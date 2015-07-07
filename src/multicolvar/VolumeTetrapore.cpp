@@ -47,7 +47,7 @@ private:
   std::vector<Tensor> dbi, dcross, dperp;
 public:
   static void registerKeywords( Keywords& keys );
-  VolumeTetrapore(const ActionOptions& ao);
+  explicit VolumeTetrapore(const ActionOptions& ao);
   ~VolumeTetrapore();
   void setupRegions();
   void update();

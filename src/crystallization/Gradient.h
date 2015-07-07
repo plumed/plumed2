@@ -40,7 +40,7 @@ private:
   std::string kerneltype;
 public:
   static void registerKeywords( Keywords& keys );
-  Gradient(const ActionOptions&);
+  explicit Gradient(const ActionOptions&);
 /// Get the number of quantities that are calculated each time
   virtual unsigned getNumberOfQuantities();
 /// Check on pbc - is it orthorhombic

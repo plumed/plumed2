@@ -103,10 +103,9 @@ s(r) = 1 - \tanh\left( \frac{ r - d_0 }{ r_0 } \right)
 
 For all the switching functions in the above table one can also specify a further (optional) parameter using the parameter
 keyword D_MAX to assert that for \f$r>d_{\textrm{max}}\f$ the switching function can be assumed equal to zero. 
-In this case it is suggested to also use the STRETCH flag, which will bring the switching function
-smoothly to zero by stretching and shifting it. To be more clear, using
+In this case the function is brought smoothly to zero by stretching and shifting it.
 \verbatim
-KEYWORD={RATIONAL R_0=1 D_MAX=3 STRETCH}
+KEYWORD={RATIONAL R_0=1 D_MAX=3}
 \endverbatim
 the resulting switching function will be
 \f$
@@ -116,7 +115,13 @@ where
 \f$
 s'(r)=\frac{1-r^6}{1-r^{12}}
 \f$
-Since PLUMED 2.2 this will become the default.
+Since PLUMED 2.2 this is the default. The old behavior (no stretching) can be obtained with the
+NOSTRETCH flag. The NOSTRETCH keyword is only provided for backward compatibility and might be
+removed in the future. Similarly, the STRETCH keyword is still allowed but has no effect.
+
+Notice that switching functions defined with the simplified syntax are never stretched
+for backward compatibility. This might change in the future.
+
 */
 //+ENDPLUMEDOC
 
@@ -148,7 +153,11 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   Tools::parse(data,"D_MAX",dmax);
   dmax_2=dmax*dmax;
   bool dostretch=false;
-  Tools::parseFlag(data,"STRETCH",dostretch);
+  Tools::parseFlag(data,"STRETCH",dostretch); // this is ignored now
+  dostretch=true;
+  bool dontstretch=false;
+  Tools::parseFlag(data,"NOSTRETCH",dontstretch); // this is ignored now
+  if(dontstretch) dostretch=false;
   double r0;
   if(name=="CUBIC"){
      r0 = dmax - d0;
@@ -181,7 +190,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
       for(unsigned i=0;i<data.size();++i) errormsg = errormsg + data[i] + " "; 
   }
 
-  if(dostretch){
+  if(dostretch && dmax!=std::numeric_limits<double>::max()){
     double dummy;
     double s0=calculate(0.0,dummy);
     double sd=calculate(dmax,dummy);

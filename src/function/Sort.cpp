@@ -61,7 +61,7 @@ class Sort :
   public Function
 {
 public:
-  Sort(const ActionOptions&);
+  explicit Sort(const ActionOptions&);
   void calculate();
   static void registerKeywords(Keywords& keys);
 };

@@ -49,7 +49,7 @@ private:
   ReferenceValuePack mypack;
   PLMD::ArgumentOnlyDistance* target;
 public:
-  Target(const ActionOptions&);
+  explicit Target(const ActionOptions&);
   ~Target();
   virtual void calculate();
   static void registerKeywords(Keywords& keys );

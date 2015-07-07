@@ -43,7 +43,7 @@ class ActionPilot:
 protected:
   int getStride()const;
 public:
-  ActionPilot(const ActionOptions&);
+  explicit ActionPilot(const ActionOptions&);
 /// Create the keywords for actionPilot
   static void registerKeywords(Keywords& keys);
 /// Check if the action is active on this step

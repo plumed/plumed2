@@ -123,7 +123,7 @@ class CH3Shifts : public Colvar {
   double len_pl2alm;
   double for_pl2alm;
 public:
-  CH3Shifts(const ActionOptions&);
+  explicit CH3Shifts(const ActionOptions&);
   ~CH3Shifts();
   static void registerKeywords( Keywords& keys );
   virtual void calculate();

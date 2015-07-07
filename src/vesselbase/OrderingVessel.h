@@ -37,7 +37,7 @@ private:
   StoreDataVessel* mydata;
 public:
   static void registerKeywords( Keywords& keys );
-  OrderingVessel( const VesselOptions& da );
+  explicit OrderingVessel( const VesselOptions& da );
   void resize();
   bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const { return true; }
   void finish( const std::vector<double>& buffer );

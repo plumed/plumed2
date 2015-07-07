@@ -40,7 +40,7 @@ class PCARMSD : public Colvar {
   std::vector<PDB> pdbv;
   std::vector<string> pca_names;
 public:
-  PCARMSD(const ActionOptions&);
+  explicit PCARMSD(const ActionOptions&);
   ~PCARMSD();
   virtual void calculate();
   static void registerKeywords(Keywords& keys);

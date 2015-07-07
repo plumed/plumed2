@@ -34,7 +34,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
-  SpathVessel( const vesselbase::VesselOptions& da );
+  explicit SpathVessel( const vesselbase::VesselOptions& da );
   std::string value_descriptor();
   void prepare();
   bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const ;

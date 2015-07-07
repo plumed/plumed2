@@ -92,7 +92,7 @@ public:
 /// Create manual
   static void registerKeywords( Keywords& keys );
 /// Constructor
-  Sprint(const ActionOptions&);
+  explicit Sprint(const ActionOptions&);
 /// Do the matrix calculation
   void completeCalculation();
 /// Sprint needs its only apply routine as it creates values

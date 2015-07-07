@@ -32,7 +32,7 @@ private:
   double lambda;
 public:
   static void registerKeywords( Keywords& keys );
-  PathBase(const ActionOptions&);
+  explicit PathBase(const ActionOptions&);
   double getLambda();
   void calculate();
   void performTask( const unsigned& , const unsigned& , MultiValue& ) const ;

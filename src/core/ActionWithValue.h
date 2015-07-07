@@ -117,7 +117,7 @@ protected:
 /// Return a pointer to the value by name
   Value* getPntrToComponent(const std::string& name);
 public:
-  ActionWithValue(const ActionOptions&ao);
+  explicit ActionWithValue(const ActionOptions&ao);
   ~ActionWithValue();
 
 /// Register all the relevant keywords for the action  

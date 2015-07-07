@@ -20,26 +20,35 @@ cppcheck --std=c++03 --std=posix -j 4 --platform=unix64 \
 # done
 # echo "+++++++++++++++++++++++++++++++++++++"
 
-
-## I exclude src/molfile which is full of warnings
-## I also exclude (style) messages
-## perhaps we could keep some of them to make to code cleaner at some point
-##
+echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+echo "  In the following analysis we exclude src/molfile src/lapack src/blas"
+echo "  since they are full of warnings"
 ## (the "true" command is necessary so that the script does not fail if some string is not found)
-grep -v "(style)" cppcheck.log | grep -v "\[molfile/" | grep -v "\[lapack/" | grep -v "\[blas/"> cppcheck.fatal || true
+cat cppcheck.log | grep -v "\[molfile/" | grep -v "\[lapack/" | grep -v "\[blas/" > cppcheck.clean || true
+
+## Here I make a summary of the (style) messages
+echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+echo "  Summary of reported (style) messages"
+## (the "true" command is necessary so that the script does not fail if some string is not found)
+awk '{if($2=="(style)")print $3}' cppcheck.clean | sort  | uniq  -c || true
+echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+## Here I also exclude (style) messages
+## perhaps we could keep some of them to make to code cleaner at some point
+## (the "true" command is necessary so that the script does not fail if some string is not found)
+grep -v "(style)" cppcheck.clean > cppcheck.fatal || true
 count=$(cat cppcheck.fatal | wc -l)
 echo 
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 if ((count==0))
 then
   echo "      cppcheck did not find any fatal error"
-  echo "      (fatal here means: excluding style and excluding molfile/)"
+  echo "      excluding (style)"
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
   exit 0
 fi
 
 echo "      cppcheck reported the following fatal errors:"
-echo "      (fatal here means: excluding style and excluding molfile/)"
+echo "      excluding (style)"
 echo
 cat cppcheck.fatal
 echo

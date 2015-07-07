@@ -160,7 +160,7 @@ class WrapAround:
   vector<AtomNumber> reference;
   unsigned groupby;
 public:
-  WrapAround(const ActionOptions&ao);
+  explicit WrapAround(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
   void calculate();
   void apply(){}

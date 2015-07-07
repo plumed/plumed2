@@ -82,7 +82,7 @@ class DRMSD : public Colvar {
   PLMD::DRMSD* drmsd_;
 
 public:
-  DRMSD(const ActionOptions&);
+  explicit DRMSD(const ActionOptions&);
   ~DRMSD();
   virtual void calculate();
   static void registerKeywords(Keywords& keys);

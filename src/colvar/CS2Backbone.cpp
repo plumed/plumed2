@@ -139,7 +139,7 @@ class CS2Backbone : public Colvar {
   Coor<double> coor; 
   Coor<double> csforces;
 public:
-  CS2Backbone(const ActionOptions&);
+  explicit CS2Backbone(const ActionOptions&);
   ~CS2Backbone();
   static void registerKeywords( Keywords& keys );
   virtual void calculate();

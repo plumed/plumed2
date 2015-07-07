@@ -50,7 +50,7 @@ protected:
   std::string getKernelType() const ;
 public:
   static void registerKeywords( Keywords& keys );
-  ActionVolume(const ActionOptions&);
+  explicit ActionVolume(const ActionOptions&);
 /// Get the number of quantities that are calculated each time
   virtual unsigned getNumberOfQuantities();
 /// Calculate whats in the volume

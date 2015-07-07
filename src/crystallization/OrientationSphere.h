@@ -37,7 +37,7 @@ private:
   SwitchingFunction switchingFunction;
 public:
   static void registerKeywords( Keywords& keys );
-  OrientationSphere(const ActionOptions&);
+  explicit OrientationSphere(const ActionOptions&);
   double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
   virtual double transformDotProduct( const double& dot, double& df ) const ;
   virtual double calculateCoordinationPrefactor( const double& coord, double& df ) const ;

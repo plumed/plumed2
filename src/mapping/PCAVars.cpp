@@ -184,7 +184,7 @@ private:
   std::vector<double> forces, forcesToApply;
 public:
   static void registerKeywords( Keywords& keys );
-  PCAVars(const ActionOptions&);
+  explicit PCAVars(const ActionOptions&);
   ~PCAVars();
   unsigned getNumberOfDerivatives();
   void lockRequests();

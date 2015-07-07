@@ -126,7 +126,7 @@ private:
   bool           ensemble;
   bool           serial;
 public:
-  RDC(const ActionOptions&);
+  explicit RDC(const ActionOptions&);
   static void registerKeywords( Keywords& keys );
   virtual void calculate();
   virtual void qf_calc(bool qf, bool docomp);

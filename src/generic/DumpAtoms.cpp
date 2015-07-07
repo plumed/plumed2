@@ -112,7 +112,7 @@ class DumpAtoms:
   XDRFILE* xd;
 #endif
 public:
-  DumpAtoms(const ActionOptions&);
+  explicit DumpAtoms(const ActionOptions&);
   ~DumpAtoms();
   static void registerKeywords( Keywords& keys );
   void calculate(){}

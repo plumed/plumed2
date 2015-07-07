@@ -47,7 +47,7 @@ protected:
 public:
 /// Registers the list of keywords
   static void registerKeywords( Keywords& keys );
-  ActionWithInputVessel(const ActionOptions&);
+  explicit ActionWithInputVessel(const ActionOptions&);
   virtual ~ActionWithInputVessel(){}
 /// Calculate the numerical derivatives
 /// N.B. only pass an ActionWithValue to this routine if you know exactly what you 

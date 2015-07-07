@@ -56,7 +56,7 @@ class Ghost:
 {
   vector<double> coord;
 public:
-  Ghost(const ActionOptions&ao);
+  explicit Ghost(const ActionOptions&ao);
   void calculate();
   static void registerKeywords( Keywords& keys );
 };

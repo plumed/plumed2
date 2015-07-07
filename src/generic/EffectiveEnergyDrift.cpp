@@ -110,7 +110,7 @@ public ActionPilot{
   bool ensemble;
 
 public:
-  EffectiveEnergyDrift(const ActionOptions&);
+  explicit EffectiveEnergyDrift(const ActionOptions&);
   ~EffectiveEnergyDrift();
 
   static void registerKeywords( Keywords& keys );

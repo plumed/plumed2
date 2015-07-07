@@ -52,7 +52,7 @@ public:
 /// Create manual
   static void registerKeywords( Keywords& keys );
 /// Constructor
-  DFSClustering(const ActionOptions&);
+  explicit DFSClustering(const ActionOptions&);
 /// Required as we have to be able to deal with vectors
   unsigned getNumberOfQuantities();
 /// This checks whether derivatives can be computed given the base multicolvar

@@ -53,7 +53,7 @@ class MoleculeOrientation : public VectorMultiColvar {
 private:
 public:
   static void registerKeywords( Keywords& keys );
-  MoleculeOrientation( const ActionOptions& ao );
+  explicit MoleculeOrientation( const ActionOptions& ao );
   void calculateVector( multicolvar::AtomValuePack& myatoms ) const;
 };
 

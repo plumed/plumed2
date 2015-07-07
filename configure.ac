@@ -211,6 +211,13 @@ then
   PLUMED_CHECK_CXXFLAG([-Wold-style-cast])
 fi
 
+AC_MSG_CHECKING([whether $CXX supports explicit])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([ class A{explicit A(){}};])],
+  [AC_MSG_RESULT([yes])],
+  [AC_MSG_RESULT([no]) ;
+   AC_DEFINE([explicit],[])])
+
+
 #### Compulsory libraries ####
 # some of them might be made optional if we find that are not available in some system
 AC_MSG_NOTICE([Now we will check compulsory headers and libraries])
@@ -224,7 +231,7 @@ save_LIBS="$LIBS"
 blas_found=
 lapack_found=
 
-# if external lapack can only work with external blas
+# external lapack can only work with external blas
 # thus, if external blas are disabled also external lapack should be disabled
 if test "$external_blas" == false && test "$external_lapack" == true ; then
   AC_MSG_NOTICE([Internal blas can only be used with internal lapack])
@@ -250,7 +257,7 @@ AC_DEFINE([__PLUMED_INTERNAL_BLAS])
 AC_DEFINE([__PLUMED_INTERNAL_LAPACK])
 fi
 
-# if found, also look for external blas
+# if found, also look for external lapack
 if test -n "$blas_found" ; then
 
 save_LIBS="$LIBS"
@@ -328,8 +335,10 @@ AC_CHECK_LIB([dl],dlopen, [STATIC_LIBS="-ldl $STATIC_LIBS"] [LIBS="-ldl $LIBS"])
 mpi_found=ko
 # optional libraries follow
 if test $mpi == true ; then
-  mpi_found=ok
   PLUMED_CHECK_PACKAGE([mpi.h],[MPI_Init],[__PLUMED_MPI])
+  if test "x$ac_cv_func_MPI_Init" = xyes; then
+    mpi_found=ok
+  fi
 else 
   mpi_found=ko
 fi

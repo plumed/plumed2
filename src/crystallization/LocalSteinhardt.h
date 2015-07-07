@@ -32,7 +32,7 @@ public:
   static void registerKeywords( Keywords& keys ){
     OrientationSphere::registerKeywords(keys);
   }
-  LocalSteinhardt(const ActionOptions& ao): Action(ao), OrientationSphere(ao)
+  explicit LocalSteinhardt(const ActionOptions& ao): Action(ao), OrientationSphere(ao)
   {
      T* mc=dynamic_cast<T*>( getBaseMultiColvar(0) );
      if(!mc) error("input action is not calculating the correct vectors");

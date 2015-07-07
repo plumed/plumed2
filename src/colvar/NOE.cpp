@@ -80,7 +80,7 @@ private:
   bool             serial;
 public:
   static void registerKeywords( Keywords& keys );
-  NOE(const ActionOptions&);
+  explicit NOE(const ActionOptions&);
   ~NOE();
   virtual void calculate();
 };

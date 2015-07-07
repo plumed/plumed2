@@ -42,7 +42,7 @@ private:
   vesselbase::ActionWithVessel* aves;
 public:
   static void registerKeywords( Keywords& keys );
-  ManyRestraintsBase(const ActionOptions&);
+  explicit ManyRestraintsBase(const ActionOptions&);
   bool isPeriodic(){ return false; }
   unsigned getNumberOfDerivatives();
 /// Routines that have to be defined so as not to have problems with virtual methods

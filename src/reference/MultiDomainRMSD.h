@@ -39,7 +39,7 @@ private:
 /// Each of the domains we are calculating the distance from
   std::vector<SingleDomainRMSD*> domains;
 public:
-  MultiDomainRMSD( const ReferenceConfigurationOptions& ro );
+  explicit MultiDomainRMSD( const ReferenceConfigurationOptions& ro );
   ~MultiDomainRMSD();
 /// Read in the input from a pdb
   void read( const PDB& );

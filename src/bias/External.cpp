@@ -99,7 +99,7 @@ private:
   Grid* BiasGrid_;
   
 public:
-  External(const ActionOptions&);
+  explicit External(const ActionOptions&);
   ~External();
   void calculate();
   static void registerKeywords(Keywords& keys);

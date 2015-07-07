@@ -104,7 +104,7 @@ public:
 /// Without message
   Exception();
 /// With message
-  Exception(const std::string&);
+  explicit Exception(const std::string&);
 /// With message plus file, line and function (meant to be used through a preprocessor macro)
   Exception(const std::string&,const std::string&,unsigned,const std::string&);
 /// Returns the error message

@@ -32,7 +32,7 @@ private:
   SwitchingFunction coord_switch;
 public:
   static void registerKeywords( Keywords& keys ); 
-  SMAC(const ActionOptions& ao); 
+  explicit SMAC(const ActionOptions& ao); 
   double transformDotProduct( const double& dot, double& df ) const ; 
   double calculateCoordinationPrefactor( const double& coord, double& df ) const ;
 };

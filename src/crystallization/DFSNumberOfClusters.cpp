@@ -45,7 +45,7 @@ public:
 /// Create manual
   static void registerKeywords( Keywords& keys );
 /// Constructor
-  DFSNumberOfClusters(const ActionOptions&);
+  explicit DFSNumberOfClusters(const ActionOptions&);
 ///
   void doCalculationOnCluster();
 };

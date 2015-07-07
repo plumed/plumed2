@@ -48,7 +48,7 @@ public:
 /// Create manual
   static void registerKeywords( Keywords& keys );
 /// Constructor
-  DFSClusterDiameter(const ActionOptions&);
+  explicit DFSClusterDiameter(const ActionOptions&);
 ///
   void doCalculationOnCluster();
 ///

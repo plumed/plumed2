@@ -4826,6 +4826,31 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 fi
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX supports explicit" >&5
+$as_echo_n "checking whether $CXX supports explicit... " >&6; }
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+ class A{explicit A(){}};
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; } ;
+   $as_echo "#define explicit /**/" >>confdefs.h
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
 #### Compulsory libraries ####
 # some of them might be made optional if we find that are not available in some system
 { $as_echo "$as_me:${as_lineno-$LINENO}: Now we will check compulsory headers and libraries" >&5
@@ -5246,7 +5271,7 @@ save_LIBS="$LIBS"
 blas_found=
 lapack_found=
 
-# if external lapack can only work with external blas
+# external lapack can only work with external blas
 # thus, if external blas are disabled also external lapack should be disabled
 if test "$external_blas" == false && test "$external_lapack" == true ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: Internal blas can only be used with internal lapack" >&5
@@ -5369,7 +5394,7 @@ $as_echo "#define __PLUMED_INTERNAL_LAPACK 1" >>confdefs.h
 
 fi
 
-# if found, also look for external blas
+# if found, also look for external lapack
 if test -n "$blas_found" ; then
 
 save_LIBS="$LIBS"
@@ -5584,7 +5609,6 @@ fi
 mpi_found=ko
 # optional libraries follow
 if test $mpi == true ; then
-  mpi_found=ok
 
     found=ko
     ac_fn_cxx_check_header_mongrel "$LINENO" "mpi.h" "ac_cv_header_mpi_h" "$ac_includes_default"
@@ -5607,6 +5631,9 @@ fi
 $as_echo "$as_me: WARNING: cannot enable __PLUMED_MPI" >&2;}
     fi
 
+  if test "x$ac_cv_func_MPI_Init" = xyes; then
+    mpi_found=ok
+  fi
 else
   mpi_found=ko
 fi

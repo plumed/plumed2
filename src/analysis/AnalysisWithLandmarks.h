@@ -47,7 +47,7 @@ protected:
   unsigned getNumberOfLandmarks() const ;
 public:
   static void registerKeywords( Keywords& keys );
-  AnalysisWithLandmarks( const ActionOptions& );
+  explicit AnalysisWithLandmarks( const ActionOptions& );
   ~AnalysisWithLandmarks();
 /// Do the analysis
   void performAnalysis();

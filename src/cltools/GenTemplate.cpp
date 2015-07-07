@@ -58,7 +58,7 @@ public CLTool
 {
 public:
   static void registerKeywords( Keywords& keys );
-  GenTemplate(const CLToolOptions& co );
+  explicit GenTemplate(const CLToolOptions& co );
   int main(FILE* in, FILE*out,Communicator& pc);
   string description()const{
     return "print out a template input for a particular action";

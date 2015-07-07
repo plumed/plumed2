@@ -78,7 +78,7 @@ public:
   const std::map<AtomNumber,Tensor> & getGradients()const;
 /// Return the atom id of the corresponding virtual atom
   AtomNumber getIndex()const;
-  ActionWithVirtualAtom(const ActionOptions&ao);
+  explicit ActionWithVirtualAtom(const ActionOptions&ao);
   ~ActionWithVirtualAtom();
   static void registerKeywords(Keywords& keys);
   void setGradientsIfNeeded();

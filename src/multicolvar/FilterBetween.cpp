@@ -41,7 +41,7 @@ private:
   HistogramBead hb;
 public:
   static void registerKeywords( Keywords& keys );
-  FilterBetween(const ActionOptions& ao);
+  explicit FilterBetween(const ActionOptions& ao);
   double applyFilter( const double& val, double& df ) const ;
 }; 
 

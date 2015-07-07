@@ -141,7 +141,7 @@ struct pairordering {
 };
 
 public:
-  FuncPathMSD(const ActionOptions&);
+  explicit FuncPathMSD(const ActionOptions&);
 // active methods:
   virtual void calculate();
   virtual void prepare();

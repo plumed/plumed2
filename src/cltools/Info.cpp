@@ -54,7 +54,7 @@ public CLTool
 {
 public:
   static void registerKeywords( Keywords& keys );
-  Info(const CLToolOptions& co );
+  explicit Info(const CLToolOptions& co );
   int main(FILE* in, FILE*out,Communicator& pc);
   string description()const{
     return "provide informations about plumed";

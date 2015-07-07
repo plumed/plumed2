@@ -126,7 +126,7 @@ class Distances : public MultiColvar {
 private:
 public:
   static void registerKeywords( Keywords& keys );
-  Distances(const ActionOptions&);
+  explicit Distances(const ActionOptions&);
 // active methods:
   virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
 /// Returns the number of coordinates of the field

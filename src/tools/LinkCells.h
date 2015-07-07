@@ -60,7 +60,7 @@ private:
   unsigned findCell( const Vector& pos ) const ;
 public:
 ///
-  LinkCells( Communicator& comm );
+  explicit LinkCells( Communicator& comm );
 /// Have the link cells been enabled
   bool enabled() const ;
 /// Set the value of the cutoff
