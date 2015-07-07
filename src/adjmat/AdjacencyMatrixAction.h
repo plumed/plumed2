@@ -45,20 +45,15 @@ private:
   Matrix<SwitchingFunction> switchingFunction;
 /// Which matrix elements have value
   bool gathered;
-  DynamicList<unsigned> active_elements;
 protected:
 /// Retrieve the vessel that holds the adjacency matrix
   AdjacencyMatrixVessel* getAdjacencyVessel();
-/// Get the adjacency matrix
-  void retrieveMatrix( Matrix<double>& mymatrix );
-/// Retrieve the adjacency lists
-  void retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matrix<unsigned>& adj_list );
 /// Get number of active matrix elements
-  unsigned getNumberOfActiveMatrixElements();
+//  unsigned getNumberOfActiveMatrixElements();
 /// Put the indices of the matrix elements in current atoms
   void setMatrixIndexesForTask( const unsigned& ii );
 /// Get the matrix elements that are active
-  unsigned getActiveMatrixElement( const unsigned& ival ) const ;
+//  unsigned getActiveMatrixElement( const unsigned& ival ) const ;
 /// Add derivatives to a matrix element
   void addDerivativesOnMatrixElement( const unsigned& ielem, const unsigned& jrow, const double& df, Matrix<double>& der );
 public:
@@ -74,22 +69,22 @@ public:
   Vector getCentralAtom(){ plumed_merror("cannot find central atoms for adjacency matrix actions"); Vector dum; return dum; }
 };
 
-inline
-unsigned AdjacencyMatrixAction::getNumberOfActiveMatrixElements(){
-  if(!gathered) active_elements.mpi_gatherActiveMembers( comm );
-  gathered=true; return active_elements.getNumberActive();
-}
+// inline
+// unsigned AdjacencyMatrixAction::getNumberOfActiveMatrixElements(){
+//   if(!gathered) active_elements.mpi_gatherActiveMembers( comm );
+//   gathered=true; return active_elements.getNumberActive();
+// }
 
 inline
 AdjacencyMatrixVessel* AdjacencyMatrixAction::getAdjacencyVessel(){
   return mat;
 }
 
-inline
-unsigned AdjacencyMatrixAction::getActiveMatrixElement( const unsigned& ival ) const {
-  plumed_dbg_assert( ival<active_elements.getNumberActive() );
-  return active_elements[ival];
-}
+// inline
+// unsigned AdjacencyMatrixAction::getActiveMatrixElement( const unsigned& ival ) const {
+//   plumed_dbg_assert( ival<active_elements.getNumberActive() );
+//   return active_elements[ival];
+// }
 
 }
 }

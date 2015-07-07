@@ -82,6 +82,8 @@ private:
   double sqrtn;
 /// Vector that stores eigenvalues
   std::vector<double> eigvals;
+/// This is used to speed up the calculation of derivatives
+  DynamicList<unsigned> active_elements;
 /// Vector that stores max eigenvector
   std::vector< std::pair<double,int> > maxeig;
 /// Adjacency matrix
@@ -132,11 +134,14 @@ eigenvecs( getFullNumberOfBaseTasks(), getFullNumberOfBaseTasks() )
       componentIsNotPeriodic("coord-"+num);
       getPntrToComponent(i)->resizeDerivatives( getNumberOfDerivatives() );
    }
+
+   // Setup the dynamic list to hold all the tasks
+   for(unsigned i=0;i<getFullNumberOfTasks();++i) active_elements.addIndexToList( i );
 }
 
 void Sprint::completeCalculation(){
    // Get the adjacency matrix
-   retrieveMatrix( mymatrix ); 
+   getAdjacencyVessel()->retrieveMatrix( active_elements, mymatrix ); 
    // Diagonalize it
    diagMat( mymatrix, eigvals, eigenvecs );
    // Get the maximum eigevalue
@@ -172,8 +177,8 @@ void Sprint::completeCalculation(){
    MultiValue myvals( 2, getNumberOfDerivatives() );
    Matrix<double> mymat_ders( getNumberOfComponents(), getNumberOfDerivatives() );  
    std::vector<unsigned> catoms(2); unsigned nval = getFullNumberOfBaseTasks(); mymat_ders=0; 
-   for(unsigned i=rank;i<getNumberOfActiveMatrixElements();i+=stride){
-      decodeIndexToAtoms( getTaskCode(getActiveMatrixElement(i)), catoms ); unsigned j=catoms[0], k=catoms[1];
+   for(unsigned i=rank;i<active_elements.getNumberActive();i+=stride){
+      decodeIndexToAtoms( getTaskCode(active_elements[i]), catoms ); unsigned j=catoms[0], k=catoms[1];
       double tmp1 = 2 * eigenvecs(nval-1,j)*eigenvecs(nval-1,k);
       for(unsigned icomp=0;icomp<getNumberOfComponents();++icomp){
           double tmp2 = 0.; 
@@ -181,7 +186,7 @@ void Sprint::completeCalculation(){
               tmp2 += eigenvecs(n,maxeig[icomp].second) * ( eigenvecs(n,j)*eigenvecs(nval-1,k) + eigenvecs(n,k)*eigenvecs(nval-1,j) ) / ( lambda - eigvals[n] );
           }
           double prefactor=sqrtn*( tmp1*maxeig[icomp].first + tmp2*lambda );
-          getAdjacencyVessel()->retrieveDerivatives( getActiveMatrixElement(i), false, myvals );
+          getAdjacencyVessel()->retrieveDerivatives( active_elements[i], false, myvals );
           for(unsigned jd=0;jd<myvals.getNumberActive();++jd){
               unsigned ider=myvals.getActiveIndex(jd);
               mymat_ders( icomp, ider ) += prefactor*myvals.getDerivative( 1, ider );

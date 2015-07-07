@@ -50,6 +50,10 @@ public:
   bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const ;
 /// Finish the calculation
   void finish( const std::vector<double>& buffer );
+/// Get the adjacency matrix
+  void retrieveMatrix( DynamicList<unsigned>& myactive_elements, Matrix<double>& mymatrix );
+/// Get the neighbour list based on the adjacency matrix
+  void retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matrix<unsigned>& adj_list );
 };
 
 inline

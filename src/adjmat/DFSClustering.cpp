@@ -61,7 +61,7 @@ unsigned DFSClustering::getNumberOfQuantities(){
 
 void DFSClustering::completeCalculation(){
    // Get the adjacency matrix
-   retrieveAdjacencyLists( nneigh, adj_list ); 
+   getAdjacencyVessel()->retrieveAdjacencyLists( nneigh, adj_list ); 
 //   for(unsigned i=0;i<nneigh.size();++i){
 //       printf("ADJACENCY LIST FOR %d HAS %d MEMBERS : ",i,nneigh[i]);
 //       for(unsigned j=0;j<nneigh[i];++j) printf("%d ",adj_list(i,j) );

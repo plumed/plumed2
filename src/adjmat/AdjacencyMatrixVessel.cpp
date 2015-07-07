@@ -54,9 +54,42 @@ bool AdjacencyMatrixVessel::calculate( const unsigned& current, MultiValue& myva
 void AdjacencyMatrixVessel::finish( const std::vector<double>& buffer ){
   if( !finished ){
      finished=true;
-     StoreDataVessel::finish( buffer ); 
+     StoreDataVessel::finish( buffer );
      function->dertime=true;
      function->completeCalculation();
+  }
+}
+
+void AdjacencyMatrixVessel::retrieveMatrix( DynamicList<unsigned>& myactive_elements, Matrix<double>& mymatrix ){
+  myactive_elements.deactivateAll();
+  std::vector<unsigned> myatoms(2); std::vector<double> vals(2);
+  for(unsigned i=0;i<getNumberOfStoredValues();++i){
+      // Ignore any non active members
+      if( !storedValueIsActive(i) ) continue ;
+      myactive_elements.activate(i);
+      function->decodeIndexToAtoms( function->getTaskCode(i), myatoms ); 
+      unsigned j = myatoms[1], k = myatoms[0];
+      retrieveValue( i, false, vals );
+      mymatrix(k,j)=mymatrix(j,k)=vals[1];
+  }
+  myactive_elements.updateActiveMembers();  
+}
+
+void AdjacencyMatrixVessel::retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matrix<unsigned>& adj_list ){
+  plumed_dbg_assert( nneigh.size()==getNumberOfStoredValues() && adj_list.nrows()==getNumberOfStoredValues() &&
+                       adj_list.ncols()==getNumberOfStoredValues() );
+  // Currently everything has zero neighbors
+  for(unsigned i=0;i<nneigh.size();++i) nneigh[i]=0;
+
+  // And set up the adjacency list
+  std::vector<unsigned> myatoms(2);
+  for(unsigned i=0;i<getNumberOfStoredValues();++i){
+      // Ignore any non active members
+      if( !storedValueIsActive(i) ) continue ;
+      function->decodeIndexToAtoms( function->getTaskCode(i), myatoms );
+      unsigned j = myatoms[1], k = myatoms[0];
+      adj_list(k,nneigh[k])=j; nneigh[k]++;
+      adj_list(j,nneigh[j])=k; nneigh[j]++;
   }
 }
 

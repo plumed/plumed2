@@ -80,9 +80,6 @@ tmpdf(1)
 
   if( use_orient && getBaseMultiColvar(0)->getNumberOfQuantities()<3 ) error("using orientation but no orientations in base colvars"); 
 
-  // Build active elements array
-  for(unsigned i=0;i<getFullNumberOfTasks();++i) active_elements.addIndexToList( i );
-
   // Find the largest sf cutoff
   double sfmax=switchingFunction(0,0).get_dmax();
   for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i){
@@ -169,49 +166,49 @@ double AdjacencyMatrixAction::compute( const unsigned& tindex, multicolvar::Atom
   return weight*f_dot;
 }
 
-void AdjacencyMatrixAction::retrieveMatrix( Matrix<double>& mymatrix ){
-  // Gather active elements in matrix
-  if(!gathered){
-     active_elements.deactivateAll();
-     for(unsigned i=0;i<getFullNumberOfTasks();++i){
-        if( mat->storedValueIsActive(i) ) active_elements.activate(i);
-     }
-     active_elements.updateActiveMembers(); gathered=true;
-  }
- 
-  std::vector<unsigned> myatoms(2); std::vector<double> vals(2);
-  for(unsigned i=0;i<active_elements.getNumberActive();++i){
-      decodeIndexToAtoms( getTaskCode(active_elements[i]), myatoms ); 
-      unsigned j = myatoms[1], k = myatoms[0];
-      mat->retrieveValue( active_elements[i], false, vals );
-      mymatrix(k,j)=mymatrix(j,k)=vals[1];   
-  }
-}
+// void AdjacencyMatrixAction::retrieveMatrix( Matrix<double>& mymatrix ){
+//   // Gather active elements in matrix
+//   if(!gathered){
+//      active_elements.deactivateAll();
+//      for(unsigned i=0;i<getFullNumberOfTasks();++i){
+//         if( mat->storedValueIsActive(i) ) active_elements.activate(i);
+//      }
+//      active_elements.updateActiveMembers(); gathered=true;
+//   }
+//  
+//   std::vector<unsigned> myatoms(2); std::vector<double> vals(2);
+//   for(unsigned i=0;i<active_elements.getNumberActive();++i){
+//       decodeIndexToAtoms( getTaskCode(active_elements[i]), myatoms ); 
+//       unsigned j = myatoms[1], k = myatoms[0];
+//       mat->retrieveValue( active_elements[i], false, vals );
+//       mymatrix(k,j)=mymatrix(j,k)=vals[1];   
+//   }
+// }
 
-void AdjacencyMatrixAction::retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matrix<unsigned>& adj_list ){
-  plumed_dbg_assert( nneigh.size()==getFullNumberOfBaseTasks() && adj_list.nrows()==getFullNumberOfBaseTasks() && 
-                       adj_list.ncols()==getFullNumberOfBaseTasks() );
-  // Gather active elements in matrix
-  if(!gathered){
-     active_elements.deactivateAll();
-     for(unsigned i=0;i<getFullNumberOfTasks();++i){
-        if( mat->storedValueIsActive(i) ) active_elements.activate(i);
-     }
-     active_elements.updateActiveMembers(); gathered=true;
-  }
-
-  // Currently everything has zero neighbors
-  for(unsigned i=0;i<nneigh.size();++i) nneigh[i]=0;
-
-  // And set up the adjacency list
-  std::vector<unsigned> myatoms(2);
-  for(unsigned i=0;i<active_elements.getNumberActive();++i){
-      decodeIndexToAtoms( getTaskCode(active_elements[i]), myatoms );
-      unsigned j = myatoms[1], k = myatoms[0];
-      adj_list(k,nneigh[k])=j; nneigh[k]++;
-      adj_list(j,nneigh[j])=k; nneigh[j]++;
-  } 
-} 
+// void AdjacencyMatrixAction::retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matrix<unsigned>& adj_list ){
+//   plumed_dbg_assert( nneigh.size()==getFullNumberOfBaseTasks() && adj_list.nrows()==getFullNumberOfBaseTasks() && 
+//                        adj_list.ncols()==getFullNumberOfBaseTasks() );
+//   // Gather active elements in matrix
+//   if(!gathered){
+//      active_elements.deactivateAll();
+//      for(unsigned i=0;i<getFullNumberOfTasks();++i){
+//         if( mat->storedValueIsActive(i) ) active_elements.activate(i);
+//      }
+//      active_elements.updateActiveMembers(); gathered=true;
+//   }
+// 
+//   // Currently everything has zero neighbors
+//   for(unsigned i=0;i<nneigh.size();++i) nneigh[i]=0;
+// 
+//   // And set up the adjacency list
+//   std::vector<unsigned> myatoms(2);
+//   for(unsigned i=0;i<active_elements.getNumberActive();++i){
+//       decodeIndexToAtoms( getTaskCode(active_elements[i]), myatoms );
+//       unsigned j = myatoms[1], k = myatoms[0];
+//       adj_list(k,nneigh[k])=j; nneigh[k]++;
+//       adj_list(j,nneigh[j])=k; nneigh[j]++;
+//   } 
+// } 
 
 }
 }
