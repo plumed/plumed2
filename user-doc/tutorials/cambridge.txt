@@ -184,7 +184,7 @@ without further rescaling needed.
 
 We can plot the time evolution of the CVs along with the height of the Gaussian.
 
-\image html belfast-6-wtb6.pdf "Time evolution of the CVs and Gaussian height during the first 2.5 ns of a well-tempered metadynamics simulation with biasfactor equal to 6."
+\image html belfast-6-wtb6.png "Time evolution of the CVs and Gaussian height during the first 2.5 ns of a well-tempered metadynamics simulation with biasfactor equal to 6."
 
 The system is initialized in one of the local minimum where it starts accumulating bias.
 As the simulation progresses and the bias added grows, the Gaussian height is progressively reduced.
