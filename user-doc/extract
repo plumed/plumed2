@@ -198,7 +198,7 @@ do
                 print "<b> This is part of the '$file' \\link mymodules module \\endlink</b>"
                 print "</td> </tr>"
                 print "<tr> <td width=60%%> </td> <td>"
-                print "<b> It is only available if you add a file called '$file'.on to the plumed2/src directory prior to compilation. "
+                print "<b> It is only available if you configure PLUMED with ./configure --enable-modules='$file' . "
                 print "Furthermore, this feature is still being developed so take care when using it and report any problems on the mailing list.</b>"
                 print "</td> </tr>"
                 print "</table>"

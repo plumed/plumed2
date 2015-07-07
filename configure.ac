@@ -100,6 +100,56 @@ AC_DEFUN([PLUMED_CHECK_PACKAGE], [
 
 ##################################################################
 
+AC_ARG_ENABLE([modules],
+  AS_HELP_STRING([--enable-modules], [all/none/reset or : separated list such as +crystallization:-bias default: reset]),
+  [
+   rm -fr src/*.on src/*.off
+   if test "${enableval}" == yes ; then
+     enableval=reset
+   fi
+   if test "${enableval}" == no ; then
+     enableval=none
+   fi
+   for modules_mod in `echo "${enableval}" | sed 's/:/ /g' | sed 's/+/ +/g' | sed 's/-/ -/g'`
+   do
+     case "$modules_mod" in
+     (none)
+       AC_MSG_NOTICE([Disabling all optional modules])
+       touch $(grep default-on src/*/module.type | sed "s|/module.type:.*|.off|") ;;
+     (all)
+       AC_MSG_NOTICE([Enabling all optional modules])
+       touch $(grep default-off src/*/module.type | sed "s|/module.type:.*|.on|") ;;
+     (reset)
+        AC_MSG_NOTICE([Resetting modules to default])
+        rm -f src/*.on src/*.off ;;
+     (-*)
+       modules_mod=`echo "${modules_mod}" | sed "s|-||"`
+       if test ! -f src/$modules_mod/module.type ; then
+         AC_MSG_ERROR([trying to remove module $modules_mod which does not exist])
+       fi
+       AC_MSG_NOTICE([Disabling module ${modules_mod}])
+       touch src/$modules_mod.off ;;
+     (+*)
+       modules_mod=`echo "${modules_mod}" | sed "s|+||"`
+       if test ! -f src/$modules_mod/module.type ; then
+         AC_MSG_ERROR([trying to add module $modules_mod which does not exist])
+       fi
+       AC_MSG_NOTICE([Enabling module ${modules_mod}])
+       touch src/$modules_mod.on ;;
+     (*)
+       if test ! -f src/$modules_mod/module.type ; then
+         AC_MSG_ERROR([trying to add module $modules_mod which does not exist])
+       fi
+       AC_MSG_NOTICE([Enabling module ${modules_mod}])
+       touch src/$modules_mod.on ;;
+     esac
+   done
+  ]
+  ,
+  []
+)
+
+
 # set enable flags for ./configure
 PLUMED_CONFIG_ENABLE([debug],[debug],[debugging],[no])
 PLUMED_CONFIG_ENABLE([basic_warnings],[basic-warnings],[basic warnings],[yes])
@@ -108,7 +158,6 @@ PLUMED_CONFIG_ENABLE([debug_glibcxx],[debug-glibcxx],[enable boundary check],[no
 PLUMED_CONFIG_ENABLE([shared],[shared],[shared libs],[yes])
 PLUMED_CONFIG_ENABLE([cxx_exceptions],[cxx-exceptions],[c++ exceptions],[no])
 PLUMED_CONFIG_ENABLE([mpi],[mpi],[search for mpi],[yes])
-PLUMED_CONFIG_ENABLE([openmp],[openmp],[search for openmp],[yes])
 PLUMED_CONFIG_ENABLE([external_lapack],[external-lapack],[search for external lapack],[yes])
 PLUMED_CONFIG_ENABLE([external_blas],[external-blas],[search for external blas],[yes])
 PLUMED_CONFIG_ENABLE([molfile_plugins],[molfile-plugins],[use molfile_plugins],[yes])
@@ -342,9 +391,11 @@ if test $mpi == true ; then
 else 
   mpi_found=ko
 fi
-if test $openmp == true ; then
-  AC_OPENMP
-fi
+
+# search for openmp is automatically disabled by autoconf
+# when configuring with --disable-openmp
+AC_OPENMP
+
 if test $matheval == true ; then
   PLUMED_CHECK_PACKAGE([matheval.h],[evaluator_create],[__PLUMED_HAS_MATHEVAL],[matheval])
 fi

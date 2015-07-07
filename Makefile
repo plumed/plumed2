@@ -63,6 +63,7 @@ fullclean:
 	rm -f Makefile.conf
 	rm -f sourceme.sh
 	rm -f config.log 
+	rm -f */*.on */*.off
 
 
 docclean:

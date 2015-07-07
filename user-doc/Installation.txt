@@ -57,6 +57,10 @@ Useful command line options for ./configure can be found by typing
 \verbatim
 > ./configure --help
 \endverbatim
+PLUMED is made up of modules. Some of them are on by default, some others aren't.
+Since version 2.2, the activation of modules can be made during configuration using the `--enable-modules`
+option (see \ref mymodules).
+
 Notice that some functionalities of PLUMED depend on external
 libraries which are looked for by configure. You can typically
 avoid looking for a library using the "disable" syntax, e.g.
