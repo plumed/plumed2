@@ -1000,13 +1000,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             }
 
             if (DOMAINDECOMP(cr))
-
-                /* PLUMED */
-                if(plumedswitch){
-                  plumed_cmd(plumedmain,"setAtomsNlocal",&cr->dd->nat_home);
-                  plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->gatindex);
-                }
-                /* END PLUMED */
             {
                 /* Repartition the domain decomposition */
                 dd_partition_system(fplog, step, cr,
@@ -1016,6 +1009,13 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                     vsite, shellfc, constr,
                                     nrnb, wcycle,
                                     do_verbose && !bPMETunePrinting);
+
+                /* PLUMED */
+                if(plumedswitch){
+                  plumed_cmd(plumedmain,"setAtomsNlocal",&cr->dd->nat_home);
+                  plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->gatindex);
+                }
+                /* END PLUMED */
             }
         }
 
