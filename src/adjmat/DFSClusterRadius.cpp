@@ -60,7 +60,6 @@ PLUMED_REGISTER_ACTION(DFSClusterDiameter,"DFSCLUSTERDIAMETER")
 void DFSClusterDiameter::registerKeywords( Keywords& keys ){
   DFSClustering::registerKeywords( keys );
   keys.add("compulsory","CLUSTER","1","which cluster would you like to look at 1 is the largest cluster, 2 is the second largest, 3 is the the third largest and so on.");
-  keys.use("WTOL"); keys.use("USE_ORIENTATION");
   keys.remove("LOWMEM"); keys.use("HIGHMEM");
 }
 
@@ -72,7 +71,7 @@ DFSClustering(ao)
    parse("CLUSTER",clustr);
 
    if( clustr<1 ) error("cannot look for a cluster larger than the largest cluster");
-   if( clustr>getFullNumberOfBaseTasks() ) error("cluster selected is invalid - too few atoms in system");
+   if( clustr>getNumberOfNodes() ) error("cluster selected is invalid - too few atoms in system");
 
    addValue(); setNotPeriodic();
 }
@@ -88,10 +87,10 @@ void DFSClusterDiameter::doCalculationOnCluster(){
    double maxdist=0;
    for(unsigned i=1;i<myatoms.size();++i){
        unsigned iatom = myatoms[i];
-       Vector ipos=getPositionOfAtomForLinkCells( iatom ); 
+       Vector ipos=getPosition( iatom ); 
        for(unsigned j=0;j<i;++j){
            unsigned jatom = myatoms[j];
-           Vector jpos=getPositionOfAtomForLinkCells( jatom );
+           Vector jpos=getPosition( jatom );
            Vector distance=getSeparation( ipos, jpos );
            double dmod=distance.modulo2();
            if( dmod>maxdist ) maxdist=dmod;

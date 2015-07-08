@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "DFSClustering.h"
+#include "AdjacencyMatrixVessel.h"
 #include "core/ActionRegister.h"
 
 //+PLUMEDOC MCOLVARF DFSCLUSTERING 
@@ -147,7 +148,6 @@ PLUMED_REGISTER_ACTION(DFSBasic,"DFSCLUSTERING")
 void DFSBasic::registerKeywords( Keywords& keys ){
   DFSClustering::registerKeywords( keys );
   keys.add("compulsory","CLUSTER","1","which cluster would you like to look at 1 is the largest cluster, 2 is the second largest, 3 is the the third largest and so on.");
-  keys.use("WTOL"); keys.use("USE_ORIENTATION");
   keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("LESS_THAN");
   if( keys.reserved("VMEAN") ) keys.use("VMEAN");
   if( keys.reserved("VSUM") ) keys.use("VSUM");
@@ -164,7 +164,7 @@ DFSClustering(ao)
    parse("CLUSTER",clustr);
 
    if( clustr<1 ) error("cannot look for a cluster larger than the largest cluster");
-   if( clustr>getFullNumberOfBaseTasks() ) error("cluster selected is invalid - too few atoms in system");
+   if( clustr>getNumberOfNodes() ) error("cluster selected is invalid - too few atoms in system");
 
    // Setup the various things this will calculate
    readVesselKeywords();

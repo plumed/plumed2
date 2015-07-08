@@ -111,10 +111,6 @@ protected:
   double getTolerance() const ;
 /// Return the value for the neighbor list tolerance
   double getNLTolerance() const ;
-/// Get the number of vessels
-  unsigned getNumberOfVessels() const;
-/// Get a pointer to the ith vessel
-   Vessel* getPntrToVessel( const unsigned& i );
 /// Calculate the values of all the vessels
   void runAllTasks();
 /// Resize all the functions when the number of derivatives change
@@ -164,6 +160,10 @@ public:
   virtual unsigned getNumberOfDerivatives()=0;
 /// Get the number of quantities that are calculated during each task
   virtual unsigned getNumberOfQuantities();
+/// Get the number of vessels
+  unsigned getNumberOfVessels() const;
+/// Get a pointer to the ith vessel
+   Vessel* getPntrToVessel( const unsigned& i );
 /// Get the list of indices that have derivatives
 //  virtual void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
 /// Switch on additional tasks 

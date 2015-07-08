@@ -31,6 +31,7 @@ class AdjacencyMatrixAction;
 
 class AdjacencyMatrixVessel : public vesselbase::StoreDataVessel {
 friend class VectorMultiColvar;
+friend class ActionWithInputMatrix;
 private:
 /// Pointer to underlying action
   AdjacencyMatrixAction* function;
@@ -40,6 +41,8 @@ public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
   explicit AdjacencyMatrixVessel( const vesselbase::VesselOptions& );
+/// Get the underlying adjacency matrix action object
+  AdjacencyMatrixAction* getMatrixAction();
 /// Ensures we use less memory for buffer in final loop
   void setBufferStart( unsigned& start );
 /// Ensures that finish is set properly
@@ -54,6 +57,8 @@ public:
   void retrieveMatrix( DynamicList<unsigned>& myactive_elements, Matrix<double>& mymatrix );
 /// Get the neighbour list based on the adjacency matrix
   void retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matrix<unsigned>& adj_list );
+///
+  void getMatrixIndices( const unsigned& code, unsigned& i, unsigned& j );
 };
 
 inline

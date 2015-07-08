@@ -3,6 +3,7 @@
 !/.gitignore
 !/Makefile
 !/README
+!/adjmat
 !/function
 !/analysis
 !/basic

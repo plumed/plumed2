@@ -313,6 +313,9 @@ void MultiColvarFunction::mergeVectorDerivatives( const unsigned& ival, const un
   }
 }
  
+vesselbase::StoreDataVessel* MultiColvarFunction::getBaseData( const unsigned& icolv ) const {
+  return mybasedata[icolv];
+}
 
 // void MultiColvarFunction::addStoredDerivative( const unsigned& jout, const unsigned& base_cv_no, const unsigned& base_index, const double& der ){
 //   plumed_dbg_assert( jout<getNumberOfQuantities() && base_cv_no<mybasemulticolvars.size() && base_index<mybasemulticolvars[base_cv_no]->getNumberOfDerivatives() );

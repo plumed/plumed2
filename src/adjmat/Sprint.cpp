@@ -19,7 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "AdjacencyMatrixAction.h"
+#include "ActionWithInputMatrix.h"
+#include "AdjacencyMatrixVessel.h"
 #include "core/ActionRegister.h"
 
 //+PLUMEDOC MCOLVARF SPRINT
@@ -76,7 +77,7 @@ PRINT ARG=ss.* FILE=colvar
 namespace PLMD {
 namespace adjmat {
 
-class Sprint : public AdjacencyMatrixAction {
+class Sprint : public ActionWithInputMatrix {
 private:
 /// Square root of number of atoms
   double sqrtn;
@@ -96,7 +97,7 @@ public:
 /// Constructor
   explicit Sprint(const ActionOptions&);
 /// Do the matrix calculation
-  void completeCalculation();
+  void calculate();
 /// Sprint needs its only apply routine as it creates values
   void apply();
 };
@@ -104,7 +105,7 @@ public:
 PLUMED_REGISTER_ACTION(Sprint,"SPRINT")
 
 void Sprint::registerKeywords( Keywords& keys ){
-  AdjacencyMatrixAction::registerKeywords( keys );
+  ActionWithInputMatrix::registerKeywords( keys );
   componentsAreNotOptional(keys);
   keys.addOutputComponent("coord","default","all \\f$n\\f$ sprint coordinates are calculated and then stored in increasing order. "
                                             "the smallest sprint coordinate will be labelled <em>label</em>.coord-1, "
@@ -113,22 +114,23 @@ void Sprint::registerKeywords( Keywords& keys ){
 
 Sprint::Sprint(const ActionOptions&ao):
 Action(ao),
-AdjacencyMatrixAction(ao),
-eigvals( getFullNumberOfBaseTasks() ),
-maxeig( getFullNumberOfBaseTasks() ),
-mymatrix( getFullNumberOfBaseTasks(), getFullNumberOfBaseTasks() ),
-eigenvecs( getFullNumberOfBaseTasks(), getFullNumberOfBaseTasks() )
+ActionWithInputMatrix(ao),
+eigvals( getNumberOfNodes() ),
+maxeig( getNumberOfNodes() ),
+mymatrix( getNumberOfNodes(), getNumberOfNodes() ),
+eigenvecs( getNumberOfNodes(), getNumberOfNodes() )
 {
    // Check on setup
-   if( getNumberOfVessels()!=1 ) error("there should be no vessel keywords");
-   // Check for bad colvar input
-   for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i){
-      if( !getBaseMultiColvar(i)->hasDifferentiableOrientation() ) error("cannot use multicolvar of type " + getBaseMultiColvar(i)->getName() );
-   }
+   // if( getNumberOfVessels()!=1 ) error("there should be no vessel keywords");
+   // Check for bad colvar input ( we  are going to get rid of this because we are going to have input adjacency matrix in future )
+   // for(unsigned i=0;i<getNumberOfAtomGroups();++i){
+   //    /// Check me GAT
+   //    // if( !getBaseMultiColvar(i)->hasDifferentiableOrientation() ) error("cannot use multicolvar of type " + getBaseMultiColvar(i)->getName() );
+   // }
 
    // Create all the values
-   sqrtn = sqrt( static_cast<double>( getFullNumberOfBaseTasks() ) );
-   for(unsigned i=0;i<getFullNumberOfBaseTasks();++i){
+   sqrtn = sqrt( static_cast<double>( getNumberOfNodes() ) );
+   for(unsigned i=0;i<getNumberOfNodes();++i){
       std::string num; Tools::convert(i,num);
       addComponentWithDerivatives("coord-"+num);
       componentIsNotPeriodic("coord-"+num);
@@ -136,28 +138,29 @@ eigenvecs( getFullNumberOfBaseTasks(), getFullNumberOfBaseTasks() )
    }
 
    // Setup the dynamic list to hold all the tasks
-   for(unsigned i=0;i<getFullNumberOfTasks();++i) active_elements.addIndexToList( i );
+   unsigned ntriangle = 0.5*getNumberOfNodes()*(getNumberOfNodes()-1);
+   for(unsigned i=0;i<ntriangle;++i) active_elements.addIndexToList( i );
 }
 
-void Sprint::completeCalculation(){
+void Sprint::calculate(){
    // Get the adjacency matrix
    getAdjacencyVessel()->retrieveMatrix( active_elements, mymatrix ); 
    // Diagonalize it
    diagMat( mymatrix, eigvals, eigenvecs );
    // Get the maximum eigevalue
-   double lambda = eigvals[ getFullNumberOfBaseTasks()-1 ];
+   double lambda = eigvals[ getNumberOfNodes()-1 ];
    // Get the corresponding eigenvector
    for(unsigned j=0;j<maxeig.size();++j){
-       maxeig[j].first = fabs( eigenvecs( getFullNumberOfBaseTasks()-1, j ) );
+       maxeig[j].first = fabs( eigenvecs( getNumberOfNodes()-1, j ) );
        maxeig[j].second = j;
        // Must make all components of principle eigenvector +ve
-       eigenvecs( getFullNumberOfBaseTasks()-1, j ) = maxeig[j].first;
+       eigenvecs( getNumberOfNodes()-1, j ) = maxeig[j].first;
    }
 
    // Reorder each block of eigevectors
    unsigned startnum=0;
-   for(unsigned j=0;j<getNumberOfBaseMultiColvars();++j){
-       unsigned nthis = getBaseMultiColvar(j)->getFullNumberOfTasks();
+   for(unsigned j=0;j<getNumberOfAtomGroups();++j){
+       unsigned nthis = getNumberOfAtomsInGroup(j); 
        // Sort into ascending order
        std::sort( maxeig.begin() + startnum, maxeig.begin() + startnum + nthis );
        // Used so we can do sorting in blocks 
@@ -176,9 +179,10 @@ void Sprint::completeCalculation(){
    // Derivatives
    MultiValue myvals( 2, getNumberOfDerivatives() );
    Matrix<double> mymat_ders( getNumberOfComponents(), getNumberOfDerivatives() );  
-   std::vector<unsigned> catoms(2); unsigned nval = getFullNumberOfBaseTasks(); mymat_ders=0; 
+   // std::vector<unsigned> catoms(2); 
+   unsigned nval = getNumberOfNodes(); mymat_ders=0; 
    for(unsigned i=rank;i<active_elements.getNumberActive();i+=stride){
-      decodeIndexToAtoms( getTaskCode(active_elements[i]), catoms ); unsigned j=catoms[0], k=catoms[1];
+      unsigned j, k; getAdjacencyVessel()->getMatrixIndices( active_elements[i], j, k );
       double tmp1 = 2 * eigenvecs(nval-1,j)*eigenvecs(nval-1,k);
       for(unsigned icomp=0;icomp<getNumberOfComponents();++icomp){
           double tmp2 = 0.; 

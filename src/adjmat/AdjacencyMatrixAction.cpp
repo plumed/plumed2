@@ -20,9 +20,12 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "AdjacencyMatrixAction.h"
+#include "core/ActionRegister.h"
 
 namespace PLMD {
 namespace adjmat {
+
+PLUMED_REGISTER_ACTION(AdjacencyMatrixAction,"ADJACENCY")
 
 void AdjacencyMatrixAction::registerKeywords( Keywords& keys ){
   multicolvar::MultiColvarFunction::registerKeywords( keys );
@@ -30,6 +33,7 @@ void AdjacencyMatrixAction::registerKeywords( Keywords& keys ){
   keys.add("numbered","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
                                "The following provides information on the \\ref switchingfunction that are available. "
                                "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
+  keys.use("WTOL");
 }
 
 AdjacencyMatrixAction::AdjacencyMatrixAction(const ActionOptions& ao):
@@ -97,7 +101,7 @@ tmpdf(1)
   vesselbase::VesselOptions da2(da,keys);
   mat = new AdjacencyMatrixVessel(da2);
   // Set a cutoff for clustering
-  mat->setHardCutoffOnWeight( getTolerance() );
+  mat->setHardCutoffOnWeight( getTolerance() );   
   // Add the vessel to the base
   addVessel( mat );
   // And resize everything
@@ -165,50 +169,6 @@ double AdjacencyMatrixAction::compute( const unsigned& tindex, multicolvar::Atom
   }
   return weight*f_dot;
 }
-
-// void AdjacencyMatrixAction::retrieveMatrix( Matrix<double>& mymatrix ){
-//   // Gather active elements in matrix
-//   if(!gathered){
-//      active_elements.deactivateAll();
-//      for(unsigned i=0;i<getFullNumberOfTasks();++i){
-//         if( mat->storedValueIsActive(i) ) active_elements.activate(i);
-//      }
-//      active_elements.updateActiveMembers(); gathered=true;
-//   }
-//  
-//   std::vector<unsigned> myatoms(2); std::vector<double> vals(2);
-//   for(unsigned i=0;i<active_elements.getNumberActive();++i){
-//       decodeIndexToAtoms( getTaskCode(active_elements[i]), myatoms ); 
-//       unsigned j = myatoms[1], k = myatoms[0];
-//       mat->retrieveValue( active_elements[i], false, vals );
-//       mymatrix(k,j)=mymatrix(j,k)=vals[1];   
-//   }
-// }
-
-// void AdjacencyMatrixAction::retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matrix<unsigned>& adj_list ){
-//   plumed_dbg_assert( nneigh.size()==getFullNumberOfBaseTasks() && adj_list.nrows()==getFullNumberOfBaseTasks() && 
-//                        adj_list.ncols()==getFullNumberOfBaseTasks() );
-//   // Gather active elements in matrix
-//   if(!gathered){
-//      active_elements.deactivateAll();
-//      for(unsigned i=0;i<getFullNumberOfTasks();++i){
-//         if( mat->storedValueIsActive(i) ) active_elements.activate(i);
-//      }
-//      active_elements.updateActiveMembers(); gathered=true;
-//   }
-// 
-//   // Currently everything has zero neighbors
-//   for(unsigned i=0;i<nneigh.size();++i) nneigh[i]=0;
-// 
-//   // And set up the adjacency list
-//   std::vector<unsigned> myatoms(2);
-//   for(unsigned i=0;i<active_elements.getNumberActive();++i){
-//       decodeIndexToAtoms( getTaskCode(active_elements[i]), myatoms );
-//       unsigned j = myatoms[1], k = myatoms[0];
-//       adj_list(k,nneigh[k])=j; nneigh[k]++;
-//       adj_list(j,nneigh[j])=k; nneigh[j]++;
-//   } 
-// } 
 
 }
 }

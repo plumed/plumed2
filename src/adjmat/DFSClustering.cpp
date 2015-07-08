@@ -20,100 +20,71 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "DFSClustering.h"
-
+#include "AdjacencyMatrixAction.h"
+#include "AdjacencyMatrixVessel.h"
 
 namespace PLMD {
 namespace adjmat {
 
 void DFSClustering::registerKeywords( Keywords& keys ){
-  AdjacencyMatrixAction::registerKeywords( keys );
+  ActionWithInputMatrix::registerKeywords( keys );
 }
 
 DFSClustering::DFSClustering(const ActionOptions&ao):
 Action(ao),
-AdjacencyMatrixAction(ao),
+ActionWithInputMatrix(ao),
 number_of_cluster(-1),
-nneigh(getFullNumberOfBaseTasks()),
-adj_list(getFullNumberOfBaseTasks(),getFullNumberOfBaseTasks()),
-cluster_sizes(getFullNumberOfBaseTasks()),
-which_cluster(getFullNumberOfBaseTasks()),
-color(getFullNumberOfBaseTasks())
+nneigh(getNumberOfNodes()),
+adj_list(getNumberOfNodes(),getNumberOfNodes()),
+cluster_sizes(getNumberOfNodes()),
+which_cluster(getNumberOfNodes()),
+color(getNumberOfNodes()),
+myfunction(NULL),
+mydata(NULL)
 {
-   if( getNumberOfBaseMultiColvars()!=1 ) error("should only be running DFS Clustering with one base multicolvar");
+   myfunction = dynamic_cast<multicolvar::MultiColvarFunction*>( getAdjacencyVessel()->getMatrixAction() );
+   if( !myfunction ) error("input to DFS clustering must be a MultiColvarFunction"); 
+   if( myfunction->getNumberOfBaseMultiColvars()!=1 ) error("should only be running DFS Clustering with one base multicolvar in function");
+   mydata = myfunction->getBaseData( 0 );
 }
 
 void DFSClustering::turnOnDerivatives(){
    // Check base multicolvar isn't density probably other things shouldn't be allowed here as well
-   if( getBaseMultiColvar(0)->isDensity() ) error("DFS clustering cannot be differentiated if base multicolvar is DENSITY");
+   if( (myfunction->getBaseMultiColvar(0))->isDensity() ) error("DFS clustering cannot be differentiated if base multicolvar is DENSITY");
 
    // Check for dubious vessels
    for(unsigned i=0;i<getNumberOfVessels();++i){
       if( getPntrToVessel(i)->getName()=="MEAN" ) error("MEAN of cluster is not differentiable");
       if( getPntrToVessel(i)->getName()=="VMEAN" ) error("VMEAN of cluster is not differentiable");  
    }
-
-   MultiColvarBase::turnOnDerivatives();
+   
+   // Ensure that derivatives are turned on in base classes
+   ActionWithValue::turnOnDerivatives();
+   needsDerivatives();
 }
 
 unsigned DFSClustering::getNumberOfQuantities(){
-  return getBaseMultiColvar(0)->getNumberOfQuantities();
+  return (myfunction->getBaseMultiColvar(0))->getNumberOfQuantities();
 } 
 
-void DFSClustering::completeCalculation(){
+void DFSClustering::calculate(){
    // Get the adjacency matrix
    getAdjacencyVessel()->retrieveAdjacencyLists( nneigh, adj_list ); 
-//   for(unsigned i=0;i<nneigh.size();++i){
-//       printf("ADJACENCY LIST FOR %d HAS %d MEMBERS : ",i,nneigh[i]);
-//       for(unsigned j=0;j<nneigh[i];++j) printf("%d ",adj_list(i,j) );
-//       printf("\n"); 
-//   }
 
    // All the clusters have zero size initially
    for(unsigned i=0;i<cluster_sizes.size();++i){ cluster_sizes[i].first=0; cluster_sizes[i].second=i;}
 
    // Perform clustering
    number_of_cluster=-1; color.assign(color.size(),0);
-   for(unsigned i=0;i<getFullNumberOfBaseTasks();++i){
+   for(unsigned i=0;i<getNumberOfNodes();++i){
       if( color[i]==0 ){ number_of_cluster++; color[i]=explore(i); } 
    }
 
    // Order the clusters in the system by size (this returns ascending order )
    std::sort( cluster_sizes.begin(), cluster_sizes.end() );
-
    // Finish the calculation (what we do depends on what we are inheriting into)
    doCalculationOnCluster();
-   
 
-//   // Work out which atoms are in the largest cluster
-//   unsigned n=0; std::vector<unsigned> myatoms( cluster_sizes[cluster_sizes.size() - clustr].first );
-//   for(unsigned i=0;i<getFullNumberOfBaseTasks();++i){
-//      if( which_cluster[i]==cluster_sizes[cluster_sizes.size() - clustr].second ){ myatoms[n]=i; n++; }
-//   }
- //  unsigned size=comm.Get_size(), rank=comm.Get_rank();
-
-//    // Now calculate properties of the largest cluster 
-//    ActionWithVessel::doJobsRequiredBeforeTaskList();  // Note we loose adjacency data by doing this
-//    // Get size for buffer
-//    unsigned bsize=0; std::vector<double> buffer( getSizeOfBuffer( bsize ), 0.0 );
-//    std::vector<double> vals( getNumberOfQuantities() ); std::vector<unsigned> der_index;
-//    MultiValue myvals( getNumberOfQuantities(), getNumberOfDerivatives() );
-//    MultiValue bvals( getNumberOfQuantities(), getNumberOfDerivatives() );
-//    // Get rid of bogus derivatives
-//    clearDerivatives(); getAdjacencyVessel()->setFinishedTrue(); 
-//    for(unsigned j=rank;j<myatoms.size();j+=size){
-//        // Note loop above over array containing atoms so this is load balanced
-//        unsigned i=myatoms[j];
-//        // Need to copy values from base action
-//        getVectorForTask( i, false, vals );
-//        for(unsigned i=0;i<vals.size();++i) myvals.setValue( i, vals[i] );
-//        if( !doNotCalculateDerivatives() ) getVectorDerivatives( i, false, myvals );
-//        // Run calculate all vessels
-//        calculateAllVessels( i, myvals, bvals, buffer, der_index );
-//        myvals.clearAll();
-//    }
-//    // MPI Gather everything
-//    if( buffer.size()>0 ) comm.Sum( buffer );
-//    finishComputations( buffer );
 }
 
 int DFSClustering::explore( const unsigned& index ){
@@ -132,9 +103,21 @@ int DFSClustering::explore( const unsigned& index ){
 
 void DFSClustering::retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const {
    unsigned n=0; myatoms.resize( cluster_sizes[cluster_sizes.size() - clust].first );
-   for(unsigned i=0;i<getFullNumberOfBaseTasks();++i){
+   for(unsigned i=0;i<getNumberOfNodes();++i){
       if( which_cluster[i]==cluster_sizes[cluster_sizes.size() - clust].second ){ myatoms[n]=i; n++; }
    }
+}
+
+bool DFSClustering::isCurrentlyActive( const unsigned& ind ) const {
+   return mydata->storedValueIsActive( ind );
+}
+
+void DFSClustering::getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient0 ) const {
+   plumed_dbg_assert( mydata->storedValueIsActive( ind ) ); mydata->retrieveValue( ind, normed, orient0 );
+}
+
+void DFSClustering::getVectorDerivatives( const unsigned& ind, const bool& normed, MultiValue& myder0 ) const {
+   plumed_dbg_assert( mydata->storedValueIsActive( ind ) ); mydata->retrieveDerivatives(  ind, normed, myder0 );
 }
 
 }

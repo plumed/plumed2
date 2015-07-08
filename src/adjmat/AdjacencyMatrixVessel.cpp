@@ -56,8 +56,15 @@ void AdjacencyMatrixVessel::finish( const std::vector<double>& buffer ){
      finished=true;
      StoreDataVessel::finish( buffer );
      function->dertime=true;
-     function->completeCalculation();
   }
+}
+
+AdjacencyMatrixAction* AdjacencyMatrixVessel::getMatrixAction() {
+  return function;
+}
+
+void AdjacencyMatrixVessel::getMatrixIndices( const unsigned& code, unsigned& i, unsigned& j ){
+  std::vector<unsigned> myatoms(2); function->decodeIndexToAtoms( function->getTaskCode(code), myatoms ); i=myatoms[0]; j=myatoms[1]; 
 }
 
 void AdjacencyMatrixVessel::retrieveMatrix( DynamicList<unsigned>& myactive_elements, Matrix<double>& mymatrix ){
@@ -76,8 +83,6 @@ void AdjacencyMatrixVessel::retrieveMatrix( DynamicList<unsigned>& myactive_elem
 }
 
 void AdjacencyMatrixVessel::retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matrix<unsigned>& adj_list ){
-  plumed_dbg_assert( nneigh.size()==getNumberOfStoredValues() && adj_list.nrows()==getNumberOfStoredValues() &&
-                       adj_list.ncols()==getNumberOfStoredValues() );
   // Currently everything has zero neighbors
   for(unsigned i=0;i<nneigh.size();++i) nneigh[i]=0;
 

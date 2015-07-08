@@ -62,8 +62,6 @@ public:
   double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
   void calculateWeight( multicolvar::AtomValuePack& myatoms ) const ;
   void doJobsRequiredBeforeTaskList();
-/// Finish the calculation
-  virtual void completeCalculation()=0;
 /// None of these things are allowed
   bool isPeriodic(){ return false; }
   Vector getCentralAtom(){ plumed_merror("cannot find central atoms for adjacency matrix actions"); Vector dum; return dum; }

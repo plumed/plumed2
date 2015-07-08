@@ -46,8 +46,6 @@ private:
 /// This sets up the atom list
   void setupAtomLists();
 protected:
-/// Get the total number of tasks that this calculation is based on
-  unsigned getFullNumberOfBaseTasks() const ;
 /// Get the derivatives for the central atom with index ind
   CatomPack getCentralAtomPackFromInput( const unsigned& ind ) const ;
 ///
@@ -66,10 +64,6 @@ protected:
   void buildSymmetryFunctionLists();
 /// Build a colvar for each pair of atoms
   void buildAtomListWithPairs( const bool& allow_intra_group );
-/// Get the number of base multicolvars 
-  unsigned getNumberOfBaseMultiColvars() const ;
-/// Get an example of the underlying multicolvar
-  MultiColvarBase* getBaseMultiColvar( const unsigned& icolv ) const ;
 /// Return the base multicolvar index that this colvar is a part of
   unsigned getBaseColvarNumber( const unsigned& iatom ) const ;
 public:
@@ -85,6 +79,14 @@ public:
   Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const ;
 /// Some things can be inactive in functions
   virtual bool isCurrentlyActive( const unsigned& bno, const unsigned& code );
+/// Get the total number of tasks that this calculation is based on
+  unsigned getFullNumberOfBaseTasks() const ;
+/// Get the number of base multicolvars 
+  unsigned getNumberOfBaseMultiColvars() const ;
+/// Get an pointer to one of the underlying multicolvars
+  MultiColvarBase* getBaseMultiColvar( const unsigned& icolv ) const ;
+/// Get a pointer to the underlying base data
+  vesselbase::StoreDataVessel* getBaseData( const unsigned& icolv ) const ;
 };
 
 inline

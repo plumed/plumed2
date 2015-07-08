@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "DFSClustering.h"
+#include "tools/SwitchingFunction.h"
 #include "core/ActionRegister.h"
 
 //+PLUMEDOC MCOLVARF DFSMAXCLUSTER
@@ -89,7 +90,6 @@ PLUMED_REGISTER_ACTION(DFSMaxCluster,"DFSMAXCLUSTER")
 void DFSMaxCluster::registerKeywords( Keywords& keys ){
   DFSClustering::registerKeywords( keys );
   keys.add("compulsory","BETA","the value of beta to be used in calculating the smooth maximum");
-  keys.use("WTOL"); keys.use("USE_ORIENTATION");
   keys.remove("LOWMEM"); keys.use("HIGHMEM");
   keys.add("compulsory","TRANSFORM","none","the switching function to use to convert the crystallinity parameter to a number between zero and one");
   keys.addFlag("INVERSE_TRANSFORM",false,"when TRANSFORM appears alone the input symmetry functions, \\fx\\f$ are transformed used \\f$1-s(x)\\f$ "
@@ -125,7 +125,7 @@ void DFSMaxCluster::doCalculationOnCluster(){
    for(unsigned iclust=0;iclust<getNumberOfClusters();++iclust){
        retrieveAtomsInCluster( iclust+1, myatoms );
        // This deals with filters
-       if( myatoms.size()==1 && !isCurrentlyActive(0,myatoms[0]) ) continue ;
+       if( myatoms.size()==1 && !isCurrentlyActive(myatoms[0]) ) continue ;    
 
        double vv, df, tval=0; tder.assign( tder.size(), 0.0 );
        for(unsigned j=0;j<myatoms.size();++j){ 
