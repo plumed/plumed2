@@ -268,6 +268,8 @@ class MetaD : public Bias {
   double gt_biasf_;
   double gt_biasthreshold_;
   double gt_alpha_;
+  string driving_work_argname_;
+  Value* driving_work_arg_;
   std::string edm_readfilename_;
   Grid *EDMTarget_;
   bool benthic_toleration_;
@@ -395,6 +397,7 @@ void MetaD::registerKeywords(Keywords &keys) {
   keys.add("optional", "GTBIASTHRESHOLD", "use globally tempered metadynamics with this bias threshold.  Please note you must also specify GTBIASFACTOR");
   keys.add("optional", "GTALPHA", "use globally tempered metadynamics with this decay shape parameter value between 0.5 and 1.0 (default 1.0).  Please note you must also specify GTBIASFACTOR");
   keys.add("optional", "EDM_RFILE", "use experiment-directed metadynamics with this file defining the desired target free energy");
+  keys.add("optional", "DRIVING_WORK", "use driven metadynamics with this argument defining the work done by steering in the system (should be a work component of a MOVINGRESTRAINT)");
   keys.add("optional", "BENTHIC_TOLERATION", "use benthic metadynamics with this number of mistakes tolerated in transition states");
   keys.add("optional", "BENTHIC_FILTER_STRIDE", "use benthic metadynamics accumulating filter samples on this timescale in units of simulation time.  Please note you must also specify BENTHIC_TOLERATION");
   keys.add("optional", "BENTHIC_EROSION", "use benthic metadynamics with erosion on this boosted timescale in units of simulation time.  Please note you must also specify BENTHIC_TOLERATION");
@@ -696,6 +699,29 @@ MetaD::MetaD(const ActionOptions &ao):
     }
   }
 
+  parse("DRIVING_WORK", driving_work_argname_);
+  if (driving_work_argname_.size() > 0) {
+    if (kbt_ == 0.0) {
+      error("Unless the MD engine passes the temperature to plumed, with driven metad you must specify it using TEMP");
+    }
+    // Find the Value* corresponding to the driving work argument.
+    vector<Value *> driving_work_arg_wrapper;
+    interpretArgumentList(vector<string>(1, driving_work_argname_), driving_work_arg_wrapper);
+    driving_work_arg_ = driving_work_arg_wrapper[0];
+    // Add a dependency on the driving work argument's corresponding ActionWithValue.
+    std::string fullname, name;
+    fullname = driving_work_arg_->getName();
+    if(fullname.find(".") != string::npos){
+      std::size_t dot = fullname.find_first_of('.');
+      name = fullname.substr(0,dot);
+    } else {
+      name = fullname;
+    }
+    ActionWithValue* action = plumed.getActionSet().selectWithLabel<ActionWithValue*>(name);
+    plumed_massert(action,"cannot find action named (in requestArguments - this is weird)" + name);
+    addDependency(action);
+  }
+
   // Check for a benthic metadynamics toleration threshold.
   // Wait to set the energy threshold until the hill height is parsed.
   parse("BENTHIC_TOLERATION", benthic_tol_number_);
@@ -990,6 +1016,10 @@ MetaD::MetaD(const ActionOptions &ao):
   // Experiment-directed metadynamics
   if (edm_readfilename_.length() > 0) {
     log.printf("  Reading a target distribution from grid in file %s \n", edm_readfilename_.c_str());
+  }
+  // Driven metadynamics
+  if (driving_work_argname_.length() > 0) {
+    log.printf("  Using driven metadynamics with steered MD work given by %s \n", driving_work_argname_.c_str());
   }
   // Benthic metadynamics options
   if (benthic_toleration_) {
@@ -1466,6 +1496,12 @@ MetaD::MetaD(const ActionOptions &ao):
      "Barducci, Bussi, and Parrinello, Phys. Rev. Lett. 100, 020603 (2008)");
   if (transitiontempered_) log << plumed.cite(
      "Dama, Rotskoff, Parrinello, and Voth, J. Chem. Theory Comput. 10, 3626 (2014)");
+  if (edm_readfilename_.size() > 0) {
+    log << plumed.cite("White, Dama, and Voth, J. Chem. Theory Comput. 11, 2451 (2015)");
+    log << plumed.cite("Marinelli and Faraldo-Gomez, Biophys. J. 108, 2779 (2015)");
+  }
+  if (driving_work_argname_.size() > 0) log << plumed.cite(
+     "Moradi and Tajkhorshid, J. Phys. Chem. Lett. 4, 1882 (2013)");
   if (mw_n_ > 1 || walkers_mpi) log << plumed.cite(
      "Raiteri, Laio, Gervasio, Micheletti, and Parrinello, J. Phys. Chem. B 110, 3533 (2006)");
   if (adaptive_ != FlexibleBin::none) log << plumed.cite(
@@ -1476,8 +1512,6 @@ MetaD::MetaD(const ActionOptions &ao):
      "Tiwary and Parrinello, Phys. Rev. Lett. 111, 230602 (2013)");
   if(concurrent) log<<plumed.cite(
      "Gil-Ley and Bussi, J. Chem. Theory Comput. 11, 1077 (2015)");
-  if (calc_average_bias_coft_) log << plumed.cite(
-     "Tiwary and Parrinello, J. Phys. Chem. B 119, 736–742 (2015)");
   if (use_whole_grid_domain_) log << plumed.cite(
      "McGovern and de Pablo, J. Chem. Phys. 139, 084102 (2013)");
   log << "\n";
