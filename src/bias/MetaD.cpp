@@ -1964,6 +1964,9 @@ double MetaD::getHeight(const vector<double> &cv) {
       height *= pow(1 + (1 - gt_alpha_) / gt_alpha_ * max(0.0, average_bias_coft_ - gt_biasthreshold_) / (kbt_ * (gt_biasf_ - 1.0)), - gt_alpha_ / (1 - gt_alpha_));
     }
   }
+  if (driving_work_argname_.size() > 0) {
+    height *= exp(-driving_work_arg_->get() / kbt_);
+  }
   if (edm_readfilename_.size() > 0) {
     height = min(height0_, height * exp(EDMTarget_->getValue(cv) / kbt_));
   }
