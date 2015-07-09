@@ -1,3 +1,7 @@
+
+# version number
+VERSION = $(shell if test -f ../../VERSION ; then grep -v \\\# ../../VERSION ; else echo "Unknown" ; fi )
+
 # here we build the list of modules to be linked in plumedKernel
 KERNEL_MODULES := $(addprefix ../,$(shell ../maketools/find_modules.sh))
 
@@ -100,6 +104,48 @@ endif
            sed "s|@_bindir_@|$(bindir)|" | \
            sed "s|@_includedir_@|$(includedir)|" \
 	   > install/modulefile
+	@cat pkgconfig.in | \
+           sed "s|@_SOEXT_@|$(SOEXT)|" | \
+           sed "s|@_program_name_@|$(program_name)|" | \
+           sed "s|@_libdir_@|$(libdir)|" | \
+           sed "s|@_libs_@||" | \
+           sed "s|@_bindir_@|$(bindir)|" | \
+           sed "s|@_includedir_@|$(includedir)|" | \
+           sed "s|@_prefix_@|$(prefix)|" | \
+           sed "s|@_exec_prefix_@|$(exec_prefix)|" | \
+           sed "s|@_VERSION_@|$(VERSION)|" | \
+           sed "s|@_conflicts_@||" | \
+           sed "s|@_cppflags_@||" | \
+           sed "s|@_extra_@||" \
+	   > install/pkgconfig
+	@cat pkgconfig.in | \
+           sed "s|@_SOEXT_@|$(SOEXT)|" | \
+           sed "s|@_program_name_@|$(program_name)|" | \
+           sed "s|@_libdir_@|$(libdir)|" | \
+           sed "s|@_libs_@||" | \
+           sed "s|@_bindir_@|$(bindir)|" | \
+           sed "s|@_includedir_@|$(includedir)|" | \
+           sed "s|@_prefix_@|$(prefix)|" | \
+           sed "s|@_exec_prefix_@|$(exec_prefix)|" | \
+           sed "s|@_VERSION_@|$(VERSION)|" | \
+           sed "s|@_conflicts_@||" | \
+           sed "s|@_cppflags_@|$(shell ../maketools/purge-d $(CPPFLAGS))|" | \
+           sed "s|@_extra_@| (full version, including internals)|" \
+	   > install/pkgconfigInternals
+	@cat pkgconfig.in | \
+           sed "s|@_SOEXT_@|$(SOEXT)|" | \
+           sed "s|@_program_name_@|$(program_name)Wrapper|" | \
+           sed "s|@_libdir_@|$(libdir)|" | \
+           sed "s|@_libs_@|$(LIBS)|" | \
+           sed "s|@_bindir_@|$(bindir)|" | \
+           sed "s|@_includedir_@|$(includedir)|" | \
+           sed "s|@_prefix_@|$(prefix)|" | \
+           sed "s|@_exec_prefix_@|$(exec_prefix)|" | \
+           sed "s|@_VERSION_@|$(VERSION)|" | \
+           sed "s|@_conflicts_@||" | \
+           sed "s|@_cppflags_@||" | \
+           sed "s|@_extra_@| (wrapper-only version, set PLUMED_KERNEL at runtime) |" \
+	   > install/pkgconfigWrapper
 
 ifdef LD_RO
 install/kernel.o: $(OBJ_KERNEL)
@@ -155,6 +201,7 @@ endif
 	# $(MAKE) uninstall
 	mkdir -p "$(DESTDIR)$(bindir)"
 	mkdir -p "$(DESTDIR)$(libdir)"
+	mkdir -p "$(DESTDIR)$(libdir)/pkgconfig"
 	mkdir -p "$(DESTDIR)$(includedir)/$(program_name)"
 	mkdir -p "$(DESTDIR)$(libdir)/$(program_name)/obj"
 	mkdir -p "$(DESTDIR)$(libdir)/$(program_name)/src/lib"
@@ -206,6 +253,12 @@ ifdef AR_CR
 endif
 # modulefile
 	cp install/modulefile "$(DESTDIR)$(libdir)/$(program_name)/modulefile"
+# pkgconfig files
+	cp install/pkgconfig "$(DESTDIR)$(libdir)/pkgconfig/$(program_name).pc"
+ifdef AR_CR
+	cp install/pkgconfigWrapper "$(DESTDIR)$(libdir)/pkgconfig/$(program_name)Wrapper.pc"
+endif
+	cp install/pkgconfigInternals "$(DESTDIR)$(libdir)/pkgconfig/$(program_name)Internals.pc"
 # vim syntax file
 	if test -d ../../vim/syntax ; then mkdir -p "$(DESTDIR)$(libdir)/$(program_name)" && cd ../../ && tar cf - vim/syntax | tar xf - -C "$(DESTDIR)$(libdir)/$(program_name)/" ; fi
 	if test -d ../../vim/help ; then mkdir -p "$(DESTDIR)$(libdir)/$(program_name)" && cd ../../ && tar cf - vim/help | tar xf - -C "$(DESTDIR)$(libdir)/$(program_name)/" ; fi
@@ -225,12 +278,13 @@ endif
 	@echo "Full name      : $(program_name)"
 	@echo
 	@echo "Setup your environment"
-	@echo "- Ensure this is in your execution path : $(bindir)"
-	@echo "- Ensure this is in your include path   : $(includedir)"
+	@echo "- Ensure this is in your execution path         : $(bindir)"
+	@echo "- Ensure this is in your include path           : $(includedir)"
 ifdef SOEXT
-	@echo "- Ensure this is in your library path   : $(libdir)"
+	@echo "- Ensure this is in your library path           : $(libdir)"
+	@echo "- Ensure this is in your PKG_CONFIG_PATH path   : $(libdir)/pkgconfig"
 	@echo "For runtime binding:"
-	@echo "- Set this environment variable         : PLUMED_KERNEL=$(libdir)/lib$(program_name)Kernel.$(SOEXT)"
+	@echo "- Set this environment variable                 : PLUMED_KERNEL=$(libdir)/lib$(program_name)Kernel.$(SOEXT)"
 endif
 	@echo
 	@echo "To create a tcl module that sets all the variables above, use this one as a starting point:"
@@ -243,6 +297,7 @@ endif
 	@echo $(bindir)/$(program_name)
 	@echo $(bindir)/$(program_name)-patch
 	@echo $(bindir)/$(program_name)-config
+	@echo $(libdir)/pkgconfig/$(program_name).pc
 ifdef SOEXT
 	@echo $(libdir)/lib$(program_name).$(SOEXT)
 	@echo $(libdir)/lib$(program_name)Kernel.$(SOEXT)
@@ -289,6 +344,7 @@ uninstall:
 	rm -f "$(DESTDIR)$(bindir)/bin/$(program_name)-config"
 	rm -f "$(DESTDIR)$(libdir)/lib$(program_name).$(SOEXT)"
 	rm -f "$(DESTDIR)$(libdir)/lib$(program_name)Kernel.$(SOEXT)"
+	rm -f "$(DESTDIR)$(libdir)/lib/pkgconfig/$(PLUMED_PROGRAM_NAME).pc"
 
 $(DIRS):
 	$(MAKE) -C $@ obj
