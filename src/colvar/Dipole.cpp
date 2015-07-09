@@ -54,6 +54,7 @@ on the position) is computed on the geometric center of the group.
    
 class Dipole : public Colvar {
   vector<AtomNumber> ga_lista;
+  bool components;
 public:
   explicit Dipole(const ActionOptions&);
   virtual void calculate();
@@ -65,15 +66,27 @@ PLUMED_REGISTER_ACTION(Dipole,"DIPOLE")
 void Dipole::registerKeywords(Keywords& keys){
   Colvar::registerKeywords(keys);
   keys.add("atoms","GROUP","the group of atoms we are calculating the dipole moment for");
+  keys.addFlag("COMPONENTS",false,"calculate the x, y and z components of the dipole separately and store them as label.x, label.y and label.z");
+  keys.addOutputComponent("x","COMPONENTS","the x-component of the dipole");
+  keys.addOutputComponent("y","COMPONENTS","the y-component of the dipole");
+  keys.addOutputComponent("z","COMPONENTS","the z-component of the dipole");
   keys.remove("NOPBC");
 }
 
 Dipole::Dipole(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao)
+PLUMED_COLVAR_INIT(ao),
+components(false)
 {
   parseAtomList("GROUP",ga_lista);
+  parseFlag("COMPONENTS",components);
   checkRead();
-  addValueWithDerivatives(); setNotPeriodic();
+  if(components){
+    addComponentWithDerivatives("x"); componentIsNotPeriodic("x");
+    addComponentWithDerivatives("y"); componentIsNotPeriodic("y");
+    addComponentWithDerivatives("z"); componentIsNotPeriodic("z");
+  } else {
+    addValueWithDerivatives(); setNotPeriodic();
+  }
 
   log.printf("  of %u atoms\n",static_cast<unsigned>(ga_lista.size()));
   for(unsigned int i=0;i<ga_lista.size();++i){
@@ -86,10 +99,8 @@ PLUMED_COLVAR_INIT(ao)
 // calculator
 void Dipole::calculate()
 {
- double dipole=0.;
  double ctot=0.;
  unsigned N=getNumberOfAtoms();
- vector<Vector> deriv(N);
  vector<double> charges(N);
  Vector dipje;
 
@@ -103,17 +114,33 @@ void Dipole::calculate()
    charges[i]-=ctot;
    dipje += charges[i]*getPosition(i);
  }
- dipole = dipje.modulo();
- double idip = 1./dipole;
 
- for(unsigned i=0;i<N;i++) {
-   double dfunc=charges[i]*idip;
-   deriv[i] += dfunc*dipje;
-   setAtomsDerivatives(i,deriv[i]);
+ if(!components){
+   double dipole = dipje.modulo();
+   double idip = 1./dipole;
+
+   for(unsigned i=0;i<N;i++) {
+     double dfunc=charges[i]*idip;
+     setAtomsDerivatives(i,dfunc*dipje);
+   }
+   setBoxDerivativesNoPbc();
+   setValue(dipole);
+ } else {
+   Value* valuex=getPntrToComponent("x");
+   Value* valuey=getPntrToComponent("y");
+   Value* valuez=getPntrToComponent("z");
+   for(unsigned i=0;i<N;i++) {
+     setAtomsDerivatives(valuex,i,charges[i]*Vector(1.0,0.0,0.0));
+     setAtomsDerivatives(valuey,i,charges[i]*Vector(0.0,1.0,0.0));
+     setAtomsDerivatives(valuez,i,charges[i]*Vector(0.0,0.0,1.0));
+   }
+   setBoxDerivativesNoPbc(valuex);
+   setBoxDerivativesNoPbc(valuey);
+   setBoxDerivativesNoPbc(valuez);
+   valuex->set(dipje[0]);
+   valuey->set(dipje[1]);
+   valuez->set(dipje[2]);
  }
-
- setValue(dipole);
- setBoxDerivativesNoPbc();
 }
 
 }
