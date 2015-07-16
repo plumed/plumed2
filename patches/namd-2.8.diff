@@ -128,8 +128,8 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
 +      positions[3*i+0]=coord.x;
 +      positions[3*i+1]=coord.y;
 +      positions[3*i+2]=coord.z;
-+      masses[i]=Node::Object()->molecule->atommass(i);
-+      charges[i]=Node::Object()->molecule->atommass(i);
++      masses[i]=Node::Object()->molecule->atommass(index[i]);
++      charges[i]=Node::Object()->molecule->atomcharge(index[i]);
 +    };
 +
 +    if(spar->lattice.volume()>0.0){
@@ -141,7 +141,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
 +
 +    for(int i=0;i<forces.size();i++) forces[i]=0.0;
 +
-+    cmd("setMasses",&masses[0]);
++    cmd("setMasses",&masses[0]); cmd("setCharges",&charges[0]);
 +    cmd("setPositions",&positions[0]);
 +    cmd("setForces",&forces[0]);
 +
