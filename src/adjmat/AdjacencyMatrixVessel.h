@@ -54,8 +54,6 @@ private:
   void buildRemoteDataStashes( const double& wtol );
 /// Converts an index to the local index for that multicolvar
   unsigned convertToLocalIndex( const unsigned& index, const unsigned& mcv_code ) const ;
-/// Is the underlying multicolvar active
-  bool isCurrentlyActive( const unsigned& code );
 public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
@@ -86,6 +84,12 @@ public:
   multicolvar::MultiColvarBase* getBaseMultiColvar( const unsigned& icolv );
 ///
   vesselbase::StoreDataVessel* getBaseData( const unsigned& icolv );
+/// Is the underlying multicolvar active
+  bool isCurrentlyActive( const unsigned& code );
+///
+  void getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient ) const ;
+///
+  void getVectorDerivatives( const unsigned& ind, const bool& normed, MultiValue& myder ) const ;
 };
 
 inline
@@ -113,6 +117,12 @@ bool AdjacencyMatrixVessel::isCurrentlyActive( const unsigned& code ){
   plumed_dbg_assert( code<colvar_label.size() ); unsigned mmc=colvar_label[code];
   if( mmc<0 ) return true;
   return mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(code,mmc) );
+}
+
+inline
+void AdjacencyMatrixVessel::getVectorForTask( const unsigned& code, const bool& normed, std::vector<double>& orient ) const {
+   plumed_dbg_assert( code<colvar_label.size() ); unsigned mmc=colvar_label[code];
+   plumed_assert( mmc>=0 ); return mybasedata[mmc]->retrieveValue( convertToLocalIndex(code,mmc), normed, orient );
 }
 
 inline

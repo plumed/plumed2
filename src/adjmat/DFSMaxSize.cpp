@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "DFSClustering.h"
+#include "DFSBase.h"
 #include "tools/SwitchingFunction.h"
 #include "core/ActionRegister.h"
 
@@ -68,7 +68,7 @@ clust: DFSMAXCLUSTER DATA=cf BETA=0.5 SWITCH={CUBIC D_0=0.4   D_MAX=0.5} TRANSFO
 namespace PLMD {
 namespace adjmat {
 
-class DFSMaxCluster : public DFSClustering {
+class DFSMaxCluster : public DFSBase {
 private:
 /// The value of beta
   double beta;
@@ -82,13 +82,15 @@ public:
 /// Constructor
   explicit DFSMaxCluster(const ActionOptions&);
 ///
-  void doCalculationOnCluster();
+  void calculate();
+///
+  void performTask( const unsigned& , const unsigned& , MultiValue& ) const {}
 };
 
 PLUMED_REGISTER_ACTION(DFSMaxCluster,"DFSMAXCLUSTER")
 
 void DFSMaxCluster::registerKeywords( Keywords& keys ){
-  DFSClustering::registerKeywords( keys );
+  DFSBase::registerKeywords( keys );
   keys.add("compulsory","BETA","the value of beta to be used in calculating the smooth maximum");
   keys.remove("LOWMEM"); keys.use("HIGHMEM");
   keys.add("compulsory","TRANSFORM","none","the switching function to use to convert the crystallinity parameter to a number between zero and one");
@@ -98,7 +100,7 @@ void DFSMaxCluster::registerKeywords( Keywords& keys ){
 
 DFSMaxCluster::DFSMaxCluster(const ActionOptions&ao):
 Action(ao),
-DFSClustering(ao)
+DFSBase(ao)
 {
    // Find out the value of beta
    parse("BETA",beta);
@@ -114,7 +116,9 @@ DFSClustering(ao)
    if( inverse && !use_switch ) error("INVERSE_TRANSFORM option was specified but no TRANSOFRM switching function was given");
 }
 
-void DFSMaxCluster::doCalculationOnCluster(){
+void DFSMaxCluster::calculate(){
+   // Do the clustring
+   performClustering();
    unsigned size=comm.Get_size(), rank=comm.Get_rank(); 
 
    std::vector<double> tder( getNumberOfDerivatives() ), fder( 1+getNumberOfDerivatives(), 0.0 );

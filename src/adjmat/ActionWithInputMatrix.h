@@ -52,13 +52,18 @@ protected:
   Vector getPosition( const unsigned& iatom ) const ;
 /// Get the separation between a pair of atom positions 
   Vector getSeparation( const Vector& vec1, const Vector& vec2 ) const ;
+/// Check if one of the stored values is active
+  bool isCurrentlyActive( const unsigned& ind ) const ;
+/// Get the vector for task ind
+  void getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient0 ) const ;
+/// Get vector derivatives
+  void getVectorDerivatives( const unsigned& ind, const bool& normed, MultiValue& myder0 ) const ;
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithInputMatrix(const ActionOptions&);
   unsigned getNumberOfDerivatives();
   bool isPeriodic(){ return false; }
   void turnOnDerivatives();
-  void performTask( const unsigned& , const unsigned& , MultiValue& ) const {}
   unsigned getNumberOfAtomGroups() const ;
   unsigned getNumberOfAtomsInGroup( const unsigned& igrp ) const ;
   void apply();

@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_adjmat_DFSClustering_h
-#define __PLUMED_adjmat_DFSClustering_h
+#ifndef __PLUMED_adjmat_DFSBase_h
+#define __PLUMED_adjmat_DFSBase_h
 
 #include "ActionWithInputMatrix.h"
 #include "multicolvar/MultiColvarFunction.h"
@@ -29,7 +29,7 @@
 namespace PLMD {
 namespace adjmat {
 
-class DFSClustering : public ActionWithInputMatrix {
+class DFSBase : public ActionWithInputMatrix {
 private:
 /// Used to identify the cluster we are working on 
   int number_of_cluster;
@@ -48,34 +48,23 @@ private:
 protected:
 /// Get the number of clusters that have been found
   unsigned getNumberOfClusters() const ;
-/// Check if one of the stored values is active
-  bool isCurrentlyActive( const unsigned& ind ) const ; 
 /// Get the atoms in one of the clusters
   void retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const ;
-/// Get the vector for task ind
-  void getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient0 ) const ;
-/// Get vector derivatives
-  void getVectorDerivatives( const unsigned& ind, const bool& normed, MultiValue& myder0 ) const ;
+/// Do the clustering of the dat
+  void performClustering();
 public:
 /// Create manual
   static void registerKeywords( Keywords& keys );
 /// Constructor
-  explicit DFSClustering(const ActionOptions&);
+  explicit DFSBase(const ActionOptions&);
 /// Required as we have to be able to deal with vectors
   unsigned getNumberOfQuantities();
 /// This checks whether derivatives can be computed given the base multicolvar
   void turnOnDerivatives();
-/// Do the matrix calculation
-  void calculate();
-/// Derivatives of elements of adjacency matrix are unimportant.  We thus
-/// overwrite this routine as this makes the code faster
-  void updateActiveAtoms( multicolvar::AtomValuePack& myatoms ) const {}
-/// Do the calculation on the cluster
-  virtual void doCalculationOnCluster()=0;
 };
 
 inline
-unsigned DFSClustering::getNumberOfClusters() const {
+unsigned DFSBase::getNumberOfClusters() const {
   return number_of_cluster + 1;
 }
 

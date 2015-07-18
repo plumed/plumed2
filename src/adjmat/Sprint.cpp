@@ -100,6 +100,8 @@ public:
   void calculate();
 /// Sprint needs its only apply routine as it creates values
   void apply();
+/// This does nothing
+  void performTask( const unsigned& , const unsigned& , MultiValue& ) const {}
 };
 
 PLUMED_REGISTER_ACTION(Sprint,"SPRINT")

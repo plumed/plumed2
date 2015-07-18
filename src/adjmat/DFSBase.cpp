@@ -19,18 +19,18 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "DFSClustering.h"
+#include "DFSBase.h"
 #include "AdjacencyMatrixBase.h"
 #include "AdjacencyMatrixVessel.h"
 
 namespace PLMD {
 namespace adjmat {
 
-void DFSClustering::registerKeywords( Keywords& keys ){
+void DFSBase::registerKeywords( Keywords& keys ){
   ActionWithInputMatrix::registerKeywords( keys );
 }
 
-DFSClustering::DFSClustering(const ActionOptions&ao):
+DFSBase::DFSBase(const ActionOptions&ao):
 Action(ao),
 ActionWithInputMatrix(ao),
 number_of_cluster(-1),
@@ -43,7 +43,7 @@ color(getNumberOfNodes())
    if( getAdjacencyVessel()->getNumberOfBaseColvars()!=1 ) error("should only be running DFS Clustering with one base multicolvar in function");
 }
 
-void DFSClustering::turnOnDerivatives(){
+void DFSBase::turnOnDerivatives(){
    // Check base multicolvar isn't density probably other things shouldn't be allowed here as well
    if( (getAdjacencyVessel()->getBaseMultiColvar(0))->isDensity() ) error("DFS clustering cannot be differentiated if base multicolvar is DENSITY");
 
@@ -58,11 +58,11 @@ void DFSClustering::turnOnDerivatives(){
    needsDerivatives();
 }
 
-unsigned DFSClustering::getNumberOfQuantities(){
+unsigned DFSBase::getNumberOfQuantities(){
   return (getAdjacencyVessel()->getBaseMultiColvar(0))->getNumberOfQuantities();
 } 
 
-void DFSClustering::calculate(){
+void DFSBase::performClustering(){
    // Get the adjacency matrix
    getAdjacencyVessel()->retrieveAdjacencyLists( nneigh, adj_list ); 
 
@@ -77,12 +77,9 @@ void DFSClustering::calculate(){
 
    // Order the clusters in the system by size (this returns ascending order )
    std::sort( cluster_sizes.begin(), cluster_sizes.end() );
-   // Finish the calculation (what we do depends on what we are inheriting into)
-   doCalculationOnCluster();
-
 }
 
-int DFSClustering::explore( const unsigned& index ){
+int DFSBase::explore( const unsigned& index ){
 
    color[index]=1;
    for(unsigned i=0;i<nneigh[index];++i){
@@ -96,25 +93,11 @@ int DFSClustering::explore( const unsigned& index ){
    return color[index];
 }
 
-void DFSClustering::retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const {
+void DFSBase::retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const {
    unsigned n=0; myatoms.resize( cluster_sizes[cluster_sizes.size() - clust].first );
    for(unsigned i=0;i<getNumberOfNodes();++i){
       if( which_cluster[i]==cluster_sizes[cluster_sizes.size() - clust].second ){ myatoms[n]=i; n++; }
    }
-}
-
-bool DFSClustering::isCurrentlyActive( const unsigned& ind ) const {
-   return (getAdjacencyVessel()->getBaseData(0))->storedValueIsActive( ind );
-}
-
-void DFSClustering::getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient0 ) const {
-   plumed_dbg_assert( (getAdjacencyVessel()->getBaseData(0))->storedValueIsActive( ind ) ); 
-   (getAdjacencyVessel()->getBaseData(0))->retrieveValue( ind, normed, orient0 );
-}
-
-void DFSClustering::getVectorDerivatives( const unsigned& ind, const bool& normed, MultiValue& myder0 ) const {
-   plumed_dbg_assert( (getAdjacencyVessel()->getBaseData(0))->storedValueIsActive( ind ) ); 
-   (getAdjacencyVessel()->getBaseData(0))->retrieveDerivatives(  ind, normed, myder0 );
 }
 
 }

@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "DFSClustering.h"
+#include "DFSBase.h"
 #include "AdjacencyMatrixVessel.h"
 #include "core/ActionRegister.h"
 
@@ -128,25 +128,25 @@ clust: DFSCLUSTERING DATA=cf WTOL=0.03 CLUSTER=1 SWITCH={CUBIC D_0=0.4   D_MAX=0
 namespace PLMD {
 namespace adjmat {
 
-class DFSBasic : public DFSClustering {
+class DFSBasic : public DFSBase {
 private:
 /// The cluster we are looking for
   unsigned clustr;
-/// The buffer (we keep a copy here to avoid resizing)
-  std::vector<double> buffer;
 public:
 /// Create manual
   static void registerKeywords( Keywords& keys );
 /// Constructor
   explicit DFSBasic(const ActionOptions&);
-///
-  void doCalculationOnCluster();
+/// Do the calculation
+  void calculate();
+/// We can use ActionWithVessel to run all the calculation
+  void performTask( const unsigned& , const unsigned& , MultiValue& ) const ;
 };
 
 PLUMED_REGISTER_ACTION(DFSBasic,"DFSCLUSTERING")
 
 void DFSBasic::registerKeywords( Keywords& keys ){
-  DFSClustering::registerKeywords( keys );
+  DFSBase::registerKeywords( keys );
   keys.add("compulsory","CLUSTER","1","which cluster would you like to look at 1 is the largest cluster, 2 is the second largest, 3 is the the third largest and so on.");
   keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("LESS_THAN");
   if( keys.reserved("VMEAN") ) keys.use("VMEAN");
@@ -158,7 +158,7 @@ void DFSBasic::registerKeywords( Keywords& keys ){
 
 DFSBasic::DFSBasic(const ActionOptions&ao):
 Action(ao),
-DFSClustering(ao)
+DFSBase(ao)
 {
    // Find out which cluster we want
    parse("CLUSTER",clustr);
@@ -166,42 +166,32 @@ DFSClustering(ao)
    if( clustr<1 ) error("cannot look for a cluster larger than the largest cluster");
    if( clustr>getNumberOfNodes() ) error("cluster selected is invalid - too few atoms in system");
 
+   // Create the task list
+   for(unsigned i=0;i<getNumberOfNodes();++i) addTaskToList(i);
+
    // Setup the various things this will calculate
    readVesselKeywords();
 }
 
-void DFSBasic::doCalculationOnCluster(){
+void DFSBasic::calculate(){
+   // Do the clustring
+   performClustering();
+   // Retrieve the atoms in the largest cluster
    std::vector<unsigned> myatoms; retrieveAtomsInCluster( clustr, myatoms );
-   unsigned size=comm.Get_size(), rank=comm.Get_rank();
+   // Activate the relevant tasks
+   deactivateAllTasks(); std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
+   for(unsigned i=0;i<myatoms.size();++i) active_tasks[myatoms[i]]=1;
+   activateTheseTasks( active_tasks );
+   // Prepare the adjacency vessel
+   getAdjacencyVessel()->setFinishedTrue(); 
+   // Now do the calculation 
+   runAllTasks(); 
+}
 
-   // Now calculate properties of the largest cluster 
-   ActionWithVessel::doJobsRequiredBeforeTaskList();  // Note we loose adjacency data by doing this
-   // Get rid of bogus derivatives
-   clearDerivatives(); 
-
-   // Get size for buffer
-   getAdjacencyVessel()->setFinishedTrue();    // This ensures buffer size is smaller
-   unsigned bsize=0, bufsize=getSizeOfBuffer(bsize); 
-   if( buffer.size()!=bufsize ) buffer.resize( bufsize );
-   buffer.assign( bufsize, 0.0 );   
-
-   std::vector<double> vals( getNumberOfQuantities() ); std::vector<unsigned> der_index;
-   MultiValue myvals( getNumberOfQuantities(), getNumberOfDerivatives() );
-   MultiValue bvals( getNumberOfQuantities(), getNumberOfDerivatives() );
-   for(unsigned j=rank;j<myatoms.size();j+=size){
-       // Note loop above over array containing atoms so this is load balanced
-       unsigned i=myatoms[j];
-       // Need to copy values from base action
-       getVectorForTask( i, false, vals );
-       if( !doNotCalculateDerivatives() ) getVectorDerivatives( i, false, myvals );
-       for(unsigned k=0;k<vals.size();++k) myvals.setValue( k, vals[k] );
-       // Run calculate all vessels
-       calculateAllVessels( i, myvals, bvals, buffer, der_index );
-       myvals.clearAll();
-   }
-   // MPI Gather everything
-   if( buffer.size()>0 ) comm.Sum( buffer );
-   finishComputations( buffer );
+void DFSBasic::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
+   std::vector<double> vals( myvals.getNumberOfValues() ); getVectorForTask( current, false, vals );
+   if( !doNotCalculateDerivatives() ) getVectorDerivatives( current, false, myvals );
+   for(unsigned k=0;k<vals.size();++k) myvals.setValue( k, vals[k] ); 
 }
 
 }

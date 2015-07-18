@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "DFSClustering.h"
+#include "DFSBase.h"
 #include "tools/SwitchingFunction.h"
 #include "core/ActionRegister.h"
 
@@ -35,7 +35,7 @@ Find the number of clusters that have a size larger than a certain cutoff
 namespace PLMD {
 namespace adjmat {
 
-class DFSNumberOfClusters : public DFSClustering {
+class DFSNumberOfClusters : public DFSBase {
 private:
   SwitchingFunction thresh;
 ///
@@ -48,13 +48,15 @@ public:
 /// Constructor
   explicit DFSNumberOfClusters(const ActionOptions&);
 ///
-  void doCalculationOnCluster();
+  void calculate();
+///
+  void performTask( const unsigned& , const unsigned& , MultiValue& ) const {}
 };
 
 PLUMED_REGISTER_ACTION(DFSNumberOfClusters,"DFSNUMEROFCLUSTERS")
 
 void DFSNumberOfClusters::registerKeywords( Keywords& keys ){
-  DFSClustering::registerKeywords( keys );
+  DFSBase::registerKeywords( keys );
   keys.add("compulsory","TRANSFORM","none","the switching function to use to convert the crystallinity parameter to a number between zero and one");
   keys.add("compulsory","THRESHOLD","a switching function that defines how large the clusters should be in order to be counted");
   keys.use("WTOL"); keys.use("USE_ORIENTATION");
@@ -65,7 +67,7 @@ void DFSNumberOfClusters::registerKeywords( Keywords& keys ){
 
 DFSNumberOfClusters::DFSNumberOfClusters(const ActionOptions&ao):
 Action(ao),
-DFSClustering(ao)
+DFSBase(ao)
 {
    // Find out the value of beta
    addValueWithDerivatives(); setNotPeriodic();
@@ -85,7 +87,9 @@ DFSClustering(ao)
    if( errors.length()!=0 ) error("problem reading THRESHOLD keyword : " + errors );
 }
 
-void DFSNumberOfClusters::doCalculationOnCluster(){
+void DFSNumberOfClusters::calculate(){
+   // Do the clustring
+   performClustering();
    unsigned size=comm.Get_size(), rank=comm.Get_rank(); 
 
    std::vector<double> tder( getNumberOfDerivatives() );

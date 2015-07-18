@@ -89,6 +89,18 @@ Vector ActionWithInputMatrix::getPosition( const unsigned& iatom ) const {
   return (mymatrix->function)->getPositionOfAtomForLinkCells( iatom );
 }
 
+bool ActionWithInputMatrix::isCurrentlyActive( const unsigned& ind ) const {
+  return mymatrix->isCurrentlyActive( ind );
+}
+
+void ActionWithInputMatrix::getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient0 ) const {
+  plumed_dbg_assert( mymatrix->isCurrentlyActive( ind ) ); mymatrix->getVectorForTask( ind, normed, orient0 );
+}
+
+void ActionWithInputMatrix::getVectorDerivatives( const unsigned& ind, const bool& normed, MultiValue& myder0 ) const {
+  plumed_dbg_assert( mymatrix->isCurrentlyActive( ind ) ); mymatrix->getVectorDerivatives(  ind, normed, myder0 );
+}
+
 Vector ActionWithInputMatrix::getSeparation( const Vector& vec1, const Vector& vec2 ) const {
   if(usepbc) return pbcDistance( vec1, vec2 );
   return delta( vec1, vec2 );
