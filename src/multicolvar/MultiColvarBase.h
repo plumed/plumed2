@@ -54,17 +54,15 @@ private:
   std::vector<double> forcesToApply;
 /// Stuff for link cells - this is used to make coordination number like variables faster
   LinkCells linkcells;
-/// This remembers where the boundaries are for the tasks. It makes link cells work fast
-  Matrix<std::pair<unsigned,unsigned> > bookeeping;
 /// Bool vector telling us which atoms are required to calculate central atom position
   std::vector<bool> use_for_central_atom;
 /// 1/number of atoms involved in central atoms
   double numberForCentralAtom;
-/// A copy of the vessel containg the values of each colvar
-//  StoreColvarVessel* myvalues;
+protected:
+/// This remembers where the boundaries are for the tasks. It makes link cells work fast
+  Matrix<std::pair<unsigned,unsigned> > bookeeping;
 /// This resizes the arrays that are used for link cell update
   void resizeBookeepingArray( const unsigned& num1, const unsigned& num2 );
-protected:
 /// Using the species keyword to read in atoms
   bool usespecies;
 /// Number of atoms in each block

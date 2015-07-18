@@ -41,9 +41,11 @@ private:
   bool usepbc;
 /// The vessel that holds the adjacency matrix
   AdjacencyMatrixVessel* mymatrix;
+/// The forces we are going to apply to things
+  std::vector<double> forcesToApply;
 protected:
 /// Retrieve the vessel that holds the adjacency matrix
-  AdjacencyMatrixVessel* getAdjacencyVessel();  
+  AdjacencyMatrixVessel* getAdjacencyVessel() const ;  
 ///  Get the number of rows/cols in the adjacency matrix vessel
   unsigned getNumberOfNodes() const ;
 /// Get the position of an atom
@@ -55,10 +57,11 @@ public:
   explicit ActionWithInputMatrix(const ActionOptions&);
   unsigned getNumberOfDerivatives();
   bool isPeriodic(){ return false; }
+  void turnOnDerivatives();
   void performTask( const unsigned& , const unsigned& , MultiValue& ) const {}
   unsigned getNumberOfAtomGroups() const ;
   unsigned getNumberOfAtomsInGroup( const unsigned& igrp ) const ;
-  void apply(){}
+  void apply();
 };
 
 }

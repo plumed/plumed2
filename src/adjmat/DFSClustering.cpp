@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "DFSClustering.h"
-#include "AdjacencyMatrixAction.h"
+#include "AdjacencyMatrixBase.h"
 #include "AdjacencyMatrixVessel.h"
 
 namespace PLMD {
@@ -38,19 +38,14 @@ nneigh(getNumberOfNodes()),
 adj_list(getNumberOfNodes(),getNumberOfNodes()),
 cluster_sizes(getNumberOfNodes()),
 which_cluster(getNumberOfNodes()),
-color(getNumberOfNodes()),
-myfunction(NULL),
-mydata(NULL)
+color(getNumberOfNodes())
 {
-   myfunction = dynamic_cast<multicolvar::MultiColvarFunction*>( getAdjacencyVessel()->getMatrixAction() );
-   if( !myfunction ) error("input to DFS clustering must be a MultiColvarFunction"); 
-   if( myfunction->getNumberOfBaseMultiColvars()!=1 ) error("should only be running DFS Clustering with one base multicolvar in function");
-   mydata = myfunction->getBaseData( 0 );
+   if( getAdjacencyVessel()->getNumberOfBaseColvars()!=1 ) error("should only be running DFS Clustering with one base multicolvar in function");
 }
 
 void DFSClustering::turnOnDerivatives(){
    // Check base multicolvar isn't density probably other things shouldn't be allowed here as well
-   if( (myfunction->getBaseMultiColvar(0))->isDensity() ) error("DFS clustering cannot be differentiated if base multicolvar is DENSITY");
+   if( (getAdjacencyVessel()->getBaseMultiColvar(0))->isDensity() ) error("DFS clustering cannot be differentiated if base multicolvar is DENSITY");
 
    // Check for dubious vessels
    for(unsigned i=0;i<getNumberOfVessels();++i){
@@ -64,7 +59,7 @@ void DFSClustering::turnOnDerivatives(){
 }
 
 unsigned DFSClustering::getNumberOfQuantities(){
-  return (myfunction->getBaseMultiColvar(0))->getNumberOfQuantities();
+  return (getAdjacencyVessel()->getBaseMultiColvar(0))->getNumberOfQuantities();
 } 
 
 void DFSClustering::calculate(){
@@ -109,15 +104,17 @@ void DFSClustering::retrieveAtomsInCluster( const unsigned& clust, std::vector<u
 }
 
 bool DFSClustering::isCurrentlyActive( const unsigned& ind ) const {
-   return mydata->storedValueIsActive( ind );
+   return (getAdjacencyVessel()->getBaseData(0))->storedValueIsActive( ind );
 }
 
 void DFSClustering::getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient0 ) const {
-   plumed_dbg_assert( mydata->storedValueIsActive( ind ) ); mydata->retrieveValue( ind, normed, orient0 );
+   plumed_dbg_assert( (getAdjacencyVessel()->getBaseData(0))->storedValueIsActive( ind ) ); 
+   (getAdjacencyVessel()->getBaseData(0))->retrieveValue( ind, normed, orient0 );
 }
 
 void DFSClustering::getVectorDerivatives( const unsigned& ind, const bool& normed, MultiValue& myder0 ) const {
-   plumed_dbg_assert( mydata->storedValueIsActive( ind ) ); mydata->retrieveDerivatives(  ind, normed, myder0 );
+   plumed_dbg_assert( (getAdjacencyVessel()->getBaseData(0))->storedValueIsActive( ind ) ); 
+   (getAdjacencyVessel()->getBaseData(0))->retrieveDerivatives(  ind, normed, myder0 );
 }
 
 }

@@ -43,10 +43,6 @@ private:
   std::vector<unsigned> which_cluster;
 /// The color that tells us whether a node has been visited
   std::vector<unsigned> color;
-/// This is here for the time being but I want to get rid of it
-  multicolvar::MultiColvarFunction* myfunction;
-/// Get the store data vessel that has in the data of interest
-  vesselbase::StoreDataVessel* mydata;
 /// The recursive function at the heart of this method
   int explore( const unsigned& index );
 protected:

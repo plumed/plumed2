@@ -19,70 +19,72 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_adjmat_AdjacencyMatrixAction_h
-#define __PLUMED_adjmat_AdjacencyMatrixAction_h
+#ifndef __PLUMED_adjmat_AdjacencyMatrixBase_h
+#define __PLUMED_adjmat_AdjacencyMatrixBase_h
 
-#include "multicolvar/MultiColvarFunction.h"
-#include "tools/SwitchingFunction.h"
-#include "tools/Matrix.h"
+#include "multicolvar/MultiColvarBase.h"
 #include "AdjacencyMatrixVessel.h"
 
 namespace PLMD {
 namespace adjmat {
 
-class AdjacencyMatrixAction : public multicolvar::MultiColvarFunction {
+class AdjacencyMatrixBase : public multicolvar::MultiColvarBase {
 friend class AdjacencyMatrixVessel;
 private:
-/// Are we including the orientation in our measure of adjacency
-  bool use_orient;
-/// Flag to make sure derivatives are calculated infrequently
-  bool dertime;
 /// This is the vessel that stores the adjacency matrix
   AdjacencyMatrixVessel* mat;
-///  Tempory vectors for storing vectors
-  std::vector<double> tmpdf;
-/// switching function
-  Matrix<SwitchingFunction> switchingFunction;
-/// Which matrix elements have value
-  bool gathered;
 protected:
 /// Retrieve the vessel that holds the adjacency matrix
   AdjacencyMatrixVessel* getAdjacencyVessel();
-/// Get number of active matrix elements
-//  unsigned getNumberOfActiveMatrixElements();
+/// Add a task to the list of tasks
+  void addTaskToList( const unsigned& taskCode );
 /// Put the indices of the matrix elements in current atoms
   void setMatrixIndexesForTask( const unsigned& ii );
-/// Get the matrix elements that are active
-//  unsigned getActiveMatrixElement( const unsigned& ival ) const ;
 /// Add derivatives to a matrix element
   void addDerivativesOnMatrixElement( const unsigned& ielem, const unsigned& jrow, const double& df, Matrix<double>& der );
+protected:
+/// Flag to make sure derivatives are calculated infrequently
+  bool dertime;
+/// Read the list of atoms involved in this colvar
+  void parseAtomList(const std::string& key, const int& num, const bool& isnodes, std::vector<AtomNumber>& t);
+/// Get the number of nodes of different types
+  unsigned getNumberOfNodeTypes() const ;
+/// Get the total number of nodes
+  unsigned getNumberOfNodes() const ;
+/// Request the atoms
+  void requestAtoms( const std::vector<AtomNumber>& atoms );
+/// Return the group this atom is a part of
+  unsigned getBaseColvarNumber( const unsigned& ) const ;
+/// Add some derivatives to the relevant atom
+  void addAtomDerivatives( const unsigned& , const Vector& , multicolvar::AtomValuePack& ) const ;
 public:
   static void registerKeywords( Keywords& keys );
-  explicit AdjacencyMatrixAction(const ActionOptions&);
-  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
-  void calculateWeight( multicolvar::AtomValuePack& myatoms ) const ;
+  explicit AdjacencyMatrixBase(const ActionOptions&);
+/// This returns the position of an atom for link cells 
+  Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const ;
+/// Tells us if a particular index is active 
+  bool isCurrentlyActive( const unsigned& bno, const unsigned& code );
+/// Update the list of active atoms in the underlying atom value pack 
+  void updateActiveAtoms( multicolvar::AtomValuePack& myatoms ) const ;
+/// Sets up everything that needs to be done prior to run through task list
   void doJobsRequiredBeforeTaskList();
+/// Calculation routine
+  void calculate();
 /// None of these things are allowed
   bool isPeriodic(){ return false; }
   Vector getCentralAtom(){ plumed_merror("cannot find central atoms for adjacency matrix actions"); Vector dum; return dum; }
 };
 
-// inline
-// unsigned AdjacencyMatrixAction::getNumberOfActiveMatrixElements(){
-//   if(!gathered) active_elements.mpi_gatherActiveMembers( comm );
-//   gathered=true; return active_elements.getNumberActive();
-// }
-
 inline
-AdjacencyMatrixVessel* AdjacencyMatrixAction::getAdjacencyVessel(){
+AdjacencyMatrixVessel* AdjacencyMatrixBase::getAdjacencyVessel(){
   return mat;
 }
 
-// inline
-// unsigned AdjacencyMatrixAction::getActiveMatrixElement( const unsigned& ival ) const {
-//   plumed_dbg_assert( ival<active_elements.getNumberActive() );
-//   return active_elements[ival];
-// }
+inline
+unsigned AdjacencyMatrixBase::getBaseColvarNumber( const unsigned& inum ) const {
+  if( mat->colvar_label[inum]<0 ) return 0;
+  return mat->colvar_label[inum];
+}
 
 }
 }

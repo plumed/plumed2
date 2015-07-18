@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithInputMatrix.h"
 #include "AdjacencyMatrixVessel.h"
-#include "AdjacencyMatrixAction.h"
+#include "AdjacencyMatrixBase.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 
@@ -67,15 +67,21 @@ mymatrix(NULL)
   addDependency( myvess );
 }
 
+void ActionWithInputMatrix::turnOnDerivatives(){
+  ActionWithValue::turnOnDerivatives();
+  needsDerivatives();
+  forcesToApply.resize( getNumberOfDerivatives() );
+} 
+
 unsigned ActionWithInputMatrix::getNumberOfDerivatives() {
   return (mymatrix->function)->getNumberOfDerivatives();
 }
 
 unsigned ActionWithInputMatrix::getNumberOfNodes() const {
-  return (mymatrix->function)->getFullNumberOfBaseTasks();
+  return mymatrix->colvar_label.size();
 }
 
-AdjacencyMatrixVessel* ActionWithInputMatrix::getAdjacencyVessel(){
+AdjacencyMatrixVessel* ActionWithInputMatrix::getAdjacencyVessel() const {
   return mymatrix;
 }
 
@@ -89,11 +95,15 @@ Vector ActionWithInputMatrix::getSeparation( const Vector& vec1, const Vector& v
 }
 
 unsigned ActionWithInputMatrix::getNumberOfAtomGroups() const {
-  return (mymatrix->getMatrixAction())->getNumberOfBaseMultiColvars();
+  return mymatrix->mybasemulticolvars.size(); 
 }
 
 unsigned ActionWithInputMatrix::getNumberOfAtomsInGroup( const unsigned& igrp ) const {
- return ((mymatrix->getMatrixAction())->getBaseMultiColvar(igrp))->getFullNumberOfTasks();
+ return (mymatrix->mybasemulticolvars[igrp])->getFullNumberOfTasks();
+}
+
+void ActionWithInputMatrix::apply(){
+ if( getForcesFromVessels( forcesToApply ) ) setForcesOnAtoms( forcesToApply ); 
 }
 
 }

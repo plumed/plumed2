@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "vesselbase/ActionWithVessel.h"
 #include "AdjacencyMatrixVessel.h"
-#include "AdjacencyMatrixAction.h" 
+#include "AdjacencyMatrixBase.h" 
 
 namespace PLMD {
 namespace adjmat {
@@ -33,8 +33,12 @@ void AdjacencyMatrixVessel::registerKeywords( Keywords& keys ){
 AdjacencyMatrixVessel::AdjacencyMatrixVessel( const vesselbase::VesselOptions& da ):
 StoreDataVessel(da)
 {
-  function=dynamic_cast<AdjacencyMatrixAction*>( getAction() );
+  function=dynamic_cast<AdjacencyMatrixBase*>( getAction() );
   plumed_assert( function );
+}
+
+void AdjacencyMatrixVessel::buildRemoteDataStashes( const double& wtol ){
+  for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasedata.push_back( mybasemulticolvars[i]->buildDataStashes( true, wtol ) );
 }
 
 void AdjacencyMatrixVessel::prepare(){
@@ -59,7 +63,7 @@ void AdjacencyMatrixVessel::finish( const std::vector<double>& buffer ){
   }
 }
 
-AdjacencyMatrixAction* AdjacencyMatrixVessel::getMatrixAction() {
+AdjacencyMatrixBase* AdjacencyMatrixVessel::getMatrixAction() {
   return function;
 }
 
