@@ -40,16 +40,8 @@ MultiColvarBase(ao)
 {
   // Weight of this does have derivatives
   weightHasDerivatives=true;
-
-  // Create the storeAdjacencyMatrixVessel
-  std::string param; vesselbase::VesselOptions da("","",0,param,this);
-  Keywords keys; AdjacencyMatrixVessel::registerKeywords( keys );
-  vesselbase::VesselOptions da2(da,keys);
-  mat = new AdjacencyMatrixVessel(da2);
-  // Set a cutoff for clustering
-  mat->setHardCutoffOnWeight( getTolerance() );   
-  // Add the vessel to the base
-  addVessel( mat );
+  parse("WTOL",wtolerance);
+  if(wtolerance>0) log.printf("  only considering those colvars with a weight greater than %f \n",wtolerance);
 }
 
 void AdjacencyMatrixBase::parseAtomList(const std::string& key, const int& num, const bool& isnodes, std::vector<AtomNumber>& t){
@@ -64,67 +56,35 @@ void AdjacencyMatrixBase::parseAtomList(const std::string& key, const int& num, 
   if( isnodes ){
      std::vector<std::string> mlabs; parseVector(newkey,mlabs);
      if( mlabs.size()==0 ) return;
-
-     std::string mname; 
-     for(unsigned i=0;i<mlabs.size();++i){
-        multicolvar::MultiColvarBase* mycolv = plumed.getActionSet().selectWithLabel<multicolvar::MultiColvarBase*>(mlabs[i]);
-        if( i==0 && !mycolv ) break;
-        if( !mycolv ) error("action labeled " + mlabs[i] + " does not exist or is not a multicolvar");
-
-        if( i==0 ){
-           mname = mycolv->getName();
-           if( mycolv->isPeriodic() ) error("multicolvar functions don't work with this multicolvar");
-           log.printf("  using colvars calculated by actions %s",mlabs[i].c_str() );
-        } else {
-           if( mname!=mycolv->getName() ) error("All input multicolvars must be of same type"); 
-           log.printf("%s ", mlabs[i].c_str() );
-        }
-        // And store the multicolvar base
-        mat->mybasemulticolvars.push_back( mycolv );
-        // And track which variable stores each colvar
-        for(unsigned j=0;j<mycolv->getFullNumberOfTasks();++j) mat->colvar_label.push_back( i );
-     } 
-     if( mname.length()>0 ){
-        // Build objects to calculate data in the underlying multicolvars
-        log.printf("\n"); double wtolerance; parse("WTOL",wtolerance);
-        log.printf("  only considering those colvars with a weight greater than %f \n",wtolerance);
-        mat->buildRemoteDataStashes( wtolerance );
-        // Retrieve the atoms involved in the underlying multicolvars
-        for(unsigned i=0;i<mat->mybasemulticolvars.size();++i){
-            std::vector<AtomNumber> tmp_atoms; 
-            multicolvar::BridgedMultiColvarFunction* mybr=dynamic_cast<multicolvar::BridgedMultiColvarFunction*>( mat->mybasemulticolvars[i] );
-            if( mybr ) tmp_atoms=(mybr->getPntrToMultiColvar())->getAbsoluteIndexes();
-            else tmp_atoms=(mat->mybasemulticolvars[i])->getAbsoluteIndexes();
-            for(unsigned j=0;j<tmp_atoms.size();++j) t.push_back( tmp_atoms[j] );
-        }
-     } else {
-        // This allows you just to read in atom numbers
-        ActionAtomistic::interpretAtomList( mlabs, t );
-        for(unsigned j=0;j<t.size();++j) mat->colvar_label.push_back( -1 );
-     }
+     myinputdata.setup( mlabs, plumed.getActionSet(), wtolerance, this );
+     log.printf("  using colvars calculated by actions "); 
+     for(unsigned i=0;i<mlabs.size();++i) log.printf("%s ",mlabs[i].c_str() );
+     log.printf("\n"); 
   } else {
      ActionAtomistic::parseAtomList( key, num, t );
   }
 }
 
-// Would like to get rid of this ideally and use the one in MultiColvarBase
-void AdjacencyMatrixBase::addTaskToList( const unsigned& taskCode ){
-  ActionWithVessel::addTaskToList( taskCode );
-}
-
 unsigned AdjacencyMatrixBase::getNumberOfNodeTypes() const {
-  if( mat->mybasemulticolvars.size()==0 ) return 1;
-  return mat->mybasemulticolvars.size();
+  return myinputdata.getNumberOfBaseMultiColvars();
 }
 
 unsigned AdjacencyMatrixBase::getNumberOfNodes() const {
-  unsigned nb=0; for(unsigned i=0;i<(mat->mybasemulticolvars).size();++i) nb += (mat->mybasemulticolvars[i])->getFullNumberOfTasks();
-  return nb;
+  return myinputdata.getFullNumberOfBaseTasks();
 }
 
 void AdjacencyMatrixBase::requestAtoms( const std::vector<AtomNumber>& atoms ){
-  ActionAtomistic::requestAtoms( atoms );
-  for(unsigned i=0;i<mat->mybasemulticolvars.size();++i) addDependency(mat->mybasemulticolvars[i]);
+  // Create the storeAdjacencyMatrixVessel
+  std::string param; vesselbase::VesselOptions da("","",0,param,this);
+  Keywords keys; AdjacencyMatrixVessel::registerKeywords( keys );
+  vesselbase::VesselOptions da2(da,keys);
+  mat = new AdjacencyMatrixVessel(da2);
+  // Set a cutoff for clustering
+  mat->setHardCutoffOnWeight( getTolerance() );
+  // Add the vessel to the base
+  addVessel( mat );
+  // Request the data required
+  myinputdata.makeDataRequests( this ); 
   setupMultiColvarBase();
 }
 
@@ -137,7 +97,6 @@ void AdjacencyMatrixBase::doJobsRequiredBeforeTaskList(){
 }
 
 void AdjacencyMatrixBase::calculate(){
-  printf("IN ADJACENCY BASE CALCULATE \n");
   if( checkNumericalDerivatives() ) error("numerical derivatives currently broken");
   // Setup the linke cells
   setupLinkCells();
@@ -146,9 +105,8 @@ void AdjacencyMatrixBase::calculate(){
 }
 
 Vector AdjacencyMatrixBase::getPositionOfAtomForLinkCells( const unsigned& iatom ) const {
-  if( iatom>mat->colvar_label.size() ) return getPosition( iatom );
-  if( mat->colvar_label[iatom]<0 ) return getPosition( iatom );
-  return mat->getCentralAtomPos( iatom );
+  if( iatom>=myinputdata.getFullNumberOfBaseTasks() ) return getPosition( iatom );
+  return myinputdata.getPosition( iatom );
 }
 
 void AdjacencyMatrixBase::updateActiveAtoms( multicolvar::AtomValuePack& myatoms ) const {
@@ -156,22 +114,17 @@ void AdjacencyMatrixBase::updateActiveAtoms( multicolvar::AtomValuePack& myatoms
 }
 
 bool AdjacencyMatrixBase::isCurrentlyActive( const unsigned& bno, const unsigned& code ){
-  if( code>mat->colvar_label.size() ) return true;
-  return mat->isCurrentlyActive( code );
+  if( code>=myinputdata.getFullNumberOfBaseTasks() ) return true; 
+  return myinputdata.isCurrentlyActive( 0, code );
 }
 
 void AdjacencyMatrixBase::addAtomDerivatives( const unsigned& iatom, const Vector& der, multicolvar::AtomValuePack& myatoms ) const {
   unsigned jatom=myatoms.getIndex(iatom);
 
-  if( jatom>mat->colvar_label.size() ){
-      myatoms.addAtomsDerivatives( 1, iatom, der );
-  } else if( mat->colvar_label[jatom]<0 ){
-      myatoms.addAtomsDerivatives( 1, iatom, der );
+  if( jatom>myinputdata.getFullNumberOfBaseTasks() ){
+      myatoms.addAtomsDerivatives( 1, jatom, der );
   } else {
-      unsigned mmc=mat->colvar_label[jatom];
-      unsigned basen=0; for(unsigned i=0;i<mmc;++i) basen+=(mat->mybasemulticolvars[i])->getNumberOfAtoms();
-      multicolvar::CatomPack atom0=(mat->mybasemulticolvars[mmc])->getCentralAtomPack( basen, mat->convertToLocalIndex(jatom,mmc) );
-      myatoms.addComDerivatives( 1, der, atom0 );
+      myinputdata.addComDerivatives( jatom, der, myatoms );
   }
 }
 

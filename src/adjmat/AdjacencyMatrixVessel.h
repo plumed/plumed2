@@ -40,12 +40,6 @@ class AdjacencyMatrixVessel : public vesselbase::StoreDataVessel {
 friend class AdjacencyMatrixBase;
 friend class ActionWithInputMatrix;
 private:
-/// This is used to keep track of what is calculated where
-  std::vector<int> colvar_label;
-/// The multicolvars from which we construct these quantities
-  std::vector<multicolvar::MultiColvarBase*> mybasemulticolvars;
-/// The vessels in these multicolvars in which the data is stored
-  std::vector<vesselbase::StoreDataVessel*> mybasedata;
 /// Pointer to underlying action
   AdjacencyMatrixBase* function;
 /// Has the vessel been finished
@@ -78,66 +72,12 @@ public:
   void retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matrix<unsigned>& adj_list );
 ///
   void getMatrixIndices( const unsigned& code, unsigned& i, unsigned& j );
-/// Get the number of base colvars
-  unsigned getNumberOfBaseColvars() const ;
-///
-  multicolvar::MultiColvarBase* getBaseMultiColvar( const unsigned& icolv );
-///
-  vesselbase::StoreDataVessel* getBaseData( const unsigned& icolv );
-/// Is the underlying multicolvar active
-  bool isCurrentlyActive( const unsigned& code );
-///
-  void getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient ) const ;
-///
-  void getVectorDerivatives( const unsigned& ind, const bool& normed, MultiValue& myder ) const ;
 };
 
 inline
 void AdjacencyMatrixVessel::setBufferStart( unsigned& start ){
   if( finished ){ bufstart=start; }
   else { Vessel::setBufferStart( start ); } 
-}
-
-inline
-unsigned AdjacencyMatrixVessel::convertToLocalIndex( const unsigned& index, const unsigned& mcv_code ) const {
-  unsigned t1 = index;
-  for(unsigned k=0;k<mcv_code;++k) t1 -= mybasemulticolvars[k]->getFullNumberOfTasks();
-  return t1;
-}
-
-inline
-Vector AdjacencyMatrixVessel::getCentralAtomPos( const unsigned& iatom ) const {
-  plumed_dbg_assert( iatom<colvar_label.size() && colvar_label[iatom]>=0 ); 
-  unsigned mmc=colvar_label[ iatom ];
-  return mybasemulticolvars[mmc]->getCentralAtomPos( convertToLocalIndex(iatom,mmc) );
-}
-
-inline
-bool AdjacencyMatrixVessel::isCurrentlyActive( const unsigned& code ){
-  plumed_dbg_assert( code<colvar_label.size() ); unsigned mmc=colvar_label[code];
-  if( mmc<0 ) return true;
-  return mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(code,mmc) );
-}
-
-inline
-void AdjacencyMatrixVessel::getVectorForTask( const unsigned& code, const bool& normed, std::vector<double>& orient ) const {
-   plumed_dbg_assert( code<colvar_label.size() ); unsigned mmc=colvar_label[code];
-   plumed_assert( mmc>=0 ); return mybasedata[mmc]->retrieveValue( convertToLocalIndex(code,mmc), normed, orient );
-}
-
-inline
-unsigned AdjacencyMatrixVessel::getNumberOfBaseColvars() const {
-  return mybasemulticolvars.size();
-}
-
-inline
-multicolvar::MultiColvarBase* AdjacencyMatrixVessel::getBaseMultiColvar( const unsigned& icolv ){
-  return mybasemulticolvars[icolv];
-}
-
-inline
-vesselbase::StoreDataVessel* AdjacencyMatrixVessel::getBaseData( const unsigned& icolv ){
-  return mybasedata[icolv];
 }
 
 }

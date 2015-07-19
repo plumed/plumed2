@@ -25,6 +25,7 @@
 #include "core/ActionWithValue.h"
 #include "core/ActionAtomistic.h"
 #include "vesselbase/ActionWithVessel.h"
+#include "multicolvar/MultiColvarBase.h"
 
 namespace PLMD {
 namespace adjmat {
@@ -58,14 +59,18 @@ protected:
   void getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient0 ) const ;
 /// Get vector derivatives
   void getVectorDerivatives( const unsigned& ind, const bool& normed, MultiValue& myder0 ) const ;
+/// Get number of base multicolvar types
+  unsigned getNumberOfNodeTypes() const ;
+/// Get number of atoms in each base multicolvar
+  unsigned getNumberOfAtomsInGroup( const unsigned& igrp ) const ;
+/// Get a pointer to the igrp th base multicolvar
+  multicolvar::MultiColvarBase* getBaseMultiColvar( const unsigned& igrp ) const ;
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithInputMatrix(const ActionOptions&);
   unsigned getNumberOfDerivatives();
   bool isPeriodic(){ return false; }
   void turnOnDerivatives();
-  unsigned getNumberOfAtomGroups() const ;
-  unsigned getNumberOfAtomsInGroup( const unsigned& igrp ) const ;
   void apply();
 };
 

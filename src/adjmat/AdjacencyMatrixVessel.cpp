@@ -37,10 +37,6 @@ StoreDataVessel(da)
   plumed_assert( function );
 }
 
-void AdjacencyMatrixVessel::buildRemoteDataStashes( const double& wtol ){
-  for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasedata.push_back( mybasemulticolvars[i]->buildDataStashes( true, wtol ) );
-}
-
 void AdjacencyMatrixVessel::prepare(){
   finished=false; 
   StoreDataVessel::prepare();
@@ -48,16 +44,6 @@ void AdjacencyMatrixVessel::prepare(){
 
 void AdjacencyMatrixVessel::setFinishedTrue(){
   finished=true;
-}
-
-void AdjacencyMatrixVessel::getVectorDerivatives( const unsigned& code, const bool& normed, MultiValue& myder ) const {
-  plumed_dbg_assert( code<colvar_label.size() ); unsigned mmc=colvar_label[code];
-  plumed_dbg_assert( mmc>=0 && mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(code,mmc) ) );
-  if( myder.getNumberOfValues()!=mybasemulticolvars[mmc]->getNumberOfQuantities() ||
-      myder.getNumberOfDerivatives()!=mybasemulticolvars[mmc]->getNumberOfDerivatives() ){
-          myder.resize( mybasemulticolvars[mmc]->getNumberOfQuantities(), mybasemulticolvars[mmc]->getNumberOfDerivatives() );
-  }
-  mybasedata[mmc]->retrieveDerivatives( convertToLocalIndex(code,mmc), normed, myder );
 }
 
 bool AdjacencyMatrixVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {

@@ -62,7 +62,6 @@ AdjacencyMatrixBase(ao)
 {
   // Read in the atomic positions
   std::vector<AtomNumber> atoms; parseAtomList("ATOMS",-1,true,atoms);
-
   // Read in the switching function
   if( getNumberOfNodeTypes()==1 ){
       switchingFunction.resize(1,1);
@@ -96,6 +95,7 @@ AdjacencyMatrixBase(ao)
           }
       }
   }
+
   // Find the largest sf cutoff
   double sfmax=switchingFunction(0,0).get_dmax();
   for(unsigned i=0;i<getNumberOfNodeTypes();++i){

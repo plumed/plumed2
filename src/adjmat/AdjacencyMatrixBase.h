@@ -23,6 +23,7 @@
 #define __PLUMED_adjmat_AdjacencyMatrixBase_h
 
 #include "multicolvar/MultiColvarBase.h"
+#include "multicolvar/InputMultiColvarSet.h"
 #include "AdjacencyMatrixVessel.h"
 
 namespace PLMD {
@@ -30,14 +31,17 @@ namespace adjmat {
 
 class AdjacencyMatrixBase : public multicolvar::MultiColvarBase {
 friend class AdjacencyMatrixVessel;
+friend class ActionWithInputMatrix;
 private:
+/// The tolerance to use to decide whether or not to incorporate atoms
+  double wtolerance;
 /// This is the vessel that stores the adjacency matrix
   AdjacencyMatrixVessel* mat;
+/// This stores the base colvars
+  multicolvar::InputMultiColvarSet myinputdata;
 protected:
 /// Retrieve the vessel that holds the adjacency matrix
   AdjacencyMatrixVessel* getAdjacencyVessel();
-/// Add a task to the list of tasks
-  void addTaskToList( const unsigned& taskCode );
 /// Put the indices of the matrix elements in current atoms
   void setMatrixIndexesForTask( const unsigned& ii );
 /// Add derivatives to a matrix element
@@ -82,8 +86,7 @@ AdjacencyMatrixVessel* AdjacencyMatrixBase::getAdjacencyVessel(){
 
 inline
 unsigned AdjacencyMatrixBase::getBaseColvarNumber( const unsigned& inum ) const {
-  if( mat->colvar_label[inum]<0 ) return 0;
-  return mat->colvar_label[inum];
+  return myinputdata.getBaseColvarNumber(inum);
 }
 
 }

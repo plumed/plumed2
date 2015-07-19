@@ -78,7 +78,7 @@ unsigned ActionWithInputMatrix::getNumberOfDerivatives() {
 }
 
 unsigned ActionWithInputMatrix::getNumberOfNodes() const {
-  return mymatrix->colvar_label.size();
+  return (mymatrix->function)->myinputdata.getFullNumberOfBaseTasks();
 }
 
 AdjacencyMatrixVessel* ActionWithInputMatrix::getAdjacencyVessel() const {
@@ -86,19 +86,19 @@ AdjacencyMatrixVessel* ActionWithInputMatrix::getAdjacencyVessel() const {
 }
 
 Vector ActionWithInputMatrix::getPosition( const unsigned& iatom ) const {
-  return (mymatrix->function)->getPositionOfAtomForLinkCells( iatom );
+  return (mymatrix->function)->myinputdata.getPosition(iatom);
 }
 
 bool ActionWithInputMatrix::isCurrentlyActive( const unsigned& ind ) const {
-  return mymatrix->isCurrentlyActive( ind );
+  return (mymatrix->function)->myinputdata.isCurrentlyActive( 0, ind );
 }
 
 void ActionWithInputMatrix::getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient0 ) const {
-  plumed_dbg_assert( mymatrix->isCurrentlyActive( ind ) ); mymatrix->getVectorForTask( ind, normed, orient0 );
+  plumed_dbg_assert( isCurrentlyActive( ind ) ); (mymatrix->function)->myinputdata.getVectorForTask( ind, normed, orient0 );
 }
 
 void ActionWithInputMatrix::getVectorDerivatives( const unsigned& ind, const bool& normed, MultiValue& myder0 ) const {
-  plumed_dbg_assert( mymatrix->isCurrentlyActive( ind ) ); mymatrix->getVectorDerivatives(  ind, normed, myder0 );
+  plumed_dbg_assert( isCurrentlyActive( ind ) ); (mymatrix->function)->myinputdata.getVectorDerivatives(  ind, normed, myder0 );
 }
 
 Vector ActionWithInputMatrix::getSeparation( const Vector& vec1, const Vector& vec2 ) const {
@@ -106,12 +106,16 @@ Vector ActionWithInputMatrix::getSeparation( const Vector& vec1, const Vector& v
   return delta( vec1, vec2 );
 }
 
-unsigned ActionWithInputMatrix::getNumberOfAtomGroups() const {
-  return mymatrix->mybasemulticolvars.size(); 
+unsigned ActionWithInputMatrix::getNumberOfNodeTypes() const {
+  return (mymatrix->function)->myinputdata.getNumberOfBaseMultiColvars(); 
 }
 
 unsigned ActionWithInputMatrix::getNumberOfAtomsInGroup( const unsigned& igrp ) const {
- return (mymatrix->mybasemulticolvars[igrp])->getFullNumberOfTasks();
+ return (mymatrix->function)->myinputdata.getNumberOfTasks(igrp); 
+}
+
+multicolvar::MultiColvarBase* ActionWithInputMatrix::getBaseMultiColvar( const unsigned& igrp ) const {
+ return (mymatrix->function)->myinputdata.getBaseColvar( igrp );
 }
 
 void ActionWithInputMatrix::apply(){

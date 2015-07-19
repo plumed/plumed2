@@ -40,12 +40,12 @@ cluster_sizes(getNumberOfNodes()),
 which_cluster(getNumberOfNodes()),
 color(getNumberOfNodes())
 {
-   if( getAdjacencyVessel()->getNumberOfBaseColvars()!=1 ) error("should only be running DFS Clustering with one base multicolvar in function");
+   if( getNumberOfNodeTypes()!=1 ) error("should only be running DFS Clustering with one base multicolvar in function");
 }
 
 void DFSBase::turnOnDerivatives(){
    // Check base multicolvar isn't density probably other things shouldn't be allowed here as well
-   if( (getAdjacencyVessel()->getBaseMultiColvar(0))->isDensity() ) error("DFS clustering cannot be differentiated if base multicolvar is DENSITY");
+   if( getBaseMultiColvar(0)->isDensity() ) error("DFS clustering cannot be differentiated if base multicolvar is DENSITY");
 
    // Check for dubious vessels
    for(unsigned i=0;i<getNumberOfVessels();++i){
@@ -59,7 +59,7 @@ void DFSBase::turnOnDerivatives(){
 }
 
 unsigned DFSBase::getNumberOfQuantities(){
-  return (getAdjacencyVessel()->getBaseMultiColvar(0))->getNumberOfQuantities();
+  return getBaseMultiColvar(0)->getNumberOfQuantities();
 } 
 
 void DFSBase::performClustering(){

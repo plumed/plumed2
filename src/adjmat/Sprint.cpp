@@ -161,7 +161,7 @@ void Sprint::calculate(){
 
    // Reorder each block of eigevectors
    unsigned startnum=0;
-   for(unsigned j=0;j<getNumberOfAtomGroups();++j){
+   for(unsigned j=0;j<getNumberOfNodeTypes();++j){
        unsigned nthis = getNumberOfAtomsInGroup(j); 
        // Sort into ascending order
        std::sort( maxeig.begin() + startnum, maxeig.begin() + startnum + nthis );
