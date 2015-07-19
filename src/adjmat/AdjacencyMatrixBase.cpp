@@ -128,5 +128,14 @@ void AdjacencyMatrixBase::addAtomDerivatives( const unsigned& iatom, const Vecto
   }
 }
 
+void AdjacencyMatrixBase::recalculateMatrixElement( const unsigned& myelem, MultiValue& myvals ){
+  std::vector<unsigned> myatoms; decodeIndexToAtoms( getTaskCode( myelem ), myatoms );
+  unsigned i=myatoms[0], j=myatoms[1];
+  for(unsigned k=bookeeping(i,j).first;k<bookeeping(i,j).second;++k){
+      if( !taskIsCurrentlyActive(k) ) continue;
+      performTask( k, getTaskCode(k), myvals );  // This may not accumulate as we would like  GAT
+  }
+}
+
 }
 }

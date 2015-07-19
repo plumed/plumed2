@@ -234,7 +234,9 @@ void MultiColvarBase::setupLinkCells(){
 }
 
 void MultiColvarBase::decodeIndexToAtoms( const unsigned& taskCode, std::vector<unsigned>& atoms ) const {
-  plumed_dbg_assert( atoms.size()==ablocks.size() && !usespecies && ablocks.size()<4 );
+  plumed_dbg_assert( !usespecies && ablocks.size()<4 );
+  if( atoms.size()!=ablocks.size() ) atoms.resize( ablocks.size() );
+
   unsigned scode = taskCode;
   for(unsigned i=0;i<ablocks.size();++i){
       unsigned ind=( scode / decoder[i] );

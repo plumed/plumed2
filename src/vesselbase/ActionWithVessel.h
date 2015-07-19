@@ -130,6 +130,8 @@ protected:
   unsigned getCurrentNumberOfActiveTasks() const ;
 /// Get the ith of the currently active tasks
   unsigned getActiveTask( const unsigned& ii ) const ;
+/// Check whether or not a particular task is currently active
+  bool taskIsCurrentlyActive( const unsigned& index ) const ;
 /// Deactivate all the tasks in the task list
   void deactivateAllTasks();
 /// Deactivate all tasks with i in lower \f$\le\f$  i < upper

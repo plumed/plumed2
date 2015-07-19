@@ -82,7 +82,11 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit StoreDataVessel( const VesselOptions& );
 /// Get the number of values that have been stored
-  unsigned getNumberOfStoredValues() const ;
+  virtual unsigned getNumberOfStoredValues() const ;
+/// Get the index to store a particular index inside
+  virtual unsigned getStoreIndex( const unsigned& ) const ;
+/// Recalculate one of the base quantities
+  virtual void recalculateStoredQuantity( const unsigned& myelm, MultiValue& myvals );
 /// Set a hard cutoff on the weight of an element
   void setHardCutoffOnWeight( const double& mytol );
 /// Is the hard weight cutoff on
@@ -150,6 +154,16 @@ inline
 unsigned StoreDataVessel::getNumberOfStoredValues() const {
   return getAction()->getFullNumberOfTasks();
 }
+
+inline
+unsigned StoreDataVessel::getStoreIndex( const unsigned& ind ) const {
+  return ind;
+}
+
+inline
+void StoreDataVessel::recalculateStoredQuantity( const unsigned& myelem, MultiValue& myvals ){
+  getAction()->performTask( getAction()->getPositionInFullTaskList(myelem), getAction()->getTaskCode(myelem), myvals );
+} 
 
 }
 }

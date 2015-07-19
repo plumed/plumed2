@@ -264,6 +264,10 @@ void ActionWithVessel::deactivate_task( const unsigned & task_index ){
   taskFlags[task_index]=1;
 }
 
+bool ActionWithVessel::taskIsCurrentlyActive( const unsigned& index ) const {
+  return (taskFlags[index]==0);
+}
+
 void ActionWithVessel::deactivateTasksInRange( const unsigned& lower, const unsigned& upper ){
   plumed_dbg_assert( contributorsAreUnlocked && lower<upper && upper<taskFlags.size() );
   for(unsigned i=lower;i<upper;++i) taskFlags[i]=1;

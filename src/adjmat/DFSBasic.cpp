@@ -182,8 +182,6 @@ void DFSBasic::calculate(){
    deactivateAllTasks(); std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
    for(unsigned i=0;i<myatoms.size();++i) active_tasks[myatoms[i]]=1;
    activateTheseTasks( active_tasks );
-   // Prepare the adjacency vessel
-   getAdjacencyVessel()->setFinishedTrue(); 
    // Now do the calculation 
    runAllTasks(); 
 }

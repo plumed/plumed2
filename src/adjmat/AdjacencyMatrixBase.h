@@ -39,6 +39,9 @@ private:
   AdjacencyMatrixVessel* mat;
 /// This stores the base colvars
   multicolvar::InputMultiColvarSet myinputdata;
+/// This is used within AdjacencyMatrixVessel to recalculate matrix elements
+/// whcih is useful when we are operating with lowmem
+  void recalculateMatrixElement( const unsigned& myelem, MultiValue& myvals );
 protected:
 /// Retrieve the vessel that holds the adjacency matrix
   AdjacencyMatrixVessel* getAdjacencyVessel();

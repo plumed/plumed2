@@ -42,28 +42,16 @@ friend class ActionWithInputMatrix;
 private:
 /// Pointer to underlying action
   AdjacencyMatrixBase* function;
-/// Has the vessel been finished
-  bool finished;
-/// This ensures that the data is stored by the underlying multicolvars
-  void buildRemoteDataStashes( const double& wtol );
-/// Converts an index to the local index for that multicolvar
-  unsigned convertToLocalIndex( const unsigned& index, const unsigned& mcv_code ) const ;
 public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
   explicit AdjacencyMatrixVessel( const vesselbase::VesselOptions& );
 /// Get the underlying adjacency matrix action object
   AdjacencyMatrixBase* getMatrixAction();
-/// Ensures we use less memory for buffer in final loop
-  void setBufferStart( unsigned& start );
-/// Ensures that finish is set properly
-  void prepare();
-/// Get the position of an atom for a multicolvar
-  Vector getCentralAtomPos( const unsigned& iatom ) const ;
-/// Set the finished flag true
-  void setFinishedTrue();
-/// An overwrite of calculate to stop this being done more than once
-  bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const ;
+/// Get the number of elements in the matrix
+  unsigned getNumberOfStoredValues() const ;
+/// Get the index we are storing this data inside
+  unsigned getStoreIndex( const unsigned& ) const ;
 /// Finish the calculation
   void finish( const std::vector<double>& buffer );
 /// Get the adjacency matrix
@@ -71,14 +59,10 @@ public:
 /// Get the neighbour list based on the adjacency matrix
   void retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matrix<unsigned>& adj_list );
 ///
-  void getMatrixIndices( const unsigned& code, unsigned& i, unsigned& j );
+  void getMatrixIndices( const unsigned& code, unsigned& i, unsigned& j ) const ;
+/// Recalculate a stored quantity
+  void recalculateStoredQuantity( const unsigned& myelm, MultiValue& myvals );
 };
-
-inline
-void AdjacencyMatrixVessel::setBufferStart( unsigned& start ){
-  if( finished ){ bufstart=start; }
-  else { Vessel::setBufferStart( start ); } 
-}
 
 }
 }
