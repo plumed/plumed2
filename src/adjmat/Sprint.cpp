@@ -23,9 +23,9 @@
 #include "AdjacencyMatrixVessel.h"
 #include "core/ActionRegister.h"
 
-//+PLUMEDOC MCOLVARF SPRINT
+//+PLUMEDOC MATRIXF SPRINT
 /*
-Calculate SPRINT topological variables.
+Calculate SPRINT topological variables from an adjacency matrix.
 
 The SPRINT topological variables are calculated from the largest eigenvalue, \f$\lambda\f$ of
 an \f$n\times n\f$ adjacency matrix and its corresponding eigenvector, \f$\mathbf{V}\f$, using:
@@ -48,7 +48,8 @@ in the manner described in ?? so two atoms are adjacent if they are within a cut
 
 \verbatim
 DENSITY SPECIES=1-7 LABEL=d1
-SPRINT ARG=d1 SWITCH={RATIONAL R_0=0.1} LABEL=ss
+CONTACT_MATRIX ATOMS=d1 SWITCH={RATIONAL R_0=0.1} LABEL=mat
+SPRINT MATRIX=mat LABEL=ss
 PRINT ARG=ss.* FILE=colvar 
 \endverbatim
 
@@ -59,13 +60,15 @@ This example input calculates the 14 SPRINT coordinates foa a molecule composed 
 DENSITY SPECIES=1-7 LABEL=c
 DENSITY SPECIES=8-14 LABEL=h
 
-SPRINT ...
- ARG=c,h
- SWITCH11={RATIONAL R_0=2.6 NN=6 MM=12}
- SWITCH12={RATIONAL R_0=2.2 NN=6 MM=12}
- SWITCH22={RATIONAL R_0=2.2 NN=6 MM=12}
- LABEL=ss
-... SPRINT
+CONTACT_MATRIX ...
+  ATOMS=c,h
+  SWITCH11={RATIONAL R_0=2.6 NN=6 MM=12}
+  SWITCH12={RATIONAL R_0=2.2 NN=6 MM=12}
+  SWITCH22={RATIONAL R_0=2.2 NN=6 MM=12}
+  LABEL=mat
+... CONTACT_MATRIX
+
+SPRINT MATRIX=mat LABEL=ss 
 
 PRINT ARG=ss.* FILE=colvar
 \endverbatim

@@ -23,9 +23,9 @@
 #include "tools/SwitchingFunction.h"
 #include "core/ActionRegister.h"
 
-//+PLUMEDOC MCOLVARF DFSNUMEROFCLUSTERS
+//+PLUMEDOC MATRIXF DFSNUMEROFCLUSTERS
 /*
-Find the number of clusters that have a size larger than a certain cutoff
+Find the number of connected components that have a size larger than a certain critical threshold.
 
 \par Examples
 

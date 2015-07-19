@@ -22,9 +22,9 @@
 #include "DFSBase.h"
 #include "core/ActionRegister.h"
 
-//+PLUMEDOC MCOLVARF DFSCLUSTERDIAMETER
+//+PLUMEDOC MATRIXF DFSCLUSTERDIAMETER
 /*
-Retrieve the size of a cluster.  This quantity is NOT differentiable.
+Find the connected components in an adjacency matrix and then output the maximum radius.
 
 This action uses the DFS clustering algorithm described in \ref DFSCLUSTERING to find a set of connected components
 based on the configuration of the atoms in your system.  Once again this can be used to find crystalline nuclei or 

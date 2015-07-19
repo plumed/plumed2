@@ -25,6 +25,15 @@
 #include "tools/SwitchingFunction.h"
 #include "tools/Matrix.h"
 
+//+PLUMEDOC MATRIX ALIGNED_MATRIX 
+/*
+Adjacency matrix in which two molecule are adjacent if they are within a certain cutoff and if they have the same orientation.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace adjmat {
 
@@ -49,10 +58,10 @@ PLUMED_REGISTER_ACTION(ContactAlignedMatrix,"ALIGNED_MATRIX")
 
 void ContactAlignedMatrix::registerKeywords( Keywords& keys ){
   AdjacencyMatrixBase::registerKeywords( keys );
-  keys.add("atoms","ATOMS","The list of atoms for which you would like to calculate the contact matrix.  The atoms involved can be specified "
-                           "as a list of indices, a list of virtual atoms or using a \\ref GROUP.  Alternatively, you can use the label of a " 
-                           "\\ref mcolv or the label of a \\ref multicolvarfunction action to specify the list of atoms involved.  This last option "
-                           "allows you to use a much wider variety of functions of the contact matrix as described here \\ref adjfunc");
+  keys.add("atoms","MOLECULES","The list of molecules for which you would like to calculate the contact matrix.  The molecules involved must "
+                               "have an orientation so your list will be a list of the labels of \\ref mcolv or \\ref multicolvarfunction "
+                               "as PLUMED calculates the orientations of molecules within these operations.  Please note also that the majority "
+                               "of \\ref mcolv and \\ref multicolvarfunction do not calculate a molecular orientation.");
   keys.add("numbered","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
                                "The following provides information on the \\ref switchingfunction that are available. "
                                "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
@@ -66,7 +75,7 @@ ncomp(getSizeOfInputVectors())
   if( getSizeOfInputVectors()<3 ) error("base multicolvars do not calculate an orientation");
 
   // Read in the atomic positions
-  std::vector<AtomNumber> atoms; parseAtomList("ATOMS",-1,true,atoms);
+  std::vector<AtomNumber> atoms; parseAtomList("MOLECULES",-1,true,atoms);
   // Read in the switching function
   if( getNumberOfNodeTypes()==1 ){
       switchingFunction.resize(1,1);

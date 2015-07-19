@@ -25,6 +25,16 @@
 #include "tools/SwitchingFunction.h"
 #include "tools/Matrix.h"
 
+//+PLUMEDOC MATRIX CONTACT_MATRIX 
+/*
+Adjacency matrix in which two atoms are adjacent if they are within a certain cutoff.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+
 namespace PLMD {
 namespace adjmat {
 
@@ -47,10 +57,11 @@ PLUMED_REGISTER_ACTION(ContactMatrix,"CONTACT_MATRIX")
 
 void ContactMatrix::registerKeywords( Keywords& keys ){
   AdjacencyMatrixBase::registerKeywords( keys );
-  keys.add("atoms","ATOMS","The list of atoms for which you would like to calculate the contact matrix.  The atoms involved can be specified "
-                           "as a list of indices, a list of virtual atoms or using a \\ref GROUP.  Alternatively, you can use the label of a " 
-                           "\\ref mcolv or the label of a \\ref multicolvarfunction action to specify the list of atoms involved.  This last option "
-                           "allows you to use a much wider variety of functions of the contact matrix as described here \\ref adjfunc");
+  keys.add("atoms","ATOMS","The list of atoms for which you would like to calculate the contact matrix.  The atoms involved must be specified "
+                           "as a list of labels of \\ref mcolv or labels of a \\ref multicolvarfunction actions.  If you would just like to use "
+                           "the atomic positions you can use a \\ref DENSITY command to specify a group of atoms.  Specifying your atomic positions using labels of "
+                           "other \\ref mcolv or \\ref multicolvarfunction commands is useful, however, as you can then exploit a much wider "
+                           "variety of functions of the contact matrix as described in \\ref contactmatrix");
   keys.add("numbered","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
                                "The following provides information on the \\ref switchingfunction that are available. "
                                "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
