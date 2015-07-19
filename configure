@@ -7087,6 +7087,9 @@ fi
 if test "$(echo "$program_name" | tr 'A-Z' 'a-z')" != "$(echo "$program_name" | tr 'A-Z' 'a-z' | sed 's/-patch$//')" ; then
   as_fn_error $? "$program_name is not a valid program name (should not terminate with -patch)" "$LINENO" 5
 fi
+if test "$(echo "$program_name" | tr 'A-Z' 'a-z')" != "$(echo "$program_name" | tr 'A-Z' 'a-z' | sed 's/-config$//')" ; then
+  as_fn_error $? "$program_name is not a valid program name (should not terminate with -config)" "$LINENO" 5
+fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: **** PLUMED will be installed using the following paths:" >&5
 $as_echo "$as_me: **** PLUMED will be installed using the following paths:" >&6;}

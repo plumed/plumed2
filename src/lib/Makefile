@@ -177,6 +177,8 @@ endif
 	cp install/plumed "$(DESTDIR)$(bindir)/$(program_name)"
 # patch file for cross compiling
 	cp install/plumed-patch "$(DESTDIR)$(bindir)/$(program_name)-patch"
+# config file for cross compiling
+	cp install/plumed-patch "$(DESTDIR)$(bindir)/$(program_name)-config"
 # copy include files for cmake and make
 # we leave it in src/lib/ for backward compatibility
 	cp install/Plumed.cmake* "$(DESTDIR)$(libdir)/$(program_name)/src/lib/"
@@ -225,6 +227,7 @@ endif
 	@echo $(includedir)/$(program_name)
 	@echo $(bindir)/$(program_name)
 	@echo $(bindir)/$(program_name)-patch
+	@echo $(bindir)/$(program_name)-config
 ifdef SOEXT
 	@echo $(libdir)/lib$(program_name).$(SOEXT)
 	@echo $(libdir)/lib$(program_name)Kernel.$(SOEXT)
@@ -238,6 +241,7 @@ endif
 ifeq ($(program_can_run),no)
 	@echo "WARNING: $(program_name) executable will not run on this machine"
 	@echo "WARNING: to patch an MD code use 'plumed-patch'"
+	@echo "WARNING: to verify configuration use 'plumed-config'"
 	@echo "WARNING: a few other command line tools are avalable as $(libdir)/$(program_name)/plumed-*"
 else ifeq ($(program_can_run_mpi),no)
 	@echo "WARNING: $(program_name) executable will not run on this machine"
@@ -257,6 +261,7 @@ uninstall:
 	@echo "$(DESTDIR)$(includedir)/$(program_name)"
 	@echo "$(DESTDIR)$(bindir)/$(program_name)"
 	@echo "$(DESTDIR)$(bindir)/$(program_name)-patch"
+	@echo "$(DESTDIR)$(bindir)/$(program_name)-config"
 	@echo "$(DESTDIR)$(libdir)/lib$(program_name).$(SOEXT)"
 	@echo "$(DESTDIR)$(libdir)/lib$(program_name)Kernel.$(SOEXT)"
 	../maketools/confirm_uninstall
@@ -266,6 +271,7 @@ uninstall:
 	rm -fr "$(DESTDIR)$(includedir)/$(program_name)"
 	rm -f "$(DESTDIR)$(bindir)/$(program_name)"
 	rm -f "$(DESTDIR)$(bindir)/$(program_name)-patch"
+	rm -f "$(DESTDIR)$(bindir)/bin/$(program_name)-config"
 	rm -f "$(DESTDIR)$(libdir)/lib$(program_name).$(SOEXT)"
 	rm -f "$(DESTDIR)$(libdir)/lib$(program_name)Kernel.$(SOEXT)"
 

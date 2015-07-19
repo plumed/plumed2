@@ -775,6 +775,9 @@ fi
 if test "$(echo "$program_name" | tr '[A-Z]' '[a-z]')" != "$(echo "$program_name" | tr '[A-Z]' '[a-z]' | sed 's/-patch$//')" ; then
   AC_MSG_ERROR([$program_name is not a valid program name (should not terminate with -patch)])
 fi
+if test "$(echo "$program_name" | tr '[A-Z]' '[a-z]')" != "$(echo "$program_name" | tr '[A-Z]' '[a-z]' | sed 's/-config$//')" ; then
+  AC_MSG_ERROR([$program_name is not a valid program name (should not terminate with -config)])
+fi
 
 AC_MSG_NOTICE([**** PLUMED will be installed using the following paths:])
 AC_MSG_NOTICE([**** prefix: $prefix])
