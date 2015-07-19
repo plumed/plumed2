@@ -390,7 +390,7 @@ AC_CHECK_LIB([dl],dlopen, [STATIC_LIBS="-ldl $STATIC_LIBS"] [LIBS="-ldl $LIBS"])
 mpi_found=ko
 # optional libraries follow
 if test $mpi == true ; then
-  PLUMED_CHECK_PACKAGE([mpi.h],[MPI_Init],[__PLUMED_MPI])
+  PLUMED_CHECK_PACKAGE([mpi.h],[MPI_Init],[__PLUMED_HAS_MPI])
   if test "x$ac_cv_func_MPI_Init" = xyes; then
     mpi_found=ok
   fi
@@ -557,12 +557,12 @@ AC_SUBST(program_can_run)
 program_can_run=""
 AC_MSG_CHECKING([whether a program can be run on this machine])
 AC_RUN_IFELSE([AC_LANG_SOURCE([
-#ifdef __PLUMED_MPI
+#ifdef __PLUMED_HAS_MPI
 #include <mpi.h>
 #endif
 // notice that [[]] is required to cheat autoconf
 int main(int argc,char*argv[[]]){
-#ifdef __PLUMED_MPI
+#ifdef __PLUMED_HAS_MPI
 // this emulates what happens when plumed
 // is compiled with mpi and invoked with --no-mpi
   if(argc==10){
@@ -583,12 +583,12 @@ AC_SUBST(program_can_run_mpi)
 program_can_run_mpi=""
 AC_MSG_CHECKING([whether a program compiled with mpi can be run on this machine])
 AC_RUN_IFELSE([AC_LANG_SOURCE([
-#ifdef __PLUMED_MPI
+#ifdef __PLUMED_HAS_MPI
 #include <mpi.h>
 #endif
 // notice that [[]] is required to cheat autoconf
 int main(int argc,char*argv[[]]){
-#ifdef __PLUMED_MPI
+#ifdef __PLUMED_HAS_MPI
   MPI_Init(&argc,&argv);
   return MPI_Finalize();
 #endif

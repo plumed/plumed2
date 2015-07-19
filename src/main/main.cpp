@@ -22,7 +22,7 @@
 #include "wrapper/Plumed.h"
 #include <cstring>
 
-#ifdef __PLUMED_MPI
+#ifdef __PLUMED_HAS_MPI
 #include <mpi.h>
 #endif
 
@@ -36,7 +36,7 @@ using namespace std;
   to avoid linker error.
 */
 int main(int argc,char**argv){
-#ifdef __PLUMED_MPI
+#ifdef __PLUMED_HAS_MPI
   bool nompi=false;
   if(argc>1 && !strcmp(argv[1],"--no-mpi")) nompi=true;
   if(!nompi) MPI_Init(&argc,&argv);
@@ -46,7 +46,7 @@ int main(int argc,char**argv){
   PLMD::Plumed* p=new PLMD::Plumed;
   p->cmd("CLTool setArgc",&argc);
   p->cmd("CLTool setArgv",argv);
-#ifdef __PLUMED_MPI
+#ifdef __PLUMED_HAS_MPI
   if(!nompi){
     MPI_Comm comm;
     MPI_Comm_dup(MPI_COMM_WORLD,&comm);
@@ -56,7 +56,7 @@ int main(int argc,char**argv){
   p->cmd("CLTool run",&ret);
   delete p;
 
-#ifdef __PLUMED_MPI
+#ifdef __PLUMED_HAS_MPI
   if(!nompi) MPI_Finalize();
 #endif
   return ret;

@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #ifndef __PLUMED_tools_Communicator_h
 #define __PLUMED_tools_Communicator_h
-#ifdef __PLUMED_MPI
+#ifdef __PLUMED_HAS_MPI
 #include <mpi.h>
 #endif
 #include <cstdlib>
@@ -34,7 +34,7 @@
 
 namespace PLMD{
 
-#ifndef  __PLUMED_MPI
+#ifndef  __PLUMED_HAS_MPI
 /// Surrogate of MPI_Comm when MPI library is not available
   class MPI_Comm {};
 /// Surrogate of MPI_Datatype when MPI library is not available

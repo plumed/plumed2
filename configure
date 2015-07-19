@@ -5693,11 +5693,11 @@ fi
 
 
     if test $found == ok ; then
-      $as_echo "#define __PLUMED_MPI 1" >>confdefs.h
+      $as_echo "#define __PLUMED_HAS_MPI 1" >>confdefs.h
 
     else
-       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_MPI" >&5
-$as_echo "$as_me: WARNING: cannot enable __PLUMED_MPI" >&2;}
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_MPI" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_MPI" >&2;}
     fi
 
   if test "x$ac_cv_func_MPI_Init" = xyes; then
@@ -6675,12 +6675,12 @@ else
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-#ifdef __PLUMED_MPI
+#ifdef __PLUMED_HAS_MPI
 #include <mpi.h>
 #endif
 // notice that [] is required to cheat autoconf
 int main(int argc,char*argv[]){
-#ifdef __PLUMED_MPI
+#ifdef __PLUMED_HAS_MPI
 // this emulates what happens when plumed
 // is compiled with mpi and invoked with --no-mpi
   if(argc==10){
@@ -6717,12 +6717,12 @@ else
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-#ifdef __PLUMED_MPI
+#ifdef __PLUMED_HAS_MPI
 #include <mpi.h>
 #endif
 // notice that [] is required to cheat autoconf
 int main(int argc,char*argv[]){
-#ifdef __PLUMED_MPI
+#ifdef __PLUMED_HAS_MPI
   MPI_Init(&argc,&argv);
   return MPI_Finalize();
 #endif
