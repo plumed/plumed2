@@ -65,6 +65,14 @@ void AdjacencyMatrixBase::parseAtomList(const std::string& key, const int& num, 
   }
 }
 
+unsigned AdjacencyMatrixBase::getSizeOfInputVectors() const {
+  unsigned nq = myinputdata.getBaseColvar(0)->getNumberOfQuantities();
+  for(unsigned i=1;i<myinputdata.getNumberOfBaseMultiColvars();++i){
+     if( myinputdata.getBaseColvar(i)->getNumberOfQuantities()!=nq ) error("mismatch between vectors in base colvars");
+  }
+  return nq;
+}
+
 unsigned AdjacencyMatrixBase::getNumberOfNodeTypes() const {
   return myinputdata.getNumberOfBaseMultiColvars();
 }
@@ -126,6 +134,12 @@ void AdjacencyMatrixBase::addAtomDerivatives( const unsigned& iatom, const Vecto
   } else {
       myinputdata.addComDerivatives( jatom, der, myatoms );
   }
+}
+
+void AdjacencyMatrixBase::addOrientationDerivatives( const unsigned& iatom, const std::vector<double>& der, multicolvar::AtomValuePack& myatoms ) const {
+  unsigned jatom=myatoms.getIndex(iatom); plumed_dbg_assert( jatom<myinputdata.getFullNumberOfBaseTasks() );
+  MultiValue myder(0,0); myinputdata.getVectorDerivatives( jatom, true, myder );
+  myinputdata.mergeVectorDerivatives( 1, 2, der.size(), jatom, der, myder, myatoms );
 }
 
 void AdjacencyMatrixBase::recalculateMatrixElement( const unsigned& myelem, MultiValue& myvals ){

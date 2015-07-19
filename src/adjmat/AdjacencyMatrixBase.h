@@ -45,6 +45,8 @@ private:
 protected:
 /// Retrieve the vessel that holds the adjacency matrix
   AdjacencyMatrixVessel* getAdjacencyVessel();
+/// Get the vector for a particular node
+  void getOrientationVector( const unsigned& ind, const bool& normed, std::vector<double>& orient0 ) const ; 
 /// Put the indices of the matrix elements in current atoms
   void setMatrixIndexesForTask( const unsigned& ii );
 /// Add derivatives to a matrix element
@@ -58,12 +60,16 @@ protected:
   unsigned getNumberOfNodeTypes() const ;
 /// Get the total number of nodes
   unsigned getNumberOfNodes() const ;
+/// Get the size of the vectors that were stored in the base colvars
+  unsigned getSizeOfInputVectors() const ;
 /// Request the atoms
   void requestAtoms( const std::vector<AtomNumber>& atoms );
 /// Return the group this atom is a part of
   unsigned getBaseColvarNumber( const unsigned& ) const ;
 /// Add some derivatives to the relevant atom
   void addAtomDerivatives( const unsigned& , const Vector& , multicolvar::AtomValuePack& ) const ;
+/// Add some derivatives to the relevant orientation
+  void addOrientationDerivatives( const unsigned& iatom, const std::vector<double>& der, multicolvar::AtomValuePack& myatoms ) const ;
 public:
   static void registerKeywords( Keywords& keys );
   explicit AdjacencyMatrixBase(const ActionOptions&);
@@ -90,6 +96,11 @@ AdjacencyMatrixVessel* AdjacencyMatrixBase::getAdjacencyVessel(){
 inline
 unsigned AdjacencyMatrixBase::getBaseColvarNumber( const unsigned& inum ) const {
   return myinputdata.getBaseColvarNumber(inum);
+}
+
+inline 
+void AdjacencyMatrixBase::getOrientationVector( const unsigned& ind, const bool& normed, std::vector<double>& orient ) const {
+  myinputdata.getVectorForTask( ind, normed, orient );
 }
 
 }
