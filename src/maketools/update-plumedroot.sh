@@ -35,7 +35,7 @@ if test -n "$PLUMED_LIBSUFFIX" ; then
 # this will result in an error in a later version
 # now we fall back to the previous behavior
   PLUMED_LIBSUFFIX="${PLUMED_LIBSUFFIX:=}"
-  test -n "$PLUMED_LIBSUFFIX" && PLUMED_LIBSUFFIX="-${PLUMED_LIBSUFFIX}"
+  test -n "$PLUMED_LIBSUFFIX" && PLUMED_LIBSUFFIX="_${PLUMED_LIBSUFFIX}"
 fi
 
 PLUMED_PROGRAM_NAME="$(echo plumed | sed "${program_transform_name}")${PLUMED_LIBSUFFIX}"

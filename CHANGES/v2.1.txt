@@ -227,6 +227,9 @@ For users:
   Notice that this bug was present also in v2.0 but in a different form.
   More information here (\issue{162}), including a workaround that allows masses to be fixed
   without repatching.
+- When installing with PLUMED_LIBSUFFIX an underscore is used as separator instead of a dash.
+  E.g. `make install PLUMED_LIBSUFFIX=2.1` will result in an executable named `plumed_v2.1`.
+  This fix a potential problem (see \ref Installation).
 - Fixed erroneously reported message about MPI at the end of ./configure.
 - Changed warning message about undocumented components.
 - PLUMED now says in the log file if it was compiled from a dirty git repository.

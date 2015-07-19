@@ -349,17 +349,27 @@ the following things:
 As a final note, if you want to install several PLUMED versions without using modules then you
 should provide a different suffix and/or prefix at configure time:
 \verbatim
-> ./configure prefix=$HOME/opt --program-suffix=-2.2 --program-prefix=mpi-
+> ./configure prefix=$HOME/opt --program-suffix=_2.2 --program-prefix=mpi-
 > make install
 \endverbatim
-This will install a plumed executable named "mpi-plumed-2.2". All the other files will be renamed similarly,
-e.g. the PLUMED library will be loaded with "-lmpi-plumed-2.2" and the PLUMED header files
-will be included with "#include <mpi-plumed-2.2/tools/Vector.h>".
+This will install a plumed executable named "mpi-plumed_2.2". All the other files will be renamed similarly,
+e.g. the PLUMED library will be loaded with "-lmpi-plumed_2.2" and the PLUMED header files
+will be included with "#include <mpi-plumed_2.2/tools/Vector.h>".
 Notice that you can also use arbitrary scripts to edit the name of the executable
 with the option --program-transform-name=PROGRAM
 (see <a href="http://www.gnu.org/software/autoconf/manual/autoconf-2.69/html_node/Transformation-Examples.html#Transformation-Examples"> autoconf documentation </a> for more info).
 These options are useful if you
 do not want to set up modules, but we believe that using modules as described above is more flexible.
+
+\warning Avoid suffixes starting with a dash since they could clash with the fact that plumed reserved names with a `-something` appended
+for scripts used in cross compiling  (see below).
+As a consequence, by doing
+\verbatim
+> make install --program-suffix=-2
+> make install
+\endverbatim
+The second install would remove all the executables installed by the first install.
+Better using `make install --program-suffix=_2`.
 
 \section Patching Patching your MD code
 
