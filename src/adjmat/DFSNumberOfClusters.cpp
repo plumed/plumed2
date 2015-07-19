@@ -59,7 +59,7 @@ void DFSNumberOfClusters::registerKeywords( Keywords& keys ){
   DFSBase::registerKeywords( keys );
   keys.add("compulsory","TRANSFORM","none","the switching function to use to convert the crystallinity parameter to a number between zero and one");
   keys.add("compulsory","THRESHOLD","a switching function that defines how large the clusters should be in order to be counted");
-  keys.use("WTOL"); keys.use("USE_ORIENTATION");
+  keys.use("WTOL"); 
   keys.remove("LOWMEM"); keys.use("HIGHMEM");
   keys.addFlag("INVERSE_TRANSFORM",false,"when TRANSFORM appears alone the input symmetry functions, \\fx\\f$ are transformed used \\f$1-s(x)\\f$ "
                                          "where \\f$s(x)\\f$ is a switching function.  When this option is used you instead transform using \\f$s(x)\\f$ only.");
