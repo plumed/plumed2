@@ -412,7 +412,7 @@ if test $gettimeofday == true ; then
   PLUMED_CHECK_PACKAGE([sys/time.h], [gettimeofday], [__PLUMED_HAS_GETTIMEOFDAY])
 fi
 if test $readdir_r == true ; then
-  PLUMED_CHECK_PACKAGE([dirent.h],[readdir_r],[__PLUMED_READDIR_R])
+  PLUMED_CHECK_PACKAGE([dirent.h],[readdir_r],[__PLUMED_HAS_READDIR_R])
 fi
 if test $cregex == true ; then
   PLUMED_CHECK_PACKAGE([regex.h],[regcomp],[__PLUMED_HAS_CREGEX])

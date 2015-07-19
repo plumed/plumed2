@@ -5948,11 +5948,11 @@ fi
 
 
     if test $found == ok ; then
-      $as_echo "#define __PLUMED_READDIR_R 1" >>confdefs.h
+      $as_echo "#define __PLUMED_HAS_READDIR_R 1" >>confdefs.h
 
     else
-       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_READDIR_R" >&5
-$as_echo "$as_me: WARNING: cannot enable __PLUMED_READDIR_R" >&2;}
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_READDIR_R" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_READDIR_R" >&2;}
     fi
 
 fi

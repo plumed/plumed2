@@ -280,12 +280,12 @@ vector<string> Tools::ls(const string&d){
   DIR*dir;
   vector<string> result;
   if ((dir=opendir(d.c_str()))){
-#if defined(__PLUMED_READDIR_R)
+#if defined(__PLUMED_HAS_READDIR_R)
     struct dirent ent;
 #endif
     while(true){
       struct dirent *res;
-#if defined(__PLUMED_READDIR_R)
+#if defined(__PLUMED_HAS_READDIR_R)
       readdir_r(dir,&ent,&res);
 #else
 // cppcheck complains about this:
