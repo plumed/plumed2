@@ -183,8 +183,8 @@ void Driver<real>::registerKeywords( Keywords& keys ){
   keys.add("atoms","--ixyz","the trajectory in xyz format");
   keys.add("atoms","--igro","the trajectory in gro format");
 #ifdef __PLUMED_HAS_XDRFILE
-  keys.add("atoms","--ixtc","the trajectory in xtc format (xdrfile implementation");
-  keys.add("atoms","--itrr","the trajectory in trr format (xdrfile implementation");
+  keys.add("atoms","--ixtc","the trajectory in xtc format (xdrfile implementation)");
+  keys.add("atoms","--itrr","the trajectory in trr format (xdrfile implementation)");
 #endif
   keys.add("optional","--length-units","units for length, either as a string or a number");
   keys.add("optional","--dump-forces","dump the forces on a file");
