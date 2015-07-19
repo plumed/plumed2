@@ -144,7 +144,7 @@ bool hasCregex(){
 }
 
 bool hasMolfile(){
-#if __PLUMED_HAS_MOLFILE
+#if __PLUMED_HAS_MOLFILE_PLUGINS
       return true;
 #else
       return false;
@@ -152,10 +152,10 @@ bool hasMolfile(){
 }
 
 bool hasExternalMolfile(){
-#if __PLUMED_INTERNAL_MOLFILE_PLUGINS
-      return false;
-#else
+#if __PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS
       return true;
+#else
+      return false;
 #endif
 }
 

@@ -5457,14 +5457,13 @@ if test -z "$blas_found" ; then
 $as_echo "$as_me: WARNING: using internal lapack and blas, could be inefficient" >&2;}
 LIBS="$save_LIBS"
 
-$as_echo "#define __PLUMED_INTERNAL_BLAS 1" >>confdefs.h
-
-$as_echo "#define __PLUMED_INTERNAL_LAPACK 1" >>confdefs.h
-
 fi
 
 # if found, also look for external lapack
 if test -n "$blas_found" ; then
+
+$as_echo "#define __PLUMED_HAS_EXTERNAL_BLAS 1" >>confdefs.h
+
 
 save_LIBS="$LIBS"
 
@@ -5534,7 +5533,8 @@ if test -z "$lapack_found" ; then
 $as_echo "$as_me: WARNING: using internal lapack, could be inefficient" >&2;}
 LIBS="$save_LIBS"
 
-$as_echo "#define __PLUMED_INTERNAL_LAPACK 1" >>confdefs.h
+else
+$as_echo "#define __PLUMED_HAS_EXTERNAL_LAPACK 1" >>confdefs.h
 
 fi
 
@@ -5569,7 +5569,7 @@ if test $molfile_plugins == true ; then
 # Check for molfile_plugins and use internal fallback if not found. TG
 
 # We always have molfile, now
-$as_echo "#define __PLUMED_HAS_MOLFILE 1" >>confdefs.h
+$as_echo "#define __PLUMED_HAS_MOLFILE_PLUGINS 1" >>confdefs.h
 
 
 found=ko
@@ -5623,7 +5623,8 @@ fi
 if test $found == ko ; then
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using internal molfile_plugins, which only support dcd/xtc/trr/trj/crd files" >&5
 $as_echo "$as_me: WARNING: using internal molfile_plugins, which only support dcd/xtc/trr/trj/crd files" >&2;}
-	$as_echo "#define __PLUMED_INTERNAL_MOLFILE_PLUGINS 1" >>confdefs.h
+else
+	$as_echo "#define __PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS 1" >>confdefs.h
 
 fi
 
