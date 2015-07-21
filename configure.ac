@@ -115,9 +115,11 @@ AC_ARG_ENABLE([modules],
      case "$modules_mod" in
      (none)
        AC_MSG_NOTICE([Disabling all optional modules])
+       rm -f src/*.off src/*.on
        touch $(grep default-on src/*/module.type | sed "s|/module.type:.*|.off|") ;;
      (all)
        AC_MSG_NOTICE([Enabling all optional modules])
+       rm -f src/*.off src/*.off
        touch $(grep default-off src/*/module.type | sed "s|/module.type:.*|.on|") ;;
      (reset)
         AC_MSG_NOTICE([Resetting modules to default])
@@ -128,6 +130,7 @@ AC_ARG_ENABLE([modules],
          AC_MSG_ERROR([trying to remove module $modules_mod which does not exist])
        fi
        AC_MSG_NOTICE([Disabling module ${modules_mod}])
+       rm -f src/$modules_mod.on
        touch src/$modules_mod.off ;;
      (+*)
        modules_mod=`echo "${modules_mod}" | sed "s|+||"`
@@ -135,12 +138,14 @@ AC_ARG_ENABLE([modules],
          AC_MSG_ERROR([trying to add module $modules_mod which does not exist])
        fi
        AC_MSG_NOTICE([Enabling module ${modules_mod}])
+       rm -f src/$modules_mod.off
        touch src/$modules_mod.on ;;
      (*)
        if test ! -f src/$modules_mod/module.type ; then
          AC_MSG_ERROR([trying to add module $modules_mod which does not exist])
        fi
        AC_MSG_NOTICE([Enabling module ${modules_mod}])
+       rm -f src/$modules_mod.off
        touch src/$modules_mod.on ;;
      esac
    done

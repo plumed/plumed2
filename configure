@@ -2339,10 +2339,12 @@ if test "${enable_modules+set}" = set; then :
      (none)
        { $as_echo "$as_me:${as_lineno-$LINENO}: Disabling all optional modules" >&5
 $as_echo "$as_me: Disabling all optional modules" >&6;}
+       rm -f src/*.off src/*.on
        touch $(grep default-on src/*/module.type | sed "s|/module.type:.*|.off|") ;;
      (all)
        { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling all optional modules" >&5
 $as_echo "$as_me: Enabling all optional modules" >&6;}
+       rm -f src/*.off src/*.off
        touch $(grep default-off src/*/module.type | sed "s|/module.type:.*|.on|") ;;
      (reset)
         { $as_echo "$as_me:${as_lineno-$LINENO}: Resetting modules to default" >&5
@@ -2355,6 +2357,7 @@ $as_echo "$as_me: Resetting modules to default" >&6;}
        fi
        { $as_echo "$as_me:${as_lineno-$LINENO}: Disabling module ${modules_mod}" >&5
 $as_echo "$as_me: Disabling module ${modules_mod}" >&6;}
+       rm -f src/$modules_mod.on
        touch src/$modules_mod.off ;;
      (+*)
        modules_mod=`echo "${modules_mod}" | sed "s|+||"`
@@ -2363,6 +2366,7 @@ $as_echo "$as_me: Disabling module ${modules_mod}" >&6;}
        fi
        { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling module ${modules_mod}" >&5
 $as_echo "$as_me: Enabling module ${modules_mod}" >&6;}
+       rm -f src/$modules_mod.off
        touch src/$modules_mod.on ;;
      (*)
        if test ! -f src/$modules_mod/module.type ; then
@@ -2370,6 +2374,7 @@ $as_echo "$as_me: Enabling module ${modules_mod}" >&6;}
        fi
        { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling module ${modules_mod}" >&5
 $as_echo "$as_me: Enabling module ${modules_mod}" >&6;}
+       rm -f src/$modules_mod.off
        touch src/$modules_mod.on ;;
      esac
    done
