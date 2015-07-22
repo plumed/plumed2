@@ -6735,6 +6735,10 @@ program_transform_name=`$as_echo "$program_transform_name" | sed "$ac_script"`
 program_transform_name_sh=$(echo "${program_transform_name}" | sed 's:\$\$:$:g')
 program_name=$(echo plumed | sed "$program_transform_name_sh")
 
+if test "$(echo "$program_name" | tr 'A-Z' 'a-z')" != "$(echo "$program_name" | tr 'A-Z' 'a-z' | sed 's/kernel$//')" ; then
+  as_fn_error $? "$program_name is not a valid program name (should not terminate with Kernel)" "$LINENO" 5
+fi
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: **** PLUMED will be installed using prefix $prefix" >&5
 $as_echo "$as_me: **** PLUMED will be installed using prefix $prefix" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: **** You can change this later using \"make install prefix=/path\"" >&5

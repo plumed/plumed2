@@ -629,6 +629,10 @@ AC_ARG_PROGRAM
 program_transform_name_sh=$(echo "${program_transform_name}" | sed 's:\$\$:$:g')
 program_name=$(echo plumed | sed "$program_transform_name_sh")
 
+if test "$(echo "$program_name" | tr '[A-Z]' '[a-z]')" != "$(echo "$program_name" | tr '[A-Z]' '[a-z]' | sed 's/kernel$//')" ; then
+  AC_MSG_ERROR([$program_name is not a valid program name (should not terminate with Kernel)])
+fi
+
 AC_MSG_NOTICE([**** PLUMED will be installed using prefix $prefix])
 AC_MSG_NOTICE([**** You can change this later using "make install prefix=/path"])
 AC_MSG_NOTICE([**** Executable will be named $program_name])
