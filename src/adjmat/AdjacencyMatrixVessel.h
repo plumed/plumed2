@@ -58,6 +58,9 @@ public:
   void retrieveMatrix( DynamicList<unsigned>& myactive_elements, Matrix<double>& mymatrix );
 /// Get the neighbour list based on the adjacency matrix
   void retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matrix<unsigned>& adj_list );
+/// Retrieve the derivatives of the matrix element - this is overwritten as if we have 
+/// derivatives wrt a weight...
+  void retrieveDerivatives( const unsigned& myelem, const bool& normed, MultiValue& myvals );
 ///
   void getMatrixIndices( const unsigned& code, unsigned& i, unsigned& j ) const ;
 /// Recalculate a stored quantity

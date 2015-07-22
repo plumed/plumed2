@@ -66,7 +66,7 @@ public:
 /// Get the number of colvars calculated by the jth base task
   unsigned getNumberOfTasks( const unsigned& j ) const ;
 /// Incorporate all dependencies into underlying action
-  void makeDataRequests( Action* action );
+  void makeDataRequests( const std::vector<AtomNumber>& atoms, Action* action );
 /// Recalculate the base colvars (used for numerical derivatives)
   void recalculateBaseColvars( ActionAtomistic* action );
 /// Get the total number of atoms involved

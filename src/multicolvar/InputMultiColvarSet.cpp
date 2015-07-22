@@ -48,7 +48,7 @@ void InputMultiColvarSet::setup( const std::vector<std::string>& mlabs, const Ac
    for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasedata.push_back( mybasemulticolvars[i]->buildDataStashes( true, wtolerance ) );
 }
 
-void InputMultiColvarSet::makeDataRequests( Action* action ){
+void InputMultiColvarSet::makeDataRequests( const std::vector<AtomNumber>& atoms, Action* action ){
 
   // Copy lists of atoms involved from base multicolvars 
   std::vector<AtomNumber> tmp_atoms, all_atoms; 
@@ -57,7 +57,9 @@ void InputMultiColvarSet::makeDataRequests( Action* action ){
       if( mybr ) tmp_atoms=(mybr->getPntrToMultiColvar())->getAbsoluteIndexes();
       else tmp_atoms=mybasemulticolvars[i]->getAbsoluteIndexes();
       for(unsigned j=0;j<tmp_atoms.size();++j) all_atoms.push_back( tmp_atoms[j] );
-  }       
+  }  
+  // Get additional atom requests
+  for(unsigned i=0;i<atoms.size();++i) all_atoms.push_back( atoms[i] );     
           
   // Now make sure we get all the atom positions 
   ActionAtomistic* myatoms = dynamic_cast<ActionAtomistic*>( action );

@@ -39,7 +39,6 @@ Action(ao),
 MultiColvarBase(ao)
 {
   // Weight of this does have derivatives
-  weightHasDerivatives=true;
   parse("WTOL",wtolerance);
   if(wtolerance>0) log.printf("  only considering those colvars with a weight greater than %f \n",wtolerance);
 }
@@ -92,7 +91,7 @@ void AdjacencyMatrixBase::requestAtoms( const std::vector<AtomNumber>& atoms ){
   // Add the vessel to the base
   addVessel( mat );
   // Request the data required
-  myinputdata.makeDataRequests( this ); 
+  myinputdata.makeDataRequests( atoms, this ); 
   setupMultiColvarBase();
 }
 

@@ -69,7 +69,7 @@ void AdjacencyMatrixVessel::retrieveMatrix( DynamicList<unsigned>& myactive_elem
       myactive_elements.activate(i);
       unsigned j, k; getMatrixIndices( i, k, j );
       retrieveValue( i, false, vals );
-      mymatrix(k,j)=mymatrix(j,k)=vals[1];
+      mymatrix(k,j)=mymatrix(j,k)=vals[1] / vals[0];
   }
   myactive_elements.updateActiveMembers();  
 }
@@ -85,6 +85,17 @@ void AdjacencyMatrixVessel::retrieveAdjacencyLists( std::vector<unsigned>& nneig
       unsigned j, k; getMatrixIndices( i, k, j );
       adj_list(k,nneigh[k])=j; nneigh[k]++;
       adj_list(j,nneigh[j])=k; nneigh[j]++;
+  }
+}
+
+void AdjacencyMatrixVessel::retrieveDerivatives( const unsigned& myelem, const bool& normed, MultiValue& myvals ){
+  StoreDataVessel::retrieveDerivatives( myelem, normed, myvals );
+  if( !function->weightHasDerivatives ) return ;
+
+  std::vector<double> vals(2); retrieveValue( myelem, normed, vals ); double pref = vals[1]/(vals[0]*vals[0]);
+  for(unsigned i=0;i<myvals.getNumberActive();++i){
+      unsigned jder=myvals.getActiveIndex(i);
+      myvals.setDerivative( 1, jder, myvals.getDerivative(1, jder)/vals[0] - pref*myvals.getDerivative(0, jder) );
   }
 }
 

@@ -52,6 +52,8 @@ private:
   bool usepbc;
 /// The forces we are going to apply to things
   std::vector<double> forcesToApply;
+/// In certain cases we can make three atom link cells faster
+  bool uselinkforthree;
 /// Stuff for link cells - this is used to make coordination number like variables faster
   LinkCells linkcells;
 /// Bool vector telling us which atoms are required to calculate central atom position

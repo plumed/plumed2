@@ -96,7 +96,7 @@ public:
 /// Get the values of all the components in the vector
   void retrieveValue( const unsigned& myelem, const bool& normed, std::vector<double>& values ) const ;
 /// Get the derivatives for one of the components in the vector
-  void retrieveDerivatives( const unsigned& myelem, const bool& normed, MultiValue& myvals );
+  virtual void retrieveDerivatives( const unsigned& myelem, const bool& normed, MultiValue& myvals );
 /// Do all resizing of data
   virtual void resize();
 /// Clear certain data before start of main loop

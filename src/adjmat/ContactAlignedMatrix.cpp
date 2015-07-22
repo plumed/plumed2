@@ -152,7 +152,7 @@ double ContactAlignedMatrix::compute( const unsigned& tindex, multicolvar::AtomV
   f_dot=0.5*( 1 + dot ); dot_df=0.5; 
 
   // Retrieve the weight of the connection
-  double weight = myatoms.getValue(0); 
+  double weight = myatoms.getValue(0); myatoms.setValue(0,1.0); 
 
   if( dertime && !doNotCalculateDerivatives() ){
       Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );

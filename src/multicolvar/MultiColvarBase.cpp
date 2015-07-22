@@ -66,6 +66,7 @@ ActionAtomistic(ao),
 ActionWithValue(ao),
 ActionWithVessel(ao),
 usepbc(false),
+uselinkforthree(false),
 linkcells(comm),
 usespecies(false)
 {
@@ -95,6 +96,16 @@ void MultiColvarBase::setupMultiColvarBase(){
      for(unsigned i=0;i<ablocks.size();++i){ decoder[ablocks.size()-1-i]=code; code *= nblock; } 
      use_for_central_atom.resize( ablocks.size(), true );
      numberForCentralAtom = 1.0 / static_cast<double>( ablocks.size() );
+     if( ablocks.size()==3 ){
+         uselinkforthree=true;
+         for(unsigned i=0;i<bookeeping.ncols();++i){
+             for(unsigned j=0;j<bookeeping.nrows();++j){
+                 if( j>=i ) continue;
+                 unsigned ntper = bookeeping(i,j).second - bookeeping(i,j).first;
+                 if( ntper != ablocks[2].size() ) uselinkforthree=false;
+             }
+         } 
+     }
   } else if( !usespecies ){
      use_for_central_atom.resize( ablocks.size(), true );
      numberForCentralAtom = 1.0 / static_cast<double>( ablocks.size() );
@@ -165,7 +176,7 @@ void MultiColvarBase::setupLinkCells(){
   // Build the lists for the link cells
   linkcells.buildCellLists( ltmp_pos, ltmp_ind, getPbc() );
 
-  if( !usespecies ){
+  if( !usespecies && !uselinkforthree ){
      // Get some parallel info
      unsigned stride=comm.Get_size();
      unsigned rank=comm.Get_rank(); 
@@ -187,6 +198,51 @@ void MultiColvarBase::setupLinkCells(){
      deactivateAllTasks(); 
      activateTheseTasks( active_tasks );
      contributorsAreUnlocked=false;
+  } else if ( !usespecies ){
+     // Get some parallel info
+     unsigned stride=comm.Get_size();
+     unsigned rank=comm.Get_rank();
+     if( serialCalculation() ){ stride=1; rank=0; }
+
+     LinkCells threecells(comm); threecells.setCutoff( linkcells.getCutoff() );
+
+     unsigned nactive_three=0;
+     for(unsigned i=0;i<ablocks[2].size();++i){
+         if( isCurrentlyActive( 2, ablocks[2][i] ) ) nactive_three++;
+     }
+
+     std::vector<Vector> lttmp_pos( nactive_three );
+     std::vector<unsigned> lttmp_ind( nactive_three );
+
+     nactive_three=0;
+     for(unsigned i=0;i<ablocks[2].size();++i){
+         if( !isCurrentlyActive( 2, ablocks[2][i] ) ) continue;
+         lttmp_ind[nactive_three]=i;
+         lttmp_pos[nactive_three]=getPositionOfAtomForLinkCells( ablocks[2][i] );
+         nactive_three++;
+     }
+     // Build the list of the link cells
+     threecells.buildCellLists( lttmp_pos, lttmp_ind, getPbc() );
+
+     // Ensure we only do tasks where atoms are in appropriate link cells
+     std::vector<unsigned> linked_atoms( 1+ablocks[1].size() );
+     std::vector<unsigned> tlinked_atoms( 1+ablocks[2].size() );
+     std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
+     for(unsigned i=rank;i<ablocks[0].size();i+=stride){
+         if( !isCurrentlyActive( 0, ablocks[0][i] ) ) continue;
+         unsigned natomsper=1; linked_atoms[0]=ltmp_ind[0];  // Note we always check atom 0 because it is simpler than changing LinkCells.cpp
+         linkcells.retrieveNeighboringAtoms( getPositionOfAtomForLinkCells( ablocks[0][i] ), natomsper, linked_atoms );
+         unsigned ntatomsper=1; tlinked_atoms[0]=lttmp_ind[0];
+         threecells.retrieveNeighboringAtoms( getPositionOfAtomForLinkCells( ablocks[0][i] ), ntatomsper, tlinked_atoms );
+         for(unsigned j=0;j<natomsper;++j){
+             for(unsigned k=0;k<ntatomsper;++k) active_tasks[bookeeping(i,linked_atoms[j]).first+tlinked_atoms[k]]=1;
+         }
+     }
+     if( !serialCalculation() ) comm.Sum( active_tasks );
+
+     deactivateAllTasks();
+     activateTheseTasks( active_tasks );
+     contributorsAreUnlocked=false; 
   } else {
      // Now check for calculating volumes (currently this is only done for usespecies style commands 
      // as it is difficult to do with things like DISTANCES or ANGLES and I think pointless

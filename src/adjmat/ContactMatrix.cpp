@@ -147,7 +147,8 @@ double ContactMatrix::compute( const unsigned& tindex, multicolvar::AtomValuePac
       addAtomDerivatives( 1, (+dfunc)*distance, myatoms ); 
       myatoms.addBoxDerivatives( 1, (-dfunc)*Tensor(distance,distance) ); 
   }
-  return myatoms.getValue(0);
+  double val=myatoms.getValue(0); myatoms.setValue(0,1.0);
+  return val;
 }
 
 }

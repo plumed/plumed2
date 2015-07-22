@@ -58,7 +58,8 @@ MultiColvarBase(ao)
 
 void MultiColvarFunction::setupAtomLists(){
   // Make all atom requests and setup dependencies
-  myinputdata.makeDataRequests( this );
+  std::vector<AtomNumber> fake_atoms; 
+  myinputdata.makeDataRequests( fake_atoms, this );
   // Do all setup stuff in MultiColvarBase
   setupMultiColvarBase();
 }

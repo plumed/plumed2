@@ -65,6 +65,8 @@ public:
   bool enabled() const ;
 /// Set the value of the cutoff
   void setCutoff( const double& lcut );
+/// Get the value of the cutoff
+  double getCutoff() const ;
 /// Build the link cell lists
   void buildCellLists( const std::vector<Vector>& pos, const std::vector<unsigned>& indices, const Pbc& pbc );
 /// Find a list of relevant atoms
