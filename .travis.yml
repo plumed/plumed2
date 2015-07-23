@@ -75,7 +75,7 @@ script:
   - if test "$PLUMED_CXX" ; then make -C regtest $OPT ; fi
   - if test "$MAKEDOC" == yes ; then make -C regtest copytodoc ; fi
   - if test "$MAKEDOC" == yes ; then make doc >/dev/null ; fi
-  - if test "$MAKEDOC" == yes ; then make -C regtest checkfail ; fi
+  - if test "$PLUMED_CXX" ; then make -C regtest checkfail ; fi
 
 # CPPCHECK:
 # this is required so as to have all the include files inplace:
