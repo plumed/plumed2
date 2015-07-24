@@ -59,7 +59,6 @@ void run(Communicator& comm){
   if(comm.Get_rank()==2) req.wait();
   dump(comm,ofs,a);
   if(comm.Get_rank()==0) ofs<<"status "<<status.Get_count<int>()<<"\n";
-  if(comm.Get_rank()==1) ofs<<"status "<<status.Get_count<int>()<<"\n";
 
   reset(comm,a);
   collect.assign(a.size()*comm.Get_size(),0.0);
