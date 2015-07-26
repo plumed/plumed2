@@ -32,6 +32,7 @@ namespace adjmat {
 class AdjacencyMatrixBase : public multicolvar::MultiColvarBase {
 friend class AdjacencyMatrixVessel;
 friend class ActionWithInputMatrix;
+friend class MatrixColumnSums;
 private:
 /// The tolerance to use to decide whether or not to incorporate atoms
   double wtolerance;

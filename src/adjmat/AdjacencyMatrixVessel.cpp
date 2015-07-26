@@ -28,6 +28,7 @@ namespace adjmat {
 
 void AdjacencyMatrixVessel::registerKeywords( Keywords& keys ){
   StoreDataVessel::registerKeywords(keys);
+
 }
 
 AdjacencyMatrixVessel::AdjacencyMatrixVessel( const vesselbase::VesselOptions& da ):
@@ -42,7 +43,7 @@ unsigned AdjacencyMatrixVessel::getNumberOfStoredValues() const {
 }
 
 unsigned AdjacencyMatrixVessel::getStoreIndex( const unsigned& myelem ) const {
-  unsigned nnodes = function->getNumberOfNodes(), ielem, jelem;
+  unsigned ielem, jelem;
   getMatrixIndices( myelem, ielem, jelem );
   return 0.5*ielem*(ielem-1)+jelem;
 }
