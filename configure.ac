@@ -552,6 +552,54 @@ then
   AC_MSG_ERROR([xxd should be installed for PLUMED to compile properly])
 fi
 
+AC_SUBST(program_can_run)
+program_can_run=""
+AC_MSG_CHECKING([whether a program can be run on this machine])
+AC_RUN_IFELSE([AC_LANG_SOURCE([
+#ifdef __PLUMED_MPI
+#include <mpi.h>
+#endif
+// notice that [[]] is required to cheat autoconf
+int main(int argc,char*argv[[]]){
+#ifdef __PLUMED_MPI
+// this emulates what happens when plumed
+// is compiled with mpi and invoked with --no-mpi
+  if(argc==10){
+    MPI_Init(&argc,&argv);
+    return MPI_Finalize();
+  }
+#endif
+  return 0;
+}
+])],
+  [ program_can_run=yes ; AC_MSG_RESULT([yes]) ],
+  [ program_can_run=no ; AC_MSG_RESULT([no]) ],
+  [ program_can_run=no ; AC_MSG_RESULT([no (cross compiling)]) ]
+)
+
+if test $mpi_found == ok ; then
+AC_SUBST(program_can_run_mpi)
+program_can_run_mpi=""
+AC_MSG_CHECKING([whether a program compiled with mpi can be run on this machine])
+AC_RUN_IFELSE([AC_LANG_SOURCE([
+#ifdef __PLUMED_MPI
+#include <mpi.h>
+#endif
+// notice that [[]] is required to cheat autoconf
+int main(int argc,char*argv[[]]){
+#ifdef __PLUMED_MPI
+  MPI_Init(&argc,&argv);
+  return MPI_Finalize();
+#endif
+  return 0;
+}
+])],
+  [ program_can_run_mpi=yes ; AC_MSG_RESULT([yes]) ],
+  [ program_can_run_mpi=no ; AC_MSG_RESULT([no]) ],
+  [ program_can_run_mpi=no ; AC_MSG_RESULT([no (cross compiling)]) ]
+)
+fi
+
 #### This further tests are required to allow linking with non c++ compiler
 AC_MSG_NOTICE([PLUMED seems to be configured properly!])
 AC_MSG_NOTICE([**************************])
@@ -632,6 +680,9 @@ program_name=$(echo plumed | sed "$program_transform_name_sh")
 if test "$(echo "$program_name" | tr '[A-Z]' '[a-z]')" != "$(echo "$program_name" | tr '[A-Z]' '[a-z]' | sed 's/kernel$//')" ; then
   AC_MSG_ERROR([$program_name is not a valid program name (should not terminate with Kernel)])
 fi
+if test "$(echo "$program_name" | tr '[A-Z]' '[a-z]')" != "$(echo "$program_name" | tr '[A-Z]' '[a-z]' | sed 's/-patch$//')" ; then
+  AC_MSG_ERROR([$program_name is not a valid program name (should not terminate with -patch)])
+fi
 
 AC_MSG_NOTICE([**** PLUMED will be installed using prefix $prefix])
 AC_MSG_NOTICE([**** You can change this later using "make install prefix=/path"])
@@ -645,6 +696,21 @@ if test $mpi == true; then
   fi
 else
     AC_MSG_NOTICE([**** PLUMED will be compiled without MPI])
+fi
+
+if test $program_can_run == no ; then
+  AC_MSG_WARN([plumed executable will not run on this machine])
+  AC_MSG_WARN([to patch an MD code now use 'plumed-patch'])
+  AC_MSG_WARN([after installing plumed you should use '$prefix/lib/$program_name/plumed-patch'])
+elif test $mpi_found == ok ; then
+  if test $program_can_run_mpi == no ; then
+    AC_MSG_WARN([plumed executable will not run on this machine])
+    AC_MSG_WARN([unless you invoke it as 'plumed --no-mpi'])
+    AC_MSG_WARN([to patch an MD code now use 'plumed --no-mpi patch'])
+    AC_MSG_WARN([(notice that MPI will be available anyway in the patched code)])
+    AC_MSG_WARN([all command line tools are available as 'plumed --no-mpi name-of-the-tool'])
+    AC_MSG_WARN([e.g. 'plumed --no-mpi driver'])
+  fi
 fi
 
 AC_SUBST(build_dir)

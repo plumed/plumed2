@@ -621,6 +621,8 @@ ac_includes_default="\
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 build_dir
+program_can_run_mpi
+program_can_run
 xxd
 dot
 doxygen
@@ -5433,9 +5435,9 @@ if test -z "$blas_found" ; then
 $as_echo "$as_me: WARNING: using internal lapack and blas, could be inefficient" >&2;}
 LIBS="$save_LIBS"
 
-$as_echo "#define __PLUMED_INTERNAL_BLAS 1" >>confdefs.h
+$as_echo "#define __PLUMED_HAS_INTERNAL_BLAS 1" >>confdefs.h
 
-$as_echo "#define __PLUMED_INTERNAL_LAPACK 1" >>confdefs.h
+$as_echo "#define __PLUMED_HAS_INTERNAL_LAPACK 1" >>confdefs.h
 
 fi
 
@@ -5510,7 +5512,7 @@ if test -z "$lapack_found" ; then
 $as_echo "$as_me: WARNING: using internal lapack, could be inefficient" >&2;}
 LIBS="$save_LIBS"
 
-$as_echo "#define __PLUMED_INTERNAL_LAPACK 1" >>confdefs.h
+$as_echo "#define __PLUMED_HAS_INTERNAL_LAPACK 1" >>confdefs.h
 
 fi
 
@@ -5599,7 +5601,7 @@ fi
 if test $found == ko ; then
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using internal molfile_plugins, which only support dcd/xtc/trr/trj/crd files" >&5
 $as_echo "$as_me: WARNING: using internal molfile_plugins, which only support dcd/xtc/trr/trj/crd files" >&2;}
-	$as_echo "#define __PLUMED_INTERNAL_MOLFILE_PLUGINS 1" >>confdefs.h
+	$as_echo "#define __PLUMED_HAS_INTERNAL_MOLFILE_PLUGINS 1" >>confdefs.h
 
 fi
 
@@ -6639,6 +6641,86 @@ then
   as_fn_error $? "xxd should be installed for PLUMED to compile properly" "$LINENO" 5
 fi
 
+
+program_can_run=""
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether a program can be run on this machine" >&5
+$as_echo_n "checking whether a program can be run on this machine... " >&6; }
+if test "$cross_compiling" = yes; then :
+   program_can_run=no ; { $as_echo "$as_me:${as_lineno-$LINENO}: result: no (cross compiling)" >&5
+$as_echo "no (cross compiling)" >&6; }
+
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#ifdef __PLUMED_MPI
+#include <mpi.h>
+#endif
+// notice that [] is required to cheat autoconf
+int main(int argc,char*argv[]){
+#ifdef __PLUMED_MPI
+// this emulates what happens when plumed
+// is compiled with mpi and invoked with --no-mpi
+  if(argc==10){
+    MPI_Init(&argc,&argv);
+    return MPI_Finalize();
+  }
+#endif
+  return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_run "$LINENO"; then :
+   program_can_run=yes ; { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+   program_can_run=no ; { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+
+
+if test $mpi_found == ok ; then
+
+program_can_run_mpi=""
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether a program compiled with mpi can be run on this machine" >&5
+$as_echo_n "checking whether a program compiled with mpi can be run on this machine... " >&6; }
+if test "$cross_compiling" = yes; then :
+   program_can_run_mpi=no ; { $as_echo "$as_me:${as_lineno-$LINENO}: result: no (cross compiling)" >&5
+$as_echo "no (cross compiling)" >&6; }
+
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#ifdef __PLUMED_MPI
+#include <mpi.h>
+#endif
+// notice that [] is required to cheat autoconf
+int main(int argc,char*argv[]){
+#ifdef __PLUMED_MPI
+  MPI_Init(&argc,&argv);
+  return MPI_Finalize();
+#endif
+  return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_run "$LINENO"; then :
+   program_can_run_mpi=yes ; { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+   program_can_run_mpi=no ; { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+
+fi
+
 #### This further tests are required to allow linking with non c++ compiler
 { $as_echo "$as_me:${as_lineno-$LINENO}: PLUMED seems to be configured properly!" >&5
 $as_echo "$as_me: PLUMED seems to be configured properly!" >&6;}
@@ -6738,6 +6820,9 @@ program_name=$(echo plumed | sed "$program_transform_name_sh")
 if test "$(echo "$program_name" | tr 'A-Z' 'a-z')" != "$(echo "$program_name" | tr 'A-Z' 'a-z' | sed 's/kernel$//')" ; then
   as_fn_error $? "$program_name is not a valid program name (should not terminate with Kernel)" "$LINENO" 5
 fi
+if test "$(echo "$program_name" | tr 'A-Z' 'a-z')" != "$(echo "$program_name" | tr 'A-Z' 'a-z' | sed 's/-patch$//')" ; then
+  as_fn_error $? "$program_name is not a valid program name (should not terminate with -patch)" "$LINENO" 5
+fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: **** PLUMED will be installed using prefix $prefix" >&5
 $as_echo "$as_me: **** PLUMED will be installed using prefix $prefix" >&6;}
@@ -6757,6 +6842,30 @@ $as_echo "$as_me: WARNING: **** PLUMED will NOT be compiled using MPI because MP
 else
     { $as_echo "$as_me:${as_lineno-$LINENO}: **** PLUMED will be compiled without MPI" >&5
 $as_echo "$as_me: **** PLUMED will be compiled without MPI" >&6;}
+fi
+
+if test $program_can_run == no ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: plumed executable will not run on this machine" >&5
+$as_echo "$as_me: WARNING: plumed executable will not run on this machine" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: to patch an MD code now use 'plumed-patch'" >&5
+$as_echo "$as_me: WARNING: to patch an MD code now use 'plumed-patch'" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: after installing plumed you should use '$prefix/lib/$program_name/plumed-patch'" >&5
+$as_echo "$as_me: WARNING: after installing plumed you should use '$prefix/lib/$program_name/plumed-patch'" >&2;}
+elif test $mpi_found == ok ; then
+  if test $program_can_run_mpi == no ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: plumed executable will not run on this machine" >&5
+$as_echo "$as_me: WARNING: plumed executable will not run on this machine" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unless you invoke it as 'plumed --no-mpi'" >&5
+$as_echo "$as_me: WARNING: unless you invoke it as 'plumed --no-mpi'" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: to patch an MD code now use 'plumed --no-mpi patch'" >&5
+$as_echo "$as_me: WARNING: to patch an MD code now use 'plumed --no-mpi patch'" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: (notice that MPI will be available anyway in the patched code)" >&5
+$as_echo "$as_me: WARNING: (notice that MPI will be available anyway in the patched code)" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: all command line tools are available as 'plumed --no-mpi name-of-the-tool'" >&5
+$as_echo "$as_me: WARNING: all command line tools are available as 'plumed --no-mpi name-of-the-tool'" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: e.g. 'plumed --no-mpi driver'" >&5
+$as_echo "$as_me: WARNING: e.g. 'plumed --no-mpi driver'" >&2;}
+  fi
 fi
 
 

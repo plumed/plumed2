@@ -104,15 +104,16 @@ install-do:
 	@sed "s|@_PREFIX_@|$(PLUMED_INSTALL_PREFIX)|" modulefile.in | sed "s|@_SOEXT_@|$(SOEXT)|" | sed "s|@_PROGNAME_@|$(PLUMED_PROGRAM_NAME)|" > $(DESTDIR)$(PLUMED_INSTALL_ROOT)/src/lib/modulefile
 # install links
 	cd $(DESTDIR)$(PLUMED_INSTALL_PREFIX)/bin/ && ln -s ../lib/$(PLUMED_PROGRAM_NAME)/src/lib/plumed $(PLUMED_PROGRAM_NAME)
-	cd $(DESTDIR)$(PLUMED_INSTALL_PREFIX)/bin/ && for file in $(PLUMED_SCRIPTS) ; do ln -s ../lib/$(PLUMED_PROGRAM_NAME)/src/lib/plumed-$$file $(PLUMED_PROGRAM_NAME)-$$file ; done
+	cd $(DESTDIR)$(PLUMED_INSTALL_ROOT) && for file in $(PLUMED_SCRIPTS) ; do ln -s src/lib/plumed-$$file plumed-$$file ; done
+	cd $(DESTDIR)$(PLUMED_INSTALL_PREFIX)/bin/ && ln -s ../lib/$(PLUMED_PROGRAM_NAME)/src/lib/plumed-patch $(PLUMED_PROGRAM_NAME)-patch
 ifdef SOEXT
 	cd $(DESTDIR)$(PLUMED_INSTALL_PREFIX)/lib/ && ln -s $(PLUMED_PROGRAM_NAME)/src/lib/libplumed.$(SOEXT) lib$(PLUMED_PROGRAM_NAME).$(SOEXT)
 	cd $(DESTDIR)$(PLUMED_INSTALL_PREFIX)/lib/ && ln -s $(PLUMED_PROGRAM_NAME)/src/lib/libplumedKernel.$(SOEXT) lib$(PLUMED_PROGRAM_NAME)Kernel.$(SOEXT)
 endif
 	chmod -R go+rX,go-w $(DESTDIR)$(PLUMED_INSTALL_ROOT)
+	chmod -R go+rX,go-w $(DESTDIR)$(PLUMED_INSTALL_ROOT)/plumed-*
 	chmod -R go+rX,go-w $(DESTDIR)$(PLUMED_INSTALL_PREFIX)/include/$(PLUMED_PROGRAM_NAME)
 	chmod -R go+rX,go-w $(DESTDIR)$(PLUMED_INSTALL_PREFIX)/bin/$(PLUMED_PROGRAM_NAME)
-	chmod -R go+rX,go-w $(DESTDIR)$(PLUMED_INSTALL_PREFIX)/bin/$(PLUMED_PROGRAM_NAME)-*
 	@echo
 	@echo "*** PLUMED has been installed ***"
 	@echo
@@ -138,17 +139,30 @@ endif
 	@echo $(PLUMED_INSTALL_ROOT)
 	@echo $(PLUMED_INSTALL_PREFIX)/include/$(PLUMED_PROGRAM_NAME)
 	@echo $(PLUMED_INSTALL_PREFIX)/bin/$(PLUMED_PROGRAM_NAME)
-	@for file in $(PLUMED_INSTALL_PREFIX)/bin/$(PLUMED_PROGRAM_NAME)-* ; do echo $$file ; done
+	@echo $(PLUMED_INSTALL_PREFIX)/bin/$(PLUMED_PROGRAM_NAME)-patch
 ifdef SOEXT
 	@echo $(PLUMED_INSTALL_PREFIX)/lib/lib$(PLUMED_PROGRAM_NAME).$(SOEXT)
 	@echo $(PLUMED_INSTALL_PREFIX)/lib/lib$(PLUMED_PROGRAM_NAME)Kernel.$(SOEXT)
 endif
+ifeq ($(program_can_run),no)
+	@echo "WARNING: $(PLUMED_PROGRAM_NAME) executable will not run on this machine"
+	@echo "WARNING: to patch an MD code use 'plumed-patch'"
+	@echo "WARNING: a few other command line tools are avalable as $(PLUMED_INSTALL_ROOT)/plumed-*"
+else ifeq ($(program_can_run_mpi),no)
+	@echo "WARNING: $(PLUMED_PROGRAM_NAME) executable will not run on this machine"
+	@echo "WARNING: unless you invoke it as '$(PLUMED_PROGRAM_NAME) --no-mpi'"
+	@echo "WARNING: to patch an MD code now use '$(PLUMED_PROGRAM_NAME) --no-mpi patch'"
+	@echo "WARNING: (notice that MPI will be available anyway in the patched code)"
+	@echo "WARNING: all command line tools are available as '$(PLUMED_PROGRAM_NAME) --no-mpi name-of-the-tool'"
+	@echo "WARNING: e.g. '$(PLUMED_PROGRAM_NAME) --no-mpi driver'"
+endif
+
 
 uninstall:
 	rm -fr $(DESTDIR)$(PLUMED_INSTALL_ROOT)
 	rm -fr $(DESTDIR)$(PLUMED_INSTALL_PREFIX)/include/$(PLUMED_PROGRAM_NAME)
 	rm -f $(DESTDIR)$(PLUMED_INSTALL_PREFIX)/bin/$(PLUMED_PROGRAM_NAME)
-	rm -f $(DESTDIR)$(PLUMED_INSTALL_PREFIX)/bin/$(PLUMED_PROGRAM_NAME)-*
+	rm -f $(DESTDIR)$(PLUMED_INSTALL_PREFIX)/bin/$(PLUMED_PROGRAM_NAME)-patch
 	rm -f $(DESTDIR)$(PLUMED_INSTALL_PREFIX)/lib/lib$(PLUMED_PROGRAM_NAME).$(SOEXT)
 	rm -f $(DESTDIR)$(PLUMED_INSTALL_PREFIX)/lib/lib$(PLUMED_PROGRAM_NAME)Kernel.$(SOEXT)
 
