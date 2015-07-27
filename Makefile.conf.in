@@ -17,3 +17,4 @@ prefix=@prefix@
 program_transform_name=@program_transform_name@
 program_can_run_mpi=@program_can_run_mpi@
 program_can_run=@program_can_run@
+LD_RO=@LD_RO@

@@ -61,7 +61,7 @@ else
 endif
 
 
-.PHONY: all links $(DIRS) $(DIRSLINKS) all-static Plumed.cmake Plumed.inc
+.PHONY: all links $(DIRS) $(DIRSLINKS) all-static $(PLUMED_LIBDIR)Plumed.cmake $(PLUMED_LIBDIR)Plumed.inc
 ifdef SOEXT
 all:
 	$(MAKE) dirslinks
@@ -92,14 +92,22 @@ install-do:
 	mkdir -p $(DESTDIR)$(PLUMED_INSTALL_PREFIX)/bin
 	mkdir -p $(DESTDIR)$(PLUMED_INSTALL_ROOT)/src/lib
 	mkdir -p $(DESTDIR)$(PLUMED_INSTALL_PREFIX)/include/$(PLUMED_PROGRAM_NAME)
+	mkdir -p $(DESTDIR)$(PLUMED_INSTALL_ROOT)/obj
 # rebuild libraries and main using new target dir
 	$(MAKE) PLUMED_LIBDIR=$(DESTDIR)$(PLUMED_INSTALL_ROOT)/src/lib/ PLUMED_LIBDIR_NODEST=$(PLUMED_INSTALL_ROOT)/src/lib/ PLUMED_INSTALL=Install all
-# copy .h, .cpp .o compile_options.sh and documentation:
-	cd ../../ ; tar cf - patches scripts src/*/*.h src/*/*.cpp src/*/*.o src/config/compile_options.sh *-doc/html *-doc/regtests *-doc/manual.pdf | tar xf - -C $(DESTDIR)$(PLUMED_INSTALL_ROOT)/
+# copy scripts, required .h, .cpp, compile_options.sh and documentation:
+	cd ../../ ; tar cf - patches scripts src/wrapper/Plumed.h src/colvar/Template.cpp *-doc/html *-doc/regtests *-doc/manual.pdf | tar xf - -C $(DESTDIR)$(PLUMED_INSTALL_ROOT)/
+	mkdir -p $(DESTDIR)$(PLUMED_INSTALL_ROOT)/src/config/
+	sed 's|-I"$$PLUMED_ROOT"/src|-I"$$PLUMED_ROOT"/../../include/$(PLUMED_PROGRAM_NAME)|' ../config/compile_options.sh > $(DESTDIR)$(PLUMED_INSTALL_ROOT)/src/config/compile_options.sh
+ifdef LD_RO
+	$(LD_RO) $(DESTDIR)$(PLUMED_INSTALL_ROOT)/obj/kernel.o $(OBJ_KERNEL)
+else
+	../maketools/copyobjects $(DESTDIR)$(PLUMED_INSTALL_ROOT)/obj/k $(OBJ_KERNEL)
+endif
+	cp $(OBJ_WRAPPER) $(DESTDIR)$(PLUMED_INSTALL_ROOT)/obj/PlumedStatic.o
+	cp $(OBJ_DYNAMIC_WRAPPER) $(DESTDIR)$(PLUMED_INSTALL_ROOT)/obj/Plumed.o
 # also copy .h files into include/ dir
 	cd ../../src ; tar cf - */*.h */*/*.h | tar xf - -C $(DESTDIR)$(PLUMED_INSTALL_PREFIX)/include/$(PLUMED_PROGRAM_NAME)/
-# copy inc files changing the path
-	for file in Plumed.inc* Plumed.cmake* ; do sed "s| $(realpath ../..)| $(PLUMED_INSTALL_ROOT)|g" $$file > $(DESTDIR)$(PLUMED_INSTALL_ROOT)/src/lib/$$file ; done
 # modulefile
 	@sed "s|@_PREFIX_@|$(PLUMED_INSTALL_PREFIX)|" modulefile.in | sed "s|@_SOEXT_@|$(SOEXT)|" | sed "s|@_PROGNAME_@|$(PLUMED_PROGRAM_NAME)|" > $(DESTDIR)$(PLUMED_INSTALL_ROOT)/src/lib/modulefile
 # install links
@@ -173,11 +181,11 @@ $(DIRS):
 
 lib: lib-static lib-shared
 
-lib-static: $(PLUMED_MAIN_STATIC) $(OBJ_WRAPPER) Plumed.inc.static Plumed.cmake.static $(PLUMED_SCRIPTS_EXE)
+lib-static: $(PLUMED_MAIN_STATIC) $(OBJ_WRAPPER) $(PLUMED_LIBDIR)Plumed.inc.static $(PLUMED_LIBDIR)Plumed.cmake.static $(PLUMED_SCRIPTS_EXE)
 
 lib-shared: $(PLUMED_KERNEL) $(PLUMED_SHARED_OBJ) $(PLUMED_MAIN_SHARED) $(PLUMED_MAIN_RUNTIME) \
-           Plumed.inc Plumed.inc.runtime Plumed.inc.shared \
-           Plumed.cmake Plumed.cmake.runtime Plumed.cmake.shared
+           $(PLUMED_LIBDIR)Plumed.inc $(PLUMED_LIBDIR)Plumed.inc.runtime $(PLUMED_LIBDIR)Plumed.inc.shared \
+           $(PLUMED_LIBDIR)Plumed.cmake $(PLUMED_LIBDIR)Plumed.cmake.runtime $(PLUMED_LIBDIR)Plumed.cmake.shared
 
 $(PLUMED_SCRIPTS_EXE):
 	@echo "#! /bin/bash" > $@
@@ -225,6 +233,23 @@ $(PLUMED_MAIN_SHARED): $(OBJ_MAIN) $(PLUMED_SHARED_OBJ)
 $(PLUMED_MAIN_RUNTIME): $(OBJ_MAIN) $(OBJ_DYNAMIC_WRAPPER)
 	$(LD) $(LDFLAGS) $^ -o $@ $(LIBS)
 
+ifeq ($(PLUMED_INSTALL),Install)
+
+$(PLUMED_LIBDIR)Plumed.inc:
+	@echo Building Plumed.inc
+	@echo "PLUMED_RUNTIME_LOAD=" $(PLUMED_INSTALL_ROOT)/obj/Plumed.o $(LIBS) $(LDFLAGS) > $@
+ifdef LD_RO
+	@echo "PLUMED_STATIC_LOAD=" $(PLUMED_INSTALL_ROOT)/obj/kernel.o $(PLUMED_INSTALL_ROOT)/obj/PlumedStatic.o $(LIBS) $(DYNAMIC_LIBS) $(LDFLAGS) >> $@
+else
+	@echo "PLUMED_STATIC_LOAD=" $(shell ../maketools/listobjects $(PLUMED_INSTALL_ROOT)/obj/k $(OBJ_KERNEL)) $(PLUMED_INSTALL_ROOT)/obj/PlumedStatic.o $(LIBS) $(DYNAMIC_LIBS) $(LDFLAGS) >> $@
+endif
+	@echo "PLUMED_SHARED_LOAD=" $(PLUMED_INSTALL_PREFIX)/lib/lib$(PLUMED_PROGRAM_NAME).$(SOEXT) $(LIBS) $(LDFLAGS) >> $@
+	@echo "PLUMED_RUNTIME_DEPENDENCIES="   >> $@
+# when installing, it is sufficient to include dependence wrt a single object
+# indeed, the object are replaced all at the same time
+	@echo "PLUMED_STATIC_DEPENDENCIES=" $(PLUMED_INSTALL_ROOT)/obj/PlumedStatic.o  >> $@
+	@echo "PLUMED_SHARED_DEPENDENCIES=" $(PLUMED_INSTALL_PREFIX)/lib/lib$(PLUMED_PROGRAM_NAME).$(SOEXT)  >> $@
+else
 Plumed.inc:
 	@echo Building Plumed.inc
 	@echo "PLUMED_RUNTIME_LOAD=" $(realpath $(OBJ_DYNAMIC_WRAPPER)) $(LIBS) $(LDFLAGS) > $@
@@ -233,42 +258,38 @@ Plumed.inc:
 	@echo "PLUMED_RUNTIME_DEPENDENCIES="   >> $@
 	@echo "PLUMED_STATIC_DEPENDENCIES=" $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER))  >> $@
 	@echo "PLUMED_SHARED_DEPENDENCIES=" $(realpath .)/libplumed.$(SOEXT)  >> $@
+endif
 
-Plumed.inc.runtime: Plumed.inc
+$(PLUMED_LIBDIR)Plumed.cmake: $(PLUMED_LIBDIR)Plumed.inc
+	@echo Building Plumed.cmake
+	@../maketools/inc2cmake < $(PLUMED_LIBDIR)Plumed.inc > $@
+
+$(PLUMED_LIBDIR)Plumed.inc.runtime: $(PLUMED_LIBDIR)Plumed.inc
 	@echo Building Plumed.inc, runtime-linking version
 	@echo "# PLUMED: runtime installation" > $@
 	@grep PLUMED_RUNTIME $< | sed 's/PLUMED_RUNTIME_/PLUMED_/' >> $@
 
-Plumed.inc.static: Plumed.inc
+$(PLUMED_LIBDIR)Plumed.inc.static: $(PLUMED_LIBDIR)Plumed.inc
 	@echo Building Plumed.inc, static version
 	@echo "# PLUMED: static installation" > $@
 	@grep PLUMED_STATIC $< | sed 's/PLUMED_STATIC_/PLUMED_/' >> $@
 
-Plumed.inc.shared: Plumed.inc
+$(PLUMED_LIBDIR)Plumed.inc.shared: $(PLUMED_LIBDIR)Plumed.inc
 	@echo Building Plumed.inc, shared version
 	@echo "# PLUMED: shared installation" > $@
 	@grep PLUMED_SHARED $< | sed 's/PLUMED_SHARED_/PLUMED_/' >> $@
 
-Plumed.cmake:
-	@echo Building Plumed.cmake
-	@echo "set(PLUMED_RUNTIME_LOAD " $(realpath $(OBJ_DYNAMIC_WRAPPER)) $(LIBS) $(LDFLAGS)")" > $@
-	@echo "set(PLUMED_STATIC_LOAD " $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER)) $(LIBS) $(DYNAMIC_LIBS) $(LDFLAGS)")" >> $@
-	@echo "set(PLUMED_SHARED_LOAD " $(realpath ./)/libplumed.$(SOEXT) $(LIBS) $(LDFLAGS)")" >> $@
-	@echo "set(PLUMED_RUNTIME_DEPENDENCIES) "   >> $@
-	@echo "set(PLUMED_STATIC_DEPENDENCIES " $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER))")"  >> $@
-	@echo "set(PLUMED_SHARED_DEPENDENCIES " $(realpath ./)/libplumed.$(SOEXT)")"  >> $@
-
-Plumed.cmake.runtime: Plumed.cmake
+$(PLUMED_LIBDIR)Plumed.cmake.runtime: $(PLUMED_LIBDIR)Plumed.cmake
 	@echo Building Plumed.cmake, runtime-linking version
 	@echo "# PLUMED: runtime installation" > $@
 	@grep PLUMED_RUNTIME $< | sed 's/PLUMED_RUNTIME_/PLUMED_/' >> $@
 
-Plumed.cmake.static: Plumed.cmake
+$(PLUMED_LIBDIR)Plumed.cmake.static: $(PLUMED_LIBDIR)Plumed.cmake
 	@echo Building Plumed.cmake, static version
 	@echo "# PLUMED: static installation" > $@
 	@grep PLUMED_STATIC $< | sed 's/PLUMED_STATIC_/PLUMED_/' >> $@
 
-Plumed.cmake.shared: Plumed.cmake
+$(PLUMED_LIBDIR)Plumed.cmake.shared: $(PLUMED_LIBDIR)Plumed.cmake
 	@echo Building Plumed.cmake, shared version
 	@echo "# PLUMED: shared installation" > $@
 	@grep PLUMED_SHARED $< | sed 's/PLUMED_SHARED_/PLUMED_/' >> $@

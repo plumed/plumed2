@@ -621,6 +621,7 @@ ac_includes_default="\
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 build_dir
+LD_RO
 program_can_run_mpi
 program_can_run
 xxd
@@ -695,6 +696,7 @@ enable_fussy
 enable_debug_glibcxx
 enable_shared
 enable_cxx_exceptions
+enable_ld_r
 enable_mpi
 enable_external_lapack
 enable_external_blas
@@ -1352,6 +1354,7 @@ Optional Features:
   --enable-debug-glibcxx  enable enable boundary check, default: no
   --enable-shared         enable shared libs, default: yes
   --enable-cxx-exceptions enable c++ exceptions, default: no
+  --enable-ld-r           enable group object files, default: yes
   --enable-mpi            enable search for mpi, default: yes
   --enable-external-lapack
                           enable search for external lapack, default: yes
@@ -2490,6 +2493,24 @@ else
   case "no" in
              (yes) cxx_exceptions=true ;;
              (no)  cxx_exceptions=false ;;
+  esac
+
+fi
+
+
+
+ld_r=
+# Check whether --enable-ld-r was given.
+if test "${enable_ld_r+set}" = set; then :
+  enableval=$enable_ld_r; case "${enableval}" in
+             (yes) ld_r=true ;;
+             (no)  ld_r=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-ld-r" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) ld_r=true ;;
+             (no)  ld_r=false ;;
   esac
 
 fi
@@ -5435,9 +5456,9 @@ if test -z "$blas_found" ; then
 $as_echo "$as_me: WARNING: using internal lapack and blas, could be inefficient" >&2;}
 LIBS="$save_LIBS"
 
-$as_echo "#define __PLUMED_HAS_INTERNAL_BLAS 1" >>confdefs.h
+$as_echo "#define __PLUMED_INTERNAL_BLAS 1" >>confdefs.h
 
-$as_echo "#define __PLUMED_HAS_INTERNAL_LAPACK 1" >>confdefs.h
+$as_echo "#define __PLUMED_INTERNAL_LAPACK 1" >>confdefs.h
 
 fi
 
@@ -5512,7 +5533,7 @@ if test -z "$lapack_found" ; then
 $as_echo "$as_me: WARNING: using internal lapack, could be inefficient" >&2;}
 LIBS="$save_LIBS"
 
-$as_echo "#define __PLUMED_HAS_INTERNAL_LAPACK 1" >>confdefs.h
+$as_echo "#define __PLUMED_INTERNAL_LAPACK 1" >>confdefs.h
 
 fi
 
@@ -5601,7 +5622,7 @@ fi
 if test $found == ko ; then
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using internal molfile_plugins, which only support dcd/xtc/trr/trj/crd files" >&5
 $as_echo "$as_me: WARNING: using internal molfile_plugins, which only support dcd/xtc/trr/trj/crd files" >&2;}
-	$as_echo "#define __PLUMED_HAS_INTERNAL_MOLFILE_PLUGINS 1" >>confdefs.h
+	$as_echo "#define __PLUMED_INTERNAL_MOLFILE_PLUGINS 1" >>confdefs.h
 
 fi
 
@@ -6726,6 +6747,47 @@ fi
 $as_echo "$as_me: PLUMED seems to be configured properly!" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: **************************" >&5
 $as_echo "$as_me: **************************" >&6;}
+
+LD_RO=
+if test "$ld_r" == true ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C++ objects can be grouped with ld -r" >&5
+$as_echo_n "checking whether C++ objects can be grouped with ld -r... " >&6; }
+
+  LD_RO="ld -r -o"
+
+  rm -f conftest-*
+
+  cat << EOF > conftest-main.cpp
+  void f(void);
+  int main(int argc,char**argv){ f(); return 0; }
+EOF
+  cat << EOF > conftest-f.cpp
+  void g(void);
+  void f(void){ g(); }
+EOF
+  cat << EOF > conftest-g.cpp
+  void g(void){ return; }
+EOF
+
+  $CXX $CXXFLAGS -c conftest-main.cpp 1> /dev/null 2> /dev/null
+  $CXX $CXXFLAGS -c conftest-f.cpp 1> /dev/null 2> /dev/null
+  $CXX $CXXFLAGS -c conftest-g.cpp 1> /dev/null 2> /dev/null
+
+  $LD_RO conftest-both.o conftest-f.o conftest-g.o 1> /dev/null 2> /dev/null
+
+  $CXX $CXXFLAGS -o conftest.exe conftest-main.o conftest-both.o 1> /dev/null 2> /dev/null
+
+  if test -f conftest.exe
+  then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+    LD_RO=""
+  fi
+fi
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: I will now check if C++ objects can be linked by C/Fortran compilers" >&5
 $as_echo "$as_me: I will now check if C++ objects can be linked by C/Fortran compilers" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: This is relevant if you want to use plumed patch --static on a non-C++ code" >&5

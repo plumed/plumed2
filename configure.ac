@@ -162,6 +162,7 @@ PLUMED_CONFIG_ENABLE([fussy],[fussy],[fussy warnings],[no])
 PLUMED_CONFIG_ENABLE([debug_glibcxx],[debug-glibcxx],[enable boundary check],[no])
 PLUMED_CONFIG_ENABLE([shared],[shared],[shared libs],[yes])
 PLUMED_CONFIG_ENABLE([cxx_exceptions],[cxx-exceptions],[c++ exceptions],[no])
+PLUMED_CONFIG_ENABLE([ld_r],[ld-r],[group object files],[yes])
 PLUMED_CONFIG_ENABLE([mpi],[mpi],[search for mpi],[yes])
 PLUMED_CONFIG_ENABLE([external_lapack],[external-lapack],[search for external lapack],[yes])
 PLUMED_CONFIG_ENABLE([external_blas],[external-blas],[search for external blas],[yes])
@@ -603,6 +604,44 @@ fi
 #### This further tests are required to allow linking with non c++ compiler
 AC_MSG_NOTICE([PLUMED seems to be configured properly!])
 AC_MSG_NOTICE([**************************])
+AC_SUBST(LD_RO)
+LD_RO=
+if test "$ld_r" == true ; then
+  AC_MSG_CHECKING([whether C++ objects can be grouped with ld -r])
+  
+  LD_RO="ld -r -o"
+  
+  rm -f conftest-*
+  
+  cat << EOF > conftest-main.cpp
+  void f(void);
+  int main(int argc,char**argv){ f(); return 0; }
+EOF
+  cat << EOF > conftest-f.cpp
+  void g(void);
+  void f(void){ g(); }
+EOF
+  cat << EOF > conftest-g.cpp
+  void g(void){ return; }
+EOF
+  
+  $CXX $CXXFLAGS -c conftest-main.cpp 1> /dev/null 2> /dev/null
+  $CXX $CXXFLAGS -c conftest-f.cpp 1> /dev/null 2> /dev/null
+  $CXX $CXXFLAGS -c conftest-g.cpp 1> /dev/null 2> /dev/null
+  
+  $LD_RO conftest-both.o conftest-f.o conftest-g.o 1> /dev/null 2> /dev/null
+  
+  $CXX $CXXFLAGS -o conftest.exe conftest-main.o conftest-both.o 1> /dev/null 2> /dev/null
+  
+  if test -f conftest.exe
+  then
+    AC_MSG_RESULT([yes])
+  else
+    AC_MSG_RESULT([no])
+    LD_RO=""
+  fi
+fi
+
 AC_MSG_NOTICE([I will now check if C++ objects can be linked by C/Fortran compilers])
 AC_MSG_NOTICE([This is relevant if you want to use plumed patch --static on a non-C++ code])
 
