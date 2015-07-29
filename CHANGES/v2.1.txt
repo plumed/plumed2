@@ -233,6 +233,8 @@ For users:
 - Fixed erroneously reported message about MPI at the end of ./configure.
 - Changed warning message about undocumented components.
 - PLUMED now says in the log file if it was compiled from a dirty git repository.
+- Fixed a problem leading to rare random crashes when using \ref METAD with WALKERS_MPI and multiple
+  processors per replica.
 
 
 */
