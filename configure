@@ -621,6 +621,7 @@ ac_includes_default="\
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 build_dir
+program_name
 LD_RO
 program_can_run_mpi
 program_can_run

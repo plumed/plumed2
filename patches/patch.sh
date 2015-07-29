@@ -237,7 +237,7 @@ case "$action" in
       plumed_before_patch
     fi
     test -n "$quiet" || echo "Linking Plumed.h and Plumed.inc ($mode mode)"
-    ln -s "$PLUMED_ROOT/src/wrapper/Plumed.h"
+    ln -s "$PLUMED_INCLUDEDIR/$PLUMED_PROGRAM_NAME/wrapper/Plumed.h" Plumed.h
     ln -s "$PLUMED_ROOT/src/lib/Plumed.inc.$mode" Plumed.inc
     ln -s "$PLUMED_ROOT/src/lib/Plumed.cmake.$mode" Plumed.cmake
 

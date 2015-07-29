@@ -715,6 +715,7 @@ AC_ARG_PROGRAM
 # version modified to work in shell script instead of makefile:
 program_transform_name_sh=$(echo "${program_transform_name}" | sed 's:\$\$:$:g')
 program_name=$(echo plumed | sed "$program_transform_name_sh")
+AC_SUBST(program_name)
 
 if test "$(echo "$program_name" | tr '[A-Z]' '[a-z]')" != "$(echo "$program_name" | tr '[A-Z]' '[a-z]' | sed 's/kernel$//')" ; then
   AC_MSG_ERROR([$program_name is not a valid program name (should not terminate with Kernel)])

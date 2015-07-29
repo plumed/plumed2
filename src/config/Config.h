@@ -31,6 +31,14 @@ std::string getSoExt();
 
 std::string getPlumedRoot();
 
+std::string getPlumedHtmldir();
+
+std::string getPlumedIncludedir();
+
+std::string getPlumedProgramName();
+
+std::string getEnvCommand();
+
 std::string getMakefile();
 
 std::string getVersion();

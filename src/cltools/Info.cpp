@@ -91,8 +91,8 @@ int Info::main(FILE* in, FILE*out,Communicator& pc){
  bool printgitversion; parseFlag("--git-version",printgitversion);
  if(printroot) fprintf(out,"%s\n",config::getPlumedRoot().c_str());
  if(printconfiguration) fprintf(out,"%s",config::getMakefile().c_str());
- std::string userdoc=config::getPlumedRoot()+"user-doc/html/index.html";
- std::string developerdoc=config::getPlumedRoot()+"developer-doc/html/index.html";
+ std::string userdoc=config::getPlumedHtmldir()+"/user-doc/html/index.html";
+ std::string developerdoc=config::getPlumedHtmldir()+"/developer-doc/html/index.html";
  if(printuserdoc) fprintf(out,"%s\n",userdoc.c_str());
  if(printdeveloperdoc) fprintf(out,"%s\n",developerdoc.c_str());
  if(printversion) fprintf(out,"%s\n",config::getVersion().c_str());
