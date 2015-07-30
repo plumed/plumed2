@@ -40,6 +40,12 @@ C=\sum_{i=1}^{N_{arg}} c_i x_i^{p_i}
 
 The coefficients c and powers p are provided as vectors.
 
+Notice that COMBINE is not able to predict which will be periodic domain
+of the computed value automatically. The user is thus forced to specify it
+explicitly. Use PERIODIC=NO if the resulting variable is not periodic,
+and PERIODIC=A,B where A and B are the two boundaries if the resulting variable
+is periodic.
+
 
 
 \par Examples
@@ -53,6 +59,17 @@ COMBINE  LABEL=distance  ARG=distance2 POWERS=0.5 PERIODIC=NO
 PRINT ARG=distance,distance2
 \endverbatim
 (See also \ref PRINT and \ref DISTANCE).
+
+The following input tells plumed to add a restraint on the
+cube of a dihedral angle. Notice that since the angle has a
+periodic domain
+-pi,pi its cube has a domain -pi**3,pi**3.
+\verbatim
+t: TORSION ATOMS=1,3,5,7
+c: COMBINE ARG=t POWERS=3 PERIODIC=-31.0062766802998,31.0062766802998
+RESTRAINT ARG=c KAPPA=10 AT=0
+\endverbatim
+
 
 
 */
