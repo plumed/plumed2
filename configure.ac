@@ -724,9 +724,19 @@ if test "$(echo "$program_name" | tr '[A-Z]' '[a-z]')" != "$(echo "$program_name
   AC_MSG_ERROR([$program_name is not a valid program name (should not terminate with -patch)])
 fi
 
-AC_MSG_NOTICE([**** PLUMED will be installed using prefix $prefix])
-AC_MSG_NOTICE([**** You can change this later using "make install prefix=/path"])
+AC_MSG_NOTICE([**** PLUMED will be installed using the following paths:])
+AC_MSG_NOTICE([**** prefix: $prefix])
+AC_MSG_NOTICE([**** exec_prefix: $exec_prefix])
+AC_MSG_NOTICE([**** bindir: $bindir])
+AC_MSG_NOTICE([**** libdir: $libdir])
+AC_MSG_NOTICE([**** includedir: $includedir])
+AC_MSG_NOTICE([**** datarootdir: $datarootdir])
+AC_MSG_NOTICE([**** datadir: $datadir])
+AC_MSG_NOTICE([**** docdir: ${datarootdir}/doc/$program_name])
+AC_MSG_NOTICE([**** htmldir: $htmldir])
 AC_MSG_NOTICE([**** Executable will be named $program_name])
+AC_MSG_NOTICE([**** You can change paths later using options to "make install"])
+AC_MSG_NOTICE([**** e.g. with "make install prefix=/path"])
 
 if test $mpi == true; then
   if test $mpi_found == ok; then

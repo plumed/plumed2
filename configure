@@ -6880,6 +6880,7 @@ program_transform_name=`$as_echo "$program_transform_name" | sed "$ac_script"`
 program_transform_name_sh=$(echo "${program_transform_name}" | sed 's:\$\$:$:g')
 program_name=$(echo plumed | sed "$program_transform_name_sh")
 
+
 if test "$(echo "$program_name" | tr 'A-Z' 'a-z')" != "$(echo "$program_name" | tr 'A-Z' 'a-z' | sed 's/kernel$//')" ; then
   as_fn_error $? "$program_name is not a valid program name (should not terminate with Kernel)" "$LINENO" 5
 fi
@@ -6887,12 +6888,32 @@ if test "$(echo "$program_name" | tr 'A-Z' 'a-z')" != "$(echo "$program_name" | 
   as_fn_error $? "$program_name is not a valid program name (should not terminate with -patch)" "$LINENO" 5
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: **** PLUMED will be installed using prefix $prefix" >&5
-$as_echo "$as_me: **** PLUMED will be installed using prefix $prefix" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: **** You can change this later using \"make install prefix=/path\"" >&5
-$as_echo "$as_me: **** You can change this later using \"make install prefix=/path\"" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: **** PLUMED will be installed using the following paths:" >&5
+$as_echo "$as_me: **** PLUMED will be installed using the following paths:" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: **** prefix: $prefix" >&5
+$as_echo "$as_me: **** prefix: $prefix" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: **** exec_prefix: $exec_prefix" >&5
+$as_echo "$as_me: **** exec_prefix: $exec_prefix" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: **** bindir: $bindir" >&5
+$as_echo "$as_me: **** bindir: $bindir" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: **** libdir: $libdir" >&5
+$as_echo "$as_me: **** libdir: $libdir" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: **** includedir: $includedir" >&5
+$as_echo "$as_me: **** includedir: $includedir" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: **** datarootdir: $datarootdir" >&5
+$as_echo "$as_me: **** datarootdir: $datarootdir" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: **** datadir: $datadir" >&5
+$as_echo "$as_me: **** datadir: $datadir" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: **** docdir: ${datarootdir}/doc/$program_name" >&5
+$as_echo "$as_me: **** docdir: ${datarootdir}/doc/$program_name" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: **** htmldir: $htmldir" >&5
+$as_echo "$as_me: **** htmldir: $htmldir" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: **** Executable will be named $program_name" >&5
 $as_echo "$as_me: **** Executable will be named $program_name" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: **** You can change paths later using options to \"make install\"" >&5
+$as_echo "$as_me: **** You can change paths later using options to \"make install\"" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: **** e.g. with \"make install prefix=/path\"" >&5
+$as_echo "$as_me: **** e.g. with \"make install prefix=/path\"" >&6;}
 
 if test $mpi == true; then
   if test $mpi_found == ok; then

@@ -80,7 +80,7 @@ install-build:
 	mkdir -p install/
 	$(MAKE) PLUMED_INSTALL=Install all
 ifdef LD_RO
-	$(LD_RO) install/kernel.o $(OBJ_KERNEL)
+	$(MAKE) install/kernel.o
 endif
 # modulefile
 	@cat modulefile.in | \
@@ -90,6 +90,11 @@ endif
            sed "s|@_bindir_@|$(bindir)|" | \
            sed "s|@_includedir_@|$(includedir)|" \
 	   > install/modulefile
+
+ifdef LD_RO
+install/kernel.o: $(OBJ_KERNEL)
+	$(LD_RO) install/kernel.o $(OBJ_KERNEL)
+endif
 
 install:
 ifdef PLUMED_PREFIX
@@ -155,7 +160,7 @@ ifdef SOEXT
 	cp install/libplumedKernel.$(SOEXT) $(DESTDIR)$(libdir)/lib$(program_name)Kernel.$(SOEXT)
 endif
 # modulefile
-	cp install/modulefile $(DESTDIR)$(libdir)/$(program_name)/src/lib/modulefile
+	cp install/modulefile $(DESTDIR)$(libdir)/$(program_name)/modulefile
 # making everything visible:
 	chmod -R go+rX,go-w $(DESTDIR)$(libdir)/$(program_name)
 	chmod -R go+rX,go-w $(DESTDIR)$(includedir)/$(program_name)

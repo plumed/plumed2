@@ -7,7 +7,7 @@ set libdir "@_libdir_@"
 # this is the path for binaries
 set bindir "@_bindir_@"
 # this is the path for include files
-set bindir "@_includedir_@"
+set includedir "@_includedir_@"
 # this is the extension for dynamic libraries
 # if set to empty, switches off plumed library
 set soext  "@_SOEXT_@"
