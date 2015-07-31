@@ -482,6 +482,24 @@ with ALMOST_INSTALL_PATH set to the full path to the ALMOST installation folder.
 
 Here you can find instructions that are specific for patching each of the supported MD codes.
 
+\section installing Other hints
+
+We here collect a list of suggestions that might be useful on particular
+machines.
+
+- On Blue Gene Q (likely on AIX) the prelinking made with `ld -r` is not
+  working properly. There is no easy way to detect this at configure time.
+  If during `make` you receive an error in the form
+\verbatim
+ld: TOC section size exceeds 64k
+\endverbatim
+  please configure plumed again with the following flag
+\verbatim
+./configure --disable-ld-r
+\endverbatim
+
+
+
 @CODES@
  
 */
