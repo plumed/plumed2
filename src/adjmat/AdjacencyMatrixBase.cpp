@@ -117,7 +117,7 @@ Vector AdjacencyMatrixBase::getPositionOfAtomForLinkCells( const unsigned& iatom
 }
 
 void AdjacencyMatrixBase::updateActiveAtoms( multicolvar::AtomValuePack& myatoms ) const {
-  myatoms.updateDynamicList();
+  if( dertime && !doNotCalculateDerivatives() ) myatoms.updateDynamicList();
 }
 
 bool AdjacencyMatrixBase::isCurrentlyActive( const unsigned& bno, const unsigned& code ){
