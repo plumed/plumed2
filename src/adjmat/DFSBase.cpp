@@ -23,6 +23,13 @@
 #include "AdjacencyMatrixBase.h"
 #include "AdjacencyMatrixVessel.h"
 
+#ifdef __PLUMED_HAS_BOOST
+#include <boost/config.hpp>
+#include <boost/graph/adjacency_list.hpp>    
+#include <boost/graph/connected_components.hpp> 
+#include <boost/graph/graph_utility.hpp>
+#endif
+
 namespace PLMD {
 namespace adjmat {
 
@@ -33,12 +40,16 @@ void DFSBase::registerKeywords( Keywords& keys ){
 DFSBase::DFSBase(const ActionOptions&ao):
 Action(ao),
 ActionWithInputMatrix(ao),
-number_of_cluster(-1),
-nneigh(getNumberOfNodes()),
-adj_list(getNumberOfNodes(),getNumberOfNodes()),
 cluster_sizes(getNumberOfNodes()),
 which_cluster(getNumberOfNodes()),
+number_of_cluster(-1),
+#ifdef __PLUMED_HAS_BOOST
+edge_list(0.5*getNumberOfNodes()*(getNumberOfNodes()-1))
+#else
+nneigh(getNumberOfNodes()),
+adj_list(getNumberOfNodes(),getNumberOfNodes()),
 color(getNumberOfNodes())
+#endif
 {
    if( getNumberOfNodeTypes()!=1 ) error("should only be running DFS Clustering with one base multicolvar in function");
 }
@@ -63,22 +74,35 @@ unsigned DFSBase::getNumberOfQuantities(){
 } 
 
 void DFSBase::performClustering(){
+   // All the clusters have zero size initially
+   for(unsigned i=0;i<cluster_sizes.size();++i){ cluster_sizes[i].first=0; cluster_sizes[i].second=i; }
+#ifdef __PLUMED_HAS_BOOST
+   // Get the list of edges
+   unsigned nedges=0; getAdjacencyVessel()->retrieveEdgeList( nedges, edge_list );
+
+   // Build the graph using boost
+   boost::adjacency_list<boost::vecS,boost::vecS,boost::undirectedS> sg(&edge_list[0],&edge_list[nedges],getNumberOfNodes());
+
+   // Find the connected components using boost (-1 here for compatibility with non-boost version)
+   number_of_cluster=boost::connected_components(sg,&which_cluster[0]) - 1;
+
+   // And work out the size of each cluster
+   for(unsigned i=0;i<which_cluster.size();++i) cluster_sizes[which_cluster[i]].first++; 
+#else
    // Get the adjacency matrix
    getAdjacencyVessel()->retrieveAdjacencyLists( nneigh, adj_list ); 
-
-   // All the clusters have zero size initially
-   for(unsigned i=0;i<cluster_sizes.size();++i){ cluster_sizes[i].first=0; cluster_sizes[i].second=i;}
 
    // Perform clustering
    number_of_cluster=-1; color.assign(color.size(),0);
    for(unsigned i=0;i<getNumberOfNodes();++i){
       if( color[i]==0 ){ number_of_cluster++; color[i]=explore(i); } 
    }
-
+#endif
    // Order the clusters in the system by size (this returns ascending order )
    std::sort( cluster_sizes.begin(), cluster_sizes.end() );
 }
 
+#ifndef __PLUMED_HAS_BOOST
 int DFSBase::explore( const unsigned& index ){
 
    color[index]=1;
@@ -92,6 +116,7 @@ int DFSBase::explore( const unsigned& index ){
    which_cluster[index] = number_of_cluster;
    return color[index];
 }
+#endif
 
 void DFSBase::retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const {
    unsigned n=0; myatoms.resize( cluster_sizes[cluster_sizes.size() - clust].first );

@@ -31,20 +31,25 @@ namespace adjmat {
 
 class DFSBase : public ActionWithInputMatrix {
 private:
-/// Used to identify the cluster we are working on 
-  int number_of_cluster;
-/// The number of neighbors each atom has
-  std::vector<unsigned> nneigh;
-/// The adjacency list
-  Matrix<unsigned> adj_list;
 /// Vector that stores the sizes of the current set of clusters
   std::vector< std::pair<unsigned,unsigned> > cluster_sizes;
 /// Vector that identifies the cluster each atom belongs to
   std::vector<unsigned> which_cluster;
+/// Used to identify the cluster we are working on 
+  int number_of_cluster;
+#ifdef __PLUMED_HAS_BOOST
+/// The list of edges in the graph
+  std::vector<std::pair<unsigned,unsigned> > edge_list;
+#else 
+/// The number of neighbors each atom has
+  std::vector<unsigned> nneigh;
+/// The adjacency list
+  Matrix<unsigned> adj_list;
 /// The color that tells us whether a node has been visited
   std::vector<unsigned> color;
 /// The recursive function at the heart of this method
   int explore( const unsigned& index );
+#endif
 protected:
 /// Get the number of clusters that have been found
   unsigned getNumberOfClusters() const ;

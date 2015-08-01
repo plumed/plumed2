@@ -89,6 +89,16 @@ void AdjacencyMatrixVessel::retrieveAdjacencyLists( std::vector<unsigned>& nneig
   }
 }
 
+void AdjacencyMatrixVessel::retrieveEdgeList( unsigned& nedge, std::vector<std::pair<unsigned,unsigned> >& edge_list ){
+  nedge=0;
+  for(unsigned i=0;i<getNumberOfStoredValues();++i){
+      // Ignore any non active members
+      if( !storedValueIsActive(i) ) continue ;
+      getMatrixIndices( i, edge_list[nedge].first, edge_list[nedge].second );
+      nedge++;
+  }
+}
+
 void AdjacencyMatrixVessel::retrieveDerivatives( const unsigned& myelem, const bool& normed, MultiValue& myvals ){
   StoreDataVessel::retrieveDerivatives( myelem, normed, myvals );
   if( !function->weightHasDerivatives ) return ;
