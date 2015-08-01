@@ -33,8 +33,8 @@ namespace adjmat {
 class AdjacencyMatrixVessel;
 
 class ActionWithInputMatrix : 
-  public ActionWithValue,
   public ActionAtomistic,
+  public ActionWithValue,
   public vesselbase::ActionWithVessel
   {
 private:
@@ -69,8 +69,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithInputMatrix(const ActionOptions&);
   unsigned getNumberOfDerivatives();
+// Turn on the derivatives
+  virtual void turnOnDerivatives();
   bool isPeriodic(){ return false; }
-  void turnOnDerivatives();
   void apply();
 };
 

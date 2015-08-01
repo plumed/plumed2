@@ -65,8 +65,7 @@ void DFSBase::turnOnDerivatives(){
    }
    
    // Ensure that derivatives are turned on in base classes
-   ActionWithValue::turnOnDerivatives();
-   needsDerivatives();
+   ActionWithInputMatrix::turnOnDerivatives();
 }
 
 unsigned DFSBase::getNumberOfQuantities(){
