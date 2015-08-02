@@ -53,8 +53,6 @@ protected:
 /// Add derivatives to a matrix element
   void addDerivativesOnMatrixElement( const unsigned& ielem, const unsigned& jrow, const double& df, Matrix<double>& der );
 protected:
-/// Flag to make sure derivatives are calculated infrequently
-  bool dertime;
 /// Read the list of atoms involved in this colvar
   void parseAtomList(const std::string& key, const int& num, const bool& isnodes, std::vector<AtomNumber>& t);
 /// Get the number of nodes of different types
@@ -80,8 +78,6 @@ public:
   bool isCurrentlyActive( const unsigned& bno, const unsigned& code );
 /// Update the list of active atoms in the underlying atom value pack 
   void updateActiveAtoms( multicolvar::AtomValuePack& myatoms ) const ;
-/// Sets up everything that needs to be done prior to run through task list
-  void doJobsRequiredBeforeTaskList();
 /// Calculation routine
   void calculate();
 /// None of these things are allowed

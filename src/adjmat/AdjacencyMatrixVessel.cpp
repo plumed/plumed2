@@ -48,11 +48,6 @@ unsigned AdjacencyMatrixVessel::getStoreIndex( const unsigned& myelem ) const {
   return 0.5*ielem*(ielem-1)+jelem;
 }
 
-void AdjacencyMatrixVessel::finish( const std::vector<double>& buffer ){
-  StoreDataVessel::finish( buffer );
-  function->dertime=true;
-}
-
 AdjacencyMatrixBase* AdjacencyMatrixVessel::getMatrixAction() {
   return function;
 }

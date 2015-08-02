@@ -91,7 +91,11 @@ private:
   bool timers;
 /// The stopwatch that times the different parts of the calculation
   Stopwatch& stopwatch;
+/// These are used to minmise computational expense in complex functions
+  bool dertime_can_be_off;
 protected:
+/// This is also used to minimise computational expense in complex functions
+  bool dertime;
 /// The terms in the series are locked
   bool contributorsAreUnlocked;
 /// Does the weight have derivatives

@@ -95,14 +95,6 @@ void AdjacencyMatrixBase::requestAtoms( const std::vector<AtomNumber>& atoms ){
   setupMultiColvarBase();
 }
 
-void AdjacencyMatrixBase::doJobsRequiredBeforeTaskList(){
-  // Do jobs required by ActionWithVessel
-  ActionWithVessel::doJobsRequiredBeforeTaskList();
-  // Dont calculate derivatives on first loop
-  if( usingLowMem() ) dertime=false;
-  else dertime=true;
-}
-
 void AdjacencyMatrixBase::calculate(){
   if( checkNumericalDerivatives() ) error("numerical derivatives currently broken");
   // Setup the linke cells
@@ -117,7 +109,7 @@ Vector AdjacencyMatrixBase::getPositionOfAtomForLinkCells( const unsigned& iatom
 }
 
 void AdjacencyMatrixBase::updateActiveAtoms( multicolvar::AtomValuePack& myatoms ) const {
-  if( dertime && !doNotCalculateDerivatives() ) myatoms.updateDynamicList();
+  if( !doNotCalculateDerivatives() ) myatoms.updateDynamicList();
 }
 
 bool AdjacencyMatrixBase::isCurrentlyActive( const unsigned& bno, const unsigned& code ){

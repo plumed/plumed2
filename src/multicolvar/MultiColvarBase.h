@@ -149,6 +149,8 @@ public:
   virtual bool hasDifferentiableOrientation() const { return false; }
 /// This makes sure we are not calculating the director when we do LocalAverage
   virtual void doNotCalculateDirector(){}
+/// Ensure that derivatives are only calculated when needed
+  bool doNotCalculateDerivatives() const ;
 };
 
 inline
@@ -159,6 +161,12 @@ unsigned MultiColvarBase::getNumberOfDerivatives(){
 inline
 bool MultiColvarBase::usesPbc() const {
   return usepbc;
+}
+
+inline
+bool MultiColvarBase::doNotCalculateDerivatives() const {
+  if( !dertime ) return true;
+  return ActionWithValue::doNotCalculateDerivatives();
 }
 
 }

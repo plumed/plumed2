@@ -140,7 +140,7 @@ void ContactMatrix::calculateWeight( multicolvar::AtomValuePack& myatoms ) const
 }
 
 double ContactMatrix::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {
-  if( dertime && !doNotCalculateDerivatives() ){
+  if( !doNotCalculateDerivatives() ){
       Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
       double dfunc, sw = switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) ).calculate( distance.modulo(), dfunc );
       addAtomDerivatives( 0, (-dfunc)*distance, myatoms );

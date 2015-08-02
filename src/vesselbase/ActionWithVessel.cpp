@@ -62,7 +62,9 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   mydata(NULL),
   contributorsAreUnlocked(false),
   weightHasDerivatives(false),
-  stopwatch(*new Stopwatch)
+  stopwatch(*new Stopwatch),
+  dertime_can_be_off(false),
+  dertime(true)
 {
   maxderivatives=309; parse("MAXDERIVATIVES",maxderivatives);
   if( keywords.exists("SERIAL") ) parseFlag("SERIAL",serial);
@@ -71,7 +73,10 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   if( keywords.exists("LOWMEM") ){
      plumed_assert( !keywords.exists("HIGHMEM") );
      parseFlag("LOWMEM",lowmem);
-     if(lowmem)log.printf("  lowering memory requirements\n");
+     if(lowmem){ 
+        log.printf("  lowering memory requirements\n");
+        dertime_can_be_off=true;
+     }
   } 
   if( keywords.exists("HIGHMEM") ){
      plumed_assert( !keywords.exists("LOWMEM") );
@@ -121,6 +126,7 @@ void ActionWithVessel::addVessel( Vessel* vv ){
   StoreDataVessel* mm=dynamic_cast<StoreDataVessel*>( vv );
   if( mydata && mm ) error("cannot have more than one StoreDataVessel in one action");
   else if( mm ) mydata=mm;
+  else dertime_can_be_off=false; 
 }
 
 BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ){
@@ -309,6 +315,8 @@ void ActionWithVessel::runAllTasks(){
   unsigned bsize=0, bufsize=getSizeOfBuffer( bsize ); 
   // Clear buffer
   buffer.assign( buffer.size(), 0.0 );
+  // Switch off calculation of derivatives in main loop
+  if( dertime_can_be_off ) dertime=false;
 
   // std::vector<unsigned> der_list;
   // if( mydata ) der_list.resize( mydata->getSizeOfDerivativeList(), 0 ); 
@@ -359,6 +367,8 @@ void ActionWithVessel::runAllTasks(){
   if(nt>1) for(unsigned i=0;i<bufsize;++i) buffer[i]+=omp_buffer[i];
 }
   if(timers) stopwatch.stop("2 Loop over tasks");
+  // Turn back on derivative calculation
+  dertime=true;
 
   if(timers) stopwatch.start("3 MPI gather");
   // MPI Gather everything

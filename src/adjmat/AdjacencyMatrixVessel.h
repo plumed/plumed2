@@ -53,8 +53,6 @@ public:
   unsigned getNumberOfStoredValues() const ;
 /// Get the index we are storing this data inside
   unsigned getStoreIndex( const unsigned& ) const ;
-/// Finish the calculation
-  void finish( const std::vector<double>& buffer );
 /// Get the adjacency matrix
   void retrieveMatrix( DynamicList<unsigned>& myactive_elements, Matrix<double>& mymatrix );
 /// Get the neighbour list based on the adjacency matrix
