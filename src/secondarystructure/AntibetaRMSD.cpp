@@ -82,7 +82,7 @@ ANTIBETARMSD RESIDUES=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} LA
 class AntibetaRMSD : public SecondaryStructureRMSD {
 public:
   static void registerKeywords( Keywords& keys );
-  AntibetaRMSD(const ActionOptions&);
+  explicit AntibetaRMSD(const ActionOptions&);
 }; 
 
 PLUMED_REGISTER_ACTION(AntibetaRMSD,"ANTIBETARMSD")

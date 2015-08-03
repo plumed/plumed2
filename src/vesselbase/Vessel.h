@@ -83,8 +83,6 @@ private:
   const int numlab;
 /// The action that this vessel is created within
   ActionWithVessel* action;
-/// The start of this Vessel's buffer in buffer in the underlying ActionWithVessel
-  unsigned bufstart;
 /// The number of elements in this vessel's buffered data
   unsigned bufsize;
 /// Directive line.
@@ -96,6 +94,8 @@ private:
 /// This just checks we have done checkRead
   bool finished_read;
 protected:
+/// The start of this Vessel's buffer in buffer in the underlying ActionWithVessel
+  unsigned bufstart;
 /// A copy of the communicator
   Communicator& comm;
 /// Return the numerical label
@@ -113,17 +113,13 @@ protected:
 /// This returns the whole input line (it is used for less_than/more_than/between)
   std::string getAllInput(); 
 /// Return a pointer to the action we are working in
-  ActionWithVessel* getAction();
+  ActionWithVessel* getAction() const ;
 /// Return the value of the tolerance
   double getTolerance() const ;
 /// Return the value of the neighbor list tolerance
   double getNLTolerance() const ;
 /// Set the size of the data buffer
   void resizeBuffer( const unsigned& n );
-/// Set the value of the ith element in the buffer
-  void setBufferElement( const unsigned& i, const double& val);
-/// Get the value in the ith element of the buffer
-  double getBufferElement( const unsigned& i ) const ;
 public:
 /// Reference to the log on which to output details
   Log& log;
@@ -132,7 +128,7 @@ public:
 /// Convert the name to the label of the component
   static std::string transformName( const std::string& name );
 /// The constructor
-  Vessel( const VesselOptions& da );
+  explicit Vessel( const VesselOptions& da );
 /// Virtual destructor needed for proper inheritance
   virtual ~Vessel(){}
 /// Return the name
@@ -141,18 +137,18 @@ public:
   std::string getLabel() const ;
 /// Check that readin was fine
   void checkRead();
-/// Set all the buffer elements to zero
-  void zero();
-/// Add something to the ith element in the buffer
-  void addToBufferElement( const unsigned& i, const double& val);
 /// Return a description of the vessel contents
   virtual std::string description()=0;
+/// Set the start of the buffer
+ virtual void setBufferStart( unsigned& start );
 /// Do something before the loop
   virtual void prepare(){}
+/// This is replaced in bridges so we can transform the derivatives
+  virtual MultiValue& transformDerivatives( const unsigned& current, MultiValue& myvals, MultiValue& bvals );
 /// Calculate the part of the vessel that is done in the loop
-  virtual bool calculate()=0;
+  virtual bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const = 0;
 /// Complete the calculation once the loop is finished
-  virtual void finish()=0;
+  virtual void finish( const std::vector<double>& )=0;
 /// Reset the size of the buffers
   virtual void resize()=0;
 /// Retrieve the forces on the quantities in the vessel
@@ -212,8 +208,18 @@ int Vessel::getNumericalLabel() const {
 }
 
 inline
+void Vessel::setBufferStart( unsigned& start ){
+  bufstart=start; start+=bufsize;
+}
+
+inline
+MultiValue& Vessel::transformDerivatives( const unsigned& current, MultiValue& myvals, MultiValue& bvals ){
+  return myvals;
+}
+
+inline
 void Vessel::resizeBuffer( const unsigned& n ){
-  bufsize=n;   
+  bufsize=n; 
 }
 
 inline
@@ -227,31 +233,8 @@ double Vessel::getNLTolerance() const {
 }
 
 inline
-ActionWithVessel* Vessel::getAction(){
+ActionWithVessel* Vessel::getAction() const {
   return action;
-}
-
-inline
-void Vessel::zero(){
-  for(unsigned i=0;i<bufsize;++i) setBufferElement( i, 0.0 );
-}
-
-inline
-void Vessel::setBufferElement( const unsigned& i, const double& val){
-  plumed_dbg_assert( i<bufsize );
-  action->buffer[bufstart+i]=val;
-}
-
-inline
-void Vessel::addToBufferElement( const unsigned& i, const double& val){
-  plumed_dbg_assert( i<bufsize );
-  action->buffer[bufstart+i]+=val;
-}
-
-inline
-double Vessel::getBufferElement( const unsigned& i ) const {
-  plumed_dbg_assert( i<bufsize );
-  return action->buffer[bufstart+i];
 }
 
 }

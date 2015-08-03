@@ -27,7 +27,7 @@ namespace analysis {
 
 class CopyAllFrames : public LandmarkSelectionBase {
 public:
-  CopyAllFrames( const LandmarkSelectionOptions& lo );
+  explicit CopyAllFrames( const LandmarkSelectionOptions& lo );
   void select( MultiReferenceBase* );
 };
 

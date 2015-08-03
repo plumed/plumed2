@@ -81,7 +81,7 @@ PRINT ARG=t,cos,sin,d.x,d.y,d.z,mycos,mysin,cc.bias.vv1 STRIDE=1 FILE=colvar FMT
 
 class BiasValue : public Bias{
 public:
-  BiasValue(const ActionOptions&);
+  explicit BiasValue(const ActionOptions&);
   void calculate();
   static void registerKeywords(Keywords& keys);
 };

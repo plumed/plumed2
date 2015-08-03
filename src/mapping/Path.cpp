@@ -58,7 +58,7 @@ namespace mapping{
 class Path : public PathBase {
 public:
   static void registerKeywords( Keywords& keys );
-  Path(const ActionOptions&);
+  explicit Path(const ActionOptions&);
 };
 
 PLUMED_REGISTER_ACTION(Path,"PATH")

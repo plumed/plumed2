@@ -1,0 +1,88 @@
+/**
+
+@page CHANGES-2-2 Version 2.2b
+
+Version 2.2b (June 30, 2015)
+----------------------------
+
+Include all fixes in branch 2.1 indicated in \ref CHANGES-2-1 .
+
+Changes from version 2.1 which are relevant for users:
+- Changes leading to incompatible behavior:
+  - Labels of quantities calculates by \ref SPRINT have changed from <i>label</i>.coord_<i>num</i> to <i>label</i>.coord-<i>num</i>
+  - \ref METAD with WALKERS_MPI now writes a single hills file, without suffixes
+  - removed the ./configure.sh script of v2.0.x, now plumed can only be configured using autotools (./configure)
+  - \ref COM, \ref CENTER, and \ref GYRATION now automatically make molecules whole. In case you do not want them to do it, use NOPBC flag,
+    which recovers plumed 2.1 behavior
+  - Some MD code could now automatically trigger restart (e.g. gromacs when starting from cpt files). This can be overwritten using
+    \ref RESTART NO.
+  - Replica suffixes are now added by PLUMED *before* extension (e.g. use plumed.0.dat instead of plumed.dat.0)
+  - When using \ref switchingfunction the STRETCH keyword is now implicit. NOSTRETCH is available to enforce the old behavior.
+- Added partial OpenMP parallelization, see \ref Openmp
+- Added multiple time step integration for bias potentials, see \ref MTS
+- Link cells are now used in all multicolvars that involve \ref switchingfunction.  The link cell cutoff is
+  set equal to 2.*\f$d_{\textrm{max}}\f$.  Where \f$d_{\textrm{max}}\f$ is the (user-specified) point at which
+  the switching function goes to zero. Users should always set this parameter when using a switching function
+  in order to achieve optimal performance.
+- DHENERGY option is no longer possible within \ref DISTANCES.  You can still calculate the DHENERGY colvar by using \ref DHENERGY
+- News in configure and install:
+  - ./configure now allows external blas to be used with internal lapack. This is done automatically if only blas are available,
+    and can be enforced with --disable-external-lapack.
+  - ./configure supports --program-prefix, --program-suffix, and --program-transform-name.
+  - make install supports DESTDIR and prefix.
+  - Environment variables PLUMED_LIBSUFFIX and PLUMED_PREFIX are deprecated and will be removed in a later version.
+- New actions
+  - \ref DUMPMASSCHARGE to dump a file with mass and charges during MD.
+  - \ref EFFECTIVE_ENERGY_DRIFT to check that plumed forces are not screwing the MD integrator.
+  - \ref EXTENDED_LAGRANGIAN : in combination with  \ref METAD it implements metadynamics with Extended Lagrangian; standalone it implements TAMD/dAFED.
+  - \ref DFSCLUSTERING calculate the size of clusters 
+  - \ref DUMPMULTICOLVAR print out a multicolvar
+  - \ref MFILTER_LESS filter multicolvar by the value of the colvar
+  - \ref MFILTER_MORE 
+  - \ref MFILTER_BETWEEN
+  - \ref PCARMSD pca collective variables using OPTIMAL rmsd measure
+  - \ref PCAVARS pca collective variables using any one of the measures in reference
+  - \ref GRADIENT can be used to calculate the gradient of a quantity.  Used to drive nucleation
+  - \ref CAVITY
+  - \ref PUCKERING implemented for 5-membered rings (thanks to Alejandro Gil-Ley).
+  - \ref WRAPAROUND to fix periodic boundary conditions.
+- New features for existing actions:
+  - Keywords UPDATE_FROM and UPDATE_UNTIL to limit update step in a defined time window, available only for actions where it would be useful.
+  - Keyword UNNORMALIZED for \ref HISTOGRAM.
+  - Keywords for \ref GROUP (REMOVE, SORT, UNIQUE) to allow more flexible editing of groups.
+  - \ref DUMPATOMS now supports dumping xtc and trr files (requires xdrfile library).
+  - \ref driver can now read xtc and trr files also with xdrfile library.
+  - \ref driver accepts a --mc flag to read charges and masses from a file produced during
+    molecular dynamics with \ref DUMPMASSCHARGE
+  - Possibility to enable or disable \ref RESTART on a per action basis, available only for actions where it would be useful.
+  - \ref MOLINFO now supports many more special names for rna and dna (thanks to Alejandro Gil-Ley).
+  - VMEAN and VSUM allow one to calculate the sum of a set of vectors calculated by VectorMultiColvar.  Note these
+  can also be used in tandem with \ref AROUND or \ref MFILTER_MORE to calculate the average vector within a particular
+  part of the cell or the average vector amonst those that have a magnitude greater than some tolerance
+  - New way of calculating the minimum value in multicolvars (ALT_MIN). This is less succetible to overflow for certain 
+    values of \f$\beta\f$.  
+  - New keywords for calculating the LOWEST and HIGHEST colvar calculated by a multicolvar
+- Other changes:
+  - File reader now supports dos newlines as well as files with no endline at the end.
+
+For developers:
+
+- In order to be able to use openmp parallelism within multcolvar, secondarystructure, manyrestraints and crystallisation
+we had to make some substantial changes to the code that underlies these routines that is contained within vesselbase. In 
+particular we needed to get rid of the derivatives and buffer private variables in the class ActionWithVessel.  As a consequence
+the derivatives calculated in the various performTask methods are stored in an object of type MultiValue.  Within multicolvar
+this is contained within an object of type AtomValuePack, which stores information on the atom indices.  If you have implemented
+a new multicolvar it should be relatively straightforward to translate them so they can exploit this new version of the code.  Look 
+at what has been done to the other multicolvars in there for guidance.  Sorry for any inconvenience caused.
+
+Further changes
+---------------
+(this paragraph will be merged with the one above when releasing 2.2.0)
+
+These are changes implemented in the \branch{v2.2} branch on github after release of v2.2b. If you need them, please
+download PLUMED from github.
+
+For users:
+- Module activation can now be controlled during configure with `--enable-modules` option.
+
+*/

@@ -66,7 +66,7 @@ protected:
   void           setBoxDerivativesNoPbc(Value*);
 public:
   bool checkIsEnergy(){return isEnergy;}
-  Colvar(const ActionOptions&);
+  explicit Colvar(const ActionOptions&);
   ~Colvar(){}
   static void registerKeywords( Keywords& keys );
   virtual unsigned getNumberOfDerivatives();

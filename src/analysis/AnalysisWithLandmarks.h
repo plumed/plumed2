@@ -47,13 +47,13 @@ protected:
   unsigned getNumberOfLandmarks() const ;
 public:
   static void registerKeywords( Keywords& keys );
-  AnalysisWithLandmarks( const ActionOptions& );
+  explicit AnalysisWithLandmarks( const ActionOptions& );
   ~AnalysisWithLandmarks();
 /// Do the analysis
   void performAnalysis();
   virtual void analyzeLandmarks()=0;
 /// This does nothing
-  void performTask();
+  void performTask( const unsigned& , const unsigned& , MultiValue& ) const ;
 };
 
 }

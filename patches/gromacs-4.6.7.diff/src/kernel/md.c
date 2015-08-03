@@ -245,6 +245,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 /* PLUMED */
     int plumedNeedsEnergy=0;
     int plumedWantsToStop=0;
+    matrix plumed_vir;
 /* END PLUMED */
 
 #ifdef GMX_FAHCORE
@@ -751,7 +752,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
       /* setting kbT is only implemented with api>1) */
       real kbT=ir->opts.ref_t[0]*BOLTZ;
       if(pversion>1) plumed_cmd(plumedmain,"setKbT",&kbT);
-
+      if(pversion>2){
+        int res=1;
+        if( (Flags & MD_STARTFROMCPT) ) plumed_cmd(plumedmain,"setRestart",&res);
+      }
       if(cr->ms && cr->ms->nsim>1) {
         if(MASTER(cr)) plumed_cmd(plumedmain,"GREX setMPIIntercomm",&cr->ms->mpi_comm_masters);
         if(PAR(cr)){
@@ -1266,8 +1270,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
               plumed_cmd(plumedmain,"prepareCalc",NULL);
               plumed_cmd(plumedmain,"setStopFlag",&plumedWantsToStop);
               plumed_cmd(plumedmain,"setForces",&f[mdatoms->start][0]);
-              plumed_cmd(plumedmain,"setVirial",&force_vir[0][0]);
               plumed_cmd(plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
+              clear_mat(plumed_vir);
+              plumed_cmd(plumedmain,"setVirial",&plumed_vir[0][0]);
             }
             /* END PLUMED */
             do_force(fplog, cr, ir, step, nrnb, wcycle, top, top_global, groups,
@@ -1279,8 +1284,13 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             /* PLUMED */
             if(plumedswitch){
               if(plumedNeedsEnergy){
+                msmul(force_vir,2.0,plumed_vir);
                 plumed_cmd(plumedmain,"setEnergy",&enerd->term[F_EPOT]);
                 plumed_cmd(plumedmain,"performCalc",NULL);
+                msmul(plumed_vir,0.5,force_vir);
+              } else {
+                msmul(plumed_vir,0.5,plumed_vir);
+                m_add(force_vir,plumed_vir,force_vir);
               }
               if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
                  do_per_step(step,repl_ex_nst)) plumed_cmd(plumedmain,"GREX savePositions",NULL);

@@ -47,7 +47,7 @@ PRINT ARG=t1
 class Time : public ActionWithValue {
 public:
   static void registerKeywords( Keywords& keys );
-  Time(const ActionOptions&);
+  explicit Time(const ActionOptions&);
 // active methods:
   virtual void calculate();
   virtual void apply(){}

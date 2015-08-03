@@ -49,7 +49,7 @@ PRINT ARG=vol
 class Volume : public Colvar {
 
 public:
-  Volume(const ActionOptions&);
+  explicit Volume(const ActionOptions&);
 // active methods:
   virtual void calculate();
 /// Register all the keywords for this action

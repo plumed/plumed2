@@ -32,13 +32,11 @@ class PDB;
 class Pbc;
 
 class ArgumentOnlyDistance : public ReferenceArguments {
-private:
-  std::vector<double> tmparg;
 public:
-  ArgumentOnlyDistance( const ReferenceConfigurationOptions& ro );
-  double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, const bool& squared );
-  double calculate( const std::vector<Value*>& vals, const bool& squared );
-  virtual double calc( const std::vector<Value*>& vals, const std::vector<double>& arg, const bool& squared )=0;
+  explicit ArgumentOnlyDistance( const ReferenceConfigurationOptions& ro );
+  void read( const PDB& pdb );
+  double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, ReferenceValuePack& myder, const bool& squared ) const ;
+  double calculate( const std::vector<Value*>& vals, ReferenceValuePack& myder, const bool& squared ) const ;
 };
 
 }

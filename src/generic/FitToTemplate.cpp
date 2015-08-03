@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2014,2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -96,7 +96,7 @@ class FitToTemplate:
   Vector center;
   Vector shift;
 public:
-  FitToTemplate(const ActionOptions&ao);
+  explicit FitToTemplate(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
   void calculate();
   void apply();
@@ -164,12 +164,12 @@ void FitToTemplate::calculate(){
 void FitToTemplate::apply(){
   Vector totForce;
   for(unsigned i=0;i<getTotAtoms();i++){
-    Vector & ato (modifyPosition(AtomNumber::index(i)));
-    ato-=shift;
-    totForce+=modifyForce(AtomNumber::index(i));
+    totForce+=modifyGlobalForce(AtomNumber::index(i));
   }
+  Tensor & vv(modifyGlobalVirial());
+  vv+=Tensor(center,totForce);
   for(unsigned i=0;i<aligned.size();++i){
-    Vector & ff(modifyForce(aligned[i]));
+    Vector & ff(modifyGlobalForce(aligned[i]));
     ff-=totForce*weights[i];
   }
 }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -27,15 +27,12 @@ namespace PLMD {
 namespace vesselbase {
 
 class Mean : public FunctionVessel {
-private:
-  unsigned wnum;
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
-  Mean( const vesselbase::VesselOptions& da );
-  std::string function_description();
-  bool calculate();
-  void finish();
+  explicit Mean( const vesselbase::VesselOptions& da );
+  std::string value_descriptor();
+  double calcTransform( const double& val, double& dv ) const ;
 };
 
 PLUMED_REGISTER_VESSEL(Mean,"MEAN")
@@ -53,36 +50,16 @@ void Mean::reserveKeyword( Keywords& keys ){
 Mean::Mean( const vesselbase::VesselOptions& da ) :
 FunctionVessel(da)
 {
-  wnum=getAction()->getIndexOfWeight();
   if( getAction()->isPeriodic() ) error("MEAN cannot be used with periodic variables");
+  norm=true;   // Makes sure we calculate the average
 }
 
-std::string Mean::function_description(){
+std::string Mean::value_descriptor(){
   return "the mean value";
 }
 
-bool Mean::calculate(){
-  double weight=getAction()->getElementValue(wnum);
-  plumed_dbg_assert( weight>=getTolerance() );
-  addValueIgnoringTolerance( 1, weight );
-  double colvar=getAction()->getElementValue(0);
-  addValueIgnoringTolerance( 0, weight*colvar  );
-  getAction()->chainRuleForElementDerivatives( 0, 0, weight, this );
-  if(diffweight){
-     getAction()->chainRuleForElementDerivatives( 0, wnum, colvar, this );
-     getAction()->chainRuleForElementDerivatives( 1, wnum, 1.0, this );
-  }
-  return true;
-}
-
-void Mean::finish(){
-  setOutputValue( getFinalValue(0) / getFinalValue(1) ); 
-  double denom=getFinalValue(1);
-  std::vector<double> df(2); 
-  df[0] = 1.0 / denom; 
-  if(diffweight) df[1] = -getFinalValue(0) / (denom*denom); 
-  else df[1]=0.0;
-  mergeFinalDerivatives( df );
+double Mean::calcTransform( const double& val, double& dv ) const {
+  dv=1.0; return val;
 }
 
 }

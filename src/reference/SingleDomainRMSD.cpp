@@ -56,17 +56,16 @@ void SingleDomainRMSD::setReferenceAtoms( const std::vector<Vector>& conf, const
      center+=conf[i]*align[i]; der_index[i]=i;
   }
   for(unsigned i=0;i<conf.size();++i) reference_atoms[i]=conf[i]-center;
-  setNumberOfAtoms( conf.size() ); setNumberOfArguments( 0 );
 }
 
-double SingleDomainRMSD::calculate( const std::vector<Vector>& pos, const Pbc& pbc,  const bool& squared ){
-  clearDerivatives();
-  return calc( pos, pbc, squared );
+double SingleDomainRMSD::calculate( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceValuePack& myder, const bool& squared ) const {
+  return calc( pos, pbc, myder, squared );
 }
 
-double SingleDomainRMSD::calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, const bool& squared ){
+double SingleDomainRMSD::calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, 
+                               ReferenceValuePack& myder, const bool& squared ) const {
   plumed_dbg_assert( vals.size()==0 && pos.size()==getNumberOfAtoms() && arg.size()==0 );
-  return calc( pos, pbc, squared );
+  return calc( pos, pbc, myder, squared );
 }
 
 }

@@ -34,8 +34,42 @@ namespace crystallization{
 
 //+PLUMEDOC MCOLVAR TETRAHEDRAL
 /*
+Calculate the degree to which the environment about ions has a tetrahedral order.
+
+We can measure the degree to which the first coordination shell around any atom, \f$i\f$ is 
+tetrahedrally ordered using the following function.
+
+\f[
+ s(i) = \frac{1}{\sum_j \sigma( r_{ij} )} \sum_j \sigma( r_{ij} )\left[ \frac{(x_{ij} + y_{ij} + z_{ij})^3}{r_{ij}^3} + 
+                                                                        \frac{(x_{ij} - y_{ij} - z_{ij})^3}{r_{ij}^3} + 
+                                                                        \frac{(-x_{ij} + y_{ij} - z_{ij})^3}{r_{ij}^3} + 
+                                                                        \frac{(-x_{ij} - y_{ij} + z_{ij})^3}{r_{ij}^3} \right]  
+\f]
+
+Here \f$r_{ij}\f$ is the magnitude fo the vector connecting atom \f$i\f$ to atom \f$j\f$ and \f$x_{ij}\f$, \f$y_{ij}\f$ and \f$z_{ij}\f$
+are its three components.  The function  \f$\sigma( r_{ij} )\f$ is a \ref switchingfunction that acts on the distance between 
+atoms \f$i\f$ and \f$j\f$.  The parameters of this function should be set so that the function is equal to one
+when atom \f$j\f$ is in the first coordination sphere of atom \f$i\f$ and is zero otherwise.
 
 \par Examples
+
+The following command calculates the average value of the tetrahedrality parameter for a set of 64 atoms all of the same type
+and outputs this quantity to a file called colvar.
+
+\verbatim
+tt: TETRAHEDRAL SPECIES=1-64 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN
+PRINT ARG=tt.mean FILE=colvar
+\endverbatim  
+
+The following command calculates the number of tetrahedrality parameters that are greater than 0.8 in a set of 10 atoms.
+In this calculation it is assumed that there are two atom types A and B and that the first coordination sphere of the
+10 atoms of type A contains atoms of type B.  The formula above is thus calculated for ten different A atoms and within 
+it the sum over \f$j\f$ runs over 40 atoms of type B that could be in the first coordination sphere.
+
+\verbatim
+tt: TETRAHEDRAL SPECIESA=1-10 SPECIESB=11-40 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MORE_THAN={RATIONAL R_0=0.8}
+PRINT ARG=tt.* FILE=colvar
+\endverbatim
 
 */
 //+ENDPLUMEDOC
@@ -48,10 +82,9 @@ private:
   SwitchingFunction switchingFunction;
 public:
   static void registerKeywords( Keywords& keys );
-  Tetrahedral(const ActionOptions&);
+  explicit Tetrahedral(const ActionOptions&);
 // active methods:
-  virtual double compute(); 
-  Vector getCentralAtom();
+  virtual double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ; 
 /// Returns the number of coordinates of the field
   bool isPeriodic(){ return false; }
 };
@@ -71,6 +104,7 @@ void Tetrahedral::registerKeywords( Keywords& keys ){
   // Use actionWithDistributionKeywords
   keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("LESS_THAN"); keys.use("MAX");
   keys.use("MIN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
+  keys.use("ALT_MIN"); keys.use("LOWEST"); keys.use("HIGHEST"); 
 }
 
 Tetrahedral::Tetrahedral(const ActionOptions&ao):
@@ -99,19 +133,20 @@ PLUMED_MULTICOLVAR_INIT(ao)
   checkRead();
 }
 
-double Tetrahedral::compute(){
-   weightHasDerivatives=true;
-   double value=0, norm=0, dfunc; Vector distance;
+double Tetrahedral::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {
+   double value=0, norm=0, dfunc; 
 
    // Calculate the coordination number
    Vector myder, fder;
    double sw, sp1, sp2, sp3, sp4;
    double sp1c, sp2c, sp3c, sp4c, r3, r5, tmp;
    double d2, t1, t2, t3, t4, tt1, tt2, tt3, tt4;
-   for(unsigned i=1;i<getNAtoms();++i){
-      distance=getSeparation( getPosition(0), getPosition(i) );
-      d2 = distance.modulo2();
-      if( d2<rcut2 ){ 
+   for(unsigned i=1;i<myatoms.getNumberOfAtoms();++i){
+      Vector& distance=myatoms.getPosition(i);  // getSeparation( myatoms.getPosition(0), myatoms.getPosition(i) );
+      if ( (d2=distance[0]*distance[0])<rcut2 &&
+           (d2+=distance[1]*distance[1])<rcut2 &&
+           (d2+=distance[2]*distance[2])<rcut2) {
+      
          sw = switchingFunction.calculateSqr( d2, dfunc );
 
          sp1 = +distance[0]+distance[1]+distance[2];
@@ -139,30 +174,24 @@ double Tetrahedral::compute(){
          myder[2] = (tt1-(distance[2]*t1))  + (-tt2-(distance[2]*t2))  + (-tt3-(distance[2]*t3))  + (tt4-(distance[2]*t4));
 
          value += sw*tmp; fder = (+dfunc)*tmp*distance + sw*myder;
-         addAtomsDerivatives( 0, -fder );
-         addAtomsDerivatives( i, +fder );
+         myatoms.addAtomsDerivatives( 1, 0, -fder );
+         myatoms.addAtomsDerivatives( 1, i, +fder );
          // Tens is a constructor that you build by taking the vector product of two vectors (remember the scalars!)
-         addBoxDerivatives( Tensor(distance,-fder) );
+         myatoms.addBoxDerivatives( 1, Tensor(distance,-fder) );
  
          norm += sw;
-         addAtomsDerivativeOfWeight( 0, (-dfunc)*distance );
-         addAtomsDerivativeOfWeight( i, (+dfunc)*distance );
-         addBoxDerivativesOfWeight( (-dfunc)*Tensor(distance,distance) );
+         myatoms.addAtomsDerivatives( 0, 0, (-dfunc)*distance );
+         myatoms.addAtomsDerivatives( 0, i, (+dfunc)*distance );
+         myatoms.addBoxDerivatives( 0, (-dfunc)*Tensor(distance,distance) );
       }
    }
    
-   setElementValue(0, value); setElementValue(1, norm ); 
+   myatoms.setValue(1, value); myatoms.setValue(0, norm ); 
    // values -> der of... value [0], weight[1], x coord [2], y, z... [more magic]
-   updateActiveAtoms(); quotientRule( 0, 1, 0 ); clearDerivativesAfterTask(1);
-   // Weight doesn't really have derivatives (just use the holder for convenience)
-   weightHasDerivatives=false; setElementValue( 1, 1.0 );
+   updateActiveAtoms( myatoms ); myatoms.getUnderlyingMultiValue().quotientRule( 1, 0, 1 ); 
+   myatoms.getUnderlyingMultiValue().clear(0); myatoms.setValue( 0, 1.0 );
 
    return value / norm; // this is equivalent to getting an "atomic" CV
-}
-
-Vector Tetrahedral::getCentralAtom(){
-   addCentralAtomDerivatives( 0, Tensor::identity() );
-   return getPosition(0);
 }
 
 }

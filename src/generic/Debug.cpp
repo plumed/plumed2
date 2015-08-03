@@ -54,7 +54,7 @@ class Debug:
   bool novirial;
   bool detailedTimers;
 public:
-  Debug(const ActionOptions&ao);
+  explicit Debug(const ActionOptions&ao);
 /// Register all the relevant keywords for the action  
   static void registerKeywords( Keywords& keys );
   void calculate(){}

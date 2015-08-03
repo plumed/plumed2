@@ -51,7 +51,7 @@ class Load :
 {
 public:
   static void registerKeywords( Keywords& keys );
-  Load(const ActionOptions&ao);
+  explicit Load(const ActionOptions&ao);
 };
 
 PLUMED_REGISTER_ACTION(Load,"LOAD")

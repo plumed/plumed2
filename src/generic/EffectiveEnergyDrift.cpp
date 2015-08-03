@@ -108,7 +108,7 @@ public ActionPilot{
   bool isFirstStep;
 
 public:
-  EffectiveEnergyDrift(const ActionOptions&);
+  explicit EffectiveEnergyDrift(const ActionOptions&);
   ~EffectiveEnergyDrift();
 
   static void registerKeywords( Keywords& keys );
@@ -127,6 +127,9 @@ void EffectiveEnergyDrift::registerKeywords( Keywords& keys ){
   keys.add("compulsory","STRIDE","1","should be set to 1. Effective energy drift computation has to be active at each step.");
   keys.add("compulsory", "FILE", "file on which to output the effective energy drift.");
   keys.add("compulsory", "PRINT_STRIDE", "frequency to which output the effective energy drift on FILE");
+  keys.use("RESTART");
+  keys.use("UPDATE_FROM");
+  keys.use("UPDATE_UNTIL");
 }
 
 EffectiveEnergyDrift::EffectiveEnergyDrift(const ActionOptions&ao):

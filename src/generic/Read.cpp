@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -74,7 +74,7 @@ private:
   std::vector<Value*> readvals;
 public:
   static void registerKeywords( Keywords& keys );
-  Read(const ActionOptions&);
+  explicit Read(const ActionOptions&);
   ~Read();
   void prepare();
   void apply(){}
@@ -99,6 +99,8 @@ void Read::registerKeywords(Keywords& keys){
   keys.addFlag("IGNORE_TIME",false,"ignore the time in the colvar file. When this flag is not present read will be quite strict "
                                    "about the start time of the simulation and the stride between frames");
   keys.remove("NUMERICAL_DERIVATIVES");
+  keys.use("UPDATE_FROM");
+  keys.use("UPDATE_UNTIL");
   ActionWithValue::useCustomisableComponents(keys);
 }
 

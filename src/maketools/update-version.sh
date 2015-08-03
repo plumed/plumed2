@@ -19,9 +19,9 @@ echo "#define PLUMED_VERSION_LONG \"$(
 
 echo "#define PLUMED_VERSION_GIT \"$(
   if test -d ../../.git && hash git 2> /dev/null ; then
-# describe --tags gives a nive name
+# describe --tags gives a nice name
 # in case it does not work, fallback to normal hash (12 char long)
-    git describe --tags || git rev-parse  --short=12 HEAD
+    git describe --long --tags --dirty --always || git rev-parse  --short=12 HEAD
   else
     echo "Unknown"
   fi

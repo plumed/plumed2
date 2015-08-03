@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -118,7 +118,7 @@ class Distance : public Colvar {
 
 public:
   static void registerKeywords( Keywords& keys );
-  Distance(const ActionOptions&);
+  explicit Distance(const ActionOptions&);
 // active methods:
   virtual void calculate();
 };
@@ -182,12 +182,9 @@ pbc(true)
 // calculator
 void Distance::calculate(){
 
-  Vector distance;
-  if(pbc){
-    distance=pbcDistance(getPosition(0),getPosition(1));
-  } else {
-    distance=delta(getPosition(0),getPosition(1));
-  }
+  if(pbc) makeWhole();
+
+  Vector distance=delta(getPosition(0),getPosition(1));
   const double value=distance.modulo();
   const double invvalue=1.0/value;
 
@@ -198,17 +195,17 @@ void Distance::calculate(){
 
     setAtomsDerivatives (valuex,0,Vector(-1,0,0));
     setAtomsDerivatives (valuex,1,Vector(+1,0,0));
-    setBoxDerivatives   (valuex,Tensor(distance,Vector(-1,0,0)));
+    setBoxDerivativesNoPbc(valuex);
     valuex->set(distance[0]);
 
     setAtomsDerivatives (valuey,0,Vector(0,-1,0));
     setAtomsDerivatives (valuey,1,Vector(0,+1,0));
-    setBoxDerivatives   (valuey,Tensor(distance,Vector(0,-1,0)));
+    setBoxDerivativesNoPbc(valuey);
     valuey->set(distance[1]);
 
     setAtomsDerivatives (valuez,0,Vector(0,0,-1));
     setAtomsDerivatives (valuez,1,Vector(0,0,+1));
-    setBoxDerivatives   (valuez,Tensor(distance,Vector(0,0,-1)));
+    setBoxDerivativesNoPbc(valuez);
     valuez->set(distance[2]);
   } else if(scaled_components){
     Value* valuea=getPntrToComponent("a");
@@ -227,7 +224,7 @@ void Distance::calculate(){
   } else {
     setAtomsDerivatives(0,-invvalue*distance);
     setAtomsDerivatives(1,invvalue*distance);
-    setBoxDerivatives  (-invvalue*Tensor(distance,distance));
+    setBoxDerivativesNoPbc();
     setValue           (value);
   }
 

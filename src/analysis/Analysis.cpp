@@ -77,6 +77,9 @@ void Analysis::registerKeywords( Keywords& keys ){
   keys.add("hidden","REUSE_DATA_FROM","eventually this will allow you to analyse the same set of data multiple times");
   keys.add("hidden","IGNORE_REWEIGHTING","this allows you to ignore any reweighting factors");
   keys.reserveFlag("NOMEMORY",false,"analyse each block of data separately");
+  keys.use("RESTART");
+  keys.use("UPDATE_FROM");
+  keys.use("UPDATE_UNTIL");
   ActionWithVessel::registerKeywords( keys ); keys.remove("TOL"); 
 }
 

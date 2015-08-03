@@ -30,8 +30,6 @@ namespace multicolvar {
 class VolumeGradientBase : public BridgedMultiColvarFunction {
 friend class MultiColvarBase;   
 private:
-/// This is used for storing positions properly
-  Vector tmp_p;
 /// This is used to store forces temporarily in apply
   std::vector<double> tmpforces;
 protected:
@@ -42,24 +40,20 @@ protected:
 /// Calculate distance between two points
   Vector pbcDistance( const Vector& v1, const Vector& v2) const;
 /// Get position of atom
-  const Vector & getPosition( int iatom );
+  Vector getPosition( int iatom ) const ;
 /// Request the atoms 
   void requestAtoms( const std::vector<AtomNumber>& atoms );
 /// Set the number in the volume
-  void setNumberInVolume( const unsigned& ivol, const double& weight, const Vector& wdf );
-/// Add derivatinve to one of the reference atoms here
-  void addReferenceAtomDerivatives( const unsigned& jvol, const unsigned& iatom, const Vector& der );
-/// Add derivatives wrt to the virial
-  void addBoxDerivatives( const unsigned& jvol, const Tensor& vir );
+  void setNumberInVolume( const unsigned& , const unsigned& , const double& , const Vector& , const Tensor& , const std::vector<Vector>& , MultiValue& ) const ;
 public:
   static void registerKeywords( Keywords& keys );
-  VolumeGradientBase(const ActionOptions&);
+  explicit VolumeGradientBase(const ActionOptions&);
 /// Do jobs required before tasks are undertaken
   void doJobsRequiredBeforeTaskList();
 /// Actually do what we are asked
-  void completeTask();
+  void completeTask( const unsigned& curr, MultiValue& invals, MultiValue& outvals ) const ;
 /// Calculate what is in the volumes
-  virtual void calculateAllVolumes()=0;
+  virtual void calculateAllVolumes( const unsigned& curr, MultiValue& outvals ) const=0;
 /// Setup the regions that this is based on 
   virtual void setupRegions()=0;
 /// Forces here are applied through the bridge
@@ -82,10 +76,10 @@ Vector VolumeGradientBase::pbcDistance( const Vector& v1, const Vector& v2) cons
 }
 
 inline
-const Vector & VolumeGradientBase::getPosition( int iatom ){
+Vector VolumeGradientBase::getPosition( int iatom ) const {
  if( !checkNumericalDerivatives() ) return ActionAtomistic::getPosition(iatom);
  // This is for numerical derivatives of quantity wrt to the local atoms
- tmp_p = ActionAtomistic::getPosition(iatom);
+ Vector tmp_p = ActionAtomistic::getPosition(iatom);
  if( bridgeVariable<3*getNumberOfAtoms() ){
     if( bridgeVariable>=3*iatom && bridgeVariable<(iatom+1)*3 ) tmp_p[bridgeVariable%3]+=sqrt(epsilon);
  }
@@ -94,32 +88,6 @@ const Vector & VolumeGradientBase::getPosition( int iatom ){
  tmp_p = getPbc().scaledToReal( tmp_p );
  return tmp_p;
 } 
-
-inline
-void VolumeGradientBase::addReferenceAtomDerivatives( const unsigned& jvol, const unsigned& iatom, const Vector& der ){
-  // This is used for storing the derivatives wrt to the 
-  // positions of any additional reference atoms
-  double pref=getPntrToMultiColvar()->getElementValue(1); 
-  unsigned nstart = jvol*getNumberOfDerivatives() + getPntrToMultiColvar()->getNumberOfDerivatives() + 3*iatom;
-  addElementDerivative( nstart + 0, pref*der[0] );
-  addElementDerivative( nstart + 1, pref*der[1] );
-  addElementDerivative( nstart + 2, pref*der[2] );
-}
-
-inline
-void VolumeGradientBase::addBoxDerivatives( const unsigned& jvol, const Tensor& vir ){
-  double pref=getPntrToMultiColvar()->getElementValue(1);
-  unsigned nstart = jvol*getNumberOfDerivatives() + getPntrToMultiColvar()->getNumberOfDerivatives() - 9;
-  addElementDerivative( nstart + 0, pref*vir(0,0) );  
-  addElementDerivative( nstart + 1, pref*vir(0,1) ); 
-  addElementDerivative( nstart + 2, pref*vir(0,2) ); 
-  addElementDerivative( nstart + 3, pref*vir(1,0) ); 
-  addElementDerivative( nstart + 4, pref*vir(1,1) ); 
-  addElementDerivative( nstart + 5, pref*vir(1,2) ); 
-  addElementDerivative( nstart + 6, pref*vir(2,0) ); 
-  addElementDerivative( nstart + 7, pref*vir(2,1) ); 
-  addElementDerivative( nstart + 8, pref*vir(2,2) ); 
-}
 
 }
 }

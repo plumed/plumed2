@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -42,6 +42,7 @@ class ActionWithVirtualAtom:
 {
   AtomNumber index;
   std::vector<Tensor> derivatives;
+  std::vector<Tensor> boxDerivatives;
   std::map<AtomNumber,Tensor> gradients;
   void apply();
 protected:
@@ -55,12 +56,29 @@ protected:
   void requestAtoms(const std::vector<AtomNumber> & a);
 /// Set the derivatives of virtual atom coordinate wrt atoms on which it dependes
   void setAtomsDerivatives(const std::vector<Tensor> &d);
+/// Set the box derivatives.
+/// This should be a vector of size 3. First index corresponds
+/// to the components of the virtual atom.
+/// Notice that this routine subtract the trivial term coming from cell deformation
+/// since this term is already implicitly included. Indeed, if the vatom
+/// position is a linear function of atomic coordinates it is not necessary
+/// to call this function (implicit term is fine) (e.g. vatom::COM and vatom::Center).
+/// On the other hand if the vatom position is a non-linear function of atomic coordinates this
+/// should be called (see vatom::Ghost).
+  void setBoxDerivatives(const std::vector<Tensor> &d);
+/// Set box derivatives automatically.
+/// It should be called after the settomsDerivatives has been used for all
+/// single atoms.
+/// \warning It only works for virtual atoms NOT using PBCs!
+///          This implies that all atoms used + the new virtual atom should be
+///          in the same periodic image.
+  void setBoxDerivativesNoPbc();
 public:
   void setGradients();
   const std::map<AtomNumber,Tensor> & getGradients()const;
 /// Return the atom id of the corresponding virtual atom
   AtomNumber getIndex()const;
-  ActionWithVirtualAtom(const ActionOptions&ao);
+  explicit ActionWithVirtualAtom(const ActionOptions&ao);
   ~ActionWithVirtualAtom();
   static void registerKeywords(Keywords& keys);
   void setGradientsIfNeeded();

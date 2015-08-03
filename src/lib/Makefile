@@ -54,6 +54,13 @@ PLUMED_MAIN_STATIC := $(PLUMED_LIBDIR)plumed
 PLUMED_MAIN_SHARED := $(PLUMED_LIBDIR)plumed-shared
 PLUMED_MAIN_RUNTIME := $(PLUMED_LIBDIR)plumed-runtime
 
+ifdef PLUMED_LIBDIR_NODEST
+  PLUMED_ROOT :="$(PLUMED_LIBDIR_NODEST)../../"
+else
+  PLUMED_ROOT :="$(realpath ../../)"
+endif
+
+
 .PHONY: all links $(DIRS) $(DIRSLINKS) all-static Plumed.cmake Plumed.inc
 ifdef SOEXT
 all:
@@ -74,10 +81,6 @@ dirs:
 	@echo "*** Compiling all directories ***"
 	$(MAKE) $(DIRS)
 
-dirslinks:
-	@echo "*** Updating links to used modules in all directories ***"
-	$(MAKE) $(DIRSLINKS)
-
 
 install:
 	cd ../config ; $(MAKE)
@@ -86,35 +89,38 @@ install:
 
 install-do:
 	$(MAKE) uninstall
-	mkdir -p $(PLUMED_INSTALL_PREFIX)/bin
-	mkdir -p $(PLUMED_INSTALL_ROOT)/src/lib
-	mkdir -p $(PLUMED_INSTALL_PREFIX)/include/plumed$(PLUMED_INSTALL_LIBSUFFIX)
+	mkdir -p $(DESTDIR)$(PLUMED_INSTALL_PREFIX)/bin
+	mkdir -p $(DESTDIR)$(PLUMED_INSTALL_ROOT)/src/lib
+	mkdir -p $(DESTDIR)$(PLUMED_INSTALL_PREFIX)/include/$(PLUMED_PROGRAM_NAME)
 # rebuild libraries and main using new target dir
-	$(MAKE) PLUMED_LIBDIR=$(PLUMED_INSTALL_ROOT)/src/lib/ PLUMED_INSTALL=Install all
+	$(MAKE) PLUMED_LIBDIR=$(DESTDIR)$(PLUMED_INSTALL_ROOT)/src/lib/ PLUMED_LIBDIR_NODEST=$(PLUMED_INSTALL_ROOT)/src/lib/ PLUMED_INSTALL=Install all
 # copy .h, .cpp .o compile_options.sh and documentation:
-	cd ../../ ; tar cf - patches scripts src/*/*.h src/*/*.cpp src/*/*.o src/config/compile_options.sh *-doc/*.png *-doc/html *-doc/regtests *-doc/manual.pdf | tar xf - -C $(PLUMED_INSTALL_ROOT)/
+	cd ../../ ; tar cf - patches scripts src/*/*.h src/*/*.cpp src/*/*.o src/config/compile_options.sh *-doc/html *-doc/regtests *-doc/manual.pdf | tar xf - -C $(DESTDIR)$(PLUMED_INSTALL_ROOT)/
 # also copy .h files into include/ dir
-	cd ../../src ; tar cf - */*.h */*/*.h | tar xf - -C $(PLUMED_INSTALL_PREFIX)/include/plumed$(PLUMED_INSTALL_LIBSUFFIX)/
+	cd ../../src ; tar cf - */*.h */*/*.h | tar xf - -C $(DESTDIR)$(PLUMED_INSTALL_PREFIX)/include/$(PLUMED_PROGRAM_NAME)/
 # copy inc files changing the path
-	for file in Plumed.inc* Plumed.cmake* ; do sed "s| $(realpath ../../)| $(PLUMED_INSTALL_ROOT)/|g" $$file > $(PLUMED_INSTALL_ROOT)/src/lib/$$file ; done
+	for file in Plumed.inc* Plumed.cmake* ; do sed "s| $(realpath ../..)| $(PLUMED_INSTALL_ROOT)|g" $$file > $(DESTDIR)$(PLUMED_INSTALL_ROOT)/src/lib/$$file ; done
 # modulefile
-	@sed "s|@_PREFIX_@|$(PLUMED_INSTALL_PREFIX)|" modulefile.in | sed "s|@_SOEXT_@|$(SOEXT)|"> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
+	@sed "s|@_PREFIX_@|$(PLUMED_INSTALL_PREFIX)|" modulefile.in | sed "s|@_SOEXT_@|$(SOEXT)|" | sed "s|@_PROGNAME_@|$(PLUMED_PROGRAM_NAME)|" > $(DESTDIR)$(PLUMED_INSTALL_ROOT)/src/lib/modulefile
 # install links
-	ln -s $(PLUMED_INSTALL_ROOT)/src/lib/plumed $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)
-	for file in $(PLUMED_SCRIPTS) ; do ln -s $(PLUMED_INSTALL_ROOT)/src/lib/plumed-$$file $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)-$$file ; done
+	cd $(DESTDIR)$(PLUMED_INSTALL_PREFIX)/bin/ && ln -s ../lib/$(PLUMED_PROGRAM_NAME)/src/lib/plumed $(PLUMED_PROGRAM_NAME)
+	cd $(DESTDIR)$(PLUMED_INSTALL_PREFIX)/bin/ && for file in $(PLUMED_SCRIPTS) ; do ln -s ../lib/$(PLUMED_PROGRAM_NAME)/src/lib/plumed-$$file $(PLUMED_PROGRAM_NAME)-$$file ; done
 ifdef SOEXT
-	ln -s $(PLUMED_INSTALL_ROOT)/src/lib/libplumed.$(SOEXT) $(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX).$(SOEXT)
-	ln -s $(PLUMED_INSTALL_ROOT)/src/lib/libplumedKernel.$(SOEXT) $(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX)Kernel.$(SOEXT)
+	cd $(DESTDIR)$(PLUMED_INSTALL_PREFIX)/lib/ && ln -s $(PLUMED_PROGRAM_NAME)/src/lib/libplumed.$(SOEXT) lib$(PLUMED_PROGRAM_NAME).$(SOEXT)
+	cd $(DESTDIR)$(PLUMED_INSTALL_PREFIX)/lib/ && ln -s $(PLUMED_PROGRAM_NAME)/src/lib/libplumedKernel.$(SOEXT) lib$(PLUMED_PROGRAM_NAME)Kernel.$(SOEXT)
 endif
-	chmod -R go+rX,go-w $(PLUMED_INSTALL_ROOT)
-	chmod -R go+rX,go-w $(PLUMED_INSTALL_PREFIX)/include/plumed$(PLUMED_INSTALL_LIBSUFFIX)
-	chmod -R go+rX,go-w $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)
-	chmod -R go+rX,go-w $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)-*
+	chmod -R go+rX,go-w $(DESTDIR)$(PLUMED_INSTALL_ROOT)
+	chmod -R go+rX,go-w $(DESTDIR)$(PLUMED_INSTALL_PREFIX)/include/$(PLUMED_PROGRAM_NAME)
+	chmod -R go+rX,go-w $(DESTDIR)$(PLUMED_INSTALL_PREFIX)/bin/$(PLUMED_PROGRAM_NAME)
+	chmod -R go+rX,go-w $(DESTDIR)$(PLUMED_INSTALL_PREFIX)/bin/$(PLUMED_PROGRAM_NAME)-*
 	@echo
 	@echo "*** PLUMED has been installed ***"
 	@echo
+ifdef DESTDIR
+	@echo "WARNING: Staged install with DESTDIR = $(DESTDIR)"
+endif
 	@echo "Install prefix : $(PLUMED_INSTALL_PREFIX)"
-	@echo "Full name      : plumed$(PLUMED_INSTALL_LIBSUFFIX)"
+	@echo "Full name      : $(PLUMED_PROGRAM_NAME)"
 	@echo
 	@echo "Setup your environment"
 	@echo "- Ensure this is in your execution path : $(PLUMED_INSTALL_PREFIX)/bin"
@@ -122,7 +128,7 @@ endif
 ifdef SOEXT
 	@echo "- Ensure this is in your library path   : $(PLUMED_INSTALL_PREFIX)/lib"
 	@echo "For runtime binding:"
-	@echo "- Set this environment variable         : PLUMED_KERNEL=$(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX)Kernel.$(SOEXT)"
+	@echo "- Set this environment variable         : PLUMED_KERNEL=$(PLUMED_INSTALL_PREFIX)/lib/lib$(PLUMED_PROGRAM_NAME)Kernel.$(SOEXT)"
 endif
 	@echo
 	@echo "To create a tcl module that sets all the variables above, use this one as a starting point:"
@@ -130,27 +136,24 @@ endif
 	@echo
 	@echo "To uninstall, remove the following files and directories:"
 	@echo $(PLUMED_INSTALL_ROOT)
-	@echo $(PLUMED_INSTALL_PREFIX)/include/plumed$(PLUMED_INSTALL_LIBSUFFIX)
-	@echo $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)
-	@for file in $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)-* ; do echo $$file ; done
+	@echo $(PLUMED_INSTALL_PREFIX)/include/$(PLUMED_PROGRAM_NAME)
+	@echo $(PLUMED_INSTALL_PREFIX)/bin/$(PLUMED_PROGRAM_NAME)
+	@for file in $(PLUMED_INSTALL_PREFIX)/bin/$(PLUMED_PROGRAM_NAME)-* ; do echo $$file ; done
 ifdef SOEXT
-	@echo $(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX).$(SOEXT)
-	@echo $(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX)Kernel.$(SOEXT)
+	@echo $(PLUMED_INSTALL_PREFIX)/lib/lib$(PLUMED_PROGRAM_NAME).$(SOEXT)
+	@echo $(PLUMED_INSTALL_PREFIX)/lib/lib$(PLUMED_PROGRAM_NAME)Kernel.$(SOEXT)
 endif
 
 uninstall:
-	rm -fr $(PLUMED_INSTALL_ROOT)
-	rm -fr $(PLUMED_INSTALL_PREFIX)/include/plumed$(PLUMED_INSTALL_LIBSUFFIX)
-	rm -f $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)
-	rm -f $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)-*
-	rm -f $(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX).$(SOEXT)
-	rm -f $(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX)Kernel.$(SOEXT)
+	rm -fr $(DESTDIR)$(PLUMED_INSTALL_ROOT)
+	rm -fr $(DESTDIR)$(PLUMED_INSTALL_PREFIX)/include/$(PLUMED_PROGRAM_NAME)
+	rm -f $(DESTDIR)$(PLUMED_INSTALL_PREFIX)/bin/$(PLUMED_PROGRAM_NAME)
+	rm -f $(DESTDIR)$(PLUMED_INSTALL_PREFIX)/bin/$(PLUMED_PROGRAM_NAME)-*
+	rm -f $(DESTDIR)$(PLUMED_INSTALL_PREFIX)/lib/lib$(PLUMED_PROGRAM_NAME).$(SOEXT)
+	rm -f $(DESTDIR)$(PLUMED_INSTALL_PREFIX)/lib/lib$(PLUMED_PROGRAM_NAME)Kernel.$(SOEXT)
 
 $(DIRS):
 	$(MAKE) -C $@ obj
-
-$(DIRSLINKS): %.links:
-	$(MAKE) -C $* links
 
 .PHONY: lib lib-static lib-shared
 
@@ -165,21 +168,45 @@ lib-shared: $(PLUMED_KERNEL) $(PLUMED_SHARED_OBJ) $(PLUMED_MAIN_SHARED) $(PLUMED
 $(PLUMED_SCRIPTS_EXE):
 	@echo "#! /bin/bash" > $@
 	@echo "echo 'NOTE: shell only version, useful when plumed is cross compiled' >&2" >> $@
-	@echo "export PLUMED_ROOT=\"$(realpath $(PLUMED_LIBDIR)../../)\"" >> $@
+	@echo "export PLUMED_ROOT=\"$(PLUMED_ROOT)\"" >> $@
 	@echo "source \"\$$PLUMED_ROOT\"/scripts/$(subst plumed-,,$(@F)).sh" >> $@
 	chmod a+x $@
 
 $(PLUMED_KERNEL):$(OBJ_KERNEL)
+# this workaround is needed to use a relative path in binding without
+# overwriting the already installed library
+# it moves the presently compiled version out of the way then move it back
+# perhaps a cleaner solution is to use patchelf (linux) and install_name_tool (mac)
+# but I am not sure how that would be portable
+ifdef DESTDIR
+	-test -f libplumedKernel.$(SOEXT) && mv libplumedKernel.$(SOEXT) .libplumedKernel.$(SOEXT)
+	$(LDSO) -o libplumedKernel.$(SOEXT) $^ $(DYNAMIC_LIBS)
+	mv libplumedKernel.$(SOEXT) $@
+	-test -f .libplumedKernel.$(SOEXT) && mv .libplumedKernel.$(SOEXT) libplumedKernel.$(SOEXT)
+else
 	$(LDSO) -o $@ $^ $(DYNAMIC_LIBS)
+endif
 
 $(PLUMED_SHARED_OBJ): $(OBJ_KERNEL) $(OBJ_WRAPPER)
+# this workaround is needed to use a relative path in binding without
+# overwriting the already installed library
+# it moves the presently compiled version out of the way then move it back
+# perhaps a cleaner solution is to use patchelf (linux) and install_name_tool (mac)
+# but I am not sure how that would be portable
+ifdef DESTDIR
+	-test -f libplumed.$(SOEXT) && mv libplumed.$(SOEXT) .libplumed.$(SOEXT)
+	$(LDSO) -o libplumed.$(SOEXT) $^ $(DYNAMIC_LIBS)
+	mv libplumed.$(SOEXT) $@
+	-test -f .libplumed.$(SOEXT) && mv .libplumed.$(SOEXT) libplumed.$(SOEXT)
+else
 	$(LDSO) -o $@ $^ $(DYNAMIC_LIBS)
+endif
 
 $(PLUMED_MAIN_STATIC): $(OBJ_MAIN) $(OBJ_KERNEL) $(OBJ_WRAPPER)
 	$(LD) $(LDFLAGS) $^ -o $@ $(LIBS) $(DYNAMIC_LIBS)
 	
 $(PLUMED_MAIN_SHARED): $(OBJ_MAIN) $(PLUMED_SHARED_OBJ)
-	$(LD) $(LDFLAGS) $(OBJ_MAIN) $(realpath $(PLUMED_SHARED_OBJ)) -o $@ $(LIBS)
+	$(LD) $(LDFLAGS) $(OBJ_MAIN) "$(realpath $(PLUMED_SHARED_OBJ))" -o $@ $(LIBS)
 
 $(PLUMED_MAIN_RUNTIME): $(OBJ_MAIN) $(OBJ_DYNAMIC_WRAPPER)
 	$(LD) $(LDFLAGS) $^ -o $@ $(LIBS)
@@ -188,10 +215,10 @@ Plumed.inc:
 	@echo Building Plumed.inc
 	@echo "PLUMED_RUNTIME_LOAD=" $(realpath $(OBJ_DYNAMIC_WRAPPER)) $(LIBS) $(LDFLAGS) > $@
 	@echo "PLUMED_STATIC_LOAD=" $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER)) $(LIBS) $(DYNAMIC_LIBS) $(LDFLAGS) >> $@
-	@echo "PLUMED_SHARED_LOAD=" $(realpath ./)/libplumed.$(SOEXT) $(LIBS) $(LDFLAGS) >> $@
+	@echo "PLUMED_SHARED_LOAD=" $(realpath .)/libplumed.$(SOEXT) $(LIBS) $(LDFLAGS) >> $@
 	@echo "PLUMED_RUNTIME_DEPENDENCIES="   >> $@
 	@echo "PLUMED_STATIC_DEPENDENCIES=" $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER))  >> $@
-	@echo "PLUMED_SHARED_DEPENDENCIES=" $(realpath ./)/libplumed.$(SOEXT)  >> $@
+	@echo "PLUMED_SHARED_DEPENDENCIES=" $(realpath .)/libplumed.$(SOEXT)  >> $@
 
 Plumed.inc.runtime: Plumed.inc
 	@echo Building Plumed.inc, runtime-linking version
@@ -246,13 +273,21 @@ error:
 	@echo First run ./configure in the root directory
 endif
 
-# this target is available anyway
+# these targets are available anyway
 
-.PHONY: clean
+.PHONY: clean dirslinks
 clean:
 	rm -f $(CLEANLIST)
 	rm -f $(PLUMED_MAIN_STATIC) $(PLUMED_MAIN_SHARED) $(PLUMED_MAIN_RUNTIME)
 	rm -f Plumed.inc* plumed-* Plumed.cmake*
+	rm -f .lib*
+
+dirslinks:
+	@echo "*** Updating links to used modules in all directories ***"
+	$(MAKE) $(DIRSLINKS)
+$(DIRSLINKS): %.links:
+	$(MAKE) -C $* links
+
 
 # generic makefile rules
 include ../maketools/make.rules

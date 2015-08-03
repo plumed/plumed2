@@ -41,8 +41,8 @@ private:
   SwitchingFunction sf;
 public:
   static void registerKeywords( Keywords& keys );
-  FilterMore(const ActionOptions& ao);
-  double applyFilter( const double& val, double& df );
+  explicit FilterMore(const ActionOptions& ao);
+  double applyFilter( const double& val, double& df ) const ;
 }; 
 
 PLUMED_REGISTER_ACTION(FilterMore,"MFILTER_MORE")
@@ -79,7 +79,7 @@ MultiColvarFilter(ao)
   checkRead();  
 }
 
-double FilterMore::applyFilter( const double& val, double& df ){
+double FilterMore::applyFilter( const double& val, double& df ) const {
   double f = 1.0 - sf.calculate( val, df ); df*=-val;
   return f;
 }

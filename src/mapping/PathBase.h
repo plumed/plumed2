@@ -32,11 +32,11 @@ private:
   double lambda;
 public:
   static void registerKeywords( Keywords& keys );
-  PathBase(const ActionOptions&);
+  explicit PathBase(const ActionOptions&);
   double getLambda();
   void calculate();
-  void performTask();
-  double transformHD( const double& dist, double& df );
+  void performTask( const unsigned& , const unsigned& , MultiValue& ) const ;
+  double transformHD( const double& dist, double& df ) const ;
 };
 
 }

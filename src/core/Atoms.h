@@ -70,8 +70,8 @@ class Atoms
   unsigned forcesHaveBeenSet;
   bool virialHasBeenSet;
   bool massAndChargeOK;
-  bool shuffledAtoms;
-  
+  unsigned shuffledAtoms;
+
   std::map<std::string,std::vector<AtomNumber> > groups;
 
   void resizeVectors(unsigned);
@@ -128,7 +128,7 @@ class Atoms
 
 public:
 
-  Atoms(PlumedMain&plumed);
+  explicit Atoms(PlumedMain&plumed);
   ~Atoms();
 
   void init();

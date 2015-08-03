@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -43,21 +43,21 @@ Using the following three input files one can run a bias exchange
 metadynamics simulation using a different angle in each replica.
 Exchanges will be randomly tried between replicas 0-1, 0-2 and 1-2
 
-Here is plumed.dat.0
+Here is plumed.0.dat
 \verbatim
 RANDOM_EXCHANGES
 t: TORSION ATOMS=1,2,3,4
 METAD ARG=t HEIGHT=0.1 PACE=100 SIGMA=0.3
 \endverbatim
 
-Here is plumed.dat.1
+Here is plumed.1.dat
 \verbatim
 RANDOM_EXCHANGES
 t: TORSION ATOMS=2,3,4,5
 METAD ARG=t HEIGHT=0.1 PACE=100 SIGMA=0.3
 \endverbatim
 
-Here is plumed.dat.2
+Here is plumed.2.dat
 \verbatim
 RANDOM_EXCHANGES
 t: TORSION ATOMS=3,4,5,6
@@ -77,7 +77,7 @@ class RandomExchanges:
 {
 public:
   static void registerKeywords( Keywords& keys );
-  RandomExchanges(const ActionOptions&ao);
+  explicit RandomExchanges(const ActionOptions&ao);
   void calculate(){}
   void apply(){}
 };

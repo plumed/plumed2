@@ -7,7 +7,7 @@ SUBDIRS := $(SRCDIRS) user-doc developer-doc regtest
 SUBDIRSCLEAN:=$(addsuffix .clean,$(SUBDIRS))
 
      
-.PHONY: all lib clean $(SRCDIRS) doc docclean check
+.PHONY: all lib clean $(SRCDIRS) doc docclean check cppcheck distclean
 
 # if machine dependent configuration has been found:
 ifdef GCCDEP
@@ -45,7 +45,7 @@ else
 
 all:
 	@echo No configuration available
-	@echo First run ./configure.sh
+	@echo First run ./configure
 endif
 
 # these targets are available also without configuration
@@ -56,19 +56,22 @@ clean: $(SUBDIRSCLEAN)
 $(SUBDIRSCLEAN): %.clean:
 	$(MAKE) -C $* clean
 
+distclean: fullclean
+
 fullclean:
 	make clean
 	rm -f Makefile.conf
 	rm -f sourceme.sh
-	rm -fr autoconf/auto*
-	rm -f autoconf/Makefile.conf
-	rm -f autoconf/sourceme.sh
-	rm -f autoconf/config.*
+	rm -f config.log 
+	rm -f */*.on */*.off
 
 
 docclean:
 	cd user-doc && make clean
 	cd developer-doc && make clean
+
+cppcheck:
+	$(MAKE) -C src cppcheck
 
 
 

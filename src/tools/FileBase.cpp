@@ -170,7 +170,7 @@ std::string FileBase::appendSuffix(const std::string&path,const std::string&suff
 // the extension. This is useful when extensions are conventionally used
 // to detect file type, so as to allow easier file manipulation.
 // Removing this line, any extension recognized by Tools::extension() would be considered
-  if(ext!="gz" && ext!="xtc" && ext!="trr") ext="";
+//  if(ext!="gz" && ext!="xtc" && ext!="trr") ext="";
 
   if(ext.length()>0){
     int l=path.length()-(ext.length()+1);
