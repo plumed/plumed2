@@ -216,6 +216,17 @@ endif
 
 
 uninstall:
+	@echo WARNING
+	@echo I will remove the following files now
+	@echo "$(DESTDIR)$(libdir)/$(program_name)"
+	@echo "$(DESTDIR)$(htmldir)"
+	@echo "$(DESTDIR)$(includedir)/$(program_name)"
+	@echo "$(DESTDIR)$(bindir)/$(program_name)"
+	@echo "$(DESTDIR)$(bindir)/$(program_name)-patch"
+	@echo "$(DESTDIR)$(libdir)/lib$(program_name).$(SOEXT)"
+	@echo "$(DESTDIR)$(libdir)/lib$(program_name)Kernel.$(SOEXT)"
+	../maketools/confirm_uninstall
+	@echo Removing previously installed files
 	rm -fr "$(DESTDIR)$(libdir)/$(program_name)"
 	rm -fr "$(DESTDIR)$(htmldir)"
 	rm -fr "$(DESTDIR)$(includedir)/$(program_name)"
