@@ -162,6 +162,8 @@ endif
 	cp ../colvar/Template.cpp "$(DESTDIR)$(libdir)/$(program_name)/src/colvar/"
 # copy compile_options.sh file (we leave it in src/colvar/ for backward compatibility)
 	cp ../config/compile_options.sh "$(DESTDIR)$(libdir)/$(program_name)/src/config/compile_options.sh"
+# copy config.txt file (we leave it in src/colvar/ for backward compatibility)
+	cp ../config/config.txt "$(DESTDIR)$(libdir)/$(program_name)/src/config/config.txt"
 ifdef LD_RO
 	cp install/kernel.o "$(DESTDIR)$(libdir)/$(program_name)/obj/kernel.o"
 else
