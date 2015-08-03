@@ -235,6 +235,8 @@ For users:
 - PLUMED now says in the log file if it was compiled from a dirty git repository.
 - Fixed a problem leading to rare random crashes when using \ref METAD with WALKERS_MPI and multiple
   processors per replica.
+- Small change in numerical accuracy of lattice reduction. Should be more
+  robust when running with highly optimizing compilers.
 
 
 */
