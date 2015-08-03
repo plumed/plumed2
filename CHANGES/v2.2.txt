@@ -88,5 +88,7 @@ For users:
   DESTDIR and other standard autoconf directories (e.g. bindir) are completely supported.
   Additionally, everything should work properly also when directory names include spaces (\issue{157}).
   Finally, compiler is not invoked on install unless path are explicitly changed (\issue{107}).
+- Related to installation refactoring, upon install a previusly installed plumed is not removed.
+  This is to avoid data loss if prefix variable is not properly set
 
 */

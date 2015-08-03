@@ -116,7 +116,11 @@ ifdef PLUMED_LIBSUFFIX
 	@echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 endif
 	cd ../config ; $(MAKE)
-	$(MAKE) uninstall
+# in principle we should uninstall before install
+# however, I think it is safer not to do it here since users could make mistake
+# and remove important files by just typing "sudo make install" with a 
+# malformed prefix variables
+	# $(MAKE) uninstall
 	mkdir -p "$(DESTDIR)$(bindir)"
 	mkdir -p "$(DESTDIR)$(libdir)"
 	mkdir -p "$(DESTDIR)$(includedir)/$(program_name)"
