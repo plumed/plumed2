@@ -90,5 +90,11 @@ For users:
   Finally, compiler is not invoked on install unless path are explicitly changed (\issue{107}).
 - Related to installation refactoring, upon install a previusly installed plumed is not removed.
   This is to avoid data loss if prefix variable is not properly set
+- Several changes have been made in the Makefile.conf that makes it not compatible with those
+  packaged with plumed 2.0/2.1. Please use ./configure to generate a new configuration file.
+
+For developers:
+- Changed the logic of several PLUMED ifdef macros so as to make them consistent.
+  Now every feature based on external libraries is identified by a __PLUMED_HAS_* macro.
 
 */
