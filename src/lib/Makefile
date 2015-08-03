@@ -215,8 +215,8 @@ uninstall:
 	rm -fr "$(DESTDIR)$(libdir)/$(program_name)"
 	rm -fr "$(DESTDIR)$(htmldir)"
 	rm -fr "$(DESTDIR)$(includedir)/$(program_name)"
-	rm -f "$(DESTDIR)$(bindir)/bin/$(program_name)"
-	rm -f "$(DESTDIR)$(bindir)/bin/$(program_name)-patch"
+	rm -f "$(DESTDIR)$(bindir)/$(program_name)"
+	rm -f "$(DESTDIR)$(bindir)/$(program_name)-patch"
 	rm -f "$(DESTDIR)$(libdir)/lib$(program_name).$(SOEXT)"
 	rm -f "$(DESTDIR)$(libdir)/lib$(program_name)Kernel.$(SOEXT)"
 
