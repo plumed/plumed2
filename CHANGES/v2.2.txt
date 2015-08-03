@@ -84,5 +84,9 @@ download PLUMED from github.
 
 For users:
 - Module activation can now be controlled during configure with `--enable-modules` option.
+- Almost complete refactoring of installation procedure. Now
+  DESTDIR and other standard autoconf directories (e.g. bindir) are completely supported.
+  Additionally, everything should work properly also when directory names include spaces (\issue{157}).
+  Finally, compiler is not invoked on install unless path are explicitly changed (\issue{107}).
 
 */
