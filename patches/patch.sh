@@ -243,7 +243,7 @@ case "$action" in
 
     if [ -d "$diff" ]; then
       test -n "$quiet" || echo "Patching with on-the-fly diff from stored originals"
-      PREPLUMED=$(cd $diff ; find . -name "*.preplumed" | sort)
+      PREPLUMED=$(cd "$diff" ; find . -name "*.preplumed" | sort)
       for bckfile in $PREPLUMED ; do
         file="${bckfile%.preplumed}"
         if test -e "$file" ; then

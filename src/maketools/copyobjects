@@ -7,13 +7,13 @@
 # cp b/b.o pippo/k1.o
 # cp c/c.o pippo/k2.o
 
-prefix=$1
+prefix="$1"
 
 shift
 
 i=0
 for file in "$@"
 do
-  cp $file $prefix$i.o
+  cp "$file" "$prefix$i.o"
   i=$((i+1))
 done

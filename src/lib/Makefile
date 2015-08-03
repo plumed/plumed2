@@ -117,55 +117,55 @@ ifdef PLUMED_LIBSUFFIX
 endif
 	cd ../config ; $(MAKE)
 	$(MAKE) uninstall
-	mkdir -p $(DESTDIR)$(bindir)
-	mkdir -p $(DESTDIR)$(libdir)
-	mkdir -p $(DESTDIR)$(includedir)/$(program_name)
-	mkdir -p $(DESTDIR)$(libdir)/$(program_name)/obj
-	mkdir -p $(DESTDIR)$(libdir)/$(program_name)/src/lib
-	mkdir -p $(DESTDIR)$(libdir)/$(program_name)/src/config
-	mkdir -p $(DESTDIR)$(libdir)/$(program_name)/src/colvar
+	mkdir -p "$(DESTDIR)$(bindir)"
+	mkdir -p "$(DESTDIR)$(libdir)"
+	mkdir -p "$(DESTDIR)$(includedir)/$(program_name)"
+	mkdir -p "$(DESTDIR)$(libdir)/$(program_name)/obj"
+	mkdir -p "$(DESTDIR)$(libdir)/$(program_name)/src/lib"
+	mkdir -p "$(DESTDIR)$(libdir)/$(program_name)/src/config"
+	mkdir -p "$(DESTDIR)$(libdir)/$(program_name)/src/colvar"
 # rebuild libraries and main using new target dir
 	$(MAKE) install-build
 # copy documentation:
-	if test -d ../../user-doc/html ; then mkdir -p $(DESTDIR)$(htmldir) && cd ../../ && tar cf - user-doc/html | tar xf - -C $(DESTDIR)$(htmldir)/ ; fi
-	if test -d ../../developer-doc/html ; then mkdir -p $(DESTDIR)$(htmldir) && cd ../../ && tar cf - developer-doc/html | tar xf - -C $(DESTDIR)$(htmldir)/ ; fi
-	if test -f ../../user-doc/manual.pdf ; then mkdir -p $(DESTDIR)$(htmldir)/user-doc && cp ../../user-doc/manual.pdf $(DESTDIR)$(htmldir)/user-doc/ ; fi
+	if test -d ../../user-doc/html ; then mkdir -p "$(DESTDIR)$(htmldir)" && cd ../../ && tar cf - user-doc/html | tar xf - -C "$(DESTDIR)$(htmldir)/" ; fi
+	if test -d ../../developer-doc/html ; then mkdir -p "$(DESTDIR)$(htmldir)" && cd ../../ && tar cf - developer-doc/html | tar xf - -C "$(DESTDIR)$(htmldir)/" ; fi
+	if test -f ../../user-doc/manual.pdf ; then mkdir -p "$(DESTDIR)$(htmldir)/user-doc" && cp ../../user-doc/manual.pdf "$(DESTDIR)$(htmldir)/user-doc/" ; fi
 # copy patches and scripts
-	cd ../../ ; tar cf - patches scripts | tar xf - -C $(DESTDIR)$(libdir)/$(program_name)/
+	cd ../../ ; tar cf - patches scripts | tar xf - -C "$(DESTDIR)$(libdir)/$(program_name)/"
 # copy Template.cpp file (we leave it in src/colvar/ for backward compatibility)
-	cp ../colvar/Template.cpp $(DESTDIR)$(libdir)/$(program_name)/src/colvar/
+	cp ../colvar/Template.cpp "$(DESTDIR)$(libdir)/$(program_name)/src/colvar/"
 # copy compile_options.sh file (we leave it in src/colvar/ for backward compatibility)
-	cp ../config/compile_options.sh $(DESTDIR)$(libdir)/$(program_name)/src/config/compile_options.sh
+	cp ../config/compile_options.sh "$(DESTDIR)$(libdir)/$(program_name)/src/config/compile_options.sh"
 ifdef LD_RO
-	cp install/kernel.o $(DESTDIR)$(libdir)/$(program_name)/obj/kernel.o
+	cp install/kernel.o "$(DESTDIR)$(libdir)/$(program_name)/obj/kernel.o"
 else
-	../maketools/copyobjects $(DESTDIR)$(libdir)/$(program_name)/obj/k $(OBJ_KERNEL)
+	../maketools/copyobjects "$(DESTDIR)$(libdir)/$(program_name)/obj/k" $(OBJ_KERNEL)
 endif
-	cp $(OBJ_WRAPPER) $(DESTDIR)$(libdir)/$(program_name)/obj/PlumedStatic.o
-	cp $(OBJ_DYNAMIC_WRAPPER) $(DESTDIR)$(libdir)/$(program_name)/obj/Plumed.o
+	cp $(OBJ_WRAPPER) "$(DESTDIR)$(libdir)/$(program_name)/obj/PlumedStatic.o"
+	cp $(OBJ_DYNAMIC_WRAPPER) "$(DESTDIR)$(libdir)/$(program_name)/obj/Plumed.o"
 # also copy .h files into include/ dir
-	cd ../../src ; tar cf - */*.h */*/*.h | tar xf - -C $(DESTDIR)$(includedir)/$(program_name)/
+	cd ../../src ; tar cf - */*.h */*/*.h | tar xf - -C "$(DESTDIR)$(includedir)/$(program_name)/"
 # install executable
-	cp install/plumed $(DESTDIR)$(bindir)/$(program_name)
+	cp install/plumed "$(DESTDIR)$(bindir)/$(program_name)"
 # patch file for cross compiling
-	cp install/plumed-patch $(DESTDIR)$(bindir)/$(program_name)-patch
+	cp install/plumed-patch "$(DESTDIR)$(bindir)/$(program_name)-patch"
 # copy include files for cmake and make
 # we leave it in src/lib/ for backward compatibility
-	cp install/Plumed.cmake* $(DESTDIR)$(libdir)/$(program_name)/src/lib/
-	cp install/Plumed.inc* $(DESTDIR)$(libdir)/$(program_name)/src/lib/
+	cp install/Plumed.cmake* "$(DESTDIR)$(libdir)/$(program_name)/src/lib/"
+	cp install/Plumed.inc* "$(DESTDIR)$(libdir)/$(program_name)/src/lib/"
 # other shell-based cltools are copied
-	for file in $(PLUMED_SCRIPTS) ; do cp install/plumed-$$file $(DESTDIR)$(libdir)/$(program_name)/plumed-$$file ; done
+	for file in $(PLUMED_SCRIPTS) ; do cp install/plumed-$$file "$(DESTDIR)$(libdir)/$(program_name)/plumed-$$file" ; done
 ifdef SOEXT
-	cp install/libplumed.$(SOEXT) $(DESTDIR)$(libdir)/lib$(program_name).$(SOEXT)
-	cp install/libplumedKernel.$(SOEXT) $(DESTDIR)$(libdir)/lib$(program_name)Kernel.$(SOEXT)
+	cp install/libplumed.$(SOEXT) "$(DESTDIR)$(libdir)/lib$(program_name).$(SOEXT)"
+	cp install/libplumedKernel.$(SOEXT) "$(DESTDIR)$(libdir)/lib$(program_name)Kernel.$(SOEXT)"
 endif
 # modulefile
-	cp install/modulefile $(DESTDIR)$(libdir)/$(program_name)/modulefile
+	cp install/modulefile "$(DESTDIR)$(libdir)/$(program_name)/modulefile"
 # making everything visible:
-	chmod -R go+rX,go-w $(DESTDIR)$(libdir)/$(program_name)
-	chmod -R go+rX,go-w $(DESTDIR)$(includedir)/$(program_name)
-	chmod -R go+rX,go-w $(DESTDIR)$(bindir)/$(program_name)
-	chmod -R go+rX,go-w $(DESTDIR)$(bindir)/$(program_name)-patch
+	chmod -R go+rX,go-w "$(DESTDIR)$(libdir)/$(program_name)"
+	chmod -R go+rX,go-w "$(DESTDIR)$(includedir)/$(program_name)"
+	chmod -R go+rX,go-w "$(DESTDIR)$(bindir)/$(program_name)"
+	chmod -R go+rX,go-w "$(DESTDIR)$(bindir)/$(program_name)-patch"
 	@echo
 	@echo "*** PLUMED has been installed ***"
 	@echo
@@ -212,13 +212,13 @@ endif
 
 
 uninstall:
-	rm -fr $(DESTDIR)$(libdir)/$(program_name)
-	rm -fr $(DESTDIR)$(htmldir)
-	rm -fr $(DESTDIR)$(includedir)/$(program_name)
-	rm -f $(DESTDIR)$(bindir)/bin/$(program_name)
-	rm -f $(DESTDIR)$(bindir)/bin/$(program_name)-patch
-	rm -f $(DESTDIR)$(libdir)/lib$(program_name).$(SOEXT)
-	rm -f $(DESTDIR)$(libdir)/lib$(program_name)Kernel.$(SOEXT)
+	rm -fr "$(DESTDIR)$(libdir)/$(program_name)"
+	rm -fr "$(DESTDIR)$(htmldir)"
+	rm -fr "$(DESTDIR)$(includedir)/$(program_name)"
+	rm -f "$(DESTDIR)$(bindir)/bin/$(program_name)"
+	rm -f "$(DESTDIR)$(bindir)/bin/$(program_name)-patch"
+	rm -f "$(DESTDIR)$(libdir)/lib$(program_name).$(SOEXT)"
+	rm -f "$(DESTDIR)$(libdir)/lib$(program_name)Kernel.$(SOEXT)"
 
 $(DIRS):
 	$(MAKE) -C $@ obj
@@ -299,18 +299,19 @@ ifeq ($(PLUMED_INSTALL),Install)
 
 $(PLUMED_LIBDIR)Plumed.inc:
 	@echo Building Plumed.inc
-	@echo "PLUMED_RUNTIME_LOAD=" $(libdir)/$(program_name)/obj/Plumed.o $(LIBS) $(LDFLAGS) > $@
+	@echo "PLUMED_RUNTIME_LOAD= \"$(libdir)/$(program_name)/obj/Plumed.o\" $(LIBS) $(LDFLAGS)" > $@
 ifdef LD_RO
-	@echo "PLUMED_STATIC_LOAD=" $(libdir)/$(program_name)/obj/kernel.o $(libdir)/$(program_name)/obj/PlumedStatic.o $(LIBS) $(DYNAMIC_LIBS) $(LDFLAGS) >> $@
+	@echo "PLUMED_STATIC_LOAD= \"$(libdir)/$(program_name)/obj/kernel.o\" \"$(libdir)/$(program_name)/obj/PlumedStatic.o\" $(LIBS) $(DYNAMIC_LIBS) $(LDFLAGS)" >> $@
 else
-	@echo "PLUMED_STATIC_LOAD=" $(shell ../maketools/listobjects $(libdir)/$(program_name)/obj/k $(OBJ_KERNEL)) $(libdir)/$(program_name)/obj/PlumedStatic.o $(LIBS) $(DYNAMIC_LIBS) $(LDFLAGS) >> $@
+# single quote required to preserve double quote in resulting file
+	@echo "PLUMED_STATIC_LOAD= '$(shell ../maketools/listobjects "$(libdir)/$(program_name)/obj/k" $(OBJ_KERNEL))' \"$(libdir)/$(program_name)/obj/PlumedStatic.o\" $(LIBS) $(DYNAMIC_LIBS) $(LDFLAGS)" >> $@
 endif
-	@echo "PLUMED_SHARED_LOAD=" $(libdir)/lib$(program_name).$(SOEXT) $(LIBS) $(LDFLAGS) >> $@
+	@echo "PLUMED_SHARED_LOAD= \"$(libdir)/lib$(program_name).$(SOEXT)\" $(LIBS) $(LDFLAGS)" >> $@
 	@echo "PLUMED_RUNTIME_DEPENDENCIES="   >> $@
 # when installing, it is sufficient to include dependence wrt a single object
 # indeed, the object are replaced all at the same time
-	@echo "PLUMED_STATIC_DEPENDENCIES=" $(libdir)/$(program_name)/obj/PlumedStatic.o  >> $@
-	@echo "PLUMED_SHARED_DEPENDENCIES=" $(libdir)/lib$(program_name).$(SOEXT)  >> $@
+	@echo "PLUMED_STATIC_DEPENDENCIES= \"$(libdir)/$(program_name)/obj/PlumedStatic.o\""  >> $@
+	@echo "PLUMED_SHARED_DEPENDENCIES= \"$(libdir)/lib$(program_name).$(SOEXT)\""  >> $@
 else
 Plumed.inc:
 	@echo Building Plumed.inc
