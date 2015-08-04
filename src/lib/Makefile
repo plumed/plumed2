@@ -59,7 +59,7 @@ PLUMED_MAIN_SHARED := $(PLUMED_LIBDIR)plumed-shared
 PLUMED_MAIN_RUNTIME := $(PLUMED_LIBDIR)plumed-runtime
 
 
-.PHONY: all links $(DIRS) $(DIRSLINKS) all-static $(PLUMED_LIBDIR)Plumed.cmake $(PLUMED_LIBDIR)Plumed.inc install $(PLUMED_SCRIPTS_EXE)
+.PHONY: all links $(DIRS) $(DIRSLINKS) all-static $(PLUMED_LIBDIR)Plumed.cmake $(PLUMED_LIBDIR)Plumed.inc install $(PLUMED_SCRIPTS_EXE) install-html
 all:
 	$(MAKE) dirslinks
 	$(MAKE) dirs
@@ -95,6 +95,12 @@ ifdef LD_RO
 install/kernel.o: $(OBJ_KERNEL)
 	$(LD_RO) install/kernel.o $(OBJ_KERNEL)
 endif
+
+# standard target (according to GNU doc)
+install-html:
+	if test -d ../../user-doc/html ; then mkdir -p "$(DESTDIR)$(htmldir)" && cd ../../ && tar cf - user-doc/html | tar xf - -C "$(DESTDIR)$(htmldir)/" ; fi
+	if test -d ../../developer-doc/html ; then mkdir -p "$(DESTDIR)$(htmldir)" && cd ../../ && tar cf - developer-doc/html | tar xf - -C "$(DESTDIR)$(htmldir)/" ; fi
+	if test -f ../../user-doc/manual.pdf ; then mkdir -p "$(DESTDIR)$(htmldir)/user-doc" && cp ../../user-doc/manual.pdf "$(DESTDIR)$(htmldir)/user-doc/" ; fi
 
 install:
 ifdef PLUMED_PREFIX
@@ -146,9 +152,7 @@ endif
 # rebuild libraries and main using new target dir
 	$(MAKE) install-build
 # copy documentation:
-	if test -d ../../user-doc/html ; then mkdir -p "$(DESTDIR)$(htmldir)" && cd ../../ && tar cf - user-doc/html | tar xf - -C "$(DESTDIR)$(htmldir)/" ; fi
-	if test -d ../../developer-doc/html ; then mkdir -p "$(DESTDIR)$(htmldir)" && cd ../../ && tar cf - developer-doc/html | tar xf - -C "$(DESTDIR)$(htmldir)/" ; fi
-	if test -f ../../user-doc/manual.pdf ; then mkdir -p "$(DESTDIR)$(htmldir)/user-doc" && cp ../../user-doc/manual.pdf "$(DESTDIR)$(htmldir)/user-doc/" ; fi
+	$(MAKE) install-html
 # copy patches and scripts
 	cd ../../ ; tar cf - patches scripts | tar xf - -C "$(DESTDIR)$(libdir)/$(program_name)/"
 # copy Template.cpp file (we leave it in src/colvar/ for backward compatibility)
