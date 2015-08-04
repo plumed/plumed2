@@ -86,7 +86,7 @@ the kernels we can use in this method.
 */
 //+ENDPLUMEDOC
 
-KernelFunctions::KernelFunctions( const std::string& input, const bool& normed ){
+KernelFunctions::KernelFunctions( const std::string& input ){
   std::vector<std::string> data=Tools::getWords(input);
   std::string name=data[0];
   data.erase(data.begin());
@@ -110,17 +110,18 @@ KernelFunctions::KernelFunctions( const std::string& input, const bool& normed )
   bool foundh = Tools::parse(data,"HEIGHT",h); 
   if( !foundh) h=1.0;
 
-  if( multi ) setData( at, sig, name, "MULTIVARIATE" , h, normed );
-  else if( vonmisses ) setData( at, sig, name, "VON-MISSES", h, normed );
-  else setData( at, sig, name, "DIAGONAL", h, normed );
+  if( multi ) setData( at, sig, name, "MULTIVARIATE" , h );
+  else if( vonmisses ) setData( at, sig, name, "VON-MISSES", h );
+  else setData( at, sig, name, "DIAGONAL", h );
 }
 
-KernelFunctions::KernelFunctions( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const std::string& mtype, const double& w, const bool norm ){
-  setData( at, sig, type, mtype, w, norm );
+KernelFunctions::KernelFunctions( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const std::string& mtype, const double& w ){
+  setData( at, sig, type, mtype, w );
 }
 
-void KernelFunctions::setData( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const std::string& mtype, const double& w, const bool norm ){
+void KernelFunctions::setData( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const std::string& mtype, const double& w ){
 
+  height=w;
   center.resize( at.size() ); for(unsigned i=0;i<at.size();++i) center[i]=at[i];
   width.resize( sig.size() ); for(unsigned i=0;i<sig.size();++i) width[i]=sig[i];
   if( mtype=="MULTIVARIATE" ) dtype=multi;
@@ -138,40 +139,38 @@ void KernelFunctions::setData( const std::vector<double>& at, const std::vector<
   } else {
       plumed_merror(type+" is an invalid kernel type\n");
   }
+}
 
-  if( norm ){
-    double det; unsigned ncv=ndim(); 
-    if(dtype==diagonal){
-       det=1; for(unsigned i=0;i<width.size();++i) det*=width[i];
-    } else {
-       Matrix<double> mymatrix( getMatrix() ), myinv( ncv, ncv );
-       Invert(mymatrix,myinv); double logd;
-       logdet( myinv, logd );
-       det=std::exp(logd);
-    }
-    double volume;
-    if( ktype==gaussian ){
-       for(unsigned i=0;i<width.size();++i) det*=width[i];
-       volume=pow( 2*pi, 0.5*ncv ) * pow( det, 0.5 );
-    } else if( ktype==uniform || ktype==triangular ){
-       if( ncv%2==1 ){
-          double dfact=1;
-          for(unsigned i=1;i<ncv;i+=2) dfact*=static_cast<double>(i);
-          volume=( pow( pi, (ncv-1)/2 ) ) * ( pow( 2., (ncv+1)/2 ) ) / dfact;
-       } else {
-          double fact=1.;
-          for(unsigned i=1;i<ncv/2;++i) fact*=static_cast<double>(i);
-          volume=pow( pi,ncv/2 ) / fact;
-       }
-       if(ktype==uniform) volume*=det;
-       else if(ktype==triangular) volume*=det / 3.;
-    } else {
-       plumed_merror("not a valid kernel type");
-    } 
-    height=w / volume;  
-  } else {
-    height=w;
+void KernelFunctions::normalize( const std::vector<Value*>& myvals ){
+
+  double det; unsigned ncv=ndim(); 
+  if(dtype==diagonal){
+     det=1; for(unsigned i=0;i<width.size();++i) det*=width[i];
+  } else if(dtype==multi){
+     Matrix<double> mymatrix( getMatrix() ), myinv( ncv, ncv );
+     Invert(mymatrix,myinv); double logd;
+     logdet( myinv, logd );
+     det=std::exp(logd);
   }
+  double volume;
+  if( ktype==gaussian ){
+     volume=pow( 2*pi, 0.5*ncv ) * pow( det, 0.5 );
+  } else if( ktype==uniform || ktype==triangular ){
+     if( ncv%2==1 ){
+        double dfact=1;
+        for(unsigned i=1;i<ncv;i+=2) dfact*=static_cast<double>(i);
+        volume=( pow( pi, (ncv-1)/2 ) ) * ( pow( 2., (ncv+1)/2 ) ) / dfact;
+     } else {
+        double fact=1.;
+        for(unsigned i=1;i<ncv/2;++i) fact*=static_cast<double>(i);
+        volume=pow( pi,ncv/2 ) / fact;
+     }
+     if(ktype==uniform) volume*=det;
+     else if(ktype==triangular) volume*=det / 3.;
+  } else {
+     plumed_merror("not a valid kernel type");
+  } 
+  height /= volume;  
 }
 
 double KernelFunctions::getCutoff( const double& width ) const {
@@ -287,7 +286,7 @@ KernelFunctions* KernelFunctions::read( IFile* ifile, const std::vector<std::str
          ifile->scanField("sigma_"+valnames[i],sig[i]);
      }
      double h; ifile->scanField("height",h);
-     return new KernelFunctions( cc, sig, "gaussian", "DIAGONAL", h, false);
+     return new KernelFunctions( cc, sig, "gaussian", "DIAGONAL", h );
   } else if( sss=="true" ){
      multivariate=true;
      unsigned ncv=valnames.size();
@@ -304,12 +303,12 @@ KernelFunctions* KernelFunctions::read( IFile* ifile, const std::vector<std::str
          for(unsigned j=i;j<ncv;j++){ sig[k]=invmatrix(i,j); k++; }
      }
      double h; ifile->scanField("height",h);
-     return new KernelFunctions( cc, sig, "gaussian", "MULTIVARIATE", h, false);
+     return new KernelFunctions( cc, sig, "gaussian", "MULTIVARIATE", h );
   } else {
       plumed_merror("multivariate flag should equal true or false");
   } 
   double h; ifile->scanField("height",h);
-  return new KernelFunctions( cc, sig, "gaussian", "DIAGONAL", h, false);
+  return new KernelFunctions( cc, sig, "gaussian", "DIAGONAL", h );
 }
 
 }
