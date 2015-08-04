@@ -115,6 +115,21 @@ ifdef PLUMED_LIBSUFFIX
 	@echo "         there is no way to change the suffix at install time"
 	@echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 endif
+ifndef program_name
+	$(error "it seems Makefile.conf does not defined program_name - please configure again!")
+endif
+ifndef bindir
+	$(error "it seems Makefile.conf does not defined bindir - please configure again!")
+endif
+ifndef libdir
+	$(error "it seems Makefile.conf does not defined libdir - please configure again!")
+endif
+ifndef includedir
+	$(error "it seems Makefile.conf does not defined includedir - please configure again!")
+endif
+ifndef htmldir
+	$(error "it seems Makefile.conf does not defined htmldir - please configure again!")
+endif
 	cd ../config ; $(MAKE)
 # in principle we should uninstall before install
 # however, I think it is safer not to do it here since users could make mistake
