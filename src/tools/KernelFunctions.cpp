@@ -236,15 +236,41 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<do
      Matrix<double> mymatrix( getMatrix() ); 
      for(unsigned i=0;i<mymatrix.nrows();++i){
         double dp_i, dp_j; derivatives[i]=0;
-        dp_i=pos[i]->difference( center[i] ); 
+        dp_i=-pos[i]->difference( center[i] ); 
         for(unsigned j=0;j<mymatrix.ncols();++j){
           if(i==j) dp_j=dp_i;
-          else dp_j=pos[j]->difference( center[j] );
+          else dp_j=-pos[j]->difference( center[j] );
 
           derivatives[i]+=mymatrix(i,j)*dp_j;
           r2+=dp_i*dp_j*mymatrix(i,j);
         }
      }
+  } else if(dtype==vonmisses){
+     std::vector<double> costmp( ndim() ), sintmp( ndim() ), sinout( ndim(), 0.0 );
+     for(unsigned i=0;i<ndim();++i){
+         if( pos[i]->isPeriodic() ){
+             sintmp[i]=sin( 2.*pi*(pos[i]->get() - center[i])/pos[i]->getMaxMinusMin() );
+             costmp[i]=cos( 2.*pi*(pos[i]->get() - center[i])/pos[i]->getMaxMinusMin() );
+         } else {
+             sintmp[i]=pos[i]->get() - center[i];
+             costmp[i]=1.0; 
+         }
+     }
+
+     Matrix<double> mymatrix( getMatrix() );
+     for(unsigned i=0;i<mymatrix.nrows();++i){
+         double dp_i, dp_j; derivatives[i]=0;
+         if( pos[i]->isPeriodic() ){
+             r2+=2*( 1 - costmp[i] )*mymatrix(i,i);
+         } else {
+             r2+=sintmp[i]*sintmp[i]*mymatrix(i,i);
+         }
+         for(unsigned j=0;j<mymatrix.ncols();++j){
+            if( i!=j ) sinout[i]+=mymatrix(i,j)*sintmp[j];
+         }
+         derivatives[i] = (2*pi/pos[i]->getMaxMinusMin())*( mymatrix(i,i)*sintmp[i] + sinout[i]*costmp[i] );
+     }
+     for(unsigned i=0;i<sinout.size();++i) r2+=sintmp[i]*sinout[i];
   }
   double kderiv, kval;
   if(ktype==gaussian){
