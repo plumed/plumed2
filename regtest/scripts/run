@@ -111,7 +111,7 @@ case "$type" in
   echo "Run Make"
   $plumed info --configuration > Makefile.conf
   $plumed --is-installed || ln -s $($plumed info --root)/src plumed
-  cat <($plumed info --configuration) $($plumed info --root)/src/lib/Plumed.inc.static ../../../scripts/exe.make > Makefile 
+  cat <($plumed info --configuration) "$($plumed info --root)/src/lib/Plumed.inc.static" ../../../scripts/exe.make > Makefile 
   make exe 1>out 2> err
   $mpi $valgrind ./exe $arg >> out 2>> err
  ;;

@@ -1,5 +1,5 @@
 
-.PHONY: all clean lib install uninstall
+.PHONY: all clean lib install uninstall install-html
 
 # by default we compile the lib directory, which in turn requests all the needeed modules
 all: lib
@@ -9,6 +9,9 @@ lib:
 
 install:
 	$(MAKE) -C lib install
+
+install-html:
+	$(MAKE) -C lib install-html
 
 uninstall:
 	$(MAKE) -C lib uninstall
