@@ -99,7 +99,9 @@ KernelFunctions::KernelFunctions( const std::string& input, const bool& normed )
   if(!foundc) plumed_merror("failed to find sigma keyword in definition of kernel");
 
   bool multi=false; Tools::parseFlag(data,"MULTIVARIATE",multi);
+  bool vonmisses=false; Tools::parseFlag(data,"VON-MISSES",vonmisses);
   if( center.size()==1 && multi ) plumed_merror("one dimensional kernel cannot be multivariate");
+  if( center.size()==1 && vonmisses ) plumed_merror("one dimensional kernal cannot be von-misses");
   if( center.size()==1 && sig.size()!=1 ) plumed_merror("size mismatch between center size and sigma size");
   if( multi && center.size()>1 && sig.size()!=0.5*center.size()*(center.size()-1) ) plumed_merror("size mismatch between center size and sigma size");
   if( !multi && center.size()>1 && sig.size()!=center.size() ) plumed_merror("size mismatch between center size and sigma size");
@@ -108,19 +110,23 @@ KernelFunctions::KernelFunctions( const std::string& input, const bool& normed )
   bool foundh = Tools::parse(data,"HEIGHT",h); 
   if( !foundh) h=1.0;
 
-  setData( at, sig, name, multi, h, normed );
+  if( multi ) setData( at, sig, name, "MULTIVARIATE" , h, normed );
+  else if( vonmisses ) setData( at, sig, name, "VON-MISSES", h, normed );
+  else setData( at, sig, name, "DIAGONAL", h, normed );
 }
 
-KernelFunctions::KernelFunctions( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const bool multivariate, const double& w, const bool norm ){
-  setData( at, sig, type, multivariate, w, norm );
+KernelFunctions::KernelFunctions( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const std::string& mtype, const double& w, const bool norm ){
+  setData( at, sig, type, mtype, w, norm );
 }
 
-void KernelFunctions::setData( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const bool multivariate, const double& w, const bool norm ){
+void KernelFunctions::setData( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const std::string& mtype, const double& w, const bool norm ){
 
   center.resize( at.size() ); for(unsigned i=0;i<at.size();++i) center[i]=at[i];
   width.resize( sig.size() ); for(unsigned i=0;i<sig.size();++i) width[i]=sig[i];
-  diagonal=false;
-  if (multivariate==false ) diagonal=true;
+  if( mtype=="MULTIVARIATE" ) dtype=multi;
+  else if( mtype=="VON-MISSES" ) dtype=vonmisses;
+  else if( mtype=="DIAGONAL" ) dtype=diagonal;
+  else plumed_merror(mtype + " is not a valid metric type");
 
   // Setup the kernel type
   if(type=="GAUSSIAN" || type=="gaussian"){
@@ -135,7 +141,7 @@ void KernelFunctions::setData( const std::vector<double>& at, const std::vector<
 
   if( norm ){
     double det; unsigned ncv=ndim(); 
-    if(diagonal){
+    if(dtype==diagonal){
        det=1; for(unsigned i=0;i<width.size();++i) det*=width[i];
     } else {
        Matrix<double> mymatrix( getMatrix() ), myinv( ncv, ncv );
@@ -180,9 +186,9 @@ double KernelFunctions::getCutoff( const double& width ) const {
 std::vector<double> KernelFunctions::getContinuousSupport( ) const {
   unsigned ncv=ndim(); 
   std::vector<double> support( ncv );
-  if(diagonal){
+  if(dtype==diagonal){
      for(unsigned i=0;i<ncv;++i) support[i]=getCutoff(width[i]);
-  } else {
+  } else if(dtype==multi) {
      Matrix<double> mymatrix( getMatrix() ), myinv( ncv,ncv );
      Invert(mymatrix,myinv);
      Matrix<double> myautovec(ncv,ncv); std::vector<double> myautoval(ncv);  
@@ -196,6 +202,8 @@ std::vector<double> KernelFunctions::getContinuousSupport( ) const {
          double extent=fabs(sqrt(maxautoval)*myautovec(i,ind_maxautoval)); 
          support[i]=getCutoff( extent );
      }
+  } else {
+     plumed_merror("cannot find support if metric is not multi or diagonal type");
   }
  return support; 
 }
@@ -219,13 +227,13 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<do
     if(pos[0]->get()>uppI_) pos[0]->set(uppI_);
   }
   double r2=0;
-  if(diagonal){ 
+  if(dtype==diagonal){ 
      for(unsigned i=0;i<ndim();++i){
          derivatives[i]=-pos[i]->difference( center[i] ) / width[i];
          r2+=derivatives[i]*derivatives[i];
          derivatives[i] /= width[i];
      }
-  } else {
+  } else if(dtype==multi){
      Matrix<double> mymatrix( getMatrix() ); 
      for(unsigned i=0;i<mymatrix.nrows();++i){
         double dp_i, dp_j; derivatives[i]=0;
@@ -278,6 +286,8 @@ KernelFunctions* KernelFunctions::read( IFile* ifile, const std::vector<std::str
          ifile->scanField(valnames[i],cc[i]);
          ifile->scanField("sigma_"+valnames[i],sig[i]);
      }
+     double h; ifile->scanField("height",h);
+     return new KernelFunctions( cc, sig, "gaussian", "DIAGONAL", h, false);
   } else if( sss=="true" ){
      multivariate=true;
      unsigned ncv=valnames.size();
@@ -293,11 +303,13 @@ KernelFunctions* KernelFunctions::read( IFile* ifile, const std::vector<std::str
      for(unsigned i=0;i<ncv;i++){
          for(unsigned j=i;j<ncv;j++){ sig[k]=invmatrix(i,j); k++; }
      }
+     double h; ifile->scanField("height",h);
+     return new KernelFunctions( cc, sig, "gaussian", "MULTIVARIATE", h, false);
   } else {
       plumed_merror("multivariate flag should equal true or false");
   } 
   double h; ifile->scanField("height",h);
-  return new KernelFunctions( cc, sig, "gaussian", multivariate ,h, false);
+  return new KernelFunctions( cc, sig, "gaussian", "DIAGONAL", h, false);
 }
 
 }

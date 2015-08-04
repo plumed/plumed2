@@ -215,7 +215,7 @@ void MultiColvarDensity::update(){
       Vector apos = pbcDistance( mycolv->getCentralAtomPos( mycolv->getTaskCode(i) ), origin );
       if( fractional ){ fpos = getPbc().realToScaled( apos ); } else { fpos=apos; }
       for(unsigned j=0;j<directions.size();++j) pp[j]=fpos[ directions[j] ];
-      KernelFunctions kernel( pp, bw, kerneltype, false, cvals[0]*cvals[1], true );
+      KernelFunctions kernel( pp, bw, kerneltype, "DIAGONAL", cvals[0]*cvals[1], true );
       gg->addKernel( kernel ); norm += cvals[0];    
   }
 

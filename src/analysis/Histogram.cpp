@@ -248,7 +248,7 @@ void Histogram::performAnalysis(){
   if(kerneltype!="discrete") {
     for(unsigned i=0;i<getNumberOfDataPoints();++i){
       getDataPoint( i, point, weight );
-      KernelFunctions kernel( point, bw, kerneltype, false, weight, true);
+      KernelFunctions kernel( point, bw, kerneltype, "DIAGONAL", weight, true);
       gg->addKernel( kernel );
     }
   } else {
