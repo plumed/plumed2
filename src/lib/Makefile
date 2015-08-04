@@ -272,31 +272,17 @@ endif
 	chmod a+x $@
 
 $(PLUMED_KERNEL):$(OBJ_KERNEL)
-# this workaround is needed to use a relative path in binding without
-# overwriting the already installed library
-# it moves the presently compiled version out of the way then move it back
-# perhaps a cleaner solution is to use patchelf (linux) and install_name_tool (mac)
-# but I am not sure how that would be portable
 ifeq ($(PLUMED_INSTALL),Install)
-	-test -f libplumedKernel.$(SOEXT) && mv libplumedKernel.$(SOEXT) .libplumedKernel.$(SOEXT)
-	$(LDSO) -o libplumedKernel.$(SOEXT) $^ $(DYNAMIC_LIBS)
-	mv libplumedKernel.$(SOEXT) $@
-	-test -f .libplumedKernel.$(SOEXT) && mv .libplumedKernel.$(SOEXT) libplumedKernel.$(SOEXT)
+	mkdir -p install
+	cd install && $(LDSO) -o libplumedKernel.$(SOEXT) $(addprefix ../,$(OBJ_KERNEL)) $(DYNAMIC_LIBS)
 else
 	$(LDSO) -o $@ $^ $(DYNAMIC_LIBS)
 endif
 
 $(PLUMED_SHARED_OBJ): $(OBJ_KERNEL) $(OBJ_WRAPPER)
-# this workaround is needed to use a relative path in binding without
-# overwriting the already installed library
-# it moves the presently compiled version out of the way then move it back
-# perhaps a cleaner solution is to use patchelf (linux) and install_name_tool (mac)
-# but I am not sure how that would be portable
 ifeq ($(PLUMED_INSTALL),Install)
-	-test -f libplumed.$(SOEXT) && mv libplumed.$(SOEXT) .libplumed.$(SOEXT)
-	$(LDSO) -o libplumed.$(SOEXT) $^ $(DYNAMIC_LIBS)
-	mv libplumed.$(SOEXT) $@
-	-test -f .libplumed.$(SOEXT) && mv .libplumed.$(SOEXT) libplumed.$(SOEXT)
+	mkdir -p install
+	cd install && $(LDSO) -o libplumed.$(SOEXT) $(addprefix ../,$(OBJ_KERNEL)) $(addprefix ../,$(OBJ_WRAPPER)) $(DYNAMIC_LIBS)
 else
 	$(LDSO) -o $@ $^ $(DYNAMIC_LIBS)
 endif
