@@ -36,6 +36,9 @@ class ValueVessel : public Vessel {
 private: 
   Value* final_value;
 protected:
+/// The value in the input MultiValue that we are considering
+  unsigned mycomponent; 
+/// Get the final value we are computing
   Value* getFinalValue() const ;
 /// Set the final value
   void setOutputValue( const double& val );

@@ -26,6 +26,7 @@ namespace vesselbase{
 
 void ValueVessel::registerKeywords( Keywords& keys ){
   Vessel::registerKeywords( keys );
+   keys.add("compulsory","COMPONENT","1","the component of the vector for which to calculate this quantity");
 }
 
 ValueVessel::ValueVessel( const VesselOptions& da ):
@@ -44,6 +45,7 @@ Vessel(da)
      a->componentIsNotPeriodic( getLabel() );
   }
   final_value=a->copyOutput( a->getNumberOfComponents()-1 );
+  parse("COMPONENT",mycomponent);
 }
 
 std::string ValueVessel::description(){

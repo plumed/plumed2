@@ -145,7 +145,6 @@ void KernelFunctions::setData( const std::vector<double>& at, const std::vector<
     }
     double volume;
     if( ktype==gaussian ){
-       for(unsigned i=0;i<width.size();++i) det*=width[i];
        volume=pow( 2*pi, 0.5*ncv ) * pow( det, 0.5 );
     } else if( ktype==uniform || ktype==triangular ){
        if( ncv%2==1 ){
@@ -229,10 +228,10 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<do
      Matrix<double> mymatrix( getMatrix() ); 
      for(unsigned i=0;i<mymatrix.nrows();++i){
         double dp_i, dp_j; derivatives[i]=0;
-        dp_i=pos[i]->difference( center[i] ); 
+        dp_i=-pos[i]->difference( center[i] ); 
         for(unsigned j=0;j<mymatrix.ncols();++j){
           if(i==j) dp_j=dp_i;
-          else dp_j=pos[j]->difference( center[j] );
+          else dp_j=-pos[j]->difference( center[j] );
 
           derivatives[i]+=mymatrix(i,j)*dp_j;
           r2+=dp_i*dp_j*mymatrix(i,j);

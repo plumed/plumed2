@@ -49,13 +49,13 @@ wtolerance(0.0)
       log.printf("%s ",mlabs[i].c_str() );
       MultiColvarBase* mycolv = plumed.getActionSet().selectWithLabel<MultiColvarBase*>(mlabs[i]); 
       if(!mycolv) error("action labeled " + mlabs[i] + " does not exist or is not a multicolvar");
-      // Check all base multicolvars are of same type
-      if( i==0 ){ 
-          mname = mycolv->getName();
-          if( mycolv->isPeriodic() ) error("multicolvar functions don't work with this multicolvar");
-      } else {
-          if( mname!=mycolv->getName() ) error("All input multicolvars must be of same type"); 
-      }
+      // Check all base multicolvars are of same type   GAT THIS ALL NEEDS TO GO BACK BUT SPECIALISED
+      // if( i==0 ){ 
+      //     mname = mycolv->getName();
+      //     // if( mycolv->isPeriodic() ) error("multicolvar functions don't work with this multicolvar");  GAT this needs to go back but somewhere else
+      // } else {
+      //     if( mname!=mycolv->getName() ) error("All input multicolvars must be of same type"); 
+      // }
       // Make sure we use low memory option in base colvar
       mycolv->setLowMemOption( usingLowMem() );
       // Add the dependency

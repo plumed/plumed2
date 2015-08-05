@@ -21,10 +21,14 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
 #include "tools/KernelFunctions.h"
+#include "tools/IFile.h"
 #include "MultiColvarFunction.h"
 
 //+PLUMEDOC MCOLVARF PAMM
 /*
+Probabilistic analysis of molecular mofifs.
+
+This is an implementation of the methods discussed in \cite{pamm}
 
 \par Examples
 
@@ -59,11 +63,9 @@ PLUMED_REGISTER_ACTION(PAMM,"PAMM")
 
 void PAMM::registerKeywords( Keywords& keys ){
   MultiColvarFunction::registerKeywords( keys ); 
-  keys.add("compulsory","TARGET-KERNEL","the kernel function that describes the structural motif we are looking for");
-  keys.add("numbered","MIX-KERNEL","the kernel functions describing the other structural motifs that were found");
-  keys.reset_style("MIX-KERNEL","compulsory"); 
+  keys.add("compulsory","CLUSTERS","the name of the file that contains the definitions of all the clusters");
   keys.add("compulsory","REGULARISE","0.001","don't allow the denominator to be smaller then this value");
-  keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("SUM"); keys.use("LESS_THAN"); keys.use("MEAN");
+  keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("SUM"); keys.use("LESS_THAN"); 
 }
 
 PAMM::PAMM(const ActionOptions& ao):
@@ -77,18 +79,41 @@ MultiColvarFunction(ao)
    // This builds the lists
    buildSets(); 
 
-   std::string kernelinpt;
-   parse("TARGET-KERNEL",kernelinpt);
-   KernelFunctions target( kernelinpt, true ); 
-   if( target.ndim()!=getNumberOfBaseMultiColvars() ) error("mismatch for dimensionality of target kernel");
-   kernels.push_back( target );
-   for(int i=1;;i++){
-      if( !parseNumbered("MIX-KERNEL",i,kernelinpt) ) break;
-      KernelFunctions mykernel( kernelinpt, true );
-      if( mykernel.ndim()!=getNumberOfBaseMultiColvars() ) error("mismatch for dimensionality of mix kernel");
-      kernels.push_back( mykernel );
-   }
-   if( kernels.size()==1 ) error("no mix kernels defined");
+   std::string filename; parse("CLUSTERS",filename);
+   IFile ifile; 
+   if( !ifile.FileExist(filename) ) error("could not find file named " + filename);
+   ifile.open(filename); ifile.allowIgnoredFields(); double weight, wij;
+   unsigned ncolv = getNumberOfBaseMultiColvars(); 
+   std::vector<double> center( ncolv );
+   std::vector<double> sig( 0.5*ncolv*(ncolv-1) + ncolv );   
+   while( ifile.scanField("weight",weight) ) {
+       for(unsigned i=0;i<center.size();++i){
+          ifile.scanField("center-"+getBaseMultiColvar(i)->getLabel(),center[i]);
+       }   
+       unsigned k=0;
+       for(unsigned i=0;i<center.size();++i){
+           for(unsigned j=0;j<center.size();++j){
+              ifile.scanField("width-"+getBaseMultiColvar(i)->getLabel()+"-" + getBaseMultiColvar(j)->getLabel(),wij );
+              if( i<=j) sig[k++]=wij;
+           }
+       }  
+       ifile.scanField();
+       // std::string ktype; ifile.scanField("kerneltype",ktype);
+       kernels.push_back( KernelFunctions( center, sig, "GAUSSIAN", true, weight, true ) );
+   } 
+
+ //  std::string kernelinpt;
+ //  parse("TARGET-KERNEL",kernelinpt);
+ //  KernelFunctions target( kernelinpt, true ); 
+ //  if( target.ndim()!=getNumberOfBaseMultiColvars() ) error("mismatch for dimensionality of target kernel");
+ //  kernels.push_back( target );
+ //  for(int i=1;;i++){
+ //     if( !parseNumbered("MIX-KERNEL",i,kernelinpt) ) break;
+ //     KernelFunctions mykernel( kernelinpt, true );
+ //     if( mykernel.ndim()!=getNumberOfBaseMultiColvars() ) error("mismatch for dimensionality of mix kernel");
+ //     kernels.push_back( mykernel );
+ //  }
+ //  if( kernels.size()==1 ) error("no mix kernels defined");
 
    // I think we can put this back for anything with not usespecies
    // Now need to pass cutoff information to underlying distance multicolvars
@@ -116,7 +141,7 @@ PAMM::~PAMM(){
 }
 
 unsigned PAMM::getNumberOfQuantities(){
-   return getBaseMultiColvar(0)->getNumberOfQuantities();
+   return 1 + kernels.size();    // getBaseMultiColvar(0)->getNumberOfQuantities();
 }
 
 void PAMM::calculateWeight( AtomValuePack& myatoms ){
@@ -146,27 +171,27 @@ void PAMM::calculateWeight( AtomValuePack& myatoms ){
 
 double PAMM::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
    unsigned nvars = getNumberOfBaseMultiColvars();    
-   std::vector<double> tval(2), nderiv( nvars ), tderiv( nvars ), dderiv( nvars );
+   std::vector<std::vector<double> > tderiv( kernels.size() );
+   for(unsigned i=0;i<kernels.size();++i) tderiv[i].resize( nvars );
+   std::vector<double> tval(2), vals( kernels.size() ), dderiv( kernels.size(), 0 );
 
    for(unsigned i=0;i<nvars;++i){
        getVectorForTask( myatoms.getIndex(i), false, tval ); pos[i]->set( tval[1] );
    }
 
-   // Evaluate the kernel that is on the top line
-   double num = kernels[0].evaluate( pos, nderiv );
-   for(unsigned j=0;j<nvars;++j) dderiv[j] = nderiv[j];
-
-   // Evaluate the set of kernel that are on the bottom line
-    double denom=num;
-    for(unsigned i=1;i<kernels.size();++i){ 
-        denom+=kernels[i].evaluate( pos, tderiv );
-        for(unsigned j=0;j<nvars;++j) dderiv[j] += tderiv[j];
-    }
-    // Make sure we don't divide by very small numbers 
-    if( denom<regulariser ) return 0.0;
+   // Evaluate the set of kernels 
+   double denom=regulariser;
+   for(unsigned i=0;i<kernels.size();++i){ 
+       vals[i]=kernels[i].evaluate( pos, tderiv[i] );
+       denom+=vals[i]; 
+       for(unsigned j=0;j<nvars;++j) dderiv[j] += tderiv[i][j];
+   }
+   // Now set all values other than the first one 
+   // This is because of some peverse choices in multicolvar
+   for(unsigned i=1;i<kernels.size();++i) myatoms.setValue( 1+i, vals[i]/denom );
 
    if( !doNotCalculateDerivatives() ){
-       double denom2=denom*denom; std::vector<double> mypref( 2 );
+       double denom2=denom*denom; std::vector<double> mypref( 1 + kernels.size() );
        MultiValue myder( 2, getBaseMultiColvar(0)->getNumberOfDerivatives() );
        for(unsigned ivar=0;ivar<nvars;++ivar){
            // Resize the holder that gets the derivatives from the base class
@@ -178,14 +203,16 @@ double PAMM::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
            // Get the values of the derivatives
            getVectorDerivatives( myatoms.getIndex(ivar), false, myder );
            // And calculate the derivatives
-           mypref[1] = nderiv[ivar]/denom - num*dderiv[ivar]/denom2;
-           // This is basically doing the chain rule to get the final derivatives
-           mergeVectorDerivatives( 1, 1, 2, myatoms.getIndex(ivar), mypref, myder, myatoms );
-           myder.clearAll();
+           for(unsigned i=0;i<kernels.size();++i){
+               mypref[1+i] = tderiv[i][ivar]/denom - vals[i]*dderiv[ivar]/denom2;
+               // This is basically doing the chain rule to get the final derivatives
+               mergeVectorDerivatives( 1+i, 1+i, 2+i, myatoms.getIndex(ivar), mypref, myder, myatoms );
+               myder.clearAll();
+           }
        }
    }
 
-   return num / denom;
+   return vals[0] / denom;
 }
 
 Vector PAMM::getCentralAtom(){
