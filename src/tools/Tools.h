@@ -121,6 +121,8 @@ public:
   static std::string extension(const std::string&);
 /// Fast int power
   static double fastpow(double base,int exp);
+/// Modified 0th-order Bessel function of the first kind 
+  static double bessel0(const double& val);
 };
 
 template <class T>

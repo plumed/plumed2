@@ -151,12 +151,38 @@ void KernelFunctions::normalize( const std::vector<Value*>& myvals ){
      Invert(mymatrix,myinv); double logd;
      logdet( myinv, logd );
      det=std::exp(logd);
-  } else if(dtype==vonmises){
-     unsigned naper=0; 
-     for(unsigned i=0;i<ncv;++i){
-         if( !myvals[i]->isPeriodic() ) naper++;
+  } 
+  if( dtype==diagonal || dtype==multi ){
+     double volume;
+     if( ktype==gaussian ){
+        volume=pow( 2*pi, 0.5*ncv ) * pow( det, 0.5 );
+     } else if( ktype==uniform || ktype==triangular ){
+        if( ncv%2==1 ){
+           double dfact=1;
+           for(unsigned i=1;i<ncv;i+=2) dfact*=static_cast<double>(i);
+           volume=( pow( pi, (ncv-1)/2 ) ) * ( pow( 2., (ncv+1)/2 ) ) / dfact;
+        } else {
+           double fact=1.;
+           for(unsigned i=1;i<ncv/2;++i) fact*=static_cast<double>(i);
+           volume=pow( pi,ncv/2 ) / fact;
+        }
+        if(ktype==uniform) volume*=det;
+        else if(ktype==triangular) volume*=det / 3.;
+     } else {
+        plumed_merror("not a valid kernel type");
      }
-     // Now construct sub matrix
+     height /= volume;
+     return;
+  }
+  plumed_assert( dtype==vonmises && ktype==gaussian );
+  // Now calculate determinant for aperiodic variables
+  unsigned naper=0; 
+  for(unsigned i=0;i<ncv;++i){
+      if( !myvals[i]->isPeriodic() ) naper++;
+  }
+  // Now construct sub matrix
+  double volume=1;
+  if( naper>0 ){
      unsigned isub=0;
      Matrix<double> mymatrix( getMatrix() ), mysub( naper, naper );
      for(unsigned i=0;i<ncv;++i){
@@ -171,26 +197,40 @@ void KernelFunctions::normalize( const std::vector<Value*>& myvals ){
      Matrix<double> myisub( naper, naper ); double logd;
      Invert( mysub, myisub ); logdet( myisub, logd );
      det=std::exp(logd);
-  }
-  double volume;
-  if( ktype==gaussian ){
      volume=pow( 2*pi, 0.5*ncv ) * pow( det, 0.5 );
-  } else if( ktype==uniform || ktype==triangular ){
-     if( ncv%2==1 ){
-        double dfact=1;
-        for(unsigned i=1;i<ncv;i+=2) dfact*=static_cast<double>(i);
-        volume=( pow( pi, (ncv-1)/2 ) ) * ( pow( 2., (ncv+1)/2 ) ) / dfact;
-     } else {
-        double fact=1.;
-        for(unsigned i=1;i<ncv/2;++i) fact*=static_cast<double>(i);
-        volume=pow( pi,ncv/2 ) / fact;
+  }
+
+  // Calculate volume of periodic variables 
+  unsigned nper=0;
+  for(unsigned i=0;i<ncv;++i){
+     if( myvals[i]->isPeriodic() ) nper++;
+  }
+
+  // Now construct sub matrix
+  if( nper>0 ){
+     unsigned isub=0;
+     Matrix<double> mymatrix( getMatrix() ),  mysub( nper, nper ); 
+     for(unsigned i=0;i<ncv;++i){
+         if( !myvals[i]->isPeriodic() ) continue;
+         unsigned jsub=0;
+         for(unsigned j=0;j<ncv;++j){
+             if( !myvals[j]->isPeriodic() ) continue;
+             mysub( isub, jsub ) = mymatrix( i, j ); jsub++;
+         }
+         isub++;
      }
-     if(ktype==uniform) volume*=det;
-     else if(ktype==triangular) volume*=det / 3.;
-  } else {
-     plumed_merror("not a valid kernel type");
-  } 
-  height /= volume;  
+     Matrix<double>  eigvec( nper, nper ); 
+     std::vector<double> eigval( nper ); 
+     diagMat( mysub, eigval, eigvec ); 
+     unsigned iper=0; volume=1;
+     for(unsigned i=0;i<ncv;++i){
+        if( myvals[i]->isPeriodic() ){ 
+            volume *= myvals[i]->getMaxMinusMin()*Tools::bessel0(eigval[iper])*std::exp(-eigval[iper]);
+            iper++;
+        }
+     }
+  }
+  height /= volume;
 }
 
 double KernelFunctions::getCutoff( const double& width ) const {

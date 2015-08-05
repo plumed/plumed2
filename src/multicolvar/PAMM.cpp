@@ -91,23 +91,26 @@ MultiColvarFunction(ao)
    }
 
    std::string filename; parse("CLUSTERS",filename);
-   IFile ifile; 
+   unsigned ncolv = getNumberOfBaseMultiColvars();
+   IFile ifile; Matrix<double> covar( ncolv, ncolv ), icovar( ncolv, ncolv );
    if( !ifile.FileExist(filename) ) error("could not find file named " + filename);
    ifile.open(filename); ifile.allowIgnoredFields(); double weight, wij;
-   unsigned ncolv = getNumberOfBaseMultiColvars(); 
    std::vector<double> center( ncolv );
    std::vector<double> sig( 0.5*ncolv*(ncolv-1) + ncolv );   
    while( ifile.scanField("weight",weight) ) {
        for(unsigned i=0;i<center.size();++i){
           ifile.scanField("center-"+getBaseMultiColvar(i)->getLabel(),center[i]);
        }   
-       unsigned k=0;
        for(unsigned i=0;i<center.size();++i){
            for(unsigned j=0;j<center.size();++j){
-              ifile.scanField("width-"+getBaseMultiColvar(i)->getLabel()+"-" + getBaseMultiColvar(j)->getLabel(),wij );
-              if( i<=j) sig[k++]=wij;
+              ifile.scanField("width-"+getBaseMultiColvar(i)->getLabel()+"-" + getBaseMultiColvar(j)->getLabel(),covar(i,j) );
            }
        }  
+       Invert( covar, icovar );
+       unsigned k=0; 
+       for(unsigned i=0;i<ncolv;i++){
+           for(unsigned j=i;j<ncolv;j++){ sig[k]=icovar(i,j); k++; }
+       }
        ifile.scanField(); 
        // std::string ktype; ifile.scanField("kerneltype",ktype);
        kernels.push_back( KernelFunctions( center, sig, "GAUSSIAN", "VON-MISES", weight ) );

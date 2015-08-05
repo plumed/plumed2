@@ -322,4 +322,15 @@ std::string Tools::extension(const std::string&s){
   return ext;
 }
 
+double Tools::bessel0( const double& val ){
+ if (fabs(val)<3.75){
+      double y = Tools::fastpow( val/3.75, 2 );
+      return 1 + y*(3.5156229 +y*(3.0899424 + y*(1.2067492+y*(0.2659732+y*(0.0360768+y*0.0045813)))));
+  }
+  double ax=fabs(val), y=3.75/ax, bx=std::exp(ax)/sqrt(ax);
+  ax=0.39894228+y*(0.01328592+y*(0.00225319+y*(-0.00157565+y*(0.00916281+y*(-0.02057706+y*(0.02635537+y*(-0.01647633+y*0.00392377)))))));
+  return ax*bx;
+}
+
+
 }
