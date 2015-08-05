@@ -151,6 +151,26 @@ void KernelFunctions::normalize( const std::vector<Value*>& myvals ){
      Invert(mymatrix,myinv); double logd;
      logdet( myinv, logd );
      det=std::exp(logd);
+  } else if(dtype==vonmisses){
+     unsigned naper=0; 
+     for(unsigned i=0;i<ncv;++i){
+         if( !myvals[i]->isPeriodic() ) naper++;
+     }
+     // Now construct sub matrix
+     unsigned isub=0;
+     Matrix<double> mymatrix( getMatrix() ), mysub( naper, naper );
+     for(unsigned i=0;i<ncv;++i){
+         if( !myvals[i]->isPeriodic() ) continue;
+         unsigned jsub=0;
+         for(unsigned j=0;j<ncv;++j){
+             if( !myvals[j]->isPeriodic() ) continue;
+             mysub( isub, jsub ) = mymatrix( i, j ); jsub++;
+         }
+         isub++;
+     }
+     Matrix<double> myisub( naper, naper ); double logd;
+     Invert( mysub, myisub ); logdet( myisub, logd );
+     det=std::exp(logd);
   }
   double volume;
   if( ktype==gaussian ){
