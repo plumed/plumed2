@@ -71,7 +71,7 @@ class Torsion : public Colvar {
   bool do_cosine;
 
 public:
-  Torsion(const ActionOptions&);
+  explicit Torsion(const ActionOptions&);
 // active methods:
   virtual void calculate();
   static void registerKeywords(Keywords& keys);

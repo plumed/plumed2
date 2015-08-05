@@ -7,36 +7,45 @@ ifndef program_transform_name
   program_transform_name=s,x,x,
 endif
 
-# default target
 .PHONY: all obj
+ifdef PLUMED_FORCE
+.PHONY: ConfigInstall.cpp Config.cpp version.h
+endif
+
+# default target
 all:
-	@echo "Updating ConfigInstall.cpp"
-	@sed "s/@SOEXT@/$(SOEXT)/g" Config.cpp.in | \
-         sed "s/@ISINSTALLED@/true/g" | \
-	env prefix="${prefix}" env program_transform_name="${program_transform_name}" ../maketools/update-plumedroot.sh ConfigInstall.cpp
-	@echo "Updating version file"
-	@ ../maketools/update-version.sh version.h
-	$(MAKE) do-all
+	$(MAKE) PLUMED_FORCE=yes ConfigInstall.cpp Config.cpp version.h
+	$(MAKE) Config.o ConfigInstall.o compile_options.sh
 
 obj: all
 
-do-all: Config.o ConfigInstall.o compile_options.sh 
-	make ConfigInstall.o
+version.h:
+	@echo "Updating version.h"
+	@ ../maketools/update-version.sh version.h
 
-ConfigInstall.cpp:
+ConfigInstall.cpp: Config.cpp.in
 	@echo "Updating ConfigInstall.cpp"
 	@sed "s/@SOEXT@/$(SOEXT)/g" Config.cpp.in | \
          sed "s/@ISINSTALLED@/true/g" | \
-         ../maketools/update-plumedroot.sh ConfigInstall.cpp
-	@echo "Updating version file"
-	@ ../maketools/update-version.sh version.h
+         sed "s|@PLUMED_ROOT@|$(libdir)/$(program_name)|g" | \
+         sed "s|@htmldir@|$(htmldir)|g" | \
+         sed "s|@includedir@|$(includedir)|g" | \
+         sed "s|@program_name@|$(program_name)|g" | \
+         sed "s|@libdir@|$(libdir)|g" > $@~
+	cmp -s $@~ $@ || cp $@~ $@
+	rm $@~
 
 # file to import compilation options inside c++
-Config.cpp: Config.cpp.in Config.h
-	@echo Building Config.cpp, a object containing configuration infos
+Config.cpp: Config.cpp.in
+	@echo "Updating Config.cpp"
 	@sed "s/@SOEXT@/$(SOEXT)/g" $< | \
          sed "s/@ISINSTALLED@/false/g" | \
-         sed "s|@PLUMED_ROOT@|$(CURDIR:src/config=)|g" > $@
+         sed "s|@htmldir@|xxxxNAxxxx|g" | \
+         sed "s|@includedir@|xxxxNAxxxx|g" | \
+         sed "s|@program_name@|xxxxNAxxxx|g" | \
+         sed "s|@PLUMED_ROOT@|$(CURDIR:src/config=)|g" > $@~
+	cmp -s $@~ $@ || cp $@~ $@
+	rm $@~
 
 links: 
 	@echo Nothing to do in $(CURDIR)
@@ -51,7 +60,7 @@ Makefile.conf.xxd: ../../Makefile.conf
 # file to import compilation options inside a bash script
 compile_options.sh:
 	@echo Building compile_options.sh, a sourceable bash script with some compilation options
-	@echo "compile='"$(CXX) -c -I'$$PLUMED_ROOT'/src $(CPPFLAGS) $(CXXFLAGS) -o"'" > $@
+	@echo "compile='"$(CXX) -c -I'"$$PLUMED_INCLUDEDIR/$$PLUMED_PROGRAM_NAME"'/ $(CPPFLAGS) $(CXXFLAGS) -o"'" > $@
 	@echo "link='"$(LDSO) -o"'" >> $@
 	@echo "soext='"$(SOEXT)"'" >> $@
 

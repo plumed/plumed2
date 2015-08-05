@@ -284,7 +284,7 @@ private:
   std::string fmt;
 
 public:
-  MetaD(const ActionOptions&);
+  explicit MetaD(const ActionOptions&);
   ~MetaD();
   void calculate();
   void update();
@@ -664,6 +664,9 @@ last_step_warn_grid(0)
     if(i==mw_id_) ifiles[i]->close();
    }
   }
+
+  comm.Barrier();
+  if(comm.Get_rank()==0) multi_sim_comm.Barrier();
 
 // open hills file for writing
   hillsOfile_.link(*this);

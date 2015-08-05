@@ -92,7 +92,7 @@ Erik Lindahl, 2008-10-07.
  */
 
 #include "simple.h"
-#if defined (__PLUMED_INTERNAL_BLAS)
+#if ! defined (__PLUMED_HAS_EXTERNAL_BLAS)
 #include "def_internal.h"
 namespace PLMD{
 namespace blas{
@@ -244,7 +244,7 @@ int
 
 
 }
-#if defined (__PLUMED_INTERNAL_BLAS)
+#if ! defined (__PLUMED_HAS_EXTERNAL_BLAS)
 }
 #endif
 

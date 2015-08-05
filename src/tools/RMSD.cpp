@@ -1223,5 +1223,27 @@ Tensor RMSDCoreData::getRotationMatrixPositionsToReference(){
 }
 
 
+template double RMSD::optimalAlignment<true,true>(const  std::vector<double>  & align,
+                                     const  std::vector<double>  & displace,
+                                     const std::vector<Vector> & positions,
+                                     const std::vector<Vector> & reference ,
+                                     std::vector<Vector>  & derivatives, bool squared)const;
+template double RMSD::optimalAlignment<true,false>(const  std::vector<double>  & align,
+                                     const  std::vector<double>  & displace,
+                                     const std::vector<Vector> & positions,
+                                     const std::vector<Vector> & reference ,
+                                     std::vector<Vector>  & derivatives, bool squared)const;
+template double RMSD::optimalAlignment<false,true>(const  std::vector<double>  & align,
+                                     const  std::vector<double>  & displace,
+                                     const std::vector<Vector> & positions,
+                                     const std::vector<Vector> & reference ,
+                                     std::vector<Vector>  & derivatives, bool squared)const;
+template double RMSD::optimalAlignment<false,false>(const  std::vector<double>  & align,
+                                     const  std::vector<double>  & displace,
+                                     const std::vector<Vector> & positions,
+                                     const std::vector<Vector> & reference ,
+                                     std::vector<Vector>  & derivatives, bool squared)const;
+
+
 
 }

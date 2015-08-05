@@ -31,7 +31,7 @@ private:
   bool fast;
   RMSD myrmsd;
 public:
-  OptimalRMSD(const ReferenceConfigurationOptions& ro);
+  explicit OptimalRMSD(const ReferenceConfigurationOptions& ro);
   void read( const PDB& );
   double calc( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const ;
   bool pcaIsEnabledForThisReference(){ return true; }

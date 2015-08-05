@@ -137,7 +137,7 @@ public:
 /// Create manual
   static void registerKeywords( Keywords& keys );
 /// Constructor
-  DFSBasic(const ActionOptions&);
+  explicit DFSBasic(const ActionOptions&);
 ///
   void doCalculationOnCluster();
 };

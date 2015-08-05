@@ -122,7 +122,7 @@ private:
   bool unnormalized;
 public:
   static void registerKeywords( Keywords& keys );
-  Histogram(const ActionOptions&ao);
+  explicit Histogram(const ActionOptions&ao);
   void performAnalysis();
   void performTask( const unsigned& , const unsigned& , MultiValue& ) const ;
 };
@@ -248,8 +248,8 @@ void Histogram::performAnalysis(){
   if(kerneltype!="discrete") {
     for(unsigned i=0;i<getNumberOfDataPoints();++i){
       getDataPoint( i, point, weight );
-      KernelFunctions kernel( point, bw, kerneltype, false, weight, true);
-      gg->addKernel( kernel );
+      KernelFunctions kernel( point, bw, kerneltype, "DIAGONAL", weight ); 
+      kernel.normalize( getArguments() ); gg->addKernel( kernel );
     }
   } else {
     for(unsigned i=0;i<getNumberOfDataPoints();++i){

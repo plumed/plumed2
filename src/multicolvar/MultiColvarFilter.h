@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -37,7 +37,7 @@ to see whether or not they are within a certain range
 class MultiColvarFilter : public BridgedMultiColvarFunction {
 public:
   static void registerKeywords( Keywords& keys );
-  MultiColvarFilter(const ActionOptions&);
+  explicit MultiColvarFilter(const ActionOptions&);
 /// Do everything required to setup the derivatives
   void doJobsRequiredBeforeTaskList();
 /// Get the number of quantities in the colvar

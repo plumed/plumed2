@@ -79,6 +79,17 @@ MultiColvarFunction(ao)
    // This builds the lists
    buildSets(); 
 
+   for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i){
+       pos.push_back( new Value() );
+       if( !getBaseMultiColvar(i)->isPeriodic() ){
+           pos[i]->setNotPeriodic();
+       } else {
+           std::string min, max;
+           getBaseMultiColvar(i)->retrieveDomain( min, max );
+           pos[i]->setDomain( min, max );
+       }
+   }
+
    std::string filename; parse("CLUSTERS",filename);
    IFile ifile; 
    if( !ifile.FileExist(filename) ) error("could not find file named " + filename);
@@ -97,9 +108,10 @@ MultiColvarFunction(ao)
               if( i<=j) sig[k++]=wij;
            }
        }  
-       ifile.scanField();
+       ifile.scanField(); 
        // std::string ktype; ifile.scanField("kerneltype",ktype);
-       kernels.push_back( KernelFunctions( center, sig, "GAUSSIAN", true, weight, true ) );
+       kernels.push_back( KernelFunctions( center, sig, "GAUSSIAN", "VON-MISES", weight ) );
+       kernels[kernels.size()-1].normalize( pos );
    } 
 
  //  std::string kernelinpt;
@@ -123,17 +135,6 @@ MultiColvarFunction(ao)
    //         mydist->setLinkCellCutoff( kernels[k].getCenter()[i]+kernels[k].getContinuousSupport()[i] );
    //     }
    // }
-
-   for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i){
-       pos.push_back( new Value() );
-       if( !getBaseMultiColvar(i)->isPeriodic() ){
-           pos[i]->setNotPeriodic();
-       } else {
-           std::string min, max;
-           getBaseMultiColvar(i)->retrieveDomain( min, max );
-           pos[i]->setDomain( min, max );
-       }
-   }
 }
 
 PAMM::~PAMM(){

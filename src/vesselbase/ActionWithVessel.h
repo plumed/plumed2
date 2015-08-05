@@ -144,7 +144,7 @@ protected:
   void addTaskToList( const unsigned& taskCode );
 public:
   static void registerKeywords(Keywords& keys);
-  ActionWithVessel(const ActionOptions&ao);
+  explicit ActionWithVessel(const ActionOptions&ao);
   ~ActionWithVessel();
   void unlockContributors();
   void lockContributors();

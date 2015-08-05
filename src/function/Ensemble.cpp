@@ -58,7 +58,7 @@ class Ensemble :
   unsigned  ens_dim;
   double    fact;
 public:
-  Ensemble(const ActionOptions&);
+  explicit Ensemble(const ActionOptions&);
   void calculate();
   static void registerKeywords(Keywords& keys);
 };

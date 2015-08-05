@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -47,7 +47,7 @@ protected:
   unsigned getNumberOfLandmarks() const ;
 public:
   static void registerKeywords( Keywords& keys );
-  AnalysisWithLandmarks( const ActionOptions& );
+  explicit AnalysisWithLandmarks( const ActionOptions& );
   ~AnalysisWithLandmarks();
 /// Do the analysis
   void performAnalysis();

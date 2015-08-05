@@ -183,13 +183,13 @@ For users:
 - Fixed bug in \ref ENSEMBLE derivatives when more than 1 argument was provided
 - Fixed bug in \ref GHOST : virial is now computed correctly.
 - Fixed a serious bug in virial communicated from plumed to gromacs, for both gromacs versions 4.6 and 5.0.
-  See notes <a href="http://github.com/plumed/plumed2/issues/132"> here </a>
+  See \issue{132}.
   This fix requires gromacs to be repatched and could be very important if you run biased simulations in the NPT ensemble.
 - Fixed a bug in the virial computed with \ref FIT_TO_TEMPLATE when the reference pdb had center non located at the origin.
 - Fixed a bug in the the forces computed with \ref FIT_TO_TEMPLATE when used in combination with \ref COM, \ref CENTER, or \ref GHOST
 - Fixed a bug that could lead plumed to be stuck with domain decomposition in some extreme case (one domain with all atoms, other domains empty).
 - Fixed a bug when \ref COMBINE or \ref MATHEVAL are used with PERIODIC keyword. Now when PERIODIC keyword is used the result
-  of the calculation is brought within the periodicity domain. See <a href="http://github.com/plumed/plumed2/issues/139"> here </a>.
+  of the calculation is brought within the periodicity domain. See \issue{139}.
 - Fixed a bug related to \ref RANDOM_EXCHANGES followed by \ref INCLUDE
 - Fixed bug in derivatives of histogram bead with triangular kernels
 - Updated gromacs patch 4.5.5 to 4.5.7
@@ -209,7 +209,7 @@ For developers:
 - Allow external VMD plugins to be detected with --has-external-molfile. This
   is required to enable some regtest with amber files.
 - Added --dump-full-virial to \ref driver
-- Allow definition of variables where some of the components have derivatives and some haven't (issue #131).
+- Allow definition of variables where some of the components have derivatives and some haven't (\issue{131}).
 - Improved travis tests with more debug options.
 - Improved some regtest to check out-of-diagonal virial components
 - Improved make cppcheck options.
@@ -218,6 +218,25 @@ For developers:
 Unreleased changes (will be included in 2.1.4)
 ---------------------------------------------
 
-See <a href="http://github.com/plumed/plumed2/commits/v2.1">branch v2.1 on git repository</a>.
+See branch \branch{v2.1} on git repository.
+
+For users:
+- Fixed NAMD patch. Masses and charges were not passed correctly, thus resulting in wrong
+  \ref COM or \ref CENTER with MASS.
+  This fix required repatching NAMD.
+  Notice that this bug was present also in v2.0 but in a different form.
+  More information here (\issue{162}), including a workaround that allows masses to be fixed
+  without repatching.
+- When installing with PLUMED_LIBSUFFIX an underscore is used as separator instead of a dash.
+  E.g. `make install PLUMED_LIBSUFFIX=2.1` will result in an executable named `plumed_v2.1`.
+  This fix a potential problem (see \ref Installation).
+- Fixed erroneously reported message about MPI at the end of ./configure.
+- Changed warning message about undocumented components.
+- PLUMED now says in the log file if it was compiled from a dirty git repository.
+- Fixed a problem leading to rare random crashes when using \ref METAD with WALKERS_MPI and multiple
+  processors per replica.
+- Small change in numerical accuracy of lattice reduction. Should be more
+  robust when running with highly optimizing compilers.
+
 
 */

@@ -56,7 +56,7 @@ namespace colvar{
 class Puckering : public Colvar {
 
 public:
-  Puckering(const ActionOptions&);
+  explicit Puckering(const ActionOptions&);
   virtual void calculate();
   static void registerKeywords(Keywords& keys);
 };

@@ -85,7 +85,7 @@ protected:
 /// This does the checks that are always required
   void singleDomainRequests( std::vector<AtomNumber>&, bool disable_checks );
 public:
-  ReferenceAtoms( const ReferenceConfigurationOptions& ro );
+  explicit ReferenceAtoms( const ReferenceConfigurationOptions& ro );
 /// This returns the number of reference atom positions
   unsigned getNumberOfReferencePositions() const ;
 /// This allows us to use a single pos array with RMSD objects using different atom indexes

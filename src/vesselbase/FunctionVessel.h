@@ -48,7 +48,7 @@ protected:
   bool usetol;
 public:
   static void registerKeywords( Keywords& keys );
-  FunctionVessel( const VesselOptions& );
+  explicit FunctionVessel( const VesselOptions& );
 /// This does the resizing of the buffer
   virtual void resize();
 /// Do the calcualtion

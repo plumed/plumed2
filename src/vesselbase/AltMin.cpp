@@ -31,7 +31,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
-  AltMin( const vesselbase::VesselOptions& da );
+  explicit AltMin( const vesselbase::VesselOptions& da );
   std::string value_descriptor();
   double calcTransform( const double& val, double& dv ) const ;
   double finalTransform( const double& val, double& dv );

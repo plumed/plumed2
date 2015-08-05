@@ -32,7 +32,7 @@ private:
   SwitchingFunction coord_switch;
 public:
   static void registerKeywords( Keywords& keys ); 
-  SMAC(const ActionOptions& ao); 
+  explicit SMAC(const ActionOptions& ao); 
   double transformDotProduct( const double& dot, double& df ) const ; 
   double calculateCoordinationPrefactor( const double& coord, double& df ) const ;
 };
@@ -53,7 +53,7 @@ OrientationSphere(ao)
    std::string kernelinpt;
    for(int i=1;;i++){
       if( !parseNumbered("KERNEL",i,kernelinpt) ) break;
-      KernelFunctions mykernel( kernelinpt, false );
+      KernelFunctions mykernel( kernelinpt );
       kernels.push_back( mykernel ); 
    }
    if( kernels.size()==0 ) error("no kernels defined");

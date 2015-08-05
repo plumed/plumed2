@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2014,2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -60,7 +60,7 @@ private:
   unsigned findCell( const Vector& pos ) const ;
 public:
 ///
-  LinkCells( Communicator& comm );
+  explicit LinkCells( Communicator& comm );
 /// Have the link cells been enabled
   bool enabled() const ;
 /// Set the value of the cutoff

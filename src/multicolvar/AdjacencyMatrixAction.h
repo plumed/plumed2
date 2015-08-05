@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -63,7 +63,7 @@ protected:
   void addDerivativesOnMatrixElement( const unsigned& ielem, const unsigned& jrow, const double& df, Matrix<double>& der );
 public:
   static void registerKeywords( Keywords& keys );
-  AdjacencyMatrixAction(const ActionOptions&);
+  explicit AdjacencyMatrixAction(const ActionOptions&);
   double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
   void calculateWeight( AtomValuePack& myatoms ) const ;
   void doJobsRequiredBeforeTaskList();

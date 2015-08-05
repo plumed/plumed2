@@ -46,6 +46,7 @@ OrientationSphere::OrientationSphere(const ActionOptions&ao):
 Action(ao),
 MultiColvarFunction(ao)
 {
+  if( getNumberOfBaseMultiColvars()>1 ) warning("not sure if orientation sphere works with more than one base multicolvar - check numerical derivatives");
   // Read in the switching function
   std::string sw, errors; parse("SWITCH",sw);
   if(sw.length()>0){

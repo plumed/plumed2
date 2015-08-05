@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -44,7 +44,7 @@ class Random{
 	int idum;
 	std::string name;
 public:
-	Random(const std::string & name=noname);
+	explicit Random(const std::string & name=noname);
 	void setSeed(int idum);
 	double RandU01();
 	double U01();

@@ -61,7 +61,7 @@ public ActionWithArguments
   OFile of;
 public:
   void calculate(){}
-  DumpForces(const ActionOptions&);
+  explicit DumpForces(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
   void apply(){}
   void update();

@@ -48,7 +48,7 @@ protected:
   void setAtomActive( const unsigned& n );
 public:
   static void registerKeywords( Keywords& keys );
-  BridgedMultiColvarFunction(const ActionOptions&);
+  explicit BridgedMultiColvarFunction(const ActionOptions&);
 /// Get a pointer to the base multicolvar
   MultiColvarBase* getPntrToMultiColvar() const ;
 /// Don't actually clear the derivatives when this is called from plumed main.  

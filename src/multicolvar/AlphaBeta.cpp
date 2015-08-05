@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -97,7 +97,7 @@ private:
   std::vector<double> target;
 public:
   static void registerKeywords( Keywords& keys );
-  AlphaBeta(const ActionOptions&);
+  explicit AlphaBeta(const ActionOptions&);
   virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
   bool isPeriodic(){ return false; }
 };

@@ -23,6 +23,14 @@ install:
 uninstall:
 	$(MAKE) -C src uninstall
 
+# standard target (according to GNU doc)
+html:
+	$(MAKE) doc
+
+# standard target (according to GNU doc)
+install-html: doc
+	$(MAKE) -C src install-html
+
 $(SRCDIRS):
 	$(MAKE) -C $@
      
@@ -63,6 +71,7 @@ fullclean:
 	rm -f Makefile.conf
 	rm -f sourceme.sh
 	rm -f config.log 
+	rm -f */*.on */*.off
 
 
 docclean:

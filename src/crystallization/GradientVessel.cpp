@@ -37,7 +37,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
-  GradientVessel( const vesselbase::VesselOptions& da );
+  explicit GradientVessel( const vesselbase::VesselOptions& da );
   std::string value_descriptor();
   void resize();
   bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;

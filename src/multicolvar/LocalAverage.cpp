@@ -88,7 +88,7 @@ private:
   SwitchingFunction switchingFunction;
 public:
   static void registerKeywords( Keywords& keys );
-  LocalAverage(const ActionOptions&);
+  explicit LocalAverage(const ActionOptions&);
 /// We have to overwrite this here
   unsigned getNumberOfQuantities();
 /// Actually do the calculation
@@ -120,6 +120,7 @@ LocalAverage::LocalAverage(const ActionOptions& ao):
 Action(ao),
 MultiColvarFunction(ao)
 {
+  if( getNumberOfBaseMultiColvars()>1 ) error("local average with more than one base colvar makes no sense");
   // Read in the switching function
   std::string sw, errors; parse("SWITCH",sw);
   if(sw.length()>0){

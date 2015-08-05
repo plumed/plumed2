@@ -29,7 +29,7 @@ class SimpleRMSD : public RMSDBase {
 private:
   RMSD myrmsd;
 public:
-  SimpleRMSD( const ReferenceConfigurationOptions& ro );
+  explicit SimpleRMSD( const ReferenceConfigurationOptions& ro );
   void read( const PDB& );
   double calc( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const ;
   bool pcaIsEnabledForThisReference(){ return true; }

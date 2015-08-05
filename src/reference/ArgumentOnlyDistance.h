@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -33,7 +33,7 @@ class Pbc;
 
 class ArgumentOnlyDistance : public ReferenceArguments {
 public:
-  ArgumentOnlyDistance( const ReferenceConfigurationOptions& ro );
+  explicit ArgumentOnlyDistance( const ReferenceConfigurationOptions& ro );
   void read( const PDB& pdb );
   double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, ReferenceValuePack& myder, const bool& squared ) const ;
   double calculate( const std::vector<Value*>& vals, ReferenceValuePack& myder, const bool& squared ) const ;

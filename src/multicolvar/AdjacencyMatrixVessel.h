@@ -39,7 +39,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
-  AdjacencyMatrixVessel( const vesselbase::VesselOptions& );
+  explicit AdjacencyMatrixVessel( const vesselbase::VesselOptions& );
 /// Ensures we use less memory for buffer in final loop
   void setBufferStart( unsigned& start );
 /// Ensures that finish is set properly

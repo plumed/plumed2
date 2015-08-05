@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -37,7 +37,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
-  Moments( const vesselbase::VesselOptions& da );
+  explicit Moments( const vesselbase::VesselOptions& da );
   std::string description();
   void resize();
   void finish( const std::vector<double>& buffer );

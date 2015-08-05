@@ -32,7 +32,7 @@ namespace PLMD {
 class KernelFunctions {
 private:
 /// Is the metric matrix diagonal
-  bool diagonal;
+  enum {diagonal,multi,vonmises} dtype;
 /// What type of kernel are we using
   enum {gaussian,uniform,triangular} ktype;
 /// The center of the kernel function
@@ -42,14 +42,16 @@ private:
 /// The height of the kernel
   double height;
 /// Used to set all the data in the kernel during construction - avoids double coding as this has two constructors
-  void setData( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const bool multivariate ,const double& w, const bool norm );
+  void setData( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const std::string& mtype, const double& w );
 /// Convert the width into matrix form
   Matrix<double> getMatrix() const;
 /// Get the cutoff for a kernel
   double getCutoff( const double& width ) const ;
 public:
-  KernelFunctions( const std::string& input, const bool& normed );
-  KernelFunctions( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const bool multivariate ,const double& w, const bool norm );
+  KernelFunctions( const std::string& input );
+  KernelFunctions( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const std::string& mtype, const double& w );
+/// Normalise the function and scale the height accordingly
+  void normalize( const std::vector<Value*>& myvals );
 /// Get the dimensionality of the kernel
   unsigned ndim() const;
 /// Get the position of the center 

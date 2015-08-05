@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -52,7 +52,7 @@ PRINT ARG=d1.* FILE=colvar1 FMT=%8.4f
 class Density : public MultiColvar {
 public:
   static void registerKeywords( Keywords& keys );
-  Density(const ActionOptions&);
+  explicit Density(const ActionOptions&);
 // active methods:
   virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
   /// Returns the number of coordinates of the field

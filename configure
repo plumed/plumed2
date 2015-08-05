@@ -621,6 +621,10 @@ ac_includes_default="\
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 build_dir
+program_name
+LD_RO
+program_can_run_mpi
+program_can_run
 xxd
 dot
 doxygen
@@ -686,14 +690,15 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
+enable_modules
 enable_debug
 enable_basic_warnings
 enable_fussy
 enable_debug_glibcxx
 enable_shared
 enable_cxx_exceptions
+enable_ld_r
 enable_mpi
-enable_openmp
 enable_external_lapack
 enable_external_blas
 enable_molfile_plugins
@@ -709,6 +714,7 @@ enable_execinfo
 enable_almost
 enable_gsl
 enable_xdrfile
+enable_openmp
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1341,14 +1347,16 @@ Optional Features:
   --disable-option-checking  ignore unrecognized --enable/--with options
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+  --enable-modules        all/none/reset or : separated list such as
+                          +crystallization:-bias default: reset
   --enable-debug          enable debugging, default: no
   --enable-basic-warnings enable basic warnings, default: yes
   --enable-fussy          enable fussy warnings, default: no
   --enable-debug-glibcxx  enable enable boundary check, default: no
   --enable-shared         enable shared libs, default: yes
   --enable-cxx-exceptions enable c++ exceptions, default: no
+  --enable-ld-r           enable group object files, default: yes
   --enable-mpi            enable search for mpi, default: yes
-  --enable-openmp         enable search for openmp, default: yes
   --enable-external-lapack
                           enable search for external lapack, default: yes
   --enable-external-blas  enable search for external blas, default: yes
@@ -2321,6 +2329,67 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 ##################################################################
 
+# Check whether --enable-modules was given.
+if test "${enable_modules+set}" = set; then :
+  enableval=$enable_modules;
+   rm -fr src/*.on src/*.off
+   if test "${enableval}" == yes ; then
+     enableval=reset
+   fi
+   if test "${enableval}" == no ; then
+     enableval=none
+   fi
+   for modules_mod in `echo "${enableval}" | sed 's/:/ /g' | sed 's/+/ +/g' | sed 's/-/ -/g'`
+   do
+     case "$modules_mod" in
+     (none)
+       { $as_echo "$as_me:${as_lineno-$LINENO}: Disabling all optional modules" >&5
+$as_echo "$as_me: Disabling all optional modules" >&6;}
+       rm -f src/*.off src/*.on
+       touch $(grep default-on src/*/module.type | sed "s|/module.type:.*|.off|") ;;
+     (all)
+       { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling all optional modules" >&5
+$as_echo "$as_me: Enabling all optional modules" >&6;}
+       rm -f src/*.off src/*.off
+       touch $(grep default-off src/*/module.type | sed "s|/module.type:.*|.on|") ;;
+     (reset)
+        { $as_echo "$as_me:${as_lineno-$LINENO}: Resetting modules to default" >&5
+$as_echo "$as_me: Resetting modules to default" >&6;}
+        rm -f src/*.on src/*.off ;;
+     (-*)
+       modules_mod=`echo "${modules_mod}" | sed "s|-||"`
+       if test ! -f src/$modules_mod/module.type ; then
+         as_fn_error $? "trying to remove module $modules_mod which does not exist" "$LINENO" 5
+       fi
+       { $as_echo "$as_me:${as_lineno-$LINENO}: Disabling module ${modules_mod}" >&5
+$as_echo "$as_me: Disabling module ${modules_mod}" >&6;}
+       rm -f src/$modules_mod.on
+       touch src/$modules_mod.off ;;
+     (+*)
+       modules_mod=`echo "${modules_mod}" | sed "s|+||"`
+       if test ! -f src/$modules_mod/module.type ; then
+         as_fn_error $? "trying to add module $modules_mod which does not exist" "$LINENO" 5
+       fi
+       { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling module ${modules_mod}" >&5
+$as_echo "$as_me: Enabling module ${modules_mod}" >&6;}
+       rm -f src/$modules_mod.off
+       touch src/$modules_mod.on ;;
+     (*)
+       if test ! -f src/$modules_mod/module.type ; then
+         as_fn_error $? "trying to add module $modules_mod which does not exist" "$LINENO" 5
+       fi
+       { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling module ${modules_mod}" >&5
+$as_echo "$as_me: Enabling module ${modules_mod}" >&6;}
+       rm -f src/$modules_mod.off
+       touch src/$modules_mod.on ;;
+     esac
+   done
+
+
+fi
+
+
+
 # set enable flags for ./configure
 
 debug=
@@ -2431,6 +2500,24 @@ fi
 
 
 
+ld_r=
+# Check whether --enable-ld-r was given.
+if test "${enable_ld_r+set}" = set; then :
+  enableval=$enable_ld_r; case "${enableval}" in
+             (yes) ld_r=true ;;
+             (no)  ld_r=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-ld-r" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) ld_r=true ;;
+             (no)  ld_r=false ;;
+  esac
+
+fi
+
+
+
 mpi=
 # Check whether --enable-mpi was given.
 if test "${enable_mpi+set}" = set; then :
@@ -2443,24 +2530,6 @@ else
   case "yes" in
              (yes) mpi=true ;;
              (no)  mpi=false ;;
-  esac
-
-fi
-
-
-
-openmp=
-# Check whether --enable-openmp was given.
-if test "${enable_openmp+set}" = set; then :
-  enableval=$enable_openmp; case "${enableval}" in
-             (yes) openmp=true ;;
-             (no)  openmp=false ;;
-             (*)   as_fn_error $? "wrong argument to --enable-openmp" "$LINENO" 5 ;;
-  esac
-else
-  case "yes" in
-             (yes) openmp=true ;;
-             (no)  openmp=false ;;
   esac
 
 fi
@@ -4826,6 +4895,31 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 fi
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX supports explicit" >&5
+$as_echo_n "checking whether $CXX supports explicit... " >&6; }
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+ class A{explicit A(){}};
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; } ;
+   $as_echo "#define explicit /**/" >>confdefs.h
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
 #### Compulsory libraries ####
 # some of them might be made optional if we find that are not available in some system
 { $as_echo "$as_me:${as_lineno-$LINENO}: Now we will check compulsory headers and libraries" >&5
@@ -5246,7 +5340,7 @@ save_LIBS="$LIBS"
 blas_found=
 lapack_found=
 
-# if external lapack can only work with external blas
+# external lapack can only work with external blas
 # thus, if external blas are disabled also external lapack should be disabled
 if test "$external_blas" == false && test "$external_lapack" == true ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: Internal blas can only be used with internal lapack" >&5
@@ -5363,14 +5457,13 @@ if test -z "$blas_found" ; then
 $as_echo "$as_me: WARNING: using internal lapack and blas, could be inefficient" >&2;}
 LIBS="$save_LIBS"
 
-$as_echo "#define __PLUMED_INTERNAL_BLAS 1" >>confdefs.h
-
-$as_echo "#define __PLUMED_INTERNAL_LAPACK 1" >>confdefs.h
-
 fi
 
-# if found, also look for external blas
+# if found, also look for external lapack
 if test -n "$blas_found" ; then
+
+$as_echo "#define __PLUMED_HAS_EXTERNAL_BLAS 1" >>confdefs.h
+
 
 save_LIBS="$LIBS"
 
@@ -5440,7 +5533,8 @@ if test -z "$lapack_found" ; then
 $as_echo "$as_me: WARNING: using internal lapack, could be inefficient" >&2;}
 LIBS="$save_LIBS"
 
-$as_echo "#define __PLUMED_INTERNAL_LAPACK 1" >>confdefs.h
+else
+$as_echo "#define __PLUMED_HAS_EXTERNAL_LAPACK 1" >>confdefs.h
 
 fi
 
@@ -5475,7 +5569,7 @@ if test $molfile_plugins == true ; then
 # Check for molfile_plugins and use internal fallback if not found. TG
 
 # We always have molfile, now
-$as_echo "#define __PLUMED_HAS_MOLFILE 1" >>confdefs.h
+$as_echo "#define __PLUMED_HAS_MOLFILE_PLUGINS 1" >>confdefs.h
 
 
 found=ko
@@ -5529,7 +5623,8 @@ fi
 if test $found == ko ; then
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using internal molfile_plugins, which only support dcd/xtc/trr/trj/crd files" >&5
 $as_echo "$as_me: WARNING: using internal molfile_plugins, which only support dcd/xtc/trr/trj/crd files" >&2;}
-	$as_echo "#define __PLUMED_INTERNAL_MOLFILE_PLUGINS 1" >>confdefs.h
+else
+	$as_echo "#define __PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS 1" >>confdefs.h
 
 fi
 
@@ -5584,7 +5679,6 @@ fi
 mpi_found=ko
 # optional libraries follow
 if test $mpi == true ; then
-  mpi_found=ok
 
     found=ko
     ac_fn_cxx_check_header_mongrel "$LINENO" "mpi.h" "ac_cv_header_mpi_h" "$ac_includes_default"
@@ -5600,17 +5694,22 @@ fi
 
 
     if test $found == ok ; then
-      $as_echo "#define __PLUMED_MPI 1" >>confdefs.h
+      $as_echo "#define __PLUMED_HAS_MPI 1" >>confdefs.h
 
     else
-       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_MPI" >&5
-$as_echo "$as_me: WARNING: cannot enable __PLUMED_MPI" >&2;}
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_MPI" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_MPI" >&2;}
     fi
 
+  if test "x$ac_cv_func_MPI_Init" = xyes; then
+    mpi_found=ok
+  fi
 else
   mpi_found=ko
 fi
-if test $openmp == true ; then
+
+# search for openmp is automatically disabled by autoconf
+# when configuring with --disable-openmp
 
   OPENMP_CXXFLAGS=
   # Check whether --enable-openmp was given.
@@ -5677,7 +5776,7 @@ $as_echo "$ac_cv_prog_cxx_openmp" >&6; }
   fi
 
 
-fi
+
 if test $matheval == true ; then
 
     found=ko
@@ -5850,11 +5949,11 @@ fi
 
 
     if test $found == ok ; then
-      $as_echo "#define __PLUMED_READDIR_R 1" >>confdefs.h
+      $as_echo "#define __PLUMED_HAS_READDIR_R 1" >>confdefs.h
 
     else
-       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_READDIR_R" >&5
-$as_echo "$as_me: WARNING: cannot enable __PLUMED_READDIR_R" >&2;}
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_READDIR_R" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_READDIR_R" >&2;}
     fi
 
 fi
@@ -6565,11 +6664,132 @@ then
   as_fn_error $? "xxd should be installed for PLUMED to compile properly" "$LINENO" 5
 fi
 
+
+program_can_run=""
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether a program can be run on this machine" >&5
+$as_echo_n "checking whether a program can be run on this machine... " >&6; }
+if test "$cross_compiling" = yes; then :
+   program_can_run=no ; { $as_echo "$as_me:${as_lineno-$LINENO}: result: no (cross compiling)" >&5
+$as_echo "no (cross compiling)" >&6; }
+
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#ifdef __PLUMED_HAS_MPI
+#include <mpi.h>
+#endif
+// notice that [] is required to cheat autoconf
+int main(int argc,char*argv[]){
+#ifdef __PLUMED_HAS_MPI
+// this emulates what happens when plumed
+// is compiled with mpi and invoked with --no-mpi
+  if(argc==10){
+    MPI_Init(&argc,&argv);
+    return MPI_Finalize();
+  }
+#endif
+  return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_run "$LINENO"; then :
+   program_can_run=yes ; { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+   program_can_run=no ; { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+
+
+if test $mpi_found == ok ; then
+
+program_can_run_mpi=""
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether a program compiled with mpi can be run on this machine" >&5
+$as_echo_n "checking whether a program compiled with mpi can be run on this machine... " >&6; }
+if test "$cross_compiling" = yes; then :
+   program_can_run_mpi=no ; { $as_echo "$as_me:${as_lineno-$LINENO}: result: no (cross compiling)" >&5
+$as_echo "no (cross compiling)" >&6; }
+
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#ifdef __PLUMED_HAS_MPI
+#include <mpi.h>
+#endif
+// notice that [] is required to cheat autoconf
+int main(int argc,char*argv[]){
+#ifdef __PLUMED_HAS_MPI
+  MPI_Init(&argc,&argv);
+  return MPI_Finalize();
+#endif
+  return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_run "$LINENO"; then :
+   program_can_run_mpi=yes ; { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+   program_can_run_mpi=no ; { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+
+fi
+
 #### This further tests are required to allow linking with non c++ compiler
 { $as_echo "$as_me:${as_lineno-$LINENO}: PLUMED seems to be configured properly!" >&5
 $as_echo "$as_me: PLUMED seems to be configured properly!" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: **************************" >&5
 $as_echo "$as_me: **************************" >&6;}
+
+LD_RO=
+if test "$ld_r" == true ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C++ objects can be grouped with ld -r" >&5
+$as_echo_n "checking whether C++ objects can be grouped with ld -r... " >&6; }
+
+  LD_RO="ld -r -o"
+
+  rm -f conftest-*
+
+  cat << EOF > conftest-main.cpp
+  void f(void);
+  int main(int argc,char**argv){ f(); return 0; }
+EOF
+  cat << EOF > conftest-f.cpp
+  void g(void);
+  void f(void){ g(); }
+EOF
+  cat << EOF > conftest-g.cpp
+  void g(void){ return; }
+EOF
+
+  $CXX $CXXFLAGS -c conftest-main.cpp 1> /dev/null 2> /dev/null
+  $CXX $CXXFLAGS -c conftest-f.cpp 1> /dev/null 2> /dev/null
+  $CXX $CXXFLAGS -c conftest-g.cpp 1> /dev/null 2> /dev/null
+
+  $LD_RO conftest-both.o conftest-f.o conftest-g.o 1> /dev/null 2> /dev/null
+
+  $CXX $CXXFLAGS -o conftest.exe conftest-main.o conftest-both.o 1> /dev/null 2> /dev/null
+
+  if test -f conftest.exe
+  then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+    LD_RO=""
+  fi
+fi
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: I will now check if C++ objects can be linked by C/Fortran compilers" >&5
 $as_echo "$as_me: I will now check if C++ objects can be linked by C/Fortran compilers" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: This is relevant if you want to use plumed patch --static on a non-C++ code" >&5
@@ -6661,12 +6881,40 @@ program_transform_name=`$as_echo "$program_transform_name" | sed "$ac_script"`
 program_transform_name_sh=$(echo "${program_transform_name}" | sed 's:\$\$:$:g')
 program_name=$(echo plumed | sed "$program_transform_name_sh")
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: **** PLUMED will be installed using prefix $prefix" >&5
-$as_echo "$as_me: **** PLUMED will be installed using prefix $prefix" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: **** You can change this later using \"make install prefix=/path\"" >&5
-$as_echo "$as_me: **** You can change this later using \"make install prefix=/path\"" >&6;}
+
+if test "$(echo "$program_name" | tr 'A-Z' 'a-z')" != "$(echo "$program_name" | tr 'A-Z' 'a-z' | sed 's/kernel$//')" ; then
+  as_fn_error $? "$program_name is not a valid program name (should not terminate with Kernel)" "$LINENO" 5
+fi
+if test "$(echo "$program_name" | tr 'A-Z' 'a-z')" != "$(echo "$program_name" | tr 'A-Z' 'a-z' | sed 's/-patch$//')" ; then
+  as_fn_error $? "$program_name is not a valid program name (should not terminate with -patch)" "$LINENO" 5
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: **** PLUMED will be installed using the following paths:" >&5
+$as_echo "$as_me: **** PLUMED will be installed using the following paths:" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: **** prefix: $prefix" >&5
+$as_echo "$as_me: **** prefix: $prefix" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: **** exec_prefix: $exec_prefix" >&5
+$as_echo "$as_me: **** exec_prefix: $exec_prefix" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: **** bindir: $bindir" >&5
+$as_echo "$as_me: **** bindir: $bindir" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: **** libdir: $libdir" >&5
+$as_echo "$as_me: **** libdir: $libdir" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: **** includedir: $includedir" >&5
+$as_echo "$as_me: **** includedir: $includedir" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: **** datarootdir: $datarootdir" >&5
+$as_echo "$as_me: **** datarootdir: $datarootdir" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: **** datadir: $datadir" >&5
+$as_echo "$as_me: **** datadir: $datadir" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: **** docdir: ${datarootdir}/doc/$program_name" >&5
+$as_echo "$as_me: **** docdir: ${datarootdir}/doc/$program_name" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: **** htmldir: $htmldir" >&5
+$as_echo "$as_me: **** htmldir: $htmldir" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: **** Executable will be named $program_name" >&5
 $as_echo "$as_me: **** Executable will be named $program_name" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: **** You can change paths later using options to \"make install\"" >&5
+$as_echo "$as_me: **** You can change paths later using options to \"make install\"" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: **** e.g. with \"make install prefix=/path\"" >&5
+$as_echo "$as_me: **** e.g. with \"make install prefix=/path\"" >&6;}
 
 if test $mpi == true; then
   if test $mpi_found == ok; then
@@ -6679,6 +6927,30 @@ $as_echo "$as_me: WARNING: **** PLUMED will NOT be compiled using MPI because MP
 else
     { $as_echo "$as_me:${as_lineno-$LINENO}: **** PLUMED will be compiled without MPI" >&5
 $as_echo "$as_me: **** PLUMED will be compiled without MPI" >&6;}
+fi
+
+if test $program_can_run == no ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: plumed executable will not run on this machine" >&5
+$as_echo "$as_me: WARNING: plumed executable will not run on this machine" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: to patch an MD code now use 'plumed-patch'" >&5
+$as_echo "$as_me: WARNING: to patch an MD code now use 'plumed-patch'" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: after installing plumed you should use '$prefix/lib/$program_name/plumed-patch'" >&5
+$as_echo "$as_me: WARNING: after installing plumed you should use '$prefix/lib/$program_name/plumed-patch'" >&2;}
+elif test $mpi_found == ok ; then
+  if test $program_can_run_mpi == no ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: plumed executable will not run on this machine" >&5
+$as_echo "$as_me: WARNING: plumed executable will not run on this machine" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unless you invoke it as 'plumed --no-mpi'" >&5
+$as_echo "$as_me: WARNING: unless you invoke it as 'plumed --no-mpi'" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: to patch an MD code now use 'plumed --no-mpi patch'" >&5
+$as_echo "$as_me: WARNING: to patch an MD code now use 'plumed --no-mpi patch'" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: (notice that MPI will be available anyway in the patched code)" >&5
+$as_echo "$as_me: WARNING: (notice that MPI will be available anyway in the patched code)" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: all command line tools are available as 'plumed --no-mpi name-of-the-tool'" >&5
+$as_echo "$as_me: WARNING: all command line tools are available as 'plumed --no-mpi name-of-the-tool'" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: e.g. 'plumed --no-mpi driver'" >&5
+$as_echo "$as_me: WARNING: e.g. 'plumed --no-mpi driver'" >&2;}
+  fi
 fi
 
 

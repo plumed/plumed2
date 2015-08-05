@@ -65,8 +65,8 @@ install:
 # I do it only when LD_LIBRARY_PATH is non blank, since otherwise clang gives problems
   - if test -n "$LD_LIBRARY_PATH" ; then PLUMED_LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH" ; fi
 script:
-# we set all the optional modules on
-  - touch src/crystallization.on src/manyrestraints.on
+# we enable crystallization and manyrestraints modules
+  - CONFIG_FLAGS="$CONFIG_FLAGS --enable-modules=crystallization:manyrestraints"
 
 # BUILD:
 # this is done only if PLUMED_CXX is defined
@@ -81,7 +81,7 @@ script:
   - if test "$PLUMED_CXX" ; then make -C regtest $OPT ; fi
   - if test "$MAKEDOC" == yes ; then make -C regtest copytodoc ; fi
   - if test "$MAKEDOC" == yes ; then make doc >/dev/null ; fi
-  - if test "$MAKEDOC" == yes ; then make -C regtest checkfail ; fi
+  - if test "$PLUMED_CXX" ; then make -C regtest checkfail ; fi
 
 # CPPCHECK:
 # this is required so as to have all the include files inplace:

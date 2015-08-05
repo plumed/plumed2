@@ -203,14 +203,14 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
         "Commands:\n";
     fprintf(out,"%s",msg.c_str());
     for(unsigned j=0;j<availableCxx.size();++j){
-      CLTool *cl=cltoolRegister().create(availableCxx[j]);
+      CLTool *cl=cltoolRegister().create(CLToolOptions(availableCxx[j]));
       plumed_assert(cl);
       string manual=availableCxx[j]+" : "+cl->description();
       delete cl;
       fprintf(out,"  plumed %s\n", manual.c_str());
     }
     for(unsigned j=0;j<availableShell.size();++j){
-      string cmd="env PLUMED_ROOT="+root+" "+root+"/scripts/"+availableShell[j]+".sh --description";
+      string cmd=config::getEnvCommand()+" \""+root+"/scripts/"+availableShell[j]+".sh\" --description";
       FILE *fp=popen(cmd.c_str(),"r");
       string line,manual;
       while(Tools::getline(fp,line))manual+=line;
@@ -229,7 +229,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
   string command(argv[i]);
 
   if(find(availableCxx.begin(),availableCxx.end(),command)!=availableCxx.end()){
-    CLTool *cl=cltoolRegister().create(command);
+    CLTool *cl=cltoolRegister().create(CLToolOptions(command));
     plumed_assert(cl); 
     // Read the command line options (returns false if we are just printing help)
     if( !cl->readInput( argc-i,&argv[i],in,out ) ){ delete cl; return 0; } 
@@ -241,7 +241,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
   if(find(availableShell.begin(),availableShell.end(),command)!=availableShell.end()){
     plumed_massert(in==stdin,"shell tools can only work on stdin");
     plumed_massert(out==stdout,"shell tools can only work on stdin");
-    string cmd="env PLUMED_ROOT="+root+" "+root+"/scripts/"+command+".sh";
+    string cmd=config::getEnvCommand()+" \""+root+"/scripts/"+command+".sh\"";
     for(int j=i+1;j<argc;j++) cmd+=string(" ")+argv[j];
     system(cmd.c_str());
     return 0;

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -37,7 +37,7 @@ private:
   std::map< std::pair <unsigned,unsigned> , double> targets;
   void setup_targets();
 public:
-  DRMSD( const ReferenceConfigurationOptions& ro );
+  explicit DRMSD( const ReferenceConfigurationOptions& ro );
 /// This sets upper and lower bounds on distances to be used in DRMSD 
   void setBoundsOnDistances( bool dopbc, double lbound=0.0, double ubound=std::numeric_limits<double>::max( ) );
 /// Check that similar comparisons are being performed - perhaps this is needed ask Davide? GAT
