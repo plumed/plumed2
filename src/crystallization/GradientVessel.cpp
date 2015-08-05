@@ -51,7 +51,7 @@ void GradientVessel::registerKeywords( Keywords& keys ){
 }
 
 void GradientVessel::reserveKeyword( Keywords& keys ){
-  keys.reserveFlag("GRADIENT",false,"calculate the gradient",true);
+  keys.reserve("vessel","GRADIENT","calculate the gradient");
   keys.addOutputComponent("gradient","GRADIENT","the gradient");
 }
 

@@ -74,7 +74,7 @@ done
 # Generate all the documentation pages from comments
 cat ../*/*/*cpp |
 awk 'BEGIN{gfile="automatic/GLOSSARY.list"; dfile="automatic/DICTIONARY.list"; }{
-  if($1=="//+ENDPLUMEDOC"){
+  if($1=="//+ENDPLUMEDOC" && inside){
      inside=0;
      print "*/" >output
   }

@@ -37,6 +37,8 @@ Keywords::KeyType::KeyType( const std::string& type ){
       style=atoms;
   } else if( type=="hidden" ){
       style=hidden;
+  } else if( type=="vessel" ){
+      style=vessel;
   } else {
       plumed_massert(false,"invalid keyword specifier " + type);   
   }
@@ -53,6 +55,8 @@ void Keywords::KeyType::setStyle( const std::string& type ){
       style=atoms;
   } else if( type=="hidden" ){
       style=hidden;
+  } else if( type=="vessel" ){
+      style=vessel;
   } else {
       plumed_massert(false,"invalid keyword specifier " + type);    
   }  
@@ -107,28 +111,24 @@ void Keywords::copyData( std::vector<std::string>& kk, std::vector<std::string>&
   }
 }   
 
-void Keywords::reserve( const std::string & t, const std::string & k, const std::string & d, const bool isvessel ){
+void Keywords::reserve( const std::string & t, const std::string & k, const std::string & d ){
   plumed_assert( !exists(k) && !reserved(k) );
   std::string fd, lowkey=k;
   std::transform(lowkey.begin(),lowkey.end(),lowkey.begin(),tolower);
-  if( t=="numbered" ){
-     if(isvessel){
-        fd = d + " The final value can be referenced using <em>label</em>." + lowkey + 
-                 ".  You can use multiple instances of this keyword i.e. " + 
-                 k +"1, " + k + "2, " + k + "3...  The corresponding values are then " 
-                 "referenced using <em>label</em>."+ lowkey +"-1,  <em>label</em>." + lowkey + 
-                 "-2,  <em>label</em>." + lowkey + "-3...";  
-     } else {
-       fd = d + " You can use multiple instances of this keyword i.e. " + k +"1, " + k + "2, " + k + "3...";
-     }
+  if( t=="vessel" ){
+     fd = d + " The final value can be referenced using <em>label</em>." + lowkey + 
+              ".  You can use multiple instances of this keyword i.e. " + 
+              k +"1, " + k + "2, " + k + "3...  The corresponding values are then " 
+              "referenced using <em>label</em>."+ lowkey +"-1,  <em>label</em>." + lowkey + 
+              "-2,  <em>label</em>." + lowkey + "-3...";  
+     allowmultiple.insert( std::pair<std::string,bool>(k,true) );
+     types.insert( std::pair<std::string,KeyType>(k,KeyType("vessel")) );
+  } else if( t=="numbered" ){  
+     fd = d + " You can use multiple instances of this keyword i.e. " + k +"1, " + k + "2, " + k + "3...";
      allowmultiple.insert( std::pair<std::string,bool>(k,true) );
      types.insert( std::pair<std::string,KeyType>(k,KeyType("optional")) );
   } else {
-     if(isvessel){
-        fd = d + " The final value can be referenced using  <em>label</em>." + lowkey + ".";
-     } else {
-        fd = d;
-     }
+     fd = d;
      if( t=="atoms" && isaction ) fd = d + ".  For more information on how to specify lists of atoms see \\ref Group";
      allowmultiple.insert( std::pair<std::string,bool>(k,false) );
      types.insert( std::pair<std::string,KeyType>(k,KeyType(t)) );
@@ -138,14 +138,13 @@ void Keywords::reserve( const std::string & t, const std::string & k, const std:
   reserved_keys.push_back(k); 
 }
 
-void Keywords::reserveFlag( const std::string & k, const bool def, const std::string & d, const bool isvessel ){
+void Keywords::reserveFlag( const std::string & k, const bool def, const std::string & d ){
   plumed_assert( !exists(k) && !reserved(k) ); 
   std::string defstr;
   if( def ) { defstr="( default=on ) "; } else { defstr="( default=off ) "; }
   types.insert( std::pair<std::string,KeyType>(k,KeyType("flag")) );
   std::string fd,lowkey=k; std::transform(lowkey.begin(),lowkey.end(),lowkey.begin(),tolower);
-  if(isvessel) fd=defstr + d + " The final value can be referenced using <em>label</em>." + lowkey;
-  else fd=defstr + d;
+  fd=defstr + d;
   documentation.insert( std::pair<std::string,std::string>(k,fd) ); 
   allowmultiple.insert( std::pair<std::string,bool>(k,false) );
   booldefs.insert( std::pair<std::string,bool>(k,def) ); 
@@ -161,12 +160,13 @@ void Keywords::use( const std::string & k ){
 
 void Keywords::reset_style( const std::string & k, const std::string & style ){
   plumed_assert( exists(k) || reserved(k) );
-  (types.find(k)->second).setStyle(style); 
+  (types.find(k)->second).setStyle(style);
+  if( (types.find(k)->second).isVessel() ) allowmultiple[k]=true; 
   if( (types.find(k)->second).isAtomList() ) atomtags.insert( std::pair<std::string,std::string>(k,style) );
 }
 
 void Keywords::add( const std::string & t, const std::string & k, const std::string & d ){
-  plumed_assert( !exists(k) && t!="flag" && !reserved(k) );  
+  plumed_assert( !exists(k) && t!="flag" && !reserved(k) && t!="vessel" );  
   std::string fd;
   if( t=="numbered" ){
      fd=d + " You can use multiple instances of this keyword i.e. " + k +"1, " + k + "2, " + k + "3...";
@@ -409,12 +409,12 @@ void Keywords::print_html() const {
   std::cout<<"</table>\n\n";
   nkeys=0;
   for(unsigned i=0;i<keys.size();++i){
-     if ( (types.find(keys[i])->second).isOptional() ) nkeys++;
+     if ( (types.find(keys[i])->second).isOptional() || (types.find(keys[i])->second).isVessel() ) nkeys++;
   }
   if( nkeys>0 ){
      std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
      for(unsigned i=0;i<keys.size();++i){
-        if ( (types.find(keys[i])->second).isOptional() ) print_html_item( keys[i] );
+        if ( (types.find(keys[i])->second).isOptional() || (types.find(keys[i])->second).isVessel() ) print_html_item( keys[i] );
      }
      std::cout<<"\n";
   }
@@ -456,11 +456,11 @@ void Keywords::print( FILE* out ) const {
   }
   nkeys=0;
   for(unsigned i=0;i<keys.size();++i){
-     if ( (types.find(keys[i])->second).isOptional() ) nkeys++;
+     if ( (types.find(keys[i])->second).isOptional() || (types.find(keys[i])->second).isVessel() ) nkeys++;
   }
   if( nkeys>0 ){
      for(unsigned i=0;i<keys.size();++i){
-        if ( (types.find(keys[i])->second).isOptional() ) printKeyword( keys[i], out );   //log.printKeyword( keys[i], documentation[i] );
+        if ( (types.find(keys[i])->second).isOptional() || (types.find(keys[i])->second).isVessel() ) printKeyword( keys[i], out );   //log.printKeyword( keys[i], documentation[i] );
      }
      fprintf(out,"\n");
   }
@@ -557,7 +557,7 @@ std::string Keywords::get( const unsigned k ) const {
 }
 
 bool Keywords::getLogicalDefault( std::string key, bool& def ) const {
-   if( booldefs.find(key)!=booldefs.end() ){ 
+  if( booldefs.find(key)!=booldefs.end() ){ 
      def=booldefs.find(key)->second;
      return true;
    } else {
