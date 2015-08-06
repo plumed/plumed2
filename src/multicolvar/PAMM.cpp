@@ -30,6 +30,8 @@ Probabilistic analysis of molecular mofifs.
 
 This is an implementation of the methods discussed in \cite{pamm}
 
+\warning Mixing periodic and aperiodic variables in input has not been tested
+
 \par Examples
 
 */
@@ -79,8 +81,10 @@ MultiColvarFunction(ao)
    // This builds the lists
    buildSets(); 
 
+   bool mixed=getBaseMultiColvar(0)->isPeriodic();
    for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i){
        pos.push_back( new Value() );
+       if( getBaseMultiColvar(i)->isPeriodic()!=mixed ) warning("mixing of periodic and aperiodic base variables in pamm is untested");
        if( !getBaseMultiColvar(i)->isPeriodic() ){
            pos[i]->setNotPeriodic();
        } else {
