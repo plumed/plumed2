@@ -24,7 +24,9 @@
 #include "reference/ReferenceArguments.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
+#include "core/ActionSet.h"
 #include "core/Atoms.h"
+#include "core/SetupMolInfo.h"
 
 namespace PLMD {
 namespace analysis {
@@ -69,20 +71,29 @@ Action(ao),
 AnalysisWithDataCollection(ao),
 fmt("%f")
 {
+  // Find a moldata object
+  std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
+  if( moldat.empty() ) warning("PDB output files do not have atom types unless you use MOLDATA");
+
   parse("FILE",filename); parse("FMT",fmt);
   if( !getRestart() ){ OFile ofile; ofile.link(*this); ofile.setBackupString("analysis"); ofile.backupAllFiles(filename); }
   log.printf("  printing data to file named %s \n",filename.c_str() );
 }
 
 void OutputPDBFile::performAnalysis(){
+  // Find a moldata object
+  std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
+  if( moldat.size()>1 ) error("you should only have one MOLINFO action in your input file"); 
+  SetupMolInfo* mymoldat=NULL; if( moldat.size()==1 ) mymoldat=moldat[0];
+
   // Output the embedding in plumed pdb format
   OFile afile; afile.link(*this); afile.setBackupString("analysis"); std::size_t psign=fmt.find("%");
   afile.open( filename.c_str() ); std::string descr="REMARK WEIGHT=%-" + fmt.substr(psign+1) + " TYPE=" + getMetricName() + "\n";
   for(unsigned j=0;j<getNumberOfDataPoints();++j){
       afile.printf("DESCRIPTION: analysis data from calculation done at time %f \n",getLabel().c_str(),getTime() );
       afile.printf(descr.c_str(),getWeight(j) ); 
-      if( plumed.getAtoms().usingNaturalUnits() ) getReferenceConfiguration(j,false)->print( 1.0, afile, fmt );
-      else getReferenceConfiguration(j,false)->print( plumed.getAtoms().getUnits().getLength()/0.1, afile, fmt );
+      if( plumed.getAtoms().usingNaturalUnits() ) getReferenceConfiguration(j,false)->print( 1.0, mymoldat, afile, fmt );
+      else getReferenceConfiguration(j,false)->print( plumed.getAtoms().getUnits().getLength()/0.1, mymoldat, afile, fmt );
   }
   afile.close();
 }

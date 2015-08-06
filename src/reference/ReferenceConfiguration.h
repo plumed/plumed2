@@ -37,6 +37,7 @@ class Value;
 class Pbc;
 class OFile;
 class PDB;
+class SetupMolInfo;
 
 /// \ingroup TOOLBOX
 /// Abstract base class for calculating the distance from a reference configuration.
@@ -120,7 +121,7 @@ public:
   void copyDerivatives( const ReferenceConfiguration* );
 /// Print a pdb file containing the reference configuration
   void print( const double& lunits, OFile& ofile, const double& time, const double& weight, const double& old_norm );
-  void print( const double& lunits, OFile& ofile, const std::string& fmt );
+  void print( const double& lunits, SetupMolInfo* mymoldat, OFile& ofile, const std::string& fmt );
 /// Get one of the referene arguments
   virtual double getReferenceArgument( const unsigned& i ) const { plumed_error(); return 0.0; }
 /// These are overwritten in ReferenceArguments and ReferenceAtoms but are required here 

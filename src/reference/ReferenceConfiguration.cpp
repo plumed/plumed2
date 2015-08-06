@@ -25,6 +25,7 @@
 #include "core/Value.h"
 #include "tools/OFile.h"
 #include "tools/PDB.h"
+#include "core/SetupMolInfo.h"
 
 namespace PLMD{
 
@@ -101,10 +102,10 @@ double ReferenceConfiguration::calculate( const std::vector<Vector>& pos, const 
 
 void ReferenceConfiguration::print( const double& lunits, OFile& ofile, const double& time, const double& weight, const double& old_norm ){
   ofile.printf("REMARK TIME=%f LOG_WEIGHT=%f OLD_NORM=%f\n",time, weight, old_norm );
-  print( lunits, ofile, "%f" );  // HARD CODED FORMAT HERE AS THIS IS FOR CHECKPOINT FILE
+  print( lunits, NULL, ofile, "%f" );  // HARD CODED FORMAT HERE AS THIS IS FOR CHECKPOINT FILE
 }
 
-void ReferenceConfiguration::print( const double& lunits, OFile& ofile, const std::string& fmt ){
+void ReferenceConfiguration::print( const double& lunits, SetupMolInfo* mymoldat, OFile& ofile, const std::string& fmt ){
   ReferenceArguments* args=dynamic_cast<ReferenceArguments*>(this);
   if( property_names.size()>0 ){
       ofile.printf("REMARK PROPERTIES=%s", property_names[0].c_str() ); 
@@ -123,7 +124,7 @@ void ReferenceConfiguration::print( const double& lunits, OFile& ofile, const st
   }
   if(args) args->printArguments( ofile, fmt );
   ReferenceAtoms* atoms=dynamic_cast<ReferenceAtoms*>(this);
-  if(atoms) atoms->printAtoms( lunits, ofile );
+  if(atoms) atoms->printAtoms( lunits, mymoldat, ofile );
   ofile.printf("END\n");
 }
 

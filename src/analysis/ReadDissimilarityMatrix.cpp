@@ -26,6 +26,7 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/ActionRegister.h"
+#include "core/ActionSetup.h"
 #include "tools/IFile.h"
 
 //+PLUMEDOC ANALYSIS READ_DISSIMILARITY_MATRIX
@@ -95,8 +96,9 @@ fake_data(NULL)
   } else {
      fake_data=metricRegister().create<ReferenceConfiguration>( "OPTIMAL" );
   }
-
-  if( mytraj.length()>0 && plumed.getActionSet().size()!=1 ) error("should only be this action and the READ_ANALYSIS_FRAMES command in the input file");
+  
+  std::vector<ActionSetup*> setupActions=plumed.getActionSet().select<ActionSetup*>();
+  if( mytraj.length()>0 && (plumed.getActionSet().size()-setupActions.size())!=1 ) error("should only be this action and the READ_ANALYSIS_FRAMES command in the input file");
   if( mytraj.length()==0 && plumed.getActionSet().size()!=0 ) error("read dissimilarity matrix command must be at top of input file");
 
   parse("FILE",fname);
