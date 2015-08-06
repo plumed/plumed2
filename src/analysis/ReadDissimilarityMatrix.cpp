@@ -21,6 +21,8 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "AnalysisBase.h"
 #include "ReadAnalysisFrames.h"
+#include "reference/ReferenceConfiguration.h"
+#include "reference/MetricRegister.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/ActionRegister.h"
@@ -41,12 +43,14 @@ namespace analysis {
 class ReadDissimilarityMatrix : public AnalysisBase {
 private:
   unsigned nnodes;
+  ReferenceConfiguration* fake_data;
   std::string fname, wfile;
   Matrix<double> dissimilarities;
   std::vector<double> weights;
 public:
   static void registerKeywords( Keywords& keys );
   ReadDissimilarityMatrix( const ActionOptions& ao );
+  ~ReadDissimilarityMatrix();
   unsigned getNumberOfDataPoints() const ;
 /// This gives an error as if we read in the matrix we dont have the coordinates
   ReferenceConfiguration* getReferenceConfiguration( const unsigned& idata, const bool& calcdist );
@@ -80,13 +84,16 @@ void ReadDissimilarityMatrix::registerKeywords( Keywords& keys ){
 ReadDissimilarityMatrix::ReadDissimilarityMatrix( const ActionOptions& ao ):
 Action(ao),
 AnalysisBase(ao),
-nnodes(1)
+nnodes(1),
+fake_data(NULL)
 {
   std::string mytraj; parse("FRAMES",mytraj);
   if( mytraj.length()>0 ){
      ReadAnalysisFrames* mtraj = plumed.getActionSet().selectWithLabel<ReadAnalysisFrames*>( mytraj );
      if( !mtraj ) error(mytraj + " is not the label of a READ_ANALYSIS_FRAMES object");
      mydata = dynamic_cast<AnalysisBase*>( mtraj ); mydata->use_all_data=true;
+  } else {
+     fake_data=metricRegister().create<ReferenceConfiguration>( "OPTIMAL" );
   }
 
   if( mytraj.length()>0 && plumed.getActionSet().size()!=1 ) error("should only be this action and the READ_ANALYSIS_FRAMES command in the input file");
@@ -102,6 +109,10 @@ nnodes(1)
   // We have to set the information on how often we are reading data from the trajectory and how 
   // often we are running here so that the code behaves
   use_all_data=true; freq=1; setStride(1);
+}
+
+ReadDissimilarityMatrix::~ReadDissimilarityMatrix(){
+  if( fake_data ) delete fake_data;
 }
 
 void ReadDissimilarityMatrix::update(){ if(!mydata) plumed.stop(); }
@@ -147,8 +158,9 @@ double ReadDissimilarityMatrix::getDissimilarity( const unsigned& iframe, const 
 }
 
 ReferenceConfiguration* ReadDissimilarityMatrix::getReferenceConfiguration( const unsigned& idata, const bool& calcdist ){
+  plumed_massert( !calcdist, "cannot calc dist as this data was read in from input");
   if( mydata ) return AnalysisBase::getReferenceConfiguration( idata, calcdist );
-  plumed_merror("cannot get reference configurations from read in dissimilarity matrix");
+  return fake_data;
   return NULL;
 }
 
