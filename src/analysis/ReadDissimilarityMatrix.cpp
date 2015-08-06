@@ -109,8 +109,12 @@ void ReadDissimilarityMatrix::update(){ if(!mydata) plumed.stop(); }
 void ReadDissimilarityMatrix::performAnalysis(){
   IFile mfile; mfile.open(fname); 
   // Read in first line
-  std::vector<std::string> words; Tools::getParsedLine( mfile, words );
-  nnodes=words.size(); dissimilarities.resize( nnodes, nnodes ); 
+  std::vector<std::string> words; nnodes=0;
+  while( nnodes==0 ){
+     Tools::getParsedLine( mfile, words );
+     nnodes=words.size(); 
+  }
+  dissimilarities.resize( nnodes, nnodes ); 
   for(unsigned j=0;j<nnodes;++j) Tools::convert( words[j], dissimilarities(0,j) );
 
   for(unsigned i=1;i<nnodes;++i){

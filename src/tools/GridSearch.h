@@ -23,6 +23,7 @@
 #define __PLUMED_tools_GridSearch_h
 
 #include "MinimiseBase.h"
+#include "Grid.h"
 #include <iostream>
 #include <math.h>
 namespace PLMD{
@@ -34,50 +35,61 @@ private:
 /// calculating class that calculates the energy
    typedef double(FCLASS::*engf_pointer)( const std::vector<double>& p, std::vector<double>& der );
    FCLASS* myclass_func;
-   std::vector<unsigned> ngrid;
-   std::vector<double> min, delr;
-   unsigned np;
+   Grid* mygrid; 
+   Grid* myfgrid;
 public:
-   GridSearch( const std::vector<double>& mmin, const std::vector<double>& mmax, const std::vector<unsigned>& ng, FCLASS* funcc ) : 
+   GridSearch( const std::vector<double>& mmin, const std::vector<double>& mmax, const std::vector<unsigned>& ng, const std::vector<unsigned>& nfg, FCLASS* funcc ) : 
      myclass_func( funcc ), 
-     ngrid(ng),
-     min(mmin),
-     delr(mmin.size())
+     myfgrid(NULL)
      {
-        // Work out the stride
-        for(unsigned i=0;i<delr.size();++i) delr[i] = ( mmax[i] - mmin[i] ) / static_cast<double>( ng[i] ); 
-        // And the number of poitns in the grid
-        np=1; for(unsigned i=0;i<ngrid.size();++i) np*=ngrid[i];
+        std::vector<std::string> fake_args( nfg.size() ), gmin( nfg.size() ), gmax( nfg.size() );
+        for(unsigned i=0;i<nfg.size();++i){
+            Tools::convert(i+1,fake_args[i]); 
+            Tools::convert(mmin[i],gmin[i]); 
+            Tools::convert(mmax[i],gmax[i]);
+        }  
+        std::vector<bool> isperiodic( nfg.size(), false );
+        mygrid = new Grid("searcher",fake_args,gmin,gmax,ng,true,true,true,isperiodic,gmin,gmax);  
+        if( nfg[0]>0 ) myfgrid = new Grid("searcher",fake_args,gmin,gmax,nfg,false,false,true,isperiodic,gmin,gmax);
      }
-     void minimise( std::vector<double>& p, engf_pointer myfunc );
+     ~GridSearch(){ delete mygrid; if(myfgrid) delete myfgrid; }
+     bool minimise( std::vector<double>& p, engf_pointer myfunc );
 };
 
 template <class FCLASS>
-void GridSearch<FCLASS>::minimise( std::vector<double>& p, engf_pointer myfunc ){
+bool GridSearch<FCLASS>::minimise( std::vector<double>& p, engf_pointer myfunc ){
+   std::vector<double> der( p.size() ); 
+   double initial_eng = (myclass_func->*myfunc)( p, der );
 
-   std::vector<double> fake_der( p.size() ); std::vector<unsigned> ind( p.size() ); 
-   unsigned pmin=0; double emin=(myclass_func->*myfunc)( min, fake_der );
-   for(unsigned i=1;i<np;++i){
-      unsigned myind=i; ind[0]=myind%ngrid[0];
-      for(unsigned j=1;j<p.size()-1;++j){
-          myind=(myind-ind[j-1])/ngrid[j-1];
-          ind[j]=myind%ngrid[j];
-      }
-      if( p.size()>=2 ) ind[p.size()-1] = (myind - ind[p.size()-2])/ngrid[p.size()-2];
-      for(unsigned j=0;j<p.size();++j) p[j] = min[j] + ind[j]*delr[j];
-
-      double eng = (myclass_func->*myfunc)( p, fake_der );
+   double emin=(myclass_func->*myfunc)( mygrid->getPoint(0), der );
+   mygrid->setValueAndDerivatives( 0, emin, der ); unsigned pmin=0;
+   for(unsigned i=1;i<mygrid->getSize();++i){
+      double eng = (myclass_func->*myfunc)( mygrid->getPoint(i), der );
+      mygrid->setValueAndDerivatives( i, eng, der );
       if( eng<emin ){ emin=eng; pmin=i; }
    }
 
-   // Now recover lowest energy point
-   ind[0]=pmin%ngrid[0];
-   for(unsigned j=1;j<p.size()-1;++j){
-       pmin=(pmin-ind[j-1])/ngrid[j-1];
-       ind[j]=pmin%ngrid[j];
+   if( myfgrid ){
+       pmin=0; double emin=mygrid->getValueAndDerivatives( myfgrid->getPoint(0), der );
+       for(unsigned i=1;i<myfgrid->getSize();++i){
+           double eng = mygrid->getValueAndDerivatives( myfgrid->getPoint(i), der );
+           if( eng<emin ){ emin=eng; pmin=i; }
+       } 
+       double checkEng = (myclass_func->*myfunc)( myfgrid->getPoint(pmin), der );
+       if( checkEng<initial_eng ){
+           p=myfgrid->getPoint(pmin);
+           return true; 
+       } else {
+           return false;
+       }
    }
-   if( p.size()>=2 ) ind[p.size()-1] = (pmin - ind[p.size()-2])/ngrid[p.size()-2];
-   for(unsigned j=0;j<p.size();++j) p[j] = min[j] + ind[j]*delr[j];
+  
+   if( emin<initial_eng ){
+      p=mygrid->getPoint(pmin);
+      return true;
+   } else {
+      return false;
+   }
 }
   
 }

@@ -39,9 +39,8 @@ namespace dimred {
 class SketchMapPointwise : public SketchMapBase {
 private:
   unsigned ncycles;
-  bool nointerpolation;
   double cgtol, gbuf;
-  std::vector<unsigned> npoints;
+  std::vector<unsigned> npoints, nfgrid;
 public:
   static void registerKeywords( Keywords& keys ); 
   SketchMapPointwise( const ActionOptions& ao );
@@ -57,26 +56,33 @@ void SketchMapPointwise::registerKeywords( Keywords& keys ){
   keys.add("compulsory","NCYCLES","5","the number of cycles of global optimisation to attempt");
   keys.add("compulsory","CGTOL","1E-6","the tolerance for the conjugate gradient minimisation");
   keys.add("compulsory","BUFFER","1.1","grid extent for search is (max projection - minimum projection) multiplied by this value");
-  keys.add("compulsory","NGRID","10","number of points to use in each grid direction");
-  keys.addFlag("NOINTERPOLATION",false,"do not use any interpolation to make the optimisation faster");
+  keys.add("compulsory","CGRID_SIZE","10","number of points to use in each grid direction");
+  keys.add("compulsory","FGRID_SIZE","0","interpolate the grid onto this number of points -- only works in 2D");
 }
 
 SketchMapPointwise::SketchMapPointwise( const ActionOptions& ao ):
 Action(ao),
 SketchMapBase(ao),
-npoints(nlow)
+npoints(nlow),
+nfgrid(nlow)
 {
-  parseVector("NGRID",npoints); parse("BUFFER",gbuf);
+  parseVector("CGRID_SIZE",npoints); parse("BUFFER",gbuf);
   if( npoints.size()!=nlow ) error("vector giving number of grid point in each direction has wrong size");
   parse("NCYCLES",ncycles); parse("CGTOL",cgtol); 
-  parseFlag("NOINTERPOLATION",nointerpolation);
+
+  parseVector("FGRID_SIZE",nfgrid);
+  if( nfgrid[0]!=0 && nlow!=2 ) error("interpolation only works in two dimensions");
 
   log.printf("  doing %d cycles of global optimisation sweeps\n",ncycles);
-  log.printf("  using grid of points that is %d",npoints[0]);
-  for(unsigned j=1;j<npoints.size();++j) log.printf(" by %d",npoints[j]);
+  log.printf("  using coarse grid of points that is %d",npoints[0]);
   log.printf(" and that is %f larger than the difference between the position of the minimum and maximum projection \n",gbuf);
+  for(unsigned j=1;j<npoints.size();++j) log.printf(" by %d",npoints[j]);
+  if( nfgrid[0]>0 ){
+      log.printf("  interpolating stress onto grid of points that is %d",nfgrid[0]);
+      for(unsigned j=1;j<nfgrid.size();++j) log.printf(" by %d",nfgrid[j]);
+      log.printf("\n");
+  }
   log.printf("  tolerance for conjugate gradient algorithm equals %f \n",cgtol);
-  if( nointerpolation ) log.printf("  not using any interpolation in grid search\n");
 }
 
 void SketchMapPointwise::minimise( Matrix<double>& projections ){
@@ -97,23 +103,23 @@ void SketchMapPointwise::minimise( Matrix<double>& projections ){
 
   // And do the search
   ConjugateGradient<SketchMapPointwise> mycgminimise( this );
-  GridSearch<SketchMapPointwise> mygridsearch( gmin, gmax, npoints, this );
+  GridSearch<SketchMapPointwise> mygridsearch( gmin, gmax, npoints, nfgrid, this );
   // Run multiple loops over all projections
   for(unsigned i=0;i<ncycles;++i){
       for(unsigned j=0;j<getNumberOfDataPoints();++j){
           // Setup target distances and target functions for calculate stress 
           for(unsigned k=0;k<getNumberOfDataPoints();++k) setTargetDistance( k, distances(j,k)  ); 
 
-          if( nointerpolation ){
-              // Minimise using grid search
-              mygridsearch.minimise( mypoint, &SketchMapPointwise::calculateStress );
+          // Find current projection of jth point
+          for(unsigned k=0;k<mypoint.size();++k) mypoint[k]=projections(j,k);
+          // Minimise using grid search
+          bool moved=mygridsearch.minimise( mypoint, &SketchMapPointwise::calculateStress );
+          if( moved ){
+              // Reassign the new projection
+              for(unsigned k=0;k<mypoint.size();++k) projections(j,k)=mypoint[k]; 
               // Minimise output using conjugate gradient
               mycgminimise.minimise( cgtol, projections.getVector(), &SketchMapPointwise::calculateFullStress ); 
-          } else {
-              plumed_merror("use a class here that Sandip will implement that allows you to do this with some interpolation");
           }
-          // Save new projection 
-          for(unsigned k=0;k<nlow;++k) projections(j,k)=mypoint[k];
       }
   }
 }

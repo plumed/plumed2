@@ -41,6 +41,8 @@ private:
 protected:
 /// Transfer frame i in the underlying action to the object we are going to analyze
   void selectFrame( const unsigned& );
+/// Do a voronoi analysis
+  void voronoiAnalysis( const std::vector<unsigned>& myindices, std::vector<double>& lweights, std::vector<unsigned>& assignments ) const ;
 public:
   static void registerKeywords( Keywords& keys );  
   LandmarkSelectionBase( const ActionOptions& ao );
