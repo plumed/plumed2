@@ -33,6 +33,9 @@ namespace multicolvar {
 
 class MultiColvarFunction : public MultiColvarBase {
 private:
+/// This is true if functions only rely on value of underlying
+/// multicolvar and not on position of central atom of colvar 
+  bool ignorepos;
 /// Tolerance used for weights of elements
   double wtolerance;
 /// The multicolvars from which we construct these quantities
@@ -124,13 +127,13 @@ unsigned MultiColvarFunction::getBaseColvarNumber( const unsigned& iatom ) const
 
 inline
 Vector MultiColvarFunction::getPositionOfAtomForLinkCells( const unsigned& iatom ) const {
-  plumed_dbg_assert( iatom<getFullNumberOfBaseTasks() ); unsigned mmc=colvar_label[ iatom ];
+  plumed_dbg_assert( !ignorepos && iatom<getFullNumberOfBaseTasks() ); unsigned mmc=colvar_label[ iatom ];
   return mybasemulticolvars[mmc]->getCentralAtomPos( convertToLocalIndex(iatom,mmc) );
 }
 
 inline
 CatomPack MultiColvarFunction::getCentralAtomPackFromInput( const unsigned& ind ) const {
-  plumed_dbg_assert( ind<getFullNumberOfBaseTasks() ); unsigned mmc=colvar_label[ind];
+  plumed_dbg_assert( !ignorepos && ind<getFullNumberOfBaseTasks() ); unsigned mmc=colvar_label[ind];
   unsigned basen=0;
   for(unsigned i=0;i<mmc;++i) basen+=mybasemulticolvars[i]->getNumberOfAtoms();
   return mybasemulticolvars[mmc]->getCentralAtomPack( basen, convertToLocalIndex(ind,mmc) );

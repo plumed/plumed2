@@ -2,14 +2,18 @@
 
 # Manually add here dependencies and conflicts
 
-# this is the prefix path, and should be set properly:
-set prefix "@_PREFIX_@"
+# this is the path for libraries
+set libdir "@_libdir_@"
+# this is the path for binaries
+set bindir "@_bindir_@"
+# this is the path for include files
+set includedir "@_includedir_@"
 # this is the extension for dynamic libraries
 # if set to empty, switches off plumed library
 set soext  "@_SOEXT_@"
 # this is the name of the plumed program
 # it is usually plumed
-set progname "@_PROGNAME_@"
+set progname "@_program_name_@"
 
 # everything past this line should not need any editing
 
@@ -20,11 +24,11 @@ proc ModulesHelp { } {
 module-whatis   "Adds paths for Plumed"
 
 # execution path
-prepend-path  PATH               $prefix/bin
+prepend-path  PATH               $bindir
 
 # include path
-prepend-path  CPATH              $prefix/include/
-prepend-path  INCLUDE            $prefix/include/
+prepend-path  CPATH              $includedir
+prepend-path  INCLUDE            $includedir
 
 # paths for libraries are only set if plumed is compiled as a dynamic library
 if { [ string length $soext ]  != 0 } {
@@ -36,8 +40,8 @@ if { [module-info mode load] && [ info exists ::env(PLUMED_KERNEL) ] } {
 }
 
 # library path
-prepend-path  LIBRARY_PATH       $prefix/lib/
-prepend-path  LD_LIBRARY_PATH    $prefix/lib/
-prepend-path  DYLD_LIBRARY_PATH  $prefix/lib/
-setenv        PLUMED_KERNEL      $prefix/lib/lib${progname}Kernel.$soext
+prepend-path  LIBRARY_PATH       $libdir
+prepend-path  LD_LIBRARY_PATH    $libdir
+prepend-path  DYLD_LIBRARY_PATH  $libdir
+setenv        PLUMED_KERNEL      $libdir/lib${progname}Kernel.$soext
 }

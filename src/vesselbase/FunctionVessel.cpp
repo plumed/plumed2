@@ -55,20 +55,22 @@ bool FunctionVessel::calculate( const unsigned& current, MultiValue& myvals, std
   plumed_dbg_assert( weight>=getTolerance() );  
 
   // This deals with the value
-  double dval, f=calcTransform( myvals.get(1), dval );
+  double dval, f=calcTransform( myvals.get(mycomponent), dval );
 
   if( norm ){
      if( usetol && weight<getTolerance() ) return false;
      buffer[bufstart+1+nderivatives] += weight;
-     if( diffweight ) myvals.chainRule( 0, 1, 1, 0, 1.0, bufstart, buffer );
+     if( getAction()->derivativesAreRequired() && diffweight ) myvals.chainRule( 0, 1, 1, 0, 1.0, bufstart, buffer );
   }
 
   double contr=weight*f;
   if( usetol && contr<getTolerance() ) return false;
   buffer[bufstart] += contr;
 
-  if( diffweight ) myvals.chainRule( 0, 0, 1, 0, f, bufstart, buffer ); 
-  if( getAction()->derivativesAreRequired() && fabs(dval)>0.0 ) myvals.chainRule( 1, 0, 1, 0, weight*dval, bufstart, buffer );
+  if( getAction()->derivativesAreRequired() ){
+     if( diffweight ) myvals.chainRule( 0, 0, 1, 0, f, bufstart, buffer ); 
+     if( fabs(dval)>0.0 ) myvals.chainRule( mycomponent, 0, 1, 0, weight*dval, bufstart, buffer );
+  }
 
   return true;
 }

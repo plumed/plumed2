@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -280,12 +280,12 @@ vector<string> Tools::ls(const string&d){
   DIR*dir;
   vector<string> result;
   if ((dir=opendir(d.c_str()))){
-#if defined(__PLUMED_READDIR_R)
+#if defined(__PLUMED_HAS_READDIR_R)
     struct dirent ent;
 #endif
     while(true){
       struct dirent *res;
-#if defined(__PLUMED_READDIR_R)
+#if defined(__PLUMED_HAS_READDIR_R)
       readdir_r(dir,&ent,&res);
 #else
 // cppcheck complains about this:
@@ -321,5 +321,16 @@ std::string Tools::extension(const std::string&s){
   }
   return ext;
 }
+
+double Tools::bessel0( const double& val ){
+ if (fabs(val)<3.75){
+      double y = Tools::fastpow( val/3.75, 2 );
+      return 1 + y*(3.5156229 +y*(3.0899424 + y*(1.2067492+y*(0.2659732+y*(0.0360768+y*0.0045813)))));
+  }
+  double ax=fabs(val), y=3.75/ax, bx=std::exp(ax)/sqrt(ax);
+  ax=0.39894228+y*(0.01328592+y*(0.00225319+y*(-0.00157565+y*(0.00916281+y*(-0.02057706+y*(0.02635537+y*(-0.01647633+y*0.00392377)))))));
+  return ax*bx;
+}
+
 
 }

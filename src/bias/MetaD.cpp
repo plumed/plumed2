@@ -665,6 +665,9 @@ last_step_warn_grid(0)
    }
   }
 
+  comm.Barrier();
+  if(comm.Get_rank()==0) multi_sim_comm.Barrier();
+
 // open hills file for writing
   hillsOfile_.link(*this);
   if(walkers_mpi){
