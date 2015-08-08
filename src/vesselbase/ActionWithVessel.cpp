@@ -163,29 +163,21 @@ void ActionWithVessel::readVesselKeywords(){
       std::string thiskey,input; thiskey=keywords.getKeyword(i);
       // Check if this is a key for a vessel
       if( vesselRegister().check(thiskey) ){
-          // If the keyword is a flag read it in as a flag
-          if( keywords.style(thiskey,"flag") ){
-              bool dothis; parseFlag(thiskey,dothis);
-              if(dothis) addVessel( thiskey, input );
-          // If it is numbered read it in as a numbered thing
-          } else if( keywords.numbered(thiskey) ) {
-              parse(thiskey,input);
-              if(input.size()!=0){ 
-                    addVessel( thiskey, input );
-              } else {
-                 for(unsigned i=1;;++i){
-                    if( !parseNumbered(thiskey,i,input) ) break;
-                    std::string ss; Tools::convert(i,ss);
-                    addVessel( thiskey, input, i ); 
-                    input.clear();
-                 } 
-              }
-          // Otherwise read in the keyword the normal way
+          plumed_assert( keywords.style(thiskey,"vessel") );
+          bool dothis=false; parseFlag(thiskey,dothis);
+          if(dothis) addVessel( thiskey, input );
+
+          parse(thiskey,input);
+          if(input.size()!=0){ 
+                addVessel( thiskey, input );
           } else {
-              parse(thiskey, input);
-              if(input.size()!=0) addVessel(thiskey,input);
+             for(unsigned i=1;;++i){
+                if( !parseNumbered(thiskey,i,input) ) break;
+                std::string ss; Tools::convert(i,ss);
+                addVessel( thiskey, input, i ); 
+                input.clear();
+             } 
           }
-          input.clear();
       }
   }
 

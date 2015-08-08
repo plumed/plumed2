@@ -46,7 +46,7 @@ void VectorSum::registerKeywords( Keywords& keys ){
 }
 
 void VectorSum::reserveKeyword( Keywords& keys ){
-  keys.reserveFlag("VSUM",false,"calculate the norm of the sum of vectors.",true);
+  keys.reserve("vessel","VSUM","calculate the norm of the sum of vectors.");
   keys.addOutputComponent("vsum","VSUM","the norm of sum of vectors. The output component can be refererred to elsewhere in the input "
                                         "file by using the label.vsum");
 }

@@ -55,6 +55,7 @@ void Moments::reserveKeyword( Keywords& keys ){
   "The \\f$m\\f$th moment of a distribution is calculated using \\f$\\frac{1}{N} \\sum_{i=1}^N ( s_i - \\overline{s} )^m \\f$, where \\f$\\overline{s}\\f$ is "
   "the average for the distribution. The moments keyword takes a lists of integers as input or a range. Each integer is a value of \\f$m\\f$. The final "
   "calculated values can be referenced using moment-\\f$m\\f$.");  
+  keys.reset_style("MOMENTS","vessel");
   keys.addOutputComponent("moment","MOMENTS","the central moments of the distribution of values. The second moment "
                                              "would be referenced elsewhere in the input file using "
                                              "<em>label</em>.moment-2, the third as <em>label</em>.moment-3, etc.");

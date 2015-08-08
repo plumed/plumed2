@@ -310,6 +310,37 @@ void MultiColvarFunction::getVectorDerivatives( const unsigned& ind, const bool&
   mybasedata[mmc]->retrieveDerivatives( convertToLocalIndex(ind,mmc), normed, myder );
 }
 
+void MultiColvarFunction::superChainRule( const unsigned& ival, const unsigned& start, const unsigned& end,
+                                          const unsigned& jatom, const std::vector<double>& der,
+                                          MultiValue& myder, AtomValuePack& myatoms ) const {
+  plumed_dbg_assert( ival<myatoms.getUnderlyingMultiValue().getNumberOfValues() );
+  plumed_dbg_assert( start<myder.getNumberOfValues() && end<=myder.getNumberOfValues() );
+  plumed_dbg_assert( der.size()==myder.getNumberOfValues() && jatom<getFullNumberOfBaseTasks() );
+
+  unsigned mmc=colvar_label[jatom]; plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(jatom,mmc) ) );
+
+  // Get start of indices for this atom
+  unsigned basen=0; for(unsigned i=0;i<mmc;++i) basen+=3*mybasemulticolvars[i]->getNumberOfAtoms();
+  // Now get the start of the virial
+  unsigned virbas = 3*getNumberOfAtoms();
+
+  MultiValue& myvals=myatoms.getUnderlyingMultiValue();
+  for(unsigned j=0;j<myder.getNumberActive();++j){
+     unsigned jder=myder.getActiveIndex(j);
+     if( jder<3*mybasemulticolvars[mmc]->getNumberOfAtoms() ){
+         unsigned kder=basen+jder;
+         for(unsigned icomp=start;icomp<end;++icomp){
+             myvals.addDerivative( icomp, kder, der[icomp]*myder.getDerivative( ival, jder ) );
+         }
+     } else {
+         unsigned kder=virbas + (jder - 3*mybasemulticolvars[mmc]->getNumberOfAtoms());
+         for(unsigned icomp=start;icomp<end;++icomp){
+             myvals.addDerivative( icomp, kder, der[icomp]*myder.getDerivative( ival, jder ) );
+         }
+     }
+  }
+}
+
 void MultiColvarFunction::mergeVectorDerivatives( const unsigned& ival, const unsigned& start, const unsigned& end, 
                                                   const unsigned& jatom, const std::vector<double>& der, 
                                                   MultiValue& myder, AtomValuePack& myatoms ) const {

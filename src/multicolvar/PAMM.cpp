@@ -121,19 +121,6 @@ MultiColvarFunction(ao)
        kernels[kernels.size()-1].normalize( pos );
    } 
 
- //  std::string kernelinpt;
- //  parse("TARGET-KERNEL",kernelinpt);
- //  KernelFunctions target( kernelinpt, true ); 
- //  if( target.ndim()!=getNumberOfBaseMultiColvars() ) error("mismatch for dimensionality of target kernel");
- //  kernels.push_back( target );
- //  for(int i=1;;i++){
- //     if( !parseNumbered("MIX-KERNEL",i,kernelinpt) ) break;
- //     KernelFunctions mykernel( kernelinpt, true );
- //     if( mykernel.ndim()!=getNumberOfBaseMultiColvars() ) error("mismatch for dimensionality of mix kernel");
- //     kernels.push_back( mykernel );
- //  }
- //  if( kernels.size()==1 ) error("no mix kernels defined");
-
    // I think we can put this back for anything with not usespecies
    // Now need to pass cutoff information to underlying distance multicolvars
    // for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i){
@@ -149,7 +136,7 @@ PAMM::~PAMM(){
 }
 
 unsigned PAMM::getNumberOfQuantities(){
-   return 1 + kernels.size();    // getBaseMultiColvar(0)->getNumberOfQuantities();
+   return 1 + kernels.size();    
 }
 
 void PAMM::calculateWeight( AtomValuePack& myatoms ){
@@ -211,12 +198,11 @@ double PAMM::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
            // Get the values of the derivatives
            getVectorDerivatives( myatoms.getIndex(ivar), false, myder );
            // And calculate the derivatives
-           for(unsigned i=0;i<kernels.size();++i){
-               mypref[1+i] = tderiv[i][ivar]/denom - vals[i]*dderiv[ivar]/denom2;
-               // This is basically doing the chain rule to get the final derivatives
-               mergeVectorDerivatives( 1+i, 1+i, 2+i, myatoms.getIndex(ivar), mypref, myder, myatoms );
-               myder.clearAll();
-           }
+           for(unsigned i=0;i<kernels.size();++i) mypref[1+i] = tderiv[i][ivar]/denom - vals[i]*dderiv[ivar]/denom2;
+           // This is basically doing the chain rule to get the final derivatives
+           superChainRule( 1, 1, 1+kernels.size(), myatoms.getIndex(ivar), mypref, myder, myatoms );
+           // And clear the derivatives
+           myder.clearAll();
        }
    }
 

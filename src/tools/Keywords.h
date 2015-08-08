@@ -37,19 +37,21 @@ class Keywords{
 /// This class lets me pass keyword types easily
   class KeyType{
   public:
-    enum {hidden,compulsory,flag,optional,atoms} style;
+    enum {hidden,compulsory,flag,optional,atoms,vessel} style;
     explicit KeyType( const std::string& type );
     void setStyle( const std::string& type );
     bool isCompulsory() const { return (style==compulsory); }
     bool isFlag() const { return (style==flag); }
     bool isOptional() const { return (style==optional); }
     bool isAtomList() const { return (style==atoms); }
+    bool isVessel() const { return (style==vessel); }
     std::string toString() const {
       if(style==compulsory) return "compulsory";
       else if(style==optional) return "optional";
       else if(style==atoms) return "atoms";
       else if(style==flag) return "flag";
       else if(style==hidden) return "hidden";
+      else if(style==vessel) return "vessel";
       else plumed_assert(0);
       return "";
     }
@@ -108,9 +110,9 @@ public:
 /// Print the documentation to a file (use by PLUMED::CLTool::readCommandLineArgs)
   void print( FILE* out ) const ;
 /// Reserve a keyword 
-  void reserve( const std::string & t, const std::string & k, const std::string & d, const bool isvessel=false );
+  void reserve( const std::string & t, const std::string & k, const std::string & d );
 /// Reserve a flag
-  void reserveFlag( const std::string & k, const bool def, const std::string & d, const bool isvessel=false );
+  void reserveFlag( const std::string & k, const bool def, const std::string & d );
 /// Use one of the reserved keywords
   void use( const std::string  & k );
 /// Get the ith keyword

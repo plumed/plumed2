@@ -61,6 +61,10 @@ protected:
   void mergeVectorDerivatives( const unsigned& ival, const unsigned& start, const unsigned& end,
                                const unsigned& jatom, const std::vector<double>& der, 
                                MultiValue& myder, AtomValuePack& myatoms ) const ;
+///
+  void superChainRule( const unsigned& ival, const unsigned& start, const unsigned& end,
+                       const unsigned& jatom, const std::vector<double>& der,
+                       MultiValue& myder, AtomValuePack& myatoms ) const ;
 /// Convert an index in the global array to an index in the individual base colvars
   unsigned convertToLocalIndex( const unsigned& index, const unsigned& mcv_code ) const ;
 /// Build sets by taking one multicolvar from each base

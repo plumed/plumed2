@@ -47,7 +47,7 @@ void SpathVessel::registerKeywords( Keywords& keys ){
 }
 
 void SpathVessel::reserveKeyword( Keywords& keys ){
-  keys.reserveFlag("SPATH",false,"docs should not appear",true);
+  keys.reserve("vessel","SPATH","docs should not appear");
   keys.addOutputComponent("spath","SPATH","the position on the path");
 }
 
