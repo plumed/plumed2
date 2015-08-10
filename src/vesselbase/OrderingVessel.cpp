@@ -58,7 +58,7 @@ void OrderingVessel::finish( const std::vector<double>& buffer ){
      mydata->retrieveDerivatives( mini, false, myvals ); Value* fval=getFinalValue();
      for(unsigned i=0;i<myvals.getNumberActive();++i){ 
          unsigned ider=myvals.getActiveIndex(i); 
-         fval->setDerivative( ider, myvals.getDerivative(1,ider) );
+         fval->setDerivative( ider, myvals.getDerivative(mycomponent,ider) );
      }
   }
 }

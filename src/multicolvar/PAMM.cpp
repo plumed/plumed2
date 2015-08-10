@@ -156,10 +156,8 @@ MultiColvarFunction(ao)
 {
    // Check for reasonable input
    for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i){
-      if( getBaseMultiColvar(i)->getNumberOfQuantities()!=2 ) error("cannot use PAMM with " + getBaseMultiColvar(i)->getName() );
+     if( getBaseMultiColvar(i)->getNumberOfQuantities()!=2 ) error("cannot use PAMM with " + getBaseMultiColvar(i)->getName() );
    }
-   // This builds the lists
-   buildSets(); 
 
    bool mixed=getBaseMultiColvar(0)->isPeriodic();
    for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i){
@@ -184,22 +182,26 @@ MultiColvarFunction(ao)
    while( ifile.scanField("weight",weight) ) {
        for(unsigned i=0;i<center.size();++i){
           ifile.scanField("center-"+getBaseMultiColvar(i)->getLabel(),center[i]);
-       }   
+       }
        for(unsigned i=0;i<center.size();++i){
            for(unsigned j=0;j<center.size();++j){
               ifile.scanField("width-"+getBaseMultiColvar(i)->getLabel()+"-" + getBaseMultiColvar(j)->getLabel(),covar(i,j) );
            }
-       }  
+       }
        Invert( covar, icovar );
        unsigned k=0; 
        for(unsigned i=0;i<ncolv;i++){
            for(unsigned j=i;j<ncolv;j++){ sig[k]=icovar(i,j); k++; }
        }
        ifile.scanField(); 
-       // std::string ktype; ifile.scanField("kerneltype",ktype);
        kernels.push_back( KernelFunctions( center, sig, "GAUSSIAN", "VON-MISES", weight ) );
        kernels[kernels.size()-1].normalize( pos );
-   } 
+   }
+   ifile.close();  
+
+   // This builds the lists
+   buildSets();
+
 
    // I think we can put this back for anything with not usespecies
    // Now need to pass cutoff information to underlying distance multicolvars
