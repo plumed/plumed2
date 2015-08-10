@@ -26,7 +26,7 @@ namespace vesselbase{
 
 void ValueVessel::registerKeywords( Keywords& keys ){
   Vessel::registerKeywords( keys );
-   keys.add("compulsory","COMPONENT","1","the component of the vector for which to calculate this quantity");
+  keys.add("compulsory","COMPONENT","1","the component of the vector for which to calculate this quantity");
 }
 
 ValueVessel::ValueVessel( const VesselOptions& da ):
