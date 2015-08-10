@@ -313,9 +313,9 @@ void MultiColvarFunction::getVectorDerivatives( const unsigned& ind, const bool&
 void MultiColvarFunction::superChainRule( const unsigned& ival, const unsigned& start, const unsigned& end,
                                           const unsigned& jatom, const std::vector<double>& der,
                                           MultiValue& myder, AtomValuePack& myatoms ) const {
-  plumed_dbg_assert( ival<myatoms.getUnderlyingMultiValue().getNumberOfValues() );
-  plumed_dbg_assert( start<myder.getNumberOfValues() && end<=myder.getNumberOfValues() );
-  plumed_dbg_assert( der.size()==myder.getNumberOfValues() && jatom<getFullNumberOfBaseTasks() );
+  plumed_dbg_assert( ival<myder.getNumberOfValues() );
+  plumed_dbg_assert( start<myatoms.getUnderlyingMultiValue().getNumberOfValues() && end<=myatoms.getUnderlyingMultiValue().getNumberOfValues() );
+  plumed_dbg_assert( der.size()==myatoms.getUnderlyingMultiValue().getNumberOfValues() && jatom<getFullNumberOfBaseTasks() );
 
   unsigned mmc=colvar_label[jatom]; plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(jatom,mmc) ) );
 
