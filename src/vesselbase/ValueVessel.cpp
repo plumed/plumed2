@@ -51,7 +51,7 @@ Vessel(da)
 std::string ValueVessel::description(){
   if( final_value->getName()==getAction()->getLabel() ) return "value " + getAction()->getLabel() + " contains " + value_descriptor();
   std::string compstr; Tools::convert(mycomponent,compstr);
-  return "value " + getAction()->getLabel() + "." + getLabel() + " is obtained by taking the " + compstr + " component and finding " + value_descriptor();
+  return "value " + getAction()->getLabel() + "." + getLabel() + " is obtained by taking the " + compstr + "th component and finding " + value_descriptor();
 }
 
 bool ValueVessel::applyForce( std::vector<double>& forces ){
