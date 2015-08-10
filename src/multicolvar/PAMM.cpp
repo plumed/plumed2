@@ -131,7 +131,8 @@ void PAMM::registerKeywords( Keywords& keys ){
   MultiColvarFunction::registerKeywords( keys ); 
   keys.add("compulsory","CLUSTERS","the name of the file that contains the definitions of all the clusters");
   keys.add("compulsory","REGULARISE","0.001","don't allow the denominator to be smaller then this value");
-  keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("SUM"); keys.use("LESS_THAN"); 
+  keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("SUM"); keys.use("LESS_THAN"); keys.use("HISTOGRAM"); keys.use("HISTOGRAM");
+  keys.use("MIN"); keys.use("MAX"); keys.use("LOWEST"); keys.use("HIGHEST"); keys.use("ALT_MIN"); keys.use("BETWEEN");
   keys.setComponentsIntroduction("When the label of this action is used as the input for a second you are not referring to a scalar quantity as you are in "
                                  "regular collective variables.  The label is used to reference the full set of quantities calculated by "
                                  "the action.  This is usual when using \\ref multicolvarfunction. Generally when doing this the set of PAMM variables "
