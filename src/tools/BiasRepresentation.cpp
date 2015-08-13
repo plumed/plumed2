@@ -131,7 +131,7 @@ void BiasRepresentation::pushKernel( IFile *ifile ){
         // here below the reading of the kernel is completely hidden
         if(histosigma.size()==0){ 
 		ifile->allowIgnoredFields();
- 		kk=KernelFunctions::read(ifile,names)   ;
+ 		kk=KernelFunctions::read(ifile,true,names)   ;
         }else{
 		// when doing histogram assume gaussian with a given diagonal sigma 
 		// and neglect all the rest

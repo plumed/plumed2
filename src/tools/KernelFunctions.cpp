@@ -99,7 +99,7 @@ KernelFunctions::KernelFunctions( const std::string& input ){
   if(!foundc) plumed_merror("failed to find sigma keyword in definition of kernel");
 
   bool multi=false; Tools::parseFlag(data,"MULTIVARIATE",multi);
-  bool vonmises=false; Tools::parseFlag(data,"VON-MISES",vonmises);
+  bool vonmises=false; Tools::parseFlag(data,"VON-MISSES",vonmises);
   if( center.size()==1 && multi ) plumed_merror("one dimensional kernel cannot be multivariate");
   if( center.size()==1 && vonmises ) plumed_merror("one dimensional kernal cannot be von-misses");
   if( center.size()==1 && sig.size()!=1 ) plumed_merror("size mismatch between center size and sigma size");
@@ -111,7 +111,7 @@ KernelFunctions::KernelFunctions( const std::string& input ){
   if( !foundh) h=1.0;
 
   if( multi ) setData( at, sig, name, "MULTIVARIATE" , h );
-  else if( vonmises ) setData( at, sig, name, "VON-MISES", h );
+  else if( vonmises ) setData( at, sig, name, "VON-MISSES", h );
   else setData( at, sig, name, "DIAGONAL", h );
 }
 
@@ -125,7 +125,7 @@ void KernelFunctions::setData( const std::vector<double>& at, const std::vector<
   center.resize( at.size() ); for(unsigned i=0;i<at.size();++i) center[i]=at[i];
   width.resize( sig.size() ); for(unsigned i=0;i<sig.size();++i) width[i]=sig[i];
   if( mtype=="MULTIVARIATE" ) dtype=multi;
-  else if( mtype=="VON-MISES" ) dtype=vonmises;
+  else if( mtype=="VON-MISSES" ) dtype=vonmises;
   else if( mtype=="DIAGONAL" ) dtype=diagonal;
   else plumed_merror(mtype + " is not a valid metric type");
 
@@ -361,41 +361,45 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<do
   return kval;
 }
 
-KernelFunctions* KernelFunctions::read( IFile* ifile, const std::vector<std::string>& valnames ){
-  std::string sss; ifile->scanField("multivariate",sss);
-  std::vector<double> cc( valnames.size() ), sig;
-  bool multivariate;
+KernelFunctions* KernelFunctions::read( IFile* ifile, const bool& cholesky, const std::vector<std::string>& valnames ){
+  double h; 
+  if( !ifile->scanField("height",h) ) return NULL;;
+
+  std::string sss; ifile->scanField("multivariate",sss); 
+  std::string ktype; ifile->scanField("kerneltype",ktype); 
+  plumed_massert( sss=="false" || sss=="true" || sss=="von-misses" , "multivariate flag must be either false, true or von-misses");
+
+  // Read the position of the center
+  std::vector<double> cc( valnames.size() );
+  for(unsigned i=0;i<valnames.size();++i) ifile->scanField(valnames[i],cc[i]);
+
+  std::vector<double> sig;
   if( sss=="false" ){
-     multivariate=false;
      sig.resize( valnames.size() );
      for(unsigned i=0;i<valnames.size();++i){
-         ifile->scanField(valnames[i],cc[i]);
          ifile->scanField("sigma_"+valnames[i],sig[i]);
+         if( !cholesky ) sig[i]=sqrt(sig[i]);
      }
-     double h; ifile->scanField("height",h);
-     return new KernelFunctions( cc, sig, "gaussian", "DIAGONAL", h );
-  } else if( sss=="true" ){
-     multivariate=true;
-     unsigned ncv=valnames.size();
-     sig.resize( (ncv*(ncv+1))/2 );
-     Matrix<double> upper(ncv,ncv), lower(ncv,ncv);
-     for(unsigned i=0;i<ncv;++i){
-         ifile->scanField(valnames[i],cc[i]);
-         for(unsigned j=0;j<ncv-i;j++){ ifile->scanField("sigma_" +valnames[j+i] + "_" + valnames[j], lower(j+i,j) ); upper(j,j+i)=lower(j+i,j); }
-     }
-     Matrix<double> mymult( ncv, ncv ), invmatrix(ncv,ncv);
-     mult(lower,upper,mymult); Invert( mymult, invmatrix );
-     unsigned k=0; 
-     for(unsigned i=0;i<ncv;i++){
-         for(unsigned j=i;j<ncv;j++){ sig[k]=invmatrix(i,j); k++; }
-     }
-     double h; ifile->scanField("height",h);
-     return new KernelFunctions( cc, sig, "gaussian", "MULTIVARIATE", h );
-  } else {
-      plumed_merror("multivariate flag should equal true or false");
+     return new KernelFunctions( cc, sig, ktype, "DIAGONAL", h );
   } 
-  double h; ifile->scanField("height",h);
-  return new KernelFunctions( cc, sig, "gaussian", "DIAGONAL", h );
+  
+  unsigned ncv=valnames.size();
+  sig.resize( (ncv*(ncv+1))/2 );
+  Matrix<double> upper(ncv,ncv), lower(ncv,ncv), mymult( ncv, ncv ), invmatrix(ncv,ncv);
+  for(unsigned i=0;i<ncv;++i){
+     for(unsigned j=0;j<ncv-i;j++){ 
+        ifile->scanField("sigma_" +valnames[j+i] + "_" + valnames[j], lower(j+i,j) ); 
+        upper(j,j+i)=lower(j+i,j); mymult(j+i,j)=mymult(j,j+i)=lower(j+i,j); 
+     }
+  }
+  if( cholesky ) mult(lower,upper,mymult); 
+  Invert( mymult, invmatrix );
+  unsigned k=0; 
+  for(unsigned i=0;i<ncv;i++){
+     for(unsigned j=i;j<ncv;j++){ sig[k]=invmatrix(i,j); k++; }
+  }
+  if( sss=="true" ) return new KernelFunctions( cc, sig, ktype, "MULTIVARIATE", h );
+  return new KernelFunctions( cc, sig, ktype, "VON-MISSES", h );
 }
 
 }

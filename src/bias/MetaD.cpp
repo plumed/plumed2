@@ -680,6 +680,7 @@ last_step_warn_grid(0)
   hillsOfile_.open(ifilesnames[mw_id_]);
   if(fmt.length()>0) hillsOfile_.fmtField(fmt);
   hillsOfile_.addConstantField("multivariate");
+  hillsOfile_.addConstantField("kerneltype");
   if(doInt_) {
     hillsOfile_.addConstantField("lower_int").printField("lower_int",lowI_);
     hillsOfile_.addConstantField("upper_int").printField("upper_int",uppI_);
@@ -762,6 +763,7 @@ void MetaD::writeGaussian(const Gaussian& hill, OFile&file){
   for(unsigned i=0;i<ncv;++i){
     file.printField(getPntrToArgument(i),hill.center[i]);
   }
+  hillsOfile_.printField("kerneltype","gaussian");
   if(hill.multivariate){
     hillsOfile_.printField("multivariate","true");
          Matrix<double> mymatrix(ncv,ncv);
