@@ -68,13 +68,15 @@ PRINT ARG=p.mean-1,mean-2 FILE=colvar
 The best place to start our explanation is to look at the contents of the clusters.dat file
 
 \verbatim
-#! FIELDS weight center-phi center-psi width-phi-phi width-phi-psi width-psi-phi width-psi-psi      
+#! FIELDS height phi psi sigma_phi_phi sigma_phi_psi sigma_psi_phi sigma_psi_psi
+#! SET multivariate von-misses
+#! SET kerneltype gaussian
       0.4     -1.0      -1.0      0.2     -0.1    -0.1    0.2   
       0.6      1.0      +1.0      0.1     -0.03   -0.03   0.1   
 \endverbatim
 
 This files contains the parameters of two two-dimensional Gaussian functions.  Each of these Gaussians has a weight, \f$w_k\f$,
-a vector that specifies the position of its centre, \f$\mathbf{c}_\f$, and a covariance matrix, \f$\Sigma_k\f$.  The \f$\phi_k\f$ functions that 
+a vector that specifies the position of its centre, \f$\mathbf{c}_k\f$, and a covariance matrix, \f$\Sigma_k\f$.  The \f$\phi_k\f$ functions that 
 we use to calculate our PAMM components are thus:
 
 \f[
@@ -107,7 +109,7 @@ namespace multicolvar {
 class PAMM : public MultiColvarFunction {
 private:
   double regulariser;
-  std::vector<KernelFunctions> kernels;
+  std::vector<KernelFunctions*> kernels;
   std::vector<Value*> pos;
 public:
   static void registerKeywords( Keywords& keys );
@@ -171,49 +173,33 @@ MultiColvarFunction(ao)
            pos[i]->setDomain( min, max );
        }
    }
+  
+   // Get labels for base multicolvars
+   std::vector<std::string> valnames( getNumberOfBaseMultiColvars() );
+   for(unsigned i=0;i<valnames.size();++i) valnames[i]=getBaseMultiColvar(i)->getLabel();
 
-   std::string filename; parse("CLUSTERS",filename);
-   unsigned ncolv = getNumberOfBaseMultiColvars();
-   IFile ifile; Matrix<double> covar( ncolv, ncolv ), icovar( ncolv, ncolv );
+   std::string filename; parse("CLUSTERS",filename); IFile ifile; 
    if( !ifile.FileExist(filename) ) error("could not find file named " + filename);
-   ifile.open(filename); ifile.allowIgnoredFields(); double weight, wij;
-   std::vector<double> center( ncolv );
-   std::vector<double> sig( 0.5*ncolv*(ncolv-1) + ncolv );   
-   while( ifile.scanField("weight",weight) ) {
-       for(unsigned i=0;i<center.size();++i){
-          ifile.scanField("center-"+getBaseMultiColvar(i)->getLabel(),center[i]);
-       }
-       for(unsigned i=0;i<center.size();++i){
-           for(unsigned j=0;j<center.size();++j){
-              ifile.scanField("width-"+getBaseMultiColvar(i)->getLabel()+"-" + getBaseMultiColvar(j)->getLabel(),covar(i,j) );
-           }
-       }
-       Invert( covar, icovar );
-       unsigned k=0; 
-       for(unsigned i=0;i<ncolv;i++){
-           for(unsigned j=i;j<ncolv;j++){ sig[k]=icovar(i,j); k++; }
-       }
+   ifile.open(filename); ifile.allowIgnoredFields(); 
+ 
+   for(unsigned i=0;;++i){
+       KernelFunctions* kk = KernelFunctions::read( &ifile, false, valnames );
+       if( !kk ) break ;
+       kk->normalize( pos );
+       kernels.push_back( kk );
        ifile.scanField(); 
-       kernels.push_back( KernelFunctions( center, sig, "GAUSSIAN", "VON-MISES", weight ) );
-       kernels[kernels.size()-1].normalize( pos );
    }
    ifile.close();  
 
    // This builds the lists
    buildSets();
-
-   // I think we can put this back for anything with not usespecies
-   // Now need to pass cutoff information to underlying distance multicolvars
-   // for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i){
-   //     Distances* mydist = dynamic_cast<Distances*>( getBaseMultiColvar(i) );
-   //     for(unsigned k=0;k<kernels.size();++k){
-   //         mydist->setLinkCellCutoff( kernels[k].getCenter()[i]+kernels[k].getContinuousSupport()[i] );
-   //     }
-   // }
+   // Read the regularisation parameter
+   parse("REGULARISE",regulariser);
 }
 
 PAMM::~PAMM(){
    for(unsigned i=0;i<pos.size();++i) delete pos[i];
+   for(unsigned i=0;i<kernels.size();++i) delete kernels[i];
 }
 
 unsigned PAMM::getNumberOfQuantities(){
@@ -258,7 +244,7 @@ double PAMM::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
    // Evaluate the set of kernels 
    double denom=regulariser;
    for(unsigned i=0;i<kernels.size();++i){ 
-       vals[i]=kernels[i].evaluate( pos, tderiv[i] );
+       vals[i]=kernels[i]->evaluate( pos, tderiv[i] );
        denom+=vals[i]; 
        for(unsigned j=0;j<nvars;++j) dderiv[j] += tderiv[i][j];
    }
