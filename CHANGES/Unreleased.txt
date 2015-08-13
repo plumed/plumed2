@@ -4,4 +4,16 @@
 
 This page contains changes that will end up in 2.3
 
+Changes from version 2.2 which are relevant for users:
+- Changes leading to incompatible behavior:
+ - \ref sum_hills expects the kernel type to be set in the input HILLS file
+ - \ref METAD outputs the kernel type in the header of the output HILLS file
+- New actions:
+ - \ref PAMM probabilistic analysis of molecular motifs
+
+Changes from version 2.2 which are relevant for developers:
+- Many changes have been made to the KernelFunctions class. It is now possible
+  to use multivariate Von-Misses ditributions within this class and the methods
+  to read in kernels from input files and to normalise them have been changed. 
+
 */
