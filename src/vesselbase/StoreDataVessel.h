@@ -140,7 +140,7 @@ unsigned StoreDataVessel::getNumberOfDerivativeSpacesPerComponent() const {
 
 inline
 bool StoreDataVessel::storedValueIsActive( const unsigned& iatom ){
-  plumed_dbg_assert( iatom<getAction()->getFullNumberOfTasks() );
+  plumed_dbg_assert( iatom<getNumberOfStoredValues() );
   if( !hard_cut ) return true; 
   return local_buffer[iatom*vecsize*nspace]>wtol;   // (active_val[iatom]==1);
 }

@@ -133,6 +133,8 @@ eigenvecs( getNumberOfNodes(), getNumberOfNodes() )
    //    // if( !getBaseMultiColvar(i)->hasDifferentiableOrientation() ) error("cannot use multicolvar of type " + getBaseMultiColvar(i)->getName() );
    // }
 
+   if( !getAdjacencyVessel()->isSymmetric() ) error("input contact matrix is not symmetric");
+
    // Create all the values
    sqrtn = sqrt( static_cast<double>( getNumberOfNodes() ) );
    for(unsigned i=0;i<getNumberOfNodes();++i){

@@ -33,7 +33,10 @@ class AdjacencyMatrixBase : public multicolvar::MultiColvarBase {
 friend class AdjacencyMatrixVessel;
 friend class ActionWithInputMatrix;
 friend class MatrixColumnSums;
+friend class MatrixRowSums;
 private:
+/// Used for read in of multiple connection descriptors
+  unsigned connect_id;
 /// The tolerance to use to decide whether or not to incorporate atoms
   double wtolerance;
 /// This is the vessel that stores the adjacency matrix
@@ -52,6 +55,8 @@ protected:
   void setMatrixIndexesForTask( const unsigned& ii );
 /// Add derivatives to a matrix element
   void addDerivativesOnMatrixElement( const unsigned& ielem, const unsigned& jrow, const double& df, Matrix<double>& der );
+/// Read in the information on the connectors
+  void parseConnectionDescriptions( const std::string& key, const unsigned& nrow_t );
 protected:
 /// Read the list of atoms involved in this colvar
   void parseAtomList(const std::string& key, const int& num, const bool& isnodes, std::vector<AtomNumber>& t);
@@ -62,7 +67,7 @@ protected:
 /// Get the size of the vectors that were stored in the base colvars
   unsigned getSizeOfInputVectors() const ;
 /// Request the atoms
-  void requestAtoms( const std::vector<AtomNumber>& atoms );
+  void requestAtoms( const std::vector<AtomNumber>& atoms, const bool& symmetric, const unsigned& nrows );
 /// Return the group this atom is a part of
   unsigned getBaseColvarNumber( const unsigned& ) const ;
 /// Add some derivatives to the relevant atom
@@ -80,6 +85,8 @@ public:
   void updateActiveAtoms( multicolvar::AtomValuePack& myatoms ) const ;
 /// Calculation routine
   void calculate();
+/// Create the connection object
+  virtual void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::string& desc ) = 0;
 /// None of these things are allowed
   bool isPeriodic(){ return false; }
   Vector getCentralAtom(){ plumed_merror("cannot find central atoms for adjacency matrix actions"); Vector dum; return dum; }

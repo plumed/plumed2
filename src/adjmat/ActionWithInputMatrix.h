@@ -33,8 +33,8 @@ namespace adjmat {
 class AdjacencyMatrixVessel;
 
 class ActionWithInputMatrix : 
-  public ActionAtomistic,
   public ActionWithValue,
+  public ActionAtomistic,
   public vesselbase::ActionWithVessel
   {
 private:

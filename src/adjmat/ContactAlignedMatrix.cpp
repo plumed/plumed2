@@ -48,6 +48,8 @@ public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
   explicit ContactAlignedMatrix(const ActionOptions&);
+/// Create the ith, ith switching function
+  void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::string& desc );
 /// This actually calculates the value of the contact function
   void calculateWeight( multicolvar::AtomValuePack& myatoms ) const ;
 /// This does nothing
@@ -77,38 +79,8 @@ ncomp(getSizeOfInputVectors())
   // Read in the atomic positions
   std::vector<AtomNumber> atoms; parseAtomList("MOLECULES",-1,true,atoms);
   // Read in the switching function
-  if( getNumberOfNodeTypes()==1 ){
-      switchingFunction.resize(1,1);
-      std::string sw, errors; parse("SWITCH",sw);
-      if(sw.length()==0) error("missing SWITCH keyword");
-      switchingFunction(0,0).set(sw,errors);
-      log.printf("  constructing adjacency matrix between atoms that are within %s\n", ( switchingFunction(0,0).description() ).c_str() );
-  } else {
-      unsigned nfunc=getNumberOfNodeTypes();
-      switchingFunction.resize( nfunc,nfunc ); 
-      for(unsigned i=0;i<nfunc;++i){
-          // Retrieve the base number  
-          unsigned ibase;
-          if( nfunc<10 ){ 
-             ibase=(i+1)*10; 
-          } else if ( nfunc<100 ){
-             ibase=(i+1)*100;
-          } else {
-             error("wow this is an error I never would have expected");
-          }
-
-          for(unsigned j=i;j<nfunc;++j){
-             std::string sw, errors; parseNumbered("SWITCH",ibase+j+1,sw);
-             if(sw.length()==0){
-                std::string num; Tools::convert(ibase+j+1,num);
-                error("could not find SWITCH" + num + " keyword. Need one SWITCH keyword for each distinct base-multicolvar-pair type");
-             }
-             switchingFunction(j,i).set(sw,errors);
-             if( j!=i) switchingFunction(i,j).set(sw,errors);
-             log.printf("  %d th and %d th multicolvar groups must be within %s\n",i+1,j+1,(switchingFunction(i,j).description()).c_str() );
-          }
-      }
-  }
+  switchingFunction.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
+  parseConnectionDescriptions("SWITCH",0);
 
   // Find the largest sf cutoff
   double sfmax=switchingFunction(0,0).get_dmax();
@@ -121,19 +93,15 @@ ncomp(getSizeOfInputVectors())
   // And set the link cell cutoff
   setLinkCellCutoff( sfmax );
 
-  // Create the task list
-  nblock = getNumberOfNodes(); resizeBookeepingArray( nblock , nblock );
-  ablocks.resize(2); ablocks[0].resize( getNumberOfNodes() ); ablocks[1].resize( nblock );
-  for(unsigned i=0;i<nblock;++i) ablocks[0][i]=ablocks[1][i]=i;
-  for(unsigned i=1;i<nblock;++i){
-     for(unsigned j=0;j<i;++j){
-        bookeeping(i,j).first=getFullNumberOfTasks();
-        addTaskToList( i*nblock + j );
-        bookeeping(i,j).second=getFullNumberOfTasks();
-     }
-  }
   // And request the atoms involved in this colvar
-  requestAtoms( atoms );
+  requestAtoms( atoms, true, 0 );
+}
+
+void ContactAlignedMatrix::setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::string& desc ){
+  plumed_assert( id==0 ); std::string errors; switchingFunction(j,i).set(desc,errors);
+  if( errors.length()!=0 ) error("problem reading switching function description " + errors);
+  if( j!=i) switchingFunction(i,j).set(desc,errors);
+  log.printf("  %d th and %d th multicolvar groups must be aligned and must be within %s\n",i+1,j+1,(switchingFunction(i,j).description()).c_str() );
 }
 
 void ContactAlignedMatrix::calculateWeight( multicolvar::AtomValuePack& myatoms ) const {

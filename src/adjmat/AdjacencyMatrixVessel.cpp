@@ -28,7 +28,10 @@ namespace adjmat {
 
 void AdjacencyMatrixVessel::registerKeywords( Keywords& keys ){
   StoreDataVessel::registerKeywords(keys);
-
+  keys.addFlag("SYMMETRIC",false,"is the matrix symmetric");
+  keys.addFlag("HBONDS",false,"can we think of the matrix as a undirected graph");
+  keys.add("compulsory","NROWS","number of rows");
+  keys.add("compulsory","NCOLS","number of columns");
 }
 
 AdjacencyMatrixVessel::AdjacencyMatrixVessel( const vesselbase::VesselOptions& da ):
@@ -36,16 +39,38 @@ StoreDataVessel(da)
 {
   function=dynamic_cast<AdjacencyMatrixBase*>( getAction() );
   plumed_assert( function );
+  parse("NROWS",nrows); parse("NCOLS",ncols);
+  parseFlag("SYMMETRIC",symmetric); parseFlag("HBONDS",hbonds);
+  if( symmetric && hbonds ) error("matrix should be either symmetric or hbonds");
+  if( symmetric && nrows!=ncols ) error("matrix is supposed to be symmetric but nrows!=ncols");
+  if( hbonds &&  nrows!=ncols ) error("matrix is supposed to be hbonds but nrows!=ncols");
+}
+
+bool AdjacencyMatrixVessel::isSymmetric() const {
+  return symmetric;
+}
+
+bool AdjacencyMatrixVessel::undirectedGraph() const {
+  return ( symmetric || hbonds );
 }
 
 unsigned AdjacencyMatrixVessel::getNumberOfStoredValues() const {
-  unsigned nnodes=function->getNumberOfNodes(); return 0.5*nnodes*(nnodes-1);
+  if( symmetric ){ unsigned nnodes=function->getNumberOfNodes(); return 0.5*nnodes*(nnodes-1); }
+  return nrows*ncols;
+}
+
+unsigned AdjacencyMatrixVessel::getStoreIndexFromMatrixIndices( const unsigned& ielem, const unsigned& jelem ) const {
+  if( !symmetric ) return nrows*ielem + jelem;
+  if( ielem>jelem ) return 0.5*ielem*(ielem-1)+jelem;
+  return 0.5*jelem*(jelem-1) + ielem;
 }
 
 unsigned AdjacencyMatrixVessel::getStoreIndex( const unsigned& myelem ) const {
   unsigned ielem, jelem;
   getMatrixIndices( myelem, ielem, jelem );
-  return 0.5*ielem*(ielem-1)+jelem;
+  return getStoreIndexFromMatrixIndices( ielem, jelem );
+  if( symmetric ) return 0.5*ielem*(ielem-1)+jelem;
+  return nrows*ielem + jelem;
 }
 
 AdjacencyMatrixBase* AdjacencyMatrixVessel::getMatrixAction() {
@@ -65,12 +90,14 @@ void AdjacencyMatrixVessel::retrieveMatrix( DynamicList<unsigned>& myactive_elem
       myactive_elements.activate(i);
       unsigned j, k; getMatrixIndices( i, k, j );
       retrieveValue( i, false, vals );
-      mymatrix(k,j)=mymatrix(j,k)=vals[1] / vals[0];
+      if( symmetric ) mymatrix(k,j)=mymatrix(j,k)=vals[1] / vals[0];
+      else mymatrix(k,j) = vals[1] / vals[0];
   }
   myactive_elements.updateActiveMembers();  
 }
 
 void AdjacencyMatrixVessel::retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matrix<unsigned>& adj_list ){
+  plumed_dbg_assert( undirectedGraph() );
   // Currently everything has zero neighbors
   for(unsigned i=0;i<nneigh.size();++i) nneigh[i]=0;
 
@@ -85,7 +112,7 @@ void AdjacencyMatrixVessel::retrieveAdjacencyLists( std::vector<unsigned>& nneig
 }
 
 void AdjacencyMatrixVessel::retrieveEdgeList( unsigned& nedge, std::vector<std::pair<unsigned,unsigned> >& edge_list ){
-  nedge=0;
+  plumed_dbg_assert( undirectedGraph() ); nedge=0;
   for(unsigned i=0;i<getNumberOfStoredValues();++i){
       // Ignore any non active members
       if( !storedValueIsActive(i) ) continue ;

@@ -39,13 +39,14 @@ void InputMultiColvarSet::setup( const std::vector<std::string>& mlabs, const Ac
       } else {
           if( mname!=mycolv->getName() ) action->error("All input multicolvars must be of same type"); 
       }
+      // And track which variable stores each colvar
+      for(unsigned j=0;j<mycolv->getFullNumberOfTasks();++j) colvar_label.push_back( mybasemulticolvars.size() );
       // And store the multicolvar base
       mybasemulticolvars.push_back( mycolv );
-      // And track which variable stores each colvar
-      for(unsigned j=0;j<mycolv->getFullNumberOfTasks();++j) colvar_label.push_back( i );
+      // And create a basedata stash
+      mybasedata.push_back( mybasemulticolvars[mybasemulticolvars.size()-1]->buildDataStashes( true, wtolerance ) );
+      plumed_assert( mybasemulticolvars.size()==mybasedata.size() );
    }
-   // And create the data stashes
-   for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasedata.push_back( mybasemulticolvars[i]->buildDataStashes( true, wtolerance ) );
 }
 
 void InputMultiColvarSet::makeDataRequests( const std::vector<AtomNumber>& atoms, Action* action ){

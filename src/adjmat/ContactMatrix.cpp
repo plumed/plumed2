@@ -40,6 +40,8 @@ namespace adjmat {
 
 class ContactMatrix : public AdjacencyMatrixBase {
 private:
+/// Number of types that are in rows
+  unsigned nrow_t;
 /// switching function
   Matrix<SwitchingFunction> switchingFunction;
 public:
@@ -47,6 +49,8 @@ public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
   explicit ContactMatrix(const ActionOptions&);
+/// Create the ith, ith switching function
+  void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::string& desc );
 /// This actually calculates the value of the contact function
   void calculateWeight( multicolvar::AtomValuePack& myatoms ) const ;
 /// This does nothing
@@ -65,6 +69,9 @@ void ContactMatrix::registerKeywords( Keywords& keys ){
   keys.add("numbered","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
                                "The following provides information on the \\ref switchingfunction that are available. "
                                "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
+// I added these keywords so I can test the results I get for column and row sums against output from COORDINATIONNUMBERS
+/// These  should never be used in production as I think they will be much slower than COORDINATIONNUMBERS
+  keys.add("hidden","ATOMSA",""); keys.add("hidden","ATOMSB","");
 }
 
 ContactMatrix::ContactMatrix( const ActionOptions& ao ):
@@ -72,45 +79,23 @@ Action(ao),
 AdjacencyMatrixBase(ao)
 {
   // Read in the atomic positions
-  std::vector<AtomNumber> atoms; parseAtomList("ATOMS",-1,true,atoms);
-  // Read in the switching function
-  if( getNumberOfNodeTypes()==1 ){
-      switchingFunction.resize(1,1);
-      std::string sw, errors; parse("SWITCH",sw);
-      if(sw.length()==0) error("missing SWITCH keyword");
-      switchingFunction(0,0).set(sw,errors);
-      log.printf("  constructing adjacency matrix between atoms that are within %s\n", ( switchingFunction(0,0).description() ).c_str() );
+  unsigned nrows=0; std::vector<AtomNumber> atoms; 
+  parseAtomList("ATOMSA",-1,true,atoms);
+  if( getNumberOfNodeTypes()!=0 ){
+     nrows=getNumberOfNodes(); nrow_t=getNumberOfNodeTypes(); 
+     parseAtomList("ATOMSB",-1,true,atoms); 
+     switchingFunction.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes()-nrow_t );
   } else {
-      unsigned nfunc=getNumberOfNodeTypes();
-      switchingFunction.resize( nfunc,nfunc ); 
-      for(unsigned i=0;i<nfunc;++i){
-          // Retrieve the base number  
-          unsigned ibase;
-          if( nfunc<10 ){ 
-             ibase=(i+1)*10; 
-          } else if ( nfunc<100 ){
-             ibase=(i+1)*100;
-          } else {
-             error("wow this is an error I never would have expected");
-          }
-
-          for(unsigned j=i;j<nfunc;++j){
-             std::string sw, errors; parseNumbered("SWITCH",ibase+j+1,sw);
-             if(sw.length()==0){
-                std::string num; Tools::convert(ibase+j+1,num);
-                error("could not find SWITCH" + num + " keyword. Need one SWITCH keyword for each distinct base-multicolvar-pair type");
-             }
-             switchingFunction(j,i).set(sw,errors);
-             if( j!=i) switchingFunction(i,j).set(sw,errors);
-             log.printf("  %d th and %d th multicolvar groups must be within %s\n",i+1,j+1,(switchingFunction(i,j).description()).c_str() );
-          }
-      }
+     parseAtomList("ATOMS",-1,true,atoms);
+     switchingFunction.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
   }
-
+  // Read in the switching functions
+  parseConnectionDescriptions("SWITCH",nrow_t);
+ 
   // Find the largest sf cutoff
   double sfmax=switchingFunction(0,0).get_dmax();
-  for(unsigned i=0;i<getNumberOfNodeTypes();++i){
-      for(unsigned j=0;j<getNumberOfNodeTypes();++j){
+  for(unsigned i=0;i<switchingFunction.nrows();++i){
+      for(unsigned j=0;j<switchingFunction.ncols();++j){
           double tsf=switchingFunction(i,j).get_dmax();
           if( tsf>sfmax ) sfmax=tsf;
       }
@@ -118,31 +103,27 @@ AdjacencyMatrixBase(ao)
   // And set the link cell cutoff
   setLinkCellCutoff( sfmax );
 
-  // Create the task list
-  nblock = getNumberOfNodes(); resizeBookeepingArray( nblock , nblock );
-  ablocks.resize(2); ablocks[0].resize( getNumberOfNodes() ); ablocks[1].resize( nblock );
-  for(unsigned i=0;i<nblock;++i) ablocks[0][i]=ablocks[1][i]=i;
-  for(unsigned i=1;i<nblock;++i){
-     for(unsigned j=0;j<i;++j){
-        bookeeping(i,j).first=getFullNumberOfTasks();
-        addTaskToList( i*nblock + j );
-        bookeeping(i,j).second=getFullNumberOfTasks();
-     }
-  }
   // And request the atoms involved in this colvar
-  requestAtoms( atoms );
+  requestAtoms( atoms, true, nrows );
+}
+
+void ContactMatrix::setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::string& desc ){
+  plumed_assert( id==0 ); std::string errors; switchingFunction(j,i).set(desc,errors);
+  if( errors.length()!=0 ) error("problem reading switching function description " + errors);
+  if( j!=i) switchingFunction(i,j).set(desc,errors);
+  log.printf("  %d th and %d th multicolvar groups must be within %s\n",i+1,j+1,(switchingFunction(i,j).description()).c_str() );
 }
 
 void ContactMatrix::calculateWeight( multicolvar::AtomValuePack& myatoms ) const {
   Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
-  double dfunc, sw = switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) ).calculate( distance.modulo(), dfunc );
+  double dfunc, sw = switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) - nrow_t ).calculate( distance.modulo(), dfunc );
   myatoms.setValue(0,sw);
 }
 
 double ContactMatrix::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {
   if( !doNotCalculateDerivatives() ){
       Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
-      double dfunc, sw = switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) ).calculate( distance.modulo(), dfunc );
+      double dfunc, sw = switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) - nrow_t ).calculate( distance.modulo(), dfunc );
       addAtomDerivatives( 0, (-dfunc)*distance, myatoms );
       addAtomDerivatives( 1, (+dfunc)*distance, myatoms ); 
       myatoms.addBoxDerivatives( 1, (-dfunc)*Tensor(distance,distance) ); 

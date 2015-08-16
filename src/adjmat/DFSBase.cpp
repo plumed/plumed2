@@ -52,6 +52,7 @@ color(getNumberOfNodes())
 #endif
 {
    if( getNumberOfNodeTypes()!=1 ) error("should only be running DFS Clustering with one base multicolvar in function");
+   if( !getAdjacencyVessel()->undirectedGraph() ) error("input contact matrix is incompatible with DFS clustering");  
 }
 
 void DFSBase::turnOnDerivatives(){

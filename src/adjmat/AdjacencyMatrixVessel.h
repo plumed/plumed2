@@ -40,9 +40,14 @@ class AdjacencyMatrixVessel : public vesselbase::StoreDataVessel {
 friend class AdjacencyMatrixBase;
 friend class ActionWithInputMatrix;
 friend class MatrixColumnSums;
+friend class MatrixRowSums;
 private:
 /// Pointer to underlying action
   AdjacencyMatrixBase* function;
+/// Number of rows and columns in the matrix
+  unsigned nrows, ncols;
+/// Is the matrix symmetric and are we calculating hbonds
+  bool symmetric, hbonds;
 public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
@@ -53,6 +58,8 @@ public:
   unsigned getNumberOfStoredValues() const ;
 /// Get the index we are storing this data inside
   unsigned getStoreIndex( const unsigned& ) const ;
+/// Get the index that a particular element is stored in from the matrix indices
+  unsigned getStoreIndexFromMatrixIndices( const unsigned& ielem, const unsigned& jelem ) const ;
 /// Get the adjacency matrix
   void retrieveMatrix( DynamicList<unsigned>& myactive_elements, Matrix<double>& mymatrix );
 /// Get the neighbour list based on the adjacency matrix
@@ -66,7 +73,25 @@ public:
   void getMatrixIndices( const unsigned& code, unsigned& i, unsigned& j ) const ;
 /// Recalculate a stored quantity
   void recalculateStoredQuantity( const unsigned& myelm, MultiValue& myvals );
+/// Can we think of the matrix as an undirected graph
+  bool undirectedGraph() const ; 
+/// Is the matrix symmetric
+  bool isSymmetric() const ;
+/// Get the number of rows
+  unsigned getNumberOfRows() const ;
+/// Get the number of columns
+  unsigned getNumberOfColumns() const ;
 };
+
+inline
+unsigned AdjacencyMatrixVessel::getNumberOfRows() const {
+  return nrows;
+}
+
+inline
+unsigned AdjacencyMatrixVessel::getNumberOfColumns() const {
+  return ncols;
+}
 
 }
 }

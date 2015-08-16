@@ -27,9 +27,9 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 
-//+PLUMEDOC MATRIXF COLUMNSUMS
+//+PLUMEDOC MATRIXF ROWSUMS 
 /*
-Sum the columns of a contact matrix
+Sum the rows of a contact matrix
 
 \par Examples
 
@@ -39,39 +39,39 @@ Sum the columns of a contact matrix
 namespace PLMD {
 namespace adjmat {
 
-class MatrixColumnSums : public MatrixSummationBase {
+class MatrixRowSums : public MatrixSummationBase {
 public:
   static void registerKeywords( Keywords& keys );
-  explicit MatrixColumnSums(const ActionOptions&);
+  explicit MatrixRowSums(const ActionOptions&);
   double compute( const unsigned& tinded, multicolvar::AtomValuePack& myatoms ) const ; 
   Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const ;
   bool isCurrentlyActive( const unsigned& bno, const unsigned& code );
 };
 
-PLUMED_REGISTER_ACTION(MatrixColumnSums,"COLUMNSUMS")
+PLUMED_REGISTER_ACTION(MatrixRowSums,"ROWSUMS")
 
-void MatrixColumnSums::registerKeywords( Keywords& keys ){
+void MatrixRowSums::registerKeywords( Keywords& keys ){
   MatrixSummationBase::registerKeywords( keys );
 }
 
-MatrixColumnSums::MatrixColumnSums(const ActionOptions& ao):
+MatrixRowSums::MatrixRowSums(const ActionOptions& ao):
 Action(ao),
 MatrixSummationBase(ao)
 {
- // Setup the tasks
-  unsigned ncols = mymatrix->getNumberOfColumns();  
-  usespecies=false; ablocks.resize(1); ablocks[0].resize( ncols );
-  for(unsigned i=0;i<ncols;++i){ ablocks[0][i]=i; addTaskToList( i ); }
+  // Setup the tasks
+  unsigned nrows = mymatrix->getNumberOfRows();  
+  usespecies=false; ablocks.resize(1); ablocks[0].resize( nrows );
+  for(unsigned i=0;i<nrows;++i){ ablocks[0][i]=i; addTaskToList( i ); }
   // Setup the underlying multicolvar
   setupMultiColvarBase();
 }
 
-double MatrixColumnSums::compute( const unsigned& tinded, multicolvar::AtomValuePack& myatoms ) const {
+double MatrixRowSums::compute( const unsigned& tinded, multicolvar::AtomValuePack& myatoms ) const {
   double sum=0.0; std::vector<double> tvals(2);
-  unsigned nrows = mymatrix->getNumberOfRows();   
-  for(unsigned i=0;i<nrows;++i){
+  unsigned ncols = mymatrix->getNumberOfColumns();   
+  for(unsigned i=0;i<ncols;++i){
      if( mymatrix->isSymmetric() && tinded==i ) continue;
-     unsigned myelem = mymatrix->getStoreIndexFromMatrixIndices( tinded, i );
+     unsigned myelem = mymatrix->getStoreIndexFromMatrixIndices( i, tinded );
      mymatrix->retrieveValue( myelem, false, tvals ); 
      sum+=tvals[1]; 
   }
@@ -79,9 +79,9 @@ double MatrixColumnSums::compute( const unsigned& tinded, multicolvar::AtomValue
   if( !doNotCalculateDerivatives() ){
       MultiValue myvals( 2, myatoms.getNumberOfDerivatives() ); 
       MultiValue& myvout=myatoms.getUnderlyingMultiValue();
-      for(unsigned i=0;i<nrows;++i){
+      for(unsigned i=0;i<ncols;++i){
           if( mymatrix->isSymmetric() && tinded==i ) continue ;
-          unsigned myelem = mymatrix->getStoreIndexFromMatrixIndices( tinded, i );
+          unsigned myelem = mymatrix->getStoreIndexFromMatrixIndices( i, tinded );
           if( !mymatrix->storedValueIsActive( myelem ) ) continue ;
           mymatrix->retrieveDerivatives( myelem, false, myvals );
           for(unsigned jd=0;jd<myvals.getNumberActive();++jd){
@@ -93,12 +93,14 @@ double MatrixColumnSums::compute( const unsigned& tinded, multicolvar::AtomValue
   return sum;
 }
 
-bool MatrixColumnSums::isCurrentlyActive( const unsigned& bno, const unsigned& code ){
-  return (mymatrix->function)->myinputdata.isCurrentlyActive( bno, code );
+bool MatrixRowSums::isCurrentlyActive( const unsigned& bno, const unsigned& code ){
+  if( mymatrix->undirectedGraph() ) return (mymatrix->function)->myinputdata.isCurrentlyActive( bno, code );
+  return (mymatrix->function)->myinputdata.isCurrentlyActive( bno, mymatrix->ncols + code );
 }
 
-Vector MatrixColumnSums::getPositionOfAtomForLinkCells( const unsigned& iatom ) const {
-  return Vector(0.0,0.0,0.0); // (mymatrix->function)->myinputdata.getPosition(iatom);
+Vector MatrixRowSums::getPositionOfAtomForLinkCells( const unsigned& iatom ) const {
+  if( mymatrix->undirectedGraph() ) return Vector(0,0,0); // (mymatrix->function)->myinputdata.getPosition(iatom);
+  return Vector(0,0,0); // (mymatrix->function)->myinputdata.getPosition( mymatrix->ncols + iatom );
 }
 
 }
