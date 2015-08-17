@@ -30,8 +30,6 @@ void AdjacencyMatrixVessel::registerKeywords( Keywords& keys ){
   StoreDataVessel::registerKeywords(keys);
   keys.addFlag("SYMMETRIC",false,"is the matrix symmetric");
   keys.addFlag("HBONDS",false,"can we think of the matrix as a undirected graph");
-  keys.add("compulsory","NROWS","number of rows");
-  keys.add("compulsory","NCOLS","number of columns");
 }
 
 AdjacencyMatrixVessel::AdjacencyMatrixVessel( const vesselbase::VesselOptions& da ):
@@ -39,11 +37,10 @@ StoreDataVessel(da)
 {
   function=dynamic_cast<AdjacencyMatrixBase*>( getAction() );
   plumed_assert( function );
-  parse("NROWS",nrows); parse("NCOLS",ncols);
   parseFlag("SYMMETRIC",symmetric); parseFlag("HBONDS",hbonds);
   if( symmetric && hbonds ) error("matrix should be either symmetric or hbonds");
-  if( symmetric && nrows!=ncols ) error("matrix is supposed to be symmetric but nrows!=ncols");
-  if( hbonds &&  nrows!=ncols ) error("matrix is supposed to be hbonds but nrows!=ncols");
+  if( symmetric && function->ablocks[0].size()!=function->ablocks[1].size() ) error("matrix is supposed to be symmetric but nrows!=ncols");
+  if( hbonds &&  function->ablocks[0].size()!=function->ablocks[1].size() ) error("matrix is supposed to be hbonds but nrows!=ncols");
 }
 
 bool AdjacencyMatrixVessel::isSymmetric() const {
@@ -54,13 +51,21 @@ bool AdjacencyMatrixVessel::undirectedGraph() const {
   return ( symmetric || hbonds );
 }
 
+unsigned AdjacencyMatrixVessel::getNumberOfRows() const {
+  return function->ablocks[0].size();
+}
+
+unsigned AdjacencyMatrixVessel::getNumberOfColumns() const {
+  return function->ablocks[1].size();
+}
+
 unsigned AdjacencyMatrixVessel::getNumberOfStoredValues() const {
   if( symmetric ){ unsigned nnodes=function->getNumberOfNodes(); return 0.5*nnodes*(nnodes-1); }
-  return nrows*ncols;
+  return function->ablocks[0].size()*function->ablocks[1].size();
 }
 
 unsigned AdjacencyMatrixVessel::getStoreIndexFromMatrixIndices( const unsigned& ielem, const unsigned& jelem ) const {
-  if( !symmetric ) return nrows*ielem + jelem;
+  if( !symmetric ) return (function->ablocks[1].size())*ielem + jelem;
   if( ielem>jelem ) return 0.5*ielem*(ielem-1)+jelem;
   return 0.5*jelem*(jelem-1) + ielem;
 }
@@ -69,8 +74,6 @@ unsigned AdjacencyMatrixVessel::getStoreIndex( const unsigned& myelem ) const {
   unsigned ielem, jelem;
   getMatrixIndices( myelem, ielem, jelem );
   return getStoreIndexFromMatrixIndices( ielem, jelem );
-  if( symmetric ) return 0.5*ielem*(ielem-1)+jelem;
-  return nrows*ielem + jelem;
 }
 
 AdjacencyMatrixBase* AdjacencyMatrixVessel::getMatrixAction() {
@@ -79,7 +82,8 @@ AdjacencyMatrixBase* AdjacencyMatrixVessel::getMatrixAction() {
 
 void AdjacencyMatrixVessel::getMatrixIndices( const unsigned& code, unsigned& i, unsigned& j ) const {
   std::vector<unsigned> myatoms; function->decodeIndexToAtoms( function->getTaskCode(code), myatoms ); 
-  i=myatoms[0]; j=myatoms[1]; 
+  i=myatoms[0]; j=myatoms[1];   
+  if( !symmetric ) j -= function->ablocks[0].size(); // Have to remove number of columns as returns number in ablocks[1]  
 }
 
 void AdjacencyMatrixVessel::retrieveMatrix( DynamicList<unsigned>& myactive_elements, Matrix<double>& mymatrix ){

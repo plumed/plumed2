@@ -71,7 +71,7 @@ double MatrixRowSums::compute( const unsigned& tinded, multicolvar::AtomValuePac
   unsigned ncols = mymatrix->getNumberOfColumns();   
   for(unsigned i=0;i<ncols;++i){
      if( mymatrix->isSymmetric() && tinded==i ) continue;
-     unsigned myelem = mymatrix->getStoreIndexFromMatrixIndices( i, tinded );
+     unsigned myelem = mymatrix->getStoreIndexFromMatrixIndices( tinded, i );
      mymatrix->retrieveValue( myelem, false, tvals ); 
      sum+=tvals[1]; 
   }
@@ -81,7 +81,7 @@ double MatrixRowSums::compute( const unsigned& tinded, multicolvar::AtomValuePac
       MultiValue& myvout=myatoms.getUnderlyingMultiValue();
       for(unsigned i=0;i<ncols;++i){
           if( mymatrix->isSymmetric() && tinded==i ) continue ;
-          unsigned myelem = mymatrix->getStoreIndexFromMatrixIndices( i, tinded );
+          unsigned myelem = mymatrix->getStoreIndexFromMatrixIndices( tinded, i );
           if( !mymatrix->storedValueIsActive( myelem ) ) continue ;
           mymatrix->retrieveDerivatives( myelem, false, myvals );
           for(unsigned jd=0;jd<myvals.getNumberActive();++jd){
@@ -94,8 +94,9 @@ double MatrixRowSums::compute( const unsigned& tinded, multicolvar::AtomValuePac
 }
 
 bool MatrixRowSums::isCurrentlyActive( const unsigned& bno, const unsigned& code ){
-  if( mymatrix->undirectedGraph() ) return (mymatrix->function)->myinputdata.isCurrentlyActive( bno, code );
-  return (mymatrix->function)->myinputdata.isCurrentlyActive( bno, mymatrix->ncols + code );
+//  if( mymatrix->undirectedGraph() ) return (mymatrix->function)->myinputdata.isCurrentlyActive( bno, code );
+//  return (mymatrix->function)->myinputdata.isCurrentlyActive( bno, mymatrix->ncols + code );
+  return true;
 }
 
 Vector MatrixRowSums::getPositionOfAtomForLinkCells( const unsigned& iatom ) const {

@@ -44,8 +44,6 @@ friend class MatrixRowSums;
 private:
 /// Pointer to underlying action
   AdjacencyMatrixBase* function;
-/// Number of rows and columns in the matrix
-  unsigned nrows, ncols;
 /// Is the matrix symmetric and are we calculating hbonds
   bool symmetric, hbonds;
 public:
@@ -82,16 +80,6 @@ public:
 /// Get the number of columns
   unsigned getNumberOfColumns() const ;
 };
-
-inline
-unsigned AdjacencyMatrixVessel::getNumberOfRows() const {
-  return nrows;
-}
-
-inline
-unsigned AdjacencyMatrixVessel::getNumberOfColumns() const {
-  return ncols;
-}
 
 }
 }

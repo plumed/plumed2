@@ -71,7 +71,7 @@ double MatrixColumnSums::compute( const unsigned& tinded, multicolvar::AtomValue
   unsigned nrows = mymatrix->getNumberOfRows();   
   for(unsigned i=0;i<nrows;++i){
      if( mymatrix->isSymmetric() && tinded==i ) continue;
-     unsigned myelem = mymatrix->getStoreIndexFromMatrixIndices( tinded, i );
+     unsigned myelem = mymatrix->getStoreIndexFromMatrixIndices( i, tinded );
      mymatrix->retrieveValue( myelem, false, tvals ); 
      sum+=tvals[1]; 
   }
@@ -81,7 +81,7 @@ double MatrixColumnSums::compute( const unsigned& tinded, multicolvar::AtomValue
       MultiValue& myvout=myatoms.getUnderlyingMultiValue();
       for(unsigned i=0;i<nrows;++i){
           if( mymatrix->isSymmetric() && tinded==i ) continue ;
-          unsigned myelem = mymatrix->getStoreIndexFromMatrixIndices( tinded, i );
+          unsigned myelem = mymatrix->getStoreIndexFromMatrixIndices( i, tinded );
           if( !mymatrix->storedValueIsActive( myelem ) ) continue ;
           mymatrix->retrieveDerivatives( myelem, false, myvals );
           for(unsigned jd=0;jd<myvals.getNumberActive();++jd){

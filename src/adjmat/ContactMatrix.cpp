@@ -41,7 +41,7 @@ namespace adjmat {
 class ContactMatrix : public AdjacencyMatrixBase {
 private:
 /// Number of types that are in rows
-  unsigned nrow_t;
+  unsigned ncol_t;
 /// switching function
   Matrix<SwitchingFunction> switchingFunction;
 public:
@@ -79,18 +79,18 @@ Action(ao),
 AdjacencyMatrixBase(ao)
 {
   // Read in the atomic positions
-  unsigned nrows=0; std::vector<AtomNumber> atoms; 
+  unsigned ncols=0; std::vector<AtomNumber> atoms; 
   parseAtomList("ATOMSA",-1,true,atoms);
   if( getNumberOfNodeTypes()!=0 ){
-     nrows=getNumberOfNodes(); nrow_t=getNumberOfNodeTypes(); 
+     ncols=getNumberOfNodes(); ncol_t=getNumberOfNodeTypes(); 
      parseAtomList("ATOMSB",-1,true,atoms); 
-     switchingFunction.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes()-nrow_t );
+     switchingFunction.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes()-ncol_t );
   } else {
      parseAtomList("ATOMS",-1,true,atoms);
      switchingFunction.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
   }
   // Read in the switching functions
-  parseConnectionDescriptions("SWITCH",nrow_t);
+  parseConnectionDescriptions("SWITCH",ncol_t);
  
   // Find the largest sf cutoff
   double sfmax=switchingFunction(0,0).get_dmax();
@@ -104,7 +104,7 @@ AdjacencyMatrixBase(ao)
   setLinkCellCutoff( sfmax );
 
   // And request the atoms involved in this colvar
-  requestAtoms( atoms, true, nrows );
+  requestAtoms( atoms, true, ncols );
 }
 
 void ContactMatrix::setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::string& desc ){
@@ -116,14 +116,14 @@ void ContactMatrix::setupConnector( const unsigned& id, const unsigned& i, const
 
 void ContactMatrix::calculateWeight( multicolvar::AtomValuePack& myatoms ) const {
   Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
-  double dfunc, sw = switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) - nrow_t ).calculate( distance.modulo(), dfunc );
+  double dfunc, sw = switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) - ncol_t ).calculate( distance.modulo(), dfunc );
   myatoms.setValue(0,sw);
 }
 
 double ContactMatrix::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {
   if( !doNotCalculateDerivatives() ){
       Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
-      double dfunc, sw = switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) - nrow_t ).calculate( distance.modulo(), dfunc );
+      double dfunc, sw = switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) - ncol_t ).calculate( distance.modulo(), dfunc );
       addAtomDerivatives( 0, (-dfunc)*distance, myatoms );
       addAtomDerivatives( 1, (+dfunc)*distance, myatoms ); 
       myatoms.addBoxDerivatives( 1, (-dfunc)*Tensor(distance,distance) ); 

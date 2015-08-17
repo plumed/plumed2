@@ -116,23 +116,23 @@ unsigned AdjacencyMatrixBase::getNumberOfNodes() const {
   return myinputdata.getFullNumberOfBaseTasks();
 }
 
-void AdjacencyMatrixBase::requestAtoms( const std::vector<AtomNumber>& atoms, const bool& symmetric, const unsigned& nrows ){
+void AdjacencyMatrixBase::requestAtoms( const std::vector<AtomNumber>& atoms, const bool& symmetric, const unsigned& ncols ){
   unsigned icoef, jcoef, kcoef, kcount;
   // Create the task list
   if( atoms.size()==0 ){
-      if( symmetric || nrows==0 ){
+      if( symmetric || ncols==0 ){
           nblock=getNumberOfNodes();
       } else {
-          nblock=nrows;
-          if( (getNumberOfNodes()-nrows)>nblock ) nblock = getNumberOfNodes()-nrows; 
+          nblock=ncols;
+          if( (getNumberOfNodes()-ncols)>nblock ) nblock = getNumberOfNodes()-ncols; 
       }
       ablocks.resize(2); icoef=nblock; jcoef=1; kcoef=0; kcount=1;
   } else {
-      if( symmetric || nrows==0 ){
+      if( symmetric || ncols==0 ){
           nblock=getNumberOfNodes(); 
       } else {
-          nblock=nrows;
-          if( (getNumberOfNodes()-nrows)>nblock ) nblock = getNumberOfNodes()-nrows;
+          nblock=ncols;
+          if( (getNumberOfNodes()-ncols)>nblock ) nblock = getNumberOfNodes()-ncols;
       } 
       if( kcount>nblock ) nblock=kcount; 
 
@@ -141,8 +141,8 @@ void AdjacencyMatrixBase::requestAtoms( const std::vector<AtomNumber>& atoms, co
       for(unsigned i=0;i<ablocks[2].size();++i) ablocks[2][i]=getNumberOfAtoms() - atoms.size() + i;
   }
   
-  if( symmetric && nrows==0 ){ 
-     plumed_dbg_assert( nrows==0 );
+  if( symmetric && ncols==0 ){ 
+     plumed_dbg_assert( ncols==0 );
      resizeBookeepingArray( getNumberOfNodes(), getNumberOfNodes() );
      ablocks[0].resize( getNumberOfNodes() ); ablocks[1].resize( getNumberOfNodes() ); 
      for(unsigned i=0;i<getNumberOfNodes();++i) ablocks[0][i]=ablocks[1][i]=i;
@@ -153,7 +153,7 @@ void AdjacencyMatrixBase::requestAtoms( const std::vector<AtomNumber>& atoms, co
            bookeeping(i,j).second=getFullNumberOfTasks();
         }
      }
-  } else if( nrows==0 ){
+  } else if( ncols==0 ){
      resizeBookeepingArray( getNumberOfNodes(), getNumberOfNodes() );
      ablocks[0].resize( getNumberOfNodes() ); ablocks[1].resize( getNumberOfNodes() );
      for(unsigned i=0;i<getNumberOfNodes();++i) ablocks[0][i]=ablocks[1][i]=i;
@@ -165,11 +165,11 @@ void AdjacencyMatrixBase::requestAtoms( const std::vector<AtomNumber>& atoms, co
         }
      }
   } else {
-     unsigned nto = getNumberOfNodes() - nrows;
-     resizeBookeepingArray( nrows, nto ); ablocks[0].resize( nrows ); ablocks[1].resize( nto );
-     for(unsigned i=0;i<nrows;++i) ablocks[0][i]=i;
-     for(unsigned i=0;i<nto;++i) ablocks[1][i] = nrows + i;
-     for(unsigned i=0;i<nrows;++i){
+     unsigned nto = getNumberOfNodes() - ncols;
+     resizeBookeepingArray( ncols, nto ); ablocks[0].resize( ncols ); ablocks[1].resize( nto );
+     for(unsigned i=0;i<ncols;++i) ablocks[0][i]=i;
+     for(unsigned i=0;i<nto;++i) ablocks[1][i] = ncols + i;
+     for(unsigned i=0;i<ncols;++i){
          for(unsigned j=0;j<nto;++j){
              bookeeping(i,j).first=getFullNumberOfTasks();
              for(unsigned k=0;k<kcount;++k) addTaskToList( i*icoef + j*jcoef + k*kcoef );   
@@ -179,12 +179,9 @@ void AdjacencyMatrixBase::requestAtoms( const std::vector<AtomNumber>& atoms, co
   }
 
   // Create the storeAdjacencyMatrixVessel
-  std::string nr,ncols,param;
-  Tools::convert( ablocks[0].size(), nr );
-  Tools::convert( ablocks[1].size(), ncols ); 
-  param = "NROWS=" + nr + " NCOLS=" + ncols;
-  if( symmetric && nrows==0 ) param+=" SYMMETRIC"; 
-  if( !symmetric && nrows==0 ) param+=" HBONDS";
+  std::string param;
+  if( symmetric && ncols==0 ) param="SYMMETRIC"; 
+  if( !symmetric && ncols==0 ) param="HBONDS";
  
   vesselbase::VesselOptions da("","",0,param,this);
   Keywords keys; AdjacencyMatrixVessel::registerKeywords( keys );
