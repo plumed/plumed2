@@ -41,6 +41,8 @@ MatrixSummationBase::MatrixSummationBase(const ActionOptions& ao):
 Action(ao),
 MultiColvarBase(ao)
 {
+  // This ensures that multicolvar base does central atoms correctly
+  usespecies=true;
   // Find the object that calculates our adjacency matrix
   std::string matname; parse("MATRIX",matname);
   ActionWithVessel* myvess = plumed.getActionSet().selectWithLabel<ActionWithVessel*>( matname );
@@ -67,6 +69,14 @@ void MatrixSummationBase::calculate(){
 
 void MatrixSummationBase::updateActiveAtoms( multicolvar::AtomValuePack& myatoms ) const {
   myatoms.updateDynamicList();
+}
+
+bool MatrixSummationBase::isCurrentlyActive( const unsigned& bno, const unsigned& code ){
+  return (mymatrix->function)->myinputdata.isCurrentlyActive( bno, code );
+}
+
+Vector MatrixSummationBase::getPositionOfAtomForLinkCells( const unsigned& iatom ) const {
+  return (mymatrix->function)->myinputdata.getPosition(iatom);
 }
 
 }

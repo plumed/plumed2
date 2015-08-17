@@ -38,6 +38,8 @@ public:
   void calculate();
   void updateActiveAtoms( multicolvar::AtomValuePack& myatoms ) const ;
   bool isPeriodic(){ return false; }
+  Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const ;
+  bool isCurrentlyActive( const unsigned& bno, const unsigned& code );
 };
 
 }

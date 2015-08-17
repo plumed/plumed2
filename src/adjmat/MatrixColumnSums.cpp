@@ -44,8 +44,6 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit MatrixColumnSums(const ActionOptions&);
   double compute( const unsigned& tinded, multicolvar::AtomValuePack& myatoms ) const ; 
-  Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const ;
-  bool isCurrentlyActive( const unsigned& bno, const unsigned& code );
 };
 
 PLUMED_REGISTER_ACTION(MatrixColumnSums,"COLUMNSUMS")
@@ -61,7 +59,13 @@ MatrixSummationBase(ao)
  // Setup the tasks
   unsigned ncols = mymatrix->getNumberOfColumns();  
   usespecies=false; ablocks.resize(1); ablocks[0].resize( ncols );
-  for(unsigned i=0;i<ncols;++i){ ablocks[0][i]=i; addTaskToList( i ); }
+  for(unsigned i=0;i<ncols;++i) addTaskToList( i ); 
+  // Set the positions - this is only used when getting positions for central atoms
+  if( mymatrix->undirectedGraph() ){
+     for(unsigned i=0;i<ncols;++i) ablocks[0][i]=i;
+  } else {
+     for(unsigned i=0;i<ncols;++i) ablocks[0][i]=mymatrix->getNumberOfRows() + i;
+  }
   // Setup the underlying multicolvar
   setupMultiColvarBase();
 }
@@ -91,14 +95,6 @@ double MatrixColumnSums::compute( const unsigned& tinded, multicolvar::AtomValue
       }
   }
   return sum;
-}
-
-bool MatrixColumnSums::isCurrentlyActive( const unsigned& bno, const unsigned& code ){
-  return (mymatrix->function)->myinputdata.isCurrentlyActive( bno, code );
-}
-
-Vector MatrixColumnSums::getPositionOfAtomForLinkCells( const unsigned& iatom ) const {
-  return Vector(0.0,0.0,0.0); // (mymatrix->function)->myinputdata.getPosition(iatom);
 }
 
 }

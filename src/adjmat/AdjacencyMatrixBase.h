@@ -32,8 +32,7 @@ namespace adjmat {
 class AdjacencyMatrixBase : public multicolvar::MultiColvarBase {
 friend class AdjacencyMatrixVessel;
 friend class ActionWithInputMatrix;
-friend class MatrixColumnSums;
-friend class MatrixRowSums;
+friend class MatrixSummationBase;
 private:
 /// Used for read in of multiple connection descriptors
   unsigned connect_id;

@@ -44,8 +44,6 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit MatrixRowSums(const ActionOptions&);
   double compute( const unsigned& tinded, multicolvar::AtomValuePack& myatoms ) const ; 
-  Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const ;
-  bool isCurrentlyActive( const unsigned& bno, const unsigned& code );
 };
 
 PLUMED_REGISTER_ACTION(MatrixRowSums,"ROWSUMS")
@@ -91,17 +89,6 @@ double MatrixRowSums::compute( const unsigned& tinded, multicolvar::AtomValuePac
       }
   }
   return sum;
-}
-
-bool MatrixRowSums::isCurrentlyActive( const unsigned& bno, const unsigned& code ){
-//  if( mymatrix->undirectedGraph() ) return (mymatrix->function)->myinputdata.isCurrentlyActive( bno, code );
-//  return (mymatrix->function)->myinputdata.isCurrentlyActive( bno, mymatrix->ncols + code );
-  return true;
-}
-
-Vector MatrixRowSums::getPositionOfAtomForLinkCells( const unsigned& iatom ) const {
-  if( mymatrix->undirectedGraph() ) return Vector(0,0,0); // (mymatrix->function)->myinputdata.getPosition(iatom);
-  return Vector(0,0,0); // (mymatrix->function)->myinputdata.getPosition( mymatrix->ncols + iatom );
 }
 
 }
