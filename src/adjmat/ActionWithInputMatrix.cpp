@@ -22,6 +22,7 @@
 #include "ActionWithInputMatrix.h"
 #include "AdjacencyMatrixVessel.h"
 #include "AdjacencyMatrixBase.h"
+#include "MatrixSummationBase.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 
@@ -44,21 +45,28 @@ ActionWithValue(ao),
 ActionAtomistic(ao),
 vesselbase::ActionWithVessel(ao),
 usepbc(true),
-mymatrix(NULL)
+mymatrix(NULL),
+matsum(false)
 {
   bool nopbc; parseFlag("NOPBC",nopbc); usepbc=!nopbc;
   // Find the object that calculates our adjacency matrix
-  std::string matname; parse("MATRIX",matname);
-  ActionWithVessel* myvess = plumed.getActionSet().selectWithLabel<ActionWithVessel*>( matname );
-  if( !myvess ) error( matname + " does not calculate an adjacency matrix");
+  std::vector<std::string> matname(1); parse("MATRIX",matname[0]);
+  ActionWithVessel* myvess = plumed.getActionSet().selectWithLabel<ActionWithVessel*>( matname[0] );
+  if( !myvess ) error( matname[0] + " does not calculate an adjacency matrix");
 
   // Retrieve the adjacency matrix of interest
   for(unsigned i=0;i<myvess->getNumberOfVessels();++i){
       mymatrix = dynamic_cast<AdjacencyMatrixVessel*>( myvess->getPntrToVessel(i) );
       if( mymatrix ) break ;
   }
-  if( !mymatrix )  error( matname + " does not calculate an adjacency matrix");
-  log.printf("  using matrix calculated by action %s \n",matname.c_str() );
+  if( !mymatrix ){
+     MatrixSummationBase* mybase = dynamic_cast<MatrixSummationBase*>( myvess );
+     if( !mybase ) error( matname[0] + " does not calculate an adjacency matrix");
+     mymatrix = mybase->mymatrix; matsum=true;
+     // Now setup a data stash in the matrix summation object
+     myinputdata.setup( matname, plumed.getActionSet(), (mymatrix->function)->wtolerance, this );
+  }
+  log.printf("  using matrix calculated by action %s \n",(mymatrix->function)->getLabel().c_str() );
 
   // And get the atom requests
   ActionAtomistic* matoms = dynamic_cast<ActionAtomistic*>( myvess );
@@ -94,11 +102,15 @@ bool ActionWithInputMatrix::isCurrentlyActive( const unsigned& ind ) const {
 }
 
 void ActionWithInputMatrix::getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient0 ) const {
-  plumed_dbg_assert( isCurrentlyActive( ind ) ); (mymatrix->function)->myinputdata.getVectorForTask( ind, normed, orient0 );
+  plumed_dbg_assert( isCurrentlyActive( ind ) ); 
+  if( matsum ) myinputdata.getVectorForTask( ind, normed, orient0 );
+  else (mymatrix->function)->myinputdata.getVectorForTask( ind, normed, orient0 );
 }
 
 void ActionWithInputMatrix::getVectorDerivatives( const unsigned& ind, const bool& normed, MultiValue& myder0 ) const {
-  plumed_dbg_assert( isCurrentlyActive( ind ) ); (mymatrix->function)->myinputdata.getVectorDerivatives(  ind, normed, myder0 );
+  plumed_dbg_assert( isCurrentlyActive( ind ) ); 
+  if( matsum ) myinputdata.getVectorDerivatives( ind, normed, myder0 );
+  else (mymatrix->function)->myinputdata.getVectorDerivatives(  ind, normed, myder0 );
 }
 
 Vector ActionWithInputMatrix::getSeparation( const Vector& vec1, const Vector& vec2 ) const {
@@ -107,14 +119,17 @@ Vector ActionWithInputMatrix::getSeparation( const Vector& vec1, const Vector& v
 }
 
 unsigned ActionWithInputMatrix::getNumberOfNodeTypes() const {
+  if( matsum ) myinputdata.getNumberOfBaseMultiColvars();
   return (mymatrix->function)->myinputdata.getNumberOfBaseMultiColvars(); 
 }
 
 unsigned ActionWithInputMatrix::getNumberOfAtomsInGroup( const unsigned& igrp ) const {
+ if( matsum ) myinputdata.getNumberOfTasks(igrp);
  return (mymatrix->function)->myinputdata.getNumberOfTasks(igrp); 
 }
 
 multicolvar::MultiColvarBase* ActionWithInputMatrix::getBaseMultiColvar( const unsigned& igrp ) const {
+ if( matsum ) myinputdata.getBaseColvar( igrp );
  return (mymatrix->function)->myinputdata.getBaseColvar( igrp );
 }
 

@@ -29,8 +29,9 @@ namespace PLMD {
 namespace adjmat {
 
 class MatrixSummationBase : public multicolvar::MultiColvarBase {
+friend class ActionWithInputMatrix;
 protected:
-  /// The vessel that holds the adjacency matrix
+/// The vessel that holds the adjacency matrix
   AdjacencyMatrixVessel* mymatrix;
 public:
   static void registerKeywords( Keywords& keys );
