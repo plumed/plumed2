@@ -210,7 +210,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
       fprintf(out,"  plumed %s\n", manual.c_str());
     }
     for(unsigned j=0;j<availableShell.size();++j){
-      string cmd="env PLUMED_ROOT=\""+root+"\" \""+root+"/scripts/"+availableShell[j]+".sh\" --description";
+      string cmd=config::getEnvCommand()+" \""+root+"/scripts/"+availableShell[j]+".sh\" --description";
       FILE *fp=popen(cmd.c_str(),"r");
       string line,manual;
       while(Tools::getline(fp,line))manual+=line;
@@ -241,7 +241,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
   if(find(availableShell.begin(),availableShell.end(),command)!=availableShell.end()){
     plumed_massert(in==stdin,"shell tools can only work on stdin");
     plumed_massert(out==stdout,"shell tools can only work on stdin");
-    string cmd="env PLUMED_ROOT=\""+root+"\" \""+root+"/scripts/"+command+".sh\"";
+    string cmd=config::getEnvCommand()+" \""+root+"/scripts/"+command+".sh\"";
     for(int j=i+1;j<argc;j++) cmd+=string(" ")+argv[j];
     system(cmd.c_str());
     return 0;

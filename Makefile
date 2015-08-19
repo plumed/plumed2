@@ -23,6 +23,14 @@ install:
 uninstall:
 	$(MAKE) -C src uninstall
 
+# standard target (according to GNU doc)
+html:
+	$(MAKE) doc
+
+# standard target (according to GNU doc)
+install-html: doc
+	$(MAKE) -C src install-html
+
 $(SRCDIRS):
 	$(MAKE) -C $@
      

@@ -42,7 +42,7 @@ void Mean::registerKeywords( Keywords& keys ){
 }
 
 void Mean::reserveKeyword( Keywords& keys ){
-  keys.reserveFlag("MEAN",false,"take the mean of these variables.",true);
+  keys.reserve("vessel","MEAN","take the mean of these variables.");
   keys.addOutputComponent("mean","MEAN","the mean value. The output component can be refererred to elsewhere in the input "
                                         "file by using the label.mean");
 }
