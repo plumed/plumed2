@@ -237,13 +237,13 @@ case "$action" in
       plumed_before_patch
     fi
     test -n "$quiet" || echo "Linking Plumed.h and Plumed.inc ($mode mode)"
-    ln -s "$PLUMED_ROOT/src/wrapper/Plumed.h"
+    ln -s "$PLUMED_INCLUDEDIR/$PLUMED_PROGRAM_NAME/wrapper/Plumed.h" Plumed.h
     ln -s "$PLUMED_ROOT/src/lib/Plumed.inc.$mode" Plumed.inc
     ln -s "$PLUMED_ROOT/src/lib/Plumed.cmake.$mode" Plumed.cmake
 
     if [ -d "$diff" ]; then
       test -n "$quiet" || echo "Patching with on-the-fly diff from stored originals"
-      PREPLUMED=$(cd $diff ; find . -name "*.preplumed" | sort)
+      PREPLUMED=$(cd "$diff" ; find . -name "*.preplumed" | sort)
       for bckfile in $PREPLUMED ; do
         file="${bckfile%.preplumed}"
         if test -e "$file" ; then
@@ -259,7 +259,7 @@ case "$action" in
     fi
 
     echo ""
-    if grep -q "D__PLUMED_MPI=1" $PLUMED_ROOT/src/config/compile_options.sh ; then
+    if grep -q "D__PLUMED_HAS_MPI=1" "$PLUMED_ROOT"/src/config/compile_options.sh ; then
       echo "PLUMED is compiled with MPI support so you can configure $engine with MPI" 
     else
       echo "PLUMED is compiled WITHOUT MPI support so you CANNOT configure $engine with MPI"

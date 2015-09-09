@@ -6,7 +6,7 @@ Internal implementation of BLAS, imported from GROMACS.
 The module in src/blas contains an internal implementation
 of BLAS routines which is automatically imported from GROMACS
 using the src/blas/import.sh script. This set of routines
-is compiled when __PLUMED_INTERNAL_BLAS is defined
+is compiled when __PLUMED_HAS_EXTERNAL_BLAS is not defined
 and allow PLUMED to be used when installed BLAS libraries
 are not available. Notice that the import script
 creates a blas.h file with function declarations which

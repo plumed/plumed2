@@ -47,9 +47,9 @@ void MoreThan::registerKeywords( Keywords& keys ){
 }
 
 void MoreThan::reserveKeyword( Keywords& keys ){
-  keys.reserve("numbered","MORE_THAN","calculate the number of variables more than a certain target value. "
+  keys.reserve("vessel","MORE_THAN","calculate the number of variables more than a certain target value. "
                                       "This quantity is calculated using \\f$\\sum_i 1.0 - \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
-                                      "is a \\ref switchingfunction.",true);
+                                      "is a \\ref switchingfunction.");
   keys.addOutputComponent("morethan","MORE_THAN","the number of values more than a target value. This is calculated using one of the "
                                                  "formula described in the description of the keyword so as to make it continuous. "
                                                  "You can calculate this quantity multiple times using different parameters."); 

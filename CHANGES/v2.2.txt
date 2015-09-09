@@ -75,4 +75,26 @@ this is contained within an object of type AtomValuePack, which stores informati
 a new multicolvar it should be relatively straightforward to translate them so they can exploit this new version of the code.  Look 
 at what has been done to the other multicolvars in there for guidance.  Sorry for any inconvenience caused.
 
+Further changes
+---------------
+(this paragraph will be merged with the one above when releasing 2.2.0)
+
+These are changes implemented in the \branch{v2.2} branch on github after release of v2.2b. If you need them, please
+download PLUMED from github.
+
+For users:
+- Module activation can now be controlled during configure with `--enable-modules` option.
+- Almost complete refactoring of installation procedure. Now
+  DESTDIR and other standard autoconf directories (e.g. bindir) are completely supported.
+  Additionally, everything should work properly also when directory names include spaces (\issue{157}).
+  Finally, compiler is not invoked on install unless path are explicitly changed (\issue{107}).
+- Related to installation refactoring, upon install a previusly installed plumed is not removed.
+  This is to avoid data loss if prefix variable is not properly set
+- Several changes have been made in the Makefile.conf that makes it not compatible with those
+  packaged with plumed 2.0/2.1. Please use ./configure to generate a new configuration file.
+
+For developers:
+- Changed the logic of several PLUMED ifdef macros so as to make them consistent.
+  Now every feature based on external libraries is identified by a __PLUMED_HAS_* macro.
+
 */

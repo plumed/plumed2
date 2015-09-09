@@ -6,8 +6,8 @@ mu1n: DIPOLE GROUP=1-10 NUMERICAL_DERIVATIVES
 mu1corr: DIPOLE GROUP=1-6
 mu1corrn: DIPOLE GROUP=1-6 NUMERICAL_DERIVATIVES
 
-DUMPDERIVATIVES FILE=mu1 ARG=mu1,mu1n
-DUMPDERIVATIVES FILE=mu1corr ARG=mu1corr,mu1corrn
+DUMPDERIVATIVES FILE=mu1 ARG=mu1,mu1n FMT=%6.5f
+DUMPDERIVATIVES FILE=mu1corr ARG=mu1corr,mu1corrn FMT=%6.5f
 
 # here I explicitly code the calculation of the dipole
 # in alternative manners, as a test
