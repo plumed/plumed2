@@ -177,10 +177,13 @@ sets of routines may be useful:
 <table align=center frame=void width=95%% cellpadding=5%%>
 <tr>
 <td width=10%> PLMD::multicolvar::MultiColvar::readAtomsLikeKeyword </td> <td> This is used to read in the ATOMS keyword.  By using this function you can change the ATOMS keyword to whatever you wish. </td>
+</tr> <tr>
 <td width=10%> PLMD::multicolvar::MultiColvar::readTwoGroups </td> <td> This is used to read in the GROUPA and GROUPB keywords.  When you use this funciton you can change GROUPA and GROUPB to whatever you desire </td>
+</tr> <tr>
 <td width=10%> PLMD::multicolvar::MultiColvar::readThreeGroups </td> <td> This is used to read in the GROUPA, GROUPB and GROUPC keywords. 
                                                                           When you use this funciton you can change GROUPA, GROUPB and GROUPC to whatever you desire.  
                                                                           For an example see PLMD::multicolvar::Bridge </td>
+</tr> <tr>
 <td width=10%> PLMD::multicolvar::MultiColvar::readSpeciesKeyword </td> <td> This is used to read in SPECIESA and SPECIESB keywords.  Once again you can use this funciton and use different keywords. </td>
 </tr>
 </table>
