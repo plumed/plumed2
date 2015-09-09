@@ -98,9 +98,8 @@ void MultiColvarBase::setupMultiColvarBase(){
      numberForCentralAtom = 1.0 / static_cast<double>( ablocks.size() );
      if( ablocks.size()==3 ){
          uselinkforthree=true;
-         for(unsigned i=0;i<bookeeping.ncols();++i){
-             for(unsigned j=0;j<bookeeping.nrows();++j){
-                 if( j>=i ) continue;
+         for(unsigned i=0;i<bookeeping.nrows();++i){
+             for(unsigned j=0;j<bookeeping.ncols();++j){
                  unsigned ntper = bookeeping(i,j).second - bookeeping(i,j).first;
                  if( ntper != ablocks[2].size() ) uselinkforthree=false;
              }

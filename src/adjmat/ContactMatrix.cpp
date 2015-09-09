@@ -86,7 +86,7 @@ AdjacencyMatrixBase(ao)
      parseAtomList("ATOMSB",-1,true,atoms); 
      switchingFunction.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes()-ncol_t );
   } else {
-     parseAtomList("ATOMS",-1,true,atoms);
+     parseAtomList("ATOMS",-1,true,atoms); ncol_t=0;
      switchingFunction.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
   }
   // Read in the switching functions
