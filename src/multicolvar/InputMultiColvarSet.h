@@ -78,7 +78,7 @@ public:
 /// Get the colvar this atom is part of 
   unsigned getBaseColvarNumber( const unsigned& i ) const ;
 /// Add derivatives to the centre of mass
-  void addComDerivatives( const unsigned& iatom, const Vector& der, multicolvar::AtomValuePack& myatoms ) const ;
+  void addComDerivatives( const unsigned& ival, const unsigned& iatom, const Vector& der, multicolvar::AtomValuePack& myatoms ) const ;
 };
 
 inline

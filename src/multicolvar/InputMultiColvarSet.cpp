@@ -110,11 +110,11 @@ void InputMultiColvarSet::mergeVectorDerivatives( const unsigned& ival, const un
   }
 }
 
-void InputMultiColvarSet::addComDerivatives( const unsigned& iatom, const Vector& der, multicolvar::AtomValuePack& myatoms ) const {
+void InputMultiColvarSet::addComDerivatives( const unsigned& ival, const unsigned& iatom, const Vector& der, multicolvar::AtomValuePack& myatoms ) const {
   unsigned mmc=colvar_label[iatom];
   unsigned basen=0; for(unsigned i=0;i<mmc;++i) basen+=mybasemulticolvars[i]->getNumberOfAtoms();
   multicolvar::CatomPack atom0=mybasemulticolvars[mmc]->getCentralAtomPack( basen, convertToLocalIndex(iatom,mmc) );
-  myatoms.addComDerivatives( 1, der, atom0 );
+  myatoms.addComDerivatives( ival, der, atom0 );
 }
 
 void InputMultiColvarSet::recalculateBaseColvars( ActionAtomistic* action ){

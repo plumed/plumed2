@@ -87,15 +87,19 @@ void AdjacencyMatrixVessel::getMatrixIndices( const unsigned& code, unsigned& i,
 }
 
 void AdjacencyMatrixVessel::retrieveMatrix( DynamicList<unsigned>& myactive_elements, Matrix<double>& mymatrix ){
-  myactive_elements.deactivateAll(); std::vector<double> vals(2);
+  myactive_elements.deactivateAll(); std::vector<double> vals( getNumberOfComponents() );
   for(unsigned i=0;i<getNumberOfStoredValues();++i){
       // Ignore any non active members
       if( !storedValueIsActive(i) ) continue ;
       myactive_elements.activate(i);
       unsigned j, k; getMatrixIndices( i, k, j );
       retrieveValue( i, false, vals );
-      if( symmetric ) mymatrix(k,j)=mymatrix(j,k)=vals[1] / vals[0];
-      else mymatrix(k,j) = vals[1] / vals[0];
+
+      // Find the maximum element in the stored values
+      double max=vals[1]; for(unsigned j=2;j<vals.size();++j){ if( vals[j]>max ) max=vals[j]; }
+
+      if( symmetric ) mymatrix(k,j)=mymatrix(j,k)=max / vals[0];
+      else mymatrix(k,j) = max / vals[0];
   }
   myactive_elements.updateActiveMembers();  
 }
@@ -129,10 +133,16 @@ void AdjacencyMatrixVessel::retrieveDerivatives( const unsigned& myelem, const b
   StoreDataVessel::retrieveDerivatives( myelem, normed, myvals );
   if( !function->weightHasDerivatives ) return ;
 
-  std::vector<double> vals(2); retrieveValue( myelem, normed, vals ); double pref = vals[1]/(vals[0]*vals[0]);
+  std::vector<double> vals( getNumberOfComponents() ); retrieveValue( myelem, normed, vals ); 
+  unsigned vi=1; double max=vals[1]; 
+  for(unsigned j=2;j<vals.size();++j){ 
+    if( vals[j]>max ){ vi=j; max=vals[j]; } 
+  }
+
+  double pref = max/(vals[0]*vals[0]);
   for(unsigned i=0;i<myvals.getNumberActive();++i){
       unsigned jder=myvals.getActiveIndex(i);
-      myvals.setDerivative( 1, jder, myvals.getDerivative(1, jder)/vals[0] - pref*myvals.getDerivative(0, jder) );
+      myvals.setDerivative( 1, jder, myvals.getDerivative(vi, jder)/vals[0] - pref*myvals.getDerivative(0, jder) );
   }
 }
 

@@ -125,14 +125,14 @@ double ContactAlignedMatrix::compute( const unsigned& tindex, multicolvar::AtomV
   if( !doNotCalculateDerivatives() ){
       Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
       double dfunc, sw = switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) ).calculate( distance.modulo(), dfunc );
-      addAtomDerivatives( 0, (-dfunc)*f_dot*distance, myatoms );
-      addAtomDerivatives( 1, (+dfunc)*f_dot*distance, myatoms ); 
+      addAtomDerivatives( 1, 0, (-dfunc)*f_dot*distance, myatoms );
+      addAtomDerivatives( 1, 1, (+dfunc)*f_dot*distance, myatoms ); 
       myatoms.addBoxDerivatives( 1, (-dfunc)*f_dot*Tensor(distance,distance) ); 
 
       // Add derivatives of orientation 
       for(unsigned k=2;k<orient0.size();++k){ orient0[k]*=sw*dot_df; orient1[k]*=sw*dot_df; }
-      addOrientationDerivatives( 0, orient1, myatoms );
-      addOrientationDerivatives( 1, orient0, myatoms );
+      addOrientationDerivatives( 1, 0, orient1, myatoms );
+      addOrientationDerivatives( 1, 1, orient0, myatoms );
   }
   return weight*f_dot;
 }

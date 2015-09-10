@@ -124,8 +124,8 @@ double ContactMatrix::compute( const unsigned& tindex, multicolvar::AtomValuePac
   if( !doNotCalculateDerivatives() ){
       Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
       double dfunc, sw = switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) - ncol_t ).calculate( distance.modulo(), dfunc );
-      addAtomDerivatives( 0, (-dfunc)*distance, myatoms );
-      addAtomDerivatives( 1, (+dfunc)*distance, myatoms ); 
+      addAtomDerivatives( 1, 0, (-dfunc)*distance, myatoms );
+      addAtomDerivatives( 1, 1, (+dfunc)*distance, myatoms ); 
       myatoms.addBoxDerivatives( 1, (-dfunc)*Tensor(distance,distance) ); 
   }
   double val=myatoms.getValue(0); myatoms.setValue(0,1.0);

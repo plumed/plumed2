@@ -218,20 +218,20 @@ bool AdjacencyMatrixBase::isCurrentlyActive( const unsigned& bno, const unsigned
   return myinputdata.isCurrentlyActive( 0, code );
 }
 
-void AdjacencyMatrixBase::addAtomDerivatives( const unsigned& iatom, const Vector& der, multicolvar::AtomValuePack& myatoms ) const {
+void AdjacencyMatrixBase::addAtomDerivatives( const unsigned& ival, const unsigned& iatom, const Vector& der, multicolvar::AtomValuePack& myatoms ) const {
   unsigned jatom=myatoms.getIndex(iatom);
 
   if( jatom>myinputdata.getFullNumberOfBaseTasks() ){
-      myatoms.addAtomsDerivatives( 1, jatom, der );
+      myatoms.addAtomsDerivatives( ival, jatom, der );
   } else {
-      myinputdata.addComDerivatives( jatom, der, myatoms );
+      myinputdata.addComDerivatives( ival, jatom, der, myatoms );
   }
 }
 
-void AdjacencyMatrixBase::addOrientationDerivatives( const unsigned& iatom, const std::vector<double>& der, multicolvar::AtomValuePack& myatoms ) const {
+void AdjacencyMatrixBase::addOrientationDerivatives( const unsigned& ival, const unsigned& iatom, const std::vector<double>& der, multicolvar::AtomValuePack& myatoms ) const {
   unsigned jatom=myatoms.getIndex(iatom); plumed_dbg_assert( jatom<myinputdata.getFullNumberOfBaseTasks() );
   MultiValue myder(0,0); myinputdata.getVectorDerivatives( jatom, true, myder );
-  myinputdata.mergeVectorDerivatives( 1, 2, der.size(), jatom, der, myder, myatoms );
+  myinputdata.mergeVectorDerivatives( ival, 2, der.size(), jatom, der, myder, myatoms );
 }
 
 void AdjacencyMatrixBase::recalculateMatrixElement( const unsigned& myelem, MultiValue& myvals ){
