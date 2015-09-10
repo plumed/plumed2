@@ -23,8 +23,7 @@
 #include "AdjacencyMatrixBase.h"
 #include "AdjacencyMatrixVessel.h"
 
-#ifdef __PLUMED_HAS_BOOST
-#include <boost/config.hpp>
+#ifdef __PLUMED_HAS_BOOST_GRAPH
 #include <boost/graph/adjacency_list.hpp>    
 #include <boost/graph/connected_components.hpp> 
 #include <boost/graph/graph_utility.hpp>
@@ -43,7 +42,7 @@ ActionWithInputMatrix(ao),
 cluster_sizes(getNumberOfNodes()),
 which_cluster(getNumberOfNodes()),
 number_of_cluster(-1),
-#ifdef __PLUMED_HAS_BOOST
+#ifdef __PLUMED_HAS_BOOST_GRAPH
 edge_list(0.5*getNumberOfNodes()*(getNumberOfNodes()-1))
 #else
 nneigh(getNumberOfNodes()),
@@ -76,7 +75,7 @@ unsigned DFSBase::getNumberOfQuantities(){
 void DFSBase::performClustering(){
    // All the clusters have zero size initially
    for(unsigned i=0;i<cluster_sizes.size();++i){ cluster_sizes[i].first=0; cluster_sizes[i].second=i; }
-#ifdef __PLUMED_HAS_BOOST
+#ifdef __PLUMED_HAS_BOOST_GRAPH
    // Get the list of edges
    unsigned nedges=0; getAdjacencyVessel()->retrieveEdgeList( nedges, edge_list );
 
@@ -102,7 +101,7 @@ void DFSBase::performClustering(){
    std::sort( cluster_sizes.begin(), cluster_sizes.end() );
 }
 
-#ifndef __PLUMED_HAS_BOOST
+#ifndef __PLUMED_HAS_BOOST_GRAPH
 int DFSBase::explore( const unsigned& index ){
 
    color[index]=1;

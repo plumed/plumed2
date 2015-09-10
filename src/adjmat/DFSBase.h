@@ -37,7 +37,7 @@ private:
   std::vector<unsigned> which_cluster;
 /// Used to identify the cluster we are working on 
   int number_of_cluster;
-#ifdef __PLUMED_HAS_BOOST
+#ifdef __PLUMED_HAS_BOOST_GRAPH
 /// The list of edges in the graph
   std::vector<std::pair<unsigned,unsigned> > edge_list;
 #else 
