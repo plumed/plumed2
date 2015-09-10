@@ -237,6 +237,10 @@ For users:
   processors per replica.
 - Small change in numerical accuracy of lattice reduction. Should be more
   robust when running with highly optimizing compilers.
-
+- Fixed a bug in normalisation of kernel functions.  This affects \ref HISTOGRAM and \ref MULTICOLVARDENS
+  If these actions were used with previous versions of the code care should be taken when analysing the 
+  results.
+- Fixed a bug in derivatives of kernel functions with non-diagonal covariances. This affects the 
+  derivatives output by \ref sum_hills
 
 */
