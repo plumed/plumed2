@@ -82,7 +82,11 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit StoreDataVessel( const VesselOptions& );
 /// Get the number of values that have been stored
-  unsigned getNumberOfStoredValues() const ;
+  virtual unsigned getNumberOfStoredValues() const ;
+/// Get the index to store a particular index inside
+  virtual unsigned getStoreIndex( const unsigned& ) const ;
+/// Recalculate one of the base quantities
+  virtual void recalculateStoredQuantity( const unsigned& myelm, MultiValue& myvals );
 /// Set a hard cutoff on the weight of an element
   void setHardCutoffOnWeight( const double& mytol );
 /// Is the hard weight cutoff on
@@ -92,7 +96,7 @@ public:
 /// Get the values of all the components in the vector
   void retrieveValue( const unsigned& myelem, const bool& normed, std::vector<double>& values ) const ;
 /// Get the derivatives for one of the components in the vector
-  void retrieveDerivatives( const unsigned& myelem, const bool& normed, MultiValue& myvals );
+  virtual void retrieveDerivatives( const unsigned& myelem, const bool& normed, MultiValue& myvals );
 /// Do all resizing of data
   virtual void resize();
 /// Clear certain data before start of main loop
@@ -136,7 +140,7 @@ unsigned StoreDataVessel::getNumberOfDerivativeSpacesPerComponent() const {
 
 inline
 bool StoreDataVessel::storedValueIsActive( const unsigned& iatom ){
-  plumed_dbg_assert( iatom<getAction()->getFullNumberOfTasks() );
+  plumed_dbg_assert( iatom<getNumberOfStoredValues() );
   if( !hard_cut ) return true; 
   return local_buffer[iatom*vecsize*nspace]>wtol;   // (active_val[iatom]==1);
 }
@@ -150,6 +154,16 @@ inline
 unsigned StoreDataVessel::getNumberOfStoredValues() const {
   return getAction()->getFullNumberOfTasks();
 }
+
+inline
+unsigned StoreDataVessel::getStoreIndex( const unsigned& ind ) const {
+  return ind;
+}
+
+inline
+void StoreDataVessel::recalculateStoredQuantity( const unsigned& myelem, MultiValue& myvals ){
+  getAction()->performTask( getAction()->getPositionInFullTaskList(myelem), getAction()->getTaskCode(myelem), myvals );
+} 
 
 }
 }

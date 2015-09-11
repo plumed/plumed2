@@ -19,12 +19,13 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "DFSClustering.h"
+#include "DFSBase.h"
+#include "tools/SwitchingFunction.h"
 #include "core/ActionRegister.h"
 
-//+PLUMEDOC MCOLVARF DFSNUMEROFCLUSTERS
+//+PLUMEDOC MATRIXF DFSNUMEROFCLUSTERS
 /*
-Find the number of clusters that have a size larger than a certain cutoff
+Find the number of connected components that have a size larger than a certain critical threshold.
 
 \par Examples
 
@@ -32,9 +33,9 @@ Find the number of clusters that have a size larger than a certain cutoff
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace crystallization {
+namespace adjmat {
 
-class DFSNumberOfClusters : public DFSClustering {
+class DFSNumberOfClusters : public DFSBase {
 private:
   SwitchingFunction thresh;
 ///
@@ -47,16 +48,18 @@ public:
 /// Constructor
   explicit DFSNumberOfClusters(const ActionOptions&);
 ///
-  void doCalculationOnCluster();
+  void calculate();
+///
+  void performTask( const unsigned& , const unsigned& , MultiValue& ) const {}
 };
 
 PLUMED_REGISTER_ACTION(DFSNumberOfClusters,"DFSNUMEROFCLUSTERS")
 
 void DFSNumberOfClusters::registerKeywords( Keywords& keys ){
-  DFSClustering::registerKeywords( keys );
+  DFSBase::registerKeywords( keys );
   keys.add("compulsory","TRANSFORM","none","the switching function to use to convert the crystallinity parameter to a number between zero and one");
   keys.add("compulsory","THRESHOLD","a switching function that defines how large the clusters should be in order to be counted");
-  keys.use("WTOL"); keys.use("USE_ORIENTATION");
+  keys.use("WTOL"); 
   keys.remove("LOWMEM"); keys.use("HIGHMEM");
   keys.addFlag("INVERSE_TRANSFORM",false,"when TRANSFORM appears alone the input symmetry functions, \\fx\\f$ are transformed used \\f$1-s(x)\\f$ "
                                          "where \\f$s(x)\\f$ is a switching function.  When this option is used you instead transform using \\f$s(x)\\f$ only.");
@@ -64,7 +67,7 @@ void DFSNumberOfClusters::registerKeywords( Keywords& keys ){
 
 DFSNumberOfClusters::DFSNumberOfClusters(const ActionOptions&ao):
 Action(ao),
-DFSClustering(ao)
+DFSBase(ao)
 {
    // Find out the value of beta
    addValueWithDerivatives(); setNotPeriodic();
@@ -84,7 +87,9 @@ DFSClustering(ao)
    if( errors.length()!=0 ) error("problem reading THRESHOLD keyword : " + errors );
 }
 
-void DFSNumberOfClusters::doCalculationOnCluster(){
+void DFSNumberOfClusters::calculate(){
+   // Do the clustring
+   performClustering();
    unsigned size=comm.Get_size(), rank=comm.Get_rank(); 
 
    std::vector<double> tder( getNumberOfDerivatives() );
@@ -95,7 +100,7 @@ void DFSNumberOfClusters::doCalculationOnCluster(){
    for(unsigned iclust=0;iclust<getNumberOfClusters();++iclust){
        retrieveAtomsInCluster( iclust+1, myatoms );
        // This deals with filters
-       if( myatoms.size()==1 && !isCurrentlyActive(0,myatoms[0]) ) continue ;
+       if( myatoms.size()==1 && !isCurrentlyActive(myatoms[0]) ) continue ;    
 
        double vv, df, tval=0; tder.assign( tder.size(), 0.0 );
        for(unsigned j=0;j<myatoms.size();++j){ 

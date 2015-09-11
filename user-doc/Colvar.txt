@@ -30,6 +30,7 @@ implement all these collective variables without implementing having an unmanigi
 - \subpage dists
 - \subpage Function
 - \subpage mcolv
+- \subpage contactmatrix
 
 \page Colvar CV Documentation
 
@@ -58,7 +59,7 @@ with the ammount the collective variables change.  A full list of the ways dista
 These options for calculating distances are re-used in a number of places in the code.  For instance they are used in some of the 
 analysis algorithms that are implemented in PLUMED and in \ref PATH collective variables. 
 
-\page mcolv MultiColvar Documentation
+\page mcolv MultiColvar 
 
 Oftentimes, when you do not need one of the collective variables described elsewhere in the manual, what you want instead is a 
 function of a distribution of collective variables of a particular type.  For instance you might need to calculate a 
@@ -137,6 +138,23 @@ The list of biases of this type are as follows:
 
 Notice that (in theory) you could also use this functionality to add additional terms to your forcefield or to implement your 
 forcefield.
+
+\page contactmatrix Exploiting contact matrices
+
+A contact matrix is an \f$N \times N\f$ matrix in which the \f$i\f$th, \f$j\f$th element tells you whether or not the \f$i\f$th
+and \f$j\f$th atoms/molecules from a set of \f$N\f$ atoms/molecules are adjacent or not.  There are various ways of definining
+whether a pair of atoms/molecules are adjacent or not.  For example we can say two atoms are adjacent if the distance between
+them is less than some cutoff.  Alternatively, if we have a have a pair of molecules, we might state they are adjacent if their
+centre's of mass are within a certain cutoff and if the two molecules have the same orientation.  Two electronegative atoms
+might be said to be adjacent if there is a hydrogen bond between them.  For these reasons then PLUMED contains all of the 
+following methods for calculating an adjacency matrix 
+
+@MATRIX@
+
+Once you have calculated an adjacency matrix you can then perform any one of the following operations on this object in order
+to reduce it to a scalar number.
+
+@MATRIXF@
 
 */
 

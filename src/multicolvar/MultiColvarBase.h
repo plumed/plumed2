@@ -52,19 +52,19 @@ private:
   bool usepbc;
 /// The forces we are going to apply to things
   std::vector<double> forcesToApply;
+/// In certain cases we can make three atom link cells faster
+  bool uselinkforthree;
 /// Stuff for link cells - this is used to make coordination number like variables faster
   LinkCells linkcells;
-/// This remembers where the boundaries are for the tasks. It makes link cells work fast
-  Matrix<std::pair<unsigned,unsigned> > bookeeping;
 /// Bool vector telling us which atoms are required to calculate central atom position
   std::vector<bool> use_for_central_atom;
 /// 1/number of atoms involved in central atoms
   double numberForCentralAtom;
-/// A copy of the vessel containg the values of each colvar
-//  StoreColvarVessel* myvalues;
+protected:
+/// This remembers where the boundaries are for the tasks. It makes link cells work fast
+  Matrix<std::pair<unsigned,unsigned> > bookeeping;
 /// This resizes the arrays that are used for link cell update
   void resizeBookeepingArray( const unsigned& num1, const unsigned& num2 );
-protected:
 /// Using the species keyword to read in atoms
   bool usespecies;
 /// Number of atoms in each block
@@ -149,6 +149,8 @@ public:
   virtual bool hasDifferentiableOrientation() const { return false; }
 /// This makes sure we are not calculating the director when we do LocalAverage
   virtual void doNotCalculateDirector(){}
+/// Ensure that derivatives are only calculated when needed
+  bool doNotCalculateDerivatives() const ;
 };
 
 inline
@@ -159,6 +161,12 @@ unsigned MultiColvarBase::getNumberOfDerivatives(){
 inline
 bool MultiColvarBase::usesPbc() const {
   return usepbc;
+}
+
+inline
+bool MultiColvarBase::doNotCalculateDerivatives() const {
+  if( !dertime ) return true;
+  return ActionWithValue::doNotCalculateDerivatives();
 }
 
 }

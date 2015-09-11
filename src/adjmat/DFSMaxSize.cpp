@@ -19,10 +19,11 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "DFSClustering.h"
+#include "DFSBase.h"
+#include "tools/SwitchingFunction.h"
 #include "core/ActionRegister.h"
 
-//+PLUMEDOC MCOLVARF DFSMAXCLUSTER
+//+PLUMEDOC MATRIXF DFSMAXCLUSTER
 /*
 Find the connected components and determine the maximum size of the clusters in your system using a smooth function
 
@@ -65,9 +66,9 @@ clust: DFSMAXCLUSTER DATA=cf BETA=0.5 SWITCH={CUBIC D_0=0.4   D_MAX=0.5} TRANSFO
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace crystallization {
+namespace adjmat {
 
-class DFSMaxCluster : public DFSClustering {
+class DFSMaxCluster : public DFSBase {
 private:
 /// The value of beta
   double beta;
@@ -81,24 +82,25 @@ public:
 /// Constructor
   explicit DFSMaxCluster(const ActionOptions&);
 ///
-  void doCalculationOnCluster();
+  void calculate();
+///
+  void performTask( const unsigned& , const unsigned& , MultiValue& ) const {}
 };
 
 PLUMED_REGISTER_ACTION(DFSMaxCluster,"DFSMAXCLUSTER")
 
 void DFSMaxCluster::registerKeywords( Keywords& keys ){
-  DFSClustering::registerKeywords( keys );
+  DFSBase::registerKeywords( keys );
   keys.add("compulsory","BETA","the value of beta to be used in calculating the smooth maximum");
-  keys.use("WTOL"); keys.use("USE_ORIENTATION");
   keys.remove("LOWMEM"); keys.use("HIGHMEM");
   keys.add("compulsory","TRANSFORM","none","the switching function to use to convert the crystallinity parameter to a number between zero and one");
-  keys.addFlag("INVERSE_TRANSFORM",false,"when TRANSFORM appears alone the input symmetry functions, \\fx\\f$ are transformed used \\f$1-s(x)\\f$ "
+  keys.addFlag("INVERSE_TRANSFORM",false,"when TRANSFORM appears alone the input symmetry functions, \\f$x\\f$ are transformed used \\f$1-s(x)\\f$ "
                                          "where \\f$s(x)\\f$ is a switching function.  When this option is used you instead transform using \\f$s(x)\\f$ only.");
 }
 
 DFSMaxCluster::DFSMaxCluster(const ActionOptions&ao):
 Action(ao),
-DFSClustering(ao)
+DFSBase(ao)
 {
    // Find out the value of beta
    parse("BETA",beta);
@@ -114,7 +116,9 @@ DFSClustering(ao)
    if( inverse && !use_switch ) error("INVERSE_TRANSFORM option was specified but no TRANSOFRM switching function was given");
 }
 
-void DFSMaxCluster::doCalculationOnCluster(){
+void DFSMaxCluster::calculate(){
+   // Do the clustring
+   performClustering();
    unsigned size=comm.Get_size(), rank=comm.Get_rank(); 
 
    std::vector<double> tder( getNumberOfDerivatives() ), fder( 1+getNumberOfDerivatives(), 0.0 );
@@ -125,7 +129,7 @@ void DFSMaxCluster::doCalculationOnCluster(){
    for(unsigned iclust=0;iclust<getNumberOfClusters();++iclust){
        retrieveAtomsInCluster( iclust+1, myatoms );
        // This deals with filters
-       if( myatoms.size()==1 && !isCurrentlyActive(0,myatoms[0]) ) continue ;
+       if( myatoms.size()==1 && !isCurrentlyActive(myatoms[0]) ) continue ;    
 
        double vv, df, tval=0; tder.assign( tder.size(), 0.0 );
        for(unsigned j=0;j<myatoms.size();++j){ 

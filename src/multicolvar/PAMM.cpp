@@ -192,7 +192,7 @@ MultiColvarFunction(ao)
    ifile.close();  
 
    // This builds the lists
-   buildSets();
+   buildSets( false );
    // Read the regularisation parameter
    parse("REGULARISE",regulariser);
 }

@@ -19,12 +19,13 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "AdjacencyMatrixAction.h"
+#include "ActionWithInputMatrix.h"
+#include "AdjacencyMatrixVessel.h"
 #include "core/ActionRegister.h"
 
-//+PLUMEDOC MCOLVARF SPRINT
+//+PLUMEDOC MATRIXF SPRINT
 /*
-Calculate SPRINT topological variables.
+Calculate SPRINT topological variables from an adjacency matrix.
 
 The SPRINT topological variables are calculated from the largest eigenvalue, \f$\lambda\f$ of
 an \f$n\times n\f$ adjacency matrix and its corresponding eigenvector, \f$\mathbf{V}\f$, using:
@@ -47,7 +48,8 @@ in the manner described in ?? so two atoms are adjacent if they are within a cut
 
 \verbatim
 DENSITY SPECIES=1-7 LABEL=d1
-SPRINT ARG=d1 SWITCH={RATIONAL R_0=0.1} LABEL=ss
+CONTACT_MATRIX ATOMS=d1 SWITCH={RATIONAL R_0=0.1} LABEL=mat
+SPRINT MATRIX=mat LABEL=ss
 PRINT ARG=ss.* FILE=colvar 
 \endverbatim
 
@@ -58,13 +60,15 @@ This example input calculates the 14 SPRINT coordinates foa a molecule composed 
 DENSITY SPECIES=1-7 LABEL=c
 DENSITY SPECIES=8-14 LABEL=h
 
-SPRINT ...
- ARG=c,h
- SWITCH11={RATIONAL R_0=2.6 NN=6 MM=12}
- SWITCH12={RATIONAL R_0=2.2 NN=6 MM=12}
- SWITCH22={RATIONAL R_0=2.2 NN=6 MM=12}
- LABEL=ss
-... SPRINT
+CONTACT_MATRIX ...
+  ATOMS=c,h
+  SWITCH11={RATIONAL R_0=2.6 NN=6 MM=12}
+  SWITCH12={RATIONAL R_0=2.2 NN=6 MM=12}
+  SWITCH22={RATIONAL R_0=2.2 NN=6 MM=12}
+  LABEL=mat
+... CONTACT_MATRIX
+
+SPRINT MATRIX=mat LABEL=ss 
 
 PRINT ARG=ss.* FILE=colvar
 \endverbatim
@@ -74,14 +78,16 @@ PRINT ARG=ss.* FILE=colvar
 
 
 namespace PLMD {
-namespace multicolvar {
+namespace adjmat {
 
-class Sprint : public AdjacencyMatrixAction {
+class Sprint : public ActionWithInputMatrix {
 private:
 /// Square root of number of atoms
   double sqrtn;
 /// Vector that stores eigenvalues
   std::vector<double> eigvals;
+/// This is used to speed up the calculation of derivatives
+  DynamicList<unsigned> active_elements;
 /// Vector that stores max eigenvector
   std::vector< std::pair<double,int> > maxeig;
 /// Adjacency matrix
@@ -94,15 +100,17 @@ public:
 /// Constructor
   explicit Sprint(const ActionOptions&);
 /// Do the matrix calculation
-  void completeCalculation();
+  void calculate();
 /// Sprint needs its only apply routine as it creates values
   void apply();
+/// This does nothing
+  void performTask( const unsigned& , const unsigned& , MultiValue& ) const {}
 };
 
 PLUMED_REGISTER_ACTION(Sprint,"SPRINT")
 
 void Sprint::registerKeywords( Keywords& keys ){
-  AdjacencyMatrixAction::registerKeywords( keys );
+  ActionWithInputMatrix::registerKeywords( keys );
   componentsAreNotOptional(keys);
   keys.addOutputComponent("coord","default","all \\f$n\\f$ sprint coordinates are calculated and then stored in increasing order. "
                                             "the smallest sprint coordinate will be labelled <em>label</em>.coord-1, "
@@ -111,48 +119,55 @@ void Sprint::registerKeywords( Keywords& keys ){
 
 Sprint::Sprint(const ActionOptions&ao):
 Action(ao),
-AdjacencyMatrixAction(ao),
-eigvals( getFullNumberOfBaseTasks() ),
-maxeig( getFullNumberOfBaseTasks() ),
-mymatrix( getFullNumberOfBaseTasks(), getFullNumberOfBaseTasks() ),
-eigenvecs( getFullNumberOfBaseTasks(), getFullNumberOfBaseTasks() )
+ActionWithInputMatrix(ao),
+eigvals( getNumberOfNodes() ),
+maxeig( getNumberOfNodes() ),
+mymatrix( getNumberOfNodes(), getNumberOfNodes() ),
+eigenvecs( getNumberOfNodes(), getNumberOfNodes() )
 {
    // Check on setup
-   if( getNumberOfVessels()!=1 ) error("there should be no vessel keywords");
-   // Check for bad colvar input
-   for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i){
-      if( !getBaseMultiColvar(i)->hasDifferentiableOrientation() ) error("cannot use multicolvar of type " + getBaseMultiColvar(i)->getName() );
-   }
+   // if( getNumberOfVessels()!=1 ) error("there should be no vessel keywords");
+   // Check for bad colvar input ( we  are going to get rid of this because we are going to have input adjacency matrix in future )
+   // for(unsigned i=0;i<getNumberOfAtomGroups();++i){
+   //    /// Check me GAT
+   //    // if( !getBaseMultiColvar(i)->hasDifferentiableOrientation() ) error("cannot use multicolvar of type " + getBaseMultiColvar(i)->getName() );
+   // }
+
+   if( !getAdjacencyVessel()->isSymmetric() ) error("input contact matrix is not symmetric");
 
    // Create all the values
-   sqrtn = sqrt( static_cast<double>( getFullNumberOfBaseTasks() ) );
-   for(unsigned i=0;i<getFullNumberOfBaseTasks();++i){
+   sqrtn = sqrt( static_cast<double>( getNumberOfNodes() ) );
+   for(unsigned i=0;i<getNumberOfNodes();++i){
       std::string num; Tools::convert(i,num);
       addComponentWithDerivatives("coord-"+num);
       componentIsNotPeriodic("coord-"+num);
       getPntrToComponent(i)->resizeDerivatives( getNumberOfDerivatives() );
    }
+
+   // Setup the dynamic list to hold all the tasks
+   unsigned ntriangle = 0.5*getNumberOfNodes()*(getNumberOfNodes()-1);
+   for(unsigned i=0;i<ntriangle;++i) active_elements.addIndexToList( i );
 }
 
-void Sprint::completeCalculation(){
+void Sprint::calculate(){
    // Get the adjacency matrix
-   retrieveMatrix( mymatrix ); 
+   getAdjacencyVessel()->retrieveMatrix( active_elements, mymatrix ); 
    // Diagonalize it
    diagMat( mymatrix, eigvals, eigenvecs );
    // Get the maximum eigevalue
-   double lambda = eigvals[ getFullNumberOfBaseTasks()-1 ];
+   double lambda = eigvals[ getNumberOfNodes()-1 ];
    // Get the corresponding eigenvector
    for(unsigned j=0;j<maxeig.size();++j){
-       maxeig[j].first = fabs( eigenvecs( getFullNumberOfBaseTasks()-1, j ) );
+       maxeig[j].first = fabs( eigenvecs( getNumberOfNodes()-1, j ) );
        maxeig[j].second = j;
        // Must make all components of principle eigenvector +ve
-       eigenvecs( getFullNumberOfBaseTasks()-1, j ) = maxeig[j].first;
+       eigenvecs( getNumberOfNodes()-1, j ) = maxeig[j].first;
    }
 
    // Reorder each block of eigevectors
    unsigned startnum=0;
-   for(unsigned j=0;j<getNumberOfBaseMultiColvars();++j){
-       unsigned nthis = getBaseMultiColvar(j)->getFullNumberOfTasks();
+   for(unsigned j=0;j<getNumberOfNodeTypes();++j){
+       unsigned nthis = getNumberOfAtomsInGroup(j); 
        // Sort into ascending order
        std::sort( maxeig.begin() + startnum, maxeig.begin() + startnum + nthis );
        // Used so we can do sorting in blocks 
@@ -171,9 +186,10 @@ void Sprint::completeCalculation(){
    // Derivatives
    MultiValue myvals( 2, getNumberOfDerivatives() );
    Matrix<double> mymat_ders( getNumberOfComponents(), getNumberOfDerivatives() );  
-   std::vector<unsigned> catoms(2); unsigned nval = getFullNumberOfBaseTasks(); mymat_ders=0; 
-   for(unsigned i=rank;i<getNumberOfActiveMatrixElements();i+=stride){
-      decodeIndexToAtoms( getTaskCode(getActiveMatrixElement(i)), catoms ); unsigned j=catoms[0], k=catoms[1];
+   // std::vector<unsigned> catoms(2); 
+   unsigned nval = getNumberOfNodes(); mymat_ders=0; 
+   for(unsigned i=rank;i<active_elements.getNumberActive();i+=stride){
+      unsigned j, k; getAdjacencyVessel()->getMatrixIndices( active_elements[i], j, k );
       double tmp1 = 2 * eigenvecs(nval-1,j)*eigenvecs(nval-1,k);
       for(unsigned icomp=0;icomp<getNumberOfComponents();++icomp){
           double tmp2 = 0.; 
@@ -181,7 +197,7 @@ void Sprint::completeCalculation(){
               tmp2 += eigenvecs(n,maxeig[icomp].second) * ( eigenvecs(n,j)*eigenvecs(nval-1,k) + eigenvecs(n,k)*eigenvecs(nval-1,j) ) / ( lambda - eigvals[n] );
           }
           double prefactor=sqrtn*( tmp1*maxeig[icomp].first + tmp2*lambda );
-          getAdjacencyVessel()->retrieveDerivatives( getActiveMatrixElement(i), false, myvals );
+          getAdjacencyVessel()->retrieveDerivatives( active_elements[i], false, myvals );
           for(unsigned jd=0;jd<myvals.getNumberActive();++jd){
               unsigned ider=myvals.getActiveIndex(jd);
               mymat_ders( icomp, ider ) += prefactor*myvals.getDerivative( 1, ider );

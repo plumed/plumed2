@@ -39,8 +39,7 @@ void LinkCells::setCutoff( const double& lcut ){
 }
 
 double LinkCells::getCutoff() const {
-  plumed_assert( cutoffwasset );
-  return link_cutoff;
+  plumed_assert( cutoffwasset ); return link_cutoff;
 }
 
 void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vector<unsigned>& indices, const Pbc& pbc ){

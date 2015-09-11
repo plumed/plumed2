@@ -19,12 +19,12 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "DFSClustering.h"
+#include "DFSBase.h"
 #include "core/ActionRegister.h"
 
-//+PLUMEDOC MCOLVARF DFSCLUSTERDIAMETER
+//+PLUMEDOC MATRIXF DFSCLUSTERDIAMETER
 /*
-Retrieve the size of a cluster.  This quantity is NOT differentiable.
+Find the connected components in an adjacency matrix and then output the maximum radius.
 
 This action uses the DFS clustering algorithm described in \ref DFSCLUSTERING to find a set of connected components
 based on the configuration of the atoms in your system.  Once again this can be used to find crystalline nuclei or 
@@ -38,9 +38,9 @@ done by this action.
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace crystallization {
+namespace adjmat {
 
-class DFSClusterDiameter : public DFSClustering {
+class DFSClusterDiameter : public DFSBase {
 private:
 /// The cluster we are looking for
   unsigned clustr;
@@ -50,7 +50,9 @@ public:
 /// Constructor
   explicit DFSClusterDiameter(const ActionOptions&);
 ///
-  void doCalculationOnCluster();
+  void calculate();
+///
+  void performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const ;
 ///
   void turnOnDerivatives();
 };
@@ -58,46 +60,65 @@ public:
 PLUMED_REGISTER_ACTION(DFSClusterDiameter,"DFSCLUSTERDIAMETER")
 
 void DFSClusterDiameter::registerKeywords( Keywords& keys ){
-  DFSClustering::registerKeywords( keys );
+  DFSBase::registerKeywords( keys );
   keys.add("compulsory","CLUSTER","1","which cluster would you like to look at 1 is the largest cluster, 2 is the second largest, 3 is the the third largest and so on.");
-  keys.use("WTOL"); keys.use("USE_ORIENTATION");
   keys.remove("LOWMEM"); keys.use("HIGHMEM");
 }
 
 DFSClusterDiameter::DFSClusterDiameter(const ActionOptions&ao):
 Action(ao),
-DFSClustering(ao)
+DFSBase(ao)
 {
    // Find out which cluster we want
    parse("CLUSTER",clustr);
 
    if( clustr<1 ) error("cannot look for a cluster larger than the largest cluster");
-   if( clustr>getFullNumberOfBaseTasks() ) error("cluster selected is invalid - too few atoms in system");
+   if( clustr>getNumberOfNodes() ) error("cluster selected is invalid - too few atoms in system");
 
-   addValue(); setNotPeriodic();
+   // Create the task list
+   for(unsigned  i=1;i<getNumberOfNodes();++i){
+       for(unsigned j=0;j<i;++j) addTaskToList( i*getNumberOfNodes() + j );
+   }
+   // Now create a higest vessel
+   addVessel("HIGHEST", "", -1); readVesselKeywords();
 }
 
 void DFSClusterDiameter::turnOnDerivatives(){
    error("cannot calculate derivatives of cluster radius.  This quantity is not differentiable");
 }
 
-void DFSClusterDiameter::doCalculationOnCluster(){
+void DFSClusterDiameter::calculate(){
+   // Do the clustring
+   performClustering();
+   // Retrieve the atoms in the largest cluster
    std::vector<unsigned> myatoms; retrieveAtomsInCluster( clustr, myatoms );
-   unsigned size=comm.Get_size(), rank=comm.Get_rank();
-
-   double maxdist=0;
+   // Activate the relevant tasks
+   deactivateAllTasks(); std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
    for(unsigned i=1;i<myatoms.size();++i){
-       unsigned iatom = myatoms[i];
-       Vector ipos=getPositionOfAtomForLinkCells( iatom ); 
-       for(unsigned j=0;j<i;++j){
-           unsigned jatom = myatoms[j];
-           Vector jpos=getPositionOfAtomForLinkCells( jatom );
-           Vector distance=getSeparation( ipos, jpos );
-           double dmod=distance.modulo2();
-           if( dmod>maxdist ) maxdist=dmod;
-       }
+       for(unsigned j=0;j<i;++j) active_tasks[ myatoms[i]*getNumberOfNodes() + myatoms[j] ] = 1;  
    }
-   setValue( sqrt( maxdist ) );
+   activateTheseTasks( active_tasks );
+   // Now do the calculation 
+   runAllTasks();
+}
+
+void DFSClusterDiameter::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const { 
+  unsigned iatom=current/getNumberOfNodes(), jatom = current - iatom*getNumberOfNodes();
+  Vector distance=getSeparation( getPosition(iatom), getPosition(jatom) );
+  double dd = distance.modulo(), inv = 1.0/dd ; myvals.setValue( 1, dd ); 
+  if( !doNotCalculateDerivatives() ){
+      myvals.addDerivative( 1, 3*iatom + 0, -inv*distance[0] );
+      myvals.addDerivative( 1, 3*iatom + 1, -inv*distance[1] );
+      myvals.addDerivative( 1, 3*iatom + 2, -inv*distance[2] );
+      myvals.addDerivative( 1, 3*jatom + 0, +inv*distance[0] );
+      myvals.addDerivative( 1, 3*jatom + 1, +inv*distance[1] );
+      myvals.addDerivative( 1, 3*jatom + 2, +inv*distance[2] );
+      Tensor vir = -inv*Tensor(distance,distance);
+      unsigned vbase = myvals.getNumberOfDerivatives() - 9;
+      for(unsigned i=0;i<3;++i){
+          for(unsigned j=0;j<3;++j) myvals.addDerivative( 1, vbase+3*i+j, vir(i,j) );
+      }
+  }
 }
 
 }
