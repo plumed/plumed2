@@ -91,7 +91,11 @@ private:
   bool timers;
 /// The stopwatch that times the different parts of the calculation
   Stopwatch& stopwatch;
+/// These are used to minmise computational expense in complex functions
+  bool dertime_can_be_off;
 protected:
+/// This is also used to minimise computational expense in complex functions
+  bool dertime;
 /// The terms in the series are locked
   bool contributorsAreUnlocked;
 /// Does the weight have derivatives
@@ -111,10 +115,6 @@ protected:
   double getTolerance() const ;
 /// Return the value for the neighbor list tolerance
   double getNLTolerance() const ;
-/// Get the number of vessels
-  unsigned getNumberOfVessels() const;
-/// Get a pointer to the ith vessel
-   Vessel* getPntrToVessel( const unsigned& i );
 /// Calculate the values of all the vessels
   void runAllTasks();
 /// Resize all the functions when the number of derivatives change
@@ -134,6 +134,8 @@ protected:
   unsigned getCurrentNumberOfActiveTasks() const ;
 /// Get the ith of the currently active tasks
   unsigned getActiveTask( const unsigned& ii ) const ;
+/// Check whether or not a particular task is currently active
+  bool taskIsCurrentlyActive( const unsigned& index ) const ;
 /// Deactivate all the tasks in the task list
   void deactivateAllTasks();
 /// Deactivate all tasks with i in lower \f$\le\f$  i < upper
@@ -164,6 +166,10 @@ public:
   virtual unsigned getNumberOfDerivatives()=0;
 /// Get the number of quantities that are calculated during each task
   virtual unsigned getNumberOfQuantities();
+/// Get the number of vessels
+  unsigned getNumberOfVessels() const;
+/// Get a pointer to the ith vessel
+   Vessel* getPntrToVessel( const unsigned& i );
 /// Get the list of indices that have derivatives
 //  virtual void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
 /// Switch on additional tasks 

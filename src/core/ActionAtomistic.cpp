@@ -163,7 +163,10 @@ void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::ve
   } else {
       if ( !parseNumberedVector(key,num,strings) ) return;
   }
+  interpretAtomList( strings, t );
+}
 
+void ActionAtomistic::interpretAtomList( std::vector<std::string>& strings, std::vector<AtomNumber> &t){
   Tools::interpretRanges(strings); t.resize(0);
   for(unsigned i=0;i<strings.size();++i){
    AtomNumber atom;
