@@ -659,7 +659,15 @@ last_step_warn_grid(0)
   }
 
   comm.Barrier();
-  if(comm.Get_rank()==0) multi_sim_comm.Barrier();
+
+// this barrier is needed when using walkers_mpi
+// to be sure that all files have been read before
+// backing them up
+// it should not be used when walkers_mpi is false otherwise
+// it would introduce troubles when using replicas without METAD
+// (e.g. in bias exchange with a neutral replica)
+// see issue #168 on github
+  if(comm.Get_rank()==0 && walkers_mpi) multi_sim_comm.Barrier();
 
 // open hills file for writing
   hillsOfile_.link(*this);
