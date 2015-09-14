@@ -83,7 +83,7 @@ AdjacencyMatrixBase* AdjacencyMatrixVessel::getMatrixAction() {
 void AdjacencyMatrixVessel::getMatrixIndices( const unsigned& code, unsigned& i, unsigned& j ) const {
   std::vector<unsigned> myatoms; function->decodeIndexToAtoms( function->getTaskCode(code), myatoms ); 
   i=myatoms[0]; j=myatoms[1];   
-  if( !symmetric ) j -= function->ablocks[0].size(); // Have to remove number of columns as returns number in ablocks[1]  
+  if( !undirectedGraph() ) j -= function->ablocks[0].size(); // Have to remove number of columns as returns number in ablocks[1]  
 }
 
 void AdjacencyMatrixVessel::retrieveMatrix( DynamicList<unsigned>& myactive_elements, Matrix<double>& mymatrix ){

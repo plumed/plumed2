@@ -117,6 +117,9 @@ unsigned AdjacencyMatrixBase::getNumberOfNodes() const {
 }
 
 void AdjacencyMatrixBase::requestAtoms( const std::vector<AtomNumber>& atoms, const bool& symmetric, const unsigned& ncols ){
+  // Request the data required
+  myinputdata.makeDataRequests( atoms, this );
+
   unsigned icoef, jcoef, kcoef, kcount;
   // Create the task list
   if( atoms.size()==0 ){
@@ -191,8 +194,6 @@ void AdjacencyMatrixBase::requestAtoms( const std::vector<AtomNumber>& atoms, co
   mat->setHardCutoffOnWeight( getTolerance() );
   // Add the vessel to the base
   addVessel( mat );
-  // Request the data required
-  myinputdata.makeDataRequests( atoms, true, this ); 
   setupMultiColvarBase();
 }
 
