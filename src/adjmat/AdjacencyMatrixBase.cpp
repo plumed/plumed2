@@ -118,7 +118,7 @@ unsigned AdjacencyMatrixBase::getNumberOfNodes() const {
 
 void AdjacencyMatrixBase::requestAtoms( const std::vector<AtomNumber>& atoms, const bool& symmetric, const unsigned& ncols ){
   // Request the data required
-  myinputdata.makeDataRequests( atoms, this );
+  myinputdata.makeDataRequests( atoms, true, this );
 
   unsigned icoef, jcoef, kcoef, kcount;
   // Create the task list
@@ -131,6 +131,7 @@ void AdjacencyMatrixBase::requestAtoms( const std::vector<AtomNumber>& atoms, co
       }
       ablocks.resize(2); icoef=nblock; jcoef=1; kcoef=0; kcount=1;
   } else {
+      kcount=atoms.size();
       if( symmetric || ncols==0 ){
           nblock=getNumberOfNodes(); 
       } else {
@@ -139,7 +140,7 @@ void AdjacencyMatrixBase::requestAtoms( const std::vector<AtomNumber>& atoms, co
       } 
       if( kcount>nblock ) nblock=kcount; 
 
-      kcount=atoms.size(); ablocks.resize(3);
+      ablocks.resize(3);
       icoef=nblock*nblock; jcoef=nblock; kcoef=1; ablocks[2].resize( atoms.size() );
       for(unsigned i=0;i<ablocks[2].size();++i) ablocks[2][i]=getNumberOfAtoms() - atoms.size() + i;
   }
@@ -162,6 +163,7 @@ void AdjacencyMatrixBase::requestAtoms( const std::vector<AtomNumber>& atoms, co
      for(unsigned i=0;i<getNumberOfNodes();++i) ablocks[0][i]=ablocks[1][i]=i;
      for(unsigned i=0;i<getNumberOfNodes();++i){
         for(unsigned j=0;j<getNumberOfNodes();++j){
+           if( i==j ) continue;
            bookeeping(i,j).first=getFullNumberOfTasks();
            for(unsigned k=0;k<kcount;++k) addTaskToList( i*icoef + j*jcoef + k*kcoef );
            bookeeping(i,j).second=getFullNumberOfTasks();
