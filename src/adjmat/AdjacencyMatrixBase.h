@@ -89,6 +89,8 @@ public:
 /// None of these things are allowed
   bool isPeriodic(){ return false; }
   Vector getCentralAtom(){ plumed_merror("cannot find central atoms for adjacency matrix actions"); Vector dum; return dum; }
+/// Get the absolute index of an atom
+  AtomNumber getAbsoluteIndexOfCentralAtom(const unsigned& i) const ;
 };
 
 inline

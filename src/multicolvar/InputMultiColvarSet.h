@@ -51,6 +51,8 @@ public:
   unsigned getNumberOfBaseMultiColvars() const ;
 /// Is the underlying multicolvar currently active
   bool isCurrentlyActive( const unsigned& bno, const unsigned& code );
+/// Return the atom number  
+  AtomNumber getAtomicIndex( const unsigned& iatom ) const ;
 /// Get the position of the iatom th atom
   Vector getPosition( const unsigned& iatom ) const ;
 /// Get the derivative of the position of the iatom th atom
@@ -107,6 +109,12 @@ inline
 bool InputMultiColvarSet::isCurrentlyActive( const unsigned& bno, const unsigned& code ){
   plumed_dbg_assert( code<getFullNumberOfBaseTasks() ); unsigned mmc=colvar_label[code];
   return mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(code,mmc) ); 
+}
+
+inline
+AtomNumber InputMultiColvarSet::getAtomicIndex( const unsigned& iatom ) const {
+  plumed_dbg_assert( iatom<getFullNumberOfBaseTasks() ); unsigned mmc=colvar_label[ iatom ];
+  return mybasemulticolvars[mmc]->getAbsoluteIndexOfCentralAtom( convertToLocalIndex(iatom,mmc) );
 } 
 
 inline

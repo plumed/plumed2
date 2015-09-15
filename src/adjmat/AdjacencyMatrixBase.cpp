@@ -118,7 +118,7 @@ unsigned AdjacencyMatrixBase::getNumberOfNodes() const {
 
 void AdjacencyMatrixBase::requestAtoms( const std::vector<AtomNumber>& atoms, const bool& symmetric, const unsigned& ncols ){
   // Request the data required
-  myinputdata.makeDataRequests( atoms, true, this );
+  myinputdata.makeDataRequests( atoms, this );
 
   unsigned icoef, jcoef, kcoef, kcount;
   // Create the task list
@@ -230,6 +230,11 @@ void AdjacencyMatrixBase::addAtomDerivatives( const unsigned& ival, const unsign
       myinputdata.addComDerivatives( ival, jatom, der, myatoms );
   }
 }
+
+AtomNumber AdjacencyMatrixBase::getAbsoluteIndexOfCentralAtom(const unsigned& i) const {
+  plumed_dbg_assert( i<myinputdata.getFullNumberOfBaseTasks() );
+  return myinputdata.getAtomicIndex( i );
+} 
 
 void AdjacencyMatrixBase::addOrientationDerivatives( const unsigned& ival, const unsigned& iatom, const std::vector<double>& der, multicolvar::AtomValuePack& myatoms ) const {
   unsigned jatom=myatoms.getIndex(iatom); plumed_dbg_assert( jatom<myinputdata.getFullNumberOfBaseTasks() );

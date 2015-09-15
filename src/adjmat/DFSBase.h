@@ -30,6 +30,7 @@ namespace PLMD {
 namespace adjmat {
 
 class DFSBase : public ActionWithInputMatrix {
+friend class DFSOutput;
 private:
 /// Vector that stores the sizes of the current set of clusters
   std::vector< std::pair<unsigned,unsigned> > cluster_sizes;

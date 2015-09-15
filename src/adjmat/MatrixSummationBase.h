@@ -41,6 +41,7 @@ public:
   bool isPeriodic(){ return false; }
   Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const ;
   bool isCurrentlyActive( const unsigned& bno, const unsigned& code );
+  AtomNumber getAbsoluteIndexOfCentralAtom( const unsigned& i ) const ;
 };
 
 }

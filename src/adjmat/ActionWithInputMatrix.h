@@ -78,6 +78,8 @@ public:
   virtual void turnOnDerivatives();
   bool isPeriodic(){ return false; }
   void apply();
+///
+  AtomNumber getAbsoluteIndexOfCentralAtom(const unsigned& i) const ;
 };
 
 }

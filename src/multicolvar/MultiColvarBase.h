@@ -45,6 +45,7 @@ friend class StoreCentralAtomsVessel;
 friend class MultiColvarFunction;
 friend class BridgedMultiColvarFunction;
 friend class VolumeGradientBase;
+friend class InputMultiColvarSet;
 friend class MultiColvarFilter;
 friend class MultiColvar;
 private:
@@ -108,6 +109,8 @@ public:
   virtual double doCalculation( const unsigned& tindex, AtomValuePack& myatoms ) const ;  
 /// Update the atoms that have derivatives
   virtual void updateActiveAtoms( AtomValuePack& myatoms ) const=0;
+/// Get the absolute index of the central atom
+  virtual AtomNumber getAbsoluteIndexOfCentralAtom( const unsigned& i ) const=0;
 /// This is replaced once we have a function to calculate the cv
   virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const=0;
 /// Apply the forces from this action
@@ -122,27 +125,8 @@ public:
   virtual Vector getCentralAtomPos( const unsigned& curr );
 /// You can use this to screen contributions that are very small so we can avoid expensive (and pointless) calculations
   virtual void calculateWeight( AtomValuePack& myatoms ) const ;
-/// Get the list of indices that have derivatives
-// virtual void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
 /// Is this a density?
   virtual bool isDensity() const { return false; }
-/// Store central atoms so that this can be used in a function
-//  virtual vesselbase::StoreDataVessel* buildDataStashes( const bool& allow_wcutoff, const double& wtol );
-/// Calculate and store getElementValue(uder)/getElementValue(vder) and its derivatives in getElementValue(iout)
-//  void quotientRule( const unsigned& uder, const unsigned& vder, const unsigned& iout );
-/// Activate the atoms that have derivatives from a storeDataVessel
-//  void activateIndexes( const unsigned& istart, const unsigned& number, const std::vector<unsigned>& indexes ); 
-/// Add central atom derivatives to a multicolvar function
-//  void addCentralAtomDerivativeToFunction( const unsigned& iatom, const unsigned& jout, const unsigned& base_cv_no, const Vector& der, MultiColvarFunction* func ); 
-/// Get the value for this task
-//  virtual void getValueForTask( const unsigned& iatom, std::vector<double>& vals ); 
-/// Used to accumulate values
-//  virtual void addWeightedValueDerivatives( const unsigned& iatom, const unsigned& base_cv_no, const double& weight, MultiColvarFunction* func );
-/// Used for calculating weighted averages
-//  virtual void finishWeightedAverageCalculation( MultiColvarFunction* func );
-/// Add derivatives to the orientations
-//  virtual void addOrientationDerivativesToBase( const unsigned& iatom, const unsigned& jstore, const unsigned& base_cv_no, 
-//                                                const std::vector<double>& weight, MultiColvarFunction* func );
 /// Is the iatom'th stored value currently active
   bool storedValueIsActive( const unsigned& iatom );
 /// This is true if multicolvar is calculating a vector or if the multicolvar is the density

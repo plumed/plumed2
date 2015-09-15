@@ -71,12 +71,21 @@ public:
   Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const ;
 /// Atoms are always active
   bool isCurrentlyActive( const unsigned& bno, const unsigned& code ){ return true; }
+/// Get the absolute index of the central atom
+  AtomNumber getAbsoluteIndexOfCentralAtom( const unsigned& i ) const ;
 };
 
 inline
 Vector MultiColvar::getPositionOfAtomForLinkCells( const unsigned& iatom ) const {
   return ActionAtomistic::getPosition( iatom );
 }
+
+inline
+AtomNumber MultiColvar::getAbsoluteIndexOfCentralAtom(const unsigned& i) const {
+  plumed_assert( usespecies || isDensity() );
+  return ActionAtomistic::getAbsoluteIndex( getTaskCode(i) );
+}
+
 
 }
 }

@@ -79,5 +79,9 @@ Vector MatrixSummationBase::getPositionOfAtomForLinkCells( const unsigned& iatom
   return (mymatrix->function)->myinputdata.getPosition(iatom);
 }
 
+AtomNumber MatrixSummationBase::getAbsoluteIndexOfCentralAtom(const unsigned& i) const {
+  return (mymatrix->function)->myinputdata.getAtomicIndex(i);
+} 
+
 }
 }

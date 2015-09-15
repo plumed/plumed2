@@ -93,6 +93,10 @@ AdjacencyMatrixVessel* ActionWithInputMatrix::getAdjacencyVessel() const {
   return mymatrix;
 }
 
+AtomNumber ActionWithInputMatrix::getAbsoluteIndexOfCentralAtom(const unsigned& i) const {
+  return (mymatrix->function)->myinputdata.getAtomicIndex(i);
+}
+
 Vector ActionWithInputMatrix::getPosition( const unsigned& iatom ) const {
   return (mymatrix->function)->myinputdata.getPosition(iatom);
 }

@@ -78,6 +78,8 @@ public:
   Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const ;
 /// Some things can be inactive in functions
   virtual bool isCurrentlyActive( const unsigned& bno, const unsigned& code );
+/// Get the absolute index of the central atom
+  AtomNumber getAbsoluteIndexOfCentralAtom( const unsigned& i ) const ;
 };
 
 inline
@@ -115,6 +117,11 @@ inline
 void MultiColvarFunction::getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient ) const {
   myinputdata.getVectorForTask( ind, normed, orient );
 }
+
+inline
+AtomNumber MultiColvarFunction::getAbsoluteIndexOfCentralAtom(const unsigned& i) const {
+  return myinputdata.getAtomicIndex( i );
+} 
 
 }
 }
