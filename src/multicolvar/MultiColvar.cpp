@@ -60,19 +60,16 @@ verbose_output(false)
 }
 
 void MultiColvar::readAtoms( int& natoms ){
-  if( getNumberOfAtoms()==0 ){
-     std::vector<AtomNumber> all_atoms;
-     
+  std::vector<AtomNumber> all_atoms;
+  if( getNumberOfAtoms()==0 && (keywords.exists("ATOMS") || keywords.exists("GROUP") || keywords.exists("SPECIES")) ){
      if( keywords.exists("ATOMS") ) readAtomsLikeKeyword( "ATOMS", natoms, all_atoms );
      if( keywords.exists("GROUP") ) readGroupsKeyword( natoms, all_atoms );
      if( keywords.exists("SPECIES") ) readSpeciesKeyword( "SPECIESA", "SPECIESB", natoms, all_atoms );
 
      if( all_atoms.size()==0 ) error("No atoms have been read in");
-     // Request all atoms from ActionAtomistic
-     ActionAtomistic::requestAtoms( all_atoms ); 
   }
   // Setup the multicolvar base
-  setupMultiColvarBase();
+  setupMultiColvarBase( all_atoms );
 }
 
 void MultiColvar::readAtomsLikeKeyword( const std::string & key, int& natoms, std::vector<AtomNumber>& all_atoms ){ 
@@ -357,15 +354,6 @@ void MultiColvar::readSpeciesKeyword( const std::string& str1, const std::string
          }
       }
   } 
-}
-
-void MultiColvar::calculate(){
-  setupLinkCells(); 
-  runAllTasks();
-}
-
-void MultiColvar::updateActiveAtoms( AtomValuePack& myatoms ) const {
-  myatoms.updateUsingIndices();
 }
      
 }

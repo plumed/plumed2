@@ -77,9 +77,8 @@ VectorMultiColvar(ao)
   if( natoms!=2 && natoms!=3 ) error("number of atoms in molecule specification is wrong.  Should be two or three.");
 
   if( all_atoms.size()==0 ) error("No atoms were specified");
-  ActionAtomistic::requestAtoms( all_atoms );
-
   setVectorDimensionality( 3, natoms );
+  ActionAtomistic::requestAtoms( all_atoms );
 
   if( natoms==3 ){
     std::vector<bool> catom_ind(3, false); catom_ind[2]=true;

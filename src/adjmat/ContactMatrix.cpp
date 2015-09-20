@@ -80,8 +80,8 @@ AdjacencyMatrixBase(ao)
 {
   // Read in the atomic positions
   unsigned ncols=0; std::vector<AtomNumber> atoms; 
-  parseAtomList("ATOMSA",-1,true,atoms);
-  if( getNumberOfNodeTypes()!=0 ){
+  bool check=parseAtomList("ATOMSA",-1,true,atoms);
+  if( check ){
      ncols=getNumberOfNodes(); ncol_t=getNumberOfNodeTypes(); 
      parseAtomList("ATOMSB",-1,true,atoms); 
      switchingFunction.resize( ncol_t, getNumberOfNodeTypes()-ncol_t );
@@ -91,7 +91,7 @@ AdjacencyMatrixBase(ao)
   }
   // Read in the switching functions
   parseConnectionDescriptions("SWITCH",ncol_t);
- 
+
   // Find the largest sf cutoff
   double sfmax=switchingFunction(0,0).get_dmax();
   for(unsigned i=0;i<switchingFunction.nrows();++i){

@@ -80,7 +80,6 @@ public:
   Vector calculateCentralAtomPosition(){ plumed_error(); }
   double compute( const unsigned& tindex, AtomValuePack& myvals ) const { plumed_error(); }
   Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const ;
-  void updateActiveAtoms( AtomValuePack& myatoms ) const { plumed_error(); }
   void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
   void applyBridgeForces( const std::vector<double>& bb );
   Vector getCentralAtomPos( const unsigned& curr );

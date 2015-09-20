@@ -61,7 +61,9 @@ MatrixSummationBase(ao)
   usespecies=false; ablocks.resize(1); ablocks[0].resize( nrows );
   for(unsigned i=0;i<nrows;++i){ ablocks[0][i]=i; addTaskToList( i ); }
   // Setup the underlying multicolvar
-  setupMultiColvarBase();
+  ActionAtomistic* matoms = dynamic_cast<ActionAtomistic*>( mymatrix->getMatrixAction() );
+  plumed_assert( matoms ); setupMultiColvarBase( matoms->getAbsoluteIndexes() );
+  addDependency( mymatrix->getMatrixAction() );
 }
 
 double MatrixRowSums::compute( const unsigned& tinded, multicolvar::AtomValuePack& myatoms ) const {

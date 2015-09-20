@@ -44,7 +44,7 @@ connect_id(0)
   if(wtolerance>0) log.printf("  only considering those colvars with a weight greater than %f \n",wtolerance);
 }
 
-void AdjacencyMatrixBase::parseAtomList(const std::string& key, const int& num, const bool& isnodes, std::vector<AtomNumber>& t){
+bool AdjacencyMatrixBase::parseAtomList(const std::string& key, const int& num, const bool& isnodes, std::vector<AtomNumber>& t){
   std::string newkey; t.resize(0);
   if( num<0 ){  
      newkey=key;
@@ -54,15 +54,18 @@ void AdjacencyMatrixBase::parseAtomList(const std::string& key, const int& num, 
   }
 
   if( isnodes ){
-     std::vector<std::string> mlabs; parseVector(newkey,mlabs);
-     if( mlabs.size()==0 ) return;
-     myinputdata.setup( mlabs, plumed.getActionSet(), wtolerance, this );
-     log.printf("  using colvars calculated by actions "); 
-     for(unsigned i=0;i<mlabs.size();++i) log.printf("%s ",mlabs[i].c_str() );
-     log.printf("\n"); 
+     bool found_acts=parseMultiColvarAsInput(newkey,0.0);
+     if( !found_acts ) return false; 
+     // std::vector<std::string> mlabs; parseVector(newkey,mlabs);
+     // if( mlabs.size()==0 ) return;
+     // myinputdata.setup( mlabs, plumed.getActionSet(), wtolerance, this );
+     // log.printf("  using colvars calculated by actions "); 
+     // for(unsigned i=0;i<mlabs.size();++i) log.printf("%s ",mlabs[i].c_str() );
+     // log.printf("\n"); 
   } else {
      ActionAtomistic::parseAtomList( key, num, t );
   }
+  return true;
 }
 
 void AdjacencyMatrixBase::parseConnectionDescriptions( const std::string& key, const unsigned& nrow_t ){
@@ -101,24 +104,26 @@ void AdjacencyMatrixBase::parseConnectionDescriptions( const std::string& key, c
 }
 
 unsigned AdjacencyMatrixBase::getSizeOfInputVectors() const {
-  unsigned nq = myinputdata.getBaseColvar(0)->getNumberOfQuantities();
-  for(unsigned i=1;i<myinputdata.getNumberOfBaseMultiColvars();++i){
-     if( myinputdata.getBaseColvar(i)->getNumberOfQuantities()!=nq ) error("mismatch between vectors in base colvars");
+  unsigned nq = mybasemulticolvars[0]->getNumberOfQuantities();
+  for(unsigned i=1;i<mybasemulticolvars.size();++i){
+     if( mybasemulticolvars[i]->getNumberOfQuantities()!=nq ) error("mismatch between vectors in base colvars");
   }
   return nq;
 }
 
 unsigned AdjacencyMatrixBase::getNumberOfNodeTypes() const {
-  return myinputdata.getNumberOfBaseMultiColvars();
+  unsigned size=mybasemulticolvars.size();
+  if( size==0 ) return 1;
+  return size;
 }
 
 unsigned AdjacencyMatrixBase::getNumberOfNodes() const {
-  return myinputdata.getFullNumberOfBaseTasks();
+  return colvar_label.size();  // myinputdata.getFullNumberOfBaseTasks();  // Not really sure what to do here needs a think GAT
 }
 
 void AdjacencyMatrixBase::requestAtoms( const std::vector<AtomNumber>& atoms, const bool& symmetric, const unsigned& ncols ){
   // Request the data required
-  myinputdata.makeDataRequests( atoms, this );
+//  myinputdata.makeDataRequests( atoms, this );
 
   unsigned icoef, jcoef, kcoef, kcount;
   // Create the task list
@@ -196,50 +201,59 @@ void AdjacencyMatrixBase::requestAtoms( const std::vector<AtomNumber>& atoms, co
   mat->setHardCutoffOnWeight( getTolerance() );
   // Add the vessel to the base
   addVessel( mat );
-  setupMultiColvarBase();
-}
-
-void AdjacencyMatrixBase::calculate(){
-  if( checkNumericalDerivatives() ) error("numerical derivatives currently broken");
-  // Setup the linke cells
-  setupLinkCells();
-  // And run all tasks
-  runAllTasks();
-}
-
-Vector AdjacencyMatrixBase::getPositionOfAtomForLinkCells( const unsigned& iatom ) const {
-  if( iatom>=myinputdata.getFullNumberOfBaseTasks() ) return getPosition( iatom );
-  return myinputdata.getPosition( iatom );
-}
-
-void AdjacencyMatrixBase::updateActiveAtoms( multicolvar::AtomValuePack& myatoms ) const {
-  if( !doNotCalculateDerivatives() ) myatoms.updateDynamicList();
-}
-
-bool AdjacencyMatrixBase::isCurrentlyActive( const unsigned& bno, const unsigned& code ){
-  if( code>=myinputdata.getFullNumberOfBaseTasks() ) return true; 
-  return myinputdata.isCurrentlyActive( 0, code );
+  setupMultiColvarBase( atoms );
 }
 
 void AdjacencyMatrixBase::addAtomDerivatives( const unsigned& ival, const unsigned& iatom, const Vector& der, multicolvar::AtomValuePack& myatoms ) const {
   unsigned jatom=myatoms.getIndex(iatom);
 
-  if( jatom>myinputdata.getFullNumberOfBaseTasks() ){
+  if( jatom>colvar_label.size() ){
       myatoms.addAtomsDerivatives( ival, jatom, der );
   } else {
-      myinputdata.addComDerivatives( ival, jatom, der, myatoms );
+      unsigned mmc=colvar_label[jatom];
+      unsigned basen=0; for(unsigned i=0;i<mmc;++i) basen+=mybasemulticolvars[i]->getNumberOfAtoms();
+      multicolvar::CatomPack atom0=mybasemulticolvars[mmc]->getCentralAtomPack( basen, convertToLocalIndex(jatom,mmc) );
+      myatoms.addComDerivatives( ival, der, atom0 );
   }
 }
 
-AtomNumber AdjacencyMatrixBase::getAbsoluteIndexOfCentralAtom(const unsigned& i) const {
-  plumed_dbg_assert( i<myinputdata.getFullNumberOfBaseTasks() );
-  return myinputdata.getAtomicIndex( i );
-} 
+// Maybe put this back GAT to check that it is returning an atom number that is one of the nodes
+// and not a hydrogen if we are doing HBPAMM
+// AtomNumber AdjacencyMatrixBase::getAbsoluteIndexOfCentralAtom(const unsigned& i) const {
+//   plumed_dbg_assert( i<myinputdata.getFullNumberOfBaseTasks() );
+//   return myinputdata.getAtomicIndex( i );
+// } 
 
 void AdjacencyMatrixBase::addOrientationDerivatives( const unsigned& ival, const unsigned& iatom, const std::vector<double>& der, multicolvar::AtomValuePack& myatoms ) const {
-  unsigned jatom=myatoms.getIndex(iatom); plumed_dbg_assert( jatom<myinputdata.getFullNumberOfBaseTasks() );
-  MultiValue myder(0,0); myinputdata.getVectorDerivatives( jatom, true, myder );
-  myinputdata.mergeVectorDerivatives( ival, 2, der.size(), jatom, der, myder, myatoms );
+  unsigned jatom=myatoms.getIndex(iatom); plumed_dbg_assert( jatom<colvar_label.size() );
+  MultiValue myder(0,0); unsigned mmc=colvar_label[ival];
+  plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(ival,mmc) ) );
+  if( myder.getNumberOfValues()!=mybasemulticolvars[mmc]->getNumberOfQuantities() ||
+      myder.getNumberOfDerivatives()!=mybasemulticolvars[mmc]->getNumberOfDerivatives() ){
+          myder.resize( mybasemulticolvars[mmc]->getNumberOfQuantities(), mybasemulticolvars[mmc]->getNumberOfDerivatives() );
+  }
+  mybasedata[mmc]->retrieveDerivatives( convertToLocalIndex(ival,mmc), true, myder );
+
+  // Get start of indices for this atom
+  unsigned basen=0; for(unsigned i=0;i<mmc;++i) basen+=3*mybasemulticolvars[i]->getNumberOfAtoms();
+
+  MultiValue& myvals=myatoms.getUnderlyingMultiValue();
+  // Now get the start of the virial
+  unsigned virbas = myvals.getNumberOfDerivatives()-9;
+  for(unsigned j=0;j<myder.getNumberActive();++j){
+     unsigned jder=myder.getActiveIndex(j);
+     if( jder<3*mybasemulticolvars[mmc]->getNumberOfAtoms() ){
+         unsigned kder=basen+jder;
+         for(unsigned icomp=2;icomp<der.size();++icomp){
+             myvals.addDerivative( ival, kder, der[icomp]*myder.getDerivative( icomp, jder ) );
+         }
+     } else {
+         unsigned kder=virbas + (jder - 3*mybasemulticolvars[mmc]->getNumberOfAtoms());
+         for(unsigned icomp=2;icomp<der.size();++icomp){
+             myvals.addDerivative( ival, kder, der[icomp]*myder.getDerivative( icomp, jder ) );
+         }
+     }
+  }
 }
 
 void AdjacencyMatrixBase::recalculateMatrixElement( const unsigned& myelem, MultiValue& myvals ){

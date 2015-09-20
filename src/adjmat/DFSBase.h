@@ -23,7 +23,6 @@
 #define __PLUMED_adjmat_DFSBase_h
 
 #include "ActionWithInputMatrix.h"
-#include "multicolvar/MultiColvarFunction.h"
 #include "multicolvar/AtomValuePack.h"
 
 namespace PLMD {

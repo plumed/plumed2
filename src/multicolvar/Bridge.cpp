@@ -95,9 +95,8 @@ PLUMED_MULTICOLVAR_INIT(ao)
   // Read in the atoms
   weightHasDerivatives=true; std::vector<AtomNumber> all_atoms;
   readThreeGroups("BRIDGING_ATOMS","GROUPA","GROUPB",false, all_atoms);
-  if( all_atoms.size()>0 ) ActionAtomistic::requestAtoms( all_atoms );
   // Setup the multicolvar base
-  setupMultiColvarBase();
+  setupMultiColvarBase( all_atoms );
   // Setup Central atom atoms
   std::vector<bool> catom_ind(3, false); catom_ind[0]=true;
   setAtomsForCentralAtom( catom_ind ); 

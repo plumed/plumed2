@@ -23,7 +23,6 @@
 #define __PLUMED_adjmat_AdjacencyMatrixBase_h
 
 #include "multicolvar/MultiColvarBase.h"
-#include "multicolvar/InputMultiColvarSet.h"
 #include "AdjacencyMatrixVessel.h"
 
 namespace PLMD {
@@ -40,8 +39,6 @@ private:
   double wtolerance;
 /// This is the vessel that stores the adjacency matrix
   AdjacencyMatrixVessel* mat;
-/// This stores the base colvars
-  multicolvar::InputMultiColvarSet myinputdata;
 /// This is used within AdjacencyMatrixVessel to recalculate matrix elements
 /// whcih is useful when we are operating with lowmem
   void recalculateMatrixElement( const unsigned& myelem, MultiValue& myvals );
@@ -58,7 +55,7 @@ protected:
   void parseConnectionDescriptions( const std::string& key, const unsigned& nrow_t );
 protected:
 /// Read the list of atoms involved in this colvar
-  void parseAtomList(const std::string& key, const int& num, const bool& isnodes, std::vector<AtomNumber>& t);
+  bool parseAtomList(const std::string& key, const int& num, const bool& isnodes, std::vector<AtomNumber>& t);
 /// Get the number of nodes of different types
   unsigned getNumberOfNodeTypes() const ;
 /// Get the total number of nodes
@@ -76,21 +73,13 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit AdjacencyMatrixBase(const ActionOptions&);
-/// This returns the position of an atom for link cells 
-  Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const ;
-/// Tells us if a particular index is active 
-  bool isCurrentlyActive( const unsigned& bno, const unsigned& code );
-/// Update the list of active atoms in the underlying atom value pack 
-  void updateActiveAtoms( multicolvar::AtomValuePack& myatoms ) const ;
-/// Calculation routine
-  void calculate();
 /// Create the connection object
   virtual void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::string& desc ) = 0;
 /// None of these things are allowed
   bool isPeriodic(){ return false; }
   Vector getCentralAtom(){ plumed_merror("cannot find central atoms for adjacency matrix actions"); Vector dum; return dum; }
 /// Get the absolute index of an atom
-  AtomNumber getAbsoluteIndexOfCentralAtom(const unsigned& i) const ;
+//  AtomNumber getAbsoluteIndexOfCentralAtom(const unsigned& i) const ;
 };
 
 inline
@@ -100,12 +89,15 @@ AdjacencyMatrixVessel* AdjacencyMatrixBase::getAdjacencyVessel(){
 
 inline
 unsigned AdjacencyMatrixBase::getBaseColvarNumber( const unsigned& inum ) const {
-  return myinputdata.getBaseColvarNumber(inum);
+  if( inum<colvar_label.size() ) return colvar_label[inum]; 
+  return 0;
 }
 
 inline 
 void AdjacencyMatrixBase::getOrientationVector( const unsigned& ind, const bool& normed, std::vector<double>& orient ) const {
-  myinputdata.getVectorForTask( ind, normed, orient );
+  plumed_dbg_assert( ind<colvar_label.size() ); unsigned mmc=colvar_label[ind];
+  plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(ind,mmc) ) );
+  mybasedata[mmc]->retrieveValue( convertToLocalIndex(ind,mmc), normed, orient );
 }
 
 }

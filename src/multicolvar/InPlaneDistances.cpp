@@ -70,13 +70,12 @@ PLUMED_MULTICOLVAR_INIT(ao)
   // Read in the atoms
   std::vector<AtomNumber> all_atoms;
   readThreeGroups("GROUP","VECTORSTART","VECTOREND",false, all_atoms);
-  if( all_atoms.size()>0 ) ActionAtomistic::requestAtoms( all_atoms );
 
   // Check atoms are OK
   if( getFullNumberOfTasks()!=getNumberOfAtoms()-2 ) error("you should specify one atom for VECTORSTART and one atom for VECTOREND only");
 
   // Setup the multicolvar base
-  setupMultiColvarBase(); readVesselKeywords();
+  setupMultiColvarBase( all_atoms ); readVesselKeywords();
   // And check everything has been read in correctly
   checkRead();
 

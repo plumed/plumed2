@@ -25,7 +25,6 @@
 #include "core/ActionWithValue.h"
 #include "core/ActionAtomistic.h"
 #include "vesselbase/ActionWithVessel.h"
-#include "multicolvar/InputMultiColvarSet.h"
 #include "multicolvar/MultiColvarBase.h"
 
 namespace PLMD {
@@ -43,10 +42,6 @@ private:
   bool usepbc;
 /// The vessel that holds the adjacency matrix
   AdjacencyMatrixVessel* mymatrix;
-/// This is set true when we are using row sums as the output colvars
-  bool matsum;
-/// This stores base colvars when we operate use a column sum as input
-  multicolvar::InputMultiColvarSet myinputdata;
 /// The forces we are going to apply to things
   std::vector<double> forcesToApply;
 protected:

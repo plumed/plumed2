@@ -36,9 +36,8 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit MatrixSummationBase(const ActionOptions&);
-  void calculate();
-  void updateActiveAtoms( multicolvar::AtomValuePack& myatoms ) const ;
   bool isPeriodic(){ return false; }
+  void updateActiveAtoms( multicolvar::AtomValuePack& myatoms ) const ;
   Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const ;
   bool isCurrentlyActive( const unsigned& bno, const unsigned& code );
   AtomNumber getAbsoluteIndexOfCentralAtom( const unsigned& i ) const ;

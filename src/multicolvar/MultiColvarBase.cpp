@@ -24,6 +24,8 @@
 #include "ActionVolume.h"
 #include "vesselbase/Vessel.h"
 #include "vesselbase/BridgeVessel.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
 #include "tools/Pbc.h"
 #include "AtomValuePack.h"
 #include "CatomPack.h"
@@ -65,6 +67,7 @@ Action(ao),
 ActionAtomistic(ao),
 ActionWithValue(ao),
 ActionWithVessel(ao),
+numder_func(false),
 usepbc(false),
 uselinkforthree(false),
 linkcells(comm),
@@ -75,6 +78,36 @@ usespecies(false)
     usepbc=!nopbc;
   } 
   if( keywords.exists("SPECIES") ) usespecies=true;
+}
+
+bool MultiColvarBase::parseMultiColvarAsInput( const std::string& key, const double& wtolerance ){
+  std::vector<std::string> mlabs; parseVector(key,mlabs);
+  if( mlabs.size()==0 ) return false;
+
+  std::string mname;
+  for(unsigned i=0;i<mlabs.size();++i){
+      MultiColvarBase* mycolv = plumed.getActionSet().selectWithLabel<MultiColvarBase*>(mlabs[i]);
+      if(!mycolv) error("action labeled " + mlabs[i] + " does not exist or is not a multicolvar");
+      // Check all base multicolvars are of same type
+      if( i==0 ){
+          mname = mycolv->getName();
+          if( mycolv->isPeriodic() ) error("multicolvar functions don't work with this multicolvar");
+      } else {
+          if( mname!=mycolv->getName() ) error("All input multicolvars must be of same type");
+      }
+      // And track which variable stores each colvar
+      for(unsigned j=0;j<mycolv->getFullNumberOfTasks();++j) colvar_label.push_back( mybasemulticolvars.size() );
+      // And store the multicolvar base
+      mybasemulticolvars.push_back( mycolv );
+      // And create a basedata stash
+      mybasedata.push_back( mybasemulticolvars[mybasemulticolvars.size()-1]->buildDataStashes( true, wtolerance ) );
+      plumed_assert( mybasemulticolvars.size()==mybasedata.size() );
+  }
+
+  log.printf("  using colvars calculated by actions "); 
+  for(unsigned i=0;i<mlabs.size();++i) log.printf("%s ",mlabs[i].c_str() );
+  log.printf("\n"); 
+  return true;
 }
 
 void MultiColvarBase::addTaskToList( const unsigned& taskCode ){
@@ -89,7 +122,7 @@ void MultiColvarBase::resizeBookeepingArray( const unsigned& num1, const unsigne
   }
 }
 
-void MultiColvarBase::setupMultiColvarBase(){
+void MultiColvarBase::setupMultiColvarBase( const std::vector<AtomNumber>& atoms ){
   // Setup decoder array
   if( !usespecies && ablocks.size()<4 ){
      decoder.resize( ablocks.size() ); unsigned code=1;
@@ -109,6 +142,22 @@ void MultiColvarBase::setupMultiColvarBase(){
      use_for_central_atom.resize( ablocks.size(), true );
      numberForCentralAtom = 1.0 / static_cast<double>( ablocks.size() );
   }
+
+  // Copy lists of atoms involved from base multicolvars 
+  std::vector<AtomNumber> tmp_atoms, all_atoms;
+  for(unsigned i=0;i<mybasemulticolvars.size();++i){
+      BridgedMultiColvarFunction* mybr=dynamic_cast<BridgedMultiColvarFunction*>( mybasemulticolvars[i] );
+      if( mybr ) tmp_atoms=(mybr->getPntrToMultiColvar())->getAbsoluteIndexes();
+      else tmp_atoms=mybasemulticolvars[i]->getAbsoluteIndexes();
+      for(unsigned j=0;j<tmp_atoms.size();++j) all_atoms.push_back( tmp_atoms[j] );
+  } 
+  // Get additional atom requests
+  for(unsigned i=0;i<atoms.size();++i) all_atoms.push_back( atoms[i] );
+
+  // Now make sure we get all the atom positions 
+  ActionAtomistic::requestAtoms( all_atoms );
+  // And setup dependencies
+  for(unsigned i=0;i<mybasemulticolvars.size();++i) addDependency( mybasemulticolvars[i] );
 
   // Setup underlying ActionWithVessel
   readVesselKeywords();
@@ -316,6 +365,29 @@ bool MultiColvarBase::setupCurrentAtomList( const unsigned& taskCode, AtomValueP
   return true;
 }
 
+void MultiColvarBase::calculate(){ 
+  if( numder_func && colvar_label.size()>0 ){
+     // Clear any derivatives in base colvar that were 
+     // accumulated from previous calculations
+     for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasemulticolvars[i]->clearDerivatives();
+     // And recalculate
+     for(unsigned i=0;i<mybasemulticolvars.size();++i){
+        BridgedMultiColvarFunction* bb=dynamic_cast<BridgedMultiColvarFunction*>( mybasemulticolvars[i] );
+        if( bb ) (bb->getPntrToMultiColvar())->calculate();
+        else mybasemulticolvars[i]->calculate();
+     }
+     // Copy the box from the base multicolvar here
+     unsigned maxb=mybasemulticolvars.size() - 1;
+     BridgedMultiColvarFunction* bb=dynamic_cast<BridgedMultiColvarFunction*>( mybasemulticolvars[maxb] );
+     if( bb ) changeBox( (bb->getPntrToMultiColvar())->getBox() );
+     else changeBox( mybasemulticolvars[maxb]->getBox() );
+  }
+  // Setup the link cells
+  setupLinkCells();
+  // And run all tasks
+  runAllTasks();
+}
+
 void MultiColvarBase::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
 
   AtomValuePack myatoms( myvals, this );
@@ -342,6 +414,11 @@ void MultiColvarBase::calculateWeight( AtomValuePack& myatoms ) const {
 double MultiColvarBase::doCalculation( const unsigned& taskIndex, AtomValuePack& myatoms ) const {
   double val=compute( taskIndex, myatoms ); updateActiveAtoms( myatoms );
   return val;
+}
+
+void MultiColvarBase::updateActiveAtoms( AtomValuePack& myatoms ) const {
+  if( colvar_label.size()==0 ) myatoms.updateUsingIndices();
+  else myatoms.updateDynamicList();
 }
 
 Vector MultiColvarBase::getCentralAtomPos( const unsigned& taskIndex ){
