@@ -115,9 +115,9 @@ double InPlaneDistances::compute( const unsigned& tindex, AtomValuePack& myatoms
   double sangle=sin(angle), cangle=cos(angle); 
   double dd=dir.modulo(), invdd=1.0/dd, val=dd*sangle;
 
-  myatoms.addAtomsDerivatives( 1, 0, dd*cangle*ddik + sangle*invdd*dir );
-  myatoms.addAtomsDerivatives( 1, 1, -dd*cangle*(ddik+ddij) - sangle*invdd*dir );
-  myatoms.addAtomsDerivatives( 1, 2, dd*cangle*ddij );
+  addAtomDerivatives( 1, 0, dd*cangle*ddik + sangle*invdd*dir, myatoms );
+  addAtomDerivatives( 1, 1, -dd*cangle*(ddik+ddij) - sangle*invdd*dir, myatoms );
+  addAtomDerivatives( 1, 2, dd*cangle*ddij, myatoms );
   myatoms.addBoxDerivatives( 1, -dd*cangle*(Tensor(normal,ddij)+Tensor(dir,ddik)) - sangle*invdd*Tensor(dir,dir) );
 
   return val;

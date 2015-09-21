@@ -158,8 +158,8 @@ double XDistances::compute( const unsigned& tindex, AtomValuePack& myatoms ) con
 
    Vector myvec; myvec.zero(); 
    // And finish the calculation
-   myvec[myc]=+1; myatoms.addAtomsDerivatives( 1, 1, myvec  );
-   myvec[myc]=-1; myatoms.addAtomsDerivatives( 1, 0, myvec );
+   myvec[myc]=+1; addAtomDerivatives( 1, 1, myvec, myatoms );
+   myvec[myc]=-1; addAtomDerivatives( 1, 0, myvec, myatoms );
    myatoms.addBoxDerivatives( 1, Tensor(distance,myvec) );
    return value;
 }

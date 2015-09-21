@@ -34,6 +34,8 @@ namespace multicolvar {
 class CatomPack;
 
 class AtomValuePack {
+friend class MultiColvarBase;
+friend class LocalAverage;
 private:
 /// Copy of the values that we are adding to
   MultiValue& myvals;
@@ -47,6 +49,10 @@ private:
   std::vector<unsigned>& sort_vector;
 /// This holds atom positions
   std::vector<Vector>& myatoms;
+///
+  void addDerivative( const unsigned& , const unsigned& , const double& );
+///
+  void addAtomsDerivatives( const unsigned& , const unsigned& , const Vector& );
 public:
   AtomValuePack( MultiValue& vals, MultiColvarBase const * mcolv );
 /// Set the number of atoms
@@ -71,10 +77,6 @@ public:
   void addValue( const unsigned& ival, const double& vv );
 ///
   double getValue( const unsigned& ) const ;
-///
-  void addDerivative( const unsigned& , const unsigned& , const double& );
-///
-  void addAtomsDerivatives( const unsigned& , const unsigned& , const Vector& );
 ///
   void addBoxDerivatives( const unsigned& , const Tensor& );
 ///

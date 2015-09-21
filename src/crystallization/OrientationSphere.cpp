@@ -108,13 +108,12 @@ double OrientationSphere::compute( const unsigned& tindex, multicolvar::AtomValu
              mergeVectorDerivatives( 1, 2, this_orient.size(), myatoms.getIndex(0), this_orient, myder0, myatoms );  
              mergeVectorDerivatives( 1, 2, catom_der.size(), myatoms.getIndex(i), catom_der, myder1, myatoms );
              myatoms.addComDerivatives( 1, f_dot*(-dfunc)*distance, atom0 );
-             multicolvar::CatomPack atom1=getCentralAtomPackFromInput( myatoms.getIndex(i) );
-             myatoms.addComDerivatives( 1, f_dot*(dfunc)*distance, atom1 );
+             addAtomDerivatives( 1, i, f_dot*(dfunc)*distance, myatoms );
              myatoms.addBoxDerivatives( 1, (-dfunc)*f_dot*Tensor(distance,distance) );
              myder1.clearAll();
               
              myatoms.addComDerivatives( 0, (-dfunc)*distance, atom0 );
-             myatoms.addComDerivatives( 0, (dfunc)*distance, atom1  );
+             addAtomDerivatives( 0, i, (dfunc)*distance, myatoms );
              myatoms.addBoxDerivatives( 0, (-dfunc)*Tensor(distance,distance) );
 
          }

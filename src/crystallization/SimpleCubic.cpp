@@ -148,14 +148,14 @@ double SimpleCubic::compute( const unsigned& tindex, multicolvar::AtomValuePack&
          myder[2] = 4*z3/t2-4*distance[2]*t3; 
 
          value += sw*tmp; fder = (+dfunc)*tmp*distance + sw*myder;
-         myatoms.addAtomsDerivatives( 1, 0, -fder );
-         myatoms.addAtomsDerivatives( 1, i, +fder );
+         addAtomDerivatives( 1, 0, -fder, myatoms );
+         addAtomDerivatives( 1, i, +fder, myatoms );
          // Tens is a constructor that you build by taking the vector product of two vectors (remember the scalars!)
          myatoms.addBoxDerivatives( 1, Tensor(distance,-fder) );
  
          norm += sw;
-         myatoms.addAtomsDerivatives( 0, 0, (-dfunc)*distance );
-         myatoms.addAtomsDerivatives( 0, i, (+dfunc)*distance );
+         addAtomDerivatives( 0, 0, (-dfunc)*distance, myatoms );
+         addAtomDerivatives( 0, i, (+dfunc)*distance, myatoms );
          myatoms.addBoxDerivatives( 0, (-dfunc)*Tensor(distance,distance) );
       }
    }

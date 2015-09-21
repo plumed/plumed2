@@ -86,8 +86,8 @@ void Steinhardt::calculateVector( multicolvar::AtomValuePack& myatoms ) const {
          double dlen3 = d2*dlen;
 
          // Store derivatives of weight
-         myatoms.addAtomsDerivatives( 1, 0, (-dfunc)*distance );
-         myatoms.addAtomsDerivatives( 1, i, (+dfunc)*distance );
+         addAtomDerivatives( 1, 0, (-dfunc)*distance, myatoms );
+         addAtomDerivatives( 1, i, (+dfunc)*distance, myatoms );
          myatoms.addBoxDerivatives( 1, (-dfunc)*Tensor( distance,distance ) ); 
 
          // Do stuff for m=0
@@ -97,8 +97,8 @@ void Steinhardt::calculateVector( multicolvar::AtomValuePack& myatoms ) const {
          // Derivative wrt to the vector connecting the two atoms
          myrealvec = (+sw)*dpoly_ass*dz + poly_ass*(+dfunc)*distance;
          // Accumulate the derivatives
-         myatoms.addAtomsDerivatives( 2 + tmom, 0, -myrealvec );      
-         myatoms.addAtomsDerivatives( 2 + tmom, i, myrealvec ); 
+         addAtomDerivatives( 2 + tmom, 0, -myrealvec, myatoms );      
+         addAtomDerivatives( 2 + tmom, i, myrealvec, myatoms); 
          myatoms.addBoxDerivatives( 2 + tmom, Tensor( -myrealvec,distance ) );
          // And store the vector function
          myatoms.addValue( 2 + tmom, sw*poly_ass );
@@ -134,13 +134,13 @@ void Steinhardt::calculateVector( multicolvar::AtomValuePack& myatoms ) const {
 
              // Real part
              myatoms.addValue( 2+tmom+m, sw*tq6 );
-             myatoms.addAtomsDerivatives( 2+tmom+m, 0, -myrealvec );
-             myatoms.addAtomsDerivatives( 2+tmom+m, i, myrealvec );
+             addAtomDerivatives( 2+tmom+m, 0, -myrealvec, myatoms );
+             addAtomDerivatives( 2+tmom+m, i, myrealvec, myatoms );
              myatoms.addBoxDerivatives( 2+tmom+m, Tensor( -myrealvec,distance ) );
              // Imaginary part 
              myatoms.addValue( 2+ncomp+tmom+m, sw*itq6 );
-             myatoms.addAtomsDerivatives( 2+ncomp+tmom+m, 0, -myimagvec );
-             myatoms.addAtomsDerivatives( 2+ncomp+tmom+m, i, myimagvec );
+             addAtomDerivatives( 2+ncomp+tmom+m, 0, -myimagvec, myatoms );
+             addAtomDerivatives( 2+ncomp+tmom+m, i, myimagvec, myatoms );
              myatoms.addBoxDerivatives( 2+ncomp+tmom+m, Tensor( -myimagvec,distance ) );
              // Store -m part of vector
              double pref=pow(-1.0,m); 
@@ -148,13 +148,13 @@ void Steinhardt::calculateVector( multicolvar::AtomValuePack& myatoms ) const {
              // conjugate of Legendre polynomial
              // Real part
              myatoms.addValue( 2+tmom-m, pref*sw*tq6 );
-             myatoms.addAtomsDerivatives( 2+tmom-m, 0, -pref*myrealvec );
-             myatoms.addAtomsDerivatives( 2+tmom-m, i, pref*myrealvec );
+             addAtomDerivatives( 2+tmom-m, 0, -pref*myrealvec, myatoms );
+             addAtomDerivatives( 2+tmom-m, i, pref*myrealvec, myatoms );
              myatoms.addBoxDerivatives( 2+tmom-m, pref*Tensor( -myrealvec,distance ) );
              // Imaginary part
              myatoms.addValue( 2+ncomp+tmom-m, -pref*sw*itq6 );
-             myatoms.addAtomsDerivatives( 2+ncomp+tmom-m, 0, pref*myimagvec );
-             myatoms.addAtomsDerivatives( 2+ncomp+tmom-m, i, -pref*myimagvec );
+             addAtomDerivatives( 2+ncomp+tmom-m, 0, pref*myimagvec, myatoms );
+             addAtomDerivatives( 2+ncomp+tmom-m, i, -pref*myimagvec, myatoms );
              myatoms.addBoxDerivatives( 2+ncomp+tmom-m, pref*Tensor( myimagvec,distance ) );
          }
      }

@@ -136,10 +136,8 @@ void NumberOfLinks::calculateWeight( AtomValuePack& myatoms ) const {
   myatoms.setValue(0,sw);
 
   if( !doNotCalculateDerivatives() ){
-      CatomPack atom0=getCentralAtomPackFromInput( myatoms.getIndex(0) );
-      myatoms.addComDerivatives( 0, (-dfunc)*distance, atom0 );
-      CatomPack atom1=getCentralAtomPackFromInput( myatoms.getIndex(1) );
-      myatoms.addComDerivatives( 0, (dfunc)*distance, atom1 );
+      addAtomDerivatives( 0, 0, (-dfunc)*distance, myatoms );
+      addAtomDerivatives( 0, 1, (dfunc)*distance, myatoms );
       myatoms.addBoxDerivatives( 0, (-dfunc)*Tensor(distance,distance) ); 
   }
 }

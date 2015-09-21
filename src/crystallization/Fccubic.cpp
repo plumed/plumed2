@@ -197,11 +197,11 @@ double Fccubic::compute( const unsigned& tindex, multicolvar::AtomValuePack& mya
   
          fder = (+dfunc)*tmp*distance + sw*myder;
 
-         myatoms.addAtomsDerivatives( 1, 0, -fder );
-         myatoms.addAtomsDerivatives( 1, i, +fder );
+         addAtomDerivatives( 1, 0, -fder, myatoms );
+         addAtomDerivatives( 1, i, +fder, myatoms);
          myatoms.addBoxDerivatives( 1, Tensor(distance,-fder) );
-         myatoms.addAtomsDerivatives( 0, 0, (-dfunc)*distance );
-         myatoms.addAtomsDerivatives( 0, i, (+dfunc)*distance );
+         addAtomDerivatives( 0, 0, (-dfunc)*distance, myatoms);
+         addAtomDerivatives( 0, i, (+dfunc)*distance, myatoms);
          myatoms.addBoxDerivatives( 0, (-dfunc)*Tensor(distance,distance) );
       }
    }

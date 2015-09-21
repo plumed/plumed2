@@ -144,8 +144,8 @@ void Bridge::calculateWeight( AtomValuePack& myatoms ) const {
   double dw, w=sf2.calculateSqr( ldij, dw );
   myatoms.setValue( 0, w );
 
-  myatoms.addAtomsDerivatives( 0, 0, -dw*dij );
-  myatoms.addAtomsDerivatives( 0, 2, dw*dij );
+  addAtomDerivatives( 0, 0, -dw*dij, myatoms );
+  addAtomDerivatives( 0, 2, dw*dij, myatoms );
   myatoms.addBoxDerivatives( 0, (-dw)*Tensor(dij,dij) );
 }
 
@@ -154,8 +154,8 @@ double Bridge::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
   double dw, w=sf1.calculateSqr( dik.modulo2(), dw );
 
   // And finish the calculation
-  myatoms.addAtomsDerivatives( 1, 0, -dw*dik );
-  myatoms.addAtomsDerivatives( 1, 1,  dw*dik );
+  addAtomDerivatives( 1, 0, -dw*dik, myatoms );
+  addAtomDerivatives( 1, 1,  dw*dik, myatoms );
   myatoms.addBoxDerivatives( 1, (-dw)*Tensor(dik,dik) );
   return w;
 }

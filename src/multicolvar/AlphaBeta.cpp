@@ -165,10 +165,10 @@ double AlphaBeta::compute( const unsigned& tindex, AtomValuePack& myatoms ) cons
   dd2 *= svalue;
   value = 0.5*cvalue;
 
-  myatoms.addAtomsDerivatives(1, 0,dd0);
-  myatoms.addAtomsDerivatives(1, 1,dd1-dd0);
-  myatoms.addAtomsDerivatives(1, 2,dd2-dd1);
-  myatoms.addAtomsDerivatives(1, 3,-dd2);
+  addAtomDerivatives(1, 0,dd0,myatoms);
+  addAtomDerivatives(1, 1,dd1-dd0,myatoms);
+  addAtomDerivatives(1, 2,dd2-dd1,myatoms);
+  addAtomDerivatives(1, 3,-dd2,myatoms);
 
   myatoms.addBoxDerivatives(1, -(extProduct(d0,dd0)+extProduct(d1,dd1)+extProduct(d2,dd2)));
 

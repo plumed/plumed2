@@ -204,19 +204,6 @@ void AdjacencyMatrixBase::requestAtoms( const std::vector<AtomNumber>& atoms, co
   setupMultiColvarBase( atoms );
 }
 
-void AdjacencyMatrixBase::addAtomDerivatives( const unsigned& ival, const unsigned& iatom, const Vector& der, multicolvar::AtomValuePack& myatoms ) const {
-  unsigned jatom=myatoms.getIndex(iatom);
-
-  if( jatom>colvar_label.size() ){
-      myatoms.addAtomsDerivatives( ival, jatom, der );
-  } else {
-      unsigned mmc=colvar_label[jatom];
-      unsigned basen=0; for(unsigned i=0;i<mmc;++i) basen+=mybasemulticolvars[i]->getNumberOfAtoms();
-      multicolvar::CatomPack atom0=mybasemulticolvars[mmc]->getCentralAtomPack( basen, convertToLocalIndex(jatom,mmc) );
-      myatoms.addComDerivatives( ival, der, atom0 );
-  }
-}
-
 // Maybe put this back GAT to check that it is returning an atom number that is one of the nodes
 // and not a hydrogen if we are doing HBPAMM
 // AtomNumber AdjacencyMatrixBase::getAbsoluteIndexOfCentralAtom(const unsigned& i) const {

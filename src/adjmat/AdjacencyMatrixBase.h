@@ -66,8 +66,6 @@ protected:
   void requestAtoms( const std::vector<AtomNumber>& atoms, const bool& symmetric, const unsigned& nrows );
 /// Return the group this atom is a part of
   unsigned getBaseColvarNumber( const unsigned& ) const ;
-/// Add some derivatives to a particular component of a particular atom
-  void addAtomDerivatives( const unsigned& , const unsigned& , const Vector& , multicolvar::AtomValuePack& ) const ;
 /// Add some derivatives to the relevant orientation
   void addOrientationDerivatives( const unsigned&, const unsigned& , const std::vector<double>& , multicolvar::AtomValuePack& ) const ;
 public:

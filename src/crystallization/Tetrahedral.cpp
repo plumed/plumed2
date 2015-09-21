@@ -174,14 +174,14 @@ double Tetrahedral::compute( const unsigned& tindex, multicolvar::AtomValuePack&
          myder[2] = (tt1-(distance[2]*t1))  + (-tt2-(distance[2]*t2))  + (-tt3-(distance[2]*t3))  + (tt4-(distance[2]*t4));
 
          value += sw*tmp; fder = (+dfunc)*tmp*distance + sw*myder;
-         myatoms.addAtomsDerivatives( 1, 0, -fder );
-         myatoms.addAtomsDerivatives( 1, i, +fder );
+         addAtomDerivatives( 1, 0, -fder, myatoms );
+         addAtomDerivatives( 1, i, +fder, myatoms );
          // Tens is a constructor that you build by taking the vector product of two vectors (remember the scalars!)
          myatoms.addBoxDerivatives( 1, Tensor(distance,-fder) );
  
          norm += sw;
-         myatoms.addAtomsDerivatives( 0, 0, (-dfunc)*distance );
-         myatoms.addAtomsDerivatives( 0, i, (+dfunc)*distance );
+         addAtomDerivatives( 0, 0, (-dfunc)*distance, myatoms );
+         addAtomDerivatives( 0, i, (+dfunc)*distance, myatoms );
          myatoms.addBoxDerivatives( 0, (-dfunc)*Tensor(distance,distance) );
       }
    }

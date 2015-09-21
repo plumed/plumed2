@@ -87,6 +87,8 @@ protected:
   void addTaskToList( const unsigned& taskCode );
 /// Finish setting up the multicolvar base
   void setupMultiColvarBase( const std::vector<AtomNumber>& atoms );
+/// Add some derivatives to a particular component of a particular atom
+  void addAtomDerivatives( const unsigned& , const unsigned& , const Vector& , multicolvar::AtomValuePack& ) const ;
 /// Set which atoms are to be used to calculate the central atom position
   void setAtomsForCentralAtom( const std::vector<bool>& catom_ind );
 /// Set the value of the cutoff for the link cells
@@ -179,7 +181,7 @@ Vector MultiColvarBase::getPositionOfAtomForLinkCells( const unsigned& iatom ) c
       return mybasemulticolvars[mmc]->getCentralAtomPos( convertToLocalIndex(iatom,mmc) );
   }
   return ActionAtomistic::getPosition( iatom );
-} 
+}
 
 inline
 unsigned MultiColvarBase::getNumberOfDerivatives(){

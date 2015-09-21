@@ -388,6 +388,19 @@ void MultiColvarBase::calculate(){
   runAllTasks();
 }
 
+void MultiColvarBase::addAtomDerivatives( const unsigned& ival, const unsigned& iatom, const Vector& der, multicolvar::AtomValuePack& myatoms ) const {
+  unsigned jatom=myatoms.getIndex(iatom);
+
+  if( jatom<colvar_label.size() ){
+      unsigned mmc=colvar_label[jatom];
+      unsigned basen=0; for(unsigned i=0;i<mmc;++i) basen+=mybasemulticolvars[i]->getNumberOfAtoms();
+      multicolvar::CatomPack atom0=mybasemulticolvars[mmc]->getCentralAtomPack( basen, convertToLocalIndex(jatom,mmc) );
+      myatoms.addComDerivatives( ival, der, atom0 );
+  } else {
+      myatoms.addAtomsDerivatives( ival, iatom, der );
+  }
+}
+
 void MultiColvarBase::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
 
   AtomValuePack myatoms( myvals, this );
