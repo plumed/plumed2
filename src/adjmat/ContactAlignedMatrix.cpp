@@ -77,7 +77,8 @@ ncomp(getSizeOfInputVectors())
   if( getSizeOfInputVectors()<3 ) error("base multicolvars do not calculate an orientation");
 
   // Read in the atomic positions
-  std::vector<AtomNumber> atoms; parseAtomList("MOLECULES",-1,true,atoms);
+  std::vector<AtomNumber> atoms; parseAtomList("MOLECULES",-1,atoms);
+  plumed_assert( atoms.size()==0 );
   // Read in the switching function
   switchingFunction.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
   parseConnectionDescriptions("SWITCH",0);
@@ -94,7 +95,8 @@ ncomp(getSizeOfInputVectors())
   setLinkCellCutoff( sfmax );
 
   // And request the atoms involved in this colvar
-  requestAtoms( atoms, true, 0 );
+  std::vector<unsigned> dims(2); dims[0]=dims[1]=colvar_label.size();
+  requestAtoms( atoms, true, false, dims );
 }
 
 void ContactAlignedMatrix::setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::string& desc ){

@@ -41,23 +41,17 @@ Action(ao),
 MultiColvarBase(ao)
 {
   // Read in the arguments
-  // std::string mname; 
-  // std::vector<std::string> mlabs; parseVector("DATA",mlabs);
+  std::vector<std::string> mlabs; parseVector("DATA",mlabs);
 
   if( keywords.exists("WTOL") ){
       double wtolerance; parse("WTOL",wtolerance); 
       log.printf("  only considering those colvars with a weight greater than %f \n",wtolerance);
-      bool found_acts=parseMultiColvarAsInput("DATA",wtolerance);
-      if( !found_acts ) error("found no input");
-      // myinputdata.setup( mlabs, plumed.getActionSet(), wtolerance, this );
+      bool found_acts=interpretInputMultiColvars(mlabs,wtolerance);
+      if( !found_acts ) error("one or more items in input is not the label of a multicolvar");
   } else {
-      // myinputdata.setup( mlabs, plumed.getActionSet(), 0.0, this );
-      bool found_acts=parseMultiColvarAsInput("DATA",0.0);
-      if( !found_acts ) error("found no input");
+      bool found_acts=interpretInputMultiColvars(mlabs,0.0);
+      if( !found_acts ) error("one or more items in input is not the label of a multicolvar");
   }
-  // log.printf("  using colvars calculated by actions "); 
-  // for(unsigned i=0;i<mlabs.size();++i) log.printf("%s ",mlabs[i].c_str() );
-  // log.printf("\n");
 }
 
 void MultiColvarFunction::setupAtomLists(){

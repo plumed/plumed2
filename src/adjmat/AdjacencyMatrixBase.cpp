@@ -44,32 +44,20 @@ connect_id(0)
   if(wtolerance>0) log.printf("  only considering those colvars with a weight greater than %f \n",wtolerance);
 }
 
-bool AdjacencyMatrixBase::parseAtomList(const std::string& key, const int& num, const bool& isnodes, std::vector<AtomNumber>& t){
-  std::string newkey; t.resize(0);
-  if( num<0 ){  
-     newkey=key;
-  } else {
-     std::string snum;
-     Tools::convert( num, snum ); newkey=key+snum;
-  }
+bool AdjacencyMatrixBase::parseAtomList(const std::string& key, const int& num, std::vector<AtomNumber>& t){
+  std::vector<std::string> mlabs; 
+  if( num<0 ) parseVector(key,mlabs);
+  else parseNumberedVector(key,num,mlabs);
 
-  if( isnodes ){
-     bool found_acts=parseMultiColvarAsInput(newkey,0.0);
-     if( !found_acts ) return false; 
-     // std::vector<std::string> mlabs; parseVector(newkey,mlabs);
-     // if( mlabs.size()==0 ) return;
-     // myinputdata.setup( mlabs, plumed.getActionSet(), wtolerance, this );
-     // log.printf("  using colvars calculated by actions "); 
-     // for(unsigned i=0;i<mlabs.size();++i) log.printf("%s ",mlabs[i].c_str() );
-     // log.printf("\n"); 
-  } else {
-     ActionAtomistic::parseAtomList( key, num, t );
-  }
+  if( mlabs.size()==0 ) return false;
+
+  bool found_acts=interpretInputMultiColvars(mlabs,0.0);
+  if( !found_acts ) ActionAtomistic::interpretAtomList( mlabs, t );
   return true;
 }
 
 void AdjacencyMatrixBase::parseConnectionDescriptions( const std::string& key, const unsigned& nrow_t ){
-  if( (getNumberOfNodeTypes()==1 && nrow_t==0) || (getNumberOfNodeTypes()==2 && nrow_t==1) ){
+  if( getNumberOfNodeTypes()==1 || (getNumberOfNodeTypes()==2 && nrow_t==1) ){
       std::string sw; parse(key,sw);
       setupConnector( connect_id, 0, 0, sw );
   } else {
@@ -117,81 +105,58 @@ unsigned AdjacencyMatrixBase::getNumberOfNodeTypes() const {
   return size;
 }
 
-unsigned AdjacencyMatrixBase::getNumberOfNodes() const {
-  return colvar_label.size();  // myinputdata.getFullNumberOfBaseTasks();  // Not really sure what to do here needs a think GAT
-}
-
-void AdjacencyMatrixBase::requestAtoms( const std::vector<AtomNumber>& atoms, const bool& symmetric, const unsigned& ncols ){
-  // Request the data required
-//  myinputdata.makeDataRequests( atoms, this );
-
+void AdjacencyMatrixBase::requestAtoms( const std::vector<AtomNumber>& atoms, const bool& symmetric, const bool& true_square, const std::vector<unsigned>& dims ){
   unsigned icoef, jcoef, kcoef, kcount;
   // Create the task list
-  if( atoms.size()==0 ){
-      if( symmetric || ncols==0 ){
-          nblock=getNumberOfNodes();
-      } else {
-          nblock=ncols;
-          if( (getNumberOfNodes()-ncols)>nblock ) nblock = getNumberOfNodes()-ncols; 
-      }
-      ablocks.resize(2); icoef=nblock; jcoef=1; kcoef=0; kcount=1;
-  } else {
-      kcount=atoms.size();
-      if( symmetric || ncols==0 ){
-          nblock=getNumberOfNodes(); 
-      } else {
-          nblock=ncols;
-          if( (getNumberOfNodes()-ncols)>nblock ) nblock = getNumberOfNodes()-ncols;
-      } 
-      if( kcount>nblock ) nblock=kcount; 
-
-      ablocks.resize(3);
-      icoef=nblock*nblock; jcoef=nblock; kcoef=1; ablocks[2].resize( atoms.size() );
-      for(unsigned i=0;i<ablocks[2].size();++i) ablocks[2][i]=getNumberOfAtoms() - atoms.size() + i;
+  ablocks.resize( dims.size() ); nblock=dims[0]; 
+  for(unsigned i=1;i<dims.size();++i){
+     if( dims[i]>nblock ) nblock=dims[i];
   }
-  
-  if( symmetric && ncols==0 ){ 
-     plumed_dbg_assert( ncols==0 );
-     resizeBookeepingArray( getNumberOfNodes(), getNumberOfNodes() );
-     ablocks[0].resize( getNumberOfNodes() ); ablocks[1].resize( getNumberOfNodes() ); 
-     for(unsigned i=0;i<getNumberOfNodes();++i) ablocks[0][i]=ablocks[1][i]=i;
-     for(unsigned i=1;i<getNumberOfNodes();++i){
-        for(unsigned j=0;j<i;++j){
-           bookeeping(i,j).first=getFullNumberOfTasks();
-           for(unsigned k=0;k<kcount;++k) addTaskToList( i*icoef + j*jcoef + k*kcoef );
-           bookeeping(i,j).second=getFullNumberOfTasks();
-        }
-     }
-  } else if( ncols==0 ){
-     resizeBookeepingArray( getNumberOfNodes(), getNumberOfNodes() );
-     ablocks[0].resize( getNumberOfNodes() ); ablocks[1].resize( getNumberOfNodes() );
-     for(unsigned i=0;i<getNumberOfNodes();++i) ablocks[0][i]=ablocks[1][i]=i;
-     for(unsigned i=0;i<getNumberOfNodes();++i){
-        for(unsigned j=0;j<getNumberOfNodes();++j){
-           if( i==j ) continue;
-           bookeeping(i,j).first=getFullNumberOfTasks();
-           for(unsigned k=0;k<kcount;++k) addTaskToList( i*icoef + j*jcoef + k*kcoef );
-           bookeeping(i,j).second=getFullNumberOfTasks();
-        }
+  if( dims.size()==2 ){ 
+     icoef=nblock; jcoef=1; kcoef=0; kcount=1;
+  } else if( dims.size()==3 ){
+     icoef=nblock*nblock; jcoef=nblock; kcoef=1; ablocks[2].resize( dims[2] ); kcount=dims[2];
+     if(symmetric || true_square ) {
+        for(unsigned i=0;i<ablocks[2].size();++i) ablocks[2][i]=dims[0]+i;
+     } else {
+        for(unsigned i=0;i<ablocks[2].size();++i) ablocks[2][i]=dims[0]+dims[1]+i;
      }
   } else {
-     unsigned nto = getNumberOfNodes() - ncols;
-     resizeBookeepingArray( ncols, nto ); ablocks[0].resize( ncols ); ablocks[1].resize( nto );
-     for(unsigned i=0;i<ncols;++i) ablocks[0][i]=i;
-     for(unsigned i=0;i<nto;++i) ablocks[1][i] = ncols + i;
-     for(unsigned i=0;i<ncols;++i){
-         for(unsigned j=0;j<nto;++j){
-             bookeeping(i,j).first=getFullNumberOfTasks();
-             for(unsigned k=0;k<kcount;++k) addTaskToList( i*icoef + j*jcoef + k*kcoef );   
-             bookeeping(i,j).second=getFullNumberOfTasks();
-         }
-     }
+     plumed_error();
+  }
+  if( (symmetric || true_square) ){
+     plumed_assert( !(symmetric && true_square) && dims[0]==dims[1] );
+     resizeBookeepingArray( dims[0], dims[0] );
+     ablocks[0].resize( dims[0] ); ablocks[1].resize( dims[0] );
+     for(unsigned i=0;i<dims[0];++i) ablocks[0][i]=ablocks[1][i]=i; 
+  } else {
+     resizeBookeepingArray( dims[0], dims[1] ); ablocks[0].resize( dims[0] ); ablocks[1].resize( dims[1] );
+     for(unsigned i=0;i<dims[0];++i) ablocks[0][i]=i;
+     for(unsigned i=0;i<dims[1];++i) ablocks[1][i]=dims[0]+i;
+  }
+  if( symmetric ){
+    for(unsigned i=1;i<dims[0];++i){
+      for(unsigned j=0;j<i;++j){
+        bookeeping(i,j).first=getFullNumberOfTasks();
+        for(unsigned k=0;k<kcount;++k) addTaskToList( i*icoef + j*jcoef + k*kcoef );
+        bookeeping(i,j).second=getFullNumberOfTasks();
+      }
+    }
+  } else {
+    for(unsigned i=0;i<dims[0];++i){
+       for(unsigned j=0;j<dims[1];++j){
+           if( true_square && i==j ) continue;
+           bookeeping(i,j).first=getFullNumberOfTasks();
+           for(unsigned k=0;k<kcount;++k) addTaskToList( i*icoef + j*jcoef + k*kcoef );
+           bookeeping(i,j).second=getFullNumberOfTasks();
+       }
+    }
   }
 
   // Create the storeAdjacencyMatrixVessel
   std::string param;
-  if( symmetric && ncols==0 ) param="SYMMETRIC"; 
-  if( !symmetric && ncols==0 ) param="HBONDS";
+  if( symmetric && dims[0]==dims[1] ) param="SYMMETRIC"; 
+  if( !symmetric && dims[0]==dims[1] ) param="HBONDS";
  
   vesselbase::VesselOptions da("","",0,param,this);
   Keywords keys; AdjacencyMatrixVessel::registerKeywords( keys );

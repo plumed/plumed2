@@ -85,7 +85,7 @@ unsigned ActionWithInputMatrix::getNumberOfDerivatives() {
 }
 
 unsigned ActionWithInputMatrix::getNumberOfNodes() const {
-  return (mymatrix->function)->getNumberOfNodes(); 
+  return (mymatrix->function)->ablocks[0].size(); 
 }
 
 AdjacencyMatrixVessel* ActionWithInputMatrix::getAdjacencyVessel() const {

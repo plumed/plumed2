@@ -55,15 +55,13 @@ protected:
   void parseConnectionDescriptions( const std::string& key, const unsigned& nrow_t );
 protected:
 /// Read the list of atoms involved in this colvar
-  bool parseAtomList(const std::string& key, const int& num, const bool& isnodes, std::vector<AtomNumber>& t);
+  bool parseAtomList(const std::string& key, const int& num, std::vector<AtomNumber>& t);
 /// Get the number of nodes of different types
   unsigned getNumberOfNodeTypes() const ;
-/// Get the total number of nodes
-  unsigned getNumberOfNodes() const ;
 /// Get the size of the vectors that were stored in the base colvars
   unsigned getSizeOfInputVectors() const ;
 /// Request the atoms
-  void requestAtoms( const std::vector<AtomNumber>& atoms, const bool& symmetric, const unsigned& nrows );
+  void requestAtoms( const std::vector<AtomNumber>& atoms, const bool& symmetric, const bool& true_square, const std::vector<unsigned>& dims );
 /// Return the group this atom is a part of
   unsigned getBaseColvarNumber( const unsigned& ) const ;
 /// Add some derivatives to the relevant orientation

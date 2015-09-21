@@ -70,7 +70,7 @@ protected:
 /// This remembers where the boundaries are for the tasks. It makes link cells work fast
   Matrix<std::pair<unsigned,unsigned> > bookeeping;
 /// Read in a set of multicolvar labels as the input to the action
-  bool parseMultiColvarAsInput( const std::string& key, const double& wtolerance );
+  bool interpretInputMultiColvars( const std::vector<std::string>& key, const double& wtolerance );
 /// Convert an index in the global array to an index in the individual base colvars
   unsigned convertToLocalIndex( const unsigned& index, const unsigned& mcv_code ) const ;
 /// This resizes the arrays that are used for link cell update

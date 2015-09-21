@@ -80,14 +80,13 @@ usespecies(false)
   if( keywords.exists("SPECIES") ) usespecies=true;
 }
 
-bool MultiColvarBase::parseMultiColvarAsInput( const std::string& key, const double& wtolerance ){
-  std::vector<std::string> mlabs; parseVector(key,mlabs);
+bool MultiColvarBase::interpretInputMultiColvars( const std::vector<std::string>& mlabs, const double& wtolerance ){
   if( mlabs.size()==0 ) return false;
 
   std::string mname;
   for(unsigned i=0;i<mlabs.size();++i){
       MultiColvarBase* mycolv = plumed.getActionSet().selectWithLabel<MultiColvarBase*>(mlabs[i]);
-      if(!mycolv) error("action labeled " + mlabs[i] + " does not exist or is not a multicolvar");
+      if(!mycolv) return false;
       // Check all base multicolvars are of same type
       if( i==0 ){
           mname = mycolv->getName();

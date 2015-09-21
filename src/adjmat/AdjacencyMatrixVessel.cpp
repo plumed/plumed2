@@ -60,7 +60,7 @@ unsigned AdjacencyMatrixVessel::getNumberOfColumns() const {
 }
 
 unsigned AdjacencyMatrixVessel::getNumberOfStoredValues() const {
-  if( symmetric ){ unsigned nnodes=function->getNumberOfNodes(); return 0.5*nnodes*(nnodes-1); }
+  if( symmetric ){ unsigned nnodes=function->ablocks[0].size(); return 0.5*nnodes*(nnodes-1); }
   return function->ablocks[0].size()*function->ablocks[1].size();
 }
 

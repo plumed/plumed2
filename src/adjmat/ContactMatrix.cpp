@@ -79,15 +79,40 @@ Action(ao),
 AdjacencyMatrixBase(ao)
 {
   // Read in the atomic positions
-  unsigned ncols=0; std::vector<AtomNumber> atoms; 
-  bool check=parseAtomList("ATOMSA",-1,true,atoms);
+  std::vector<unsigned> dims(2); std::vector<AtomNumber> atoms; 
+  bool check=parseAtomList("ATOMSA",-1,atoms);
   if( check ){
-     ncols=getNumberOfNodes(); ncol_t=getNumberOfNodeTypes(); 
-     parseAtomList("ATOMSB",-1,true,atoms); 
-     switchingFunction.resize( ncol_t, getNumberOfNodeTypes()-ncol_t );
+     std::vector<AtomNumber> all_atoms;
+     if( atoms.size()>0 ){
+         plumed_assert( colvar_label.size()==0 ); 
+         dims[0]=atoms.size(); ncol_t=0;
+     } else {
+         dims[0]=colvar_label.size();
+         ncol_t=getNumberOfNodeTypes();
+     }
+     for(unsigned i=0;i<atoms.size();++i) all_atoms.push_back( atoms[i] );
+     parseAtomList("ATOMSB",-1,atoms); 
+     for(unsigned i=0;i<atoms.size();++i) all_atoms.push_back( atoms[i] );
+     if( atoms.size()>0 ){ 
+         plumed_assert( colvar_label.size()==0 ); dims[1]=atoms.size();
+         if( ncol_t==0 ) switchingFunction.resize( 1, 1 ); 
+         else switchingFunction.resize( ncol_t, 1 );
+     } else {
+         dims[1]=colvar_label.size()-dims[0];
+         switchingFunction.resize( ncol_t, getNumberOfNodeTypes()-ncol_t ); 
+     }
+     // And request the atoms involved in this colvar
+     requestAtoms( all_atoms, false, false, dims );
   } else {
-     parseAtomList("ATOMS",-1,true,atoms); ncol_t=0;
+     parseAtomList("ATOMS",-1,atoms); ncol_t=0;
      switchingFunction.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
+     if( atoms.size()>0 ){
+         plumed_assert( colvar_label.size()==0 ); dims[0]=dims[1]=atoms.size();
+     } else {
+         dims[0]=dims[1]=colvar_label.size();
+     }
+     // And request the atoms involved in this colvar
+     requestAtoms( atoms, true, false, dims );
   }
   // Read in the switching functions
   parseConnectionDescriptions("SWITCH",ncol_t);
@@ -102,9 +127,6 @@ AdjacencyMatrixBase(ao)
   }
   // And set the link cell cutoff
   setLinkCellCutoff( sfmax );
-
-  // And request the atoms involved in this colvar
-  requestAtoms( atoms, true, ncols );
 }
 
 void ContactMatrix::setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::string& desc ){
