@@ -200,17 +200,15 @@ double Fccubic::compute( const unsigned& tindex, multicolvar::AtomValuePack& mya
          addAtomDerivatives( 1, 0, -fder, myatoms );
          addAtomDerivatives( 1, i, +fder, myatoms);
          myatoms.addBoxDerivatives( 1, Tensor(distance,-fder) );
-         addAtomDerivatives( 0, 0, (-dfunc)*distance, myatoms);
-         addAtomDerivatives( 0, i, (+dfunc)*distance, myatoms);
-         myatoms.addBoxDerivatives( 0, (-dfunc)*Tensor(distance,distance) );
+         addAtomDerivatives( -1, 0, (-dfunc)*distance, myatoms);
+         addAtomDerivatives( -1, i, (+dfunc)*distance, myatoms);
+         myatoms.addTemporyBoxDerivatives( (-dfunc)*Tensor(distance,distance) );
       }
    }
    
-   myatoms.setValue(1, value); myatoms.setValue(0, norm ); 
+   myatoms.setValue(1, value);  
    // values -> der of... value [0], weight[1], x coord [2], y, z... [more magic]
-   updateActiveAtoms( myatoms ); myatoms.getUnderlyingMultiValue().quotientRule( 1, 0, 1 );   
-   // Weight doesn't really have derivatives (just use the holder for convenience)
-   myatoms.getUnderlyingMultiValue().clear(0); myatoms.setValue( 0, 1.0 );
+   updateActiveAtoms( myatoms ); myatoms.getUnderlyingMultiValue().quotientRule( 1, norm, 1 );   
 
    return value / norm; // this is equivalent to getting an "atomic" CV
 }

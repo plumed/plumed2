@@ -211,21 +211,21 @@ double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) c
                  myatoms.addBoxDerivatives( 1, (-dfunc)*values[1]*vir );
              }
              // And the bit we use to average the vector
-             myatoms.addComDerivatives( 0, (-dfunc)*distance, atom0 );
-             myatoms.addComDerivatives( 0, (+dfunc)*distance, atom1 );
-             myatoms.addBoxDerivatives( 0, (-dfunc)*vir );
+             myatoms.addComDerivatives( -1, (-dfunc)*distance, atom0 );
+             myatoms.addComDerivatives( -1, (+dfunc)*distance, atom1 );
+             myatoms.addTemporyBoxDerivatives( (-dfunc)*vir );
              myder.clearAll();
          }
      }
   }
 
   // Set the tempory weight
-  myatoms.setValue( 0, nbond ); updateActiveAtoms( myatoms );
+  updateActiveAtoms( myatoms );
   if( values.size()>2){
       double norm=0;
       MultiValue& myvals=myatoms.getUnderlyingMultiValue(); 
       for(unsigned i=2;i<values.size();++i){
-          myvals.quotientRule( i, 0, i );
+          myvals.quotientRule( i, nbond, i );
           // Calculate length of vector
           norm+=myvals.get(i)*myvals.get(i);
       }
@@ -237,10 +237,8 @@ double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) c
          }
       }
   } else {
-      myatoms.getUnderlyingMultiValue().quotientRule( 1, 0, 1 ); 
+      myatoms.getUnderlyingMultiValue().quotientRule( 1, nbond, 1 ); 
   }
-  // Weight doesn't really have derivatives (just use the holder for convenience) 
-  myatoms.getUnderlyingMultiValue().clear(0); myatoms.setValue( 0, 1.0 );
    
   return myatoms.getValue(1);
 }

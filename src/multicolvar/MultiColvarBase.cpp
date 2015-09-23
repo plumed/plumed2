@@ -100,6 +100,8 @@ bool MultiColvarBase::interpretInputMultiColvars( const std::vector<std::string>
       mybasemulticolvars.push_back( mycolv );
       // And create a basedata stash
       mybasedata.push_back( mybasemulticolvars[mybasemulticolvars.size()-1]->buildDataStashes( true, wtolerance ) );
+      // Check if weight has derivatives
+      if( mybasemulticolvars[ mybasemulticolvars.size()-1 ]->weightHasDerivatives ) weightHasDerivatives=true;    
       plumed_assert( mybasemulticolvars.size()==mybasedata.size() );
   }
 
@@ -183,6 +185,66 @@ void MultiColvarBase::setLinkCellCutoff( const double& lcut ){
 }
 
 void MultiColvarBase::setupLinkCells(){
+  if( usespecies ){
+     // Now check for calculating volumes (currently this is only done for usespecies style commands 
+     // as it is difficult to do with things like DISTANCES or ANGLES and I think pointless
+     bool justVolumes=true;
+     for(unsigned i=0;i<getNumberOfVessels();++i){
+         vesselbase::BridgeVessel* myb=dynamic_cast<vesselbase::BridgeVessel*>( getPntrToVessel(i) );
+         if( !myb ){ justVolumes=false; break; }
+         ActionVolume* myv=dynamic_cast<ActionVolume*>( myb->getOutputAction() );
+         if( !myv ){ justVolumes=false; break; }
+     }
+     // Now ensure that we only do calculations for those atoms in the relevant volume
+     if( justVolumes ){
+         // Setup the regions in the action volume objects 
+         for(unsigned i=0;i<getNumberOfVessels();++i){
+             vesselbase::BridgeVessel* myb=dynamic_cast<vesselbase::BridgeVessel*>( getPntrToVessel(i) );
+             ActionVolume* myv=dynamic_cast<ActionVolume*>( myb->getOutputAction() );
+             myv->retrieveAtoms(); myv->setupRegions();
+         }
+
+         unsigned stride=comm.Get_size();
+         unsigned rank=comm.Get_rank();
+         if( serialCalculation() ){ stride=1; rank=0; }
+
+         unsigned nactive=0;
+         std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
+         for(unsigned i=rank;i<getFullNumberOfTasks();i+=stride){
+             if( !isCurrentlyActive( 0, getTaskCode(i) ) ) continue ;
+             bool invol=false;
+             for(unsigned j=0;j<getNumberOfVessels();++j){
+                 vesselbase::BridgeVessel* myb=dynamic_cast<vesselbase::BridgeVessel*>( getPntrToVessel(j) );
+                 ActionVolume* myv=dynamic_cast<ActionVolume*>( myb->getOutputAction() );
+                 if( myv->inVolumeOfInterest(i) ){ invol=true; }
+             }
+             if( invol ){ nactive++; active_tasks[i]=1; }
+         }
+
+         if( !serialCalculation() ) comm.Sum( active_tasks );
+
+         deactivateAllTasks();
+         activateTheseTasks( active_tasks );
+         contributorsAreUnlocked=false;
+     } else if( colvar_label.size()>0 ){
+         unsigned stride=comm.Get_size();
+         unsigned rank=comm.Get_rank();
+         if( serialCalculation() ){ stride=1; rank=0; }
+
+         unsigned nactive=0;
+         std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
+         for(unsigned i=rank;i<getFullNumberOfTasks();i+=stride){
+             if( isCurrentlyActive( 0, getTaskCode(i) ) ){ nactive++; active_tasks[i]=1; }
+         }
+
+         if( !serialCalculation() ) comm.Sum( active_tasks );
+
+         deactivateAllTasks();
+         activateTheseTasks( active_tasks );
+         contributorsAreUnlocked=false;
+     }
+  }
+
   if( !linkcells.enabled() ) return ;
 
   unsigned iblock;
@@ -290,50 +352,7 @@ void MultiColvarBase::setupLinkCells(){
      deactivateAllTasks();
      activateTheseTasks( active_tasks );
      contributorsAreUnlocked=false; 
-  } else {
-     // Now check for calculating volumes (currently this is only done for usespecies style commands 
-     // as it is difficult to do with things like DISTANCES or ANGLES and I think pointless
-     bool justVolumes=true;
-     for(unsigned i=0;i<getNumberOfVessels();++i){
-         vesselbase::BridgeVessel* myb=dynamic_cast<vesselbase::BridgeVessel*>( getPntrToVessel(i) );
-         if( !myb ){ justVolumes=false; break; }
-         ActionVolume* myv=dynamic_cast<ActionVolume*>( myb->getOutputAction() ); 
-         if( !myv ){ justVolumes=false; break; }
-     }
-     // Now ensure that we only do calculations for those atoms in the relevant volume
-     if( justVolumes ){
-         bool justVolumes=true;
-         // Setup the regions in the action volume objects 
-         for(unsigned i=0;i<getNumberOfVessels();++i){
-             vesselbase::BridgeVessel* myb=dynamic_cast<vesselbase::BridgeVessel*>( getPntrToVessel(i) );
-             ActionVolume* myv=dynamic_cast<ActionVolume*>( myb->getOutputAction() );
-             myv->retrieveAtoms(); myv->setupRegions();
-         } 
-
-         unsigned stride=comm.Get_size();
-         unsigned rank=comm.Get_rank();
-         if( serialCalculation() ){ stride=1; rank=0; } 
-
-         unsigned nactive=0;
-         std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
-         for(unsigned i=rank;i<getFullNumberOfTasks();i+=stride){
-             bool invol=false;
-             for(unsigned j=0;j<getNumberOfVessels();++j){
-                 vesselbase::BridgeVessel* myb=dynamic_cast<vesselbase::BridgeVessel*>( getPntrToVessel(j) );
-                 ActionVolume* myv=dynamic_cast<ActionVolume*>( myb->getOutputAction() );
-                 if( myv->inVolumeOfInterest(i) ){ invol=true; }  
-             }
-             if( invol ){ nactive++; active_tasks[i]=1; }
-         }
-
-         if( !serialCalculation() ) comm.Sum( active_tasks );
-
-         deactivateAllTasks();
-         activateTheseTasks( active_tasks );
-         contributorsAreUnlocked=false;
-     }
-  }
-
+  } 
 }
 
 void MultiColvarBase::decodeIndexToAtoms( const unsigned& taskCode, std::vector<unsigned>& atoms ) const {
@@ -387,7 +406,7 @@ void MultiColvarBase::calculate(){
   runAllTasks();
 }
 
-void MultiColvarBase::addAtomDerivatives( const unsigned& ival, const unsigned& iatom, const Vector& der, multicolvar::AtomValuePack& myatoms ) const {
+void MultiColvarBase::addAtomDerivatives( const int& ival, const unsigned& iatom, const Vector& der, multicolvar::AtomValuePack& myatoms ) const {
   unsigned jatom=myatoms.getIndex(iatom);
 
   if( jatom<colvar_label.size() ){
@@ -396,7 +415,8 @@ void MultiColvarBase::addAtomDerivatives( const unsigned& ival, const unsigned& 
       multicolvar::CatomPack atom0=mybasemulticolvars[mmc]->getCentralAtomPack( basen, convertToLocalIndex(jatom,mmc) );
       myatoms.addComDerivatives( ival, der, atom0 );
   } else {
-      myatoms.addAtomsDerivatives( ival, iatom, der );
+      if( ival<0 ) myatoms.addTemporyAtomsDerivatives( iatom, der );
+      else myatoms.addAtomsDerivatives( ival, iatom, der );
   }
 }
 
@@ -407,7 +427,7 @@ void MultiColvarBase::performTask( const unsigned& task_index, const unsigned& c
   if( !setupCurrentAtomList( current, myatoms ) ) return;
 
   // Do a quick check on the size of this contribution  
-  calculateWeight( myatoms ); 
+  calculateWeight( current, myatoms ); 
   if( myatoms.getValue(0)<getTolerance() ){
      updateActiveAtoms( myatoms );
      return;   
@@ -419,8 +439,20 @@ void MultiColvarBase::performTask( const unsigned& task_index, const unsigned& c
   return;
 }
 
-void MultiColvarBase::calculateWeight( AtomValuePack& myatoms ) const {
-  myatoms.setValue( 0, 1.0 );
+void MultiColvarBase::calculateWeight( const unsigned& taskCode, AtomValuePack& myatoms ) const {
+  if( usespecies && taskCode<colvar_label.size() ){
+      unsigned mmc=colvar_label[taskCode]; std::vector<double> old_data( mybasemulticolvars[mmc]->getNumberOfQuantities() );
+      plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(taskCode,mmc) ) );
+      mybasedata[mmc]->retrieveValue( convertToLocalIndex(taskCode,mmc), false, old_data );
+      myatoms.setValue( 0, old_data[0] );
+      if( !doNotCalculateDerivatives() && mybasemulticolvars[mmc]->weightHasDerivatives ){
+          MultiValue myder( mybasemulticolvars[mmc]->getNumberOfQuantities(), mybasemulticolvars[mmc]->getNumberOfDerivatives() );
+          MultiValue& outder=myatoms.getUnderlyingMultiValue(); mybasedata[mmc]->retrieveDerivatives( convertToLocalIndex(taskCode,mmc), false, myder );
+          for(unsigned j=0;j<myder.getNumberActive();++j){ unsigned jder=myder.getActiveIndex(j); outder.addDerivative( 0, jder, myder.getDerivative(0,jder) ); }
+      }
+  } else {
+      myatoms.setValue( 0, 1.0 );
+  }
 }
 
 double MultiColvarBase::doCalculation( const unsigned& taskIndex, AtomValuePack& myatoms ) const {

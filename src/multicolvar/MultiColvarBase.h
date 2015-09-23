@@ -88,7 +88,7 @@ protected:
 /// Finish setting up the multicolvar base
   void setupMultiColvarBase( const std::vector<AtomNumber>& atoms );
 /// Add some derivatives to a particular component of a particular atom
-  void addAtomDerivatives( const unsigned& , const unsigned& , const Vector& , multicolvar::AtomValuePack& ) const ;
+  void addAtomDerivatives( const int& , const unsigned& , const Vector& , multicolvar::AtomValuePack& ) const ;
 /// Set which atoms are to be used to calculate the central atom position
   void setAtomsForCentralAtom( const std::vector<bool>& catom_ind );
 /// Set the value of the cutoff for the link cells
@@ -136,7 +136,7 @@ public:
 /// Get the index where the central atom is stored
   virtual Vector getCentralAtomPos( const unsigned& curr );
 /// You can use this to screen contributions that are very small so we can avoid expensive (and pointless) calculations
-  virtual void calculateWeight( AtomValuePack& myatoms ) const ;
+  virtual void calculateWeight( const unsigned& taskCode, AtomValuePack& myatoms ) const ;
 /// Is this a density?
   virtual bool isDensity() const { return false; }
 /// Is the iatom'th stored value currently active

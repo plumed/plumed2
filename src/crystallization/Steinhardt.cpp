@@ -86,9 +86,9 @@ void Steinhardt::calculateVector( multicolvar::AtomValuePack& myatoms ) const {
          double dlen3 = d2*dlen;
 
          // Store derivatives of weight
-         addAtomDerivatives( 1, 0, (-dfunc)*distance, myatoms );
-         addAtomDerivatives( 1, i, (+dfunc)*distance, myatoms );
-         myatoms.addBoxDerivatives( 1, (-dfunc)*Tensor( distance,distance ) ); 
+         addAtomDerivatives( -1, 0, (-dfunc)*distance, myatoms );
+         addAtomDerivatives( -1, i, (+dfunc)*distance, myatoms );
+         myatoms.addTemporyBoxDerivatives( (-dfunc)*Tensor( distance,distance ) ); 
 
          // Do stuff for m=0
          poly_ass=deriv_poly( 0, distance[2]/dlen, dpoly_ass );
@@ -161,10 +161,8 @@ void Steinhardt::calculateVector( multicolvar::AtomValuePack& myatoms ) const {
   } 
 
   // Normalize 
-  myatoms.setValue(1, nbond ); updateActiveAtoms( myatoms );
-  for(unsigned i=0;i<getNumberOfComponentsInVector();++i) myatoms.getUnderlyingMultiValue().quotientRule( 2+i, 1, 2+i ); 
-  // Clear tempory stuff
-  myatoms.getUnderlyingMultiValue().clear(1);
+  updateActiveAtoms( myatoms );
+  for(unsigned i=0;i<getNumberOfComponentsInVector();++i) myatoms.getUnderlyingMultiValue().quotientRule( 2+i, nbond, 2+i ); 
 }
 
 double Steinhardt::deriv_poly( const unsigned& m, const double& val, double& df ) const { 

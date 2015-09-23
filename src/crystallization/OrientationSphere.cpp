@@ -112,9 +112,9 @@ double OrientationSphere::compute( const unsigned& tindex, multicolvar::AtomValu
              myatoms.addBoxDerivatives( 1, (-dfunc)*f_dot*Tensor(distance,distance) );
              myder1.clearAll();
               
-             myatoms.addComDerivatives( 0, (-dfunc)*distance, atom0 );
-             addAtomDerivatives( 0, i, (dfunc)*distance, myatoms );
-             myatoms.addBoxDerivatives( 0, (-dfunc)*Tensor(distance,distance) );
+             myatoms.addComDerivatives( -1, (-dfunc)*distance, atom0 );
+             addAtomDerivatives( -1, i, (dfunc)*distance, myatoms );
+             myatoms.addTemporyBoxDerivatives( (-dfunc)*Tensor(distance,distance) );
 
          }
          value += sw*f_dot;
@@ -128,10 +128,9 @@ double OrientationSphere::compute( const unsigned& tindex, multicolvar::AtomValu
    updateActiveAtoms( myatoms ); MultiValue& myvals=myatoms.getUnderlyingMultiValue();
    for(unsigned i=0;i<myvals.getNumberActive();++i){
        unsigned ider=myvals.getActiveIndex(i);
-       double  dgd=myvals.getDerivative(0,ider);
+       double  dgd=myvals.getTemporyDerivative(ider);
        myvals.setDerivative( 1, ider, (pref*myvals.getDerivative(1,ider)+value*df2*dgd)/denom - (value*pref*dgd)/denom2 );
    } 
-   myvals.clear(0); myvals.setValue( 0, 1.0 );
 
    return pref*value / denom;
 }

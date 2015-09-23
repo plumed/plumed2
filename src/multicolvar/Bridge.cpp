@@ -69,7 +69,7 @@ public:
   explicit Bridge(const ActionOptions&);
 // active methods:
   virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
-  void calculateWeight( AtomValuePack& myatoms ) const ;
+  void calculateWeight( const unsigned& taskCode, AtomValuePack& myatoms ) const ;
   bool isPeriodic(){ return false; }
 };
 
@@ -137,7 +137,7 @@ PLUMED_MULTICOLVAR_INIT(ao)
   checkRead();
 }
 
-void Bridge::calculateWeight( AtomValuePack& myatoms ) const {
+void Bridge::calculateWeight( const unsigned& taskCode, AtomValuePack& myatoms ) const {
   Vector dij=getSeparation( myatoms.getPosition(0), myatoms.getPosition(2) );
   double ldij = dij.modulo2();
   if( ldij>rcut2 ) { myatoms.setValue(0,0); return; }

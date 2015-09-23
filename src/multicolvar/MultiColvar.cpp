@@ -303,7 +303,7 @@ void MultiColvar::readSpeciesKeyword( const std::string& str1, const std::string
   if( keywords.exists("SPECIES") ) parseVector("SPECIES",tw);
 
   if( !tw.empty() ){
-      bool found_acts=interpretInputMultiColvars(tw,0.0);
+      bool found_acts=interpretInputMultiColvars( tw, getTolerance() );
       unsigned nat=colvar_label.size(); std::vector<AtomNumber> ta;
       if( !found_acts ){
           ActionAtomistic::interpretAtomList( tw, ta ); nat=ta.size();
@@ -338,13 +338,13 @@ void MultiColvar::readSpeciesKeyword( const std::string& str1, const std::string
          parseVector(str2,t2w);
          if ( t2w.empty() ) error(str2 + "keyword defines no atoms or is missing. Use " + str1 + " and " + str2);
 
-         bool found_acts1=interpretInputMultiColvars(t1w,0.0);
+         bool found_acts1=interpretInputMultiColvars( t1w, getTolerance() );
          unsigned nat1=colvar_label.size(); std::vector<AtomNumber> t1a,t2a;
          if( !found_acts1 ){
              ActionAtomistic::interpretAtomList( t1w, t1a ); nat1=t1a.size();
              for(unsigned i=0;i<t1a.size();++i) all_atoms.push_back( t1a[i] );
          }
-         bool found_acts2=interpretInputMultiColvars(t2w,0.0);
+         bool found_acts2=interpretInputMultiColvars( t2w, getTolerance() );
          if( !found_acts1 && found_acts2 ) error("cannot use dynamic groups in second group only");
          unsigned nat2=colvar_label.size() - nat1; 
          if( !found_acts2 ){

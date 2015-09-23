@@ -52,7 +52,7 @@ public:
 /// Create the ith, ith switching function
   void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::string& desc );
 /// This actually calculates the value of the contact function
-  void calculateWeight( multicolvar::AtomValuePack& myatoms ) const ;
+  void calculateWeight( const unsigned& taskCode, multicolvar::AtomValuePack& myatoms ) const ;
 /// This does nothing
   double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
 };
@@ -136,7 +136,7 @@ void ContactMatrix::setupConnector( const unsigned& id, const unsigned& i, const
   log.printf("  %d th and %d th multicolvar groups must be within %s\n",i+1,j+1,(switchingFunction(i,j).description()).c_str() );
 }
 
-void ContactMatrix::calculateWeight( multicolvar::AtomValuePack& myatoms ) const {
+void ContactMatrix::calculateWeight( const unsigned& taskCode, multicolvar::AtomValuePack& myatoms ) const {
   Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
   double dfunc, sw = switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) - ncol_t ).calculate( distance.modulo(), dfunc );
   myatoms.setValue(0,sw);
