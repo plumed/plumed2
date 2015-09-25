@@ -79,15 +79,15 @@ double OrientationSphere::compute( const unsigned& tindex, multicolvar::AtomValu
 
    Vector catom_pos = myatoms.getPosition(0);
    getVectorForTask( myatoms.getIndex(0), true, catom_orient );
-   multicolvar::CatomPack atom0; 
-   MultiValue myder0(ncomponents,nder), myder1(ncomponents,nder); 
+   multicolvar::CatomPack atom0; MultiValue myder0(0,0), myder1(0,0); 
    if( !doNotCalculateDerivatives() ){
+       myder0.resize( ncomponents,nder ); myder1.resize(ncomponents,nder); 
        atom0=getCentralAtomPackFromInput( myatoms.getIndex(0) );
        getVectorDerivatives( myatoms.getIndex(0), true, myder0 );
    }
 
    for(unsigned i=1;i<myatoms.getNumberOfAtoms();++i){
-      Vector& distance=myatoms.getPosition(i);  // getSeparation( catom_pos, myatoms.getPosition(i) );
+      Vector& distance=myatoms.getPosition(i);  
       if ( (d2=distance[0]*distance[0])<rcut2 &&
            (d2+=distance[1]*distance[1])<rcut2 &&
            (d2+=distance[2]*distance[2])<rcut2) {
