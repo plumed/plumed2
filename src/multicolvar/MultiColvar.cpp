@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiColvar.h"
+#include "BridgedMultiColvarFunction.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/SetupMolInfo.h"
@@ -338,11 +339,18 @@ void MultiColvar::readSpeciesKeyword( const std::string& str1, const std::string
          parseVector(str2,t2w);
          if ( t2w.empty() ) error(str2 + "keyword defines no atoms or is missing. Use " + str1 + " and " + str2);
 
+         unsigned nbase_atoms=0;
          bool found_acts1=interpretInputMultiColvars( t1w, getTolerance() );
          unsigned nat1=colvar_label.size(); std::vector<AtomNumber> t1a,t2a;
          if( !found_acts1 ){
-             ActionAtomistic::interpretAtomList( t1w, t1a ); nat1=t1a.size();
+             ActionAtomistic::interpretAtomList( t1w, t1a ); nbase_atoms=nat1=t1a.size();
              for(unsigned i=0;i<t1a.size();++i) all_atoms.push_back( t1a[i] );
+         } else {
+             for(unsigned i=0;i<mybasemulticolvars.size();++i){
+                 BridgedMultiColvarFunction* mybr=dynamic_cast<BridgedMultiColvarFunction*>( mybasemulticolvars[i] );
+                 if( mybr ) nbase_atoms+=(mybr->getPntrToMultiColvar())->getAbsoluteIndexes().size();
+                 else nbase_atoms+=mybasemulticolvars[i]->getAbsoluteIndexes().size();
+             }
          }
          bool found_acts2=interpretInputMultiColvars( t2w, getTolerance() );
          if( !found_acts1 && found_acts2 ) error("cannot use dynamic groups in second group only");
@@ -364,7 +372,7 @@ void MultiColvar::readSpeciesKeyword( const std::string& str1, const std::string
             // This prevents mistakes being made in colvar setup
             if( found ){ ablocks[0][i]=inum; } 
             else { 
-              ablocks[0][i]=nat1 + k; k++; 
+              ablocks[0][i]=nbase_atoms + k; k++; 
               if( !found_acts2 ) all_atoms.push_back( t2a[i] );
             }
          }
