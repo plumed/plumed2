@@ -155,7 +155,7 @@ void ActionAtomistic::parseAtomList(const std::string&key, std::vector<AtomNumbe
 }
 
 void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::vector<AtomNumber> &t){
-  plumed_massert( keywords.style(key,"atoms"), "keyword " + key + " should be registered as atoms");
+  plumed_massert( keywords.style(key,"atoms") || keywords.style(key,"hidden"), "keyword " + key + " should be registered as atoms");
   vector<string> strings;
   if( num<0 ){
       parseVector(key,strings);

@@ -66,9 +66,8 @@ VectorMultiColvar(ao)
   if( natoms!=3 && natoms!=4 ) error("number of atoms in molecule specification is wrong.  Should be three or four.");
 
   if( all_atoms.size()==0 ) error("No atoms were specified");
-  ActionAtomistic::requestAtoms( all_atoms );
-
   setVectorDimensionality( 3, natoms );
+  ActionAtomistic::requestAtoms( all_atoms );
 }
 
 void MoleculePlane::calculateVector( multicolvar::AtomValuePack& myatoms ) const { 
@@ -82,38 +81,38 @@ void MoleculePlane::calculateVector( multicolvar::AtomValuePack& myatoms ) const
   }
   cp = crossProduct( d1, d2 );
 
-  myatoms.addAtomsDerivatives( 2, 0, crossProduct( Vector(-1.0,0,0), d2 ) );
+  addAtomDerivatives( 2, 0, crossProduct( Vector(-1.0,0,0), d2 ), myatoms );
   if( myatoms.getNumberOfAtoms()==3 ){
-     myatoms.addAtomsDerivatives( 2, 1, crossProduct( Vector(+1.0,0,0), d2 ) + crossProduct( Vector(-1.0,0,0), d1 ) );
-     myatoms.addAtomsDerivatives( 2, 2, crossProduct( Vector(+1.0,0,0), d1 ) );
+     addAtomDerivatives( 2, 1, crossProduct( Vector(+1.0,0,0), d2 ) + crossProduct( Vector(-1.0,0,0), d1 ), myatoms );
+     addAtomDerivatives( 2, 2, crossProduct( Vector(+1.0,0,0), d1 ), myatoms );
   } else {
-     myatoms.addAtomsDerivatives( 2, 1, crossProduct( Vector(+1.0,0,0), d2 ) ); 
-     myatoms.addAtomsDerivatives( 2, 2, crossProduct( Vector(-1.0,0,0), d1 ) );
-     myatoms.addAtomsDerivatives( 2, 3, crossProduct( Vector(+1.0,0,0), d1 ) );
+     addAtomDerivatives( 2, 1, crossProduct( Vector(+1.0,0,0), d2 ), myatoms ); 
+     addAtomDerivatives( 2, 2, crossProduct( Vector(-1.0,0,0), d1 ), myatoms );
+     addAtomDerivatives( 2, 3, crossProduct( Vector(+1.0,0,0), d1 ), myatoms );
   }
   myatoms.addBoxDerivatives( 2, Tensor(d1,crossProduct(Vector(+1.0,0,0), d2)) + Tensor( d2, crossProduct(Vector(-1.0,0,0), d1)) );
   myatoms.addValue( 2, cp[0] );
 
-  myatoms.addAtomsDerivatives( 3, 0, crossProduct( Vector(0,-1.0,0), d2 ) );
+  addAtomDerivatives( 3, 0, crossProduct( Vector(0,-1.0,0), d2 ), myatoms );
   if( myatoms.getNumberOfAtoms()==3 ){
-     myatoms.addAtomsDerivatives( 3, 1, crossProduct( Vector(0,+1.0,0), d2 ) + crossProduct( Vector(0,-1.0,0), d1 ) );
-     myatoms.addAtomsDerivatives( 3, 2, crossProduct( Vector(0,+1.0,0), d1 ) );
+     addAtomDerivatives( 3, 1, crossProduct( Vector(0,+1.0,0), d2 ) + crossProduct( Vector(0,-1.0,0), d1 ), myatoms );
+     addAtomDerivatives( 3, 2, crossProduct( Vector(0,+1.0,0), d1 ), myatoms );
   } else {
-     myatoms.addAtomsDerivatives( 3, 1, crossProduct( Vector(0,+1.0,0), d2 ) ); 
-     myatoms.addAtomsDerivatives( 3, 2, crossProduct( Vector(0,-1.0,0), d1 ) );
-     myatoms.addAtomsDerivatives( 3, 3, crossProduct( Vector(0,+1.0,0), d1 ) );
+     addAtomDerivatives( 3, 1, crossProduct( Vector(0,+1.0,0), d2 ), myatoms ); 
+     addAtomDerivatives( 3, 2, crossProduct( Vector(0,-1.0,0), d1 ), myatoms );
+     addAtomDerivatives( 3, 3, crossProduct( Vector(0,+1.0,0), d1 ), myatoms );
   }
   myatoms.addBoxDerivatives( 3, Tensor(d1,crossProduct(Vector(0,+1.0,0), d2)) + Tensor( d2, crossProduct(Vector(0,-1.0,0), d1)) );
   myatoms.addValue( 3, cp[1] );
 
-  myatoms.addAtomsDerivatives( 4, 0, crossProduct( Vector(0,0,-1.0), d2 ) );
+  addAtomDerivatives( 4, 0, crossProduct( Vector(0,0,-1.0), d2 ), myatoms );
   if( myatoms.getNumberOfAtoms()==3 ){
-     myatoms.addAtomsDerivatives( 4, 1, crossProduct( Vector(0,0,+1.0), d2 ) + crossProduct( Vector(0,0,-1.0), d1 ) );
-     myatoms.addAtomsDerivatives( 4, 2, crossProduct( Vector(0,0,+1.0), d1 ) );
+     addAtomDerivatives( 4, 1, crossProduct( Vector(0,0,+1.0), d2 ) + crossProduct( Vector(0,0,-1.0), d1 ), myatoms );
+     addAtomDerivatives( 4, 2, crossProduct( Vector(0,0,+1.0), d1 ), myatoms);
   } else {
-     myatoms.addAtomsDerivatives( 4, 1, crossProduct( Vector(0,0,-1.0), d2 ) ); 
-     myatoms.addAtomsDerivatives( 4, 2, crossProduct( Vector(0,0,-1.0), d1 ) );
-     myatoms.addAtomsDerivatives( 4, 3, crossProduct( Vector(0,0,+1.0), d1 ) );
+     addAtomDerivatives( 4, 1, crossProduct( Vector(0,0,-1.0), d2 ), myatoms); 
+     addAtomDerivatives( 4, 2, crossProduct( Vector(0,0,-1.0), d1 ), myatoms);
+     addAtomDerivatives( 4, 3, crossProduct( Vector(0,0,+1.0), d1 ), myatoms);
   }
   myatoms.addBoxDerivatives( 4, Tensor(d1,crossProduct(Vector(0,0,+1.0), d2)) + Tensor( d2, crossProduct(Vector(0,0,-1.0), d1)) );
   myatoms.addValue( 4, cp[2] );

@@ -75,7 +75,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit NumberOfLinks(const ActionOptions&);
 /// Do the stuff with the switching functions
-  void calculateWeight( AtomValuePack& myatoms ) const ;
+  void calculateWeight( const unsigned& taskCode, AtomValuePack& myatoms ) const ;
 /// Actually do the calculation
   double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
 /// Is the variable periodic
@@ -130,16 +130,14 @@ MultiColvarFunction(ao)
   readVesselKeywords();
 }
 
-void NumberOfLinks::calculateWeight( AtomValuePack& myatoms ) const {
+void NumberOfLinks::calculateWeight( const unsigned& taskCode, AtomValuePack& myatoms ) const {
   Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
   double dfunc, sw = switchingFunction.calculateSqr( distance.modulo2(), dfunc );
   myatoms.setValue(0,sw);
 
   if( !doNotCalculateDerivatives() ){
-      CatomPack atom0=getCentralAtomPackFromInput( myatoms.getIndex(0) );
-      myatoms.addComDerivatives( 0, (-dfunc)*distance, atom0 );
-      CatomPack atom1=getCentralAtomPackFromInput( myatoms.getIndex(1) );
-      myatoms.addComDerivatives( 0, (dfunc)*distance, atom1 );
+      addAtomDerivatives( 0, 0, (-dfunc)*distance, myatoms );
+      addAtomDerivatives( 0, 1, (dfunc)*distance, myatoms );
       myatoms.addBoxDerivatives( 0, (-dfunc)*Tensor(distance,distance) ); 
   }
 }

@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiColvar.h"
+#include "BridgedMultiColvarFunction.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/SetupMolInfo.h"
@@ -42,10 +43,14 @@ void MultiColvar::registerKeywords( Keywords& keys ){
   keys.reset_style("ATOMS","atoms");
   keys.reserve("atoms-3","SPECIES","this keyword is used for colvars such as coordination number. In that context it specifies that plumed should calculate "
                                  "one coordination number for each of the atoms specified.  Each of these coordination numbers specifies how many of the "
-                                 "other specified atoms are within a certain cutoff of the central atom.");
+                                 "other specified atoms are within a certain cutoff of the central atom.  You can specify the atoms here as another multicolvar "
+                                 "action or using a MultiColvarFilter or ActionVolume action.  When you do so the quantity is calculated for those atoms specified "
+                                 "in the previous multicolvar.  This is useful if you would like to calculate the Steinhardt parameter for those atoms that have a "
+                                 "coordination number more than four for example");
   keys.reserve("atoms-4","SPECIESA","this keyword is used for colvars such as the coordination number.  In that context it species that plumed should calculate "
                                   "one coordination number for each of the atoms specified in SPECIESA.  Each of these cooordination numbers specifies how many "
-                                  "of the atoms specifies using SPECIESB is within the specified cutoff");
+                                  "of the atoms specifies using SPECIESB is within the specified cutoff.  As with the species keyword the input can also be specified "
+                                  "using the label of another multicolvar");
   keys.reserve("atoms-4","SPECIESB","this keyword is used for colvars such as the coordination number.  It must appear with SPECIESA.  For a full explanation see " 
                                   "the documentation for that keyword");
   keys.addFlag("VERBOSE",false,"write a more detailed output");
@@ -60,19 +65,16 @@ verbose_output(false)
 }
 
 void MultiColvar::readAtoms( int& natoms ){
-  if( getNumberOfAtoms()==0 ){
-     std::vector<AtomNumber> all_atoms;
-     
+  std::vector<AtomNumber> all_atoms;
+  if( getNumberOfAtoms()==0 && (keywords.exists("ATOMS") || keywords.exists("GROUP") || keywords.exists("SPECIES")) ){
      if( keywords.exists("ATOMS") ) readAtomsLikeKeyword( "ATOMS", natoms, all_atoms );
      if( keywords.exists("GROUP") ) readGroupsKeyword( natoms, all_atoms );
      if( keywords.exists("SPECIES") ) readSpeciesKeyword( "SPECIESA", "SPECIESB", natoms, all_atoms );
 
-     if( all_atoms.size()==0 ) error("No atoms have been read in");
-     // Request all atoms from ActionAtomistic
-     ActionAtomistic::requestAtoms( all_atoms ); 
+     if( all_atoms.size()==0 && colvar_label.size()==0 ) error("No atoms have been read in");
   }
   // Setup the multicolvar base
-  setupMultiColvarBase();
+  setupMultiColvarBase( all_atoms, true );
 }
 
 void MultiColvar::readAtomsLikeKeyword( const std::string & key, int& natoms, std::vector<AtomNumber>& all_atoms ){ 
@@ -299,73 +301,102 @@ void MultiColvar::readThreeGroups( const std::string& key1, const std::string& k
 
 void MultiColvar::readSpeciesKeyword( const std::string& str1, const std::string& str2, int& natoms, std::vector<AtomNumber>& all_atoms ){
   plumed_assert( usespecies );
-  if( all_atoms.size()>0 ) return ;
+  if( all_atoms.size()>0 || colvar_label.size()>0 ) return ;
   ablocks.resize( natoms-1 );
 
-  std::vector<AtomNumber> t;
-  if( keywords.exists("SPECIES") ) parseAtomList("SPECIES",t);
+  std::vector<std::string> tw;
+  if( keywords.exists("SPECIES") ) parseVector("SPECIES",tw);
 
-  if( !t.empty() ){
-      for(unsigned i=0;i<t.size();++i) all_atoms.push_back( t[i] );
+  if( !tw.empty() ){
+      bool found_acts=interpretInputMultiColvars( tw, getTolerance() );
+      unsigned nat=colvar_label.size(); std::vector<AtomNumber> ta;
+      if( !found_acts ){
+          ActionAtomistic::interpretAtomList( tw, ta ); nat=ta.size();
+          for(unsigned i=0;i<ta.size();++i) all_atoms.push_back( ta[i] ); 
+      }
+
       if( keywords.exists(str1) && keywords.exists(str2) ){
           plumed_assert( natoms==2 ); 
-          for(unsigned i=0;i<t.size();++i) addTaskToList(i);
-          ablocks[0].resize( t.size() ); for(unsigned i=0;i<t.size();++i) ablocks[0][i]=i; 
-          if( !verbose_output ){
-              log.printf("  generating colvars from %u atoms of a particular type\n",static_cast<unsigned>(t.size()));
+          for(unsigned i=0;i<nat;++i) addTaskToList(i);
+          ablocks[0].resize( nat ); for(unsigned i=0;i<nat;++i) ablocks[0][i]=i; 
+          if( !verbose_output && colvar_label.size()==0 ){
+              log.printf("  generating colvars from %u atoms of a particular type\n",static_cast<unsigned>(ta.size()));
               log.printf("  atoms involved : "); 
-              for(unsigned i=0;i<t.size();++i) log.printf("%d ",t[i].serial() );
+              for(unsigned i=0;i<ta.size();++i) log.printf("%d ",ta[i].serial() );
               log.printf("\n");
           }
       } else if( !( keywords.exists(str1) && keywords.exists(str2) ) ){
           usespecies=false; verbose_output=false; // Make sure we don't do verbose output
-          log.printf("  involving atoms : ");
-          ablocks.resize(1); ablocks[0].resize( t.size() ); 
-          for(unsigned i=0;i<t.size();++i){ 
-             addTaskToList(i); ablocks[0][i]=i; log.printf(" %d",t[i].serial() ); 
+          if( !found_acts ) log.printf("  involving atoms : ");
+          ablocks.resize(1); ablocks[0].resize( nat ); 
+          for(unsigned i=0;i<nat;++i){ 
+             addTaskToList(i); ablocks[0][i]=i; 
+             if( !found_acts ) log.printf(" %d",ta[i].serial() ); 
           }
-          log.printf("\n");
+          if( !found_acts ) log.printf("\n");
       } else {
           plumed_merror("SPECIES keyword should probably not be used for your CV");
       }
   } else if( keywords.exists(str1) && keywords.exists(str2) ) {
-      std::vector<AtomNumber> t1,t2;
-      parseAtomList(str1,t1);
-      if( !t1.empty() ){
-         parseAtomList(str2,t2);
-         if ( t2.empty() ) error(str2 + "keyword defines no atoms or is missing. Use " + str1 + " and " + str2);
-         for(unsigned i=0;i<t1.size();++i){ all_atoms.push_back( t1[i] ); addTaskToList(i); }
-         ablocks[0].resize( t2.size() ); 
+      std::vector<std::string> t1w,t2w; parseVector(str1,t1w);
+      if( !t1w.empty() ){
+         parseVector(str2,t2w);
+         if ( t2w.empty() ) error(str2 + "keyword defines no atoms or is missing. Use " + str1 + " and " + str2);
+
+         unsigned nbase_atoms=0;
+         bool found_acts1=interpretInputMultiColvars( t1w, getTolerance() );
+         unsigned nat1=colvar_label.size(); std::vector<AtomNumber> t1a,t2a;
+         if( !found_acts1 ){
+             ActionAtomistic::interpretAtomList( t1w, t1a ); nbase_atoms=nat1=t1a.size();
+             for(unsigned i=0;i<t1a.size();++i) all_atoms.push_back( t1a[i] );
+         } else {
+             for(unsigned i=0;i<mybasemulticolvars.size();++i){
+                 BridgedMultiColvarFunction* mybr=dynamic_cast<BridgedMultiColvarFunction*>( mybasemulticolvars[i] );
+                 if( mybr ) nbase_atoms+=(mybr->getPntrToMultiColvar())->getAbsoluteIndexes().size();
+                 else nbase_atoms+=mybasemulticolvars[i]->getAbsoluteIndexes().size();
+             }
+         }
+         bool found_acts2=interpretInputMultiColvars( t2w, getTolerance() );
+         if( !found_acts1 && found_acts2 ) error("cannot use dynamic groups in second group only");
+         unsigned nat2=colvar_label.size() - nat1; 
+         if( !found_acts2 ){
+             ActionAtomistic::interpretAtomList( t2w, t2a ); nat2=t2a.size();
+         }
+
+         for(unsigned i=0;i<nat1;++i) addTaskToList(i); 
+         ablocks[0].resize( nat2 ); 
          unsigned k=0;
-         for(unsigned i=0;i<t2.size();++i){ 
+         for(unsigned i=0;i<nat2;++i){ 
             bool found=false; unsigned inum;
-            for(unsigned j=0;j<t1.size();++j){
-                if( t1[j]==t2[i] ){ found=true; inum=j; break; }
+            if( colvar_label.size()==0 ){
+                for(unsigned j=0;j<nat1;++j){
+                    if( t1a[j]==t2a[i] ){ found=true; inum=j; break; }
+                }
             }
             // This prevents mistakes being made in colvar setup
             if( found ){ ablocks[0][i]=inum; } 
-            else { all_atoms.push_back( t2[i] ); ablocks[0][i]=t1.size() + k; k++; }
+            else { 
+              ablocks[0][i]=nbase_atoms + k; k++; 
+              if( !found_acts2 ) all_atoms.push_back( t2a[i] );
+            }
          }
          if( !verbose_output ){
-             log.printf("  generating colvars from a group of %u central atoms and %u other atoms\n",static_cast<unsigned>(t1.size()),static_cast<unsigned>(t2.size()));
-             log.printf("  central atoms are : ");
-             for(unsigned i=0;i<t1.size();++i) log.printf("%d ",t1[i].serial() );
-             log.printf("\n");
-             log.printf("  other atoms are : ");
-             for(unsigned i=0;i<t2.size();++i) log.printf("%d ",t2[i].serial() );
-             log.printf("\n");
+             if( colvar_label.size()==0 ){
+                log.printf("  generating colvars from a group of %u central atoms and %u other atoms\n",static_cast<unsigned>(t1a.size()),static_cast<unsigned>(t2a.size()));
+             } 
+             if( t1a.size()>0 ){
+                log.printf("  central atoms are : ");
+                for(unsigned i=0;i<t1a.size();++i) log.printf("%d ",t1a[i].serial() );
+                log.printf("\n");
+             }
+             if( t2a.size()>0 ){
+                log.printf("  other atoms are : ");
+                for(unsigned i=0;i<t2a.size();++i) log.printf("%d ",t2a[i].serial() );
+                log.printf("\n");
+             }
          }
       }
   } 
-}
-
-void MultiColvar::calculate(){
-  setupLinkCells(); 
-  runAllTasks();
-}
-
-void MultiColvar::updateActiveAtoms( AtomValuePack& myatoms ) const {
-  myatoms.updateUsingIndices();
 }
      
 }

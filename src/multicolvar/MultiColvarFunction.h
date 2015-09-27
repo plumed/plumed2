@@ -26,7 +26,6 @@
 #include "MultiColvarBase.h"
 #include "AtomValuePack.h"
 #include "CatomPack.h"
-#include "InputMultiColvarSet.h"
 #include "vesselbase/StoreDataVessel.h"
 
 namespace PLMD {
@@ -34,11 +33,6 @@ namespace multicolvar {
 
 class MultiColvarFunction : public MultiColvarBase {
 private:
-/// This is true if functions only rely on value of underlying
-/// multicolvar and not on position of central atom of colvar 
-  bool ignorepos;
-/// This holds all the information on the base colvars
-  InputMultiColvarSet myinputdata;
 /// A tempory vector that is used for retrieving vectors
   std::vector<double> tvals;
 /// This sets up the atom list
@@ -56,10 +50,8 @@ protected:
                                MultiValue& myder, AtomValuePack& myatoms ) const ;
 ///
   void superChainRule( const unsigned& ival, const unsigned& start, const unsigned& end,
-                       const unsigned& jatom, const std::vector<double>& der,
-                       MultiValue& myder, AtomValuePack& myatoms ) const ;
-/// Convert an index in the global array to an index in the individual base colvars
-  unsigned convertToLocalIndex( const unsigned& index, const unsigned& mcv_code ) const ;
+                                          const unsigned& jatom, const std::vector<double>& der,
+                                          MultiValue& myder, AtomValuePack& myatoms ) const ;
 /// Build sets by taking one multicolvar from each base
   void buildSets( const bool& all_same_type );
 /// Build colvars for atoms as if they were symmetry functions
@@ -75,52 +67,40 @@ protected:
 public:
   explicit MultiColvarFunction(const ActionOptions&);
   static void registerKeywords( Keywords& keys );
-/// Update the atoms that are active
-  virtual void updateActiveAtoms( AtomValuePack& myatoms ) const ;
-/// Regular calculate
-  void calculate();
 /// Calculate the numerical derivatives for this action
   void calculateNumericalDerivatives( ActionWithValue* a=NULL );
-/// This is used in MultiColvarBase only - it is used to setup the link cells
-  Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const ;
-/// Some things can be inactive in functions
-  virtual bool isCurrentlyActive( const unsigned& bno, const unsigned& code );
 };
 
 inline
-bool MultiColvarFunction::isCurrentlyActive( const unsigned& bno, const unsigned& code ){
-  return myinputdata.isCurrentlyActive( bno, code );
-}
-
-inline
 unsigned MultiColvarFunction::getFullNumberOfBaseTasks() const {
-  return myinputdata.getFullNumberOfBaseTasks();
+  return colvar_label.size(); 
 }
 
 
 inline
 unsigned MultiColvarFunction::getNumberOfBaseMultiColvars() const {
-  return myinputdata.getNumberOfBaseMultiColvars();
+  return mybasemulticolvars.size(); 
 }
 
 inline
 MultiColvarBase* MultiColvarFunction::getBaseMultiColvar( const unsigned& icolv ) const {
-  return myinputdata.getBaseColvar(icolv);
+  plumed_dbg_assert( icolv<mybasemulticolvars.size() );
+  return mybasemulticolvars[icolv]; 
 } 
 
 inline
-Vector MultiColvarFunction::getPositionOfAtomForLinkCells( const unsigned& iatom ) const {
-  return myinputdata.getPosition( iatom );
-}
-
-inline
 CatomPack MultiColvarFunction::getCentralAtomPackFromInput( const unsigned& ind ) const {
-  return myinputdata.getPositionDerivatives( ind );
+  plumed_dbg_assert( ind<colvar_label.size() ); unsigned mmc=colvar_label[ind];
+  unsigned basen=0;
+  for(unsigned i=0;i<mmc;++i) basen+=mybasemulticolvars[i]->getNumberOfAtoms();
+  return mybasemulticolvars[mmc]->getCentralAtomPack( basen, convertToLocalIndex(ind,mmc) );
 }
 
 inline
 void MultiColvarFunction::getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient ) const {
-  myinputdata.getVectorForTask( ind, normed, orient );
+  plumed_dbg_assert( ind<colvar_label.size() ); unsigned mmc=colvar_label[ind];
+  plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(ind,mmc) ) );
+  mybasedata[mmc]->retrieveValue( convertToLocalIndex(ind,mmc), normed, orient );
 }
 
 }

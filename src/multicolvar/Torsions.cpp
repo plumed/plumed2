@@ -110,10 +110,10 @@ double Torsions::compute( const unsigned& tindex, AtomValuePack& myatoms ) const
   Vector dd0,dd1,dd2; PLMD::Torsion t;
   double value  = t.compute(d0,d1,d2,dd0,dd1,dd2);
 
-  myatoms.addAtomsDerivatives(1,0,dd0);
-  myatoms.addAtomsDerivatives(1,1,dd1-dd0);
-  myatoms.addAtomsDerivatives(1,2,dd2-dd1);
-  myatoms.addAtomsDerivatives(1,3,-dd2);
+  addAtomDerivatives(1,0,dd0,myatoms);
+  addAtomDerivatives(1,1,dd1-dd0,myatoms);
+  addAtomDerivatives(1,2,dd2-dd1,myatoms);
+  addAtomDerivatives(1,3,-dd2,myatoms);
 
   myatoms.addBoxDerivatives  (1, -(extProduct(d0,dd0)+extProduct(d1,dd1)+extProduct(d2,dd2)));
 

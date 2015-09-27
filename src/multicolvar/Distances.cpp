@@ -191,8 +191,8 @@ double Distances::compute( const unsigned& tindex, AtomValuePack& myatoms ) cons
    const double invvalue=1.0/value;
 
    // And finish the calculation
-   myatoms.addAtomsDerivatives( 1, 0,-invvalue*distance );
-   myatoms.addAtomsDerivatives( 1, 1, invvalue*distance );
+   addAtomDerivatives( 1, 0,-invvalue*distance, myatoms );
+   addAtomDerivatives( 1, 1, invvalue*distance, myatoms );
    myatoms.addBoxDerivatives( 1, -invvalue*Tensor(distance,distance) );
    return value;
 }

@@ -23,13 +23,13 @@
 #define __PLUMED_adjmat_DFSBase_h
 
 #include "ActionWithInputMatrix.h"
-#include "multicolvar/MultiColvarFunction.h"
 #include "multicolvar/AtomValuePack.h"
 
 namespace PLMD {
 namespace adjmat {
 
 class DFSBase : public ActionWithInputMatrix {
+friend class DFSOutput;
 private:
 /// Vector that stores the sizes of the current set of clusters
   std::vector< std::pair<unsigned,unsigned> > cluster_sizes;

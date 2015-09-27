@@ -10,6 +10,11 @@ Changes from version 2.2 which are relevant for users:
  - \ref METAD outputs the kernel type in the header of the output HILLS file
 - New actions:
  - \ref PAMM probabilistic analysis of molecular motifs
+ - \ref HBPAMM probabilistic analysis of hydrogen bonding
+- New features for existing actions:
+  - The SPECIES and SPECIESA keyword in MultiColvars can now take a multicolvar as input.  This allows one
+    to calculate quantities such as the Q4 parameters for those atoms that have a coordination number greater
+    than x.
 
 Changes from version 2.2 which are relevant for developers:
 - Many changes have been made to the KernelFunctions class. It is now possible

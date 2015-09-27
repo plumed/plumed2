@@ -141,20 +141,20 @@ double DihedralCorrelation::compute( const unsigned& tindex, AtomValuePack& myat
   dd11 *= 0.5*sin( phi2 - phi1 );
   dd12 *= 0.5*sin( phi2 - phi1 );
   // And add
-  myatoms.addAtomsDerivatives(1, 0, dd10);
-  myatoms.addAtomsDerivatives(1, 1, dd11-dd10);
-  myatoms.addAtomsDerivatives(1, 2, dd12-dd11);
-  myatoms.addAtomsDerivatives(1, 3, -dd12);
+  addAtomDerivatives(1, 0, dd10, myatoms );
+  addAtomDerivatives(1, 1, dd11-dd10, myatoms );
+  addAtomDerivatives(1, 2, dd12-dd11, myatoms );
+  addAtomDerivatives(1, 3, -dd12, myatoms );
   myatoms.addBoxDerivatives  (1, -(extProduct(d10,dd10)+extProduct(d11,dd11)+extProduct(d12,dd12)));
   // Derivative wrt phi2
   dd20 *= -0.5*sin( phi2 - phi1 );
   dd21 *= -0.5*sin( phi2 - phi1 );
   dd22 *= -0.5*sin( phi2 - phi1 );
   // And add
-  myatoms.addAtomsDerivatives(1, 4, dd20);
-  myatoms.addAtomsDerivatives(1, 5, dd21-dd20);
-  myatoms.addAtomsDerivatives(1, 6, dd22-dd21);
-  myatoms.addAtomsDerivatives(1, 7, -dd22);
+  addAtomDerivatives(1, 4, dd20, myatoms );
+  addAtomDerivatives(1, 5, dd21-dd20, myatoms );
+  addAtomDerivatives(1, 6, dd22-dd21, myatoms );
+  addAtomDerivatives(1, 7, -dd22, myatoms );
   myatoms.addBoxDerivatives(1, -(extProduct(d20,dd20)+extProduct(d21,dd21)+extProduct(d22,dd22)));
 
   return value;

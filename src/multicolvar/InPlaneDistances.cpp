@@ -70,13 +70,12 @@ PLUMED_MULTICOLVAR_INIT(ao)
   // Read in the atoms
   std::vector<AtomNumber> all_atoms;
   readThreeGroups("GROUP","VECTORSTART","VECTOREND",false, all_atoms);
-  if( all_atoms.size()>0 ) ActionAtomistic::requestAtoms( all_atoms );
 
   // Check atoms are OK
   if( getFullNumberOfTasks()!=getNumberOfAtoms()-2 ) error("you should specify one atom for VECTORSTART and one atom for VECTOREND only");
 
   // Setup the multicolvar base
-  setupMultiColvarBase(); readVesselKeywords();
+  setupMultiColvarBase( all_atoms, true ); readVesselKeywords();
   // And check everything has been read in correctly
   checkRead();
 
@@ -116,9 +115,9 @@ double InPlaneDistances::compute( const unsigned& tindex, AtomValuePack& myatoms
   double sangle=sin(angle), cangle=cos(angle); 
   double dd=dir.modulo(), invdd=1.0/dd, val=dd*sangle;
 
-  myatoms.addAtomsDerivatives( 1, 0, dd*cangle*ddik + sangle*invdd*dir );
-  myatoms.addAtomsDerivatives( 1, 1, -dd*cangle*(ddik+ddij) - sangle*invdd*dir );
-  myatoms.addAtomsDerivatives( 1, 2, dd*cangle*ddij );
+  addAtomDerivatives( 1, 0, dd*cangle*ddik + sangle*invdd*dir, myatoms );
+  addAtomDerivatives( 1, 1, -dd*cangle*(ddik+ddij) - sangle*invdd*dir, myatoms );
+  addAtomDerivatives( 1, 2, dd*cangle*ddij, myatoms );
   myatoms.addBoxDerivatives( 1, -dd*cangle*(Tensor(normal,ddij)+Tensor(dir,ddik)) - sangle*invdd*Tensor(dir,dir) );
 
   return val;
