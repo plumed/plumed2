@@ -43,10 +43,14 @@ void MultiColvar::registerKeywords( Keywords& keys ){
   keys.reset_style("ATOMS","atoms");
   keys.reserve("atoms-3","SPECIES","this keyword is used for colvars such as coordination number. In that context it specifies that plumed should calculate "
                                  "one coordination number for each of the atoms specified.  Each of these coordination numbers specifies how many of the "
-                                 "other specified atoms are within a certain cutoff of the central atom.");
+                                 "other specified atoms are within a certain cutoff of the central atom.  You can specify the atoms here as another multicolvar "
+                                 "action or using a MultiColvarFilter or ActionVolume action.  When you do so the quantity is calculated for those atoms specified "
+                                 "in the previous multicolvar.  This is useful if you would like to calculate the Steinhardt parameter for those atoms that have a "
+                                 "coordination number more than four for example");
   keys.reserve("atoms-4","SPECIESA","this keyword is used for colvars such as the coordination number.  In that context it species that plumed should calculate "
                                   "one coordination number for each of the atoms specified in SPECIESA.  Each of these cooordination numbers specifies how many "
-                                  "of the atoms specifies using SPECIESB is within the specified cutoff");
+                                  "of the atoms specifies using SPECIESB is within the specified cutoff.  As with the species keyword the input can also be specified "
+                                  "using the label of another multicolvar");
   keys.reserve("atoms-4","SPECIESB","this keyword is used for colvars such as the coordination number.  It must appear with SPECIESA.  For a full explanation see " 
                                   "the documentation for that keyword");
   keys.addFlag("VERBOSE",false,"write a more detailed output");
