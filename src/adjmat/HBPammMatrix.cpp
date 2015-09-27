@@ -79,7 +79,7 @@ void HBPammMatrix::registerKeywords( Keywords& keys ){
   keys.add("atoms","HYDROGENS","The list of hydrogen atoms that can form part of a hydrogen bond.  The atoms must be specified using a comma separated list, "
                                "an index range or by using a \\ref GROUP");
   keys.add("numbered","CLUSTERS","the name of the file that contains the definitions of all the kernels for PAMM");
-  keys.reset_style("CLUSTERS","compulsory");
+  keys.reset_style("CLUSTERS","compulsory"); keys.use("SUM");
   keys.add("compulsory","REGULARISE","0.001","don't allow the denominator to be smaller then this value");
 }
   
