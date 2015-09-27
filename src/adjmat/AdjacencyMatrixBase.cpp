@@ -178,7 +178,7 @@ void AdjacencyMatrixBase::requestAtoms( const std::vector<AtomNumber>& atoms, co
 
 void AdjacencyMatrixBase::addOrientationDerivatives( const unsigned& ival, const unsigned& iatom, const std::vector<double>& der, multicolvar::AtomValuePack& myatoms ) const {
   unsigned jatom=myatoms.getIndex(iatom); plumed_dbg_assert( jatom<colvar_label.size() );
-  MultiValue myder(0,0); unsigned mmc=colvar_label[ival];
+  MultiValue myder(0,0); unsigned mmc=colvar_label[ival]; plumed_assert( !mybasemulticolvars[mmc]->weightWithDerivatives() );
   plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(ival,mmc) ) );
   if( myder.getNumberOfValues()!=mybasemulticolvars[mmc]->getNumberOfQuantities() ||
       myder.getNumberOfDerivatives()!=mybasemulticolvars[mmc]->getNumberOfDerivatives() ){

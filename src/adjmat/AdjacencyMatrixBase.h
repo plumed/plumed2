@@ -92,7 +92,7 @@ unsigned AdjacencyMatrixBase::getBaseColvarNumber( const unsigned& inum ) const 
 inline 
 void AdjacencyMatrixBase::getOrientationVector( const unsigned& ind, const bool& normed, std::vector<double>& orient ) const {
   plumed_dbg_assert( ind<colvar_label.size() ); unsigned mmc=colvar_label[ind];
-  plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(ind,mmc) ) );
+  plumed_assert( !mybasemulticolvars[mmc]->weightWithDerivatives() ); plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(ind,mmc) ) );
   mybasedata[mmc]->retrieveValue( convertToLocalIndex(ind,mmc), normed, orient );
 }
 

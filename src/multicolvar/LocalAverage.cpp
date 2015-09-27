@@ -143,8 +143,10 @@ unsigned LocalAverage::getNumberOfQuantities(){
 
 double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
   double d2, sw, dfunc, nbond=1; CatomPack atom0, atom1;
-  std::vector<double> values( getBaseMultiColvar(0)->getNumberOfQuantities() );
-  MultiValue myder(values.size(), myatoms.getNumberOfDerivatives());
+  std::vector<double> values( getBaseMultiColvar(0)->getNumberOfQuantities() ); MultiValue myder(0,0);
+  if( myder.getNumberOfValues()!=values.size() || myder.getNumberOfDerivatives()!=myatoms.getNumberOfDerivatives() ){
+      myder.resize( values.size(), myatoms.getNumberOfDerivatives() );
+  }
 
   getVectorForTask( myatoms.getIndex(0), false, values );
   if( values.size()>2 ){
