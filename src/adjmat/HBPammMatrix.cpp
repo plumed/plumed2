@@ -197,36 +197,35 @@ double HBPammMatrix::compute( const unsigned& tindex, multicolvar::AtomValuePack
   if( ndonor_types==0 ) ano = getBaseColvarNumber( myatoms.getIndex(1) );
   else ano = getBaseColvarNumber( myatoms.getIndex(1) ) - ndonor_types;
 
-  std::vector<std::vector<double> > tderiv( kernels(dno,ano).size() );
-  for(unsigned i=0;i<kernels(dno,ano).size();++i) tderiv[i].resize( 3 );
-  std::vector<double> vals( kernels(dno,ano).size() ), dderiv( kernels(dno,ano).size(), 0 );
+  std::vector<double> tderiv( kernels(dno,ano).size() ), tmderiv( kernels(dno,ano).size()), dderiv( kernels(dno,ano).size(), 0 );
 
   // Now evaluate all kernels  
-  double denom=regulariser;
+  double denom=regulariser, numer;
   for(unsigned i=0;i<kernels(dno,ano).size();++i){
-      vals[i]=kernels(dno,ano)[i]->evaluate( pos, tderiv[i] );
-      denom+=vals[i];
-      for(unsigned j=0;j<3;++j) dderiv[j] += tderiv[i][j];
+      double val=kernels(dno,ano)[i]->evaluate( pos, tmderiv );
+      denom+=val;
+      if(i==0){ numer=val; for(unsigned j=0;j<3;++j) tderiv[j]=tmderiv[j]; }
+      for(unsigned j=0;j<3;++j) dderiv[j] += tmderiv[j];
   }
 
   if( !doNotCalculateDerivatives() ){ 
       double denom2 = denom*denom, pref; 
-      pref = tderiv[0][0] / denom - vals[0]*dderiv[0]/denom2;
+      pref = tderiv[0] / denom - numer*dderiv[0]/denom2;
       addAtomDerivatives( 1, 0, ((-pref)/md_dh)*d_dh, myatoms );
       addAtomDerivatives( 1, 1, ((+pref)/md_ah)*d_ah, myatoms  );
       addAtomDerivatives( 1, 2, ((+pref)/md_dh)*d_dh - ((+pref)/md_ah)*d_ah, myatoms );
       myatoms.addBoxDerivatives( 1, ((-pref)/md_dh)*Tensor(d_dh,d_dh) - ((-pref)/md_ah)*Tensor(d_ah,d_ah) );
-      pref = tderiv[0][1] / denom - vals[0]*dderiv[1]/denom2;
+      pref = tderiv[1] / denom - numer*dderiv[1]/denom2;
       addAtomDerivatives( 1, 0, ((-pref)/md_dh)*d_dh, myatoms );
       addAtomDerivatives( 1, 1, ((-pref)/md_ah)*d_ah, myatoms );
       addAtomDerivatives( 1, 2, ((+pref)/md_dh)*d_dh + ((+pref)/md_ah)*d_ah, myatoms );
       myatoms.addBoxDerivatives( 1, ((-pref)/md_dh)*Tensor(d_dh,d_dh) + ((-pref)/md_ah)*Tensor(d_ah,d_ah) );
-      pref = tderiv[0][2] / denom - vals[0]*dderiv[2]/denom2; 
+      pref = tderiv[2] / denom - numer*dderiv[2]/denom2; 
       addAtomDerivatives( 1, 0, ((-pref)/md_da)*d_da, myatoms );
       addAtomDerivatives( 1, 1, ((+pref)/md_da)*d_da, myatoms );
       myatoms.addBoxDerivatives( 1, ((-pref)/md_da)*Tensor(d_da,d_da) );
   }
-  return vals[0]/denom;
+  return numer/denom;
 }
 
 }
