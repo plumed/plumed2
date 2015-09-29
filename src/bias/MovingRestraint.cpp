@@ -138,7 +138,7 @@ void MovingRestraint::registerKeywords( Keywords& keys ){
                               "parameter is linearly interpolated.  If no KAPPAx is specified for STEPx then the values of KAPPAx "
                               "are kept constant during the interval of time between STEPx-1 and STEPx.");
   keys.reset_style("KAPPA","compulsory");
-  keys.addFlag("LOOP",false,"This keyword tells the MOVINGRESTRAINT to loop through the given STEPs again and again, starting with STEP0 "
+  keys.addFlag("LOOP_STEPS",false,"This keyword tells the MOVINGRESTRAINT to loop through the given STEPs again and again, starting with STEP0 "
                                "every time the last STEP is reached. For stability, it is strongly recommended that when using this "
                                "keyword, the STEPs should actually form a loop in the restraint parameter space.");
   keys.add("numbered","EQUILIBRATION","EQUILIBRATIONx instructs the work calculation that this is an equilibration step in which the "
@@ -166,7 +166,7 @@ PLUMED_BIAS_INIT(ao),
 verse(getNumberOfArguments())
 {
   parseVector("VERSE",verse);
-  parseFlag("LOOP", loop_steps_);
+  parseFlag("LOOP_STEPS", loop_steps_);
   vector<long int> ss(1); ss[0]=-1;
   std::vector<double> kk( getNumberOfArguments() ), aa( getNumberOfArguments() );
   unsigned equilibration_this_step;
