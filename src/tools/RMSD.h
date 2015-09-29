@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -180,7 +180,7 @@ double optimalAlignment_PCA(const  std::vector<double>  & align,
 			    Tensor & Rotation, 
                             std::vector<Vector> & DDistDPos, 
 			    Matrix<std::vector<Vector> > & DRotDPos,
-                            bool squared=false);
+                            bool squared=false) const ;
 
 template <bool safe,bool alEqDis>
 double optimalAlignment_Fit(const  std::vector<double>  & align,
@@ -205,7 +205,7 @@ double optimalAlignment_Fit(const  std::vector<double>  & align,
  double calc_DDistDRef_Rot_DRotDPos( const std::vector<Vector>& positions, std::vector<Vector> &DDistDPos, std::vector<Vector>& DDistDRef , Tensor & Rotation,Matrix<std::vector<Vector> > &DRotDPos, const bool squared=false   ); 
  double calc_DDistDRef_Rot_DRotDPos_DRotDRef( const std::vector<Vector>& positions, std::vector<Vector> &DDistDPos, std::vector<Vector>& DDistDRef , Tensor & Rotation,Matrix<std::vector<Vector> > &DRotDPos,Matrix<std::vector<Vector> > &DRotDRef, const bool squared=false   ); 
  /// convenience method to retrieve all the bits and pieces for PCA
- double calc_PCAelements( const std::vector<Vector>& pos, std::vector<Vector> &DDistDPos, Tensor & Rotation, Matrix<std::vector<Vector> > & DRotDPos,std::vector<Vector>  & alignedpositions, std::vector<Vector> & centeredpositions, std::vector<Vector> &centeredreference, const bool& squared=false); 
+ double calc_PCAelements( const std::vector<Vector>& pos, std::vector<Vector> &DDistDPos, Tensor & Rotation, Matrix<std::vector<Vector> > & DRotDPos,std::vector<Vector>  & alignedpositions, std::vector<Vector> & centeredpositions, std::vector<Vector> &centeredreference, const bool& squared=false) const ; 
  /// convenience method to retrieve all the bits and pieces needed by FitToTemplate 
  double calc_FitElements( const std::vector<Vector>& pos, Tensor & Rotation, Matrix<std::vector<Vector> > & DRotDPos,std::vector<Vector> & centeredpositions ,Vector & center_positions, const bool& squared=false ); 
  /// static convenience method to get the matrix i,a from drotdpos (which is a bit tricky)
@@ -263,13 +263,13 @@ class RMSDCoreData
 		RMSDCoreData(const std::vector<double> &a ,const std::vector<double> &d,const std::vector<Vector> &p, const std::vector<Vector> &r, Vector &cp, Vector &cr ):
 			alEqDis(false),distanceIsMSD(false),hasDistance(false),isInitialized(false),safe(false),
 			creference(cr),creference_is_calculated(true),creference_is_removed(true),
-			cpositions(cp),cpositions_is_calculated(true),cpositions_is_removed(true),retrieve_only_rotation(false),positions(p),reference(r),align(a),displace(d){};
+			cpositions(cp),cpositions_is_calculated(true),cpositions_is_removed(true),retrieve_only_rotation(false),positions(p),reference(r),align(a),displace(d),dist(0.0),rr00(0.0),rr11(0.0){};
 
 		// this constructor does not assume that the positions and reference have the center subtracted
 		RMSDCoreData(const std::vector<double> &a ,const std::vector<double> &d,const std::vector<Vector> &p, const std::vector<Vector> &r):
 			alEqDis(false),distanceIsMSD(false),hasDistance(false),isInitialized(false),safe(false),
 			creference_is_calculated(false),creference_is_removed(false),
-			cpositions_is_calculated(false),cpositions_is_removed(false),retrieve_only_rotation(false),positions(p),reference(r),align(a),displace(d)
+			cpositions_is_calculated(false),cpositions_is_removed(false),retrieve_only_rotation(false),positions(p),reference(r),align(a),displace(d),dist(0.0),rr00(0.0),rr11(0.0)
 			{cpositions.zero();creference.zero();};
 
 		// set the center on the fly without subtracting

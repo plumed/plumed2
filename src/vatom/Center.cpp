@@ -81,7 +81,7 @@ class Center:
   bool weight_mass;
   bool nopbc;
 public:
-  Center(const ActionOptions&ao);
+  explicit Center(const ActionOptions&ao);
   void calculate();
   static void registerKeywords( Keywords& keys );
 };

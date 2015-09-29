@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -193,7 +193,7 @@ class FuncSumHills :
   BiasRepresentation *biasrep;
   BiasRepresentation *historep;
 public:
-  FuncSumHills(const ActionOptions&);
+  explicit FuncSumHills(const ActionOptions&);
   ~FuncSumHills();
   void calculate(); // this probably is not needed
   bool checkFilesAreExisting(const vector<string> & hills ); 

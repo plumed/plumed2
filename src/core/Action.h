@@ -157,12 +157,12 @@ public:
 
 public:
 /// Standard constructor from ActionOptions
-  Action(const ActionOptions&);
+  explicit Action(const ActionOptions&);
 /// Destructor
   virtual ~Action();
 private:
 /// Copy constructor is disabled (private and unimplemented)
-  Action(const Action&a);
+  explicit Action(const Action&a);
 /// Assignment operator is disabled (private and unimplemented)
   Action& operator=(const Action&a);
 public:

@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2014,2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -171,19 +171,20 @@ class PCAVars :
   public ActionWithArguments
   {
 private:
+/// The holders for the derivatives
+  MultiValue myvals;
+  ReferenceValuePack mypack;
 /// The position of the reference configuration (the one we align to)
   ReferenceConfiguration* myref; 
 /// The eigenvectors for the atomic displacements
   Matrix<Vector> atom_eigv;
 /// The eigenvectors for the displacements in argument space
   Matrix<double> arg_eigv;
-/// Tempory vector used for storing derivatives
-  std::vector<Vector> tmpder;
 /// Stuff for applying forces
   std::vector<double> forces, forcesToApply;
 public:
   static void registerKeywords( Keywords& keys );
-  PCAVars(const ActionOptions&);
+  explicit PCAVars(const ActionOptions&);
   ~PCAVars();
   unsigned getNumberOfDerivatives();
   void lockRequests();
@@ -216,7 +217,9 @@ PCAVars::PCAVars(const ActionOptions& ao):
 Action(ao),
 ActionWithValue(ao),
 ActionAtomistic(ao),
-ActionWithArguments(ao)
+ActionWithArguments(ao),
+myvals(1,0),
+mypack(0,0,myvals)
 {
 
   // What type of distance are we calculating
@@ -262,12 +265,17 @@ ActionWithArguments(ao)
   myframes.getAtomAndArgumentRequirements( atoms, args );
   requestAtoms( atoms ); std::vector<Value*> req_args;
   interpretArgumentList( args, req_args ); requestArguments( req_args );
-  // Resize all derivative arrays
-  myframes.setNumberOfAtomsAndArguments( atoms.size(), args.size() );
+
+  // Setup the derivative pack
+  if( atoms.size()>0 ) myvals.resize( 1, args.size() + 3*atoms.size() + 9 ); 
+  else myvals.resize( 1, args.size() );
+  mypack.resize( args.size(), atoms.size() ); 
+  for(unsigned i=0;i<atoms.size();++i) mypack.setAtomIndex( i, i );
+  /// This sets up all the storage data required by PCA in the pack
+  myframes.getFrame(0)->setupPCAStorage( mypack );
 
   // Retrieve the position of the first frame, as we use this for alignment
   myref->setNamesAndAtomNumbers( atoms, args );
-  myref->setNumberOfAtoms( atoms.size() ); myref->setNumberOfArguments( args.size() );
   // Check there are no periodic arguments
   for(unsigned i=0;i<getNumberOfArguments();++i){
       if( getPntrToArgument(i)->isPeriodic() ) error("cannot use periodic variables in pca projections");
@@ -285,19 +293,19 @@ ActionWithArguments(ao)
   // Now calculate the eigenvectors 
   for(unsigned i=1;i<nfram;++i){
       // Calculate distance from reference configuration
-      double dist=myframes.getFrame(i)->calc( myref->getReferencePositions(), fake_pbc, getArguments(), myref->getReferenceArguments(), true );
+      double dist=myframes.getFrame(i)->calc( myref->getReferencePositions(), fake_pbc, getArguments(), myref->getReferenceArguments(), mypack, true );
 
       // Calculate the length of the vector for normalization
       double tmp, norm=0.0;
       for(unsigned j=0;j<getNumberOfAtoms();++j){ 
-         for(unsigned k=0;k<3;++k){ tmp = myframes.getFrame(i)->getAtomicDisplacement(j)[k]; norm+=tmp*tmp; } 
+         for(unsigned k=0;k<3;++k){ tmp = mypack.getAtomsDisplacementVector()[j][k]; norm+=tmp*tmp; } 
       }
-      for(unsigned j=0;j<getNumberOfArguments();++j){ tmp = 0.5*myframes.getFrame(i)->getArgumentDerivative(j); norm+=tmp*tmp; }
+      for(unsigned j=0;j<getNumberOfArguments();++j){ tmp = 0.5*mypack.getArgumentDerivative(j); norm+=tmp*tmp; }
 
       // Normalize the eigevector
       if(nflag){ norm = 1.0 / sqrt(norm); } else { norm = 1.0; }
-      for(unsigned j=0;j<getNumberOfAtoms();++j) atom_eigv(i-1,j) = norm*myframes.getFrame(i)->getAtomicDisplacement(j); 
-      for(unsigned j=0;j<getNumberOfArguments();++j) arg_eigv(i-1,j) = -0.5*norm*myframes.getFrame(i)->getArgumentDerivative(j); 
+      for(unsigned j=0;j<getNumberOfAtoms();++j) atom_eigv(i-1,j) = norm*mypack.getAtomsDisplacementVector()[j]; 
+      for(unsigned j=0;j<getNumberOfArguments();++j) arg_eigv(i-1,j) = -0.5*norm*mypack.getArgumentDerivative(j); 
 
       // Create a component to store the output
       std::string num; Tools::convert( i, num );
@@ -314,7 +322,7 @@ ActionWithArguments(ao)
   }
 
   // Resize all derivative arrays
-  forces.resize( nder ); forcesToApply.resize( nder ); tmpder.resize( getNumberOfAtoms() );
+  forces.resize( nder ); forcesToApply.resize( nder ); 
   for(unsigned i=0;i<getNumberOfComponents();++i) getPntrToComponent(i)->resizeDerivatives(nder);
 }
 
@@ -340,14 +348,16 @@ void PCAVars::unlockRequests(){
 } 
 
 void PCAVars::calculate(){
+  // Clear the reference value pack
+  mypack.clear();
   // Calculate distance between instaneous configuration and reference
-  double dist = myref->calculate( getPositions(), getPbc(), getArguments(), true );
+  double dist = myref->calculate( getPositions(), getPbc(), getArguments(), mypack, true );
   
   // Start accumulating residual by adding derivatives of distance
   Value* resid=getPntrToComponent( getNumberOfComponents()-1 ); unsigned nargs=getNumberOfArguments();
-  for(unsigned j=0;j<getNumberOfArguments();++j) resid->addDerivative( j, myref->getArgumentDerivative(j) );
+  for(unsigned j=0;j<getNumberOfArguments();++j) resid->addDerivative( j, mypack.getArgumentDerivative(j) );
   for(unsigned j=0;j<getNumberOfAtoms();++j){
-      Vector ader=myref->getAtomDerivative( j );
+      Vector ader=mypack.getAtomDerivative( j );
       for(unsigned k=0;k<3;++k) resid->addDerivative( nargs +3*j+k, ader[k] );
   }
 
@@ -356,19 +366,19 @@ void PCAVars::calculate(){
   for(unsigned i=0;i<getNumberOfComponents()-1;++i){  // One less component as we also have residual
       double proj=0; tvir.zero(); Value* eid=getPntrToComponent(i);
       for(unsigned j=0;j<getNumberOfArguments();++j){
-          proj+=arg_eigv(i,j)*0.5*myref->getArgumentDerivative(j);
+          proj+=arg_eigv(i,j)*0.5*mypack.getArgumentDerivative(j);
           eid->addDerivative( j, arg_eigv(i,j) ); 
       }
       if( getNumberOfAtoms()>0 ){
-         proj += myref->projectAtomicDisplacementOnVector( i, atom_eigv, getPositions(), tmpder );
+         proj += myref->projectAtomicDisplacementOnVector( i, atom_eigv, getPositions(), mypack );
          for(unsigned j=0;j<getNumberOfAtoms();++j){
+            Vector myader=mypack.getAtomDerivative(j);
             for(unsigned k=0;k<3;++k){
-                eid->addDerivative( nargs + 3*j+k, tmpder[j][k] );
-                resid->addDerivative( nargs + 3*j+k, -2*proj*tmpder[j][k] );
+                eid->addDerivative( nargs + 3*j+k, myader[k] );
+                resid->addDerivative( nargs + 3*j+k, -2*proj*myader[k] );
             }
-            tvir += -1.0*Tensor( getPosition(j), tmpder[j] );
+            tvir += -1.0*Tensor( getPosition(j), myader );
          }
-         plumed_assert( !myref->getVirial( fvir ) );
          for(unsigned j=0;j<3;++j){
             for(unsigned k=0;k<3;++k) eid->addDerivative( nargs + 3*getNumberOfAtoms() + 3*j + k, tvir(j,k) );
          }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -36,38 +36,23 @@ private:
   unsigned vend, nquantities;
 /// Number of bins in each direction
   std::vector<unsigned> nbins;
-/// The bead for the histogram
-  HistogramBead bead;
+/// The type of kernel for the histogram
+  std::string kerneltype;
 public:
   static void registerKeywords( Keywords& keys );
-  Gradient(const ActionOptions&);
+  explicit Gradient(const ActionOptions&);
 /// Get the number of quantities that are calculated each time
   virtual unsigned getNumberOfQuantities();
-/// This just throws an error
-  unsigned getCentralAtomElementIndex(); 
 /// Check on pbc - is it orthorhombic
   void setupRegions();
 /// Calculate whats in the volume
-  void calculateAllVolumes();
-  double getValueForTolerance();
-  unsigned getIndexOfWeight();
+  void calculateAllVolumes( const unsigned& curr, MultiValue& outvals ) const ;
 };
 
 inline
 unsigned Gradient::getNumberOfQuantities(){
   return nquantities;
 } 
-
-inline
-double Gradient::getValueForTolerance(){
-  return 1.0;
-}
-
-inline
-unsigned Gradient::getIndexOfWeight(){
-  plumed_error();
-  return 1;
-}
 
 }
 }

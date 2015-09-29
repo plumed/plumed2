@@ -46,15 +46,13 @@ private:
 //  double nl_cut;
   double rcut2, alpha, a1, b1;
   double rotationmatrix[3][3]; 
-  std::vector<Vector> dlist; // A buffer array to store distances and apply PBC wholesale
   
   SwitchingFunction switchingFunction;
 public:
   static void registerKeywords( Keywords& keys );
-  Fccubic(const ActionOptions&);
+  explicit Fccubic(const ActionOptions&);
 // active methods:
-  virtual double compute(); 
-  Vector getCentralAtom();
+  virtual double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ; 
 /// Returns the number of coordinates of the field
   bool isPeriodic(){ return false; }
 };
@@ -78,6 +76,7 @@ void Fccubic::registerKeywords( Keywords& keys ){
   // Use actionWithDistributionKeywords
   keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("LESS_THAN"); keys.use("MAX");
   keys.use("MIN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
+  keys.use("ALT_MIN"); keys.use("LOWEST"); keys.use("HIGHEST"); 
 }
 
 Fccubic::Fccubic(const ActionOptions&ao):
@@ -129,22 +128,16 @@ PLUMED_MULTICOLVAR_INIT(ao)
   checkRead();
 }
 
-double Fccubic::compute(){
-   weightHasDerivatives=true;
+double Fccubic::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {
    double value=0, norm=0, dfunc; Vector rotatedis;
 
    // Calculate the coordination number
-   Vector myder, rotateder, fder;
+   Vector myder, rotateder, fder; unsigned nat=myatoms.getNumberOfAtoms();
    double sw, t0, t1, t2, t3, x2, x4, y2, y4, z2, z4, r8, r12, tmp;
    
-   //std::vector<Vector> dlist(getPosition(0),getNAtoms());
-   if (getNAtoms()>dlist.size()) dlist.resize(getNAtoms());
-   for(unsigned i=1;i<getNAtoms();++i) dlist[i]=getPosition(i)-getPosition(0);
-   applyPbc( dlist, getNAtoms() );
-   
    double d2; 
-   for(unsigned i=1;i<getNAtoms();++i){
-      Vector& distance=dlist[i]; 
+   for(unsigned i=1;i<nat;++i){
+      Vector& distance=myatoms.getPosition(i); 
       
       if ( (d2=distance[0]*distance[0])<rcut2 && 
            (d2+=distance[1]*distance[1])<rcut2 &&
@@ -204,29 +197,20 @@ double Fccubic::compute(){
   
          fder = (+dfunc)*tmp*distance + sw*myder;
 
-         addAtomsDerivatives( 0, -fder );
-         addAtomsDerivatives( i, +fder );
-         addBoxDerivatives( Tensor(distance,-fder) );
-         addAtomsDerivativeOfWeight( 0, (-dfunc)*distance );
-         addAtomsDerivativeOfWeight( i, (+dfunc)*distance );
-         addBoxDerivativesOfWeight( (-dfunc)*Tensor(distance,distance) );
+         addAtomDerivatives( 1, 0, -fder, myatoms );
+         addAtomDerivatives( 1, i, +fder, myatoms);
+         myatoms.addBoxDerivatives( 1, Tensor(distance,-fder) );
+         addAtomDerivatives( -1, 0, (-dfunc)*distance, myatoms);
+         addAtomDerivatives( -1, i, (+dfunc)*distance, myatoms);
+         myatoms.addTemporyBoxDerivatives( (-dfunc)*Tensor(distance,distance) );
       }
    }
    
-   setElementValue(0, value); setElementValue(1, norm ); 
+   myatoms.setValue(1, value);  
    // values -> der of... value [0], weight[1], x coord [2], y, z... [more magic]
-   updateActiveAtoms(); 
-   quotientRule( 0, 1, 0 ); 
-   clearDerivativesAfterTask(1);
-   // Weight doesn't really have derivatives (just use the holder for convenience)
-   weightHasDerivatives=false; setElementValue( 1, 1.0 );
+   updateActiveAtoms( myatoms ); myatoms.getUnderlyingMultiValue().quotientRule( 1, norm, 1 );   
 
    return value / norm; // this is equivalent to getting an "atomic" CV
-}
-
-Vector Fccubic::getCentralAtom(){
-   addCentralAtomDerivatives( 0, Tensor::identity() );
-   return getPosition(0);
 }
 
 }

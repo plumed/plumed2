@@ -63,12 +63,12 @@ void MultiReferenceBase::getAtomAndArgumentRequirements( std::vector<AtomNumber>
   }
 }
 
-void MultiReferenceBase::setNumberOfAtomsAndArguments( const unsigned& natoms, const unsigned& nargs ){
-  for(unsigned i=0;i<frames.size();++i){
-      frames[i]->setNumberOfAtoms( natoms );
-      frames[i]->setNumberOfArguments( nargs );
-  }
-}
+// void MultiReferenceBase::setNumberOfAtomsAndArguments( const unsigned& natoms, const unsigned& nargs ){
+//   for(unsigned i=0;i<frames.size();++i){
+//       frames[i]->setNumberOfAtoms( natoms );
+//       frames[i]->setNumberOfArguments( nargs );
+//   }
+// }
 
 void MultiReferenceBase::copyFrame( ReferenceConfiguration* frameToCopy ){
   // Create a reference configuration of the appropriate type

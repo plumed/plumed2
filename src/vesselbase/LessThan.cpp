@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -33,9 +33,9 @@ void LessThan::registerKeywords( Keywords& keys ){
 }
 
 void LessThan::reserveKeyword( Keywords& keys ){
-  keys.reserve("numbered","LESS_THAN","calculate the number of variables less than a certain target value. "
+  keys.reserve("vessel","LESS_THAN","calculate the number of variables less than a certain target value. "
                                  "This quantity is calculated using \\f$\\sum_i \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
-                                 "is a \\ref switchingfunction.",true);
+                                 "is a \\ref switchingfunction.");
   keys.addOutputComponent("lessthan","LESS_THAN","the number of values less than a target value. This is calculated using one of the " 
                                                  "formula described in the description of the keyword so as to make it continuous. "
                                                  "You can calculate this quantity multiple times using different parameters."); 
@@ -44,35 +44,18 @@ void LessThan::reserveKeyword( Keywords& keys ){
 LessThan::LessThan( const VesselOptions& da ) :
 FunctionVessel(da)
 {
-  wnum=getAction()->getIndexOfWeight();
+  usetol=true; 
   if( getAction()->isPeriodic() ) error("LESS_THAN is not a meaningful option for periodic variables");
   std::string errormsg; sf.set( getAllInput(), errormsg ); 
   if( errormsg.size()!=0 ) error( errormsg ); 
 }
 
-std::string LessThan::function_description(){
+std::string LessThan::value_descriptor(){
   return "the number of values less than " + sf.description();
 }
 
-bool LessThan::calculate(){
-  double weight=getAction()->getElementValue(wnum);
-  plumed_dbg_assert( weight>=getTolerance() );
-
-  double val=getAction()->getElementValue(0);
-  double dval, f = sf.calculate(val, dval); dval*=val;
-  double contr=weight*f;
-  bool addval=addValueUsingTolerance(0,contr);
-  if(addval){ 
-    getAction()->chainRuleForElementDerivatives(0, 0, weight*dval, this);
-    if(diffweight) getAction()->chainRuleForElementDerivatives(0, wnum, f, this);
-  }
-  return ( contr>getNLTolerance() ); 
-}
-
-void LessThan::finish(){
-  setOutputValue( getFinalValue(0) ); 
-  std::vector<double> df(2); df[0]=1.0; df[1]=0.0;
-  mergeFinalDerivatives( df );
+double LessThan::calcTransform( const double& val, double& dv ) const {
+  double f = sf.calculate(val, dv); dv*=val; return f;
 }
 
 double LessThan::getCutoff(){

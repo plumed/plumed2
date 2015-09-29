@@ -178,8 +178,10 @@ void VectorGeneric<n>::zero(){
 }
 
 template <unsigned n>
+// notice that d[] is initialized in LoopUnroller<n>::_zero(d)
+// cppcheck-suppress uninitMemberVar
 VectorGeneric<n>::VectorGeneric(){
-  zero();
+  LoopUnroller<n>::_zero(d);
 }
 
 template <unsigned n>

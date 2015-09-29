@@ -93,7 +93,7 @@ private:
   bool nopbc;
 public:
   static void registerKeywords(Keywords& keys);
-  Gyration(const ActionOptions&);
+  explicit Gyration(const ActionOptions&);
   virtual void calculate();
 };
 

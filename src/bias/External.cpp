@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -99,7 +99,7 @@ private:
   Grid* BiasGrid_;
   
 public:
-  External(const ActionOptions&);
+  explicit External(const ActionOptions&);
   ~External();
   void calculate();
   static void registerKeywords(Keywords& keys);

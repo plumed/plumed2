@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2014,2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -37,7 +37,6 @@ class ActionWithInputVessel : public virtual Action {
 private:
   Vessel* arguments;
   BridgeVessel* myBridgeVessel;
-  bool lockRequestArguments;
 protected:
 /// What type of arguments are we reading in
   void readArgument( const std::string& type );
@@ -48,7 +47,7 @@ protected:
 public:
 /// Registers the list of keywords
   static void registerKeywords( Keywords& keys );
-  ActionWithInputVessel(const ActionOptions&);
+  explicit ActionWithInputVessel(const ActionOptions&);
   virtual ~ActionWithInputVessel(){}
 /// Calculate the numerical derivatives
 /// N.B. only pass an ActionWithValue to this routine if you know exactly what you 

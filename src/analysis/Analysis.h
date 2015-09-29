@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -134,7 +134,7 @@ protected:
   std::string getOutputFormat() const ;
 public:
   static void registerKeywords( Keywords& keys );
-  Analysis(const ActionOptions&);
+  explicit Analysis(const ActionOptions&);
   ~Analysis();
   void prepare();
   void calculate();

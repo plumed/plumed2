@@ -72,6 +72,52 @@ DISTANCES GROUPA=1 GROUPB=2,3 MORE_THAN={RATIONAL R_0=0.1}
 PRINT ARG=d1.gt0.1 
 \endverbatim
 (See also \ref PRINT \ref switchingfunction)
+
+
+\par Calculating minimum distances
+
+To calculate and print the minimum distance between two groups of atoms you use the following commands
+
+\verbatim
+d1: DISTANCES GROUPA=1-10 GROUPB=11-20 MIN={BETA=500.} 
+PRINT ARG=d1.min FILE=colvar STRIDE=10
+\endverbatim
+(see \ref DISTANCES and \ref PRINT)
+
+In order to ensure differentiability the minimum is calculated using the following function:
+
+\f[
+s = \frac{\beta}{ \log \sum_i \exp\left( \frac{\beta}{s_i} \right) }
+\f]
+
+where \f$\beta\f$ is a user specified parameter.
+
+This input is used rather than a separate MINDIST colvar so that the same routine and the same input style can be 
+used to calculate minimum coordinatetion numbers (see \ref COORDINATIONNUMBER), minimum 
+angles (see \ref ANGLES) and many other variables.  
+
+This new way of calculating mindist is part of plumed 2's multicolvar functionality.  These special actions
+allow you to calculate multiple functions of a distribution of simple collective variables.  As an example you 
+can calculate the number of distances less than 1.0, the minimum distance, the number of distances more than
+2.0 and the number of distances between 1.0 and 2.0 by using the following command:
+
+\verbatim
+DISTANCES ...
+ GROUPA=1-10 GROUPB=11-20 
+ LESS_THAN={RATIONAL R_0=1.0} 
+ MORE_THAN={RATIONAL R_0=2.0} 
+ BETWEEN={GAUSSIAN LOWER=1.0 UPPER=2.0} 
+ MIN={BETA=500.}
+... DISTANCES
+PRINT ARG=d1.lessthan,d1.morethan,d1.between,d1.min FILE=colvar STRIDE=10
+\endverbatim
+(see \ref DISTANCES and \ref PRINT)
+
+A calculation performed this way is fast because the expensive part of the calculation - the calculation of all the distances - is only 
+done once per step.  Furthermore, it can be made faster by using the TOL keyword to discard those distance that make only a small contributions 
+to the final values together with the NL_STRIDE keyword, which ensures that the distances that make only a small contribution to the final values aren't
+calculated at every step.
+
 */
 //+ENDPLUMEDOC
 
@@ -80,20 +126,19 @@ class Distances : public MultiColvar {
 private:
 public:
   static void registerKeywords( Keywords& keys );
-  Distances(const ActionOptions&);
+  explicit Distances(const ActionOptions&);
 // active methods:
-  virtual double compute();
+  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
 /// Returns the number of coordinates of the field
   bool isPeriodic(){ return false; }
-  Vector getCentralAtom();
 };
 
 PLUMED_REGISTER_ACTION(Distances,"DISTANCES")
 
 void Distances::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
-  keys.use("ATOMS"); 
-  keys.use("MEAN"); keys.use("MIN"); keys.use("MAX"); keys.use("LESS_THAN"); keys.use("DHENERGY");
+  keys.use("ATOMS"); keys.use("ALT_MIN"); keys.use("LOWEST"); keys.use("HIGHEST"); 
+  keys.use("MEAN"); keys.use("MIN"); keys.use("MAX"); keys.use("LESS_THAN"); // keys.use("DHENERGY");
   keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
   keys.add("atoms-1","GROUP","Calculate the distance between each distinct pair of atoms in the group");
   keys.add("atoms-2","GROUPA","Calculate the distances between all the atoms in GROUPA and all "
@@ -139,23 +184,17 @@ PLUMED_MULTICOLVAR_INIT(ao)
   }
 }
 
-double Distances::compute(){
+double Distances::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
    Vector distance; 
-   distance=getSeparation( getPosition(0), getPosition(1) );
+   distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
    const double value=distance.modulo();
    const double invvalue=1.0/value;
 
    // And finish the calculation
-   addAtomsDerivatives( 0,-invvalue*distance );
-   addAtomsDerivatives( 1, invvalue*distance );
-   addBoxDerivatives( -invvalue*Tensor(distance,distance) );
+   addAtomDerivatives( 1, 0,-invvalue*distance, myatoms );
+   addAtomDerivatives( 1, 1, invvalue*distance, myatoms );
+   myatoms.addBoxDerivatives( 1, -invvalue*Tensor(distance,distance) );
    return value;
-}
-
-Vector Distances::getCentralAtom(){
-   addCentralAtomDerivatives( 0, 0.5*Tensor::identity() );
-   addCentralAtomDerivatives( 1, 0.5*Tensor::identity() );
-   return 0.5*( getPosition(0) + getPosition(1) );
 }
 
 }

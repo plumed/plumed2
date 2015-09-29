@@ -402,4 +402,67 @@ give it a go and have fun!
 More information about C++
 http://www.parashift.com/c++-faq-lite/
 
+\page UsingExternalLibs Using external libraries in PLUMED
+
+When implementing new CVs and methods you may at time find it useful to make use functionality that has
+been implemented in some external library (eg <a href="http://www.boost.org"> boost </a>).  This is strongly 
+encouraged and good practise - you introduce fewer bugs if you write less code.  Having said that we would 
+prefer it if any functionality that is reliant on external libraries is <b> not </b> enabled by default.  The 
+reason for this is that we would like to ensure that the code remains easy to compile.  We would rather not 
+have users struggling to resolve lots of dependencies on external libraries just so that they can compile 
+PLUMED to run metadynamics with an distance and a torsion.
+
+The first step in ensuring that the code will compile even if your fancy library is not available is to thus 
+put all the calls to the functions in these libraries inside an ifdef block.  So for example here is a block
+of code that uses the boost graph library:
+
+\verbatim
+#ifdef __PLUMED_HAS_BOOST_GRAPH
+#include <boost/graph/adjacency_list.hpp>
+#include <boost/graph/connected_components.hpp>
+#include <boost/graph/graph_utility.hpp>
+#endif
+\endverbatim
+
+Here the ifdef __PLUMED_HAS_BOOST_GRAPH ensures that this part of the code is only compiled when the 
+-D__PLUMED_HAS_BOOST_GRAPH flag is set at compile time.  
+
+This example is a bit of a special case as the particular PLMD::Action I took this example from both when the 
+library is available and when it is not.  Obviously, if your PLMD::Action does not work without the library
+then you should place everything in the file inside the file (the definition of the class, the defintions of 
+the methods and the PLUMED_REGISTER_ACTION command) an ifdef block like the one shown above. 
+
+Once you have written the code and surrounded all the calls to the library by an ifdef block like the one above
+you then need to adjust the configure scripts so that the user is provided with the option to compile the code
+with your new functionality and the link to the external library available.  To do this you need to edit the
+file configure.ac in the plumed2 directory.  The first edit you need to make to this file should read as follows:
+
+\verbatim
+PLUMED_CONFIG_ENABLE([library_name],[library_name],[search for library_name],[no])
+\endverbatim
+
+Add this in the part of the file where there are similar names.  This command allows users to enable the package
+using --enable-library_name when they run the configure command.  Obviously, library_name here should be replaced
+with the name of the particular library you are using.
+
+The second edit you need to make to the configure.ac file is as follows:
+
+\verbatim
+if test $library_name == true ; then
+  PLUMED_CHECK_PACKAGE([header_file.hpp],[function],[__PLUMED_HAS_LIBRARY_NAME],[library_name])
+fi
+\endverbatim 
+
+This command checks if the library is available on the machine that PLUMED is being compiled on.  If it is the 
+Makefiles are generated with the appropriate precompiler directives and lists of libraries to link.  If it is not
+available a warning is issued to the user that tells him/her that PLUMED will not be compiled with the requested
+features.  The PLUMED_CHECK_PACKAGE command that we use to do this check here takes in four arguments.  The first
+is the name of one of the header files from the library that you are using.  You specify the location of this header
+file in the same way as you specified its location within the code.  So for example if you had #include <boost/graph/adjacency_list.hpp> 
+in your cpp code you would replace header_file.hpp in the above with boost/graph/adjacency_list.hpp.  The next 
+argument to PLUMED_CHECK_PACKAGE is one of the functions that is within the library that you are trying to link.  If in doubt
+you can use the exit funciton here, which should work even if you are using template functions.  The third argument is the precompiler 
+directive that appears around your library calling code and that we discussed earlier.  The last argument meanwhile is the name of the library - 
+the part that appears after the -l.  In the example above the code would thus try and link -llibrary_name. 
+
 */

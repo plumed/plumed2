@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -26,7 +26,8 @@
 namespace PLMD {
 
 ReferenceAtoms::ReferenceAtoms( const ReferenceConfigurationOptions& ro ):
-ReferenceConfiguration(ro)
+ReferenceConfiguration(ro),
+checks_were_disabled(false)
 {
 }
 
@@ -66,11 +67,11 @@ bool ReferenceAtoms::parseAtomList( const std::string& key, std::vector<unsigned
   Tools::interpretRanges(strings); 
 
   numbers.resize( strings.size() ); 
-  bool found; AtomNumber atom;
   for(unsigned i=0;i<strings.size();++i){
+      AtomNumber atom;
       if( !Tools::convert(strings[i],atom ) ) error("could not convert " + strings[i] + " into atom number");
 
-      found=false;
+      bool found=false;
       for(unsigned j=0;j<indices.size();++j){
           if( atom==indices[j] ){ found=true; numbers[i]=j; break; }
       }

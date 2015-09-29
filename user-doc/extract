@@ -74,7 +74,7 @@ done
 # Generate all the documentation pages from comments
 cat ../*/*/*cpp |
 awk 'BEGIN{gfile="automatic/GLOSSARY.list"; dfile="automatic/DICTIONARY.list"; }{
-  if($1=="//+ENDPLUMEDOC"){
+  if($1=="//+ENDPLUMEDOC" && inside){
      inside=0;
      print "*/" >output
   }
@@ -92,7 +92,7 @@ awk 'BEGIN{gfile="automatic/GLOSSARY.list"; dfile="automatic/DICTIONARY.list"; }
      if(inside==3){ printf "%s", $0 > dfile; }
   }
   if($1=="//+PLUMEDOC"){
-    if( $2=="TOPOLOGY" || $2=="COLVAR" || $2=="MCOLVAR" || $2=="DCOLVAR"|| $2=="MCOLVARF" || $2=="MCOLVARB" || $2=="FUNCTION" || $2=="ANALYSIS" || $2=="BIAS" || $2=="GENERIC" || $2=="VATOM" || $2=="TOOLS" ){
+    if( $2=="TOPOLOGY" || $2=="COLVAR" || $2=="MCOLVAR" || $2=="DCOLVAR"|| $2=="MCOLVARF" || $2=="MCOLVARB" || $2=="MATRIX" || $2=="MATRIXF" || $2=="FUNCTION" || $2=="ANALYSIS" || $2=="BIAS" || $2=="GENERIC" || $2=="VATOM" || $2=="TOOLS" ){
       lfile="automatic/"$2".list"
       
       printf "<tr> <td width=%s> \\subpage %s </td> <td>","5%", $3 > lfile
@@ -156,6 +156,7 @@ echo "<table align=center frame=void width=65%% cellpadding=5%%>" > automatic/mo
 echo "<tr> <td> <b> Module name </b> </td> <td> <b> Default behavior </b> </td> </tr>" >> automatic/modules.list
 for file in `ls ../src/*/module.type | sed -e 's/..\/src\///' | sed -e 's/\/module.type//'`
 do
+   defoff=0
    dstr=`head ../src/$file/module.type`
    if [ "$dstr" != "always" ] ; then
          echo "<tr> <td> $file </td>" >> automatic/modules.list
@@ -163,6 +164,7 @@ do
             echo "<td> on </td> </tr>" >> automatic/modules.list
          else 
             echo "<td> off </td> </tr>" >> automatic/modules.list
+            defoff=1
          fi
 #        # Generate documentation and accreditation on modules page
 #        echo "\section $file" >> automatic/mymodules.list
@@ -183,12 +185,24 @@ do
         docfiles=$(cat ../src/"$file"/*cpp | grep PLUMEDOC | grep -v END | awk '{print $3;}')
         for docfile in $docfiles ; do
           cat automatic/"$docfile".tmp |
-          awk '{ print }
+          awk -v o=$defoff '{ print }
           /\\page '$docfile'/{
-            print "<table  align=center frame=void width=95%% celpadding=5%%>"
-            print "<tr> <td width=70%%> </td> <td>"
-            print "<b> This is part of the '$file' \\link mymodules module \\endlink</b>"
-            print "</td> </tr> </table>"
+            if( o==0 ){
+                print "<table  align=center frame=void width=95%% celpadding=5%%>"
+                print "<tr> <td width=70%%> </td> <td>"
+                print "<b> This is part of the '$file' \\link mymodules module \\endlink</b>"
+                print "</td> </tr> </table>"
+            } else {
+                print "<table  align=center frame=void width=95%% celpadding=5%%>"
+                print "<tr> <td width=60%%> </td> <td>"
+                print "<b> This is part of the '$file' \\link mymodules module \\endlink</b>"
+                print "</td> </tr>"
+                print "<tr> <td width=60%%> </td> <td>"
+                print "<b> It is only available if you configure PLUMED with ./configure --enable-modules='$file' . "
+                print "Furthermore, this feature is still being developed so take care when using it and report any problems on the mailing list.</b>"
+                print "</td> </tr>"
+                print "</table>"
+            }
           }' > automatic/"$docfile"1.tmp
           mv automatic/"$docfile"1.tmp automatic/"$docfile".tmp
         done
@@ -222,7 +236,7 @@ done
 sed -ie 's/<b> --/<b> \\c \\-\\-/g' automatic/*.txt
 rm automatic/*.txte
 
-for file in COLVAR MCOLVAR DCOLVAR MCOLVARF MCOLVARB ANALYSIS BIAS GLOSSARY \
+for file in COLVAR MCOLVAR DCOLVAR MCOLVARF MCOLVARB MATRIX MATRIXF ANALYSIS BIAS GLOSSARY \
             DICTIONARY TUTORIALS WEBSITES FUNCTION TOPOLOGY VATOM \
             TOOLS
 do
@@ -256,6 +270,8 @@ cat $file.txt |
     /^ *@MCOLVARF@ *$/r   automatic/MCOLVARF.list
     /^ *@MCOLVARB@ *$/r   automatic/MCOLVARB.list
     /^ *@ANALYSIS@ *$/r   automatic/ANALYSIS.list
+    /^ *@MATRIX@ *$/r   automatic/MATRIX.list
+    /^ *@MATRIXF@ *$/r   automatic/MATRIXF.list
     /^ *@BIAS@ *$/r       automatic/BIAS.list
     /^ *@GLOSSARY@ *$/r   automatic/GLOSSARY.list
     /^ *@DICTIONARY@ *$/r automatic/DICTIONARY.list

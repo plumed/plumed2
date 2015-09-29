@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -40,9 +40,11 @@ class AtomNumber{
   unsigned index_;
 /// Construct with a given index.
 /// This constructor is kept private to avoid implicit cast.
-  AtomNumber(unsigned);
+  explicit AtomNumber(unsigned);
 public:
 /// Initialize to index=0 (serial=1)
+// The following line triggers a warning in cppcheck,
+// cppcheck-suppress noExplicitConstructor
   AtomNumber();
 /// Returns the serial number
   unsigned serial()const;

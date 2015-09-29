@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -115,7 +115,7 @@ class MovingRestraint : public Bias{
   std::vector<bool> equilibration;
   long int getRestraintStep();
 public:
-  MovingRestraint(const ActionOptions&);
+  explicit MovingRestraint(const ActionOptions&);
   void calculate();
   static void registerKeywords( Keywords& keys );
 };
@@ -147,6 +147,7 @@ void MovingRestraint::registerKeywords( Keywords& keys ){
   keys.reset_style("EQUILIBRATION","optional");
   componentsAreNotOptional(keys);
   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
+  keys.addOutputComponent("work","default","the total work performed changing this restraint");
   keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
   keys.addOutputComponent("_cntr","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
                                             "these quantities will named with  the arguments of the bias followed by "

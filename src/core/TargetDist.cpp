@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -58,9 +58,9 @@ void TargetDist::read( const std::vector<double>& targ, std::vector<Value*> ar )
 
 double TargetDist::calculate( std::vector<double>& derivs ){
   plumed_assert( derivs.size()==args.size() );
-  double dist=0, tmp;
+  double dist=0;
   for(unsigned i=0;i<args.size();++i){
-      tmp=args[i]->difference( target[i], args[i]->get() );
+      double tmp=args[i]->difference( target[i], args[i]->get() );
       derivs[i]=tmp; dist+=tmp*tmp; 
   }
   dist=sqrt(dist);

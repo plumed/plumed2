@@ -59,6 +59,16 @@ As a general rule, put it at the top of the input file. Also, unless you
 know exactly what you are doing, leave the default stride (1), so that
 this action is performed at every MD step.
 
+The way WHOLEMOLECULES modifies each of the listed entities is this:
+- First atom of the list is left in place
+- Each atom of the list is shifted by a lattice vectors so that it becomes as close as possible
+  to the previous one, iteratively.
+
+In this way, if an entity consists of a list of atoms such that consecutive atoms in the
+list are always closer than half a box side the entity will become whole.
+This can be usually achieved selecting consecute atoms (1-100), but it is also possible
+to skip some atoms, provided consecute chosen atoms are close enough.
+
 \par Examples
 
 This command instructs plumed to reconstruct the molecule containing atoms 1-20
@@ -99,7 +109,7 @@ class WholeMolecules:
 {
   vector<vector<AtomNumber> > groups;
 public:
-  WholeMolecules(const ActionOptions&ao);
+  explicit WholeMolecules(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
   void calculate();
   void apply(){}

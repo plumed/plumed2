@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -109,7 +109,7 @@ protected:
 /// Return a pointer to the value by name
   Value* getPntrToComponent(const std::string& name);
 public:
-  ActionWithValue(const ActionOptions&ao);
+  explicit ActionWithValue(const ActionOptions&ao);
   ~ActionWithValue();
 
 /// Register all the relevant keywords for the action  
@@ -121,7 +121,7 @@ public:
 /// The components in the action will depend on the user
   static void useCustomisableComponents(Keywords& keys);
 /// Are we not calculating derivatives
-  bool doNotCalculateDerivatives() const ;
+  virtual bool doNotCalculateDerivatives() const ;
 /// Get the value of one of the components of the PLMD::Action
   double getOutputQuantity( const unsigned j ) const ;
 /// Get the value with a specific name (N.B. if there is no such value this returns zero)
