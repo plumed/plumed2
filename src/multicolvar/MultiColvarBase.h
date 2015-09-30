@@ -52,10 +52,14 @@ private:
   bool usepbc;
 /// The forces we are going to apply to things
   std::vector<double> forcesToApply;
+/// We use this to say that all the atoms in the third block should are in the tasks
+  bool allthirdblockintasks;
 /// In certain cases we can make three atom link cells faster
   bool uselinkforthree;
 /// Stuff for link cells - this is used to make coordination number like variables faster
   LinkCells linkcells;
+/// Link cells for third block of atoms
+  LinkCells threecells;
 /// Bool vector telling us which atoms are required to calculate central atom position
   std::vector<bool> use_for_central_atom;
 /// 1/number of atoms involved in central atoms

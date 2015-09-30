@@ -69,8 +69,10 @@ ActionWithValue(ao),
 ActionWithVessel(ao),
 numder_func(false),
 usepbc(false),
+allthirdblockintasks(false),
 uselinkforthree(false),
 linkcells(comm),
+threecells(comm),
 usespecies(false)
 {
   if( keywords.exists("NOPBC") ){ 
@@ -126,19 +128,29 @@ void MultiColvarBase::resizeBookeepingArray( const unsigned& num1, const unsigne
 void MultiColvarBase::setupMultiColvarBase( const std::vector<AtomNumber>& atoms ){
   // Setup decoder array
   if( !usespecies && ablocks.size()<4 ){
-     decoder.resize( ablocks.size() ); unsigned code=1;
-     for(unsigned i=0;i<ablocks.size();++i){ decoder[ablocks.size()-1-i]=code; code *= nblock; } 
      use_for_central_atom.resize( ablocks.size(), true );
      numberForCentralAtom = 1.0 / static_cast<double>( ablocks.size() );
      if( ablocks.size()==3 ){
-         uselinkforthree=true;
+         allthirdblockintasks=uselinkforthree=true;
          for(unsigned i=0;i<bookeeping.nrows();++i){
              for(unsigned j=0;j<bookeeping.ncols();++j){
                  unsigned ntper = bookeeping(i,j).second - bookeeping(i,j).first;
-                 if( ntper != ablocks[2].size() ) uselinkforthree=false;
+                 if( i==j && ntper==0 ){
+                     continue;
+                 } else if( ntper == 1 && allthirdblockintasks ){
+                     allthirdblockintasks=true;
+                 } else if( ntper != ablocks[2].size() ){
+                     allthirdblockintasks=uselinkforthree=false;
+                 } else {
+                     allthirdblockintasks=false;
+                 }
              }
          } 
      }
+    
+     if( allthirdblockintasks ) decoder.resize(2);
+     else decoder.resize( ablocks.size() ); 
+     unsigned code=1; for(unsigned i=0;i<decoder.size();++i){ decoder[decoder.size()-1-i]=code; code *= nblock; }
   } else if( !usespecies ){
      use_for_central_atom.resize( ablocks.size(), true );
      numberForCentralAtom = 1.0 / static_cast<double>( ablocks.size() );
@@ -181,7 +193,7 @@ void MultiColvarBase::turnOnDerivatives(){
 
 void MultiColvarBase::setLinkCellCutoff( const double& lcut ){
   plumed_assert( usespecies || ablocks.size()<4 );
-  linkcells.setCutoff( lcut );
+  linkcells.setCutoff( lcut ); threecells.setCutoff( lcut );
 }
 
 void MultiColvarBase::setupLinkCells(){
@@ -313,8 +325,6 @@ void MultiColvarBase::setupLinkCells(){
      unsigned rank=comm.Get_rank();
      if( serialCalculation() ){ stride=1; rank=0; }
 
-     LinkCells threecells(comm); threecells.setCutoff( linkcells.getCutoff() );
-
      unsigned nactive_three=0;
      for(unsigned i=0;i<ablocks[2].size();++i){
          if( isCurrentlyActive( 2, ablocks[2][i] ) ) nactive_three++;
@@ -324,11 +334,20 @@ void MultiColvarBase::setupLinkCells(){
      std::vector<unsigned> lttmp_ind( nactive_three );
 
      nactive_three=0;
-     for(unsigned i=0;i<ablocks[2].size();++i){
-         if( !isCurrentlyActive( 2, ablocks[2][i] ) ) continue;
-         lttmp_ind[nactive_three]=i;
-         lttmp_pos[nactive_three]=getPositionOfAtomForLinkCells( ablocks[2][i] );
-         nactive_three++;
+     if( allthirdblockintasks ){
+         for(unsigned i=0;i<ablocks[2].size();++i){
+             if( !isCurrentlyActive( 2, ablocks[2][i] ) ) continue;
+             lttmp_ind[nactive_three]=ablocks[2][i];
+             lttmp_pos[nactive_three]=getPositionOfAtomForLinkCells( ablocks[2][i] );
+             nactive_three++;
+         }
+     } else {
+         for(unsigned i=0;i<ablocks[2].size();++i){
+             if( !isCurrentlyActive( 2, ablocks[2][i] ) ) continue;
+             lttmp_ind[nactive_three]=i;
+             lttmp_pos[nactive_three]=getPositionOfAtomForLinkCells( ablocks[2][i] );
+             nactive_three++;
+         }
      }
      // Build the list of the link cells
      threecells.buildCellLists( lttmp_pos, lttmp_ind, getPbc() );
@@ -341,10 +360,16 @@ void MultiColvarBase::setupLinkCells(){
          if( !isCurrentlyActive( 0, ablocks[0][i] ) ) continue;
          unsigned natomsper=1; linked_atoms[0]=ltmp_ind[0];  // Note we always check atom 0 because it is simpler than changing LinkCells.cpp
          linkcells.retrieveNeighboringAtoms( getPositionOfAtomForLinkCells( ablocks[0][i] ), natomsper, linked_atoms );
-         unsigned ntatomsper=1; tlinked_atoms[0]=lttmp_ind[0];
-         threecells.retrieveNeighboringAtoms( getPositionOfAtomForLinkCells( ablocks[0][i] ), ntatomsper, tlinked_atoms );
-         for(unsigned j=0;j<natomsper;++j){
-             for(unsigned k=0;k<ntatomsper;++k) active_tasks[bookeeping(i,linked_atoms[j]).first+tlinked_atoms[k]]=1;
+         if( allthirdblockintasks ) {
+             for(unsigned j=0;j<natomsper;++j){
+                 for(unsigned k=bookeeping(i,linked_atoms[j]).first;k<bookeeping(i,linked_atoms[j]).second;++k) active_tasks[k]=1;
+             }
+         } else {
+             unsigned ntatomsper=1; tlinked_atoms[0]=lttmp_ind[0];
+             threecells.retrieveNeighboringAtoms( getPositionOfAtomForLinkCells( ablocks[0][i] ), ntatomsper, tlinked_atoms );
+             for(unsigned j=0;j<natomsper;++j){
+                 for(unsigned k=0;k<ntatomsper;++k) active_tasks[bookeeping(i,linked_atoms[j]).first+tlinked_atoms[k]]=1;
+             }
          }
      }
      if( !serialCalculation() ) comm.Sum( active_tasks );
@@ -357,10 +382,10 @@ void MultiColvarBase::setupLinkCells(){
 
 void MultiColvarBase::decodeIndexToAtoms( const unsigned& taskCode, std::vector<unsigned>& atoms ) const {
   plumed_dbg_assert( !usespecies && ablocks.size()<4 );
-  if( atoms.size()!=ablocks.size() ) atoms.resize( ablocks.size() );
+  if( atoms.size()!=decoder.size() ) atoms.resize( decoder.size() );
 
   unsigned scode = taskCode;
-  for(unsigned i=0;i<ablocks.size();++i){
+  for(unsigned i=0;i<decoder.size();++i){
       unsigned ind=( scode / decoder[i] );
       atoms[i] = ablocks[i][ind];
       scode -= ind*decoder[i];
@@ -370,8 +395,12 @@ void MultiColvarBase::decodeIndexToAtoms( const unsigned& taskCode, std::vector<
 bool MultiColvarBase::setupCurrentAtomList( const unsigned& taskCode, AtomValuePack& myatoms ) const {
   if( usespecies ){
      if( isDensity() ) return true;
-     unsigned natomsper=myatoms.setupAtomsFromLinkCells( taskCode, getPositionOfAtomForLinkCells(taskCode), linkcells );
+     std::vector<unsigned> task_atoms(1); task_atoms[0]=taskCode;
+     unsigned natomsper=myatoms.setupAtomsFromLinkCells( task_atoms, getPositionOfAtomForLinkCells(taskCode), linkcells );
      return natomsper>1;
+  } else if( allthirdblockintasks ){ 
+     plumed_dbg_assert( ablocks.size()==3 ); std::vector<unsigned> atoms(2); decodeIndexToAtoms( taskCode, atoms );
+     unsigned natomsper=myatoms.setupAtomsFromLinkCells( atoms, getPositionOfAtomForLinkCells(atoms[0]), threecells );
   } else if( ablocks.size()<4 ){
      std::vector<unsigned> atoms( ablocks.size() );
      decodeIndexToAtoms( taskCode, atoms ); myatoms.setNumberOfAtoms( ablocks.size() );
