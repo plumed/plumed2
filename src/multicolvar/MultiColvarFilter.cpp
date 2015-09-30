@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2014,2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -28,6 +28,7 @@ void MultiColvarFilter::registerKeywords( Keywords& keys ){
   BridgedMultiColvarFunction::registerKeywords( keys );
   if( keys.reserved("VMEAN") ) keys.use("VMEAN");
   keys.use("MEAN"); keys.use("MOMENTS"); keys.use("MIN"); keys.use("MAX");
+  keys.use("ALT_MIN"); keys.use("LOWEST"); keys.use("HIGHEST");
 }
 
 MultiColvarFilter::MultiColvarFilter(const ActionOptions&ao):
@@ -43,38 +44,29 @@ void MultiColvarFilter::doJobsRequiredBeforeTaskList(){
   ActionWithVessel::doJobsRequiredBeforeTaskList();
 }
 
-void MultiColvarFilter::completeTask(){
-  MultiColvarBase* mcolv=getPntrToMultiColvar(); 
-  // Copy the derivatives across
-  mcolv->copyElementsToBridgedColvar( this );
+void MultiColvarFilter::completeTask( const unsigned& curr, MultiValue& invals, MultiValue& outvals ) const {
+  invals.copyValues( outvals );
+  if( derivativesAreRequired() ) invals.copyDerivatives( outvals );
+ 
   // Retrive the value of the multicolvar and apply filter
-  double val=getElementValue(0), df, weight=applyFilter( val, df );
+  double val=invals.get(1), df, weight=applyFilter( val, df );
 
   // Now propegate derivatives
-  if( !mcolv->weightHasDerivatives ){
-     unsigned nstart=getNumberOfDerivatives(); setElementValue( 1, weight );
-     for(unsigned i=0;i<mcolv->atoms_with_derivatives.getNumberActive();++i){
-        unsigned n=mcolv->atoms_with_derivatives[i], nx=3*n;
-        atoms_with_derivatives.activate(n);
-        addElementDerivative( nstart+nx+0, df*getElementDerivative(nx+0) );
-        addElementDerivative( nstart+nx+1, df*getElementDerivative(nx+1) );
-        addElementDerivative( nstart+nx+2, df*getElementDerivative(nx+2) );
-     }
-     for(unsigned i=3*mcolv->getNumberOfAtoms();i<mcolv->getNumberOfDerivatives();++i){
-        addElementDerivative( nstart+i, df*getElementDerivative(i) );
+  if( !getPntrToMultiColvar()->weightHasDerivatives ){
+     outvals.setValue( 0, weight );
+     if( derivativesAreRequired() ){
+         for(unsigned i=0;i<invals.getNumberActive();++i){
+             unsigned jder=invals.getActiveIndex(i);
+             outvals.addDerivative( 0, jder, df*invals.getDerivative(1, jder ) );
+         }
      }
   } else {
-      unsigned nstart=getNumberOfDerivatives();
-      double ww=mcolv->getElementValue(1); setElementValue( 1, ww*weight );
-      for(unsigned i=0;i<mcolv->atoms_with_derivatives.getNumberActive();++i){
-          unsigned n=mcolv->atoms_with_derivatives[i], nx=3*n;
-          atoms_with_derivatives.activate(n);
-          addElementDerivative( nstart+nx+0, weight*mcolv->getElementDerivative(nstart+nx+0) + ww*df*getElementDerivative(nx+0) );
-          addElementDerivative( nstart+nx+1, weight*mcolv->getElementDerivative(nstart+nx+0) + ww*df*getElementDerivative(nx+1) );
-          addElementDerivative( nstart+nx+2, weight*mcolv->getElementDerivative(nstart+nx+0) + ww*df*getElementDerivative(nx+2) );
-     }
-     for(unsigned i=3*mcolv->getNumberOfAtoms();i<mcolv->getNumberOfDerivatives();++i){
-         addElementDerivative( nstart+i, weight*mcolv->getElementDerivative(nstart+i) + ww*df*getElementDerivative(i) );
+     double ww=outvals.get(0); outvals.setValue( 0, ww*weight );
+     if( derivativesAreRequired() ){
+         for(unsigned i=0;i<outvals.getNumberActive();++i){
+             unsigned ider=outvals.getActiveIndex(i);
+             outvals.setDerivative( 0, ider, weight*outvals.getDerivative(1,ider) + ww*df*outvals.getDerivative(0,ider) );
+         }
      }
   }
 }

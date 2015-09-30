@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -75,7 +75,7 @@ protected:
   std::vector< std::vector<double> > indexvec; // use double to allow isomaps
   unsigned nframes;
 public:
-  PathMSDBase(const ActionOptions&);
+  explicit PathMSDBase(const ActionOptions&);
 // active methods:
   virtual void calculate();
 //  virtual void prepare();

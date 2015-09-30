@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014,2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -40,7 +40,7 @@ class PCARMSD : public Colvar {
   std::vector<PDB> pdbv;
   std::vector<string> pca_names;
 public:
-  PCARMSD(const ActionOptions&);
+  explicit PCARMSD(const ActionOptions&);
   ~PCARMSD();
   virtual void calculate();
   static void registerKeywords(Keywords& keys);
@@ -152,7 +152,7 @@ PLUMED_COLVAR_INIT(ao),squared(true)
         std::string num; Tools::convert( i, num );
         string name; name=string("eig-")+num;
 	pca_names.push_back(name);
-	addComponentWithDerivatives(name.c_str()); componentIsNotPeriodic(name.c_str());	
+	addComponentWithDerivatives(name); componentIsNotPeriodic(name);
   }  
   turnOnDerivatives();
 
@@ -167,12 +167,10 @@ PCARMSD::~PCARMSD(){
 void PCARMSD::calculate(){
         Tensor rotation,invrotation;
         Matrix<std::vector<Vector> > drotdpos(3,3);
-        std::vector<Vector> DDistDRef;
         std::vector<Vector> alignedpos;
         std::vector<Vector> centeredpos;
         std::vector<Vector> centeredref;
         std::vector<Vector> ddistdpos;
-        std::vector<Vector> derivatives;
         double r=rmsd->calc_PCAelements( getPositions(), ddistdpos, rotation ,  drotdpos , alignedpos ,centeredpos, centeredref ,squared);
 	invrotation=rotation.transpose();
 	

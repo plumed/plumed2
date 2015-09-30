@@ -120,6 +120,7 @@ if cmp -s $file $file.tmp ; then
 else
   cp $file.tmp $file
   echo " +++ PATCHED"
+  git add $file
 fi
 
 rm $file.tmp

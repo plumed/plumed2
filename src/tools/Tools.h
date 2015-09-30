@@ -168,7 +168,7 @@ bool Tools::parseFlag(std::vector<std::string>&line,const std::string&key,bool&v
 /// beware: this brings any number into a pbc that ranges from -0.5 to 0.5
 inline
 double Tools::pbc(double x){
-#ifdef PBC_WHILE
+#ifdef __PLUMED_PBC_WHILE
   while (x>0.5) x-=1.0;
   while (x<-0.5) x+=1.0;
   return x;

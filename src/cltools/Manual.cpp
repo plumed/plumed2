@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -59,7 +59,7 @@ public CLTool
 {
 public:
   static void registerKeywords( Keywords& keys );
-  Manual(const CLToolOptions& co );
+  explicit Manual(const CLToolOptions& co );
   int main(FILE* in, FILE*out,Communicator& pc);
   string description()const{
     return "print out a description of the keywords for an action in html";

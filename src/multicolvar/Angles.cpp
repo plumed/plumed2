@@ -87,18 +87,16 @@ class Angles : public MultiColvar {
 private:
   bool use_sf;
   double rcut2_1, rcut2_2;
-  Vector dij, dik;
   SwitchingFunction sf1;
   SwitchingFunction sf2;
 public:
   static void registerKeywords( Keywords& keys );
-  Angles(const ActionOptions&);
+  explicit Angles(const ActionOptions&);
 /// Updates neighbor list
-  virtual double compute();
+  virtual double compute( const unsigned& tindex, AtomValuePack& ) const ;
 /// Returns the number of coordinates of the field
-  void calculateWeight();
+  void calculateWeight( const unsigned& taskCode, AtomValuePack& ) const ;
   bool isPeriodic(){ return false; }
-  Vector getCentralAtom();
 };
 
 PLUMED_REGISTER_ACTION(Angles,"ANGLES")
@@ -165,47 +163,48 @@ use_sf(false)
 
   // And check everything has been read in correctly
   checkRead();
+  // Setup stuff for central atom
+  std::vector<bool> catom_ind(3, false); catom_ind[0]=true;
+  setAtomsForCentralAtom( catom_ind );
 }
 
-void Angles::calculateWeight(){
-  dij=getSeparation( getPosition(0), getPosition(2) );
-  dik=getSeparation( getPosition(0), getPosition(1) );
-  if(!use_sf){ setWeight(1.0); return; }
+void Angles::calculateWeight( const unsigned& taskCode, AtomValuePack& myatoms ) const {
+  if(!use_sf){ myatoms.setValue( 0, 1.0 ); return; }
+  Vector dij=getSeparation( myatoms.getPosition(0), myatoms.getPosition(2) );
+  Vector dik=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
 
   double w1, w2, dw1, dw2, wtot;
   double ldij = dij.modulo2(), ldik = dik.modulo2(); 
 
   if( use_sf ){
-     if( ldij>rcut2_1 || ldik>rcut2_2 ){ setWeight(0.0); return; }
+     if( ldij>rcut2_1 || ldik>rcut2_2 ){ myatoms.setValue(0,0.0); return; }
   }
 
   w1=sf1.calculateSqr( ldij, dw1 );
   w2=sf2.calculateSqr( ldik, dw2 );
   wtot=w1*w2; dw1*=w2; dw2*=w1; 
 
-  setWeight( wtot );
-  addAtomsDerivativeOfWeight( 1, dw2*dik );
-  addAtomsDerivativeOfWeight( 0, -dw1*dij - dw2*dik ); 
-  addAtomsDerivativeOfWeight( 2, dw1*dij );
-  addBoxDerivativesOfWeight( (-dw1)*Tensor(dij,dij) + (-dw2)*Tensor(dik,dik) );
+  myatoms.setValue( 0, wtot );
+  addAtomDerivatives( 0, 1, dw2*dik, myatoms );
+  addAtomDerivatives( 0, 0, -dw1*dij - dw2*dik, myatoms ); 
+  addAtomDerivatives( 0, 2, dw1*dij, myatoms );
+  myatoms.addBoxDerivatives( 0, (-dw1)*Tensor(dij,dij) + (-dw2)*Tensor(dik,dik) );
 }
 
-double Angles::compute(){
+double Angles::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
+  Vector dij=getSeparation( myatoms.getPosition(0), myatoms.getPosition(2) );
+  Vector dik=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
+
   Vector ddij,ddik; PLMD::Angle a; 
   double angle=a.compute(dij,dik,ddij,ddik);
 
   // And finish the calculation
-  addAtomsDerivatives( 1, ddik );
-  addAtomsDerivatives( 0, - ddik - ddij );
-  addAtomsDerivatives( 2, ddij );
-  addBoxDerivatives( -(Tensor(dij,ddij)+Tensor(dik,ddik)) );
+  addAtomDerivatives( 1, 1, ddik, myatoms );
+  addAtomDerivatives( 1, 0, - ddik - ddij, myatoms );
+  addAtomDerivatives( 1, 2, ddij, myatoms );
+  myatoms.addBoxDerivatives( 1, -(Tensor(dij,ddij)+Tensor(dik,ddik)) );
 
   return angle;
-}
-
-Vector Angles::getCentralAtom(){
-   addCentralAtomDerivatives( 0, Tensor::identity() );
-   return getPosition(0);
 }
 
 }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -111,8 +111,11 @@ class MovingRestraint : public Bias{
   std::vector<string> verse;
   std::vector<double> work;
   double tot_work;
+  bool loop_steps_;
+  std::vector<bool> equilibration;
+  long int getRestraintStep();
 public:
-  MovingRestraint(const ActionOptions&);
+  explicit MovingRestraint(const ActionOptions&);
   void calculate();
   static void registerKeywords( Keywords& keys );
 };
@@ -135,8 +138,16 @@ void MovingRestraint::registerKeywords( Keywords& keys ){
                               "parameter is linearly interpolated.  If no KAPPAx is specified for STEPx then the values of KAPPAx "
                               "are kept constant during the interval of time between STEPx-1 and STEPx.");
   keys.reset_style("KAPPA","compulsory");
+  keys.addFlag("LOOP_STEPS",false,"This keyword tells the MOVINGRESTRAINT to loop through the given STEPs again and again, starting with STEP0 "
+                               "every time the last STEP is reached. For stability, it is strongly recommended that when using this "
+                               "keyword, the STEPs should actually form a loop in the restraint parameter space.");
+  keys.add("numbered","EQUILIBRATION","EQUILIBRATIONx instructs the work calculation that this is an equilibration step in which the "
+                              "work is reset  to zero. A value of 0 indicates it is not an equilibration step, 1 indicates that it is. "
+                              "If no EQUILIBRATIONx is specified for STEPx then the work will be accumulated as normal through STEPx+1.");
+  keys.reset_style("EQUILIBRATION","optional");
   componentsAreNotOptional(keys);
   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
+  keys.addOutputComponent("work","default","the total work performed changing this restraint");
   keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
   keys.addOutputComponent("_cntr","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
                                             "these quantities will named with  the arguments of the bias followed by "
@@ -156,8 +167,10 @@ PLUMED_BIAS_INIT(ao),
 verse(getNumberOfArguments())
 {
   parseVector("VERSE",verse);
+  parseFlag("LOOP_STEPS", loop_steps_);
   vector<long int> ss(1); ss[0]=-1;
   std::vector<double> kk( getNumberOfArguments() ), aa( getNumberOfArguments() );
+  unsigned equilibration_this_step;
   for(int i=0;;i++){
     // Read in step 
     if( !parseNumberedVector("STEP",i,ss) ) break;
@@ -173,6 +186,14 @@ verse(getNumberOfArguments())
     // Now read AT
     if( !parseNumberedVector("AT",i,aa) ) aa=at[i-1];
     at.push_back(aa);
+
+    // Now read EQUILIBRATION
+    if( !parseNumbered("EQUILIBRATION",i,equilibration_this_step) ) equilibration_this_step=0;
+    if (equilibration_this_step == 0) {
+      equilibration.push_back(false);
+    } else {
+      equilibration.push_back(true);
+    }   
   }
   checkRead();
 
@@ -183,6 +204,7 @@ verse(getNumberOfArguments())
     log.printf("\n");
     log.printf("  with force constant");
     for(unsigned j=0;j<kappa[i].size();j++) log.printf(" %f",kappa[i][j]);
+    if (equilibration[i]) log.printf("  -- an equilibration step");
     log.printf("\n");
   };
 
@@ -209,30 +231,53 @@ verse(getNumberOfArguments())
 
 }
 
+// Returns the least step greater than the current for
+// a non-repeated simulation, otherwise the next step
+// point ID in a cyclic simulation.
+long int MovingRestraint::getRestraintStep(){
+  long int now = getStep();
+  if (loop_steps_) {
+    now = now % step[step.size()-1];
+  }
+  if (now<=step[0]) {
+    return 0;
+  } else if (now>=step[step.size()-1]) {
+    return step.size();
+  } else {
+    unsigned i=0;
+    for(i=1;i<step.size();i++) if(now<step[i]) break;
+    return i;
+  }
+}
 
 void MovingRestraint::calculate(){
   double ene=0.0;
   double totf2=0.0;
   unsigned narg=getNumberOfArguments();
   long int now=getStep();
+  unsigned curr_restraint_step=getRestraintStep();
   std::vector<double> kk(narg),aa(narg),f(narg),dpotdk(narg);
-  if(now<=step[0]){
+  
+  if(curr_restraint_step == 0){
     kk=kappa[0];
     aa=at[0];
     oldaa=at[0];
     oldk=kappa[0];
     olddpotdk.resize(narg);	
     oldf.resize(narg);
-  } else if(now>=step[step.size()-1]){
+  } else if(getRestraintStep() == step.size()){
     kk=kappa[step.size()-1];
     aa=at[step.size()-1];
   } else {
-    unsigned i=0;
-    for(i=1;i<step.size();i++) if(now<step[i]) break;
-    double c2=(now-step[i-1])/double(step[i]-step[i-1]);
+    double c2;
+    if (!loop_steps_) {
+      c2=(now-step[curr_restraint_step-1])/double(step[curr_restraint_step]-step[curr_restraint_step-1]);
+    } else {
+      c2=((now%step[step.size()-1])-step[curr_restraint_step-1])/double(step[curr_restraint_step]-step[curr_restraint_step-1]);
+    }
     double c1=1.0-c2;
-    for(unsigned j=0;j<narg;j++) kk[j]=(c1*kappa[i-1][j]+c2*kappa[i][j]);
-    for(unsigned j=0;j<narg;j++) aa[j]=(c1*at[i-1][j]+c2*at[i][j]);
+    for(unsigned j=0;j<narg;j++) kk[j]=(c1*kappa[curr_restraint_step-1][j]+c2*kappa[curr_restraint_step][j]);
+    for(unsigned j=0;j<narg;j++) aa[j]=(c1*at[curr_restraint_step-1][j]+c2*at[curr_restraint_step][j]);
   }
   tot_work=0.0;
   for(unsigned i=0;i<narg;++i){
@@ -259,6 +304,14 @@ void MovingRestraint::calculate(){
   olddpotdk=dpotdk;
   getPntrToComponent("bias")->set(ene);
   getPntrToComponent("force2")->set(totf2);
+  if (curr_restraint_step < step.size() && equilibration[curr_restraint_step]) {
+    if ((!loop_steps_ && now == step[curr_restraint_step]-1) || 
+        (loop_steps_ && now % step[step.size()-1] == step[curr_restraint_step]-1)) {
+      for (unsigned i=0;i<narg;++i) {
+        work[i] = 0;
+      }
+    }
+  }
 }
 
 }

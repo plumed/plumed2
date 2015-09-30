@@ -30,16 +30,24 @@ ReferenceArguments(ro)
 {
 }
 
-double ArgumentOnlyDistance::calculate( const std::vector<Value*>& vals, const bool& squared ){
-  clearDerivatives();
-  if( tmparg.size()!=vals.size() ) tmparg.resize( vals.size() );
-  for(unsigned i=0;i<vals.size();++i) tmparg[i]=vals[i]->get();
-  return calc( vals, tmparg, squared );
+void ArgumentOnlyDistance::read( const PDB& pdb ){
+  readArgumentsFromPDB( pdb );
 }
 
-double ArgumentOnlyDistance::calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, const bool& squared ){
+double ArgumentOnlyDistance::calculate( const std::vector<Value*>& vals, ReferenceValuePack& myder, const bool& squared ) const {
+  std::vector<double> tmparg( vals.size() );
+  for(unsigned i=0;i<vals.size();++i) tmparg[i]=vals[i]->get();
+  double d=calculateArgumentDistance( vals, tmparg, myder, squared );
+  if( !myder.updateComplete() ) myder.updateDynamicLists();
+  return d;
+}
+
+double ArgumentOnlyDistance::calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, 
+                                   ReferenceValuePack& myder, const bool& squared ) const {
   plumed_dbg_assert( pos.size()==0 );
-  return calc( vals, arg, squared );
+  double d=calculateArgumentDistance( vals, arg, myder, squared );
+  if( !myder.updateComplete() ) myder.updateDynamicLists();
+  return d;
 }
 
 }

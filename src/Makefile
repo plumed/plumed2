@@ -1,5 +1,5 @@
 
-.PHONY: all clean lib install uninstall
+.PHONY: all clean lib install uninstall install-html
 
 # by default we compile the lib directory, which in turn requests all the needeed modules
 all: lib
@@ -9,6 +9,9 @@ lib:
 
 install:
 	$(MAKE) -C lib install
+
+install-html:
+	$(MAKE) -C lib install-html
 
 uninstall:
 	$(MAKE) -C lib uninstall
@@ -20,22 +23,14 @@ SUBDIRSCLEAN :=$(addsuffix .clean,$(SUBDIRS))
 
 # this is cleaning all subdirectories
 clean: $(SUBDIRSCLEAN)
+	rm -f cppcheck.log cppcheck.fatal
 
 $(SUBDIRSCLEAN): %.clean:
 	$(MAKE) -C $* clean
 
 .PHONY: cppcheck
 cppcheck:
-	cppcheck --std=c++03 --std=posix -j 4 --platform=unix64 -q --enable=all --force */*.{h,cpp}
-
-.PHONY: mod-light mod-heavy mod-reset
-mod-light:
-	maketools/mod.sh light
-mod-heavy:
-	maketools/mod.sh heavy
-mod-reset:
-	maketools/mod.sh reset
-	
+	maketools/cppcheck
 
 .PHONY: help
 help:
@@ -43,8 +38,5 @@ help:
 	@echo "  all: compile everything (default)"
 	@echo "  clean: clean everything"
 	@echo "  cppcheck: check source (requires cppcheck installed)"
-	@echo "  mod-light: disable all optional modules"
-	@echo "  mod-heavy: enable all optional modules"
-	@echo "  mod-reset: reset optional modules to their default"
 
 

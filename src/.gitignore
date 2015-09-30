@@ -3,6 +3,7 @@
 # Only track modules that are part of the plumed core
 !/Makefile
 !/README
+!/adjmat
 !/analysis
 !/bias
 !/blas

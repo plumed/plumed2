@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2014,2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -40,9 +40,8 @@ class MoleculePlane : public VectorMultiColvar {
 private:
 public:
   static void registerKeywords( Keywords& keys );
-  MoleculePlane( const ActionOptions& ao );
-  void calculateVector();
-  Vector getCentralAtom();
+  explicit MoleculePlane( const ActionOptions& ao );
+  void calculateVector( multicolvar::AtomValuePack& myatoms ) const ;
 };
 
 PLUMED_REGISTER_ACTION(MoleculePlane,"PLANES")
@@ -67,80 +66,79 @@ VectorMultiColvar(ao)
   if( natoms!=3 && natoms!=4 ) error("number of atoms in molecule specification is wrong.  Should be three or four.");
 
   if( all_atoms.size()==0 ) error("No atoms were specified");
+  setVectorDimensionality( 3, natoms );
   ActionAtomistic::requestAtoms( all_atoms );
-
-  setVectorDimensionality( 3, false, natoms );
 }
 
-void MoleculePlane::calculateVector(){
+void MoleculePlane::calculateVector( multicolvar::AtomValuePack& myatoms ) const { 
   Vector d1, d2, cp; 
-  if( getNAtoms()==3 ){
-     d1=getSeparation( getPosition(1), getPosition(0) );
-     d2=getSeparation( getPosition(1), getPosition(2) ); 
+  if( myatoms.getNumberOfAtoms()==3 ){
+     d1=getSeparation( myatoms.getPosition(1), myatoms.getPosition(0) );
+     d2=getSeparation( myatoms.getPosition(1), myatoms.getPosition(2) ); 
   } else {
-     d1=getSeparation( getPosition(1), getPosition(0) );
-     d2=getSeparation( getPosition(2), getPosition(3) );
+     d1=getSeparation( myatoms.getPosition(1), myatoms.getPosition(0) );
+     d2=getSeparation( myatoms.getPosition(2), myatoms.getPosition(3) );
   }
   cp = crossProduct( d1, d2 );
 
-  addAtomsDerivative( 0, 0, crossProduct( Vector(-1.0,0,0), d2 ) );
-  if( getNAtoms()==3 ){
-     addAtomsDerivative( 0, 1, crossProduct( Vector(+1.0,0,0), d2 ) + crossProduct( Vector(-1.0,0,0), d1 ) );
-     addAtomsDerivative( 0, 2, crossProduct( Vector(+1.0,0,0), d1 ) );
+  addAtomDerivatives( 2, 0, crossProduct( Vector(-1.0,0,0), d2 ), myatoms );
+  if( myatoms.getNumberOfAtoms()==3 ){
+     addAtomDerivatives( 2, 1, crossProduct( Vector(+1.0,0,0), d2 ) + crossProduct( Vector(-1.0,0,0), d1 ), myatoms );
+     addAtomDerivatives( 2, 2, crossProduct( Vector(+1.0,0,0), d1 ), myatoms );
   } else {
-     addAtomsDerivative( 0, 1, crossProduct( Vector(+1.0,0,0), d2 ) ); 
-     addAtomsDerivative( 0, 2, crossProduct( Vector(-1.0,0,0), d1 ) );
-     addAtomsDerivative( 0, 3, crossProduct( Vector(+1.0,0,0), d1 ) );
+     addAtomDerivatives( 2, 1, crossProduct( Vector(+1.0,0,0), d2 ), myatoms ); 
+     addAtomDerivatives( 2, 2, crossProduct( Vector(-1.0,0,0), d1 ), myatoms );
+     addAtomDerivatives( 2, 3, crossProduct( Vector(+1.0,0,0), d1 ), myatoms );
   }
-  addBoxDerivatives( 0, Tensor(d1,crossProduct(Vector(+1.0,0,0), d2)) + Tensor( d2, crossProduct(Vector(-1.0,0,0), d1)) );
-  addComponent( 0, cp[0] );
+  myatoms.addBoxDerivatives( 2, Tensor(d1,crossProduct(Vector(+1.0,0,0), d2)) + Tensor( d2, crossProduct(Vector(-1.0,0,0), d1)) );
+  myatoms.addValue( 2, cp[0] );
 
-  addAtomsDerivative( 1, 0, crossProduct( Vector(0,-1.0,0), d2 ) );
-  if( getNAtoms()==3 ){
-     addAtomsDerivative( 1, 1, crossProduct( Vector(0,+1.0,0), d2 ) + crossProduct( Vector(0,-1.0,0), d1 ) );
-     addAtomsDerivative( 1, 2, crossProduct( Vector(0,+1.0,0), d1 ) );
+  addAtomDerivatives( 3, 0, crossProduct( Vector(0,-1.0,0), d2 ), myatoms );
+  if( myatoms.getNumberOfAtoms()==3 ){
+     addAtomDerivatives( 3, 1, crossProduct( Vector(0,+1.0,0), d2 ) + crossProduct( Vector(0,-1.0,0), d1 ), myatoms );
+     addAtomDerivatives( 3, 2, crossProduct( Vector(0,+1.0,0), d1 ), myatoms );
   } else {
-     addAtomsDerivative( 1, 1, crossProduct( Vector(0,+1.0,0), d2 ) ); 
-     addAtomsDerivative( 1, 2, crossProduct( Vector(0,-1.0,0), d1 ) );
-     addAtomsDerivative( 1, 3, crossProduct( Vector(0,+1.0,0), d1 ) );
+     addAtomDerivatives( 3, 1, crossProduct( Vector(0,+1.0,0), d2 ), myatoms ); 
+     addAtomDerivatives( 3, 2, crossProduct( Vector(0,-1.0,0), d1 ), myatoms );
+     addAtomDerivatives( 3, 3, crossProduct( Vector(0,+1.0,0), d1 ), myatoms );
   }
-  addBoxDerivatives( 1, Tensor(d1,crossProduct(Vector(0,+1.0,0), d2)) + Tensor( d2, crossProduct(Vector(0,-1.0,0), d1)) );
-  addComponent( 1, cp[1] );
+  myatoms.addBoxDerivatives( 3, Tensor(d1,crossProduct(Vector(0,+1.0,0), d2)) + Tensor( d2, crossProduct(Vector(0,-1.0,0), d1)) );
+  myatoms.addValue( 3, cp[1] );
 
-  addAtomsDerivative( 2, 0, crossProduct( Vector(0,0,-1.0), d2 ) );
-  if( getNAtoms()==3 ){
-     addAtomsDerivative( 2, 1, crossProduct( Vector(0,0,+1.0), d2 ) + crossProduct( Vector(0,0,-1.0), d1 ) );
-     addAtomsDerivative( 2, 2, crossProduct( Vector(0,0,+1.0), d1 ) );
+  addAtomDerivatives( 4, 0, crossProduct( Vector(0,0,-1.0), d2 ), myatoms );
+  if( myatoms.getNumberOfAtoms()==3 ){
+     addAtomDerivatives( 4, 1, crossProduct( Vector(0,0,+1.0), d2 ) + crossProduct( Vector(0,0,-1.0), d1 ), myatoms );
+     addAtomDerivatives( 4, 2, crossProduct( Vector(0,0,+1.0), d1 ), myatoms);
   } else {
-     addAtomsDerivative( 2, 1, crossProduct( Vector(0,0,-1.0), d2 ) ); 
-     addAtomsDerivative( 2, 2, crossProduct( Vector(0,0,-1.0), d1 ) );
-     addAtomsDerivative( 2, 3, crossProduct( Vector(0,0,+1.0), d1 ) );
+     addAtomDerivatives( 4, 1, crossProduct( Vector(0,0,-1.0), d2 ), myatoms); 
+     addAtomDerivatives( 4, 2, crossProduct( Vector(0,0,-1.0), d1 ), myatoms);
+     addAtomDerivatives( 4, 3, crossProduct( Vector(0,0,+1.0), d1 ), myatoms);
   }
-  addBoxDerivatives( 2, Tensor(d1,crossProduct(Vector(0,0,+1.0), d2)) + Tensor( d2, crossProduct(Vector(0,0,-1.0), d1)) );
-  addComponent( 2, cp[2] );
+  myatoms.addBoxDerivatives( 4, Tensor(d1,crossProduct(Vector(0,0,+1.0), d2)) + Tensor( d2, crossProduct(Vector(0,0,-1.0), d1)) );
+  myatoms.addValue( 4, cp[2] );
 }
 
-Vector MoleculePlane::getCentralAtom(){
-  Vector com; com.zero(); 
-  if( getNAtoms()==3 ){
-      com+=(1.0/3.0)*getPosition(0);
-      com+=(1.0/3.0)*getPosition(1);
-      com+=(1.0/3.0)*getPosition(2);
-      addCentralAtomDerivatives( 0, (1.0/3.0)*Tensor::identity() );
-      addCentralAtomDerivatives( 1, (1.0/3.0)*Tensor::identity() );
-      addCentralAtomDerivatives( 2, (1.0/3.0)*Tensor::identity() );
-      return com;
-  }
-  com+=0.25*getPosition(0);
-  com+=0.25*getPosition(1);
-  com+=0.25*getPosition(2);
-  com+=0.25*getPosition(3);
-  addCentralAtomDerivatives( 0, 0.25*Tensor::identity() );
-  addCentralAtomDerivatives( 1, 0.25*Tensor::identity() );
-  addCentralAtomDerivatives( 2, 0.25*Tensor::identity() );
-  addCentralAtomDerivatives( 3, 0.25*Tensor::identity() );
-  return com;
-}
+// Vector MoleculePlane::getCentralAtom(){
+//   Vector com; com.zero(); 
+//   if( getNAtoms()==3 ){
+//       com+=(1.0/3.0)*getPosition(0);
+//       com+=(1.0/3.0)*getPosition(1);
+//       com+=(1.0/3.0)*getPosition(2);
+//       addCentralAtomDerivatives( 0, (1.0/3.0)*Tensor::identity() );
+//       addCentralAtomDerivatives( 1, (1.0/3.0)*Tensor::identity() );
+//       addCentralAtomDerivatives( 2, (1.0/3.0)*Tensor::identity() );
+//       return com;
+//   }
+//   com+=0.25*getPosition(0);
+//   com+=0.25*getPosition(1);
+//   com+=0.25*getPosition(2);
+//   com+=0.25*getPosition(3);
+//   addCentralAtomDerivatives( 0, 0.25*Tensor::identity() );
+//   addCentralAtomDerivatives( 1, 0.25*Tensor::identity() );
+//   addCentralAtomDerivatives( 2, 0.25*Tensor::identity() );
+//   addCentralAtomDerivatives( 3, 0.25*Tensor::identity() );
+//   return com;
+// }
 
 }
 }

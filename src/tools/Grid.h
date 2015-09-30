@@ -80,6 +80,9 @@ class KernelFunctions;
 
 /// \ingroup TOOLBOX
 class Grid {
+ public:
+  typedef size_t index_t;
+ private:
   std::vector<double> grid_;
   std::vector< std::vector<double> > der_;
 
@@ -91,150 +94,148 @@ class Grid {
   std::vector<unsigned> nbin_;
   std::vector<bool> pbc_;
   std::vector<unsigned> indices_;
-  unsigned long long maxsize_;
+  index_t maxsize_;
   unsigned dimension_;
   bool dospline_, usederiv_, usedomains_;
   std::string fmt_; // format for output
-/// get "neighbors" for spline
-  std::vector<unsigned long long> getSplineNeighbors(const std::vector<unsigned> &indices)const;
+  /// get "neighbors" for spline
+  std::vector<index_t> getSplineNeighbors(const std::vector<unsigned> &indices)const;
 
 
  public:
-/// clear grid
+  /// clear grid
   virtual void clear();
-/// this constructor here is Value-aware
+  /// this constructor here is Value-aware
   Grid(const std::string &funcl, std::vector<Value*> args, const std::vector<std::string> &gmin,
        const std::vector<std::string> &gmax, const std::vector<unsigned> &nbin, bool dospline,
        bool usederiv, bool doclear = true);
-/// this constructor here is not Value-aware
+  /// this constructor here is not Value-aware
   Grid(const std::string &funcl, const std::vector<std::string> &names, const std::vector<std::string> &gmin,
        const std::vector<std::string> &gmax, const std::vector<unsigned> &nbin, bool dospline,
        bool usederiv, bool doclear, const std::vector<bool> &isperiodic, const std::vector<std::string> &pmin,
        const std::vector<std::string> &pmax);
-/// this is the real initializator
+  /// this is the real initializator
   void Init(const std::string &funcl, const std::vector<std::string> &names, const std::vector<std::string> &gmin,
             const std::vector<std::string> &gmax, const std::vector<unsigned> &nbin, bool dospline, bool usederiv,
             bool doclear, const std::vector<bool> &isperiodic, const std::vector<std::string> &pmin, const std::vector<std::string> &pmax);
-/// get lower boundary
+  /// get lower boundary
   std::vector<std::string> getMin() const;
-/// get upper boundary
+  /// get upper boundary
   std::vector<std::string> getMax() const;
-/// get bin size
+  /// get bin size
   std::vector<double> getDx() const;
-/// get bin volume
+  /// get bin volume
   double getBinVolume() const;
-/// get number of bins
+  /// get number of bins
   std::vector<unsigned> getNbin() const;
-/// get if periodic
+  /// get if periodic
   std::vector<bool> getIsPeriodic() const;
-/// get grid dimension
+  /// get grid dimension
   unsigned getDimension() const;
-/// get argument names  of this grid
+  /// get argument names  of this grid
   std::vector<std::string> getArgNames() const;
 
-/// methods to handle grid indices
-  std::vector<unsigned> getIndices(unsigned long long index) const;
+  /// methods to handle grid indices
+  std::vector<unsigned> getIndices(index_t index) const;
   std::vector<unsigned> getIndices(const std::vector<double> &x) const;
-  unsigned long long getIndex(const std::vector<unsigned> &indices) const;
-  unsigned long long getIndex(const std::vector<double> &x) const;
-  std::vector<double> getPoint(unsigned long long index) const;
+  index_t getIndex(const std::vector<unsigned> &indices) const;
+  index_t getIndex(const std::vector<double> &x) const;
+  std::vector<double> getPoint(index_t index) const;
   std::vector<double> getPoint(const std::vector<unsigned> &indices) const;
   std::vector<double> getPoint(const std::vector<double> &x) const;
-/// faster versions relying on preallocated vectors
-  void getPoint(unsigned long long index, std::vector<double> &point);
+  /// faster versions relying on preallocated vectors
+  void getPoint(index_t index, std::vector<double> &point);
   void getPoint(const std::vector<unsigned> &indices, std::vector<double> &point) const;
   void getPoint(const std::vector<double> &x, std::vector<double> &point);
-  void getIndices(unsigned long long index, std::vector<unsigned> &indices);
-  void getIndices(const std::vector<double> &x, std::vector<unsigned> &indices);
+  void getIndices(index_t index, std::vector<unsigned> &indices) const;
+  void getIndices(const std::vector<double> &x, std::vector<unsigned> &indices) const;
 
-/// get neighbors
-  std::vector<unsigned long long> getNeighbors(unsigned long long index, const std::vector<unsigned> &neigh) const;
-  std::vector<unsigned long long> getNeighbors(const std::vector<unsigned> &indices, const std::vector<unsigned> &neigh) const;
-  std::vector<unsigned long long> getNeighbors(const std::vector<double> &x, const std::vector<unsigned> &neigh) const;
-/// get nearest neighbors (those separated by exactly one lattice unit)
-  std::vector<unsigned long long> getNearestNeighbors(const unsigned long long index) const;
-  std::vector<unsigned long long> getNearestNeighbors(const std::vector<unsigned> &indices) const;
+  /// get neighbors
+  std::vector<index_t> getNeighbors(index_t index, const std::vector<unsigned> &neigh) const;
+  std::vector<index_t> getNeighbors(const std::vector<unsigned> &indices, const std::vector<unsigned> &neigh) const;
+  std::vector<index_t> getNeighbors(const std::vector<double> &x, const std::vector<unsigned> &neigh) const;
+  /// get nearest neighbors (those separated by exactly one lattice unit)
+  std::vector<index_t> getNearestNeighbors(const index_t index) const;
+  std::vector<index_t> getNearestNeighbors(const std::vector<unsigned> &indices) const;
 
-/// write header for grid file
+  /// write header for grid file
   void writeHeader(OFile &file);
 
-/// read grid from file
+  /// read grid from file
   static Grid* create(const std::string &, std::vector<Value*>, IFile &, bool, bool, bool);
-/// read grid from file and check boundaries are what is expected from input
+  /// read grid from file and check boundaries are what is expected from input
   static Grid* create(const std::string &, std::vector<Value*>, IFile &,
                       const std::vector<std::string> &, const std::vector<std::string> &,
                       const std::vector<unsigned> &, bool, bool, bool);
-/// get grid size
-  virtual unsigned long long getSize() const;
-  unsigned long long getMaxSize() const;
-/// get grid value
-  virtual double getValue(unsigned long long index) const;
+  /// get grid size
+  virtual index_t getSize() const;
+  index_t getMaxSize() const;
+  /// get grid value
+  virtual double getValue(index_t index) const;
   virtual double getValue(const std::vector<unsigned> &indices) const;
   virtual double getValue(const std::vector<double> &x) const;
-/// get minimum value
+  /// get minimum value
   virtual double getMinValue() const;
-/// get maximum value
+  /// get maximum value
   virtual double getMaxValue() const;
-/// get grid value and derivatives
-  virtual double getValueAndDerivatives(unsigned long long index, std::vector<double> &der) const ;
+  /// get grid value and derivatives
+  virtual double getValueAndDerivatives(index_t index, std::vector<double> &der) const ;
   virtual double getValueAndDerivatives(const std::vector<unsigned> &indices, std::vector<double> &der) const;
   virtual double getValueAndDerivatives(const std::vector<double> &x, std::vector<double> &der) const;
 
-/// set grid value
-  virtual void setValue(unsigned long long index, double value);
+  /// set grid value
+  virtual void setValue(index_t index, double value);
   virtual void setValue(const std::vector<unsigned> &indices, double value);
-/// set grid value and derivatives
-  virtual void setValueAndDerivatives(unsigned long long index, double value, std::vector<double> &der);
+  /// set grid value and derivatives
+  virtual void setValueAndDerivatives(index_t index, double value, std::vector<double> &der);
   virtual void setValueAndDerivatives(const std::vector<unsigned> &indices, double value, std::vector<double> &der);
-/// add to grid value
-  virtual void addValue(unsigned long long index, double value);
+  /// add to grid value
+  virtual void addValue(index_t index, double value);
   virtual void addValue(const std::vector<unsigned> &indices, double value);
-/// add to grid value and derivatives
-  virtual void addValueAndDerivatives(unsigned long long index, double value, std::vector<double> &der);
+  /// add to grid value and derivatives
+  virtual void addValueAndDerivatives(index_t index, double value, std::vector<double> &der);
   virtual void addValueAndDerivatives(const std::vector<unsigned> &indices, double value, std::vector<double> &der);
-
-/// Scale all grid values and derivatives by a constant factor
+  /// Scale all grid values and derivatives by a constant factor
   virtual void scaleAllValuesAndDerivatives(const double &scalef);
-/// Takes the scalef times the logarithm of all grid values and derivatives
+  /// Takes the scalef times the logarithm of all grid values and derivatives
   virtual void logAllValuesAndDerivatives(const double &scalef);
-/// Set the minimum value of the grid to zero and translates accordingly
+  /// Set the minimum value of the grid to zero and translates accordingly
   virtual void setMinToZero();
-/// apply function: takes  pointer to  function that accepts a double and apply
+  /// apply function: takes  pointer to  function that accepts a double and apply
   virtual void applyFunctionAllValuesAndDerivatives(double(*func)(double val), double(*funcder)(double valder));
-/// add a kernel function to the grid
+  /// add a kernel function to the grid
   void addKernel(const KernelFunctions &kernel);
 
-/// Find the maximum over paths of the minimum value of the gridded function along the paths
-/// for all paths of neighboring grid lattice points from a source point to a sink point.
+  /// Find the maximum over paths of the minimum value of the gridded function along the paths
+  /// for all paths of neighboring grid lattice points from a source point to a sink point.
   virtual double findMaximalPathMinimum(const std::vector<double> &source, const std::vector<double> &sink);
 
-/// Reset a grid point's derivatives based on the values of its neighbors.
-  void setDerivFromValues(const unsigned long long index);
+  /// Reset a grid point's derivatives based on the values of its neighbors.
+  void setDerivFromValues(const index_t index);
   void setDerivFromValues(const std::vector<unsigned> &indices);
 
-/// dump grid on file
- virtual void writeToFile(OFile&);
-/// dump grid to gaussian cube file
- void writeCubeFile(OFile&);
+  /// dump grid on file
+  virtual void writeToFile(OFile&);
+  /// dump grid to gaussian cube file
+  void writeCubeFile(OFile&);
 
   virtual ~Grid() {}
 
-/// project a high dimensional grid onto a low dimensional one: this should be changed at some time
-/// to enable many types of weighting
+  /// project a high dimensional grid onto a low dimensional one: this should be changed at some time
+  /// to enable many types of weighting
   Grid project(const std::vector<std::string> &proj , WeightBase *ptr2obj);
   void projectOnLowDimension(double &val , std::vector<int> &varHigh, WeightBase* ptr2obj);
-/// set output format
+  /// set output format
   void setOutputFmt(std::string ss) {
     fmt_ = ss;
   }
 };
 
-
 class SparseGrid : public Grid {
- std::map<unsigned long long,double> map_;
- typedef std::map<unsigned long long,double>::const_iterator iterator;
- std::map< unsigned long long,std::vector<double> > der_;
- typedef std::map<unsigned long long,std::vector<double> >::const_iterator iterator_der;
+  std::map<index_t, double> map_;
+  typedef std::map<index_t,double>::const_iterator iterator;
+  std::map<index_t,std::vector<double> > der_;
+  typedef std::map<index_t,std::vector<double> >::const_iterator iterator_der;
  
  protected:
   void clear();
@@ -245,7 +246,7 @@ class SparseGrid : public Grid {
              const std::vector<unsigned> &nbin, bool dospline, bool usederiv):
     Grid(funcl, args, gmin, gmax, nbin, dospline, usederiv, false) {}
 
-  unsigned long long getSize() const;
+  index_t getSize() const;
 
 /// this is to access to Grid:: version of these methods (allowing overloading of virtual methods)
   using Grid::getValue;
@@ -255,19 +256,19 @@ class SparseGrid : public Grid {
   using Grid::addValue;
   using Grid::addValueAndDerivatives;
 
-/// get grid value
-  double getValue(unsigned long long index) const;
-/// get grid value and derivatives
-  double getValueAndDerivatives(unsigned long long index, std::vector<double> &der) const;
+  /// get grid value
+  double getValue(index_t index) const;
+  /// get grid value and derivatives
+  double getValueAndDerivatives(index_t index, std::vector<double> &der) const;
 
-/// set grid value
-  void setValue(unsigned long long index, double value);
-/// set grid value and derivatives
-  void setValueAndDerivatives(unsigned long long index, double value, std::vector<double> &der);
-/// add to grid value
-  void addValue(unsigned long long index, double value);
-/// add to grid value and derivatives
-  void addValueAndDerivatives(unsigned long long index, double value, std::vector<double> &der);
+  /// set grid value
+  void setValue(index_t index, double value);
+  /// set grid value and derivatives
+  void setValueAndDerivatives(index_t index, double value, std::vector<double> &der);
+  /// add to grid value
+  void addValue(index_t index, double value);
+  /// add to grid value and derivatives
+  void addValueAndDerivatives(index_t index, double value, std::vector<double> &der);
 
 /// dump grid on file
   void writeToFile(OFile &);

@@ -375,7 +375,7 @@ without further rescaling needed.
 We can plot the time evolution of the CVs along with the height of the Gaussian.
 
 \anchor belfast-6-wtb6-fig
-\image html belfast-6-wtb6.pdf "Time evolution of the CVs and Gaussian height during the first 2.5 ns of a well-tempered metadynamics simulation with biasfactor equal to 6."
+\image html belfast-6-wtb6.png "Time evolution of the CVs and Gaussian height during the first 2.5 ns of a well-tempered metadynamics simulation with biasfactor equal to 6."
 
 The system is initialized in one of the local minimum where it starts accumulating bias.
 As the simulation progresses and the bias added grows, the Gaussian height is progressively reduced.
@@ -391,7 +391,7 @@ this biasfactor is not large enough to allow for the system to escape from the i
 in the time scale of this simulation.
 
 \anchor belfast-6-wtb15-fig
-\image html belfast-6-wtb15.pdf "Time evolution of the CVs and Gaussian height in a 5 ns long well-tempered metadynamics simulation with biasfactor equal to 1.5."
+\image html belfast-6-wtb15.png "Time evolution of the CVs and Gaussian height in a 5 ns long well-tempered metadynamics simulation with biasfactor equal to 1.5."
 
 Following the procedure described for standard metadynamics in the previous example, 
 we can estimate the free energy as a function of time and monitor the convergence of the
@@ -435,7 +435,7 @@ Let's look at the HILLS file, in particular at the time serie of the CV psi and 
 Gaussian height.
 
 \anchor belfast-6-phialone-fig
-\image html belfast-6-phialone.pdf "Time evolution of psi and Gaussian height in a well-tempered metadynamics simulation using psi alone as CV."
+\image html belfast-6-phialone.png "Time evolution of psi and Gaussian height in a well-tempered metadynamics simulation using psi alone as CV."
 
 From this plot, we observe a nice diffusive behavior of the CV psi when the Gaussian height is already
 quite small. This happens until t=3 ns, when the CV seems to be stuck for a while in a small region

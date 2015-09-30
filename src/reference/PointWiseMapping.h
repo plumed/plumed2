@@ -61,11 +61,11 @@ public:
 /// Get the value of the ith property for th jth frame
   double getPropertyValue( const unsigned& iframe, const unsigned& jprop ) const ;
 /// Get the derivatives wrt to the position of an atom
-  Vector getAtomDerivatives( const unsigned& iframe, const unsigned& jatom );
+//  Vector getAtomDerivatives( const unsigned& iframe, const unsigned& jatom );
 /// Get the derivatives wrt to the box
-  bool getVirial( const unsigned& iframe, Tensor& vir );
+//  bool getVirial( const unsigned& iframe, Tensor& vir );
 /// Ge the derivatives wrt to one of the arguments
-  double getArgumentDerivative( const unsigned& iframe, const unsigned& jarg );
+//  double getArgumentDerivative( const unsigned& iframe, const unsigned& jarg );
 /// Copy derivative information from frame number from to frame number to
   void copyFrameDerivatives( const unsigned& from, const unsigned& to );
 /// Get a pointer to the matrix of pairwise distances
@@ -112,20 +112,20 @@ double PointWiseMapping::getPropertyValue( const unsigned& iframe, const unsigne
   return low_dim[iframe][jprop];
 }
 
-inline
-Vector PointWiseMapping::getAtomDerivatives( const unsigned& iframe, const unsigned& jatom ){
-  return frames[iframe]->getAtomDerivative(jatom);
-}
+// inline
+// Vector PointWiseMapping::getAtomDerivatives( const unsigned& iframe, const unsigned& jatom ){
+//   return frames[iframe]->getAtomDerivative(jatom);
+// }
+// 
+// inline
+// bool PointWiseMapping::getVirial( const unsigned& iframe, Tensor& vir ){
+//   return frames[iframe]->getVirial( vir );
+// }
 
-inline
-bool PointWiseMapping::getVirial( const unsigned& iframe, Tensor& vir ){
-  return frames[iframe]->getVirial( vir );
-}
-
-inline
-double PointWiseMapping::getArgumentDerivative( const unsigned& iframe, const unsigned& jarg ){
-  return frames[iframe]->getArgumentDerivative(jarg);
-}
+// inline
+// double PointWiseMapping::getArgumentDerivative( const unsigned& iframe, const unsigned& jarg ){
+//   return frames[iframe]->getArgumentDerivative(jarg);
+// }
 
 inline
 Matrix<double>& PointWiseMapping::modifyDmat(){

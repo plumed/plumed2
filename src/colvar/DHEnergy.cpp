@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -72,7 +72,7 @@ class DHEnergy : public CoordinationBase{
   double epsilon;
 
 public:
-  DHEnergy(const ActionOptions&);
+  explicit DHEnergy(const ActionOptions&);
 // active methods:
   static void registerKeywords( Keywords& keys );
   virtual double pairing(double distance,double&dfunc,unsigned i,unsigned j)const;

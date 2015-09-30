@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -30,11 +30,11 @@ public ReferenceAtoms,
 public ReferenceArguments
 {
 public:
-  Direction( const ReferenceConfigurationOptions& ro );
+  explicit Direction( const ReferenceConfigurationOptions& ro );
   void read( const PDB& );
-  double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& args, const bool& squared );
+  double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& args, 
+               ReferenceValuePack& myder, const bool& squared ) const ;
   void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in ){ plumed_error(); }
-  Vector getAtomicDisplacement( const unsigned& iatom );
 };
 
 PLUMED_REGISTER_METRIC(Direction,"DIRECTION")
@@ -51,14 +51,13 @@ void Direction::read( const PDB& pdb ){
   readArgumentsFromPDB( pdb );
 }
 
-double Direction::calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& args, const bool& squared ){
+double Direction::calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& args, 
+                        ReferenceValuePack& myder, const bool& squared ) const {
   plumed_assert( squared );
-  for(unsigned i=0;i<getReferenceArguments().size();++i) arg_ders[i] = -2.*getReferenceArgument(i);
+  for(unsigned i=0;i<getNumberOfReferenceArguments();++i) myder.addArgumentDerivatives( i, -2.*getReferenceArgument(i) );
+  for(unsigned i=0;i<getNumberOfAtoms();++i) myder.getAtomsDisplacementVector()[i]=getReferencePosition(i);
+  
   return 0.0;
-}
-
-Vector Direction::getAtomicDisplacement( const unsigned& iatom ){ 
-  return getReferencePosition( iatom );
 }
 
 }

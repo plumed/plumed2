@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -44,7 +44,7 @@ protected:
   void addValueWithDerivatives();
   void addComponentWithDerivatives( const std::string& name ); 
 public:
-  Function(const ActionOptions&);
+  explicit Function(const ActionOptions&);
   virtual ~Function(){}
   void apply();
   static void registerKeywords(Keywords&);

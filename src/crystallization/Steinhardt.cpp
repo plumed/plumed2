@@ -36,12 +36,14 @@ void Steinhardt::registerKeywords( Keywords& keys ){
                                "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   keys.use("SPECIES"); keys.use("SPECIESA"); keys.use("SPECIESB");
   keys.use("MEAN"); keys.use("LESS_THAN"); keys.use("MORE_THAN"); keys.use("VMEAN");
-  keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS"); keys.use("MIN");
+  keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS"); keys.use("MIN"); keys.use("ALT_MIN");
+  keys.use("LOWEST"); keys.use("HIGHEST");
 }
 
 Steinhardt::Steinhardt( const ActionOptions& ao ):
 Action(ao),
-VectorMultiColvar(ao)
+VectorMultiColvar(ao),
+tmom(0)
 {
   // Read in the switching function
   std::string sw, errors; parse("SWITCH",sw);
@@ -57,33 +59,36 @@ VectorMultiColvar(ao)
   log.printf("  Steinhardt parameter of central atom and those within %s\n",( switchingFunction.description() ).c_str() );
   // Set the link cell cutoff
   setLinkCellCutoff( switchingFunction.get_dmax() );
-  rcut = switchingFunction.get_dmax();
+  rcut = switchingFunction.get_dmax(); rcut2 = rcut*rcut;
 }
 
 void Steinhardt::setAngularMomentum( const unsigned& ang ){
-  tmom=ang; setVectorDimensionality( 2*ang + 1, true, 2 );
+  tmom=ang; setVectorDimensionality( 2*(2*ang + 1), 2 );
 } 
 
-void Steinhardt::calculateVector(){
+void Steinhardt::calculateVector( multicolvar::AtomValuePack& myatoms ) const {
   double dfunc, dpoly_ass, md, tq6, itq6, real_z, imag_z; 
-  Vector distance, dz, myrealvec, myimagvec, real_dz, imag_dz;
+  Vector dz, myrealvec, myimagvec, real_dz, imag_dz;
   // The square root of -1
   std::complex<double> ii( 0.0, 1.0 ), dp_x, dp_y, dp_z;
 
-  double sw, poly_ass, dlen, nbond=0.0; std::complex<double> powered;
-  for(unsigned i=1;i<getNAtoms();++i){
-     distance=getSeparation( getPosition(0), getPosition(i) );
-     dlen=distance.modulo(); 
-     if( dlen<rcut ){
+  unsigned ncomp=2*tmom+1;
+  double sw, poly_ass, d2, dlen, nbond=0.0; std::complex<double> powered;
+  for(unsigned i=1;i<myatoms.getNumberOfAtoms();++i){
+      Vector& distance=myatoms.getPosition(i);  // getSeparation( myatoms.getPosition(0), myatoms.getPosition(i) );
+      if ( (d2=distance[0]*distance[0])<rcut2 &&
+           (d2+=distance[1]*distance[1])<rcut2 &&
+           (d2+=distance[2]*distance[2])<rcut2) {
+         dlen = sqrt(d2);
          sw = switchingFunction.calculate( dlen, dfunc ); 
    
          nbond += sw;  // Accumulate total number of bonds
-         double dlen3 = dlen*dlen*dlen;
+         double dlen3 = d2*dlen;
 
          // Store derivatives of weight
-         MultiColvarBase::addAtomsDerivatives( 0, current_atoms[0], (-dfunc)*distance );
-         MultiColvarBase::addAtomsDerivatives( 0, current_atoms[i], (+dfunc)*distance );
-         MultiColvarBase::addBoxDerivatives( 0, (-dfunc)*Tensor( distance,distance ) ); 
+         addAtomDerivatives( -1, 0, (-dfunc)*distance, myatoms );
+         addAtomDerivatives( -1, i, (+dfunc)*distance, myatoms );
+         myatoms.addTemporyBoxDerivatives( (-dfunc)*Tensor( distance,distance ) ); 
 
          // Do stuff for m=0
          poly_ass=deriv_poly( 0, distance[2]/dlen, dpoly_ass );
@@ -92,11 +97,11 @@ void Steinhardt::calculateVector(){
          // Derivative wrt to the vector connecting the two atoms
          myrealvec = (+sw)*dpoly_ass*dz + poly_ass*(+dfunc)*distance;
          // Accumulate the derivatives
-         addAtomsDerivative( tmom, 0, -myrealvec );      
-         addAtomsDerivative( tmom, i, myrealvec ); 
-         addBoxDerivatives( tmom, Tensor( -myrealvec,distance ) );
+         addAtomDerivatives( 2 + tmom, 0, -myrealvec, myatoms );      
+         addAtomDerivatives( 2 + tmom, i, myrealvec, myatoms); 
+         myatoms.addBoxDerivatives( 2 + tmom, Tensor( -myrealvec,distance ) );
          // And store the vector function
-         addComponent( tmom, sw*poly_ass );
+         myatoms.addValue( 2 + tmom, sw*poly_ass );
 
          // The complex number of which we have to take powers
          std::complex<double> com1( distance[0]/dlen ,distance[1]/dlen );
@@ -128,41 +133,39 @@ void Steinhardt::calculateVector(){
              myimagvec = (+sw)*dpoly_ass*imag_z*dz + (+dfunc)*distance*itq6 + (+sw)*poly_ass*imag_dz;
 
              // Real part
-             addComponent( tmom+m, sw*tq6 );
-             addAtomsDerivative( tmom+m, 0, -myrealvec );
-             addAtomsDerivative( tmom+m, i, myrealvec );
-             addBoxDerivatives( tmom+m, Tensor( -myrealvec,distance ) );
+             myatoms.addValue( 2+tmom+m, sw*tq6 );
+             addAtomDerivatives( 2+tmom+m, 0, -myrealvec, myatoms );
+             addAtomDerivatives( 2+tmom+m, i, myrealvec, myatoms );
+             myatoms.addBoxDerivatives( 2+tmom+m, Tensor( -myrealvec,distance ) );
              // Imaginary part 
-             addImaginaryComponent( tmom+m, sw*itq6 );
-             addImaginaryAtomsDerivative( tmom+m, 0, -myimagvec );
-             addImaginaryAtomsDerivative( tmom+m, i, myimagvec );
-             addImaginaryBoxDerivatives( tmom+m, Tensor( -myimagvec,distance ) );
+             myatoms.addValue( 2+ncomp+tmom+m, sw*itq6 );
+             addAtomDerivatives( 2+ncomp+tmom+m, 0, -myimagvec, myatoms );
+             addAtomDerivatives( 2+ncomp+tmom+m, i, myimagvec, myatoms );
+             myatoms.addBoxDerivatives( 2+ncomp+tmom+m, Tensor( -myimagvec,distance ) );
              // Store -m part of vector
              double pref=pow(-1.0,m); 
              // -m part of vector is just +m part multiplied by (-1.0)**m and multiplied by complex
              // conjugate of Legendre polynomial
              // Real part
-             addComponent( tmom-m, pref*sw*tq6 );
-             addAtomsDerivative( tmom-m, 0, -pref*myrealvec );
-             addAtomsDerivative( tmom-m, i, pref*myrealvec );
-             addBoxDerivatives( tmom-m, pref*Tensor( -myrealvec,distance ) );
+             myatoms.addValue( 2+tmom-m, pref*sw*tq6 );
+             addAtomDerivatives( 2+tmom-m, 0, -pref*myrealvec, myatoms );
+             addAtomDerivatives( 2+tmom-m, i, pref*myrealvec, myatoms );
+             myatoms.addBoxDerivatives( 2+tmom-m, pref*Tensor( -myrealvec,distance ) );
              // Imaginary part
-             addImaginaryComponent( tmom-m, -pref*sw*itq6 );
-             addImaginaryAtomsDerivative( tmom-m, 0, pref*myimagvec );
-             addImaginaryAtomsDerivative( tmom-m, i, -pref*myimagvec );
-             addImaginaryBoxDerivatives( tmom-m, pref*Tensor( myimagvec,distance ) );
+             myatoms.addValue( 2+ncomp+tmom-m, -pref*sw*itq6 );
+             addAtomDerivatives( 2+ncomp+tmom-m, 0, pref*myimagvec, myatoms );
+             addAtomDerivatives( 2+ncomp+tmom-m, i, -pref*myimagvec, myatoms );
+             myatoms.addBoxDerivatives( 2+ncomp+tmom-m, pref*Tensor( myimagvec,distance ) );
          }
      }
   } 
 
   // Normalize 
-  setElementValue(0, nbond ); updateActiveAtoms();
-  for(unsigned i=0;i<2*getNumberOfComponentsInVector();++i) quotientRule( 5+i, 0, 5+i ); 
-  // Clear tempory stuff
-  clearDerivativesAfterTask(0);
+  updateActiveAtoms( myatoms );
+  for(unsigned i=0;i<getNumberOfComponentsInVector();++i) myatoms.getUnderlyingMultiValue().quotientRule( 2+i, nbond, 2+i ); 
 }
 
-double Steinhardt::deriv_poly( const unsigned& m, const double& val, double& df ){
+double Steinhardt::deriv_poly( const unsigned& m, const double& val, double& df ) const { 
   double fact=1.0;
   for(unsigned j=1;j<=m;++j) fact=fact*j;
   double res=coeff_poly[m]*fact;
@@ -177,12 +180,6 @@ double Steinhardt::deriv_poly( const unsigned& m, const double& val, double& df 
   }
   df = df*normaliz[m];
   return normaliz[m]*res;
-}
-
-Vector Steinhardt::getCentralAtom(){
-  addCentralAtomDerivatives( 0, Tensor::identity() );
-  return getPosition(0);
-
 }
 
 }

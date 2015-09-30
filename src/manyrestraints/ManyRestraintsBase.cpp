@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -46,6 +46,7 @@ ActionWithInputVessel(ao)
   // Read in the vessel we are action on
   readArgument("bridge");
   aves=dynamic_cast<ActionWithVessel*>( getDependencies()[0] );
+
   plumed_assert( getDependencies().size()==1 && aves );
   log.printf("  adding restraints on variables calculated by %s action with label %s\n",
          aves->getName().c_str(),aves->getLabel().c_str());
@@ -64,16 +65,23 @@ void ManyRestraintsBase::doJobsRequiredBeforeTaskList(){
   ActionWithValue::clearDerivatives();
 }
 
-void ManyRestraintsBase::applyChainRuleForDerivatives( const double& df ){
-   // Value (this could be optimized more -- GAT)
-   for(unsigned i=0;i<aves->getNumberOfDerivatives();++i){
-       setElementDerivative( i, df*aves->getElementDerivative(i) );   
-   }
-   // And weights
-   unsigned nder=aves->getNumberOfDerivatives();
-   for(unsigned i=0;i<aves->getNumberOfDerivatives();++i){
-       setElementDerivative( nder+i, aves->getElementDerivative(nder+i) );
-   }
+void ManyRestraintsBase::transformBridgedDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals ) const {
+  outvals.setValue( 0, invals.get(0) );
+  
+  // Get the potential
+  double dval=0, val=calcPotential( invals.get(1), dval );
+
+  outvals.setValue( 1, val );
+  for(unsigned i=0;i<invals.getNumberActive();++i){
+      unsigned jder=invals.getActiveIndex(i);
+      outvals.addDerivative( 1, jder, dval*invals.getDerivative( 1, jder ) );
+  } 
+
+  // Now update the outvals derivatives lists
+  outvals.emptyActiveMembers();
+  for(unsigned j=0;j<invals.getNumberActive();++j) outvals.updateIndex( invals.getActiveIndex(j) );
+  outvals.completeUpdate();
+  return;
 }
 
 void ManyRestraintsBase::apply(){
