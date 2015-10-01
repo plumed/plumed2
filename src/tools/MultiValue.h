@@ -204,7 +204,7 @@ unsigned MultiValue::getActiveIndex( const unsigned& ind ) const {
 
 inline
 void MultiValue::updateDynamicList(){
-  hasDerivatives.updateActiveMembers();
+  if( atLeastOneSet ) hasDerivatives.updateActiveMembers();
 }
 
 inline
