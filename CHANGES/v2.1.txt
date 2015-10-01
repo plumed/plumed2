@@ -218,8 +218,6 @@ For developers:
 Version 2.1.4 (Oct 5, 2015)
 -----------------------------
 
-See branch \branch{v2.1} on git repository.
-
 For users:
 - Fixed NAMD patch. Masses and charges were not passed correctly, thus resulting in wrong
   \ref COM or \ref CENTER with MASS.
