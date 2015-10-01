@@ -37,6 +37,8 @@ private:
   unsigned connect_id;
 /// The tolerance to use to decide whether or not to incorporate atoms
   double wtolerance;
+/// Do we need to separate out the tasks for the third atoms
+  bool no_third_dim_accum;
 /// This is the vessel that stores the adjacency matrix
   AdjacencyMatrixVessel* mat;
 /// This is used within AdjacencyMatrixVessel to recalculate matrix elements

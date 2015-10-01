@@ -62,7 +62,7 @@ public:
 ///
   void setAtom( const unsigned& j, const unsigned& ind );
 ///
-  unsigned setupAtomsFromLinkCells( const unsigned& cind, const Vector& cpos, const LinkCells& linkcells );
+  unsigned setupAtomsFromLinkCells( const std::vector<unsigned>& cind, const Vector& cpos, const LinkCells& linkcells );
 ///
   unsigned getIndex( const unsigned& j ) const ;
 ///

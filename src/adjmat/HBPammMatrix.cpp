@@ -52,8 +52,11 @@ public:
   ~HBPammMatrix();
 /// Setup the connector -- i.e. read in the clusters file
   void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::string& desc );
-/// This does nothing
+///
   double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
+///
+  double calculateForThree( const unsigned& iat, const unsigned& ano, const unsigned& dno, const Vector& d_da,
+                            const double md_da, multicolvar::AtomValuePack& myatoms ) const ;
 };
 
 PLUMED_REGISTER_ACTION(HBPammMatrix,"HBPAMM")
@@ -182,8 +185,27 @@ void HBPammMatrix::setupConnector( const unsigned& id, const unsigned& i, const 
 
 double HBPammMatrix::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {
   Vector d_da = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) ); double md_da = d_da.modulo(); // acceptor - donor
-  Vector d_dh = getSeparation( myatoms.getPosition(0), myatoms.getPosition(2) ); double md_dh = d_dh.modulo(); // hydrogen - donor
-  Vector d_ah = getSeparation( myatoms.getPosition(1), myatoms.getPosition(2) ); double md_ah = d_ah.modulo(); // hydrogen - acceptor
+
+  // Get the base colvar numbers
+  unsigned ano, dno = getBaseColvarNumber( myatoms.getIndex(0) );
+  if( ndonor_types==0 ) ano = getBaseColvarNumber( myatoms.getIndex(1) );
+  else ano = getBaseColvarNumber( myatoms.getIndex(1) ) - ndonor_types;
+
+  double value=0;
+  if( myatoms.getNumberOfAtoms()>3 ){
+      for(unsigned i=2;i<myatoms.getNumberOfAtoms();++i) value+=calculateForThree( i, ano, dno, d_da, md_da, myatoms ); 
+  } else {
+      plumed_dbg_assert( myatoms.getNumberOfAtoms()==3 );
+      value=calculateForThree( 2, ano, dno, d_da, md_da, myatoms );
+  }
+
+  return value;
+}
+
+double HBPammMatrix::calculateForThree( const unsigned& iat, const unsigned& ano, const unsigned& dno, const Vector& d_da, 
+                                        const double md_da, multicolvar::AtomValuePack& myatoms ) const {
+  Vector d_dh = getSeparation( myatoms.getPosition(0), myatoms.getPosition(iat) ); double md_dh = d_dh.modulo(); // hydrogen - donor
+  Vector d_ah = getSeparation( myatoms.getPosition(1), myatoms.getPosition(iat) ); double md_ah = d_ah.modulo(); // hydrogen - acceptor
   
   // Proton transfer coordinate
   pos[0]->set( md_dh - md_ah );
@@ -192,15 +214,10 @@ double HBPammMatrix::compute( const unsigned& tindex, multicolvar::AtomValuePack
   // Acceptor donor distance 
   pos[2]->set( md_da );
 
-  // Get the base colvar numbers
-  unsigned ano, dno = getBaseColvarNumber( myatoms.getIndex(0) );
-  if( ndonor_types==0 ) ano = getBaseColvarNumber( myatoms.getIndex(1) );
-  else ano = getBaseColvarNumber( myatoms.getIndex(1) ) - ndonor_types;
-
   std::vector<double> tderiv( kernels(dno,ano).size() ), tmderiv( kernels(dno,ano).size()), dderiv( kernels(dno,ano).size(), 0 );
 
   // Now evaluate all kernels  
-  double denom=regulariser, numer;
+  double denom=regulariser, numer=0;
   for(unsigned i=0;i<kernels(dno,ano).size();++i){
       double val=kernels(dno,ano)[i]->evaluate( pos, tmderiv );
       denom+=val;
@@ -213,12 +230,12 @@ double HBPammMatrix::compute( const unsigned& tindex, multicolvar::AtomValuePack
       pref = tderiv[0] / denom - numer*dderiv[0]/denom2;
       addAtomDerivatives( 1, 0, ((-pref)/md_dh)*d_dh, myatoms );
       addAtomDerivatives( 1, 1, ((+pref)/md_ah)*d_ah, myatoms  );
-      addAtomDerivatives( 1, 2, ((+pref)/md_dh)*d_dh - ((+pref)/md_ah)*d_ah, myatoms );
+      addAtomDerivatives( 1, iat, ((+pref)/md_dh)*d_dh - ((+pref)/md_ah)*d_ah, myatoms );
       myatoms.addBoxDerivatives( 1, ((-pref)/md_dh)*Tensor(d_dh,d_dh) - ((-pref)/md_ah)*Tensor(d_ah,d_ah) );
       pref = tderiv[1] / denom - numer*dderiv[1]/denom2;
       addAtomDerivatives( 1, 0, ((-pref)/md_dh)*d_dh, myatoms );
       addAtomDerivatives( 1, 1, ((-pref)/md_ah)*d_ah, myatoms );
-      addAtomDerivatives( 1, 2, ((+pref)/md_dh)*d_dh + ((+pref)/md_ah)*d_ah, myatoms );
+      addAtomDerivatives( 1, iat, ((+pref)/md_dh)*d_dh + ((+pref)/md_ah)*d_ah, myatoms );
       myatoms.addBoxDerivatives( 1, ((-pref)/md_dh)*Tensor(d_dh,d_dh) + ((-pref)/md_ah)*Tensor(d_ah,d_ah) );
       pref = tderiv[2] / denom - numer*dderiv[2]/denom2; 
       addAtomDerivatives( 1, 0, ((-pref)/md_da)*d_da, myatoms );

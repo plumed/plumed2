@@ -37,7 +37,8 @@ void AdjacencyMatrixBase::registerKeywords( Keywords& keys ){
 AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
 Action(ao),
 MultiColvarBase(ao),
-connect_id(0)
+connect_id(0),
+no_third_dim_accum(true)
 {
   // Weight of this does have derivatives
   parse("WTOL",wtolerance);
@@ -115,7 +116,12 @@ void AdjacencyMatrixBase::requestAtoms( const std::vector<AtomNumber>& atoms, co
   if( dims.size()==2 ){ 
      icoef=nblock; jcoef=1; kcoef=0; kcount=1;
   } else if( dims.size()==3 ){
-     icoef=nblock*nblock; jcoef=nblock; kcoef=1; ablocks[2].resize( dims[2] ); kcount=dims[2];
+     if( no_third_dim_accum ){
+        icoef=nblock; jcoef=1; kcoef=0; kcount=1;  
+     } else{
+        icoef=nblock*nblock; jcoef=nblock; kcoef=1; kcount=dims[2];
+     }
+     ablocks[2].resize( dims[2] );
      if(symmetric || true_square ) {
         for(unsigned i=0;i<ablocks[2].size();++i) ablocks[2][i]=dims[0]+i;
      } else {
