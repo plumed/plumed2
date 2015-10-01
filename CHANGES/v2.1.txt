@@ -215,8 +215,8 @@ For developers:
 - Improved make cppcheck options.
 - Fixes in developer documentation.
 
-Unreleased changes (will be included in 2.1.4)
----------------------------------------------
+Version 2.1.4 (Oct 5, 2015)
+-----------------------------
 
 See branch \branch{v2.1} on git repository.
 
@@ -242,5 +242,11 @@ For users:
   results.
 - Fixed a bug in derivatives of kernel functions with non-diagonal covariances. This affects the 
   derivatives output by \ref sum_hills
+
+Unreleased changes (will be included in 2.1.5)
+---------------------------------------------
+
+See branch \branch{v2.1} on git repository.
+
 
 */
