@@ -121,18 +121,20 @@ double OrientationSphere::compute( const unsigned& tindex, multicolvar::AtomValu
          denom += sw;
       }
    }
-   double df2, pref=calculateCoordinationPrefactor( denom, df2 );
-   
+   double rdenom, df2, pref=calculateCoordinationPrefactor( denom, df2 );
+   if( fabs(denom)>epsilon ){ rdenom = 1.0 / denom; }
+   else { plumed_assert(fabs(value)<epsilon); rdenom=1.0; } 
+  
    // Now divide everything
-   double denom2=denom*denom;
+   double rdenom2=rdenom*rdenom;
    updateActiveAtoms( myatoms ); MultiValue& myvals=myatoms.getUnderlyingMultiValue();
    for(unsigned i=0;i<myvals.getNumberActive();++i){
        unsigned ider=myvals.getActiveIndex(i);
        double  dgd=myvals.getTemporyDerivative(ider);
-       myvals.setDerivative( 1, ider, (pref*myvals.getDerivative(1,ider)+value*df2*dgd)/denom - (value*pref*dgd)/denom2 );
+       myvals.setDerivative( 1, ider, rdenom*(pref*myvals.getDerivative(1,ider)+value*df2*dgd) - (value*pref*dgd)*rdenom2 );
    } 
 
-   return pref*value / denom;
+   return pref*rdenom*value;
 }
 
 }

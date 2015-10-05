@@ -102,14 +102,18 @@ void MultiValue::quotientRule( const unsigned& nder, const double& denom, const 
   plumed_dbg_assert( nder<values.size() && oder<values.size() );
   if( !hasDerivatives.updateComplete() ) hasDerivatives.updateActiveMembers();
 
-  unsigned ndert=hasDerivatives.getNumberActive();
+  unsigned ndert=hasDerivatives.getNumberActive(); double wpref;
   unsigned obase=oder*nderivatives, nbase=nder*nderivatives;
-  double weight = denom, pref = values[nder] / (weight*weight);
+
+  if( fabs(denom)>epsilon ){ wpref=1.0/denom; } 
+  else{ plumed_assert(fabs(values[nder])<epsilon); wpref=1.0; }
+
+  double pref = values[nder]*wpref*wpref;
   for(unsigned j=0;j<ndert;++j){
       unsigned jder=hasDerivatives[j];
-      derivatives[obase+jder] = derivatives[nbase+jder] / weight - pref*tmpder[jder];
+      derivatives[obase+jder] = wpref*derivatives[nbase+jder]  - pref*tmpder[jder];
   }
-  values[oder] = values[nder] / denom;
+  values[oder] = wpref*values[nder];
 }
 
 }
