@@ -392,6 +392,7 @@ acceleration(false), acc(0.0),
 uppI_(-1), lowI_(-1), doInt_(false),
 isFirstStep(true),
 reweight_factor(0.0),
+rewf_ustride_(1),
 last_step_warn_grid(0)
 {
   // parse the flexible hills
