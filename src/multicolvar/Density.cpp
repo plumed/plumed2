@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -52,18 +52,17 @@ PRINT ARG=d1.* FILE=colvar1 FMT=%8.4f
 class Density : public MultiColvar {
 public:
   static void registerKeywords( Keywords& keys );
-  Density(const ActionOptions&);
+  explicit Density(const ActionOptions&);
 // active methods:
-  virtual double compute();
-  Vector getCentralAtom();
+  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
   /// Returns the number of coordinates of the field
   bool isPeriodic(){ return false; }
-  bool isDensity(){ return true; }
+  bool isDensity() const { return true; }
   bool hasDifferentiableOrientation() const { return true; }
-  void addOrientationDerivativesToBase( const unsigned& iatom, const unsigned& jstore, const unsigned& base_cv_no, 
-                                        const std::vector<double>& weight, MultiColvarFunction* func ){}
+//  void addOrientationDerivativesToBase( const unsigned& iatom, const unsigned& jstore, const unsigned& base_cv_no, 
+//                                        const std::vector<double>& weight, MultiColvarFunction* func ){}
   void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
-  unsigned getNumberOfQuantities();
+//  unsigned getNumberOfQuantities();
   void getValueForTask( const unsigned& iatom, std::vector<double>& vals );
 };
 
@@ -82,22 +81,17 @@ PLUMED_MULTICOLVAR_INIT(ao)
   checkRead(); 
 }
 
-double Density::compute(){
+double Density::compute( const unsigned& tindex, AtomValuePack& myvals ) const {
   return 1.0;
-}
-
-Vector Density::getCentralAtom(){
-   addCentralAtomDerivatives( 0, Tensor::identity() );
-   return getPosition(0);
 }
 
 void Density::getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices ){
    indices[jstore]=0; 
 }
 
-unsigned Density::getNumberOfQuantities(){
-   return 6;
-}
+// unsigned Density::getNumberOfQuantities(){
+//    return 2;
+// }
 
 void Density::getValueForTask( const unsigned& iatom, std::vector<double>& vals ){
    plumed_dbg_assert( vals.size()==2 ); vals[0]=vals[1]=1.0;

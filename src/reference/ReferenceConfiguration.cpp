@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -44,10 +44,11 @@ std::string ReferenceConfigurationOptions::getMultiRMSDType() const {
 }
 
 ReferenceConfiguration::ReferenceConfiguration( const ReferenceConfigurationOptions& ro ):
-name(ro.tt),
-arg_ders(0),
-atom_ders(0)
+name(ro.tt)
+// arg_ders(0),
+// atom_ders(0)
 {
+  weight=0.0;
 }
 
 ReferenceConfiguration::~ReferenceConfiguration()
@@ -68,18 +69,18 @@ void ReferenceConfiguration::set( const PDB& pdb ){
   read( pdb );
 }
 
-void ReferenceConfiguration::setNumberOfArguments( const unsigned& n ){
-  arg_ders.resize(n); tmparg.resize(n);
-}
+// void ReferenceConfiguration::setNumberOfArguments( const unsigned& n ){
+//   arg_ders.resize(n); tmparg.resize(n);
+// }
 
-void ReferenceConfiguration::setNumberOfAtoms( const unsigned& n ){
-  atom_ders.resize(n);
-}
+// void ReferenceConfiguration::setNumberOfAtoms( const unsigned& n ){
+//   atom_ders.resize(n);
+// }
 
-bool ReferenceConfiguration::getVirial( Tensor& virout ) const {
-  if(virialWasSet) virout=virial;
-  return virialWasSet;
-}
+// bool ReferenceConfiguration::getVirial( Tensor& virout ) const {
+//   if(virialWasSet) virout=virial;
+//   return virialWasSet;
+// }
 
 void ReferenceConfiguration::parseFlag( const std::string&key, bool&t ){
   Tools::parseFlag(line,key,t);
@@ -93,24 +94,24 @@ void ReferenceConfiguration::setNamesAndAtomNumbers( const std::vector<AtomNumbe
    ReferenceAtoms* atoms=dynamic_cast<ReferenceAtoms*>( this );
   if(!atoms){
      plumed_massert( numbers.size()==0, "expecting no atomic positions");
-     setNumberOfAtoms( 0 );
+     //setNumberOfAtoms( 0 );
   } else { 
      atoms->setAtomNumbers( numbers );
-     setNumberOfAtoms( numbers.size() );
+     // setNumberOfAtoms( numbers.size() );
   }
   // Copy the arguments to the reference
   ReferenceArguments* args=dynamic_cast<ReferenceArguments*>( this );
   if(!args){
      plumed_massert( arg.size()==0, "expecting no arguments");
-     setNumberOfArguments(0);
+     // setNumberOfArguments(0);
   } else {
      args->setArgumentNames( arg );
-     setNumberOfArguments( arg.size() );
+     // setNumberOfArguments( arg.size() );
   }
 }
 
 void ReferenceConfiguration::setReferenceConfig( const std::vector<Vector>& pos, const std::vector<double>& arg, const std::vector<double>& metric ){
-  plumed_dbg_assert( pos.size()==atom_ders.size() && arg.size()==arg_ders.size() );
+//  plumed_dbg_assert( pos.size()==atom_ders.size() && arg.size()==arg_ders.size() );
   // Copy the atomic positions to the reference
   ReferenceAtoms* atoms=dynamic_cast<ReferenceAtoms*>( this );
   if(!atoms){
@@ -136,24 +137,24 @@ void ReferenceConfiguration::checkRead(){
   }
 }
 
-void ReferenceConfiguration::clearDerivatives(){
-  for(unsigned i=0;i<atom_ders.size();++i) atom_ders[i].zero();
-  virial.zero(); virialWasSet=false;
-  arg_ders.assign(arg_ders.size(),0.0);
+bool ReferenceConfiguration::isDirection() const {
+  return ( name=="DIRECTION" );
 }
 
-double ReferenceConfiguration::calculate( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const bool& squared ){
-  clearDerivatives();
+double ReferenceConfiguration::calculate( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, 
+                                          ReferenceValuePack& myder, const bool& squared ) const {
+  // clearDerivatives();
+  std::vector<double> tmparg( vals.size() );
   for(unsigned i=0;i<vals.size();++i) tmparg[i]=vals[i]->get();
-  return calc( pos, pbc, vals, tmparg, squared );
+  return calc( pos, pbc, vals, tmparg, myder, squared );
 }
 
-void ReferenceConfiguration::copyDerivatives( const ReferenceConfiguration* ref ){
-  plumed_dbg_assert( ref->atom_ders.size()==atom_ders.size() && ref->arg_ders.size()==arg_ders.size() );
-  for(unsigned i=0;i<atom_ders.size();++i) atom_ders[i]=ref->atom_ders[i];
-  for(unsigned i=0;i<arg_ders.size();++i) arg_ders[i]=ref->arg_ders[i];
-  virialWasSet=ref->virialWasSet; virial=ref->virial;
-}
+// void ReferenceConfiguration::copyDerivatives( const ReferenceConfiguration* ref ){
+//   plumed_dbg_assert( ref->atom_ders.size()==atom_ders.size() && ref->arg_ders.size()==arg_ders.size() );
+//   for(unsigned i=0;i<atom_ders.size();++i) atom_ders[i]=ref->atom_ders[i];
+//   for(unsigned i=0;i<arg_ders.size();++i) arg_ders[i]=ref->arg_ders[i];
+//   virialWasSet=ref->virialWasSet; virial=ref->virial;
+// }
 
 void ReferenceConfiguration::print( OFile& ofile, const double& time, const double& weight, const double& old_norm ){
   ofile.printf("REMARK TIME=%f LOG_WEIGHT=%f OLD_NORM=%f\n",time, weight, old_norm );
@@ -169,10 +170,15 @@ void ReferenceConfiguration::print( OFile& ofile, const std::string& fmt ){
 }
 
 double distance( const Pbc& pbc, const std::vector<Value*> & vals, ReferenceConfiguration* ref1, ReferenceConfiguration* ref2, const bool& squared ){
-  double dist1=ref1->calc( ref2->getReferencePositions(), pbc, vals, ref2->getReferenceArguments(), squared );
+  unsigned nder;
+  if( ref1->getReferencePositions().size()>0 ) nder=ref1->getReferenceArguments().size() + 3*ref1->getReferencePositions().size() + 9;
+  else nder=ref1->getReferenceArguments().size();
+
+  MultiValue myvals( 1, nder ); ReferenceValuePack myder( ref1->getReferenceArguments().size() , ref1->getReferencePositions().size() , myvals ); 
+  double dist1=ref1->calc( ref2->getReferencePositions(), pbc, vals, ref2->getReferenceArguments(), myder, squared );
 #ifndef NDEBUG
   // Check that A - B = B - A
-  double dist2=ref2->calc( ref1->getReferencePositions(), pbc, vals, ref1->getReferenceArguments(), squared );
+  double dist2=ref2->calc( ref1->getReferencePositions(), pbc, vals, ref1->getReferenceArguments(), myder, squared );
   plumed_dbg_assert( fabs(dist1-dist2)<epsilon );
 #endif 
   return dist1;

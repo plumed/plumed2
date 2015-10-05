@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -82,6 +82,8 @@ private:
   double inv_max_minus_min;
 /// Complete the setup of the periodicity
   void setupPeriodicity();
+// bring value within PBCs
+  void applyPeriodicity();
 public:
 /// A constructor that can be used to make Vectors of values
   Value();
@@ -117,6 +119,8 @@ public:
   void clearDerivatives();
 /// Add some derivative to the ith component of the derivatives array
   void addDerivative(unsigned i,double d);
+/// Set the value of the ith component of the derivatives array
+  void setDerivative(unsigned i, double d);
 /// Apply the chain rule to the derivatives
   void chainRule(double df);
 /// Get the derivative with respect to component n
@@ -147,6 +151,14 @@ void copy( const Value& val1, Value* val2 );
 void add( const Value& val1, Value* valout );
 
 inline
+void Value::applyPeriodicity(){
+  if(periodicity==periodic){
+    value=min+difference(min,value);
+    if(value<min)value+=max_minus_min;
+  }
+}
+
+inline
 void product( const Value& val1, const Value& val2, Value& valout ){
   plumed_assert( val1.derivatives.size()==val2.derivatives.size() );
   if( valout.derivatives.size()!=val1.derivatives.size() ) valout.derivatives.resize( val1.derivatives.size() );
@@ -174,12 +186,14 @@ inline
 void Value::set(double v){
   value_set=true;
   value=v;
+  applyPeriodicity();
 }
 
 inline
 void Value::add(double v){
   value_set=true;
   value+=v;
+  applyPeriodicity();
 }
 
 inline
@@ -216,7 +230,6 @@ bool Value::hasDerivatives() const {
 
 inline
 void Value::resizeDerivatives(int n){
-  plumed_massert(hasDeriv,"cannot resize derivatives in values that have not got derivatives"); 
   derivatives.resize(n);
 }
 
@@ -224,6 +237,12 @@ inline
 void Value::addDerivative(unsigned i,double d){
   plumed_dbg_massert(i<derivatives.size(),"derivative is out of bounds");
   derivatives[i]+=d;
+}
+
+inline
+void Value::setDerivative(unsigned i, double d){
+  plumed_dbg_massert(i<derivatives.size(),"derivative is out of bounds");
+  derivatives[i]=d;
 }
 
 inline

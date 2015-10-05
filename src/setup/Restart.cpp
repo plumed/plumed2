@@ -88,21 +88,33 @@ class Restart :
 {
 public:
   static void registerKeywords( Keywords& keys );
-  Restart(const ActionOptions&ao);
+  explicit Restart(const ActionOptions&ao);
 };
 
 PLUMED_REGISTER_ACTION(Restart,"RESTART")
 
 void Restart::registerKeywords( Keywords& keys ){
   ActionSetup::registerKeywords(keys);
+  keys.addFlag("NO",false,"switch off restart - can be used to override the behavior of the MD engine");
 }
 
 Restart::Restart(const ActionOptions&ao):
 Action(ao),
 ActionSetup(ao)
 {
-  plumed.setRestart(true);
-  log<<"Restarting simulation: files will be appended\n";
+  bool no=false;
+  parseFlag("NO",no);
+  bool md=plumed.getRestart();
+  log<<"  MD code "<<(md?"did":"didn't")<<" require restart\n";
+  if(no){
+    if(md) log<<"  Switching off restart\n";
+    plumed.setRestart(false);
+    log<<"  Not restarting simulation: files will be backed up\n";
+  } else {
+    if(!md) log<<"  Switching on restart\n";
+    plumed.setRestart(true);
+    log<<"  Restarting simulation: files will be appended\n";
+  }
 }
 
 }

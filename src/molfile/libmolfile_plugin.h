@@ -44,6 +44,9 @@ namespace molfile{
  int molfile_dcdplugin_init(void);
  int molfile_dcdplugin_register(void *, vmdplugin_register_cb);
  int molfile_dcdplugin_fini(void);
+ int molfile_crdplugin_init(void);
+ int molfile_crdplugin_register(void *, vmdplugin_register_cb);
+ int molfile_crdplugin_fini(void);
  int molfile_gromacsplugin_init(void);
  int molfile_gromacsplugin_register(void *, vmdplugin_register_cb);
  int molfile_gromacsplugin_fini(void);
@@ -53,16 +56,19 @@ namespace molfile{
 
 #define MOLFILE_INIT_ALL \
     molfile_dcdplugin_init(); \
+    molfile_crdplugin_init(); \
     molfile_gromacsplugin_init(); \
     molfile_pdbplugin_init(); \
 
 #define MOLFILE_REGISTER_ALL(v, cb) \
     molfile_dcdplugin_register(v, cb); \
+    molfile_crdplugin_register(v, cb); \
     molfile_gromacsplugin_register(v, cb); \
     molfile_pdbplugin_register(v, cb); \
 
 #define MOLFILE_FINI_ALL \
     molfile_dcdplugin_fini(); \
+    molfile_crdplugin_fini(); \
     molfile_gromacsplugin_fini(); \
     molfile_pdbplugin_fini(); \
 

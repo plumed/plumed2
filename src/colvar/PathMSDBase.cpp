@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -36,6 +36,7 @@ namespace colvar{
 
 void PathMSDBase::registerKeywords(Keywords& keys){
   Colvar::registerKeywords(keys);
+  keys.remove("NOPBC");
   keys.add("compulsory","LAMBDA","the lambda parameter is needed for smoothing, is in the units of plumed");
   keys.add("compulsory","REFERENCE","the pdb is needed to provide the various milestones");
   keys.add("optional","NEIGH_SIZE","size of the neighbor list");

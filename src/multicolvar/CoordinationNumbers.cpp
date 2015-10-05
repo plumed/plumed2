@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -69,10 +69,9 @@ private:
   SwitchingFunction switchingFunction;
 public:
   static void registerKeywords( Keywords& keys );
-  CoordinationNumbers(const ActionOptions&);
+  explicit CoordinationNumbers(const ActionOptions&);
 // active methods:
-  virtual double compute(); 
-  Vector getCentralAtom();
+  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ; 
 /// Returns the number of coordinates of the field
   bool isPeriodic(){ return false; }
 };
@@ -92,6 +91,7 @@ void CoordinationNumbers::registerKeywords( Keywords& keys ){
   // Use actionWithDistributionKeywords
   keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("LESS_THAN"); keys.use("MAX");
   keys.use("MIN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
+  keys.use("ALT_MIN"); keys.use("LOWEST"); keys.use("HIGHEST"); 
 }
 
 CoordinationNumbers::CoordinationNumbers(const ActionOptions&ao):
@@ -120,30 +120,27 @@ PLUMED_MULTICOLVAR_INIT(ao)
   checkRead();
 }
 
-double CoordinationNumbers::compute(){
-   double value=0, dfunc; Vector distance;
+double CoordinationNumbers::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
+   double value=0, dfunc; 
 
    // Calculate the coordination number
    double d2, sw;
-   for(unsigned i=1;i<getNAtoms();++i){
-      distance=getSeparation( getPosition(0), getPosition(i) );
-      d2 = distance.modulo2();
-      if( d2<rcut2 ){ 
+   for(unsigned i=1;i<myatoms.getNumberOfAtoms();++i){
+      Vector& distance=myatoms.getPosition(i);  // getSeparation( myatoms.getPosition(0), myatoms.getPosition(i) );
+      if ( (d2=distance[0]*distance[0])<rcut2 && 
+           (d2+=distance[1]*distance[1])<rcut2 &&
+           (d2+=distance[2]*distance[2])<rcut2) {
+  
          sw = switchingFunction.calculateSqr( d2, dfunc );
   
          value += sw;             
-         addAtomsDerivatives( 0, (-dfunc)*distance );
-         addAtomsDerivatives( i,  (dfunc)*distance );
-         addBoxDerivatives( (-dfunc)*Tensor(distance,distance) );
+         myatoms.addAtomsDerivatives( 1, 0, (-dfunc)*distance );
+         myatoms.addAtomsDerivatives( 1, i,  (dfunc)*distance );
+         myatoms.addBoxDerivatives( 1, (-dfunc)*Tensor(distance,distance) );
       }
    }
 
    return value;
-}
-
-Vector CoordinationNumbers::getCentralAtom(){
-   addCentralAtomDerivatives( 0, Tensor::identity() );
-   return getPosition(0);
 }
 
 }

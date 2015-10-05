@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -38,6 +38,11 @@ const std::vector<unsigned> & PDB::getAtomBlockEnds()const{
 
 const std::vector<Vector> & PDB::getPositions()const{
   return positions;
+}
+
+void PDB::setPositions(const std::vector<Vector> &v ){
+	  plumed_assert( v.size()==positions.size() );	
+	  positions=v;
 }
 
 const std::vector<double> & PDB::getOccupancy()const{
@@ -90,7 +95,7 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale){
   bool file_is_alive=false;
   if(naturalUnits) scale=1.0;
   string line;
-  fpos_t pos;
+  fpos_t pos; bool between_ters=true;
   while(Tools::getline(fp,line)){
     //cerr<<line<<"\n";
     fgetpos (fp,&pos);
@@ -107,7 +112,7 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale){
     string occ=line.substr(54,6);
     string bet=line.substr(60,6);
     Tools::trim(record);
-    if(record=="TER"){ block_ends.push_back( positions.size() ); }
+    if(record=="TER"){ between_ters=false; block_ends.push_back( positions.size() ); }
     if(record=="END"){ file_is_alive=true;  break;}
     if(record=="ENDMDL"){ file_is_alive=true;  break;}
     if(record=="REMARK"){
@@ -115,6 +120,7 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale){
          addRemark( v1 );
     }
     if(record=="ATOM" || record=="HETATM"){
+      between_ters=true;
       AtomNumber a; unsigned resno;
       double o,b;
       Vector p;
@@ -140,7 +146,7 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale){
       residuenames.push_back(residuename);
     }
   }
-  block_ends.push_back( positions.size() );
+  if( between_ters ) block_ends.push_back( positions.size() );
   return file_is_alive;
 }
 
@@ -211,6 +217,14 @@ std::string PDB::getResidueName( const unsigned& resnum ) const {
   return "";
 }
 
+std::string PDB::getResidueName(const unsigned& resnum,const std::string& chainid ) const {
+  for(unsigned i=0;i<size();++i){
+     if( residue[i]==resnum && ( chainid=="*" || chain[i]==chainid) ) return residuenames[i];
+  }
+  return "";
+}
+
+
 AtomNumber PDB::getNamedAtomFromResidue( const std::string& aname, const unsigned& resnum ) const {
   for(unsigned i=0;i<size();++i){
      if( residue[i]==resnum && atomsymb[i]==aname ) return numbers[i];
@@ -219,6 +233,16 @@ AtomNumber PDB::getNamedAtomFromResidue( const std::string& aname, const unsigne
   plumed_merror("residue " + num + " does not contain an atom named " + aname );
   return numbers[0]; // This is to stop compiler errors
 }
+
+AtomNumber PDB::getNamedAtomFromResidueAndChain( const std::string& aname, const unsigned& resnum, const std::string& chainid ) const{
+  for(unsigned i=0;i<size();++i){
+     if( residue[i]==resnum && atomsymb[i]==aname && ( chainid=="*" || chain[i]==chainid) ) return numbers[i];
+  }
+  std::string num; Tools::convert( resnum, num );
+  plumed_merror("residue " + num + " from chain " + chainid + " does not contain an atom named " + aname );
+  return numbers[0]; // This is to stop compiler errors
+}
+
 
 std::string PDB::getChainID(const unsigned& resnumber) const {
   for(unsigned i=0;i<size();++i){

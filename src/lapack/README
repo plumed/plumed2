@@ -6,7 +6,7 @@ Internal implementation of LAPACK, imported from GROMACS.
 The module in src/lapack contains an internal implementation
 of LAPACK routines which is automatically imported from GROMACS
 using the src/lapack/import.sh script. This set of routines
-is compiled when __PLUMED_INTERNAL_LAPACK is defined
+is compiled when __PLUMED_HAS_NTERNAL_LAPACK is defined
 and allow PLUMED to be used when installed LAPACK libraries
 are not available. Notice that the import script
 creates a lapack.h file with function declarations which

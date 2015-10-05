@@ -42,20 +42,23 @@ PRINT ARG=d FILE=COLVAR
 
 When reading a file, PLUMED will try to add the suffix. If the file is not found, it will fall back to
 the name without suffix. The most important case is the reading of the plumed input file.
-If you provide a file for each replica (e.g. plumed.dat.0, plumed.dat.1, etc) you will be able to
+If you provide a file for each replica (e.g. plumed.0.dat, plumed.1.dat, etc) you will be able to
 setup plumed differently on each replica. 
 On the other hand, using a single plumed.dat will make all the replicas read the same file.
 
-\subsection Suffixes-and-file-extension Suffixes and file extension
+Notice that when PLUMED adds the replica suffix, it recognizes the file extension and add the suffix _before_ the
+extension. Before PLUMED 2.2, the only recognized suffix was ".gz". Since 2.2, any suffix with length
+less or equal to five letters is recognized.
 
-When PLUMED adds the replica suffix, it recognizes some file extension and add the suffix _before_ the
-extension. The only suffix recognized by PLUMED 2.1 is ".gz". This means that using
+This means that using in a multireplica context an input such as
 \verbatim
 d: DISTANCE ATOMS=1,2
 PRINT ARG=d FILE=COLVAR.gz
+METAD ARG=d FILE=test.HILLS SIGMA=0.1 HEIGHT=0.1
 \endverbatim
-will write files named COLVAR.0.gz, COLVAR.1.gz, etc. This is useful since the preserved extension makes it easy
-to process the files later. In future PLUMED versions this behavior might change and more extensions
-could be recognized.
+(see \ref DISTANCE, \ref PRINT, and \ref METAD)
+PLUMED will write files named COLVAR.0.gz, COLVAR.1.gz, test.0.HILLS, test.1.HILLS, etc
+etc. This is useful since the preserved extension makes it easy
+to process the files later.
 
 */

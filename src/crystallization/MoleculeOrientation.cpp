@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -53,9 +53,8 @@ class MoleculeOrientation : public VectorMultiColvar {
 private:
 public:
   static void registerKeywords( Keywords& keys );
-  MoleculeOrientation( const ActionOptions& ao );
-  void calculateVector();
-  Vector getCentralAtom();
+  explicit MoleculeOrientation( const ActionOptions& ao );
+  void calculateVector( multicolvar::AtomValuePack& myatoms ) const;
 };
 
 PLUMED_REGISTER_ACTION(MoleculeOrientation,"MOLECULES")
@@ -80,40 +79,45 @@ VectorMultiColvar(ao)
   if( all_atoms.size()==0 ) error("No atoms were specified");
   ActionAtomistic::requestAtoms( all_atoms );
 
-  setVectorDimensionality( 3, false, natoms );
-}
+  setVectorDimensionality( 3, natoms );
 
-void MoleculeOrientation::calculateVector(){
-  Vector distance; distance=getSeparation( getPosition(0), getPosition(1) );
-
-  addAtomsDerivative( 0, 0, Vector(-1.0,0,0) ); 
-  addAtomsDerivative( 0, 1, Vector(+1.0,0,0) ); 
-  addBoxDerivatives( 0, Tensor(distance,Vector(-1.0,0,0)) ); 
-  addComponent( 0, distance[0] ); 
-
-  addAtomsDerivative( 1, 0, Vector(0,-1.0,0) ); 
-  addAtomsDerivative( 1, 1, Vector(0,+1.0,0) ); 
-  addBoxDerivatives( 1, Tensor(distance,Vector(0,-1.0,0)) ); 
-  addComponent( 1, distance[1] ); 
-
-  addAtomsDerivative( 2, 0, Vector(0,0,-1.0) ); 
-  addAtomsDerivative( 2, 1, Vector(0,0,+1.0) ); 
-  addBoxDerivatives( 2, Tensor(distance,Vector(0,0,-1.0)) ); 
-  addComponent( 2, distance[2] ); 
-}
-
-Vector MoleculeOrientation::getCentralAtom(){
-  if( getNAtoms()==2 ){
-      Vector com; com.zero();
-      com+=0.5*getPosition(0);
-      com+=0.5*getPosition(1);
-      addCentralAtomDerivatives( 0, 0.5*Tensor::identity() );
-      addCentralAtomDerivatives( 1, 0.5*Tensor::identity() );
-      return com;
+  if( natoms==3 ){
+    std::vector<bool> catom_ind(3, false); catom_ind[2]=true;
+    setAtomsForCentralAtom( catom_ind );
   } 
-  addCentralAtomDerivatives( 2, Tensor::identity() );
-  return getPosition(2);
 }
+
+void MoleculeOrientation::calculateVector( multicolvar::AtomValuePack& myatoms ) const {
+  Vector distance; distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
+
+  myatoms.addAtomsDerivatives( 2, 0, Vector(-1.0,0,0) ); 
+  myatoms.addAtomsDerivatives( 2, 1, Vector(+1.0,0,0) ); 
+  myatoms.addBoxDerivatives( 2, Tensor(distance,Vector(-1.0,0,0)) ); 
+  myatoms.addValue( 2, distance[0] ); 
+
+  myatoms.addAtomsDerivatives( 3, 0, Vector(0,-1.0,0) ); 
+  myatoms.addAtomsDerivatives( 3, 1, Vector(0,+1.0,0) ); 
+  myatoms.addBoxDerivatives( 3, Tensor(distance,Vector(0,-1.0,0)) ); 
+  myatoms.addValue( 3, distance[1] ); 
+
+  myatoms.addAtomsDerivatives( 4, 0, Vector(0,0,-1.0) ); 
+  myatoms.addAtomsDerivatives( 4, 1, Vector(0,0,+1.0) ); 
+  myatoms.addBoxDerivatives( 4, Tensor(distance,Vector(0,0,-1.0)) ); 
+  myatoms.addValue( 4, distance[2] ); 
+}
+
+// Vector MoleculeOrientation::getCentralAtom(){
+//   if( getNAtoms()==2 ){
+//       Vector com; com.zero();
+//       com+=0.5*getPosition(0);
+//       com+=0.5*getPosition(1);
+//       addCentralAtomDerivatives( 0, 0.5*Tensor::identity() );
+//       addCentralAtomDerivatives( 1, 0.5*Tensor::identity() );
+//       return com;
+//   } 
+//   addCentralAtomDerivatives( 2, Tensor::identity() );
+//   return getPosition(2);
+// }
 
 }
 }

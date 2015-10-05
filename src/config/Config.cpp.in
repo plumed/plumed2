@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -22,6 +22,7 @@
 
 #include "Config.h"
 #include "version.h"
+#include <cstdlib>
 #include <cstring>
 
 namespace PLMD{
@@ -36,7 +37,58 @@ bool isInstalled(){
 }
 
 std::string getPlumedRoot(){
-  return "@PLUMED_ROOT@";
+  char *env = std::getenv("PLUMED_ROOT");
+  std::string ss;
+  if( env == NULL) {
+    ss="@PLUMED_ROOT@";
+  } else {
+    ss=std::string( env );
+  }
+  return ss;
+}
+
+std::string getPlumedHtmldir(){
+  if(!isInstalled()) return getPlumedRoot();
+  char *env = std::getenv("PLUMED_HTMLDIR");
+  std::string ss;
+  if( env == NULL) {
+    ss="@htmldir@";
+  } else {
+    ss=std::string( env );
+  }
+  return ss;
+}
+
+std::string getPlumedIncludedir(){
+  if(!isInstalled()) return getPlumedRoot()+"/include";
+  char *env = std::getenv("PLUMED_INCLUDEDIR");
+  std::string ss;
+  if( env == NULL) {
+    ss="@includedir@";
+  } else {
+    ss=std::string( env );
+  }
+  return ss;
+}
+
+std::string getPlumedProgramName(){
+  if(!isInstalled()) return "plumed";
+  char *env = std::getenv("PLUMED_PROGRAM_NAME");
+  std::string ss;
+  if( env == NULL) {
+    ss="@program_name@";
+  } else {
+    ss=std::string( env );
+  }
+  return ss;
+}
+
+std::string getEnvCommand(){
+  return "env PLUMED_ROOT=\""+getPlumedRoot()+"\""+
+        " env PLUMED_HTMLDIR=\""+getPlumedHtmldir()+"\""+
+        " env PLUMED_INCLUDEDIR=\""+getPlumedIncludedir()+"\""+
+        " env PLUMED_PROGRAM_NAME=\""+getPlumedProgramName()+"\""+
+        " env PLUMED_IS_INSTALLED=\""+(@ISINSTALLED@?"yes":"no")+"\"";
 }
 
 std::string getVersion(){
@@ -92,7 +144,15 @@ bool hasCregex(){
 }
 
 bool hasMolfile(){
-#if __PLUMED_HAS_MOLFILE
+#if __PLUMED_HAS_MOLFILE_PLUGINS
+      return true;
+#else
+      return false;
+#endif
+}
+
+bool hasExternalMolfile(){
+#if __PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS
       return true;
 #else
       return false;

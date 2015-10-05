@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -103,9 +103,8 @@ void ReferenceArguments::getArgumentRequests( std::vector<std::string>& argout, 
       if(!disable_checks){
          if( arg_names.size()!=argout.size() ) error("mismatched numbers of arguments in pdb frames");
       }
-      bool found;
       for(unsigned i=0;i<arg_names.size();++i){
-         found=false;
+         bool found=false;
          if(!disable_checks){
             if( argout[i]!=arg_names[i] ) error("found mismatched arguments in pdb frames");
             der_index[i]=i;
@@ -159,14 +158,15 @@ const std::vector<double>& ReferenceArguments::getReferenceMetric(){
   return trig_metric;
 }
 
-double ReferenceArguments::calculateArgumentDistance( const std::vector<Value*> & vals, const std::vector<double>& arg, const bool& squared ){
-  double r=0;
+double ReferenceArguments::calculateArgumentDistance( const std::vector<Value*> & vals, const std::vector<double>& arg, 
+                                                      ReferenceValuePack& myder, const bool& squared ) const {
+  double r=0; std::vector<double> arg_ders( vals.size() );
   if( hasmetric ){
-      double dp_i, dp_j;
       for(unsigned i=0;i<reference_args.size();++i){
           unsigned ik=der_index[i]; arg_ders[ ik ]=0;
-          dp_i=vals[ik]->difference( reference_args[i], arg[ik] );
+          double dp_i=vals[ik]->difference( reference_args[i], arg[ik] );
           for(unsigned j=0;j<reference_args.size();++j){
+             double dp_j;
              unsigned jk=der_index[j];
              if(i==j) dp_j=dp_i;
              else dp_j=vals[jk]->difference( reference_args[j], arg[jk] );
@@ -176,16 +176,17 @@ double ReferenceArguments::calculateArgumentDistance( const std::vector<Value*> 
           }
       }
   } else {
-      double dp_i;
       for(unsigned i=0;i<reference_args.size();++i){
           unsigned ik=der_index[i];
-          dp_i=vals[ik]->difference( reference_args[i], arg[ik] );
+          double dp_i=vals[ik]->difference( reference_args[i], arg[ik] );
           r+=weights[i]*dp_i*dp_i; arg_ders[ik]=2.0*weights[i]*dp_i;
       }
   }
   if(!squared){ 
     r=sqrt(r); double ir=1.0/(2.0*r); 
-    for(unsigned i=0;i<arg_ders.size();++i) arg_ders[i]*=ir; 
+    for(unsigned i=0;i<arg_ders.size();++i) myder.setArgumentDerivatives( i, arg_ders[i]*ir ); 
+  } else {
+    for(unsigned i=0;i<arg_ders.size();++i) myder.setArgumentDerivatives( i, arg_ders[i] );
   }
   return r;
 }

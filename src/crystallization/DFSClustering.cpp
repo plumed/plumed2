@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2014,2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -19,74 +19,20 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "multicolvar/AdjacencyMatrixAction.h"
-#include "core/ActionRegister.h"
-
-//+PLUMEDOC MCOLVARF DFSCLUSTERING 
-/*
-Find average properites of atoms in a cluster
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
+#include "DFSClustering.h"
 
 
 namespace PLMD {
 namespace crystallization {
 
-class DFSClustering : public multicolvar::AdjacencyMatrixAction {
-private:
-/// The cluster we are looking for
-  unsigned clustr;
-/// Used to identify the cluster we are working on 
-  int number_of_cluster;
-/// The values from the underlying colvar
-  std::vector<double> myvals;
-/// The number of neighbors each atom has
-  std::vector<unsigned> nneigh;
-/// The adjacency list
-  Matrix<unsigned> adj_list;
-/// Vector that stores the sizes of the current set of clusters
-  std::vector< std::pair<unsigned,unsigned> > cluster_sizes;
-/// Vector that identifies the cluster each atom belongs to
-  std::vector<unsigned> which_cluster;
-/// The color that tells us whether a node has been visited
-  std::vector<unsigned> color;
-/// The recursive function at the heart of this method
-  int explore( const unsigned& index );
-public:
-/// Create manual
-  static void registerKeywords( Keywords& keys );
-/// Constructor
-  DFSClustering(const ActionOptions&);
-/// Required as we have to be able to deal with vectors
-  unsigned getNumberOfQuantities();
-/// This checks whether derivatives can be computed given the base multicolvar
-  void turnOnDerivatives();
-/// Do the matrix calculation
-  void completeCalculation();
-/// Derivatives of elements of adjacency matrix are unimportant.  We thus
-/// overwrite this routine as this makes the code faster
-  void updateActiveAtoms(){}
-};
-
-PLUMED_REGISTER_ACTION(DFSClustering,"DFSCLUSTERING")
-
 void DFSClustering::registerKeywords( Keywords& keys ){
   multicolvar::AdjacencyMatrixAction::registerKeywords( keys );
-  keys.add("compulsory","CLUSTER","1","which cluster would you like to look at 1 is the largest cluster, 2 is the second largest, 3 is the the third largest and so on.");
-  keys.use("WTOL"); keys.use("USE_ORIENTATION");
-  keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("LESS_THAN"); 
-  if( keys.reserved("VMEAN") ) keys.use("VMEAN");
-  if( keys.reserved("VSUM") ) keys.use("VSUM");
-  keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS"); 
-  keys.use("MIN"); keys.use("MAX"); keys.use("SUM"); keys.remove("LOWMEM"); keys.use("HIGHMEM");
 }
 
 DFSClustering::DFSClustering(const ActionOptions&ao):
 Action(ao),
 AdjacencyMatrixAction(ao),
+number_of_cluster(-1),
 nneigh(getFullNumberOfBaseTasks()),
 adj_list(getFullNumberOfBaseTasks(),getFullNumberOfBaseTasks()),
 cluster_sizes(getFullNumberOfBaseTasks()),
@@ -94,16 +40,6 @@ which_cluster(getFullNumberOfBaseTasks()),
 color(getFullNumberOfBaseTasks())
 {
    if( getNumberOfBaseMultiColvars()!=1 ) error("should only be running DFS Clustering with one base multicolvar");
-   // Find out which cluster we want
-   parse("CLUSTER",clustr); 
-
-   if( clustr<1 ) error("cannot look for a cluster larger than the largest cluster");
-   if( clustr>getFullNumberOfBaseTasks() ) error("cluster selected is invalid - too few atoms in system");
-
-   // Set myvals size equal to number of components in vector + 1 (for norm)
-   myvals.resize( getBaseMultiColvar(0)->getNumberOfQuantities() - 4 );
-   // Setup the various things this will calculate
-   readVesselKeywords(); 
 }
 
 void DFSClustering::turnOnDerivatives(){
@@ -143,38 +79,41 @@ void DFSClustering::completeCalculation(){
 
    // Order the clusters in the system by size (this returns ascending order )
    std::sort( cluster_sizes.begin(), cluster_sizes.end() );
-   // Work out which atoms are in the largest cluster
-   unsigned n=0; std::vector<unsigned> myatoms( cluster_sizes[cluster_sizes.size() - clustr].first );
-   for(unsigned i=0;i<getFullNumberOfBaseTasks();++i){
-      if( which_cluster[i]==cluster_sizes[cluster_sizes.size() - clustr].second ){ myatoms[n]=i; n++; }
-   }
-   unsigned size=comm.Get_size(), rank=comm.Get_rank();
 
-//   for(unsigned i=0;i<cluster_sizes.size();++i) printf("HELLO CLUSTER %d %d \n",i,cluster_sizes[i].first );
-   // Now calculate properties of the largest cluster 
-   ActionWithVessel::doJobsRequiredBeforeTaskList();  // Note we loose adjacency data by doing this
-   // Get rid of bogus derivatives
-   clearDerivatives(); getAdjacencyVessel()->setFinishedTrue(); 
-   for(unsigned j=rank;j<myatoms.size();j+=size){
-       // Note loop above over array containing atoms so this is load balanced
-       unsigned i=myatoms[j];
-       // Need to copy values from base action
-       extractValueForBaseTask( i, myvals );
-       //  getValueForBaseTask( i, myvals );
-       setElementValue(0, myvals[0] ); setElementValue(1, 1.0 );
-       for(unsigned i=0;i<myvals.size()-1;++i) setElementValue(2+i, myvals[1+i] );
-       // Prepare dynamic lists
-       atoms_with_derivatives.deactivateAll();
-       // Copy derivatives from base action
-       extractWeightedAverageAndDerivatives( i, 1.0 ); 
-       // Update all dynamic lists
-       atoms_with_derivatives.updateActiveMembers();
-       // Run calculate all vessels
-       calculateAllVessels();
-       // Must clear element values and derivatives
-       clearAfterTask();
-   }
-   finishComputations();
+   // Finish the calculation (what we do depends on what we are inheriting into)
+   doCalculationOnCluster();
+   
+
+//   // Work out which atoms are in the largest cluster
+//   unsigned n=0; std::vector<unsigned> myatoms( cluster_sizes[cluster_sizes.size() - clustr].first );
+//   for(unsigned i=0;i<getFullNumberOfBaseTasks();++i){
+//      if( which_cluster[i]==cluster_sizes[cluster_sizes.size() - clustr].second ){ myatoms[n]=i; n++; }
+//   }
+ //  unsigned size=comm.Get_size(), rank=comm.Get_rank();
+
+//    // Now calculate properties of the largest cluster 
+//    ActionWithVessel::doJobsRequiredBeforeTaskList();  // Note we loose adjacency data by doing this
+//    // Get size for buffer
+//    unsigned bsize=0; std::vector<double> buffer( getSizeOfBuffer( bsize ), 0.0 );
+//    std::vector<double> vals( getNumberOfQuantities() ); std::vector<unsigned> der_index;
+//    MultiValue myvals( getNumberOfQuantities(), getNumberOfDerivatives() );
+//    MultiValue bvals( getNumberOfQuantities(), getNumberOfDerivatives() );
+//    // Get rid of bogus derivatives
+//    clearDerivatives(); getAdjacencyVessel()->setFinishedTrue(); 
+//    for(unsigned j=rank;j<myatoms.size();j+=size){
+//        // Note loop above over array containing atoms so this is load balanced
+//        unsigned i=myatoms[j];
+//        // Need to copy values from base action
+//        getVectorForTask( i, false, vals );
+//        for(unsigned i=0;i<vals.size();++i) myvals.setValue( i, vals[i] );
+//        if( !doNotCalculateDerivatives() ) getVectorDerivatives( i, false, myvals );
+//        // Run calculate all vessels
+//        calculateAllVessels( i, myvals, bvals, buffer, der_index );
+//        myvals.clearAll();
+//    }
+//    // MPI Gather everything
+//    if( buffer.size()>0 ) comm.Sum( buffer );
+//    finishComputations( buffer );
 }
 
 int DFSClustering::explore( const unsigned& index ){
@@ -189,6 +128,13 @@ int DFSClustering::explore( const unsigned& index ){
    cluster_sizes[number_of_cluster].first++;
    which_cluster[index] = number_of_cluster;
    return color[index];
+}
+
+void DFSClustering::retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const {
+   unsigned n=0; myatoms.resize( cluster_sizes[cluster_sizes.size() - clust].first );
+   for(unsigned i=0;i<getFullNumberOfBaseTasks();++i){
+      if( which_cluster[i]==cluster_sizes[cluster_sizes.size() - clust].second ){ myatoms[n]=i; n++; }
+   }
 }
 
 }

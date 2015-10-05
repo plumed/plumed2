@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -108,7 +108,7 @@ IFile& IFile::open(const std::string&path){
   fp=NULL;
   gzfp=NULL;
   bool do_exist=FileExist(path);
-  plumed_massert(do_exist,"file " + path + "cannot be found");
+  plumed_massert(do_exist,"file " + path + " cannot be found");
   fp=std::fopen(const_cast<char*>(this->path.c_str()),"r");
   if(Tools::extension(this->path)=="gz"){
 #ifdef __PLUMED_HAS_ZLIB
@@ -196,17 +196,30 @@ IFile::~IFile(){
 }
 
 IFile& IFile::getline(std::string &str){
-  char tmp;
+  char tmp=0;
   str="";
-  fpos_t pos;
-  fgetpos(fp,&pos);
-  while(llread(&tmp,1)==1 && tmp && tmp!='\n' && !eof && !err){
+// I comment out this (see note below on commented fgetpos):
+// fpos_t pos;
+// fgetpos(fp,&pos);
+  while(llread(&tmp,1)==1 && tmp && tmp!='\n' && tmp!='\r' && !eof && !err){
     str+=tmp;
   }
-  if(err || eof || tmp!='\n'){
+  if(tmp=='\r'){
+    llread(&tmp,1);
+    plumed_massert(tmp=='\n',"plumed only accepts \\n (unix) or \\r\\n (dos) new lines");
+  }
+  if(eof){
+    if(str.length()>0) eof=false;
+  } else if(err || tmp!='\n'){
     eof = true;
     str="";
-    fsetpos(fp,&pos);
+// there was a fsetpos here that apparently is not necessary
+//  fsetpos(fp,&pos);
+// I think it was necessary to have rewind working correctly
+// after end of file. Since rewind is not used now anywhere,
+// it should be ok not to reset position.
+// This is necessary so that eof works properly for emacs files
+// with no endline at end of file.
   }
   return *this;
 }

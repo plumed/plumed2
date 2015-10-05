@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -141,8 +141,6 @@ private:
   std::vector<T> all;
 /// This tells us what members of all are on/off at any given time
   std::vector<unsigned> onoff;
-/// This translates a position from all to active
-  std::vector<int> translator;
 /// The current number of active members
   unsigned nactive;
 /// This is the list of active members
@@ -155,7 +153,7 @@ private:
   bool allWereActivated, allWereDeactivated;
 public:
 /// Constructor
-  DynamicList():nactive(0),nprocessors(1),rank(0),allWereActivated(false) {}
+  DynamicList():nactive(0),nprocessors(1),rank(0),allWereActivated(false),allWereDeactivated(false) {}
 /// An operator that returns the element from the current active list
   inline T operator [] (const unsigned& i) const { 
      plumed_dbg_assert( i<nactive );
@@ -178,14 +176,14 @@ public:
   void setupMPICommunication( Communicator& comm );
 /// Add something to the active list
   void addIndexToList( const T & ii );
+/// Create the list from a vector
+  void createIndexListFromVector( const std::vector<T>& myind );
 /// Find the index of in the list which has value t
   int getIndexOfElement( const T& t ) const ;
 /// Make a particular element inactive
   void deactivate( const T& t ); 
 /// Make everything in the list inactive
   void deactivateAll();
-/// Reset the translator vector
-  void resetTranslator();
 /// Make something active
   void activate( const unsigned ii );
 /// Make everything in the list active
@@ -198,15 +196,15 @@ public:
   void emptyActiveMembers();
 /// This can be used for a fast version of updateActiveMembers in which only a subset of the
 /// indexes are checked
-  void updateIndex( const unsigned& ii );
+  void putIndexInActiveArray( const unsigned& ii );
+/// This can be called on once update is complete
+  void completeUpdate();
 /// This tells one if an update has been completed
   bool updateComplete() const ;
 /// This sorts the elements in the active list
   void sortActiveList();
 /// Retriee the list of active objects
   std::vector<T> retrieveActiveList(); 
-/// Return the index of this atom
-  unsigned linkIndex( const unsigned& ii ) const ;
 };
 
 template <typename T>
@@ -218,7 +216,7 @@ std::vector<T> DynamicList<T>::retrieveActiveList(){
 
 template <typename T>
 void DynamicList<T>::clear() {
-  all.resize(0); translator.resize(0); 
+  all.resize(0); 
   onoff.resize(0); active.resize(0);
 }
 
@@ -239,8 +237,14 @@ unsigned DynamicList<T>::getNumberActive() const {
 
 template <typename T>
 void DynamicList<T>::addIndexToList( const T & ii ){
-  all.push_back(ii); active.resize( all.size() );
-  translator.push_back( all.size()-1 ); onoff.push_back(0); 
+  all.push_back(ii); active.resize( all.size() ); onoff.push_back(0); 
+}
+
+template <typename T>
+void DynamicList<T>::createIndexListFromVector( const std::vector<T>& myind ){
+  plumed_dbg_assert( all.size()==0 ); onoff.resize( myind.size(), 0 );
+  active.resize( myind.size() ); 
+  all.insert( all.end(), myind.begin(), myind.end() );
 }
 
 template <typename T>
@@ -279,11 +283,6 @@ void DynamicList<T>::deactivateAll(){
 }
 
 template <typename T>
-void DynamicList<T>::resetTranslator(){
-  for(unsigned i=0;i<all.size();++i) translator[i]=i;
-}
-
-template <typename T>
 void DynamicList<T>::activate( const unsigned ii ){
   plumed_dbg_massert(ii<all.size(),"ii is out of bounds");
   plumed_dbg_assert( !allWereActivated );
@@ -311,7 +310,7 @@ void DynamicList<T>::updateActiveMembers(){
   plumed_dbg_assert( allWereActivated || allWereDeactivated );
   unsigned kk=0; allWereActivated=allWereDeactivated=false;
   for(unsigned i=0;i<all.size();++i){
-      if( onoff[i]>0 && onoff[i]%nprocessors==0 ){ translator[i]=kk; active[kk]=i; kk++; }
+      if( onoff[i]>0 && onoff[i]%nprocessors==0 ){ active[kk]=i; kk++; }
   }
   nactive=kk; 
 }
@@ -323,11 +322,16 @@ void DynamicList<T>::emptyActiveMembers(){
 }
 
 template <typename T>
-void DynamicList<T>::updateIndex( const unsigned& ii ){
+void DynamicList<T>::putIndexInActiveArray( const unsigned& ii ){
   plumed_dbg_assert( allWereActivated || allWereDeactivated );
-  if( onoff[ii]>0 && onoff[ii]%nprocessors==0 ){
-     translator[nactive]=nactive; active[nactive]=ii; nactive++;
-  }
+  plumed_dbg_assert( onoff[ii]>0 && onoff[ii]%nprocessors==0 );
+  active[nactive]=ii; nactive++;
+}
+
+template <typename T>
+void DynamicList<T>::completeUpdate(){
+  plumed_dbg_assert( allWereActivated || allWereDeactivated );
+  allWereActivated=allWereDeactivated=false;
 }
 
 template <typename T>
@@ -335,12 +339,6 @@ void DynamicList<T>::sortActiveList(){
   plumed_dbg_assert( allWereActivated || allWereDeactivated );
   allWereActivated=allWereDeactivated=false;
   std::sort( active.begin(), active.begin()+nactive );
-  for(unsigned i=0;i<nactive;++i) translator[ active[i] ]=i; 
-}
-
-template <typename T>
-unsigned DynamicList<T>::linkIndex( const unsigned& ii ) const {
-  return translator[ii];
 }
 
 template <typename T>

@@ -18,7 +18,8 @@ An experimental PDF copy of this manual can be found
 To understand the difference between PLUMED 1 and PLUMED 2, and to
 follow the development of PLUMED 2, you can look at the detailed \ref Changelog.
 
-A short tutorial explaining how to move from PLUMED 1 to PLUMED 2 is also available (see \ref moving)
+A short tutorial explaining why it is a good idea to move from PLUMED 1 to PLUMED 2
+and how to do it in practice is also available (see \ref moving).
 
 To install PLUMED 2, see this page: \ref Installation
 
@@ -60,6 +61,8 @@ First, it can be incorporated into an MD code and used to analyse or bias a mole
 Notice that some MD code could already include calls to the PLUMED library
 and be PLUMED-ready in its original distribution.
 As far as we know, the following MD codes can be used with PLUMED 2 out of the box:
+- [AmberTools](http://ambermd.org/), sander module, since version 15.
+- [CP2K](http://www.cp2k.org), since Feb 2015.
 - [ESPResSo](http://espressomd.org), in a Plumedized version that can be found
   [here](http://davidebr.github.io/espresso/).
 - [PINY-MD](http://github.com/TuckermanGroup/PINY), in its plumed branch.
@@ -77,6 +80,17 @@ can use PLUMED as a standalone tool for postprocessing the results from molecula
 or enhanced sampling calculations.
 
 \page Changelog Change Log
+
+Here you can find a history of changes across different PLUMED versions.
+We mostly add new features without breaking exising ones.
+However, some of the changes lead to incompatible behavior.
+In the Change Log we try to give as much visibility as possible to these changes
+to avoid surprises.
+
+We also log changes that are relevant if you are developing the code. These
+change lists are however not complete, and if you want to put your hands in the code
+and maintain your own collective variables we suggest you to follow the development
+on github.
 
 @CHANGES@
 

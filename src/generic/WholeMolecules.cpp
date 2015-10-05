@@ -59,6 +59,16 @@ As a general rule, put it at the top of the input file. Also, unless you
 know exactly what you are doing, leave the default stride (1), so that
 this action is performed at every MD step.
 
+The way WHOLEMOLECULES modifies each of the listed entities is this:
+- First atom of the list is left in place
+- Each atom of the list is shifted by a lattice vectors so that it becomes as close as possible
+  to the previous one, iteratively.
+
+In this way, if an entity consists of a list of atoms such that consecutive atoms in the
+list are always closer than half a box side the entity will become whole.
+This can be usually achieved selecting consecute atoms (1-100), but it is also possible
+to skip some atoms, provided consecute chosen atoms are close enough.
+
 \par Examples
 
 This command instructs plumed to reconstruct the molecule containing atoms 1-20
@@ -67,7 +77,7 @@ at every step of the calculation and dump them on a file.
 \verbatim
 # to see the effect, one could dump the atoms as they were before molecule reconstruction:
 # DUMPATOMS FILE=dump-broken.xyz ATOMS=1-20
-WHOLEMOLECULES STRIDE=1 ENTITY0=1-20
+WHOLEMOLECULES ENTITY0=1-20
 DUMPATOMS FILE=dump.xyz ATOMS=1-20
 \endverbatim
 (see also \ref DUMPATOMS)
@@ -75,7 +85,7 @@ DUMPATOMS FILE=dump.xyz ATOMS=1-20
 This command instructs plumed to reconstruct two molecules containing atoms 1-20 and 30-40
 
 \verbatim
-WHOLEMOLECULES STRIDE=1 ENTITY0=1-20 ENTITY1=30-40
+WHOLEMOLECULES ENTITY0=1-20 ENTITY1=30-40
 DUMPATOMS FILE=dump.xyz ATOMS=1-20,30-40
 \endverbatim
 (see also \ref DUMPATOMS)
@@ -85,7 +95,7 @@ protein
 
 \verbatim
 MOLINFO STRUCTURE=helix.pdb
-WHOLEMOLECULES STRIDE=1 RESIDUES=all MOLTYPE=protein 
+WHOLEMOLECULES RESIDUES=all MOLTYPE=protein 
 \endverbatim
 (See also \ref MOLINFO)
 
@@ -99,7 +109,7 @@ class WholeMolecules:
 {
   vector<vector<AtomNumber> > groups;
 public:
-  WholeMolecules(const ActionOptions&ao);
+  explicit WholeMolecules(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
   void calculate();
   void apply(){}
@@ -112,7 +122,7 @@ void WholeMolecules::registerKeywords( Keywords& keys ){
   ActionPilot::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
   keys.add("compulsory","STRIDE","1","the frequency with which molecules are reassembled.  Unless you are completely certain about what you are doing leave this set equal to 1!");
-  keys.add("numbered","ENTITY","the atoms that make up a molecule that you wish to align. To specify multiple molecules use a list of ENTITY keywords: ENTITY1, ENTITY2,...");
+  keys.add("numbered","ENTITY","the atoms that make up a molecule that you wish to align. To specify multiple molecules use a list of ENTITY keywords: ENTITY0, ENTITY1,...");
   keys.reset_style("ENTITY","atoms");
   keys.add("residues","RESIDUES","this command specifies that the backbone atoms in a set of residues all must be aligned. It must be used in tandem with the \\ref MOLINFO "
                               "action and the MOLTYPE keyword. If you wish to use all the residues from all the chains in your system you can do so by "

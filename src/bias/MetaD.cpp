@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Bias.h"
 #include "ActionRegister.h"
+#include "core/ActionSet.h"
 #include "tools/Grid.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
@@ -31,7 +32,6 @@
 #include <string>
 #include <cstring>
 #include "tools/File.h"
-#include "time.h"
 #include <iostream>
 #include <limits>
 
@@ -74,7 +74,7 @@ utility.
 In the simplest possible implementation of a metadynamics calculation the expense of a metadynamics 
 calculation increases with the length of the simulation as one has to, at every step, evaluate 
 the values of a larger and larger number of Gaussians. To avoid this issue you can
-store the bias on a grid.  This approach is similar to that proposed in \cite babi+08jcp but has the 
+store the bias on a grid.  This approach is similar to that proposed in \cite babi08jcp but has the 
 advantage that the grid spacing is independent on the Gaussian width.
 Notice that you should
 provide either the number of bins for every collective variable (GRID_BIN) or
@@ -148,6 +148,10 @@ Additional material and examples can be also found in the tutorials:
 - \ref belfast-6
 - \ref belfast-7
 - \ref belfast-8
+
+Notice that at variance with PLUMED 1.3 it is now straightforward to apply concurrent metadynamics
+as done e.g. in Ref. \cite gil2015enhanced . This indeed can be obtained by using the METAD
+action multiple times in the same input file.
 
 \par Examples
 The following input is for a standard metadynamics calculation using as
@@ -285,6 +289,7 @@ private:
   unsigned int rewf_ustride_;
 /// accumulator for work
   double work_;
+  long int last_step_warn_grid;
   
  
   void   readGaussians(IFile*);
@@ -302,7 +307,7 @@ private:
   std::string fmt;
 
 public:
-  MetaD(const ActionOptions&);
+  explicit MetaD(const ActionOptions&);
   ~MetaD();
   void calculate();
   void update();
@@ -318,6 +323,7 @@ void MetaD::registerKeywords(Keywords& keys){
   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
   keys.addOutputComponent("rbias","REWEIGHTING_NGRID","the instantaneous value of the bias normalized using the c(t) reweighting factor [rbias=bias-c(t)]. This is calculated using the method of Tiwary and Parrinello.");
   keys.addOutputComponent("rct","REWEIGHTING_NGRID","the reweighting factor c(t) calculated according to the method of Tiwary and Parrinello.");
+  keys.addOutputComponent("work","default","accumulator for work");
   keys.addOutputComponent("acc","ACCELERATION","the metadynamics acceleration factor");
   keys.use("ARG");
   keys.add("compulsory","SIGMA","the widths of the Gaussian hills");
@@ -350,6 +356,9 @@ void MetaD::registerKeywords(Keywords& keys){
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with other WALKERS_* options");
   keys.addFlag("ACCELERATION",false,"Set to TRUE if you want to compute the metadynamics acceleration factor.");  
+  keys.use("RESTART");
+  keys.use("UPDATE_FROM");
+  keys.use("UPDATE_UNTIL");
 }
 
 MetaD::~MetaD(){
@@ -383,7 +392,7 @@ acceleration(false), acc(0.0),
 uppI_(-1), lowI_(-1), doInt_(false),
 isFirstStep(true),
 reweight_factor(0.0),
-work_(0.0)
+last_step_warn_grid(0)
 {
   // parse the flexible hills
   string adaptiveoption;
@@ -705,7 +714,18 @@ work_(0.0)
    }
   }
 
-  // Calculate the Tiwary-Parrinello reweighting factor if we are restarting from previous hills
+  comm.Barrier();
+
+// this barrier is needed when using walkers_mpi
+// to be sure that all files have been read before
+// backing them up
+// it should not be used when walkers_mpi is false otherwise
+// it would introduce troubles when using replicas without METAD
+// (e.g. in bias exchange with a neutral replica)
+// see issue #168 on github
+  if(comm.Get_rank()==0 && walkers_mpi) multi_sim_comm.Barrier();
+
+// Calculate the Tiwary-Parrinello reweighting factor if we are restarting from previous hills
   if(plumed.getRestart() && rewf_grid_.size()>0 ){computeReweightingFactor();}
 
 // open hills file for writing
@@ -728,6 +748,12 @@ work_(0.0)
 // output periodicities of variables
   for(unsigned i=0;i<getNumberOfArguments();++i) hillsOfile_.setupPrintValue( getPntrToArgument(i) );
 
+  bool concurrent=false;
+
+  const ActionSet&actionSet(plumed.getActionSet());
+  for(ActionSet::const_iterator p=actionSet.begin();p!=actionSet.end();++p) if(dynamic_cast<MetaD*>(*p)){ concurrent=true; break; }
+  if(concurrent) log<<"  You are using concurrent metadynamics\n";
+
   log<<"  Bibliography "<<plumed.cite("Laio and Parrinello, PNAS 99, 12562 (2002)");
   if(welltemp_) log<<plumed.cite(
     "Barducci, Bussi, and Parrinello, Phys. Rev. Lett. 100, 020603 (2008)");
@@ -741,6 +767,8 @@ work_(0.0)
      "Pratyush and Parrinello, Phys. Rev. Lett. 111, 230602 (2013)");
   if(rewf_grid_.size()>0) log<<plumed.cite(
      "Pratyush and Parrinello, J. Phys. Chem. B, 119, 736 (2015)");
+  if(concurrent) log<<plumed.cite(
+     "Gil-Ley and Bussi, J. Chem. Theory Comput. 11, 1077 (2015)");
   log<<"\n";
 
 }
@@ -842,12 +870,12 @@ void MetaD::addGaussian(const Gaussian& hill){
  else{
   unsigned ncv=getNumberOfArguments();
   vector<unsigned> nneighb=getGaussianSupport(hill);
-  vector<unsigned> neighbors=BiasGrid_->getNeighbors(hill.center,nneighb);
+  vector<Grid::index_t> neighbors=BiasGrid_->getNeighbors(hill.center,nneighb);
   vector<double> der(ncv);
   vector<double> xx(ncv);
   if(comm.Get_size()==1){
     for(unsigned i=0;i<neighbors.size();++i){
-     unsigned ineigh=neighbors[i];
+     Grid::index_t ineigh=neighbors[i];
      for(unsigned j=0;j<ncv;++j){der[j]=0.0;}
      BiasGrid_->getPoint(ineigh,xx);
      double bias=evaluateGaussian(xx,hill,&der[0]);
@@ -859,14 +887,14 @@ void MetaD::addGaussian(const Gaussian& hill){
     vector<double> allder(ncv*neighbors.size(),0.0);
     vector<double> allbias(neighbors.size(),0.0);
     for(unsigned i=rank;i<neighbors.size();i+=stride){
-     unsigned ineigh=neighbors[i];
+     Grid::index_t ineigh=neighbors[i];
      BiasGrid_->getPoint(ineigh,xx);
      allbias[i]=evaluateGaussian(xx,hill,&allder[ncv*i]);
     }
     comm.Sum(allbias);
     comm.Sum(allder);
     for(unsigned i=0;i<neighbors.size();++i){
-     unsigned ineigh=neighbors[i];
+     Grid::index_t ineigh=neighbors[i];
      for(unsigned j=0;j<ncv;++j){der[j]=allder[ncv*i+j];}
      BiasGrid_->addValueAndDerivatives(ineigh,allbias[i],der);
     }
@@ -930,6 +958,13 @@ double MetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
 {
  double bias=0.0;
  if(!grid_){
+  if(hills_.size()>10000 && (getStep()-last_step_warn_grid)>10000){
+    std::string msg;
+    Tools::convert(hills_.size(),msg);
+    msg="You have accumulated "+msg+" hills, you should enable GRIDs to avoid serious performance hits";
+    warning(msg);
+    last_step_warn_grid=getStep();
+  }
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
   for(unsigned i=rank;i<hills_.size();i+=stride){
@@ -1181,25 +1216,25 @@ void MetaD::update(){
   double vbias1=getBiasAndDerivatives(cv);
   work_+=vbias1-vbias;
 
-// dump grid on file
+  // dump grid on file
   if(wgridstride_>0&&getStep()%wgridstride_==0){
-// in case old grids are stored, a sequence of grids should appear
-// this call results in a repetition of the header:
+    // in case old grids are stored, a sequence of grids should appear
+    // this call results in a repetition of the header:
     if(storeOldGrids_) gridfile_.clearFields();
-// in case only latest grid is stored, file should be rewound
-// this will overwrite previously written grids
+    // in case only latest grid is stored, file should be rewound
+    // this will overwrite previously written grids
     else gridfile_.rewind();
     BiasGrid_->writeToFile(gridfile_); 
-// if a single grid is stored, it is necessary to flush it, otherwise
-// the file might stay empty forever (when a single grid is not large enough to
-// trigger flushing from the operating system).
-// on the other hand, if grids are stored one after the other this is
-// no necessary, and we leave the flushing control to the user as usual
-// (with FLUSH keyword)
+    // if a single grid is stored, it is necessary to flush it, otherwise
+    // the file might stay empty forever (when a single grid is not large enough to
+    // trigger flushing from the operating system).
+    // on the other hand, if grids are stored one after the other this is
+    // no necessary, and we leave the flushing control to the user as usual
+    // (with FLUSH keyword)
     if(!storeOldGrids_) gridfile_.flush();
   }
 
-// if multiple walkers and time to read Gaussians
+  // if multiple walkers and time to read Gaussians
  if(mw_n_>1 && getStep()%mw_rstride_==0){
    for(int i=0;i<mw_n_;++i){
     // don't read your own Gaussians

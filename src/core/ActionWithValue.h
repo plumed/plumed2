@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -109,7 +109,7 @@ protected:
 /// Return a pointer to the value by name
   Value* getPntrToComponent(const std::string& name);
 public:
-  ActionWithValue(const ActionOptions&ao);
+  explicit ActionWithValue(const ActionOptions&ao);
   ~ActionWithValue();
 
 /// Register all the relevant keywords for the action  

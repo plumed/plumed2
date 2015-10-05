@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -34,10 +34,10 @@ class RMSDBase : public SingleDomainRMSD {
 // this is to avoid warnings:
   using SingleDomainRMSD::calc;
 public:
-  RMSDBase( const ReferenceConfigurationOptions& ro );
-  double calc( const std::vector<Vector>& pos, const Pbc& pbc, const bool& squared );
-  double calculate( const std::vector<Vector>& pos, const bool& squared );
-  virtual double calc( const std::vector<Vector>& pos, const bool& squared )=0;
+  explicit RMSDBase( const ReferenceConfigurationOptions& ro );
+  double calc( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceValuePack& myder, const bool& squared ) const;
+  double calculate( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const ; 
+  virtual double calc( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const=0;
 };
 
 }

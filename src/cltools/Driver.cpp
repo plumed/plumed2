@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -35,10 +35,10 @@
 #include "tools/IFile.h"
 
 // when using molfile plugin
-#ifdef __PLUMED_HAS_MOLFILE
-#ifdef __PLUMED_INTERNAL_MOLFILE_PLUGINS
+#ifdef __PLUMED_HAS_MOLFILE_PLUGINS
+#ifndef __PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS
 /* Use the internal ones. Alternatively:
- *    ifneq (,$(findstring __PLUMED_INTERNAL_MOLFILE_PLUGINS,$(CPPFLAGS)))
+ *    ifeq (,$(findstring __PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS,$(CPPFLAGS)))
  *    CPPFLAGS+=-I../molfile  
  */
 #include "molfile/libmolfile_plugin.h"
@@ -69,6 +69,14 @@ The input to driver is specified using the command line arguments described belo
 In addition, you can use the special \subpage READ command inside your plumed input
 to read in colvar files that were generated during your MD simulation.  The values
 read in can then be treated like calculated colvars. 
+
+\warning
+Notice that by default the driver has no knowledge about the masses and charges
+of your atoms! Thus, if you want to compute quantities depending charges (e.g. \ref DHENERGY)
+or masses (e.g. \ref COM) you should pass the proper information to the driver.
+You can do it either with the --pdb option or with the --mc option. The latter
+will read a file produced by \ref DUMPMASSCHARGE .
+
 
 \par Examples
 
@@ -112,10 +120,23 @@ the lines of:
 configure [...] LDFLAGS="-ltcl8.5 -L/mypathtomolfilelibrary/ -L/mypathtotcl" CPPFLAGS="-I/mypathtolibmolfile_plugin.h/"
 \endverbatim
 
-and rebuild. Check the available molfile plugins and limitations at http://www.ks.uiuc.edu/Research/vmd/plugins/molfile/.
+and rebuild.
+
+Molfile plugin require periodic cell to be triangular (i.e. first vector oriented along x and
+second vector in xy plane). This is true for many MD codes. However, it could be false
+if you rotate the coordinates in your trajectory before reading them in the driver.
+Also notice that some formats (e.g. amber crd) do not specify atom number. In this case you can use
+the `--natoms` option:
+\verbatim
+plumed driver --plumed plumed.dat --imf_crd trajectory.crd --natoms 128
+\endverbatim
+
+Check the available molfile plugins and limitations at http://www.ks.uiuc.edu/Research/vmd/plugins/molfile/.
 
 Additionally, you can use the xdrfile implementation of xtc and trr. To this aim, just
-download and install properly the xdrfile library (see here: http://www.gromacs.org/Developer_Zone/Programming_Guide/XTC_Library)
+download and install properly the xdrfile library (see here: http://www.gromacs.org/Developer_Zone/Programming_Guide/XTC_Library).
+If the xdrfile library is installed properly the PLUMED configure script should be able to
+detect it and enable it.
 Notice that the xdrfile implementation of xtc and trr
 is more robust than the molfile one, since it provides support for generic cell shapes.
 
@@ -124,7 +145,7 @@ is more robust than the molfile one, since it provides support for generic cell 
 //+ENDPLUMEDOC
 //
 
-#ifdef __PLUMED_HAS_MOLFILE
+#ifdef __PLUMED_HAS_MOLFILE_PLUGINS
 static vector<molfile_plugin_t *> plugins;
 static map <string, unsigned> pluginmap;
 static int register_cb(void *v, vmdplugin_t *p){
@@ -135,7 +156,7 @@ static int register_cb(void *v, vmdplugin_t *p){
 	//cerr<<"MOLFILE: found duplicate plugin for "<<key<<" : not inserted "<<endl; 
   }else{
 	//cerr<<"MOLFILE: loading plugin "<<key<<" number "<<plugins.size()-1<<endl;
-  	plugins.push_back((molfile_plugin_t *)p);
+  	plugins.push_back(reinterpret_cast<molfile_plugin_t *>(p));
   } 
   return VMDPLUGIN_SUCCESS;
 }
@@ -145,7 +166,7 @@ template<typename real>
 class Driver : public CLTool {
 public:
   static void registerKeywords( Keywords& keys );
-  Driver(const CLToolOptions& co );
+  explicit Driver(const CLToolOptions& co );
   int main(FILE* in,FILE*out,Communicator& pc);
   string description()const;
 };
@@ -162,21 +183,23 @@ void Driver<real>::registerKeywords( Keywords& keys ){
   keys.add("atoms","--ixyz","the trajectory in xyz format");
   keys.add("atoms","--igro","the trajectory in gro format");
 #ifdef __PLUMED_HAS_XDRFILE
-  keys.add("atoms","--ixtc","the trajectory in xtc format (xdrfile implementation");
-  keys.add("atoms","--itrr","the trajectory in trr format (xdrfile implementation");
+  keys.add("atoms","--ixtc","the trajectory in xtc format (xdrfile implementation)");
+  keys.add("atoms","--itrr","the trajectory in trr format (xdrfile implementation)");
 #endif
   keys.add("optional","--length-units","units for length, either as a string or a number");
   keys.add("optional","--dump-forces","dump the forces on a file");
   keys.add("optional","--dump-forces-fmt","( default=%%f ) the format to use to dump the forces");
+  keys.addFlag("--dump-full-virial",false,"with --dump-forces, it dumps the 9 components of the virial");
   keys.add("optional","--pdb","provides a pdb with masses and charges");
   keys.add("optional","--mc","provides a file with masses and charges as produced with DUMPMASSCHARGE");
   keys.add("optional","--box","comma-separated box dimensions (3 for orthorombic, 9 for generic)");
+  keys.add("optional","--natoms","provides number of atoms - only used if file format does not contain number of atoms");
   keys.add("hidden","--debug-float","turns on the single precision version (to check float interface)");
   keys.add("hidden","--debug-dd","use a fake domain decomposition");
   keys.add("hidden","--debug-pd","use a fake particle decomposition");
   keys.add("hidden","--debug-grex","use a fake gromacs-like replica exchange, specify exchange stride");
   keys.add("hidden","--debug-grex-log","log file for debug=grex");
-#ifdef __PLUMED_HAS_MOLFILE
+#ifdef __PLUMED_HAS_MOLFILE_PLUGINS
   MOLFILE_INIT_ALL
   MOLFILE_REGISTER_ALL(NULL, register_cb)
   for(int i=0;i<plugins.size();i++){
@@ -273,22 +296,27 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
   unsigned stride; parse("--trajectory-stride",stride);
 // are we writing forces
   string dumpforces(""), dumpforcesFmt("%f");; 
+  bool dumpfullvirial=false;
   if(!noatoms) parse("--dump-forces",dumpforces);
   if(dumpforces!="") parse("--dump-forces-fmt",dumpforcesFmt);
+  if(dumpforces!="") parseFlag("--dump-full-virial",dumpfullvirial);
 
   string trajectory_fmt;
 
   bool use_molfile=false; 
-#ifdef __PLUMED_HAS_MOLFILE
+#ifdef __PLUMED_HAS_MOLFILE_PLUGINS
   molfile_plugin_t *api=NULL;      
   void *h_in=NULL;
   molfile_timestep_t ts_in; // this is the structure that has the timestep 
   ts_in.coords=NULL;
+  ts_in.A=-1; // we use this to check whether cell is provided or not
 #endif
 
 // Read in an xyz file
   string trajectoryFile(""), pdbfile(""), mcfile("");
   bool pbc_cli_given=false; vector<double> pbc_cli_box(9,0.0);
+  int command_line_natoms=-1;
+
   if(!noatoms){
      std::string traj_xyz; parse("--ixyz",traj_xyz);
      std::string traj_gro; parse("--igro",traj_gro);
@@ -298,7 +326,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
      parse("--ixtc",traj_xtc);
      parse("--itrr",traj_trr);
 #endif
-#ifdef __PLUMED_HAS_MOLFILE 
+#ifdef __PLUMED_HAS_MOLFILE_PLUGINS
      for(int i=0;i<plugins.size();i++){ 	
 	string molfile_key="--mf_"+string(plugins[i]->name);
 	string traj_molfile;
@@ -371,6 +399,9 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
        }
 
      }
+
+     parse("--natoms",command_line_natoms);
+     
   }
 
   if( debug_dd && debug_pd ) error("cannot use debug-dd and debug-pd at the same time");
@@ -415,8 +446,12 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
        fp=in;
      else {
        if(use_molfile==true){
-#ifdef __PLUMED_HAS_MOLFILE
+#ifdef __PLUMED_HAS_MOLFILE_PLUGINS
         h_in = api->open_file_read(trajectoryFile.c_str(), trajectory_fmt.c_str(), &natoms);
+        if(natoms==MOLFILE_NUMATOMS_UNKNOWN){
+          if(command_line_natoms>=0) natoms=command_line_natoms;
+          else error("this file format does not provide number of atoms; use --natoms on the command line");
+        }
         ts_in.coords = new float [3*natoms];
 #endif
        }else if(trajectory_fmt=="xdr-xtc" || trajectory_fmt=="xdr-trr"){
@@ -474,7 +509,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
   while(true){
     if(!noatoms){
        if(use_molfile==true){	
-#ifdef __PLUMED_HAS_MOLFILE
+#ifdef __PLUMED_HAS_MOLFILE_PLUGINS
           int rc; 
     	  rc = api->read_next_timestep(h_in, natoms, &ts_in);
           //if(rc==MOLFILE_SUCCESS){
@@ -598,8 +633,9 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
     p.cmd("setStopFlag",&plumedStopCondition);
     if(!noatoms){
        if(use_molfile){
-#ifdef __PLUMED_HAS_MOLFILE
+#ifdef __PLUMED_HAS_MOLFILE_PLUGINS
     	   if(pbc_cli_given==false) {
+                 if(ts_in.A>0.0){ // this is negative if molfile does not provide box
     		   // info on the cell: convert using pbcset.tcl from pbctools in vmd distribution
     		   real cosBC=cos(ts_in.alpha*pi/180.);
     		   //double sinBC=sin(ts_in.alpha*pi/180.);
@@ -615,7 +651,11 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
     		   cell[0]=Ax/10.;cell[1]=0.;cell[2]=0.;
     		   cell[3]=Bx/10.;cell[4]=By/10.;cell[5]=0.;
     		   cell[6]=Cx/10.;cell[7]=Cy/10.;cell[8]=Cz/10.;
-    		   //cerr<<"CELL "<<cell[0]<<" "<<cell[1]<<" "<<cell[2]<<" "<<cell[3]<<" "<<cell[4]<<" "<<cell[5]<<" "<<cell[6]<<" "<<cell[7]<<" "<<cell[8]<<endl;
+                 } else {
+                   cell[0]=0.0; cell[1]=0.0; cell[2]=0.0;
+                   cell[3]=0.0; cell[4]=0.0; cell[5]=0.0;
+                   cell[6]=0.0; cell[7]=0.0; cell[8]=0.0;
+                 }
     	   }else{
     		   for(unsigned i=0;i<9;i++)cell[i]=pbc_cli_box[i];
     	   }
@@ -776,8 +816,13 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 
    if(fp_forces){
      fprintf(fp_forces,"%d\n",natoms);
+     string fmtv=dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+"\n";
      string fmt=dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+"\n";
-     fprintf(fp_forces,fmt.c_str(),virial[0],virial[4],virial[8]);
+     if(dumpfullvirial){
+       fprintf(fp_forces,fmtv.c_str(),virial[0],virial[1],virial[2],virial[3],virial[4],virial[5],virial[6],virial[7],virial[8]);
+     } else {
+       fprintf(fp_forces,fmt.c_str(),virial[0],virial[4],virial[8]);
+     }
      fmt="X "+fmt;
      for(int i=0;i<natoms;i++)
        fprintf(fp_forces,fmt.c_str(),forces[3*i],forces[3*i+1],forces[3*i+2]);
@@ -794,7 +839,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 #ifdef __PLUMED_HAS_XDRFILE
   if(xd) xdrfile_close(xd);
 #endif
-#ifdef __PLUMED_HAS_MOLFILE
+#ifdef __PLUMED_HAS_MOLFILE_PLUGINS
   if(h_in) api->close_file_read(h_in);
   if(ts_in.coords) delete [] ts_in.coords;
 #endif

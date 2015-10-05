@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -74,11 +74,10 @@ Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle o
 class Torsions : public MultiColvar {
 public:
   static void registerKeywords( Keywords& keys );
-  Torsions(const ActionOptions&);
-  virtual double compute();
+  explicit Torsions(const ActionOptions&);
+  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
   bool isPeriodic(){ return true; }
   void retrieveDomain( std::string& min, std::string& max ){ min="-pi"; max="pi"; }
-  Vector getCentralAtom();  
 };
 
 PLUMED_REGISTER_ACTION(Torsions,"TORSIONS")
@@ -93,35 +92,32 @@ PLUMED_MULTICOLVAR_INIT(ao)
 {
   // Read in the atoms
   int natoms=4; readAtoms( natoms );
+  std::vector<bool> catom_ind(4, false); 
+  catom_ind[1]=catom_ind[2]=true;
+  setAtomsForCentralAtom( catom_ind );
   // Read in the vessels
   readVesselKeywords();  
   // And check everything has been read in correctly
   checkRead();
 }
 
-double Torsions::compute(){
+double Torsions::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
   Vector d0,d1,d2;
-  d0=getSeparation(getPosition(1),getPosition(0));
-  d1=getSeparation(getPosition(2),getPosition(1));
-  d2=getSeparation(getPosition(3),getPosition(2));
+  d0=getSeparation(myatoms.getPosition(1),myatoms.getPosition(0));
+  d1=getSeparation(myatoms.getPosition(2),myatoms.getPosition(1));
+  d2=getSeparation(myatoms.getPosition(3),myatoms.getPosition(2));
 
   Vector dd0,dd1,dd2; PLMD::Torsion t;
   double value  = t.compute(d0,d1,d2,dd0,dd1,dd2);
 
-  addAtomsDerivatives(0,dd0);
-  addAtomsDerivatives(1,dd1-dd0);
-  addAtomsDerivatives(2,dd2-dd1);
-  addAtomsDerivatives(3,-dd2);
+  myatoms.addAtomsDerivatives(1,0,dd0);
+  myatoms.addAtomsDerivatives(1,1,dd1-dd0);
+  myatoms.addAtomsDerivatives(1,2,dd2-dd1);
+  myatoms.addAtomsDerivatives(1,3,-dd2);
 
-  addBoxDerivatives  (-(extProduct(d0,dd0)+extProduct(d1,dd1)+extProduct(d2,dd2)));
+  myatoms.addBoxDerivatives  (1, -(extProduct(d0,dd0)+extProduct(d1,dd1)+extProduct(d2,dd2)));
 
   return value;
-}
-
-Vector Torsions::getCentralAtom(){
-   addCentralAtomDerivatives( 1, 0.5*Tensor::identity() );
-   addCentralAtomDerivatives( 2, 0.5*Tensor::identity() );
-   return 0.5*( getPosition(1) + getPosition(2) );
 }
 
 }

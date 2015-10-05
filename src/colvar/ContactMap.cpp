@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -51,7 +51,9 @@ PRINT ARG=f1.* FILE=colvar
 \endverbatim
 
 The following example calculates the difference of the current contact map with respect
-to a reference provided. 
+to a reference provided. In this case REFERENCE is the fraction of contact that is formed
+(i.e. the distance between two atoms transformed with the SWITH), while R_0 is the contact
+distance. WEIGHT gives the relative weight of each contact to the final distance measure. 
 
 \verbatim
 CONTACTMAP ...
@@ -79,7 +81,7 @@ private:
   vector<double> reference, weight;
 public:
   static void registerKeywords( Keywords& keys );
-  ContactMap(const ActionOptions&);
+  explicit ContactMap(const ActionOptions&);
   ~ContactMap();
 // active methods:
   virtual void calculate();
@@ -232,7 +234,7 @@ ContactMap::~ContactMap(){
 
 void ContactMap::calculate(){ 
      
- double ncoord=0., coord;
+ double ncoord=0.;
  Tensor virial;
  std::vector<Vector> deriv(getNumberOfAtoms());
 
@@ -259,7 +261,7 @@ void ContactMap::calculate(){
     }
 
     double dfunc=0.;
-    coord = weight[i]*(sfs[i].calculate(distance.modulo(), dfunc) - reference[i]);
+    double coord = weight[i]*(sfs[i].calculate(distance.modulo(), dfunc) - reference[i]);
     Vector tmpder = weight[i]*dfunc*distance;
     Tensor tmpvir = weight[i]*dfunc*Tensor(distance,distance);
     if(!docmdist) { 

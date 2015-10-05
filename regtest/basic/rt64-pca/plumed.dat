@@ -1,0 +1,6 @@
+#pca-1: PCARMSD AVERAGE=average.pdb EIGENVECTORS=eigenvec1.pdb
+#pca-2: PCARMSD AVERAGE=average.pdb EIGENVECTORS=eigenvec1.pdb NUMERICAL_DERIVATIVES
+#DUMPDERIVATIVES ARG=pca-1.pca-0,pca-2.pca-0 FILE=check
+pca: PCARMSD AVERAGE=average.pdb EIGENVECTORS=eigenvec.pdb
+DUMPDERIVATIVES ARG=pca.eig-0 FMT=%8.4f FILE=check
+PRINT ARG=* FILE=colvar FMT=%8.4f STRIDE=10 

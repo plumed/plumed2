@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -70,7 +70,7 @@ class Atoms
   unsigned forcesHaveBeenSet;
   bool virialHasBeenSet;
   bool massAndChargeOK;
-  bool shuffledAtoms;
+  unsigned shuffledAtoms;
 
   std::map<std::string,std::vector<AtomNumber> > groups;
 
@@ -128,7 +128,7 @@ class Atoms
 
 public:
 
-  Atoms(PlumedMain&plumed);
+  explicit Atoms(PlumedMain&plumed);
   ~Atoms();
 
   void init();

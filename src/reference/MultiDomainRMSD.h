@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -39,15 +39,20 @@ private:
 /// Each of the domains we are calculating the distance from
   std::vector<SingleDomainRMSD*> domains;
 public:
-  MultiDomainRMSD( const ReferenceConfigurationOptions& ro );
+  explicit MultiDomainRMSD( const ReferenceConfigurationOptions& ro );
   ~MultiDomainRMSD();
 /// Read in the input from a pdb
   void read( const PDB& );
 /// Set the input from an analysis object (don't know how this will work yet so currently just a plumed_error)
   void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in );
 /// Calculate
-  double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, const bool& squared );
-  double calculate( const std::vector<Vector>& pos, const Pbc& pbc,  const bool& squared );
+  double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, ReferenceValuePack& myder, const bool& squared ) const ;
+  double calculate( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceValuePack& myder, const bool& squared ) const ;
+///
+  bool pcaIsEnabledForThisReference();
+//  Vector getAtomicDisplacement( const unsigned& iatom );
+  double projectAtomicDisplacementOnVector( const unsigned& iv, const Matrix<Vector>& vecs, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const ; 
+  void setupPCAStorage( ReferenceValuePack& mypack ); 
 };
 
 }

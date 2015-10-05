@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -47,7 +47,7 @@
 
 using namespace std;
 
-enum { SETBOX, SETPOSITIONS, SETMASSES, SETCHARGES, SETPOSITIONSX, SETPOSITIONSY, SETPOSITIONSZ, SETVIRIAL, SETENERGY, SETFORCES, SETFORCESX, SETFORCESY, SETFORCESZ, CALC, PREPAREDEPENDENCIES, SHAREDATA, PREPARECALC, PERFORMCALC, SETSTEP, SETSTEPLONG, SETATOMSNLOCAL, SETATOMSGATINDEX, SETATOMSFGATINDEX, SETATOMSCONTIGUOUS, CREATEFULLLIST, GETFULLLIST, CLEARFULLLIST, READ, CLEAR, GETAPIVERSION, INIT, SETREALPRECISION, SETMDLENGTHUNITS, SETMDENERGYUNITS, SETMDTIMEUNITS, SETNATURALUNITS, SETNOVIRIAL, SETPLUMEDDAT, SETMPICOMM, SETMPIFCOMM, SETMPIMULTISIMCOMM, SETNATOMS, SETTIMESTEP, SETMDENGINE, SETLOG, SETLOGFILE, SETSTOPFLAG, GETEXCHANGESFLAG, SETEXCHANGESSEED, SETNUMBEROFREPLICAS, GETEXCHANGESLIST, RUNFINALJOBS, ISENERGYNEEDED, GETBIAS, SETKBT };
+enum { SETBOX, SETPOSITIONS, SETMASSES, SETCHARGES, SETPOSITIONSX, SETPOSITIONSY, SETPOSITIONSZ, SETVIRIAL, SETENERGY, SETFORCES, SETFORCESX, SETFORCESY, SETFORCESZ, CALC, PREPAREDEPENDENCIES, SHAREDATA, PREPARECALC, PERFORMCALC, SETSTEP, SETSTEPLONG, SETATOMSNLOCAL, SETATOMSGATINDEX, SETATOMSFGATINDEX, SETATOMSCONTIGUOUS, CREATEFULLLIST, GETFULLLIST, CLEARFULLLIST, READ, CLEAR, GETAPIVERSION, INIT, SETREALPRECISION, SETMDLENGTHUNITS, SETMDENERGYUNITS, SETMDTIMEUNITS, SETNATURALUNITS, SETNOVIRIAL, SETPLUMEDDAT, SETMPICOMM, SETMPIFCOMM, SETMPIMULTISIMCOMM, SETNATOMS, SETTIMESTEP, SETMDENGINE, SETLOG, SETLOGFILE, SETSTOPFLAG, GETEXCHANGESFLAG, SETEXCHANGESSEED, SETNUMBEROFREPLICAS, GETEXCHANGESLIST, RUNFINALJOBS, ISENERGYNEEDED, GETBIAS, SETKBT, SETRESTART };
 
 namespace PLMD{
 
@@ -134,6 +134,7 @@ PlumedMain::PlumedMain():
   word_map["isEnergyNeeded"]=ISENERGYNEEDED;
   word_map["getBias"]=GETBIAS;
   word_map["setKbT"]=SETKBT;
+  word_map["setRestart"]=SETRESTART;
 }
 
 PlumedMain::~PlumedMain(){
@@ -300,7 +301,7 @@ void PlumedMain::cmd(const std::string & word,void*val){
         break;
       case GETAPIVERSION:
         CHECK_NULL(val,word);
-        *(static_cast<int*>(val))=2;
+        *(static_cast<int*>(val))=3;
         break;
       // commands which can be used only before initialization:
       case INIT:
@@ -374,6 +375,11 @@ void PlumedMain::cmd(const std::string & word,void*val){
         CHECK_NOTINIT(initialized,word);
         CHECK_NULL(val,word);
         atoms.setKbT(val);
+        break;
+      case SETRESTART: /* ADDED WITH API==3 */
+        CHECK_NOTINIT(initialized,word);
+        CHECK_NULL(val,word);
+        if(*static_cast<int*>(val)!=0) restart=true;
         break;
       case SETMDENGINE:
         CHECK_NOTINIT(initialized,word);
@@ -503,7 +509,6 @@ void PlumedMain::readInputFile(std::string str){
   ifile.link(*this);
   ifile.open(str);
   std::vector<std::string> words;
-  exchangePatterns.setFlag(exchangePatterns.NONE);
   while(Tools::getParsedLine(ifile,words) && words[0]!="ENDPLUMED") readInputWords(words);
   log.printf("END FILE: %s\n",str.c_str());
   log.flush();	

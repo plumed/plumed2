@@ -92,11 +92,15 @@ Erik Lindahl, 2008-10-07.
  */
 
 #include "simple.h"
-#if defined(__PLUMED_INTERNAL_LAPACK) || defined (__PLUMED_INTERNAL_BLAS)
+#if ! defined (__PLUMED_HAS_EXTERNAL_BLAS)
 #include "def_internal.h"
 namespace PLMD{
 namespace blas{
 #else
+namespace PLMD{
+namespace blas{
+}
+}
 #include "def_external.h"
 extern "C"{
 #endif
@@ -240,7 +244,7 @@ int
 
 
 }
-#if defined(__PLUMED_INTERNAL_LAPACK) || defined (__PLUMED_INTERNAL_BLAS)
+#if ! defined (__PLUMED_HAS_EXTERNAL_BLAS)
 }
 #endif
 

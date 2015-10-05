@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -38,7 +38,7 @@ This class just provides things which are common among OFile and IFile
 
 class FileBase{
 /// Copy constructor is disabled (private and unimplemented)
-  FileBase(const FileBase&);
+  explicit FileBase(const FileBase&);
 /// Assignment operator is disabled (private and unimplemented)
   FileBase& operator=(const FileBase&);
 protected:

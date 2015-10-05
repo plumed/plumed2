@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -71,7 +71,7 @@ protected:
 /// Transfer frame i in the underlying action to the object we are going to analyze
   void selectFrame( const unsigned& , MultiReferenceBase* );
 public:
-  LandmarkSelectionBase( const LandmarkSelectionOptions& lo );
+  explicit LandmarkSelectionBase( const LandmarkSelectionOptions& lo );
   virtual ~LandmarkSelectionBase();
 /// Check everything was read in
   void checkRead() const ;

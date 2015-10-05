@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -68,8 +68,8 @@ private:
   double offset;
 public:
   static void registerKeywords( Keywords& keys );
-  UWalls( const ActionOptions& );
-  void performTask();
+  explicit UWalls( const ActionOptions& );
+  double calcPotential( const double& val, double& df ) const ;
 };
 
 PLUMED_REGISTER_ACTION(UWalls,"UWALLS")
@@ -95,23 +95,16 @@ ManyRestraintsBase(ao)
   checkRead();
 }
 
-void UWalls::performTask(){
-  double value=getValue(); 
-  double uscale = (value - at + offset)/eps;
+double UWalls::calcPotential( const double& val, double& df ) const { 
+  double uscale = (val - at + offset)/eps;
   if( uscale > 0. ){
      double power = pow( uscale, exp );
-     double f = ( kappa / eps ) * exp * power / uscale;
+     df = ( kappa / eps ) * exp * power / uscale;
 
-     setElementValue( 0, kappa*power ); setElementValue( 1, getWeight() );
-     // Add derivatives 
-     applyChainRuleForDerivatives( f );
-    
-     return;
+     return kappa*power;
   }
 
-  // We need do nothing more if this is not true
-  setElementValue( 1, 0.0 );
-  return;
+  return 0.0;
 }
 
 }

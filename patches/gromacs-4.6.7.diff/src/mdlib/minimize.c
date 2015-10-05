@@ -800,6 +800,7 @@ static void evaluate_energy(FILE *fplog, gmx_bool bVerbose, t_commrec *cr,
      */
     /* PLUMED */
     int plumedNeedsEnergy=0;
+    matrix plumed_vir;
     if(plumedswitch){
       long int lstep=count; (*plumedcmd)(plumedmain,"setStepLong",&count);
       (*plumedcmd) (plumedmain,"setPositions",&ems->s.x[mdatoms->start][0]);
@@ -808,8 +809,9 @@ static void evaluate_energy(FILE *fplog, gmx_bool bVerbose, t_commrec *cr,
       (*plumedcmd) (plumedmain,"setBox",&ems->s.box[0][0]);
       (*plumedcmd) (plumedmain,"prepareCalc",NULL);
       (*plumedcmd) (plumedmain,"setForces",&ems->f[mdatoms->start][0]);
-      (*plumedcmd) (plumedmain,"setVirial",&force_vir[0][0]);
       (*plumedcmd) (plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
+      clear_mat(plumed_vir);
+      (*plumedcmd) (plumedmain,"setVirial",&plumed_vir[0][0]);
     }
     /* END PLUMED */
     do_force(fplog, cr, inputrec,
@@ -823,8 +825,13 @@ static void evaluate_energy(FILE *fplog, gmx_bool bVerbose, t_commrec *cr,
     /* PLUMED */
     if(plumedswitch){
       if(plumedNeedsEnergy) {
+        msmul(force_vir,2.0,plumed_vir);
         (*plumedcmd) (plumedmain,"setEnergy",&enerd->term[F_EPOT]);
         (*plumedcmd) (plumedmain,"performCalc",NULL);
+        msmul(plumed_vir,0.5,force_vir);
+      } else {
+        msmul(plumed_vir,0.5,plumed_vir);
+        m_add(force_vir,plumed_vir,force_vir);
       }
     }
     /* END PLUMED */
