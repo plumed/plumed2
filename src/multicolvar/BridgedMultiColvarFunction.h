@@ -69,6 +69,8 @@ public:
   virtual void completeTask( const unsigned& curr, MultiValue& invals, MultiValue& outvals ) const=0;
 /// Get the central atom position
   Vector retrieveCentralAtomPos();
+/// Get the index of the central atom
+  AtomNumber getAbsoluteIndexOfCentralAtom( const unsigned& i ) const ;
 /// We need our own calculate numerical derivatives here
   void calculateNumericalDerivatives( ActionWithValue* a=NULL );
   void apply(){};
@@ -78,7 +80,6 @@ public:
   Vector calculateCentralAtomPosition(){ plumed_error(); }
   double compute( const unsigned& tindex, AtomValuePack& myvals ) const { plumed_error(); }
   Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const ;
-  void updateActiveAtoms( AtomValuePack& myatoms ) const { plumed_error(); }
   void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
   void applyBridgeForces( const std::vector<double>& bb );
   Vector getCentralAtomPos( const unsigned& curr );
@@ -113,6 +114,11 @@ Vector BridgedMultiColvarFunction::getPositionOfAtomForLinkCells( const unsigned
 inline
 Vector BridgedMultiColvarFunction::getCentralAtomPos( const unsigned& curr ){
   return mycolv->getCentralAtomPos( curr );
+}
+
+inline
+AtomNumber BridgedMultiColvarFunction::getAbsoluteIndexOfCentralAtom(const unsigned& i) const {
+  return mycolv->getAbsoluteIndexOfCentralAtom(i); 
 }
 
 }

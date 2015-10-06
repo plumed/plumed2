@@ -63,20 +63,7 @@ public:
   static void registerKeywords( Keywords& keys );
 /// Get the position of atom iatom
   const Vector & getPosition(unsigned) const;
-/// Calculate the multicolvar
-  virtual void calculate();
-/// Update the atoms that have derivatives
-  void updateActiveAtoms( AtomValuePack& myatoms ) const ;
-/// This is used in MultiColvarBase only - it is used to setup the link cells
-  Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const ;
-/// Atoms are always active
-  bool isCurrentlyActive( const unsigned& bno, const unsigned& code ){ return true; }
 };
-
-inline
-Vector MultiColvar::getPositionOfAtomForLinkCells( const unsigned& iatom ) const {
-  return ActionAtomistic::getPosition( iatom );
-}
 
 }
 }

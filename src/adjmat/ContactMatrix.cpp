@@ -52,7 +52,7 @@ public:
 /// Create the ith, ith switching function
   void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::string& desc );
 /// This actually calculates the value of the contact function
-  void calculateWeight( multicolvar::AtomValuePack& myatoms ) const ;
+  void calculateWeight( const unsigned& taskCode, multicolvar::AtomValuePack& myatoms ) const ;
 /// This does nothing
   double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
 };
@@ -79,19 +79,44 @@ Action(ao),
 AdjacencyMatrixBase(ao)
 {
   // Read in the atomic positions
-  unsigned ncols=0; std::vector<AtomNumber> atoms; 
-  parseAtomList("ATOMSA",-1,true,atoms);
-  if( getNumberOfNodeTypes()!=0 ){
-     ncols=getNumberOfNodes(); ncol_t=getNumberOfNodeTypes(); 
-     parseAtomList("ATOMSB",-1,true,atoms); 
-     switchingFunction.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes()-ncol_t );
+  std::vector<unsigned> dims(2); std::vector<AtomNumber> atoms; 
+  bool check=parseAtomList("ATOMSA",-1,atoms);
+  if( check ){
+     std::vector<AtomNumber> all_atoms;
+     if( atoms.size()>0 ){
+         plumed_assert( colvar_label.size()==0 ); 
+         dims[0]=atoms.size(); ncol_t=0;
+     } else {
+         dims[0]=colvar_label.size();
+         ncol_t=getNumberOfNodeTypes();
+     }
+     for(unsigned i=0;i<atoms.size();++i) all_atoms.push_back( atoms[i] );
+     parseAtomList("ATOMSB",-1,atoms); 
+     for(unsigned i=0;i<atoms.size();++i) all_atoms.push_back( atoms[i] );
+     if( atoms.size()>0 ){ 
+         plumed_assert( colvar_label.size()==0 ); dims[1]=atoms.size();
+         if( ncol_t==0 ) switchingFunction.resize( 1, 1 ); 
+         else switchingFunction.resize( ncol_t, 1 );
+     } else {
+         dims[1]=colvar_label.size()-dims[0];
+         switchingFunction.resize( ncol_t, getNumberOfNodeTypes()-ncol_t ); 
+     }
+     // And request the atoms involved in this colvar
+     requestAtoms( all_atoms, false, false, dims );
   } else {
-     parseAtomList("ATOMS",-1,true,atoms); ncol_t=0;
+     parseAtomList("ATOMS",-1,atoms); ncol_t=0;
      switchingFunction.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
+     if( atoms.size()>0 ){
+         plumed_assert( colvar_label.size()==0 ); dims[0]=dims[1]=atoms.size();
+     } else {
+         dims[0]=dims[1]=colvar_label.size();
+     }
+     // And request the atoms involved in this colvar
+     requestAtoms( atoms, true, false, dims );
   }
   // Read in the switching functions
   parseConnectionDescriptions("SWITCH",ncol_t);
- 
+
   // Find the largest sf cutoff
   double sfmax=switchingFunction(0,0).get_dmax();
   for(unsigned i=0;i<switchingFunction.nrows();++i){
@@ -102,9 +127,6 @@ AdjacencyMatrixBase(ao)
   }
   // And set the link cell cutoff
   setLinkCellCutoff( sfmax );
-
-  // And request the atoms involved in this colvar
-  requestAtoms( atoms, true, ncols );
 }
 
 void ContactMatrix::setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::string& desc ){
@@ -114,7 +136,7 @@ void ContactMatrix::setupConnector( const unsigned& id, const unsigned& i, const
   log.printf("  %d th and %d th multicolvar groups must be within %s\n",i+1,j+1,(switchingFunction(i,j).description()).c_str() );
 }
 
-void ContactMatrix::calculateWeight( multicolvar::AtomValuePack& myatoms ) const {
+void ContactMatrix::calculateWeight( const unsigned& taskCode, multicolvar::AtomValuePack& myatoms ) const {
   Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
   double dfunc, sw = switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) - ncol_t ).calculate( distance.modulo(), dfunc );
   myatoms.setValue(0,sw);

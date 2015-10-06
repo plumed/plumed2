@@ -56,28 +56,23 @@ MultiColvarBase(ao)
   if( !mymatrix )  error( matname + " does not calculate an adjacency matrix");
   log.printf("  using matrix calculated by action %s \n",matname.c_str() );
 
-  // And get the atom requests
-  ActionAtomistic* matoms = dynamic_cast<ActionAtomistic*>( myvess );
-  plumed_assert( matoms ); requestAtoms( matoms->getAbsoluteIndexes() );
-  // And add the dependency after the atom requst ( atom request resets dependences )
-  addDependency( myvess );
-}
-
-void MatrixSummationBase::calculate(){
-  runAllTasks();
 }
 
 void MatrixSummationBase::updateActiveAtoms( multicolvar::AtomValuePack& myatoms ) const {
   myatoms.updateDynamicList();
-}
+} 
 
 bool MatrixSummationBase::isCurrentlyActive( const unsigned& bno, const unsigned& code ){
-  return (mymatrix->function)->myinputdata.isCurrentlyActive( bno, code );
+  return (mymatrix->function)->isCurrentlyActive( bno, code );
 }
 
 Vector MatrixSummationBase::getPositionOfAtomForLinkCells( const unsigned& iatom ) const {
-  return (mymatrix->function)->myinputdata.getPosition(iatom);
+  return (mymatrix->function)->getPositionOfAtomForLinkCells(iatom);
 }
+
+AtomNumber MatrixSummationBase::getAbsoluteIndexOfCentralAtom(const unsigned& i) const {
+  return (mymatrix->function)->getAbsoluteIndexOfCentralAtom(i);
+} 
 
 }
 }

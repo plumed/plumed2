@@ -60,7 +60,7 @@ unsigned AdjacencyMatrixVessel::getNumberOfColumns() const {
 }
 
 unsigned AdjacencyMatrixVessel::getNumberOfStoredValues() const {
-  if( symmetric ){ unsigned nnodes=function->getNumberOfNodes(); return 0.5*nnodes*(nnodes-1); }
+  if( symmetric ){ unsigned nnodes=function->ablocks[0].size(); return 0.5*nnodes*(nnodes-1); }
   return function->ablocks[0].size()*function->ablocks[1].size();
 }
 
@@ -83,7 +83,7 @@ AdjacencyMatrixBase* AdjacencyMatrixVessel::getMatrixAction() {
 void AdjacencyMatrixVessel::getMatrixIndices( const unsigned& code, unsigned& i, unsigned& j ) const {
   std::vector<unsigned> myatoms; function->decodeIndexToAtoms( function->getTaskCode(code), myatoms ); 
   i=myatoms[0]; j=myatoms[1];   
-  if( !symmetric ) j -= function->ablocks[0].size(); // Have to remove number of columns as returns number in ablocks[1]  
+  if( !undirectedGraph() ) j -= function->ablocks[0].size(); // Have to remove number of columns as returns number in ablocks[1]  
 }
 
 void AdjacencyMatrixVessel::retrieveMatrix( DynamicList<unsigned>& myactive_elements, Matrix<double>& mymatrix ){
