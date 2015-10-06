@@ -17,9 +17,6 @@ env:
   - PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes
 # cppcheck
   - CPPCHECK=yes
-matrix:
-  allow_failures:
-    - env: CPPCHECK=yes
 # Possible additional variables:
 #   VALGRIND=yes to make valgrind tests, only when log contains string [valgrind]
 install:
