@@ -49,14 +49,29 @@ void Bias::registerKeywords( Keywords& keys ){
   keys.add("hidden","STRIDE","the frequency with which the forces due to the bias should be calculated.  This can be used to correctly set up multistep algorithms");
 }
 
-void Bias::turnOnDerivatives(){
-  error("a bias cannot be used as a collective variable");
-}
-
 void Bias::apply(){
   if(onStep()) for(unsigned i=0;i<getNumberOfArguments();++i){
     getPntrToArgument(i)->addForce(getStride()*outputForces[i]);
   }
+
+// additional forces on the bias component
+
+  std::vector<double>   f(getNumberOfArguments(),0.0);
+  bool at_least_one_forced=false;
+
+  std::vector<double> forces( getNumberOfArguments() );
+  for(int i=0;i<getNumberOfComponents();++i){
+    if( getPntrToComponent(i)->applyForce( forces ) ){
+       at_least_one_forced=true;
+       for(unsigned j=0;j<forces.size();j++){ f[j]+=forces[j]; }
+    }
+  }
+  if(at_least_one_forced && !onStep()) error("you are biasing a bias with an inconsistent STRIDE");
+
+  if(at_least_one_forced) for(unsigned i=0;i<getNumberOfArguments();++i){
+    getPntrToArgument(i)->addForce(f[i]);
+  }
+
 }
 
 }
