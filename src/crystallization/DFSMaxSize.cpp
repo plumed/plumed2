@@ -92,7 +92,7 @@ void DFSMaxCluster::registerKeywords( Keywords& keys ){
   keys.use("WTOL"); keys.use("USE_ORIENTATION");
   keys.remove("LOWMEM"); keys.use("HIGHMEM");
   keys.add("compulsory","TRANSFORM","none","the switching function to use to convert the crystallinity parameter to a number between zero and one");
-  keys.addFlag("INVERSE_TRANSFORM",false,"when TRANSFORM appears alone the input symmetry functions, \\fx\\f$ are transformed used \\f$1-s(x)\\f$ "
+  keys.addFlag("INVERSE_TRANSFORM",false,"when TRANSFORM appears alone the input symmetry functions, \\f$x\\f$ are transformed used \\f$1-s(x)\\f$ "
                                          "where \\f$s(x)\\f$ is a switching function.  When this option is used you instead transform using \\f$s(x)\\f$ only.");
 }
 
