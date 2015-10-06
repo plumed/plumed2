@@ -82,7 +82,7 @@ myclusters(NULL)
   parse("CLUSTER",clustr);
   if( clustr<1 ) error("cannot look for a cluster larger than the largest cluster");
   if( clustr>myclusters->getNumberOfNodes() ) error("cluster selected is invalid - too few atoms in system");
-  log.printf("  outputting atoms in %d th largest cluster found by %s \n",clustr,matname[0].c_str() );
+  log.printf("  outputting atoms in %u th largest cluster found by %s \n",clustr,matname[0].c_str() );
 
   // Read in stuff for finding nearest neighbours 
   double rcut_surf=0; parse("RCUT_SURF",rcut_surf);
@@ -108,18 +108,18 @@ void DFSOutput::update(){
           if( atoms[i] ) nats++;
       }
 
-     ofile.printf("CLUSTERING RESULTS AT TIME %f : NUMBER OF ATOMS IN %d TH LARGEST CLUSTER EQUALS %d \n",getTime(),clustr,myatoms.size() );
+     ofile.printf("CLUSTERING RESULTS AT TIME %f : NUMBER OF ATOMS IN %u TH LARGEST CLUSTER EQUALS %u \n",getTime(),clustr,myatoms.size() );
      ofile.printf("INDICES OF ATOMS : ");
      for(unsigned i=0;i<myatoms.size();++i) ofile.printf("%d ",(myclusters->getAbsoluteIndexOfCentralAtom(myatoms[i])).index());
      ofile.printf("\n");
-     ofile.printf("NUMBER OF ATOMS INCLUDING SURFACE ATOMS EQUALS %d \n",nats);
+     ofile.printf("NUMBER OF ATOMS INCLUDING SURFACE ATOMS EQUALS %u \n",nats);
      ofile.printf("INDICES OF ATOMS : ");
      for(unsigned i=0;i<myclusters->getNumberOfNodes();++i){
          if( atoms[i] ) ofile.printf("%d ",(myclusters->getAbsoluteIndexOfCentralAtom(i)).index());
      }
      ofile.printf("\n");
   } else {
-     ofile.printf("CLUSTERING RESULTS AT TIME %f : NUMBER OF ATOMS IN %d TH LARGEST CLUSTER EQUALS %d \n",getTime(),clustr,myatoms.size() );
+     ofile.printf("CLUSTERING RESULTS AT TIME %f : NUMBER OF ATOMS IN %u TH LARGEST CLUSTER EQUALS %u \n",getTime(),clustr,myatoms.size() );
      ofile.printf("INDICES OF ATOMS : ");
      for(unsigned i=0;i<myatoms.size();++i) ofile.printf("%d ",(myclusters->getAbsoluteIndexOfCentralAtom(myatoms[i])).index());
      ofile.printf("\n");
