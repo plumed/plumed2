@@ -650,7 +650,7 @@ last_step_warn_grid(0)
    if(walkers_mpi) log.printf("  Multiple walkers active using MPI communnication\n"); 
   }
 
-  addComponent("bias"); componentIsNotPeriodic("bias");
+  addComponentWithDerivatives("bias"); componentIsNotPeriodic("bias");
   if( rewf_grid_.size()>0 ){ 
    addComponent("rbias"); componentIsNotPeriodic("rbias");
    addComponent("rct"); componentIsNotPeriodic("rct"); 
@@ -1155,6 +1155,7 @@ void MetaD::calculate()
   for(unsigned i=0;i<ncv;++i){
    const double f=-der[i];
    setOutputForce(i,f);
+   getPntrToComponent("bias")->addDerivative(i,der[i]);
   }
 
   delete [] der;
