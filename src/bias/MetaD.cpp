@@ -684,7 +684,7 @@ last_step_warn_grid(0)
 
 // Tiwary-Parrinello reweighting factor
   if(rewf_grid_.size()>0){
-   log.printf("  the c(t) reweighting factor will be calculated every %d hills\n",rewf_ustride_);
+   log.printf("  the c(t) reweighting factor will be calculated every %u hills\n",rewf_ustride_);
    vector<double> dummy; dummy.assign(getNumberOfArguments(),1.0);
    getPntrToComponent("rct")->set(reweight_factor);
   }
