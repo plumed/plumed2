@@ -456,26 +456,24 @@ launched.
 \section installingalmost Installing PLUMED with ALMOST
 
 In order to used some of the NMR based collective variables (\ref CS2BACKBONE and \ref CH3SHIFTS) PLUMED needs to be linked with ALMOST.
-To do this the free package ALMOST v.2.1 MUST be dowloaded via SVN (svn checkout svn://svn.code.sf.net/p/almost/code/ almost-code).
-ALMOST 2.1 can be found in branches/almost-2.1/ and can be compiled:
+To do this the free package ALMOST v.2.2 MUST be dowloaded via SVN (svn checkout svn://svn.code.sf.net/p/almost/code/branches/almost-2.2-plumed almost-2.2).
+Compile it:
 
 \warning ALMOST needs SQLITE3 and  GZIP installed on your computer.
 \warning ALMOST cannot be installed in the same folder of the source code, use --prefix to install it in a different folder
 
 \verbatim
-> ./configure --prefix="wherever you want it" CXXFLAGS="-O3 -fPIC" CFLAGS="-O3 -fPIC" 
+> ./configure --prefix="wherever you want it" CXXFLAGS="-O3 -fPIC" CFLAGS="-O3 -fPIC" LIBS=-llapack 
 > make
 > make install
 \endverbatim
-
+Configure can complain about lapack and RDCs but it doesn't matter.
 Sometimes ALMOST can give errors related to the automake tools. To fix them it is often enough to execute
 \verbatim
 > autoreconf -fi
 > automake
 \endverbatim
 and then repeat the configuration and compilation instructions.
-
-PLUMED will not use the RDCs module of ALMOST so you can ignore the warning about LAPACK.
 
 Once ALMOST is installed, PLUMED 2 can then be configured with ALMOST enabled: 
 
