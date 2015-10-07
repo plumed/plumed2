@@ -393,6 +393,7 @@ uppI_(-1), lowI_(-1), doInt_(false),
 isFirstStep(true),
 reweight_factor(0.0),
 rewf_ustride_(1),
+work_(0),
 last_step_warn_grid(0)
 {
   // parse the flexible hills
@@ -685,7 +686,6 @@ last_step_warn_grid(0)
 // Tiwary-Parrinello reweighting factor
   if(rewf_grid_.size()>0){
    log.printf("  the c(t) reweighting factor will be calculated every %u hills\n",rewf_ustride_);
-   vector<double> dummy; dummy.assign(getNumberOfArguments(),1.0);
    getPntrToComponent("rct")->set(reweight_factor);
   }
 
