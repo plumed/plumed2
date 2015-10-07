@@ -60,7 +60,7 @@ install:
   - if test "$ALMOST" == yes ; then sudo apt-get install libatlas-base-dev      ; fi
   - if test "$ALMOST" == yes ; then ./.travis/install.almost                     ; fi
   - if test "$ALMOST" == yes ; then ENALMOST="--enable-almost"                 ; fi
-  - if test "$ALMOST" == yes ; then export INCLUDE="$HOME/opt/include/almost:$INCLUDE"  ; fi
+  - if test "$ALMOST" == yes ; then PLUMED_CPPFLAGS="-I$HOME/opt/include -I$HOME/opt/include/almost"  ; fi
 # moreover, we hardcode path to dynamic library, required for xdrfile to link properly
 # I do it only when LD_LIBRARY_PATH is non blank, since otherwise clang gives problems
   - if test -n "$LD_LIBRARY_PATH" ; then PLUMED_LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH" ; fi
