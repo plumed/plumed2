@@ -5489,7 +5489,6 @@ fi
 mpi_found=ko
 # optional libraries follow
 if test $mpi == true ; then
-  mpi_found=ok
 
     found=ko
     ac_fn_cxx_check_header_mongrel "$LINENO" "mpi.h" "ac_cv_header_mpi_h" "$ac_includes_default"
@@ -5512,6 +5511,9 @@ fi
 $as_echo "$as_me: WARNING: cannot enable __PLUMED_MPI" >&2;}
     fi
 
+  if test "x$ac_cv_func_MPI_Init" = xyes; then
+    mpi_found=ok
+  fi
 else
   mpi_found=ko
 fi

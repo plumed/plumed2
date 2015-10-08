@@ -164,7 +164,7 @@ void MultiColvar::readTwoGroups( const std::string& key1, const std::string& key
   plumed_assert( all_atoms.fullSize()==0 );
   ablocks.resize( 2 ); current_atoms.resize( 2 );
 
-  std::vector<AtomNumber> t1, t2; std::vector<unsigned> newlist; 
+  std::vector<AtomNumber> t1, t2;
   parseAtomList(key1,t1); parseAtomList(key2,t2);
   if( t1.empty() ) error("missing atom specification " + key1);
   if ( t2.empty() ) error("missing atom specification " + key2); 
@@ -200,7 +200,7 @@ void MultiColvar::readThreeGroups( const std::string& key1, const std::string& k
   plumed_assert( all_atoms.fullSize()==0 );
   ablocks.resize( 3 ); current_atoms.resize( 3 );
 
-  std::vector<AtomNumber> t1, t2, t3; std::vector<unsigned> newlist;
+  std::vector<AtomNumber> t1, t2, t3;
   parseAtomList(key1,t1); parseAtomList(key2,t2);
   if( t1.empty() ) error("missing atom specification " + key1);
   if( t2.empty() ) error("missing atom specification " + key2);
@@ -292,7 +292,7 @@ void MultiColvar::readSpeciesKeyword( int& natoms ){
               log.printf("\n");
           }
       } else if( !( keywords.exists("SPECIESA") && keywords.exists("SPECIESB") ) ){
-          std::vector<unsigned> newlist; usespecies=false; verbose_output=false; // Make sure we don't do verbose output
+          usespecies=false; verbose_output=false; // Make sure we don't do verbose output
           log.printf("  involving atoms : ");
           current_atoms.resize(1); ablocks.resize(1); ablocks[0].resize( t.size() ); 
           for(unsigned i=0;i<t.size();++i){ 

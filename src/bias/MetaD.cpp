@@ -134,6 +134,10 @@ Additional material and examples can be also found in the tutorials:
 - \ref belfast-7
 - \ref belfast-8
 
+Notice that at variance with PLUMED 1.3 it is now straightforward to apply concurrent metadynamics
+as done e.g. in Ref. \cite gil2015enhanced . This indeed can be obtained by using the METAD
+action multiple times in the same input file.
+
 \par Examples
 The following input is for a standard metadynamics calculation using as
 collective variables the distance between atoms 3 and 5
@@ -653,6 +657,17 @@ last_step_warn_grid(0)
     if(i==mw_id_) ifiles[i]->close();
    }
   }
+
+  comm.Barrier();
+
+// this barrier is needed when using walkers_mpi
+// to be sure that all files have been read before
+// backing them up
+// it should not be used when walkers_mpi is false otherwise
+// it would introduce troubles when using replicas without METAD
+// (e.g. in bias exchange with a neutral replica)
+// see issue #168 on github
+  if(comm.Get_rank()==0 && walkers_mpi) multi_sim_comm.Barrier();
 
 // open hills file for writing
   hillsOfile_.link(*this);
