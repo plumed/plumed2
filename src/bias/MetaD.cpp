@@ -134,10 +134,10 @@ presented in \cite Tiwary_jp504920s.
 The expression used to calculate c(t) follows directly from using Eq. 12 in 
 Eq. 3 in \cite Tiwary_jp504920s and gives smoother results than equivalent Eqs. 13 
 and Eqs. 14 in that paper. The c(t) is given by the rct component while the bias 
-normalized by c(t) is given by rbias component (rbias=bias-ct) which can be used 
+normalized by c(t) is given by the rbias component (rbias=bias-ct) which can be used 
 to obtain a reweighted histogram.
 The calculation of c(t) is enabled by using the keyword REWEIGHTING_NGRID where the grid used for the 
-calculation is specified. 
+calculation is specified.   This grid should have a size that is equal or larger than the grid given in GRID_BIN./
 By default c(t) is updated every 50 Gaussian hills but this 
 can be changed by using the REWEIGHTING_NHILLS keyword. 
 This option can only be employed together with Well-Tempered Metadynamics and requires that 
@@ -224,6 +224,29 @@ where  WALKERS_N is the total number of walkers, WALKERS_ID is the
 id of the present walker (starting from 0 ) and the WALKERS_DIR is the directory  
 where all the walkers are located. WALKERS_RSTRIDE is the number of step between 
 one update and the other. 
+
+\par
+The c(t) reweighting factor can be calculated on the fly using the equations
+presented in \cite Tiwary_jp504920s as described above.
+This is enabled by using the keyword REWEIGHTING_NGRID where the grid used for
+the calculation is set. The number of grid points given in REWEIGHTING_NGRID
+should be equal or larger than the number of grid points given in GRID_BIN.
+\verbatim
+METAD ...
+ LABEL=metad
+ ARG=phi,psi SIGMA=0.20,0.20 HEIGHT=1.20 BIASFACTOR=5 TEMP=300.0 PACE=500
+ GRID_MIN=-pi,-pi GRID_MAX=pi,pi GRID_BIN=150,150
+ REWEIGHTING_NGRID=150,150
+ REWEIGHTING_NHILLS=20
+... METAD
+\endverbatim
+Here we have asked that the calculation is performed every 20 hills by using
+REWEIGHTING_NHILLS keyword. If this keyword is not given the calculation will
+by default be performed every 50 hills. The c(t) reweighting factor will be given
+in the rct component while the instantaneous value of the bias potential
+normalized using the c(t) reweighting factor is given in the rbias component
+[rbias=bias-c(t)] which can be used to obtain a reweighted histogram or
+free energy surface using the \ref HISTOGRAM analysis.
 
 \par
 The kinetics of the transitions between basins can also be analysed on the fly as
@@ -321,8 +344,8 @@ void MetaD::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   componentsAreNotOptional(keys);
   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
-  keys.addOutputComponent("rbias","REWEIGHTING_NGRID","the instantaneous value of the bias normalized using the c(t) reweighting factor [rbias=bias-c(t)]. This is calculated using the method of Tiwary and Parrinello.");
-  keys.addOutputComponent("rct","REWEIGHTING_NGRID","the reweighting factor c(t) calculated according to the method of Tiwary and Parrinello.");
+  keys.addOutputComponent("rbias","REWEIGHTING_NGRID","the instantaneous value of the bias normalized using the c(t) reweighting factor [rbias=bias-c(t)]. This component can be used to obtain a reweighted histogram.");
+  keys.addOutputComponent("rct","REWEIGHTING_NGRID","the reweighting factor c(t).");
   keys.addOutputComponent("work","default","accumulator for work");
   keys.addOutputComponent("acc","ACCELERATION","the metadynamics acceleration factor");
   keys.use("ARG");
@@ -338,8 +361,8 @@ void MetaD::registerKeywords(Keywords& keys){
   keys.add("optional","GRID_MAX","the upper bounds for the grid");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
-  keys.add("optional","REWEIGHTING_NGRID","calculate the c(t) reweighting factor using the method of Tiwary and Parrinello and use that to obtain the corrected bias. Here you should specify the number of grid points required in each dimension." "This method is not compatible with metadynamics not on a grid.");
-  keys.add("optional","REWEIGHTING_NHILLS","how many Gaussian hills should be deposited between calculating the reweighting factor. The default is to do this every 50 hills.");
+  keys.add("optional","REWEIGHTING_NGRID","calculate the c(t) reweighting factor and use that to obtain the normalized bias [rbias=bias-c(t)]. Here you should specify the number of grid points required in each dimension. The number of grid points should be equal or larger to the number of grid points given in GRID_BIN." "This method is not compatible with metadynamics not on a grid.");
+  keys.add("optional","REWEIGHTING_NHILLS","how many Gaussian hills should be deposited between calculating the c(t) reweighting factor. The default is to do this every 50 hills.");
   keys.addFlag("GRID_SPARSE",false,"use a sparse grid to store hills");
   keys.addFlag("GRID_NOSPLINE",false,"don't use spline interpolation with grids");
   keys.add("optional","GRID_WSTRIDE","write the grid to a file every N steps");
