@@ -1,4 +1,4 @@
-#! FIELDS time parameter mu1corr mu1corrn
+#! FIELDS time parameter mu2 mu2n
  0.000000 0 -0.04437 -0.04437
  0.000000 1 0.02715 0.02715
  0.000000 2 -0.15834 -0.15834

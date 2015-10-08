@@ -56,10 +56,11 @@ install:
   - if test "$MAKEDOC" == yes ; then sudo apt-get update -qq                     ; fi
   - if test "$MAKEDOC" == yes ; then sudo apt-get install -y doxygen doxygen-latex ; fi
   - if test "$VALGRIND" == yes ; then sudo apt-get install -y valgrind           ; fi
-  - if test "$LAPACK" == yes  ; then sudo apt-get install libatlas-base-dev      ; fi
+  - if test "$LAPACK" == yes ; then sudo apt-get install libatlas-base-dev      ; fi
+  - if test "$ALMOST" == yes ; then sudo apt-get install libatlas-base-dev      ; fi
   - if test "$ALMOST" == yes ; then ./.travis/install.almost                     ; fi
   - if test "$ALMOST" == yes ; then ENALMOST="--enable-almost"                 ; fi
-  - if test "$ALMOST" == yes ; then PLUMED_CPPFLAGS="$INCLUDE -I/usr/local/include -I/usr/local/include/almost"  ; fi
+  - if test "$ALMOST" == yes ; then PLUMED_CPPFLAGS="-I$HOME/opt/include -I$HOME/opt/include/almost"  ; fi
 # moreover, we hardcode path to dynamic library, required for xdrfile to link properly
 # I do it only when LD_LIBRARY_PATH is non blank, since otherwise clang gives problems
   - if test -n "$LD_LIBRARY_PATH" ; then PLUMED_LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH" ; fi
