@@ -553,6 +553,7 @@ last_step_warn_grid(0)
             if( !getPntrToArgument(j)->isPeriodic() ) rewf_grid_[j] += 1; 
          }
      }
+     if( adaptive_==FlexibleBin::diffusion || adaptive_==FlexibleBin::geometry) warning("reweighting has not been proven to work with adaptive Gaussians");
      rewf_ustride_=50; parse("REWEIGHTING_NHILLS",rewf_ustride_);
   }
 
