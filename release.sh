@@ -19,8 +19,11 @@ confirm () {
 
 update_changelog() {
   echo $1 $2 $3
-  awk -v version="$2" -v date="$3" '{
-    if($1=="Version" && $2==version){
+  awk -v version="$2" -v shortversion="$3" -v date="$4" '{
+    if(version == shortversion ".0" && $1=="Version" && $2==shortversion){
+      print "Version " shortversion " (" date ")"
+      done=1
+    } else if($1=="Version" && $2==version){
       print "Version " version " (" date ")"
       done=1
     } else if(!done && $1=="Unreleased" && $2=="changes"){
@@ -108,7 +111,7 @@ git checkout v$shortversion
 
 set -e
 if ! test "$VALIDATED" ; then
-  update_changelog CHANGES/v$shortversion.txt $version "coming soon"
+  update_changelog CHANGES/v$shortversion.txt $version $shortversion "coming soon"
   echo 
   msg="Travis tests for v$version
 
@@ -133,7 +136,7 @@ if ! test "$VALIDATED" ; then
   echo "  http://plumed.github.io/doc-v$shortversion"
   echo "In case of success, relaunch this script as \"./release.sh --validated\""
 else
-  update_changelog CHANGES/v$shortversion.txt $version "$(date '+%b %e, %Y' | sed 's/  / /g')"
+  update_changelog CHANGES/v$shortversion.txt $version $shortversion "$(date '+%b %e, %Y' | sed 's/  / /g')"
   {
     grep  \# VERSION 
     echo $version
