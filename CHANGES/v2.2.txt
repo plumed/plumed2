@@ -2,7 +2,7 @@
 
 @page CHANGES-2-2 Version 2.2
 
-Version 2.2 (October 5, 2015)
+Version 2.2 (coming soon)
 ----------------------------
 
 Include all fixes in branch 2.1 indicated in \ref CHANGES-2-1 .
@@ -59,6 +59,7 @@ Changes from version 2.1 which are relevant for users:
 - New features for existing actions:
   - Keywords UPDATE_FROM and UPDATE_UNTIL to limit update step in a defined time window, available only for actions where it would be useful.
   - Keyword UNNORMALIZED for \ref HISTOGRAM.
+  - Possibility to use Tiwary-Parrinello reweighting for \ref METAD
   - Keywords for \ref GROUP (REMOVE, SORT, UNIQUE) to allow more flexible editing of groups.
   - \ref DUMPATOMS now supports dumping xtc and trr files (requires xdrfile library).
   - \ref driver can now read xtc and trr files also with xdrfile library.
