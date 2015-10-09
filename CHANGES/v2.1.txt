@@ -215,7 +215,7 @@ For developers:
 - Improved make cppcheck options.
 - Fixes in developer documentation.
 
-Version 2.1.4 (Oct 5, 2015)
+Version 2.1.4 (Oct 9, 2015)
 -----------------------------
 
 For users:
