@@ -78,7 +78,7 @@ public:
   explicit Read(const ActionOptions&);
   ~Read();
   void prepare();
-  void apply(){ plumed_assert( ignore_forces ); }
+  void apply(){}
   void calculate();
   void update();
   std::string getFilename() const;
