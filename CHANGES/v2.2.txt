@@ -2,7 +2,7 @@
 
 @page CHANGES-2-2 Version 2.2
 
-Version 2.2 (October 5, 2015)
+Version 2.2 (October 9, 2015)
 ----------------------------
 
 Include all fixes in branch 2.1 indicated in \ref CHANGES-2-1 .
