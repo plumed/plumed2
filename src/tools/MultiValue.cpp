@@ -106,7 +106,7 @@ void MultiValue::quotientRule( const unsigned& nder, const double& denom, const 
   unsigned obase=oder*nderivatives, nbase=nder*nderivatives;
 
   if( fabs(denom)>epsilon ){ wpref=1.0/denom; } 
-  else{ plumed_assert(fabs(values[nder])<epsilon); wpref=1.0; }
+  else{ wpref=1.0; }
 
   double pref = values[nder]*wpref*wpref;
   for(unsigned j=0;j<ndert;++j){
