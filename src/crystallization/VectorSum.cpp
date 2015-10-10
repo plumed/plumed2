@@ -29,6 +29,8 @@ namespace PLMD {
 namespace crystallization {
 
 class VectorSum : public vesselbase::FunctionVessel {
+private:
+  unsigned nder;
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
@@ -52,7 +54,8 @@ void VectorSum::reserveKeyword( Keywords& keys ){
 }
 
 VectorSum::VectorSum( const vesselbase::VesselOptions& da ) :
-FunctionVessel(da)
+FunctionVessel(da),
+nder(0)
 {
 }
 
@@ -64,22 +67,24 @@ void VectorSum::resize(){
   unsigned ncomp=getAction()->getNumberOfQuantities() - 2;
 
   if( getAction()->derivativesAreRequired() ){
-     unsigned nder=getAction()->getNumberOfDerivatives();
+     nder=getAction()->getNumberOfDerivatives();
      resizeBuffer( (1+nder)*ncomp ); getFinalValue()->resizeDerivatives( nder );
   } else {
-     resizeBuffer(ncomp);
+     nder=0; resizeBuffer(ncomp);
   }
 }
 
 bool VectorSum::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
-  unsigned ncomp=getAction()->getNumberOfQuantities()-2, nder=getAction()->getNumberOfDerivatives();
+  unsigned ncomp=getAction()->getNumberOfQuantities()-2;
 
   double weight=myvals.get(0); 
   plumed_dbg_assert( weight>=getTolerance() );
   buffer[bufstart] += weight;
+  for(unsigned i=0;i<ncomp;++i) buffer[bufstart + i*(1+nder)] += weight*myvals.get(2+i);
+  if( !getAction()->derivativesAreRequired() ) return true;
+
   for(unsigned i=0;i<ncomp;++i){
-      double colvar=myvals.get(2+i);  
-      buffer[bufstart + i*(1+nder)] += weight*colvar;
+      double colvar=myvals.get(2+i);
       myvals.chainRule( 2+i, i, 1, 0, weight, bufstart, buffer );
       if( diffweight ) myvals.chainRule( 0, i, 1, 0, colvar, bufstart, buffer );
   }
@@ -89,7 +94,7 @@ bool VectorSum::calculate( const unsigned& current, MultiValue& myvals, std::vec
 void VectorSum::finish( const std::vector<double>& buffer ){
   unsigned ncomp=getAction()->getNumberOfQuantities()-2;
 
-  double sum=0; unsigned nder=getAction()->getNumberOfDerivatives();
+  double sum=0; 
   for(unsigned i=0;i<ncomp;++i){ 
      double tmp = buffer[bufstart+(nder+1)*i]; 
      sum+=tmp*tmp; 
