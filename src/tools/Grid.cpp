@@ -859,4 +859,35 @@ Grid Grid::project(const std::vector<std::string> & proj , WeightBase *ptr2obj )
      return smallgrid; 
 }
 
+double Grid::integrate( std::vector<unsigned>& npoints ){
+  plumed_dbg_assert( npoints.size()==dimension_ ); plumed_assert( dospline_ );
+
+  unsigned ntotgrid=1; double box_vol=1.0;
+  std::vector<double> ispacing( npoints.size() );
+  for(unsigned j=0;j<dimension_;++j){
+      if( !pbc_[j] ){
+         ispacing[j] = ( max_[j] - dx_[j] - min_[j] ) / static_cast<double>( npoints[j] );
+         npoints[j]+=1;
+      } else {
+         ispacing[j] = ( max_[j] - min_[j] ) / static_cast<double>( npoints[j] );
+      } 
+      ntotgrid*=npoints[j]; box_vol*=ispacing[j];
+  }
+
+  std::vector<double> vals( dimension_ );
+  std::vector<unsigned> t_index( dimension_ ); double integral=0.0;
+  for(unsigned i=0;i<ntotgrid;++i){
+      t_index[0]=(i%npoints[0]);
+      unsigned kk=i;
+      for(unsigned j=1;j<dimension_-1;++j){ kk=(kk-t_index[j-1])/npoints[i-1]; t_index[j]=(kk%npoints[i]); }
+      if( dimension_>=2 ) t_index[dimension_-1]=((kk-t_index[dimension_-1])/npoints[dimension_-2]);
+
+      for(unsigned j=0;j<dimension_;++j) vals[j]=min_[j] + t_index[j]*ispacing[j];
+
+      integral += getValue( vals ); 
+  }
+
+  return box_vol*integral;
+}
+
 }
