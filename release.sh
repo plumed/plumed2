@@ -161,6 +161,7 @@ else
   echo "git archive -o plumed-$version.tgz --prefix plumed-$version/ v$version"
   echo "***"
   confirm || exit
+  git add CHANGES/v$shortversion.txt
   git add VERSION
   git commit --allow-empty -m "$msg"
   git tag v$version
