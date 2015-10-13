@@ -150,6 +150,7 @@ else
   echo "push it to origin and create a tgz file"
   echo "I will use the following commands:"
   echo "***"
+  echo "git add CHANGES/v$shortversion.txt"
   echo "git add VERSION"
   echo "git commit --allow-empty -m \"$msg\""
   echo "git tag v$version"
