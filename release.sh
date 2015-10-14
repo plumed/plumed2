@@ -153,6 +153,7 @@ else
   echo "push it to origin and create a tgz file"
   echo "I will use the following commands:"
   echo "***"
+  echo "git add CHANGES/v$shortversion.txt"
   echo "git add VERSION"
   echo "git commit --allow-empty -m \"$msg\""
   echo "git tag v$version"
@@ -160,6 +161,7 @@ else
   echo "git archive -o plumed-$version.tgz --prefix plumed-$version/ v$version"
   echo "***"
   confirm || exit
+  git add CHANGES/v$shortversion.txt
   git add VERSION
   git commit --allow-empty -m "$msg"
   git tag v$version
