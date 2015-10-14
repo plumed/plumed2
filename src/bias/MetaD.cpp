@@ -34,6 +34,7 @@
 #include "tools/File.h"
 #include <iostream>
 #include <limits>
+#include <ctime>
 
 #define DP2CUTOFF 6.25
 
@@ -885,7 +886,7 @@ void MetaD::writeGaussian(const Gaussian& hill, OFile&file){
   double height=hill.height;
   if(welltemp_){height*=biasf_/(biasf_-1.0);}
   file.printField("height",height).printField("biasf",biasf_);
-  if(mw_n_>1) file.printField("clock",int(time(0)));
+  if(mw_n_>1) file.printField("clock",int(std::time(0)));
   file.printField();
 }
 
