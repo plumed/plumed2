@@ -36,12 +36,12 @@ interested in how many atoms are present in the largest cluster.
 This collective variable is a function of a multicolvar and as such it must take a multicolvar as input. 
 At first this may seem rather peverse but after a while one hopefully will come to appreciate just how 
 many different properties of the cluster simply by using DFSCLUSTERING in tandem with the different multicolvars.  
-As examples of some things that could be done you could use DFSCLUSTERING in tandem with \ref COORDINATIONNUMBERS 
+As examples of some things that could be done you could use DFSCLUSTERING in tandem with \ref COORDINATIONNUMBER 
 to look at the coordination numbers of the atoms in the largest cluster or you could use DFSCLUSTERING in tandem 
 with \ref Q6 to look at the crystallinity in the largest cluster.  Regardless of what you do, however, this works
 because a multicolvar is essentially calculating a large number of (we will call them) symmetry functions and 
 each of these symmetry functions can be ascribed to a particular location in space.  As an example the symmetry
-functions calculated by the command \ref COORDINATIONNUMBERS SPECIES=1-10 are the coordination numbers of atoms
+functions calculated by the command \ref COORDINATIONNUMBER SPECIES=1-10 are the coordination numbers of atoms
 1 through 10.  In other words, the first of these symmetry functions measures the number of atoms that are within
 a certain cutoff of atom 1, the second measures the number of atoms that are within a cutoff of atom 2 and so on.
 In terms of location it seems logical to suppose that the first of these symmetry functions is located at atom 1's 
@@ -76,23 +76,23 @@ cluster.
 
 \par Examples
 
-In this example the \ref FCCCUBIC multicolvar is used to determine how similar the environment around each atom is
+In this example the \ref FCCUBIC multicolvar is used to determine how similar the environment around each atom is
 to an FCC unit cell.  DFS clustering is used with the adjacency matrix constructed using the switching function 
 specified by SWITCH={CUBIC D_0=0.4   D_MAX=0.5} - in pratice this means the clustering algorithm views two atoms
 as connected as long as they are within 0.5 nm of each other (as the tolerance is machine epsilon).  The final 
-quantity calculated measures the number of atoms in the largest cluster that have an FCCCUBIC parameter greater than 0.035.
+quantity calculated measures the number of atoms in the largest cluster that have an FCCUBIC parameter greater than 0.035.
 
 \verbatim
 cubic1: FCCUBIC SPECIES=1-1000 SWITCH={CUBIC D_0=0.4  D_MAX=0.5} 
 clust: DFSCLUSTERING DATA=cubic1 CLUSTER=1 SWITCH={CUBIC D_0=0.4   D_MAX=0.5} MORE_THAN={CUBIC D_0=0.035  D_MAX=0.045}
 \endverbatim
 
-This second example adds a layer of complexity to the previous one.  Once again the \ref FCCCUBIC multicolvar is used 
+This second example adds a layer of complexity to the previous one.  Once again the \ref FCCUBIC multicolvar is used 
 to determine how similar the environment around each atom is to an FCC unit cell.  However, in this case the intervening
 \ref MFILTER_MORE means that when the clustering is performed by DFSCLUSTERING only those atoms from the \ref FCCUBIC action
 that have an fcccubic switching function greater than 0.045 are explicitly clustered using the DFS algorithm.  As described on 
 the manual page for \ref MFILTER_MORE this command takes each of the various symmetry functions input by the input multicolvar (in this 
-case the FCCCUBIC multicolvar labelled cubic1) and ascribes each of them a weight, \f$w_i\f$ using:
+case the FCCUBIC multicolvar labelled cubic1) and ascribes each of them a weight, \f$w_i\f$ using:
 \f[
 w_i = 1.0 - s( v_i ) 
 \f]
@@ -101,7 +101,7 @@ SWITCH keyword.  Within the DFSCLUSTERING these continuous switching functions h
 switching functions, which is done through the WTOL keyword.  The value given to this keyword ensures that any symmetry function
 calculated by cubic1 whose weight (calculated by MFILTER_MORE) is less than 0.03 is ignored during the DFS clustering.  
 
-Once again the final quantity to be calculated here is the number of atoms in the largest cluster that have an FCCCUBIC 
+Once again the final quantity to be calculated here is the number of atoms in the largest cluster that have an FCCUBIC 
 parameter greater than 0.035.  There is a very important and subtle distinction between what is being calculated here and
 what was calculated in the first example, however.  The difference is best understood by considering an example.  Imagine we had
 a very large extended but largely disordered cluster of atoms.  By virtue of sheer blind luck a few widely-spaced atoms in this disordered
