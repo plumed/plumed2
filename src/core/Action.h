@@ -198,6 +198,15 @@ public:
 /// The set of all Actions is applied in backward order.
   virtual void apply()=0;
 
+/// Before Update.
+/// This is a special method that is called just
+/// before the update() method. It can be used by
+/// actions that want to do something irrespectively
+/// of the fact that update() is active or not.
+/// In other words, this is *always* called, even when action
+/// is not active.
+  virtual void beforeUpdate(){}
+
 /// Update.
 /// This method is called one time per step.
 /// The set of all Actions is updated in forward order.

@@ -28,6 +28,7 @@
 #include <vector>
 #include <set>
 #include <map>
+#include <stack>
 
 
 // !!!!!!!!!!!!!!!!!!!!!!    DANGER   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
@@ -139,6 +140,10 @@ private:
 /// Stuff to make plumed stop the MD code cleanly
   int* stopFlag;
   bool stopNow;
+
+/// Stack for update flags.
+/// Store information used in class \ref UpdateIf
+  std::stack<bool> updateFlags;
 
 public:
 /// Flag to switch off virial calculation (for debug and MD codes with no barostat)
@@ -295,6 +300,13 @@ public:
 
 /// Access to exchange patterns
   ExchangePatterns& getExchangePatterns(){return exchangePatterns;}
+
+/// Push a state to update flags
+  void updateFlagsPush(bool);
+/// Pop a state from update flags
+  void updateFlagsPop();
+/// Get top of update flags
+  bool updateFlagsTop();
 };
 
 /////
@@ -338,6 +350,21 @@ bool PlumedMain::getExchangeStep()const{
 inline
 void PlumedMain::resetActive(bool active){
   this->active=active;
+}
+
+inline
+void PlumedMain::updateFlagsPush(bool on){
+  updateFlags.push(on);
+}
+
+inline
+void PlumedMain::updateFlagsPop(){
+  updateFlags.pop();
+}
+
+inline
+bool PlumedMain::updateFlagsTop(){
+  return updateFlags.top();
 }
 
 }

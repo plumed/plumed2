@@ -79,6 +79,7 @@ PlumedMain::PlumedMain():
   log.setLinePrefix("PLUMED: ");
   stopwatch.start();
   stopwatch.pause();
+  updateFlags.push(true);
   word_map["setBox"]=SETBOX;
   word_map["setPositions"]=SETPOSITIONS;
   word_map["setMasses"]=SETMASSES;
@@ -697,7 +698,8 @@ void PlumedMain::justApply(){
   if(detailedTimers) stopwatch.start("5C Update");
 // update step (for statistics, etc)
   for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();++p){
-    if((*p)->isActive() && (*p)->checkUpdate()) (*p)->update();
+    (*p)->beforeUpdate();
+    if((*p)->isActive() && (*p)->checkUpdate() && updateFlagsTop()) (*p)->update();
   }
   if(detailedTimers) stopwatch.stop("5C Update");
 // Check that no action has told the calculation to stop
