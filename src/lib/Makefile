@@ -54,7 +54,7 @@ PLUMED_MAIN_STATIC := $(PLUMED_LIBDIR)plumed
 PLUMED_MAIN_SHARED := $(PLUMED_LIBDIR)plumed-shared
 PLUMED_MAIN_RUNTIME := $(PLUMED_LIBDIR)plumed-runtime
 
-.PHONY: all links $(DIRS) $(DIRSLINKS) all-static Plumed.cmake Plumed.inc
+.PHONY: all links $(DIRS) $(DIRSLINKS) all-static Plumed.cmake Plumed.inc install
 ifdef SOEXT
 all:
 	$(MAKE) dirslinks
