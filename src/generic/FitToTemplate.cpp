@@ -113,7 +113,7 @@ class FitToTemplate:
 
         
 public:
-  FitToTemplate(const ActionOptions&ao);
+  explicit FitToTemplate(const ActionOptions&ao);
   ~FitToTemplate();
   static void registerKeywords( Keywords& keys );
   void calculate();

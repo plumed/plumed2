@@ -255,8 +255,8 @@ void OFile::backupFile( const std::string& bstring, const std::string& fname ){
    if(std::getenv("PLUMED_MAXBACKUP")) Tools::convert(std::getenv("PLUMED_MAXBACKUP"),maxbackup);
    if(maxbackup>0 && (!comm || comm->Get_rank()==0)){
      FILE* ff=std::fopen(const_cast<char*>(fname.c_str()),"r");
-     FILE* fff=NULL;
      if(ff){
+       FILE* fff=NULL;
        std::fclose(ff);
        std::string backup;
        size_t found=fname.find_last_of("/\\");

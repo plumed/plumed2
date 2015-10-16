@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -30,17 +30,13 @@ namespace vesselbase {
 
 class Between : public FunctionVessel {
 private:
-  unsigned wnum;
-  bool norm;
-  std::vector<double> df;
   HistogramBead hist;
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
-  Between( const VesselOptions& da );
-  std::string function_description();
-  bool calculate();
-  void finish();
+  explicit Between( const VesselOptions& da );
+  std::string value_descriptor();
+  double calcTransform( const double& val, double& dv ) const ;
   double getCutoff();
 };
 

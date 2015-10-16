@@ -46,17 +46,17 @@ Calculate distances in the plane perpendicular to an axis
 class InPlaneDistances : public MultiColvar {
 public:
   static void registerKeywords( Keywords& keys );
-  InPlaneDistances(const ActionOptions&);
+  explicit InPlaneDistances(const ActionOptions&);
 // active methods:
-  virtual double compute();
+  virtual double compute(const unsigned& tindex, AtomValuePack& myatoms ) const ; 
   bool isPeriodic(){ return false; }
-  Vector getCentralAtom();
 };
 
 PLUMED_REGISTER_ACTION(InPlaneDistances,"INPLANEDISTANCES")
 
 void InPlaneDistances::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
+  keys.use("ALT_MIN"); keys.use("LOWEST"); keys.use("HIGHEST");
   keys.use("MEAN"); keys.use("MIN"); keys.use("MAX"); keys.use("LESS_THAN"); 
   keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
   keys.add("atoms","VECTORSTART","The first atom position that is used to define the normal to the plane of interest");
@@ -109,24 +109,19 @@ PLUMED_MULTICOLVAR_INIT(ao)
   }
 }
 
-double InPlaneDistances::compute(){
-  Vector normal=getSeparation( getPosition(1), getPosition(2) );
-  Vector dir=getSeparation( getPosition(1), getPosition(0) );
+double InPlaneDistances::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
+  Vector normal=getSeparation( myatoms.getPosition(1), myatoms.getPosition(2) );
+  Vector dir=getSeparation( myatoms.getPosition(1), myatoms.getPosition(0) );
   PLMD::Angle a; Vector ddij, ddik; double angle=a.compute(normal,dir,ddij,ddik);
   double sangle=sin(angle), cangle=cos(angle); 
   double dd=dir.modulo(), invdd=1.0/dd, val=dd*sangle;
 
-  addAtomsDerivatives( 0, dd*cangle*ddik + sangle*invdd*dir );
-  addAtomsDerivatives( 1, -dd*cangle*(ddik+ddij) - sangle*invdd*dir );
-  addAtomsDerivatives( 2, dd*cangle*ddij );
-  addBoxDerivatives( -dd*cangle*(Tensor(normal,ddij)+Tensor(dir,ddik)) - sangle*invdd*Tensor(dir,dir) );
+  myatoms.addAtomsDerivatives( 1, 0, dd*cangle*ddik + sangle*invdd*dir );
+  myatoms.addAtomsDerivatives( 1, 1, -dd*cangle*(ddik+ddij) - sangle*invdd*dir );
+  myatoms.addAtomsDerivatives( 1, 2, dd*cangle*ddij );
+  myatoms.addBoxDerivatives( 1, -dd*cangle*(Tensor(normal,ddij)+Tensor(dir,ddik)) - sangle*invdd*Tensor(dir,dir) );
 
   return val;
-}
-
-Vector InPlaneDistances::getCentralAtom(){
-   addCentralAtomDerivatives( 0, Tensor::identity() );
-   return getPosition(0);
 }
 
 }

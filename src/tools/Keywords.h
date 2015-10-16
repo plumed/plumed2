@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -38,7 +38,7 @@ class Keywords{
   class KeyType{
   public:
     enum {hidden,compulsory,flag,optional,atoms} style;
-    KeyType( const std::string& type );
+    explicit KeyType( const std::string& type );
     void setStyle( const std::string& type );
     bool isCompulsory() const { return (style==compulsory); }
     bool isFlag() const { return (style==flag); }

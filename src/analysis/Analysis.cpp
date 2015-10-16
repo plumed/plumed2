@@ -77,6 +77,9 @@ void Analysis::registerKeywords( Keywords& keys ){
   keys.add("hidden","REUSE_DATA_FROM","eventually this will allow you to analyse the same set of data multiple times");
   keys.add("hidden","IGNORE_REWEIGHTING","this allows you to ignore any reweighting factors");
   keys.reserveFlag("NOMEMORY",false,"analyse each block of data separately");
+  keys.use("RESTART");
+  keys.use("UPDATE_FROM");
+  keys.use("UPDATE_UNTIL");
   ActionWithVessel::registerKeywords( keys ); keys.remove("TOL"); 
 }
 
@@ -137,12 +140,19 @@ argument_names(getNumberOfArguments())
              std::vector<Value*> arg( getArguments() );
              log.printf("  reweigting using the following biases ");
              for(unsigned j=0;j<all.size();j++){
-                 std::string flab; flab=all[j]->getLabel() + ".bias";
+                 std::string flab; flab=all[j]->getLabel() + ".rbias";
                  if( all[j]->exists(flab) ){ 
                     biases.push_back( all[j]->copyOutput(flab) ); 
                     arg.push_back( all[j]->copyOutput(flab) ); 
                     log.printf(" %s",flab.c_str()); 
-                 }
+                 } else {
+                     std::string flab2; flab2=all[j]->getLabel() + ".bias";
+                     if( all[j]->exists(flab2) ){
+                        biases.push_back( all[j]->copyOutput(flab2) );
+                        arg.push_back( all[j]->copyOutput(flab2) );
+                        log.printf(" %s",flab2.c_str());
+                     }
+                 } 
              }
              log.printf("\n");
              if( biases.empty() ) error("you are asking to reweight bias but there does not appear to be a bias acting on your system");

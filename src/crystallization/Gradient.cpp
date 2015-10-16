@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2014,2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -79,9 +79,9 @@ nbins(3)
   }
 
   // Find number of quantities
-  if( getPntrToMultiColvar()->isDensity() ) vend=1;
-  else if( getPntrToMultiColvar()->getNumberOfQuantities()==5 ) vend=1;
-  else vend= 1 + getPntrToMultiColvar()->getNumberOfQuantities()-5; // +1 is for weight 
+  if( getPntrToMultiColvar()->isDensity() ) vend=2;
+  else if( getPntrToMultiColvar()->getNumberOfQuantities()==2 ) vend=2;
+  else vend = getPntrToMultiColvar()->getNumberOfQuantities();  
   nquantities = vend + nbins[0] + nbins[1] + nbins[2];
 
   // Output some nice information
@@ -89,30 +89,28 @@ nbins(3)
   std::transform( functype.begin(), functype.end(), functype.begin(), tolower );
   log.printf("  calculating gradient of %s in %s direction \n",functype.c_str(), direction.c_str() ); 
 
-  parse("SIGMA",sigma); 
-  bead.isNotPeriodic(); std::string kerneltype; 
-  parse("KERNEL",kerneltype); bead.setKernelType( kerneltype );
+  parse("SIGMA",sigma); parse("KERNEL",kerneltype); 
   checkRead(); requestAtoms(atom);
 
   // And setup the vessel
   std::string input; addVessel( "GRADIENT", input, -1 );
-  // And resize atoms
-  finishTaskListUpdate();
-}
-
-unsigned Gradient::getCentralAtomElementIndex(){
-  plumed_error();
+  // And resize everything
+  readVesselKeywords();
 }
 
 void Gradient::setupRegions(){
 //  if( !getPbc().isOrthorombic() ) error("cell must be orthorhombic when using gradient");
 }
 
-void Gradient::calculateAllVolumes(){
-  Vector cpos = pbcDistance( getPosition(0), getPntrToMultiColvar()->retrieveCentralAtomPos() );
-  Vector oderiv, fpos = getPbc().realToScaled( cpos );  
+void Gradient::calculateAllVolumes( const unsigned& curr, MultiValue& outvals ) const {
+  // Setup the bead
+  HistogramBead bead; bead.isNotPeriodic(); bead.setKernelType( kerneltype );  
+
+  Vector cpos = pbcDistance( getPosition(0), getPntrToMultiColvar()->getCentralAtomPos( curr ) );
+  // Note we use the pbc from base multicolvar so that we get numerical derivatives correct
+  Vector oderiv, fpos = (getPntrToMultiColvar()->getPbc()).realToScaled( cpos );  
   
-  Vector deriv; unsigned nbase=vend;
+  Vector deriv; unsigned nbase=vend; std::vector<Vector> refder(1); Tensor vir; vir.zero();
   for(unsigned idir=0;idir<3;++idir){
       deriv[0]=deriv[1]=deriv[2]=0.0;
       double delx = 1.0 / static_cast<double>( nbins[idir] );
@@ -120,10 +118,11 @@ void Gradient::calculateAllVolumes(){
           // Calculate what box we are in
           bead.set( -0.5+jbead*delx, -0.5+(jbead+1)*delx, sigma );
           double weight=bead.calculate( fpos[0], deriv[idir] );
-          oderiv = getPbc().realToScaled( deriv );          
+          oderiv = (getPntrToMultiColvar()->getPbc()).realToScaled( deriv );          
           // Set and derivatives
-          setNumberInVolume( nbase+jbead, weight, oderiv ); 
-          addReferenceAtomDerivatives( nbase+jbead, 0, -oderiv );
+          refder[0]=-oderiv; // vir = -Tensor(cpos,oderiv);
+          setNumberInVolume( nbase+jbead, curr, weight, oderiv, vir, refder, outvals ); 
+//          addReferenceAtomDerivatives( nbase+jbead, 0, -oderiv );
 //          addBoxDerivatives( nbase+jbead, -Tensor(cpos,oderiv) );
       }
       nbase += nbins[idir];

@@ -1,0 +1,17 @@
+# some point "a" in phi/psi space
+a1: CONSTANT VALUE=-1.22173047639603070385 #-70
+a2: CONSTANT VALUE=2.61799387799149436539  #150
+# current point "p" in phi-psi space
+p1: TORSION ATOMS=5,7,9,15
+p2: TORSION ATOMS=7,9,15,17
+
+# p-a vector
+pa1: COMBINE ARG=p1,a1 COEFFICIENTS=1.,-1. PERIODIC=NO
+pa2: COMBINE ARG=p2,a2 COEFFICIENTS=1.,-1. PERIODIC=NO
+
+#trying to get a periodic p-a vector
+pa1m: COMBINE ARG=pa1 COEFFICIENTS=1. PERIODIC=-pi,pi 
+pa2m: COMBINE ARG=pa2 COEFFICIENTS=1. PERIODIC=-pi,pi 
+
+PRINT ARG=a1,a2,p1,p2,pa1,pa2,pa1m,pa2m  STRIDE=1 FMT=%g FILE=colvar
+

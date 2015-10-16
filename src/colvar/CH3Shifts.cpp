@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -123,7 +123,7 @@ class CH3Shifts : public Colvar {
   double len_pl2alm;
   double for_pl2alm;
 public:
-  CH3Shifts(const ActionOptions&);
+  explicit CH3Shifts(const ActionOptions&);
   ~CH3Shifts();
   static void registerKeywords( Keywords& keys );
   virtual void calculate();

@@ -128,7 +128,7 @@ class Atoms
 
 public:
 
-  Atoms(PlumedMain&plumed);
+  explicit Atoms(PlumedMain&plumed);
   ~Atoms();
 
   void init();

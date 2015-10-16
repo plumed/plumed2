@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -509,7 +509,6 @@ void PlumedMain::readInputFile(std::string str){
   ifile.link(*this);
   ifile.open(str);
   std::vector<std::string> words;
-  exchangePatterns.setFlag(exchangePatterns.NONE);
   while(Tools::getParsedLine(ifile,words) && words[0]!="ENDPLUMED") readInputWords(words);
   log.printf("END FILE: %s\n",str.c_str());
   log.flush();	

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -189,7 +189,7 @@ that gives  myhisto_0.dat,  myhisto_1.dat,  myhisto_3.dat etc..
 class CLToolSumHills : public CLTool {
 public:
   static void registerKeywords( Keywords& keys );
-  CLToolSumHills(const CLToolOptions& co );
+  explicit CLToolSumHills(const CLToolOptions& co );
   int main(FILE* in,FILE*out,Communicator& pc);
   string description()const;
 /// find a list of variables present, if they are periodic and which is the period
@@ -242,20 +242,20 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc){
   vector< vector<string> > vcvs;
   vector<string> vpmin;
   vector<string> vpmax;
-  bool vmultivariate;
   string lowI_, uppI_;
   if(dohills){
        // parse it as it was a restart
+       bool vmultivariate;
        findCvsAndPeriodic(hillsFiles[0], vcvs, vpmin, vpmax, vmultivariate, lowI_, uppI_);
   }
 
   vector< vector<string> > hcvs;
   vector<string> hpmin;
   vector<string> hpmax;
-  bool hmultivariate;
  
   vector<std::string> sigma; 
   if(dohisto){
+       bool hmultivariate;
        findCvsAndPeriodic(histoFiles[0], hcvs, hpmin, hpmax, hmultivariate, lowI_, uppI_);
        // here need also the vector of sigmas
        parseVector("--sigma",sigma);
@@ -542,10 +542,10 @@ bool CLToolSumHills::findCvsAndPeriodic(std::string filename, std::vector< std::
           cvs.clear(); pmin.clear(); pmax.clear(); 
           ifile.open(filename);
           ifile.scanFieldList(fields);
-          size_t founds,foundm,foundp;
           bool before_sigma=true;
           for(unsigned i=0;i<fields.size();i++){
               size_t pos = 0;
+              size_t founds,foundm,foundp;
               //found=(fields[i].find("sigma_", pos) || fields[i].find("min_", pos) || fields[i].find("max_", pos) ) ;
               founds=fields[i].find("sigma_", pos)  ;
               foundm=fields[i].find("min_", pos)  ;

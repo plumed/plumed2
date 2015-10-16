@@ -1,0 +1,26 @@
+#! /bin/bash
+
+set -e
+set -x
+
+
+git clone https://github.com/danmar/cppcheck.git
+cd cppcheck
+
+if [ -n "$1" ] ; then
+  echo "installing cppcheck $version"
+  version=$1
+else
+  echo "installing latest doxygen"
+  version=$(git tag | tail -n 1)
+fi
+
+
+git checkout $version
+make -j 4 install CFGDIR="$HOME/opt/share/cppcheck/" CXXFLAGS="-O2 -march=native -mtune=native -Wunreachable-code" PREFIX="$HOME/opt"
+cd ../
+
+cppcheck --version
+
+
+

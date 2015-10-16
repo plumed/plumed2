@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -120,7 +120,7 @@ void KernelFunctions::setData( const std::vector<double>& at, const std::vector<
   center.resize( at.size() ); for(unsigned i=0;i<at.size();++i) center[i]=at[i];
   width.resize( sig.size() ); for(unsigned i=0;i<sig.size();++i) width[i]=sig[i];
   diagonal=false;
-  if (multivariate==false || at.size()==1 ) diagonal=true;
+  if (multivariate==false ) diagonal=true;
 
   // Setup the kernel type
   if(type=="GAUSSIAN" || type=="gaussian"){
@@ -145,7 +145,6 @@ void KernelFunctions::setData( const std::vector<double>& at, const std::vector<
     }
     double volume;
     if( ktype==gaussian ){
-       for(unsigned i=0;i<width.size();++i) det*=width[i];
        volume=pow( 2*pi, 0.5*ncv ) * pow( det, 0.5 );
     } else if( ktype==uniform || ktype==triangular ){
        if( ncv%2==1 ){
@@ -229,10 +228,10 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<do
      Matrix<double> mymatrix( getMatrix() ); 
      for(unsigned i=0;i<mymatrix.nrows();++i){
         double dp_i, dp_j; derivatives[i]=0;
-        dp_i=pos[i]->difference( center[i] ); 
+        dp_i=-pos[i]->difference( center[i] ); 
         for(unsigned j=0;j<mymatrix.ncols();++j){
           if(i==j) dp_j=dp_i;
-          else dp_j=pos[j]->difference( center[j] );
+          else dp_j=-pos[j]->difference( center[j] );
 
           derivatives[i]+=mymatrix(i,j)*dp_j;
           r2+=dp_i*dp_j*mymatrix(i,j);

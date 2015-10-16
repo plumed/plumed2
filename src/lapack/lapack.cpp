@@ -21,7 +21,7 @@ better idea to use the full reference implementation.
 
 Erik Lindahl, 2008-10-07.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#if defined(__PLUMED_INTERNAL_LAPACK) || defined (__PLUMED_INTERNAL_BLAS)
+#if ! defined(__PLUMED_HAS_EXTERNAL_LAPACK)
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
@@ -12206,9 +12206,9 @@ PLUMED_BLAS_F77_FUNC(dlasq5,DLASQ5)(int *i0,
     int i__1;
     double d__1, d__2;
 
-    static double d__;
-    static int j4, j4p2;
-    static double emin, temp;
+    double d__;
+    int j4, j4p2;
+    double emin, temp;
 
     --z__;
 
@@ -31035,9 +31035,9 @@ PLUMED_BLAS_F77_FUNC(slasq5,SLASQ5)(int *i0,
     int i__1;
     float d__1, d__2;
 
-    static float d__;
-    static int j4, j4p2;
-    static float emin, temp;
+    float d__;
+    int j4, j4p2;
+    float emin, temp;
 
     --z__;
 

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2014,2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -41,8 +41,8 @@ private:
   SwitchingFunction sf;
 public:
   static void registerKeywords( Keywords& keys );
-  FilterLess(const ActionOptions& ao);
-  double applyFilter( const double& val, double& df );
+  explicit FilterLess(const ActionOptions& ao);
+  double applyFilter( const double& val, double& df ) const ;
 }; 
 
 PLUMED_REGISTER_ACTION(FilterLess,"MFILTER_LESS")
@@ -79,7 +79,7 @@ MultiColvarFilter(ao)
   checkRead();  
 }
 
-double FilterLess::applyFilter( const double& val, double& df ){
+double FilterLess::applyFilter( const double& val, double& df ) const {
   double f = sf.calculate( val, df ); df*=val;
   return f;
 }

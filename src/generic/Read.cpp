@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -67,6 +67,7 @@ public ActionWithValue
 {
 private:
   bool ignore_time;
+  bool ignore_forces;
   bool cloned_file;
   unsigned nlinesPerStep;
   std::string filename;
@@ -74,7 +75,7 @@ private:
   std::vector<Value*> readvals;
 public:
   static void registerKeywords( Keywords& keys );
-  Read(const ActionOptions&);
+  explicit Read(const ActionOptions&);
   ~Read();
   void prepare();
   void apply(){}
@@ -98,7 +99,11 @@ void Read::registerKeywords(Keywords& keys){
   keys.add("compulsory","FILE","the name of the file from which to read these quantities");
   keys.addFlag("IGNORE_TIME",false,"ignore the time in the colvar file. When this flag is not present read will be quite strict "
                                    "about the start time of the simulation and the stride between frames");
+  keys.addFlag("IGNORE_FORCES",false,"use this flag if the forces added by any bias can be safely ignored.  As an example forces can be "
+                                     "safely ignored if you are doing postprocessing that does not involve outputting forces");
   keys.remove("NUMERICAL_DERIVATIVES");
+  keys.use("UPDATE_FROM");
+  keys.use("UPDATE_UNTIL");
   ActionWithValue::useCustomisableComponents(keys);
 }
 
@@ -107,12 +112,15 @@ Action(ao),
 ActionPilot(ao),
 ActionWithValue(ao),
 ignore_time(false),
+ignore_forces(false),
 nlinesPerStep(1)
 {
   // Read the file name from the input line
   parse("FILE",filename);
   // Check if time is to be ignored
   parseFlag("IGNORE_TIME",ignore_time);
+  // Check if forces are to be ignored
+  parseFlag("IGNORE_FORCES",ignore_forces);
   // Open the file if it is not already opened
   cloned_file=false;
   std::vector<Read*> other_reads=plumed.getActionSet().select<Read*>();
@@ -189,7 +197,8 @@ unsigned Read::getNumberOfDerivatives(){
 }
 
 void Read::turnOnDerivatives(){
-  error("cannot calculate derivatives for colvars that are read in from a file");
+  if( !ignore_forces ) error("cannot calculate derivatives for colvars that are read in from a file.  If you are postprocessing and "
+                             "these forces do not matter add the flag INGORE_FORCES to all READ actions");
 }
 
 void Read::prepare(){

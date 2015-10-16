@@ -27,7 +27,7 @@ namespace PLMD {
 
 class DotProductDistance : public ArgumentOnlyDistance {
 public:
-  DotProductDistance( const ReferenceConfigurationOptions& ro );
+  explicit DotProductDistance( const ReferenceConfigurationOptions& ro );
   void read( const PDB& );
   double calc( const std::vector<Value*>& vals, const std::vector<double>& arg, const bool& squared );
 };

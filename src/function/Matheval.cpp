@@ -103,7 +103,7 @@ class Matheval :
   vector<double> values;
   vector<char*> names;
 public:
-  Matheval(const ActionOptions&);
+  explicit Matheval(const ActionOptions&);
   ~Matheval();
   void calculate();
   static void registerKeywords(Keywords& keys);

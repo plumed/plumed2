@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -28,15 +28,14 @@ namespace vesselbase{
 
 class Min : public FunctionVessel {
 private:
-  std::vector<double> df;
   double beta;
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
-  Min( const VesselOptions& da );
-  std::string function_description();
-  bool calculate();
-  void finish();
+  explicit Min( const VesselOptions& da );
+  std::string value_descriptor();
+  double calcTransform( const double& val, double& dv ) const ;
+  double finalTransform( const double& val, double& dv );
 };
 
 PLUMED_REGISTER_VESSEL(Min,"MIN")
@@ -56,8 +55,7 @@ void Min::reserveKeyword( Keywords& keys ){
 }
 
 Min::Min( const VesselOptions& da ) :
-FunctionVessel(da),
-df(2)
+FunctionVessel(da)
 {
   if( getAction()->isPeriodic() ) error("min is not a meaningful option for periodic variables");
   parse("BETA",beta);
@@ -65,23 +63,19 @@ df(2)
   if( diffweight ) error("can't calculate min if weight is differentiable");
 }
 
-std::string Min::function_description(){
+std::string Min::value_descriptor(){
   std::string str_beta; Tools::convert( beta, str_beta );
   return "the minimum value. Beta is equal to " + str_beta;
 }
 
-bool Min::calculate(){
-  double val=getAction()->getElementValue(0);
-  double dval, f = exp(beta/val); dval=f/(val*val);
-  addValueIgnoringTolerance(0,f);
-  getAction()->chainRuleForElementDerivatives( 0, 0, dval, this );
-  return true;
+double Min::calcTransform( const double& val, double& dv ) const {
+  double f = exp(beta/val); dv=f/(val*val);
+  return f; 
 }
 
-void Min::finish(){
-  double valin=getFinalValue(0); double dist=beta/std::log( valin );
-  setOutputValue( dist ); df[0]=dist*dist/valin; df[1]=0.0;  
-  mergeFinalDerivatives( df );
+double Min::finalTransform( const double& val, double& dv ){
+  double dist=beta/std::log( val );
+  dv = dist*dist/val; return dist;
 }
 
 }

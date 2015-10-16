@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -46,7 +46,7 @@ void Between::reserveKeyword( Keywords& keys ){
 Between::Between( const VesselOptions& da ) :
 FunctionVessel(da)
 { 
-  wnum=getAction()->getIndexOfWeight();
+  usetol=true;
   bool isPeriodic=getAction()->isPeriodic();
   double min, max; std::string str_min, str_max;
   if( isPeriodic ){
@@ -54,56 +54,21 @@ FunctionVessel(da)
       Tools::convert(str_min,min); Tools::convert(str_max,max);
   }
 
-  parseFlag("NORM",norm); std::string errormsg; df.resize(2); 
+  parseFlag("NORM",norm); std::string errormsg; 
 
-  hist.set( getAllInput(),"",errormsg );
+  hist.set( getAllInput(),errormsg );
   if( !isPeriodic ) hist.isNotPeriodic();
   else hist.isPeriodic( min, max ); 
   if( errormsg.size()!=0 ) error( errormsg );
 }
 
-std::string Between::function_description(){
+std::string Between::value_descriptor(){
   if(norm) return "the fraction of values " + hist.description();
   return "the number of values " + hist.description();
 }
 
-bool Between::calculate(){
-  double weight=getAction()->getElementValue(wnum);
-  plumed_dbg_assert( weight>=getTolerance() );
-  double val=getAction()->getElementValue(0);
-  double dval, f = hist.calculate(val, dval);
-
-  bool bigw=addValueUsingTolerance(1,weight);
-  if( !bigw ) return false;
-
-  double contr=weight*f;
-  bool addval=addValueUsingTolerance(0,contr);
-  if( addval ){
-     getAction()->chainRuleForElementDerivatives( 0, 0, weight*dval, this );
-     if(diffweight){
-        getAction()->chainRuleForElementDerivatives( 0, wnum, f, this ); 
-        if(norm) getAction()->chainRuleForElementDerivatives( 1, wnum, 1.0, this );
-     }
-  }
-  return ( contr>getNLTolerance() );
-}
-
-void Between::finish(){
-  double denom=getFinalValue(1);
-  if( norm && diffweight ){ 
-     df[0] = 1.0 / denom;
-     setOutputValue( getFinalValue(0) / denom ); 
-     df[1] = -getFinalValue(0) / ( denom*denom );
-     mergeFinalDerivatives( df );
-  } else if (norm) {
-     df[0] = 1.0 / denom; df[1]=0.0;
-     setOutputValue( getFinalValue(0) / denom );
-     mergeFinalDerivatives( df );
-  } else {
-     setOutputValue( getFinalValue(0) );
-     df[0] = 1.0; df[1]=0.0;
-     mergeFinalDerivatives( df );
-  }
+double Between::calcTransform( const double& val, double& dv ) const {
+  double f = hist.calculate(val, dv); return f; 
 }
 
 double Between::getCutoff(){

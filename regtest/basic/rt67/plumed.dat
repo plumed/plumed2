@@ -1,0 +1,30 @@
+phi:   TORSION ATOMS=5,7,9,15     NOPBC
+psi:   TORSION ATOMS=7,9,15,17    NOPBC
+
+METAD ...
+ ARG=phi,psi
+ SIGMA=0.20,0.20
+ HEIGHT=1.20
+ BIASFACTOR=10
+ TEMP=300.0
+ PACE=500
+ LABEL=metad
+ FILE=HILLS
+ GRID_MIN=-pi,-pi
+ GRID_MAX=pi,pi
+ GRID_BIN=150,150
+ REWEIGHTING_NGRID=150,150
+ REWEIGHTING_NHILLS=1
+... METAD
+
+PRINT ...
+ ARG=phi,psi,metad.bias,metad.rbias,metad.rct
+ STRIDE=500
+ FILE=COLVAR
+ FMT=%8.4f
+... PRINT
+
+
+
+
+

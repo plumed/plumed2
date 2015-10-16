@@ -88,7 +88,7 @@ class Restart :
 {
 public:
   static void registerKeywords( Keywords& keys );
-  Restart(const ActionOptions&ao);
+  explicit Restart(const ActionOptions&ao);
 };
 
 PLUMED_REGISTER_ACTION(Restart,"RESTART")

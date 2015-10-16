@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -280,8 +280,24 @@ vector<string> Tools::ls(const string&d){
   DIR*dir;
   vector<string> result;
   if ((dir=opendir(d.c_str()))){
-    struct dirent *ent;
-    while ((ent = readdir (dir))) if(string(ent->d_name)!="." && string(ent->d_name)!="..") result.push_back(ent->d_name);
+#if defined(__PLUMED_HAS_READDIR_R)
+    struct dirent ent;
+#endif
+    while(true){
+      struct dirent *res;
+#if defined(__PLUMED_HAS_READDIR_R)
+      readdir_r(dir,&ent,&res);
+#else
+// cppcheck complains about this:
+// (portability) Non reentrant function 'readdir' called. For threadsafe applications it is recommended to use the reentrant replacement function 'readdir_r'.
+// since we use it only if readdir_r is not available, I suppress the warning
+// GB
+// cppcheck-suppress nonreentrantFunctionsreaddir
+      res=readdir(dir);
+#endif
+      if(!res) break;
+      if(string(res->d_name)!="." && string(res->d_name)!="..") result.push_back(res->d_name);
+    }
     closedir (dir);
   }
   return result;

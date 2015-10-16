@@ -71,7 +71,7 @@ class COM:
 {
   bool nopbc;
 public:
-  COM(const ActionOptions&ao);
+  explicit COM(const ActionOptions&ao);
   void calculate();
   static void registerKeywords( Keywords& keys );
 };

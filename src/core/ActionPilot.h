@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -43,7 +43,7 @@ class ActionPilot:
 protected:
   int getStride()const;
 public:
-  ActionPilot(const ActionOptions&);
+  explicit ActionPilot(const ActionOptions&);
 /// Create the keywords for actionPilot
   static void registerKeywords(Keywords& keys);
 /// Check if the action is active on this step

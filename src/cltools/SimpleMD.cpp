@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -104,7 +104,7 @@ static void registerKeywords( Keywords& keys ){
   keys.add("compulsory","wrapatoms","false","If true, atomic coordinates are written wrapped in minimal cell");
 }
 
-SimpleMD( const CLToolOptions& co ) :
+explicit SimpleMD( const CLToolOptions& co ) :
   CLTool(co),
   write_positions_first(true),
   write_statistics_first(true),
@@ -434,7 +434,6 @@ virtual int main(FILE* in,FILE*out,PLMD::Communicator& pc){
   string      outputfile;        // name of file with final configuration (xyz)
   string      trajfile;          // name of the trajectory file (xyz)
   string      statfile;          // name of the file with statistics
-  string      string;            // a string for parsing
 
   double engkin;                 // kinetic energy
   double engconf;                // configurational energy

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -113,12 +113,11 @@ private:
   unsigned myc;
 public:
   static void registerKeywords( Keywords& keys );
-  XDistances(const ActionOptions&);
+  explicit XDistances(const ActionOptions&);
 // active methods:
-  virtual double compute();
+  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
 /// Returns the number of coordinates of the field
   bool isPeriodic(){ return false; }
-  Vector getCentralAtom();
 };
 
 PLUMED_REGISTER_ACTION(XDistances,"XDISTANCES")
@@ -127,8 +126,9 @@ PLUMED_REGISTER_ACTION(XDistances,"ZDISTANCES")
 
 void XDistances::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
-  keys.use("ATOMS");  // keys.use("MAX");
-  keys.use("MEAN"); keys.use("MIN"); keys.use("LESS_THAN"); keys.use("DHENERGY");
+  keys.use("ATOMS");  keys.use("MAX"); keys.use("ALT_MIN"); 
+  keys.use("MEAN"); keys.use("MIN"); keys.use("LESS_THAN");
+  keys.use("LOWEST"); keys.use("HIGHEST"); 
   keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
   keys.add("atoms-1","GROUP","Calculate the distance between each distinct pair of atoms in the group");
   keys.add("atoms-2","GROUPA","Calculate the distances between all the atoms in GROUPA and all "
@@ -151,23 +151,17 @@ PLUMED_MULTICOLVAR_INIT(ao)
   checkRead();
 }
 
-double XDistances::compute(){
+double XDistances::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
    Vector distance; 
-   distance=getSeparation( getPosition(0), getPosition(1) );
+   distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
    const double value=distance[myc];
 
    Vector myvec; myvec.zero(); 
    // And finish the calculation
-   myvec[myc]=+1; addAtomsDerivatives( 1,myvec  );
-   myvec[myc]=-1; addAtomsDerivatives( 0,myvec );
-   addBoxDerivatives( Tensor(distance,myvec) );
+   myvec[myc]=+1; myatoms.addAtomsDerivatives( 1, 1, myvec  );
+   myvec[myc]=-1; myatoms.addAtomsDerivatives( 1, 0, myvec );
+   myatoms.addBoxDerivatives( 1, Tensor(distance,myvec) );
    return value;
-}
-
-Vector XDistances::getCentralAtom(){
-   addCentralAtomDerivatives( 0, 0.5*Tensor::identity() );
-   addCentralAtomDerivatives( 1, 0.5*Tensor::identity() );
-   return 0.5*( getPosition(0) + getPosition(1) );
 }
 
 }

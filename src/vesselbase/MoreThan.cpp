@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -30,16 +30,13 @@ namespace vesselbase{
 
 class MoreThan : public FunctionVessel {
 private:
-  unsigned wnum;
-  std::vector<double> df;
   SwitchingFunction sf;
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
-  MoreThan( const VesselOptions& da );
-  std::string function_description();
-  bool calculate();
-  void finish();
+  explicit MoreThan( const VesselOptions& da );
+  std::string value_descriptor();
+  double calcTransform( const double& val, double& dv ) const ;
 };
 
 PLUMED_REGISTER_VESSEL(MoreThan,"MORE_THAN")
@@ -59,38 +56,20 @@ void MoreThan::reserveKeyword( Keywords& keys ){
 }
 
 MoreThan::MoreThan( const VesselOptions& da ) :
-FunctionVessel(da),
-df(2)
+FunctionVessel(da)
 {
-  wnum=getAction()->getIndexOfWeight();
+  usetol=true; 
   if( getAction()->isPeriodic() ) error("more than is not a meaningful option for periodic variables");
   std::string errormsg; sf.set( getAllInput(), errormsg );
   if( errormsg.size()!=0 ) error( errormsg );
 }
 
-std::string MoreThan::function_description(){
+std::string MoreThan::value_descriptor(){
   return "the number of values more than " + sf.description();
 }
 
-bool MoreThan::calculate(){
-  double weight=getAction()->getElementValue(wnum);
-  plumed_dbg_assert( weight>=getTolerance() );
-
-  double val=getAction()->getElementValue(0);
-  double dval, f = 1.0 - sf.calculate(val, dval); dval*=-val;
-  double contr=weight*f;
-  bool addval=addValueUsingTolerance(0,contr);
-  if(addval){
-    getAction()->chainRuleForElementDerivatives( 0, 0, weight*dval, this );
-    if(diffweight) getAction()->chainRuleForElementDerivatives(0, wnum, f, this);
-  }
-  return ( contr>getNLTolerance() );
-}
-
-void MoreThan::finish(){
-  setOutputValue( getFinalValue(0) ); 
-  df[0]=1.0; df[1]=0.0;
-  mergeFinalDerivatives( df );
+double MoreThan::calcTransform( const double& val, double& dv ) const {
+  double f = 1.0 - sf.calculate(val, dv); dv*=-val; return f; 
 }
 
 }

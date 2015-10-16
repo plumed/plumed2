@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -32,35 +32,32 @@ class AdjacencyMatrixAction;
 class AdjacencyMatrixVessel : public vesselbase::StoreDataVessel {
 friend class VectorMultiColvar;
 private:
-  unsigned nrows;
 /// Pointer to underlying action
   AdjacencyMatrixAction* function;
 /// Has the vessel been finished
   bool finished;
-/// Tempory vector for chain rule
-  std::vector<double> tmpdf;
 public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
-  AdjacencyMatrixVessel( const vesselbase::VesselOptions& );
+  explicit AdjacencyMatrixVessel( const vesselbase::VesselOptions& );
+/// Ensures we use less memory for buffer in final loop
+  void setBufferStart( unsigned& start );
 /// Ensures that finish is set properly
   void prepare();
-/// This does nothing
-  std::string description(){ return ""; }
-/// This recomputes the colvar
-  void recompute( const unsigned& ivec, const unsigned& jstore );
-/// Get the i,j th element of the matrix
-  double getElement( const unsigned& ivec ); 
 /// Set the finished flag true
   void setFinishedTrue();
+/// An overwrite of calculate to stop this being done more than once
+  bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const ;
 /// Finish the calculation
-  void finish();
+  void finish( const std::vector<double>& buffer );
 };
 
 inline
-double AdjacencyMatrixVessel::getElement( const unsigned& ivec ){
-  return getComponent( ivec, 0 );
-} 
+void AdjacencyMatrixVessel::setBufferStart( unsigned& start ){
+  if( finished ){ bufstart=start; }
+  else { Vessel::setBufferStart( start ); } 
+}
+
 
 }
 }

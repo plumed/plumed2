@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -63,7 +63,7 @@ class Units :
 {
 public:
   static void registerKeywords( Keywords& keys );
-  Units(const ActionOptions&ao);
+  explicit Units(const ActionOptions&ao);
 };
 
 PLUMED_REGISTER_ACTION(Units,"UNITS")

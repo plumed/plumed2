@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -40,7 +40,7 @@ private:
 /// This is the vessel that stores the adjacency matrix
   AdjacencyMatrixVessel* mat;
 ///  Tempory vectors for storing vectors
-  std::vector<double> tmpdf, orient0, orient1;
+  std::vector<double> tmpdf;
 /// switching function
   Matrix<SwitchingFunction> switchingFunction;
 /// Which matrix elements have value
@@ -57,15 +57,15 @@ protected:
   unsigned getNumberOfActiveMatrixElements();
 /// Put the indices of the matrix elements in current atoms
   void setMatrixIndexesForTask( const unsigned& ii );
-/// Get an element of the adjacency matrix
-  double getMatrixElement( const unsigned& ielem ) const ;
+/// Get the matrix elements that are active
+  unsigned getActiveMatrixElement( const unsigned& ival ) const ;
 /// Add derivatives to a matrix element
   void addDerivativesOnMatrixElement( const unsigned& ielem, const unsigned& jrow, const double& df, Matrix<double>& der );
 public:
   static void registerKeywords( Keywords& keys );
-  AdjacencyMatrixAction(const ActionOptions&);
-  double compute();
-  void calculateWeight();
+  explicit AdjacencyMatrixAction(const ActionOptions&);
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
+  void calculateWeight( AtomValuePack& myatoms ) const ;
   void doJobsRequiredBeforeTaskList();
 /// Finish the calculation
   virtual void completeCalculation()=0;
@@ -81,13 +81,14 @@ unsigned AdjacencyMatrixAction::getNumberOfActiveMatrixElements(){
 }
 
 inline
-double AdjacencyMatrixAction::getMatrixElement( const unsigned& ielem ) const {
-  return mat->getComponent( active_elements[ielem], 0 );
+AdjacencyMatrixVessel* AdjacencyMatrixAction::getAdjacencyVessel(){
+  return mat;
 }
 
 inline
-AdjacencyMatrixVessel* AdjacencyMatrixAction::getAdjacencyVessel(){
-  return mat;
+unsigned AdjacencyMatrixAction::getActiveMatrixElement( const unsigned& ival ) const {
+  plumed_dbg_assert( ival<active_elements.getNumberActive() );
+  return active_elements[ival];
 }
 
 }

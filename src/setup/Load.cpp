@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -39,9 +39,58 @@ in which case the file is compiled first.
 
 \par Examples
 
+If you have a shared object named extensions.so and want to
+use the functionalities implemented in it within PLUMED you can
+load it with the following syntax
+
 \verbatim
 LOAD FILE=extensions.so
 \endverbatim
+
+As a more practical example, imagine that you want to make a
+small change to one collective variable that is already implemented
+in PLUMED, say \ref DISTANCE . Copy the file `src/colvar/Distance.cpp`
+into your work directory, rename it as `Distance2.cpp`
+and  edit it as you wish. It might be better
+to also replace any occurence of the string DISTANCE within the file
+with DISTANCE2, so that both old and new implementation will be available
+with different names. Then you can compile it into a shared object using
+\verbatim
+> plumed mklib Distance2.cpp
+\endverbatim
+This will generate a file `Distance2.so` (or `Distance2.dylib` on a mac)
+that can be loaded.
+Now you can use your new implementation with the following input
+\verbatim
+# load the new library
+LOAD FILE=Distance2.so
+# compute standard distance
+d: DISTANCE ATOMS=1,10
+# compute modified distance
+d2: DISTANCE2 ATOMS=1,10
+# print them on a file
+PRINT ARG=d,d2 FILE=compare-them
+\endverbatim
+
+You can even skip the initial step and directly feed PLUMED
+with the `Distance2.cpp` file: it will be compiled on the fly.
+\verbatim
+# load the new definition
+# this is a cpp file so it will be compiled
+LOAD FILE=Distance2.cpp
+# compute standard distance
+d: DISTANCE ATOMS=1,10
+# compute modified distance
+d2: DISTANCE2 ATOMS=1,10
+# print them on a file
+PRINT ARG=d,d2 FILE=compare-them
+\endverbatim
+
+This will allow to make quick tests while developing your own
+variables. Of course, after your implementation is ready you might
+want to add it to the PLUMED source tree and recompile 
+the whole PLUMED.
+
 
 */
 //+ENDPLUMEDOC
@@ -51,7 +100,7 @@ class Load :
 {
 public:
   static void registerKeywords( Keywords& keys );
-  Load(const ActionOptions&ao);
+  explicit Load(const ActionOptions&ao);
 };
 
 PLUMED_REGISTER_ACTION(Load,"LOAD")

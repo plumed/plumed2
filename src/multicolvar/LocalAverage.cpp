@@ -84,21 +84,15 @@ class LocalAverage : public MultiColvarFunction {
 private:
 /// Cutoff
   double rcut2;
-/// Ensures we deal with vectors properly
-  unsigned jstart;
-/// The values of the quantities we need to differentiate
-  std::vector<double> values;
 /// The switching function that tells us if atoms are close enough together
   SwitchingFunction switchingFunction;
 public:
   static void registerKeywords( Keywords& keys );
-  LocalAverage(const ActionOptions&);
+  explicit LocalAverage(const ActionOptions&);
 /// We have to overwrite this here
   unsigned getNumberOfQuantities();
 /// Actually do the calculation
-  double compute();
-/// This returns the position of the central atom
-  Vector getCentralAtom();
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
 /// Is the variable periodic
   bool isPeriodic(){ return false; }   
 };
@@ -118,16 +112,14 @@ void LocalAverage::registerKeywords( Keywords& keys ){
   keys.remove("LOWMEM"); keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("LESS_THAN");
   keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
   keys.addFlag("LOWMEM",false,"lower the memory requirements");
+  if( keys.reserved("VMEAN") ) keys.use("VMEAN");
+  if( keys.reserved("VSUM") ) keys.use("VSUM");
 }
 
 LocalAverage::LocalAverage(const ActionOptions& ao):
 Action(ao),
 MultiColvarFunction(ao)
 {
-  // One component for regular multicolvar and nelements for vectormulticolvar
-  if( getBaseMultiColvar(0)->getNumberOfQuantities()==5 ){ values.resize( 1 ); jstart=0; }
-  else { values.resize( getBaseMultiColvar(0)->getNumberOfQuantities() - 5 ); jstart=5; }
-
   // Read in the switching function
   std::string sw, errors; parse("SWITCH",sw);
   if(sw.length()>0){
@@ -142,62 +134,115 @@ MultiColvarFunction(ao)
   log.printf("  averaging over central molecule and those within %s\n",( switchingFunction.description() ).c_str() );
   rcut2 = switchingFunction.get_dmax()*switchingFunction.get_dmax();
   setLinkCellCutoff( switchingFunction.get_dmax() ); buildSymmetryFunctionLists();
-  for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i) getBaseMultiColvar(i)->doNotCalculateDirector();
 }
 
 unsigned LocalAverage::getNumberOfQuantities(){
-  return jstart + values.size();
+  return getBaseMultiColvar(0)->getNumberOfQuantities();
 }
 
-double LocalAverage::compute(){
-  weightHasDerivatives=true;  
+double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
+  double d2, sw, dfunc, nbond=1; CatomPack atom0, atom1;
+  std::vector<double> values( getBaseMultiColvar(0)->getNumberOfQuantities() );
+  MultiValue myder(values.size(), myatoms.getNumberOfDerivatives());
 
-  Vector distance; double d2, sw, dfunc, nbond=1;
+  getVectorForTask( myatoms.getIndex(0), false, values );
+  if( values.size()>2 ){
+      for(unsigned j=2;j<values.size();++j) myatoms.addValue( j, values[j] ); 
+  } else {
+      myatoms.addValue( 1, values[1] ); 
+  }
 
-  getVectorForBaseTask( 0, values ); 
-  for(unsigned j=0;j<values.size();++j) addElementValue( jstart + j, values[j] );
+  Vector catom_pos=myatoms.getPosition(0);
+  if( !doNotCalculateDerivatives() ){
+      atom0=getCentralAtomPackFromInput( myatoms.getIndex(0) );
+      getVectorDerivatives( myatoms.getIndex(0), false, myder );
+      if( values.size()>2 ){
+          for(unsigned j=0;j<myder.getNumberActive();++j){
+              unsigned jder=myder.getActiveIndex(j);
+              for(unsigned k=2;k<values.size();++k) myatoms.addDerivative( k, jder, myder.getDerivative(k,jder) );
+          }
+      } else {
+          for(unsigned j=0;j<myder.getNumberActive();++j){
+              unsigned jder=myder.getActiveIndex(j);
+              myatoms.addDerivative( 1, jder, myder.getDerivative(1,jder) ); 
+          }
+      }
+      myder.clearAll();
+  }
 
-  accumulateWeightedAverageAndDerivatives( 0, 1.0 );
-  for(unsigned i=1;i<getNAtoms();++i){
-     distance=getSeparation( getPositionOfCentralAtom(0), getPositionOfCentralAtom(i) );
-     d2 = distance.modulo2(); 
-     if( d2<rcut2 ){
+  for(unsigned i=1;i<myatoms.getNumberOfAtoms();++i){
+      Vector& distance=myatoms.getPosition(i);  // getSeparation( myatoms.getPosition(0), myatoms.getPosition(i) );
+      if ( (d2=distance[0]*distance[0])<rcut2 &&
+           (d2+=distance[1]*distance[1])<rcut2 &&
+           (d2+=distance[2]*distance[2])<rcut2) {
+
          sw = switchingFunction.calculateSqr( d2, dfunc );
-         Tensor vir(distance,distance); 
-         getVectorForBaseTask( i, values ); 
-         accumulateWeightedAverageAndDerivatives( i, sw );
-         for(unsigned j=0;j<values.size();++j){
-             addElementValue( jstart + j, sw*values[j] );
-             addCentralAtomsDerivatives( 0, jstart+j, (-dfunc)*values[j]*distance );
-             addCentralAtomsDerivatives( i, jstart+j, (+dfunc)*values[j]*distance );
-             MultiColvarBase::addBoxDerivatives( jstart+j, (-dfunc)*values[j]*vir );   // This is a complex number?
+
+         getVectorForTask( myatoms.getIndex(i), false, values );
+         if( values.size()>2 ){
+             for(unsigned j=2;j<values.size();++j) myatoms.addValue( j, sw*values[j] );
+         } else {
+             myatoms.addValue( 1, sw*values[1] );
          }
          nbond += sw;
-         addCentralAtomsDerivatives( 0, 1, (-dfunc)*distance );
-         addCentralAtomsDerivatives( i, 1, (+dfunc)*distance );
-         MultiColvarBase::addBoxDerivatives( 1, (-dfunc)*vir );
+
+         if( !doNotCalculateDerivatives() ){
+             Tensor vir(distance,distance);
+             getVectorDerivatives( myatoms.getIndex(i), false, myder );
+             atom1=getCentralAtomPackFromInput( myatoms.getIndex(i) );
+             if( values.size()>2 ){
+                 for(unsigned j=0;j<myder.getNumberActive();++j){
+                     unsigned jder=myder.getActiveIndex(j);
+                     for(unsigned k=2;k<values.size();++k) myatoms.addDerivative( k, jder, sw*myder.getDerivative(k,jder) );
+                 }
+                 for(unsigned k=2;k<values.size();++k){
+                     myatoms.addComDerivatives( k, (-dfunc)*values[k]*distance, atom0 );
+                     myatoms.addComDerivatives( k, (+dfunc)*values[k]*distance, atom1 );
+                     myatoms.addBoxDerivatives( k, (-dfunc)*values[k]*vir );
+                 }
+             } else {
+                 for(unsigned j=0;j<myder.getNumberActive();++j){
+                     unsigned jder=myder.getActiveIndex(j);
+                     myatoms.addDerivative( 1, jder, sw*myder.getDerivative(1,jder) ); 
+                 }
+                 myatoms.addComDerivatives( 1, (-dfunc)*values[1]*distance, atom0 );
+                 myatoms.addComDerivatives( 1, (+dfunc)*values[1]*distance, atom1 );
+                 myatoms.addBoxDerivatives( 1, (-dfunc)*values[1]*vir );
+             }
+             // And the bit we use to average the vector
+             myatoms.addComDerivatives( 0, (-dfunc)*distance, atom0 );
+             myatoms.addComDerivatives( 0, (+dfunc)*distance, atom1 );
+             myatoms.addBoxDerivatives( 0, (-dfunc)*vir );
+             myder.clearAll();
+         }
      }
   }
 
   // Set the tempory weight
-  setElementValue( 1, nbond ); 
-  // Update all dynamic lists
-  updateActiveAtoms();
-  // Finish the calculation
-  getBaseMultiColvar(0)->finishWeightedAverageCalculation( this );
-
-  // Clear working derivatives
-  clearDerivativesAfterTask(1);
-  // Weight doesn't really have derivatives (just use the holder for convenience)
-  weightHasDerivatives=false; setElementValue( 1, 1.0 );   
+  myatoms.setValue( 0, nbond ); updateActiveAtoms( myatoms );
+  if( values.size()>2){
+      double norm=0;
+      MultiValue& myvals=myatoms.getUnderlyingMultiValue(); 
+      for(unsigned i=2;i<values.size();++i){
+          myvals.quotientRule( i, 0, i );
+          // Calculate length of vector
+          norm+=myvals.get(i)*myvals.get(i);
+      }
+      norm=sqrt(norm); myatoms.setValue(1, norm); double inorm = 1.0 / norm;
+      for(unsigned j=0;j<myvals.getNumberActive();++j){
+         unsigned jder=myvals.getActiveIndex(j);
+         for(unsigned i=2;i<values.size();++i){
+             myvals.addDerivative( 1, jder, myvals.get(i)*inorm*myvals.getDerivative(i,jder) ); 
+         }
+      }
+  } else {
+      myatoms.getUnderlyingMultiValue().quotientRule( 1, 0, 1 ); 
+  }
+  // Weight doesn't really have derivatives (just use the holder for convenience) 
+  myatoms.getUnderlyingMultiValue().clear(0); myatoms.setValue( 0, 1.0 );
    
-  return getElementValue(0);
+  return myatoms.getValue(1);
 }
-
-Vector LocalAverage::getCentralAtom(){
-  addDerivativeOfCentralAtomPos( 0, Tensor::identity() ); 
-  return getPositionOfCentralAtom(0); 
-} 
 
 }
 }

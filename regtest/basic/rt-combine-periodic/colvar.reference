@@ -1,0 +1,11 @@
+#! FIELDS time a1 a2 p1 p2 pa1 pa2 pa1m pa2m
+#! SET min_p1 -pi
+#! SET max_p1 pi
+#! SET min_p2 -pi
+#! SET max_p2 pi
+#! SET min_pa1m -pi
+#! SET max_pa1m pi
+#! SET min_pa2m -pi
+#! SET max_pa2m pi
+ 0.000000 -1.22173 2.61799 -1.66697 3.13967 -0.445236 0.521676 -0.445236 0.521676
+ 0.050000 -1.22173 2.61799 -1.68457 -3.1278 -0.462839 -5.74579 -0.462839 0.537394

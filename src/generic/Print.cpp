@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -71,7 +71,7 @@ public ActionWithArguments
 public:
   void calculate(){}
   void prepare();
-  Print(const ActionOptions&);
+  explicit Print(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
   void apply(){}
   void update();
@@ -89,6 +89,9 @@ void Print::registerKeywords(Keywords& keys){
   keys.add("optional","FILE","the name of the file on which to output these quantities");
   keys.add("optional","FMT","the format that should be used to output real numbers");
   keys.add("hidden","_ROTATE","some funky thing implemented by GBussi");
+  keys.use("RESTART");
+  keys.use("UPDATE_FROM");
+  keys.use("UPDATE_UNTIL");
 }
 
 Print::Print(const ActionOptions&ao):
