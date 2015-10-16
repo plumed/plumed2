@@ -1,0 +1,3 @@
+type=driver
+plumed_needs="matheval"
+arg="--plumed plumed.dat --ixyz trajectory.xyz --dump-forces ff --dump-forces-fmt=%10.6f --dump-full-virial"
