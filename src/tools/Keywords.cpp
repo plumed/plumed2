@@ -184,7 +184,7 @@ void Keywords::add( const std::string & t, const std::string & k, const std::str
 }
 
 void Keywords::add( const std::string & t, const std::string & k, const std::string &  def, const std::string & d ){
-  plumed_assert( !exists(k) && !reserved(k) &&  t=="compulsory" ); // An optional keyword can't have a default
+  plumed_assert( !exists(k) && !reserved(k) &&  (t=="compulsory" || t=="hidden" ); // An optional keyword can't have a default
   types.insert(  std::pair<std::string,KeyType>(k, KeyType(t)) ); 
   documentation.insert( std::pair<std::string,std::string>(k,"( default=" + def + " ) " + d) );
   allowmultiple.insert( std::pair<std::string,bool>(k,false) );
