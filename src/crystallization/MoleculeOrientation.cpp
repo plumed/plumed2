@@ -77,9 +77,8 @@ VectorMultiColvar(ao)
   if( natoms!=2 && natoms!=3 ) error("number of atoms in molecule specification is wrong.  Should be two or three.");
 
   if( all_atoms.size()==0 ) error("No atoms were specified");
-  ActionAtomistic::requestAtoms( all_atoms );
-
   setVectorDimensionality( 3, natoms );
+  ActionAtomistic::requestAtoms( all_atoms );
 
   if( natoms==3 ){
     std::vector<bool> catom_ind(3, false); catom_ind[2]=true;
@@ -90,18 +89,18 @@ VectorMultiColvar(ao)
 void MoleculeOrientation::calculateVector( multicolvar::AtomValuePack& myatoms ) const {
   Vector distance; distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
 
-  myatoms.addAtomsDerivatives( 2, 0, Vector(-1.0,0,0) ); 
-  myatoms.addAtomsDerivatives( 2, 1, Vector(+1.0,0,0) ); 
+  addAtomDerivatives( 2, 0, Vector(-1.0,0,0), myatoms ); 
+  addAtomDerivatives( 2, 1, Vector(+1.0,0,0), myatoms ); 
   myatoms.addBoxDerivatives( 2, Tensor(distance,Vector(-1.0,0,0)) ); 
   myatoms.addValue( 2, distance[0] ); 
 
-  myatoms.addAtomsDerivatives( 3, 0, Vector(0,-1.0,0) ); 
-  myatoms.addAtomsDerivatives( 3, 1, Vector(0,+1.0,0) ); 
+  addAtomDerivatives( 3, 0, Vector(0,-1.0,0), myatoms ); 
+  addAtomDerivatives( 3, 1, Vector(0,+1.0,0), myatoms ); 
   myatoms.addBoxDerivatives( 3, Tensor(distance,Vector(0,-1.0,0)) ); 
   myatoms.addValue( 3, distance[1] ); 
 
-  myatoms.addAtomsDerivatives( 4, 0, Vector(0,0,-1.0) ); 
-  myatoms.addAtomsDerivatives( 4, 1, Vector(0,0,+1.0) ); 
+  addAtomDerivatives( 4, 0, Vector(0,0,-1.0), myatoms ); 
+  addAtomDerivatives( 4, 1, Vector(0,0,+1.0), myatoms ); 
   myatoms.addBoxDerivatives( 4, Tensor(distance,Vector(0,0,-1.0)) ); 
   myatoms.addValue( 4, distance[2] ); 
 }

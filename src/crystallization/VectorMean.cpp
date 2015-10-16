@@ -48,7 +48,7 @@ void VectorMean::registerKeywords( Keywords& keys ){
 }
 
 void VectorMean::reserveKeyword( Keywords& keys ){
-  keys.reserveFlag("VMEAN",false,"calculate the norm of the mean vector.",true);
+  keys.reserve("vessel","VMEAN","calculate the norm of the mean vector.");
   keys.addOutputComponent("vmean","VMEAN","the norm of the mean vector. The output component can be refererred to elsewhere in the input "
                                           "file by using the label.vmean");
 }

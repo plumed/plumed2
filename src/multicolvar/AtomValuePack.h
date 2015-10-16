@@ -34,6 +34,8 @@ namespace multicolvar {
 class CatomPack;
 
 class AtomValuePack {
+friend class MultiColvarBase;
+friend class LocalAverage;
 private:
 /// Copy of the values that we are adding to
   MultiValue& myvals;
@@ -47,6 +49,12 @@ private:
   std::vector<unsigned>& sort_vector;
 /// This holds atom positions
   std::vector<Vector>& myatoms;
+///
+  void addDerivative( const unsigned& , const unsigned& , const double& );
+///
+  void addAtomsDerivatives( const unsigned& , const unsigned& , const Vector& );
+///
+  void addTemporyAtomsDerivatives( const unsigned& jder, const Vector& der );
 public:
   AtomValuePack( MultiValue& vals, MultiColvarBase const * mcolv );
 /// Set the number of atoms
@@ -56,7 +64,7 @@ public:
 ///
   void setAtom( const unsigned& j, const unsigned& ind );
 ///
-  unsigned setupAtomsFromLinkCells( const unsigned& cind, const Vector& cpos, const LinkCells& linkcells );
+  unsigned setupAtomsFromLinkCells( const std::vector<unsigned>& cind, const Vector& cpos, const LinkCells& linkcells );
 ///
   unsigned getIndex( const unsigned& j ) const ;
 ///
@@ -72,17 +80,15 @@ public:
 ///
   double getValue( const unsigned& ) const ;
 ///
-  void addDerivative( const unsigned& , const unsigned& , const double& );
-///
-  void addAtomsDerivatives( const unsigned& , const unsigned& , const Vector& );
-///
   void addBoxDerivatives( const unsigned& , const Tensor& );
+///
+  void addTemporyBoxDerivatives( const Tensor& vir );
 ///
   void updateUsingIndices();
 ///
   void updateDynamicList();
 ///
-  void addComDerivatives( const unsigned& , const Vector& , CatomPack& );
+  void addComDerivatives( const int& , const Vector& , CatomPack& );
 ///
   MultiValue& getUnderlyingMultiValue();
 };
@@ -150,6 +156,20 @@ void AtomValuePack::addAtomsDerivatives( const unsigned& ival, const unsigned& j
   myvals.addDerivative( ival, 3*indices[jder] + 0, der[0] );
   myvals.addDerivative( ival, 3*indices[jder] + 1, der[1] );
   myvals.addDerivative( ival, 3*indices[jder] + 2, der[2] );
+}
+
+inline
+void AtomValuePack::addTemporyAtomsDerivatives( const unsigned& jder, const Vector& der ){
+  plumed_dbg_assert( jder<natoms );
+  myvals.addTemporyDerivative( 3*indices[jder] + 0, der[0] );
+  myvals.addTemporyDerivative( 3*indices[jder] + 1, der[1] );
+  myvals.addTemporyDerivative( 3*indices[jder] + 2, der[2] );
+}
+
+inline
+void AtomValuePack::addTemporyBoxDerivatives( const Tensor& vir ){
+  unsigned nvir=3*mycolv->getNumberOfAtoms();
+  for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) myvals.addTemporyDerivative( nvir + 3*i+j, vir(i,j) );
 }
 
 inline

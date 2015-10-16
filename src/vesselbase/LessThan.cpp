@@ -33,9 +33,9 @@ void LessThan::registerKeywords( Keywords& keys ){
 }
 
 void LessThan::reserveKeyword( Keywords& keys ){
-  keys.reserve("numbered","LESS_THAN","calculate the number of variables less than a certain target value. "
+  keys.reserve("vessel","LESS_THAN","calculate the number of variables less than a certain target value. "
                                  "This quantity is calculated using \\f$\\sum_i \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
-                                 "is a \\ref switchingfunction.",true);
+                                 "is a \\ref switchingfunction.");
   keys.addOutputComponent("lessthan","LESS_THAN","the number of values less than a target value. This is calculated using one of the " 
                                                  "formula described in the description of the keyword so as to make it continuous. "
                                                  "You can calculate this quantity multiple times using different parameters."); 

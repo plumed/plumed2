@@ -120,6 +120,7 @@ LocalAverage::LocalAverage(const ActionOptions& ao):
 Action(ao),
 MultiColvarFunction(ao)
 {
+  if( getNumberOfBaseMultiColvars()>1 ) error("local average with more than one base colvar makes no sense");
   // Read in the switching function
   std::string sw, errors; parse("SWITCH",sw);
   if(sw.length()>0){
@@ -142,8 +143,10 @@ unsigned LocalAverage::getNumberOfQuantities(){
 
 double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
   double d2, sw, dfunc, nbond=1; CatomPack atom0, atom1;
-  std::vector<double> values( getBaseMultiColvar(0)->getNumberOfQuantities() );
-  MultiValue myder(values.size(), myatoms.getNumberOfDerivatives());
+  std::vector<double> values( getBaseMultiColvar(0)->getNumberOfQuantities() ); MultiValue myder(0,0);
+  if( myder.getNumberOfValues()!=values.size() || myder.getNumberOfDerivatives()!=myatoms.getNumberOfDerivatives() ){
+      myder.resize( values.size(), myatoms.getNumberOfDerivatives() );
+  }
 
   getVectorForTask( myatoms.getIndex(0), false, values );
   if( values.size()>2 ){
@@ -210,21 +213,21 @@ double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) c
                  myatoms.addBoxDerivatives( 1, (-dfunc)*values[1]*vir );
              }
              // And the bit we use to average the vector
-             myatoms.addComDerivatives( 0, (-dfunc)*distance, atom0 );
-             myatoms.addComDerivatives( 0, (+dfunc)*distance, atom1 );
-             myatoms.addBoxDerivatives( 0, (-dfunc)*vir );
+             myatoms.addComDerivatives( -1, (-dfunc)*distance, atom0 );
+             myatoms.addComDerivatives( -1, (+dfunc)*distance, atom1 );
+             myatoms.addTemporyBoxDerivatives( (-dfunc)*vir );
              myder.clearAll();
          }
      }
   }
 
   // Set the tempory weight
-  myatoms.setValue( 0, nbond ); updateActiveAtoms( myatoms );
+  updateActiveAtoms( myatoms );
   if( values.size()>2){
       double norm=0;
       MultiValue& myvals=myatoms.getUnderlyingMultiValue(); 
       for(unsigned i=2;i<values.size();++i){
-          myvals.quotientRule( i, 0, i );
+          myvals.quotientRule( i, nbond, i );
           // Calculate length of vector
           norm+=myvals.get(i)*myvals.get(i);
       }
@@ -236,10 +239,8 @@ double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) c
          }
       }
   } else {
-      myatoms.getUnderlyingMultiValue().quotientRule( 1, 0, 1 ); 
+      myatoms.getUnderlyingMultiValue().quotientRule( 1, nbond, 1 ); 
   }
-  // Weight doesn't really have derivatives (just use the holder for convenience) 
-  myatoms.getUnderlyingMultiValue().clear(0); myatoms.setValue( 0, 1.0 );
    
   return myatoms.getValue(1);
 }

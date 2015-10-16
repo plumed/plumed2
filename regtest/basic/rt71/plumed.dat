@@ -1,0 +1,32 @@
+at: FIXEDATOM AT=1,2,3
+DUMPATOMS ATOMS=at FILE=x
+
+d: DISTANCE ATOMS=at,2 COMPONENTS NOPBC
+
+# alternative calculation:
+p: POSITION ATOM=2 NOPBC
+one: CONSTANT VALUE=1.0
+dx: COMBINE ARG=p.x,one COEFFICIENTS=1,-1 PERIODIC=NO
+dy: COMBINE ARG=p.y,one COEFFICIENTS=1,-2 PERIODIC=NO
+dz: COMBINE ARG=p.z,one COEFFICIENTS=1,-3 PERIODIC=NO
+
+### # I used this to test derivatives during development:
+### # take the difference between the two definitions:
+###  co1: COMBINE ARG=d.x,dx COEFFICIENTS=1,-1 PERIODIC=NO
+###  co2: COMBINE ARG=d.y,dy COEFFICIENTS=1,-1 PERIODIC=NO
+###  co3: COMBINE ARG=d.z,dz COEFFICIENTS=1,-1 PERIODIC=NO
+###  co:  COMBINE ARG=co1,co2,co3 POWERS=2,2,2 PERIODIC=NO
+### # if I apply a force on co there should be no resulting force on atoms
+
+# For the regtest I keep the force so as to check it
+co: COMBINE ARG=d.x,d.y,d.z COEFFICIENTS=1,0.5,-1 PERIODIC=NO
+
+val: BIASVALUE ARG=co
+
+PRINT FILE=colvar ARG=d.x,d.y,d.z,dx,dy,dz,val.bias
+
+# other atoms to check charges and masses
+at2: FIXEDATOM AT=4,5,6 SET_CHARGE=2.0
+at3: FIXEDATOM AT=4,5,6 SET_MASS=3.0
+at4: FIXEDATOM AT=4,5,6 SET_CHARGE=2.0 SET_MASS=3.0
+DUMPMASSCHARGE ATOMS=at,at2,at3,at4 FILE=mc

@@ -24,6 +24,8 @@
 #include "ActionVolume.h"
 #include "vesselbase/Vessel.h"
 #include "vesselbase/BridgeVessel.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
 #include "tools/Pbc.h"
 #include "AtomValuePack.h"
 #include "CatomPack.h"
@@ -65,8 +67,12 @@ Action(ao),
 ActionAtomistic(ao),
 ActionWithValue(ao),
 ActionWithVessel(ao),
+numder_func(false),
 usepbc(false),
+allthirdblockintasks(false),
+uselinkforthree(false),
 linkcells(comm),
+threecells(comm),
 usespecies(false)
 {
   if( keywords.exists("NOPBC") ){ 
@@ -74,6 +80,37 @@ usespecies(false)
     usepbc=!nopbc;
   } 
   if( keywords.exists("SPECIES") ) usespecies=true;
+}
+
+bool MultiColvarBase::interpretInputMultiColvars( const std::vector<std::string>& mlabs, const double& wtolerance ){
+  if( mlabs.size()==0 ) return false;
+
+  std::string mname;
+  for(unsigned i=0;i<mlabs.size();++i){
+      MultiColvarBase* mycolv = plumed.getActionSet().selectWithLabel<MultiColvarBase*>(mlabs[i]);
+      if(!mycolv) return false;
+      // Check all base multicolvars are of same type
+      if( i==0 ){
+          mname = mycolv->getName();
+          if( mycolv->isPeriodic() ) error("multicolvar functions don't work with this multicolvar");
+      } else {
+          if( mname!=mycolv->getName() ) error("All input multicolvars must be of same type");
+      }
+      // And track which variable stores each colvar
+      for(unsigned j=0;j<mycolv->getFullNumberOfTasks();++j) colvar_label.push_back( mybasemulticolvars.size() );
+      // And store the multicolvar base
+      mybasemulticolvars.push_back( mycolv );
+      // And create a basedata stash
+      mybasedata.push_back( mybasemulticolvars[mybasemulticolvars.size()-1]->buildDataStashes( true, wtolerance ) );
+      // Check if weight has derivatives
+      if( mybasemulticolvars[ mybasemulticolvars.size()-1 ]->weightHasDerivatives ) weightHasDerivatives=true;    
+      plumed_assert( mybasemulticolvars.size()==mybasedata.size() );
+  }
+
+  log.printf("  using colvars calculated by actions "); 
+  for(unsigned i=0;i<mlabs.size();++i) log.printf("%s ",mlabs[i].c_str() );
+  log.printf("\n"); 
+  return true;
 }
 
 void MultiColvarBase::addTaskToList( const unsigned& taskCode ){
@@ -88,17 +125,52 @@ void MultiColvarBase::resizeBookeepingArray( const unsigned& num1, const unsigne
   }
 }
 
-void MultiColvarBase::setupMultiColvarBase(){
+void MultiColvarBase::setupMultiColvarBase( const std::vector<AtomNumber>& atoms ){
   // Setup decoder array
   if( !usespecies && ablocks.size()<4 ){
-     decoder.resize( ablocks.size() ); unsigned code=1;
-     for(unsigned i=0;i<ablocks.size();++i){ decoder[ablocks.size()-1-i]=code; code *= nblock; } 
      use_for_central_atom.resize( ablocks.size(), true );
      numberForCentralAtom = 1.0 / static_cast<double>( ablocks.size() );
+     if( ablocks.size()==3 ){
+         allthirdblockintasks=uselinkforthree=true;
+         for(unsigned i=0;i<bookeeping.nrows();++i){
+             for(unsigned j=0;j<bookeeping.ncols();++j){
+                 unsigned ntper = bookeeping(i,j).second - bookeeping(i,j).first;
+                 if( i==j && ntper==0 ){
+                     continue;
+                 } else if( ntper == 1 && allthirdblockintasks ){
+                     allthirdblockintasks=true;
+                 } else if( ntper != ablocks[2].size() ){
+                     allthirdblockintasks=uselinkforthree=false;
+                 } else {
+                     allthirdblockintasks=false;
+                 }
+             }
+         } 
+     }
+    
+     if( allthirdblockintasks ) decoder.resize(2);
+     else decoder.resize( ablocks.size() ); 
+     unsigned code=1; for(unsigned i=0;i<decoder.size();++i){ decoder[decoder.size()-1-i]=code; code *= nblock; }
   } else if( !usespecies ){
      use_for_central_atom.resize( ablocks.size(), true );
      numberForCentralAtom = 1.0 / static_cast<double>( ablocks.size() );
   }
+
+  // Copy lists of atoms involved from base multicolvars 
+  std::vector<AtomNumber> tmp_atoms, all_atoms;
+  for(unsigned i=0;i<mybasemulticolvars.size();++i){
+      BridgedMultiColvarFunction* mybr=dynamic_cast<BridgedMultiColvarFunction*>( mybasemulticolvars[i] );
+      if( mybr ) tmp_atoms=(mybr->getPntrToMultiColvar())->getAbsoluteIndexes();
+      else tmp_atoms=mybasemulticolvars[i]->getAbsoluteIndexes();
+      for(unsigned j=0;j<tmp_atoms.size();++j) all_atoms.push_back( tmp_atoms[j] );
+  } 
+  // Get additional atom requests
+  for(unsigned i=0;i<atoms.size();++i) all_atoms.push_back( atoms[i] );
+
+  // Now make sure we get all the atom positions 
+  ActionAtomistic::requestAtoms( all_atoms );
+  // And setup dependencies
+  for(unsigned i=0;i<mybasemulticolvars.size();++i) addDependency( mybasemulticolvars[i] );
 
   // Setup underlying ActionWithVessel
   readVesselKeywords();
@@ -121,10 +193,70 @@ void MultiColvarBase::turnOnDerivatives(){
 
 void MultiColvarBase::setLinkCellCutoff( const double& lcut ){
   plumed_assert( usespecies || ablocks.size()<4 );
-  linkcells.setCutoff( lcut );
+  linkcells.setCutoff( lcut ); threecells.setCutoff( lcut );
 }
 
 void MultiColvarBase::setupLinkCells(){
+  if( usespecies ){
+     // Now check for calculating volumes (currently this is only done for usespecies style commands 
+     // as it is difficult to do with things like DISTANCES or ANGLES and I think pointless
+     bool justVolumes=true;
+     for(unsigned i=0;i<getNumberOfVessels();++i){
+         vesselbase::BridgeVessel* myb=dynamic_cast<vesselbase::BridgeVessel*>( getPntrToVessel(i) );
+         if( !myb ){ justVolumes=false; break; }
+         ActionVolume* myv=dynamic_cast<ActionVolume*>( myb->getOutputAction() );
+         if( !myv ){ justVolumes=false; break; }
+     }
+     // Now ensure that we only do calculations for those atoms in the relevant volume
+     if( justVolumes ){
+         // Setup the regions in the action volume objects 
+         for(unsigned i=0;i<getNumberOfVessels();++i){
+             vesselbase::BridgeVessel* myb=dynamic_cast<vesselbase::BridgeVessel*>( getPntrToVessel(i) );
+             ActionVolume* myv=dynamic_cast<ActionVolume*>( myb->getOutputAction() );
+             myv->retrieveAtoms(); myv->setupRegions();
+         }
+
+         unsigned stride=comm.Get_size();
+         unsigned rank=comm.Get_rank();
+         if( serialCalculation() ){ stride=1; rank=0; }
+
+         unsigned nactive=0;
+         std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
+         for(unsigned i=rank;i<getFullNumberOfTasks();i+=stride){
+             if( !isCurrentlyActive( 0, getTaskCode(i) ) ) continue ;
+             bool invol=false;
+             for(unsigned j=0;j<getNumberOfVessels();++j){
+                 vesselbase::BridgeVessel* myb=dynamic_cast<vesselbase::BridgeVessel*>( getPntrToVessel(j) );
+                 ActionVolume* myv=dynamic_cast<ActionVolume*>( myb->getOutputAction() );
+                 if( myv->inVolumeOfInterest(i) ){ invol=true; }
+             }
+             if( invol ){ nactive++; active_tasks[i]=1; }
+         }
+
+         if( !serialCalculation() ) comm.Sum( active_tasks );
+
+         deactivateAllTasks();
+         activateTheseTasks( active_tasks );
+         contributorsAreUnlocked=false;
+     } else if( colvar_label.size()>0 ){
+         unsigned stride=comm.Get_size();
+         unsigned rank=comm.Get_rank();
+         if( serialCalculation() ){ stride=1; rank=0; }
+
+         unsigned nactive=0;
+         std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
+         for(unsigned i=rank;i<getFullNumberOfTasks();i+=stride){
+             if( isCurrentlyActive( 0, getTaskCode(i) ) ){ nactive++; active_tasks[i]=1; }
+         }
+
+         if( !serialCalculation() ) comm.Sum( active_tasks );
+
+         deactivateAllTasks();
+         activateTheseTasks( active_tasks );
+         contributorsAreUnlocked=false;
+     }
+  }
+
   if( !linkcells.enabled() ) return ;
 
   unsigned iblock;
@@ -165,7 +297,7 @@ void MultiColvarBase::setupLinkCells(){
   // Build the lists for the link cells
   linkcells.buildCellLists( ltmp_pos, ltmp_ind, getPbc() );
 
-  if( !usespecies ){
+  if( !usespecies && !uselinkforthree ){
      // Get some parallel info
      unsigned stride=comm.Get_size();
      unsigned rank=comm.Get_rank(); 
@@ -187,56 +319,73 @@ void MultiColvarBase::setupLinkCells(){
      deactivateAllTasks(); 
      activateTheseTasks( active_tasks );
      contributorsAreUnlocked=false;
-  } else {
-     // Now check for calculating volumes (currently this is only done for usespecies style commands 
-     // as it is difficult to do with things like DISTANCES or ANGLES and I think pointless
-     bool justVolumes=true;
-     for(unsigned i=0;i<getNumberOfVessels();++i){
-         vesselbase::BridgeVessel* myb=dynamic_cast<vesselbase::BridgeVessel*>( getPntrToVessel(i) );
-         if( !myb ){ justVolumes=false; break; }
-         ActionVolume* myv=dynamic_cast<ActionVolume*>( myb->getOutputAction() ); 
-         if( !myv ){ justVolumes=false; break; }
+  } else if ( !usespecies ){
+     // Get some parallel info
+     unsigned stride=comm.Get_size();
+     unsigned rank=comm.Get_rank();
+     if( serialCalculation() ){ stride=1; rank=0; }
+
+     unsigned nactive_three=0;
+     for(unsigned i=0;i<ablocks[2].size();++i){
+         if( isCurrentlyActive( 2, ablocks[2][i] ) ) nactive_three++;
      }
-     // Now ensure that we only do calculations for those atoms in the relevant volume
-     if( justVolumes ){
-         bool justVolumes=true;
-         // Setup the regions in the action volume objects 
-         for(unsigned i=0;i<getNumberOfVessels();++i){
-             vesselbase::BridgeVessel* myb=dynamic_cast<vesselbase::BridgeVessel*>( getPntrToVessel(i) );
-             ActionVolume* myv=dynamic_cast<ActionVolume*>( myb->getOutputAction() );
-             myv->retrieveAtoms(); myv->setupRegions();
-         } 
 
-         unsigned stride=comm.Get_size();
-         unsigned rank=comm.Get_rank();
-         if( serialCalculation() ){ stride=1; rank=0; } 
+     std::vector<Vector> lttmp_pos( nactive_three );
+     std::vector<unsigned> lttmp_ind( nactive_three );
 
-         unsigned nactive=0;
-         std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
-         for(unsigned i=rank;i<getFullNumberOfTasks();i+=stride){
-             bool invol=false;
-             for(unsigned j=0;j<getNumberOfVessels();++j){
-                 vesselbase::BridgeVessel* myb=dynamic_cast<vesselbase::BridgeVessel*>( getPntrToVessel(j) );
-                 ActionVolume* myv=dynamic_cast<ActionVolume*>( myb->getOutputAction() );
-                 if( myv->inVolumeOfInterest(i) ){ invol=true; }  
-             }
-             if( invol ){ nactive++; active_tasks[i]=1; }
+     nactive_three=0;
+     if( allthirdblockintasks ){
+         for(unsigned i=0;i<ablocks[2].size();++i){
+             if( !isCurrentlyActive( 2, ablocks[2][i] ) ) continue;
+             lttmp_ind[nactive_three]=ablocks[2][i];
+             lttmp_pos[nactive_three]=getPositionOfAtomForLinkCells( ablocks[2][i] );
+             nactive_three++;
          }
-
-         if( !serialCalculation() ) comm.Sum( active_tasks );
-
-         deactivateAllTasks();
-         activateTheseTasks( active_tasks );
-         contributorsAreUnlocked=false;
+     } else {
+         for(unsigned i=0;i<ablocks[2].size();++i){
+             if( !isCurrentlyActive( 2, ablocks[2][i] ) ) continue;
+             lttmp_ind[nactive_three]=i;
+             lttmp_pos[nactive_three]=getPositionOfAtomForLinkCells( ablocks[2][i] );
+             nactive_three++;
+         }
      }
-  }
+     // Build the list of the link cells
+     threecells.buildCellLists( lttmp_pos, lttmp_ind, getPbc() );
 
+     // Ensure we only do tasks where atoms are in appropriate link cells
+     std::vector<unsigned> linked_atoms( 1+ablocks[1].size() );
+     std::vector<unsigned> tlinked_atoms( 1+ablocks[2].size() );
+     std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
+     for(unsigned i=rank;i<ablocks[0].size();i+=stride){
+         if( !isCurrentlyActive( 0, ablocks[0][i] ) ) continue;
+         unsigned natomsper=1; linked_atoms[0]=ltmp_ind[0];  // Note we always check atom 0 because it is simpler than changing LinkCells.cpp
+         linkcells.retrieveNeighboringAtoms( getPositionOfAtomForLinkCells( ablocks[0][i] ), natomsper, linked_atoms );
+         if( allthirdblockintasks ) {
+             for(unsigned j=0;j<natomsper;++j){
+                 for(unsigned k=bookeeping(i,linked_atoms[j]).first;k<bookeeping(i,linked_atoms[j]).second;++k) active_tasks[k]=1;
+             }
+         } else {
+             unsigned ntatomsper=1; tlinked_atoms[0]=lttmp_ind[0];
+             threecells.retrieveNeighboringAtoms( getPositionOfAtomForLinkCells( ablocks[0][i] ), ntatomsper, tlinked_atoms );
+             for(unsigned j=0;j<natomsper;++j){
+                 for(unsigned k=0;k<ntatomsper;++k) active_tasks[bookeeping(i,linked_atoms[j]).first+tlinked_atoms[k]]=1;
+             }
+         }
+     }
+     if( !serialCalculation() ) comm.Sum( active_tasks );
+
+     deactivateAllTasks();
+     activateTheseTasks( active_tasks );
+     contributorsAreUnlocked=false; 
+  } 
 }
 
 void MultiColvarBase::decodeIndexToAtoms( const unsigned& taskCode, std::vector<unsigned>& atoms ) const {
-  plumed_dbg_assert( atoms.size()==ablocks.size() && !usespecies && ablocks.size()<4 );
+  plumed_dbg_assert( !usespecies && ablocks.size()<4 );
+  if( atoms.size()!=decoder.size() ) atoms.resize( decoder.size() );
+
   unsigned scode = taskCode;
-  for(unsigned i=0;i<ablocks.size();++i){
+  for(unsigned i=0;i<decoder.size();++i){
       unsigned ind=( scode / decoder[i] );
       atoms[i] = ablocks[i][ind];
       scode -= ind*decoder[i];
@@ -246,8 +395,12 @@ void MultiColvarBase::decodeIndexToAtoms( const unsigned& taskCode, std::vector<
 bool MultiColvarBase::setupCurrentAtomList( const unsigned& taskCode, AtomValuePack& myatoms ) const {
   if( usespecies ){
      if( isDensity() ) return true;
-     unsigned natomsper=myatoms.setupAtomsFromLinkCells( taskCode, getPositionOfAtomForLinkCells(taskCode), linkcells );
+     std::vector<unsigned> task_atoms(1); task_atoms[0]=taskCode;
+     unsigned natomsper=myatoms.setupAtomsFromLinkCells( task_atoms, getPositionOfAtomForLinkCells(taskCode), linkcells );
      return natomsper>1;
+  } else if( allthirdblockintasks ){ 
+     plumed_dbg_assert( ablocks.size()==3 ); std::vector<unsigned> atoms(2); decodeIndexToAtoms( taskCode, atoms );
+     unsigned natomsper=myatoms.setupAtomsFromLinkCells( atoms, getPositionOfAtomForLinkCells(atoms[0]), threecells );
   } else if( ablocks.size()<4 ){
      std::vector<unsigned> atoms( ablocks.size() );
      decodeIndexToAtoms( taskCode, atoms ); myatoms.setNumberOfAtoms( ablocks.size() );
@@ -259,6 +412,43 @@ bool MultiColvarBase::setupCurrentAtomList( const unsigned& taskCode, AtomValueP
   return true;
 }
 
+void MultiColvarBase::calculate(){ 
+  if( numder_func && colvar_label.size()>0 ){
+     // Clear any derivatives in base colvar that were 
+     // accumulated from previous calculations
+     for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasemulticolvars[i]->clearDerivatives();
+     // And recalculate
+     for(unsigned i=0;i<mybasemulticolvars.size();++i){
+        BridgedMultiColvarFunction* bb=dynamic_cast<BridgedMultiColvarFunction*>( mybasemulticolvars[i] );
+        if( bb ) (bb->getPntrToMultiColvar())->calculate();
+        else mybasemulticolvars[i]->calculate();
+     }
+     // Copy the box from the base multicolvar here
+     unsigned maxb=mybasemulticolvars.size() - 1;
+     BridgedMultiColvarFunction* bb=dynamic_cast<BridgedMultiColvarFunction*>( mybasemulticolvars[maxb] );
+     if( bb ) changeBox( (bb->getPntrToMultiColvar())->getBox() );
+     else changeBox( mybasemulticolvars[maxb]->getBox() );
+  }
+  // Setup the link cells
+  setupLinkCells();
+  // And run all tasks
+  runAllTasks();
+}
+
+void MultiColvarBase::addAtomDerivatives( const int& ival, const unsigned& iatom, const Vector& der, multicolvar::AtomValuePack& myatoms ) const {
+  unsigned jatom=myatoms.getIndex(iatom);
+
+  if( jatom<colvar_label.size() ){
+      unsigned mmc=colvar_label[jatom];
+      unsigned basen=0; for(unsigned i=0;i<mmc;++i) basen+=mybasemulticolvars[i]->getNumberOfAtoms();
+      multicolvar::CatomPack atom0=mybasemulticolvars[mmc]->getCentralAtomPack( basen, convertToLocalIndex(jatom,mmc) );
+      myatoms.addComDerivatives( ival, der, atom0 );
+  } else {
+      if( ival<0 ) myatoms.addTemporyAtomsDerivatives( iatom, der );
+      else myatoms.addAtomsDerivatives( ival, iatom, der );
+  }
+}
+
 void MultiColvarBase::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
 
   AtomValuePack myatoms( myvals, this );
@@ -266,7 +456,7 @@ void MultiColvarBase::performTask( const unsigned& task_index, const unsigned& c
   if( !setupCurrentAtomList( current, myatoms ) ) return;
 
   // Do a quick check on the size of this contribution  
-  calculateWeight( myatoms ); 
+  calculateWeight( current, myatoms ); 
   if( myatoms.getValue(0)<getTolerance() ){
      updateActiveAtoms( myatoms );
      return;   
@@ -278,13 +468,30 @@ void MultiColvarBase::performTask( const unsigned& task_index, const unsigned& c
   return;
 }
 
-void MultiColvarBase::calculateWeight( AtomValuePack& myatoms ) const {
-  myatoms.setValue( 0, 1.0 );
+void MultiColvarBase::calculateWeight( const unsigned& taskCode, AtomValuePack& myatoms ) const {
+  if( usespecies && taskCode<colvar_label.size() ){
+      unsigned mmc=colvar_label[taskCode]; std::vector<double> old_data( mybasemulticolvars[mmc]->getNumberOfQuantities() );
+      plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(taskCode,mmc) ) );
+      mybasedata[mmc]->retrieveValue( convertToLocalIndex(taskCode,mmc), false, old_data );
+      myatoms.setValue( 0, old_data[0] );
+      if( !doNotCalculateDerivatives() && mybasemulticolvars[mmc]->weightHasDerivatives ){
+          MultiValue myder( mybasemulticolvars[mmc]->getNumberOfQuantities(), mybasemulticolvars[mmc]->getNumberOfDerivatives() );
+          MultiValue& outder=myatoms.getUnderlyingMultiValue(); mybasedata[mmc]->retrieveDerivatives( convertToLocalIndex(taskCode,mmc), false, myder );
+          for(unsigned j=0;j<myder.getNumberActive();++j){ unsigned jder=myder.getActiveIndex(j); outder.addDerivative( 0, jder, myder.getDerivative(0,jder) ); }
+      }
+  } else {
+      myatoms.setValue( 0, 1.0 );
+  }
 }
 
 double MultiColvarBase::doCalculation( const unsigned& taskIndex, AtomValuePack& myatoms ) const {
   double val=compute( taskIndex, myatoms ); updateActiveAtoms( myatoms );
   return val;
+}
+
+void MultiColvarBase::updateActiveAtoms( AtomValuePack& myatoms ) const {
+  if( colvar_label.size()==0 ) myatoms.updateUsingIndices();
+  else myatoms.updateDynamicList();
 }
 
 Vector MultiColvarBase::getCentralAtomPos( const unsigned& taskIndex ){

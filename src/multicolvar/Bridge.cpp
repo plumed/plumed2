@@ -69,7 +69,7 @@ public:
   explicit Bridge(const ActionOptions&);
 // active methods:
   virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
-  void calculateWeight( AtomValuePack& myatoms ) const ;
+  void calculateWeight( const unsigned& taskCode, AtomValuePack& myatoms ) const ;
   bool isPeriodic(){ return false; }
 };
 
@@ -95,9 +95,8 @@ PLUMED_MULTICOLVAR_INIT(ao)
   // Read in the atoms
   weightHasDerivatives=true; std::vector<AtomNumber> all_atoms;
   readThreeGroups("BRIDGING_ATOMS","GROUPA","GROUPB",false, all_atoms);
-  if( all_atoms.size()>0 ) ActionAtomistic::requestAtoms( all_atoms );
   // Setup the multicolvar base
-  setupMultiColvarBase();
+  setupMultiColvarBase( all_atoms );
   // Setup Central atom atoms
   std::vector<bool> catom_ind(3, false); catom_ind[0]=true;
   setAtomsForCentralAtom( catom_ind ); 
@@ -138,15 +137,15 @@ PLUMED_MULTICOLVAR_INIT(ao)
   checkRead();
 }
 
-void Bridge::calculateWeight( AtomValuePack& myatoms ) const {
+void Bridge::calculateWeight( const unsigned& taskCode, AtomValuePack& myatoms ) const {
   Vector dij=getSeparation( myatoms.getPosition(0), myatoms.getPosition(2) );
   double ldij = dij.modulo2();
   if( ldij>rcut2 ) { myatoms.setValue(0,0); return; }
   double dw, w=sf2.calculateSqr( ldij, dw );
   myatoms.setValue( 0, w );
 
-  myatoms.addAtomsDerivatives( 0, 0, -dw*dij );
-  myatoms.addAtomsDerivatives( 0, 2, dw*dij );
+  addAtomDerivatives( 0, 0, -dw*dij, myatoms );
+  addAtomDerivatives( 0, 2, dw*dij, myatoms );
   myatoms.addBoxDerivatives( 0, (-dw)*Tensor(dij,dij) );
 }
 
@@ -155,8 +154,8 @@ double Bridge::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
   double dw, w=sf1.calculateSqr( dik.modulo2(), dw );
 
   // And finish the calculation
-  myatoms.addAtomsDerivatives( 1, 0, -dw*dik );
-  myatoms.addAtomsDerivatives( 1, 1,  dw*dik );
+  addAtomDerivatives( 1, 0, -dw*dik, myatoms );
+  addAtomDerivatives( 1, 1,  dw*dik, myatoms );
   myatoms.addBoxDerivatives( 1, (-dw)*Tensor(dik,dik) );
   return w;
 }

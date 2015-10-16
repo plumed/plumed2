@@ -62,7 +62,9 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   mydata(NULL),
   contributorsAreUnlocked(false),
   weightHasDerivatives(false),
-  stopwatch(*new Stopwatch)
+  stopwatch(*new Stopwatch),
+  dertime_can_be_off(false),
+  dertime(true)
 {
   maxderivatives=309; parse("MAXDERIVATIVES",maxderivatives);
   if( keywords.exists("SERIAL") ) parseFlag("SERIAL",serial);
@@ -71,7 +73,10 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   if( keywords.exists("LOWMEM") ){
      plumed_assert( !keywords.exists("HIGHMEM") );
      parseFlag("LOWMEM",lowmem);
-     if(lowmem)log.printf("  lowering memory requirements\n");
+     if(lowmem){ 
+        log.printf("  lowering memory requirements\n");
+        dertime_can_be_off=true;
+     }
   } 
   if( keywords.exists("HIGHMEM") ){
      plumed_assert( !keywords.exists("LOWMEM") );
@@ -121,6 +126,7 @@ void ActionWithVessel::addVessel( Vessel* vv ){
   StoreDataVessel* mm=dynamic_cast<StoreDataVessel*>( vv );
   if( mydata && mm ) error("cannot have more than one StoreDataVessel in one action");
   else if( mm ) mydata=mm;
+  else dertime_can_be_off=false; 
 }
 
 BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ){
@@ -163,29 +169,21 @@ void ActionWithVessel::readVesselKeywords(){
       std::string thiskey,input; thiskey=keywords.getKeyword(i);
       // Check if this is a key for a vessel
       if( vesselRegister().check(thiskey) ){
-          // If the keyword is a flag read it in as a flag
-          if( keywords.style(thiskey,"flag") ){
-              bool dothis; parseFlag(thiskey,dothis);
-              if(dothis) addVessel( thiskey, input );
-          // If it is numbered read it in as a numbered thing
-          } else if( keywords.numbered(thiskey) ) {
-              parse(thiskey,input);
-              if(input.size()!=0){ 
-                    addVessel( thiskey, input );
-              } else {
-                 for(unsigned i=1;;++i){
-                    if( !parseNumbered(thiskey,i,input) ) break;
-                    std::string ss; Tools::convert(i,ss);
-                    addVessel( thiskey, input, i ); 
-                    input.clear();
-                 } 
-              }
-          // Otherwise read in the keyword the normal way
+          plumed_assert( keywords.style(thiskey,"vessel") );
+          bool dothis=false; parseFlag(thiskey,dothis);
+          if(dothis) addVessel( thiskey, input );
+
+          parse(thiskey,input);
+          if(input.size()!=0){ 
+                addVessel( thiskey, input );
           } else {
-              parse(thiskey, input);
-              if(input.size()!=0) addVessel(thiskey,input);
+             for(unsigned i=1;;++i){
+                if( !parseNumbered(thiskey,i,input) ) break;
+                std::string ss; Tools::convert(i,ss);
+                addVessel( thiskey, input, i ); 
+                input.clear();
+             } 
           }
-          input.clear();
       }
   }
 
@@ -264,6 +262,10 @@ void ActionWithVessel::deactivate_task( const unsigned & task_index ){
   taskFlags[task_index]=1;
 }
 
+bool ActionWithVessel::taskIsCurrentlyActive( const unsigned& index ) const {
+  return (taskFlags[index]==0);
+}
+
 void ActionWithVessel::deactivateTasksInRange( const unsigned& lower, const unsigned& upper ){
   plumed_dbg_assert( contributorsAreUnlocked && lower<upper && upper<taskFlags.size() );
   for(unsigned i=lower;i<upper;++i) taskFlags[i]=1;
@@ -305,6 +307,8 @@ void ActionWithVessel::runAllTasks(){
   unsigned bsize=0, bufsize=getSizeOfBuffer( bsize ); 
   // Clear buffer
   buffer.assign( buffer.size(), 0.0 );
+  // Switch off calculation of derivatives in main loop
+  if( dertime_can_be_off ) dertime=false;
 
   // std::vector<unsigned> der_list;
   // if( mydata ) der_list.resize( mydata->getSizeOfDerivativeList(), 0 ); 
@@ -355,6 +359,8 @@ void ActionWithVessel::runAllTasks(){
   if(nt>1) for(unsigned i=0;i<bufsize;++i) buffer[i]+=omp_buffer[i];
 }
   if(timers) stopwatch.stop("2 Loop over tasks");
+  // Turn back on derivative calculation
+  dertime=true;
 
   if(timers) stopwatch.start("3 MPI gather");
   // MPI Gather everything

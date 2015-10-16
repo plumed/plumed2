@@ -22,6 +22,7 @@
 #include "BridgeVessel.h"
 #include "tools/Matrix.h"
 #include "core/ActionWithArguments.h"
+#include "StoreDataVessel.h"
 
 namespace PLMD {
 namespace vesselbase {
@@ -39,6 +40,13 @@ void BridgeVessel::resize(){
   if( myOutputAction->checkNumericalDerivatives() ){
       mynumerical_values.resize( getAction()->getNumberOfDerivatives()*myOutputValues->getNumberOfComponents() );
       inum=0;
+  }
+  // This bit ensures that we can store data in a bridge function if needs be
+  // Notice we need to resize der_list in the underlying action as this is called
+  // from a bridge
+  if( myOutputAction->mydata ){
+      unsigned dsize=(myOutputAction->mydata)->getSizeOfDerivativeList();
+      if( getAction()->der_list.size()!=dsize ) getAction()->der_list.resize( dsize ); 
   }
   unsigned tmp=0; resizeBuffer( myOutputAction->getSizeOfBuffer( tmp ) );
 }

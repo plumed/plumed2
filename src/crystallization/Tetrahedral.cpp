@@ -174,22 +174,21 @@ double Tetrahedral::compute( const unsigned& tindex, multicolvar::AtomValuePack&
          myder[2] = (tt1-(distance[2]*t1))  + (-tt2-(distance[2]*t2))  + (-tt3-(distance[2]*t3))  + (tt4-(distance[2]*t4));
 
          value += sw*tmp; fder = (+dfunc)*tmp*distance + sw*myder;
-         myatoms.addAtomsDerivatives( 1, 0, -fder );
-         myatoms.addAtomsDerivatives( 1, i, +fder );
+         addAtomDerivatives( 1, 0, -fder, myatoms );
+         addAtomDerivatives( 1, i, +fder, myatoms );
          // Tens is a constructor that you build by taking the vector product of two vectors (remember the scalars!)
          myatoms.addBoxDerivatives( 1, Tensor(distance,-fder) );
  
          norm += sw;
-         myatoms.addAtomsDerivatives( 0, 0, (-dfunc)*distance );
-         myatoms.addAtomsDerivatives( 0, i, (+dfunc)*distance );
-         myatoms.addBoxDerivatives( 0, (-dfunc)*Tensor(distance,distance) );
+         addAtomDerivatives( -1, 0, (-dfunc)*distance, myatoms );
+         addAtomDerivatives( -1, i, (+dfunc)*distance, myatoms );
+         myatoms.addTemporyBoxDerivatives( (-dfunc)*Tensor(distance,distance) );
       }
    }
    
-   myatoms.setValue(1, value); myatoms.setValue(0, norm ); 
+   myatoms.setValue(1, value);  
    // values -> der of... value [0], weight[1], x coord [2], y, z... [more magic]
-   updateActiveAtoms( myatoms ); myatoms.getUnderlyingMultiValue().quotientRule( 1, 0, 1 ); 
-   myatoms.getUnderlyingMultiValue().clear(0); myatoms.setValue( 0, 1.0 );
+   updateActiveAtoms( myatoms ); myatoms.getUnderlyingMultiValue().quotientRule( 1, norm, 1 ); 
 
    return value / norm; // this is equivalent to getting an "atomic" CV
 }

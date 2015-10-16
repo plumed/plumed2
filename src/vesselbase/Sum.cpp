@@ -41,7 +41,7 @@ void Sum::registerKeywords( Keywords& keys ){
 }
 
 void Sum::reserveKeyword( Keywords& keys ){
-  keys.reserveFlag("SUM",false,"calculate the sum of all the quantities.",true);
+  keys.reserve("vessel","SUM","calculate the sum of all the quantities.");
   keys.addOutputComponent("sum","SUM","the sum of values");
 }
 

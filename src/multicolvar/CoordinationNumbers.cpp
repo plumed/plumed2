@@ -134,8 +134,8 @@ double CoordinationNumbers::compute( const unsigned& tindex, AtomValuePack& myat
          sw = switchingFunction.calculateSqr( d2, dfunc );
   
          value += sw;             
-         myatoms.addAtomsDerivatives( 1, 0, (-dfunc)*distance );
-         myatoms.addAtomsDerivatives( 1, i,  (dfunc)*distance );
+         addAtomDerivatives( 1, 0, (-dfunc)*distance, myatoms );
+         addAtomDerivatives( 1, i,  (dfunc)*distance, myatoms );
          myatoms.addBoxDerivatives( 1, (-dfunc)*Tensor(distance,distance) );
       }
    }

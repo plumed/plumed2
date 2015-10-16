@@ -27,6 +27,7 @@ MultiValue::MultiValue( const unsigned& nvals, const unsigned& nder ):
 values(nvals),
 nderivatives(nder),
 derivatives(nvals*nder),
+tmpder(nder),
 atLeastOneSet(false)
 {
   std::vector<unsigned> myind( nder );
@@ -36,7 +37,7 @@ atLeastOneSet(false)
 
 void MultiValue::resize( const unsigned& nvals, const unsigned& nder ){
   values.resize(nvals); nderivatives=nder; derivatives.resize( nvals*nder );
-  hasDerivatives.clear(); std::vector<unsigned> myind( nder ); 
+  tmpder.resize( nder ); hasDerivatives.clear(); std::vector<unsigned> myind( nder ); 
   for(unsigned i=0;i<nder;++i) myind[i]=i;
   hasDerivatives.createIndexListFromVector( myind );
   atLeastOneSet=false;
@@ -45,13 +46,18 @@ void MultiValue::resize( const unsigned& nvals, const unsigned& nder ){
 void MultiValue::clearAll(){
   if( atLeastOneSet && !hasDerivatives.updateComplete() ) hasDerivatives.updateActiveMembers();
   for(unsigned i=0;i<values.size();++i) clear(i);
-  hasDerivatives.deactivateAll(); atLeastOneSet=false;
+  clearTemporyDerivatives(); hasDerivatives.deactivateAll(); atLeastOneSet=false;
 }
 
 void MultiValue::clear( const unsigned& ival ){
   values[ival]=0;
   unsigned base=ival*nderivatives, ndert=hasDerivatives.getNumberActive();
   for(unsigned i=0;i<ndert;++i) derivatives[ base+hasDerivatives[i] ]=0.;   
+}
+
+void MultiValue::clearTemporyDerivatives(){
+  unsigned ndert=hasDerivatives.getNumberActive(); 
+  for(unsigned i=0;i<ndert;++i) tmpder[ hasDerivatives[i] ]=0.;
 }
 
 void MultiValue::chainRule( const unsigned& ival, const unsigned& iout, const unsigned& stride, const unsigned& off, 
@@ -92,18 +98,22 @@ void MultiValue::copyDerivatives( MultiValue& outvals ){
   }
 }
 
-void MultiValue::quotientRule( const unsigned& nder, const unsigned& dder, const unsigned& oder ){
-  plumed_dbg_assert( nder<values.size() && dder<values.size() && oder<values.size() );
+void MultiValue::quotientRule( const unsigned& nder, const double& denom, const unsigned& oder ){
+  plumed_dbg_assert( nder<values.size() && oder<values.size() );
   if( !hasDerivatives.updateComplete() ) hasDerivatives.updateActiveMembers();
 
-  unsigned ndert=hasDerivatives.getNumberActive();
-  unsigned obase=oder*nderivatives, nbase=nder*nderivatives, dbase=dder*nderivatives;
-  double weight = values[dder], pref = values[nder] / (weight*weight);
+  unsigned ndert=hasDerivatives.getNumberActive(); double wpref;
+  unsigned obase=oder*nderivatives, nbase=nder*nderivatives;
+
+  if( fabs(denom)>epsilon ){ wpref=1.0/denom; } 
+  else{ wpref=1.0; }
+
+  double pref = values[nder]*wpref*wpref;
   for(unsigned j=0;j<ndert;++j){
       unsigned jder=hasDerivatives[j];
-      derivatives[obase+jder] = derivatives[nbase+jder] / weight - pref*derivatives[dbase+jder];
+      derivatives[obase+jder] = wpref*derivatives[nbase+jder]  - pref*tmpder[jder];
   }
-  values[oder] = values[nder] / values[dder];
+  values[oder] = wpref*values[nder];
 }
 
 }

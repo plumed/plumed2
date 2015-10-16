@@ -38,6 +38,10 @@ void LinkCells::setCutoff( const double& lcut ){
   cutoffwasset=true; link_cutoff=lcut;
 }
 
+double LinkCells::getCutoff() const {
+  plumed_assert( cutoffwasset ); return link_cutoff;
+}
+
 void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vector<unsigned>& indices, const Pbc& pbc ){
   plumed_assert( cutoffwasset && pos.size()==indices.size() );
 
@@ -101,7 +105,7 @@ void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vecto
 #define LINKC_PBC(n,num) ((n<0)? num-1 : n%num )
 
 void LinkCells::retrieveNeighboringAtoms( const Vector& pos, unsigned& natomsper, std::vector<unsigned>& atoms ) const {
-  plumed_assert( natomsper==1 );  // This is really a bug. If you are trying to reuse this ask GAT for help
+  plumed_assert( natomsper==1 || natomsper==2 );  // This is really a bug. If you are trying to reuse this ask GAT for help
   std::vector<unsigned> celn( findMyCell( pos ) );
 
   for(int nx=LINKC_MIN(ncells[0]);nx<LINKC_MAX(ncells[0]);++nx){

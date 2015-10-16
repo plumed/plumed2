@@ -95,7 +95,7 @@ public:
 /// Updates neighbor list
   virtual double compute( const unsigned& tindex, AtomValuePack& ) const ;
 /// Returns the number of coordinates of the field
-  void calculateWeight( AtomValuePack& ) const ;
+  void calculateWeight( const unsigned& taskCode, AtomValuePack& ) const ;
   bool isPeriodic(){ return false; }
 };
 
@@ -168,7 +168,7 @@ use_sf(false)
   setAtomsForCentralAtom( catom_ind );
 }
 
-void Angles::calculateWeight( AtomValuePack& myatoms ) const {
+void Angles::calculateWeight( const unsigned& taskCode, AtomValuePack& myatoms ) const {
   if(!use_sf){ myatoms.setValue( 0, 1.0 ); return; }
   Vector dij=getSeparation( myatoms.getPosition(0), myatoms.getPosition(2) );
   Vector dik=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
@@ -185,9 +185,9 @@ void Angles::calculateWeight( AtomValuePack& myatoms ) const {
   wtot=w1*w2; dw1*=w2; dw2*=w1; 
 
   myatoms.setValue( 0, wtot );
-  myatoms.addAtomsDerivatives( 0, 1, dw2*dik );
-  myatoms.addAtomsDerivatives( 0, 0, -dw1*dij - dw2*dik ); 
-  myatoms.addAtomsDerivatives( 0, 2, dw1*dij );
+  addAtomDerivatives( 0, 1, dw2*dik, myatoms );
+  addAtomDerivatives( 0, 0, -dw1*dij - dw2*dik, myatoms ); 
+  addAtomDerivatives( 0, 2, dw1*dij, myatoms );
   myatoms.addBoxDerivatives( 0, (-dw1)*Tensor(dij,dij) + (-dw2)*Tensor(dik,dik) );
 }
 
@@ -199,9 +199,9 @@ double Angles::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
   double angle=a.compute(dij,dik,ddij,ddik);
 
   // And finish the calculation
-  myatoms.addAtomsDerivatives( 1, 1, ddik );
-  myatoms.addAtomsDerivatives( 1, 0, - ddik - ddij );
-  myatoms.addAtomsDerivatives( 1, 2, ddij );
+  addAtomDerivatives( 1, 1, ddik, myatoms );
+  addAtomDerivatives( 1, 0, - ddik - ddij, myatoms );
+  addAtomDerivatives( 1, 2, ddij, myatoms );
   myatoms.addBoxDerivatives( 1, -(Tensor(dij,ddij)+Tensor(dik,ddik)) );
 
   return angle;
