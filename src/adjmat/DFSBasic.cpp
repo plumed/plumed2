@@ -93,7 +93,7 @@ to determine how similar the environment around each atom is to an FCC unit cell
 \ref MFILTER_MORE means that when the clustering is performed by DFSCLUSTERING only those atoms from the \ref FCCUBIC action
 that have an fcccubic switching function greater than 0.045 are explicitly clustered using the DFS algorithm.  As described on 
 the manual page for \ref MFILTER_MORE this command takes each of the various symmetry functions input by the input multicolvar (in this 
-case the FCCCUBIC multicolvar labelled cubic1) and ascribes each of them a weight, \f$w_i\f$ using:
+case the FCCUBIC multicolvar labelled cubic1) and ascribes each of them a weight, \f$w_i\f$ using:
 \f[
 w_i = 1.0 - s( v_i ) 
 \f]
@@ -102,7 +102,7 @@ SWITCH keyword.  Within the DFSCLUSTERING these continuous switching functions h
 switching functions, which is done through the WTOL keyword.  The value given to this keyword ensures that any symmetry function
 calculated by cubic1 whose weight (calculated by MFILTER_MORE) is less than 0.03 is ignored during the DFS clustering.  
 
-Once again the final quantity to be calculated here is the number of atoms in the largest cluster that have an FCCCUBIC 
+Once again the final quantity to be calculated here is the number of atoms in the largest cluster that have an FCCUBIC 
 parameter greater than 0.035.  There is a very important and subtle distinction between what is being calculated here and
 what was calculated in the first example, however.  The difference is best understood by considering an example.  Imagine we had
 a very large extended but largely disordered cluster of atoms.  By virtue of sheer blind luck a few widely-spaced atoms in this disordered
