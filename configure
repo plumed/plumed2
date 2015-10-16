@@ -6962,6 +6962,10 @@ build_dir=`pwd`
 # saving the result to Makefile.conf
 ac_config_files="$ac_config_files Makefile.conf sourceme.sh"
 
+# This is to have the stamp-h file up to date
+# The date of this file keeps track of when Makefile.conf and sourceme.sh have been updated
+ac_config_files="$ac_config_files stamp-h"
+
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
 # tests run on this system so they can be shared between configure
@@ -7669,6 +7673,7 @@ do
   case $ac_config_target in
     "Makefile.conf") CONFIG_FILES="$CONFIG_FILES Makefile.conf" ;;
     "sourceme.sh") CONFIG_FILES="$CONFIG_FILES sourceme.sh" ;;
+    "stamp-h") CONFIG_FILES="$CONFIG_FILES stamp-h" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
@@ -8082,6 +8087,11 @@ which seems to be undefined.  Please make sure it is defined" >&2;}
 
   esac
 
+
+  case $ac_file$ac_mode in
+    "stamp-h":F) echo timestamp > stamp-h ;;
+
+  esac
 done # for ac_tag
 
 

@@ -773,5 +773,8 @@ build_dir=`pwd`
 # This is to replace tags in Makefile.conf.in
 # saving the result to Makefile.conf
 AC_CONFIG_FILES([Makefile.conf sourceme.sh])
+# This is to have the stamp-h file up to date
+# The date of this file keeps track of when Makefile.conf and sourceme.sh have been updated
+AC_CONFIG_FILES([stamp-h], [echo timestamp > stamp-h])
 AC_OUTPUT
 
