@@ -1,0 +1,27 @@
+at: FIXEDATOM AT=0.1,0.2,0.3 SCALED_COMPONENTS
+DUMPATOMS ATOMS=at FILE=x
+
+d: DISTANCE ATOMS=at,2 SCALED_COMPONENTS NOPBC
+
+# alternative calculation:
+p: POSITION ATOM=2 NOPBC SCALED_COMPONENTS
+one: CONSTANT VALUE=1.0
+da: COMBINE ARG=p.a,one COEFFICIENTS=1,-0.1 PERIODIC=NO
+db: COMBINE ARG=p.b,one COEFFICIENTS=1,-0.2 PERIODIC=NO
+dc: COMBINE ARG=p.c,one COEFFICIENTS=1,-0.3 PERIODIC=NO
+
+### # I used this to test derivatives during development:
+### # take the difference between the two definitions:
+###  co1: COMBINE ARG=d.a,da COEFFICIENTS=1,-1 PERIODIC=NO
+###  co2: COMBINE ARG=d.b,db COEFFICIENTS=1,-1 PERIODIC=NO
+###  co3: COMBINE ARG=d.c,dc COEFFICIENTS=1,-1 PERIODIC=NO
+###  co:  COMBINE ARG=co1,co2,co3 POWERS=2,2,2 PERIODIC=NO
+### # if I apply a force on co there should be no resulting force on atoms
+
+# For the regtest I keep the force so as to check it
+co: COMBINE ARG=d.a,d.b,d.c COEFFICIENTS=1,0.5,-1 PERIODIC=NO
+
+val: BIASVALUE ARG=co
+
+PRINT FILE=colvar ARG=d.a,d.b,d.c,da,db,dc,val.bias
+
