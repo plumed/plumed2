@@ -5,6 +5,8 @@
 This page contains changes that will end up in 2.3
 
 Changes from version 2.2 which are relevant for users:
+- New actions:
+  - \ref FIXEDATOM
 - New features for existing actions:
   - The SPECIES and SPECIESA keyword in MultiColvars can now take a multicolvar as input.  This allows one
     to calculate quantities such as the Q4 parameters for those atoms that have a coordination number greater
