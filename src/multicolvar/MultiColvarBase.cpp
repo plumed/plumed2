@@ -67,7 +67,6 @@ Action(ao),
 ActionAtomistic(ao),
 ActionWithValue(ao),
 ActionWithVessel(ao),
-numder_func(false),
 usepbc(false),
 allthirdblockintasks(false),
 uselinkforthree(false),
@@ -429,7 +428,6 @@ void MultiColvarBase::calculate(){
 //     if( bb ) changeBox( (bb->getPntrToMultiColvar())->getBox() );
 //     else changeBox( mybasemulticolvars[maxb]->getBox() );
 //  }
-  plumed_dbg_assert( colvar_label.size()==0 );
   // Setup the link cells
   setupLinkCells();
   // And run all tasks

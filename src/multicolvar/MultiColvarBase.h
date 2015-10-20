@@ -46,8 +46,6 @@ class MultiColvarBase :
  friend class VolumeGradientBase;
  friend class MultiColvarFilter;
 private:
-/// Are we in the part where we have to recalculate the base colvars for numerical derivatives
-  bool numder_func;
 /// Use periodic boundary conditions
   bool usepbc;
 /// The forces we are going to apply to things
