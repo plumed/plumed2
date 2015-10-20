@@ -34,6 +34,10 @@ OrderingVessel::OrderingVessel( const VesselOptions& da ) :
 ValueVessel(da)
 {
   mydata = getAction()->buildDataStashes( false, 0.0 );
+  for(unsigned i=0;i<getAction()->getNumberOfVessels();++i){
+      if( getAction()->getPntrToVessel(i)->getName()==getName() ) 
+           error("calculating lowest/highest value multiple times serves no purpose");
+  }
 }
 
 void OrderingVessel::resize(){

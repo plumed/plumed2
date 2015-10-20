@@ -116,11 +116,11 @@ void Keywords::reserve( const std::string & t, const std::string & k, const std:
   std::string fd, lowkey=k;
   std::transform(lowkey.begin(),lowkey.end(),lowkey.begin(),tolower);
   if( t=="vessel" ){
-     fd = d + " The final value can be referenced using <em>label</em>." + lowkey + 
-              ".  You can use multiple instances of this keyword i.e. " + 
-              k +"1, " + k + "2, " + k + "3...  The corresponding values are then " 
-              "referenced using <em>label</em>."+ lowkey +"-1,  <em>label</em>." + lowkey + 
-              "-2,  <em>label</em>." + lowkey + "-3...";  
+     fd = d + " The final value can be referenced using <em>label</em>." + lowkey;
+     if(d.find("flag")==std::string::npos) fd += ".  You can use multiple instances of this keyword i.e. " + 
+                                                 k +"1, " + k + "2, " + k + "3...  The corresponding values are then " 
+                                                 "referenced using <em>label</em>."+ lowkey +"-1,  <em>label</em>." + lowkey + 
+                                                 "-2,  <em>label</em>." + lowkey + "-3...";  
      allowmultiple.insert( std::pair<std::string,bool>(k,true) );
      types.insert( std::pair<std::string,KeyType>(k,KeyType("vessel")) );
   } else if( t=="numbered" ){  

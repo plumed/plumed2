@@ -52,6 +52,7 @@ friend class FunctionVessel;
 friend class StoreDataVessel;
 friend class BridgeVessel;
 friend class ActionWithInputVessel;
+friend class OrderingVessel;
 private:
 /// Do all calculations in serial
   bool serial;
