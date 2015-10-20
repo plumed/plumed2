@@ -133,7 +133,7 @@ BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ){
   VesselOptions da("","",0,"",this); 
   BridgeVessel* bv=new BridgeVessel(da);
   bv->setOutputAction( tome );
-  tome->actionIsBridged=true;
+  tome->actionIsBridged=true; dertime_can_be_off=false;
   functions.push_back( dynamic_cast<Vessel*>(bv) );
   resizeFunctions();
   return bv; 
@@ -309,7 +309,6 @@ void ActionWithVessel::runAllTasks(){
   buffer.assign( buffer.size(), 0.0 );
   // Switch off calculation of derivatives in main loop
   if( dertime_can_be_off ) dertime=false;
-
   // std::vector<unsigned> der_list;
   // if( mydata ) der_list.resize( mydata->getSizeOfDerivativeList(), 0 ); 
 
