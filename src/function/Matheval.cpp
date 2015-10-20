@@ -211,6 +211,9 @@ names(getNumberOfArguments())
   log.printf("  with variables :");
   for(unsigned i=0;i<var.size();i++) log.printf(" %s",var[i].c_str());
   log.printf("\n");
+  log.printf("  function as parsed by matheval: %s\n", evaluator_get_string(evaluator));
+  log.printf("  derivatives as computed by matheval:\n");
+  for(unsigned i=0;i<var.size();i++) log.printf("    %s\n",evaluator_get_string(evaluator_deriv[i]));
 }
 
 void Matheval::calculate(){
