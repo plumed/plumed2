@@ -108,6 +108,8 @@ HISTOGRAM ...
 ... HISTOGRAM
 \endverbatim
 
+\bug Option FREE-ENERGY without USE_ALL_DATA is not working properly. See \issue{175}.
+
 */
 //+ENDPLUMEDOC
 
