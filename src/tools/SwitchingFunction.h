@@ -41,7 +41,7 @@ class SwitchingFunction{
 /// This is to check that switching function has been initialized
   bool init;
 /// Type of function
-  enum {rational,exponential,gaussian,smap,cubic,tanh} type;
+  enum {rational,exponential,gaussian,smap,cubic,tanh,matheval} type;
 /// Inverse of scaling length.
 /// We store the inverse to avoid a division
   double invr0;
@@ -63,10 +63,18 @@ class SwitchingFunction{
 /// Low-level tool to compute rational functions.
 /// It is separated since it is called both by calculate() and calculateSqr()
   double do_rational(double rdist,double&dfunc,int nn,int mm)const;
+/// Evaluator for matheval:
+  void* evaluator;
+/// Evaluator for matheval:
+  void* evaluator_deriv;
 public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
   SwitchingFunction();
+/// Destructor
+  ~SwitchingFunction();
+/// Copy constructor
+  SwitchingFunction(const SwitchingFunction&);
 /// Set a "rational" switching function.
 /// Notice that a d_max is set automatically to a value such that
 /// f(d_max)=0.00001. 

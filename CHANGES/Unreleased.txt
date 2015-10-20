@@ -5,12 +5,16 @@
 This page contains changes that will end up in 2.3
 
 Changes from version 2.2 which are relevant for users:
+- Changes leading to incompatible behavior:
+  - \ref COMMITTOR can now be used to define multiple basins, but the syntax has been changed
 - New actions:
   - \ref FIXEDATOM
 - New features for existing actions:
   - The SPECIES and SPECIESA keyword in MultiColvars can now take a multicolvar as input.  This allows one
     to calculate quantities such as the Q4 parameters for those atoms that have a coordination number greater
     than x.
-  - In rational switching functions, by default MM is twice NN. This is valid both in \ref switchingfunction with expanded          syntax and when specifying MM on e.g. \ref COORDINATION
+  - In rational switching functions, by default MM is twice NN. This is valid both in \ref switchingfunction with expanded
+    syntax and when specifying MM on e.g. \ref COORDINATION
+  - Added MATHEVAL type in \ref switchingfunction
 
 */
