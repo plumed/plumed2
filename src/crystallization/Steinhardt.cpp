@@ -28,7 +28,7 @@ namespace crystallization {
 void Steinhardt::registerKeywords( Keywords& keys ){
   VectorMultiColvar::registerKeywords( keys ); 
   keys.add("compulsory","NN","12","The n parameter of the switching function ");
-  keys.add("compulsory","MM","24","The m parameter of the switching function ");
+  keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
   keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
