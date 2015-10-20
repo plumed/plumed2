@@ -81,7 +81,7 @@ void Committor::registerKeywords( Keywords& keys ){
   keys.add("numbered", "BASIN_LL","List of lower limits for basin #");
   keys.add("numbered", "BASIN_UL","List of upper limits for basin #");
   keys.add("compulsory","STRIDE","1","the frequency with which the CVs are analysed");
-  keys.add("optional","FILE","the name of the file on which to output these quantities");
+  keys.add("optional","FILE","the name of the file on which to output the reached basin");
   keys.add("optional","FMT","the format that should be used to output real numbers");
 }
 
@@ -107,11 +107,15 @@ fmt("%f")
   for(unsigned i=0;i<getNumberOfArguments();++i) ofile.setupPrintValue( getPntrToArgument(i) );
 
   for(unsigned b=1;;++b ){
-     parseNumberedVector("BASIN_LL", b, lowerlimits[b] );
-     parseNumberedVector("BASIN_UL", b, upperlimits[b] );
-     if( lowerlimits[b].empty() && upperlimits[b].empty() ) break;
-     if( lowerlimits[b].size()!=getNumberOfArguments()) error("Wrong number of values for BASIN_LL: they should be equal to the number of arguments");
-     if( upperlimits[b].size()!=getNumberOfArguments()) error("Wrong number of values for BASIN_UL: they should be equal to the number of arguments");
+
+     std::vector<double> tmpl, tmpu;
+     parseNumberedVector("BASIN_LL", b, tmpl );
+     parseNumberedVector("BASIN_UL", b, tmpu );
+     if( tmpl.empty() && tmpu.empty() ) break;
+     if( tmpl.size()!=getNumberOfArguments()) error("Wrong number of values for BASIN_LL: they should be equal to the number of arguments");
+     if( tmpu.size()!=getNumberOfArguments()) error("Wrong number of values for BASIN_UL: they should be equal to the number of arguments");
+     lowerlimits.push_back(tmpl);
+     upperlimits.push_back(tmpu);
      nbasins=b;
   }
   checkRead();
