@@ -143,7 +143,8 @@ void RDC::registerKeywords( Keywords& keys ){
                              "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one dipolar coupling will be "
                              "calculated for each ATOMS keyword you specify.");
   keys.reset_style("ATOMS","atoms");
-  keys.add("compulsory","TYPE","QFACTOR","The type of calculation relative to the Residual Dipolar Coupling");
+  keys.add("compulsory","TYPE","QFACTOR","The type of calculation relative to the Residual Dipolar Coupling:"
+                                         "QFACTOR, SQUAREDEV, CORRELATION, COMPONENTS, SVD.");
   keys.add("numbered","COUPLING","Add an experimental value for each coupling. ");
   keys.add("numbered","GYROM","Add the product of the gyromagnetic constants for each bond. ");
   keys.add("numbered","SCALE","Add a scaling factor to take into account concentration and other effects. ");
@@ -151,6 +152,9 @@ void RDC::registerKeywords( Keywords& keys ){
   keys.addFlag("ENSEMBLE",false,"Set to TRUE if you want to average over multiple replicas.");  
   keys.addFlag("SERIAL",false,"Set to TRUE if you want to run the CV in serial.");  
   keys.addOutputComponent("bond_","COMPONENTS","the squared deviation of the RDC for bond #");
+  keys.addOutputComponent("corr","CORRELATION","the correlation between calculated and experimental RDCs");
+  keys.addOutputComponent("slope","CORRELATION","the slope between calculated and experimental RDCs");
+  keys.addOutputComponent("inter","CORRELATION","the intercept between calculated and experimental RDCs");
 }
 
 RDC::RDC(const ActionOptions&ao):
@@ -251,11 +255,26 @@ norm(0.0)
 
   checkRead();
 
-  if(type==QF||type==SDEV||type==CORR) {
+  if(type==QF||type==SDEV) {
     addValueWithDerivatives();
     setNotPeriodic();
     if(ensemble) setEnsemble(ens_dim);
     else setNotEnsemble();
+
+  } else if(type==CORR) {
+      addComponentWithDerivatives("corr"); componentIsNotPeriodic("corr");
+      addComponentWithDerivatives("slope"); componentIsNotPeriodic("slope");
+      addComponentWithDerivatives("inter"); componentIsNotPeriodic("inter");
+      if(ensemble) {
+        componentIsEnsemble("corr", ens_dim);
+        componentIsEnsemble("slope", ens_dim);
+        componentIsEnsemble("inter", ens_dim);
+      } else {
+        componentIsNotEnsemble("corr");
+        componentIsNotEnsemble("slope");
+        componentIsNotEnsemble("inter");
+      }
+
   } else if(type==COMP) {
     for(unsigned i=0;i<coupl.size();i++) {
       std::string num; Tools::convert(i,num);
@@ -446,7 +465,6 @@ void RDC::qf_calc(bool qf, bool docomp)
 
 void RDC::corr_calc()
 {
-  double score=0.;
   double scx=0., scx2=0., scy=0., scxy=0.;
   vector<double> rdc( coupl.size() );
   unsigned N = getNumberOfAtoms();
@@ -532,7 +550,6 @@ void RDC::corr_calc()
     } else for(unsigned i=0;i<coupl.size();i++) rdc[i] = 0.;
     // inside each replica
     comm.Sum(&rdc[0], coupl.size() );
-    score = 0.;
     for(unsigned r=rank;r<N;r+=stride) {
       unsigned index=r/2;
       scx  += rdc[index];
@@ -542,9 +559,14 @@ void RDC::corr_calc()
     } 
   }
  
-  Tensor virial;
-  virial.zero();
-  vector<Vector> deriv(N);
+  Tensor co_virial, sl_virial, int_virial;
+  co_virial.zero();
+  sl_virial.zero();
+  int_virial.zero();
+  vector<Vector> co_deriv(N);
+  vector<Vector> sl_deriv(N);
+  vector<Vector> int_deriv(N);
+
   if(!serial) { 
     comm.Sum(scxy);
     comm.Sum(scx);
@@ -552,30 +574,74 @@ void RDC::corr_calc()
     comm.Sum(scx2);
   }
   double ns = coupl.size();
+
   double num = ns*scxy - scx*scy;
   double scy2=norm;
-  double idevx = 1./sqrt(ns*scx2-scx*scx);
+  double idev2x = 1./(ns*scx2-scx*scx);
+  double idevx = sqrt(idev2x);
   double idevy = 1./sqrt(ns*scy2-scy*scy);
-  score = num * idevx * idevy;
+  /* correlation */
+  double correlation = num * idevx * idevy;
+  /* slope and intercept */
+  double slope = num * idev2x;
+  double inter = (scy - slope * scx)/ns;
+
+  /* derivatives */
   for(unsigned r=rank;r<N;r+=stride) {
     unsigned index=r/2;
-    double tmpder1 = (ns*coupl[index]-scy)*idevx*idevy;
-    double tmpder2 = num*(ns*rdc[index]-scx)*idevy*idevx*idevx*idevx;
-    double tmpder3 = fact*(tmpder1-tmpder2);
-    deriv[r]   = tmpder3*dRDC[r];
-    deriv[r+1] = tmpder3*dRDC[r+1];
-    virial=virial+(-1.*Tensor(getPosition(r),deriv[r]));
-    virial=virial+(-1.*Tensor(getPosition(r+1),deriv[r+1]));
+    double common_d1 = (ns*coupl[index]-scy)*idevx;
+    double common_d2 = num*(ns*rdc[index]-scx)*idev2x*idevx;
+    double common_d3 = common_d1 - common_d2;
+    /* correlation */
+    double co_der = fact*common_d3*idevy;
+    co_deriv[r]   = co_der*dRDC[r];
+    co_deriv[r+1] = co_der*dRDC[r+1];
+    co_virial=co_virial+(-1.*Tensor(getPosition(r),co_deriv[r]));
+    co_virial=co_virial+(-1.*Tensor(getPosition(r+1),co_deriv[r+1]));
+    /* end */
+
+    /* slope */
+    double common_sl = (common_d1-2.*common_d2)*idevx;
+    double sl_der = fact*common_sl;
+    sl_deriv[r]   = sl_der*dRDC[r];
+    sl_deriv[r+1] = sl_der*dRDC[r+1];
+    sl_virial=sl_virial+(-1.*Tensor(getPosition(r),sl_deriv[r]));
+    sl_virial=sl_virial+(-1.*Tensor(getPosition(r+1),sl_deriv[r+1]));
+    /* end */
+
+    /* intercept */
+    double int_der = -fact*(slope+ scx*common_sl)/ns;
+    int_deriv[r]   = int_der*dRDC[r];
+    int_deriv[r+1] = int_der*dRDC[r+1];
+    int_virial=int_virial+(-1.*Tensor(getPosition(r),int_deriv[r]));
+    int_virial=int_virial+(-1.*Tensor(getPosition(r+1),int_deriv[r+1]));
+    /* end */
   }
 
   if(!serial){
-    if(!deriv.empty()) comm.Sum(&deriv[0][0],3*deriv.size());
-    comm.Sum(virial);
+    if(!co_deriv.empty())  comm.Sum(&co_deriv[0][0], 3*co_deriv.size());
+    if(!sl_deriv.empty())  comm.Sum(&sl_deriv[0][0], 3*sl_deriv.size());
+    if(!int_deriv.empty()) comm.Sum(&int_deriv[0][0],3*int_deriv.size());
+    comm.Sum(co_virial);
+    comm.Sum(sl_virial);
+    comm.Sum(int_virial);
   }
 
-  for(unsigned i=0;i<N;i++) setAtomsDerivatives(i,deriv[i]);
-  setValue           (score);
-  setBoxDerivatives  (virial);
+  Value* valuea=getPntrToComponent("corr");
+  Value* valueb=getPntrToComponent("slope");
+  Value* valuec=getPntrToComponent("inter");
+
+  for(unsigned i=0;i<N;i++) {
+    setAtomsDerivatives(valuea,i,co_deriv[i]);
+    setAtomsDerivatives(valueb,i,sl_deriv[i]);
+    setAtomsDerivatives(valuec,i,int_deriv[i]);
+  }
+  valuea->set(correlation);
+  valueb->set(slope);
+  valuec->set(inter);
+  setBoxDerivatives(valuea, co_virial);
+  setBoxDerivatives(valueb, sl_virial);
+  setBoxDerivatives(valuec, int_virial);
 }
 
 void RDC::svd_calc()
