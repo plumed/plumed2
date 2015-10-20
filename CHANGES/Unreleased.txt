@@ -5,6 +5,8 @@
 This page contains changes that will end up in 2.3
 
 Changes from version 2.2 which are relevant for users:
+- Changes leading to incompatible behavior:
+  - \ref COMMITTOR can now be used to define multiple basins, but the syntax has been changed
 - New actions:
   - \ref FIXEDATOM
 - New features for existing actions:
