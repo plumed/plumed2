@@ -63,8 +63,6 @@ protected:
 public:
   explicit MultiColvarFunction(const ActionOptions&);
   static void registerKeywords( Keywords& keys );
-/// Calculate the numerical derivatives for this action
-  void calculateNumericalDerivatives( ActionWithValue* a=NULL );
 };
 
 inline

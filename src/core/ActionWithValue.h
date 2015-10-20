@@ -198,6 +198,7 @@ int ActionWithValue::getNumberOfComponents() const {
 
 inline
 void ActionWithValue::useNumericalDerivatives(){
+  plumed_massert( keywords.exists("NUMERICAL_DERIVATIVES"), "numerical derivatives are not permitted for this action" );
   numericalDerivatives=true;
 }
 

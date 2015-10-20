@@ -117,6 +117,8 @@ public:
   void applyPbc(std::vector<Vector>& dlist, unsigned max_index=0) const;
 /// Do the calculation
   void calculate();
+/// Calculate numerical derivatives
+  virtual void calculateNumericalDerivatives( ActionWithValue* a=NULL );
 /// Perform one of the tasks
   virtual void performTask( const unsigned& , const unsigned& , MultiValue& ) const ;
 /// Update the active atoms
