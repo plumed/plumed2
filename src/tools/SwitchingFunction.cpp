@@ -130,7 +130,7 @@ void SwitchingFunction::registerKeywords( Keywords& keys ){
   keys.add("compulsory","D_0","0.0","the value of D_0 in the switching function");
   keys.add("optional","D_MAX","the value at which the switching function can be assumed equal to zero");
   keys.add("compulsory","NN","6","the value of n in the switching function (only needed for TYPE=RATIONAL)");
-  keys.add("compulsory","MM","12","the value of m in the switching function (only needed for TYPE=RATIONAL)");
+  keys.add("compulsory","MM","0","the value of m in the switching function (only needed for TYPE=RATIONAL); 0 implies 2*NN");
   keys.add("compulsory","A","the value of a in the switching funciton (only needed for TYPE=SMAP)");
   keys.add("compulsory","B","the value of b in the switching funciton (only needed for TYPE=SMAP)"); 
 }
@@ -171,9 +171,10 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   if(name=="RATIONAL"){
     type=rational;
     nn=6;
-    mm=12;
+    mm=0;
     Tools::parse(data,"NN",nn);
     Tools::parse(data,"MM",mm);
+    if(mm==0) mm=2*nn;
   } else if(name=="SMAP"){
     type=smap;
     Tools::parse(data,"A",a);
@@ -326,7 +327,7 @@ SwitchingFunction::SwitchingFunction():
   d0(0.0),
   dmax(0.0),
   nn(6),
-  mm(12),
+  mm(0),
   a(0.0),
   b(0.0),
   c(0.0),
@@ -341,6 +342,7 @@ SwitchingFunction::SwitchingFunction():
 void SwitchingFunction::set(int nn,int mm,double r0,double d0){
   init=true;
   type=rational;
+  if(mm==0) mm=2*nn;
   this->nn=nn;
   this->mm=mm;
   this->invr0=1.0/r0;
