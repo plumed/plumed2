@@ -33,7 +33,7 @@ void MultiColvarFunction::registerKeywords( Keywords& keys ){
   MultiColvarBase::registerKeywords( keys );
   keys.add("compulsory","DATA","the labels of the action that calculates the multicolvars we are interested in");
   keys.reserve("compulsory","WTOL","if the base multicolvars have weights then you must define a hard cutoff on those you want to consider explicitally");
-  keys.reset_style("NUMERICAL_DERIVATIVES","hidden");
+  keys.remove("NUMERICAL_DERIVATIVES");
 }
 
 MultiColvarFunction::MultiColvarFunction(const ActionOptions& ao):
@@ -140,61 +140,6 @@ void MultiColvarFunction::buildAtomListWithPairs( const bool& allow_intra_group 
      }
   }
   setupAtomLists(); 
-}
-
-void MultiColvarFunction::calculateNumericalDerivatives( ActionWithValue* a ){
-  // Construct matrix to store numerical derivatives
-  unsigned natt=0; for(unsigned i=0;i<mybasemulticolvars.size();++i) natt += mybasemulticolvars[i]->getNumberOfAtoms();
-  unsigned pstart=3*natt;
-//  for(unsigned i=0;i<myinputdata.getNumberOfBaseMultiColvars();++i){
-//     BridgedMultiColvarFunction* bb=dynamic_cast<BridgedMultiColvarFunction*>( mybasemulticolvars[i] );
-//     if( bb ){
-//         BridgedMultiColvarFunction* bb2=dynamic_cast<BridgedMultiColvarFunction*>( bb->getPntrToMultiColvar() );
-//         plumed_massert( !bb2, "double filtered multicolvars and NumericalDerivatives are not compatible" );
-//         pstart+=3*(bb->getPntrToMultiColvar())->getNumberOfAtoms();
-//     } else {
-//        pstart+=3*mybasemulticolvars[i]->getNumberOfAtoms();
-//     }
-//  }
-  Matrix<double> numder_store( getNumberOfComponents(), pstart + 9 );
-
-  pstart=0; 
-  for(unsigned i=0;i<mybasemulticolvars.size();++i){
-     BridgedMultiColvarFunction* bb=dynamic_cast<BridgedMultiColvarFunction*>( mybasemulticolvars[i] );
-     if( bb ){
-        ( bb->getPntrToMultiColvar() )->calculateAtomicNumericalDerivatives( this, pstart );
-        for(unsigned k=0;k<getNumberOfComponents();++k){
-           Value* val=getPntrToComponent(k);
-           for(unsigned j=0;j<3*(bb->getPntrToMultiColvar())->getNumberOfAtoms();++j){
-              numder_store(k,pstart+j) = val->getDerivative(pstart + j);
-           }
-        }   
-     } else {
-        mybasemulticolvars[i]->calculateAtomicNumericalDerivatives( this, pstart );
-        for(unsigned k=0;k<getNumberOfComponents();++k){
-           Value* val=getPntrToComponent(k);
-           for(unsigned j=0;j<3*mybasemulticolvars[i]->getNumberOfAtoms();++j){
-              numder_store(k,pstart+j) = val->getDerivative(pstart + j);
-           }
-        }
-     }
-     pstart += 3*mybasemulticolvars[i]->getNumberOfAtoms();
-  }
-
-  // Note numerical derivatives only work for virial if mybasemulticolvars.size()==1
-  if( mybasemulticolvars.size()==1 ){
-      for(unsigned k=0;k<getNumberOfComponents();++k){
-         Value* val=getPntrToComponent(k);
-         for(unsigned j=0;j<9;++j) numder_store(k,pstart+j) = val->getDerivative(pstart + j);
-      }
-  }
-
-  // Now transfer to multicolvar
-  clearDerivatives();
-  for(unsigned j=0;j<getNumberOfComponents();++j){
-     Value* val=getPntrToComponent(j);
-     for(unsigned i=0;i<getNumberOfDerivatives();++i) val->addDerivative( i, numder_store(j,i) );
-  }
 }
 
 void MultiColvarFunction::getVectorDerivatives( const unsigned& ind, const bool& normed, MultiValue& myder ) const {

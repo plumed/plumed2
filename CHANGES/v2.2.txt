@@ -92,6 +92,10 @@ at what has been done to the other multicolvars in there for guidance.  Sorry fo
 Unreleased changes (will be included in 2.2.1)
 ---------------------------------------------
 
+For developers:
+- ./configure is automatically relaunched when changing ./configure or Makefile.conf. This makes it more robust
+  to switch between branches.
+
 See branch \branch{v2.2} on git repository.
 
 

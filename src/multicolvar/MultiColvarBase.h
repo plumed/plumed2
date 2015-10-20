@@ -46,8 +46,6 @@ class MultiColvarBase :
  friend class VolumeGradientBase;
  friend class MultiColvarFilter;
 private:
-/// Are we in the part where we have to recalculate the base colvars for numerical derivatives
-  bool numder_func;
 /// Use periodic boundary conditions
   bool usepbc;
 /// The forces we are going to apply to things
@@ -117,6 +115,8 @@ public:
   void applyPbc(std::vector<Vector>& dlist, unsigned max_index=0) const;
 /// Do the calculation
   void calculate();
+/// Calculate numerical derivatives
+  virtual void calculateNumericalDerivatives( ActionWithValue* a=NULL );
 /// Perform one of the tasks
   virtual void performTask( const unsigned& , const unsigned& , MultiValue& ) const ;
 /// Update the active atoms

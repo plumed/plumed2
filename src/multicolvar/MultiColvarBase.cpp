@@ -67,7 +67,6 @@ Action(ao),
 ActionAtomistic(ao),
 ActionWithValue(ao),
 ActionWithVessel(ao),
-numder_func(false),
 usepbc(false),
 allthirdblockintasks(false),
 uselinkforthree(false),
@@ -413,26 +412,31 @@ bool MultiColvarBase::setupCurrentAtomList( const unsigned& taskCode, AtomValueP
 }
 
 void MultiColvarBase::calculate(){ 
-  if( numder_func && colvar_label.size()>0 ){
-     // Clear any derivatives in base colvar that were 
-     // accumulated from previous calculations
-     for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasemulticolvars[i]->clearDerivatives();
-     // And recalculate
-     for(unsigned i=0;i<mybasemulticolvars.size();++i){
-        BridgedMultiColvarFunction* bb=dynamic_cast<BridgedMultiColvarFunction*>( mybasemulticolvars[i] );
-        if( bb ) (bb->getPntrToMultiColvar())->calculate();
-        else mybasemulticolvars[i]->calculate();
-     }
-     // Copy the box from the base multicolvar here
-     unsigned maxb=mybasemulticolvars.size() - 1;
-     BridgedMultiColvarFunction* bb=dynamic_cast<BridgedMultiColvarFunction*>( mybasemulticolvars[maxb] );
-     if( bb ) changeBox( (bb->getPntrToMultiColvar())->getBox() );
-     else changeBox( mybasemulticolvars[maxb]->getBox() );
-  }
+//  if( numder_func && colvar_label.size()>0 ){
+//     // Clear any derivatives in base colvar that were 
+//     // accumulated from previous calculations
+//     for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasemulticolvars[i]->clearDerivatives();
+//     // And recalculate
+//     for(unsigned i=0;i<mybasemulticolvars.size();++i){
+//        BridgedMultiColvarFunction* bb=dynamic_cast<BridgedMultiColvarFunction*>( mybasemulticolvars[i] );
+//        if( bb ) (bb->getPntrToMultiColvar())->calculate();
+//        else mybasemulticolvars[i]->calculate();
+//     }
+//     // Copy the box from the base multicolvar here
+//     unsigned maxb=mybasemulticolvars.size() - 1;
+//     BridgedMultiColvarFunction* bb=dynamic_cast<BridgedMultiColvarFunction*>( mybasemulticolvars[maxb] );
+//     if( bb ) changeBox( (bb->getPntrToMultiColvar())->getBox() );
+//     else changeBox( mybasemulticolvars[maxb]->getBox() );
+//  }
   // Setup the link cells
   setupLinkCells();
   // And run all tasks
   runAllTasks();
+}
+
+void MultiColvarBase::calculateNumericalDerivatives( ActionWithValue* a ){
+  if( colvar_label.size()>0 ) plumed_merror("cannot calculate numerical derivatives for this quantity");
+  calculateAtomicNumericalDerivatives( this, 0 );
 }
 
 void MultiColvarBase::addAtomDerivatives( const int& ival, const unsigned& iatom, const Vector& der, multicolvar::AtomValuePack& myatoms ) const {

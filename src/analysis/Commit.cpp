@@ -61,8 +61,9 @@ private:
   std::string file;
   OFile ofile;
   std::string fmt;
-  std::vector<double> amin, amax; 
-  std::vector<double> bmin, bmax;
+  std::vector< std::vector<double> > lowerlimits; 
+  std::vector< std::vector<double> > upperlimits;
+  unsigned nbasins;
 public:
   static void registerKeywords( Keywords& keys );
   explicit Committor(const ActionOptions&ao);
@@ -77,11 +78,9 @@ void Committor::registerKeywords( Keywords& keys ){
   ActionPilot::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
   keys.use("ARG");
+  keys.add("numbered", "BASIN_LL","List of lower limits for basin #");
+  keys.add("numbered", "BASIN_UL","List of upper limits for basin #");
   keys.add("compulsory","STRIDE","1","the frequency with which the CVs are analysed");
-  keys.add("compulsory","BASIN_A_LOWER","the lower bounds of Basin A");
-  keys.add("compulsory","BASIN_A_UPPER","the upper bounds of Basin A");
-  keys.add("compulsory","BASIN_B_LOWER","the lower bounds of Basin B");
-  keys.add("compulsory","BASIN_B_UPPER","the upper bounds of Basin B");
   keys.add("optional","FILE","the name of the file on which to output these quantities");
   keys.add("optional","FMT","the format that should be used to output real numbers");
 }
@@ -104,32 +103,41 @@ fmt("%f")
   parse("FMT",fmt);
   fmt=" "+fmt;
   log.printf("  with format %s\n",fmt.c_str());
-  for(unsigned i=0;i<getNumberOfArguments();++i) ofile.setupPrintValue( getPntrToArgument(i) );
-  parseVector("BASIN_A_LOWER",amin);
-  if(amin.size()!=getNumberOfArguments()) error("Wrong number of values for BASIN_A_LOWER: they should be equal to the number of arguments");
-  parseVector("BASIN_A_UPPER",amax);
-  if(amax.size()!=getNumberOfArguments()) error("Wrong number of values for BASIN_A_UPPER: they should be equal to the number of arguments");
-  parseVector("BASIN_B_LOWER",bmin);
-  if(bmin.size()!=getNumberOfArguments()) error("Wrong number of values for BASIN_B_LOWER: they should be equal to the number of arguments");
-  parseVector("BASIN_B_UPPER",bmax);
-  if(bmax.size()!=getNumberOfArguments()) error("Wrong number of values for BASIN_B_UPPER: they should be equal to the number of arguments");
-  checkRead();
-  if(bmin>bmax||amin>amax) error("COMMITTOR: UPPER bounds must always be greater than LOWER bounds");
 
-  log.printf("  BASIN A definition\n");
-  for(unsigned i=0;i<amin.size();++i) log.printf(" %f - %f\n", amin[i], amax[i]);
-  log.printf("  BASIN B definition\n");
-  for(unsigned i=0;i<bmin.size();++i) log.printf(" %f - %f\n", bmin[i], bmax[i]);
+  for(unsigned i=0;i<getNumberOfArguments();++i) ofile.setupPrintValue( getPntrToArgument(i) );
+
+  for(unsigned b=1;;++b ){
+     parseNumberedVector("BASIN_LL", b, lowerlimits[b] );
+     parseNumberedVector("BASIN_UL", b, upperlimits[b] );
+     if( lowerlimits[b].empty() && upperlimits[b].empty() ) break;
+     if( lowerlimits[b].size()!=getNumberOfArguments()) error("Wrong number of values for BASIN_LL: they should be equal to the number of arguments");
+     if( upperlimits[b].size()!=getNumberOfArguments()) error("Wrong number of values for BASIN_UL: they should be equal to the number of arguments");
+     nbasins=b;
+  }
+  checkRead();
+
+
+  for(unsigned b=0;b<nbasins;b++) {
+    log.printf("  BASIN %i definition:\n", b+1);
+    for(unsigned i=0;i<getNumberOfArguments();++i){
+      if(lowerlimits[b][i]>upperlimits[b][i]) error("COMMITTOR: UPPER bounds must always be greater than LOWER bounds");
+      log.printf(" %f - %f\n", lowerlimits[b][i], upperlimits[b][i]);
+    }
+  }
 }
 
 void Committor::calculate(){
-  unsigned ba=1,bb=1;
+  std::vector<unsigned> inbasin;
+  inbasin.assign (nbasins,1);
 
-  for(unsigned i=0;i<getNumberOfArguments();++i){
-     if(getArgument(i)>amin[i]&&getArgument(i)<amax[i]) ba*=1; else ba*=0;
-     if(getArgument(i)>bmin[i]&&getArgument(i)<bmax[i]) bb*=1; else bb*=0;
+  for(unsigned b=0;b<nbasins;++b){
+    for(unsigned i=0;i<getNumberOfArguments();++i){
+       if(getArgument(i)>lowerlimits[b][i]&&getArgument(i)<upperlimits[b][i]) inbasin[b]*=1; else inbasin[b]*=0;
+    }
   }
-  if(ba||bb) {
+
+  for(unsigned b=0;b<nbasins;++b){
+    if(inbasin[b]==1) {
       ofile.fmtField(" %f");
       ofile.printField("time",getTime());
       for(unsigned i=0;i<getNumberOfArguments();i++){
@@ -137,11 +145,13 @@ void Committor::calculate(){
         ofile.printField( getPntrToArgument(i), getArgument(i) );
       }
       ofile.printField();
-      if(ba) ofile.addConstantField("COMMITTED TO BASIN A");
-      if(bb) ofile.addConstantField("COMMITTED TO BASIN B");
+      std::string num; Tools::convert( b+1, num );
+      std::string str = "COMMITED TO BASIN " + num;  
+      ofile.addConstantField(str);
       ofile.printField();
       ofile.flush();
       plumed.stop();
+    }
   }
 }
 

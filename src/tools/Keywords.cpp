@@ -114,13 +114,20 @@ void Keywords::copyData( std::vector<std::string>& kk, std::vector<std::string>&
 void Keywords::reserve( const std::string & t, const std::string & k, const std::string & d ){
   plumed_assert( !exists(k) && !reserved(k) );
   std::string fd, lowkey=k;
+  // Convert to lower case
   std::transform(lowkey.begin(),lowkey.end(),lowkey.begin(),tolower);
+ // Remove any underscore characters
+  for(unsigned i=0;;++i){
+     std::size_t num=lowkey.find_first_of("_");
+     if( num==std::string::npos ) break;
+     lowkey.erase( lowkey.begin() + num, lowkey.begin() + num + 1 );
+  }
   if( t=="vessel" ){
-     fd = d + " The final value can be referenced using <em>label</em>." + lowkey + 
-              ".  You can use multiple instances of this keyword i.e. " + 
-              k +"1, " + k + "2, " + k + "3...  The corresponding values are then " 
-              "referenced using <em>label</em>."+ lowkey +"-1,  <em>label</em>." + lowkey + 
-              "-2,  <em>label</em>." + lowkey + "-3...";  
+     fd = d + " The final value can be referenced using <em>label</em>." + lowkey;
+     if(d.find("flag")==std::string::npos) fd += ".  You can use multiple instances of this keyword i.e. " + 
+                                                 k +"1, " + k + "2, " + k + "3...  The corresponding values are then " 
+                                                 "referenced using <em>label</em>."+ lowkey +"-1,  <em>label</em>." + lowkey + 
+                                                 "-2,  <em>label</em>." + lowkey + "-3...";  
      allowmultiple.insert( std::pair<std::string,bool>(k,true) );
      types.insert( std::pair<std::string,KeyType>(k,KeyType("vessel")) );
   } else if( t=="numbered" ){  
@@ -184,7 +191,7 @@ void Keywords::add( const std::string & t, const std::string & k, const std::str
 }
 
 void Keywords::add( const std::string & t, const std::string & k, const std::string &  def, const std::string & d ){
-  plumed_assert( !exists(k) && !reserved(k) &&  t=="compulsory" ); // An optional keyword can't have a default
+  plumed_assert( !exists(k) && !reserved(k) &&  (t=="compulsory" || t=="hidden" )); // An optional keyword can't have a default
   types.insert(  std::pair<std::string,KeyType>(k, KeyType(t)) ); 
   documentation.insert( std::pair<std::string,std::string>(k,"( default=" + def + " ) " + d) );
   allowmultiple.insert( std::pair<std::string,bool>(k,false) );
