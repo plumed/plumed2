@@ -1,4 +1,4 @@
-#! FIELDS time rdca rdcb
+#! FIELDS time rdca rdcb.corr
  0.000000 0.838821 0.410525
  0.050000 1.255792 0.348690
  0.100000 1.549145 -0.237545
