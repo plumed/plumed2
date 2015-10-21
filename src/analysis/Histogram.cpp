@@ -108,7 +108,7 @@ HISTOGRAM ...
 ... HISTOGRAM
 \endverbatim
 
-\bug Option FREE-ENERGY without USE_ALL_DATA is not working properly. See \issue{175}.
+\bug Option FREE-ENERGY or UNNORMALIZED without USE_ALL_DATA is not working properly. See \issue{175}.
 
 */
 //+ENDPLUMEDOC
@@ -237,6 +237,7 @@ void Histogram::performAnalysis(){
   Grid* gg; IFile oldf; oldf.link(*this); 
   if( usingMemory() && oldf.FileExist(gridfname) ){
       if(fenergy) error("FREE-ENERGY only works with USE_ALL_DATA");
+      if(unnormalized) error("UNNORMALIZED only works with USE_ALL_DATA");
       oldf.open(gridfname);
       gg = Grid::create( "probs", getArguments(), oldf, gmin, gmax, gbin, false, false, false );
       oldf.close();
