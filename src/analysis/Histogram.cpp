@@ -236,6 +236,7 @@ void Histogram::performAnalysis(){
 
   Grid* gg; IFile oldf; oldf.link(*this); 
   if( usingMemory() && oldf.FileExist(gridfname) ){
+      if(fenergy) error("FREE-ENERGY only works with USE_ALL_DATA");
       oldf.open(gridfname);
       gg = Grid::create( "probs", getArguments(), oldf, gmin, gmax, gbin, false, false, false );
       oldf.close();
