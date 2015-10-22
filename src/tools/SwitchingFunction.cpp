@@ -61,7 +61,7 @@ s(r)=\frac{ 1 - \left(\frac{ r - d_0 }{ r_0 }\right)^{n} }{ 1 - \left(\frac{ r -
 \f$
 </td> <td>
 {RATIONAL R_0=\f$r_0\f$ D_0=\f$d_0\f$ NN=\f$n\f$ MM=\f$m\f$}
-</td> <td> \f$d_0=0.0\f$, \f$n=6\f$, \f$m=12\f$ </td>
+</td> <td> \f$d_0=0.0\f$, \f$n=6\f$, \f$m=2n\f$ </td>
 </tr> <tr>
 <td> EXP </td> <td>
 \f$

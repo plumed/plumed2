@@ -92,6 +92,10 @@ at what has been done to the other multicolvars in there for guidance.  Sorry fo
 Unreleased changes (will be included in 2.2.1)
 ---------------------------------------------
 
+For users:
+- PLUMED now reports an error when using \ref HISTOGRAM with UNNORMALIZED without USE_ALL_DATA. See \issue{175}
+
+
 For developers:
 - ./configure is automatically relaunched when changing ./configure or Makefile.conf. This makes it more robust
   to switch between branches.
