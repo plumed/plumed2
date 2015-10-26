@@ -83,6 +83,10 @@ For RNA or RNA residues, the following groups are available:
 
 Notice that `zeta` and `epsilon` groups should not be used on 3' end and `alpha` should not be used on 5' end.
 
+If the chosen group name does not match any of the default ones, the parser looks for a single atom
+with the same name. This means that it is also possible to pick single atoms using the syntax
+`@atom-residue~.
+
 \warning If a residue-chain is repeated twice only the first entry will be selected.
 
 \bug At the moment the HA1 atoms in a GLY residues are treated as if they are the CB atoms. This may or
@@ -102,6 +106,19 @@ MOLINFO STRUCTURE=reference.pdb
 ALPHARMSD RESIDUES=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} LABEL=a 
 \endverbatim
 (see also \ref ALPHARMSD)
+
+The following example prints the distance corresponding to the hydrogen bonds
+in a GC Watson-Crick pair.
+
+\verbatim
+MOLINFO STRUCTURE=reference.pdb
+hb1: DISTANCE ATOMS=@N2-1,@O2-14
+hb2: DISTANCE ATOMS=@N1-1,@N3-14
+hb3: DISTANCE ATOMS=@O6-1,@N4-14
+PRINT ARG=hb1,hb2,hb3
+\endverbatim
+(see also \ref DISTANCE).
+
 
 */
 //+ENDPLUMEDOC

@@ -216,7 +216,7 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
           numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("OG",resnum,chainid));
         else
           numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CG",resnum,chainid));
-      } else plumed_merror("protein name not recognized "+name);
+      } else numbers.push_back(mypdb.getNamedAtomFromResidueAndChain(name,resnum,chainid));
     } else if( allowedResidue("rna",resname) || allowedResidue("dna",resname)){
       std::string basetype;
       if(resname.find_first_of("A")!=std::string::npos) basetype+="A";
@@ -356,7 +356,7 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
           numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N7",resnum,chainid));
           numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C8",resnum,chainid));
         } else plumed_error();
-      } else plumed_merror("RNA/DNA name not recognized "+name);
+      } else numbers.push_back(mypdb.getNamedAtomFromResidueAndChain(name,resnum,chainid));
     }
   }
   else {
