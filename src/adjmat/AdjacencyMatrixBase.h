@@ -78,6 +78,10 @@ public:
   Vector getCentralAtom(){ plumed_merror("cannot find central atoms for adjacency matrix actions"); Vector dum; return dum; }
 /// Get the absolute index of an atom
 //  AtomNumber getAbsoluteIndexOfCentralAtom(const unsigned& i) const ;
+/// Transforms the stored values in whatever way is required
+  virtual double transformStoredValues( const std::vector<double>& myvals, unsigned& vout, double& df ) const ;
+/// Used to check for connections between atoms
+  virtual bool checkForConnection( const std::vector<double>& myvals ) const=0;
 };
 
 inline
@@ -96,6 +100,11 @@ void AdjacencyMatrixBase::getOrientationVector( const unsigned& ind, const bool&
   plumed_dbg_assert( ind<colvar_label.size() ); unsigned mmc=colvar_label[ind];
   plumed_assert( !mybasemulticolvars[mmc]->weightWithDerivatives() ); plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(ind,mmc) ) );
   mybasedata[mmc]->retrieveValue( convertToLocalIndex(ind,mmc), normed, orient );
+}
+
+inline
+double AdjacencyMatrixBase::transformStoredValues( const std::vector<double>& myvals, unsigned& vout, double& df  ) const {
+  plumed_dbg_assert( myvals.size()==2 ); vout=1; df=1; return myvals[1]; 
 }
 
 }

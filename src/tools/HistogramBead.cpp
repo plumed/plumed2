@@ -157,7 +157,11 @@ void HistogramBead::set( const std::string& params, std::string& errormsg ){
 }
 
 void HistogramBead::set( double l, double h, double w){
-  init=true; lowb=l; highb=h; width=w;  
+  init=true; lowb=l; highb=h; width=w; 
+  const double DP2CUTOFF=6.25;
+  if( type==gaussian ) cutoff=sqrt(2.0*DP2CUTOFF);
+  else if( type==triangular ) cutoff=1.;
+  else plumed_error();
 } 
 
 void HistogramBead::setKernelType( const std::string& ktype ){
@@ -191,6 +195,35 @@ double HistogramBead::calculate( double x, double& df ) const {
   } else {
      plumed_merror("function type does not exist");
   } 
+  return f;
+}
+
+double HistogramBead::calculateWithCutoff( double x, double& df ) const {
+  plumed_dbg_assert(init && periodicity!=unset );
+
+  double lowB, upperB, f;
+  lowB = difference( x, lowb ) / width ; upperB = difference( x, highb ) / width;
+  if( upperB<=-cutoff || lowB>=cutoff ){ double df=0; return 0; }
+
+  if( type==gaussian ){
+     lowB /= sqrt(2.0); upperB /= sqrt(2.0); 
+     df = ( exp( -lowB*lowB ) - exp( -upperB*upperB ) ) / ( sqrt(2*pi)*width );
+     f = 0.5*( erf( upperB ) - erf( lowB ) );
+  } else if( type==triangular ){
+     df=0;
+     if( fabs(lowB)<1. ) df = (1 - fabs(lowB)) / width;
+     if( fabs(upperB)<1. ) df -= (1 - fabs(upperB)) / width;
+     if (upperB<=-1. || lowB >=1.){
+        f=0.;
+     } else {
+       double ia, ib;
+       if( lowB>-1.0 ){ ia=lowB; }else{ ia=-1.0; }
+       if( upperB<1.0 ){ ib=upperB; } else{ ib=1.0; }
+       f = (ib*(2.-fabs(ib))-ia*(2.-fabs(ia)))*0.5;
+     }
+  } else {
+     plumed_merror("function type does not exist");
+  }
   return f;
 }
 

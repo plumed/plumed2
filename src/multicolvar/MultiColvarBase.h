@@ -94,7 +94,7 @@ protected:
 /// Set which atoms are to be used to calculate the central atom position
   void setAtomsForCentralAtom( const std::vector<bool>& catom_ind );
 /// Set the value of the cutoff for the link cells
-  void setLinkCellCutoff( const double& lcut );
+  void setLinkCellCutoff( const double& lcut, double tcut=-1.0 );
 /// Setup link cells in order to make this calculation faster
   void setupLinkCells();
 /// Get the separation between a pair of vectors
@@ -123,6 +123,8 @@ public:
   virtual void updateActiveAtoms( AtomValuePack& myatoms ) const ;
 /// This gets the position of an atom for the link cell setup
   virtual Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const ;
+/// Returns the position where we should assume the center is for link cell calculations
+  virtual Vector getLinkCellPosition( const std::vector<unsigned>& atoms ) const ;
 /// And a virtual function which actually computes the colvar
   virtual double doCalculation( const unsigned& tindex, AtomValuePack& myatoms ) const ;  
 /// Get the absolute index of the central atom
@@ -186,6 +188,11 @@ Vector MultiColvarBase::getPositionOfAtomForLinkCells( const unsigned& iatom ) c
   }
   return ActionAtomistic::getPosition( iatom );
 }
+
+inline
+Vector MultiColvarBase::getLinkCellPosition( const std::vector<unsigned>& atoms ) const {
+  return getPositionOfAtomForLinkCells( atoms[0] );
+} 
 
 inline
 unsigned MultiColvarBase::getNumberOfDerivatives(){

@@ -190,9 +190,11 @@ void MultiColvarBase::turnOnDerivatives(){
   forcesToApply.resize( getNumberOfDerivatives() );
 } 
 
-void MultiColvarBase::setLinkCellCutoff( const double& lcut ){
+void MultiColvarBase::setLinkCellCutoff( const double& lcut, double tcut ){
   plumed_assert( usespecies || ablocks.size()<4 );
-  linkcells.setCutoff( lcut ); threecells.setCutoff( lcut );
+  if( tcut<0 ) tcut=lcut;
+  linkcells.setCutoff( lcut ); 
+  threecells.setCutoff( tcut );
 }
 
 void MultiColvarBase::setupLinkCells(){
@@ -395,11 +397,11 @@ bool MultiColvarBase::setupCurrentAtomList( const unsigned& taskCode, AtomValueP
   if( usespecies ){
      if( isDensity() ) return true;
      std::vector<unsigned> task_atoms(1); task_atoms[0]=taskCode;
-     unsigned natomsper=myatoms.setupAtomsFromLinkCells( task_atoms, getPositionOfAtomForLinkCells(taskCode), linkcells );
+     unsigned natomsper=myatoms.setupAtomsFromLinkCells( task_atoms, getLinkCellPosition(task_atoms), linkcells );
      return natomsper>1;
   } else if( allthirdblockintasks ){ 
      plumed_dbg_assert( ablocks.size()==3 ); std::vector<unsigned> atoms(2); decodeIndexToAtoms( taskCode, atoms );
-     unsigned natomsper=myatoms.setupAtomsFromLinkCells( atoms, getPositionOfAtomForLinkCells(atoms[0]), threecells );
+     unsigned natomsper=myatoms.setupAtomsFromLinkCells( atoms, getLinkCellPosition(atoms), threecells );
   } else if( ablocks.size()<4 ){
      std::vector<unsigned> atoms( ablocks.size() );
      decodeIndexToAtoms( taskCode, atoms ); myatoms.setNumberOfAtoms( ablocks.size() );
