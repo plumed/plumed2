@@ -7,8 +7,16 @@ This page contains changes that will end up in 2.3
 Changes from version 2.2 which are relevant for users:
 - Changes leading to incompatible behavior:
   - \ref COMMITTOR can now be used to define multiple basins, but the syntax has been changed
+  - Syntax for \ref SPRINT, \ref DFSCLUSTERING, \ref DFSCLUSTERDIAMETER, \ref DFSMAXCLUSTER \ref DFSNUMEROFCLUSTERS has changed.
+    We have separated the Actions that calculate the contact matrix from these actions.  These actions thus now take a contact
+    matrix as input.  This means that we these actions can be used with contact matrices that measures whether or not a pair of atoms
+    are hydrogen bonded.  For more details on this see \ref contactmatrix 
 - New actions:
   - \ref FIXEDATOM
+  - \ref HBOND_MATRIX
+  - \ref DFSOUTPUT
+  - \ref ROWSUMS
+  - \ref COLUMNSUMS
 - New features for existing actions:
   - The SPECIES and SPECIESA keyword in MultiColvars can now take a multicolvar as input.  This allows one
     to calculate quantities such as the Q4 parameters for those atoms that have a coordination number greater
