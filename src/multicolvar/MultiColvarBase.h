@@ -64,6 +64,10 @@ private:
   std::vector<bool> use_for_central_atom;
 /// 1/number of atoms involved in central atoms
   double numberForCentralAtom;
+/// Ensures that setup is only performed once per loop
+  bool setup_completed;
+/// Ensures that retrieving of atoms is only done once per calculation loop
+  bool atomsWereRetrieved;
 protected:
 /// This is used to keep track of what is calculated where
   std::vector<unsigned> colvar_label;
@@ -97,6 +101,8 @@ protected:
   void setAtomsForCentralAtom( const std::vector<bool>& catom_ind );
 /// Set the value of the cutoff for the link cells
   void setLinkCellCutoff( const double& lcut, double tcut=-1.0 );
+/// Setup the link cells and neighbour list stuff
+  void setupActiveTaskSet( std::vector<unsigned>& active_tasks, const std::string& input_label );
 /// Setup link cells in order to make this calculation faster
   void setupLinkCells();
 /// This does setup of link cell stuff that is specific to the non-use of the usespecies keyword
@@ -117,6 +123,10 @@ public:
   bool usesPbc() const ;
 /// Apply PBCs over a set of distance vectors
   void applyPbc(std::vector<Vector>& dlist, unsigned max_index=0) const;
+/// Do some setup before the calculation
+  void prepare();
+/// This is overwritten here in order to make sure that we do not retrieve atoms multiple times
+  void retrieveAtoms();
 /// Do the calculation
   void calculate();
 /// Calculate numerical derivatives
@@ -168,7 +178,7 @@ unsigned MultiColvarBase::convertToLocalIndex( const unsigned& index, const unsi
 
 inline
 bool MultiColvarBase::isCurrentlyActive( const unsigned& bno, const unsigned& code ){
-  if( code<colvar_label.size() ){
+  if( setup_completed && code<colvar_label.size() ){
      unsigned mmc=colvar_label[code]; 
      return mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(code,mmc) ); 
   }

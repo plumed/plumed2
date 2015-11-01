@@ -22,6 +22,7 @@
 #include "MultiColvarBase.h"
 #include "BridgedMultiColvarFunction.h"
 #include "ActionVolume.h"
+#include "MultiColvarFilter.h"
 #include "vesselbase/Vessel.h"
 #include "vesselbase/BridgeVessel.h"
 #include "core/PlumedMain.h"
@@ -72,6 +73,8 @@ allthirdblockintasks(false),
 uselinkforthree(false),
 linkcells(comm),
 threecells(comm),
+setup_completed(false),
+atomsWereRetrieved(false),
 usespecies(false)
 {
   if( keywords.exists("NOPBC") ){ 
@@ -197,32 +200,13 @@ void MultiColvarBase::setLinkCellCutoff( const double& lcut, double tcut ){
   threecells.setCutoff( tcut );
 }
 
-bool MultiColvarBase::hasOnlyVolumeActions(){
-  bool justVolumes=true;
-  for(unsigned i=0;i<getNumberOfVessels();++i){
-      vesselbase::BridgeVessel* myb=dynamic_cast<vesselbase::BridgeVessel*>( getPntrToVessel(i) );
-      if( !myb ){ justVolumes=false; break; }
-      ActionVolume* myv=dynamic_cast<ActionVolume*>( myb->getOutputAction() );
-      if( !myv ){ justVolumes=false; break; }
-  }
-  return justVolumes;
-}
-
-void MultiColvarBase::findTasksInVolume( ActionVolume* myv, std::vector<unsigned>& active_tasks ){
-  myv->retrieveAtoms(); myv->setupRegions();
-
-  unsigned stride=comm.Get_size();
-  unsigned rank=comm.Get_rank();
-  if( serialCalculation() ){ stride=1; rank=0; }
-  
-  for(unsigned i=rank;i<getFullNumberOfTasks();i+=stride){
-      if( isCurrentlyActive( 0, getTaskCode(i) ) && myv->inVolumeOfInterest(i) ) active_tasks[i]=1;
-  }
-  if( !serialCalculation() ) comm.Sum( active_tasks );
-}
-
 void MultiColvarBase::setupLinkCells(){
   if( !linkcells.enabled() ) return ;
+  // Retrieve any atoms that haven't already been retrieved
+  for(std::vector<MultiColvarBase*>::iterator p=mybasemulticolvars.begin();p!=mybasemulticolvars.end();++p){
+     (*p)->retrieveAtoms();
+  }
+  retrieveAtoms();
 
   unsigned iblock;
   if( usespecies ){
@@ -382,46 +366,94 @@ bool MultiColvarBase::setupCurrentAtomList( const unsigned& taskCode, AtomValueP
   return true;
 }
 
-void MultiColvarBase::calculate(){ 
-  if( usespecies ){
-     std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
-     // Check if stored data is being used to calculate volumes
-     if( mydata ){
-         bool store_for_vol=(mydata->getNumberOfDataUsers()>0);
-         for(unsigned i=0;i<mydata->getNumberOfDataUsers();++i){
-             MultiColvarBase* myu=dynamic_cast<MultiColvarBase*>( mydata->getDataUser(i) );
-             if( !myu->hasOnlyVolumeActions() ) store_for_vol=false; 
-         }
-     // Now ensure that we only do calculations for those atoms in the relevant volume
-     } else if( hasOnlyVolumeActions() ){
-         for(unsigned i=0;i<getNumberOfVessels();++i){
-             vesselbase::BridgeVessel* myb=dynamic_cast<vesselbase::BridgeVessel*>( getPntrToVessel(i) );
-             ActionVolume* myv=dynamic_cast<ActionVolume*>( myb->getOutputAction() );
-             findTasksInVolume( myv, active_tasks );
-         }
-         // Now activate all tasks in base 
-         deactivateAllTasks();
-         activateTheseTasks( active_tasks );
-         contributorsAreUnlocked=false;
-     } else if( colvar_label.size()>0 ){
-         unsigned stride=comm.Get_size();
-         unsigned rank=comm.Get_rank();
-         if( serialCalculation() ){ stride=1; rank=0; }
+void MultiColvarBase::setupActiveTaskSet( std::vector<unsigned>& active_tasks, const std::string& input_label ){
+  if( !setup_completed ){ 
+      bool justVolumes=false;
+      if( usespecies ){
+          justVolumes=true;
+          for(unsigned i=0;i<getNumberOfVessels();++i){
+              vesselbase::StoreDataVessel* mys=dynamic_cast<vesselbase::StoreDataVessel*>( getPntrToVessel(i) );
+              if( mys ) continue;
+              vesselbase::BridgeVessel* myb=dynamic_cast<vesselbase::BridgeVessel*>( getPntrToVessel(i) );
+              if( !myb ){ justVolumes=false; break; }
+              ActionVolume* myv=dynamic_cast<ActionVolume*>( myb->getOutputAction() );
+              if( !myv ){ justVolumes=false; break; }
+          }
+      }
+      std::vector<unsigned> this_actions_tasks( getFullNumberOfTasks(), 0 );
+      if( justVolumes && mydata ){
+          if( mydata->getNumberOfDataUsers()==0 ) justVolumes=false;
 
-         for(unsigned i=rank;i<getFullNumberOfTasks();i+=stride){
-             if( isCurrentlyActive( 0, getTaskCode(i) ) ){ active_tasks[i]=1; }
-         }
+          for(unsigned i=0;i<mydata->getNumberOfDataUsers();++i){
+              MultiColvarBase* myu=dynamic_cast<MultiColvarBase*>( mydata->getDataUser(i) );
+              if( myu ){
+                  myu->setupActiveTaskSet( this_actions_tasks, getLabel() );
+              } else {
+                  for(unsigned i=0;i<this_actions_tasks.size();++i) this_actions_tasks[i]=1;
+              }
+          }
+      }
+      if( justVolumes ){
+          for(unsigned j=0;j<getNumberOfVessels();++j){
+              vesselbase::BridgeVessel* myb=dynamic_cast<vesselbase::BridgeVessel*>( getPntrToVessel(j) );
+              if( !myb ) continue ;
+              ActionVolume* myv=dynamic_cast<ActionVolume*>( myb->getOutputAction() );
+              if( !myv ) continue ;
+              myv->retrieveAtoms(); myv->setupRegions();
+              
+              for(unsigned i=0;i<getFullNumberOfTasks();++i){
+                 if( myv->inVolumeOfInterest(i) ) this_actions_tasks[i]=1;
+              }
+          }
+      } else { 
+          for(unsigned i=0;i<getFullNumberOfTasks();++i) this_actions_tasks[i]=1;
+      } 
 
-         if( !serialCalculation() ) comm.Sum( active_tasks );
-
-         deactivateAllTasks();
-         activateTheseTasks( active_tasks );
-         contributorsAreUnlocked=false;
-     }
+      // Now activate all this class
+      deactivateAllTasks();
+      activateTheseTasks( this_actions_tasks );
+      contributorsAreUnlocked=false;
+      // Setup the link cells
+      setupLinkCells();  
+      // Ensures that setup is not performed multiple times during one cycle
+      setup_completed=true;
   }
 
-  // Setup the link cells
-  setupLinkCells();
+  // And activate the tasks in input action
+  if( getLabel()!=input_label ){
+      int input_code=-1;
+      for(unsigned i=0;i<mybasemulticolvars.size();++i){
+          if( mybasemulticolvars[i]->getLabel()==input_label ){ input_code=i; break; }
+      }
+
+      MultiValue my_tvals( getNumberOfQuantities(), getNumberOfDerivatives() ); 
+      AtomValuePack mytmp_atoms( my_tvals, this );   
+      for(unsigned i=0;i<getFullNumberOfTasks();++i){
+          if( !taskIsCurrentlyActive(i) ) continue;
+          setupCurrentAtomList( getTaskCode(i), mytmp_atoms );
+          for(unsigned j=0;j<mytmp_atoms.getNumberOfAtoms();++j){
+              unsigned itask=mytmp_atoms.getIndex(j);
+              if( colvar_label[itask]==input_code ) active_tasks[ convertToLocalIndex( itask, input_code ) ]=1;   
+          }
+      }
+  }
+}
+
+void MultiColvarBase::calculate(){ 
+  std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
+  // Recursive function that sets up tasks
+  setupActiveTaskSet( active_tasks, getLabel() );
+
+  // Check for filters and rerun setup of link cells if there are any
+  if( colvar_label.size()>0 ){
+      bool inputAreFilters=true;
+      for(unsigned i=0;i<mybasemulticolvars.size();++i){
+          MultiColvarFilter* myfilt=dynamic_cast<MultiColvarFilter*>( mybasemulticolvars[i] );
+          if( !myfilt ) inputAreFilters=false;
+      }
+      if( inputAreFilters ) setupLinkCells();
+  }
+
   //  Setup the link cells if we are not using species
   if( !usespecies && ablocks.size()>1 ){
      // This loop finds the first active atom, which is always checked because
@@ -442,6 +474,14 @@ void MultiColvarBase::calculate(){
 void MultiColvarBase::calculateNumericalDerivatives( ActionWithValue* a ){
   if( colvar_label.size()>0 ) plumed_merror("cannot calculate numerical derivatives for this quantity");
   calculateAtomicNumericalDerivatives( this, 0 );
+}
+
+void MultiColvarBase::prepare(){
+  setup_completed=false; atomsWereRetrieved=false;
+}
+
+void MultiColvarBase::retrieveAtoms(){
+  if( !atomsWereRetrieved ){ ActionAtomistic::retrieveAtoms(); atomsWereRetrieved=true; }
 }
 
 void MultiColvarBase::addAtomDerivatives( const int& ival, const unsigned& iatom, const Vector& der, multicolvar::AtomValuePack& myatoms ) const {

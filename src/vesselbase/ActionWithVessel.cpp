@@ -253,7 +253,7 @@ void ActionWithVessel::activateTheseTasks( std::vector<unsigned>& additionalTask
       if( additionalTasks[i]>0 ){
           partialTaskList[nactive_tasks] = fullTaskList[i]; 
           indexOfTaskInFullList[nactive_tasks]=i;
-          nactive_tasks++;
+          taskFlags[i]=0; nactive_tasks++;
       } else {
           taskFlags[i]=1;
       }

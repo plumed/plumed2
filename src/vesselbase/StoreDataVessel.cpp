@@ -112,8 +112,9 @@ void StoreDataVessel::retrieveValue( const unsigned& myelem, const bool& normed,
   if( normed && values.size()>2 ){
      unsigned ibuf = myelem * vecsize * nspace;
      values[0]=local_buffer[ibuf]; ibuf+=nspace;
-     values[1]=local_buffer[ibuf]; ibuf+=nspace;   // Element 1 contains the norm of the vector
-     for(unsigned i=2;i<vecsize;++i){ values[i]=local_buffer[ibuf]/values[1]; ibuf+=nspace; } 
+     double norm=values[1]=local_buffer[ibuf]; ibuf+=nspace;   // Element 1 contains the norm of the vector
+     if( norm<epsilon ) norm=1.0;
+     for(unsigned i=2;i<vecsize;++i){ values[i]=local_buffer[ibuf]/norm; ibuf+=nspace; } 
   } else {
      unsigned ibuf = myelem * vecsize * nspace;
      for(unsigned i=0;i<vecsize;++i){ values[i]=local_buffer[ibuf]; ibuf+=nspace; }

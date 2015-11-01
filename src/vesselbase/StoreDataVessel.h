@@ -170,7 +170,7 @@ unsigned StoreDataVessel::getStoreIndex( const unsigned& ind ) const {
 
 inline
 void StoreDataVessel::recalculateStoredQuantity( const unsigned& myelem, MultiValue& myvals ){
-  getAction()->performTask( getAction()->getPositionInFullTaskList(myelem), getAction()->getTaskCode(myelem), myvals );
+  getAction()->performTask( myelem, getAction()->getTaskCode(myelem), myvals );
 }
 
 inline
