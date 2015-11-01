@@ -125,6 +125,10 @@ public:
   virtual void activateIndices( ActionWithVessel* ){}
 /// Forces on vectors should always be applied elsewhere
   virtual bool applyForce(std::vector<double>&){ return false; }
+///  Get the number of data users
+  unsigned getNumberOfDataUsers() const ;
+/// Get one of the ith data user
+  ActionWithVessel* getDataUser( const unsigned& );
 };
 
 inline
@@ -167,7 +171,17 @@ unsigned StoreDataVessel::getStoreIndex( const unsigned& ind ) const {
 inline
 void StoreDataVessel::recalculateStoredQuantity( const unsigned& myelem, MultiValue& myvals ){
   getAction()->performTask( getAction()->getPositionInFullTaskList(myelem), getAction()->getTaskCode(myelem), myvals );
-} 
+}
+
+inline
+unsigned StoreDataVessel::getNumberOfDataUsers() const {
+  return userActions.size();
+}
+
+inline
+ActionWithVessel* StoreDataVessel::getDataUser( const unsigned& idata ){
+  plumed_dbg_assert( idata<userActions.size() ); return userActions[idata];
+}
 
 }
 }

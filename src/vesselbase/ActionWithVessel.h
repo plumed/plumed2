@@ -70,8 +70,6 @@ private:
   double nl_tolerance;
 /// Pointers to the functions we are using on each value
   std::vector<Vessel*> functions;
-/// A pointer to the object that stores data
-  StoreDataVessel* mydata;
 /// Tempory storage for forces
   std::vector<double> tmpforces;
 /// Ths full list of tasks we have to perform
@@ -103,6 +101,8 @@ protected:
   bool weightHasDerivatives;
 /// This is used for numerical derivatives of bridge variables
   unsigned bridgeVariable;
+/// A pointer to the object that stores data
+  StoreDataVessel* mydata;
 /// Add a vessel to the list of vessels
   void addVessel( const std::string& name, const std::string& input, const int numlab=0 );
   void addVessel( Vessel* vv );

@@ -384,12 +384,16 @@ bool MultiColvarBase::setupCurrentAtomList( const unsigned& taskCode, AtomValueP
 
 void MultiColvarBase::calculate(){ 
   if( usespecies ){
-     // Now check for calculating volumes (currently this is only done for usespecies style commands 
-     // as it is difficult to do with things like DISTANCES or ANGLES and I think pointless
-     bool justVolumes=hasOnlyVolumeActions();
+     std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
+     // Check if stored data is being used to calculate volumes
+     if( mydata ){
+         bool store_for_vol=(mydata->getNumberOfDataUsers()>0);
+         for(unsigned i=0;i<mydata->getNumberOfDataUsers();++i){
+             MultiColvarBase* myu=dynamic_cast<MultiColvarBase*>( mydata->getDataUser(i) );
+             if( !myu->hasOnlyVolumeActions() ) store_for_vol=false; 
+         }
      // Now ensure that we only do calculations for those atoms in the relevant volume
-     if( hasOnlyVolumeActions() ){
-         std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
+     } else if( hasOnlyVolumeActions() ){
          for(unsigned i=0;i<getNumberOfVessels();++i){
              vesselbase::BridgeVessel* myb=dynamic_cast<vesselbase::BridgeVessel*>( getPntrToVessel(i) );
              ActionVolume* myv=dynamic_cast<ActionVolume*>( myb->getOutputAction() );
@@ -404,10 +408,8 @@ void MultiColvarBase::calculate(){
          unsigned rank=comm.Get_rank();
          if( serialCalculation() ){ stride=1; rank=0; }
 
-         unsigned nactive=0;
-         std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
          for(unsigned i=rank;i<getFullNumberOfTasks();i+=stride){
-             if( isCurrentlyActive( 0, getTaskCode(i) ) ){ nactive++; active_tasks[i]=1; }
+             if( isCurrentlyActive( 0, getTaskCode(i) ) ){ active_tasks[i]=1; }
          }
 
          if( !serialCalculation() ) comm.Sum( active_tasks );
