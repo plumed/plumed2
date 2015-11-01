@@ -46,6 +46,10 @@ void StoreDataVessel::setHardCutoffOnWeight( const double& mytol ){
   hard_cut=true; wtol=mytol;
 }
 
+void StoreDataVessel::addActionThatUses( ActionWithVessel* actionThatUses ){
+  userActions.push_back( actionThatUses );
+}
+
 bool StoreDataVessel::weightCutoffIsOn() const {
   return hard_cut;
 }

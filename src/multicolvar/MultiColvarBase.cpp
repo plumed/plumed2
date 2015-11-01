@@ -100,7 +100,7 @@ bool MultiColvarBase::interpretInputMultiColvars( const std::vector<std::string>
       // And store the multicolvar base
       mybasemulticolvars.push_back( mycolv );
       // And create a basedata stash
-      mybasedata.push_back( mybasemulticolvars[mybasemulticolvars.size()-1]->buildDataStashes( true, wtolerance ) );
+      mybasedata.push_back( mybasemulticolvars[mybasemulticolvars.size()-1]->buildDataStashes( true, wtolerance, this ) );
       // Check if weight has derivatives
       if( mybasemulticolvars[ mybasemulticolvars.size()-1 ]->weightHasDerivatives ) weightHasDerivatives=true;    
       plumed_assert( mybasemulticolvars.size()==mybasedata.size() );

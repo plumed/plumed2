@@ -56,6 +56,8 @@ private:
   std::vector<unsigned> active_der;
 /// The buffer
    std::vector<double> local_buffer;
+/// The actions that are going to use the stored data
+   std::vector<ActionWithVessel*> userActions;
 protected:
 /// Apply a hard cutoff on the weight
   bool hard_cut;
@@ -89,6 +91,8 @@ public:
   virtual void recalculateStoredQuantity( const unsigned& myelm, MultiValue& myvals );
 /// Set a hard cutoff on the weight of an element
   void setHardCutoffOnWeight( const double& mytol );
+/// Add an action that uses this data 
+  void addActionThatUses( ActionWithVessel* actionThatUses );
 /// Is the hard weight cutoff on
   bool weightCutoffIsOn() const ;
 /// Return the number of components in the vector
