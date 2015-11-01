@@ -36,6 +36,7 @@ namespace multicolvar {
 class AtomValuePack;
 class CatomPack;
 class BridgedMultiColvarFunction;
+class ActionVolume;
 
 class MultiColvarBase :
   public ActionAtomistic,
@@ -98,6 +99,8 @@ protected:
   void setLinkCellCutoff( const double& lcut, double tcut=-1.0 );
 /// Setup link cells in order to make this calculation faster
   void setupLinkCells();
+/// This does setup of link cell stuff that is specific to the non-use of the usespecies keyword
+  void setupNonUseSpeciesLinkCells( const unsigned& );
 /// Get the separation between a pair of vectors
   Vector getSeparation( const Vector& vec1, const Vector& vec2 ) const ;
 /// This sets up the list of atoms that are involved in this colvar

@@ -197,67 +197,31 @@ void MultiColvarBase::setLinkCellCutoff( const double& lcut, double tcut ){
   threecells.setCutoff( tcut );
 }
 
-void MultiColvarBase::setupLinkCells(){
-  if( usespecies ){
-     // Now check for calculating volumes (currently this is only done for usespecies style commands 
-     // as it is difficult to do with things like DISTANCES or ANGLES and I think pointless
-     bool justVolumes=true;
-     for(unsigned i=0;i<getNumberOfVessels();++i){
-         vesselbase::BridgeVessel* myb=dynamic_cast<vesselbase::BridgeVessel*>( getPntrToVessel(i) );
-         if( !myb ){ justVolumes=false; break; }
-         ActionVolume* myv=dynamic_cast<ActionVolume*>( myb->getOutputAction() );
-         if( !myv ){ justVolumes=false; break; }
-     }
-     // Now ensure that we only do calculations for those atoms in the relevant volume
-     if( justVolumes ){
-         // Setup the regions in the action volume objects 
-         for(unsigned i=0;i<getNumberOfVessels();++i){
-             vesselbase::BridgeVessel* myb=dynamic_cast<vesselbase::BridgeVessel*>( getPntrToVessel(i) );
-             ActionVolume* myv=dynamic_cast<ActionVolume*>( myb->getOutputAction() );
-             myv->retrieveAtoms(); myv->setupRegions();
-         }
-
-         unsigned stride=comm.Get_size();
-         unsigned rank=comm.Get_rank();
-         if( serialCalculation() ){ stride=1; rank=0; }
-
-         unsigned nactive=0;
-         std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
-         for(unsigned i=rank;i<getFullNumberOfTasks();i+=stride){
-             if( !isCurrentlyActive( 0, getTaskCode(i) ) ) continue ;
-             bool invol=false;
-             for(unsigned j=0;j<getNumberOfVessels();++j){
-                 vesselbase::BridgeVessel* myb=dynamic_cast<vesselbase::BridgeVessel*>( getPntrToVessel(j) );
-                 ActionVolume* myv=dynamic_cast<ActionVolume*>( myb->getOutputAction() );
-                 if( myv->inVolumeOfInterest(i) ){ invol=true; }
-             }
-             if( invol ){ nactive++; active_tasks[i]=1; }
-         }
-
-         if( !serialCalculation() ) comm.Sum( active_tasks );
-
-         deactivateAllTasks();
-         activateTheseTasks( active_tasks );
-         contributorsAreUnlocked=false;
-     } else if( colvar_label.size()>0 ){
-         unsigned stride=comm.Get_size();
-         unsigned rank=comm.Get_rank();
-         if( serialCalculation() ){ stride=1; rank=0; }
-
-         unsigned nactive=0;
-         std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
-         for(unsigned i=rank;i<getFullNumberOfTasks();i+=stride){
-             if( isCurrentlyActive( 0, getTaskCode(i) ) ){ nactive++; active_tasks[i]=1; }
-         }
-
-         if( !serialCalculation() ) comm.Sum( active_tasks );
-
-         deactivateAllTasks();
-         activateTheseTasks( active_tasks );
-         contributorsAreUnlocked=false;
-     }
+bool MultiColvarBase::hasOnlyVolumeActions(){
+  bool justVolumes=true;
+  for(unsigned i=0;i<getNumberOfVessels();++i){
+      vesselbase::BridgeVessel* myb=dynamic_cast<vesselbase::BridgeVessel*>( getPntrToVessel(i) );
+      if( !myb ){ justVolumes=false; break; }
+      ActionVolume* myv=dynamic_cast<ActionVolume*>( myb->getOutputAction() );
+      if( !myv ){ justVolumes=false; break; }
   }
+  return justVolumes;
+}
 
+void MultiColvarBase::findTasksInVolume( ActionVolume* myv, std::vector<unsigned>& active_tasks ){
+  myv->retrieveAtoms(); myv->setupRegions();
+
+  unsigned stride=comm.Get_size();
+  unsigned rank=comm.Get_rank();
+  if( serialCalculation() ){ stride=1; rank=0; }
+  
+  for(unsigned i=rank;i<getFullNumberOfTasks();i+=stride){
+      if( isCurrentlyActive( 0, getTaskCode(i) ) && myv->inVolumeOfInterest(i) ) active_tasks[i]=1;
+  }
+  if( !serialCalculation() ) comm.Sum( active_tasks );
+}
+
+void MultiColvarBase::setupLinkCells(){
   if( !linkcells.enabled() ) return ;
 
   unsigned iblock;
@@ -297,8 +261,13 @@ void MultiColvarBase::setupLinkCells(){
 
   // Build the lists for the link cells
   linkcells.buildCellLists( ltmp_pos, ltmp_ind, getPbc() );
+}
 
-  if( !usespecies && !uselinkforthree ){
+void MultiColvarBase::setupNonUseSpeciesLinkCells( const unsigned& my_always_active ){
+  plumed_assert( !usespecies );
+  if( !linkcells.enabled() ) return ;
+
+  if( !uselinkforthree ){
      // Get some parallel info
      unsigned stride=comm.Get_size();
      unsigned rank=comm.Get_rank(); 
@@ -309,7 +278,7 @@ void MultiColvarBase::setupLinkCells(){
      std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
      for(unsigned i=rank;i<ablocks[0].size();i+=stride){
          if( !isCurrentlyActive( 0, ablocks[0][i] ) ) continue;
-         unsigned natomsper=1; linked_atoms[0]=ltmp_ind[0];  // Note we always check atom 0 because it is simpler than changing LinkCells.cpp
+         unsigned natomsper=1; linked_atoms[0]=my_always_active;  // Note we always check atom 0 because it is simpler than changing LinkCells.cpp
          linkcells.retrieveNeighboringAtoms( getPositionOfAtomForLinkCells( ablocks[0][i] ), natomsper, linked_atoms );
          for(unsigned j=0;j<natomsper;++j){
              for(unsigned k=bookeeping(i,linked_atoms[j]).first;k<bookeeping(i,linked_atoms[j]).second;++k) active_tasks[k]=1;
@@ -320,7 +289,7 @@ void MultiColvarBase::setupLinkCells(){
      deactivateAllTasks(); 
      activateTheseTasks( active_tasks );
      contributorsAreUnlocked=false;
-  } else if ( !usespecies ){
+  } else { 
      // Get some parallel info
      unsigned stride=comm.Get_size();
      unsigned rank=comm.Get_rank();
@@ -359,7 +328,7 @@ void MultiColvarBase::setupLinkCells(){
      std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
      for(unsigned i=rank;i<ablocks[0].size();i+=stride){
          if( !isCurrentlyActive( 0, ablocks[0][i] ) ) continue;
-         unsigned natomsper=1; linked_atoms[0]=ltmp_ind[0];  // Note we always check atom 0 because it is simpler than changing LinkCells.cpp
+         unsigned natomsper=1; linked_atoms[0]=my_always_active;  // Note we always check atom 0 because it is simpler than changing LinkCells.cpp
          linkcells.retrieveNeighboringAtoms( getPositionOfAtomForLinkCells( ablocks[0][i] ), natomsper, linked_atoms );
          if( allthirdblockintasks ) {
              for(unsigned j=0;j<natomsper;++j){
@@ -414,24 +383,56 @@ bool MultiColvarBase::setupCurrentAtomList( const unsigned& taskCode, AtomValueP
 }
 
 void MultiColvarBase::calculate(){ 
-//  if( numder_func && colvar_label.size()>0 ){
-//     // Clear any derivatives in base colvar that were 
-//     // accumulated from previous calculations
-//     for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasemulticolvars[i]->clearDerivatives();
-//     // And recalculate
-//     for(unsigned i=0;i<mybasemulticolvars.size();++i){
-//        BridgedMultiColvarFunction* bb=dynamic_cast<BridgedMultiColvarFunction*>( mybasemulticolvars[i] );
-//        if( bb ) (bb->getPntrToMultiColvar())->calculate();
-//        else mybasemulticolvars[i]->calculate();
-//     }
-//     // Copy the box from the base multicolvar here
-//     unsigned maxb=mybasemulticolvars.size() - 1;
-//     BridgedMultiColvarFunction* bb=dynamic_cast<BridgedMultiColvarFunction*>( mybasemulticolvars[maxb] );
-//     if( bb ) changeBox( (bb->getPntrToMultiColvar())->getBox() );
-//     else changeBox( mybasemulticolvars[maxb]->getBox() );
-//  }
+  if( usespecies ){
+     // Now check for calculating volumes (currently this is only done for usespecies style commands 
+     // as it is difficult to do with things like DISTANCES or ANGLES and I think pointless
+     bool justVolumes=hasOnlyVolumeActions();
+     // Now ensure that we only do calculations for those atoms in the relevant volume
+     if( hasOnlyVolumeActions() ){
+         std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
+         for(unsigned i=0;i<getNumberOfVessels();++i){
+             vesselbase::BridgeVessel* myb=dynamic_cast<vesselbase::BridgeVessel*>( getPntrToVessel(i) );
+             ActionVolume* myv=dynamic_cast<ActionVolume*>( myb->getOutputAction() );
+             findTasksInVolume( myv, active_tasks );
+         }
+         // Now activate all tasks in base 
+         deactivateAllTasks();
+         activateTheseTasks( active_tasks );
+         contributorsAreUnlocked=false;
+     } else if( colvar_label.size()>0 ){
+         unsigned stride=comm.Get_size();
+         unsigned rank=comm.Get_rank();
+         if( serialCalculation() ){ stride=1; rank=0; }
+
+         unsigned nactive=0;
+         std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
+         for(unsigned i=rank;i<getFullNumberOfTasks();i+=stride){
+             if( isCurrentlyActive( 0, getTaskCode(i) ) ){ nactive++; active_tasks[i]=1; }
+         }
+
+         if( !serialCalculation() ) comm.Sum( active_tasks );
+
+         deactivateAllTasks();
+         activateTheseTasks( active_tasks );
+         contributorsAreUnlocked=false;
+     }
+  }
+
   // Setup the link cells
   setupLinkCells();
+  //  Setup the link cells if we are not using species
+  if( !usespecies && ablocks.size()>1 ){
+     // This loop finds the first active atom, which is always checked because
+     // of a peculiarity in linkcells
+     unsigned first_active;
+     for(unsigned i=0;i<ablocks[0].size();++i){
+        if( !isCurrentlyActive( 1, ablocks[1][i] ) ) continue;
+        else {
+           first_active=i; break;
+        }
+     }
+     setupNonUseSpeciesLinkCells( first_active );
+  }
   // And run all tasks
   runAllTasks();
 }
