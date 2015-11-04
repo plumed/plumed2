@@ -402,7 +402,7 @@ void Keywords::print_html() const {
   }
   nkeys=0;
   for(unsigned i=0;i<keys.size();++i){
-     if ( (types.find(keys[i])->second).isFlag() ) nkeys++;
+     if ( (types.find(keys[i])->second).isFlag() || (types.find(keys[i])->second).isOptional() || (types.find(keys[i])->second).isVessel() ) nkeys++;
   }
   if( nkeys>0 ){
      if(isaction) std::cout<<"\\par Options\n\n";
