@@ -45,6 +45,7 @@ class MultiColvarBase :
  friend class BridgedMultiColvarFunction;
  friend class VolumeGradientBase;
  friend class MultiColvarFilter;
+ friend class AtomValuePack;
 private:
 /// Use periodic boundary conditions
   bool usepbc;

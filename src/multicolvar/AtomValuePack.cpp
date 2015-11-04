@@ -44,7 +44,11 @@ myatoms( vals.getAtomVector() )
 unsigned AtomValuePack::setupAtomsFromLinkCells( const std::vector<unsigned>& cind, const Vector& cpos, const LinkCells& linkcells ){
   natoms=cind.size(); for(unsigned i=0;i<natoms;++i) indices[i]=cind[i];
   linkcells.retrieveNeighboringAtoms( cpos, natoms, indices ); 
-  for(unsigned i=0;i<natoms;++i) myatoms[i]=mycolv->getPositionOfAtomForLinkCells( indices[i] ) - cpos;
+  if( mycolv->colvar_label.size()==0 ){ 
+      for(unsigned i=0;i<natoms;++i) myatoms[i]=mycolv->getPosition( indices[i] ) - cpos;
+  } else {
+      for(unsigned i=0;i<natoms;++i) myatoms[i]=mycolv->getPositionOfAtomForLinkCells( indices[i] ) - cpos;
+  }
   if( mycolv->usesPbc() ) mycolv->applyPbc( myatoms, natoms );
   return natoms;
 }

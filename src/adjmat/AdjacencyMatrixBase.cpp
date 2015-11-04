@@ -53,7 +53,12 @@ bool AdjacencyMatrixBase::parseAtomList(const std::string& key, const int& num, 
   if( mlabs.size()==0 ) return false;
 
   bool found_acts=interpretInputMultiColvars(mlabs,0.0);
-  if( !found_acts ) ActionAtomistic::interpretAtomList( mlabs, t );
+  if( !found_acts ){
+     ActionAtomistic::interpretAtomList( mlabs, t );
+     log.printf("  involving atoms ");
+     for(unsigned i=0;i<t.size();++i) log.printf("%d ",t[i].serial() );
+     log.printf("\n");
+  }
   return true;
 }
 

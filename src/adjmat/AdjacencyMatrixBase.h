@@ -82,6 +82,8 @@ public:
   virtual double transformStoredValues( const std::vector<double>& myvals, unsigned& vout, double& df ) const ;
 /// Used to check for connections between atoms
   virtual bool checkForConnection( const std::vector<double>& myvals ) const=0;
+/// Get the atom number
+  AtomNumber getAbsoluteIndexOfCentralAtom( const unsigned& i ) const ; 
 };
 
 inline
@@ -94,6 +96,16 @@ unsigned AdjacencyMatrixBase::getBaseColvarNumber( const unsigned& inum ) const 
   if( inum<colvar_label.size() ) return colvar_label[inum]; 
   return 0;
 }
+
+inline
+AtomNumber AdjacencyMatrixBase::getAbsoluteIndexOfCentralAtom( const unsigned& iatom ) const {
+  if( iatom<colvar_label.size() ){
+      unsigned mmc=colvar_label[ iatom ];
+      return mybasemulticolvars[mmc]->getAbsoluteIndexOfCentralAtom( convertToLocalIndex(iatom,mmc) );
+  }
+  return ActionAtomistic::getAbsoluteIndex( iatom );
+}
+
 
 inline 
 void AdjacencyMatrixBase::getOrientationVector( const unsigned& ind, const bool& normed, std::vector<double>& orient ) const {
