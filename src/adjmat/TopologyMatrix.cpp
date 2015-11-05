@@ -83,7 +83,7 @@ void TopologyMatrix::registerKeywords( Keywords& keys ){
                                "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   keys.add("numbered","RADIUS","");
   keys.add("compulsory","DENSITY_THRESHOLD","");
-  keys.add("compulsory","GRID_SPACING",""); keys.use("SUM");
+  keys.add("compulsory","BIN_SIZE",""); keys.use("SUM");
   keys.add("compulsory","SIGMA","the width of the function to be used for kernel density estimation");
   keys.add("compulsory","KERNEL","gaussian","the type of kernel function to be used");
 }
@@ -93,7 +93,7 @@ Action(ao),
 AdjacencyMatrixBase(ao)
 {
   // Read in stuff for grid
-  parse("GRID_SPACING",binw); parse("SIGMA",sigma); parse("KERNEL",kerneltype);
+  parse("BIN_SIZE",binw); parse("SIGMA",sigma); parse("KERNEL",kerneltype);
   // Read in threshold for density cutoff
   std::string errors, thresh_sw_str; parse("DENSITY_THRESHOLD",thresh_sw_str);
   threshold_switch.set(thresh_sw_str, errors );
@@ -220,12 +220,13 @@ void TopologyMatrix::calculateForThreeAtoms( const unsigned& iat, const Vector& 
   // Return if the projection is outside the length of interest
   if( proj<-bead.getCutoff() || proj>(d1_len+bead.getCutoff()) ) return;
 
-  Vector cross = crossProduct( d1, d2 ); double cm=cross.modulo();
+  // Calculate the projection on the perpendicular distance from the center of the tube
+  double cm = d2.modulo2() - proj*proj;
 
   // Now calculate the density in the cylinder
   if( cm<cylinder_sw( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) ).get_dmax() ){
       double dfuncr, val = 1.0 - cylinder_sw( getBaseColvarNumber( myatoms.getIndex(0) ), 
-                                              getBaseColvarNumber( myatoms.getIndex(1) ) ).calculate( cm, dfuncr );
+                                              getBaseColvarNumber( myatoms.getIndex(1) ) ).calculateSqr( cm, dfuncr );
 
       Vector dc1, dc2, dc3, dd1, dd2, dd3;
       if( !doNotCalculateDerivatives() ){
@@ -247,9 +248,9 @@ void TopologyMatrix::calculateForThreeAtoms( const unsigned& iat, const Vector& 
           dd3 = matmul( Tensor::identity(), d1 );
 
           // Calculate derivatives of cross product
-          dc1 = -dfuncr*cm*( matmul( d1, Tensor::identity() ) + matmul( d1_a1, d2) );  
-          dc2 = -dfuncr*cm*matmul( -d1_a1, d2 );
-          dc3 = -dfuncr*cm*matmul( d1, Tensor::identity() );
+          dc1 = -dfuncr*( -d2 - proj*dd1 );
+          dc2 = -dfuncr*( -proj*dd2 );
+          dc3 = -dfuncr*( d2 - proj*dd3 );
       }
 
       Vector g1derivf,g2derivf,lderivf; Tensor vir;
@@ -260,10 +261,9 @@ void TopologyMatrix::calculateForThreeAtoms( const unsigned& iat, const Vector& 
           myatoms.addValue( 1+bin, sw*contr*val );
 
           if( !doNotCalculateDerivatives() ){
-              // Now the derivatives 
               g1derivf=contr*sw*dc1 + sw*val*der*dd1 - contr*val*dfuncl*d1_len*d1; addAtomDerivatives( 1+bin, 0, g1derivf, myatoms );
               g2derivf=contr*sw*dc2 + sw*val*der*dd2 + contr*val*dfuncl*d1_len*d1; addAtomDerivatives( 1+bin, 1, g2derivf, myatoms );
-              lderivf=contr*sw*dc3 + sw*val*der*dd2; addAtomDerivatives( 1+bin, iat, lderivf, myatoms );
+              lderivf=contr*sw*dc3 + sw*val*der*dd3; addAtomDerivatives( 1+bin, iat, lderivf, myatoms );
               // Virial 
               vir = -Tensor( myatoms.getPosition(0), g1derivf ) - Tensor( myatoms.getPosition(1), g2derivf ) - Tensor( myatoms.getPosition(iat), lderivf );
               myatoms.addBoxDerivatives( 1+bin, vir );
