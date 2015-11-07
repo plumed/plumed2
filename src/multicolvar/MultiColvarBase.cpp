@@ -534,6 +534,7 @@ void MultiColvarBase::calculateWeight( const unsigned& taskCode, AtomValuePack& 
 }
 
 double MultiColvarBase::doCalculation( const unsigned& taskIndex, AtomValuePack& myatoms ) const {
+  if( colvar_label.size()>0 ) mybasedata[0]->resetTemporyMultiValues();
   double val=compute( taskIndex, myatoms ); updateActiveAtoms( myatoms );
   return val;
 }

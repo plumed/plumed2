@@ -79,7 +79,7 @@ void MultiColvarFunction::buildSymmetryFunctionLists(){
       }
       start += mybasemulticolvars[i]->getFullNumberOfTasks();
   }  
-  setupAtomLists();
+  mybasedata[0]->resizeTemporyMultiValues(2); setupAtomLists();
 }
 
 void MultiColvarFunction::buildSets(){
@@ -104,7 +104,7 @@ void MultiColvarFunction::buildSets(){
           addTaskToList( i );
       }
   }
-  setupAtomLists();
+  mybasedata[0]->resizeTemporyMultiValues( mybasemulticolvars.size() ); setupAtomLists();
 }
 
 void MultiColvarFunction::buildAtomListWithPairs( const bool& allow_intra_group ){
@@ -139,17 +139,21 @@ void MultiColvarFunction::buildAtomListWithPairs( const bool& allow_intra_group 
         }
      }
   }
-  setupAtomLists(); 
+  mybasedata[0]->resizeTemporyMultiValues(2); setupAtomLists(); 
 }
 
-void MultiColvarFunction::getVectorDerivatives( const unsigned& ind, const bool& normed, MultiValue& myder ) const {
+MultiValue& MultiColvarFunction::getVectorDerivatives( const unsigned& ind, const bool& normed ) const {
   plumed_dbg_assert( ind<colvar_label.size() ); unsigned mmc=colvar_label[ind];
   plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(ind,mmc) ) );
+  // Get a tempory multi value from the base class
+  MultiValue& myder=mybasedata[0]->getTemporyMultiValue();
+
   if( myder.getNumberOfValues()!=mybasemulticolvars[mmc]->getNumberOfQuantities() ||
       myder.getNumberOfDerivatives()!=mybasemulticolvars[mmc]->getNumberOfDerivatives() ){
           myder.resize( mybasemulticolvars[mmc]->getNumberOfQuantities(), mybasemulticolvars[mmc]->getNumberOfDerivatives() );
   }
   mybasedata[mmc]->retrieveDerivatives( convertToLocalIndex(ind,mmc), normed, myder );
+  return myder;
 }
 
 void MultiColvarFunction::mergeVectorDerivatives( const unsigned& ival, const unsigned& start, const unsigned& end, 

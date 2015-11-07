@@ -58,6 +58,10 @@ private:
    std::vector<double> local_buffer;
 /// The actions that are going to use the stored data
    std::vector<ActionWithVessel*> userActions;
+/// We create a vector of tempory MultiValues here so as to avoid 
+/// lots of vector resizing
+   unsigned tmp_index;
+   std::vector<MultiValue> my_tmp_vals;
 protected:
 /// Apply a hard cutoff on the weight
   bool hard_cut;
@@ -103,8 +107,6 @@ public:
   virtual void retrieveDerivatives( const unsigned& myelem, const bool& normed, MultiValue& myvals );
 /// Do all resizing of data
   virtual void resize();
-/// Clear certain data before start of main loop
-//  virtual void prepare();
 ///
   virtual std::string description(){ return ""; }
 /// Get the number of derivatives for the ith value
@@ -113,8 +115,6 @@ public:
   unsigned getSizeOfDerivativeList() const ;
 /// This stores the data when not using lowmem
   virtual bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const ;
-/// Build index stores
-//  void buildIndexStores( const unsigned& current, MultiValue& myvals, std::vector<unsigned>& val_index, std::vector<unsigned>& der_index ) const ;
 /// Final step in gathering data
   virtual void finish( const std::vector<double>& buffer );
 /// Is a particular stored value active at the present time
@@ -129,6 +129,12 @@ public:
   unsigned getNumberOfDataUsers() const ;
 /// Get one of the ith data user
   ActionWithVessel* getDataUser( const unsigned& );
+/// Set the number of tempory multivalues we need
+  void resizeTemporyMultiValues( const unsigned& nvals );
+/// Reset the tempory multi values at the start of the calculation 
+  void resetTemporyMultiValues();
+/// Return a tempory multi value - we do this so as to avoid vector resizing
+  MultiValue& getTemporyMultiValue();
 };
 
 inline

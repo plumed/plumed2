@@ -140,6 +140,10 @@ BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ){
 }
 
 StoreDataVessel* ActionWithVessel::buildDataStashes( const bool& allow_wcutoff, const double& wtol, ActionWithVessel* actionThatUses ){
+  if( actionThatUses && OpenMP::getNumThreads()>1 ){
+      actionThatUses->error("this action is probably not thread safe");  
+  }
+
   if(mydata){
      if( actionThatUses ) mydata->addActionThatUses( actionThatUses );  
      return mydata;
