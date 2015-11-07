@@ -95,6 +95,7 @@ init(false),
 lowb(0.0),
 highb(0.0),
 width(0.0),
+cutoff(std::numeric_limits<double>::max()),
 type(gaussian),
 periodicity(unset),
 min(0.0),
@@ -140,9 +141,9 @@ void HistogramBead::set( const std::string& params, std::string& errormsg ){
   std::vector<std::string> data=Tools::getWords(params);
   if(data.size()<1) errormsg="No input has been specified";
 
-  std::string name=data[0];
-  if(name=="GAUSSIAN") type=gaussian;
-  else if(name=="TRIANGULAR") type=triangular;
+  std::string name=data[0]; const double DP2CUTOFF=6.25;
+  if(name=="GAUSSIAN"){ type=gaussian; cutoff=sqrt(2.0*DP2CUTOFF); }
+  else if(name=="TRIANGULAR"){ type=triangular; cutoff=1.; }
   else plumed_merror("cannot understand kernel type " + name ); 
 
   double smear;
@@ -203,7 +204,7 @@ double HistogramBead::calculateWithCutoff( double x, double& df ) const {
 
   double lowB, upperB, f;
   lowB = difference( x, lowb ) / width ; upperB = difference( x, highb ) / width;
-  if( upperB<=-cutoff || lowB>=cutoff ){ double df=0; return 0; }
+  if( upperB<=-cutoff || lowB>=cutoff ){ df=0; return 0; }
 
   if( type==gaussian ){
      lowB /= sqrt(2.0); upperB /= sqrt(2.0); 
