@@ -7,7 +7,7 @@ MOLINFO STRUCTURE=helix.pdb
 # ps: DISTANCE ATOMS=c,3 SCALED_COMPONENTS
 # new way (resetting reference frame)
 FIT_TO_TEMPLATE REFERENCE=align.pdb TYPE=SIMPLE
-s: COM ATOMS=3
+s: CENTER ATOMS=3
 p: POSITION ATOM=s
 ps: POSITION SCALED_COMPONENTS ATOM=3
 # using one or the other should give the same result and same forces
