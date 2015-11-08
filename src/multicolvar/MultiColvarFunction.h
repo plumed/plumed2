@@ -63,6 +63,7 @@ protected:
 public:
   explicit MultiColvarFunction(const ActionOptions&);
   static void registerKeywords( Keywords& keys );
+  bool threadSafe() const { return false; }
 };
 
 inline

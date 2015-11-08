@@ -140,10 +140,6 @@ BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ){
 }
 
 StoreDataVessel* ActionWithVessel::buildDataStashes( const bool& allow_wcutoff, const double& wtol, ActionWithVessel* actionThatUses ){
-  if( actionThatUses && OpenMP::getNumThreads()>1 ){
-      actionThatUses->error("this action is probably not thread safe");  
-  }
-
   if(mydata){
      if( actionThatUses ) mydata->addActionThatUses( actionThatUses );  
      return mydata;
@@ -308,8 +304,8 @@ void ActionWithVessel::runAllTasks(){
 
   // Get number of threads for OpenMP
   unsigned nt=OpenMP::getNumThreads();
-  if( nt*stride*10>nactive_tasks) nt=nactive_tasks/stride/10;
-  if( nt==0 ) nt=1;
+  if( nt*stride*10>nactive_tasks ) nt=nactive_tasks/stride/10;
+  if( nt==0 || !threadSafe() ) nt=1;
 
   // Get size for buffer
   unsigned bsize=0, bufsize=getSizeOfBuffer( bsize ); 

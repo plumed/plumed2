@@ -157,6 +157,8 @@ public:
   virtual void deactivate_task( const unsigned & task_index );
 /// Are derivatives required for this quantity
   bool derivativesAreRequired() const ;
+/// Is this action thread safe
+  virtual bool threadSafe() const { return true; }
 /// Finish running all the calculations
   virtual void finishComputations( const std::vector<double>& buffer );
 /// Are the base quantities periodic
