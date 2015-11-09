@@ -202,7 +202,9 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     Tools::parse(data,"B",b);
     c=pow(2., static_cast<double>(a)/static_cast<double>(b) ) - 1; 
     d = -static_cast<double>(b) / static_cast<double>(a);
-  } else if(name=="EXP") type=exponential;
+  } 
+  else if(name=="EXP") type=exponential;
+  else if(name=="Q") type=nativeq;
   else if(name=="GAUSSIAN") type=gaussian;
   else if(name=="CUBIC") type=cubic;
   else if(name=="TANH") type=tanh;
@@ -248,6 +250,8 @@ std::string SwitchingFunction::description() const {
      ostr<<"rational";
   } else if(type==exponential){
      ostr<<"exponential";
+  } else if(type==nativeq){
+     ostr<<"nativeq";     
   } else if(type==gaussian){
      ostr<<"gaussian";
   } else if(type==smap){
@@ -332,7 +336,8 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const{
   }
   const double rdist = (distance-d0)*invr0;
   double result;
-  if(rdist<=0.){
+  // fraction of native contacts, no switching
+  if(rdist<=0.&&type!=nativeq){
      result=1.;
      dfunc=0.0;
   }else{
@@ -345,6 +350,11 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const{
     }else if(type==exponential){
       result=exp(-rdist);
       dfunc=-result;
+    }else if(type==nativeq){
+      // this will be used as fraction of native contacts
+      double exprdist=exp(rdist);
+      result=1./(1.+exprdist);
+      dfunc=-exprdist/(1.+exprdist)/(1.+exprdist);
     }else if(type==gaussian){
       result=exp(-0.5*rdist*rdist);
       dfunc=-rdist*result;
