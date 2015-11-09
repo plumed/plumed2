@@ -368,10 +368,9 @@ void MultiColvar::readSpeciesKeyword( const std::string& str1, const std::string
          unsigned k=0;
          for(unsigned i=0;i<nat2;++i){ 
             bool found=false; unsigned inum;
-            if( colvar_label.size()==0 ){
-                for(unsigned j=0;j<nat1;++j){
-                    if( t1a[j]==t2a[i] ){ found=true; inum=j; break; }
-                }
+            for(unsigned j=0;j<nat1;++j){
+                if( colvar_label.size()==0 && t1a[j]==t2a[i] ){ found=true; inum=j; break; }
+                else if( colvar_label.size()>0 && getAbsoluteIndexOfCentralAtom(j)==t2a[i] ){ found=true; inum=j; break; }
             }
             // This prevents mistakes being made in colvar setup
             if( found ){ ablocks[0][i]=inum; } 

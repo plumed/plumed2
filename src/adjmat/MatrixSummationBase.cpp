@@ -72,7 +72,28 @@ Vector MatrixSummationBase::getPositionOfAtomForLinkCells( const unsigned& iatom
 
 AtomNumber MatrixSummationBase::getAbsoluteIndexOfCentralAtom(const unsigned& i) const {
   return (mymatrix->function)->getAbsoluteIndexOfCentralAtom(i);
-} 
+}
+
+double MatrixSummationBase::retrieveConnectionValue( const unsigned& i, const unsigned& j, std::vector<double>& vals ) const {
+  unsigned vi, myelem = mymatrix->getStoreIndexFromMatrixIndices( i, j );
+  if( !mymatrix->storedValueIsActive( myelem ) ) return 0;
+ 
+  mymatrix->retrieveValue( myelem, false, vals ); double df;
+  return (mymatrix->function)->transformStoredValues( vals, vi, df );
+}
+
+void MatrixSummationBase::addConnectionDerivatives( const unsigned& i, const unsigned& j, std::vector<double>& vals, MultiValue& myvals, MultiValue& myvout ) const {
+  unsigned vi, myelem = mymatrix->getStoreIndexFromMatrixIndices( i, j );
+  if( !mymatrix->storedValueIsActive( myelem ) ) return;
+
+  mymatrix->retrieveValue( myelem, false, vals ); double df;
+  double vv = (mymatrix->function)->transformStoredValues( vals, vi, df );
+  mymatrix->retrieveDerivatives( myelem, false, myvals );
+  for(unsigned jd=0;jd<myvals.getNumberActive();++jd){
+      unsigned ider=myvals.getActiveIndex(jd);
+      myvout.addDerivative( 1, ider, df*myvals.getDerivative( vi, ider ) );
+  }
+}
 
 }
 }

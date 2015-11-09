@@ -72,6 +72,7 @@ public:
 // Turn on the derivatives
   virtual void turnOnDerivatives();
   bool isPeriodic(){ return false; }
+  unsigned getNumberOfQuantities();
   void apply();
 ///
   AtomNumber getAbsoluteIndexOfCentralAtom(const unsigned& i) const ;

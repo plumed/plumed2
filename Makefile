@@ -71,6 +71,7 @@ fullclean:
 	rm -f Makefile.conf
 	rm -f sourceme.sh
 	rm -f config.log 
+	rm -f stamp-h
 	rm -f */*.on */*.off
 
 
@@ -80,6 +81,17 @@ docclean:
 
 cppcheck:
 	$(MAKE) -C src cppcheck
+
+# stamp-h file keeps track of when ./configure was last applied
+# the procedure below is taken from:
+# https://www.gnu.org/software/autoconf/manual/autoconf-2.69/html_node/Automatic-Remaking.html#Automatic-Remaking
+Makefile.conf: stamp-h
+
+stamp-h: sourceme.sh.in Makefile.conf.in config.status
+	./config.status
+
+config.status: configure
+	./config.status --recheck
 
 
 

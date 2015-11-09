@@ -53,7 +53,12 @@ bool AdjacencyMatrixBase::parseAtomList(const std::string& key, const int& num, 
   if( mlabs.size()==0 ) return false;
 
   bool found_acts=interpretInputMultiColvars(mlabs,0.0);
-  if( !found_acts ) ActionAtomistic::interpretAtomList( mlabs, t );
+  if( !found_acts ){
+     ActionAtomistic::interpretAtomList( mlabs, t );
+     log.printf("  involving atoms ");
+     for(unsigned i=0;i<t.size();++i) log.printf("%d ",t[i].serial() );
+     log.printf("\n");
+  }
   return true;
 }
 
@@ -143,9 +148,9 @@ void AdjacencyMatrixBase::requestAtoms( const std::vector<AtomNumber>& atoms, co
   if( symmetric ){
     for(unsigned i=1;i<dims[0];++i){
       for(unsigned j=0;j<i;++j){
-        bookeeping(i,j).first=getFullNumberOfTasks();
+        bookeeping(j,i).first=bookeeping(i,j).first=getFullNumberOfTasks();
         for(unsigned k=0;k<kcount;++k) addTaskToList( i*icoef + j*jcoef + k*kcoef );
-        bookeeping(i,j).second=getFullNumberOfTasks();
+        bookeeping(j,i).second=bookeeping(i,j).second=getFullNumberOfTasks();
       }
     }
   } else {

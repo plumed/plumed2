@@ -52,6 +52,7 @@ friend class FunctionVessel;
 friend class StoreDataVessel;
 friend class BridgeVessel;
 friend class ActionWithInputVessel;
+friend class OrderingVessel;
 private:
 /// Do all calculations in serial
   bool serial;
@@ -69,8 +70,6 @@ private:
   double nl_tolerance;
 /// Pointers to the functions we are using on each value
   std::vector<Vessel*> functions;
-/// A pointer to the object that stores data
-  StoreDataVessel* mydata;
 /// Tempory storage for forces
   std::vector<double> tmpforces;
 /// Ths full list of tasks we have to perform
@@ -102,6 +101,8 @@ protected:
   bool weightHasDerivatives;
 /// This is used for numerical derivatives of bridge variables
   unsigned bridgeVariable;
+/// A pointer to the object that stores data
+  StoreDataVessel* mydata;
 /// Add a vessel to the list of vessels
   void addVessel( const std::string& name, const std::string& input, const int numlab=0 );
   void addVessel( Vessel* vv );
@@ -156,6 +157,8 @@ public:
   virtual void deactivate_task( const unsigned & task_index );
 /// Are derivatives required for this quantity
   bool derivativesAreRequired() const ;
+/// Is this action thread safe
+  virtual bool threadSafe() const { return true; }
 /// Finish running all the calculations
   virtual void finishComputations( const std::vector<double>& buffer );
 /// Are the base quantities periodic
@@ -187,7 +190,7 @@ public:
 /// Do the task if we have a bridge
   virtual void transformBridgedDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals ) const;
 /// Ensure that data required in other vessels is stored
-  StoreDataVessel* buildDataStashes( const bool& allow_wcutoff, const double& wtol );
+  StoreDataVessel* buildDataStashes( const bool& allow_wcutoff, const double& wtol, ActionWithVessel* actionThatUses );
 /// Apply forces from bridge vessel - this is rarely used - currently only in ActionVolume
   virtual void applyBridgeForces( const std::vector<double>& bb ){ plumed_error(); }
 /// These are overwritten in MultiColvarFunction

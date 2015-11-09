@@ -41,7 +41,7 @@ void Lowest::registerKeywords( Keywords& keys ){
 }
 
 void Lowest::reserveKeyword( Keywords& keys ){
-  keys.reserve("vessel","LOWEST","calculate the lowest of these variables.");
+  keys.reserve("vessel","LOWEST","this flag allows you to recover the lowest of these variables.");
   keys.addOutputComponent("lowest","LOWEST","the lowest of the quantitities calculated by this action");
 }
 

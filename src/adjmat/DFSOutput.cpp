@@ -40,7 +40,6 @@ private:
   OFile ofile;
   DFSBase* myclusters;
   unsigned clustr;
-  double rcut_surf2;
 public:
   static void registerKeywords( Keywords& keys );
   explicit DFSOutput(const ActionOptions&);
@@ -58,8 +57,6 @@ void DFSOutput::registerKeywords( Keywords& keys ){
   keys.add("compulsory","CLUSTER","1","which cluster would you like to look at 1 is the largest cluster, 2 is the second largest, 3 is the the third largest and so on");
   keys.add("compulsory","STRIDE","1","the frequency with which you would like to output the atoms in the cluster");
   keys.add("compulsory","FILE","the name of the file on which to output the details of the cluster");
-  keys.add("optional","RCUT_SURF","you also have the option to find the atoms on the surface of the cluster.  An atom must be within this distance of one of the atoms "
-                                  "of the cluster in order to be considered a surface atom");
 }
 
 DFSOutput::DFSOutput(const ActionOptions& ao):
@@ -82,49 +79,15 @@ myclusters(NULL)
   parse("CLUSTER",clustr);
   if( clustr<1 ) error("cannot look for a cluster larger than the largest cluster");
   if( clustr>myclusters->getNumberOfNodes() ) error("cluster selected is invalid - too few atoms in system");
-  log.printf("  outputting atoms in %d th largest cluster found by %s \n",clustr,matname[0].c_str() );
-
-  // Read in stuff for finding nearest neighbours 
-  double rcut_surf=0; parse("RCUT_SURF",rcut_surf);
-  if( rcut_surf>0 ) log.printf("  outputting surface atoms that are within %f of the cluster atoms \n",rcut_surf);
-  rcut_surf2=rcut_surf*rcut_surf;
+  log.printf("  outputting atoms in %u th largest cluster found by %s \n",clustr,matname[0].c_str() );
 }
 
 void DFSOutput::update(){
   std::vector<unsigned> myatoms; myclusters->retrieveAtomsInCluster( clustr, myatoms );
-  if( rcut_surf2>0 ){
-      // Find the atoms in the clusters
-      std::vector<bool> atoms( myclusters->getNumberOfNodes(), false ); 
-      for(unsigned i=0;i<myatoms.size();++i){
-          for(unsigned j=0;j<myclusters->getNumberOfNodes();++j){
-             double dist2=myclusters->getSeparation( myclusters->getPosition(myatoms[i]), myclusters->getPosition(j)).modulo2();
-             if( dist2<rcut_surf2 ) atoms[j]=true; 
-          }
-      }
-
-      // Count the number of atoms
-      unsigned nats=0;
-      for(unsigned i=0;i<myclusters->getNumberOfNodes();++i){
-          if( atoms[i] ) nats++;
-      }
-
-     ofile.printf("CLUSTERING RESULTS AT TIME %f : NUMBER OF ATOMS IN %d TH LARGEST CLUSTER EQUALS %d \n",getTime(),clustr,myatoms.size() );
-     ofile.printf("INDICES OF ATOMS : ");
-     for(unsigned i=0;i<myatoms.size();++i) ofile.printf("%d ",(myclusters->getAbsoluteIndexOfCentralAtom(myatoms[i])).index());
-     ofile.printf("\n");
-     ofile.printf("NUMBER OF ATOMS INCLUDING SURFACE ATOMS EQUALS %d \n",nats);
-     ofile.printf("INDICES OF ATOMS : ");
-     for(unsigned i=0;i<myclusters->getNumberOfNodes();++i){
-         if( atoms[i] ) ofile.printf("%d ",(myclusters->getAbsoluteIndexOfCentralAtom(i)).index());
-     }
-     ofile.printf("\n");
-  } else {
-     ofile.printf("CLUSTERING RESULTS AT TIME %f : NUMBER OF ATOMS IN %d TH LARGEST CLUSTER EQUALS %d \n",getTime(),clustr,myatoms.size() );
-     ofile.printf("INDICES OF ATOMS : ");
-     for(unsigned i=0;i<myatoms.size();++i) ofile.printf("%d ",(myclusters->getAbsoluteIndexOfCentralAtom(myatoms[i])).index());
-     ofile.printf("\n");
-  }
-
+  ofile.printf("CLUSTERING RESULTS AT TIME %f : NUMBER OF ATOMS IN %u TH LARGEST CLUSTER EQUALS %u \n",getTime(),clustr,static_cast<unsigned>(myatoms.size()) );
+  ofile.printf("INDICES OF ATOMS : ");
+  for(unsigned i=0;i<myatoms.size();++i) ofile.printf("%d ",(myclusters->getAbsoluteIndexOfCentralAtom(myatoms[i])).index());
+  ofile.printf("\n");
 }
 
 }

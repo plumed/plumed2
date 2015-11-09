@@ -3,6 +3,13 @@
 
 \page usingDoxygen Creating plumed documentation
 
+<b> Whenever you make a change to the documentation for PLUMED and you want the
+online version of the manual to be updated, you need to write include the phrase
+[makedoc] in your next commit message.  Doing so ensures that the online manuals are updated the next 
+time you push your commits to master.
+See more in the section \ref updating-web-manuals
+</b>
+
 To create the plumed manual you should go to the <b> user-doc </b> directory and type <b> make </b>. 
 This command works because user documentation for all the PLMD::Action is inside the source code.  If
 you look at the documentation page for any of the actions that are implemented in plumed you will

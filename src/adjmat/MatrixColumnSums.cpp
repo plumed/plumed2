@@ -73,27 +73,19 @@ MatrixSummationBase(ao)
 }
 
 double MatrixColumnSums::compute( const unsigned& tinded, multicolvar::AtomValuePack& myatoms ) const {
-  double sum=0.0; std::vector<double> tvals(2);
+  double sum=0.0; std::vector<double> tvals( mymatrix->getNumberOfComponents() );
   unsigned nrows = mymatrix->getNumberOfRows();   
   for(unsigned i=0;i<nrows;++i){
      if( mymatrix->isSymmetric() && tinded==i ) continue;
-     unsigned myelem = mymatrix->getStoreIndexFromMatrixIndices( i, tinded );
-     mymatrix->retrieveValue( myelem, false, tvals ); 
-     sum+=tvals[1]; 
+     sum+=retrieveConnectionValue( i, tinded, tvals ); 
   }
 
   if( !doNotCalculateDerivatives() ){
-      MultiValue myvals( 2, myatoms.getNumberOfDerivatives() ); 
+      MultiValue myvals( mymatrix->getNumberOfComponents(), myatoms.getNumberOfDerivatives() ); 
       MultiValue& myvout=myatoms.getUnderlyingMultiValue();
       for(unsigned i=0;i<nrows;++i){
           if( mymatrix->isSymmetric() && tinded==i ) continue ;
-          unsigned myelem = mymatrix->getStoreIndexFromMatrixIndices( i, tinded );
-          if( !mymatrix->storedValueIsActive( myelem ) ) continue ;
-          mymatrix->retrieveDerivatives( myelem, false, myvals );
-          for(unsigned jd=0;jd<myvals.getNumberActive();++jd){
-              unsigned ider=myvals.getActiveIndex(jd);
-              myvout.addDerivative( 1, ider, myvals.getDerivative( 1, ider ) );
-          }
+          addConnectionDerivatives( i, tinded, tvals, myvals, myvout );
       }
   }
   return sum;

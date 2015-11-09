@@ -42,7 +42,7 @@ quantity as the size of the largest cluster in the system.
 
 \par Examples
 
-The following example calculates the size of the largest cluster of the system.  FCCCUBIC parameters, which don't 
+The following example calculates the size of the largest cluster of the system.  FCCUBIC parameters, which don't 
 necessarily have to be equal to numbers between zero and one, are converted to numbers between zero and one by 
 virtue of the switching function specified using the TRANSFORM keyword.
 

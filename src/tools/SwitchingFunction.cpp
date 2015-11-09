@@ -25,6 +25,10 @@
 #include <vector>
 #include <limits>
 
+#ifdef __PLUMED_HAS_MATHEVAL
+#include <matheval.h>
+#endif
+
 using namespace std;
 namespace PLMD{
 
@@ -57,7 +61,7 @@ s(r)=\frac{ 1 - \left(\frac{ r - d_0 }{ r_0 }\right)^{n} }{ 1 - \left(\frac{ r -
 \f$
 </td> <td>
 {RATIONAL R_0=\f$r_0\f$ D_0=\f$d_0\f$ NN=\f$n\f$ MM=\f$m\f$}
-</td> <td> \f$d_0=0.0\f$, \f$n=6\f$, \f$m=12\f$ </td>
+</td> <td> \f$d_0=0.0\f$, \f$n=6\f$, \f$m=2n\f$ </td>
 </tr> <tr>
 <td> EXP </td> <td>
 \f$
@@ -98,8 +102,25 @@ s(r) = 1 - \tanh\left( \frac{ r - d_0 }{ r_0 } \right)
 </td> <td>
 {TANH R_0=\f$r_0\f$ D_0=\f$d_0\f$}
 </td> <td> </td>
+</tr> <tr> 
+<td> MATHEVAL </td> <td>
+\f$
+s(r) = FUNC
+\f$
+</td> <td>
+{MATHEVAL FUNC=1/(1+x^6) R_0=\f$r_0\f$ D_0=\f$d_0\f$}
+</td> <td> </td>
 </tr>
 </table>
+
+\attention
+Similarly to the \ref MATHEVAL function, the MATHEVAL switching function 
+only works if libmatheval is installed on the system and
+PLUMED has been linked to it
+Also notice that using MATHEVAL is much slower than using e.g. RATIONAL.
+Thus, the MATHEVAL switching function is useful to perform quick
+tests on switching functions with arbitrary form before proceeding to their
+implementation in C++.
 
 For all the switching functions in the above table one can also specify a further (optional) parameter using the parameter
 keyword D_MAX to assert that for \f$r>d_{\textrm{max}}\f$ the switching function can be assumed equal to zero. 
@@ -130,7 +151,7 @@ void SwitchingFunction::registerKeywords( Keywords& keys ){
   keys.add("compulsory","D_0","0.0","the value of D_0 in the switching function");
   keys.add("optional","D_MAX","the value at which the switching function can be assumed equal to zero");
   keys.add("compulsory","NN","6","the value of n in the switching function (only needed for TYPE=RATIONAL)");
-  keys.add("compulsory","MM","12","the value of m in the switching function (only needed for TYPE=RATIONAL)");
+  keys.add("compulsory","MM","0","the value of m in the switching function (only needed for TYPE=RATIONAL); 0 implies 2*NN");
   keys.add("compulsory","A","the value of a in the switching funciton (only needed for TYPE=SMAP)");
   keys.add("compulsory","B","the value of b in the switching funciton (only needed for TYPE=SMAP)"); 
 }
@@ -171,9 +192,10 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   if(name=="RATIONAL"){
     type=rational;
     nn=6;
-    mm=12;
+    mm=0;
     Tools::parse(data,"NN",nn);
     Tools::parse(data,"MM",mm);
+    if(mm==0) mm=2*nn;
   } else if(name=="SMAP"){
     type=smap;
     Tools::parse(data,"A",a);
@@ -184,6 +206,26 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   else if(name=="GAUSSIAN") type=gaussian;
   else if(name=="CUBIC") type=cubic;
   else if(name=="TANH") type=tanh;
+#ifdef __PLUMED_HAS_MATHEVAL
+  else if(name=="MATHEVAL"){
+    type=matheval;
+    std::string func;
+    Tools::parse(data,"FUNC",func);
+    evaluator=evaluator_create(const_cast<char*>(func.c_str()));
+    char **check_names;
+    int    check_count;
+    evaluator_get_variables(evaluator,&check_names,&check_count);
+    if(check_count!=1){
+      errormsg="wrong number of arguments in MATHEVAL switching function";
+      return;
+    } 
+    if(std::string(check_names[0])!="x"){
+      errormsg ="argument should be named 'x'";
+      return;
+    }
+    evaluator_deriv=evaluator_derivative(evaluator,const_cast<char*>("x"));
+  }
+#endif
   else errormsg="cannot understand switching function type '"+name+"'";
   if( !data.empty() ){
       errormsg="found the following rogue keywords in switching function input : ";
@@ -214,6 +256,10 @@ std::string SwitchingFunction::description() const {
      ostr<<"cubic";
   } else if(type==tanh){
      ostr<<"tanh";
+#ifdef __PLUMED_HAS_MATHEVAL
+  } else if(type==matheval){
+     ostr<<"matheval";
+#endif
   } else{
      plumed_merror("Unknown switching function type");
   }
@@ -224,6 +270,11 @@ std::string SwitchingFunction::description() const {
     ostr<<" a="<<a<<" b="<<b;
   } else if(type==cubic){
     ostr<<" dmax="<<dmax;
+#ifdef __PLUMED_HAS_MATHEVAL
+  } else if(type==matheval){
+     ostr<<" func="<<evaluator_get_string(evaluator);
+#endif
+
   }
   return ostr.str(); 
 }
@@ -305,6 +356,11 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const{
       double tmp1=std::tanh(rdist);
       result = 1.0 - tmp1;
       dfunc=-(1-tmp1*tmp1);
+#ifdef __PLUMED_HAS_MATHEVAL
+    }else if(type==matheval){
+      result=evaluator_evaluate_x(evaluator,rdist);
+      dfunc=evaluator_evaluate_x(evaluator_deriv,rdist);
+#endif
     }else plumed_merror("Unknown switching function type");
 // this is for the chain rule:
     dfunc*=invr0;
@@ -326,7 +382,7 @@ SwitchingFunction::SwitchingFunction():
   d0(0.0),
   dmax(0.0),
   nn(6),
-  mm(12),
+  mm(0),
   a(0.0),
   b(0.0),
   c(0.0),
@@ -334,13 +390,41 @@ SwitchingFunction::SwitchingFunction():
   invr0_2(0.0),
   dmax_2(0.0),
   stretch(1.0),
-  shift(0.0)
+  shift(0.0),
+  evaluator(NULL),
+  evaluator_deriv(NULL)
 {
+}
+
+SwitchingFunction::SwitchingFunction(const SwitchingFunction&sf):
+  init(sf.init),
+  type(sf.type),
+  invr0(sf.invr0),
+  d0(sf.d0),
+  dmax(sf.dmax),
+  nn(sf.nn),
+  mm(sf.mm),
+  a(sf.a),
+  b(sf.b),
+  c(sf.c),
+  d(sf.d),
+  invr0_2(sf.invr0_2),
+  dmax_2(sf.dmax_2),
+  stretch(sf.stretch),
+  shift(sf.shift),
+  evaluator(NULL),
+  evaluator_deriv(NULL)
+{
+#ifdef __PLUMED_HAS_MATHEVAL
+  if(sf.evaluator) evaluator=evaluator_create(evaluator_get_string(sf.evaluator));
+  if(sf.evaluator_deriv) evaluator_deriv=evaluator_create(evaluator_get_string(sf.evaluator_deriv));
+#endif
 }
 
 void SwitchingFunction::set(int nn,int mm,double r0,double d0){
   init=true;
   type=rational;
+  if(mm==0) mm=2*nn;
   this->nn=nn;
   this->mm=mm;
   this->invr0=1.0/r0;
@@ -361,6 +445,14 @@ double SwitchingFunction::get_d0() const {
 double SwitchingFunction::get_dmax() const {
   return dmax;
 }
+
+SwitchingFunction::~SwitchingFunction(){
+#ifdef __PLUMED_HAS_MATHEVAL
+  if(evaluator) evaluator_destroy(evaluator);
+  if(evaluator_deriv) evaluator_destroy(evaluator_deriv);
+#endif
+}
+
 
 }
 

@@ -133,17 +133,21 @@ BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ){
   VesselOptions da("","",0,"",this); 
   BridgeVessel* bv=new BridgeVessel(da);
   bv->setOutputAction( tome );
-  tome->actionIsBridged=true;
+  tome->actionIsBridged=true; dertime_can_be_off=false;
   functions.push_back( dynamic_cast<Vessel*>(bv) );
   resizeFunctions();
   return bv; 
 }
 
-StoreDataVessel* ActionWithVessel::buildDataStashes( const bool& allow_wcutoff, const double& wtol ){
-  if(mydata) return mydata;
-  
+StoreDataVessel* ActionWithVessel::buildDataStashes( const bool& allow_wcutoff, const double& wtol, ActionWithVessel* actionThatUses ){
+  if(mydata){
+     if( actionThatUses ) mydata->addActionThatUses( actionThatUses );  
+     return mydata;
+  } 
+ 
   VesselOptions da("","",0,"",this);
   StoreDataVessel* mm=new StoreDataVessel(da);
+  if( actionThatUses ) mm->addActionThatUses( actionThatUses );
   if( allow_wcutoff ) mm->setHardCutoffOnWeight( wtol );
   addVessel(mm);
 
@@ -249,7 +253,7 @@ void ActionWithVessel::activateTheseTasks( std::vector<unsigned>& additionalTask
       if( additionalTasks[i]>0 ){
           partialTaskList[nactive_tasks] = fullTaskList[i]; 
           indexOfTaskInFullList[nactive_tasks]=i;
-          nactive_tasks++;
+          taskFlags[i]=0; nactive_tasks++;
       } else {
           taskFlags[i]=1;
       }
@@ -300,8 +304,8 @@ void ActionWithVessel::runAllTasks(){
 
   // Get number of threads for OpenMP
   unsigned nt=OpenMP::getNumThreads();
-  if( nt*stride*10>nactive_tasks) nt=nactive_tasks/stride/10;
-  if( nt==0 ) nt=1;
+  if( nt*stride*10>nactive_tasks ) nt=nactive_tasks/stride/10;
+  if( nt==0 || !threadSafe() ) nt=1;
 
   // Get size for buffer
   unsigned bsize=0, bufsize=getSizeOfBuffer( bsize ); 
@@ -309,7 +313,6 @@ void ActionWithVessel::runAllTasks(){
   buffer.assign( buffer.size(), 0.0 );
   // Switch off calculation of derivatives in main loop
   if( dertime_can_be_off ) dertime=false;
-
   // std::vector<unsigned> der_list;
   // if( mydata ) der_list.resize( mydata->getSizeOfDerivativeList(), 0 ); 
 
