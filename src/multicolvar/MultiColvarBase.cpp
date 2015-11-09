@@ -195,14 +195,14 @@ void MultiColvarBase::turnOnDerivatives(){
 
 void MultiColvarBase::setLinkCellCutoff( const double& lcut, double tcut ){
   plumed_assert( usespecies || ablocks.size()<4 );
-  if( !linkcells.enabled() ){
+  if( tcut<0 ) tcut=lcut;
 
   if( !linkcells.enabled() ){
      linkcells.setCutoff( lcut ); 
      threecells.setCutoff( tcut );
   } else {
      if( lcut>linkcells.getCutoff() ) linkcells.setCutoff( lcut );
-     if( tcut>threecells.setCutoff() ) threecells.setCutoff( tcut ); 
+     if( tcut>threecells.getCutoff() ) threecells.setCutoff( tcut ); 
   }
 }
 

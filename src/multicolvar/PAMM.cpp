@@ -217,12 +217,9 @@ void PAMM::calculateWeight( AtomValuePack& myatoms ){
 
    if(!doNotCalculateDerivatives() ){
       double pref = 1.0 / static_cast<double>( nvars );
-      MultiValue myder( getBaseMultiColvar(0)->getNumberOfQuantities(), getBaseMultiColvar(0)->getNumberOfDerivatives() );
       for(unsigned ivar=0;ivar<nvars;++ivar){
-          // Resize the holder that gets the derivatives from the base class
-          if( ivar>0 ) myder.resize( getBaseMultiColvar(ivar)->getNumberOfQuantities(), getBaseMultiColvar(ivar)->getNumberOfDerivatives() );
           // Get the values of derivatives
-          getVectorDerivatives( myatoms.getIndex(ivar), false, myder );
+          MultiValue& myder=getVectorDerivatives( myatoms.getIndex(ivar), false );
           for(unsigned j=0;j<myder.getNumberActive();++j){
               unsigned jder=myder.getActiveIndex(j);
               myatoms.addDerivative( 0, jder, pref*myder.getDerivative( 1, jder ) );
@@ -254,16 +251,9 @@ double PAMM::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
 
    if( !doNotCalculateDerivatives() ){
        double denom2=denom*denom; std::vector<double> mypref( 1 + kernels.size() );
-       MultiValue myder( 2, getBaseMultiColvar(0)->getNumberOfDerivatives() );
        for(unsigned ivar=0;ivar<nvars;++ivar){
-           // Resize the holder that gets the derivatives from the base class
-           if( ivar>0 ){
-              if( getBaseMultiColvar(ivar)->getNumberOfDerivatives()!=getBaseMultiColvar(ivar-1)->getNumberOfDerivatives() ){
-                 myder.resize( 2, getBaseMultiColvar(ivar)->getNumberOfDerivatives() );
-              }
-           }
            // Get the values of the derivatives
-           getVectorDerivatives( myatoms.getIndex(ivar), false, myder );
+           MultiValue& myder = getVectorDerivatives( myatoms.getIndex(ivar), false );
            // And calculate the derivatives
            for(unsigned i=0;i<kernels.size();++i) mypref[1+i] = tderiv[i][ivar]/denom - vals[i]*dderiv[ivar]/denom2;
            // This is basically doing the chain rule to get the final derivatives

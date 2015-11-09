@@ -73,7 +73,7 @@ Moments::Moments( const vesselbase::VesselOptions& da) :
 Vessel(da)
 {
    // Build the data stashes in this vessel
-   mystash=getAction()->buildDataStashes( false, 0.0 );
+   mystash=getAction()->buildDataStashes( false, 0.0, NULL );
 
    ActionWithValue* a=dynamic_cast<ActionWithValue*>( getAction() );
    plumed_massert(a,"cannot create passable values as base action does not inherit from ActionWithValue");

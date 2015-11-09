@@ -57,6 +57,8 @@ public:
 ///
   double calculateForThree( const unsigned& iat, const unsigned& ano, const unsigned& dno, const Vector& d_da,
                             const double md_da, multicolvar::AtomValuePack& myatoms ) const ;
+/// Used to check for connections between atoms
+  bool checkForConnection( const std::vector<double>& myvals ) const { return !(myvals[1]>epsilon); }
 };
 
 PLUMED_REGISTER_ACTION(HBPammMatrix,"HBPAMM")
