@@ -169,7 +169,7 @@ HBPammMatrix::~HBPammMatrix(){
 }
 
 void HBPammMatrix::setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::string& desc ){
-  log.printf("  reading definition of hydrogen bond between between type %lu and %lu from file %s \n",i,j,desc.c_str() );
+  log.printf("  reading definition of hydrogen bond between between type %u and %u from file %s \n",i,j,desc.c_str() );
   IFile ifile; std::vector<std::string> valnames(3); 
   valnames[0]="ptc"; valnames[1]="ssc"; valnames[2]="adc";
   if( !ifile.FileExist(desc) ) error("count not find file named " + desc );
