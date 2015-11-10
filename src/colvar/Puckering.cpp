@@ -35,9 +35,25 @@ namespace colvar{
 
 //+PLUMEDOC COLVAR PUCKERING
 /*
- Calculate the Nucleic Acid sugar pseudorotation coordinates.
- 
- This command can be used to represent the ring's pseudorotation with polar coordinates (Phase, Amplitud) or cartesian coordinates (Zx, Zy) using the position of the five ring atoms ( see \cite huang2014improvement ).
+ Calculate sugar pseudorotation coordinates.
+
+ This command can be used to calculate ring's pseudorotations in sugars (puckers). It works for both 
+ 5-membered and 6-membered rings. Notice that there are two different implementations depending if
+ one passes 5 or 6 atoms in the ATOMS keyword.
+
+ For 5-membered rings the implementation is the one discussed in \cite huang2014improvement .
+ This implementation is simple and can be used in RNA to distinguish C2'-endo and C3'-endo conformations.
+ Both the polar coordinates (phs and amp) and the cartesian coordinates (Zx and Zy) are provided.
+ C2'-endo conformations have negative Zx, whereas C3'-endo conformations have positive Zy.
+ Notation is consistent with \cite huang2014improvement .
+ The five atoms should be provided as C4',O4',C1',C2',C3'.
+ Notice that this is the same order that can be obtained using the \ref MOLINFO syntax (see example below).
+
+ For 6-membered rings the implementation is the general Cremer-Pople one \cite cremer1975general 
+ as also discussed in \cite biarnes2007conformational .
+ This implementation provides both a triplet with Cartesian components (qx, qy, and qz)
+ and a triplet of polar components (amplitude, phase, and theta).
+ Applications of this particular implentation are to be published (paper in preparation).
  
  Components of this action are:
  
@@ -59,6 +75,8 @@ public:
   explicit Puckering(const ActionOptions&);
   virtual void calculate();
   static void registerKeywords(Keywords& keys);
+  void calculate5m();
+  void calculate6m();
 };
 
 PLUMED_REGISTER_ACTION(Puckering,"PUCKERING")
@@ -66,12 +84,17 @@ PLUMED_REGISTER_ACTION(Puckering,"PUCKERING")
 void Puckering::registerKeywords(Keywords& keys){
    Colvar::registerKeywords( keys );
    keys.remove("NOPBC");
-   keys.add("atoms","ATOMS","the five atoms of the sugar ring in the order C4',O4',C1',C2',C3'");
-   componentsAreNotOptional(keys);
-   keys.addOutputComponent("phs","default","Pseudorotaion phase");
-   keys.addOutputComponent("amp","default","Pseudorotation amplitude");
-   keys.addOutputComponent("Zx","default","Pseudorotation x cartesian component");
-   keys.addOutputComponent("Zy","default","Pseudorotation y cartesian component");
+   keys.add("atoms","ATOMS","the five or six atoms of the sugar ring in the proper order");
+   keys.addOutputComponent("phs","default","Pseudorotation phase (5 membered rings)");
+   keys.addOutputComponent("amp","default","Pseudorotation amplitude (5 membered rings)");
+   keys.addOutputComponent("Zx","default","Pseudorotation x cartesian component (5 membered rings)");
+   keys.addOutputComponent("Zy","default","Pseudorotation y cartesian component (5 membered rings)");
+   keys.addOutputComponent("phase","default","Pseudorotation phase (6 membered rings)");
+   keys.addOutputComponent("theta","default","Theta angle (6 membered rings)");
+   keys.addOutputComponent("amplitude","default","Pseudorotation amplitude (6 membered rings)");
+   keys.addOutputComponent("qx","default","Cartesian component x (6 membered rings)");
+   keys.addOutputComponent("qy","default","Cartesian component y (6 membered rings)");
+   keys.addOutputComponent("qz","default","Cartesian component z (6 membered rings)");
 }
 
 Puckering::Puckering(const ActionOptions&ao):
@@ -79,25 +102,45 @@ PLUMED_COLVAR_INIT(ao)
 {
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
-  if(atoms.size()!=5) error("only for 5-membered rings");
+  if(atoms.size()!=5 && atoms.size()!=6) error("only for 5 or 6-membered rings");
   checkRead();
-  
-  plumed.cite("Huang, Giese, Lee, York, J. Chem. Theory Comput. 10, 1538 (2014)");
   
   if(atoms.size()==5){
     log.printf("  between atoms %d %d %d %d %d\n",atoms[0].serial(),atoms[1].serial(),atoms[2].serial(),atoms[3].serial(),atoms[4].serial());
-  }else error("ATOMS should specify 5 atoms");
+  } else if(atoms.size()==6){
+    log.printf("  between atoms %d %d %d %d %d %d\n",atoms[0].serial(),atoms[1].serial(),atoms[2].serial(),atoms[3].serial(),atoms[4].serial(),atoms[5].serial());
+  } else error("ATOMS should specify 5 atoms");
     
-  addComponentWithDerivatives("phs"); componentIsPeriodic("phs","-pi","pi");
-  addComponentWithDerivatives("amp"); componentIsNotPeriodic("amp");
-  addComponentWithDerivatives("Zx"); componentIsNotPeriodic("Zx");
-  addComponentWithDerivatives("Zy"); componentIsNotPeriodic("Zy");
+  if(atoms.size()==5){
+    addComponentWithDerivatives("phs"); componentIsPeriodic("phs","-pi","pi");
+    addComponentWithDerivatives("amp"); componentIsNotPeriodic("amp");
+    addComponentWithDerivatives("Zx"); componentIsNotPeriodic("Zx");
+    addComponentWithDerivatives("Zy"); componentIsNotPeriodic("Zy");
+  } else if(atoms.size()==6){
+    addComponentWithDerivatives("qx"); componentIsNotPeriodic("qx");
+    addComponentWithDerivatives("qy"); componentIsNotPeriodic("qy");
+    addComponentWithDerivatives("qz"); componentIsNotPeriodic("qz");
+    addComponentWithDerivatives("phase"); componentIsPeriodic("phase","0","2pi");
+    addComponentWithDerivatives("theta"); componentIsNotPeriodic("theta");
+    addComponentWithDerivatives("amplitude"); componentIsNotPeriodic("amplitude");
+  }
+
+  log<<"  Bibliography ";
+  if(atoms.size()==5) log<<plumed.cite("Huang, Giese, Lee, York, J. Chem. Theory Comput. 10, 1538 (2014)");
+  if(atoms.size()==6) log<<plumed.cite("Cremer and Pople, J. Am. Chem. Soc. 97, 1354 (1975)");
+  log<<"\n";
 
   requestAtoms(atoms);
 }
 
 // calculator
 void Puckering::calculate(){
+  makeWhole();
+  if(getNumberOfAtoms()==5) calculate5m();
+  else calculate6m();
+}
+
+void Puckering::calculate5m(){
 
   Vector d0,d1,d2,d3,d4,d5;
   makeWhole();
@@ -190,6 +233,196 @@ void Puckering::calculate(){
 
     
 }
+
+void Puckering::calculate6m(){
+
+  vector<Vector> r(6);
+  r[0]=getPosition(0);
+  for(unsigned i=1;i<6;i++){
+    r[i]=r[i-1]+pbcDistance(getPosition(i-1),getPosition(i));
+  }
+
+  vector<Vector> R(6);
+  Vector center;
+  for(unsigned j=0;j<6;j++) center+=r[j]/6.0;
+  for(unsigned j=0;j<6;j++) R[j]=(r[j]-center);
+
+  Vector Rp,Rpp;
+  for(unsigned j=0;j<6;j++) Rp +=R[j]*sin(2.0/6.0*pi*j);
+  for(unsigned j=0;j<6;j++) Rpp+=R[j]*cos(2.0/6.0*pi*j);
+
+  Vector n=crossProduct(Rp,Rpp);
+  Vector nhat=n/modulo(n);
+
+  Tensor dn_dRp=dcrossDv1(Rp,Rpp);
+  Tensor dn_dRpp=dcrossDv2(Rp,Rpp);
+
+  Tensor dnhat_dn= 1.0/modulo(n)*( Tensor::identity() - extProduct(nhat,nhat));
+  Tensor dnhat_dRp=matmul(dnhat_dn,dn_dRp);
+  Tensor dnhat_dRpp=matmul(dnhat_dn,dn_dRpp);
+
+  vector<double> z(6);
+  for(unsigned j=0;j<6;j++) z[j]=dotProduct(R[j],nhat);
+
+  vector<vector<Vector> > dz_dR(6);
+  for(unsigned j=0;j<6;j++) dz_dR[j].resize(6);
+
+  for(unsigned i=0;i<6;i++) for(unsigned j=0;j<6;j++){
+    if(i==j) dz_dR[i][j]+=nhat;
+    dz_dR[i][j]+=matmul(R[i],dnhat_dRp)*sin(2.0/6.0*pi*j);
+    dz_dR[i][j]+=matmul(R[i],dnhat_dRpp)*cos(2.0/6.0*pi*j);
+  }
+
+  double B=0.0;
+  for(unsigned j=0;j<6;j++) B+=z[j]*cos(4.0/6.0*pi*j);
+
+  vector<Vector> dB_dR(6);
+  for(unsigned i=0;i<6;i++) for(unsigned j=0;j<6;j++){
+    dB_dR[i]+=dz_dR[j][i]*cos(4.0/6.0*pi*j);
+  }
+  Vector Bsum;
+  for(unsigned j=0;j<6;j++) Bsum+=dB_dR[j];
+  for(unsigned j=0;j<6;j++) dB_dR[j]-=Bsum/6.0;;
+
+  double A=0.0;
+  for(unsigned j=0;j<6;j++) A+=z[j]*sin(4.0/6.0*pi*j);
+
+  vector<Vector> dA_dR(6);
+  for(unsigned i=0;i<6;i++) for(unsigned j=0;j<6;j++){
+    dA_dR[i]+=dz_dR[j][i]*sin(4.0/6.0*pi*j);
+  }
+  Vector Asum;
+  for(unsigned j=0;j<6;j++) Asum+=dA_dR[j];
+  for(unsigned j=0;j<6;j++) dA_dR[j]-=Asum/6.0;;
+
+  double C=0.0;
+  for(unsigned j=0;j<6;j++) C+=z[j]*Tools::fastpow(-1.0,(j));
+
+  vector<Vector> dC_dR(6);
+  for(unsigned i=0;i<6;i++) for(unsigned j=0;j<6;j++){
+    dC_dR[i]+=dz_dR[j][i]*Tools::fastpow(-1.0,(j));
+  }
+
+  Vector Csum;
+  for(unsigned j=0;j<6;j++) Csum+=dC_dR[j];
+  for(unsigned j=0;j<6;j++) dC_dR[j]-=Csum/6.0;;
+
+
+// qx
+    double qx = B/sqrt(3);
+
+// qx derivaties
+    vector<Vector> dqx_dR(6);
+    for(unsigned j=0;j<6;j++){
+      dqx_dR[j]=1/sqrt(3) * dB_dR[j];
+    }
+
+    Value* vqx=getPntrToComponent("qx");
+    vqx->set(qx);
+    setAtomsDerivatives (vqx,0, dqx_dR[0] );
+    setAtomsDerivatives (vqx,1, dqx_dR[1] );
+    setAtomsDerivatives (vqx,2, dqx_dR[2] );
+    setAtomsDerivatives (vqx,3, dqx_dR[3] );
+    setAtomsDerivatives (vqx,4, dqx_dR[4] );
+    setAtomsDerivatives (vqx,5, dqx_dR[5] );
+    setBoxDerivativesNoPbc(vqx);
+
+// qy
+   double qy = -A/sqrt(3);
+
+// qy derivatives
+    vector<Vector> dqy_dR(6);
+    for(unsigned j=0;j<6;j++){
+      dqy_dR[j]=-1/sqrt(3) * dA_dR[j];
+    }
+
+    Value* vqy=getPntrToComponent("qy");
+    vqy->set(qy);
+    setAtomsDerivatives (vqy,0, dqy_dR[0] );
+    setAtomsDerivatives (vqy,1, dqy_dR[1] );
+    setAtomsDerivatives (vqy,2, dqy_dR[2] );
+    setAtomsDerivatives (vqy,3, dqy_dR[3] );
+    setAtomsDerivatives (vqy,4, dqy_dR[4] );
+    setAtomsDerivatives (vqy,5, dqy_dR[5] );
+    setBoxDerivativesNoPbc(vqy);
+
+// qz 
+   double qz = C/sqrt(6);
+
+// qz derivatives
+    vector<Vector> dqz_dR(6);
+    for(unsigned j=0;j<6;j++){
+      dqz_dR[j]=1/sqrt(6) * dC_dR[j];
+    }
+
+    Value* vqz=getPntrToComponent("qz");
+    vqz->set(qz);
+    setAtomsDerivatives (vqz,0, dqz_dR[0] );
+    setAtomsDerivatives (vqz,1, dqz_dR[1] );
+    setAtomsDerivatives (vqz,2, dqz_dR[2] );
+    setAtomsDerivatives (vqz,3, dqz_dR[3] );
+    setAtomsDerivatives (vqz,4, dqz_dR[4] );
+    setAtomsDerivatives (vqz,5, dqz_dR[5] );
+    setBoxDerivativesNoPbc(vqz);
+
+
+// PHASE
+    double phase=atan2(-A,B);
+
+// PHASE DERIVATIVES
+    vector<Vector> dphase_dR(6);
+    for(unsigned j=0;j<6;j++){
+      dphase_dR[j]=1.0/(A*A+B*B) * (-B*dA_dR[j] + A*dB_dR[j]);
+    }
+
+    Value* vphase=getPntrToComponent("phase");
+    vphase->set(phase);
+    setAtomsDerivatives (vphase,0, dphase_dR[0] );
+    setAtomsDerivatives (vphase,1, dphase_dR[1] );
+    setAtomsDerivatives (vphase,2, dphase_dR[2] );
+    setAtomsDerivatives (vphase,3, dphase_dR[3] );
+    setAtomsDerivatives (vphase,4, dphase_dR[4] );
+    setAtomsDerivatives (vphase,5, dphase_dR[5] );
+    setBoxDerivativesNoPbc(vphase);
+
+//  AMPLITUDE
+    double amplitude=sqrt((2*(A*A+B*B)+C*C)/6);
+
+//  AMPLITUDE DERIVATIES
+    vector<Vector> damplitude_dR(6);
+    for (unsigned j=0;j<6;j++){
+      damplitude_dR[j]=0.5*sqrt(2.0/6.0)/(sqrt(A*A+B*B+0.5*C*C)) * (2*A*dA_dR[j] + 2*B*dB_dR[j] + C*dC_dR[j]);
+    }
+
+    Value* vamplitude=getPntrToComponent("amplitude");
+    vamplitude->set(amplitude);
+    setAtomsDerivatives (vamplitude,0, damplitude_dR[0] );
+    setAtomsDerivatives (vamplitude,1, damplitude_dR[1] );
+    setAtomsDerivatives (vamplitude,2, damplitude_dR[2] );
+    setAtomsDerivatives (vamplitude,3, damplitude_dR[3] );
+    setAtomsDerivatives (vamplitude,4, damplitude_dR[4] );
+    setAtomsDerivatives (vamplitude,5, damplitude_dR[5] );
+    setBoxDerivativesNoPbc(vamplitude);
+
+//  THETA
+    double theta=acos( C / sqrt(2.*(A*A+B*B) +C*C ) );
+
+//  THETA DERIVATIVES
+    vector<Vector> dtheta_dR(6);
+    for(unsigned j=0;j<6;j++){
+      dtheta_dR[j]=1.0/(3.0*sqrt(2)*amplitude*amplitude) * (C/(sqrt(A*A+B*B)) * (A*dA_dR[j] + B*dB_dR[j]) - sqrt(A*A+B*B)*dC_dR[j]);
+    }
+    Value* vtheta=getPntrToComponent("theta");
+    vtheta->set(theta);
+    setAtomsDerivatives (vtheta,0, dtheta_dR[0] );
+    setAtomsDerivatives (vtheta,1, dtheta_dR[1] );
+    setAtomsDerivatives (vtheta,2, dtheta_dR[2] );
+    setAtomsDerivatives (vtheta,3, dtheta_dR[3] );
+    setAtomsDerivatives (vtheta,4, dtheta_dR[4] );
+    setAtomsDerivatives (vtheta,5, dtheta_dR[5] );
+    setBoxDerivativesNoPbc(vtheta);
+}
+
 
 }
 }
