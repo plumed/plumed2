@@ -28,5 +28,6 @@ Changes from version 2.2 which are relevant for users:
   - In rational switching functions, by default MM is twice NN. This is valid both in \ref switchingfunction with expanded
     syntax and when specifying MM on e.g. \ref COORDINATION
   - Added MATHEVAL type in \ref switchingfunction
+  - \ref PUCKERING now supports 6 membered rings.
 
 */
