@@ -321,7 +321,7 @@ equivalent.  You should read the documentation for the PLUMED 2 Action.
 </TR>
 <TR>
   <TD> PUCKERING </TD>
-  <TD> \ref PUCKERING (5 membered rings only) </TD>
+  <TD> \ref PUCKERING </TD>
 </TR>
 <TR>
   <TD> S_PATH </TD>
