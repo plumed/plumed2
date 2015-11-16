@@ -37,9 +37,9 @@ We can start by downloading the tarball and uncompressing it:
 \warning Exercises should be run inside the newly-created cineca directory,
 by creating new subdirectories, one per exercise.
 
-\section cineca-submit Using GROMACS and PLUMED on Cineca
+\section cineca-submit Using GROMACS and PLUMED at Cineca
 
-To be able to use GROMACS and PLUMED on Cineca, you first need to load the following modules:
+To be able to use GROMACS and PLUMED on the Eurora machine at Cineca, you first need to load the following modules:
 
 \verbatim
 > module load profile/advanced
@@ -47,14 +47,14 @@ To be able to use GROMACS and PLUMED on Cineca, you first need to load the follo
 > module load plumed/2.2.0
 \endverbatim
 
-The GROMACS main executable can be launched as follows:
+The GROMACS main executable can be launched interactively (max 10 minutes) as follows:
 \verbatim
 mdrun_mpi_plumed
 \endverbatim
 
 More info about the machine we are using can be found <a href=http://www.hpc.cineca.it/content/eurora-user-guide> here</a>.
-In particular, we will need to submit parallel jobs using the PBS queue system.
-Details instructions are <a href=http://www.hpc.cineca.it/content/eurora-batch-scheduler-pbs> here</a>. 
+In particular, we will need to submit some of the longer exercises using the PBS queue system.
+Examples of the scripts needed can be found below, while more detailed instructions are <a href=http://www.hpc.cineca.it/content/eurora-batch-scheduler-pbs> here</a>. 
  
 
 \section cineca-toymodel Alanine dipeptide: our toy model
@@ -109,18 +109,18 @@ For this tutorial, it is sufficient to use the .tpr files provided in the SETUP 
 However, we also provide .gro, .mdp, and .top files,
 that can be modified and used to generate a new .tpr file.
 
-GROMACS can be run using on the command line:
+GROMACS can be run (interactively) using the following command:
 \verbatim
 > mdrun_mpi_plumed -s ../SETUP/topolA.tpr -nsteps 10000 -x traj.xtc
 \endverbatim
 The nsteps flags can be used to change the number of timesteps and topolA.tpr is the name of the tpr file.
-While running, GROMACS will produce an md.log file, with log information, and a traj.xtc file, with a binary trajectory.
-The trajectory can be visualized with VMD using a command such as
+While running, GROMACS will produce a md.log file, with log information, and a traj.xtc file, with a binary trajectory.
+The trajectory can be visualized with VMD using:
 \verbatim
 > vmd confout.gro traj.xtc
 \endverbatim
 
-To run a simulation with GROMACS+PLUMED you just need to add a -plumed flag
+To activate PLUMED during a GROMACS MD simulation, you need to add the -plumed flag
 \verbatim
 > mdrun_mpi_plumed -s ../SETUP/topolA.tpr -nsteps 10000 -plumed plumed.dat -x traj.xtc
 \endverbatim
@@ -128,8 +128,8 @@ Here plumed.dat is the name of the PLUMED input file. Notice that PLUMED will wr
 information in the md.log that could be useful to verify if the simulation has been set up properly.
 
 In this exercise, we will run a plain MD simulation and monitor the \f$\Phi\f$ and \f$\Psi\f$ dihedral angles
-on-the-fly.
-Using the following PLUMED input file you can monitor \f$\Phi\f$ and \f$\Psi\f$ angles during the MD simulation
+on-the-fly. In order to do so, you need to prepare the following PLUMED input file:
+
 \verbatim
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
@@ -137,7 +137,7 @@ PRINT ARG=phi,psi STRIDE=100 FILE=COLVAR
 \endverbatim
 (see \ref TORSION and \ref PRINT)
 
-Notice that PLUMED is going to compute the collective variables only when necessary, that is, in this case, every 100 steps.
+PLUMED is going to compute the collective variables only when necessary, that is, in this case, every 100 steps.
 This is not very relevant for simple variables such as torsional angles, but provides a significant speed-up
 when using expensive collective variables.
 
@@ -165,14 +165,14 @@ separated by a large barrier so that the system cannot cross it in such short si
 Also notice that the two clouds are well separated, indicating that these two collective variables
 are appropriate to properly distinguish the two minima.
 
-As a final comment, notice that if you run twice the same calculation in the same directory, you might overwrite the
-resulting files. GROMACS takes automatic backup of the output files, and PLUMED does it as well. In case you are restarting a simulation,
+As a final comment, consider that if you run twice the same calculation in the same directory, you might overwrite the
+output files. GROMACS takes automatic backup of these files, and PLUMED does it as well. In case you are restarting a simulation,
 you can add the keyword \ref RESTART at the beginning of the PLUMED input file. This will tell PLUMED to *append* files
 instead of taking a backup copy.
 
 \subsection cineca-monitor-dr Exercise 2: analysis with the driver tool
 
-Imagine you already made a simulation, with or without PLUMED. You might want to compute the collective
+Imagine you have already run a simulation, with or without PLUMED. You might want to compute the collective
 variables a posteriori, i.e. from the trajectory file. You can do this by using the PLUMED executable on the command line.
 Type
 \verbatim
@@ -180,12 +180,12 @@ Type
 \endverbatim
 to have an idea of the possible options. See \ref driver for the full documentation.
 
-Here we will use the driver the compute \f$\Phi\f$ and \f$\Psi\f$ on the already generated trajectory. Let's assume
-the trajectory is named `traj.xtc`. You should prepare an PLUMED input file named `analysis.dat` as:
+Here we will use the driver the compute \f$\Phi\f$ and \f$\Psi\f$ on the trajectory previously generated. Let's assume
+the trajectory is named `traj.xtc`. You should prepare a PLUMED input file named `analysis.dat` as:
 \verbatim
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
-PRINT ARG=phi,psi FILE=analysis
+PRINT ARG=phi,psi FILE=COLVAR_ANALYSIS
 \endverbatim
 (see \ref TORSION and \ref PRINT)
 Notice that typically when using the driver we do not provide a STRIDE keyword to PRINT. This implies "print at every step" which,
@@ -195,7 +195,7 @@ command:
 > plumed driver --mf_xtc traj.xtc --plumed analysis.dat
 \endverbatim
 Notice that PLUMED has no way to now the value of physical time from the trajectory. If you want physical time to
-be printed in the `analysis` file you should give more information to the driver, e.g.:
+be printed in the output file you should give more information to the driver, e.g.:
 \verbatim
 > plumed driver --mf_xtc traj.xtc --plumed analysis.dat --timestep 0.002 --trajectory-stride 1000
 \endverbatim
@@ -205,7 +205,7 @@ In this case we inform the driver that the `traj.xtc` file was produced in a run
 saving a snapshop every 1000 timesteps.
 
 You might want to analyze a different collective variable, such as the gyration radius.
-The gyration radius tells how extended is the molecules in space.
+The gyration radius tells how extended is a molecule in space.
 You can do it with the following PLUMED input file
 
 \verbatim
@@ -222,7 +222,7 @@ PRINT ARG=phi,psi,gyr FILE=analyze
 \endverbatim
 (see \ref TORSION, \ref GYRATION, \ref GROUP, and \ref PRINT)
 
-Now try to compute the time series of the gyration radius.
+Now try to compute the time serie of the gyration radius.
 
 \section cineca-biasing Biasing collective variables
 
@@ -479,7 +479,7 @@ The resulting plot should look like the following:
 To assess the convergence of the simulation more quantitatively, we can calculate the free-energy difference between the two
 local minima of the free energy along phi as a function of simulation time.
 We can use following script to integrate the multiple free-energy profiles in the two basins defined
-by the following intervals in phi space: basin A, -3<phi<-1, basin B, 0.5<phi<1.5.
+by the following regions in phi space: basin A, -3<phi<-1, basin B, 0.5<phi<1.5.
 
 \verbatim
 # number of free-energy profiles
@@ -509,7 +509,7 @@ done
 
 \endverbatim
 
-notice that nfes should be set to the 
+Please notice that nfes should be set to the 
 number of profiles (free-energy estimates at different times of the simulation) generated by the option --stride of \ref sum_hills.
 
 \anchor cineca-metad-phifes-difft-fig
@@ -706,7 +706,7 @@ Notice that here we are printing a quantity named `res.bias`. We do this because
 value (that here would be theoretically named `res`) but a structure with several components. All
 biasing methods (including \ref METAD) do so, as well as many collective variables (see e.g. \ref DISTANCE used with COMPONENTS keyword).
 Printing the bias allows one to know how much a given snapshop was penalized.
-Also notice that PLUMED understands numbers in the for `{number}pi`. This is convenient when using
+Also notice that PLUMED understands numbers in the form `{number}pi`. This is convenient when using
 torsions, since they are expressed in radians.
 
 Now you can plot your trajectory with gnuplot and see the effect of KAPPA. You can also try different values
@@ -812,7 +812,8 @@ how to reweight and combine data with WHAM to obtain free-energy profiles.
 We start with running in a replica-exchange scheme 32 
 simulations with a restraint on phi in different positions, ranging from -3 to 3.
 We will instruct GROMACS to attempt an exchange between different simulations every 1000 steps.
-First we need to create the 32 PLUMED input files and .tpr files:
+
+First we need to create the 32 PLUMED input files and .tpr files, using the following script:
 
 \verbatim
 nrep=32
@@ -919,9 +920,27 @@ Now, single files named ALLCOLVAR.XX will contain on the fourth column the value
 centered in a given position, computed on the entire concatenated trajectory.
 
 Next step is to compute the weights self-consistently solving the WHAM equations, using
-the python script "wham.py" contained in the SCRIPTS directory. To use this code:
+the python script "wham.py" contained in the SCRIPTS directory. 
+We will submit this using the following PBS script:
 
 \verbatim
+#!/bin/bash
+#PBS -N WHAM 
+#PBS -l select=1:ncpus=1:mpiprocs=1:mem=2GB
+#PBS -l walltime=1:00:00
+#PBS -A train_cmd32015
+#PBS -q parallel
+#PBS -W group_list=train_cmd32015
+
+# go to submission dir
+cd $PBS_O_WORKDIR
+
+# load gromacs 5.0.4 + PLUMED 2.2.0
+module load profile/advanced
+module load autoload gromacs/5.0.4
+module load plumed/2.2.0
+export OMP_NUM_THREADS=1
+
 bash ../SCRIPTS/wham.sh ALLCOLVAR.*
 \endverbatim 
 
