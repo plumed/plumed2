@@ -719,7 +719,7 @@ that a too large kappa could make the MD integrator unstable.
 with GROMACS, but only partly supported with other MD engines.
 
 Some free-energy methods are intrinsically parallel and requires running
-several simultaneous simulations. This can be done with gromacs using the
+several simultaneous simulations. This can be done with GROMACS using the
 multi replica framework. That is, if you have 4 tpr files named topol0.tpr,
 topol1.tpr, topol2.tpr, topol3.tpr you can run 4 simultaneous simulations.
 \verbatim
@@ -735,8 +735,8 @@ As a consequence, if all the replicas should use the same input file it is suffi
 to put a single `plumed.dat` file, but one has also the flexibility of using separate files
 named `plumed.0.dat`, `plumed.1.dat` etc. 
 
-Also notice that providing the flag `-replex` one can instruct gromacs to perform a replica exchange
-simulation. Namely, from time to time gromacs will try to swap coordinates among neighboring
+Also notice that providing the flag `-replex` one can instruct GROMACS to perform a replica exchange
+simulation. Namely, from time to time GROMACS will try to swap coordinates among neighboring
 replicas and accept of reject the exchange with a Monte Carlo procedure which also
 takes into account the bias potentials acting on the replicas, even if different bias potentials
 are used in different replicas. That is, PLUMED allows
@@ -811,7 +811,8 @@ In this exercise we will run multiple restraint simulations and learn
 how to reweight and combine data with WHAM to obtain free-energy profiles.
 We start with running in a replica-exchange scheme 32 
 simulations with a restraint on phi in different positions, ranging from -3 to 3.
-We will instruct gromacs to attempt an exchange between different simulations every 1000 steps.
+We will instruct GROMACS to attempt an exchange between different simulations every 1000 steps.
+First we need to create the 32 PLUMED input files and .tpr files:
 
 \verbatim
 nrep=32
@@ -842,9 +843,35 @@ else
   cp ../SETUP/topolB.tpr topol$i.tpr
 fi
 done
+\endverbatim
 
-# run REM
-mpirun -np $nrep mdrun_mpi_plumed -plumed plumed.dat -s topol.tpr -multi $nrep -replex 1000 -nsteps 500000 -x traj.xtc
+And then prepare the following script (go.pbs) for the PBS queue system:
+
+\verbatim
+#!/bin/bash
+#PBS -N US-WHAM
+#PBS -l select=2:ncpus=16:mpiprocs=16:mem=30GB
+#PBS -l walltime=1:00:00
+#PBS -A train_cmd32015
+#PBS -q parallel
+#PBS -W group_list=train_cmd32015
+
+# go to submission dir
+cd $PBS_O_WORKDIR
+
+# load gromacs 5.0.4 + PLUMED 2.2.0
+module load profile/advanced
+module load autoload gromacs/5.0.4
+module load plumed/2.2.0
+export OMP_NUM_THREADS=1
+
+mpirun -np 32 mdrun_mpi_plumed -plumed plumed.dat -s topol.tpr -multi 32 -replex 1000 -nsteps 500000 -x traj.xtc
+\endverbatim
+
+and submit it using:
+
+\verbatim
+qsub go.pbs
 \endverbatim
 
 To be able to combine data from all the simulations, it is necessary to have an overlap between 
