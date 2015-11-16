@@ -361,11 +361,35 @@ In case you do not provide any information about bin size (neither GRID_BIN nor 
 and if Gaussian width is fixed PLUMED will use 1/5 of the Gaussian width as grid spacing.
 This default choice should be reasonable for most applications.
 
-Once the PLUMED input file is prepared, one has to run Gromacs with the option to activate PLUMED and
-read the input file:
+Once the PLUMED input file is prepared, one has to run GROMACS with the option to activate PLUMED and
+read the input file. We will submit this job using the PBS queue system.
+In order to do this, we need to prepare the following script (go.pbs):
 
 \verbatim
-mdrun_mpi_plumed -s ../SETUP/topolA.tpr -plumed plumed.dat -nsteps 5000000
+#!/bin/bash
+#PBS -N WTMetaD
+#PBS -l select=1:ncpus=1:mpiprocs=1:mem=2GB
+#PBS -l walltime=1:00:00
+#PBS -A train_cmd32015
+#PBS -q parallel
+#PBS -W group_list=train_cmd32015
+
+# go to submission dir
+cd $PBS_O_WORKDIR
+
+# load gromacs 5.0.4 + PLUMED 2.2.0
+module load profile/advanced
+module load autoload gromacs/5.0.4
+module load plumed/2.2.0
+export OMP_NUM_THREADS=1
+
+mdrun_mpi_plumed -s ../SETUP/topolA.tpr -plumed plumed.dat -nsteps 5000000 -x traj.xtc
+\endverbatim
+
+and submit it using:
+
+\verbatim
+qsub go.pbs
 \endverbatim
 
 During the metadynamics simulation, PLUMED will create two files, named COLVAR and HILLS.
@@ -527,12 +551,9 @@ PRINT STRIDE=10 ARG=phi,psi,metad.bias FILE=COLVAR
 \endverbatim
 (see \ref TORSION, \ref METAD, and \ref PRINT).
 
-Once the PLUMED input file is prepared, one has to run Gromacs with the option to activate PLUMED and
-read the input file:
-
-\verbatim
-mdrun_mpi_plumed -s ../SETUP/topolA.tpr -plumed plumed.dat -nsteps 5000000
-\endverbatim
+Once the PLUMED input file is prepared, one has to run GROMACS with the option to activate PLUMED and
+read the input file. We will submit this job using the PBS queue system, as done for the previous
+exercise.
 
 As we did in the previous exercise, we can use COLVAR to visualize the behavior of the CV during the simulation.
 Here we will plot at the same time the evolution of the metadynamics CV psi and of the other dihedral phi:
