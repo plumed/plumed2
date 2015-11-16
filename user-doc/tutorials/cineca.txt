@@ -859,7 +859,7 @@ can be mixed and it is not necessary to keep track of which restraint was used t
 every single frame. Let's get the concatenated trajectory
 
 \verbatim
-trjcat_mpi -cat -f traj*.xtc -o alltraj.xtc
+trjcat -cat -f traj*.xtc -o alltraj.xtc
 \endverbatim
 
 Now we should compute the value of each of the bias potentials on the entire (concatenated) trajectory.
@@ -921,7 +921,7 @@ across the different restraint potentials. In order to do so, we can use the fol
 
 \verbatim
 demux.pl md0.log
-trjcat_mpi -f traj*.xtc  -demux replica_index.xvg
+trjcat -f traj*.xtc  -demux replica_index.xvg
 \endverbatim
  
 This commands will generate 32 continous trajectories, named XX_trajout.xtc. We will use the driver to calculate the value of the CVs
