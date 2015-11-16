@@ -37,6 +37,7 @@ We can start by downloading the tarball and uncompressing it:
 \warning Exercises should be run inside the newly-created cineca directory,
 by creating new subdirectories, one per exercise.
 
+
 \section cineca-toymodel Alanine dipeptide: our toy model
 
 In this tutorial we will play with alanine dipeptide (see Fig. \ref cineca-1-ala-fig).
