@@ -37,6 +37,25 @@ We can start by downloading the tarball and uncompressing it:
 \warning Exercises should be run inside the newly-created cineca directory,
 by creating new subdirectories, one per exercise.
 
+\section cineca-submit Using GROMACS and PLUMED on Cineca
+
+To be able to use GROMACS and PLUMED on Cineca, you first need to load the following modules:
+
+\verbatim
+> module load profile/advanced
+> module load autoload gromacs/5.0.4
+> module load plumed/2.2.0
+\endverbatim
+
+The GROMACS main executable can be launched as follows:
+\verbatim
+mdrun_mpi_plumed
+\endverbatim
+
+More info about the machine we are using can be found <a href=http://www.hpc.cineca.it/content/eurora-user-guide> here</a>.
+In particular, we will need to submit parallel jobs using the PBS queue system.
+Details instructions are <a href=http://www.hpc.cineca.it/content/eurora-batch-scheduler-pbs> here</a>. 
+ 
 
 \section cineca-toymodel Alanine dipeptide: our toy model
 
