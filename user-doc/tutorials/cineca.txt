@@ -854,7 +854,7 @@ Next step is to compute the weights self-consistently solving the WHAM equations
 the python script "wham.py" contained in the SCRIPTS directory. To use this code:
 
 \verbatim
-../SCRIPTS/wham.sh ALLCOLVAR.*
+bash ../SCRIPTS/wham.sh ALLCOLVAR.*
 \endverbatim 
 
 This script will produce several files. Let's visualize "phi_fes.dat", which contains the free energy as a function of phi, and compare this with the result previously obtained with metadynamics.
@@ -867,7 +867,7 @@ This script will produce several files. Let's visualize "phi_fes.dat", which con
 In the previous exercise, we use multiple restraint simulations to calculate the free energy as a function of the
 dihedral phi. The resulting free energy was in excellent agreement with our previous metadynamics simulation.
 In this exercise we will repeat the same procedure for the dihedral psi.
-At the end of the steps defined above, we can plot the free energy "psi_fes.dat" and compare it with the reference
+At the end of the steps defined above, we can plot the free energy "psi_fes.dat" and compare it with the
 profile calculated from a metadynamics simulations using both phi and psi as CVs.
 
 \anchor cineca-usrem-psi-fes

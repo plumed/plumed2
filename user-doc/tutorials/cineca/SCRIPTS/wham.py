@@ -10,9 +10,9 @@ NBIAS_ = int(sys.argv[2])
 KBT_ = float(sys.argv[3])
 # default parameters for WHAM
 # number of WHAM iterations
-NWHAM_ = 10000
+NWHAM_ = 1000
 # convergence thresold
-THRES_ = 1.0e-30
+THRES_ = 1.0e-10
 
 
 def get_wham_weights(nbias, nframes, bias_ts, nwham=NWHAM_, thres=THRES_):
