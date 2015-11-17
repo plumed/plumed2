@@ -445,20 +445,22 @@ void MultiColvarBase::setupActiveTaskSet( std::vector<unsigned>& active_tasks, c
   }
 }
 
+bool MultiColvarBase::filtersUsedAsInput(){
+  bool inputAreFilters=false;
+  for(unsigned i=0;i<mybasemulticolvars.size();++i){
+      MultiColvarFilter* myfilt=dynamic_cast<MultiColvarFilter*>( mybasemulticolvars[i] );
+      if( myfilt || mybasemulticolvars[i]->filtersUsedAsInput() ) inputAreFilters=true;
+  }
+  return inputAreFilters;
+}
+
 void MultiColvarBase::calculate(){ 
   std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
   // Recursive function that sets up tasks
   setupActiveTaskSet( active_tasks, getLabel() );
 
   // Check for filters and rerun setup of link cells if there are any
-  if( colvar_label.size()>0 ){
-      bool inputAreFilters=true;
-      for(unsigned i=0;i<mybasemulticolvars.size();++i){
-          MultiColvarFilter* myfilt=dynamic_cast<MultiColvarFilter*>( mybasemulticolvars[i] );
-          if( !myfilt ) inputAreFilters=false;
-      }
-      if( inputAreFilters ) setupLinkCells();
-  }
+  if( colvar_label.size()>0 && filtersUsedAsInput() ) setupLinkCells();
 
   //  Setup the link cells if we are not using species
   if( !usespecies && ablocks.size()>1 ){
