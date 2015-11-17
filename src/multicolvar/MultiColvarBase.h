@@ -77,6 +77,9 @@ protected:
   std::vector<vesselbase::StoreDataVessel*> mybasedata;
 /// This remembers where the boundaries are for the tasks. It makes link cells work fast
   Matrix<std::pair<unsigned,unsigned> > bookeeping;
+/// Function that recursively checks if filters have been used in the input to a multicolvar
+/// we need this to ensure that setupLinkCells is run in calculate with some actions
+  bool filtersUsedAsInput();
 /// Read in a set of multicolvar labels as the input to the action
   bool interpretInputMultiColvars( const std::vector<std::string>& key, const double& wtolerance );
 /// Convert an index in the global array to an index in the individual base colvars
