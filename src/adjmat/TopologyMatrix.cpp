@@ -225,8 +225,8 @@ void TopologyMatrix::calculateForThreeAtoms( const unsigned& iat, const Vector& 
 
   // Now calculate the density in the cylinder
   if( cm<cylinder_sw( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) ).get_dmax() ){
-      double dfuncr, val = 1.0 - cylinder_sw( getBaseColvarNumber( myatoms.getIndex(0) ), 
-                                              getBaseColvarNumber( myatoms.getIndex(1) ) ).calculateSqr( cm, dfuncr );
+      double dfuncr, val = cylinder_sw( getBaseColvarNumber( myatoms.getIndex(0) ), 
+                                        getBaseColvarNumber( myatoms.getIndex(1) ) ).calculateSqr( cm, dfuncr );
 
       Vector dc1, dc2, dc3, dd1, dd2, dd3;
       if( !doNotCalculateDerivatives() ){
@@ -248,9 +248,9 @@ void TopologyMatrix::calculateForThreeAtoms( const unsigned& iat, const Vector& 
           dd3 = matmul( Tensor::identity(), d1 );
 
           // Calculate derivatives of cross product
-          dc1 = -dfuncr*( -d2 - proj*dd1 );
-          dc2 = -dfuncr*( -proj*dd2 );
-          dc3 = -dfuncr*( d2 - proj*dd3 );
+          dc1 = dfuncr*( -d2 - proj*dd1 );
+          dc2 = dfuncr*( -proj*dd2 );
+          dc3 = dfuncr*( d2 - proj*dd3 );
       }
 
       Vector g1derivf,g2derivf,lderivf; Tensor vir;
