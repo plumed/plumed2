@@ -877,7 +877,18 @@ qsub go.pbs
 
 To be able to combine data from all the simulations, it is necessary to have an overlap between 
 statistics collected in two adjacent umbrellas.  
-Have a look at the plot of (phi,psi) for the different simulations to understand what is happening.
+Have a look at the plots of (phi,psi) for the different simulations to understand what is happening.
+To visualize them all at once as in Fig. \ref cineca-usrem-phi-all, you can prepare the following script:
+
+\verbatim
+awk 'BEGIN{print ""; ORS=""; print "p \"COLVAR.0\" u 2:3 notitle,"; for(i=1;i<=30;i++) print "\"COLVAR."i"\" u 2:3 notitle,"; print "\"COLVAR.31\" u 2:3 notitle"; ORS="\n"; print ""}' > plot.plt
+\endverbatim
+
+and then open gnuplot and load it:
+
+\verbatim
+gnuplot> load "plot.plt"
+\endverbatim
 
 \anchor cineca-usrem-phi-all
 \image html munster-usrem-phi-all.png "(phi,psi) scatter plot from the multiple restraints simulation."
@@ -992,7 +1003,7 @@ plumed driver --mf_xtc ${i}_trajout.xtc --trajectory-stride=10 --plumed plumed.d
 done
 \endverbatim
 
-The COLVARDEMUX.XX files will contain the value of the CVs on the demuxed trajectory. If we visualize these files we will notice that
+The COLVARDEMUX.XX files will contain the value of the CVs on the demuxed trajectory. If we visualize these files (see previous exercise for instructions) we will notice that
 replicas sample the CVs space differently. In order for each umbrella to equilibrate the slow degrees of freedom phi, the continuous replicas
 must be ergodic and thus sample the same distribution in phi and psi.  
 
