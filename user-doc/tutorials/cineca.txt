@@ -967,7 +967,7 @@ across the different restraint potentials. In order to do so, we can use the fol
 
 \verbatim
 demux.pl md0.log
-trjcat -f traj*.xtc  -demux replica_index.xvg
+trjcat -f traj?.xtc traj??.xtc  -demux replica_index.xvg
 \endverbatim
  
 This commands will generate 32 continous trajectories, named XX_trajout.xtc. We will use the driver to calculate the value of the CVs
