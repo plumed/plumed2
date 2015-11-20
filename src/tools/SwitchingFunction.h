@@ -54,6 +54,8 @@ class SwitchingFunction{
 /// Parameters for smap function
   int a,b;
   double c,d;
+// nativeq
+  double lambda, beta, ref;
 /// Square of invr0, useful in calculateSqr()
   double invr0_2;
 /// Square of dmax, useful in calculateSqr()

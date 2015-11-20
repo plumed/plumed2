@@ -203,8 +203,16 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     c=pow(2., static_cast<double>(a)/static_cast<double>(b) ) - 1; 
     d = -static_cast<double>(b) / static_cast<double>(a);
   } 
+  else if(name=="Q") {
+    type=nativeq; 
+    beta = 50.0;  // ?nm-1?
+    lambda = 1.5; // unitless
+    ref = 0.1; // nm
+    Tools::parse(data, "BETA", beta);
+    Tools::parse(data, "LAMBDA", lambda);
+    Tools::parse(data, "REF", ref);
+  }
   else if(name=="EXP") type=exponential;
-  else if(name=="Q") type=nativeq;
   else if(name=="GAUSSIAN") type=gaussian;
   else if(name=="CUBIC") type=cubic;
   else if(name=="TANH") type=tanh;
@@ -270,6 +278,8 @@ std::string SwitchingFunction::description() const {
   ostr<<" swiching function with parameters d0="<<d0;
   if(type==rational){
     ostr<<" nn="<<nn<<" mm="<<mm;
+  } else if(type==nativeq){
+    ostr<<" beta="<<beta<<" lambda="<<lambda<<" ref="<<ref;
   } else if(type==smap){
     ostr<<" a="<<a<<" b="<<b;
   } else if(type==cubic){
@@ -336,8 +346,8 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const{
   }
   const double rdist = (distance-d0)*invr0;
   double result;
-  // fraction of native contacts, no switching
-  if(rdist<=0.&&type!=nativeq){
+
+  if(rdist<0){
      result=1.;
      dfunc=0.0;
   }else{
@@ -351,8 +361,8 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const{
       result=exp(-rdist);
       dfunc=-result;
     }else if(type==nativeq){
-      // this will be used as fraction of native contacts
-      double exprdist=exp(rdist);
+      double rdist2 = beta*(distance - lambda * ref);
+      double exprdist=exp(rdist2);
       result=1./(1.+exprdist);
       dfunc=-exprdist/(1.+exprdist)/(1.+exprdist);
     }else if(type==gaussian){
@@ -397,6 +407,9 @@ SwitchingFunction::SwitchingFunction():
   b(0.0),
   c(0.0),
   d(0.0),
+  beta(0.0),
+  lambda(0.0),
+  ref(0.0),
   invr0_2(0.0),
   dmax_2(0.0),
   stretch(1.0),
@@ -418,6 +431,9 @@ SwitchingFunction::SwitchingFunction(const SwitchingFunction&sf):
   b(sf.b),
   c(sf.c),
   d(sf.d),
+  beta(sf.beta),
+  lambda(sf.lambda),
+  ref(sf.ref),
   invr0_2(sf.invr0_2),
   dmax_2(sf.dmax_2),
   stretch(sf.stretch),
