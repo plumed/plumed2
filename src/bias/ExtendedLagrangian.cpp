@@ -132,7 +132,6 @@ public:
   explicit ExtendedLagrangian(const ActionOptions&);
   void calculate();
   void update();
-  void turnOnDerivatives();
   static void registerKeywords(Keywords& keys);
 };
 
@@ -278,13 +277,6 @@ void ExtendedLagrangian::update(){
   }
 }
 
-void ExtendedLagrangian::turnOnDerivatives(){
-  // do nothing
-  // this is to avoid errors triggered when a bias is used as a CV
 }
-
-
-}
-
 
 }

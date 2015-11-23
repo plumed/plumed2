@@ -51,7 +51,6 @@ public:
   explicit Bias(const ActionOptions&ao);
   void apply();
   unsigned getNumberOfDerivatives();
-  void turnOnDerivatives();
 };
 
 inline
