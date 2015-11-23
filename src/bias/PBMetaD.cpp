@@ -339,7 +339,7 @@ multiple_w(false), doInt_(false), isFirstStep(true)
   hillsOfiles_.push_back(ofile);
  }
 
-  log<<"  Bibliography "<<plumed.cite("Pfaendtner and Bonomi. Submitted (2015)");
+  log<<"  Bibliography "<<plumed.cite("Pfaendtner and Bonomi. J. Chem. Theory Comput. 11, 5062 (2015)");
   if(doInt_) log<<plumed.cite(
      "Baftizadeh, Cossio, Pietrucci, and Laio, Curr. Phys. Chem. 2, 79 (2012)");
   if(multiple_w) log<<plumed.cite(
