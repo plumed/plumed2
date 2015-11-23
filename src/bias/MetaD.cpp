@@ -797,6 +797,8 @@ last_step_warn_grid(0)
      "Gil-Ley and Bussi, J. Chem. Theory Comput. 11, 1077 (2015)");
   log<<"\n";
 
+
+  turnOnDerivatives();
 }
 
 void MetaD::readGaussians(IFile *ifile)
