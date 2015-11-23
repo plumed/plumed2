@@ -33,6 +33,10 @@ friend class ActionWithInputMatrix;
 protected:
 /// The vessel that holds the adjacency matrix
   AdjacencyMatrixVessel* mymatrix;
+/// Get the value of a connection
+  double retrieveConnectionValue( const unsigned& i, const unsigned& j, std::vector<double>& vals ) const ;
+/// Add the derivatives
+  void addConnectionDerivatives( const unsigned& i, const unsigned& j, std::vector<double>& vals, MultiValue& myvals, MultiValue& myvout ) const ;
 public:
   static void registerKeywords( Keywords& keys );
   explicit MatrixSummationBase(const ActionOptions&);

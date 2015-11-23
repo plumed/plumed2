@@ -139,11 +139,15 @@ BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ){
   return bv; 
 }
 
-StoreDataVessel* ActionWithVessel::buildDataStashes( const bool& allow_wcutoff, const double& wtol ){
-  if(mydata) return mydata;
-  
+StoreDataVessel* ActionWithVessel::buildDataStashes( const bool& allow_wcutoff, const double& wtol, ActionWithVessel* actionThatUses ){
+  if(mydata){
+     if( actionThatUses ) mydata->addActionThatUses( actionThatUses );  
+     return mydata;
+  } 
+ 
   VesselOptions da("","",0,"",this);
   StoreDataVessel* mm=new StoreDataVessel(da);
+  if( actionThatUses ) mm->addActionThatUses( actionThatUses );
   if( allow_wcutoff ) mm->setHardCutoffOnWeight( wtol );
   addVessel(mm);
 
@@ -249,7 +253,7 @@ void ActionWithVessel::activateTheseTasks( std::vector<unsigned>& additionalTask
       if( additionalTasks[i]>0 ){
           partialTaskList[nactive_tasks] = fullTaskList[i]; 
           indexOfTaskInFullList[nactive_tasks]=i;
-          nactive_tasks++;
+          taskFlags[i]=0; nactive_tasks++;
       } else {
           taskFlags[i]=1;
       }
@@ -300,8 +304,8 @@ void ActionWithVessel::runAllTasks(){
 
   // Get number of threads for OpenMP
   unsigned nt=OpenMP::getNumThreads();
-  if( nt*stride*10>nactive_tasks) nt=nactive_tasks/stride/10;
-  if( nt==0 ) nt=1;
+  if( nt*stride*10>nactive_tasks ) nt=nactive_tasks/stride/10;
+  if( nt==0 || !threadSafe() ) nt=1;
 
   // Get size for buffer
   unsigned bsize=0, bufsize=getSizeOfBuffer( bsize ); 

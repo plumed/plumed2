@@ -43,7 +43,7 @@ protected:
 ///
   void getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient0 ) const ;
 ///
-  void getVectorDerivatives( const unsigned& ind, const bool& normed, MultiValue& myder0 ) const ;
+  MultiValue& getVectorDerivatives( const unsigned& ind, const bool& normed ) const ;
 ///
   void mergeVectorDerivatives( const unsigned& ival, const unsigned& start, const unsigned& end,
                                const unsigned& jatom, const std::vector<double>& der, 
@@ -63,6 +63,7 @@ protected:
 public:
   explicit MultiColvarFunction(const ActionOptions&);
   static void registerKeywords( Keywords& keys );
+  bool threadSafe() const { return false; }
 };
 
 inline

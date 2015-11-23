@@ -143,10 +143,7 @@ unsigned LocalAverage::getNumberOfQuantities(){
 
 double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
   double d2, sw, dfunc, nbond=1; CatomPack atom0, atom1;
-  std::vector<double> values( getBaseMultiColvar(0)->getNumberOfQuantities() ); MultiValue myder(0,0);
-  if( myder.getNumberOfValues()!=values.size() || myder.getNumberOfDerivatives()!=myatoms.getNumberOfDerivatives() ){
-      myder.resize( values.size(), myatoms.getNumberOfDerivatives() );
-  }
+  std::vector<double> values( getBaseMultiColvar(0)->getNumberOfQuantities() ); 
 
   getVectorForTask( myatoms.getIndex(0), false, values );
   if( values.size()>2 ){
@@ -158,7 +155,7 @@ double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) c
   Vector catom_pos=myatoms.getPosition(0);
   if( !doNotCalculateDerivatives() ){
       atom0=getCentralAtomPackFromInput( myatoms.getIndex(0) );
-      getVectorDerivatives( myatoms.getIndex(0), false, myder );
+      MultiValue& myder=getVectorDerivatives( myatoms.getIndex(0), false );
       if( values.size()>2 ){
           for(unsigned j=0;j<myder.getNumberActive();++j){
               unsigned jder=myder.getActiveIndex(j);
@@ -191,7 +188,7 @@ double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) c
 
          if( !doNotCalculateDerivatives() ){
              Tensor vir(distance,distance);
-             getVectorDerivatives( myatoms.getIndex(i), false, myder );
+             MultiValue& myder=getVectorDerivatives( myatoms.getIndex(i), false );
              atom1=getCentralAtomPackFromInput( myatoms.getIndex(i) );
              if( values.size()>2 ){
                  for(unsigned j=0;j<myder.getNumberActive();++j){

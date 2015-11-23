@@ -44,6 +44,7 @@ private:
 	double lowb;
 	double highb;
 	double width;
+        double cutoff;
         enum {gaussian,triangular} type;
         enum {unset,periodic,notperiodic} periodicity;
         double min, max, max_minus_min, inv_max_minus_min;
@@ -60,10 +61,12 @@ public:
         void set(const std::string& params, std::string& errormsg);
 	void set(double l, double h, double w);
 	double calculate(double x, double&df) const;
+        double calculateWithCutoff( double x, double& df ) const; 
         double lboundDerivative( const double& x ) const;
         double uboundDerivative( const double& x ) const;
 	double getlowb() const ;
 	double getbigb() const ;
+        double getCutoff() const ;
 };	
 
 inline
@@ -89,6 +92,9 @@ double HistogramBead::getlowb() const { return lowb; }
 	
 inline
 double HistogramBead::getbigb() const { return highb; }
+
+inline
+double HistogramBead::getCutoff() const { return cutoff*width; }
 
 inline
 double HistogramBead::difference( const double& d1, const double& d2 ) const {
