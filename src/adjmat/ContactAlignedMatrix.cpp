@@ -54,6 +54,9 @@ public:
   void calculateWeight( const unsigned& taskCode, multicolvar::AtomValuePack& myatoms ) const ;
 /// This does nothing
   double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
+///
+  /// Used to check for connections between atoms
+  bool checkForConnection( const std::vector<double>& myvals ) const { return !(myvals[1]>epsilon); }
 };
 
 PLUMED_REGISTER_ACTION(ContactAlignedMatrix,"ALIGNED_MATRIX")

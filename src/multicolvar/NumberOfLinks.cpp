@@ -157,11 +157,9 @@ double NumberOfLinks::compute( const unsigned& tindex, AtomValuePack& myatoms ) 
    }
 
    if( !doNotCalculateDerivatives() ){
-     unsigned nder=myatoms.getNumberOfDerivatives();   //getNumberOfDerivatives();
-     MultiValue myder0(ncomp,nder), myder1(ncomp,nder);
-     getVectorDerivatives( myatoms.getIndex(0), true, myder0 );
+     MultiValue& myder0=getVectorDerivatives( myatoms.getIndex(0), true );
      mergeVectorDerivatives( 1, 2, orient1.size(), myatoms.getIndex(0), orient1, myder0, myatoms );
-     getVectorDerivatives( myatoms.getIndex(1), true, myder1 ); 
+     MultiValue& myder1=getVectorDerivatives( myatoms.getIndex(1), true ); 
      mergeVectorDerivatives( 1, 2, orient0.size(), myatoms.getIndex(1), orient0, myder1, myatoms );
    }
 

@@ -536,8 +536,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
       pd_nlocal=natoms;
       pd_start=0;
       first_step=true;
-      masses.assign(natoms,real(1.0));
-      charges.assign(natoms,real(0.0));
+      masses.assign(natoms,NAN);
+      charges.assign(natoms,NAN);
 //case pdb: structure
       if(pdbfile.length()>0){
         for(unsigned i=0;i<pdb.size();++i){

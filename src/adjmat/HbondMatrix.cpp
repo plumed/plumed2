@@ -62,6 +62,8 @@ public:
 ///
   double calculateForThree( const unsigned& iat, const unsigned& ano, const unsigned& dno, const Vector& ood,
                             const double& ood_df , const double& ood_sw, multicolvar::AtomValuePack& myatoms ) const ;
+/// Used to check for connections between atoms
+  bool checkForConnection( const std::vector<double>& myvals ) const { return !(myvals[1]>epsilon); }
 };
 
 PLUMED_REGISTER_ACTION(HBondMatrix,"HBOND_MATRIX")
@@ -212,7 +214,7 @@ double HBondMatrix::compute( const unsigned& tindex, multicolvar::AtomValuePack&
 
 double HBondMatrix::calculateForThree( const unsigned& iat, const unsigned& ano, const unsigned& dno, const Vector& ood,
                                        const double& ood_df , const double& ood_sw, multicolvar::AtomValuePack& myatoms ) const {
-  Vector ohd=getSeparation( myatoms.getPosition(0), myatoms.getPosition(2) ); double ohd_l=ohd.modulo();
+  Vector ohd=getSeparation( myatoms.getPosition(0), myatoms.getPosition(iat) ); double ohd_l=ohd.modulo();
   double ohd_df, ohd_sw=distanceOHSwitch( getBaseColvarNumber( myatoms.getIndex(0) ),
                                           getBaseColvarNumber( myatoms.getIndex(1) ) ).calculate( ohd_l, ohd_df );
 
@@ -223,7 +225,7 @@ double HBondMatrix::calculateForThree( const unsigned& iat, const unsigned& ano,
   if( !doNotCalculateDerivatives() ){
       addAtomDerivatives( 1, 0, angle_sw*ohd_sw*(-ood_df)*ood + angle_sw*ood_sw*(-ohd_df)*ohd + ood_sw*ohd_sw*angle_df*angle*(-ood_adf-ohd_adf), myatoms );
       addAtomDerivatives( 1, 1, angle_sw*ohd_sw*(+ood_df)*ood + ood_sw*ohd_sw*angle_df*angle*ood_adf, myatoms );
-      addAtomDerivatives( 1, 2, angle_sw*ood_sw*(+ohd_df)*ohd + ood_sw*ohd_sw*angle_df*angle*ohd_adf, myatoms ); 
+      addAtomDerivatives( 1, iat, angle_sw*ood_sw*(+ohd_df)*ohd + ood_sw*ohd_sw*angle_df*angle*ohd_adf, myatoms ); 
       myatoms.addBoxDerivatives( 1, angle_sw*ohd_sw*(-ood_df)*Tensor(ood,ood) + angle_sw*ood_sw*(-ohd_df)*Tensor(ohd,ohd) 
                                     -ood_sw*ohd_sw*angle_df*angle*(Tensor(ood,ood_adf)+Tensor(ohd,ohd_adf)) );
   }

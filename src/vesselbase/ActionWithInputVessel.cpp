@@ -60,7 +60,7 @@ void ActionWithInputVessel::readArgument( const std::string& type ){
      plumed_assert(aves); myBridgeVessel = mves->addBridgingVessel( aves ); 
      arguments = dynamic_cast<Vessel*>( myBridgeVessel );
   } else  if( type=="store" ){ 
-     arguments = dynamic_cast<Vessel*>( mves->buildDataStashes( false, 0.0 ) );  
+     arguments = dynamic_cast<Vessel*>( mves->buildDataStashes( false, 0.0, NULL ) );  
   } else {
      plumed_error();
   }

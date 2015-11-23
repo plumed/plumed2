@@ -80,6 +80,7 @@ void Committor::registerKeywords( Keywords& keys ){
   keys.use("ARG");
   keys.add("numbered", "BASIN_LL","List of lower limits for basin #");
   keys.add("numbered", "BASIN_UL","List of upper limits for basin #");
+  keys.reset_style("BASIN_LL","compulsory"); keys.reset_style("BASIN_UL","compulsory");
   keys.add("compulsory","STRIDE","1","the frequency with which the CVs are analysed");
   keys.add("optional","FILE","the name of the file on which to output the reached basin");
   keys.add("optional","FMT","the format that should be used to output real numbers");

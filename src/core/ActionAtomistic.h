@@ -154,7 +154,7 @@ public:
 /// ActionWithArguments and ActionAtomistic
   void calculateAtomicNumericalDerivatives( ActionWithValue* a, const unsigned& startnum );
 
-  void retrieveAtoms();
+  virtual void retrieveAtoms();
   void applyForces();
   void lockRequests();
   void unlockRequests();

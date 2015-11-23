@@ -36,6 +36,7 @@ namespace multicolvar {
 class AtomValuePack;
 class CatomPack;
 class BridgedMultiColvarFunction;
+class ActionVolume;
 
 class MultiColvarBase :
   public ActionAtomistic,
@@ -45,6 +46,7 @@ class MultiColvarBase :
  friend class BridgedMultiColvarFunction;
  friend class VolumeGradientBase;
  friend class MultiColvarFilter;
+ friend class AtomValuePack;
 private:
 /// Use periodic boundary conditions
   bool usepbc;
@@ -62,6 +64,10 @@ private:
   std::vector<bool> use_for_central_atom;
 /// 1/number of atoms involved in central atoms
   double numberForCentralAtom;
+/// Ensures that setup is only performed once per loop
+  bool setup_completed;
+/// Ensures that retrieving of atoms is only done once per calculation loop
+  bool atomsWereRetrieved;
 protected:
 /// This is used to keep track of what is calculated where
   std::vector<unsigned> colvar_label;
@@ -71,6 +77,9 @@ protected:
   std::vector<vesselbase::StoreDataVessel*> mybasedata;
 /// This remembers where the boundaries are for the tasks. It makes link cells work fast
   Matrix<std::pair<unsigned,unsigned> > bookeeping;
+/// Function that recursively checks if filters have been used in the input to a multicolvar
+/// we need this to ensure that setupLinkCells is run in calculate with some actions
+  bool filtersUsedAsInput();
 /// Read in a set of multicolvar labels as the input to the action
   bool interpretInputMultiColvars( const std::vector<std::string>& key, const double& wtolerance );
 /// Convert an index in the global array to an index in the individual base colvars
@@ -94,9 +103,13 @@ protected:
 /// Set which atoms are to be used to calculate the central atom position
   void setAtomsForCentralAtom( const std::vector<bool>& catom_ind );
 /// Set the value of the cutoff for the link cells
-  void setLinkCellCutoff( const double& lcut );
+  void setLinkCellCutoff( const double& lcut, double tcut=-1.0 );
+/// Setup the link cells and neighbour list stuff
+  void setupActiveTaskSet( std::vector<unsigned>& active_tasks, const std::string& input_label );
 /// Setup link cells in order to make this calculation faster
   void setupLinkCells();
+/// This does setup of link cell stuff that is specific to the non-use of the usespecies keyword
+  void setupNonUseSpeciesLinkCells( const unsigned& );
 /// Get the separation between a pair of vectors
   Vector getSeparation( const Vector& vec1, const Vector& vec2 ) const ;
 /// This sets up the list of atoms that are involved in this colvar
@@ -113,6 +126,10 @@ public:
   bool usesPbc() const ;
 /// Apply PBCs over a set of distance vectors
   void applyPbc(std::vector<Vector>& dlist, unsigned max_index=0) const;
+/// Do some setup before the calculation
+  void prepare();
+/// This is overwritten here in order to make sure that we do not retrieve atoms multiple times
+  void retrieveAtoms();
 /// Do the calculation
   void calculate();
 /// Calculate numerical derivatives
@@ -123,6 +140,8 @@ public:
   virtual void updateActiveAtoms( AtomValuePack& myatoms ) const ;
 /// This gets the position of an atom for the link cell setup
   virtual Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const ;
+/// Returns the position where we should assume the center is for link cell calculations
+  virtual Vector getLinkCellPosition( const std::vector<unsigned>& atoms ) const ;
 /// And a virtual function which actually computes the colvar
   virtual double doCalculation( const unsigned& tindex, AtomValuePack& myatoms ) const ;  
 /// Get the absolute index of the central atom
@@ -162,7 +181,7 @@ unsigned MultiColvarBase::convertToLocalIndex( const unsigned& index, const unsi
 
 inline
 bool MultiColvarBase::isCurrentlyActive( const unsigned& bno, const unsigned& code ){
-  if( code<colvar_label.size() ){
+  if( setup_completed && code<colvar_label.size() ){
      unsigned mmc=colvar_label[code]; 
      return mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(code,mmc) ); 
   }
@@ -186,6 +205,11 @@ Vector MultiColvarBase::getPositionOfAtomForLinkCells( const unsigned& iatom ) c
   }
   return ActionAtomistic::getPosition( iatom );
 }
+
+inline
+Vector MultiColvarBase::getLinkCellPosition( const std::vector<unsigned>& atoms ) const {
+  return getPositionOfAtomForLinkCells( atoms[0] );
+} 
 
 inline
 unsigned MultiColvarBase::getNumberOfDerivatives(){

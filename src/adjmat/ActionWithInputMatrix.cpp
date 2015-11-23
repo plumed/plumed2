@@ -105,21 +105,52 @@ bool ActionWithInputMatrix::isCurrentlyActive( const unsigned& ind ) const {
 }
 
 void ActionWithInputMatrix::getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient0 ) const {
-  plumed_dbg_assert( isCurrentlyActive( ind ) ); 
-  plumed_dbg_assert( ind<(mymatrix->function)->colvar_label.size() ); unsigned mmc=(mymatrix->function)->colvar_label[ind];
-  plumed_dbg_assert( ((mymatrix->function)->mybasedata[mmc])->storedValueIsActive( (mymatrix->function)->convertToLocalIndex(ind,mmc) ) );
-  ((mymatrix->function)->mybasedata[mmc])->retrieveValue( (mymatrix->function)->convertToLocalIndex(ind,mmc), normed, orient0 );
+  if( (mymatrix->function)->colvar_label.size()==0  ){
+     double df, sum=0.0; std::vector<double> tvals( mymatrix->getNumberOfComponents() ); 
+     unsigned vin; unsigned ncols = mymatrix->getNumberOfColumns(); orient0.assign(orient0.size(),0);
+     for(unsigned i=0;i<ncols;++i){
+         if( mymatrix->isSymmetric() && ind==i ) continue;
+         unsigned myelem = mymatrix->getStoreIndexFromMatrixIndices( ind, i );
+         if( !mymatrix->storedValueIsActive( myelem ) ) continue ;
+         mymatrix->retrieveValue( myelem, false, tvals ); 
+         orient0[1]+=(mymatrix->function)->transformStoredValues( tvals, vin, df);
+     } 
+     orient0[0]=1.0;
+  } else {
+     plumed_dbg_assert( isCurrentlyActive( ind ) );
+     plumed_dbg_assert( ind<(mymatrix->function)->colvar_label.size() ); unsigned mmc=(mymatrix->function)->colvar_label[ind];
+     plumed_dbg_assert( ((mymatrix->function)->mybasedata[mmc])->storedValueIsActive( (mymatrix->function)->convertToLocalIndex(ind,mmc) ) );
+     ((mymatrix->function)->mybasedata[mmc])->retrieveValue( (mymatrix->function)->convertToLocalIndex(ind,mmc), normed, orient0 );
+  }
 }
 
 void ActionWithInputMatrix::getVectorDerivatives( const unsigned& ind, const bool& normed, MultiValue& myder ) const {
-  plumed_dbg_assert( isCurrentlyActive( ind ) ); 
-  plumed_dbg_assert( ind<(mymatrix->function)->colvar_label.size() ); unsigned mmc=(mymatrix->function)->colvar_label[ind];
-  plumed_dbg_assert( ((mymatrix->function)->mybasedata[mmc])->storedValueIsActive( (mymatrix->function)->convertToLocalIndex(ind,mmc) ) );
-  if( myder.getNumberOfValues()!=(mymatrix->function)->mybasemulticolvars[mmc]->getNumberOfQuantities() ||
-      myder.getNumberOfDerivatives()!=(mymatrix->function)->mybasemulticolvars[mmc]->getNumberOfDerivatives() ){
-          myder.resize( (mymatrix->function)->mybasemulticolvars[mmc]->getNumberOfQuantities(), (mymatrix->function)->mybasemulticolvars[mmc]->getNumberOfDerivatives() );
+  if( (mymatrix->function)->colvar_label.size()==0  ){
+     MultiValue myvals( 2, myder.getNumberOfDerivatives() ); 
+     double df, sum=0.0; std::vector<double> tvals( mymatrix->getNumberOfComponents() ); 
+     unsigned vin; unsigned ncols = mymatrix->getNumberOfColumns();
+     for(unsigned i=0;i<ncols;++i){
+         if( mymatrix->isSymmetric() && ind==i ) continue;
+         unsigned myelem = mymatrix->getStoreIndexFromMatrixIndices( ind, i );
+         if( !mymatrix->storedValueIsActive( myelem ) ) continue ;
+         mymatrix->retrieveValue( myelem, false, tvals );
+         double dum=(mymatrix->function)->transformStoredValues( tvals, vin, df);
+         mymatrix->retrieveDerivatives( myelem, false, myvals ); 
+         for(unsigned jd=0;jd<myvals.getNumberActive();++jd){
+             unsigned ider=myvals.getActiveIndex(jd);
+             myder.addDerivative( 1, ider, df*myvals.getDerivative( vin, ider ) );
+         }
+     }
+  } else { 
+     plumed_dbg_assert( isCurrentlyActive( ind ) ); 
+     plumed_dbg_assert( ind<(mymatrix->function)->colvar_label.size() ); unsigned mmc=(mymatrix->function)->colvar_label[ind];
+     plumed_dbg_assert( ((mymatrix->function)->mybasedata[mmc])->storedValueIsActive( (mymatrix->function)->convertToLocalIndex(ind,mmc) ) );
+     if( myder.getNumberOfValues()!=(mymatrix->function)->mybasemulticolvars[mmc]->getNumberOfQuantities() ||
+         myder.getNumberOfDerivatives()!=(mymatrix->function)->mybasemulticolvars[mmc]->getNumberOfDerivatives() ){
+             myder.resize( (mymatrix->function)->mybasemulticolvars[mmc]->getNumberOfQuantities(), (mymatrix->function)->mybasemulticolvars[mmc]->getNumberOfDerivatives() );
+     }
+     (mymatrix->function)->mybasedata[mmc]->retrieveDerivatives( (mymatrix->function)->convertToLocalIndex(ind,mmc), normed, myder );
   }
-  (mymatrix->function)->mybasedata[mmc]->retrieveDerivatives( (mymatrix->function)->convertToLocalIndex(ind,mmc), normed, myder );
 }
 
 Vector ActionWithInputMatrix::getSeparation( const Vector& vec1, const Vector& vec2 ) const {
@@ -133,12 +164,18 @@ unsigned ActionWithInputMatrix::getNumberOfNodeTypes() const {
   return size; 
 }
 
+unsigned ActionWithInputMatrix::getNumberOfQuantities(){
+  if( (mymatrix->function)->colvar_label.size()==0 ) return 2;
+  else return (mymatrix->function)->mybasemulticolvars[0]->getNumberOfQuantities();
+}
+
 unsigned ActionWithInputMatrix::getNumberOfAtomsInGroup( const unsigned& igrp ) const {
  plumed_dbg_assert( igrp<(mymatrix->function)->mybasemulticolvars.size() );
  return (mymatrix->function)->mybasemulticolvars[igrp]->getFullNumberOfTasks(); 
 }
 
 multicolvar::MultiColvarBase* ActionWithInputMatrix::getBaseMultiColvar( const unsigned& igrp ) const {
+ plumed_dbg_assert( igrp<(mymatrix->function)->mybasemulticolvars.size() );
  return (mymatrix->function)->mybasemulticolvars[igrp];
 }
 

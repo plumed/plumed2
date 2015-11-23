@@ -68,10 +68,6 @@ void DFSBase::turnOnDerivatives(){
    ActionWithInputMatrix::turnOnDerivatives();
 }
 
-unsigned DFSBase::getNumberOfQuantities(){
-  return getBaseMultiColvar(0)->getNumberOfQuantities();
-} 
-
 void DFSBase::performClustering(){
    // All the clusters have zero size initially
    for(unsigned i=0;i<cluster_sizes.size();++i){ cluster_sizes[i].first=0; cluster_sizes[i].second=i; }
