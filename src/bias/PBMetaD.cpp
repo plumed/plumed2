@@ -260,7 +260,7 @@ multiple_w(false), doInt_(false), isFirstStep(true)
    if(sparsegrid){log.printf("  Grid uses sparse grid\n");}
   }
 
-  addComponent("bias"); componentIsNotPeriodic("bias");
+  addComponentWithDerivatives("bias"); componentIsNotPeriodic("bias");
 
 // initializing vector of hills
   hills_.resize(getNumberOfArguments());
@@ -347,6 +347,7 @@ multiple_w(false), doInt_(false), isFirstStep(true)
  
   log<<"\n";
 
+  turnOnDerivatives();
 }
 
 void PBMetaD::readGaussians(int iarg, IFile *ifile){
@@ -527,6 +528,7 @@ void PBMetaD::calculate()
   for(unsigned i=0; i<getNumberOfArguments(); ++i){
    const double f = - exp(-bias[i]/kbt_) / ene * deriv[i];
    setOutputForce(i, f);
+   getPntrToComponent("bias")->addDerivative(i,-f);
   }
   delete [] der;
 
