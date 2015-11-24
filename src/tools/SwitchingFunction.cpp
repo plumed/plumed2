@@ -347,7 +347,7 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const{
   const double rdist = (distance-d0)*invr0;
   double result;
 
-  if(rdist<0){
+  if(rdist<=0.){
      result=1.;
      dfunc=0.0;
   }else{
