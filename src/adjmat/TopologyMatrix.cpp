@@ -224,7 +224,7 @@ void TopologyMatrix::calculateForThreeAtoms( const unsigned& iat, const Vector& 
   double cm = d2.modulo2() - proj*proj;
 
   // Now calculate the density in the cylinder
-  if( cm<cylinder_sw( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) ).get_dmax() ){
+  if( cm<cylinder_sw( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) ).get_dmax2() ){
       double dfuncr, val = cylinder_sw( getBaseColvarNumber( myatoms.getIndex(0) ), 
                                         getBaseColvarNumber( myatoms.getIndex(1) ) ).calculateSqr( cm, dfuncr );
 

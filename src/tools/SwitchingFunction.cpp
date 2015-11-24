@@ -446,6 +446,10 @@ double SwitchingFunction::get_dmax() const {
   return dmax;
 }
 
+double SwitchingFunction::get_dmax2() const {
+  return dmax*dmax;
+}
+
 SwitchingFunction::~SwitchingFunction(){
 #ifdef __PLUMED_HAS_MATHEVAL
   if(evaluator) evaluator_destroy(evaluator);
