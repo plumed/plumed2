@@ -91,10 +91,12 @@ kbt(-1.0)
   parseFlag("REWEIGHT", do_reweight); 
   double temp=0.0;
   parse("TEMP",temp);
-  if(temp>0.0) kbt=plumed.getAtoms().getKBoltzmann()*temp;
-  else kbt=plumed.getAtoms().getKbT();
-  if(kbt==0.0) error("Unless the MD engine passes the temperature to plumed, with REWEIGHT you must specify TEMP");
- 
+  if(do_reweight) {
+    if(temp>0.0) kbt=plumed.getAtoms().getKBoltzmann()*temp;
+    else kbt=plumed.getAtoms().getKbT();
+    if(kbt==0.0) error("Unless the MD engine passes the temperature to plumed, with REWEIGHT you must specify TEMP");
+  }
+
   master = (comm.Get_rank()==0);
   if(master) {
     if(multi_sim_comm.Get_size()<2) error("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
