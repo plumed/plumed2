@@ -106,6 +106,7 @@ Action(ao),
 Function(ao),
 normalize(false),
 coefficients(getNumberOfArguments(),1.0),
+parameters(getNumberOfArguments(),1.0),
 powers(getNumberOfArguments(),1.0)
 {
   parseVector("COEFFICIENTS",coefficients);
