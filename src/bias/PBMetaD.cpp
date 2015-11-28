@@ -149,7 +149,7 @@ multiple_w(false), doInt_(false), isFirstStep(true)
   
   vector<string> hillsfname;
   parseVector("FILE",hillsfname);
-  if( hillsfname.size()!=getNumberOfArguments() ) error("number of arguments does not match number of HILLS files");
+  if( hillsfname.size()!=getNumberOfArguments() ) error("number of FILE arguments does not match number of HILLS files");
 
   parse("BIASFACTOR",biasf_);
   if( biasf_<1.0 ) error("well tempered bias factor is nonsensical");
@@ -515,7 +515,8 @@ void PBMetaD::calculate()
   vector<double> bias(getNumberOfArguments());
   vector<double> deriv(getNumberOfArguments());
 
-  double ene = 0.0;
+  double ene = 0.;
+  double ncv = (double) getNumberOfArguments();
   for(unsigned i=0; i<getNumberOfArguments(); ++i){
    cv[0] = getArgument(i);
    der[0] = 0.0;
@@ -526,14 +527,14 @@ void PBMetaD::calculate()
       
   // set Forces 
   for(unsigned i=0; i<getNumberOfArguments(); ++i){
-   const double f = - exp(-bias[i]/kbt_) / ene * deriv[i];
-   setOutputForce(i, f);
-   getPntrToComponent("bias")->addDerivative(i,-f);
+    const double f = - exp(-bias[i]/kbt_) / (ene) * deriv[i];
+    setOutputForce(i, f);
+    getPntrToComponent("bias")->addDerivative(i,-f);
   }
   delete [] der;
 
   // set bias
-  ene = -kbt_ * std::log(ene);
+  ene = -kbt_ * (std::log(ene) - std::log(ncv));
   getPntrToComponent("bias")->set(ene);
 }
 
