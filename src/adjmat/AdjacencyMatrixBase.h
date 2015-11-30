@@ -62,8 +62,6 @@ protected:
   unsigned getSizeOfInputVectors() const ;
 /// Request the atoms
   void requestAtoms( const std::vector<AtomNumber>& atoms, const bool& symmetric, const bool& true_square, const std::vector<unsigned>& dims );
-/// Return the group this atom is a part of
-  unsigned getBaseColvarNumber( const unsigned& ) const ;
 /// Add some derivatives to the relevant orientation
   void addOrientationDerivatives( const unsigned&, const unsigned& , const std::vector<double>& , multicolvar::AtomValuePack& ) const ;
 public:
@@ -87,12 +85,6 @@ public:
 inline
 AdjacencyMatrixVessel* AdjacencyMatrixBase::getAdjacencyVessel(){
   return mat;
-}
-
-inline
-unsigned AdjacencyMatrixBase::getBaseColvarNumber( const unsigned& inum ) const {
-  if( inum<colvar_label.size() ) return colvar_label[inum]; 
-  return 0;
 }
 
 inline

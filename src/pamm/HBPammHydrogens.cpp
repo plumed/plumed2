@@ -35,7 +35,7 @@ namespace pamm{
 
 //+PLUMEDOC MCOLVAR HBPAMM_SH
 /*
-Numberof HBPAMM hydrogen bonds formed by each hydrogen atom in the system
+Number of HBPAMM hydrogen bonds formed by each hydrogen atom in the system
 
 \par Examples
 
@@ -46,7 +46,7 @@ Numberof HBPAMM hydrogen bonds formed by each hydrogen atom in the system
 class HBPammHydrogens : public multicolvar::MultiColvar {
 private:
   double rcut2;
-  HBPammObject hbpamm_obj;
+  Matrix<HBPammObject> hbpamm_obj;
 public:
   static void registerKeywords( Keywords& keys );
   explicit HBPammHydrogens(const ActionOptions&);
@@ -97,14 +97,45 @@ PLUMED_MULTICOLVAR_INIT(ao)
   double reg; parse("REGULARISE",reg);
   if( getNumberOfInputAtomTypes()==1 ){  
       std::string errormsg, desc; parse("CLUSTERS",desc);
-      hbpamm_obj.setup(desc, reg, this, errormsg );
+      hbpamm_obj.resize(1,1);
+      hbpamm_obj(0,0).setup(desc, reg, this, errormsg );
       if( errormsg.length()>0 ) error( errormsg );
   } else {
-      plumed_error();
+      unsigned nr=getNumberOfInputAtomTypes(), nc=getNumberOfInputAtomTypes();
+      hbpamm_obj.resize( nr, nc );
+      for(unsigned i=0;i<nr;++i){
+          // Retrieve the base number  
+          unsigned ibase;
+          if( nc<10 ){
+             ibase=(i+1)*10;
+          } else if ( nc<100 ){
+             ibase=(i+1)*100;
+          } else {
+             error("wow this is an error I never would have expected");
+          }
+
+          for(unsigned j=i;j<nc;++j){
+              std::string errormsg, desc; parseNumbered("CLUSTERS",ibase+j+1,desc);
+              if( i==j ){
+                  hbpamm_obj(i,j).setup( desc, reg, this, errormsg );
+                  if( errormsg.length()>0 ) error( errormsg );
+              } else {
+                  hbpamm_obj(i,j).setup( desc, reg, this, errormsg );
+                  hbpamm_obj(j,i).setup( desc, reg, this, errormsg );
+                  if( errormsg.length()>0 ) error( errormsg );
+              } 
+          }
+      }
   }
 
   // Set the link cell cutoff
-  double sfmax=hbpamm_obj.get_cutoff();
+  double sfmax=0;
+  for(unsigned i=0;i<hbpamm_obj.ncols();++i){
+      for(unsigned j=i;j<hbpamm_obj.nrows();++j){
+          double rcut=hbpamm_obj(i,j).get_cutoff();
+          if( rcut>sfmax ){ sfmax=rcut; }
+      }   
+  }
   setLinkCellCutoff( sfmax );
   rcut2 = sfmax*sfmax;
 
@@ -121,10 +152,13 @@ double HBPammHydrogens::compute( const unsigned& tindex, multicolvar::AtomValueP
    for(unsigned i=1;i<myatoms.getNumberOfAtoms();++i){
       for(unsigned j=1;j<myatoms.getNumberOfAtoms();++j){
           if( i==j ) continue ;
+          // Get the base colvar numbers
+          unsigned dno = getBaseColvarNumber( myatoms.getIndex(i) );
+          unsigned ano = getBaseColvarNumber( myatoms.getIndex(j) );
           Vector d_da=getSeparation( myatoms.getPosition(i), myatoms.getPosition(j) );
           if ( (md_da=d_da[0]*d_da[0])<rcut2 && 
                (md_da+=d_da[1]*d_da[1])<rcut2 &&
-               (md_da+=d_da[2]*d_da[2])<rcut2) value += hbpamm_obj.evaluate( i, j, 0, d_da, sqrt(md_da), myatoms ); 
+               (md_da+=d_da[2]*d_da[2])<rcut2) value += hbpamm_obj(dno,ano).evaluate( i, j, 0, d_da, sqrt(md_da), myatoms ); 
       }
    }
 

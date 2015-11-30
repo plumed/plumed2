@@ -96,6 +96,8 @@ protected:
   std::vector<unsigned> decoder;
 /// Blocks of atom numbers
   std::vector< std::vector<unsigned> > ablocks;
+/// Return the group this atom is a part of
+  unsigned getBaseColvarNumber( const unsigned& ) const ;
 /// Add a task to the list of tasks
   void addTaskToList( const unsigned& taskCode );
 /// Finish setting up the multicolvar base
@@ -227,6 +229,12 @@ inline
 bool MultiColvarBase::doNotCalculateDerivatives() const {
   if( !dertime ) return true;
   return ActionWithValue::doNotCalculateDerivatives();
+}
+
+inline
+unsigned MultiColvarBase::getBaseColvarNumber( const unsigned& inum ) const {
+  if( inum<colvar_label.size() ) return colvar_label[inum];
+  return 0;
 }
 
 }
