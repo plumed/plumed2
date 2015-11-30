@@ -261,7 +261,7 @@ void Value::clearInputForce(){
 inline
 void Value::clearDerivatives(){
   value_set=false;
-  derivatives.assign(derivatives.size(),0.0);
+  std::fill(derivatives.begin(), derivatives.end(), 0);
 }
 
 inline
