@@ -80,6 +80,8 @@ protected:
 /// Function that recursively checks if filters have been used in the input to a multicolvar
 /// we need this to ensure that setupLinkCells is run in calculate with some actions
   bool filtersUsedAsInput();
+/// Get the number of types of input atoms that have been input
+  unsigned getNumberOfInputAtomTypes() const ;
 /// Read in a set of multicolvar labels as the input to the action
   bool interpretInputMultiColvars( const std::vector<std::string>& key, const double& wtolerance );
 /// Convert an index in the global array to an index in the individual base colvars
@@ -98,8 +100,6 @@ protected:
   void addTaskToList( const unsigned& taskCode );
 /// Finish setting up the multicolvar base
   void setupMultiColvarBase( const std::vector<AtomNumber>& atoms, const bool& all_same_type );
-/// Add some derivatives to a particular component of a particular atom
-  void addAtomDerivatives( const int& , const unsigned& , const Vector& , multicolvar::AtomValuePack& ) const ;
 /// Set which atoms are to be used to calculate the central atom position
   void setAtomsForCentralAtom( const std::vector<bool>& catom_ind );
 /// Set the value of the cutoff for the link cells
@@ -110,8 +110,6 @@ protected:
   void setupLinkCells();
 /// This does setup of link cell stuff that is specific to the non-use of the usespecies keyword
   void setupNonUseSpeciesLinkCells( const unsigned& );
-/// Get the separation between a pair of vectors
-  Vector getSeparation( const Vector& vec1, const Vector& vec2 ) const ;
 /// This sets up the list of atoms that are involved in this colvar
   bool setupCurrentAtomList( const unsigned& taskCode, AtomValuePack& myatoms ) const ;
 /// Decode indices if there are 2 or 3 atoms involved
@@ -122,6 +120,10 @@ public:
   static void registerKeywords( Keywords& keys );
 /// Turn on the derivatives 
   void turnOnDerivatives();
+/// Add some derivatives to a particular component of a particular atom
+  void addAtomDerivatives( const int& , const unsigned& , const Vector& , multicolvar::AtomValuePack& ) const ;
+/// Get the separation between a pair of vectors
+  Vector getSeparation( const Vector& vec1, const Vector& vec2 ) const ;
 /// Do we use pbc to calculate this quantity
   bool usesPbc() const ;
 /// Apply PBCs over a set of distance vectors

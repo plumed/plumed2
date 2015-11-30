@@ -119,6 +119,15 @@ KernelFunctions::KernelFunctions( const std::vector<double>& at, const std::vect
   setData( at, sig, type, mtype, w );
 }
 
+KernelFunctions::KernelFunctions( const KernelFunctions* in ):
+dtype(in->dtype),
+ktype(in->ktype),
+center(in->center),
+width(in->width),
+height(in->height)
+{
+}
+
 void KernelFunctions::setData( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const std::string& mtype, const double& w ){
 
   height=w;

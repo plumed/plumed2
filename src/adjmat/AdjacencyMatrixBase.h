@@ -58,8 +58,6 @@ protected:
 protected:
 /// Read the list of atoms involved in this colvar
   bool parseAtomList(const std::string& key, const int& num, std::vector<AtomNumber>& t);
-/// Get the number of nodes of different types
-  unsigned getNumberOfNodeTypes() const ;
 /// Get the size of the vectors that were stored in the base colvars
   unsigned getSizeOfInputVectors() const ;
 /// Request the atoms

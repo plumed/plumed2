@@ -109,7 +109,7 @@ AdjacencyMatrixBase(ao)
           dims[0]=atoms.size(); ndonor_types=0;
       } else {
           dims[0]=colvar_label.size();
-          ndonor_types=getNumberOfNodeTypes();
+          ndonor_types=getNumberOfInputAtomTypes();
       }
       for(unsigned i=0;i<atoms.size();++i) all_atoms.push_back( atoms[i] );
       parseAtomList("ACCEPTORS",-1,atoms);
@@ -120,15 +120,15 @@ AdjacencyMatrixBase(ao)
           else { distanceOOSwitch.resize( ndonor_types, 1 ); distanceOHSwitch.resize( 1, 1 ); angleSwitch.resize( 1, 1 ); }
       } else {
           dims[1]=colvar_label.size()-dims[0];
-          distanceOOSwitch.resize( ndonor_types, getNumberOfNodeTypes()-ndonor_types );
-          distanceOHSwitch.resize( ndonor_types, getNumberOfNodeTypes()-ndonor_types );
-          angleSwitch.resize( ndonor_types, getNumberOfNodeTypes()-ndonor_types );
+          distanceOOSwitch.resize( ndonor_types, getNumberOfInputAtomTypes()-ndonor_types );
+          distanceOHSwitch.resize( ndonor_types, getNumberOfInputAtomTypes()-ndonor_types );
+          angleSwitch.resize( ndonor_types, getNumberOfInputAtomTypes()-ndonor_types );
       }
   } else {
       parseAtomList("ATOMS",-1,atoms); ndonor_types=0;
-      distanceOOSwitch.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
-      distanceOHSwitch.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
-      angleSwitch.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
+      distanceOOSwitch.resize( getNumberOfInputAtomTypes(), getNumberOfInputAtomTypes() );
+      distanceOHSwitch.resize( getNumberOfInputAtomTypes(), getNumberOfInputAtomTypes() );
+      angleSwitch.resize( getNumberOfInputAtomTypes(), getNumberOfInputAtomTypes() );
       if( atoms.size()>0 ){
          plumed_assert( colvar_label.size()==0 ); dims[0]=dims[1]=atoms.size();
       } else {
@@ -150,8 +150,8 @@ AdjacencyMatrixBase(ao)
 
   // Find the largest sf cutoff
   double sfmax=distanceOOSwitch(0,0).get_dmax();
-  for(unsigned i=0;i<getNumberOfNodeTypes();++i){
-      for(unsigned j=0;j<getNumberOfNodeTypes();++j){
+  for(unsigned i=0;i<getNumberOfInputAtomTypes();++i){
+      for(unsigned j=0;j<getNumberOfInputAtomTypes();++j){
           double tsf=distanceOOSwitch(i,j).get_dmax();
           if( tsf>sfmax ) sfmax=tsf;
       }

@@ -63,15 +63,15 @@ bool AdjacencyMatrixBase::parseAtomList(const std::string& key, const int& num, 
 }
 
 void AdjacencyMatrixBase::parseConnectionDescriptions( const std::string& key, const unsigned& nrow_t ){
-  if( getNumberOfNodeTypes()==1 || (getNumberOfNodeTypes()==2 && nrow_t==1) ){
+  if( getNumberOfInputAtomTypes()==1 || (getNumberOfInputAtomTypes()==2 && nrow_t==1) ){
       std::string sw; parse(key,sw);
       setupConnector( connect_id, 0, 0, sw );
   } else {
       unsigned nr, nc;
       if( nrow_t==0 ){
-        nr=nc=getNumberOfNodeTypes();
+        nr=nc=getNumberOfInputAtomTypes();
       } else{
-        nr=nrow_t; nc = getNumberOfNodeTypes() - nr;
+        nr=nrow_t; nc = getNumberOfInputAtomTypes() - nr;
       }
       for(unsigned i=0;i<nr;++i){
           // Retrieve the base number  
@@ -103,12 +103,6 @@ unsigned AdjacencyMatrixBase::getSizeOfInputVectors() const {
      if( mybasemulticolvars[i]->getNumberOfQuantities()!=nq ) error("mismatch between vectors in base colvars");
   }
   return nq;
-}
-
-unsigned AdjacencyMatrixBase::getNumberOfNodeTypes() const {
-  unsigned size=mybasemulticolvars.size();
-  if( size==0 ) return 1;
-  return size;
 }
 
 void AdjacencyMatrixBase::requestAtoms( const std::vector<AtomNumber>& atoms, const bool& symmetric, const bool& true_square, const std::vector<unsigned>& dims ){

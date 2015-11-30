@@ -90,7 +90,7 @@ AdjacencyMatrixBase(ao)
          dims[0]=atoms.size(); ncol_t=0;
      } else {
          dims[0]=colvar_label.size();
-         ncol_t=getNumberOfNodeTypes();
+         ncol_t=getNumberOfInputAtomTypes();
      }
      for(unsigned i=0;i<atoms.size();++i) all_atoms.push_back( atoms[i] );
      parseAtomList("ATOMSB",-1,atoms); 
@@ -101,13 +101,13 @@ AdjacencyMatrixBase(ao)
          else switchingFunction.resize( ncol_t, 1 );
      } else {
          dims[1]=colvar_label.size()-dims[0];
-         switchingFunction.resize( ncol_t, getNumberOfNodeTypes()-ncol_t ); 
+         switchingFunction.resize( ncol_t, getNumberOfInputAtomTypes()-ncol_t ); 
      }
      // And request the atoms involved in this colvar
      requestAtoms( all_atoms, false, false, dims );
   } else {
      parseAtomList("ATOMS",-1,atoms); ncol_t=0;
-     switchingFunction.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
+     switchingFunction.resize( getNumberOfInputAtomTypes(), getNumberOfInputAtomTypes() );
      if( atoms.size()>0 ){
          plumed_assert( colvar_label.size()==0 ); dims[0]=dims[1]=atoms.size();
      } else {

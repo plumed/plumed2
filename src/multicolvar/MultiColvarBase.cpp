@@ -340,6 +340,12 @@ void MultiColvarBase::setupNonUseSpeciesLinkCells( const unsigned& my_always_act
   } 
 }
 
+unsigned MultiColvarBase::getNumberOfInputAtomTypes() const {
+  unsigned size=mybasemulticolvars.size();
+  if( size==0 ) return 1;
+  return size;
+} 
+
 void MultiColvarBase::decodeIndexToAtoms( const unsigned& taskCode, std::vector<unsigned>& atoms ) const {
   plumed_dbg_assert( !usespecies && ablocks.size()<4 );
   if( atoms.size()!=decoder.size() ) atoms.resize( decoder.size() );

@@ -83,13 +83,13 @@ ncomp(getSizeOfInputVectors())
   std::vector<AtomNumber> atoms; parseAtomList("MOLECULES",-1,atoms);
   plumed_assert( atoms.size()==0 );
   // Read in the switching function
-  switchingFunction.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
+  switchingFunction.resize( getNumberOfInputAtomTypes(), getNumberOfInputAtomTypes() );
   parseConnectionDescriptions("SWITCH",0);
 
   // Find the largest sf cutoff
   double sfmax=switchingFunction(0,0).get_dmax();
-  for(unsigned i=0;i<getNumberOfNodeTypes();++i){
-      for(unsigned j=0;j<getNumberOfNodeTypes();++j){
+  for(unsigned i=0;i<getNumberOfInputAtomTypes();++i){
+      for(unsigned j=0;j<getNumberOfInputAtomTypes();++j){
           double tsf=switchingFunction(i,j).get_dmax();
           if( tsf>sfmax ) sfmax=tsf;
       }
