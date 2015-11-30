@@ -19,14 +19,14 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "AdjacencyMatrixBase.h"
+#include "adjmat/AdjacencyMatrixBase.h"
 #include "multicolvar/AtomValuePack.h"
-#include "multicolvar/HBPammObject.h"
+#include "HBPammObject.h"
 #include "core/ActionRegister.h"
 #include "tools/KernelFunctions.h"
 #include "tools/IFile.h"
 
-//+PLUMEDOC MATRIX HBPAMM
+//+PLUMEDOC MATRIX HBPAMM_MATRIX
 /*
 Adjacency matrix in which two electronegative atoms are adjacent if they are hydrogen bonded
 
@@ -37,13 +37,13 @@ Adjacency matrix in which two electronegative atoms are adjacent if they are hyd
 
 
 namespace PLMD {
-namespace adjmat {
+namespace pamm {
 
-class HBPammMatrix : public AdjacencyMatrixBase {
+class HBPammMatrix : public adjmat::AdjacencyMatrixBase {
 private:
   unsigned ndonor_types;
   double regulariser;
-  Matrix<multicolvar::HBPammObject> myhb_objs;
+  Matrix<HBPammObject> myhb_objs;
 public:
 /// Create manual
   static void registerKeywords( Keywords& keys );
@@ -58,10 +58,10 @@ public:
   bool checkForConnection( const std::vector<double>& myvals ) const { return !(myvals[1]>epsilon); }
 };
 
-PLUMED_REGISTER_ACTION(HBPammMatrix,"HBPAMM")
+PLUMED_REGISTER_ACTION(HBPammMatrix,"HBPAMM_MATRIX")
 
 void HBPammMatrix::registerKeywords( Keywords& keys ){
-  AdjacencyMatrixBase::registerKeywords( keys );
+  adjmat::AdjacencyMatrixBase::registerKeywords( keys );
   keys.add("atoms-1","ATOMS","The list of atoms which can be part of a hydrogen bond.  When this command is used the set of atoms that can donate a "
                              "hydrogen bond is assumed to be the same as the set of atoms that can form hydrogen bonds.  The atoms involved must be specified" 
                               "as a list of labels of \\ref mcolv or labels of a \\ref multicolvarfunction actions.  If you would just like to use "

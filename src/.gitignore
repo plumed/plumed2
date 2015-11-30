@@ -25,6 +25,7 @@
 !/manyrestraints
 !/molfile
 !/multicolvar
+!/pamm
 !/reference
 !/secondarystructure
 !/setup

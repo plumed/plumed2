@@ -23,7 +23,7 @@
 #include "tools/IFile.h"
 
 namespace PLMD {
-namespace multicolvar {
+namespace pamm {
 
 HBPammObject::HBPammObject():
 mymulti(NULL),
@@ -42,7 +42,7 @@ HBPammObject::~HBPammObject(){
   for(unsigned i=0;i<kernels.size();++i) delete kernels[i];
 }
 
-void HBPammObject::setup( const std::string& filename, const double& reg, MultiColvarBase* mybase, std::string& errorstr ){
+void HBPammObject::setup( const std::string& filename, const double& reg, multicolvar::MultiColvarBase* mybase, std::string& errorstr ){
   IFile ifile; regulariser=reg; mymulti=mybase;
   if( !ifile.FileExist(filename) ){
      errorstr = "could not find file named " + filename;
@@ -79,7 +79,7 @@ double HBPammObject::get_cutoff() const {
 }
 
 double HBPammObject::evaluate( const unsigned& dno, const unsigned& ano, const unsigned& hno, 
-                               const Vector& d_da, const double& md_da, AtomValuePack& myatoms ) const {
+                               const Vector& d_da, const double& md_da, multicolvar::AtomValuePack& myatoms ) const {
   Vector d_dh = mymulti->getSeparation( myatoms.getPosition(dno), myatoms.getPosition(hno) ); double md_dh = d_dh.modulo(); // hydrogen - donor
   Vector d_ah = mymulti->getSeparation( myatoms.getPosition(ano), myatoms.getPosition(hno) ); double md_ah = d_ah.modulo(); // hydrogen - acceptor
 

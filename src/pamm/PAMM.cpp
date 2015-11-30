@@ -22,7 +22,7 @@
 #include "core/ActionRegister.h"
 #include "tools/KernelFunctions.h"
 #include "tools/IFile.h"
-#include "MultiColvarFunction.h"
+#include "multicolvar/MultiColvarFunction.h"
 
 //+PLUMEDOC MCOLVARF PAMM
 /*
@@ -104,9 +104,9 @@ and compute these PAMM variables and we can transform the PAMM variables themsel
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace multicolvar {
+namespace pamm {
 
-class PAMM : public MultiColvarFunction {
+class PAMM : public multicolvar::MultiColvarFunction {
 private:
   double regulariser;
   std::vector<KernelFunctions*> kernels;
@@ -118,9 +118,9 @@ public:
 /// We have to overwrite this here
   unsigned getNumberOfQuantities();
 /// Calculate the weight of this object ( average of input weights )
-  void calculateWeight( AtomValuePack& myatoms );
+  void calculateWeight( multicolvar::AtomValuePack& myatoms );
 /// Actually do the calculation
-  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
+  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
 /// This returns the position of the central atom
   Vector getCentralAtom();
 /// Is the variable periodic
@@ -206,7 +206,7 @@ unsigned PAMM::getNumberOfQuantities(){
    return 1 + kernels.size();    
 }
 
-void PAMM::calculateWeight( AtomValuePack& myatoms ){
+void PAMM::calculateWeight( multicolvar::AtomValuePack& myatoms ){
    unsigned nvars = getNumberOfBaseMultiColvars();
    // Weight of point is average of weights of input colvars?
    std::vector<double> tval(2); double ww=0;
@@ -228,7 +228,7 @@ void PAMM::calculateWeight( AtomValuePack& myatoms ){
    }
 }
 
-double PAMM::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
+double PAMM::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {
    unsigned nvars = getNumberOfBaseMultiColvars();    
    std::vector<std::vector<double> > tderiv( kernels.size() );
    for(unsigned i=0;i<kernels.size();++i) tderiv[i].resize( nvars );

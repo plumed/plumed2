@@ -19,22 +19,22 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_multicolvar_HBPammObject_h
-#define __PLUMED_multicolvar_HBPammObject_h
+#ifndef __PLUMED_pamm_HBPammObject_h
+#define __PLUMED_pamm_HBPammObject_h
 
 #include <vector>
 #include "tools/Vector.h"
 #include "core/Value.h"
-#include "AtomValuePack.h"
+#include "multicolvar/AtomValuePack.h"
 #include "tools/KernelFunctions.h"
 
 namespace PLMD {
-namespace multicolvar {
+namespace pamm {
 
 class HBPammObject {
 private:
 /// Pointer to base class in multicolvar
-  MultiColvarBase* mymulti;
+  multicolvar::MultiColvarBase* mymulti;
 /// Regularisation parameter to use
   double regulariser;
 /// List of kernel functions involved
@@ -45,12 +45,12 @@ public:
   HBPammObject( const HBPammObject& );
   ~HBPammObject();
 /// Setup the HBPamm object
-  void setup( const std::string& filename, const double& reg, MultiColvarBase* mybase, std::string& errorstr );
+  void setup( const std::string& filename, const double& reg, multicolvar::MultiColvarBase* mybase, std::string& errorstr );
 /// Get the cutoff to use throughout
   double get_cutoff() const ;
 /// Evaluate the HBPamm Object
   double evaluate( const unsigned& dno, const unsigned& ano, const unsigned& hno, 
-                   const Vector& d_da, const double& md_da, AtomValuePack& myatoms ) const ;
+                   const Vector& d_da, const double& md_da, multicolvar::AtomValuePack& myatoms ) const ;
 };
 
 }
