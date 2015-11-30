@@ -25,54 +25,17 @@
 namespace PLMD {
 namespace pamm {
 
-HBPammObject::HBPammObject():
-mymulti(NULL),
-regulariser(0.001)
-{
-}
-
-HBPammObject::HBPammObject( const HBPammObject& in ):
-mymulti(in.mymulti),
-regulariser(in.regulariser)
-{
-  for(unsigned i=0;i<in.kernels.size();++i) kernels.push_back( new KernelFunctions( in.kernels[i] ) ); 
-}
-
-HBPammObject::~HBPammObject(){
-  for(unsigned i=0;i<kernels.size();++i) delete kernels[i];
-}
-
 void HBPammObject::setup( const std::string& filename, const double& reg, multicolvar::MultiColvarBase* mybase, std::string& errorstr ){
-  IFile ifile; regulariser=reg; mymulti=mybase;
-  if( !ifile.FileExist(filename) ){
-     errorstr = "could not find file named " + filename;
-     return;
-  }
-
-  std::vector<std::string> valnames(3); 
-  valnames[0]="ptc"; valnames[1]="ssc"; valnames[2]="adc";
-
-  std::vector<Value*> pos; 
-  for(unsigned i=0;i<3;++i){
-    pos.push_back( new Value() ); pos[i]->setNotPeriodic();
-  }
-  
-  ifile.open(filename); ifile.allowIgnoredFields(); kernels.resize(0);
-  for(unsigned k=0;;++k){
-      KernelFunctions* kk = KernelFunctions::read( &ifile, false, valnames );
-      if( !kk ) break ;
-      kk->normalize( pos );
-      kernels.push_back( kk );
-      ifile.scanField();
-  }
-  ifile.close();
-  for(unsigned i=0;i<3;++i) delete pos[i];
+  mymulti=mybase; std::vector<std::string> valnames(3);
+  valnames[0]="ptc"; valnames[1]="ssc"; valnames[2]="adc"; 
+  std::vector<std::string> min(3), max(3); std::vector<bool> pbc(3, false);
+  mypamm.setup( filename, reg, valnames, pbc, min, max, errorstr );
 }
 
 double HBPammObject::get_cutoff() const {
   double sfmax=0;
-  for(unsigned k=0;k<kernels.size();++k){
-      double rcut = kernels[k]->getCenter()[2] + kernels[k]->getContinuousSupport()[2];
+  for(unsigned k=0;k<mypamm.getNumberOfKernels();++k){
+      double rcut = mypamm.getKernelCenter(k)[2] + mypamm.getKernelSupport(k)[2]; 
       if( rcut>sfmax ){ sfmax=rcut; }
   }
   return sfmax;
@@ -83,47 +46,29 @@ double HBPammObject::evaluate( const unsigned& dno, const unsigned& ano, const u
   Vector d_dh = mymulti->getSeparation( myatoms.getPosition(dno), myatoms.getPosition(hno) ); double md_dh = d_dh.modulo(); // hydrogen - donor
   Vector d_ah = mymulti->getSeparation( myatoms.getPosition(ano), myatoms.getPosition(hno) ); double md_ah = d_ah.modulo(); // hydrogen - acceptor
 
-  std::vector<Value*> pos;
-  for(unsigned i=0;i<3;++i){
-    pos.push_back( new Value() ); pos[i]->setNotPeriodic();
-  }
-  // Proton transfer coordinate
-  pos[0]->set( md_dh - md_ah );
-  // Symmetric stretch coordinate
-  pos[1]->set( md_dh + md_ah );
-  // Acceptor donor distance 
-  pos[2]->set( md_da );
-
-  std::vector<double> tderiv(3), tmderiv(3), dderiv(3,0);
-
-  // Now evaluate all kernels  
-  double denom=regulariser, numer=0;
-  for(unsigned i=0;i<kernels.size();++i){
-      double val=kernels[i]->evaluate( pos, tmderiv ); denom+=val;
-      if(i==0){ numer=val; for(unsigned j=0;j<3;++j) tderiv[j]=tmderiv[j]; }
-      for(unsigned j=0;j<3;++j) dderiv[j] += tmderiv[j];
-  }
+  // Create some vectors locally for pamm evaluation
+  std::vector<double> invals( 3 ), outvals( mypamm.getNumberOfKernels() ); 
+  std::vector<std:: vector<double> > der( mypamm.getNumberOfKernels() );
+  for(unsigned i=0;i<der.size();++i) der[i].resize(3);
+  
+  // Evaluate the pamm object
+  invals[0]=md_dh - md_ah; invals[1]=md_dh+md_ah; invals[2]=md_da;
+  mypamm.evaluate( invals, outvals, der );
 
   if( !mymulti->doNotCalculateDerivatives() ){
-      double denom2 = denom*denom, pref;
-      pref = tderiv[0] / denom - numer*dderiv[0]/denom2;
-      mymulti->addAtomDerivatives( 1, dno, ((-pref)/md_dh)*d_dh, myatoms );
-      mymulti->addAtomDerivatives( 1, ano, ((+pref)/md_ah)*d_ah, myatoms  );
-      mymulti->addAtomDerivatives( 1, hno, ((+pref)/md_dh)*d_dh - ((+pref)/md_ah)*d_ah, myatoms );
-      myatoms.addBoxDerivatives( 1, ((-pref)/md_dh)*Tensor(d_dh,d_dh) - ((-pref)/md_ah)*Tensor(d_ah,d_ah) );
-      pref = tderiv[1] / denom - numer*dderiv[1]/denom2;
-      mymulti->addAtomDerivatives( 1, dno, ((-pref)/md_dh)*d_dh, myatoms );
-      mymulti->addAtomDerivatives( 1, ano, ((-pref)/md_ah)*d_ah, myatoms );
-      mymulti->addAtomDerivatives( 1, hno, ((+pref)/md_dh)*d_dh + ((+pref)/md_ah)*d_ah, myatoms );
-      myatoms.addBoxDerivatives( 1, ((-pref)/md_dh)*Tensor(d_dh,d_dh) + ((-pref)/md_ah)*Tensor(d_ah,d_ah) );
-      pref = tderiv[2] / denom - numer*dderiv[2]/denom2;
-      mymulti->addAtomDerivatives( 1, dno, ((-pref)/md_da)*d_da, myatoms );
-      mymulti->addAtomDerivatives( 1, ano, ((+pref)/md_da)*d_da, myatoms );
-      myatoms.addBoxDerivatives( 1, ((-pref)/md_da)*Tensor(d_da,d_da) );
+      mymulti->addAtomDerivatives( 1, dno, ((-der[0][0])/md_dh)*d_dh, myatoms );
+      mymulti->addAtomDerivatives( 1, ano, ((+der[0][0])/md_ah)*d_ah, myatoms  );
+      mymulti->addAtomDerivatives( 1, hno, ((+der[0][0])/md_dh)*d_dh - ((+der[0][0])/md_ah)*d_ah, myatoms );
+      myatoms.addBoxDerivatives( 1, ((-der[0][0])/md_dh)*Tensor(d_dh,d_dh) - ((-der[0][0])/md_ah)*Tensor(d_ah,d_ah) );
+      mymulti->addAtomDerivatives( 1, dno, ((-der[0][1])/md_dh)*d_dh, myatoms );
+      mymulti->addAtomDerivatives( 1, ano, ((-der[0][1])/md_ah)*d_ah, myatoms );
+      mymulti->addAtomDerivatives( 1, hno, ((+der[0][1])/md_dh)*d_dh + ((+der[0][1])/md_ah)*d_ah, myatoms );
+      myatoms.addBoxDerivatives( 1, ((-der[0][1])/md_dh)*Tensor(d_dh,d_dh) + ((-der[0][1])/md_ah)*Tensor(d_ah,d_ah) );
+      mymulti->addAtomDerivatives( 1, dno, ((-der[0][2])/md_da)*d_da, myatoms );
+      mymulti->addAtomDerivatives( 1, ano, ((+der[0][2])/md_da)*d_da, myatoms );
+      myatoms.addBoxDerivatives( 1, ((-der[0][2])/md_da)*Tensor(d_da,d_da) );
   }
-  for(unsigned i=0;i<3;++i) delete pos[i];
-  pos.resize(0);
-  return numer/denom;
+  return outvals[0];
 
 }
 

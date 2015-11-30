@@ -23,6 +23,7 @@
 #include "tools/KernelFunctions.h"
 #include "tools/IFile.h"
 #include "multicolvar/MultiColvarFunction.h"
+#include "PammObject.h"
 
 //+PLUMEDOC MCOLVARF PAMM
 /*
@@ -108,13 +109,10 @@ namespace pamm {
 
 class PAMM : public multicolvar::MultiColvarFunction {
 private:
-  double regulariser;
-  std::vector<KernelFunctions*> kernels;
-  std::vector<Value*> pos;
+  PammObject mypamm;
 public:
   static void registerKeywords( Keywords& keys );
   PAMM(const ActionOptions&);
-  ~PAMM();
 /// We have to overwrite this here
   unsigned getNumberOfQuantities();
 /// Calculate the weight of this object ( average of input weights )
@@ -162,48 +160,27 @@ MultiColvarFunction(ao)
    }
 
    bool mixed=getBaseMultiColvar(0)->isPeriodic();
-   for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i){
-       pos.push_back( new Value() );
-       if( getBaseMultiColvar(i)->isPeriodic()!=mixed ) warning("mixing of periodic and aperiodic base variables in pamm is untested");
-       if( !getBaseMultiColvar(i)->isPeriodic() ){
-           pos[i]->setNotPeriodic();
-       } else {
-           std::string min, max;
-           getBaseMultiColvar(i)->retrieveDomain( min, max );
-           pos[i]->setDomain( min, max );
-       }
-   }
-  
-   // Get labels for base multicolvars
+   std::vector<bool> pbc( getNumberOfBaseMultiColvars() ); 
    std::vector<std::string> valnames( getNumberOfBaseMultiColvars() );
-   for(unsigned i=0;i<valnames.size();++i) valnames[i]=getBaseMultiColvar(i)->getLabel();
-
-   std::string filename; parse("CLUSTERS",filename); IFile ifile; 
-   if( !ifile.FileExist(filename) ) error("could not find file named " + filename);
-   ifile.open(filename); ifile.allowIgnoredFields(); 
- 
-   for(unsigned i=0;;++i){
-       KernelFunctions* kk = KernelFunctions::read( &ifile, false, valnames );
-       if( !kk ) break ;
-       kk->normalize( pos );
-       kernels.push_back( kk );
-       ifile.scanField(); 
+   std::vector<std::string> min( getNumberOfBaseMultiColvars() ), max( getNumberOfBaseMultiColvars() );
+   for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i){
+       if( getBaseMultiColvar(i)->isPeriodic()!=mixed ) warning("mixing of periodic and aperiodic base variables in pamm is untested");
+       pbc[i]=getBaseMultiColvar(i)->isPeriodic();
+       if( pbc[i] ) getBaseMultiColvar(i)->retrieveDomain( min[i], max[i] );
+       valnames[i]=getBaseMultiColvar(i)->getLabel();
    }
-   ifile.close();  
+
+   double regulariser; parse("REGULARISE",regulariser);
+   std::string errorstr, filename; parse("CLUSTERS",filename); 
+   mypamm.setup( filename, regulariser, valnames, pbc, min, max, errorstr );
+   if( errorstr.length()>0 ) error( errorstr );
 
    // This builds the lists
    buildSets( false );
-   // Read the regularisation parameter
-   parse("REGULARISE",regulariser);
-}
-
-PAMM::~PAMM(){
-   for(unsigned i=0;i<pos.size();++i) delete pos[i];
-   for(unsigned i=0;i<kernels.size();++i) delete kernels[i];
 }
 
 unsigned PAMM::getNumberOfQuantities(){
-   return 1 + kernels.size();    
+   return 1 + mypamm.getNumberOfKernels();    
 }
 
 void PAMM::calculateWeight( multicolvar::AtomValuePack& myatoms ){
@@ -230,40 +207,34 @@ void PAMM::calculateWeight( multicolvar::AtomValuePack& myatoms ){
 
 double PAMM::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {
    unsigned nvars = getNumberOfBaseMultiColvars();    
-   std::vector<std::vector<double> > tderiv( kernels.size() );
-   for(unsigned i=0;i<kernels.size();++i) tderiv[i].resize( nvars );
-   std::vector<double> tval(2), vals( kernels.size() ), dderiv( kernels.size(), 0 );
+   std::vector<std::vector<double> > tderiv( mypamm.getNumberOfKernels() );
+   for(unsigned i=0;i<tderiv.size();++i) tderiv[i].resize( nvars );
+   std::vector<double> tval(2), invals( nvars ), vals( mypamm.getNumberOfKernels() );
 
    for(unsigned i=0;i<nvars;++i){
-       getVectorForTask( myatoms.getIndex(i), false, tval ); pos[i]->set( tval[1] );
+       getVectorForTask( myatoms.getIndex(i), false, tval ); invals[i]=tval[1];
    }
+   mypamm.evaluate( invals, vals, tderiv );
 
-   // Evaluate the set of kernels 
-   double denom=regulariser;
-   for(unsigned i=0;i<kernels.size();++i){ 
-       vals[i]=kernels[i]->evaluate( pos, tderiv[i] );
-       denom+=vals[i]; 
-       for(unsigned j=0;j<nvars;++j) dderiv[j] += tderiv[i][j];
-   }
    // Now set all values other than the first one 
    // This is because of some peverse choices in multicolvar
-   for(unsigned i=1;i<kernels.size();++i) myatoms.setValue( 1+i, vals[i]/denom );
+   for(unsigned i=1;i<vals.size();++i) myatoms.setValue( 1+i, vals[i] );
 
    if( !doNotCalculateDerivatives() ){
-       double denom2=denom*denom; std::vector<double> mypref( 1 + kernels.size() );
+       std::vector<double> mypref( 1 + vals.size() );
        for(unsigned ivar=0;ivar<nvars;++ivar){
            // Get the values of the derivatives
            MultiValue& myder = getVectorDerivatives( myatoms.getIndex(ivar), false );
            // And calculate the derivatives
-           for(unsigned i=0;i<kernels.size();++i) mypref[1+i] = tderiv[i][ivar]/denom - vals[i]*dderiv[ivar]/denom2;
+           for(unsigned i=0;i<vals.size();++i) mypref[1+i] = tderiv[i][ivar];    
            // This is basically doing the chain rule to get the final derivatives
-           superChainRule( 1, 1, 1+kernels.size(), myatoms.getIndex(ivar), mypref, myder, myatoms );
+           superChainRule( 1, 1, 1+vals.size(), myatoms.getIndex(ivar), mypref, myder, myatoms );
            // And clear the derivatives
            myder.clearAll();
        }
    }
 
-   return vals[0] / denom;
+   return vals[0];
 }
 
 Vector PAMM::getCentralAtom(){
