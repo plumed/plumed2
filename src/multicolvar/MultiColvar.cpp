@@ -65,11 +65,12 @@ verbose_output(false)
 }
 
 void MultiColvar::readAtoms( int& natoms ){
-  std::vector<AtomNumber> all_atoms;
+  std::vector<AtomNumber> all_atoms; std::vector<unsigned> dum_starts(1);
+  std::vector<std::string> speciesB(1); speciesB[0]="SPECIESB";
   if( getNumberOfAtoms()==0 && (keywords.exists("ATOMS") || keywords.exists("GROUP") || keywords.exists("SPECIES")) ){
      if( keywords.exists("ATOMS") ) readAtomsLikeKeyword( "ATOMS", natoms, all_atoms );
      if( keywords.exists("GROUP") ) readGroupsKeyword( natoms, all_atoms );
-     if( keywords.exists("SPECIES") ) readSpeciesKeyword( "SPECIESA", "SPECIESB", natoms, all_atoms );
+     if( keywords.exists("SPECIES") ) readSpeciesKeyword( "SPECIESA", speciesB, dum_starts, natoms, all_atoms );
 
      if( all_atoms.size()==0 && colvar_label.size()==0 ) error("No atoms have been read in");
   }
@@ -299,13 +300,19 @@ void MultiColvar::readThreeGroups( const std::string& key1, const std::string& k
   }
 }
 
-void MultiColvar::readSpeciesKeyword( const std::string& str1, const std::string& str2, int& natoms, std::vector<AtomNumber>& all_atoms ){
+void MultiColvar::readSpeciesKeyword( const std::string& str1, const std::vector<std::string>& str2, std::vector<unsigned>& nat2, 
+                                      int& natoms, std::vector<AtomNumber>& all_atoms ){
   plumed_assert( usespecies );
   if( all_atoms.size()>0 || colvar_label.size()>0 ) return ;
   ablocks.resize( natoms-1 );
 
   std::vector<std::string> tw;
   if( keywords.exists("SPECIES") ) parseVector("SPECIES",tw);
+
+  bool str2_exists=true;
+  for(unsigned i=0;i<str2.size();++i){
+      if( !keywords.exists(str2[i]) ) str2_exists=false;
+  }
 
   if( !tw.empty() ){
       bool found_acts=interpretInputMultiColvars( tw, getTolerance() );
@@ -315,7 +322,7 @@ void MultiColvar::readSpeciesKeyword( const std::string& str1, const std::string
           for(unsigned i=0;i<ta.size();++i) all_atoms.push_back( ta[i] ); 
       }
 
-      if( keywords.exists(str1) && keywords.exists(str2) ){
+      if( keywords.exists(str1) && str2_exists ){
           plumed_assert( natoms==2 ); 
           for(unsigned i=0;i<nat;++i) addTaskToList(i);
           ablocks[0].resize( nat ); for(unsigned i=0;i<nat;++i) ablocks[0][i]=i; 
@@ -325,7 +332,7 @@ void MultiColvar::readSpeciesKeyword( const std::string& str1, const std::string
               for(unsigned i=0;i<ta.size();++i) log.printf("%d ",ta[i].serial() );
               log.printf("\n");
           }
-      } else if( !( keywords.exists(str1) && keywords.exists(str2) ) ){
+      } else if( !( keywords.exists(str1) && str2_exists ) ){
           usespecies=false; verbose_output=false; // Make sure we don't do verbose output
           if( !found_acts ) log.printf("  involving atoms : ");
           ablocks.resize(1); ablocks[0].resize( nat ); 
@@ -337,15 +344,23 @@ void MultiColvar::readSpeciesKeyword( const std::string& str1, const std::string
       } else {
           plumed_merror("SPECIES keyword should probably not be used for your CV");
       }
-  } else if( keywords.exists(str1) && keywords.exists(str2) ) {
-      std::vector<std::string> t1w,t2w; parseVector(str1,t1w);
-      if( !t1w.empty() ){
-         parseVector(str2,t2w);
-         if ( t2w.empty() ) error(str2 + "keyword defines no atoms or is missing. Use " + str1 + " and " + str2);
+  } else if( keywords.exists(str1) && str2_exists ) {
+      std::vector< std::vector<std::string> > t2w( str2.size() );
+      unsigned nstrings=0;
+      for(unsigned i=0;i<str2.size();++i){
+          parseVector( str2[i], t2w[i] );
+          nstrings += t2w[i].size();
+      }
+
+      std::vector<std::string> t1w; 
+      if( nstrings>0 ){
+         parseVector(str1,t1w);
+         if ( t1w.empty() ) error(str1 + "keyword defines no atoms or is missing. Use " + str1 );
 
          unsigned nbase_atoms=0;
-         bool found_acts1=interpretInputMultiColvars( t1w, getTolerance() );
-         unsigned nat1=colvar_label.size(); std::vector<AtomNumber> t1a,t2a;
+         bool found_acts2,found_acts1=interpretInputMultiColvars( t1w, getTolerance() );
+         unsigned nat1=colvar_label.size(); std::vector<AtomNumber> t1a; 
+         std::vector<std::vector<AtomNumber> > t2a( str2.size() );
          if( !found_acts1 ){
              ActionAtomistic::interpretAtomList( t1w, t1a ); nbase_atoms=nat1=t1a.size();
              for(unsigned i=0;i<t1a.size();++i) all_atoms.push_back( t1a[i] );
@@ -356,27 +371,36 @@ void MultiColvar::readSpeciesKeyword( const std::string& str1, const std::string
                  else nbase_atoms+=mybasemulticolvars[i]->getAbsoluteIndexes().size();
              }
          }
-         bool found_acts2=interpretInputMultiColvars( t2w, getTolerance() );
-         if( !found_acts1 && found_acts2 ) error("cannot use dynamic groups in second group only");
-         unsigned nat2=colvar_label.size() - nat1; 
-         if( !found_acts2 ){
-             ActionAtomistic::interpretAtomList( t2w, t2a ); nat2=t2a.size();
+         for(unsigned i=0;i<t2w.size();++i){
+             found_acts2=interpretInputMultiColvars( t2w[i], getTolerance() );
+             if( !found_acts1 && found_acts2 ) error("cannot use dynamic groups in second group only");
+  
+             nat2[i]=colvar_label.size() - nat1; 
+             for(unsigned j=0;j<i;++j) nat2[i]-=nat2[j];             
+
+             if( !found_acts2 ){
+                 ActionAtomistic::interpretAtomList( t2w[i], t2a[i] ); nat2[i]=t2a[i].size(); 
+             }
          }
 
          for(unsigned i=0;i<nat1;++i) addTaskToList(i); 
-         ablocks[0].resize( nat2 ); 
-         unsigned k=0;
-         for(unsigned i=0;i<nat2;++i){ 
-            bool found=false; unsigned inum;
-            for(unsigned j=0;j<nat1;++j){
-                if( colvar_label.size()==0 && t1a[j]==t2a[i] ){ found=true; inum=j; break; }
-                else if( colvar_label.size()>0 && getAbsoluteIndexOfCentralAtom(j)==t2a[i] ){ found=true; inum=j; break; }
-            }
-            // This prevents mistakes being made in colvar setup
-            if( found ){ ablocks[0][i]=inum; } 
-            else { 
-              ablocks[0][i]=nbase_atoms + k; k++; 
-              if( !found_acts2 ) all_atoms.push_back( t2a[i] );
+
+         unsigned tot_nat2=0;
+         for(unsigned i=0;i<str2.size();++i) tot_nat2+=nat2[i];
+         ablocks[0].resize( tot_nat2 ); unsigned k=0;
+         for(unsigned n=0;n<str2.size();++n){
+            for(unsigned i=0;i<nat2[n];++i){ 
+               bool found=false; unsigned inum;
+               for(unsigned j=0;j<nat1;++j){
+                   if( colvar_label.size()==0 && t1a[j]==t2a[n][i] ){ found=true; inum=j; break; }
+                   else if( colvar_label.size()>0 && getAbsoluteIndexOfCentralAtom(j)==t2a[n][i] ){ found=true; inum=j; break; }
+               }
+               // This prevents mistakes being made in colvar setup
+               if( found ){ ablocks[0][i]=inum; } 
+               else { 
+                 ablocks[0][i]=nbase_atoms + k; k++; 
+                 if( !found_acts2 ) all_atoms.push_back( t2a[n][i] );
+               }
             }
          }
          if( !verbose_output ){
@@ -389,9 +413,11 @@ void MultiColvar::readSpeciesKeyword( const std::string& str1, const std::string
                 log.printf("\n");
              }
              if( t2a.size()>0 ){
-                log.printf("  other atoms are : ");
-                for(unsigned i=0;i<t2a.size();++i) log.printf("%d ",t2a[i].serial() );
-                log.printf("\n");
+                for(unsigned n=0;n<str2.size();++n){
+                   log.printf("  other atoms in group %d are : ",n+1);
+                   for(unsigned i=0;i<t2a[n].size();++i) log.printf("%d ",t2a[n][i].serial() );
+                   log.printf("\n");
+                }
              }
          }
       }

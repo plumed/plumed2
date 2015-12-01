@@ -46,7 +46,8 @@ private:
   void readGroupsKeyword( int& natoms, std::vector<AtomNumber>& all_atoms );
 protected:
 /// Read in the various SPECIES keywords
-  void readSpeciesKeyword( const std::string& str1, const std::string& str2, int& natoms, std::vector<AtomNumber>& all_atoms );
+  void readSpeciesKeyword( const std::string& str1, const std::vector<std::string>& str2, std::vector<unsigned>& sizes, 
+                           int& natoms, std::vector<AtomNumber>& all_atoms );
 /// Read in all the keywords that can be used to define atoms
   void readAtoms( int& natoms );
 /// Read in ATOMS keyword
