@@ -46,6 +46,7 @@ Number of HBPAMM hydrogen bonds formed by each hydrogen atom in the system
 class HBPammHydrogens : public multicolvar::MultiColvar {
 private:
   double rcut2;
+  unsigned block1upper,block2lower;
   Matrix<HBPammObject> hbpamm_obj;
 public:
   static void registerKeywords( Keywords& keys );
@@ -92,7 +93,17 @@ PLUMED_MULTICOLVAR_INIT(ao)
   // Read in the atoms
   usespecies=true; weightHasDerivatives=false;
   int natoms=2; std::vector<AtomNumber> all_atoms;
-  readSpeciesKeyword("HYDROGENS","SITES",natoms,all_atoms);
+  std::vector<unsigned> sizes(1);
+  std::vector<std::string> sitenames(1); sitenames[0]="SITES";
+  readSpeciesKeyword("HYDROGENS",sitenames,sizes,natoms,all_atoms);
+  block1upper=sizes[0]+1; block2lower=0;
+  if( all_atoms.size()==0 ){
+      sizes.resize(2); sitenames.resize(2); 
+      sitenames[0]="DONORS"; sitenames[1]="ACCEPTORS";
+      readSpeciesKeyword("HYDROGENS",sitenames,sizes,natoms,all_atoms);
+      block1upper=block2lower=sizes[0]+1; 
+  } 
+  if( all_atoms.size()==0 ) error("no atoms read in use either HYDROGENS+SITES or HYDROGENS+ACCEPTORS+DONORS");
 
   double reg; parse("REGULARISE",reg);
   if( getNumberOfInputAtomTypes()==1 ){  
@@ -150,8 +161,9 @@ double HBPammHydrogens::compute( const unsigned& tindex, multicolvar::AtomValueP
 
    // Calculate the coordination number
    for(unsigned i=1;i<myatoms.getNumberOfAtoms();++i){
+      if( i>block1upper ) continue;
       for(unsigned j=1;j<myatoms.getNumberOfAtoms();++j){
-          if( i==j ) continue ;
+          if( i==j || j<block2lower ) continue ;
           // Get the base colvar numbers
           unsigned dno = getBaseColvarNumber( myatoms.getIndex(i) );
           unsigned ano = getBaseColvarNumber( myatoms.getIndex(j) );
