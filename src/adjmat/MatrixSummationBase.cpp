@@ -33,7 +33,7 @@ void MatrixSummationBase::registerKeywords( Keywords& keys ){
   multicolvar::MultiColvarBase::registerKeywords( keys );
   keys.add("compulsory","MATRIX","the action that calcualtes the adjacency matrix vessel we would like to analyse");
   keys.use("ALT_MIN"); keys.use("LOWEST"); keys.use("HIGHEST"); keys.use("MEAN");
-  keys.use("MEAN"); keys.use("MIN"); keys.use("MAX"); keys.use("LESS_THAN"); 
+  keys.use("MEAN"); keys.use("MIN"); keys.use("MAX"); keys.use("LESS_THAN"); keys.use("SUM"); 
   keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
 }
 
