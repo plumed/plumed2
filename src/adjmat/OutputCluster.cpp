@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "DFSBase.h"
+#include "ClusteringBase.h"
 #include "tools/OFile.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
@@ -38,7 +38,7 @@ namespace adjmat {
 class OutputCluster : public ActionPilot {
 private:
   OFile ofile;
-  DFSBase* myclusters;
+  ClusteringBase* myclusters;
   unsigned clustr;
 public:
   static void registerKeywords( Keywords& keys );
@@ -71,7 +71,7 @@ myclusters(NULL)
 
   // Find what action we are taking the clusters from
   std::vector<std::string> matname(1); parse("CLUSTERS",matname[0]);
-  myclusters = plumed.getActionSet().selectWithLabel<DFSBase*>( matname[0] );
+  myclusters = plumed.getActionSet().selectWithLabel<ClusteringBase*>( matname[0] );
   if( !myclusters ) error( matname[0] + " does not calculate perform a clustering of the atomic positions"); 
   addDependency( myclusters );
 

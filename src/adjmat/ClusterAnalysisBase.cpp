@@ -39,7 +39,7 @@ myclusters(NULL)
   std::vector<std::string> matname(1); parse("CLUSTERS",matname[0]);
   bool found_cluster=interpretInputMultiColvars(matname,0.0);
   if(!found_cluster) error("unable to interpret input clusters " + matname[0] );
-  myclusters = dynamic_cast<DFSBase*>( mybasemulticolvars[0] );
+  myclusters = dynamic_cast<ClusteringBase*>( mybasemulticolvars[0] );
   if( !myclusters ) error("input label is not that of a DFS object");
 
   // Create all tasks by copying those from underlying DFS object (which is actually MultiColvar)

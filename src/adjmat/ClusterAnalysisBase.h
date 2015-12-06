@@ -22,7 +22,7 @@
 #ifndef __PLUMED_adjmat_ClusterAnalysisBase_h
 #define __PLUMED_adjmat_ClusterAnalysisBase_h
 
-#include "DFSBase.h"
+#include "ClusteringBase.h"
 #include "multicolvar/MultiColvarFunction.h"
 
 namespace PLMD {
@@ -30,7 +30,7 @@ namespace adjmat {
 
 class ClusterAnalysisBase : public multicolvar::MultiColvarFunction {
 private:
-  DFSBase* myclusters;
+  ClusteringBase* myclusters;
 protected:
   unsigned getNumberOfNodes() const ;
   void retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const ;
