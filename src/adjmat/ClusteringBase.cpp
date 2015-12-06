@@ -32,12 +32,13 @@ void ClusteringBase::registerKeywords( Keywords& keys ){
 ClusteringBase::ClusteringBase(const ActionOptions&ao):
 Action(ao),
 ActionWithInputMatrix(ao),
-cluster_sizes(getNumberOfNodes()),
-number_of_cluster(-1),
-which_cluster(getNumberOfNodes())
+number_of_cluster(-1)
 {
-   if( getNumberOfNodeTypes()!=1 ) error("should only be running clustering with one base multicolvar in function");
-   if( !getAdjacencyVessel()->undirectedGraph() ) error("input contact matrix is incompatible with clustering");  
+   if( getAdjacencyVessel() ){
+      cluster_sizes.resize(getNumberOfNodes()); which_cluster.resize(getNumberOfNodes());
+      if( getNumberOfNodeTypes()!=1 ) error("should only be running clustering with one base multicolvar in function");
+      if( !getAdjacencyVessel()->undirectedGraph() ) error("input contact matrix is incompatible with clustering");  
+   }
 }
 
 void ClusteringBase::turnOnDerivatives(){

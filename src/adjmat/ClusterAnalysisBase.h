@@ -33,6 +33,7 @@ private:
   ClusteringBase* myclusters;
 protected:
   unsigned getNumberOfNodes() const ;
+  Vector getPosition( const unsigned& ) const ;
   void retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const ;
   void getPropertiesOfNode( const unsigned& ind, std::vector<double>& vals ) const ;
   void getNodePropertyDerivatives( const unsigned& ind, MultiValue& myvals ) const ;

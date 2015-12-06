@@ -50,7 +50,7 @@ public:
 /// Do the clustering 
   virtual void performClustering()=0;
 /// Get the atoms in one of the clusters
-  void retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const ;
+  virtual void retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const ;
 /// Do nothing for apply here
   void apply(){}
 };

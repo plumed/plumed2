@@ -39,10 +39,6 @@ private:
 /// The forces we are going to apply to things
   std::vector<double> forcesToApply;
 protected:
-/// Retrieve the vessel that holds the adjacency matrix
-  AdjacencyMatrixVessel* getAdjacencyVessel() const ;  
-/// Get the position of an atom
-  Vector getPosition( const unsigned& iatom ) const ;
 /// Check if one of the stored values is active
   bool isCurrentlyActive( const unsigned& ind ) const ;
 /// Get number of base multicolvar types
@@ -54,17 +50,19 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithInputMatrix(const ActionOptions&);
+/// Retrieve the vessel that holds the adjacency matrix
+  AdjacencyMatrixVessel* getAdjacencyVessel() const ;
 /// Get the vector for task ind
-  void getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient0 ) const ;
+  virtual void getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient0 ) const ;
 /// Get vector derivatives
-  void getVectorDerivatives( const unsigned& ind, const bool& normed, MultiValue& myder0 ) const ;
-  unsigned getNumberOfDerivatives();
+  virtual void getVectorDerivatives( const unsigned& ind, const bool& normed, MultiValue& myder0 ) const ;
+  virtual unsigned getNumberOfDerivatives();
 ///  Get the number of rows/cols in the adjacency matrix vessel
-  unsigned getNumberOfNodes() const ;
+  virtual unsigned getNumberOfNodes() const ;
   bool isPeriodic(){ return false; }
-  unsigned getNumberOfQuantities();
+  virtual unsigned getNumberOfQuantities();
 ///
-  AtomNumber getAbsoluteIndexOfCentralAtom(const unsigned& i) const ;
+  virtual AtomNumber getAbsoluteIndexOfCentralAtom(const unsigned& i) const ;
 /// No loop over tasks for ActionWithInputMatrix
   double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const { plumed_error(); }
 };

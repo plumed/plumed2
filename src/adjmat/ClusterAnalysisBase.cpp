@@ -78,5 +78,9 @@ void ClusterAnalysisBase::getNodePropertyDerivatives( const unsigned& ind, Multi
   myclusters->getVectorDerivatives( ind, false, myvals );
 }
 
+Vector ClusterAnalysisBase::getPosition( const unsigned& iatom ) const {
+  return myclusters->getPosition( iatom );
+}
+
 }
 }

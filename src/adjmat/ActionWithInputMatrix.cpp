@@ -41,29 +41,31 @@ Action(ao),
 MultiColvarFunction(ao),
 mymatrix(NULL)
 {
-  // Find the object that calculates our adjacency matrix
-  std::vector<std::string> matname(1); parse("MATRIX",matname[0]);
-  bool found_matrix=interpretInputMultiColvars(matname,0.0);
-  if(!found_matrix) error("unable to interpret input matrix " + matname[0] );
+  if( keywords.exists("MATRIX") ){
+      // Find the object that calculates our adjacency matrix
+      std::vector<std::string> matname(1); parse("MATRIX",matname[0]);
+      bool found_matrix=interpretInputMultiColvars(matname,0.0);
+      if(!found_matrix) error("unable to interpret input matrix " + matname[0] );
 
-  // Retrieve the adjacency matrix of interest
-  for(unsigned i=0;i<mybasemulticolvars[0]->getNumberOfVessels();++i){
-      mymatrix = dynamic_cast<AdjacencyMatrixVessel*>( mybasemulticolvars[0]->getPntrToVessel(i) );
-      if( mymatrix ) break ;
+      // Retrieve the adjacency matrix of interest
+      for(unsigned i=0;i<mybasemulticolvars[0]->getNumberOfVessels();++i){
+          mymatrix = dynamic_cast<AdjacencyMatrixVessel*>( mybasemulticolvars[0]->getPntrToVessel(i) );
+          if( mymatrix ) break ;
+      }
+
+      if( !mymatrix ){
+         MatrixSummationBase* mybase = dynamic_cast<MatrixSummationBase*>( mybasemulticolvars[0] );
+         if( !mybase ) error( matname[0] + " does not calculate an adjacency matrix");
+      }
+      log.printf("  using matrix calculated by action %s \n",(mymatrix->function)->getLabel().c_str() );
+
+      // And now finish the setup of everything in the base
+      setupAtomLists();
   }
-
-  if( !mymatrix ){
-     MatrixSummationBase* mybase = dynamic_cast<MatrixSummationBase*>( mybasemulticolvars[0] );
-     if( !mybase ) error( matname[0] + " does not calculate an adjacency matrix");
-  }
-  log.printf("  using matrix calculated by action %s \n",(mymatrix->function)->getLabel().c_str() );
-
-  // And now finish the setup of everything in the base
-  setupAtomLists();
 }
 
 unsigned ActionWithInputMatrix::getNumberOfDerivatives() {
-  return (mymatrix->function)->getNumberOfDerivatives();
+ return (mymatrix->function)->getNumberOfDerivatives();
 }
 
 unsigned ActionWithInputMatrix::getNumberOfNodes() const {
@@ -76,10 +78,6 @@ AdjacencyMatrixVessel* ActionWithInputMatrix::getAdjacencyVessel() const {
 
 AtomNumber ActionWithInputMatrix::getAbsoluteIndexOfCentralAtom(const unsigned& i) const {
   return (mymatrix->function)->getAbsoluteIndexOfCentralAtom(i);  
-}
-
-Vector ActionWithInputMatrix::getPosition( const unsigned& iatom ) const {
-  return (mymatrix->function)->getPositionOfAtomForLinkCells(iatom); 
 }
 
 bool ActionWithInputMatrix::isCurrentlyActive( const unsigned& ind ) const {
