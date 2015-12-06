@@ -93,13 +93,15 @@ void ClusterDistribution::calculate(){
 }
 
 void ClusterDistribution::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
-  std::vector<double> vals( getNumberOfQuantities() ), tder( nderivatives );
   std::vector<unsigned> myatoms; retrieveAtomsInCluster( current+1, myatoms );
-
   // This deals with filters
   if( myatoms.size()==1 && !nodeIsActive(myatoms[0]) ) return ;
+
+  std::vector<double> vals( getNumberOfQuantities() ); 
+  MultiValue tvals( getNumberOfQuantities(), nderivatives );
+
   // And this builds everything for this particular atom
-  double vv, df, tval=0; tder.assign( tder.size(), 0.0 );
+  double vv, df, tval=0; 
   for(unsigned j=0;j<myatoms.size();++j){
       unsigned i=myatoms[j];
       getPropertiesOfNode( i, vals );
@@ -113,13 +115,15 @@ void ClusterDistribution::performTask( const unsigned& task_index, const unsigne
           tval += vals[0]*vals[1]; df=1.; vv=vals[1];
       }
       if( !doNotCalculateDerivatives() ){
-          getNodePropertyDerivatives( i, myvals );
-          for(unsigned k=0;k<myvals.getNumberActive();++k){
-              unsigned kat=myvals.getActiveIndex(k);
-              tder[kat]+=vals[0]*df*myvals.getDerivative(1,kat) + vv*myvals.getDerivative(0,kat);
+          getNodePropertyDerivatives( i, tvals );
+          for(unsigned k=0;k<tvals.getNumberActive();++k){
+              unsigned kat=tvals.getActiveIndex(k);
+              myvals.addDerivative( 1, kat, vals[0]*df*tvals.getDerivative(1,kat) + vv*tvals.getDerivative(0,kat) );
           }
+          tvals.clearAll();
       }
   }
+  myvals.setValue( 0, 1.0 ); myvals.setValue( 1, tval ); 
 }
 
 }
