@@ -68,7 +68,10 @@ ClusterAnalysisBase(ao)
    if( clustr<1 ) error("cannot look for a cluster larger than the largest cluster");
    if( clustr>getNumberOfNodes() ) error("cluster selected is invalid - too few atoms in system");
 
-   addValue(); setNotPeriodic();
+   // Create all tasks by copying those from underlying DFS object (which is actually MultiColvar)
+   for(unsigned i=0;i<getNumberOfNodes();++i) addTaskToList(i);
+   // And now finish the setup of everything in the base
+   setupAtomLists(); addValue(); setNotPeriodic();
 }
 
 void ClusterSize::turnOnDerivatives(){

@@ -41,12 +41,6 @@ myclusters(NULL)
   if(!found_cluster) error("unable to interpret input clusters " + matname[0] );
   myclusters = dynamic_cast<ClusteringBase*>( mybasemulticolvars[0] );
   if( !myclusters ) error("input label is not that of a DFS object");
-
-  // Create all tasks by copying those from underlying DFS object (which is actually MultiColvar)
-  for(unsigned i=0;i<myclusters->getNumberOfNodes();++i) addTaskToList(i);
-
-  // And now finish the setup of everything in the base
-  setupAtomLists();
 }
 
 void ClusterAnalysisBase::turnOnDerivatives(){ 

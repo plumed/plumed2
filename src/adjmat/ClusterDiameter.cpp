@@ -72,7 +72,7 @@ ClusterAnalysisBase(ao)
        for(unsigned j=0;j<i;++j) addTaskToList( i*getNumberOfNodes() + j );
    }
    // Now create a higest vessel
-   addVessel("HIGHEST", "", -1); readVesselKeywords();
+   addVessel("HIGHEST", "", -1); setupAtomLists();
 }
 
 void ClusterDiameter::turnOnDerivatives(){
@@ -93,22 +93,10 @@ void ClusterDiameter::calculate(){
 }
 
 void ClusterDiameter::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const { 
-  unsigned iatom=current/getNumberOfNodes(), jatom = current - iatom*getNumberOfNodes();
+  unsigned iatom=std::floor(current/getNumberOfNodes()), jatom = current - iatom*getNumberOfNodes();
   Vector distance=getSeparation( getPosition(iatom), getPosition(jatom) );
-  double dd = distance.modulo(), inv = 1.0/dd ; myvals.setValue( 1, dd ); 
-  if( !doNotCalculateDerivatives() ){
-      myvals.addDerivative( 1, 3*iatom + 0, -inv*distance[0] );
-      myvals.addDerivative( 1, 3*iatom + 1, -inv*distance[1] );
-      myvals.addDerivative( 1, 3*iatom + 2, -inv*distance[2] );
-      myvals.addDerivative( 1, 3*jatom + 0, +inv*distance[0] );
-      myvals.addDerivative( 1, 3*jatom + 1, +inv*distance[1] );
-      myvals.addDerivative( 1, 3*jatom + 2, +inv*distance[2] );
-      Tensor vir = -inv*Tensor(distance,distance);
-      unsigned vbase = myvals.getNumberOfDerivatives() - 9;
-      for(unsigned i=0;i<3;++i){
-          for(unsigned j=0;j<3;++j) myvals.addDerivative( 1, vbase+3*i+j, vir(i,j) );
-      }
-  }
+  double dd = distance.modulo(), inv = 1.0/dd ; 
+  myvals.setValue( 0, 1.0 ); myvals.setValue( 1, dd ); 
 }
 
 }

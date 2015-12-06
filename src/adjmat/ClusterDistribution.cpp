@@ -78,8 +78,11 @@ nderivatives(0)
    parseFlag("INVERSE_TRANSFORM",inverse);
    if( inverse && !use_switch ) error("INVERSE_TRANSFORM option was specified but no TRANSOFRM switching function was given");
 
-   // Setup the various things this will calculate
-   readVesselKeywords();
+   // Create all tasks by copying those from underlying DFS object (which is actually MultiColvar)
+   for(unsigned i=0;i<getNumberOfNodes();++i) addTaskToList(i);
+
+   // And now finish the setup of everything in the base
+   setupAtomLists();
 }
 
 void ClusterDistribution::calculate(){
