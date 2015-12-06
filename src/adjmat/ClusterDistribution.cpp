@@ -24,8 +24,9 @@
 #include "core/ActionRegister.h"
 #include "tools/SwitchingFunction.h"
 
-//+PLUMEDOC MATRIXF CLUSTER_DISTRIBUTION
+//+PLUMEDOC CONCOMP CLUSTER_DISTRIBUTION
 /*
+Calculate functions of the distribution of properties in your connected components.
 
 \par Examples
 

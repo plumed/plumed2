@@ -22,8 +22,9 @@
 #include "ClusterAnalysisBase.h"
 #include "core/ActionRegister.h"
 
-//+PLUMEDOC MATRIXF CLUSTER_DIAMETER
+//+PLUMEDOC CONCOMP CLUSTER_DIAMETER
 /*
+Print out the diameter of one of the connected components
 
 \par Examples
 

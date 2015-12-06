@@ -26,7 +26,7 @@
 #include "core/ActionPilot.h"
 #include "core/ActionRegister.h"
 
-//+PLUMEDOC MATRIXF DFSOUTPUT
+//+PLUMEDOC CONCOMP OUTPUT_CLUSTER
 /*
 
 */

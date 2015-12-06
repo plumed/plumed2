@@ -22,9 +22,9 @@
 #include "ClusterAnalysisBase.h"
 #include "core/ActionRegister.h"
 
-//+PLUMEDOC MATRIXF CLUSTER_NATOMS
+//+PLUMEDOC CONCOMP CLUSTER_NATOMS
 /*
-Gives the number of atoms in the cluster
+Gives the number of atoms in the connected component 
 
 \par Examples
 

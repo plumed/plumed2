@@ -29,6 +29,15 @@
 #include <boost/graph/graph_utility.hpp>
 #endif
 
+//+PLUMEDOC MATRIXF DFSCLUSTERING
+/*
+Find the connected components of the matrix using the DFS clustering algorithm.
+
+\par Examples 
+
+*/
+//+ENDPLUMEDOC 
+
 namespace PLMD {
 namespace adjmat {
 
