@@ -42,7 +42,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Gradient(const ActionOptions&);
 /// Get the number of quantities that are calculated each time
-  virtual unsigned getNumberOfQuantities();
+  virtual unsigned getNumberOfQuantities() const ;
 /// Check on pbc - is it orthorhombic
   void setupRegions();
 /// Calculate whats in the volume
@@ -50,7 +50,7 @@ public:
 };
 
 inline
-unsigned Gradient::getNumberOfQuantities(){
+unsigned Gradient::getNumberOfQuantities() const {
   return nquantities;
 } 
 

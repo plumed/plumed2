@@ -52,7 +52,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit ActionVolume(const ActionOptions&);
 /// Get the number of quantities that are calculated each time
-  virtual unsigned getNumberOfQuantities();
+  virtual unsigned getNumberOfQuantities() const ;
 /// Calculate whats in the volume
   void calculateAllVolumes( const unsigned& curr, MultiValue& outvals ) const ;
 /// This calculates whether or not a particular is inside the box of interest
@@ -63,7 +63,7 @@ public:
 };
 
 inline
-unsigned ActionVolume::getNumberOfQuantities(){
+unsigned ActionVolume::getNumberOfQuantities() const {
   return nquantities;
 } 
 

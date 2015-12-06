@@ -39,8 +39,6 @@ private:
 /// The forces we are going to apply to things
   std::vector<double> forcesToApply;
 protected:
-/// Check if one of the stored values is active
-  bool isCurrentlyActive( const unsigned& ind ) const ;
 /// Get number of base multicolvar types
   unsigned getNumberOfNodeTypes() const ;
 /// Get number of atoms in each base multicolvar
@@ -52,6 +50,8 @@ public:
   explicit ActionWithInputMatrix(const ActionOptions&);
 /// Retrieve the vessel that holds the adjacency matrix
   AdjacencyMatrixVessel* getAdjacencyVessel() const ;
+/// Check if one of the stored values is active
+  bool isCurrentlyActive( const unsigned& ind ) const ;
 /// Get the vector for task ind
   virtual void getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient0 ) const ;
 /// Get vector derivatives
@@ -60,7 +60,7 @@ public:
 ///  Get the number of rows/cols in the adjacency matrix vessel
   virtual unsigned getNumberOfNodes() const ;
   bool isPeriodic(){ return false; }
-  virtual unsigned getNumberOfQuantities();
+  virtual unsigned getNumberOfQuantities() const ;
 ///
   virtual AtomNumber getAbsoluteIndexOfCentralAtom(const unsigned& i) const ;
 /// No loop over tasks for ActionWithInputMatrix

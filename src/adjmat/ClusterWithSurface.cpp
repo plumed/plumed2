@@ -62,7 +62,7 @@ public:
 ///
   void getVectorDerivatives( const unsigned& ind, const bool& normed, MultiValue& myder0 ) const ;
 ///
-  unsigned getNumberOfQuantities();
+  unsigned getNumberOfQuantities() const ;
 /// Do the calculation
   void performClustering(){};
 };
@@ -118,8 +118,8 @@ void ClusterWithSurface::getVectorDerivatives( const unsigned& ind, const bool& 
   myclusters->getVectorDerivatives( ind, normed, myder0 );
 }
 
-unsigned ClusterWithSurface::getNumberOfQuantities(){
-  myclusters->getNumberOfQuantities();
+unsigned ClusterWithSurface::getNumberOfQuantities() const {
+  return myclusters->getNumberOfQuantities();
 }
 
 void ClusterWithSurface::retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const {

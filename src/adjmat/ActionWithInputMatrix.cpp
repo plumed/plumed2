@@ -139,7 +139,7 @@ unsigned ActionWithInputMatrix::getNumberOfNodeTypes() const {
   return size; 
 }
 
-unsigned ActionWithInputMatrix::getNumberOfQuantities(){
+unsigned ActionWithInputMatrix::getNumberOfQuantities() const {
   if( (mymatrix->function)->colvar_label.size()==0 ) return 2;
   else return (mymatrix->function)->mybasemulticolvars[0]->getNumberOfQuantities();
 }

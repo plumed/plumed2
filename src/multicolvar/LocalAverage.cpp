@@ -90,7 +90,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit LocalAverage(const ActionOptions&);
 /// We have to overwrite this here
-  unsigned getNumberOfQuantities();
+  unsigned getNumberOfQuantities() const ;
 /// Actually do the calculation
   double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
 /// Is the variable periodic
@@ -137,7 +137,7 @@ MultiColvarFunction(ao)
   setLinkCellCutoff( switchingFunction.get_dmax() ); buildSymmetryFunctionLists();
 }
 
-unsigned LocalAverage::getNumberOfQuantities(){
+unsigned LocalAverage::getNumberOfQuantities() const {
   return getBaseMultiColvar(0)->getNumberOfQuantities();
 }
 

@@ -62,12 +62,20 @@ unsigned ClusterAnalysisBase::getNumberOfNodes() const {
   return myclusters->getNumberOfNodes();
 }
 
+unsigned ClusterAnalysisBase::getNumberOfClusters() const {
+  return myclusters->getNumberOfClusters();
+}
+
 bool ClusterAnalysisBase::isPeriodic(){
   return mybasemulticolvars[0]->isPeriodic();
 }
 
 void ClusterAnalysisBase::retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const {
   myclusters->retrieveAtomsInCluster( clust, myatoms );
+}
+
+bool ClusterAnalysisBase::nodeIsActive( const unsigned& ind ) const {
+  return myclusters->isCurrentlyActive( ind );
 }
 
 void ClusterAnalysisBase::getPropertiesOfNode( const unsigned& ind, std::vector<double>& vals ) const {

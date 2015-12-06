@@ -152,8 +152,7 @@ void ClusterProperties::registerKeywords( Keywords& keys ){
   if( keys.reserved("VMEAN") ) keys.use("VMEAN");
   if( keys.reserved("VSUM") ) keys.use("VSUM");
   keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS"); keys.use("ALT_MIN"); 
-  keys.use("MIN"); keys.use("MAX"); keys.use("SUM"); keys.remove("LOWMEM"); keys.use("HIGHMEM");
-  keys.use("LOWEST"); keys.use("HIGHEST");
+  keys.use("MIN"); keys.use("MAX"); keys.use("SUM");keys.use("LOWEST"); keys.use("HIGHEST");
 }
 
 ClusterProperties::ClusterProperties(const ActionOptions&ao):

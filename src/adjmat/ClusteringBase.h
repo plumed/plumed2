@@ -36,8 +36,6 @@ protected:
   int number_of_cluster;
 /// Vector that identifies the cluster each atom belongs to
   std::vector<unsigned> which_cluster;
-/// Get the number of clusters that have been found
-  unsigned getNumberOfClusters() const ;
 public:
 /// Create manual
   static void registerKeywords( Keywords& keys );
@@ -49,6 +47,8 @@ public:
   void calculate();
 /// Do the clustering 
   virtual void performClustering()=0;
+/// Get the number of clusters that have been found
+  unsigned getNumberOfClusters() const ;
 /// Get the atoms in one of the clusters
   virtual void retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const ;
 /// Do nothing for apply here
