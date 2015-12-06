@@ -19,11 +19,11 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "DFSBase.h"
+#include "ClusterAnalysisBase.h"
 #include "AdjacencyMatrixVessel.h"
 #include "core/ActionRegister.h"
 
-//+PLUMEDOC MATRIXF DFSCLUSTERING 
+//+PLUMEDOC MATRIXF CLUSTER_PROPERTIES
 /*
 Find the various connected components in an adjacency matrix and then output average
 properties of the atoms in those connected components.
@@ -128,7 +128,7 @@ clust: DFSCLUSTERING DATA=cf WTOL=0.03 CLUSTER=1 SWITCH={CUBIC D_0=0.4   D_MAX=0
 namespace PLMD {
 namespace adjmat {
 
-class DFSBasic : public DFSBase {
+class ClusterProperties : public ClusterAnalysisBase {
 private:
 /// The cluster we are looking for
   unsigned clustr;
@@ -136,17 +136,17 @@ public:
 /// Create manual
   static void registerKeywords( Keywords& keys );
 /// Constructor
-  explicit DFSBasic(const ActionOptions&);
+  explicit ClusterProperties(const ActionOptions&);
 /// Do the calculation
   void calculate();
 /// We can use ActionWithVessel to run all the calculation
   void performTask( const unsigned& , const unsigned& , MultiValue& ) const ;
 };
 
-PLUMED_REGISTER_ACTION(DFSBasic,"DFSCLUSTERING")
+PLUMED_REGISTER_ACTION(ClusterProperties,"CLUSTER_PROPERTIES")
 
-void DFSBasic::registerKeywords( Keywords& keys ){
-  DFSBase::registerKeywords( keys );
+void ClusterProperties::registerKeywords( Keywords& keys ){
+  ClusterAnalysisBase::registerKeywords( keys );
   keys.add("compulsory","CLUSTER","1","which cluster would you like to look at 1 is the largest cluster, 2 is the second largest, 3 is the the third largest and so on.");
   keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("LESS_THAN");
   if( keys.reserved("VMEAN") ) keys.use("VMEAN");
@@ -156,9 +156,9 @@ void DFSBasic::registerKeywords( Keywords& keys ){
   keys.use("LOWEST"); keys.use("HIGHEST");
 }
 
-DFSBasic::DFSBasic(const ActionOptions&ao):
+ClusterProperties::ClusterProperties(const ActionOptions&ao):
 Action(ao),
-DFSBase(ao)
+ClusterAnalysisBase(ao)
 {
    // Find out which cluster we want
    parse("CLUSTER",clustr);
@@ -166,16 +166,11 @@ DFSBase(ao)
    if( clustr<1 ) error("cannot look for a cluster larger than the largest cluster");
    if( clustr>getNumberOfNodes() ) error("cluster selected is invalid - too few atoms in system");
 
-   // Create the task list
-   for(unsigned i=0;i<getNumberOfNodes();++i) addTaskToList(i);
-
    // Setup the various things this will calculate
    readVesselKeywords();
 }
 
-void DFSBasic::calculate(){
-   // Do the clustring
-   performClustering();
+void ClusterProperties::calculate(){
    // Retrieve the atoms in the largest cluster
    std::vector<unsigned> myatoms; retrieveAtomsInCluster( clustr, myatoms );
    // Activate the relevant tasks
@@ -186,9 +181,9 @@ void DFSBasic::calculate(){
    runAllTasks(); 
 }
 
-void DFSBasic::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
-   std::vector<double> vals( myvals.getNumberOfValues() ); getVectorForTask( current, false, vals );
-   if( !doNotCalculateDerivatives() ) getVectorDerivatives( current, false, myvals );
+void ClusterProperties::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
+   std::vector<double> vals( myvals.getNumberOfValues() ); getPropertiesOfNode( current, vals );
+   if( !doNotCalculateDerivatives() ) getNodePropertyDerivatives( current, myvals );
    for(unsigned k=0;k<vals.size();++k) myvals.setValue( k, vals[k] ); 
 }
 

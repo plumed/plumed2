@@ -121,7 +121,7 @@ public:
   ~MultiColvarBase(){}
   static void registerKeywords( Keywords& keys );
 /// Turn on the derivatives 
-  void turnOnDerivatives();
+  virtual void turnOnDerivatives();
 /// Do we use pbc to calculate this quantity
   bool usesPbc() const ;
 /// Apply PBCs over a set of distance vectors
@@ -131,7 +131,7 @@ public:
 /// This is overwritten here in order to make sure that we do not retrieve atoms multiple times
   void retrieveAtoms();
 /// Do the calculation
-  void calculate();
+  virtual void calculate();
 /// Calculate numerical derivatives
   virtual void calculateNumericalDerivatives( ActionWithValue* a=NULL );
 /// Perform one of the tasks

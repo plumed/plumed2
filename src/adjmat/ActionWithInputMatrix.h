@@ -24,22 +24,16 @@
 
 #include "core/ActionWithValue.h"
 #include "core/ActionAtomistic.h"
-#include "vesselbase/ActionWithVessel.h"
 #include "multicolvar/MultiColvarBase.h"
+#include "multicolvar/MultiColvarFunction.h"
 
 namespace PLMD {
 namespace adjmat {
 
 class AdjacencyMatrixVessel;
 
-class ActionWithInputMatrix : 
-  public ActionWithValue,
-  public ActionAtomistic,
-  public vesselbase::ActionWithVessel
-  {
+class ActionWithInputMatrix : public multicolvar::MultiColvarFunction {
 private:
-/// Are we using pbc
-  bool usepbc;
 /// The vessel that holds the adjacency matrix
   AdjacencyMatrixVessel* mymatrix;
 /// The forces we are going to apply to things
@@ -47,18 +41,10 @@ private:
 protected:
 /// Retrieve the vessel that holds the adjacency matrix
   AdjacencyMatrixVessel* getAdjacencyVessel() const ;  
-///  Get the number of rows/cols in the adjacency matrix vessel
-  unsigned getNumberOfNodes() const ;
 /// Get the position of an atom
   Vector getPosition( const unsigned& iatom ) const ;
-/// Get the separation between a pair of atom positions 
-  Vector getSeparation( const Vector& vec1, const Vector& vec2 ) const ;
 /// Check if one of the stored values is active
   bool isCurrentlyActive( const unsigned& ind ) const ;
-/// Get the vector for task ind
-  void getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient0 ) const ;
-/// Get vector derivatives
-  void getVectorDerivatives( const unsigned& ind, const bool& normed, MultiValue& myder0 ) const ;
 /// Get number of base multicolvar types
   unsigned getNumberOfNodeTypes() const ;
 /// Get number of atoms in each base multicolvar
@@ -68,14 +54,19 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithInputMatrix(const ActionOptions&);
+/// Get the vector for task ind
+  void getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient0 ) const ;
+/// Get vector derivatives
+  void getVectorDerivatives( const unsigned& ind, const bool& normed, MultiValue& myder0 ) const ;
   unsigned getNumberOfDerivatives();
-// Turn on the derivatives
-  virtual void turnOnDerivatives();
+///  Get the number of rows/cols in the adjacency matrix vessel
+  unsigned getNumberOfNodes() const ;
   bool isPeriodic(){ return false; }
   unsigned getNumberOfQuantities();
-  void apply();
 ///
   AtomNumber getAbsoluteIndexOfCentralAtom(const unsigned& i) const ;
+/// No loop over tasks for ActionWithInputMatrix
+  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const { plumed_error(); }
 };
 
 }

@@ -35,9 +35,9 @@ class MultiColvarFunction : public MultiColvarBase {
 private:
 /// A tempory vector that is used for retrieving vectors
   std::vector<double> tvals;
+protected:
 /// This sets up the atom list
   void setupAtomLists();
-protected:
 /// Get the derivatives for the central atom with index ind
   CatomPack getCentralAtomPackFromInput( const unsigned& ind ) const ;
 ///

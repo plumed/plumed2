@@ -22,6 +22,7 @@
 #include "DFSBase.h"
 #include "AdjacencyMatrixBase.h"
 #include "AdjacencyMatrixVessel.h"
+#include "core/ActionRegister.h"
 
 #ifdef __PLUMED_HAS_BOOST_GRAPH
 #include <boost/graph/adjacency_list.hpp>    
@@ -31,6 +32,8 @@
 
 namespace PLMD {
 namespace adjmat {
+
+PLUMED_REGISTER_ACTION(DFSBase,"DFSCLUSTERING")
 
 void DFSBase::registerKeywords( Keywords& keys ){
   ActionWithInputMatrix::registerKeywords( keys );
@@ -57,18 +60,12 @@ color(getNumberOfNodes())
 void DFSBase::turnOnDerivatives(){
    // Check base multicolvar isn't density probably other things shouldn't be allowed here as well
    if( getBaseMultiColvar(0)->isDensity() ) error("DFS clustering cannot be differentiated if base multicolvar is DENSITY");
-
-   // Check for dubious vessels
-   for(unsigned i=0;i<getNumberOfVessels();++i){
-      if( getPntrToVessel(i)->getName()=="MEAN" ) error("MEAN of cluster is not differentiable");
-      if( getPntrToVessel(i)->getName()=="VMEAN" ) error("VMEAN of cluster is not differentiable");  
-   }
    
    // Ensure that derivatives are turned on in base classes
    ActionWithInputMatrix::turnOnDerivatives();
 }
 
-void DFSBase::performClustering(){
+void DFSBase::calculate(){
    // All the clusters have zero size initially
    for(unsigned i=0;i<cluster_sizes.size();++i){ cluster_sizes[i].first=0; cluster_sizes[i].second=i; }
 #ifdef __PLUMED_HAS_BOOST_GRAPH

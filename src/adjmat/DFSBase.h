@@ -53,8 +53,6 @@ private:
 protected:
 /// Get the number of clusters that have been found
   unsigned getNumberOfClusters() const ;
-/// Do the clustering of the dat
-  void performClustering();
 public:
 /// Create manual
   static void registerKeywords( Keywords& keys );
@@ -62,8 +60,12 @@ public:
   explicit DFSBase(const ActionOptions&);
 /// This checks whether derivatives can be computed given the base multicolvar
   void turnOnDerivatives();
+/// Do the calculation
+  void calculate();
 /// Get the atoms in one of the clusters
   virtual void retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const ;
+/// Do nothing for apply here
+  void apply(){}
 };
 
 inline

@@ -41,16 +41,18 @@ Action(ao),
 MultiColvarBase(ao)
 {
   // Read in the arguments
-  std::vector<std::string> mlabs; parseVector("DATA",mlabs);
+  if( keywords.exists("DATA") ){ 
+      std::vector<std::string> mlabs; parseVector("DATA",mlabs);
 
-  if( keywords.exists("WTOL") ){
-      double wtolerance; parse("WTOL",wtolerance); 
-      log.printf("  only considering those colvars with a weight greater than %f \n",wtolerance);
-      bool found_acts=interpretInputMultiColvars(mlabs,wtolerance);
-      if( !found_acts ) error("one or more items in input is not the label of a multicolvar");
-  } else {
-      bool found_acts=interpretInputMultiColvars(mlabs,0.0);
-      if( !found_acts ) error("one or more items in input is not the label of a multicolvar");
+      if( keywords.exists("WTOL") ){
+          double wtolerance; parse("WTOL",wtolerance); 
+          log.printf("  only considering those colvars with a weight greater than %f \n",wtolerance);
+          bool found_acts=interpretInputMultiColvars(mlabs,wtolerance);
+          if( !found_acts ) error("one or more items in input is not the label of a multicolvar");
+      } else {
+          bool found_acts=interpretInputMultiColvars(mlabs,0.0);
+          if( !found_acts ) error("one or more items in input is not the label of a multicolvar");
+      }
   }
 }
 
