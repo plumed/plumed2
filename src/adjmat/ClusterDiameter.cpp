@@ -69,8 +69,8 @@ ClusterAnalysisBase(ao)
    if( clustr>getNumberOfNodes() ) error("cluster selected is invalid - too few atoms in system");
 
    // Create the task list
-   for(unsigned  i=1;i<getNumberOfNodes();++i){
-       for(unsigned j=0;j<i;++j) addTaskToList( i*getNumberOfNodes() + j );
+   for(unsigned  i=0;i<getNumberOfNodes();++i){
+       for(unsigned j=0;j<getNumberOfNodes();++j) addTaskToList( i*getNumberOfNodes() + j );
    }
    // Now create a higest vessel
    addVessel("HIGHEST", "", -1); setupAtomLists();
