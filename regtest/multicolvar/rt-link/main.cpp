@@ -1,7 +1,9 @@
+#include "mpi.h"
+#include "plumed/tools/Communicator.h"
+#include "plumed/tools/Tools.h"
 #include "plumed/tools/Vector.h"
 #include "plumed/tools/LinkCells.h"
 #include "plumed/tools/Pbc.h"
-#include "plumed/tools/Communicator.h"
 #include <fstream>
 #include <iostream>
 

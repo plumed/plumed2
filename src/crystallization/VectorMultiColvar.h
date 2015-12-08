@@ -61,7 +61,7 @@ public:
 /// Get the number of components in the vector
   unsigned getNumberOfComponentsInVector() const ;
 /// Get the number of quantities we are calculating per step
-  unsigned getNumberOfQuantities();
+  unsigned getNumberOfQuantities() const ;
 /// Can we differentiate the orientation - yes we can the multicolvar is a vector
   bool hasDifferentiableOrientation() const { return true; }
 ///  This makes sure we are not calculating the director when we do LocalAverage
@@ -74,7 +74,7 @@ unsigned VectorMultiColvar::getNumberOfComponentsInVector() const {
 }
 
 inline
-unsigned VectorMultiColvar::getNumberOfQuantities(){
+unsigned VectorMultiColvar::getNumberOfQuantities() const {
   return 2 + ncomponents;
 }
 

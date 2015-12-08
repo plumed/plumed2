@@ -40,7 +40,7 @@ namespace PLMD
 {
 namespace multicolvar {
 
-//+PLUMEDOC ANALYSIS DUMPMULTICOLVAR 
+//+PLUMEDOC MCOLVARA DUMPMULTICOLVAR 
 /*
 Dump atom positions and multicolvar on a file.
 
@@ -64,6 +64,7 @@ DUMPMULTICOLVAR DATA=slt FILE=MULTICOLVAR.xyz
 
 class DumpMultiColvar:
   public ActionPilot,
+  public ActionAtomistic,
   public vesselbase::ActionWithInputVessel
 {
   OFile of;
@@ -71,10 +72,11 @@ class DumpMultiColvar:
   MultiColvarBase* mycolv; 
   std::string fmt_xyz;
 public:
-  explicit DumpMultiColvar(const ActionOptions&);
+  DumpMultiColvar(const ActionOptions&);
   ~DumpMultiColvar();
   static void registerKeywords( Keywords& keys );
   void calculate(){}
+  void calculateNumericalDerivatives( ActionWithValue* vv ){ plumed_error(); }
   void apply(){}
   void update();
 };
@@ -83,16 +85,19 @@ PLUMED_REGISTER_ACTION(DumpMultiColvar,"DUMPMULTICOLVAR")
 
 void DumpMultiColvar::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
+  ActionAtomistic::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
   ActionWithInputVessel::registerKeywords( keys );
   keys.add("compulsory","STRIDE","1","the frequency with which the atoms should be output");
   keys.add("compulsory", "FILE", "file on which to output coordinates");
   keys.add("compulsory", "UNITS","PLUMED","the units in which to print out the coordinates. PLUMED means internal PLUMED units");
-  keys.add("optional", "PRECISION","The number of digits in trajectory file");
+  keys.add("optional","PRECISION","The number of digits in trajectory file");
+  keys.add("atoms","ORIGIN","You can use this keyword to specify the position of an atom as an origin. The positions output will then be displayed relative to that origin");
 }
 
 DumpMultiColvar::DumpMultiColvar(const ActionOptions&ao):
   Action(ao),
+  ActionAtomistic(ao),
   ActionPilot(ao),
   ActionWithInputVessel(ao)
 {
@@ -101,6 +106,11 @@ DumpMultiColvar::DumpMultiColvar(const ActionOptions&ao):
   plumed_assert( getDependencies().size()==1 ); 
   if(!mycolv) error("action labeled " + mycolv->getLabel() + " is not a multicolvar");
   log.printf("  printing colvars calculated by action %s \n",mycolv->getLabel().c_str() );
+
+  std::vector<AtomNumber> atom;
+  parseAtomList("ORIGIN",atom);
+  if( atom.size()>1 ) error("should only be one atom specified");
+  if( atom.size()==1 ) log.printf("  origin is at position of atom : %d\n",atom[0].serial() );
 
   string file; parse("FILE",file);
   if(file.length()==0) error("name out output file was not specified");
@@ -131,6 +141,7 @@ DumpMultiColvar::DumpMultiColvar(const ActionOptions&ao):
   of.link(*this);
   of.open(file);
   log.printf("  printing atom positions in %s units \n", unitname.c_str() );
+  requestAtoms(atom); addDependency( mycolv );
 }
 
 void DumpMultiColvar::update(){
@@ -153,6 +164,7 @@ void DumpMultiColvar::update(){
     const char* name=defname;
 
     Vector apos = mycolv->getCentralAtomPos( mycolv->getTaskCode(i) );
+    if( getNumberOfAtoms()>0 ) apos=pbcDistance( apos, getPosition(0) );
     of.printf(("%s "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz).c_str(),name,lenunit*apos[0],lenunit*apos[1],lenunit*apos[2]);
     stash->retrieveValue( i, true, cvals );
     if( mycolv->weightWithDerivatives() ){

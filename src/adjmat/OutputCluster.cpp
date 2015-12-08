@@ -19,14 +19,14 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "DFSBase.h"
+#include "ClusteringBase.h"
 #include "tools/OFile.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/ActionPilot.h"
 #include "core/ActionRegister.h"
 
-//+PLUMEDOC MATRIXF DFSOUTPUT
+//+PLUMEDOC CONCOMP OUTPUT_CLUSTER
 /*
 
 */
@@ -35,31 +35,31 @@
 namespace PLMD {
 namespace adjmat {
 
-class DFSOutput : public ActionPilot {
+class OutputCluster : public ActionPilot {
 private:
   OFile ofile;
-  DFSBase* myclusters;
+  ClusteringBase* myclusters;
   unsigned clustr;
 public:
   static void registerKeywords( Keywords& keys );
-  explicit DFSOutput(const ActionOptions&);
+  explicit OutputCluster(const ActionOptions&);
   void calculate(){}
   void apply(){}
   void update();
 };
 
-PLUMED_REGISTER_ACTION(DFSOutput,"DFSOUTPUT")
+PLUMED_REGISTER_ACTION(OutputCluster,"OUTPUT_CLUSTER")
 
-void DFSOutput::registerKeywords( Keywords& keys ){
+void OutputCluster::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
-  keys.add("compulsory","DFS","the DFS action that performed the clustering");
+  keys.add("compulsory","CLUSTERS","the action that performed the clustering");
   keys.add("compulsory","CLUSTER","1","which cluster would you like to look at 1 is the largest cluster, 2 is the second largest, 3 is the the third largest and so on");
   keys.add("compulsory","STRIDE","1","the frequency with which you would like to output the atoms in the cluster");
   keys.add("compulsory","FILE","the name of the file on which to output the details of the cluster");
 }
 
-DFSOutput::DFSOutput(const ActionOptions& ao):
+OutputCluster::OutputCluster(const ActionOptions& ao):
 Action(ao),
 ActionPilot(ao),
 myclusters(NULL)
@@ -70,8 +70,8 @@ myclusters(NULL)
   ofile.open(file); log.printf("  on file %s \n",file.c_str());
 
   // Find what action we are taking the clusters from
-  std::vector<std::string> matname(1); parse("DFS",matname[0]);
-  myclusters = plumed.getActionSet().selectWithLabel<DFSBase*>( matname[0] );
+  std::vector<std::string> matname(1); parse("CLUSTERS",matname[0]);
+  myclusters = plumed.getActionSet().selectWithLabel<ClusteringBase*>( matname[0] );
   if( !myclusters ) error( matname[0] + " does not calculate perform a clustering of the atomic positions"); 
   addDependency( myclusters );
 
@@ -82,7 +82,7 @@ myclusters(NULL)
   log.printf("  outputting atoms in %u th largest cluster found by %s \n",clustr,matname[0].c_str() );
 }
 
-void DFSOutput::update(){
+void OutputCluster::update(){
   std::vector<unsigned> myatoms; myclusters->retrieveAtomsInCluster( clustr, myatoms );
   ofile.printf("CLUSTERING RESULTS AT TIME %f : NUMBER OF ATOMS IN %u TH LARGEST CLUSTER EQUALS %u \n",getTime(),clustr,static_cast<unsigned>(myatoms.size()) );
   ofile.printf("INDICES OF ATOMS : ");

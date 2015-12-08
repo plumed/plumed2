@@ -168,7 +168,7 @@ public:
 /// Get the number of derivatives for final calculated quantity 
   virtual unsigned getNumberOfDerivatives()=0;
 /// Get the number of quantities that are calculated during each task
-  virtual unsigned getNumberOfQuantities();
+  virtual unsigned getNumberOfQuantities() const ;
 /// Get the number of vessels
   unsigned getNumberOfVessels() const;
 /// Get a pointer to the ith vessel
@@ -217,7 +217,7 @@ unsigned ActionWithVessel::getNumberOfVessels() const {
 }
 
 inline
-unsigned ActionWithVessel::getNumberOfQuantities(){
+unsigned ActionWithVessel::getNumberOfQuantities() const {
   return 2;
 }
 

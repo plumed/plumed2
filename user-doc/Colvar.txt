@@ -152,9 +152,15 @@ following methods for calculating an adjacency matrix
 @MATRIX@
 
 Once you have calculated an adjacency matrix you can then perform any one of the following operations on this object in order
-to reduce it to a scalar number.
+to reduce it to a scalar number or a set of connected components.
 
 @MATRIXF@
+
+If the function you have chosen reduces your contact matrix to a set of connected components you then need a method to convert 
+these connected components into a scalar number or to output this information to a file.  The various things that you can do
+with a set of connected components are listed below:
+
+@CONCOMP@
 
 */
 

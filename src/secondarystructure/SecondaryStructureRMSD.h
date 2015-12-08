@@ -76,7 +76,7 @@ public:
   virtual ~SecondaryStructureRMSD();
   unsigned getNumberOfFunctionsInAction();
   unsigned getNumberOfDerivatives();
-  unsigned getNumberOfQuantities();
+  unsigned getNumberOfQuantities() const ;
   void turnOnDerivatives();
   void prepare();
   void finishTaskListUpdate();
@@ -87,7 +87,7 @@ public:
 };
 
 inline
-unsigned SecondaryStructureRMSD::getNumberOfQuantities(){
+unsigned SecondaryStructureRMSD::getNumberOfQuantities() const {
   return 1 + references.size();
 }
 

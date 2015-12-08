@@ -19,11 +19,12 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "DFSBase.h"
+#include "ClusteringBase.h"
 #include "AdjacencyMatrixVessel.h"
+#include "AdjacencyMatrixBase.h"
 #include "core/ActionRegister.h"
 
-//+PLUMEDOC MATRIXF DFSCLUSTERING_WITHSURFACE 
+//+PLUMEDOC MATRIXF CLUSTER_WITHSURFACE 
 /*
 Find the various connected components in an adjacency matrix and then output average
 properties of the atoms in those connected components.
@@ -37,66 +38,98 @@ properties of the atoms in those connected components.
 namespace PLMD {
 namespace adjmat {
 
-class DFSBasicWithSurface : public DFSBase {
+class ClusterWithSurface : public ClusteringBase {
 private:
-/// The cluster we are looking for
-  unsigned clustr;
+/// The clusters that we are adding surface atoms to
+  ClusteringBase* myclusters;
 /// The cutoff for surface atoms
   double rcut_surf2;
 public:
 /// Create manual
   static void registerKeywords( Keywords& keys );
 /// Constructor
-  explicit DFSBasicWithSurface(const ActionOptions&);
-/// Do the calculation
-  void calculate();
+  explicit ClusterWithSurface(const ActionOptions&);
+///
+  unsigned getNumberOfDerivatives();
+///
+  unsigned getNumberOfNodes() const ;
+///
+  AtomNumber getAbsoluteIndexOfCentralAtom(const unsigned& i) const ;
 ///
   void retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const ;
-/// We can use ActionWithVessel to run all the calculation
-  void performTask( const unsigned& , const unsigned& , MultiValue& ) const {}
+///
+  void getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient0 ) const ;
+///
+  void getVectorDerivatives( const unsigned& ind, const bool& normed, MultiValue& myder0 ) const ;
+///
+  unsigned getNumberOfQuantities() const ;
+/// Do the calculation
+  void performClustering(){};
 };
 
-PLUMED_REGISTER_ACTION(DFSBasicWithSurface,"DFSCLUSTERING_WITHSURFACE")
+PLUMED_REGISTER_ACTION(ClusterWithSurface,"CLUSTER_WITHSURFACE")
 
-void DFSBasicWithSurface::registerKeywords( Keywords& keys ){
-  DFSBase::registerKeywords( keys );
-  keys.add("compulsory","CLUSTER","1","which cluster would you like to look at 1 is the largest cluster, 2 is the second largest, 3 is the the third largest and so on.");
+void ClusterWithSurface::registerKeywords( Keywords& keys ){
+  ClusteringBase::registerKeywords( keys );
+  keys.remove("MATRIX");
+  keys.add("compulsory","CLUSTERS","the label of the action that does the clustering");
   keys.add("compulsory","RCUT_SURF","you also have the option to find the atoms on the surface of the cluster.  An atom must be within this distance of one of the atoms "
                                   "of the cluster in order to be considered a surface atom");
 }
 
-DFSBasicWithSurface::DFSBasicWithSurface(const ActionOptions&ao):
+ClusterWithSurface::ClusterWithSurface(const ActionOptions&ao):
 Action(ao),
-DFSBase(ao)
+ClusteringBase(ao)
 {
-   // Find out which cluster we want
-   parse("CLUSTER",clustr);
+   std::vector<std::string> cname(1); parse("CLUSTERS",cname[0]);
+   bool found_cname=interpretInputMultiColvars(cname,0.0);
+   if(!found_cname) error("unable to interpret input clusters " + cname[0] );
 
-   if( clustr<1 ) error("cannot look for a cluster larger than the largest cluster");
-   if( clustr>getNumberOfNodes() ) error("cluster selected is invalid - too few atoms in system");
+   // Retrieve the adjacency matrix of interest
+   myclusters = dynamic_cast<ClusteringBase*>( mybasemulticolvars[0] ); 
+   if( !myclusters ) error( cname[0] + " does not calculate clusters");
 
    // Setup switching function for surface atoms
    double rcut_surf; parse("RCUT_SURF",rcut_surf);
    if( rcut_surf>0 ) log.printf("  counting surface atoms that are within %f of the cluster atoms \n",rcut_surf);
    rcut_surf2=rcut_surf*rcut_surf;
 
-   // Create the task list
-   for(unsigned i=0;i<getNumberOfNodes();++i) addTaskToList(i);
-
-   // Setup the various things this will calculate
-   readVesselKeywords();
-
-   // Create the value
-   addValue(); setNotPeriodic();
+   // And now finish the setup of everything in the base
+   setupAtomLists();
 }
 
-void DFSBasicWithSurface::retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const {
-  std::vector<unsigned> tmpat; DFSBase::retrieveAtomsInCluster( clust, tmpat );
+unsigned ClusterWithSurface::getNumberOfDerivatives(){
+  return myclusters->getNumberOfDerivatives();
+}
+
+unsigned ClusterWithSurface::getNumberOfNodes() const {
+  return myclusters->getNumberOfNodes();
+}
+
+AtomNumber ClusterWithSurface::getAbsoluteIndexOfCentralAtom(const unsigned& i) const {
+  return myclusters->getAbsoluteIndexOfCentralAtom(i);
+}
+
+void ClusterWithSurface::getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient0 ) const {
+  myclusters->getVectorForTask( ind, normed, orient0 );
+}
+
+void ClusterWithSurface::getVectorDerivatives( const unsigned& ind, const bool& normed, MultiValue& myder0 ) const {
+  myclusters->getVectorDerivatives( ind, normed, myder0 );
+}
+
+unsigned ClusterWithSurface::getNumberOfQuantities() const {
+  return myclusters->getNumberOfQuantities();
+}
+
+void ClusterWithSurface::retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const {
+  std::vector<unsigned> tmpat; myclusters->retrieveAtomsInCluster( clust, tmpat );
+
   // Find the atoms in the the clusters
   std::vector<bool> atoms( getNumberOfNodes(), false ); 
   for(unsigned i=0;i<tmpat.size();++i){
       for(unsigned j=0;j<getNumberOfNodes();++j){
-         double dist2=getSeparation( getPosition(tmpat[i]), getPosition(j)).modulo2();
+         double dist2=getSeparation( getPosition(tmpat[i]), getPosition(j) ).modulo2();
          if( dist2<rcut_surf2 ){ atoms[j]=true; }
       }
   }
@@ -111,15 +144,6 @@ void DFSBasicWithSurface::retrieveAtomsInCluster( const unsigned& clust, std::ve
       if( atoms[j] ){ myatoms[nn]=j; nn++; }
   }
   plumed_assert( nn==myatoms.size() );
-}
-
-void DFSBasicWithSurface::calculate(){
-   // Do the clustring
-   performClustering();
-   // Retrieve the atoms in the largest cluster
-   std::vector<unsigned> myatoms; retrieveAtomsInCluster( clustr, myatoms );
-   // The size of the cluster
-   setValue( myatoms.size() );
 }
 
 }

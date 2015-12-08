@@ -79,23 +79,24 @@ awk 'BEGIN{gfile="automatic/GLOSSARY.list"; dfile="automatic/DICTIONARY.list"; }
      print "*/" >output
   }
   if(inside>=2 && NF==0){
-     print "</td> </tr>" > lfile
+     print "</td> </tr>" >> lfile
      if(inside==2){ printf "</td> </tr>\n" > gfile; }
      if(inside==3){ printf "</td> </tr>\n" > dfile; }
      inside=1
   }
-  if(inside==1 && $1!="/*" && $1!="*/") print $0 >output
+  if(inside==1 && $1!="/*" && $1!="*/") print $0 > output
   if(inside>=2 && $1!="/*" && $1!="*/" ){
      print $0 > output
-     printf "%s", $0 > lfile
+     printf "%s", $0 >> lfile
      if(inside==2){ printf "%s", $0 > gfile; }
      if(inside==3){ printf "%s", $0 > dfile; }
   }
   if($1=="//+PLUMEDOC"){
-    if( $2=="TOPOLOGY" || $2=="COLVAR" || $2=="MCOLVAR" || $2=="DCOLVAR"|| $2=="MCOLVARF" || $2=="MCOLVARB" || $2=="MATRIX" || $2=="MATRIXF" || $2=="FUNCTION" || $2=="ANALYSIS" || $2=="BIAS" || $2=="GENERIC" || $2=="VATOM" || $2=="TOOLS" ){
+    if( $2=="TOPOLOGY" || $2=="COLVAR" || $2=="MCOLVAR" || $2=="DCOLVAR"|| $2=="MCOLVARF" || $2=="MCOLVARB" || $2=="MATRIX" || $2=="MATRIXF" || $2=="CONCOMP" || $2=="FUNCTION" || $2=="ANALYSIS" || $2=="BIAS" || $2=="GENERIC" || $2=="VATOM" || $2=="TOOLS" ){
+      if(lfile!="") close(lfile)
       lfile="automatic/"$2".list"
       
-      printf "<tr> <td width=%s> \\subpage %s </td> <td>","5%", $3 > lfile
+      printf "<tr> <td width=%s> \\subpage %s </td> <td>","5%", $3 >> lfile
 #       printf "<tr> <td width=5%> \\ref %s </td><td> %s </td><td>",$3, $2 > gfile
       printf "<tr> <td width=%s> \\ref %s </td><td> %s </td><td>","5%",$3, $2 > gfile
 
@@ -236,7 +237,7 @@ done
 sed -ie 's/<b> --/<b> \\c \\-\\-/g' automatic/*.txt
 rm automatic/*.txte
 
-for file in COLVAR MCOLVAR DCOLVAR MCOLVARF MCOLVARB MATRIX MATRIXF ANALYSIS BIAS GLOSSARY \
+for file in COLVAR MCOLVAR DCOLVAR MCOLVARF MCOLVARB MATRIX MATRIXF CONCOMP ANALYSIS BIAS GLOSSARY \
             DICTIONARY TUTORIALS WEBSITES FUNCTION TOPOLOGY VATOM \
             TOOLS
 do
@@ -272,6 +273,7 @@ cat $file.txt |
     /^ *@ANALYSIS@ *$/r   automatic/ANALYSIS.list
     /^ *@MATRIX@ *$/r   automatic/MATRIX.list
     /^ *@MATRIXF@ *$/r   automatic/MATRIXF.list
+    /^ *@CONCOMP@ *$/r   automatic/CONCOMP.list
     /^ *@BIAS@ *$/r       automatic/BIAS.list
     /^ *@GLOSSARY@ *$/r   automatic/GLOSSARY.list
     /^ *@DICTIONARY@ *$/r automatic/DICTIONARY.list

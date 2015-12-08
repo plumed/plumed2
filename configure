@@ -6313,7 +6313,11 @@ fi
   if test $found == ok; then
     $as_echo "#define __PLUMED_HAS_ALMOST 1" >>confdefs.h
 
-    LIBS="$LIBS -lsqlite3 -lz -lbz2 -lnbimpl -lshx"
+    if test $bz2 == ok; then
+      LIBS="$LIBS -lsqlite3 -lz -lbz2 -lnbimpl -lshx"
+    else
+      LIBS="$LIBS -lsqlite3 -lz -lnbimpl -lshx"
+    fi
   else
     as_fn_error $? "--enable-almost: cannot find almost" "$LINENO" 5
   fi

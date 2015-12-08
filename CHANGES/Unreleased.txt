@@ -7,10 +7,12 @@ This page contains changes that will end up in 2.3
 Changes from version 2.2 which are relevant for users:
 - Changes leading to incompatible behavior:
   - \ref COMMITTOR can now be used to define multiple basins, but the syntax has been changed
-  - Syntax for \ref SPRINT, \ref DFSCLUSTERING, \ref DFSCLUSTERDIAMETER, \ref DFSMAXCLUSTER \ref DFSNUMEROFCLUSTERS has changed.
+  - Syntax for \ref SPRINT and \ref DFSCLUSTERING has changed.
     We have separated the Actions that calculate the contact matrix from these actions.  These actions thus now take a contact
     matrix as input.  This means that we these actions can be used with contact matrices that measures whether or not a pair of atoms
-    are hydrogen bonded.  For more details on this see \ref contactmatrix 
+    are hydrogen bonded.  For more details on this see \ref contactmatrix.  For clustering the output can now be passed to the actions
+    \ref CLUSTER_PROPERTIES, \ref CLUSTER_DIAMETER, \ref CLUSTER_NATOMS, \ref OUTPUT_CLUSTER and \ref CLUSTER_DISTRIBUTION.  These
+    provide various different kinds of information about the connected components found by clustering 
 - In \ref driver masses and charges are set by default to NaN.
   This makes it less likely to do mistakes trying to compute centers of mass or electrostatic-dependent variables
   when masses or charges were not set. To compute these variables from the driver you are now forced to use
@@ -18,7 +20,11 @@ Changes from version 2.2 which are relevant for users:
 - New actions:
   - \ref FIXEDATOM
   - \ref HBOND_MATRIX
-  - \ref DFSOUTPUT
+  - \ref CLUSTER_PROPERTIES
+  - \ref CLUSTER_DIAMETER
+  - \ref CLUSTER_NATOMS
+  - \ref OUTPUT_CLUSTER
+  - \ref CLUSTER_DISTRIBUTION
   - \ref ROWSUMS
   - \ref COLUMNSUMS
 - New features for existing actions:

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2014,2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -19,41 +19,36 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_crystallization_Gradient_h
-#define __PLUMED_crystallization_Gradient_h
+#ifndef __PLUMED_adjmat_ClusterAnalysisBase_h
+#define __PLUMED_adjmat_ClusterAnalysisBase_h
 
-#include "multicolvar/VolumeGradientBase.h"
+#include "ClusteringBase.h"
+#include "multicolvar/MultiColvarFunction.h"
 
 namespace PLMD {
-namespace crystallisation {
+namespace adjmat {
 
-class Gradient : public multicolvar::VolumeGradientBase {
-friend class GradientVessel;
+class ClusterAnalysisBase : public multicolvar::MultiColvarFunction {
 private:
-/// The value of sigma
-  double sigma;
-/// Number of quantities in use in this colvar
-  unsigned vend, nquantities;
-/// Number of bins in each direction
-  std::vector<unsigned> nbins;
-/// The type of kernel for the histogram
-  std::string kerneltype;
+  ClusteringBase* myclusters;
+protected:
+  unsigned getNumberOfNodes() const ;
+  unsigned getNumberOfClusters() const ;
+  Vector getPosition( const unsigned& ) const ;
+  void retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const ;
+  bool nodeIsActive( const unsigned& ind ) const ;
+  void getPropertiesOfNode( const unsigned& ind, std::vector<double>& vals ) const ;
+  void getNodePropertyDerivatives( const unsigned& ind, MultiValue& myvals ) const ;
 public:
   static void registerKeywords( Keywords& keys );
-  explicit Gradient(const ActionOptions&);
-/// Get the number of quantities that are calculated each time
-  virtual unsigned getNumberOfQuantities() const ;
-/// Check on pbc - is it orthorhombic
-  void setupRegions();
-/// Calculate whats in the volume
-  void calculateAllVolumes( const unsigned& curr, MultiValue& outvals ) const ;
+  explicit ClusterAnalysisBase(const ActionOptions&);
+  bool isPeriodic();
+  void turnOnDerivatives();
+  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const { plumed_error(); }
 };
-
-inline
-unsigned Gradient::getNumberOfQuantities() const {
-  return nquantities;
-} 
 
 }
 }
 #endif
+
+

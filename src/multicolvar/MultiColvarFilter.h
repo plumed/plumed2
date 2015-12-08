@@ -41,7 +41,7 @@ public:
 /// Do everything required to setup the derivatives
   void doJobsRequiredBeforeTaskList();
 /// Get the number of quantities in the colvar
-  unsigned getNumberOfQuantities();
+  unsigned getNumberOfQuantities() const ;
 /// Actually do what we are asked
   void completeTask( const unsigned& curr, MultiValue& invals, MultiValue& outvals ) const ;
 /// Do the filtering
@@ -51,7 +51,7 @@ public:
 };
 
 inline
-unsigned MultiColvarFilter::getNumberOfQuantities(){
+unsigned MultiColvarFilter::getNumberOfQuantities() const {
   return getPntrToMultiColvar()->getNumberOfQuantities();
 }
 
