@@ -113,8 +113,9 @@ WillardChandlerSurface::WillardChandlerSurface(const ActionOptions&ao):
   plumed_assert( getDependencies().size()==1 ); 
   if(!mycolv) error("action labeled " + mycolv->getLabel() + " is not a multicolvar");
 
-  parse("KERNEL",kerneltype); parseVector("BANDWIDTH",bw); parseVector("NBINS",nbins); 
+  parse("KERNEL",kerneltype); parseVector("BANDWIDTH",bw); parseVector("NBINS",nbins); parse("CONTOUR",contour);
   if( bw.size()!=3 || nbins.size()!=3 ) error("wrong size found for bandwidth vector or number of bins");
+  log.printf("  calculating dividing surface where average equals %f along ", contour);
   log.printf(" for colvars calculated by action %s \n",mycolv->getLabel().c_str() );
 
   // START OF BIT TO IMPROVE
