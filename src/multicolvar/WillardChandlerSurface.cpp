@@ -86,7 +86,6 @@ void WillardChandlerSurface::registerKeywords( Keywords& keys ){
   ActionWithInputVessel::registerKeywords( keys );
   keys.add("compulsory","STRIDE","1","the frequency with which the data should be collected and added to the grid");
   keys.add("atoms","ORIGIN","we will use the position of this atom as the origin");
-  keys.add("compulsory","DIR","the direction perpendicular to the Willard-Chandler surface");
   keys.add("compulsory","NBINS","the number of bins to use to represent the density profile");
   keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
   keys.add("compulsory","KERNEL","gaussian","the kernel function you are using.  More details on  the kernels available "
@@ -116,17 +115,6 @@ WillardChandlerSurface::WillardChandlerSurface(const ActionOptions&ao):
 
   parse("KERNEL",kerneltype); parseVector("BANDWIDTH",bw); parseVector("NBINS",nbins); 
   if( bw.size()!=3 || nbins.size()!=3 ) error("wrong size found for bandwidth vector or number of bins");
-  std::string direction; parse("DIR",direction); parse("CONTOUR",contour);
-  log.printf("  calculating dividing surface where average equals %f along ", contour);
-  if( direction=="x" ){
-      log.printf("x direction"); dir=0;
-  } else if( direction=="y" ){
-      log.printf("y direction"); dir=1;
-  } else if( direction=="z" ){
-      log.printf("z direction"); dir=2;
-  } else {
-     error( direction + " is not valid gradient direction");
-  } 
   log.printf(" for colvars calculated by action %s \n",mycolv->getLabel().c_str() );
 
   // START OF BIT TO IMPROVE
