@@ -60,13 +60,13 @@ void PRE::registerKeywords( Keywords& keys ){
   keys.add("compulsory","INEPT","is the INEPT time (in ms).");
   keys.add("compulsory","TAUC","is the correlation time (in ns) for this electron-nuclear interaction.");
   keys.add("compulsory","OMEGA","is the Larmor frequency of the nuclear spin (in MHz).");
-  keys.add("atoms","SPINLABEL","The atom to be used as the reference atom for the paramagnetic center.");
-  keys.add("numbered","RTWO","The relaxation of the atom/atoms in the corresponding GROUPA of atoms. "
-                   "Keywords like RTWO1, RTWO2, RTWO3,... should be listed.");
+  keys.add("atoms","SPINLABEL","The atom to be used as the paramagnetic center.");
   keys.add("numbered","GROUPA","the atoms involved in each of the contacts you wish to calculate. "
                    "Keywords like GROUPA1, GROUPA2, GROUPA3,... should be listed and one contact will be "
                    "calculated for each ATOM keyword you specify.");
   keys.reset_style("GROUPA","atoms");
+  keys.add("numbered","RTWO","The relaxation of the atom/atoms in the corresponding GROUPA of atoms. "
+                   "Keywords like RTWO1, RTWO2, RTWO3,... should be listed.");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   keys.addOutputComponent("pre_","COMPONENTS","the # PRE");
 }
@@ -88,11 +88,11 @@ serial(false)
     error("Number of specified atom should be 1");
 
   // Read in the atoms
-  vector<AtomNumber> t, ga_lista;
+  vector<AtomNumber> t, ga_lista, gb_lista;
   for(int i=1;;++i ){
      parseAtomList("GROUPA", i, t );
      if( t.empty() ) break;
-     for(unsigned j=0;j<t.size();j++) ga_lista.push_back(t[j]);
+     for(unsigned j=0;j<t.size();j++) {ga_lista.push_back(t[j]); gb_lista.push_back(atom[0]);}
      nga.push_back(t.size());
      t.resize(0); 
   }
@@ -131,13 +131,14 @@ serial(false)
   constant = (4.*tauc*ns2s+(3.*tauc*ns2s)/(1+omega*omega*MHz2Hz*MHz2Hz*tauc*tauc*ns2s*ns2s))*Kappa;
 
   // Create neighbour lists
-  nl= new NeighborList(atom,ga_lista,false,pbc,getPbc());
+  nl= new NeighborList(gb_lista,ga_lista,true,pbc,getPbc());
 
   // Ouput details of all contacts
   unsigned index=0; 
   for(unsigned i=0;i<nga.size();++i){
     log.printf("  The %uth PRE is calculated using %u equivalent atoms:\n", i, nga[i]);
     log.printf("    %d", ga_lista[index].serial());
+    index++;
     for(unsigned j=1;j<nga[i];j++) {
       log.printf(" %d", ga_lista[index].serial());
       index++;
@@ -166,10 +167,11 @@ PRE::~PRE(){
 } 
 
 void PRE::calculate(){ 
-  std::vector<Vector> deriv(getNumberOfAtoms());
   unsigned sga = nga.size();
+  std::vector<Vector> deriv(getNumberOfAtoms());
+  std::vector<Tensor> dervir(sga);
   vector<double> pre(sga), ratio(sga);
- 
+
   // internal parallelisation
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
@@ -179,20 +181,19 @@ void PRE::calculate(){
   }
  
   for(unsigned i=0;i<sga;i++) ratio[i]=pre[i]=0.;
-  unsigned i0=nl->getClosePair(0).first;
-  Vector v0 = getPosition(i0); 
 
   unsigned index=0; for(unsigned k=0;k<rank;k++) index += nga[k];
 
   for(unsigned i=rank;i<sga;i+=stride) { //cycle over the number of pre 
     for(unsigned j=0;j<nga[i];j++) {
       double aver=1./((double)nga[i]);
+      unsigned i0=nl->getClosePair(index).first;
       unsigned i1=nl->getClosePair(index).second;
       Vector distance;
       if(pbc){
-        distance=pbcDistance(v0,getPosition(i1));
+        distance=pbcDistance(getPosition(i0),getPosition(i1));
       } else {
-        distance=delta(v0,getPosition(i1));
+        distance=delta(getPosition(i0),getPosition(i1));
       }
       double d=distance.modulo();
       double r2=d*d;
@@ -205,6 +206,9 @@ void PRE::calculate(){
 
       deriv[i0] = -tmpir8*distance;
       deriv[i1] = +tmpir8*distance;
+
+      dervir[i] += Tensor(distance,deriv[i0]);
+
       index++;
     }
     ratio[i] = rtwo[i]*exp(-pre[i]*inept) / (rtwo[i]+pre[i]);
@@ -215,23 +219,23 @@ void PRE::calculate(){
     comm.Sum(&pre[0],sga);
     comm.Sum(&ratio[0],sga);
     comm.Sum(&deriv[0][0],3*deriv.size());
+    comm.Sum(&dervir[0][0][0],9*sga);
   }
 
   index = 0;
   for(unsigned i=0;i<sga;i++) { //cycle over the number of pre 
-    Tensor virial;
-    virial.zero();
     Value* val=getPntrToComponent(i);
     val->set(ratio[i]);
     double fact = -ratio[i]*(inept+1./(rtwo[i]+pre[i]));
+    Tensor virial = fact*dervir[i];
+    setBoxDerivatives(val, virial);
     for(unsigned j=0;j<nga[i];j++) {
+      unsigned i0=nl->getClosePair(index).first;
       unsigned i1=nl->getClosePair(index).second;
-      virial += -Tensor(v0,fact*deriv[i0])-Tensor(getPosition(i1),fact*deriv[i1]);
       setAtomsDerivatives(val, i0, fact*deriv[i0]);
       setAtomsDerivatives(val, i1, fact*deriv[i1]); 
       index++;
     }
-    setBoxDerivatives(val, virial);
   }
 
 }
