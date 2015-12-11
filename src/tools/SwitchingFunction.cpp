@@ -87,6 +87,14 @@ s(r) = \left[ 1 + ( 2^{a/b} -1 )\left( \frac{r-d_0}{r_0} \right)^a \right]^{-b/a
 {SMAP R_0=\f$r_0\f$ D_0=\f$d_0\f$ A=\f$a\f$ B=\f$b\f$}
 </td> <td> \f$d_0=0.0\f$ </td>
 </tr> <tr> 
+<td> Q </td> <td>
+\f$
+s(r) = \frac{1}{1 + \exp(\beta(r_{ij} - \lambda r_{ij}^0))}
+\f$
+</td> <td>
+{Q REF=\f$r_{ij}^0\f$ BETA=\f$\beta\f$ LAMBDA=\f$\lambda\f$ }
+</td> <td> \f$\lambda=1.8\f$,  \f$\beta=50 nm^-1\f$ (all-atom)<br/>\f$\lambda=1.5\f$,  \f$\beta=50 nm^-1\f$ (coarse-grained)  </td>
+</tr> <tr> 
 <td> CUBIC </td> <td>
 \f$
 s(r) = (y-1)^2(1+2y) \qquad \textrm{where} \quad y = \frac{r - r_1}{r_0-r_1}
@@ -205,12 +213,13 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   } 
   else if(name=="Q") {
     type=nativeq; 
-    beta = 50.0;  // ?nm-1?
-    lambda = 1.5; // unitless
-    ref = 0.1; // nm
+    beta = 50.0;  // nm-1
+    lambda = 1.8; // unitless
     Tools::parse(data, "BETA", beta);
     Tools::parse(data, "LAMBDA", lambda);
-    Tools::parse(data, "REF", ref);
+    bool found_ref=Tools::parse(data,"REF",ref); // nm
+    if(!found_ref) errormsg="REF (reference disatance) is required for native Q";
+
   }
   else if(name=="EXP") type=exponential;
   else if(name=="GAUSSIAN") type=gaussian;
