@@ -155,7 +155,6 @@ serial(false)
     std::string num; Tools::convert(i,num);
     addComponentWithDerivatives("pre_"+num);
     componentIsNotPeriodic("pre_"+num);
-    componentIsNotEnsemble("pre_"+num);
   }
 
   requestAtoms(nl->getFullAtomList());
