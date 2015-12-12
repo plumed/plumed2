@@ -68,7 +68,7 @@ void PRE::registerKeywords( Keywords& keys ){
   keys.add("numbered","RTWO","The relaxation of the atom/atoms in the corresponding GROUPA of atoms. "
                    "Keywords like RTWO1, RTWO2, RTWO3,... should be listed.");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
-  keys.addOutputComponent("pre_","COMPONENTS","the # PRE");
+  keys.addOutputComponent("pre","COMPONENTS","the # PRE");
 }
 
 PRE::PRE(const ActionOptions&ao):
@@ -155,7 +155,6 @@ serial(false)
     std::string num; Tools::convert(i,num);
     addComponentWithDerivatives("pre_"+num);
     componentIsNotPeriodic("pre_"+num);
-    componentIsNotEnsemble("pre_"+num);
   }
 
   requestAtoms(nl->getFullAtomList());
