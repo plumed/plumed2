@@ -596,7 +596,7 @@ void Keywords::addOutputComponent( const std::string& name, const std::string& k
   plumed_assert( !outputComponentExists( name, false ) );
   plumed_massert( name.find("-")==std::string::npos,"dash is reseved character in component names" );
 
-  std::string sname; std::size_t num2=name.find_first_of("_");
+  std::size_t num2=name.find_first_of("_");
   if( num2!=std::string::npos ) plumed_massert( num2==0, "underscore is reserved character in component names that has special meaning"); 
 
   ckey.insert( std::pair<std::string,std::string>(name,key) );
