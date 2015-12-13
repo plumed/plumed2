@@ -151,7 +151,7 @@ void RDC::registerKeywords( Keywords& keys ){
   keys.add("compulsory","WRITE_DC","0","Write the back-calculated dipolar couplings every # steps.");
   keys.addFlag("ENSEMBLE",false,"Set to TRUE if you want to average over multiple replicas.");  
   keys.addFlag("SERIAL",false,"Set to TRUE if you want to run the CV in serial.");  
-  keys.addOutputComponent("bond_","COMPONENTS","the squared deviation of the RDC for bond #");
+  keys.addOutputComponent("bond","COMPONENTS","the squared deviation of the RDC for bond #");
   keys.addOutputComponent("corr","CORRELATION","the correlation between calculated and experimental RDCs");
   keys.addOutputComponent("slope","CORRELATION","the slope between calculated and experimental RDCs");
   keys.addOutputComponent("inter","CORRELATION","the intercept between calculated and experimental RDCs");
