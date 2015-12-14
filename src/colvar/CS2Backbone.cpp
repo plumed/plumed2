@@ -163,12 +163,12 @@ void CS2Backbone::registerKeywords( Keywords& keys ){
   keys.addFlag("CYS-DISU",false,"Set to TRUE if your system has disulphide bridges.");  
   keys.addFlag("ENSEMBLE",false,"Set to TRUE if you want to average over multiple replicas.");
   keys.add("optional","REPLICAS","List of replicas for the averaging");
-  keys.addOutputComponent("ha_","COMPONENTS","the calculated squared differences for Ha hydrogen chemical shifts"); 
-  keys.addOutputComponent("hn_","COMPONENTS","the calculated squared differences for H hydrogen chemical shifts"); 
-  keys.addOutputComponent("nh_","COMPONENTS","the calculated squared differences for N nitrogen chemical shifts"); 
-  keys.addOutputComponent("ca_","COMPONENTS","the calculated squared differences for Ca carbon chemical shifts"); 
-  keys.addOutputComponent("cb_","COMPONENTS","the calculated squared differences for Cb carbon chemical shifts"); 
-  keys.addOutputComponent("co_","COMPONENTS","the calculated squared differences for C' carbon chemical shifts"); 
+  keys.addOutputComponent("ha","COMPONENTS","the calculated squared differences for Ha hydrogen chemical shifts"); 
+  keys.addOutputComponent("hn","COMPONENTS","the calculated squared differences for H hydrogen chemical shifts"); 
+  keys.addOutputComponent("nh","COMPONENTS","the calculated squared differences for N nitrogen chemical shifts"); 
+  keys.addOutputComponent("ca","COMPONENTS","the calculated squared differences for Ca carbon chemical shifts"); 
+  keys.addOutputComponent("cb","COMPONENTS","the calculated squared differences for Cb carbon chemical shifts"); 
+  keys.addOutputComponent("co","COMPONENTS","the calculated squared differences for C' carbon chemical shifts"); 
   keys.remove("NOPBC");
 }
 
