@@ -87,6 +87,14 @@ s(r) = \left[ 1 + ( 2^{a/b} -1 )\left( \frac{r-d_0}{r_0} \right)^a \right]^{-b/a
 {SMAP R_0=\f$r_0\f$ D_0=\f$d_0\f$ A=\f$a\f$ B=\f$b\f$}
 </td> <td> \f$d_0=0.0\f$ </td>
 </tr> <tr> 
+<td> Q </td> <td>
+\f$
+s(r) = \frac{1}{1 + \exp(\beta(r_{ij} - \lambda r_{ij}^0))}
+\f$
+</td> <td>
+{Q REF=\f$r_{ij}^0\f$ BETA=\f$\beta\f$ LAMBDA=\f$\lambda\f$ }
+</td> <td> \f$\lambda=1.8\f$,  \f$\beta=50 nm^-1\f$ (all-atom)<br/>\f$\lambda=1.5\f$,  \f$\beta=50 nm^-1\f$ (coarse-grained)  </td>
+</tr> <tr> 
 <td> CUBIC </td> <td>
 \f$
 s(r) = (y-1)^2(1+2y) \qquad \textrm{where} \quad y = \frac{r - r_1}{r_0-r_1}
@@ -202,7 +210,18 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     Tools::parse(data,"B",b);
     c=pow(2., static_cast<double>(a)/static_cast<double>(b) ) - 1; 
     d = -static_cast<double>(b) / static_cast<double>(a);
-  } else if(name=="EXP") type=exponential;
+  } 
+  else if(name=="Q") {
+    type=nativeq; 
+    beta = 50.0;  // nm-1
+    lambda = 1.8; // unitless
+    Tools::parse(data, "BETA", beta);
+    Tools::parse(data, "LAMBDA", lambda);
+    bool found_ref=Tools::parse(data,"REF",ref); // nm
+    if(!found_ref) errormsg="REF (reference disatance) is required for native Q";
+
+  }
+  else if(name=="EXP") type=exponential;
   else if(name=="GAUSSIAN") type=gaussian;
   else if(name=="CUBIC") type=cubic;
   else if(name=="TANH") type=tanh;
@@ -248,6 +267,8 @@ std::string SwitchingFunction::description() const {
      ostr<<"rational";
   } else if(type==exponential){
      ostr<<"exponential";
+  } else if(type==nativeq){
+     ostr<<"nativeq";     
   } else if(type==gaussian){
      ostr<<"gaussian";
   } else if(type==smap){
@@ -266,6 +287,8 @@ std::string SwitchingFunction::description() const {
   ostr<<" swiching function with parameters d0="<<d0;
   if(type==rational){
     ostr<<" nn="<<nn<<" mm="<<mm;
+  } else if(type==nativeq){
+    ostr<<" beta="<<beta<<" lambda="<<lambda<<" ref="<<ref;
   } else if(type==smap){
     ostr<<" a="<<a<<" b="<<b;
   } else if(type==cubic){
@@ -332,6 +355,7 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const{
   }
   const double rdist = (distance-d0)*invr0;
   double result;
+
   if(rdist<=0.){
      result=1.;
      dfunc=0.0;
@@ -345,6 +369,11 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const{
     }else if(type==exponential){
       result=exp(-rdist);
       dfunc=-result;
+    }else if(type==nativeq){
+      double rdist2 = beta*(distance - lambda * ref);
+      double exprdist=exp(rdist2);
+      result=1./(1.+exprdist);
+      dfunc=-exprdist/(1.+exprdist)/(1.+exprdist);
     }else if(type==gaussian){
       result=exp(-0.5*rdist*rdist);
       dfunc=-rdist*result;
@@ -387,6 +416,9 @@ SwitchingFunction::SwitchingFunction():
   b(0.0),
   c(0.0),
   d(0.0),
+  beta(0.0),
+  lambda(0.0),
+  ref(0.0),
   invr0_2(0.0),
   dmax_2(0.0),
   stretch(1.0),
@@ -408,6 +440,9 @@ SwitchingFunction::SwitchingFunction(const SwitchingFunction&sf):
   b(sf.b),
   c(sf.c),
   d(sf.d),
+  beta(sf.beta),
+  lambda(sf.lambda),
+  ref(sf.ref),
   invr0_2(sf.invr0_2),
   dmax_2(sf.dmax_2),
   stretch(sf.stretch),
