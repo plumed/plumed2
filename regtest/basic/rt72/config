@@ -1,0 +1,2 @@
+type=driver
+arg="--plumed plumed.dat --igro trpcage.gro"
