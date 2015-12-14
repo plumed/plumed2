@@ -176,7 +176,9 @@ void WillardChandlerSurface::update(){
   plumed_dbg_assert( stash ); std::vector<double> cvals( mycolv->getNumberOfQuantities() );
   Vector origin = getPosition(0); std::vector<double> pp( 3 ); Vector fpos;
 
-  for(unsigned i=0;i<mycolv->getFullNumberOfTasks();++i){
+  unsigned rank=comm.Get_rank(), size=comm.Get_size();
+
+  for(unsigned i=rank;i<mycolv->getFullNumberOfTasks();i+=size){
       stash->retrieveValue( i, false, cvals );
       Vector apos = pbcDistance( mycolv->getCentralAtomPos( mycolv->getTaskCode(i) ), origin );
 
@@ -186,6 +188,8 @@ void WillardChandlerSurface::update(){
       KernelFunctions kernel( pp, bw, kerneltype, false, cvals[0]*cvals[1], true );
       gg.addKernel( kernel ); 
   }
+  gg.mpiSumValuesAndDerivatives( comm );
+
   unsigned npoints=0; std::vector<std::vector<double> > contour_points;
   gg.findSetOfPointsOnContour( contour, npoints, contour_points );
   if(npoints==0 ) warning("found no points on Willard-Chandler surface try changing the CONTOUR parameter"); 
