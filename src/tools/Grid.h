@@ -64,6 +64,7 @@ class Value;
 class IFile;
 class OFile;
 class KernelFunctions;
+class Communicator;
 
 /// \ingroup TOOLBOX
 class Grid  
@@ -211,6 +212,8 @@ public:
  void setOutputFmt(std::string ss){fmt_=ss;}
 /// Integrate the function calculated on the grid
  double integrate( std::vector<unsigned>& npoints );
+///
+ void mpiSumValuesAndDerivatives( Communicator& comm );
 };
 
   

@@ -33,6 +33,7 @@
 #include "Exception.h"
 #include "KernelFunctions.h"
 #include "MinimiseBase.h"
+#include "Communicator.h"
 
 using namespace std;
 namespace PLMD{
@@ -937,6 +938,10 @@ double Grid::integrate( std::vector<unsigned>& npoints ){
   }
 
   return box_vol*integral;
+}
+
+void Grid::mpiSumValuesAndDerivatives( Communicator& comm ){
+  comm.Sum( grid_ ); for(unsigned i=0;i<der_.size();++i) comm.Sum( der_[i] );
 }
 
 }
