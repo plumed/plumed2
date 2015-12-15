@@ -118,18 +118,6 @@ void ActionWithValue::setPeriodic( const std::string& min, const std::string& ma
   values[0]->setDomain( min, max );
 }
 
-void ActionWithValue::setNotEnsemble(){
-  plumed_massert(values.size()==1,"The number of components is not equal to one");
-  plumed_massert(values[0]->name==getLabel(), "The value you are trying to set is not the default");
-  values[0]->setNotEnsemble();
-}
-
-void ActionWithValue::setEnsemble( const unsigned n ){
-  plumed_massert(values.size()==1,"The number of components is not equal to one");
-  plumed_massert(values[0]->name==getLabel(), "The value you are trying to set is not the default");
-  values[0]->setEnsemble( n );
-}
-
 Value* ActionWithValue::getPntrToValue(){
   plumed_dbg_massert(values.size()==1,"The number of components is not equal to one");
   plumed_dbg_massert(values[0]->name==getLabel(), "The value you are trying to retrieve is not the default");
@@ -207,16 +195,6 @@ void ActionWithValue::componentIsNotPeriodic( const std::string& name ){
 void ActionWithValue::componentIsPeriodic( const std::string& name, const std::string& min, const std::string& max ){
   int kk=getComponent(name);
   values[kk]->setDomain(min,max);
-}
-
-void ActionWithValue::componentIsNotEnsemble( const std::string& name ){
-  int kk=getComponent(name);
-  values[kk]->setNotEnsemble();
-}
-
-void ActionWithValue::componentIsEnsemble( const std::string& name, const unsigned n ){
-  int kk=getComponent(name);
-  values[kk]->setEnsemble( n );
 }
 
 void ActionWithValue::setGradientsIfNeeded(){

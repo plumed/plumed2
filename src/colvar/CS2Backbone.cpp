@@ -372,8 +372,6 @@ isvectorial(false)
     csforces.resize(atoms.size());
     addValueWithDerivatives();
     setNotPeriodic();
-    if(ensemble) setEnsemble(ens_dim);
-    else setNotEnsemble();
   } else {
     csforces.resize(6*numResidues*atoms.size());
     for(int i=0; i<numResidues; i++) {
@@ -384,21 +382,6 @@ isvectorial(false)
       addComponentWithDerivatives("ca_"+num); componentIsNotPeriodic("ca_"+num);
       addComponentWithDerivatives("cb_"+num); componentIsNotPeriodic("cb_"+num);
       addComponentWithDerivatives("co_"+num); componentIsNotPeriodic("co_"+num);
-      if(ensemble) {
-        componentIsEnsemble("ha_"+num, ens_dim);
-        componentIsEnsemble("hn_"+num, ens_dim);
-        componentIsEnsemble("nh_"+num, ens_dim);
-        componentIsEnsemble("ca_"+num, ens_dim);
-        componentIsEnsemble("cb_"+num, ens_dim);
-        componentIsEnsemble("co_"+num, ens_dim);
-      } else {
-        componentIsNotEnsemble("ha_"+num);
-        componentIsNotEnsemble("hn_"+num);
-        componentIsNotEnsemble("nh_"+num);
-        componentIsNotEnsemble("ca_"+num);
-        componentIsNotEnsemble("cb_"+num);
-        componentIsNotEnsemble("co_"+num);
-      }
     }
   }
 

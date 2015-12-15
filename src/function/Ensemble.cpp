@@ -113,7 +113,6 @@ kbt(-1.0)
      std::string s=getPntrToArgument(i)->getName();
      addComponentWithDerivatives(s); 
      getPntrToComponent(i)->setNotPeriodic();
-     getPntrToComponent(i)->setEnsemble(ens_dim);
   }
   log.printf("  using %u replicas.\n", ens_dim);
 

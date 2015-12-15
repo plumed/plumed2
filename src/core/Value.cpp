@@ -182,27 +182,4 @@ void add( const Value& val1, Value* val2 ){
   val2->set( val1.get() + val2->get() );
 }
 
-bool Value::isEnsemble()const{
-  return ensemble==averaged;
 }
-
-void Value::setNotEnsemble(){
-  nrep=1; ensemble=notaveraged;
-}
-
-void Value::setEnsemble(unsigned n){
-  nrep=n; ensemble=averaged;
-}
-
-unsigned Value::getEnsemble()const{
-  return nrep;
-}
-
-}
-
-
-
-
-
-
-

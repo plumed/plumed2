@@ -147,14 +147,6 @@ public:
 /// This sets up the gradients
   void setGradients();
   static double projection(const Value&,const Value&);
-/// Check if the value is an ensemble average 
-  bool isEnsemble() const;
-/// Set the function is not an ensemble average 
-  void setNotEnsemble();
-/// Set the function is an ensemble average 
-  void setEnsemble(unsigned n);
-/// Get the number of replicas of the ensemble averaging 
-  unsigned getEnsemble() const;
 };
 
 void copy( const Value& val1, Value& val2 );

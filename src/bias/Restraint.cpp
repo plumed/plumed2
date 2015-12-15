@@ -122,7 +122,7 @@ void Restraint::calculate(){
     const double k=kappa[i];
     const double m=slope[i];
     const double f=-(k*cv+m);
-    if(getPntrToArgument(i)->isEnsemble()) fact = 1./static_cast<double>(getPntrToArgument(i)->getEnsemble());
+    //if(getPntrToArgument(i)->isEnsemble()) fact = 1./static_cast<double>(getPntrToArgument(i)->getEnsemble());
     ene+=0.5*fact*k*cv*cv+m*cv;
     setOutputForce(i,f);
     totf2+=f*f;
