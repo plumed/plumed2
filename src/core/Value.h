@@ -161,9 +161,11 @@ void Value::applyPeriodicity(){
 inline
 void product( const Value& val1, const Value& val2, Value& valout ){
   plumed_assert( val1.derivatives.size()==val2.derivatives.size() );
-  if( valout.derivatives.size()!=val1.derivatives.size() ) valout.derivatives.resize( val1.derivatives.size() );
-  valout.value_set=false; valout.derivatives.assign(valout.derivatives.size(),0.0);
-  double u, v; u=val1.value; v=val2.value;
+  if( valout.derivatives.size()!=val1.derivatives.size() ) valout.resizeDerivatives( val1.derivatives.size() );
+  valout.value_set=false; 
+  valout.clearDerivatives();
+  double u=val1.value; 
+  double v=val2.value;
   for(unsigned i=0;i<val1.derivatives.size();++i){
      valout.addDerivative(i, u*val2.derivatives[i] + v*val1.derivatives[i] );
   }
@@ -173,9 +175,11 @@ void product( const Value& val1, const Value& val2, Value& valout ){
 inline
 void quotient( const Value& val1, const Value& val2, Value* valout ){
   plumed_assert( val1.derivatives.size()==val2.derivatives.size() );
-  if( valout->derivatives.size()!=val1.derivatives.size() ) valout->derivatives.resize( val1.derivatives.size() );
-  valout->value_set=false; valout->derivatives.assign(valout->derivatives.size(),0.0);
-  double u, v; u=val1.get(); v=val2.get();
+  if( valout->derivatives.size()!=val1.derivatives.size() ) valout->resizeDerivatives( val1.derivatives.size() );
+  valout->value_set=false; 
+  valout->clearDerivatives();
+  double u=val1.get(); 
+  double v=val2.get();
   for(unsigned i=0;i<val1.getNumberOfDerivatives();++i){
      valout->addDerivative(i, v*val1.getDerivative(i) - u*val2.getDerivative(i) );
   }
