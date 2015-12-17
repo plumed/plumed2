@@ -496,6 +496,7 @@ namespace Almost {
 	      //3. distances const
 	    
 	      int ipos = CSDIM*atom[s][a].pos[at_kind];
+
 	      //PREV
 	      for(unsigned int q=0;q<atom[s][a].prev.size();q++){
 	        double d2,dx,dy,dz;
@@ -518,7 +519,6 @@ namespace Almost {
 	        ff[place+jpos]   = ff[place+jpos]   - fact*dx;
 	        ff[place+jpos+1] = ff[place+jpos+1] - fact*dy;
 	        ff[place+jpos+2] = ff[place+jpos+2] - fact*dz;
-
 	      }
 
 	      //CURR
@@ -543,7 +543,6 @@ namespace Almost {
 	        ff[place+jpos]   = ff[place+jpos]   - fact*dx;
 	        ff[place+jpos+1] = ff[place+jpos+1] - fact*dy;
 	        ff[place+jpos+2] = ff[place+jpos+2] - fact*dz;
-
 	      }
 
 	      //NEXT
@@ -568,7 +567,6 @@ namespace Almost {
 	        ff[place+jpos]   = ff[place+jpos]   - fact*dx;
 	        ff[place+jpos+1] = ff[place+jpos+1] - fact*dy;
 	        ff[place+jpos+2] = ff[place+jpos+2] - fact*dz;	    
-
 	      }
 
 	      //SIDE CHAIN
@@ -618,7 +616,6 @@ namespace Almost {
 	        ff[place+jpos]   = ff[place+jpos]   - fact*dx;
 	        ff[place+jpos+1] = ff[place+jpos+1] - fact*dy;
 	        ff[place+jpos+2] = ff[place+jpos+2] - fact*dz;
-
 	      }
 	    
 	      //NON BOND
@@ -704,19 +701,18 @@ namespace Almost {
 	        double *rc = db.CO_RING(aa_kind,at_kind);
 	        double contrib [] = {0.0, 0.0, 0.0, 0.0, 0.0};
 	        double contribTot = 0.0;
-	        double dL, dL2, angle;
-	        double d[3], n[3];
 	        for (unsigned int i = 0; i < ringInfo.size(); i++){
 		  // compute angle from ring middle point to current atom position
 		  // get distance vector from query atom to ring center and normal vector to ring plane
   		  double fact = cs_deriv*rc[ringInfo[i].rtype];
+	          double d[3], n[3];
 		  for (int j = 0; j < 3; j++){
 		    d[j] = coor[ipos+j] - ringInfo[i].position[j];
 		    n[j] = ringInfo[i].normVect[j];
 		  }
 		  // compute square distance and distance from query atom to ring center
-		  dL2 = d[0]*d[0] + d[1]*d[1] + d[2]*d[2];
-		  dL = sqrt(dL2);
+		  double dL2 = d[0]*d[0] + d[1]*d[1] + d[2]*d[2];
+		  double dL = sqrt(dL2);
 		  double v = dL2 * dL;
 		  double dL4 = dL2 * dL2;
 		  double nL = ringInfo[i].lengthNV;
@@ -732,9 +728,9 @@ namespace Almost {
 
 		  // here we save the necessity of calculating the angle first and then the cos, 
                   // using that the acos and cos cancel each other out
-		  angle = fabs( dn/(dL*nL) );
+		  double angle = fabs( dn/(dL*nL) );
 		  contrib[ringInfo[i].rtype] += (1 - 3 * angle * angle) / v;
-
+                  
 		  // calculate terms resulting from differentiating energy function with respect to query and ring atom coordinates
 		
 		  double factor = -6 * dn / (dL4 * nL2);
@@ -805,7 +801,6 @@ namespace Almost {
 		    ff[place+aPos[at]  ] += -fact * (gradUx * v - u * gradVx) / v2;
 		    ff[place+aPos[at]+1] += -fact * (gradUy * v - u * gradVy) / v2;
 		    ff[place+aPos[at]+2] += -fact * (gradUz * v - u * gradVz) / v2;
-
 	          }
                 }
 	        // then multiply with appropriate coefficient and sum up
@@ -936,7 +931,6 @@ namespace Almost {
 	        }
 	      }
 	      //END OF DIHE
-
               sh[index+a][at_kind] = cs;
 	    } 
 	  }
@@ -1392,7 +1386,7 @@ namespace Almost {
 	for (int j = 0; j < 3; j++) ringInfo[i].normVect[j] = 0.5*(ringInfo[i].n1[j] + ringInfo[i].n2[j]);
 	// calculate squared length and length of normal vector
 	ringInfo[i].lengthN2 = ringInfo[i].normVect[0]*ringInfo[i].normVect[0] + 
-                               ringInfo[i].normVect[1]*ringInfo[i].normVect[0] + 
+                               ringInfo[i].normVect[1]*ringInfo[i].normVect[1] + 
                                ringInfo[i].normVect[2]*ringInfo[i].normVect[2];
 	ringInfo[i].lengthNV = sqrt(ringInfo[i].lengthN2);
 	
