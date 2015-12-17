@@ -25,15 +25,17 @@
 #include "ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
+#include "CamShift.h"
 
 #include <almost/mdb.h>
 #include <almost/pdb.h>
-#include <almost/forcefield/const/camshift2.h>
-#include <almost/io/formostream.h>
-
 
 using namespace std;
 using namespace Almost;
+
+string CamShift3::RingInfo::atomNames[4][6];
+string CamShift3::RingInfo::types[4];
+int    CamShift3::RingInfo::init_ = 0;
 
 namespace PLMD{
 
@@ -122,7 +124,7 @@ PRINT ARG=cs
 //+ENDPLUMEDOC
 
 class CS2Backbone : public Colvar {
-  vector<CamShift2> cam_list;
+  vector<CamShift3> cam_list;
   Molecules molecules;
   unsigned  numResidues;
   bool serial;
@@ -131,8 +133,8 @@ class CS2Backbone : public Colvar {
   double **sh;
   double len_pl2alm;
   double for_pl2alm;
-  Coor<double> coor; 
-  Coor<double> csforces;
+  vector<double> coor;
+  vector<double> csforces;
 public:
   explicit CS2Backbone(const ActionOptions&);
   ~CS2Backbone();
@@ -144,7 +146,7 @@ PLUMED_REGISTER_ACTION(CS2Backbone,"CS2BACKBONE")
 
 void CS2Backbone::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords( keys );
-  keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose.");
+  keys.addFlag("PARALLEL",false,"Perform the calculation in parallel - (experimental, bad scaling).");
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
   keys.add("compulsory","DATA","data/","The folder with the experimental chemical shifts.");
   keys.add("compulsory","FF","a03_gromacs.mdb","The ALMOST force-field to map the atoms' names.");
@@ -170,6 +172,7 @@ void CS2Backbone::registerKeywords( Keywords& keys ){
 
 CS2Backbone::CS2Backbone(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
+serial(true),
 pbc(true),
 noexp(false)
 {
@@ -183,8 +186,9 @@ noexp(false)
 
   parseFlag("NOEXP",noexp);
 
-  serial=false;
-  parseFlag("SERIAL",serial);
+  bool parallel=false;
+  parseFlag("PARALLEL",parallel);
+  serial=!parallel;
 
   string stringa_data;
   parse("DATA",stringa_data);
@@ -240,7 +244,7 @@ noexp(false)
   mol2pdb(molecules,"converted-template.pdb");
 
   log.printf("  Initialization of the predictor ...\n"); log.flush();
-  CamShift2 a = CamShift2(molecules, stringadb);
+  CamShift3 a = CamShift3(molecules, stringadb);
 
   log.printf("  Reading experimental data ...\n"); log.flush();
   stringadb = stringa_data + string("/CAshifts.dat");
@@ -378,8 +382,8 @@ noexp(false)
     }
   }
 
-  coor.resize(atoms.size()); 
-  csforces.resize(6*numResidues*atoms.size());
+  coor.resize(CSDIM*atoms.size()); 
+  csforces.resize(6*CSDIM*numResidues*atoms.size());
 
   requestAtoms(atoms);
   log.printf("  DONE!\n"); log.flush();
@@ -399,26 +403,21 @@ void CS2Backbone::calculate()
 
   for(unsigned i=0;i<numResidues;i++) for(unsigned j=0;j<6;j++) sh[i][j]=0.;
 
-  if(getExchangeStep()) {
-     cam_list[0].set_box_count(0);
-     csforces.clear();
-  }
+  if(getExchangeStep()) cam_list[0].set_box_count(0);
 
   for (unsigned i=0;i<N;i++) {
-     unsigned ipos = 4*i;
+     unsigned ipos = CSDIM*i;
      Vector Pos = getPosition(i);
-     coor.coor[ipos]   = len_pl2alm*Pos[0];
-     coor.coor[ipos+1] = len_pl2alm*Pos[1];
-     coor.coor[ipos+2] = len_pl2alm*Pos[2];
+     coor[ipos]   = len_pl2alm*Pos[0];
+     coor[ipos+1] = len_pl2alm*Pos[1];
+     coor[ipos+2] = len_pl2alm*Pos[2];
   }
 
-  vector<int> track;
-  cam_list[0].new_calc_cs(coor, csforces, N, sh, track);
+  cam_list[0].new_calc_cs(coor, csforces, N, sh);
 
   if(!serial) {
     comm.Sum(&sh[0][0], numResidues*6);
-    comm.Sum(&csforces[0][0], 6*numResidues*N*4);
-    comm.Sum(&track[0], track.size());
+    comm.Sum(csforces);
   }
 
   unsigned k=0;
@@ -426,17 +425,18 @@ void CS2Backbone::calculate()
   if(noexp) step=1;
  
   for(unsigned j=0;j<numResidues;j++) {
-    unsigned placeres = 4*N*6*j;
+    unsigned placeres = CSDIM*N*6*j;
     for(unsigned cs=0;cs<6;cs++) {
       if(sh[j][cs]!=0.) {
         Value* comp=getPntrToComponent(k);
         comp->set(sh[j][cs]);
-        unsigned place = placeres+cs*4*N;
+        unsigned place = placeres+cs*CSDIM*N;
         Tensor virial; 
         for(unsigned i=0;i<N;i++) {
-          unsigned ipos = place+4*i;
-          if(csforces.coor[ipos]!=0||csforces.coor[ipos+1]!=0||csforces.coor[ipos+2]!=0) { 
-            Vector For(for_pl2alm*csforces.coor[ipos], for_pl2alm*csforces.coor[ipos+1], for_pl2alm*csforces.coor[ipos+2]);
+          unsigned ipos = place+CSDIM*i;
+          if(csforces[ipos]!=0||csforces[ipos+1]!=0||csforces[ipos+2]!=0) {
+            Vector For(for_pl2alm*csforces[ipos], for_pl2alm*csforces[ipos+1], for_pl2alm*csforces[ipos+2]);
+            csforces[ipos]=csforces[ipos+1]=csforces[ipos+2]=0.;
             setAtomsDerivatives(comp,i,For);
             virial-=Tensor(getPosition(i),For);
           }
@@ -447,11 +447,6 @@ void CS2Backbone::calculate()
     }
   }
 
-  for(unsigned i=0; i<track.size();++i) {
-    csforces.coor[track[i]]=0.;
-    csforces.coor[track[i]+1]=0.;
-    csforces.coor[track[i]+2]=0.;
-  }
 } 
 
 }
