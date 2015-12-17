@@ -17,6 +17,8 @@ Changes from version 2.2 which are relevant for users:
   This makes it less likely to do mistakes trying to compute centers of mass or electrostatic-dependent variables
   when masses or charges were not set. To compute these variables from the driver you are now forced to use
   `--pdb` or `--mc`.
+- New interfaces with codes:
+  - PLUMED can now be used in conjuction with iPI via an interface based on sockets
 - New actions:
   - \ref FIXEDATOM
   - \ref HBOND_MATRIX

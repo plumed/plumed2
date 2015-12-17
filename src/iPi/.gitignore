@@ -1,0 +1,5 @@
+/*.c
+/*.h
+/Makefile.conf
+/imdapi*
+!/module.type
