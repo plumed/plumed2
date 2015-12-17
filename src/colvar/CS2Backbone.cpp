@@ -127,6 +127,7 @@ class CS2Backbone : public Colvar {
   unsigned  numResidues;
   bool serial;
   bool pbc;
+  bool noexp;
   double **sh;
   double len_pl2alm;
   double for_pl2alm;
@@ -147,21 +148,30 @@ void CS2Backbone::registerKeywords( Keywords& keys ){
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
   keys.add("compulsory","DATA","data/","The folder with the experimental chemical shifts.");
   keys.add("compulsory","FF","a03_gromacs.mdb","The ALMOST force-field to map the atoms' names.");
+  keys.add("compulsory","TEMPLATE","template.pdb","A PDB file of the protein system to initialise ALMOST.");
   keys.add("compulsory","NEIGH_FREQ","10","Period in step for neighbour list update.");
   keys.add("compulsory","NRES","Number of residues, corresponding to the number of chemical shifts.");
   keys.add("optional","TERMINI","Defines the protonation states of the chain-termini.");
   keys.addFlag("CYS-DISU",false,"Set to TRUE if your system has disulphide bridges.");  
-  keys.addOutputComponent("ha","default","the calculated squared differences for Ha hydrogen chemical shifts"); 
-  keys.addOutputComponent("hn","default","the calculated squared differences for H hydrogen chemical shifts"); 
-  keys.addOutputComponent("nh","default","the calculated squared differences for N nitrogen chemical shifts"); 
-  keys.addOutputComponent("ca","default","the calculated squared differences for Ca carbon chemical shifts"); 
-  keys.addOutputComponent("cb","default","the calculated squared differences for Cb carbon chemical shifts"); 
-  keys.addOutputComponent("co","default","the calculated squared differences for C' carbon chemical shifts"); 
+  keys.addFlag("NOEXP",false,"Set to TRUE if you don't want to have fixed components with the experimetnal values.");  
+  keys.addOutputComponent("ha","default","the calculated Ha hydrogen chemical shifts"); 
+  keys.addOutputComponent("hn","default","the calculated H hydrogen chemical shifts"); 
+  keys.addOutputComponent("nh","default","the calculated N nitrogen chemical shifts"); 
+  keys.addOutputComponent("ca","default","the calculated Ca carbon chemical shifts"); 
+  keys.addOutputComponent("cb","default","the calculated Cb carbon chemical shifts"); 
+  keys.addOutputComponent("co","default","the calculated C' carbon chemical shifts"); 
+  keys.addOutputComponent("expha","default","the experimental Ha hydrogen chemical shifts"); 
+  keys.addOutputComponent("exphn","default","the experimental H hydrogen chemical shifts"); 
+  keys.addOutputComponent("expnh","default","the experimental N nitrogen chemical shifts"); 
+  keys.addOutputComponent("expca","default","the experimental Ca carbon chemical shifts"); 
+  keys.addOutputComponent("expcb","default","the experimental Cb carbon chemical shifts"); 
+  keys.addOutputComponent("expco","default","the experimental C' carbon chemical shifts"); 
 }
 
 CS2Backbone::CS2Backbone(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
-pbc(true)
+pbc(true),
+noexp(false)
 {
   string stringadb;
   string stringamdb;
@@ -171,6 +181,8 @@ pbc(true)
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
 
+  parseFlag("NOEXP",noexp);
+
   serial=false;
   parseFlag("SERIAL",serial);
 
@@ -179,6 +191,9 @@ pbc(true)
 
   string stringa_forcefield;
   parse("FF",stringa_forcefield);
+
+  string stringa_template;
+  parse("TEMPLATE",stringa_template);
 
   bool disu=false;
   parseFlag("CYS-DISU",disu);
@@ -190,7 +205,7 @@ pbc(true)
 
   stringadb  = stringa_data + string("/camshift.db");
   stringamdb = stringa_data + string("/") + stringa_forcefield;
-  stringapdb = stringa_data + string("/template.pdb");
+  stringapdb = stringa_data + string("/") + stringa_template;
 
   log.printf("  loading force-field %s\n", stringamdb.c_str()); log.flush();
   Almost::MDB mdb((char*)stringamdb.c_str());
@@ -317,12 +332,48 @@ pbc(true)
   for(unsigned i=0;i<cam_list[0].atom.size();i++) {
     for(unsigned a=0;a<cam_list[0].atom[i].size();a++) {
       std::string num; Tools::convert(k,num);
-      if(cam_list[0].atom[i][a].exp_cs[0]>0) { addComponentWithDerivatives("ha_"+num); componentIsNotPeriodic("ha_"+num); }
-      if(cam_list[0].atom[i][a].exp_cs[1]>0) { addComponentWithDerivatives("hn_"+num); componentIsNotPeriodic("hn_"+num); }
-      if(cam_list[0].atom[i][a].exp_cs[2]>0) { addComponentWithDerivatives("nh_"+num); componentIsNotPeriodic("nh_"+num); }
-      if(cam_list[0].atom[i][a].exp_cs[3]>0) { addComponentWithDerivatives("ca_"+num); componentIsNotPeriodic("ca_"+num); }
-      if(cam_list[0].atom[i][a].exp_cs[4]>0) { addComponentWithDerivatives("cb_"+num); componentIsNotPeriodic("cb_"+num); }
-      if(cam_list[0].atom[i][a].exp_cs[5]>0) { addComponentWithDerivatives("co_"+num); componentIsNotPeriodic("co_"+num); }
+      if(cam_list[0].atom[i][a].exp_cs[0]>0) { 
+        addComponentWithDerivatives("ha_"+num); componentIsNotPeriodic("ha_"+num); 
+        if(!noexp) { 
+          addComponent("expha_"+num); componentIsNotPeriodic("expha_"+num);
+          Value* comp=getPntrToComponent("expha_"+num); comp->set(cam_list[0].atom[i][a].exp_cs[0]);
+        }
+      }
+      if(cam_list[0].atom[i][a].exp_cs[1]>0) { 
+        addComponentWithDerivatives("hn_"+num); componentIsNotPeriodic("hn_"+num); 
+        if(!noexp) { 
+          addComponent("exphn_"+num); componentIsNotPeriodic("exphn_"+num);
+          Value* comp=getPntrToComponent("exphn_"+num); comp->set(cam_list[0].atom[i][a].exp_cs[1]);
+        }
+      }
+      if(cam_list[0].atom[i][a].exp_cs[2]>0) { 
+        addComponentWithDerivatives("nh_"+num); componentIsNotPeriodic("nh_"+num); 
+        if(!noexp) { 
+          addComponent("expnh_"+num); componentIsNotPeriodic("expnh_"+num);
+          Value* comp=getPntrToComponent("expnh_"+num); comp->set(cam_list[0].atom[i][a].exp_cs[2]);
+        }
+      }
+      if(cam_list[0].atom[i][a].exp_cs[3]>0) { 
+        addComponentWithDerivatives("ca_"+num); componentIsNotPeriodic("ca_"+num); 
+        if(!noexp) { 
+          addComponent("expca_"+num); componentIsNotPeriodic("expca_"+num);
+          Value* comp=getPntrToComponent("expca_"+num); comp->set(cam_list[0].atom[i][a].exp_cs[3]);
+        }
+      }
+      if(cam_list[0].atom[i][a].exp_cs[4]>0) { 
+        addComponentWithDerivatives("cb_"+num); componentIsNotPeriodic("cb_"+num); 
+        if(!noexp) { 
+          addComponent("expcb_"+num); componentIsNotPeriodic("expcb_"+num);
+          Value* comp=getPntrToComponent("expcb_"+num); comp->set(cam_list[0].atom[i][a].exp_cs[4]);
+        }
+      }
+      if(cam_list[0].atom[i][a].exp_cs[5]>0) { 
+        addComponentWithDerivatives("co_"+num); componentIsNotPeriodic("co_"+num);
+        if(!noexp) { 
+          addComponent("expco_"+num); componentIsNotPeriodic("expco_"+num);
+          Value* comp=getPntrToComponent("expco_"+num); comp->set(cam_list[0].atom[i][a].exp_cs[5]);
+        }
+      }
       k++;
     }
   }
@@ -348,7 +399,10 @@ void CS2Backbone::calculate()
 
   for(unsigned i=0;i<numResidues;i++) for(unsigned j=0;j<6;j++) sh[i][j]=0.;
 
-  if(getExchangeStep()) cam_list[0].set_box_count(0);
+  if(getExchangeStep()) {
+     cam_list[0].set_box_count(0);
+     csforces.clear();
+  }
 
   for (unsigned i=0;i<N;i++) {
      unsigned ipos = 4*i;
@@ -358,15 +412,19 @@ void CS2Backbone::calculate()
      coor.coor[ipos+2] = len_pl2alm*Pos[2];
   }
 
-  csforces.clear();
-  cam_list[0].new_calc_cs(coor, csforces, N, sh);
+  vector<int> track;
+  cam_list[0].new_calc_cs(coor, csforces, N, sh, track);
 
   if(!serial) {
     comm.Sum(&sh[0][0], numResidues*6);
     comm.Sum(&csforces[0][0], 6*numResidues*N*4);
+    comm.Sum(&track[0], track.size());
   }
 
-  unsigned k=0; 
+  unsigned k=0;
+  unsigned step=2;
+  if(noexp) step=1;
+ 
   for(unsigned j=0;j<numResidues;j++) {
     unsigned placeres = 4*N*6*j;
     for(unsigned cs=0;cs<6;cs++) {
@@ -374,17 +432,26 @@ void CS2Backbone::calculate()
         Value* comp=getPntrToComponent(k);
         comp->set(sh[j][cs]);
         unsigned place = placeres+cs*4*N;
+        Tensor virial; 
         for(unsigned i=0;i<N;i++) {
           unsigned ipos = place+4*i;
-          Vector For(for_pl2alm*csforces.coor[ipos], for_pl2alm*csforces.coor[ipos+1], for_pl2alm*csforces.coor[ipos+2]);
-          setAtomsDerivatives(comp,i,For);
+          if(csforces.coor[ipos]!=0||csforces.coor[ipos+1]!=0||csforces.coor[ipos+2]!=0) { 
+            Vector For(for_pl2alm*csforces.coor[ipos], for_pl2alm*csforces.coor[ipos+1], for_pl2alm*csforces.coor[ipos+2]);
+            setAtomsDerivatives(comp,i,For);
+            virial-=Tensor(getPosition(i),For);
+          }
         }
-        setBoxDerivativesNoPbc(comp);
-        k++;
+        setBoxDerivatives(comp,virial);
+        k+=step;
       }
     }
   }
 
+  for(unsigned i=0; i<track.size();++i) {
+    csforces.coor[track[i]]=0.;
+    csforces.coor[track[i]+1]=0.;
+    csforces.coor[track[i]+2]=0.;
+  }
 } 
 
 }
