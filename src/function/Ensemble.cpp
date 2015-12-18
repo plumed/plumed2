@@ -115,7 +115,7 @@ kbt(-1.0)
      getPntrToComponent(i)->setNotPeriodic();
   }
   log.printf("  using %u replicas.\n", ens_dim);
-
+  if(do_reweight) log.printf("  doing simple REWEIGHT using the latest ARGUMENT as energy.\n");
   checkRead();
 
   // prepare vector for biases and cvs
