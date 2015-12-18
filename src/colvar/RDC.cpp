@@ -153,10 +153,12 @@ void RDC::registerKeywords( Keywords& keys ){
   keys.reset_style("ATOMS","atoms");
   keys.add("numbered","GYROM","Add the product of the gyromagnetic constants for each bond. ");
   keys.add("numbered","SCALE","Add a scaling factor to take into account concentration and other effects. ");
-  keys.add("numbered","COUPLING","Add an experimental value for each coupling (only for SVD).");
   keys.addFlag("SERIAL",false,"Set to TRUE if you want to run the CV in serial.");  
-  keys.addFlag("SVD",false,"Set to TRUE if you want to backcalculate using Single Value Decomposition (need GSL at compilation time).");  
-  keys.addOutputComponent("rdc","default","the # RDC");
+  keys.addFlag("SVD",false,"Set to TRUE if you want to backcalculate using Single Value Decomposition (need GSL at compilation time)."); 
+  keys.addFlag("ADDCOUPLINGS",false,"Set to TRUE if you want to have fixed components with the experimetnal values.");  
+  keys.add("numbered","COUPLING","Add an experimental value for each coupling (only for SVD).");
+  keys.addOutputComponent("rdc","default","the calculated # RDC");
+  keys.addOutputComponent("exp","SVD/ADDCOUPLINGS","the experimental # RDC");
 }
 
 RDC::RDC(const ActionOptions&ao):
@@ -209,7 +211,12 @@ Const(0.3356806)
 #ifndef __PLUMED_HAS_GSL
   if(svd) error("You CANNOT use SVD without GSL. Recompile PLUMED with GSL!\n");
 #endif
-  if(svd) {
+
+  bool addcoupling=false;
+  parseFlag("ADDCOUPLINGS",addcoupling);
+
+
+  if(svd||addcoupling) {
     coupl.resize( atoms.size()/2 ); 
     ntarget=0;
 
@@ -226,7 +233,9 @@ Const(0.3356806)
   // Ouput details of all contacts 
   for(unsigned i=0;i<ndata;++i){
     log.printf("  The %dth Bond Dipolar Coupling is calculated from atoms : %d %d.", i+1, atoms[2*i].serial(), atoms[2*i+1].serial()); 
-    log.printf("  Gyromagnetic moment is %f. Scaling factor is %f.\n",mu_s[i],scale[i]);
+    log.printf("  Gyromagnetic moment is %f. Scaling factor is %f.",mu_s[i],scale[i]);
+    if(svd||addcoupling) log.printf(" Experimental coupling is %f.", coupl[i]);
+    log.printf("\n");
   }
 
   checkRead();
@@ -241,6 +250,15 @@ Const(0.3356806)
     } else {
       addComponent("rdc_"+num);
       componentIsNotPeriodic("rdc_"+num);
+    }
+  }
+
+  if(svd||addcoupling) {
+    for(unsigned i=0;i<ndata;i++) {
+      std::string num; Tools::convert(i,num);
+      addComponent("exp_"+num);
+      componentIsNotPeriodic("exp_"+num);
+      Value* comp=getPntrToComponent("exp_"+num); comp->set(coupl[i]);
     }
   }
 
