@@ -54,23 +54,52 @@ PLUMED_REGISTER_ACTION(Stats,"STATS")
 
 void Stats::registerKeywords(Keywords& keys){
   Function::registerKeywords(keys);
-  keys.use("ARG"); 
-  keys.add("compulsory","PARAMETERS","0.0","the parameters of the arguments in your function");
+  keys.use("ARG");
+  keys.add("optional","PARARG","the input for this action is the scalar output from one or more other actions. The particular scalars that you will use "
+                                  "are referenced using the label of the action. If the label appears on its own then it is assumed that the Action calculates "
+                                  "a single scalar value.  The value of this scalar is thus used as the input to this new action.  If * or *.* appears the "
+                                  "scalars calculated by all the proceding actions in the input file are taken.  Some actions have multi-component outputs and "
+                                  "each component of the output has a specific label.  For example a \\ref DISTANCE action labelled dist may have three componets "
+                                  "x, y and z.  To take just the x component you should use dist.x, if you wish to take all three components then use dist.*."
+                                  "More information on the referencing of Actions can be found in the section of the manual on the PLUMED \\ref Syntax.  "
+                                  "Scalar values can also be "
+                                  "referenced using POSIX regular expressions as detailed in the section on \\ref Regex. To use this feature you you must compile "
+                                  "PLUMED with the appropriate flag."); 
+  keys.add("optional","PARAMETERS","the parameters of the arguments in your function");
   keys.addFlag("SQDEVSUM",false,"calculates only SQDEVSUM");
+  keys.addOutputComponent("sqdevsum","default","the sum of the squared deviations between arguments and parameters"); 
+  keys.addOutputComponent("corr","default","the correlation between arguments and parameters"); 
+  keys.addOutputComponent("slope","default","the slope of a linear fit between arguments and parameters"); 
+  keys.addOutputComponent("intercept","default","the intercept of a linear fit between arguments and parameters"); 
 }
 
 Stats::Stats(const ActionOptions&ao):
 Action(ao),
 Function(ao),
-parameters(getNumberOfArguments(),0.0),
 sqdonly(false)
 {
   parseVector("PARAMETERS",parameters);
-  if(parameters.size()!=static_cast<unsigned>(getNumberOfArguments()))
-    error("Size of PARAMETERS array should be the same as number for arguments");
+  if(parameters.size()!=static_cast<unsigned>(getNumberOfArguments())&&!parameters.empty())
+    error("Size of PARAMETERS array should be either 0 or the same as of the number of arguments in ARG1");
+
+  vector<Value*> arg2;
+  parseArgumentList("PARARG",arg2);
+
+  if(!arg2.empty()) {
+    if(parameters.size()>0) error("It is not possible to use PARARG and PARAMETERS together");
+    if(arg2.size()!=getNumberOfArguments()) error("Size of PARARG array should be the same as number for arguments in ARG");
+    for(unsigned i=0;i<arg2.size();i++){
+      parameters.push_back(arg2[i]->get()); 
+      if(arg2[i]->hasDerivatives()==true) error("PARARG can only accept arguments without derivatives");
+    }
+  }
 
   parseFlag("SQDEVSUM",sqdonly);
 
+  if(!arg2.empty()) log.printf("  using %u parameters from inactive actions:", arg2.size());
+  else              log.printf("  using %u parameters:", arg2.size());
+  for(unsigned i=0;i<parameters.size();i++) log.printf(" %f",parameters[i]);
+  log.printf("\n");
 
   addComponentWithDerivatives("sqdevsum");
   componentIsNotPeriodic("sqdevsum");
@@ -88,6 +117,7 @@ sqdonly(false)
 
 void Stats::calculate()
 {
+
   if(sqdonly) {
 
     double nsqd = 0.;
