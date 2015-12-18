@@ -96,8 +96,8 @@ sqdonly(false)
 
   parseFlag("SQDEVSUM",sqdonly);
 
-  if(!arg2.empty()) log.printf("  using %lu parameters from inactive actions:", arg2.size());
-  else              log.printf("  using %lu parameters:", arg2.size());
+  if(!arg2.empty()) log.printf("  using %zu parameters from inactive actions:", arg2.size());
+  else              log.printf("  using %zu parameters:", arg2.size());
   for(unsigned i=0;i<parameters.size();i++) log.printf(" %f",parameters[i]);
   log.printf("\n");
 
