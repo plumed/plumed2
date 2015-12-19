@@ -35,6 +35,8 @@ Action(ao),
 MultiColvarFunction(ao),
 myclusters(NULL)
 {
+  // This makes these colvars behave appropriately with dump and analysis
+  usespecies=true;
   // Find what action we are taking the clusters from
   std::vector<std::string> matname(1); parse("CLUSTERS",matname[0]);
   bool found_cluster=interpretInputMultiColvars(matname,0.0);
