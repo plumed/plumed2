@@ -62,17 +62,25 @@ analysis algorithms that are implemented in PLUMED and in \ref PATH collective v
 \page mcolv MultiColvar 
 
 Oftentimes, when you do not need one of the collective variables described elsewhere in the manual, what you want instead is a 
-function of a distribution of collective variables of a particular type.  For instance you might need to calculate a 
-minimum distance or the number of coordination numbers greater than a 3.0.  To avoid dupilcating the code to calculate
-an angle or distance many times and to make it easier to implement very complex collective variables PLUMED provides
-these sort of collective variables using so-called MultiColvars.  MultiColvars are named in this way because a single
+function of a distribution of collective variables of a particular type.  In other words, you would like to calculate a
+function something like this:
+\f[
+s = \sum_i g[f(\{X\}_i)]
+\f]
+In this expression \f$g\f$ is a funciton that takes in one argument and \f$f\f$ is a function that takes a set of atomic positions
+as argument. The symbol \f$\{X\}_i\f$ is used to indicate the fact that the function \f$f\f$ is evaluated for a number of different
+sets of atoms.  If you would just like to output the values of all the various \f$f\f$ functions you should use the command \ref DUMPMULTICOLVAR
+
+This functionality is useful if you need to calculate a minimum distance or the number of coordination numbers greater than a 3.0.  
+To avoid dupilcating the code to calculate an angle or distance many times and to make it easier to implement very complex collective 
+variables PLUMED provides these sort of collective variables using so-called MultiColvars.  MultiColvars are named in this way because a single
 PLUMED action can be used to calculate a number of different collective variables.  For instance the \ref DISTANCES
 action can be used to calculate the minimum distance, the number of distances less than a certain value, the number of
 distances within a certain range... A more detailed introduction to multicolvars is provided in this 
 <a href="http://www.youtube.com/watch?v=iDvZmbWE5ps">10-minute video</a>. Descriptions of the various multicolvars
 that are implemented in PLUMED 2 are given below: 
 
-@MCOLVAR@   
+@MCOLVAR@  
 
 To instruct PLUMED to calculate a multicolvar you give an instruction that looks something like this:
 
@@ -111,8 +119,32 @@ value and the average value directly.
 
 \section multicolvarfunction MultiColvar functions
 
-As well as the relatively simple quantities described above more complex functions of the distribution of values for the  
-base colvars can be computed by employing multicolvars in conjuction with the following actions: 
+It is possible to use multicolvars to calculate complicated collective variables by exploiting the fact that the output
+from one multicolvar can be used as input to a second multicolvar.  One simple way of exploiting this functionality is to
+filter the atoms based on the value they have for a symmetry function.  For example you might want to consider only those
+atoms that with a \ref COORDINATIONNUMBER higher that a certain threshold when calculating some particularly expensive symmetry
+function such as \ref Q6.  The following methods can thus all be used to filter the values of multicolvars in this way:
+
+@MFILTERS@
+
+An alternative way of filtering atoms is to consider only those atoms in a particular part of the simulation box.  This can be
+done by exploiting the following methods
+
+@VOLUMES@
+
+The idea with these methods is that function of the form:
+\f[
+s = \sum_i w(\{X\}_i) g[f(\{X\}_i)]
+\f]
+can be evaluated where once again \f$g\f$ is a function with one argumet and \f$g\f$ is a function of a set of atomic positions.  
+The difference from the more general function described earlier is that we now have a weight \f$w\f$ which is again a function of the
+atomic positions.  This weight varies between zero and one and it is this weight that is calculated in the list of filtering methods
+and volume methods described in the lists above.  
+
+In addition to these volume and filtering methods it is also possible to calculate the local average of a quantities in the manner 
+described in \cite dellago-q6-average using the \ref LOCAL_AVERAGE method.  Furthermore, in many cases \ref Q6, \ref MOLECULES and 
+\ref PLANES the symmetry function being evaluated is a vector.  You can thus construct a variety of novel collective variables by
+taking dot products of vectors on adjacent atoms as described below: 
 
 @MCOLVARF@ 
 

@@ -44,7 +44,7 @@ namespace multicolvar {
 
 //+PLUMEDOC ANALYSIS MULTICOLVARDENS
 /*
-Dump atom positions and multicolvar on a file.
+Evaluate the average value of a multicolvar on a grid.
 
 \par Examples
 

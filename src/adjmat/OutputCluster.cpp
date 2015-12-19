@@ -28,6 +28,7 @@
 
 //+PLUMEDOC CONCOMP OUTPUT_CLUSTER
 /*
+Output the indices of the atoms in one of the clusters identified by a clustering object
 
 */
 //+ENDPLUMEDOC

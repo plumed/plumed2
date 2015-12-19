@@ -23,7 +23,7 @@
 #include "tools/Pbc.h"
 #include "ActionVolume.h"
 
-//+PLUMEDOC MCOLVARF AROUND
+//+PLUMEDOC VOLUMES AROUND
 /*
 This quantity can be used to calculate functions of the distribution of collective 
 variables for the atoms that lie in a particular, user-specified part of of the cell.

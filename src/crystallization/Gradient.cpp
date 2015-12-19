@@ -26,6 +26,15 @@
 namespace PLMD {
 namespace crystallisation {
 
+//+PLUMEDOC MCOLVARF GRADIENT
+/*
+Calculate the gradient of the average value of a multicolvar value
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 PLUMED_REGISTER_ACTION(Gradient,"GRADIENT")
 
 void Gradient::registerKeywords( Keywords& keys ){
