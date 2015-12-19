@@ -170,8 +170,9 @@ double HBPammMatrix::compute( const unsigned& tindex, multicolvar::AtomValuePack
 
   double value=0;
   if( myatoms.getNumberOfAtoms()>3 ){
+      const HBPammObject& myhb=myhb_objs(dno,ano);
       for(unsigned i=2;i<myatoms.getNumberOfAtoms();++i){
-         value+=myhb_objs(dno,ano).evaluate( 0, 1, i, d_da, md_da, myatoms );
+         value+=myhb.evaluate( 0, 1, i, d_da, md_da, myatoms );
       }
   } else {
       plumed_dbg_assert( myatoms.getNumberOfAtoms()==3 );
