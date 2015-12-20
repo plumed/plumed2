@@ -114,7 +114,7 @@ public:
   static void registerKeywords( Keywords& keys );
   PAMM(const ActionOptions&);
 /// We have to overwrite this here
-  unsigned getNumberOfQuantities();
+  unsigned getNumberOfQuantities() const ;
 /// Calculate the weight of this object ( average of input weights )
   void calculateWeight( multicolvar::AtomValuePack& myatoms );
 /// Actually do the calculation
@@ -179,7 +179,7 @@ MultiColvarFunction(ao)
    buildSets( false );
 }
 
-unsigned PAMM::getNumberOfQuantities(){
+unsigned PAMM::getNumberOfQuantities() const {
    return 1 + mypamm.getNumberOfKernels();    
 }
 
