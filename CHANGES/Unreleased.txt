@@ -22,7 +22,11 @@ Changes from version 2.2 which are relevant for users:
   - \ref HBPAMM probabilistic analysis of hydrogen bonding
   - \ref FIXEDATOM
   - \ref HBOND_MATRIX
-  - \ref DFSOUTPUT
+  - \ref CLUSTER_PROPERTIES
+  - \ref CLUSTER_DIAMETER
+  - \ref CLUSTER_NATOMS
+  - \ref OUTPUT_CLUSTER
+  - \ref CLUSTER_DISTRIBUTION
   - \ref ROWSUMS
   - \ref COLUMNSUMS
 - New features for existing actions:

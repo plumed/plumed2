@@ -135,7 +135,7 @@ public:
 /// This is overwritten here in order to make sure that we do not retrieve atoms multiple times
   void retrieveAtoms();
 /// Do the calculation
-  void calculate();
+  virtual void calculate();
 /// Calculate numerical derivatives
   virtual void calculateNumericalDerivatives( ActionWithValue* a=NULL );
 /// Perform one of the tasks

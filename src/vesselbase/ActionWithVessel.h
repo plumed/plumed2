@@ -131,12 +131,8 @@ protected:
   bool usingLowMem() const ;
 /// Set that we are using low memory
   void setLowMemOption(const bool& );
-/// Get the number of tasks that are currently active
-  unsigned getCurrentNumberOfActiveTasks() const ;
 /// Get the ith of the currently active tasks
   unsigned getActiveTask( const unsigned& ii ) const ;
-/// Check whether or not a particular task is currently active
-  bool taskIsCurrentlyActive( const unsigned& index ) const ;
 /// Deactivate all the tasks in the task list
   void deactivateAllTasks();
 /// Deactivate all tasks with i in lower \f$\le\f$  i < upper
@@ -151,6 +147,10 @@ public:
   ~ActionWithVessel();
   void unlockContributors();
   void lockContributors();
+/// Get the number of tasks that are currently active
+  unsigned getCurrentNumberOfActiveTasks() const ;
+/// Check whether or not a particular task is currently active
+  bool taskIsCurrentlyActive( const unsigned& index ) const ;
   virtual void finishTaskListUpdate(){};
 /// Activate the jth colvar
 /// Deactivate the current task in future loops
@@ -168,7 +168,7 @@ public:
 /// Get the number of derivatives for final calculated quantity 
   virtual unsigned getNumberOfDerivatives()=0;
 /// Get the number of quantities that are calculated during each task
-  virtual unsigned getNumberOfQuantities();
+  virtual unsigned getNumberOfQuantities() const ;
 /// Get the number of vessels
   unsigned getNumberOfVessels() const;
 /// Get a pointer to the ith vessel
@@ -217,7 +217,7 @@ unsigned ActionWithVessel::getNumberOfVessels() const {
 }
 
 inline
-unsigned ActionWithVessel::getNumberOfQuantities(){
+unsigned ActionWithVessel::getNumberOfQuantities() const {
   return 2;
 }
 

@@ -411,15 +411,13 @@ void Keywords::print_html() const {
      for(unsigned i=0;i<keys.size();++i){
         if ( (types.find(keys[i])->second).isFlag() ) print_html_item( keys[i] );
      }
-     std::cout<<"\n";
+     std::cout<<"\n"; 
   }
-  std::cout<<"</table>\n\n";
   nkeys=0;
   for(unsigned i=0;i<keys.size();++i){
      if ( (types.find(keys[i])->second).isOptional() || (types.find(keys[i])->second).isVessel() ) nkeys++;
   }
   if( nkeys>0 ){
-     std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
      for(unsigned i=0;i<keys.size();++i){
         if ( (types.find(keys[i])->second).isOptional() || (types.find(keys[i])->second).isVessel() ) print_html_item( keys[i] );
      }
@@ -597,6 +595,9 @@ void Keywords::setComponentsIntroduction( const std::string& instr ){
 void Keywords::addOutputComponent( const std::string& name, const std::string& key, const std::string& descr ){
   plumed_assert( !outputComponentExists( name, false ) );
   plumed_massert( name.find("-")==std::string::npos,"dash is reseved character in component names" );
+
+  std::size_t num2=name.find_first_of("_");
+  if( num2!=std::string::npos ) plumed_massert( num2==0, "underscore is reserved character in component names that has special meaning"); 
 
   ckey.insert( std::pair<std::string,std::string>(name,key) );
   cdocs.insert( std::pair<std::string,std::string>(name,descr) );

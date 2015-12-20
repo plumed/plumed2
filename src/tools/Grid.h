@@ -64,6 +64,7 @@ class Value;
 class IFile;
 class OFile;
 class KernelFunctions;
+class Communicator;
 
 /// \ingroup TOOLBOX
 class Grid  
@@ -76,6 +77,7 @@ public:
 // to restore old implementation (unsigned) use the following instead:
 // typedef unsigned index_t;
 private:
+ double contour_location;
  std::vector<double> grid_;
  std::vector< std::vector<double> > der_;
 protected:
@@ -167,6 +169,10 @@ public:
  virtual double getValueAndDerivatives(index_t index, std::vector<double>& der) const ;
  virtual double getValueAndDerivatives(const std::vector<unsigned> & indices, std::vector<double>& der) const;
  virtual double getValueAndDerivatives(const std::vector<double> & x, std::vector<double>& der) const;
+/// Get the difference from the contour
+ double getDifferenceFromContour(const std::vector<double> & x, std::vector<double>& der); 
+/// Find a set of points on a contour in the function
+ void findSetOfPointsOnContour(const double& target, unsigned& npoints, std::vector<std::vector<double> >& points );
 
 /// set grid value 
  virtual void setValue(index_t index, double value);
@@ -194,7 +200,7 @@ public:
 /// dump grid on file
  virtual void writeToFile(OFile&);
 /// dump grid to gaussian cube file
- void writeCubeFile(OFile&);
+ void writeCubeFile(OFile&, const double& lunit);
 
  virtual ~Grid(){}
 
@@ -206,6 +212,8 @@ public:
  void setOutputFmt(std::string ss){fmt_=ss;}
 /// Integrate the function calculated on the grid
  double integrate( std::vector<unsigned>& npoints );
+///
+ void mpiSumValuesAndDerivatives( Communicator& comm );
 };
 
   

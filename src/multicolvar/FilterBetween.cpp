@@ -23,7 +23,7 @@
 #include "tools/HistogramBead.h"
 #include "MultiColvarFilter.h"
 
-//+PLUMEDOC MCOLVARF MFILTER_BETWEEN
+//+PLUMEDOC MFILTERS MFILTER_BETWEEN
 /*
 This action can be used to filter the distribution of colvar values in a multicolvar 
 so that one can compute the mean and so on for only those multicolvars within a certain range.

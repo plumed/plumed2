@@ -32,6 +32,7 @@ namespace adjmat {
 void AdjacencyMatrixBase::registerKeywords( Keywords& keys ){
   multicolvar::MultiColvarBase::registerKeywords( keys );
   keys.add("compulsory","WTOL","0.0","if the base multicolvars have weights then you must define a hard cutoff on those you want to consider explicitally");
+  keys.remove("LOWMEM"); keys.use("HIGHMEM");
 }
 
 AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):

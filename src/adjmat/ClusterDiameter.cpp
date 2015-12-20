@@ -19,18 +19,12 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "DFSBase.h"
+#include "ClusterAnalysisBase.h"
 #include "core/ActionRegister.h"
 
-//+PLUMEDOC MATRIXF DFSCLUSTERDIAMETER
+//+PLUMEDOC CONCOMP CLUSTER_DIAMETER
 /*
-Find the connected components in an adjacency matrix and then output the maximum radius.
-
-This action uses the DFS clustering algorithm described in \ref DFSCLUSTERING to find a set of connected components
-based on the configuration of the atoms in your system.  Once again this can be used to find crystalline nuclei or 
-bubble of atoms.  Once these connected components  you can then find the sizes of the connected components by 
-measuring the distance between the two most widely separated atoms in the connected component.  This is what is 
-done by this action.
+Print out the diameter of one of the connected components
 
 \par Examples
 
@@ -40,7 +34,7 @@ done by this action.
 namespace PLMD {
 namespace adjmat {
 
-class DFSClusterDiameter : public DFSBase {
+class ClusterDiameter : public ClusterAnalysisBase {
 private:
 /// The cluster we are looking for
   unsigned clustr;
@@ -48,7 +42,7 @@ public:
 /// Create manual
   static void registerKeywords( Keywords& keys );
 /// Constructor
-  explicit DFSClusterDiameter(const ActionOptions&);
+  explicit ClusterDiameter(const ActionOptions&);
 ///
   void calculate();
 ///
@@ -57,17 +51,16 @@ public:
   void turnOnDerivatives();
 };
 
-PLUMED_REGISTER_ACTION(DFSClusterDiameter,"DFSCLUSTERDIAMETER")
+PLUMED_REGISTER_ACTION(ClusterDiameter,"CLUSTER_DIAMETER")
 
-void DFSClusterDiameter::registerKeywords( Keywords& keys ){
-  DFSBase::registerKeywords( keys );
+void ClusterDiameter::registerKeywords( Keywords& keys ){
+  ClusterAnalysisBase::registerKeywords( keys );
   keys.add("compulsory","CLUSTER","1","which cluster would you like to look at 1 is the largest cluster, 2 is the second largest, 3 is the the third largest and so on.");
-  keys.remove("LOWMEM"); keys.use("HIGHMEM");
 }
 
-DFSClusterDiameter::DFSClusterDiameter(const ActionOptions&ao):
+ClusterDiameter::ClusterDiameter(const ActionOptions&ao):
 Action(ao),
-DFSBase(ao)
+ClusterAnalysisBase(ao)
 {
    // Find out which cluster we want
    parse("CLUSTER",clustr);
@@ -76,24 +69,22 @@ DFSBase(ao)
    if( clustr>getNumberOfNodes() ) error("cluster selected is invalid - too few atoms in system");
 
    // Create the task list
-   for(unsigned  i=1;i<getNumberOfNodes();++i){
-       for(unsigned j=0;j<i;++j) addTaskToList( i*getNumberOfNodes() + j );
+   for(unsigned  i=0;i<getNumberOfNodes();++i){
+       for(unsigned j=0;j<getNumberOfNodes();++j) addTaskToList( i*getNumberOfNodes() + j );
    }
    // Now create a higest vessel
-   addVessel("HIGHEST", "", -1); readVesselKeywords();
+   addVessel("HIGHEST", "", -1); setupAtomLists();
 }
 
-void DFSClusterDiameter::turnOnDerivatives(){
+void ClusterDiameter::turnOnDerivatives(){
    error("cannot calculate derivatives of cluster radius.  This quantity is not differentiable");
 }
 
-void DFSClusterDiameter::calculate(){
-   // Do the clustring
-   performClustering();
+void ClusterDiameter::calculate(){
    // Retrieve the atoms in the largest cluster
    std::vector<unsigned> myatoms; retrieveAtomsInCluster( clustr, myatoms );
    // Activate the relevant tasks
-   deactivateAllTasks(); std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
+   deactivateAllTasks(); std::vector<unsigned> active_tasks( getFullNumberOfTasks(), 0 );
    for(unsigned i=1;i<myatoms.size();++i){
        for(unsigned j=0;j<i;++j) active_tasks[ myatoms[i]*getNumberOfNodes() + myatoms[j] ] = 1;  
    }
@@ -102,23 +93,11 @@ void DFSClusterDiameter::calculate(){
    runAllTasks();
 }
 
-void DFSClusterDiameter::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const { 
-  unsigned iatom=current/getNumberOfNodes(), jatom = current - iatom*getNumberOfNodes();
+void ClusterDiameter::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const { 
+  unsigned iatom=std::floor(current/getNumberOfNodes()), jatom = current - iatom*getNumberOfNodes();
   Vector distance=getSeparation( getPosition(iatom), getPosition(jatom) );
-  double dd = distance.modulo(), inv = 1.0/dd ; myvals.setValue( 1, dd ); 
-  if( !doNotCalculateDerivatives() ){
-      myvals.addDerivative( 1, 3*iatom + 0, -inv*distance[0] );
-      myvals.addDerivative( 1, 3*iatom + 1, -inv*distance[1] );
-      myvals.addDerivative( 1, 3*iatom + 2, -inv*distance[2] );
-      myvals.addDerivative( 1, 3*jatom + 0, +inv*distance[0] );
-      myvals.addDerivative( 1, 3*jatom + 1, +inv*distance[1] );
-      myvals.addDerivative( 1, 3*jatom + 2, +inv*distance[2] );
-      Tensor vir = -inv*Tensor(distance,distance);
-      unsigned vbase = myvals.getNumberOfDerivatives() - 9;
-      for(unsigned i=0;i<3;++i){
-          for(unsigned j=0;j<3;++j) myvals.addDerivative( 1, vbase+3*i+j, vir(i,j) );
-      }
-  }
+  double dd = distance.modulo(), inv = 1.0/dd ; 
+  myvals.setValue( 0, 1.0 ); myvals.setValue( 1, dd ); 
 }
 
 }

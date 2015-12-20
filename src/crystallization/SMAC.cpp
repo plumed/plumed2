@@ -23,6 +23,15 @@
 #include "core/ActionRegister.h"
 #include "tools/KernelFunctions.h"
 
+//+PLUMEDOC MCOLVARF SMAC
+/*
+Calculate the SMAC collective variable discussed in \cite smac-paper
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace crystallization {
 

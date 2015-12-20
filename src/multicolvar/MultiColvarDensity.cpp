@@ -44,7 +44,7 @@ namespace multicolvar {
 
 //+PLUMEDOC ANALYSIS MULTICOLVARDENS
 /*
-Dump atom positions and multicolvar on a file.
+Evaluate the average value of a multicolvar on a grid.
 
 \par Examples
 
@@ -94,10 +94,10 @@ void MultiColvarDensity::registerKeywords( Keywords& keys ){
   keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
   keys.add("compulsory","KERNEL","gaussian","the kernel function you are using.  More details on  the kernels available "
                                             "in plumed plumed can be found in \\ref kernelfunctions.");
-  keys.add("compulsory","OFILE","density","the file on which to write the profile");
+  keys.add("compulsory","OFILE","density","the file on which to write the profile. If you use the extension .cube a Gaussian cube file will be output "
+                                          "if you run with the xyz option for DIR");
   keys.addFlag("FRACTIONAL",false,"use fractional coordinates on the x-axis");
   keys.addFlag("NOMEMORY",false,"do a block averaging rather than a cumulative average");
-  keys.addFlag("DUMP_CUBE",false,"write out a Gaussian cube file to visualise the three dimensional density");
 }
 
 MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
@@ -120,8 +120,8 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
   plumed_assert( getDependencies().size()==1 ); 
   if(!mycolv) error("action labeled " + mycolv->getLabel() + " is not a multicolvar");
 
-  parse("OFILE",filename); parse("RUN",rstride);
-  if(filename.length()==0) error("name out output file was not specified");
+  parse("RUN",rstride);
+  log.printf("  storing data every %d steps and calculating density every %u steps \n", getStride(), rstride );
 
   parseVector("NBINS",nbins); parseFlag("NOMEMORY",nomemory);
   parse("KERNEL",kerneltype); parseVector("BANDWIDTH",bw); parseFlag("FRACTIONAL",fractional);
@@ -159,8 +159,16 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
      error( direction + " is not valid gradient direction");
   } 
   log.printf(" for colvars calculated by action %s \n",mycolv->getLabel().c_str() );
-  parseFlag("DUMP_CUBE",cube);
+
+  parse("OFILE",filename); 
+  if(filename.length()==0) error("name out output file was not specified");
+
+  std::size_t dot=filename.find_first_of(".");
+  if( filename.substr(dot+1)=="cube" ) cube=true;
+  else cube=false;
+
   if( cube && directions.size()!=3 ) error("can only dump gaussian cube file with three dimensional plots");
+  printf("  printing densities to file named %s \n",filename.c_str() );
 
   checkRead(); requestAtoms(atom); 
   // Stupid dependencies cleared by requestAtoms - why GBussi why? That's got me so many times
@@ -212,14 +220,18 @@ void MultiColvarDensity::update(){
   Vector origin = getPosition(0); std::vector<double> pp( directions.size() ); Vector fpos;
   std::vector<Value*> vals; for(unsigned i=0;i<directions.size();++i) vals.push_back( new Value() );
   for(unsigned i=0;i<mycolv->getFullNumberOfTasks();++i){
+      // Skip if task was not active on last run through
+      if( !mycolv->taskIsCurrentlyActive(i) ) continue ;
+
       stash->retrieveValue( i, false, cvals );
       Vector apos = pbcDistance( mycolv->getCentralAtomPos( mycolv->getTaskCode(i) ), origin );
       if( fractional ){ fpos = getPbc().realToScaled( apos ); } else { fpos=apos; }
       for(unsigned j=0;j<directions.size();++j) pp[j]=fpos[ directions[j] ];
       KernelFunctions kernel( pp, bw, kerneltype, "DIAGONAL", cvals[0]*cvals[1] );
-      kernel.normalize( vals ); gg->addKernel( kernel ); norm += cvals[0];    
+      kernel.normalize( vals ); gg->addKernel( kernel ); 
   }
   for(unsigned i=0;i<directions.size();++i) delete vals[i];
+  norm += 1.0;
 
   // Output and reset the counter if required
   if( getStep()%rstride==0 ){  // && getStep()>0 ){
@@ -228,8 +240,12 @@ void MultiColvarDensity::update(){
 
       OFile gridfile; gridfile.link(*this); gridfile.setBackupString("analysis");
       gridfile.open( filename ); 
-      if( cube ) gg->writeCubeFile( gridfile );
-      else gg->writeToFile( gridfile ); 
+      if( cube ){
+         // Cube files are in au so I convert from "Angstrom" to AU so that when
+         // VMD converts this number back to Angstroms (from AU) it looks right
+         if( plumed.getAtoms().usingNaturalUnits() ) gg->writeCubeFile( gridfile, 1.0/0.5292 );  
+         else gg->writeCubeFile( gridfile, plumed.getAtoms().getUnits().getLength()/.05929 );
+      } else gg->writeToFile( gridfile ); 
       gridfile.close();
 
       if( nomemory ){ 

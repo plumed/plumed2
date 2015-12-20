@@ -19,9 +19,9 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "DFSBase.h"
-#include "AdjacencyMatrixBase.h"
+#include "ClusteringBase.h"
 #include "AdjacencyMatrixVessel.h"
+#include "core/ActionRegister.h"
 
 #ifdef __PLUMED_HAS_BOOST_GRAPH
 #include <boost/graph/adjacency_list.hpp>    
@@ -29,19 +29,51 @@
 #include <boost/graph/graph_utility.hpp>
 #endif
 
+//+PLUMEDOC MATRIXF DFSCLUSTERING
+/*
+Find the connected components of the matrix using the DFS clustering algorithm.
+
+\par Examples 
+
+*/
+//+ENDPLUMEDOC 
+
 namespace PLMD {
 namespace adjmat {
 
-void DFSBase::registerKeywords( Keywords& keys ){
-  ActionWithInputMatrix::registerKeywords( keys );
+class DFSClustering : public ClusteringBase {
+private:
+#ifdef __PLUMED_HAS_BOOST_GRAPH
+/// The list of edges in the graph
+  std::vector<std::pair<unsigned,unsigned> > edge_list;
+#else
+/// The number of neighbors each atom has
+  std::vector<unsigned> nneigh;
+/// The adjacency list
+  Matrix<unsigned> adj_list;
+/// The color that tells us whether a node has been visited
+  std::vector<unsigned> color;
+/// The recursive function at the heart of this method
+  int explore( const unsigned& index );
+#endif
+public:
+/// Create manual
+  static void registerKeywords( Keywords& keys );
+/// Constructor
+  explicit DFSClustering(const ActionOptions&);
+/// Do the clustering
+  void performClustering();
+};
+
+PLUMED_REGISTER_ACTION(DFSClustering,"DFSCLUSTERING")
+
+void DFSClustering::registerKeywords( Keywords& keys ){
+  ClusteringBase::registerKeywords( keys );
 }
 
-DFSBase::DFSBase(const ActionOptions&ao):
+DFSClustering::DFSClustering(const ActionOptions&ao):
 Action(ao),
-ActionWithInputMatrix(ao),
-cluster_sizes(getNumberOfNodes()),
-which_cluster(getNumberOfNodes()),
-number_of_cluster(-1),
+ClusteringBase(ao),
 #ifdef __PLUMED_HAS_BOOST_GRAPH
 edge_list(0.5*getNumberOfNodes()*(getNumberOfNodes()-1))
 #else
@@ -50,27 +82,9 @@ adj_list(getNumberOfNodes(),getNumberOfNodes()),
 color(getNumberOfNodes())
 #endif
 {
-   if( getNumberOfNodeTypes()!=1 ) error("should only be running DFS Clustering with one base multicolvar in function");
-   if( !getAdjacencyVessel()->undirectedGraph() ) error("input contact matrix is incompatible with DFS clustering");  
 }
 
-void DFSBase::turnOnDerivatives(){
-   // Check base multicolvar isn't density probably other things shouldn't be allowed here as well
-   if( getBaseMultiColvar(0)->isDensity() ) error("DFS clustering cannot be differentiated if base multicolvar is DENSITY");
-
-   // Check for dubious vessels
-   for(unsigned i=0;i<getNumberOfVessels();++i){
-      if( getPntrToVessel(i)->getName()=="MEAN" ) error("MEAN of cluster is not differentiable");
-      if( getPntrToVessel(i)->getName()=="VMEAN" ) error("VMEAN of cluster is not differentiable");  
-   }
-   
-   // Ensure that derivatives are turned on in base classes
-   ActionWithInputMatrix::turnOnDerivatives();
-}
-
-void DFSBase::performClustering(){
-   // All the clusters have zero size initially
-   for(unsigned i=0;i<cluster_sizes.size();++i){ cluster_sizes[i].first=0; cluster_sizes[i].second=i; }
+void DFSClustering::performClustering(){
 #ifdef __PLUMED_HAS_BOOST_GRAPH
    // Get the list of edges
    unsigned nedges=0; getAdjacencyVessel()->retrieveEdgeList( nedges, edge_list );
@@ -93,12 +107,10 @@ void DFSBase::performClustering(){
       if( color[i]==0 ){ number_of_cluster++; color[i]=explore(i); } 
    }
 #endif
-   // Order the clusters in the system by size (this returns ascending order )
-   std::sort( cluster_sizes.begin(), cluster_sizes.end() );
 }
 
 #ifndef __PLUMED_HAS_BOOST_GRAPH
-int DFSBase::explore( const unsigned& index ){
+int DFSClustering::explore( const unsigned& index ){
 
    color[index]=1;
    for(unsigned i=0;i<nneigh[index];++i){
@@ -112,13 +124,6 @@ int DFSBase::explore( const unsigned& index ){
    return color[index];
 }
 #endif
-
-void DFSBase::retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const {
-   unsigned n=0; myatoms.resize( cluster_sizes[cluster_sizes.size() - clust].first );
-   for(unsigned i=0;i<getNumberOfNodes();++i){
-      if( which_cluster[i]==cluster_sizes[cluster_sizes.size() - clust].second ){ myatoms[n]=i; n++; }
-   }
-}
 
 }
 }

@@ -26,7 +26,7 @@
 #include "tools/Pbc.h"
 #include "ActionVolume.h"
 
-//+PLUMEDOC MCOLVARF CAVITY
+//+PLUMEDOC VOLUMES CAVITY
 /*
 This quantity can be used to calculate functions of the distribution of collective 
 variables for the atoms that lie in a box defined by the positions of four atoms.

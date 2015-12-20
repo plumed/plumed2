@@ -24,7 +24,7 @@
 #include "tools/SwitchingFunction.h"
 #include "ActionVolume.h"
 
-//+PLUMEDOC MCOLVARF INCYLINDER
+//+PLUMEDOC VOLUMES INCYLINDER
 /*
 This quantity can be used to calculate functions of the distribution of collective 
 variables for the atoms that lie in a particular, user-specified part of of the cell.

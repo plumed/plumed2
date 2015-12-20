@@ -431,7 +431,7 @@ if test $zlib == true ; then
 fi
 if test $almost == true ; then
   bz2=ko
-  AC_CHECK_HEADER([bzlib.h], AC_SEARCH_LIBS([BZ2_bzReadOpen], [bz2], [bz2=ok] ))
+  AC_CHECK_HEADER([bzlib.h], AC_SEARCH_LIBS([BZ2_bzReadOpen], [bz2], [bz2=ok]))
   found=ko
   if test $bz2 == ok; then
     AC_CHECK_HEADER([almost.h], AC_SEARCH_LIBS([init_camshift], [Alm], [found=ok] , AC_MSG_NOTICE(["Almost not found"]), [-lsqlite3 -lz -lbz2 -lnbimpl -lshx]))
@@ -439,8 +439,12 @@ if test $almost == true ; then
     AC_CHECK_HEADER([almost.h], AC_SEARCH_LIBS([init_camshift], [Alm], [found=ok] , AC_MSG_NOTICE(["Almost not found"]), [-lsqlite3 -lz -lnbimpl -lshx]))
   fi
   if test $found == ok; then
-    AC_DEFINE([__PLUMED_HAS_ALMOST]) 
-    LIBS="$LIBS -lsqlite3 -lz -lbz2 -lnbimpl -lshx"
+    AC_DEFINE([__PLUMED_HAS_ALMOST])
+    if test $bz2 == ok; then 
+      LIBS="$LIBS -lsqlite3 -lz -lbz2 -lnbimpl -lshx"
+    else
+      LIBS="$LIBS -lsqlite3 -lz -lnbimpl -lshx"
+    fi
   else 
     AC_MSG_ERROR([--enable-almost: cannot find almost])
   fi
