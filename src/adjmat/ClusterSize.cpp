@@ -71,7 +71,7 @@ ClusterAnalysisBase(ao)
    // Create all tasks by copying those from underlying DFS object (which is actually MultiColvar)
    for(unsigned i=0;i<getNumberOfNodes();++i) addTaskToList(i);
    // And now finish the setup of everything in the base
-   setupAtomLists(); addValue(); setNotPeriodic();
+   setupAtomLists( true ); addValue(); setNotPeriodic();
 }
 
 void ClusterSize::turnOnDerivatives(){

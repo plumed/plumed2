@@ -177,7 +177,7 @@ void WillardChandlerSurface::update(){
   Vector origin = getPosition(0); std::vector<double> pp( 3 ); Vector fpos;
 
   unsigned rank=comm.Get_rank(), size=comm.Get_size();
-
+  std::vector<Value*> vals; for(unsigned i=0;i<3;++i) vals.push_back( new Value() );
   for(unsigned i=rank;i<mycolv->getFullNumberOfTasks();i+=size){
       // Skip if task was not active on last run through
       if( !mycolv->taskIsCurrentlyActive(i) ) continue ;
@@ -188,9 +188,10 @@ void WillardChandlerSurface::update(){
       // fpos = getPbc().realToScaled( apos ); Ideally want to do with scaled coordinates eventually GAT
       for(unsigned j=0;j<3;++j) pp[j]=apos[j];
 
-      KernelFunctions kernel( pp, bw, kerneltype, false, cvals[0]*cvals[1], true );
-      gg.addKernel( kernel ); 
+      KernelFunctions kernel( pp, bw, kerneltype, "DIAGONAL", cvals[0]*cvals[1] );
+      kernel.normalize( vals ); gg.addKernel( kernel ); 
   }
+  for(unsigned i=0;i<3;++i) delete vals[i];
   gg.mpiSumValuesAndDerivatives( comm );
 
   unsigned npoints=0; std::vector<std::vector<double> > contour_points;

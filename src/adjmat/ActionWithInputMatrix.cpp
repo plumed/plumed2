@@ -60,7 +60,7 @@ mymatrix(NULL)
       log.printf("  using matrix calculated by action %s \n",(mymatrix->function)->getLabel().c_str() );
 
       // And now finish the setup of everything in the base
-      setupAtomLists();
+      setupAtomLists( true );
   }
 }
 

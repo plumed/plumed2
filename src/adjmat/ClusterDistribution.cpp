@@ -83,7 +83,7 @@ nderivatives(0)
    for(unsigned i=0;i<getNumberOfNodes();++i) addTaskToList(i);
 
    // And now finish the setup of everything in the base
-   setupAtomLists();
+   setupAtomLists( true );
 }
 
 void ClusterDistribution::calculate(){

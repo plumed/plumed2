@@ -95,7 +95,7 @@ ClusteringBase(ao)
    rcut_surf2=rcut_surf*rcut_surf;
 
    // And now finish the setup of everything in the base
-   setupAtomLists();
+   setupAtomLists( true );
 }
 
 unsigned ClusterWithSurface::getNumberOfDerivatives(){
