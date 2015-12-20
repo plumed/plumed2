@@ -144,6 +144,9 @@ public:
 /// vector-matrix multiplication
   template<unsigned n_,unsigned m_>
   friend VectorGeneric<n_> matmul(const VectorGeneric<m_>&,const TensorGeneric<m_,n_>&);
+/// vector-vector multiplication (maps to dotProduct)
+  template<unsigned n_>
+  friend double matmul(const VectorGeneric<n_>&,const VectorGeneric<n_>&);
 /// matrix-matrix-matrix multiplication
   template<unsigned n_,unsigned m_,unsigned l_,unsigned i_>
   friend TensorGeneric<n_,i_> matmul(const TensorGeneric<n_,m_>&,const TensorGeneric<m_,l_>&,const TensorGeneric<l_,i_>&);
@@ -153,6 +156,9 @@ public:
 /// vector-matrix-matrix multiplication
   template<unsigned n_,unsigned m_,unsigned l_>
   friend VectorGeneric<l_> matmul(const VectorGeneric<n_>&,const TensorGeneric<n_,m_>&,const TensorGeneric<m_,l_>&);
+/// vector-matrix-vector multiplication
+  template<unsigned n_,unsigned m_>
+  friend double matmul(const VectorGeneric<n_>&,const TensorGeneric<n_,m_>&,const VectorGeneric<m_>&);
 /// returns the determinant of a tensor
   friend double determinant(const TensorGeneric<3,3>&);
 /// returns the inverse of a tensor (same as inverse())
@@ -377,6 +383,11 @@ VectorGeneric<n> matmul(const VectorGeneric<m>&a,const TensorGeneric<m,n>&b){
   return t;
 }
 
+template<unsigned n_>
+double matmul(const VectorGeneric<n_>&a,const VectorGeneric<n_>&b){
+  return dotProduct(a,b);
+}
+
 template<unsigned n,unsigned m,unsigned l,unsigned i>
 TensorGeneric<n,i> matmul(const TensorGeneric<n,m>&a,const TensorGeneric<m,l>&b,const TensorGeneric<l,i>&c){
   return matmul(matmul(a,b),c);
@@ -389,6 +400,11 @@ VectorGeneric<n> matmul(const TensorGeneric<n,m>&a,const TensorGeneric<m,l>&b,co
 
 template<unsigned n,unsigned m,unsigned l> 
 VectorGeneric<l> matmul(const VectorGeneric<n>&a,const TensorGeneric<n,m>&b,const TensorGeneric<m,l>&c){
+  return matmul(matmul(a,b),c);
+}
+
+template<unsigned n,unsigned m>
+double matmul(const VectorGeneric<n>&a,const TensorGeneric<n,m>&b,const VectorGeneric<m>&c){
   return matmul(matmul(a,b),c);
 }
 
