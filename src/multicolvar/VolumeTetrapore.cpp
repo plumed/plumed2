@@ -26,7 +26,7 @@
 #include "tools/Pbc.h"
 #include "ActionVolume.h"
 
-//+PLUMEDOC MCOLVARF TETRAHEDRALPORE 
+//+PLUMEDOC VOLUMES TETRAHEDRALPORE 
 /*
 
 */

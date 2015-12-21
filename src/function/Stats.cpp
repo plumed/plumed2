@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -96,8 +96,8 @@ sqdonly(false)
 
   parseFlag("SQDEVSUM",sqdonly);
 
-  if(!arg2.empty()) log.printf("  using %lu parameters from inactive actions:", arg2.size());
-  else              log.printf("  using %lu parameters:", arg2.size());
+  if(!arg2.empty()) log.printf("  using %zu parameters from inactive actions:", arg2.size());
+  else              log.printf("  using %zu parameters:", arg2.size());
   for(unsigned i=0;i<parameters.size();i++) log.printf(" %f",parameters[i]);
   log.printf("\n");
 

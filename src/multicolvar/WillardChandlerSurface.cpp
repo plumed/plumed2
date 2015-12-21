@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -179,6 +179,9 @@ void WillardChandlerSurface::update(){
   unsigned rank=comm.Get_rank(), size=comm.Get_size();
 
   for(unsigned i=rank;i<mycolv->getFullNumberOfTasks();i+=size){
+      // Skip if task was not active on last run through
+      if( !mycolv->taskIsCurrentlyActive(i) ) continue ;
+
       stash->retrieveValue( i, false, cvals );
       Vector apos = pbcDistance( mycolv->getCentralAtomPos( mycolv->getTaskCode(i) ), origin );
 

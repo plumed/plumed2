@@ -40,7 +40,7 @@ namespace PLMD
 {
 namespace multicolvar {
 
-//+PLUMEDOC MCOLVARA DUMPMULTICOLVAR 
+//+PLUMEDOC GENERIC DUMPMULTICOLVAR 
 /*
 Dump atom positions and multicolvar on a file.
 
@@ -145,7 +145,7 @@ DumpMultiColvar::DumpMultiColvar(const ActionOptions&ao):
 }
 
 void DumpMultiColvar::update(){
-  of.printf("%u\n",mycolv->getFullNumberOfTasks());
+  of.printf("%u\n",mycolv->getCurrentNumberOfActiveTasks());
   const Tensor & t(mycolv->getPbc().getBox());
   if(mycolv->getPbc().isOrthorombic()){
     of.printf((" "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+"\n").c_str(),lenunit*t(0,0),lenunit*t(1,1),lenunit*t(2,2));
@@ -162,6 +162,7 @@ void DumpMultiColvar::update(){
   for(unsigned i=0;i<mycolv->getFullNumberOfTasks();++i){
     const char* defname="X";
     const char* name=defname;
+    if( !mycolv->taskIsCurrentlyActive(i) ) continue;
 
     Vector apos = mycolv->getCentralAtomPos( mycolv->getTaskCode(i) );
     if( getNumberOfAtoms()>0 ) apos=pbcDistance( apos, getPosition(0) );

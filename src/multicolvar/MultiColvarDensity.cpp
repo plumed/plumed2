@@ -44,7 +44,7 @@ namespace multicolvar {
 
 //+PLUMEDOC ANALYSIS MULTICOLVARDENS
 /*
-Dump atom positions and multicolvar on a file.
+Evaluate the average value of a multicolvar on a grid.
 
 \par Examples
 
@@ -219,6 +219,9 @@ void MultiColvarDensity::update(){
   plumed_dbg_assert( stash ); std::vector<double> cvals( mycolv->getNumberOfQuantities() );
   Vector origin = getPosition(0); std::vector<double> pp( directions.size() ); Vector fpos;
   for(unsigned i=0;i<mycolv->getFullNumberOfTasks();++i){
+      // Skip if task was not active on last run through
+      if( !mycolv->taskIsCurrentlyActive(i) ) continue ;
+
       stash->retrieveValue( i, false, cvals );
       Vector apos = pbcDistance( mycolv->getCentralAtomPos( mycolv->getTaskCode(i) ), origin );
       if( fractional ){ fpos = getPbc().realToScaled( apos ); } else { fpos=apos; }
@@ -239,7 +242,7 @@ void MultiColvarDensity::update(){
          // Cube files are in au so I convert from "Angstrom" to AU so that when
          // VMD converts this number back to Angstroms (from AU) it looks right
          if( plumed.getAtoms().usingNaturalUnits() ) gg->writeCubeFile( gridfile, 1.0/0.5292 );  
-         else gg->writeCubeFile( gridfile, plumed.getAtoms().getUnits().getLength()/5.929 );
+         else gg->writeCubeFile( gridfile, plumed.getAtoms().getUnits().getLength()/.05929 );
       } else gg->writeToFile( gridfile ); 
       gridfile.close();
 

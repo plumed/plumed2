@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_multicolvar_AdjacencyMatrixVessel_h
-#define __PLUMED_multicolvar_AdjacencyMatrixVessel_h
+#ifndef __PLUMED_adjmat_AdjacencyMatrixVessel_h
+#define __PLUMED_adjmat_AdjacencyMatrixVessel_h
 
 #include "vesselbase/StoreDataVessel.h" 
 #include "multicolvar/MultiColvarBase.h"
