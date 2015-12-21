@@ -97,6 +97,8 @@ For users:
 
 
 For developers:
+- Vector and Tensor now support direct output with `<<`.
+- Added some missing matmul operation Vector and Tensor.
 - ./configure is automatically relaunched when changing ./configure or Makefile.conf. This makes it more robust
   to switch between branches.
 
