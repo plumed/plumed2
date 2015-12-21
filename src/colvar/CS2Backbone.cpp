@@ -33,10 +33,6 @@
 using namespace std;
 using namespace Almost;
 
-string CamShift3::RingInfo::atomNames[4][6];
-string CamShift3::RingInfo::types[4];
-int    CamShift3::RingInfo::init_ = 0;
-
 namespace PLMD{
 
 //+PLUMEDOC COLVAR CS2BACKBONE 
@@ -295,8 +291,6 @@ noexp(false)
   /* done */
 
   log.printf("  Setting parameters ...\n"); log.flush();
-  unsigned stride=comm.Get_size();
-  unsigned rank=comm.Get_rank();
   
   a.set_box_nupdate(neigh_f);
   cam_list.push_back(a);

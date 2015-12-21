@@ -306,7 +306,9 @@ namespace Almost {
 
       vector<vector<int> > box_nb;
  
-      Fragment() { 
+      Fragment() {
+	res_type_prev = res_type_curr = res_type_next = -1;
+        res_kind = fd = -1;
         box_nb.resize(6); 
         for(unsigned int i=0;i<6;i++) box_nb[i].resize(1000);
         pos.resize(6); 
@@ -323,7 +325,7 @@ namespace Almost {
       enum ring_t {R_PHE, R_TYR, R_TRP1, R_TRP2, R_HIS};
       int rtype;
       // up to six member per ring
-      int atom [6];
+      int atom[6];
       // number of ring members (5 or 6)
       int numAtoms;
       // center of ring coordinates
@@ -336,9 +338,33 @@ namespace Almost {
       vector<double> n1;
       vector<double> n2;
       //Static
-      static string atomNames[4][6];
-      static string types[4];
-      static int    init_;
+      string atomNames[4][6];
+      string types[4];
+      int    init_;
+      RingInfo() {
+        if(RingInfo::init_ != 1){
+          vector<string> pheTyr_n = AminoAcid::phe_ring(); 
+          vector<string> trp1_n   = AminoAcid::trp1_ring();
+          vector<string> trp2_n   = AminoAcid::trp2_ring();
+          vector<string> his_n    = AminoAcid::his_ring();
+          // assign to multidim array for easier access
+          
+          for (int i = 0; i < 6; i++){
+            atomNames[0][i] = pheTyr_n[i];
+            atomNames[1][i] = trp1_n[i];
+            if (i < 5){
+              atomNames[2][i] = trp2_n[i];
+              atomNames[3][i] = his_n[i];
+            }
+          }
+ 
+          types[0] = "PHE";
+          types[1] = "TYR";
+          types[2] = "TRP";
+          types[3] = "HIS";
+          init_  = 1;      
+        }
+      } 
     };
 
     vector<RingInfo> ringInfo;
@@ -357,28 +383,6 @@ namespace Almost {
     vector<vector<Fragment> > atom;
   
     CamShift3(const Molecules & molecules, string file):db(file){
-      if(RingInfo::init_ != 1){
-	vector<string> pheTyr_n = AminoAcid::phe_ring(); 
-	vector<string> trp1_n   = AminoAcid::trp1_ring();
-	vector<string> trp2_n   = AminoAcid::trp2_ring();
-	vector<string> his_n    = AminoAcid::his_ring();
-	// assign to multidim array for easier access
-	
-	for (int i = 0; i < 6; i++){
-	  RingInfo::atomNames[0][i] = pheTyr_n[i];
-	  RingInfo::atomNames[1][i] = trp1_n[i];
-	  if (i < 5){
-	    RingInfo::atomNames[2][i] = trp2_n[i];
-	    RingInfo::atomNames[3][i] = his_n[i];
-	  }
-	}
-
-	RingInfo::types[0] = "PHE";
-	RingInfo::types[1] = "TYR";
-	RingInfo::types[2] = "TRP";
-	RingInfo::types[3] = "HIS";
-	RingInfo::init_  = 1;      
-      }
       //Init
       init_backbone(molecules);
       init_sidechain(molecules);
@@ -717,7 +721,7 @@ namespace Almost {
 		  double dn = d[0]*n[0] + d[1]*n[1] + d[2]*n[2];
 		  double dn2 = dn * dn;
 		
-  		  int aPos[ringInfo[i].numAtoms];
+  		  int aPos[6];
   		  for (int j = 0; j < ringInfo[i].numAtoms; j++) aPos[j] = CSDIM*ringInfo[i].atom[j];
 
 		  // here we save the necessity of calculating the angle first and then the cos, 
@@ -1285,7 +1289,7 @@ namespace Almost {
 	  for(unsigned int a=0;a<frg_atoms.size();a++){
 	    for(unsigned int aa=0;aa<6;aa++){
 	      int atm = frg_atoms[a];
-	      if(m[atm].name()==RingInfo::atomNames[ri.type][aa]){
+	      if(m[atm].name()==ri.atomNames[ri.type][aa]){
 		ri.atom[aa] = atm;
 		break;
 	      }
@@ -1305,7 +1309,7 @@ namespace Almost {
 	    for(unsigned int a=0;a<frg_atoms.size();a++){
 	      for(unsigned int aa=0;aa<6;aa++){
 		int atm = frg_atoms[a];
-		if(m[atm].name()==RingInfo::atomNames[ri.type][aa]){
+		if(m[atm].name()==ri.atomNames[ri.type][aa]){
 		  ri.atom[aa] = atm;
 		  break;
 		}
@@ -1323,7 +1327,7 @@ namespace Almost {
 	    for(unsigned int a=0;a<frg_atoms.size();a++){
 	      for(unsigned int aa=0;aa<5;aa++){
 		int atm = frg_atoms[a];
-		if(m[atm].name()==RingInfo::atomNames[ri.type][aa]){
+		if(m[atm].name()==ri.atomNames[ri.type][aa]){
 		  ri.atom[aa] = atm;
 		  break;
 		}
@@ -1341,7 +1345,7 @@ namespace Almost {
 	  for(unsigned int a=0;a<frg_atoms.size();a++){
 	    for(unsigned int aa=0;aa<5;aa++){
 	      int atm = frg_atoms[a];
-	      if(m[atm].name()==RingInfo::atomNames[ri.type][aa]){
+	      if(m[atm].name()==ri.atomNames[ri.type][aa]){
 		ri.atom[aa] = atm;
 		break;
 	      }
@@ -1357,7 +1361,7 @@ namespace Almost {
     void compute_ring_parameters(const vector<double> & coor){
       for(unsigned int i=0;i<ringInfo.size();i++){
 	int size = ringInfo[i].numAtoms;
-	double a[size][3];
+	double a[6][3];
 	for(int j = 0; j < size; j++)
 	  for(unsigned int d=0;d<3;d++){
 	    a[j][d] = coor[CSDIM*ringInfo[i].atom[j]+d];
