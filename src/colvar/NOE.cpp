@@ -68,6 +68,7 @@ private:
   bool             pbc;
   bool             serial;
   vector<unsigned> nga;
+  vector<double>   noedist;
   NeighborList     *nl;
 public:
   static void registerKeywords( Keywords& keys );
@@ -88,6 +89,8 @@ void NOE::registerKeywords( Keywords& keys ){
                    "calculated for each ATOM keyword you specify.");
   keys.reset_style("GROUPA","atoms");
   keys.reset_style("GROUPB","atoms");
+  keys.addFlag("ADDDISTANCES",false,"Set to TRUE if you want to have fixed components with the experimetnal values.");  
+  keys.add("numbered","NOEDIST","Add an experimental value for each NOE.");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   keys.addOutputComponent("noe","default","the # NOE");
 }
@@ -125,6 +128,20 @@ serial(false)
   // Create neighbour lists
   nl= new NeighborList(ga_lista,gb_lista,true,pbc,getPbc());
 
+  bool addistance=false;
+  parseFlag("ADDDISTANCES",addistance);
+
+  if(addistance) {
+    noedist.resize( nga.size() ); 
+    unsigned ntarget=0;
+
+    for(unsigned i=0;i<nga.size();++i){
+       if( !parseNumbered( "NOEDIST", i+1, noedist[i] ) ) break;
+       ntarget++; 
+    }
+    if( ntarget!=nga.size() ) error("found wrong number of NOEDIST values");
+  }
+
   // Ouput details of all contacts
   unsigned index=0; 
   for(unsigned i=0;i<nga.size();++i){
@@ -144,6 +161,15 @@ serial(false)
     std::string num; Tools::convert(i,num);
     addComponentWithDerivatives("noe_"+num);
     componentIsNotPeriodic("noe_"+num);
+  }
+
+  if(addistance) {
+    for(unsigned i=0;i<nga.size();i++) {
+      std::string num; Tools::convert(i,num);
+      addComponent("exp_"+num);
+      componentIsNotPeriodic("exp_"+num);
+      Value* comp=getPntrToComponent("exp_"+num); comp->set(noedist[i]);
+    }
   }
 
   requestAtoms(nl->getFullAtomList());

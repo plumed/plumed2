@@ -156,7 +156,7 @@ void RDC::registerKeywords( Keywords& keys ){
   keys.addFlag("SERIAL",false,"Set to TRUE if you want to run the CV in serial.");  
   keys.addFlag("SVD",false,"Set to TRUE if you want to backcalculate using Single Value Decomposition (need GSL at compilation time)."); 
   keys.addFlag("ADDCOUPLINGS",false,"Set to TRUE if you want to have fixed components with the experimetnal values.");  
-  keys.add("numbered","COUPLING","Add an experimental value for each coupling (only for SVD).");
+  keys.add("numbered","COUPLING","Add an experimental value for each coupling (needed by SVD and usefull for \ref STATS).");
   keys.addOutputComponent("rdc","default","the calculated # RDC");
   keys.addOutputComponent("exp","SVD/ADDCOUPLINGS","the experimental # RDC");
 }
@@ -215,9 +215,8 @@ Const(0.3356806)
   bool addcoupling=false;
   parseFlag("ADDCOUPLINGS",addcoupling);
 
-
   if(svd||addcoupling) {
-    coupl.resize( atoms.size()/2 ); 
+    coupl.resize( ndata ); 
     ntarget=0;
 
     for(unsigned i=0;i<ndata;++i){
