@@ -171,6 +171,10 @@ public:
   friend TensorGeneric<n_,m_> extProduct(const VectorGeneric<n>&,const VectorGeneric<m>&);
   friend TensorGeneric<3,3> dcrossDv1(const VectorGeneric<3>&,const VectorGeneric<3>&);
   friend TensorGeneric<3,3> dcrossDv2(const VectorGeneric<3>&,const VectorGeneric<3>&);
+/// << operator.
+/// Allows printing tensor `t` with `std::cout<<t;`
+  template<unsigned n_,unsigned m_>
+  friend std::ostream & operator<<(std::ostream &os, const TensorGeneric<n_,m_>&);
 };
 
 template<unsigned n,unsigned m>
@@ -444,6 +448,15 @@ TensorGeneric<3,3> dcrossDv2(const VectorGeneric<3>&v1,const VectorGeneric<3>&v2
     0.0,-v1[2],v1[1],
     v1[2],0.0,-v1[0],
     -v1[1],v1[0],0.0);
+}
+
+template<unsigned n,unsigned m>
+std::ostream & operator<<(std::ostream &os, const TensorGeneric<n,m>& t){
+  for(unsigned i=0;i<n;i++)for(unsigned j=0;j<m;j++){
+    if(i!=(n-1) || j!=(m-1)) os<<t(i,j)<<" ";
+    else os<<t(i,j);
+  }
+  return os;
 }
 
 /// \ingroup TOOLBOX
