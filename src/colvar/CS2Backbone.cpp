@@ -127,7 +127,6 @@ class CS2Backbone : public Colvar {
   vector<CamShift3> cam_list;
   Molecules molecules;
   unsigned  numResidues;
-  bool serial;
   bool pbc;
   bool noexp;
   double **sh;
@@ -146,7 +145,6 @@ PLUMED_REGISTER_ACTION(CS2Backbone,"CS2BACKBONE")
 
 void CS2Backbone::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords( keys );
-  keys.addFlag("PARALLEL",false,"Perform the calculation in parallel - (experimental, bad scaling).");
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
   keys.add("compulsory","DATA","data/","The folder with the experimental chemical shifts.");
   keys.add("compulsory","FF","a03_gromacs.mdb","The ALMOST force-field to map the atoms' names.");
@@ -172,7 +170,6 @@ void CS2Backbone::registerKeywords( Keywords& keys ){
 
 CS2Backbone::CS2Backbone(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
-serial(true),
 pbc(true),
 noexp(false)
 {
@@ -185,10 +182,6 @@ noexp(false)
   pbc=!nopbc;
 
   parseFlag("NOEXP",noexp);
-
-  bool parallel=false;
-  parseFlag("PARALLEL",parallel);
-  serial=!parallel;
 
   string stringa_data;
   parse("DATA",stringa_data);
@@ -304,9 +297,6 @@ noexp(false)
   log.printf("  Setting parameters ...\n"); log.flush();
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
-  if(serial) {stride=1; rank=0;}
-  if(stride>1) log.printf("  Parallelized over %u processors\n", stride);
-  a.set_mpi(stride, rank);
   
   a.set_box_nupdate(neigh_f);
   cam_list.push_back(a);
@@ -414,11 +404,6 @@ void CS2Backbone::calculate()
   }
 
   cam_list[0].new_calc_cs(coor, csforces, N, sh);
-
-  if(!serial) {
-    comm.Sum(&sh[0][0], numResidues*6);
-    comm.Sum(csforces);
-  }
 
   unsigned k=0;
   unsigned step=2;

@@ -352,8 +352,6 @@ namespace Almost {
     static const int numXtraDists = 27;
     int box_nupdate;
     int box_count;
-    int npe;
-    int rank;
 
   public:
     vector<vector<Fragment> > atom;
@@ -390,14 +388,10 @@ namespace Almost {
       //Non-Bonded neighbour lists 
       box_nupdate=10;
       box_count=0;
-      //Parallel parameters for PLUMED
-      rank=0;
-      npe=1;
     }
 
     void set_box_nupdate(int v){box_nupdate = v;}
     void set_box_count(int v){box_count = v;}
-    void set_mpi(int n, int r){npe=n; rank=r;}
 
     void remove_problematic(string res, string nucl) {
       unsigned n;
@@ -454,7 +448,7 @@ namespace Almost {
       // CYCLE OVER MULTIPLE CHAINS
       for(unsigned int s=0;s<atom.size();s++){
 	// SKIP FIRST AND LAST RESIDUE OF EACH CHAIN
-	for(unsigned int a=rank+1;a<atom[s].size()-1;a+=npe){
+	for(unsigned int a=0;a<atom[s].size();a++){
           // CYCLE OVER THE SIX BACKBONE CHEMICAL SHIFTS
 	  for(unsigned int at_kind=0;at_kind<6;at_kind++){
 	    double cs;
