@@ -332,8 +332,10 @@ namespace Almost {
       double position[3];
       // ring plane normal vector
       double normVect[3];
-      double lengthN2; // square of length of normVect
-      double lengthNV; // length of normVect
+      // square of length of normVect
+      double lengthN2;
+      // length of normVect
+      double lengthNV;
       // two atom plane normal vectors used to compute ring plane normal
       vector<double> n1;
       vector<double> n2;
@@ -342,28 +344,32 @@ namespace Almost {
       string types[4];
       int    init_;
       RingInfo() {
-        if(RingInfo::init_ != 1){
-          vector<string> pheTyr_n = AminoAcid::phe_ring(); 
-          vector<string> trp1_n   = AminoAcid::trp1_ring();
-          vector<string> trp2_n   = AminoAcid::trp2_ring();
-          vector<string> his_n    = AminoAcid::his_ring();
-          // assign to multidim array for easier access
-          
-          for (int i = 0; i < 6; i++){
-            atomNames[0][i] = pheTyr_n[i];
-            atomNames[1][i] = trp1_n[i];
-            if (i < 5){
-              atomNames[2][i] = trp2_n[i];
-              atomNames[3][i] = his_n[i];
-            }
+        type = rtype = -1;
+        for(int i = 0; i < 6; i++) atom[i]=-1;
+        numAtoms = -1;
+        position[0] = position[1] = position[2] = -1;
+        normVect[0] = normVect[1] = normVect[2] = -1;
+        lengthN2 = lengthNV = -1;
+
+        vector<string> pheTyr_n = AminoAcid::phe_ring(); 
+        vector<string> trp1_n   = AminoAcid::trp1_ring();
+        vector<string> trp2_n   = AminoAcid::trp2_ring();
+        vector<string> his_n    = AminoAcid::his_ring();
+        
+        for (int i = 0; i < 6; i++){
+          atomNames[0][i] = pheTyr_n[i];
+          atomNames[1][i] = trp1_n[i];
+          if (i < 5){
+            atomNames[2][i] = trp2_n[i];
+            atomNames[3][i] = his_n[i];
           }
- 
-          types[0] = "PHE";
-          types[1] = "TYR";
-          types[2] = "TRP";
-          types[3] = "HIS";
-          init_  = 1;      
         }
+ 
+        types[0] = "PHE";
+        types[1] = "TYR";
+        types[2] = "TRP";
+        types[3] = "HIS";
+        init_  = 1;      
       } 
     };
 
