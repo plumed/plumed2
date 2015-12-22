@@ -93,6 +93,7 @@ void NOE::registerKeywords( Keywords& keys ){
   keys.add("numbered","NOEDIST","Add an experimental value for each NOE.");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   keys.addOutputComponent("noe","default","the # NOE");
+  keys.addOutputComponent("exp","ADDDISTANCES","the # NOE experimental distance");
 }
 
 NOE::NOE(const ActionOptions&ao):

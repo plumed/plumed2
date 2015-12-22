@@ -45,6 +45,7 @@ private:
   double           constant, inept;
   vector<double>   rtwo;
   vector<unsigned> nga;
+  vector<double>   exppre;
   NeighborList     *nl;
 public:
   static void registerKeywords( Keywords& keys );
@@ -67,8 +68,11 @@ void PRE::registerKeywords( Keywords& keys ){
   keys.reset_style("GROUPA","atoms");
   keys.add("numbered","RTWO","The relaxation of the atom/atoms in the corresponding GROUPA of atoms. "
                    "Keywords like RTWO1, RTWO2, RTWO3,... should be listed.");
+  keys.addFlag("ADDEXPVALUES",false,"Set to TRUE if you want to have fixed components with the experimetnal values.");  
+  keys.add("numbered","PREINT","Add an experimental value for each PRE.");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   keys.addOutputComponent("pre","default","the # PRE");
+  keys.addOutputComponent("exp","ADDEXPVALUES","the # PRE experimental intensity");
 }
 
 PRE::PRE(const ActionOptions&ao):
@@ -130,6 +134,21 @@ serial(false)
                                         // in nm^6/s^2
   constant = (4.*tauc*ns2s+(3.*tauc*ns2s)/(1+omega*omega*MHz2Hz*MHz2Hz*tauc*tauc*ns2s*ns2s))*Kappa;
 
+  bool addistance=false;
+  parseFlag("ADDEXPVALUES",addistance);
+
+  if(addistance) {
+    exppre.resize( nga.size() ); 
+    unsigned ntarget=0;
+
+    for(unsigned i=0;i<nga.size();++i){
+       if( !parseNumbered( "PREINT", i+1, exppre[i] ) ) break;
+       ntarget++; 
+    }
+    if( ntarget!=nga.size() ) error("found wrong number of NOEDIST values");
+  }
+
+
   // Create neighbour lists
   nl= new NeighborList(gb_lista,ga_lista,true,pbc,getPbc());
 
@@ -155,6 +174,15 @@ serial(false)
     std::string num; Tools::convert(i,num);
     addComponentWithDerivatives("pre_"+num);
     componentIsNotPeriodic("pre_"+num);
+  }
+
+  if(addistance) {
+    for(unsigned i=0;i<nga.size();i++) {
+      std::string num; Tools::convert(i,num);
+      addComponent("exp_"+num);
+      componentIsNotPeriodic("exp_"+num);
+      Value* comp=getPntrToComponent("exp_"+num); comp->set(exppre[i]);
+    }
   }
 
   requestAtoms(nl->getFullAtomList());

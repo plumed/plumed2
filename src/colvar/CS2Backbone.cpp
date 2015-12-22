@@ -220,7 +220,7 @@ noexp(false)
   }
   log.printf(" done!\n"); log.flush(); 
   log.printf("  Writing converted template.pdb ...\n"); log.flush();
-  mol2pdb(molecules,"converted-template.pdb");
+  Almost::mol2pdb(molecules,"converted-template.pdb");
 
 
   /* Lenght conversion (parameters are tuned for angstrom) */
