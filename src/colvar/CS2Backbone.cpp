@@ -21,17 +21,9 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #ifdef __PLUMED_HAS_ALMOST
 
-#include "Colvar.h"
-#include "ActionRegister.h"
-#include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include "CamShift.h"
 
-#include <almost/mdb.h>
-#include <almost/pdb.h>
-
 using namespace std;
-using namespace Almost;
 
 namespace PLMD{
 
@@ -121,7 +113,7 @@ PRINT ARG=cs
 
 class CS2Backbone : public Colvar {
   vector<CamShift3> cam_list;
-  Molecules molecules;
+  Almost::Molecules molecules;
   unsigned  numResidues;
   bool pbc;
   bool noexp;
@@ -221,7 +213,7 @@ noexp(false)
     unsigned j=2*i;
     string str;
     str +='A'+i;
-    Protein p(str);
+    Almost::Protein p(str);
     p.build_missing(pdb[0][i],mdb,termini[j],termini[j+1]);
     if(disu) p.auto_disu_bonds(2.9,mdb);
     molecules.add_protein(p);

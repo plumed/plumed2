@@ -10,16 +10,22 @@
 #define invswitch     1.0/((cutOffDist2 - cutOnDist2)*(cutOffDist2 - cutOnDist2)*(cutOffDist2 - cutOnDist2))
 #define CSDIM         3
 
-#include <iupac.h>
-#include <molecules/molecules.h>
 #include <string>
 #include <sstream>
 #include <vector>
 
+#include <almost/mdb.h>
+#include <almost/molecules/molecules.h>
+
+#include "Colvar.h"
+#include "ActionRegister.h"
+#include "core/PlumedMain.h"
 #include "tools/OpenMP.h"
 #include "tools/Torsion.h"
 
-namespace Almost {
+using namespace std;
+
+namespace PLMD {
 
   class CamShiftDB {
     enum { STD, GLY, PRO};
@@ -102,10 +108,7 @@ namespace Almost {
     void parse(string file){
       ifstream in;
       in.open(file.c_str());
-      if(!in){
-	aout<<">> FATAL ERROR: unable to open CamShiftDB file: "<<file<<endl;
-	throw;
-      }
+      if(!in) plumed_merror("Unable to open CamShiftDB file\n");
 
       int c_kind = -1;
       int c_atom = -1;
@@ -264,8 +267,10 @@ namespace Almost {
 	}
 	if(ok) continue;
 	
-	if(tok.size())
-	  aout<<">> CAMSHIFTDB WARNING: unrecognized token: "<<nline<<" <"<<tok[0]<<">"<<endl;
+	if(tok.size()) {
+          string str_err = "CAMSHIFTDB WARNING: unrecognized token: " + tok[0];
+          plumed_merror(str_err);
+        }
       }
     }
 
@@ -364,11 +369,11 @@ namespace Almost {
         normVect[0] = normVect[1] = normVect[2] = -1;
         lengthN2 = lengthNV = -1;
 
-        vector<string> pheTyr_n = AminoAcid::phe_ring(); 
-        vector<string> trp1_n   = AminoAcid::trp1_ring();
-        vector<string> trp2_n   = AminoAcid::trp2_ring();
-        vector<string> his_n    = AminoAcid::his_ring();
-        
+        const char* pheTyr_n[] = {"CG","CD1","CE1","CZ","CE2","CD2"};
+        const char* trp1_n[]   = {"CD2","CE2","CZ2","CH2","CZ3","CE3"};
+        const char* trp2_n[]   = {"CG","CD1","NE1","CE2","CD2"};
+        const char* his_n[]    = {"CG","ND1","CD2","CE1","NE2"};
+
         for (int i = 0; i < 6; i++){
           atomNames[0][i] = pheTyr_n[i];
           atomNames[1][i] = trp1_n[i];
@@ -401,7 +406,7 @@ namespace Almost {
   public:
     vector<vector<Fragment> > atom;
   
-    CamShift3(const Molecules & molecules, string file):db(file){
+    CamShift3(const Almost::Molecules & molecules, string file):db(file){
       //Init
       init_backbone(molecules);
       init_sidechain(molecules);
@@ -438,8 +443,8 @@ namespace Almost {
       ifstream in;
       in.open(file.c_str());
       if(!in){
-	aout<<"CamShift3: Unable to open "<<file<<endl;
-	throw;
+        string str_err = "CS2Backbone: Unable to open " + file; 
+	plumed_merror(str_err);
       }
       istream_iterator<string> iter(in), end;
       while(iter!=end){
@@ -472,7 +477,7 @@ namespace Almost {
       // CYCLE OVER MULTIPLE CHAINS
       for(unsigned int s=0;s<atom.size();s++){
 	// SKIP FIRST AND LAST RESIDUE OF EACH CHAIN
-#pragma omp parallel for num_threads(PLMD::OpenMP::getNumThreads())
+#pragma omp parallel for num_threads(OpenMP::getNumThreads())
 	for(unsigned int a=0;a<atom[s].size();a++){
           // CYCLE OVER THE SIX BACKBONE CHEMICAL SHIFTS
 	  for(unsigned int at_kind=0;at_kind<6;at_kind++){
@@ -835,20 +840,20 @@ namespace Almost {
 
 	        if(atom[s][a].phi.size()==4){
 
-                  PLMD::Vector d0(coor[CSDIM*atom[s][a].phi[0]  ] - coor[CSDIM*atom[s][a].phi[1]],
-		                  coor[CSDIM*atom[s][a].phi[0]+1] - coor[CSDIM*atom[s][a].phi[1]+1],
-		                  coor[CSDIM*atom[s][a].phi[0]+2] - coor[CSDIM*atom[s][a].phi[1]+2]);
-                                                                              
-                  PLMD::Vector d1(coor[CSDIM*atom[s][a].phi[1]  ] - coor[CSDIM*atom[s][a].phi[2]],
-		                  coor[CSDIM*atom[s][a].phi[1]+1] - coor[CSDIM*atom[s][a].phi[2]+1],
-		                  coor[CSDIM*atom[s][a].phi[1]+2] - coor[CSDIM*atom[s][a].phi[2]+2]);
-                                                                              
-                  PLMD::Vector d2(coor[CSDIM*atom[s][a].phi[2]  ] - coor[CSDIM*atom[s][a].phi[3]],
-		                  coor[CSDIM*atom[s][a].phi[2]+1] - coor[CSDIM*atom[s][a].phi[3]+1],
-		                  coor[CSDIM*atom[s][a].phi[2]+2] - coor[CSDIM*atom[s][a].phi[3]+2]);
+                  Vector d0(coor[CSDIM*atom[s][a].phi[0]  ] - coor[CSDIM*atom[s][a].phi[1]],
+		            coor[CSDIM*atom[s][a].phi[0]+1] - coor[CSDIM*atom[s][a].phi[1]+1],
+		            coor[CSDIM*atom[s][a].phi[0]+2] - coor[CSDIM*atom[s][a].phi[1]+2]);
+                                                                        
+                  Vector d1(coor[CSDIM*atom[s][a].phi[1]  ] - coor[CSDIM*atom[s][a].phi[2]],
+		            coor[CSDIM*atom[s][a].phi[1]+1] - coor[CSDIM*atom[s][a].phi[2]+1],
+		            coor[CSDIM*atom[s][a].phi[1]+2] - coor[CSDIM*atom[s][a].phi[2]+2]);
+                                                                        
+                  Vector d2(coor[CSDIM*atom[s][a].phi[2]  ] - coor[CSDIM*atom[s][a].phi[3]],
+		            coor[CSDIM*atom[s][a].phi[2]+1] - coor[CSDIM*atom[s][a].phi[3]+1],
+		            coor[CSDIM*atom[s][a].phi[2]+2] - coor[CSDIM*atom[s][a].phi[3]+2]);
 
-                  PLMD::Vector dd0,dd1,dd2;
-                  PLMD::Torsion t;
+                  Vector dd0,dd1,dd2;
+                  Torsion t;
                   double phi = t.compute(d0,d1,d2,dd0,dd1,dd2);
 
   		  PARS_DA = db.PARS_DA(aa_kind,at_kind,0);
@@ -873,20 +878,20 @@ namespace Almost {
                 }
 
 	        if(atom[s][a].psi.size()==4){
-                  PLMD::Vector d0(coor[CSDIM*atom[s][a].psi[0]  ] - coor[CSDIM*atom[s][a].psi[1]],
-		                  coor[CSDIM*atom[s][a].psi[0]+1] - coor[CSDIM*atom[s][a].psi[1]+1],
-		                  coor[CSDIM*atom[s][a].psi[0]+2] - coor[CSDIM*atom[s][a].psi[1]+2]);
-                                                                              
-                  PLMD::Vector d1(coor[CSDIM*atom[s][a].psi[1]  ] - coor[CSDIM*atom[s][a].psi[2]],
-		                  coor[CSDIM*atom[s][a].psi[1]+1] - coor[CSDIM*atom[s][a].psi[2]+1],
-		                  coor[CSDIM*atom[s][a].psi[1]+2] - coor[CSDIM*atom[s][a].psi[2]+2]);
-                                                                              
-                  PLMD::Vector d2(coor[CSDIM*atom[s][a].psi[2]  ] - coor[CSDIM*atom[s][a].psi[3]],
-		                  coor[CSDIM*atom[s][a].psi[2]+1] - coor[CSDIM*atom[s][a].psi[3]+1],
-		                  coor[CSDIM*atom[s][a].psi[2]+2] - coor[CSDIM*atom[s][a].psi[3]+2]);
+                  Vector d0(coor[CSDIM*atom[s][a].psi[0]  ] - coor[CSDIM*atom[s][a].psi[1]],
+		            coor[CSDIM*atom[s][a].psi[0]+1] - coor[CSDIM*atom[s][a].psi[1]+1],
+		            coor[CSDIM*atom[s][a].psi[0]+2] - coor[CSDIM*atom[s][a].psi[1]+2]);
+                                                                        
+                  Vector d1(coor[CSDIM*atom[s][a].psi[1]  ] - coor[CSDIM*atom[s][a].psi[2]],
+		            coor[CSDIM*atom[s][a].psi[1]+1] - coor[CSDIM*atom[s][a].psi[2]+1],
+		            coor[CSDIM*atom[s][a].psi[1]+2] - coor[CSDIM*atom[s][a].psi[2]+2]);
+                                                                        
+                  Vector d2(coor[CSDIM*atom[s][a].psi[2]  ] - coor[CSDIM*atom[s][a].psi[3]],
+		            coor[CSDIM*atom[s][a].psi[2]+1] - coor[CSDIM*atom[s][a].psi[3]+1],
+		            coor[CSDIM*atom[s][a].psi[2]+2] - coor[CSDIM*atom[s][a].psi[3]+2]);
 
-                  PLMD::Torsion t;
-                  PLMD::Vector dd0,dd1,dd2;
+                  Torsion t;
+                  Vector dd0,dd1,dd2;
                   double psi = t.compute(d0,d1,d2,dd0,dd1,dd2);
 
 		  PARS_DA = db.PARS_DA(aa_kind,at_kind,1);
@@ -912,20 +917,20 @@ namespace Almost {
 
 	        //Chi
 	        if(atom[s][a].chi1.size()==4){
-                  PLMD::Vector d0(coor[CSDIM*atom[s][a].chi1[0]  ] - coor[CSDIM*atom[s][a].chi1[1]],
-		                  coor[CSDIM*atom[s][a].chi1[0]+1] - coor[CSDIM*atom[s][a].chi1[1]+1],
-		                  coor[CSDIM*atom[s][a].chi1[0]+2] - coor[CSDIM*atom[s][a].chi1[1]+2]);
-                                                                               
-                  PLMD::Vector d1(coor[CSDIM*atom[s][a].chi1[1]  ] - coor[CSDIM*atom[s][a].chi1[2]],
-		                  coor[CSDIM*atom[s][a].chi1[1]+1] - coor[CSDIM*atom[s][a].chi1[2]+1],
-		                  coor[CSDIM*atom[s][a].chi1[1]+2] - coor[CSDIM*atom[s][a].chi1[2]+2]);
-                                                                               
-                  PLMD::Vector d2(coor[CSDIM*atom[s][a].chi1[2]  ] - coor[CSDIM*atom[s][a].chi1[3]],
-		                  coor[CSDIM*atom[s][a].chi1[2]+1] - coor[CSDIM*atom[s][a].chi1[3]+1],
-		                  coor[CSDIM*atom[s][a].chi1[2]+2] - coor[CSDIM*atom[s][a].chi1[3]+2]);
+                  Vector d0(coor[CSDIM*atom[s][a].chi1[0]  ] - coor[CSDIM*atom[s][a].chi1[1]],
+		            coor[CSDIM*atom[s][a].chi1[0]+1] - coor[CSDIM*atom[s][a].chi1[1]+1],
+		            coor[CSDIM*atom[s][a].chi1[0]+2] - coor[CSDIM*atom[s][a].chi1[1]+2]);
+                                                                         
+                  Vector d1(coor[CSDIM*atom[s][a].chi1[1]  ] - coor[CSDIM*atom[s][a].chi1[2]],
+		            coor[CSDIM*atom[s][a].chi1[1]+1] - coor[CSDIM*atom[s][a].chi1[2]+1],
+		            coor[CSDIM*atom[s][a].chi1[1]+2] - coor[CSDIM*atom[s][a].chi1[2]+2]);
+                                                                         
+                  Vector d2(coor[CSDIM*atom[s][a].chi1[2]  ] - coor[CSDIM*atom[s][a].chi1[3]],
+		            coor[CSDIM*atom[s][a].chi1[2]+1] - coor[CSDIM*atom[s][a].chi1[3]+1],
+		            coor[CSDIM*atom[s][a].chi1[2]+2] - coor[CSDIM*atom[s][a].chi1[3]+2]);
 
-                  PLMD::Torsion t;
-                  PLMD::Vector dd0,dd1,dd2;
+                  Torsion t;
+                  Vector dd0,dd1,dd2;
                   double chi = t.compute(d0,d1,d2,dd0,dd1,dd2);
 
 		  PARS_DA = db.PARS_DA(aa_kind,at_kind,2);
@@ -982,24 +987,14 @@ namespace Almost {
     }
 
     void xdist_name_map(string & name){
-      if(AminoAcid::name_kind){
-	if((name == "OT1")) name = "O";
-	else if ((name == "HN") || (name == "HT1")) name = "H";
-	else if ((name == "CG1")|| (name == "OG")|| 
-		 (name == "SG") || (name == "OG1")) name = "CG";
-	else if ((name == "HA1"))                   name = "HA";
-
-      } else {
-
-	if ((name == "OT1")) name = "O";
-	else if ((name == "HN") || (name == "HT1")) name = "H";
-	else if ((name == "CG1")|| (name == "OG")|| 
-		 (name == "SG") || (name == "OG1")) name = "CG";
-	else if ((name == "HA2"))                   name = "HA";
-      }
+      if((name == "OT1")) name = "O";
+      else if ((name == "HN") || (name == "HT1")) name = "H";
+      else if ((name == "CG1")|| (name == "OG")|| 
+	       (name == "SG") || (name == "OG1")) name = "CG";
+      else if ((name == "HA1"))                   name = "HA";
     }
 
-    void init_backbone(const Molecules & molecules){
+    void init_backbone(const Almost::Molecules & molecules){
 
       seg_last.resize(molecules.protein_size());
 
@@ -1009,7 +1004,7 @@ namespace Almost {
 	else 
 	  seg_last[i] = seg_last[i-1]+molecules.protein(i).fragment_size();
 
-	const Protein & p = molecules.protein(i);
+	const Almost::Protein & p = molecules.protein(i);
 	int b = p.atom_offset();
 	int e = b+p.atom_size();
 	int fb = p.fragment_offset();
@@ -1048,42 +1043,29 @@ namespace Almost {
 	  if(molecules[a].name()=="N"){
 	    int f = molecules.find_fragment(a);
 	    N_[f-fb] = a;
-	  }
-
-	  else if(AminoAcid::is_backbone_h(molecules[a].name())){
+	  } else if(molecules[a].name()=="H"||molecules[a].name()=="HN"){
 	    int f = molecules.find_fragment(a);
 	    H_[f-fb] = a;
-	  }
-
-	  else if(AminoAcid::is_backbone_ha(molecules[a].name())){
+	  } else if(molecules[a].name()=="HA"||molecules[a].name()=="HA1"){
 	    int f = molecules.find_fragment(a);
 	    HA_[f-fb] = a;
-	  }
-
-	  else if(molecules[a].name()=="CA"){
+	  } else if(molecules[a].name()=="CA"){
 	    int f = molecules.find_fragment(a);
 	    CA_[f-fb] = a;
-	  }
-
-	  else if(molecules[a].name()=="CB"){
+	  } else if(molecules[a].name()=="CB"){
 	    int f = molecules.find_fragment(a);
 	    CB_[f-fb] = a;
-	  }
-
-	  else if(molecules[a].name()=="C"){
+	  } else if(molecules[a].name()=="C"){
 	    int f = molecules.find_fragment(a);
 	    C_[f-fb] = a;
-	  }
-
-	  else if(molecules[a].name()=="O"){
+	  } else if(molecules[a].name()=="O"){
 	    int f = molecules.find_fragment(a);
 	    O_[f-fb] = a;
-	  }
-	  else {
+	  } else {
 	    //SPECIAL CASE PRO
 	    if(molecules[a].name()=="CD"){
 	      int f = molecules.find_fragment(a);
-	      if(molecules.fragment_name(f,Protein::SHORT)=="PRO")
+	      if(molecules.fragment_name(f,Almost::Protein::SHORT)=="PRO")
 		H_[f-fb] = a;
 	    }
 	  }
@@ -1091,10 +1073,9 @@ namespace Almost {
 	  //CHI1 SIDE CHAIN
 	  {
 	    int f = molecules.find_fragment(a);
-	    string frg = molecules.fragment_name(f,Protein::SHORT);
+	    string frg = molecules.fragment_name(f,Almost::Protein::SHORT);
 	    string atm = molecules[a].name();
-	    if(AminoAcid::is_chi1_cx(frg,atm))
-	      CX_[f-fb] = a;
+	    if(is_chi1_cx(frg,atm)) CX_[f-fb] = a;
 	  }
 	}
 
@@ -1113,7 +1094,7 @@ namespace Almost {
 	      at.pos[5] = C_[f_idx];
 	    }
 	    at.res_type_prev = at.res_type_curr = at.res_type_next = -1;
-	    at.res_name = molecules.fragment_name(fd,Molecules::SHORT);
+	    at.res_name = molecules.fragment_name(fd,Almost::Molecules::SHORT);
 	    at.res_kind = db.kind(at.res_name);
 	    at.fd = fd;
 	    //REGISTER PREV CURR NEXT
@@ -1127,7 +1108,7 @@ namespace Almost {
 		at.prev.push_back(HA_[f_idx-1]);
 		at.prev.push_back(C_[f_idx-1]);
 		at.prev.push_back(O_[f_idx-1]);	
-		at.res_type_prev = frag2enum(molecules.fragment_name(fd-1,Molecules::SHORT));
+		at.res_type_prev = frag2enum(molecules.fragment_name(fd-1,Almost::Molecules::SHORT));
 	      }
 
 	      //CURR
@@ -1138,7 +1119,7 @@ namespace Almost {
 		at.curr.push_back(HA_[f_idx]);
 		at.curr.push_back(C_[f_idx]);
 		at.curr.push_back(O_[f_idx]);		
-		at.res_type_curr = frag2enum(molecules.fragment_name(fd,Molecules::SHORT));
+		at.res_type_curr = frag2enum(molecules.fragment_name(fd,Almost::Molecules::SHORT));
 	      }
 
 	      //NEXT
@@ -1148,7 +1129,7 @@ namespace Almost {
 		at.next.push_back(CA_[f_idx+1]);
 		at.next.push_back(HA_[f_idx+1]);
 		at.next.push_back(C_[f_idx+1]);
-		at.res_type_next = frag2enum(molecules.fragment_name(fd+1,Molecules::SHORT));
+		at.res_type_next = frag2enum(molecules.fragment_name(fd+1,Almost::Molecules::SHORT));
 	      }
 
 	      //PHI | PSI | CH1
@@ -1180,7 +1161,7 @@ namespace Almost {
       }
     }
 
-    void init_sidechain(const Molecules & molecules){
+    void init_sidechain(const Almost::Molecules & molecules){
       for(unsigned int s = 0; s<atom.size(); s++){
 	for(unsigned int a = 0;a<atom[s].size();a++){
 	  vector<int> atm = molecules.fragment_atoms(atom[s][a].fd);
@@ -1197,7 +1178,7 @@ namespace Almost {
       }
     }
 
-    void init_xdist(const Molecules & molecules){
+    void init_xdist(const Almost::Molecules & molecules){
       string atomsP1[] = {"H", "H", "H", "C", "C", "C", 
                           "O", "O", "O", "N", "N", "N", 
                           "O", "O", "O", "N", "N", "N", 
@@ -1265,10 +1246,10 @@ namespace Almost {
       }
     }
 
-    void init_types(const Molecules & molecules){
+    void init_types(const Almost::Molecules & molecules){
       for(unsigned int i=0;i<molecules.atom_size();i++){
 	int frag = molecules.find_fragment(i);
-	string fragName = molecules.fragment_name(frag,Molecules::SHORT);
+	string fragName = molecules.fragment_name(frag,Almost::Molecules::SHORT);
 	string atom_name = molecules[i].name();
 	char atom_type = atom_name[0];
 	res_num.push_back(frag);
@@ -1288,9 +1269,9 @@ namespace Almost {
       }
     }
 
-    void init_rings(const Molecules & m){
+    void init_rings(const Almost::Molecules & m){
       for(unsigned int i=0;i<m.fragment_size();i++){
-	string frg = m.fragment_name(i,Molecules::SHORT);
+	string frg = m.fragment_name(i,Almost::Molecules::SHORT);
 	if(!((frg=="PHE")||
 	     (frg=="TYR")||
 	     (frg=="TRP")||
@@ -1452,48 +1433,254 @@ namespace Almost {
     }
 
     vector<string> side_chain_atoms(string s){
+      vector<string> sc; sc.clear();
 
-      if(s=="ALA"){	
-	return AminoAcid::sidechain_ala();
+      if(s=="ALA"){
+        sc.push_back( "CB" );
+        sc.push_back( "HB1" );
+        sc.push_back( "HB2" );
+        sc.push_back( "HB3" );
+	return sc;
       } else if(s=="ARG"){
-	return AminoAcid::sidechain_arg();
+        sc.push_back( "CB" );
+        sc.push_back( "CG" );
+        sc.push_back( "CD" );
+        sc.push_back( "NE" );
+        sc.push_back( "CZ" );
+        sc.push_back( "NH1" );
+        sc.push_back( "NH2" );
+        sc.push_back( "HB1" );
+        sc.push_back( "HB2" );
+        sc.push_back( "HG1" );
+        sc.push_back( "HG2" );
+        sc.push_back( "HD1" );
+        sc.push_back( "HD2" );
+        sc.push_back( "HE" );
+        sc.push_back( "HH11" );
+        sc.push_back( "HH12" );
+        sc.push_back( "HH21" );
+        sc.push_back( "HH22" );
+	return sc;
       } else if(s=="ASN"){
-	return AminoAcid::sidechain_asn();
+        sc.push_back( "CB" );
+        sc.push_back( "CG" );
+        sc.push_back( "OD1" );
+        sc.push_back( "ND2" );
+        sc.push_back( "HB1" );
+        sc.push_back( "HB2" );
+        sc.push_back( "HD21" );
+        sc.push_back( "HD22" );
+	return sc;
       } else if(s=="ASP"||s=="ASH"){
-	return AminoAcid::sidechain_asp();
+        sc.push_back( "CB" );
+        sc.push_back( "CG" );
+        sc.push_back( "OD1" );
+        sc.push_back( "OD2" );
+        sc.push_back( "HB1" );
+        sc.push_back( "HB2" );
+	return sc;
       } else if(s=="CYS"||s=="CYM"){
-	return AminoAcid::sidechain_cys();
+        sc.push_back( "CB" );
+        sc.push_back( "SG" );
+        sc.push_back( "HB1" );
+        sc.push_back( "HB2" );
+        sc.push_back( "HG1" );
+	return sc;
       } else if(s=="GLN"){
-	return AminoAcid::sidechain_gln();
+        sc.push_back( "CB" );
+        sc.push_back( "CG" );
+        sc.push_back( "CD" );
+        sc.push_back( "OE1" );
+        sc.push_back( "NE2" );
+        sc.push_back( "HB1" );
+        sc.push_back( "HB2" );
+        sc.push_back( "HG1" );
+        sc.push_back( "HG2" );
+        sc.push_back( "HE21" );
+        sc.push_back( "HE22" );
+	return sc;
       } else if(s=="GLU"||s=="GLH"){
-	return AminoAcid::sidechain_glu();
+        sc.push_back( "CB" );
+        sc.push_back( "CG" );
+        sc.push_back( "CD" );
+        sc.push_back( "OE1" );
+        sc.push_back( "OE2" );
+        sc.push_back( "HB1" );
+        sc.push_back( "HB2" );
+        sc.push_back( "HG1" );
+        sc.push_back( "HG2" );
+	return sc;
       } else if(s=="GLY"||s=="GME"){
-	return AminoAcid::sidechain_gly();
+        sc.push_back( "HA2" );
+	return sc;
       } else if(s=="HIS"||s=="HSE"||s=="HIE"||s=="HSD"||s=="HID"||s=="HIP"||s=="HSP"){
-	return AminoAcid::sidechain_his();
+        sc.push_back( "CB" );
+        sc.push_back( "CG" );
+        sc.push_back( "ND1" );
+        sc.push_back( "CD2" );
+        sc.push_back( "CE1" );
+        sc.push_back( "NE2" );
+        sc.push_back( "HB1" );
+        sc.push_back( "HB2" );
+        sc.push_back( "HD1" );
+        sc.push_back( "HD2" );
+        sc.push_back( "HE1" );
+	return sc;
       } else if(s=="ILE"||s=="IME"){
-	return AminoAcid::sidechain_ile();
+        sc.push_back( "CB" );
+        sc.push_back( "CG1" );
+        sc.push_back( "CG2" );
+        sc.push_back( "CD" );
+        sc.push_back( "HB" );
+        sc.push_back( "HG11" );
+        sc.push_back( "HG12" );
+        sc.push_back( "HG21" );
+        sc.push_back( "HG22" );
+        sc.push_back( "HG23" );
+        sc.push_back( "HD1" );
+        sc.push_back( "HD2" );
+        sc.push_back( "HD3" );
+	return sc;
       } else if(s=="LEU"){
-	return AminoAcid::sidechain_leu();
+        sc.push_back( "CB" );
+        sc.push_back( "CG" );
+        sc.push_back( "CD1" );
+        sc.push_back( "CD2" );
+        sc.push_back( "HB1" );
+        sc.push_back( "HB2" );
+        sc.push_back( "HG" );
+        sc.push_back( "HD11" );
+        sc.push_back( "HD12" );
+        sc.push_back( "HD13" );
+        sc.push_back( "HD21" );
+        sc.push_back( "HD22" );
+        sc.push_back( "HD23" );
+	return sc;
       } else if(s=="LYS"){
-	return AminoAcid::sidechain_lys();
+        sc.push_back( "CB" );
+        sc.push_back( "CG" );
+        sc.push_back( "CD" );
+        sc.push_back( "CE" );
+        sc.push_back( "NZ" );
+        sc.push_back( "HB1" );
+        sc.push_back( "HB2" );
+        sc.push_back( "HG1" );
+        sc.push_back( "HG2" );
+        sc.push_back( "HD1" );
+        sc.push_back( "HD2" );
+        sc.push_back( "HE1" );
+        sc.push_back( "HE2" );
+        sc.push_back( "HZ1" );
+        sc.push_back( "HZ2" );
+        sc.push_back( "HZ3" );
+	return sc;
       } else if(s=="MET"){
-	return AminoAcid::sidechain_met();
+        sc.push_back( "CB" );
+        sc.push_back( "CG" );
+        sc.push_back( "SD" );
+        sc.push_back( "CE" );
+        sc.push_back( "HB1" );
+        sc.push_back( "HB2" );
+        sc.push_back( "HG1" );
+        sc.push_back( "HG2" );
+        sc.push_back( "HE1" );
+        sc.push_back( "HE2" );
+        sc.push_back( "HE3" );
+	return sc;
       } else if(s=="PHE"){
-	return AminoAcid::sidechain_phe();
+        sc.push_back( "CB" );
+        sc.push_back( "CG" );
+        sc.push_back( "CD1" );
+        sc.push_back( "CD2" );
+        sc.push_back( "CE1" );
+        sc.push_back( "CE2" );
+        sc.push_back( "CZ" );
+        sc.push_back( "HB1" );
+        sc.push_back( "HB2" );
+        sc.push_back( "HD1" );
+        sc.push_back( "HD2" );
+        sc.push_back( "HE1" );
+        sc.push_back( "HE2" );
+        sc.push_back( "HZ" );
+	return sc;
       } else if(s=="PRO"){
-	return AminoAcid::sidechain_pro();
+        sc.push_back( "CB" );
+        sc.push_back( "CG" );
+        sc.push_back( "CD" );
+        sc.push_back( "HB1" );
+        sc.push_back( "HB2" );
+        sc.push_back( "HG1" );
+        sc.push_back( "HG2" );
+        sc.push_back( "HD1" );
+        sc.push_back( "HD2" );
+	return sc;
       } else if(s=="SER"){
-	return AminoAcid::sidechain_ser();
+        sc.push_back( "CB" );
+        sc.push_back( "OG" );
+        sc.push_back( "HB1" );
+        sc.push_back( "HB2" );
+        sc.push_back( "HG1" );
+	return sc;
       } else if(s=="THR"){
-	return AminoAcid::sidechain_thr();
+        sc.push_back( "CB" );
+        sc.push_back( "OG1" );
+        sc.push_back( "CG2" );
+        sc.push_back( "HB" );
+        sc.push_back( "HG1" );
+        sc.push_back( "HG21" );
+        sc.push_back( "HG22" );
+        sc.push_back( "HG23" );
+	return sc;
       } else if(s=="TRP"){
-	return AminoAcid::sidechain_trp();
+        sc.push_back( "CB" );
+        sc.push_back( "CG" );
+        sc.push_back( "CD1" );
+        sc.push_back( "CD2" );
+        sc.push_back( "NE1" );
+        sc.push_back( "CE2" );
+        sc.push_back( "CE3" );
+        sc.push_back( "CZ2" );
+        sc.push_back( "CZ3" );
+        sc.push_back( "CH2" );
+        sc.push_back( "HB1" );
+        sc.push_back( "HB2" );
+        sc.push_back( "HD1" );
+        sc.push_back( "HE1" );
+        sc.push_back( "HE3" );
+        sc.push_back( "HZ2" );
+        sc.push_back( "HZ3" );
+        sc.push_back( "HH2" );
+	return sc;
       } else if(s=="TYR"){
-	return AminoAcid::sidechain_tyr();
+        sc.push_back( "CB" );
+        sc.push_back( "CG" );
+        sc.push_back( "CD1" );
+        sc.push_back( "CD2" );
+        sc.push_back( "CE1" );
+        sc.push_back( "CE2" );
+        sc.push_back( "CZ" );
+        sc.push_back( "OH" );
+        sc.push_back( "HB1" );
+        sc.push_back( "HB2" );
+        sc.push_back( "HD1" );
+        sc.push_back( "HD2" );
+        sc.push_back( "HE1" );
+        sc.push_back( "HE2" );
+        sc.push_back( "HH" );
+	return sc;
       } else if(s=="VAL"){
-	return AminoAcid::sidechain_val();
-      } else cerr << "Error in side_chain_atoms" << endl; exit(1);
+        sc.push_back( "CB" );
+        sc.push_back( "CG1" );
+        sc.push_back( "CG2" );
+        sc.push_back( "HB" );
+        sc.push_back( "HG11" );
+        sc.push_back( "HG12" );
+        sc.push_back( "HG13" );
+        sc.push_back( "HG21" );
+        sc.push_back( "HG22" );
+        sc.push_back( "HG23" );
+	return sc;
+      } else plumed_merror("CS2BackBone: side_chain_atoms unknown");
     }
 
     bool isSP2(const string & resType, const string & atomName)
@@ -1568,6 +1755,16 @@ namespace Almost {
       }
  
       return sp2;
+    }
+
+    bool is_chi1_cx(const string & frg, const string & atm){
+      if(atm=="CG")                                        return true;
+      if((frg == "CYS")&&(atm =="SG"))                     return true;
+      if(((frg == "ILE")||(frg == "VAL"))&&(atm == "CG1")) return true;
+      if((frg == "SER")&&(atm == "OG"))                    return true;
+      if((frg == "THR")&&(atm == "OG1"))                   return true;
+
+      return false;
     }
 
     static inline vector<double> xProduct(const double & x1, const double & y1, const double & z1, 
