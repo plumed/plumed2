@@ -126,8 +126,6 @@ class CS2Backbone : public Colvar {
   bool pbc;
   bool noexp;
   double **sh;
-  double len_pl2alm;
-  double for_pl2alm;
   vector<double> coor;
   vector<double> csforces;
 public:
@@ -299,13 +297,12 @@ noexp(false)
   sh[0] = new double[numResidues*6];
   for(unsigned i=1;i<numResidues;i++)  sh[i]=sh[i-1]+6;
 
-  /* Energy and Lenght conversion */
-  len_pl2alm = 10.00*plumed.getAtoms().getUnits().getLength();
-  for_pl2alm = len_pl2alm;
-
-  log.printf("  Conversion table from plumed to Almost:\n");
-  log.printf("    Length %lf\n", len_pl2alm);
-  log.printf("    Force %lf\n", for_pl2alm);
+  /* Lenght conversion (parameters are tuned for angstrom) */
+  if(plumed.getAtoms().usingNaturalUnits()) {
+    a.set_db_scale(1.0);
+  } else {
+    a.set_db_scale(0.1/atoms.getUnits().getLength());
+  }
 
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
@@ -392,9 +389,9 @@ void CS2Backbone::calculate()
   for (unsigned i=0;i<N;i++) {
      unsigned ipos = CSDIM*i;
      Vector Pos = getPosition(i);
-     coor[ipos]   = len_pl2alm*Pos[0];
-     coor[ipos+1] = len_pl2alm*Pos[1];
-     coor[ipos+2] = len_pl2alm*Pos[2];
+     coor[ipos]   = Pos[0];
+     coor[ipos+1] = Pos[1];
+     coor[ipos+2] = Pos[2];
   }
 
   cam_list[0].new_calc_cs(coor, csforces, N, sh);
@@ -414,7 +411,7 @@ void CS2Backbone::calculate()
         for(unsigned i=0;i<N;i++) {
           unsigned ipos = place+CSDIM*i;
           if(csforces[ipos]!=0||csforces[ipos+1]!=0||csforces[ipos+2]!=0) {
-            Vector For(for_pl2alm*csforces[ipos], for_pl2alm*csforces[ipos+1], for_pl2alm*csforces[ipos+2]);
+            Vector For(csforces[ipos], csforces[ipos+1], csforces[ipos+2]);
             csforces[ipos]=csforces[ipos+1]=csforces[ipos+2]=0.;
             setAtomsDerivatives(comp,i,For);
             virial-=Tensor(getPosition(i),For);

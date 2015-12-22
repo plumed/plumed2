@@ -31,13 +31,15 @@ namespace Almost {
     static const int atm_kind = 6;
     static const int numXtraDists = 27;
 
+    double dscale;
+
     double c_all[aa_kind][atm_kind];
     // ALA, ARG, ASN, ASP, CYS, GLU, GLN, GLY, HIS, ILE, LEU, LYS, MET, PHE, PRO, SER, THR, TRP, TYR, VAL
     double c_aa[aa_kind][atm_kind][20];
     double c_aa_prev[aa_kind][atm_kind][20];
     double c_aa_succ[aa_kind][atm_kind][20];
     double co_bb[aa_kind][atm_kind][2][16];
-    double CO_SC_[aa_kind][atm_kind][20][2][20];
+    double co_sc_[aa_kind][atm_kind][20][2][20];
     double co_sphere[aa_kind][atm_kind][2][8];
 
     // for dihedral angles
@@ -48,10 +50,7 @@ namespace Almost {
     // for ring current effects
     // Phe, Tyr, Trp_1, Trp_2, His
     double co_ring[aa_kind][atm_kind][5];
-    // for hydrogen bonds
-    // O_PRE, H, O, H_NXT
 
-    double co_hb[aa_kind][atm_kind][12];
     // for extra distances
     double co_xd[aa_kind][atm_kind][numXtraDists];
 
@@ -59,6 +58,8 @@ namespace Almost {
     CamShiftDB(string file){
       parse(file);
     }
+
+    void set_distance_scale(const double scale) { dscale = scale; }
 
     int kind(string s){
       if(s=="GLY") return GLY;
@@ -86,7 +87,7 @@ namespace Almost {
     double * CONST_BB2_CURR(int a_kind, int at_kind){return co_bb[a_kind][at_kind][1]+5;}
     double * CONST_BB2_NEXT(int a_kind, int at_kind){return co_bb[a_kind][at_kind][1]+11;}
 
-    double * CONST_SC2(int a_kind, int at_kind, int res_type){ return CO_SC_[a_kind][at_kind][res_type][1];}
+    double * CONST_SC2(int a_kind, int at_kind, int res_type){ return co_sc_[a_kind][at_kind][res_type][1];}
     double * CONST_XD(int a_kind, int at_kind){ return co_xd[a_kind][at_kind];}
 
     double * CO_SPHERE(int a_kind, int at_kind, int exp_type){ return co_sphere[a_kind][at_kind][exp_type];}
@@ -116,7 +117,7 @@ namespace Almost {
           c_aa[i][j][k]=0.;
           c_aa_prev[i][j][k]=0.;
           c_aa_succ[i][j][k]=0.;
-          for(int l=0;l<2;l++) for(int m=0;m<20;m++) CO_SC_[i][j][k][l][m]=0.;
+          for(int l=0;l<2;l++) for(int m=0;m<20;m++) co_sc_[i][j][k][l][m]=0.;
         }
         for(int k=0;k<16;k++) {co_bb[i][j][0][k]=0.; co_bb[i][j][1][k]=0.;}
         for(int k=0;k<8;k++) { co_sphere[i][j][0][k]=0.; co_sphere[i][j][1][k]=0.; }
@@ -125,7 +126,6 @@ namespace Almost {
           for(int l=0;l<5;l++) pars_da[i][j][k][l]=0.;
         }
         for(int k=0;k<5;k++) co_ring[i][j][k]=0.;
-        for(int k=0;k<12;k++) co_hb[i][j][k]=0.;
         for(int k=0;k<numXtraDists;k++) co_xd[i][j][k]=0.;
       }
 
@@ -173,80 +173,92 @@ namespace Almost {
 	  continue;
 	}
 	else if (tok[0] == "CONSTAA"){
-	  assign(c_aa[c_kind][c_atom],tok);
+	  assign(c_aa[c_kind][c_atom],tok,1);
 	  continue;
 	}
 	else if (tok[0] == "CONSTAA-1"){
-	  assign(c_aa_prev[c_kind][c_atom],tok);
+	  assign(c_aa_prev[c_kind][c_atom],tok,1);
 	  continue;
 	}
 	else if (tok[0] == "CONSTAA+1"){
-	  assign(c_aa_succ[c_kind][c_atom],tok);
+	  assign(c_aa_succ[c_kind][c_atom],tok,1);
 	  continue;
 	}
 	else if (tok[0] == "COBB1"){
-	  assign(co_bb[c_kind][c_atom][0],tok);
+          //angstrom to nm
+	  assign(co_bb[c_kind][c_atom][0],tok,dscale);
 	  continue;
 	}
 	else if (tok[0] == "COBB2"){
-	  assign(co_bb[c_kind][c_atom][1],tok);
+          //angstrom to nm
+	  assign(co_bb[c_kind][c_atom][1],tok,dscale);
 	  continue;
 	}
 	else if (tok[0] == "SPHERE1"){
-	  assign(co_sphere[c_kind][c_atom][0],tok);
+          // angstrom^-3 to nm^-3
+	  assign(co_sphere[c_kind][c_atom][0],tok,1./(dscale*dscale*dscale));
 	  continue;
 	}
 	else if (tok[0] == "SPHERE2"){
-	  assign(co_sphere[c_kind][c_atom][1],tok);
+          //angstrom to nm
+	  assign(co_sphere[c_kind][c_atom][1],tok,dscale);
 	  continue;
 	}
 	else if (tok[0] == "DIHEDRALS"){
-	  assign(co_da[c_kind][c_atom],tok);
+	  assign(co_da[c_kind][c_atom],tok,1);
 	  continue;
 	}
 	else if (tok[0] == "RINGS"){
-	  assign(co_ring[c_kind][c_atom],tok);
+          // angstrom^-3 to nm^-3
+	  assign(co_ring[c_kind][c_atom],tok,1./(dscale*dscale*dscale));
 	  for(unsigned int i=1;i<tok.size();i++)
 	    co_ring[c_kind][c_atom][i-1] *= 1000;
 	  continue;
 	}
 	else if (tok[0] == "HBONDS"){
-	  assign(co_hb[c_kind][c_atom],tok);
 	  continue;
 	}
 	else if (tok[0] == "XTRADISTS"){
-	  assign(co_xd[c_kind][c_atom],tok);
+          //angstrom to nm
+	  assign(co_xd[c_kind][c_atom],tok,dscale);
 	  continue;
 	}
 	else if(tok[0]=="DIHEDPHI"){
-	  assign(pars_da[c_kind][c_atom][0],tok);
+	  assign(pars_da[c_kind][c_atom][0],tok,1);
 	  continue;
 	}
 	else if(tok[0]=="DIHEDPSI"){
-	  assign(pars_da[c_kind][c_atom][1],tok);
+	  assign(pars_da[c_kind][c_atom][1],tok,1);
 	  continue;
 	}
 	else if(tok[0]=="DIHEDCHI1"){
-	  assign(pars_da[c_kind][c_atom][2],tok);
+	  assign(pars_da[c_kind][c_atom][2],tok,1);
 	  continue;
 	}
 
 	bool ok = false;
-	string scIdent1 [] = {"COSCALA1", "COSCARG1", "COSCASN1", "COSCASP1", "COSCCYS1", "COSCGLN1", "COSCGLU1", "COSCGLY1", "COSCHIS1", "COSCILE1", "COSCLEU1", "COSCLYS1", "COSCMET1", "COSCPHE1", "COSCPRO1", "COSCSER1", "COSCTHR1", "COSCTRP1", "COSCTYR1", "COSCVAL1"};
+	string scIdent1 [] = {"COSCALA1", "COSCARG1", "COSCASN1", "COSCASP1", "COSCCYS1", "COSCGLN1", "COSCGLU1", 
+                              "COSCGLY1", "COSCHIS1", "COSCILE1", "COSCLEU1", "COSCLYS1", "COSCMET1", "COSCPHE1", 
+                              "COSCPRO1", "COSCSER1", "COSCTHR1", "COSCTRP1", "COSCTYR1", "COSCVAL1"};
+
 	for (int scC = 0; scC < 20; scC++){
 	  if(tok[0]==scIdent1[scC]){
-	    assign(CO_SC_[c_kind][c_atom][scC][0],tok);
-	    ok = true; break;
+            //angstrom to nm
+	    assign(co_sc_[c_kind][c_atom][scC][0],tok,dscale);
+	    ok = true; 
+            break;
 	  }
 	}
-	
 	if(ok) continue;
 
-	string scIdent2 [] = {"COSCALA2", "COSCARG2", "COSCASN2", "COSCASP2", "COSCCYS2", "COSCGLN2", "COSCGLU2", "COSCGLY2", "COSCHIS2", "COSCILE2", "COSCLEU2", "COSCLYS2", "COSCMET2", "COSCPHE2", "COSCPRO2", "COSCSER2", "COSCTHR2", "COSCTRP2", "COSCTYR2", "COSCVAL2"};
+	string scIdent2 [] = {"COSCALA2", "COSCARG2", "COSCASN2", "COSCASP2", "COSCCYS2", "COSCGLN2", "COSCGLU2", 
+                              "COSCGLY2", "COSCHIS2", "COSCILE2", "COSCLEU2", "COSCLYS2", "COSCMET2", "COSCPHE2", 
+                              "COSCPRO2", "COSCSER2", "COSCTHR2", "COSCTRP2", "COSCTYR2", "COSCVAL2"};
 
 	for (int scC = 0; scC < 20; scC++){
 	  if(tok[0]==scIdent2[scC]){
-	    assign(CO_SC_[c_kind][c_atom][scC][1],tok);
+            //angstrom to nm
+	    assign(co_sc_[c_kind][c_atom][scC][1],tok,dscale);
 	    ok = true; break;
 	  }
 	}
@@ -272,9 +284,9 @@ namespace Almost {
       return elems;
     }
     
-    void assign(double * f, const vector<string> & v){
+    void assign(double * f, const vector<string> & v, const double scale){
       for(unsigned int i=1;i<v.size();i++)
-	f[i-1] = atof(v[i].c_str());
+	f[i-1] = scale*atof(v[i].c_str());
       
     }
   };
@@ -401,9 +413,10 @@ namespace Almost {
       box_count=0;
     }
 
-    void set_box_nupdate(int v){box_nupdate = v;}
-    void set_box_count(int v){box_count = v;}
-
+    void set_box_nupdate(const int v){box_nupdate = v;}
+    void set_box_count(const int v){box_count = v;}
+    void set_db_scale(const double d){db.set_distance_scale(d);}
+   
     void remove_problematic(string res, string nucl) {
       unsigned n;
       if(nucl=="HA")     n=0;
@@ -459,7 +472,7 @@ namespace Almost {
       // CYCLE OVER MULTIPLE CHAINS
       for(unsigned int s=0;s<atom.size();s++){
 	// SKIP FIRST AND LAST RESIDUE OF EACH CHAIN
-#pragma omp parallel for num_threads(PLM::OpenMP::getNumThreads())
+#pragma omp parallel for num_threads(PLMD::OpenMP::getNumThreads())
 	for(unsigned int a=0;a<atom[s].size();a++){
           // CYCLE OVER THE SIX BACKBONE CHEMICAL SHIFTS
 	  for(unsigned int at_kind=0;at_kind<6;at_kind++){
