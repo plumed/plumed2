@@ -222,8 +222,15 @@ noexp(false)
   log.printf("  Writing converted template.pdb ...\n"); log.flush();
   mol2pdb(molecules,"converted-template.pdb");
 
+
+  /* Lenght conversion (parameters are tuned for angstrom) */
+  double scale=1.;
+  if(!plumed.getAtoms().usingNaturalUnits()) {
+    scale = 10.*atoms.getUnits().getLength();
+  }
+
   log.printf("  Initialization of the predictor ...\n"); log.flush();
-  CamShift3 a = CamShift3(molecules, stringadb);
+  CamShift3 a = CamShift3(molecules, stringadb, scale);
 
   log.printf("  Reading experimental data ...\n"); log.flush();
   stringadb = stringa_data + string("/CAshifts.dat");
@@ -283,18 +290,12 @@ noexp(false)
   log.printf("  Setting parameters ...\n"); log.flush();
   
   a.set_box_nupdate(neigh_f);
+
   cam_list.push_back(a);
 
   sh = new double*[numResidues];
   sh[0] = new double[numResidues*6];
   for(unsigned i=1;i<numResidues;i++)  sh[i]=sh[i-1]+6;
-
-  /* Lenght conversion (parameters are tuned for angstrom) */
-  if(plumed.getAtoms().usingNaturalUnits()) {
-    a.set_db_scale(1.0);
-  } else {
-    a.set_db_scale(0.1/atoms.getUnits().getLength());
-  }
 
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);

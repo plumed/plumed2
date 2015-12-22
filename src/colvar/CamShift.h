@@ -3,10 +3,10 @@
 #ifndef __CAMSHIFT3__
 #define __CAMSHIFT3__
 
-#define cutOffDist    5.0   	// cut off distance for non-bonded pairwise forces
-#define cutOffDist2   25.0 	// square of cutOffDist
-#define cutOnDist     3.2   	// cut off distance for non-bonded pairwise forces
-#define cutOnDist2    10.24 	// square of cutOffDist
+#define cutOffDist    0.55  	// cut off distance for non-bonded pairwise forces
+#define cutOffDist2   0.3025 	// square of cutOffDist
+#define cutOnDist     0.45   	// cut off distance for non-bonded pairwise forces
+#define cutOnDist2    0.2025 	// square of cutOffDist
 #define invswitch     1.0/((cutOffDist2 - cutOnDist2)*(cutOffDist2 - cutOnDist2)*(cutOffDist2 - cutOnDist2))
 #define CSDIM         3
 
@@ -61,11 +61,10 @@ namespace PLMD {
     double co_xd[aa_kind][atm_kind][numXtraDists];
 
   public:
-    CamShiftDB(string file){
+    CamShiftDB(string file, const double scale){ 
+      dscale = scale;
       parse(file);
     }
-
-    void set_distance_scale(const double scale) { dscale = scale; }
 
     int kind(string s){
       if(s=="GLY") return GLY;
@@ -291,7 +290,7 @@ namespace PLMD {
     
     void assign(double * f, const vector<string> & v, const double scale){
       for(unsigned int i=1;i<v.size();i++)
-	f[i-1] = scale*atof(v[i].c_str());
+	f[i-1] = scale*(atof(v[i].c_str()));
       
     }
   };
@@ -406,7 +405,7 @@ namespace PLMD {
   public:
     vector<vector<Fragment> > atom;
   
-    CamShift3(const Almost::Molecules & molecules, string file):db(file){
+    CamShift3(const Almost::Molecules & molecules, string file, const double scale):db(file,scale){
       //Init
       init_backbone(molecules);
       init_sidechain(molecules);
@@ -420,7 +419,6 @@ namespace PLMD {
 
     void set_box_nupdate(const int v){box_nupdate = v;}
     void set_box_count(const int v){box_count = v;}
-    void set_db_scale(const double d){db.set_distance_scale(d);}
    
     void remove_problematic(string res, string nucl) {
       unsigned n;
@@ -650,7 +648,7 @@ namespace PLMD {
 	        double dist_sum [8] = {0,0,0,0,0,0,0,0};
 
 	        int curr = atom[s][a].pos[at_kind];
-                if(update) update_box(curr, atom[s][a].box_nb[at_kind], coor, 50.);
+                if(update) update_box(curr, atom[s][a].box_nb[at_kind], coor, 0.56);
   	        double ffi[3] = {0,0,0};
                  
                 for(unsigned bat = 0; bat<atom[s][a].box_nb[at_kind].size(); bat++) {
