@@ -479,7 +479,7 @@ namespace PLMD {
 	for(unsigned int a=0;a<atom[s].size();a++){
           // CYCLE OVER THE SIX BACKBONE CHEMICAL SHIFTS
 	  for(unsigned int at_kind=0;at_kind<6;at_kind++){
-	    double cs;
+	    double cs = 0.;
 	    double cs_deriv = -1.;
             
 	    if(atom[s][a].pos[at_kind]>0&&atom[s][a].exp_cs[at_kind]>0){
@@ -953,8 +953,8 @@ namespace PLMD {
 	        }
 	      }
 	      //END OF DIHE
-              sh[index+a][at_kind] = cs;
 	    } 
+            sh[index+a][at_kind] = cs;
 	  }
 	}
         index += atom[s].size();

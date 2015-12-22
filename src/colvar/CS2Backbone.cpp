@@ -375,10 +375,9 @@ void CS2Backbone::calculate()
 
   if(pbc) makeWhole();
 
-  for(unsigned i=0;i<numResidues;i++) for(unsigned j=0;j<6;j++) sh[i][j]=0.;
-
   if(getExchangeStep()) cam_list[0].set_box_count(0);
 
+  /* pragma here? */ 
   for (unsigned i=0;i<N;i++) {
      unsigned ipos = CSDIM*i;
      Vector Pos = getPosition(i);
@@ -400,7 +399,8 @@ void CS2Backbone::calculate()
         Value* comp=getPntrToComponent(k);
         comp->set(sh[j][cs]);
         unsigned place = placeres+cs*CSDIM*N;
-        Tensor virial; 
+        Tensor virial;
+        /* pragma here? */ 
         for(unsigned i=0;i<N;i++) {
           unsigned ipos = place+CSDIM*i;
           if(csforces[ipos]!=0||csforces[ipos+1]!=0||csforces[ipos+2]!=0) {
