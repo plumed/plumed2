@@ -16,6 +16,7 @@
 #include <sstream>
 #include <vector>
 
+#include "tools/OpenMP.h"
 #include "tools/Torsion.h"
 
 namespace Almost {
@@ -424,7 +425,7 @@ namespace Almost {
       ifstream in;
       in.open(file.c_str());
       if(!in){
-	aout<<"CamShift2: Unable to open "<<file<<endl;
+	aout<<"CamShift3: Unable to open "<<file<<endl;
 	throw;
       }
       istream_iterator<string> iter(in), end;
@@ -458,6 +459,7 @@ namespace Almost {
       // CYCLE OVER MULTIPLE CHAINS
       for(unsigned int s=0;s<atom.size();s++){
 	// SKIP FIRST AND LAST RESIDUE OF EACH CHAIN
+#pragma omp parallel for num_threads(PLM::OpenMP::getNumThreads())
 	for(unsigned int a=0;a<atom[s].size();a++){
           // CYCLE OVER THE SIX BACKBONE CHEMICAL SHIFTS
 	  for(unsigned int at_kind=0;at_kind<6;at_kind++){
@@ -1487,8 +1489,71 @@ namespace Almost {
       if (atomName == "C") return true;
       if (atomName == "O") return true;
 
-      sp2 = AminoAcid::isSP2(resType,atomName);
+      if(resType == "TRP") {
 
+        if      (atomName == "CG")  sp2 = true;
+        else if (atomName == "CD1") sp2 = true;
+        else if (atomName == "CD2") sp2 = true;
+        else if (atomName == "CE2") sp2 = true;
+        else if (atomName == "CE3") sp2 = true;
+        else if (atomName == "CZ2") sp2 = true;
+        else if (atomName == "CZ3") sp2 = true;
+        else if (atomName == "CH2") sp2 = true;
+
+      } else if (resType == "ASP") {
+
+        if      (atomName == "CG")  sp2 = true;
+        else if (atomName == "OD1") sp2 = true;
+        else if (atomName == "OD2") sp2 = true;
+
+      } else if (resType == "GLU") {
+
+        if      (atomName == "CD")  sp2 = true;
+        else if (atomName == "OE1") sp2 = true;
+        else if (atomName == "OE2") sp2 = true;
+
+      } else if (resType == "ARG") {
+
+        if (atomName == "CZ") sp2 = true;
+
+      } else if (resType == "HIS") {
+
+        if      (atomName == "CG")  sp2 = true;
+        else if (atomName == "ND1") sp2 = true;
+        else if (atomName == "CD2") sp2 = true;
+        else if (atomName == "CE1") sp2 = true;
+        else if (atomName == "NE2") sp2 = true;
+
+      } else if (resType == "PHE") {
+
+        if      (atomName == "CG")  sp2 = true;
+        else if (atomName == "CD1") sp2 = true;
+        else if (atomName == "CD2") sp2 = true;
+        else if (atomName == "CE1") sp2 = true;
+        else if (atomName == "CE2") sp2 = true;
+        else if (atomName == "CZ")  sp2 = true;
+
+      } else if (resType == "TYR") {
+
+        if      (atomName == "CG")  sp2 = true;
+        else if (atomName == "CD1") sp2 = true;
+        else if (atomName == "CD2") sp2 = true;
+        else if (atomName == "CE1") sp2 = true;
+        else if (atomName == "CE2") sp2 = true;
+        else if (atomName == "CZ")  sp2 = true;
+        
+      } else if (resType == "ASN") {
+ 
+        if      (atomName == "CG")  sp2 = true;
+        else if (atomName == "OD1") sp2 = true;
+ 
+      } else if (resType == "GLN") {
+
+        if      (atomName == "CD")  sp2 = true;
+        else if (atomName == "OE1") sp2 = true;
+
+      }
+ 
       return sp2;
     }
 
