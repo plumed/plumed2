@@ -223,6 +223,8 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
   Keywords keys; gridtools::HistogramOnGrid::registerKeywords( keys );
   vesselbase::VesselOptions dar( da, keys );
   mygrid = new gridtools::HistogramOnGrid(dar); addVessel( mygrid );
+  resizeFunctions();
+
   // Enusre units for cube files are set correctly
   if( !fractional ){
      if( plumed.getAtoms().usingNaturalUnits() ) mygrid->setCubeUnits( 1.0/0.5292 );  
