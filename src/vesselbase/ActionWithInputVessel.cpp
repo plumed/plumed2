@@ -22,6 +22,7 @@
 #include "ActionWithInputVessel.h"
 #include "StoreDataVessel.h"
 #include "BridgeVessel.h"
+#include "GridVessel.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 
@@ -32,6 +33,7 @@ void ActionWithInputVessel::registerKeywords(Keywords& keys){
   keys.add("compulsory","DATA","certain actions in plumed work by calculating a list of variables and summing over them. "
                                "This particular action can be used to calculate functions of these base variables or prints "
                                "them to a file. This keyword thus takes the label of one of those such variables as input.");
+  keys.reserve("compulsory","GRID","the action that creates the input grid you would like to use");
 }
 
 ActionWithInputVessel::ActionWithInputVessel(const ActionOptions&ao):
@@ -42,7 +44,9 @@ ActionWithInputVessel::ActionWithInputVessel(const ActionOptions&ao):
 }
 
 void ActionWithInputVessel::readArgument( const std::string& type ){
-  std::string mlab; parse("DATA",mlab);
+  std::string mlab; 
+  if( keywords.exists("DATA") && type!="grid" ) parse("DATA",mlab);
+  else if( type=="grid" ) parse("GRID",mlab);
   ActionWithVessel* mves= plumed.getActionSet().selectWithLabel<ActionWithVessel*>(mlab);
   if(!mves) error("action labelled " +  mlab + " does not exist or does not have vessels");
   addDependency(mves);
@@ -61,6 +65,13 @@ void ActionWithInputVessel::readArgument( const std::string& type ){
      arguments = dynamic_cast<Vessel*>( myBridgeVessel );
   } else  if( type=="store" ){ 
      arguments = dynamic_cast<Vessel*>( mves->buildDataStashes( false, 0.0, NULL ) );  
+  } else if( type=="grid" ){
+     log.printf("  using grid calculated by action %s \n",mves->getLabel().c_str() );
+     for(unsigned i=0;i<mves->getNumberOfVessels();++i){ 
+        GridVessel* mygrid=dynamic_cast<GridVessel*>( mves->getPntrToVessel(i) );
+        if( mygrid ) arguments=dynamic_cast<Vessel*>( mygrid ); 
+     }
+     if( !arguments ) error("input action does not calculate a grid");
   } else {
      plumed_error();
   }

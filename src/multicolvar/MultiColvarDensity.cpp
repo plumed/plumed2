@@ -31,9 +31,9 @@
 #include "core/SetupMolInfo.h"
 #include "core/ActionSet.h"
 #include "MultiColvarBase.h"
-#include "tools/Grid.h"
 #include "tools/KernelFunctions.h"
 #include "vesselbase/ActionWithInputVessel.h"
+#include "vesselbase/HistogramOnGrid.h"
 #include "vesselbase/StoreDataVessel.h"
 
 using namespace std;
@@ -55,26 +55,28 @@ Evaluate the average value of a multicolvar on a grid.
 class MultiColvarDensity :
   public ActionPilot,
   public ActionAtomistic,
+  public vesselbase::ActionWithVessel,
   public vesselbase::ActionWithInputVessel
 {
   std::string kerneltype;
-  bool nomemory,cube;
   double norm;
   bool firststep;
   bool fractional;
   unsigned rstride;
-  std::string filename;
-  Grid* gg;
   MultiColvarBase* mycolv; 
-  std::vector<unsigned> nbins;
-  std::vector<double> bw;
+  vesselbase::StoreDataVessel* stash;
+  vesselbase::HistogramOnGrid* mygrid;
+  Vector origin;
   std::vector<unsigned> directions;
 public:
   explicit MultiColvarDensity(const ActionOptions&);
-  ~MultiColvarDensity();
   static void registerKeywords( Keywords& keys );
+  unsigned getNumberOfQuantities() const ;
   void calculate(){}
   void calculateNumericalDerivatives( ActionWithValue* a=NULL ){ plumed_error(); }
+  bool isPeriodic(){ return false; }
+  unsigned getNumberOfDerivatives(){ return 0; }
+  void performTask( const unsigned& , const unsigned& , MultiValue& ) const ;
   void apply(){}
   void update();
 };
@@ -85,17 +87,15 @@ void MultiColvarDensity::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
+  ActionWithVessel::registerKeywords( keys );
   ActionWithInputVessel::registerKeywords( keys );
   keys.add("compulsory","STRIDE","1","the frequency with which the data should be collected and added to the grid");
-  keys.add("compulsory","RUN","the frequency with which the density profile is written out");
   keys.add("atoms","ORIGIN","we will use the position of this atom as the origin");
   keys.add("compulsory","DIR","the direction in which to calculate the density profile");
   keys.add("compulsory","NBINS","the number of bins to use to represent the density profile");
   keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
   keys.add("compulsory","KERNEL","gaussian","the kernel function you are using.  More details on  the kernels available "
                                             "in plumed plumed can be found in \\ref kernelfunctions.");
-  keys.add("compulsory","OFILE","density","the file on which to write the profile. If you use the extension .cube a Gaussian cube file will be output "
-                                          "if you run with the xyz option for DIR");
   keys.addFlag("FRACTIONAL",false,"use fractional coordinates on the x-axis");
   keys.addFlag("NOMEMORY",false,"do a block averaging rather than a cumulative average");
 }
@@ -104,10 +104,10 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
   Action(ao),
   ActionPilot(ao),
   ActionAtomistic(ao),
+  ActionWithVessel(ao),
   ActionWithInputVessel(ao),
   norm(0),
-  firststep(true),
-  gg(NULL)
+  firststep(true)
 {
 
   std::vector<AtomNumber> atom;
@@ -119,40 +119,31 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
   mycolv = dynamic_cast<MultiColvarBase*>( getDependencies()[0] );
   plumed_assert( getDependencies().size()==1 ); 
   if(!mycolv) error("action labeled " + mycolv->getLabel() + " is not a multicolvar");
+  stash=dynamic_cast<vesselbase::StoreDataVessel*>( getPntrToArgument() );
 
-  parse("RUN",rstride);
-  log.printf("  storing data every %d steps and calculating density every %u steps \n", getStride(), rstride );
-
-  parseVector("NBINS",nbins); parseFlag("NOMEMORY",nomemory);
-  parse("KERNEL",kerneltype); parseVector("BANDWIDTH",bw); parseFlag("FRACTIONAL",fractional);
+  log.printf("  storing data every %d steps \n", getStride() );
+  parseFlag("FRACTIONAL",fractional);
   std::string direction; parse("DIR",direction);
   log.printf("  calculating density profile along ");
   if( direction=="x" ){
-      if( bw.size()!=1 || nbins.size()!=1 ) error("BANDWIDTH or NBINS has wrong dimensionality");
       log.printf("x axis");
       directions.resize(1); directions[0]=0;
   } else if( direction=="y" ){
-      if( bw.size()!=1 || nbins.size()!=1 ) error("BANDWIDTH or NBINS has wrong dimensionality");
       log.printf("y axis");
       directions.resize(1); directions[0]=1;
   } else if( direction=="z" ){
-      if( bw.size()!=1 || nbins.size()!=1 ) error("BANDWIDTH or NBINS has wrong dimensionality");
       log.printf("z axis");
       directions.resize(1); directions[0]=2;
   } else if( direction=="xy" ){
-      if( bw.size()!=2 || nbins.size()!=2 ) error("BANDWIDTH or NBINS has wrong dimensionality");
       log.printf("x and y axes");
       directions.resize(2); directions[0]=0; directions[1]=1;
   } else if( direction=="xz" ){
-      if( bw.size()!=2 || nbins.size()!=2 ) error("BANDWIDTH or NBINS has wrong dimensionality");
       log.printf("x and z axes");
       directions.resize(2); directions[0]=0; directions[1]=2;
   } else if( direction=="yz" ){
-      if( bw.size()!=2 || nbins.size()!=2 ) error("BANDWIDTH or NBINS has wrong dimensionality");
       log.printf("y and z axis");
       directions.resize(2); directions[0]=1; directions[1]=2;
   } else if( direction=="xyz" ){
-      if( bw.size()!=3 || nbins.size()!=3 ) error("BANDWIDTH or NBINS has wrong dimensionality");
       log.printf("x, y and z axes");
       directions.resize(3); directions[0]=0; directions[1]=1; directions[2]=2;
   } else {
@@ -160,36 +151,48 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
   } 
   log.printf(" for colvars calculated by action %s \n",mycolv->getLabel().c_str() );
 
-  parse("OFILE",filename); 
-  if(filename.length()==0) error("name out output file was not specified");
+  std::string vstring = getKeyword("NBINS") + " " + getKeyword("KERNEL") + " " + getKeyword("BANDWIDTH");
+  vstring += " PBC=T"; for(unsigned i=1;i<directions.size();++i) vstring+=",T";
+  vstring +=" COMPONENTS=" + getPntrToArgument()->getLabel() + ".dens";
+  vstring +=" COORDINATES=";
+  if( directions[0]==0 ) vstring+="x";
+  else if( directions[0]==1 ) vstring+="y";
+  else if( directions[0]==2 ) vstring+="z";
+  for(unsigned i=1;i<directions.size();++i){
+    if( directions[i]==0 ) vstring+=",x";
+    else if( directions[i]==1 ) vstring+=",y";
+    else if( directions[i]==2 ) vstring+=",z";
+  }
+  bool nomemory; parseFlag("NOMEMORY",nomemory);
+  if( nomemory ) vstring += " NOMEMORY";
+  // Create a task list
+  for(unsigned i=0;i<mycolv->getFullNumberOfTasks();++i) addTaskToList(i);
+  vesselbase::VesselOptions da("mygrid","",-1,vstring,this);
+  Keywords keys; vesselbase::HistogramOnGrid::registerKeywords( keys );
+  vesselbase::VesselOptions dar( da, keys );
+  mygrid = new vesselbase::HistogramOnGrid(dar); addVessel( mygrid );
+  resizeFunctions();
 
-  std::size_t dot=filename.find_first_of(".");
-  if( filename.substr(dot+1)=="cube" ) cube=true;
-  else cube=false;
-
-  if( cube && directions.size()!=3 ) error("can only dump gaussian cube file with three dimensional plots");
-  printf("  printing densities to file named %s \n",filename.c_str() );
+  // Enusre units for cube files are set correctly
+  if( !fractional ){
+     if( plumed.getAtoms().usingNaturalUnits() ) mygrid->setCubeUnits( 1.0/0.5292 );  
+     else mygrid->setCubeUnits( plumed.getAtoms().getUnits().getLength()/.05929 );
+  }
 
   checkRead(); requestAtoms(atom); 
   // Stupid dependencies cleared by requestAtoms - why GBussi why? That's got me so many times
   addDependency( mycolv );
 }
 
-MultiColvarDensity::~MultiColvarDensity(){
-  delete gg;
+unsigned MultiColvarDensity::getNumberOfQuantities() const {
+  return directions.size() + 2;
 }
 
 void MultiColvarDensity::update(){
   if(firststep){
-     std::vector<bool> pbc(nbins.size()); std::vector<double> min(nbins.size()), max(nbins.size());
-     std::vector<std::string> args(nbins.size()), gmin(nbins.size()), gmax(nbins.size());;
-     for(unsigned i=0;i<directions.size();++i){
-         min[i]=-0.5; max[i]=0.5; pbc[i]=true;
-         if( directions[i]==0 ) args[i]="x";
-         else if( directions[i]==1 ) args[i]="y";
-         else if( directions[i]==2 ) args[i]="z";
-         else plumed_error();
-     }
+     std::vector<double> min(directions.size()), max(directions.size());
+     std::vector<std::string> gmin(directions.size()), gmax(directions.size());;
+     for(unsigned i=0;i<directions.size();++i){ min[i]=-0.5; max[i]=0.5; }
      if( !fractional ){
          if( !mycolv->getPbc().isOrthorombic() ) error("I think that density profiles with non-orthorhombic cells don't work.  If you want it have a look and see if you can work it out");
 
@@ -203,58 +206,54 @@ void MultiColvarDensity::update(){
      if( plumed.getRestart() ){
         error("restarting of MultiColvarDensity is not yet implemented");
      } else {
-        // Setup the grid
-        std::string funcl=mycolv->getLabel() + ".dens";
-        gg = new Grid(funcl,args,gmin,gmax,nbins,true,true,true,pbc,gmin,gmax);
+        mygrid->setBounds( gmin, gmax );
      }
      firststep=false;    // We only have the first step once
   } else {
       for(unsigned i=0;i<directions.size();++i){
-          double max; Tools::convert( gg->getMax()[i], max );
+          double max; Tools::convert( mygrid->getMax()[i], max );
           if( fabs( 2*max - mycolv->getBox()(directions[i],directions[i]) )>epsilon ) error("box size should be fixed.  Use FRACTIONAL");
       }
-  } 
-
-  vesselbase::StoreDataVessel* stash=dynamic_cast<vesselbase::StoreDataVessel*>( getPntrToArgument() );
-  plumed_dbg_assert( stash ); std::vector<double> cvals( mycolv->getNumberOfQuantities() );
-  Vector origin = getPosition(0); std::vector<double> pp( directions.size() ); Vector fpos;
-  for(unsigned i=0;i<mycolv->getFullNumberOfTasks();++i){
-      // Skip if task was not active on last run through
-      if( !mycolv->taskIsCurrentlyActive(i) ) continue ;
-
-      stash->retrieveValue( i, false, cvals );
-      Vector apos = pbcDistance( mycolv->getCentralAtomPos( mycolv->getTaskCode(i) ), origin );
-      if( fractional ){ fpos = getPbc().realToScaled( apos ); } else { fpos=apos; }
-      for(unsigned j=0;j<directions.size();++j) pp[j]=fpos[ directions[j] ];
-      KernelFunctions kernel( pp, bw, kerneltype, false, cvals[0]*cvals[1], true );
-      gg->addKernel( kernel );     
   }
-  norm += 1.0;
+  // Now perform All Tasks
+  origin = getPosition(0);
+  runAllTasks(); norm += 1.0;
 
-  // Output and reset the counter if required
-  if( getStep()%rstride==0 ){  // && getStep()>0 ){
-      // Normalise prior to output
-      gg->scaleAllValuesAndDerivatives( 1.0 / norm );
-
-      OFile gridfile; gridfile.link(*this); gridfile.setBackupString("analysis");
-      gridfile.open( filename ); 
-      if( cube ){
-         // Cube files are in au so I convert from "Angstrom" to AU so that when
-         // VMD converts this number back to Angstroms (from AU) it looks right
-         if( plumed.getAtoms().usingNaturalUnits() ) gg->writeCubeFile( gridfile, 1.0/0.5292 );  
-         else gg->writeCubeFile( gridfile, plumed.getAtoms().getUnits().getLength()/.05929 );
-      } else gg->writeToFile( gridfile ); 
-      gridfile.close();
-
-      if( nomemory ){ 
-        gg->clear(); norm=0.0; 
-      } else {
-        // Unormalise after output
-        gg->scaleAllValuesAndDerivatives( norm );
-      }
-  }
+//  // Output and reset the counter if required
+//  if( getStep()%rstride==0 ){  // && getStep()>0 ){
+//      // Normalise prior to output
+//      gg->scaleAllValuesAndDerivatives( 1.0 / norm );
+//
+//      OFile gridfile; gridfile.link(*this); gridfile.setBackupString("analysis");
+//      gridfile.open( filename ); 
+//      if( cube ){
+//         // Cube files are in au so I convert from "Angstrom" to AU so that when
+//         // VMD converts this number back to Angstroms (from AU) it looks right
+//         if( plumed.getAtoms().usingNaturalUnits() ) gg->writeCubeFile( gridfile, 1.0/0.5292 );  
+//         else gg->writeCubeFile( gridfile, plumed.getAtoms().getUnits().getLength()/.05929 );
+//      } else gg->writeToFile( gridfile ); 
+//      gridfile.close();
+//
+//      if( nomemory ){ 
+//        gg->clear(); norm=0.0; 
+//      } else {
+//        // Unormalise after output
+//        gg->scaleAllValuesAndDerivatives( norm );
+//      }
+//  }
 
 }
+
+void MultiColvarDensity::performTask( const unsigned& tindex, const unsigned& current, MultiValue& myvals ) const {
+  std::vector<double> cvals( mycolv->getNumberOfQuantities() ); stash->retrieveValue( current, false, cvals );
+  Vector fpos, apos = pbcDistance( mycolv->getCentralAtomPos( mycolv->getTaskCode(current) ), origin );
+  if( fractional ){ fpos = getPbc().realToScaled( apos ); } else { fpos=apos; }
+
+  myvals.setValue( 0, cvals[0] );
+  for(unsigned j=0;j<directions.size();++j) myvals.setValue( 1+j, fpos[ directions[j] ] );
+  myvals.setValue( 1+directions.size(), cvals[1] );
+}
+
 
 }
 }

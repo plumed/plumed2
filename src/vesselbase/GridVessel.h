@@ -32,47 +32,60 @@ namespace vesselbase {
 
 class GridVessel : public Vessel {
 private:
+/// Are we deleting the data after print
+ bool nomemory;
+/// Have the minimum and maximum for the grid been set
+ bool bounds_set;
 /// These two variables are used to 
 /// remember the box we were in on the previous call
  unsigned bold;
 /// The number of points in the grid
  unsigned npoints;
+/// Units for Gaussian Cube file
+ double cube_units;
 /// Remember the neighbors that were used last time
  std::vector<unsigned> current_neigh; 
 /// The names of the various columns in the grid file
  std::vector<std::string> arg_names;
-/// The minimum and maximum in the grid stored as strings 
- std::vector<std::string> str_min, str_max;
 /// The minimum and maximum of the grid stored as doubles
  std::vector<double> min, max;
-/// The spacing between grid points
- std::vector<double> dx;
 /// The numerical distance between adjacent grid points
  std::vector<unsigned> stride;
 /// The number of bins in each grid direction
  std::vector<unsigned> nbin;
-/// Is this direction periodic
- std::vector<bool> pbc;
 /// A tempory array that can be used to store indices for a point
  std::vector<unsigned> tmp_indices;
-/// The grid with all the data values on it
- std::vector<double> data;
 ///  Flatten the grid and get the grid index for a point
  unsigned getIndex( const std::vector<unsigned>& indices ) const ;
+/// The grid point that was requested last by getGridPointCoordinates
+ unsigned currentGridPoint;
+protected:
 /// The number of pieces of information we are storing for each 
 /// point in the grid
  unsigned nper;
+/// Is this direction periodic
+ std::vector<bool> pbc;
+/// The minimum and maximum in the grid stored as strings 
+ std::vector<std::string> str_min, str_max;
+/// The spacing between grid points
+ std::vector<double> dx;
 /// The dimensionality of the grid
  unsigned dimension;
-/// The grid point that was requested last by getGridPointCoordinates
- unsigned currentGridPoint;
+/// The grid with all the data values on it
+ std::vector<double> data;
+/// Get the set of points neighouring a particular location in space
+ void getNeighbors( const std::vector<double>& pp, const std::vector<unsigned>& nneigh, std::vector<unsigned>& neighbors ) const ;
 public:
 /// keywords
-  static void registerKeywords( Keywords& keys );
+ static void registerKeywords( Keywords& keys );
 /// Constructor
-  GridVessel( const VesselOptions& );
+ explicit GridVessel( const VesselOptions& );
+/// Set the minimum and maximum of the grid
+ virtual void setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax );
 /// Get a description of the grid to output to the log
  std::string getGridDescription() const ;
+/// Convert an index into indices
+ void convertIndexToIndices( const unsigned& index, const std::vector<unsigned>& nnbin, std::vector<unsigned>& indices ) const ;
 /// Get the indices fof a point
  void getIndices( const unsigned& index, std::vector<unsigned>& indices ) const ;
 
@@ -85,30 +98,51 @@ public:
  void setGridElement( const std::vector<unsigned>&, const unsigned&, const double& );
  void addToGridElement( const std::vector<unsigned>&, const unsigned&, const double& );
 /// Set the size of the buffer equal to nper*npoints
-  virtual void resize();
+ virtual void resize();
 /// Get the number of points in the grid
-  unsigned getNumberOfPoints() const;
+ unsigned getNumberOfPoints() const;
 /// Get the coordinates for a point in the grid
-  void getGridPointCoordinates( const unsigned& , std::vector<double>& );
+ void getGridPointCoordinates( const unsigned& , std::vector<double>& ) const ;
 /// Get the dimensionality of the function
-  unsigned getDimension() const ;
+ unsigned getDimension() const ;
+/// Get the number of components in the vector stored on each grid point
+ unsigned getNumberOfComponents() const ;
+/// Is the grid periodic in the ith direction
+ bool isPeriodic( const unsigned& i ) const ;
+/// Get the number of quantities we have stored at each grid point
+ unsigned getNumberOfQuantities() const ;
 /// Get the number of grid points for each dimension
-  std::vector<unsigned> getNbin() const ;
+ std::vector<unsigned> getNbin() const ;
+/// Get the name of the ith component
+ std::string getComponentName( const unsigned& i ) const ;
 /// Get the vector containing the minimum value of the grid in each dimension
-  std::vector<std::string> getMin() const ;
+ std::vector<std::string> getMin() const ;
 /// Get the vector containing the maximum value of the grid in each dimension
-  std::vector<std::string> getMax() const ;
+ std::vector<std::string> getMax() const ;
 /// Return the volume of one of the grid cells
-  double getCellVolume() const ;
+ double getCellVolume() const ;
 /// Get the value of the ith grid element 
-  double getGridElement( const unsigned&, const unsigned& ) const ;
+ double getGridElement( const unsigned&, const unsigned& ) const ;
 /// Get the numerical index for the box that contains a particular point
  unsigned getLocationOnGrid( const std::vector<double>& x, std::vector<double>& dd );
 /// Get the points neighboring a particular spline point
  void getSplineNeighbors( const unsigned& mybox, std::vector<unsigned>& mysneigh );
 /// Get the spacing between grid points
-  const std::vector<double>& getGridSpacing() const ;
+ const std::vector<double>& getGridSpacing() const ;
+/// Get the extent of the grid in one of the axis
+ double getGridExtent( const unsigned& i ) const ;
+/// Clear all the data stored on the grid
+ void clear();
+/// This ensures that Gaussian cube fies are in correct units
+ void setCubeUnits( const double& units );
+/// This ensures that Gaussian cube files are in correct units
+ double getCubeUnits() const ;
 };
+
+inline
+unsigned GridVessel::getNumberOfQuantities() const {
+  return nper;
+}
 
 inline
 unsigned GridVessel::getNumberOfPoints() const {
@@ -129,6 +163,26 @@ double GridVessel::getCellVolume() const {
 inline
 unsigned GridVessel::getDimension() const {
   return dimension;
+}
+
+inline
+bool GridVessel::isPeriodic( const unsigned& i ) const {
+  return pbc[i];
+}
+
+inline
+std::string GridVessel::getComponentName( const unsigned& i ) const {
+  return arg_names[i];
+}
+
+inline
+unsigned GridVessel::getNumberOfComponents() const {
+  return nper / ( dimension + 1 );
+}
+
+inline
+double GridVessel::getGridExtent( const unsigned& i ) const {
+  return max[i] - min[i];
 }
 
 }
