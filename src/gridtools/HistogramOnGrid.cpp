@@ -33,6 +33,7 @@ void HistogramOnGrid::registerKeywords( Keywords& keys ){
 
 HistogramOnGrid::HistogramOnGrid( const vesselbase::VesselOptions& da ):
 GridVessel(da),
+norm(0),
 bandwidths(dimension)
 {
   parse("KERNEL",kerneltype); parseVector("BANDWIDTH",bandwidths);
@@ -76,6 +77,11 @@ bool HistogramOnGrid::calculate( const unsigned& current, MultiValue& myvals, st
 
 void HistogramOnGrid::finish( const std::vector<double>& buffer ){
   for(unsigned i=0;i<data.size();++i) data[i]+=buffer[bufstart + i];
+}
+
+void HistogramOnGrid::clear(){
+  if( !nomemory ) return ;
+  norm = 0.; GridVessel::clear();
 }
 
 }

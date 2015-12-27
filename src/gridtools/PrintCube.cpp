@@ -78,7 +78,7 @@ void PrintCube::performOperationsWithGrid( const bool& from_update ){
   for(pp[0]=0;pp[0]<nbin[0];++pp[0]){
       for(pp[1]=0;pp[1]<nbin[1];++pp[1]){
           for(pp[2]=0;pp[2]<nbin[2];++pp[2]){
-              ofile.printf("%f ",mygrid->getGridElement( pp, 0 ) );
+              ofile.printf("%f ",getGridElement( pp, 0 ) );
               if(pp[2]%6==5) ofile.printf("\n");
           }
           ofile.printf("\n");

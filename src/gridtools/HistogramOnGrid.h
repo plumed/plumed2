@@ -29,6 +29,7 @@ namespace gridtools {
 
 class HistogramOnGrid : public GridVessel {
 private:
+  double norm;
   std::string kerneltype;
   std::vector<double> bandwidths;
   std::vector<unsigned> nneigh;
@@ -40,7 +41,26 @@ public:
   bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
   void finish( const std::vector<double>& );
   bool applyForce(  std::vector<double>& forces ){ return false; }
+  void addToNorm( const double& anorm );
+  void setNorm( const double& snorm );
+  double getNorm() const ;
+  void clear();
 };
+
+inline
+void HistogramOnGrid::addToNorm( const double& anorm ){
+  norm+=anorm;
+}
+
+inline
+void HistogramOnGrid::setNorm( const double& snorm ){
+  norm=snorm;
+}
+
+inline
+double HistogramOnGrid::getNorm() const {
+  return norm;
+}
 
 }
 }

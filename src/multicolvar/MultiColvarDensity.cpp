@@ -59,7 +59,6 @@ class MultiColvarDensity :
   public vesselbase::ActionWithInputVessel
 {
   std::string kerneltype;
-  double norm;
   bool firststep;
   bool fractional;
   unsigned rstride;
@@ -106,7 +105,6 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
   ActionAtomistic(ao),
   ActionWithVessel(ao),
   ActionWithInputVessel(ao),
-  norm(0),
   firststep(true)
 {
 
@@ -217,31 +215,7 @@ void MultiColvarDensity::update(){
   }
   // Now perform All Tasks
   origin = getPosition(0);
-  runAllTasks(); norm += 1.0;
-
-//  // Output and reset the counter if required
-//  if( getStep()%rstride==0 ){  // && getStep()>0 ){
-//      // Normalise prior to output
-//      gg->scaleAllValuesAndDerivatives( 1.0 / norm );
-//
-//      OFile gridfile; gridfile.link(*this); gridfile.setBackupString("analysis");
-//      gridfile.open( filename ); 
-//      if( cube ){
-//         // Cube files are in au so I convert from "Angstrom" to AU so that when
-//         // VMD converts this number back to Angstroms (from AU) it looks right
-//         if( plumed.getAtoms().usingNaturalUnits() ) gg->writeCubeFile( gridfile, 1.0/0.5292 );  
-//         else gg->writeCubeFile( gridfile, plumed.getAtoms().getUnits().getLength()/.05929 );
-//      } else gg->writeToFile( gridfile ); 
-//      gridfile.close();
-//
-//      if( nomemory ){ 
-//        gg->clear(); norm=0.0; 
-//      } else {
-//        // Unormalise after output
-//        gg->scaleAllValuesAndDerivatives( norm );
-//      }
-//  }
-
+  runAllTasks(); mygrid->addToNorm( 1.0 ); 
 }
 
 void MultiColvarDensity::performTask( const unsigned& tindex, const unsigned& current, MultiValue& myvals ) const {

@@ -32,8 +32,6 @@ namespace gridtools {
 
 class GridVessel : public vesselbase::Vessel {
 private:
-/// Are we deleting the data after print
- bool nomemory;
 /// Have the minimum and maximum for the grid been set
  bool bounds_set;
 /// These two variables are used to 
@@ -60,6 +58,8 @@ private:
 /// The grid point that was requested last by getGridPointCoordinates
  unsigned currentGridPoint;
 protected:
+/// Are we deleting the data after print
+ bool nomemory;
 /// The number of pieces of information we are storing for each 
 /// point in the grid
  unsigned nper;
@@ -132,11 +132,13 @@ public:
 /// Get the extent of the grid in one of the axis
  double getGridExtent( const unsigned& i ) const ;
 /// Clear all the data stored on the grid
- void clear();
+ virtual void clear();
 /// This ensures that Gaussian cube fies are in correct units
  void setCubeUnits( const double& units );
 /// This ensures that Gaussian cube files are in correct units
  double getCubeUnits() const ;
+/// This gives the normalisation of histograms
+ virtual double getNorm() const ;
 };
 
 inline
@@ -183,6 +185,11 @@ unsigned GridVessel::getNumberOfComponents() const {
 inline
 double GridVessel::getGridExtent( const unsigned& i ) const {
   return max[i] - min[i];
+}
+
+inline
+double GridVessel::getNorm() const {
+  return 1.0;
 }
 
 }

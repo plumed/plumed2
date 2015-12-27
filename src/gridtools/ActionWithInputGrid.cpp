@@ -32,11 +32,13 @@ void ActionWithInputGrid::registerKeywords( Keywords& keys ){
   keys.add("compulsory","GRID","the action that creates the input grid you would like to use");
   keys.add("compulsory","STRIDE","the frequency with which to output the grid");
   keys.addFlag("USE_ALL_DATA",false,"use the data from the entire trajectory to perform the analysis");
+  keys.addFlag("UNORMALISED",false,"output an unormalised grid"); 
 }
 
 ActionWithInputGrid::ActionWithInputGrid(const ActionOptions&ao):
 Action(ao),
 ActionPilot(ao),
+norm(0.0),
 mygrid(NULL)
 {
   std::string mlab; parse("GRID",mlab);
@@ -51,6 +53,8 @@ mygrid(NULL)
   }
   if( !mygrid ) error("input action does not calculate a grid");
 
+  parseFlag("UNORMALISED",unormalised);
+  if( unormalised ) log.printf("  working with unormalised grid \n");
   if( keywords.exists("USE_ALL_DATA") ){
      parseFlag("USE_ALL_DATA",single_run);
      if( !single_run ) log.printf("  outputting grid every %u steps \n", getStride() );
@@ -59,10 +63,14 @@ mygrid(NULL)
 }
 
 void ActionWithInputGrid::update(){
+  if( unormalised ) norm = 1.0;
+  else norm=1.0/mygrid->getNorm();
   performOperationsWithGrid( true );
 }
 
 void ActionWithInputGrid::runFinalJobs(){
+  if( unormalised ) norm = 1.0;
+  else norm=1.0/mygrid->getNorm();
   performOperationsWithGrid( false );
 }
 

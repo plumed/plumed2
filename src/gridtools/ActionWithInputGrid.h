@@ -30,9 +30,14 @@ namespace gridtools {
 
 class ActionWithInputGrid : 
 public ActionPilot {
+private:
+  double norm;
+  bool unormalised;
 protected:
   bool single_run;
   GridVessel* mygrid;
+  double getGridElement( const std::vector<unsigned>& pp, const unsigned& ind ) const ;
+  double getGridElement( const unsigned& ind, const unsigned& jind ) const ;
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithInputGrid(const ActionOptions&ao);
@@ -42,6 +47,16 @@ public:
   void runFinalJobs();
   virtual void performOperationsWithGrid( const bool& from_update )=0;
 };
+
+inline
+double ActionWithInputGrid::getGridElement( const std::vector<unsigned>& pp, const unsigned& ind ) const {
+  return norm*mygrid->getGridElement( pp, ind );
+}
+
+inline
+double ActionWithInputGrid::getGridElement( const unsigned& ind, const unsigned& jind ) const {
+  return norm*mygrid->getGridElement( ind, jind );
+}
 
 }
 }

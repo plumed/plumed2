@@ -85,7 +85,7 @@ void PrintGrid::performOperationsWithGrid( const bool& from_update ){
      mygrid->getGridPointCoordinates(i, xx ); 
      for(unsigned j=0;j<mygrid->getDimension();++j){ ofile.fmtField(fmt); ofile.printField(mygrid->getComponentName(j),xx[j]); }
      for(unsigned j=0;j<mygrid->getNumberOfQuantities();++j){ 
-        ofile.fmtField(fmt); ofile.printField(mygrid->getComponentName(mygrid->getDimension()+j), mygrid->getGridElement( i, j ) ); 
+        ofile.fmtField(fmt); ofile.printField(mygrid->getComponentName(mygrid->getDimension()+j), getGridElement( i, j ) ); 
      }
      ofile.printField();
   }
