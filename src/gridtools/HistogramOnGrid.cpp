@@ -29,18 +29,25 @@ void HistogramOnGrid::registerKeywords( Keywords& keys ){
   GridVessel::registerKeywords( keys );
   keys.add("compulsory","KERNEL","the type of kernel to use");
   keys.add("compulsory","BANDWIDTH","the bandwidths");
+  keys.addFlag("STORE_NORMED",false,"are we to store the data normalised");
 }
 
 HistogramOnGrid::HistogramOnGrid( const vesselbase::VesselOptions& da ):
 GridVessel(da),
 norm(0),
+store_normed(false),
 bandwidths(dimension)
 {
-  parse("KERNEL",kerneltype); parseVector("BANDWIDTH",bandwidths);
+  parseFlag("STORE_NORMED",store_normed); parse("KERNEL",kerneltype); parseVector("BANDWIDTH",bandwidths);
 }
 
-void HistogramOnGrid::setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax ){
-  GridVessel::setBounds( smin, smax ); 
+void HistogramOnGrid::switchOffNormalisation(){
+  store_normed=false;
+}
+
+void HistogramOnGrid::setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax,
+                                 const std::vector<unsigned>& nbins, const std::vector<double>& spacing ){
+  GridVessel::setBounds( smin, smax, nbins, spacing ); 
   std::vector<double> point(dimension,0);
   KernelFunctions kernel( point, bandwidths, kerneltype, false, 1.0, true );
   nneigh=kernel.getSupport( dx );
@@ -80,8 +87,13 @@ void HistogramOnGrid::finish( const std::vector<double>& buffer ){
 }
 
 void HistogramOnGrid::clear(){
-  if( !nomemory ) return ;
-  norm = 0.; GridVessel::clear();
+  if( !nomemory && !store_normed ) return ;
+  if( nomemory ){
+     norm = 0.; GridVessel::clear(); return;
+  }
+  if( store_normed ){
+     for(unsigned i=0;i<data.size();++i) data[i] /= norm;
+  }
 }
 
 }

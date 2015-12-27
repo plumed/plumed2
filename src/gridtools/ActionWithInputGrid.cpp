@@ -54,7 +54,11 @@ mygrid(NULL)
   if( !mygrid ) error("input action does not calculate a grid");
 
   parseFlag("UNORMALISED",unormalised);
-  if( unormalised ) log.printf("  working with unormalised grid \n");
+  if( unormalised ){
+     log.printf("  working with unormalised grid \n");
+     mygrid->switchOffNormalisation(); 
+  }
+
   if( keywords.exists("USE_ALL_DATA") ){
      parseFlag("USE_ALL_DATA",single_run);
      if( !single_run ) log.printf("  outputting grid every %u steps \n", getStride() );

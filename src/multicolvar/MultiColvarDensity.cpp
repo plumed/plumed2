@@ -63,6 +63,8 @@ class MultiColvarDensity :
   bool fractional;
   unsigned rstride;
   MultiColvarBase* mycolv; 
+  std::vector<unsigned> nbins;
+  std::vector<double> gspacing;
   vesselbase::StoreDataVessel* stash;
   gridtools::HistogramOnGrid* mygrid;
   Vector origin;
@@ -91,7 +93,8 @@ void MultiColvarDensity::registerKeywords( Keywords& keys ){
   keys.add("compulsory","STRIDE","1","the frequency with which the data should be collected and added to the grid");
   keys.add("atoms","ORIGIN","we will use the position of this atom as the origin");
   keys.add("compulsory","DIR","the direction in which to calculate the density profile");
-  keys.add("compulsory","NBINS","the number of bins to use to represent the density profile");
+  keys.add("optional","NBINS","the number of bins to use to represent the density profile");
+  keys.add("optional","SPACING","the approximate grid spacing (to be used as an alternative or together with NBINS)");
   keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
   keys.add("compulsory","KERNEL","gaussian","the kernel function you are using.  More details on  the kernels available "
                                             "in plumed plumed can be found in \\ref kernelfunctions.");
@@ -148,8 +151,10 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
      error( direction + " is not valid gradient direction");
   } 
   log.printf(" for colvars calculated by action %s \n",mycolv->getLabel().c_str() );
+  parseVector("NBINS",nbins); parseVector("SPACING",gspacing);
+  if( nbins.size()!=directions.size() && gspacing.size()!=directions.size() ) error("NBINS or SPACING must be set");
 
-  std::string vstring = getKeyword("NBINS") + " " + getKeyword("KERNEL") + " " + getKeyword("BANDWIDTH");
+  std::string vstring = getKeyword("KERNEL") + " " + getKeyword("BANDWIDTH");
   vstring += " PBC=T"; for(unsigned i=1;i<directions.size();++i) vstring+=",T";
   vstring +=" COMPONENTS=" + getPntrToArgument()->getLabel() + ".dens";
   vstring +=" COORDINATES=";
@@ -169,7 +174,6 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
   Keywords keys; gridtools::HistogramOnGrid::registerKeywords( keys );
   vesselbase::VesselOptions dar( da, keys );
   mygrid = new gridtools::HistogramOnGrid(dar); addVessel( mygrid );
-  resizeFunctions();
 
   // Enusre units for cube files are set correctly
   if( !fractional ){
@@ -204,7 +208,7 @@ void MultiColvarDensity::update(){
      if( plumed.getRestart() ){
         error("restarting of MultiColvarDensity is not yet implemented");
      } else {
-        mygrid->setBounds( gmin, gmax );
+        mygrid->setBounds( gmin, gmax, nbins, gspacing ); resizeFunctions();
      }
      firststep=false;    // We only have the first step once
   } else {

@@ -46,7 +46,6 @@ cube_units(1.0)
   dimension=coordnames.size();
   std::vector<std::string> spbc( dimension ); parseVector("PBC",spbc); 
   str_min.resize( dimension);  str_max.resize( dimension ); 
-  nbin.resize( dimension ); parseVector("NBINS",nbin);
   parseFlag("NOMEMORY",nomemory);
 
   tmp_indices.resize( str_min.size() );
@@ -60,30 +59,43 @@ cube_units(1.0)
       for(unsigned j=0;j<coordnames.size();++j){ arg_names[n] = "d" + compnames[i] + "_" + coordnames[j]; n++; }
   }
 
-  npoints=1; dx.resize( dimension ); pbc.resize( dimension ); 
-  min.resize( dimension ); stride.resize( dimension ); max.resize( dimension ); 
+  pbc.resize( dimension ); 
   for(unsigned i=0;i<dimension;++i){
-      if( spbc[i]=="F" ){ pbc[i]=false; nbin[i]+=1; }  
+      if( spbc[i]=="F" ) pbc[i]=false;   
       else if( spbc[i]=="T" ) pbc[i]=true;
       else plumed_error();
-      stride[i]=npoints;
-      npoints*=nbin[i];
   }
 }
 
-void GridVessel::setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax ){
-  bounds_set=true; plumed_dbg_assert( smin.size()==dimension && smax.size()==dimension );
+void GridVessel::setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax,
+                            const std::vector<unsigned>& binsin, const std::vector<double>& spacing ){
+  plumed_dbg_assert( smin.size()==dimension && smax.size()==dimension );
+  plumed_assert( spacing.size()==dimension || binsin.size()==dimension );
+
+  npoints=1; bounds_set=true;
+  stride.resize( dimension ); max.resize( dimension );
+  dx.resize( dimension ); nbin.resize( dimension ); min.resize( dimension ); 
   for(unsigned i=0;i<dimension;++i){
       str_min[i]=smin[i]; str_max[i]=smax[i];
       Tools::convert( str_min[i], min[i] );
       Tools::convert( str_max[i], max[i] );
-      if( !pbc[i] ){ nbin[i]-=1; }
+      if( spacing.size()==dimension && binsin.size()==dimension ){
+          unsigned spc = std::floor(( max[i] - min[i] ) / spacing[i]) + 1;
+          if( spc>binsin[i] ) nbin[i]=spc;
+          else nbin[i]=binsin[i]; 
+      } else if( binsin.size()==dimension ) nbin[i]=binsin[i];
+      else if( spacing.size()==dimension ) nbin[i] = std::floor(( max[i] - min[i] ) / spacing[i]) + 1; 
+      else plumed_error();
       dx[i] = ( max[i] - min[i] ) / static_cast<double>( nbin[i] );
       if( !pbc[i] ){ max[i] +=dx[i]; nbin[i]+=1; }
+      stride[i]=npoints;
+      npoints*=nbin[i]; 
   }
 } 
 
-std::string GridVessel::getGridDescription() const {
+std::string GridVessel::description(){
+  if( !bounds_set ) return "";
+ 
   std::string des="grid of "; std::string num;
   for(unsigned i=0;i<dimension-1;++i){
       Tools::convert( nbin[i], num );

@@ -81,9 +81,9 @@ public:
 /// Constructor
  explicit GridVessel( const vesselbase::VesselOptions& );
 /// Set the minimum and maximum of the grid
- virtual void setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax );
+ virtual void setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax, const std::vector<unsigned>& nbins, const std::vector<double>& spacing );
 /// Get a description of the grid to output to the log
- std::string getGridDescription() const ;
+ std::string description();
 /// Convert an index into indices
  void convertIndexToIndices( const unsigned& index, const std::vector<unsigned>& nnbin, std::vector<unsigned>& indices ) const ;
 /// Get the indices fof a point
@@ -139,6 +139,7 @@ public:
  double getCubeUnits() const ;
 /// This gives the normalisation of histograms
  virtual double getNorm() const ;
+ virtual void switchOffNormalisation(){}
 };
 
 inline
