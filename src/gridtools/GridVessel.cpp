@@ -19,12 +19,12 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "GridVessel.h"
-#include "ActionWithVessel.h"
+#include "vesselbase/ActionWithVessel.h"
 #include "tools/Tools.h"
+#include "GridVessel.h"
 
 namespace PLMD {
-namespace vesselbase {
+namespace gridtools {
 
 void GridVessel::registerKeywords( Keywords& keys ){
   Vessel::registerKeywords( keys );
@@ -35,7 +35,7 @@ void GridVessel::registerKeywords( Keywords& keys ){
   keys.addFlag("NOMEMORY",false,"should the data in the grid be deleted after print/analysis");
 }
 
-GridVessel::GridVessel( const VesselOptions& da ):
+GridVessel::GridVessel( const vesselbase::VesselOptions& da ):
 Vessel(da),
 bounds_set(false),
 bold(0),

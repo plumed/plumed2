@@ -19,18 +19,18 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_vesselbase_GridVessel_h
-#define __PLUMED_vesselbase_GridVessel_h
+#ifndef __PLUMED_gridtools_GridVessel_h
+#define __PLUMED_gridtools_GridVessel_h
 
 #include <string>
 #include <cstring>
 #include <vector>
-#include "Vessel.h"
+#include "vesselbase/Vessel.h"
 
 namespace PLMD {
-namespace vesselbase {
+namespace gridtools {
 
-class GridVessel : public Vessel {
+class GridVessel : public vesselbase::Vessel {
 private:
 /// Are we deleting the data after print
  bool nomemory;
@@ -79,7 +79,7 @@ public:
 /// keywords
  static void registerKeywords( Keywords& keys );
 /// Constructor
- explicit GridVessel( const VesselOptions& );
+ explicit GridVessel( const vesselbase::VesselOptions& );
 /// Set the minimum and maximum of the grid
  virtual void setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax );
 /// Get a description of the grid to output to the log

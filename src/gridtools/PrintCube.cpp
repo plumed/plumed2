@@ -19,88 +19,51 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "core/ActionPilot.h"
-#include "ActionWithInputVessel.h"
-#include "GridVessel.h"
 #include "core/ActionRegister.h"
+#include "ActionWithInputGrid.h"
 #include "tools/OFile.h"
 
 namespace PLMD {
-namespace vesselbase {
+namespace gridtools {
 
-class PrintCube : 
-public ActionWithInputVessel,
-public ActionPilot
-{
+class PrintCube : public ActionWithInputGrid {
 private:
-  bool single_run;
-  GridVessel* mygrid;
   std::string fmt, filename;
-  void printGrid( OFile& ofile );
 public:
   static void registerKeywords( Keywords& keys );
   explicit PrintCube(const ActionOptions&ao); 
-  void calculate(){}
-  void apply(){}
-  void update();
-  void runFinalJobs();
+  void performOperationsWithGrid( const bool& from_update );
 };
 
 PLUMED_REGISTER_ACTION(PrintCube,"PRINT_CUBE")
 
 void PrintCube::registerKeywords( Keywords& keys ){
-  Action::registerKeywords( keys );
-  ActionWithInputVessel::registerKeywords( keys );
-  ActionPilot::registerKeywords( keys );
-  keys.use("GRID"); keys.remove("DATA");
-  keys.add("compulsory","STRIDE","the frequency with which to output the grid");
+  ActionWithInputGrid::registerKeywords( keys );
   keys.add("compulsory","FILE","density","the file on which to write the grid."); 
   keys.add("optional","FMT","the format that should be used to output real numbers");
-  keys.addFlag("USE_ALL_DATA",false,"use the data from the entire trajectory to perform the analysis");
 }
 
 PrintCube::PrintCube(const ActionOptions&ao):
 Action(ao),
-ActionWithInputVessel(ao),
-ActionPilot(ao),
-mygrid(NULL),
+ActionWithInputGrid(ao),
 fmt("%f")
 {
-  readArgument( "grid" );
-  mygrid=dynamic_cast<GridVessel*>( getPntrToArgument() );
   if( mygrid->getDimension()!=3 ) error("cannot print cube file if grid does not contain three dimensional data");
   if( mygrid->getNumberOfComponents()!=1 ) error("cannot print cube file if data on grid is a vector field");
 
-  parse("FMT",fmt); fmt=" "+fmt;
-  parse("FILE",filename); parseFlag("USE_ALL_DATA",single_run);
+  parse("FMT",fmt); fmt=" "+fmt; parse("FILE",filename); 
   if(filename.length()==0) error("name out output file was not specified");
-
-  if( !single_run ) log.printf("  outputting grid every %u steps to file named %s \n", getStride(), filename.c_str() );
-  else log.printf("  outputting grid to file named %s with format %s \n",filename.c_str(), fmt.c_str() );
+  log.printf("  outputting grid to file named %s with format %s \n",filename.c_str(), fmt.c_str() );
 
   checkRead();
 }
 
-void PrintCube::update(){
-  OFile gridfile; gridfile.link(*this); 
-  gridfile.setBackupString("analysis");
-  gridfile.open( filename );
-  printGrid( gridfile );
-  gridfile.close();
+void PrintCube::performOperationsWithGrid( const bool& from_update ){
+  if( !from_update && !single_run ) return ;
+  OFile ofile; ofile.link(*this);
+  if( from_update ) ofile.setBackupString("analysis");
+  ofile.open( filename );
 
-  // Clear the grid ready for next time
-  mygrid->clear();
-}
-
-void PrintCube::runFinalJobs(){
-  if( !single_run ) return ;
-  OFile gridfile; gridfile.link(*this); 
-  gridfile.open( filename );
-  printGrid( gridfile );
-  gridfile.close();
-}
-
-void PrintCube::printGrid( OFile& ofile ){
   double lunit = mygrid->getCubeUnits();
 
   ofile.printf("PLUMED CUBE FILE\n");
@@ -121,6 +84,10 @@ void PrintCube::printGrid( OFile& ofile ){
           ofile.printf("\n");
      }
   }
+
+  ofile.close();
+  // Clear the grid ready for next time
+  if( from_update ) mygrid->clear();
 }
 
 }

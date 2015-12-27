@@ -23,7 +23,7 @@
 #include "HistogramOnGrid.h"
 
 namespace PLMD {
-namespace vesselbase {
+namespace gridtools {
 
 void HistogramOnGrid::registerKeywords( Keywords& keys ){
   GridVessel::registerKeywords( keys );
@@ -31,7 +31,7 @@ void HistogramOnGrid::registerKeywords( Keywords& keys ){
   keys.add("compulsory","BANDWIDTH","the bandwidths");
 }
 
-HistogramOnGrid::HistogramOnGrid( const VesselOptions& da ):
+HistogramOnGrid::HistogramOnGrid( const vesselbase::VesselOptions& da ):
 GridVessel(da),
 bandwidths(dimension)
 {

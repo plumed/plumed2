@@ -33,7 +33,7 @@
 #include "MultiColvarBase.h"
 #include "tools/KernelFunctions.h"
 #include "vesselbase/ActionWithInputVessel.h"
-#include "vesselbase/HistogramOnGrid.h"
+#include "gridtools/HistogramOnGrid.h"
 #include "vesselbase/StoreDataVessel.h"
 
 using namespace std;
@@ -65,7 +65,7 @@ class MultiColvarDensity :
   unsigned rstride;
   MultiColvarBase* mycolv; 
   vesselbase::StoreDataVessel* stash;
-  vesselbase::HistogramOnGrid* mygrid;
+  gridtools::HistogramOnGrid* mygrid;
   Vector origin;
   std::vector<unsigned> directions;
 public:
@@ -168,9 +168,9 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
   // Create a task list
   for(unsigned i=0;i<mycolv->getFullNumberOfTasks();++i) addTaskToList(i);
   vesselbase::VesselOptions da("mygrid","",-1,vstring,this);
-  Keywords keys; vesselbase::HistogramOnGrid::registerKeywords( keys );
+  Keywords keys; gridtools::HistogramOnGrid::registerKeywords( keys );
   vesselbase::VesselOptions dar( da, keys );
-  mygrid = new vesselbase::HistogramOnGrid(dar); addVessel( mygrid );
+  mygrid = new gridtools::HistogramOnGrid(dar); addVessel( mygrid );
   resizeFunctions();
 
   // Enusre units for cube files are set correctly
