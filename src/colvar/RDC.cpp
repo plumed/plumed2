@@ -308,10 +308,13 @@ void RDC::calculate()
       dRDC[r+1] = -dRDC[r];
       dervir[index] += Tensor(distance,dRDC[r]);
     }
+
     if(!serial){
+      comm.Sum(&rdc[0],ndata);
       comm.Sum(&dRDC[0][0],3*N);
       comm.Sum(&dervir[0][0][0],9*ndata);
     }
+
     unsigned index=0;
     for(unsigned r=0;r<N;r+=2) {
       Value* val=getPntrToComponent(index);
