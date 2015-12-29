@@ -172,11 +172,11 @@ void Ensemble::calculate(){
     Value* v=getPntrToComponent(i);
     v->set(cv[i]);
     setDerivative(v, i, fact);
-  }
-  // if reweighing, derivative also wrt to bias
-  if(do_reweight){
-    double der = (getArgument(i) - cv[i]) * fact_kbt;
-    setDerivative(v, narg, der);
+    // if reweighing, derivative also wrt to bias
+    if(do_reweight){
+      double der = (getArgument(i) - cv[i]) * fact_kbt;
+      setDerivative(v, narg, der);
+    }
   }
 }
 
