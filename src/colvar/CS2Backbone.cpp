@@ -19,13 +19,16 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifdef __PLUMED_HAS_ALMOST
 
+#include "Colvar.h"
+#include "ActionRegister.h"
+#include "core/PlumedMain.h"
 #include "CamShift.h"
 
 using namespace std;
 
 namespace PLMD{
+namespace colvar{
 
 //+PLUMEDOC COLVAR CS2BACKBONE 
 /*
@@ -113,7 +116,6 @@ PRINT ARG=cs
 
 class CS2Backbone : public Colvar {
   vector<CamShift3> cam_list;
-  Almost::Molecules molecules;
   unsigned  numResidues;
   bool pbc;
   bool noexp;
@@ -133,12 +135,9 @@ void CS2Backbone::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords( keys );
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
   keys.add("compulsory","DATA","data/","The folder with the experimental chemical shifts.");
-  keys.add("compulsory","FF","a03_gromacs.mdb","The ALMOST force-field to map the atoms' names.");
   keys.add("compulsory","TEMPLATE","template.pdb","A PDB file of the protein system to initialise ALMOST.");
   keys.add("compulsory","NEIGH_FREQ","10","Period in step for neighbour list update.");
   keys.add("compulsory","NRES","Number of residues, corresponding to the number of chemical shifts.");
-  keys.add("optional","TERMINI","Defines the protonation states of the chain-termini.");
-  keys.addFlag("CYS-DISU",false,"Set to TRUE if your system has disulphide bridges.");  
   keys.addFlag("NOEXP",false,"Set to TRUE if you don't want to have fixed components with the experimetnal values.");  
   keys.addOutputComponent("ha","default","the calculated Ha hydrogen chemical shifts"); 
   keys.addOutputComponent("hn","default","the calculated H hydrogen chemical shifts"); 
@@ -160,7 +159,6 @@ pbc(true),
 noexp(false)
 {
   string stringadb;
-  string stringamdb;
   string stringapdb;
 
   bool nopbc=!pbc;
@@ -172,14 +170,8 @@ noexp(false)
   string stringa_data;
   parse("DATA",stringa_data);
 
-  string stringa_forcefield;
-  parse("FF",stringa_forcefield);
-
   string stringa_template;
   parse("TEMPLATE",stringa_template);
-
-  bool disu=false;
-  parseFlag("CYS-DISU",disu);
 
   int neigh_f=10;
   parse("NEIGH_FREQ", neigh_f);
@@ -187,41 +179,7 @@ noexp(false)
   parse("NRES", numResidues);
 
   stringadb  = stringa_data + string("/camshift.db");
-  stringamdb = stringa_data + string("/") + stringa_forcefield;
   stringapdb = stringa_data + string("/") + stringa_template;
-
-  log.printf("  loading force-field %s\n", stringamdb.c_str()); log.flush();
-  Almost::MDB mdb((char*)stringamdb.c_str());
-  log.printf("  loading template %s\n", stringapdb.c_str()); log.flush();
-  Almost::PDB pdb((char*)stringapdb.c_str());
-
-  vector<string> termini;
-  string stringa_mol;
-  parse("TERMINI",stringa_mol);
-  if(stringa_mol.length()>0) {
-    unsigned num_chains = pdb[0].size();
-    vector<string> data=Tools::getWords(stringa_mol,",");
-    if(data.size()!=2*num_chains) error("You have to define both the NTerm and the CTerm for each chain of your system!\n");
-    for(unsigned i=0;i<data.size();i++) termini.push_back(data[i]);
-  } else {
-    unsigned num_chains = pdb[0].size();
-    for(unsigned i=0;i<(2*num_chains);i++) termini.push_back("DEFAULT");
-  }
-
-  log.printf("  building molecule ..."); log.flush();
-  for(unsigned i=0;i<pdb[0].size();i++){
-    unsigned j=2*i;
-    string str;
-    str +='A'+i;
-    Almost::Protein p(str);
-    p.build_missing(pdb[0][i],mdb,termini[j],termini[j+1]);
-    if(disu) p.auto_disu_bonds(2.9,mdb);
-    molecules.add_protein(p);
-  }
-  log.printf(" done!\n"); log.flush(); 
-  log.printf("  Writing converted template.pdb ...\n"); log.flush();
-  Almost::mol2pdb(molecules,"converted-template.pdb");
-
 
   /* Lenght conversion (parameters are tuned for angstrom) */
   double scale=1.;
@@ -230,7 +188,7 @@ noexp(false)
   }
 
   log.printf("  Initialization of the predictor ...\n"); log.flush();
-  CamShift3 a = CamShift3(molecules, stringadb, scale);
+  CamShift3 a = CamShift3(stringapdb, stringadb, plumed.getAtoms().usingNaturalUnits(), scale);
 
   log.printf("  Reading experimental data ...\n"); log.flush();
   stringadb = stringa_data + string("/CAshifts.dat");
@@ -277,14 +235,12 @@ noexp(false)
   a.remove_problematic("UNK", "CA");
   a.remove_problematic("UNK", "CB");
   a.remove_problematic("UNK", "C");
-  if(disu) { 
-    a.remove_problematic("CYS", "HA");
-    a.remove_problematic("CYS", "H");
-    a.remove_problematic("CYS", "N");
-    a.remove_problematic("CYS", "CA");
-    a.remove_problematic("CYS", "CB");
-    a.remove_problematic("CYS", "C");
-  }
+  a.remove_problematic("CYS", "HA");
+  a.remove_problematic("CYS", "H");
+  a.remove_problematic("CYS", "N");
+  a.remove_problematic("CYS", "CA");
+  a.remove_problematic("CYS", "CB");
+  a.remove_problematic("CYS", "C");
   /* done */
 
   log.printf("  Setting parameters ...\n"); log.flush();
@@ -304,7 +260,6 @@ noexp(false)
   log<<"  Bibliography "
      <<plumed.cite("Kohlhoff K, Robustelli P, Cavalli A, Salvatella A, Vendruscolo M, J. Am. Chem. Soc. 131, 13894 (2009)")
      <<plumed.cite("Camilloni C, Robustelli P, De Simone A, Cavalli A, Vendruscolo M, J. Am. Chem. Soc. 134, 3968 (2012)") <<"\n";
-
 
   unsigned k=0;
   for(unsigned i=0;i<cam_list[0].atom.size();i++) {
@@ -419,4 +374,4 @@ void CS2Backbone::calculate()
 } 
 
 }
-#endif
+}

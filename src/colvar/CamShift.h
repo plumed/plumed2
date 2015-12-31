@@ -1,5 +1,3 @@
-#ifdef __PLUMED_HAS_ALMOST
-
 #ifndef __CAMSHIFT3__
 #define __CAMSHIFT3__
 
@@ -11,16 +9,13 @@
 #define CSDIM         3
 
 #include <string>
+#include <fstream>
 #include <sstream>
 #include <vector>
 
-#include <almost/mdb.h>
-#include <almost/molecules/molecules.h>
-
-#include "Colvar.h"
-#include "ActionRegister.h"
-#include "core/PlumedMain.h"
+#include "tools/MolDataClass.h"
 #include "tools/OpenMP.h"
+#include "tools/PDB.h"
 #include "tools/Torsion.h"
 
 using namespace std;
@@ -139,7 +134,7 @@ namespace PLMD {
 	vector<string> tok;
 	vector<string> tmp;
 	tok = split(line,' ');
-	for(unsigned int q=0;q<tok.size();q++)
+	for(unsigned q=0;q<tok.size();q++)
 	  if(tok[q].size()) tmp.push_back(tok[q]);
 	tok = tmp;
 	//PROCESS
@@ -213,7 +208,7 @@ namespace PLMD {
 	else if (tok[0] == "RINGS"){
           // angstrom^-3 to nm^-3
 	  assign(co_ring[c_kind][c_atom],tok,1./(dscale*dscale*dscale));
-	  for(unsigned int i=1;i<tok.size();i++)
+	  for(unsigned i=1;i<tok.size();i++)
 	    co_ring[c_kind][c_atom][i-1] *= 1000;
 	  continue;
 	}
@@ -289,7 +284,7 @@ namespace PLMD {
     }
     
     void assign(double * f, const vector<string> & v, const double scale){
-      for(unsigned int i=1;i<v.size();i++)
+      for(unsigned i=1;i<v.size();i++)
 	f[i-1] = scale*(atof(v[i].c_str()));
       
     }
@@ -327,10 +322,13 @@ namespace PLMD {
 	res_type_prev = res_type_curr = res_type_next = -1;
         res_kind = fd = -1;
         box_nb.resize(6); 
-        for(unsigned int i=0;i<6;i++) box_nb[i].resize(1000);
         pos.resize(6); 
         exp_cs.resize(6); 
-        for(unsigned int i=0;i<6;i++) pos[i] = -1;
+        for(unsigned i=0;i<6;i++) {
+           box_nb[i].resize(50);
+           pos[i] = -1;
+           exp_cs[i] = 0.;
+        }
       }
     };
 
@@ -405,13 +403,15 @@ namespace PLMD {
   public:
     vector<vector<Fragment> > atom;
   
-    CamShift3(const Almost::Molecules & molecules, string file, const double scale):db(file,scale){
+    CamShift3(const string pdbfile, const string dbfile, const bool NatUnits, const double scale):db(dbfile,scale){
+      PDB pdb;
+      if( !pdb.read(pdbfile,NatUnits,1./scale ) ) plumed_merror("missing input file " + pdbfile );
       //Init
-      init_backbone(molecules);
-      init_sidechain(molecules);
-      init_xdist(molecules);
-      init_types(molecules);
-      init_rings(molecules);
+      init_backbone(pdb);
+      init_sidechain(pdb);
+      init_xdist(pdb);
+      init_types(pdb);
+      init_rings(pdb);
       //Non-Bonded neighbour lists 
       box_nupdate=10;
       box_count=0;
@@ -430,8 +430,8 @@ namespace PLMD {
       else if(nucl=="C") n=5;
       else return;
 
-      for(unsigned int i=0;i<atom.size();i++){
-	for(unsigned int a=0;a<atom[i].size();a++){
+      for(unsigned i=0;i<atom.size();i++){
+	for(unsigned a=0;a<atom[i].size();a++){
           if(atom[i][a].res_name.c_str()==res) atom[i][a].exp_cs[n] = 0.;
         }
       }
@@ -473,12 +473,12 @@ namespace PLMD {
 
       unsigned index=0;
       // CYCLE OVER MULTIPLE CHAINS
-      for(unsigned int s=0;s<atom.size();s++){
+      for(unsigned s=0;s<atom.size();s++){
 	// SKIP FIRST AND LAST RESIDUE OF EACH CHAIN
 #pragma omp parallel for num_threads(OpenMP::getNumThreads())
-	for(unsigned int a=0;a<atom[s].size();a++){
+	for(unsigned a=1;a<atom[s].size()-1;a++){
           // CYCLE OVER THE SIX BACKBONE CHEMICAL SHIFTS
-	  for(unsigned int at_kind=0;at_kind<6;at_kind++){
+	  for(unsigned at_kind=0;at_kind<6;at_kind++){
 	    double cs = 0.;
 	    double cs_deriv = -1.;
             
@@ -520,7 +520,7 @@ namespace PLMD {
 	      int ipos = CSDIM*atom[s][a].pos[at_kind];
 
 	      //PREV
-	      for(unsigned int q=0;q<atom[s][a].prev.size();q++){
+	      for(unsigned q=0;q<atom[s][a].prev.size();q++){
 	        double d2,dx,dy,dz;
 	        int jpos = CSDIM*atom[s][a].prev[q];
 	        dx = coor[ipos] - coor[jpos];
@@ -544,7 +544,7 @@ namespace PLMD {
 	      }
 
 	      //CURR
-	      for(unsigned int q=0;q<atom[s][a].curr.size();q++){
+	      for(unsigned q=0;q<atom[s][a].curr.size();q++){
 	        int jpos = CSDIM*atom[s][a].curr[q];
 	        if(ipos==jpos) continue;
 	        double d2,dx,dy,dz;
@@ -568,7 +568,7 @@ namespace PLMD {
 	      }
 
 	      //NEXT
-	      for(unsigned int q=0;q<atom[s][a].next.size();q++){
+	      for(unsigned q=0;q<atom[s][a].next.size();q++){
 	        double d2,dx,dy,dz;
 	        int jpos = CSDIM*atom[s][a].next[q];
 	        dx = coor[ipos] - coor[jpos];
@@ -592,7 +592,7 @@ namespace PLMD {
 	      }
 
 	      //SIDE CHAIN
-	      for(unsigned int q=0;q<atom[s][a].side_chain.size();q++){
+	      for(unsigned q=0;q<atom[s][a].side_chain.size();q++){
 	        int jpos = CSDIM*atom[s][a].side_chain[q];
 	        if(ipos==jpos) continue;
 	        double d2,dx,dy,dz;
@@ -615,7 +615,7 @@ namespace PLMD {
 	      }
 	    
 	      //EXTRA DIST
-	      for(unsigned int q=0;q<atom[s][a].xd1.size();q++){
+	      for(unsigned q=0;q<atom[s][a].xd1.size();q++){
 	        double d2,dx,dy,dz;
 	        if(atom[s][a].xd1[q]==-1||atom[s][a].xd2[q]==-1) continue;
 	        int kpos = CSDIM*atom[s][a].xd1[q];
@@ -711,7 +711,7 @@ namespace PLMD {
 	        ff[place+ipos+1] = ff[place+ipos+1] + ffi[1];
 	        ff[place+ipos+2] = ff[place+ipos+2] + ffi[2];
 
-	        for(unsigned int tt=0;tt<8;tt++){
+	        for(unsigned tt=0;tt<8;tt++){
 		  cs += dist_sum3[tt]*CONST_CO_SPHERE3[tt];
 		  cs += dist_sum [tt]*CONST_CO_SPHERE [tt];
 	        }
@@ -723,7 +723,7 @@ namespace PLMD {
 	        double *rc = db.CO_RING(aa_kind,at_kind);
 	        double contrib [] = {0.0, 0.0, 0.0, 0.0, 0.0};
 	        double contribTot = 0.0;
-	        for (unsigned int i = 0; i < ringInfo.size(); i++){
+	        for (unsigned i = 0; i < ringInfo.size(); i++){
 		  // compute angle from ring middle point to current atom position
 		  // get distance vector from query atom to ring center and normal vector to ring plane
   		  double fact = cs_deriv*rc[ringInfo[i].rtype];
@@ -966,7 +966,7 @@ namespace PLMD {
 
   private:
 
-    inline void update_box(int curr, vector<int> & aa_box_i, const vector<double> & coor, const double cutnb2){
+    inline void update_box(const int curr, vector<int> & aa_box_i, const vector<double> & coor, const double cutnb2){
       aa_box_i.clear();
       int ipos = CSDIM*curr;
       int size = coor.size();
@@ -992,20 +992,22 @@ namespace PLMD {
       else if ((name == "HA1"))                   name = "HA";
     }
 
-    void init_backbone(const Almost::Molecules & molecules){
+    void init_backbone(const PDB pdb){
 
-      seg_last.resize(molecules.protein_size());
+      // number of chains
+      std::vector<std::string> chains; pdb.getChainNames( chains );
+      seg_last.resize(chains.size());
 
-      for(unsigned int i=0;i<molecules.protein_size();i++){
-	if(i==0)
-	  seg_last[i] = molecules.protein(i).fragment_size();
-	else 
-	  seg_last[i] = seg_last[i-1]+molecules.protein(i).fragment_size();
+      for(unsigned i=0;i<chains.size();i++){
+        unsigned start,end;
+        std::string errmsg;
+        pdb.getResidueRange( chains[i], start, end, errmsg );
 
-	const Almost::Protein & p = molecules.protein(i);
-	int b = p.atom_offset();
-	int e = b+p.atom_size();
-	int fb = p.fragment_offset();
+	int fb = start;
+        unsigned resrange = end-start+1;
+
+	if(i==0) seg_last[i] = resrange;
+	else seg_last[i] = seg_last[i-1]+resrange;
 
 	vector<int> N_;
 	vector<int> H_;
@@ -1016,173 +1018,164 @@ namespace PLMD {
 	vector<int> O_;
 	vector<int> CX_; //For chi1
 	{	  
-	  N_.resize(p.fragment_size());
-	  H_.resize(p.fragment_size());
-	  CA_.resize(p.fragment_size());
-	  CB_.resize(p.fragment_size());
-	  HA_.resize(p.fragment_size());
-	  C_.resize(p.fragment_size());
-	  O_.resize(p.fragment_size());
-	  CX_.resize(p.fragment_size());
+	  N_.resize (resrange);
+	  H_.resize (resrange);
+	  CA_.resize(resrange);
+	  CB_.resize(resrange);
+	  HA_.resize(resrange);
+	  C_.resize (resrange);
+	  O_.resize (resrange);
+	  CX_.resize(resrange);
 	}
 
-	for(unsigned int a=0;a<N_.size();a++){
-	  N_[a] = -1;
-	  H_[a] = -1;
+	for(unsigned a=0;a<resrange;a++){
+	  N_[a]  = -1;
+	  H_[a]  = -1;
 	  CA_[a] = -1;
 	  CB_[a] = -1;
 	  HA_[a] = -1;
-	  C_[a] = -1;
-	  O_[a] = -1;
+	  C_[a]  = -1;
+	  O_[a]  = -1;
 	  CX_[a] = -1;
 	}
 
-	for(int a=b;a<e;a++){
-	  if(molecules[a].name()=="N"){
-	    int f = molecules.find_fragment(a);
-	    N_[f-fb] = a;
-	  } else if(molecules[a].name()=="H"||molecules[a].name()=="HN"){
-	    int f = molecules.find_fragment(a);
-	    H_[f-fb] = a;
-	  } else if(molecules[a].name()=="HA"||molecules[a].name()=="HA1"){
-	    int f = molecules.find_fragment(a);
-	    HA_[f-fb] = a;
-	  } else if(molecules[a].name()=="CA"){
-	    int f = molecules.find_fragment(a);
-	    CA_[f-fb] = a;
-	  } else if(molecules[a].name()=="CB"){
-	    int f = molecules.find_fragment(a);
-	    CB_[f-fb] = a;
-	  } else if(molecules[a].name()=="C"){
-	    int f = molecules.find_fragment(a);
-	    C_[f-fb] = a;
-	  } else if(molecules[a].name()=="O"){
-	    int f = molecules.find_fragment(a);
-	    O_[f-fb] = a;
-	  } else {
-	    //SPECIAL CASE PRO
-	    if(molecules[a].name()=="CD"){
-	      int f = molecules.find_fragment(a);
-	      if(molecules.fragment_name(f,Almost::Protein::SHORT)=="PRO")
-		H_[f-fb] = a;
-	    }
-	  }
-
+        AtomNumber astart, aend; 
+        pdb.getAtomRange( chains[i], astart, aend, errmsg );
+        vector<AtomNumber> allatoms = pdb.getAtomNumbers();
+        int atom_offset = astart.index();
+        // cycle over all the atoms in the chain
+	for(int a=astart.index();a<aend.index();a++){
+          int atm_index=a-atom_offset;
+	  int f = pdb.getResidueNumber(allatoms[a]);
+          string AN = pdb.getAtomName(allatoms[a]);
+	  if(AN=="N")                  N_[f-fb] = atm_index;
+	  else if(AN=="H"||AN=="HN")   H_[f-fb] = atm_index;
+	  else if(AN=="HA"||AN=="HA1") HA_[f-fb] = atm_index;
+	  else if(AN=="CA")            CA_[f-fb] = atm_index;
+	  else if(AN=="CB")            CB_[f-fb] = atm_index;
+	  else if(AN=="C")             C_[f-fb] = atm_index;
+	  else if(AN=="O")             O_[f-fb] = atm_index;
+	  else if(AN=="CD"&&pdb.getResidueName(allatoms[a])=="PRO") H_[f-fb] = atm_index;
 	  //CHI1 SIDE CHAIN
-	  {
-	    int f = molecules.find_fragment(a);
-	    string frg = molecules.fragment_name(f,Almost::Protein::SHORT);
-	    string atm = molecules[a].name();
-	    if(is_chi1_cx(frg,atm)) CX_[f-fb] = a;
-	  }
+	  string frg = pdb.getResidueName(allatoms[a]);
+	  if(is_chi1_cx(frg,AN)) CX_[f-fb] = atm_index;
 	}
 
+        // vector of residues for a given chain
 	vector<Fragment> atm_;
-	for(int a=b;a<e;a++){
-	  if(molecules[a].name()=="CA"){
-	    int fd = p.find_fragment(a);
-	    int f_idx = fd - fb;
-	    Fragment at;
-	    {
-	      at.pos[0] = HA_[f_idx];
-	      at.pos[1] = H_[f_idx];
-	      at.pos[2] = N_[f_idx];
-	      at.pos[3] = CA_[f_idx];
-	      at.pos[4] = CB_[f_idx];
-	      at.pos[5] = C_[f_idx];
-	    }
-	    at.res_type_prev = at.res_type_curr = at.res_type_next = -1;
-	    at.res_name = molecules.fragment_name(fd,Almost::Molecules::SHORT);
-	    at.res_kind = db.kind(at.res_name);
-	    at.fd = fd;
-	    //REGISTER PREV CURR NEXT
-	    {
-	      //N H CA HA C O
-
-	      //PREV
-	      if(f_idx!=0){
-		at.prev.push_back(N_[f_idx-1]);
-		at.prev.push_back(CA_[f_idx-1]);
-		at.prev.push_back(HA_[f_idx-1]);
-		at.prev.push_back(C_[f_idx-1]);
-		at.prev.push_back(O_[f_idx-1]);	
-		at.res_type_prev = frag2enum(molecules.fragment_name(fd-1,Almost::Molecules::SHORT));
-	      }
-
-	      //CURR
-	      {
-		at.curr.push_back(N_[f_idx]);
-		at.curr.push_back(H_[f_idx]);
-		at.curr.push_back(CA_[f_idx]);
-		at.curr.push_back(HA_[f_idx]);
-		at.curr.push_back(C_[f_idx]);
-		at.curr.push_back(O_[f_idx]);		
-		at.res_type_curr = frag2enum(molecules.fragment_name(fd,Almost::Molecules::SHORT));
-	      }
-
-	      //NEXT
-	      if(f_idx!=p.fragment_size()-1){
-		at.next.push_back(N_[f_idx+1]);
-		at.next.push_back(H_[f_idx+1]);
-		at.next.push_back(CA_[f_idx+1]);
-		at.next.push_back(HA_[f_idx+1]);
-		at.next.push_back(C_[f_idx+1]);
-		at.res_type_next = frag2enum(molecules.fragment_name(fd+1,Almost::Molecules::SHORT));
-	      }
-
-	      //PHI | PSI | CH1
-	      if(f_idx!=0){
-		at.phi.push_back(C_[f_idx-1]);
-		at.phi.push_back(N_[f_idx]);
-		at.phi.push_back(CA_[f_idx]);
-		at.phi.push_back(C_[f_idx]);
-	      }
-	      
-	      if(f_idx!=p.fragment_size()-1){
-		at.psi.push_back(N_[f_idx]);
-		at.psi.push_back(CA_[f_idx]);
-		at.psi.push_back(C_[f_idx]);
-		at.psi.push_back(N_[f_idx+1]);	
-	      }
-
-	      if(CX_[f_idx]!=-1&&CB_[f_idx]!=-1){
-		at.chi1.push_back(N_[f_idx]);
-		at.chi1.push_back(CA_[f_idx]);
-		at.chi1.push_back(CB_[f_idx]);
-		at.chi1.push_back(CX_[f_idx]);	
-	      }
-	    }
-	    atm_.push_back(at);
+        // cycle over all residues in the chain 
+	for(int a=start;a<end;a++){
+	  int f_idx = a - fb;
+	  Fragment at;
+	  {
+	    at.pos[0] = HA_[f_idx];
+	    at.pos[1] = H_[f_idx];
+	    at.pos[2] = N_[f_idx];
+	    at.pos[3] = CA_[f_idx];
+	    at.pos[4] = CB_[f_idx];
+	    at.pos[5] = C_[f_idx];
 	  }
+	  at.res_type_prev = at.res_type_curr = at.res_type_next = -1;
+	  at.res_name = pdb.getResidueName(a, chains[i]); 
+	  at.res_kind = db.kind(at.res_name);
+	  at.fd = a;
+	  //REGISTER PREV CURR NEXT
+	  {
+	    //N H CA HA C O
+
+	    //PREV
+	    if(f_idx>0){
+	      at.prev.push_back(N_[f_idx-1]);
+	      at.prev.push_back(CA_[f_idx-1]);
+	      at.prev.push_back(HA_[f_idx-1]);
+	      at.prev.push_back(C_[f_idx-1]);
+	      at.prev.push_back(O_[f_idx-1]);	
+	      at.res_type_prev = frag2enum(pdb.getResidueName(a-1, chains[i]));
+	    }
+
+	    //CURR
+	    {
+	      at.curr.push_back(N_[f_idx]);
+	      at.curr.push_back(H_[f_idx]);
+	      at.curr.push_back(CA_[f_idx]);
+	      at.curr.push_back(HA_[f_idx]);
+	      at.curr.push_back(C_[f_idx]);
+	      at.curr.push_back(O_[f_idx]);		
+	      at.res_type_curr = frag2enum(pdb.getResidueName(a, chains[i]));
+	    }
+
+	    //NEXT
+	    if(f_idx<(end-fb)-1){
+	      at.next.push_back(N_[f_idx+1]);
+	      at.next.push_back(H_[f_idx+1]);
+	      at.next.push_back(CA_[f_idx+1]);
+	      at.next.push_back(HA_[f_idx+1]);
+	      at.next.push_back(C_[f_idx+1]);
+	      at.res_type_next = frag2enum(pdb.getResidueName(a+1, chains[i]));
+	    }
+
+	    //PHI | PSI | CH1
+	    if(f_idx>0){
+	      at.phi.push_back(C_[f_idx-1]);
+	      at.phi.push_back(N_[f_idx]);
+	      at.phi.push_back(CA_[f_idx]);
+	      at.phi.push_back(C_[f_idx]);
+	    }
+	    
+	    if(f_idx<(end-fb)-1){
+	      at.psi.push_back(N_[f_idx]);
+	      at.psi.push_back(CA_[f_idx]);
+	      at.psi.push_back(C_[f_idx]);
+	      at.psi.push_back(N_[f_idx+1]);	
+	    }
+
+	    if(CX_[f_idx]!=-1&&CB_[f_idx]!=-1){
+	      at.chi1.push_back(N_[f_idx]);
+	      at.chi1.push_back(CA_[f_idx]);
+	      at.chi1.push_back(CB_[f_idx]);
+	      at.chi1.push_back(CX_[f_idx]);	
+	    }
+	  }
+	  atm_.push_back(at);
 	}
 	atom.push_back(atm_);
       }
     }
 
-    void init_sidechain(const Almost::Molecules & molecules){
-      for(unsigned int s = 0; s<atom.size(); s++){
-	for(unsigned int a = 0;a<atom[s].size();a++){
-	  vector<int> atm = molecules.fragment_atoms(atom[s][a].fd);
+    void init_sidechain(const PDB pdb){
+      std::vector<std::string> chains; 
+      pdb.getChainNames( chains );
+      // cycle over chains
+      for(unsigned s = 0; s<atom.size(); s++){
+        AtomNumber astart, aend; 
+        std::string errmsg;
+        pdb.getAtomRange( chains[s], astart, aend, errmsg );
+        int atom_offset = astart.index();
+        // cycle over residues  
+	for(unsigned a = 0;a<atom[s].size();a++){
           if(atom[s][a].res_name=="UNK") continue;
+	  vector<AtomNumber> atm = pdb.getAtomsInResidue(atom[s][a].fd, chains[s]);
 	  vector<string> sc_atm = side_chain_atoms(atom[s][a].res_name);
 
-	  for(unsigned int sc=0;sc<sc_atm.size();sc++){
-	    for(unsigned int aa=0;aa<atm.size();aa++){
-	      if(molecules[atm[aa]].name()==sc_atm[sc])
-		atom[s][a].side_chain.push_back(atm[aa]);
+	  for(unsigned sc=0;sc<sc_atm.size();sc++){
+	    for(unsigned aa=0;aa<atm.size();aa++){
+	      if(pdb.getAtomName(atm[aa])==sc_atm[sc])
+		atom[s][a].side_chain.push_back(atm[aa].index()-atom_offset);
 	    }
 	  }
+
 	}
       }
     }
 
-    void init_xdist(const Almost::Molecules & molecules){
+    void init_xdist(const PDB pdb){
       string atomsP1[] = {"H", "H", "H", "C", "C", "C", 
                           "O", "O", "O", "N", "N", "N", 
                           "O", "O", "O", "N", "N", "N", 
                           "CG", "CG", "CG", "CG", "CG", "CG", "CG", "CA"};
 
       int resOffsetP1 [] = {0, 0, 0, -1, -1, -1, 0, 0, 0, 1, 1, 1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, -1, 1, -1};
+
       string atomsP2[] = {"HA", "C", "CB", "HA", "C", "CB", 
                           "HA", "N", "CB", "HA", "N", "CB", 
                           "HA", "N", "CB", "HA", "N", "CB", 
@@ -1190,30 +1183,41 @@ namespace PLMD {
 
       int resOffsetP2 [] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, 0, 0, 0, -1, 1, 0, 0, 1};
 
-      for(unsigned int s = 0; s<atom.size(); s++){
-	for(unsigned int a = 0;a<atom[s].size();a++){
+      std::vector<std::string> chains; 
+      pdb.getChainNames( chains );
+      vector<AtomNumber> allatoms = pdb.getAtomNumbers();
+
+      for(unsigned s = 0; s<atom.size(); s++){
+        unsigned start,end;
+        std::string errmsg;
+        pdb.getResidueRange( chains[s], start, end, errmsg );
+        AtomNumber astart, aend; 
+        pdb.getAtomRange( chains[s], astart, aend, errmsg );
+        int atom_offset = astart.index();
+
+	for(unsigned a = 0;a<atom[s].size();a++){
 	  int fd = atom[s][a].fd;
-	  int fo = molecules.protein(s).fragment_offset();
-	  int fs = molecules.protein(s).fragment_size();
+	  int fo = start;
+	  int fs = end-fo;
 	  int f_idx = fd-fo;
 	  if((f_idx==0)||(f_idx==fs-1)) continue;
-	  vector<int> atm_curr = molecules.fragment_atoms(atom[s][a].fd);
-	  vector<int> atm_prev = molecules.fragment_atoms(atom[s][a].fd-1);
-	  vector<int> atm_next = molecules.fragment_atoms(atom[s][a].fd+1);
+	  vector<AtomNumber> atm_curr = pdb.getAtomsInResidue(atom[s][a].fd,chains[s]);
+	  vector<AtomNumber> atm_prev = pdb.getAtomsInResidue(atom[s][a].fd-1,chains[s]);
+	  vector<AtomNumber> atm_next = pdb.getAtomsInResidue(atom[s][a].fd+1,chains[s]);
 
-	  for(unsigned int q=0;q<numXtraDists - 1; q++){
-	    vector<int>::iterator at1,at1_end;
-	    vector<int>::iterator at2,at2_end;
+	  for(unsigned q=0;q<numXtraDists-1; q++){
+	    vector<AtomNumber>::iterator at1,at1_end;
+	    vector<AtomNumber>::iterator at2,at2_end;
 
-	    int p1 = -1;
-	    int p2 = -1;
+	    AtomNumber p1;
+	    AtomNumber p2;
 
 	    if(resOffsetP1[q]== 0){ at1 = atm_curr.begin(); at1_end = atm_curr.end();}
 	    if(resOffsetP1[q]==-1){ at1 = atm_prev.begin(); at1_end = atm_prev.end();}
 	    if(resOffsetP1[q]==+1){ at1 = atm_next.begin(); at1_end = atm_next.end();}
 	    while(at1!=at1_end){
-	      int aa = *at1; ++at1;
-	      string name = molecules[aa].name();
+	      AtomNumber aa = *at1; ++at1;
+	      string name = pdb.getAtomName(aa);
 
 	      xdist_name_map(name);
 
@@ -1227,8 +1231,8 @@ namespace PLMD {
 	    if(resOffsetP2[q]==-1){ at2 = atm_prev.begin(); at2_end = atm_prev.end();}
 	    if(resOffsetP2[q]==+1){ at2 = atm_next.begin(); at2_end = atm_next.end();}
 	    while(at2!=at2_end){
-	      int aa = *at2; ++at2;
-	      string name = molecules[aa].name();
+	      AtomNumber aa = *at2; ++at2;
+	      string name = pdb.getAtomName(aa);
 
 	      xdist_name_map(name);
 
@@ -1237,18 +1241,19 @@ namespace PLMD {
 		break;
 	      }
 	    }
-	    atom[s][a].xd1.push_back(p1);
-	    atom[s][a].xd2.push_back(p2);
+	    atom[s][a].xd1.push_back(p1.index()-atom_offset);
+	    atom[s][a].xd2.push_back(p2.index()-atom_offset);
 	  }
 	}
       }
     }
 
-    void init_types(const Almost::Molecules & molecules){
-      for(unsigned int i=0;i<molecules.atom_size();i++){
-	int frag = molecules.find_fragment(i);
-	string fragName = molecules.fragment_name(frag,Almost::Molecules::SHORT);
-	string atom_name = molecules[i].name();
+    void init_types(const PDB pdb){
+      vector<AtomNumber> aa = pdb.getAtomNumbers();
+      for(unsigned i=0;i<aa.size();i++){
+	int frag = pdb.getResidueNumber(aa[i]);
+	string fragName = pdb.getResidueName(aa[i]);
+	string atom_name = pdb.getAtomName(aa[i]);
 	char atom_type = atom_name[0];
 	res_num.push_back(frag);
 	int t = -1;
@@ -1267,103 +1272,108 @@ namespace PLMD {
       }
     }
 
-    void init_rings(const Almost::Molecules & m){
-      for(unsigned int i=0;i<m.fragment_size();i++){
-	string frg = m.fragment_name(i,Almost::Molecules::SHORT);
-	if(!((frg=="PHE")||
-	     (frg=="TYR")||
-	     (frg=="TRP")||
-	     (frg=="HIS")||
-	     (frg=="HIP")||
-	     (frg=="HID")||
-	     (frg=="HIE")||
-	     (frg=="HSD")||
-	     (frg=="HSE")||
-	     (frg=="HSP")))
-	  continue;
+    void init_rings(const PDB pdb){
+      std::vector<std::string> chains; 
+      pdb.getChainNames( chains );
+      vector<AtomNumber> allatoms = pdb.getAtomNumbers();
 
-	if(frg=="PHE"||frg=="TYR"){
-	  RingInfo ri;
-	  ri.type = 0;
-	  vector<int> frg_atoms = m.fragment_atoms(i);
-	  for(unsigned int a=0;a<frg_atoms.size();a++){
-	    for(unsigned int aa=0;aa<6;aa++){
-	      int atm = frg_atoms[a];
-	      if(m[atm].name()==ri.atomNames[ri.type][aa]){
-		ri.atom[aa] = atm;
-		break;
-	      }
-	    }
-	  }
-	  ri.numAtoms = 6;
-	  if(frg=="PHE") ri.rtype = RingInfo::R_PHE;
-	  if(frg=="TYR") ri.rtype = RingInfo::R_TYR;
-	  ringInfo.push_back(ri);
-	}
-	else if(frg=="TRP"){
-	  //First ring
-	  {
+      for(unsigned s=0; s<atom.size(); s++){
+        unsigned start,end;
+        std::string errmsg;
+        pdb.getResidueRange( chains[s], start, end, errmsg );
+        AtomNumber astart, aend; 
+        pdb.getAtomRange( chains[s], astart, aend, errmsg );
+        int atom_offset = astart.index();
+	for(unsigned a=start; a<end; a++){
+	  string frg = pdb.getResidueName(a);
+	  if(!((frg=="PHE")||(frg=="TYR")||(frg=="TRP")||
+	       (frg=="HIS")||(frg=="HIP")||(frg=="HID")||
+	       (frg=="HIE")||(frg=="HSD")||(frg=="HSE")||
+	       (frg=="HSP"))) continue;
+
+	  if(frg=="PHE"||frg=="TYR"){
 	    RingInfo ri;
-	    ri.type = 1;
-	    vector<int> frg_atoms = m.fragment_atoms(i);
-	    for(unsigned int a=0;a<frg_atoms.size();a++){
-	      for(unsigned int aa=0;aa<6;aa++){
-		int atm = frg_atoms[a];
-		if(m[atm].name()==ri.atomNames[ri.type][aa]){
+	    ri.type = 0;
+	    vector<AtomNumber> frg_atoms = pdb.getAtomsInResidue(atom[s][a].fd,chains[s]);
+	    for(unsigned a=0;a<frg_atoms.size();a++){
+	      for(unsigned aa=0;aa<6;aa++){
+	        int atm = frg_atoms[a].index()-atom_offset;
+	        if(pdb.getAtomName(frg_atoms[a])==ri.atomNames[ri.type][aa]){
 		  ri.atom[aa] = atm;
 		  break;
-		}
+	        }
 	      }
 	    }
 	    ri.numAtoms = 6;
-	    ri.rtype = RingInfo::R_TRP1;
+	    if(frg=="PHE") ri.rtype = RingInfo::R_PHE;
+	    if(frg=="TYR") ri.rtype = RingInfo::R_TYR;
 	    ringInfo.push_back(ri);
 	  }
-	  //Second Ring
-	  {
+	  else if(frg=="TRP"){
+	    //First ring
+	    {
+	      RingInfo ri;
+	      ri.type = 1;
+	      vector<AtomNumber> frg_atoms = pdb.getAtomsInResidue(atom[s][a].fd,chains[s]);
+	      for(unsigned a=0;a<frg_atoms.size();a++){
+	        for(unsigned aa=0;aa<6;aa++){
+		  int atm = frg_atoms[a].index()-atom_offset;
+	          if(pdb.getAtomName(frg_atoms[a])==ri.atomNames[ri.type][aa]){
+		    ri.atom[aa] = atm;
+		    break;
+		  }
+	        }
+	      }
+	      ri.numAtoms = 6;
+	      ri.rtype = RingInfo::R_TRP1;
+	      ringInfo.push_back(ri);
+	    }
+	    //Second Ring
+	    {
+	      RingInfo ri;
+	      ri.type = 2;
+	      vector<AtomNumber> frg_atoms = pdb.getAtomsInResidue(atom[s][a].fd,chains[s]);
+	      for(unsigned a=0;a<frg_atoms.size();a++){
+	        for(unsigned aa=0;aa<5;aa++){
+		  int atm = frg_atoms[a].index()-atom_offset;
+	          if(pdb.getAtomName(frg_atoms[a])==ri.atomNames[ri.type][aa]){
+		    ri.atom[aa] = atm;
+		    break;
+		  }
+	        }
+	      }
+	      ri.numAtoms = 5;
+	      ri.rtype = RingInfo::R_TRP2;
+	      ringInfo.push_back(ri);
+	    }
+	  }
+	  else { //HIS case
 	    RingInfo ri;
-	    ri.type = 2;
-	    vector<int> frg_atoms = m.fragment_atoms(i);
-	    for(unsigned int a=0;a<frg_atoms.size();a++){
-	      for(unsigned int aa=0;aa<5;aa++){
-		int atm = frg_atoms[a];
-		if(m[atm].name()==ri.atomNames[ri.type][aa]){
+	    ri.type = 3;
+	    vector<AtomNumber> frg_atoms = pdb.getAtomsInResidue(atom[s][a].fd,chains[s]);
+	    for(unsigned a=0;a<frg_atoms.size();a++){
+	      for(unsigned aa=0;aa<5;aa++){
+	        int atm = frg_atoms[a].index()-atom_offset;
+	        if(pdb.getAtomName(frg_atoms[a])==ri.atomNames[ri.type][aa]){
 		  ri.atom[aa] = atm;
 		  break;
-		}
+	        }
 	      }
 	    }
 	    ri.numAtoms = 5;
-	    ri.rtype = RingInfo::R_TRP2;
+	    ri.rtype = RingInfo::R_HIS;
 	    ringInfo.push_back(ri);
 	  }
-	}
-	else { //HIS case
-	  RingInfo ri;
-	  ri.type = 3;
-	  vector<int> frg_atoms = m.fragment_atoms(i);
-	  for(unsigned int a=0;a<frg_atoms.size();a++){
-	    for(unsigned int aa=0;aa<5;aa++){
-	      int atm = frg_atoms[a];
-	      if(m[atm].name()==ri.atomNames[ri.type][aa]){
-		ri.atom[aa] = atm;
-		break;
-	      }
-	    }
-	  }
-	  ri.numAtoms = 5;
-	  ri.rtype = RingInfo::R_HIS;
-	  ringInfo.push_back(ri);
-	}
+        }
       }
     }
 
     void compute_ring_parameters(const vector<double> & coor){
-      for(unsigned int i=0;i<ringInfo.size();i++){
+      for(unsigned i=0;i<ringInfo.size();i++){
 	int size = ringInfo[i].numAtoms;
 	double a[6][3];
 	for(int j = 0; j < size; j++)
-	  for(unsigned int d=0;d<3;d++){
+	  for(unsigned d=0;d<3;d++){
 	    a[j][d] = coor[CSDIM*ringInfo[i].atom[j]+d];
 	  }
 	// calculate ring center
@@ -1778,7 +1788,7 @@ namespace PLMD {
 
     int frag_segment(int p){
       int s = 0;
-      for(unsigned int i=0;i<seg_last.size()-1;i++){
+      for(unsigned i=0;i<seg_last.size()-1;i++){
 	if(p>seg_last[i]) s  = i+1;
 	else break;
       }
@@ -1793,7 +1803,5 @@ namespace PLMD {
   };
 
 }
-
-#endif
 
 #endif
