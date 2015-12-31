@@ -38,7 +38,6 @@ GridVessel::GridVessel( const vesselbase::VesselOptions& da ):
 Vessel(da),
 noderiv(false),
 bounds_set(false),
-bold(0),
 cube_units(1.0)
 {
   std::vector<std::string> compnames; parseVector("COMPONENTS",compnames);
@@ -47,9 +46,6 @@ cube_units(1.0)
   std::vector<std::string> spbc( dimension ); parseVector("PBC",spbc); 
   str_min.resize( dimension);  str_max.resize( dimension ); 
   parseFlag("NOMEMORY",nomemory);
-
-  tmp_indices.resize( str_min.size() );
-  current_neigh.resize( static_cast<unsigned>(pow(2.,dimension)) );
 
   unsigned n=0; nper=compnames.size()*( 1 + coordnames.size() );
   arg_names.resize( coordnames.size() + compnames.size()*( 1 + coordnames.size() ) );
@@ -136,13 +132,17 @@ unsigned GridVessel::getIndex( const std::vector<unsigned>& indices ) const {
   return index;
 }
 
-unsigned GridVessel::getIndex( const std::vector<double>& point ) const {
-  plumed_dbg_assert( bounds_set && point.size()==dimension );
-  std::vector<unsigned> indices(dimension);
+void GridVessel::getIndices( const std::vector<double>& point, std::vector<unsigned>& indices ) const { 
+  plumed_dbg_assert( bounds_set && point.size()==dimension && indices.size()==dimension );
   for(unsigned i=0;i<dimension;++i){
-      indices[i]=std::floor( (point[i] - min[i])/dx[i] ); 
+      indices[i]=std::floor( (point[i] - min[i])/dx[i] );
       if( pbc[i] ) indices[i]=indices[i]%nbin[i];
   }
+}
+
+unsigned GridVessel::getIndex( const std::vector<double>& point ) const {
+  plumed_dbg_assert( bounds_set && point.size()==dimension );
+  std::vector<unsigned> indices(dimension); getIndices( point, indices );
   return getIndex( indices );
 }
 
@@ -169,42 +169,22 @@ void GridVessel::getGridPointCoordinates( const unsigned& ipoint , std::vector<d
   for(unsigned i=0;i<dimension;++i) x[i] = min[i] + dx[i]*tindices[i];
 }
 
-unsigned GridVessel::getLocationOnGrid( const std::vector<double>& x, std::vector<double>& dd ){
-  plumed_dbg_assert( bounds_set && x.size()==dimension && dd.size()==dimension );
-  getIndices( bold, tmp_indices ); bool changebox=false;
-  for(unsigned i=0;i<dimension;++i){
-     double bb = x[i] - min[i];
-     if ( bb<0.0 || bb>dx[i]*nbin[i] ){
-        getAction()->error("Extrapolation of function is not allowed");
-     } else if( bb<tmp_indices[i]*dx[i] || bb>(tmp_indices[i]+1)*dx[i] ){
-        tmp_indices[i]=static_cast<unsigned>( std::floor(bb/dx[i]) );
-        changebox=true;
-     }
-     dd[i] = bb/dx[i] - static_cast<double>(tmp_indices[i]);
-  }
-  if(changebox) bold = getIndex( tmp_indices );
-  return bold;
-}
+void GridVessel::getSplineNeighbors( const unsigned& mybox, std::vector<unsigned>& mysneigh ) const {
+  mysneigh.resize( static_cast<unsigned>(pow(2.,dimension)) );
 
-void GridVessel::getSplineNeighbors( const unsigned& mybox, std::vector<unsigned>& mysneigh ){
-  if( mysneigh.size()!=current_neigh.size() ) mysneigh.resize( current_neigh.size() );   
-
-  if( bold!=mybox ){
-     std::vector<unsigned> my_indices( dimension );
-     getIndices( mybox, my_indices );
-     for(unsigned i=0;i<current_neigh.size();++i){
-        unsigned tmp=i;
-        for(unsigned j=0;j<dimension;++j){
-           unsigned i0=tmp%2+my_indices[j]; tmp/=2;
-           if(!pbc[j] && i0==nbin[j]) getAction()->error("Extrapolating function on grid");
-           if( pbc[j] && i0==nbin[j]) i0=0;
-           tmp_indices[j]=i0;
-        }
-        current_neigh[i]=getIndex( tmp_indices );
+  std::vector<unsigned> tmp_indices( dimension );
+  std::vector<unsigned> my_indices( dimension );
+  getIndices( mybox, my_indices );
+  for(unsigned i=0;i<mysneigh.size();++i){
+     unsigned tmp=i;
+     for(unsigned j=0;j<dimension;++j){
+        unsigned i0=tmp%2+my_indices[j]; tmp/=2;
+        if(!pbc[j] && i0==nbin[j]) getAction()->error("Extrapolating function on grid");
+        if( pbc[j] && i0==nbin[j]) i0=0;
+        tmp_indices[j]=i0;
      }
-     bold=mybox;
+     mysneigh[i]=getIndex( tmp_indices );
   }
-  for(unsigned i=0;i<current_neigh.size();++i) mysneigh[i]=current_neigh[i];
 }
 
 double GridVessel::getGridElement( const unsigned& ipoint, const unsigned& jelement ) const {
@@ -309,6 +289,53 @@ std::string GridVessel::getInputString() const {
      else mstring +=",F";
   }
   return mstring;
+}
+
+double GridVessel::getValueAndDerivatives( const std::vector<double>& x, const unsigned& ind, std::vector<double>& der ) const {
+  plumed_dbg_assert( der.size()==dimension && !noderiv && ind<getNumberOfComponents() );
+
+  double X,X2,X3,value=0; der.assign(der.size(),0.0);
+  std::vector<double> fd(dimension);
+  std::vector<double> C(dimension);
+  std::vector<double> D(dimension);
+  std::vector<double> dder(dimension);
+
+  std::vector<unsigned> nindices(dimension);
+  std::vector<unsigned> indices(dimension); getIndices( x, indices );
+  std::vector<unsigned> neigh; getSplineNeighbors( getIndex(indices), neigh );
+  std::vector<double> xfloor(dimension); getGridPointCoordinates( getIndex(x), xfloor );
+
+// loop over neighbors
+  for(unsigned int ipoint=0;ipoint<neigh.size();++ipoint){
+     double grid=getGridElement(neigh[ipoint], ind*(1+dimension) );          
+     for(unsigned j=0;j<dimension;++j) dder[j] = getGridElement( neigh[ipoint], ind*(1+dimension) + 1 + j );
+ 
+     getIndices( neigh[ipoint], nindices );
+     double ff=1.0;
+
+     for(unsigned j=0;j<dimension;++j){
+         int x0=1;
+         if(nindices[j]==indices[j]) x0=0;
+         double ddx=dx[j];
+         X=fabs((x[j]-xfloor[j])/ddx-(double)x0);
+         X2=X*X;
+         X3=X2*X;
+         double yy;
+         if(fabs(grid)<0.0000001) yy=0.0;
+          else yy=-dder[j]/grid;
+         C[j]=(1.0-3.0*X2+2.0*X3) - (x0?-1.0:1.0)*yy*(X-2.0*X2+X3)*ddx;
+         D[j]=( -6.0*X +6.0*X2) - (x0?-1.0:1.0)*yy*(1.0-4.0*X +3.0*X2)*ddx;
+         D[j]*=(x0?-1.0:1.0)/ddx;
+         ff*=C[j];
+      }
+      for(unsigned j=0;j<dimension;++j){
+         fd[j]=D[j];
+         for(unsigned i=0;i<dimension;++i) if(i!=j) fd[j]*=C[i];
+      }
+      value+=grid*ff;
+      for(unsigned j=0;j<dimension;++j) der[j]+=grid*fd[j];
+  }
+  return value;
 }
 
 }

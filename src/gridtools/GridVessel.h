@@ -36,15 +36,10 @@ private:
  bool noderiv;
 /// Have the minimum and maximum for the grid been set
  bool bounds_set;
-/// These two variables are used to 
-/// remember the box we were in on the previous call
- unsigned bold;
 /// The number of points in the grid
  unsigned npoints;
 /// Units for Gaussian Cube file
  double cube_units;
-/// Remember the neighbors that were used last time
- std::vector<unsigned> current_neigh; 
 /// The names of the various columns in the grid file
  std::vector<std::string> arg_names;
 /// The minimum and maximum of the grid stored as doubles
@@ -53,8 +48,6 @@ private:
  std::vector<unsigned> stride;
 /// The number of bins in each grid direction
  std::vector<unsigned> nbin;
-/// A tempory array that can be used to store indices for a point
- std::vector<unsigned> tmp_indices;
 ///  Flatten the grid and get the grid index for a point
  unsigned getIndex( const std::vector<unsigned>& indices ) const ;
 /// The grid point that was requested last by getGridPointCoordinates
@@ -78,6 +71,8 @@ protected:
 /// Get the set of points neighouring a particular location in space
  void getNeighbors( const std::vector<double>& pp, const std::vector<unsigned>& nneigh, 
                     unsigned& num_neighbours, std::vector<unsigned>& neighbors ) const ;
+/// Get the indices of a particular point
+ void getIndices( const std::vector<double>& point, std::vector<unsigned>& indices ) const ;
 /// Convert a point in space the the correspoinding grid point
  unsigned getIndex( const std::vector<double>& p ) const ;
 public:
@@ -130,10 +125,8 @@ public:
  double getCellVolume() const ;
 /// Get the value of the ith grid element 
  double getGridElement( const unsigned&, const unsigned& ) const ;
-/// Get the numerical index for the box that contains a particular point
- unsigned getLocationOnGrid( const std::vector<double>& x, std::vector<double>& dd );
 /// Get the points neighboring a particular spline point
- void getSplineNeighbors( const unsigned& mybox, std::vector<unsigned>& mysneigh );
+ void getSplineNeighbors( const unsigned& mybox, std::vector<unsigned>& mysneigh ) const ;
 /// Get the spacing between grid points
  const std::vector<double>& getGridSpacing() const ;
 /// Get the extent of the grid in one of the axis
@@ -151,6 +144,8 @@ public:
  std::string getInputString() const ;
 /// Does this have derivatives
  bool noDerivatives() const ;
+/// Get the value and derivatives at a particular location using spline interpolation
+ double getValueAndDerivatives( const std::vector<double>& x, const unsigned& ind, std::vector<double>& der ) const ; 
 };
 
 inline

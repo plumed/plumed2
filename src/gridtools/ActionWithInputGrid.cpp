@@ -82,6 +82,7 @@ void ActionWithInputGrid::update(){
 }
 
 void ActionWithInputGrid::runFinalJobs(){
+  if( !single_run ) return ;
   if( unormalised ) norm = 1.0;
   else norm=1.0/mygrid->getNorm();
   performOperationsWithGrid( false );
