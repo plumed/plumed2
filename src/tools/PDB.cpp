@@ -243,6 +243,17 @@ AtomNumber PDB::getNamedAtomFromResidueAndChain( const std::string& aname, const
   return numbers[0]; // This is to stop compiler errors
 }
 
+std::vector<AtomNumber> PDB::getAtomsInResidue(const unsigned& resnum,const std::string& chainid)const {
+  std::vector<AtomNumber> tmp;
+  for(unsigned i=0;i<size();++i){
+     if( residue[i]==resnum && ( chainid=="*" || chain[i]==chainid) ) tmp.push_back(numbers[i]);
+  }
+  if(tmp.size()==0) {
+    std::string num; Tools::convert( resnum, num );
+    plumed_merror("Cannot find residue " + num + " from chain " + chainid  );
+  }
+  return tmp;
+}
 
 std::string PDB::getChainID(const unsigned& resnumber) const {
   for(unsigned i=0;i<size();++i){
