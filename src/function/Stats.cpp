@@ -134,11 +134,13 @@ void Stats::calculate()
     double scx=0., scx2=0., scy=0., scy2=0., scxy=0.;
  
     for(unsigned i=0;i<parameters.size();++i){
-      scx  += getArgument(i);
-      scx2 += getArgument(i)*getArgument(i);
-      scy  += parameters[i];
-      scy2 += parameters[i]*parameters[i];
-      scxy += getArgument(i)*parameters[i];
+      double tmpx=getArgument(i);
+      double tmpy=parameters[i];
+      scx  += tmpx;
+      scx2 += tmpx*tmpx;
+      scy  += tmpy;
+      scy2 += tmpy*tmpy;
+      scxy += tmpx*tmpy;
     }
   
     double ns = parameters.size();
