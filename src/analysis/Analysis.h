@@ -148,7 +148,8 @@ public:
   void unlockRequests();
   void calculateNumericalDerivatives( ActionWithValue* a=NULL ){ plumed_error(); }
   bool isPeriodic(){ plumed_error(); return false; }
-  unsigned getNumberOfDerivatives(){ plumed_error(); return 0; }
+  unsigned getNumberOfDerivatives(){ return 0; }
+  virtual void setAnalysisStride( const bool& use_all, const unsigned& astride );
 };
 
 inline

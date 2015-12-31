@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
-
-   See http://www.plumed.org for more information.
+  
+   See http://www.plumed-code.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -19,34 +19,30 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ActionPilot.h"
+#include "GridFunction.h"
 
-using namespace std;
-namespace PLMD{
+namespace PLMD {
+namespace gridtools {
 
-void ActionPilot::registerKeywords(Keywords& keys){
+void GridFunction::registerKeywords( Keywords& keys ){
+  GridVessel::registerKeywords( keys );
 }
 
-ActionPilot::ActionPilot(const ActionOptions&ao):
-Action(ao),
-stride(1)
+GridFunction::GridFunction( const vesselbase::VesselOptions& da ):
+GridVessel(da)
 {
-  parse("STRIDE",stride);
-  log.printf("  with stride %d\n",stride);
 }
 
-bool ActionPilot::onStep()const{
-  return getStep()%stride==0;
-}
-
-int ActionPilot::getStride()const{
-  return stride;
-}
-
-void ActionPilot::setStride( const unsigned& ss ){
-  stride=ss;
-}
-
+bool GridFunction::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
+  plumed_dbg_assert( myvals.getNumberOfValues()==(nper+1) );
+  for(unsigned i=0;i<myvals.getNumberOfValues();++i) buffer[bufstart + nper*current + i] += myvals.get(i+1);
+  return true;
 }
 
 
+void GridFunction::finish( const std::vector<double>& buffer ){
+  for(unsigned i=0;i<data.size();++i) data[i]+=buffer[bufstart + i];
+}
+
+}
+}

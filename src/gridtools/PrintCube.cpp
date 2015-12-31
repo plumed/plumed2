@@ -33,6 +33,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit PrintCube(const ActionOptions&ao); 
   void performOperationsWithGrid( const bool& from_update );
+  unsigned getNumberOfDerivatives(){ return 0; }
+  void performTask( const unsigned& , const unsigned& , MultiValue& ) const {}
+  bool isPeriodic(){ return false; }
 };
 
 PLUMED_REGISTER_ACTION(PrintCube,"PRINT_CUBE")

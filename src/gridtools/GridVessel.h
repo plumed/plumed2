@@ -32,6 +32,8 @@ namespace gridtools {
 
 class GridVessel : public vesselbase::Vessel {
 private:
+/// Do we have derivatives
+ bool noderiv;
 /// Have the minimum and maximum for the grid been set
  bool bounds_set;
 /// These two variables are used to 
@@ -74,12 +76,17 @@ protected:
 /// The grid with all the data values on it
  std::vector<double> data;
 /// Get the set of points neighouring a particular location in space
- void getNeighbors( const std::vector<double>& pp, const std::vector<unsigned>& nneigh, std::vector<unsigned>& neighbors ) const ;
+ void getNeighbors( const std::vector<double>& pp, const std::vector<unsigned>& nneigh, 
+                    unsigned& num_neighbours, std::vector<unsigned>& neighbors ) const ;
+/// Convert a point in space the the correspoinding grid point
+ unsigned getIndex( const std::vector<double>& p ) const ;
 public:
 /// keywords
  static void registerKeywords( Keywords& keys );
 /// Constructor
  explicit GridVessel( const vesselbase::VesselOptions& );
+/// Remove the derivatives 
+ void setNoDerivatives();
 /// Set the minimum and maximum of the grid
  virtual void setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax, const std::vector<unsigned>& nbins, const std::vector<double>& spacing );
 /// Get a description of the grid to output to the log
@@ -140,6 +147,10 @@ public:
 /// This gives the normalisation of histograms
  virtual double getNorm() const ;
  virtual void switchOffNormalisation(){}
+/// Return a string containing the input to the grid so we can clone it
+ std::string getInputString() const ;
+/// Does this have derivatives
+ bool noDerivatives() const ;
 };
 
 inline
@@ -180,6 +191,7 @@ std::string GridVessel::getComponentName( const unsigned& i ) const {
 
 inline
 unsigned GridVessel::getNumberOfComponents() const {
+  if( noderiv ) return nper;
   return nper / ( dimension + 1 );
 }
 
@@ -191,6 +203,11 @@ double GridVessel::getGridExtent( const unsigned& i ) const {
 inline
 double GridVessel::getNorm() const {
   return 1.0;
+}
+
+inline
+bool GridVessel::noDerivatives() const {
+  return noderiv;
 }
 
 }

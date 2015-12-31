@@ -31,12 +31,12 @@ void GridVessel::registerKeywords( Keywords& keys ){
   keys.add("compulsory","COMPONENTS","the names of the components in the vector");
   keys.add("compulsory","COORDINATES","the names of the coordinates of the grid");
   keys.add("compulsory","PBC","is the grid periodic in each direction or not");
-  keys.add("compulsory","NBINS","number of bins in each direction for the grid");
   keys.addFlag("NOMEMORY",false,"should the data in the grid be deleted after print/analysis");
 }
 
 GridVessel::GridVessel( const vesselbase::VesselOptions& da ):
 Vessel(da),
+noderiv(false),
 bounds_set(false),
 bold(0),
 cube_units(1.0)
@@ -65,6 +65,16 @@ cube_units(1.0)
       else if( spbc[i]=="T" ) pbc[i]=true;
       else plumed_error();
   }
+}
+
+void GridVessel::setNoDerivatives(){
+  nper = ( nper/(1+dimension) ); noderiv=true;
+  std::vector<std::string> tnames( dimension ), cnames(nper);
+  for(unsigned i=0;i<dimension;++i) tnames[i]=arg_names[i];
+  unsigned k=dimension; for(unsigned i=0;i<nper;++i){ cnames[i]=arg_names[k]; k+=(1+dimension); }
+  arg_names.resize( dimension + nper );
+  for(unsigned i=0;i<dimension;++i) arg_names[i]=tnames[i];
+  for(unsigned i=0;i<nper;++i) arg_names[dimension+i]=cnames[i];
 }
 
 void GridVessel::setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax,
@@ -124,6 +134,16 @@ unsigned GridVessel::getIndex( const std::vector<unsigned>& indices ) const {
     index=index*nbin[i-1]+indices[i-1];
   } 
   return index;
+}
+
+unsigned GridVessel::getIndex( const std::vector<double>& point ) const {
+  plumed_dbg_assert( bounds_set && point.size()==dimension );
+  std::vector<unsigned> indices(dimension);
+  for(unsigned i=0;i<dimension;++i){
+      indices[i]=std::floor( (point[i] - min[i])/dx[i] ); 
+      if( pbc[i] ) indices[i]=indices[i]%nbin[i];
+  }
+  return getIndex( indices );
 }
 
 void GridVessel::convertIndexToIndices( const unsigned& index, const std::vector<unsigned>& nnbin, std::vector<unsigned>& indices ) const {
@@ -232,7 +252,8 @@ std::vector<unsigned> GridVessel::getNbin() const {
   return ngrid;
 }
 
-void GridVessel::getNeighbors( const std::vector<double>& pp, const std::vector<unsigned>& nneigh, std::vector<unsigned>& neighbors ) const {
+void GridVessel::getNeighbors( const std::vector<double>& pp, const std::vector<unsigned>& nneigh, 
+                               unsigned& num_neighbors, std::vector<unsigned>& neighbors ) const {
   plumed_dbg_assert( bounds_set && nneigh.size()==dimension );
 
   std::vector<unsigned> indices( dimension );  
@@ -244,19 +265,23 @@ void GridVessel::getNeighbors( const std::vector<double>& pp, const std::vector<
      num_neigh *=small_bin[i];
   }
 
-  neighbors.resize( num_neigh );
+  neighbors.resize( num_neigh ); num_neighbors=0;
   std::vector<unsigned> s_indices(dimension), t_indices(dimension);
   for(unsigned index=0;index<num_neigh;++index){
+      bool found=true;
       convertIndexToIndices( index, small_bin, s_indices );
       for(unsigned i=0;i<dimension;++i){
           int i0=s_indices[i]-nneigh[i]+indices[i];
-          if(!pbc[i] && i0<0)        plumed_merror("grid is not large enough");
-          if(!pbc[i] && i0>=nbin[i]) plumed_merror("grid is not large engouh");
+          if(!pbc[i] && i0<0)        found=false;
+          if(!pbc[i] && i0>=nbin[i]) found=false;
           if( pbc[i] && i0<0)        i0=nbin[i]-(-i0)%nbin[i];
           if( pbc[i] && i0>=nbin[i]) i0%=nbin[i];
           t_indices[i]=static_cast<unsigned>(i0);
       }
-      neighbors[index]=getIndex( t_indices );
+      if( found ){
+          neighbors[num_neighbors]=getIndex( t_indices );
+          num_neighbors++;
+      }
   }
 }
 
@@ -271,6 +296,19 @@ void GridVessel::setCubeUnits( const double& units ){
 
 double GridVessel::getCubeUnits() const {
   return cube_units;
+}
+
+std::string GridVessel::getInputString() const {
+  std::string mstring="COORDINATES="+arg_names[0];
+  for(unsigned i=1;i<dimension;++i) mstring+="," + arg_names[i];
+  mstring += " PBC=";
+  if( pbc[0] ) mstring +="T";
+  else mstring +="F";
+  for(unsigned i=1;i<dimension;++i){
+     if( pbc[i] ) mstring +=",T";
+     else mstring +=",F";
+  }
+  return mstring;
 }
 
 }

@@ -29,7 +29,9 @@ namespace PLMD {
 namespace gridtools {
 
 class ActionWithInputGrid : 
-public ActionPilot {
+public ActionPilot,
+public vesselbase::ActionWithVessel
+{
 private:
   double norm;
   bool unormalised;
@@ -46,6 +48,7 @@ public:
   void update();
   void runFinalJobs();
   virtual void performOperationsWithGrid( const bool& from_update )=0;
+  void setAnalysisStride( const bool& use_all, const unsigned& astride );
 };
 
 inline

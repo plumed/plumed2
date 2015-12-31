@@ -94,6 +94,7 @@ nomemory(true),
 write_chq(false),
 reusing_data(false),
 ignore_reweight(false),
+freq(0),
 needeng(false),
 idata(0),
 firstAnalysisDone(false),
@@ -175,20 +176,16 @@ argument_names(getNumberOfArguments())
          if(simtemp==0) error("The MD engine does not pass the temperature to plumed so you have to specify it using TEMP");
       }
 
-      parseFlag("USE_ALL_DATA",single_run); 
-      if( !single_run ){
-          parse("RUN",freq );
-          log.printf("  running analysis every %u steps\n",freq);
-          if( freq%getStride()!= 0 ) error("Frequncy of running is not a multiple of the stride");
-          ndata=freq/getStride();
-          data.resize( ndata );
-          for(unsigned i=0;i<ndata;++i){ 
-             data[i]=metricRegister().create<ReferenceConfiguration>( metricname ); 
-             data[i]->setNamesAndAtomNumbers( atom_numbers, argument_names );
+      single_run=true;
+      if( keywords.exists("USE_ALL_DATA") ){
+          parseFlag("USE_ALL_DATA",single_run); 
+          if( !single_run ){
+              unsigned astride; parse("RUN",astride);
+              log.printf("  running analysis every %u steps\n",astride);
+              setAnalysisStride( false, astride );
+          } else {       
+              log.printf("  analyzing all data in trajectory\n");
           }
-          logweights.resize( ndata );
-      } else {       
-          log.printf("  analyzing all data in trajectory\n");
       }
       if( keywords.exists("NOMEMORY") ){ nomemory=false; parseFlag("NOMEMORY",nomemory); }
       if(nomemory) log.printf("  doing a separate analysis for each block of data\n");
@@ -219,6 +216,20 @@ argument_names(getNumberOfArguments())
          for(unsigned i=0;i<getNumberOfArguments();++i) rfile.setupPrintValue( getPntrToArgument(i) );
       }
   }
+}
+
+void Analysis::setAnalysisStride( const bool& use_all, const unsigned& astride ){
+  if( freq>0 && astride!=freq ) error("frequency for output does not match frequency for run"); 
+  else if( freq>0 || use_all ) return;
+
+  freq=astride; single_run=false;
+  if( astride%getStride()!= 0 ) error("Frequncy of running is not a multiple of the stride");
+  ndata=freq/getStride(); data.resize( ndata );
+  for(unsigned i=0;i<ndata;++i){
+     data[i]=metricRegister().create<ReferenceConfiguration>( metricname );
+     data[i]->setNamesAndAtomNumbers( getAbsoluteIndexes(), argument_names );
+  }
+  logweights.resize( ndata );
 }
 
 void Analysis::readDataFromFile( const std::string& filename ){
@@ -394,6 +405,8 @@ void Analysis::runAnalysis(){
      mydatastash->finalizeWeights( ignore_reweight );
      norm=mydatastash->retrieveNorm();
   }
+  // This ensures everything is set up to run the calculation
+  setAnalysisStride( single_run, freq );
   // And run the analysis
   performAnalysis(); idata=0;
   // Update total normalization constant

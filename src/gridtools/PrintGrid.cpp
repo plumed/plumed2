@@ -34,6 +34,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit PrintGrid(const ActionOptions&ao); 
   void performOperationsWithGrid( const bool& from_update );
+  unsigned getNumberOfDerivatives(){ return 0; }
+  void performTask( const unsigned& , const unsigned& , MultiValue& ) const {}
+  bool isPeriodic(){ return false; }
 };
 
 PLUMED_REGISTER_ACTION(PrintGrid,"PRINT_GRID")
@@ -62,6 +65,7 @@ void PrintGrid::performOperationsWithGrid( const bool& from_update ){
   if( from_update ) ofile.setBackupString("analysis");
   ofile.open( filename );
 
+  ofile.addConstantField("normalisation");
   for(unsigned i=0;i<mygrid->getDimension();++i){
      ofile.addConstantField("min_" + mygrid->getComponentName(i) );
      ofile.addConstantField("max_" + mygrid->getComponentName(i) );
@@ -69,11 +73,13 @@ void PrintGrid::performOperationsWithGrid( const bool& from_update ){
      ofile.addConstantField("periodic_" + mygrid->getComponentName(i) );
   }
 
+  double norm = mygrid->getNorm();
   std::vector<double> xx( mygrid->getDimension() );
   std::vector<unsigned> ind( mygrid->getDimension() );
   for(unsigned i=0;i<mygrid->getNumberOfPoints();++i){
      mygrid->getIndices( i, ind );
-     if(i>0 && mygrid->getDimension()==2 && ind[mygrid->getDimension()-2]==0) ofile.printf("\n");
+     if(i>0 && mygrid->getDimension()>1 && ind[mygrid->getDimension()-2]==0) ofile.printf("\n");
+     ofile.fmtField(fmt); ofile.printField("normalisation", norm );
      for(unsigned j=0;j<mygrid->getDimension();++j){
          ofile.printField("min_" + mygrid->getComponentName(j), mygrid->getMin()[j] );
          ofile.printField("max_" + mygrid->getComponentName(j), mygrid->getMax()[j] );

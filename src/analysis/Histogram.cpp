@@ -26,6 +26,7 @@
 #include "tools/KernelFunctions.h"
 #include "tools/IFile.h"
 #include "tools/OFile.h"
+#include "gridtools/HistogramOnGrid.h"
 
 namespace PLMD{
 namespace analysis{
@@ -115,7 +116,7 @@ HISTOGRAM ...
 
 class Histogram : public Analysis {
 private:
-  std::vector<std::string> gmin, gmax; 
+  gridtools::HistogramOnGrid* mygrid;
   std::vector<double> point, bw;
   std::vector<unsigned> gbin;
   std::string gridfname;
@@ -126,7 +127,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Histogram(const ActionOptions&ao);
   void performAnalysis();
+  unsigned getNumberOfQuantities() const ;
   void performTask( const unsigned& , const unsigned& , MultiValue& ) const ;
+  void setAnalysisStride( const bool& use_all, const unsigned& astride );
 };
 
 PLUMED_REGISTER_ACTION(Histogram,"HISTOGRAM")
@@ -134,6 +137,7 @@ PLUMED_REGISTER_ACTION(Histogram,"HISTOGRAM")
 void Histogram::registerKeywords( Keywords& keys ){
   Analysis::registerKeywords( keys ); keys.reset_style("METRIC","hidden");
   keys.remove("ATOMS"); keys.reset_style("ARG","compulsory");
+  keys.remove("RUN"); keys.remove("USE_ALL_DATA");
   keys.add("compulsory","GRID_MIN","the lower bounds for the grid");
   keys.add("compulsory","GRID_MAX","the upper bounds for the grid");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
@@ -141,148 +145,70 @@ void Histogram::registerKeywords( Keywords& keys ){
   keys.add("compulsory","KERNEL","gaussian","the kernel function you are using. Use discrete/DISCRETE if you want to accumulate a discrete histogram. \
                                              More details on the kernels available in plumed can be found in \\ref kernelfunctions.");
   keys.add("optional","BANDWIDTH","the bandwdith for kernel density estimation");
-  keys.addFlag("FREE-ENERGY",false,"Set to TRUE if you want a FREE ENERGY instead of a probabilty density (you need to set TEMP).");
   keys.addFlag("UNNORMALIZED",false,"Set to TRUE if you don't want histogram to be normalized or free energy to be shifted.");
-  keys.add("compulsory","GRID_WFILE","histogram","the file on which to write the grid");
   keys.use("NOMEMORY");
 }
 
 Histogram::Histogram(const ActionOptions&ao):
 PLUMED_ANALYSIS_INIT(ao),
+mygrid(NULL),
 point(getNumberOfArguments()),
 fenergy(false),
 unnormalized(false)
 {
-  // Read stuff for Grid
-  parseVector("GRID_MIN",gmin);
-  if(gmin.size()!=getNumberOfArguments()) error("Wrong number of values for GRID_MIN: they should be equal to the number of arguments");
-  parseVector("GRID_MAX",gmax);
-  if(gmax.size()!=getNumberOfArguments()) error("Wrong number of values for GRID_MAX: they should be equal to the number of arguments");
-  parseVector("GRID_BIN",gbin);
-  if(gbin.size()!=getNumberOfArguments() && gbin.size()!=0) error("Wrong number of values for GRID_BIN: they should be equal to the number of arguments");
-  std::vector<double>  gspacing;
-  parseVector("GRID_SPACING",gspacing);
-  if(gspacing.size()!=getNumberOfArguments() && gspacing.size()!=0) 
-    error("Wrong number of for GRID_SPACING: they should be equal to the number of arguments");
-  if(gbin.size()==0 && gspacing.size()==0)  { error("At least one among GRID_BIN and GRID_SPACING should be used");
-  } else if(gspacing.size()!=0 && gbin.size()==0) {
-    log<<"  The number of bins will be estimated from GRID_SPACING\n";
-  } else if(gspacing.size()!=0 && gbin.size()!=0) {
-    log<<"  You specified both GRID_BIN and GRID_SPACING\n";
-    log<<"  The more conservative (highest) number of bins will be used for each variable\n";
-  }
-  if(gbin.size()==0) gbin.assign(getNumberOfArguments(),1);
-  if(gspacing.size()!=0) for(unsigned i=0;i<getNumberOfArguments();i++){
-      double a,b;
-      Tools::convert(gmin[i],a);
-      Tools::convert(gmax[i],b);
-      unsigned n=((b-a)/gspacing[i])+1;
-      if(gbin[i]<n) gbin[i]=n;
-  }
-  parseOutputFile("GRID_WFILE",gridfname); 
+  // Read stuff for grid
+  std::vector<std::string> gmin( getNumberOfArguments() ), gmax( getNumberOfArguments() );
+  parseVector("GRID_MIN",gmin); parseVector("GRID_MAX",gmax);
 
-  // Read the type of kernel we are using
-  parse("KERNEL",kerneltype);
-  if(kerneltype=="DISCRETE") kerneltype="discrete";
-  // Read stuff for window functions
-  parseVector("BANDWIDTH",bw);
-  if(bw.size()!=getNumberOfArguments()&&kerneltype!="discrete") 
-    error("Wrong number of values for BANDWIDTH: they should be equal to the number of arguments");
-
-  parseFlag("FREE-ENERGY",fenergy);
-  if(getTemp()<=0 && fenergy) error("Set the temperature (TEMP) if you want a free energy.");
-
-  parseFlag("UNNORMALIZED",unnormalized);
-  if(unnormalized){
-    if(fenergy) log<<"  free energy will not be shifted to set its minimum to zero\n";
-    else        log<<"  histogram will not be normalized\n";
-  } else {
-    if(fenergy) log<<"  free energy will be shifted to set its minimum to zero\n";
-    else        log<<"  histogram will be normalized\n";
+  // Setup input for grid vessel
+  std::string dmin, dmax, vstring = getKeyword("KERNEL") + " " + getKeyword("BANDWIDTH");
+  if( getPeriodicityInformation(0, dmin, dmax) ) vstring+=" PBC=T";
+  else vstring+=" PBC=F";
+  for(unsigned i=1;i<getNumberOfArguments();++i){
+     if( getPeriodicityInformation(i, dmin, dmax) ) vstring+=",T";
+     else vstring+=",F";
   }
+  vstring += " STORE_NORMED COMPONENTS=" + getLabel();
+  vstring += " COORDINATES=" + getPntrToArgument(0)->getName();
+  for(unsigned i=1;i<getNumberOfArguments();++i) vstring += "," + getPntrToArgument(i)->getName(); 
+  if( !usingMemory() ) vstring += " NOMEMORY";
+  std::vector<unsigned> nbin; parseVector("GRID_BIN",nbin);
+  std::vector<double> gspacing; parseVector("GRID_SPACING",gspacing);
+  if( nbin.size()!=getNumberOfArguments() && gspacing.size()!=getNumberOfArguments() ){
+      error("GRID_BIN or GRID_SPACING must be set");
+  }
+
+  // Create a grid
+  vesselbase::VesselOptions da("mygrid","",-1,vstring,this);
+  Keywords keys; gridtools::HistogramOnGrid::registerKeywords( keys );
+  vesselbase::VesselOptions dar( da, keys );
+  mygrid = new gridtools::HistogramOnGrid(dar); addVessel( mygrid );
+  mygrid->setBounds( gmin, gmax, nbin, gspacing );
+  resizeFunctions();
+
   checkRead();
-
-  log.printf("  Using %s kernel functions\n",kerneltype.c_str() );
-  log.printf("  Grid min");
-  for(unsigned i=0;i<gmin.size();++i) log.printf(" %s",gmin[i].c_str() );
-  log.printf("\n");
-  log.printf("  Grid max");
-  for(unsigned i=0;i<gmax.size();++i) log.printf(" %s",gmax[i].c_str() );
-  log.printf("\n");
-  log.printf("  Grid bin");
-  for(unsigned i=0;i<gbin.size();++i) log.printf(" %u",gbin[i]);
-  log.printf("\n");
 }
 
-void Histogram::performTask( const unsigned& , const unsigned& , MultiValue& ) const { plumed_error(); }
+void Histogram::setAnalysisStride( const bool& use_all, const unsigned& astride ){
+  if( getFullNumberOfTasks()>0 && getFullNumberOfTasks()==getNumberOfDataPoints() ) return;
+  Analysis::setAnalysisStride( use_all, astride ); plumed_assert( getFullNumberOfTasks()==0 );
+  for(unsigned i=0;i<getNumberOfDataPoints();++i) addTaskToList( i );
+}
+
+unsigned Histogram::getNumberOfQuantities() const {
+  return getNumberOfArguments() + 2;
+}
+
+void Histogram::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {  
+  double weight; std::vector<double> point( getNumberOfArguments() );
+  getDataPoint( current, point, weight );
+  myvals.setValue( 0, 1.0 );
+  for(unsigned j=0;j<getNumberOfArguments();++j) myvals.setValue( 1+j, point[j] );
+  myvals.setValue( 1+getNumberOfArguments(), weight );
+}
 
 void Histogram::performAnalysis(){
-  // Back up old histogram files
-  //  std::string oldfname=saveResultsFromPreviousAnalyses( gridfname );
-
-  // Get pbc stuff for grid
-  std::vector<bool> pbc; std::string dmin,dmax; std::vector<double> pmin,pmax;
-  pmin.resize(getNumberOfArguments());
-  pmax.resize(getNumberOfArguments());
-  for(unsigned i=0;i<getNumberOfArguments();++i){
-     pbc.push_back( getPeriodicityInformation(i,dmin,dmax) );
-     if(pbc[i]){ 
-       Tools::convert(dmin,gmin[i]); 
-       Tools::convert(dmax,gmax[i]);
-       Tools::convert(dmin,pmin[i]);
-       Tools::convert(dmax,pmax[i]);
-     }
-  }
-
-  Grid* gg; IFile oldf; oldf.link(*this); 
-  if( usingMemory() && oldf.FileExist(gridfname) ){
-      if(fenergy) error("FREE-ENERGY only works with USE_ALL_DATA");
-      if(unnormalized) error("UNNORMALIZED only works with USE_ALL_DATA");
-      oldf.open(gridfname);
-      gg = Grid::create( "probs", getArguments(), oldf, gmin, gmax, gbin, false, false, false );
-      oldf.close();
-  } else {
-      gg = new Grid( "probs", getArguments(), gmin, gmax, gbin,false,false);
-  }
-  // Set output format for grid
-  gg->setOutputFmt( getOutputFormat() );
-
-  // Now build the histogram
-  double weight; std::vector<double> point( getNumberOfArguments() );
-  if(kerneltype!="discrete") {
-    for(unsigned i=0;i<getNumberOfDataPoints();++i){
-      getDataPoint( i, point, weight );
-      KernelFunctions kernel( point, bw, kerneltype, false, weight, true);
-      gg->addKernel( kernel );
-    }
-  } else {
-    for(unsigned i=0;i<getNumberOfDataPoints();++i){
-      getDataPoint( i, point, weight );
-      // Without KERNEL the point are assigned with a lower approximation (floor)
-      // in order to have a correct assigmnet points must be translated of half
-      // the mesh
-      std::vector<double> dx_;
-      dx_ = gg->getDx();
-      for(unsigned j=0;j<point.size();j++) { 
-         point[j]+=0.5*dx_[j];
-         if(pbc[j]&&point[j]>pmax[j]) point[j] -= (pmax[j]-pmin[j]);
-      }
-      gg->addValue(gg->getIndex(point), weight);
-    }  
-  }
-
-  // Normalize the histogram
-  if(!unnormalized) gg->scaleAllValuesAndDerivatives( 1.0 / getNormalization() );
-  if(fenergy) {
-    gg->logAllValuesAndDerivatives( -getTemp() );
-    if(!unnormalized) gg->setMinToZero();
-  }
-
-  // Write the grid to a file
-  OFile gridfile; gridfile.link(*this); gridfile.setBackupString("analysis");
-  gridfile.open( gridfname ); gg->writeToFile( gridfile );
-  // Close the file 
-  gridfile.close(); delete gg;
+  runAllTasks(); mygrid->setNorm( getNormalization() );
 }
 
 }

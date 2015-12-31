@@ -36,9 +36,15 @@ HistogramOnGrid::HistogramOnGrid( const vesselbase::VesselOptions& da ):
 GridVessel(da),
 norm(0),
 store_normed(false),
-bandwidths(dimension)
+bandwidths(dimension),
+discrete(false)
 {
-  parseFlag("STORE_NORMED",store_normed); parse("KERNEL",kerneltype); parseVector("BANDWIDTH",bandwidths);
+  parseFlag("STORE_NORMED",store_normed); parse("KERNEL",kerneltype); 
+  if( kerneltype=="discrete" || kerneltype=="DISCRETE" ){
+      discrete=true; setNoDerivatives();
+  } else {
+      parseVector("BANDWIDTH",bandwidths);
+  }
 }
 
 void HistogramOnGrid::switchOffNormalisation(){
@@ -47,10 +53,12 @@ void HistogramOnGrid::switchOffNormalisation(){
 
 void HistogramOnGrid::setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax,
                                  const std::vector<unsigned>& nbins, const std::vector<double>& spacing ){
-  GridVessel::setBounds( smin, smax, nbins, spacing ); 
-  std::vector<double> point(dimension,0);
-  KernelFunctions kernel( point, bandwidths, kerneltype, false, 1.0, true );
-  nneigh=kernel.getSupport( dx );
+  GridVessel::setBounds( smin, smax, nbins, spacing );
+  if( !discrete ){ 
+      std::vector<double> point(dimension,0);
+      KernelFunctions kernel( point, bandwidths, kerneltype, false, 1.0, true );
+      nneigh=kernel.getSupport( dx );
+  }
 }
 
 bool HistogramOnGrid::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
@@ -58,27 +66,34 @@ bool HistogramOnGrid::calculate( const unsigned& current, MultiValue& myvals, st
   // Create a kernel function at the point of interest
   std::vector<double> point( dimension ); double weight=myvals.get(0)*myvals.get( 1+dimension );
   for(unsigned i=0;i<dimension;++i) point[i]=myvals.get( 1+i );
-  KernelFunctions kernel( point, bandwidths, kerneltype, false, weight, true );
+  
+  if( discrete ){
+      for(unsigned i=0;i<dimension;++i) point[i] += 0.5*dx[i];
+      buffer[bufstart + nper*getIndex( point )] += weight;
+  } else {
+      KernelFunctions kernel( point, bandwidths, kerneltype, false, weight, true );
 
-  std::vector<unsigned> neighbors; getNeighbors( kernel.getCenter(), nneigh, neighbors );
-  std::vector<double> xx( dimension ); std::vector<Value*> vv;
-  for(unsigned i=0;i<dimension;++i){
-      vv.push_back(new Value());
-      if( pbc[i] ) vv[i]->setDomain( str_min[i], str_max[i] );
-      else vv[i]->setNotPeriodic();
+      unsigned num_neigh; std::vector<unsigned> neighbors; 
+      getNeighbors( kernel.getCenter(), nneigh, num_neigh, neighbors );
+      std::vector<double> xx( dimension ); std::vector<Value*> vv;
+      for(unsigned i=0;i<dimension;++i){
+          vv.push_back(new Value());
+          if( pbc[i] ) vv[i]->setDomain( str_min[i], str_max[i] );
+          else vv[i]->setNotPeriodic();
+      }
+
+      double newval; std::vector<double> der( dimension );
+      for(unsigned i=0;i<num_neigh;++i){
+          unsigned ineigh=neighbors[i];
+          getGridPointCoordinates( ineigh, xx );
+          for(unsigned j=0;j<dimension;++j) vv[j]->set(xx[j]);
+          newval = kernel.evaluate( vv, der, true );
+          buffer[bufstart+nper*ineigh ] += newval;
+          for(unsigned j=0;j<dimension;++j) buffer[bufstart+nper*ineigh + 1 + j] += der[j];   
+      }
+
+      for(unsigned i=0;i<dimension;++i) delete vv[i];
   }
-
-  double newval; std::vector<double> der( dimension );
-  for(unsigned i=0;i<neighbors.size();++i){
-      unsigned ineigh=neighbors[i];
-      getGridPointCoordinates( ineigh, xx );
-      for(unsigned j=0;j<dimension;++j) vv[j]->set(xx[j]);
-      newval = kernel.evaluate( vv, der, true );
-      buffer[ nper*ineigh ] += newval;
-      for(unsigned j=0;j<dimension;++j) buffer[ nper*ineigh + 1 + j] += der[j];   
-  }
-
-  for(unsigned i=0;i<dimension;++i) delete vv[i];
   return true;
 }
 
@@ -91,7 +106,7 @@ void HistogramOnGrid::clear(){
   if( nomemory ){
      norm = 0.; GridVessel::clear(); return;
   }
-  if( store_normed ){
+  if( norm>0 && store_normed ){
      for(unsigned i=0;i<data.size();++i) data[i] /= norm;
   }
 }

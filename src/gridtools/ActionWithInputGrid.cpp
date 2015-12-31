@@ -29,15 +29,17 @@ namespace gridtools {
 void ActionWithInputGrid::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
+  vesselbase::ActionWithVessel::registerKeywords( keys );
   keys.add("compulsory","GRID","the action that creates the input grid you would like to use");
-  keys.add("compulsory","STRIDE","the frequency with which to output the grid");
+  keys.add("optional","STRIDE","the frequency with which to output the grid");
   keys.addFlag("USE_ALL_DATA",false,"use the data from the entire trajectory to perform the analysis");
-  keys.addFlag("UNORMALISED",false,"output an unormalised grid"); 
+  keys.addFlag("UNNORMALIZED",false,"output an unormalised grid"); 
 }
 
 ActionWithInputGrid::ActionWithInputGrid(const ActionOptions&ao):
 Action(ao),
 ActionPilot(ao),
+ActionWithVessel(ao),
 norm(0.0),
 mygrid(NULL)
 {
@@ -53,7 +55,7 @@ mygrid(NULL)
   }
   if( !mygrid ) error("input action does not calculate a grid");
 
-  parseFlag("UNORMALISED",unormalised);
+  parseFlag("UNNORMALIZED",unormalised);
   if( unormalised ){
      log.printf("  working with unormalised grid \n");
      mygrid->switchOffNormalisation(); 
@@ -61,9 +63,16 @@ mygrid(NULL)
 
   if( keywords.exists("USE_ALL_DATA") ){
      parseFlag("USE_ALL_DATA",single_run);
-     if( !single_run ) log.printf("  outputting grid every %u steps \n", getStride() );
-     else log.printf("  outputting grid at end of calculation\n");
+     if( !single_run ){
+        mves->setAnalysisStride( false, getStride() ); 
+        log.printf("  outputting grid every %u steps \n", getStride() );
+     } else log.printf("  outputting grid at end of calculation\n");
   }
+}
+
+void ActionWithInputGrid::setAnalysisStride( const bool& use_all, const unsigned& astride ){
+  single_run=use_all;
+  if( !single_run ) setStride( astride );
 }
 
 void ActionWithInputGrid::update(){

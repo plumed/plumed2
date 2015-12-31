@@ -199,6 +199,8 @@ public:
   Vessel* getVesselWithName( const std::string& mynam );
 /// Does the weight have derivatives
   bool weightWithDerivatives() const ;
+/// This is used to set the stride for the output of histograms
+  virtual void setAnalysisStride( const bool& use_all, const unsigned& astride ){}
 };
 
 inline

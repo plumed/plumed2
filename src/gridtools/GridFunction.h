@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2012 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed.org for more information.
+   See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.
+   This file is part of plumed, version 2.0.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -19,34 +19,23 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ActionPilot.h"
+#ifndef __PLUMED_gridtools_HistogramOnGrid_h
+#define __PLUMED_gridtools_HistogramOnGrid_h
 
-using namespace std;
-namespace PLMD{
+#include "GridVessel.h"
 
-void ActionPilot::registerKeywords(Keywords& keys){
-}
+namespace PLMD {
+namespace gridtools {
 
-ActionPilot::ActionPilot(const ActionOptions&ao):
-Action(ao),
-stride(1)
-{
-  parse("STRIDE",stride);
-  log.printf("  with stride %d\n",stride);
-}
-
-bool ActionPilot::onStep()const{
-  return getStep()%stride==0;
-}
-
-int ActionPilot::getStride()const{
-  return stride;
-}
-
-void ActionPilot::setStride( const unsigned& ss ){
-  stride=ss;
-}
+class GridFunction : public GridVessel {
+public:
+  static void registerKeywords( Keywords& keys );
+  explicit GridFunction( const vesselbase::VesselOptions& da );
+  bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
+  void finish( const std::vector<double>& );
+  bool applyForce(  std::vector<double>& forces ){ return false; }
+};
 
 }
-
-
+}
+#endif

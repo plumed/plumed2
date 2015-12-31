@@ -33,6 +33,7 @@ private:
   bool store_normed;
   std::string kerneltype;
   std::vector<double> bandwidths;
+  bool discrete;
   std::vector<unsigned> nneigh;
 public:
   static void registerKeywords( Keywords& keys );
