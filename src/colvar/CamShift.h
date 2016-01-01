@@ -268,17 +268,17 @@ namespace PLMD {
       }
     }
 
-    vector<string> &split(const std::string &s, char delim, std::vector<std::string> &elems) {
-      std::stringstream ss(s);
-      std::string item;
-      while (std::getline(ss, item, delim)) {
+    vector<string> &split(const string &s, char delim, vector<string> &elems) {
+      stringstream ss(s);
+      string item;
+      while (getline(ss, item, delim)) {
         elems.push_back(item);
       }
       return elems;
     }
 
-    vector<string> split(const std::string &s, char delim) {
-      std::vector<std::string> elems;
+    vector<string> split(const string &s, char delim) {
+      vector<string> elems;
       split(s, delim, elems);
       return elems;
     }
@@ -485,7 +485,7 @@ namespace PLMD {
 
     int check_indices(const vector<int> & v){
       int c = 0;
-      for(unsigned int i=0;i<v.size();i++)
+      for(unsigned i=0;i<v.size();i++)
 	if(v[i]>0) ++c;
 
       return c;
@@ -1069,12 +1069,13 @@ namespace PLMD {
     void init_backbone(const PDB pdb){
 
       // number of chains
-      std::vector<std::string> chains; pdb.getChainNames( chains );
+      vector<string> chains;
+      pdb.getChainNames( chains );
       seg_last.resize(chains.size());
 
       for(unsigned i=0;i<chains.size();i++){
         unsigned start, end;
-        std::string errmsg;
+        string errmsg;
         pdb.getResidueRange( chains[i], start, end, errmsg );
 
 	int res_offset = start;
@@ -1090,17 +1091,15 @@ namespace PLMD {
 	vector<int> HA_;
 	vector<int> C_;
 	vector<int> O_;
-	vector<int> CX_; //For chi1
-	{	  
-	  N_.resize (resrange);
-	  H_.resize (resrange);
-	  CA_.resize(resrange);
-	  CB_.resize(resrange);
-	  HA_.resize(resrange);
-	  C_.resize (resrange);
-	  O_.resize (resrange);
-	  CX_.resize(resrange);
-	}
+	vector<int> CX_;
+	N_.resize (resrange);
+	H_.resize (resrange);
+	CA_.resize(resrange);
+	CB_.resize(resrange);
+	HA_.resize(resrange);
+	C_.resize (resrange);
+	O_.resize (resrange);
+	CX_.resize(resrange);
 
 	for(unsigned a=0;a<resrange;a++){
 	  N_[a]  = -1;
@@ -1123,32 +1122,31 @@ namespace PLMD {
 	  int f = pdb.getResidueNumber(allatoms[a]);
           int f_idx = f-res_offset;
           string AN = pdb.getAtomName(allatoms[a]);
-	  if(AN=="N")                  N_[f_idx] = atm_index;
-	  else if(AN=="H"||AN=="HN")   H_[f_idx] = atm_index;
+          string RES = pdb.getResidueName(allatoms[a]);
+	  if(AN=="N")                  { N_ [f_idx] = atm_index; printf("N %i %i\n", f_idx, atm_index); }
+	  else if(AN=="H" ||AN=="HN" ) H_ [f_idx] = atm_index;
 	  else if(AN=="HA"||AN=="HA1") HA_[f_idx] = atm_index;
-	  else if(AN=="CA")            CA_[f_idx] = atm_index;
-	  else if(AN=="CB")            CB_[f_idx] = atm_index;
-	  else if(AN=="C")             C_[f_idx] = atm_index;
-	  else if(AN=="O")             O_[f_idx] = atm_index;
-	  else if(AN=="CD"&&pdb.getResidueName(allatoms[a])=="PRO") H_[f_idx] = atm_index;
-	  //CHI1 SIDE CHAIN
-	  string frg = pdb.getResidueName(allatoms[a]);
-	  if(is_chi1_cx(frg,AN)) CX_[f_idx] = atm_index;
+	  else if(AN=="CA"           ) CA_[f_idx] = atm_index;
+	  else if(AN=="CB"           ) CB_[f_idx] = atm_index;
+	  else if(AN=="C"            ) C_ [f_idx] = atm_index;
+	  else if(AN=="O"            ) O_ [f_idx] = atm_index;
+	  else if(AN=="CD"&&RES=="PRO") H_[f_idx] = atm_index;
+	  if(is_chi1_cx(RES,AN))       CX_[f_idx] = atm_index;
 	}
 
         // vector of residues for a given chain
 	vector<Fragment> atm_;
         // cycle over all residues in the chain 
-	for(int a=start;a<end;a++){
+	for(int a=start;a<=end;a++){
 	  int f_idx = a - res_offset;
 	  Fragment at;
 	  {
 	    at.pos[0] = HA_[f_idx];
-	    at.pos[1] = H_[f_idx];
-	    at.pos[2] = N_[f_idx];
+	    at.pos[1] =  H_[f_idx];
+	    at.pos[2] =  N_[f_idx];
 	    at.pos[3] = CA_[f_idx];
 	    at.pos[4] = CB_[f_idx];
-	    at.pos[5] = C_[f_idx];
+	    at.pos[5] =  C_[f_idx];
 	  }
 	  at.res_type_prev = at.res_type_curr = at.res_type_next = -1;
 	  at.res_name = pdb.getResidueName(a, chains[i]); 
@@ -1156,56 +1154,49 @@ namespace PLMD {
 	  at.fd = a;
 	  //REGISTER PREV CURR NEXT
 	  {
-	    //N H CA HA C O
-
-	    //PREV
-	    if(f_idx>0){
-	      at.prev.push_back(N_[f_idx-1]);
+	    if(a!=start){
+	      at.prev.push_back( N_[f_idx-1]);
 	      at.prev.push_back(CA_[f_idx-1]);
 	      at.prev.push_back(HA_[f_idx-1]);
-	      at.prev.push_back(C_[f_idx-1]);
-	      at.prev.push_back(O_[f_idx-1]);	
+	      at.prev.push_back( C_[f_idx-1]);
+	      at.prev.push_back( O_[f_idx-1]);	
 	      at.res_type_prev = frag2enum(pdb.getResidueName(a-1, chains[i]));
 	    }
 
-	    //CURR
-	    {
-	      at.curr.push_back(N_[f_idx]);
-	      at.curr.push_back(H_[f_idx]);
-	      at.curr.push_back(CA_[f_idx]);
-	      at.curr.push_back(HA_[f_idx]);
-	      at.curr.push_back(C_[f_idx]);
-	      at.curr.push_back(O_[f_idx]);		
-	      at.res_type_curr = frag2enum(pdb.getResidueName(a, chains[i]));
-	    }
+	    at.curr.push_back( N_[f_idx]);
+	    at.curr.push_back( H_[f_idx]);
+	    at.curr.push_back(CA_[f_idx]);
+	    at.curr.push_back(HA_[f_idx]);
+	    at.curr.push_back( C_[f_idx]);
+	    at.curr.push_back( O_[f_idx]);		
+	    at.res_type_curr = frag2enum(pdb.getResidueName(a, chains[i]));
 
-	    //NEXT
-	    if(f_idx<(end-res_offset)-1){
-	      at.next.push_back(N_[f_idx+1]);
-	      at.next.push_back(H_[f_idx+1]);
+	    if(a!=end){
+	      at.next.push_back (N_[f_idx+1]);
+	      at.next.push_back (H_[f_idx+1]);
 	      at.next.push_back(CA_[f_idx+1]);
 	      at.next.push_back(HA_[f_idx+1]);
-	      at.next.push_back(C_[f_idx+1]);
+	      at.next.push_back( C_[f_idx+1]);
 	      at.res_type_next = frag2enum(pdb.getResidueName(a+1, chains[i]));
 	    }
 
 	    //PHI | PSI | CH1
-	    if(f_idx>0){
-	      at.phi.push_back(C_[f_idx-1]);
-	      at.phi.push_back(N_[f_idx]);
+	    if(a>start){
+	      at.phi.push_back( C_[f_idx-1]);
+	      at.phi.push_back( N_[f_idx]);
 	      at.phi.push_back(CA_[f_idx]);
-	      at.phi.push_back(C_[f_idx]);
+	      at.phi.push_back( C_[f_idx]);
 	    }
 	    
-	    if(f_idx<(end-res_offset)-1){
-	      at.psi.push_back(N_[f_idx]);
+	    if(a<end){
+	      at.psi.push_back( N_[f_idx]);
 	      at.psi.push_back(CA_[f_idx]);
-	      at.psi.push_back(C_[f_idx]);
-	      at.psi.push_back(N_[f_idx+1]);	
+	      at.psi.push_back( C_[f_idx]);
+	      at.psi.push_back( N_[f_idx+1]);	
 	    }
 
 	    if(CX_[f_idx]!=-1&&CB_[f_idx]!=-1){
-	      at.chi1.push_back(N_[f_idx]);
+	      at.chi1.push_back( N_[f_idx]);
 	      at.chi1.push_back(CA_[f_idx]);
 	      at.chi1.push_back(CB_[f_idx]);
 	      at.chi1.push_back(CX_[f_idx]);	
@@ -1218,12 +1209,12 @@ namespace PLMD {
     }
 
     void init_sidechain(const PDB pdb){
-      std::vector<std::string> chains; 
+      vector<string> chains; 
       pdb.getChainNames( chains );
       // cycle over chains
       for(unsigned s=0; s<atom.size(); s++){
         AtomNumber astart, aend; 
-        std::string errmsg;
+        string errmsg;
         pdb.getAtomRange( chains[s], astart, aend, errmsg );
         int atom_offset = astart.index();
         // cycle over residues  
@@ -1259,11 +1250,11 @@ namespace PLMD {
 
       int resOffsetP2 [] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, 0, 0, 0, -1, 1, 0, 0, 1};
 
-      std::vector<std::string> chains; 
+      vector<string> chains; 
       pdb.getChainNames( chains );
       for(unsigned s=0; s<atom.size(); s++){
         AtomNumber astart, aend; 
-        std::string errmsg;
+        string errmsg;
         pdb.getAtomRange( chains[s], astart, aend, errmsg );
         int atom_offset = astart.index();
 
@@ -1342,13 +1333,13 @@ namespace PLMD {
     }
 
     void init_rings(const PDB pdb){
-      std::vector<std::string> chains; 
+      vector<string> chains; 
       pdb.getChainNames( chains );
       vector<AtomNumber> allatoms = pdb.getAtomNumbers();
 
       for(unsigned s=0; s<atom.size(); s++){
         AtomNumber astart, aend; 
-        std::string errmsg;
+        string errmsg;
         pdb.getAtomRange( chains[s], astart, aend, errmsg );
         int atom_offset = astart.index();
 	for(unsigned a=0; a<atom[s].size(); a++){
