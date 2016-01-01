@@ -426,13 +426,11 @@ namespace PLMD {
       for(unsigned i=0;i<atom.size();i++)
 	cout<<atom[i].size()<<" ";
       cout<<"\n";
-      char buff[1024];
-      sprintf(buff,"\t%8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s \n",
+      printf("\t%8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s \n",
 	      "Seg","N","AA","Prev","Curr","Next","SC","XD1","XD2","Phi","Psi","Chi1");
-      cout<<buff;
       for(unsigned i=0;i<atom.size();i++){
 	for(unsigned j=0;j<atom[i].size();j++){
-	  sprintf(buff,"\t%8i %8i %8s %8i %8i %8i %8i %8i %8i %8i %8i %8i \n",
+	  printf("\t%8i %8i %8s %8i %8i %8i %8i %8i %8i %8i %8i %8i \n",
 		  i+1,
 		  j+1,
 		  atom[i][j].res_name.c_str(),
@@ -446,8 +444,17 @@ namespace PLMD {
 		  (int)atom[i][j].psi.size(),
 		  (int)atom[i][j].chi1.size());
 
-	  cout<<buff;
-	  sprintf(buff,"\t%8i %8i %8s %8i %8i %8i %8i %8i %8i %8i %8i %8i \n",
+          for(unsigned k=0;k<atom[i][j].prev.size();k++) printf("%8i ", atom[i][j].prev[k]); printf("\n");
+          for(unsigned k=0;k<atom[i][j].curr.size();k++) printf("%8i ", atom[i][j].curr[k]); printf("\n");
+          for(unsigned k=0;k<atom[i][j].next.size();k++) printf("%8i ", atom[i][j].next[k]); printf("\n");
+          for(unsigned k=0;k<atom[i][j].side_chain.size();k++) printf("%8i ", atom[i][j].side_chain[k]); printf("\n");
+          for(unsigned k=0;k<atom[i][j].xd1.size();k++) printf("%8i ", atom[i][j].xd1[k]); printf("\n");
+          for(unsigned k=0;k<atom[i][j].xd2.size();k++) printf("%8i ", atom[i][j].xd2[k]); printf("\n");
+          for(unsigned k=0;k<atom[i][j].phi.size();k++) printf("%8i ", atom[i][j].phi[k]); printf("\n");
+          for(unsigned k=0;k<atom[i][j].psi.size();k++) printf("%8i ", atom[i][j].psi[k]); printf("\n");
+          for(unsigned k=0;k<atom[i][j].chi1.size();k++) printf("%8i ", atom[i][j].chi1[k]); printf("\n");
+
+	  printf("\t%8i %8i %8s %8i %8i %8i %8i %8i %8i %8i %8i %8i \n",
 		  i+1,
 		  j+1,
 		  atom[i][j].res_name.c_str(),
@@ -461,7 +468,6 @@ namespace PLMD {
 		  (int)check_indices(atom[i][j].psi),
 		  (int)check_indices(atom[i][j].chi1));
 
-	  cout<<buff;
 	    
 	}
       }
@@ -469,17 +475,15 @@ namespace PLMD {
       cout<<"\t Rings: "<<"\n";
       cout<<"\t ------ \n";
       cout<<"\t Number of rings: "<<ringInfo.size()<<"\n";
-      sprintf(buff,"\t%8s %8s %8s %8s\n",
+      printf("\t%8s %8s %8s %8s\n",
 	      "Num","Type","RType","N.atoms");
-      cout<<buff;
 
       for(unsigned i=0;i<ringInfo.size();i++){
-	sprintf(buff,"\t%8i %8i %8i %8i \n",
+	printf("\t%8i %8i %8i %8i \n",
 		i+1,
 		ringInfo[i].type,
 		ringInfo[i].rtype,
 		ringInfo[i].numAtoms);
-	cout<<buff;
       }
     }
 
@@ -1112,18 +1116,20 @@ namespace PLMD {
 	  CX_[a] = -1;
 	}
 
-        AtomNumber astart, aend; 
-        pdb.getAtomRange( chains[i], astart, aend, errmsg );
+        //AtomNumber astart, aend; 
+        //pdb.getAtomRange( chains[i], astart, aend, errmsg );
         vector<AtomNumber> allatoms = pdb.getAtomNumbers();
-        int atom_offset = astart.index();
+        //int atom_offset = astart.index();
         // cycle over all the atoms in the chain
-	for(int a=astart.index();a<aend.index();a++){
-          int atm_index=a-atom_offset;
+	//for(int a=astart.index();a<=aend.index();a++){
+	for(int a=0;a<allatoms.size();a++){
+          int atm_index=a;
+          //int atm_index=a-atom_offset;
 	  int f = pdb.getResidueNumber(allatoms[a]);
           int f_idx = f-res_offset;
           string AN = pdb.getAtomName(allatoms[a]);
           string RES = pdb.getResidueName(allatoms[a]);
-	  if(AN=="N")                  { N_ [f_idx] = atm_index; printf("N %i %i\n", f_idx, atm_index); }
+	  if(AN=="N")                  N_ [f_idx] = atm_index; //printf("N %i %i\n", f_idx, atm_index); }
 	  else if(AN=="H" ||AN=="HN" ) H_ [f_idx] = atm_index;
 	  else if(AN=="HA"||AN=="HA1") HA_[f_idx] = atm_index;
 	  else if(AN=="CA"           ) CA_[f_idx] = atm_index;
