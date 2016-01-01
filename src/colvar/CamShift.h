@@ -405,16 +405,90 @@ namespace PLMD {
   
     CamShift3(const string pdbfile, const string dbfile, const bool NatUnits, const double scale):db(dbfile,scale){
       PDB pdb;
-      if( !pdb.read(pdbfile,NatUnits,1./scale ) ) plumed_merror("missing input file " + pdbfile );
+      if( !pdb.read(pdbfile,NatUnits,1./scale) ) plumed_merror("missing input file " + pdbfile );
       //Init
       init_backbone(pdb);
       init_sidechain(pdb);
       init_xdist(pdb);
       init_types(pdb);
       init_rings(pdb);
+      debug_report();
       //Non-Bonded neighbour lists 
-      box_nupdate=10;
+      box_nupdate=1;
       box_count=0;
+    }
+
+    void debug_report(){
+      cout<<"\t CamShift3 Initialization report: "<<"\n";
+      cout<<"\t -------------------------------\n";
+      cout<<"\t Number of segments: "<<atom.size()<<"\n";
+      cout<<"\t Segments size:      ";
+      for(unsigned i=0;i<atom.size();i++)
+	cout<<atom[i].size()<<" ";
+      cout<<"\n";
+      char buff[1024];
+      sprintf(buff,"\t%8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s \n",
+	      "Seg","N","AA","Prev","Curr","Next","SC","XD1","XD2","Phi","Psi","Chi1");
+      cout<<buff;
+      for(unsigned i=0;i<atom.size();i++){
+	for(unsigned j=0;j<atom[i].size();j++){
+	  sprintf(buff,"\t%8i %8i %8s %8i %8i %8i %8i %8i %8i %8i %8i %8i \n",
+		  i+1,
+		  j+1,
+		  atom[i][j].res_name.c_str(),
+		  (int)atom[i][j].prev.size(),
+		  (int)atom[i][j].curr.size(),
+		  (int)atom[i][j].next.size(),
+		  (int)atom[i][j].side_chain.size(),
+		  (int)atom[i][j].xd1.size(),
+		  (int)atom[i][j].xd2.size(),
+		  (int)atom[i][j].phi.size(),
+		  (int)atom[i][j].psi.size(),
+		  (int)atom[i][j].chi1.size());
+
+	  cout<<buff;
+	  sprintf(buff,"\t%8i %8i %8s %8i %8i %8i %8i %8i %8i %8i %8i %8i \n",
+		  i+1,
+		  j+1,
+		  atom[i][j].res_name.c_str(),
+		  (int)check_indices(atom[i][j].prev),
+		  (int)check_indices(atom[i][j].curr),
+		  (int)check_indices(atom[i][j].next),
+		  (int)check_indices(atom[i][j].side_chain),
+		  (int)check_indices(atom[i][j].xd1),
+		  (int)check_indices(atom[i][j].xd2),
+		  (int)check_indices(atom[i][j].phi),
+		  (int)check_indices(atom[i][j].psi),
+		  (int)check_indices(atom[i][j].chi1));
+
+	  cout<<buff;
+	    
+	}
+      }
+
+      cout<<"\t Rings: "<<"\n";
+      cout<<"\t ------ \n";
+      cout<<"\t Number of rings: "<<ringInfo.size()<<"\n";
+      sprintf(buff,"\t%8s %8s %8s %8s\n",
+	      "Num","Type","RType","N.atoms");
+      cout<<buff;
+
+      for(unsigned i=0;i<ringInfo.size();i++){
+	sprintf(buff,"\t%8i %8i %8i %8i \n",
+		i+1,
+		ringInfo[i].type,
+		ringInfo[i].rtype,
+		ringInfo[i].numAtoms);
+	cout<<buff;
+      }
+    }
+
+    int check_indices(const vector<int> & v){
+      int c = 0;
+      for(unsigned int i=0;i<v.size();i++)
+	if(v[i]>0) ++c;
+
+      return c;
     }
 
     void set_box_nupdate(const int v){box_nupdate = v;}
@@ -971,7 +1045,7 @@ namespace PLMD {
       int ipos = CSDIM*curr;
       int size = coor.size();
       for(int n=0;n<size;n++){
-	int res_dist = abs(res_num[curr]-res_num[n]);
+	unsigned res_dist = abs(res_num[curr]-res_num[n]);
 	if(res_dist<2) continue;
 
 	int npos = CSDIM*n;
@@ -999,11 +1073,11 @@ namespace PLMD {
       seg_last.resize(chains.size());
 
       for(unsigned i=0;i<chains.size();i++){
-        unsigned start,end;
+        unsigned start, end;
         std::string errmsg;
         pdb.getResidueRange( chains[i], start, end, errmsg );
 
-	int fb = start;
+	int res_offset = start;
         unsigned resrange = end-start+1;
 
 	if(i==0) seg_last[i] = resrange;
@@ -1047,25 +1121,26 @@ namespace PLMD {
 	for(int a=astart.index();a<aend.index();a++){
           int atm_index=a-atom_offset;
 	  int f = pdb.getResidueNumber(allatoms[a]);
+          int f_idx = f-res_offset;
           string AN = pdb.getAtomName(allatoms[a]);
-	  if(AN=="N")                  N_[f-fb] = atm_index;
-	  else if(AN=="H"||AN=="HN")   H_[f-fb] = atm_index;
-	  else if(AN=="HA"||AN=="HA1") HA_[f-fb] = atm_index;
-	  else if(AN=="CA")            CA_[f-fb] = atm_index;
-	  else if(AN=="CB")            CB_[f-fb] = atm_index;
-	  else if(AN=="C")             C_[f-fb] = atm_index;
-	  else if(AN=="O")             O_[f-fb] = atm_index;
-	  else if(AN=="CD"&&pdb.getResidueName(allatoms[a])=="PRO") H_[f-fb] = atm_index;
+	  if(AN=="N")                  N_[f_idx] = atm_index;
+	  else if(AN=="H"||AN=="HN")   H_[f_idx] = atm_index;
+	  else if(AN=="HA"||AN=="HA1") HA_[f_idx] = atm_index;
+	  else if(AN=="CA")            CA_[f_idx] = atm_index;
+	  else if(AN=="CB")            CB_[f_idx] = atm_index;
+	  else if(AN=="C")             C_[f_idx] = atm_index;
+	  else if(AN=="O")             O_[f_idx] = atm_index;
+	  else if(AN=="CD"&&pdb.getResidueName(allatoms[a])=="PRO") H_[f_idx] = atm_index;
 	  //CHI1 SIDE CHAIN
 	  string frg = pdb.getResidueName(allatoms[a]);
-	  if(is_chi1_cx(frg,AN)) CX_[f-fb] = atm_index;
+	  if(is_chi1_cx(frg,AN)) CX_[f_idx] = atm_index;
 	}
 
         // vector of residues for a given chain
 	vector<Fragment> atm_;
         // cycle over all residues in the chain 
 	for(int a=start;a<end;a++){
-	  int f_idx = a - fb;
+	  int f_idx = a - res_offset;
 	  Fragment at;
 	  {
 	    at.pos[0] = HA_[f_idx];
@@ -1105,7 +1180,7 @@ namespace PLMD {
 	    }
 
 	    //NEXT
-	    if(f_idx<(end-fb)-1){
+	    if(f_idx<(end-res_offset)-1){
 	      at.next.push_back(N_[f_idx+1]);
 	      at.next.push_back(H_[f_idx+1]);
 	      at.next.push_back(CA_[f_idx+1]);
@@ -1122,7 +1197,7 @@ namespace PLMD {
 	      at.phi.push_back(C_[f_idx]);
 	    }
 	    
-	    if(f_idx<(end-fb)-1){
+	    if(f_idx<(end-res_offset)-1){
 	      at.psi.push_back(N_[f_idx]);
 	      at.psi.push_back(CA_[f_idx]);
 	      at.psi.push_back(C_[f_idx]);
@@ -1146,21 +1221,22 @@ namespace PLMD {
       std::vector<std::string> chains; 
       pdb.getChainNames( chains );
       // cycle over chains
-      for(unsigned s = 0; s<atom.size(); s++){
+      for(unsigned s=0; s<atom.size(); s++){
         AtomNumber astart, aend; 
         std::string errmsg;
         pdb.getAtomRange( chains[s], astart, aend, errmsg );
         int atom_offset = astart.index();
         // cycle over residues  
-	for(unsigned a = 0;a<atom[s].size();a++){
+	for(unsigned a=0; a<atom[s].size(); a++){
           if(atom[s][a].res_name=="UNK") continue;
 	  vector<AtomNumber> atm = pdb.getAtomsInResidue(atom[s][a].fd, chains[s]);
 	  vector<string> sc_atm = side_chain_atoms(atom[s][a].res_name);
 
 	  for(unsigned sc=0;sc<sc_atm.size();sc++){
 	    for(unsigned aa=0;aa<atm.size();aa++){
-	      if(pdb.getAtomName(atm[aa])==sc_atm[sc])
+	      if(pdb.getAtomName(atm[aa])==sc_atm[sc]){
 		atom[s][a].side_chain.push_back(atm[aa].index()-atom_offset);
+              }
 	    }
 	  }
 
@@ -1185,29 +1261,20 @@ namespace PLMD {
 
       std::vector<std::string> chains; 
       pdb.getChainNames( chains );
-      vector<AtomNumber> allatoms = pdb.getAtomNumbers();
-
-      for(unsigned s = 0; s<atom.size(); s++){
-        unsigned start,end;
-        std::string errmsg;
-        pdb.getResidueRange( chains[s], start, end, errmsg );
+      for(unsigned s=0; s<atom.size(); s++){
         AtomNumber astart, aend; 
+        std::string errmsg;
         pdb.getAtomRange( chains[s], astart, aend, errmsg );
         int atom_offset = astart.index();
 
-	for(unsigned a = 0;a<atom[s].size();a++){
-	  int fd = atom[s][a].fd;
-	  int fo = start;
-	  int fs = end-fo;
-	  int f_idx = fd-fo;
-	  if((f_idx==0)||(f_idx==fs-1)) continue;
+	for(unsigned a=1; a<atom[s].size()-1; a++){
 	  vector<AtomNumber> atm_curr = pdb.getAtomsInResidue(atom[s][a].fd,chains[s]);
 	  vector<AtomNumber> atm_prev = pdb.getAtomsInResidue(atom[s][a].fd-1,chains[s]);
 	  vector<AtomNumber> atm_next = pdb.getAtomsInResidue(atom[s][a].fd+1,chains[s]);
 
 	  for(unsigned q=0;q<numXtraDists-1; q++){
-	    vector<AtomNumber>::iterator at1,at1_end;
-	    vector<AtomNumber>::iterator at2,at2_end;
+	    vector<AtomNumber>::iterator at1, at1_end;
+	    vector<AtomNumber>::iterator at2, at2_end;
 
 	    AtomNumber p1;
 	    AtomNumber p2;
@@ -1216,7 +1283,8 @@ namespace PLMD {
 	    if(resOffsetP1[q]==-1){ at1 = atm_prev.begin(); at1_end = atm_prev.end();}
 	    if(resOffsetP1[q]==+1){ at1 = atm_next.begin(); at1_end = atm_next.end();}
 	    while(at1!=at1_end){
-	      AtomNumber aa = *at1; ++at1;
+	      AtomNumber aa = *at1;
+              ++at1;
 	      string name = pdb.getAtomName(aa);
 
 	      xdist_name_map(name);
@@ -1231,7 +1299,8 @@ namespace PLMD {
 	    if(resOffsetP2[q]==-1){ at2 = atm_prev.begin(); at2_end = atm_prev.end();}
 	    if(resOffsetP2[q]==+1){ at2 = atm_next.begin(); at2_end = atm_next.end();}
 	    while(at2!=at2_end){
-	      AtomNumber aa = *at2; ++at2;
+	      AtomNumber aa = *at2;
+              ++at2;
 	      string name = pdb.getAtomName(aa);
 
 	      xdist_name_map(name);
@@ -1278,14 +1347,12 @@ namespace PLMD {
       vector<AtomNumber> allatoms = pdb.getAtomNumbers();
 
       for(unsigned s=0; s<atom.size(); s++){
-        unsigned start,end;
-        std::string errmsg;
-        pdb.getResidueRange( chains[s], start, end, errmsg );
         AtomNumber astart, aend; 
+        std::string errmsg;
         pdb.getAtomRange( chains[s], astart, aend, errmsg );
         int atom_offset = astart.index();
-	for(unsigned a=start; a<end; a++){
-	  string frg = pdb.getResidueName(a);
+	for(unsigned a=0; a<atom[s].size(); a++){
+	  string frg = pdb.getResidueName(atom[s][a].fd);
 	  if(!((frg=="PHE")||(frg=="TYR")||(frg=="TRP")||
 	       (frg=="HIS")||(frg=="HIP")||(frg=="HID")||
 	       (frg=="HIE")||(frg=="HSD")||(frg=="HSE")||
