@@ -1116,20 +1116,15 @@ namespace PLMD {
 	  CX_[a] = -1;
 	}
 
-        //AtomNumber astart, aend; 
-        //pdb.getAtomRange( chains[i], astart, aend, errmsg );
         vector<AtomNumber> allatoms = pdb.getAtomNumbers();
-        //int atom_offset = astart.index();
         // cycle over all the atoms in the chain
-	//for(int a=astart.index();a<=aend.index();a++){
 	for(int a=0;a<allatoms.size();a++){
           int atm_index=a;
-          //int atm_index=a-atom_offset;
 	  int f = pdb.getResidueNumber(allatoms[a]);
           int f_idx = f-res_offset;
           string AN = pdb.getAtomName(allatoms[a]);
           string RES = pdb.getResidueName(allatoms[a]);
-	  if(AN=="N")                  N_ [f_idx] = atm_index; //printf("N %i %i\n", f_idx, atm_index); }
+	  if(AN=="N")                  N_ [f_idx] = atm_index;
 	  else if(AN=="H" ||AN=="HN" ) H_ [f_idx] = atm_index;
 	  else if(AN=="HA"||AN=="HA1") HA_[f_idx] = atm_index;
 	  else if(AN=="CA"           ) CA_[f_idx] = atm_index;
@@ -1307,8 +1302,12 @@ namespace PLMD {
 		break;
 	      }
 	    }
-	    atom[s][a].xd1.push_back(p1.index()-atom_offset);
-	    atom[s][a].xd2.push_back(p2.index()-atom_offset);
+            int add1 = p1.index()-atom_offset;
+            int add2 = p2.index()-atom_offset;
+            if(add1<0) add1=-1;
+            if(add2<0) add2=-1;
+            atom[s][a].xd1.push_back(add1);
+            atom[s][a].xd2.push_back(add2);
 	  }
 	}
       }
