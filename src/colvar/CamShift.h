@@ -1332,6 +1332,7 @@ namespace PLMD {
 	string fragName = pdb.getResidueName(aa[i]);
 	string atom_name = pdb.getAtomName(aa[i]);
 	char atom_type = atom_name[0];
+        if(isdigit(atom_name[0])) atom_type = atom_name[1];
 	res_num.push_back(frag);
 	int t = -1;
 	if (!isSP2(fragName, atom_name)){
