@@ -255,6 +255,17 @@ std::vector<AtomNumber> PDB::getAtomsInResidue(const unsigned& resnum,const std:
   return tmp;
 }
 
+std::vector<AtomNumber> PDB::getAtomsInChain(const std::string& chainid)const {
+  std::vector<AtomNumber> tmp;
+  for(unsigned i=0;i<size();++i){
+     if( chainid=="*" || chain[i]==chainid ) tmp.push_back(numbers[i]);
+  }
+  if(tmp.size()==0) {
+    plumed_merror("Cannot find atoms from chain " + chainid  );
+  }
+  return tmp;
+}
+
 std::string PDB::getChainID(const unsigned& resnumber) const {
   for(unsigned i=0;i<size();++i){
      if(resnumber==residue[i]) return chain[i];
