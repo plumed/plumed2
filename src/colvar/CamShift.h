@@ -82,18 +82,13 @@ namespace PLMD {
     double * CONSTAACURR(int a_kind, int at_kind){return c_aa[a_kind][at_kind];}
     double * CONSTAANEXT(int a_kind, int at_kind){return c_aa_succ[a_kind][at_kind];}
     double * CONSTAAPREV(int a_kind, int at_kind){return c_aa_prev[a_kind][at_kind];}
-
     double * CONST_BB2_PREV(int a_kind, int at_kind){return co_bb[a_kind][at_kind][1];}
     double * CONST_BB2_CURR(int a_kind, int at_kind){return co_bb[a_kind][at_kind][1]+5;}
     double * CONST_BB2_NEXT(int a_kind, int at_kind){return co_bb[a_kind][at_kind][1]+11;}
-
     double * CONST_SC2(int a_kind, int at_kind, int res_type){ return co_sc_[a_kind][at_kind][res_type][1];}
     double * CONST_XD(int a_kind, int at_kind){ return co_xd[a_kind][at_kind];}
-
     double * CO_SPHERE(int a_kind, int at_kind, int exp_type){ return co_sphere[a_kind][at_kind][exp_type];}
-    
     double * CO_RING(int a_kind, int at_kind){ return co_ring[a_kind][at_kind];}
-    
     double * CO_DA(int a_kind, int at_kind){ return co_da[a_kind][at_kind];}
     double * PARS_DA(int a_kind, int at_kind, int ang_kind){ return pars_da[a_kind][at_kind][ang_kind];}
 
@@ -423,8 +418,7 @@ namespace PLMD {
       cout<<"\t -------------------------------\n";
       cout<<"\t Number of segments: "<<atom.size()<<"\n";
       cout<<"\t Segments size:      ";
-      for(unsigned i=0;i<atom.size();i++)
-	cout<<atom[i].size()<<" ";
+      for(unsigned i=0;i<atom.size();i++) cout<<atom[i].size()<<" ";
       cout<<"\n";
       printf("\t%8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s \n",
 	      "Seg","N","AA","Prev","Curr","Next","SC","XD1","XD2","Phi","Psi","Chi1");
@@ -552,14 +546,17 @@ namespace PLMD {
       unsigned index=0;
       // CYCLE OVER MULTIPLE CHAINS
       for(unsigned s=0;s<atom.size();s++){
+        printf("chains %u\n", s); fflush(stdout);
 	// SKIP FIRST AND LAST RESIDUE OF EACH CHAIN
 #pragma omp parallel for num_threads(OpenMP::getNumThreads())
-	for(unsigned a=1;a<atom[s].size()-1;a++){
+	for(unsigned a=0;a<atom[s].size();a++){
+          printf("residue %u\n", a); fflush(stdout);
           // CYCLE OVER THE SIX BACKBONE CHEMICAL SHIFTS
 	  for(unsigned at_kind=0;at_kind<6;at_kind++){
+            printf("cs %u\n", at_kind); fflush(stdout);
 	    double cs = 0.;
 	    double cs_deriv = -1.;
-            
+            printf("do it %i %f\n", atom[s][a].pos[at_kind], atom[s][a].exp_cs[at_kind]);
 	    if(atom[s][a].pos[at_kind]>0&&atom[s][a].exp_cs[at_kind]>0){
 
               // this is the counter to find your place in ff
@@ -596,6 +593,7 @@ namespace PLMD {
 	      //3. distances const
 	    
 	      int ipos = CSDIM*atom[s][a].pos[at_kind];
+              printf("cs %f\n", cs); fflush(stdout);
 
 	      //PREV
 	      for(unsigned q=0;q<atom[s][a].prev.size();q++){
@@ -620,6 +618,7 @@ namespace PLMD {
 	        ff[place+jpos+1] = ff[place+jpos+1] - fact*dy;
 	        ff[place+jpos+2] = ff[place+jpos+2] - fact*dz;
 	      }
+              printf("PREV cs %f\n", cs); fflush(stdout);
 
 	      //CURR
 	      for(unsigned q=0;q<atom[s][a].curr.size();q++){
@@ -644,6 +643,7 @@ namespace PLMD {
 	        ff[place+jpos+1] = ff[place+jpos+1] - fact*dy;
 	        ff[place+jpos+2] = ff[place+jpos+2] - fact*dz;
 	      }
+              printf("CURR cs %f\n", cs); fflush(stdout);
 
 	      //NEXT
 	      for(unsigned q=0;q<atom[s][a].next.size();q++){
@@ -668,6 +668,7 @@ namespace PLMD {
 	        ff[place+jpos+1] = ff[place+jpos+1] - fact*dy;
 	        ff[place+jpos+2] = ff[place+jpos+2] - fact*dz;	    
 	      }
+              printf("NEXT cs %f\n", cs); fflush(stdout);
 
 	      //SIDE CHAIN
 	      for(unsigned q=0;q<atom[s][a].side_chain.size();q++){
@@ -691,6 +692,7 @@ namespace PLMD {
 	        ff[place+jpos+1] = ff[place+jpos+1] - fact*dy;
 	        ff[place+jpos+2] = ff[place+jpos+2] - fact*dz;	    	    
 	      }
+              printf("CS cs %f\n", cs); fflush(stdout);
 	    
 	      //EXTRA DIST
 	      for(unsigned q=0;q<atom[s][a].xd1.size();q++){
@@ -717,6 +719,7 @@ namespace PLMD {
 	        ff[place+jpos+1] = ff[place+jpos+1] - fact*dy;
 	        ff[place+jpos+2] = ff[place+jpos+2] - fact*dz;
 	      }
+              printf("XD cs %f\n", cs); fflush(stdout);
 	    
 	      //NON BOND
 	      {
@@ -795,6 +798,7 @@ namespace PLMD {
 	        }
 	      }
 	      //END NON BOND
+              printf("NB cs %f\n", cs); fflush(stdout);
 
 	      //RINGS
 	      {
@@ -908,6 +912,7 @@ namespace PLMD {
 	        cs += contribTot;
 	      }
 	      //END OF RINGS
+              printf("RG cs %f\n", cs); fflush(stdout);
 
 	      //DIHEDRAL ANGLES
 	      {
@@ -1031,7 +1036,9 @@ namespace PLMD {
 	        }
 	      }
 	      //END OF DIHE
+              printf("DH cs %f\n", cs); fflush(stdout);
 	    } 
+            printf("FINAL %i %i cs %f\n", index+a, at_kind, cs); fflush(stdout);
             sh[index+a][at_kind] = cs;
 	  }
 	}
@@ -1044,10 +1051,11 @@ namespace PLMD {
 
   private:
 
-    inline void update_box(const int curr, vector<int> & aa_box_i, const vector<double> & coor, const double cutnb2){
+    void update_box(const int curr, vector<int> & aa_box_i, const vector<double> & coor, const double cutnb2){
       aa_box_i.clear();
       int ipos = CSDIM*curr;
-      int size = coor.size();
+      int size = coor.size()/CSDIM;
+#pragma omp parallel for num_threads(OpenMP::getNumThreads())
       for(int n=0;n<size;n++){
 	unsigned res_dist = abs(res_num[curr]-res_num[n]);
 	if(res_dist<2) continue;
@@ -1063,8 +1071,8 @@ namespace PLMD {
     }
 
     void xdist_name_map(string & name){
-      if((name == "OT1")) name = "O";
-      else if ((name == "HN") || (name == "HT1")) name = "H";
+      if((name == "OT1")||(name == "OC1")) name = "O";
+      else if ((name == "HN") || (name == "HT1") || (name == "H1")) name = "H";
       else if ((name == "CG1")|| (name == "OG")|| 
 	       (name == "SG") || (name == "OG1")) name = "CG";
       else if ((name == "HA1"))                   name = "HA";
@@ -1116,7 +1124,7 @@ namespace PLMD {
 	  CX_[a] = -1;
 	}
 
-        vector<AtomNumber> allatoms = pdb.getAtomNumbers();
+        vector<AtomNumber> allatoms = pdb.getAtomsInChain(chains[i]);
         // cycle over all the atoms in the chain
 	for(int a=0;a<allatoms.size();a++){
           int atm_index=a;
@@ -1155,7 +1163,7 @@ namespace PLMD {
 	  at.fd = a;
 	  //REGISTER PREV CURR NEXT
 	  {
-	    if(a!=start){
+	    if(a>start){
 	      at.prev.push_back( N_[f_idx-1]);
 	      at.prev.push_back(CA_[f_idx-1]);
 	      at.prev.push_back(HA_[f_idx-1]);
@@ -1172,7 +1180,7 @@ namespace PLMD {
 	    at.curr.push_back( O_[f_idx]);		
 	    at.res_type_curr = frag2enum(pdb.getResidueName(a, chains[i]));
 
-	    if(a!=end){
+	    if(a<end){
 	      at.next.push_back (N_[f_idx+1]);
 	      at.next.push_back (H_[f_idx+1]);
 	      at.next.push_back(CA_[f_idx+1]);
@@ -1268,7 +1276,9 @@ namespace PLMD {
 	    vector<AtomNumber>::iterator at1, at1_end;
 	    vector<AtomNumber>::iterator at2, at2_end;
 
+            bool init_p1=false;
 	    AtomNumber p1;
+            bool init_p2=false;
 	    AtomNumber p2;
 
 	    if(resOffsetP1[q]== 0){ at1 = atm_curr.begin(); at1_end = atm_curr.end();}
@@ -1283,6 +1293,7 @@ namespace PLMD {
 
 	      if(name==atomsP1[q]){
 		p1 = aa;
+                init_p1=true;
 		break;
 	      }
 	    }
@@ -1299,13 +1310,14 @@ namespace PLMD {
 
 	      if(name==atomsP2[q]){
 		p2 = aa;
+                init_p2=true;
 		break;
 	      }
 	    }
-            int add1 = p1.index()-atom_offset;
-            int add2 = p2.index()-atom_offset;
-            if(add1<0) add1=-1;
-            if(add2<0) add2=-1;
+            int add1 = -1;
+            int add2 = -1;
+            if(init_p1) add1=p1.index()-atom_offset;
+            if(init_p2) add2=p2.index()-atom_offset;
             atom[s][a].xd1.push_back(add1);
             atom[s][a].xd2.push_back(add2);
 	  }
@@ -1520,17 +1532,25 @@ namespace PLMD {
         sc.push_back( "CZ" );
         sc.push_back( "NH1" );
         sc.push_back( "NH2" );
+        sc.push_back( "NH3" );
         sc.push_back( "HB1" );
         sc.push_back( "HB2" );
+        sc.push_back( "HB3" );
         sc.push_back( "HG1" );
         sc.push_back( "HG2" );
+        sc.push_back( "HG3" );
         sc.push_back( "HD1" );
         sc.push_back( "HD2" );
+        sc.push_back( "HD3" );
         sc.push_back( "HE" );
         sc.push_back( "HH11" );
         sc.push_back( "HH12" );
         sc.push_back( "HH21" );
         sc.push_back( "HH22" );
+        sc.push_back( "1HH1" );
+        sc.push_back( "2HH1" );
+        sc.push_back( "1HH2" );
+        sc.push_back( "2HH2" );
 	return sc;
       } else if(s=="ASN"){
         sc.push_back( "CB" );
@@ -1539,8 +1559,11 @@ namespace PLMD {
         sc.push_back( "ND2" );
         sc.push_back( "HB1" );
         sc.push_back( "HB2" );
+        sc.push_back( "HB3" );
         sc.push_back( "HD21" );
         sc.push_back( "HD22" );
+        sc.push_back( "1HD2" );
+        sc.push_back( "2HD2" );
 	return sc;
       } else if(s=="ASP"||s=="ASH"){
         sc.push_back( "CB" );
@@ -1549,13 +1572,16 @@ namespace PLMD {
         sc.push_back( "OD2" );
         sc.push_back( "HB1" );
         sc.push_back( "HB2" );
+        sc.push_back( "HB3" );
 	return sc;
       } else if(s=="CYS"||s=="CYM"){
         sc.push_back( "CB" );
         sc.push_back( "SG" );
         sc.push_back( "HB1" );
         sc.push_back( "HB2" );
+        sc.push_back( "HB3" );
         sc.push_back( "HG1" );
+        sc.push_back( "HG" );
 	return sc;
       } else if(s=="GLN"){
         sc.push_back( "CB" );
@@ -1565,10 +1591,14 @@ namespace PLMD {
         sc.push_back( "NE2" );
         sc.push_back( "HB1" );
         sc.push_back( "HB2" );
+        sc.push_back( "HB3" );
         sc.push_back( "HG1" );
         sc.push_back( "HG2" );
+        sc.push_back( "HG3" );
         sc.push_back( "HE21" );
         sc.push_back( "HE22" );
+        sc.push_back( "1HE2" );
+        sc.push_back( "2HE2" );
 	return sc;
       } else if(s=="GLU"||s=="GLH"){
         sc.push_back( "CB" );
@@ -1578,8 +1608,10 @@ namespace PLMD {
         sc.push_back( "OE2" );
         sc.push_back( "HB1" );
         sc.push_back( "HB2" );
+        sc.push_back( "HB3" );
         sc.push_back( "HG1" );
         sc.push_back( "HG2" );
+        sc.push_back( "HG3" );
 	return sc;
       } else if(s=="GLY"||s=="GME"){
         sc.push_back( "HA2" );
@@ -1596,6 +1628,7 @@ namespace PLMD {
         sc.push_back( "HD1" );
         sc.push_back( "HD2" );
         sc.push_back( "HE1" );
+        sc.push_back( "HE2" );
 	return sc;
       } else if(s=="ILE"||s=="IME"){
         sc.push_back( "CB" );
@@ -1608,6 +1641,11 @@ namespace PLMD {
         sc.push_back( "HG21" );
         sc.push_back( "HG22" );
         sc.push_back( "HG23" );
+        sc.push_back( "1HG1" );
+        sc.push_back( "2HG1" );
+        sc.push_back( "1HG2" );
+        sc.push_back( "2HG2" );
+        sc.push_back( "3HG2" );
         sc.push_back( "HD1" );
         sc.push_back( "HD2" );
         sc.push_back( "HD3" );
@@ -1619,6 +1657,7 @@ namespace PLMD {
         sc.push_back( "CD2" );
         sc.push_back( "HB1" );
         sc.push_back( "HB2" );
+        sc.push_back( "HB3" );
         sc.push_back( "HG" );
         sc.push_back( "HD11" );
         sc.push_back( "HD12" );
@@ -1626,6 +1665,12 @@ namespace PLMD {
         sc.push_back( "HD21" );
         sc.push_back( "HD22" );
         sc.push_back( "HD23" );
+        sc.push_back( "1HD1" );
+        sc.push_back( "2HD1" );
+        sc.push_back( "3HD1" );
+        sc.push_back( "1HD2" );
+        sc.push_back( "2HD2" );
+        sc.push_back( "3HD2" );
 	return sc;
       } else if(s=="LYS"){
         sc.push_back( "CB" );
@@ -1635,12 +1680,16 @@ namespace PLMD {
         sc.push_back( "NZ" );
         sc.push_back( "HB1" );
         sc.push_back( "HB2" );
+        sc.push_back( "HB3" );
         sc.push_back( "HG1" );
         sc.push_back( "HG2" );
+        sc.push_back( "HG3" );
         sc.push_back( "HD1" );
         sc.push_back( "HD2" );
+        sc.push_back( "HD3" );
         sc.push_back( "HE1" );
         sc.push_back( "HE2" );
+        sc.push_back( "HE3" );
         sc.push_back( "HZ1" );
         sc.push_back( "HZ2" );
         sc.push_back( "HZ3" );
@@ -1652,8 +1701,10 @@ namespace PLMD {
         sc.push_back( "CE" );
         sc.push_back( "HB1" );
         sc.push_back( "HB2" );
+        sc.push_back( "HB3" );
         sc.push_back( "HG1" );
         sc.push_back( "HG2" );
+        sc.push_back( "HG3" );
         sc.push_back( "HE1" );
         sc.push_back( "HE2" );
         sc.push_back( "HE3" );
@@ -1668,10 +1719,13 @@ namespace PLMD {
         sc.push_back( "CZ" );
         sc.push_back( "HB1" );
         sc.push_back( "HB2" );
+        sc.push_back( "HB3" );
         sc.push_back( "HD1" );
         sc.push_back( "HD2" );
+        sc.push_back( "HD3" );
         sc.push_back( "HE1" );
         sc.push_back( "HE2" );
+        sc.push_back( "HE3" );
         sc.push_back( "HZ" );
 	return sc;
       } else if(s=="PRO"){
@@ -1680,17 +1734,22 @@ namespace PLMD {
         sc.push_back( "CD" );
         sc.push_back( "HB1" );
         sc.push_back( "HB2" );
+        sc.push_back( "HB3" );
         sc.push_back( "HG1" );
         sc.push_back( "HG2" );
+        sc.push_back( "HG3" );
         sc.push_back( "HD1" );
         sc.push_back( "HD2" );
+        sc.push_back( "HD3" );
 	return sc;
       } else if(s=="SER"){
         sc.push_back( "CB" );
         sc.push_back( "OG" );
         sc.push_back( "HB1" );
         sc.push_back( "HB2" );
+        sc.push_back( "HB3" );
         sc.push_back( "HG1" );
+        sc.push_back( "HG" );
 	return sc;
       } else if(s=="THR"){
         sc.push_back( "CB" );
@@ -1701,6 +1760,9 @@ namespace PLMD {
         sc.push_back( "HG21" );
         sc.push_back( "HG22" );
         sc.push_back( "HG23" );
+        sc.push_back( "1HG2" );
+        sc.push_back( "2HG2" );
+        sc.push_back( "3HG2" );
 	return sc;
       } else if(s=="TRP"){
         sc.push_back( "CB" );
@@ -1733,10 +1795,13 @@ namespace PLMD {
         sc.push_back( "OH" );
         sc.push_back( "HB1" );
         sc.push_back( "HB2" );
+        sc.push_back( "HB3" );
         sc.push_back( "HD1" );
         sc.push_back( "HD2" );
+        sc.push_back( "HD3" );
         sc.push_back( "HE1" );
         sc.push_back( "HE2" );
+        sc.push_back( "HE3" );
         sc.push_back( "HH" );
 	return sc;
       } else if(s=="VAL"){
@@ -1750,6 +1815,12 @@ namespace PLMD {
         sc.push_back( "HG21" );
         sc.push_back( "HG22" );
         sc.push_back( "HG23" );
+        sc.push_back( "1HG1" );
+        sc.push_back( "2HG1" );
+        sc.push_back( "3HG1" );
+        sc.push_back( "1HG2" );
+        sc.push_back( "2HG2" );
+        sc.push_back( "3HG2" );
 	return sc;
       } else plumed_merror("CS2BackBone: side_chain_atoms unknown");
     }
