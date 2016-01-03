@@ -341,7 +341,7 @@ void CS2Backbone::calculate()
      coor[ipos+2] = Pos[2];
   }
 
-  cam_list[0].new_calc_cs(coor, csforces, N, sh);
+  cam_list[0].calc_cs(coor, csforces, N, sh);
 
   unsigned k=0;
   unsigned step=2;

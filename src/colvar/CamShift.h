@@ -24,8 +24,6 @@ namespace PLMD {
 
   class CamShiftDB {
     enum { STD, GLY, PRO};
-
-    //6 ATOMS TYPES
     enum { HA_ATOM, H_ATOM, N_ATOM, CA_ATOM, CB_ATOM, C_ATOM };
 
     static const int aa_kind = 3;
@@ -56,45 +54,47 @@ namespace PLMD {
     double co_xd[aa_kind][atm_kind][numXtraDists];
 
   public:
-    CamShiftDB(string file, const double scale){ 
+    CamShiftDB(const string file, const double scale){ 
       dscale = scale;
       parse(file);
     }
 
-    int kind(string s){
+    inline int kind(const string s){
       if(s=="GLY") return GLY;
-      if(s=="PRO") return PRO;      
+      else if(s=="PRO") return PRO;      
       return STD;
     }
 
-    int atom_kind(string s){
+    inline int atom_kind(const string s){
       if(s=="HA")return HA_ATOM;
-      if(s=="H") return H_ATOM;
-      if(s=="N") return N_ATOM;
-      if(s=="CA")return CA_ATOM;
-      if(s=="CB")return CB_ATOM;
-      if(s=="C") return C_ATOM;
+      else if(s=="H") return H_ATOM;
+      else if(s=="N") return N_ATOM;
+      else if(s=="CA")return CA_ATOM;
+      else if(s=="CB")return CB_ATOM;
+      else if(s=="C") return C_ATOM;
       return -1;
     }
 
+    int get_numXtraDists() {return numXtraDists;}
+
     //PARAMETERS
-    double   CONST(int a_kind, int at_kind){ return c_all[a_kind][at_kind];}
-    double * CONSTAACURR(int a_kind, int at_kind){return c_aa[a_kind][at_kind];}
-    double * CONSTAANEXT(int a_kind, int at_kind){return c_aa_succ[a_kind][at_kind];}
-    double * CONSTAAPREV(int a_kind, int at_kind){return c_aa_prev[a_kind][at_kind];}
-    double * CONST_BB2_PREV(int a_kind, int at_kind){return co_bb[a_kind][at_kind][1];}
-    double * CONST_BB2_CURR(int a_kind, int at_kind){return co_bb[a_kind][at_kind][1]+5;}
-    double * CONST_BB2_NEXT(int a_kind, int at_kind){return co_bb[a_kind][at_kind][1]+11;}
-    double * CONST_SC2(int a_kind, int at_kind, int res_type){ return co_sc_[a_kind][at_kind][res_type][1];}
-    double * CONST_XD(int a_kind, int at_kind){ return co_xd[a_kind][at_kind];}
-    double * CO_SPHERE(int a_kind, int at_kind, int exp_type){ return co_sphere[a_kind][at_kind][exp_type];}
-    double * CO_RING(int a_kind, int at_kind){ return co_ring[a_kind][at_kind];}
-    double * CO_DA(int a_kind, int at_kind){ return co_da[a_kind][at_kind];}
-    double * PARS_DA(int a_kind, int at_kind, int ang_kind){ return pars_da[a_kind][at_kind][ang_kind];}
+    inline double   CONST(const int a_kind, const int at_kind){ return c_all[a_kind][at_kind];}
+    inline double * CONSTAACURR(const int a_kind, const int at_kind){return c_aa[a_kind][at_kind];}
+    inline double * CONSTAANEXT(const int a_kind, const int at_kind){return c_aa_succ[a_kind][at_kind];}
+    inline double * CONSTAAPREV(const int a_kind, const int at_kind){return c_aa_prev[a_kind][at_kind];}
+    inline double * CONST_BB2_PREV(const int a_kind, const int at_kind){return co_bb[a_kind][at_kind][1];}
+    inline double * CONST_BB2_CURR(const int a_kind, const int at_kind){return co_bb[a_kind][at_kind][1]+5;}
+    inline double * CONST_BB2_NEXT(const int a_kind, const int at_kind){return co_bb[a_kind][at_kind][1]+11;}
+    inline double * CONST_SC2(const int a_kind, const int at_kind, int res_type){ return co_sc_[a_kind][at_kind][res_type][1];}
+    inline double * CONST_XD(const int a_kind, const int at_kind){ return co_xd[a_kind][at_kind];}
+    inline double * CO_SPHERE(const int a_kind, const int at_kind, int exp_type){ return co_sphere[a_kind][at_kind][exp_type];}
+    inline double * CO_RING(const int a_kind, const int at_kind){ return co_ring[a_kind][at_kind];}
+    inline double * CO_DA(const int a_kind, const int at_kind){ return co_da[a_kind][at_kind];}
+    inline double * PARS_DA(const int a_kind, const int at_kind, const int ang_kind){ return pars_da[a_kind][at_kind][ang_kind];}
 
   private:
 
-    void parse(string file){
+    void parse(const string file){
       ifstream in;
       in.open(file.c_str());
       if(!in) plumed_merror("Unable to open CamShiftDB file\n");
@@ -132,7 +132,6 @@ namespace PLMD {
 	for(unsigned q=0;q<tok.size();q++)
 	  if(tok[q].size()) tmp.push_back(tok[q]);
 	tok = tmp;
-	//PROCESS
 	if(tok.size()==0) continue;
 	if(tok[0]=="PAR"){
 	  c_kind = kind(tok[2]);
@@ -233,7 +232,7 @@ namespace PLMD {
                               "COSCGLY1", "COSCHIS1", "COSCILE1", "COSCLEU1", "COSCLYS1", "COSCMET1", "COSCPHE1", 
                               "COSCPRO1", "COSCSER1", "COSCTHR1", "COSCTRP1", "COSCTYR1", "COSCVAL1"};
 
-	for (int scC = 0; scC < 20; scC++){
+	for(int scC = 0; scC < 20; scC++){
 	  if(tok[0]==scIdent1[scC]){
             //angstrom to nm
 	    assign(co_sc_[c_kind][c_atom][scC][0],tok,dscale);
@@ -247,7 +246,7 @@ namespace PLMD {
                               "COSCGLY2", "COSCHIS2", "COSCILE2", "COSCLEU2", "COSCLYS2", "COSCMET2", "COSCPHE2", 
                               "COSCPRO2", "COSCSER2", "COSCTHR2", "COSCTRP2", "COSCTYR2", "COSCVAL2"};
 
-	for (int scC = 0; scC < 20; scC++){
+	for(int scC = 0; scC < 20; scC++){
 	  if(tok[0]==scIdent2[scC]){
             //angstrom to nm
 	    assign(co_sc_[c_kind][c_atom][scC][1],tok,dscale);
@@ -305,13 +304,13 @@ namespace PLMD {
       int res_kind;
       int fd;
 
+      vector<vector<int> > box_nb;
+
       vector<int> phi;
       vector<int> psi;
       vector<int> chi1;
 
       vector<double> exp_cs;
-
-      vector<vector<int> > box_nb;
  
       Fragment() {
 	res_type_prev = res_type_curr = res_type_next = -1;
@@ -327,12 +326,9 @@ namespace PLMD {
       }
     };
 
-    vector<int> seg_last; // i<seg_last[0] is i n 0...
-
     struct RingInfo{
+      enum {R_PHE, R_TYR, R_TRP1, R_TRP2, R_HIS};
       // one out of five different types
-      int type;
-      enum ring_t {R_PHE, R_TYR, R_TRP1, R_TRP2, R_HIS};
       int rtype;
       // up to six member per ring
       int atom[6];
@@ -349,53 +345,20 @@ namespace PLMD {
       // two atom plane normal vectors used to compute ring plane normal
       vector<double> n1;
       vector<double> n2;
-      //Static
-      string atomNames[4][6];
-      string types[4];
-      int    init_;
-      RingInfo() {
-        type = rtype = -1;
-        for(int i = 0; i < 6; i++) atom[i]=-1;
-        numAtoms = -1;
-        position[0] = position[1] = position[2] = -1;
-        normVect[0] = normVect[1] = normVect[2] = -1;
-        lengthN2 = lengthNV = -1;
-
-        const char* pheTyr_n[] = {"CG","CD1","CE1","CZ","CE2","CD2"};
-        const char* trp1_n[]   = {"CD2","CE2","CZ2","CH2","CZ3","CE3"};
-        const char* trp2_n[]   = {"CG","CD1","NE1","CE2","CD2"};
-        const char* his_n[]    = {"CG","ND1","CD2","CE1","NE2"};
-
-        for (int i = 0; i < 6; i++){
-          atomNames[0][i] = pheTyr_n[i];
-          atomNames[1][i] = trp1_n[i];
-          if (i < 5){
-            atomNames[2][i] = trp2_n[i];
-            atomNames[3][i] = his_n[i];
-          }
-        }
- 
-        types[0] = "PHE";
-        types[1] = "TYR";
-        types[2] = "TRP";
-        types[3] = "HIS";
-        init_  = 1;      
-      } 
     };
 
-    vector<RingInfo> ringInfo;
-
-    //TYPES
-    vector<int> type;
-    vector<int> res_num;
     enum aa_t {ALA, ARG, ASN, ASP, CYS, GLN, GLU, GLY, HIS, ILE, LEU, LYS, MET, PHE, PRO, SER, THR, TRP, TYR, VAL, UNK};
     enum atom_t {D_C, D_H, D_N, D_O, D_S, D_C2, D_N2, D_O2};
     CamShiftDB db;
-    static const int numXtraDists = 27;
+    vector<int> seg_last; // i<seg_last[0] is i n 0...
+    vector<int> type;
+    vector<int> res_num;
+    vector<RingInfo> ringInfo;
     int box_nupdate;
     int box_count;
 
   public:
+
     vector<vector<Fragment> > atom;
   
     CamShift3(const string pdbfile, const string dbfile, const bool NatUnits, const double scale):db(dbfile,scale){
@@ -413,86 +376,10 @@ namespace PLMD {
       box_count=0;
     }
 
-    void debug_report(){
-      cout<<"\t CamShift3 Initialization report: "<<"\n";
-      cout<<"\t -------------------------------\n";
-      cout<<"\t Number of segments: "<<atom.size()<<"\n";
-      cout<<"\t Segments size:      ";
-      for(unsigned i=0;i<atom.size();i++) cout<<atom[i].size()<<" ";
-      cout<<"\n";
-      printf("\t%8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s \n",
-	      "Seg","N","AA","Prev","Curr","Next","SC","XD1","XD2","Phi","Psi","Chi1");
-      for(unsigned i=0;i<atom.size();i++){
-	for(unsigned j=0;j<atom[i].size();j++){
-	  printf("\t%8i %8i %8s %8i %8i %8i %8i %8i %8i %8i %8i %8i \n",
-		  i+1,
-		  j+1,
-		  atom[i][j].res_name.c_str(),
-		  (int)atom[i][j].prev.size(),
-		  (int)atom[i][j].curr.size(),
-		  (int)atom[i][j].next.size(),
-		  (int)atom[i][j].side_chain.size(),
-		  (int)atom[i][j].xd1.size(),
-		  (int)atom[i][j].xd2.size(),
-		  (int)atom[i][j].phi.size(),
-		  (int)atom[i][j].psi.size(),
-		  (int)atom[i][j].chi1.size());
-
-          for(unsigned k=0;k<atom[i][j].prev.size();k++) printf("%8i ", atom[i][j].prev[k]); printf("\n");
-          for(unsigned k=0;k<atom[i][j].curr.size();k++) printf("%8i ", atom[i][j].curr[k]); printf("\n");
-          for(unsigned k=0;k<atom[i][j].next.size();k++) printf("%8i ", atom[i][j].next[k]); printf("\n");
-          for(unsigned k=0;k<atom[i][j].side_chain.size();k++) printf("%8i ", atom[i][j].side_chain[k]); printf("\n");
-          for(unsigned k=0;k<atom[i][j].xd1.size();k++) printf("%8i ", atom[i][j].xd1[k]); printf("\n");
-          for(unsigned k=0;k<atom[i][j].xd2.size();k++) printf("%8i ", atom[i][j].xd2[k]); printf("\n");
-          for(unsigned k=0;k<atom[i][j].phi.size();k++) printf("%8i ", atom[i][j].phi[k]); printf("\n");
-          for(unsigned k=0;k<atom[i][j].psi.size();k++) printf("%8i ", atom[i][j].psi[k]); printf("\n");
-          for(unsigned k=0;k<atom[i][j].chi1.size();k++) printf("%8i ", atom[i][j].chi1[k]); printf("\n");
-
-	  printf("\t%8i %8i %8s %8i %8i %8i %8i %8i %8i %8i %8i %8i \n",
-		  i+1,
-		  j+1,
-		  atom[i][j].res_name.c_str(),
-		  (int)check_indices(atom[i][j].prev),
-		  (int)check_indices(atom[i][j].curr),
-		  (int)check_indices(atom[i][j].next),
-		  (int)check_indices(atom[i][j].side_chain),
-		  (int)check_indices(atom[i][j].xd1),
-		  (int)check_indices(atom[i][j].xd2),
-		  (int)check_indices(atom[i][j].phi),
-		  (int)check_indices(atom[i][j].psi),
-		  (int)check_indices(atom[i][j].chi1));
-
-	    
-	}
-      }
-
-      cout<<"\t Rings: "<<"\n";
-      cout<<"\t ------ \n";
-      cout<<"\t Number of rings: "<<ringInfo.size()<<"\n";
-      printf("\t%8s %8s %8s %8s\n",
-	      "Num","Type","RType","N.atoms");
-
-      for(unsigned i=0;i<ringInfo.size();i++){
-	printf("\t%8i %8i %8i %8i \n",
-		i+1,
-		ringInfo[i].type,
-		ringInfo[i].rtype,
-		ringInfo[i].numAtoms);
-      }
-    }
-
-    int check_indices(const vector<int> & v){
-      int c = 0;
-      for(unsigned i=0;i<v.size();i++)
-	if(v[i]>0) ++c;
-
-      return c;
-    }
-
     void set_box_nupdate(const int v){box_nupdate = v;}
     void set_box_count(const int v){box_count = v;}
    
-    void remove_problematic(string res, string nucl) {
+    void remove_problematic(const string res, const string nucl) {
       unsigned n;
       if(nucl=="HA")     n=0;
       else if(nucl=="H") n=1;
@@ -509,7 +396,7 @@ namespace PLMD {
       }
     }
 
-    void read_cs(string file, string k){
+    void read_cs(const string file, const string k){
       ifstream in;
       in.open(file.c_str());
       if(!in){
@@ -536,7 +423,7 @@ namespace PLMD {
       }
     }
 
-    void new_calc_cs(const vector<double> & coor, vector<double> & ff, const int N,  double **sh){
+    void calc_cs(const vector<double> & coor, vector<double> & ff, const int N,  double **sh){
 
       compute_ring_parameters(coor);
 
@@ -591,7 +478,6 @@ namespace PLMD {
 	      cs = cs + CONSTAAPREV[res_type_prev];
 
 	      //3. distances const
-	    
 	      int ipos = CSDIM*atom[s][a].pos[at_kind];
               printf("cs %f\n", cs); fflush(stdout);
 
@@ -805,12 +691,12 @@ namespace PLMD {
 	        double *rc = db.CO_RING(aa_kind,at_kind);
 	        double contrib [] = {0.0, 0.0, 0.0, 0.0, 0.0};
 	        double contribTot = 0.0;
-	        for (unsigned i = 0; i < ringInfo.size(); i++){
+	        for(unsigned i=0; i<ringInfo.size(); i++){
 		  // compute angle from ring middle point to current atom position
 		  // get distance vector from query atom to ring center and normal vector to ring plane
   		  double fact = cs_deriv*rc[ringInfo[i].rtype];
 	          double d[3], n[3];
-		  for (int j = 0; j < 3; j++){
+		  for(int j=0; j<3; j++){
 		    d[j] = coor[ipos+j] - ringInfo[i].position[j];
 		    n[j] = ringInfo[i].normVect[j];
 		  }
@@ -828,7 +714,7 @@ namespace PLMD {
 		  double dn2 = dn * dn;
 		
   		  int aPos[6];
-  		  for (int j = 0; j < ringInfo[i].numAtoms; j++) aPos[j] = CSDIM*ringInfo[i].atom[j];
+  		  for(int j=0; j<ringInfo[i].numAtoms; j++) aPos[j] = CSDIM*ringInfo[i].atom[j];
 
 		  // here we save the necessity of calculating the angle first and then the cos, 
                   // using that the acos and cos cancel each other out
@@ -861,7 +747,7 @@ namespace PLMD {
 		  int limit = ringInfo[i].numAtoms - 3; // 2 for a 5-membered ring, 3 for a 6-membered ring
 		
 		  // update forces on ring atoms
-		  for (int at = 0; at < ringInfo[i].numAtoms; at++)
+		  for(int at=0; at<ringInfo[i].numAtoms; at++)
 		  {
 		    if (at < limit) // atoms 0,1 (5 member) or 0,1,2 (6 member)
 		    {
@@ -908,7 +794,7 @@ namespace PLMD {
 	          }
                 }
 	        // then multiply with appropriate coefficient and sum up
-	        for (int i = 0; i < 5; i++) contribTot += rc[i] * contrib[i];
+	        for(unsigned i=0; i<5; i++) contribTot += rc[i]*contrib[i];
 	        cs += contribTot;
 	      }
 	      //END OF RINGS
@@ -1050,33 +936,6 @@ namespace PLMD {
     }
 
   private:
-
-    void update_box(const int curr, vector<int> & aa_box_i, const vector<double> & coor, const double cutnb2){
-      aa_box_i.clear();
-      int ipos = CSDIM*curr;
-      int size = coor.size()/CSDIM;
-#pragma omp parallel for num_threads(OpenMP::getNumThreads())
-      for(int n=0;n<size;n++){
-	unsigned res_dist = abs(res_num[curr]-res_num[n]);
-	if(res_dist<2) continue;
-
-	int npos = CSDIM*n;
-	double dx,dy,dz;
-	dx = coor[ipos  ] - coor[npos];
-	dy = coor[ipos+1] - coor[npos+1];
-	dz = coor[ipos+2] - coor[npos+2];
-	double d2 = dx*dx+dy*dy+dz*dz;
-	if(d2<cutnb2) aa_box_i.push_back(n);
-      }
-    }
-
-    void xdist_name_map(string & name){
-      if((name == "OT1")||(name == "OC1")) name = "O";
-      else if ((name == "HN") || (name == "HT1") || (name == "H1")) name = "H";
-      else if ((name == "CG1")|| (name == "OG")|| 
-	       (name == "SG") || (name == "OG1")) name = "CG";
-      else if ((name == "HA1"))                   name = "HA";
-    }
 
     void init_backbone(const PDB pdb){
 
@@ -1272,7 +1131,7 @@ namespace PLMD {
 	  vector<AtomNumber> atm_prev = pdb.getAtomsInResidue(atom[s][a].fd-1,chains[s]);
 	  vector<AtomNumber> atm_next = pdb.getAtomsInResidue(atom[s][a].fd+1,chains[s]);
 
-	  for(unsigned q=0;q<numXtraDists-1; q++){
+	  for(unsigned q=0;q<db.get_numXtraDists()-1; q++){
 	    vector<AtomNumber>::iterator at1, at1_end;
 	    vector<AtomNumber>::iterator at2, at2_end;
 
@@ -1351,6 +1210,12 @@ namespace PLMD {
     }
 
     void init_rings(const PDB pdb){
+
+      const string pheTyr_n[] = {"CG","CD1","CE1","CZ","CE2","CD2"};
+      const string trp1_n[]   = {"CD2","CE2","CZ2","CH2","CZ3","CE3"};
+      const string trp2_n[]   = {"CG","CD1","NE1","CE2","CD2"};
+      const string his_n[]    = {"CG","ND1","CD2","CE1","NE2"};
+
       vector<string> chains; 
       pdb.getChainNames( chains );
       vector<AtomNumber> allatoms = pdb.getAtomNumbers();
@@ -1360,21 +1225,24 @@ namespace PLMD {
         string errmsg;
         pdb.getAtomRange( chains[s], astart, aend, errmsg );
         int atom_offset = astart.index();
-	for(unsigned a=0; a<atom[s].size(); a++){
-	  string frg = pdb.getResidueName(atom[s][a].fd);
+	for(unsigned r=0; r<atom[s].size(); r++){
+	  string frg = pdb.getResidueName(atom[s][r].fd);
 	  if(!((frg=="PHE")||(frg=="TYR")||(frg=="TRP")||
 	       (frg=="HIS")||(frg=="HIP")||(frg=="HID")||
 	       (frg=="HIE")||(frg=="HSD")||(frg=="HSE")||
 	       (frg=="HSP"))) continue;
 
+	  RingInfo ri;
+          ri.n1.resize(3);
+          ri.n2.resize(3);
+	  vector<AtomNumber> frg_atoms = pdb.getAtomsInResidue(atom[s][r].fd,chains[s]);
+
 	  if(frg=="PHE"||frg=="TYR"){
-	    RingInfo ri;
-	    ri.type = 0;
-	    vector<AtomNumber> frg_atoms = pdb.getAtomsInResidue(atom[s][a].fd,chains[s]);
 	    for(unsigned a=0;a<frg_atoms.size();a++){
+	      int atm = frg_atoms[a].index()-atom_offset;
 	      for(unsigned aa=0;aa<6;aa++){
-	        int atm = frg_atoms[a].index()-atom_offset;
-	        if(pdb.getAtomName(frg_atoms[a])==ri.atomNames[ri.type][aa]){
+	        if(pdb.getAtomName(frg_atoms[a])==pheTyr_n[aa]){
+                  printf("RING chain %u res %u atm %i name %s\n", s, r, atm, pdb.getAtomName(frg_atoms[a]).c_str());
 		  ri.atom[aa] = atm;
 		  break;
 	        }
@@ -1383,54 +1251,38 @@ namespace PLMD {
 	    ri.numAtoms = 6;
 	    if(frg=="PHE") ri.rtype = RingInfo::R_PHE;
 	    if(frg=="TYR") ri.rtype = RingInfo::R_TYR;
-	    ringInfo.push_back(ri);
-	  }
-	  else if(frg=="TRP"){
+
+	  } else if(frg=="TRP"){
 	    //First ring
-	    {
-	      RingInfo ri;
-	      ri.type = 1;
-	      vector<AtomNumber> frg_atoms = pdb.getAtomsInResidue(atom[s][a].fd,chains[s]);
-	      for(unsigned a=0;a<frg_atoms.size();a++){
-	        for(unsigned aa=0;aa<6;aa++){
-		  int atm = frg_atoms[a].index()-atom_offset;
-	          if(pdb.getAtomName(frg_atoms[a])==ri.atomNames[ri.type][aa]){
-		    ri.atom[aa] = atm;
-		    break;
-		  }
-	        }
-	      }
-	      ri.numAtoms = 6;
-	      ri.rtype = RingInfo::R_TRP1;
-	      ringInfo.push_back(ri);
-	    }
-	    //Second Ring
-	    {
-	      RingInfo ri;
-	      ri.type = 2;
-	      vector<AtomNumber> frg_atoms = pdb.getAtomsInResidue(atom[s][a].fd,chains[s]);
-	      for(unsigned a=0;a<frg_atoms.size();a++){
-	        for(unsigned aa=0;aa<5;aa++){
-		  int atm = frg_atoms[a].index()-atom_offset;
-	          if(pdb.getAtomName(frg_atoms[a])==ri.atomNames[ri.type][aa]){
-		    ri.atom[aa] = atm;
-		    break;
-		  }
-	        }
-	      }
-	      ri.numAtoms = 5;
-	      ri.rtype = RingInfo::R_TRP2;
-	      ringInfo.push_back(ri);
-	    }
-	  }
-	  else { //HIS case
-	    RingInfo ri;
-	    ri.type = 3;
-	    vector<AtomNumber> frg_atoms = pdb.getAtomsInResidue(atom[s][a].fd,chains[s]);
 	    for(unsigned a=0;a<frg_atoms.size();a++){
+	      int atm = frg_atoms[a].index()-atom_offset;
+	      for(unsigned aa=0;aa<6;aa++){
+	        if(pdb.getAtomName(frg_atoms[a])==trp1_n[aa]){
+	          ri.atom[aa] = atm;
+	          break;
+	        }
+	      }
+	    }
+	    ri.numAtoms = 6;
+	    ri.rtype = RingInfo::R_TRP1;
+	    //Second Ring
+	    for(unsigned a=0;a<frg_atoms.size();a++){
+	      int atm = frg_atoms[a].index()-atom_offset;
 	      for(unsigned aa=0;aa<5;aa++){
-	        int atm = frg_atoms[a].index()-atom_offset;
-	        if(pdb.getAtomName(frg_atoms[a])==ri.atomNames[ri.type][aa]){
+	        if(pdb.getAtomName(frg_atoms[a])==trp2_n[aa]){
+	          ri.atom[aa] = atm;
+	          break;
+	        }
+	      }
+	    }
+	    ri.numAtoms = 5;
+	    ri.rtype = RingInfo::R_TRP2;
+
+	  } else { //HIS case
+	    for(unsigned a=0;a<frg_atoms.size();a++){
+	      int atm = frg_atoms[a].index()-atom_offset;
+	      for(unsigned aa=0;aa<5;aa++){
+	        if(pdb.getAtomName(frg_atoms[a])==his_n[aa]){
 		  ri.atom[aa] = atm;
 		  break;
 	        }
@@ -1438,25 +1290,27 @@ namespace PLMD {
 	    }
 	    ri.numAtoms = 5;
 	    ri.rtype = RingInfo::R_HIS;
-	    ringInfo.push_back(ri);
 	  }
+
+	  ringInfo.push_back(ri);
         }
       }
     }
 
     void compute_ring_parameters(const vector<double> & coor){
       for(unsigned i=0;i<ringInfo.size();i++){
-	int size = ringInfo[i].numAtoms;
+	unsigned size = ringInfo[i].numAtoms;
 	double a[6][3];
-	for(int j = 0; j < size; j++)
-	  for(unsigned d=0;d<3;d++){
-	    a[j][d] = coor[CSDIM*ringInfo[i].atom[j]+d];
-	  }
+	for(unsigned j=0; j<size; j++) {
+          a[j][0] = coor[CSDIM*ringInfo[i].atom[j]  ];
+          a[j][1] = coor[CSDIM*ringInfo[i].atom[j]+1];
+          a[j][2] = coor[CSDIM*ringInfo[i].atom[j]+2];
+        }
 	// calculate ring center
-	double midP [3];
-	for (int j = 0; j < 3; j++){
-	  midP[j] = 0.0;
-	  for (int k = 0; k < size; k++) midP[j] += a[k][j];
+	double midP[3];
+	for(unsigned j=0; j<3; j++){
+	  midP[j] = a[0][j];
+	  for(unsigned k=1; k<size; k++) midP[j] += a[k][j];
 	  ringInfo[i].position[j] = midP[j] /= (double) size;
 	}
 	// compute normal vector to plane containing first three atoms in array
@@ -1467,17 +1321,18 @@ namespace PLMD {
 	ringInfo[i].n2 = xProduct(a[size-3][0] - a[size-2][0], a[size-3][1] - a[size-2][1], a[size-3][2] - a[size-2][2],
 				  a[size-1][0] - a[size-2][0], a[size-1][1] - a[size-2][1], a[size-1][2] - a[size-2][2]);
 	// ring plane normal vector is average of n1 and n2
-	for (int j = 0; j < 3; j++) ringInfo[i].normVect[j] = 0.5*(ringInfo[i].n1[j] + ringInfo[i].n2[j]);
+	ringInfo[i].normVect[0] = 0.5*(ringInfo[i].n1[0] + ringInfo[i].n2[0]);
+	ringInfo[i].normVect[1] = 0.5*(ringInfo[i].n1[1] + ringInfo[i].n2[1]);
+	ringInfo[i].normVect[2] = 0.5*(ringInfo[i].n1[2] + ringInfo[i].n2[2]);
 	// calculate squared length and length of normal vector
 	ringInfo[i].lengthN2 = ringInfo[i].normVect[0]*ringInfo[i].normVect[0] + 
                                ringInfo[i].normVect[1]*ringInfo[i].normVect[1] + 
                                ringInfo[i].normVect[2]*ringInfo[i].normVect[2];
 	ringInfo[i].lengthNV = sqrt(ringInfo[i].lengthN2);
-	
       }
     }
 
-    aa_t frag2enum(string aa)
+    aa_t frag2enum(const string aa)
     {
       aa_t type = ALA;
       if (aa == "ALA") type = ALA;
@@ -1516,8 +1371,9 @@ namespace PLMD {
       return type;
     }
 
-    vector<string> side_chain_atoms(string s){
-      vector<string> sc; sc.clear();
+    vector<string> side_chain_atoms(const string s){
+      vector<string> sc;
+      sc.clear();
 
       if(s=="ALA"){
         sc.push_back( "CB" );
@@ -1921,7 +1777,7 @@ namespace PLMD {
       return result;
     }
 
-    int frag_segment(int p){
+    int frag_segment(const int p){
       int s = 0;
       for(unsigned i=0;i<seg_last.size()-1;i++){
 	if(p>seg_last[i]) s  = i+1;
@@ -1930,11 +1786,107 @@ namespace PLMD {
       return s;
     }
 
-    int frag_relitive_index(int p, int s){
+    int frag_relitive_index(const int p, const int s){
       if(s==0) return p;
       return p-seg_last[s-1];
     }
-    
+
+    void debug_report(){
+      cout<<"\t CamShift3 Initialization report: "<<"\n";
+      cout<<"\t -------------------------------\n";
+      cout<<"\t Number of segments: "<<atom.size()<<"\n";
+      cout<<"\t Segments size:      ";
+      for(unsigned i=0;i<atom.size();i++) cout<<atom[i].size()<<" ";
+      cout<<"\n";
+      printf("\t%8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s \n",
+	      "Seg","N","AA","Prev","Curr","Next","SC","XD1","XD2","Phi","Psi","Chi1");
+      for(unsigned i=0;i<atom.size();i++){
+	for(unsigned j=0;j<atom[i].size();j++){
+	  printf("\t%8i %8i %8s %8i %8i %8i %8i %8i %8i %8i %8i %8i \n",
+		  i+1,
+		  j+1,
+		  atom[i][j].res_name.c_str(),
+		  (int)atom[i][j].prev.size(),
+		  (int)atom[i][j].curr.size(),
+		  (int)atom[i][j].next.size(),
+		  (int)atom[i][j].side_chain.size(),
+		  (int)atom[i][j].xd1.size(),
+		  (int)atom[i][j].xd2.size(),
+		  (int)atom[i][j].phi.size(),
+		  (int)atom[i][j].psi.size(),
+		  (int)atom[i][j].chi1.size());
+
+          for(unsigned k=0;k<atom[i][j].prev.size();k++) printf("%8i ", atom[i][j].prev[k]); printf("\n");
+          for(unsigned k=0;k<atom[i][j].curr.size();k++) printf("%8i ", atom[i][j].curr[k]); printf("\n");
+          for(unsigned k=0;k<atom[i][j].next.size();k++) printf("%8i ", atom[i][j].next[k]); printf("\n");
+          for(unsigned k=0;k<atom[i][j].side_chain.size();k++) printf("%8i ", atom[i][j].side_chain[k]); printf("\n");
+          for(unsigned k=0;k<atom[i][j].xd1.size();k++) printf("%8i ", atom[i][j].xd1[k]); printf("\n");
+          for(unsigned k=0;k<atom[i][j].xd2.size();k++) printf("%8i ", atom[i][j].xd2[k]); printf("\n");
+          for(unsigned k=0;k<atom[i][j].phi.size();k++) printf("%8i ", atom[i][j].phi[k]); printf("\n");
+          for(unsigned k=0;k<atom[i][j].psi.size();k++) printf("%8i ", atom[i][j].psi[k]); printf("\n");
+          for(unsigned k=0;k<atom[i][j].chi1.size();k++) printf("%8i ", atom[i][j].chi1[k]); printf("\n");
+
+	  printf("\t%8i %8i %8s %8i %8i %8i %8i %8i %8i %8i %8i %8i \n",
+		  i+1,
+		  j+1,
+		  atom[i][j].res_name.c_str(),
+		  (int)check_indices(atom[i][j].prev),
+		  (int)check_indices(atom[i][j].curr),
+		  (int)check_indices(atom[i][j].next),
+		  (int)check_indices(atom[i][j].side_chain),
+		  (int)check_indices(atom[i][j].xd1),
+		  (int)check_indices(atom[i][j].xd2),
+		  (int)check_indices(atom[i][j].phi),
+		  (int)check_indices(atom[i][j].psi),
+		  (int)check_indices(atom[i][j].chi1));
+
+	}
+      }
+
+      cout<<"\t Rings: "<<"\n";
+      cout<<"\t ------ \n";
+      cout<<"\t Number of rings: "<<ringInfo.size()<<"\n";
+      printf("\t%8s %8s %8s %8s\n", "Num","Type","RType","N.atoms");
+      for(unsigned i=0;i<ringInfo.size();i++){
+	printf("\t%8i %8i %8i \n",i+1,ringInfo[i].rtype,ringInfo[i].numAtoms);
+        for(unsigned j=0;j<ringInfo[i].numAtoms;j++) printf("%8i ", ringInfo[i].atom[j]); printf("\n");
+      } 
+    }
+
+    int check_indices(const vector<int> & v){
+      int c = 0;
+      for(unsigned i=0;i<v.size();i++)
+	if(v[i]>0) ++c;
+
+      return c;
+    }
+
+    inline void update_box(const int curr, vector<int> & aa_box_i, const vector<double> & coor, const double cutnb2){
+      aa_box_i.clear();
+      int ipos = CSDIM*curr;
+      int size = coor.size()/CSDIM;
+      for(int n=0;n<size;n++){
+	unsigned res_dist = abs(res_num[curr]-res_num[n]);
+	if(res_dist<2) continue;
+
+	int npos = CSDIM*n;
+	double dx,dy,dz;
+	dx = coor[ipos  ] - coor[npos];
+	dy = coor[ipos+1] - coor[npos+1];
+	dz = coor[ipos+2] - coor[npos+2];
+	double d2 = dx*dx+dy*dy+dz*dz;
+	if(d2<cutnb2) aa_box_i.push_back(n);
+      }
+    }
+
+    void xdist_name_map(string & name){
+      if((name == "OT1")||(name == "OC1")) name = "O";
+      else if ((name == "HN") || (name == "HT1") || (name == "H1")) name = "H";
+      else if ((name == "CG1")|| (name == "OG")|| 
+	       (name == "SG") || (name == "OG1")) name = "CG";
+      else if ((name == "HA1"))                   name = "HA";
+    }
+
   };
 
 }
