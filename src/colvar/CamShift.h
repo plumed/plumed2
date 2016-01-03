@@ -10,6 +10,7 @@
 
 #include <string>
 #include <fstream>
+#include <iterator>
 #include <sstream>
 #include <vector>
 
@@ -1374,7 +1375,7 @@ namespace PLMD {
       else if (aa == "TYR") type = TYR;
       else if (aa == "VAL") type = VAL;
       else if (aa == "UNK") type = UNK;
-      else cerr << "Error converting string " << aa << " into amino acid index: not a valid 3-letter code" << endl;
+      else plumed_merror("CS2Backbone: Error converting string " + aa + " into amino acid index: not a valid 3-letter code");
       return type;
     }
 
@@ -1799,12 +1800,11 @@ namespace PLMD {
     }
 
     void debug_report(){
-      cout<<"\t CamShift3 Initialization report: "<<"\n";
-      cout<<"\t -------------------------------\n";
-      cout<<"\t Number of segments: "<<atom.size()<<"\n";
-      cout<<"\t Segments size:      ";
-      for(unsigned i=0;i<atom.size();i++) cout<<atom[i].size()<<" ";
-      cout<<"\n";
+      printf("\t CamShift3 Initialization report: \n");
+      printf("\t -------------------------------\n");
+      printf("\t Number of segments: %lu\n", atom.size());
+      printf("\t Segments size:      ");
+      for(unsigned i=0;i<atom.size();i++) printf("%lu ", atom[i].size()); printf("\n");
       printf("\t%8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s \n",
 	      "Seg","N","AA","Prev","Curr","Next","SC","XD1","XD2","Phi","Psi","Chi1");
       for(unsigned i=0;i<atom.size();i++){
@@ -1850,9 +1850,9 @@ namespace PLMD {
 	}
       }
 
-      cout<<"\t Rings: "<<"\n";
-      cout<<"\t ------ \n";
-      cout<<"\t Number of rings: "<<ringInfo.size()<<"\n";
+      printf("\t Rings: \n");
+      printf("\t ------ \n");
+      printf("\t Number of rings: %lu\n", ringInfo.size());
       printf("\t%8s %8s %8s %8s\n", "Num","Type","RType","N.atoms");
       for(unsigned i=0;i<ringInfo.size();i++){
 	printf("\t%8i %8i %8i \n",i+1,ringInfo[i].rtype,ringInfo[i].numAtoms);
