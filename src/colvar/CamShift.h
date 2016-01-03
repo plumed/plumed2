@@ -370,7 +370,9 @@ namespace PLMD {
       init_xdist(pdb);
       init_types(pdb);
       init_rings(pdb);
+#ifdef NDEBUG
       debug_report();
+#endif
       //Non-Bonded neighbour lists 
       box_nupdate=1;
       box_count=0;
@@ -433,17 +435,13 @@ namespace PLMD {
       unsigned index=0;
       // CYCLE OVER MULTIPLE CHAINS
       for(unsigned s=0;s<atom.size();s++){
-        printf("chains %u\n", s); fflush(stdout);
 	// SKIP FIRST AND LAST RESIDUE OF EACH CHAIN
 #pragma omp parallel for num_threads(OpenMP::getNumThreads())
 	for(unsigned a=0;a<atom[s].size();a++){
-          printf("residue %u\n", a); fflush(stdout);
           // CYCLE OVER THE SIX BACKBONE CHEMICAL SHIFTS
 	  for(unsigned at_kind=0;at_kind<6;at_kind++){
-            printf("cs %u\n", at_kind); fflush(stdout);
 	    double cs = 0.;
 	    double cs_deriv = -1.;
-            printf("do it %i %f\n", atom[s][a].pos[at_kind], atom[s][a].exp_cs[at_kind]);
 	    if(atom[s][a].pos[at_kind]>0&&atom[s][a].exp_cs[at_kind]>0){
 
               // this is the counter to find your place in ff
@@ -479,7 +477,6 @@ namespace PLMD {
 
 	      //3. distances const
 	      int ipos = CSDIM*atom[s][a].pos[at_kind];
-              printf("cs %f\n", cs); fflush(stdout);
 
 	      //PREV
 	      for(unsigned q=0;q<atom[s][a].prev.size();q++){
@@ -504,7 +501,6 @@ namespace PLMD {
 	        ff[place+jpos+1] = ff[place+jpos+1] - fact*dy;
 	        ff[place+jpos+2] = ff[place+jpos+2] - fact*dz;
 	      }
-              printf("PREV cs %f\n", cs); fflush(stdout);
 
 	      //CURR
 	      for(unsigned q=0;q<atom[s][a].curr.size();q++){
@@ -529,7 +525,6 @@ namespace PLMD {
 	        ff[place+jpos+1] = ff[place+jpos+1] - fact*dy;
 	        ff[place+jpos+2] = ff[place+jpos+2] - fact*dz;
 	      }
-              printf("CURR cs %f\n", cs); fflush(stdout);
 
 	      //NEXT
 	      for(unsigned q=0;q<atom[s][a].next.size();q++){
@@ -554,7 +549,6 @@ namespace PLMD {
 	        ff[place+jpos+1] = ff[place+jpos+1] - fact*dy;
 	        ff[place+jpos+2] = ff[place+jpos+2] - fact*dz;	    
 	      }
-              printf("NEXT cs %f\n", cs); fflush(stdout);
 
 	      //SIDE CHAIN
 	      for(unsigned q=0;q<atom[s][a].side_chain.size();q++){
@@ -578,7 +572,6 @@ namespace PLMD {
 	        ff[place+jpos+1] = ff[place+jpos+1] - fact*dy;
 	        ff[place+jpos+2] = ff[place+jpos+2] - fact*dz;	    	    
 	      }
-              printf("CS cs %f\n", cs); fflush(stdout);
 	    
 	      //EXTRA DIST
 	      for(unsigned q=0;q<atom[s][a].xd1.size();q++){
@@ -605,7 +598,6 @@ namespace PLMD {
 	        ff[place+jpos+1] = ff[place+jpos+1] - fact*dy;
 	        ff[place+jpos+2] = ff[place+jpos+2] - fact*dz;
 	      }
-              printf("XD cs %f\n", cs); fflush(stdout);
 	    
 	      //NON BOND
 	      {
@@ -684,7 +676,6 @@ namespace PLMD {
 	        }
 	      }
 	      //END NON BOND
-              printf("NB cs %f\n", cs); fflush(stdout);
 
 	      //RINGS
 	      {
@@ -798,7 +789,6 @@ namespace PLMD {
 	        cs += contribTot;
 	      }
 	      //END OF RINGS
-              printf("RG cs %f\n", cs); fflush(stdout);
 
 	      //DIHEDRAL ANGLES
 	      {
@@ -922,9 +912,7 @@ namespace PLMD {
 	        }
 	      }
 	      //END OF DIHE
-              printf("DH cs %f\n", cs); fflush(stdout);
 	    } 
-            printf("FINAL %i %i cs %f\n", index+a, at_kind, cs); fflush(stdout);
             sh[index+a][at_kind] = cs;
 	  }
 	}
@@ -1331,7 +1319,6 @@ namespace PLMD {
 	  for(unsigned k=1; k<size; k++) midP[j] += a[k][j];
           midP[j] /= (double) size;
 	  ringInfo[i].position[j] = midP[j];
-          printf("RING %i pos %i %f\n",i,j,ringInfo[i].position[j]); fflush(stdout);
 	}
 	// compute normal vector to plane containing first three atoms in array
 	ringInfo[i].n1 = xProduct(a[0][0] - a[1][0], a[0][1] - a[1][1], a[0][2] - a[1][2],
@@ -1349,7 +1336,6 @@ namespace PLMD {
                                ringInfo[i].normVect[1]*ringInfo[i].normVect[1] + 
                                ringInfo[i].normVect[2]*ringInfo[i].normVect[2];
 	ringInfo[i].lengthNV = sqrt(ringInfo[i].lengthN2);
-        printf("RING %i NV %f\n",i,ringInfo[i].lengthNV); fflush(stdout);
       }
     }
 
