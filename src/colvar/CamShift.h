@@ -370,7 +370,7 @@ namespace PLMD {
       init_xdist(pdb);
       init_types(pdb);
       init_rings(pdb);
-#ifdef NDEBUG
+#ifndef NDEBUG
       debug_report();
 #endif
       //Non-Bonded neighbour lists 
