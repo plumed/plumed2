@@ -943,6 +943,7 @@ namespace PLMD {
       vector<string> chains;
       pdb.getChainNames( chains );
       seg_last.resize(chains.size());
+      int old_size=0;
 
       for(unsigned i=0;i<chains.size();i++){
         unsigned start, end;
@@ -986,7 +987,7 @@ namespace PLMD {
         vector<AtomNumber> allatoms = pdb.getAtomsInChain(chains[i]);
         // cycle over all the atoms in the chain
 	for(int a=0;a<allatoms.size();a++){
-          int atm_index=a;
+          int atm_index=a+old_size;
 	  int f = pdb.getResidueNumber(allatoms[a]);
           int f_idx = f-res_offset;
           string AN = pdb.getAtomName(allatoms[a]);
@@ -1001,6 +1002,7 @@ namespace PLMD {
 	  else if(AN=="CD"&&RES=="PRO") H_[f_idx] = atm_index;
 	  if(is_chi1_cx(RES,AN))       CX_[f_idx] = atm_index;
 	}
+        old_size+=allatoms.size();
 
         // vector of residues for a given chain
 	vector<Fragment> atm_;
@@ -1079,6 +1081,7 @@ namespace PLMD {
     void init_sidechain(const PDB pdb){
       vector<string> chains; 
       pdb.getChainNames( chains );
+      int old_size=0;
       // cycle over chains
       for(unsigned s=0; s<atom.size(); s++){
         AtomNumber astart, aend; 
@@ -1094,12 +1097,13 @@ namespace PLMD {
 	  for(unsigned sc=0;sc<sc_atm.size();sc++){
 	    for(unsigned aa=0;aa<atm.size();aa++){
 	      if(pdb.getAtomName(atm[aa])==sc_atm[sc]){
-		atom[s][a].side_chain.push_back(atm[aa].index()-atom_offset);
+		atom[s][a].side_chain.push_back(atm[aa].index()-atom_offset+old_size);
               }
 	    }
 	  }
 
 	}
+        old_size += aend.index()+1; 
       }
     }
 
@@ -1120,6 +1124,7 @@ namespace PLMD {
 
       vector<string> chains; 
       pdb.getChainNames( chains );
+      int old_size=0;
       for(unsigned s=0; s<atom.size(); s++){
         AtomNumber astart, aend; 
         string errmsg;
@@ -1175,12 +1180,13 @@ namespace PLMD {
 	    }
             int add1 = -1;
             int add2 = -1;
-            if(init_p1) add1=p1.index()-atom_offset;
-            if(init_p2) add2=p2.index()-atom_offset;
+            if(init_p1) add1=p1.index()-atom_offset+old_size;
+            if(init_p2) add2=p2.index()-atom_offset+old_size;
             atom[s][a].xd1.push_back(add1);
             atom[s][a].xd2.push_back(add2);
 	  }
 	}
+        old_size += aend.index()+1; 
       }
     }
 
@@ -1219,6 +1225,7 @@ namespace PLMD {
       vector<string> chains; 
       pdb.getChainNames( chains );
       vector<AtomNumber> allatoms = pdb.getAtomNumbers();
+      int old_size=0;
 
       for(unsigned s=0; s<atom.size(); s++){
         AtomNumber astart, aend; 
@@ -1232,17 +1239,16 @@ namespace PLMD {
 	       (frg=="HIE")||(frg=="HSD")||(frg=="HSE")||
 	       (frg=="HSP"))) continue;
 
-	  RingInfo ri;
-          ri.n1.resize(3);
-          ri.n2.resize(3);
 	  vector<AtomNumber> frg_atoms = pdb.getAtomsInResidue(atom[s][r].fd,chains[s]);
 
 	  if(frg=="PHE"||frg=="TYR"){
+	    RingInfo ri;
+            ri.n1.resize(3);
+            ri.n2.resize(3);
 	    for(unsigned a=0;a<frg_atoms.size();a++){
-	      int atm = frg_atoms[a].index()-atom_offset;
+	      int atm = frg_atoms[a].index()-atom_offset+old_size;
 	      for(unsigned aa=0;aa<6;aa++){
 	        if(pdb.getAtomName(frg_atoms[a])==pheTyr_n[aa]){
-                  printf("RING chain %u res %u atm %i name %s\n", s, r, atm, pdb.getAtomName(frg_atoms[a]).c_str());
 		  ri.atom[aa] = atm;
 		  break;
 	        }
@@ -1251,11 +1257,15 @@ namespace PLMD {
 	    ri.numAtoms = 6;
 	    if(frg=="PHE") ri.rtype = RingInfo::R_PHE;
 	    if(frg=="TYR") ri.rtype = RingInfo::R_TYR;
+	    ringInfo.push_back(ri);
 
 	  } else if(frg=="TRP"){
 	    //First ring
+	    RingInfo ri;
+            ri.n1.resize(3);
+            ri.n2.resize(3);
 	    for(unsigned a=0;a<frg_atoms.size();a++){
-	      int atm = frg_atoms[a].index()-atom_offset;
+	      int atm = frg_atoms[a].index()-atom_offset+old_size;
 	      for(unsigned aa=0;aa<6;aa++){
 	        if(pdb.getAtomName(frg_atoms[a])==trp1_n[aa]){
 	          ri.atom[aa] = atm;
@@ -1265,22 +1275,30 @@ namespace PLMD {
 	    }
 	    ri.numAtoms = 6;
 	    ri.rtype = RingInfo::R_TRP1;
+	    ringInfo.push_back(ri);
 	    //Second Ring
+	    RingInfo ri2;
+            ri2.n1.resize(3);
+            ri2.n2.resize(3);
 	    for(unsigned a=0;a<frg_atoms.size();a++){
-	      int atm = frg_atoms[a].index()-atom_offset;
+	      int atm = frg_atoms[a].index()-atom_offset+old_size;
 	      for(unsigned aa=0;aa<5;aa++){
 	        if(pdb.getAtomName(frg_atoms[a])==trp2_n[aa]){
-	          ri.atom[aa] = atm;
+	          ri2.atom[aa] = atm;
 	          break;
 	        }
 	      }
 	    }
-	    ri.numAtoms = 5;
-	    ri.rtype = RingInfo::R_TRP2;
+	    ri2.numAtoms = 5;
+	    ri2.rtype = RingInfo::R_TRP2;
+	    ringInfo.push_back(ri2);
 
 	  } else { //HIS case
+	    RingInfo ri;
+            ri.n1.resize(3);
+            ri.n2.resize(3);
 	    for(unsigned a=0;a<frg_atoms.size();a++){
-	      int atm = frg_atoms[a].index()-atom_offset;
+	      int atm = frg_atoms[a].index()-atom_offset+old_size;
 	      for(unsigned aa=0;aa<5;aa++){
 	        if(pdb.getAtomName(frg_atoms[a])==his_n[aa]){
 		  ri.atom[aa] = atm;
@@ -1290,10 +1308,10 @@ namespace PLMD {
 	    }
 	    ri.numAtoms = 5;
 	    ri.rtype = RingInfo::R_HIS;
+	    ringInfo.push_back(ri);
 	  }
-
-	  ringInfo.push_back(ri);
         }
+        old_size += aend.index()+1; 
       }
     }
 
@@ -1311,7 +1329,9 @@ namespace PLMD {
 	for(unsigned j=0; j<3; j++){
 	  midP[j] = a[0][j];
 	  for(unsigned k=1; k<size; k++) midP[j] += a[k][j];
-	  ringInfo[i].position[j] = midP[j] /= (double) size;
+          midP[j] /= (double) size;
+	  ringInfo[i].position[j] = midP[j];
+          printf("RING %i pos %i %f\n",i,j,ringInfo[i].position[j]); fflush(stdout);
 	}
 	// compute normal vector to plane containing first three atoms in array
 	ringInfo[i].n1 = xProduct(a[0][0] - a[1][0], a[0][1] - a[1][1], a[0][2] - a[1][2],
@@ -1329,6 +1349,7 @@ namespace PLMD {
                                ringInfo[i].normVect[1]*ringInfo[i].normVect[1] + 
                                ringInfo[i].normVect[2]*ringInfo[i].normVect[2];
 	ringInfo[i].lengthNV = sqrt(ringInfo[i].lengthN2);
+        printf("RING %i NV %f\n",i,ringInfo[i].lengthNV); fflush(stdout);
       }
     }
 
