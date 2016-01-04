@@ -361,7 +361,7 @@ namespace PLMD {
 
     vector<vector<Fragment> > atom;
   
-    CamShift3(const string pdbfile, const string dbfile, const bool NatUnits, const double scale):db(dbfile,scale){
+    CamShift3(const string &pdbfile, const string &dbfile, const bool NatUnits, const double scale):db(dbfile,scale){
       PDB pdb;
       if( !pdb.read(pdbfile,NatUnits,1./scale) ) plumed_merror("missing input file " + pdbfile );
       init_backbone(pdb);
@@ -439,8 +439,9 @@ namespace PLMD {
           // CYCLE OVER THE SIX BACKBONE CHEMICAL SHIFTS
 	  for(unsigned at_kind=0;at_kind<6;at_kind++){
 	    double cs = 0.;
-	    double cs_deriv = -1.;
 	    if(atom[s][a].pos[at_kind]>0&&atom[s][a].exp_cs[at_kind]>0){
+
+	      double cs_deriv = -1.;
 
               // this is the counter to find your place in ff
               // place is residue*6*CSDIM*N + at_kind*CSDIM*N
