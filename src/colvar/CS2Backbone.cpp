@@ -32,34 +32,34 @@ namespace colvar{
 
 //+PLUMEDOC COLVAR CS2BACKBONE 
 /*
-This collective variable calculates a scoring function based on the comparison of backcalculated and
-experimental backbone chemical shifts for a protein (CA, CB, C', H, HA, N).
+This collective variable calculates the backbone chemical shifts for a protein. 
 
-CamShift \cite Kohlhoff:2009us is employed to back calculate the chemical shifts that are then compared
-with a set of experimental values to generate a score \cite Robustelli:2010dn \cite Granata:2013dk.
+The functional form is that of CamShift \cite Kohlhoff:2009us. The chemical shifts
+of the selected nuclei/residues are saved as components. Reference experimental values
+can also be stored as components. The two kind of components can then be used to calculate
+either a scoring function as in \cite Robustelli:2010dn \cite Granata:2013dk or to calculate
+ensemble averages as in \cite Camilloni:2012je \cite Camilloni:2013hs (see \ref STATS and
+\ref ENSEMBLE).
 
-It is also possible to back-calculate the chemical shifts from multiple replicas and then average them
-to perform Replica-Averaged Restrained MD simulations \cite Camilloni:2012je \cite Camilloni:2013hs.
+CamShift calculation is relatively heavy because it often uses a large number of atoms, in order
+to make it faster it is currently parallelised with \ref OpenMP.
 
 In general the system for which chemical shifts are to be calculated must be completly included in
-ATOMS. It should also be made whole \ref WHOLEMOLECULES before the the back-calculation. 
-
-HOW TO COMPILE IT
-
-\ref installingalmost on how to compile PLUMED with ALMOST.
-
-HOW TO USE IT
-
-To use CamShift a set of experimental data is needed. CamShift uses backbone and Cb chemical shifts 
-that must be provided as text files:
+ATOMS and a TEMPLATE pdb file for the same atoms should be provided as well in the folder DATA. 
+The atoms are made automatically whole unless NOPBC is used, in particular if the pdb is composed
+by multiple chains it is usually better to use NOPBC and make the molecule whole \ref WHOLEMOLECULES
+selecting an appropriate order.
+ 
+In addition to a pdb file one needs to provide a list of chemical shifts to be calculated using one
+file per nuclues type (CAshifts.dat, CBshifts.dat, Cshifts.dat, Hshifts.dat, HAshifts.dat, Nshifts.dat), 
+all the six files should always be present. A chemical shifts for a nucleus is calculated if a value
+greater than 0 is provided. For practical purposes the value can correspond to the experimental value.
+Residues numbers should go from 1 to N irrespectively of the numbers used in the pdb file. The first and
+last residue of each chain should be preceeded by a # character. Termini groups like ACE or NME should
+be removed from the PDB.
 
 \verbatim
 CAshifts.dat:
-CBshifts.dat:
-Cshifts.dat:
-Hshifts.dat:
-HAshifts.dat:
-Nshifts.dat:
 #1 0.0
 2 55.5
 3 58.4
@@ -71,20 +71,18 @@ Nshifts.dat:
 #last of second chain
 \endverbatim
 
-All of them must always be there. If a chemical shift for an atom of a residue is not available 0.0 must be used. 
-So if for example all the Cb are not available all the chemical shifts for all the residues should be set as 0.0.
+The default behaviour is to store the values for the active nuclei are stored in components (ca_#, cb_#,
+co_#, ha_#, hn_#, nh_# and expca_#, expcb_#, expco_#, expha_#, exphn_#, exp_nh#) with NOEXP it is possible
+to only store the backcalculated values.
+ 
+A pdb file is needed to the generate a simple topology of the protein. For histidines in protonation 
+states different from D the HIE/HSE HIP/HSP name should be used. GLH and ASH can be used for the alternative 
+protonation of GLU and ASP. Non-standard amino acids and other molecules are not yet supported, but in principle
+they can be named UNK. If multiple chains are present the chain identifier must be in the standard PDB format, 
+together with the TER keyword at the end of each chain. 
 
-A template.pdb file is needed to the generate a topology of the protein within ALMOST. For histidines in protonation 
-states different from D the HIE/HIP name should be used in the template.pdb. GLH and ASH can be used for the alternative 
-protonation of GLU and ASP. Non-standard amino acids and other molecules are not yet supported! If multiple chains are 
-present the chain identifier must be in the standard PDB format, together with the TER keyword at the end of each chain.
-Residues numbering should always go from 1 to N in both the chemical shifts files as well as in the template.pdb file.
-Two more keywords can be used to setup the topology: CYS-DISU to tell ALMOST to look for disulphide bridges and TERMINI
-to define the protonation state of the the chain's termini (currently only DEFAULT (NH3+, CO2-) and NONE (NH, CO)).
-
-Two more standard files are also needed: an ALMOST force-field file, corresponding to the force-field family used in
-the MD code, (a03_cs2_gromacs.mdb for the amber family or all22_gromacs.mdb for the charmm family) and camshift.db, 
-both these files can be copied from almost/branches/almost-2.1/toppar.
+One more standard file is also needed in the folder DATA: camshift.db. This file includes all the CamShift parameters
+and can be found in regtest/basic/rt45/data/ . 
 
 All the above files must be in a single folder that must be specified with the keyword DATA. 
 
@@ -92,31 +90,39 @@ Additional material and examples can be also found in the tutorial \ref belfast-
 
 \par Examples
 
-case 1:
+In this first example the chemical shifts are used to calculate a scoring function to be used
+in NMR driven Metadynamics \cite Granata:2013dk:
 
 \verbatim
-WHOLEMOLECULES ENTITY0=1-174
-cs: CS2BACKBONE ATOMS=1-174 DATA=data/ FF=a03_gromacs.mdb FLAT=0.0 NRES=13 ENSEMBLE
-cse: RESTRAINT ARG=cs SLOPE=24 KAPPA=0 AT=0.
-PRINT ARG=cs,cse.bias
+whole: GROUP ATOMS=2612-2514:-1,961-1:-1,2466-962:-1,2513-2467:-1
+WHOLEMOLECULES ENTITY0=whole
+cs: CS2BACKBONE ATOMS=1-2612 NRES=176 DATA=../data/ TEMPLATE=template.pdb NEIGH_FREQ=10
+score: STATS ARG=(cs\.hn_.*),(cs\.nh_.*),(cs\.ca_.*),(cs\.cb_.*),(cs\.co_.*),(cs\.ha_.*) PARARG=(cs\.exphn_.*),(cs\.expnh_.*),(cs\.expca_.*),(cs\.expcb.*),(cs\.expco_.*),(cs\.expha_.*) SQDEVSUM  
+metad: METAD ARG=score.sqdevsum ...
+PRINT ARG=(cs\.hn_.*),(cs\.nh_.*),(cs\.ca_.*),(cs\.cb_.*),(cs\.co_.*),(cs\.ha_.*) FILE=CS.dat STRIDE=100 
+PRINT ARG=score FILE=COLVAR STRIDE=100 
 \endverbatim
 
-case 2:
-
+In this second example the chemical shifts are used as replica-averaged restrained as in \cite Camilloni:2012je \cite Camilloni:2013hs. 
+ 
 \verbatim
-WHOLEMOLECULES ENTITY0=1-174
-cs: CS2BACKBONE ATOMS=1-174 DATA=data/ FF=a03_gromacs.mdb FLAT=1.0 NRES=13 TERMINI=DEFAULT,NONE CYS-DISU WRITE_CS=1000
-PRINT ARG=cs
+cs: CS2BACKBONE ATOMS=1-174 DATA=data/ NRES=13 
+encs: ENSEMBLE ARG=(cs\.hn_.*),(cs\.nh_.*)
+stcs: STATS ARG=encs.* SQDEVSUM PARARG=(cs\.exphn_.*),(cs\.expnh_.*)
+RESTRAINT ARG=stcs.sqdevsum AT=0 KAPPA=0 SLOPE=24
+
+PRINT ARG=(cs\.hn_.*),(cs\.nh_.*) FILE=RESTRAINT STRIDE=100
+
 \endverbatim
 
-(See also \ref WHOLEMOLECULES, \ref RESTRAINT and \ref PRINT)
+(See also \ref WHOLEMOLECULES, \ref STATS, \ref METAD, \ref RESTRAINT and \ref PRINT)
 
 */
 //+ENDPLUMEDOC
 
 class CS2Backbone : public Colvar {
   vector<CamShift3> cam_list;
-  unsigned  numResidues;
+  unsigned numResidues;
   bool pbc;
   bool noexp;
   double **sh;
@@ -133,6 +139,8 @@ PLUMED_REGISTER_ACTION(CS2Backbone,"CS2BACKBONE")
 
 void CS2Backbone::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords( keys );
+  componentsAreNotOptional(keys);
+  useCustomisableComponents(keys);
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
   keys.add("compulsory","DATA","data/","The folder with the experimental chemical shifts.");
   keys.add("compulsory","TEMPLATE","template.pdb","A PDB file of the protein system to initialise ALMOST.");
@@ -332,7 +340,7 @@ void CS2Backbone::calculate()
 
   if(getExchangeStep()) cam_list[0].set_box_count(0);
 
-  /* pragma here? */ 
+#pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for (unsigned i=0;i<N;i++) {
      unsigned ipos = CSDIM*i;
      Vector Pos = getPosition(i);
@@ -355,7 +363,7 @@ void CS2Backbone::calculate()
         comp->set(sh[j][cs]);
         unsigned place = placeres+cs*CSDIM*N;
         Tensor virial;
-        /* pragma here? */ 
+#pragma omp parallel for num_threads(OpenMP::getNumThreads())
         for(unsigned i=0;i<N;i++) {
           unsigned ipos = place+CSDIM*i;
           if(csforces[ipos]!=0||csforces[ipos+1]!=0||csforces[ipos+2]!=0) {

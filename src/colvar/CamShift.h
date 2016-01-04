@@ -14,7 +14,6 @@
 #include <sstream>
 #include <vector>
 
-#include "tools/MolDataClass.h"
 #include "tools/OpenMP.h"
 #include "tools/PDB.h"
 #include "tools/Torsion.h"
@@ -27,9 +26,9 @@ namespace PLMD {
     enum { STD, GLY, PRO};
     enum { HA_ATOM, H_ATOM, N_ATOM, CA_ATOM, CB_ATOM, C_ATOM };
 
-    static const int aa_kind = 3;
-    static const int atm_kind = 6;
-    static const int numXtraDists = 27;
+    static const unsigned aa_kind = 3;
+    static const unsigned atm_kind = 6;
+    static const unsigned numXtraDists = 27;
 
     double dscale;
 
@@ -55,18 +54,18 @@ namespace PLMD {
     double co_xd[aa_kind][atm_kind][numXtraDists];
 
   public:
-    CamShiftDB(const string file, const double scale){ 
+    CamShiftDB(const string &file, const double scale){ 
       dscale = scale;
       parse(file);
     }
 
-    inline int kind(const string s){
+    inline unsigned kind(const string &s){
       if(s=="GLY") return GLY;
       else if(s=="PRO") return PRO;      
       return STD;
     }
 
-    inline int atom_kind(const string s){
+    inline unsigned atom_kind(const string &s){
       if(s=="HA")return HA_ATOM;
       else if(s=="H") return H_ATOM;
       else if(s=="N") return N_ATOM;
@@ -76,50 +75,50 @@ namespace PLMD {
       return -1;
     }
 
-    int get_numXtraDists() {return numXtraDists;}
+    unsigned get_numXtraDists() {return numXtraDists;}
 
     //PARAMETERS
-    inline double   CONST(const int a_kind, const int at_kind){ return c_all[a_kind][at_kind];}
-    inline double * CONSTAACURR(const int a_kind, const int at_kind){return c_aa[a_kind][at_kind];}
-    inline double * CONSTAANEXT(const int a_kind, const int at_kind){return c_aa_succ[a_kind][at_kind];}
-    inline double * CONSTAAPREV(const int a_kind, const int at_kind){return c_aa_prev[a_kind][at_kind];}
-    inline double * CONST_BB2_PREV(const int a_kind, const int at_kind){return co_bb[a_kind][at_kind][1];}
-    inline double * CONST_BB2_CURR(const int a_kind, const int at_kind){return co_bb[a_kind][at_kind][1]+5;}
-    inline double * CONST_BB2_NEXT(const int a_kind, const int at_kind){return co_bb[a_kind][at_kind][1]+11;}
-    inline double * CONST_SC2(const int a_kind, const int at_kind, int res_type){ return co_sc_[a_kind][at_kind][res_type][1];}
-    inline double * CONST_XD(const int a_kind, const int at_kind){ return co_xd[a_kind][at_kind];}
-    inline double * CO_SPHERE(const int a_kind, const int at_kind, int exp_type){ return co_sphere[a_kind][at_kind][exp_type];}
-    inline double * CO_RING(const int a_kind, const int at_kind){ return co_ring[a_kind][at_kind];}
-    inline double * CO_DA(const int a_kind, const int at_kind){ return co_da[a_kind][at_kind];}
-    inline double * PARS_DA(const int a_kind, const int at_kind, const int ang_kind){ return pars_da[a_kind][at_kind][ang_kind];}
+    inline double   CONST(const unsigned a_kind, const unsigned at_kind){ return c_all[a_kind][at_kind];}
+    inline double * CONSTAACURR(const unsigned a_kind, const unsigned at_kind){return c_aa[a_kind][at_kind];}
+    inline double * CONSTAANEXT(const unsigned a_kind, const unsigned at_kind){return c_aa_succ[a_kind][at_kind];}
+    inline double * CONSTAAPREV(const unsigned a_kind, const unsigned at_kind){return c_aa_prev[a_kind][at_kind];}
+    inline double * CONST_BB2_PREV(const unsigned a_kind, const unsigned at_kind){return co_bb[a_kind][at_kind][1];}
+    inline double * CONST_BB2_CURR(const unsigned a_kind, const unsigned at_kind){return co_bb[a_kind][at_kind][1]+5;}
+    inline double * CONST_BB2_NEXT(const unsigned a_kind, const unsigned at_kind){return co_bb[a_kind][at_kind][1]+11;}
+    inline double * CONST_SC2(const unsigned a_kind, const unsigned at_kind, unsigned res_type){ return co_sc_[a_kind][at_kind][res_type][1];}
+    inline double * CONST_XD(const unsigned a_kind, const unsigned at_kind){ return co_xd[a_kind][at_kind];}
+    inline double * CO_SPHERE(const unsigned a_kind, const unsigned at_kind, unsigned exp_type){ return co_sphere[a_kind][at_kind][exp_type];}
+    inline double * CO_RING(const unsigned a_kind, const unsigned at_kind){ return co_ring[a_kind][at_kind];}
+    inline double * CO_DA(const unsigned a_kind, const unsigned at_kind){ return co_da[a_kind][at_kind];}
+    inline double * PARS_DA(const unsigned a_kind, const unsigned at_kind, const unsigned ang_kind){ return pars_da[a_kind][at_kind][ang_kind];}
 
   private:
 
-    void parse(const string file){
+    void parse(const string &file){
       ifstream in;
       in.open(file.c_str());
       if(!in) plumed_merror("Unable to open CamShiftDB file\n");
 
-      int c_kind = -1;
-      int c_atom = -1;
-      int nline = 0;
+      unsigned c_kind = 0;
+      unsigned c_atom = 0;
+      unsigned nline = 0;
 
-      for(int i=0;i<3;i++) for(int j=0;j<6;j++) {
+      for(unsigned i=0;i<3;i++) for(unsigned j=0;j<6;j++) {
         c_all[i][j]=0.;
-        for(int k=0;k<20;k++) {
+        for(unsigned k=0;k<20;k++) {
           c_aa[i][j][k]=0.;
           c_aa_prev[i][j][k]=0.;
           c_aa_succ[i][j][k]=0.;
-          for(int l=0;l<2;l++) for(int m=0;m<20;m++) co_sc_[i][j][k][l][m]=0.;
+          for(unsigned l=0;l<2;l++) for(unsigned m=0;m<20;m++) co_sc_[i][j][k][l][m]=0.;
         }
-        for(int k=0;k<16;k++) {co_bb[i][j][0][k]=0.; co_bb[i][j][1][k]=0.;}
-        for(int k=0;k<8;k++) { co_sphere[i][j][0][k]=0.; co_sphere[i][j][1][k]=0.; }
-        for(int k=0;k<3;k++) {
+        for(unsigned k=0;k<16;k++) {co_bb[i][j][0][k]=0.; co_bb[i][j][1][k]=0.;}
+        for(unsigned k=0;k<8;k++) { co_sphere[i][j][0][k]=0.; co_sphere[i][j][1][k]=0.; }
+        for(unsigned k=0;k<3;k++) {
           co_da[i][j][k]=0.;
-          for(int l=0;l<5;l++) pars_da[i][j][k][l]=0.;
+          for(unsigned l=0;l<5;l++) pars_da[i][j][k][l]=0.;
         }
-        for(int k=0;k<5;k++) co_ring[i][j][k]=0.;
-        for(int k=0;k<numXtraDists;k++) co_xd[i][j][k]=0.;
+        for(unsigned k=0;k<5;k++) co_ring[i][j][k]=0.;
+        for(unsigned k=0;k<numXtraDists;k++) co_xd[i][j][k]=0.;
       }
 
       while(!in.eof()){
@@ -233,7 +232,7 @@ namespace PLMD {
                               "COSCGLY1", "COSCHIS1", "COSCILE1", "COSCLEU1", "COSCLYS1", "COSCMET1", "COSCPHE1", 
                               "COSCPRO1", "COSCSER1", "COSCTHR1", "COSCTRP1", "COSCTYR1", "COSCVAL1"};
 
-	for(int scC = 0; scC < 20; scC++){
+	for(unsigned scC = 0; scC < 20; scC++){
 	  if(tok[0]==scIdent1[scC]){
             //angstrom to nm
 	    assign(co_sc_[c_kind][c_atom][scC][0],tok,dscale);
@@ -247,7 +246,7 @@ namespace PLMD {
                               "COSCGLY2", "COSCHIS2", "COSCILE2", "COSCLEU2", "COSCLYS2", "COSCMET2", "COSCPHE2", 
                               "COSCPRO2", "COSCSER2", "COSCTHR2", "COSCTRP2", "COSCTYR2", "COSCVAL2"};
 
-	for(int scC = 0; scC < 20; scC++){
+	for(unsigned scC = 0; scC < 20; scC++){
 	  if(tok[0]==scIdent2[scC]){
             //angstrom to nm
 	    assign(co_sc_[c_kind][c_atom][scC][1],tok,dscale);
@@ -294,18 +293,18 @@ namespace PLMD {
       vector<int> curr;
       vector<int> next;
 
-      int res_type_prev;
-      int res_type_curr;
-      int res_type_next;
+      unsigned res_type_prev;
+      unsigned res_type_curr;
+      unsigned res_type_next;
 
       vector<int> side_chain;
       vector<int> xd1;
       vector<int> xd2;
       string res_name;
-      int res_kind;
-      int fd;
+      unsigned res_kind;
+      unsigned fd;
 
-      vector<vector<int> > box_nb;
+      vector<vector<unsigned> > box_nb;
 
       vector<int> phi;
       vector<int> psi;
@@ -314,8 +313,8 @@ namespace PLMD {
       vector<double> exp_cs;
  
       Fragment() {
-	res_type_prev = res_type_curr = res_type_next = -1;
-        res_kind = fd = -1;
+	res_type_prev = res_type_curr = res_type_next = 0;
+        res_kind = fd = 0;
         box_nb.resize(6); 
         pos.resize(6); 
         exp_cs.resize(6); 
@@ -330,11 +329,11 @@ namespace PLMD {
     struct RingInfo{
       enum {R_PHE, R_TYR, R_TRP1, R_TRP2, R_HIS};
       // one out of five different types
-      int rtype;
+      unsigned rtype;
       // up to six member per ring
-      int atom[6];
+      unsigned atom[6];
       // number of ring members (5 or 6)
-      int numAtoms;
+      unsigned numAtoms;
       // center of ring coordinates
       double position[3];
       // ring plane normal vector
@@ -351,12 +350,12 @@ namespace PLMD {
     enum aa_t {ALA, ARG, ASN, ASP, CYS, GLN, GLU, GLY, HIS, ILE, LEU, LYS, MET, PHE, PRO, SER, THR, TRP, TYR, VAL, UNK};
     enum atom_t {D_C, D_H, D_N, D_O, D_S, D_C2, D_N2, D_O2};
     CamShiftDB db;
-    vector<int> seg_last; // i<seg_last[0] is i n 0...
-    vector<int> type;
-    vector<int> res_num;
+    vector<unsigned> seg_last; // i<seg_last[0] is i n 0...
+    vector<unsigned> type;
+    vector<unsigned> res_num;
     vector<RingInfo> ringInfo;
-    int box_nupdate;
-    int box_count;
+    unsigned box_nupdate;
+    unsigned box_count;
 
   public:
 
@@ -365,7 +364,6 @@ namespace PLMD {
     CamShift3(const string pdbfile, const string dbfile, const bool NatUnits, const double scale):db(dbfile,scale){
       PDB pdb;
       if( !pdb.read(pdbfile,NatUnits,1./scale) ) plumed_merror("missing input file " + pdbfile );
-      //Init
       init_backbone(pdb);
       init_sidechain(pdb);
       init_xdist(pdb);
@@ -374,15 +372,14 @@ namespace PLMD {
 #ifndef NDEBUG
       debug_report();
 #endif
-      //Non-Bonded neighbour lists 
       box_nupdate=1;
       box_count=0;
     }
 
-    void set_box_nupdate(const int v){box_nupdate = v;}
-    void set_box_count(const int v){box_count = v;}
+    void set_box_nupdate(const unsigned v){box_nupdate = v;}
+    void set_box_count(const unsigned v){box_count = v;}
    
-    void remove_problematic(const string res, const string nucl) {
+    void remove_problematic(const string &res, const string &nucl) {
       unsigned n;
       if(nucl=="HA")     n=0;
       else if(nucl=="H") n=1;
@@ -399,7 +396,7 @@ namespace PLMD {
       }
     }
 
-    void read_cs(const string file, const string k){
+    void read_cs(const string &file, const string &k){
       ifstream in;
       in.open(file.c_str());
       if(!in){
@@ -411,9 +408,9 @@ namespace PLMD {
 	string tok;
 	tok = *iter; ++iter;
 	if(tok[0]=='#'){ ++iter; continue;}
-	int p = atoi(tok.c_str());
+	unsigned p = atoi(tok.c_str());
 	p = p - 1;
-	int seg = frag_segment(p);
+	unsigned seg = frag_segment(p);
 	p = frag_relitive_index(p,seg);
 	tok = *iter; ++iter;
 	double cs = atof(tok.c_str());
@@ -426,7 +423,7 @@ namespace PLMD {
       }
     }
 
-    void calc_cs(const vector<double> & coor, vector<double> & ff, const int N,  double **sh){
+    void calc_cs(const vector<double> & coor, vector<double> & ff, const unsigned N,  double **sh){
 
       compute_ring_parameters(coor);
 
@@ -449,12 +446,12 @@ namespace PLMD {
               // place is residue*6*CSDIM*N + at_kind*CSDIM*N
               // residue is atoms[s-1].size()+a
               //int place = (iamresidue+a)*6*CSDIM*N+at_kind*CSDIM*N;
-              int place = (index+a)*6*CSDIM*N+at_kind*CSDIM*N;
+              unsigned place = (index+a)*6*CSDIM*N+at_kind*CSDIM*N;
 
-	      int aa_kind = atom[s][a].res_kind;
-	      int res_type_curr = atom[s][a].res_type_curr;
-	      int res_type_prev = atom[s][a].res_type_prev;
-	      int res_type_next = atom[s][a].res_type_next;
+	      unsigned aa_kind = atom[s][a].res_kind;
+	      unsigned res_type_curr = atom[s][a].res_type_curr;
+	      unsigned res_type_prev = atom[s][a].res_type_prev;
+	      unsigned res_type_next = atom[s][a].res_type_next;
 
 	      double   CONST = db.CONST(aa_kind,at_kind);
 	      double * CONSTAACURR = db.CONSTAACURR(aa_kind,at_kind);
@@ -477,12 +474,12 @@ namespace PLMD {
 	      cs = cs + CONSTAAPREV[res_type_prev];
 
 	      //3. distances const
-	      int ipos = CSDIM*atom[s][a].pos[at_kind];
+	      unsigned ipos = CSDIM*atom[s][a].pos[at_kind];
 
 	      //PREV
 	      for(unsigned q=0;q<atom[s][a].prev.size();q++){
 	        double d2,dx,dy,dz;
-	        int jpos = CSDIM*atom[s][a].prev[q];
+	        unsigned jpos = CSDIM*atom[s][a].prev[q];
 	        dx = coor[ipos] - coor[jpos];
 	        dy = coor[ipos+1] - coor[jpos+1];
 	        dz = coor[ipos+2] - coor[jpos+2];
@@ -505,7 +502,7 @@ namespace PLMD {
 
 	      //CURR
 	      for(unsigned q=0;q<atom[s][a].curr.size();q++){
-	        int jpos = CSDIM*atom[s][a].curr[q];
+	        unsigned jpos = CSDIM*atom[s][a].curr[q];
 	        if(ipos==jpos) continue;
 	        double d2,dx,dy,dz;
 	        dx = coor[ipos] - coor[jpos];
@@ -530,7 +527,7 @@ namespace PLMD {
 	      //NEXT
 	      for(unsigned q=0;q<atom[s][a].next.size();q++){
 	        double d2,dx,dy,dz;
-	        int jpos = CSDIM*atom[s][a].next[q];
+	        unsigned jpos = CSDIM*atom[s][a].next[q];
 	        dx = coor[ipos] - coor[jpos];
 	        dy = coor[ipos+1] - coor[jpos+1];
 	        dz = coor[ipos+2] - coor[jpos+2];
@@ -553,7 +550,7 @@ namespace PLMD {
 
 	      //SIDE CHAIN
 	      for(unsigned q=0;q<atom[s][a].side_chain.size();q++){
-	        int jpos = CSDIM*atom[s][a].side_chain[q];
+	        unsigned jpos = CSDIM*atom[s][a].side_chain[q];
 	        if(ipos==jpos) continue;
 	        double d2,dx,dy,dz;
 	        dx = coor[ipos] - coor[jpos];
@@ -578,8 +575,8 @@ namespace PLMD {
 	      for(unsigned q=0;q<atom[s][a].xd1.size();q++){
 	        double d2,dx,dy,dz;
 	        if(atom[s][a].xd1[q]==-1||atom[s][a].xd2[q]==-1) continue;
-	        int kpos = CSDIM*atom[s][a].xd1[q];
-	        int jpos = CSDIM*atom[s][a].xd2[q];
+	        unsigned kpos = CSDIM*atom[s][a].xd1[q];
+	        unsigned jpos = CSDIM*atom[s][a].xd2[q];
 	        dx = coor[kpos] - coor[jpos];
 	        dy = coor[kpos+1] - coor[jpos+1];
 	        dz = coor[kpos+2] - coor[jpos+2];
@@ -607,14 +604,14 @@ namespace PLMD {
 	        double dist_sum3[8] = {0,0,0,0,0,0,0,0};
 	        double dist_sum [8] = {0,0,0,0,0,0,0,0};
 
-	        int curr = atom[s][a].pos[at_kind];
-                if(update) update_box(curr, atom[s][a].box_nb[at_kind], coor, 0.56);
+	        unsigned curr = atom[s][a].pos[at_kind];
+                if(update) update_box(atom[s][a].box_nb[at_kind], curr, coor, N, 0.56);
   	        double ffi[3] = {0,0,0};
                  
                 for(unsigned bat = 0; bat<atom[s][a].box_nb[at_kind].size(); bat++) {
-                  int at = atom[s][a].box_nb[at_kind][bat];
+                  unsigned at = atom[s][a].box_nb[at_kind][bat];
 
-		  int jpos = CSDIM*at;
+		  unsigned jpos = CSDIM*at;
 		  double dx = coor[ipos] - coor[jpos];
 		  double dy = coor[ipos+1] - coor[jpos+1];
 		  double dz = coor[ipos+2] - coor[jpos+2];
@@ -652,16 +649,16 @@ namespace PLMD {
                       double ef3 = -2.*d4*d2;
                       dfactor3 = dfactor3*invswitch*(af3+cf3+df3+ef3);
                     }
-		    int t = type[at];
+		    unsigned t = type[at];
 		    dist_sum3[t] += factor3;
 		    dist_sum [t] += factor1;
 
 		    double fact1 = -cs_deriv*dfactor1*dinv;
 		    double fact2 = -cs_deriv*dfactor3*dinv;
 		    double fact = fact1*CONST_CO_SPHERE[t]+fact2*CONST_CO_SPHERE3[t];
-		    ffi[0]   = ffi[0]   + fact*dx;
-		    ffi[1]   = ffi[1]   + fact*dy;
-		    ffi[2]   = ffi[2]   + fact*dz;
+		    ffi[0] = ffi[0] + fact*dx;
+		    ffi[1] = ffi[1] + fact*dy;
+		    ffi[2] = ffi[2] + fact*dz;
 		    ff[place+jpos]   = ff[place+jpos]   - fact*dx;
 		    ff[place+jpos+1] = ff[place+jpos+1] - fact*dy;
 		    ff[place+jpos+2] = ff[place+jpos+2] - fact*dz;
@@ -688,7 +685,7 @@ namespace PLMD {
 		  // get distance vector from query atom to ring center and normal vector to ring plane
   		  double fact = cs_deriv*rc[ringInfo[i].rtype];
 	          double d[3], n[3];
-		  for(int j=0; j<3; j++){
+		  for(unsigned j=0; j<3; j++){
 		    d[j] = coor[ipos+j] - ringInfo[i].position[j];
 		    n[j] = ringInfo[i].normVect[j];
 		  }
@@ -705,8 +702,8 @@ namespace PLMD {
 		  double dn = d[0]*n[0] + d[1]*n[1] + d[2]*n[2];
 		  double dn2 = dn * dn;
 		
-  		  int aPos[6];
-  		  for(int j=0; j<ringInfo[i].numAtoms; j++) aPos[j] = CSDIM*ringInfo[i].atom[j];
+  		  unsigned aPos[6];
+  		  for(unsigned j=0; j<ringInfo[i].numAtoms; j++) aPos[j] = CSDIM*ringInfo[i].atom[j];
 
 		  // here we save the necessity of calculating the angle first and then the cos, 
                   // using that the acos and cos cancel each other out
@@ -736,10 +733,10 @@ namespace PLMD {
 				    ringInfo[i].n1[1] + ringInfo[i].n2[1], 
 				    ringInfo[i].n1[2] + ringInfo[i].n2[2]};
 		  double g[3], ab[3], c[3];
-		  int limit = ringInfo[i].numAtoms - 3; // 2 for a 5-membered ring, 3 for a 6-membered ring
+		  unsigned limit = ringInfo[i].numAtoms - 3; // 2 for a 5-membered ring, 3 for a 6-membered ring
 		
 		  // update forces on ring atoms
-		  for(int at=0; at<ringInfo[i].numAtoms; at++)
+		  for(unsigned at=0; at<ringInfo[i].numAtoms; at++)
 		  {
 		    if (at < limit) // atoms 0,1 (5 member) or 0,1,2 (6 member)
 		    {
@@ -749,7 +746,7 @@ namespace PLMD {
 		    }
 		    else if (at >= ringInfo[i].numAtoms - limit) // atoms 3,4 (5 member) or 3,4,5 (6 member)
 		    {
-		      int offset = ringInfo[i].numAtoms - 3; // 2 for a 5-membered ring, 3 for a 6-membered ring
+		      unsigned offset = ringInfo[i].numAtoms - 3; // 2 for a 5-membered ring, 3 for a 6-membered ring
 		      g[0] = coor[aPos[((at + 1 - offset) % 3) + offset]  ] - coor[aPos[((at + 2 - offset) % 3) + offset]  ];
 		      g[1] = coor[aPos[((at + 1 - offset) % 3) + offset]+1] - coor[aPos[((at + 2 - offset) % 3) + offset]+1];
 		      g[2] = coor[aPos[((at + 1 - offset) % 3) + offset]+2] - coor[aPos[((at + 2 - offset) % 3) + offset]+2];
@@ -926,20 +923,20 @@ namespace PLMD {
 
   private:
 
-    void init_backbone(const PDB pdb){
+    void init_backbone(const PDB &pdb){
 
       // number of chains
       vector<string> chains;
       pdb.getChainNames( chains );
       seg_last.resize(chains.size());
-      int old_size=0;
+      unsigned old_size=0;
 
       for(unsigned i=0;i<chains.size();i++){
         unsigned start, end;
         string errmsg;
         pdb.getResidueRange( chains[i], start, end, errmsg );
 
-	int res_offset = start;
+	unsigned res_offset = start;
         unsigned resrange = end-start+1;
 
 	if(i==0) seg_last[i] = resrange;
@@ -975,10 +972,10 @@ namespace PLMD {
 
         vector<AtomNumber> allatoms = pdb.getAtomsInChain(chains[i]);
         // cycle over all the atoms in the chain
-	for(int a=0;a<allatoms.size();a++){
-          int atm_index=a+old_size;
-	  int f = pdb.getResidueNumber(allatoms[a]);
-          int f_idx = f-res_offset;
+	for(unsigned a=0;a<allatoms.size();a++){
+          unsigned atm_index=a+old_size;
+	  unsigned f = pdb.getResidueNumber(allatoms[a]);
+          unsigned f_idx = f-res_offset;
           string AN = pdb.getAtomName(allatoms[a]);
           string RES = pdb.getResidueName(allatoms[a]);
 	  if(AN=="N")                  N_ [f_idx] = atm_index;
@@ -996,8 +993,8 @@ namespace PLMD {
         // vector of residues for a given chain
 	vector<Fragment> atm_;
         // cycle over all residues in the chain 
-	for(int a=start;a<=end;a++){
-	  int f_idx = a - res_offset;
+	for(unsigned a=start;a<=end;a++){
+	  unsigned f_idx = a - res_offset;
 	  Fragment at;
 	  {
 	    at.pos[0] = HA_[f_idx];
@@ -1007,7 +1004,7 @@ namespace PLMD {
 	    at.pos[4] = CB_[f_idx];
 	    at.pos[5] =  C_[f_idx];
 	  }
-	  at.res_type_prev = at.res_type_curr = at.res_type_next = -1;
+	  at.res_type_prev = at.res_type_curr = at.res_type_next = 0;
 	  at.res_name = pdb.getResidueName(a, chains[i]); 
 	  at.res_kind = db.kind(at.res_name);
 	  at.fd = a;
@@ -1067,16 +1064,16 @@ namespace PLMD {
       }
     }
 
-    void init_sidechain(const PDB pdb){
+    void init_sidechain(const PDB &pdb){
       vector<string> chains; 
       pdb.getChainNames( chains );
-      int old_size=0;
+      unsigned old_size=0;
       // cycle over chains
       for(unsigned s=0; s<atom.size(); s++){
         AtomNumber astart, aend; 
         string errmsg;
         pdb.getAtomRange( chains[s], astart, aend, errmsg );
-        int atom_offset = astart.index();
+        unsigned atom_offset = astart.index();
         // cycle over residues  
 	for(unsigned a=0; a<atom[s].size(); a++){
           if(atom[s][a].res_name=="UNK") continue;
@@ -1096,29 +1093,30 @@ namespace PLMD {
       }
     }
 
-    void init_xdist(const PDB pdb){
-      string atomsP1[] = {"H", "H", "H", "C", "C", "C", 
-                          "O", "O", "O", "N", "N", "N", 
-                          "O", "O", "O", "N", "N", "N", 
-                          "CG", "CG", "CG", "CG", "CG", "CG", "CG", "CA"};
+    void init_xdist(const PDB &pdb){
+      const string atomsP1[] = {"H", "H", "H", "C", "C", "C", 
+                                "O", "O", "O", "N", "N", "N", 
+                                "O", "O", "O", "N", "N", "N", 
+                                "CG", "CG", "CG", "CG", "CG", 
+                                "CG", "CG", "CA"};
 
-      int resOffsetP1 [] = {0, 0, 0, -1, -1, -1, 0, 0, 0, 1, 1, 1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, -1, 1, -1};
+      const int resOffsetP1 [] = {0, 0, 0, -1, -1, -1, 0, 0, 0, 1, 1, 1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, -1, 1, -1};
 
-      string atomsP2[] = {"HA", "C", "CB", "HA", "C", "CB", 
-                          "HA", "N", "CB", "HA", "N", "CB", 
-                          "HA", "N", "CB", "HA", "N", "CB", 
-                          "HA", "N", "C", "C", "N", "CA", "CA", "CA"};
+      const string atomsP2[] = {"HA", "C", "CB", "HA", "C", "CB", 
+                                "HA", "N", "CB", "HA", "N", "CB", 
+                                "HA", "N", "CB", "HA", "N", "CB", 
+                                "HA", "N", "C", "C", "N", "CA", "CA", "CA"};
 
-      int resOffsetP2 [] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, 0, 0, 0, -1, 1, 0, 0, 1};
+      const int resOffsetP2 [] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, 0, 0, 0, -1, 1, 0, 0, 1};
 
       vector<string> chains; 
       pdb.getChainNames( chains );
-      int old_size=0;
+      unsigned old_size=0;
       for(unsigned s=0; s<atom.size(); s++){
         AtomNumber astart, aend; 
         string errmsg;
         pdb.getAtomRange( chains[s], astart, aend, errmsg );
-        int atom_offset = astart.index();
+        unsigned atom_offset = astart.index();
 
 	for(unsigned a=1; a<atom[s].size()-1; a++){
 	  vector<AtomNumber> atm_curr = pdb.getAtomsInResidue(atom[s][a].fd,chains[s]);
@@ -1179,32 +1177,34 @@ namespace PLMD {
       }
     }
 
-    void init_types(const PDB pdb){
+    void init_types(const PDB &pdb){
       vector<AtomNumber> aa = pdb.getAtomNumbers();
       for(unsigned i=0;i<aa.size();i++){
-	int frag = pdb.getResidueNumber(aa[i]);
+	unsigned frag = pdb.getResidueNumber(aa[i]);
 	string fragName = pdb.getResidueName(aa[i]);
 	string atom_name = pdb.getAtomName(aa[i]);
 	char atom_type = atom_name[0];
         if(isdigit(atom_name[0])) atom_type = atom_name[1];
 	res_num.push_back(frag);
-	int t = -1;
+	unsigned t = 0;
 	if (!isSP2(fragName, atom_name)){
 	  if (atom_type == 'C') t = D_C;
 	  else if (atom_type == 'O') t = D_O;
 	  else if (atom_type == 'H') t = D_H;
 	  else if (atom_type == 'N') t = D_N;
 	  else if (atom_type == 'S') t = D_S;
+          else plumed_merror("Camshift:init_type: unknown atom type!\n");
 	}else{
 	  if (atom_type == 'C') t = D_C2;
 	  else if (atom_type == 'O') t = D_O2;
 	  else if (atom_type == 'N') t = D_N2;
+          else plumed_merror("Camshift:init_type: unknown atom type!\n");
 	}
 	type.push_back(t);
       }
     }
 
-    void init_rings(const PDB pdb){
+    void init_rings(const PDB &pdb){
 
       const string pheTyr_n[] = {"CG","CD1","CE1","CZ","CE2","CD2"};
       const string trp1_n[]   = {"CD2","CE2","CZ2","CH2","CZ3","CE3"};
@@ -1214,13 +1214,13 @@ namespace PLMD {
       vector<string> chains; 
       pdb.getChainNames( chains );
       vector<AtomNumber> allatoms = pdb.getAtomNumbers();
-      int old_size=0;
+      unsigned old_size=0;
 
       for(unsigned s=0; s<atom.size(); s++){
         AtomNumber astart, aend; 
         string errmsg;
         pdb.getAtomRange( chains[s], astart, aend, errmsg );
-        int atom_offset = astart.index();
+        unsigned atom_offset = astart.index();
 	for(unsigned r=0; r<atom[s].size(); r++){
 	  string frg = pdb.getResidueName(atom[s][r].fd);
 	  if(!((frg=="PHE")||(frg=="TYR")||(frg=="TRP")||
@@ -1235,7 +1235,7 @@ namespace PLMD {
             ri.n1.resize(3);
             ri.n2.resize(3);
 	    for(unsigned a=0;a<frg_atoms.size();a++){
-	      int atm = frg_atoms[a].index()-atom_offset+old_size;
+	      unsigned atm = frg_atoms[a].index()-atom_offset+old_size;
 	      for(unsigned aa=0;aa<6;aa++){
 	        if(pdb.getAtomName(frg_atoms[a])==pheTyr_n[aa]){
 		  ri.atom[aa] = atm;
@@ -1254,7 +1254,7 @@ namespace PLMD {
             ri.n1.resize(3);
             ri.n2.resize(3);
 	    for(unsigned a=0;a<frg_atoms.size();a++){
-	      int atm = frg_atoms[a].index()-atom_offset+old_size;
+	      unsigned atm = frg_atoms[a].index()-atom_offset+old_size;
 	      for(unsigned aa=0;aa<6;aa++){
 	        if(pdb.getAtomName(frg_atoms[a])==trp1_n[aa]){
 	          ri.atom[aa] = atm;
@@ -1270,7 +1270,7 @@ namespace PLMD {
             ri2.n1.resize(3);
             ri2.n2.resize(3);
 	    for(unsigned a=0;a<frg_atoms.size();a++){
-	      int atm = frg_atoms[a].index()-atom_offset+old_size;
+	      unsigned atm = frg_atoms[a].index()-atom_offset+old_size;
 	      for(unsigned aa=0;aa<5;aa++){
 	        if(pdb.getAtomName(frg_atoms[a])==trp2_n[aa]){
 	          ri2.atom[aa] = atm;
@@ -1287,7 +1287,7 @@ namespace PLMD {
             ri.n1.resize(3);
             ri.n2.resize(3);
 	    for(unsigned a=0;a<frg_atoms.size();a++){
-	      int atm = frg_atoms[a].index()-atom_offset+old_size;
+	      unsigned atm = frg_atoms[a].index()-atom_offset+old_size;
 	      for(unsigned aa=0;aa<5;aa++){
 	        if(pdb.getAtomName(frg_atoms[a])==his_n[aa]){
 		  ri.atom[aa] = atm;
@@ -1340,7 +1340,7 @@ namespace PLMD {
       }
     }
 
-    aa_t frag2enum(const string aa)
+    aa_t frag2enum(const string &aa)
     {
       aa_t type = ALA;
       if (aa == "ALA") type = ALA;
@@ -1379,7 +1379,7 @@ namespace PLMD {
       return type;
     }
 
-    vector<string> side_chain_atoms(const string s){
+    vector<string> side_chain_atoms(const string &s){
       vector<string> sc;
       sc.clear();
 
@@ -1778,15 +1778,14 @@ namespace PLMD {
                                           const double & x2, const double & y2, const double & z2)
     {
       vector<double> result;
-      result.reserve(3);
       result.push_back(y1 * z2 - z1 * y2);
       result.push_back(z1 * x2 - x1 * z2);
       result.push_back(x1 * y2 - y1 * x2);
       return result;
     }
 
-    int frag_segment(const int p){
-      int s = 0;
+    unsigned frag_segment(const unsigned p){
+      unsigned s = 0;
       for(unsigned i=0;i<seg_last.size()-1;i++){
 	if(p>seg_last[i]) s  = i+1;
 	else break;
@@ -1794,7 +1793,7 @@ namespace PLMD {
       return s;
     }
 
-    int frag_relitive_index(const int p, const int s){
+    unsigned frag_relitive_index(const unsigned p, const unsigned s){
       if(s==0) return p;
       return p-seg_last[s-1];
     }
@@ -1802,26 +1801,25 @@ namespace PLMD {
     void debug_report(){
       printf("\t CamShift3 Initialization report: \n");
       printf("\t -------------------------------\n");
-      printf("\t Number of segments: %lu\n", atom.size());
+      printf("\t Number of segments: %u\n", static_cast<unsigned>(atom.size()));
       printf("\t Segments size:      ");
-      for(unsigned i=0;i<atom.size();i++) printf("%lu ", atom[i].size()); printf("\n");
+      for(unsigned i=0;i<atom.size();i++) printf("%u ", static_cast<unsigned>(atom[i].size())); printf("\n");
       printf("\t%8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s \n",
 	      "Seg","N","AA","Prev","Curr","Next","SC","XD1","XD2","Phi","Psi","Chi1");
       for(unsigned i=0;i<atom.size();i++){
 	for(unsigned j=0;j<atom[i].size();j++){
-	  printf("\t%8i %8i %8s %8i %8i %8i %8i %8i %8i %8i %8i %8i \n",
-		  i+1,
-		  j+1,
+	  printf("\t%8u %8u %8s %8u %8u %8u %8u %8u %8u %8u %8u %8u \n",
+		  i+1, j+1,
 		  atom[i][j].res_name.c_str(),
-		  (int)atom[i][j].prev.size(),
-		  (int)atom[i][j].curr.size(),
-		  (int)atom[i][j].next.size(),
-		  (int)atom[i][j].side_chain.size(),
-		  (int)atom[i][j].xd1.size(),
-		  (int)atom[i][j].xd2.size(),
-		  (int)atom[i][j].phi.size(),
-		  (int)atom[i][j].psi.size(),
-		  (int)atom[i][j].chi1.size());
+		  (unsigned)atom[i][j].prev.size(),
+		  (unsigned)atom[i][j].curr.size(),
+		  (unsigned)atom[i][j].next.size(),
+		  (unsigned)atom[i][j].side_chain.size(),
+		  (unsigned)atom[i][j].xd1.size(),
+		  (unsigned)atom[i][j].xd2.size(),
+		  (unsigned)atom[i][j].phi.size(),
+		  (unsigned)atom[i][j].psi.size(),
+		  (unsigned)atom[i][j].chi1.size());
 
           for(unsigned k=0;k<atom[i][j].prev.size();k++) printf("%8i ", atom[i][j].prev[k]); printf("\n");
           for(unsigned k=0;k<atom[i][j].curr.size();k++) printf("%8i ", atom[i][j].curr[k]); printf("\n");
@@ -1833,54 +1831,31 @@ namespace PLMD {
           for(unsigned k=0;k<atom[i][j].psi.size();k++) printf("%8i ", atom[i][j].psi[k]); printf("\n");
           for(unsigned k=0;k<atom[i][j].chi1.size();k++) printf("%8i ", atom[i][j].chi1[k]); printf("\n");
 
-	  printf("\t%8i %8i %8s %8i %8i %8i %8i %8i %8i %8i %8i %8i \n",
-		  i+1,
-		  j+1,
-		  atom[i][j].res_name.c_str(),
-		  (int)check_indices(atom[i][j].prev),
-		  (int)check_indices(atom[i][j].curr),
-		  (int)check_indices(atom[i][j].next),
-		  (int)check_indices(atom[i][j].side_chain),
-		  (int)check_indices(atom[i][j].xd1),
-		  (int)check_indices(atom[i][j].xd2),
-		  (int)check_indices(atom[i][j].phi),
-		  (int)check_indices(atom[i][j].psi),
-		  (int)check_indices(atom[i][j].chi1));
-
 	}
       }
 
       printf("\t Rings: \n");
       printf("\t ------ \n");
-      printf("\t Number of rings: %lu\n", ringInfo.size());
+      printf("\t Number of rings: %u\n", static_cast<unsigned>(ringInfo.size()));
       printf("\t%8s %8s %8s %8s\n", "Num","Type","RType","N.atoms");
       for(unsigned i=0;i<ringInfo.size();i++){
-	printf("\t%8i %8i %8i \n",i+1,ringInfo[i].rtype,ringInfo[i].numAtoms);
-        for(unsigned j=0;j<ringInfo[i].numAtoms;j++) printf("%8i ", ringInfo[i].atom[j]); printf("\n");
+	printf("\t%8u %8u %8u \n",i+1,ringInfo[i].rtype,ringInfo[i].numAtoms);
+        for(unsigned j=0;j<ringInfo[i].numAtoms;j++) printf("%8u ", ringInfo[i].atom[j]); printf("\n");
       } 
     }
 
-    int check_indices(const vector<int> & v){
-      int c = 0;
-      for(unsigned i=0;i<v.size();i++)
-	if(v[i]>0) ++c;
-
-      return c;
-    }
-
-    inline void update_box(const int curr, vector<int> & aa_box_i, const vector<double> & coor, const double cutnb2){
+    inline void update_box(vector<unsigned> & aa_box_i, const unsigned curr, const vector<double> & coor, const unsigned size, const double cutnb2){
       aa_box_i.clear();
-      int ipos = CSDIM*curr;
-      int size = coor.size()/CSDIM;
-      for(int n=0;n<size;n++){
-	unsigned res_dist = abs(res_num[curr]-res_num[n]);
+      unsigned ipos = CSDIM*curr;
+      unsigned res_curr = res_num[curr];
+      for(unsigned n=0;n<size;n++){
+	unsigned res_dist = abs(static_cast<int>(res_curr-res_num[n]));
 	if(res_dist<2) continue;
 
-	int npos = CSDIM*n;
-	double dx,dy,dz;
-	dx = coor[ipos  ] - coor[npos];
-	dy = coor[ipos+1] - coor[npos+1];
-	dz = coor[ipos+2] - coor[npos+2];
+	unsigned npos = CSDIM*n;
+	double dx = coor[ipos  ] - coor[npos];
+	double dy = coor[ipos+1] - coor[npos+1];
+	double dz = coor[ipos+2] - coor[npos+2];
 	double d2 = dx*dx+dy*dy+dz*dz;
 	if(d2<cutnb2) aa_box_i.push_back(n);
       }

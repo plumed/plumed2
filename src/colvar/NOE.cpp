@@ -81,6 +81,8 @@ PLUMED_REGISTER_ACTION(NOE,"NOE")
 
 void NOE::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords( keys );
+  componentsAreNotOptional(keys);
+  useCustomisableComponents(keys);
   keys.add("numbered","GROUPA","the atoms involved in each of the contacts you wish to calculate. "
                    "Keywords like GROUPA1, GROUPA2, GROUPA3,... should be listed and one contact will be "
                    "calculated for each ATOM keyword you specify.");
