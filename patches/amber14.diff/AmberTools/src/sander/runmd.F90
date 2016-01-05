@@ -328,7 +328,7 @@ subroutine runmd(xx,ix,ih,ipairs,x,winv,amass,f, &
 ! variables for plumed
    _REAL_ :: plumed_box(3,3),plumed_virial(3,3), plumed_kbt
    integer :: plumed_version,plumed_stopflag,plumed_ms
-   _REAL_ :: plumed_energyUnits,plumed_timeUnits,plumed_lengthUnits
+   _REAL_ :: plumed_energyUnits,plumed_timeUnits,plumed_lengthUnits,plumed_chargeUnits
 
    !==========================================================================
   
@@ -756,9 +756,13 @@ subroutine runmd(xx,ix,ih,ipairs,x,winv,amass,f, &
      plumed_energyUnits=4.184
      plumed_lengthUnits=0.1
      plumed_timeUnits=1.0
+     plumed_chargeUnits=1.0/18.2223
      call plumed_f_gcmd("setMDEnergyUnits"//char(0),plumed_energyUnits)
      call plumed_f_gcmd("setMDLengthUnits"//char(0),plumed_lengthUnits)
      call plumed_f_gcmd("setMDTimeUnits"//char(0),plumed_timeUnits)
+     if(plumed_version>3)then
+       call plumed_f_gcmd("setMDChargeUnits"//char(0),plumed_chargeUnits)
+     endif
      call plumed_f_gcmd("setPlumedDat"//char(0),trim(adjustl(plumedfile))//char(0))
      call plumed_f_gcmd("setNatoms"//char(0),nr)
      call plumed_f_gcmd("setMDEngine"//char(0),"amber")
