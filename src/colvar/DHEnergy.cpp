@@ -122,7 +122,7 @@ constant(0.0)
   parse("EPSILON",epsilon);
   checkRead();
   if( plumed.getAtoms().usingNaturalUnits() ) error("DHENERGY cannot be used for calculations performed with natural units");
-  constant=138.935458111/atoms.getUnits().getEnergy()/atoms.getUnits().getLength();
+  constant=138.935458111/atoms.getUnits().getEnergy()/atoms.getUnits().getLength()*atoms.getUnits().getCharge()*atoms.getUnits().getCharge();
   k=sqrt(I/(epsilon*T))*502.903741125*atoms.getUnits().getLength();
   checkRead();
   log<<"  with solvent dielectric constant "<<epsilon<<"\n";
