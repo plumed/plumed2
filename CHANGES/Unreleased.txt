@@ -13,10 +13,12 @@ Changes from version 2.2 which are relevant for users:
     are hydrogen bonded.  For more details on this see \ref contactmatrix.  For clustering the output can now be passed to the actions
     \ref CLUSTER_PROPERTIES, \ref CLUSTER_DIAMETER, \ref CLUSTER_NATOMS, \ref OUTPUT_CLUSTER and \ref CLUSTER_DISTRIBUTION.  These
     provide various different kinds of information about the connected components found by clustering 
-- In \ref driver masses and charges are set by default to NaN.
-  This makes it less likely to do mistakes trying to compute centers of mass or electrostatic-dependent variables
-  when masses or charges were not set. To compute these variables from the driver you are now forced to use
-  `--pdb` or `--mc`.
+  - In \ref driver masses and charges are set by default to NaN.
+    This makes it less likely to do mistakes trying to compute centers of mass or electrostatic-dependent variables
+    when masses or charges were not set. To compute these variables from the driver you are now forced to use
+    `--pdb` or `--mc`.
+  - In rational switching functions, by default MM is twice NN. This is valid both in \ref switchingfunction with expanded
+    syntax and when specifying MM on e.g. \ref COORDINATION
 - New actions:
   - \ref FIXEDATOM
   - \ref HBOND_MATRIX
@@ -31,8 +33,8 @@ Changes from version 2.2 which are relevant for users:
   - The SPECIES and SPECIESA keyword in MultiColvars can now take a multicolvar as input.  This allows one
     to calculate quantities such as the Q4 parameters for those atoms that have a coordination number greater
     than x.
-  - In rational switching functions, by default MM is twice NN. This is valid both in \ref switchingfunction with expanded
-    syntax and when specifying MM on e.g. \ref COORDINATION
   - Added MATHEVAL type in \ref switchingfunction
+  - Added Q type native contacts in \ref switchingfunction (thanks to Jan Domanski).
+  - \ref COMMITTOR can now be used to define multiple basins
 
 */

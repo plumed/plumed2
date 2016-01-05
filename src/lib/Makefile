@@ -328,9 +328,15 @@ else
 endif
 	@echo "PLUMED_SHARED_LOAD= \"$(libdir)/lib$(program_name).$(SOEXT)\" $(LIBS) $(LDFLAGS)" >> $@
 	@echo "PLUMED_RUNTIME_DEPENDENCIES="   >> $@
-# when installing, it is sufficient to include dependence wrt a single object
-# indeed, the object are replaced all at the same time
-	@echo "PLUMED_STATIC_DEPENDENCIES= \"$(libdir)/$(program_name)/obj/PlumedStatic.o\""  >> $@
+# in principle all objects are replaced at the same time
+# however, to keep compatibility with the include files generated in plumed 2.0 and 2.1,
+# I put all the objects (or shared objects) here
+ifdef LD_RO
+	@echo "PLUMED_STATIC_DEPENDENCIES= \"$(libdir)/$(program_name)/obj/kernel.o\" \"$(libdir)/$(program_name)/obj/PlumedStatic.o\"" >> $@
+else
+# single quote required to preserve double quote in resulting file
+	@echo "PLUMED_STATIC_DEPENDENCIES= '$(shell ../maketools/listobjects "$(libdir)/$(program_name)/obj/k" $(OBJ_KERNEL))' \"$(libdir)/$(program_name)/obj/PlumedStatic.o\"" >> $@
+endif
 	@echo "PLUMED_SHARED_DEPENDENCIES= \"$(libdir)/lib$(program_name).$(SOEXT)\""  >> $@
 else
 Plumed.inc:
