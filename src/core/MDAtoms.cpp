@@ -39,6 +39,7 @@ public MDAtomsBase
 {
   T scalep,scalef;
   T scaleb,scalev;
+  T scalec,scalem; // factor to scale charges and masses
   int stride;
   T *m;
   T *c;
@@ -79,12 +80,16 @@ template <class T>
 void MDAtomsTyped<T>::setUnits(const Units& units,const Units& MDUnits){
   double lscale=units.getLength()/MDUnits.getLength();
   double escale=units.getEnergy()/MDUnits.getEnergy();
+  double cscale=units.getCharge()/MDUnits.getCharge();
+  double mscale=units.getMass()/MDUnits.getMass();
 // scalep and scaleb are used to convert MD to plumed
   scalep=1.0/lscale;
   scaleb=1.0/lscale;
 // scalef and scalev are used to convert plumed to MD
   scalef=escale/lscale;
   scalev=escale;
+  scalec=1.0/cscale;
+  scalem=1.0/mscale;
 }
 
 template <class T>
@@ -127,13 +132,13 @@ void MDAtomsTyped<T>::getLocalPositions(vector<Vector>&positions)const{
 
 template <class T>
 void MDAtomsTyped<T>::getMasses(const vector<int>&index,vector<double>&masses)const{
-  if(m) for(unsigned i=0;i<index.size();++i) masses[index[i]]=m[i];
+  if(m) for(unsigned i=0;i<index.size();++i) masses[index[i]]=scalem*m[i];
   else  for(unsigned i=0;i<index.size();++i) masses[index[i]]=0.0;
 }
 
 template <class T>
 void MDAtomsTyped<T>::getCharges(const vector<int>&index,vector<double>&charges)const{
-  if(c) for(unsigned i=0;i<index.size();++i) charges[index[i]]=c[i];
+  if(c) for(unsigned i=0;i<index.size();++i) charges[index[i]]=scalec*c[i];
   else  for(unsigned i=0;i<index.size();++i) charges[index[i]]=0.0;
 }
 
@@ -238,6 +243,8 @@ MDAtomsTyped<T>::MDAtomsTyped():
   scalef(1.0),
   scaleb(1.0),
   scalev(1.0),
+  scalec(1.0),
+  scalem(1.0),
   stride(0),
   m(NULL),
   c(NULL),

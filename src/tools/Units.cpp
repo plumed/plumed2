@@ -32,7 +32,11 @@ Units::Units():
   length(1.0),
   lengthString("nm"),
   time(1.0),
-  timeString("ps")
+  timeString("ps"),
+  charge(1.0),
+  chargeString("e"),
+  mass(1.0),
+  massString("amu")
 {
 }
 
@@ -86,6 +90,30 @@ void Units::setTime(const std::string &s){
   }
 }
 
+void Units::setCharge(const std::string &s){
+  chargeString=s;
+  if(s=="e"){
+    charge=1.0;
+  } else {
+    charge=-1.0;
+    chargeString="";
+    Tools::convert(s,charge);
+    plumed_massert(charge>0.0,"charge units should be positive");
+  }
+}
+
+void Units::setMass(const std::string &s){
+  massString=s;
+  if(s=="amu"){
+    mass=1.0;
+  } else {
+    mass=-1.0;
+    massString="";
+    Tools::convert(s,mass);
+    plumed_massert(mass>0.0,"mass units should be positive");
+  }
+}
+
 void Units::setEnergy(const double s){
   energyString="";
   energy=s;
@@ -100,6 +128,18 @@ void Units::setTime(const double s){
   timeString="";
   time=s;
 }
+
+void Units::setCharge(const double s){
+  chargeString="";
+  charge=s;
+}
+
+void Units::setMass(const double s){
+  massString="";
+  mass=s;
+}
+
+
 
 }
 
