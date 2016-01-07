@@ -58,6 +58,7 @@ class Stats :
 {
   std::vector<double> parameters;
   bool sqdonly;
+  bool components;
 public:
   explicit Stats(const ActionOptions&);
   void calculate();
@@ -73,16 +74,19 @@ void Stats::registerKeywords(Keywords& keys){
   keys.add("optional","PARARG","the input for this action is the scalar output from one or more other actions without derivatives."); 
   keys.add("optional","PARAMETERS","the parameters of the arguments in your function");
   keys.addFlag("SQDEVSUM",false,"calculates only SQDEVSUM");
+  keys.addFlag("SQDEV",false,"calculates and store the SQDEV as components");
   keys.addOutputComponent("sqdevsum","default","the sum of the squared deviations between arguments and parameters"); 
   keys.addOutputComponent("corr","default","the correlation between arguments and parameters"); 
   keys.addOutputComponent("slope","default","the slope of a linear fit between arguments and parameters"); 
   keys.addOutputComponent("intercept","default","the intercept of a linear fit between arguments and parameters"); 
+  keys.addOutputComponent("sqd","SQDEV","the squared deviations between arguments and parameters"); 
 }
 
 Stats::Stats(const ActionOptions&ao):
 Action(ao),
 Function(ao),
-sqdonly(false)
+sqdonly(false),
+components(false)
 {
   parseVector("PARAMETERS",parameters);
   if(parameters.size()!=static_cast<unsigned>(getNumberOfArguments())&&!parameters.empty())
@@ -103,15 +107,31 @@ sqdonly(false)
   if(getNumberOfArguments()<2) error("STATS need at least two arguments to be used");
 
   parseFlag("SQDEVSUM",sqdonly);
+  parseFlag("SQDEV",components);
+
+  if(sqdonly&&components) error("You cannot used SQDEVSUM and SQDEV at the sametime");
+
+  if(components) sqdonly = true;
 
   if(!arg2.empty()) log.printf("  using %zu parameters from inactive actions:", arg2.size());
   else              log.printf("  using %zu parameters:", arg2.size());
   for(unsigned i=0;i<parameters.size();i++) log.printf(" %f",parameters[i]);
   log.printf("\n");
 
-  addComponentWithDerivatives("sqdevsum");
-  componentIsNotPeriodic("sqdevsum");
-  if(!sqdonly) {
+  if(sqdonly) {
+    if(components) {
+      for(unsigned i=0;i<parameters.size();i++) {
+        std::string num; Tools::convert(i,num);
+        addComponent("sqd_"+num);
+        componentIsNotPeriodic("sqd_"+num);
+      }
+    } else {
+      addComponentWithDerivatives("sqdevsum");
+      componentIsNotPeriodic("sqdevsum");
+    }
+  } else {
+    addComponentWithDerivatives("sqdevsum");
+    componentIsNotPeriodic("sqdevsum");
     addComponentWithDerivatives("corr");
     componentIsNotPeriodic("corr");
     addComponentWithDerivatives("slope");
@@ -119,6 +139,7 @@ sqdonly(false)
     addComponentWithDerivatives("intercept");
     componentIsNotPeriodic("intercept");
   }
+
 
   checkRead();
 }
@@ -129,13 +150,19 @@ void Stats::calculate()
   if(sqdonly) {
 
     double nsqd = 0.;
-    Value* valuea=getPntrToComponent("sqdevsum");
+    Value* val;
+    if(!components) val=getPntrToComponent("sqdevsum");
     for(unsigned i=0;i<parameters.size();++i){
       double dev = getArgument(i)-parameters[i];
-      setDerivative(valuea,i,2.*dev);
-      nsqd += dev*dev;
+      if(components) {
+        val=getPntrToComponent(i);
+        val->set(dev*dev);
+      } else { 
+        nsqd += dev*dev;
+      }
+      setDerivative(val,i,2.*dev);
     }
-    valuea->set(nsqd);
+    if(!components) val->set(nsqd);
 
   } else {
 
