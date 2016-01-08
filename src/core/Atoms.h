@@ -194,6 +194,8 @@ public:
   void setMDEnergyUnits(double d){MDUnits.setEnergy(d);}
   void setMDLengthUnits(double d){MDUnits.setLength(d);}
   void setMDTimeUnits(double d){MDUnits.setTime(d);}
+  void setMDChargeUnits(double d){MDUnits.setCharge(d);}
+  void setMDMassUnits(double d){MDUnits.setMass(d);}
   const Units& getMDUnits(){return MDUnits;}
   void setUnits(const Units&u){units=u;}
   const Units& getUnits(){return units;}
