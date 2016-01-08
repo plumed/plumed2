@@ -355,7 +355,6 @@ void CS2Backbone::calculate()
   unsigned step=2;
   if(noexp) step=1;
  
-#pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for(unsigned j=0;j<numResidues;j++) {
     unsigned placeres = CSDIM*N*6*j;
     for(unsigned cs=0;cs<6;cs++) {
