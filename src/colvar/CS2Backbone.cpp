@@ -355,6 +355,7 @@ void CS2Backbone::calculate()
   unsigned step=2;
   if(noexp) step=1;
  
+#pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for(unsigned j=0;j<numResidues;j++) {
     unsigned placeres = CSDIM*N*6*j;
     for(unsigned cs=0;cs<6;cs++) {
@@ -363,7 +364,6 @@ void CS2Backbone::calculate()
         comp->set(sh[j][cs]);
         unsigned place = placeres+cs*CSDIM*N;
         Tensor virial;
-#pragma omp parallel for num_threads(OpenMP::getNumThreads())
         for(unsigned i=0;i<N;i++) {
           unsigned ipos = place+CSDIM*i;
           if(csforces[ipos]!=0||csforces[ipos+1]!=0||csforces[ipos+2]!=0) {
