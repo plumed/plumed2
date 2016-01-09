@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -187,6 +187,8 @@ void Driver<real>::registerKeywords( Keywords& keys ){
   keys.add("atoms","--itrr","the trajectory in trr format (xdrfile implementation)");
 #endif
   keys.add("optional","--length-units","units for length, either as a string or a number");
+  keys.add("optional","--mass-units","units for mass in pdb and mc file, either as a string or a number");
+  keys.add("optional","--charge-units","units for charge in pdb and mc file, either as a string or a number");
   keys.add("optional","--dump-forces","dump the forces on a file");
   keys.add("optional","--dump-forces-fmt","( default=%%f ) the format to use to dump the forces");
   keys.addFlag("--dump-full-virial",false,"with --dump-forces, it dumps the 9 components of the virial");
@@ -375,6 +377,10 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
      }
      string lengthUnits(""); parse("--length-units",lengthUnits);
      if(lengthUnits.length()>0) units.setLength(lengthUnits);
+     string chargeUnits(""); parse("--charge-units",chargeUnits);
+     if(chargeUnits.length()>0) units.setCharge(chargeUnits);
+     string massUnits(""); parse("--mass-units",massUnits);
+     if(massUnits.length()>0) units.setMass(massUnits);
   
      parse("--pdb",pdbfile);
      if(pdbfile.length()>0){
@@ -423,6 +429,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
     p.cmd("setMPIComm",&intracomm.Get_comm());
   } 
   p.cmd("setMDLengthUnits",&units.getLength());
+  p.cmd("setMDChargeUnits",&units.getCharge());
+  p.cmd("setMDMassUnits",&units.getMass());
   p.cmd("setMDEngine","driver");
   p.cmd("setTimestep",&timestep);
   p.cmd("setPlumedDat",plumedFile.c_str());

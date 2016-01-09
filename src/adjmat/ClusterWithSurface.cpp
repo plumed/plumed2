@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015 The plumed team
+   Copyright (c) 2015,2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -125,23 +125,28 @@ unsigned ClusterWithSurface::getNumberOfQuantities() const {
 void ClusterWithSurface::retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const {
   std::vector<unsigned> tmpat; myclusters->retrieveAtomsInCluster( clust, tmpat );
 
+  // Prevent double counting
+  std::vector<bool> incluster( getNumberOfNodes(), false );
+  for(unsigned i=0;i<tmpat.size();++i) incluster[tmpat[i]]=true;
+
   // Find the atoms in the the clusters
-  std::vector<bool> atoms( getNumberOfNodes(), false ); 
+  std::vector<bool> surface_atom( getNumberOfNodes(), false ); 
   for(unsigned i=0;i<tmpat.size();++i){
       for(unsigned j=0;j<getNumberOfNodes();++j){
+         if( incluster[j] ) continue;
          double dist2=getSeparation( getPosition(tmpat[i]), getPosition(j) ).modulo2();
-         if( dist2<rcut_surf2 ){ atoms[j]=true; }
+         if( dist2<rcut_surf2 ){ surface_atom[j]=true; }
       }
   }
   unsigned nsurf_at=0; 
   for(unsigned j=0;j<getNumberOfNodes();++j){
-     if( atoms[j] ) nsurf_at++; 
+     if( surface_atom[j] ) nsurf_at++; 
   }
   myatoms.resize( nsurf_at + tmpat.size() );
   for(unsigned i=0;i<tmpat.size();++i) myatoms[i]=tmpat[i];
   unsigned nn=tmpat.size();
   for(unsigned j=0;j<getNumberOfNodes();++j){
-      if( atoms[j] ){ myatoms[nn]=j; nn++; }
+      if( surface_atom[j] ){ myatoms[nn]=j; nn++; }
   }
   plumed_assert( nn==myatoms.size() );
 }
