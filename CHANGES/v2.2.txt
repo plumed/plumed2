@@ -96,6 +96,7 @@ For users:
 - PLUMED now reports an error when using \ref HISTOGRAM with UNNORMALIZED without USE_ALL_DATA. See \issue{175}
 - Fixed a bug in configure together with --enable-almost. The check for lbz2 library was not working properly.
 - Fixed a bug in install procedure that was introducing an error in linking with CP2K.
+- Fixed a bug that sometimes was preventing the printing of a usefull error message.
 
 For developers:
 - Vector and Tensor now support direct output with `<<`.
