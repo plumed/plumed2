@@ -123,6 +123,7 @@ PRINT ARG=(cs\.hn_.*),(cs\.nh_.*) FILE=RESTRAINT STRIDE=100
 class CS2Backbone : public Colvar {
   vector<CamShift3> cam_list;
   unsigned numResidues;
+  unsigned **c_sh;
   bool pbc;
   bool noexp;
   double **sh;
@@ -250,86 +251,66 @@ noexp(false)
   a.remove_problematic("CYS", "CB");
   a.remove_problematic("CYS", "C");
   /* done */
-
-  log.printf("  Setting parameters ...\n"); log.flush();
-  
   a.set_box_nupdate(neigh_f);
-
   cam_list.push_back(a);
-
-  sh = new double*[numResidues];
-  sh[0] = new double[numResidues*6];
-  for(unsigned i=1;i<numResidues;i++)  sh[i]=sh[i-1]+6;
 
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   checkRead();
 
-  log<<"  Bibliography "
-     <<plumed.cite("Kohlhoff K, Robustelli P, Cavalli A, Salvatella A, Vendruscolo M, J. Am. Chem. Soc. 131, 13894 (2009)")
-     <<plumed.cite("Camilloni C, Robustelli P, De Simone A, Cavalli A, Vendruscolo M, J. Am. Chem. Soc. 134, 3968 (2012)") <<"\n";
+  sh = new double*[numResidues];
+  sh[0] = new double[numResidues*6];
+  for(unsigned i=1;i<numResidues;i++) sh[i]=sh[i-1]+6;
 
-  unsigned k=0;
-  for(unsigned i=0;i<cam_list[0].atom.size();i++) {
-    for(unsigned a=0;a<cam_list[0].atom[i].size();a++) {
-      std::string num; Tools::convert(k,num);
-      if(cam_list[0].atom[i][a].exp_cs[0]>0) { 
-        addComponentWithDerivatives("ha_"+num); componentIsNotPeriodic("ha_"+num); 
-        if(!noexp) { 
-          addComponent("expha_"+num); componentIsNotPeriodic("expha_"+num);
-          Value* comp=getPntrToComponent("expha_"+num); comp->set(cam_list[0].atom[i][a].exp_cs[0]);
-        }
-      }
-      if(cam_list[0].atom[i][a].exp_cs[1]>0) { 
-        addComponentWithDerivatives("hn_"+num); componentIsNotPeriodic("hn_"+num); 
-        if(!noexp) { 
-          addComponent("exphn_"+num); componentIsNotPeriodic("exphn_"+num);
-          Value* comp=getPntrToComponent("exphn_"+num); comp->set(cam_list[0].atom[i][a].exp_cs[1]);
-        }
-      }
-      if(cam_list[0].atom[i][a].exp_cs[2]>0) { 
-        addComponentWithDerivatives("nh_"+num); componentIsNotPeriodic("nh_"+num); 
-        if(!noexp) { 
-          addComponent("expnh_"+num); componentIsNotPeriodic("expnh_"+num);
-          Value* comp=getPntrToComponent("expnh_"+num); comp->set(cam_list[0].atom[i][a].exp_cs[2]);
-        }
-      }
-      if(cam_list[0].atom[i][a].exp_cs[3]>0) { 
-        addComponentWithDerivatives("ca_"+num); componentIsNotPeriodic("ca_"+num); 
-        if(!noexp) { 
-          addComponent("expca_"+num); componentIsNotPeriodic("expca_"+num);
-          Value* comp=getPntrToComponent("expca_"+num); comp->set(cam_list[0].atom[i][a].exp_cs[3]);
-        }
-      }
-      if(cam_list[0].atom[i][a].exp_cs[4]>0) { 
-        addComponentWithDerivatives("cb_"+num); componentIsNotPeriodic("cb_"+num); 
-        if(!noexp) { 
-          addComponent("expcb_"+num); componentIsNotPeriodic("expcb_"+num);
-          Value* comp=getPntrToComponent("expcb_"+num); comp->set(cam_list[0].atom[i][a].exp_cs[4]);
-        }
-      }
-      if(cam_list[0].atom[i][a].exp_cs[5]>0) { 
-        addComponentWithDerivatives("co_"+num); componentIsNotPeriodic("co_"+num);
-        if(!noexp) { 
-          addComponent("expco_"+num); componentIsNotPeriodic("expco_"+num);
-          Value* comp=getPntrToComponent("expco_"+num); comp->set(cam_list[0].atom[i][a].exp_cs[5]);
-        }
-      }
-      k++;
-    }
-  }
+  c_sh = new unsigned*[numResidues];
+  c_sh[0] = new unsigned[numResidues*6];
+  for(unsigned i=1;i<numResidues;i++) c_sh[i]=c_sh[i-1]+6;
 
   coor.resize(CSDIM*atoms.size()); 
   csforces.resize(6*CSDIM*numResidues*atoms.size());
 
+  log<<"  Bibliography "
+     <<plumed.cite("Kohlhoff K, Robustelli P, Cavalli A, Salvatella A, Vendruscolo M, J. Am. Chem. Soc. 131, 13894 (2009)")
+     <<plumed.cite("Camilloni C, Robustelli P, De Simone A, Cavalli A, Vendruscolo M, J. Am. Chem. Soc. 134, 3968 (2012)") <<"\n";
+
+  const string str_cs[] = {"ha_","hn_","nh_","ca_","cb_","co_"};
+  unsigned k=0;
+  unsigned index=0;
+  for(unsigned i=0;i<cam_list[0].atom.size();i++) {
+    for(unsigned a=0;a<cam_list[0].atom[i].size();a++) {
+      unsigned res=index+a;
+      std::string num; Tools::convert(res,num);
+      for(unsigned at_kind=0;at_kind<6;at_kind++){
+        if(cam_list[0].atom[i][a].exp_cs[at_kind]>0) {
+          addComponentWithDerivatives(str_cs[at_kind]+num);
+          componentIsNotPeriodic(str_cs[at_kind]+num);
+          c_sh[res][at_kind]=k;
+          k++; 
+          if(!noexp) { 
+            addComponent("exp"+str_cs[at_kind]+num); 
+            componentIsNotPeriodic("exp"+str_cs[at_kind]+num);
+            Value* comp=getPntrToComponent("exp"+str_cs[at_kind]+num);
+            comp->set(cam_list[0].atom[i][a].exp_cs[at_kind]);
+            k++;
+          }
+        }
+      }
+    }
+    index += cam_list[0].atom[i].size();
+  }
+
+  /* temporary check, the idea is that I can remove NRES completely */
+  if(index!=numResidues) error("NRES and the number of residues in the PDB does not match!");
+
   requestAtoms(atoms);
-  log.printf("  DONE!\n"); log.flush();
 }
 
 CS2Backbone::~CS2Backbone()
 {
   delete[] sh[0];
   delete[] sh;
+  delete[] c_sh[0];
+  delete[] c_sh;
 }
 
 void CS2Backbone::calculate()
@@ -337,11 +318,10 @@ void CS2Backbone::calculate()
   unsigned N = getNumberOfAtoms();
 
   if(pbc) makeWhole();
-
   if(getExchangeStep()) cam_list[0].set_box_count(0);
 
 #pragma omp parallel for num_threads(OpenMP::getNumThreads())
-  for (unsigned i=0;i<N;i++) {
+  for(unsigned i=0;i<N;i++) {
      unsigned ipos = CSDIM*i;
      Vector Pos = getPosition(i);
      coor[ipos]   = Pos[0];
@@ -351,29 +331,26 @@ void CS2Backbone::calculate()
 
   cam_list[0].calc_cs(coor, csforces, N, sh);
 
-  unsigned k=0;
-  unsigned step=2;
-  if(noexp) step=1;
- 
+#pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for(unsigned j=0;j<numResidues;j++) {
-    unsigned placeres = CSDIM*N*6*j;
     for(unsigned cs=0;cs<6;cs++) {
       if(sh[j][cs]!=0.) {
-        Value* comp=getPntrToComponent(k);
+        Value* comp=getPntrToComponent(c_sh[j][cs]);
         comp->set(sh[j][cs]);
-        unsigned place = placeres+cs*CSDIM*N;
+        unsigned place = CSDIM*N*6*j+cs*CSDIM*N;
         Tensor virial;
         for(unsigned i=0;i<N;i++) {
           unsigned ipos = place+CSDIM*i;
-          if(csforces[ipos]!=0||csforces[ipos+1]!=0||csforces[ipos+2]!=0) {
-            Vector For(csforces[ipos], csforces[ipos+1], csforces[ipos+2]);
-            csforces[ipos]=csforces[ipos+1]=csforces[ipos+2]=0.;
+          unsigned jpos = ipos+1;
+          unsigned kpos = jpos+1;
+          if(csforces[ipos]!=0||csforces[jpos]!=0||csforces[kpos]!=0) {
+            Vector For(csforces[ipos], csforces[jpos], csforces[kpos]);
+            csforces[ipos]=csforces[jpos]=csforces[kpos]=0.;
             setAtomsDerivatives(comp,i,For);
             virial-=Tensor(getPosition(i),For);
           }
         }
         setBoxDerivatives(comp,virial);
-        k+=step;
       }
     }
   }
