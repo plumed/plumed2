@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -33,6 +33,10 @@ friend class ActionWithInputMatrix;
 protected:
 /// The vessel that holds the adjacency matrix
   AdjacencyMatrixVessel* mymatrix;
+/// Get the value of a connection
+  double retrieveConnectionValue( const unsigned& i, const unsigned& j, std::vector<double>& vals ) const ;
+/// Add the derivatives
+  void addConnectionDerivatives( const unsigned& i, const unsigned& j, std::vector<double>& vals, MultiValue& myvals, MultiValue& myvout ) const ;
 public:
   static void registerKeywords( Keywords& keys );
   explicit MatrixSummationBase(const ActionOptions&);

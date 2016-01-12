@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -114,13 +114,20 @@ void Keywords::copyData( std::vector<std::string>& kk, std::vector<std::string>&
 void Keywords::reserve( const std::string & t, const std::string & k, const std::string & d ){
   plumed_assert( !exists(k) && !reserved(k) );
   std::string fd, lowkey=k;
+  // Convert to lower case
   std::transform(lowkey.begin(),lowkey.end(),lowkey.begin(),tolower);
+ // Remove any underscore characters
+  for(unsigned i=0;;++i){
+     std::size_t num=lowkey.find_first_of("_");
+     if( num==std::string::npos ) break;
+     lowkey.erase( lowkey.begin() + num, lowkey.begin() + num + 1 );
+  }
   if( t=="vessel" ){
-     fd = d + " The final value can be referenced using <em>label</em>." + lowkey + 
-              ".  You can use multiple instances of this keyword i.e. " + 
-              k +"1, " + k + "2, " + k + "3...  The corresponding values are then " 
-              "referenced using <em>label</em>."+ lowkey +"-1,  <em>label</em>." + lowkey + 
-              "-2,  <em>label</em>." + lowkey + "-3...";  
+     fd = d + " The final value can be referenced using <em>label</em>." + lowkey;
+     if(d.find("flag")==std::string::npos) fd += ".  You can use multiple instances of this keyword i.e. " + 
+                                                 k +"1, " + k + "2, " + k + "3...  The corresponding values are then " 
+                                                 "referenced using <em>label</em>."+ lowkey +"-1,  <em>label</em>." + lowkey + 
+                                                 "-2,  <em>label</em>." + lowkey + "-3...";  
      allowmultiple.insert( std::pair<std::string,bool>(k,true) );
      types.insert( std::pair<std::string,KeyType>(k,KeyType("vessel")) );
   } else if( t=="numbered" ){  
@@ -184,7 +191,7 @@ void Keywords::add( const std::string & t, const std::string & k, const std::str
 }
 
 void Keywords::add( const std::string & t, const std::string & k, const std::string &  def, const std::string & d ){
-  plumed_assert( !exists(k) && !reserved(k) &&  t=="compulsory" ); // An optional keyword can't have a default
+  plumed_assert( !exists(k) && !reserved(k) &&  (t=="compulsory" || t=="hidden" )); // An optional keyword can't have a default
   types.insert(  std::pair<std::string,KeyType>(k, KeyType(t)) ); 
   documentation.insert( std::pair<std::string,std::string>(k,"( default=" + def + " ) " + d) );
   allowmultiple.insert( std::pair<std::string,bool>(k,false) );
@@ -395,7 +402,7 @@ void Keywords::print_html() const {
   }
   nkeys=0;
   for(unsigned i=0;i<keys.size();++i){
-     if ( (types.find(keys[i])->second).isFlag() ) nkeys++;
+     if ( (types.find(keys[i])->second).isFlag() || (types.find(keys[i])->second).isOptional() || (types.find(keys[i])->second).isVessel() ) nkeys++;
   }
   if( nkeys>0 ){
      if(isaction) std::cout<<"\\par Options\n\n";
@@ -404,15 +411,13 @@ void Keywords::print_html() const {
      for(unsigned i=0;i<keys.size();++i){
         if ( (types.find(keys[i])->second).isFlag() ) print_html_item( keys[i] );
      }
-     std::cout<<"\n";
+     std::cout<<"\n"; 
   }
-  std::cout<<"</table>\n\n";
   nkeys=0;
   for(unsigned i=0;i<keys.size();++i){
      if ( (types.find(keys[i])->second).isOptional() || (types.find(keys[i])->second).isVessel() ) nkeys++;
   }
   if( nkeys>0 ){
-     std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
      for(unsigned i=0;i<keys.size();++i){
         if ( (types.find(keys[i])->second).isOptional() || (types.find(keys[i])->second).isVessel() ) print_html_item( keys[i] );
      }
@@ -590,6 +595,9 @@ void Keywords::setComponentsIntroduction( const std::string& instr ){
 void Keywords::addOutputComponent( const std::string& name, const std::string& key, const std::string& descr ){
   plumed_assert( !outputComponentExists( name, false ) );
   plumed_massert( name.find("-")==std::string::npos,"dash is reseved character in component names" );
+
+  std::size_t num2=name.find_first_of("_");
+  if( num2!=std::string::npos ) plumed_massert( num2==0, "underscore is reserved character in component names that has special meaning"); 
 
   ckey.insert( std::pair<std::string,std::string>(name,key) );
   cdocs.insert( std::pair<std::string,std::string>(name,descr) );

@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -30,7 +30,7 @@ namespace crystallization {
 void OrientationSphere::registerKeywords( Keywords& keys ){
   multicolvar::MultiColvarFunction::registerKeywords( keys );
   keys.add("compulsory","NN","6","The n parameter of the switching function ");
-  keys.add("compulsory","MM","12","The m parameter of the switching function ");
+  keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
   keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
@@ -74,17 +74,13 @@ double OrientationSphere::compute( const unsigned& tindex, multicolvar::AtomValu
 
    double d2, sw, value=0, denom=0, dot, f_dot, dot_df, dfunc; 
    unsigned ncomponents=getBaseMultiColvar(0)->getNumberOfQuantities();
-   unsigned nder=myatoms.getNumberOfDerivatives();
    std::vector<double> catom_orient( ncomponents ), this_orient( ncomponents ), catom_der( ncomponents ); 
 
    Vector catom_pos = myatoms.getPosition(0);
-   getVectorForTask( myatoms.getIndex(0), true, catom_orient );
-   multicolvar::CatomPack atom0; MultiValue myder0(0,0), myder1(0,0); 
-   if( !doNotCalculateDerivatives() ){
-       myder0.resize( ncomponents,nder ); myder1.resize(ncomponents,nder); 
-       atom0=getCentralAtomPackFromInput( myatoms.getIndex(0) );
-       getVectorDerivatives( myatoms.getIndex(0), true, myder0 );
-   }
+   getVectorForTask( myatoms.getIndex(0), true, catom_orient ); 
+   multicolvar::CatomPack atom0; 
+   MultiValue& myder0=getVectorDerivatives( myatoms.getIndex(0), true ); 
+   if( !doNotCalculateDerivatives() ) atom0=getCentralAtomPackFromInput( myatoms.getIndex(0) );
 
    for(unsigned i=1;i<myatoms.getNumberOfAtoms();++i){
       Vector& distance=myatoms.getPosition(i);  
@@ -104,7 +100,7 @@ double OrientationSphere::compute( const unsigned& tindex, multicolvar::AtomValu
              for(unsigned k=2;k<catom_orient.size();++k){
                  this_orient[k]*=sw*dot_df; catom_der[k]=sw*dot_df*catom_orient[k];
              }
-             getVectorDerivatives( myatoms.getIndex(i), true, myder1 );
+             MultiValue& myder1=getVectorDerivatives( myatoms.getIndex(i), true );
              mergeVectorDerivatives( 1, 2, this_orient.size(), myatoms.getIndex(0), this_orient, myder0, myatoms );  
              mergeVectorDerivatives( 1, 2, catom_der.size(), myatoms.getIndex(i), catom_der, myder1, myatoms );
              myatoms.addComDerivatives( 1, f_dot*(-dfunc)*distance, atom0 );

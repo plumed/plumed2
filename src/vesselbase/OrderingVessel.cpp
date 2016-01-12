@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015 The plumed team
+   Copyright (c) 2015,2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -33,7 +33,11 @@ void OrderingVessel::registerKeywords( Keywords& keys ){
 OrderingVessel::OrderingVessel( const VesselOptions& da ) :
 ValueVessel(da)
 {
-  mydata = getAction()->buildDataStashes( false, 0.0 );
+  mydata = getAction()->buildDataStashes( false, 0.0, NULL );
+  for(unsigned i=0;i<getAction()->getNumberOfVessels();++i){
+      if( getAction()->getPntrToVessel(i)->getName()==getName() ) 
+           error("calculating lowest/highest value multiple times serves no purpose");
+  }
 }
 
 void OrderingVessel::resize(){

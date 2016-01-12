@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2015,2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -54,6 +54,9 @@ public:
   void calculateWeight( const unsigned& taskCode, multicolvar::AtomValuePack& myatoms ) const ;
 /// This does nothing
   double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
+///
+  /// Used to check for connections between atoms
+  bool checkForConnection( const std::vector<double>& myvals ) const { return !(myvals[1]>epsilon); }
 };
 
 PLUMED_REGISTER_ACTION(ContactAlignedMatrix,"ALIGNED_MATRIX")

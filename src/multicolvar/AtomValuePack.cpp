@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014,2015 The plumed team
+   Copyright (c) 2014-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -43,9 +43,12 @@ myatoms( vals.getAtomVector() )
 
 unsigned AtomValuePack::setupAtomsFromLinkCells( const std::vector<unsigned>& cind, const Vector& cpos, const LinkCells& linkcells ){
   natoms=cind.size(); for(unsigned i=0;i<natoms;++i) indices[i]=cind[i];
-  linkcells.retrieveNeighboringAtoms( cpos, natoms, indices ); myatoms[0]=Vector(0.0,0.0,0.0);
-  for(unsigned i=1;i<cind.size();++i) myatoms[i]=mycolv->getPositionOfAtomForLinkCells( cind[i] ) - cpos;
-  for(unsigned i=cind.size();i<natoms;++i) myatoms[i]=mycolv->getPositionOfAtomForLinkCells( indices[i] ) - cpos;
+  linkcells.retrieveNeighboringAtoms( cpos, natoms, indices ); 
+  if( mycolv->colvar_label.size()==0 ){ 
+      for(unsigned i=0;i<natoms;++i) myatoms[i]=mycolv->getPosition( indices[i] ) - cpos;
+  } else {
+      for(unsigned i=0;i<natoms;++i) myatoms[i]=mycolv->getPositionOfAtomForLinkCells( indices[i] ) - cpos;
+  }
   if( mycolv->usesPbc() ) mycolv->applyPbc( myatoms, natoms );
   return natoms;
 }

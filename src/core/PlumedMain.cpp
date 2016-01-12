@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -47,7 +47,7 @@
 
 using namespace std;
 
-enum { SETBOX, SETPOSITIONS, SETMASSES, SETCHARGES, SETPOSITIONSX, SETPOSITIONSY, SETPOSITIONSZ, SETVIRIAL, SETENERGY, SETFORCES, SETFORCESX, SETFORCESY, SETFORCESZ, CALC, PREPAREDEPENDENCIES, SHAREDATA, PREPARECALC, PERFORMCALC, SETSTEP, SETSTEPLONG, SETATOMSNLOCAL, SETATOMSGATINDEX, SETATOMSFGATINDEX, SETATOMSCONTIGUOUS, CREATEFULLLIST, GETFULLLIST, CLEARFULLLIST, READ, CLEAR, GETAPIVERSION, INIT, SETREALPRECISION, SETMDLENGTHUNITS, SETMDENERGYUNITS, SETMDTIMEUNITS, SETNATURALUNITS, SETNOVIRIAL, SETPLUMEDDAT, SETMPICOMM, SETMPIFCOMM, SETMPIMULTISIMCOMM, SETNATOMS, SETTIMESTEP, SETMDENGINE, SETLOG, SETLOGFILE, SETSTOPFLAG, GETEXCHANGESFLAG, SETEXCHANGESSEED, SETNUMBEROFREPLICAS, GETEXCHANGESLIST, RUNFINALJOBS, ISENERGYNEEDED, GETBIAS, SETKBT, SETRESTART };
+enum { SETBOX, SETPOSITIONS, SETMASSES, SETCHARGES, SETPOSITIONSX, SETPOSITIONSY, SETPOSITIONSZ, SETVIRIAL, SETENERGY, SETFORCES, SETFORCESX, SETFORCESY, SETFORCESZ, CALC, PREPAREDEPENDENCIES, SHAREDATA, PREPARECALC, PERFORMCALC, SETSTEP, SETSTEPLONG, SETATOMSNLOCAL, SETATOMSGATINDEX, SETATOMSFGATINDEX, SETATOMSCONTIGUOUS, CREATEFULLLIST, GETFULLLIST, CLEARFULLLIST, READ, CLEAR, GETAPIVERSION, INIT, SETREALPRECISION, SETMDLENGTHUNITS, SETMDENERGYUNITS, SETMDTIMEUNITS, SETMDCHARGEUNITS, SETMDMASSUNITS, SETNATURALUNITS, SETNOVIRIAL, SETPLUMEDDAT, SETMPICOMM, SETMPIFCOMM, SETMPIMULTISIMCOMM, SETNATOMS, SETTIMESTEP, SETMDENGINE, SETLOG, SETLOGFILE, SETSTOPFLAG, GETEXCHANGESFLAG, SETEXCHANGESSEED, SETNUMBEROFREPLICAS, GETEXCHANGESLIST, RUNFINALJOBS, ISENERGYNEEDED, GETBIAS, SETKBT, SETRESTART };
 
 namespace PLMD{
 
@@ -114,6 +114,8 @@ PlumedMain::PlumedMain():
   word_map["setMDLengthUnits"]=SETMDLENGTHUNITS;
   word_map["setMDEnergyUnits"]=SETMDENERGYUNITS;
   word_map["setMDTimeUnits"]=SETMDTIMEUNITS;
+  word_map["setMDMassUnits"]=SETMDMASSUNITS;
+  word_map["setMDChargeUnits"]=SETMDCHARGEUNITS;
   word_map["setNaturalUnits"]=SETNATURALUNITS;
   word_map["setNoVirial"]=SETNOVIRIAL;
   word_map["setPlumedDat"]=SETPLUMEDDAT;
@@ -301,7 +303,7 @@ void PlumedMain::cmd(const std::string & word,void*val){
         break;
       case GETAPIVERSION:
         CHECK_NULL(val,word);
-        *(static_cast<int*>(val))=3;
+        *(static_cast<int*>(val))=4;
         break;
       // commands which can be used only before initialization:
       case INIT:
@@ -318,6 +320,18 @@ void PlumedMain::cmd(const std::string & word,void*val){
         CHECK_NULL(val,word);
         atoms.MD2double(val,d);
         atoms.setMDLengthUnits(d);
+        break;
+      case SETMDCHARGEUNITS:
+        CHECK_NOTINIT(initialized,word);
+        CHECK_NULL(val,word);
+        atoms.MD2double(val,d);
+        atoms.setMDChargeUnits(d);
+        break;
+      case SETMDMASSUNITS:
+        CHECK_NOTINIT(initialized,word);
+        CHECK_NULL(val,word);
+        atoms.MD2double(val,d);
+        atoms.setMDMassUnits(d);
         break;
       case SETMDENERGYUNITS:
         CHECK_NOTINIT(initialized,word);

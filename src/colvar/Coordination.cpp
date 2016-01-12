@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -105,7 +105,7 @@ PLUMED_REGISTER_ACTION(Coordination,"COORDINATION")
 void Coordination::registerKeywords( Keywords& keys ){
   CoordinationBase::registerKeywords(keys);
   keys.add("compulsory","NN","6","The n parameter of the switching function ");
-  keys.add("compulsory","MM","12","The m parameter of the switching function ");
+  keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
   keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
@@ -125,7 +125,7 @@ CoordinationBase(ao)
     if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
   } else {
     int nn=6;
-    int mm=12;
+    int mm=0;
     double d0=0.0;
     double r0=0.0;
     parse("R_0",r0);

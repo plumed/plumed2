@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2015,2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -32,6 +32,7 @@ namespace adjmat {
 void AdjacencyMatrixBase::registerKeywords( Keywords& keys ){
   multicolvar::MultiColvarBase::registerKeywords( keys );
   keys.add("compulsory","WTOL","0.0","if the base multicolvars have weights then you must define a hard cutoff on those you want to consider explicitally");
+  keys.remove("LOWMEM"); keys.use("HIGHMEM");
 }
 
 AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
@@ -53,7 +54,12 @@ bool AdjacencyMatrixBase::parseAtomList(const std::string& key, const int& num, 
   if( mlabs.size()==0 ) return false;
 
   bool found_acts=interpretInputMultiColvars(mlabs,0.0);
-  if( !found_acts ) ActionAtomistic::interpretAtomList( mlabs, t );
+  if( !found_acts ){
+     ActionAtomistic::interpretAtomList( mlabs, t );
+     log.printf("  involving atoms ");
+     for(unsigned i=0;i<t.size();++i) log.printf("%d ",t[i].serial() );
+     log.printf("\n");
+  }
   return true;
 }
 
@@ -143,9 +149,9 @@ void AdjacencyMatrixBase::requestAtoms( const std::vector<AtomNumber>& atoms, co
   if( symmetric ){
     for(unsigned i=1;i<dims[0];++i){
       for(unsigned j=0;j<i;++j){
-        bookeeping(i,j).first=getFullNumberOfTasks();
+        bookeeping(j,i).first=bookeeping(i,j).first=getFullNumberOfTasks();
         for(unsigned k=0;k<kcount;++k) addTaskToList( i*icoef + j*jcoef + k*kcoef );
-        bookeeping(i,j).second=getFullNumberOfTasks();
+        bookeeping(j,i).second=bookeeping(i,j).second=getFullNumberOfTasks();
       }
     }
   } else {

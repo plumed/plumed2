@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -44,6 +44,10 @@ nspace(0)
 
 void StoreDataVessel::setHardCutoffOnWeight( const double& mytol ){
   hard_cut=true; wtol=mytol;
+}
+
+void StoreDataVessel::addActionThatUses( ActionWithVessel* actionThatUses ){
+  userActions.push_back( actionThatUses );
 }
 
 bool StoreDataVessel::weightCutoffIsOn() const {
@@ -108,8 +112,9 @@ void StoreDataVessel::retrieveValue( const unsigned& myelem, const bool& normed,
   if( normed && values.size()>2 ){
      unsigned ibuf = myelem * vecsize * nspace;
      values[0]=local_buffer[ibuf]; ibuf+=nspace;
-     values[1]=local_buffer[ibuf]; ibuf+=nspace;   // Element 1 contains the norm of the vector
-     for(unsigned i=2;i<vecsize;++i){ values[i]=local_buffer[ibuf]/values[1]; ibuf+=nspace; } 
+     double norm=values[1]=local_buffer[ibuf]; ibuf+=nspace;   // Element 1 contains the norm of the vector
+     if( norm<epsilon ) norm=1.0;
+     for(unsigned i=2;i<vecsize;++i){ values[i]=local_buffer[ibuf]/norm; ibuf+=nspace; } 
   } else {
      unsigned ibuf = myelem * vecsize * nspace;
      for(unsigned i=0;i<vecsize;++i){ values[i]=local_buffer[ibuf]; ibuf+=nspace; }
@@ -198,6 +203,21 @@ void StoreDataVessel::setActiveValsAndDerivatives( const std::vector<unsigned>& 
   if( !getAction()->lowmem && getAction()->derivativesAreRequired() ){
       for(unsigned i=0;i<der_index.size();++i) active_der[i]=der_index[i]; 
   }
+}
+
+void StoreDataVessel::resizeTemporyMultiValues( const unsigned& nvals ){
+  for(unsigned i=0;i<nvals;++i) my_tmp_vals.push_back( MultiValue(0,0) );
+}
+
+void StoreDataVessel::resetTemporyMultiValues(){
+  tmp_index=0;
+}
+
+MultiValue& StoreDataVessel::getTemporyMultiValue(){
+  unsigned ival;
+  if( tmp_index<my_tmp_vals.size() ) ival=tmp_index;
+  else ival=my_tmp_vals.size()-1;
+  tmp_index++; return my_tmp_vals[ival];
 }
 
 }

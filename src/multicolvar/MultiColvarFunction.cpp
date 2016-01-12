@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -33,7 +33,7 @@ void MultiColvarFunction::registerKeywords( Keywords& keys ){
   MultiColvarBase::registerKeywords( keys );
   keys.add("compulsory","DATA","the labels of the action that calculates the multicolvars we are interested in");
   keys.reserve("compulsory","WTOL","if the base multicolvars have weights then you must define a hard cutoff on those you want to consider explicitally");
-  keys.reset_style("NUMERICAL_DERIVATIVES","hidden");
+  keys.remove("NUMERICAL_DERIVATIVES");
 }
 
 MultiColvarFunction::MultiColvarFunction(const ActionOptions& ao):
@@ -41,16 +41,18 @@ Action(ao),
 MultiColvarBase(ao)
 {
   // Read in the arguments
-  std::vector<std::string> mlabs; parseVector("DATA",mlabs);
+  if( keywords.exists("DATA") ){ 
+      std::vector<std::string> mlabs; parseVector("DATA",mlabs);
 
-  if( keywords.exists("WTOL") ){
-      double wtolerance; parse("WTOL",wtolerance); 
-      log.printf("  only considering those colvars with a weight greater than %f \n",wtolerance);
-      bool found_acts=interpretInputMultiColvars(mlabs,wtolerance);
-      if( !found_acts ) error("one or more items in input is not the label of a multicolvar");
-  } else {
-      bool found_acts=interpretInputMultiColvars(mlabs,0.0);
-      if( !found_acts ) error("one or more items in input is not the label of a multicolvar");
+      if( keywords.exists("WTOL") ){
+          double wtolerance; parse("WTOL",wtolerance); 
+          log.printf("  only considering those colvars with a weight greater than %f \n",wtolerance);
+          bool found_acts=interpretInputMultiColvars(mlabs,wtolerance);
+          if( !found_acts ) error("one or more items in input is not the label of a multicolvar");
+      } else {
+          bool found_acts=interpretInputMultiColvars(mlabs,0.0);
+          if( !found_acts ) error("one or more items in input is not the label of a multicolvar");
+      }
   }
 }
 
@@ -79,7 +81,7 @@ void MultiColvarFunction::buildSymmetryFunctionLists(){
       }
       start += mybasemulticolvars[i]->getFullNumberOfTasks();
   }  
-  setupAtomLists();
+  mybasedata[0]->resizeTemporyMultiValues(2); setupAtomLists();
 }
 
 void MultiColvarFunction::buildSets(){
@@ -104,7 +106,7 @@ void MultiColvarFunction::buildSets(){
           addTaskToList( i );
       }
   }
-  setupAtomLists();
+  mybasedata[0]->resizeTemporyMultiValues( mybasemulticolvars.size() ); setupAtomLists();
 }
 
 void MultiColvarFunction::buildAtomListWithPairs( const bool& allow_intra_group ){
@@ -139,72 +141,21 @@ void MultiColvarFunction::buildAtomListWithPairs( const bool& allow_intra_group 
         }
      }
   }
-  setupAtomLists(); 
+  mybasedata[0]->resizeTemporyMultiValues(2); setupAtomLists(); 
 }
 
-void MultiColvarFunction::calculateNumericalDerivatives( ActionWithValue* a ){
-  // Construct matrix to store numerical derivatives
-  unsigned natt=0; for(unsigned i=0;i<mybasemulticolvars.size();++i) natt += mybasemulticolvars[i]->getNumberOfAtoms();
-  unsigned pstart=3*natt;
-//  for(unsigned i=0;i<myinputdata.getNumberOfBaseMultiColvars();++i){
-//     BridgedMultiColvarFunction* bb=dynamic_cast<BridgedMultiColvarFunction*>( mybasemulticolvars[i] );
-//     if( bb ){
-//         BridgedMultiColvarFunction* bb2=dynamic_cast<BridgedMultiColvarFunction*>( bb->getPntrToMultiColvar() );
-//         plumed_massert( !bb2, "double filtered multicolvars and NumericalDerivatives are not compatible" );
-//         pstart+=3*(bb->getPntrToMultiColvar())->getNumberOfAtoms();
-//     } else {
-//        pstart+=3*mybasemulticolvars[i]->getNumberOfAtoms();
-//     }
-//  }
-  Matrix<double> numder_store( getNumberOfComponents(), pstart + 9 );
-
-  pstart=0; 
-  for(unsigned i=0;i<mybasemulticolvars.size();++i){
-     BridgedMultiColvarFunction* bb=dynamic_cast<BridgedMultiColvarFunction*>( mybasemulticolvars[i] );
-     if( bb ){
-        ( bb->getPntrToMultiColvar() )->calculateAtomicNumericalDerivatives( this, pstart );
-        for(unsigned k=0;k<getNumberOfComponents();++k){
-           Value* val=getPntrToComponent(k);
-           for(unsigned j=0;j<3*(bb->getPntrToMultiColvar())->getNumberOfAtoms();++j){
-              numder_store(k,pstart+j) = val->getDerivative(pstart + j);
-           }
-        }   
-     } else {
-        mybasemulticolvars[i]->calculateAtomicNumericalDerivatives( this, pstart );
-        for(unsigned k=0;k<getNumberOfComponents();++k){
-           Value* val=getPntrToComponent(k);
-           for(unsigned j=0;j<3*mybasemulticolvars[i]->getNumberOfAtoms();++j){
-              numder_store(k,pstart+j) = val->getDerivative(pstart + j);
-           }
-        }
-     }
-     pstart += 3*mybasemulticolvars[i]->getNumberOfAtoms();
-  }
-
-  // Note numerical derivatives only work for virial if mybasemulticolvars.size()==1
-  if( mybasemulticolvars.size()==1 ){
-      for(unsigned k=0;k<getNumberOfComponents();++k){
-         Value* val=getPntrToComponent(k);
-         for(unsigned j=0;j<9;++j) numder_store(k,pstart+j) = val->getDerivative(pstart + j);
-      }
-  }
-
-  // Now transfer to multicolvar
-  clearDerivatives();
-  for(unsigned j=0;j<getNumberOfComponents();++j){
-     Value* val=getPntrToComponent(j);
-     for(unsigned i=0;i<getNumberOfDerivatives();++i) val->addDerivative( i, numder_store(j,i) );
-  }
-}
-
-void MultiColvarFunction::getVectorDerivatives( const unsigned& ind, const bool& normed, MultiValue& myder ) const {
+MultiValue& MultiColvarFunction::getVectorDerivatives( const unsigned& ind, const bool& normed ) const {
   plumed_dbg_assert( ind<colvar_label.size() ); unsigned mmc=colvar_label[ind];
   plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(ind,mmc) ) );
+  // Get a tempory multi value from the base class
+  MultiValue& myder=mybasedata[0]->getTemporyMultiValue();
+
   if( myder.getNumberOfValues()!=mybasemulticolvars[mmc]->getNumberOfQuantities() ||
       myder.getNumberOfDerivatives()!=mybasemulticolvars[mmc]->getNumberOfDerivatives() ){
           myder.resize( mybasemulticolvars[mmc]->getNumberOfQuantities(), mybasemulticolvars[mmc]->getNumberOfDerivatives() );
   }
   mybasedata[mmc]->retrieveDerivatives( convertToLocalIndex(ind,mmc), normed, myder );
+  return myder;
 }
 
 void MultiColvarFunction::mergeVectorDerivatives( const unsigned& ival, const unsigned& start, const unsigned& end, 

@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -90,7 +90,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit LocalAverage(const ActionOptions&);
 /// We have to overwrite this here
-  unsigned getNumberOfQuantities();
+  unsigned getNumberOfQuantities() const ;
 /// Actually do the calculation
   double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
 /// Is the variable periodic
@@ -102,7 +102,7 @@ PLUMED_REGISTER_ACTION(LocalAverage,"LOCAL_AVERAGE")
 void LocalAverage::registerKeywords( Keywords& keys ){
   MultiColvarFunction::registerKeywords( keys );
   keys.add("compulsory","NN","6","The n parameter of the switching function ");
-  keys.add("compulsory","MM","12","The m parameter of the switching function ");
+  keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
   keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
@@ -137,16 +137,13 @@ MultiColvarFunction(ao)
   setLinkCellCutoff( switchingFunction.get_dmax() ); buildSymmetryFunctionLists();
 }
 
-unsigned LocalAverage::getNumberOfQuantities(){
+unsigned LocalAverage::getNumberOfQuantities() const {
   return getBaseMultiColvar(0)->getNumberOfQuantities();
 }
 
 double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
   double d2, sw, dfunc, nbond=1; CatomPack atom0, atom1;
-  std::vector<double> values( getBaseMultiColvar(0)->getNumberOfQuantities() ); MultiValue myder(0,0);
-  if( myder.getNumberOfValues()!=values.size() || myder.getNumberOfDerivatives()!=myatoms.getNumberOfDerivatives() ){
-      myder.resize( values.size(), myatoms.getNumberOfDerivatives() );
-  }
+  std::vector<double> values( getBaseMultiColvar(0)->getNumberOfQuantities() ); 
 
   getVectorForTask( myatoms.getIndex(0), false, values );
   if( values.size()>2 ){
@@ -158,7 +155,7 @@ double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) c
   Vector catom_pos=myatoms.getPosition(0);
   if( !doNotCalculateDerivatives() ){
       atom0=getCentralAtomPackFromInput( myatoms.getIndex(0) );
-      getVectorDerivatives( myatoms.getIndex(0), false, myder );
+      MultiValue& myder=getVectorDerivatives( myatoms.getIndex(0), false );
       if( values.size()>2 ){
           for(unsigned j=0;j<myder.getNumberActive();++j){
               unsigned jder=myder.getActiveIndex(j);
@@ -191,7 +188,7 @@ double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) c
 
          if( !doNotCalculateDerivatives() ){
              Tensor vir(distance,distance);
-             getVectorDerivatives( myatoms.getIndex(i), false, myder );
+             MultiValue& myder=getVectorDerivatives( myatoms.getIndex(i), false );
              atom1=getCentralAtomPackFromInput( myatoms.getIndex(i) );
              if( values.size()>2 ){
                  for(unsigned j=0;j<myder.getNumberActive();++j){

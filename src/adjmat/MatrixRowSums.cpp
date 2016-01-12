@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2015,2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -67,27 +67,19 @@ MatrixSummationBase(ao)
 }
 
 double MatrixRowSums::compute( const unsigned& tinded, multicolvar::AtomValuePack& myatoms ) const {
-  double sum=0.0; std::vector<double> tvals(2);
+  double sum=0.0; std::vector<double> tvals( mymatrix->getNumberOfComponents() );
   unsigned ncols = mymatrix->getNumberOfColumns();   
   for(unsigned i=0;i<ncols;++i){
      if( mymatrix->isSymmetric() && tinded==i ) continue;
-     unsigned myelem = mymatrix->getStoreIndexFromMatrixIndices( tinded, i );
-     mymatrix->retrieveValue( myelem, false, tvals ); 
-     sum+=tvals[1]; 
+     sum+=retrieveConnectionValue( tinded, i, tvals ); 
   }
 
   if( !doNotCalculateDerivatives() ){
-      MultiValue myvals( 2, myatoms.getNumberOfDerivatives() ); 
+      MultiValue myvals( mymatrix->getNumberOfComponents(), myatoms.getNumberOfDerivatives() ); 
       MultiValue& myvout=myatoms.getUnderlyingMultiValue();
       for(unsigned i=0;i<ncols;++i){
           if( mymatrix->isSymmetric() && tinded==i ) continue ;
-          unsigned myelem = mymatrix->getStoreIndexFromMatrixIndices( tinded, i );
-          if( !mymatrix->storedValueIsActive( myelem ) ) continue ;
-          mymatrix->retrieveDerivatives( myelem, false, myvals );
-          for(unsigned jd=0;jd<myvals.getNumberActive();++jd){
-              unsigned ider=myvals.getActiveIndex(jd);
-              myvout.addDerivative( 1, ider, myvals.getDerivative( 1, ider ) );
-          }
+          addConnectionDerivatives( tinded, i, tvals, myvals, myvout );
       }
   }
   return sum;

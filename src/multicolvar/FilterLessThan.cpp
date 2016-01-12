@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014,2015 The plumed team
+   Copyright (c) 2014-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -23,7 +23,7 @@
 #include "tools/SwitchingFunction.h"
 #include "MultiColvarFilter.h"
 
-//+PLUMEDOC MCOLVARF MFILTER_LESS
+//+PLUMEDOC MFILTERS MFILTER_LESS
 /*
 This action can be used to filter the distribution of colvar values in a multicolvar 
 so that one can compute the mean and so on for only those multicolvars less than a tolerance.
@@ -50,7 +50,7 @@ PLUMED_REGISTER_ACTION(FilterLess,"MFILTER_LESS")
 void FilterLess::registerKeywords( Keywords& keys ){
   MultiColvarFilter::registerKeywords( keys );
   keys.add("compulsory","NN","6","The n parameter of the switching function ");
-  keys.add("compulsory","MM","12","The m parameter of the switching function ");
+  keys.add("compulsory","MM","0","The m parameter of the switching function ");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
   keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "

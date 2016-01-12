@@ -1,0 +1,3 @@
+UNITS CHARGE=0.5 MASS=0.5
+DUMPMASSCHARGE FILE=mc
+# notice that charges and masses will be multiplied by 2.

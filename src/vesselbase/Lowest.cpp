@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -41,7 +41,7 @@ void Lowest::registerKeywords( Keywords& keys ){
 }
 
 void Lowest::reserveKeyword( Keywords& keys ){
-  keys.reserve("vessel","LOWEST","calculate the lowest of these variables.");
+  keys.reserve("vessel","LOWEST","this flag allows you to recover the lowest of these variables.");
   keys.addOutputComponent("lowest","LOWEST","the lowest of the quantitities calculated by this action");
 }
 

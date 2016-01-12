@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -107,6 +107,8 @@ HISTOGRAM ...
   GRID_WFILE=histo
 ... HISTOGRAM
 \endverbatim
+
+\bug Option FREE-ENERGY or UNNORMALIZED without USE_ALL_DATA is not working properly. See \issue{175}.
 
 */
 //+ENDPLUMEDOC
@@ -234,6 +236,8 @@ void Histogram::performAnalysis(){
 
   Grid* gg; IFile oldf; oldf.link(*this); 
   if( usingMemory() && oldf.FileExist(gridfname) ){
+      if(fenergy) error("FREE-ENERGY only works with USE_ALL_DATA");
+      if(unnormalized) error("UNNORMALIZED only works with USE_ALL_DATA");
       oldf.open(gridfname);
       gg = Grid::create( "probs", getArguments(), oldf, gmin, gmax, gbin, false, false, false );
       oldf.close();

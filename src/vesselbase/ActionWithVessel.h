@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -52,6 +52,7 @@ friend class FunctionVessel;
 friend class StoreDataVessel;
 friend class BridgeVessel;
 friend class ActionWithInputVessel;
+friend class OrderingVessel;
 private:
 /// Do all calculations in serial
   bool serial;
@@ -69,8 +70,6 @@ private:
   double nl_tolerance;
 /// Pointers to the functions we are using on each value
   std::vector<Vessel*> functions;
-/// A pointer to the object that stores data
-  StoreDataVessel* mydata;
 /// Tempory storage for forces
   std::vector<double> tmpforces;
 /// Ths full list of tasks we have to perform
@@ -102,6 +101,8 @@ protected:
   bool weightHasDerivatives;
 /// This is used for numerical derivatives of bridge variables
   unsigned bridgeVariable;
+/// A pointer to the object that stores data
+  StoreDataVessel* mydata;
 /// Add a vessel to the list of vessels
   void addVessel( const std::string& name, const std::string& input, const int numlab=0 );
   void addVessel( Vessel* vv );
@@ -130,12 +131,8 @@ protected:
   bool usingLowMem() const ;
 /// Set that we are using low memory
   void setLowMemOption(const bool& );
-/// Get the number of tasks that are currently active
-  unsigned getCurrentNumberOfActiveTasks() const ;
 /// Get the ith of the currently active tasks
   unsigned getActiveTask( const unsigned& ii ) const ;
-/// Check whether or not a particular task is currently active
-  bool taskIsCurrentlyActive( const unsigned& index ) const ;
 /// Deactivate all the tasks in the task list
   void deactivateAllTasks();
 /// Deactivate all tasks with i in lower \f$\le\f$  i < upper
@@ -150,12 +147,18 @@ public:
   ~ActionWithVessel();
   void unlockContributors();
   void lockContributors();
+/// Get the number of tasks that are currently active
+  unsigned getCurrentNumberOfActiveTasks() const ;
+/// Check whether or not a particular task is currently active
+  bool taskIsCurrentlyActive( const unsigned& index ) const ;
   virtual void finishTaskListUpdate(){};
 /// Activate the jth colvar
 /// Deactivate the current task in future loops
   virtual void deactivate_task( const unsigned & task_index );
 /// Are derivatives required for this quantity
   bool derivativesAreRequired() const ;
+/// Is this action thread safe
+  virtual bool threadSafe() const { return true; }
 /// Finish running all the calculations
   virtual void finishComputations( const std::vector<double>& buffer );
 /// Are the base quantities periodic
@@ -165,7 +168,7 @@ public:
 /// Get the number of derivatives for final calculated quantity 
   virtual unsigned getNumberOfDerivatives()=0;
 /// Get the number of quantities that are calculated during each task
-  virtual unsigned getNumberOfQuantities();
+  virtual unsigned getNumberOfQuantities() const ;
 /// Get the number of vessels
   unsigned getNumberOfVessels() const;
 /// Get a pointer to the ith vessel
@@ -187,7 +190,7 @@ public:
 /// Do the task if we have a bridge
   virtual void transformBridgedDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals ) const;
 /// Ensure that data required in other vessels is stored
-  StoreDataVessel* buildDataStashes( const bool& allow_wcutoff, const double& wtol );
+  StoreDataVessel* buildDataStashes( const bool& allow_wcutoff, const double& wtol, ActionWithVessel* actionThatUses );
 /// Apply forces from bridge vessel - this is rarely used - currently only in ActionVolume
   virtual void applyBridgeForces( const std::vector<double>& bb ){ plumed_error(); }
 /// These are overwritten in MultiColvarFunction
@@ -214,7 +217,7 @@ unsigned ActionWithVessel::getNumberOfVessels() const {
 }
 
 inline
-unsigned ActionWithVessel::getNumberOfQuantities(){
+unsigned ActionWithVessel::getNumberOfQuantities() const {
   return 2;
 }
 
