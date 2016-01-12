@@ -122,7 +122,7 @@ components(false)
     if(components) {
       for(unsigned i=0;i<parameters.size();i++) {
         std::string num; Tools::convert(i,num);
-        addComponent("sqd_"+num);
+        addComponentWithDerivatives("sqd_"+num);
         componentIsNotPeriodic("sqd_"+num);
       }
     } else {
