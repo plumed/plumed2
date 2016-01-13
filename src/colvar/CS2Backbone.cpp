@@ -319,25 +319,28 @@ void CS2Backbone::calculate()
 
   if(pbc) makeWhole();
   if(getExchangeStep()) cam_list[0].set_box_count(0);
+  vector<Vector> Pos; Pos.resize(N);
 
 #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for(unsigned i=0;i<N;i++) {
      unsigned ipos = CSDIM*i;
-     Vector Pos = getPosition(i);
-     coor[ipos]   = Pos[0];
-     coor[ipos+1] = Pos[1];
-     coor[ipos+2] = Pos[2];
+     Pos[i] = getPosition(i);
+     coor[ipos]   = Pos[i][0];
+     coor[ipos+1] = Pos[i][1];
+     coor[ipos+2] = Pos[i][2];
   }
 
   cam_list[0].calc_cs(coor, csforces, N, sh);
 
+  const unsigned cpl1=CSDIM*N*6;
+  const unsigned cpl2=CSDIM*N;
 #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for(unsigned j=0;j<numResidues;j++) {
     for(unsigned cs=0;cs<6;cs++) {
       if(sh[j][cs]!=0.) {
         Value* comp=getPntrToComponent(c_sh[j][cs]);
         comp->set(sh[j][cs]);
-        unsigned place = CSDIM*N*6*j+cs*CSDIM*N;
+        unsigned place = cpl1*j + cs*cpl2;
         Tensor virial;
         for(unsigned i=0;i<N;i++) {
           unsigned ipos = place+CSDIM*i;
@@ -347,7 +350,7 @@ void CS2Backbone::calculate()
             Vector For(csforces[ipos], csforces[jpos], csforces[kpos]);
             csforces[ipos]=csforces[jpos]=csforces[kpos]=0.;
             setAtomsDerivatives(comp,i,For);
-            virial-=Tensor(getPosition(i),For);
+            virial-=Tensor(Pos[i],For);
           }
         }
         setBoxDerivatives(comp,virial);
