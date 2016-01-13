@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
+#include "tools/OpenMP.h"
 #include <vector>
 #include <string>
 
@@ -64,6 +65,7 @@ void Colvar::apply(){
   v.zero();
 
   if(!isEnergy){
+#pragma omp parallel for num_threads(OpenMP::getNumThreads())
     for(int i=0;i<getNumberOfComponents();++i){
       if( getPntrToComponent(i)->applyForce( forces ) ){
        for(unsigned j=0;j<nat;++j){
