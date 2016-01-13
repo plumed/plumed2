@@ -197,7 +197,7 @@ public:
   void parse(const string &file, const double dscale){
     ifstream in;
     in.open(file.c_str());
-    if(!in) plumed_merror("Unable to open CS2Backbone DB file\n");
+    if(!in) plumed_merror("Unable to open CS2Backbone DB file " +file);
 
     unsigned c_kind = 0;
     unsigned c_atom = 0;
@@ -670,7 +670,8 @@ void CS2Backbone::remove_problematic(const string &res, const string &nucl) {
 }
 
 void CS2Backbone::read_cs(const string &file, const string &k){
-  ifstream in.open(file.c_str());
+  ifstream in;
+  in.open(file.c_str());
   if(!in) error("CS2Backbone: Unable to open " + file);
   istream_iterator<string> iter(in), end;
   while(iter!=end){
@@ -747,10 +748,14 @@ void CS2Backbone::calculate()
                                   CONSTAAPREV[res_type_prev];
           // this is the atom for which we are calculating the chemical shift 
           unsigned ipos = atom[s][a].pos[at_kind];
+          vector<unsigned> list;
+          list.reserve(N);
+          list.push_back(ipos);
 
           //PREV
           for(unsigned q=rank;q<atom[s][a].prev.size();q+=stride){
             unsigned jpos = atom[s][a].prev[q];
+            list.push_back(jpos);
             Vector distance = delta(coor[jpos],coor[ipos]);
             double d = distance.modulo();
             double fact = -cs_deriv*CONST_BB2_PREV[q]/d;
@@ -764,6 +769,7 @@ void CS2Backbone::calculate()
           for(unsigned q=rank;q<atom[s][a].curr.size();q+=stride){
             unsigned jpos = atom[s][a].curr[q];
             if(ipos==jpos) continue;
+            list.push_back(jpos);
             Vector distance = delta(coor[jpos],coor[ipos]);
             double d = distance.modulo();
             double fact = -cs_deriv*CONST_BB2_CURR[q]/d;
@@ -776,6 +782,7 @@ void CS2Backbone::calculate()
           //NEXT
           for(unsigned q=rank;q<atom[s][a].next.size();q+=stride){
             unsigned jpos = atom[s][a].next[q];
+            list.push_back(jpos);
             Vector distance = delta(coor[jpos],coor[ipos]);
             double d = distance.modulo();
             double fact = -cs_deriv*CONST_BB2_NEXT[q]/d;
@@ -789,6 +796,7 @@ void CS2Backbone::calculate()
           for(unsigned q=rank;q<atom[s][a].side_chain.size();q+=stride){
             unsigned jpos = atom[s][a].side_chain[q];
             if(ipos==jpos) continue;
+            list.push_back(jpos);
             Vector distance = delta(coor[jpos],coor[ipos]);
             double d = distance.modulo();
             double fact = -cs_deriv*CONST_SC2[q]/d;
@@ -803,6 +811,8 @@ void CS2Backbone::calculate()
             if(atom[s][a].xd1[q]==-1||atom[s][a].xd2[q]==-1) continue;
             unsigned kpos = atom[s][a].xd1[q];
             unsigned jpos = atom[s][a].xd2[q];
+            list.push_back(jpos);
+            list.push_back(kpos);
             Vector distance = delta(coor[kpos],coor[jpos]);
             double d = distance.modulo();
             double fact = -cs_deriv*CONST_XD[q]/d;
@@ -822,6 +832,7 @@ void CS2Backbone::calculate()
              
             for(unsigned bat = rank; bat<atom[s][a].box_nb[at_kind].size(); bat+=stride) {
               unsigned jpos = atom[s][a].box_nb[at_kind][bat];
+              list.push_back(jpos);
               Vector distance = delta(coor[jpos],coor[ipos]);
               double d2 = distance.modulo2();
             
@@ -937,6 +948,7 @@ void CS2Backbone::calculate()
                 Vector gradV = factor * d;
     	    
     	        ff[ringInfo[i].atom[at]] += -fact*(gradU * dL3 - u * gradV);
+                list.push_back(ringInfo[i].atom[at]);
               }
             }
           }
@@ -1017,12 +1029,10 @@ void CS2Backbone::calculate()
           comp->set(cs);
           Tensor virial;
           comm.Sum(ff);
-          for(unsigned i=0;i<N;i++) {
-            if(ff[i][0]!=0||ff[i][1]!=0||ff[i][2]!=0) {
-              setAtomsDerivatives(comp,i,ff[i]);
-              virial-=Tensor(coor[i],ff[i]);
-              ff[i].zero();
-            }
+          for(unsigned i=0;i<list.size();i++) {
+            setAtomsDerivatives(comp,list[i],ff[list[i]]);
+            virial-=Tensor(coor[list[i]],ff[list[i]]);
+            ff[list[i]].zero();
           }
           setBoxDerivatives(comp,virial);
         } 
