@@ -705,6 +705,8 @@ void CS2Backbone::calculate()
 
   vector<Vector> coor; 
   coor.resize(N);
+  vector<Vector> ff;
+  ff.resize(N);
 #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for(unsigned i=0;i<N;i++) coor[i] = getPosition(i);
 
@@ -721,7 +723,6 @@ void CS2Backbone::calculate()
     for(unsigned a=0;a<atom[s].size();a++){
       // CYCLE OVER THE SIX BACKBONE CHEMICAL SHIFTS
       for(unsigned at_kind=0;at_kind<6;at_kind++){
-        vector<Vector> ff; ff.resize(N);
         double cs = 0.;
         if(atom[s][a].pos[at_kind]>0&&atom[s][a].exp_cs[at_kind]>0){
 
@@ -1035,6 +1036,7 @@ void CS2Backbone::calculate()
             if(ff[i][0]!=0||ff[i][1]!=0||ff[i][2]!=0) {
               setAtomsDerivatives(comp,i,ff[i]);
               virial-=Tensor(coor[i],ff[i]);
+              ff[i].zero();
             }
           }
           setBoxDerivatives(comp,virial);
