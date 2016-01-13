@@ -446,6 +446,8 @@ class CS2Backbone : public Colvar {
   unsigned numResidues;
   unsigned **c_sh;
   bool pbc;
+  vector<Vector> coor; 
+  vector<Vector> ff;
   void remove_problematic(const string &res, const string &nucl);
   void read_cs(const string &file, const string &k);
   void init_backbone(const PDB &pdb);
@@ -642,6 +644,9 @@ PLUMED_COLVAR_INIT(ao)
 
   /* temporary check, the idea is that I can remove NRES completely */
   if(index!=numResidues) error("NRES and the number of residues in the PDB do not match!");
+ 
+  coor.resize(atoms.size());
+  ff.resize(6*numResidues*atoms.size());;
 
   requestAtoms(atoms);
 }
@@ -695,19 +700,10 @@ void CS2Backbone::read_cs(const string &file, const string &k){
 
 void CS2Backbone::calculate()
 {
-  unsigned N = getNumberOfAtoms();
-
   if(pbc) makeWhole();
   if(getExchangeStep()) box_count=0;
 
-  unsigned stride=comm.Get_size();
-  unsigned rank=comm.Get_rank();
-  bool master = (comm.Get_rank()==0);
-
-  vector<Vector> coor; 
-  coor.resize(N);
-  vector<Vector> ff;
-  ff.resize(N);
+  unsigned N = getNumberOfAtoms();
   for(unsigned i=0;i<N;i++) coor[i] = getPosition(i);
 
   compute_ring_parameters(coor);
@@ -718,12 +714,13 @@ void CS2Backbone::calculate()
   unsigned index=0;
   // CYCLE OVER MULTIPLE CHAINS
   for(unsigned s=0;s<atom.size();s++){
+#pragma omp parallel for num_threads(OpenMP::getNumThreads()) private(cs)
     // SKIP FIRST AND LAST RESIDUE OF EACH CHAIN
     for(unsigned a=1;a<atom[s].size()-1;a++){
       // CYCLE OVER THE SIX BACKBONE CHEMICAL SHIFTS
       for(unsigned at_kind=0;at_kind<6;at_kind++){
         if(atom[s][a].pos[at_kind]>0&&atom[s][a].exp_cs[at_kind]>0){
-
+          unsigned place = (index+a)*6*N+at_kind*N;
           double cs = 0.;
           double cs_deriv = -1.;
 
@@ -743,9 +740,9 @@ void CS2Backbone::calculate()
           double * CONST_XD  = db.CONST_XD(aa_kind,at_kind);
 
           // Common constant and AATYPE
-          if(master) cs = CONST + CONSTAACURR[res_type_curr] + 
-                                  CONSTAANEXT[res_type_next] + 
-                                  CONSTAAPREV[res_type_prev];
+          cs = CONST + CONSTAACURR[res_type_curr] + 
+                       CONSTAANEXT[res_type_next] + 
+                       CONSTAAPREV[res_type_prev];
           // this is the atom for which we are calculating the chemical shift 
           unsigned ipos = atom[s][a].pos[at_kind];
           vector<unsigned> list;
@@ -753,7 +750,7 @@ void CS2Backbone::calculate()
           list.push_back(ipos);
 
           //PREV
-          for(unsigned q=rank;q<atom[s][a].prev.size();q+=stride){
+          for(unsigned q=0;q<atom[s][a].prev.size();q++){
             unsigned jpos = atom[s][a].prev[q];
             list.push_back(jpos);
             Vector distance = delta(coor[jpos],coor[ipos]);
@@ -761,12 +758,12 @@ void CS2Backbone::calculate()
             double fact = -cs_deriv*CONST_BB2_PREV[q]/d;
 
             cs = cs + CONST_BB2_PREV[q]*d;
-            ff[ipos] += fact*distance;
-            ff[jpos] += -fact*distance;
+            ff[place+ipos] += fact*distance;
+            ff[place+jpos] += -fact*distance;
           }
 
           //CURR
-          for(unsigned q=rank;q<atom[s][a].curr.size();q+=stride){
+          for(unsigned q=0;q<atom[s][a].curr.size();q++){
             unsigned jpos = atom[s][a].curr[q];
             if(ipos==jpos) continue;
             list.push_back(jpos);
@@ -775,12 +772,12 @@ void CS2Backbone::calculate()
             double fact = -cs_deriv*CONST_BB2_CURR[q]/d;
 
             cs = cs + CONST_BB2_CURR[q]*d;
-            ff[ipos] += fact*distance;
-            ff[jpos] += -fact*distance;
+            ff[place+ipos] += fact*distance;
+            ff[place+jpos] += -fact*distance;
           }
 
           //NEXT
-          for(unsigned q=rank;q<atom[s][a].next.size();q+=stride){
+          for(unsigned q=0;q<atom[s][a].next.size();q++){
             unsigned jpos = atom[s][a].next[q];
             list.push_back(jpos);
             Vector distance = delta(coor[jpos],coor[ipos]);
@@ -788,12 +785,12 @@ void CS2Backbone::calculate()
             double fact = -cs_deriv*CONST_BB2_NEXT[q]/d;
 
             cs = cs + CONST_BB2_NEXT[q]*d;
-            ff[ipos] += fact*distance;
-            ff[jpos] += -fact*distance;
+            ff[place+ipos] += fact*distance;
+            ff[place+jpos] += -fact*distance;
           }
 
           //SIDE CHAIN
-          for(unsigned q=rank;q<atom[s][a].side_chain.size();q+=stride){
+          for(unsigned q=0;q<atom[s][a].side_chain.size();q++){
             unsigned jpos = atom[s][a].side_chain[q];
             if(ipos==jpos) continue;
             list.push_back(jpos);
@@ -802,12 +799,12 @@ void CS2Backbone::calculate()
             double fact = -cs_deriv*CONST_SC2[q]/d;
 
             cs = cs + CONST_SC2[q]*d;
-            ff[ipos] += fact*distance;
-            ff[jpos] += -fact*distance;
+            ff[place+ipos] += fact*distance;
+            ff[place+jpos] += -fact*distance;
           }
         
           //EXTRA DIST
-          for(unsigned q=rank;q<atom[s][a].xd1.size();q+=stride){
+          for(unsigned q=0;q<atom[s][a].xd1.size();q++){
             if(atom[s][a].xd1[q]==-1||atom[s][a].xd2[q]==-1) continue;
             unsigned kpos = atom[s][a].xd1[q];
             unsigned jpos = atom[s][a].xd2[q];
@@ -818,8 +815,8 @@ void CS2Backbone::calculate()
             double fact = -cs_deriv*CONST_XD[q]/d;
 
             cs = cs + CONST_XD[q]*d;
-            ff[jpos] += fact*distance;
-            ff[kpos] += -fact*distance;
+            ff[place+jpos] += fact*distance;
+            ff[place+kpos] += -fact*distance;
           }
         
           //NON BOND
@@ -830,7 +827,7 @@ void CS2Backbone::calculate()
             unsigned curr = atom[s][a].pos[at_kind];
             if(update) update_box(atom[s][a].box_nb[at_kind], curr, coor, N, 0.50);
              
-            for(unsigned bat = rank; bat<atom[s][a].box_nb[at_kind].size(); bat+=stride) {
+            for(unsigned bat=0; bat<atom[s][a].box_nb[at_kind].size(); bat++) {
               unsigned jpos = atom[s][a].box_nb[at_kind][bat];
               list.push_back(jpos);
               Vector distance = delta(coor[jpos],coor[ipos]);
@@ -873,8 +870,8 @@ void CS2Backbone::calculate()
     	        double fact2 = -cs_deriv*dfactor3*dinv;
     	        double fact = fact1*CONST_CO_SPHERE[t]+fact2*CONST_CO_SPHERE3[t];
 
-                ff[ipos] +=  fact*distance;
-    	        ff[jpos] += -fact*distance;
+                ff[place+ipos] +=  fact*distance;
+    	        ff[place+jpos] += -fact*distance;
               }
             }
           }
@@ -883,7 +880,7 @@ void CS2Backbone::calculate()
           //RINGS
           {
             double *rc = db.CO_RING(aa_kind,at_kind);
-            for(unsigned i=rank; i<ringInfo.size(); i+=stride){
+            for(unsigned i=0; i<ringInfo.size(); i++){
     	      // compute angle from ring middle point to current atom position
     	      // get distance vector from query atom to ring center and normal vector to ring plane
               Vector d, n;
@@ -923,8 +920,7 @@ void CS2Backbone::calculate()
     	      // update forces on ring atoms
     	      Vector g, ab, c;
     	      unsigned limit = ringInfo[i].numAtoms - 3; // 2 for a 5-membered ring, 3 for a 6-membered ring
-    	      for(unsigned at=0; at<ringInfo[i].numAtoms; at++)
-    	      {
+    	      for(unsigned at=0; at<ringInfo[i].numAtoms; at++) {
                 // atoms 0,1 (5 member) or 0,1,2 (6 member)
     	        if (at < limit) g = delta(coor[ringInfo[i].atom[(at+2)%3]],coor[ringInfo[i].atom[(at+1)%3]]);
                 // atoms 3,4 (5 member) or 3,4,5 (6 member)
@@ -947,7 +943,7 @@ void CS2Backbone::calculate()
     	        factor = -3 * dL * OneOverN;
                 Vector gradV = factor * d;
     	    
-    	        ff[ringInfo[i].atom[at]] += -fact*(gradU * dL3 - u * gradV);
+    	        ff[place+ringInfo[i].atom[at]] += -fact*(gradU * dL3 - u * gradV);
                 list.push_back(ringInfo[i].atom[at]);
               }
             }
@@ -955,7 +951,7 @@ void CS2Backbone::calculate()
           //END OF RINGS
 
           //DIHEDRAL ANGLES
-          if(master){
+          {
             double *CO_DA = db.CO_DA(aa_kind,at_kind);
     	    double *PARS_DA;
             if(atom[s][a].phi.size()==4){
@@ -973,10 +969,10 @@ void CS2Backbone::calculate()
               double fact = cs_deriv * CO_DA[0] * (-PARS_DA[0]*3*sin(3*phi+ PARS_DA[3]) 
     	      	                                   -PARS_DA[1] * sin(phi + PARS_DA[4]));
 
-              ff[atom[s][a].phi[0]] += -fact*dd0;
-              ff[atom[s][a].phi[1]] += -fact*(dd1-dd0);
-              ff[atom[s][a].phi[2]] += -fact*(dd2-dd1);
-              ff[atom[s][a].phi[3]] +=  fact*dd2;
+              ff[place+atom[s][a].phi[0]] += -fact*dd0;
+              ff[place+atom[s][a].phi[1]] += -fact*(dd1-dd0);
+              ff[place+atom[s][a].phi[2]] += -fact*(dd2-dd1);
+              ff[place+atom[s][a].phi[3]] +=  fact*dd2;
             }
 
             if(atom[s][a].psi.size()==4){
@@ -994,10 +990,10 @@ void CS2Backbone::calculate()
               double fact = cs_deriv * CO_DA[1] * (-PARS_DA[0] * 3 * sin(3 * psi + PARS_DA[3]) 
     	      	                                   -PARS_DA[1] * sin(psi + PARS_DA[4]));
 
-              ff[atom[s][a].psi[0]] += -fact*dd0;
-              ff[atom[s][a].psi[1]] += -fact*(dd1-dd0);
-              ff[atom[s][a].psi[2]] += -fact*(dd2-dd1);
-              ff[atom[s][a].psi[3]] +=  fact*dd2;
+              ff[place+atom[s][a].psi[0]] += -fact*dd0;
+              ff[place+atom[s][a].psi[1]] += -fact*(dd1-dd0);
+              ff[place+atom[s][a].psi[2]] += -fact*(dd2-dd1);
+              ff[place+atom[s][a].psi[3]] +=  fact*dd2;
             }
 
             //Chi
@@ -1016,23 +1012,22 @@ void CS2Backbone::calculate()
               double fact = cs_deriv* CO_DA[2] * (-PARS_DA[0] * 3 * sin(3 * chi + PARS_DA[3]) 
     	      	                                  -PARS_DA[1] * sin(chi + PARS_DA[4]));
 
-              ff[atom[s][a].chi1[0]] += -fact*dd0;
-              ff[atom[s][a].chi1[1]] += -fact*(dd1-dd0);
-              ff[atom[s][a].chi1[2]] += -fact*(dd2-dd1);
-              ff[atom[s][a].chi1[3]] +=  fact*dd2;
+              ff[place+atom[s][a].chi1[0]] += -fact*dd0;
+              ff[place+atom[s][a].chi1[1]] += -fact*(dd1-dd0);
+              ff[place+atom[s][a].chi1[2]] += -fact*(dd2-dd1);
+              ff[place+atom[s][a].chi1[3]] +=  fact*dd2;
             }
           }
           //END OF DIHE
 
           Value* comp=getPntrToComponent(c_sh[index+a][at_kind]);
-          comm.Sum(cs);
           comp->set(cs);
           Tensor virial;
-          comm.Sum(ff);
           for(unsigned i=0;i<list.size();i++) {
-            setAtomsDerivatives(comp,list[i],ff[list[i]]);
-            virial-=Tensor(coor[list[i]],ff[list[i]]);
-            ff[list[i]].zero();
+            unsigned who = place+list[i];
+            setAtomsDerivatives(comp,list[i],ff[who]);
+            virial-=Tensor(coor[list[i]],ff[who]);
+            ff[who].zero();
           }
           setBoxDerivatives(comp,virial);
         } 
