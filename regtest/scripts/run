@@ -145,7 +145,7 @@ for file in *.reference ; do
     test -n "$out" && {
       echo FAILURE
       echo "Diff for ${file%.reference}:"
-      diff "${file}" "$new.zfix"
+      echo "$out"
     }
   else
     echo FAILURE
