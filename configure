@@ -6941,24 +6941,22 @@ fi
 if test $program_can_run == no ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: plumed executable will not run on this machine" >&5
 $as_echo "$as_me: WARNING: plumed executable will not run on this machine" >&2;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: to patch an MD code now use 'plumed-patch'" >&5
-$as_echo "$as_me: WARNING: to patch an MD code now use 'plumed-patch'" >&2;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: after installing plumed you should use '$prefix/lib/$program_name/plumed-patch'" >&5
-$as_echo "$as_me: WARNING: after installing plumed you should use '$prefix/lib/$program_name/plumed-patch'" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: to patch an MD code use 'plumed-patch'" >&5
+$as_echo "$as_me: WARNING: to patch an MD code use 'plumed-patch'" >&2;}
 elif test $mpi_found == ok ; then
   if test $program_can_run_mpi == no ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: plumed executable will not run on this machine" >&5
 $as_echo "$as_me: WARNING: plumed executable will not run on this machine" >&2;}
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unless you invoke it as 'plumed --no-mpi'" >&5
 $as_echo "$as_me: WARNING: unless you invoke it as 'plumed --no-mpi'" >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: to patch an MD code now use 'plumed --no-mpi patch'" >&5
-$as_echo "$as_me: WARNING: to patch an MD code now use 'plumed --no-mpi patch'" >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: (notice that MPI will be available anyway in the patched code)" >&5
-$as_echo "$as_me: WARNING: (notice that MPI will be available anyway in the patched code)" >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: all command line tools are available as 'plumed --no-mpi name-of-the-tool'" >&5
-$as_echo "$as_me: WARNING: all command line tools are available as 'plumed --no-mpi name-of-the-tool'" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: all command line tools are thus available as 'plumed --no-mpi name-of-the-tool'" >&5
+$as_echo "$as_me: WARNING: all command line tools are thus available as 'plumed --no-mpi name-of-the-tool'" >&2;}
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: e.g. 'plumed --no-mpi driver'" >&5
 $as_echo "$as_me: WARNING: e.g. 'plumed --no-mpi driver'" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: to patch an MD code use 'plumed --no-mpi patch'" >&5
+$as_echo "$as_me: WARNING: to patch an MD code use 'plumed --no-mpi patch'" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: (notice that MPI will be available anyway in the patched code)" >&5
+$as_echo "$as_me: WARNING: (notice that MPI will be available anyway in the patched code)" >&2;}
   fi
 fi
 
