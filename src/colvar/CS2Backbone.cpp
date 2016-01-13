@@ -703,11 +703,14 @@ void CS2Backbone::calculate()
   if(pbc) makeWhole();
   if(getExchangeStep()) box_count=0;
 
+  unsigned stride=comm.Get_size();
+  unsigned rank=comm.Get_rank();
+  bool master = (comm.Get_rank()==0);
+
   vector<Vector> coor; 
   coor.resize(N);
   vector<Vector> ff;
   ff.resize(N);
-#pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for(unsigned i=0;i<N;i++) coor[i] = getPosition(i);
 
   compute_ring_parameters(coor);
@@ -719,13 +722,12 @@ void CS2Backbone::calculate()
   // CYCLE OVER MULTIPLE CHAINS
   for(unsigned s=0;s<atom.size();s++){
     // SKIP FIRST AND LAST RESIDUE OF EACH CHAIN
-#pragma omp parallel for num_threads(OpenMP::getNumThreads())
-    for(unsigned a=0;a<atom[s].size();a++){
+    for(unsigned a=1;a<atom[s].size()-1;a++){
       // CYCLE OVER THE SIX BACKBONE CHEMICAL SHIFTS
       for(unsigned at_kind=0;at_kind<6;at_kind++){
-        double cs = 0.;
         if(atom[s][a].pos[at_kind]>0&&atom[s][a].exp_cs[at_kind]>0){
 
+          double cs = 0.;
           double cs_deriv = -1.;
 
           unsigned aa_kind = atom[s][a].res_kind;
@@ -744,14 +746,14 @@ void CS2Backbone::calculate()
           double * CONST_XD  = db.CONST_XD(aa_kind,at_kind);
 
           // Common constant and AATYPE
-          cs = CONST + CONSTAACURR[res_type_curr] + 
-                       CONSTAANEXT[res_type_next] + 
-                       CONSTAAPREV[res_type_prev];
+          if(master) cs = CONST + CONSTAACURR[res_type_curr] + 
+                                  CONSTAANEXT[res_type_next] + 
+                                  CONSTAAPREV[res_type_prev];
           // this is the atom for which we are calculating the chemical shift 
           unsigned ipos = atom[s][a].pos[at_kind];
 
           //PREV
-          for(unsigned q=0;q<atom[s][a].prev.size();q++){
+          for(unsigned q=rank;q<atom[s][a].prev.size();q+=stride){
             unsigned jpos = atom[s][a].prev[q];
             Vector distance = delta(coor[jpos],coor[ipos]);
             double d = distance.modulo();
@@ -763,7 +765,7 @@ void CS2Backbone::calculate()
           }
 
           //CURR
-          for(unsigned q=0;q<atom[s][a].curr.size();q++){
+          for(unsigned q=rank;q<atom[s][a].curr.size();q+=stride){
             unsigned jpos = atom[s][a].curr[q];
             if(ipos==jpos) continue;
             Vector distance = delta(coor[jpos],coor[ipos]);
@@ -776,7 +778,7 @@ void CS2Backbone::calculate()
           }
 
           //NEXT
-          for(unsigned q=0;q<atom[s][a].next.size();q++){
+          for(unsigned q=rank;q<atom[s][a].next.size();q+=stride){
             unsigned jpos = atom[s][a].next[q];
             Vector distance = delta(coor[jpos],coor[ipos]);
             double d = distance.modulo();
@@ -788,7 +790,7 @@ void CS2Backbone::calculate()
           }
 
           //SIDE CHAIN
-          for(unsigned q=0;q<atom[s][a].side_chain.size();q++){
+          for(unsigned q=rank;q<atom[s][a].side_chain.size();q+=stride){
             unsigned jpos = atom[s][a].side_chain[q];
             if(ipos==jpos) continue;
             Vector distance = delta(coor[jpos],coor[ipos]);
@@ -801,7 +803,7 @@ void CS2Backbone::calculate()
           }
         
           //EXTRA DIST
-          for(unsigned q=0;q<atom[s][a].xd1.size();q++){
+          for(unsigned q=rank;q<atom[s][a].xd1.size();q+=stride){
             if(atom[s][a].xd1[q]==-1||atom[s][a].xd2[q]==-1) continue;
             unsigned kpos = atom[s][a].xd1[q];
             unsigned jpos = atom[s][a].xd2[q];
@@ -818,14 +820,11 @@ void CS2Backbone::calculate()
           {
             double * CONST_CO_SPHERE3 = db.CO_SPHERE(aa_kind,at_kind,0);
             double * CONST_CO_SPHERE  = db.CO_SPHERE(aa_kind,at_kind,1);
-            double dist_sum3[8] = {0,0,0,0,0,0,0,0};
-            double dist_sum [8] = {0,0,0,0,0,0,0,0};
 
             unsigned curr = atom[s][a].pos[at_kind];
             if(update) update_box(atom[s][a].box_nb[at_kind], curr, coor, N, 0.50);
-            Vector ffi;
              
-            for(unsigned bat = 0; bat<atom[s][a].box_nb[at_kind].size(); bat++) {
+            for(unsigned bat = rank; bat<atom[s][a].box_nb[at_kind].size(); bat+=stride) {
               unsigned jpos = atom[s][a].box_nb[at_kind][bat];
               Vector distance = delta(coor[jpos],coor[ipos]);
               double d2 = distance.modulo2();
@@ -861,22 +860,15 @@ void CS2Backbone::calculate()
                   dfactor3 = dfactor3*invswitch*(af3+cf3+df3+ef3);
                 }
     	        unsigned t = type[jpos];
-    	        dist_sum3[t] += factor3;
-    	        dist_sum [t] += factor1;
+                cs += factor3*CONST_CO_SPHERE3[t] + factor1*CONST_CO_SPHERE[t];
 
     	        double fact1 = -cs_deriv*dfactor1*dinv;
     	        double fact2 = -cs_deriv*dfactor3*dinv;
     	        double fact = fact1*CONST_CO_SPHERE[t]+fact2*CONST_CO_SPHERE3[t];
 
-                ffi += fact*distance;
-    	        ff[jpos]   += - fact*distance;
+                ff[ipos] +=  fact*distance;
+    	        ff[jpos] += -fact*distance;
               }
-            }
-            ff[ipos] += ffi;
-
-            for(unsigned tt=0;tt<8;tt++){
-    	      cs += dist_sum3[tt]*CONST_CO_SPHERE3[tt];
-    	      cs += dist_sum [tt]*CONST_CO_SPHERE [tt];
             }
           }
           //END NON BOND
@@ -884,8 +876,7 @@ void CS2Backbone::calculate()
           //RINGS
           {
             double *rc = db.CO_RING(aa_kind,at_kind);
-            double contrib [] = {0.0, 0.0, 0.0, 0.0, 0.0};
-            for(unsigned i=0; i<ringInfo.size(); i++){
+            for(unsigned i=rank; i<ringInfo.size(); i+=stride){
     	      // compute angle from ring middle point to current atom position
     	      // get distance vector from query atom to ring center and normal vector to ring plane
               Vector d, n;
@@ -907,7 +898,7 @@ void CS2Backbone::calculate()
 
     	      double sqrangle = dn2/(dL2*nL2);
     	      double u = 1.-3.*sqrangle;
-    	      contrib[ringInfo[i].rtype] += u/dL3;
+              cs += rc[ringInfo[i].rtype]*u/dL3;
               
     	      // calculate terms resulting from differentiating energy function with respect to query and ring atom coordinates
     	      double factor = -6 * dn / (dL4 * nL2);
@@ -954,13 +945,11 @@ void CS2Backbone::calculate()
     	        ff[aPos[at]] += -fact*(gradU * dL3 - u * gradV);
               }
             }
-            // then multiply with appropriate coefficient and sum up
-            for(unsigned i=0; i<5; i++) cs += rc[i]*contrib[i];
           }
           //END OF RINGS
 
           //DIHEDRAL ANGLES
-          {
+          if(master){
             double *CO_DA = db.CO_DA(aa_kind,at_kind);
     	    double *PARS_DA;
             if(atom[s][a].phi.size()==4){
@@ -1030,8 +1019,10 @@ void CS2Backbone::calculate()
           //END OF DIHE
 
           Value* comp=getPntrToComponent(c_sh[index+a][at_kind]);
+          comm.Sum(cs);
           comp->set(cs);
           Tensor virial;
+          comm.Sum(ff);
           for(unsigned i=0;i<N;i++) {
             if(ff[i][0]!=0||ff[i][1]!=0||ff[i][2]!=0) {
               setAtomsDerivatives(comp,i,ff[i]);
