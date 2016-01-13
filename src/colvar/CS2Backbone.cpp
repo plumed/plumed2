@@ -30,7 +30,6 @@
 #include <fstream>
 #include <iterator>
 #include <sstream>
-#include <vector>
 
 #include "Colvar.h"
 #include "ActionRegister.h"
@@ -44,6 +43,7 @@ using namespace std;
 
 namespace PLMD {
 namespace colvar{
+
 //+PLUMEDOC COLVAR CS2BACKBONE 
 /*
 This collective variable calculates the backbone chemical shifts for a protein. 
@@ -641,7 +641,7 @@ PLUMED_COLVAR_INIT(ao)
   }
 
   /* temporary check, the idea is that I can remove NRES completely */
-  if(index!=numResidues) error("NRES and the number of residues in the PDB does not match!");
+  if(index!=numResidues) error("NRES and the number of residues in the PDB do not match!");
 
   requestAtoms(atoms);
 }
@@ -670,12 +670,8 @@ void CS2Backbone::remove_problematic(const string &res, const string &nucl) {
 }
 
 void CS2Backbone::read_cs(const string &file, const string &k){
-  ifstream in;
-  in.open(file.c_str());
-  if(!in){
-    string str_err = "CS2Backbone: Unable to open " + file; 
-    plumed_merror(str_err);
-  }
+  ifstream in.open(file.c_str());
+  if(!in) error("CS2Backbone: Unable to open " + file);
   istream_iterator<string> iter(in), end;
   while(iter!=end){
     string tok;
@@ -742,7 +738,7 @@ void CS2Backbone::calculate()
           double * CONST_BB2_PREV = db.CONST_BB2_PREV(aa_kind,at_kind);
           double * CONST_BB2_NEXT = db.CONST_BB2_NEXT(aa_kind,at_kind);
           double * CONST_BB2_CURR = db.CONST_BB2_CURR(aa_kind,at_kind);
-          double * CONST_SC2 = db.CONST_SC2(aa_kind,at_kind, res_type_curr);
+          double * CONST_SC2 = db.CONST_SC2(aa_kind,at_kind,res_type_curr);
           double * CONST_XD  = db.CONST_XD(aa_kind,at_kind);
 
           // Common constant and AATYPE
@@ -886,7 +882,7 @@ void CS2Backbone::calculate()
     	      double dn  = dotProduct(d,n);
     	      double dn2 = dn * dn;
     	      double dL2 = d.modulo2();
-    	      double dL = sqrt(dL2);
+    	      double dL  = sqrt(dL2);
     	      double dL3 = dL2 * dL;
     	      double dL4 = dL2 * dL2;
 
@@ -912,8 +908,6 @@ void CS2Backbone::calculate()
     	      ff[ipos] += -fact * (gradUQ * dL3 - u * gradVQ);
     	
     	      Vector nSum = ringInfo[i].n1 + ringInfo[i].n2;
-      	      unsigned aPos[6];
-      	      for(unsigned j=0; j<ringInfo[i].numAtoms; j++) aPos[j] = ringInfo[i].atom[j];
 
     	      // update forces on ring atoms
     	      Vector g, ab, c;
@@ -921,14 +915,14 @@ void CS2Backbone::calculate()
     	      for(unsigned at=0; at<ringInfo[i].numAtoms; at++)
     	      {
                 // atoms 0,1 (5 member) or 0,1,2 (6 member)
-    	        if (at < limit) g = delta(coor[aPos[(at+2)%3]],coor[aPos[(at+1)%3]]);
+    	        if (at < limit) g = delta(coor[ringInfo[i].atom[(at+2)%3]],coor[ringInfo[i].atom[(at+1)%3]]);
                 // atoms 3,4 (5 member) or 3,4,5 (6 member)
     	        else if (at >= ringInfo[i].numAtoms - limit) {
                   // 2 for a 5-membered ring, 3 for a 6-membered ring
     	          unsigned offset = ringInfo[i].numAtoms - 3;
-                  g = delta(coor[aPos[((at + 2 - offset) % 3) + offset]],coor[aPos[((at + 1 - offset) % 3) + offset]]); 
+                  g = delta(coor[ringInfo[i].atom[((at + 2 - offset) % 3) + offset]],coor[ringInfo[i].atom[((at + 1 - offset) % 3) + offset]]); 
                   // atom 2 (5-membered rings)
-    	        } else g = delta(coor[aPos[4]] , coor[aPos[3]]) + delta(coor[aPos[1]] , coor[aPos[2]]);
+    	        } else g = delta(coor[ringInfo[i].atom[4]] , coor[ringInfo[i].atom[3]]) + delta(coor[ringInfo[i].atom[1]] , coor[ringInfo[i].atom[2]]);
 
                 ab = crossProduct(d,g);
                 c  = crossProduct(nSum,g);
@@ -942,7 +936,7 @@ void CS2Backbone::calculate()
     	        factor = -3 * dL * OneOverN;
                 Vector gradV = factor * d;
     	    
-    	        ff[aPos[at]] += -fact*(gradU * dL3 - u * gradV);
+    	        ff[ringInfo[i].atom[at]] += -fact*(gradU * dL3 - u * gradV);
               }
             }
           }
