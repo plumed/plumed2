@@ -714,14 +714,15 @@ void CS2Backbone::calculate()
   unsigned index=0;
   // CYCLE OVER MULTIPLE CHAINS
   for(unsigned s=0;s<atom.size();s++){
-#pragma omp parallel for num_threads(OpenMP::getNumThreads()) private(cs)
+  double cs=0;
+  vector<unsigned> list;
+#pragma omp parallel for num_threads(OpenMP::getNumThreads()) private(cs,list) 
     // SKIP FIRST AND LAST RESIDUE OF EACH CHAIN
     for(unsigned a=1;a<atom[s].size()-1;a++){
       // CYCLE OVER THE SIX BACKBONE CHEMICAL SHIFTS
       for(unsigned at_kind=0;at_kind<6;at_kind++){
         if(atom[s][a].pos[at_kind]>0&&atom[s][a].exp_cs[at_kind]>0){
           unsigned place = (index+a)*6*N+at_kind*N;
-          double cs = 0.;
           double cs_deriv = -1.;
 
           unsigned aa_kind = atom[s][a].res_kind;
@@ -746,7 +747,7 @@ void CS2Backbone::calculate()
           // this is the atom for which we are calculating the chemical shift 
           unsigned ipos = atom[s][a].pos[at_kind];
           vector<unsigned> list;
-          list.reserve(N);
+          list.clear();
           list.push_back(ipos);
 
           //PREV
@@ -913,7 +914,7 @@ void CS2Backbone::calculate()
     	      double invdL6 = 1./(dL3 * dL3);
     	
       	      double fact = cs_deriv * rc[ringInfo[i].rtype] * invdL6;
-    	      ff[ipos] += -fact * (gradUQ * dL3 - u * gradVQ);
+    	      ff[place+ipos] += -fact * (gradUQ * dL3 - u * gradVQ);
     	
     	      Vector nSum = ringInfo[i].n1 + ringInfo[i].n2;
 
