@@ -732,7 +732,12 @@ fi
 
 AC_MSG_NOTICE([**** PLUMED will be installed using the following paths:])
 AC_MSG_NOTICE([**** prefix: $prefix])
-AC_MSG_NOTICE([**** exec_prefix: $exec_prefix])
+if test "$exec_prefix" = NONE ; then
+  exec_prefix_='${prefix}'
+else
+  exec_prefix_="${exec_prefix}"
+fi
+AC_MSG_NOTICE([**** exec_prefix: $exec_prefix_])
 AC_MSG_NOTICE([**** bindir: $bindir])
 AC_MSG_NOTICE([**** libdir: $libdir])
 AC_MSG_NOTICE([**** includedir: $includedir])
