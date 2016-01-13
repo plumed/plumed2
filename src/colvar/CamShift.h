@@ -488,32 +488,23 @@ namespace PLMD {
 	      double * CONST_SC2 = db.CONST_SC2(aa_kind,at_kind, res_type_curr);
 	      double * CONST_XD  = db.CONST_XD(aa_kind,at_kind);
 
-	      //1. Common constant
-	      cs = CONST;
-
-	      //2. AATYPE	  
-	      cs = cs + CONSTAACURR[res_type_curr];
-	      cs = cs + CONSTAANEXT[res_type_next];
-	      cs = cs + CONSTAAPREV[res_type_prev];
-
-	      //3. distances const
+	      // Common constant and AATYPE
+	      cs = CONST + CONSTAACURR[res_type_curr] + CONSTAANEXT[res_type_next] + CONSTAAPREV[res_type_prev];
+              // this is the atom for which we are calculating the chemical shift 
 	      unsigned ipos = CSDIM*atom[s][a].pos[at_kind];
 
 	      //PREV
 	      for(unsigned q=0;q<atom[s][a].prev.size();q++){
-	        double d2,dx,dy,dz;
 	        unsigned jpos = CSDIM*atom[s][a].prev[q];
-	        dx = coor[ipos] - coor[jpos];
-	        dy = coor[ipos+1] - coor[jpos+1];
-	        dz = coor[ipos+2] - coor[jpos+2];
-	        d2 = dx*dx+dy*dy+dz*dz;
-
+	        double dx = coor[ipos] - coor[jpos];
+	        double dy = coor[ipos+1] - coor[jpos+1];
+	        double dz = coor[ipos+2] - coor[jpos+2];
+	        double d2 = dx*dx+dy*dy+dz*dz;
 	        double d  = sqrt(d2);
+  	        double fact = -cs_deriv*CONST_BB2_PREV[q]/d;
+
 	        cs = cs + CONST_BB2_PREV[q]*d;
 
-	        double dinv = 1.0/d;
-
-  	        double fact = -cs_deriv*CONST_BB2_PREV[q]*dinv;
 	        ff[place+ipos]   = ff[place+ipos]   + fact*dx;
 	        ff[place+ipos+1] = ff[place+ipos+1] + fact*dy;
 	        ff[place+ipos+2] = ff[place+ipos+2] + fact*dz;
@@ -527,17 +518,15 @@ namespace PLMD {
 	      for(unsigned q=0;q<atom[s][a].curr.size();q++){
 	        unsigned jpos = CSDIM*atom[s][a].curr[q];
 	        if(ipos==jpos) continue;
-	        double d2,dx,dy,dz;
-	        dx = coor[ipos] - coor[jpos];
-	        dy = coor[ipos+1] - coor[jpos+1];
-	        dz = coor[ipos+2] - coor[jpos+2];
-	        d2 = dx*dx+dy*dy+dz*dz;
-
+	        double dx = coor[ipos] - coor[jpos];
+	        double dy = coor[ipos+1] - coor[jpos+1];
+	        double dz = coor[ipos+2] - coor[jpos+2];
+	        double d2 = dx*dx+dy*dy+dz*dz;
 	        double d  = sqrt(d2);
+	        double fact = -cs_deriv*CONST_BB2_CURR[q]/d;
+
 	        cs = cs + CONST_BB2_CURR[q]*d;
 
-	        double dinv = 1.0/d;
-	        double fact = -cs_deriv*CONST_BB2_CURR[q]*dinv;
 	        ff[place+ipos]   = ff[place+ipos]   + fact*dx;
 	        ff[place+ipos+1] = ff[place+ipos+1] + fact*dy;
 	        ff[place+ipos+2] = ff[place+ipos+2] + fact*dz;
@@ -549,18 +538,15 @@ namespace PLMD {
 
 	      //NEXT
 	      for(unsigned q=0;q<atom[s][a].next.size();q++){
-	        double d2,dx,dy,dz;
 	        unsigned jpos = CSDIM*atom[s][a].next[q];
-	        dx = coor[ipos] - coor[jpos];
-	        dy = coor[ipos+1] - coor[jpos+1];
-	        dz = coor[ipos+2] - coor[jpos+2];
-	        d2 = dx*dx+dy*dy+dz*dz;
-	    
+	        double dx = coor[ipos] - coor[jpos];
+	        double dy = coor[ipos+1] - coor[jpos+1];
+	        double dz = coor[ipos+2] - coor[jpos+2];
+	        double d2 = dx*dx+dy*dy+dz*dz;
 	        double d  = sqrt(d2);
-	        cs = cs + CONST_BB2_NEXT[q]*d;
+	        double fact = -cs_deriv*CONST_BB2_NEXT[q]/d;
 
-	        double dinv = 1.0/d;
-	        double fact = -cs_deriv*CONST_BB2_NEXT[q]*dinv;
+	        cs = cs + CONST_BB2_NEXT[q]*d;
 
 	        ff[place+ipos]   = ff[place+ipos]   + fact*dx;
 	        ff[place+ipos+1] = ff[place+ipos+1] + fact*dy;
@@ -575,20 +561,19 @@ namespace PLMD {
 	      for(unsigned q=0;q<atom[s][a].side_chain.size();q++){
 	        unsigned jpos = CSDIM*atom[s][a].side_chain[q];
 	        if(ipos==jpos) continue;
-	        double d2,dx,dy,dz;
-	        dx = coor[ipos] - coor[jpos];
-	        dy = coor[ipos+1] - coor[jpos+1];
-	        dz = coor[ipos+2] - coor[jpos+2];
-	        d2 = dx*dx+dy*dy+dz*dz;
-	    
+	        double dx = coor[ipos] - coor[jpos];
+	        double dy = coor[ipos+1] - coor[jpos+1];
+	        double dz = coor[ipos+2] - coor[jpos+2];
+	        double d2 = dx*dx+dy*dy+dz*dz;
 	        double d  = sqrt(d2);
+	        double fact = -cs_deriv*CONST_SC2[q]/d;
+
 	        cs = cs + CONST_SC2[q]*d;
 
-	        double dinv = 1.0/d;
-	        double fact = -cs_deriv*CONST_SC2[q]*dinv;
 	        ff[place+ipos]   = ff[place+ipos]   + fact*dx;
 	        ff[place+ipos+1] = ff[place+ipos+1] + fact*dy;
 	        ff[place+ipos+2] = ff[place+ipos+2] + fact*dz;
+
 	        ff[place+jpos]   = ff[place+jpos]   - fact*dx;
 	        ff[place+jpos+1] = ff[place+jpos+1] - fact*dy;
 	        ff[place+jpos+2] = ff[place+jpos+2] - fact*dz;	    	    
@@ -596,20 +581,17 @@ namespace PLMD {
 	    
 	      //EXTRA DIST
 	      for(unsigned q=0;q<atom[s][a].xd1.size();q++){
-	        double d2,dx,dy,dz;
 	        if(atom[s][a].xd1[q]==-1||atom[s][a].xd2[q]==-1) continue;
 	        unsigned kpos = CSDIM*atom[s][a].xd1[q];
 	        unsigned jpos = CSDIM*atom[s][a].xd2[q];
-	        dx = coor[kpos] - coor[jpos];
-	        dy = coor[kpos+1] - coor[jpos+1];
-	        dz = coor[kpos+2] - coor[jpos+2];
-	        d2 = dx*dx+dy*dy+dz*dz;
-
+	        double dx = coor[kpos] - coor[jpos];
+	        double dy = coor[kpos+1] - coor[jpos+1];
+	        double dz = coor[kpos+2] - coor[jpos+2];
+	        double d2 = dx*dx+dy*dy+dz*dz;
 	        double d  = sqrt(d2);
-	        cs = cs + CONST_XD[q]*d;
+	        double fact = -cs_deriv*CONST_XD[q]/d;
 
-	        double dinv = 1.0/d;
-	        double fact = -cs_deriv*CONST_XD[q]*dinv;
+	        cs = cs + CONST_XD[q]*d;
 
 	        ff[place+kpos]   = ff[place+kpos]   + fact*dx;
 	        ff[place+kpos+1] = ff[place+kpos+1] + fact*dy;
@@ -642,15 +624,13 @@ namespace PLMD {
                 
                   if(d2<cutOffDist2) {
 		    double d = sqrt(d2);
-		    double d3inv = 1.0/(d*d2);
-                    double factor1=d;
-                    double factor3=d3inv;
-
   		    double dinv = 1.0/d;
+                    double factor1 = d;
+		    double factor3 = dinv*dinv*dinv;
+
 		    double d4 = d2*d2;
-		    double d4inv = 1.0/d4;
                     double dfactor1 = 1.0;
-                    double dfactor3 = -3.*d4inv;
+                    double dfactor3 = -3./d4;
 
                     if(d2>cutOnDist2) {
                       double af = (cutOffDist2 - d2);
@@ -687,7 +667,7 @@ namespace PLMD {
 		    ff[place+jpos+2] = ff[place+jpos+2] - fact*dz;
                   }
 	        }
-	        ff[place+ipos] = ff[place+ipos] + ffi[0];
+	        ff[place+ipos  ] = ff[place+ipos  ] + ffi[0];
 	        ff[place+ipos+1] = ff[place+ipos+1] + ffi[1];
 	        ff[place+ipos+2] = ff[place+ipos+2] + ffi[2];
 
@@ -702,63 +682,61 @@ namespace PLMD {
 	      {
 	        double *rc = db.CO_RING(aa_kind,at_kind);
 	        double contrib [] = {0.0, 0.0, 0.0, 0.0, 0.0};
-	        double contribTot = 0.0;
 	        for(unsigned i=0; i<ringInfo.size(); i++){
 		  // compute angle from ring middle point to current atom position
 		  // get distance vector from query atom to ring center and normal vector to ring plane
-  		  double fact = cs_deriv*rc[ringInfo[i].rtype];
 	          double d[3], n[3];
-		  for(unsigned j=0; j<3; j++){
-		    d[j] = coor[ipos+j] - ringInfo[i].position[j];
-		    n[j] = ringInfo[i].normVect[j];
-		  }
-		  // compute square distance and distance from query atom to ring center
-		  double dL2 = d[0]*d[0] + d[1]*d[1] + d[2]*d[2];
-		  double dL = sqrt(dL2);
-		  double v = dL2 * dL;
-		  double dL4 = dL2 * dL2;
-		  double nL = ringInfo[i].lengthNV;
-		  double nL2 = ringInfo[i].lengthN2;
-		  double dLnL = dL * nL;
-		  double dL3nL3 = v * nL2 * nL;
+		  d[0] = coor[ipos  ] - ringInfo[i].position[0];
+		  d[1] = coor[ipos+1] - ringInfo[i].position[1];
+		  d[2] = coor[ipos+2] - ringInfo[i].position[2];
+		  n[0] = ringInfo[i].normVect[0];
+		  n[1] = ringInfo[i].normVect[1];
+		  n[2] = ringInfo[i].normVect[2];
 		
+		  // compute square distance and distance from query atom to ring center
 		  double dn = d[0]*n[0] + d[1]*n[1] + d[2]*n[2];
 		  double dn2 = dn * dn;
-		
-  		  unsigned aPos[6];
-  		  for(unsigned j=0; j<ringInfo[i].numAtoms; j++) aPos[j] = CSDIM*ringInfo[i].atom[j];
+		  double dL2 = d[0]*d[0] + d[1]*d[1] + d[2]*d[2];
+		  double dL = sqrt(dL2);
+		  double dL3 = dL2 * dL;
+		  double dL4 = dL2 * dL2;
 
-		  // here we save the necessity of calculating the angle first and then the cos, 
-                  // using that the acos and cos cancel each other out
-		  double angle = fabs( dn/(dL*nL) );
-		  contrib[ringInfo[i].rtype] += (1 - 3 * angle * angle) / v;
+		  double nL  = ringInfo[i].lengthNV;
+		  double nL2 = ringInfo[i].lengthN2;
+
+		  double dLnL = dL * nL;
+		  double dL3nL3 = dL3 * nL2 * nL;
+
+		  double sqrangle = dn2/(dL2*nL2);
+		  double u = 1.-3.*sqrangle;
+		  contrib[ringInfo[i].rtype] += u/dL3;
                   
 		  // calculate terms resulting from differentiating energy function with respect to query and ring atom coordinates
-		
 		  double factor = -6 * dn / (dL4 * nL2);
 		  double gradUQx = factor * (dL2 * n[0] - dn * d[0]);
 		  double gradUQy = factor * (dL2 * n[1] - dn * d[1]);
 		  double gradUQz = factor * (dL2 * n[2] - dn * d[2]);
-		  double u = 1 - 3 * dn2 / (dL2 * nL2);
 		
 		  factor = 3 * dL;
 		  double gradVQx = factor * d[0];
 		  double gradVQy = factor * d[1];
 		  double gradVQz = factor * d[2];
-		  double v2 = v * v;
+		  double invdL6 = 1./(dL3 * dL3);
 		
+  		  double fact = cs_deriv * rc[ringInfo[i].rtype] * invdL6;
 		  // update forces on query atom
-		  ff[place+ipos  ] += -fact * (gradUQx * v - u * gradVQx) / v2;
-		  ff[place+ipos+1] += -fact * (gradUQy * v - u * gradVQy) / v2;
-		  ff[place+ipos+2] += -fact * (gradUQz * v - u * gradVQz) / v2;
+		  ff[place+ipos  ] += -fact * (gradUQx * dL3 - u * gradVQx);
+		  ff[place+ipos+1] += -fact * (gradUQy * dL3 - u * gradVQy);
+		  ff[place+ipos+2] += -fact * (gradUQz * dL3 - u * gradVQz);
 		
 		  double nSum[3] = {ringInfo[i].n1[0] + ringInfo[i].n2[0],
 				    ringInfo[i].n1[1] + ringInfo[i].n2[1], 
 				    ringInfo[i].n1[2] + ringInfo[i].n2[2]};
+  		  unsigned aPos[6];
+  		  for(unsigned j=0; j<ringInfo[i].numAtoms; j++) aPos[j] = CSDIM*ringInfo[i].atom[j];
+		  // update forces on ring atoms
 		  double g[3], ab[3], c[3];
 		  unsigned limit = ringInfo[i].numAtoms - 3; // 2 for a 5-membered ring, 3 for a 6-membered ring
-		
-		  // update forces on ring atoms
 		  for(unsigned at=0; at<ringInfo[i].numAtoms; at++)
 		  {
 		    if (at < limit) // atoms 0,1 (5 member) or 0,1,2 (6 member)
@@ -800,14 +778,13 @@ namespace PLMD {
 		    double gradVy = factor * d[1];
 		    double gradVz = factor * d[2];
 		    
-		    ff[place+aPos[at]  ] += -fact * (gradUx * v - u * gradVx) / v2;
-		    ff[place+aPos[at]+1] += -fact * (gradUy * v - u * gradVy) / v2;
-		    ff[place+aPos[at]+2] += -fact * (gradUz * v - u * gradVz) / v2;
+		    ff[place+aPos[at]  ] += -fact * (gradUx * dL3 - u * gradVx);
+		    ff[place+aPos[at]+1] += -fact * (gradUy * dL3 - u * gradVy);
+		    ff[place+aPos[at]+2] += -fact * (gradUz * dL3 - u * gradVz);
 	          }
                 }
 	        // then multiply with appropriate coefficient and sum up
-	        for(unsigned i=0; i<5; i++) contribTot += rc[i]*contrib[i];
-	        cs += contribTot;
+	        for(unsigned i=0; i<5; i++) cs += rc[i]*contrib[i];
 	      }
 	      //END OF RINGS
 
@@ -1867,7 +1844,9 @@ namespace PLMD {
       } 
     }
 
-    inline void update_box(vector<unsigned> & aa_box_i, const unsigned curr, const vector<double> & coor, const unsigned size, const double cutnb2){
+    inline void update_box(vector<unsigned> & aa_box_i, const unsigned curr, 
+                           const vector<double> & coor, const unsigned size, 
+                           const double cutnb2){
       aa_box_i.clear();
       unsigned ipos = CSDIM*curr;
       unsigned res_curr = res_num[curr];
