@@ -66,7 +66,6 @@ ActionWithValue::~ActionWithValue(){
 }
 
 void ActionWithValue::clearInputForces(){
-#pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for(unsigned i=0;i<values.size();i++) values[i]->clearInputForce();
 }
 void ActionWithValue::clearDerivatives(){
