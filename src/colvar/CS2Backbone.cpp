@@ -387,50 +387,36 @@ private:
 
 class CS2Backbone : public Colvar {
   struct Fragment {
-    //Order HA H N CA CB C
+    vector<double> exp_cs;
+    unsigned res_type_prev;
+    unsigned res_type_curr;
+    unsigned res_type_next;
+    unsigned res_kind;
+    unsigned fd;
+    string res_name;
     vector<int> pos;
     vector<int> prev;
     vector<int> curr;
     vector<int> next;
-    unsigned res_type_prev;
-    unsigned res_type_curr;
-    unsigned res_type_next;
     vector<int> side_chain;
     vector<int> xd1;
     vector<int> xd2;
-    string res_name;
-    unsigned res_kind;
-    unsigned fd;
     vector<vector<unsigned> > box_nb;
     vector<int> phi;
     vector<int> psi;
     vector<int> chi1;
-    vector<double> exp_cs;
-
-    Fragment() {
-      res_type_prev = res_type_curr = res_type_next = 0;
-      res_kind = fd = 0;
-      box_nb.resize(6); 
-      pos.resize(6); 
-      exp_cs.resize(6); 
-      for(unsigned i=0;i<6;i++) {
-         box_nb[i].resize(50);
-         pos[i] = -1;
-         exp_cs[i] = 0.;
-      }
-    }
   };
 
   struct RingInfo{
     enum {R_PHE, R_TYR, R_TRP1, R_TRP2, R_HIS};
-    unsigned rtype;// one out of five different types
-    unsigned atom[6];// up to six member per ring
-    unsigned numAtoms;// number of ring members (5 or 6)
-    Vector position;// center of ring coordinates
-    Vector normVect;// ring plane normal vector
-    double lengthN2;// square of length of normVect
-    double lengthNV;// length of normVect
-    Vector n1, n2;// two atom plane normal vectors used to compute ring plane normal
+    unsigned rtype;    // one out of five different types
+    unsigned atom[6];  // up to six member per ring
+    unsigned numAtoms; // number of ring members (5 or 6)
+    Vector position;   // center of ring coordinates
+    Vector normVect;   // ring plane normal vector
+    Vector n1, n2;     // two atom plane normal vectors used to compute ring plane normal
+    double lengthN2;   // square of length of normVect
+    double lengthNV;   // length of normVect
   };
 
   enum aa_t {ALA, ARG, ASN, ASP, CYS, GLN, GLU, GLY, HIS, ILE, LEU, LYS, MET, PHE, PRO, SER, THR, TRP, TYR, VAL, UNK};
@@ -450,12 +436,15 @@ class CS2Backbone : public Colvar {
   vector<Vector> ff;
   void remove_problematic(const string &res, const string &nucl);
   void read_cs(const string &file, const string &k);
+  void compute_ring_parameters(const vector<Vector> & coor);
+  void update_box(vector<unsigned> & aa_box_i, const unsigned curr, 
+                  const vector<Vector> & coor, const unsigned size, 
+                  const double cutnb2);
   void init_backbone(const PDB &pdb);
   void init_sidechain(const PDB &pdb);
   void init_xdist(const PDB &pdb);
   void init_types(const PDB &pdb);
   void init_rings(const PDB &pdb);
-  void compute_ring_parameters(const vector<Vector> & coor);
   aa_t frag2enum(const string &aa);
   vector<string> side_chain_atoms(const string &s);
   bool isSP2(const string & resType, const string & atomName);
@@ -463,9 +452,6 @@ class CS2Backbone : public Colvar {
   unsigned frag_segment(const unsigned p);
   unsigned frag_relitive_index(const unsigned p, const unsigned s);
   void debug_report();
-  void update_box(vector<unsigned> & aa_box_i, const unsigned curr, 
-                  const vector<Vector> & coor, const unsigned size, 
-                  const double cutnb2);
   void xdist_name_map(string & name);
 
 public:
@@ -1160,6 +1146,9 @@ void CS2Backbone::init_backbone(const PDB &pdb){
     for(unsigned a=start;a<=end;a++){
       unsigned f_idx = a - res_offset;
       Fragment at;
+      at.box_nb.resize(6); 
+      at.pos.resize(6); 
+      at.exp_cs.resize(6); 
       {
         at.pos[0] = HA_[f_idx];
         at.pos[1] =  H_[f_idx];
