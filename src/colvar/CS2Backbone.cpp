@@ -141,23 +141,21 @@ class CS2BackboneDB {
   static const unsigned atm_kind = 6;
   static const unsigned numXtraDists = 27;
 
-  double c_all[aa_kind][atm_kind];
   // ALA, ARG, ASN, ASP, CYS, GLU, GLN, GLY, HIS, ILE, LEU, LYS, MET, PHE, PRO, SER, THR, TRP, TYR, VAL
   double c_aa[aa_kind][atm_kind][20];
   double c_aa_prev[aa_kind][atm_kind][20];
   double c_aa_succ[aa_kind][atm_kind][20];
-  double co_bb[aa_kind][atm_kind][2][16];
-  double co_sc_[aa_kind][atm_kind][20][2][20];
+  double co_bb[aa_kind][atm_kind][16];
+  double co_sc_[aa_kind][atm_kind][20][20];
+  double co_xd[aa_kind][atm_kind][numXtraDists];
   double co_sphere[aa_kind][atm_kind][2][8];
+  // for ring current effects
+  // Phe, Tyr, Trp_1, Trp_2, His
+  double co_ring[aa_kind][atm_kind][5];
   // for dihedral angles
   // co * (a * cos(3 * omega + c) + b * cos(omega + d))
   double co_da[aa_kind][atm_kind][3];
   double pars_da[aa_kind][atm_kind][3][5];
-  // for ring current effects
-  // Phe, Tyr, Trp_1, Trp_2, His
-  double co_ring[aa_kind][atm_kind][5];
-  // for extra distances
-  double co_xd[aa_kind][atm_kind][numXtraDists];
 
 public:
 
@@ -180,14 +178,13 @@ public:
   unsigned get_numXtraDists() {return numXtraDists;}
 
   //PARAMETERS
-  inline double   CONST(const unsigned a_kind, const unsigned at_kind){ return c_all[a_kind][at_kind];}
-  inline double * CONSTAACURR(const unsigned a_kind, const unsigned at_kind){return c_aa[a_kind][at_kind];}
-  inline double * CONSTAANEXT(const unsigned a_kind, const unsigned at_kind){return c_aa_succ[a_kind][at_kind];}
-  inline double * CONSTAAPREV(const unsigned a_kind, const unsigned at_kind){return c_aa_prev[a_kind][at_kind];}
-  inline double * CONST_BB2_PREV(const unsigned a_kind, const unsigned at_kind){return co_bb[a_kind][at_kind][1];}
-  inline double * CONST_BB2_CURR(const unsigned a_kind, const unsigned at_kind){return co_bb[a_kind][at_kind][1]+5;}
-  inline double * CONST_BB2_NEXT(const unsigned a_kind, const unsigned at_kind){return co_bb[a_kind][at_kind][1]+11;}
-  inline double * CONST_SC2(const unsigned a_kind, const unsigned at_kind, unsigned res_type){ return co_sc_[a_kind][at_kind][res_type][1];}
+  inline double * CONSTAACURR(const unsigned a_kind, const unsigned at_kind) {return c_aa[a_kind][at_kind];}
+  inline double * CONSTAANEXT(const unsigned a_kind, const unsigned at_kind) {return c_aa_succ[a_kind][at_kind];}
+  inline double * CONSTAAPREV(const unsigned a_kind, const unsigned at_kind) {return c_aa_prev[a_kind][at_kind];}
+  inline double * CONST_BB2_PREV(const unsigned a_kind, const unsigned at_kind){return co_bb[a_kind][at_kind];}
+  inline double * CONST_BB2_CURR(const unsigned a_kind, const unsigned at_kind){return co_bb[a_kind][at_kind]+5;}
+  inline double * CONST_BB2_NEXT(const unsigned a_kind, const unsigned at_kind){return co_bb[a_kind][at_kind]+11;}
+  inline double * CONST_SC2(const unsigned a_kind, const unsigned at_kind, unsigned res_type){ return co_sc_[a_kind][at_kind][res_type];}
   inline double * CONST_XD(const unsigned a_kind, const unsigned at_kind){ return co_xd[a_kind][at_kind];}
   inline double * CO_SPHERE(const unsigned a_kind, const unsigned at_kind, unsigned exp_type){ return co_sphere[a_kind][at_kind][exp_type];}
   inline double * CO_RING(const unsigned a_kind, const unsigned at_kind){ return co_ring[a_kind][at_kind];}
@@ -204,14 +201,13 @@ public:
     unsigned nline = 0;
 
     for(unsigned i=0;i<3;i++) for(unsigned j=0;j<6;j++) {
-      c_all[i][j]=0.;
       for(unsigned k=0;k<20;k++) {
         c_aa[i][j][k]=0.;
         c_aa_prev[i][j][k]=0.;
         c_aa_succ[i][j][k]=0.;
-        for(unsigned l=0;l<2;l++) for(unsigned m=0;m<20;m++) co_sc_[i][j][k][l][m]=0.;
+        for(unsigned m=0;m<20;m++) co_sc_[i][j][k][m]=0.;
       }
-      for(unsigned k=0;k<16;k++) {co_bb[i][j][0][k]=0.; co_bb[i][j][1][k]=0.;}
+      for(unsigned k=0;k<16;k++) {co_bb[i][j][k]=0.; }
       for(unsigned k=0;k<8;k++) { co_sphere[i][j][0][k]=0.; co_sphere[i][j][1][k]=0.; }
       for(unsigned k=0;k<3;k++) {
         co_da[i][j][k]=0.;
@@ -260,7 +256,6 @@ public:
         continue;
       }
       else if (tok[0] == "CONST"){
-        c_all[c_kind][c_atom]= atof(tok[1].c_str());
         continue;
       }
       else if (tok[0] == "CONSTAA"){
@@ -276,13 +271,11 @@ public:
         continue;
       }
       else if (tok[0] == "COBB1"){
-        //angstrom to nm
-        assign(co_bb[c_kind][c_atom][0],tok,dscale);
         continue;
       }
       else if (tok[0] == "COBB2"){
         //angstrom to nm
-        assign(co_bb[c_kind][c_atom][1],tok,dscale);
+        assign(co_bb[c_kind][c_atom],tok,dscale);
         continue;
       }
       else if (tok[0] == "SPHERE1"){
@@ -334,8 +327,6 @@ public:
 
       for(unsigned scC = 0; scC < 20; scC++){
         if(tok[0]==scIdent1[scC]){
-          //angstrom to nm
-          assign(co_sc_[c_kind][c_atom][scC][0],tok,dscale);
           ok = true; 
           break;
         }
@@ -349,7 +340,7 @@ public:
       for(unsigned scC = 0; scC < 20; scC++){
         if(tok[0]==scIdent2[scC]){
           //angstrom to nm
-          assign(co_sc_[c_kind][c_atom][scC][1],tok,dscale);
+          assign(co_sc_[c_kind][c_atom][scC],tok,dscale);
           ok = true; break;
         }
       }
@@ -588,6 +579,12 @@ PLUMED_COLVAR_INIT(ao)
   remove_problematic("CYS", "CA");
   remove_problematic("CYS", "CB");
   remove_problematic("CYS", "C");
+  remove_problematic("HIS", "HA");
+  remove_problematic("HIS", "H");
+  remove_problematic("HIS", "N");
+  remove_problematic("HIS", "CA");
+  remove_problematic("HIS", "CB");
+  remove_problematic("HIS", "C");
   /* done */
 
   vector<AtomNumber> atoms;
@@ -675,12 +672,12 @@ void CS2Backbone::read_cs(const string &file, const string &k){
     p = frag_relitive_index(p,seg);
     tok = *iter; ++iter;
     double cs = atof(tok.c_str());
-    if(k=="HA")     atom[seg][p].exp_cs[0] = cs;
-    else if(k=="H") atom[seg][p].exp_cs[1] = cs;
-    else if(k=="N") atom[seg][p].exp_cs[2] = cs;
-    else if(k=="CA")atom[seg][p].exp_cs[3] = cs;
-    else if(k=="CB")atom[seg][p].exp_cs[4] = cs;
-    else if(k=="C") atom[seg][p].exp_cs[5] = cs;
+    if(k=="HA")     { if(atom[seg][p].pos[0]<=0) cs=0; atom[seg][p].exp_cs[0] = cs; }
+    else if(k=="H") { if(atom[seg][p].pos[1]<=0) cs=0; atom[seg][p].exp_cs[1] = cs; }
+    else if(k=="N") { if(atom[seg][p].pos[2]<=0) cs=0; atom[seg][p].exp_cs[2] = cs; }
+    else if(k=="CA"){ if(atom[seg][p].pos[3]<=0) cs=0; atom[seg][p].exp_cs[3] = cs; }
+    else if(k=="CB"){ if(atom[seg][p].pos[4]<=0) cs=0; atom[seg][p].exp_cs[4] = cs; }
+    else if(k=="C") { if(atom[seg][p].pos[5]<=0) cs=0; atom[seg][p].exp_cs[5] = cs; }
   }
 }
 
@@ -708,7 +705,7 @@ void CS2Backbone::calculate()
       const Fragment *myfrag = &atom[s][a];
       // CYCLE OVER THE SIX BACKBONE CHEMICAL SHIFTS
       for(unsigned at_kind=0;at_kind<6;at_kind++){
-        if(myfrag->pos[at_kind]>0&&myfrag->exp_cs[at_kind]>0){
+        if(myfrag->exp_cs[at_kind]>0){
           const unsigned place = (index+a)*6*N+at_kind*N;
           const double cs_deriv = -1.;
 
@@ -717,15 +714,14 @@ void CS2Backbone::calculate()
           const unsigned res_type_prev = myfrag->res_type_prev;
           const unsigned res_type_next = myfrag->res_type_next;
 
-          const double   CONST = db.CONST(aa_kind,at_kind);
           const double * CONSTAACURR = db.CONSTAACURR(aa_kind,at_kind);
           const double * CONSTAANEXT = db.CONSTAANEXT(aa_kind,at_kind);
           const double * CONSTAAPREV = db.CONSTAAPREV(aa_kind,at_kind);
 
           // Common constant and AATYPE
-          cs = CONST + CONSTAACURR[res_type_curr] + 
-                       CONSTAANEXT[res_type_next] + 
-                       CONSTAAPREV[res_type_prev];
+          cs = CONSTAACURR[res_type_curr] + 
+               CONSTAANEXT[res_type_next] + 
+               CONSTAAPREV[res_type_prev];
           // this is the atom for which we are calculating the chemical shift 
           const unsigned ipos = myfrag->pos[at_kind];
           list.clear();
@@ -812,6 +808,8 @@ void CS2Backbone::calculate()
              
             const double * CONST_CO_SPHERE3 = db.CO_SPHERE(aa_kind,at_kind,0);
             const double * CONST_CO_SPHERE  = db.CO_SPHERE(aa_kind,at_kind,1);
+            const double af1 = cutOffDist2*cutOffDist2;
+            const double af3 = cutOffDist2*cutOffDist2*cutOffDist2 -3.*cutOffDist2*cutOffDist2*cutOnDist2;
 
             for(unsigned bat=0; bat<myfrag->box_nb[at_kind].size(); bat++) {
               const unsigned jpos = myfrag->box_nb[at_kind][bat];
@@ -837,18 +835,17 @@ void CS2Backbone::calculate()
 		  factor1 = d*cf;
                   factor3 = invd3*cf;
 
-                  const double af1 = invswitch*af;
-                  const double bf1 = cutOffDist2*cutOffDist2;
+                  const double bf1 = invswitch*af;
                   const double cf1 = +15.*cutOnDist2*d2;
                   const double df1 = -14.*d4;
                   const double ef1 = cutOffDist2*(-3.*cutOnDist2+d2);
-                  dfactor1 = af1*(bf1+ef1+cf1+df1);
+                  dfactor1 = bf1*(af1+cf1+df1+ef1);
 
-                  const double af3 = cutOffDist2*cutOffDist2*cutOffDist2 -3.*cutOffDist2*cutOffDist2*cutOnDist2;
+                  const double bf3 =  -3.*invswitch/d4;
                   const double cf3 = +2.*cutOffDist2*cutOnDist2*d2;
                   const double df3 = d4*(cutOffDist2+cutOnDist2);
                   const double ef3 = -2.*d4*d2;
-                  dfactor3 = -3.*invswitch*(af3+cf3+df3+ef3)/d4;
+                  dfactor3 = bf3*(af3+cf3+df3+ef3);
                 } else {
                   factor1 = d;
     	          factor3 = invd3;
