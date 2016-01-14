@@ -22,7 +22,6 @@
 #ifndef __PLUMED_tools_HistogramBead_h
 #define __PLUMED_tools_HistogramBead_h
 
-#include <cmath>
 #include <string>
 #include <vector>
 #include "Exception.h"

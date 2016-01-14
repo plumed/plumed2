@@ -25,9 +25,6 @@
 #include "multicolvar/MultiColvarFunction.h"
 #include "tools/SwitchingFunction.h"
 
-#include <string>
-#include <cmath> 
-
 namespace PLMD {
 namespace crystallization {
 

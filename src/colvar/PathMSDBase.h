@@ -22,8 +22,6 @@
 #ifndef __PLUMED_colvar_PathMSDBase_h
 #define __PLUMED_colvar_PathMSDBase_h
 
-#include <cmath>
-
 #include "Colvar.h"
 #include "ActionRegister.h"
 
