@@ -703,7 +703,7 @@ void CS2Backbone::calculate()
   if(pbc) makeWhole();
   if(getExchangeStep()) box_count=0;
 
-  unsigned N = getNumberOfAtoms();
+  const unsigned N = getNumberOfAtoms();
   for(unsigned i=0;i<N;i++) coor[i] = getPosition(i);
 
   compute_ring_parameters(coor);
@@ -719,39 +719,36 @@ void CS2Backbone::calculate()
 #pragma omp parallel for num_threads(OpenMP::getNumThreads()) private(cs,list) 
     // SKIP FIRST AND LAST RESIDUE OF EACH CHAIN
     for(unsigned a=1;a<atom[s].size()-1;a++){
+      const Fragment *myfrag = &atom[s][a];
       // CYCLE OVER THE SIX BACKBONE CHEMICAL SHIFTS
       for(unsigned at_kind=0;at_kind<6;at_kind++){
-        if(atom[s][a].pos[at_kind]>0&&atom[s][a].exp_cs[at_kind]>0){
+        if(myfrag->pos[at_kind]>0&&myfrag->exp_cs[at_kind]>0){
           const unsigned place = (index+a)*6*N+at_kind*N;
           const double cs_deriv = -1.;
 
-          const unsigned aa_kind = atom[s][a].res_kind;
-          const unsigned res_type_curr = atom[s][a].res_type_curr;
-          const unsigned res_type_prev = atom[s][a].res_type_prev;
-          const unsigned res_type_next = atom[s][a].res_type_next;
+          const unsigned aa_kind = myfrag->res_kind;
+          const unsigned res_type_curr = myfrag->res_type_curr;
+          const unsigned res_type_prev = myfrag->res_type_prev;
+          const unsigned res_type_next = myfrag->res_type_next;
 
           const double   CONST = db.CONST(aa_kind,at_kind);
           const double * CONSTAACURR = db.CONSTAACURR(aa_kind,at_kind);
           const double * CONSTAANEXT = db.CONSTAANEXT(aa_kind,at_kind);
           const double * CONSTAAPREV = db.CONSTAAPREV(aa_kind,at_kind);
-          const double * CONST_BB2_PREV = db.CONST_BB2_PREV(aa_kind,at_kind);
-          const double * CONST_BB2_NEXT = db.CONST_BB2_NEXT(aa_kind,at_kind);
-          const double * CONST_BB2_CURR = db.CONST_BB2_CURR(aa_kind,at_kind);
-          const double * CONST_SC2 = db.CONST_SC2(aa_kind,at_kind,res_type_curr);
-          const double * CONST_XD  = db.CONST_XD(aa_kind,at_kind);
 
           // Common constant and AATYPE
           cs = CONST + CONSTAACURR[res_type_curr] + 
                        CONSTAANEXT[res_type_next] + 
                        CONSTAAPREV[res_type_prev];
           // this is the atom for which we are calculating the chemical shift 
-          const unsigned ipos = atom[s][a].pos[at_kind];
+          const unsigned ipos = myfrag->pos[at_kind];
           list.clear();
           list.push_back(ipos);
 
           //PREV
-          for(unsigned q=0;q<atom[s][a].prev.size();q++){
-            const unsigned jpos = atom[s][a].prev[q];
+          const double * CONST_BB2_PREV = db.CONST_BB2_PREV(aa_kind,at_kind);
+          for(unsigned q=0;q<myfrag->prev.size();q++){
+            const unsigned jpos = myfrag->prev[q];
             list.push_back(jpos);
             const Vector distance = delta(coor[jpos],coor[ipos]);
             const double d = distance.modulo();
@@ -763,8 +760,9 @@ void CS2Backbone::calculate()
           }
 
           //CURR
-          for(unsigned q=0;q<atom[s][a].curr.size();q++){
-            const unsigned jpos = atom[s][a].curr[q];
+          const double * CONST_BB2_CURR = db.CONST_BB2_CURR(aa_kind,at_kind);
+          for(unsigned q=0;q<myfrag->curr.size();q++){
+            const unsigned jpos = myfrag->curr[q];
             if(ipos==jpos) continue;
             list.push_back(jpos);
             const Vector distance = delta(coor[jpos],coor[ipos]);
@@ -777,8 +775,9 @@ void CS2Backbone::calculate()
           }
 
           //NEXT
-          for(unsigned q=0;q<atom[s][a].next.size();q++){
-            const unsigned jpos = atom[s][a].next[q];
+          const double * CONST_BB2_NEXT = db.CONST_BB2_NEXT(aa_kind,at_kind);
+          for(unsigned q=0;q<myfrag->next.size();q++){
+            const unsigned jpos = myfrag->next[q];
             list.push_back(jpos);
             const Vector distance = delta(coor[jpos],coor[ipos]);
             const double d = distance.modulo();
@@ -790,8 +789,9 @@ void CS2Backbone::calculate()
           }
 
           //SIDE CHAIN
-          for(unsigned q=0;q<atom[s][a].side_chain.size();q++){
-            const unsigned jpos = atom[s][a].side_chain[q];
+          const double * CONST_SC2 = db.CONST_SC2(aa_kind,at_kind,res_type_curr);
+          for(unsigned q=0;q<myfrag->side_chain.size();q++){
+            const unsigned jpos = myfrag->side_chain[q];
             if(ipos==jpos) continue;
             list.push_back(jpos);
             const Vector distance = delta(coor[jpos],coor[ipos]);
@@ -804,10 +804,11 @@ void CS2Backbone::calculate()
           }
         
           //EXTRA DIST
-          for(unsigned q=0;q<atom[s][a].xd1.size();q++){
-            if(atom[s][a].xd1[q]==-1||atom[s][a].xd2[q]==-1) continue;
-            const unsigned kpos = atom[s][a].xd1[q];
-            const unsigned jpos = atom[s][a].xd2[q];
+          const double * CONST_XD  = db.CONST_XD(aa_kind,at_kind);
+          for(unsigned q=0;q<myfrag->xd1.size();q++){
+            if(myfrag->xd1[q]==-1||myfrag->xd2[q]==-1) continue;
+            const unsigned kpos = myfrag->xd1[q];
+            const unsigned jpos = myfrag->xd2[q];
             list.push_back(jpos);
             list.push_back(kpos);
             const Vector distance = delta(coor[kpos],coor[jpos]);
@@ -826,8 +827,8 @@ void CS2Backbone::calculate()
             const double * CONST_CO_SPHERE3 = db.CO_SPHERE(aa_kind,at_kind,0);
             const double * CONST_CO_SPHERE  = db.CO_SPHERE(aa_kind,at_kind,1);
 
-            for(unsigned bat=0; bat<atom[s][a].box_nb[at_kind].size(); bat++) {
-              const unsigned jpos = atom[s][a].box_nb[at_kind][bat];
+            for(unsigned bat=0; bat<myfrag->box_nb[at_kind].size(); bat++) {
+              const unsigned jpos = myfrag->box_nb[at_kind][bat];
               const Vector distance = delta(coor[jpos],coor[ipos]);
               const double d2 = distance.modulo2();
             
@@ -959,10 +960,10 @@ void CS2Backbone::calculate()
           {
             const double *CO_DA = db.CO_DA(aa_kind,at_kind);
     	    double *PARS_DA;
-            if(atom[s][a].phi.size()==4){
-              const Vector d0 = delta(coor[atom[s][a].phi[1]], coor[atom[s][a].phi[0]]);
-              const Vector d1 = delta(coor[atom[s][a].phi[2]], coor[atom[s][a].phi[1]]);
-              const Vector d2 = delta(coor[atom[s][a].phi[3]], coor[atom[s][a].phi[2]]);
+            if(myfrag->phi.size()==4){
+              const Vector d0 = delta(coor[myfrag->phi[1]], coor[myfrag->phi[0]]);
+              const Vector d1 = delta(coor[myfrag->phi[2]], coor[myfrag->phi[1]]);
+              const Vector d2 = delta(coor[myfrag->phi[3]], coor[myfrag->phi[2]]);
               Torsion t;
               Vector dd0,dd1,dd2;
               const double phi = t.compute(d0,d1,d2,dd0,dd1,dd2);
@@ -974,16 +975,16 @@ void CS2Backbone::calculate()
               const double fact = cs_deriv * CO_DA[0] * (-PARS_DA[0]*3*sin(3*phi+ PARS_DA[3]) 
     	      	                                   -PARS_DA[1] * sin(phi + PARS_DA[4]));
 
-              ff[place+atom[s][a].phi[0]] += -fact*dd0;
-              ff[place+atom[s][a].phi[1]] += -fact*(dd1-dd0);
-              ff[place+atom[s][a].phi[2]] += -fact*(dd2-dd1);
-              ff[place+atom[s][a].phi[3]] +=  fact*dd2;
+              ff[place+myfrag->phi[0]] += -fact*dd0;
+              ff[place+myfrag->phi[1]] += -fact*(dd1-dd0);
+              ff[place+myfrag->phi[2]] += -fact*(dd2-dd1);
+              ff[place+myfrag->phi[3]] +=  fact*dd2;
             }
 
-            if(atom[s][a].psi.size()==4){
-              const Vector d0 = delta(coor[atom[s][a].psi[1]], coor[atom[s][a].psi[0]]);
-              const Vector d1 = delta(coor[atom[s][a].psi[2]], coor[atom[s][a].psi[1]]);
-              const Vector d2 = delta(coor[atom[s][a].psi[3]], coor[atom[s][a].psi[2]]);
+            if(myfrag->psi.size()==4){
+              const Vector d0 = delta(coor[myfrag->psi[1]], coor[myfrag->psi[0]]);
+              const Vector d1 = delta(coor[myfrag->psi[2]], coor[myfrag->psi[1]]);
+              const Vector d2 = delta(coor[myfrag->psi[3]], coor[myfrag->psi[2]]);
               Torsion t;
               Vector dd0,dd1,dd2;
               const double psi = t.compute(d0,d1,d2,dd0,dd1,dd2);
@@ -995,17 +996,17 @@ void CS2Backbone::calculate()
               const double fact = cs_deriv * CO_DA[1] * (-PARS_DA[0] * 3 * sin(3 * psi + PARS_DA[3]) 
     	      	                                   -PARS_DA[1] * sin(psi + PARS_DA[4]));
 
-              ff[place+atom[s][a].psi[0]] += -fact*dd0;
-              ff[place+atom[s][a].psi[1]] += -fact*(dd1-dd0);
-              ff[place+atom[s][a].psi[2]] += -fact*(dd2-dd1);
-              ff[place+atom[s][a].psi[3]] +=  fact*dd2;
+              ff[place+myfrag->psi[0]] += -fact*dd0;
+              ff[place+myfrag->psi[1]] += -fact*(dd1-dd0);
+              ff[place+myfrag->psi[2]] += -fact*(dd2-dd1);
+              ff[place+myfrag->psi[3]] +=  fact*dd2;
             }
 
             //Chi
-            if(atom[s][a].chi1.size()==4){
-              const Vector d0 = delta(coor[atom[s][a].chi1[1]], coor[atom[s][a].chi1[0]]);
-              const Vector d1 = delta(coor[atom[s][a].chi1[2]], coor[atom[s][a].chi1[1]]);
-              const Vector d2 = delta(coor[atom[s][a].chi1[3]], coor[atom[s][a].chi1[2]]);
+            if(myfrag->chi1.size()==4){
+              const Vector d0 = delta(coor[myfrag->chi1[1]], coor[myfrag->chi1[0]]);
+              const Vector d1 = delta(coor[myfrag->chi1[2]], coor[myfrag->chi1[1]]);
+              const Vector d2 = delta(coor[myfrag->chi1[3]], coor[myfrag->chi1[2]]);
               Torsion t;
               Vector dd0,dd1,dd2;
               const double chi = t.compute(d0,d1,d2,dd0,dd1,dd2);
@@ -1017,10 +1018,10 @@ void CS2Backbone::calculate()
               const double fact = cs_deriv* CO_DA[2] * (-PARS_DA[0] * 3 * sin(3 * chi + PARS_DA[3]) 
     	      	                                  -PARS_DA[1] * sin(chi + PARS_DA[4]));
 
-              ff[place+atom[s][a].chi1[0]] += -fact*dd0;
-              ff[place+atom[s][a].chi1[1]] += -fact*(dd1-dd0);
-              ff[place+atom[s][a].chi1[2]] += -fact*(dd2-dd1);
-              ff[place+atom[s][a].chi1[3]] +=  fact*dd2;
+              ff[place+myfrag->chi1[0]] += -fact*dd0;
+              ff[place+myfrag->chi1[1]] += -fact*(dd1-dd0);
+              ff[place+myfrag->chi1[2]] += -fact*(dd2-dd1);
+              ff[place+myfrag->chi1[3]] +=  fact*dd2;
             }
           }
           //END OF DIHE
@@ -1043,6 +1044,33 @@ void CS2Backbone::calculate()
 
   ++box_count;
   if(box_count == box_nupdate) box_count = 0;
+}
+
+void CS2Backbone::compute_ring_parameters(const vector<Vector> & coor){
+  for(unsigned i=0;i<ringInfo.size();i++){
+    const unsigned size = ringInfo[i].numAtoms;
+    vector<Vector> a;
+    a.resize(size);
+    a[0] = coor[ringInfo[i].atom[0]];
+    // ring center
+    Vector midP = a[0];
+    for(unsigned j=1; j<size; j++) {
+      a[j] = coor[ringInfo[i].atom[j]];
+      midP += a[j];
+    }
+    midP /= (double) size;
+    ringInfo[i].position = midP;
+    // compute normal vector to plane containing first three atoms in array
+    ringInfo[i].n1 = crossProduct(delta(a[1],a[0]), delta(a[1], a[2]));
+    // compute normal vector to plane containing last three atoms in array
+    // NB: third atom of five-membered ring used for both computations above
+    ringInfo[i].n2 = crossProduct(delta(a[size-2], a[size-3]), delta(a[size-2], a[size-1]));
+    // ring plane normal vector is average of n1 and n2
+    ringInfo[i].normVect = 0.5*(ringInfo[i].n1 + ringInfo[i].n2);
+    // calculate squared length and length of normal vector
+    ringInfo[i].lengthN2 = ringInfo[i].normVect.modulo2(); 
+    ringInfo[i].lengthNV = sqrt(ringInfo[i].lengthN2);
+  }
 }
 
 void CS2Backbone::update_box(vector<unsigned> & aa_box_i, const unsigned curr, 
@@ -1432,31 +1460,6 @@ void CS2Backbone::init_rings(const PDB &pdb){
       }
     }
     old_size += aend.index()+1; 
-  }
-}
-
-void CS2Backbone::compute_ring_parameters(const vector<Vector> & coor){
-  for(unsigned i=0;i<ringInfo.size();i++){
-    unsigned size = ringInfo[i].numAtoms;
-    vector<Vector> a;
-    a.resize(size);
-    for(unsigned j=0; j<size; j++) a[j] = coor[ringInfo[i].atom[j]];
-    // calculate ring center
-    Vector midP;
-    midP = a[0];
-    for(unsigned k=1; k<size; k++) midP += a[k];
-    midP /= (double) size;
-    ringInfo[i].position = midP;
-    // compute normal vector to plane containing first three atoms in array
-    ringInfo[i].n1 = crossProduct(delta(a[1],a[0]), delta(a[1], a[2]));
-    // compute normal vector to plane containing last three atoms in array
-    // NB: third atom of five-membered ring used for both computations above
-    ringInfo[i].n2 = crossProduct(delta(a[size-2], a[size-3]), delta(a[size-2], a[size-1]));
-    // ring plane normal vector is average of n1 and n2
-    ringInfo[i].normVect = 0.5*(ringInfo[i].n1 + ringInfo[i].n2);
-    // calculate squared length and length of normal vector
-    ringInfo[i].lengthN2 = ringInfo[i].normVect.modulo2(); 
-    ringInfo[i].lengthNV = sqrt(ringInfo[i].lengthN2);
   }
 }
 
