@@ -6983,8 +6983,13 @@ fi
 $as_echo "$as_me: **** PLUMED will be installed using the following paths:" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: **** prefix: $prefix" >&5
 $as_echo "$as_me: **** prefix: $prefix" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: **** exec_prefix: $exec_prefix" >&5
-$as_echo "$as_me: **** exec_prefix: $exec_prefix" >&6;}
+if test "$exec_prefix" = NONE ; then
+  exec_prefix_='${prefix}'
+else
+  exec_prefix_="${exec_prefix}"
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: **** exec_prefix: $exec_prefix_" >&5
+$as_echo "$as_me: **** exec_prefix: $exec_prefix_" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: **** bindir: $bindir" >&5
 $as_echo "$as_me: **** bindir: $bindir" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: **** libdir: $libdir" >&5
