@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_bias/_Bias_h
-#define __PLUMED_bias/_Bias_h
+#ifndef __PLUMED_bias_Bias_h
+#define __PLUMED_bias_Bias_h
 
 #include "core/ActionPilot.h"
 #include "core/ActionWithValue.h"
