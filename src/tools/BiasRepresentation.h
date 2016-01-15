@@ -26,7 +26,6 @@
 #include "KernelFunctions.h"
 #include "File.h"
 #include "Grid.h"
-#include <iostream>
 
 using namespace std;
 

@@ -27,7 +27,6 @@
 #include <cstdio>
 #include "tools/Tools.h"
 #include "tools/Keywords.h"
-#include <iostream>
 
 namespace PLMD{
 
