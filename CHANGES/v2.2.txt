@@ -42,7 +42,6 @@ Changes from version 2.1 which are relevant for users:
   - make install supports DESTDIR and prefix.
   - Environment variables PLUMED_LIBSUFFIX and PLUMED_PREFIX are deprecated and will be removed in a later version.
 - New actions
-  - \ref PBMETAD implement the new Parallel Bias Metadynamics flavor of the Metadynamics sampling method.
   - \ref DUMPMASSCHARGE to dump a file with mass and charges during MD.
   - \ref EFFECTIVE_ENERGY_DRIFT to check that plumed forces are not screwing the MD integrator.
   - \ref EXTENDED_LAGRANGIAN : in combination with  \ref METAD it implements metadynamics with Extended Lagrangian; standalone it implements TAMD/dAFED.
@@ -94,6 +93,7 @@ Unreleased changes (will be included in 2.2.1)
 ---------------------------------------------
 
 For users:
+- \ref PBMETAD implement the new Parallel Bias Metadynamics flavor of the Metadynamics sampling method.
 - PLUMED now reports an error when using \ref HISTOGRAM with UNNORMALIZED without USE_ALL_DATA. See \issue{175}
 - Fixed a bug in configure together with --enable-almost. The check for lbz2 library was not working properly.
 - Fixed a bug in install procedure that was introducing an error in linking with CP2K.
