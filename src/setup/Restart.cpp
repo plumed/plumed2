@@ -46,7 +46,7 @@ and disable restart for that single action.
 
 \attention
 This directive can have also other side effects, e.g. on \ref METAD
-and on some analysis action.
+and \PBMETAD and on some analysis action.
 
 \par Examples
 

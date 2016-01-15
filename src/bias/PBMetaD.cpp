@@ -44,9 +44,141 @@ namespace bias{
 
 //+PLUMEDOC BIAS PBMETAD 
 /*
+Used to performed Parallel Bias MetaDynamics.
 
-Put doc here
+This action activate Parallel Bias MetaDynamics (PBMetaD) \cite pbmetad, a version of MetaDynamics \cite metad in which 
+multiple low-dimensional bias potentials are applied in parallel.
+In the current implementation, these have the form of mono-dimensional MetaDynamics bias
+potentials:
 
+\f[
+{V(s_1,t), ..., V(s_N,t)}
+\f]
+
+where:
+
+\f[
+V(s_i,t) = \sum_{ k \tau < t} W_i(k \tau)
+\exp\left(
+- \frac{(s_i-s_i^{(0)}(k \tau))^2}{2\sigma_i^2}
+\right).
+\f]
+
+To ensure the convergence of each mono-dimensional bias potential to the corresponding free energy,
+at each deposition step the Gaussian heights are multiplied by the so-called conditional term:
+
+\f[
+W_i(k \tau)=W_0 \frac{\exp\left(
+- \frac{V(s_i,k \tau)}{k_B T}
+\right)}{\sum_{i=1}^N 
+\exp\left(
+- \frac{V(s_i,k \tau)}{k_B T}
+\right)}
+\f]
+
+where \f$W_0\f$ is the initial Gaussian height.
+
+The PBMetaD bias potential is defined by:
+
+\f[
+V_{PB}(\vec{s},t) = -k_B T \log{\sum_{i=1}^N 
+\exp\left(
+- \frac{V(s_i,t)}{k_B T}
+\right)}.
+\f]
+
+
+Information on the Gaussian functions that build each bias potential are printed to 
+multiple HILLS files, which 
+are used both to restart the calculation and to reconstruct the mono-dimensional 
+free energies as a function of the corresponding CVs. 
+These can be reconstructed using the \ref sum_hills utility because the final bias is given
+by: 
+
+\f[
+V(s_i) = -F(s_i)
+\f]
+
+Currently, only a subset of the \ref METAD options are available in PBMetaD.
+
+The bias potentials can be stored on a grid to increase performances of long PBMetaD simulations.
+You should
+provide either the number of bins for every collective variable (GRID_BIN) or
+the desired grid spacing (GRID_SPACING). In case you provide both PLUMED will use
+the most conservative choice (highest number of bins) for each dimension.
+In case you do not provide any information about bin size (neither GRID_BIN nor GRID_SPACING)
+and if Gaussian width is fixed PLUMED will use 1/5 of the Gaussian width as grid spacing.
+This default choice should be reasonable for most applications.
+
+Another option that is available is well-tempered metadynamics \cite Barducci:2008. In this
+variant of PBMetaD the heights of the Gaussian hills are rescaled at each step by the 
+additional well-tempered metadynamics term.
+This  ensures that each bias converges more smoothly. It should be noted that, in the case of well-tempered metadynamics, in
+the output printed the Gaussian height is re-scaled using the bias factor.
+Also notice that with well-tempered metadynamics the HILLS files do not contain the bias,
+but the negative of the free-energy estimate. This choice has the advantage that
+one can restart a simulation using a different value for the \f$\Delta T\f$. The applied bias will be scaled accordingly.
+
+With the keyword INTERVAL one changes the metadynamics algorithm setting the bias force equal to zero 
+outside boundary \cite baftizadeh2012protein. If, for example, metadynamics is performed on a CV s and one is interested only 
+to the free energy for s > sw, the history dependent potential is still updated according to the above
+equations but the metadynamics force is set to zero for s < sw. Notice that Gaussians are added also 
+if s < sw, as the tails of these Gaussians influence VG in the relevant region s > sw. In this way, the 
+force on the system in the region s > sw comes from both metadynamics and the force field, in the region 
+s < sw only from the latter. This approach allows obtaining a history-dependent bias potential VG that 
+fluctuates around a stable estimator, equal to the negative of the free energy far enough from the 
+boundaries. Note that:
+- It works only for one-dimensional biases;
+- It works both with and without GRID;
+- The interval limit sw in a region where the free energy derivative is not large;
+- If in the region outside the limit sw the system has a free energy minimum, the INTERVAL keyword should 
+  be used together with a \ref UPPER_WALLS or \ref LOWER_WALLS at sw.
+  
+Multiple walkers  \cite multiplewalkers can also be used, in the MPI implementation only. See below the examples.
+
+\par Examples
+The following input is for PBMetaD calculation using as
+collective variables the distance between atoms 3 and 5
+and the distance between atoms 2 and 4. The value of the CVs and
+the PBMetaD bias potential are written to the COLVAR file every 100 steps.
+\verbatim
+DISTANCE ATOMS=3,5 LABEL=d1
+DISTANCE ATOMS=2,4 LABEL=d2
+PBMETAD ARG=d1,d2 SIGMA=0.2,0.2 HEIGHT=0.3 PACE=500 LABEL=pb FILE=HILLS_d1,HILLS_d2
+PRINT ARG=d1,d2,pb.bias STRIDE=100 FILE=COLVAR
+\endverbatim
+(See also \ref DISTANCE and \ref PRINT).
+
+\par
+If you use well-tempered metadynamics, you should specify a single biasfactor and initial
+Gaussian height. 
+\verbatim
+DISTANCE ATOMS=3,5 LABEL=d1
+DISTANCE ATOMS=2,4 LABEL=d2
+PBMETAD ...
+ARG=d1,d2 SIGMA=0.2,0.2 HEIGHT=0.3 
+PACE=500 BIASFACTOR=8 LABEL=pb 
+FILE=HILLS_d1,HILLS_d2
+... PBMETAD
+PRINT ARG=d1,d2,pb.bias STRIDE=100 FILE=COLVAR
+\endverbatim
+
+\par 
+Only the MPI version of multiple-walkers is currently implemented.
+\verbatim
+DISTANCE ATOMS=3,5 LABEL=d1
+DISTANCE ATOMS=2,4 LABEL=d2
+PBMETAD ...
+ARG=d1,d2 SIGMA=0.2,0.2 HEIGHT=0.3 
+PACE=500 BIASFACTOR=8 LABEL=pb 
+FILE=HILLS_d1,HILLS_d2
+MULTIPLE_WALKERS
+... PBMETAD
+PRINT ARG=d1,d2,pb.bias STRIDE=100 FILE=COLVAR
+\endverbatim
+
+  
+>>>>>>> v2.2
 */
 //+ENDPLUMEDOC
 
@@ -103,11 +235,11 @@ void PBMetaD::registerKeywords(Keywords& keys){
   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
   keys.use("ARG");
   keys.add("compulsory","SIGMA","the widths of the Gaussian hills");
-  keys.add("compulsory","PACE","the frequency for hill addition");
+  keys.add("compulsory","PACE","the frequency for hill addition, one for all biases");
   keys.add("compulsory","FILE","files in which the lists of added hills are stored");
-  keys.add("optional","HEIGHT","the heights of the Gaussian hills. Compulsory unless TAU, TEMP and BIASFACTOR are given");
+  keys.add("optional","HEIGHT","the height of the Gaussian hills, one for all biases. Compulsory unless TAU, TEMP and BIASFACTOR are given");
   keys.add("optional","FMT","specify format for HILLS files (useful for decrease the number of digits in regtests)");
-  keys.add("optional","BIASFACTOR","use well tempered metadynamics and use this biasfactor.  Please note you must also specify temp");
+  keys.add("optional","BIASFACTOR","use well tempered metadynamics with this biasfactor, one for all biases.  Please note you must also specify temp");
   keys.add("optional","TEMP","the system temperature - this is only needed if you are doing well-tempered metadynamics");
   keys.add("optional","TAU","in well tempered metadynamics, sets height to (kb*DeltaT*pace*timestep)/tau");
   keys.add("optional","GRID_MIN","the lower bounds for the grid");
@@ -564,9 +696,8 @@ void PBMetaD::update()
      height[i] = h;
    }
    // normalize and apply welltemp correction
-   double ncv = static_cast<double> (getNumberOfArguments());
    for(unsigned i=0; i<getNumberOfArguments(); ++i){
-     height[i] *=  ncv * height0_ / norm;
+     height[i] *=  height0_ / norm;
      if(welltemp_) height[i] *= exp(-bias[i]/(kbt_*(biasf_-1.0)));
    }
    
