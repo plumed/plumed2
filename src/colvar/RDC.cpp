@@ -22,6 +22,7 @@
 
 #include "Colvar.h"
 #include "ActionRegister.h"
+#include "tools/OpenMP.h"
 
 #ifdef __PLUMED_HAS_GSL
 #include <gsl/gsl_vector.h>
@@ -135,7 +136,6 @@ private:
   vector<double> mu_s;
   vector<double> scale;
   vector<double> coupl;
-  bool serial;
   bool svd;
 public:
   explicit RDC(const ActionOptions&);
@@ -155,7 +155,6 @@ void RDC::registerKeywords( Keywords& keys ){
   keys.reset_style("ATOMS","atoms");
   keys.add("numbered","GYROM","Add the product of the gyromagnetic constants for each bond. ");
   keys.add("numbered","SCALE","Add a scaling factor to take into account concentration and other effects. ");
-  keys.addFlag("SERIAL",false,"Set to TRUE if you want to run the CV in serial.");  
   keys.addFlag("SVD",false,"Set to TRUE if you want to backcalculate using Single Value Decomposition (need GSL at compilation time)."); 
   keys.addFlag("ADDCOUPLINGS",false,"Set to TRUE if you want to have fixed components with the experimetnal values.");  
   keys.add("numbered","COUPLING","Add an experimental value for each coupling (needed by SVD and usefull for \ref STATS).");
@@ -228,9 +227,6 @@ Const(0.3356806)
     if( ntarget!=ndata ) error("found wrong number of COUPLING values");
   }
 
-  serial=false;
-  parseFlag("SERIAL",serial);
-
   // Ouput details of all contacts 
   for(unsigned i=0;i<ndata;++i){
     log.printf("  The %dth Bond Dipolar Coupling is calculated from atoms : %d %d.", i+1, atoms[2*i].serial(), atoms[2*i+1].serial()); 
@@ -240,8 +236,6 @@ Const(0.3356806)
   }
 
   checkRead();
-
-  if(svd) serial=true;
 
   for(unsigned i=0;i<ndata;i++) {
     std::string num; Tools::convert(i,num);
@@ -270,40 +264,32 @@ Const(0.3356806)
 
 void RDC::calculate()
 {
-  vector<double> rdc( ndata );
+  vector<double> rdc(ndata);
   unsigned N = getNumberOfAtoms();
   vector<Vector> dRDC(N);
   vector<Tensor> dervir(ndata);
 
-  // internal parallelisation
-  unsigned stride=2*comm.Get_size();
-  unsigned rank=2*comm.Get_rank();
-  if(serial){
-    stride=2;
-    rank=0;
-  }
-
   if(!svd) {
 
     /* RDC Calculations and forces */
-    for(unsigned r=rank;r<N;r+=stride)
+#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
+    for(unsigned r=0;r<N;r+=2)
     {
-      unsigned index=r/2;
-      Vector distance;
-      distance=pbcDistance(getPosition(r),getPosition(r+1));
-      double d    = distance.modulo();
-      double ind  = 1./d;
-      double id3  = ind*ind*ind; 
-      double id7  = id3*id3*ind;
-      double id9  = id7*ind*ind;
-      double max  = -Const*scale[index]*mu_s[index];
-      double dmax = id3*max;
-      double cos_theta = distance[2]*ind;
+      const unsigned index=r/2;
+      const Vector distance = pbcDistance(getPosition(r),getPosition(r+1));
+      const double d    = distance.modulo();
+      const double ind  = 1./d;
+      const double id3  = ind*ind*ind; 
+      const double id7  = id3*id3*ind;
+      const double id9  = id7*ind*ind;
+      const double max  = -Const*scale[index]*mu_s[index];
+      const double dmax = id3*max;
+      const double cos_theta = distance[2]*ind;
       rdc[index] = 0.5*dmax*(3.*cos_theta*cos_theta-1.);
-      double x2=distance[0]*distance[0];
-      double y2=distance[1]*distance[1];
-      double z2=distance[2]*distance[2];
-      double prod = -max*id7*(1.5*x2 +1.5*y2 -6.*z2);
+      const double x2=distance[0]*distance[0];
+      const double y2=distance[1]*distance[1];
+      const double z2=distance[2]*distance[2];
+      const double prod = -max*id7*(1.5*x2 +1.5*y2 -6.*z2);
       dRDC[r][0] = prod*distance[0];
       dRDC[r][1] = prod*distance[1];
       dRDC[r][2] = -max*id9*distance[2]*(4.5*x2*x2 + 4.5*y2*y2 + 1.5*y2*z2 - 3.*z2*z2 + x2*(9.*y2 + 1.5*z2));
@@ -311,19 +297,13 @@ void RDC::calculate()
       dervir[index] += Tensor(distance,dRDC[r]);
     }
 
-    if(!serial){
-      comm.Sum(&rdc[0],ndata);
-      comm.Sum(&dRDC[0][0],3*N);
-      comm.Sum(&dervir[0][0][0],9*ndata);
-    }
-
     unsigned index=0;
     for(unsigned r=0;r<N;r+=2) {
       Value* val=getPntrToComponent(index);
       val->set(rdc[index]);
       setBoxDerivatives(val, dervir[index]);
-      setAtomsDerivatives( val, r  , dRDC[r  ]);
-      setAtomsDerivatives( val, r+1, dRDC[r+1]); 
+      setAtomsDerivatives(val, r  , dRDC[r  ]);
+      setAtomsDerivatives(val, r+1, dRDC[r+1]); 
       index++;
     }
 
