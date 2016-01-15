@@ -99,9 +99,13 @@ kbt(-1.0)
 
   master = (comm.Get_rank()==0);
   if(master) {
-    if(multi_sim_comm.Get_size()<2) error("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
-    else {ens_dim=multi_sim_comm.Get_size(); my_repl=multi_sim_comm.Get_rank();}
-  } else {ens_dim=0; my_repl=0;}
+    if(multi_sim_comm.Get_size()<2) log.printf("WARNING: ENSEMBLE with one replica is not doing any averaging!\n");
+    ens_dim=multi_sim_comm.Get_size();
+    my_repl=multi_sim_comm.Get_rank();
+  } else { 
+    ens_dim=0; 
+    my_repl=0;
+  }
   comm.Sum(&ens_dim, 1);
   comm.Sum(&my_repl, 1);
   
