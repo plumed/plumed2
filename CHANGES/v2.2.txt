@@ -89,7 +89,7 @@ at what has been done to the other multicolvars in there for guidance.  Sorry fo
 - Changed the logic of several PLUMED ifdef macros so as to make them consistent.
   Now every feature based on external libraries is identified by a __PLUMED_HAS_* macro.
 
-Unreleased changes (will be included in 2.2.1)
+Version 2.2.1 (coming soon)
 ---------------------------------------------
 
 For users:
