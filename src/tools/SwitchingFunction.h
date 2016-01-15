@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -41,7 +41,7 @@ class SwitchingFunction{
 /// This is to check that switching function has been initialized
   bool init;
 /// Type of function
-  enum {rational,exponential,gaussian,smap,cubic,tanh,matheval} type;
+  enum {rational,exponential,gaussian,smap,cubic,tanh,matheval,nativeq} type;
 /// Inverse of scaling length.
 /// We store the inverse to avoid a division
   double invr0;
@@ -54,6 +54,8 @@ class SwitchingFunction{
 /// Parameters for smap function
   int a,b;
   double c,d;
+// nativeq
+  double lambda, beta, ref;
 /// Square of invr0, useful in calculateSqr()
   double invr0_2;
 /// Square of dmax, useful in calculateSqr()

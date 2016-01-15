@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -35,9 +35,9 @@ class MultiColvarFunction : public MultiColvarBase {
 private:
 /// A tempory vector that is used for retrieving vectors
   std::vector<double> tvals;
+protected:
 /// This sets up the atom list
   void setupAtomLists();
-protected:
 /// Get the derivatives for the central atom with index ind
   CatomPack getCentralAtomPackFromInput( const unsigned& ind ) const ;
 ///

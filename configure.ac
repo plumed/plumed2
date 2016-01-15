@@ -431,7 +431,7 @@ if test $zlib == true ; then
 fi
 if test $almost == true ; then
   bz2=ko
-  AC_CHECK_HEADER([bzlib.h], AC_SEARCH_LIBS([BZ2_bzReadOpen], [bz2], [bz2=ok] ))
+  AC_CHECK_HEADER([bzlib.h], AC_SEARCH_LIBS([BZ2_bzReadOpen], [bz2], [bz2=ok]))
   found=ko
   if test $bz2 == ok; then
     AC_CHECK_HEADER([almost.h], AC_SEARCH_LIBS([init_camshift], [Alm], [found=ok] , AC_MSG_NOTICE(["Almost not found"]), [-lsqlite3 -lz -lbz2 -lnbimpl -lshx]))
@@ -439,8 +439,12 @@ if test $almost == true ; then
     AC_CHECK_HEADER([almost.h], AC_SEARCH_LIBS([init_camshift], [Alm], [found=ok] , AC_MSG_NOTICE(["Almost not found"]), [-lsqlite3 -lz -lnbimpl -lshx]))
   fi
   if test $found == ok; then
-    AC_DEFINE([__PLUMED_HAS_ALMOST]) 
-    LIBS="$LIBS -lsqlite3 -lz -lbz2 -lnbimpl -lshx"
+    AC_DEFINE([__PLUMED_HAS_ALMOST])
+    if test $bz2 == ok; then 
+      LIBS="$LIBS -lsqlite3 -lz -lbz2 -lnbimpl -lshx"
+    else
+      LIBS="$LIBS -lsqlite3 -lz -lnbimpl -lshx"
+    fi
   else 
     AC_MSG_ERROR([--enable-almost: cannot find almost])
   fi
@@ -732,7 +736,12 @@ fi
 
 AC_MSG_NOTICE([**** PLUMED will be installed using the following paths:])
 AC_MSG_NOTICE([**** prefix: $prefix])
-AC_MSG_NOTICE([**** exec_prefix: $exec_prefix])
+if test "$exec_prefix" = NONE ; then
+  exec_prefix_='${prefix}'
+else
+  exec_prefix_="${exec_prefix}"
+fi
+AC_MSG_NOTICE([**** exec_prefix: $exec_prefix_])
 AC_MSG_NOTICE([**** bindir: $bindir])
 AC_MSG_NOTICE([**** libdir: $libdir])
 AC_MSG_NOTICE([**** includedir: $includedir])
@@ -756,16 +765,15 @@ fi
 
 if test $program_can_run == no ; then
   AC_MSG_WARN([plumed executable will not run on this machine])
-  AC_MSG_WARN([to patch an MD code now use 'plumed-patch'])
-  AC_MSG_WARN([after installing plumed you should use '$prefix/lib/$program_name/plumed-patch'])
+  AC_MSG_WARN([to patch an MD code use 'plumed-patch'])
 elif test $mpi_found == ok ; then
   if test $program_can_run_mpi == no ; then
     AC_MSG_WARN([plumed executable will not run on this machine])
     AC_MSG_WARN([unless you invoke it as 'plumed --no-mpi'])
-    AC_MSG_WARN([to patch an MD code now use 'plumed --no-mpi patch'])
-    AC_MSG_WARN([(notice that MPI will be available anyway in the patched code)])
-    AC_MSG_WARN([all command line tools are available as 'plumed --no-mpi name-of-the-tool'])
+    AC_MSG_WARN([all command line tools are thus available as 'plumed --no-mpi name-of-the-tool'])
     AC_MSG_WARN([e.g. 'plumed --no-mpi driver'])
+    AC_MSG_WARN([to patch an MD code use 'plumed --no-mpi patch'])
+    AC_MSG_WARN([(notice that MPI will be available anyway in the patched code)])
   fi
 fi
 

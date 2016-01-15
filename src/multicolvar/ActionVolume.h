@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -52,7 +52,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit ActionVolume(const ActionOptions&);
 /// Get the number of quantities that are calculated each time
-  virtual unsigned getNumberOfQuantities();
+  virtual unsigned getNumberOfQuantities() const ;
 /// Calculate whats in the volume
   void calculateAllVolumes( const unsigned& curr, MultiValue& outvals ) const ;
 /// This calculates whether or not a particular is inside the box of interest
@@ -63,7 +63,7 @@ public:
 };
 
 inline
-unsigned ActionVolume::getNumberOfQuantities(){
+unsigned ActionVolume::getNumberOfQuantities() const {
   return nquantities;
 } 
 

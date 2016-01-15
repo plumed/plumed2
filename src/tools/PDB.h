@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -98,6 +98,10 @@ public:
 /// Return the atom named aname from residue number resnum and chain.
 /// Chain=="*" matches any chain and makes it equivalent to getNamedAtomFromResidue.
   AtomNumber getNamedAtomFromResidueAndChain( const std::string& aname, const unsigned& resnum, const std::string& chain ) const;
+/// Access to the atoms of a residue 
+  std::vector<AtomNumber> getAtomsInResidue(const unsigned& resnum,const std::string& chainid)const;
+/// Access to the atoms of a chain 
+  std::vector<AtomNumber> getAtomsInChain(const std::string& chainid)const;
 /// Get the extents of the blocks containing the atoms
   const std::vector<unsigned> & getAtomBlockEnds() const ;
 /// Get the number of blocks of atoms in the pdb

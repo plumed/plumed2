@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -90,7 +90,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit LocalAverage(const ActionOptions&);
 /// We have to overwrite this here
-  unsigned getNumberOfQuantities();
+  unsigned getNumberOfQuantities() const ;
 /// Actually do the calculation
   double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
 /// Is the variable periodic
@@ -137,7 +137,7 @@ MultiColvarFunction(ao)
   setLinkCellCutoff( switchingFunction.get_dmax() ); buildSymmetryFunctionLists();
 }
 
-unsigned LocalAverage::getNumberOfQuantities(){
+unsigned LocalAverage::getNumberOfQuantities() const {
   return getBaseMultiColvar(0)->getNumberOfQuantities();
 }
 

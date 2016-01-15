@@ -83,7 +83,14 @@ variables CXX and CC. E.g., to use Intel compilers use the following command:
 > ./configure CXX=icpc CC=icc
 \endverbatim
 Notice that we are using icpc in this example, which is not an mpi compiler as a 
-result mpi will not be enabled.
+result mpi will not be enabled. Also consider that this is different with respect
+to what some other configure script does in that variables such as MPICXX are
+completely ignored here. In case you work on a machine where CXX is
+set to a serial compiler and MPICXX to a MPI compiler, to
+compile with MPI you should use
+\verbatim
+> ./configure CXX="$MPICXX"
+\endverbatim
 
 To tune the compilation options you can use the CXXFLAGS variable:
 \verbatim

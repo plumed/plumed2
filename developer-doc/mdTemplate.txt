@@ -190,6 +190,13 @@ plumed_cmd(plumedmain,"setRealPrecision",&real_precision);     // Pass a pointer
 plumed_cmd(plumedmain,"setMDEnergyUnits",&energyUnits);        // Pass a pointer to the conversion factor between the energy unit used in your code and kJ mol-1
 plumed_cmd(plumedmain,"setMDLengthUnits",&lengthUnits);        // Pass a pointer to the conversion factor between the length unit used in your code and nm 
 plumed_cmd(plumedmain,"setMDTimeUnits",&timeUnits);            // Pass a pointer to the conversion factor between the time unit used in your code and ps
+
+// This is valid only if API VERSION > 3
+plumed_cmd(plumedmain,"setMDChargeUnits",&chargeUnits);        // Pass a pointer to the conversion factor between the charge unit used in your code and e
+
+// This is valid only if API VERSION > 3
+plumed_cmd(plumedmain,"setMDMassUnits",&massUnits);            // Pass a pointer to the conversion factor between the mass unit used in your code and amu
+
 plumed_cmd(plumedmain,"setPlumedDat",&plumedInput);            // Pass the name of the plumed input file from the md code to plumed
 plumed_cmd(plumedmain,"setMPIComm",&MPI_COMM_WORLD);           // Pass a pointer to the MPI communicator to plumed
 // notice that from fortran the command "setMPIFComm" should be used instead

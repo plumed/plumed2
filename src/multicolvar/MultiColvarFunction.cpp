@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -41,16 +41,18 @@ Action(ao),
 MultiColvarBase(ao)
 {
   // Read in the arguments
-  std::vector<std::string> mlabs; parseVector("DATA",mlabs);
+  if( keywords.exists("DATA") ){ 
+      std::vector<std::string> mlabs; parseVector("DATA",mlabs);
 
-  if( keywords.exists("WTOL") ){
-      double wtolerance; parse("WTOL",wtolerance); 
-      log.printf("  only considering those colvars with a weight greater than %f \n",wtolerance);
-      bool found_acts=interpretInputMultiColvars(mlabs,wtolerance);
-      if( !found_acts ) error("one or more items in input is not the label of a multicolvar");
-  } else {
-      bool found_acts=interpretInputMultiColvars(mlabs,0.0);
-      if( !found_acts ) error("one or more items in input is not the label of a multicolvar");
+      if( keywords.exists("WTOL") ){
+          double wtolerance; parse("WTOL",wtolerance); 
+          log.printf("  only considering those colvars with a weight greater than %f \n",wtolerance);
+          bool found_acts=interpretInputMultiColvars(mlabs,wtolerance);
+          if( !found_acts ) error("one or more items in input is not the label of a multicolvar");
+      } else {
+          bool found_acts=interpretInputMultiColvars(mlabs,0.0);
+          if( !found_acts ) error("one or more items in input is not the label of a multicolvar");
+      }
   }
 }
 

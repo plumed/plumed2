@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -1055,7 +1055,7 @@ double MetaD::evaluateGaussian
  double tmpcv[1]; // tmp array with cv (to be used with doInt_)
  if(cv.size()>0) pcv=&cv[0];
  if(doInt_){
-   plumed_dbg_assert(cv.size()==1);
+   plumed_assert(cv.size()==1);
    pcv=&(tmpcv[0]);
    tmpcv[0]=cv[0];
    if(cv[0]<lowI_) tmpcv[0]=lowI_;
