@@ -170,6 +170,8 @@ public:
   virtual void doNotCalculateDirector(){}
 /// Ensure that derivatives are only calculated when needed
   bool doNotCalculateDerivatives() const ;
+/// Are we using base colvars
+  bool usingBaseColvars() const ;
 };
 
 inline
@@ -225,6 +227,11 @@ inline
 bool MultiColvarBase::doNotCalculateDerivatives() const {
   if( !dertime ) return true;
   return ActionWithValue::doNotCalculateDerivatives();
+}
+
+inline
+bool MultiColvarBase::usingBaseColvars() const {
+  return ( colvar_label.size()>0 );
 }
 
 }

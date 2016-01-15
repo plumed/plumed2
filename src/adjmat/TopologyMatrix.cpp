@@ -49,7 +49,7 @@ public:
 /// Constructor
   explicit TopologyMatrix(const ActionOptions&);
 /// Get the number of quantities that we must compute
-  unsigned getNumberOfQuantities();
+  unsigned getNumberOfQuantities() const ;
 /// Create the ith, ith switching function
   void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::string& desc );
 /// Get the position that we should use as the center of our link cells
@@ -147,7 +147,7 @@ AdjacencyMatrixBase(ao)
   requestAtoms( all_atoms, true, false, dims );
 }
 
-unsigned TopologyMatrix::getNumberOfQuantities(){
+unsigned TopologyMatrix::getNumberOfQuantities() const {
   return maxbins+1;
 }
 
@@ -190,7 +190,6 @@ double TopologyMatrix::compute( const unsigned& tindex, multicolvar::AtomValuePa
   double dfuncl, sw = switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ),
                                          getBaseColvarNumber( myatoms.getIndex(1) ) ).calculate( d1_len, dfuncl );
   d1 = d1 / d1_len;
-
   if( myatoms.getNumberOfAtoms()>3 ){
       for(unsigned i=2;i<myatoms.getNumberOfAtoms();++i) calculateForThreeAtoms( i, d1, d1_len, sw, dfuncl, bead, myatoms );
   } else {
@@ -201,7 +200,7 @@ double TopologyMatrix::compute( const unsigned& tindex, multicolvar::AtomValuePa
 }
 
 double TopologyMatrix::transformStoredValues( const std::vector<double>& myvals, unsigned& vout, double& df  ) const {
-  plumed_dbg_assert( myvals.size()==maxbins ); vout=1; double max=myvals[1];
+  plumed_dbg_assert( myvals.size()==(maxbins+1) ); vout=1; double max=myvals[1];
   for(unsigned i=2;i<myvals.size();++i){
       if( myvals[i]>max ){ max=myvals[i]; vout=i; }
   }

@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ClusteringBase.h"
+#include "AdjacencyMatrixBase.h"
 #include "AdjacencyMatrixVessel.h"
 
 namespace PLMD {
@@ -43,8 +44,10 @@ number_of_cluster(-1)
 
 void ClusteringBase::turnOnDerivatives(){
    // Check base multicolvar isn't density probably other things shouldn't be allowed here as well
-   if( getBaseMultiColvar(0)->isDensity() ) error("DFS clustering cannot be differentiated if base multicolvar is DENSITY");
-   
+   if( (getAdjacencyVessel()->getMatrixAction())->usingBaseColvars() ){
+      if( getBaseMultiColvar(0)->isDensity() ) error("DFS clustering cannot be differentiated if base multicolvar is DENSITY");
+   }   
+
    // Ensure that derivatives are turned on in base classes
    ActionWithInputMatrix::turnOnDerivatives();
 }

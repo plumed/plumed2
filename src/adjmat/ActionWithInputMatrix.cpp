@@ -106,7 +106,7 @@ void ActionWithInputMatrix::getVectorForTask( const unsigned& ind, const bool& n
 
 void ActionWithInputMatrix::getVectorDerivatives( const unsigned& ind, const bool& normed, MultiValue& myder ) const {
   if( (mymatrix->function)->colvar_label.size()==0  ){
-     MultiValue myvals( 2, myder.getNumberOfDerivatives() ); 
+     MultiValue myvals( mymatrix->getNumberOfComponents(), myder.getNumberOfDerivatives() ); 
      double df, sum=0.0; std::vector<double> tvals( mymatrix->getNumberOfComponents() ); 
      unsigned vin; unsigned ncols = mymatrix->getNumberOfColumns();
      for(unsigned i=0;i<ncols;++i){
