@@ -83,7 +83,7 @@ void TopologyMatrix::registerKeywords( Keywords& keys ){
                                "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   keys.add("numbered","RADIUS","");
   keys.add("compulsory","DENSITY_THRESHOLD","");
-  keys.add("compulsory","BIN_SIZE",""); keys.use("SUM");
+  keys.add("compulsory","BIN_SIZE",""); keys.use("SUM"); keys.use("LESS_THAN");
   keys.add("compulsory","SIGMA","the width of the function to be used for kernel density estimation");
   keys.add("compulsory","KERNEL","gaussian","the type of kernel function to be used");
 }

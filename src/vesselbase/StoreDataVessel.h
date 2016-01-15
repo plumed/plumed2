@@ -92,7 +92,7 @@ public:
 /// Get the index to store a particular index inside
   virtual unsigned getStoreIndex( const unsigned& ) const ;
 /// Recalculate one of the base quantities
-  virtual void recalculateStoredQuantity( const unsigned& myelm, MultiValue& myvals );
+  void recalculateStoredQuantity( const unsigned& myelm, MultiValue& myvals );
 /// Set a hard cutoff on the weight of an element
   void setHardCutoffOnWeight( const double& mytol );
 /// Add an action that uses this data 
@@ -104,7 +104,7 @@ public:
 /// Get the values of all the components in the vector
   void retrieveValue( const unsigned& myelem, const bool& normed, std::vector<double>& values ) const ;
 /// Get the derivatives for one of the components in the vector
-  virtual void retrieveDerivatives( const unsigned& myelem, const bool& normed, MultiValue& myvals );
+  void retrieveDerivatives( const unsigned& myelem, const bool& normed, MultiValue& myvals );
 /// Do all resizing of data
   virtual void resize();
 ///

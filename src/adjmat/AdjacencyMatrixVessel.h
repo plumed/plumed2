@@ -63,13 +63,8 @@ public:
   void retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matrix<unsigned>& adj_list );
 /// Retrieve the list of edges in the adjacency matrix/graph
   void retrieveEdgeList( unsigned& nedge, std::vector<std::pair<unsigned,unsigned> >& edge_list );
-/// Retrieve the derivatives of the matrix element - this is overwritten as if we have 
-/// derivatives wrt a weight...
-  void retrieveDerivatives( const unsigned& myelem, const bool& normed, MultiValue& myvals );
 ///
   void getMatrixIndices( const unsigned& code, unsigned& i, unsigned& j ) const ;
-/// Recalculate a stored quantity
-  void recalculateStoredQuantity( const unsigned& myelm, MultiValue& myvals );
 /// Can we think of the matrix as an undirected graph
   bool undirectedGraph() const ; 
 /// Is the matrix symmetric

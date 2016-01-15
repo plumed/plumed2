@@ -139,24 +139,6 @@ void AdjacencyMatrixVessel::retrieveEdgeList( unsigned& nedge, std::vector<std::
   }
 }
 
-void AdjacencyMatrixVessel::retrieveDerivatives( const unsigned& myelem, const bool& normed, MultiValue& myvals ){
-  StoreDataVessel::retrieveDerivatives( myelem, normed, myvals );
-  if( !function->weightHasDerivatives ) return ;
-
-  unsigned vi; std::vector<double> vals( getNumberOfComponents() ); retrieveValue( myelem, normed, vals ); 
-  double df, max=function->transformStoredValues( vals, vi, df );
-
-  double pref = max/(vals[0]*vals[0]);
-  for(unsigned i=0;i<myvals.getNumberActive();++i){
-      unsigned jder=myvals.getActiveIndex(i);
-      myvals.setDerivative( 1, jder, df*myvals.getDerivative(vi, jder)/vals[0] - pref*myvals.getDerivative(0, jder) );
-  }
-}
-
-void AdjacencyMatrixVessel::recalculateStoredQuantity( const unsigned& myelem, MultiValue& myvals ){
-  function->recalculateMatrixElement( myelem, myvals );
-}
-
 }
 }
 

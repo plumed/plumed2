@@ -41,9 +41,6 @@ private:
   bool no_third_dim_accum;
 /// This is the vessel that stores the adjacency matrix
   AdjacencyMatrixVessel* mat;
-/// This is used within AdjacencyMatrixVessel to recalculate matrix elements
-/// whcih is useful when we are operating with lowmem
-  void recalculateMatrixElement( const unsigned& myelem, MultiValue& myvals );
 protected:
 /// Retrieve the vessel that holds the adjacency matrix
   AdjacencyMatrixVessel* getAdjacencyVessel();
