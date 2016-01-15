@@ -424,7 +424,6 @@ class CS2Backbone : public Colvar {
   unsigned **c_sh;
   bool pbc;
   vector<Vector> coor; 
-  vector<Vector> ff;
   void remove_problematic(const string &res, const string &nucl);
   void read_cs(const string &file, const string &k);
   void compute_ring_parameters(const vector<Vector> & coor);
@@ -629,7 +628,6 @@ PLUMED_COLVAR_INIT(ao)
   if(index!=numResidues) error("NRES and the number of residues in the PDB do not match!");
  
   coor.resize(atoms.size());
-  ff.resize(6*numResidues*atoms.size());
 
   requestAtoms(atoms);
 }
@@ -697,16 +695,13 @@ void CS2Backbone::calculate()
   unsigned index=0;
   // CYCLE OVER MULTIPLE CHAINS
   for(unsigned s=0;s<atom.size();s++){
-  double cs=0;
-  vector<unsigned> list;
-#pragma omp parallel for num_threads(OpenMP::getNumThreads()) private(cs,list) 
+#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
     // SKIP FIRST AND LAST RESIDUE OF EACH CHAIN
     for(unsigned a=1;a<atom[s].size()-1;a++){
       const Fragment *myfrag = &atom[s][a];
       // CYCLE OVER THE SIX BACKBONE CHEMICAL SHIFTS
       for(unsigned at_kind=0;at_kind<6;at_kind++){
         if(myfrag->exp_cs[at_kind]>0){
-          const unsigned place = (index+a)*6*N+at_kind*N;
           const double cs_deriv = -1.;
 
           const unsigned aa_kind = myfrag->res_kind;
@@ -719,13 +714,18 @@ void CS2Backbone::calculate()
           const double * CONSTAAPREV = db.CONSTAAPREV(aa_kind,at_kind);
 
           // Common constant and AATYPE
-          cs = CONSTAACURR[res_type_curr] + 
-               CONSTAANEXT[res_type_next] + 
-               CONSTAAPREV[res_type_prev];
+          double cs = CONSTAACURR[res_type_curr] + 
+                      CONSTAANEXT[res_type_next] + 
+                      CONSTAAPREV[res_type_prev];
           // this is the atom for which we are calculating the chemical shift 
           const unsigned ipos = myfrag->pos[at_kind];
-          list.clear();
+
+          vector<unsigned> list;
+          list.reserve(2*numResidues);
           list.push_back(ipos);
+          vector<Vector> ff;
+          ff.reserve(2*numResidues); 
+          ff.push_back(Vector(0,0,0));
 
           //PREV
           const double * CONST_BB2_PREV = db.CONST_BB2_PREV(aa_kind,at_kind);
@@ -736,9 +736,9 @@ void CS2Backbone::calculate()
             const double d = distance.modulo();
             const double fact = -cs_deriv*CONST_BB2_PREV[q]/d;
 
-            cs = cs + CONST_BB2_PREV[q]*d;
-            ff[place+ipos] += fact*distance;
-            ff[place+jpos] += -fact*distance;
+            cs += CONST_BB2_PREV[q]*d;
+            ff[0] += fact*distance;
+            ff.push_back(-fact*distance);
           }
 
           //CURR
@@ -751,9 +751,9 @@ void CS2Backbone::calculate()
             const double d = distance.modulo();
             const double fact = -cs_deriv*CONST_BB2_CURR[q]/d;
 
-            cs = cs + CONST_BB2_CURR[q]*d;
-            ff[place+ipos] += fact*distance;
-            ff[place+jpos] += -fact*distance;
+            cs += CONST_BB2_CURR[q]*d;
+            ff[0] += fact*distance;
+            ff.push_back(-fact*distance);
           }
 
           //NEXT
@@ -765,9 +765,9 @@ void CS2Backbone::calculate()
             const double d = distance.modulo();
             const double fact = -cs_deriv*CONST_BB2_NEXT[q]/d;
 
-            cs = cs + CONST_BB2_NEXT[q]*d;
-            ff[place+ipos] += fact*distance;
-            ff[place+jpos] += -fact*distance;
+            cs += CONST_BB2_NEXT[q]*d;
+            ff[0] += fact*distance;
+            ff.push_back(-fact*distance);
           }
 
           //SIDE CHAIN
@@ -780,9 +780,9 @@ void CS2Backbone::calculate()
             const double d = distance.modulo();
             const double fact = -cs_deriv*CONST_SC2[q]/d;
 
-            cs = cs + CONST_SC2[q]*d;
-            ff[place+ipos] += fact*distance;
-            ff[place+jpos] += -fact*distance;
+            cs += CONST_SC2[q]*d;
+            ff[0] += fact*distance;
+            ff.push_back(-fact*distance);
           }
         
           //EXTRA DIST
@@ -797,9 +797,9 @@ void CS2Backbone::calculate()
             const double d = distance.modulo();
             const double fact = -cs_deriv*CONST_XD[q]/d;
 
-            cs = cs + CONST_XD[q]*d;
-            ff[place+jpos] += fact*distance;
-            ff[place+kpos] += -fact*distance;
+            cs += CONST_XD[q]*d;
+            ff.push_back(fact*distance);
+            ff.push_back(-fact*distance);
           }
         
           //NON BOND
@@ -860,8 +860,8 @@ void CS2Backbone::calculate()
     	        const double fact2 = -cs_deriv*dfactor3*dinv;
     	        const double fact = fact1*CONST_CO_SPHERE[t]+fact2*CONST_CO_SPHERE3[t];
 
-                ff[place+ipos] +=  fact*distance;
-    	        ff[place+jpos] += -fact*distance;
+                ff[0] +=  fact*distance;
+    	        ff.push_back(-fact*distance);
               }
             }
           }
@@ -902,7 +902,7 @@ void CS2Backbone::calculate()
     	      const double invdL6 = 1./(dL3 * dL3);
     	
       	      const double fact = cs_deriv * rc[ringInfo[i].rtype] * invdL6;
-    	      ff[place+ipos] += -fact * (gradUQ * dL3 - u * gradVQ);
+    	      ff[0] += -fact * (gradUQ * dL3 - u * gradVQ);
     	
     	      const Vector nSum = ringInfo[i].n1 + ringInfo[i].n2;
 
@@ -932,7 +932,7 @@ void CS2Backbone::calculate()
     	        factor = -3 * dL * OneOverN;
                 const Vector gradV = factor * d;
     	    
-    	        ff[place+ringInfo[i].atom[at]] += -fact*(gradU * dL3 - u * gradV);
+    	        ff.push_back(-fact*(gradU * dL3 - u * gradV));
                 list.push_back(ringInfo[i].atom[at]);
               }
             }
@@ -958,10 +958,14 @@ void CS2Backbone::calculate()
               const double fact = cs_deriv * CO_DA[0] * (-PARS_DA[0]*3*sin(3*phi+ PARS_DA[3]) 
     	      	                                   -PARS_DA[1] * sin(phi + PARS_DA[4]));
 
-              ff[place+myfrag->phi[0]] += -fact*dd0;
-              ff[place+myfrag->phi[1]] += -fact*(dd1-dd0);
-              ff[place+myfrag->phi[2]] += -fact*(dd2-dd1);
-              ff[place+myfrag->phi[3]] +=  fact*dd2;
+              ff.push_back(-fact*dd0);
+              ff.push_back(-fact*(dd1-dd0));
+              ff.push_back(-fact*(dd2-dd1));
+              ff.push_back( fact*dd2);
+              list.push_back(myfrag->phi[0]);
+              list.push_back(myfrag->phi[1]);
+              list.push_back(myfrag->phi[2]);
+              list.push_back(myfrag->phi[3]);
             }
 
             if(myfrag->psi.size()==4){
@@ -979,10 +983,14 @@ void CS2Backbone::calculate()
               const double fact = cs_deriv * CO_DA[1] * (-PARS_DA[0] * 3 * sin(3 * psi + PARS_DA[3]) 
     	      	                                   -PARS_DA[1] * sin(psi + PARS_DA[4]));
 
-              ff[place+myfrag->psi[0]] += -fact*dd0;
-              ff[place+myfrag->psi[1]] += -fact*(dd1-dd0);
-              ff[place+myfrag->psi[2]] += -fact*(dd2-dd1);
-              ff[place+myfrag->psi[3]] +=  fact*dd2;
+              ff.push_back(-fact*dd0);
+              ff.push_back(-fact*(dd1-dd0));
+              ff.push_back(-fact*(dd2-dd1));
+              ff.push_back( fact*dd2);
+              list.push_back(myfrag->psi[0]);
+              list.push_back(myfrag->psi[1]);
+              list.push_back(myfrag->psi[2]);
+              list.push_back(myfrag->psi[3]);
             }
 
             //Chi
@@ -1001,10 +1009,14 @@ void CS2Backbone::calculate()
               const double fact = cs_deriv* CO_DA[2] * (-PARS_DA[0] * 3 * sin(3 * chi + PARS_DA[3]) 
     	      	                                  -PARS_DA[1] * sin(chi + PARS_DA[4]));
 
-              ff[place+myfrag->chi1[0]] += -fact*dd0;
-              ff[place+myfrag->chi1[1]] += -fact*(dd1-dd0);
-              ff[place+myfrag->chi1[2]] += -fact*(dd2-dd1);
-              ff[place+myfrag->chi1[3]] +=  fact*dd2;
+              ff.push_back(-fact*dd0);
+              ff.push_back(-fact*(dd1-dd0));
+              ff.push_back(-fact*(dd2-dd1));
+              ff.push_back( fact*dd2);
+              list.push_back(myfrag->chi1[0]);
+              list.push_back(myfrag->chi1[1]);
+              list.push_back(myfrag->chi1[2]);
+              list.push_back(myfrag->chi1[3]);
             }
           }
           //END OF DIHE
@@ -1013,10 +1025,8 @@ void CS2Backbone::calculate()
           comp->set(cs);
           Tensor virial;
           for(unsigned i=0;i<list.size();i++) {
-            const unsigned who = place+list[i];
-            setAtomsDerivatives(comp,list[i],ff[who]);
-            virial-=Tensor(coor[list[i]],ff[who]);
-            ff[who].zero();
+            setAtomsDerivatives(comp,list[i],ff[i]);
+            virial-=Tensor(coor[list[i]],ff[i]);
           }
           setBoxDerivatives(comp,virial);
         } 
