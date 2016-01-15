@@ -264,16 +264,11 @@ Const(0.3356806)
 
 void RDC::calculate()
 {
-  vector<double> rdc(ndata);
-  unsigned N = getNumberOfAtoms();
-  vector<Vector> dRDC(N);
-  vector<Tensor> dervir(ndata);
-
   if(!svd) {
 
     /* RDC Calculations and forces */
 #pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
-    for(unsigned r=0;r<N;r+=2)
+    for(unsigned r=0;r<getNumberOfAtoms();r+=2)
     {
       const unsigned index=r/2;
       const Vector distance = pbcDistance(getPosition(r),getPosition(r+1));
@@ -285,26 +280,21 @@ void RDC::calculate()
       const double max  = -Const*scale[index]*mu_s[index];
       const double dmax = id3*max;
       const double cos_theta = distance[2]*ind;
-      rdc[index] = 0.5*dmax*(3.*cos_theta*cos_theta-1.);
+      const double rdc = 0.5*dmax*(3.*cos_theta*cos_theta-1.);
       const double x2=distance[0]*distance[0];
       const double y2=distance[1]*distance[1];
       const double z2=distance[2]*distance[2];
       const double prod = -max*id7*(1.5*x2 +1.5*y2 -6.*z2);
-      dRDC[r][0] = prod*distance[0];
-      dRDC[r][1] = prod*distance[1];
-      dRDC[r][2] = -max*id9*distance[2]*(4.5*x2*x2 + 4.5*y2*y2 + 1.5*y2*z2 - 3.*z2*z2 + x2*(9.*y2 + 1.5*z2));
-      dRDC[r+1] = -dRDC[r];
-      dervir[index] += Tensor(distance,dRDC[r]);
-    }
+      Vector dRDC;
+      dRDC[0] = prod*distance[0];
+      dRDC[1] = prod*distance[1];
+      dRDC[2] = -max*id9*distance[2]*(4.5*x2*x2 + 4.5*y2*y2 + 1.5*y2*z2 - 3.*z2*z2 + x2*(9.*y2 + 1.5*z2));
 
-    unsigned index=0;
-    for(unsigned r=0;r<N;r+=2) {
       Value* val=getPntrToComponent(index);
-      val->set(rdc[index]);
-      setBoxDerivatives(val, dervir[index]);
-      setAtomsDerivatives(val, r  , dRDC[r  ]);
-      setAtomsDerivatives(val, r+1, dRDC[r+1]); 
-      index++;
+      val->set(rdc);
+      setBoxDerivatives(val, Tensor(distance,dRDC));
+      setAtomsDerivatives(val, r  ,  dRDC);
+      setAtomsDerivatives(val, r+1, -dRDC); 
     }
 
   } else {
@@ -325,7 +315,7 @@ void RDC::calculate()
     gsl_vector_set_zero(bc);
     unsigned index=0;
     vector<double> dmax(coupl.size());
-    for(unsigned r=0; r<N; r+=2) {
+    for(unsigned r=0; r<getNumberOfAtoms(); r+=2) {
       Vector distance;
       distance=pbcDistance(getPosition(r),getPosition(r+1));
       double d    = distance.modulo();
@@ -356,7 +346,9 @@ void RDC::calculate()
     Syz = gsl_vector_get(S,4);
     gsl_blas_dgemv(CblasNoTrans, 1.0, coef_mat, S, 0., bc);
     for(index=0; index<coupl.size(); index++) {
-      rdc[index] = gsl_vector_get(bc,index)*dmax[index];
+      double rdc = gsl_vector_get(bc,index)*dmax[index];
+      Value* val=getPntrToComponent(index);
+      val->set(rdc);
     }
     gsl_matrix_free(coef_mat);
     gsl_matrix_free(A);
@@ -365,12 +357,6 @@ void RDC::calculate()
     gsl_vector_free(Stmp);
     gsl_vector_free(S);
     gsl_vector_free(work);
-
-    for(unsigned i=0;i<ndata;i++) {
-      Value* val=getPntrToComponent(i);
-      val->set(rdc[i]);
-    }
-
 #endif
 
   }
