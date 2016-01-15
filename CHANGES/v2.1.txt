@@ -241,7 +241,7 @@ For users:
 - Fixed a bug in derivatives of kernel functions with non-diagonal covariances. This affects the 
   derivatives output by \ref sum_hills
 
-Unreleased changes (will be included in 2.1.5)
+Version 2.1.5 (coming soon)
 ---------------------------------------------
 Notice that branch 2.1 will not be longer maintained!
 All users are invited to switch to version 2.2.
