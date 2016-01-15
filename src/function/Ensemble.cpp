@@ -123,23 +123,20 @@ kbt(-1.0)
   checkRead();
 
   // prepare vector for biases and cvs
-  for(unsigned i=0; i<ens_dim; ++i) bias.push_back(0.0);
-  for(unsigned i=0; i<narg; ++i) cv.push_back(0.0);
+  bias.resize(ens_dim);
+  cv.resize(narg);
 }
 
 void Ensemble::calculate(){
-
-  // put bias to zero
-  for(unsigned i=0; i<ens_dim; ++i) bias[i] = 0.0;
+  
   double norm = 0.0;
 
-  // in case of reweight
-  if(do_reweight){
-    // first we share the bias - the narg
-    double b = getArgument(narg);
+  if(do_reweight){ // in case of reweight
+    for(unsigned i=0; i<ens_dim; ++i) bias[i] = 0.0;
     if(master){
-      bias[my_repl] = b;
-      multi_sim_comm.Sum(&bias[0], ens_dim);  
+      // first we share the bias - the narg
+      bias[my_repl] = getArgument(narg);
+      if(ens_dim>1) multi_sim_comm.Sum(&bias[0], ens_dim);  
     }
     // inside each replica
     comm.Sum(&bias[0], ens_dim);
@@ -164,14 +161,14 @@ void Ensemble::calculate(){
   double  fact = w/norm;
   double  fact_kbt = fact/kbt;
   // cycle on number of arguments - bias excluded
-  for(unsigned i=0;i<narg;++i){
-    if(master) cv[i] = getArgument(i) * fact;
-    else cv[i] = 0.;
-  }
-  // among replicas
-  if(master) multi_sim_comm.Sum(&cv[0], narg);
+  if(master) for(unsigned i=0;i<narg;++i) cv[i] = getArgument(i) * fact;
+  else       for(unsigned i=0;i<narg;++i) cv[i] = 0;
+
+  // calculate the average among replicas
+  if(master&&ens_dim>1) multi_sim_comm.Sum(&cv[0], narg);
   // inside each replica
   comm.Sum(&cv[0], narg);
+
   for(unsigned i=0;i<narg;++i){
     Value* v=getPntrToComponent(i);
     v->set(cv[i]);
