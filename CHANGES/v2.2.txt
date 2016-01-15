@@ -42,6 +42,7 @@ Changes from version 2.1 which are relevant for users:
   - make install supports DESTDIR and prefix.
   - Environment variables PLUMED_LIBSUFFIX and PLUMED_PREFIX are deprecated and will be removed in a later version.
 - New actions
+  - \ref PBMETAD implement the new Parallel Bias Metadynamics flavor of the Metadynamics sampling method.
   - \ref DUMPMASSCHARGE to dump a file with mass and charges during MD.
   - \ref EFFECTIVE_ENERGY_DRIFT to check that plumed forces are not screwing the MD integrator.
   - \ref EXTENDED_LAGRANGIAN : in combination with  \ref METAD it implements metadynamics with Extended Lagrangian; standalone it implements TAMD/dAFED.
