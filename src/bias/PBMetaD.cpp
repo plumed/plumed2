@@ -44,8 +44,9 @@ namespace bias{
 
 //+PLUMEDOC BIAS PBMETAD 
 /*
+Used to performed Parallel Bias MetaDynamics.
 
-Used to performed Parallel Bias MetaDynamics (PBMetaD) \cite pbmetad, a version of MetaDynamics \cite metad in which 
+This action activate Parallel Bias MetaDynamics (PBMetaD) \cite pbmetad, a version of MetaDynamics \cite metad in which 
 multiple low-dimensional bias potentials are applied in parallel.
 In the current implementation, these have the form of mono-dimensional MetaDynamics bias
 potentials:
