@@ -22,6 +22,7 @@
 #include "Colvar.h"
 #include "ActionRegister.h"
 #include "tools/NeighborList.h"
+#include "tools/OpenMP.h"
 
 #include <string>
 #include <cmath>
@@ -189,16 +190,21 @@ PRE::~PRE(){
 
 void PRE::calculate()
 {
-  std::vector<Vector> deriv(getNumberOfAtoms()); 
-  unsigned index=0;
 
-  for(unsigned i=0;i<nga.size();i++) { //cycle over the number of pre
+  // cycle over the number of PRE
+#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
+  for(unsigned i=0;i<nga.size();i++) { 
+    std::vector<Vector> deriv; 
     Tensor dervir;
     double pre=0;
+    unsigned index=0;
+    for(unsigned k=0; k<i; k++) index+=nga[k]; 
+    // cycle over equivalent atoms 
     for(unsigned j=0;j<nga[i];j++) {
       const double c_aver=constant/((double)nga[i]);
-      const unsigned i0=nl->getClosePair(index).first;
-      const unsigned i1=nl->getClosePair(index).second;
+      // the first atom is always the same (the paramagnetic group)
+      const unsigned i0=nl->getClosePair(index+j).first;
+      const unsigned i1=nl->getClosePair(index+j).second;
 
       Vector distance;
       if(pbc) distance=pbcDistance(getPosition(i0),getPosition(i1));
@@ -211,11 +217,10 @@ void PRE::calculate()
       const double tmpir8=-6.*c_aver/r8;
 
       pre += tmpir6;
-
-      deriv[i0] = -tmpir8*distance;
-      deriv[i1] =  tmpir8*distance;
-      dervir   +=  Tensor(distance,deriv[i0]);
-      index++;
+      
+      Vector tmpv = -tmpir8*distance;
+      deriv.push_back(tmpv);
+      dervir   +=  Tensor(distance,tmpv);
     }
     const double ratio = rtwo[i]*exp(-pre*inept) / (rtwo[i]+pre);
     const double fact = -ratio*(inept+1./(rtwo[i]+pre));
@@ -225,10 +230,10 @@ void PRE::calculate()
     setBoxDerivatives(val, fact*dervir);
 
     for(unsigned j=0;j<nga[i];j++) {
-      const unsigned i0=nl->getClosePair(index).first;
-      const unsigned i1=nl->getClosePair(index).second;
-      setAtomsDerivatives(val, i0, fact*deriv[i0]);
-      setAtomsDerivatives(val, i1, fact*deriv[i1]);
+      const unsigned i0=nl->getClosePair(index+j).first;
+      const unsigned i1=nl->getClosePair(index+j).second;
+      setAtomsDerivatives(val, i0,  fact*deriv[j]);
+      setAtomsDerivatives(val, i1, -fact*deriv[j]);
     } 
   }
 }
