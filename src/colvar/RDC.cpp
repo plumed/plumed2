@@ -275,16 +275,19 @@ void RDC::calculate()
       const double d    = distance.modulo();
       const double ind  = 1./d;
       const double id3  = ind*ind*ind; 
-      const double id7  = id3*id3*ind;
-      const double id9  = id7*ind*ind;
       const double max  = -Const*scale[index]*mu_s[index];
       const double dmax = id3*max;
       const double cos_theta = distance[2]*ind;
+
       const double rdc = 0.5*dmax*(3.*cos_theta*cos_theta-1.);
+
+      const double id7  = id3*id3*ind;
+      const double id9  = id7*ind*ind;
       const double x2=distance[0]*distance[0];
       const double y2=distance[1]*distance[1];
       const double z2=distance[2]*distance[2];
       const double prod = -max*id7*(1.5*x2 +1.5*y2 -6.*z2);
+
       Vector dRDC;
       dRDC[0] = prod*distance[0];
       dRDC[1] = prod*distance[1];
