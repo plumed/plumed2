@@ -166,14 +166,14 @@ pbc(true)
   else         log.printf("  without periodic boundary conditions\n");
 
   for(unsigned i=0;i<nga.size();i++) {
-    std::string num; Tools::convert(i,num);
+    string num; Tools::convert(i,num);
     addComponentWithDerivatives("pre_"+num);
     componentIsNotPeriodic("pre_"+num);
   }
 
   if(addistance) {
     for(unsigned i=0;i<nga.size();i++) {
-      std::string num; Tools::convert(i,num);
+      string num; Tools::convert(i,num);
       addComponent("exp_"+num);
       componentIsNotPeriodic("exp_"+num);
       Value* comp=getPntrToComponent("exp_"+num); comp->set(exppre[i]);
@@ -194,7 +194,7 @@ void PRE::calculate()
   // cycle over the number of PRE
 #pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
   for(unsigned i=0;i<nga.size();i++) { 
-    std::vector<Vector> deriv; 
+    vector<Vector> deriv; 
     Tensor dervir;
     double pre=0;
     unsigned index=0;
