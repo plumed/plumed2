@@ -1608,6 +1608,7 @@ vector<string> CS2Backbone::side_chain_atoms(const string &s){
     sc.push_back( "NE2" );
     sc.push_back( "HB1" );
     sc.push_back( "HB2" );
+    sc.push_back( "HB3" );
     sc.push_back( "HD1" );
     sc.push_back( "HD2" );
     sc.push_back( "HE1" );
