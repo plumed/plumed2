@@ -125,7 +125,7 @@ constant(0.0)
   constant=138.935458111/atoms.getUnits().getEnergy()/atoms.getUnits().getLength()*atoms.getUnits().getCharge()*atoms.getUnits().getCharge();
   k=sqrt(I/(epsilon*T))*502.903741125*atoms.getUnits().getLength();
   checkRead();
-  log<<"  with solvent dielectric constant "<<epsilon<<"\n";
+  if(k!=0) log<<"  with solvent dielectric constant "<<epsilon<<"\n";
   log<<"  at temperature "<<T<<" K\n";
   log<<"  at ionic strength "<<I<< "M\n";
   log<<"  these parameters correspond to a screening length of "<<(1.0/k)<<"\n";
@@ -139,8 +139,15 @@ double DHEnergy::pairing(double distance2,double&dfunc,unsigned i,unsigned j)con
     return 0.0;
   }
   double invdistance=1.0/distance;
-  double tmp=exp(-k*distance)*invdistance*constant*getCharge(i)*getCharge(j)/epsilon;
-  double dtmp=-(k+invdistance)*tmp;
+  double tmp=0.;
+  double dtmp=0.;
+  if(k!=0) {
+    tmp  = exp(-k*distance)*invdistance*constant*getcharge(i)*getcharge(j)/epsilon;
+    dtmp = -(k+invdistance)*tmp;
+  } else {
+    tmp  = invdistance*constant*getcharge(i)*getcharge(j)/epsilon;
+    dtmp = -invdistance*tmp;
+  }
   dfunc=dtmp*invdistance;
   return tmp;
 }
