@@ -9,6 +9,9 @@ test -d ../.git  || {
 
 DIRS=$1
 
+# remove trailing "/"
+DIRS=${DIRS%%/*}
+
 test -z "$DIRS" && DIRS=*
 
 for dir in $DIRS
