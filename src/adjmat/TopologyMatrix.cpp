@@ -39,6 +39,8 @@ private:
 /// The maximum number of bins that will be used 
 /// This is calculated based on the dmax of the switching functions
   unsigned maxbins;
+/// The volume of the cells
+  Matrix<double> cell_volume;
 /// switching function
   Matrix<SwitchingFunction> switchingFunction;
   Matrix<SwitchingFunction> cylinder_sw;
@@ -114,6 +116,13 @@ AdjacencyMatrixBase(ao)
   parseConnectionDescriptions("SWITCH",0);
   cylinder_sw.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
   parseConnectionDescriptions("RADIUS",0);
+  cell_volume.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
+  for(unsigned i=0;i<getNumberOfNodeTypes();++i){
+      for(unsigned j=0;j<getNumberOfNodeTypes();++j){
+          double r=cylinder_sw(i,j).get_d0() + cylinder_sw(i,j).get_r0();
+          cell_volume(i,j)=binw*pi*r*r;
+      }
+  }
 
   // Read in atoms 
   atoms.resize(0); parseAtomList("ATOMS",-1,atoms);
@@ -226,6 +235,7 @@ void TopologyMatrix::calculateForThreeAtoms( const unsigned& iat, const Vector& 
   if( cm<cylinder_sw( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) ).get_dmax2() ){
       double dfuncr, val = cylinder_sw( getBaseColvarNumber( myatoms.getIndex(0) ), 
                                         getBaseColvarNumber( myatoms.getIndex(1) ) ).calculateSqr( cm, dfuncr );
+      double cellv = cell_volume( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) );
 
       Vector dc1, dc2, dc3, dd1, dd2, dd3;
       if( !doNotCalculateDerivatives() ){
@@ -256,7 +266,7 @@ void TopologyMatrix::calculateForThreeAtoms( const unsigned& iat, const Vector& 
       for(unsigned bin=0;bin<maxbins;++bin){
           bead.set( bin*binw, (bin+1)*binw, sigma ); 
           if( proj<(bin*binw-bead.getCutoff()) || proj>binw*(bin+1)+bead.getCutoff() ) continue;
-          double der, contr=bead.calculateWithCutoff( proj, der );
+          double der, contr=bead.calculateWithCutoff( proj, der ) / cellv; der /= cellv;
           myatoms.addValue( 1+bin, sw*contr*val );
 
           if( !doNotCalculateDerivatives() ){
