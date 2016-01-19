@@ -61,7 +61,9 @@ class Ensemble :
   unsigned my_repl;
   unsigned narg;
   std::vector<double> bias;
-  std::vector<double> cv;
+  std::vector<double> mean;
+  std::vector<double> var;
+  std::vector<double> var_tmp;
   bool     do_reweight;
   bool     master;
   double   kbt;
@@ -113,29 +115,40 @@ kbt(-1.0)
   narg = getNumberOfArguments();
   if(do_reweight) narg--;
   
+  // these are the averages
   for(unsigned i=0;i<narg;i++) {
      std::string s=getPntrToArgument(i)->getName();
      addComponentWithDerivatives(s); 
      getPntrToComponent(i)->setNotPeriodic();
   }
+  // these are the variances
+  for(unsigned i=0;i<narg;i++) {
+     std::string s=getPntrToArgument(i)->getName()+"_v";
+     addComponentWithDerivatives(s); 
+     getPntrToComponent(i+narg)->setNotPeriodic();
+  }
   log.printf("  using %u replicas.\n", ens_dim);
   if(do_reweight) log.printf("  doing simple REWEIGHT using the latest ARGUMENT as energy.\n");
   checkRead();
 
-  // prepare vector for biases and cvs
-  bias.resize(ens_dim);
-  cv.resize(narg);
+  // prepare vector for biases, means, variances, and derivatives
+  for(unsigned i=0; i<ens_dim; ++i) bias.push_back(0.0);
+  for(unsigned i=0; i<narg; ++i) mean.push_back(0.0);
+  for(unsigned i=0; i<narg; ++i) var.push_back(0.0);
+  for(unsigned i=0; i<narg; ++i) var_tmp.push_back(0.0);
 }
 
 void Ensemble::calculate(){
-  
+
   double norm = 0.0;
 
-  if(do_reweight){ // in case of reweight
+  // in case of reweight
+  if(do_reweight){
+    // put bias to zero
     for(unsigned i=0; i<ens_dim; ++i) bias[i] = 0.0;
     if(master){
       // first we share the bias - the narg
-      bias[my_repl] = getArgument(narg);
+      bias[my_repl] = getArgument(narg); 
       if(ens_dim>1) multi_sim_comm.Sum(&bias[0], ens_dim);  
     }
     // inside each replica
@@ -160,25 +173,60 @@ void Ensemble::calculate(){
   double  w = bias[my_repl];
   double  fact = w/norm;
   double  fact_kbt = fact/kbt;
+
+  // 1) calculate means
   // cycle on number of arguments - bias excluded
-  if(master) for(unsigned i=0;i<narg;++i) cv[i] = getArgument(i) * fact;
-  else       for(unsigned i=0;i<narg;++i) cv[i] = 0;
-
-  // calculate the average among replicas
-  if(master&&ens_dim>1) multi_sim_comm.Sum(&cv[0], narg);
+  if(master) for(unsigned i=0;i<narg;++i) mean[i] = getArgument(i) * fact;
+  else       for(unsigned i=0;i<narg;++i) mean[i] = 0.;
+  // among replicas
+  if(master&&ens_dim>1) multi_sim_comm.Sum(&mean[0], narg);
   // inside each replica
-  comm.Sum(&cv[0], narg);
-
-  for(unsigned i=0;i<narg;++i){
-    Value* v=getPntrToComponent(i);
-    v->set(cv[i]);
-    setDerivative(v, i, fact);
-    // if reweighing, derivative also wrt to bias
-    if(do_reweight){
-      double der = (getArgument(i) - cv[i]) * fact_kbt;
-      setDerivative(v, narg, der);
+  comm.Sum(&mean[0], narg);
+  
+  // 2) calculate variances
+  // cycle on number of arguments - bias excluded
+  if(master) { 
+     for(unsigned i=0;i<narg;++i){
+       var_tmp[i] = ( getArgument(i) - mean[i] ) * fact;
+       var[i]     = ( getArgument(i) - mean[i] ) * var_tmp[i];
+     }
+   } else {
+     for(unsigned i=0;i<narg;++i){
+       var_tmp[i] = 0.; 
+       var[i]     = 0.;
     }
   }
+  // among replicas
+  if(master&&ens_dim>1){
+     multi_sim_comm.Sum(&var[0], narg);
+     multi_sim_comm.Sum(&var_tmp[0], narg);
+  }
+  // inside each replica
+  comm.Sum(&var[0], narg);
+  comm.Sum(&var_tmp[0], narg);
+  
+  // 3) set components
+  for(unsigned i=0;i<narg;++i){
+    // useful tmp quantity
+    double der_tmp = getArgument(i) - mean[i];
+    // set mean
+    Value* v=getPntrToComponent(i);
+    v->set(mean[i]);
+    setDerivative(v, i, fact);
+    // set variance
+    Value* u=getPntrToComponent(i+narg);
+    u->set(var[i]);
+    double der = 2.0 * fact * ( der_tmp - var_tmp[i] );
+    setDerivative(u, i, der);
+    // if reweighing, derivative also wrt to bias
+    if(do_reweight){
+      // of the mean
+      setDerivative(v, narg, der_tmp * fact_kbt);
+      // and of the variance
+      double der = ( der_tmp * der_tmp -2.0 * der_tmp * var_tmp[i] - var[i] ) * fact_kbt;
+      setDerivative(u, narg, der);
+    }
+  };
 }
 
 }
