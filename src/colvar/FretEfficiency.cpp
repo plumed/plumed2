@@ -134,13 +134,18 @@ void FretEfficiency::calculate(){
   if(pbc) makeWhole();
 
   Vector distance=delta(getPosition(0),getPosition(1));
-  const double value=distance.modulo();
-  const double invvalue=1.0/value;
+  const double dist_mod=distance.modulo();
+  const double inv_dist_mod=1.0/dist_mod;
+  
+  const double ratiosix=pow(R0_*inv_dist_mod,6);
+  const double fret_eff = 1.0/(1.0+ratiosix);
 
-  setAtomsDerivatives(0,-invvalue*distance);
-  setAtomsDerivatives(1,invvalue*distance);
+  const double der = 6.0*fret_eff*fret_eff*ratiosix*inv_dist_mod;
+
+  setAtomsDerivatives(0,-inv_dist_mod*der*distance);
+  setAtomsDerivatives(1, inv_dist_mod*der*distance);
   setBoxDerivativesNoPbc();
-  setValue           (value);
+  setValue(fret_eff);
 
 }
 
