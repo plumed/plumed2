@@ -710,10 +710,14 @@ void PlumedMain::justApply(){
 
   if(detailedTimers) stopwatch.start("5C Update");
 // update step (for statistics, etc)
+  updateFlags.push(true);
   for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();++p){
-    if((*p)->isActive() && (*p)->checkUpdate()) (*p)->update();
+    (*p)->beforeUpdate();
+    if((*p)->isActive() && (*p)->checkUpdate() && updateFlagsTop()) (*p)->update();
   }
+  while(!updateFlags.empty()) updateFlags.pop();
   if(detailedTimers) stopwatch.stop("5C Update");
+  if(!updateFlags.empty()) plumed_merror("non matching changes in the update flags");
 // Check that no action has told the calculation to stop
   if(stopNow){
      if(stopFlag) (*stopFlag)=1;
