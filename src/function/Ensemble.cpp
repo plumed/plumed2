@@ -66,6 +66,7 @@ class Ensemble :
   std::vector<double> var_tmp;
   bool     do_reweight;
   bool     master;
+  bool     do_variance;
   double   kbt;
 public:
   explicit Ensemble(const ActionOptions&);
@@ -80,6 +81,7 @@ void Ensemble::registerKeywords(Keywords& keys){
   Function::registerKeywords(keys);
   keys.use("ARG");
   keys.addFlag("REWEIGHT",false,"do reweight"); 
+  keys.addFlag("VARIANCE",false,"calculate the variance in addition to the mean"); 
   keys.add("optional","TEMP","the system temperature - this is only needed if you are reweighting");
   ActionWithValue::useCustomisableComponents(keys);
 }
@@ -88,9 +90,11 @@ Ensemble::Ensemble(const ActionOptions&ao):
 Action(ao),
 Function(ao),
 do_reweight(false),
+do_variance(false),
 kbt(-1.0)
 {
   parseFlag("REWEIGHT", do_reweight); 
+  parseFlag("VARIANCE", do_variance); 
   double temp=0.0;
   parse("TEMP",temp);
   if(do_reweight) {
@@ -122,20 +126,22 @@ kbt(-1.0)
      getPntrToComponent(i)->setNotPeriodic();
   }
   // these are the variances
-  for(unsigned i=0;i<narg;i++) {
-     std::string s=getPntrToArgument(i)->getName()+"_v";
-     addComponentWithDerivatives(s); 
-     getPntrToComponent(i+narg)->setNotPeriodic();
+  if(do_variance) {
+    for(unsigned i=0;i<narg;i++) {
+      std::string s=getPntrToArgument(i)->getName()+"_v";
+      addComponentWithDerivatives(s); 
+      getPntrToComponent(i+narg)->setNotPeriodic();
+    }
   }
   log.printf("  using %u replicas.\n", ens_dim);
   if(do_reweight) log.printf("  doing simple REWEIGHT using the latest ARGUMENT as energy.\n");
   checkRead();
 
   // prepare vector for biases, means, variances, and derivatives
-  for(unsigned i=0; i<ens_dim; ++i) bias.push_back(0.0);
-  for(unsigned i=0; i<narg; ++i) mean.push_back(0.0);
-  for(unsigned i=0; i<narg; ++i) var.push_back(0.0);
-  for(unsigned i=0; i<narg; ++i) var_tmp.push_back(0.0);
+  bias.resize(ens_dim);
+  mean.resize(narg);
+  var.resize(narg);
+  var_tmp.resize(narg);
 }
 
 void Ensemble::calculate(){
@@ -185,46 +191,53 @@ void Ensemble::calculate(){
   
   // 2) calculate variances
   // cycle on number of arguments - bias excluded
-  if(master) { 
-     for(unsigned i=0;i<narg;++i){
-       var_tmp[i] = ( getArgument(i) - mean[i] ) * fact;
-       var[i]     = ( getArgument(i) - mean[i] ) * var_tmp[i];
-     }
-   } else {
-     for(unsigned i=0;i<narg;++i){
-       var_tmp[i] = 0.; 
-       var[i]     = 0.;
+  if(do_variance) {
+    if(master) { 
+      for(unsigned i=0;i<narg;++i){
+        var_tmp[i] = ( getArgument(i) - mean[i] ) * fact;
+        var[i]     = ( getArgument(i) - mean[i] ) * var_tmp[i];
+      }
+    } else {
+      for(unsigned i=0;i<narg;++i){
+        var_tmp[i] = 0.; 
+        var[i]     = 0.;
+      }
     }
+    // among replicas
+    if(master&&ens_dim>1){
+      multi_sim_comm.Sum(&var[0], narg);
+      multi_sim_comm.Sum(&var_tmp[0], narg);
+    }
+    // inside each replica
+    comm.Sum(&var[0], narg);
+    comm.Sum(&var_tmp[0], narg);
   }
-  // among replicas
-  if(master&&ens_dim>1){
-     multi_sim_comm.Sum(&var[0], narg);
-     multi_sim_comm.Sum(&var_tmp[0], narg);
-  }
-  // inside each replica
-  comm.Sum(&var[0], narg);
-  comm.Sum(&var_tmp[0], narg);
   
   // 3) set components
   for(unsigned i=0;i<narg;++i){
-    // useful tmp quantity
-    double der_tmp = getArgument(i) - mean[i];
     // set mean
     Value* v=getPntrToComponent(i);
     v->set(mean[i]);
     setDerivative(v, i, fact);
-    // set variance
-    Value* u=getPntrToComponent(i+narg);
-    u->set(var[i]);
-    double der = 2.0 * fact * ( der_tmp - var_tmp[i] );
-    setDerivative(u, i, der);
+    // useful tmp quantity
+    const double der_tmp = getArgument(i) - mean[i];
+
+    if(do_variance) {
+      // set variance
+      Value* u=getPntrToComponent(i+narg);
+      u->set(var[i]);
+      const double der = 2.0 * fact * ( der_tmp - var_tmp[i] );
+      setDerivative(u, i, der);
+      // if reweighing, derivative also wrt to bias
+      if(do_reweight){
+        const double der = ( der_tmp * der_tmp -2.0 * der_tmp * var_tmp[i] - var[i] ) * fact_kbt;
+        setDerivative(u, narg, der);
+      }
+    }
     // if reweighing, derivative also wrt to bias
     if(do_reweight){
       // of the mean
       setDerivative(v, narg, der_tmp * fact_kbt);
-      // and of the variance
-      double der = ( der_tmp * der_tmp -2.0 * der_tmp * var_tmp[i] - var[i] ) * fact_kbt;
-      setDerivative(u, narg, der);
     }
   };
 }
