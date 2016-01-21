@@ -254,8 +254,8 @@ void PBMetaD::registerKeywords(Keywords& keys){
 }
 
 PBMetaD::~PBMetaD(){
-  for(int i=0; i<BiasGrids_.size();   ++i) delete BiasGrids_[i];
-  for(int i=0; i<hillsOfiles_.size(); ++i){
+  for(unsigned i=0; i<BiasGrids_.size();   ++i) delete BiasGrids_[i];
+  for(unsigned i=0; i<hillsOfiles_.size(); ++i){
    hillsOfiles_[i]->close();
    delete hillsOfiles_[i];
   }
@@ -263,8 +263,8 @@ PBMetaD::~PBMetaD(){
 
 PBMetaD::PBMetaD(const ActionOptions& ao):
 PLUMED_BIAS_INIT(ao),
-height0_(std::numeric_limits<double>::max()), biasf_(1.0), kbt_(0.0),
-grid_(false), stride_(0), welltemp_(false),
+grid_(false), height0_(std::numeric_limits<double>::max()),
+biasf_(1.0), kbt_(0.0), stride_(0), welltemp_(false),
 multiple_w(false), doInt_(false), isFirstStep(true)
 {
 
@@ -429,7 +429,7 @@ multiple_w(false), doInt_(false), isFirstStep(true)
   }
 
 // read Gaussians if restarting
-  for(int i=0;i<hillsfname.size();++i){
+  for(unsigned i=0;i<hillsfname.size();++i){
    IFile *ifile = new IFile();
    ifile->link(*this);
    if(ifile->FileExist(hillsfname[i])){
@@ -444,8 +444,19 @@ multiple_w(false), doInt_(false), isFirstStep(true)
    }
   }
 
+  comm.Barrier();
+
+// this barrier is needed when using walkers_mpi
+// to be sure that all files have been read before
+// backing them up
+// it should not be used when walkers_mpi is false otherwise
+// it would introduce troubles when using replicas without METAD
+// (e.g. in bias exchange with a neutral replica)
+// see issue #168 on github
+  if(comm.Get_rank()==0 && multiple_w) multi_sim_comm.Barrier();
+
 // open hills files for writing
- for(int i=0;i<hillsfname.size();++i){
+ for(unsigned i=0;i<hillsfname.size();++i){
   OFile *ofile = new OFile();
   ofile->link(*this);
   string hillsfname_tmp = hillsfname[i];
