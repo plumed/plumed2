@@ -525,7 +525,10 @@ void PlumedMain::readInputFile(std::string str){
   std::vector<std::string> words;
   while(Tools::getParsedLine(ifile,words) && words[0]!="ENDPLUMED") readInputWords(words);
   log.printf("END FILE: %s\n",str.c_str());
-  log.flush();	
+  log.flush();
+
+  //comm.Barrier();	
+  //if(comm.Get_rank()==0) multi_sim_comm.Barrier();	
 
   pilots=actionSet.select<ActionPilot*>();
 }
