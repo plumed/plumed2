@@ -190,10 +190,9 @@ PRE::~PRE(){
 
 void PRE::calculate()
 {
-
-  // cycle over the number of PRE
+// cycle over the number of PRE
 #pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
-  for(unsigned i=0;i<nga.size();i++) { 
+  for(unsigned i=0;i<nga.size();i++) {
     vector<Vector> deriv; 
     Tensor dervir;
     double pre=0;
@@ -217,7 +216,7 @@ void PRE::calculate()
       const double tmpir8=-6.*c_aver/r8;
 
       pre += tmpir6;
-      
+
       Vector tmpv = -tmpir8*distance;
       deriv.push_back(tmpv);
       dervir   +=  Tensor(distance,tmpv);
@@ -234,7 +233,7 @@ void PRE::calculate()
       const unsigned i1=nl->getClosePair(index+j).second;
       setAtomsDerivatives(val, i0,  fact*deriv[j]);
       setAtomsDerivatives(val, i1, -fact*deriv[j]);
-    } 
+    }
   }
 }
 

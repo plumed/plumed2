@@ -22,6 +22,7 @@
 #include "Colvar.h"
 #include "ActionRegister.h"
 #include "tools/NeighborList.h"
+#include "tools/OpenMP.h"
 
 #include <string>
 #include <cmath>
@@ -66,7 +67,6 @@ PRINT ARG=noes.* FILE=colvar
 class NOE : public Colvar {   
 private:
   bool             pbc;
-  bool             serial;
   vector<unsigned> nga;
   vector<double>   noedist;
   NeighborList     *nl;
@@ -93,18 +93,14 @@ void NOE::registerKeywords( Keywords& keys ){
   keys.reset_style("GROUPB","atoms");
   keys.addFlag("ADDDISTANCES",false,"Set to TRUE if you want to have fixed components with the experimetnal values.");  
   keys.add("numbered","NOEDIST","Add an experimental value for each NOE.");
-  keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   keys.addOutputComponent("noe","default","the # NOE");
   keys.addOutputComponent("exp","ADDDISTANCES","the # NOE experimental distance");
 }
 
 NOE::NOE(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
-pbc(true),
-serial(false)
+pbc(true)
 {
-  parseFlag("SERIAL",serial);
-
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;  
@@ -155,20 +151,18 @@ serial(false)
     }
   }
 
-  if(!serial)  log.printf("  The NOEs are calculated in parallel\n");
-  else         log.printf("  The NOEs are calculated in serial\n");
   if(pbc)      log.printf("  using periodic boundary conditions\n");
   else         log.printf("  without periodic boundary conditions\n");
 
   for(unsigned i=0;i<nga.size();i++) {
-    std::string num; Tools::convert(i,num);
+    string num; Tools::convert(i,num);
     addComponentWithDerivatives("noe_"+num);
     componentIsNotPeriodic("noe_"+num);
   }
 
   if(addistance) {
     for(unsigned i=0;i<nga.size();i++) {
-      std::string num; Tools::convert(i,num);
+      string num; Tools::convert(i,num);
       addComponent("exp_"+num);
       componentIsNotPeriodic("exp_"+num);
       Value* comp=getPntrToComponent("exp_"+num); comp->set(noedist[i]);
@@ -183,74 +177,51 @@ NOE::~NOE(){
   delete nl;
 } 
 
-void NOE::calculate(){ 
-  unsigned sga = nga.size();
-  std::vector<Vector> deriv(getNumberOfAtoms());
-  std::vector<Tensor> dervir(sga);
-  vector<double> noe(sga);
-
-  // internal parallelisation
-  unsigned stride=comm.Get_size();
-  unsigned rank=comm.Get_rank();
-  if(serial){
-    stride=1;
-    rank=0;
-  }
- 
-  for(unsigned i=0;i<sga;i++) noe[i]=0.;
-
-  unsigned index=0; for(unsigned k=0;k<rank;k++) index += nga[k];
-
-  for(unsigned i=rank;i<sga;i+=stride) { //cycle over the number of noe 
+void NOE::calculate()
+{
+// cycle over the number of NOE
+#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
+  for(unsigned i=0;i<nga.size();i++) {
+    vector<Vector> deriv; 
+    Tensor dervir;
+    double noe=0;
+    unsigned index=0;
+    for(unsigned k=0; k<i; k++) index+=nga[k]; 
+    // cycle over equivalent atoms 
     for(unsigned j=0;j<nga[i];j++) {
-      double aver=1./((double)nga[i]);
-      unsigned i0=nl->getClosePair(index).first;
-      unsigned i1=nl->getClosePair(index).second;
+      const double c_aver=1./((double)nga[i]);
+      // the first atom is always the same (the paramagnetic group)
+      const unsigned i0=nl->getClosePair(index+j).first;
+      const unsigned i1=nl->getClosePair(index+j).second;
+
       Vector distance;
-      if(pbc){
-        distance=pbcDistance(getPosition(i0),getPosition(i1));
-      } else {
-        distance=delta(getPosition(i0),getPosition(i1));
-      }
-      double d=distance.modulo();
-      double r2=d*d;
-      double r6=r2*r2*r2;
-      double r8=r6*r2;
-      double tmpir6=aver/r6;
-      double tmpir8=-6.*aver/r8;
+      if(pbc) distance=pbcDistance(getPosition(i0),getPosition(i1));
+      else    distance=delta(getPosition(i0),getPosition(i1));
 
-      noe[i] += tmpir6;
+      const double r2=distance.modulo2();
+      const double r6=r2*r2*r2;
+      const double r8=r6*r2;
+      const double tmpir6=c_aver/r6;
+      const double tmpir8=-6.*c_aver/r8;
 
-      deriv[i0] = -tmpir8*distance;
-      deriv[i1] = +tmpir8*distance;
+      noe += tmpir6;
 
-      dervir[i] += Tensor(distance,deriv[i0]);
-
-      index++;
+      Vector tmpv = -tmpir8*distance;
+      deriv.push_back(tmpv);
+      dervir   +=  Tensor(distance,tmpv);
     }
-    for(unsigned k=i+1;k<i+stride;k++) index += nga[k];
-  }
 
-  if(!serial){
-    comm.Sum(&noe[0],sga);
-    comm.Sum(&deriv[0][0],3*deriv.size());
-    comm.Sum(&dervir[0][0][0],9*sga);
-  }
-
-  index = 0;
-  for(unsigned i=0;i<sga;i++) { //cycle over the number of noe 
     Value* val=getPntrToComponent(i);
-    val->set(noe[i]);
-    setBoxDerivatives(val, dervir[i]);
+    val->set(noe);
+    setBoxDerivatives(val, dervir);
+
     for(unsigned j=0;j<nga[i];j++) {
-      unsigned i0=nl->getClosePair(index).first;
-      unsigned i1=nl->getClosePair(index).second;
-      setAtomsDerivatives(val, i0, deriv[i0]);
-      setAtomsDerivatives(val, i1, deriv[i1]); 
-      index++;
+      const unsigned i0=nl->getClosePair(index+j).first;
+      const unsigned i1=nl->getClosePair(index+j).second;
+      setAtomsDerivatives(val, i0,  deriv[j]);
+      setAtomsDerivatives(val, i1, -deriv[j]); 
     }
   }
-
 }
 
 }
