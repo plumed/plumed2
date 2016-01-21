@@ -59,6 +59,7 @@ class Stats :
   std::vector<double> parameters;
   bool sqdonly;
   bool components;
+  bool upperd;
 public:
   explicit Stats(const ActionOptions&);
   void calculate();
@@ -76,6 +77,7 @@ void Stats::registerKeywords(Keywords& keys){
   keys.add("optional","PARAMETERS","the parameters of the arguments in your function");
   keys.addFlag("SQDEVSUM",false,"calculates only SQDEVSUM");
   keys.addFlag("SQDEV",false,"calculates and store the SQDEV as components");
+  keys.addFlag("UPPERDISTS",false,"calculates and store the SQDEV as components");
   keys.addOutputComponent("sqdevsum","default","the sum of the squared deviations between arguments and parameters"); 
   keys.addOutputComponent("corr","default","the correlation between arguments and parameters"); 
   keys.addOutputComponent("slope","default","the slope of a linear fit between arguments and parameters"); 
@@ -87,7 +89,8 @@ Stats::Stats(const ActionOptions&ao):
 Action(ao),
 Function(ao),
 sqdonly(false),
-components(false)
+components(false),
+upperd(false)
 {
   parseVector("PARAMETERS",parameters);
   if(parameters.size()!=static_cast<unsigned>(getNumberOfArguments())&&!parameters.empty())
@@ -109,6 +112,7 @@ components(false)
 
   parseFlag("SQDEVSUM",sqdonly);
   parseFlag("SQDEV",components);
+  parseFlag("UPPERDISTS",upperd);
 
   if(sqdonly&&components) error("You cannot used SQDEVSUM and SQDEV at the sametime");
 
@@ -147,7 +151,6 @@ components(false)
 
 void Stats::calculate()
 {
-
   if(sqdonly) {
 
     double nsqd = 0.;
@@ -155,6 +158,7 @@ void Stats::calculate()
     if(!components) val=getPntrToComponent("sqdevsum");
     for(unsigned i=0;i<parameters.size();++i){
       double dev = getArgument(i)-parameters[i];
+      if(upperd&&dev<0) dev=0.; 
       if(components) {
         val=getPntrToComponent(i);
         val->set(dev*dev);

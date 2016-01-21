@@ -64,10 +64,13 @@ class Ensemble :
   std::vector<double> mean;
   std::vector<double> var;
   std::vector<double> var_tmp;
+  std::vector<double> argn;
+  std::vector<double> dargn;
   bool     do_reweight;
   bool     master;
   bool     do_variance;
   double   kbt;
+  double   moment;
 public:
   explicit Ensemble(const ActionOptions&);
   void     calculate();
@@ -83,6 +86,7 @@ void Ensemble::registerKeywords(Keywords& keys){
   keys.addFlag("REWEIGHT",false,"do reweight"); 
   keys.addFlag("VARIANCE",false,"calculate the variance in addition to the mean"); 
   keys.add("optional","TEMP","the system temperature - this is only needed if you are reweighting");
+  keys.add("optional","MOMENT","the moment you want to calculate in alternative to the mean or the variance");
   ActionWithValue::useCustomisableComponents(keys);
 }
 
@@ -91,7 +95,8 @@ Action(ao),
 Function(ao),
 do_reweight(false),
 do_variance(false),
-kbt(-1.0)
+kbt(-1.0),
+moment(0)
 {
   parseFlag("REWEIGHT", do_reweight); 
   parseFlag("VARIANCE", do_variance); 
@@ -102,6 +107,7 @@ kbt(-1.0)
     else kbt=plumed.getAtoms().getKbT();
     if(kbt==0.0) error("Unless the MD engine passes the temperature to plumed, with REWEIGHT you must specify TEMP");
   }
+  parse("MOMENT",moment);
 
   master = (comm.Get_rank()==0);
   if(master) {
@@ -139,6 +145,8 @@ kbt(-1.0)
 
   // prepare vector for biases, means, variances, and derivatives
   bias.resize(ens_dim);
+  argn.resize(narg);
+  dargn.resize(narg);
   mean.resize(narg);
   var.resize(narg);
   var_tmp.resize(narg);
@@ -180,9 +188,13 @@ void Ensemble::calculate(){
   double  fact = w/norm;
   double  fact_kbt = fact/kbt;
 
+  // 0) if we are calculating a moment then
+  if(moment!=0) for(unsigned i=0;i<narg;++i) {argn[i]=pow(getArgument(i),moment); dargn[i]=moment*pow(getArgument(i),moment-1);}
+  else for(unsigned i=0;i<narg;++i) {argn[i]=getArgument(i); dargn[i]=1.;}
+
   // 1) calculate means
   // cycle on number of arguments - bias excluded
-  if(master) for(unsigned i=0;i<narg;++i) mean[i] = getArgument(i) * fact;
+  if(master) for(unsigned i=0;i<narg;++i) mean[i] = argn[i] * fact;
   else       for(unsigned i=0;i<narg;++i) mean[i] = 0.;
   // among replicas
   if(master&&ens_dim>1) multi_sim_comm.Sum(&mean[0], narg);
@@ -194,8 +206,8 @@ void Ensemble::calculate(){
   if(do_variance) {
     if(master) { 
       for(unsigned i=0;i<narg;++i){
-        var_tmp[i] = ( getArgument(i) - mean[i] ) * fact;
-        var[i]     = ( getArgument(i) - mean[i] ) * var_tmp[i];
+        var_tmp[i] = ( argn[i] - mean[i] ) * fact;
+        var[i]     = ( argn[i] - mean[i] ) * var_tmp[i];
       }
     } else {
       for(unsigned i=0;i<narg;++i){
@@ -218,9 +230,9 @@ void Ensemble::calculate(){
     // set mean
     Value* v=getPntrToComponent(i);
     v->set(mean[i]);
-    setDerivative(v, i, fact);
+    setDerivative(v, i, fact*dargn[i]);
     // useful tmp quantity
-    const double der_tmp = getArgument(i) - mean[i];
+    const double der_tmp = argn[i] - mean[i];
 
     if(do_variance) {
       // set variance
