@@ -59,7 +59,6 @@ class MultiColvarDensity :
   public vesselbase::ActionWithInputVessel
 {
   std::string kerneltype;
-  bool firststep;
   bool fractional;
   unsigned rstride;
   MultiColvarBase* mycolv; 
@@ -107,8 +106,7 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
   ActionPilot(ao),
   ActionAtomistic(ao),
   ActionWithVessel(ao),
-  ActionWithInputVessel(ao),
-  firststep(true)
+  ActionWithInputVessel(ao)
 {
 
   std::vector<AtomNumber> atom;
@@ -191,7 +189,7 @@ unsigned MultiColvarDensity::getNumberOfQuantities() const {
 }
 
 void MultiColvarDensity::update(){
-  if(firststep){
+  if( mygrid->wasreset() ){
      std::vector<double> min(directions.size()), max(directions.size());
      std::vector<std::string> gmin(directions.size()), gmax(directions.size());;
      for(unsigned i=0;i<directions.size();++i){ min[i]=-0.5; max[i]=0.5; }
@@ -210,7 +208,6 @@ void MultiColvarDensity::update(){
      } else {
         mygrid->setBounds( gmin, gmax, nbins, gspacing ); resizeFunctions();
      }
-     firststep=false;    // We only have the first step once
   } else {
       for(unsigned i=0;i<directions.size();++i){
           double max; Tools::convert( mygrid->getMax()[i], max );

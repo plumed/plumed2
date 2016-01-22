@@ -153,6 +153,8 @@ void FindContour::performOperationsWithGrid( const bool& from_update ){
      } 
    
   }
+  // Clear the grid ready for next time
+  if( from_update ) mygrid->clear();
 
   of.printf("%u\n",npoints);
   of.printf("Points found on isocontour\n");

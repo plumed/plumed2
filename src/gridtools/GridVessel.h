@@ -34,6 +34,8 @@ class GridVessel : public vesselbase::Vessel {
 private:
 /// Do we have derivatives
  bool noderiv;
+/// The grid was recently cleared and bounds can be set
+ bool wascleared;
 /// Have the minimum and maximum for the grid been set
  bool bounds_set;
 /// The number of points in the grid
@@ -146,6 +148,8 @@ public:
  bool noDerivatives() const ;
 /// Get the value and derivatives at a particular location using spline interpolation
  double getValueAndDerivatives( const std::vector<double>& x, const unsigned& ind, std::vector<double>& der ) const ; 
+/// Was the grid cleared on the last step
+ bool wasreset() const ;
 };
 
 inline
@@ -203,6 +207,11 @@ double GridVessel::getNorm() const {
 inline
 bool GridVessel::noDerivatives() const {
   return noderiv;
+}
+
+inline
+bool GridVessel::wasreset() const {
+  return wascleared;
 }
 
 }

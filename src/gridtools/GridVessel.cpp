@@ -37,6 +37,7 @@ void GridVessel::registerKeywords( Keywords& keys ){
 GridVessel::GridVessel( const vesselbase::VesselOptions& da ):
 Vessel(da),
 noderiv(false),
+wascleared(true), 
 bounds_set(false),
 cube_units(1.0)
 {
@@ -76,7 +77,7 @@ void GridVessel::setNoDerivatives(){
 void GridVessel::setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax,
                             const std::vector<unsigned>& binsin, const std::vector<double>& spacing ){
   plumed_dbg_assert( smin.size()==dimension && smax.size()==dimension );
-  plumed_assert( spacing.size()==dimension || binsin.size()==dimension );
+  plumed_assert( wascleared && spacing.size()==dimension || binsin.size()==dimension );
 
   npoints=1; bounds_set=true;
   stride.resize( dimension ); max.resize( dimension );
@@ -194,12 +195,12 @@ double GridVessel::getGridElement( const unsigned& ipoint, const unsigned& jelem
 
 void GridVessel::setGridElement( const unsigned& ipoint, const unsigned& jelement, const double& value ){
   plumed_dbg_assert( bounds_set && ipoint<npoints && jelement<nper );
-  data[ nper*ipoint + jelement ] = value;
+  wascleared=false; data[ nper*ipoint + jelement ] = value;
 }
 
 void GridVessel::addToGridElement( const unsigned& ipoint, const unsigned& jelement, const double& value ){
   plumed_dbg_assert( bounds_set && ipoint<npoints && jelement<nper );
-  data[ nper*ipoint + jelement ] += value;
+  wascleared=false; data[ nper*ipoint + jelement ] += value;
 }
 
 double GridVessel::getGridElement( const std::vector<unsigned>& indices, const unsigned& jelement ) const {
@@ -267,6 +268,7 @@ void GridVessel::getNeighbors( const std::vector<double>& pp, const std::vector<
 
 void GridVessel::clear(){
   if( !nomemory ) return ;
+  wascleared=true;
   data.assign( data.size(), 0.0 );
 }
 
