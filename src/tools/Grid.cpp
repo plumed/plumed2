@@ -32,7 +32,7 @@
 #include "File.h"
 #include "Exception.h"
 #include "KernelFunctions.h"
-#include "MinimiseBase.h"
+#include "RootFindingBase.h"
 #include "Communicator.h"
 
 using namespace std;
@@ -208,7 +208,6 @@ vector<unsigned> Grid::getIndices(const vector<double> & x) const {
  vector<unsigned> indices;
  for(unsigned int i=0;i<dimension_;++i){
    indices.push_back(unsigned(floor((x[i]-min_[i])/dx_[i])));
-   if( pbc_[i] ) indices[i]=indices[i]%nbin_[i];
  }
  return indices;
 }
@@ -682,10 +681,11 @@ Grid::index_t SparseGrid::getMaxSize() const {
 }
 
 double Grid::getDifferenceFromContour( const std::vector<double>& x, std::vector<double>& der ){
- return std::fabs( getValueAndDerivatives( x, der ) - contour_location ); 
+ return getValueAndDerivatives( x, der ) - contour_location; 
 }
 
-void Grid::findSetOfPointsOnContour(const double& target, unsigned& npoints, std::vector<std::vector<double> >& points ){
+void Grid::findSetOfPointsOnContour(const double& target, const std::vector<bool>& nosearch,
+                                    unsigned& npoints, std::vector<std::vector<double> >& points ){
  // Set contour location for function
  contour_location=target;
  // Resize points to maximum possible value 
@@ -696,7 +696,7 @@ void Grid::findSetOfPointsOnContour(const double& target, unsigned& npoints, std
  std::vector<double> direction( dimension_, 0 );
 
  // Run over whole grid
- npoints=0; MinimiseBase<Grid> mymin( this );
+ npoints=0; RootFindingBase<Grid> mymin( this );
  for(unsigned i=0;i<maxsize_;++i){
      for(unsigned j=0;j<dimension_;++j) ind[j]=getIndices(i)[j]; 
 
@@ -706,6 +706,7 @@ void Grid::findSetOfPointsOnContour(const double& target, unsigned& npoints, std
      // Now search for contour in each direction
      bool edge=false;
      for(unsigned j=0;j<dimension_;++j){
+         if( nosearch[j] ) continue ; 
          // Make sure we don't search at the edge of the grid
          if( !pbc_[j] && (ind[j]+1)==nbin_[j] ) continue;
          else if( (ind[j]+1)==nbin_[j] ){ edge=true; ind[j]=0; } 
@@ -715,9 +716,9 @@ void Grid::findSetOfPointsOnContour(const double& target, unsigned& npoints, std
              // Use initial point location as first guess for search
              points[npoints].resize(dimension_); for(unsigned k=0;k<dimension_;++k) points[npoints][k]=getPoint(i)[k];
              // Setup direction vector
-             direction[j]=1.0;
+             direction[j]=0.9999*dx_[j];
              // And do proper search for contour point
-             double themin=mymin.linemin( direction, points[npoints], &Grid::getDifferenceFromContour );
+             mymin.linesearch( direction, points[npoints], &Grid::getDifferenceFromContour );
              direction[j]=0.0; npoints++;
          } 
          if( pbc_[j] && edge ){ edge=false; ind[j]=nbin_[j]-1; }
