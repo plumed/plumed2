@@ -489,7 +489,7 @@ void PlumedMain::init(){
   log<<"Please cite this paper when using PLUMED ";
   log<<cite("Tribello, Bonomi, Branduardi, Camilloni, and Bussi, Comput. Phys. Commun. 185, 604 (2014)");
   log<<"\n";
-  log<<"For further information see the PLUMED web page at http://www.plumed-code.org\n";
+  log<<"For further information see the PLUMED web page at http://www.plumed.org\n";
   log.printf("Molecular dynamics engine: %s\n",MDEngine.c_str());
   log.printf("Precision of reals: %d\n",atoms.getRealPrecision());
   log.printf("Running over %d %s\n",comm.Get_size(),(comm.Get_size()>1?"nodes":"node"));
@@ -525,7 +525,10 @@ void PlumedMain::readInputFile(std::string str){
   std::vector<std::string> words;
   while(Tools::getParsedLine(ifile,words) && words[0]!="ENDPLUMED") readInputWords(words);
   log.printf("END FILE: %s\n",str.c_str());
-  log.flush();	
+  log.flush();
+
+  //comm.Barrier();	
+  //if(comm.Get_rank()==0) multi_sim_comm.Barrier();	
 
   pilots=actionSet.select<ActionPilot*>();
 }
