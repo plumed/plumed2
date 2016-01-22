@@ -223,7 +223,6 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
   Keywords keys; gridtools::HistogramOnGrid::registerKeywords( keys );
   vesselbase::VesselOptions dar( da, keys );
   mygrid = new gridtools::HistogramOnGrid(dar); addVessel( mygrid );
-  resizeFunctions();
 
   // Enusre units for cube files are set correctly
   if( !fractional ){
@@ -261,6 +260,7 @@ void MultiColvarDensity::update(){
      }
      for(unsigned i=0;i<directions.size();++i){ Tools::convert(min[i],gmin[i]); Tools::convert(max[i],gmax[i]); }
      mygrid->clear(); mygrid->setBounds( gmin, gmax, nbins, gspacing ); resizeFunctions();
+
   } else {
       for(unsigned i=0;i<directions.size();++i){
           double max; Tools::convert( mygrid->getMax()[i], max );
