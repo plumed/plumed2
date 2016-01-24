@@ -137,10 +137,10 @@ void FretEfficiency::calculate(){
   const double dist_mod=distance.modulo();
   const double inv_dist_mod=1.0/dist_mod;
   
-  const double ratiosix=pow(R0_*inv_dist_mod,6);
+  const double ratiosix=pow(dist_mod/R0_,6);
   const double fret_eff = 1.0/(1.0+ratiosix);
 
-  const double der = 6.0*fret_eff*fret_eff*ratiosix*inv_dist_mod;
+  const double der = -6.0*fret_eff*fret_eff*ratiosix*inv_dist_mod;
 
   setAtomsDerivatives(0,-inv_dist_mod*der*distance);
   setAtomsDerivatives(1, inv_dist_mod*der*distance);
