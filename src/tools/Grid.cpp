@@ -716,7 +716,7 @@ void Grid::findSetOfPointsOnContour(const double& target, const std::vector<bool
              // Use initial point location as first guess for search
              points[npoints].resize(dimension_); for(unsigned k=0;k<dimension_;++k) points[npoints][k]=getPoint(i)[k];
              // Setup direction vector
-             direction[j]=0.9999*dx_[j];
+             direction[j]=0.999999999*dx_[j];
              // And do proper search for contour point
              mymin.linesearch( direction, points[npoints], &Grid::getDifferenceFromContour );
              direction[j]=0.0; npoints++;
