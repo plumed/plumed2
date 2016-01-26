@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Function.h"
+#include "tools/OpenMP.h"
 
 using namespace std;
 namespace PLMD{
@@ -61,12 +62,13 @@ void Function::addComponentWithDerivatives( const std::string& name ){
   getPntrToComponent(name)->resizeDerivatives(getNumberOfArguments());
 }
 
-void Function::apply(){
+void Function::apply()
+{
 
-  vector<double>   f(getNumberOfArguments(),0.0);
+  vector<double> f(getNumberOfArguments(),0.0);
+  vector<double> forces( getNumberOfArguments() );
   bool at_least_one_forced=false;
 
-  std::vector<double> forces( getNumberOfArguments() );
   for(int i=0;i<getNumberOfComponents();++i){
     if( getPntrToComponent(i)->applyForce( forces ) ){
        at_least_one_forced=true;
@@ -74,9 +76,11 @@ void Function::apply(){
     }
   }
 
-  if(at_least_one_forced) for(unsigned i=0;i<getNumberOfArguments();++i){
-    getPntrToArgument(i)->addForce(f[i]);
+  if(at_least_one_forced) {
+#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
+    for(unsigned i=0;i<getNumberOfArguments();++i) getPntrToArgument(i)->addForce(f[i]);
   }
 }
+
 }
 }
