@@ -171,7 +171,10 @@ void PlumedMain::cmd(const std::string & word,void*val){
   std::vector<std::string> words=Tools::getWords(word);
   unsigned nw=words.size();
   if(nw==1) {
-    switch(word_map[word]) {
+    int iword=-1;
+    std::map<std::string, int>::const_iterator it=word_map.find(word);
+    if(it!=word_map.end()) iword=it->second;
+    switch(iword) {
       double d;
       case SETBOX:
         CHECK_INIT(initialized,word);
