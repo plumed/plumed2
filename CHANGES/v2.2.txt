@@ -111,6 +111,11 @@ Unreleased changes (will be included in 2.2.2)
 For users:
 - \ref MOLINFO for RNA accepts more residue names, see \issue{180}.
 
+For developers:
+- Fixed a bug in the interpretation of cmd strings. Namely, an erroneous string was not triggering an error.
+  This is harmless for MD codes properly patched, but could have introduced problems in MD codes with typoes
+  in cmd strings.
+
 See branch \branch{v2.2} on git repository.
 
 
