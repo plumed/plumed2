@@ -69,6 +69,7 @@ PLUMED_REGISTER_ACTION(DFSClustering,"DFSCLUSTERING")
 
 void DFSClustering::registerKeywords( Keywords& keys ){
   ClusteringBase::registerKeywords( keys );
+  keys.add("compulsory","MAXCONNECT","0","maximum number of connections that can be formed by any given node in the graph");
 }
 
 DFSClustering::DFSClustering(const ActionOptions&ao):
@@ -78,10 +79,12 @@ ClusteringBase(ao),
 edge_list(0.5*getNumberOfNodes()*(getNumberOfNodes()-1))
 #else
 nneigh(getNumberOfNodes()),
-adj_list(getNumberOfNodes(),getNumberOfNodes()),
 color(getNumberOfNodes())
 #endif
 {
+   unsigned maxconnections; parse("MAXCONNECT",maxconnections);
+   if( maxconnections>0 ) adj_list.resize(getNumberOfNodes(),maxconnections);
+   else adj_list.resize(getNumberOfNodes(),getNumberOfNodes()); 
 }
 
 void DFSClustering::performClustering(){

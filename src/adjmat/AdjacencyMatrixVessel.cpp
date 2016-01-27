@@ -116,7 +116,8 @@ void AdjacencyMatrixVessel::retrieveAdjacencyLists( std::vector<unsigned>& nneig
       retrieveValue( i, false, myvals );
       unsigned j, k; getMatrixIndices( i, k, j ); 
       if( !function->checkForConnection( myvals ) ) continue ;       
-      
+ 
+      if( nneigh[j]>adj_list.ncols() || nneigh[k]>adj_list.ncols() ) error("adjacency matrix is not large enough, increase maxconnections"); 
       // Store if atoms are connected
       // unsigned j, k; getMatrixIndices( i, k, j );
       adj_list(k,nneigh[k])=j; nneigh[k]++;
