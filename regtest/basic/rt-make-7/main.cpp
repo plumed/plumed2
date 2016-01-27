@@ -21,6 +21,8 @@ int main(){
   plumed->cmd("readInputLine","d: DISTANCE ATOMS=1,2");
   plumed->cmd("readInputLine","d1: DISTANCE ATOMS={1 2}"); // check if braces are parsed correctly
   plumed->cmd("readInputLine","PRINT ARG=d,d1 FILE=COLVAR");
+  plumed->cmd("readInputLine","METAD ARG=d PACE=1 SIGMA=1 HEIGHT=1 FILE=H1");
+  plumed->cmd("readInputLine","METAD ARG=d PACE=1 SIGMA=1 HEIGHT=1 FILE=H2");
 
 
   int step=1;
