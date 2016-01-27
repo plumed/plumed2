@@ -1,5 +1,6 @@
 #include "plumed/wrapper/Plumed.h"
 #include <vector>
+#include <fstream>
 
 using namespace PLMD;
 
@@ -21,18 +22,35 @@ int main(){
   plumed->cmd("readInputLine","d: DISTANCE ATOMS=1,2");
   plumed->cmd("readInputLine","d1: DISTANCE ATOMS={1 2}"); // check if braces are parsed correctly
   plumed->cmd("readInputLine","PRINT ARG=d,d1 FILE=COLVAR");
-  plumed->cmd("readInputLine","METAD ARG=d PACE=1 SIGMA=1 HEIGHT=1 FILE=H1");
-  plumed->cmd("readInputLine","METAD ARG=d PACE=1 SIGMA=1 HEIGHT=1 FILE=H2");
+  plumed->cmd("readInputLine","RESTRAINT ARG=d AT=0 KAPPA=1");
+  plumed->cmd("readInputLine","METAD ARG=d PACE=1 SIGMA=1 HEIGHT=0 FILE=H1");
+  plumed->cmd("readInputLine","METAD ARG=d PACE=2 SIGMA=1 HEIGHT=0 FILE=H2");
 
+  std::ofstream ofs("output");
 
-  int step=1;
-  plumed->cmd("setStep",&step);
-  plumed->cmd("setPositions",&positions[0]);
-  plumed->cmd("setBox",&box[0]);
-  plumed->cmd("setForces",&forces[0]);
-  plumed->cmd("setVirial",&virial[0]);
-  plumed->cmd("setMasses",&masses[0]);
-  plumed->cmd("calc");
+  for(int step=0;step<10;step++){
+    plumed->cmd("setStep",&step);
+    plumed->cmd("setPositions",&positions[0]);
+    plumed->cmd("setBox",&box[0]);
+    plumed->cmd("setForces",&forces[0]);
+    plumed->cmd("setVirial",&virial[0]);
+    plumed->cmd("setMasses",&masses[0]);
+// first compute using modified positions:
+    positions[0]=0.5;
+    plumed->cmd("prepareCalc");
+    plumed->cmd("performCalcNoUpdate");
+    positions[0]=0;
+    double bias;
+    plumed->cmd("getBias",&bias);
+    ofs<<bias<<"\n";
+// first compute using regular positions:
+    plumed->cmd("prepareCalc");
+    plumed->cmd("performCalcNoUpdate");
+    plumed->cmd("getBias",&bias);
+    ofs<<bias<<"\n";
+// hills should only be added at regular positions:
+    plumed->cmd("update");
+  }
 
   delete plumed;
   return 0;
