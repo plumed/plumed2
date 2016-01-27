@@ -105,6 +105,12 @@ For developers:
 - ./configure is automatically relaunched when changing ./configure or Makefile.conf. This makes it more robust
   to switch between branches.
 
+Unreleased changes (will be included in 2.2.2)
+----------------------------------------------
+
+For users:
+- \ref MOLINFO for RNA accepts more residue names, see \issue{180}.
+
 See branch \branch{v2.2} on git repository.
 
 
