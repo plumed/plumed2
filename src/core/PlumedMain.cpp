@@ -543,7 +543,13 @@ void PlumedMain::readInputLine(const std::string & str){
   plumed_assert(initialized);
   if(str.empty()) return;
   std::vector<std::string> words=Tools::getWords(str);
+  citations.clear();
   readInputWords(words);
+  if(!citations.empty()){
+    log<<"Relevant bibliography:\n";
+    log<<citations;
+    log<<"Please read and cite where appropriate!\n";
+  }
 }
 
 void PlumedMain::readInputWords(const std::vector<std::string> & words){
