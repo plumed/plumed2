@@ -79,7 +79,6 @@ public:
   unsigned getNumberOfQuantities() const ;
   void turnOnDerivatives();
   void prepare();
-  void finishTaskListUpdate();
   void calculate();
   void performTask( const unsigned& , const unsigned& , MultiValue& ) const ; 
   void apply();

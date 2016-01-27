@@ -69,7 +69,10 @@ PLUMED_REGISTER_ACTION(DFSClustering,"DFSCLUSTERING")
 
 void DFSClustering::registerKeywords( Keywords& keys ){
   ClusteringBase::registerKeywords( keys );
-  keys.add("compulsory","MAXCONNECT","0","maximum number of connections that can be formed by any given node in the graph");
+  keys.add("compulsory","MAXCONNECT","0","maximum number of connections that can be formed by any given node in the graph. "
+                                         "By default this is set equal to zero and the number of connections is set equal to the number "
+                                         "of nodes.  You only really need to set this if you are working with a very large system and "
+                                         "memory is at a premium");
 }
 
 DFSClustering::DFSClustering(const ActionOptions&ao):

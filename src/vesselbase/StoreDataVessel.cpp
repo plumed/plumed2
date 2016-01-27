@@ -180,7 +180,7 @@ void StoreDataVessel::retrieveDerivatives( const unsigned& myelem, const bool& n
   } 
 }
 
-bool StoreDataVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
+void StoreDataVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
 
   if( !hard_cut ){
      storeValues( current, myvals, buffer );
@@ -190,7 +190,7 @@ bool StoreDataVessel::calculate( const unsigned& current, MultiValue& myvals, st
      if( !(getAction()->lowmem) && getAction()->derivativesAreRequired() ) storeDerivatives( current, myvals, buffer, der_list );
   } 
 
-  return true;
+  return;
 }
 
 void StoreDataVessel::finish( const std::vector<double>& buffer ){
