@@ -197,6 +197,13 @@ public:
   void readInputWords(const std::vector<std::string> &  str);
 
 /**
+  Read an input string.
+  \param str name of the string
+  At variance with readInputWords(), this is splitting the string into words
+*/
+  void readInputLine(const std::string & str);
+
+/**
   Initialize the object.
   Should be called once.
 */
