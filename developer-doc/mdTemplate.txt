@@ -246,11 +246,17 @@ plumed_cmd(plumedmain,"setVirial",&force_vir[0][0]);         // Pass a pointer t
 
 // Calls to do actual calculations
 plumed_cmd(plumedmain,"calc",NULL);                          // Calculate and apply forces from the biases defined in the plumed input
-// In some cases it can be faster to break up the above command into its individual setps:
+
+// One can break up the "calc" command in two parts:
 plumed_cmd(plumedmain,"prepareCalc",NULL);                   // Prepare to do a calculation by requesting all the atomic positions from the MD code
+plumed_cmd(plumedmain,"performCalc",NULL);                   // Use the atomic positions collected during prepareCalc phase to calculate colvars and biases.
+// After the first part it will be possible to ask PLUMED e.g. if the energy is required with
+plumed_cmd(plumedmain,"isEnergyNeeded,&flag);                // assuming flag is an int, that will be set to 0 if energy is not needed and 1 if it is needed
+
+// The "prepareCalc" can be further split into:
 plumed_cmd(plumedmain,"prepareDependencies",NULL);           // Work out what we are calculating during this MD step (this is the first step of prepareCalc)
 plumed_cmd(plumedmain,"shareData",NULL);                     // Request all the atomic positions from the MD code (this is the second step of prepareCalc)
-plumed_cmd(plumedmain,"performCalc",NULL);                   // Use the atomic positions collected during prepareCalc phase to calculate colvars and biases.
+// This will allow to overlap sharing of atoms across multiple processors (sent in shareData) and calculation
 
 // Some extra calls that might come in handy
 plumed_cmd(plumedmain,"createFullList",&n);                  // Create a list containing of all the atoms plumed is using to do calculations (return the number of atoms in n)
