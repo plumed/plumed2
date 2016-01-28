@@ -51,6 +51,16 @@ using namespace std;
 
 namespace PLMD{
 
+std::map<std::string, int> & plumedMainWordMap(){
+  static std::map<std::string, int> word_map;
+  static bool init=false;
+  if(!init){
+#include "PlumedMainMap.tmp"
+  }
+  init=true;
+  return word_map;
+}
+
 PlumedMain::PlumedMain():
   comm(*new Communicator),
   multi_sim_comm(*new Communicator),
@@ -79,7 +89,6 @@ PlumedMain::PlumedMain():
   log.setLinePrefix("PLUMED: ");
   stopwatch.start();
   stopwatch.pause();
-#include "PlumedMainMap.tmp"
 }
 
 PlumedMain::~PlumedMain(){
@@ -114,8 +123,8 @@ void PlumedMain::cmd(const std::string & word,void*val){
   unsigned nw=words.size();
   if(nw==1) {
     int iword=-1;
-    std::map<std::string, int>::const_iterator it=word_map.find(word);
-    if(it!=word_map.end()) iword=it->second;
+    std::map<std::string, int>::const_iterator it=plumedMainWordMap().find(word);
+    if(it!=plumedMainWordMap().end()) iword=it->second;
     switch(iword) {
       double d;
       case SETBOX: // cmd setBox

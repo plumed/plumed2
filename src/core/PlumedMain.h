@@ -27,7 +27,6 @@
 #include <string>
 #include <vector>
 #include <set>
-#include <map>
 #include <stack>
 
 
@@ -154,9 +153,6 @@ public:
 
 /// Add a citation, returning a string containing the reference number, something like "[10]"
   std::string cite(const std::string&);
-
-/// word list command
-  std::map<std::string, int> word_map;
 
 /// Get number of threads that can be used by openmp
   unsigned getNumThreads()const;
