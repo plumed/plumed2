@@ -1,0 +1,25 @@
+#! /bin/bash
+
+awk -v opt=$1 '
+{
+  if($1=="case" && $(NF-1)=="cmd"){
+      i++;
+      string[i]=$NF
+      enum[i]=$2
+      sub(":","",enum[i]);
+      } }END{
+  n=i;
+  if(opt=="enum"){
+    print "enum {"
+    for(i=1;i<=n;i++){
+      comma=","
+      if(i==n) comma=""
+      print enum[i],comma;
+    }
+    print "};"
+  } else if(opt=="map"){
+    for(i=1;i<=n;i++) printf("  word_map[\"%s\"]=%s;\n",string[i],enum[i]);
+  }
+  }'
+
+
