@@ -197,6 +197,13 @@ public:
   void readInputWords(const std::vector<std::string> &  str);
 
 /**
+  Read an input string.
+  \param str name of the string
+  At variance with readInputWords(), this is splitting the string into words
+*/
+  void readInputLine(const std::string & str);
+
+/**
   Initialize the object.
   Should be called once.
 */
@@ -221,9 +228,15 @@ public:
   void shareData();
 /**
   Perform the calculation.
-  Shortcut for waitData() + justCalculate() + justApply()
+  Shortcut for waitData() + justCalculate() + justApply().
+  Equivalently: waitData() + justCalculate() + backwardPropagate() + update().
 */
   void performCalc();
+/**
+  Perform the calculation without update()
+  Shortcut for: waitData() + justCalculate() + backwardPropagate()
+*/
+  void performCalcNoUpdate();
 /**
   Complete PLUMED calculation.
   Shortcut for prepareCalc() + performCalc()
@@ -240,10 +253,20 @@ public:
 */
   void justCalculate();
 /**
+  Backward propagate and update.
+  Shortcut for backwardPropagate() + update()
+  I leave it here for backward compatibility
+*/
+  void justApply();
+/**
   Perform the backward loop on active actions.
   Needed to apply the forces back.
 */
-  void justApply();
+  void backwardPropagate();
+/**
+  Call the update() method.
+*/
+  void update();
 /**
   If there are calculations that need to be done at the very end of the calculations this
   makes sures they are done

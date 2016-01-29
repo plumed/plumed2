@@ -47,7 +47,7 @@
 
 using namespace std;
 
-enum { SETBOX, SETPOSITIONS, SETMASSES, SETCHARGES, SETPOSITIONSX, SETPOSITIONSY, SETPOSITIONSZ, SETVIRIAL, SETENERGY, SETFORCES, SETFORCESX, SETFORCESY, SETFORCESZ, CALC, PREPAREDEPENDENCIES, SHAREDATA, PREPARECALC, PERFORMCALC, SETSTEP, SETSTEPLONG, SETATOMSNLOCAL, SETATOMSGATINDEX, SETATOMSFGATINDEX, SETATOMSCONTIGUOUS, CREATEFULLLIST, GETFULLLIST, CLEARFULLLIST, READ, CLEAR, GETAPIVERSION, INIT, SETREALPRECISION, SETMDLENGTHUNITS, SETMDENERGYUNITS, SETMDTIMEUNITS, SETMDCHARGEUNITS, SETMDMASSUNITS, SETNATURALUNITS, SETNOVIRIAL, SETPLUMEDDAT, SETMPICOMM, SETMPIFCOMM, SETMPIMULTISIMCOMM, SETNATOMS, SETTIMESTEP, SETMDENGINE, SETLOG, SETLOGFILE, SETSTOPFLAG, GETEXCHANGESFLAG, SETEXCHANGESSEED, SETNUMBEROFREPLICAS, GETEXCHANGESLIST, RUNFINALJOBS, ISENERGYNEEDED, GETBIAS, SETKBT, SETRESTART };
+enum { SETBOX, SETPOSITIONS, SETMASSES, SETCHARGES, SETPOSITIONSX, SETPOSITIONSY, SETPOSITIONSZ, SETVIRIAL, SETENERGY, SETFORCES, SETFORCESX, SETFORCESY, SETFORCESZ, CALC, PREPAREDEPENDENCIES, SHAREDATA, PREPARECALC, PERFORMCALC, PERFORMCALCNOUPDATE, UPDATE, SETSTEP, SETSTEPLONG, SETATOMSNLOCAL, SETATOMSGATINDEX, SETATOMSFGATINDEX, SETATOMSCONTIGUOUS, CREATEFULLLIST, GETFULLLIST, CLEARFULLLIST, READ, CLEAR, GETAPIVERSION, INIT, SETREALPRECISION, SETMDLENGTHUNITS, SETMDENERGYUNITS, SETMDTIMEUNITS, SETMDCHARGEUNITS, SETMDMASSUNITS, SETNATURALUNITS, SETNOVIRIAL, SETPLUMEDDAT, SETMPICOMM, SETMPIFCOMM, SETMPIMULTISIMCOMM, SETNATOMS, SETTIMESTEP, SETMDENGINE, SETLOG, SETLOGFILE, SETSTOPFLAG, GETEXCHANGESFLAG, SETEXCHANGESSEED, SETNUMBEROFREPLICAS, GETEXCHANGESLIST, RUNFINALJOBS, ISENERGYNEEDED, GETBIAS, SETKBT, SETRESTART, READINPUTLINE };
 
 namespace PLMD{
 
@@ -97,6 +97,8 @@ PlumedMain::PlumedMain():
   word_map["shareData"]=SHAREDATA;
   word_map["prepareCalc"]=PREPARECALC;
   word_map["performCalc"]=PERFORMCALC;
+  word_map["performCalcNoUpdate"]=PERFORMCALCNOUPDATE;
+  word_map["update"]=UPDATE;
   word_map["setStep"]=SETSTEP;
   word_map["setStepLong"]=SETSTEPLONG;
   word_map["setAtomsNlocal"]=SETATOMSNLOCAL;
@@ -137,6 +139,7 @@ PlumedMain::PlumedMain():
   word_map["getBias"]=GETBIAS;
   word_map["setKbT"]=SETKBT;
   word_map["setRestart"]=SETRESTART;
+  word_map["readInputLine"]=READINPUTLINE;
 }
 
 PlumedMain::~PlumedMain(){
@@ -250,6 +253,14 @@ void PlumedMain::cmd(const std::string & word,void*val){
         CHECK_INIT(initialized,word);
         performCalc();
         break;
+      case PERFORMCALCNOUPDATE:
+        CHECK_INIT(initialized,word);
+        performCalcNoUpdate();
+        break;
+      case UPDATE:
+        CHECK_INIT(initialized,word);
+        update();
+        break;
       case SETSTEP:
         CHECK_INIT(initialized,word);
         CHECK_NULL(val,word);
@@ -299,6 +310,11 @@ void PlumedMain::cmd(const std::string & word,void*val){
         CHECK_INIT(initialized,word);
         if(val)readInputFile(static_cast<char*>(val));
         else   readInputFile("plumed.dat");
+        break;
+      case READINPUTLINE:
+        CHECK_INIT(initialized,word);
+        CHECK_NULL(val,word);
+        readInputLine(static_cast<char*>(val));
         break;
       case CLEAR:
         CHECK_INIT(initialized,word);
@@ -536,6 +552,19 @@ void PlumedMain::readInputFile(std::string str){
   pilots=actionSet.select<ActionPilot*>();
 }
 
+void PlumedMain::readInputLine(const std::string & str){
+  plumed_assert(initialized);
+  if(str.empty()) return;
+  std::vector<std::string> words=Tools::getWords(str);
+  citations.clear();
+  readInputWords(words);
+  if(!citations.empty()){
+    log<<"Relevant bibliography:\n";
+    log<<citations;
+    log<<"Please read and cite where appropriate!\n";
+  }
+}
+
 void PlumedMain::readInputWords(const std::vector<std::string> & words){
   plumed_assert(initialized);
   if(words.empty())return;
@@ -628,10 +657,17 @@ void PlumedMain::shareData(){
   stopwatch.stop("2 Sharing data");
 }
 
+void PlumedMain::performCalcNoUpdate(){
+  waitData();
+  justCalculate();
+  backwardPropagate();
+}
+
 void PlumedMain::performCalc(){
   waitData();
   justCalculate();
-  justApply();
+  backwardPropagate();
+  update();
 }
 
 void PlumedMain::waitData(){
@@ -684,7 +720,11 @@ void PlumedMain::justCalculate(){
 }
 
 void PlumedMain::justApply(){
+  backwardPropagate();
+  update();
+}
   
+void PlumedMain::backwardPropagate(){
   if(!active)return;
   int iaction=0;
   stopwatch.start("5 Applying (backward loop)");
@@ -713,8 +753,13 @@ void PlumedMain::justApply(){
   if(detailedTimers) stopwatch.start("5B Update forces");
   if(atoms.getNatoms()>0) atoms.updateForces();
   if(detailedTimers) stopwatch.stop("5B Update forces");
+  stopwatch.stop("5 Applying (backward loop)");
+}
 
-  if(detailedTimers) stopwatch.start("5C Update");
+void PlumedMain::update(){
+  if(!active)return;
+
+  stopwatch.start("6 Update");
 // update step (for statistics, etc)
   updateFlags.push(true);
   for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();++p){
@@ -722,14 +767,12 @@ void PlumedMain::justApply(){
     if((*p)->isActive() && (*p)->checkUpdate() && updateFlagsTop()) (*p)->update();
   }
   while(!updateFlags.empty()) updateFlags.pop();
-  if(detailedTimers) stopwatch.stop("5C Update");
   if(!updateFlags.empty()) plumed_merror("non matching changes in the update flags");
 // Check that no action has told the calculation to stop
   if(stopNow){
      if(stopFlag) (*stopFlag)=1;
      else plumed_merror("your md code cannot handle plumed stop events - add a call to plumed.comm(stopFlag,stopCondition)");
   }  
-  stopwatch.stop("5 Applying (backward loop)");
 
 // flush by default every 10000 steps
 // hopefully will not affect performance
@@ -738,6 +781,7 @@ void PlumedMain::justApply(){
     log.flush();
     for(ActionSet::const_iterator p=actionSet.begin();p!=actionSet.end();++p) (*p)->fflush();
   }
+  stopwatch.stop("6 Update");
 }
 
 void PlumedMain::load(const std::string& ss){
