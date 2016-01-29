@@ -202,12 +202,7 @@ void MultiColvarDensity::update(){
          }
      }
      for(unsigned i=0;i<directions.size();++i){ Tools::convert(min[i],gmin[i]); Tools::convert(max[i],gmax[i]); }
-
-     if( plumed.getRestart() ){
-        error("restarting of MultiColvarDensity is not yet implemented");
-     } else {
-        mygrid->setBounds( gmin, gmax, nbins, gspacing ); resizeFunctions();
-     }
+     mygrid->clear(); mygrid->setBounds( gmin, gmax, nbins, gspacing ); resizeFunctions();
   } else {
       for(unsigned i=0;i<directions.size();++i){
           double max; Tools::convert( mygrid->getMax()[i], max );

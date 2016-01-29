@@ -208,6 +208,7 @@ void Histogram::performTask( const unsigned& task_index, const unsigned& current
 }
 
 void Histogram::performAnalysis(){
+  if( mygrid->wasreset() ) mygrid->clear();
   runAllTasks(); mygrid->setNorm( getNormalization() );
 }
 

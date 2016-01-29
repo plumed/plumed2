@@ -135,6 +135,8 @@ public:
  double getGridExtent( const unsigned& i ) const ;
 /// Clear all the data stored on the grid
  virtual void clear();
+/// Reset the grid so that it is cleared at start of next time it is calculated
+ void reset();
 /// This ensures that Gaussian cube fies are in correct units
  void setCubeUnits( const double& units );
 /// This ensures that Gaussian cube files are in correct units

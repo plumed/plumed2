@@ -81,7 +81,7 @@ unsigned ConvertToFES::getNumberOfQuantities() const {
 }
 
 void ConvertToFES::performOperationsWithGrid( const bool& from_update ){
-  outgrid->clear(); runAllTasks();
+  outgrid->clear(); runAllTasks(); outgrid->reset();
 }
 
 void ConvertToFES::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {

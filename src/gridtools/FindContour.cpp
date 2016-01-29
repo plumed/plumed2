@@ -143,7 +143,7 @@ void FindContour::performOperationsWithGrid( const bool& from_update ){
              contour_points[npoints].resize( mygrid->getDimension() );  
              mygrid->getGridPointCoordinates( i, contour_points[npoints] );  
              // Setup direction vector
-             direction[j]=0.9999*dx[j];
+             direction[j]=0.999999999*dx[j];
              // And do proper search for contour point
              mymin.linesearch( direction, contour_points[npoints], &FindContour::getDifferenceFromContour );
              direction[j]=0.0; npoints++;
@@ -154,7 +154,7 @@ void FindContour::performOperationsWithGrid( const bool& from_update ){
    
   }
   // Clear the grid ready for next time
-  if( from_update ) mygrid->clear();
+  if( from_update ) mygrid->reset();
 
   of.printf("%u\n",npoints);
   of.printf("Points found on isocontour\n");

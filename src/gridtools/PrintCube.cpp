@@ -90,7 +90,7 @@ void PrintCube::performOperationsWithGrid( const bool& from_update ){
 
   ofile.close();
   // Clear the grid ready for next time
-  if( from_update ) mygrid->clear();
+  if( from_update ) mygrid->reset();
 }
 
 }

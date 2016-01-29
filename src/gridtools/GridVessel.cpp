@@ -266,9 +266,13 @@ void GridVessel::getNeighbors( const std::vector<double>& pp, const std::vector<
   }
 }
 
-void GridVessel::clear(){
+void GridVessel::reset(){
   if( !nomemory ) return ;
   wascleared=true;
+}
+
+void GridVessel::clear(){
+  plumed_assert( wascleared ); 
   data.assign( data.size(), 0.0 );
 }
 
