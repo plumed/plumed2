@@ -29,7 +29,6 @@ namespace gridtools {
 class PrintGrid : public ActionWithInputGrid {
 private:
   std::string fmt, filename;
-  void printGrid( OFile& ofile );
 public:
   static void registerKeywords( Keywords& keys );
   explicit PrintGrid(const ActionOptions&ao); 
