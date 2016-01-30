@@ -33,6 +33,7 @@ class FindContour : public ActionWithInputGrid {
 private:
   OFile of;
   double lenunit;
+  unsigned gbuffer;
   std::string fmt_xyz;
   unsigned mycomp;
   double contour;
@@ -40,6 +41,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit FindContour(const ActionOptions&ao);
+  bool checkAllActive() const { return gbuffer==0; }
   void performOperationsWithGrid( const bool& from_update );
   double getDifferenceFromContour( const std::vector<double>& x, std::vector<double>& der );
   unsigned getNumberOfDerivatives(){ return 0; }
@@ -61,6 +63,7 @@ void FindContour::registerKeywords( Keywords& keys ){
                                           "is thre dimensional specifying SEARCHDIR=1,2 means that only points found along grid lines parallel to the "
                                           "first and second axis of the grid will be looked for.  The code will not search for the dividing surface "
                                           "along the third axis of the grid");
+  keys.add("compulsory","BUFFER","0","number of buffer grid points around location where grid was found on last step.  If this is zero the full grid is calculated on each step");
   keys.add("optional","COMPONENT","if your input is a vector field use this to specifiy the component of the input vector field for which you wish to find the contour");
   keys.add("optional", "PRECISION","The number of digits in trajectory file");  
 }
@@ -79,8 +82,9 @@ nosearch_dirs( mygrid->getDimension() )
   }
   if( mygrid->noDerivatives() ) error("cannot find contours if input grid has no derivatives");
 
-  parse("CONTOUR",contour);
+  parse("CONTOUR",contour); parse("BUFFER",gbuffer);
   log.printf("  calculating dividing surface along which function equals %f \n", contour);
+  if( gbuffer>0 ) log.printf("  after first step a subset of only %d grid points around where the countour was found will be checked\n",gbuffer);
 
   std::string searchdir_str; parse("SEARCHDIR",searchdir_str);
   if( searchdir_str=="all" ){
@@ -149,10 +153,28 @@ void FindContour::performOperationsWithGrid( const bool& from_update ){
   }
 
   // Run over whole grid
+  std::vector<bool> active( mygrid->getNumberOfPoints(), false );
+  std::vector<unsigned> neighbours; unsigned num_neighbours;
+  std::vector<unsigned> gbuffer_vec( mygrid->getDimension(), gbuffer );
+  std::vector<unsigned> ugrid_indices( mygrid->getDimension() );
   unsigned npoints=0; RootFindingBase<FindContour> mymin( this );
   for(unsigned i=0;i<mygrid->getNumberOfPoints();++i){
      // Get the index of the current grid point
      mygrid->getIndices( i, ind ); 
+     // Ensure inactive grid points are ignored
+     bool cycle=false;
+     if( mygrid->inactive(i) ) continue ;
+     for(unsigned j=0;j<mygrid->getDimension();++j) ugrid_indices[j]=ind[j];
+     for(unsigned j=0;j<mygrid->getDimension();++j){
+        if( mygrid->isPeriodic(j) ) ugrid_indices[j]=(ugrid_indices[j]+1)%nbin[j];
+        else if( (ugrid_indices[j]+1)==nbin[j] ) continue ;
+        else ugrid_indices[j]+=1;
+        // Now check the grid is active
+        if( mygrid->inactive( mygrid->getIndex( ugrid_indices ) ) ){ cycle=true; break; }
+        // And reset ugrid_indices
+        ugrid_indices[j]=ind[j];
+     }
+     if( cycle ) continue ;
 
      // Get the value of a point on the grid
      double val1=getGridElement( i, mycomp*(mygrid->getDimension()+1) ) - contour;
@@ -173,13 +195,20 @@ void FindContour::performOperationsWithGrid( const bool& from_update ){
              direction[j]=0.999999999*dx[j];
              // And do proper search for contour point
              mymin.linesearch( direction, contour_points[npoints], &FindContour::getDifferenceFromContour );
-             direction[j]=0.0; npoints++;
+             direction[j]=0.0; 
+             // For next run through activate buffer region around this grid point
+             if( gbuffer>0 ){
+                 mygrid->getNeighbors( contour_points[npoints], gbuffer_vec, num_neighbours, neighbours );
+                 for(unsigned n=0;n<num_neighbours;++n) active[ neighbours[n] ]=true; 
+             }
+             npoints++;
          }
          if( mygrid->isPeriodic(j) && edge ){ edge=false; ind[j]=nbin[j]-1; }
          else ind[j]-=1;
      } 
    
   }
+  if( gbuffer>0 ) mygrid->activateThesePoints( active );
   // Clear the grid ready for next time
   if( from_update ) mygrid->reset();
 

@@ -120,7 +120,7 @@ std::string GridVessel::description(){
 
 void GridVessel::resize(){
   plumed_massert( nper>0, "Number of datapoints at each grid point has not been set");
-  resizeBuffer( npoints*nper ); data.resize( npoints*nper, 0 );
+  resizeBuffer( npoints*nper ); data.resize( npoints*nper, 0 ); active.resize( npoints, true );
 }
 
 unsigned GridVessel::getIndex( const std::vector<unsigned>& indices ) const {
@@ -189,7 +189,7 @@ void GridVessel::getSplineNeighbors( const unsigned& mybox, std::vector<unsigned
 }
 
 double GridVessel::getGridElement( const unsigned& ipoint, const unsigned& jelement ) const {
-  plumed_dbg_assert( bounds_set && ipoint<npoints && jelement<nper );
+  plumed_assert( bounds_set && ipoint<npoints && jelement<nper && active[ipoint] );
   return data[ nper*ipoint + jelement ];
 }
 
@@ -342,6 +342,11 @@ double GridVessel::getValueAndDerivatives( const std::vector<double>& x, const u
       for(unsigned j=0;j<dimension;++j) der[j]+=grid*fd[j];
   }
   return value;
+}
+
+void GridVessel::activateThesePoints( const std::vector<bool>& to_activate ){
+  plumed_dbg_assert( to_activate.size()==npoints );
+  for(unsigned i=0;i<npoints;++i) active[i]=to_activate[i];
 }
 
 }

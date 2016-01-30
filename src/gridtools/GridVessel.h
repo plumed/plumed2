@@ -50,8 +50,6 @@ private:
  std::vector<unsigned> stride;
 /// The number of bins in each grid direction
  std::vector<unsigned> nbin;
-///  Flatten the grid and get the grid index for a point
- unsigned getIndex( const std::vector<unsigned>& indices ) const ;
 /// The grid point that was requested last by getGridPointCoordinates
  unsigned currentGridPoint;
 protected:
@@ -68,11 +66,10 @@ protected:
  std::vector<double> dx;
 /// The dimensionality of the grid
  unsigned dimension;
+/// Which grid points are we actively accumulating
+ std::vector<bool> active;
 /// The grid with all the data values on it
  std::vector<double> data;
-/// Get the set of points neighouring a particular location in space
- void getNeighbors( const std::vector<double>& pp, const std::vector<unsigned>& nneigh, 
-                    unsigned& num_neighbours, std::vector<unsigned>& neighbors ) const ;
 /// Get the indices of a particular point
  void getIndices( const std::vector<double>& point, std::vector<unsigned>& indices ) const ;
 /// Convert a point in space the the correspoinding grid point
@@ -90,6 +87,8 @@ public:
  std::string description();
 /// Convert an index into indices
  void convertIndexToIndices( const unsigned& index, const std::vector<unsigned>& nnbin, std::vector<unsigned>& indices ) const ;
+///  Flatten the grid and get the grid index for a point
+ unsigned getIndex( const std::vector<unsigned>& indices ) const ;
 /// Get the indices fof a point
  void getIndices( const unsigned& index, std::vector<unsigned>& indices ) const ;
 
@@ -127,6 +126,9 @@ public:
  double getCellVolume() const ;
 /// Get the value of the ith grid element 
  double getGridElement( const unsigned&, const unsigned& ) const ;
+/// Get the set of points neighouring a particular location in space
+ void getNeighbors( const std::vector<double>& pp, const std::vector<unsigned>& nneigh,
+                    unsigned& num_neighbours, std::vector<unsigned>& neighbors ) const ;
 /// Get the points neighboring a particular spline point
  void getSplineNeighbors( const unsigned& mybox, std::vector<unsigned>& mysneigh ) const ;
 /// Get the spacing between grid points
@@ -152,6 +154,10 @@ public:
  double getValueAndDerivatives( const std::vector<double>& x, const unsigned& ind, std::vector<double>& der ) const ; 
 /// Was the grid cleared on the last step
  bool wasreset() const ;
+/// Deactivate all the grid points
+ void activateThesePoints( const std::vector<bool>& to_activate );
+/// Is this point active
+ bool inactive( const unsigned& ip ) const ;
 };
 
 inline
@@ -214,6 +220,12 @@ bool GridVessel::noDerivatives() const {
 inline
 bool GridVessel::wasreset() const {
   return wascleared;
+}
+
+inline
+bool GridVessel::inactive( const unsigned& ip ) const {
+  plumed_dbg_assert( ip<npoints );
+  return !active[ip];
 }
 
 }

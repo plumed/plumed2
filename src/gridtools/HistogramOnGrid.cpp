@@ -85,6 +85,7 @@ bool HistogramOnGrid::calculate( const unsigned& current, MultiValue& myvals, st
       double newval; std::vector<double> der( dimension );
       for(unsigned i=0;i<num_neigh;++i){
           unsigned ineigh=neighbors[i];
+          if( inactive( ineigh ) ) continue ;
           getGridPointCoordinates( ineigh, xx );
           for(unsigned j=0;j<dimension;++j) vv[j]->set(xx[j]);
           newval = kernel.evaluate( vv, der, true );

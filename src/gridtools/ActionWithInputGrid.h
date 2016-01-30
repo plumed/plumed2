@@ -47,6 +47,7 @@ public:
   void apply(){}
   void update();
   void runFinalJobs();
+  virtual bool checkAllActive() const { return true; }
   virtual void performOperationsWithGrid( const bool& from_update )=0;
   void setAnalysisStride( const bool& use_all, const unsigned& astride );
 };

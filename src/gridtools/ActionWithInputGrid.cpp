@@ -78,6 +78,12 @@ void ActionWithInputGrid::setAnalysisStride( const bool& use_all, const unsigned
 void ActionWithInputGrid::update(){
   if( unormalised ) norm = 1.0;
   else norm=1.0/mygrid->getNorm();
+
+  if( checkAllActive() ){
+     for(unsigned i=0;i<mygrid->getNumberOfPoints();++i){
+         if( mygrid->inactive(i) ) error("if FIND_CONTOUR is used with BUFFER option then other actions cannot be performed with grid");
+     }
+  }
   performOperationsWithGrid( true );
 }
 
