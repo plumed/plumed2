@@ -70,7 +70,6 @@ myclass_func(pf)
 template <class FCLASS>
 void Brent1DRootSearch<FCLASS>::bracket( const double& a, const double& b, eng_pointer eng ){
    ax=a; bx=b; fa=(myclass_func.*eng)(a); fb=(myclass_func.*eng)(b);
-   printf("STUPID FUCKING THING %f %f \n",fa,fb);
    if ((fa > 0.0 && fb > 0.0) || (fa < 0.0 && fb < 0.0)) plumed_merror("input points do not bracket root");
    bracketed=true;
 }
