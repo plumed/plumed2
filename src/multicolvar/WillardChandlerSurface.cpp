@@ -68,6 +68,8 @@ class WillardChandlerSurface :
   MultiColvarBase* mycolv; 
   std::vector<unsigned> nbins;
   std::vector<double> bw;
+  std::vector<bool> nosearch_dirs, confined;
+  std::vector<double> cmin, cmax; 
 public:
   explicit WillardChandlerSurface(const ActionOptions&);
   static void registerKeywords( Keywords& keys );
@@ -95,6 +97,18 @@ void WillardChandlerSurface::registerKeywords( Keywords& keys ){
   keys.add("compulsory", "FILE", "file on which to output coordinates");
   keys.add("compulsory", "UNITS","PLUMED","the units in which to print out the coordinates. PLUMED means internal PLUMED units");
   keys.add("optional", "PRECISION","The number of digits in trajectory file");
+  keys.addFlag("NO_X_SEARCH",false,"");
+  keys.addFlag("XREDUCED",false,"");
+  keys.add("optional","XLOWER","");
+  keys.add("optional","XUPPER","");
+  keys.addFlag("NO_Y_SEARCH",false,"");
+  keys.addFlag("YREDUCED",false,"");
+  keys.add("optional","YLOWER","");
+  keys.add("optional","YUPPER","");
+  keys.addFlag("NO_Z_SEARCH",false,"");
+  keys.addFlag("ZREDUCED",false,"");
+  keys.add("optional","ZLOWER","");
+  keys.add("optional","ZUPPER","");
 // Better way for this bit 
 }
 
@@ -102,7 +116,11 @@ WillardChandlerSurface::WillardChandlerSurface(const ActionOptions&ao):
   Action(ao),
   ActionPilot(ao),
   ActionAtomistic(ao),
-  ActionWithInputVessel(ao)
+  ActionWithInputVessel(ao),
+  nosearch_dirs(3,false),
+  confined(3,false),
+  cmin(3),
+  cmax(3)
 {
   std::vector<AtomNumber> atom; parseAtomList("ORIGIN",atom);
   if( atom.size()!=1 ) error("should only be one atom specified");
@@ -117,6 +135,33 @@ WillardChandlerSurface::WillardChandlerSurface(const ActionOptions&ao):
   if( bw.size()!=3 || nbins.size()!=3 ) error("wrong size found for bandwidth vector or number of bins");
   log.printf("  calculating dividing surface where average equals %f along ", contour);
   log.printf(" for colvars calculated by action %s \n",mycolv->getLabel().c_str() );
+
+  // Read in confinement stuff
+  bool tflag;
+  parseFlag("XREDUCED",tflag); confined[0]=tflag; 
+  parseFlag("NO_X_SEARCH",tflag); nosearch_dirs[0]=tflag; 
+  if( confined[0] ){ 
+      cmin[0]=cmax[0]=0.0;
+      parse("XLOWER",cmin[0]); parse("XUPPER",cmax[0]);
+      if( fabs(cmin[0]-cmax[0])<epsilon ) error("range set for x axis search makes no sense");
+      log.printf("  confining search in x direction to between %f and %f \n",cmin[0],cmax[0]);
+  }
+  parseFlag("YREDUCED",tflag); confined[1]=tflag; 
+  parseFlag("NO_Y_SEARCH",tflag); nosearch_dirs[1]=tflag; 
+  if( confined[1] ){ 
+      cmin[1]=cmax[1]=0.0;
+      parse("YLOWER",cmin[1]); parse("YUPPER",cmax[1]);
+      if( fabs(cmin[1]-cmax[1])<epsilon ) error("range set for y axis search makes no sense");
+      log.printf("  confining search in y direction to between %f and %f \n",cmin[1],cmax[1]);
+  }
+  parseFlag("ZREDUCED",tflag); confined[2]=tflag;
+  parseFlag("NO_Z_SEARCH",tflag); nosearch_dirs[2]=tflag; 
+  if( confined[2] ){ 
+      cmin[2]=cmax[2]=0.0;
+      parse("ZLOWER",cmin[2]); parse("ZUPPER",cmax[2]);
+      if( fabs(cmin[2]-cmax[2])<epsilon ) error("range set for z axis search makes no sense");
+      log.printf("  confining search in z direction to between %f and %f \n",cmin[2],cmax[2]);
+  }
 
   // START OF BIT TO IMPROVE
   std::string file; parse("FILE",file);
@@ -156,14 +201,20 @@ void WillardChandlerSurface::update(){
   std::vector<bool> pbc(nbins.size()); std::vector<double> min(nbins.size()), max(nbins.size());
   std::vector<std::string> args(nbins.size()), gmin(nbins.size()), gmax(nbins.size());;
   args[0]="x"; args[1]="y"; args[2]="z";
-  for(unsigned i=0;i<3;++i){ min[i]=-0.5; max[i]=0.5; pbc[i]=true; }
+  for(unsigned i=0;i<3;++i){ min[i]=-0.5; max[i]=0.5; pbc[i]=!confined[i]; }
 
   if( !mycolv->getPbc().isOrthorombic() ){
       error("I think that Willard-Chandler surfaces with non-orthorhombic cells don't work.  If you want it have a look and see if you can work it out");
   }
 
   // Get the box (this is going to give us the extent of the grid)
-  for(unsigned i=0;i<3;++i){ min[i]*=mycolv->getBox()(i,i); max[i]*=mycolv->getBox()(i,i); }
+  for(unsigned i=0;i<3;++i){ 
+    if( !confined[i] ){
+      min[i]*=mycolv->getBox()(i,i); max[i]*=mycolv->getBox()(i,i); 
+    } else {
+      min[i]=cmin[i]; max[i]=cmax[i];
+    }
+  }
 
   // This will be the only thing we keep eventually
   for(unsigned i=0;i<3;++i){ Tools::convert(min[i],gmin[i]); Tools::convert(max[i],gmax[i]); }
@@ -194,7 +245,7 @@ void WillardChandlerSurface::update(){
   gg.mpiSumValuesAndDerivatives( comm );
 
   unsigned npoints=0; std::vector<std::vector<double> > contour_points;
-  gg.findSetOfPointsOnContour( contour, npoints, contour_points );
+  gg.findSetOfPointsOnContour( contour, nosearch_dirs, npoints, contour_points );
   if(npoints==0 ) warning("found no points on Willard-Chandler surface try changing the CONTOUR parameter"); 
 
   of.printf("%u\n",npoints);

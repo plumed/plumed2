@@ -47,9 +47,19 @@
 
 using namespace std;
 
-enum { SETBOX, SETPOSITIONS, SETMASSES, SETCHARGES, SETPOSITIONSX, SETPOSITIONSY, SETPOSITIONSZ, SETVIRIAL, SETENERGY, SETFORCES, SETFORCESX, SETFORCESY, SETFORCESZ, CALC, PREPAREDEPENDENCIES, SHAREDATA, PREPARECALC, PERFORMCALC, SETSTEP, SETSTEPLONG, SETATOMSNLOCAL, SETATOMSGATINDEX, SETATOMSFGATINDEX, SETATOMSCONTIGUOUS, CREATEFULLLIST, GETFULLLIST, CLEARFULLLIST, READ, CLEAR, GETAPIVERSION, INIT, SETREALPRECISION, SETMDLENGTHUNITS, SETMDENERGYUNITS, SETMDTIMEUNITS, SETMDCHARGEUNITS, SETMDMASSUNITS, SETNATURALUNITS, SETNOVIRIAL, SETPLUMEDDAT, SETMPICOMM, SETMPIFCOMM, SETMPIMULTISIMCOMM, SETNATOMS, SETTIMESTEP, SETMDENGINE, SETLOG, SETLOGFILE, SETSTOPFLAG, GETEXCHANGESFLAG, SETEXCHANGESSEED, SETNUMBEROFREPLICAS, GETEXCHANGESLIST, RUNFINALJOBS, ISENERGYNEEDED, GETBIAS, SETKBT, SETRESTART };
+#include "PlumedMainEnum.tmp"
 
 namespace PLMD{
+
+std::map<std::string, int> & plumedMainWordMap(){
+  static std::map<std::string, int> word_map;
+  static bool init=false;
+  if(!init){
+#include "PlumedMainMap.tmp"
+  }
+  init=true;
+  return word_map;
+}
 
 PlumedMain::PlumedMain():
   comm(*new Communicator),
@@ -79,64 +89,6 @@ PlumedMain::PlumedMain():
   log.setLinePrefix("PLUMED: ");
   stopwatch.start();
   stopwatch.pause();
-  word_map["setBox"]=SETBOX;
-  word_map["setPositions"]=SETPOSITIONS;
-  word_map["setMasses"]=SETMASSES;
-  word_map["setCharges"]=SETCHARGES;
-  word_map["setPositionsX"]=SETPOSITIONSX;
-  word_map["setPositionsY"]=SETPOSITIONSY;
-  word_map["setPositionsZ"]=SETPOSITIONSZ;
-  word_map["setVirial"]=SETVIRIAL;
-  word_map["setEnergy"]=SETENERGY;
-  word_map["setForces"]=SETFORCES;
-  word_map["setForcesX"]=SETFORCESX;
-  word_map["setForcesY"]=SETFORCESY;
-  word_map["setForcesZ"]=SETFORCESZ;
-  word_map["calc"]=CALC;
-  word_map["prepareDependencies"]=PREPAREDEPENDENCIES;
-  word_map["shareData"]=SHAREDATA;
-  word_map["prepareCalc"]=PREPARECALC;
-  word_map["performCalc"]=PERFORMCALC;
-  word_map["setStep"]=SETSTEP;
-  word_map["setStepLong"]=SETSTEPLONG;
-  word_map["setAtomsNlocal"]=SETATOMSNLOCAL;
-  word_map["setAtomsGatindex"]=SETATOMSGATINDEX;
-  word_map["setAtomsFGatindex"]=SETATOMSFGATINDEX;
-  word_map["setAtomsContiguous"]=SETATOMSCONTIGUOUS;
-  word_map["createFullList"]=CREATEFULLLIST;
-  word_map["getFullList"]=GETFULLLIST;
-  word_map["clearFullList"]=CLEARFULLLIST;
-  word_map["read"]=READ;
-  word_map["clear"]=CLEAR;
-  word_map["getApiVersion"]=GETAPIVERSION;
-  word_map["init"]=INIT;
-  word_map["setRealPrecision"]=SETREALPRECISION;
-  word_map["setMDLengthUnits"]=SETMDLENGTHUNITS;
-  word_map["setMDEnergyUnits"]=SETMDENERGYUNITS;
-  word_map["setMDTimeUnits"]=SETMDTIMEUNITS;
-  word_map["setMDMassUnits"]=SETMDMASSUNITS;
-  word_map["setMDChargeUnits"]=SETMDCHARGEUNITS;
-  word_map["setNaturalUnits"]=SETNATURALUNITS;
-  word_map["setNoVirial"]=SETNOVIRIAL;
-  word_map["setPlumedDat"]=SETPLUMEDDAT;
-  word_map["setMPIComm"]=SETMPICOMM;
-  word_map["setMPIFComm"]=SETMPIFCOMM;
-  word_map["setMPImultiSimComm"]=SETMPIMULTISIMCOMM;
-  word_map["setNatoms"]=SETNATOMS;
-  word_map["setTimestep"]=SETTIMESTEP;
-  word_map["setMDEngine"]=SETMDENGINE;
-  word_map["setLog"]=SETLOG;
-  word_map["setLogFile"]=SETLOGFILE;
-  word_map["setStopFlag"]=SETSTOPFLAG;
-  word_map["getExchangesFlag"]=GETEXCHANGESFLAG;
-  word_map["setExchangesSeed"]=SETEXCHANGESSEED;
-  word_map["setNumberOfReplicas"]=SETNUMBEROFREPLICAS;
-  word_map["getExchangesList"]=GETEXCHANGESLIST;
-  word_map["runFinalJobs"]=RUNFINALJOBS;
-  word_map["isEnergyNeeded"]=ISENERGYNEEDED;
-  word_map["getBias"]=GETBIAS;
-  word_map["setKbT"]=SETKBT;
-  word_map["setRestart"]=SETRESTART;
 }
 
 PlumedMain::~PlumedMain(){
@@ -170,282 +122,298 @@ void PlumedMain::cmd(const std::string & word,void*val){
   std::vector<std::string> words=Tools::getWords(word);
   unsigned nw=words.size();
   if(nw==1) {
-    switch(word_map[word]) {
+    int iword=-1;
+    std::map<std::string, int>::const_iterator it=plumedMainWordMap().find(word);
+    if(it!=plumedMainWordMap().end()) iword=it->second;
+    switch(iword) {
       double d;
-      case SETBOX:
+      case SETBOX: // cmd setBox
         CHECK_INIT(initialized,word);
         CHECK_NULL(val,word);
         atoms.setBox(val);
         break;
-      case SETPOSITIONS:
+      case SETPOSITIONS: // cmd setPositions
         CHECK_INIT(initialized,word);
         atoms.setPositions(val);
         break;
-      case SETMASSES:
+      case SETMASSES: // cmd setMasses
         CHECK_INIT(initialized,word);
         atoms.setMasses(val);
         break;
-      case SETCHARGES:
+      case SETCHARGES: // cmd setCharges
         CHECK_INIT(initialized,word);
         atoms.setCharges(val);
         break;
-      case SETPOSITIONSX:
+      case SETPOSITIONSX: // cmd setPositionsX
         CHECK_INIT(initialized,word);
         atoms.setPositions(val,0);
         break;
-      case SETPOSITIONSY:
+      case SETPOSITIONSY: // cmd setPositionsY
         CHECK_INIT(initialized,word);
         atoms.setPositions(val,1);
         break;
-      case SETPOSITIONSZ:
+      case SETPOSITIONSZ: // cmd setPositionsZ
         CHECK_INIT(initialized,word);
         atoms.setPositions(val,2);
         break;
-      case SETVIRIAL:
+      case SETVIRIAL: // cmd setVirial
         CHECK_INIT(initialized,word);
         CHECK_NULL(val,word);
         atoms.setVirial(val);
         break;
-      case SETENERGY:
+      case SETENERGY: // cmd setEnergy
         CHECK_INIT(initialized,word);
         CHECK_NULL(val,word);
         atoms.setEnergy(val);
         break;
-      case SETFORCES:
+      case SETFORCES: // cmd setForces
         CHECK_INIT(initialized,word);
         atoms.setForces(val);
         break;
-      case SETFORCESX:
+      case SETFORCESX: // cmd setForcesX
         CHECK_INIT(initialized,word);
         atoms.setForces(val,0);
         break;
-      case SETFORCESY:
+      case SETFORCESY: // cmd setForcesY
         CHECK_INIT(initialized,word);
         atoms.setForces(val,1);
         break;
-      case SETFORCESZ:
+      case SETFORCESZ: // cmd setForcesZ
         CHECK_INIT(initialized,word);
         atoms.setForces(val,2);
         break;
-      case CALC:
+      case CALC: // cmd calc
         CHECK_INIT(initialized,word);
         calc();
         break;
-      case PREPAREDEPENDENCIES:
+      case PREPAREDEPENDENCIES: // cmd prepareDependencies
         CHECK_INIT(initialized,word);
         prepareDependencies();
         break;
-      case SHAREDATA:
+      case SHAREDATA: // cmd shareData
         CHECK_INIT(initialized,word);
         shareData();
         break;
-      case PREPARECALC:
+      case PREPARECALC: // cmd prepareCalc
         CHECK_INIT(initialized,word);
         prepareCalc();
         break;
-      case PERFORMCALC:
+      case PERFORMCALC: // cmd performCalc
         CHECK_INIT(initialized,word);
         performCalc();
         break;
-      case SETSTEP:
+      case PERFORMCALCNOUPDATE: // cmd performCalcNoUpdate
+        CHECK_INIT(initialized,word);
+        performCalcNoUpdate();
+        break;
+      case UPDATE: // cmd update
+        CHECK_INIT(initialized,word);
+        update();
+        break;
+      case SETSTEP: // cmd setStep
         CHECK_INIT(initialized,word);
         CHECK_NULL(val,word);
         step=(*static_cast<int*>(val));
         atoms.startStep();
         break;
-      case SETSTEPLONG:
+      case SETSTEPLONG: // cmd setStepLong
         CHECK_INIT(initialized,word);
         CHECK_NULL(val,word);
         step=(*static_cast<long int*>(val));
         atoms.startStep();
         break;
       // words used less frequently:
-      case SETATOMSNLOCAL:
+      case SETATOMSNLOCAL: // cmd setAtomsNlocal
         CHECK_INIT(initialized,word);
         CHECK_NULL(val,word);
         atoms.setAtomsNlocal(*static_cast<int*>(val));
         break;
-      case SETATOMSGATINDEX:
+      case SETATOMSGATINDEX: // cmd setAtomsGatindex
         CHECK_INIT(initialized,word);
         atoms.setAtomsGatindex(static_cast<int*>(val),false);
         break;
-      case SETATOMSFGATINDEX:
+      case SETATOMSFGATINDEX: // cmd setAtomsFGatindex
         CHECK_INIT(initialized,word);
         atoms.setAtomsGatindex(static_cast<int*>(val),true);
         break;
-      case SETATOMSCONTIGUOUS:
+      case SETATOMSCONTIGUOUS: // cmd setAtomsContiguous
         CHECK_INIT(initialized,word);
         CHECK_NULL(val,word);
         atoms.setAtomsContiguous(*static_cast<int*>(val));
         break;
-      case CREATEFULLLIST:
+      case CREATEFULLLIST: // cmd createFullList
         CHECK_INIT(initialized,word);
         CHECK_NULL(val,word);
         atoms.createFullList(static_cast<int*>(val));
         break;
-      case GETFULLLIST:
+      case GETFULLLIST: // cmd getFullList
         CHECK_INIT(initialized,word);
         CHECK_NULL(val,word);
         atoms.getFullList(static_cast<int**>(val));
         break;
-      case CLEARFULLLIST:
+      case CLEARFULLLIST: // cmd clearFullList
         CHECK_INIT(initialized,word);
         atoms.clearFullList();
         break;
-      case READ:
+      case READ: // cmd read
         CHECK_INIT(initialized,word);
         if(val)readInputFile(static_cast<char*>(val));
         else   readInputFile("plumed.dat");
         break;
-      case CLEAR:
+      case READINPUTLINE: // cmd readInputLine
+        CHECK_INIT(initialized,word);
+        CHECK_NULL(val,word);
+        readInputLine(static_cast<char*>(val));
+        break;
+      case CLEAR: // cmd clear
         CHECK_INIT(initialized,word);
         actionSet.clearDelete();
         break;
-      case GETAPIVERSION:
+      case GETAPIVERSION: // cmd getApiVersion
         CHECK_NULL(val,word);
         *(static_cast<int*>(val))=4;
         break;
       // commands which can be used only before initialization:
-      case INIT:
+      case INIT: // cmd init
         CHECK_NOTINIT(initialized,word);
         init();
         break;
-      case SETREALPRECISION:
+      case SETREALPRECISION: // cmd setRealPrecision
         CHECK_NOTINIT(initialized,word);
         CHECK_NULL(val,word);
         atoms.setRealPrecision(*static_cast<int*>(val));
         break;
-      case SETMDLENGTHUNITS:
+      case SETMDLENGTHUNITS: // cmd setMDLengthUnits
         CHECK_NOTINIT(initialized,word);
         CHECK_NULL(val,word);
         atoms.MD2double(val,d);
         atoms.setMDLengthUnits(d);
         break;
-      case SETMDCHARGEUNITS:
+      case SETMDCHARGEUNITS: // cmd setMDChargeUnits
         CHECK_NOTINIT(initialized,word);
         CHECK_NULL(val,word);
         atoms.MD2double(val,d);
         atoms.setMDChargeUnits(d);
         break;
-      case SETMDMASSUNITS:
+      case SETMDMASSUNITS: // cmd setMDMassUnits
         CHECK_NOTINIT(initialized,word);
         CHECK_NULL(val,word);
         atoms.MD2double(val,d);
         atoms.setMDMassUnits(d);
         break;
-      case SETMDENERGYUNITS:
+      case SETMDENERGYUNITS: // cmd setMDEnergyUnits
         CHECK_NOTINIT(initialized,word);
         CHECK_NULL(val,word);
         atoms.MD2double(val,d);
         atoms.setMDEnergyUnits(d);
         break;
-      case SETMDTIMEUNITS:
+      case SETMDTIMEUNITS: // cmd setMDTimeUnits
         CHECK_NOTINIT(initialized,word);
         CHECK_NULL(val,word);
         atoms.MD2double(val,d);
         atoms.setMDTimeUnits(d);
         break;
-      case SETNATURALUNITS:
+      case SETNATURALUNITS: // cmd setNaturalUnits
       // set the boltzman constant for MD in natural units (kb=1)
       // only needed in LJ codes if the MD is passing temperatures to plumed (so, not yet...)
       // use as cmd("setNaturalUnits")
         CHECK_NOTINIT(initialized,word);
         atoms.setMDNaturalUnits(true);
         break;
-      case SETNOVIRIAL:
+      case SETNOVIRIAL: // cmd setNoVirial
         CHECK_NOTINIT(initialized,word);
         novirial=true;
         break;
-      case SETPLUMEDDAT:
+      case SETPLUMEDDAT: // cmd setPlumedDat
         CHECK_NOTINIT(initialized,word);
         CHECK_NULL(val,word);
         plumedDat=static_cast<char*>(val);
         break;
-      case SETMPICOMM:
+      case SETMPICOMM: // cmd setMPIComm
         CHECK_NOTINIT(initialized,word);
         comm.Set_comm(val);
         atoms.setDomainDecomposition(comm);
         break;
-      case SETMPIFCOMM:
+      case SETMPIFCOMM: // cmd setMPIFComm
         CHECK_NOTINIT(initialized,word);
         comm.Set_fcomm(val);
         atoms.setDomainDecomposition(comm);
         break;
-      case SETMPIMULTISIMCOMM:
+      case SETMPIMULTISIMCOMM: // cmd setMPImultiSimComm
         CHECK_NOTINIT(initialized,word);
         multi_sim_comm.Set_comm(val);
         break;
-      case SETNATOMS:
+      case SETNATOMS: // cmd setNatoms
         CHECK_NOTINIT(initialized,word);
         CHECK_NULL(val,word);
         atoms.setNatoms(*static_cast<int*>(val));
         break;
-      case SETTIMESTEP:
+      case SETTIMESTEP: // cmd setTimestep
         CHECK_NOTINIT(initialized,word);
         CHECK_NULL(val,word);
         atoms.setTimeStep(val);
         break;
-      case SETKBT: /* ADDED WITH API==2 */
+      case SETKBT: /* ADDED WITH API==2 */ // cmd setKbT
         CHECK_NOTINIT(initialized,word);
         CHECK_NULL(val,word);
         atoms.setKbT(val);
         break;
-      case SETRESTART: /* ADDED WITH API==3 */
+      case SETRESTART: /* ADDED WITH API==3 */ // cmd setRestart
         CHECK_NOTINIT(initialized,word);
         CHECK_NULL(val,word);
         if(*static_cast<int*>(val)!=0) restart=true;
         break;
-      case SETMDENGINE:
+      case SETMDENGINE: // cmd setMDEngine
         CHECK_NOTINIT(initialized,word);
         CHECK_NULL(val,word);
         MDEngine=static_cast<char*>(val);
         break;
-      case SETLOG:
+      case SETLOG: // cmd setLog
         CHECK_NOTINIT(initialized,word);
         log.link(static_cast<FILE*>(val));
         break;
-      case SETLOGFILE:
+      case SETLOGFILE: // cmd setLogFile
         CHECK_NOTINIT(initialized,word);
         CHECK_NULL(val,word);
         log.open(static_cast<char*>(val));
         break;
       // other commands that should be used after initialization:
-      case SETSTOPFLAG:
+      case SETSTOPFLAG: // cmd setStopFlag
         CHECK_INIT(initialized,word);
         CHECK_NULL(val,word);
         stopFlag=static_cast<int*>(val);
         break;
-      case GETEXCHANGESFLAG:
+      case GETEXCHANGESFLAG: // cmd getExchangesFlag
         CHECK_INIT(initialized,word);
         CHECK_NULL(val,word);
         exchangePatterns.getFlag((*static_cast<int*>(val)));
         break;
-      case SETEXCHANGESSEED:
+      case SETEXCHANGESSEED: // cmd setExchangesSeed
         CHECK_INIT(initialized,word);
         CHECK_NULL(val,word);
         exchangePatterns.setSeed((*static_cast<int*>(val)));
         break;
-      case SETNUMBEROFREPLICAS:
+      case SETNUMBEROFREPLICAS: // cmd setNumberOfReplicas
         CHECK_INIT(initialized,word);
         CHECK_NULL(val,word);
         exchangePatterns.setNofR((*static_cast<int*>(val)));
         break;
-      case GETEXCHANGESLIST:
+      case GETEXCHANGESLIST: // cmd getExchangesList
         CHECK_INIT(initialized,word);
         CHECK_NULL(val,word);
         exchangePatterns.getList((static_cast<int*>(val)));
         break;
-      case RUNFINALJOBS:
+      case RUNFINALJOBS: // cmd runFinalJobs
         CHECK_INIT(initialized,word);
         runJobsAtEndOfCalculation();
         break;
-      case ISENERGYNEEDED:
+      case ISENERGYNEEDED: // cmd isEnergyNeeded
         CHECK_INIT(initialized,word);
         CHECK_NULL(val,word);
         if(atoms.isEnergyNeeded()) *(static_cast<int*>(val))=1;
         else                       *(static_cast<int*>(val))=0;
         break;
-      case GETBIAS:
+      case GETBIAS: // cmd getBias
         CHECK_INIT(initialized,word);
         CHECK_NULL(val,word);
         d=getBias()/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
@@ -531,6 +499,19 @@ void PlumedMain::readInputFile(std::string str){
   //if(comm.Get_rank()==0) multi_sim_comm.Barrier();	
 
   pilots=actionSet.select<ActionPilot*>();
+}
+
+void PlumedMain::readInputLine(const std::string & str){
+  plumed_assert(initialized);
+  if(str.empty()) return;
+  std::vector<std::string> words=Tools::getWords(str);
+  citations.clear();
+  readInputWords(words);
+  if(!citations.empty()){
+    log<<"Relevant bibliography:\n";
+    log<<citations;
+    log<<"Please read and cite where appropriate!\n";
+  }
 }
 
 void PlumedMain::readInputWords(const std::vector<std::string> & words){
@@ -625,10 +606,17 @@ void PlumedMain::shareData(){
   stopwatch.stop("2 Sharing data");
 }
 
+void PlumedMain::performCalcNoUpdate(){
+  waitData();
+  justCalculate();
+  backwardPropagate();
+}
+
 void PlumedMain::performCalc(){
   waitData();
   justCalculate();
-  justApply();
+  backwardPropagate();
+  update();
 }
 
 void PlumedMain::waitData(){
@@ -681,7 +669,11 @@ void PlumedMain::justCalculate(){
 }
 
 void PlumedMain::justApply(){
+  backwardPropagate();
+  update();
+}
   
+void PlumedMain::backwardPropagate(){
   if(!active)return;
   int iaction=0;
   stopwatch.start("5 Applying (backward loop)");
@@ -710,8 +702,13 @@ void PlumedMain::justApply(){
   if(detailedTimers) stopwatch.start("5B Update forces");
   if(atoms.getNatoms()>0) atoms.updateForces();
   if(detailedTimers) stopwatch.stop("5B Update forces");
+  stopwatch.stop("5 Applying (backward loop)");
+}
 
-  if(detailedTimers) stopwatch.start("5C Update");
+void PlumedMain::update(){
+  if(!active)return;
+
+  stopwatch.start("6 Update");
 // update step (for statistics, etc)
   updateFlags.push(true);
   for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();++p){
@@ -719,14 +716,12 @@ void PlumedMain::justApply(){
     if((*p)->isActive() && (*p)->checkUpdate() && updateFlagsTop()) (*p)->update();
   }
   while(!updateFlags.empty()) updateFlags.pop();
-  if(detailedTimers) stopwatch.stop("5C Update");
   if(!updateFlags.empty()) plumed_merror("non matching changes in the update flags");
 // Check that no action has told the calculation to stop
   if(stopNow){
      if(stopFlag) (*stopFlag)=1;
      else plumed_merror("your md code cannot handle plumed stop events - add a call to plumed.comm(stopFlag,stopCondition)");
   }  
-  stopwatch.stop("5 Applying (backward loop)");
 
 // flush by default every 10000 steps
 // hopefully will not affect performance
@@ -735,6 +730,7 @@ void PlumedMain::justApply(){
     log.flush();
     for(ActionSet::const_iterator p=actionSet.begin();p!=actionSet.end();++p) (*p)->fflush();
   }
+  stopwatch.stop("6 Update");
 }
 
 void PlumedMain::load(const std::string& ss){

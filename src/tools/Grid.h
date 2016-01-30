@@ -172,7 +172,7 @@ public:
 /// Get the difference from the contour
  double getDifferenceFromContour(const std::vector<double> & x, std::vector<double>& der); 
 /// Find a set of points on a contour in the function
- void findSetOfPointsOnContour(const double& target, unsigned& npoints, std::vector<std::vector<double> >& points );
+ void findSetOfPointsOnContour(const double& target, const std::vector<bool>& nosearch, unsigned& npoints, std::vector<std::vector<double> >& points );
 
 /// set grid value 
  virtual void setValue(index_t index, double value);
