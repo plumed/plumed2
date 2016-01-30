@@ -64,6 +64,8 @@ class MultiColvarDensity :
   MultiColvarBase* mycolv; 
   std::vector<unsigned> nbins;
   std::vector<double> gspacing;
+  std::vector<bool> confined;
+  std::vector<double> cmin, cmax;
   vesselbase::StoreDataVessel* stash;
   gridtools::HistogramOnGrid* mygrid;
   Vector origin;
@@ -99,6 +101,21 @@ void MultiColvarDensity::registerKeywords( Keywords& keys ){
                                             "in plumed plumed can be found in \\ref kernelfunctions.");
   keys.addFlag("FRACTIONAL",false,"use fractional coordinates on the x-axis");
   keys.addFlag("NOMEMORY",false,"do a block averaging rather than a cumulative average");
+  keys.addFlag("XREDUCED",false,"limit the calculation of the density/average to a portion of the z-axis only");
+  keys.add("optional","XLOWER","this is required if you are using XREDUCED. It specifes the lower bound for the region of the x-axis that for "
+                               "which you are calculating the density/average");
+  keys.add("optional","XUPPER","this is required if you are using XREDUCED. It specifes the upper bound for the region of the x-axis that for "
+                               "which you are calculating the density/average");
+  keys.addFlag("YREDUCED",false,"limit the calculation of the density/average to a portion of the y-axis only");
+  keys.add("optional","YLOWER","this is required if you are using YREDUCED. It specifes the lower bound for the region of the y-axis that for "
+                               "which you are calculating the density/average");
+  keys.add("optional","YUPPER","this is required if you are using YREDUCED. It specifes the upper bound for the region of the y-axis that for "
+                               "which you are calculating the density/average");
+  keys.addFlag("ZREDUCED",false,"limit the calculation of the density/average to a portion of the z-axis only");
+  keys.add("optional","ZLOWER","this is required if you are using ZREDUCED. It specifes the lower bound for the region of the z-axis that for "
+                               "which you are calculating the density/average");
+  keys.add("optional","ZUPPER","this is required if you are using ZREDUCED. It specifes the upper bound for the region of the z-axis that for "
+                               "which you are calculating the density/average");
 }
 
 MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
@@ -152,8 +169,42 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
   parseVector("NBINS",nbins); parseVector("SPACING",gspacing);
   if( nbins.size()!=directions.size() && gspacing.size()!=directions.size() ) error("NBINS or SPACING must be set");
 
+  confined.resize( directions.size() ); cmin.resize( directions.size() ); cmax.resize( directions.size() );
+  for(unsigned i=0;i<directions.size();++i){
+      if( directions[i]==0 ){
+          bool tflag; parseFlag("XREDUCED",tflag); confined[i]=tflag;
+          if( confined[i] ){
+              cmin[i]=cmax[i]=0.0; parse("XLOWER",cmin[i]); parse("XUPPER",cmax[i]);
+              if( fractional ) error("XREDUCED is incompatible with FRACTIONAL");
+              if( fabs(cmin[i]-cmax[i])<epsilon ) error("range set for x axis makes no sense");
+              log.printf("  confining calculation in x direction to between %f and %f \n",cmin[i],cmax[i]);
+          }
+      } else if( directions[i]==1 ){
+          bool tflag; parseFlag("YREDUCED",tflag); confined[i]=tflag;
+          if( confined[i] ){
+              cmin[i]=cmax[i]=0.0; parse("YLOWER",cmin[i]); parse("YUPPER",cmax[i]);
+              if( fractional ) error("YREDUCED is incompatible with FRACTIONAL");
+              if( fabs(cmin[i]-cmax[i])<epsilon ) error("range set for y axis makes no sense");
+              log.printf("  confining calculation in y direction to between %f and %f \n",cmin[i],cmax[i]);
+          }
+      } else if( directions[i]==2 ){
+          bool tflag; parseFlag("ZREDUCED",tflag); confined[i]=tflag;
+          if( confined[i] ){
+              cmin[i]=cmax[i]=0.0; parse("ZLOWER",cmin[i]); parse("ZUPPER",cmax[i]);
+              if( fractional ) error("ZREDUCED is incompatible with FRACTIONAL");
+              if( fabs(cmin[i]-cmax[i])<epsilon ) error("range set for z axis search makes no sense");
+              log.printf("  confining calculation in z direction to between %f and %f \n",cmin[i],cmax[i]);
+          }
+      }
+  }
+
   std::string vstring = getKeyword("KERNEL") + " " + getKeyword("BANDWIDTH");
-  vstring += " PBC=T"; for(unsigned i=1;i<directions.size();++i) vstring+=",T";
+  if( confined[0] ) vstring +=" PBC=F";
+  else vstring += " PBC=T";
+  for(unsigned i=1;i<directions.size();++i){
+      if( confined[i] ) vstring += ",F";
+      else vstring += ",T"; 
+  }
   vstring +=" COMPONENTS=" + getPntrToArgument()->getLabel() + ".dens";
   vstring +=" COORDINATES=";
   if( directions[0]==0 ) vstring+="x";
@@ -172,7 +223,6 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
   Keywords keys; gridtools::HistogramOnGrid::registerKeywords( keys );
   vesselbase::VesselOptions dar( da, keys );
   mygrid = new gridtools::HistogramOnGrid(dar); addVessel( mygrid );
-
   // Enusre units for cube files are set correctly
   if( !fractional ){
      if( plumed.getAtoms().usingNaturalUnits() ) mygrid->setCubeUnits( 1.0/0.5292 );  
@@ -194,11 +244,17 @@ void MultiColvarDensity::update(){
      std::vector<std::string> gmin(directions.size()), gmax(directions.size());;
      for(unsigned i=0;i<directions.size();++i){ min[i]=-0.5; max[i]=0.5; }
      if( !fractional ){
-         if( !mycolv->getPbc().isOrthorombic() ) error("I think that density profiles with non-orthorhombic cells don't work.  If you want it have a look and see if you can work it out");
+         if( !mycolv->getPbc().isOrthorombic() ){
+             error("I think that density profiles with non-orthorhombic cells don't work.  If you want it have a look and see if you can work it out");
+         }
 
          for(unsigned i=0;i<directions.size();++i){
-             min[i]*=mycolv->getBox()(directions[i],directions[i]);
-             max[i]*=mycolv->getBox()(directions[i],directions[i]); 
+             if( !confined[i] ){ 
+                 min[i]*=mycolv->getBox()(directions[i],directions[i]);
+                 max[i]*=mycolv->getBox()(directions[i],directions[i]); 
+             } else {
+                 min[i]=cmin[i]; max[i]=cmax[i];
+             }
          }
      }
      for(unsigned i=0;i<directions.size();++i){ Tools::convert(min[i],gmin[i]); Tools::convert(max[i],gmax[i]); }

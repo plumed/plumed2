@@ -36,6 +36,7 @@ private:
   std::string fmt_xyz;
   unsigned mycomp;
   double contour;
+  std::vector<bool> nosearch_dirs;
 public:
   static void registerKeywords( Keywords& keys );
   explicit FindContour(const ActionOptions&ao);
@@ -54,13 +55,20 @@ void FindContour::registerKeywords( Keywords& keys ){
 // We want a better way of doing this bit
   keys.add("compulsory", "FILE", "file on which to output coordinates");
   keys.add("compulsory", "UNITS","PLUMED","the units in which to print out the coordinates. PLUMED means internal PLUMED units");
+  keys.add("compulsory","SEARCHDIR","all","In which directions do you wish to search for the contour.  By default the code searches "
+                                          "for points on the dividing surface in all directions.  You may whish, however to search along one direction "
+                                          "for points on the dividing surface.  You can specify the a subset of directions as numbers so if your grid "
+                                          "is thre dimensional specifying SEARCHDIR=1,2 means that only points found along grid lines parallel to the "
+                                          "first and second axis of the grid will be looked for.  The code will not search for the dividing surface "
+                                          "along the third axis of the grid");
   keys.add("optional","COMPONENT","if your input is a vector field use this to specifiy the component of the input vector field for which you wish to find the contour");
   keys.add("optional", "PRECISION","The number of digits in trajectory file");  
 }
 
 FindContour::FindContour(const ActionOptions&ao):
 Action(ao),
-ActionWithInputGrid(ao)
+ActionWithInputGrid(ao),
+nosearch_dirs( mygrid->getDimension() )
 {
   if( mygrid->getNumberOfComponents()==1 ){ 
      mycomp=0; 
@@ -74,6 +82,24 @@ ActionWithInputGrid(ao)
   parse("CONTOUR",contour);
   log.printf("  calculating dividing surface along which function equals %f \n", contour);
 
+  std::string searchdir_str; parse("SEARCHDIR",searchdir_str);
+  if( searchdir_str=="all" ){
+     nosearch_dirs.assign( nosearch_dirs.size(), false );
+  } else {
+     std::vector<std::string> searchdirs = Tools::getWords(searchdir_str,"\t\n ,");
+     if( searchdirs.size()>mygrid->getDimension() ) error("number of search directions is larger than number of input dimensions");
+     nosearch_dirs.assign( nosearch_dirs.size(), true );
+     unsigned nn; Tools::convert(searchdirs[0],nn); nosearch_dirs[nn-1]=false;
+     log.printf("  searching for contour along %d", nn);
+     for(unsigned i=1;i<searchdirs.size()-1;++i){
+         Tools::convert(searchdirs[i],nn); 
+         nosearch_dirs[nn-1]=false; log.printf(", %d",nn);
+     }
+     if( searchdirs.size()>1 ){ 
+         Tools::convert(searchdirs[searchdirs.size()-1],nn); 
+         nosearch_dirs[nn-1]=false; log.printf(" and %d directions \n",nn);
+     } else log.printf(" direction \n");
+  }
   // START OF BIT TO IMPROVE
   std::string file; parse("FILE",file);
   if(file.length()==0) error("name out output file was not specified");
@@ -133,6 +159,7 @@ void FindContour::performOperationsWithGrid( const bool& from_update ){
 
      bool edge=false;
      for(unsigned j=0;j<mygrid->getDimension();++j){
+         if( nosearch_dirs[j] ) continue ;
          // Make sure we don't search at the edge of the grid
          if( !mygrid->isPeriodic(j) && (ind[j]+1)==nbin[j] ) continue;
          else if( (ind[j]+1)==nbin[j] ){ edge=true; ind[j]=0; }
