@@ -51,8 +51,6 @@ public:
   explicit AdjacencyMatrixVessel( const vesselbase::VesselOptions& );
 /// Get the underlying adjacency matrix action object
   AdjacencyMatrixBase* getMatrixAction();
-/// Get the number of elements in the matrix
-  unsigned getNumberOfStoredValues() const ;
 /// Get the index we are storing this data inside
   unsigned getStoreIndex( const unsigned& ) const ;
 /// Get the index that a particular element is stored in from the matrix indices

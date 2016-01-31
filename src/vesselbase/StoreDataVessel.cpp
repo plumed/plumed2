@@ -69,7 +69,7 @@ void StoreDataVessel::resize(){
 }
 
 void StoreDataVessel::storeValues( const unsigned& myelem, MultiValue& myvals, std::vector<double>& buffer ) const {
-  unsigned jelem = getStoreIndex( myelem );
+  unsigned jelem = getStoreIndex( myelem ); plumed_dbg_assert( jelem<getNumberOfStoredValues() );
   unsigned ibuf = bufstart + jelem * vecsize * nspace; 
   for(unsigned icomp=0;icomp<vecsize;++icomp){
       buffer[ibuf] += myvals.get(icomp); ibuf+=nspace;

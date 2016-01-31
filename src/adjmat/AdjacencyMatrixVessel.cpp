@@ -59,11 +59,6 @@ unsigned AdjacencyMatrixVessel::getNumberOfColumns() const {
   return function->ablocks[1].size();
 }
 
-unsigned AdjacencyMatrixVessel::getNumberOfStoredValues() const {
-  if( symmetric ){ unsigned nnodes=function->ablocks[0].size(); return 0.5*nnodes*(nnodes-1); }
-  return function->ablocks[0].size()*function->ablocks[1].size();
-}
-
 unsigned AdjacencyMatrixVessel::getStoreIndexFromMatrixIndices( const unsigned& ielem, const unsigned& jelem ) const {
   if( !symmetric ) return (function->ablocks[1].size())*ielem + jelem;
   if( ielem>jelem ) return 0.5*ielem*(ielem-1)+jelem;

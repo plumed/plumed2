@@ -184,6 +184,9 @@ void HBondMatrix::setupConnector( const unsigned& id, const unsigned& i, const u
 }
 
 void HBondMatrix::calculateWeight( const unsigned& taskCode, multicolvar::AtomValuePack& myatoms ) const {
+  // Ensure we skip diagonal elements of square matrix
+  if( myatoms.getIndex(0)==myatoms.getIndex(1) ){ myatoms.setValue(0,0); return; }
+
   Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
   if( distance.modulo()<distanceOOSwitch( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) ).get_dmax() ){
       myatoms.setValue(0,1);

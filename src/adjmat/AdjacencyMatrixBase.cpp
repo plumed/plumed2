@@ -157,7 +157,6 @@ void AdjacencyMatrixBase::requestAtoms( const std::vector<AtomNumber>& atoms, co
   } else {
     for(unsigned i=0;i<dims[0];++i){
        for(unsigned j=0;j<dims[1];++j){
-           if( true_square && i==j ) continue;
            bookeeping(i,j).first=getFullNumberOfTasks();
            for(unsigned k=0;k<kcount;++k) addTaskToList( i*icoef + j*jcoef + k*kcoef );
            bookeeping(i,j).second=getFullNumberOfTasks();
