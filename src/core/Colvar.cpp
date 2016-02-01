@@ -85,7 +85,7 @@ void Colvar::apply(){
         v(2,2)+=forces[3*nat+8];
       }
     }
-    comm.Sum(&f[0][0],3*f.size());
+    if(f.size()>0) comm.Sum(&f[0][0],3*f.size());
     comm.Sum(&v[0][0],9);
   } else if( isEnergy ){
     forces.resize(1);
