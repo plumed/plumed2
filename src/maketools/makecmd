@@ -2,12 +2,15 @@
 
 awk -v opt=$1 '
 {
-  if($1=="case" && $(NF-1)=="cmd"){
-      i++;
-      string[i]=$NF
-      enum[i]=$2
-      sub(":","",enum[i]);
-      } }END{
+  if($1=="case" && match($2,"^cmd_.*:")){
+    i++;
+    enum[i]=$2;
+    sub(":","",enum[i]);
+    string[i]=$2;
+    sub(":","",string[i]);
+    sub("^cmd_","",string[i]);
+  }
+  }END{
   n=i;
   if(opt=="enum"){
     print "enum {"
