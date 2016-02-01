@@ -176,7 +176,6 @@ PLUMED_CONFIG_ENABLE([readdir_r],[readdir-r],[search for readdir_r (threadsafe)]
 PLUMED_CONFIG_ENABLE([cregex],[cregex],[search for C regular expression],[yes])
 PLUMED_CONFIG_ENABLE([dlopen],[dlopen],[search for dlopen],[yes])
 PLUMED_CONFIG_ENABLE([execinfo],[execinfo],[search for execinfo],[yes])
-PLUMED_CONFIG_ENABLE([almost],[almost],[search for almost],[no])
 PLUMED_CONFIG_ENABLE([gsl],[gsl],[search for gsl],[no])
 PLUMED_CONFIG_ENABLE([xdrfile],[xdrfile],[search for xdrfile],[yes])
 PLUMED_CONFIG_ENABLE([boost_graph],[boost_graph],[search for boost graph],[no])
@@ -428,26 +427,6 @@ if test $execinfo == true ; then
 fi
 if test $zlib == true ; then
   PLUMED_CHECK_PACKAGE([zlib.h],[gzopen],[__PLUMED_HAS_ZLIB],[z])
-fi
-if test $almost == true ; then
-  bz2=ko
-  AC_CHECK_HEADER([bzlib.h], AC_SEARCH_LIBS([BZ2_bzReadOpen], [bz2], [bz2=ok]))
-  found=ko
-  if test $bz2 == ok; then
-    AC_CHECK_HEADER([almost.h], AC_SEARCH_LIBS([init_camshift], [Alm], [found=ok] , AC_MSG_NOTICE(["Almost not found"]), [-lsqlite3 -lz -lbz2 -lnbimpl -lshx]))
-  else 
-    AC_CHECK_HEADER([almost.h], AC_SEARCH_LIBS([init_camshift], [Alm], [found=ok] , AC_MSG_NOTICE(["Almost not found"]), [-lsqlite3 -lz -lnbimpl -lshx]))
-  fi
-  if test $found == ok; then
-    AC_DEFINE([__PLUMED_HAS_ALMOST])
-    if test $bz2 == ok; then 
-      LIBS="$LIBS -lsqlite3 -lz -lbz2 -lnbimpl -lshx"
-    else
-      LIBS="$LIBS -lsqlite3 -lz -lnbimpl -lshx"
-    fi
-  else 
-    AC_MSG_ERROR([--enable-almost: cannot find almost])
-  fi
 fi
 if test $gsl == true ; then
   found=ko

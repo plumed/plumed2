@@ -198,7 +198,7 @@ just set this variable to a blank ("SOEXT=").
 \subsection BlasAndLapack BLAS and LAPACK
 
 We tried to keep PLUMED as independent as possible from external libraries and as such those features
-that require external libraries (e.g. Almost and Matheval) are optional. However, to have a properly working version
+that require external libraries (e.g. Matheval) are optional. However, to have a properly working version
 of plumed PLUMED you need BLAS and LAPACK libraries.  We would strongly recommend you download these libraries and 
 install them separately so as to have the most efficient possible implementations of the functions contained within 
 them.  However, if you cannot install blas and lapack, you can use the internal ones.
@@ -459,37 +459,6 @@ Notice that other command line tools will be available in the directory `prefix/
 default values this would be `/usr/local/lib/plumed/plumed-*`. These files are not included in the execution path (prefix/bin)
 to avoid clashes, but can be executed also when plumed is cross compiled and the main plumed executable cannot be
 launched.
-
-\section installingalmost Installing PLUMED with ALMOST
-
-In order to used some of the NMR based collective variables (\ref CS2BACKBONE and \ref CH3SHIFTS) PLUMED needs to be linked with ALMOST.
-To do this the free package ALMOST v.2.2 MUST be dowloaded via SVN (svn checkout svn://svn.code.sf.net/p/almost/code/branches/almost-2.2-plumed almost-2.2).
-Compile it:
-
-\warning ALMOST needs SQLITE3 and  GZIP installed on your computer.
-\warning ALMOST cannot be installed in the same folder of the source code, use --prefix to install it in a different folder
-
-\verbatim
-> ./configure --prefix="wherever you want it" CXXFLAGS="-O3 -fPIC" CFLAGS="-O3 -fPIC" LIBS=-llapack 
-> make
-> make install
-\endverbatim
-Configure can complain about lapack and RDCs but it doesn't matter.
-Sometimes ALMOST can give errors related to the automake tools. To fix them it is often enough to execute
-\verbatim
-> autoreconf -fi
-> automake
-\endverbatim
-and then repeat the configuration and compilation instructions.
-
-Once ALMOST is installed, PLUMED 2 can then be configured with ALMOST enabled: 
-
-\verbatim
-> ./configure --enable-almost CPPFLAGS="-I/ALMOST_INSTALL_PATH/include \
-  -I/ALMOST_INSTALL_PATH/include/almost" LDFLAGS="-L/ALMOST_INSTALL_PATH/lib"
-  
-\endverbatim
-with ALMOST_INSTALL_PATH set to the full path to the ALMOST installation folder.
 
 \page CodeSpecificNotes Code specific notes
 
