@@ -113,7 +113,7 @@ PlumedMain::~PlumedMain(){
 
 #define CHECK_INIT(ini,word) plumed_massert(ini,"cmd(\"" + word +"\") should be only used after plumed initialization")
 #define CHECK_NOTINIT(ini,word) plumed_massert(!(ini),"cmd(\"" + word +"\") should be only used before plumed initialization")
-#define CHECK_NULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"" + word + "\")");
+#define CHECK_NOTNULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"" + word + "\")");
 
 void PlumedMain::cmd(const std::string & word,void*val){
 
@@ -129,7 +129,7 @@ void PlumedMain::cmd(const std::string & word,void*val){
       double d;
       case cmd_setBox:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         atoms.setBox(val);
         break;
       case cmd_setPositions:
@@ -158,12 +158,12 @@ void PlumedMain::cmd(const std::string & word,void*val){
         break;
       case cmd_setVirial:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         atoms.setVirial(val);
         break;
       case cmd_setEnergy:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         atoms.setEnergy(val);
         break;
       case cmd_setForces:
@@ -212,20 +212,20 @@ void PlumedMain::cmd(const std::string & word,void*val){
         break;
       case cmd_setStep:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         step=(*static_cast<int*>(val));
         atoms.startStep();
         break;
       case cmd_setStepLong:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         step=(*static_cast<long int*>(val));
         atoms.startStep();
         break;
       // words used less frequently:
       case cmd_setAtomsNlocal:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         atoms.setAtomsNlocal(*static_cast<int*>(val));
         break;
       case cmd_setAtomsGatindex:
@@ -238,17 +238,17 @@ void PlumedMain::cmd(const std::string & word,void*val){
         break;
       case cmd_setAtomsContiguous:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         atoms.setAtomsContiguous(*static_cast<int*>(val));
         break;
       case cmd_createFullList:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         atoms.createFullList(static_cast<int*>(val));
         break;
       case cmd_getFullList:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         atoms.getFullList(static_cast<int**>(val));
         break;
       case cmd_clearFullList:
@@ -262,7 +262,7 @@ void PlumedMain::cmd(const std::string & word,void*val){
         break;
       case cmd_readInputLine:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         readInputLine(static_cast<char*>(val));
         break;
       case cmd_clear:
@@ -270,7 +270,7 @@ void PlumedMain::cmd(const std::string & word,void*val){
         actionSet.clearDelete();
         break;
       case cmd_getApiVersion:
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         *(static_cast<int*>(val))=4;
         break;
       // commands which can be used only before initialization:
@@ -280,36 +280,36 @@ void PlumedMain::cmd(const std::string & word,void*val){
         break;
       case cmd_setRealPrecision:
         CHECK_NOTINIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         atoms.setRealPrecision(*static_cast<int*>(val));
         break;
       case cmd_setMDLengthUnits:
         CHECK_NOTINIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         atoms.MD2double(val,d);
         atoms.setMDLengthUnits(d);
         break;
       case cmd_setMDChargeUnits:
         CHECK_NOTINIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         atoms.MD2double(val,d);
         atoms.setMDChargeUnits(d);
         break;
       case cmd_setMDMassUnits:
         CHECK_NOTINIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         atoms.MD2double(val,d);
         atoms.setMDMassUnits(d);
         break;
       case cmd_setMDEnergyUnits:
         CHECK_NOTINIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         atoms.MD2double(val,d);
         atoms.setMDEnergyUnits(d);
         break;
       case cmd_setMDTimeUnits:
         CHECK_NOTINIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         atoms.MD2double(val,d);
         atoms.setMDTimeUnits(d);
         break;
@@ -326,7 +326,7 @@ void PlumedMain::cmd(const std::string & word,void*val){
         break;
       case cmd_setPlumedDat:
         CHECK_NOTINIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         plumedDat=static_cast<char*>(val);
         break;
       case cmd_setMPIComm:
@@ -345,29 +345,29 @@ void PlumedMain::cmd(const std::string & word,void*val){
         break;
       case cmd_setNatoms:
         CHECK_NOTINIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         atoms.setNatoms(*static_cast<int*>(val));
         break;
       case cmd_setTimestep:
         CHECK_NOTINIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         atoms.setTimeStep(val);
         break;
       /* ADDED WITH API==2 */
       case cmd_setKbT:
         CHECK_NOTINIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         atoms.setKbT(val);
         break;
       /* ADDED WITH API==3 */
       case cmd_setRestart:
         CHECK_NOTINIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         if(*static_cast<int*>(val)!=0) restart=true;
         break;
       case cmd_setMDEngine:
         CHECK_NOTINIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         MDEngine=static_cast<char*>(val);
         break;
       case cmd_setLog:
@@ -376,33 +376,33 @@ void PlumedMain::cmd(const std::string & word,void*val){
         break;
       case cmd_setLogFile:
         CHECK_NOTINIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         log.open(static_cast<char*>(val));
         break;
       // other commands that should be used after initialization:
       case cmd_setStopFlag:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         stopFlag=static_cast<int*>(val);
         break;
       case cmd_getExchangesFlag:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         exchangePatterns.getFlag((*static_cast<int*>(val)));
         break;
       case cmd_setExchangesSeed:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         exchangePatterns.setSeed((*static_cast<int*>(val)));
         break;
       case cmd_setNumberOfReplicas:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         exchangePatterns.setNofR((*static_cast<int*>(val)));
         break;
       case cmd_getExchangesList:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         exchangePatterns.getList((static_cast<int*>(val)));
         break;
       case cmd_runFinalJobs:
@@ -411,13 +411,13 @@ void PlumedMain::cmd(const std::string & word,void*val){
         break;
       case cmd_isEnergyNeeded:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         if(atoms.isEnergyNeeded()) *(static_cast<int*>(val))=1;
         else                       *(static_cast<int*>(val))=0;
         break;
       case cmd_getBias:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         d=getBias()/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
         atoms.double2MD(d,val);
         break;

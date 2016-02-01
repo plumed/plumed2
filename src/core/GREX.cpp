@@ -52,12 +52,12 @@ GREX::~GREX(){
 
 #define CHECK_INIT(ini,word) plumed_massert(ini,"cmd(\"" + word +"\") should be only used after GREX initialization")
 #define CHECK_NOTINIT(ini,word) plumed_massert(!(ini),"cmd(\"" + word +"\") should be only used before GREX initialization")
-#define CHECK_NULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"GREX " + word + "\")");
+#define CHECK_NOTNULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"GREX " + word + "\")");
 
 void GREX::cmd(const string&key,void*val){
   if(false){
   }else if(key=="initialized"){
-    CHECK_NULL(val,key);
+    CHECK_NOTNULL(val,key);
     *static_cast<int*>(val)=initialized;
   }else if(key=="setMPIIntracomm"){
     CHECK_NOTINIT(initialized,key);
@@ -100,26 +100,26 @@ void GREX::cmd(const string&key,void*val){
     calculate();
   }else if(key=="getLocalDeltaBias"){
     CHECK_INIT(initialized,key);
-    CHECK_NULL(val,key);
+    CHECK_NOTNULL(val,key);
     double x=localDeltaBias/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
     atoms.double2MD(x,val);
   }else if(key=="cacheLocalUNow"){
     CHECK_INIT(initialized,key);
-    CHECK_NULL(val,key);
+    CHECK_NOTNULL(val,key);
     double x;
     atoms.MD2double(val,x);
     localUNow=x*(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
     intracomm.Sum(localUNow);
   }else if(key=="cacheLocalUSwap"){
     CHECK_INIT(initialized,key);
-    CHECK_NULL(val,key);
+    CHECK_NOTNULL(val,key);
     double x;
     atoms.MD2double(val,x);
     localUSwap=x*(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
     intracomm.Sum(localUSwap);
   }else if(key=="getForeignDeltaBias"){
     CHECK_INIT(initialized,key);
-    CHECK_NULL(val,key);
+    CHECK_NOTNULL(val,key);
     double x=foreignDeltaBias/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
     atoms.double2MD(x,val);
   }else if(key=="shareAllDeltaBias"){
@@ -135,7 +135,7 @@ void GREX::cmd(const string&key,void*val){
      if(false){
      } else if(nw==2 && words[0]=="getDeltaBias"){
        CHECK_INIT(initialized,key);
-       CHECK_NULL(val,key);
+       CHECK_NOTNULL(val,key);
        plumed_massert(allDeltaBias.size()==static_cast<unsigned>(intercomm.Get_size()),
            "to retrieve bias with cmd(\"GREX getDeltaBias\"), first share it with cmd(\"GREX shareAllDeltaBias\")");
        unsigned rep;
