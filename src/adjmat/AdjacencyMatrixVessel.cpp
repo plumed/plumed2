@@ -112,7 +112,7 @@ void AdjacencyMatrixVessel::retrieveAdjacencyLists( std::vector<unsigned>& nneig
       unsigned j, k; getMatrixIndices( function->getPositionInFullTaskList(i), k, j ); 
       if( !function->checkForConnection( myvals ) ) continue ;       
  
-      if( nneigh[j]>=adj_list.ncols() || nneigh[k]>=adj_list.ncols() ) error("adjacency matrix is not large enough, increase maxconnections"); 
+      if( nneigh[j]>=adj_list.ncols() || nneigh[k]>=adj_list.ncols() ) error("adjacency lists are not large enough, increase maxconnections"); 
       // Store if atoms are connected
       // unsigned j, k; getMatrixIndices( i, k, j );
       adj_list(k,nneigh[k])=j; nneigh[k]++;
@@ -123,6 +123,8 @@ void AdjacencyMatrixVessel::retrieveAdjacencyLists( std::vector<unsigned>& nneig
 void AdjacencyMatrixVessel::retrieveEdgeList( unsigned& nedge, std::vector<std::pair<unsigned,unsigned> >& edge_list ){
   plumed_dbg_assert( undirectedGraph() ); nedge=0;
   std::vector<double> myvals( getNumberOfComponents() );
+  if( getNumberOfStoredValues()>edge_list.size() ) error("adjacency lists are not large enough, increase maxconnections");
+
   for(unsigned i=0;i<getNumberOfStoredValues();++i){
       // Ignore any non active members
       if( !storedValueIsActive( function->getPositionInFullTaskList(i) ) ) continue ;

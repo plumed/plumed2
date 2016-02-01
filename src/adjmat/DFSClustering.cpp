@@ -77,17 +77,17 @@ void DFSClustering::registerKeywords( Keywords& keys ){
 
 DFSClustering::DFSClustering(const ActionOptions&ao):
 Action(ao),
-ClusteringBase(ao),
-#ifdef __PLUMED_HAS_BOOST_GRAPH
-edge_list(0.5*getNumberOfNodes()*(getNumberOfNodes()-1))
-#else
-nneigh(getNumberOfNodes()),
-color(getNumberOfNodes())
-#endif
+ClusteringBase(ao)
 {
    unsigned maxconnections; parse("MAXCONNECT",maxconnections);
+#ifdef __PLUMED_HAS_BOOST_GRAPH 
+   if( maxconnections>0 ) edge_list.resize( getNumberOfNodes()*maxconnections );
+   else edge_list.resize(0.5*getNumberOfNodes()*(getNumberOfNodes()-1));
+#else
+   nneigh.resize( getNumberOfNodes() ); color.resize(getNumberOfNodes());
    if( maxconnections>0 ) adj_list.resize(getNumberOfNodes(),maxconnections);
    else adj_list.resize(getNumberOfNodes(),getNumberOfNodes()); 
+#endif
 }
 
 void DFSClustering::performClustering(){
