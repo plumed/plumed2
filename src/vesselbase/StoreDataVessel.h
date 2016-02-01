@@ -154,9 +154,11 @@ unsigned StoreDataVessel::getNumberOfDerivativeSpacesPerComponent() const {
 
 inline
 bool StoreDataVessel::storedValueIsActive( const unsigned& iatom ){
-  plumed_dbg_assert( iatom<getNumberOfStoredValues() );
+  if( !getAction()->taskIsCurrentlyActive( iatom ) ) return false;
   if( !hard_cut ) return true; 
-  return local_buffer[iatom*vecsize*nspace]>wtol;   // (active_val[iatom]==1);
+  unsigned jatom = getStoreIndex( iatom );
+  plumed_dbg_assert( jatom<getNumberOfStoredValues() );
+  return local_buffer[jatom*vecsize*nspace]>wtol;   // (active_val[iatom]==1);
 }
 
 inline
@@ -166,12 +168,17 @@ unsigned StoreDataVessel::getSizeOfDerivativeList() const {
 
 inline
 unsigned StoreDataVessel::getNumberOfStoredValues() const {
-  return getAction()->getFullNumberOfTasks();
+  return getAction()->nactive_tasks;
 }
 
 inline
 unsigned StoreDataVessel::getStoreIndex( const unsigned& ind ) const {
-  return ind;
+  if( getAction()->nactive_tasks==getAction()->getFullNumberOfTasks() ) return ind;
+
+  for(unsigned i=0;i<getAction()->nactive_tasks;++i){
+      if( ind==getAction()->getPositionInFullTaskList(i) ) return i;
+  }
+  plumed_merror("requested task is not active");
 }
 
 inline

@@ -60,9 +60,9 @@ unsigned AdjacencyMatrixVessel::getNumberOfColumns() const {
 }
 
 unsigned AdjacencyMatrixVessel::getStoreIndexFromMatrixIndices( const unsigned& ielem, const unsigned& jelem ) const {
-  if( !symmetric ) return (function->ablocks[1].size())*ielem + jelem;
-  if( ielem>jelem ) return 0.5*ielem*(ielem-1)+jelem;
-  return 0.5*jelem*(jelem-1) + ielem;
+  if( !symmetric ) return StoreDataVessel::getStoreIndex( (function->ablocks[1].size())*ielem + jelem );
+  if( ielem>jelem ) return StoreDataVessel::getStoreIndex( 0.5*ielem*(ielem-1)+jelem );
+  return StoreDataVessel::getStoreIndex( 0.5*jelem*(jelem-1) + ielem );
 }
 
 unsigned AdjacencyMatrixVessel::getStoreIndex( const unsigned& myelem ) const {
@@ -86,9 +86,9 @@ void AdjacencyMatrixVessel::retrieveMatrix( DynamicList<unsigned>& myactive_elem
   myactive_elements.deactivateAll(); std::vector<double> vals( getNumberOfComponents() ); 
   for(unsigned i=0;i<getNumberOfStoredValues();++i){
       // Ignore any non active members
-      if( !storedValueIsActive(i) ) continue ;
+      if( !storedValueIsActive( function->getPositionInFullTaskList(i) ) ) continue ;
       myactive_elements.activate(i);
-      unsigned j, k; getMatrixIndices( i, k, j );
+      unsigned j, k; getMatrixIndices( function->getPositionInFullTaskList(i), k, j );
       retrieveValue( i, false, vals );
 
       if( symmetric ) mymatrix(k,j)=mymatrix(j,k)=function->transformStoredValues( vals, vin, df );      
@@ -106,10 +106,10 @@ void AdjacencyMatrixVessel::retrieveAdjacencyLists( std::vector<unsigned>& nneig
   std::vector<double> myvals( getNumberOfComponents() );
   for(unsigned i=0;i<getNumberOfStoredValues();++i){
       // Ignore any non active members
-      if( !storedValueIsActive(i) ) continue ;
+      if( !storedValueIsActive( function->getPositionInFullTaskList(i) ) ) continue ;
       // Check if atoms are connected 
       retrieveValue( i, false, myvals );
-      unsigned j, k; getMatrixIndices( i, k, j ); 
+      unsigned j, k; getMatrixIndices( function->getPositionInFullTaskList(i), k, j ); 
       if( !function->checkForConnection( myvals ) ) continue ;       
  
       if( nneigh[j]>adj_list.ncols() || nneigh[k]>adj_list.ncols() ) error("adjacency matrix is not large enough, increase maxconnections"); 
@@ -125,9 +125,9 @@ void AdjacencyMatrixVessel::retrieveEdgeList( unsigned& nedge, std::vector<std::
   std::vector<double> myvals( getNumberOfComponents() );
   for(unsigned i=0;i<getNumberOfStoredValues();++i){
       // Ignore any non active members
-      if( !storedValueIsActive(i) ) continue ;
+      if( !storedValueIsActive( function->getPositionInFullTaskList(i) ) ) continue ;
       // Check if atoms are connected 
-      retrieveValue( i, false, myvals );
+      retrieveValue( function->getPositionInFullTaskList(i), false, myvals );
       if( !function->checkForConnection( myvals ) ) continue ;
 
       getMatrixIndices( i, edge_list[nedge].first, edge_list[nedge].second );
