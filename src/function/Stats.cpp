@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Function.h"
 #include "ActionRegister.h"
+#include "tools/OpenMP.h"
 
 using namespace std;
 
@@ -156,6 +157,7 @@ void Stats::calculate()
     double nsqd = 0.;
     Value* val;
     if(!components) val=getPntrToComponent("sqdevsum");
+#pragma omp parallel for num_threads(OpenMP::getNumThreads()) reduction(+:nsqd)
     for(unsigned i=0;i<parameters.size();++i){
       double dev = getArgument(i)-parameters[i];
       if(upperd&&dev<0) dev=0.; 
@@ -173,9 +175,10 @@ void Stats::calculate()
 
     double scx=0., scx2=0., scy=0., scy2=0., scxy=0.;
  
+#pragma omp parallel for num_threads(OpenMP::getNumThreads()) reduction(+:scx,scx2,scy,scy2,scxy)
     for(unsigned i=0;i<parameters.size();++i){
-      double tmpx=getArgument(i);
-      double tmpy=parameters[i];
+      const double tmpx=getArgument(i);
+      const double tmpy=parameters[i];
       scx  += tmpx;
       scx2 += tmpx*tmpx;
       scy  += tmpy;
@@ -183,20 +186,20 @@ void Stats::calculate()
       scxy += tmpx*tmpy;
     }
   
-    double ns = parameters.size();
+    const double ns = parameters.size();
 
-    double num = ns*scxy - scx*scy;
-    double idev2x = 1./(ns*scx2-scx*scx);
-    double idevx = sqrt(idev2x);
-    double idevy = 1./sqrt(ns*scy2-scy*scy);
+    const double num = ns*scxy - scx*scy;
+    const double idev2x = 1./(ns*scx2-scx*scx);
+    const double idevx = sqrt(idev2x);
+    const double idevy = 1./sqrt(ns*scy2-scy*scy);
 
     /* sd */
-    double nsqd = scx2 + scy2 - 2.*scxy;
+    const double nsqd = scx2 + scy2 - 2.*scxy;
     /* correlation */
-    double correlation = num * idevx * idevy;
+    const double correlation = num * idevx * idevy;
     /* slope and intercept */
-    double slope = num * idev2x;
-    double inter = (scy - slope * scx)/ns;
+    const double slope = num * idev2x;
+    const double inter = (scy - slope * scx)/ns;
 
     Value* valuea=getPntrToComponent("sqdevsum");
     Value* valueb=getPntrToComponent("corr");
@@ -209,19 +212,20 @@ void Stats::calculate()
     valued->set(inter);
 
     /* derivatives */
+#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
     for(unsigned i=0;i<parameters.size();++i){
-      double common_d1 = (ns*parameters[i]-scy)*idevx;
-      double common_d2 = num*(ns*getArgument(i)-scx)*idev2x*idevx;
-      double common_d3 = common_d1 - common_d2;
+      const double common_d1 = (ns*parameters[i]-scy)*idevx;
+      const double common_d2 = num*(ns*getArgument(i)-scx)*idev2x*idevx;
+      const double common_d3 = common_d1 - common_d2;
 
       /* sqdevsum */
-      double sq_der = 2.*(getArgument(i)-parameters[i]);
+      const double sq_der = 2.*(getArgument(i)-parameters[i]);
       /* correlation */
-      double co_der = common_d3*idevy;
+      const double co_der = common_d3*idevy;
       /* slope */
-      double sl_der = (common_d1-2.*common_d2)*idevx;
+      const double sl_der = (common_d1-2.*common_d2)*idevx;
       /* intercept */
-      double int_der = -(slope+ scx*sl_der)/ns;
+      const double int_der = -(slope+ scx*sl_der)/ns;
 
       setDerivative(valuea,i,sq_der);
       setDerivative(valueb,i,co_der);
