@@ -244,7 +244,7 @@ template <typename T> int diagMat( const Matrix<T>& A, std::vector<double>& eige
    for(int i=0;i<n;++i) {
      int j;
      for(j=0;j<n;j++) if(eigenvecs(i,j)*eigenvecs(i,j)>1e-14) break;
-     if(j<n) if(eigenvecs(i,j)<0.0) for(unsigned j=0;j<n;j++) eigenvecs(i,j)*=-1;
+     if(j<n) if(eigenvecs(i,j)<0.0) for(j=0;j<n;j++) eigenvecs(i,j)*=-1;
    }
 
    // Deallocate all the memory used by the various arrays
