@@ -24,6 +24,7 @@
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include "tools/Communicator.h"
+#include "tools/OpenMP.h"
 
 using namespace std;
 
@@ -60,17 +61,19 @@ class Ensemble :
   unsigned ens_dim;
   unsigned my_repl;
   unsigned narg;
-  std::vector<double> bias;
-  std::vector<double> mean;
-  std::vector<double> var;
-  std::vector<double> var_tmp;
-  std::vector<double> argn;
-  std::vector<double> dargn;
+  vector<double> bias;
+  vector<double> mean;
+  vector<double> var;
+  vector<double> var_tmp;
+  vector<double> argn;
+  vector<double> dargn;
+  vector<double> dmean;
   bool     do_reweight;
   bool     master;
   bool     do_variance;
   double   kbt;
   double   moment;
+  double   power;
 public:
   explicit Ensemble(const ActionOptions&);
   void     calculate();
@@ -87,6 +90,7 @@ void Ensemble::registerKeywords(Keywords& keys){
   keys.addFlag("VARIANCE",false,"calculate the variance in addition to the mean"); 
   keys.add("optional","TEMP","the system temperature - this is only needed if you are reweighting");
   keys.add("optional","MOMENT","the moment you want to calculate in alternative to the mean or the variance");
+  keys.add("optional","POWER","the power of the mean");
   ActionWithValue::useCustomisableComponents(keys);
 }
 
@@ -96,7 +100,8 @@ Function(ao),
 do_reweight(false),
 do_variance(false),
 kbt(-1.0),
-moment(0)
+moment(0),
+power(0)
 {
   parseFlag("REWEIGHT", do_reweight); 
   parseFlag("VARIANCE", do_variance); 
@@ -108,6 +113,7 @@ moment(0)
     if(kbt==0.0) error("Unless the MD engine passes the temperature to plumed, with REWEIGHT you must specify TEMP");
   }
   parse("MOMENT",moment);
+  parse("POWER",power);
 
   master = (comm.Get_rank()==0);
   if(master) {
@@ -150,6 +156,7 @@ moment(0)
   mean.resize(narg);
   var.resize(narg);
   var_tmp.resize(narg);
+  dmean.resize(narg);
 }
 
 void Ensemble::calculate(){
@@ -189,13 +196,31 @@ void Ensemble::calculate(){
   double  fact_kbt = fact/kbt;
 
   // 0) if we are calculating a moment then
-  if(moment!=0) for(unsigned i=0;i<narg;++i) {argn[i]=pow(getArgument(i),moment); dargn[i]=moment*pow(getArgument(i),moment-1);}
-  else for(unsigned i=0;i<narg;++i) {argn[i]=getArgument(i); dargn[i]=1.;}
+  if(moment!=0) {
+#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
+    for(unsigned i=0;i<narg;++i) { 
+      argn[i]=pow(getArgument(i),moment); 
+      dargn[i]=moment*pow(getArgument(i),moment-1);
+    }
+  } else { 
+#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
+    for(unsigned i=0;i<narg;++i) {
+      argn[i]=getArgument(i); 
+      dargn[i]=1.;
+    }
+  }
 
   // 1) calculate means
   // cycle on number of arguments - bias excluded
-  if(master) for(unsigned i=0;i<narg;++i) mean[i] = argn[i] * fact;
-  else       for(unsigned i=0;i<narg;++i) mean[i] = 0.;
+  if(master) {
+#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
+    for(unsigned i=0;i<narg;++i) mean[i] = argn[i] * fact;
+  } else { 
+#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
+    for(unsigned i=0;i<narg;++i) mean[i] = 0;
+  }
+//fill(mean.begin(), mean.end(), 0.);
+
   // among replicas
   if(master&&ens_dim>1) multi_sim_comm.Sum(&mean[0], narg);
   // inside each replica
@@ -224,13 +249,24 @@ void Ensemble::calculate(){
     comm.Sum(&var[0], narg);
     comm.Sum(&var_tmp[0], narg);
   }
+
+  fill(dmean.begin(), dmean.end(), 1.);
+  if(power!=0) {
+#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
+    for(unsigned i=0;i<narg;++i) {
+      const double tmp=pow(mean[i],power-1);
+      dmean[i]=power*tmp; 
+      mean[i] *= tmp;
+    }
+  }
   
   // 3) set components
+#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
   for(unsigned i=0;i<narg;++i){
     // set mean
     Value* v=getPntrToComponent(i);
     v->set(mean[i]);
-    setDerivative(v, i, fact*dargn[i]);
+    setDerivative(v, i, fact*dargn[i]*dmean[i]);
     // useful tmp quantity
     const double der_tmp = argn[i] - mean[i];
 
