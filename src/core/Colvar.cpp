@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
-#include "tools/OpenMP.h"
 #include <vector>
 #include <string>
 
@@ -64,9 +63,12 @@ void Colvar::apply(){
   }
   v.zero();
 
+  const unsigned stride=comm.Get_size();
+  const unsigned rank=comm.Get_rank();
+
   if(!isEnergy){
-    for(int i=0;i<getNumberOfComponents();++i){
-      if( getPntrToComponent(i)->applyForce( forces ) ){
+    for(int i=rank;i<getNumberOfComponents();i+=stride){
+      if(getPntrToComponent(i)->applyForce( forces )){
        for(unsigned j=0;j<nat;++j){
           f[j][0]+=forces[3*j+0];
           f[j][1]+=forces[3*j+1];
@@ -81,8 +83,11 @@ void Colvar::apply(){
        v(2,0)+=forces[3*nat+6];
        v(2,1)+=forces[3*nat+7];
        v(2,2)+=forces[3*nat+8];
-    }
+     }
    }
+   comm.Sum(&f[0][0],3*nat);
+   comm.Sum(&v[0][0],9);
+   
   } else if( isEnergy ){
      forces.resize(1);
      if( getPntrToComponent(0)->applyForce( forces ) ) modifyForceOnEnergy()+=forces[0];
