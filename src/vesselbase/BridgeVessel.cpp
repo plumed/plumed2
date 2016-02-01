@@ -177,6 +177,12 @@ bool BridgeVessel::applyForce( std::vector<double>& outforces ){
   return hasforce;
 }
 
+void BridgeVessel::copyTaskFlags(){
+  myOutputAction->deactivateAllTasks();
+  for(unsigned i=0;i<getAction()->nactive_tasks;++i) myOutputAction->taskFlags[ getAction()->indexOfTaskInFullList[i] ] = 1;
+  myOutputAction->lockContributors();
+}
+
 }
 }
 

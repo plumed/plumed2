@@ -176,7 +176,7 @@ unsigned StoreDataVessel::getStoreIndex( const unsigned& ind ) const {
   if( getAction()->nactive_tasks==getAction()->getFullNumberOfTasks() ) return ind;
 
   for(unsigned i=0;i<getAction()->nactive_tasks;++i){
-      if( ind==getAction()->getPositionInFullTaskList(i) ) return i;
+      if( ind==getAction()->indexOfTaskInFullList[i] ) return i;
   }
   plumed_merror("requested task is not active");
 }

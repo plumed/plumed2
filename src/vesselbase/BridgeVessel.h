@@ -70,6 +70,8 @@ public:
   void finish( const std::vector<double>& buffer );
 /// Calculate numerical derivatives
   void completeNumericalDerivatives();
+/// Set the task flags in the bridged class the same as in the original class
+  void copyTaskFlags();
 };
 
 inline

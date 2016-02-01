@@ -51,6 +51,8 @@ ActionWithInputVessel(ao)
   log.printf("  adding restraints on variables calculated by %s action with label %s\n",
          aves->getName().c_str(),aves->getLabel().c_str());
 
+  // Add a task list in order to avoid problems
+  for(unsigned i=0;i<aves->getFullNumberOfTasks();++i) addTaskToList( aves->getTaskCode(i) );
   // And turn on the derivatives (note problems here because of ActionWithValue)
   turnOnDerivatives(); needsDerivatives();
 

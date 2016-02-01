@@ -150,10 +150,8 @@ StoreDataVessel* ActionWithVessel::buildDataStashes( const bool& allow_wcutoff, 
 }
 
 void ActionWithVessel::addTaskToList( const unsigned& taskCode ){
-  indexOfTaskInFullList.push_back( fullTaskList.size() );
-  fullTaskList.push_back( taskCode ); partialTaskList.push_back( taskCode ); 
-  taskFlags.push_back(0); nactive_tasks = fullTaskList.size();
-  plumed_assert( partialTaskList.size()==nactive_tasks && indexOfTaskInFullList.size()==nactive_tasks && taskFlags.size()==nactive_tasks );
+  fullTaskList.push_back( taskCode ); taskFlags.push_back(0); 
+  plumed_assert( fullTaskList.size()==taskFlags.size() );
 }
 
 void ActionWithVessel::readVesselKeywords(){
@@ -206,13 +204,27 @@ void ActionWithVessel::needsDerivatives(){
 void ActionWithVessel::lockContributors(){
   nactive_tasks = 0;
   for(unsigned i=0;i<fullTaskList.size();++i){
+      if( taskFlags[i]>0 ) nactive_tasks++;
+  }
+
+  unsigned n=0;
+  partialTaskList.resize( nactive_tasks );
+  indexOfTaskInFullList.resize( nactive_tasks );  
+  for(unsigned i=0;i<fullTaskList.size();++i){
       // Deactivate sets inactive tasks to number not equal to zero
       if( taskFlags[i]>0 ){
-          partialTaskList[nactive_tasks] = fullTaskList[i]; 
-          indexOfTaskInFullList[nactive_tasks]=i;
-          nactive_tasks++; 
+          partialTaskList[n] = fullTaskList[i]; 
+          indexOfTaskInFullList[n]=i;
+          n++; 
       } 
   }
+  plumed_dbg_assert( n==nactive_tasks );
+  for(unsigned i=0;i<functions.size();++i){
+     BridgeVessel* bb = dynamic_cast<BridgeVessel*>( functions[i] );
+     if( bb ) bb->copyTaskFlags();
+  }
+  // Resize mydata to accomodate all active tasks
+  if( mydata ) mydata->resize();
   contributorsAreUnlocked=false;
 }
 

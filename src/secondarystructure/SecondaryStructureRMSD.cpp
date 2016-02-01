@@ -83,7 +83,7 @@ align_atom_2(0)
   log.printf("  distances from secondary structure elements are calculated using %s algorithm\n",alignType.c_str() );
   log<<"  Bibliography "<<plumed.cite("Pietrucci and Laio, J. Chem. Theory Comput. 5, 2197 (2009)"); log<<"\n";
 
-  parseFlag("VERBOSE",verbose_output); firsttime=false;    
+  parseFlag("VERBOSE",verbose_output); 
 
   if( keywords.exists("STRANDS_CUTOFF") ){
     parse("STRANDS_CUTOFF",s_cutoff); align_strands=true;
@@ -172,10 +172,11 @@ void SecondaryStructureRMSD::setSecondaryStructure( std::vector<Vector>& structu
   references[nn]->setBoundsOnDistances( true , bondlength );  // We always use pbc
   references[nn]->setReferenceAtoms( structure, align, displace );
 //  references[nn]->setNumberOfAtoms( structure.size() );
-}
 
-void SecondaryStructureRMSD::prepare(){
-  if( firsttime ){ lockContributors(); firsttime=false; }
+  // And prepare the task list
+  deactivateAllTasks();
+  for(unsigned i=0;i<getFullNumberOfTasks();++i) taskFlags[i]=1;
+  lockContributors(); 
 }
 
 void SecondaryStructureRMSD::calculate(){
