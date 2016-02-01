@@ -68,7 +68,6 @@ class NOE : public Colvar {
 private:
   bool             pbc;
   vector<unsigned> nga;
-  vector<double>   noedist;
   NeighborList     *nl;
 public:
   static void registerKeywords( Keywords& keys );
@@ -130,6 +129,7 @@ pbc(true)
   bool addistance=false;
   parseFlag("ADDDISTANCES",addistance);
 
+  vector<double> noedist;
   if(addistance) {
     noedist.resize( nga.size() ); 
     unsigned ntarget=0;
@@ -179,18 +179,16 @@ NOE::~NOE(){
 
 void NOE::calculate()
 {
-// cycle over the number of NOE
 #pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
   for(unsigned i=0;i<nga.size();i++) {
-    vector<Vector> deriv; 
     Tensor dervir;
     double noe=0;
     unsigned index=0;
     for(unsigned k=0; k<i; k++) index+=nga[k]; 
+    const double c_aver=1./static_cast<double>(nga[i]);
+    Value* val=getPntrToComponent(i);
     // cycle over equivalent atoms 
     for(unsigned j=0;j<nga[i];j++) {
-      const double c_aver=1./((double)nga[i]);
-      // the first atom is always the same (the paramagnetic group)
       const unsigned i0=nl->getClosePair(index+j).first;
       const unsigned i1=nl->getClosePair(index+j).second;
 
@@ -198,29 +196,20 @@ void NOE::calculate()
       if(pbc) distance=pbcDistance(getPosition(i0),getPosition(i1));
       else    distance=delta(getPosition(i0),getPosition(i1));
 
-      const double r2=distance.modulo2();
-      const double r6=r2*r2*r2;
-      const double r8=r6*r2;
-      const double tmpir6=c_aver/r6;
-      const double tmpir8=-6.*c_aver/r8;
+      const double ir2=1./distance.modulo2();
+      const double ir6=ir2*ir2*ir2;
+      const double ir8=6*ir6*ir2;
+      const double tmpir6=c_aver*ir6;
+      const double tmpir8=c_aver*ir8;
 
       noe += tmpir6;
-
-      Vector tmpv = -tmpir8*distance;
-      deriv.push_back(tmpv);
-      dervir   +=  Tensor(distance,tmpv);
+      Vector deriv = tmpir8*distance;
+      dervir += Tensor(distance,deriv);
+      setAtomsDerivatives(val, i0,  deriv);
+      setAtomsDerivatives(val, i1, -deriv);
     }
-
-    Value* val=getPntrToComponent(i);
     val->set(noe);
     setBoxDerivatives(val, dervir);
-
-    for(unsigned j=0;j<nga[i];j++) {
-      const unsigned i0=nl->getClosePair(index+j).first;
-      const unsigned i1=nl->getClosePair(index+j).second;
-      setAtomsDerivatives(val, i0,  deriv[j]);
-      setAtomsDerivatives(val, i1, -deriv[j]); 
-    }
   }
 }
 
