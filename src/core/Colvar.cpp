@@ -68,29 +68,28 @@ void Colvar::apply(){
 
   if(!isEnergy){
     for(int i=rank;i<getNumberOfComponents();i+=stride){
-      if(getPntrToComponent(i)->applyForce( forces )){
-       for(unsigned j=0;j<nat;++j){
+      if(getPntrToComponent(i)->applyForce(forces)){
+        for(unsigned j=0;j<nat;++j){
           f[j][0]+=forces[3*j+0];
           f[j][1]+=forces[3*j+1];
           f[j][2]+=forces[3*j+2];
-       }
-       v(0,0)+=forces[3*nat+0];
-       v(0,1)+=forces[3*nat+1];
-       v(0,2)+=forces[3*nat+2];
-       v(1,0)+=forces[3*nat+3];
-       v(1,1)+=forces[3*nat+4];
-       v(1,2)+=forces[3*nat+5];
-       v(2,0)+=forces[3*nat+6];
-       v(2,1)+=forces[3*nat+7];
-       v(2,2)+=forces[3*nat+8];
-     }
-   }
-   comm.Sum(&f[0][0],3*nat);
-   comm.Sum(&v[0][0],9);
-   
+        }
+        v(0,0)+=forces[3*nat+0];
+        v(0,1)+=forces[3*nat+1];
+        v(0,2)+=forces[3*nat+2];
+        v(1,0)+=forces[3*nat+3];
+        v(1,1)+=forces[3*nat+4];
+        v(1,2)+=forces[3*nat+5];
+        v(2,0)+=forces[3*nat+6];
+        v(2,1)+=forces[3*nat+7];
+        v(2,2)+=forces[3*nat+8];
+      }
+    }
+    comm.Sum(&f[0][0],3*f.size());
+    comm.Sum(&v[0][0],9);
   } else if( isEnergy ){
-     forces.resize(1);
-     if( getPntrToComponent(0)->applyForce( forces ) ) modifyForceOnEnergy()+=forces[0];
+    forces.resize(1);
+    if(getPntrToComponent(0)->applyForce(forces)) modifyForceOnEnergy()+=forces[0];
   }
 }
 
