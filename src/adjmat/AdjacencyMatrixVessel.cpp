@@ -132,7 +132,7 @@ void AdjacencyMatrixVessel::retrieveEdgeList( unsigned& nedge, std::vector<std::
       retrieveValue( function->getPositionInFullTaskList(i), false, myvals );
       if( !function->checkForConnection( myvals ) ) continue ;
 
-      getMatrixIndices( i, edge_list[nedge].first, edge_list[nedge].second );
+      getMatrixIndices( function->getPositionInFullTaskList(i), edge_list[nedge].first, edge_list[nedge].second );
       nedge++;
   }
 }
