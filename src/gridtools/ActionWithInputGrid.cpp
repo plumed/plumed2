@@ -65,8 +65,8 @@ mygrid(NULL)
      parseFlag("USE_ALL_DATA",single_run);
      if( !single_run ){
         mves->setAnalysisStride( false, getStride() ); 
-        log.printf("  outputting grid every %u steps \n", getStride() );
-     } else log.printf("  outputting grid at end of calculation\n");
+        log.printf("  outputting every %u steps \n", getStride() );
+     } else log.printf("  outputting at end of calculation\n");
   }
 }
 

@@ -185,6 +185,7 @@ void GridVessel::getSplineNeighbors( const unsigned& mybox, std::vector<unsigned
         tmp_indices[j]=i0;
      }
      mysneigh[i]=getIndex( tmp_indices );
+     plumed_massert( active[mysneigh[i]], "inactive grid point required for splines"); 
   }
 }
 

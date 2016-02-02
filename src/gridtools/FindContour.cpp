@@ -153,8 +153,10 @@ void FindContour::performOperationsWithGrid( const bool& from_update ){
   }
 
   // Run over whole grid
+  std::vector<double> coords( mygrid->getDimension() );
   std::vector<bool> active( mygrid->getNumberOfPoints(), false );
   std::vector<unsigned> neighbours; unsigned num_neighbours;
+  std::vector<unsigned> ones( mygrid->getDimension(), 1 );
   std::vector<unsigned> gbuffer_vec( mygrid->getDimension(), gbuffer );
   std::vector<unsigned> ugrid_indices( mygrid->getDimension() );
   unsigned npoints=0; RootFindingBase<FindContour> mymin( this );
@@ -162,19 +164,14 @@ void FindContour::performOperationsWithGrid( const bool& from_update ){
      // Get the index of the current grid point
      mygrid->getIndices( i, ind ); 
      // Ensure inactive grid points are ignored
+     if( mygrid->inactive(i) ) continue;
+     mygrid->getGridPointCoordinates( mygrid->getIndex(ind), coords );
+     mygrid->getNeighbors(coords, ones, num_neighbours, neighbours );
      bool cycle=false;
-     if( mygrid->inactive(i) ) continue ;
-     for(unsigned j=0;j<mygrid->getDimension();++j) ugrid_indices[j]=ind[j];
-     for(unsigned j=0;j<mygrid->getDimension();++j){
-        if( mygrid->isPeriodic(j) ) ugrid_indices[j]=(ugrid_indices[j]+1)%nbin[j];
-        else if( (ugrid_indices[j]+1)==nbin[j] ) continue ;
-        else ugrid_indices[j]+=1;
-        // Now check the grid is active
-        if( mygrid->inactive( mygrid->getIndex( ugrid_indices ) ) ){ cycle=true; break; }
-        // And reset ugrid_indices
-        ugrid_indices[j]=ind[j];
+     for(unsigned j=0;j<num_neighbours;++j){
+         if( mygrid->inactive( neighbours[j] ) ){ cycle=true; break; }
      }
-     if( cycle ) continue ;
+     if( cycle ) continue;
 
      // Get the value of a point on the grid
      double val1=getGridElement( i, mycomp*(mygrid->getDimension()+1) ) - contour;
