@@ -61,16 +61,11 @@ class Ensemble :
   unsigned ens_dim;
   unsigned my_repl;
   unsigned narg;
-  vector<double> bias;
-  vector<double> mean;
-  vector<double> var;
-  vector<double> var_tmp;
-  vector<double> argn;
-  vector<double> dargn;
-  vector<double> dmean;
-  bool     do_reweight;
   bool     master;
-  bool     do_variance;
+  bool     do_reweight;
+  bool     do_moments;
+  bool     do_central;
+  bool     do_powers;
   double   kbt;
   double   moment;
   double   power;
@@ -86,11 +81,11 @@ PLUMED_REGISTER_ACTION(Ensemble,"ENSEMBLE")
 void Ensemble::registerKeywords(Keywords& keys){
   Function::registerKeywords(keys);
   keys.use("ARG");
-  keys.addFlag("REWEIGHT",false,"do reweight"); 
-  keys.addFlag("VARIANCE",false,"calculate the variance in addition to the mean"); 
+  keys.addFlag("REWEIGHT",false,"simple REWEIGHT using the latest ARG as energy"); 
+  keys.addFlag("CENTRAL",false,"calculate a central moment instead of a standard moment"); 
   keys.add("optional","TEMP","the system temperature - this is only needed if you are reweighting");
   keys.add("optional","MOMENT","the moment you want to calculate in alternative to the mean or the variance");
-  keys.add("optional","POWER","the power of the mean");
+  keys.add("optional","POWER","the power of the mean (and moment)");
   ActionWithValue::useCustomisableComponents(keys);
 }
 
@@ -98,13 +93,14 @@ Ensemble::Ensemble(const ActionOptions&ao):
 Action(ao),
 Function(ao),
 do_reweight(false),
-do_variance(false),
+do_moments(false),
+do_central(false),
+do_powers(false),
 kbt(-1.0),
 moment(0),
 power(0)
 {
   parseFlag("REWEIGHT", do_reweight); 
-  parseFlag("VARIANCE", do_variance); 
   double temp=0.0;
   parse("TEMP",temp);
   if(do_reweight) {
@@ -112,8 +108,18 @@ power(0)
     else kbt=plumed.getAtoms().getKbT();
     if(kbt==0.0) error("Unless the MD engine passes the temperature to plumed, with REWEIGHT you must specify TEMP");
   }
+
   parse("MOMENT",moment);
+  if(moment==1) error("MOMENT can be any number but for 0 and 1");
+  if(moment!=0) do_moments=true;
+  parseFlag("CENTRAL", do_central);
+  if(!do_moments&&do_central) error("To calculate a CENTRAL moment you need to define for which MOMENT");
+ 
   parse("POWER",power);
+  if(power==1) error("POWER can be any number but for 0 and 1");
+  if(power!=0) do_powers=true;
+
+  checkRead();
 
   master = (comm.Get_rank()==0);
   if(master) {
@@ -137,157 +143,139 @@ power(0)
      addComponentWithDerivatives(s); 
      getPntrToComponent(i)->setNotPeriodic();
   }
-  // these are the variances
-  if(do_variance) {
+  // these are the moments 
+  if(do_moments) {
     for(unsigned i=0;i<narg;i++) {
-      std::string s=getPntrToArgument(i)->getName()+"_v";
+      std::string s=getPntrToArgument(i)->getName()+"_m";
       addComponentWithDerivatives(s); 
       getPntrToComponent(i+narg)->setNotPeriodic();
     }
   }
-  log.printf("  using %u replicas.\n", ens_dim);
+  log.printf("  averaing over %u replicas.\n", ens_dim);
   if(do_reweight) log.printf("  doing simple REWEIGHT using the latest ARGUMENT as energy.\n");
-  checkRead();
-
-  // prepare vector for biases, means, variances, and derivatives
-  bias.resize(ens_dim);
-  argn.resize(narg);
-  dargn.resize(narg);
-  mean.resize(narg);
-  var.resize(narg);
-  var_tmp.resize(narg);
-  dmean.resize(narg);
+  if(do_moments&&!do_central)  log.printf("  calculating also the %lf standard moment\n", moment);
+  if(do_moments&&do_central)   log.printf("  calculating also the %lf central moment\n", moment);
+  if(do_powers)                log.printf("  calculating the %lf power of the mean (and moment)\n", power);
 }
 
 void Ensemble::calculate(){
-
   double norm = 0.0;
+  double fact = 0.0;
 
-  // in case of reweight
+  // calculate the weights either from BIAS 
   if(do_reweight){
-    // put bias to zero
-    for(unsigned i=0; i<ens_dim; ++i) bias[i] = 0.0;
+    vector<double> bias;
+    bias.resize(ens_dim);
     if(master){
-      // first we share the bias - the narg
       bias[my_repl] = getArgument(narg); 
       if(ens_dim>1) multi_sim_comm.Sum(&bias[0], ens_dim);  
     }
-    // inside each replica
     comm.Sum(&bias[0], ens_dim);
-
-    // find maximum value of bias
-    double maxbias = *(std::max_element(bias.begin(), bias.end()));
-
-    // calculate weights
+    const double maxbias = *(std::max_element(bias.begin(), bias.end()));
     for(unsigned i=0; i<ens_dim; ++i){
-       bias[i] = exp((bias[i]-maxbias)/kbt); 
-       norm += bias[i];
+      bias[i] = exp((bias[i]-maxbias)/kbt); 
+      norm += bias[i];
     }
-  // otherwise set weight to 1 and norm to ens_dim  
+    fact = bias[my_repl]/norm;
+  // or arithmetic ones
   } else {
-    for(unsigned i=0; i<ens_dim; ++i){
-       bias[i] = 1.0; 
-       norm += bias[i];
-    }   
+    norm = static_cast<double>(ens_dim); 
+    fact = 1.0/norm; 
   }
 
-  double  w = bias[my_repl];
-  double  fact = w/norm;
-  double  fact_kbt = fact/kbt;
+  const double fact_kbt = fact/kbt;
 
-  // 0) if we are calculating a moment then
-  if(moment!=0) {
-#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
-    for(unsigned i=0;i<narg;++i) { 
-      argn[i]=pow(getArgument(i),moment); 
-      dargn[i]=moment*pow(getArgument(i),moment-1);
-    }
-  } else { 
-#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
-    for(unsigned i=0;i<narg;++i) {
-      argn[i]=getArgument(i); 
-      dargn[i]=1.;
-    }
-  }
-
-  // 1) calculate means
-  // cycle on number of arguments - bias excluded
+  vector<double> mean, dmean;
+  mean.resize(narg);
+  dmean.resize(narg);
+  fill(dmean.begin(), dmean.end(), fact);
+  // calculate the mean 
   if(master) {
-#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
-    for(unsigned i=0;i<narg;++i) mean[i] = argn[i] * fact;
-  } else { 
-#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
-    for(unsigned i=0;i<narg;++i) mean[i] = 0;
+    for(unsigned i=0;i<narg;++i) mean[i] = fact*getArgument(i); 
+    if(ens_dim>1) multi_sim_comm.Sum(&mean[0], narg);
   }
-//fill(mean.begin(), mean.end(), 0.);
-
-  // among replicas
-  if(master&&ens_dim>1) multi_sim_comm.Sum(&mean[0], narg);
-  // inside each replica
   comm.Sum(&mean[0], narg);
-  
-  // 2) calculate variances
-  // cycle on number of arguments - bias excluded
-  if(do_variance) {
-    if(master) { 
-      for(unsigned i=0;i<narg;++i){
-        var_tmp[i] = ( argn[i] - mean[i] ) * fact;
-        var[i]     = ( argn[i] - mean[i] ) * var_tmp[i];
+
+  vector<double> v_moment, dv_moment;
+  // calculate other moments
+  if(do_moments) {
+    v_moment.resize(narg);
+    dv_moment.resize(narg);
+    // standard moment
+    if(!do_central) {
+      if(master) {
+#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
+        for(unsigned i=0;i<narg;++i) { 
+          const double tmp = fact*pow(getArgument(i),moment-1);
+          v_moment[i]      = tmp*getArgument(i);
+          dv_moment[i]     = moment*tmp;
+        }
+        if(ens_dim>1) multi_sim_comm.Sum(&v_moment[0], narg);
+      } else {
+#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
+        for(unsigned i=0;i<narg;++i) {
+          const double tmp = fact*pow(getArgument(i),moment-1);
+          dv_moment[i]     = moment*tmp;
+        }
       }
+    // central moment
     } else {
-      for(unsigned i=0;i<narg;++i){
-        var_tmp[i] = 0.; 
-        var[i]     = 0.;
+      if(master) {
+#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
+        for(unsigned i=0;i<narg;++i) { 
+          const double tmp = pow(getArgument(i)-mean[i],moment-1);
+          v_moment[i]      = fact*tmp*(getArgument(i)-mean[i]);
+          dv_moment[i]     = moment*tmp*(fact-fact/norm);
+        }
+        if(ens_dim>1) multi_sim_comm.Sum(&v_moment[0], narg);
+      } else {
+#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
+        for(unsigned i=0;i<narg;++i) {
+          const double tmp = pow(getArgument(i)-mean[i],moment-1);
+          dv_moment[i]     = moment*tmp*(fact-fact/norm);
+        }
       }
     }
-    // among replicas
-    if(master&&ens_dim>1){
-      multi_sim_comm.Sum(&var[0], narg);
-      multi_sim_comm.Sum(&var_tmp[0], narg);
-    }
-    // inside each replica
-    comm.Sum(&var[0], narg);
-    comm.Sum(&var_tmp[0], narg);
+    comm.Sum(&v_moment[0], narg);
   }
 
-  fill(dmean.begin(), dmean.end(), 1.);
-  if(power!=0) {
+  // calculate powers of moments
+  if(do_powers) {
 #pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
     for(unsigned i=0;i<narg;++i) {
-      const double tmp=pow(mean[i],power-1);
-      dmean[i]=power*tmp; 
-      mean[i] *= tmp;
+      const double tmp1 = pow(mean[i],power-1);
+      mean[i]          *= tmp1;
+      dmean[i]         *= power*tmp1;
+      if(do_moments) { 
+        const double tmp2 = pow(v_moment[i],power-1);
+        v_moment[i]      *= tmp2;
+        dv_moment[i]     *= power*tmp2; 
+      }
     }
   }
   
-  // 3) set components
+  // set components
 #pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
   for(unsigned i=0;i<narg;++i){
     // set mean
     Value* v=getPntrToComponent(i);
     v->set(mean[i]);
-    setDerivative(v, i, fact*dargn[i]*dmean[i]);
-    // useful tmp quantity
-    const double der_tmp = argn[i] - mean[i];
-
-    if(do_variance) {
-      // set variance
+    setDerivative(v, i, dmean[i]);
+    if(do_reweight) {
+      const double w_tmp = fact_kbt*(getArgument(i) - mean[i]);
+      setDerivative(v, narg, w_tmp);
+    }
+    if(do_moments) {
+      // set moments
       Value* u=getPntrToComponent(i+narg);
-      u->set(var[i]);
-      const double der = 2.0 * fact * ( der_tmp - var_tmp[i] );
-      setDerivative(u, i, der);
-      // if reweighing, derivative also wrt to bias
-      if(do_reweight){
-        const double der = ( der_tmp * der_tmp -2.0 * der_tmp * var_tmp[i] - var[i] ) * fact_kbt;
-        setDerivative(u, narg, der);
+      u->set(v_moment[i]);
+      setDerivative(u, i, dv_moment[i]);
+      if(do_reweight) {
+        const double w_tmp = fact_kbt*(pow(getArgument(i),moment) - v_moment[i]);
+        setDerivative(u, narg, w_tmp);
       }
     }
-    // if reweighing, derivative also wrt to bias
-    if(do_reweight){
-      // of the mean
-      setDerivative(v, narg, der_tmp * fact_kbt);
-    }
-  };
+  } 
 }
 
 }
