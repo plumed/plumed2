@@ -55,6 +55,7 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   lowmem(false),
   noderiv(true),
   actionIsBridged(false),
+  nactive_tasks(0),
   mydata(NULL),
   contributorsAreUnlocked(false),
   weightHasDerivatives(false),
