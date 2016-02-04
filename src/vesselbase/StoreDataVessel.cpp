@@ -107,20 +107,24 @@ void StoreDataVessel::storeDerivatives( const unsigned& myelem, MultiValue& myva
   }
 }
 
-void StoreDataVessel::retrieveValue( const unsigned& myelem, const bool& normed, std::vector<double>& values ) const {
-  plumed_dbg_assert( values.size()==vecsize );
-  unsigned jelem = getStoreIndex( myelem );
-
+void StoreDataVessel::retrieveSequentialValue( const unsigned& jelem, const bool& normed, std::vector<double>& values ) const {
   if( normed && values.size()>2 ){
      unsigned ibuf = jelem * vecsize * nspace;
      values[0]=local_buffer[ibuf]; ibuf+=nspace;
      double norm=values[1]=local_buffer[ibuf]; ibuf+=nspace;   // Element 1 contains the norm of the vector
      if( norm<epsilon ) norm=1.0;
-     for(unsigned i=2;i<vecsize;++i){ values[i]=local_buffer[ibuf]/norm; ibuf+=nspace; } 
+     for(unsigned i=2;i<vecsize;++i){ values[i]=local_buffer[ibuf]/norm; ibuf+=nspace; }
   } else {
      unsigned ibuf = jelem * vecsize * nspace;
      for(unsigned i=0;i<vecsize;++i){ values[i]=local_buffer[ibuf]; ibuf+=nspace; }
   }
+
+}
+
+void StoreDataVessel::retrieveValueWithIndex( const unsigned& myelem, const bool& normed, std::vector<double>& values ) const {
+  plumed_dbg_assert( values.size()==vecsize );
+  unsigned jelem = getStoreIndex( myelem );
+  retrieveSequentialValue( jelem, normed, values );
 }
 
 void StoreDataVessel::retrieveDerivatives( const unsigned& myelem, const bool& normed, MultiValue& myvals ){

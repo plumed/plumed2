@@ -85,11 +85,11 @@ void AdjacencyMatrixVessel::retrieveMatrix( DynamicList<unsigned>& myactive_elem
   unsigned vin; double df;
   myactive_elements.deactivateAll(); std::vector<double> vals( getNumberOfComponents() ); 
   for(unsigned i=0;i<getNumberOfStoredValues();++i){
-      // Ignore any non active members
-      if( !storedValueIsActive( function->getPositionInFullTaskList(i) ) ) continue ;
+      retrieveSequentialValue( i, false, vals );
+      if( vals[0]<=wtol ) continue ;
+
       myactive_elements.activate(i);
       unsigned j, k; getMatrixIndices( function->getPositionInFullTaskList(i), k, j );
-      retrieveValue( function->getPositionInFullTaskList(i), false, vals );
 
       if( symmetric ) mymatrix(k,j)=mymatrix(j,k)=function->transformStoredValues( vals, vin, df );      
       else mymatrix(k,j)=function->transformStoredValues( vals, vin, df );                                 
@@ -105,13 +105,12 @@ void AdjacencyMatrixVessel::retrieveAdjacencyLists( std::vector<unsigned>& nneig
   // And set up the adjacency list
   std::vector<double> myvals( getNumberOfComponents() );
   for(unsigned i=0;i<getNumberOfStoredValues();++i){
-      // Ignore any non active members
-      if( !storedValueIsActive( function->getPositionInFullTaskList(i) ) ) continue ;
       // Check if atoms are connected 
-      retrieveValue( function->getPositionInFullTaskList(i), false, myvals );
+      retrieveSequentialValue( i, false, myvals );
+      if( myvals[0]<=wtol || !function->checkForConnection( myvals ) ) continue ; 
+
       unsigned j, k; getMatrixIndices( function->getPositionInFullTaskList(i), k, j ); 
-      if( !function->checkForConnection( myvals ) ) continue ;       
- 
+
       if( nneigh[j]>=adj_list.ncols() || nneigh[k]>=adj_list.ncols() ) error("adjacency lists are not large enough, increase maxconnections"); 
       // Store if atoms are connected
       // unsigned j, k; getMatrixIndices( i, k, j );
@@ -126,11 +125,9 @@ void AdjacencyMatrixVessel::retrieveEdgeList( unsigned& nedge, std::vector<std::
   if( getNumberOfStoredValues()>edge_list.size() ) error("adjacency lists are not large enough, increase maxconnections");
 
   for(unsigned i=0;i<getNumberOfStoredValues();++i){
-      // Ignore any non active members
-      if( !storedValueIsActive( function->getPositionInFullTaskList(i) ) ) continue ;
       // Check if atoms are connected 
-      retrieveValue( function->getPositionInFullTaskList(i), false, myvals );
-      if( !function->checkForConnection( myvals ) ) continue ;
+      retrieveSequentialValue( i, false, myvals );
+      if( myvals[0]<=wtol || !function->checkForConnection( myvals ) ) continue ;
 
       getMatrixIndices( function->getPositionInFullTaskList(i), edge_list[nedge].first, edge_list[nedge].second );
       nedge++;
@@ -141,7 +138,7 @@ void AdjacencyMatrixVessel::retrieveDerivatives( const unsigned& myelem, const b
   StoreDataVessel::retrieveDerivatives( myelem, normed, myvals );
   if( !function->weightHasDerivatives ) return ;
 
-  unsigned vi; std::vector<double> vals( getNumberOfComponents() ); retrieveValue( myelem, normed, vals ); 
+  unsigned vi; std::vector<double> vals( getNumberOfComponents() ); retrieveValueWithIndex( myelem, normed, vals ); 
   double df, max=function->transformStoredValues( vals, vi, df );
 
   double pref = max/(vals[0]*vals[0]);

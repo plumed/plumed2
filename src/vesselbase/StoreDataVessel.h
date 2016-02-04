@@ -102,7 +102,8 @@ public:
 /// Return the number of components in the vector
   unsigned getNumberOfComponents() const { return vecsize; }
 /// Get the values of all the components in the vector
-  void retrieveValue( const unsigned& myelem, const bool& normed, std::vector<double>& values ) const ;
+  void retrieveSequentialValue( const unsigned& myelem, const bool& normed, std::vector<double>& values ) const ;
+  void retrieveValueWithIndex( const unsigned& myelem, const bool& normed, std::vector<double>& values ) const ;
 /// Get the derivatives for one of the components in the vector
   virtual void retrieveDerivatives( const unsigned& myelem, const bool& normed, MultiValue& myvals );
 /// Do all resizing of data

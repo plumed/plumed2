@@ -78,7 +78,7 @@ double MatrixSummationBase::retrieveConnectionValue( const unsigned& i, const un
   unsigned vi, myelem = mymatrix->getStoreIndexFromMatrixIndices( i, j );
   if( !mymatrix->storedValueIsActive( myelem ) ) return 0;
  
-  mymatrix->retrieveValue( myelem, false, vals ); double df;
+  mymatrix->retrieveValueWithIndex( myelem, false, vals ); double df;
   return (mymatrix->function)->transformStoredValues( vals, vi, df );
 }
 
@@ -86,7 +86,7 @@ void MatrixSummationBase::addConnectionDerivatives( const unsigned& i, const uns
   unsigned vi, myelem = mymatrix->getStoreIndexFromMatrixIndices( i, j );
   if( !mymatrix->storedValueIsActive( myelem ) ) return;
 
-  mymatrix->retrieveValue( myelem, false, vals ); double df;
+  mymatrix->retrieveValueWithIndex( myelem, false, vals ); double df;
   double vv = (mymatrix->function)->transformStoredValues( vals, vi, df );
   mymatrix->retrieveDerivatives( myelem, false, myvals );
   for(unsigned jd=0;jd<myvals.getNumberActive();++jd){

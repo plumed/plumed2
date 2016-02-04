@@ -512,7 +512,7 @@ void MultiColvarBase::calculateWeight( const unsigned& taskCode, AtomValuePack& 
   if( usespecies && taskCode<colvar_label.size() ){
       unsigned mmc=colvar_label[taskCode]; std::vector<double> old_data( mybasemulticolvars[mmc]->getNumberOfQuantities() );
       plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(taskCode,mmc) ) );
-      mybasedata[mmc]->retrieveValue( convertToLocalIndex(taskCode,mmc), false, old_data );
+      mybasedata[mmc]->retrieveValueWithIndex( convertToLocalIndex(taskCode,mmc), false, old_data );
       myatoms.setValue( 0, old_data[0] );
       if( !doNotCalculateDerivatives() && mybasemulticolvars[mmc]->weightHasDerivatives ){
           MultiValue myder( mybasemulticolvars[mmc]->getNumberOfQuantities(), mybasemulticolvars[mmc]->getNumberOfDerivatives() );

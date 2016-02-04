@@ -95,7 +95,7 @@ inline
 void MultiColvarFunction::getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient ) const {
   plumed_dbg_assert( ind<colvar_label.size() ); unsigned mmc=colvar_label[ind];
   plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(ind,mmc) ) );
-  mybasedata[mmc]->retrieveValue( convertToLocalIndex(ind,mmc), normed, orient );
+  mybasedata[mmc]->retrieveValueWithIndex( convertToLocalIndex(ind,mmc), normed, orient );
 }
 
 }

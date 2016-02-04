@@ -131,8 +131,6 @@ protected:
   bool usingLowMem() const ;
 /// Set that we are using low memory
   void setLowMemOption(const bool& );
-/// Get the ith of the currently active tasks
-  unsigned getActiveTask( const unsigned& ii ) const ;
 /// Deactivate all the tasks in the task list
   void deactivateAllTasks();
 /// Get the size of the buffer
@@ -174,6 +172,8 @@ public:
   unsigned getPositionInFullTaskList( const unsigned& ii ) const ;
 /// Get the code for the ii th task in the list
   unsigned getTaskCode( const unsigned& ii ) const ;
+/// Get the ith of the currently active tasks
+  unsigned getActiveTask( const unsigned& ii ) const ;
 /// Calculate one of the functions in the distribution
   virtual void performTask( const unsigned& , const unsigned& , MultiValue& ) const=0;
 /// Do the task if we have a bridge
