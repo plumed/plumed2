@@ -234,20 +234,27 @@ std::vector<unsigned> GridVessel::getNbin() const {
   return ngrid;
 }
 
-void GridVessel::getNeighbors( const std::vector<double>& pp, const std::vector<unsigned>& nneigh, 
+void GridVessel::getNeighbors( const std::vector<double>& pp, const std::vector<unsigned>& nneigh,
                                unsigned& num_neighbors, std::vector<unsigned>& neighbors ) const {
   plumed_dbg_assert( bounds_set && nneigh.size()==dimension );
 
-  std::vector<unsigned> indices( dimension );  
+  std::vector<unsigned> indices( dimension );
   for(unsigned i=0;i<dimension;++i) indices[i] = std::floor( (pp[i]-min[i])/dx[i] );
+  getNeighbors( indices, nneigh, num_neighbors, neighbors );
+}
+
+void GridVessel::getNeighbors( const std::vector<unsigned>& indices, const std::vector<unsigned>& nneigh, 
+                               unsigned& num_neighbors, std::vector<unsigned>& neighbors ) const {
+  plumed_dbg_assert( bounds_set && nneigh.size()==dimension );
 
   unsigned num_neigh=1; std::vector<unsigned> small_bin( dimension );
   for(unsigned i=0;i<dimension;++i){
      small_bin[i]=(2*nneigh[i]+1);
      num_neigh *=small_bin[i];
   }
+  if( neighbors.size()!=num_neigh ) neighbors.resize( num_neigh ); 
 
-  neighbors.resize( num_neigh ); num_neighbors=0;
+  num_neighbors=0;
   std::vector<unsigned> s_indices(dimension), t_indices(dimension);
   for(unsigned index=0;index<num_neigh;++index){
       bool found=true;

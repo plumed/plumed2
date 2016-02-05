@@ -161,15 +161,15 @@ void FindContour::performOperationsWithGrid( const bool& from_update ){
   std::vector<unsigned> ugrid_indices( mygrid->getDimension() );
   unsigned npoints=0; RootFindingBase<FindContour> mymin( this );
   for(unsigned i=0;i<mygrid->getNumberOfPoints();++i){
-     // Get the index of the current grid point
-     mygrid->getIndices( i, ind ); 
      // Ensure inactive grid points are ignored
      if( mygrid->inactive(i) ) continue;
-     mygrid->getGridPointCoordinates( mygrid->getIndex(ind), coords );
-     mygrid->getNeighbors(coords, ones, num_neighbours, neighbours );
+
+     // Get the index of the current grid point
+     mygrid->getIndices( i, ind );
+     mygrid->getNeighbors( ind, ones, num_neighbours, neighbours );
      bool cycle=false;
      for(unsigned j=0;j<num_neighbours;++j){
-         if( mygrid->inactive( neighbours[j] ) ){ cycle=true; break; }
+         if( mygrid->inactive( neighbours[j]) ){ cycle=true; break; }
      }
      if( cycle ) continue;
 
@@ -195,7 +195,8 @@ void FindContour::performOperationsWithGrid( const bool& from_update ){
              direction[j]=0.0; 
              // For next run through activate buffer region around this grid point
              if( gbuffer>0 ){
-                 mygrid->getNeighbors( contour_points[npoints], gbuffer_vec, num_neighbours, neighbours );
+                 mygrid->getIndices( i, ugrid_indices );
+                 mygrid->getNeighbors( ugrid_indices , gbuffer_vec, num_neighbours, neighbours );
                  for(unsigned n=0;n<num_neighbours;++n) active[ neighbours[n] ]=true; 
              }
              npoints++;

@@ -129,6 +129,9 @@ public:
 /// Get the set of points neighouring a particular location in space
  void getNeighbors( const std::vector<double>& pp, const std::vector<unsigned>& nneigh,
                     unsigned& num_neighbours, std::vector<unsigned>& neighbors ) const ;
+/// Get the neighbors for a set of indices of a point
+ void getNeighbors( const std::vector<unsigned>& indices, const std::vector<unsigned>& nneigh,
+                    unsigned& num_neighbors, std::vector<unsigned>& neighbors ) const ;
 /// Get the points neighboring a particular spline point
  void getSplineNeighbors( const unsigned& mybox, std::vector<unsigned>& mysneigh ) const ;
 /// Get the spacing between grid points
