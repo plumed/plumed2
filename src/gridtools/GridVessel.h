@@ -70,8 +70,6 @@ protected:
  std::vector<bool> active;
 /// The grid with all the data values on it
  std::vector<double> data;
-/// Get the indices of a particular point
- void getIndices( const std::vector<double>& point, std::vector<unsigned>& indices ) const ;
 /// Convert a point in space the the correspoinding grid point
  unsigned getIndex( const std::vector<double>& p ) const ;
 public:
@@ -91,6 +89,8 @@ public:
  unsigned getIndex( const std::vector<unsigned>& indices ) const ;
 /// Get the indices fof a point
  void getIndices( const unsigned& index, std::vector<unsigned>& indices ) const ;
+/// Get the indices of a particular point
+ void getIndices( const std::vector<double>& point, std::vector<unsigned>& indices ) const ;
 
 /// Operations on one of the elements of grid point i
  void setGridElement( const unsigned&, const unsigned&, const double& );
