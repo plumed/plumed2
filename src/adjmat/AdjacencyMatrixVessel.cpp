@@ -59,16 +59,14 @@ unsigned AdjacencyMatrixVessel::getNumberOfColumns() const {
   return function->ablocks[1].size();
 }
 
-unsigned AdjacencyMatrixVessel::getStoreIndexFromMatrixIndices( const unsigned& ielem, const unsigned& jelem ) const {
-  if( !symmetric ) return StoreDataVessel::getStoreIndex( (function->ablocks[1].size())*ielem + jelem );
-  if( ielem>jelem ) return StoreDataVessel::getStoreIndex( 0.5*ielem*(ielem-1)+jelem );
-  return StoreDataVessel::getStoreIndex( 0.5*jelem*(jelem-1) + ielem );
+bool AdjacencyMatrixVessel::matrixElementIsActive( const unsigned& ielem, const unsigned& jelem ) const {
+  return StoreDataVessel::storedValueIsActive( getStoreIndexFromMatrixIndices( ielem, jelem ) );
 }
 
-unsigned AdjacencyMatrixVessel::getStoreIndex( const unsigned& myelem ) const {
-  unsigned ielem, jelem;
-  getMatrixIndices( myelem, ielem, jelem );
-  return getStoreIndexFromMatrixIndices( ielem, jelem );
+unsigned AdjacencyMatrixVessel::getStoreIndexFromMatrixIndices( const unsigned& ielem, const unsigned& jelem ) const {
+  if( !symmetric ) return (function->ablocks[1].size())*ielem + jelem;
+  if( ielem>jelem ) return 0.5*ielem*(ielem-1)+jelem;
+  return 0.5*jelem*(jelem-1) + ielem; 
 }
 
 AdjacencyMatrixBase* AdjacencyMatrixVessel::getMatrixAction() {

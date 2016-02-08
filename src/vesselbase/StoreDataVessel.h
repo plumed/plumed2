@@ -90,7 +90,7 @@ public:
 /// Get the number of values that have been stored
   virtual unsigned getNumberOfStoredValues() const ;
 /// Get the index to store a particular index inside
-  virtual unsigned getStoreIndex( const unsigned& ) const ;
+  unsigned getStoreIndex( const unsigned& ) const ;
 /// Recalculate one of the base quantities
   virtual void recalculateStoredQuantity( const unsigned& myelm, MultiValue& myvals );
 /// Set a hard cutoff on the weight of an element
@@ -119,7 +119,7 @@ public:
 /// Final step in gathering data
   virtual void finish( const std::vector<double>& buffer );
 /// Is a particular stored value active at the present time
-  bool storedValueIsActive( const unsigned& iatom ); 
+  bool storedValueIsActive( const unsigned& iatom ) const ;   
 /// Set the active values
   void setActiveValsAndDerivatives( const std::vector<unsigned>& der_index );
 /// Activate indexes (this is used at end of chain rule)
@@ -154,7 +154,7 @@ unsigned StoreDataVessel::getNumberOfDerivativeSpacesPerComponent() const {
 }
 
 inline
-bool StoreDataVessel::storedValueIsActive( const unsigned& iatom ){
+bool StoreDataVessel::storedValueIsActive( const unsigned& iatom ) const {
   if( !getAction()->taskIsCurrentlyActive( iatom ) ) return false;
   if( !hard_cut ) return true; 
   unsigned jatom = getStoreIndex( iatom );

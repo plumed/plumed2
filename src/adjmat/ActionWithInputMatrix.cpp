@@ -90,8 +90,8 @@ void ActionWithInputMatrix::getVectorForTask( const unsigned& ind, const bool& n
      unsigned vin; unsigned ncols = mymatrix->getNumberOfColumns(); orient0.assign(orient0.size(),0);
      for(unsigned i=0;i<ncols;++i){
          if( mymatrix->isSymmetric() && ind==i ) continue;
+         if( !mymatrix->matrixElementIsActive( ind, i ) ) continue; 
          unsigned myelem = mymatrix->getStoreIndexFromMatrixIndices( ind, i );
-         if( !mymatrix->storedValueIsActive( myelem ) ) continue ;
          mymatrix->retrieveValueWithIndex( myelem, false, tvals ); 
          orient0[1]+=(mymatrix->function)->transformStoredValues( tvals, vin, df);
      } 
@@ -111,8 +111,8 @@ void ActionWithInputMatrix::getVectorDerivatives( const unsigned& ind, const boo
      unsigned vin; unsigned ncols = mymatrix->getNumberOfColumns();
      for(unsigned i=0;i<ncols;++i){
          if( mymatrix->isSymmetric() && ind==i ) continue;
+         if( !mymatrix->matrixElementIsActive( ind, i ) ) continue; 
          unsigned myelem = mymatrix->getStoreIndexFromMatrixIndices( ind, i );
-         if( !mymatrix->storedValueIsActive( myelem ) ) continue ;
          mymatrix->retrieveValueWithIndex( myelem, false, tvals );
          double dum=(mymatrix->function)->transformStoredValues( tvals, vin, df);
          mymatrix->retrieveDerivatives( myelem, false, myvals ); 

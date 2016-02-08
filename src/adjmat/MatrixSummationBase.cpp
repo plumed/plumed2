@@ -75,16 +75,16 @@ AtomNumber MatrixSummationBase::getAbsoluteIndexOfCentralAtom(const unsigned& i)
 }
 
 double MatrixSummationBase::retrieveConnectionValue( const unsigned& i, const unsigned& j, std::vector<double>& vals ) const {
+  if( !mymatrix->matrixElementIsActive( i, j ) ) return 0;
   unsigned vi, myelem = mymatrix->getStoreIndexFromMatrixIndices( i, j );
-  if( !mymatrix->storedValueIsActive( myelem ) ) return 0;
  
   mymatrix->retrieveValueWithIndex( myelem, false, vals ); double df;
   return (mymatrix->function)->transformStoredValues( vals, vi, df );
 }
 
 void MatrixSummationBase::addConnectionDerivatives( const unsigned& i, const unsigned& j, std::vector<double>& vals, MultiValue& myvals, MultiValue& myvout ) const {
+  if( !mymatrix->matrixElementIsActive( i, j ) ) return;
   unsigned vi, myelem = mymatrix->getStoreIndexFromMatrixIndices( i, j );
-  if( !mymatrix->storedValueIsActive( myelem ) ) return;
 
   mymatrix->retrieveValueWithIndex( myelem, false, vals ); double df;
   double vv = (mymatrix->function)->transformStoredValues( vals, vi, df );
