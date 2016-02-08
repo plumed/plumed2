@@ -23,7 +23,6 @@
 #include "ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
-#include "tools/Communicator.h"
 #include "tools/OpenMP.h"
 
 using namespace std;
@@ -151,6 +150,7 @@ power(0)
       getPntrToComponent(i+narg)->setNotPeriodic();
     }
   }
+
   log.printf("  averaing over %u replicas.\n", ens_dim);
   if(do_reweight) log.printf("  doing simple REWEIGHT using the latest ARGUMENT as energy.\n");
   if(do_moments&&!do_central)  log.printf("  calculating also the %lf standard moment\n", moment);
