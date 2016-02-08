@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Function.h"
-#include "tools/OpenMP.h"
 
 using namespace std;
 namespace PLMD{
@@ -64,22 +63,25 @@ void Function::addComponentWithDerivatives( const std::string& name ){
 
 void Function::apply()
 {
-
   vector<double> f(getNumberOfArguments(),0.0);
   vector<double> forces( getNumberOfArguments() );
-  bool at_least_one_forced=false;
 
-  for(int i=0;i<getNumberOfComponents();++i){
+  unsigned stride=1;
+  unsigned rank=0;
+  if(getNumberOfComponents()>comm.Get_size()) {
+    stride=comm.Get_size();
+    rank=comm.Get_rank();
+  }
+
+  for(int i=rank;i<getNumberOfComponents();i+=stride){
     if( getPntrToComponent(i)->applyForce( forces ) ){
-       at_least_one_forced=true;
        for(unsigned j=0;j<forces.size();j++){ f[j]+=forces[j]; }
     }
   }
 
-  if(at_least_one_forced) {
-#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
-    for(unsigned i=0;i<getNumberOfArguments();++i) getPntrToArgument(i)->addForce(f[i]);
-  }
+  if(f.size()>0&&getNumberOfComponents()>comm.Get_size()) comm.Sum(&f[0],f.size());
+
+  for(unsigned i=0;i<getNumberOfArguments();++i) if(f[i]!=0.) getPntrToArgument(i)->addForce(f[i]);
 }
 
 }
