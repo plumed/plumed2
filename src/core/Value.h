@@ -82,9 +82,6 @@ private:
   double inv_max_minus_min;
 /// Complete the setup of the periodicity
   void setupPeriodicity();
-/// Is this quantity an ensemble average 
-  enum {averaged,notaveraged} ensemble;
-  unsigned nrep;
 // bring value within PBCs
   void applyPeriodicity();
 public:
@@ -134,7 +131,7 @@ public:
   void  addForce(double f);
 /// Get the value of the force on this colvar
   double getForce() const ;
-/// Apply the forces to the derivatives using the chain rule (if there are no forces this routine returns false
+/// Apply the forces to the derivatives using the chain rule (if there are no forces this routine returns false)
   bool applyForce( std::vector<double>& forces ) const ;
 /// Calculate the difference between the instantaneous value of the function and some other point: other_point-inst_val
   double difference(double)const;
