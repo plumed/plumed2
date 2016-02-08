@@ -99,6 +99,8 @@ void AdjacencyMatrixBase::parseConnectionDescriptions( const std::string& key, c
 }
 
 unsigned AdjacencyMatrixBase::getSizeOfInputVectors() const {
+  if( mybasemulticolvars.size()==0 ) return 2; 
+
   unsigned nq = mybasemulticolvars[0]->getNumberOfQuantities();
   for(unsigned i=1;i<mybasemulticolvars.size();++i){
      if( mybasemulticolvars[i]->getNumberOfQuantities()!=nq ) error("mismatch between vectors in base colvars");
