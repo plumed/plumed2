@@ -139,7 +139,6 @@ outgrid(NULL)
       vesselbase::VesselOptions dar( da, keys );
       outgrid = new GridFunction(dar); addVessel( outgrid ); 
       if( mygrid->noDerivatives() ) outgrid->setNoDerivatives();
-      resizeFunctions();    
   }
 
   // START OF BIT TO IMPROVE
@@ -204,6 +203,7 @@ void FindContour::performOperationsWithGrid( const bool& from_update ){
          snbins[i]=mygrid->getNbin()[gdirs[i]];
       }
       outgrid->setBounds( smin, smax, snbins, fspacing); 
+      resizeFunctions();
   }
 
   // Run over whole grid

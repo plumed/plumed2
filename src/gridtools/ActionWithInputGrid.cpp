@@ -48,6 +48,11 @@ mygrid(NULL)
   if(!mves) error("action labelled " +  mlab + " does not exist or does not have vessels");
   addDependency(mves);
 
+  ActionPilot* ap=dynamic_cast<ActionPilot*>( mves );
+  if( ap ){
+     if( getStride()!=ap->getStride() ) error("mismatch between strides in " + ap->getLabel() + " and " +  getLabel() );
+  }
+
   log.printf("  using grid calculated by action %s \n",mves->getLabel().c_str() );
   for(unsigned i=0;i<mves->getNumberOfVessels();++i){
       mygrid=dynamic_cast<GridVessel*>( mves->getPntrToVessel(i) );

@@ -41,7 +41,6 @@ class ActionPilot:
 {
   int stride; // multiple time step
 protected:
-  int getStride()const;
   void setStride( const unsigned& ss );
 public:
   explicit ActionPilot(const ActionOptions&);
@@ -49,6 +48,8 @@ public:
   static void registerKeywords(Keywords& keys);
 /// Check if the action is active on this step
   bool onStep()const;
+/// Get the stride
+  int getStride()const;
 };
 
 }

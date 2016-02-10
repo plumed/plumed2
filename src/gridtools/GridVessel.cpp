@@ -120,7 +120,11 @@ std::string GridVessel::description(){
 
 void GridVessel::resize(){
   plumed_massert( nper>0, "Number of datapoints at each grid point has not been set");
-  resizeBuffer( npoints*nper ); data.resize( npoints*nper, 0 ); active.resize( npoints, true );
+  resizeBuffer( npoints*nper ); 
+  if( data.size()!=npoints*nper ){ 
+      data.resize( npoints*nper, 0 ); 
+      active.resize( npoints, true );
+  }
 }
 
 unsigned GridVessel::getIndex( const std::vector<unsigned>& indices ) const {
