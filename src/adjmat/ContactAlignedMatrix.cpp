@@ -56,7 +56,7 @@ public:
   double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
 ///
   /// Used to check for connections between atoms
-  bool checkForConnection( const std::vector<double>& myvals ) const { return !(myvals[1]>epsilon); }
+  bool checkForConnection( const std::vector<double>& myvals ) const { return (myvals[1]>epsilon); }
 };
 
 PLUMED_REGISTER_ACTION(ContactAlignedMatrix,"ALIGNED_MATRIX")
@@ -134,7 +134,7 @@ double ContactAlignedMatrix::compute( const unsigned& tindex, multicolvar::AtomV
   getOrientationVector( myatoms.getIndex(0), true, orient0 );
   getOrientationVector( myatoms.getIndex(1), true, orient1 );
   double dot=0; for(unsigned k=2;k<orient0.size();++k) dot+=orient0[k]*orient1[k];
-  f_dot = 1 - sw_angle( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) ).calculate( dot, dot_df ); dot_df*=-1;
+  f_dot = 1 - sw_angle( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) ).calculate( dot, dot_df ); dot_df*=-dot;
 
   // Retrieve the weight of the connection
   double weight = myatoms.getValue(0); myatoms.setValue(0,1.0); 

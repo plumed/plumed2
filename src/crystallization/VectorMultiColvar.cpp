@@ -32,8 +32,7 @@ void VectorMultiColvar::registerKeywords( Keywords& keys ){
 
 VectorMultiColvar::VectorMultiColvar(const ActionOptions& ao):
 PLUMED_MULTICOLVAR_INIT(ao),
-store_director(true),
-firstcall(false)
+store_director(true)
 {
   setLowMemOption(true);
 }
