@@ -131,11 +131,10 @@ PRINT ARG=svd.* FILE=svd
 class RDC : public Colvar {
 private:
   const double   Const;
-  unsigned ndata;
-  vector<double> mu_s;
-  vector<double> scale;
+  double         mu_s;
+  double         scale;
   vector<double> coupl;
-  bool svd;
+  bool           svd;
 public:
   explicit RDC(const ActionOptions&);
   static void registerKeywords( Keywords& keys );
@@ -152,8 +151,8 @@ void RDC::registerKeywords( Keywords& keys ){
                              "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one dipolar coupling will be "
                              "calculated for each ATOMS keyword you specify.");
   keys.reset_style("ATOMS","atoms");
-  keys.add("numbered","GYROM","Add the product of the gyromagnetic constants for each bond. ");
-  keys.add("numbered","SCALE","Add a scaling factor to take into account concentration and other effects. ");
+  keys.add("compulsory","GYROM","Add the product of the gyromagnetic constants for the bond. ");
+  keys.add("compulsory","SCALE","Add the scaling factor to take into account concentration and other effects. ");
   keys.addFlag("SVD",false,"Set to TRUE if you want to backcalculate using Single Value Decomposition (need GSL at compilation time)."); 
   keys.addFlag("ADDCOUPLINGS",false,"Set to TRUE if you want to have fixed components with the experimetnal values.");  
   keys.add("numbered","COUPLING","Add an experimental value for each coupling (needed by SVD and usefull for \ref STATS).");
@@ -163,7 +162,9 @@ void RDC::registerKeywords( Keywords& keys ){
 
 RDC::RDC(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
-Const(0.3356806)
+Const(0.3356806),
+mu_s(0),
+scale(1)
 {
   // Read in the atoms
   vector<AtomNumber> t, atoms;
@@ -179,32 +180,15 @@ Const(0.3356806)
      t.resize(0); 
   }
 
-  ndata = atoms.size()/2;
+  const unsigned ndata = atoms.size()/2;
  
-  // Read in GYROMAGNETIC constants 
-  mu_s.resize( ndata ); 
-  unsigned ntarget=0;
-  for(unsigned i=0;i<ndata;++i){
-     if( !parseNumbered( "GYROM", i+1, mu_s[i] ) ) break;
-     ntarget++; 
-  }
-  if( ntarget==0 ){
-      parse("GYROM",mu_s[0]);
-      for(unsigned i=1;i<ndata;++i) mu_s[i]=mu_s[0];
-  } else if( ntarget!=ndata ) error("found wrong number of GYROM values");
+  // Read in GYROMAGNETIC constants
+  parse("GYROM", mu_s);
+  if(mu_s==0.) error("GYROM must be set");
 
   // Read in SCALING factors 
-  scale.resize( ndata );
-  for(unsigned i=0;i<ndata;++i) scale[i]=1.0;
-  ntarget=0;
-  for(unsigned i=0;i<ndata;++i){
-     if( !parseNumbered( "SCALE", i+1, scale[i] ) ) break;
-     ntarget++; 
-  }
-  if( ntarget==0 ){
-      parse("SCALE",scale[0]);
-      for(unsigned i=1;i<ndata;++i) scale[i]=scale[0];
-  } else if( ntarget!=ndata ) error("found wrong number of SCALE values");
+  parse("SCALE", scale);
+  if(scale==0.) error("SCALE must be different from 0");
 
   svd=false;
   parseFlag("SVD",svd);
@@ -217,8 +201,7 @@ Const(0.3356806)
 
   if(svd||addcoupling) {
     coupl.resize( ndata ); 
-    ntarget=0;
-
+    unsigned ntarget=0;
     for(unsigned i=0;i<ndata;++i){
        if( !parseNumbered( "COUPLING", i+1, coupl[i] ) ) break;
        ntarget++; 
@@ -227,9 +210,9 @@ Const(0.3356806)
   }
 
   // Ouput details of all contacts 
+  log.printf("  Gyromagnetic moment is %f. Scaling factor is %f.",mu_s,scale);
   for(unsigned i=0;i<ndata;++i){
     log.printf("  The %dth Bond Dipolar Coupling is calculated from atoms : %d %d.", i+1, atoms[2*i].serial(), atoms[2*i+1].serial()); 
-    log.printf("  Gyromagnetic moment is %f. Scaling factor is %f.",mu_s[i],scale[i]);
     if(svd||addcoupling) log.printf(" Experimental coupling is %f.", coupl[i]);
     log.printf("\n");
   }
@@ -257,23 +240,21 @@ Const(0.3356806)
   }
 
   requestAtoms(atoms);
-
-  log.printf("  DONE!\n"); log.flush();
 }
 
 void RDC::calculate()
 {
   if(!svd) {
-
+    const double max  = -Const*scale*mu_s;
+    const unsigned N=getNumberOfAtoms();
     /* RDC Calculations and forces */
-    for(unsigned r=0;r<getNumberOfAtoms();r+=2)
+    for(unsigned r=0;r<N;r+=2)
     {
       const unsigned index=r/2;
       const Vector distance = pbcDistance(getPosition(r),getPosition(r+1));
       const double d    = distance.modulo();
       const double ind  = 1./d;
       const double id3  = ind*ind*ind; 
-      const double max  = -Const*scale[index]*mu_s[index];
       const double dmax = id3*max;
       const double cos_theta = distance[2]*ind;
 
@@ -303,7 +284,6 @@ void RDC::calculate()
 #ifdef __PLUMED_HAS_GSL
     gsl_vector *rdc_vec, *S, *Stmp, *work, *bc;
     gsl_matrix *coef_mat, *A, *V;
-    double Sxx,Syy,Szz,Sxy,Sxz,Syz;
     rdc_vec = gsl_vector_alloc(coupl.size());
     bc = gsl_vector_alloc(coupl.size());
     Stmp = gsl_vector_alloc(5);
@@ -323,7 +303,7 @@ void RDC::calculate()
       double d2   = d*d;
       double d3   = d2*d;
       double id3  = 1./d3; 
-      double max  = -Const*mu_s[index]*scale[index];
+      double max  = -Const*mu_s*scale;
       dmax[index] = id3*max;
       double mu_x = distance[0]/d;
       double mu_y = distance[1]/d;
@@ -339,12 +319,14 @@ void RDC::calculate()
     gsl_matrix_memcpy(A,coef_mat);
     gsl_linalg_SV_decomp(A, V, Stmp, work);
     gsl_linalg_SV_solve(A, V, Stmp, rdc_vec, S);
-    Sxx = gsl_vector_get(S,0);
-    Syy = gsl_vector_get(S,1);
-    Szz = -Sxx-Syy;
-    Sxy = gsl_vector_get(S,2);
-    Sxz = gsl_vector_get(S,3);
-    Syz = gsl_vector_get(S,4);
+    /* tensor 
+    double Sxx = gsl_vector_get(S,0);
+    double Syy = gsl_vector_get(S,1);
+    double Szz = -Sxx-Syy;
+    double Sxy = gsl_vector_get(S,2);
+    double Sxz = gsl_vector_get(S,3);
+    double Syz = gsl_vector_get(S,4);
+    */
     gsl_blas_dgemv(CblasNoTrans, 1.0, coef_mat, S, 0., bc);
     for(index=0; index<coupl.size(); index++) {
       double rdc = gsl_vector_get(bc,index)*dmax[index];
