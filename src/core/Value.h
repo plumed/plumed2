@@ -268,7 +268,7 @@ void Value::clearDerivatives(){
 
 inline
 void Value::addForce(double f){
-  plumed_massert(hasDerivatives(),"forces can only be added to values with derivatives");
+  plumed_dbg_massert(hasDerivatives(),"forces can only be added to values with derivatives");
   hasForce=true;
   inputForce+=f;
 }

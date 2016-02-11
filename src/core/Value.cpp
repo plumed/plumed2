@@ -79,8 +79,9 @@ bool Value::isPeriodic()const{
 
 bool Value::applyForce(std::vector<double>& forces ) const {
   if( !hasForce ) return false;
-  plumed_massert( derivatives.size()==forces.size()," forces array has wrong size" );
-  for(unsigned i=0;i<derivatives.size();++i) forces[i]=inputForce*derivatives[i]; 
+  plumed_dbg_massert( derivatives.size()==forces.size()," forces array has wrong size" );
+  const unsigned N=derivatives.size();
+  for(unsigned i=0;i<N;++i) forces[i]=inputForce*derivatives[i]; 
   return true;
 }
 
