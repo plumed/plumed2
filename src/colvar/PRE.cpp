@@ -142,7 +142,7 @@ pbc(true)
        if( !parseNumbered( "PREINT", i+1, exppre[i] ) ) break;
        ntarget++; 
     }
-    if( ntarget!=nga.size() ) error("found wrong number of NOEDIST values");
+    if( ntarget!=nga.size() ) error("found wrong number of PREINT values");
   }
 
   // Create neighbour lists
