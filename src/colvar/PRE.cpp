@@ -45,7 +45,6 @@ private:
   double           constant, inept;
   vector<double>   rtwo;
   vector<unsigned> nga;
-  vector<double>   exppre;
   NeighborList     *nl;
 public:
   static void registerKeywords( Keywords& keys );
@@ -134,6 +133,7 @@ pbc(true)
   bool addistance=false;
   parseFlag("ADDEXPVALUES",addistance);
 
+  vector<double> exppre;
   if(addistance) {
     exppre.resize( nga.size() ); 
     unsigned ntarget=0;
@@ -142,9 +142,8 @@ pbc(true)
        if( !parseNumbered( "PREINT", i+1, exppre[i] ) ) break;
        ntarget++; 
     }
-    if( ntarget!=nga.size() ) error("found wrong number of NOEDIST values");
+    if( ntarget!=nga.size() ) error("found wrong number of PREINT values");
   }
-
 
   // Create neighbour lists
   nl= new NeighborList(gb_lista,ga_lista,true,pbc,getPbc());
