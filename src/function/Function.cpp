@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Function.h"
+#include "tools/OpenMP.h"
 
 using namespace std;
 namespace PLMD{
@@ -63,25 +64,29 @@ void Function::addComponentWithDerivatives( const std::string& name ){
 
 void Function::apply()
 {
-  vector<double> f(getNumberOfArguments(),0.0);
-  vector<double> forces( getNumberOfArguments() );
+  const unsigned noa=getNumberOfArguments();
+  const unsigned ncp=getNumberOfComponents();
+
+  vector<double> f(noa,0.0);
+  vector<double> forces(noa);
 
   unsigned stride=1;
   unsigned rank=0;
-  if(getNumberOfComponents()>comm.Get_size()) {
+  if(ncp>comm.Get_size()) {
     stride=comm.Get_size();
     rank=comm.Get_rank();
   }
+/*
+  const unsigned  stride=comm.Get_size();
+  const unsigned  rank=comm.Get_rank();
+*/
 
-  for(int i=rank;i<getNumberOfComponents();i+=stride){
-    if( getPntrToComponent(i)->applyForce( forces ) ){
-       for(unsigned j=0;j<forces.size();j++){ f[j]+=forces[j]; }
-    }
-  }
+  for(unsigned i=rank;i<ncp;i+=stride)
+    if(getPntrToComponent(i)->applyForce(forces)) for(unsigned j=0;j<noa;j++) f[j]+=forces[j]; 
 
-  if(f.size()>0&&getNumberOfComponents()>comm.Get_size()) comm.Sum(&f[0],f.size());
+  if(noa>0&&ncp>comm.Get_size()) comm.Sum(&f[0],noa);
 
-  for(unsigned i=0;i<getNumberOfArguments();++i) if(f[i]!=0.) getPntrToArgument(i)->addForce(f[i]);
+  for(unsigned i=0;i<noa;++i) getPntrToArgument(i)->addForce(f[i]);
 }
 
 }

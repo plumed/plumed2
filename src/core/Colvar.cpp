@@ -54,20 +54,22 @@ void Colvar::requestAtoms(const vector<AtomNumber> & a){
 void Colvar::apply(){
   vector<Vector>&   f(modifyForces());
   Tensor&           v(modifyVirial());
-  unsigned          nat=getNumberOfAtoms();
+  const unsigned    nat=getNumberOfAtoms();
+  const unsigned    ncp=getNumberOfComponents();
+  const unsigned    fsz=f.size();
 
-  for(unsigned i=0;i<f.size();i++){
-    f[i][0]=0.0;
-    f[i][1]=0.0;
-    f[i][2]=0.0;
-  }
+  for(unsigned i=0;i<fsz;i++) f[i].zero();
   v.zero();
 
-  const unsigned stride=comm.Get_size();
-  const unsigned rank=comm.Get_rank();
+  unsigned stride=1;
+  unsigned rank=0;
+  if(ncp>comm.Get_size()) {
+    stride=comm.Get_size();
+    rank=comm.Get_rank();
+  }
 
   if(!isEnergy){
-    for(int i=rank;i<getNumberOfComponents();i+=stride){
+    for(unsigned i=rank;i<ncp;i+=stride){
       if(getPntrToComponent(i)->applyForce(forces)){
         for(unsigned j=0;j<nat;++j){
           f[j][0]+=forces[3*j+0];
@@ -85,8 +87,10 @@ void Colvar::apply(){
         v(2,2)+=forces[3*nat+8];
       }
     }
-    if(f.size()>0) comm.Sum(&f[0][0],3*f.size());
-    comm.Sum(&v[0][0],9);
+    if(ncp>comm.Get_size()) {
+      if(fsz>0) comm.Sum(&f[0][0],3*fsz);
+      comm.Sum(&v[0][0],9);
+    }
   } else if( isEnergy ){
     forces.resize(1);
     if(getPntrToComponent(0)->applyForce(forces)) modifyForceOnEnergy()+=forces[0];

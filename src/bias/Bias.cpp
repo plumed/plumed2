@@ -50,25 +50,30 @@ void Bias::registerKeywords( Keywords& keys ){
 }
 
 void Bias::apply(){
-  if(onStep()) for(unsigned i=0;i<getNumberOfArguments();++i){
-    getPntrToArgument(i)->addForce(getStride()*outputForces[i]);
+  const unsigned noa=getNumberOfArguments();
+  const unsigned ncp=getNumberOfComponents();
+
+  if(onStep()) { 
+    double gstr = static_cast<double>(getStride()); 
+    for(unsigned i=0;i<noa;++i)
+      getPntrToArgument(i)->addForce(gstr*outputForces[i]);
   }
 
-// additional forces on the bias component
+  // additional forces on the bias component
+  std::vector<double> f(noa,0.0);
+  std::vector<double> forces(noa);
 
-  std::vector<double>   f(getNumberOfArguments(),0.0);
   bool at_least_one_forced=false;
-
-  std::vector<double> forces( getNumberOfArguments() );
-  for(int i=0;i<getNumberOfComponents();++i){
-    if( getPntrToComponent(i)->applyForce( forces ) ){
+  for(unsigned i=0;i<ncp;++i){
+    if(getPntrToComponent(i)->applyForce(forces)){
        at_least_one_forced=true;
-       for(unsigned j=0;j<forces.size();j++){ f[j]+=forces[j]; }
+       for(unsigned j=0;j<noa;j++) f[j]+=forces[j]; 
     }
   }
+
   if(at_least_one_forced && !onStep()) error("you are biasing a bias with an inconsistent STRIDE");
 
-  if(at_least_one_forced) for(unsigned i=0;i<getNumberOfArguments();++i){
+  if(at_least_one_forced) for(unsigned i=0;i<noa;++i){
     getPntrToArgument(i)->addForce(f[i]);
   }
 
