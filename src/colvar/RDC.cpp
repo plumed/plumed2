@@ -22,7 +22,6 @@
 
 #include "Colvar.h"
 #include "ActionRegister.h"
-#include "tools/OpenMP.h"
 
 #ifdef __PLUMED_HAS_GSL
 #include <gsl/gsl_vector.h>
@@ -267,7 +266,6 @@ void RDC::calculate()
   if(!svd) {
 
     /* RDC Calculations and forces */
-#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
     for(unsigned r=0;r<getNumberOfAtoms();r+=2)
     {
       const unsigned index=r/2;

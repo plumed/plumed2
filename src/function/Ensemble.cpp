@@ -23,7 +23,6 @@
 #include "ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
-#include "tools/OpenMP.h"
 
 using namespace std;
 
