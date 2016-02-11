@@ -66,25 +66,22 @@ void Function::apply()
 {
   const unsigned noa=getNumberOfArguments();
   const unsigned ncp=getNumberOfComponents();
+  const unsigned cgs=comm.Get_size();
 
   vector<double> f(noa,0.0);
   vector<double> forces(noa);
 
   unsigned stride=1;
   unsigned rank=0;
-  if(ncp>comm.Get_size()) {
+  if(ncp>cgs) {
     stride=comm.Get_size();
     rank=comm.Get_rank();
   }
-/*
-  const unsigned  stride=comm.Get_size();
-  const unsigned  rank=comm.Get_rank();
-*/
 
   for(unsigned i=rank;i<ncp;i+=stride)
     if(getPntrToComponent(i)->applyForce(forces)) for(unsigned j=0;j<noa;j++) f[j]+=forces[j]; 
 
-  if(noa>0&&ncp>comm.Get_size()) comm.Sum(&f[0],noa);
+  if(noa>0&&ncp>cgs) comm.Sum(&f[0],noa);
 
   for(unsigned i=0;i<noa;++i) getPntrToArgument(i)->addForce(f[i]);
 }
