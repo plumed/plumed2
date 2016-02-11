@@ -179,8 +179,10 @@ NOE::~NOE(){
 
 void NOE::calculate()
 {
-#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
-  for(unsigned i=0;i<nga.size();i++) {
+  const unsigned ngasz=nga.size();
+
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
+  for(unsigned i=0;i<ngasz;i++) {
     Tensor dervir;
     double noe=0;
     unsigned index=0;

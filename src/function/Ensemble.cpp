@@ -185,10 +185,8 @@ void Ensemble::calculate(){
 
   const double fact_kbt = fact/kbt;
 
-  vector<double> mean, dmean;
-  mean.resize(narg);
-  dmean.resize(narg);
-  fill(dmean.begin(), dmean.end(), fact);
+  vector<double> mean(narg);
+  vector<double> dmean(narg,fact);
   // calculate the mean 
   if(master) {
     for(unsigned i=0;i<narg;++i) mean[i] = fact*getArgument(i); 
@@ -204,7 +202,6 @@ void Ensemble::calculate(){
     // standard moment
     if(!do_central) {
       if(master) {
-#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
         for(unsigned i=0;i<narg;++i) { 
           const double tmp = fact*pow(getArgument(i),moment-1);
           v_moment[i]      = tmp*getArgument(i);
@@ -212,7 +209,6 @@ void Ensemble::calculate(){
         }
         if(ens_dim>1) multi_sim_comm.Sum(&v_moment[0], narg);
       } else {
-#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
         for(unsigned i=0;i<narg;++i) {
           const double tmp = fact*pow(getArgument(i),moment-1);
           dv_moment[i]     = moment*tmp;
@@ -221,7 +217,6 @@ void Ensemble::calculate(){
     // central moment
     } else {
       if(master) {
-#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
         for(unsigned i=0;i<narg;++i) { 
           const double tmp = pow(getArgument(i)-mean[i],moment-1);
           v_moment[i]      = fact*tmp*(getArgument(i)-mean[i]);
@@ -229,7 +224,6 @@ void Ensemble::calculate(){
         }
         if(ens_dim>1) multi_sim_comm.Sum(&v_moment[0], narg);
       } else {
-#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
         for(unsigned i=0;i<narg;++i) {
           const double tmp = pow(getArgument(i)-mean[i],moment-1);
           dv_moment[i]     = moment*tmp*(fact-fact/norm);
@@ -241,7 +235,6 @@ void Ensemble::calculate(){
 
   // calculate powers of moments
   if(do_powers) {
-#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
     for(unsigned i=0;i<narg;++i) {
       const double tmp1 = pow(mean[i],power-1);
       mean[i]          *= tmp1;
@@ -255,7 +248,6 @@ void Ensemble::calculate(){
   }
   
   // set components
-#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
   for(unsigned i=0;i<narg;++i){
     // set mean
     Value* v=getPntrToComponent(i);
