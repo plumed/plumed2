@@ -215,7 +215,7 @@ double CrossLinkMSRestraint::getEnergy(double sigma, double psi, int i0, int i1)
     // calculate posterior
     double post = -sig/(sq2Pi*dist) * (eLpR_2_e2LR - eLpR_2) + 0.5 * (erfLmR + erfLpR);
     // and add to energy
-    ene += -kbt_ * std::log(psi*(1.0-post)+(1.0-psi)*post) + kbt_ * slope_ * dist;
+    ene += -kbt_ * std::log(psi*(1.0-post)+(1.0-psi)*post);
   }
   // add Jeffrey's prior on psi
   ene += kbt_ * std::log(psi);
@@ -251,7 +251,7 @@ double CrossLinkMSRestraint::getEnergy(double sigma, std::vector<double> psi)
      ipsi += 1;
      imax += ndata_[ipsi];
     }
-    ene += -kbt_ * std::log(psi[ipsi]*(1.0-post)+(1.0-psi[ipsi])*post) + kbt_ * slope_ * dist;
+    ene += -kbt_ * std::log(psi[ipsi]*(1.0-post)+(1.0-psi[ipsi])*post);
   }
   return ene;
 }
