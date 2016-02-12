@@ -45,6 +45,7 @@ private:
   Matrix<SwitchingFunction> switchingFunction;
   Matrix<SwitchingFunction> cylinder_sw;
   Matrix<SwitchingFunction> low_sf;
+  Matrix<double> binw_mat;
   SwitchingFunction threshold_switch;
 public:
 /// Create manual
@@ -85,7 +86,9 @@ void TopologyMatrix::registerKeywords( Keywords& keys ){
                                "The following provides information on the \\ref switchingfunction that are available. "
                                "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   keys.add("numbered","RADIUS","");
-  keys.add("numbered","BIN_SIZE","");
+//  keys.add("numbered","LOW_SWITCH","anything less than this distance is connected and you need not consider the density");
+  keys.add("numbered","CYLINDER_SWITCH","a switching function on ( r_ij . r_ik - 1 )/r_ij");
+  keys.add("numbered","BIN_SIZE","the size to use for the bins");
   keys.add("compulsory","DENSITY_THRESHOLD","");
   keys.use("SUM"); keys.use("LESS_THAN");
   keys.add("compulsory","SIGMA","the width of the function to be used for kernel density estimation");
@@ -119,13 +122,15 @@ AdjacencyMatrixBase(ao)
   cylinder_sw.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
   parseConnectionDescriptions("RADIUS",0);
   low_sf.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
-  parseConnectionDescriptions("BIN_SIZE",0);
+  parseConnectionDescriptions("CYLINDER_SWITCH",0);
+  binw_mat.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
   cell_volume.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
+  parseConnectionDescriptions("BIN_SIZE",0);
   for(unsigned i=0;i<getNumberOfNodeTypes();++i){
       for(unsigned j=0;j<getNumberOfNodeTypes();++j){
           double r=cylinder_sw(i,j).get_d0() + cylinder_sw(i,j).get_r0();
-          cell_volume(i,j)=low_sf(i,j).get_d0()*pi*r*r;
-      }
+          cell_volume(i,j)=binw_mat(i,j)*pi*r*r;
+       }
   }
 
   // Read in atoms 
@@ -157,7 +162,7 @@ AdjacencyMatrixBase(ao)
   double maxsize=0;
   for(unsigned i=0;i<getNumberOfNodeTypes();++i){
       for(unsigned j=0;j<getNumberOfNodeTypes();++j){
-          if( low_sf(i,j).get_d0()>maxsize ) maxsize=low_sf(i,j).get_d0();
+          if( binw_mat(i,j)>maxsize ) maxsize=binw_mat(i,j);
       }
   }
   // Set the maximum number of bins that we will need to compute
@@ -172,7 +177,7 @@ unsigned TopologyMatrix::getNumberOfQuantities() const {
 }
 
 void TopologyMatrix::setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::string& desc ){ 
-  plumed_assert( id<3 );
+  plumed_assert( id<4 );
   if( id==0 ){
      std::string errors; switchingFunction(j,i).set(desc,errors);
      if( errors.length()!=0 ) error("problem reading switching function description " + errors);
@@ -187,7 +192,11 @@ void TopologyMatrix::setupConnector( const unsigned& id, const unsigned& i, cons
      std::string errors; low_sf(j,i).set(desc,errors);
      if( errors.length()!=0 ) error("problem reading switching function description " + errors);
      if( j!=i ) low_sf(i,j).set(desc,errors);
-     log.printf("  %d th and %d the multicolvar groups must be further apart than %s\n",i+1,j+1,(low_sf(j,i).description()).c_str() );
+     log.printf("  %d th and %d th multicolvar groups must be further apart than %s\n",i+1,j+1,(low_sf(j,i).description()).c_str() );
+  } else if( id==3 ){
+     Tools::convert( desc, binw_mat(j,i) ); 
+     if( i!=j ) binw_mat(i,j)=binw_mat(j,i);
+     log.printf("  cylinder for %d th and %d th multicolvar groups is split into bins of length %f \n",binw_mat(i,j) );    
   }
 }
 
@@ -214,18 +223,20 @@ double TopologyMatrix::compute( const unsigned& tindex, multicolvar::AtomValuePa
   Vector d1 = delta( myatoms.getPosition(0), myatoms.getPosition(1) ); double d1_len = d1.modulo();
   double dfuncl, sw = switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ),
                                          getBaseColvarNumber( myatoms.getIndex(1) ) ).calculate( d1_len, dfuncl );
-  double dfunc2, lowc = 1.0 - low_sf( getBaseColvarNumber( myatoms.getIndex(0) ),
-                                      getBaseColvarNumber( myatoms.getIndex(1) ) ).calculate( d1_len, dfunc2 );
   d1 = d1 / d1_len;
   if( myatoms.getNumberOfAtoms()>3 ){
-      for(unsigned i=2;i<myatoms.getNumberOfAtoms();++i) calculateForThreeAtoms( i, d1, d1_len, lowc*sw, dfuncl*lowc-dfunc2*sw, bead, myatoms );
+      for(unsigned i=2;i<myatoms.getNumberOfAtoms();++i) calculateForThreeAtoms( i, d1, d1_len, sw, dfuncl, bead, myatoms );
       // printf("HELLO DENSITY %d %d %f %f \n",myatoms.getIndex(0), myatoms.getIndex(1), d1_len, myatoms.getValue(1) );
   } else {
       plumed_dbg_assert( myatoms.getNumberOfAtoms()==3 );
-      calculateForThreeAtoms( 2, d1, d1_len, lowc*sw, dfuncl*lowc-dfunc2*sw, bead, myatoms );
+      calculateForThreeAtoms( 2, d1, d1_len, sw, dfuncl, bead, myatoms );
   }
   return myatoms.getValue(1);
 }
+
+
+
+
 
 double TopologyMatrix::transformStoredValues( const std::vector<double>& myvals, unsigned& vout, double& df  ) const {
   plumed_dbg_assert( myvals.size()==(maxbins+1) ); vout=1; double max=myvals[1];
@@ -237,6 +248,8 @@ double TopologyMatrix::transformStoredValues( const std::vector<double>& myvals,
 } 
 
 
+
+
 void TopologyMatrix::calculateForThreeAtoms( const unsigned& iat, const Vector& d1, const double& d1_len, const double& sw, 
                                              const double& dfuncl, HistogramBead& bead, multicolvar::AtomValuePack& myatoms ) const {
   // Calculate if there are atoms in the cylinder (can use delta here as pbc are done in atom setup)
@@ -244,9 +257,18 @@ void TopologyMatrix::calculateForThreeAtoms( const unsigned& iat, const Vector& 
   if ( d2.modulo2()>radmax2 ) return; 
   // Now calculate projection of d2 on d1
   double proj=dotProduct(d2,d1);
+  // This tells us if we are outside the end of the cylinder
+  double excess = proj - d1_len;
+  // Return if we are outside of the cylinder as calculated based on excess
+  if( excess>low_sf( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) ).get_dmax() ) return;
+  // Find the length of the cylinder
+  double binw = binw_mat( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) );
+  double lcylinder = (std::floor( d1_len / binw ) + 1)*binw;
   // Return if the projection is outside the length of interest
-  if( proj<-bead.getCutoff() || proj>(d1_len+bead.getCutoff()) ) return;
+  if( proj<-bead.getCutoff() || proj>(lcylinder+bead.getCutoff()) ) return;
 
+  // Calculate the excess swiching function 
+  double edf, eval = low_sf( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) ).calculate( excess, edf );
   // Calculate the projection on the perpendicular distance from the center of the tube
   double cm = d2.modulo2() - proj*proj;
 
@@ -255,31 +277,35 @@ void TopologyMatrix::calculateForThreeAtoms( const unsigned& iat, const Vector& 
       double dfuncr, val = cylinder_sw( getBaseColvarNumber( myatoms.getIndex(0) ), 
                                         getBaseColvarNumber( myatoms.getIndex(1) ) ).calculateSqr( cm, dfuncr );
       double cellv = cell_volume( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) );
-      double binw = low_sf( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) ).get_d0();
 
-      Vector dc1, dc2, dc3, dd1, dd2, dd3;
+      Vector dc1, dc2, dc3, dd1, dd2, dd3, de1, de2, de3;
       if( !doNotCalculateDerivatives() ){
-          Tensor d1_a1; double dlen_3=d1_len*d1_len*d1_len;
+          Tensor d1_a1; 
           // Derivative of director connecting atom1 - atom2 wrt the position of atom 1
-          d1_a1(0,0) = ( -(d1[1]*d1[1]+d1[2]*d1[2])/dlen_3 );   // dx/dx
-          d1_a1(0,1) = (  d1[0]*d1[1]/dlen_3 );                 // dx/dy
-          d1_a1(0,2) = (  d1[0]*d1[2]/dlen_3 );                 // dx/dz 
-          d1_a1(1,0) = (  d1[1]*d1[0]/dlen_3 );                 // dy/dx
-          d1_a1(1,1) = ( -(d1[0]*d1[0]+d1[2]*d1[2])/dlen_3 );   // dy/dy
-          d1_a1(1,2) = (  d1[1]*d1[2]/dlen_3 );
-          d1_a1(2,0) = (  d1[2]*d1[0]/dlen_3 );
-          d1_a1(2,1) = (  d1[2]*d1[1]/dlen_3 );
-          d1_a1(2,2) = ( -(d1[1]*d1[1]+d1[0]*d1[0])/dlen_3 ); 
+          d1_a1(0,0) = ( -(d1[1]*d1[1]+d1[2]*d1[2])/d1_len );   // dx/dx
+          d1_a1(0,1) = (  d1[0]*d1[1]/d1_len );                 // dx/dy
+          d1_a1(0,2) = (  d1[0]*d1[2]/d1_len );                 // dx/dz 
+          d1_a1(1,0) = (  d1[1]*d1[0]/d1_len );                 // dy/dx
+          d1_a1(1,1) = ( -(d1[0]*d1[0]+d1[2]*d1[2])/d1_len );   // dy/dy
+          d1_a1(1,2) = (  d1[1]*d1[2]/d1_len );
+          d1_a1(2,0) = (  d1[2]*d1[0]/d1_len );
+          d1_a1(2,1) = (  d1[2]*d1[1]/d1_len );
+          d1_a1(2,2) = ( -(d1[1]*d1[1]+d1[0]*d1[0])/d1_len ); 
 
           // Calculate derivatives of dot product 
-          dd1 = matmul(d2, d1_a1) - matmul( Tensor::identity(), d1 );
+          dd1 = matmul(d2, d1_a1) - d1; 
           dd2 = matmul(d2, -d1_a1);
-          dd3 = matmul( Tensor::identity(), d1 );
+          dd3 = d1; 
 
           // Calculate derivatives of cross product
-          dc1 = dfuncr*( -d2 - proj*dd1 );
-          dc2 = dfuncr*( -proj*dd2 );
-          dc3 = dfuncr*( d2 - proj*dd3 );
+          dc1 = dfuncr*( -d2 - proj*dd1 ); 
+          dc2 = dfuncr*( -proj*dd2 ); 
+          dc3 = dfuncr*( d2 - proj*dd3 ); 
+
+          // Calculate derivatives of excess
+          de1 = edf*excess*( dd1 + d1 ); 
+          de2 = edf*excess*( dd2 - d1 ); 
+          de3 = edf*excess*dd3; 
       }
 
       Vector g1derivf,g2derivf,lderivf; Tensor vir;
@@ -287,12 +313,15 @@ void TopologyMatrix::calculateForThreeAtoms( const unsigned& iat, const Vector& 
           bead.set( bin*binw, (bin+1)*binw, sigma ); 
           if( proj<(bin*binw-bead.getCutoff()) || proj>binw*(bin+1)+bead.getCutoff() ) continue;
           double der, contr=bead.calculateWithCutoff( proj, der ) / cellv; der /= cellv;
-          myatoms.addValue( 1+bin, sw*contr*val );
+          myatoms.addValue( 1+bin, sw*contr*val*eval );
 
           if( !doNotCalculateDerivatives() ){
-              g1derivf=contr*sw*dc1 + sw*val*der*dd1 - contr*val*dfuncl*d1_len*d1; addAtomDerivatives( 1+bin, 0, g1derivf, myatoms );
-              g2derivf=contr*sw*dc2 + sw*val*der*dd2 + contr*val*dfuncl*d1_len*d1; addAtomDerivatives( 1+bin, 1, g2derivf, myatoms );
-              lderivf=contr*sw*dc3 + sw*val*der*dd3; addAtomDerivatives( 1+bin, iat, lderivf, myatoms );
+              g1derivf=contr*sw*eval*dc1 + sw*val*eval*der*dd1 - contr*val*eval*dfuncl*d1_len*d1 + sw*contr*val*de1; 
+              addAtomDerivatives( 1+bin, 0, g1derivf, myatoms );
+              g2derivf=contr*sw*eval*dc2 + sw*val*eval*der*dd2 + contr*val*eval*dfuncl*d1_len*d1 + sw*contr*val*de2; 
+              addAtomDerivatives( 1+bin, 1, g2derivf, myatoms );
+              lderivf=contr*sw*eval*dc3 + sw*val*eval*der*dd3 + sw*contr*val*de3; 
+              addAtomDerivatives( 1+bin, iat, lderivf, myatoms );
               // Virial 
               vir = -Tensor( myatoms.getPosition(0), g1derivf ) - Tensor( myatoms.getPosition(1), g2derivf ) - Tensor( myatoms.getPosition(iat), lderivf );
               myatoms.addBoxDerivatives( 1+bin, vir );
@@ -301,10 +330,13 @@ void TopologyMatrix::calculateForThreeAtoms( const unsigned& iat, const Vector& 
   }
 }
 
+
+
 bool TopologyMatrix::checkForConnection( const std::vector<double>& myvals ) const { 
   double dfake; unsigned vfake; 
   return (transformStoredValues( myvals, vfake, dfake)>epsilon);
 } 
+
 
 }
 }
