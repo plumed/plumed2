@@ -129,8 +129,8 @@ void CrossLinkMSRestraint::registerKeywords(Keywords& keys){
   keys.addOutputComponent("bias",   "default","the instantaneous value of the bias potential");
   keys.addOutputComponent("sigma",  "default","uncertainty parameter");
   keys.addOutputComponent("accsig", "default","MC acceptance sigma");
-  keys.addOutputComponent("psi_",   "COMPONENTS","psi parameter");
-  keys.addOutputComponent("accpsi_","COMPONENTS","MC acceptance psi");
+  keys.addOutputComponent("psi",    "COMPONENTS","psi parameter");
+  keys.addOutputComponent("accpsi", "COMPONENTS","MC acceptance psi");
 }
 
 CrossLinkMSRestraint::CrossLinkMSRestraint(const ActionOptions&ao):
@@ -177,8 +177,8 @@ MCsteps_(1), MCstride_(1), MCaccsig_(0), MCfirst_(-1), slope_(0.0)
   addComponent("accsig"); componentIsNotPeriodic("accsig");
   for(unsigned i=0;i<ndata_.size();i++) {
       std::string num; Tools::convert(i,num);
-      addComponent("psi_"+num);    componentIsNotPeriodic("psi_"+num);
-      addComponent("accpsi_"+num); componentIsNotPeriodic("accpsi_"+num);
+      addComponent("psi"+num);    componentIsNotPeriodic("psi"+num);
+      addComponent("accpsi"+num); componentIsNotPeriodic("accpsi"+num);
       psi_.push_back(psi0);
       MCaccpsi_.push_back(0);      
   }
@@ -289,7 +289,7 @@ void CrossLinkMSRestraint::doMonteCarlo(){
  for(unsigned i=0;i<MCsteps_;++i){
   // get old energy
   oldE = getEnergy(sigma_, psi_);
-  // propose move in uncertainty
+  // propose move in sigma
   double new_sigma = proposeMove(sigma_,sigma_min_,sigma_max_,Dsigma_);
   // calculate new energy
   newE = getEnergy(new_sigma, psi_);
@@ -335,7 +335,7 @@ void CrossLinkMSRestraint::update(){
   for(unsigned i=0; i<MCaccpsi_.size(); ++i){
    double accpsi = static_cast<double>(MCaccpsi_[i]) / static_cast<double>(MCsteps_) / MCtrials;
    std::string num; Tools::convert(i,num);
-   getPntrToComponent("accpsi_"+num)->set(accpsi);
+   getPntrToComponent("accpsi"+num)->set(accpsi);
   }
 }
 
@@ -387,7 +387,7 @@ void CrossLinkMSRestraint::calculate(){
   // set value of psi 
   for(unsigned i=0;i<psi_.size();++i){ 
      std::string num; Tools::convert(i,num);
-     getPntrToComponent("psi_"+num)->set(psi_[i]);
+     getPntrToComponent("psi"+num)->set(psi_[i]);
   }
 }
 
