@@ -374,7 +374,7 @@ void CrossLinkMSRestraint::calculate(){
     }
     ene += -kbt_ * std::log(psi_[ipsi]*(1.0-post)+(1.0-psi_[ipsi])*post) + kbt_ * slope_ * dist;
     // add entropic contribution
-    if(entropic_) ene += 2.0*std::log(dist);
+    if(entropic_) ene += kbt_ * 2.0 * std::log(dist);
     // set force on the i-th component
     double dlog_eLpR_2 = -2.0 * (dist+length_) / (2.0*sig2);
     double dlog_e2LR = 2.0 * length_ / sig2;
@@ -384,7 +384,7 @@ void CrossLinkMSRestraint::calculate(){
     double derfLpR =  2.0 / sqPi * exp(-(length_+dist)*(length_+dist)/2.0/sig2) / sq2 / sig;
     double dpost = sig/sq2Pi/dist/dist * (eLpR_2_e2LR - eLpR_2) -sig/(sq2Pi*dist) * (deLpR_2_e2LR - deLpR_2) + 0.5 * (derfLmR + derfLpR);
     double force = kbt_ * 1.0 / (psi_[ipsi]*(1.0-post)+(1.0-psi_[ipsi])*post) * (1.0-2.0*psi_[ipsi]) * dpost - kbt_ * slope_;
-    if(entropic_) force += -2.0 / dist;
+    if(entropic_) force += - kbt_ * 2.0 / dist;
     setOutputForce(i, force);
   };
   // add Jeffrey's priors on psi_
