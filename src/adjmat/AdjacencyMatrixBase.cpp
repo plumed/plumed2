@@ -66,6 +66,7 @@ bool AdjacencyMatrixBase::parseAtomList(const std::string& key, const int& num, 
 void AdjacencyMatrixBase::parseConnectionDescriptions( const std::string& key, const unsigned& nrow_t ){
   if( getNumberOfNodeTypes()==1 || (getNumberOfNodeTypes()==2 && nrow_t==1) ){
       std::string sw; parse(key,sw);
+      if(sw.length()==0) error("could not find " + key + " keyword");
       setupConnector( connect_id, 0, 0, sw );
   } else {
       unsigned nr, nc;
