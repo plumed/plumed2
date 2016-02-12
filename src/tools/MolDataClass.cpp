@@ -87,10 +87,22 @@ bool MolDataClass::allowedResidue( const std::string& type, const std::string& r
       else if(residuename=="DCN") return true;
       else return false;
   } else if( type=="rna" ){
-      if(residuename=="A") return true;
+           if(residuename=="A") return true;
+      else if(residuename=="A5") return true;
+      else if(residuename=="A3") return true;
+      else if(residuename=="AN") return true;
       else if(residuename=="G") return true;
+      else if(residuename=="G5") return true;
+      else if(residuename=="G3") return true;
+      else if(residuename=="GN") return true;
       else if(residuename=="U") return true;
+      else if(residuename=="U5") return true;
+      else if(residuename=="U3") return true;
+      else if(residuename=="UN") return true;
       else if(residuename=="C") return true;
+      else if(residuename=="C5") return true;
+      else if(residuename=="C3") return true;
+      else if(residuename=="CN") return true;
       else if(residuename=="RA") return true;
       else if(residuename=="RA5") return true;
       else if(residuename=="RA3") return true;
