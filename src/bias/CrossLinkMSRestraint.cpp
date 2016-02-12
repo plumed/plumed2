@@ -81,6 +81,7 @@ class CrossLinkMSRestraint : public Bias
   double length_;
 // slope
   double slope_;
+  bool entropic_;
 // data classes
   std::vector<int> ndata_;
 // temperature in kbt
@@ -123,6 +124,7 @@ void CrossLinkMSRestraint::registerKeywords(Keywords& keys){
   keys.add("compulsory","KBT","temperature");
   keys.add("compulsory","NDATA","number of data points per class");
   keys.add("optional","SLOPE","slope");
+  keys.addFlag("ENTROPY",false,"add entropic contribution");
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_STRIDE","MC stride");
   componentsAreNotOptional(keys); 
@@ -135,7 +137,8 @@ void CrossLinkMSRestraint::registerKeywords(Keywords& keys){
 
 CrossLinkMSRestraint::CrossLinkMSRestraint(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao),
-MCsteps_(1), MCstride_(1), MCaccsig_(0), MCfirst_(-1), slope_(0.0)
+MCsteps_(1), MCstride_(1), MCaccsig_(0), MCfirst_(-1), slope_(0.0),
+entropic_(false)
 {
   double psi0;
   parse("SIGMA0",   sigma_);
@@ -152,6 +155,9 @@ MCsteps_(1), MCstride_(1), MCaccsig_(0), MCfirst_(-1), slope_(0.0)
   parseVector("NDATA", ndata_);
   parse("MC_STEPS", MCsteps_);
   parse("MC_STRIDE",MCstride_);
+
+  parseFlag("ENTROPY",entropic_);
+
   checkRead();
 
   // adjust for multiple-time steps
@@ -367,6 +373,8 @@ void CrossLinkMSRestraint::calculate(){
      imax += ndata_[ipsi];
     }
     ene += -kbt_ * std::log(psi_[ipsi]*(1.0-post)+(1.0-psi_[ipsi])*post) + kbt_ * slope_ * dist;
+    // add entropic contribution
+    if(entropic_) ene += 2.0*std::log(dist);
     // set force on the i-th component
     double dlog_eLpR_2 = -2.0 * (dist+length_) / (2.0*sig2);
     double dlog_e2LR = 2.0 * length_ / sig2;
@@ -376,6 +384,7 @@ void CrossLinkMSRestraint::calculate(){
     double derfLpR =  2.0 / sqPi * exp(-(length_+dist)*(length_+dist)/2.0/sig2) / sq2 / sig;
     double dpost = sig/sq2Pi/dist/dist * (eLpR_2_e2LR - eLpR_2) -sig/(sq2Pi*dist) * (deLpR_2_e2LR - deLpR_2) + 0.5 * (derfLmR + derfLpR);
     double force = kbt_ * 1.0 / (psi_[ipsi]*(1.0-post)+(1.0-psi_[ipsi])*post) * (1.0-2.0*psi_[ipsi]) * dpost - kbt_ * slope_;
+    if(entropic_) force += -2.0 / dist;
     setOutputForce(i, force);
   };
   // add Jeffrey's priors on psi_
