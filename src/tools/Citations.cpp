@@ -43,6 +43,15 @@ std::ostream & operator<<(std::ostream &log,const Citations&cit){
     log<<"  ["<<i+1<<"] "<<cit.items[i]<<"\n";
   return log;
 }
+
+void Citations::clear(){
+  items.clear();
+}
+
+bool Citations::empty()const{
+  return items.empty();
+}
+
 }
 
 
