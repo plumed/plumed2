@@ -35,7 +35,7 @@ public:
   void read( const PDB& );
   double calc( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const ;
   bool pcaIsEnabledForThisReference(){ return true; }
-  void setupRMSDObject(){ myrmsd.set(getAlign(),getDisplace(),getReferencePositions(),"OPTIMAL"); }
+  void setupRMSDObject(){ myrmsd.clear(); myrmsd.set(getAlign(),getDisplace(),getReferencePositions(),"OPTIMAL"); }
   void setupPCAStorage( ReferenceValuePack& mypack ){ 
         mypack.switchOnPCAOption();
         mypack.centeredpos.resize( getNumberOfAtoms() ); 
@@ -55,7 +55,7 @@ RMSDBase(ro)
 }
 
 void OptimalRMSD::read( const PDB& pdb ){
-  readReference( pdb ); myrmsd.set(getAlign(),getDisplace(),getReferencePositions(),"OPTIMAL"); 
+  readReference( pdb ); setupRMSDObject(); 
 }
 
 double OptimalRMSD::calc( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const {
