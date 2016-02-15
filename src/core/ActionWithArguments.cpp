@@ -34,7 +34,7 @@ using namespace std;
 namespace PLMD{
 
 void ActionWithArguments::registerKeywords(Keywords& keys){
-  keys.reserve("compulsory","ARG","the input for this action is the scalar output from one or more other actions. The particular scalars that you will use "
+  keys.reserve("numbered","ARG","the input for this action is the scalar output from one or more other actions. The particular scalars that you will use "
                                   "are referenced using the label of the action. If the label appears on its own then it is assumed that the Action calculates "
                                   "a single scalar value.  The value of this scalar is thus used as the input to this new action.  If * or *.* appears the "
                                   "scalars calculated by all the proceding actions in the input file are taken.  Some actions have multi-component outputs and "
@@ -48,6 +48,15 @@ void ActionWithArguments::registerKeywords(Keywords& keys){
 
 void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Value*>&arg){
   vector<string> c; arg.clear(); parseVector(key,c); interpretArgumentList(c,arg);
+}
+
+bool ActionWithArguments::parseArgumentList(const std::string&key,int i,std::vector<Value*>&arg){
+  vector<string> c; 
+  arg.clear(); 
+  if(parseNumberedVector(key,i,c)) {
+    interpretArgumentList(c,arg);
+    return true;
+  } else return false;
 }
 
 void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& c, std::vector<Value*>&arg){
