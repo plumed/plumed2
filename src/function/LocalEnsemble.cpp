@@ -108,11 +108,8 @@ ens_dim(0)
 }
 
 void LocalEnsemble::calculate(){
-  double norm = 0.0;
-  double fact = 0.0;
-
-  norm = static_cast<double>(ens_dim); 
-  fact = 1.0/norm; 
+  const double norm = static_cast<double>(ens_dim); 
+  const double fact = 1.0/norm; 
 
   vector<double> mean(narg);
   vector<double> dmean(narg,fact);
