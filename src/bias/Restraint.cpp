@@ -116,14 +116,12 @@ slope(getNumberOfArguments(),0.0)
 void Restraint::calculate(){
   double ene=0.0;
   double totf2=0.0;
-  double fact=1.0;
   for(unsigned i=0;i<getNumberOfArguments();++i){
     const double cv=difference(i,at[i],getArgument(i));
     const double k=kappa[i];
     const double m=slope[i];
     const double f=-(k*cv+m);
-    //if(getPntrToArgument(i)->isEnsemble()) fact = 1./static_cast<double>(getPntrToArgument(i)->getEnsemble());
-    ene+=0.5*fact*k*cv*cv+m*cv;
+    ene+=0.5*k*cv*cv+m*cv;
     setOutputForce(i,f);
     totf2+=f*f;
   };
