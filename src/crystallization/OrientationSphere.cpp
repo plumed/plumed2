@@ -68,10 +68,6 @@ MultiColvarFunction(ao)
 }
 
 double OrientationSphere::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {
-   // Make sure derivatives for central atom are only calculated once
-   VectorMultiColvar* vv = dynamic_cast<VectorMultiColvar*>( getBaseMultiColvar(0) );
-   vv->firstcall=true;
-
    double d2, sw, value=0, denom=0, dot, f_dot, dot_df, dfunc; 
    unsigned ncomponents=getBaseMultiColvar(0)->getNumberOfQuantities();
    std::vector<double> catom_orient( ncomponents ), this_orient( ncomponents ), catom_der( ncomponents ); 

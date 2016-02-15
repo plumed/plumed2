@@ -45,7 +45,6 @@ void MultiColvarBase::registerKeywords( Keywords& keys ){
   ActionAtomistic::registerKeywords( keys );
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   ActionWithVessel::registerKeywords( keys );
-  keys.use("NL_TOL");
   keys.add("hidden","NL_STRIDE","the frequency with which the neighbor list should be updated. Between neighbour list update steps all quantities "
                                 "that contributed less than TOL at the previous neighbor list update step are ignored.");
   keys.setComponentsIntroduction("When the label of this action is used as the input for a second you are not referring to a scalar quantity as you are in "
@@ -258,21 +257,17 @@ void MultiColvarBase::setupNonUseSpeciesLinkCells( const unsigned& my_always_act
      if( serialCalculation() ){ stride=1; rank=0; }
 
      // Ensure we only do tasks where atoms are in appropriate link cells
-     std::vector<unsigned> linked_atoms( 1+ablocks[1].size() );
-     std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
+     std::vector<unsigned> linked_atoms( 1+ablocks[1].size() ); deactivateAllTasks();
      for(unsigned i=rank;i<ablocks[0].size();i+=stride){
          if( !isCurrentlyActive( 0, ablocks[0][i] ) ) continue;
          unsigned natomsper=1; linked_atoms[0]=my_always_active;  // Note we always check atom 0 because it is simpler than changing LinkCells.cpp
          linkcells.retrieveNeighboringAtoms( getPositionOfAtomForLinkCells( ablocks[0][i] ), natomsper, linked_atoms );
          for(unsigned j=0;j<natomsper;++j){
-             for(unsigned k=bookeeping(i,linked_atoms[j]).first;k<bookeeping(i,linked_atoms[j]).second;++k) active_tasks[k]=1;
+             for(unsigned k=bookeeping(i,linked_atoms[j]).first;k<bookeeping(i,linked_atoms[j]).second;++k) taskFlags[k]=1;
          }
      }
-     if( !serialCalculation() ) comm.Sum( active_tasks ); 
-
-     deactivateAllTasks(); 
-     activateTheseTasks( active_tasks );
-     contributorsAreUnlocked=false;
+     if( !serialCalculation() ) comm.Sum( taskFlags ); 
+     lockContributors();
   } else { 
      // Get some parallel info
      unsigned stride=comm.Get_size();
@@ -307,30 +302,27 @@ void MultiColvarBase::setupNonUseSpeciesLinkCells( const unsigned& my_always_act
      threecells.buildCellLists( lttmp_pos, lttmp_ind, getPbc() );
 
      // Ensure we only do tasks where atoms are in appropriate link cells
+     deactivateAllTasks();
      std::vector<unsigned> linked_atoms( 1+ablocks[1].size() );
      std::vector<unsigned> tlinked_atoms( 1+ablocks[2].size() );
-     std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
      for(unsigned i=rank;i<ablocks[0].size();i+=stride){
          if( !isCurrentlyActive( 0, ablocks[0][i] ) ) continue;
          unsigned natomsper=1; linked_atoms[0]=my_always_active;  // Note we always check atom 0 because it is simpler than changing LinkCells.cpp
          linkcells.retrieveNeighboringAtoms( getPositionOfAtomForLinkCells( ablocks[0][i] ), natomsper, linked_atoms );
          if( allthirdblockintasks ) {
              for(unsigned j=0;j<natomsper;++j){
-                 for(unsigned k=bookeeping(i,linked_atoms[j]).first;k<bookeeping(i,linked_atoms[j]).second;++k) active_tasks[k]=1;
+                 for(unsigned k=bookeeping(i,linked_atoms[j]).first;k<bookeeping(i,linked_atoms[j]).second;++k) taskFlags[k]=1;
              }
          } else {
              unsigned ntatomsper=1; tlinked_atoms[0]=lttmp_ind[0];
              threecells.retrieveNeighboringAtoms( getPositionOfAtomForLinkCells( ablocks[0][i] ), ntatomsper, tlinked_atoms );
              for(unsigned j=0;j<natomsper;++j){
-                 for(unsigned k=0;k<ntatomsper;++k) active_tasks[bookeeping(i,linked_atoms[j]).first+tlinked_atoms[k]]=1;
+                 for(unsigned k=0;k<ntatomsper;++k) taskFlags[bookeeping(i,linked_atoms[j]).first+tlinked_atoms[k]]=1;
              }
          }
      }
-     if( !serialCalculation() ) comm.Sum( active_tasks );
-
-     deactivateAllTasks();
-     activateTheseTasks( active_tasks );
-     contributorsAreUnlocked=false; 
+     if( !serialCalculation() ) comm.Sum( taskFlags );
+     lockContributors();
   } 
 }
 
@@ -380,16 +372,16 @@ void MultiColvarBase::setupActiveTaskSet( std::vector<unsigned>& active_tasks, c
               if( !myv ){ justVolumes=false; break; }
           }
       }
-      std::vector<unsigned> this_actions_tasks( getFullNumberOfTasks(), 0 );
+      deactivateAllTasks();
       if( justVolumes && mydata ){
           if( mydata->getNumberOfDataUsers()==0 ) justVolumes=false;
 
           for(unsigned i=0;i<mydata->getNumberOfDataUsers();++i){
               MultiColvarBase* myu=dynamic_cast<MultiColvarBase*>( mydata->getDataUser(i) );
               if( myu ){
-                  myu->setupActiveTaskSet( this_actions_tasks, getLabel() );
+                  myu->setupActiveTaskSet( taskFlags, getLabel() );
               } else {
-                  for(unsigned i=0;i<this_actions_tasks.size();++i) this_actions_tasks[i]=1;
+                  for(unsigned i=0;i<getFullNumberOfTasks();++i) taskFlags[i]=1;
               }
           }
       }
@@ -402,17 +394,15 @@ void MultiColvarBase::setupActiveTaskSet( std::vector<unsigned>& active_tasks, c
               myv->retrieveAtoms(); myv->setupRegions();
               
               for(unsigned i=0;i<getFullNumberOfTasks();++i){
-                 if( myv->inVolumeOfInterest(i) ) this_actions_tasks[i]=1;
+                 if( myv->inVolumeOfInterest(i) ) taskFlags[i]=1;
               }
           }
       } else { 
-          for(unsigned i=0;i<getFullNumberOfTasks();++i) this_actions_tasks[i]=1;
+          for(unsigned i=0;i<getFullNumberOfTasks();++i) taskFlags[i]=1;
       } 
 
       // Now activate all this class
-      deactivateAllTasks();
-      activateTheseTasks( this_actions_tasks );
-      contributorsAreUnlocked=false;
+      lockContributors();
       // Setup the link cells
       setupLinkCells();  
       // Ensures that setup is not performed multiple times during one cycle
@@ -449,9 +439,8 @@ bool MultiColvarBase::filtersUsedAsInput(){
 }
 
 void MultiColvarBase::calculate(){ 
-  std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
   // Recursive function that sets up tasks
-  setupActiveTaskSet( active_tasks, getLabel() );
+  setupActiveTaskSet( taskFlags, getLabel() );
 
   // Check for filters and rerun setup of link cells if there are any
   if( colvar_label.size()>0 && filtersUsedAsInput() ) setupLinkCells();
@@ -523,7 +512,7 @@ void MultiColvarBase::calculateWeight( const unsigned& taskCode, AtomValuePack& 
   if( usespecies && taskCode<colvar_label.size() ){
       unsigned mmc=colvar_label[taskCode]; std::vector<double> old_data( mybasemulticolvars[mmc]->getNumberOfQuantities() );
       plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(taskCode,mmc) ) );
-      mybasedata[mmc]->retrieveValue( convertToLocalIndex(taskCode,mmc), false, old_data );
+      mybasedata[mmc]->retrieveValueWithIndex( convertToLocalIndex(taskCode,mmc), false, old_data );
       myatoms.setValue( 0, old_data[0] );
       if( !doNotCalculateDerivatives() && mybasemulticolvars[mmc]->weightHasDerivatives ){
           MultiValue myder( mybasemulticolvars[mmc]->getNumberOfQuantities(), mybasemulticolvars[mmc]->getNumberOfDerivatives() );

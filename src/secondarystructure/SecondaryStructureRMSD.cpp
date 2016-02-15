@@ -57,7 +57,7 @@ void SecondaryStructureRMSD::registerKeywords( Keywords& keys ){
   keys.add("hidden","NL_STRIDE","the frequency with which the neighbor list should be updated. Between neighbour list update steps all quantities "
                                   "that contributed less than TOL at the previous neighbor list update step are ignored.");
   ActionWithVessel::registerKeywords( keys );
-  keys.use("LESS_THAN"); keys.use("MIN"); keys.use("ALT_MIN"); keys.use("NL_TOL"); keys.use("LOWEST"); keys.use("HIGHEST");
+  keys.use("LESS_THAN"); keys.use("MIN"); keys.use("ALT_MIN"); keys.use("LOWEST"); keys.use("HIGHEST");
   keys.setComponentsIntroduction("By default this Action calculates the number of structural units that are within a certain "
                                  "distance of a idealised secondary structure element. This quantity can then be referenced "
                                  "elsewhere in the input by using the label of the action. However, thes Action can also be used to "
@@ -74,7 +74,6 @@ Action(ao),
 ActionAtomistic(ao),
 ActionWithValue(ao),
 ActionWithVessel(ao),
-updateFreq(0),
 align_strands(false),
 s_cutoff(0),
 align_atom_1(0),
@@ -84,15 +83,7 @@ align_atom_2(0)
   log.printf("  distances from secondary structure elements are calculated using %s algorithm\n",alignType.c_str() );
   log<<"  Bibliography "<<plumed.cite("Pietrucci and Laio, J. Chem. Theory Comput. 5, 2197 (2009)"); log<<"\n";
 
-  parseFlag("VERBOSE",verbose_output);
-  if( keywords.exists("NL_STRIDE") ) parse("NL_STRIDE",updateFreq);
-  if(updateFreq>0){ 
-     firsttime=true; 
-     log.printf("  Updating contributors every %d steps.\n",updateFreq);
-  } else {
-     firsttime=false; contributorsAreUnlocked=true;   // This will lock during first prepare step methinks
-     log.printf("  Updating contributors every step.\n");
-  }
+  parseFlag("VERBOSE",verbose_output); 
 
   if( keywords.exists("STRANDS_CUTOFF") ){
     parse("STRANDS_CUTOFF",s_cutoff); align_strands=true;
@@ -163,8 +154,6 @@ void SecondaryStructureRMSD::setSecondaryStructure( std::vector<Vector>& structu
   }
 
   if( references.size()==0 ){
-     finishTaskListUpdate();
-
      readVesselKeywords();
      if( getNumberOfVessels()==0 ){
          double r0; parse("R_0",r0); double d0; parse("D_0",d0);
@@ -183,16 +172,12 @@ void SecondaryStructureRMSD::setSecondaryStructure( std::vector<Vector>& structu
   references[nn]->setBoundsOnDistances( true , bondlength );  // We always use pbc
   references[nn]->setReferenceAtoms( structure, align, displace );
 //  references[nn]->setNumberOfAtoms( structure.size() );
-}
 
-void SecondaryStructureRMSD::prepare(){
-  if( contributorsAreUnlocked ) lockContributors();
-  if( updateFreq>0 ){
-      if( firsttime || getStep()%updateFreq==0 ){ firsttime=false; unlockContributors(); }
-  }
+  // And prepare the task list
+  deactivateAllTasks();
+  for(unsigned i=0;i<getFullNumberOfTasks();++i) taskFlags[i]=1;
+  lockContributors(); 
 }
-
-void SecondaryStructureRMSD::finishTaskListUpdate(){ }
 
 void SecondaryStructureRMSD::calculate(){
   runAllTasks();

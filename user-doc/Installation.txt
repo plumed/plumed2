@@ -92,6 +92,17 @@ compile with MPI you should use
 > ./configure CXX="$MPICXX"
 \endverbatim
 
+\warning
+This procedure could be somehow confusing since many other programs behave in a different way.
+The flag `--enable-mpi` is perfectly valid but is not needed here.
+Autoconf will check if a code containing MPI calls can be compiled,
+and if so it will enable it. `--disable-mpi` could be used if you are
+using a compiler that supports MPI but you don't want PLUMED to  be compiled
+with MPI support. Thus the correct way to enable MPI is to pass
+to ./configure  the name of a C++ compiler that implements MPI using the CXX option.
+In this way, MPI library is treated similarly to all the other libraries
+that PLUMED tries to link by default.
+
 To tune the compilation options you can use the CXXFLAGS variable:
 \verbatim
 > ./configure CXXFLAGS=-O3
@@ -378,6 +389,8 @@ do not want to set up modules, but we believe that using modules as described ab
 
 \section Patching Patching your MD code
 
+A growing number of MD codes can use PLUMED without any modification.
+If you are using one of these codes, refer to its manual to know how to activate PLUMED.
 In case your MD code is not supporting PLUMED already, you should modify it.
 We provide scripts to adjust some of the most popular MD codes
 so as to provide PLUMED support.

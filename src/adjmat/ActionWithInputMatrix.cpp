@@ -90,9 +90,9 @@ void ActionWithInputMatrix::getVectorForTask( const unsigned& ind, const bool& n
      unsigned vin; unsigned ncols = mymatrix->getNumberOfColumns(); orient0.assign(orient0.size(),0);
      for(unsigned i=0;i<ncols;++i){
          if( mymatrix->isSymmetric() && ind==i ) continue;
+         if( !mymatrix->matrixElementIsActive( ind, i ) ) continue; 
          unsigned myelem = mymatrix->getStoreIndexFromMatrixIndices( ind, i );
-         if( !mymatrix->storedValueIsActive( myelem ) ) continue ;
-         mymatrix->retrieveValue( myelem, false, tvals ); 
+         mymatrix->retrieveValueWithIndex( myelem, false, tvals ); 
          orient0[1]+=(mymatrix->function)->transformStoredValues( tvals, vin, df);
      } 
      orient0[0]=1.0;
@@ -100,7 +100,7 @@ void ActionWithInputMatrix::getVectorForTask( const unsigned& ind, const bool& n
      plumed_dbg_assert( isCurrentlyActive( ind ) );
      plumed_dbg_assert( ind<(mymatrix->function)->colvar_label.size() ); unsigned mmc=(mymatrix->function)->colvar_label[ind];
      plumed_dbg_assert( ((mymatrix->function)->mybasedata[mmc])->storedValueIsActive( (mymatrix->function)->convertToLocalIndex(ind,mmc) ) );
-     ((mymatrix->function)->mybasedata[mmc])->retrieveValue( (mymatrix->function)->convertToLocalIndex(ind,mmc), normed, orient0 );
+     ((mymatrix->function)->mybasedata[mmc])->retrieveValueWithIndex( (mymatrix->function)->convertToLocalIndex(ind,mmc), normed, orient0 );
   }
 }
 
@@ -111,9 +111,9 @@ void ActionWithInputMatrix::getVectorDerivatives( const unsigned& ind, const boo
      unsigned vin; unsigned ncols = mymatrix->getNumberOfColumns();
      for(unsigned i=0;i<ncols;++i){
          if( mymatrix->isSymmetric() && ind==i ) continue;
+         if( !mymatrix->matrixElementIsActive( ind, i ) ) continue; 
          unsigned myelem = mymatrix->getStoreIndexFromMatrixIndices( ind, i );
-         if( !mymatrix->storedValueIsActive( myelem ) ) continue ;
-         mymatrix->retrieveValue( myelem, false, tvals );
+         mymatrix->retrieveValueWithIndex( myelem, false, tvals );
          double dum=(mymatrix->function)->transformStoredValues( tvals, vin, df);
          mymatrix->retrieveDerivatives( myelem, false, myvals ); 
          for(unsigned jd=0;jd<myvals.getNumberActive();++jd){

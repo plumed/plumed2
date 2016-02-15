@@ -52,7 +52,7 @@ public:
 /// This does the resizing of the buffer
   virtual void resize();
 /// Do the calcualtion
-  virtual bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
+  virtual void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
 /// Do any transformations of the value that are required
   virtual double calcTransform( const double& val, double& df ) const ;
 /// Finish the calculation of the quantity

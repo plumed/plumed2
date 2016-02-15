@@ -90,7 +90,7 @@ public:
 /// Get the number of values that have been stored
   virtual unsigned getNumberOfStoredValues() const ;
 /// Get the index to store a particular index inside
-  virtual unsigned getStoreIndex( const unsigned& ) const ;
+  unsigned getStoreIndex( const unsigned& ) const ;
 /// Recalculate one of the base quantities
   virtual void recalculateStoredQuantity( const unsigned& myelm, MultiValue& myvals );
 /// Set a hard cutoff on the weight of an element
@@ -102,7 +102,8 @@ public:
 /// Return the number of components in the vector
   unsigned getNumberOfComponents() const { return vecsize; }
 /// Get the values of all the components in the vector
-  void retrieveValue( const unsigned& myelem, const bool& normed, std::vector<double>& values ) const ;
+  void retrieveSequentialValue( const unsigned& myelem, const bool& normed, std::vector<double>& values ) const ;
+  void retrieveValueWithIndex( const unsigned& myelem, const bool& normed, std::vector<double>& values ) const ;
 /// Get the derivatives for one of the components in the vector
   virtual void retrieveDerivatives( const unsigned& myelem, const bool& normed, MultiValue& myvals );
 /// Do all resizing of data
@@ -114,11 +115,11 @@ public:
 /// Get the size of the derivative list
   unsigned getSizeOfDerivativeList() const ;
 /// This stores the data when not using lowmem
-  virtual bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const ;
+  virtual void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const ;
 /// Final step in gathering data
   virtual void finish( const std::vector<double>& buffer );
 /// Is a particular stored value active at the present time
-  bool storedValueIsActive( const unsigned& iatom ); 
+  bool storedValueIsActive( const unsigned& iatom ) const ;   
 /// Set the active values
   void setActiveValsAndDerivatives( const std::vector<unsigned>& der_index );
 /// Activate indexes (this is used at end of chain rule)
@@ -153,10 +154,12 @@ unsigned StoreDataVessel::getNumberOfDerivativeSpacesPerComponent() const {
 }
 
 inline
-bool StoreDataVessel::storedValueIsActive( const unsigned& iatom ){
-  plumed_dbg_assert( iatom<getNumberOfStoredValues() );
+bool StoreDataVessel::storedValueIsActive( const unsigned& iatom ) const {
+  if( !getAction()->taskIsCurrentlyActive( iatom ) ) return false;
   if( !hard_cut ) return true; 
-  return local_buffer[iatom*vecsize*nspace]>wtol;   // (active_val[iatom]==1);
+  unsigned jatom = getStoreIndex( iatom );
+  plumed_dbg_assert( jatom<getNumberOfStoredValues() );
+  return local_buffer[jatom*vecsize*nspace]>wtol;   // (active_val[iatom]==1);
 }
 
 inline
@@ -166,12 +169,17 @@ unsigned StoreDataVessel::getSizeOfDerivativeList() const {
 
 inline
 unsigned StoreDataVessel::getNumberOfStoredValues() const {
-  return getAction()->getFullNumberOfTasks();
+  return getAction()->nactive_tasks;
 }
 
 inline
 unsigned StoreDataVessel::getStoreIndex( const unsigned& ind ) const {
-  return ind;
+  if( getAction()->nactive_tasks==getAction()->getFullNumberOfTasks() ) return ind;
+
+  for(unsigned i=0;i<getAction()->nactive_tasks;++i){
+      if( ind==getAction()->indexOfTaskInFullList[i] ) return i;
+  }
+  plumed_merror("requested task is not active");
 }
 
 inline

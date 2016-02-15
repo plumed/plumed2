@@ -20,22 +20,9 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MetricRegister.h"
-#include "ReferenceAtoms.h"
-#include "ReferenceArguments.h"
+#include "Direction.h"
 
 namespace PLMD {
-
-class Direction :
-public ReferenceAtoms,
-public ReferenceArguments
-{
-public:
-  explicit Direction( const ReferenceConfigurationOptions& ro );
-  void read( const PDB& );
-  double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& args, 
-               ReferenceValuePack& myder, const bool& squared ) const ;
-  void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in ){ plumed_error(); }
-};
 
 PLUMED_REGISTER_METRIC(Direction,"DIRECTION")
 
@@ -49,6 +36,14 @@ ReferenceArguments(ro)
 void Direction::read( const PDB& pdb ){
   readAtomsFromPDB( pdb );
   readArgumentsFromPDB( pdb );
+}
+
+void Direction::setDirection( const std::vector<Vector>& conf, const std::vector<double>& args ){
+  std::vector<double> sigma( args.size(), 1.0 ); setReferenceArguments( args, sigma );
+
+  reference_atoms.resize( conf.size() ); align.resize( conf.size() );
+  displace.resize( conf.size() ); atom_der_index.resize( conf.size() );
+  for(unsigned i=0;i<conf.size();++i){ align[i]=1.0; displace[i]=1.0; atom_der_index[i]=i; reference_atoms[i]=conf[i]; }
 }
 
 double Direction::calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& args, 

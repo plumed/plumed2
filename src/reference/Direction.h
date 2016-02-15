@@ -19,33 +19,27 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_crystallization_LocalSteinhardt_h
-#define __PLUMED_crystallization_LocalSteinhardt_h
-#include "OrientationSphere.h"
+#ifndef __PLUMED_reference_Direction_h
+#define __PLUMED_reference_Direction_h
+
+#include "ReferenceAtoms.h"
+#include "ReferenceArguments.h"
 
 namespace PLMD {
-namespace crystallization {
 
-template<class T>
-class LocalSteinhardt : public OrientationSphere {
+class Direction :
+public ReferenceAtoms,
+public ReferenceArguments
+{
 public:
-  static void registerKeywords( Keywords& keys ){
-    OrientationSphere::registerKeywords(keys);
-  }
-  explicit LocalSteinhardt(const ActionOptions& ao): Action(ao), OrientationSphere(ao)
-  {
-     for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i){
-         T* mc=dynamic_cast<T*>( getBaseMultiColvar(i) );
-         if(!mc){
-            for(unsigned j=0;j<getBaseMultiColvar(i)->getNumberOfBaseMultiColvars();++j){
-                T* mmc=dynamic_cast<T*>( getBaseMultiColvar(i)->getBaseMultiColvar(j) );
-                if( !mmc ) error("input action is not calculating the correct vectors");
-            }
-         }
-     }
-  }
+  explicit Direction( const ReferenceConfigurationOptions& ro );
+  void read( const PDB& );
+  double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& args,
+               ReferenceValuePack& myder, const bool& squared ) const ;
+  void setDirection( const std::vector<Vector>& conf, const std::vector<double>& args );
+  void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in ){ plumed_error(); }
 };
 
 }
-}
+
 #endif

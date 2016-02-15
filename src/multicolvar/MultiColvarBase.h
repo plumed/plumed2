@@ -170,6 +170,10 @@ public:
   virtual void doNotCalculateDirector(){}
 /// Ensure that derivatives are only calculated when needed
   bool doNotCalculateDerivatives() const ;
+/// Get the icolv th base multicolvar 
+  MultiColvarBase* getBaseMultiColvar( const unsigned& icolv ) const ;
+/// Get the number of base multicolvars 
+  unsigned getNumberOfBaseMultiColvars() const ;
 };
 
 inline
@@ -226,6 +230,18 @@ bool MultiColvarBase::doNotCalculateDerivatives() const {
   if( !dertime ) return true;
   return ActionWithValue::doNotCalculateDerivatives();
 }
+
+inline
+unsigned MultiColvarBase::getNumberOfBaseMultiColvars() const {
+  return mybasemulticolvars.size(); 
+} 
+
+inline 
+MultiColvarBase* MultiColvarBase::getBaseMultiColvar( const unsigned& icolv ) const {
+  plumed_dbg_assert( icolv<mybasemulticolvars.size() );
+  return mybasemulticolvars[icolv]; 
+} 
+
 
 }
 }

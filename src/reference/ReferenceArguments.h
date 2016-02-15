@@ -54,7 +54,7 @@ private:
 /// The names of the arguments
   std::vector<std::string> arg_names;
 /// The indices for setting derivatives
-  std::vector<unsigned> der_index;
+  std::vector<unsigned> arg_der_index;
 protected:
 /// Are we reading weights from input
   bool hasweights;

@@ -162,6 +162,7 @@ void ReferenceConfiguration::print( OFile& ofile, const double& time, const doub
 }
 
 void ReferenceConfiguration::print( OFile& ofile, const std::string& fmt ){
+  ofile.printf("REMARK TYPE=%s\n",getName().c_str() );
   ReferenceArguments* args=dynamic_cast<ReferenceArguments*>(this);
   if(args) args->printArguments( ofile, fmt );
   ReferenceAtoms* atoms=dynamic_cast<ReferenceAtoms*>(this);
