@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
+#define cutOffNB      0.49
 #define cutOffDist    0.55  	// cut off distance for non-bonded pairwise forces
 #define cutOffDist2   0.3025 	// square of cutOffDist
 #define cutOnDist     0.45   	// cut off distance for non-bonded pairwise forces
@@ -426,10 +427,7 @@ class CS2Backbone : public Colvar {
   vector<Vector> coor; 
   void remove_problematic(const string &res, const string &nucl);
   void read_cs(const string &file, const string &k);
-  void compute_ring_parameters(const vector<Vector> & coor);
-  void update_box(vector<unsigned> & aa_box_i, const unsigned curr, 
-                  const vector<Vector> & coor, const unsigned size, 
-                  const double cutnb2);
+  void compute_ring_parameters();
   void init_backbone(const PDB &pdb);
   void init_sidechain(const PDB &pdb);
   void init_xdist(const PDB &pdb);
@@ -683,21 +681,22 @@ void CS2Backbone::calculate()
 {
   if(pbc) makeWhole();
   if(getExchangeStep()) box_count=0;
+  bool update = false;
+  if(box_count==0) update = true;
 
   const unsigned N = getNumberOfAtoms();
   for(unsigned i=0;i<N;i++) coor[i] = getPosition(i);
 
-  compute_ring_parameters(coor);
-
-  bool update = false;
-  if(box_count==0) update = true;
+  compute_ring_parameters();
 
   unsigned index=0;
+  const unsigned chainsize = atom.size();
   // CYCLE OVER MULTIPLE CHAINS
-  for(unsigned s=0;s<atom.size();s++){
-#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
+  for(unsigned s=0;s<chainsize;s++){
+    const unsigned psize = atom[s].size();
+    #pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
     // SKIP FIRST AND LAST RESIDUE OF EACH CHAIN
-    for(unsigned a=1;a<atom[s].size()-1;a++){
+    for(unsigned a=1;a<psize-1;a++){
       const Fragment *myfrag = &atom[s][a];
       // CYCLE OVER THE SIX BACKBONE CHEMICAL SHIFTS
       for(unsigned at_kind=0;at_kind<6;at_kind++){
@@ -721,10 +720,10 @@ void CS2Backbone::calculate()
           const unsigned ipos = myfrag->pos[at_kind];
 
           vector<unsigned> list;
-          list.reserve(2*numResidues);
+          list.reserve(3*numResidues);
           list.push_back(ipos);
           vector<Vector> ff;
-          ff.reserve(2*numResidues); 
+          ff.reserve(3*numResidues); 
           ff.push_back(Vector(0,0,0));
 
           //PREV
@@ -804,17 +803,35 @@ void CS2Backbone::calculate()
         
           //NON BOND
           {
-            if(update) update_box(atom[s][a].box_nb[at_kind], ipos, coor, N, 0.50);
-             
             const double * CONST_CO_SPHERE3 = db.CO_SPHERE(aa_kind,at_kind,0);
             const double * CONST_CO_SPHERE  = db.CO_SPHERE(aa_kind,at_kind,1);
             const double af1 = cutOffDist2*cutOffDist2;
             const double af3 = cutOffDist2*cutOffDist2*cutOffDist2 -3.*cutOffDist2*cutOffDist2*cutOnDist2;
-
-            for(unsigned bat=0; bat<myfrag->box_nb[at_kind].size(); bat++) {
-              const unsigned jpos = myfrag->box_nb[at_kind][bat];
-              const Vector distance = delta(coor[jpos],coor[ipos]);
-              const double d2 = distance.modulo2();
+            unsigned boxsize, res_curr;
+            if(!update) boxsize = myfrag->box_nb[at_kind].size();
+            else { 
+              boxsize = N;
+              atom[s][a].box_nb[at_kind].clear();
+              atom[s][a].box_nb[at_kind].reserve(2*numResidues);
+              res_curr = res_num[ipos];
+            }
+            for(unsigned bat=0; bat<boxsize; bat++) {
+              unsigned jpos;
+              Vector distance;
+              double d2;
+              if(!update) {
+                jpos = myfrag->box_nb[at_kind][bat];
+                distance = delta(coor[jpos],coor[ipos]);
+                d2 = distance.modulo2();
+              } else {
+                const unsigned res_dist = abs(static_cast<int>(res_curr-res_num[bat]));
+                if(res_dist<2) continue;
+                jpos = bat;
+                distance = delta(coor[jpos],coor[ipos]);
+                d2 = distance.modulo2();
+                if(d2<cutOffNB) atom[s][a].box_nb[at_kind].push_back(bat);
+                else continue;
+              }
             
               if(d2<cutOffDist2) {
                 list.push_back(jpos);
@@ -1032,23 +1049,23 @@ void CS2Backbone::calculate()
         } 
       }
     }
-    index += atom[s].size();
+    index += psize;
   }
 
   ++box_count;
   if(box_count == box_nupdate) box_count = 0;
 }
 
-void CS2Backbone::compute_ring_parameters(const vector<Vector> & coor){
+void CS2Backbone::compute_ring_parameters(){
   for(unsigned i=0;i<ringInfo.size();i++){
     const unsigned size = ringInfo[i].numAtoms;
     vector<Vector> a;
     a.resize(size);
-    a[0] = coor[ringInfo[i].atom[0]];
+    a[0] = getPosition(ringInfo[i].atom[0]);
     // ring center
     Vector midP = a[0];
     for(unsigned j=1; j<size; j++) {
-      a[j] = coor[ringInfo[i].atom[j]];
+      a[j] = getPosition(ringInfo[i].atom[j]);
       midP += a[j];
     }
     midP /= (double) size;
@@ -1066,22 +1083,7 @@ void CS2Backbone::compute_ring_parameters(const vector<Vector> & coor){
   }
 }
 
-void CS2Backbone::update_box(vector<unsigned> & aa_box_i, const unsigned curr, 
-                             const vector<Vector> & coor, const unsigned size, 
-                             const double cutnb2){
-  aa_box_i.clear();
-  unsigned res_curr = res_num[curr];
-  for(unsigned n=0;n<size;n++){
-    unsigned res_dist = abs(static_cast<int>(res_curr-res_num[n]));
-    if(res_dist<2) continue;
-
-    Vector d = delta(coor[n], coor[curr]);
-    if(d.modulo2()<cutnb2) aa_box_i.push_back(n);
-  }
-}
-
 void CS2Backbone::init_backbone(const PDB &pdb){
-
   // number of chains
   vector<string> chains;
   pdb.getChainNames( chains );
@@ -1243,7 +1245,7 @@ void CS2Backbone::init_sidechain(const PDB &pdb){
       for(unsigned sc=0;sc<sc_atm.size();sc++){
         for(unsigned aa=0;aa<atm.size();aa++){
           if(pdb.getAtomName(atm[aa])==sc_atm[sc]){
-    	atom[s][a].side_chain.push_back(atm[aa].index()-atom_offset+old_size);
+    	    atom[s][a].side_chain.push_back(atm[aa].index()-atom_offset+old_size);
           }
         }
       }
@@ -1761,6 +1763,7 @@ vector<string> CS2Backbone::side_chain_atoms(const string &s){
     sc.push_back( "CH2" );
     sc.push_back( "HB1" );
     sc.push_back( "HB2" );
+    sc.push_back( "HB3" );
     sc.push_back( "HD1" );
     sc.push_back( "HE1" );
     sc.push_back( "HE3" );
