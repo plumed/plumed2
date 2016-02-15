@@ -78,12 +78,17 @@ void Function::apply()
     rank=comm.Get_rank();
   }
 
-  for(unsigned i=rank;i<ncp;i+=stride)
-    if(getPntrToComponent(i)->applyForce(forces)) for(unsigned j=0;j<noa;j++) f[j]+=forces[j]; 
+  unsigned at_least_one_forced=0;
+  for(unsigned i=rank;i<ncp;i+=stride) {
+    if(getPntrToComponent(i)->applyForce(forces)) {
+      at_least_one_forced=1;
+      for(unsigned j=0;j<noa;j++) f[j]+=forces[j]; 
+    }
+  }
 
-  if(noa>0&&ncp>cgs) comm.Sum(&f[0],noa);
+  if(noa>0&&ncp>cgs) { comm.Sum(&f[0],noa); comm.Sum(at_least_one_forced); }
 
-  for(unsigned i=0;i<noa;++i) getPntrToArgument(i)->addForce(f[i]);
+  if(at_least_one_forced>0) for(unsigned i=0;i<noa;++i) getPntrToArgument(i)->addForce(f[i]);
 }
 
 }
