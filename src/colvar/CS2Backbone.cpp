@@ -22,10 +22,12 @@
 
 #define cutOffNB      0.43	// squared buffer distance for neighbour-lists 
 #define cutOffDist    0.55  	// cut off distance for non-bonded pairwise forces
-#define cutOffDist2   0.3025 	// square of cutOffDist
 #define cutOnDist     0.45   	// cut off distance for non-bonded pairwise forces
-#define cutOnDist2    0.2025 	// square of cutOffDist
+#define cutOffDist2   cutOffDist*cutOffDist
+#define cutOnDist2    cutOnDist*cutOnDist 
 #define invswitch     1.0/((cutOffDist2-cutOnDist2)*(cutOffDist2-cutOnDist2)*(cutOffDist2-cutOnDist2))
+#define cutOffDist4   cutOffDist2*cutOffDist2 
+#define cutMixed      cutOffDist2*cutOffDist2*cutOffDist2 -3.*cutOffDist2*cutOffDist2*cutOnDist2 
 
 #include <string>
 #include <fstream>
@@ -822,8 +824,6 @@ void CS2Backbone::calculate()
           {
             const double * CONST_CO_SPHERE3 = db.CO_SPHERE(aa_kind,at_kind,0);
             const double * CONST_CO_SPHERE  = db.CO_SPHERE(aa_kind,at_kind,1);
-            const double af1 = cutOffDist2*cutOffDist2;
-            const double af3 = cutOffDist2*cutOffDist2*cutOffDist2 -3.*cutOffDist2*cutOffDist2*cutOnDist2;
             unsigned boxsize, res_curr;
             if(!update) boxsize = myfrag->box_nb[at_kind].size();
             else { 
@@ -851,49 +851,42 @@ void CS2Backbone::calculate()
               }
             
               if(d2<cutOffDist2) {
-                list.push_back(jpos);
     	        const double d = sqrt(d2);
     	        const double d4 = d2*d2;
-      	        const double dinv = 1.0/d;
-                const double invd3 = dinv*dinv*dinv;
+      	        const double invd = 1.0/d;
+                const double invd3 = invd*invd*invd;
+                const double invd5 = invd3*invd*invd;
 
-                double factor1;
-    	        double factor3;
-                double dfactor1;
-                double dfactor3;
+                double factor1  = d;
+    	        double factor3  = invd3;
+                double dfactor1 = invd;
+                double dfactor3 = -3.*invd5;
 
                 if(d2>cutOnDist2) {
-                  const double af = (cutOffDist2 - d2);
-                  const double bf = (cutOffDist2 + 2.*d2 - 3.*cutOnDist2);
-                  const double cf = invswitch*af*af*bf;
-		  factor1 = d*cf;
-                  factor3 = invd3*cf;
+                  const double af = cutOffDist2 - d2;
+                  const double bf = cutOffDist2 - 3.*cutOnDist2 + 2.*d2;
+                  const double cf = invswitch*af; 
+                  const double df = cf*af*bf;
+		  factor1 *= df;
+                  factor3 *= df;
 
-                  const double bf1 = invswitch*af;
-                  const double cf1 = +15.*cutOnDist2*d2;
-                  const double df1 = -14.*d4;
-                  const double ef1 = cutOffDist2*(-3.*cutOnDist2+d2);
-                  dfactor1 = bf1*(af1+cf1+df1+ef1);
+                  const double af1 = 15.*cutOnDist2*d2;
+                  const double bf1 = -14.*d4;
+                  const double cf1 = -3.*cutOffDist2*cutOnDist2 + cutOffDist2*d2;
+                  dfactor1 *= cf*(cutOffDist4+af1+bf1+cf1);
 
-                  const double bf3 =  -3.*invswitch/d4;
-                  const double cf3 = +2.*cutOffDist2*cutOnDist2*d2;
-                  const double df3 = d4*(cutOffDist2+cutOnDist2);
-                  const double ef3 = -2.*d4*d2;
-                  dfactor3 = bf3*(af3+cf3+df3+ef3);
-                } else {
-                  factor1 = d;
-    	          factor3 = invd3;
-                  dfactor1 = 1.0;
-                  dfactor3 = -3./d4;
+                  const double af3 = +2.*cutOffDist2*cutOnDist2*d2;
+                  const double bf3 = d4*(cutOffDist2+cutOnDist2);
+                  const double cf3 = -2.*d4*d2;
+                  dfactor3 *= invswitch*(cutMixed+af3+bf3+cf3);
                 }
 
     	        const unsigned t = type[jpos];
-                cs += factor3*CONST_CO_SPHERE3[t] + factor1*CONST_CO_SPHERE[t];
+                cs += factor1*CONST_CO_SPHERE[t] + factor3*CONST_CO_SPHERE3[t] ;
+    	        const double fact = dfactor1*CONST_CO_SPHERE[t]+dfactor3*CONST_CO_SPHERE3[t];
+                const Vector der  = fact*distance;
 
-    	        const double fact1 = dfactor1*dinv;
-    	        const double fact2 = dfactor3*dinv;
-    	        const double fact = fact1*CONST_CO_SPHERE[t]+fact2*CONST_CO_SPHERE3[t];
-                const Vector der = fact*distance;
+                list.push_back(jpos);
                 ff[0] += der;
     	        ff.push_back(-der);
               }
@@ -939,9 +932,8 @@ void CS2Backbone::calculate()
       	      const double fact = -rc[ringInfo[i].rtype] * invdL6;
     	      ff[0] += -fact * (gradUQ * dL3 - u * gradVQ);
     	
-    	      const Vector nSum = ringInfo[i].n1 + ringInfo[i].n2;
-
     	      // update forces on ring atoms
+    	      const Vector nSum = 2.*ringInfo[i].normVect;
     	      Vector g, ab, c;
     	      const unsigned limit = ringInfo[i].numAtoms - 3; // 2 for a 5-membered ring, 3 for a 6-membered ring
     	      for(unsigned at=0; at<ringInfo[i].numAtoms; at++) {
