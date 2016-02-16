@@ -121,8 +121,7 @@ class Stopwatch{
     Time max;
     Time min;
     unsigned cycles;
-    bool running;
-    bool paused;
+    unsigned running;
     void start();
     void stop();
     void pause();

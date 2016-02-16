@@ -106,11 +106,10 @@ const Stopwatch::Time & Stopwatch::Time::operator+=(const Time&t2){
 }
 
 Stopwatch::Watch::Watch():
-  cycles(0),running(false),paused(false) { }
+  cycles(0),running(0) { }
 
 void Stopwatch::Watch::start(){
-  plumed_assert(!running);
-  running=true;
+  running++;
   lastStart=Time::get();
 }
 
@@ -124,9 +123,10 @@ void Stopwatch::Watch::stop(){
 } 
 
 void Stopwatch::Watch::pause(){
+  plumed_assert(running>0);
+  running--;
+  if(running!=0) return;
   lap+=Time::get()-lastStart;
-  plumed_assert(running);
-  running=false;
 } 
 
 void Stopwatch::start(const std::string & name){
