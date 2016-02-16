@@ -873,12 +873,14 @@ void CS2Backbone::calculate()
                   const double af1 = 15.*cutOnDist2*d2;
                   const double bf1 = -14.*d4;
                   const double cf1 = -3.*cutOffDist2*cutOnDist2 + cutOffDist2*d2;
-                  dfactor1 *= cf*(cutOffDist4+af1+bf1+cf1);
+                  const double df1 = af1+bf1+cf1;
+                  dfactor1 *= cf*(cutOffDist4+df1);
 
-                  const double af3 = +2.*cutOffDist2*cutOnDist2*d2;
-                  const double bf3 = d4*(cutOffDist2+cutOnDist2);
-                  const double cf3 = -2.*d4*d2;
-                  dfactor3 *= invswitch*(cutMixed+af3+bf3+cf3);
+                  const double af3 = +2.*cutOffDist2*cutOnDist2;
+                  const double bf3 = d2*(cutOffDist2+cutOnDist2);
+                  const double cf3 = -2.*d4;
+                  const double df3 = (af3+bf3+cf3)*d2;
+                  dfactor3 *= invswitch*(cutMixed+df3);
                 }
 
     	        const unsigned t = type[jpos];
