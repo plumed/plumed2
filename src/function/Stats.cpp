@@ -21,7 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Function.h"
 #include "ActionRegister.h"
-#include "tools/OpenMP.h"
 
 using namespace std;
 
@@ -157,7 +156,6 @@ void Stats::calculate()
     double nsqd = 0.;
     Value* val;
     if(!components) val=getPntrToComponent("sqdevsum");
-#pragma omp parallel for num_threads(OpenMP::getNumThreads()) reduction(+:nsqd)
     for(unsigned i=0;i<parameters.size();++i){
       double dev = getArgument(i)-parameters[i];
       if(upperd&&dev<0) dev=0.; 
@@ -175,7 +173,6 @@ void Stats::calculate()
 
     double scx=0., scx2=0., scy=0., scy2=0., scxy=0.;
  
-#pragma omp parallel for num_threads(OpenMP::getNumThreads()) reduction(+:scx,scx2,scy,scy2,scxy)
     for(unsigned i=0;i<parameters.size();++i){
       const double tmpx=getArgument(i);
       const double tmpy=parameters[i];
@@ -212,7 +209,6 @@ void Stats::calculate()
     valued->set(inter);
 
     /* derivatives */
-#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
     for(unsigned i=0;i<parameters.size();++i){
       const double common_d1 = (ns*parameters[i]-scy)*idevx;
       const double common_d2 = num*(ns*getArgument(i)-scx)*idev2x*idevx;
