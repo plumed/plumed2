@@ -933,29 +933,28 @@ void CS2Backbone::calculate()
     	      ff[0] += -fact * (gradUQ * dL3 - u * gradVQ);
     	
     	      // update forces on ring atoms
-    	      const Vector nSum = 2.*ringInfo[i].normVect;
-    	      Vector g, ab, c;
     	      const unsigned limit = ringInfo[i].numAtoms - 3; // 2 for a 5-membered ring, 3 for a 6-membered ring
     	      for(unsigned at=0; at<ringInfo[i].numAtoms; at++) {
+    	        Vector g;
                 // atoms 0,1 (5 member) or 0,1,2 (6 member)
     	        if (at < limit) g = delta(getPosition(ringInfo[i].atom[(at+2)%3]),getPosition(ringInfo[i].atom[(at+1)%3]));
                 // atoms 3,4 (5 member) or 3,4,5 (6 member)
     	        else if (at >= ringInfo[i].numAtoms - limit) {
                   // 2 for a 5-membered ring, 3 for a 6-membered ring
-    	          unsigned offset = ringInfo[i].numAtoms - 3;
-                  g = delta(getPosition(ringInfo[i].atom[((at+2-offset) % 3) + offset]),getPosition(ringInfo[i].atom[((at+1-offset) % 3) + offset])); 
+    	          const unsigned offset = ringInfo[i].numAtoms - 3;
+                  g = delta(getPosition(ringInfo[i].atom[((at+2-offset) % 3) + offset]), getPosition(ringInfo[i].atom[((at+1-offset) % 3) + offset])); 
                 // atom 2 (5-membered rings)
     	        } else g = delta(getPosition(ringInfo[i].atom[4]) , getPosition(ringInfo[i].atom[3])) + 
                            delta(getPosition(ringInfo[i].atom[1]) , getPosition(ringInfo[i].atom[2]));
 
-                ab = crossProduct(d,g);
-                c  = crossProduct(nSum,g);
+                const Vector ab = crossProduct(d,g);
+                const Vector c  = crossProduct(n,g);
     	    
     	        factor = -6 * dn / dL3nL3;
     	        const double factor2 = 0.25 * dL / nL;
     	        const double OneOverN = 1 / ((double) ringInfo[i].numAtoms);
     	        const double factor3 = nL / dL * OneOverN;
-                const Vector gradU = factor * ((0.5 * ab - n *  OneOverN) * dLnL - dn * (factor2 * c - factor3 * d));
+                const Vector gradU = factor * ((0.5 * ab - n *  OneOverN) * dLnL - dn * (2. * factor2 * c - factor3 * d));
     	    
     	        factor = -3 * dL * OneOverN;
                 const Vector gradV = factor * d;
