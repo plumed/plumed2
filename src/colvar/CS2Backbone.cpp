@@ -20,9 +20,10 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-#define cutOffNB      0.43	// squared buffer distance for neighbour-lists 
-#define cutOffDist    0.55  	// cut off distance for non-bonded pairwise forces
-#define cutOnDist     0.45   	// cut off distance for non-bonded pairwise forces
+#define cutOffNB      0.60	// buffer distance for neighbour-lists 
+#define cutOffDist    0.50  	// cut off distance for non-bonded pairwise forces
+#define cutOnDist     0.32   	// cut off distance for non-bonded pairwise forces
+#define cutOffNB2     cutOffNB*cutOffNB // squared buffer distance for neighbour-lists 
 #define cutOffDist2   cutOffDist*cutOffDist
 #define cutOnDist2    cutOnDist*cutOnDist 
 #define invswitch     1.0/((cutOffDist2-cutOnDist2)*(cutOffDist2-cutOnDist2)*(cutOffDist2-cutOnDist2))
@@ -846,7 +847,7 @@ void CS2Backbone::calculate()
                 jpos = bat;
                 distance = delta(getPosition(jpos),getPosition(ipos));
                 d2 = distance.modulo2();
-                if(d2<cutOffNB) atom[s][a].box_nb[at_kind].push_back(bat);
+                if(d2<cutOffNB2) atom[s][a].box_nb[at_kind].push_back(bat);
                 else continue;
               }
             
