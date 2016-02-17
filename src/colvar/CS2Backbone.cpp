@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-#define cutOffNB      0.60	// buffer distance for neighbour-lists 
+#define cutOffNB      0.65	// buffer distance for neighbour-lists 
 #define cutOffDist    0.50  	// cut off distance for non-bonded pairwise forces
 #define cutOnDist     0.32   	// cut off distance for non-bonded pairwise forces
 #define cutOffNB2     cutOffNB*cutOffNB // squared buffer distance for neighbour-lists 
@@ -468,7 +468,7 @@ void CS2Backbone::registerKeywords( Keywords& keys ){
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
   keys.add("compulsory","DATA","data/","The folder with the experimental chemical shifts.");
   keys.add("compulsory","TEMPLATE","template.pdb","A PDB file of the protein system to initialise ALMOST.");
-  keys.add("compulsory","NEIGH_FREQ","10","Period in step for neighbour list update.");
+  keys.add("compulsory","NEIGH_FREQ","20","Period in step for neighbour list update.");
   keys.add("compulsory","NRES","Number of residues, corresponding to the number of chemical shifts.");
   keys.addFlag("NOEXP",false,"Set to TRUE if you don't want to have fixed components with the experimetnal values.");  
   keys.addOutputComponent("ha","default","the calculated Ha hydrogen chemical shifts"); 
@@ -505,7 +505,7 @@ PLUMED_COLVAR_INIT(ao)
   parse("TEMPLATE",stringa_template);
 
   box_count=0;
-  box_nupdate=10;
+  box_nupdate=20;
   parse("NEIGH_FREQ", box_nupdate);
 
   parse("NRES", numResidues);
@@ -691,7 +691,6 @@ void CS2Backbone::calculate()
   if(getExchangeStep()) box_count=0;
   bool update = false;
   if(box_count==0) update = true;
-
   compute_ring_parameters();
 
   compute_dihedrals();
