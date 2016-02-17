@@ -70,9 +70,6 @@ class BayesianSP : public Bias
   double sigma_min_;
   double sigma_max_;
   double Dsigma_;
-  // vectors to communicate sigma
-  vector<double> s2_global_;
-  vector<double> s2_local_;
   // sigma_mean is uncertainty in the mean estimate
   double sigma_mean_;
   // temperature in kbt
@@ -146,10 +143,6 @@ MCfirst_(-1)
   if(comm.Get_rank()==0) nrep_ = multi_sim_comm.Get_size();
   else nrep_ = 0;
   comm.Sum(&nrep_,1);
-
-  // resize s2 vectors
-  s2_global_.resize(nrep_);
-  s2_local_.resize(nrep_);
 
   // divide sigma_mean by the square root of the number of replicas
   sigma_mean_ /= sqrt(static_cast<double>(nrep_));
@@ -248,46 +241,42 @@ void BayesianSP::update(){
 }
 
 void BayesianSP::calculate(){
-  // calculate effective sigma
+
+  // calculate local effective sigma
   double s = sqrt( sigma_*sigma_ + sigma_mean_*sigma_mean_ );
-  // communicate with other replicas
-  for(unsigned i=0; i<nrep_; ++i){
-    s2_global_[i] = 0.0;
-    s2_local_[i]  = 0.0;
-  }
-  // inter-replicas summation
-  if(comm.Get_rank()==0){
-     s2_global_[multi_sim_comm.Get_rank()] = s*s;
-     multi_sim_comm.Sum(&s2_global_[0],nrep_);
-     s2_local_ = s2_global_;
-  }
-  // intra-replica summation
-  comm.Sum(&s2_local_[0],nrep_);
 
   // cycle on arguments (experimental data) 
   double ene = 0.0;
-  for(unsigned i=0;i<getNumberOfArguments();++i){
-    // cycle on replicas
-    double f = 0.0;
-    for(unsigned j=0; j<nrep_; ++j){
+  vector<double> f(getNumberOfArguments());
+  for(unsigned i=0; i<f.size(); ++i) f[i] = 0.0;
+  
+  if(comm.Get_rank()==0){
+   for(unsigned i=0;i<getNumberOfArguments();++i){
        // argument
-       double a2 = 0.5 * getArgument(i) + s2_local_[j];
+       double a2 = 0.5 * getArgument(i) + s*s;
        // useful quantity
        double t = exp(- a2 / sigma_mean_ / sigma_mean_);
        // increment energy
        ene += std::log( 2.0 * a2 / ( 1.0 - t ) );
-       // increment force
-       f += - 0.5 / a2 + 1.0 / (1.0-t) * t * 0.5 / sigma_mean_ / sigma_mean_;
-    }
-    // set derivatives
-    setOutputForce(i, kbt_*f);
-  };
-  // add normalizations and priors
-  ene += std::log(s) - static_cast<double>(ndata_)*std::log(sqrt2_div_pi*s);
+       // store force
+       f[i] = - 0.5 / a2 + 1.0 / (1.0-t) * t * 0.5 / sigma_mean_ / sigma_mean_;
+   }
+   // collect contribution to forces and energy from other replicas
+   multi_sim_comm.Sum(&f[0],getNumberOfArguments());
+   multi_sim_comm.Sum(&ene,1);
+   // add normalizations and priors of local replica
+   ene += std::log(s) - static_cast<double>(ndata_)*std::log(sqrt2_div_pi*s);
+  }
+  // intra-replica summation
+  comm.Sum(&f[0],getNumberOfArguments());
+  comm.Sum(&ene,1);
+  
   // set value of the bias
   valueBias->set(kbt_*ene);
   // set value of data uncertainty
   valueSigma->set(sigma_);
+  // set forces
+  for(unsigned i=0; i<f.size(); ++i) setOutputForce(i, kbt_ * f[i]);
 }
 
 
