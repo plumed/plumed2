@@ -112,7 +112,6 @@ void LocalEnsemble::calculate(){
   const double fact = 1.0/norm; 
 
   vector<double> mean(narg);
-  vector<double> dmean(narg,fact);
   // calculate the mean 
   for(unsigned i=0;i<narg;++i) for(unsigned j=0;j<ens_dim;++j) mean[i] += fact*getArgument(j*narg+i); 
 
@@ -121,7 +120,7 @@ void LocalEnsemble::calculate(){
     // set mean
     Value* v=getPntrToComponent(i);
     v->set(mean[i]);
-    setDerivative(v, i, dmean[i]);
+    for(unsigned j=0;j<ens_dim;++j) setDerivative(v, j*narg+i, fact);
   } 
 }
 
