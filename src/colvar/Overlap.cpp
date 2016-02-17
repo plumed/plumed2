@@ -355,6 +355,7 @@ void Overlap::calculate(){
      value->set(ovmd_[i]);
      for(unsigned j=0;j<getNumberOfAtoms();j++){
        setAtomsDerivatives (value,j,ovmd_der_[i][j]);
+       setBoxDerivativesNoPbc();
      }
   }
 }
