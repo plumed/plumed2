@@ -47,6 +47,7 @@ Put Documentation here
 class Overlap : public Colvar {
 
 private:
+
  // model GMM
  vector<double> GMM_m_w_;
  vector< Matrix<double> > GMM_m_cov_;
@@ -66,8 +67,9 @@ private:
  void get_GMM_d(string gmm_file);
  void normalize_GMM(vector<double> &w);
 
- void get_auxiliary_stuff();
- double get_self_overlap(Vector d_m, double d_w, Matrix <double> d_cov);
+ void   get_auxiliary_stuff();
+ 
+ double get_self_overlap(double d_w, Matrix <double> d_cov);
  
  double get_overlap(Vector m_m, double m_w, Vector d_m, double d_w,
  					double det_md, Matrix<double> inv_cov_md,                    
@@ -126,27 +128,28 @@ PLUMED_COLVAR_INIT(ao)
   normalize_GMM(GMM_m_w_);
   normalize_GMM(GMM_d_w_);
   
-  // get overlap between data GMM components
-  for(unsigned i=0;i<GMM_d_m_.size();++i) {
-      double ov = get_self_overlap(GMM_d_m_[i], GMM_d_w_[i], GMM_d_cov_[i]);
+  // get constant parameters for the model-data overlaps
+  get_auxiliary_stuff();
+  
+  // get self overlaps between data GMM components
+  for(unsigned i=0;i<GMM_d_w_.size();++i) {
+      double ov = get_self_overlap(GMM_d_w_[i], GMM_d_cov_[i]);
       string num; Tools::convert(i,num);
       Value* value=getPntrToComponent("ovdd"+num);
       value->set(ov);
   }
-  
-  // get constant parameters for the model-data overlaps
-  get_auxiliary_stuff();
-  
+
   // initialize temporary vectors for overlaps and their derivatives
-  for(unsigned i=0;i<GMM_d_w_.size(); ++i){
+  for(unsigned i=0; i<GMM_d_w_.size(); ++i){
      ovmd_.push_back(0.0);
      vector<Vector> der_tmp;
-     for(unsigned j=0;j<getNumberOfAtoms();j++) der_tmp.push_back(Vector(0,0,0));
+     for(unsigned j=0; j<atoms.size(); ++j) der_tmp.push_back(Vector(0,0,0));
      ovmd_der_.push_back(der_tmp);
   }
-     
+  
   // request the atoms
   requestAtoms(atoms);
+     
 }
 
 void Overlap::get_GMM_m(vector<AtomNumber> &atoms)
@@ -227,9 +230,8 @@ void Overlap::get_GMM_d(string GMM_file)
      cov(1,0)=c10; cov(1,1)=c11; cov(1,2)=c12;
      cov(2,0)=c20; cov(2,1)=c21; cov(2,2)=c22;
      GMM_d_cov_.push_back(cov);
-     // weight -> multiply by the normalization factor of the Gaussian
-     double norm = 1.0;
-     GMM_d_w_.push_back(w * norm);
+     // weight
+     GMM_d_w_.push_back(w);
      // new line
      ifile->scanField();
     }
@@ -273,18 +275,27 @@ void Overlap::get_auxiliary_stuff()
    det_md_tmp.push_back(1.0/sqrt(exp(det)));
    // and its inverse
    Matrix<double> inv_sum_i_j; Invert(sum_i_j, inv_sum_i_j);
-   inv_cov_md_tmp.push_back(inv_sum_i_j);
+   inv_cov_md_tmp.push_back(inv_sum_i_j); 
   }
   inv_cov_md_.push_back(inv_cov_md_tmp);
   det_md_.push_back(det_md_tmp);
  } 
 }
 
-double Overlap::get_self_overlap(Vector d_m, double d_w, Matrix <double> d_cov)
+double Overlap::get_self_overlap(double d_w, Matrix <double> d_cov)
 {
-  double ov=0.0;
+  // we need the sum of the covariance matrices
+  Matrix<double> sum_i_i(3,3);
+  for(unsigned k1=0; k1<3; ++k1){ 
+    for(unsigned k2=0; k2<3; ++k2){ 
+     sum_i_i[k1][k2] = 2.0*d_cov[k1][k2];
+    }
+  }
+  // and to pre-calculate the inverse of the square root of its determinant
+  double det;
+  logdet(sum_i_i, det); 
+  double ov = 1.0/sqrt(exp(det)) * ov_const_ * d_w * d_w;
   return ov;
-  
 }
 
 double Overlap::get_overlap(Vector m_m, double m_w,
@@ -306,6 +317,10 @@ double Overlap::get_overlap(Vector m_m, double m_w,
   // final calculation
   ov = exp(-0.5*ov) * det_md * ov_const_ * m_w * d_w;
   // derivatives
+  double x = m_d[0]*inv_cov_md[0][0] + m_d[1]*inv_cov_md[0][1] + m_d[2]*inv_cov_md[0][2];
+  double y = m_d[0]*inv_cov_md[0][1] + m_d[1]*inv_cov_md[1][1] + m_d[2]*inv_cov_md[1][2];
+  double z = m_d[0]*inv_cov_md[0][2] + m_d[1]*inv_cov_md[1][2] + m_d[2]*inv_cov_md[2][2];
+  ov_der = ov * Vector(-x, -y, -z); 
   return ov;
 }
 
@@ -330,10 +345,9 @@ void Overlap::calculate(){
                                   GMM_d_m_[id], GMM_d_w_[id],
                                   det_md_[id][im], inv_cov_md_[id][im],
                                   ovmd_der_[id][im]);
-
   }
   // MPI or OPENMP?
-  
+ 
   // put values and derivatives
   for(unsigned i=0;i<GMM_d_w_.size(); ++i) {
      string num; Tools::convert(i,num);
@@ -343,7 +357,6 @@ void Overlap::calculate(){
        setAtomsDerivatives (value,j,ovmd_der_[i][j]);
      }
   }
-  
 }
 
 }
