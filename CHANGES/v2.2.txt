@@ -111,6 +111,7 @@ Unreleased changes (will be included in 2.2.2)
 For users:
 - \ref MOLINFO for RNA accepts more residue names, see \issue{180}.
 - added two mpi barries (one was missing in PBMetaD wor multiple walkers) to help syncronise initialisation
+- Fixed a bug in internal stopwatches that was making \ref DEBUG logRequestedAtoms not working
 
 For developers:
 - Fixed a bug in the interpretation of cmd strings. Namely, an erroneous string was not triggering an error.
