@@ -29,7 +29,7 @@
 
 #include <string>
 #include <cmath>
-#include <unordered_map>
+#include <map>
 #include <numeric>
 
 using namespace std;
@@ -158,7 +158,7 @@ void Overlap::get_GMM_m(vector<AtomNumber> &atoms)
   Matrix <double> cov(3,3);
 
   // map of atom types to scattering radii - in nm
-  unordered_map<string, double> radii_map;
+  map<string, double> radii_map;
   radii_map["C"] = 1.0;
   radii_map["O"] = 1.0;
   radii_map["N"] = 1.0;
