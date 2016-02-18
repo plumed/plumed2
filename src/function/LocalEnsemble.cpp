@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Function.h"
 #include "ActionRegister.h"
+#include "tools/OpenMP.h"
 
 using namespace std;
 
@@ -107,20 +108,18 @@ ens_dim(0)
   log.printf("  averaging over %u replicas.\n", ens_dim);
 }
 
-void LocalEnsemble::calculate(){
-  const double norm = static_cast<double>(ens_dim); 
-  const double fact = 1.0/norm; 
-
-  vector<double> mean(narg);
-  // calculate the mean 
-  for(unsigned i=0;i<narg;++i) for(unsigned j=0;j<ens_dim;++j) mean[i] += fact*getArgument(j*narg+i); 
-
-  // set components
+void LocalEnsemble::calculate()
+{
+  const double fact = 1.0/static_cast<double>(ens_dim); 
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for(unsigned i=0;i<narg;++i){
-    // set mean
+    double mean = 0.;
     Value* v=getPntrToComponent(i);
-    v->set(mean[i]);
-    for(unsigned j=0;j<ens_dim;++j) setDerivative(v, j*narg+i, fact);
+    for(unsigned j=0;j<ens_dim;++j) {
+      setDerivative(v, j*narg+i, fact);
+      mean += fact*getArgument(j*narg+i);
+    }
+    v->set(mean);
   } 
 }
 
