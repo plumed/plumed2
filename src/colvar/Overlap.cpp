@@ -115,7 +115,7 @@ PLUMED_COLVAR_INIT(ao)
 
   // read data GMM parameters
   get_GMM_d(GMM_file);
-  log.printf("  number of GMM components : %u\n", GMM_d_m_.size());
+  log.printf("  number of GMM components : %u\n", static_cast<unsigned>(GMM_d_m_.size()));
   
   // add components
   for(unsigned i=0;i<GMM_d_m_.size();++i) {

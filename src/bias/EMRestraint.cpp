@@ -80,7 +80,7 @@ sqrt2pi(2.506628274631001)
   kbt_ = plumed.getAtoms().getKbT();
 
   log.printf("  temperature of the system %f\n",kbt_);
-  log.printf("  number of experimental data points %u\n",ovdd_.size());
+  log.printf("  number of experimental data points %u\n",static_cast<unsigned>(ovdd_.size()));
 
   addComponent("bias");   componentIsNotPeriodic("bias");
 
