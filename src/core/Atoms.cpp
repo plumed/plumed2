@@ -28,6 +28,7 @@
 #include <algorithm>
 #include <iostream>
 #include <string>
+#include <cmath>
 
 using namespace std;
 
@@ -192,6 +193,8 @@ void Atoms::share(const std::set<AtomNumber>& unique){
   int ndata=3;
   if(!massAndChargeOK){
     ndata=5;
+    masses.assign(masses.size(),NAN);
+    charges.assign(charges.size(),NAN);
     mdatoms->getCharges(gatindex,charges);
     mdatoms->getMasses(gatindex,masses);
   }

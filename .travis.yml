@@ -7,8 +7,7 @@ env:
 # the following are with debug flags
 # I think clang does not support debug-glibcxx, so I skip it here
   - PLUMED_CC=gcc   PLUMED_CXX=g++    CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
-# with debug flags there are issues with openmp+mpi on travis - I disable openmp here
-  - PLUMED_CC=mpicc PLUMED_CXX=mpic++  CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx --disable-openmp"
+  - PLUMED_CC=mpicc PLUMED_CXX=mpic++ CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
 # then I try serial compilers
   - PLUMED_CC=clang PLUMED_CXX=clang++
   - PLUMED_CC=gcc   PLUMED_CXX=g++
@@ -19,12 +18,6 @@ env:
   - PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes CONFIG_FLAGS="--disable-external-lapack"
 # cppcheck
   - CPPCHECK=yes
-# with debug flags there are issues with openmp+mpi on travis - I disable openmp here
-# I leave this test here to monitor if things change in the future, allowing it to fail
-  - PLUMED_CC=mpicc PLUMED_CXX=mpic++ CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
-matrix:
-  allow_failures:
-    - env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
 # Possible additional variables:
 #   VALGRIND=yes to make valgrind tests, only when log contains string [valgrind]
 install:
