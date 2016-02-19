@@ -836,6 +836,7 @@ void CS2Backbone::calculate()
               unsigned jpos;
               Vector distance;
               double d2;
+              int remove_res=-1;
               if(!update) {
                 jpos = myfrag->box_nb[at_kind][bat];
                 distance = delta(getPosition(jpos),getPosition(ipos));
@@ -843,11 +844,15 @@ void CS2Backbone::calculate()
               } else {
                 const unsigned res_dist = abs(static_cast<int>(res_curr-res_num[bat]));
                 if(res_dist<2) continue;
+                if(res_num[bat]==remove_res) continue;
                 jpos = bat;
                 distance = delta(getPosition(jpos),getPosition(ipos));
                 d2 = distance.modulo2();
                 if(d2<cutOffNB2) atom[s][a].box_nb[at_kind].push_back(bat);
-                else continue;
+                else {
+                  if(d2>5.*cutOffNB2) remove_res=res_num[bat];
+                  continue;
+                }
               }
             
               if(d2<cutOffDist2) {
