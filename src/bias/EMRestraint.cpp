@@ -40,7 +40,6 @@ Put the doc here
 
 class EMrestraint : public Bias
 {
-  const double sqrt2pi;
   // temperature in kbt
   double kbt_;
   // exp data points
@@ -66,8 +65,7 @@ void EMrestraint::registerKeywords(Keywords& keys){
 }
 
 EMrestraint::EMrestraint(const ActionOptions&ao):
-PLUMED_BIAS_INIT(ao), 
-sqrt2pi(2.506628274631001)
+PLUMED_BIAS_INIT(ao)
 {
 
   parseVector("EXPVALUES", ovdd_);
@@ -90,21 +88,31 @@ sqrt2pi(2.506628274631001)
 
 
 void EMrestraint::calculate(){
-
-  
+ 
   // cycle on arguments 
   double ene = 0.0;
+  vector<double> ene_der(getNumberOfArguments());
+  
   for(unsigned i=0;i<getNumberOfArguments();++i){
+    // individual term
+    ene_der[i] = std::log(getArgument(i)/ovdd_[i]);
     // increment energy
-    ene += getArgument(i); 
-    // set derivatives
-    setOutputForce(i, -0.5*kbt_);
+    ene += ene_der[i] * ene_der[i];
   };
 
-  // add normalizations and priors
-  ene = 0.5*ene;
+  // constant factor
+  double fact = kbt_ * 0.5 * static_cast<double>(ovdd_.size());
+
+  // get derivatives
+  for(unsigned i=0;i<getNumberOfArguments();++i){
+    // calculate derivative
+    double der = 2.0 * fact / ene * ene_der[i] / getArgument(i);
+    // set forces
+    setOutputForce(i, -der);
+  }
+
   // set value of the bias
-  valueBias->set(kbt_*ene);
+  valueBias->set(fact * std::log(ene));
 }
 
 
