@@ -157,13 +157,16 @@ void Overlap::get_GMM_m(vector<AtomNumber> &atoms)
   vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
   Matrix <double> cov(3,3);
 
-  // map of atom types to scattering radii - in nm
-  map<string, double> radii_map;
-  radii_map["C"] = 1.0;
-  radii_map["O"] = 1.0;
-  radii_map["N"] = 1.0;
-  radii_map["H"] = 1.0;
-  radii_map["S"] = 1.0;
+  // map of atom types to A and B coefficients of scattering factor
+  // f(s) = A * exp(-B*s**2)
+  // B is in Angstrom squared
+  // data from here
+  // http://fg.oisin.rc-harwell.ac.uk/scm/loggerhead/cctbx/cctbx/view/head:/cctbx/eltbx/xray_scattering/n_gaussian_raw.cpp
+  map<string, double> A_map, B_map;
+  A_map["C"] = 5.96792806111; B_map["C"] = 14.8957682987;
+  A_map["O"] = 7.9652690671;  B_map["O"] = 9.0526662027;
+  A_map["N"] = 6.96715024214; B_map["N"] = 11.4372299305;
+  A_map["S"] = 15.911119329;  B_map["S"] = 10.8469011094;
   
   // check if MOLINFO line is present 
   if( moldat.size()==1 ){
@@ -183,12 +186,18 @@ void Overlap::get_GMM_m(vector<AtomNumber> &atoms)
       }
       // check if key in map
       std::string type_s = std::string(1,type);
-      if(radii_map.find(type_s) != radii_map.end()){
-        cov(0,0)=radii_map[type_s]; cov(0,1)=0.0; cov(0,2)=0.0;
-        cov(1,0)=0.0; cov(1,1)=radii_map[type_s]; cov(1,2)=0.0;
-        cov(2,0)=0.0; cov(2,1)=0.0; cov(2,2)=radii_map[type_s];
+      if(A_map.find(type_s) != A_map.end()){
+        // convert to sigma in nm
+        // the Gaussian in density (real) space is the FT of scattering factor
+        // f(r) = A * (pi/B)**1.5 * exp(-pi**2/B*r**2)
+        double s = sqrt ( 0.5 * B_map[type_s] ) / pi * 0.1;
+        // covariance matrix for spherical Gaussian
+        cov(0,0)=s*s; cov(0,1)=0.0; cov(0,2)=0.0;
+        cov(1,0)=0.0; cov(1,1)=s*s; cov(1,2)=0.0;
+        cov(2,0)=0.0; cov(2,1)=0.0; cov(2,2)=s*s;
         GMM_m_cov_.push_back(cov);
-        GMM_m_w_.push_back(1.0); 
+        // this will be normalized to 1 in the final density
+        GMM_m_w_.push_back(A_map[type_s]); 
       } else {
         error("Wrong atom type "+type_s+" from atom name "+name+"\n"); 
       }
