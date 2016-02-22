@@ -241,7 +241,7 @@ void Overlap::get_GMM_d(string GMM_file)
      GMM_d_m_.push_back(Vector(m0,m1,m2));
      // covariance matrix
      GMM_d_cov_.push_back(cov);
-     // weight
+     // weights
      GMM_d_w_.push_back(w);
      // new line
      ifile->scanField();
@@ -338,6 +338,9 @@ double Overlap::get_overlap(Vector m_m, Vector d_m, double fact_md,
 void Overlap::calculate(){
 
   //makeWhole();
+  
+  unsigned size=comm.Get_size();
+  unsigned rank=comm.Get_rank();
 
   // clean temporary vectors  
   for(unsigned i=0;i<GMM_d_w_.size(); ++i){
@@ -346,7 +349,7 @@ void Overlap::calculate(){
   }
     
   // we have to cycle over all model and data GMM components - MPI or OPENMP?
-  for(unsigned i=0;i<GMM_d_w_.size()*GMM_m_w_.size();++i) {
+  for(unsigned i=rank;i<GMM_d_w_.size()*GMM_m_w_.size();i=i+size) {
       // get indexes of data and model component
       unsigned id = i / GMM_m_w_.size();
       unsigned im = i % GMM_m_w_.size();
@@ -355,7 +358,9 @@ void Overlap::calculate(){
                                inv_cov_md_[i], ovmd_der_[i]);
   }
   // MPI or OPENMP?
- 
+  comm.Sum(&ovmd_[0], ovmd_.size());
+  comm.Sum(&ovmd_der_[0][0], 3*ovmd_der_.size());
+  
   // put values and derivatives
   for(unsigned i=0;i<GMM_d_w_.size(); ++i) {
      string num; Tools::convert(i,num);
