@@ -700,7 +700,7 @@ void CS2Backbone::calculate()
   // CYCLE OVER MULTIPLE CHAINS
   for(unsigned s=0;s<chainsize;s++){
     const unsigned psize = atom[s].size();
-    #pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
+    #pragma omp parallel for num_threads(OpenMP::getNumThreads()) schedule(dynamic)  
     // SKIP FIRST AND LAST RESIDUE OF EACH CHAIN
     for(unsigned a=1;a<psize-1;a++){
       const Fragment *myfrag = &atom[s][a];
@@ -1051,7 +1051,6 @@ void CS2Backbone::calculate()
 }
 
 void CS2Backbone::compute_ring_parameters(){
-  #pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
   for(unsigned i=0;i<ringInfo.size();i++){
     const unsigned size = ringInfo[i].numAtoms;
     vector<Vector> a;
@@ -1083,7 +1082,7 @@ void CS2Backbone::compute_dihedrals(){
   // CYCLE OVER MULTIPLE CHAINS
   for(unsigned s=0;s<chainsize;s++){
     const unsigned psize = atom[s].size();
-    #pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
+    #pragma omp parallel for num_threads(OpenMP::getNumThreads()) schedule(dynamic)  
     // SKIP FIRST AND LAST RESIDUE OF EACH CHAIN
     for(unsigned a=1;a<psize-1;a++){
       const Fragment *myfrag = &atom[s][a];
