@@ -59,7 +59,7 @@ PLUMED_REGISTER_ACTION(EMrestraint,"EMRESTRAINT")
 void EMrestraint::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   keys.use("ARG");
-  keys.add("compulsory","EXPVALUES","experimental data points");
+  //keys.add("compulsory","EXPVALUES","experimental data points");
   componentsAreNotOptional(keys); 
   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
 }
@@ -68,11 +68,15 @@ EMrestraint::EMrestraint(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao)
 {
 
-  parseVector("EXPVALUES", ovdd_);
   checkRead();
 
+  // last half of the arguments inside ovdd_;
+  for(unsigned i=getNumberOfArguments()/2; i<getNumberOfArguments();++i){
+    ovdd_.push_back(getArgument(i));
+  }
+
   // check if experimental data points are as many as arguments
-  if(ovdd_.size()!=getNumberOfArguments()) error("Wrong number of experimental data points\n");
+  //if(ovdd_.size()!=getNumberOfArguments()) error("Wrong number of experimental data points\n");
 
   // get temperature
   kbt_ = plumed.getAtoms().getKbT();
@@ -91,9 +95,9 @@ void EMrestraint::calculate(){
  
   // cycle on arguments 
   double ene = 0.0;
-  vector<double> ene_der(getNumberOfArguments());
+  vector<double> ene_der(getNumberOfArguments()/2);
   
-  for(unsigned i=0;i<getNumberOfArguments();++i){
+  for(unsigned i=0;i<getNumberOfArguments()/2;++i){
     // individual term
     ene_der[i] = std::log(getArgument(i)/ovdd_[i]);
     // increment energy
@@ -104,7 +108,7 @@ void EMrestraint::calculate(){
   double fact = kbt_ * 0.5 * static_cast<double>(ovdd_.size());
 
   // get derivatives
-  for(unsigned i=0;i<getNumberOfArguments();++i){
+  for(unsigned i=0;i<getNumberOfArguments()/2;++i){
     // calculate derivative
     double der = 2.0 * fact / ene * ene_der[i] / getArgument(i);
     // set forces
