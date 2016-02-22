@@ -842,9 +842,9 @@ void CS2Backbone::calculate()
                 distance = delta(getPosition(jpos),getPosition(ipos));
                 d2 = distance.modulo2();
               } else {
+                if(res_num[bat]==remove_res) continue;
                 const unsigned res_dist = abs(static_cast<int>(res_curr-res_num[bat]));
                 if(res_dist<2) continue;
-                if(res_num[bat]==remove_res) continue;
                 jpos = bat;
                 distance = delta(getPosition(jpos),getPosition(ipos));
                 d2 = distance.modulo2();
@@ -856,16 +856,10 @@ void CS2Backbone::calculate()
               }
             
               if(d2<cutOffDist2) {
-    	        const double d = sqrt(d2);
-    	        const double d4 = d2*d2;
-      	        const double invd = 1.0/d;
-                const double invd3 = invd*invd*invd;
-                const double invd5 = invd3*invd*invd;
-
-                double factor1  = d;
-    	        double factor3  = invd3;
-                double dfactor1 = invd;
-                double dfactor3 = -3.*invd5;
+                double factor1  = sqrt(d2);
+                double dfactor1 = 1./factor1;
+    	        double factor3  = dfactor1*dfactor1*dfactor1;
+                double dfactor3 = -3.*factor3*dfactor1*dfactor1;
 
                 if(d2>cutOnDist2) {
                   const double af = cutOffDist2 - d2;
@@ -875,6 +869,7 @@ void CS2Backbone::calculate()
 		  factor1 *= df;
                   factor3 *= df;
 
+    	          const double d4  = d2*d2;
                   const double af1 = 15.*cutOnDist2*d2;
                   const double bf1 = -14.*d4;
                   const double cf1 = -3.*cutOffDist2*cutOnDist2 + cutOffDist2*d2;
