@@ -58,15 +58,19 @@ private:
  vector<double>           GMM_d_w_;
  vector< Matrix<double> > GMM_d_cov_;
  
- // auxiliary stuff for MPI overlaps calls
- vector<double>   ovmd_;
- vector< Vector > ovmd_der_;
  // prefactor for overlap between two components of model and data GMM
  // fact_md = w_m * w_d / (2pi)**1.5 / sqrt(det_md)
  vector< double > fact_md_;
  // inverse of the sum of model and data covariances matrices
  vector< Matrix<double> > inv_cov_md_;
-
+ // neighbor list
+ bool     do_nl_;
+ double   nl_cutoff_;
+ unsigned nl_stride_;
+ vector < pair<unsigned, unsigned > > nl_;
+ // parallel stuff
+ unsigned size_;
+ unsigned rank_;
  
  // calculate model GMM weights and covariances - these are constants
  void get_GMM_m(vector<AtomNumber> &atoms);
@@ -77,12 +81,14 @@ private:
 
  // get constant parameters for overlap between two components of model and data GMM:
  // fact_md_ and inv_cov_md_
- void   get_auxiliary_stuff();
+ void get_auxiliary_stuff();
  // calculate self overlaps between data GMM components - ovdd_
  double get_self_overlap(double d_w, Matrix <double> d_cov);
  // calculate overlap between two components of model and data GMM
  double get_overlap(Vector m_m, Vector d_m, double fact_md,
                     Matrix<double> &inv_cov_md, Vector &ov_der);
+ // update the neighbor list
+ void update_neighbor_list();
 
 public:
   static void registerKeywords( Keywords& keys );
@@ -97,7 +103,10 @@ void Overlap::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords( keys );
   keys.add("atoms","ATOMS","atoms for which we calculate the density map");
   keys.add("compulsory","GMM_FILE","file with the parameters of the GMM components");
-  keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
+  keys.addFlag("SERIAL",false,"perform the calculation in serial - for debug purpose");
+  keys.addFlag("NLIST",false,"use neighbor lists");
+  keys.add("optional","NL_CUTOFF","The cutoff in overlap for the neighbor list");
+  keys.add("optional","NL_STRIDE","The frequency with which we are updating the neighbor list");
   componentsAreNotOptional(keys);
   keys.addOutputComponent("ovmd", "COMPONENTS","overlap of the model with individual data GMM components");
   keys.addOutputComponent("ovdd", "COMPONENTS","overlap between individual data GMM components");
@@ -105,7 +114,7 @@ void Overlap::registerKeywords( Keywords& keys ){
 
 Overlap::Overlap(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
-serial_(false)
+serial_(false), do_nl_(false)
 {
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
@@ -113,7 +122,24 @@ serial_(false)
   string GMM_file;
   parse("GMM_FILE",GMM_file);
   
+  // neighbor list stuff
+  parseFlag("NLIST",do_nl_);
+  if(do_nl_){
+   parse("NL_CUTOFF",nl_cutoff_);
+   if(nl_cutoff_<=0.0) error("NL_CUTOFF should be explicitly specified and positive");
+   parse("NL_STRIDE",nl_stride_);
+   if(nl_stride_<=0) error("NL_STRIDE should be explicitly specified and positive");
+  }
+  
+  // serial or parallel
   parseFlag("SERIAL",serial_);
+  if(serial_){
+    size_=1;
+    rank_=0;
+  } else {
+    size_=comm.Get_size();
+    rank_=comm.Get_rank();
+  }
   
   checkRead();
 
@@ -122,7 +148,11 @@ serial_(false)
   log.printf("\n");
   log.printf("  GMM data file : %s\n", GMM_file.c_str());
   if(serial_) log.printf("  serial calculation\n");
-
+  if(do_nl_){
+    log.printf("  neighbor list cutoff : %lf\n", nl_cutoff_);
+    log.printf("  neighbor list stride : %u\n",  nl_stride_);
+  }
+  
   // calculate model GMM constant parameters
   get_GMM_m(atoms);
 
@@ -152,12 +182,10 @@ serial_(false)
       value->set(ov);
   }
 
-  // initialize temporary vectors for overlaps and their derivatives
-  for(unsigned i=0; i<GMM_d_w_.size(); ++i){
-     ovmd_.push_back(0.0);
-     for(unsigned j=0; j<GMM_m_w_.size(); ++j) ovmd_der_.push_back(Vector(0,0,0));
-  }
-  
+  // prepare neighbor list - or full list
+  for(unsigned i=0; i<GMM_d_w_.size(); ++i)
+     for(unsigned j=0; j<GMM_m_w_.size(); ++j) nl_.push_back(make_pair(i,j));
+    
   // request the atoms
   requestAtoms(atoms);
      
@@ -340,52 +368,77 @@ double Overlap::get_overlap(Vector m_m, Vector d_m, double fact_md,
   return ov;
 }
 
+void Overlap::update_neighbor_list()
+{
+  Vector ovmd_der;
+  // clear old neighbor list
+  nl_.clear();
+  // cycle on all overlaps
+  for(unsigned i=0; i<GMM_d_w_.size(); ++i){
+     for(unsigned j=0; j<GMM_m_w_.size(); ++j){
+      // get index in 1D array of constant parameters
+      unsigned k = i*GMM_m_w_.size()+j;
+      // calculate overlap
+      double ov = get_overlap(getPosition(j), GMM_d_m_[i], fact_md_[k],
+                              inv_cov_md_[k], ovmd_der);     
+      // if the overlap is greater than cutoff, add to nl_
+      if(ov > nl_cutoff_) nl_.push_back(make_pair(i,j));
+     }
+   }    
+}
+
 // calculator
 void Overlap::calculate(){
 
   //makeWhole();
   
-  // parallel stuff
-  unsigned size;
-  unsigned rank;
-  if(serial_){
-    size=1;
-    rank=0;
-  } else {
-    size=comm.Get_size();
-    rank=comm.Get_rank();
-  }
-
-  // clean temporary vectors  
-  for(unsigned i=0;i<GMM_d_w_.size(); ++i){
-    ovmd_[i]=0.0;
-    for(unsigned j=0; j<GMM_m_w_.size(); ++j) ovmd_der_[i*GMM_m_w_.size()+j]=Vector(0,0,0);
-  }
-    
-  // we have to cycle over all model and data GMM components - MPI or OPENMP?
-  for(unsigned i=rank;i<GMM_d_w_.size()*GMM_m_w_.size();i=i+size) {
+  // update neighbor list ?
+  if(do_nl_ && getStep()%nl_stride_==0) update_neighbor_list();
+  
+  // temporary vectors
+  vector<double> ovmd(GMM_d_w_.size());
+  vector<Vector> ovmd_der(nl_.size());
+  Vector ovmd_der_tmp;
+  
+  // we have to cycle over all model and data GMM components in the neighbor list
+  for(unsigned i=rank_;i<nl_.size();i=i+size_) {
       // get indexes of data and model component
-      unsigned id = i / GMM_m_w_.size();
-      unsigned im = i % GMM_m_w_.size();
+      unsigned id = nl_[i].first;
+      unsigned im = nl_[i].second;
+      // get index in 1D array of constant parameters
+      unsigned j = id*GMM_m_w_.size()+im;
       // add overlap with im component of model GMM
-      ovmd_[id] += get_overlap(getPosition(im), GMM_d_m_[id], fact_md_[i],
-                               inv_cov_md_[i], ovmd_der_[i]);
-  }
-  // MPI or OPENMP?
-  if(!serial_){
-   comm.Sum(&ovmd_[0], ovmd_.size());
-   comm.Sum(&ovmd_der_[0][0], 3*ovmd_der_.size());
+      ovmd[id] += get_overlap(getPosition(im), GMM_d_m_[id], fact_md_[j],
+                               inv_cov_md_[j], ovmd_der_tmp);
+      if(serial_){
+        string num; Tools::convert(id,num);
+        Value* value=getPntrToComponent("ovmd"+num);
+        setAtomsDerivatives(value,im,ovmd_der_tmp);
+      } else {
+        ovmd_der[i] = ovmd_der_tmp;
+      }
   }
   
-  // put values and derivatives
+  if(!serial_){
+   comm.Sum(&ovmd[0], ovmd.size());
+   comm.Sum(&ovmd_der[0][0], 3*ovmd_der.size());
+  }
+  
+  // put values
   for(unsigned i=0;i<GMM_d_w_.size(); ++i) {
      string num; Tools::convert(i,num);
      Value* value=getPntrToComponent("ovmd"+num);
-     value->set(ovmd_[i]);
-     for(unsigned j=0;j<GMM_m_w_.size();j++){
-       setAtomsDerivatives (value,j,ovmd_der_[i*GMM_m_w_.size()+j]);
-     }
+     value->set(ovmd[i]);
   }
+  
+  // and derivatives
+  if(!serial_){
+   for(unsigned i=0;i<nl_.size();++i) {
+       string num; Tools::convert(nl_[i].first,num);
+       Value* value=getPntrToComponent("ovmd"+num);
+       setAtomsDerivatives(value,nl_[i].second,ovmd_der[i]);
+   }
+  }     
 }
 
 }
