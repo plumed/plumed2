@@ -48,6 +48,8 @@ class Overlap : public Colvar {
 
 private:
 
+ // parallel or serial
+ bool serial_;
  // model GMM - weights and covariances
  vector<double>           GMM_m_w_;
  vector< Matrix<double> > GMM_m_cov_;
@@ -95,14 +97,15 @@ void Overlap::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords( keys );
   keys.add("atoms","ATOMS","atoms for which we calculate the density map");
   keys.add("compulsory","GMM_FILE","file with the parameters of the GMM components");
+  keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   componentsAreNotOptional(keys);
   keys.addOutputComponent("ovmd", "COMPONENTS","overlap of the model with individual data GMM components");
   keys.addOutputComponent("ovdd", "COMPONENTS","overlap between individual data GMM components");
 }
 
 Overlap::Overlap(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao)
-
+PLUMED_COLVAR_INIT(ao),
+serial_(false)
 {
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
@@ -110,12 +113,15 @@ PLUMED_COLVAR_INIT(ao)
   string GMM_file;
   parse("GMM_FILE",GMM_file);
   
+  parseFlag("SERIAL",serial_);
+  
   checkRead();
 
   log.printf("  atoms involved : ");
   for(unsigned i=0;i<atoms.size();++i) log.printf("%d ",atoms[i].serial());
   log.printf("\n");
   log.printf("  GMM data file : %s\n", GMM_file.c_str());
+  if(serial_) log.printf("  serial calculation\n");
 
   // calculate model GMM constant parameters
   get_GMM_m(atoms);
@@ -339,8 +345,16 @@ void Overlap::calculate(){
 
   //makeWhole();
   
-  unsigned size=comm.Get_size();
-  unsigned rank=comm.Get_rank();
+  // parallel stuff
+  unsigned size;
+  unsigned rank;
+  if(serial_){
+    size=1;
+    rank=0;
+  } else {
+    size=comm.Get_size();
+    rank=comm.Get_rank();
+  }
 
   // clean temporary vectors  
   for(unsigned i=0;i<GMM_d_w_.size(); ++i){
@@ -358,8 +372,10 @@ void Overlap::calculate(){
                                inv_cov_md_[i], ovmd_der_[i]);
   }
   // MPI or OPENMP?
-  comm.Sum(&ovmd_[0], ovmd_.size());
-  comm.Sum(&ovmd_der_[0][0], 3*ovmd_der_.size());
+  if(!serial_){
+   comm.Sum(&ovmd_[0], ovmd_.size());
+   comm.Sum(&ovmd_der_[0][0], 3*ovmd_der_.size());
+  }
   
   // put values and derivatives
   for(unsigned i=0;i<GMM_d_w_.size(); ++i) {
@@ -368,7 +384,6 @@ void Overlap::calculate(){
      value->set(ovmd_[i]);
      for(unsigned j=0;j<GMM_m_w_.size();j++){
        setAtomsDerivatives (value,j,ovmd_der_[i*GMM_m_w_.size()+j]);
-       setBoxDerivativesNoPbc();
      }
   }
 }
