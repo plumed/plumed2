@@ -109,10 +109,14 @@ void EMrestraint::calculate(){
   
   // cycle on arguments 
   for(unsigned i=rank_;i<getNumberOfArguments()/2;i=i+size_){
-    // individual term
-    ene_der[i] = std::log(getArgument(i)/ovdd_[i]);
-    // increment energy
-    ene += ene_der[i] * ene_der[i];
+    // check for zero overlaps
+    double ovmd = getArgument(i);
+    if(ovmd > 0.0){
+     // individual term
+     ene_der[i] = std::log(ovmd/ovdd_[i]);
+     // increment energy
+     ene += ene_der[i] * ene_der[i];
+    }
   };
   
   if(!serial_){
@@ -125,10 +129,14 @@ void EMrestraint::calculate(){
 
   // get derivatives
   for(unsigned i=0;i<getNumberOfArguments()/2;++i){
-    // calculate derivative
-    double der = 2.0 * fact / ene * ene_der[i] / getArgument(i);
-    // set forces
-    setOutputForce(i, -der);
+    // check for zero overlaps
+    double ovmd = getArgument(i);
+    if(ovmd > 0.0 && ene > 0.0){
+     // calculate derivative
+     double der = 2.0 * fact / ene * ene_der[i] / ovmd;
+     // set forces
+     setOutputForce(i, -der);
+    }
   }
 
   // set value of the bias
