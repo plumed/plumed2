@@ -73,6 +73,9 @@ private:
  bool serial_;
  unsigned size_;
  unsigned rank_;
+ // temporary vectors
+ vector<double> ovmd_;
+ vector<Vector> ovmd_der_;
  
  // calculate model GMM weights and covariances - these are constants
  void get_GMM_m(vector<AtomNumber> &atoms);
@@ -188,7 +191,10 @@ nl_cutoff_(-1.0), nl_stride_(0)
   // prepare neighbor list - or full list
   for(unsigned i=0; i<GMM_d_w_.size(); ++i)
      for(unsigned j=0; j<GMM_m_w_.size(); ++j) nl_.push_back(make_pair(i,j));
-    
+  // and prepare temporary vectors
+  ovmd_.resize(GMM_d_w_.size());
+  ovmd_der_.resize(nl_.size());
+
   // request the atoms
   requestAtoms(atoms);
      
@@ -396,11 +402,14 @@ void Overlap::calculate(){
   //makeWhole();
   
   // update neighbor list ?
-  if(do_nl_ && getStep()%nl_stride_==0) update_neighbor_list();
+  if(do_nl_ && getStep()%nl_stride_==0){
+    update_neighbor_list();
+    ovmd_der_.resize(nl_.size());
+  }
   
-  // temporary vectors
-  vector<double> ovmd(GMM_d_w_.size());
-  vector<Vector> ovmd_der(nl_.size());
+  // clean temporary vectors
+  for(unsigned i=0; i<ovmd_.size(); ++i)     ovmd_[i]=0.0;
+  for(unsigned i=0; i<ovmd_der_.size(); ++i) ovmd_der_[i]=Vector(0,0,0);
   Vector ovmd_der_tmp;
   
   // we have to cycle over all model and data GMM components in the neighbor list
@@ -412,7 +421,7 @@ void Overlap::calculate(){
       // get index in 1D array of constant parameters
       unsigned j = id*GMM_m_w_.size()+im;
       // add overlap with im component of model GMM
-      ovmd[id] += get_overlap(getPosition(im), GMM_d_m_[id], fact_md_[j],
+      ovmd_[id] += get_overlap(getPosition(im), GMM_d_m_[id], fact_md_[j],
                                inv_cov_md_[j], ovmd_der_tmp);
 
       setAtomsDerivatives(ovmd_ptr_[id],im,ovmd_der_tmp);      
@@ -425,21 +434,21 @@ void Overlap::calculate(){
       // get index in 1D array of constant parameters
       unsigned j = id*GMM_m_w_.size()+im;
       // add overlap with im component of model GMM
-      ovmd[id] += get_overlap(getPosition(im), GMM_d_m_[id], fact_md_[j],
-                               inv_cov_md_[j], ovmd_der[i]);
+      ovmd_[id] += get_overlap(getPosition(im), GMM_d_m_[id], fact_md_[j],
+                               inv_cov_md_[j], ovmd_der_[i]);
    }
    // Communicate    
-   comm.Sum(&ovmd[0], ovmd.size());
-   comm.Sum(&ovmd_der[0][0], 3*ovmd_der.size());
+   comm.Sum(&ovmd_[0], ovmd_.size());
+   comm.Sum(&ovmd_der_[0][0], 3*ovmd_der_.size());
   }
   
   // put values
-  for(unsigned i=0;i<GMM_d_w_.size(); ++i) ovmd_ptr_[i]->set(ovmd[i]);
+  for(unsigned i=0;i<GMM_d_w_.size(); ++i) ovmd_ptr_[i]->set(ovmd_[i]);
   
   // and derivatives
   if(!serial_){
    for(unsigned i=0;i<nl_.size();++i) {
-       setAtomsDerivatives(ovmd_ptr_[nl_[i].first],nl_[i].second,ovmd_der[i]);
+       setAtomsDerivatives(ovmd_ptr_[nl_[i].first],nl_[i].second,ovmd_der_[i]);
    }
   }     
 
