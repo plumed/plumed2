@@ -401,7 +401,8 @@ void Overlap::calculate(){
   Vector ovmd_der_tmp;
   
   // we have to cycle over all model and data GMM components in the neighbor list
-  for(unsigned i=rank_;i<nl_.size();i=i+size_) {
+  if(serial_){
+   for(unsigned i=rank_;i<nl_.size();i=i+size_) {
       // get indexes of data and model component
       unsigned id = nl_[i].first;
       unsigned im = nl_[i].second;
@@ -410,16 +411,26 @@ void Overlap::calculate(){
       // add overlap with im component of model GMM
       ovmd[id] += get_overlap(getPosition(im), GMM_d_m_[id], fact_md_[j],
                                inv_cov_md_[j], ovmd_der_tmp);
-      if(serial_){
-        string num; Tools::convert(id,num);
-        Value* value=getPntrToComponent("ovmd"+num);
-        setAtomsDerivatives(value,im,ovmd_der_tmp);
-      } else {
-        ovmd_der[i] = ovmd_der_tmp;
-      }
-  }
-  
-  if(!serial_){
+    
+      string num; Tools::convert(id,num);
+      Value* value=getPntrToComponent("ovmd"+num);
+      setAtomsDerivatives(value,im,ovmd_der_tmp);      
+   }
+  } else {
+   for(unsigned i=rank_;i<nl_.size();i=i+size_) {
+      // get indexes of data and model component
+      unsigned id = nl_[i].first;
+      unsigned im = nl_[i].second;
+      // get index in 1D array of constant parameters
+      unsigned j = id*GMM_m_w_.size()+im;
+      // add overlap with im component of model GMM
+      ovmd[id] += get_overlap(getPosition(im), GMM_d_m_[id], fact_md_[j],
+                               inv_cov_md_[j], ovmd_der_tmp);
+      
+      ovmd_der[i] = ovmd_der_tmp;
+
+   }
+   // Communicate    
    comm.Sum(&ovmd[0], ovmd.size());
    comm.Sum(&ovmd_der[0][0], 3*ovmd_der.size());
   }
