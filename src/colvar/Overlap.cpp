@@ -48,8 +48,7 @@ class Overlap : public Colvar {
 
 private:
 
- // parallel or serial
- bool serial_;
+
  // model GMM - weights and covariances
  vector<double>           GMM_m_w_;
  vector< Matrix<double> > GMM_m_cov_;
@@ -57,6 +56,8 @@ private:
  vector<Vector>           GMM_d_m_;
  vector<double>           GMM_d_w_;
  vector< Matrix<double> > GMM_d_cov_;
+ // pointer to components
+ vector<Value*> ovmd_ptr_;
  
  // prefactor for overlap between two components of model and data GMM
  // fact_md = w_m * w_d / (2pi)**1.5 / sqrt(det_md)
@@ -69,6 +70,7 @@ private:
  unsigned nl_stride_;
  vector < pair<unsigned, unsigned > > nl_;
  // parallel stuff
+ bool serial_;
  unsigned size_;
  unsigned rank_;
  
@@ -165,6 +167,8 @@ serial_(false), do_nl_(false)
       string num; Tools::convert(i,num);
       addComponentWithDerivatives("ovmd"+num); componentIsNotPeriodic("ovmd"+num);
       addComponent("ovdd"+num);                componentIsNotPeriodic("ovdd"+num);
+      Value* value=getPntrToComponent("ovmd"+num);
+      ovmd_ptr_.push_back(value);
   }
   
   // normalize GMMs
@@ -411,10 +415,8 @@ void Overlap::calculate(){
       // add overlap with im component of model GMM
       ovmd[id] += get_overlap(getPosition(im), GMM_d_m_[id], fact_md_[j],
                                inv_cov_md_[j], ovmd_der_tmp);
-    
-      string num; Tools::convert(id,num);
-      Value* value=getPntrToComponent("ovmd"+num);
-      setAtomsDerivatives(value,im,ovmd_der_tmp);      
+
+      setAtomsDerivatives(ovmd_ptr_[id],im,ovmd_der_tmp);      
    }
   } else {
    for(unsigned i=rank_;i<nl_.size();i=i+size_) {
@@ -425,10 +427,7 @@ void Overlap::calculate(){
       unsigned j = id*GMM_m_w_.size()+im;
       // add overlap with im component of model GMM
       ovmd[id] += get_overlap(getPosition(im), GMM_d_m_[id], fact_md_[j],
-                               inv_cov_md_[j], ovmd_der_tmp);
-      
-      ovmd_der[i] = ovmd_der_tmp;
-
+                               inv_cov_md_[j], ovmd_der[i]);
    }
    // Communicate    
    comm.Sum(&ovmd[0], ovmd.size());
@@ -436,20 +435,15 @@ void Overlap::calculate(){
   }
   
   // put values
-  for(unsigned i=0;i<GMM_d_w_.size(); ++i) {
-     string num; Tools::convert(i,num);
-     Value* value=getPntrToComponent("ovmd"+num);
-     value->set(ovmd[i]);
-  }
+  for(unsigned i=0;i<GMM_d_w_.size(); ++i) ovmd_ptr_[i]->set(ovmd[i]);
   
   // and derivatives
   if(!serial_){
    for(unsigned i=0;i<nl_.size();++i) {
-       string num; Tools::convert(nl_[i].first,num);
-       Value* value=getPntrToComponent("ovmd"+num);
-       setAtomsDerivatives(value,nl_[i].second,ovmd_der[i]);
+       setAtomsDerivatives(ovmd_ptr_[nl_[i].first],nl_[i].second,ovmd_der[i]);
    }
   }     
+
 }
 
 }
