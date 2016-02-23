@@ -119,8 +119,8 @@ void Overlap::registerKeywords( Keywords& keys ){
 
 Overlap::Overlap(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
-serial_(false), do_nl_(false),
-nl_cutoff_(-1.0), nl_stride_(0)
+do_nl_(false), nl_cutoff_(-1.0),
+nl_stride_(0), serial_(false)
 {
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
