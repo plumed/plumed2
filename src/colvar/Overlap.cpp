@@ -116,7 +116,8 @@ void Overlap::registerKeywords( Keywords& keys ){
 
 Overlap::Overlap(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
-serial_(false), do_nl_(false)
+serial_(false), do_nl_(false),
+nl_cutoff_(-1.0), nl_stride_(0)
 {
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
@@ -136,11 +137,9 @@ serial_(false), do_nl_(false)
   // serial or parallel
   parseFlag("SERIAL",serial_);
   if(serial_){
-    size_=1;
-    rank_=0;
+    size_=1; rank_=0;
   } else {
-    size_=comm.Get_size();
-    rank_=comm.Get_rank();
+    size_=comm.Get_size(); rank_=comm.Get_rank();
   }
   
   checkRead();
