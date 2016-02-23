@@ -46,6 +46,10 @@ class EMrestraint : public Bias
   vector<double> ovdd_;
   // output
   Value* valueBias;
+  // parallel stuff
+  bool serial_;
+  unsigned size_;
+  unsigned rank_;
   
 public:
   EMrestraint(const ActionOptions&);
@@ -59,14 +63,23 @@ PLUMED_REGISTER_ACTION(EMrestraint,"EMRESTRAINT")
 void EMrestraint::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   keys.use("ARG");
-  //keys.add("compulsory","EXPVALUES","experimental data points");
+  keys.addFlag("SERIAL",false,"perform the calculation in serial - for debug purpose");
   componentsAreNotOptional(keys); 
   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
 }
 
 EMrestraint::EMrestraint(const ActionOptions&ao):
-PLUMED_BIAS_INIT(ao)
+PLUMED_BIAS_INIT(ao),
+serial_(false)
 {
+
+  // serial or parallel
+  parseFlag("SERIAL",serial_);
+  if(serial_){
+    size_=1; rank_=0;
+  } else {
+    size_=comm.Get_size(); rank_=comm.Get_rank();
+  }
 
   checkRead();
 
@@ -75,34 +88,37 @@ PLUMED_BIAS_INIT(ao)
     ovdd_.push_back(getArgument(i));
   }
 
-  // check if experimental data points are as many as arguments
-  //if(ovdd_.size()!=getNumberOfArguments()) error("Wrong number of experimental data points\n");
-
   // get temperature
   kbt_ = plumed.getAtoms().getKbT();
 
   log.printf("  temperature of the system %f\n",kbt_);
   log.printf("  number of experimental data points %u\n",static_cast<unsigned>(ovdd_.size()));
+  if(serial_) log.printf("  serial calculation\n");
 
   addComponent("bias");   componentIsNotPeriodic("bias");
 
   valueBias=getPntrToComponent("bias");
-
+  
 }
 
 
 void EMrestraint::calculate(){
- 
-  // cycle on arguments 
+   
   double ene = 0.0;
   vector<double> ene_der(getNumberOfArguments()/2);
   
-  for(unsigned i=0;i<getNumberOfArguments()/2;++i){
+  // cycle on arguments 
+  for(unsigned i=rank_;i<getNumberOfArguments()/2;i=i+size_){
     // individual term
     ene_der[i] = std::log(getArgument(i)/ovdd_[i]);
     // increment energy
     ene += ene_der[i] * ene_der[i];
   };
+  
+  if(!serial_){
+   comm.Sum(&ene, 1);
+   comm.Sum(&ene_der[0], ene_der.size());
+  }
 
   // constant factor
   double fact = kbt_ * 0.5 * static_cast<double>(ovdd_.size());
