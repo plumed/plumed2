@@ -66,7 +66,8 @@ private:
  vector< Matrix<double> > inv_cov_md_;
  // neighbor list
  bool     do_nl_;
- double   nl_cutoff_;
+ double   nl_o_cutoff_;
+ double   nl_d_cutoff_;
  unsigned nl_stride_;
  vector < pair<unsigned, unsigned > > nl_;
  // parallel stuff
@@ -110,7 +111,8 @@ void Overlap::registerKeywords( Keywords& keys ){
   keys.add("compulsory","GMM_FILE","file with the parameters of the GMM components");
   keys.addFlag("SERIAL",false,"perform the calculation in serial - for debug purpose");
   keys.addFlag("NLIST",false,"use neighbor lists");
-  keys.add("optional","NL_CUTOFF","The cutoff in overlap for the neighbor list");
+  keys.add("optional","NL_O_CUTOFF","The cutoff in overlap for the neighbor list");
+  keys.add("optional","NL_D_CUTOFF","The cutoff in distance for the neighbor list");
   keys.add("optional","NL_STRIDE","The frequency with which we are updating the neighbor list");
   componentsAreNotOptional(keys);
   keys.addOutputComponent("ovmd", "COMPONENTS","overlap of the model with individual data GMM components");
@@ -119,8 +121,9 @@ void Overlap::registerKeywords( Keywords& keys ){
 
 Overlap::Overlap(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
-do_nl_(false), nl_cutoff_(-1.0),
-nl_stride_(0), serial_(false)
+do_nl_(false), nl_o_cutoff_(-1.0),
+nl_d_cutoff_(-1.0), nl_stride_(0),
+serial_(false)
 {
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
@@ -131,8 +134,9 @@ nl_stride_(0), serial_(false)
   // neighbor list stuff
   parseFlag("NLIST",do_nl_);
   if(do_nl_){
-   parse("NL_CUTOFF",nl_cutoff_);
-   if(nl_cutoff_<=0.0) error("NL_CUTOFF should be explicitly specified and positive");
+   parse("NL_O_CUTOFF",nl_o_cutoff_);
+   parse("NL_D_CUTOFF",nl_d_cutoff_);
+   if(nl_o_cutoff_<=0.0 && nl_d_cutoff_<=0.0) error("NL_O_CUTOFF or NL_D_CUTOFF or both should be explicitly specified and positive");
    parse("NL_STRIDE",nl_stride_);
    if(nl_stride_<=0) error("NL_STRIDE should be explicitly specified and positive");
   }
@@ -153,7 +157,8 @@ nl_stride_(0), serial_(false)
   log.printf("  GMM data file : %s\n", GMM_file.c_str());
   if(serial_) log.printf("  serial calculation\n");
   if(do_nl_){
-    log.printf("  neighbor list cutoff : %lf\n", nl_cutoff_);
+    if(nl_o_cutoff_>0) log.printf("  neighbor list overlap cutoff : %lf\n", nl_o_cutoff_);
+    if(nl_d_cutoff_>0) log.printf("  neighbor list distance cutoff : %lf\n", nl_d_cutoff_);
     log.printf("  neighbor list stride : %u\n",  nl_stride_);
   }
   
@@ -389,9 +394,13 @@ void Overlap::update_neighbor_list()
       unsigned k = i*GMM_m_w_.size()+j;
       // calculate overlap
       double ov = get_overlap(getPosition(j), GMM_d_m_[i], fact_md_[k],
-                              inv_cov_md_[k], ovmd_der);     
-      // if the overlap is greater than cutoff, add to nl_
-      if(ov > nl_cutoff_) nl_.push_back(make_pair(i,j));
+                              inv_cov_md_[k], ovmd_der);
+      // calculate distance
+      Vector md = getPosition(j) - GMM_d_m_[i];
+      double dist = md.modulo();
+      // if conditions are met, add to nl_
+      if(ov >= nl_o_cutoff_ && dist <= nl_d_cutoff_ && nl_d_cutoff_>0.0) nl_.push_back(make_pair(i,j));
+      if(ov >= nl_o_cutoff_ && nl_d_cutoff_<=0.0) nl_.push_back(make_pair(i,j));
      }
    }    
 }
