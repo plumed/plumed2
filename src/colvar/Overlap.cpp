@@ -419,10 +419,10 @@ void Overlap::calculate(){
   // clean temporary vectors
   for(unsigned i=0; i<ovmd_.size(); ++i)     ovmd_[i]=0.0;
   for(unsigned i=0; i<ovmd_der_.size(); ++i) ovmd_der_[i]=Vector(0,0,0);
-  Vector ovmd_der_tmp;
   
   // we have to cycle over all model and data GMM components in the neighbor list
   if(serial_){
+   Vector ovmd_der_tmp;
    for(unsigned i=rank_;i<nl_.size();i=i+size_) {
       // get indexes of data and model component
       unsigned id = nl_[i].first;
