@@ -209,7 +209,7 @@ double EMOutrestraint::getEnergy(double sigma)
   // add normalization and Jeffrey's prior
   ene += std::log(sigma) - ndata_zero*std::log(sqrt2_div_pi*sigma);
 
-  return ene;
+  return kbt_ * ene;
 }
 
 void EMOutrestraint::calculate()
