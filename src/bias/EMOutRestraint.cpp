@@ -215,37 +215,26 @@ double EMOutrestraint::getEnergy(double sigma)
 void EMOutrestraint::calculate()
 {   
   double ene = 0.0;
-  unsigned int ndata = getNumberOfArguments()/2;
-  
-  vector<double> ene_der(ndata);
-  
+    
   // cycle on arguments
   // count number of non-zero overlaps
   double ndata_zero = 0.0;
-  for(unsigned i=0;i<ndata;++i){
+  for(unsigned i=0;i<getNumberOfArguments()/2;++i){
     // check for zero overlaps
     double ovmd = getArgument(i);
     if(ovmd > 0.0){
      // individual term
-     ene_der[i] = std::log(ovmd/ovdd_[i]);
+     double ene_tmp = std::log(ovmd/ovdd_[i]);
      // increment energy
-     ene += std::log(ene_der[i] * ene_der[i] + 2.0*sigma_*sigma_);
+     ene += std::log(ene_tmp*ene_tmp + 2.0*sigma_*sigma_);
+     // calculate derivative
+     double der =  1.0 / (ene_tmp*ene_tmp + 2.0*sigma_*sigma_) * 2.0 * ene_tmp / ovmd;
+     // set forces
+     setOutputForce(i, -kbt_*der);
      // increment counter
      ndata_zero += 1.0;
     }
   };
-  
-  // get derivatives
-  for(unsigned i=0;i<ndata;++i){
-    // check for zero overlaps
-    double ovmd = getArgument(i);
-    if(ovmd > 0.0 && ene > 0.0){
-     // calculate derivative
-     double der =  1.0 / (ene_der[i] * ene_der[i] + 2.0*sigma_*sigma_) * 2.0 * ene_der[i] / ovmd;
-     // set forces
-     setOutputForce(i, -kbt_*der);
-    }
-  }
   
   // add normalization and Jeffrey's prior
   ene += std::log(sigma_) - ndata_zero*std::log(sqrt2_div_pi*sigma_);
