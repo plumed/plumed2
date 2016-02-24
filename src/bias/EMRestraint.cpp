@@ -90,10 +90,14 @@ PLUMED_BIAS_INIT(ao)
 void EMrestraint::calculate(){
    
   double ene = 0.0;
-  vector<double> ene_der(getNumberOfArguments()/2);
+  unsigned int ndata = getNumberOfArguments()/2;
   
-  // cycle on arguments 
-  for(unsigned i=0;i<getNumberOfArguments()/2;++i){
+  vector<double> ene_der(ndata);
+  
+  // cycle on arguments
+  // count number of non-zero overlaps
+  double ndata_zero = 0.0;
+  for(unsigned i=0;i<ndata;++i){
     // check for zero overlaps
     double ovmd = getArgument(i);
     if(ovmd > 0.0){
@@ -101,14 +105,16 @@ void EMrestraint::calculate(){
      ene_der[i] = std::log(ovmd/ovdd_[i]);
      // increment energy
      ene += ene_der[i] * ene_der[i];
+     // increment counter
+     ndata_zero += 1.0;
     }
   };
   
   // constant factor
-  double fact = kbt_ * 0.5 * static_cast<double>(ovdd_.size());
+  double fact = kbt_ * 0.5 * ndata_zero;
 
   // get derivatives
-  for(unsigned i=0;i<getNumberOfArguments()/2;++i){
+  for(unsigned i=0;i<ndata;++i){
     // check for zero overlaps
     double ovmd = getArgument(i);
     if(ovmd > 0.0 && ene > 0.0){
