@@ -177,7 +177,12 @@ void Driver<real>::registerKeywords( Keywords& keys ){
   keys.addFlag("--help-debug",false,"print special options that can be used to create regtests");
   keys.add("compulsory","--plumed","plumed.dat","specify the name of the plumed input file");
   keys.add("compulsory","--timestep","1.0","the timestep that was used in the calculation that produced this trajectory in picoseconds");
-  keys.add("compulsory","--trajectory-stride","1","the frequency with which frames were output to this trajectory during the simulation");
+  keys.add("compulsory","--trajectory-stride","1","the frequency with which frames were output to this trajectory during the simulation"
+#ifdef __PLUMED_HAS_XDRFILE
+                                       " (0 means that the number of the step is read from the trajectory file,"
+                                       " currently working only for xtc/trr files read with --ixtc/--trr)"
+#endif
+          );
   keys.add("compulsory","--multi","0","set number of replicas for multi environment (needs mpi)");
   keys.addFlag("--noatoms",false,"don't read in a trajectory.  Just use colvar files as specified in plumed.dat");
   keys.add("atoms","--ixyz","the trajectory in xyz format");
@@ -629,8 +634,6 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
     }
 
     int plumedStopCondition=0;
-    p.cmd("setStep",&step);
-    p.cmd("setStopFlag",&plumedStopCondition);
     if(!noatoms){
        if(use_molfile){
 #ifdef __PLUMED_HAS_MOLFILE_PLUGINS
@@ -668,14 +671,15 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 #endif
        }else if(trajectory_fmt=="xdr-xtc" || trajectory_fmt=="xdr-trr"){
 #ifdef __PLUMED_HAS_XDRFILE
-         int step;
+         int localstep;
          float time;
          matrix box;
          rvec* pos=new rvec[natoms];
          float prec,lambda;
          int ret;
-         if(trajectory_fmt=="xdr-xtc") ret=read_xtc(xd,natoms,&step,&time,box,pos,&prec);
-         if(trajectory_fmt=="xdr-trr") ret=read_trr(xd,natoms,&step,&time,&lambda,box,pos,NULL,NULL);
+         if(trajectory_fmt=="xdr-xtc") ret=read_xtc(xd,natoms,&localstep,&time,box,pos,&prec);
+         if(trajectory_fmt=="xdr-trr") ret=read_trr(xd,natoms,&localstep,&time,&lambda,box,pos,NULL,NULL);
+         if(stride==0) step=localstep;
          if(ret==exdrENDOFFILE) break;
          if(ret!=exdrOK) break;
          for(unsigned i=0;i<3;i++) for(unsigned j=0;j<3;j++) cell[3*i+j]=box[i][j];
@@ -757,6 +761,9 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 
      }
 
+     p.cmd("setStep",&step);
+     p.cmd("setStopFlag",&plumedStopCondition);
+
        if(debug_dd){
          for(int i=0;i<dd_nlocal;++i){
            int kk=dd_gatindex[i];
@@ -776,6 +783,9 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
        }
        p.cmd("setBox",&cell[0]);
        p.cmd("setVirial",&virial[0]);
+   }else{
+    p.cmd("setStep",&step);
+    p.cmd("setStopFlag",&plumedStopCondition);
    }
    p.cmd("calc");
 
