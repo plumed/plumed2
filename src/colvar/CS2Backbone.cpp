@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-#define cutOffNB      0.65	// buffer distance for neighbour-lists 
+#define cutOffNB      0.60	// buffer distance for neighbour-lists 
 #define cutOffDist    0.50  	// cut off distance for non-bonded pairwise forces
 #define cutOnDist     0.32   	// cut off distance for non-bonded pairwise forces
 #define cutOffNB2     cutOffNB*cutOffNB // squared buffer distance for neighbour-lists 
@@ -382,7 +382,8 @@ private:
 
 class CS2Backbone : public Colvar {
   struct Fragment {
-    vector<double> exp_cs;
+    vector<bool> csdoit;
+    bool doit;
     unsigned res_type_prev;
     unsigned res_type_curr;
     unsigned res_type_next;
@@ -396,14 +397,14 @@ class CS2Backbone : public Colvar {
     vector<int> side_chain;
     vector<int> xd1;
     vector<int> xd2;
-    vector<vector<unsigned> > box_nb;
+    vector<unsigned> box_nb;
     vector<int> phi;
     vector<int> psi;
     vector<int> chi1;
     double t_phi;
     double t_psi;
     double t_chi1;
-    vector<Vector> dd0, dd1, dd2;
+    vector<Vector> dd0, dd10, dd21, dd2;
   };
 
   struct RingInfo{
@@ -430,11 +431,12 @@ class CS2Backbone : public Colvar {
   unsigned         box_count;
   vector<vector<Fragment> > atom;
   unsigned         numResidues;
-  unsigned         **c_sh;
+  vector<vector<unsigned> > c_sh;
   bool             pbc;
 
   void remove_problematic(const string &res, const string &nucl);
-  void read_cs(const string &file, const string &k);
+  void read_cs(const string &file, const string &k, vector<vector<double> > &exp_cs);
+  void update_neighb();
   void compute_ring_parameters();
   void compute_dihedrals();
   void init_backbone(const PDB &pdb);
@@ -454,7 +456,6 @@ class CS2Backbone : public Colvar {
 public:
 
   explicit CS2Backbone(const ActionOptions&);
-  ~CS2Backbone();
   static void registerKeywords( Keywords& keys );
   virtual void calculate();
 };
@@ -505,7 +506,7 @@ PLUMED_COLVAR_INIT(ao)
   parse("TEMPLATE",stringa_template);
 
   box_count=0;
-  box_nupdate=20;
+  box_nupdate=25;
   parse("NEIGH_FREQ", box_nupdate);
 
   parse("NRES", numResidues);
@@ -531,26 +532,26 @@ PLUMED_COLVAR_INIT(ao)
 #ifndef NDEBUG
   debug_report();
 #endif
-
+  vector<vector<double> > exp_cs(numResidues,vector<double>(6));
   log.printf("  Reading experimental data ...\n"); log.flush();
   stringadb = stringa_data + string("/CAshifts.dat");
   log.printf("  Initializing CA shifts %s\n", stringadb.c_str()); log.flush();
-  read_cs(stringadb, "CA");
+  read_cs(stringadb, "CA", exp_cs);
   stringadb = stringa_data + string("/CBshifts.dat");
   log.printf("  Initializing CB shifts %s\n", stringadb.c_str()); log.flush();
-  read_cs(stringadb, "CB");
+  read_cs(stringadb, "CB", exp_cs);
   stringadb = stringa_data + string("/Cshifts.dat");
   log.printf("  Initializing C' shifts %s\n", stringadb.c_str()); log.flush();
-  read_cs(stringadb, "C");
+  read_cs(stringadb, "C", exp_cs);
   stringadb = stringa_data + string("/HAshifts.dat");
   log.printf("  Initializing HA shifts %s\n", stringadb.c_str()); log.flush();
-  read_cs(stringadb, "HA");
+  read_cs(stringadb, "HA", exp_cs);
   stringadb = stringa_data + string("/Hshifts.dat");
   log.printf("  Initializing H shifts %s\n", stringadb.c_str()); log.flush();
-  read_cs(stringadb, "H");
+  read_cs(stringadb, "H", exp_cs);
   stringadb = stringa_data + string("/Nshifts.dat");
   log.printf("  Initializing N shifts %s\n", stringadb.c_str()); log.flush();
-  read_cs(stringadb, "N");
+  read_cs(stringadb, "N", exp_cs);
 
   /* this is a workaround for those chemical shifts that can result in too large forces */
   remove_problematic("GLN", "CB");
@@ -597,14 +598,11 @@ PLUMED_COLVAR_INIT(ao)
   parseAtomList("ATOMS",atoms);
   checkRead();
 
-  c_sh = new unsigned*[numResidues];
-  c_sh[0] = new unsigned[numResidues*6];
-  for(unsigned i=1;i<numResidues;i++) c_sh[i]=c_sh[i-1]+6;
-
   log<<"  Bibliography "
      <<plumed.cite("Kohlhoff K, Robustelli P, Cavalli A, Salvatella A, Vendruscolo M, J. Am. Chem. Soc. 131, 13894 (2009)")
      <<plumed.cite("Camilloni C, Robustelli P, De Simone A, Cavalli A, Vendruscolo M, J. Am. Chem. Soc. 134, 3968 (2012)") <<"\n";
 
+  c_sh.resize(numResidues, vector<unsigned>(6));
   const string str_cs[] = {"ha_","hn_","nh_","ca_","cb_","co_"};
   unsigned k=0;
   unsigned index=0;
@@ -613,7 +611,7 @@ PLUMED_COLVAR_INIT(ao)
       unsigned res=index+a;
       std::string num; Tools::convert(res,num);
       for(unsigned at_kind=0;at_kind<6;at_kind++){
-        if(atom[i][a].exp_cs[at_kind]>0) {
+        if(atom[i][a].csdoit[at_kind]) {
           addComponentWithDerivatives(str_cs[at_kind]+num);
           componentIsNotPeriodic(str_cs[at_kind]+num);
           c_sh[res][at_kind]=k;
@@ -622,7 +620,7 @@ PLUMED_COLVAR_INIT(ao)
             addComponent("exp"+str_cs[at_kind]+num); 
             componentIsNotPeriodic("exp"+str_cs[at_kind]+num);
             Value* comp=getPntrToComponent("exp"+str_cs[at_kind]+num);
-            comp->set(atom[i][a].exp_cs[at_kind]);
+            comp->set(exp_cs[res][at_kind]);
             k++;
           }
         }
@@ -637,12 +635,6 @@ PLUMED_COLVAR_INIT(ao)
   requestAtoms(atoms);
 }
 
-CS2Backbone::~CS2Backbone()
-{
-  delete[] c_sh[0];
-  delete[] c_sh;
-}
-
 void CS2Backbone::remove_problematic(const string &res, const string &nucl) {
   unsigned n;
   if(nucl=="HA")     n=0;
@@ -655,32 +647,47 @@ void CS2Backbone::remove_problematic(const string &res, const string &nucl) {
 
   for(unsigned i=0;i<atom.size();i++){
     for(unsigned a=0;a<atom[i].size();a++){
-      if(atom[i][a].res_name.c_str()==res) atom[i][a].exp_cs[n] = 0.;
+      if(atom[i][a].res_name.c_str()==res) {
+        atom[i][a].csdoit[n] = false;
+        atom[i][a].doit = false; 
+        for(unsigned at_kind=0;at_kind<6;at_kind++) if(atom[i][a].csdoit[at_kind]) {atom[i][a].doit = true; break;} 
+      }
     }
   }
 }
 
-void CS2Backbone::read_cs(const string &file, const string &k){
+void CS2Backbone::read_cs(const string &file, const string &nucl, vector<vector<double> > &exp_cs){
   ifstream in;
   in.open(file.c_str());
   if(!in) error("CS2Backbone: Unable to open " + file);
   istream_iterator<string> iter(in), end;
+
+  unsigned n;
+  if(nucl=="HA")     n=0;
+  else if(nucl=="H") n=1;
+  else if(nucl=="N") n=2;
+  else if(nucl=="CA")n=3;
+  else if(nucl=="CB")n=4;
+  else if(nucl=="C") n=5;
+  else return;
+
   while(iter!=end){
     string tok;
     tok = *iter; ++iter;
     if(tok[0]=='#'){ ++iter; continue;}
     unsigned p = atoi(tok.c_str());
     p = p - 1;
-    unsigned seg = frag_segment(p);
+    unsigned res = p;
+    const unsigned seg = frag_segment(p);
     p = frag_relitive_index(p,seg);
     tok = *iter; ++iter;
     double cs = atof(tok.c_str());
-    if(k=="HA")     { if(atom[seg][p].pos[0]<=0) cs=0; atom[seg][p].exp_cs[0] = cs; }
-    else if(k=="H") { if(atom[seg][p].pos[1]<=0) cs=0; atom[seg][p].exp_cs[1] = cs; }
-    else if(k=="N") { if(atom[seg][p].pos[2]<=0) cs=0; atom[seg][p].exp_cs[2] = cs; }
-    else if(k=="CA"){ if(atom[seg][p].pos[3]<=0) cs=0; atom[seg][p].exp_cs[3] = cs; }
-    else if(k=="CB"){ if(atom[seg][p].pos[4]<=0) cs=0; atom[seg][p].exp_cs[4] = cs; }
-    else if(k=="C") { if(atom[seg][p].pos[5]<=0) cs=0; atom[seg][p].exp_cs[5] = cs; }
+    if(atom[seg][p].pos[n]<=0) cs=0;
+    exp_cs[res][n] = cs; 
+    if(cs!=0) {
+      atom[seg][p].csdoit[n]=true; 
+      atom[seg][p].doit=true;
+    }
   }
 }
 
@@ -689,8 +696,9 @@ void CS2Backbone::calculate()
   if(pbc) makeWhole();
 
   if(getExchangeStep()) box_count=0;
-  bool update = false;
-  if(box_count==0) update = true;
+
+  if(box_count==0) update_neighb();
+
   compute_ring_parameters();
 
   compute_dihedrals();
@@ -700,23 +708,37 @@ void CS2Backbone::calculate()
   // CYCLE OVER MULTIPLE CHAINS
   for(unsigned s=0;s<chainsize;s++){
     const unsigned psize = atom[s].size();
-    #pragma omp parallel for num_threads(OpenMP::getNumThreads()) schedule(dynamic)  
+    #pragma omp parallel for num_threads(OpenMP::getNumThreads())  
     // SKIP FIRST AND LAST RESIDUE OF EACH CHAIN
     for(unsigned a=1;a<psize-1;a++){
+      if(!atom[s][a].doit) continue;
+
       const Fragment *myfrag = &atom[s][a];
+      const unsigned aa_kind = myfrag->res_kind;
+      const unsigned res_type_curr = myfrag->res_type_curr;
+      const unsigned res_type_prev = myfrag->res_type_prev;
+      const unsigned res_type_next = myfrag->res_type_next;
+      const unsigned needed_atoms = 72+ringInfo.size()*6+myfrag->box_nb.size();
+
+      /* Extra Distances are the same for each residue */
+      const unsigned xdsize=myfrag->xd1.size();
+      vector<Vector> ext_distances(xdsize);
+      vector<double> ext_d(xdsize);
+      for(unsigned q=0;q<xdsize;q++){
+        if(myfrag->xd1[q]==-1||myfrag->xd2[q]==-1) continue;
+        const Vector distance = delta(getPosition(myfrag->xd1[q]),getPosition(myfrag->xd2[q]));
+        ext_d[q] = distance.modulo();
+        ext_distances[q] = distance/ext_d[q];
+      }
+
       // CYCLE OVER THE SIX BACKBONE CHEMICAL SHIFTS
       for(unsigned at_kind=0;at_kind<6;at_kind++){
-        if(myfrag->exp_cs[at_kind]>0){
-          const unsigned aa_kind = myfrag->res_kind;
-          const unsigned res_type_curr = myfrag->res_type_curr;
-          const unsigned res_type_prev = myfrag->res_type_prev;
-          const unsigned res_type_next = myfrag->res_type_next;
-
+        if(myfrag->csdoit[at_kind]){
+          // Common constant and AATYPE
           const double * CONSTAACURR = db.CONSTAACURR(aa_kind,at_kind);
           const double * CONSTAANEXT = db.CONSTAANEXT(aa_kind,at_kind);
           const double * CONSTAAPREV = db.CONSTAAPREV(aa_kind,at_kind);
 
-          // Common constant and AATYPE
           double cs = CONSTAACURR[res_type_curr] + 
                       CONSTAANEXT[res_type_next] + 
                       CONSTAAPREV[res_type_prev];
@@ -724,24 +746,25 @@ void CS2Backbone::calculate()
           const unsigned ipos = myfrag->pos[at_kind];
 
           vector<unsigned> list;
-          list.reserve(3*numResidues);
+          list.reserve(needed_atoms);
           list.push_back(ipos);
           vector<Vector> ff;
-          ff.reserve(3*numResidues); 
+          ff.reserve(needed_atoms); 
           ff.push_back(Vector(0,0,0));
 
           //PREV
           const double * CONST_BB2_PREV = db.CONST_BB2_PREV(aa_kind,at_kind);
           const unsigned presize = myfrag->prev.size();
           for(unsigned q=0;q<presize;q++){
-            if(CONST_BB2_PREV[q]==0.) continue;
+            const double cb2pq = CONST_BB2_PREV[q];
+            if(cb2pq==0.) continue;
             const unsigned jpos = myfrag->prev[q];
             list.push_back(jpos);
             const Vector distance = delta(getPosition(jpos),getPosition(ipos));
             const double d = distance.modulo();
-            const double fact = CONST_BB2_PREV[q]/d;
+            const double fact = cb2pq/d;
 
-            cs += CONST_BB2_PREV[q]*d;
+            cs += cb2pq*d;
             const Vector der = fact*distance;
             ff[0] += der;
             ff.push_back(-der);
@@ -751,15 +774,16 @@ void CS2Backbone::calculate()
           const double * CONST_BB2_CURR = db.CONST_BB2_CURR(aa_kind,at_kind);
           const unsigned cursize = myfrag->curr.size();
           for(unsigned q=0;q<cursize;q++){
-            if(CONST_BB2_CURR[q]==0.) continue;
+            const double cb2cq = CONST_BB2_CURR[q];
+            if(cb2cq==0.) continue;
             const unsigned jpos = myfrag->curr[q];
             if(ipos==jpos) continue;
             list.push_back(jpos);
             const Vector distance = delta(getPosition(jpos),getPosition(ipos));
             const double d = distance.modulo();
-            const double fact = CONST_BB2_CURR[q]/d;
+            const double fact = cb2cq/d;
 
-            cs += CONST_BB2_CURR[q]*d;
+            cs += cb2cq*d;
             const Vector der = fact*distance;
             ff[0] += der;
             ff.push_back(-der);
@@ -769,14 +793,15 @@ void CS2Backbone::calculate()
           const double * CONST_BB2_NEXT = db.CONST_BB2_NEXT(aa_kind,at_kind);
           const unsigned nexsize = myfrag->next.size();
           for(unsigned q=0;q<nexsize;q++){
-            if(CONST_BB2_NEXT[q]==0.) continue;
+            const double cb2nq = CONST_BB2_NEXT[q]; 
+            if(cb2nq==0.) continue;
             const unsigned jpos = myfrag->next[q];
             list.push_back(jpos);
             const Vector distance = delta(getPosition(jpos),getPosition(ipos));
             const double d = distance.modulo();
-            const double fact = CONST_BB2_NEXT[q]/d;
+            const double fact = cb2nq/d;
 
-            cs += CONST_BB2_NEXT[q]*d;
+            cs += cb2nq*d;
             const Vector der = fact*distance;
             ff[0] += der;
             ff.push_back(-der);
@@ -786,15 +811,16 @@ void CS2Backbone::calculate()
           const double * CONST_SC2 = db.CONST_SC2(aa_kind,at_kind,res_type_curr);
           const unsigned sidsize = myfrag->side_chain.size();
           for(unsigned q=0;q<sidsize;q++){
-            if(CONST_SC2[q]==0.) continue;
+            const double cs2q = CONST_SC2[q]; 
+            if(cs2q==0.) continue;
             const unsigned jpos = myfrag->side_chain[q];
             if(ipos==jpos) continue;
             list.push_back(jpos);
             const Vector distance = delta(getPosition(jpos),getPosition(ipos));
             const double d = distance.modulo();
-            const double fact = CONST_SC2[q]/d;
+            const double fact = cs2q/d;
 
-            cs += CONST_SC2[q]*d;
+            cs += cs2q*d;
             const Vector der = fact*distance;
             ff[0] += der;
             ff.push_back(-der);
@@ -802,20 +828,14 @@ void CS2Backbone::calculate()
         
           //EXTRA DIST
           const double * CONST_XD  = db.CONST_XD(aa_kind,at_kind);
-          const unsigned xdsize = myfrag->xd1.size();
           for(unsigned q=0;q<xdsize;q++){
-            if(CONST_XD[q]==0.) continue;
+            const double cxdq = CONST_XD[q];
+            if(cxdq==0.) continue;
             if(myfrag->xd1[q]==-1||myfrag->xd2[q]==-1) continue;
-            const unsigned kpos = myfrag->xd1[q];
-            const unsigned jpos = myfrag->xd2[q];
-            list.push_back(jpos);
-            list.push_back(kpos);
-            const Vector distance = delta(getPosition(kpos),getPosition(jpos));
-            const double d = distance.modulo();
-            const double fact = CONST_XD[q]/d;
-
-            cs += CONST_XD[q]*d;
-            const Vector der = fact*distance;
+            list.push_back(myfrag->xd2[q]);
+            list.push_back(myfrag->xd1[q]);
+            cs += cxdq*ext_d[q];
+            const Vector der = cxdq*ext_distances[q];
             ff.push_back( der);
             ff.push_back(-der);
           }
@@ -824,36 +844,11 @@ void CS2Backbone::calculate()
           {
             const double * CONST_CO_SPHERE3 = db.CO_SPHERE(aa_kind,at_kind,0);
             const double * CONST_CO_SPHERE  = db.CO_SPHERE(aa_kind,at_kind,1);
-            unsigned boxsize, res_curr;
-            if(!update) boxsize = myfrag->box_nb[at_kind].size();
-            else { 
-              boxsize = getNumberOfAtoms();
-              atom[s][a].box_nb[at_kind].clear();
-              atom[s][a].box_nb[at_kind].reserve(2*numResidues);
-              res_curr = res_num[ipos];
-            }
+            const unsigned boxsize = myfrag->box_nb.size();
             for(unsigned bat=0; bat<boxsize; bat++) {
-              unsigned jpos;
-              Vector distance;
-              double d2;
-              int remove_res=-1;
-              if(!update) {
-                jpos = myfrag->box_nb[at_kind][bat];
-                distance = delta(getPosition(jpos),getPosition(ipos));
-                d2 = distance.modulo2();
-              } else {
-                if(res_num[bat]==remove_res) continue;
-                const unsigned res_dist = abs(static_cast<int>(res_curr-res_num[bat]));
-                if(res_dist<2) continue;
-                jpos = bat;
-                distance = delta(getPosition(jpos),getPosition(ipos));
-                d2 = distance.modulo2();
-                if(d2<cutOffNB2) atom[s][a].box_nb[at_kind].push_back(bat);
-                else {
-                  if(d2>5.*cutOffNB2) remove_res=res_num[bat];
-                  continue;
-                }
-              }
+              const unsigned jpos = myfrag->box_nb[bat];
+              const Vector distance = delta(getPosition(jpos),getPosition(ipos));
+              const double d2 = distance.modulo2();
             
               if(d2<cutOffDist2) {
                 double factor1  = sqrt(d2);
@@ -903,37 +898,41 @@ void CS2Backbone::calculate()
             for(unsigned i=0; i<rsize; i++){
     	      // compute angle from ring middle point to current atom position
     	      // get distance vector from query atom to ring center and normal vector to ring plane
+    	      const Vector n   = ringInfo[i].normVect;
+    	      const double nL  = ringInfo[i].lengthNV;
+    	      const double inL2 = 1./ringInfo[i].lengthN2;
+
               const Vector d = delta(ringInfo[i].position, getPosition(ipos));
-    	      const Vector n = ringInfo[i].normVect;
-    	      // compute square distance and distance from query atom to ring center
-    	      const double dn  = dotProduct(d,n);
-    	      const double dn2 = dn * dn;
     	      const double dL2 = d.modulo2();
     	      const double dL  = sqrt(dL2);
-    	      const double dL3 = dL2 * dL;
-    	      const double dL4 = dL2 * dL2;
+    	      const double idL3 = 1./(dL2*dL);
 
-    	      const double nL  = ringInfo[i].lengthNV;
-    	      const double nL2 = ringInfo[i].lengthN2;
+    	      const double dn    = dotProduct(d,n);
+    	      const double dn2   = dn*dn;
+    	      const double dLnL  = dL*nL;
+              const double dL_nL = dL/nL;
 
-    	      const double dLnL = dL * nL;
-    	      const double dL3nL3 = dL3 * nL2 * nL;
+    	      const double ang2 = dn2*inL2/dL2;
+    	      const double u    = 1.-3.*ang2;
+              const double cc   = rc[ringInfo[i].rtype];
 
-    	      const double sqrangle = dn2/(dL2*nL2);
-    	      const double u = 1.-3.*sqrangle;
-              cs += rc[ringInfo[i].rtype]*u/dL3;
-              
-    	      // calculate terms resulting from differentiating energy function with respect to query and ring atom coordinates
-    	      double factor = -6 * dn / (dL4 * nL2);
-              const Vector gradUQ = factor * (dL2 * n - dn * d);
+              cs += cc*u*idL3;
+             
+              const double fUU    = -6*dn*inL2; 
+    	      const double fUQ    = fUU/dL;
+              const Vector gradUQ = fUQ*(dL2*n - dn*d);
+              const Vector gradVQ = (3*dL*u)*d;
     	
-    	      factor = 3 * dL;
-              const Vector gradVQ = factor * d;
-    	      const double invdL6 = 1./(dL3 * dL3);
+      	      const double fact   = cc*idL3*idL3;
+    	      ff[0] += fact*(gradUQ - gradVQ);
     	
-      	      const double fact = -rc[ringInfo[i].rtype] * invdL6;
-    	      ff[0] += -fact * (gradUQ * dL3 - u * gradVQ);
-    	
+    	      const double fU       = fUU/nL;
+    	      const double OneOverN = 1./((double) ringInfo[i].numAtoms);
+              const Vector factor2  = OneOverN*n;
+    	      const Vector factor4  = (OneOverN/dL_nL)*d;
+
+              const Vector gradV    = -OneOverN*gradVQ;
+
     	      // update forces on ring atoms
     	      const unsigned limit = ringInfo[i].numAtoms - 3; // 2 for a 5-membered ring, 3 for a 6-membered ring
     	      for(unsigned at=0; at<ringInfo[i].numAtoms; at++) {
@@ -952,16 +951,12 @@ void CS2Backbone::calculate()
                 const Vector ab = crossProduct(d,g);
                 const Vector c  = crossProduct(n,g);
     	    
-    	        factor = -6 * dn / dL3nL3;
-    	        const double factor2 = 0.25 * dL / nL;
-    	        const double OneOverN = 1 / ((double) ringInfo[i].numAtoms);
-    	        const double factor3 = nL / dL * OneOverN;
-                const Vector gradU = factor * ((0.5 * ab - n *  OneOverN) * dLnL - dn * (2. * factor2 * c - factor3 * d));
+    	        const Vector factor3 = 0.5*dL_nL*c;
+                const Vector factor1 = 0.5*ab;
+                const Vector gradU   = fU*( dLnL*(factor1 - factor2) -dn*(factor3 - factor4) );
+
     	    
-    	        factor = -3 * dL * OneOverN;
-                const Vector gradV = factor * d;
-    	    
-    	        ff.push_back(-fact*(gradU * dL3 - u * gradV));
+    	        ff.push_back(fact*(gradU - gradV));
                 list.push_back(ringInfo[i].atom[at]);
               }
             }
@@ -971,18 +966,17 @@ void CS2Backbone::calculate()
           //DIHEDRAL ANGLES
           {
             const double *CO_DA = db.CO_DA(aa_kind,at_kind);
-    	    double *PARS_DA;
             if(myfrag->phi.size()==4){
-      	      PARS_DA = db.PARS_DA(aa_kind,at_kind,0);
+      	      const double *PARS_DA = db.PARS_DA(aa_kind,at_kind,0);
               const double val1 = 3.*myfrag->t_phi+PARS_DA[3];
-              const double val2 = 1.*myfrag->t_phi+PARS_DA[4];
+              const double val2 = myfrag->t_phi+PARS_DA[4];
     	      cs += CO_DA[0]*(PARS_DA[0]*cos(val1)+PARS_DA[1]*cos(val2)+PARS_DA[2]);
-              const double fact = CO_DA[0]*(+3.*PARS_DA[0]*sin(val1)+PARS_DA[1]*sin(val2));
+              const double fact = -CO_DA[0]*(+3.*PARS_DA[0]*sin(val1)+PARS_DA[1]*sin(val2));
 
-              ff.push_back(-fact*myfrag->dd0[0]);
-              ff.push_back(-fact*(myfrag->dd1[0]-myfrag->dd0[0]));
-              ff.push_back(-fact*(myfrag->dd2[0]-myfrag->dd1[0]));
-              ff.push_back( fact*myfrag->dd2[0]);
+              ff.push_back(fact*myfrag->dd0[0]);
+              ff.push_back(fact*myfrag->dd10[0]);
+              ff.push_back(fact*myfrag->dd21[0]);
+              ff.push_back(-fact*myfrag->dd2[0]);
               list.push_back(myfrag->phi[0]);
               list.push_back(myfrag->phi[1]);
               list.push_back(myfrag->phi[2]);
@@ -990,16 +984,16 @@ void CS2Backbone::calculate()
             }
 
             if(myfrag->psi.size()==4){
-    	      PARS_DA = db.PARS_DA(aa_kind,at_kind,1);
+    	      const double *PARS_DA = db.PARS_DA(aa_kind,at_kind,1);
               const double val1 = 3.*myfrag->t_psi+PARS_DA[3];
-              const double val2 = 1.*myfrag->t_psi+PARS_DA[4];
+              const double val2 = myfrag->t_psi+PARS_DA[4];
     	      cs += CO_DA[1]*(PARS_DA[0]*cos(val1)+PARS_DA[1]*cos(val2)+PARS_DA[2]);
-              const double fact = CO_DA[1]*(+3.*PARS_DA[0]*sin(val1)+PARS_DA[1]*sin(val2));
+              const double fact = -CO_DA[1]*(+3.*PARS_DA[0]*sin(val1)+PARS_DA[1]*sin(val2));
 
-              ff.push_back(-fact*myfrag->dd0[1]);
-              ff.push_back(-fact*(myfrag->dd1[1]-myfrag->dd0[1]));
-              ff.push_back(-fact*(myfrag->dd2[1]-myfrag->dd1[1]));
-              ff.push_back( fact*myfrag->dd2[1]);
+              ff.push_back(fact*myfrag->dd0[1]);
+              ff.push_back(fact*myfrag->dd10[1]);
+              ff.push_back(fact*myfrag->dd21[1]);
+              ff.push_back(-fact*myfrag->dd2[1]);
               list.push_back(myfrag->psi[0]);
               list.push_back(myfrag->psi[1]);
               list.push_back(myfrag->psi[2]);
@@ -1008,16 +1002,16 @@ void CS2Backbone::calculate()
 
             //Chi
             if(myfrag->chi1.size()==4){
-    	      PARS_DA = db.PARS_DA(aa_kind,at_kind,2);
+    	      const double *PARS_DA = db.PARS_DA(aa_kind,at_kind,2);
               const double val1 = 3.*myfrag->t_chi1+PARS_DA[3];
-              const double val2 = 1.*myfrag->t_chi1+PARS_DA[4];
+              const double val2 = myfrag->t_chi1+PARS_DA[4];
     	      cs += CO_DA[2]*(PARS_DA[0]*cos(val1)+PARS_DA[1]*cos(val2)+PARS_DA[2]);
-              const double fact = CO_DA[2]*(+3.*PARS_DA[0]*sin(val1)+PARS_DA[1]*sin(val2));
+              const double fact = -CO_DA[2]*(+3.*PARS_DA[0]*sin(val1)+PARS_DA[1]*sin(val2));
 
-              ff.push_back(-fact*myfrag->dd0[2]);
-              ff.push_back(-fact*(myfrag->dd1[2]-myfrag->dd0[2]));
-              ff.push_back(-fact*(myfrag->dd2[2]-myfrag->dd1[2]));
-              ff.push_back( fact*myfrag->dd2[2]);
+              ff.push_back(fact*myfrag->dd0[2]);
+              ff.push_back(fact*myfrag->dd10[2]);
+              ff.push_back(fact*myfrag->dd21[2]);
+              ff.push_back(-fact*myfrag->dd2[2]);
               list.push_back(myfrag->chi1[0]);
               list.push_back(myfrag->chi1[1]);
               list.push_back(myfrag->chi1[2]);
@@ -1032,9 +1026,9 @@ void CS2Backbone::calculate()
           const unsigned listsize = list.size();
           for(unsigned i=0;i<listsize;i++) {
             setAtomsDerivatives(comp,list[i],ff[i]);
-            virial-=Tensor(getPosition(list[i]),ff[i]);
+            virial+=Tensor(getPosition(list[i]),ff[i]);
           }
-          setBoxDerivatives(comp,virial);
+          setBoxDerivatives(comp,-virial);
         } 
       }
     }
@@ -1043,6 +1037,35 @@ void CS2Backbone::calculate()
 
   ++box_count;
   if(box_count == box_nupdate) box_count = 0;
+}
+
+void CS2Backbone::update_neighb(){
+  const unsigned chainsize = atom.size();
+  for(unsigned s=0;s<chainsize;s++){
+    const unsigned psize = atom[s].size();
+    #pragma omp parallel for num_threads(OpenMP::getNumThreads())  
+    for(unsigned a=1;a<psize-1;a++){
+      if(!atom[s][a].doit) continue;
+      const unsigned boxsize = getNumberOfAtoms();
+      atom[s][a].box_nb.clear();
+      atom[s][a].box_nb.reserve(3*numResidues);
+      const unsigned res_curr = res_num[atom[s][a].pos[0]];
+      for(unsigned bat=0; bat<boxsize; bat++) {
+        const unsigned res_dist = abs(static_cast<int>(res_curr-res_num[bat]));
+        if(res_dist<2) continue;
+        for(unsigned at_kind=0;at_kind<6; at_kind++) {
+          if(!atom[s][a].csdoit[at_kind]) continue;
+          const unsigned ipos = atom[s][a].pos[at_kind]; 
+          const Vector distance = delta(getPosition(bat),getPosition(ipos));
+          const double d2=distance.modulo2();
+          if(d2<cutOffNB2) { 
+            atom[s][a].box_nb.push_back(bat); 
+            break; 
+          }
+        }
+      }
+    }
+  }
 }
 
 void CS2Backbone::compute_ring_parameters(){
@@ -1074,39 +1097,47 @@ void CS2Backbone::compute_ring_parameters(){
 
 void CS2Backbone::compute_dihedrals(){
   const unsigned chainsize = atom.size();
-  // CYCLE OVER MULTIPLE CHAINS
   for(unsigned s=0;s<chainsize;s++){
     const unsigned psize = atom[s].size();
-    #pragma omp parallel for num_threads(OpenMP::getNumThreads()) schedule(dynamic)  
-    // SKIP FIRST AND LAST RESIDUE OF EACH CHAIN
+    #pragma omp parallel for num_threads(OpenMP::getNumThreads())  
     for(unsigned a=1;a<psize-1;a++){
+      if(!atom[s][a].doit) continue;
       const Fragment *myfrag = &atom[s][a];
-      // CYCLE OVER THE SIX BACKBONE CHEMICAL SHIFTS
-      for(unsigned at_kind=0;at_kind<6;at_kind++){
-        if(myfrag->exp_cs[at_kind]>0){
-          if(myfrag->phi.size()==4){
-            const Vector d0 = delta(getPosition(myfrag->phi[1]), getPosition(myfrag->phi[0]));
-            const Vector d1 = delta(getPosition(myfrag->phi[2]), getPosition(myfrag->phi[1]));
-            const Vector d2 = delta(getPosition(myfrag->phi[3]), getPosition(myfrag->phi[2]));
-            Torsion t;
-            atom[s][a].t_phi = t.compute(d0,d1,d2,atom[s][a].dd0[0],atom[s][a].dd1[0],atom[s][a].dd2[0]);
-          }
-          if(myfrag->psi.size()==4){
-            const Vector d0 = delta(getPosition(myfrag->psi[1]), getPosition(myfrag->psi[0]));
-            const Vector d1 = delta(getPosition(myfrag->psi[2]), getPosition(myfrag->psi[1]));
-            const Vector d2 = delta(getPosition(myfrag->psi[3]), getPosition(myfrag->psi[2]));
-            Torsion t;
-            atom[s][a].t_psi = t.compute(d0,d1,d2,atom[s][a].dd0[1],atom[s][a].dd1[1],atom[s][a].dd2[1]);
-          }
-          if(myfrag->chi1.size()==4){
-            const Vector d0 = delta(getPosition(myfrag->chi1[1]), getPosition(myfrag->chi1[0]));
-            const Vector d1 = delta(getPosition(myfrag->chi1[2]), getPosition(myfrag->chi1[1]));
-            const Vector d2 = delta(getPosition(myfrag->chi1[3]), getPosition(myfrag->chi1[2]));
-            Torsion t;
-            atom[s][a].t_chi1 = t.compute(d0,d1,d2,atom[s][a].dd0[2],atom[s][a].dd1[2],atom[s][a].dd2[2]);
-          }
-          break;
-        }
+      if(myfrag->phi.size()==4){
+        const Vector d0 = delta(getPosition(myfrag->phi[1]), getPosition(myfrag->phi[0]));
+        const Vector d1 = delta(getPosition(myfrag->phi[2]), getPosition(myfrag->phi[1]));
+        const Vector d2 = delta(getPosition(myfrag->phi[3]), getPosition(myfrag->phi[2]));
+        Torsion t;
+        Vector dd0, dd1, dd2;
+        atom[s][a].t_phi = t.compute(d0,d1,d2,dd0,dd1,dd2);
+        atom[s][a].dd0[0]  = dd0;
+        atom[s][a].dd10[0] = dd1-dd0;
+        atom[s][a].dd21[0] = dd2-dd1;
+        atom[s][a].dd2[0]  = dd2;
+      }
+      if(myfrag->psi.size()==4){
+        const Vector d0 = delta(getPosition(myfrag->psi[1]), getPosition(myfrag->psi[0]));
+        const Vector d1 = delta(getPosition(myfrag->psi[2]), getPosition(myfrag->psi[1]));
+        const Vector d2 = delta(getPosition(myfrag->psi[3]), getPosition(myfrag->psi[2]));
+        Torsion t;
+        Vector dd0, dd1, dd2;
+        atom[s][a].t_psi = t.compute(d0,d1,d2,dd0,dd1,dd2);
+        atom[s][a].dd0[1]  = dd0;
+        atom[s][a].dd10[1] = dd1-dd0;
+        atom[s][a].dd21[1] = dd2-dd1;
+        atom[s][a].dd2[1]  = dd2;
+      }
+      if(myfrag->chi1.size()==4){
+        const Vector d0 = delta(getPosition(myfrag->chi1[1]), getPosition(myfrag->chi1[0]));
+        const Vector d1 = delta(getPosition(myfrag->chi1[2]), getPosition(myfrag->chi1[1]));
+        const Vector d2 = delta(getPosition(myfrag->chi1[3]), getPosition(myfrag->chi1[2]));
+        Torsion t;
+        Vector dd0, dd1, dd2;
+        atom[s][a].t_chi1 = t.compute(d0,d1,d2,dd0,dd1,dd2);
+        atom[s][a].dd0[2]  = dd0;
+        atom[s][a].dd10[2] = dd1-dd0;
+        atom[s][a].dd21[2] = dd2-dd1;
+        atom[s][a].dd2[2]  = dd2;
       }
     }
   }
@@ -1184,9 +1215,9 @@ void CS2Backbone::init_backbone(const PDB &pdb){
     for(unsigned a=start;a<=end;a++){
       unsigned f_idx = a - res_offset;
       Fragment at;
-      at.box_nb.resize(6); 
       at.pos.resize(6); 
-      at.exp_cs.resize(6); 
+      at.csdoit.resize(6,false);
+      at.doit = false; 
       {
         at.pos[0] = HA_[f_idx];
         at.pos[1] =  H_[f_idx];
@@ -1249,7 +1280,8 @@ void CS2Backbone::init_backbone(const PDB &pdb){
           at.chi1.push_back(CX_[f_idx]);
         }
         at.dd0.resize(3);
-        at.dd1.resize(3);
+        at.dd10.resize(3);
+        at.dd21.resize(3);
         at.dd2.resize(3);
       }
       atm_.push_back(at);
