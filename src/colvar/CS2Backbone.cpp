@@ -469,7 +469,7 @@ void CS2Backbone::registerKeywords( Keywords& keys ){
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
   keys.add("compulsory","DATA","data/","The folder with the experimental chemical shifts.");
   keys.add("compulsory","TEMPLATE","template.pdb","A PDB file of the protein system to initialise ALMOST.");
-  keys.add("compulsory","NEIGH_FREQ","20","Period in step for neighbour list update.");
+  keys.add("compulsory","NEIGH_FREQ","25","Period in step for neighbour list update.");
   keys.add("compulsory","NRES","Number of residues, corresponding to the number of chemical shifts.");
   keys.addFlag("NOEXP",false,"Set to TRUE if you don't want to have fixed components with the experimetnal values.");  
   keys.addOutputComponent("ha","default","the calculated Ha hydrogen chemical shifts"); 
@@ -705,6 +705,7 @@ void CS2Backbone::calculate()
 
   unsigned index=0;
   const unsigned chainsize = atom.size();
+  const unsigned atleastned = 72+ringInfo.size()*6;
   // CYCLE OVER MULTIPLE CHAINS
   for(unsigned s=0;s<chainsize;s++){
     const unsigned psize = atom[s].size();
@@ -718,7 +719,7 @@ void CS2Backbone::calculate()
       const unsigned res_type_curr = myfrag->res_type_curr;
       const unsigned res_type_prev = myfrag->res_type_prev;
       const unsigned res_type_next = myfrag->res_type_next;
-      const unsigned needed_atoms = 72+ringInfo.size()*6+myfrag->box_nb.size();
+      const unsigned needed_atoms = atleastned+myfrag->box_nb.size();
 
       /* Extra Distances are the same for each residue */
       const unsigned xdsize=myfrag->xd1.size();
@@ -900,7 +901,7 @@ void CS2Backbone::calculate()
     	      // get distance vector from query atom to ring center and normal vector to ring plane
     	      const Vector n   = ringInfo[i].normVect;
     	      const double nL  = ringInfo[i].lengthNV;
-    	      const double inL2 = 1./ringInfo[i].lengthN2;
+    	      const double inL2 = ringInfo[i].lengthN2;
 
               const Vector d = delta(ringInfo[i].position, getPosition(ipos));
     	      const double dL2 = d.modulo2();
@@ -941,9 +942,7 @@ void CS2Backbone::calculate()
     	        if (at < limit) g = delta(getPosition(ringInfo[i].atom[(at+2)%3]),getPosition(ringInfo[i].atom[(at+1)%3]));
                 // atoms 3,4 (5 member) or 3,4,5 (6 member)
     	        else if (at >= ringInfo[i].numAtoms - limit) {
-                  // 2 for a 5-membered ring, 3 for a 6-membered ring
-    	          const unsigned offset = ringInfo[i].numAtoms - 3;
-                  g = delta(getPosition(ringInfo[i].atom[((at+2-offset) % 3) + offset]), getPosition(ringInfo[i].atom[((at+1-offset) % 3) + offset])); 
+                  g = delta(getPosition(ringInfo[i].atom[((at+2-limit) % 3) + limit]), getPosition(ringInfo[i].atom[((at+1-limit) % 3) + limit])); 
                 // atom 2 (5-membered rings)
     	        } else g = delta(getPosition(ringInfo[i].atom[4]) , getPosition(ringInfo[i].atom[3])) + 
                            delta(getPosition(ringInfo[i].atom[1]) , getPosition(ringInfo[i].atom[2]));
@@ -1090,8 +1089,8 @@ void CS2Backbone::compute_ring_parameters(){
     // ring plane normal vector is average of n1 and n2
     ringInfo[i].normVect = 0.5*(ringInfo[i].n1 + ringInfo[i].n2);
     // calculate squared length and length of normal vector
-    ringInfo[i].lengthN2 = ringInfo[i].normVect.modulo2(); 
-    ringInfo[i].lengthNV = sqrt(ringInfo[i].lengthN2);
+    ringInfo[i].lengthN2 = 1./ringInfo[i].normVect.modulo2(); 
+    ringInfo[i].lengthNV = 1./sqrt(ringInfo[i].lengthN2);
   }
 }
 
