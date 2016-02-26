@@ -79,19 +79,19 @@ void Colvar::apply(){
       for(unsigned i=rank;i<ncp;i+=stride){
         if(getPntrToComponent(i)->applyForce(oforces)){
           for(unsigned j=0;j<nat;++j){
-            omp_f[j][0]+=forces[3*j+0];
-            omp_f[j][1]+=forces[3*j+1];
-            omp_f[j][2]+=forces[3*j+2];
+            omp_f[j][0]+=oforces[3*j+0];
+            omp_f[j][1]+=oforces[3*j+1];
+            omp_f[j][2]+=oforces[3*j+2];
           }
-          omp_v(0,0)+=forces[3*nat+0];
-          omp_v(0,1)+=forces[3*nat+1];
-          omp_v(0,2)+=forces[3*nat+2];
-          omp_v(1,0)+=forces[3*nat+3];
-          omp_v(1,1)+=forces[3*nat+4];
-          omp_v(1,2)+=forces[3*nat+5];
-          omp_v(2,0)+=forces[3*nat+6];
-          omp_v(2,1)+=forces[3*nat+7];
-          omp_v(2,2)+=forces[3*nat+8];
+          omp_v(0,0)+=oforces[3*nat+0];
+          omp_v(0,1)+=oforces[3*nat+1];
+          omp_v(0,2)+=oforces[3*nat+2];
+          omp_v(1,0)+=oforces[3*nat+3];
+          omp_v(1,1)+=oforces[3*nat+4];
+          omp_v(1,2)+=oforces[3*nat+5];
+          omp_v(2,0)+=oforces[3*nat+6];
+          omp_v(2,1)+=oforces[3*nat+7];
+          omp_v(2,2)+=oforces[3*nat+8];
         }
       }
       #pragma omp critical
