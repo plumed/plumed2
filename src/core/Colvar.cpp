@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
+#include "tools/OpenMP.h"
 #include <vector>
 #include <string>
 
@@ -69,24 +70,43 @@ void Colvar::apply(){
   }
 
   if(!isEnergy){
-    for(unsigned i=rank;i<ncp;i+=stride){
-      if(getPntrToComponent(i)->applyForce(forces)){
-        for(unsigned j=0;j<nat;++j){
-          f[j][0]+=forces[3*j+0];
-          f[j][1]+=forces[3*j+1];
-          f[j][2]+=forces[3*j+2];
+    #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(f,v) 
+    {
+      vector<Vector> omp_f(f.size());
+      Tensor         omp_v;
+      vector<double> oforces(3*nat+9);
+      #pragma omp for 
+      for(unsigned i=rank;i<ncp;i+=stride){
+        if(getPntrToComponent(i)->applyForce(oforces)){
+          for(unsigned j=0;j<nat;++j){
+            omp_f[j][0]+=forces[3*j+0];
+            omp_f[j][1]+=forces[3*j+1];
+            omp_f[j][2]+=forces[3*j+2];
+          }
+          omp_v(0,0)+=forces[3*nat+0];
+          omp_v(0,1)+=forces[3*nat+1];
+          omp_v(0,2)+=forces[3*nat+2];
+          omp_v(1,0)+=forces[3*nat+3];
+          omp_v(1,1)+=forces[3*nat+4];
+          omp_v(1,2)+=forces[3*nat+5];
+          omp_v(2,0)+=forces[3*nat+6];
+          omp_v(2,1)+=forces[3*nat+7];
+          omp_v(2,2)+=forces[3*nat+8];
         }
-        v(0,0)+=forces[3*nat+0];
-        v(0,1)+=forces[3*nat+1];
-        v(0,2)+=forces[3*nat+2];
-        v(1,0)+=forces[3*nat+3];
-        v(1,1)+=forces[3*nat+4];
-        v(1,2)+=forces[3*nat+5];
-        v(2,0)+=forces[3*nat+6];
-        v(2,1)+=forces[3*nat+7];
-        v(2,2)+=forces[3*nat+8];
       }
+      #pragma omp critical
+      for(unsigned j=0;j<nat;j++) f[j]+=omp_f[j]; 
+      v(0,0)+=omp_v(0,0);
+      v(0,1)+=omp_v(0,1);
+      v(0,2)+=omp_v(0,2);
+      v(1,0)+=omp_v(1,0);
+      v(1,1)+=omp_v(1,1);
+      v(1,2)+=omp_v(1,2);
+      v(2,0)+=omp_v(2,0);
+      v(2,1)+=omp_v(2,1);
+      v(2,2)+=omp_v(2,2);
     }
+
     if(ncp>comm.Get_size()) {
       if(fsz>0) comm.Sum(&f[0][0],3*fsz);
       comm.Sum(&v[0][0],9);

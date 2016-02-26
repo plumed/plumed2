@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Function.h"
+#include "tools/OpenMP.h"
 
 using namespace std;
 namespace PLMD{
@@ -68,7 +69,6 @@ void Function::apply()
   const unsigned cgs=comm.Get_size();
 
   vector<double> f(noa,0.0);
-  vector<double> forces(noa);
 
   unsigned stride=1;
   unsigned rank=0;
@@ -78,11 +78,19 @@ void Function::apply()
   }
 
   unsigned at_least_one_forced=0;
-  for(unsigned i=rank;i<ncp;i+=stride) {
-    if(getPntrToComponent(i)->applyForce(forces)) {
-      at_least_one_forced=1;
-      for(unsigned j=0;j<noa;j++) f[j]+=forces[j]; 
+  #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(f)
+  {
+    vector<double> omp_f(noa,0.0);
+    vector<double> forces(noa);
+    #pragma omp for reduction( + : at_least_one_forced)
+    for(unsigned i=rank;i<ncp;i+=stride) {
+      if(getPntrToComponent(i)->applyForce(forces)) {
+        at_least_one_forced+=1;
+        for(unsigned j=0;j<noa;j++) omp_f[j]+=forces[j]; 
+      }
     }
+    #pragma omp critical
+    for(unsigned j=0;j<noa;j++) f[j]+=omp_f[j]; 
   }
 
   if(noa>0&&ncp>cgs) { comm.Sum(&f[0],noa); comm.Sum(at_least_one_forced); }
