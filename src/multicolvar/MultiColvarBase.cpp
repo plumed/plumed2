@@ -93,7 +93,7 @@ void MultiColvarBase::setupMultiColvarBase(){
   // Setup decoder array
   if( !usespecies && nblock>0 ){
      // Check if number of atoms is too large
-     if( pow( nblock, ablocks.size()+1)>std::numeric_limits<unsigned>::max() ) error("number of atoms in groups is too big for PLUMED to handle"); 
+     if( pow( nblock, ablocks.size() )>std::numeric_limits<unsigned>::max() ) error("number of atoms in groups is too big for PLUMED to handle"); 
 
      decoder.resize( ablocks.size() ); unsigned code=1;
      for(unsigned i=0;i<ablocks.size();++i){ decoder[ablocks.size()-1-i]=code; code *= nblock; } 
