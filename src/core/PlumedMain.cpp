@@ -733,7 +733,10 @@ void PlumedMain::load(const std::string& ss){
      if(n!=std::string::npos && n<s.length()-1) extension=s.substr(n+1);
      if(n!=std::string::npos && n<s.length())   base=s.substr(0,n);
      if(extension=="cpp"){
-       string cmd="plumed mklib "+s;
+// full path command, including environment setup
+// this will work even if plumed is not in the execution path or if it has been
+// installed with a name different from "plumed"
+       string cmd=config::getEnvCommand()+" \""+config::getPlumedRoot()+"\"/scripts/mklib.sh "+s;
        log<<"Executing: "<<cmd;
        if(comm.Get_size()>0) log<<" (only on master node)";
        log<<"\n";
