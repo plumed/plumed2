@@ -74,7 +74,8 @@ linkcells(comm),
 threecells(comm),
 setup_completed(false),
 atomsWereRetrieved(false),
-usespecies(false)
+usespecies(false),
+nblock(0)
 {
   if( keywords.exists("NOPBC") ){ 
     bool nopbc=!usepbc; parseFlag("NOPBC",nopbc);
@@ -128,8 +129,11 @@ void MultiColvarBase::resizeBookeepingArray( const unsigned& num1, const unsigne
 
 void MultiColvarBase::setupMultiColvarBase( const std::vector<AtomNumber>& atoms ){
   // Setup decoder array
-  if( !usespecies && ablocks.size()<4 ){
-     use_for_central_atom.resize( ablocks.size(), true );
+  if( !usespecies && nblock>0 ){
+     // Check if number of atoms is too large
+     if( pow( nblock, ablocks.size() )>std::numeric_limits<unsigned>::max() ) error("number of atoms in groups is too big for PLUMED to handle"); 
+
+     ncentral=ablocks.size(); use_for_central_atom.resize( ablocks.size(), true );
      numberForCentralAtom = 1.0 / static_cast<double>( ablocks.size() );
      if( ablocks.size()==3 ){
          allthirdblockintasks=uselinkforthree=true;
@@ -153,7 +157,7 @@ void MultiColvarBase::setupMultiColvarBase( const std::vector<AtomNumber>& atoms
      else decoder.resize( ablocks.size() ); 
      unsigned code=1; for(unsigned i=0;i<decoder.size();++i){ decoder[decoder.size()-1-i]=code; code *= nblock; }
   } else if( !usespecies ){
-     use_for_central_atom.resize( ablocks.size(), true );
+     ncentral=ablocks.size(); use_for_central_atom.resize( ablocks.size(), true );
      numberForCentralAtom = 1.0 / static_cast<double>( ablocks.size() );
   }
 
@@ -183,7 +187,8 @@ void MultiColvarBase::setAtomsForCentralAtom( const std::vector<bool>& catom_ind
       use_for_central_atom[i]=catom_ind[i]; 
       if( use_for_central_atom[i] ) nat++;
   }
-  plumed_dbg_assert( nat>0 ); numberForCentralAtom = 1.0 / static_cast<double>( nat );
+  plumed_dbg_assert( nat>0 ); ncentral=nat;
+  numberForCentralAtom = 1.0 / static_cast<double>( nat );
 }
 
 void MultiColvarBase::turnOnDerivatives(){
@@ -200,7 +205,7 @@ void MultiColvarBase::setLinkCellCutoff( const double& lcut, double tcut ){
 }
 
 void MultiColvarBase::setupLinkCells(){
-  if( !linkcells.enabled() ) return ;
+  if( (!usespecies && nblock==0) || !linkcells.enabled() ) return ;
   // Retrieve any atoms that haven't already been retrieved
   for(std::vector<MultiColvarBase*>::iterator p=mybasemulticolvars.begin();p!=mybasemulticolvars.end();++p){
      (*p)->retrieveAtoms();
@@ -248,7 +253,7 @@ void MultiColvarBase::setupLinkCells(){
 
 void MultiColvarBase::setupNonUseSpeciesLinkCells( const unsigned& my_always_active ){
   plumed_assert( !usespecies );
-  if( !linkcells.enabled() ) return ;
+  if( nblock==0 || !linkcells.enabled() ) return ;
 
   if( !uselinkforthree ){
      // Get some parallel info
@@ -327,7 +332,7 @@ void MultiColvarBase::setupNonUseSpeciesLinkCells( const unsigned& my_always_act
 }
 
 void MultiColvarBase::decodeIndexToAtoms( const unsigned& taskCode, std::vector<unsigned>& atoms ) const {
-  plumed_dbg_assert( !usespecies && ablocks.size()<4 );
+  plumed_dbg_assert( atoms.size()==ablocks.size() && !usespecies && nblock>0 );
   if( atoms.size()!=decoder.size() ) atoms.resize( decoder.size() );
 
   unsigned scode = taskCode;
@@ -347,7 +352,7 @@ bool MultiColvarBase::setupCurrentAtomList( const unsigned& taskCode, AtomValueP
   } else if( allthirdblockintasks ){ 
      plumed_dbg_assert( ablocks.size()==3 ); std::vector<unsigned> atoms(2); decodeIndexToAtoms( taskCode, atoms );
      unsigned natomsper=myatoms.setupAtomsFromLinkCells( atoms, getLinkCellPosition(atoms), threecells );
-  } else if( ablocks.size()<4 ){
+  } else if( nblock>0 ){
      std::vector<unsigned> atoms( ablocks.size() );
      decodeIndexToAtoms( taskCode, atoms ); myatoms.setNumberOfAtoms( ablocks.size() );
      for(unsigned i=0;i<ablocks.size();++i) myatoms.setAtom( i, atoms[i] ); 
@@ -540,7 +545,7 @@ Vector MultiColvarBase::getCentralAtomPos( const unsigned& taskIndex ){
 
   if( usespecies || isDensity() ){
      return getPositionOfAtomForLinkCells(curr);
-  } else if( ablocks.size()<4 ){
+  } else if( nblock>0 ){
      // double factor=1.0/static_cast<double>( ablocks.size() );
      Vector mypos; mypos.zero(); 
      std::vector<unsigned> atoms( ablocks.size() ); decodeIndexToAtoms( curr, atoms );
@@ -565,9 +570,8 @@ CatomPack MultiColvarBase::getCentralAtomPack( const unsigned& basn, const unsig
      mypack.resize(1);
      mypack.setIndex( 0, basn + curr );
      mypack.setDerivative( 0, Tensor::identity() );
-  } else if( ablocks.size()<4 ){
-     mypack.resize(ablocks.size());
-     unsigned k=0;
+  } else if( nblock>0 ){
+     mypack.resize(ncentral); unsigned k=0;
      std::vector<unsigned> atoms( ablocks.size() ); decodeIndexToAtoms( curr, atoms );
      for(unsigned i=0;i<ablocks.size();++i){
          if( use_for_central_atom[i] ){
@@ -577,7 +581,7 @@ CatomPack MultiColvarBase::getCentralAtomPack( const unsigned& basn, const unsig
          }
      }
   } else {
-     unsigned k=0;
+     mypack.resize(ncentral); unsigned k=0;
      for(unsigned i=0;i<ablocks.size();++i){
          if( use_for_central_atom[i] ){
              mypack.setIndex( k, basn + ablocks[i][curr] );
