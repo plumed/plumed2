@@ -161,7 +161,7 @@ void MultiColvar::readGroupsKeyword( int& natoms, std::vector<AtomNumber>& all_a
       if(natoms==2){
          readTwoGroups( "GROUPA", "GROUPB", all_atoms );
       } else if(natoms==3){
-         readThreeGroups( "GROUPA", "GROUPB", "GROUPC", true, all_atoms);
+         readThreeGroups( "GROUPA", "GROUPB", "GROUPC", true, false, all_atoms);
       } else {
          plumed_merror("can only use groups for colvars involving 2 or 3 atoms");
       }
@@ -207,7 +207,8 @@ void MultiColvar::readTwoGroups( const std::string& key1, const std::string& key
   }
 }
 
-void MultiColvar::readThreeGroups( const std::string& key1, const std::string& key2, const std::string& key3, const bool& allow2, std::vector<AtomNumber>& all_atoms ){
+void MultiColvar::readThreeGroups( const std::string& key1, const std::string& key2, const std::string& key3, 
+                                   const bool& allow2, const bool& no_third_dim_accum, std::vector<AtomNumber>& all_atoms ){
   plumed_assert( all_atoms.size()==0 );
   ablocks.resize( 3 ); 
 
@@ -257,6 +258,13 @@ void MultiColvar::readThreeGroups( const std::string& key1, const std::string& k
       else nblock=t1.size();
       if( t3.size()>nblock ) nblock=t3.size();
 
+      unsigned icoef, jcoef, kcoef, kcount;
+      if( no_third_dim_accum ){
+         icoef=nblock; jcoef=1; kcoef=0; kcount=1; 
+      } else {
+         icoef=nblock*nblock; jcoef=nblock; kcoef=1; kcount=t3.size(); 
+      }
+
       ablocks[2].resize( t3.size() ); 
       for(unsigned i=0;i<t3.size();++i){
          all_atoms.push_back( t3[i] ); ablocks[2][i] = t1.size() + t2.size() + i;
@@ -264,10 +272,10 @@ void MultiColvar::readThreeGroups( const std::string& key1, const std::string& k
       for(unsigned i=0;i<t1.size();++i){
           for(unsigned j=0;j<t2.size();++j){
               bookeeping(i,j).first=getFullNumberOfTasks();
-              for(unsigned k=0;k<t3.size();++k){
+              for(unsigned k=0;k<kcount;++k){
                   if( all_atoms[ablocks[0][i]]!=all_atoms[ablocks[1][j]] && 
                       all_atoms[ablocks[0][i]]!=all_atoms[ablocks[2][k]] && 
-                      all_atoms[ablocks[1][j]]!=all_atoms[ablocks[2][k]] ) addTaskToList( nblock*nblock*i + nblock*j + k );
+                      all_atoms[ablocks[1][j]]!=all_atoms[ablocks[2][k]] ) addTaskToList( icoef*i + jcoef*j + kcoef*k );
               }
               bookeeping(i,j).second=getFullNumberOfTasks();
           }

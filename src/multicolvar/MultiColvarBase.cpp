@@ -130,8 +130,6 @@ void MultiColvarBase::resizeBookeepingArray( const unsigned& num1, const unsigne
 void MultiColvarBase::setupMultiColvarBase( const std::vector<AtomNumber>& atoms ){
   // Setup decoder array
   if( !usespecies && nblock>0 ){
-     // Check if number of atoms is too large
-     if( pow( nblock, ablocks.size() )>std::numeric_limits<unsigned>::max() ) error("number of atoms in groups is too big for PLUMED to handle"); 
 
      ncentral=ablocks.size(); use_for_central_atom.resize( ablocks.size(), true );
      numberForCentralAtom = 1.0 / static_cast<double>( ablocks.size() );
@@ -153,8 +151,15 @@ void MultiColvarBase::setupMultiColvarBase( const std::vector<AtomNumber>& atoms
          } 
      }
     
-     if( allthirdblockintasks ) decoder.resize(2);
-     else decoder.resize( ablocks.size() ); 
+     if( allthirdblockintasks ){
+        decoder.resize(2); plumed_assert( ablocks.size()==3 );
+        // Check if number of atoms is too large
+        if( pow( nblock, 2 )>std::numeric_limits<unsigned>::max() ) error("number of atoms in groups is too big for PLUMED to handle");
+     } else {
+        decoder.resize( ablocks.size() ); 
+        // Check if number of atoms is too large
+        if( pow( nblock, ablocks.size() )>std::numeric_limits<unsigned>::max() ) error("number of atoms in groups is too big for PLUMED to handle");
+     }
      unsigned code=1; for(unsigned i=0;i<decoder.size();++i){ decoder[decoder.size()-1-i]=code; code *= nblock; }
   } else if( !usespecies ){
      ncentral=ablocks.size(); use_for_central_atom.resize( ablocks.size(), true );
