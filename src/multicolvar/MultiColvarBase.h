@@ -56,6 +56,8 @@ private:
   LinkCells linkcells;
 /// This remembers where the boundaries are for the tasks. It makes link cells work fast
   Matrix<std::pair<unsigned,unsigned> > bookeeping;
+/// Number of atoms that are being used for central atom position
+  unsigned ncentral;
 /// Bool vector telling us which atoms are required to calculate central atom position
   std::vector<bool> use_for_central_atom;
 /// 1/number of atoms involved in central atoms

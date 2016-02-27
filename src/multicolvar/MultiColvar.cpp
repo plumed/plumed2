@@ -102,20 +102,8 @@ void MultiColvar::readAtomsLikeKeyword( const std::string & key, int& natoms, st
      t.resize(0); 
   }
   if( all_atoms.size()>0 ){
-     nblock=ablocks[0].size(); 
-     if( natoms<4 ) resizeBookeepingArray( nblock, nblock ); 
-
-     for(unsigned i=0;i<nblock;++i){
-         if( natoms<4 ){
-            unsigned cvcode=0, tmpc=1; 
-            for(unsigned j=0;j<natoms;++j){ cvcode += i*tmpc; tmpc *= nblock; }
-            bookeeping(i,i).first=getFullNumberOfTasks();
-            addTaskToList( cvcode ); 
-            bookeeping(i,i).second=getFullNumberOfTasks();
-         } else {
-            addTaskToList( i );
-         }
-     }
+     nblock=0; 
+     for(unsigned i=0;i<ablocks[0].size();++i) addTaskToList( i );
   }
 }
 
