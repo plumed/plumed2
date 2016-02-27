@@ -115,18 +115,21 @@ PlumedMain::~PlumedMain(){
 #define CHECK_NOTINIT(ini,word) plumed_massert(!(ini),"cmd(\"" + word +"\") should be only used before plumed initialization")
 #define CHECK_NOTNULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"" + word + "\")");
 
+
 void PlumedMain::cmd(const std::string & word,void*val){
 
   stopwatch.start();
 
   std::vector<std::string> words=Tools::getWords(word);
   unsigned nw=words.size();
-  if(nw==1) {
+  if(nw==0){
+    // do nothing
+  } else {
     int iword=-1;
-    std::map<std::string, int>::const_iterator it=plumedMainWordMap().find(word);
+    double d;
+    std::map<std::string, int>::const_iterator it=plumedMainWordMap().find(words[0]);
     if(it!=plumedMainWordMap().end()) iword=it->second;
     switch(iword) {
-      double d;
       case cmd_setBox:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
@@ -418,33 +421,37 @@ void PlumedMain::cmd(const std::string & word,void*val){
       case cmd_getBias:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        d=getBias()/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
-        atoms.double2MD(d,val);
+        atoms.double2MD(getBias()/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy()),val);
+        break;
+      case cmd_checkAction:
+        CHECK_NOTNULL(val,word);
+        plumed_assert(nw==2);
+        *(static_cast<int*>(val))=(actionRegister().check(words[1]) ? 1:0);
+        break;
+      case cmd_GREX:
+        if(!grex) grex=new GREX(*this);
+        plumed_massert(grex,"error allocating grex");
+        {
+          std::string kk=words[1];
+          for(unsigned i=2;i<words.size();i++) kk+=" "+words[i];
+          grex->cmd(kk.c_str(),val);
+        }
+        break;
+      case cmd_CLTool:
+        CHECK_NOTINIT(initialized,word);
+        if(!cltool) cltool=new CLToolMain;
+        {
+          std::string kk=words[1];
+          for(unsigned i=2;i<words.size();i++) kk+=" "+words[i];
+          cltool->cmd(kk.c_str(),val);
+        }
         break;
       default:
         plumed_merror("cannot interpret cmd(\"" + word + "\"). check plumed developers manual to see the available commands.");
         break;
     }
-  } else if(nw==2 && words[0]=="checkAction"){
-    int check=0;
-    if(actionRegister().check(words[1])) check=1;
-    *(static_cast<int*>(val))=check;
-  } else if(nw>1 && words[0]=="GREX"){
-    if(!grex) grex=new GREX(*this);
-    plumed_massert(grex,"error allocating grex");
-    std::string kk=words[1];
-    for(unsigned i=2;i<words.size();i++) kk+=" "+words[i];
-    grex->cmd(kk.c_str(),val);
-  } else if(nw>1 && words[0]=="CLTool"){
-    CHECK_NOTINIT(initialized,word);
-    if(!cltool) cltool=new CLToolMain;
-    std::string kk=words[1];
-    for(unsigned i=2;i<words.size();i++) kk+=" "+words[i];
-    cltool->cmd(kk.c_str(),val);
-  } else{
-    plumed_merror("cannot interpret cmd(\"" + word + "\"). check plumed developers manual to see the available commands.");
-  };
- stopwatch.pause();
+  }
+  stopwatch.pause();
 }
 
 ////////////////////////////////////////////////////////////////////////
