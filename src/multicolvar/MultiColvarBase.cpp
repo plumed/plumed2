@@ -332,7 +332,7 @@ void MultiColvarBase::setupNonUseSpeciesLinkCells( const unsigned& my_always_act
 }
 
 void MultiColvarBase::decodeIndexToAtoms( const unsigned& taskCode, std::vector<unsigned>& atoms ) const {
-  plumed_dbg_assert( atoms.size()==ablocks.size() && !usespecies && nblock>0 );
+  plumed_dbg_assert( !usespecies && nblock>0 );
   if( atoms.size()!=decoder.size() ) atoms.resize( decoder.size() );
 
   unsigned scode = taskCode;
