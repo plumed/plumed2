@@ -302,7 +302,7 @@ void Analysis::accumulate(){
   // Write data to checkpoint file
   if( write_chq ){
      rfile.rewind();
-     data[idata]->print( rfile, getTime(), logweights[idata], old_norm );
+     data[idata]->print( rfile, getTime(), logweights[idata], atoms.getUnits().getLength()/0.1, old_norm );
      rfile.flush();
   }
   // Increment data counter
