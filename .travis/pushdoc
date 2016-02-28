@@ -54,5 +54,5 @@ To browse the manual you should go
 EOF
 git add --all .
 git commit -m "Update to plumed/plumed2@$hash"
-# -q is not to show the GIT_TOKEN on Travis log
-git push -q -f doc gh-pages
+# -q and 2> is not to show the GIT_TOKEN on Travis log
+git push -q -f doc gh-pages 2> /dev/null 

@@ -60,6 +60,8 @@ private:
   LinkCells linkcells;
 /// Link cells for third block of atoms
   LinkCells threecells;
+/// Number of atoms that are being used for central atom position
+  unsigned ncentral;
 /// Bool vector telling us which atoms are required to calculate central atom position
   std::vector<bool> use_for_central_atom;
 /// 1/number of atoms involved in central atoms
