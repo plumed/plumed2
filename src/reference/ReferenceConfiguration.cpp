@@ -156,17 +156,17 @@ double ReferenceConfiguration::calculate( const std::vector<Vector>& pos, const 
 //   virialWasSet=ref->virialWasSet; virial=ref->virial;
 // }
 
-void ReferenceConfiguration::print( OFile& ofile, const double& time, const double& weight, const double& old_norm ){
+void ReferenceConfiguration::print( OFile& ofile, const double& time, const double& weight, const double& lunits, const double& old_norm ){
   ofile.printf("REMARK TIME=%f LOG_WEIGHT=%f OLD_NORM=%f\n",time, weight, old_norm );
-  print( ofile, "%f" );  // HARD CODED FORMAT HERE AS THIS IS FOR CHECKPOINT FILE
+  print( ofile, "%f", lunits );  // HARD CODED FORMAT HERE AS THIS IS FOR CHECKPOINT FILE
 }
 
-void ReferenceConfiguration::print( OFile& ofile, const std::string& fmt ){
+void ReferenceConfiguration::print( OFile& ofile, const std::string& fmt, const double& lunits ){
   ofile.printf("REMARK TYPE=%s\n",getName().c_str() );
   ReferenceArguments* args=dynamic_cast<ReferenceArguments*>(this);
   if(args) args->printArguments( ofile, fmt );
   ReferenceAtoms* atoms=dynamic_cast<ReferenceAtoms*>(this);
-  if(atoms) atoms->printAtoms( ofile );
+  if(atoms) atoms->printAtoms( ofile, lunits );
   ofile.printf("END\n");
 }
 
