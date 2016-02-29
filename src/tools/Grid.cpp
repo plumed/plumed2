@@ -577,7 +577,7 @@ void Grid::writeCubeFile(OFile& ofile, const double& lunit){
   ofile.printf("%u %f %f %f\n",nbin_[0],lunit*dx_[0],0.0,0.0);  // Number of bins in each direction followed by 
   ofile.printf("%u %f %f %f\n",nbin_[1],0.0,lunit*dx_[1],0.0);  // shape of voxel
   ofile.printf("%u %f %f %f\n",nbin_[2],0.0,0.0,lunit*dx_[2]);
-  ofile.printf("%u %f %f %f\n",1,0.0,0.0,0.0); // Fake atom otherwise VMD doesn't work
+  ofile.printf("%d %f %f %f\n",1,0.0,0.0,0.0); // Fake atom otherwise VMD doesn't work
   std::vector<unsigned> pp(3);
   for(pp[0]=0;pp[0]<nbin_[0];++pp[0]){
       for(pp[1]=0;pp[1]<nbin_[1];++pp[1]){
