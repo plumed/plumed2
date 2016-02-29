@@ -26,29 +26,30 @@ echo "  since they are full of warnings"
 ## (the "true" command is necessary so that the script does not fail if some string is not found)
 cat cppcheck.log | grep -v "\[molfile/" | grep -v "\[lapack/" | grep -v "\[blas/" > cppcheck.clean || true
 
-## Here I make a summary of the (style) messages
+## Here I make a summary of the (style) and (information) messages
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-echo "  Summary of reported (style) messages"
+echo "  Summary of reported (style) and (information) messages"
 ## (the "true" command is necessary so that the script does not fail if some string is not found)
 awk '{if($2=="(style)")print $3}' cppcheck.clean | sort  | uniq  -c || true
+awk '{if($2=="(information)")print $3}' cppcheck.clean | sort  | uniq  -c || true
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-## Here I also exclude (style) messages
+## Here I also exclude (style) and (information) messages
 ## perhaps we could keep some of them to make to code cleaner at some point
 ## (the "true" command is necessary so that the script does not fail if some string is not found)
-grep -v "(style)" cppcheck.clean > cppcheck.fatal || true
+grep -v "(style)" cppcheck.clean | grep -v "(information)" > cppcheck.fatal || true
 count=$(cat cppcheck.fatal | wc -l)
 echo 
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 if ((count==0))
 then
   echo "      cppcheck did not find any fatal error"
-  echo "      excluding (style)"
+  echo "      excluding (style) and (information)"
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
   exit 0
 fi
 
 echo "      cppcheck reported the following fatal errors:"
-echo "      excluding (style)"
+echo "      excluding (style) and (information)"
 echo
 cat cppcheck.fatal
 echo
