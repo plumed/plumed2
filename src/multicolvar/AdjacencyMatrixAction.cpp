@@ -70,7 +70,7 @@ tmpdf(1)
              }
              switchingFunction(j,i).set(sw,errors);  
              if( j!=i) switchingFunction(i,j).set(sw,errors);
-             log.printf("  %d th and %d th multicolvar groups must be within %s\n",i+1,j+1,(switchingFunction(i,j).description()).c_str() );      
+             log.printf("  %u th and %u th multicolvar groups must be within %s\n",i+1,j+1,(switchingFunction(i,j).description()).c_str() );      
           }
       }
   }
