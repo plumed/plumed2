@@ -17,6 +17,16 @@ matrix:
     dist: trusty
     sudo: required
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
+# cppcheck - takes a lot of time to compile the code, so I place it closer
+# to the beginning of the list
+  - os: linux
+    dist: trusty
+    sudo: required
+    env: CPPCHECK=yes CPPCHECK_VERSION=1.69
+  - os: linux
+    dist: trusty
+    sudo: required
+    env: CPPCHECK=yes CPPCHECK_VERSION=1.71
 # then check with different optimization flags
   - os: linux
     dist: trusty
@@ -38,15 +48,6 @@ matrix:
 # osx parallel
   - os: osx
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3
-# cppcheck
-  - os: linux
-    dist: trusty
-    sudo: required
-    env: CPPCHECK=yes CPPCHECK_VERSION=1.69
-  - os: linux
-    dist: trusty
-    sudo: required
-    env: CPPCHECK=yes CPPCHECK_VERSION=1.71
   allow_failures:
 # I allow this to fail temporarily
     - env: CPPCHECK=yes CPPCHECK_VERSION=1.71
