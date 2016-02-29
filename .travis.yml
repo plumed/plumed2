@@ -17,6 +17,16 @@ matrix:
     dist: trusty
     sudo: required
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
+# cppcheck - takes a lot of time to compile the code, so I place it closer
+# to the beginning of the list
+  - os: linux
+    dist: trusty
+    sudo: required
+    env: CPPCHECK=yes CPPCHECK_VERSION=1.69
+  - os: linux
+    dist: trusty
+    sudo: required
+    env: CPPCHECK=yes CPPCHECK_VERSION=1.71
 # then check with different optimization flags
   - os: linux
     dist: trusty
@@ -38,10 +48,9 @@ matrix:
 # osx parallel
   - os: osx
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3
-# cppcheck
-  - os: linux
-    sudo: required
-    env: CPPCHECK=yes
+  allow_failures:
+# I allow this to fail temporarily
+    - env: CPPCHECK=yes CPPCHECK_VERSION=1.71
 # Possible additional variables:
 #   VALGRIND=yes to make valgrind tests, only when log contains string [valgrind]
 install:
@@ -63,7 +72,8 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libmatheval-dev ; fi
   - if test "$PLUMED_CXX" ; then ./.travis/install.xdrfile ; fi
 # cppcheck:
-  - if test "$CPPCHECK" == yes ; then  ./.travis/install.cppcheck 1.69  ; fi
+# I use 1.71 since 1.72 seems to report a lot of false positive
+  - if test "$CPPCHECK" == yes ; then  ./.travis/install.cppcheck $CPPCHECK_VERSION ; fi
 # installation of these packages takes a lot of time
 # we do it only when needed
   - if test "$PLUMED_CXX" == "mpic++" -a "$TRAVIS_OS_NAME" == "linux" ; then sudo apt-get install -y libopenmpi-dev openmpi-bin ; fi
