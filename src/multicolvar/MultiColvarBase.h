@@ -56,6 +56,8 @@ private:
   bool allthirdblockintasks;
 /// In certain cases we can make three atom link cells faster
   bool uselinkforthree;
+/// Number of atoms that are active on this step
+  unsigned nactive_atoms;
 /// Stuff for link cells - this is used to make coordination number like variables faster
   LinkCells linkcells;
 /// Link cells for third block of atoms
@@ -110,6 +112,8 @@ protected:
   void setupActiveTaskSet( std::vector<unsigned>& active_tasks, const std::string& input_label );
 /// Setup link cells in order to make this calculation faster
   void setupLinkCells();
+/// Get the cutoff for the link cells
+  double getLinkCellCutoff()  const ;
 /// This does setup of link cell stuff that is specific to the non-use of the usespecies keyword
   void setupNonUseSpeciesLinkCells( const unsigned& );
 /// Get the separation between a pair of vectors

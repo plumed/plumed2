@@ -65,6 +65,8 @@ public:
   unsigned getNumberOfQuantities() const ;
 /// Do the calculation
   void performClustering(){};
+///
+  double  getCutoffForConnection() const ;  
 };
 
 PLUMED_REGISTER_ACTION(ClusterWithSurface,"CLUSTER_WITHSURFACE")
@@ -120,6 +122,12 @@ void ClusterWithSurface::getVectorDerivatives( const unsigned& ind, const bool& 
 
 unsigned ClusterWithSurface::getNumberOfQuantities() const {
   return myclusters->getNumberOfQuantities();
+}
+
+double  ClusterWithSurface::getCutoffForConnection() const {
+  double tcut = myclusters->getCutoffForConnection();
+  if( tcut>sqrt(rcut_surf2) ) return tcut;
+  return sqrt(rcut_surf2);
 }
 
 void ClusterWithSurface::retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const {

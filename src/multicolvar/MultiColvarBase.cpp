@@ -209,6 +209,10 @@ void MultiColvarBase::setLinkCellCutoff( const double& lcut, double tcut ){
   threecells.setCutoff( tcut );
 }
 
+double MultiColvarBase::getLinkCellCutoff()  const {
+  return linkcells.getCutoff();
+}
+
 void MultiColvarBase::setupLinkCells(){
   if( (!usespecies && nblock==0) || !linkcells.enabled() ) return ;
   // Retrieve any atoms that haven't already been retrieved
@@ -227,47 +231,50 @@ void MultiColvarBase::setupLinkCells(){
   }
  
   // Count number of currently active atoms
-  unsigned nactive_atoms=0;
+  nactive_atoms=0;
   for(unsigned i=0;i<ablocks[iblock].size();++i){
       if( isCurrentlyActive( iblock, ablocks[iblock][i] ) ) nactive_atoms++;
   }
 
-  std::vector<Vector> ltmp_pos( nactive_atoms ); 
-  std::vector<unsigned> ltmp_ind( nactive_atoms );
+  if( nactive_atoms>0 ){
+      std::vector<Vector> ltmp_pos( nactive_atoms ); 
+      std::vector<unsigned> ltmp_ind( nactive_atoms );
 
-  nactive_atoms=0;
-  if( usespecies ){
-     for(unsigned i=0;i<ablocks[0].size();++i){
-        if( !isCurrentlyActive( 0, ablocks[0][i] ) ) continue; 
-        ltmp_ind[nactive_atoms]=ablocks[0][i];
-        ltmp_pos[nactive_atoms]=getPositionOfAtomForLinkCells( ltmp_ind[nactive_atoms] );
-        nactive_atoms++;
-     }
-  } else {
-     for(unsigned i=0;i<ablocks[1].size();++i){
-        if( !isCurrentlyActive( 1, ablocks[1][i] ) ) continue;
-        ltmp_ind[nactive_atoms]=i; 
-        ltmp_pos[nactive_atoms]=getPositionOfAtomForLinkCells( ablocks[1][i] );
-        nactive_atoms++; 
-     }
+      nactive_atoms=0;
+      if( usespecies ){
+         for(unsigned i=0;i<ablocks[0].size();++i){
+            if( !isCurrentlyActive( 0, ablocks[0][i] ) ) continue; 
+            ltmp_ind[nactive_atoms]=ablocks[0][i];
+            ltmp_pos[nactive_atoms]=getPositionOfAtomForLinkCells( ltmp_ind[nactive_atoms] );
+            nactive_atoms++;
+         }
+      } else {
+         for(unsigned i=0;i<ablocks[1].size();++i){
+            if( !isCurrentlyActive( 1, ablocks[1][i] ) ) continue;
+            ltmp_ind[nactive_atoms]=i; 
+            ltmp_pos[nactive_atoms]=getPositionOfAtomForLinkCells( ablocks[1][i] );
+            nactive_atoms++; 
+         }
+      }
+
+      // Build the lists for the link cells
+      linkcells.buildCellLists( ltmp_pos, ltmp_ind, getPbc() );
   }
-
-  // Build the lists for the link cells
-  linkcells.buildCellLists( ltmp_pos, ltmp_ind, getPbc() );
 }
 
 void MultiColvarBase::setupNonUseSpeciesLinkCells( const unsigned& my_always_active ){
   plumed_assert( !usespecies );
   if( nblock==0 || !linkcells.enabled() ) return ;
+  deactivateAllTasks();
 
-  if( !uselinkforthree ){
+  if( !uselinkforthree && nactive_atoms>0 ){
      // Get some parallel info
      unsigned stride=comm.Get_size();
      unsigned rank=comm.Get_rank(); 
      if( serialCalculation() ){ stride=1; rank=0; }
 
      // Ensure we only do tasks where atoms are in appropriate link cells
-     std::vector<unsigned> linked_atoms( 1+ablocks[1].size() ); deactivateAllTasks();
+     std::vector<unsigned> linked_atoms( 1+ablocks[1].size() ); 
      for(unsigned i=rank;i<ablocks[0].size();i+=stride){
          if( !isCurrentlyActive( 0, ablocks[0][i] ) ) continue;
          unsigned natomsper=1; linked_atoms[0]=my_always_active;  // Note we always check atom 0 because it is simpler than changing LinkCells.cpp
@@ -276,9 +283,7 @@ void MultiColvarBase::setupNonUseSpeciesLinkCells( const unsigned& my_always_act
              for(unsigned k=bookeeping(i,linked_atoms[j]).first;k<bookeeping(i,linked_atoms[j]).second;++k) taskFlags[k]=1;
          }
      }
-     if( !serialCalculation() ) comm.Sum( taskFlags ); 
-     lockContributors();
-  } else { 
+  } else if( nactive_atoms>0 ){ 
      // Get some parallel info
      unsigned stride=comm.Get_size();
      unsigned rank=comm.Get_rank();
@@ -312,7 +317,6 @@ void MultiColvarBase::setupNonUseSpeciesLinkCells( const unsigned& my_always_act
      threecells.buildCellLists( lttmp_pos, lttmp_ind, getPbc() );
 
      // Ensure we only do tasks where atoms are in appropriate link cells
-     deactivateAllTasks();
      std::vector<unsigned> linked_atoms( 1+ablocks[1].size() );
      std::vector<unsigned> tlinked_atoms( 1+ablocks[2].size() );
      for(unsigned i=rank;i<ablocks[0].size();i+=stride){
@@ -331,9 +335,9 @@ void MultiColvarBase::setupNonUseSpeciesLinkCells( const unsigned& my_always_act
              }
          }
      }
-     if( !serialCalculation() ) comm.Sum( taskFlags );
-     lockContributors();
-  } 
+  }
+  if( !serialCalculation() ) comm.Sum( taskFlags );
+  lockContributors(); 
 }
 
 void MultiColvarBase::decodeIndexToAtoms( const unsigned& taskCode, std::vector<unsigned>& atoms ) const {

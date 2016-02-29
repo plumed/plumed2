@@ -132,6 +132,15 @@ void AdjacencyMatrixVessel::retrieveEdgeList( unsigned& nedge, std::vector<std::
   }
 }
 
+bool AdjacencyMatrixVessel::nodesAreConnected( const unsigned& iatom, const unsigned& jatom ) const {
+  if( !matrixElementIsActive( iatom, jatom ) ) return false;
+  unsigned ind=getStoreIndexFromMatrixIndices( iatom, jatom );
+
+  std::vector<double> myvals( getNumberOfComponents() ); 
+  retrieveValueWithIndex( ind, false, myvals );
+  return ( myvals[0]>wtol && function->checkForConnection( myvals ) );
+}
+
 void AdjacencyMatrixVessel::retrieveDerivatives( const unsigned& myelem, const bool& normed, MultiValue& myvals ){
   StoreDataVessel::retrieveDerivatives( myelem, normed, myvals );
   if( !function->weightHasDerivatives ) return ;
@@ -148,6 +157,10 @@ void AdjacencyMatrixVessel::retrieveDerivatives( const unsigned& myelem, const b
 
 void AdjacencyMatrixVessel::recalculateStoredQuantity( const unsigned& myelem, MultiValue& myvals ){
   function->recalculateMatrixElement( myelem, myvals );
+}
+
+double AdjacencyMatrixVessel::getCutoffForConnection() const {
+  return function->getLinkCellCutoff();
 }
 
 }

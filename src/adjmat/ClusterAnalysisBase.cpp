@@ -86,5 +86,13 @@ Vector ClusterAnalysisBase::getPosition( const unsigned& iatom ) const {
   return myclusters->getPosition( iatom );
 }
 
+double ClusterAnalysisBase::getCutoffForConnection() const {
+  return myclusters->getCutoffForConnection();
+}
+
+bool ClusterAnalysisBase::areConnected( const unsigned& ind1, const unsigned& ind2 ) const {
+  return myclusters->areConnected( ind1, ind2 );
+}
+
 }
 }

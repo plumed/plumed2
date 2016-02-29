@@ -76,6 +76,10 @@ public:
   unsigned getNumberOfRows() const ;
 /// Get the number of columns
   unsigned getNumberOfColumns() const ;
+/// Are these two nodes connected
+  bool nodesAreConnected( const unsigned& iatom, const unsigned& jatom ) const ;
+/// Get the cutoff that we are using for connections
+  double getCutoffForConnection() const ;
 };
 
 }

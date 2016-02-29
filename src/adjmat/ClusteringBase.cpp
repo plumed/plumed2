@@ -65,5 +65,13 @@ void ClusteringBase::retrieveAtomsInCluster( const unsigned& clust, std::vector<
    }
 }
 
+bool ClusteringBase::areConnected( const unsigned& iatom, const unsigned& jatom ) const {
+   return getAdjacencyVessel()->nodesAreConnected( iatom, jatom );
+}
+
+double ClusteringBase::getCutoffForConnection() const {
+  return getAdjacencyVessel()->getCutoffForConnection();
+}
+
 }
 }

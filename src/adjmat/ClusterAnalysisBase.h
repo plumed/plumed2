@@ -37,6 +37,8 @@ protected:
   Vector getPosition( const unsigned& ) const ;
   void retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const ;
   bool nodeIsActive( const unsigned& ind ) const ;
+  double getCutoffForConnection() const ;
+  bool areConnected( const unsigned& ind1, const unsigned& ind2 ) const ;
   void getPropertiesOfNode( const unsigned& ind, std::vector<double>& vals ) const ;
   void getNodePropertyDerivatives( const unsigned& ind, MultiValue& myvals ) const ;
 public:
@@ -44,6 +46,7 @@ public:
   explicit ClusterAnalysisBase(const ActionOptions&);
   bool isPeriodic();
   void turnOnDerivatives();
+  void setupActiveTaskSet( std::vector<unsigned>& active_tasks, const std::string& input_label ){}
   double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const { plumed_error(); }
 };
 
