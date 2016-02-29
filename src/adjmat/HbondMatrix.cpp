@@ -169,17 +169,17 @@ void HBondMatrix::setupConnector( const unsigned& id, const unsigned& i, const u
      std::string errors; distanceOOSwitch(j,i).set(desc,errors);
      if( errors.length()!=0 ) error("problem reading switching function description " + errors);
      if( j!=i) distanceOOSwitch(i,j).set(desc,errors);
-     log.printf("  atoms of type %d and %d must be within %s\n",i+1,j+1,(distanceOOSwitch(i,j).description()).c_str() );
+     log.printf("  atoms of type %u and %u must be within %s\n",i+1,j+1,(distanceOOSwitch(i,j).description()).c_str() );
   } else if( id==1 ){
      std::string errors; distanceOHSwitch(j,i).set(desc,errors);
      if( errors.length()!=0 ) error("problem reading switching function description " + errors);
      if( j!=i) distanceOHSwitch(i,j).set(desc,errors);
-     log.printf("  for atoms of type %d and %d the OH distance must be less than %s \n",i+1,j+1,(distanceOHSwitch(i,j).description()).c_str() );
+     log.printf("  for atoms of type %u and %u the OH distance must be less than %s \n",i+1,j+1,(distanceOHSwitch(i,j).description()).c_str() );
   } else if( id==2 ){
      std::string errors; angleSwitch(j,i).set(desc,errors);
      if( errors.length()!=0 ) error("problem reading switching function description " + errors);
      if( j!=i) angleSwitch(i,j).set(desc,errors);
-     log.printf("  for atoms of type %d and %d the OOH angle must be less than %s \n",i+1,j+1,(angleSwitch(i,j).description()).c_str() );
+     log.printf("  for atoms of type %u and %u the OOH angle must be less than %s \n",i+1,j+1,(angleSwitch(i,j).description()).c_str() );
   } 
 }
 

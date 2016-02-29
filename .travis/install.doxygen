@@ -17,8 +17,11 @@ fi
 
 git checkout $version
 
-./configure --prefix="$HOME/opt"
-make
+mkdir build
+cd build
+cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="$HOME/opt" ../
+make -j 4
 make install
+
 cd ../
 

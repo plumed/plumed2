@@ -212,7 +212,7 @@ scale(1)
   // Ouput details of all contacts 
   log.printf("  Gyromagnetic moment is %f. Scaling factor is %f.",mu_s,scale);
   for(unsigned i=0;i<ndata;++i){
-    log.printf("  The %dth Bond Dipolar Coupling is calculated from atoms : %d %d.", i+1, atoms[2*i].serial(), atoms[2*i+1].serial()); 
+    log.printf("  The %uth Bond Dipolar Coupling is calculated from atoms : %d %d.", i+1, atoms[2*i].serial(), atoms[2*i+1].serial()); 
     if(svd||addcoupling) log.printf(" Experimental coupling is %f.", coupl[i]);
     log.printf("\n");
   }

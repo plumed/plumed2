@@ -111,12 +111,12 @@ void ContactAlignedMatrix::setupConnector( const unsigned& id, const unsigned& i
      std::string errors; switchingFunction(j,i).set(desc,errors);
      if( errors.length()!=0 ) error("problem reading switching function in SWITCH keywrd description " + errors);
      if( j!=i) switchingFunction(i,j).set(desc,errors);
-     log.printf("  %d th and %d th multicolvar groups must be within %s\n",i+1,j+1,(switchingFunction(i,j).description()).c_str() );
+     log.printf("  %u th and %u th multicolvar groups must be within %s\n",i+1,j+1,(switchingFunction(i,j).description()).c_str() );
   } else if( id==1 ){
      std::string errors; sw_angle(j,i).set(desc,errors);
      if( errors.length()!=0 ) error("problem reading switching function in SW_ANGLE keyword description " + errors);
      if( j!=i) sw_angle(i,j).set(desc,errors);
-     log.printf("  dot product of vectors for %d th and %d th multicolvar groups must be greater than %s\n",i+1,j+1,(sw_angle(i,j).description()).c_str() ); 
+     log.printf("  dot product of vectors for %u th and %u th multicolvar groups must be greater than %s\n",i+1,j+1,(sw_angle(i,j).description()).c_str() ); 
   }
 }
 
