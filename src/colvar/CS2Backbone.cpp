@@ -225,7 +225,7 @@ public:
       string line;
       getline(in,line);
       ++nline;
-      if(line.find("#")==0) continue;
+      if(line.compare(0,1,"#")==0) continue;
       vector<string> tok;
       vector<string> tmp;
       tok = split(line,' ');
