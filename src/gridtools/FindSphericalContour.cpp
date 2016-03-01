@@ -36,7 +36,7 @@ private:
   double lenunit;
   std::string fmt_xyz;
   int rnd;
-  unsigned mycomp;
+  unsigned mycomp, nbins;
   double contour, offset, increment;
   double min, max;
   unsigned npoints;
@@ -58,6 +58,7 @@ void FindSphericalContour::registerKeywords( Keywords& keys ){
   keys.add("compulsory","CONTOUR","the value we would like to draw the contour at in the space");
   keys.add("compulsory","INNER_RADIUS","the minimum radius on which to look for the contour");
   keys.add("compulsory","OUTER_RADIUS","the outer radius on which to look for the contour");
+  keys.add("compulsory","NBINS","1","the number of discrete sections in which to divide the distance between the inner and outer radius when searching for a contour");
 // We want a better way of doing this bit
   keys.add("compulsory", "FILE", "file on which to output coordinates");
   keys.add("compulsory", "UNITS","PLUMED","the units in which to print out the coordinates. PLUMED means internal PLUMED units");
@@ -84,8 +85,9 @@ ActionWithInputGrid(ao)
   log.printf("  searching for %d points on dividing surface \n");
   parse("CONTOUR",contour); 
   log.printf("  calculating dividing surface along which function equals %f \n", contour);
-  parse("INNER_RADIUS",min); parse("OUTER_RADIUS",max);
+  parse("INNER_RADIUS",min); parse("OUTER_RADIUS",max); parse("NBINS",nbins);
   log.printf("  expecting to find dividing surface at radii between %f and %f \n",min,max);
+  log.printf("  looking for contour in windows of length %f \n", (max-min)/nbins);
 
   // Set this here so the same set of grid points are used on every turn
   Random random; rnd = std::floor( npoints*random.RandU01() );
@@ -153,17 +155,23 @@ void FindSphericalContour::performOperationsWithGrid( const bool& from_update ){
       // Now set up direction as vector from inner sphere to outer sphere
       for(unsigned j=0;j<3;++j){
          contour_point[j] = min*direction[j];
-         direction[j] = (max-min)*direction[j];
-         tmp[j] = contour_point[j] + direction[j]; 
+         direction[j] = (max-min)*direction[j] / static_cast<double>(nbins);
       }
+      bool found=false;
+      for(unsigned k=0;k<nbins;++k){
+          for(unsigned j=0;j<3;++j) tmp[j] = contour_point[j] + direction[j];
 
-      double val1 = getDifferenceFromContour( contour_point, der );
-      double val2 = getDifferenceFromContour( tmp, der );
-      if( val1*val2>=0 ) error("range does not bracket the dividing surface");
- 
-      mymin.linesearch( direction, contour_point, &FindSphericalContour::getDifferenceFromContour );
-      of.printf(("%s "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz).c_str(),nn,lenunit*contour_point[0], lenunit*contour_point[1], lenunit*contour_point[2] );
-      of.printf("\n");
+          double val1 = getDifferenceFromContour( contour_point, der );
+          double val2 = getDifferenceFromContour( tmp, der );
+          if( val1*val2<0 ){ 
+              mymin.linesearch( direction, contour_point, &FindSphericalContour::getDifferenceFromContour );
+              of.printf(("%s "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz).c_str(),nn,lenunit*contour_point[0], lenunit*contour_point[1], lenunit*contour_point[2] );
+              of.printf("\n");
+              found=true; break;
+          }
+          for(unsigned j=0;j<3;++j) contour_point[j] = tmp[j];
+      }
+      if( !found ) error("range does not bracket the dividing surface");
   }
 
   // Clear the grid ready for next time
