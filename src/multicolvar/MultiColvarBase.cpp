@@ -154,11 +154,11 @@ void MultiColvarBase::setupMultiColvarBase( const std::vector<AtomNumber>& atoms
      if( allthirdblockintasks ){
         decoder.resize(2); plumed_assert( ablocks.size()==3 );
         // Check if number of atoms is too large
-        if( pow( nblock, 2 )>std::numeric_limits<unsigned>::max() ) error("number of atoms in groups is too big for PLUMED to handle");
+        if( pow( double(nblock), 2.0 )>std::numeric_limits<unsigned>::max() ) error("number of atoms in groups is too big for PLUMED to handle");
      } else {
         decoder.resize( ablocks.size() ); 
         // Check if number of atoms is too large
-        if( pow( nblock, ablocks.size() )>std::numeric_limits<unsigned>::max() ) error("number of atoms in groups is too big for PLUMED to handle");
+        if( pow( double(nblock), double(ablocks.size()) )>std::numeric_limits<unsigned>::max() ) error("number of atoms in groups is too big for PLUMED to handle");
      }
      unsigned code=1; for(unsigned i=0;i<decoder.size();++i){ decoder[decoder.size()-1-i]=code; code *= nblock; }
   } else if( !usespecies ){

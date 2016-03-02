@@ -208,9 +208,9 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
   of.link(*this);
   of.open(file);
   std::string path=of.getPath();
-  std::string mode=of.getMode();
   log<<"  Writing on file "<<path<<"\n";
 #ifdef __PLUMED_HAS_XDRFILE
+  std::string mode=of.getMode();
   if(type=="xtc"){
     of.close();
     xd=xdrfile_open(path.c_str(),mode.c_str());
