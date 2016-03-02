@@ -96,7 +96,7 @@ KernelFunctions::KernelFunctions( const std::string& input, const bool& normed )
   if(!foundc) plumed_merror("failed to find center keyword in definition of kernel");
   std::vector<double> sig; 
   bool founds = Tools::parseVector(data,"SIGMA",sig);
-  if(!foundc) plumed_merror("failed to find sigma keyword in definition of kernel");
+  if(!founds) plumed_merror("failed to find sigma keyword in definition of kernel");
 
   bool multi=false; Tools::parseFlag(data,"MULTIVARIATE",multi);
   if( center.size()==1 && multi ) plumed_merror("one dimensional kernel cannot be multivariate");
