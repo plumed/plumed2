@@ -59,6 +59,7 @@ PLUMED_REGISTER_ACTION(EMrestraint,"EMRESTRAINT")
 void EMrestraint::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   keys.use("ARG");
+  keys.add("compulsory","TEMP","temperature in energy units");
   componentsAreNotOptional(keys); 
   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
 }
@@ -67,15 +68,13 @@ EMrestraint::EMrestraint(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao)
 {
 
+  parse("TEMP",kbt_);
   checkRead();
 
   // last half of the arguments inside ovdd_;
   for(unsigned i=getNumberOfArguments()/2; i<getNumberOfArguments();++i){
     ovdd_.push_back(getArgument(i));
   }
-
-  // get temperature
-  kbt_ = plumed.getAtoms().getKbT();
 
   log.printf("  temperature of the system %f\n",kbt_);
   log.printf("  number of experimental data points %u\n",static_cast<unsigned>(ovdd_.size()));

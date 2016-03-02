@@ -77,6 +77,7 @@ PLUMED_REGISTER_ACTION(EMOutrestraint,"EMOUTRESTRAINT")
 void EMOutrestraint::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   keys.use("ARG");
+  keys.add("compulsory","TEMP","temperature in energy units");
   keys.add("compulsory","SIGMA0","initial value of the uncertainty parameter");
   keys.add("compulsory","SIGMA_MIN","minimum value of the uncertainty parameter");
   keys.add("compulsory","SIGMA_MAX","maximum value of the uncertainty parameter");
@@ -103,6 +104,7 @@ MCfirst_(-1)
   parse("DSIGMA",Dsigma_);
   parse("MC_STEPS",MCsteps_);
   parse("MC_STRIDE",MCstride_);
+  parse("TEMP",kbt_);
   checkRead();
 
   // last half of the arguments inside ovdd_;
@@ -110,9 +112,6 @@ MCfirst_(-1)
     ovdd_.push_back(getArgument(i));
   }
 
-  // get temperature
-  kbt_ = plumed.getAtoms().getKbT();
-  
   // adjust for multiple-time steps
   MCstride_ *= getStride();
 
