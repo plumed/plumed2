@@ -338,12 +338,12 @@ void Grid::addKernel( const KernelFunctions& kernel ){
       }
   }
 
-  double newval; std::vector<double> der( dimension_ );
+  std::vector<double> der( dimension_ );
   for(unsigned i=0;i<neighbors.size();++i){
       index_t ineigh=neighbors[i];
       getPoint( ineigh, xx );
       for(unsigned j=0;j<dimension_;++j) vv[j]->set(xx[j]);
-      newval = kernel.evaluate( vv, der, usederiv_ );
+      double newval = kernel.evaluate( vv, der, usederiv_ );
       if( usederiv_ ) addValueAndDerivatives( ineigh, newval, der );
       else addValue( ineigh, newval );
   }

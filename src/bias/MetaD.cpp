@@ -1056,10 +1056,10 @@ double MetaD::evaluateGaussian
  if(cv.size()>0) pcv=&cv[0];
  if(doInt_){
    plumed_dbg_assert(cv.size()==1);
-   pcv=&(tmpcv[0]);
    tmpcv[0]=cv[0];
    if(cv[0]<lowI_) tmpcv[0]=lowI_;
    if(cv[0]>uppI_) tmpcv[0]=uppI_;
+   pcv=&(tmpcv[0]);
  }
  if(hill.multivariate){ 
     unsigned k=0;
