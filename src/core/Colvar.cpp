@@ -49,7 +49,7 @@ void Colvar::requestAtoms(const vector<AtomNumber> & a){
 // Resize the derivatives of all atoms
   for(int i=0;i<getNumberOfComponents();++i) getPntrToComponent(i)->resizeDerivatives(3*a.size()+9);
 // Set the size of the forces array
-  forces.resize(3*getNumberOfAtoms()+9);
+//  forces.resize(3*getNumberOfAtoms()+9);
 }
 
 void Colvar::apply(){
@@ -69,24 +69,27 @@ void Colvar::apply(){
     rank=comm.Get_rank();
   }
 
+  unsigned nt=OpenMP::getNumThreads();
+  if(nt<ncp/(2.*stride)) nt=1;
+
   if(!isEnergy){
-    //#pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(f,v) 
+    #pragma omp parallel num_threads(nt) 
     {
-      //vector<Vector> omp_f(f.size());
-      //Tensor         omp_v;
-      //vector<double> oforces(3*nat+9);
-      //#pragma omp for 
+      vector<Vector> omp_f(f.size());
+      Tensor         omp_v;
+      #pragma omp for 
+      vector<double> forces(3*nat+9);
       for(unsigned i=rank;i<ncp;i+=stride){
-        //if(getPntrToComponent(i)->applyForce(oforces)){
         if(getPntrToComponent(i)->applyForce(forces)){
           for(unsigned j=0;j<nat;++j){
-            //omp_f[j][0]+=oforces[3*j+0];
-            //omp_f[j][1]+=oforces[3*j+1];
-            //omp_f[j][2]+=oforces[3*j+2];
-            f[j][0]+=forces[3*j+0];
-            f[j][1]+=forces[3*j+1];
-            f[j][2]+=forces[3*j+2];
+            omp_f[j][0]+=forces[3*j+0];
+            omp_f[j][1]+=forces[3*j+1];
+            omp_f[j][2]+=forces[3*j+2];
+            //f[j][0]+=forces[3*j+0];
+            //f[j][1]+=forces[3*j+1];
+            //f[j][2]+=forces[3*j+2];
           }
+/*
           v(0,0)+=forces[3*nat+0];
           v(0,1)+=forces[3*nat+1];
           v(0,2)+=forces[3*nat+2];
@@ -96,20 +99,18 @@ void Colvar::apply(){
           v(2,0)+=forces[3*nat+6];
           v(2,1)+=forces[3*nat+7];
           v(2,2)+=forces[3*nat+8];
-/*
-          omp_v(0,0)+=oforces[3*nat+0];
-          omp_v(0,1)+=oforces[3*nat+1];
-          omp_v(0,2)+=oforces[3*nat+2];
-          omp_v(1,0)+=oforces[3*nat+3];
-          omp_v(1,1)+=oforces[3*nat+4];
-          omp_v(1,2)+=oforces[3*nat+5];
-          omp_v(2,0)+=oforces[3*nat+6];
-          omp_v(2,1)+=oforces[3*nat+7];
-          omp_v(2,2)+=oforces[3*nat+8];
 */
+          omp_v(0,0)+=forces[3*nat+0];
+          omp_v(0,1)+=forces[3*nat+1];
+          omp_v(0,2)+=forces[3*nat+2];
+          omp_v(1,0)+=forces[3*nat+3];
+          omp_v(1,1)+=forces[3*nat+4];
+          omp_v(1,2)+=forces[3*nat+5];
+          omp_v(2,0)+=forces[3*nat+6];
+          omp_v(2,1)+=forces[3*nat+7];
+          omp_v(2,2)+=forces[3*nat+8];
         }
       }
-/*
       #pragma omp critical
       for(unsigned j=0;j<nat;++j) f[j]+=omp_f[j]; 
       v(0,0)=omp_v(0,0);
@@ -121,7 +122,6 @@ void Colvar::apply(){
       v(2,0)=omp_v(2,0);
       v(2,1)=omp_v(2,1);
       v(2,2)=omp_v(2,2);
-*/
     }
 
     if(ncp>comm.Get_size()) {
@@ -129,7 +129,8 @@ void Colvar::apply(){
       comm.Sum(&v[0][0],9);
     }
   } else if( isEnergy ){
-    forces.resize(1);
+    vector<double> forces(1);
+//   forces.resize(1);
     if(getPntrToComponent(0)->applyForce(forces)) modifyForceOnEnergy()+=forces[0];
   }
 }
