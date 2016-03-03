@@ -77,8 +77,8 @@ void Colvar::apply(){
     {
       vector<Vector> omp_f(f.size());
       Tensor         omp_v;
-      #pragma omp for 
       vector<double> forces(3*nat+9);
+      #pragma omp for 
       for(unsigned i=rank;i<ncp;i+=stride){
         if(getPntrToComponent(i)->applyForce(forces)){
           for(unsigned j=0;j<nat;++j){
