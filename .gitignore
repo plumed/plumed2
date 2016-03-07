@@ -10,6 +10,7 @@
 *.dll
 *.sw?
 *.exe
+*.pyc
 a.out
 makefile.dep
 /Makefile.conf
