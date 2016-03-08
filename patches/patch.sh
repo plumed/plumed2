@@ -258,6 +258,19 @@ case "$action" in
       bash "$diff"
     fi
 
+    if [ "$PLUMED_IS_INSTALLED" = no  ] && [ "$mode" = shared ] ; then
+      echo ""
+      echo "You are patching in shared mode from a non installed PLUMED"
+      echo "Be warned that if you 'make clean' PLUMED the patched code won't work anymore"
+    fi
+
+    if [ "$mode" = runtime ] ; then
+      echo ""
+      echo "You are patching in runtime mode"
+      echo "Be warned that when you will run MD you will use the PLUMED version pointed at"
+      echo "by the PLUMED_KERNEL environment variable"
+    fi
+
     echo ""
     if grep -q "D__PLUMED_HAS_MPI=1" "$PLUMED_ROOT"/src/config/compile_options.sh ; then
       echo "PLUMED is compiled with MPI support so you can configure $engine with MPI" 
