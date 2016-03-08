@@ -22,7 +22,7 @@ Actions (choose one):
 Options:
   -e ENGINE, --engine ENGINE
                     set MD engine to ENGINE (default: choose interactively)
-  -m MODE, --mode MODE (default: static)
+  -m MODE, --mode MODE (default: shared)
                     set link mode to MODE, which can be either static, shared or runtime
   --static
                     same as --mode static
@@ -46,7 +46,7 @@ prefix=""
 action=""
 engine=""
 diff=""
-mode=static
+mode=shared
 force=""
 newpatch=
 
