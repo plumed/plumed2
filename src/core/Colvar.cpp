@@ -48,8 +48,6 @@ void Colvar::requestAtoms(const vector<AtomNumber> & a){
   ActionAtomistic::requestAtoms(a);
 // Resize the derivatives of all atoms
   for(int i=0;i<getNumberOfComponents();++i) getPntrToComponent(i)->resizeDerivatives(3*a.size()+9);
-// Set the size of the forces array
-//  forces.resize(3*getNumberOfAtoms()+9);
 }
 
 void Colvar::apply(){
@@ -58,9 +56,6 @@ void Colvar::apply(){
   const unsigned    nat=getNumberOfAtoms();
   const unsigned    ncp=getNumberOfComponents();
   const unsigned    fsz=f.size();
-
-  for(unsigned i=0;i<fsz;i++) f[i].zero();
-  v.zero();
 
   unsigned stride=1;
   unsigned rank=0;
@@ -75,7 +70,7 @@ void Colvar::apply(){
   if(!isEnergy){
     #pragma omp parallel num_threads(nt) 
     {
-      vector<Vector> omp_f(f.size());
+      vector<Vector> omp_f(fsz);
       Tensor         omp_v;
       vector<double> forces(3*nat+9);
       #pragma omp for 
@@ -85,21 +80,7 @@ void Colvar::apply(){
             omp_f[j][0]+=forces[3*j+0];
             omp_f[j][1]+=forces[3*j+1];
             omp_f[j][2]+=forces[3*j+2];
-            //f[j][0]+=forces[3*j+0];
-            //f[j][1]+=forces[3*j+1];
-            //f[j][2]+=forces[3*j+2];
           }
-/*
-          v(0,0)+=forces[3*nat+0];
-          v(0,1)+=forces[3*nat+1];
-          v(0,2)+=forces[3*nat+2];
-          v(1,0)+=forces[3*nat+3];
-          v(1,1)+=forces[3*nat+4];
-          v(1,2)+=forces[3*nat+5];
-          v(2,0)+=forces[3*nat+6];
-          v(2,1)+=forces[3*nat+7];
-          v(2,2)+=forces[3*nat+8];
-*/
           omp_v(0,0)+=forces[3*nat+0];
           omp_v(0,1)+=forces[3*nat+1];
           omp_v(0,2)+=forces[3*nat+2];
@@ -112,7 +93,7 @@ void Colvar::apply(){
         }
       }
       #pragma omp critical
-      for(unsigned j=0;j<nat;++j) f[j]+=omp_f[j]; 
+      for(unsigned j=0;j<nat;++j) f[j]=omp_f[j]; 
       v(0,0)=omp_v(0,0);
       v(0,1)=omp_v(0,1);
       v(0,2)=omp_v(0,2);
@@ -128,9 +109,9 @@ void Colvar::apply(){
       if(fsz>0) comm.Sum(&f[0][0],3*fsz);
       comm.Sum(&v[0][0],9);
     }
+
   } else if( isEnergy ){
     vector<double> forces(1);
-//   forces.resize(1);
     if(getPntrToComponent(0)->applyForce(forces)) modifyForceOnEnergy()+=forces[0];
   }
 }

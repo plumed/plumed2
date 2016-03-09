@@ -41,8 +41,6 @@ class Colvar :
   public ActionWithValue
   {
 private:
-/// This is used by apply to retrive the forces on the atoms
-//std::vector<double> forces;
 protected:
   bool isEnergy;
   void requestAtoms(const std::vector<AtomNumber> & a);
