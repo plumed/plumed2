@@ -108,6 +108,9 @@ upperd(false)
     }
   }
 
+  if(parameters.size()!=getNumberOfArguments()) 
+    error("PARARG or PARAMETERS arrays should include the same number of elements as the arguments in ARG");
+
   if(getNumberOfArguments()<2) error("STATS need at least two arguments to be used");
 
   parseFlag("SQDEVSUM",sqdonly);

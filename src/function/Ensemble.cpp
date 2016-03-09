@@ -120,16 +120,15 @@ power(0)
   checkRead();
 
   master = (comm.Get_rank()==0);
+  ens_dim=0; 
+  my_repl=0;
   if(master) {
-    if(multi_sim_comm.Get_size()<2) log.printf("WARNING: ENSEMBLE with one replica is not doing any averaging!\n");
     ens_dim=multi_sim_comm.Get_size();
     my_repl=multi_sim_comm.Get_rank();
-  } else { 
-    ens_dim=0; 
-    my_repl=0;
   }
-  comm.Sum(&ens_dim, 1);
-  comm.Sum(&my_repl, 1);
+  comm.Bcast(ens_dim,0);
+  comm.Bcast(my_repl,0);
+  if(multi_sim_comm.Get_size()<2) log.printf("WARNING: ENSEMBLE with one replica is not doing any averaging!\n");
   
   // prepare output components, the number depending on reweighing or not
   narg = getNumberOfArguments();
@@ -271,5 +270,3 @@ void Ensemble::calculate(){
 
 }
 }
-
-

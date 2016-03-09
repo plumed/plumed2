@@ -1,5 +1,16 @@
-cs: CS2BACKBONE ATOMS=1-2612 NRES=176 DATA=../data/ TEMPLATE=template.pdb NEIGH_FREQ=1 NOEXP NOPBC 
-#csn: CS2BACKBONE ATOMS=1-2612 NRES=176 DATA=../data/ TEMPLATE=template.pdb NEIGH_FREQ=1 NOEXP NOPBC NUMERICAL_DERIVATIVES 
+cs: CS2BACKBONE ATOMS=1-2612 NRES=176 DATA=../data/ TEMPLATE=template.pdb NEIGH_FREQ=1 NOPBC 
 
-PRINT ARG=cs.* STRIDE=1 FILE=colvar FMT=%8.4f
+ens: ENSEMBLE ARG=(cs\.ca_.*),(cs\.cb_.*),(cs\.hn_.*),(cs\.nh_.*)
+
+st: STATS ARG=(cs\.ca_.*),(cs\.cb_.*),(cs\.hn_.*),(cs\.nh_.*) PARARG=(cs\.expca_.*),(cs\.expcb_.*),(cs\.exphn_.*),(cs\.expnh_.*)
+ste: STATS ARG=ens.* PARARG=(cs\.expca_.*),(cs\.expcb_.*),(cs\.exphn_.*),(cs\.expnh_.*)
+
+RESTRAINT ARG=st.sqdevsum,ste.corr AT=0,1 KAPPA=0,0 SLOPE=1,1
+
+DUMPFORCES ARG=(cs\.ca_.*),(cs\.cb_.*),(cs\.hn_.*),(cs\.nh_.*) FILE=forces
+
+PRINT ARG=(cs\.ca_.*),(cs\.cb_.*),(cs\.hn_.*),(cs\.nh_.*) STRIDE=1 FILE=colvar FMT=%8.4f
+PRINT ARG=ens.* STRIDE=1 FILE=ecolvar FMT=%8.4f
+
+#csn: CS2BACKBONE ATOMS=1-2612 NRES=176 DATA=../data/ TEMPLATE=template.pdb NEIGH_FREQ=1 NOEXP NOPBC NUMERICAL_DERIVATIVES 
 #DUMPDERIVATIVES ARG=cs.ca_4,csn.ca_4  FILE=derivatives1 FMT=%8.2f STRIDE=1
