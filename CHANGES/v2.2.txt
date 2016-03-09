@@ -110,10 +110,11 @@ Unreleased changes (will be included in 2.2.2)
 
 For users:
 - \ref MOLINFO for RNA accepts more residue names, see \issue{180}.
-- added two mpi barries (one was missing in PBMetaD wor multiple walkers) to help syncronise initialisation
+- added two mpi barries (one was missing in PBMetaD for multiple walkers) to help syncronise initialisation
 - Fixed a bug in internal stopwatches that was making \ref DEBUG logRequestedAtoms not working
 - Some multicolvars (including \ref BRIDGE, \ref ANGLES, and \ref INPLANEDISTANCES) now crashes if one
   asks for too many atoms, see \issue{185}.
+- Optimisations (activation of the dependencies, secondary structures, DRMSD)
 
 For developers:
 - Fixed a bug in the interpretation of cmd strings. Namely, an erroneous string was not triggering an error.
