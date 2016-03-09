@@ -75,7 +75,7 @@ ActionAtomistic(ao),
 ActionWithValue(ao),
 ActionWithVessel(ao),
 align_strands(false),
-s_cutoff(0),
+s_cutoff2(0),
 align_atom_1(0),
 align_atom_2(0)
 {
@@ -86,8 +86,10 @@ align_atom_2(0)
   parseFlag("VERBOSE",verbose_output); 
 
   if( keywords.exists("STRANDS_CUTOFF") ){
+    double s_cutoff = 0;
     parse("STRANDS_CUTOFF",s_cutoff); align_strands=true;
     if( s_cutoff>0) log.printf("  ignoring contributions from strands that are more than %f apart\n",s_cutoff);
+    s_cutoff2=s_cutoff*s_cutoff;
   }
 }
 
@@ -186,12 +188,13 @@ void SecondaryStructureRMSD::calculate(){
 void SecondaryStructureRMSD::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
   // Retrieve the positions
   std::vector<Vector> pos( references[0]->getNumberOfAtoms() );
-  for(unsigned i=0;i<pos.size();++i) pos[i]=ActionAtomistic::getPosition( getAtomIndex(current,i) );
+  const unsigned n=pos.size();
+  for(unsigned i=0;i<n;++i) pos[i]=ActionAtomistic::getPosition( getAtomIndex(current,i) );
 
   // This does strands cutoff
   Vector distance=pbcDistance( pos[align_atom_1],pos[align_atom_2] ); 
-  if( s_cutoff>0 ){
-     if( distance.modulo()>s_cutoff ){
+  if( s_cutoff2>0 ){
+     if( distance.modulo2()>s_cutoff2 ){
        myvals.setValue( 0, 0.0 );
        return;
      }
@@ -207,15 +210,17 @@ void SecondaryStructureRMSD::performTask( const unsigned& task_index, const unsi
   }
   // Create a holder for the derivatives
   ReferenceValuePack mypack( 0, pos.size(), myvals ); mypack.setValIndex( 1 );
-  for(unsigned i=0;i<pos.size();++i) mypack.setAtomIndex( i, getAtomIndex(current,i) );
+  for(unsigned i=0;i<n;++i) mypack.setAtomIndex( i, getAtomIndex(current,i) );
 
   // And now calculate the RMSD
-  double r,nr; const Pbc& pbc=getPbc(); 
-  unsigned closest=0; r=references[0]->calculate( pos, pbc, mypack, false );
-  for(unsigned i=1;i<references.size();++i){
-      mypack.setValIndex( i+1 );
-      nr=references[i]->calculate( pos, pbc, mypack, false );
-      if( nr<r ){ closest=i; r=nr; }
+  const Pbc& pbc=getPbc(); 
+  unsigned closest=0; 
+  double r = references[0]->calculate( pos, pbc, mypack, false );
+  const unsigned rs = references.size();
+  for(unsigned i=1;i<rs;++i){
+    mypack.setValIndex( i+1 );
+    double nr=references[i]->calculate( pos, pbc, mypack, false );
+    if( nr<r ){ closest=i; r=nr; }
   }
 
   // Transfer everything to the value
@@ -223,11 +228,12 @@ void SecondaryStructureRMSD::performTask( const unsigned& task_index, const unsi
   if( closest>0 ) mypack.moveDerivatives( closest+1, 1 );
 
   if( !mypack.virialWasSet() ){
-      Tensor vir; vir.zero();
-      for(unsigned i=0;i<colvar_atoms[current].size();++i){
-         vir+=(-1.0*Tensor( pos[i], mypack.getAtomDerivative(i) ));
-      } 
-      mypack.setValIndex(1); mypack.addBoxDerivatives( vir );
+    Tensor vir;
+    const unsigned cacs = colvar_atoms[current].size();
+    for(unsigned i=0;i<cacs;++i){
+       vir+=(-1.0*Tensor( pos[i], mypack.getAtomDerivative(i) ));
+    } 
+    mypack.setValIndex(1); mypack.addBoxDerivatives( vir );
   }
 
   return;
