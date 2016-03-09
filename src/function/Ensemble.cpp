@@ -128,8 +128,8 @@ power(0)
   }
   comm.Bcast(ens_dim,0);
   comm.Bcast(my_repl,0);
-  if(multi_sim_comm.Get_size()<2) log.printf("WARNING: ENSEMBLE with one replica is not doing any averaging!\n");
-  
+  if(ens_dim<2) log.printf("WARNING: ENSEMBLE with one replica is not doing any averaging!\n");
+ 
   // prepare output components, the number depending on reweighing or not
   narg = getNumberOfArguments();
   if(do_reweight) narg--;
@@ -149,7 +149,7 @@ power(0)
     }
   }
 
-  log.printf("  averaing over %u replicas.\n", ens_dim);
+  log.printf("  averaging over %u replicas.\n", ens_dim);
   if(do_reweight) log.printf("  doing simple REWEIGHT using the latest ARGUMENT as energy.\n");
   if(do_moments&&!do_central)  log.printf("  calculating also the %lf standard moment\n", moment);
   if(do_moments&&do_central)   log.printf("  calculating also the %lf central moment\n", moment);
