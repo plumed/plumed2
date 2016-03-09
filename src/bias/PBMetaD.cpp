@@ -220,7 +220,7 @@ private:
   std::string fmt;
 
 public:
-  PBMetaD(const ActionOptions&);
+  explicit PBMetaD(const ActionOptions&);
   ~PBMetaD();
   void calculate();
   void update();
@@ -634,10 +634,10 @@ double PBMetaD::evaluateGaussian
  if(cv.size()>0) pcv=&cv[0];
  if(doInt_){
    plumed_assert(cv.size()==1);
-   pcv=&(tmpcv[0]);
    tmpcv[0]=cv[0];
    if(cv[0]<lowI_[iarg]) tmpcv[0]=lowI_[iarg];
    if(cv[0]>uppI_[iarg]) tmpcv[0]=uppI_[iarg];
+   pcv=&(tmpcv[0]);
  }
  double dp = difference(0,hill.center[0],pcv[0]) / hill.sigma[0];
  double dp2 = 0.5 * dp * dp;

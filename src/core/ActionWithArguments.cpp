@@ -64,9 +64,8 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
   for(unsigned i=0;i<c.size();i++){
       // is a regex? then just interpret it. The signal is () 
       std::size_t found1 = c[i].find("(");
-      std::size_t found2 ;
       if(found1!=std::string::npos){
-        found2=c[i].find(")",found1+1,1); // find it again
+        std::size_t found2=c[i].find(")",found1+1,1); // find it again
 	if(found2!=std::string::npos){
 		// start regex parsing
 #ifdef __PLUMED_HAS_CREGEX 
@@ -93,10 +92,8 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
            	std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
                 if( all.empty() ) error("your input file is not telling plumed to calculate anything");
 	        for(unsigned j=0;j<all.size();j++){
-				std::string thisargument=all[j]->getLabel();	
 				std::vector<std::string> ss=all[j]->getComponentsVector();	
 				for(unsigned  k=0;k<ss.size();++k){
-					thisargument=ss[k];	
 					unsigned ll=strlen(ss[k].c_str())+1;
 					char*str;
 					str=new char [ll];

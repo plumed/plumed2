@@ -222,8 +222,9 @@ argument_names(getNumberOfArguments())
 }
 
 void Analysis::readDataFromFile( const std::string& filename ){
-  FILE* fp=fopen(filename.c_str(),"r"); double tstep, oldtstep; 
+  FILE* fp=fopen(filename.c_str(),"r");
   if(fp!=NULL){
+     double tstep, oldtstep; 
      bool do_read=true, first=true;
      while (do_read) {
         PDB mypdb;

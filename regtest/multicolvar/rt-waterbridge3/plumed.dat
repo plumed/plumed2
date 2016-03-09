@@ -1,0 +1,11 @@
+# I test linked cells here
+# the input trajectory has frames with different cell shape,
+# including orthorhomic, hexagonal, and no box
+
+# this uses linked cells:
+b: BRIDGE GROUPA=1,4 GROUPB=2 BRIDGING_ATOMS=3 SWITCH={RATIONAL NN=100 MM=200 D_0=0.95 R_0=0.01 D_MAX=0.99}
+# this doesn't:
+c: BRIDGE GROUPA=1,4 GROUPB=2 BRIDGING_ATOMS=3 SWITCH={RATIONAL NN=100 MM=200 D_0=0.95 R_0=0.01}
+# they should give identical results
+PRINT ARG=b,c FILE=colvar
+

@@ -22,7 +22,7 @@ Actions (choose one):
 Options:
   -e ENGINE, --engine ENGINE
                     set MD engine to ENGINE (default: choose interactively)
-  -m MODE, --mode MODE (default: static)
+  -m MODE, --mode MODE (default: shared)
                     set link mode to MODE, which can be either static, shared or runtime
   --static
                     same as --mode static
@@ -46,7 +46,7 @@ prefix=""
 action=""
 engine=""
 diff=""
-mode=static
+mode=shared
 force=""
 newpatch=
 
@@ -256,6 +256,19 @@ case "$action" in
     else
       test -n "$quiet" || echo "Patching with stored diff"
       bash "$diff"
+    fi
+
+    if [ "$PLUMED_IS_INSTALLED" = no  ] && [ "$mode" = shared ] ; then
+      echo ""
+      echo "You are patching in shared mode from a non installed PLUMED"
+      echo "Be warned that if you 'make clean' PLUMED the patched code won't work anymore"
+    fi
+
+    if [ "$mode" = runtime ] ; then
+      echo ""
+      echo "You are patching in runtime mode"
+      echo "Be warned that when you will run MD you will use the PLUMED version pointed at"
+      echo "by the PLUMED_KERNEL environment variable"
     fi
 
     echo ""
