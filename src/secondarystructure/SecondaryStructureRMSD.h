@@ -51,7 +51,7 @@ private:
   std::vector<SingleDomainRMSD*> references;
 /// Variables for strands cutoff
   bool align_strands;
-  double s_cutoff;
+  double s_cutoff2;
   unsigned align_atom_1, align_atom_2;
   bool verbose_output;
 /// Tempory variables for getting positions of atoms and applying forces

@@ -76,38 +76,38 @@ double DRMSD::calc( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceVal
   plumed_dbg_assert(!targets.empty());
 
   Vector distance; 
-  myder.clear(); double drmsd=0.; 
+  myder.clear(); 
+  double drmsd=0.; 
   for(std::map< std::pair <unsigned,unsigned> , double>::const_iterator it=targets.begin();it!=targets.end();++it){
       
-      unsigned i=getAtomIndex( it->first.first );
-      unsigned j=getAtomIndex( it->first.second );
+      const unsigned i=getAtomIndex( it->first.first );
+      const unsigned j=getAtomIndex( it->first.second );
 
-      if(nopbc){ distance=delta( pos[i] , pos[j] ); }
-      else{ distance=pbc.distance( pos[i] , pos[j] ); }
+      if(nopbc) distance=delta( pos[i] , pos[j] ); 
+      else      distance=pbc.distance( pos[i] , pos[j] );
 
-      double len = distance.modulo();
-      double diff = len - it->second;
+      const double len = distance.modulo();
+      const double diff = len - it->second;
+      const double der = diff / len; 
 
       drmsd += diff * diff;
-      myder.addAtomDerivatives( i, -( diff / len ) * distance );
-      myder.addAtomDerivatives( j, ( diff / len ) * distance );
-      myder.addBoxDerivatives( -( diff / len ) * Tensor(distance,distance) );
+      myder.addAtomDerivatives( i, -der * distance );
+      myder.addAtomDerivatives( j,  der * distance );
+      myder.addBoxDerivatives( - der * Tensor(distance,distance) );
   }
 
-  double npairs = static_cast<double>(targets.size());
+  const double inpairs = 1./static_cast<double>(targets.size());
   double idrmsd;
 
   if(squared){
-     drmsd = drmsd / npairs;
-     idrmsd = 2.0 / npairs;
+     drmsd = drmsd * inpairs;
+     idrmsd = 2.0 * inpairs;
   } else {
-     drmsd = sqrt( drmsd / npairs );
-     idrmsd = 1.0/( drmsd * npairs );
+     drmsd = sqrt( drmsd * inpairs );
+     idrmsd = inpairs / drmsd ;
   }
 
   myder.scaleAllDerivatives( idrmsd );
-  // virial *= idrmsd; 
-  // for(unsigned i=0;i<getNumberOfAtoms();++i){atom_ders[i] *= idrmsd;}
 
   return drmsd;
 }
