@@ -115,6 +115,7 @@ For users:
 - Some multicolvars (including \ref BRIDGE, \ref ANGLES, and \ref INPLANEDISTANCES) now crashes if one
   asks for too many atoms, see \issue{185}.
 - Optimisations (activation of the dependencies, secondary structures, DRMSD)
+- Fixed a performance regression with RMSD=OPTIMAL-FAST
 
 For developers:
 - Fixed a bug in the interpretation of cmd strings. Namely, an erroneous string was not triggering an error.
