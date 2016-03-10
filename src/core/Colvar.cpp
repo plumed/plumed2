@@ -57,6 +57,9 @@ void Colvar::apply(){
   const unsigned    ncp=getNumberOfComponents();
   const unsigned    fsz=f.size();
 
+  for(unsigned i=0;i<fsz;i++) f[i].zero();
+  v.zero();
+
   unsigned stride=1;
   unsigned rank=0;
   if(ncp>comm.Get_size()) {
@@ -93,16 +96,16 @@ void Colvar::apply(){
         }
       }
       #pragma omp critical
-      for(unsigned j=0;j<nat;++j) f[j]=omp_f[j]; 
-      v(0,0)=omp_v(0,0);
-      v(0,1)=omp_v(0,1);
-      v(0,2)=omp_v(0,2);
-      v(1,0)=omp_v(1,0);
-      v(1,1)=omp_v(1,1);
-      v(1,2)=omp_v(1,2);
-      v(2,0)=omp_v(2,0);
-      v(2,1)=omp_v(2,1);
-      v(2,2)=omp_v(2,2);
+      for(unsigned j=0;j<nat;++j) f[j]+=omp_f[j]; 
+      v(0,0)+=omp_v(0,0);
+      v(0,1)+=omp_v(0,1);
+      v(0,2)+=omp_v(0,2);
+      v(1,0)+=omp_v(1,0);
+      v(1,1)+=omp_v(1,1);
+      v(1,2)+=omp_v(1,2);
+      v(2,0)+=omp_v(2,0);
+      v(2,1)+=omp_v(2,1);
+      v(2,2)+=omp_v(2,2);
     }
 
     if(ncp>comm.Get_size()) {
