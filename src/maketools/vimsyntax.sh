@@ -197,8 +197,49 @@ fun! CompletePlumed(findstart, base)
         endfun
 set omnifunc=CompletePlumed
 
-
-
+" inspect the entire file to find lines containing
+" non highlighted characters
+fun! PlumedAnnotateSyntax()
+" buffer where errors are written
+  let buffer=[]
+  let l=1
+" loop over lines
+  while l <= line("$")
+    let line=getline(l)
+    let p=0
+" line is assumed right a priori
+    let wrong=0
+" position the cursor and redraw the screen
+    call cursor(l,1)
+    redraw! "! is required for some reason
+    while p <len(line)
+      if line[p] !~ "[ \t]"
+        let stack=synstack(l,p+1)
+        if(len(stack)==0)
+          let wrong=1
+        elseif(synIDattr(stack[len(stack)-1],"name")=~"^plumedLine.*")
+          let wrong=1
+        endif
+        let annotation=""
+        for s in stack
+          let annotation=annotation."+".synIDattr(s,"name")
+        endfor
+        call add(buffer,"ANNOTATION ".l." ".p." ".line[p]." ".annotation)
+      endif
+      let p=p+1
+    endwhile
+    
+    if(wrong)
+      call add(buffer,"ERROR AT LINE ".l." : ".line)
+    endif
+    let l=l+1
+  endwhile
+" dump the buffer on a new window
+  new
+  for l in buffer
+    put=l
+  endfor
+endfun
 
 EOF
 
