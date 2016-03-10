@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-#define cutOffNB      0.60	// buffer distance for neighbour-lists 
+#define cutOffNB      0.65	// buffer distance for neighbour-lists 
 #define cutOffDist    0.50  	// cut off distance for non-bonded pairwise forces
 #define cutOnDist     0.32   	// cut off distance for non-bonded pairwise forces
 #define cutOffNB2     cutOffNB*cutOffNB // squared buffer distance for neighbour-lists 
