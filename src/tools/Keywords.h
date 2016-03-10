@@ -131,6 +131,8 @@ public:
   bool style( const std::string & k, const std::string & t ) const ;
 /// Print an html version of the documentation
   void print_html() const ;
+/// Print keywords in form readable by vim
+  void print_vim() const ;
 /// Print the template version for the documenation
   void print_template( const std::string& actionname, bool include_optional) const ;
 /// Change the style of a keyword
