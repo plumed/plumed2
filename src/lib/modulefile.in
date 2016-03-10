@@ -44,4 +44,5 @@ prepend-path  LIBRARY_PATH       $libdir
 prepend-path  LD_LIBRARY_PATH    $libdir
 prepend-path  DYLD_LIBRARY_PATH  $libdir
 setenv        PLUMED_KERNEL      $libdir/lib${progname}Kernel.$soext
+setenv        PLUMED_VIMPATH     $libdir/$progname/vim
 }
