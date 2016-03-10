@@ -38,13 +38,9 @@ double Torsion::compute(const Vector& v1,const Vector& v2,const Vector& v3)const
 
 double Torsion::compute(const Vector& v1,const Vector& v2,const Vector& v3,Vector& d1,Vector& d2,Vector& d3)const{
 
-  d1.zero();
-  d2.zero();
-  d3.zero();
-
-  const double modv2(v2.modulo());
-  const Vector nv2(v2/modv2);
-  const Tensor dnv2_v2((Tensor::identity()-extProduct(nv2,nv2))/modv2);
+  const double modv2(1./v2.modulo());
+  const Vector nv2(v2*modv2);
+  const Tensor dnv2_v2((Tensor::identity()-extProduct(nv2,nv2))*modv2);
 
   const Vector a(crossProduct(v2,v1));
   const Tensor da_dv2(dcrossDv1(v2,v1));
@@ -52,7 +48,7 @@ double Torsion::compute(const Vector& v1,const Vector& v2,const Vector& v3,Vecto
   const Vector b(crossProduct(v3,v2));
   const Tensor db_dv3(dcrossDv1(v3,v2));
   const Tensor db_dv2(dcrossDv2(v3,v2));
-  const double cosangle=dotProduct(a,b);
+  const double icosangle=1./dotProduct(a,b);
   const Vector dcosangle_dv1=matmul(b,da_dv1);
   const Vector dcosangle_dv2=matmul(b,da_dv2) + matmul(a,db_dv2);
   const Vector dcosangle_dv3=matmul(a,db_dv3);
@@ -67,15 +63,18 @@ double Torsion::compute(const Vector& v1,const Vector& v2,const Vector& v3,Vecto
   const Vector dsinangle_dv2=matmul(nv2,dcab_dv2)+matmul(cab,dnv2_v2);
   const Vector dsinangle_dv3=matmul(nv2,dcab_dv3);
 
-  const double x=-sinangle/cosangle;
-  const Vector dx_dv1=-dsinangle_dv1/cosangle + sinangle/(cosangle*cosangle) * dcosangle_dv1;
-  const Vector dx_dv2=-dsinangle_dv2/cosangle + sinangle/(cosangle*cosangle) * dcosangle_dv2;
-  const Vector dx_dv3=-dsinangle_dv3/cosangle + sinangle/(cosangle*cosangle) * dcosangle_dv3;
+  const double x=-sinangle*icosangle;
+  const double scc=sinangle*icosangle*icosangle;
+  const Vector dx_dv1=-dsinangle_dv1*icosangle + scc * dcosangle_dv1;
+  const Vector dx_dv2=-dsinangle_dv2*icosangle + scc * dcosangle_dv2;
+  const Vector dx_dv3=-dsinangle_dv3*icosangle + scc * dcosangle_dv3;
 
-  const double torsion=std::atan2(-sinangle,cosangle);
-  d1=1.0/(1.0+x*x) * dx_dv1;
-  d2=1.0/(1.0+x*x) * dx_dv2;
-  d3=1.0/(1.0+x*x) * dx_dv3;
+  const double torsion=std::atan2(-sinangle,1./icosangle);
+  const double dx=1.0/(1.0+x*x);
+
+  d1= dx * dx_dv1;
+  d2= dx * dx_dv2;
+  d3= dx * dx_dv3;
   
   return torsion;
 }
