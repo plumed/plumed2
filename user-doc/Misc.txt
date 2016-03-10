@@ -4,6 +4,7 @@
 
 - \subpage comments
 - \subpage ContinuationLines
+- \subpage VimSyntax
 - \subpage includes
 - \subpage load
 - \subpage degub
@@ -39,7 +40,7 @@ easier - aren't we kind?  Well no not really, we have to use this code too.  Any
 as this makes this: 
 
 \verbatim
-DISTANCES ATOMS1=1,300 ATOMS2=1,400 ATOMS3=1,500
+DISTANCES ATOMS1=1,300 ATOMS2=1,400 ATOMS3=1,500 LABEL=dist
 \endverbatim
 (see \ref DISTANCES)
 
@@ -47,6 +48,7 @@ equivalent to this:
 
 \verbatim
 DISTANCES ...
+  LABEL=dist
 # we can also insert comments here
   ATOMS1=1,300
 # multiple kewords per line are allowed
@@ -55,6 +57,225 @@ DISTANCES ...
 
 ... DISTANCES
 \endverbatim
+
+Notice that the closing `...` is followed by the word `DISTANCES`. This is optional, but might be
+useful to find more easily which is the matching start of the statement. The following is equally correct
+\verbatim
+DISTANCES ...
+  LABEL=dist
+# we can also insert comments here
+  ATOMS1=1,300
+# multiple kewords per line are allowed
+  ATOMS2=1,400 ATOMS3=1,500
+#empty lines are also allowed
+
+...
+\endverbatim
+
+Notice that PLUMED makes a check that the word following the closing `...` is actually identical to
+the first word in the line with the first `...`. If not, it will throw an error.
+Also notice that you might put more than one word in the first line. E.g.
+\verbatim
+DISTANCES LABEL=dist ...
+# we can also insert comments here
+  ATOMS1=1,300
+# multiple kewords per line are allowed
+  ATOMS2=1,400 ATOMS3=1,500
+#empty lines are also allowed
+...
+\endverbatim
+or, equivalently,
+\verbatim
+dist: DISTANCES ...
+# we can also insert comments here
+  ATOMS1=1,300
+# multiple kewords per line are allowed
+  ATOMS2=1,400 ATOMS3=1,500
+#empty lines are also allowed
+...  
+\endverbatim
+
+
+\page VimSyntax Using VIM syntax file
+
+For the impatients:
+- Add the following to your .vimrc file:
+\verbatim
+" This allows including the proper PLUMED syntax file:
+:let &runtimepath.=','.$PLUMED_VIMPATH
+" This makes autocompletion work in the expected way:
+:set completeopt=longest,menuone
+\endverbatim
+- When you open a PLUMED input file, you can enable syntax highlighting with:
+\verbatim
+:set syntax=plumed
+\endverbatim
+This will also enable autocompletion. Use `<CTRL-X><CTRL-O>` to autocomplete a word.
+- If you want to fold multiline statements, type
+\verbatim
+:setlocal foldmethod=syntax
+\endverbatim
+
+See below for more detailed instructions.
+
+\par Configuration
+
+When PLUMED is compiled, a file named `plumed.vim` will appear in directory `src/lib/`.
+This file is a VIM syntax file that can be used to highlight proper PLUMED instructions in a PLUMED
+input file.
+
+\warning
+Notice that this file does not appear if you are cross compiling.
+In this case, you must copy the syntax file from another machine.
+
+You can try it right after compilation by typing in VIM
+\verbatim
+:syntax off
+:source /path/to/plumed/src/lib/plumed.vim
+\endverbatim
+
+Alternatively, you can copy it to your `.vim/syntax` directory, so that you can later enable it using
+\verbatim
+:set syntax=plumed
+\endverbatim
+
+If you work in an environment where several PLUMED versions are installed (e.g. using env modules),
+we recommend the following procedure:
+- Install PLUMED
+- Add to your `.vimrc` file the following line:
+\verbatim
+:let &runtimepath.=','.$PLUMED_VIMPATH
+\endverbatim
+
+The modulefile provided with PLUMED should set the PLUMED_VIMPATH environemnt variable
+to the proper path.
+Thus, when working with a given PLUMED module loaded, you should be able to
+enable to proper syntax by just typing
+\verbatim
+:set syntax=plumed
+\endverbatim
+in VIM.
+
+If you are tired of typing `:set syntax=plumed`, you can use a modeline.
+Add to your `.vimrc` file the following commands
+\verbatim
+:set modeline
+:set modelines=5
+\endverbatim
+Then, at the beginning of your PLUMED input file, put the following comment:
+\verbatim
+# vim:syntax=plumed
+d: DISTANCE ATOMS=1,2
+RESTRAINT ARG=d AT=0.0 KAPPA=1.0
+\endverbatim
+Now, every time you open this file, you will see it highlighted.
+
+\par Syntax highlighting
+
+The syntax file contains a definition of all possible PLUMED actions and keywords.
+It is designed to allow for a quick validation of the PLUMED input file before running it.
+As such, all the meaningful words in the input should be highlighted:
+- Valid action names (such as `METAD`) and labels (such as `metad:` or `LABEL=metad`) will be
+  highlighted in the brightest way (`Type` in VIM). Those are the most important words.
+- Keyword and flag names (such as `ATOMS=` or `COMPONENTS` when part of the action \ref DISTANCE) will be highlighted with a different color
+  (`Statement` in VIM).
+- Values provided by users (such as the number of the atoms following `ATOMS=`) will be highlighted with a different color
+  (`String` in VIM).
+- Comments (see \ref comments) will be highlighted as comments (`Comment` in VIM).
+
+If you see something that is not highlighted and appears in black, this is likely going to result in an error at runtime.
+Think of this as a sort of preliminary spell-check.
+For this checks to be effective, we recommend to use a syntax file generated with
+exactly the same version of PLUMED that you are using.
+In case you find that parts of an input file that is valid are not highlighted, then please
+report it as a bug.
+On the contrary, you cannot expect the VIM syntax file to recognize all possible errors
+in a PLUMED input. Thus, a file for  which the highlighting looks correct might still contain errors.
+
+\par Multi-line folding
+
+Notice that syntax highlighting also allow VIM to properly fold multi-line actions.
+Try to do the following:
+- Open a PLUMED input file
+- Enable PLUMED syntax
+\verbatim
+:set syntax=plumed
+\endverbatim
+- Enable syntax-based folding
+\verbatim
+:setlocal foldmethod=syntax
+\endverbatim
+
+Now look at what happened to all the multi-line statements in PLUMED (i.e. those using
+\ref ContinuationLines).  As you can see, they will be folded into single lines.
+Folded lines can be expanded with `zo` and folded with `zc`. Look at VIM documentation to
+learn more.
+In case you want to use this feature, we suggest you to put both label
+and action type on the first line of multi-line statements. E.g.
+\verbatim
+m: METAD ...
+  ARG=d
+  HEIGHT=1.0
+  SIGMA=0.5
+  PACE=100
+...
+\endverbatim
+will be folded to
+\verbatim
++--  6 lines: m: METAD ...------------------------------------------------------
+\endverbatim
+and
+\verbatim
+METAD LABEL=m ...
+  ARG=d
+  HEIGHT=1.0
+  SIGMA=0.5
+  PACE=100
+...
+\endverbatim
+will be folded to
+\verbatim
++--  6 lines: METAD LABEL=m ...-------------------------------------------------
+\endverbatim
+This will allow you to easily identify the folded lines by seeing the most important information,
+that is the action type (`METAD`) and its label (`m`). This feature is convenient if
+you want to browse files that contain a lot of actions defined on multiple lines.
+
+\par Autocompletion
+
+Another VIM feature that comes when you load PLUMED syntax is autocompletion of PLUMED
+actions and keywords. Open your favorite PLUMED input file and set it to PLUMED syntax highlighting with
+\verbatim
+:set syntax=plumed
+\endverbatim
+Now go into insert mode pressing `i` and type `DU` followed by `<CTRL+X><CTRL+O>`.
+Here `<CTRL+X>` stands for autocompletion and `<CTRL+O>` for omnifunc autocompletion. You will see a short
+menu listing the following actions
+\verbatim
+DUMPATOMS       
+DUMPDERIVATIVES 
+DUMPFORCES      
+DUMPMASSCHARGE  
+DUMPMULTICOLVAR 
+DUMPPROJECTIONS 
+\endverbatim
+That is, all the actions starting with `DU`.
+You can navigate it with up and down arrows so as to choose the
+best match.
+
+Notice that the default behavior of VIM is to use the first match by default.
+In the first example (`DU<CTRL+X><CTRL+O`), it would be `DUMPATOMS`.
+The following settings make it work as most of the people expect:
+\verbatim
+:set completeopt=longest,menuone
+\endverbatim
+With these settings, in the first example (`DU<CTRL+X><CTRL+O`) VIM will only complete up to the longest common part (`DUMP`).
+
+As you can imagine,
+if you use autocompletion after you have typed the word `DISTANCE` followed by a space you will see
+a menu listing `LABEL=`, `COMPONENTS`, etc. Basically, all the keywords that are possibly used withint a `DISTANCE` line
+will be shown.
+
 
 \page includes Including other files 
 
