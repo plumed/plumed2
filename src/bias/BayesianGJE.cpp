@@ -30,7 +30,7 @@ using namespace std;
 namespace PLMD{
 namespace bias{
 
-//+PLUMEDOC BIAS BAYESIANGJ
+//+PLUMEDOC BIAS BAYESIANGJE
 /*
 Calculate a Bayesian Score to use with the Chemical Shifts CV \ref CS2BACKBONE.
 
@@ -52,7 +52,7 @@ to print the values of the uncertainty parameter, MC acceptance, and Bayesian sc
 \verbatim
 WHOLEMOLECULES ENTITY0=1-174
 cs:  CS2BACKBONE ATOMS=1-174 DATA=data/ FF=a03_gromacs.mdb FLAT=0.0 NRES=13 ENSEMBLE COMPONENTS
-csb: BAYESIANGJ ARG=cs.ha SIGMA0=1.0 SIGMA_MIN=0.00001 SIGMA_MAX=10.0 DSIGMA=0.1 NDATA=13
+csb: BAYESIANGJE ARG=cs.ha SIGMA0=1.0 SIGMA_MIN=0.00001 SIGMA_MAX=10.0 DSIGMA=0.1 NDATA=13
 PRINT ARG=csb.sigma,csb.accept,csb.bias
 \endverbatim
 (See also \ref CS2BACKBONE and \ref PRINT).
@@ -62,9 +62,16 @@ PRINT ARG=csb.sigma,csb.accept,csb.bias
 //+ENDPLUMEDOC
 
 
-class BayesianGJ : public Bias
+class BayesianGJE : public Bias
 {
   const double sqrt2pi;
+  // experimental values
+  vector<double> parameters;
+  // scale is data scaling factor
+  double scale_;
+  double scale_min_;
+  double scale_max_;
+  double Dscale_;
   // sigma is data uncertainty
   double sigma_;
   double sigma_min_;
@@ -86,25 +93,32 @@ class BayesianGJ : public Bias
   // output
   Value* valueBias;
   Value* valueSigma;
+  Value* valueScale;
   Value* valueAccept;
   Value* valueKappa;
  
   void doMonteCarlo();
-  double getEnergy(const double sigma);
+  double getEnergy(const double sigma, const double scale);
   
 public:
-  BayesianGJ(const ActionOptions&);
+  BayesianGJE(const ActionOptions&);
   void calculate();
   void update();
   static void registerKeywords(Keywords& keys);
 };
 
 
-PLUMED_REGISTER_ACTION(BayesianGJ,"BAYESIANGJ")
+PLUMED_REGISTER_ACTION(BayesianGJE,"BAYESIANGJE")
 
-void BayesianGJ::registerKeywords(Keywords& keys){
+void BayesianGJE::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   keys.use("ARG");
+  keys.add("optional","PARARG","the input for this action is the scalar output from other actions without derivatives."); 
+  keys.add("optional","PARAMETERS","the parameters of the arguments in your function");
+  keys.add("compulsory","SCALE0","initial value of the uncertainty parameter");
+  keys.add("compulsory","SCALE_MIN","minimum value of the uncertainty parameter");
+  keys.add("compulsory","SCALE_MAX","maximum value of the uncertainty parameter");
+  keys.add("compulsory","DSCALE","maximum MC move of the uncertainty parameter");
   keys.add("compulsory","SIGMA0","initial value of the uncertainty parameter");
   keys.add("compulsory","SIGMA_MIN","minimum value of the uncertainty parameter");
   keys.add("compulsory","SIGMA_MAX","maximum value of the uncertainty parameter");
@@ -117,11 +131,12 @@ void BayesianGJ::registerKeywords(Keywords& keys){
   componentsAreNotOptional(keys); 
   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
   keys.addOutputComponent("sigma", "default","uncertainty parameter");
+  keys.addOutputComponent("scale", "default","scale parameter");
   keys.addOutputComponent("kappa", "default","intensity of the harmonic restraint");
   keys.addOutputComponent("accept","default","MC acceptance");
 }
 
-BayesianGJ::BayesianGJ(const ActionOptions&ao):
+BayesianGJE::BayesianGJE(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao), 
 sqrt2pi(2.506628274631001),
 ndata_(0),
@@ -130,6 +145,29 @@ MCstride_(1),
 MCaccept_(0), 
 MCfirst_(-1)
 {
+  parseVector("PARAMETERS",parameters);
+  if(parameters.size()!=static_cast<unsigned>(getNumberOfArguments())&&!parameters.empty())
+    error("Size of PARAMETERS array should be either 0 or the same as of the number of arguments in ARG1");
+
+  vector<Value*> arg2;
+  parseArgumentList("PARARG",arg2);
+
+  if(!arg2.empty()) {
+    if(parameters.size()>0) error("It is not possible to use PARARG and PARAMETERS together");
+    if(arg2.size()!=getNumberOfArguments()) error("Size of PARARG array should be the same as number for arguments in ARG");
+    for(unsigned i=0;i<arg2.size();i++){
+      parameters.push_back(arg2[i]->get()); 
+      if(arg2[i]->hasDerivatives()==true) error("PARARG can only accept arguments without derivatives");
+    }
+  }
+
+  if(parameters.size()!=getNumberOfArguments()) 
+    error("PARARG or PARAMETERS arrays should include the same number of elements as the arguments in ARG");
+
+  parse("SCALE0",scale_);
+  parse("SCALE_MIN",scale_min_);
+  parse("SCALE_MAX",scale_max_);
+  parse("DSCALE",Dscale_);
   parse("SIGMA0",sigma_);
   parse("SIGMA_MIN",sigma_min_);
   parse("SIGMA_MAX",sigma_max_);
@@ -159,6 +197,10 @@ MCfirst_(-1)
   // adjust for multiple-time steps
   MCstride_ *= getStride();
 
+  log.printf("  initial scale parameter %f\n",scale_);
+  log.printf("  minimum scale parameter %f\n",scale_min_);
+  log.printf("  maximum scale parameter %f\n",scale_max_);
+  log.printf("  maximum MC move of scale parameter %f\n",Dscale_);
   log.printf("  initial data uncertainty %f\n",sigma_);
   log.printf("  minimum data uncertainty %f\n",sigma_min_);
   log.printf("  maximum data uncertainty %f\n",sigma_max_);
@@ -172,10 +214,12 @@ MCfirst_(-1)
 
   addComponent("bias");   componentIsNotPeriodic("bias");
   addComponent("sigma");  componentIsNotPeriodic("sigma");
+  addComponent("scale");  componentIsNotPeriodic("scale");
   addComponent("accept"); componentIsNotPeriodic("accept");
   addComponent("kappa");  componentIsNotPeriodic("kappa");
   valueBias=getPntrToComponent("bias");
   valueSigma=getPntrToComponent("sigma");
+  valueScale=getPntrToComponent("scale");
   valueAccept=getPntrToComponent("accept");
   valueKappa=getPntrToComponent("kappa");
 
@@ -185,41 +229,53 @@ MCfirst_(-1)
   else iseed = 0;     
   comm.Sum(&iseed, 1);
   srand(iseed);
-
 }
 
-double BayesianGJ::getEnergy(const double sigma){
+double BayesianGJE::getEnergy(const double sigma, const double scale){
   // calculate effective sigma
   const double s = sqrt( sigma*sigma + sigma_mean_*sigma_mean_ );
   // cycle on arguments
   double ene = 0.0;
   for(unsigned i=0;i<getNumberOfArguments();++i){
-    ene += getArgument(i);
+    const double dev = scale*getArgument(i)-parameters[i]; 
+    ene += dev*dev;
   }
   // add normalization and Jeffrey's prior
   ene = 0.5*ene/s/s + std::log(s) + static_cast<double>(ndata_)*std::log(s*sqrt2pi);
   return kbt_ * ene;
 }
 
-void BayesianGJ::doMonteCarlo(){
+void BayesianGJE::doMonteCarlo(){
  // store old energy
- double old_energy = getEnergy(sigma_);
+ double old_energy = getEnergy(sigma_, scale_);
  // cycle on MC steps 
  for(unsigned i=0;i<MCsteps_;++i){
-  // propose move
-  const double r = static_cast<double>(rand()) / RAND_MAX;
-  const double ds = -Dsigma_ + r * 2.0 * Dsigma_;
-  double new_sigma = sigma_ + ds;
+  // propose move for scale
+  const double r1 = static_cast<double>(rand()) / RAND_MAX;
+  const double ds1 = -Dscale_ + r1 * 2.0 * Dscale_;
+  double new_scale = scale_ + ds1;
+  // check boundaries
+  if(new_scale > scale_max_){new_scale = 2.0 * scale_max_ - new_scale;}
+  if(new_scale < scale_min_){new_scale = 2.0 * scale_min_ - new_scale;}
+  // the scaling factor should be the same for all the replicas
+  if(comm.Get_rank()==0) multi_sim_comm.Bcast(new_scale,0);
+  comm.Bcast(new_scale,0);
+  // propose move for sigma
+  const double r2 = static_cast<double>(rand()) / RAND_MAX;
+  const double ds2 = -Dsigma_ + r2 * 2.0 * Dsigma_;
+  double new_sigma = sigma_ + ds2;
   // check boundaries
   if(new_sigma > sigma_max_){new_sigma = 2.0 * sigma_max_ - new_sigma;}
   if(new_sigma < sigma_min_){new_sigma = 2.0 * sigma_min_ - new_sigma;}
+
   // calculate new energy
-  double new_energy = getEnergy(new_sigma);
+  const double new_energy = getEnergy(new_sigma,new_scale);
   // accept or reject
   const double delta = ( new_energy - old_energy ) / kbt_;
   // if delta is negative always accept move
   if( delta <= 0.0 ){
    old_energy = new_energy;
+   scale_ = new_scale;
    sigma_ = new_sigma;
    MCaccept_++;
   // otherwise extract random number
@@ -227,6 +283,7 @@ void BayesianGJ::doMonteCarlo(){
    const double s = static_cast<double>(rand()) / RAND_MAX;
    if( s < exp(-delta) ){
     old_energy = new_energy;
+    scale_ = new_scale;
     sigma_ = new_sigma;
     MCaccept_++;
    }
@@ -234,7 +291,7 @@ void BayesianGJ::doMonteCarlo(){
  }
 }
 
-void BayesianGJ::update(){
+void BayesianGJE::update(){
   // get time step 
   const long int step = getStep();
   // do MC stuff at the right time step
@@ -242,13 +299,13 @@ void BayesianGJ::update(){
   // this is needed when restarting simulations
   if(MCfirst_==-1) MCfirst_=step;
   // calculate acceptance
-  const double MCtrials = std::floor(static_cast<double>(step-MCfirst_) / static_cast<double>(MCstride_))+1.0;
+  const double MCtrials = floor(static_cast<double>(step-MCfirst_) / static_cast<double>(MCstride_))+1.0;
   const double accept = static_cast<double>(MCaccept_) / static_cast<double>(MCsteps_) / MCtrials;
   // set value of acceptance
   valueAccept->set(accept);
 }
 
-void BayesianGJ::calculate(){
+void BayesianGJE::calculate(){
   // calculate effective sigma
   const double s = sqrt( sigma_*sigma_ + sigma_mean_*sigma_mean_ );
 
@@ -267,10 +324,11 @@ void BayesianGJ::calculate(){
   // cycle on arguments 
   double ene = 0.0;
   for(unsigned i=0;i<getNumberOfArguments();++i){
+    const double dev = scale_*getArgument(i)-parameters[i]; 
     // increment energy
-    ene += getArgument(i); 
+    ene += dev*dev; 
     // set derivatives
-    setOutputForce(i, -0.5*kbt_*inv_s2);
+    setOutputForce(i, -kbt_*dev*scale_*inv_s2);
   };
 
   // add normalizations and priors
@@ -279,6 +337,8 @@ void BayesianGJ::calculate(){
   valueBias->set(kbt_*ene);
   // set value of data uncertainty
   valueSigma->set(sigma_);
+  // set value of scale parameter 
+  valueScale->set(scale_);
   // and of the harmonic restraint
   valueKappa->set(kbt_*inv_s2);
 }
