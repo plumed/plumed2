@@ -26,6 +26,8 @@ if exists("b:current_syntax")
   finish
 endif
 
+let b:current_syntax="plumed"
+
 " All except space and hash are in word
 set iskeyword=33,34,36-126
 
@@ -34,15 +36,15 @@ set iskeyword=33,34,36-126
 syntax match plumedDots /\v\.\.\.(\s*(#.*)*$)@=/ contained
 highlight link plumedDots Type
 
-let plumedActions=[]
-let plumedDictionary={}
+let b:plumedActions=[]
+let b:plumedDictionary={}
 
 EOF
 for a in $actions ; do
 action_name="${a%%,*}" 
 action_name_=$(echo $action_name | sed s/-/_/g)
 
-echo 'call add(plumedActions,{"word":"'"$action_name"'"})'
+echo 'call add(b:plumedActions,{"word":"'"$action_name"'"})'
 
 dictionary='{"word":"LABEL=","menu":"add a label"}'
 
@@ -76,7 +78,7 @@ done
 dictionary="$(
   echo "$dictionary" | sort | tr '\n' ',' | sed 's/,$//'
 )"
-echo "let plumedDictionary[\"plumedLine$action_name\"]=[$dictionary]"
+echo "let b:plumedDictionary[\"plumedLine$action_name\"]=[$dictionary]"
 
 cat << \EOF | sed s/ACTION/$action_name/g | sed s/ACTNAME/$action_name_/g
 " single line, with explicit LABEL
@@ -120,8 +122,8 @@ EOF
 done
 cat << \EOF
 " comments and strings last, with highest priority
-syntax region  plumedString start=/\v\{/  end=/\v\}/ contained
-syntax region  plumedStringOneline start=/\v\{/  end=/\v\}/ oneline contained
+syntax region  plumedString start=/\v\{/  end=/\v\}/ contained contains=plumedString fold
+syntax region  plumedStringOneline start=/\v\{/  end=/\v\}/ oneline contained contains=plumedStringOneline fold
 highlight link plumedString String
 highlight link plumedStringOneline String
 syntax match   plumedStringInKeyword /\v(<[^ #]+\=)@<=[^ #]+/ contained
@@ -135,12 +137,12 @@ highlight link plumedLabel Type
 syntax match   plumedLabelWrong "\v<LABEL\=\@[^ #]*" contained
 highlight link plumedLabelWrong Error
 
-syntax region  plumedComment start="\v^\s*ENDPLUMED>" end="\%$"
+syntax region  plumedComment start="\v^\s*ENDPLUMED>" end="\%$" fold
 syntax match   plumedComment excludenl "\v#.*$"
 highlight link plumedComment Comment
 
 " autocomplete function
-fun! CompletePlumed(findstart, base)
+fun! PlumedComplete(findstart, base)
 " this is to find the start of the word to be completed
           if a:findstart
             " locate the start of the word
@@ -169,11 +171,11 @@ fun! CompletePlumed(findstart, base)
             let comp=[]
             if key ==""
 " if outside of any region, complete with list of actions
-              let comp=g:plumedActions
-            elseif has_key(g:plumedDictionary,key)
+              let comp=b:plumedActions
+            elseif has_key(b:plumedDictionary,key)
 " if inside a region in the form "plumedLineXXX"
 " complete with keywords associated to action XXX
-              let comp=g:plumedDictionary[key]
+              let comp=b:plumedDictionary[key]
             endif
             " find months matching with "a:base"
             let res = []
@@ -195,7 +197,7 @@ fun! CompletePlumed(findstart, base)
             return res
           endif
         endfun
-set omnifunc=CompletePlumed
+setlocal omnifunc=PlumedComplete
 
 " inspect the entire file to find lines containing
 " non highlighted characters
@@ -213,19 +215,19 @@ fun! PlumedAnnotateSyntax()
     call cursor(l,1)
     redraw! "! is required for some reason
     while p <len(line)
+      let stack=synstack(l,p+1)
       if line[p] !~ "[ \t]"
-        let stack=synstack(l,p+1)
         if(len(stack)==0)
           let wrong=1
         elseif(synIDattr(stack[len(stack)-1],"name")=~"^plumedLine.*")
           let wrong=1
         endif
-        let annotation=""
-        for s in stack
-          let annotation=annotation."+".synIDattr(s,"name")
-        endfor
-        call add(buffer,"ANNOTATION ".l." ".p." ".line[p]." ".annotation)
       endif
+      let annotation=""
+      for s in stack
+        let annotation=annotation."+".synIDattr(s,"name")
+      endfor
+      call add(buffer,printf("ANNOTATION %5d %3d %s %s",l,p,line[p],annotation))
       let p=p+1
     endwhile
     
