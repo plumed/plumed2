@@ -46,6 +46,17 @@ for file in ../CHANGES/* ; do
 echo "- Changes for \\subpage $(cat $file | grep "@page" | awk '{print $2}')"
 done > automatic/changes.tmp
 
+if test "$make_pdfdoc" = yes ; then
+cat > automatic/pdfmanual.tmp << \EOF
+\htmlonly
+An experimental PDF copy of this manual can be found
+<a href="../manual.pdf"> here </a>.
+\endhtmlonly
+EOF
+else
+touch automatic/pdfmanual.tmp
+fi
+
 # Check for files that register actions with no documentation
 for file in ../src/*/*.cpp
 do
@@ -284,5 +295,6 @@ cat $file.txt |
     /^ *@CODESL@ *$/r     automatic/codesl.list
     /^ *@VERSION@ *$/r    automatic/version.tmp
     /^ *@CHANGES@ *$/r    automatic/changes.tmp
+    /^ *@PDFMANUAL@ *$/r  automatic/pdfmanual.tmp
 " | grep -Ev '^ *@[A-Z]*@ *$' > ${file}PP.txt
 done
