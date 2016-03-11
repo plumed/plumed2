@@ -30,7 +30,7 @@ using namespace std;
 namespace PLMD{
 namespace bias{
 
-//+PLUMEDOC BIAS BAYESIANSP
+//+PLUMEDOC BIAS BAYESIANSPE
 /*
 Calculate a Bayesian Score to use with the Chemical Shifts CV \ref CS2BACKBONE.
 
@@ -52,7 +52,7 @@ to print the values of the uncertainty parameter, MC acceptance, and Bayesian sc
 \verbatim
 WHOLEMOLECULES ENTITY0=1-174
 cs:  CS2BACKBONE ATOMS=1-174 DATA=data/ FF=a03_gromacs.mdb FLAT=0.0 NRES=13 ENSEMBLE COMPONENTS
-csb: BAYESIANSP ARG=cs.ha SIGMA0=1.0 SIGMA_MIN=0.00001 SIGMA_MAX=10.0 DSIGMA=0.1 NDATA=13
+csb: BAYESIANSPE ARG=cs.ha SIGMA0=1.0 SIGMA_MIN=0.00001 SIGMA_MAX=10.0 DSIGMA=0.1 NDATA=13
 PRINT ARG=csb.sigma,csb.accept,csb.bias
 \endverbatim
 (See also \ref CS2BACKBONE and \ref PRINT).
@@ -62,9 +62,16 @@ PRINT ARG=csb.sigma,csb.accept,csb.bias
 //+ENDPLUMEDOC
 
 
-class BayesianSP : public Bias
+class BayesianSPE : public Bias
 {
   const double sqrt2_div_pi;
+  // experimental values
+  std::vector<double> parameters;
+  // scale is data scaling factor
+  double scale_;
+  double scale_min_;
+  double scale_max_;
+  double Dscale_;
   // sigma is data uncertainty
   double sigma_;
   double sigma_min_;
@@ -86,24 +93,31 @@ class BayesianSP : public Bias
   // output
   Value* valueBias;
   Value* valueSigma;
+  Value* valueScale;
   Value* valueAccept;
  
   void doMonteCarlo();
-  double getEnergy(double sigma);
+  double getEnergy(const double sigma, const double scale);
   
 public:
-  BayesianSP(const ActionOptions&);
+  BayesianSPE(const ActionOptions&);
   void calculate();
   void update();
   static void registerKeywords(Keywords& keys);
 };
 
 
-PLUMED_REGISTER_ACTION(BayesianSP,"BAYESIANSP")
+PLUMED_REGISTER_ACTION(BayesianSPE,"BAYESIANSPE")
 
-void BayesianSP::registerKeywords(Keywords& keys){
+void BayesianSPE::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   keys.use("ARG");
+  keys.add("optional","PARARG","the input for this action is the scalar output from other actions without derivatives."); 
+  keys.add("optional","PARAMETERS","the parameters of the arguments in your function");
+  keys.add("compulsory","SCALE0","initial value of the uncertainty parameter");
+  keys.add("compulsory","SCALE_MIN","minimum value of the uncertainty parameter");
+  keys.add("compulsory","SCALE_MAX","maximum value of the uncertainty parameter");
+  keys.add("compulsory","DSCALE","maximum MC move of the uncertainty parameter");
   keys.add("compulsory","SIGMA0","initial value of the uncertainty parameter");
   keys.add("compulsory","SIGMA_MIN","minimum value of the uncertainty parameter");
   keys.add("compulsory","SIGMA_MAX","maximum value of the uncertainty parameter");
@@ -116,10 +130,11 @@ void BayesianSP::registerKeywords(Keywords& keys){
   componentsAreNotOptional(keys); 
   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
   keys.addOutputComponent("sigma", "default","uncertainty parameter");
+  keys.addOutputComponent("scale", "default","scale parameter");
   keys.addOutputComponent("accept","default","MC acceptance");
 }
 
-BayesianSP::BayesianSP(const ActionOptions&ao):
+BayesianSPE::BayesianSPE(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao), 
 sqrt2_div_pi(0.45015815807855),
 ndata_(0),
@@ -128,6 +143,29 @@ MCstride_(1),
 MCaccept_(0), 
 MCfirst_(-1)
 {
+  parseVector("PARAMETERS",parameters);
+  if(parameters.size()!=static_cast<unsigned>(getNumberOfArguments())&&!parameters.empty())
+    error("Size of PARAMETERS array should be either 0 or the same as of the number of arguments in ARG1");
+
+  vector<Value*> arg2;
+  parseArgumentList("PARARG",arg2);
+
+  if(!arg2.empty()) {
+    if(parameters.size()>0) error("It is not possible to use PARARG and PARAMETERS together");
+    if(arg2.size()!=getNumberOfArguments()) error("Size of PARARG array should be the same as number for arguments in ARG");
+    for(unsigned i=0;i<arg2.size();i++){
+      parameters.push_back(arg2[i]->get()); 
+      if(arg2[i]->hasDerivatives()==true) error("PARARG can only accept arguments without derivatives");
+    }
+  }
+
+  if(parameters.size()!=getNumberOfArguments()) 
+    error("PARARG or PARAMETERS arrays should include the same number of elements as the arguments in ARG");
+
+  parse("SCALE0",scale_);
+  parse("SCALE_MIN",scale_min_);
+  parse("SCALE_MAX",scale_max_);
+  parse("DSCALE",Dscale_);
   parse("SIGMA0",sigma_);
   parse("SIGMA_MIN",sigma_min_);
   parse("SIGMA_MAX",sigma_max_);
@@ -157,6 +195,10 @@ MCfirst_(-1)
   // adjust for multiple-time steps
   MCstride_ *= getStride();
 
+  log.printf("  initial scale parameter %f\n",scale_);
+  log.printf("  minimum scale parameter %f\n",scale_min_);
+  log.printf("  maximum scale parameter %f\n",scale_max_);
+  log.printf("  maximum MC move of scale parameter %f\n",Dscale_);
   log.printf("  initial data uncertainty %f\n",sigma_);
   log.printf("  minimum data uncertainty %f\n",sigma_min_);
   log.printf("  maximum data uncertainty %f\n",sigma_max_);
@@ -170,9 +212,11 @@ MCfirst_(-1)
 
   addComponent("bias");   componentIsNotPeriodic("bias");
   addComponent("sigma");  componentIsNotPeriodic("sigma");
+  addComponent("scale");  componentIsNotPeriodic("scale");
   addComponent("accept"); componentIsNotPeriodic("accept");
   valueBias=getPntrToComponent("bias");
   valueSigma=getPntrToComponent("sigma");
+  valueScale=getPntrToComponent("scale");
   valueAccept=getPntrToComponent("accept");
 
   // initialize random seed
@@ -183,15 +227,16 @@ MCfirst_(-1)
   srand(iseed);
 }
 
-double BayesianSP::getEnergy(double sigma){
+double BayesianSPE::getEnergy(const double sigma, const double scale){
   // calculate effective sigma
   const double smean2 = sigma_mean_*sigma_mean_;
   const double s = sqrt( sigma*sigma + smean2 );
   // cycle on arguments
   double ene = 0.0;
   for(unsigned i=0;i<getNumberOfArguments();++i){
+    const double dev = scale*getArgument(i)-parameters[i]; 
     // argument
-    const double a2 = 0.5 * getArgument(i) + s*s;
+    const double a2 = 0.5*dev*dev + s*s;
     // increment energy
     ene += std::log( 2.0 * a2 / ( 1.0 - exp(- a2 / smean2) ) );
   }
@@ -200,25 +245,34 @@ double BayesianSP::getEnergy(double sigma){
   return kbt_ * ene;
 }
 
-void BayesianSP::doMonteCarlo(){
+void BayesianSPE::doMonteCarlo(){
  // store old energy
- double old_energy = getEnergy(sigma_);
+ double old_energy = getEnergy(sigma_, scale_);
  // cycle on MC steps 
  for(unsigned i=0;i<MCsteps_;++i){
-  // propose move
-  const double r = static_cast<double>(rand()) / RAND_MAX;
-  const double ds = -Dsigma_ + r * 2.0 * Dsigma_;
-  double new_sigma = sigma_ + ds;
+  // propose move for scale
+  const double r1 = static_cast<double>(rand()) / RAND_MAX;
+  const double ds1 = -Dscale_ + r1 * 2.0 * Dscale_;
+  double new_scale = scale_ + ds1;
+  // check boundaries
+  if(new_scale > scale_max_){new_scale = 2.0 * scale_max_ - new_scale;}
+  if(new_scale < scale_min_){new_scale = 2.0 * scale_min_ - new_scale;}
+  // propose move for sigma
+  const double r2 = static_cast<double>(rand()) / RAND_MAX;
+  const double ds2 = -Dsigma_ + r2 * 2.0 * Dsigma_;
+  double new_sigma = sigma_ + ds2;
   // check boundaries
   if(new_sigma > sigma_max_){new_sigma = 2.0 * sigma_max_ - new_sigma;}
   if(new_sigma < sigma_min_){new_sigma = 2.0 * sigma_min_ - new_sigma;}
+
   // calculate new energy
-  double new_energy = getEnergy(new_sigma);
+  const double new_energy = getEnergy(new_sigma,new_scale);
   // accept or reject
   const double delta = ( new_energy - old_energy ) / kbt_;
   // if delta is negative always accept move
   if( delta <= 0.0 ){
    old_energy = new_energy;
+   scale_ = new_scale;
    sigma_ = new_sigma;
    MCaccept_++;
   // otherwise extract random number
@@ -226,6 +280,7 @@ void BayesianSP::doMonteCarlo(){
    const double s = static_cast<double>(rand()) / RAND_MAX;
    if( s < exp(-delta) ){
     old_energy = new_energy;
+    scale_ = new_scale;
     sigma_ = new_sigma;
     MCaccept_++;
    }
@@ -233,7 +288,7 @@ void BayesianSP::doMonteCarlo(){
  }
 }
 
-void BayesianSP::update(){
+void BayesianSPE::update(){
   // get time step 
   const long int step = getStep();
   // do MC stuff at the right time step
@@ -247,7 +302,7 @@ void BayesianSP::update(){
   valueAccept->set(accept);
 }
 
-void BayesianSP::calculate(){
+void BayesianSPE::calculate(){
 
   // calculate local effective sigma
   const double smean2 = sigma_mean_*sigma_mean_; 
@@ -258,15 +313,18 @@ void BayesianSP::calculate(){
   // cycle on arguments (experimental data) 
   if(comm.Get_rank()==0){
    for(unsigned i=0;i<getNumberOfArguments();++i){
+     const double dev = scale_*getArgument(i)-parameters[i]; 
      // argument
-     const double a2 = 0.5 * getArgument(i) + s*s;
+     const double a2 = 0.5*dev*dev + s*s;
      // useful quantity
      const double t = exp(-a2/smean2);
+     const double dt = 1./t;
      const double it = 1./(1.-t);
+     const double dit = 1./(1.-dt);
      // increment energy
      ene += std::log(2.*a2*it);
      // store force
-     f[i] = - 0.5/a2 + it*t*0.5/smean2;
+     f[i] = -scale_*dev*(dit/smean2 + 1./a2);
    }
    // collect contribution to forces and energy from other replicas
    multi_sim_comm.Sum(&f[0],getNumberOfArguments());
@@ -285,6 +343,8 @@ void BayesianSP::calculate(){
   valueBias->set(kbt_*ene);
   // set value of data uncertainty
   valueSigma->set(sigma_);
+  // set value of scale parameter 
+  valueScale->set(scale_);
   // set forces
   for(unsigned i=0; i<f.size(); ++i) setOutputForce(i, kbt_ * f[i]);
 }
