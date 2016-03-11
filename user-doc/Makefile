@@ -13,12 +13,11 @@ all:
 else
 
 all:
-ifeq ($(make_doc),yes)
-	make_pdfdoc=$(make_pdfdoc) ./extract
-	make_pdfdoc=$(make_pdfdoc) ./go-doxygen
+	./extract
+	./go-doxygen
 	cp *png html/
 	./report_errors
-endif
+
 endif
 
 clean:

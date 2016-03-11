@@ -10,7 +10,10 @@ new methods, more straightforward to add it to MD codes and hopefully simpler to
 This is the user manual -  if you want to modify PLUMED or to understand how it works internally, have a look at the 
 <a href="../../developer-doc/html/index.html"> developer manual </a>.
 
-@PDFMANUAL@
+\htmlonly
+An experimental PDF copy of this manual can be found
+<a href="../manual.pdf"> here </a>.
+\endhtmlonly
 
 To understand the difference between PLUMED 1 and PLUMED 2, and to
 follow the development of PLUMED 2, you can look at the detailed \ref Changelog.
@@ -24,7 +27,7 @@ To install PLUMED 2, see this page: \ref Installation
 
 @VERSION@
 
-Since version 2.1 we optionally provide an experimental PDF manual.
+Since version 2.1 we provide an experimental PDF manual.
 The PDF version is still not complete and has some known issue (e.g. some
 links are not working properly and images are not correctly included),
 and the html documentation should be considered as the official one.

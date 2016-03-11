@@ -54,10 +54,6 @@ done
 cat html/doxygen.css plumed.css > html/doxygen.css.tmp
 mv html/doxygen.css.tmp html/doxygen.css
 
-if [ "$make_pdfdoc" != yes ] ; then
-  exit
-fi
-
 cd latex
 
 # this is a workaround for a problem on the linux workstation

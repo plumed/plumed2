@@ -626,10 +626,8 @@ LD_RO
 program_can_run_mpi
 program_can_run
 xxd
-make_pdfdoc
 dot
 doxygen
-make_doc
 LD
 OPENMP_CXXFLAGS
 EGREP
@@ -693,8 +691,6 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_modules
-enable_doc
-enable_pdfdoc
 enable_debug
 enable_basic_warnings
 enable_fussy
@@ -1353,8 +1349,6 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-modules        all/none/reset or : separated list such as
                           +crystallization:-bias default: reset
-  --enable-doc            enable documentation, default: yes
-  --enable-pdfdoc         enable pdf version of the manual, default: yes
   --enable-debug          enable debugging, default: no
   --enable-basic-warnings enable basic warnings, default: yes
   --enable-fussy          enable fussy warnings, default: no
@@ -2397,42 +2391,6 @@ fi
 
 
 # set enable flags for ./configure
-
-doc=
-# Check whether --enable-doc was given.
-if test "${enable_doc+set}" = set; then :
-  enableval=$enable_doc; case "${enableval}" in
-             (yes) doc=true ;;
-             (no)  doc=false ;;
-             (*)   as_fn_error $? "wrong argument to --enable-doc" "$LINENO" 5 ;;
-  esac
-else
-  case "yes" in
-             (yes) doc=true ;;
-             (no)  doc=false ;;
-  esac
-
-fi
-
-
-
-pdfdoc=
-# Check whether --enable-pdfdoc was given.
-if test "${enable_pdfdoc+set}" = set; then :
-  enableval=$enable_pdfdoc; case "${enableval}" in
-             (yes) pdfdoc=true ;;
-             (no)  pdfdoc=false ;;
-             (*)   as_fn_error $? "wrong argument to --enable-pdfdoc" "$LINENO" 5 ;;
-  esac
-else
-  case "yes" in
-             (yes) pdfdoc=true ;;
-             (no)  pdfdoc=false ;;
-  esac
-
-fi
-
-
 
 debug=
 # Check whether --enable-debug was given.
@@ -6574,13 +6532,6 @@ $as_echo "$as_me: WARNING: dynamic library will be disabled" >&2;}
 fi
 #### Options for dynamic library to work properly ####
 
-
-make_doc=no
-if test "$doc" == true
-then
-
-make_doc=yes
-
 ### Look for doxygen
 # Extract the first word of "doxygen", so it can be a program name with args.
 set dummy doxygen; ac_word=$2
@@ -6627,9 +6578,8 @@ then
     { $as_echo "$as_me:${as_lineno-$LINENO}: Doxygen version is fine" >&5
 $as_echo "$as_me: Doxygen version is fine" >&6;}
   else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Doxygen version is <1.8" >&5
-$as_echo "$as_me: WARNING: Doxygen version is <1.8" >&2;}
-    make_doc=no
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Doxygen version is <1.8. You might have problems in generating manuals" >&5
+$as_echo "$as_me: WARNING: Doxygen version is <1.8. You might have problems in generating manuals" >&2;}
   fi
   # Extract the first word of "dot", so it can be a program name with args.
 set dummy dot; ac_word=$2
@@ -6673,29 +6623,6 @@ fi
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: You will not be able to see diagrams in the manual" >&5
 $as_echo "$as_me: WARNING: You will not be able to see diagrams in the manual" >&2;}
   fi
-fi
-fi
-
-if test "$make_doc" = yes
-then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: Manuals will be generated" >&5
-$as_echo "$as_me: Manuals will be generated" >&6;}
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: Manuals will not be generated" >&5
-$as_echo "$as_me: Manuals will not be generated" >&6;}
-fi
-
-
-make_pdfdoc=""
-if test "$pdfdoc" == true && test "$make_doc" == yes
-then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: A PDF version of the manual will be generated" >&5
-$as_echo "$as_me: A PDF version of the manual will be generated" >&6;}
-  make_pdfdoc=yes
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: A PDF version of the manual will not be generated" >&5
-$as_echo "$as_me: A PDF version of the manual will not be generated" >&6;}
-  make_pdfdoc=no
 fi
 
 ### Look for xxd
