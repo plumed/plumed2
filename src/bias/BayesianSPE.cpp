@@ -257,6 +257,9 @@ void BayesianSPE::doMonteCarlo(){
   // check boundaries
   if(new_scale > scale_max_){new_scale = 2.0 * scale_max_ - new_scale;}
   if(new_scale < scale_min_){new_scale = 2.0 * scale_min_ - new_scale;}
+  // the scaling factor should be the same for all the replicas
+  if(comm.Get_rank()==0) multi_sim_comm.Bcast(new_scale,0);
+  comm.Bcast(new_scale,0);
   // propose move for sigma
   const double r2 = static_cast<double>(rand()) / RAND_MAX;
   const double ds2 = -Dsigma_ + r2 * 2.0 * Dsigma_;
