@@ -116,8 +116,6 @@ For users:
   asks for too many atoms, see \issue{185}.
 - Optimisations (activation of the dependencies, secondary structures, DRMSD)
 - Fixed a performance regression with RMSD=OPTIMAL-FAST
-- Added to ./configure the possibility to enable/disable documentation (--enable-doc) and PDF manual (--enable-pdfdoc).
-  Default behavior is to enable both, for backward compatibility.
 
 For developers:
 - Fixed a bug in the interpretation of cmd strings. Namely, an erroneous string was not triggering an error.
