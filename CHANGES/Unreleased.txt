@@ -43,5 +43,6 @@ Changes from version 2.2 which are relevant for users:
   - Added Q type native contacts in \ref switchingfunction (thanks to Jan Domanski).
   - \ref COMMITTOR can now be used to define multiple basins
   - The number of atoms admitted in \ref BRIDGE has been significantly increased, see \issue{185}.
+  - \ref driver now allows --trajectory-stride to be set to zero when reading with --ixtc/--itrr. In this case, step number is read from the trajectory file.
 
 */
