@@ -89,7 +89,7 @@ class BayesianSP : public Bias
   Value* valueAccept;
  
   void doMonteCarlo();
-  double getEnergy(double sigma);
+  double getEnergy(const double sigma);
   
 public:
   BayesianSP(const ActionOptions&);
@@ -183,7 +183,7 @@ MCfirst_(-1)
   srand(iseed);
 }
 
-double BayesianSP::getEnergy(double sigma){
+double BayesianSP::getEnergy(const double sigma){
   // calculate effective sigma
   const double smean2 = sigma_mean_*sigma_mean_;
   const double s = sqrt( sigma*sigma + smean2 );

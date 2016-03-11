@@ -90,7 +90,7 @@ class BayesianGJ : public Bias
   Value* valueKappa;
  
   void doMonteCarlo();
-  double getEnergy(double sigma);
+  double getEnergy(const double sigma);
   
 public:
   BayesianGJ(const ActionOptions&);
@@ -111,6 +111,7 @@ void BayesianGJ::registerKeywords(Keywords& keys){
   keys.add("compulsory","DSIGMA","maximum MC move of the uncertainty parameter");
   keys.add("compulsory","SIGMA_MEAN","uncertainty in the mean estimate");
   keys.add("compulsory","NDATA","number of experimental data points");
+  keys.add("optional","TEMP","the system temperature - this is only needed if code doesnt' pass the temperature to plumed");
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_STRIDE","MC stride");
   componentsAreNotOptional(keys); 
@@ -136,10 +137,14 @@ MCfirst_(-1)
   parse("NDATA",ndata_);
   parse("MC_STEPS",MCsteps_);
   parse("MC_STRIDE",MCstride_);
+  // get temperature
+  double temp=0.0;
+  parse("TEMP",temp);
+
   checkRead();
 
-  // get temperature
-  kbt_ = plumed.getAtoms().getKbT();
+  if(temp>0.0) kbt_=plumed.getAtoms().getKBoltzmann()*temp;
+  else kbt_=plumed.getAtoms().getKbT();
 
   // get number of replicas
   if(comm.Get_rank()==0) nrep_ = multi_sim_comm.Get_size();
@@ -173,7 +178,7 @@ MCfirst_(-1)
   valueKappa=getPntrToComponent("kappa");
 
   // initialize random seed
-  unsigned int iseed;
+  unsigned iseed;
   if(comm.Get_rank()==0) iseed = time(NULL)+multi_sim_comm.Get_rank();
   else iseed = 0;     
   comm.Sum(&iseed, 1);
@@ -181,9 +186,9 @@ MCfirst_(-1)
 
 }
 
-double BayesianGJ::getEnergy(double sigma){
+double BayesianGJ::getEnergy(const double sigma){
   // calculate effective sigma
-  double s = sqrt( sigma*sigma + sigma_mean_*sigma_mean_ );
+  const double s = sqrt( sigma*sigma + sigma_mean_*sigma_mean_ );
   // cycle on arguments
   double ene = 0.0;
   for(unsigned i=0;i<getNumberOfArguments();++i){
@@ -200,8 +205,8 @@ void BayesianGJ::doMonteCarlo(){
  // cycle on MC steps 
  for(unsigned i=0;i<MCsteps_;++i){
   // propose move
-  double r = static_cast<double>(rand()) / RAND_MAX;
-  double ds = -Dsigma_ + r * 2.0 * Dsigma_;
+  const double r = static_cast<double>(rand()) / RAND_MAX;
+  const double ds = -Dsigma_ + r * 2.0 * Dsigma_;
   double new_sigma = sigma_ + ds;
   // check boundaries
   if(new_sigma > sigma_max_){new_sigma = 2.0 * sigma_max_ - new_sigma;}
@@ -209,7 +214,7 @@ void BayesianGJ::doMonteCarlo(){
   // calculate new energy
   double new_energy = getEnergy(new_sigma);
   // accept or reject
-  double delta = ( new_energy - old_energy ) / kbt_;
+  const double delta = ( new_energy - old_energy ) / kbt_;
   // if delta is negative always accept move
   if( delta <= 0.0 ){
    old_energy = new_energy;
@@ -217,7 +222,7 @@ void BayesianGJ::doMonteCarlo(){
    MCaccept_++;
   // otherwise extract random number
   } else {
-   double s = static_cast<double>(rand()) / RAND_MAX;
+   const double s = static_cast<double>(rand()) / RAND_MAX;
    if( s < exp(-delta) ){
     old_energy = new_energy;
     sigma_ = new_sigma;
@@ -229,21 +234,21 @@ void BayesianGJ::doMonteCarlo(){
 
 void BayesianGJ::update(){
   // get time step 
-  long int step = getStep();
+  const long int step = getStep();
   // do MC stuff at the right time step
   if(step%MCstride_==0) doMonteCarlo();
   // this is needed when restarting simulations
   if(MCfirst_==-1) MCfirst_=step;
   // calculate acceptance
-  double MCtrials = std::floor(static_cast<double>(step-MCfirst_) / static_cast<double>(MCstride_))+1.0;
-  double accept = static_cast<double>(MCaccept_) / static_cast<double>(MCsteps_) / MCtrials;
+  const double MCtrials = std::floor(static_cast<double>(step-MCfirst_) / static_cast<double>(MCstride_))+1.0;
+  const double accept = static_cast<double>(MCaccept_) / static_cast<double>(MCsteps_) / MCtrials;
   // set value of acceptance
   valueAccept->set(accept);
 }
 
 void BayesianGJ::calculate(){
   // calculate effective sigma
-  double s = sqrt( sigma_*sigma_ + sigma_mean_*sigma_mean_ );
+  const double s = sqrt( sigma_*sigma_ + sigma_mean_*sigma_mean_ );
 
   // communicate with other replicas
   double inv_s2;
