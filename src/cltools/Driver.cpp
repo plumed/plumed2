@@ -25,6 +25,7 @@
 #include "wrapper/Plumed.h"
 #include "tools/Communicator.h"
 #include "tools/Random.h"
+#include "tools/Pbc.h"
 #include <cstdio>
 #include <cstring>
 #include <vector>
@@ -168,6 +169,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Driver(const CLToolOptions& co );
   int main(FILE* in,FILE*out,Communicator& pc);
+  void evaluateNumericalDerivatives( const int& step, Plumed& p, const std::vector<real>& coordinates,
+                                     const std::vector<real>& masses, const std::vector<real>& charges,
+                                     std::vector<real>& cell, const double& base, std::vector<real>& numder );
   string description()const;
 };
 
@@ -201,6 +205,8 @@ void Driver<real>::registerKeywords( Keywords& keys ){
   keys.add("optional","--mc","provides a file with masses and charges as produced with DUMPMASSCHARGE");
   keys.add("optional","--box","comma-separated box dimensions (3 for orthorombic, 9 for generic)");
   keys.add("optional","--natoms","provides number of atoms - only used if file format does not contain number of atoms");
+  keys.add("optional","--debug-forces","output a file containing the forces due to the bias evaluated using numerical derivatives "
+                                       "and using the analytical derivatives implemented in plumed");
   keys.add("hidden","--debug-float","turns on the single precision version (to check float interface)");
   keys.add("hidden","--debug-dd","use a fake domain decomposition");
   keys.add("hidden","--debug-pd","use a fake particle decomposition");
@@ -302,11 +308,16 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 // the stride
   unsigned stride; parse("--trajectory-stride",stride);
 // are we writing forces
-  string dumpforces(""), dumpforcesFmt("%f");; 
+  string dumpforces(""), debugforces(""), dumpforcesFmt("%f");; 
   bool dumpfullvirial=false;
-  if(!noatoms) parse("--dump-forces",dumpforces);
-  if(dumpforces!="") parse("--dump-forces-fmt",dumpforcesFmt);
+  if(!noatoms){
+     parse("--dump-forces",dumpforces);
+     parse("--debug-forces",debugforces);
+  }
+  if(dumpforces!="" || debugforces!="" ) parse("--dump-forces-fmt",dumpforcesFmt);
   if(dumpforces!="") parseFlag("--dump-full-virial",dumpfullvirial);
+  if( debugforces!="" && (debug_dd || debug_pd) ) error("cannot debug forces and domain/particle decomposition at same time");
+  if( debugforces!="" && sizeof(real)!=sizeof(double) ) error("cannot debug forces in single precision mode");
 
   string trajectory_fmt;
 
@@ -450,7 +461,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 
   int natoms;
 
-  FILE* fp=NULL; FILE* fp_forces=NULL;
+  FILE* fp=NULL; FILE* fp_forces=NULL; OFile fp_dforces;
 #ifdef __PLUMED_HAS_XDRFILE
   XDRFILE* xd=NULL;
 #endif
@@ -495,6 +506,14 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
        }
        fp_forces=fopen(dumpforces.c_str(),"w");
      }
+     if(debugforces.length()>0){
+       if(Communicator::initialized() && pc.Get_size()>1){
+         string n;
+         Tools::convert(pc.Get_rank(),n);
+         debugforces+="."+n;
+       }
+       fp_dforces.open(debugforces);
+     }
   }
 
   std::string line;
@@ -504,6 +523,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
   std::vector<real> charges;
   std::vector<real> cell;
   std::vector<real> virial;
+  std::vector<real> numder;
 
 // variables to test particle decomposition
   int pd_nlocal;
@@ -845,6 +865,29 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
      for(int i=0;i<natoms;i++)
        fprintf(fp_forces,fmt.c_str(),forces[3*i],forces[3*i+1],forces[3*i+2]);
    }
+   if(debugforces.length()>0){
+      // Now call the routine to work out the derivatives numerically
+      numder.assign(3*natoms+9,real(0.0)); real base=0;
+      p.cmd("getBias",&base);
+      if( fabs(base)<epsilon ) printf("WARNING: bias for configuration appears to be zero so debugging forces is trivial");
+      evaluateNumericalDerivatives( step, p, coordinates, masses, charges, cell, base, numder );  
+
+      // And output everything to a file
+      fp_dforces.fmtField(" " + dumpforcesFmt);
+      for(int i=0;i<3*natoms;++i){
+         fp_dforces.printField("parameter",(int)i);
+         fp_dforces.printField("analytical",forces[i]);
+         fp_dforces.printField("numerical",-numder[i]);
+         fp_dforces.printField();
+      }
+      // And print the virial
+      for(int i=0;i<9;++i){
+         fp_dforces.printField("parameter",3*natoms+i );
+         fp_dforces.printField("analytical",virial[i] );
+         fp_dforces.printField("numerical",-numder[3*natoms+i]);
+         fp_dforces.printField();
+      }
+   }
 
     if(noatoms && plumedStopCondition) break;
 
@@ -853,6 +896,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
   p.cmd("runFinalJobs");
 
   if(fp_forces) fclose(fp_forces);
+  if(debugforces.length()>0) fp_dforces.close();
   if(fp && fp!=in)fclose(fp);
 #ifdef __PLUMED_HAS_XDRFILE
   if(xd) xdrfile_close(xd);
@@ -865,6 +909,64 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 
   return 0;
 }
+
+template<typename real>
+void Driver<real>::evaluateNumericalDerivatives( const int& step, Plumed& p, const std::vector<real>& coordinates,
+                                                 const std::vector<real>& masses, const std::vector<real>& charges,
+                                                 std::vector<real>& cell, const double& base, std::vector<real>& numder ){
+
+  int natoms = coordinates.size() / 3; real delta = sqrt(epsilon);
+  std::vector<Vector> pos(natoms); real bias=0; 
+  std::vector<real> fake_forces( 3*natoms ), fake_virial(9);
+  for(int i=0;i<natoms;++i){
+     for(unsigned j=0;j<3;++j) pos[i][j]=coordinates[3*i+j];
+  }
+
+  for(int i=0;i<natoms;++i){
+     for(unsigned j=0;j<3;++j){
+         pos[i][j]=pos[i][j]+delta;
+         p.cmd("setStep",&step);
+         p.cmd("setPositions",&pos[0][0]);
+         p.cmd("setForces",&fake_forces[0]);
+         p.cmd("setMasses",&masses[0]);
+         p.cmd("setCharges",&charges[0]);
+         p.cmd("setBox",&cell[0]);
+         p.cmd("setVirial",&fake_virial[0]);
+         p.cmd("prepareCalc");
+         p.cmd("performCalcNoUpdate");
+         p.cmd("getBias",&bias);
+         pos[i][j]=coordinates[3*i+j]; 
+         numder[3*i+j] = (bias - base) / delta;
+     }
+  }
+
+  // Create the cell
+  Tensor box( cell[0], cell[1], cell[2], cell[3], cell[4], cell[5], cell[6], cell[7], cell[8] );
+  // And the virial
+  Pbc pbc; pbc.setBox( box ); Tensor nvirial; 
+  for(unsigned i=0;i<3;i++) for(unsigned k=0;k<3;k++){ 
+     double arg0=box(i,k);
+     for(int j=0;j<natoms;++j) pos[j]=pbc.realToScaled( pos[j] );
+     cell[3*i+k]=box(i,k)=box(i,k)+delta; pbc.setBox(box); 
+     for(int j=0;j<natoms;j++) pos[j]=pbc.scaledToReal( pos[j] );
+     p.cmd("setStep",&step);
+     p.cmd("setPositions",&pos[0][0]);
+     p.cmd("setForces",&fake_forces[0]);
+     p.cmd("setMasses",&masses[0]);
+     p.cmd("setCharges",&charges[0]);
+     p.cmd("setBox",&cell[0]);
+     p.cmd("setVirial",&fake_virial[0]);
+     p.cmd("prepareCalc");
+     p.cmd("performCalcNoUpdate"); 
+     p.cmd("getBias",&bias);
+     cell[3*i+k]=box(i,k)=arg0; pbc.setBox(box);
+     for(int j=0;j<natoms;j++) for(unsigned n=0;n<3;++n) pos[j][n]=coordinates[3*j+n];
+     nvirial(i,k) = ( bias - base ) / delta;
+  }       
+  nvirial=-matmul(box.transpose(),nvirial);
+  for(unsigned i=0;i<3;i++) for(unsigned k=0;k<3;k++)  numder[3*natoms+3*i+k] = nvirial(i,k);  
+
+} 
 
 }
 }
