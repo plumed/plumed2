@@ -258,7 +258,7 @@ fun! PlumedComplete(findstart, base)
             if key ==""
 " if outside of any region, complete with list of actions
               let comp=b:plumedActions
-            elseif has_key(b:plumedDictionary,key)
+            elseif has_key(b:plumedDictionary,key1)
 " if inside a region in the form "plumedLineXXX"
 " complete with keywords associated to action XXX
               let comp=b:plumedDictionary[key1]

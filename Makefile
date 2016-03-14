@@ -20,7 +20,6 @@ lib:
 
 install:
 	$(MAKE) -C src install
-	$(MAKE) -C vim
 
 uninstall:
 	$(MAKE) -C src uninstall
