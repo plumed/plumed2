@@ -76,8 +76,6 @@ class BayesianGJ : public Bias
   double kbt_;
   // number of data points
   unsigned ndata_;
-  // number of replicas
-  unsigned nrep_;
   // Monte Carlo stuff
   unsigned MCsteps_;
   unsigned MCstride_;
@@ -149,6 +147,7 @@ MCfirst_(-1)
   else kbt_=plumed.getAtoms().getKbT();
 
   // get number of replicas
+  unsigned nrep_;
   if(comm.Get_rank()==0) nrep_ = multi_sim_comm.Get_size();
   else nrep_ = 0;
   comm.Sum(&nrep_,1);
