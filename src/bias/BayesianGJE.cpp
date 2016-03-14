@@ -98,7 +98,7 @@ class BayesianGJE : public Bias
   vector<Value*> valueKappa;
  
   void doMonteCarlo();
-  double getEnergy(const vector<double> sigma, const double scale);
+  double getEnergy(const vector<double> &sigma, const double scale);
   
 public:
   BayesianGJE(const ActionOptions&);
@@ -249,7 +249,7 @@ MCfirst_(-1)
   srand(iseed);
 }
 
-double BayesianGJE::getEnergy(const vector<double> sigma, const double scale){
+double BayesianGJE::getEnergy(const vector<double> &sigma, const double scale){
   // cycle on arguments
   double ene = 0.0;
   const double smean2 = sigma_mean_*sigma_mean_;
