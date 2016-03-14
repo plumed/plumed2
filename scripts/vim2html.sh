@@ -1,10 +1,6 @@
 #! /bin/bash
 
-VIMFILE="$PLUMED_ROOT"/src/lib/plumed.vim
-
-if [ "$PLUMED_IS_INSTALLED" = yes ] ; then
-  VIMFILE="$PLUMED_ROOT/vim/syntax/$PLUMED_PROGRAM_NAME".vim
-fi
+VIMFILE="$PLUMED_ROOT/vim/syntax/plumed.vim"
 
 if [ "$1" = --description ] ; then
   echo "convert plumed input file to colored html using vim syntax"
