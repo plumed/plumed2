@@ -30,6 +30,6 @@ TEMP=300
 LABEL=spe
 ... BAYESIANGJE
 
-DUMPFORCES ARG=ardc.*,erdc.* FILE=forces
+DUMPFORCES ARG=ardc.*,erdc.* FILE=forces FMT=%15.8f
 
 PRINT ARG=sp.*,spe.* FILE=BIAS STRIDE=1

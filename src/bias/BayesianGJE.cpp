@@ -73,7 +73,7 @@ class BayesianGJE : public Bias
   double scale_max_;
   double Dscale_;
   // sigma is data uncertainty
-  double sigma_;
+  vector<double> sigma_;
   double sigma_min_;
   double sigma_max_;
   double Dsigma_;
@@ -92,13 +92,13 @@ class BayesianGJE : public Bias
   long int MCfirst_;
   // output
   Value* valueBias;
-  Value* valueSigma;
+  vector<Value*> valueSigma;
   Value* valueScale;
   Value* valueAccept;
-  Value* valueKappa;
+  vector<Value*> valueKappa;
  
   void doMonteCarlo();
-  double getEnergy(const double sigma, const double scale);
+  double getEnergy(const vector<double> sigma, const double scale);
   
 public:
   BayesianGJE(const ActionOptions&);
@@ -128,7 +128,8 @@ void BayesianGJE::registerKeywords(Keywords& keys){
   keys.add("optional","TEMP","the system temperature - this is only needed if code doesnt' pass the temperature to plumed");
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_STRIDE","MC stride");
-  componentsAreNotOptional(keys); 
+  componentsAreNotOptional(keys);
+  useCustomisableComponents(keys);
   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
   keys.addOutputComponent("sigma", "default","uncertainty parameter");
   keys.addOutputComponent("scale", "default","scale parameter");
@@ -168,7 +169,8 @@ MCfirst_(-1)
   parse("SCALE_MIN",scale_min_);
   parse("SCALE_MAX",scale_max_);
   parse("DSCALE",Dscale_);
-  parse("SIGMA0",sigma_);
+  vector<double> readsigma;
+  parseVector("SIGMA0",readsigma);
   parse("SIGMA_MIN",sigma_min_);
   parse("SIGMA_MAX",sigma_max_);
   parse("DSIGMA",Dsigma_);
@@ -186,6 +188,15 @@ MCfirst_(-1)
   if(temp>0.0) kbt_=plumed.getAtoms().getKBoltzmann()*temp;
   else kbt_=plumed.getAtoms().getKbT();
 
+  if(readsigma.size()==ndata_) {
+    sigma_.resize(ndata_);
+    sigma_=readsigma;
+  } else if(readsigma.size()==1) {
+    sigma_.resize(ndata_,readsigma[0]);
+  } else {
+    plumed_merror("SIGMA0 can accept either one single value or as many values as the number of arguments");
+  } 
+
   // get number of replicas
   if(comm.Get_rank()==0) nrep_ = multi_sim_comm.Get_size();
   else nrep_ = 0;
@@ -201,7 +212,12 @@ MCfirst_(-1)
   log.printf("  minimum scale parameter %f\n",scale_min_);
   log.printf("  maximum scale parameter %f\n",scale_max_);
   log.printf("  maximum MC move of scale parameter %f\n",Dscale_);
-  log.printf("  initial data uncertainty %f\n",sigma_);
+  if(readsigma.size()==1) log.printf("  initial data uncertainty %f\n",sigma_[0]);
+  else {
+    log.printf("  initial data uncertainty");
+    for(unsigned i=0;i<sigma_.size();++i) log.printf(" %f", sigma_[i]);
+    log.printf("\n");
+  }
   log.printf("  minimum data uncertainty %f\n",sigma_min_);
   log.printf("  maximum data uncertainty %f\n",sigma_max_);
   log.printf("  maximum MC move of data uncertainty %f\n",Dsigma_);
@@ -213,16 +229,18 @@ MCfirst_(-1)
   log.printf("  MC stride %u\n",MCstride_);
 
   addComponent("bias");   componentIsNotPeriodic("bias");
-  addComponent("sigma");  componentIsNotPeriodic("sigma");
   addComponent("scale");  componentIsNotPeriodic("scale");
   addComponent("accept"); componentIsNotPeriodic("accept");
-  addComponent("kappa");  componentIsNotPeriodic("kappa");
   valueBias=getPntrToComponent("bias");
-  valueSigma=getPntrToComponent("sigma");
   valueScale=getPntrToComponent("scale");
   valueAccept=getPntrToComponent("accept");
-  valueKappa=getPntrToComponent("kappa");
-
+  for(unsigned i=0;i<sigma_.size();++i){
+    std::string num; Tools::convert(i,num);
+    addComponent("sigma_"+num); componentIsNotPeriodic("sigma_"+num);
+    addComponent("kappa_"+num); componentIsNotPeriodic("kappa_"+num);
+    valueSigma.push_back(getPntrToComponent("sigma_"+num));
+    valueKappa.push_back(getPntrToComponent("kappa_"+num));
+  }
   // initialize random seed
   unsigned iseed;
   if(comm.Get_rank()==0) iseed = time(NULL)+multi_sim_comm.Get_rank();
@@ -231,17 +249,15 @@ MCfirst_(-1)
   srand(iseed);
 }
 
-double BayesianGJE::getEnergy(const double sigma, const double scale){
-  // calculate effective sigma
-  const double s = sqrt( sigma*sigma + sigma_mean_*sigma_mean_ );
+double BayesianGJE::getEnergy(const vector<double> sigma, const double scale){
   // cycle on arguments
   double ene = 0.0;
+  const double smean2 = sigma_mean_*sigma_mean_;
   for(unsigned i=0;i<getNumberOfArguments();++i){
+    const double ss = sigma[i]*sigma[i] + smean2; 
     const double dev = scale*getArgument(i)-parameters[i]; 
-    ene += dev*dev;
+    ene += 0.5*dev*dev/ss + std::log(ss*sqrt2pi);
   }
-  // add normalization and Jeffrey's prior
-  ene = 0.5*ene/s/s + std::log(s) + static_cast<double>(ndata_)*std::log(s*sqrt2pi);
   return kbt_ * ene;
 }
 
@@ -250,44 +266,46 @@ void BayesianGJE::doMonteCarlo(){
  double old_energy = getEnergy(sigma_, scale_);
  // cycle on MC steps 
  for(unsigned i=0;i<MCsteps_;++i){
-  // propose move for scale
-  const double r1 = static_cast<double>(rand()) / RAND_MAX;
-  const double ds1 = -Dscale_ + r1 * 2.0 * Dscale_;
-  double new_scale = scale_ + ds1;
-  // check boundaries
-  if(new_scale > scale_max_){new_scale = 2.0 * scale_max_ - new_scale;}
-  if(new_scale < scale_min_){new_scale = 2.0 * scale_min_ - new_scale;}
-  // the scaling factor should be the same for all the replicas
-  if(comm.Get_rank()==0) multi_sim_comm.Bcast(new_scale,0);
-  comm.Bcast(new_scale,0);
-  // propose move for sigma
-  const double r2 = static_cast<double>(rand()) / RAND_MAX;
-  const double ds2 = -Dsigma_ + r2 * 2.0 * Dsigma_;
-  double new_sigma = sigma_ + ds2;
-  // check boundaries
-  if(new_sigma > sigma_max_){new_sigma = 2.0 * sigma_max_ - new_sigma;}
-  if(new_sigma < sigma_min_){new_sigma = 2.0 * sigma_min_ - new_sigma;}
-
-  // calculate new energy
-  const double new_energy = getEnergy(new_sigma,new_scale);
-  // accept or reject
-  const double delta = ( new_energy - old_energy ) / kbt_;
-  // if delta is negative always accept move
-  if( delta <= 0.0 ){
-   old_energy = new_energy;
-   scale_ = new_scale;
-   sigma_ = new_sigma;
-   MCaccept_++;
-  // otherwise extract random number
-  } else {
-   const double s = static_cast<double>(rand()) / RAND_MAX;
-   if( s < exp(-delta) ){
+   // propose move for scale
+   const double r1 = static_cast<double>(rand()) / RAND_MAX;
+   const double ds1 = -Dscale_ + r1 * 2.0 * Dscale_;
+   double new_scale = scale_ + ds1;
+   // check boundaries
+   if(new_scale > scale_max_){new_scale = 2.0 * scale_max_ - new_scale;}
+   if(new_scale < scale_min_){new_scale = 2.0 * scale_min_ - new_scale;}
+   // the scaling factor should be the same for all the replicas
+   if(comm.Get_rank()==0) multi_sim_comm.Bcast(new_scale,0);
+   comm.Bcast(new_scale,0);
+   // propose move for sigma
+   vector<double> new_sigma(sigma_.size());
+   for(unsigned j=0;j<sigma_.size();++j) {
+     const double r2 = static_cast<double>(rand()) / RAND_MAX;
+     const double ds2 = -Dsigma_ + r2 * 2.0 * Dsigma_;
+     new_sigma[j] = sigma_[j] + ds2;
+     // check boundaries
+     if(new_sigma[j] > sigma_max_){new_sigma[j] = 2.0 * sigma_max_ - new_sigma[j];}
+     if(new_sigma[j] < sigma_min_){new_sigma[j] = 2.0 * sigma_min_ - new_sigma[j];}
+   }
+   // calculate new energy
+   const double new_energy = getEnergy(new_sigma,new_scale);
+   // accept or reject
+   const double delta = ( new_energy - old_energy ) / kbt_;
+   // if delta is negative always accept move
+   if( delta <= 0.0 ){
     old_energy = new_energy;
     scale_ = new_scale;
     sigma_ = new_sigma;
     MCaccept_++;
+   // otherwise extract random number
+   } else {
+    const double s = static_cast<double>(rand()) / RAND_MAX;
+    if( s < exp(-delta) ){
+     old_energy = new_energy;
+     scale_ = new_scale;
+     sigma_ = new_sigma;
+     MCaccept_++;
+    }
    }
-  }
  }
 }
 
@@ -307,40 +325,37 @@ void BayesianGJE::update(){
 
 void BayesianGJE::calculate(){
   // calculate effective sigma
-  const double s = sqrt( sigma_*sigma_ + sigma_mean_*sigma_mean_ );
-
-  // communicate with other replicas
-  double inv_s2;
-  // inter-replicas summation
-  if(comm.Get_rank()==0){
-     inv_s2 = 1.0/s/s;
-     multi_sim_comm.Sum(&inv_s2,1); 
-  } else {
-     inv_s2 = 0.0;
+  vector<double> ss(sigma_.size());
+  vector<double> inv_s2(sigma_.size(),0);
+  const double smean2 = sigma_mean_*sigma_mean_;
+  for(unsigned i=0;i<sigma_.size(); ++i) {
+    ss[i] = sigma_[i]*sigma_[i] + smean2;
+    inv_s2[i] = 1.0/ss[i];
   }
+ 
+  // inter-replicas summation
+  if(comm.Get_rank()==0) multi_sim_comm.Sum(&inv_s2[0],sigma_.size()); 
   // intra-replica summation
-  comm.Sum(&inv_s2,1);  
+  comm.Sum(&inv_s2[0],sigma_.size());  
   
   // cycle on arguments 
   double ene = 0.0;
   for(unsigned i=0;i<getNumberOfArguments();++i){
     const double dev = scale_*getArgument(i)-parameters[i]; 
     // increment energy
-    ene += dev*dev; 
+    ene += 0.5*dev*dev*inv_s2[i] + std::log(ss[i]*sqrt2pi); 
     // set derivatives
-    setOutputForce(i, -kbt_*dev*scale_*inv_s2);
-  };
+    setOutputForce(i, -kbt_*dev*scale_*inv_s2[i]);
+    // set value of data uncertainty
+    valueSigma[i]->set(sigma_[i]);
+    // and of the harmonic restraint
+    valueKappa[i]->set(kbt_*inv_s2[i]);
+  }
 
-  // add normalizations and priors
-  ene = 0.5*ene*inv_s2 + std::log(s) + static_cast<double>(ndata_)*std::log(s*sqrt2pi);
   // set value of the bias
   valueBias->set(kbt_*ene);
-  // set value of data uncertainty
-  valueSigma->set(sigma_);
   // set value of scale parameter 
   valueScale->set(scale_);
-  // and of the harmonic restraint
-  valueKappa->set(kbt_*inv_s2);
 }
 
 
