@@ -330,7 +330,7 @@ void BayesianGJE::calculate(){
   const double smean2 = sigma_mean_*sigma_mean_;
   for(unsigned i=0;i<sigma_.size(); ++i) {
     ss[i] = sigma_[i]*sigma_[i] + smean2;
-    inv_s2[i] = 1.0/ss[i];
+    if(comm.Get_rank()==0) inv_s2[i] = 1.0/ss[i];
   }
  
   // inter-replicas summation
