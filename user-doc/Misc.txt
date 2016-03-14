@@ -120,6 +120,9 @@ This will also enable autocompletion. Use `<CTRL-X><CTRL-O>` to autocomplete a w
 - While in vim normal mode, you can use the button `<F2>` to show in a split window a short
   help about the action defined in the line where the cursor is. Hitting `<F2>` again you will
   close that window. With `<CTRL-W><CTRL-W>` you go back and forth between the two windows.
+- When you open a file starting with `#! FIELDS`, VIM will automatically understand it
+  is a PLUMED outpt file (VIM filetype = plumedf) and will color fields and data columns with
+  alternating colors.
 
 See below for more detailed instructions.
 
@@ -128,18 +131,14 @@ See below for more detailed instructions.
 When PLUMED is compiled, directories `help` and `syntax` will appear in `builddir/vim`.
 They contain a VIM plugin that can be used to highlight proper PLUMED instructions in a PLUMED
 input file and to quickly retrieve help.
+There is also a file `builddir/vim/scripts.vim` that helps VIM in recognizing PLUMED output files.
 
 \warning
-Notice that this file does not appear if you are cross compiling.
+Notice that these file do not appear if you are cross compiling.
 In this case, you must copy the plugin files from another machine.
 
-You can try it right after compilation by typing in VIM
-\verbatim
-:syntax off
-:source /path/to/plumed/src/lib/plumed.vim
-\endverbatim
-
-You can copy the two directories into your `$HOME/.vim` directory so that later you can
+To make VIM aware of these files, you should copy them to your `$HOME/.vim` directory.
+Later you can
 enable plumed syntax with the command
 \verbatim
 :set ft=plumed
@@ -161,6 +160,9 @@ enable to proper syntax by just typing
 :set ft=plumed
 \endverbatim
 in VIM.
+Notice that the variable PLUMED_VIMPATH is also set in the `sourceme.sh` script in the build directory.
+This, if you modify your `.vimrc` file as suggested, you will be able to use the correct syntax both
+when using an installed PLUMED and when running from a just compiled copy.
 
 If you are tired of typing `:set ft=plumed`, you can use a modeline.
 Add to your `.vimrc` file the following commands
@@ -309,11 +311,28 @@ you should be able to open and close the manual hitting the F2 key.
 We prefer not to set this in the PLUMED syntax file to avoid clashing with other shortcuts you might
 have bound to the F2 key.
 
+\par Displaying output files
 
+Most of the PLUMED output files look like this
+\verbatim
+#! FIELDS A B C
+1 2 3
+\endverbatim
+This is useful since in the header you can see the name of the quantities that are printed in the
+data lines. However, when you have an output file with many columns it might be a bit error prone to count them.
+To simplify this, when PLUMED syntax for VIM is configure properly VIM should be able to:
+- Detect that this file is a PLUMED output file with fields, automatically setting its type to `plumedf`. If not, just type
+  `:set ft=plumedf`.
+- Show this file with syntax highlighting to increase its readability.
 
+Notice that the syntax file for the output files (`plumedf.vim`) is not the same one that is used for the PLUMED
+input file (`plumed.vim`).
 
-
-
+To make output files more readable, vi will show `FIELDS` and `SET` words in a different color,
+and data columns with alternating colors (e.g. dark/light/dark/light).
+The colors in the columns are consistent with those shown in the FIELD line.
+In the example above, 1, 2, and 3 will be of the same color as A, B, and C respectively.
+This should make it much easier to find which columns correspond to a given quantity.
 
 \page includes Including other files 
 
