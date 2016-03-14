@@ -17,6 +17,32 @@ fi
 
 mkdir -p syntax help
 
+cat > syntax/plumedf.vim << \EOF
+syn match plumedFCol2S   /\v\s+/    nextgroup=plumedFCol1 contained
+syn match plumedFCol2    /\v\S+/    nextgroup=plumedFCol2S contained
+syn match plumedFCol1S   /\v\s+/    nextgroup=plumedFCol2 contained
+syn match plumedFCol1    /\v\S+/    nextgroup=plumedFCol1S
+
+syn match plumedNothing  /\v.*/    contained
+syn match plumedSCol2    /\v\S+/    nextgroup=plumedNothing contained
+syn match plumedSCol1S   /\v\s+/    nextgroup=plumedSCol2 contained
+syn match plumedSCol1    /\v\S+/    nextgroup=plumedSCol1S contained
+
+highlight link plumedFCol1 Constant
+highlight link plumedFCol2 Keyword
+highlight link plumedSCol1 Type
+highlight link plumedSCol2 Constant
+
+syntax match   plumedFComment excludenl /\v#.*$/
+highlight link plumedFComment Comment
+
+syntax region plumedFieldLine  matchgroup=plumedFieldLine start=/\v[ \t]*\#\![ \t]+FIELDS[ \t]+/ excludenl end=/$/ contains=plumedFCol1
+syntax region plumedSetLine    matchgroup=plumedSetLine start=/\v[ \t]*\#\![ \t]+SET[ \t]+/ excludenl end=/$/ contains=plumedSCol1
+highlight link plumedFieldLine Type
+highlight link plumedSetLine   Type
+EOF
+
+
 
 actions=$(
 plumed --no-mpi manual --action 2>&1 | awk '{
@@ -334,6 +360,7 @@ endfun
 EOF
 
 } > syntax/plumed.vim
+
 
 # colors:
 # Constant
