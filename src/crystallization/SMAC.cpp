@@ -21,11 +21,15 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "OrientationSphere.h"
 #include "core/ActionRegister.h"
+#include "tools/Torsion.h"
 #include "tools/KernelFunctions.h"
 
 //+PLUMEDOC MCOLVARF SMAC
 /*
 Calculate the SMAC collective variable discussed in \cite smac-paper
+
+
+\bug Contribution to virial is wrong
 
 \par Examples
 
@@ -42,7 +46,8 @@ private:
 public:
   static void registerKeywords( Keywords& keys ); 
   explicit SMAC(const ActionOptions& ao); 
-  double transformDotProduct( const double& dot, double& df ) const ; 
+  double computeVectorFunction( const Vector& conn, const std::vector<double>& vec1, const std::vector<double>& vec2, 
+                                Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const ;
   double calculateCoordinationPrefactor( const double& coord, double& df ) const ;
 };
 
@@ -59,6 +64,11 @@ SMAC::SMAC(const ActionOptions& ao):
 Action(ao),
 OrientationSphere(ao)
 {
+   if( mybasemulticolvars.size()==0 ) error("SMAC must take multicolvar as input");
+   for(unsigned i=0;i<mybasemulticolvars.size();++i){
+       if( mybasemulticolvars[i]->getNumberOfQuantities()!=5 ) error("SMAC is only possible with three dimensional vectors");
+   }
+
    std::string kernelinpt;
    for(int i=1;;i++){
       if( !parseNumbered("KERNEL",i,kernelinpt) ) break;
@@ -74,20 +84,28 @@ OrientationSphere(ao)
 
 }
 
-double SMAC::transformDotProduct( const double& dot, double& df ) const {
+double SMAC::computeVectorFunction( const Vector& conn, const std::vector<double>& vec1, const std::vector<double>& vec2, 
+                                    Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const {
+  double dot=0; Vector v1, v2;
+  for(unsigned k=2;k<vec1.size();++k){
+      dot+=vec1[k]*vec2[k];                        
+      v1[k-2]=vec1[k]; v2[k-2]=vec2[k];
+  }
+  Vector dv1, dv2; Torsion t;
+  double angle = t.compute( v1, conn, v2, dv1, dconn, dv2 );
+
   std::vector<Value*> pos; pos.push_back( new Value() ); std::vector<double> deriv(1);
-  pos[0]->setNotPeriodic(); pos[0]->set( acos( dot ) ); 
-  double ans=0; df=0; double dcos=-1./sqrt( 1. - dot*dot );
+  pos[0]->setDomain( "-pi", "pi" ); pos[0]->set( angle ); double ans=0, df=0; 
   for(unsigned i=0;i<kernels.size();++i){
       ans += kernels[i].evaluate( pos, deriv );
-      df += deriv[0]*dcos;
+      df += deriv[0];
   }
-  delete pos[0];
-  return ans;
+  dconn*=df; for(unsigned k=2;k<vec1.size();++k){ dvec1[k]=df*dv1[k-2]; dvec2[k]=df*dv2[k-2]; }
+  delete pos[0]; return ans;
 }
 
 double SMAC::calculateCoordinationPrefactor( const double& coord, double& df ) const {
-  double f=coord_switch.calculate( coord, df ); df*=coord; return f;
+  double f=1-coord_switch.calculate( coord, df ); df*=-coord; return f;
 }
 
 }

@@ -54,6 +54,10 @@ void ClusterAnalysisBase::turnOnDerivatives(){
   MultiColvarBase::turnOnDerivatives();
 }
 
+unsigned ClusterAnalysisBase::getNumberOfQuantities() const {
+  return myclusters->getNumberOfQuantities();
+}
+
 unsigned ClusterAnalysisBase::getNumberOfNodes() const {
   return myclusters->getNumberOfNodes();
 }
@@ -83,7 +87,7 @@ void ClusterAnalysisBase::getNodePropertyDerivatives( const unsigned& ind, Multi
 }
 
 Vector ClusterAnalysisBase::getPosition( const unsigned& iatom ) const {
-  return myclusters->getPosition( iatom );
+  return myclusters->getNodePosition( iatom );
 }
 
 double ClusterAnalysisBase::getCutoffForConnection() const {

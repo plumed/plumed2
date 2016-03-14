@@ -44,6 +44,7 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit ClusterAnalysisBase(const ActionOptions&);
+  unsigned getNumberOfQuantities() const ;
   bool isPeriodic();
   void turnOnDerivatives();
   void setupActiveTaskSet( std::vector<unsigned>& active_tasks, const std::string& input_label ){}

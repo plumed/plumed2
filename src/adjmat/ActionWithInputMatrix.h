@@ -65,6 +65,8 @@ public:
   virtual AtomNumber getAbsoluteIndexOfCentralAtom(const unsigned& i) const ;
 /// No loop over tasks for ActionWithInputMatrix
   double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const { plumed_error(); }
+///
+  virtual Vector getNodePosition( const unsigned& taskIndex ) const ;
 };
 
 }

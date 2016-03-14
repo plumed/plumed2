@@ -141,7 +141,7 @@ unsigned ActionWithInputMatrix::getNumberOfNodeTypes() const {
 
 unsigned ActionWithInputMatrix::getNumberOfQuantities() const {
   if( (mymatrix->function)->colvar_label.size()==0 ) return 2;
-  else return (mymatrix->function)->mybasemulticolvars[0]->getNumberOfQuantities();
+  return (mymatrix->function)->mybasemulticolvars[0]->getNumberOfQuantities();
 }
 
 unsigned ActionWithInputMatrix::getNumberOfAtomsInGroup( const unsigned& igrp ) const {
@@ -153,6 +153,11 @@ multicolvar::MultiColvarBase* ActionWithInputMatrix::getBaseMultiColvar( const u
  plumed_dbg_assert( igrp<(mymatrix->function)->mybasemulticolvars.size() );
  return (mymatrix->function)->mybasemulticolvars[igrp];
 }
+
+Vector ActionWithInputMatrix::getNodePosition( const unsigned& taskIndex ) const {
+  return (getAdjacencyVessel()->function)->getPositionOfAtomForLinkCells( taskIndex );
+} 
+
 
 }
 }

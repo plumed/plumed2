@@ -490,6 +490,7 @@ void MultiColvarBase::retrieveAtoms(){
 }
 
 void MultiColvarBase::addAtomDerivatives( const int& ival, const unsigned& iatom, const Vector& der, multicolvar::AtomValuePack& myatoms ) const {
+  if( doNotCalculateDerivatives() ) return ;
   unsigned jatom=myatoms.getIndex(iatom);
 
   if( jatom<colvar_label.size() ){

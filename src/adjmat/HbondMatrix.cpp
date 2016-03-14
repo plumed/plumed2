@@ -54,7 +54,7 @@ public:
 /// Constructor
   explicit HBondMatrix(const ActionOptions&);
 /// Create the ith, ith switching function
-  void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::string& desc );
+  void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc );
 /// This actually calculates the value of the contact function
   void calculateWeight( const unsigned& taskCode, multicolvar::AtomValuePack& myatoms ) const ;
 /// This does nothing
@@ -145,9 +145,9 @@ AdjacencyMatrixBase(ao)
   for(unsigned i=0;i<atoms.size();++i){ all_atoms.push_back( atoms[i] );  log.printf("%d ",atoms[i].serial() ); }
   log.printf("\n");
 
-  parseConnectionDescriptions("SWITCH",ndonor_types);
-  parseConnectionDescriptions("HSWITCH",ndonor_types);
-  parseConnectionDescriptions("ASWITCH",ndonor_types);
+  parseConnectionDescriptions("SWITCH",false,ndonor_types);
+  parseConnectionDescriptions("HSWITCH",false,ndonor_types);
+  parseConnectionDescriptions("ASWITCH",false,ndonor_types);
 
   // Find the largest sf cutoff
   double sfmax=distanceOOSwitch(0,0).get_dmax();
@@ -164,22 +164,22 @@ AdjacencyMatrixBase(ao)
   requestAtoms( all_atoms, false, donors_eq_accept, dims );
 }
 
-void HBondMatrix::setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::string& desc ){ 
-  plumed_assert( id<3 );
+void HBondMatrix::setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ){ 
+  plumed_assert( id<3 && desc.size()==1 );
   if( id==0 ){
-     std::string errors; distanceOOSwitch(j,i).set(desc,errors);
+     std::string errors; distanceOOSwitch(j,i).set(desc[0],errors);
      if( errors.length()!=0 ) error("problem reading switching function description " + errors);
-     if( j!=i) distanceOOSwitch(i,j).set(desc,errors);
+     if( j!=i) distanceOOSwitch(i,j).set(desc[0],errors);
      log.printf("  atoms of type %u and %u must be within %s\n",i+1,j+1,(distanceOOSwitch(i,j).description()).c_str() );
   } else if( id==1 ){
-     std::string errors; distanceOHSwitch(j,i).set(desc,errors);
+     std::string errors; distanceOHSwitch(j,i).set(desc[0],errors);
      if( errors.length()!=0 ) error("problem reading switching function description " + errors);
-     if( j!=i) distanceOHSwitch(i,j).set(desc,errors);
+     if( j!=i) distanceOHSwitch(i,j).set(desc[0],errors);
      log.printf("  for atoms of type %u and %u the OH distance must be less than %s \n",i+1,j+1,(distanceOHSwitch(i,j).description()).c_str() );
   } else if( id==2 ){
-     std::string errors; angleSwitch(j,i).set(desc,errors);
+     std::string errors; angleSwitch(j,i).set(desc[0],errors);
      if( errors.length()!=0 ) error("problem reading switching function description " + errors);
-     if( j!=i) angleSwitch(i,j).set(desc,errors);
+     if( j!=i) angleSwitch(i,j).set(desc[0],errors);
      log.printf("  for atoms of type %u and %u the OOH angle must be less than %s \n",i+1,j+1,(angleSwitch(i,j).description()).c_str() );
   } 
 }

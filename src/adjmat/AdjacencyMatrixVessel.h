@@ -80,6 +80,8 @@ public:
   bool nodesAreConnected( const unsigned& iatom, const unsigned& jatom ) const ;
 /// Get the cutoff that we are using for connections
   double getCutoffForConnection() const ;
+///
+  Vector getNodePosition( const unsigned& taskIndex ) const ;
 };
 
 }

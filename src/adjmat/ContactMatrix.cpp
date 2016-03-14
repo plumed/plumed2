@@ -50,7 +50,7 @@ public:
 /// Constructor
   explicit ContactMatrix(const ActionOptions&);
 /// Create the ith, ith switching function
-  void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::string& desc );
+  void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc );
 /// This actually calculates the value of the contact function
   void calculateWeight( const unsigned& taskCode, multicolvar::AtomValuePack& myatoms ) const ;
 /// This does nothing
@@ -117,7 +117,7 @@ AdjacencyMatrixBase(ao)
      requestAtoms( atoms, true, false, dims );
   }
   // Read in the switching functions
-  parseConnectionDescriptions("SWITCH",ncol_t);
+  parseConnectionDescriptions("SWITCH",false,ncol_t);
 
   // Find the largest sf cutoff
   double sfmax=switchingFunction(0,0).get_dmax();
@@ -131,10 +131,10 @@ AdjacencyMatrixBase(ao)
   setLinkCellCutoff( sfmax );
 }
 
-void ContactMatrix::setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::string& desc ){
-  plumed_assert( id==0 ); std::string errors; switchingFunction(j,i).set(desc,errors);
+void ContactMatrix::setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ){
+  plumed_assert( id==0 && desc.size()==1 ); std::string errors; switchingFunction(j,i).set(desc[0],errors);
   if( errors.length()!=0 ) error("problem reading switching function description " + errors);
-  if( j!=i) switchingFunction(i,j).set(desc,errors);
+  if( j!=i) switchingFunction(i,j).set(desc[0],errors);
   log.printf("  %u th and %u th multicolvar groups must be within %s\n",i+1,j+1,(switchingFunction(i,j).description()).c_str() );
 }
 

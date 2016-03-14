@@ -67,6 +67,8 @@ public:
   void performClustering(){};
 ///
   double  getCutoffForConnection() const ;  
+///
+  Vector getNodePosition( const unsigned& taskIndex ) const ;
 };
 
 PLUMED_REGISTER_ACTION(ClusterWithSurface,"CLUSTER_WITHSURFACE")
@@ -157,6 +159,10 @@ void ClusterWithSurface::retrieveAtomsInCluster( const unsigned& clust, std::vec
       if( surface_atom[j] ){ myatoms[nn]=j; nn++; }
   }
   plumed_assert( nn==myatoms.size() );
+}
+
+Vector ClusterWithSurface::getNodePosition( const unsigned& taskIndex ) const {
+  return myclusters->getNodePosition( taskIndex );
 }
 
 }

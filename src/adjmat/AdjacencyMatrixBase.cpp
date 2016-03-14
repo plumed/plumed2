@@ -63,12 +63,22 @@ bool AdjacencyMatrixBase::parseAtomList(const std::string& key, const int& num, 
   return true;
 }
 
-void AdjacencyMatrixBase::parseConnectionDescriptions( const std::string& key, const unsigned& nrow_t ){
+void AdjacencyMatrixBase::parseConnectionDescriptions( const std::string& key, const bool& multiple, const unsigned& nrow_t ){
   if( getNumberOfNodeTypes()==1 || (getNumberOfNodeTypes()==2 && nrow_t==1) ){
-      std::string sw; parse(key,sw);
-      if(sw.length()==0) error("could not find " + key + " keyword");
+      std::vector<std::string> sw; 
+      if( !multiple ){
+         sw.resize(1); parse(key,sw[0]);
+         if(sw[0].length()==0) error("could not find " + key + " keyword");
+      } else {
+         std::string input;
+         for(int i=1;;i++){
+             if( !parseNumbered(key, i, input ) ) break;
+             sw.push_back( input ); 
+         }
+      }
       setupConnector( connect_id, 0, 0, sw );
   } else {
+      if( multiple ) error("keyword " + key + " does not work with multiple input strings");
       unsigned nr, nc;
       if( nrow_t==0 ){
         nr=nc=getNumberOfNodeTypes();
@@ -87,8 +97,8 @@ void AdjacencyMatrixBase::parseConnectionDescriptions( const std::string& key, c
           }
 
           for(unsigned j=i;j<nc;++j){
-             std::string sw; parseNumbered(key,ibase+j+1,sw);
-             if(sw.length()==0){
+             std::vector<std::string> sw(1); parseNumbered(key,ibase+j+1,sw[0]);
+             if(sw[0].length()==0){
                 std::string num; Tools::convert(ibase+j+1,num);
                 error("could not find " + key + num + " keyword. Need one " + key + " keyword for each distinct base-multicolvar-pair type");
              }

@@ -54,7 +54,7 @@ protected:
 /// Add derivatives to a matrix element
   void addDerivativesOnMatrixElement( const unsigned& ielem, const unsigned& jrow, const double& df, Matrix<double>& der );
 /// Read in the information on the connectors
-  void parseConnectionDescriptions( const std::string& key, const unsigned& nrow_t );
+  void parseConnectionDescriptions( const std::string& key, const bool& multiple, const unsigned& nrow_t );
 protected:
 /// Read the list of atoms involved in this colvar
   bool parseAtomList(const std::string& key, const int& num, std::vector<AtomNumber>& t);
@@ -72,7 +72,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit AdjacencyMatrixBase(const ActionOptions&);
 /// Create the connection object
-  virtual void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::string& desc ) = 0;
+  virtual void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ) = 0;
 /// None of these things are allowed
   bool isPeriodic(){ return false; }
   Vector getCentralAtom(){ plumed_merror("cannot find central atoms for adjacency matrix actions"); Vector dum; return dum; }
