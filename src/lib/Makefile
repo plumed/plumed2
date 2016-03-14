@@ -58,15 +58,8 @@ PLUMED_MAIN_STATIC := $(PLUMED_LIBDIR)plumed
 PLUMED_MAIN_SHARED := $(PLUMED_LIBDIR)plumed-shared
 PLUMED_MAIN_RUNTIME := $(PLUMED_LIBDIR)plumed-runtime
 
-# vim syntax file
-ifeq ($(program_can_run),yes)
-	PLUMED_VIM := $(PLUMED_LIBDIR)plumed.vim
-else
-	PLUMED_VIM := 
-endif
 
-
-.PHONY: all links $(DIRS) $(DIRSLINKS) all-static $(PLUMED_LIBDIR)Plumed.cmake $(PLUMED_LIBDIR)Plumed.inc install $(PLUMED_SCRIPTS_EXE) install-html $(PLUMED_VIM)
+.PHONY: all links $(DIRS) $(DIRSLINKS) all-static $(PLUMED_LIBDIR)Plumed.cmake $(PLUMED_LIBDIR)Plumed.inc install $(PLUMED_SCRIPTS_EXE) install-html
 all:
 	$(MAKE) dirslinks
 	$(MAKE) dirs
@@ -193,11 +186,8 @@ endif
 # modulefile
 	cp install/modulefile "$(DESTDIR)$(libdir)/$(program_name)/modulefile"
 # vim syntax file
-ifeq ($(program_can_run),yes)
-	mkdir -p "$(DESTDIR)$(libdir)/$(program_name)"/vim
-	mkdir -p "$(DESTDIR)$(libdir)/$(program_name)"/vim/syntax
-	cp install/plumed.vim "$(DESTDIR)$(libdir)/$(program_name)/vim/syntax/$(program_name)".vim
-endif
+	if test -d ../../vim/syntax ; then mkdir -p "$(DESTDIR)$(libdir)/$(program_name)" && cd ../../ && tar cf - vim/syntax | tar xf - -C "$(DESTDIR)$(libdir)/$(program_name)/" ; fi
+	if test -d ../../vim/help ; then mkdir -p "$(DESTDIR)$(libdir)/$(program_name)" && cd ../../ && tar cf - vim/help | tar xf - -C "$(DESTDIR)$(libdir)/$(program_name)/" ; fi
 # making everything visible:
 	chmod -R go+rX,go-w "$(DESTDIR)$(libdir)/$(program_name)"
 	chmod -R go+rX,go-w "$(DESTDIR)$(includedir)/$(program_name)"
@@ -221,15 +211,6 @@ ifdef SOEXT
 	@echo "- Set this environment variable         : PLUMED_KERNEL=$(libdir)/lib$(program_name)Kernel.$(SOEXT)"
 endif
 	@echo
-ifeq ($(program_can_run),yes)
-	@echo "A vim syntax file can be found here:"
-	@echo "$(libdir)/$(program_name)/vim/syntax"
-	@echo "Copy it to $(HOME)/.vim/syntax"
-	@echo "Alternatively:"
-	@echo "- Set this environment variable         : PLUMED_VIMPATH=$(libdir)/$(program_name)/vim"
-	@echo "- Add the command 'let &runtimepath.=','.\$$PLUMED_VIMPATH' to your .vimrc file"
-	@echo "From vim, you can use :set syntax=$(program_name) to enable it"
-endif
 	@echo "To create a tcl module that sets all the variables above, use this one as a starting point:"
 	@echo "$(libdir)/$(program_name)/modulefile"
 	@echo
@@ -243,6 +224,12 @@ ifdef SOEXT
 	@echo $(libdir)/lib$(program_name).$(SOEXT)
 	@echo $(libdir)/lib$(program_name)Kernel.$(SOEXT)
 endif
+	@if test -d ../../vim/help ; then echo "A vim plugin can be found here: $(libdir)/$(program_name)/vim/" ; fi
+	@if test -d ../../vim/help ; then echo "Copy it to $(HOME)/.vim/ directory" ; fi
+	@if test -d ../../vim/help ; then echo "Alternatively:" ; fi
+	@if test -d ../../vim/help ; then echo "- Set this environment variable         : PLUMED_VIMPATH=$(libdir)/$(program_name)/vim" ; fi
+	@if test -d ../../vim/help ; then echo "- Add the command 'let &runtimepath.=','.\$$PLUMED_VIMPATH' to your .vimrc file" ; fi
+	@if test -d ../../vim/help ; then echo "From vim, you can use :set syntax=$(program_name) to enable it" ; fi
 ifeq ($(program_can_run),no)
 	@echo "WARNING: $(program_name) executable will not run on this machine"
 	@echo "WARNING: to patch an MD code use 'plumed-patch'"
@@ -282,7 +269,7 @@ $(DIRS):
 
 .PHONY: lib lib-static lib-shared lib-install lib-static-install
 
-lib: lib-static lib-shared $(PLUMED_VIM)
+lib: lib-static lib-shared
 
 lib-static: $(PLUMED_MAIN_STATIC) $(OBJ_WRAPPER) $(PLUMED_LIBDIR)Plumed.inc.static $(PLUMED_LIBDIR)Plumed.cmake.static $(PLUMED_SCRIPTS_EXE)
 
@@ -328,9 +315,6 @@ ifeq ($(PLUMED_INSTALL),Install)
 else
 	$(LDSO) -o $@ $^ $(DYNAMIC_LIBS)
 endif
-
-$(PLUMED_VIM): $(PLUMED_MAIN_STATIC)
-	../maketools/vimsyntax.sh ./plumed > $@
 
 $(PLUMED_MAIN_STATIC): $(OBJ_MAIN) $(OBJ_KERNEL) $(OBJ_WRAPPER)
 	$(LD) $(LDFLAGS) $^ -o $@ $(LIBS) $(DYNAMIC_LIBS)
@@ -430,6 +414,8 @@ clean:
 	rm -f $(CLEANLIST)
 	rm -f $(PLUMED_MAIN_STATIC) $(PLUMED_MAIN_SHARED) $(PLUMED_MAIN_RUNTIME)
 	rm -f Plumed.inc* plumed-* Plumed.cmake*
+# this is not necessary, I leave it here to remove spurious plumed.vim files generated with
+# the first version of plumed.vim syntax file:
 	rm -f plumed.vim
 	rm -f .lib*
 	rm -fr install/

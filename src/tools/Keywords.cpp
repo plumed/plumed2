@@ -309,6 +309,8 @@ void Keywords::print_vim() const {
          else printf(",option:%s",keys[i].c_str() );
      }  
   }
+  fprintf(stdout,"\n");
+  print(stdout);
 }
 
 void Keywords::print_html() const {

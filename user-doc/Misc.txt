@@ -105,28 +105,33 @@ For the impatients:
 :let &runtimepath.=','.$PLUMED_VIMPATH
 " This makes autocompletion work in the expected way:
 :set completeopt=longest,menuone
+" This binds the F2 key to toggle short helps
+: nmap <F2> : PHelp<CR>
 \endverbatim
 - When you open a PLUMED input file, you can enable syntax highlighting with:
 \verbatim
-:set syntax=plumed
+:set ft=plumed
 \endverbatim
 This will also enable autocompletion. Use `<CTRL-X><CTRL-O>` to autocomplete a word.
 - If you want to fold multiline statements, type
 \verbatim
 :setlocal foldmethod=syntax
 \endverbatim
+- While in vim normal mode, you can use the button `<F2>` to show in a split window a short
+  help about the action defined in the line where the cursor is. Hitting `<F2>` again you will
+  close that window. With `<CTRL-W><CTRL-W>` you go back and forth between the two windows.
 
 See below for more detailed instructions.
 
 \par Configuration
 
-When PLUMED is compiled, a file named `plumed.vim` will appear in directory `src/lib/`.
-This file is a VIM syntax file that can be used to highlight proper PLUMED instructions in a PLUMED
-input file.
+When PLUMED is compiled, directories `help` and `syntax` will appear in `builddir/vim`.
+They contain a VIM plugin that can be used to highlight proper PLUMED instructions in a PLUMED
+input file and to quickly retrieve help.
 
 \warning
 Notice that this file does not appear if you are cross compiling.
-In this case, you must copy the syntax file from another machine.
+In this case, you must copy the plugin files from another machine.
 
 You can try it right after compilation by typing in VIM
 \verbatim
@@ -134,9 +139,10 @@ You can try it right after compilation by typing in VIM
 :source /path/to/plumed/src/lib/plumed.vim
 \endverbatim
 
-Alternatively, you can copy it to your `.vim/syntax` directory, so that you can later enable it using
+You can copy the two directories into your `$HOME/.vim` directory so that later you can
+enable plumed syntax with the command
 \verbatim
-:set syntax=plumed
+:set ft=plumed
 \endverbatim
 
 If you work in an environment where several PLUMED versions are installed (e.g. using env modules),
@@ -152,11 +158,11 @@ to the proper path.
 Thus, when working with a given PLUMED module loaded, you should be able to
 enable to proper syntax by just typing
 \verbatim
-:set syntax=plumed
+:set ft=plumed
 \endverbatim
 in VIM.
 
-If you are tired of typing `:set syntax=plumed`, you can use a modeline.
+If you are tired of typing `:set ft=plumed`, you can use a modeline.
 Add to your `.vimrc` file the following commands
 \verbatim
 :set modeline
@@ -164,7 +170,7 @@ Add to your `.vimrc` file the following commands
 \endverbatim
 Then, at the beginning of your PLUMED input file, put the following comment:
 \verbatim
-# vim:syntax=plumed
+# vim:ft=plumed
 d: DISTANCE ATOMS=1,2
 RESTRAINT ARG=d AT=0.0 KAPPA=1.0
 \endverbatim
@@ -199,7 +205,7 @@ Try to do the following:
 - Open a PLUMED input file
 - Enable PLUMED syntax
 \verbatim
-:set syntax=plumed
+:set ft=plumed
 \endverbatim
 - Enable syntax-based folding
 \verbatim
@@ -246,7 +252,7 @@ you want to browse files that contain a lot of actions defined on multiple lines
 Another VIM feature that comes when you load PLUMED syntax is autocompletion of PLUMED
 actions and keywords. Open your favorite PLUMED input file and set it to PLUMED syntax highlighting with
 \verbatim
-:set syntax=plumed
+:set ft=plumed
 \endverbatim
 Now go into insert mode pressing `i` and type `DU` followed by `<CTRL+X><CTRL+O>`.
 Here `<CTRL+X>` stands for autocompletion and `<CTRL+O>` for omnifunc autocompletion. You will see a short
@@ -275,6 +281,38 @@ As you can imagine,
 if you use autocompletion after you have typed the word `DISTANCE` followed by a space you will see
 a menu listing `LABEL=`, `COMPONENTS`, etc. Basically, all the keywords that are possibly used withint a `DISTANCE` line
 will be shown.
+
+\par Quick help
+
+You can also retrieve quick explanation of the input options for a specific collective variable.
+Try to do the following. Enable plumed syntax:
+\verbatim
+:set ft=plumed
+\endverbatim
+Then add the following line
+\verbatim
+DISTANCE
+\endverbatim
+Now, in normal mode, go with the cursor on the `DISTANCE` line and type
+\verbatim
+:PHelp
+\endverbatim
+A new split window should appear containing some documentation about the \ref DISTANCE collective variable.
+You can go back and forth between the two windows with `<CTRL+W><CTRL+W>`, as usually in vim.
+Notice that if you are in the help window and type `:PHelp` this window will be closed.
+
+To make the navigation easier, you can add a shortcut in your .vimrc file. For example, adding:
+\verbatim
+: nmap <F2> : PHelp<CR>
+\endverbatim
+you should be able to open and close the manual hitting the F2 key.
+We prefer not to set this in the PLUMED syntax file to avoid clashing with other shortcuts you might
+have bound to the F2 key.
+
+
+
+
+
 
 
 \page includes Including other files 
