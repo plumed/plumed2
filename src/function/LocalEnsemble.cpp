@@ -116,8 +116,9 @@ void LocalEnsemble::calculate()
     double mean = 0.;
     Value* v=getPntrToComponent(i);
     for(unsigned j=0;j<ens_dim;++j) {
-      setDerivative(v, j*narg+i, fact);
-      mean += fact*getArgument(j*narg+i);
+      const unsigned index = j*narg+i;
+      setDerivative(v, index, fact);
+      mean += fact*getArgument(index);
     }
     v->set(mean);
   } 
