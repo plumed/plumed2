@@ -323,23 +323,33 @@ void BayesianGJE::update(){
 }
 
 void BayesianGJE::calculate(){
+  const unsigned ssize = sigma_.size();
   // calculate effective sigma
-  vector<double> ss(sigma_.size());
-  vector<double> inv_s2(sigma_.size(),0);
+  vector<double> ss(ssize);
+  vector<double> inv_s2(ssize);
   const double smean2 = sigma_mean_*sigma_mean_;
-  for(unsigned i=0;i<sigma_.size(); ++i) {
-    ss[i] = sigma_[i]*sigma_[i] + smean2;
-    if(comm.Get_rank()==0) inv_s2[i] = 1.0/ss[i];
+
+  if(comm.Get_rank()==0) {
+    for(unsigned i=0;i<ssize; ++i) {
+      ss[i] = sigma_[i]*sigma_[i] + smean2;
+      inv_s2[i] = 1.0/ss[i];
+    }
+  } else {
+    for(unsigned i=0;i<ssize; ++i) {
+      ss[i] = sigma_[i]*sigma_[i] + smean2;
+      inv_s2[i] = 0.;
+    }
   }
  
   // inter-replicas summation
-  if(comm.Get_rank()==0) multi_sim_comm.Sum(&inv_s2[0],sigma_.size()); 
+  if(comm.Get_rank()==0) multi_sim_comm.Sum(&inv_s2[0],ssize); 
   // intra-replica summation
-  comm.Sum(&inv_s2[0],sigma_.size());  
+  comm.Sum(&inv_s2[0],ssize);  
   
-  // cycle on arguments 
+  // cycle on arguments
+  const unsigned narg=getNumberOfArguments();
   double ene = 0.0;
-  for(unsigned i=0;i<getNumberOfArguments();++i){
+  for(unsigned i=0;i<narg;++i){
     const double dev = scale_*getArgument(i)-parameters[i]; 
     // increment energy
     ene += 0.5*dev*dev*inv_s2[i] + std::log(ss[i]*sqrt2pi); 
@@ -356,7 +366,6 @@ void BayesianGJE::calculate(){
   // set value of scale parameter 
   valueScale->set(scale_);
 }
-
 
 }
 }
