@@ -86,7 +86,6 @@ highlight link plumedDots Type
 
 let b:plumedActions=[]
 let b:plumedDictionary={}
-let b:plumedFullMan={}
 
 EOF
 for a in $actions ; do
