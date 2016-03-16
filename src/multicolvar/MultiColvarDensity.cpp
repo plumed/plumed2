@@ -217,6 +217,7 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
   }
   bool nomemory; parseFlag("NOMEMORY",nomemory);
   if( nomemory ) vstring += " NOMEMORY";
+  if( !mycolv->isDensity() ) vstring += " AVERAGE";
   // Create a task list
   for(unsigned i=0;i<mycolv->getFullNumberOfTasks();++i) addTaskToList(i);
   vesselbase::VesselOptions da("mygrid","",-1,vstring,this);
@@ -274,7 +275,7 @@ void MultiColvarDensity::update(){
 
 void MultiColvarDensity::performTask( const unsigned& tindex, const unsigned& current, MultiValue& myvals ) const {
   std::vector<double> cvals( mycolv->getNumberOfQuantities() ); stash->retrieveValue( current, false, cvals );
-  Vector fpos, apos = pbcDistance( mycolv->getCentralAtomPos( mycolv->getTaskCode(current) ), origin );
+  Vector fpos, apos = pbcDistance( origin, mycolv->getCentralAtomPos( mycolv->getTaskCode(current) ) );
   if( fractional ){ fpos = getPbc().realToScaled( apos ); } else { fpos=apos; }
 
   myvals.setValue( 0, cvals[0] );

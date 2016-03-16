@@ -30,6 +30,7 @@ namespace gridtools {
 class HistogramOnGrid : public GridVessel {
 private:
   double norm;
+  bool average;
   bool store_normed;
   std::string kerneltype;
   std::vector<double> bandwidths;

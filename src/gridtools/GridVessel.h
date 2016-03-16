@@ -58,6 +58,8 @@ protected:
 /// The number of pieces of information we are storing for each 
 /// point in the grid
  unsigned nper;
+/// Number of grids we are accumulating
+ unsigned naccumulate_grids;
 /// Is this direction periodic
  std::vector<bool> pbc;
 /// The minimum and maximum in the grid stored as strings 

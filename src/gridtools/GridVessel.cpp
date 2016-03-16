@@ -39,7 +39,8 @@ Vessel(da),
 noderiv(false),
 wascleared(true), 
 bounds_set(false),
-cube_units(1.0)
+cube_units(1.0),
+naccumulate_grids(1)
 {
   std::vector<std::string> compnames; parseVector("COMPONENTS",compnames);
   std::vector<std::string> coordnames; parseVector("COORDINATES",coordnames);
@@ -120,7 +121,7 @@ std::string GridVessel::description(){
 
 void GridVessel::resize(){
   plumed_massert( nper>0, "Number of datapoints at each grid point has not been set");
-  resizeBuffer( npoints*nper ); 
+  resizeBuffer( naccumulate_grids*npoints*nper ); 
   if( data.size()!=npoints*nper ){ 
       data.resize( npoints*nper, 0 ); 
       active.resize( npoints, true );

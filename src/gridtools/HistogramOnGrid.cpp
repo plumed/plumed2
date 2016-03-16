@@ -29,6 +29,7 @@ void HistogramOnGrid::registerKeywords( Keywords& keys ){
   GridVessel::registerKeywords( keys );
   keys.add("compulsory","KERNEL","the type of kernel to use");
   keys.add("compulsory","BANDWIDTH","the bandwidths");
+  keys.addFlag("AVERAGE",false,"are we computed a weighted average over the grid");
   keys.addFlag("STORE_NORMED",false,"are we to store the data normalised");
 }
 
@@ -39,6 +40,9 @@ store_normed(false),
 bandwidths(dimension),
 discrete(false)
 {
+  naccumulate_grids=2;
+  parseFlag("AVERAGE",average);
+
   parseFlag("STORE_NORMED",store_normed); parse("KERNEL",kerneltype); 
   if( kerneltype=="discrete" || kerneltype=="DISCRETE" ){
       discrete=true; setNoDerivatives();
@@ -69,9 +73,11 @@ bool HistogramOnGrid::calculate( const unsigned& current, MultiValue& myvals, st
   
   if( discrete ){
       for(unsigned i=0;i<dimension;++i) point[i] += 0.5*dx[i];
-      buffer[bufstart + nper*getIndex( point )] += weight;
+      unsigned ipoint = getIndex( point );
+      buffer[bufstart + nper*ipoint] += weight;
+      buffer[bufstart+nper*(nper+ipoint)] += 1.0;
   } else {
-      KernelFunctions kernel( point, bandwidths, kerneltype, false, weight, true );
+      KernelFunctions kernel( point, bandwidths, kerneltype, false, 1.0, true );
 
       unsigned num_neigh; std::vector<unsigned> neighbors; 
       getNeighbors( kernel.getCenter(), nneigh, num_neigh, neighbors );
@@ -82,6 +88,7 @@ bool HistogramOnGrid::calculate( const unsigned& current, MultiValue& myvals, st
           else vv[i]->setNotPeriodic();
       }
 
+      unsigned ntot=nper*getNumberOfPoints();
       double newval; std::vector<double> der( dimension );
       for(unsigned i=0;i<num_neigh;++i){
           unsigned ineigh=neighbors[i];
@@ -89,17 +96,29 @@ bool HistogramOnGrid::calculate( const unsigned& current, MultiValue& myvals, st
           getGridPointCoordinates( ineigh, xx );
           for(unsigned j=0;j<dimension;++j) vv[j]->set(xx[j]);
           newval = kernel.evaluate( vv, der, true );
-          buffer[bufstart+nper*ineigh ] += newval;
-          for(unsigned j=0;j<dimension;++j) buffer[bufstart+nper*ineigh + 1 + j] += der[j];   
+          buffer[bufstart+nper*ineigh] += weight*newval;
+          for(unsigned j=0;j<dimension;++j) buffer[bufstart+nper*ineigh + 1 + j] += weight*der[j];  
+          buffer[bufstart+ntot+nper*ineigh] += newval; 
+          for(unsigned j=0;j<dimension;++j) buffer[bufstart+ntot+nper*ineigh + 1 + j] += newval;
       }
-
       for(unsigned i=0;i<dimension;++i) delete vv[i];
   }
   return true;
 }
 
 void HistogramOnGrid::finish( const std::vector<double>& buffer ){
-  for(unsigned i=0;i<data.size();++i) data[i]+=buffer[bufstart + i];
+  if( average ){
+     unsigned ntot=nper*getNumberOfPoints();
+     for(unsigned i=0;i<getNumberOfPoints();++i){
+         data[i*nper] = buffer[bufstart+nper*i] / buffer[bufstart+ntot+nper*i];
+         for(unsigned j=0;j<dimension;++j){
+             data[i*nper + 1 + j] += buffer[bufstart+nper*i+1+j] / buffer[bufstart+ntot+nper*i] - 
+                                     buffer[bufstart+nper*i]*buffer[bufstart+ntot+nper*i+1+j] / (buffer[bufstart+ntot+nper*i]*buffer[bufstart+ntot+nper*i]);  
+         }
+     }
+  } else {
+     for(unsigned i=0;i<data.size();++i) data[i]+=buffer[bufstart + i];
+  }
 }
 
 void HistogramOnGrid::clear(){
