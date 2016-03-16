@@ -46,8 +46,48 @@ namespace multicolvar {
 /*
 Evaluate the average value of a multicolvar on a grid.
 
+This keyword allows one to construct a phase field representation for a symmetry function from 
+an atomistic description.  If each atom has an associated order parameter, \f$\phi_i\f$ then a 
+smooth phase field function \f$\phi(r)\f$ can be computed using:
+
+\f[
+\phi(\mathbf{r}) = \frac{\sum_i K(\mathbf{r}-\mathbf{r}_i) \phi_i }{ \sum_i K(\mathbf{r} - \mathbf{r}_i )}
+\f]
+
+where \f$\mathbf{r}_i\f$ is the position of atom \f$i\f$, the sums run over all the atoms input 
+and \f$K(\mathbf{r} - \mathbf{r}_i)\f$ is one of the \ref kernelfunctions implemented in plumed.
+This action calculates the above function on a grid, which can then be used in the input to further 
+actions. 
+
 \par Examples
 
+The following example shows perhaps the simplest way in which this action can be used.  The following
+input computes the density of atoms at each point on the grid and ouptuts this quantity to a file.  In
+other words this input instructs plumed to calculate \f$\rho(\mathbf{r}) = \sum_i K(\mathbf{r} - \mathbf{r}_i )\f$
+
+\verbatim
+dens: DENSITY SPECIES=1-100
+grid: MULTICOLVARDENS DATA=dens ORIGIN=1 DIR=xyz NBINS=100,100,100 BANDWIDTH=0.05,0.05,0.05 STRIDE=1 
+PRINT_GRID GRID=grid STRIDE=500 FILE=density 
+\endverbatim 
+
+In the above example density is added to the grid on every step.  The PRINT_GRID instruction thus tells PLUMED to 
+output the average density at each point on the grid every 500 steps of simulation.  Notice that the that grid output
+on step 1000 is an average over all 1000 frames of the trajectory.  If you would like to analyse these two blocks 
+of data separately you must use the NOMEMORY flag.
+
+This second example computes an order parameter (in this case \ref FCCCUBIC) and constructs a phase field model
+for this order parameter using the equation above.
+
+\verbatim
+fcc: FCCUBIC SPECIES=1-5184 SWITCH={CUBIC D_0=1.2 D_MAX=1.5} ALPHA=27
+dens: MULTICOLVARDENS DATA=fcc ORIGIN=1 DIR=xyz NBINS=14,14,28 BANDWIDTH=1.0,1.0,1.0 STRIDE=1 NOMEMORY
+PRINT_CUBE GRID=dens STRIDE=1 FILE=dens.cube
+\endverbatim
+
+In this example the phase field model is computed and output to a file on every step of the simulation.  Furthermore,
+because the NOMEMORY keyword is present on the MULTICOLVARDENS line each Gaussian cube file output is a phase field
+model for a particular trajectory frame.  There is no averaging over trajectory frames in this case. 
 
 */
 //+ENDPLUMEDOC
@@ -99,6 +139,7 @@ void MultiColvarDensity::registerKeywords( Keywords& keys ){
   keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
   keys.add("compulsory","KERNEL","gaussian","the kernel function you are using.  More details on  the kernels available "
                                             "in plumed plumed can be found in \\ref kernelfunctions.");
+  keys.addFlag("UNORMALIZED",false,"output the unormalized density on the grid.  In other words with this flag \\f$ \\sum_i K(\\mathbf{r}-\\mathbf{r}_i) \\phi_i \\f$ is output");
   keys.addFlag("FRACTIONAL",false,"use fractional coordinates on the x-axis");
   keys.addFlag("NOMEMORY",false,"do a block averaging rather than a cumulative average");
   keys.addFlag("XREDUCED",false,"limit the calculation of the density/average to a portion of the z-axis only");
@@ -217,7 +258,10 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
   }
   bool nomemory; parseFlag("NOMEMORY",nomemory);
   if( nomemory ) vstring += " NOMEMORY";
-  if( !mycolv->isDensity() ) vstring += " AVERAGE";
+
+  bool sumflag; parseFlag("UNORMALIZED",sumflag);
+  if( mycolv->isDensity() && sumflag ) error("input is a DENSITY so the UNORMALIZED flag makes no sense");
+  if( !mycolv->isDensity() && !sumflag ) vstring += " AVERAGE";
   // Create a task list
   for(unsigned i=0;i<mycolv->getFullNumberOfTasks();++i) addTaskToList(i);
   vesselbase::VesselOptions da("mygrid","",-1,vstring,this);
