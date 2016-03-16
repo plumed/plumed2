@@ -305,6 +305,9 @@ void BayesianGJE::doMonteCarlo(){
      MCaccept_++;
     }
    }
+   // the scaling factor should be the same for all the replicas
+   if(comm.Get_rank()==0) multi_sim_comm.Bcast(scale_,0);
+   comm.Bcast(scale_,0);
  }
 }
 
