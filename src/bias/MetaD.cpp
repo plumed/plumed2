@@ -1391,13 +1391,12 @@ void MetaD::computeReweightingFactor(){
 
  // Recover the minimum values for the grid
  unsigned ncv=getNumberOfArguments();
- double grid_size=1.0; unsigned ntotgrid=1;
+ unsigned ntotgrid=1;
  std::vector<double> dmin( ncv ),dmax( ncv ), grid_spacing( ncv ), vals( ncv ); 
  for(unsigned j=0;j<ncv;++j){
     Tools::convert( BiasGrid_->getMin()[j], dmin[j] );
     Tools::convert( BiasGrid_->getMax()[j], dmax[j] );
     grid_spacing[j] = ( dmax[j] - dmin[j] ) / static_cast<double>( rewf_grid_[j] );
-    grid_size *= grid_spacing[j]; 
     if( !getPntrToArgument(j)->isPeriodic() ) dmax[j] += grid_spacing[j]; 
     ntotgrid *= rewf_grid_[j];
  }
