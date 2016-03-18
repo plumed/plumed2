@@ -77,7 +77,7 @@ void PrintGrid::performOperationsWithGrid( const bool& from_update ){
   std::vector<unsigned> ind( mygrid->getDimension() );
   for(unsigned i=0;i<mygrid->getNumberOfPoints();++i){
      mygrid->getIndices( i, ind );
-     if(i>0 && mygrid->getDimension()>1 && ind[mygrid->getDimension()-2]==0) ofile.printf("\n");
+     if(i>0 && mygrid->getDimension()==2 && ind[mygrid->getDimension()-2]==0) ofile.printf("\n");
      ofile.fmtField(fmt); ofile.printField("normalisation", norm );
      for(unsigned j=0;j<mygrid->getDimension();++j){
          ofile.printField("min_" + mygrid->getComponentName(j), mygrid->getMin()[j] );

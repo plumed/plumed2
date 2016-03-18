@@ -136,7 +136,7 @@ void KernelFunctions::setData( const std::vector<double>& at, const std::vector<
   if( norm ){
     double det; unsigned ncv=ndim(); 
     if(diagonal){
-       det=1; for(unsigned i=0;i<width.size();++i) det*=width[i];
+       det=1; for(unsigned i=0;i<width.size();++i) det*=width[i]*width[i];
     } else {
        Matrix<double> mymatrix( getMatrix() ), myinv( ncv, ncv );
        Invert(mymatrix,myinv); double logd;
