@@ -152,7 +152,6 @@ double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) c
       myatoms.addValue( 1, values[1] ); 
   }
 
-  Vector catom_pos=myatoms.getPosition(0);
   if( !doNotCalculateDerivatives() ){
       atom0=getCentralAtomPackFromInput( myatoms.getIndex(0) );
       MultiValue& myder=getVectorDerivatives( myatoms.getIndex(0), false );
