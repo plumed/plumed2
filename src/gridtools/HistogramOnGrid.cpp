@@ -61,7 +61,10 @@ void HistogramOnGrid::setBounds( const std::vector<std::string>& smin, const std
   if( !discrete ){ 
       std::vector<double> point(dimension,0);
       KernelFunctions kernel( point, bandwidths, kerneltype, false, 1.0, true );
-      nneigh=kernel.getSupport( dx );
+      nneigh=kernel.getSupport( dx ); std::vector<double> support( kernel.getContinuousSupport() );
+      for(unsigned i=0;i<dimension;++i){
+          if( pbc[i] && 2*support[i]>getGridExtent(i) ) error("bandwidth is too large for periodic grid");
+      } 
   }
 }
 
