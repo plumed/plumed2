@@ -97,8 +97,8 @@ void DumpMultiColvar::registerKeywords( Keywords& keys ){
 
 DumpMultiColvar::DumpMultiColvar(const ActionOptions&ao):
   Action(ao),
-  ActionAtomistic(ao),
   ActionPilot(ao),
+  ActionAtomistic(ao),
   ActionWithInputVessel(ao)
 {
   readArgument("store");
