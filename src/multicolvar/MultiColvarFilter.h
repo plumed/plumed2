@@ -35,6 +35,9 @@ to see whether or not they are within a certain range
 */
 
 class MultiColvarFilter : public BridgedMultiColvarFunction {
+private:
+/// Are we doing a filtering of the coordinates or a transoformation
+  bool filter;
 public:
   static void registerKeywords( Keywords& keys );
   explicit MultiColvarFilter(const ActionOptions&);

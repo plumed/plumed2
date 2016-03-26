@@ -46,6 +46,7 @@ public:
 }; 
 
 PLUMED_REGISTER_ACTION(FilterLess,"MFILTER_LESS")
+PLUMED_REGISTER_ACTION(FilterLess,"MTRANSFORM_LESS")
 
 void FilterLess::registerKeywords( Keywords& keys ){
   MultiColvarFilter::registerKeywords( keys );

@@ -113,10 +113,12 @@ void HistogramOnGrid::finish( const std::vector<double>& buffer ){
   if( average ){
      unsigned ntot=nper*getNumberOfPoints();
      for(unsigned i=0;i<getNumberOfPoints();++i){
-         data[i*nper] = buffer[bufstart+nper*i] / buffer[bufstart+ntot+nper*i];
+         double rdenom;
+         if( fabs(buffer[bufstart+ntot+nper*i])>epsilon ) rdenom = 1. / buffer[bufstart+ntot+nper*i];
+         else rdenom = 1.0; 
+         data[i*nper] = rdenom * buffer[bufstart+nper*i];
          for(unsigned j=0;j<dimension;++j){
-             data[i*nper + 1 + j] += buffer[bufstart+nper*i+1+j] / buffer[bufstart+ntot+nper*i] - 
-                                     buffer[bufstart+nper*i]*buffer[bufstart+ntot+nper*i+1+j] / (buffer[bufstart+ntot+nper*i]*buffer[bufstart+ntot+nper*i]);  
+             data[i*nper + 1 + j] += rdenom*buffer[bufstart+nper*i+1+j] - rdenom*rdenom*buffer[bufstart+nper*i]*buffer[bufstart+ntot+nper*i+1+j];  
          }
      }
   } else {
