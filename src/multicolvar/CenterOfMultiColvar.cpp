@@ -64,6 +64,19 @@ The first line here calclates the coordination numbers of all the atoms in the s
 of the coordination numbers calculated by the action labelled c1 when it calculates the Berry Phase average described above.  
 (N.B. the \f$w_i\f$ in the above expression are all set equal to 1 in this case)
 
+The above input is fine we can, however, refine this somewhat by making use of a multicolvar transform action as shown below:
+
+\verbatim 
+c1: COORDINATIONNUMBER SPECIES=1-512 SWITCH={EXP D_0=4.0 R_0=0.5}
+cf: MTRANSFORM_MORE DATA=c1 SWITCH={RATIONAL D_0=2.0 R_0=0.1} LOWMEM
+cc: CENTER_OF_MULTICOLVAR DATA=cf
+\endverbatim
+
+This input once again calculates the coordination numbers of all the atoms in the system.  The middle line then transforms these
+coordinations numbers to numbers between 0 and 1.  Essentially any atom with a coordination number larger than 2.0 is given a weight 
+of one and below this value the transformed value decays to zero.  It is these transformed coordination numbers that are used to calculate
+the Berry phase average described in the previous section.
+
 */
 //+ENDPLUMEDOC
 
