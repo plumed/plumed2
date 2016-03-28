@@ -20,6 +20,7 @@ Changes from version 2.2 which are relevant for users:
   - In rational switching functions, by default MM is twice NN. This is valid both in \ref switchingfunction with expanded
     syntax and when specifying MM on e.g. \ref COORDINATION
   - Patch script `plumed patch` now patches by default with `--shared`. This should make the procedure more robust (see \issue{186}).
+  - Faster \ref GYRATION but new default behavior is not mass weighted
 - New actions:
   - \ref FIXEDATOM
   - \ref HBOND_MATRIX
