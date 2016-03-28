@@ -37,12 +37,12 @@ Calculate a a weighted average position based on the value of some multicolvar.
 This action calculates the position of a new virtual atom using the following formula:
 
 \f[
-x_\alpha = \frac{1}{2\pi} \arctan \left[ \frac{ \sum_i w_i \sin\left( 2\pi x_{i,\alpha} \right) }{ \sum_i w_i \cos\left( 2\pi x_{i,\alpha} \right) } \right]
+x_\alpha = \frac{1}{2\pi} \arctan \left[ \frac{ \sum_i w_i f_i \sin\left( 2\pi x_{i,\alpha} \right) }{ \sum_i w_i f_i \cos\left( 2\pi x_{i,\alpha} \right) } \right]
 \f]
 
 Where in this expression the \f$w_i\f$ values are a set of weights calculated within a multicolvar 
-action. The \f$x_{i,\alpha}\f$ values are the positions (in scaled coordinates) associated with each 
-of the multicolvars calculated. 
+action and the \f$f_i\f$ are the values of the multicolvar functions. The \f$x_{i,\alpha}\f$ values are 
+the positions (in scaled coordinates) associated with each of the multicolvars calculated. 
 
 \bug The virial contribution for this type of virtual atom is not currently evaluated so do not use in bias functions unless the volume of the cell is fixed
 
@@ -57,14 +57,12 @@ You can thus calculate the position of the droplet using an input like the one s
 
 \verbatim
 c1: COORDINATIONNUMBER SPECIES=1-512 SWITCH={EXP D_0=4.0 R_0=0.5}
-cf: MFILTER_MORE DATA=c1 SWITCH={RATIONAL D_0=2.0 R_0=0.1} LOWMEM
-cc: CENTER_OF_MULTICOLVAR DATA=cf
+cc: CENTER_OF_MULTICOLVAR DATA=c1
 \endverbatim
 
-The first line here calclates the coordination numbers of all the atoms in the system.  The second line then transforms
-these coordination number by a switching function that is only equal to one if the coordination number is greater than 2.
-The weights in the above expression for the center (which will be a virtual atom labelled cc for the above input) are thus
-transformed values of the various coordination numbers.
+The first line here calclates the coordination numbers of all the atoms in the system.  The virtual atom then uses the values
+of the coordination numbers calculated by the action labelled c1 when it calculates the Berry Phase average described above.  
+(N.B. the \f$w_i\f$ in the above expression are all set equal to 1 in this case)
 
 */
 //+ENDPLUMEDOC
