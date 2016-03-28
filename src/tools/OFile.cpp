@@ -55,6 +55,15 @@ size_t OFile::llwrite(const char*ptr,size_t s){
       r=fwrite(ptr,1,s,fp);
     }
   }
+//  This barrier is apparently useless since it comes
+//  just before a Bcast.
+//  
+//  Anyway, it looks like it is solving an issue that appeared on
+//  TRAVIS (at least on my laptop) so I add it here.
+//  GB
+  if(comm) comm->Barrier();
+
+
   if(comm) comm->Bcast(r,0);
   return r;
 }
@@ -256,7 +265,6 @@ void OFile::backupFile( const std::string& bstring, const std::string& fname ){
    if(maxbackup>0 && (!comm || comm->Get_rank()==0)){
      FILE* ff=std::fopen(const_cast<char*>(fname.c_str()),"r");
      if(ff){
-       FILE* fff=NULL;
        std::fclose(ff);
        std::string backup;
        size_t found=fname.find_last_of("/\\");
@@ -267,7 +275,7 @@ void OFile::backupFile( const std::string& bstring, const std::string& fname ){
          Tools::convert(i,num);
          if(i>maxbackup) plumed_merror("cannot backup file "+file+" maximum number of backup is "+num+"\n");
          backup=directory+bstring +"."+num+"."+file;
-         fff=std::fopen(backup.c_str(),"r");
+         FILE* fff=std::fopen(backup.c_str(),"r");
          if(!fff) break;
 	 else std::fclose(fff);
        }

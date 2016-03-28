@@ -41,7 +41,7 @@ public:
   explicit HistogramOnGrid( const vesselbase::VesselOptions& da );
   void setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax,
                   const std::vector<unsigned>& nbins, const std::vector<double>& spacing );
-  bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
+  void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
   void finish( const std::vector<double>& );
   bool applyForce(  std::vector<double>& forces ){ return false; }
   void addToNorm( const double& anorm );

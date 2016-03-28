@@ -33,10 +33,10 @@ GridVessel(da)
 {
 }
 
-bool GridFunction::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
+void GridFunction::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
   plumed_dbg_assert( myvals.getNumberOfValues()==(nper+1) );
   for(unsigned i=0;i<myvals.getNumberOfValues();++i) buffer[bufstart + nper*current + i] += myvals.get(i+1);
-  return true;
+  return;
 }
 
 

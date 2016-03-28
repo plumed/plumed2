@@ -31,7 +31,7 @@ class GridFunction : public GridVessel {
 public:
   static void registerKeywords( Keywords& keys );
   explicit GridFunction( const vesselbase::VesselOptions& da );
-  bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
+  void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
   void finish( const std::vector<double>& );
   bool applyForce(  std::vector<double>& forces ){ return false; }
 };

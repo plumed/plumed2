@@ -79,7 +79,7 @@ keyword. Thus, everytime it is modified, all the headers are repeated in the out
 - most methods return a reference to the OFile itself, to allow chaining many calls on the same line
 (this is similar to << operator in std::ostream)
 
-\section Using correctly OFile in PLUMED
+\section using-correctly-ofile Using correctly OFile in PLUMED
 
 When a OFile object is used in PLUMED it can be convenient to link() it
 to the Action object where it is defined, or to the PlumedMain object.

@@ -40,7 +40,7 @@ namespace PLMD
 {
 namespace multicolvar {
 
-//+PLUMEDOC GENERIC DUMPMULTICOLVAR 
+//+PLUMEDOC ANALYSIS DUMPMULTICOLVAR 
 /*
 Dump atom positions and multicolvar on a file.
 
@@ -97,8 +97,8 @@ void DumpMultiColvar::registerKeywords( Keywords& keys ){
 
 DumpMultiColvar::DumpMultiColvar(const ActionOptions&ao):
   Action(ao),
-  ActionAtomistic(ao),
   ActionPilot(ao),
+  ActionAtomistic(ao),
   ActionWithInputVessel(ao)
 {
   readArgument("store");
@@ -159,15 +159,14 @@ void DumpMultiColvar::update(){
   vesselbase::StoreDataVessel* stash=dynamic_cast<vesselbase::StoreDataVessel*>( getPntrToArgument() );
   plumed_dbg_assert( stash );
   std::vector<double> cvals( mycolv->getNumberOfQuantities() );
-  for(unsigned i=0;i<mycolv->getFullNumberOfTasks();++i){
+  for(unsigned i=0;i<mycolv->getCurrentNumberOfActiveTasks();++i){
     const char* defname="X";
     const char* name=defname;
-    if( !mycolv->taskIsCurrentlyActive(i) ) continue;
 
     Vector apos = mycolv->getCentralAtomPos( mycolv->getTaskCode(i) );
     if( getNumberOfAtoms()>0 ) apos=pbcDistance( getPosition(0), apos );
     of.printf(("%s "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz).c_str(),name,lenunit*apos[0],lenunit*apos[1],lenunit*apos[2]);
-    stash->retrieveValue( i, true, cvals );
+    stash->retrieveSequentialValue( i, true, cvals );
     if( mycolv->weightWithDerivatives() ){
        for(unsigned j=0;j<cvals.size();++j) of.printf((" "+fmt_xyz).c_str(),cvals[j]);
     } else {

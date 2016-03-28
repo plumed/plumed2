@@ -1056,10 +1056,10 @@ double MetaD::evaluateGaussian
  if(cv.size()>0) pcv=&cv[0];
  if(doInt_){
    plumed_assert(cv.size()==1);
-   pcv=&(tmpcv[0]);
    tmpcv[0]=cv[0];
    if(cv[0]<lowI_) tmpcv[0]=lowI_;
    if(cv[0]>uppI_) tmpcv[0]=uppI_;
+   pcv=&(tmpcv[0]);
  }
  if(hill.multivariate){ 
     unsigned k=0;
@@ -1391,13 +1391,12 @@ void MetaD::computeReweightingFactor(){
 
  // Recover the minimum values for the grid
  unsigned ncv=getNumberOfArguments();
- double grid_size=1.0; unsigned ntotgrid=1;
+ unsigned ntotgrid=1;
  std::vector<double> dmin( ncv ),dmax( ncv ), grid_spacing( ncv ), vals( ncv ); 
  for(unsigned j=0;j<ncv;++j){
     Tools::convert( BiasGrid_->getMin()[j], dmin[j] );
     Tools::convert( BiasGrid_->getMax()[j], dmax[j] );
     grid_spacing[j] = ( dmax[j] - dmin[j] ) / static_cast<double>( rewf_grid_[j] );
-    grid_size *= grid_spacing[j]; 
     if( !getPntrToArgument(j)->isPeriodic() ) dmax[j] += grid_spacing[j]; 
     ntotgrid *= rewf_grid_[j];
  }

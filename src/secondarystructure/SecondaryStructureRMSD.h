@@ -49,12 +49,9 @@ private:
   std::vector< std::vector<unsigned> > colvar_atoms;
 /// The list of reference configurations
   std::vector<SingleDomainRMSD*> references;
-/// Everything for controlling the updating of neighbor lists
-  int updateFreq;
-  bool firsttime;
 /// Variables for strands cutoff
   bool align_strands;
-  double s_cutoff;
+  double s_cutoff2;
   unsigned align_atom_1, align_atom_2;
   bool verbose_output;
 /// Tempory variables for getting positions of atoms and applying forces
@@ -78,8 +75,6 @@ public:
   unsigned getNumberOfDerivatives();
   unsigned getNumberOfQuantities() const ;
   void turnOnDerivatives();
-  void prepare();
-  void finishTaskListUpdate();
   void calculate();
   void performTask( const unsigned& , const unsigned& , MultiValue& ) const ; 
   void apply();

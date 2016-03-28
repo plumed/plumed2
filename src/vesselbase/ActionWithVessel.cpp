@@ -40,10 +40,6 @@ void ActionWithVessel::registerKeywords(Keywords& keys){
                           "terms are numbers inbetween zero and one it is assumed that terms less than a certain tolerance "
                           "make only a small contribution to the sum.  They can thus be safely ignored as can the the derivatives "
                           "wrt these small quantities.");
-  keys.reserve("hidden","NL_TOL","this keyword can be used to speed up your calculation.  It must be used in conjuction with the TOL "
-                                 "keyword and the value for NL_TOL must be set less than the value for TOL.  This keyword ensures that "
-                                 "quantities, which are much less than TOL and which will thus not added to the sums being accumulated "
-                                 "are not calculated at every step. They are only calculated when the neighbor list is updated.");
   keys.add("hidden","MAXDERIVATIVES","The maximum number of derivatives that can be used when storing data.  This controls when "
                                      "we have to start using lowmem");
   keys.addFlag("SERIAL",false,"do the calculation in serial.  Do not parallelize");
@@ -59,6 +55,7 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   lowmem(false),
   noderiv(true),
   actionIsBridged(false),
+  nactive_tasks(0),
   mydata(NULL),
   contributorsAreUnlocked(false),
   weightHasDerivatives(false),
@@ -87,11 +84,7 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   tolerance=nl_tolerance=epsilon; 
   if( keywords.exists("TOL") ) parse("TOL",tolerance);
   if( tolerance>epsilon){
-     if( keywords.exists("NL_TOL") ) parse("NL_TOL",nl_tolerance);
-     if( nl_tolerance>tolerance ) error("NL_TOL must be smaller than TOL"); 
-     log.printf(" Ignoring contributions less than %f",tolerance);
-     if( nl_tolerance>epsilon ) log.printf(" and ignoring quantities less than %f inbetween neighbor list update steps\n",nl_tolerance);
-     else log.printf("\n");
+     log.printf(" Ignoring contributions less than %f \n",tolerance);
   }
   parseFlag("TIMINGS",timers);
   stopwatch.start(); stopwatch.pause();
@@ -158,10 +151,8 @@ StoreDataVessel* ActionWithVessel::buildDataStashes( const bool& allow_wcutoff, 
 }
 
 void ActionWithVessel::addTaskToList( const unsigned& taskCode ){
-  indexOfTaskInFullList.push_back( fullTaskList.size() );
-  fullTaskList.push_back( taskCode ); partialTaskList.push_back( taskCode ); 
-  taskFlags.push_back(0); nactive_tasks = fullTaskList.size();
-  plumed_assert( partialTaskList.size()==nactive_tasks && indexOfTaskInFullList.size()==nactive_tasks && taskFlags.size()==nactive_tasks );
+  fullTaskList.push_back( taskCode ); taskFlags.push_back(0); 
+  plumed_assert( fullTaskList.size()==taskFlags.size() );
 }
 
 void ActionWithVessel::readVesselKeywords(){
@@ -203,7 +194,7 @@ void ActionWithVessel::needsDerivatives(){
   // Turn on the derivatives and resize
   noderiv=false; resizeFunctions(); 
   // Setting contributors unlocked here ensures that link cells are ignored
-  contributorsAreUnlocked=true; finishTaskListUpdate(); contributorsAreUnlocked=false;
+  contributorsAreUnlocked=true; contributorsAreUnlocked=false;
   // And turn on the derivatives in all actions on which we are dependent
   for(unsigned i=0;i<getDependencies().size();++i){
       ActionWithVessel* vv=dynamic_cast<ActionWithVessel*>( getDependencies()[i] );
@@ -211,68 +202,40 @@ void ActionWithVessel::needsDerivatives(){
   }
 }
 
-void ActionWithVessel::unlockContributors(){
-  if( contributorsAreUnlocked ) return;
-  nactive_tasks = fullTaskList.size();
-  for(unsigned i=0;i<fullTaskList.size();++i){ 
-     partialTaskList[i] = fullTaskList[i]; taskFlags[i]=0; 
-     indexOfTaskInFullList[i]=i;
-  }
-  finishTaskListUpdate();
-  contributorsAreUnlocked=true;
-  resizeFunctions();
-}
-
 void ActionWithVessel::lockContributors(){
   nactive_tasks = 0;
   for(unsigned i=0;i<fullTaskList.size();++i){
+      if( taskFlags[i]>0 ) nactive_tasks++;
+  }
+
+  unsigned n=0;
+  partialTaskList.resize( nactive_tasks );
+  indexOfTaskInFullList.resize( nactive_tasks );  
+  for(unsigned i=0;i<fullTaskList.size();++i){
       // Deactivate sets inactive tasks to number not equal to zero
-      if( taskFlags[i]==0 ){
-          partialTaskList[nactive_tasks] = fullTaskList[i]; 
-          indexOfTaskInFullList[nactive_tasks]=i;
-          nactive_tasks++; 
+      if( taskFlags[i]>0 ){
+          partialTaskList[n] = fullTaskList[i]; 
+          indexOfTaskInFullList[n]=i;
+          n++; 
       } 
   }
+  plumed_dbg_assert( n==nactive_tasks );
+  for(unsigned i=0;i<functions.size();++i){
+     BridgeVessel* bb = dynamic_cast<BridgeVessel*>( functions[i] );
+     if( bb ) bb->copyTaskFlags();
+  }
+  // Resize mydata to accomodate all active tasks
+  if( mydata ) mydata->resize();
   contributorsAreUnlocked=false;
-  finishTaskListUpdate();
-  resizeFunctions();
 }
 
 void ActionWithVessel::deactivateAllTasks(){
   contributorsAreUnlocked=true; nactive_tasks = 0;
-}
-
-void ActionWithVessel::activateTheseTasks( std::vector<unsigned>& additionalTasks ){
-  plumed_dbg_assert( additionalTasks.size()==fullTaskList.size() );
-  // Activate tasks that are already active locally
-  for(unsigned i=0;i<nactive_tasks;++i) additionalTasks[ indexOfTaskInFullList[i] ] = 1;
-
-  nactive_tasks = 0;
-  for(unsigned i=0;i<fullTaskList.size();++i){
-      // Deactivate sets inactive tasks to number not equal to zero
-      if( additionalTasks[i]>0 ){
-          partialTaskList[nactive_tasks] = fullTaskList[i]; 
-          indexOfTaskInFullList[nactive_tasks]=i;
-          taskFlags[i]=0; nactive_tasks++;
-      } else {
-          taskFlags[i]=1;
-      }
-  }
-  contributorsAreUnlocked=false;
-}
-
-void ActionWithVessel::deactivate_task( const unsigned & task_index ){
-  plumed_dbg_assert( contributorsAreUnlocked );
-  taskFlags[task_index]=1;
+  taskFlags.assign(taskFlags.size(),0);
 }
 
 bool ActionWithVessel::taskIsCurrentlyActive( const unsigned& index ) const {
-  return (taskFlags[index]==0);
-}
-
-void ActionWithVessel::deactivateTasksInRange( const unsigned& lower, const unsigned& upper ){
-  plumed_dbg_assert( contributorsAreUnlocked && lower<upper && upper<taskFlags.size() );
-  for(unsigned i=lower;i<upper;++i) taskFlags[i]=1;
+  return (taskFlags[index]>0);
 }
 
 void ActionWithVessel::doJobsRequiredBeforeTaskList(){
@@ -291,8 +254,7 @@ unsigned ActionWithVessel::getSizeOfBuffer( unsigned& bufsize ){
 }
 
 void ActionWithVessel::runAllTasks(){
-  if( getExchangeStep() && nactive_tasks!=fullTaskList.size()  ) error("contributors must be unlocked during exchange steps");
-  plumed_massert( functions.size()>0, "you must have a call to readVesselKeywords somewhere" );
+  plumed_massert( !contributorsAreUnlocked && functions.size()>0, "you must have a call to readVesselKeywords somewhere" );
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
   if(serial){ stride=1; rank=0; }
@@ -339,8 +301,6 @@ void ActionWithVessel::runAllTasks(){
       // the condition is that the weight of the contribution is low 
       // N.B. Here weights are assumed to be between zero and one
       if( myvals.get(0)<tolerance ){
-         // Deactivate task if it is less than the neighbor list tolerance
-         if( myvals.get(0)<nl_tolerance && contributorsAreUnlocked ) deactivate_task( indexOfTaskInFullList[i] );
          // Clear the derivatives
          myvals.clearAll();
          continue;
@@ -350,9 +310,9 @@ void ActionWithVessel::runAllTasks(){
       // If the contribution of this quantity is very small at neighbour list time ignore it
       // untill next neighbour list time
       if( nt>1 ){
-          if( !calculateAllVessels( indexOfTaskInFullList[i], myvals, bvals, omp_buffer, der_list ) && contributorsAreUnlocked ) deactivate_task( indexOfTaskInFullList[i] );
+          calculateAllVessels( indexOfTaskInFullList[i], myvals, bvals, omp_buffer, der_list );
       } else {
-          if( !calculateAllVessels( indexOfTaskInFullList[i], myvals, bvals, buffer, der_list ) && contributorsAreUnlocked ) deactivate_task( indexOfTaskInFullList[i] );
+          calculateAllVessels( indexOfTaskInFullList[i], myvals, bvals, buffer, der_list );
       }
 
       // Clear the value
@@ -374,7 +334,6 @@ void ActionWithVessel::runAllTasks(){
   }
   // Update the elements that are makign contributions to the sum here
   // this causes problems if we do it in prepare
-  if( !serial && contributorsAreUnlocked ) comm.Sum( taskFlags );
   if(timers) stopwatch.stop("3 MPI gather");
 
   if(timers) stopwatch.start("4 Finishing computations");
@@ -386,15 +345,14 @@ void ActionWithVessel::transformBridgedDerivatives( const unsigned& current, Mul
   plumed_error();
 }
 
-bool ActionWithVessel::calculateAllVessels( const unsigned& taskCode, MultiValue& myvals, MultiValue& bvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ){
-  bool keep=false; 
+void ActionWithVessel::calculateAllVessels( const unsigned& taskCode, MultiValue& myvals, MultiValue& bvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ){
   for(unsigned j=0;j<functions.size();++j){
       // Calculate returns a bool that tells us if this particular
       // quantity is contributing more than the tolerance
-      if( functions[j]->calculate( taskCode, functions[j]->transformDerivatives(taskCode, myvals, bvals), buffer, der_list ) ) keep=true;
+      functions[j]->calculate( taskCode, functions[j]->transformDerivatives(taskCode, myvals, bvals), buffer, der_list );
       if( !actionIsBridged && bvals.getNumberActive()>0 ) bvals.clearAll(); 
   }
-  return keep;
+  return;
 }
 
 void ActionWithVessel::finishComputations( const std::vector<double>& buffer ){

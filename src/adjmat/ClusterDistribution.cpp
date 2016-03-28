@@ -89,9 +89,9 @@ nderivatives(0)
 void ClusterDistribution::calculate(){
    // Activate the relevant tasks
    nderivatives = getNumberOfDerivatives();
-   deactivateAllTasks(); std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
-   for(unsigned i=0;i<getNumberOfClusters();++i) active_tasks[i]=1;
-   activateTheseTasks( active_tasks );
+   deactivateAllTasks(); 
+   for(unsigned i=0;i<getNumberOfClusters();++i) taskFlags[i]=1;
+   lockContributors();
    // Now do the calculation 
    runAllTasks(); 
 }

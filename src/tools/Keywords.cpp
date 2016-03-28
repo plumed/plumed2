@@ -300,6 +300,19 @@ void Keywords::print_template(const std::string& actionname, bool include_option
   printf("\n");
 }
 
+void Keywords::print_vim() const {
+  for(unsigned i=0;i<keys.size();++i){
+     if( (types.find(keys[i])->second).isFlag() ){
+         printf( ",flag:%s", keys[i].c_str() );
+     } else {
+         if( allowmultiple.find(keys[i])->second ) printf(",numbered:%s",keys[i].c_str() );
+         else printf(",option:%s",keys[i].c_str() );
+     }  
+  }
+  fprintf(stdout,"\n");
+  print(stdout);
+}
+
 void Keywords::print_html() const {
 
 // This is the part that outputs the details of the components

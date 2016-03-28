@@ -135,7 +135,7 @@ void ContactMatrix::setupConnector( const unsigned& id, const unsigned& i, const
   plumed_assert( id==0 ); std::string errors; switchingFunction(j,i).set(desc,errors);
   if( errors.length()!=0 ) error("problem reading switching function description " + errors);
   if( j!=i) switchingFunction(i,j).set(desc,errors);
-  log.printf("  %d th and %d th multicolvar groups must be within %s\n",i+1,j+1,(switchingFunction(i,j).description()).c_str() );
+  log.printf("  %u th and %u th multicolvar groups must be within %s\n",i+1,j+1,(switchingFunction(i,j).description()).c_str() );
 }
 
 void ContactMatrix::calculateWeight( const unsigned& taskCode, multicolvar::AtomValuePack& myatoms ) const {

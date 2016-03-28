@@ -37,7 +37,7 @@ public:
   explicit VectorSum( const vesselbase::VesselOptions& da );
   std::string value_descriptor();
   void resize();
-  bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
+  void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
   void finish( const std::vector<double>& buffer );
 };
 
@@ -74,21 +74,21 @@ void VectorSum::resize(){
   }
 }
 
-bool VectorSum::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
+void VectorSum::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
   unsigned ncomp=getAction()->getNumberOfQuantities()-2;
 
   double weight=myvals.get(0); 
   plumed_dbg_assert( weight>=getTolerance() );
   buffer[bufstart] += weight;
   for(unsigned i=0;i<ncomp;++i) buffer[bufstart + i*(1+nder)] += weight*myvals.get(2+i);
-  if( !getAction()->derivativesAreRequired() ) return true;
+  if( !getAction()->derivativesAreRequired() ) return;
 
   for(unsigned i=0;i<ncomp;++i){
       double colvar=myvals.get(2+i);
       myvals.chainRule( 2+i, i, 1, 0, weight, bufstart, buffer );
       if( diffweight ) myvals.chainRule( 0, i, 1, 0, colvar, bufstart, buffer );
   }
-  return true;
+  return;
 }
 
 void VectorSum::finish( const std::vector<double>& buffer ){

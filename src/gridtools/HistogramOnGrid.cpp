@@ -68,7 +68,7 @@ void HistogramOnGrid::setBounds( const std::vector<std::string>& smin, const std
   }
 }
 
-bool HistogramOnGrid::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
+void HistogramOnGrid::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
   plumed_dbg_assert( myvals.getNumberOfValues()==dimension+2 );
   // Create a kernel function at the point of interest
   std::vector<double> point( dimension ); double weight=myvals.get(0)*myvals.get( 1+dimension );
@@ -106,7 +106,7 @@ bool HistogramOnGrid::calculate( const unsigned& current, MultiValue& myvals, st
       }
       for(unsigned i=0;i<dimension;++i) delete vv[i];
   }
-  return true;
+  return;
 }
 
 void HistogramOnGrid::finish( const std::vector<double>& buffer ){

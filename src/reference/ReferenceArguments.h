@@ -54,7 +54,7 @@ private:
 /// The names of the arguments
   std::vector<std::string> arg_names;
 /// The indices for setting derivatives
-  std::vector<unsigned> der_index;
+  std::vector<unsigned> arg_der_index;
 protected:
 /// Are we reading weights from input
   bool hasweights;
@@ -64,9 +64,6 @@ protected:
   void readArgumentsFromPDB( const PDB& pdb );
 /// Set the values of the colvars based on their current instantanous values (used in Analysis)
   void setReferenceArguments();
-/// Calculate the euclidean/malanobius distance the atoms have moved from the reference
-/// configuration in CV space
-  double calculateArgumentDistance( const std::vector<Value*> & vals, const std::vector<double>& arg, ReferenceValuePack& myder, const bool& squared ) const ;
 public:
   explicit ReferenceArguments( const ReferenceConfigurationOptions& ro );
 /// Get the number of reference arguments
@@ -86,6 +83,9 @@ public:
   const std::vector<double>& getReferenceMetric();
 /// Return names
   const std::vector<std::string>& getArgumentNames();
+/// Calculate the euclidean/malanobius distance the atoms have moved from the reference
+/// configuration in CV space
+  virtual double calculateArgumentDistance( const std::vector<Value*> & vals, const std::vector<double>& arg, ReferenceValuePack& myder, const bool& squared ) const ;
 };
 
 inline

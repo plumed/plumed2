@@ -49,7 +49,7 @@ void FunctionVessel::resize(){
   }
 }
 
-bool FunctionVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
+void FunctionVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
   unsigned nderivatives=getFinalValue()->getNumberOfDerivatives();
   double weight=myvals.get(0); 
   plumed_dbg_assert( weight>=getTolerance() );  
@@ -58,19 +58,19 @@ bool FunctionVessel::calculate( const unsigned& current, MultiValue& myvals, std
   double dval, f=calcTransform( myvals.get(1), dval );
 
   if( norm ){
-     if( usetol && weight<getTolerance() ) return false;
+     if( usetol && weight<getTolerance() ) return;
      buffer[bufstart+1+nderivatives] += weight;
      if( diffweight ) myvals.chainRule( 0, 1, 1, 0, 1.0, bufstart, buffer );
   }
 
   double contr=weight*f;
-  if( usetol && contr<getTolerance() ) return false;
+  if( usetol && contr<getTolerance() ) return;
   buffer[bufstart] += contr;
 
   if( diffweight ) myvals.chainRule( 0, 0, 1, 0, f, bufstart, buffer ); 
   if( getAction()->derivativesAreRequired() && fabs(dval)>0.0 ) myvals.chainRule( 1, 0, 1, 0, weight*dval, bufstart, buffer );
 
-  return true;
+  return;
 }
 
 double FunctionVessel::calcTransform( const double& , double& ) const { 

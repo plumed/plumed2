@@ -34,8 +34,15 @@ public:
   }
   explicit LocalSteinhardt(const ActionOptions& ao): Action(ao), OrientationSphere(ao)
   {
-     T* mc=dynamic_cast<T*>( getBaseMultiColvar(0) );
-     if(!mc) error("input action is not calculating the correct vectors");
+     for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i){
+         T* mc=dynamic_cast<T*>( getBaseMultiColvar(i) );
+         if(!mc){
+            for(unsigned j=0;j<getBaseMultiColvar(i)->getNumberOfBaseMultiColvars();++j){
+                T* mmc=dynamic_cast<T*>( getBaseMultiColvar(i)->getBaseMultiColvar(j) );
+                if( !mmc ) error("input action is not calculating the correct vectors");
+            }
+         }
+     }
   }
 };
 

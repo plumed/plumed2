@@ -54,12 +54,8 @@ protected:
   void buildSymmetryFunctionLists();
 /// Build a colvar for each pair of atoms
   void buildAtomListWithPairs( const bool& allow_intra_group );
-/// Get the icolv th base multicolvar 
-  MultiColvarBase* getBaseMultiColvar( const unsigned& icolv ) const ;
 /// Get the total number of tasks that this calculation is based on
   unsigned getFullNumberOfBaseTasks() const ;
-/// Get the number of base multicolvars 
-  unsigned getNumberOfBaseMultiColvars() const ;
 public:
   explicit MultiColvarFunction(const ActionOptions&);
   static void registerKeywords( Keywords& keys );
@@ -70,18 +66,6 @@ inline
 unsigned MultiColvarFunction::getFullNumberOfBaseTasks() const {
   return colvar_label.size(); 
 }
-
-
-inline
-unsigned MultiColvarFunction::getNumberOfBaseMultiColvars() const {
-  return mybasemulticolvars.size(); 
-}
-
-inline
-MultiColvarBase* MultiColvarFunction::getBaseMultiColvar( const unsigned& icolv ) const {
-  plumed_dbg_assert( icolv<mybasemulticolvars.size() );
-  return mybasemulticolvars[icolv]; 
-} 
 
 inline
 CatomPack MultiColvarFunction::getCentralAtomPackFromInput( const unsigned& ind ) const {
@@ -95,7 +79,7 @@ inline
 void MultiColvarFunction::getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient ) const {
   plumed_dbg_assert( ind<colvar_label.size() ); unsigned mmc=colvar_label[ind];
   plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(ind,mmc) ) );
-  mybasedata[mmc]->retrieveValue( convertToLocalIndex(ind,mmc), normed, orient );
+  mybasedata[mmc]->retrieveValueWithIndex( convertToLocalIndex(ind,mmc), normed, orient );
 }
 
 }

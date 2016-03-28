@@ -86,10 +86,15 @@ Action* ActionRegister::create(const ActionOptions&ao){
   return action;
 }
 
-bool ActionRegister::printManual( const std::string& action ){
+bool ActionRegister::printManual( const std::string& action, const bool& vimout ){
   if ( check(action) ){
      Keywords keys; mk[action](keys); 
-     keys.print_html(); keys.destroyData();
+     if( vimout ){
+        printf("%s",action.c_str()); keys.print_vim(); printf("\n");
+     } else { 
+        keys.print_html(); 
+     }
+     keys.destroyData();
      return true;
   } else {
      return false;

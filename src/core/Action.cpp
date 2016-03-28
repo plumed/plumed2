@@ -169,7 +169,7 @@ void Action::activate(){
     this->unlockRequests();
     prepare();
     this->lockRequests();
-  }
+  } else return;
   for(Dependencies::iterator p=after.begin();p!=after.end();++p) (*p)->activate();
   active=true;
 }

@@ -71,7 +71,7 @@ void BridgedMultiColvarFunction::transformBridgedDerivatives( const unsigned& cu
 
 void BridgedMultiColvarFunction::performTask( const unsigned& taskIndex, const unsigned& current, MultiValue& myvals ) const {
   MultiValue invals( mycolv->getNumberOfQuantities(), mycolv->getNumberOfDerivatives() );
-  mycolv->performTask( taskIndex, current, invals );
+  invals.clearAll(); mycolv->performTask( taskIndex, current, invals );
   transformBridgedDerivatives( taskIndex, invals, myvals ); 
 }
 

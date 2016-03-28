@@ -44,6 +44,7 @@ class Pbc;
 class ReferenceAtoms :
   virtual public ReferenceConfiguration
 {
+friend class Direction;
 friend class SingleDomainRMSD;
 private:
 /// This flag tells us if the user has disabled checking of the input in order to
@@ -60,7 +61,7 @@ private:
 /// The indices of the atoms in the pdb file
   std::vector<AtomNumber> indices;
 /// The indeces for setting derivatives
-  std::vector<unsigned> der_index;
+  std::vector<unsigned> atom_der_index;
 protected:
 /// Read in the atoms from the pdb file
   void readAtomsFromPDB( const PDB& );
@@ -97,7 +98,7 @@ public:
 /// Set the positions of the reference atoms
   virtual void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in )=0;
 /// Print the atomic positions
-  void printAtoms( OFile& ofile ) const ;
+  void printAtoms( OFile& ofile, const double& lunits ) const ;
 /// Return all atom indexes
   const std::vector<AtomNumber>& getAbsoluteIndexes();
 /// This returns how many atoms there should be
@@ -116,7 +117,7 @@ const std::vector<double> & ReferenceAtoms::getDisplace() const {
 
 inline
 unsigned ReferenceAtoms::getNumberOfReferencePositions() const {
-  plumed_dbg_assert( der_index.size()==reference_atoms.size() );
+  plumed_dbg_assert( atom_der_index.size()==reference_atoms.size() );
   return reference_atoms.size();
 }
 
@@ -127,9 +128,9 @@ unsigned ReferenceAtoms::getNumberOfAtoms() const {
 
 inline
 unsigned ReferenceAtoms::getAtomIndex( const unsigned& iatom ) const {
-  plumed_dbg_assert( iatom<der_index.size() );
-  plumed_dbg_assert( der_index[iatom]<reference_atoms.size() );
-  return der_index[iatom];
+  plumed_dbg_assert( iatom<atom_der_index.size() );
+  plumed_dbg_assert( atom_der_index[iatom]<reference_atoms.size() );
+  return atom_der_index[iatom];
 }
 
 inline

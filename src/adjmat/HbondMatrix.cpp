@@ -70,12 +70,15 @@ PLUMED_REGISTER_ACTION(HBondMatrix,"HBOND_MATRIX")
 
 void HBondMatrix::registerKeywords( Keywords& keys ){
   AdjacencyMatrixBase::registerKeywords( keys );
- keys.add("atoms-1","ATOMS","The list of atoms which can be part of a hydrogen bond.  When this command is used the set of atoms that can donate a "
+  keys.add("atoms","ATOMS","The list of atoms which can be part of a hydrogen bond.  When this command is used the set of atoms that can donate a "
                              "hydrogen bond is assumed to be the same as the set of atoms that can form hydrogen bonds.  The atoms involved must be specified"
                               "as a list of labels of \\ref mcolv or labels of a \\ref multicolvarfunction actions.  If you would just like to use "
                               "the atomic positions you can use a \\ref DENSITY command to specify a group of atoms.  Specifying your atomic positions using labels of "
                               "other \\ref mcolv or \\ref multicolvarfunction commands is useful, however, as you can then exploit a much wider "
                               "variety of functions of the contact matrix as described in \\ref contactmatrix");
+  keys.add("atoms","HYDROGENS","The list of hydrogen atoms that can form part of a hydrogen bond.  The atoms must be specified using a comma separated list, "
+                               "an index range or by using a \\ref GROUP.  A list of hydrogen atoms is always required even if you specify the other atoms using "
+                               "DONORS and ACCEPTORS as described below.");
   keys.add("atoms-2","DONORS","The list of atoms which can donate a hydrogen bond.  The atoms involved must be specified "
                               "as a list of labels of \\ref mcolv or labels of a \\ref multicolvarfunction actions.  If you would just like to use "
                               "the atomic positions you can use a \\ref DENSITY command to specify a group of atoms.  Specifying your atomic positions using labels of "
@@ -86,8 +89,6 @@ void HBondMatrix::registerKeywords( Keywords& keys ){
                                  "the atomic positions you can use a \\ref DENSITY command to specify a group of atoms.  Specifying your atomic positions using labels of "
                                  "other \\ref mcolv or \\ref multicolvarfunction commands is useful, however, as you can then exploit a much wider "
                                  "variety of functions of the contact matrix as described in \\ref contactmatrix");
-  keys.add("atoms","HYDROGENS","The list of hydrogen atoms that can form part of a hydrogen bond.  The atoms must be specified using a comma separated list, "
-                               "an index range or by using a \\ref GROUP");
   keys.add("numbered","SWITCH","The \\ref switchingfunction that specifies how close a pair of atoms must be together for there to be a hydrogen bond between them");
   keys.add("numbered","HSWITCH","The \\ref switchingfunction that specifies how close the hydrogen must be to the donor atom of the hydrogen bond for it to be "
                                 "considered a hydrogen bond");
@@ -169,21 +170,24 @@ void HBondMatrix::setupConnector( const unsigned& id, const unsigned& i, const u
      std::string errors; distanceOOSwitch(j,i).set(desc,errors);
      if( errors.length()!=0 ) error("problem reading switching function description " + errors);
      if( j!=i) distanceOOSwitch(i,j).set(desc,errors);
-     log.printf("  atoms of type %d and %d must be within %s\n",i+1,j+1,(distanceOOSwitch(i,j).description()).c_str() );
+     log.printf("  atoms of type %u and %u must be within %s\n",i+1,j+1,(distanceOOSwitch(i,j).description()).c_str() );
   } else if( id==1 ){
      std::string errors; distanceOHSwitch(j,i).set(desc,errors);
      if( errors.length()!=0 ) error("problem reading switching function description " + errors);
      if( j!=i) distanceOHSwitch(i,j).set(desc,errors);
-     log.printf("  for atoms of type %d and %d the OH distance must be less than %s \n",i+1,j+1,(distanceOHSwitch(i,j).description()).c_str() );
+     log.printf("  for atoms of type %u and %u the OH distance must be less than %s \n",i+1,j+1,(distanceOHSwitch(i,j).description()).c_str() );
   } else if( id==2 ){
      std::string errors; angleSwitch(j,i).set(desc,errors);
      if( errors.length()!=0 ) error("problem reading switching function description " + errors);
      if( j!=i) angleSwitch(i,j).set(desc,errors);
-     log.printf("  for atoms of type %d and %d the OOH angle must be less than %s \n",i+1,j+1,(angleSwitch(i,j).description()).c_str() );
+     log.printf("  for atoms of type %u and %u the OOH angle must be less than %s \n",i+1,j+1,(angleSwitch(i,j).description()).c_str() );
   } 
 }
 
 void HBondMatrix::calculateWeight( const unsigned& taskCode, multicolvar::AtomValuePack& myatoms ) const {
+  // Ensure we skip diagonal elements of square matrix
+  if( myatoms.getIndex(0)==myatoms.getIndex(1) ){ myatoms.setValue(0,0); return; }
+
   Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
   if( distance.modulo()<distanceOOSwitch( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) ).get_dmax() ){
       myatoms.setValue(0,1);

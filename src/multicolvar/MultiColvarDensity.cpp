@@ -312,14 +312,18 @@ void MultiColvarDensity::update(){
           if( fabs( 2*max - mycolv->getBox()(directions[i],directions[i]) )>epsilon ) error("box size should be fixed.  Use FRACTIONAL");
       }
   }
+  // Ensure we only work with active multicolvars
+  deactivateAllTasks();
+  for(unsigned i=0;i<stash->getNumberOfStoredValues();++i) taskFlags[i]=1;
+  lockContributors();
   // Now perform All Tasks
   origin = getPosition(0);
   runAllTasks(); mygrid->addToNorm( 1.0 ); 
 }
 
 void MultiColvarDensity::performTask( const unsigned& tindex, const unsigned& current, MultiValue& myvals ) const {
-  std::vector<double> cvals( mycolv->getNumberOfQuantities() ); stash->retrieveValue( current, false, cvals );
-  Vector fpos, apos = pbcDistance( origin, mycolv->getCentralAtomPos( mycolv->getTaskCode(current) ) );
+  std::vector<double> cvals( mycolv->getNumberOfQuantities() ); stash->retrieveSequentialValue( current, false, cvals );
+  Vector fpos, apos = pbcDistance( origin, mycolv->getCentralAtomPos( mycolv->getActiveTask(current) ) );
   if( fractional ){ fpos = getPbc().realToScaled( apos ); } else { fpos=apos; }
 
   myvals.setValue( 0, cvals[0] );

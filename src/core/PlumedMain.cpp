@@ -113,7 +113,8 @@ PlumedMain::~PlumedMain(){
 
 #define CHECK_INIT(ini,word) plumed_massert(ini,"cmd(\"" + word +"\") should be only used after plumed initialization")
 #define CHECK_NOTINIT(ini,word) plumed_massert(!(ini),"cmd(\"" + word +"\") should be only used before plumed initialization")
-#define CHECK_NULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"" + word + "\")");
+#define CHECK_NOTNULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"" + word + "\")");
+
 
 void PlumedMain::cmd(const std::string & word,void*val){
 
@@ -121,328 +122,336 @@ void PlumedMain::cmd(const std::string & word,void*val){
 
   std::vector<std::string> words=Tools::getWords(word);
   unsigned nw=words.size();
-  if(nw==1) {
+  if(nw==0){
+    // do nothing
+  } else {
     int iword=-1;
-    std::map<std::string, int>::const_iterator it=plumedMainWordMap().find(word);
+    double d;
+    std::map<std::string, int>::const_iterator it=plumedMainWordMap().find(words[0]);
     if(it!=plumedMainWordMap().end()) iword=it->second;
     switch(iword) {
-      double d;
-      case SETBOX: // cmd setBox
+      case cmd_setBox:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         atoms.setBox(val);
         break;
-      case SETPOSITIONS: // cmd setPositions
+      case cmd_setPositions:
         CHECK_INIT(initialized,word);
         atoms.setPositions(val);
         break;
-      case SETMASSES: // cmd setMasses
+      case cmd_setMasses:
         CHECK_INIT(initialized,word);
         atoms.setMasses(val);
         break;
-      case SETCHARGES: // cmd setCharges
+      case cmd_setCharges:
         CHECK_INIT(initialized,word);
         atoms.setCharges(val);
         break;
-      case SETPOSITIONSX: // cmd setPositionsX
+      case cmd_setPositionsX:
         CHECK_INIT(initialized,word);
         atoms.setPositions(val,0);
         break;
-      case SETPOSITIONSY: // cmd setPositionsY
+      case cmd_setPositionsY:
         CHECK_INIT(initialized,word);
         atoms.setPositions(val,1);
         break;
-      case SETPOSITIONSZ: // cmd setPositionsZ
+      case cmd_setPositionsZ:
         CHECK_INIT(initialized,word);
         atoms.setPositions(val,2);
         break;
-      case SETVIRIAL: // cmd setVirial
+      case cmd_setVirial:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         atoms.setVirial(val);
         break;
-      case SETENERGY: // cmd setEnergy
+      case cmd_setEnergy:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         atoms.setEnergy(val);
         break;
-      case SETFORCES: // cmd setForces
+      case cmd_setForces:
         CHECK_INIT(initialized,word);
         atoms.setForces(val);
         break;
-      case SETFORCESX: // cmd setForcesX
+      case cmd_setForcesX:
         CHECK_INIT(initialized,word);
         atoms.setForces(val,0);
         break;
-      case SETFORCESY: // cmd setForcesY
+      case cmd_setForcesY:
         CHECK_INIT(initialized,word);
         atoms.setForces(val,1);
         break;
-      case SETFORCESZ: // cmd setForcesZ
+      case cmd_setForcesZ:
         CHECK_INIT(initialized,word);
         atoms.setForces(val,2);
         break;
-      case CALC: // cmd calc
+      case cmd_calc:
         CHECK_INIT(initialized,word);
         calc();
         break;
-      case PREPAREDEPENDENCIES: // cmd prepareDependencies
+      case cmd_prepareDependencies:
         CHECK_INIT(initialized,word);
         prepareDependencies();
         break;
-      case SHAREDATA: // cmd shareData
+      case cmd_shareData:
         CHECK_INIT(initialized,word);
         shareData();
         break;
-      case PREPARECALC: // cmd prepareCalc
+      case cmd_prepareCalc:
         CHECK_INIT(initialized,word);
         prepareCalc();
         break;
-      case PERFORMCALC: // cmd performCalc
+      case cmd_performCalc:
         CHECK_INIT(initialized,word);
         performCalc();
         break;
-      case PERFORMCALCNOUPDATE: // cmd performCalcNoUpdate
+      case cmd_performCalcNoUpdate:
         CHECK_INIT(initialized,word);
         performCalcNoUpdate();
         break;
-      case UPDATE: // cmd update
+      case cmd_update:
         CHECK_INIT(initialized,word);
         update();
         break;
-      case SETSTEP: // cmd setStep
+      case cmd_setStep:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         step=(*static_cast<int*>(val));
         atoms.startStep();
         break;
-      case SETSTEPLONG: // cmd setStepLong
+      case cmd_setStepLong:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         step=(*static_cast<long int*>(val));
         atoms.startStep();
         break;
       // words used less frequently:
-      case SETATOMSNLOCAL: // cmd setAtomsNlocal
+      case cmd_setAtomsNlocal:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         atoms.setAtomsNlocal(*static_cast<int*>(val));
         break;
-      case SETATOMSGATINDEX: // cmd setAtomsGatindex
+      case cmd_setAtomsGatindex:
         CHECK_INIT(initialized,word);
         atoms.setAtomsGatindex(static_cast<int*>(val),false);
         break;
-      case SETATOMSFGATINDEX: // cmd setAtomsFGatindex
+      case cmd_setAtomsFGatindex:
         CHECK_INIT(initialized,word);
         atoms.setAtomsGatindex(static_cast<int*>(val),true);
         break;
-      case SETATOMSCONTIGUOUS: // cmd setAtomsContiguous
+      case cmd_setAtomsContiguous:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         atoms.setAtomsContiguous(*static_cast<int*>(val));
         break;
-      case CREATEFULLLIST: // cmd createFullList
+      case cmd_createFullList:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         atoms.createFullList(static_cast<int*>(val));
         break;
-      case GETFULLLIST: // cmd getFullList
+      case cmd_getFullList:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         atoms.getFullList(static_cast<int**>(val));
         break;
-      case CLEARFULLLIST: // cmd clearFullList
+      case cmd_clearFullList:
         CHECK_INIT(initialized,word);
         atoms.clearFullList();
         break;
-      case READ: // cmd read
+      case cmd_read:
         CHECK_INIT(initialized,word);
         if(val)readInputFile(static_cast<char*>(val));
         else   readInputFile("plumed.dat");
         break;
-      case READINPUTLINE: // cmd readInputLine
+      case cmd_readInputLine:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         readInputLine(static_cast<char*>(val));
         break;
-      case CLEAR: // cmd clear
+      case cmd_clear:
         CHECK_INIT(initialized,word);
         actionSet.clearDelete();
         break;
-      case GETAPIVERSION: // cmd getApiVersion
-        CHECK_NULL(val,word);
+      case cmd_getApiVersion:
+        CHECK_NOTNULL(val,word);
         *(static_cast<int*>(val))=4;
         break;
       // commands which can be used only before initialization:
-      case INIT: // cmd init
+      case cmd_init:
         CHECK_NOTINIT(initialized,word);
         init();
         break;
-      case SETREALPRECISION: // cmd setRealPrecision
+      case cmd_setRealPrecision:
         CHECK_NOTINIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         atoms.setRealPrecision(*static_cast<int*>(val));
         break;
-      case SETMDLENGTHUNITS: // cmd setMDLengthUnits
+      case cmd_setMDLengthUnits:
         CHECK_NOTINIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         atoms.MD2double(val,d);
         atoms.setMDLengthUnits(d);
         break;
-      case SETMDCHARGEUNITS: // cmd setMDChargeUnits
+      case cmd_setMDChargeUnits:
         CHECK_NOTINIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         atoms.MD2double(val,d);
         atoms.setMDChargeUnits(d);
         break;
-      case SETMDMASSUNITS: // cmd setMDMassUnits
+      case cmd_setMDMassUnits:
         CHECK_NOTINIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         atoms.MD2double(val,d);
         atoms.setMDMassUnits(d);
         break;
-      case SETMDENERGYUNITS: // cmd setMDEnergyUnits
+      case cmd_setMDEnergyUnits:
         CHECK_NOTINIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         atoms.MD2double(val,d);
         atoms.setMDEnergyUnits(d);
         break;
-      case SETMDTIMEUNITS: // cmd setMDTimeUnits
+      case cmd_setMDTimeUnits:
         CHECK_NOTINIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         atoms.MD2double(val,d);
         atoms.setMDTimeUnits(d);
         break;
-      case SETNATURALUNITS: // cmd setNaturalUnits
+      case cmd_setNaturalUnits:
       // set the boltzman constant for MD in natural units (kb=1)
       // only needed in LJ codes if the MD is passing temperatures to plumed (so, not yet...)
       // use as cmd("setNaturalUnits")
         CHECK_NOTINIT(initialized,word);
         atoms.setMDNaturalUnits(true);
         break;
-      case SETNOVIRIAL: // cmd setNoVirial
+      case cmd_setNoVirial:
         CHECK_NOTINIT(initialized,word);
         novirial=true;
         break;
-      case SETPLUMEDDAT: // cmd setPlumedDat
+      case cmd_setPlumedDat:
         CHECK_NOTINIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         plumedDat=static_cast<char*>(val);
         break;
-      case SETMPICOMM: // cmd setMPIComm
+      case cmd_setMPIComm:
         CHECK_NOTINIT(initialized,word);
         comm.Set_comm(val);
         atoms.setDomainDecomposition(comm);
         break;
-      case SETMPIFCOMM: // cmd setMPIFComm
+      case cmd_setMPIFComm:
         CHECK_NOTINIT(initialized,word);
         comm.Set_fcomm(val);
         atoms.setDomainDecomposition(comm);
         break;
-      case SETMPIMULTISIMCOMM: // cmd setMPImultiSimComm
+      case cmd_setMPImultiSimComm:
         CHECK_NOTINIT(initialized,word);
         multi_sim_comm.Set_comm(val);
         break;
-      case SETNATOMS: // cmd setNatoms
+      case cmd_setNatoms:
         CHECK_NOTINIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         atoms.setNatoms(*static_cast<int*>(val));
         break;
-      case SETTIMESTEP: // cmd setTimestep
+      case cmd_setTimestep:
         CHECK_NOTINIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         atoms.setTimeStep(val);
         break;
-      case SETKBT: /* ADDED WITH API==2 */ // cmd setKbT
+      /* ADDED WITH API==2 */
+      case cmd_setKbT:
         CHECK_NOTINIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         atoms.setKbT(val);
         break;
-      case SETRESTART: /* ADDED WITH API==3 */ // cmd setRestart
+      /* ADDED WITH API==3 */
+      case cmd_setRestart:
         CHECK_NOTINIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         if(*static_cast<int*>(val)!=0) restart=true;
         break;
-      case SETMDENGINE: // cmd setMDEngine
+      case cmd_setMDEngine:
         CHECK_NOTINIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         MDEngine=static_cast<char*>(val);
         break;
-      case SETLOG: // cmd setLog
+      case cmd_setLog:
         CHECK_NOTINIT(initialized,word);
         log.link(static_cast<FILE*>(val));
         break;
-      case SETLOGFILE: // cmd setLogFile
+      case cmd_setLogFile:
         CHECK_NOTINIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         log.open(static_cast<char*>(val));
         break;
       // other commands that should be used after initialization:
-      case SETSTOPFLAG: // cmd setStopFlag
+      case cmd_setStopFlag:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         stopFlag=static_cast<int*>(val);
         break;
-      case GETEXCHANGESFLAG: // cmd getExchangesFlag
+      case cmd_getExchangesFlag:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         exchangePatterns.getFlag((*static_cast<int*>(val)));
         break;
-      case SETEXCHANGESSEED: // cmd setExchangesSeed
+      case cmd_setExchangesSeed:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         exchangePatterns.setSeed((*static_cast<int*>(val)));
         break;
-      case SETNUMBEROFREPLICAS: // cmd setNumberOfReplicas
+      case cmd_setNumberOfReplicas:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         exchangePatterns.setNofR((*static_cast<int*>(val)));
         break;
-      case GETEXCHANGESLIST: // cmd getExchangesList
+      case cmd_getExchangesList:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         exchangePatterns.getList((static_cast<int*>(val)));
         break;
-      case RUNFINALJOBS: // cmd runFinalJobs
+      case cmd_runFinalJobs:
         CHECK_INIT(initialized,word);
         runJobsAtEndOfCalculation();
         break;
-      case ISENERGYNEEDED: // cmd isEnergyNeeded
+      case cmd_isEnergyNeeded:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
+        CHECK_NOTNULL(val,word);
         if(atoms.isEnergyNeeded()) *(static_cast<int*>(val))=1;
         else                       *(static_cast<int*>(val))=0;
         break;
-      case GETBIAS: // cmd getBias
+      case cmd_getBias:
         CHECK_INIT(initialized,word);
-        CHECK_NULL(val,word);
-        d=getBias()/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
-        atoms.double2MD(d,val);
+        CHECK_NOTNULL(val,word);
+        atoms.double2MD(getBias()/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy()),val);
+        break;
+      case cmd_checkAction:
+        CHECK_NOTNULL(val,word);
+        plumed_assert(nw==2);
+        *(static_cast<int*>(val))=(actionRegister().check(words[1]) ? 1:0);
+        break;
+      case cmd_GREX:
+        if(!grex) grex=new GREX(*this);
+        plumed_massert(grex,"error allocating grex");
+        {
+          std::string kk=words[1];
+          for(unsigned i=2;i<words.size();i++) kk+=" "+words[i];
+          grex->cmd(kk.c_str(),val);
+        }
+        break;
+      case cmd_CLTool:
+        CHECK_NOTINIT(initialized,word);
+        if(!cltool) cltool=new CLToolMain;
+        {
+          std::string kk=words[1];
+          for(unsigned i=2;i<words.size();i++) kk+=" "+words[i];
+          cltool->cmd(kk.c_str(),val);
+        }
         break;
       default:
         plumed_merror("cannot interpret cmd(\"" + word + "\"). check plumed developers manual to see the available commands.");
         break;
     }
-  } else if(nw==2 && words[0]=="checkAction"){
-    int check=0;
-    if(actionRegister().check(words[1])) check=1;
-    *(static_cast<int*>(val))=check;
-  } else if(nw>1 && words[0]=="GREX"){
-    if(!grex) grex=new GREX(*this);
-    plumed_massert(grex,"error allocating grex");
-    std::string kk=words[1];
-    for(unsigned i=2;i<words.size();i++) kk+=" "+words[i];
-    grex->cmd(kk.c_str(),val);
-  } else if(nw>1 && words[0]=="CLTool"){
-    CHECK_NOTINIT(initialized,word);
-    if(!cltool) cltool=new CLToolMain;
-    std::string kk=words[1];
-    for(unsigned i=2;i<words.size();i++) kk+=" "+words[i];
-    cltool->cmd(kk.c_str(),val);
-  } else{
-    plumed_merror("cannot interpret cmd(\"" + word + "\"). check plumed developers manual to see the available commands.");
-  };
- stopwatch.pause();
+  }
+  stopwatch.pause();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -576,7 +585,8 @@ void PlumedMain::prepareDependencies(){
 // First switch off all actions
   for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();++p){
      (*p)->deactivate();
-     (*p)->clearOptions();
+     //I think this is already done inside deactivate
+     //(*p)->clearOptions();
   }
 
 // for optimization, an "active" flag remains false if no action at all is active

@@ -69,7 +69,7 @@ void StoreDataVessel::resize(){
 }
 
 void StoreDataVessel::storeValues( const unsigned& myelem, MultiValue& myvals, std::vector<double>& buffer ) const {
-  unsigned jelem = getStoreIndex( myelem );
+  unsigned jelem = getStoreIndex( myelem ); plumed_dbg_assert( jelem<getNumberOfStoredValues() );
   unsigned ibuf = bufstart + jelem * vecsize * nspace; 
   for(unsigned icomp=0;icomp<vecsize;++icomp){
       buffer[ibuf] += myvals.get(icomp); ibuf+=nspace;
@@ -107,18 +107,24 @@ void StoreDataVessel::storeDerivatives( const unsigned& myelem, MultiValue& myva
   }
 }
 
-void StoreDataVessel::retrieveValue( const unsigned& myelem, const bool& normed, std::vector<double>& values ) const {
-  plumed_dbg_assert( values.size()==vecsize );
+void StoreDataVessel::retrieveSequentialValue( const unsigned& jelem, const bool& normed, std::vector<double>& values ) const {
   if( normed && values.size()>2 ){
-     unsigned ibuf = myelem * vecsize * nspace;
+     unsigned ibuf = jelem * vecsize * nspace;
      values[0]=local_buffer[ibuf]; ibuf+=nspace;
      double norm=values[1]=local_buffer[ibuf]; ibuf+=nspace;   // Element 1 contains the norm of the vector
      if( norm<epsilon ) norm=1.0;
-     for(unsigned i=2;i<vecsize;++i){ values[i]=local_buffer[ibuf]/norm; ibuf+=nspace; } 
+     for(unsigned i=2;i<vecsize;++i){ values[i]=local_buffer[ibuf]/norm; ibuf+=nspace; }
   } else {
-     unsigned ibuf = myelem * vecsize * nspace;
+     unsigned ibuf = jelem * vecsize * nspace;
      for(unsigned i=0;i<vecsize;++i){ values[i]=local_buffer[ibuf]; ibuf+=nspace; }
   }
+
+}
+
+void StoreDataVessel::retrieveValueWithIndex( const unsigned& myelem, const bool& normed, std::vector<double>& values ) const {
+  plumed_dbg_assert( values.size()==vecsize );
+  unsigned jelem = getStoreIndex( myelem );
+  retrieveSequentialValue( jelem, normed, values );
 }
 
 void StoreDataVessel::retrieveDerivatives( const unsigned& myelem, const bool& normed, MultiValue& myvals ){
@@ -137,11 +143,12 @@ void StoreDataVessel::retrieveDerivatives( const unsigned& myelem, const bool& n
           }
       }
   } else {
+      unsigned jelem = getStoreIndex( myelem );
       // Retrieve the derivatives for elements 0 and 1 - weight and norm
       for(unsigned icomp=0;icomp<2;++icomp){
-          unsigned ibuf = myelem * ( vecsize*nspace ) + icomp*nspace + 1;
-          unsigned kder = getNumberOfStoredValues() + myelem * ( nspace - 1 );
-          for(unsigned j=0;j<active_der[myelem];++j){
+          unsigned ibuf = jelem * ( vecsize*nspace ) + icomp*nspace + 1;
+          unsigned kder = getNumberOfStoredValues() + jelem * ( nspace - 1 );
+          for(unsigned j=0;j<active_der[jelem];++j){
               myvals.addDerivative( icomp, active_der[kder], local_buffer[ibuf] );
               kder++; ibuf++;
           }
@@ -150,12 +157,12 @@ void StoreDataVessel::retrieveDerivatives( const unsigned& myelem, const bool& n
       // Retrieve the derivatives for the vector
       if( vecsize>2 && normed ){
          plumed_dbg_assert( myvals.getNumberOfValues()>2 );
-         unsigned kder = getNumberOfStoredValues() + myelem * ( nspace - 1 );
-         double v = local_buffer[myelem*vecsize*nspace + nspace], weight = 1.0 / v, wdf = 1.0 / ( v*v*v );
-         for(unsigned ider=0;ider<active_der[myelem];++ider){
-             unsigned ibuf = myelem * vecsize * nspace + 2 * nspace + 1 + ider; double comp2=0.0; 
+         unsigned kder = getNumberOfStoredValues() + jelem * ( nspace - 1 );
+         double v = local_buffer[jelem*vecsize*nspace + nspace], weight = 1.0 / v, wdf = 1.0 / ( v*v*v );
+         for(unsigned ider=0;ider<active_der[jelem];++ider){
+             unsigned ibuf = jelem * vecsize * nspace + 2 * nspace + 1 + ider; double comp2=0.0; 
              for(unsigned jcomp=2;jcomp<vecsize;++jcomp){ comp2 += local_buffer[ibuf-ider-1]*local_buffer[ibuf]; ibuf+=nspace; }  
-             ibuf = myelem * vecsize * nspace + 2 * nspace + 1 + ider;
+             ibuf = jelem * vecsize * nspace + 2 * nspace + 1 + ider;
              for(unsigned jcomp=2;jcomp<vecsize;++jcomp){
                  myvals.addDerivative( jcomp, active_der[kder], weight*local_buffer[ibuf] - wdf*comp2*local_buffer[ibuf-ider-1] );
                  ibuf+=nspace;
@@ -164,9 +171,9 @@ void StoreDataVessel::retrieveDerivatives( const unsigned& myelem, const bool& n
          }
       } else if( vecsize>2 ){
          for(unsigned icomp=2;icomp<vecsize;++icomp){
-             unsigned ibuf = myelem * ( vecsize*nspace ) + icomp*nspace + 1;
-             unsigned kder = getNumberOfStoredValues() + myelem * ( nspace - 1 );
-             for(unsigned j=0;j<active_der[myelem];++j){
+             unsigned ibuf = jelem * ( vecsize*nspace ) + icomp*nspace + 1;
+             unsigned kder = getNumberOfStoredValues() + jelem * ( nspace - 1 );
+             for(unsigned j=0;j<active_der[jelem];++j){
                  myvals.addDerivative( icomp, active_der[kder], local_buffer[ibuf] );
                  kder++; ibuf++;
              } 
@@ -174,13 +181,13 @@ void StoreDataVessel::retrieveDerivatives( const unsigned& myelem, const bool& n
       }
       // Now ensure appropriate parts of list are activated
       myvals.emptyActiveMembers();
-      unsigned kder = getNumberOfStoredValues() + myelem * ( nspace - 1 );
-      for(unsigned j=0;j<active_der[myelem];++j){ myvals.putIndexInActiveArray( active_der[kder] ); kder++; }
+      unsigned kder = getNumberOfStoredValues() + jelem * ( nspace - 1 );
+      for(unsigned j=0;j<active_der[jelem];++j){ myvals.putIndexInActiveArray( active_der[kder] ); kder++; }
       myvals.sortActiveList();
   } 
 }
 
-bool StoreDataVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
+void StoreDataVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
 
   if( !hard_cut ){
      storeValues( current, myvals, buffer );
@@ -190,7 +197,7 @@ bool StoreDataVessel::calculate( const unsigned& current, MultiValue& myvals, st
      if( !(getAction()->lowmem) && getAction()->derivativesAreRequired() ) storeDerivatives( current, myvals, buffer, der_list );
   } 
 
-  return true;
+  return;
 }
 
 void StoreDataVessel::finish( const std::vector<double>& buffer ){

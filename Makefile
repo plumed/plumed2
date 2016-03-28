@@ -13,6 +13,7 @@ SUBDIRSCLEAN:=$(addsuffix .clean,$(SUBDIRS))
 ifdef GCCDEP
 all:
 	$(MAKE) lib
+	$(MAKE) -C vim
 
 lib:
 	$(MAKE)	-C src

@@ -1,0 +1,173 @@
+ANNOTATION     1   0 D +plumedLineDISTANCE+plumedActionDISTANCE
+ANNOTATION     1   1 I +plumedLineDISTANCE+plumedActionDISTANCE
+ANNOTATION     1   2 S +plumedLineDISTANCE+plumedActionDISTANCE
+ANNOTATION     1   3 T +plumedLineDISTANCE+plumedActionDISTANCE
+ANNOTATION     1   4 A +plumedLineDISTANCE+plumedActionDISTANCE
+ANNOTATION     1   5 N +plumedLineDISTANCE+plumedActionDISTANCE
+ANNOTATION     1   6 C +plumedLineDISTANCE+plumedActionDISTANCE
+ANNOTATION     1   7 E +plumedLineDISTANCE+plumedActionDISTANCE
+ANNOTATION     1   8   +plumedLineDISTANCE
+ANNOTATION     1   9 A +plumedLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     1  10 T +plumedLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     1  11 O +plumedLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     1  12 M +plumedLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     1  13 S +plumedLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     1  14 = +plumedLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     1  15 1 +plumedLineDISTANCE+plumedKeywordsDISTANCE+plumedStringInKeyword
+ANNOTATION     1  16 , +plumedLineDISTANCE+plumedKeywordsDISTANCE+plumedStringInKeyword
+ANNOTATION     1  17 2 +plumedLineDISTANCE+plumedKeywordsDISTANCE+plumedStringInKeyword
+ANNOTATION     1  18   +plumedLineDISTANCE
+ANNOTATION     1  19 C +plumedLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     1  20 O +plumedLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     1  21 M +plumedLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     1  22 P +plumedLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     1  23 O +plumedLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     1  24 N +plumedLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     1  25 E +plumedLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     1  26 N +plumedLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     1  27 T +plumedLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     1  28 S +plumedLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     2   0 # +plumedComment
+ANNOTATION     2   1   +plumedComment
+ANNOTATION     2   2 c +plumedComment
+ANNOTATION     2   3 o +plumedComment
+ANNOTATION     2   4 m +plumedComment
+ANNOTATION     2   5 m +plumedComment
+ANNOTATION     2   6 e +plumedComment
+ANNOTATION     2   7 n +plumedComment
+ANNOTATION     2   8 t +plumedComment
+ANNOTATION     3   0 D +plumedCLineDISTANCE+plumedActionDISTANCE
+ANNOTATION     3   1 I +plumedCLineDISTANCE+plumedActionDISTANCE
+ANNOTATION     3   2 S +plumedCLineDISTANCE+plumedActionDISTANCE
+ANNOTATION     3   3 T +plumedCLineDISTANCE+plumedActionDISTANCE
+ANNOTATION     3   4 A +plumedCLineDISTANCE+plumedActionDISTANCE
+ANNOTATION     3   5 N +plumedCLineDISTANCE+plumedActionDISTANCE
+ANNOTATION     3   6 C +plumedCLineDISTANCE+plumedActionDISTANCE
+ANNOTATION     3   7 E +plumedCLineDISTANCE+plumedActionDISTANCE
+ANNOTATION     3   8   +plumedCLineDISTANCE
+ANNOTATION     3   9 . +plumedCLineDISTANCE+plumedDots
+ANNOTATION     3  10 . +plumedCLineDISTANCE+plumedDots
+ANNOTATION     3  11 . +plumedCLineDISTANCE+plumedDots
+ANNOTATION     4   0   +plumedCLineDISTANCE
+ANNOTATION     4   1   +plumedCLineDISTANCE
+ANNOTATION     4   2   +plumedCLineDISTANCE
+ANNOTATION     4   3 A +plumedCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     4   4 T +plumedCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     4   5 O +plumedCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     4   6 M +plumedCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     4   7 S +plumedCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     4   8 = +plumedCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     4   9 1 +plumedCLineDISTANCE+plumedKeywordsDISTANCE+plumedStringInKeyword
+ANNOTATION     4  10 , +plumedCLineDISTANCE+plumedKeywordsDISTANCE+plumedStringInKeyword
+ANNOTATION     4  11 2 +plumedCLineDISTANCE+plumedKeywordsDISTANCE+plumedStringInKeyword
+ANNOTATION     4  12   +plumedCLineDISTANCE
+ANNOTATION     4  13 C +plumedCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     4  14 O +plumedCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     4  15 M +plumedCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     4  16 P +plumedCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     4  17 O +plumedCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     4  18 N +plumedCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     4  19 E +plumedCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     4  20 N +plumedCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     4  21 T +plumedCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     4  22 S +plumedCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     4  23   +plumedCLineDISTANCE
+ANNOTATION     4  24 L +plumedCLineDISTANCE+plumedLabel
+ANNOTATION     4  25 A +plumedCLineDISTANCE+plumedLabel
+ANNOTATION     4  26 B +plumedCLineDISTANCE+plumedLabel
+ANNOTATION     4  27 E +plumedCLineDISTANCE+plumedLabel
+ANNOTATION     4  28 L +plumedCLineDISTANCE+plumedLabel
+ANNOTATION     4  29 = +plumedCLineDISTANCE+plumedLabel
+ANNOTATION     4  30 a +plumedCLineDISTANCE+plumedLabel
+ANNOTATION     5   0 . +plumedActionDISTANCE
+ANNOTATION     5   1 . +plumedActionDISTANCE
+ANNOTATION     5   2 . +plumedActionDISTANCE
+ANNOTATION     5   3   +plumedActionDISTANCE
+ANNOTATION     6   0 D +plumedCLineDISTANCE+plumedActionDISTANCE
+ANNOTATION     6   1 I +plumedCLineDISTANCE+plumedActionDISTANCE
+ANNOTATION     6   2 S +plumedCLineDISTANCE+plumedActionDISTANCE
+ANNOTATION     6   3 T +plumedCLineDISTANCE+plumedActionDISTANCE
+ANNOTATION     6   4 A +plumedCLineDISTANCE+plumedActionDISTANCE
+ANNOTATION     6   5 N +plumedCLineDISTANCE+plumedActionDISTANCE
+ANNOTATION     6   6 C +plumedCLineDISTANCE+plumedActionDISTANCE
+ANNOTATION     6   7 E +plumedCLineDISTANCE+plumedActionDISTANCE
+ANNOTATION     6   8   +plumedCLineDISTANCE
+ANNOTATION     6   9 L +plumedCLineDISTANCE+plumedLabel
+ANNOTATION     6  10 A +plumedCLineDISTANCE+plumedLabel
+ANNOTATION     6  11 B +plumedCLineDISTANCE+plumedLabel
+ANNOTATION     6  12 E +plumedCLineDISTANCE+plumedLabel
+ANNOTATION     6  13 L +plumedCLineDISTANCE+plumedLabel
+ANNOTATION     6  14 = +plumedCLineDISTANCE+plumedLabel
+ANNOTATION     6  15 a +plumedCLineDISTANCE+plumedLabel
+ANNOTATION     6  16   +plumedCLineDISTANCE
+ANNOTATION     6  17 . +plumedCLineDISTANCE+plumedDots
+ANNOTATION     6  18 . +plumedCLineDISTANCE+plumedDots
+ANNOTATION     6  19 . +plumedCLineDISTANCE+plumedDots
+ANNOTATION     7   0   +plumedCLineDISTANCE
+ANNOTATION     7   1   +plumedCLineDISTANCE
+ANNOTATION     7   2   +plumedCLineDISTANCE
+ANNOTATION     7   3 A +plumedCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     7   4 T +plumedCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     7   5 O +plumedCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     7   6 M +plumedCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     7   7 S +plumedCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     7   8 = +plumedCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     7   9 1 +plumedCLineDISTANCE+plumedKeywordsDISTANCE+plumedStringInKeyword
+ANNOTATION     7  10 , +plumedCLineDISTANCE+plumedKeywordsDISTANCE+plumedStringInKeyword
+ANNOTATION     7  11 2 +plumedCLineDISTANCE+plumedKeywordsDISTANCE+plumedStringInKeyword
+ANNOTATION     7  12   +plumedCLineDISTANCE
+ANNOTATION     7  13 C +plumedCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     7  14 O +plumedCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     7  15 M +plumedCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     7  16 P +plumedCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     7  17 O +plumedCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     7  18 N +plumedCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     7  19 E +plumedCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     7  20 N +plumedCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     7  21 T +plumedCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     7  22 S +plumedCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION     8   0 . +plumedActionDISTANCE
+ANNOTATION     8   1 . +plumedActionDISTANCE
+ANNOTATION     8   2 . +plumedActionDISTANCE
+ANNOTATION     8   3   +plumedActionDISTANCE
+ANNOTATION     9   0 a +plumedLCLineDISTANCE+plumedActionDISTANCE
+ANNOTATION     9   1 : +plumedLCLineDISTANCE+plumedActionDISTANCE
+ANNOTATION     9   2   +plumedLCLineDISTANCE+plumedActionDISTANCE
+ANNOTATION     9   3 . +plumedLCLineDISTANCE+plumedDots
+ANNOTATION     9   4 . +plumedLCLineDISTANCE+plumedDots
+ANNOTATION     9   5 . +plumedLCLineDISTANCE+plumedDots
+ANNOTATION    10   0   +plumedLCLineDISTANCE
+ANNOTATION    10   1   +plumedLCLineDISTANCE
+ANNOTATION    10   2 D +plumedLCLineDISTANCE+plumedSpecialDISTANCE
+ANNOTATION    10   3 I +plumedLCLineDISTANCE+plumedSpecialDISTANCE
+ANNOTATION    10   4 S +plumedLCLineDISTANCE+plumedSpecialDISTANCE
+ANNOTATION    10   5 T +plumedLCLineDISTANCE+plumedSpecialDISTANCE
+ANNOTATION    10   6 A +plumedLCLineDISTANCE+plumedSpecialDISTANCE
+ANNOTATION    10   7 N +plumedLCLineDISTANCE+plumedSpecialDISTANCE
+ANNOTATION    10   8 C +plumedLCLineDISTANCE+plumedSpecialDISTANCE
+ANNOTATION    10   9 E +plumedLCLineDISTANCE+plumedSpecialDISTANCE
+ANNOTATION    10  10   +plumedLCLineDISTANCE
+ANNOTATION    10  11 A +plumedLCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION    10  12 T +plumedLCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION    10  13 O +plumedLCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION    10  14 M +plumedLCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION    10  15 S +plumedLCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION    10  16 = +plumedLCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION    10  17 1 +plumedLCLineDISTANCE+plumedKeywordsDISTANCE+plumedStringInKeyword
+ANNOTATION    10  18 , +plumedLCLineDISTANCE+plumedKeywordsDISTANCE+plumedStringInKeyword
+ANNOTATION    10  19 2 +plumedLCLineDISTANCE+plumedKeywordsDISTANCE+plumedStringInKeyword
+ANNOTATION    11   0   +plumedLCLineDISTANCE
+ANNOTATION    11   1   +plumedLCLineDISTANCE
+ANNOTATION    11   2 C +plumedLCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION    11   3 O +plumedLCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION    11   4 M +plumedLCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION    11   5 P +plumedLCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION    11   6 O +plumedLCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION    11   7 N +plumedLCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION    11   8 E +plumedLCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION    11   9 N +plumedLCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION    11  10 T +plumedLCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION    11  11 S +plumedLCLineDISTANCE+plumedKeywordsDISTANCE
+ANNOTATION    12   0 . +plumedActionDISTANCE
+ANNOTATION    12   1 . +plumedActionDISTANCE
+ANNOTATION    12   2 . +plumedActionDISTANCE

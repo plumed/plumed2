@@ -85,8 +85,6 @@ private:
   std::string ofmt;
 /// Tempory vector to store values of arguments
   std::vector<double> current_args;
-/// List of argument names 
-  std::vector<std::string> argument_names;
 /// The type of metric we are using to measure distances
   std::string metricname;
 /// The checkpoint file
@@ -101,6 +99,8 @@ private:
 /// Get the metric if we are using malonobius distance and flexible hill
   std::vector<double> getMetric() const ;
 protected:
+/// List of argument names 
+  std::vector<std::string> argument_names;
 /// This is used to read in output file names for analysis methods.  When
 /// this method is used and the calculation is not restarted old analysis
 /// files are backed up.

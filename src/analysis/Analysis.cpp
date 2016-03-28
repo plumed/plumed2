@@ -233,8 +233,9 @@ void Analysis::setAnalysisStride( const bool& use_all, const unsigned& astride )
 }
 
 void Analysis::readDataFromFile( const std::string& filename ){
-  FILE* fp=fopen(filename.c_str(),"r"); double tstep, oldtstep; 
+  FILE* fp=fopen(filename.c_str(),"r");
   if(fp!=NULL){
+     double tstep, oldtstep; 
      bool do_read=true, first=true;
      while (do_read) {
         PDB mypdb;
@@ -313,7 +314,7 @@ void Analysis::accumulate(){
   // Write data to checkpoint file
   if( write_chq ){
      rfile.rewind();
-     data[idata]->print( rfile, getTime(), logweights[idata], old_norm );
+     data[idata]->print( rfile, getTime(), logweights[idata], atoms.getUnits().getLength()/0.1, old_norm );
      rfile.flush();
   }
   // Increment data counter

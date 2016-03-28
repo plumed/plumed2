@@ -38,6 +38,7 @@ namespace adjmat {
 
 class OutputCluster : public ActionPilot {
 private:
+  bool output_xyz;
   OFile ofile;
   ClusteringBase* myclusters;
   unsigned clustr;
@@ -68,6 +69,13 @@ myclusters(NULL)
   // Setup output file
   ofile.link(*this); std::string file; parse("FILE",file);
   if( file.length()==0 ) error("output file name was not specified");
+  // Search for xyz extension
+  output_xyz=false;
+  if( file.find(".")!=std::string::npos ){
+      std::size_t dot=file.find_first_of('.');
+      if( file.substr(dot+1)=="xyz" ) output_xyz=true;
+  }
+
   ofile.open(file); log.printf("  on file %s \n",file.c_str());
 
   // Find what action we are taking the clusters from
@@ -85,10 +93,19 @@ myclusters(NULL)
 
 void OutputCluster::update(){
   std::vector<unsigned> myatoms; myclusters->retrieveAtomsInCluster( clustr, myatoms );
-  ofile.printf("CLUSTERING RESULTS AT TIME %f : NUMBER OF ATOMS IN %u TH LARGEST CLUSTER EQUALS %u \n",getTime(),clustr,static_cast<unsigned>(myatoms.size()) );
-  ofile.printf("INDICES OF ATOMS : ");
-  for(unsigned i=0;i<myatoms.size();++i) ofile.printf("%d ",(myclusters->getAbsoluteIndexOfCentralAtom(myatoms[i])).index());
-  ofile.printf("\n");
+  if( output_xyz ){
+     ofile.printf("%u \n",static_cast<unsigned>(myatoms.size()));
+     ofile.printf("atoms in %u th largest cluster \n",clustr );
+     for(unsigned i=0;i<myatoms.size();++i){
+       Vector pos=myclusters->getPosition( myatoms[i] ); 
+       ofile.printf( "X %f %f %f \n", pos[0], pos[1], pos[2] );
+     }
+  } else {
+     ofile.printf("CLUSTERING RESULTS AT TIME %f : NUMBER OF ATOMS IN %u TH LARGEST CLUSTER EQUALS %u \n",getTime(),clustr,static_cast<unsigned>(myatoms.size()) );
+     ofile.printf("INDICES OF ATOMS : ");
+     for(unsigned i=0;i<myatoms.size();++i) ofile.printf("%d ",(myclusters->getAbsoluteIndexOfCentralAtom(myatoms[i])).index());
+     ofile.printf("\n");
+  }
 }
 
 }
