@@ -157,7 +157,7 @@ AC_ARG_ENABLE([modules],
 
 # set enable flags for ./configure
 PLUMED_CONFIG_ENABLE([doc],[doc],[documentation],[yes])
-PLUMED_CONFIG_ENABLE([pdfdoc],[pdfdoc],[pdf version of the manual],[yes])
+PLUMED_CONFIG_ENABLE([pdfdoc],[pdfdoc],[pdf version of the manual],[no])
 PLUMED_CONFIG_ENABLE([debug],[debug],[debugging],[no])
 PLUMED_CONFIG_ENABLE([basic_warnings],[basic-warnings],[basic warnings],[yes])
 PLUMED_CONFIG_ENABLE([fussy],[fussy],[fussy warnings],[no])

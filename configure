@@ -1354,7 +1354,7 @@ Optional Features:
   --enable-modules        all/none/reset or : separated list such as
                           +crystallization:-bias default: reset
   --enable-doc            enable documentation, default: yes
-  --enable-pdfdoc         enable pdf version of the manual, default: yes
+  --enable-pdfdoc         enable pdf version of the manual, default: no
   --enable-debug          enable debugging, default: no
   --enable-basic-warnings enable basic warnings, default: yes
   --enable-fussy          enable fussy warnings, default: no
@@ -2425,7 +2425,7 @@ if test "${enable_pdfdoc+set}" = set; then :
              (*)   as_fn_error $? "wrong argument to --enable-pdfdoc" "$LINENO" 5 ;;
   esac
 else
-  case "yes" in
+  case "no" in
              (yes) pdfdoc=true ;;
              (no)  pdfdoc=false ;;
   esac

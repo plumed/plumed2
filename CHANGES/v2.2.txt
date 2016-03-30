@@ -118,7 +118,8 @@ For users:
 - Fixed a performance regression with RMSD=OPTIMAL-FAST
 - Fixed a bug in the normalization of kernel functions (relevant for \ref HISTOGRAM).
 - Updated patch for gromacs 5.1
-- Possibility to disable manual generation (including pdf) from ./configure.
+- Possibility to control manual generation (including pdf) from ./configure. Pdf manual is now off
+  by default. Notice that on travis CI it is still generated.
 
 For developers:
 - Fixed a bug in the interpretation of cmd strings. Namely, an erroneous string was not triggering an error.
