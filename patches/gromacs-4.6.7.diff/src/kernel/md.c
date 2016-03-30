@@ -99,6 +99,11 @@ extern int    plumedswitch;
 extern plumed plumedmain;
 /* END PLUMED */
 
+/* PLUMED HREX */
+extern int plumed_hrex;
+/* END PLUMED HREX */
+
+
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
@@ -1162,6 +1167,94 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
         GMX_MPE_LOG(ev_timestep2);
 
+
+        gmx_bool bHREX;
+        bHREX= repl_ex_nst > 0 && (step>0) && !bLastStep && do_per_step(step,repl_ex_nst) && plumed_hrex;
+
+/* Hamiltonian Replica Exchange */
+        if(plumedswitch) if(bHREX){
+          gmx_enerdata_t *hrex_enerd;
+          snew(hrex_enerd,1);
+          init_enerdata(top_global->groups.grps[egcENER].nr,ir->fepvals->n_lambda,hrex_enerd);
+          int repl=-1;
+          int nrepl=-1;
+          if(MASTER(cr)){
+            repl=replica_exchange_get_repl(repl_ex);
+            nrepl=replica_exchange_get_nrepl(repl_ex);
+          }
+          if (PAR(cr)) {
+            if (DOMAINDECOMP(cr))
+              dd_collect_state(cr->dd,state,state_global);
+            else
+              pd_collect_state(cr,state_global);
+          }
+          if(MASTER(cr)){
+            if(repl%2==step/repl_ex_nst%2){
+              if(repl-1>=0) exchange_state(cr->ms,repl-1,state_global);
+            }else{
+              if(repl+1<nrepl) exchange_state(cr->ms,repl+1,state_global);
+            }
+          }
+          if(PAR(cr)){
+            if (DOMAINDECOMP(cr)) {
+              dd_partition_system(fplog,step,cr,TRUE,1,
+                              state_global,top_global,ir,
+                              state,&f,mdatoms,top,fr,vsite,shellfc,constr,
+                              nrnb,wcycle,FALSE);
+            } else {
+              bcast_state(cr,state,FALSE);
+            }
+          }
+          do_force(fplog, cr, ir, step, nrnb, wcycle, top, top_global, groups,
+                     state->box, state->x, &state->hist,
+                     f, force_vir, mdatoms, hrex_enerd, fcd,
+                     state->lambda, graph,
+                     fr, vsite, mu_tot, t, outf->fp_field, ed, bBornRadii,
+                    GMX_FORCE_STATECHANGED |
+                       ((DYNAMIC_BOX(*ir) || bRerunMD) ? GMX_FORCE_DYNAMICBOX : 0) |
+                       GMX_FORCE_ALLFORCES |
+                       GMX_FORCE_SEPLRF |
+                       GMX_FORCE_VIRIAL |
+                       GMX_FORCE_ENERGY |
+                       GMX_FORCE_DHDL |
+                       GMX_FORCE_NS);
+          plumed_cmd(plumedmain,"GREX cacheLocalUSwap",&hrex_enerd->term[F_EPOT]);
+          sfree(hrex_enerd);
+
+/* exchange back */
+          if (PAR(cr)) {
+            if (DOMAINDECOMP(cr))
+              dd_collect_state(cr->dd,state,state_global);
+            else
+              pd_collect_state(cr,state_global);
+          }
+          if(MASTER(cr)){
+            if(repl%2==step/repl_ex_nst%2){
+              if(repl-1>=0) exchange_state(cr->ms,repl-1,state_global);
+            }else{
+              if(repl+1<nrepl) exchange_state(cr->ms,repl+1,state_global);
+            }
+          }
+          if(PAR(cr)){
+            if (DOMAINDECOMP(cr)) {
+              dd_partition_system(fplog,step,cr,TRUE,1,
+                              state_global,top_global,ir,
+                              state,&f,mdatoms,top,fr,vsite,shellfc,constr,
+                              nrnb,wcycle,FALSE);
+              if(plumedswitch){
+                plumed_cmd(plumedmain,"setAtomsNlocal",&cr->dd->nat_home);
+                plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->gatindex);
+              }
+            } else {
+              bcast_state(cr,state,FALSE);
+            }
+          }
+
+        }
+/* END Hamiltonian Replica Exchange */
+
+
+
         /* We write a checkpoint at this MD step when:
          * either at an NS step when we signalled through gs,
          * or at the last step (but not when we do not want confout),
@@ -1295,6 +1388,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
               if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
                  do_per_step(step,repl_ex_nst)) plumed_cmd(plumedmain,"GREX savePositions",NULL);
               if(plumedWantsToStop) ir->nsteps=step_rel+1;
+              if(bHREX)
+                 plumed_cmd(plumedmain,"GREX cacheLocalUNow",&enerd->term[F_EPOT]);
             }
             /* END PLUMED */
         }

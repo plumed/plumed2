@@ -59,6 +59,10 @@ extern int    plumedswitch;
 extern plumed plumedmain;
 /* END PLUMED */
 
+/* PLUMED HREX */
+extern int plumed_hrex;
+/* END PLUMED HREX */
+
 #define PROBABILITYCUTOFF 100
 /* we don't bother evaluating if events are more rare than exp(-100) = 3.7x10^-44 */
 
@@ -546,7 +550,7 @@ static void exchange_rvecs(const gmx_multisim_t *ms, int b, rvec *v, int n)
     }
 }
 
-static void exchange_state(const gmx_multisim_t *ms, int b, t_state *state)
+void exchange_state(const gmx_multisim_t *ms, int b, t_state *state)
 {
     /* When t_state changes, this code should be updated. */
     int ngtc, nnhpres;
@@ -666,7 +670,7 @@ static void scale_velocities(t_state *state, real fac)
     }
 }
 
-static void pd_collect_state(const t_commrec *cr, t_state *state)
+void pd_collect_state(const t_commrec *cr, t_state *state)
 {
     int shift;
 
@@ -891,6 +895,7 @@ static real calc_delta(FILE *fplog, gmx_bool bPrint, struct gmx_repl_ex *re, int
     {
         fprintf(fplog, "Repl %d <-> %d  dE_term = %10.3e (kT)\n", a, b, delta);
     }
+
     if (re->bNPT)
     {
         /* revist the calculation for 5.0.  Might be some improvements. */
@@ -1002,6 +1007,8 @@ test_for_replica_exchange(FILE                 *fplog,
     int plumed_test_exchange_pattern=0;
     /* END PLUMED */
 
+    if(plumed_test_exchange_pattern && plumed_hrex) gmx_fatal(FARGS,"hrex not compatible with ad hoc exchange patterns");
+
     if (bMultiEx)
     {
         /* multiple random switch exchange */
@@ -1105,6 +1112,10 @@ test_for_replica_exchange(FILE                 *fplog,
             if (i % 2 == m)
             {
                 delta = calc_delta(fplog, bPrint, re, a, b, a, b);
+/* this is necessary because with plumed HREX the energy contribution is
+   already taken into account */
+                if(plumed_hrex) delta=0.0;
+
                 /* PLUMED */
                 if(plumedswitch){
                   real adb,bdb,dplumed;
@@ -1523,3 +1534,12 @@ void print_replica_exchange_statistics(FILE *fplog, struct gmx_repl_ex *re)
     /* print the transition matrix */
     print_transition_matrix(fplog, "", re->nrepl, re->nmoves, re->nattempt);
 }
+
+int replica_exchange_get_repl(const gmx_repl_ex_t re){
+  return re->repl;
+};
+
+int replica_exchange_get_nrepl(const gmx_repl_ex_t re){
+  return re->nrepl;
+};
+

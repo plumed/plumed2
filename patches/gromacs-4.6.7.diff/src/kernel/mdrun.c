@@ -64,6 +64,11 @@ extern int    plumedswitch;
 extern plumed plumedmain; extern void(*plumedcmd)(plumed,const char*,const void*);
 /* END PLUMED */
 
+/* PLUMED HREX */
+int plumed_hrex;
+/* END PLUMED HREX */
+
+
 int cmain(int argc, char *argv[])
 {
     const char   *desc[] = {
@@ -559,6 +564,8 @@ int cmain(int argc, char *argv[])
           "Number of random exchanges to carry out each exchange interval (N^3 is one suggestion).  -nex zero or not specified gives neighbor replica exchange." },
         { "-reseed",  FALSE, etINT, {&repl_ex_seed},
           "Seed for replica exchange, -1 is generate a seed" },
+        { "-hrex",  FALSE, etBOOL, {&plumed_hrex},
+          "Enable hamiltonian replica exchange" },
         { "-rerunvsite", FALSE, etBOOL, {&bRerunVSite},
           "HIDDENRecalculate virtual site coordinates with [TT]-rerun[tt]" },
         { "-ionize",  FALSE, etBOOL, {&bIonize},
@@ -783,6 +790,15 @@ int cmain(int argc, char *argv[])
       plumed_cmd(plumedmain,"setPlumedDat",ftp2fn(efDAT,NFILE,fnm));
       plumedswitch=1;
     }
+    /* PLUMED HREX*/
+    if(getenv("PLUMED_HREX")) plumed_hrex=1;
+    if(plumed_hrex){
+      if(!plumedswitch)  gmx_fatal(FARGS,"-hrex (or PLUMED_HREX) requires -plumed");
+      if(repl_ex_nst==0) gmx_fatal(FARGS,"-hrex (or PLUMED_HREX) replica exchange");
+      if(repl_ex_nex!=0) gmx_fatal(FARGS,"-hrex (or PLUMED_HREX) not compatible with -nex");
+    }
+    /* END PLUMED HREX */
+
     /* END PLUMED */
 
     rc = mdrunner(&hw_opt, fplog, cr, NFILE, fnm, oenv, bVerbose, bCompact,
