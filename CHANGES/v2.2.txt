@@ -116,6 +116,8 @@ For users:
   asks for too many atoms, see \issue{185}.
 - Optimisations (activation of the dependencies, secondary structures, DRMSD)
 - Fixed a performance regression with RMSD=OPTIMAL-FAST
+- Fixed a bug in the normalization of kernel functions (relevant for \ref HISTOGRAM).
+- Updated patch for gromacs 5.1
 
 For developers:
 - Fixed a bug in the interpretation of cmd strings. Namely, an erroneous string was not triggering an error.
