@@ -36,11 +36,10 @@ MultiColvarFunction(ao),
 myclusters(NULL)
 {
   // This makes these colvars behave appropriately with dump and analysis
-  usespecies=true;
+  usespecies=matsums=true; std::vector<AtomNumber> fake_atoms;
   // Find what action we are taking the clusters from
-  std::vector<std::string> matname(1); parse("CLUSTERS",matname[0]);
-  bool found_cluster=interpretInputMultiColvars(matname,0.0);
-  if(!found_cluster) error("unable to interpret input clusters " + matname[0] );
+  if( !parseMultiColvarAtomList("CLUSTERS",-1,fake_atoms ) ) error("unable to interpret input CLUSTERS" );
+  if( mybasemulticolvars.size()!=1 ) error("should be exactly one multicolvar input");
   myclusters = dynamic_cast<ClusteringBase*>( mybasemulticolvars[0] );
   if( !myclusters ) error("input label is not that of a DFS object");
 }
@@ -86,7 +85,7 @@ void ClusterAnalysisBase::getNodePropertyDerivatives( const unsigned& ind, Multi
   myclusters->getVectorDerivatives( ind, false, myvals );
 }
 
-Vector ClusterAnalysisBase::getPosition( const unsigned& iatom ) const {
+Vector ClusterAnalysisBase::getPositionOfAtomForLinkCells( const unsigned& iatom ) const {
   return myclusters->getNodePosition( iatom );
 }
 

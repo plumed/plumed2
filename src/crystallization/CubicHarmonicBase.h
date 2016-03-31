@@ -22,12 +22,14 @@
 #ifndef __PLUMED_crystallization_CubicHarmonicBase_h
 #define __PLUMED_crystallization_CubicHarmonicBase_h
 
-#include "multicolvar/MultiColvar.h"
+#include "multicolvar/MultiColvarBase.h"
+#include "multicolvar/AtomValuePack.h"
+#include "tools/SwitchingFunction.h"
 
 namespace PLMD{
 namespace crystallization{
 
-class CubicHarmonicBase : public multicolvar::MultiColvar {
+class CubicHarmonicBase : public multicolvar::MultiColvarBase {
 private:
 //  double nl_cut;
   double rcut2, alpha, a1, b1;

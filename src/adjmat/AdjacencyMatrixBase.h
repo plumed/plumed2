@@ -35,8 +35,6 @@ friend class MatrixSummationBase;
 private:
 /// Used for read in of multiple connection descriptors
   unsigned connect_id;
-/// The tolerance to use to decide whether or not to incorporate atoms
-  double wtolerance;
 /// Do we need to separate out the tasks for the third atoms
   bool no_third_dim_accum;
 /// This is the vessel that stores the adjacency matrix
@@ -44,7 +42,15 @@ private:
 /// This is used within AdjacencyMatrixVessel to recalculate matrix elements
 /// whcih is useful when we are operating with lowmem
   void recalculateMatrixElement( const unsigned& myelem, MultiValue& myvals );
+/// Finish the setup of the matrix
+  void finishMatrixSetup( const bool& symmetric, const std::vector<AtomNumber>& all_atoms );
 protected:
+/// Read in a matrix involving a maximum of two species
+  void readMaxTwoSpeciesMatrix( const std::string& key0, const std::string& key1, const std::string& key2, const bool& symmetric );
+/// Read in a matrix involving a maximum of three species
+  void readMaxThreeSpeciesMatrix( const std::string& key0, const std::string& key1, const std::string& key2, const std::string& keym, const bool& symmetric );
+/// Get the dimensions of the matrix of types
+  void retrieveTypeDimensions( unsigned& nrows, unsigned& ncols, unsigned& ntype ) const ;
 /// Retrieve the vessel that holds the adjacency matrix
   AdjacencyMatrixVessel* getAdjacencyVessel();
 /// Get the vector for a particular node
@@ -56,14 +62,10 @@ protected:
 /// Read in the information on the connectors
   void parseConnectionDescriptions( const std::string& key, const bool& multiple, const unsigned& nrow_t );
 protected:
-/// Read the list of atoms involved in this colvar
-  bool parseAtomList(const std::string& key, const int& num, std::vector<AtomNumber>& t);
 /// Get the number of nodes of different types
   unsigned getNumberOfNodeTypes() const ;
 /// Get the size of the vectors that were stored in the base colvars
   unsigned getSizeOfInputVectors() const ;
-/// Request the atoms
-  void requestAtoms( const std::vector<AtomNumber>& atoms, const bool& symmetric, const bool& true_square, const std::vector<unsigned>& dims );
 /// Return the group this atom is a part of
   unsigned getBaseColvarNumber( const unsigned& ) const ;
 /// Add some derivatives to the relevant orientation
@@ -81,7 +83,7 @@ public:
 /// Transforms the stored values in whatever way is required
   virtual double transformStoredValues( const std::vector<double>& myvals, unsigned& vout, double& df ) const ;
 /// Used to check for connections between atoms
-  virtual bool checkForConnection( const std::vector<double>& myvals ) const=0;
+  virtual bool checkForConnection( const std::vector<double>& myvals ) const;
 /// Get the atom number
   AtomNumber getAbsoluteIndexOfCentralAtom( const unsigned& i ) const ; 
 };
@@ -93,30 +95,35 @@ AdjacencyMatrixVessel* AdjacencyMatrixBase::getAdjacencyVessel(){
 
 inline
 unsigned AdjacencyMatrixBase::getBaseColvarNumber( const unsigned& inum ) const {
-  if( inum<colvar_label.size() ) return colvar_label[inum]; 
+  if( atom_lab[inum].first>0 ) return atom_lab[inum].first-1; 
   return 0;
 }
 
 inline
 AtomNumber AdjacencyMatrixBase::getAbsoluteIndexOfCentralAtom( const unsigned& iatom ) const {
-  if( iatom<colvar_label.size() ){
-      unsigned mmc=colvar_label[ iatom ];
-      return mybasemulticolvars[mmc]->getAbsoluteIndexOfCentralAtom( convertToLocalIndex(iatom,mmc) );
+  if( atom_lab[iatom].first>0 ){
+      unsigned mmc=atom_lab[ iatom ].first - 1;
+      return mybasemulticolvars[mmc]->getAbsoluteIndexOfCentralAtom( atom_lab[iatom].second );
   }
-  return ActionAtomistic::getAbsoluteIndex( iatom );
+  return ActionAtomistic::getAbsoluteIndex( atom_lab[iatom].first );
 }
 
 
 inline 
 void AdjacencyMatrixBase::getOrientationVector( const unsigned& ind, const bool& normed, std::vector<double>& orient ) const {
-  plumed_dbg_assert( ind<colvar_label.size() ); unsigned mmc=colvar_label[ind];
-  plumed_assert( !mybasemulticolvars[mmc]->weightWithDerivatives() ); plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(ind,mmc) ) );
-  mybasedata[mmc]->retrieveValueWithIndex( convertToLocalIndex(ind,mmc), normed, orient );
+  plumed_dbg_assert( atom_lab[iatom].first>0 ); unsigned mmc=atom_lab[ind].first - 1; 
+  plumed_assert( !mybasemulticolvars[mmc]->weightWithDerivatives() ); plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( atom_lab[ind].second ) );
+  mybasedata[mmc]->retrieveValueWithIndex( atom_lab[ind].second, normed, orient );
 }
 
 inline
 double AdjacencyMatrixBase::transformStoredValues( const std::vector<double>& myvals, unsigned& vout, double& df  ) const {
   plumed_dbg_assert( myvals.size()==2 ); vout=1; df=1; return myvals[1]; 
+}
+
+inline
+bool AdjacencyMatrixBase::checkForConnection( const std::vector<double>& myvals ) const {
+  return (myvals[0]*myvals[1]>epsilon);
 }
 
 }

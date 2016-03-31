@@ -32,8 +32,7 @@ StoreDataVessel::StoreDataVessel( const VesselOptions& da ):
 Vessel(da),
 max_lowmem_stash(3),
 vecsize(0),
-nspace(0),
-hard_cut(false)
+nspace(0)
 {
   ActionWithValue* myval=dynamic_cast<ActionWithValue*>( getAction() );
   if( !myval ) hasderiv=false;
@@ -42,16 +41,8 @@ hard_cut(false)
   vecsize=getAction()->getNumberOfQuantities();
 }
 
-void StoreDataVessel::setHardCutoffOnWeight( const double& mytol ){
-  hard_cut=true; wtol=mytol;
-}
-
 void StoreDataVessel::addActionThatUses( ActionWithVessel* actionThatUses ){
   userActions.push_back( actionThatUses );
-}
-
-bool StoreDataVessel::weightCutoffIsOn() const {
-  return hard_cut;
 }
 
 void StoreDataVessel::resize(){
@@ -128,6 +119,10 @@ void StoreDataVessel::retrieveValueWithIndex( const unsigned& myelem, const bool
   retrieveSequentialValue( jelem, normed, values );
 }
 
+double StoreDataVessel::retrieveWeightWithIndex( const unsigned& myelem ) const {
+  unsigned jelem = getStoreIndex( myelem ); unsigned ibuf = jelem * vecsize * nspace; return local_buffer[ibuf];
+}
+
 void StoreDataVessel::retrieveDerivatives( const unsigned& myelem, const bool& normed, MultiValue& myvals ){
   plumed_dbg_assert( myvals.getNumberOfValues()==vecsize && myvals.getNumberOfDerivatives()==getAction()->getNumberOfDerivatives() );
 
@@ -190,10 +185,7 @@ void StoreDataVessel::retrieveDerivatives( const unsigned& myelem, const bool& n
 
 void StoreDataVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
 
-  if( !hard_cut ){
-     storeValues( current, myvals, buffer );
-     if( !(getAction()->lowmem) && getAction()->derivativesAreRequired() ) storeDerivatives( current, myvals, buffer, der_list );
-  } else if( myvals.get(0)>wtol ){
+  if( myvals.get(0)>epsilon ){
      storeValues( current, myvals, buffer );
      if( !(getAction()->lowmem) && getAction()->derivativesAreRequired() ) storeDerivatives( current, myvals, buffer, der_list );
   } 

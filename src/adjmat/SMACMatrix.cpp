@@ -65,9 +65,8 @@ SMACMatrix::SMACMatrix( const ActionOptions& ao ):
 Action(ao),
 AlignedMatrixBase(ao)
 {
-   if( getNumberOfNodeTypes()!= 1 ) error("SMAC_MATRIX currently only works with one type of molecule");
-   kernels.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
-   parseConnectionDescriptions("KERNEL",true,0);
+   unsigned nrows, ncols, ig; retrieveTypeDimensions( nrows, ncols, ig );
+   kernels.resize( nrows, ncols ); parseConnectionDescriptions("KERNEL",true,0);
 }
 
 void SMACMatrix::readOrientationConnector( const unsigned& iv, const unsigned& jv, const std::vector<std::string>& desc ){

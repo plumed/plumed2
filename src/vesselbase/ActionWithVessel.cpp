@@ -132,7 +132,7 @@ BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ){
   return bv; 
 }
 
-StoreDataVessel* ActionWithVessel::buildDataStashes( const bool& allow_wcutoff, const double& wtol, ActionWithVessel* actionThatUses ){
+StoreDataVessel* ActionWithVessel::buildDataStashes( ActionWithVessel* actionThatUses ){
   if(mydata){
      if( actionThatUses ) mydata->addActionThatUses( actionThatUses );  
      return mydata;
@@ -141,7 +141,6 @@ StoreDataVessel* ActionWithVessel::buildDataStashes( const bool& allow_wcutoff, 
   VesselOptions da("","",0,"",this);
   StoreDataVessel* mm=new StoreDataVessel(da);
   if( actionThatUses ) mm->addActionThatUses( actionThatUses );
-  if( allow_wcutoff ) mm->setHardCutoffOnWeight( wtol );
   addVessel(mm);
 
   // Make sure resizing of vessels is done

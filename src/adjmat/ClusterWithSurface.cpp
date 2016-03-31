@@ -85,13 +85,13 @@ ClusterWithSurface::ClusterWithSurface(const ActionOptions&ao):
 Action(ao),
 ClusteringBase(ao)
 {
-   std::vector<std::string> cname(1); parse("CLUSTERS",cname[0]);
-   bool found_cname=interpretInputMultiColvars(cname,0.0);
-   if(!found_cname) error("unable to interpret input clusters " + cname[0] );
+   matsums=true; std::vector<AtomNumber> fake_atoms;
+   if( !parseMultiColvarAtomList("CLUSTERS",-1,fake_atoms ) ) error("unable to find CLUSTERS input");
+   if( mybasemulticolvars.size()!=1 ) error("should be exactly one multicolvar input");
 
    // Retrieve the adjacency matrix of interest
    myclusters = dynamic_cast<ClusteringBase*>( mybasemulticolvars[0] ); 
-   if( !myclusters ) error( cname[0] + " does not calculate clusters");
+   if( !myclusters ) error( mybasemulticolvars[0]->getLabel() + " does not calculate clusters");
 
    // Setup switching function for surface atoms
    double rcut_surf; parse("RCUT_SURF",rcut_surf);
@@ -99,7 +99,7 @@ ClusteringBase(ao)
    rcut_surf2=rcut_surf*rcut_surf;
 
    // And now finish the setup of everything in the base
-   setupAtomLists();
+   setupMultiColvarBase( fake_atoms ); 
 }
 
 unsigned ClusterWithSurface::getNumberOfDerivatives(){

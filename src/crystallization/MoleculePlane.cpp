@@ -66,8 +66,7 @@ VectorMultiColvar(ao)
   if( natoms!=3 && natoms!=4 ) error("number of atoms in molecule specification is wrong.  Should be three or four.");
 
   if( all_atoms.size()==0 ) error("No atoms were specified");
-  setVectorDimensionality( 3, natoms );
-  ActionAtomistic::requestAtoms( all_atoms );
+  setVectorDimensionality( 3 ); setupMultiColvarBase( all_atoms );
 }
 
 void MoleculePlane::calculateVector( multicolvar::AtomValuePack& myatoms ) const { 

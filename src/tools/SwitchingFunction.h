@@ -104,6 +104,8 @@ public:
   double get_r0() const;
 /// Return dmax 
   double get_dmax() const;
+/// Return dmax squared
+  double get_dmax2() const;
 };
 
 }

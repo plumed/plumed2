@@ -33,7 +33,7 @@ void OrderingVessel::registerKeywords( Keywords& keys ){
 OrderingVessel::OrderingVessel( const VesselOptions& da ) :
 ValueVessel(da)
 {
-  mydata = getAction()->buildDataStashes( false, 0.0, NULL );
+  mydata = getAction()->buildDataStashes( NULL );
   for(unsigned i=0;i<getAction()->getNumberOfVessels();++i){
       if( getAction()->getPntrToVessel(i)->getName()==getName() ) 
            error("calculating lowest/highest value multiple times serves no purpose");

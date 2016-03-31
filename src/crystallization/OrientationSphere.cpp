@@ -37,9 +37,10 @@ void OrientationSphere::registerKeywords( Keywords& keys ){
                                "The following provides information on the \\ref switchingfunction that are available. "
                                "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   // Use actionWithDistributionKeywords
+  keys.use("SPECIES"); keys.use("SPECIESA"); keys.use("SPECIESB"); 
   keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("LESS_THAN"); 
   keys.use("MIN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
-  keys.use("LOWEST"); keys.use("HIGHEST");
+  keys.use("LOWEST"); keys.use("HIGHEST"); keys.remove("DATA");
 }
 
 OrientationSphere::OrientationSphere(const ActionOptions&ao):
@@ -62,9 +63,7 @@ MultiColvarFunction(ao)
   // Set the link cell cutoff
   rcut2 = switchingFunction.get_dmax()*switchingFunction.get_dmax();
   setLinkCellCutoff( switchingFunction.get_dmax() );
-
-  // Finish the setup of the object
-  buildSymmetryFunctionLists();
+  std::vector<AtomNumber> all_atoms; setupMultiColvarBase( all_atoms );
 }
 
 double OrientationSphere::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {

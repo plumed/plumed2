@@ -42,10 +42,9 @@ MultiColvarFunction(ao),
 mymatrix(NULL)
 {
   if( keywords.exists("MATRIX") ){
-      // Find the object that calculates our adjacency matrix
-      std::vector<std::string> matname(1); parse("MATRIX",matname[0]);
-      bool found_matrix=interpretInputMultiColvars(matname,0.0);
-      if(!found_matrix) error("unable to interpret input matrix " + matname[0] );
+      std::vector<AtomNumber> fake_atoms; 
+      if( !parseMultiColvarAtomList("MATRIX",-1,fake_atoms ) ) error("unable to interpret input matrix");
+      if( mybasemulticolvars.size()!=1 ) error("should be exactly one matrix input");
 
       // Retrieve the adjacency matrix of interest
       for(unsigned i=0;i<mybasemulticolvars[0]->getNumberOfVessels();++i){
@@ -55,12 +54,12 @@ mymatrix(NULL)
 
       if( !mymatrix ){
          MatrixSummationBase* mybase = dynamic_cast<MatrixSummationBase*>( mybasemulticolvars[0] );
-         if( !mybase ) error( matname[0] + " does not calculate an adjacency matrix");
+         if( !mybase ) error( mybasemulticolvars[0]->getLabel() + " does not calculate an adjacency matrix");
       }
       log.printf("  using matrix calculated by action %s \n",(mymatrix->function)->getLabel().c_str() );
 
       // And now finish the setup of everything in the base
-      setupAtomLists();
+      setupMultiColvarBase( fake_atoms );
   }
 }
 
@@ -85,7 +84,7 @@ bool ActionWithInputMatrix::isCurrentlyActive( const unsigned& ind ) const {
 }
 
 void ActionWithInputMatrix::getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient0 ) const {
-  if( (mymatrix->function)->colvar_label.size()==0  ){
+  if( (mymatrix->function)->mybasemulticolvars.size()==0  ){
      double df, sum=0.0; std::vector<double> tvals( mymatrix->getNumberOfComponents() ); 
      unsigned vin; unsigned ncols = mymatrix->getNumberOfColumns(); orient0.assign(orient0.size(),0);
      for(unsigned i=0;i<ncols;++i){
@@ -93,19 +92,18 @@ void ActionWithInputMatrix::getVectorForTask( const unsigned& ind, const bool& n
          if( !mymatrix->matrixElementIsActive( ind, i ) ) continue; 
          unsigned myelem = mymatrix->getStoreIndexFromMatrixIndices( ind, i );
          mymatrix->retrieveValueWithIndex( myelem, false, tvals ); 
-         orient0[1]+=(mymatrix->function)->transformStoredValues( tvals, vin, df);
+         orient0[1]+=tvals[0]*(mymatrix->function)->transformStoredValues( tvals, vin, df);
      } 
      orient0[0]=1.0;
   } else {
-     plumed_dbg_assert( isCurrentlyActive( ind ) );
-     plumed_dbg_assert( ind<(mymatrix->function)->colvar_label.size() ); unsigned mmc=(mymatrix->function)->colvar_label[ind];
-     plumed_dbg_assert( ((mymatrix->function)->mybasedata[mmc])->storedValueIsActive( (mymatrix->function)->convertToLocalIndex(ind,mmc) ) );
-     ((mymatrix->function)->mybasedata[mmc])->retrieveValueWithIndex( (mymatrix->function)->convertToLocalIndex(ind,mmc), normed, orient0 );
+     unsigned mmc=atom_lab[ind].first - 1; plumed_dbg_assert( atom_lab[ind].first>0 && isCurrentlyActive( ind ) ); 
+     plumed_dbg_assert( ((mymatrix->function)->mybasedata[mmc])->storedValueIsActive( atom_lab[ind].second ) );
+     ((mymatrix->function)->mybasedata[mmc])->retrieveValueWithIndex( atom_lab[ind].second, normed, orient0 );
   }
 }
 
 void ActionWithInputMatrix::getVectorDerivatives( const unsigned& ind, const bool& normed, MultiValue& myder ) const {
-  if( (mymatrix->function)->colvar_label.size()==0  ){
+  if( (mymatrix->function)->mybasemulticolvars.size()==0  ){
      MultiValue myvals( 2, myder.getNumberOfDerivatives() ); 
      double df, sum=0.0; std::vector<double> tvals( mymatrix->getNumberOfComponents() ); 
      unsigned vin; unsigned ncols = mymatrix->getNumberOfColumns();
@@ -114,7 +112,7 @@ void ActionWithInputMatrix::getVectorDerivatives( const unsigned& ind, const boo
          if( !mymatrix->matrixElementIsActive( ind, i ) ) continue; 
          unsigned myelem = mymatrix->getStoreIndexFromMatrixIndices( ind, i );
          mymatrix->retrieveValueWithIndex( myelem, false, tvals );
-         double dum=(mymatrix->function)->transformStoredValues( tvals, vin, df);
+         double dum=tvals[0]*(mymatrix->function)->transformStoredValues( tvals, vin, df);
          mymatrix->retrieveDerivatives( myelem, false, myvals ); 
          for(unsigned jd=0;jd<myvals.getNumberActive();++jd){
              unsigned ider=myvals.getActiveIndex(jd);
@@ -122,14 +120,13 @@ void ActionWithInputMatrix::getVectorDerivatives( const unsigned& ind, const boo
          }
      }
   } else { 
-     plumed_dbg_assert( isCurrentlyActive( ind ) ); 
-     plumed_dbg_assert( ind<(mymatrix->function)->colvar_label.size() ); unsigned mmc=(mymatrix->function)->colvar_label[ind];
-     plumed_dbg_assert( ((mymatrix->function)->mybasedata[mmc])->storedValueIsActive( (mymatrix->function)->convertToLocalIndex(ind,mmc) ) );
+     plumed_dbg_assert( atom_lab[ind].first>0 && isCurrentlyActive( ind ) ); unsigned mmc=atom_lab[ind].first - 1;
+     plumed_dbg_assert( ((mymatrix->function)->mybasedata[mmc])->storedValueIsActive( atom_lab[ind].second ) );
      if( myder.getNumberOfValues()!=(mymatrix->function)->mybasemulticolvars[mmc]->getNumberOfQuantities() ||
          myder.getNumberOfDerivatives()!=(mymatrix->function)->mybasemulticolvars[mmc]->getNumberOfDerivatives() ){
              myder.resize( (mymatrix->function)->mybasemulticolvars[mmc]->getNumberOfQuantities(), (mymatrix->function)->mybasemulticolvars[mmc]->getNumberOfDerivatives() );
      }
-     (mymatrix->function)->mybasedata[mmc]->retrieveDerivatives( (mymatrix->function)->convertToLocalIndex(ind,mmc), normed, myder );
+     (mymatrix->function)->mybasedata[mmc]->retrieveDerivatives( atom_lab[ind].second, normed, myder );
   }
 }
 
@@ -140,7 +137,7 @@ unsigned ActionWithInputMatrix::getNumberOfNodeTypes() const {
 }
 
 unsigned ActionWithInputMatrix::getNumberOfQuantities() const {
-  if( (mymatrix->function)->colvar_label.size()==0 ) return 2;
+  if( (mymatrix->function)->mybasemulticolvars.size()==0 ) return 2;
   return (mymatrix->function)->mybasemulticolvars[0]->getNumberOfQuantities();
 }
 

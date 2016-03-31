@@ -58,7 +58,7 @@ MatrixSummationBase(ao)
 {
  // Setup the tasks
   unsigned ncols = mymatrix->getNumberOfColumns();  
-  usespecies=false; ablocks.resize(1); ablocks[0].resize( ncols );
+  ablocks.resize(1); ablocks[0].resize( ncols );
   for(unsigned i=0;i<ncols;++i) addTaskToList( i ); 
   // Set the positions - this is only used when getting positions for central atoms
   if( mymatrix->undirectedGraph() ){

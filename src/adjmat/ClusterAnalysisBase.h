@@ -34,7 +34,6 @@ private:
 protected:
   unsigned getNumberOfNodes() const ;
   unsigned getNumberOfClusters() const ;
-  Vector getPosition( const unsigned& ) const ;
   void retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const ;
   bool nodeIsActive( const unsigned& ind ) const ;
   double getCutoffForConnection() const ;
@@ -48,6 +47,7 @@ public:
   bool isPeriodic();
   void turnOnDerivatives();
   void setupActiveTaskSet( std::vector<unsigned>& active_tasks, const std::string& input_label ){}
+  Vector getPositionOfAtomForLinkCells( const unsigned& ) const ;
   double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const { plumed_error(); }
 };
 

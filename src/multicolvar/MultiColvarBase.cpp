@@ -23,6 +23,7 @@
 #include "BridgedMultiColvarFunction.h"
 #include "ActionVolume.h"
 #include "MultiColvarFilter.h"
+#include "MultiColvarFunction.h"
 #include "vesselbase/Vessel.h"
 #include "vesselbase/BridgeVessel.h"
 #include "core/PlumedMain.h"
@@ -60,6 +61,18 @@ void MultiColvarBase::registerKeywords( Keywords& keys ){
                                  "e.g. <em>label</em>.lessthan-1, <em>label</em>.lessthan-2 etc.  When doing this and, for clarity we have "
                                  "made the label of the components customizable. As such by using the LABEL keyword in the description of the keyword "
                                  "input you can customize the component name");
+  keys.reserve("atoms-3","SPECIES","this keyword is used for colvars such as coordination number. In that context it specifies that plumed should calculate "
+                                 "one coordination number for each of the atoms specified.  Each of these coordination numbers specifies how many of the "
+                                 "other specified atoms are within a certain cutoff of the central atom.  You can specify the atoms here as another multicolvar "
+                                 "action or using a MultiColvarFilter or ActionVolume action.  When you do so the quantity is calculated for those atoms specified "
+                                 "in the previous multicolvar.  This is useful if you would like to calculate the Steinhardt parameter for those atoms that have a "
+                                 "coordination number more than four for example");
+  keys.reserve("atoms-4","SPECIESA","this keyword is used for colvars such as the coordination number.  In that context it species that plumed should calculate "
+                                  "one coordination number for each of the atoms specified in SPECIESA.  Each of these cooordination numbers specifies how many "
+                                  "of the atoms specifies using SPECIESB is within the specified cutoff.  As with the species keyword the input can also be specified "
+                                  "using the label of another multicolvar");
+  keys.reserve("atoms-4","SPECIESB","this keyword is used for colvars such as the coordination number.  It must appear with SPECIESA.  For a full explanation see "
+                                  "the documentation for that keyword");
 } 
 
 MultiColvarBase::MultiColvarBase(const ActionOptions&ao):
@@ -74,23 +87,28 @@ linkcells(comm),
 threecells(comm),
 setup_completed(false),
 atomsWereRetrieved(false),
+matsums(false),
 usespecies(false),
 nblock(0)
 {
   if( keywords.exists("NOPBC") ){ 
-    bool nopbc=!usepbc; parseFlag("NOPBC",nopbc);
-    usepbc=!nopbc;
+     bool nopbc=!usepbc; parseFlag("NOPBC",nopbc);
+     usepbc=!nopbc;
   } 
-  if( keywords.exists("SPECIES") ) usespecies=true;
+  if( keywords.exists("SPECIESA") ){ matsums=usespecies=true; }
 }
 
-bool MultiColvarBase::interpretInputMultiColvars( const std::vector<std::string>& mlabs, const double& wtolerance ){
+bool MultiColvarBase::parseMultiColvarAtomList(const std::string& key, const int& num, std::vector<AtomNumber>& t){
+  std::vector<std::string> mlabs; 
+  if( num<0 ) parseVector(key,mlabs);
+  else parseNumberedVector(key,num,mlabs);
+
   if( mlabs.size()==0 ) return false;
 
-  std::string mname;
+  std::string mname; unsigned found_mcolv=mlabs.size();
   for(unsigned i=0;i<mlabs.size();++i){
       MultiColvarBase* mycolv = plumed.getActionSet().selectWithLabel<MultiColvarBase*>(mlabs[i]);
-      if(!mycolv) return false;
+      if(!mycolv){ found_mcolv=i; break; }
       // Check all base multicolvars are of same type
       if( i==0 ){
           mname = mycolv->getName();
@@ -99,20 +117,196 @@ bool MultiColvarBase::interpretInputMultiColvars( const std::vector<std::string>
           if( mname!=mycolv->getName() ) error("All input multicolvars must be of same type");
       }
       // And track which variable stores each colvar
-      for(unsigned j=0;j<mycolv->getFullNumberOfTasks();++j) colvar_label.push_back( mybasemulticolvars.size() );
+      for(unsigned j=0;j<mycolv->getFullNumberOfTasks();++j) atom_lab.push_back( std::pair<unsigned,unsigned>( mybasemulticolvars.size()+1, j ) );
       // And store the multicolvar base
       mybasemulticolvars.push_back( mycolv );
       // And create a basedata stash
-      mybasedata.push_back( mybasemulticolvars[mybasemulticolvars.size()-1]->buildDataStashes( true, wtolerance, this ) );
+      mybasedata.push_back( mybasemulticolvars[mybasemulticolvars.size()-1]->buildDataStashes( this ) );
       // Check if weight has derivatives
-      if( mybasemulticolvars[ mybasemulticolvars.size()-1 ]->weightHasDerivatives ) weightHasDerivatives=true;    
+      if( mybasemulticolvars[ mybasemulticolvars.size()-1 ]->weightHasDerivatives ) weightHasDerivatives=true;
       plumed_assert( mybasemulticolvars.size()==mybasedata.size() );
   }
-
-  log.printf("  using colvars calculated by actions "); 
-  for(unsigned i=0;i<mlabs.size();++i) log.printf("%s ",mlabs[i].c_str() );
-  log.printf("\n"); 
+  // Have we conventional atoms to read in
+  if( found_mcolv==0 ){
+      std::vector<AtomNumber> tt; ActionAtomistic::interpretAtomList( mlabs, tt );
+      for(unsigned i=0;i<tt.size();++i){ atom_lab.push_back( std::pair<unsigned,unsigned>( 0, t.size() + i ) ); }
+      log.printf("  keyword %s takes atoms : ", key.c_str() );  
+      for(unsigned i=0;i<tt.size();++i){ t.push_back( tt[i] ); log.printf("%d ",tt[i].serial() ); }
+      log.printf("\n");
+  } else if( found_mcolv==mlabs.size() ){
+      log.printf("  keyword %s takes dynamic groups of atoms constructed from multicolvars labelled : ", key.c_str() );
+      for(unsigned i=0;i<mlabs.size();++i) log.printf("%s ",mlabs[i].c_str() );
+      log.printf("\n");
+  } else if( found_mcolv<mlabs.size() ) {
+      error("cannot mix multicolvar input and atom input in one line");
+  }
   return true;
+}
+
+void MultiColvarBase::readTwoGroups( const std::string& key0, const std::string& key1, const std::string& key2, std::vector<AtomNumber>& all_atoms ){
+  plumed_dbg_assert( keywords.exists(key0) && keywords.exists(key1) && keywords.exists(key2) ); ablocks.resize( 2 );
+
+  if( parseMultiColvarAtomList(key0,-1,all_atoms) ){
+      nblock=atom_lab.size(); for(unsigned i=0;i<2;++i) ablocks[i].resize(nblock);
+      resizeBookeepingArray( nblock, nblock );
+      for(unsigned i=0;i<nblock;++i) ablocks[0][i]=ablocks[1][i]=i; 
+      for(unsigned i=1;i<nblock;++i){
+          for(unsigned j=0;j<i;++j){
+             bookeeping(i,j).first=getFullNumberOfTasks();
+             addTaskToList( i*nblock + j );
+             bookeeping(i,j).second=getFullNumberOfTasks();
+          }
+      } 
+  } else {
+      bool readkey1=parseMultiColvarAtomList(key1,-1,all_atoms);
+      ablocks[0].resize( atom_lab.size() ); for(unsigned i=0;i<ablocks[0].size();++i) ablocks[0][i]=i;
+      bool readkey2=parseMultiColvarAtomList(key2,-1,all_atoms);
+      ablocks[1].resize( atom_lab.size() - ablocks[0].size() ); for(unsigned i=0;i<ablocks[1].size();++i) ablocks[1][i]=ablocks[0].size() + i;
+
+      if( ablocks[0].size()>ablocks[1].size() ) nblock = ablocks[0].size();
+      else nblock=ablocks[1].size();
+
+      resizeBookeepingArray( ablocks[0].size(), ablocks[1].size() );
+      for(unsigned i=0;i<ablocks[0].size();++i){
+         for(unsigned j=0;j<ablocks[1].size();++j){
+             bookeeping(i,j).first=getFullNumberOfTasks();
+             if( atom_lab[ablocks[0][i]].first>0 && atom_lab[ablocks[1][j]].first>0 ){
+                 if( mybasemulticolvars[atom_lab[ablocks[0][i]].first-1]->getLabel()!=mybasemulticolvars[atom_lab[ablocks[1][j]].first-1]->getLabel() &&
+                     atom_lab[ablocks[0][i]].second!=atom_lab[ablocks[1][j]].second ) addTaskToList( i*nblock + j );
+             } else if( all_atoms[atom_lab[ablocks[0][i]].second]!=all_atoms[atom_lab[ablocks[1][j]].second] ) addTaskToList( i*nblock + j );
+             bookeeping(i,j).second=getFullNumberOfTasks();
+         }
+      }
+  }
+}
+
+void MultiColvarBase::readGroupKeywords( const std::string& key0, const std::string& key1, const std::string& key2, const std::string& key3, 
+                                         const bool& no_third_dim_accum, const bool& symmetric, std::vector<AtomNumber>& all_atoms ){
+  plumed_dbg_assert( keywords.exists(key0) && keywords.exists(key1) && keywords.exists(key2) && keywords.exists(key3) ); ablocks.resize( 3 );
+
+  if( parseMultiColvarAtomList(key0,-1,all_atoms) ){
+      if( no_third_dim_accum ){
+          nblock=atom_lab.size(); ablocks[0].resize(nblock); ablocks[1].resize( nblock ); 
+          for(unsigned i=0;i<ablocks[0].size();++i) ablocks[0][i]=ablocks[1][i]=i;
+          resizeBookeepingArray( nblock, nblock );
+          if( symmetric ){
+              for(unsigned i=1;i<nblock;++i){
+                  for(unsigned j=0;j<i;++j){
+                      bookeeping(i,j).first=getFullNumberOfTasks();
+                      addTaskToList( i*nblock + j );
+                      bookeeping(i,j).second=getFullNumberOfTasks(); 
+                  }
+              }
+          } else {
+              for(unsigned i=0;i<nblock;++i){
+                  for(unsigned j=0;j<nblock;++j){
+                      if( i==j ) continue ; 
+                      bookeeping(i,j).first=getFullNumberOfTasks();
+                      addTaskToList( i*nblock + j );
+                      bookeeping(i,j).second=getFullNumberOfTasks();
+                  }
+              }
+          }
+          if( !parseMultiColvarAtomList(key3,-1,all_atoms) ) error("missing required keyword " + key3 + " in input");
+          ablocks[2].resize( atom_lab.size() - ablocks[0].size() );
+          for(unsigned i=0;i<ablocks[2].size();++i) ablocks[2][i]=ablocks[0].size() + i;
+      } else {
+          nblock=atom_lab.size(); for(unsigned i=0;i<3;++i) ablocks[i].resize(nblock);
+          resizeBookeepingArray( nblock, nblock );
+          for(unsigned i=0;i<nblock;++i){ ablocks[0][i]=i; ablocks[1][i]=i; ablocks[2][i]=i; }
+          if( symmetric ){
+              for(unsigned i=2;i<nblock;++i){
+                 for(unsigned j=1;j<i;++j){
+                    bookeeping(i,j).first=getFullNumberOfTasks();
+                    for(unsigned k=0;k<j;++k) addTaskToList( i*nblock*nblock + j*nblock + k );
+                    bookeeping(i,j).second=getFullNumberOfTasks();
+                 }                  
+              }
+          } else {
+              for(unsigned i=0;i<nblock;++i){
+                  for(unsigned j=0;j<nblock;++j){ 
+                      if( i==j ) continue;
+                      bookeeping(i,j).first=getFullNumberOfTasks(); 
+                      for(unsigned k=0;k<nblock;++k){
+                          if( i!=k && j!=k ) addTaskToList( i*nblock*nblock + j*nblock + k ); 
+                      }
+                      bookeeping(i,j).first=getFullNumberOfTasks();
+                  }
+              }
+          }
+      }
+  } else {
+      readThreeGroups( key1, key2, key3, true, no_third_dim_accum, all_atoms );
+  }
+
+}
+
+void MultiColvarBase::readThreeGroups( const std::string& key1, const std::string& key2, const std::string& key3, 
+                                       const bool& allow2, const bool& no_third_dim_accum, std::vector<AtomNumber>& all_atoms ){
+  plumed_dbg_assert( keywords.exists(key1) && keywords.exists(key2) && keywords.exists(key3) ); ablocks.resize( 3 );
+
+  bool readkey1=parseMultiColvarAtomList(key1,-1,all_atoms);
+  ablocks[0].resize( atom_lab.size() ); for(unsigned i=0;i<ablocks[0].size();++i) ablocks[0][i]=i;
+  bool readkey2=parseMultiColvarAtomList(key2,-1,all_atoms);
+  if( !readkey1 && !readkey2 ) return ;
+  ablocks[1].resize( atom_lab.size() - ablocks[0].size() ); for(unsigned i=0;i<ablocks[1].size();++i) ablocks[1][i]=ablocks[0].size() + i;
+
+  resizeBookeepingArray( ablocks[0].size(), ablocks[1].size() );
+  bool readkey3=parseMultiColvarAtomList(key3,-1,all_atoms);
+  if( !readkey3 && !allow2 ){
+      error("missing atom specification " + key3);
+  } else if( !readkey3 ){
+      if( ablocks[1].size()>ablocks[0].size() ) nblock=ablocks[1].size();
+      else nblock=ablocks[0].size();
+
+      ablocks[2].resize( ablocks[1].size() );
+      for(unsigned i=0;i<ablocks[1].size();++i) ablocks[2][i]=ablocks[0].size() + i;
+      for(unsigned i=0;i<ablocks[0].size();++i){
+        for(unsigned j=1;j<ablocks[1].size();++j){
+           bookeeping(i,j).first=getFullNumberOfTasks();
+           for(unsigned k=0;k<j;++k){
+              if( atom_lab[ablocks[0][i]].first>0 && atom_lab[ablocks[1][j]].first>0 && atom_lab[ablocks[2][k]].first>0 ){
+                  if( mybasemulticolvars[atom_lab[ablocks[0][i]].first-1]->getLabel()!=mybasemulticolvars[atom_lab[ablocks[1][j]].first-1]->getLabel() && 
+                      mybasemulticolvars[atom_lab[ablocks[0][i]].first-1]->getLabel()!=mybasemulticolvars[atom_lab[ablocks[2][k]].first-1]->getLabel() &&
+                      mybasemulticolvars[atom_lab[ablocks[1][j]].first-1]->getLabel()!=mybasemulticolvars[atom_lab[ablocks[2][k]].first-1]->getLabel() &&
+                      atom_lab[ablocks[0][i]].second!=atom_lab[ablocks[1][j]].second && atom_lab[ablocks[0][i]].second!=atom_lab[ablocks[2][k]].second &&
+                      atom_lab[ablocks[1][j]].second!=atom_lab[ablocks[2][k]].second )  addTaskToList( nblock*nblock*i + nblock*j + k );
+              } else if( all_atoms[atom_lab[ablocks[0][i]].second]!=all_atoms[atom_lab[ablocks[1][j]].second] &&
+                         all_atoms[atom_lab[ablocks[0][i]].second]!=all_atoms[atom_lab[ablocks[2][k]].second] &&
+                         all_atoms[atom_lab[ablocks[1][j]].second]!=all_atoms[atom_lab[ablocks[2][k]].second] ) addTaskToList( nblock*nblock*i + nblock*j + k ); 
+           }
+           bookeeping(i,j).second=getFullNumberOfTasks();
+        }
+      }
+  } else {
+      ablocks[2].resize( atom_lab.size() - ablocks[1].size() - ablocks[0].size() );
+      for(unsigned i=0;i<ablocks[2].size();++i) ablocks[2][i] = ablocks[0].size() + ablocks[1].size() + i;
+
+      if( ablocks[1].size()>ablocks[0].size() ) nblock=ablocks[1].size();
+      else nblock=ablocks[0].size();
+      if( ablocks[2].size()>nblock ) nblock=ablocks[2].size();
+
+      unsigned  kcount; if( no_third_dim_accum ) kcount=1; else kcount=ablocks[2].size();
+
+      for(unsigned i=0;i<ablocks[0].size();++i){
+          for(unsigned j=0;j<ablocks[1].size();++j){
+              bookeeping(i,j).first=getFullNumberOfTasks();
+              for(unsigned k=0;k<kcount;++k){
+                  if( no_third_dim_accum ) addTaskToList( nblock*i + j  );
+                  else if( atom_lab[ablocks[0][i]].first>0 && atom_lab[ablocks[1][j]].first>0 && atom_lab[ablocks[2][k]].first>0 ){
+                  if( mybasemulticolvars[atom_lab[ablocks[0][i]].first-1]->getLabel()!=mybasemulticolvars[atom_lab[ablocks[1][j]].first-1]->getLabel() &&
+                      mybasemulticolvars[atom_lab[ablocks[0][i]].first-1]->getLabel()!=mybasemulticolvars[atom_lab[ablocks[2][k]].first-1]->getLabel() &&
+                      mybasemulticolvars[atom_lab[ablocks[1][j]].first-1]->getLabel()!=mybasemulticolvars[atom_lab[ablocks[2][k]].first-1]->getLabel() &&
+                      atom_lab[ablocks[0][i]].second!=atom_lab[ablocks[1][j]].second && atom_lab[ablocks[0][i]].second!=atom_lab[ablocks[2][k]].second &&
+                      atom_lab[ablocks[1][j]].second!=atom_lab[ablocks[2][k]].second ) addTaskToList( nblock*nblock*i + nblock*j + k );
+                  } else if( all_atoms[atom_lab[ablocks[0][i]].second]!=all_atoms[atom_lab[ablocks[1][j]].second] &&
+                             all_atoms[atom_lab[ablocks[0][i]].second]!=all_atoms[atom_lab[ablocks[2][k]].second] &&
+                             all_atoms[atom_lab[ablocks[1][j]].second]!=all_atoms[atom_lab[ablocks[2][k]].second] ) addTaskToList( nblock*nblock*i + nblock*j + k ); 
+              }
+              bookeeping(i,j).second=getFullNumberOfTasks();
+          }
+      }
+  }
 }
 
 void MultiColvarBase::addTaskToList( const unsigned& taskCode ){
@@ -128,6 +322,8 @@ void MultiColvarBase::resizeBookeepingArray( const unsigned& num1, const unsigne
 }
 
 void MultiColvarBase::setupMultiColvarBase( const std::vector<AtomNumber>& atoms ){
+  if( !matsums && atom_lab.size()==0 ) error("No atoms have been read in");
+  std::vector<AtomNumber> all_atoms;
   // Setup decoder array
   if( !usespecies && nblock>0 ){
 
@@ -161,21 +357,49 @@ void MultiColvarBase::setupMultiColvarBase( const std::vector<AtomNumber>& atoms
         if( pow( double(nblock), double(ablocks.size()) )>std::numeric_limits<unsigned>::max() ) error("number of atoms in groups is too big for PLUMED to handle");
      }
      unsigned code=1; for(unsigned i=0;i<decoder.size();++i){ decoder[decoder.size()-1-i]=code; code *= nblock; }
+     for(unsigned i=0;i<atoms.size();++i) all_atoms.push_back( atoms[i] );
   } else if( !usespecies ){
      ncentral=ablocks.size(); use_for_central_atom.resize( ablocks.size(), true );
      numberForCentralAtom = 1.0 / static_cast<double>( ablocks.size() );
+     for(unsigned i=0;i<atoms.size();++i) all_atoms.push_back( atoms[i] );
+  } else if( keywords.exists("SPECIESA") ){
+     plumed_assert( atom_lab.size()==0 && all_atoms.size()==0 ); 
+     ablocks.resize( 1 ); bool readspecies=parseMultiColvarAtomList("SPECIES", -1, all_atoms); 
+     if( readspecies ){
+         ablocks[0].resize( atom_lab.size() ); for(unsigned i=0;i<atom_lab.size();++i){ addTaskToList(i); ablocks[0][i]=i; }
+     } else {
+         if( !parseMultiColvarAtomList("SPECIESA", -1, all_atoms) ) error("missing SPECIES/SPECIESA keyword");
+         unsigned nat1=atom_lab.size();
+         if( !parseMultiColvarAtomList("SPECIESB", -1, all_atoms) ) error("missing SPECIESB keyword");
+         unsigned nat2=atom_lab.size() - nat1;
+  
+         for(unsigned i=0;i<nat1;++i) addTaskToList(i);
+         ablocks[0].resize( nat2 );
+         for(unsigned i=0;i<nat2;++i){
+            bool found=false; unsigned inum;
+            for(unsigned j=0;j<nat1;++j){
+                if( atom_lab[nat1+i].first>0 && atom_lab[j].first>0 ){
+                    if( mybasemulticolvars[atom_lab[nat1+i].first-1]->getLabel()==mybasemulticolvars[atom_lab[j].first-1]->getLabel() &&
+                        atom_lab[nat1+i].second==atom_lab[j].second ){ found=true; inum=j; break; }
+                } else if( all_atoms[atom_lab[nat1+i].second]==all_atoms[atom_lab[j].second] ){ found=true; inum=j; break; }
+            }
+            // This prevents mistakes being made in colvar setup
+            if( found ){ ablocks[0][i]=inum; }
+            else { ablocks[0][i]=nat1 + i; }
+         }  
+     }
   }
+  MultiColvarFunction* myfunc = dynamic_cast<MultiColvarFunction*>( this );
+  if( myfunc ){ for(unsigned i=0;i<mybasedata.size();++i) mybasedata[i]->resizeTemporyMultiValues(2); }
 
   // Copy lists of atoms involved from base multicolvars 
-  std::vector<AtomNumber> tmp_atoms, all_atoms;
+  std::vector<AtomNumber> tmp_atoms;
   for(unsigned i=0;i<mybasemulticolvars.size();++i){
       BridgedMultiColvarFunction* mybr=dynamic_cast<BridgedMultiColvarFunction*>( mybasemulticolvars[i] );
       if( mybr ) tmp_atoms=(mybr->getPntrToMultiColvar())->getAbsoluteIndexes();
       else tmp_atoms=mybasemulticolvars[i]->getAbsoluteIndexes();
       for(unsigned j=0;j<tmp_atoms.size();++j) all_atoms.push_back( tmp_atoms[j] );
   } 
-  // Get additional atom requests
-  for(unsigned i=0;i<atoms.size();++i) all_atoms.push_back( atoms[i] );
 
   // Now make sure we get all the atom positions 
   ActionAtomistic::requestAtoms( all_atoms );
@@ -427,7 +651,7 @@ void MultiColvarBase::setupActiveTaskSet( std::vector<unsigned>& active_tasks, c
   if( getLabel()!=input_label ){
       int input_code=-1;
       for(unsigned i=0;i<mybasemulticolvars.size();++i){
-          if( mybasemulticolvars[i]->getLabel()==input_label ){ input_code=i; break; }
+          if( mybasemulticolvars[i]->getLabel()==input_label ){ input_code=i+1; break; }
       }
 
       MultiValue my_tvals( getNumberOfQuantities(), getNumberOfDerivatives() ); 
@@ -437,7 +661,7 @@ void MultiColvarBase::setupActiveTaskSet( std::vector<unsigned>& active_tasks, c
           setupCurrentAtomList( getTaskCode(i), mytmp_atoms );
           for(unsigned j=0;j<mytmp_atoms.getNumberOfAtoms();++j){
               unsigned itask=mytmp_atoms.getIndex(j);
-              if( colvar_label[itask]==input_code ) active_tasks[ convertToLocalIndex( itask, input_code ) ]=1;   
+              if( atom_lab[itask].first==input_code ) active_tasks[ atom_lab[itask].second ]=1;   
           }
       }
   }
@@ -457,7 +681,7 @@ void MultiColvarBase::calculate(){
   setupActiveTaskSet( taskFlags, getLabel() );
 
   // Check for filters and rerun setup of link cells if there are any
-  if( colvar_label.size()>0 && filtersUsedAsInput() ) setupLinkCells();
+  if( mybasemulticolvars.size()>0 && filtersUsedAsInput() ) setupLinkCells();
 
   //  Setup the link cells if we are not using species
   if( !usespecies && ablocks.size()>1 ){
@@ -477,7 +701,7 @@ void MultiColvarBase::calculate(){
 }
 
 void MultiColvarBase::calculateNumericalDerivatives( ActionWithValue* a ){
-  if( colvar_label.size()>0 ) plumed_merror("cannot calculate numerical derivatives for this quantity");
+  if( mybasemulticolvars.size()>0 ) plumed_merror("cannot calculate numerical derivatives for this quantity");
   calculateAtomicNumericalDerivatives( this, 0 );
 }
 
@@ -493,10 +717,10 @@ void MultiColvarBase::addAtomDerivatives( const int& ival, const unsigned& iatom
   if( doNotCalculateDerivatives() ) return ;
   unsigned jatom=myatoms.getIndex(iatom);
 
-  if( jatom<colvar_label.size() ){
-      unsigned mmc=colvar_label[jatom];
+  if( atom_lab[jatom].first>0 ){
+      unsigned mmc=atom_lab[jatom].first-1;
       unsigned basen=0; for(unsigned i=0;i<mmc;++i) basen+=mybasemulticolvars[i]->getNumberOfAtoms();
-      multicolvar::CatomPack atom0=mybasemulticolvars[mmc]->getCentralAtomPack( basen, convertToLocalIndex(jatom,mmc) );
+      multicolvar::CatomPack atom0=mybasemulticolvars[mmc]->getCentralAtomPack( basen, atom_lab[jatom].second );
       myatoms.addComDerivatives( ival, der, atom0 );
   } else {
       if( ival<0 ) myatoms.addTemporyAtomsDerivatives( iatom, der );
@@ -504,49 +728,67 @@ void MultiColvarBase::addAtomDerivatives( const int& ival, const unsigned& iatom
   }
 }
 
-void MultiColvarBase::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
+double MultiColvarBase::calculateWeight( const unsigned& current, const double& weight, AtomValuePack& myvals ) const {
+  return 1.0;
+}
 
+void MultiColvarBase::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
   AtomValuePack myatoms( myvals, this );
   // Retrieve the atom list
   if( !setupCurrentAtomList( current, myatoms ) ) return;
-
+  // Get weight due to dynamic groups
+  double weight = 1.0; 
+  if( !matsums ){
+      for(unsigned i=0;i<myatoms.getNumberOfAtoms();++i){
+          if( atom_lab[myatoms.getIndex(i)].first==0 ) continue;
+          // Only need to do first two atoms for thigns like TopologyMatrix, HbondMatrix, Bridge and so on
+          if( allthirdblockintasks && i>1 ) break;
+          unsigned mmc = atom_lab[myatoms.getIndex(i)].first - 1;
+          weight *= mybasedata[mmc]->retrieveWeightWithIndex( atom_lab[myatoms.getIndex(i)].second );
+      } 
+  }
   // Do a quick check on the size of this contribution  
-  calculateWeight( current, myatoms ); 
-  if( myatoms.getValue(0)<getTolerance() ){
+  double multweight = calculateWeight( current, weight, myatoms ); 
+  if( weight*multweight<getTolerance() ){
      updateActiveAtoms( myatoms );
      return;   
   }
+  myatoms.setValue( 0 , weight*multweight );
+  // Deal with derivatives of weights due to dynamic groups
+  if( !matsums && !doNotCalculateDerivatives() && mybasemulticolvars.size()>0 ){
+      MultiValue& outder=myatoms.getUnderlyingMultiValue(); MultiValue myder(0,0);
+      for(unsigned i=0;i<myatoms.getNumberOfAtoms();++i){
+         // Neglect any atoms without differentiable weights
+         if( atom_lab[myatoms.getIndex(i)].first==0 ) continue;
 
+         // Retrieve derivatives
+         unsigned mmc = atom_lab[myatoms.getIndex(i)].first - 1;
+         if( myder.getNumberOfValues()!=mybasemulticolvars[mmc]->getNumberOfQuantities() || myder.getNumberOfDerivatives()!=mybasemulticolvars[mmc]->getNumberOfDerivatives() ){
+             myder.resize( mybasemulticolvars[mmc]->getNumberOfQuantities(), mybasemulticolvars[mmc]->getNumberOfDerivatives() );
+         }
+         mybasedata[mmc]->retrieveDerivatives( atom_lab[myatoms.getIndex(i)].second, false, myder );
+
+         // Retrieve the prefactor (product of all other weights)
+         double prefactor = multweight*weight / mybasedata[mmc]->retrieveWeightWithIndex( atom_lab[myatoms.getIndex(i)].second );
+         // And accumulate the derivatives 
+         for(unsigned j=0;j<myder.getNumberActive();++j){ unsigned jder=myder.getActiveIndex(j); outder.addDerivative( 0, jder, prefactor*myder.getDerivative(0,jder) ); }
+         myder.clearAll();
+      }
+  }
   // Compute everything
   double vv=doCalculation( task_index, myatoms ); 
   myatoms.setValue( 1, vv );
   return;
 }
 
-void MultiColvarBase::calculateWeight( const unsigned& taskCode, AtomValuePack& myatoms ) const {
-  if( usespecies && taskCode<colvar_label.size() ){
-      unsigned mmc=colvar_label[taskCode]; std::vector<double> old_data( mybasemulticolvars[mmc]->getNumberOfQuantities() );
-      plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(taskCode,mmc) ) );
-      mybasedata[mmc]->retrieveValueWithIndex( convertToLocalIndex(taskCode,mmc), false, old_data );
-      myatoms.setValue( 0, old_data[0] );
-      if( !doNotCalculateDerivatives() && mybasemulticolvars[mmc]->weightHasDerivatives ){
-          MultiValue myder( mybasemulticolvars[mmc]->getNumberOfQuantities(), mybasemulticolvars[mmc]->getNumberOfDerivatives() );
-          MultiValue& outder=myatoms.getUnderlyingMultiValue(); mybasedata[mmc]->retrieveDerivatives( convertToLocalIndex(taskCode,mmc), false, myder );
-          for(unsigned j=0;j<myder.getNumberActive();++j){ unsigned jder=myder.getActiveIndex(j); outder.addDerivative( 0, jder, myder.getDerivative(0,jder) ); }
-      }
-  } else {
-      myatoms.setValue( 0, 1.0 );
-  }
-}
-
 double MultiColvarBase::doCalculation( const unsigned& taskIndex, AtomValuePack& myatoms ) const {
-  if( colvar_label.size()>0 ) mybasedata[0]->resetTemporyMultiValues();
+  if( mybasemulticolvars.size()>0 ) mybasedata[0]->resetTemporyMultiValues();
   double val=compute( taskIndex, myatoms ); updateActiveAtoms( myatoms );
   return val;
 }
 
 void MultiColvarBase::updateActiveAtoms( AtomValuePack& myatoms ) const {
-  if( colvar_label.size()==0 ) myatoms.updateUsingIndices();
+  if( mybasemulticolvars.size()==0 ) myatoms.updateUsingIndices();
   else myatoms.updateDynamicList();
 }
 

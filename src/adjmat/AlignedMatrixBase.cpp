@@ -33,6 +33,8 @@ void AlignedMatrixBase::registerKeywords( Keywords& keys ){
                            "have an orientation so your list will be a list of the labels of \\ref mcolv or \\ref multicolvarfunction "
                            "as PLUMED calculates the orientations of molecules within these operations.  Please note also that the majority "
                            "of \\ref mcolv and \\ref multicolvarfunction do not calculate a molecular orientation.");
+  keys.add("atoms-1","ATOMSA","");
+  keys.add("atoms-1","ATOMSB","");
   keys.add("numbered","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
                                "The following provides information on the \\ref switchingfunction that are available. "
                                "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
@@ -43,15 +45,13 @@ Action(ao),
 AdjacencyMatrixBase(ao)
 {
   // Read in the atomic positions
-  std::vector<AtomNumber> atoms; parseAtomList("ATOMS",-1,atoms);
-  if( colvar_label.size()==0 ){
-     if( atoms.size()!=0 ) error("cannot use atom indices as input to this variable");
-     else error("input atoms were not specified");
-  }
+  readMaxTwoSpeciesMatrix( "ATOMS", "ATOMSA", "ATOMSB", true );
+  unsigned nrows, ncols; retrieveTypeDimensions( nrows, ncols, ncol_t ); 
+  if( mybasemulticolvars.size()==0 ) error("cannot use atom indices as input to this variable / input was not specified");
   if( getSizeOfInputVectors()<3 ) error("base multicolvars do not calculate an orientation");
   // Read in the switching function
-  switchingFunction.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
-  parseConnectionDescriptions("SWITCH",false,0); 
+  switchingFunction.resize( nrows, ncols );
+  parseConnectionDescriptions("SWITCH",false,ncol_t); 
 
   // Find the largest sf cutoff
   double sfmax=switchingFunction(0,0).get_dmax();
@@ -63,10 +63,6 @@ AdjacencyMatrixBase(ao)
   }
   // And set the link cell cutoff
   setLinkCellCutoff( sfmax );
-
-  // And request the atoms involved in this colvar
-  std::vector<unsigned> dims(2); dims[0]=dims[1]=colvar_label.size();
-  requestAtoms( atoms, true, false, dims );
 }
 
 void AlignedMatrixBase::setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ){
@@ -81,10 +77,10 @@ void AlignedMatrixBase::setupConnector( const unsigned& id, const unsigned& i, c
   }
 }
 
-void AlignedMatrixBase::calculateWeight( const unsigned& taskCode, multicolvar::AtomValuePack& myatoms ) const {
+double AlignedMatrixBase::calculateWeight( const unsigned& taskCode, const double& weight, multicolvar::AtomValuePack& myatoms ) const {
   Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
-  double dfunc, sw = switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) ).calculate( distance.modulo(), dfunc );
-  myatoms.setValue(0,sw);
+  if( distance.modulo2()<switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) )-ncol_t ).get_dmax2() ) return 1.0;
+  return 0.0;
 }
 
 double AlignedMatrixBase::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {
@@ -93,14 +89,13 @@ double AlignedMatrixBase::compute( const unsigned& tindex, multicolvar::AtomValu
   Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
   getOrientationVector( myatoms.getIndex(0), true, orient0 );
   getOrientationVector( myatoms.getIndex(1), true, orient1 );
-  double f_dot = computeVectorFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ), 
+  double f_dot = computeVectorFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) )-ncol_t, 
                                         distance, orient0, orient1, ddistance, dorient0, dorient1 );
 
   // Retrieve the weight of the connection
-  double weight = myatoms.getValue(0); myatoms.setValue(0,1.0); 
+  double dfunc, sw = switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) )-ncol_t ).calculate( distance.modulo(), dfunc ); 
 
   if( !doNotCalculateDerivatives() ){
-      double dfunc, sw = switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) ).calculate( distance.modulo(), dfunc );
       addAtomDerivatives( 1, 0, (-dfunc)*f_dot*distance + sw*ddistance, myatoms );
       addAtomDerivatives( 1, 1, (+dfunc)*f_dot*distance - sw*ddistance, myatoms ); 
       myatoms.addBoxDerivatives( 1, (-dfunc)*f_dot*Tensor(distance,distance) - sw*Tensor( ddistance, distance ) ); 
@@ -110,7 +105,7 @@ double AlignedMatrixBase::compute( const unsigned& tindex, multicolvar::AtomValu
       addOrientationDerivatives( 1, 0, dorient0, myatoms );
       addOrientationDerivatives( 1, 1, dorient1, myatoms );
   }
-  return weight*f_dot;
+  return sw*f_dot;
 }
 
 }

@@ -74,7 +74,7 @@ private:
   bool atomsWereRetrieved;
 protected:
 /// This is used to keep track of what is calculated where
-  std::vector<unsigned> colvar_label;
+  std::vector< std::pair<unsigned,unsigned> > atom_lab;
 /// The multicolvars from which we construct these quantities
   std::vector<MultiColvarBase*> mybasemulticolvars;
 /// The vessels in these multicolvars in which the data is stored
@@ -84,12 +84,10 @@ protected:
 /// Function that recursively checks if filters have been used in the input to a multicolvar
 /// we need this to ensure that setupLinkCells is run in calculate with some actions
   bool filtersUsedAsInput();
-/// Read in a set of multicolvar labels as the input to the action
-  bool interpretInputMultiColvars( const std::vector<std::string>& key, const double& wtolerance );
-/// Convert an index in the global array to an index in the individual base colvars
-  unsigned convertToLocalIndex( const unsigned& index, const unsigned& mcv_code ) const ;
 /// This resizes the arrays that are used for link cell update
   void resizeBookeepingArray( const unsigned& num1, const unsigned& num2 );
+/// Are we doing sums of matrix rows
+  bool matsums;
 /// Using the species keyword to read in atoms
   bool usespecies;
 /// Number of atoms in each block
@@ -122,6 +120,16 @@ protected:
   bool setupCurrentAtomList( const unsigned& taskCode, AtomValuePack& myatoms ) const ;
 /// Decode indices if there are 2 or 3 atoms involved
   void decodeIndexToAtoms( const unsigned& taskCode, std::vector<unsigned>& atoms ) const ;
+/// Read in some atoms
+  bool parseMultiColvarAtomList(const std::string& key, const int& num, std::vector<AtomNumber>& t);
+/// Read in two groups of atoms and setup multicolvars to calculate
+  void readTwoGroups( const std::string& key0, const std::string& key1, const std::string& key2, std::vector<AtomNumber>& all_atoms );
+/// Read in three groups of atoms
+  void readGroupKeywords( const std::string& key0, const std::string& key1, const std::string& key2, const std::string& key3,
+                          const bool& no_third_dim_accum, const bool& symmetric, std::vector<AtomNumber>& all_atoms );
+/// Read in three groups of atoms and construct CVs involving at least one
+  void readThreeGroups( const std::string& key1, const std::string& key2, const std::string& key3,
+                        const bool& allow2, const bool& no_third_dim_accum, std::vector<AtomNumber>& all_atoms );
 public:
   explicit MultiColvarBase(const ActionOptions&);
   ~MultiColvarBase(){}
@@ -165,7 +173,7 @@ public:
 /// Get the index where the central atom is stored
   virtual Vector getCentralAtomPos( const unsigned& curr );
 /// You can use this to screen contributions that are very small so we can avoid expensive (and pointless) calculations
-  virtual void calculateWeight( const unsigned& taskCode, AtomValuePack& myatoms ) const ;
+  virtual double calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& myatoms ) const ;
 /// Is this a density?
   virtual bool isDensity() const { return false; }
 /// Is the iatom'th stored value currently active
@@ -183,35 +191,29 @@ public:
 };
 
 inline
-unsigned MultiColvarBase::convertToLocalIndex( const unsigned& index, const unsigned& mcv_code ) const {
-  unsigned t1 = index;
-  for(unsigned k=0;k<mcv_code;++k) t1 -= mybasemulticolvars[k]->getFullNumberOfTasks();
-  return t1;
-}
-
-inline
 bool MultiColvarBase::isCurrentlyActive( const unsigned& bno, const unsigned& code ){
-  if( setup_completed && code<colvar_label.size() ){
-     unsigned mmc=colvar_label[code]; 
-     return mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(code,mmc) ); 
+  if( setup_completed && atom_lab[code].first>0 ){
+     unsigned mmc=atom_lab[code].first - 1; 
+     return mybasedata[mmc]->storedValueIsActive( atom_lab[code].second ); 
   }
   return true;
 }
 
 inline
 AtomNumber MultiColvarBase::getAbsoluteIndexOfCentralAtom( const unsigned& iatom ) const {
-  if( iatom<colvar_label.size() ){
-      unsigned mmc=colvar_label[ iatom ];
-      return mybasemulticolvars[mmc]->getAbsoluteIndexOfCentralAtom( convertToLocalIndex(iatom,mmc) ); 
+  if( atom_lab[iatom].first>0  ){
+      unsigned mmc=atom_lab[iatom].first - 1;
+      return mybasemulticolvars[mmc]->getAbsoluteIndexOfCentralAtom( atom_lab[iatom].second ); 
   }
-  return ActionAtomistic::getAbsoluteIndex( getTaskCode(iatom) );
+  plumed_dbg_assert( usespecies );
+  return ActionAtomistic::getAbsoluteIndex( atom_lab[getTaskCode(iatom)].second );
 } 
 
 inline
 Vector MultiColvarBase::getPositionOfAtomForLinkCells( const unsigned& iatom ) const {
-  if( iatom<colvar_label.size()  ){ 
-      unsigned mmc=colvar_label[ iatom ];
-      return mybasemulticolvars[mmc]->getCentralAtomPos( convertToLocalIndex(iatom,mmc) );
+  if( atom_lab[iatom].first>0  ){ 
+      unsigned mmc=atom_lab[iatom].first - 1;
+      return mybasemulticolvars[mmc]->getCentralAtomPos( atom_lab[iatom].second );
   }
   return ActionAtomistic::getPosition( iatom );
 }

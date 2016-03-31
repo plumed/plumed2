@@ -37,11 +37,8 @@ store_director(true)
   setLowMemOption(true);
 }
 
-void VectorMultiColvar::setVectorDimensionality( const unsigned& ncomp, const int& nat ){
-  // Store number of derivatives 
+void VectorMultiColvar::setVectorDimensionality( const unsigned& ncomp ){
   ncomponents = ncomp;  
-  // Read in the atoms if we are using multicolvar reading
-  int natoms=nat; readAtoms( natoms );
 }
 
 void VectorMultiColvar::doNotCalculateDirector(){

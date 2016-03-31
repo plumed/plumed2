@@ -151,7 +151,9 @@ Distances::Distances(const ActionOptions&ao):
 PLUMED_MULTICOLVAR_INIT(ao)
 {
   // Read in the atoms
-  int natoms=2; readAtoms( natoms );
+  std::vector<AtomNumber> all_atoms; 
+  readTwoGroups( "GROUP", "GROUPA", "GROUPB", all_atoms );
+  int natoms=2; readAtoms( natoms, all_atoms );
   // And check everything has been read in correctly
   checkRead();
 

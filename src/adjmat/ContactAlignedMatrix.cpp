@@ -60,7 +60,8 @@ ContactAlignedMatrix::ContactAlignedMatrix( const ActionOptions& ao ):
 Action(ao),
 AlignedMatrixBase(ao)
 {
-   sf.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
+   unsigned nrows, ncols, ig; retrieveTypeDimensions( nrows, ncols, ig ); 
+   sf.resize( nrows, ncols );
    parseConnectionDescriptions("ORIENTATION_SWITCH",false,0);
 }
 

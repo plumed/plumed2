@@ -36,8 +36,6 @@ private:
 /// A tempory vector that is used for retrieving vectors
   std::vector<double> tvals;
 protected:
-/// This sets up the atom list
-  void setupAtomLists();
 /// Get the derivatives for the central atom with index ind
   CatomPack getCentralAtomPackFromInput( const unsigned& ind ) const ;
 ///
@@ -50,12 +48,6 @@ protected:
                                MultiValue& myder, AtomValuePack& myatoms ) const ;
 /// Build sets by taking one multicolvar from each base
   void buildSets();
-/// Build colvars for atoms as if they were symmetry functions
-  void buildSymmetryFunctionLists();
-/// Build a colvar for each pair of atoms
-  void buildAtomListWithPairs( const bool& allow_intra_group );
-/// Get the total number of tasks that this calculation is based on
-  unsigned getFullNumberOfBaseTasks() const ;
 public:
   explicit MultiColvarFunction(const ActionOptions&);
   static void registerKeywords( Keywords& keys );
@@ -63,23 +55,18 @@ public:
 };
 
 inline
-unsigned MultiColvarFunction::getFullNumberOfBaseTasks() const {
-  return colvar_label.size(); 
-}
-
-inline
 CatomPack MultiColvarFunction::getCentralAtomPackFromInput( const unsigned& ind ) const {
-  plumed_dbg_assert( ind<colvar_label.size() ); unsigned mmc=colvar_label[ind];
+  plumed_dbg_assert( atom_lab[ind].first>0 ); unsigned mmc=atom_lab[ind].first-1;
   unsigned basen=0;
   for(unsigned i=0;i<mmc;++i) basen+=mybasemulticolvars[i]->getNumberOfAtoms();
-  return mybasemulticolvars[mmc]->getCentralAtomPack( basen, convertToLocalIndex(ind,mmc) );
+  return mybasemulticolvars[mmc]->getCentralAtomPack( basen, atom_lab[ind].second );
 }
 
 inline
 void MultiColvarFunction::getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient ) const {
-  plumed_dbg_assert( ind<colvar_label.size() ); unsigned mmc=colvar_label[ind];
-  plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(ind,mmc) ) );
-  mybasedata[mmc]->retrieveValueWithIndex( convertToLocalIndex(ind,mmc), normed, orient );
+  plumed_dbg_assert( atom_lab[ind].first>0 ); unsigned mmc=atom_lab[ind].first-1;
+  plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( atom_lab[ind].second ) );
+  mybasedata[mmc]->retrieveValueWithIndex( atom_lab[ind].second, normed, orient );
 }
 
 }

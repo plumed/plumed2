@@ -56,14 +56,12 @@ public:
 /// Create the ith, ith switching function
   void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc );
 /// This actually calculates the value of the contact function
-  void calculateWeight( const unsigned& taskCode, multicolvar::AtomValuePack& myatoms ) const ;
+  double calculateWeight( const unsigned& taskCode, const double& weight, multicolvar::AtomValuePack& myatoms ) const ;
 /// This does nothing
   double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
 ///
   double calculateForThree( const unsigned& iat, const unsigned& ano, const unsigned& dno, const Vector& ood,
                             const double& ood_df , const double& ood_sw, multicolvar::AtomValuePack& myatoms ) const ;
-/// Used to check for connections between atoms
-  bool checkForConnection( const std::vector<double>& myvals ) const { return !(myvals[1]>epsilon); }
 };
 
 PLUMED_REGISTER_ACTION(HBondMatrix,"HBOND_MATRIX")
@@ -101,50 +99,9 @@ HBondMatrix::HBondMatrix( const ActionOptions& ao ):
 Action(ao),
 AdjacencyMatrixBase(ao)
 {
-  bool donors_eq_accept=false;
-  std::vector<unsigned> dims(3); std::vector<AtomNumber> all_atoms, atoms;
-  bool check=parseAtomList("DONORS",-1,atoms);
-  if( check ){
-      if( atoms.size()>0 ){
-          plumed_assert( colvar_label.size()==0 );
-          dims[0]=atoms.size(); ndonor_types=0;
-      } else {
-          dims[0]=colvar_label.size();
-          ndonor_types=getNumberOfNodeTypes();
-      }
-      for(unsigned i=0;i<atoms.size();++i) all_atoms.push_back( atoms[i] );
-      parseAtomList("ACCEPTORS",-1,atoms);
-      for(unsigned i=0;i<atoms.size();++i) all_atoms.push_back( atoms[i] );
-      if( atoms.size()>0 ){
-          plumed_assert( colvar_label.size()==0 ); dims[1]=atoms.size();
-          if( ndonor_types==0 ){ distanceOOSwitch.resize( 1, 1 ); distanceOHSwitch.resize( 1, 1 ); angleSwitch.resize( 1, 1 ); }
-          else { distanceOOSwitch.resize( ndonor_types, 1 ); distanceOHSwitch.resize( 1, 1 ); angleSwitch.resize( 1, 1 ); }
-      } else {
-          dims[1]=colvar_label.size()-dims[0];
-          distanceOOSwitch.resize( ndonor_types, getNumberOfNodeTypes()-ndonor_types );
-          distanceOHSwitch.resize( ndonor_types, getNumberOfNodeTypes()-ndonor_types );
-          angleSwitch.resize( ndonor_types, getNumberOfNodeTypes()-ndonor_types );
-      }
-  } else {
-      parseAtomList("ATOMS",-1,atoms); ndonor_types=0;
-      distanceOOSwitch.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
-      distanceOHSwitch.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
-      angleSwitch.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
-      if( atoms.size()>0 ){
-         plumed_assert( colvar_label.size()==0 ); dims[0]=dims[1]=atoms.size();
-      } else {
-         dims[0]=dims[1]=colvar_label.size();
-      }
-      for(unsigned i=0;i<atoms.size();++i) all_atoms.push_back( atoms[i] );
-      donors_eq_accept=true;
-  }
-
-  parseAtomList("HYDROGENS",-1,atoms); dims[2]=atoms.size();
-  if( atoms.size()==0 ) error("no hydrogen atoms were specified");
-  log.printf("  involving hydrogen atoms : ");
-  for(unsigned i=0;i<atoms.size();++i){ all_atoms.push_back( atoms[i] );  log.printf("%d ",atoms[i].serial() ); }
-  log.printf("\n");
-
+  readMaxThreeSpeciesMatrix( "ATOMS", "DONORS", "ACCEPTORS", "HYDROGENS", false );
+  unsigned nrows, ncols; retrieveTypeDimensions( nrows, ncols, ndonor_types );
+  distanceOOSwitch.resize( nrows, ncols ); distanceOHSwitch.resize( nrows, ncols ); angleSwitch.resize( nrows, ncols ); 
   parseConnectionDescriptions("SWITCH",false,ndonor_types);
   parseConnectionDescriptions("HSWITCH",false,ndonor_types);
   parseConnectionDescriptions("ASWITCH",false,ndonor_types);
@@ -159,9 +116,6 @@ AdjacencyMatrixBase(ao)
   }
   // Set the link cell cutoff
   setLinkCellCutoff( sfmax );
- 
-  // And request the atoms involved in this colvar
-  requestAtoms( all_atoms, false, donors_eq_accept, dims );
 }
 
 void HBondMatrix::setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ){ 
@@ -184,16 +138,13 @@ void HBondMatrix::setupConnector( const unsigned& id, const unsigned& i, const u
   } 
 }
 
-void HBondMatrix::calculateWeight( const unsigned& taskCode, multicolvar::AtomValuePack& myatoms ) const {
+double HBondMatrix::calculateWeight( const unsigned& taskCode, const double& weight, multicolvar::AtomValuePack& myatoms ) const {
   // Ensure we skip diagonal elements of square matrix
-  if( myatoms.getIndex(0)==myatoms.getIndex(1) ){ myatoms.setValue(0,0); return; }
+  if( myatoms.getIndex(0)==myatoms.getIndex(1) ) return 0.0; 
 
   Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
-  if( distance.modulo()<distanceOOSwitch( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) ).get_dmax() ){
-      myatoms.setValue(0,1);
-  } else {
-      myatoms.setValue(0,0);
-  }
+  if( distance.modulo2()<distanceOOSwitch( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) ).get_dmax2() ) return 1.0;
+  return 0.0;
 }
 
 double HBondMatrix::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {

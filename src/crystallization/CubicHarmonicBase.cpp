@@ -31,7 +31,7 @@ namespace PLMD{
 namespace crystallization{
 
 void CubicHarmonicBase::registerKeywords( Keywords& keys ){
-  multicolvar::MultiColvar::registerKeywords( keys );
+  multicolvar::MultiColvarBase::registerKeywords( keys );
   keys.use("SPECIES"); keys.use("SPECIESA"); keys.use("SPECIESB");
   keys.add("compulsory","NN","6","The n parameter of the switching function ");
   keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
@@ -51,7 +51,7 @@ void CubicHarmonicBase::registerKeywords( Keywords& keys ){
 
 CubicHarmonicBase::CubicHarmonicBase(const ActionOptions&ao):
 Action(ao),
-MultiColvar(ao)
+MultiColvarBase(ao)
 {
   // Read in the switching function
   std::string sw, errors; parse("SWITCH",sw);
@@ -86,9 +86,8 @@ MultiColvar(ao)
   // Set the link cell cutoff
   rcut2 = switchingFunction.get_dmax()*switchingFunction.get_dmax();
   setLinkCellCutoff( switchingFunction.get_dmax() );
-
-  // Read in the atoms
-  int natoms=2; readAtoms( natoms );
+  // And setup the ActionWithVessel
+  std::vector<AtomNumber> all_atoms; setupMultiColvarBase( all_atoms ); 
 }
 
 double CubicHarmonicBase::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {

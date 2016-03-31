@@ -41,10 +41,8 @@ MatrixSummationBase::MatrixSummationBase(const ActionOptions& ao):
 Action(ao),
 MultiColvarBase(ao)
 {
-  // This ensures that multicolvar base does central atoms correctly
-  usespecies=true;
   // Find the object that calculates our adjacency matrix
-  std::string matname; parse("MATRIX",matname);
+  matsums=true; std::string matname; parse("MATRIX",matname);
   ActionWithVessel* myvess = plumed.getActionSet().selectWithLabel<ActionWithVessel*>( matname );
   if( !myvess ) error( matname + " does not calculate an adjacency matrix");
 
@@ -79,19 +77,18 @@ double MatrixSummationBase::retrieveConnectionValue( const unsigned& i, const un
   unsigned vi, myelem = mymatrix->getStoreIndexFromMatrixIndices( i, j );
  
   mymatrix->retrieveValueWithIndex( myelem, false, vals ); double df;
-  return (mymatrix->function)->transformStoredValues( vals, vi, df );
+  return vals[0]*(mymatrix->function)->transformStoredValues( vals, vi, df );
 }
 
 void MatrixSummationBase::addConnectionDerivatives( const unsigned& i, const unsigned& j, std::vector<double>& vals, MultiValue& myvals, MultiValue& myvout ) const {
   if( !mymatrix->matrixElementIsActive( i, j ) ) return;
   unsigned vi, myelem = mymatrix->getStoreIndexFromMatrixIndices( i, j );
 
-  mymatrix->retrieveValueWithIndex( myelem, false, vals ); double df;
-  double vv = (mymatrix->function)->transformStoredValues( vals, vi, df );
+  mymatrix->retrieveValueWithIndex( myelem, false, vals ); 
   mymatrix->retrieveDerivatives( myelem, false, myvals );
   for(unsigned jd=0;jd<myvals.getNumberActive();++jd){
       unsigned ider=myvals.getActiveIndex(jd);
-      myvout.addDerivative( 1, ider, df*myvals.getDerivative( vi, ider ) );
+      myvout.addDerivative( 1, ider, myvals.getDerivative( vi, ider ) );
   }
 }
 

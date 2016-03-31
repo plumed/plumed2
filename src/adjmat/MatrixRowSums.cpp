@@ -58,7 +58,7 @@ MatrixSummationBase(ao)
 {
   // Setup the tasks
   unsigned nrows = mymatrix->getNumberOfRows();  
-  usespecies=false; ablocks.resize(1); ablocks[0].resize( nrows );
+  ablocks.resize(1); ablocks[0].resize( nrows );
   for(unsigned i=0;i<nrows;++i){ ablocks[0][i]=i; addTaskToList( i ); }
   // Setup the underlying multicolvar
   ActionAtomistic* matoms = dynamic_cast<ActionAtomistic*>( mymatrix->getMatrixAction() );

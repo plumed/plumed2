@@ -109,8 +109,9 @@ void LocalAverage::registerKeywords( Keywords& keys ){
                                "The following provides information on the \\ref switchingfunction that are available. "
                                "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   // Use actionWithDistributionKeywords
+  keys.use("SPECIES"); keys.use("SPECIESA"); keys.use("SPECIESB");
   keys.remove("LOWMEM"); keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("LESS_THAN");
-  keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
+  keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS"); keys.remove("DATA");
   keys.addFlag("LOWMEM",false,"lower the memory requirements");
   if( keys.reserved("VMEAN") ) keys.use("VMEAN");
   if( keys.reserved("VSUM") ) keys.use("VSUM");
@@ -134,7 +135,8 @@ MultiColvarFunction(ao)
   }
   log.printf("  averaging over central molecule and those within %s\n",( switchingFunction.description() ).c_str() );
   rcut2 = switchingFunction.get_dmax()*switchingFunction.get_dmax();
-  setLinkCellCutoff( switchingFunction.get_dmax() ); buildSymmetryFunctionLists();
+  setLinkCellCutoff( switchingFunction.get_dmax() );
+  std::vector<AtomNumber> all_atoms; setupMultiColvarBase( all_atoms ); 
 }
 
 unsigned LocalAverage::getNumberOfQuantities() const {

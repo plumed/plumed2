@@ -116,7 +116,8 @@ AlphaBeta::AlphaBeta(const ActionOptions&ao):
 PLUMED_MULTICOLVAR_INIT(ao)
 {
   // Read in the atoms
-  int natoms=4; readAtoms( natoms );
+  int natoms=4; std::vector<AtomNumber> all_atoms;
+  readAtoms( natoms, all_atoms );
   // Resize target
   target.resize( getFullNumberOfTasks() );
   // Setup central atom indices

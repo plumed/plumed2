@@ -60,10 +60,11 @@ tmom(0)
   // Set the link cell cutoff
   setLinkCellCutoff( switchingFunction.get_dmax() );
   rcut = switchingFunction.get_dmax(); rcut2 = rcut*rcut;
+  std::vector<AtomNumber> all_atoms; setupMultiColvarBase( all_atoms );
 }
 
 void Steinhardt::setAngularMomentum( const unsigned& ang ){
-  tmom=ang; setVectorDimensionality( 2*(2*ang + 1), 2 );
+  tmom=ang; setVectorDimensionality( 2*(2*ang + 1) );
 } 
 
 void Steinhardt::calculateVector( multicolvar::AtomValuePack& myatoms ) const {

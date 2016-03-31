@@ -31,7 +31,6 @@ namespace adjmat {
 
 void AdjacencyMatrixBase::registerKeywords( Keywords& keys ){
   multicolvar::MultiColvarBase::registerKeywords( keys );
-  keys.add("compulsory","WTOL","0.0","if the base multicolvars have weights then you must define a hard cutoff on those you want to consider explicitally");
   keys.remove("LOWMEM"); keys.use("HIGHMEM");
 }
 
@@ -41,26 +40,6 @@ MultiColvarBase(ao),
 connect_id(0),
 no_third_dim_accum(true)
 {
-  // Weight of this does have derivatives
-  parse("WTOL",wtolerance);
-  if(wtolerance>0) log.printf("  only considering those colvars with a weight greater than %f \n",wtolerance);
-}
-
-bool AdjacencyMatrixBase::parseAtomList(const std::string& key, const int& num, std::vector<AtomNumber>& t){
-  std::vector<std::string> mlabs; 
-  if( num<0 ) parseVector(key,mlabs);
-  else parseNumberedVector(key,num,mlabs);
-
-  if( mlabs.size()==0 ) return false;
-
-  bool found_acts=interpretInputMultiColvars(mlabs,0.0);
-  if( !found_acts ){
-     ActionAtomistic::interpretAtomList( mlabs, t );
-     log.printf("  involving atoms ");
-     for(unsigned i=0;i<t.size();++i) log.printf("%d ",t[i].serial() );
-     log.printf("\n");
-  }
-  return true;
 }
 
 void AdjacencyMatrixBase::parseConnectionDescriptions( const std::string& key, const bool& multiple, const unsigned& nrow_t ){
@@ -125,72 +104,66 @@ unsigned AdjacencyMatrixBase::getNumberOfNodeTypes() const {
   return size;
 }
 
-void AdjacencyMatrixBase::requestAtoms( const std::vector<AtomNumber>& atoms, const bool& symmetric, const bool& true_square, const std::vector<unsigned>& dims ){
-  unsigned icoef, jcoef, kcoef, kcount;
-  // Create the task list
-  ablocks.resize( dims.size() ); nblock=dims[0]; 
-  for(unsigned i=1;i<dims.size();++i){
-     if( dims[i]>nblock ) nblock=dims[i];
-  }
-  if( dims.size()==2 ){ 
-     icoef=nblock; jcoef=1; kcoef=0; kcount=1;
-  } else if( dims.size()==3 ){
-     if( no_third_dim_accum ){
-        icoef=nblock; jcoef=1; kcoef=0; kcount=1;  
-     } else{
-        icoef=nblock*nblock; jcoef=nblock; kcoef=1; kcount=dims[2];
-     }
-     ablocks[2].resize( dims[2] );
-     if(symmetric || true_square ) {
-        for(unsigned i=0;i<ablocks[2].size();++i) ablocks[2][i]=dims[0]+i;
-     } else {
-        for(unsigned i=0;i<ablocks[2].size();++i) ablocks[2][i]=dims[0]+dims[1]+i;
-     }
-  } else {
-     plumed_error();
-  }
-  if( (symmetric || true_square) ){
-     plumed_assert( !(symmetric && true_square) && dims[0]==dims[1] );
-     resizeBookeepingArray( dims[0], dims[0] );
-     ablocks[0].resize( dims[0] ); ablocks[1].resize( dims[0] );
-     for(unsigned i=0;i<dims[0];++i) ablocks[0][i]=ablocks[1][i]=i; 
-  } else {
-     resizeBookeepingArray( dims[0], dims[1] ); ablocks[0].resize( dims[0] ); ablocks[1].resize( dims[1] );
-     for(unsigned i=0;i<dims[0];++i) ablocks[0][i]=i;
-     for(unsigned i=0;i<dims[1];++i) ablocks[1][i]=dims[0]+i;
-  }
-  if( symmetric ){
-    for(unsigned i=1;i<dims[0];++i){
-      for(unsigned j=0;j<i;++j){
-        bookeeping(j,i).first=bookeeping(i,j).first=getFullNumberOfTasks();
-        for(unsigned k=0;k<kcount;++k) addTaskToList( i*icoef + j*jcoef + k*kcoef );
-        bookeeping(j,i).second=bookeeping(i,j).second=getFullNumberOfTasks();
-      }
-    }
-  } else {
-    for(unsigned i=0;i<dims[0];++i){
-       for(unsigned j=0;j<dims[1];++j){
-           bookeeping(i,j).first=getFullNumberOfTasks();
-           for(unsigned k=0;k<kcount;++k) addTaskToList( i*icoef + j*jcoef + k*kcoef );
-           bookeeping(i,j).second=getFullNumberOfTasks();
-       }
-    }
-  }
+void AdjacencyMatrixBase::retrieveTypeDimensions( unsigned& nrows, unsigned& ncols, unsigned& ntype ) const {
+  bool allsame=(ablocks[0].size()==ablocks[1].size());
+  if( allsame ){
+     for(unsigned i=0;i<ablocks[0].size();++i){
+         if( ablocks[0][i]!=ablocks[1][i] ) allsame=false; 
+     } 
+  } 
 
-  // Create the storeAdjacencyMatrixVessel
+  if( allsame ){
+      std::vector<unsigned> types(1); types[0]=atom_lab[ablocks[0][0]].first;
+      for(unsigned i=1;i<ablocks[0].size();++i){
+          bool found = false;
+          for(unsigned j=0;j<types.size();++j){
+              if( atom_lab[ablocks[0][i]].first==types[j] ){ found=true; break; }
+          }  
+          if( !found ) types.push_back( atom_lab[ablocks[0][i]].first );
+      }
+      ntype=0; nrows=ncols=types.size();
+  } else {
+      std::vector<unsigned> types(1); types[0]=atom_lab[ablocks[0][0]].first;
+      for(unsigned i=1;i<ablocks[0].size();++i){
+          bool found = false;
+          for(unsigned j=0;j<types.size();++j){
+              if( atom_lab[ablocks[0][i]].first==types[j] ){ found=true; break; }
+          } 
+          if( !found ) types.push_back( atom_lab[ablocks[0][i]].first );
+      }
+      nrows=ntype=types.size();
+      for(unsigned i=0;i<ablocks[1].size();++i){
+          bool found = false;
+          for(unsigned j=0;j<types.size();++j){
+              if( atom_lab[ablocks[1][i]].first==types[j] ){ found=true; break; }
+          }
+          if( !found ) types.push_back( atom_lab[ablocks[1][i]].first );
+      }
+      if( types.size()==nrows ){ ntype=0; ncols=1; plumed_assert( types.size()==1 && atom_lab[ablocks[0][0]].first==0 ); }
+      else ncols = types.size() - ntype;
+  }
+}
+
+void AdjacencyMatrixBase::finishMatrixSetup( const bool& symmetric, const std::vector<AtomNumber>& all_atoms ){
   std::string param;
-  if( symmetric && dims[0]==dims[1] ) param="SYMMETRIC"; 
-  if( !symmetric && dims[0]==dims[1] ) param="HBONDS";
- 
+  if( symmetric && ablocks[0].size()==ablocks[1].size() ) param="SYMMETRIC";
+  if( !symmetric && ablocks[0].size()==ablocks[1].size() ) param="HBONDS";
+
+
   vesselbase::VesselOptions da("","",0,param,this);
   Keywords keys; AdjacencyMatrixVessel::registerKeywords( keys );
-  vesselbase::VesselOptions da2(da,keys);
-  mat = new AdjacencyMatrixVessel(da2);
-  // Set a cutoff for clustering
-  mat->setHardCutoffOnWeight( getTolerance() );
-  // Add the vessel to the base
-  addVessel( mat );
-  setupMultiColvarBase( atoms );
+  vesselbase::VesselOptions da2(da,keys); mat = new AdjacencyMatrixVessel(da2); addVessel( mat );
+  setupMultiColvarBase( all_atoms ); 
+}
+
+void AdjacencyMatrixBase::readMaxTwoSpeciesMatrix( const std::string& key0, const std::string& key1, const std::string& key2, const bool& symmetric ){
+  std::vector<AtomNumber> all_atoms; readTwoGroups( key0, key1, key2, all_atoms );
+  finishMatrixSetup( symmetric, all_atoms );
+}
+
+void AdjacencyMatrixBase::readMaxThreeSpeciesMatrix( const std::string& key0, const std::string& key1, const std::string& key2, const std::string& keym, const bool& symmetric ){
+  std::vector<AtomNumber> all_atoms; readGroupKeywords( key0, key1, key2, keym, true, symmetric, all_atoms );
+  finishMatrixSetup( symmetric, all_atoms );
 }
 
 // Maybe put this back GAT to check that it is returning an atom number that is one of the nodes
@@ -202,13 +175,13 @@ void AdjacencyMatrixBase::requestAtoms( const std::vector<AtomNumber>& atoms, co
 
 void AdjacencyMatrixBase::addOrientationDerivatives( const unsigned& ival, const unsigned& iatom, const std::vector<double>& der, multicolvar::AtomValuePack& myatoms ) const {
   unsigned jatom=myatoms.getIndex(iatom); plumed_dbg_assert( jatom<colvar_label.size() );
-  MultiValue myder(0,0); unsigned mmc=colvar_label[ival]; plumed_assert( !mybasemulticolvars[mmc]->weightWithDerivatives() );
-  plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(ival,mmc) ) );
+  MultiValue myder(0,0); unsigned mmc=atom_lab[ival].first - 1; plumed_assert( !mybasemulticolvars[mmc]->weightWithDerivatives() );
+  plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( atom_lab[ival].second ) );
   if( myder.getNumberOfValues()!=mybasemulticolvars[mmc]->getNumberOfQuantities() ||
       myder.getNumberOfDerivatives()!=mybasemulticolvars[mmc]->getNumberOfDerivatives() ){
           myder.resize( mybasemulticolvars[mmc]->getNumberOfQuantities(), mybasemulticolvars[mmc]->getNumberOfDerivatives() );
   }
-  mybasedata[mmc]->retrieveDerivatives( convertToLocalIndex(ival,mmc), true, myder );
+  mybasedata[mmc]->retrieveDerivatives( atom_lab[ival].second, true, myder );
 
   // Get start of indices for this atom
   unsigned basen=0; for(unsigned i=0;i<mmc;++i) basen+=3*mybasemulticolvars[i]->getNumberOfAtoms();
