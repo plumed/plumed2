@@ -169,7 +169,7 @@ ensemble(false)
 
   //construct biases from ActionWithValue with a component named bias
   vector<ActionWithValue*> tmpActions=plumed.getActionSet().select<ActionWithValue*>();
-  for(int i=0;i<tmpActions.size();i++) if(tmpActions[i]->exists(tmpActions[i]->getLabel()+".bias")) biases.push_back(tmpActions[i]);
+  for(unsigned i=0;i<tmpActions.size();i++) if(tmpActions[i]->exists(tmpActions[i]->getLabel()+".bias")) biases.push_back(tmpActions[i]);
 
   //resize counters and displacements useful to communicate with MPI_Allgatherv
   indexCnt.resize(nProc);
@@ -198,7 +198,7 @@ void EffectiveEnergyDrift::update(){
     Tensor B=atoms.getPbc().getBox();
     Tensor IB=atoms.getPbc().getInvBox();
 #pragma omp parallel for
-    for(int i=0;i<positions.size();++i){
+    for(unsigned i=0;i<positions.size();++i){
       positions[i]=matmul(positions[i],IB);
       forces[i]=matmul(B,forces[i]);
     }
@@ -258,7 +258,7 @@ void EffectiveEnergyDrift::update(){
     pForces.resize(nLocalAtoms);
 
     //compute backmap
-    for(int j=0;j<indexR.size();j++) backmap[indexR[j]]=j;
+    for(unsigned j=0;j<indexR.size();j++) backmap[indexR[j]]=j;
 
     //fill the vectors pGatindex, pPositions and pForces
     for(int i=0; i<nLocalAtoms; i++){
@@ -298,7 +298,7 @@ void EffectiveEnergyDrift::update(){
 
     //we cannot just use plumed.getBias() because it will be ==0.0 if PRINT_STRIDE
     //is not a multiple of the bias actions stride
-    for(int i=0;i<biases.size();i++) bias+=biases[i]->getOutputQuantity("bias");
+    for(unsigned i=0;i<biases.size();i++) bias+=biases[i]->getOutputQuantity("bias");
 
     plumed.comm.Sum(&eedSum,1);
  

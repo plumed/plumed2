@@ -493,9 +493,15 @@ ld: TOC section size exceeds 64k
 ./configure --disable-ld-r
 \endverbatim
 
+\page CodeSpecificNotes Code specific notes
 
+Here you can find instructions that are specific for patching each of the supported MD codes.
+Notice that MD codes with native PLUMED support are not listed here.
 
 @CODES@
+
+
+
  
 */
 
