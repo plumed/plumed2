@@ -32,6 +32,8 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+include(${CMAKE_SOURCE_DIR}/Plumed.cmake)
+
 set(LIBGROMACS_SOURCES)
 
 set_property(GLOBAL PROPERTY GMX_INSTALLED_HEADERS)
@@ -71,7 +73,7 @@ if(GMX_USE_TNG)
                 "TNG >= 1.6.0 not found. "
                 "You can set GMX_EXTERNAL_TNG=OFF to compile TNG.")
         endif()
-        include_directories(${TNG_IO_INCLUDE_DIRS})
+        include_directories(SYSTEM ${TNG_IO_INCLUDE_DIRS})
     endif()
     if(NOT GMX_EXTERNAL_TNG)
         include(${CMAKE_SOURCE_DIR}/src/external/tng_io/BuildTNG.cmake)
@@ -81,7 +83,7 @@ if(GMX_USE_TNG)
 
         if (HAVE_ZLIB)
             list(APPEND GMX_EXTRA_LIBRARIES ${ZLIB_LIBRARIES})
-            include_directories(${ZLIB_INCLUDE_DIRS})
+            include_directories(SYSTEM ${ZLIB_INCLUDE_DIRS})
         endif()
     endif()
 else()
@@ -197,6 +199,8 @@ else()
 endif()
 set_source_files_properties(selection/scanner.cpp PROPERTIES COMPILE_FLAGS "${_scanner_cpp_compiler_flags}")
 
+target_link_libraries(libgromacs ${PLUMED_LOAD})
+
 target_link_libraries(libgromacs
                       ${EXTRAE_LIBRARIES}
                       ${GMX_EXTRA_LIBRARIES}
@@ -204,6 +208,8 @@ target_link_libraries(libgromacs
                       ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
                       ${XML_LIBRARIES}
                       ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS} ${OPENCL_LIBRARIES})
+
+
 set_target_properties(libgromacs PROPERTIES
                       OUTPUT_NAME "gromacs${GMX_LIBS_SUFFIX}"
                       SOVERSION ${LIBRARY_SOVERSION_MAJOR}
