@@ -560,6 +560,8 @@ then
   then
     AC_MSG_WARN([You will not be able to see diagrams in the manual])
   fi
+else
+  make_doc=no
 fi
 fi
 

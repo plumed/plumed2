@@ -6673,6 +6673,8 @@ fi
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: You will not be able to see diagrams in the manual" >&5
 $as_echo "$as_me: WARNING: You will not be able to see diagrams in the manual" >&2;}
   fi
+else
+  make_doc=no
 fi
 fi
 
