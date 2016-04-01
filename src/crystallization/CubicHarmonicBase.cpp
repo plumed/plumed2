@@ -91,7 +91,7 @@ MultiColvarBase(ao)
 }
 
 double CubicHarmonicBase::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {
-   double value=0, norm=0, dfunc; Vector rotatedis;
+   double dfunc; Vector rotatedis;
 
    // Calculate the coordination number
    Vector myder, rotateder, fder; unsigned nat=myatoms.getNumberOfAtoms();
@@ -106,8 +106,6 @@ double CubicHarmonicBase::compute( const unsigned& tindex, multicolvar::AtomValu
            (d2+=distance[2]*distance[2])<rcut2) {
            
          sw = switchingFunction.calculateSqr( d2, dfunc ); 
-   
-         norm += sw;
 
          rotatedis[0]=rotationmatrix[0][0]*distance[0]
                   +rotationmatrix[0][1]*distance[1]
@@ -130,25 +128,16 @@ double CubicHarmonicBase::compute( const unsigned& tindex, multicolvar::AtomValu
          myder[2]=rotationmatrix[0][2]*rotateder[0]
                   +rotationmatrix[1][2]*rotateder[1]
                   +rotationmatrix[2][2]*rotateder[2];
-          
-         value += sw*tmp;
   
          fder = (+dfunc)*tmp*distance + sw*myder;
 
-         addAtomDerivatives( 1, 0, -fder, myatoms );
-         addAtomDerivatives( 1, i, +fder, myatoms);
-         myatoms.addBoxDerivatives( 1, Tensor(distance,-fder) );
-         addAtomDerivatives( -1, 0, (-dfunc)*distance, myatoms);
-         addAtomDerivatives( -1, i, (+dfunc)*distance, myatoms);
-         myatoms.addTemporyBoxDerivatives( (-dfunc)*Tensor(distance,distance) );
+         accumulateSymmetryFunction( 1, i, sw*tmp, fder, Tensor(distance,-fder), myatoms );
+         accumulateSymmetryFunction( -1, i, sw, (+dfunc)*distance, (-dfunc)*Tensor(distance,distance), myatoms );
       }
    }
-   
-   myatoms.setValue(1, value);  
    // values -> der of... value [0], weight[1], x coord [2], y, z... [more magic]
-   updateActiveAtoms( myatoms ); myatoms.getUnderlyingMultiValue().quotientRule( 1, norm, 1 );   
-
-   return value / norm; // this is equivalent to getting an "atomic" CV
+   updateActiveAtoms( myatoms ); myatoms.getUnderlyingMultiValue().quotientRule( 1, 1 );   
+   return myatoms.getValue(1); // this is equivalent to getting an "atomic" CV
 }
 
 }

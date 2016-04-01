@@ -127,10 +127,8 @@ public:
   ActionWithVessel* getDataUser( const unsigned& );
 /// Set the number of tempory multivalues we need
   void resizeTemporyMultiValues( const unsigned& nvals );
-/// Reset the tempory multi values at the start of the calculation 
-  void resetTemporyMultiValues();
 /// Return a tempory multi value - we do this so as to avoid vector resizing
-  MultiValue& getTemporyMultiValue();
+  MultiValue& getTemporyMultiValue( const unsigned& ind );
 };
 
 inline

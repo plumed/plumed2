@@ -38,6 +38,8 @@ private:
   unsigned nderivatives;
 /// Derivatives
   std::vector<double> derivatives;
+/// Tempory value
+  double tmpval;
 /// Tempory vector of derivatives (used for calculating quotients
   std::vector<double> tmpder;
 /// Logical to check if any derivatives were set
@@ -62,6 +64,8 @@ public:
   void addValue( const unsigned&,  const double& );
 /// Add derivative
   void addDerivative( const unsigned& , const unsigned& , const double& );
+/// Add to the tempory value
+  void addTemporyValue( const double& val );
 /// Add tempory derivatives - this is used for calculating quotients
   void addTemporyDerivative( const unsigned& jder, const double& der );
 /// Set the value of the derivative
@@ -98,7 +102,7 @@ public:
 ///
   void copyDerivatives( MultiValue& );
 ///
-  void quotientRule( const unsigned& nder, const double& denom, const unsigned& oder );
+  void quotientRule( const unsigned& nder, const unsigned& oder );
 };
 
 inline
@@ -133,6 +137,11 @@ inline
 void MultiValue::addDerivative( const unsigned& ival, const unsigned& jder, const double& der){
   plumed_dbg_assert( ival<=values.size() && jder<nderivatives ); atLeastOneSet=true;
   hasDerivatives.activate(jder); derivatives[nderivatives*ival+jder] += der;
+}
+
+inline
+void MultiValue::addTemporyValue( const double& val ){
+  tmpval += val;
 }
 
 inline

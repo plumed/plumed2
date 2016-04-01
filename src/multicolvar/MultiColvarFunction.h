@@ -40,12 +40,6 @@ protected:
   CatomPack getCentralAtomPackFromInput( const unsigned& ind ) const ;
 ///
   void getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient0 ) const ;
-///
-  MultiValue& getVectorDerivatives( const unsigned& ind, const bool& normed ) const ;
-///
-  void mergeVectorDerivatives( const unsigned& ival, const unsigned& start, const unsigned& end,
-                               const unsigned& jatom, const std::vector<double>& der, 
-                               MultiValue& myder, AtomValuePack& myatoms ) const ;
 /// Build sets by taking one multicolvar from each base
   void buildSets();
 public:

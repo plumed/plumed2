@@ -144,33 +144,41 @@ unsigned LocalAverage::getNumberOfQuantities() const {
 }
 
 double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
-  double d2, sw, dfunc, nbond=1; CatomPack atom0, atom1;
+  double d2, sw, dfunc; CatomPack atom0, atom1; MultiValue& myvals = myatoms.getUnderlyingMultiValue();
   std::vector<double> values( getBaseMultiColvar(0)->getNumberOfQuantities() ); 
 
   getVectorForTask( myatoms.getIndex(0), false, values );
+  myvals.addTemporyValue( values[0] );
   if( values.size()>2 ){
-      for(unsigned j=2;j<values.size();++j) myatoms.addValue( j, values[j] ); 
+      for(unsigned j=2;j<values.size();++j) myatoms.addValue( j, values[0]*values[j] ); 
   } else {
-      myatoms.addValue( 1, values[1] ); 
+      myatoms.addValue( 1, values[0]*values[1] ); 
   }
 
   if( !doNotCalculateDerivatives() ){
       atom0=getCentralAtomPackFromInput( myatoms.getIndex(0) );
-      MultiValue& myder=getVectorDerivatives( myatoms.getIndex(0), false );
+      MultiValue& myder=getInputDerivatives( 0, false, myatoms );
       if( values.size()>2 ){
           for(unsigned j=0;j<myder.getNumberActive();++j){
               unsigned jder=myder.getActiveIndex(j);
-              for(unsigned k=2;k<values.size();++k) myatoms.addDerivative( k, jder, myder.getDerivative(k,jder) );
+              for(unsigned k=2;k<values.size();++k){
+                  myatoms.addDerivative( k, jder, values[0]*myder.getDerivative(k,jder) );
+                  myatoms.addDerivative( k, jder, values[k]*myder.getDerivative(0,jder) ); 
+              }
           }
       } else {
           for(unsigned j=0;j<myder.getNumberActive();++j){
               unsigned jder=myder.getActiveIndex(j);
-              myatoms.addDerivative( 1, jder, myder.getDerivative(1,jder) ); 
+              myatoms.addDerivative( 1, jder, values[0]*myder.getDerivative(1,jder) );
+              myatoms.addDerivative( 1, jder, values[1]*myder.getDerivative(0,jder) );   
           }
+      }
+      for(unsigned j=0;j<myder.getNumberActive();++j){
+          unsigned jder=myder.getActiveIndex(j); myvals.addTemporyDerivative( jder, myder.getDerivative(0, jder) );
       }
       myder.clearAll();
   }
-
+   
   for(unsigned i=1;i<myatoms.getNumberOfAtoms();++i){
       Vector& distance=myatoms.getPosition(i);  // getSeparation( myatoms.getPosition(0), myatoms.getPosition(i) );
       if ( (d2=distance[0]*distance[0])<rcut2 &&
@@ -181,39 +189,46 @@ double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) c
 
          getVectorForTask( myatoms.getIndex(i), false, values );
          if( values.size()>2 ){
-             for(unsigned j=2;j<values.size();++j) myatoms.addValue( j, sw*values[j] );
+             for(unsigned j=2;j<values.size();++j) myatoms.addValue( j, sw*values[0]*values[j] );
          } else {
-             myatoms.addValue( 1, sw*values[1] );
+             myatoms.addValue( 1, sw*values[0]*values[1] );
          }
-         nbond += sw;
+         myvals.addTemporyValue(sw);
 
          if( !doNotCalculateDerivatives() ){
              Tensor vir(distance,distance);
-             MultiValue& myder=getVectorDerivatives( myatoms.getIndex(i), false );
+             MultiValue& myder=getInputDerivatives( i, false, myatoms );
              atom1=getCentralAtomPackFromInput( myatoms.getIndex(i) );
              if( values.size()>2 ){
                  for(unsigned j=0;j<myder.getNumberActive();++j){
                      unsigned jder=myder.getActiveIndex(j);
-                     for(unsigned k=2;k<values.size();++k) myatoms.addDerivative( k, jder, sw*myder.getDerivative(k,jder) );
+                     for(unsigned k=2;k<values.size();++k){
+                         myatoms.addDerivative( k, jder, sw*values[0]*myder.getDerivative(k,jder) );
+                         myatoms.addDerivative( k, jder, sw*values[k]*myder.getDerivative(0,jder) );
+                     } 
                  }
                  for(unsigned k=2;k<values.size();++k){
-                     myatoms.addComDerivatives( k, (-dfunc)*values[k]*distance, atom0 );
-                     myatoms.addComDerivatives( k, (+dfunc)*values[k]*distance, atom1 );
-                     myatoms.addBoxDerivatives( k, (-dfunc)*values[k]*vir );
+                     myatoms.addComDerivatives( k, (-dfunc)*values[0]*values[k]*distance, atom0 );
+                     myatoms.addComDerivatives( k, (+dfunc)*values[0]*values[k]*distance, atom1 );
+                     myatoms.addBoxDerivatives( k, (-dfunc)*values[0]*values[k]*vir );
                  }
              } else {
                  for(unsigned j=0;j<myder.getNumberActive();++j){
                      unsigned jder=myder.getActiveIndex(j);
-                     myatoms.addDerivative( 1, jder, sw*myder.getDerivative(1,jder) ); 
+                     myatoms.addDerivative( 1, jder, sw*values[0]*myder.getDerivative(1,jder) ); 
+                     myatoms.addDerivative( 1, jder, sw*values[1]*myder.getDerivative(0,jder) );
                  }
-                 myatoms.addComDerivatives( 1, (-dfunc)*values[1]*distance, atom0 );
-                 myatoms.addComDerivatives( 1, (+dfunc)*values[1]*distance, atom1 );
-                 myatoms.addBoxDerivatives( 1, (-dfunc)*values[1]*vir );
+                 myatoms.addComDerivatives( 1, (-dfunc)*values[0]*values[1]*distance, atom0 );
+                 myatoms.addComDerivatives( 1, (+dfunc)*values[0]*values[1]*distance, atom1 );
+                 myatoms.addBoxDerivatives( 1, (-dfunc)*values[0]*values[1]*vir );
              }
              // And the bit we use to average the vector
-             myatoms.addComDerivatives( -1, (-dfunc)*distance, atom0 );
-             myatoms.addComDerivatives( -1, (+dfunc)*distance, atom1 );
-             myatoms.addTemporyBoxDerivatives( (-dfunc)*vir );
+             myatoms.addComDerivatives( -1, (-dfunc)*values[0]*distance, atom0 );
+             myatoms.addComDerivatives( -1, (+dfunc)*values[0]*distance, atom1 );
+             for(unsigned j=0;j<myder.getNumberActive();++j){
+                 unsigned jder=myder.getActiveIndex(j); myvals.addTemporyDerivative( jder, sw*myder.getDerivative(0, jder) );
+             }
+             myatoms.addTemporyBoxDerivatives( (-dfunc)*values[0]*vir );
              myder.clearAll();
          }
      }
@@ -223,9 +238,8 @@ double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) c
   updateActiveAtoms( myatoms );
   if( values.size()>2){
       double norm=0;
-      MultiValue& myvals=myatoms.getUnderlyingMultiValue(); 
       for(unsigned i=2;i<values.size();++i){
-          myvals.quotientRule( i, nbond, i );
+          myvals.quotientRule( i, i );
           // Calculate length of vector
           norm+=myvals.get(i)*myvals.get(i);
       }
@@ -237,7 +251,7 @@ double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) c
          }
       }
   } else {
-      myatoms.getUnderlyingMultiValue().quotientRule( 1, nbond, 1 ); 
+      myvals.quotientRule( 1, 1 ); 
   }
    
   return myatoms.getValue(1);

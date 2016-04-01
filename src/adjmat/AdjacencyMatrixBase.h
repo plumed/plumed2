@@ -111,7 +111,7 @@ AtomNumber AdjacencyMatrixBase::getAbsoluteIndexOfCentralAtom( const unsigned& i
 
 inline 
 void AdjacencyMatrixBase::getOrientationVector( const unsigned& ind, const bool& normed, std::vector<double>& orient ) const {
-  plumed_dbg_assert( atom_lab[iatom].first>0 ); unsigned mmc=atom_lab[ind].first - 1; 
+  plumed_dbg_assert( atom_lab[ind].first>0 ); unsigned mmc=atom_lab[ind].first - 1; 
   plumed_assert( !mybasemulticolvars[mmc]->weightWithDerivatives() ); plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( atom_lab[ind].second ) );
   mybasedata[mmc]->retrieveValueWithIndex( atom_lab[ind].second, normed, orient );
 }

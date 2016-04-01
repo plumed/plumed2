@@ -85,10 +85,11 @@ void MatrixSummationBase::addConnectionDerivatives( const unsigned& i, const uns
   unsigned vi, myelem = mymatrix->getStoreIndexFromMatrixIndices( i, j );
 
   mymatrix->retrieveValueWithIndex( myelem, false, vals ); 
+  double df, val = (mymatrix->function)->transformStoredValues( vals, vi, df );
   mymatrix->retrieveDerivatives( myelem, false, myvals );
   for(unsigned jd=0;jd<myvals.getNumberActive();++jd){
       unsigned ider=myvals.getActiveIndex(jd);
-      myvout.addDerivative( 1, ider, myvals.getDerivative( vi, ider ) );
+      myvout.addDerivative( 1, ider, df*myvals.getDerivative( vi, ider ) );
   }
 }
 

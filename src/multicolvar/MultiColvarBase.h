@@ -72,6 +72,8 @@ private:
   bool setup_completed;
 /// Ensures that retrieving of atoms is only done once per calculation loop
   bool atomsWereRetrieved;
+/// Add derivatives of center of mass position
+  void addComDerivatives( const int& ival, const unsigned& iatom, const Vector& der, multicolvar::AtomValuePack& myatoms ) const ;
 protected:
 /// This is used to keep track of what is calculated where
   std::vector< std::pair<unsigned,unsigned> > atom_lab;
@@ -102,6 +104,13 @@ protected:
   void setupMultiColvarBase( const std::vector<AtomNumber>& atoms );
 /// Add some derivatives to a particular component of a particular atom
   void addAtomDerivatives( const int& , const unsigned& , const Vector& , multicolvar::AtomValuePack& ) const ;
+/// Retrieve the input derivatives
+  MultiValue& getInputDerivatives( const unsigned& iatom, const bool& normed, const multicolvar::AtomValuePack& myatoms ) const ;
+/// Add derivative of the input value
+  void mergeInputDerivatives( const unsigned& ival, const unsigned& start, const unsigned& end, const unsigned& jatom, 
+                              const std::vector<double>& der, MultiValue& myder, AtomValuePack& myatoms ) const ;
+/// This is used to accumulate functions of the coordination sphere.  Ensures weights are taken into account
+  void accumulateSymmetryFunction( const int& ival, const unsigned& iatom, const double& val, const Vector& der, const Tensor& vir, multicolvar::AtomValuePack& myatoms ) const ;
 /// Set which atoms are to be used to calculate the central atom position
   void setAtomsForCentralAtom( const std::vector<bool>& catom_ind );
 /// Set the value of the cutoff for the link cells

@@ -56,7 +56,7 @@ void MultiValue::clear( const unsigned& ival ){
 }
 
 void MultiValue::clearTemporyDerivatives(){
-  unsigned ndert=hasDerivatives.getNumberActive(); 
+  unsigned ndert=hasDerivatives.getNumberActive(); tmpval=0.;
   for(unsigned i=0;i<ndert;++i) tmpder[ hasDerivatives[i] ]=0.;
 }
 
@@ -98,14 +98,14 @@ void MultiValue::copyDerivatives( MultiValue& outvals ){
   }
 }
 
-void MultiValue::quotientRule( const unsigned& nder, const double& denom, const unsigned& oder ){
+void MultiValue::quotientRule( const unsigned& nder, const unsigned& oder ){
   plumed_dbg_assert( nder<values.size() && oder<values.size() );
   if( !hasDerivatives.updateComplete() ) hasDerivatives.updateActiveMembers();
 
   unsigned ndert=hasDerivatives.getNumberActive(); double wpref;
   unsigned obase=oder*nderivatives, nbase=nder*nderivatives;
 
-  if( fabs(denom)>epsilon ){ wpref=1.0/denom; } 
+  if( fabs(tmpval)>epsilon ){ wpref=1.0/tmpval; } 
   else{ wpref=1.0; }
 
   double pref = values[nder]*wpref*wpref;

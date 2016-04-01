@@ -209,15 +209,8 @@ void StoreDataVessel::resizeTemporyMultiValues( const unsigned& nvals ){
   for(unsigned i=0;i<nvals;++i) my_tmp_vals.push_back( MultiValue(0,0) );
 }
 
-void StoreDataVessel::resetTemporyMultiValues(){
-  tmp_index=0;
-}
-
-MultiValue& StoreDataVessel::getTemporyMultiValue(){
-  unsigned ival;
-  if( tmp_index<my_tmp_vals.size() ) ival=tmp_index;
-  else ival=my_tmp_vals.size()-1;
-  tmp_index++; return my_tmp_vals[ival];
+MultiValue& StoreDataVessel::getTemporyMultiValue( const unsigned& ind ){
+  plumed_dbg_assert( ind<my_tmp_vals.size() ); return my_tmp_vals[ind];
 }
 
 }

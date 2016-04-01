@@ -74,7 +74,7 @@ double OrientationSphere::compute( const unsigned& tindex, multicolvar::AtomValu
 
    getVectorForTask( myatoms.getIndex(0), true, catom_orient ); 
    multicolvar::CatomPack atom0; 
-   MultiValue& myder0=getVectorDerivatives( myatoms.getIndex(0), true ); 
+   MultiValue& myder0=getInputDerivatives( 0, true, myatoms ); 
    if( !doNotCalculateDerivatives() ) atom0=getCentralAtomPackFromInput( myatoms.getIndex(0) );
 
    for(unsigned i=1;i<myatoms.getNumberOfAtoms();++i){
@@ -91,9 +91,9 @@ double OrientationSphere::compute( const unsigned& tindex, multicolvar::AtomValu
 
          if( !doNotCalculateDerivatives() ){
              for(unsigned k=2;k<catom_orient.size();++k){ this_der[k]*=sw; catom_der[k]*=sw; }
-             MultiValue& myder1=getVectorDerivatives( myatoms.getIndex(i), true );
-             mergeVectorDerivatives( 1, 2, this_orient.size(), myatoms.getIndex(0), catom_der, myder0, myatoms );  
-             mergeVectorDerivatives( 1, 2, catom_der.size(), myatoms.getIndex(i), this_der, myder1, myatoms );
+             MultiValue& myder1=getInputDerivatives( i, true, myatoms );
+             mergeInputDerivatives( 1, 2, this_orient.size(), 0, catom_der, myder0, myatoms );
+             mergeInputDerivatives( 1, 2, catom_der.size(), i, this_der, myder1, myatoms );
              myatoms.addComDerivatives( 1, f_dot*(-dfunc)*distance - sw*ddistance, atom0 );
              addAtomDerivatives( 1, i, f_dot*(dfunc)*distance + sw*ddistance, myatoms );
              myatoms.addBoxDerivatives( 1, (-dfunc)*f_dot*Tensor(distance,distance) - sw*Tensor( ddistance, distance ) );   

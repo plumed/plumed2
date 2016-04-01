@@ -174,7 +174,7 @@ void AdjacencyMatrixBase::readMaxThreeSpeciesMatrix( const std::string& key0, co
 // } 
 
 void AdjacencyMatrixBase::addOrientationDerivatives( const unsigned& ival, const unsigned& iatom, const std::vector<double>& der, multicolvar::AtomValuePack& myatoms ) const {
-  unsigned jatom=myatoms.getIndex(iatom); plumed_dbg_assert( jatom<colvar_label.size() );
+  unsigned jatom=myatoms.getIndex(iatom); plumed_dbg_assert( jatom<atom_lab.size() );
   MultiValue myder(0,0); unsigned mmc=atom_lab[ival].first - 1; plumed_assert( !mybasemulticolvars[mmc]->weightWithDerivatives() );
   plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( atom_lab[ival].second ) );
   if( myder.getNumberOfValues()!=mybasemulticolvars[mmc]->getNumberOfQuantities() ||

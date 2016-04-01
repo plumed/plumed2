@@ -65,51 +65,6 @@ void MultiColvarFunction::buildSets(){
   mybasedata[0]->resizeTemporyMultiValues( mybasemulticolvars.size() ); 
 }
 
-MultiValue& MultiColvarFunction::getVectorDerivatives( const unsigned& ind, const bool& normed ) const {
-  plumed_dbg_assert( atom_lab[ind].first>0 ); unsigned mmc=atom_lab[ind].first-1;
-  plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( atom_lab[ind].second ) );
-  // Get a tempory multi value from the base class
-  MultiValue& myder=mybasedata[0]->getTemporyMultiValue();
-
-  if( myder.getNumberOfValues()!=mybasemulticolvars[mmc]->getNumberOfQuantities() ||
-      myder.getNumberOfDerivatives()!=mybasemulticolvars[mmc]->getNumberOfDerivatives() ){
-          myder.resize( mybasemulticolvars[mmc]->getNumberOfQuantities(), mybasemulticolvars[mmc]->getNumberOfDerivatives() );
-  }
-  mybasedata[mmc]->retrieveDerivatives( atom_lab[ind].second, normed, myder );
-  return myder;
-}
-
-void MultiColvarFunction::mergeVectorDerivatives( const unsigned& ival, const unsigned& start, const unsigned& end, 
-                                                  const unsigned& jatom, const std::vector<double>& der, 
-                                                  MultiValue& myder, AtomValuePack& myatoms ) const {
-  plumed_dbg_assert( ival<myatoms.getUnderlyingMultiValue().getNumberOfValues() );
-  plumed_dbg_assert( start<myder.getNumberOfValues() && end<=myder.getNumberOfValues() );
-  plumed_dbg_assert( der.size()==myder.getNumberOfValues() && jatom<getFullNumberOfBaseTasks() );
-
-  unsigned mmc=atom_lab[jatom].first - 1; plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( atom_lab[ind].second ) );
-
-  // Get start of indices for this atom
-  unsigned basen=0; for(unsigned i=0;i<mmc;++i) basen+=3*mybasemulticolvars[i]->getNumberOfAtoms();
-
-  MultiValue& myvals=myatoms.getUnderlyingMultiValue();
-  // Now get the start of the virial
-  unsigned virbas = myvals.getNumberOfDerivatives()-9;
-  for(unsigned j=0;j<myder.getNumberActive();++j){
-     unsigned jder=myder.getActiveIndex(j);
-     if( jder<3*mybasemulticolvars[mmc]->getNumberOfAtoms() ){
-         unsigned kder=basen+jder;
-         for(unsigned icomp=start;icomp<end;++icomp){
-             myvals.addDerivative( ival, kder, der[icomp]*myder.getDerivative( icomp, jder ) );
-         }
-     } else {
-         unsigned kder=virbas + (jder - 3*mybasemulticolvars[mmc]->getNumberOfAtoms());
-         for(unsigned icomp=start;icomp<end;++icomp){
-             myvals.addDerivative( ival, kder, der[icomp]*myder.getDerivative( icomp, jder ) );
-         }
-     }
-  }
-}
-
 }
 }
 

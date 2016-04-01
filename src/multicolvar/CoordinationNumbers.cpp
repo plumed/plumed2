@@ -121,26 +121,20 @@ MultiColvarBase(ao)
 }
 
 double CoordinationNumbers::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
-   double value=0, dfunc; 
-
    // Calculate the coordination number
-   double d2, sw;
+   double dfunc, d2, sw;
    for(unsigned i=1;i<myatoms.getNumberOfAtoms();++i){
-      Vector& distance=myatoms.getPosition(i);  // getSeparation( myatoms.getPosition(0), myatoms.getPosition(i) );
+      Vector& distance=myatoms.getPosition(i);  
       if ( (d2=distance[0]*distance[0])<rcut2 && 
            (d2+=distance[1]*distance[1])<rcut2 &&
            (d2+=distance[2]*distance[2])<rcut2) {
   
          sw = switchingFunction.calculateSqr( d2, dfunc );
-  
-         value += sw;             
-         addAtomDerivatives( 1, 0, (-dfunc)*distance, myatoms );
-         addAtomDerivatives( 1, i,  (dfunc)*distance, myatoms );
-         myatoms.addBoxDerivatives( 1, (-dfunc)*Tensor(distance,distance) );
+         accumulateSymmetryFunction( 1, i, sw, (dfunc)*distance, (-dfunc)*Tensor(distance,distance), myatoms );  
       }
    }
 
-   return value;
+   return myatoms.getValue(1);
 }
 
 }
