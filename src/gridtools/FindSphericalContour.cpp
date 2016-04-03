@@ -36,7 +36,7 @@ private:
   double lenunit;
   std::string fmt_xyz;
   int rnd;
-  unsigned mycomp, nbins;
+  unsigned nbins;
   double contour, offset, increment;
   double min, max;
   unsigned npoints;
@@ -62,7 +62,6 @@ void FindSphericalContour::registerKeywords( Keywords& keys ){
 // We want a better way of doing this bit
   keys.add("compulsory", "FILE", "file on which to output coordinates");
   keys.add("compulsory", "UNITS","PLUMED","the units in which to print out the coordinates. PLUMED means internal PLUMED units");
-  keys.add("optional","COMPONENT","if your input is a vector field use this to specifiy the component of the input vector field for which you wish to find the contour");
   keys.add("optional", "PRECISION","The number of digits in trajectory file");  
 }
 
@@ -71,14 +70,6 @@ Action(ao),
 ActionWithInputGrid(ao)
 {
   if( mygrid->getDimension()!=3 ) error("input grid must be three dimensional");
-
-  if( mygrid->getNumberOfComponents()==1 ){ 
-     mycomp=0; 
-  } else {
-     int tcomp=-1; parse("COMPONENT",tcomp);
-     if( tcomp<0 ) error("component of vector field was not specified - use COMPONENT keyword");
-     mycomp=tcomp;
-  }
   if( mygrid->noDerivatives() ) error("cannot find contours if input grid has no derivatives");
 
   parse("NPOINTS",npoints);
@@ -126,7 +117,7 @@ ActionWithInputGrid(ao)
 }
 
 double FindSphericalContour::getDifferenceFromContour( const std::vector<double>& x, std::vector<double>& der ){
-  return mygrid->getValueAndDerivatives( x, mycomp, der ) - contour;
+  return getFunctionValueAndDerivatives( x, der ) - contour;
 }
 
 void FindSphericalContour::performOperationsWithGrid( const bool& from_update ){
@@ -173,9 +164,6 @@ void FindSphericalContour::performOperationsWithGrid( const bool& from_update ){
       }
       if( !found ) error("range does not bracket the dividing surface");
   }
-
-  // Clear the grid ready for next time
-  if( from_update ) mygrid->reset();
 }
 
 }

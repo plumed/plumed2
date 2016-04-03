@@ -1,0 +1,28 @@
+UNITS NATURAL
+
+dens: COORDINATIONNUMBER SPECIESA=2 SPECIESB=3-5 SWITCH={RATIONAL D_0=1.1 R_0=0.001 D_MAX=2.0}  
+
+# Print the average (whole trajectory) density with a stride of two
+dens1: MULTICOLVARDENS DATA=dens ORIGIN=1 DIR=x NBINS=50 BANDWIDTH=0.2 
+PRINT_GRID GRID=dens1 STRIDE=1 FILE=dens1 FMT=%8.4f
+
+# Print the average density with a stride of two 
+dens2: MULTICOLVARDENS DATA=dens ORIGIN=1 DIR=x NBINS=50 BANDWIDTH=0.2
+PRINT_GRID GRID=dens2 STRIDE=2 FILE=dens2 FMT=%8.4f
+
+# Print the average density (whole trajectory)
+dens5: MULTICOLVARDENS DATA=dens ORIGIN=1 DIR=x NBINS=50 BANDWIDTH=0.2
+PRINT_GRID GRID=dens5 USE_ALL_DATA FILE=dens5 FMT=%8.4f
+PRINT_GRID GRID=dens5 USE_ALL_DATA FILE=dens5a PRINT_AVERAGE FMT=%8.4f
+
+# Print block averages (over two frames) of the density
+dens1b: MULTICOLVARDENS DATA=dens ORIGIN=1 DIR=x NBINS=50 NOMEMORY BANDWIDTH=0.2
+PRINT_GRID GRID=dens1b STRIDE=1 FILE=dens1b FMT=%8.4f
+PRINT_GRID GRID=dens1b STRIDE=1 FILE=dens1ba PRINT_AVERAGE FMT=%8.4f
+
+# Interpolate onto a finer grid and test
+fine: MULTICOLVARDENS DATA=dens ORIGIN=1 DIR=x NBINS=100 BANDWIDTH=0.1
+interpol: INTERPOLATE_GRID GRID=dens5 GRID_BIN=100
+
+PRINT_GRID GRID=fine FILE=fine_grid USE_ALL_DATA PRINT_AVERAGE FMT=%8.4f
+PRINT_GRID GRID=interpol FILE=interpol USE_ALL_DATA FMT=%8.4f

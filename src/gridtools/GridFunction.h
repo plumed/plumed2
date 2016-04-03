@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_gridtools_HistogramOnGrid_h
-#define __PLUMED_gridtools_HistogramOnGrid_h
+#ifndef __PLUMED_gridtools_GridFunction_h
+#define __PLUMED_gridtools_GridFunction_h
 
 #include "GridVessel.h"
 
@@ -28,11 +28,11 @@ namespace PLMD {
 namespace gridtools {
 
 class GridFunction : public GridVessel {
+friend class PrintGrid;
 public:
   static void registerKeywords( Keywords& keys );
   explicit GridFunction( const vesselbase::VesselOptions& da );
   void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
-  void finish( const std::vector<double>& );
   bool applyForce(  std::vector<double>& forces ){ return false; }
   void incorporateRestartDataIntoGrid( const double& old_norm, std::vector<double>& indata );
 };

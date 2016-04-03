@@ -34,6 +34,7 @@
 #include "tools/KernelFunctions.h"
 #include "vesselbase/ActionWithInputVessel.h"
 #include "gridtools/HistogramOnGrid.h"
+#include "gridtools/AverageOnGrid.h"
 #include "vesselbase/StoreDataVessel.h"
 
 using namespace std;
@@ -99,9 +100,9 @@ class MultiColvarDensity :
   public vesselbase::ActionWithInputVessel
 {
   std::string kerneltype;
-  bool fractional;
+  bool nomemory, fractional, single_run;
   unsigned rstride;
-  MultiColvarBase* mycolv; 
+  MultiColvarBase* mycolv;
   std::vector<unsigned> nbins;
   std::vector<double> gspacing;
   std::vector<bool> confined;
@@ -118,6 +119,7 @@ public:
   void calculateNumericalDerivatives( ActionWithValue* a=NULL ){ plumed_error(); }
   bool isPeriodic(){ return false; }
   unsigned getNumberOfDerivatives(){ return 0; }
+  void setAnalysisStride( const bool& use_all, const unsigned& astride ){ single_run=use_all; }
   void performTask( const unsigned& , const unsigned& , MultiValue& ) const ;
   void apply(){}
   void update();
@@ -164,7 +166,8 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
   ActionPilot(ao),
   ActionAtomistic(ao),
   ActionWithVessel(ao),
-  ActionWithInputVessel(ao)
+  ActionWithInputVessel(ao),
+  single_run(true)
 {
 
   std::vector<AtomNumber> atom;
@@ -256,18 +259,20 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
     else if( directions[i]==1 ) vstring+=",y";
     else if( directions[i]==2 ) vstring+=",z";
   }
-  bool nomemory; parseFlag("NOMEMORY",nomemory);
+  parseFlag("NOMEMORY",nomemory);
   if( nomemory ) vstring += " NOMEMORY";
 
   bool sumflag; parseFlag("UNORMALIZED",sumflag);
-  if( mycolv->isDensity() && sumflag ) error("input is a DENSITY so the UNORMALIZED flag makes no sense");
-  if( !mycolv->isDensity() && !sumflag ) vstring += " AVERAGE";
+  if( sumflag ) vstring += " UNORMALIZED";
   // Create a task list
   for(unsigned i=0;i<mycolv->getFullNumberOfTasks();++i) addTaskToList(i);
   vesselbase::VesselOptions da("mygrid","",-1,vstring,this);
-  Keywords keys; gridtools::HistogramOnGrid::registerKeywords( keys );
+  Keywords keys; gridtools::AverageOnGrid::registerKeywords( keys );
   vesselbase::VesselOptions dar( da, keys );
-  mygrid = new gridtools::HistogramOnGrid(dar); addVessel( mygrid );
+  if( mycolv->isDensity() ){
+     mygrid = new gridtools::HistogramOnGrid(dar); mygrid->setNorm(0);
+  } else mygrid = new gridtools::AverageOnGrid(dar); 
+  addVessel( mygrid );
 
   // Enusre units for cube files are set correctly
   if( !fractional ){
@@ -285,6 +290,8 @@ unsigned MultiColvarDensity::getNumberOfQuantities() const {
 }
 
 void MultiColvarDensity::update(){
+  if( !single_run && getStep()==0 ) return;
+
   if( mygrid->wasreset() ){
      std::vector<double> min(directions.size()), max(directions.size());
      std::vector<std::string> gmin(directions.size()), gmax(directions.size());;
@@ -318,6 +325,7 @@ void MultiColvarDensity::update(){
   lockContributors();
   // Now perform All Tasks
   origin = getPosition(0);
+  if( mycolv->isDensity() ) mygrid->setNorm( 1. + mygrid->getNorm() );
   runAllTasks();  
 }
 
@@ -326,8 +334,7 @@ void MultiColvarDensity::performTask( const unsigned& tindex, const unsigned& cu
   Vector fpos, apos = pbcDistance( origin, mycolv->getCentralAtomPos( mycolv->getActiveTask(current) ) );
   if( fractional ){ fpos = getPbc().realToScaled( apos ); } else { fpos=apos; }
 
-  myvals.setValue( 0, cvals[0] );
-  for(unsigned j=0;j<directions.size();++j) myvals.setValue( 1+j, fpos[ directions[j] ] );
+  myvals.setValue( 0, cvals[0] ); for(unsigned j=0;j<directions.size();++j) myvals.setValue( 1+j, fpos[ directions[j] ] );
   myvals.setValue( 1+directions.size(), cvals[1] );
 }
 

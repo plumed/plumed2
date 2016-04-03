@@ -130,6 +130,7 @@ public:
   unsigned getNumberOfQuantities() const ;
   void performTask( const unsigned& , const unsigned& , MultiValue& ) const ;
   void setAnalysisStride( const bool& use_all, const unsigned& astride );
+  void finalizeWeights( const bool& ignore_weights );
 };
 
 PLUMED_REGISTER_ACTION(Histogram,"HISTOGRAM")
@@ -146,7 +147,7 @@ void Histogram::registerKeywords( Keywords& keys ){
                                              More details on the kernels available in plumed can be found in \\ref kernelfunctions.");
   keys.add("optional","BANDWIDTH","the bandwdith for kernel density estimation");
   keys.addFlag("UNORMALIZED",false,"Set to TRUE if you don't want histogram to be normalized or free energy to be shifted.");
-  keys.use("NOMEMORY");
+  keys.addFlag("NOMEMORY",false,"analyse each block of data separately");
 }
 
 Histogram::Histogram(const ActionOptions&ao):
@@ -169,14 +170,15 @@ unnormalized(false)
      else vstring+=",F";
   }
   bool unorm=false; parseFlag("UNORMALIZED",unorm);
+  bool nomem=false; parseFlag("NOMEMORY",nomem);
   if( unorm ){
      log.printf("  working with unormalised grid \n");
      vstring += " UNORMALIZED";
   }
+  if( nomem ) vstring += " NOMEMORY";
   vstring += " COMPONENTS=" + getLabel();
   vstring += " COORDINATES=" + getPntrToArgument(0)->getName();
   for(unsigned i=1;i<getNumberOfArguments();++i) vstring += "," + getPntrToArgument(i)->getName(); 
-  if( !usingMemory() ) vstring += " NOMEMORY";
   std::vector<unsigned> nbin; parseVector("GRID_BIN",nbin);
   std::vector<double> gspacing; parseVector("GRID_SPACING",gspacing);
   if( nbin.size()!=getNumberOfArguments() && gspacing.size()!=getNumberOfArguments() ){
@@ -215,6 +217,8 @@ void Histogram::performTask( const unsigned& task_index, const unsigned& current
   for(unsigned j=0;j<getNumberOfArguments();++j) myvals.setValue( 1+j, point[j] );
   myvals.setValue( 1+getNumberOfArguments(), weight );
 }
+
+void Histogram::finalizeWeights( const bool& ignore_weights ){ finalizeWeightsNoLogSums( 1.0 ); }
 
 void Histogram::performAnalysis(){
   if( mygrid->wasreset() ) mygrid->clear();

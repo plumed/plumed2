@@ -76,7 +76,6 @@ void Analysis::registerKeywords( Keywords& keys ){
   keys.addFlag("WRITE_CHECKPOINT",false,"write out a checkpoint so that the analysis can be restarted in a later run");
   keys.add("hidden","REUSE_DATA_FROM","eventually this will allow you to analyse the same set of data multiple times");
   keys.add("hidden","IGNORE_REWEIGHTING","this allows you to ignore any reweighting factors");
-  keys.reserveFlag("NOMEMORY",false,"analyse each block of data separately");
   keys.use("RESTART");
   keys.use("UPDATE_FROM");
   keys.use("UPDATE_UNTIL");
@@ -186,8 +185,6 @@ argument_names(getNumberOfArguments())
               log.printf("  analyzing all data in trajectory\n");
           }
       }
-      if( keywords.exists("NOMEMORY") ){ nomemory=false; parseFlag("NOMEMORY",nomemory); }
-      if(nomemory) log.printf("  doing a separate analysis for each block of data\n");
       parseFlag("WRITE_CHECKPOINT",write_chq);
       if( write_chq && single_run ){
           write_chq=false;
@@ -368,18 +365,17 @@ void Analysis::finalizeWeights( const bool& ignore_weights ){
       }
   // Calculate normalized weights (with memory)
   } else {
-      // Calculate normalization constant
-      for(unsigned i=0;i<logweights.size();++i){
-         norm+=exp( logweights[i] );
-      }
-      if( !firstAnalysisDone ) old_norm=1.0;
-      // Calculate weights (with memory)
-      for(unsigned i=0;i<logweights.size();++i){
-          data[i]->setWeight( exp( logweights[i] ) / old_norm );
-      }
-      if( !firstAnalysisDone ) old_norm=0.0;
+      if( !firstAnalysisDone ) finalizeWeightsNoLogSums( 1.0 );
+      else finalizeWeightsNoLogSums( old_norm );
   }
-  
+}
+
+void Analysis::finalizeWeightsNoLogSums( const double& onorm ){
+  if( !reusing_data && idata!=logweights.size() ) error("something has gone wrong.  Am trying to run analysis but I don't have sufficient data");
+  // Calculate normalization constant
+  norm=0; for(unsigned i=0;i<logweights.size();++i) norm+=exp( logweights[i] );
+  // Calculate weights (with memory)
+  for(unsigned i=0;i<logweights.size();++i) data[i]->setWeight( exp( logweights[i] ) / onorm );
 }
 
 void Analysis::getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const {

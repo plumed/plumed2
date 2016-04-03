@@ -21,6 +21,8 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithInputGrid.h"
 #include "core/ActionRegister.h"
+#include "GridFunction.h"
+#include "AverageOnGrid.h"
 #include "tools/IFile.h"
 #include "tools/OFile.h"
 
@@ -29,6 +31,7 @@ namespace gridtools {
 
 class PrintGrid : public ActionWithInputGrid {
 private:
+  bool printav;
   std::string fmt, filename;
 public:
   static void registerKeywords( Keywords& keys );
@@ -47,19 +50,31 @@ void PrintGrid::registerKeywords( Keywords& keys ){
   ActionWithInputGrid::registerKeywords( keys );
   keys.add("compulsory","FILE","density","the file on which to write the grid."); 
   keys.add("optional","FMT","the format that should be used to output real numbers");
+  keys.addFlag("PRINT_AVERAGE",false,"if your input is a \\ref MULTICOLVARDENS output the average in the grid file. This option can only be used with USE_ALL_DATA/NOMEMORY");
 }
 
 PrintGrid::PrintGrid(const ActionOptions&ao):
 Action(ao),
 ActionWithInputGrid(ao),
+printav(false),
 fmt("%f")
 {
-  // This ensures that restarting of grids works with NOMEMORY
+  // This ensures that restarting of grids works with memory
   mygrid->foundprint=true;
+  GridFunction* mygf = dynamic_cast<GridFunction*> ( mygrid );
+  if( mygf ){
+      ActionWithInputGrid* ming = dynamic_cast<ActionWithInputGrid*>( mygf->getAction() );
+      plumed_assert( ming ); (ming->mygrid)->foundprint=true; 
+  }
+  AverageOnGrid* myav = dynamic_cast<AverageOnGrid*>( mygrid );
+  if( myav ){
+     parseFlag("PRINT_AVERAGE",printav);
+     if( printav && !mygrid->nomemory && !single_run ) error("cannot use PRINT_AVERAGE flag if you are outputting with a stride");
+   }
+
   parse("FMT",fmt); fmt=" "+fmt; parse("FILE",filename); 
   if(filename.length()==0) error("name out output file was not specified");
   log.printf("  outputting grid to file named %s with format %s \n",filename.c_str(), fmt.c_str() );
-
   checkRead();
 }
 
@@ -68,6 +83,7 @@ void PrintGrid::performOperationsWithGrid( const bool& from_update ){
 
   // Read in the old grid and ensure that it is considered
   if( from_update && !mygrid->nomemory ){
+     if( mygrid->wasreset() ) error("grid must be printed in action immediately after it is calculated");
      IFile oldf; oldf.link(*this);
      if( oldf.FileExist(filename) ){
          oldf.open(filename);
@@ -104,15 +120,20 @@ void PrintGrid::performOperationsWithGrid( const bool& from_update ){
      // Retrieve and print the grid coordinates
      mygrid->getGridPointCoordinates(i, xx ); 
      for(unsigned j=0;j<mygrid->getDimension();++j){ ofile.fmtField(fmt); ofile.printField(mygrid->getComponentName(j),xx[j]); }
-     for(unsigned j=0;j<mygrid->getNumberOfQuantities();++j){ 
-        ofile.fmtField(fmt); ofile.printField(mygrid->arg_names[mygrid->dimension+j], mygrid->getGridElement( i, j ) );  
+     if( printav ){
+        unsigned nnorm=mygrid->dimension+1; if( mygrid->noderiv ) nnorm=1;
+        for(unsigned j=0;j<mygrid->getNumberOfQuantities()-nnorm;++j){
+           ofile.fmtField(fmt); ofile.printField(mygrid->arg_names[mygrid->dimension+j], mygrid->getGridElement( i, j ) );
+        }
+     } else {
+        for(unsigned j=0;j<mygrid->getNumberOfQuantities();++j){ 
+           ofile.fmtField(fmt); ofile.printField(mygrid->arg_names[mygrid->dimension+j], mygrid->getGridElementForPrint( i, j ) );  
+        }
      }
      ofile.printField();
   }
 
   ofile.close();
-  // Clear the grid ready for next time
-  if( from_update ) mygrid->reset();
 }
 
 void PrintGrid::readGridFile( IFile& ifile ){
@@ -125,7 +146,7 @@ void PrintGrid::readGridFile( IFile& ifile ){
       if( min!=mygrid->str_max[i] ) error("maximum of grid in restart file does not match stored minimum");
       ifile.scanField("periodic_" + mygrid->arg_names[i], min );
       if( mygrid->pbc[i] && min!="true" ) error("periodicity of grid in restart file does not match stored periodicity");
-      else if( mygrid->pbc[i] && min!="false" ) error("periodicity of grid in restart file does not match stored periodicity");
+      else if( !mygrid->pbc[i] && min!="false" ) error("periodicity of grid in restart file does not match stored periodicity");
       ifile.scanField("nbins_" + mygrid->arg_names[i], nb );
       if( mygrid->pbc[i] && nb!=mygrid->nbin[i] ) error("number of bins in restart file does not match stored number of bins");
       else if( !mygrid->pbc[i] && (nb+1)!=mygrid->nbin[i] ) error("number of bins in restart file does not match stored number of bins");
@@ -157,6 +178,11 @@ void PrintGrid::readGridFile( IFile& ifile ){
      ifile.scanField();
   }
   mygrid->incorporateRestartDataIntoGrid( old_norm, indata );
+  GridFunction* mygf = dynamic_cast<GridFunction*> ( mygrid );
+  if( mygf ){
+      ActionWithInputGrid* ming=dynamic_cast<ActionWithInputGrid*>( mygrid->getAction() );
+      plumed_assert( ming ); mygrid->reset(); ming->performOperationsWithGrid( true );
+  }
 }
 
 }

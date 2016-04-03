@@ -29,7 +29,8 @@ namespace gridtools {
 
 class HistogramOnGrid : public GridVessel {
 private:
-  bool average;
+  bool noreadin;
+  double save_norm;
   std::string kerneltype;
   std::vector<double> bandwidths;
   std::vector<unsigned> nneigh;
@@ -42,9 +43,9 @@ public:
                   const std::vector<unsigned>& nbins, const std::vector<double>& spacing );
   void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
   virtual void accumulate( const unsigned& ipoint, const double& weight, const double& dens, const std::vector<double>& der, std::vector<double>& buffer ) const ;
-  virtual void finish( const std::vector<double>& );
   virtual double getGridElement( const unsigned& ipoint, const unsigned& jelement ) const ;
   bool applyForce(  std::vector<double>& forces ){ return false; }
+  void reset();
   void incorporateRestartDataIntoGrid( const double& old_norm, std::vector<double>& indata );
 };
 

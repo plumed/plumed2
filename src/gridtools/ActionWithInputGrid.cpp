@@ -32,6 +32,7 @@ void ActionWithInputGrid::registerKeywords( Keywords& keys ){
   vesselbase::ActionWithVessel::registerKeywords( keys );
   keys.add("compulsory","GRID","the action that creates the input grid you would like to use");
   keys.add("optional","STRIDE","the frequency with which to output the grid");
+  keys.add("optional","COMPONENT","if your input is a vector field use this to specifiy the component of the input vector field for which you wish to use");
   keys.addFlag("USE_ALL_DATA",false,"use the data from the entire trajectory to perform the analysis");
 }
 
@@ -52,12 +53,20 @@ mygrid(NULL)
      if( getStride()%ap->getStride()!=0 ) error("mismatch between strides in " + ap->getLabel() + " and " +  getLabel() );
   }
 
-  log.printf("  using grid calculated by action %s \n",mves->getLabel().c_str() );
   for(unsigned i=0;i<mves->getNumberOfVessels();++i){
       mygrid=dynamic_cast<GridVessel*>( mves->getPntrToVessel(i) );
       if( mygrid ) break; 
   }
   if( !mygrid ) error("input action does not calculate a grid");
+
+  if( mygrid->getNumberOfComponents()==1 ){
+     mycomp=0;
+  } else {
+     int tcomp=-1; parse("COMPONENT",tcomp);
+     if( tcomp<0 ) error("component of vector field was not specified - use COMPONENT keyword");
+     mycomp=tcomp;
+  }
+  log.printf("  using %dth component of grid calculated by action %s \n",mycomp,mves->getLabel().c_str() );
 
   if( keywords.exists("USE_ALL_DATA") ){
      parseFlag("USE_ALL_DATA",single_run);
@@ -81,7 +90,7 @@ void ActionWithInputGrid::update(){
   // Don't analyse the first frame in the trajectory
   if( single_run || getStep()==0 ) return;
   // Now check that all stuff for restarting is done correctly
-  if( !mygrid->foundprint ) error("an additional PRINT_GRID action is required before this action so grid is restarted correctly");
+  if( !mygrid->nomemory && !mygrid->foundprint ) error("an additional PRINT_GRID action is required before this action so grid is restarted correctly");
 
   if( checkAllActive() ){
      for(unsigned i=0;i<mygrid->getNumberOfPoints();++i){
@@ -89,6 +98,8 @@ void ActionWithInputGrid::update(){
      }
   }
   performOperationsWithGrid( true );
+  // Get the grid ready for next time
+  mygrid->reset();
 }
 
 void ActionWithInputGrid::runFinalJobs(){

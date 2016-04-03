@@ -52,9 +52,8 @@ ActionWithInputGrid(ao),
 fmt("%f")
 {
   if( mygrid->getDimension()!=3 ) error("cannot print cube file if grid does not contain three dimensional data");
-  if( mygrid->getNumberOfComponents()!=1 ) error("cannot print cube file if data on grid is a vector field");
 
-  parse("FMT",fmt); fmt=" "+fmt; parse("FILE",filename); 
+  parse("FMT",fmt); fmt=fmt +" "; parse("FILE",filename); 
   if(filename.length()==0) error("name out output file was not specified");
   log.printf("  outputting grid to file named %s with format %s \n",filename.c_str(), fmt.c_str() );
 
@@ -72,7 +71,7 @@ void PrintCube::performOperationsWithGrid( const bool& from_update ){
   ofile.printf("PLUMED CUBE FILE\n");
   ofile.printf("OUTER LOOP: X, MIDDLE LOOP: Y, INNER LOOP: Z\n");
   // Number of atoms followed by position of origin (origin set so that center of grid is in center of cell)
-  std::string ostr = "%d" + fmt + fmt + fmt + "\n";
+  std::string ostr = "%d " + fmt + fmt + fmt + "\n";
   ofile.printf(ostr.c_str(),1,-0.5*lunit*mygrid->getGridExtent(0),-0.5*lunit*mygrid->getGridExtent(1),-0.5*lunit*mygrid->getGridExtent(2));
   ofile.printf(ostr.c_str(),mygrid->getNbin()[0],lunit*mygrid->getGridSpacing()[0],0.0,0.0);  // Number of bins in each direction followed by 
   ofile.printf(ostr.c_str(),mygrid->getNbin()[1],0.0,lunit*mygrid->getGridSpacing()[1],0.0);  // shape of voxel
@@ -82,7 +81,7 @@ void PrintCube::performOperationsWithGrid( const bool& from_update ){
   for(pp[0]=0;pp[0]<nbin[0];++pp[0]){
       for(pp[1]=0;pp[1]<nbin[1];++pp[1]){
           for(pp[2]=0;pp[2]<nbin[2];++pp[2]){
-              ofile.printf(fmt.c_str(),mygrid->getGridElement( pp, 0 ) );
+              ofile.printf(fmt.c_str(), getFunctionValue(pp) );
               if(pp[2]%6==5) ofile.printf("\n");
           }
           ofile.printf("\n");
@@ -90,8 +89,6 @@ void PrintCube::performOperationsWithGrid( const bool& from_update ){
   }
 
   ofile.close();
-  // Clear the grid ready for next time
-  if( from_update ) mygrid->reset();
 }
 
 }

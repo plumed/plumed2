@@ -36,7 +36,6 @@ private:
   double lenunit;
   unsigned gbuffer;
   std::string fmt_xyz;
-  unsigned mycomp;
   double contour;
   bool firsttime, usegrid, output_xyz;
   std::vector<unsigned> gdirs;
@@ -69,7 +68,6 @@ void FindContour::registerKeywords( Keywords& keys ){
                                           "along the third axis of the grid");
   keys.addFlag("BUILD_GRID",false,"look for position of the contour on a grid");
   keys.add("compulsory","BUFFER","0","number of buffer grid points around location where grid was found on last step.  If this is zero the full grid is calculated on each step");
-  keys.add("optional","COMPONENT","if your input is a vector field use this to specifiy the component of the input vector field for which you wish to find the contour");
   keys.add("optional", "PRECISION","The number of digits in trajectory file");  
 }
 
@@ -81,13 +79,6 @@ nosearch_dirs( mygrid->getDimension() ),
 firsttime(true),
 outgrid(NULL)
 {
-  if( mygrid->getNumberOfComponents()==1 ){ 
-     mycomp=0; 
-  } else {
-     int tcomp=-1; parse("COMPONENT",tcomp);
-     if( tcomp<0 ) error("component of vector field was not specified - use COMPONENT keyword");
-     mycomp=tcomp;
-  }
   if( mygrid->noDerivatives() ) error("cannot find contours if input grid has no derivatives");
 
   parse("CONTOUR",contour); parse("BUFFER",gbuffer);
@@ -177,7 +168,7 @@ outgrid(NULL)
 }
 
 double FindContour::getDifferenceFromContour( const std::vector<double>& x, std::vector<double>& der ){
-  return mygrid->getValueAndDerivatives( x, mycomp, der ) - contour;
+  return getFunctionValueAndDerivatives( x, der ) - contour;
 }
 
 void FindContour::performOperationsWithGrid( const bool& from_update ){
@@ -228,7 +219,7 @@ void FindContour::performOperationsWithGrid( const bool& from_update ){
      if( cycle ) continue;
 
      // Get the value of a point on the grid
-     double val1=mygrid->getGridElement( i, mycomp*(mygrid->getDimension()+1) ) - contour;
+     double val1=getFunctionValue( i ) - contour;
 
      bool edge=false;
      for(unsigned j=0;j<mygrid->getDimension();++j){
@@ -237,7 +228,7 @@ void FindContour::performOperationsWithGrid( const bool& from_update ){
          if( !mygrid->isPeriodic(j) && (ind[j]+1)==nbin[j] ) continue;
          else if( (ind[j]+1)==nbin[j] ){ edge=true; ind[j]=0; }
          else ind[j]+=1; 
-         double val2=mygrid->getGridElement(ind,mycomp*(mygrid->getDimension()+1)) - contour;
+         double val2=getFunctionValue( ind ) - contour;
          if( val1*val2<0 ){
              // Use initial point location as first guess for search
              contour_points[npoints].resize( mygrid->getDimension() );  
@@ -261,8 +252,6 @@ void FindContour::performOperationsWithGrid( const bool& from_update ){
    
   }
   if( gbuffer>0 ) mygrid->activateThesePoints( active );
-  // Clear the grid ready for next time
-  if( from_update ) mygrid->reset();
 
   if( usegrid ){
       std::vector<double> g_point( outgrid->getDimension() );

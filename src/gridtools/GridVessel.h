@@ -32,10 +32,10 @@ namespace gridtools {
 
 class GridVessel : public vesselbase::Vessel {
 friend class ActionWithInputGrid;
+friend class AverageOnGrid;
+friend class GridFunction;
 friend class PrintGrid;
 private:
-/// Do we have derivatives
- bool noderiv;
 /// The grid was recently cleared and bounds can be set
  bool wascleared;
 /// Have the minimum and maximum for the grid been set
@@ -55,6 +55,8 @@ private:
 /// The grid point that was requested last by getGridPointCoordinates
  unsigned currentGridPoint;
 protected:
+/// Do we have derivatives
+ bool noderiv;
 /// The names of the various columns in the grid file
  std::vector<std::string> arg_names; 
 /// The normalisation constant to use
@@ -102,12 +104,10 @@ public:
 
 /// Operations on one of the elements of grid point i
  void setGridElement( const unsigned&, const unsigned&, const double& );
- void addToGridElement( const unsigned&, const unsigned&, const double& );
 
 /// Operations on one of the elements of grid point specified by vector
  double getGridElement( const std::vector<unsigned>&, const unsigned& ) const ;
  void setGridElement( const std::vector<unsigned>&, const unsigned&, const double& );
- void addToGridElement( const std::vector<unsigned>&, const unsigned&, const double& );
 /// Set the size of the buffer equal to nper*npoints
  virtual void resize();
 /// Get the number of points in the grid
@@ -117,7 +117,7 @@ public:
 /// Get the dimensionality of the function
  unsigned getDimension() const ;
 /// Get the number of components in the vector stored on each grid point
- unsigned getNumberOfComponents() const ;
+ virtual unsigned getNumberOfComponents() const ;
 /// Is the grid periodic in the ith direction
  bool isPeriodic( const unsigned& i ) const ;
 /// Get the number of quantities we have stored at each grid point
@@ -134,6 +134,7 @@ public:
  double getCellVolume() const ;
 /// Get the value of the ith grid element 
  virtual double getGridElement( const unsigned&, const unsigned& ) const ;
+ virtual double getGridElementForPrint( const unsigned&, const unsigned& ) const ; 
 /// Get the set of points neighouring a particular location in space
  void getNeighbors( const std::vector<double>& pp, const std::vector<unsigned>& nneigh,
                     unsigned& num_neighbours, std::vector<unsigned>& neighbors ) const ;
@@ -146,10 +147,12 @@ public:
  const std::vector<double>& getGridSpacing() const ;
 /// Get the extent of the grid in one of the axis
  double getGridExtent( const unsigned& i ) const ;
+/// Copy data from an accumulated buffer into the grid
+ void finish( const std::vector<double>& );
 /// Clear all the data stored on the grid
  virtual void clear();
 /// Reset the grid so that it is cleared at start of next time it is calculated
- void reset();
+ virtual void reset();
 /// This ensures that Gaussian cube fies are in correct units
  void setCubeUnits( const double& units );
 /// This ensures that Gaussian cube files are in correct units

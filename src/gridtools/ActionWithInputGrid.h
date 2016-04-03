@@ -33,12 +33,16 @@ public ActionPilot,
 public vesselbase::ActionWithVessel
 {
 friend class GridFunction;
+friend class PrintGrid;
 private:
+  unsigned mycomp;
   vesselbase::ActionWithVessel* mves;
 protected:
   bool single_run;
   GridVessel* mygrid;
-  double getGridElementAndDerivatives( const std::vector<double>& x, std::vector<double>& der ) const ;
+  double getFunctionValue( const unsigned& ipoint ) const ;
+  double getFunctionValue( const std::vector<unsigned>& ip ) const ;
+  double getFunctionValueAndDerivatives( const std::vector<double>& x, std::vector<double>& der ) const ;
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithInputGrid(const ActionOptions&ao);
@@ -52,6 +56,22 @@ public:
   virtual bool isGridPrint() const { return false; }
   virtual void invertTask( const std::vector<double>& indata, std::vector<double>& outdata );
 };
+
+inline
+double ActionWithInputGrid::getFunctionValue( const unsigned& ipoint ) const {
+  unsigned dim=mygrid->getDimension(); if( mygrid->noderiv ) dim=0; 
+  return mygrid->getGridElement( ipoint, mycomp*(1+dim) );
+}
+
+inline
+double ActionWithInputGrid::getFunctionValue( const std::vector<unsigned>& ip ) const {
+  return getFunctionValue( mygrid->getIndex(ip) );
+}
+
+inline
+double ActionWithInputGrid::getFunctionValueAndDerivatives( const std::vector<double>& x, std::vector<double>& der ) const {
+  return mygrid->getValueAndDerivatives( x, mycomp, der );
+} 
 
 }
 }

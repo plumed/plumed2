@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "GridFunction.h"
+#include "HistogramOnGrid.h"
 #include "ActionWithInputGrid.h"
 
 namespace PLMD {
@@ -32,6 +33,15 @@ void GridFunction::registerKeywords( Keywords& keys ){
 GridFunction::GridFunction( const vesselbase::VesselOptions& da ):
 GridVessel(da)
 {
+  ActionWithInputGrid* myfunc = dynamic_cast<ActionWithInputGrid*>( getAction() );
+  plumed_assert( myfunc ); nomemory=false;
+  if( (myfunc->mygrid)->nomemory ) nomemory=true; 
+
+  if( !nomemory ){
+     HistogramOnGrid* myhist = dynamic_cast<HistogramOnGrid*>( myfunc->mygrid );
+     if( myhist && (myfunc->mygrid)->foundprint && (!myfunc->single_run  || (myfunc->mygrid)->nomemory) ) error("cannot convert a histogram to a free energy after print");
+     else if( myhist ) (myfunc->mygrid)->foundprint=true;
+  }
 }
 
 void GridFunction::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
@@ -40,14 +50,9 @@ void GridFunction::calculate( const unsigned& current, MultiValue& myvals, std::
   return;
 }
 
-
-void GridFunction::finish( const std::vector<double>& buffer ){
-  for(unsigned i=0;i<data.size();++i) data[i]+=buffer[bufstart + i];
-}
-
 void GridFunction::incorporateRestartDataIntoGrid( const double& old_norm, std::vector<double>& indata ){
   ActionWithInputGrid* myfunc = dynamic_cast<ActionWithInputGrid*>( getAction() );
-  std::vector<double> pin( nper ), pout( nper ); 
+  std::vector<double> pin( nper ), pout( nper ); setNorm( 1. + getNorm() / old_norm ); 
   for(unsigned i=0;i<getNumberOfPoints();++i){
       for(unsigned j=0;j<nper;++j) pin[j]=indata[i*nper+j];
       myfunc->invertTask( pin, pout ); 

@@ -31,31 +31,42 @@ void AverageOnGrid::registerKeywords( Keywords& keys ){
 AverageOnGrid::AverageOnGrid( const vesselbase::VesselOptions& da ):
 HistogramOnGrid(da)
 {
-  plumed_assert( nper==(dimension+1) );
   arg_names.push_back( "density" );
   if( !discrete ){
     for(unsigned i=0;i<dimension;++i) arg_names.push_back( "ddensity_" + arg_names[i] );
-    nper = 2*(dimension+1);
+    nper += (dimension+1);
   } else {
-    nper = 2;
+    nper += 1;
   }
 }
 
 void AverageOnGrid::accumulate( const unsigned& ipoint, const double& weight, const double& dens, const std::vector<double>& der, std::vector<double>& buffer ) const {
-  buffer[bufstart+nper*ipoint] += weight*dens; buffer[bufstart+nper*ipoint+1+dimension] += dens;
+  buffer[bufstart+nper*ipoint] += weight*dens; buffer[ bufstart+nper*(ipoint+1) - (dimension+1) ] += dens;
   if( der.size()>0 ){
-    for(unsigned j=0;j<dimension;++j) buffer[bufstart+nper*ipoint+ 1 + j] += weight*der[j];
-    for(unsigned j=0;j<dimension;++j) buffer[bufstart+nper*ipoint + 1 + dimension + 1 + j] += der[j];
+    for(unsigned j=0;j<dimension;++j) buffer[ bufstart+nper*ipoint + 1 + j ] += weight*der[j];
+    for(unsigned j=0;j<dimension;++j) buffer[ bufstart+nper*(ipoint+1) - dimension + j ] += der[j];
   }
 }
 
 double AverageOnGrid::getGridElement( const unsigned& ipoint, const unsigned& jelement ) const {
   if( unormalised ) return data[nper*ipoint + jelement];  
-  if( jelement==0 ) return data[nper*ipoint] / data[nper*ipoint + 1 + dimension]; 
-  double rdenom = 1.0;
-  if( fabs(data[nper*ipoint+1+dimension])>epsilon ) rdenom = 1. / data[nper*ipoint + 1 + dimension];
-  return rdenom*data[nper*ipoint+1+jelement] - rdenom*rdenom*data[nper*ipoint]*data[nper*ipoint+1+dimension+1+jelement]; 
-} 
+
+  if( noderiv ) return data[nper*ipoint+jelement] / data[nper*(1+ipoint) - 1];
+
+  double rdenom = 1.0; 
+  if( fabs(data[nper*(ipoint+1) -(dimension+1)])>epsilon ) rdenom = 1. / data[nper*(ipoint+1) - (dimension+1)];
+  
+  unsigned jderiv = jelement%(1+dimension);
+  if( jderiv==0 ) return rdenom*data[nper*ipoint+jelement]; 
+
+  unsigned jfloor = std::floor( jelement / (1+dimension) );
+  return rdenom*data[nper*ipoint+jelement] - rdenom*rdenom*data[nper*ipoint+jfloor]*data[nper*(ipoint+1) - (dimension+1) + jderiv ]; 
+}
+
+double AverageOnGrid::getGridElementForPrint( const unsigned& ipoint, const unsigned& jelement ) const {
+  plumed_assert( bounds_set && ipoint<npoints && jelement<nper && active[ipoint] );
+  return data[nper*ipoint + jelement]; 
+}
 
 }
 }

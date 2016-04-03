@@ -25,37 +25,48 @@
 #include "ActionWithInputGrid.h"
 #include "GridFunction.h"
 
+//+PLUMEDOC GRIDANALYSIS INTERPOLATE_GRID
+/*
+Interpolate a smooth function stored on a grid onto a grid with a smaller grid spacing.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace gridtools {
 
-class ConvertToFES : public ActionWithInputGrid {
+class InterpolateGrid : public ActionWithInputGrid {
 private:
-  double simtemp;
+  std::vector<unsigned> nbin;
+  std::vector<double> gspacing;
   GridFunction* outgrid;
 public:
   static void registerKeywords( Keywords& keys );
-  explicit ConvertToFES(const ActionOptions&ao);
+  explicit InterpolateGrid(const ActionOptions&ao);
   void performOperationsWithGrid( const bool& from_update );
   unsigned getNumberOfDerivatives(){ return 0; }
   unsigned getNumberOfQuantities() const ;
   void performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const ;
-  void invertTask( const std::vector<double>& indata, std::vector<double>& outdata );
   bool isPeriodic(){ return false; }
 };
 
-PLUMED_REGISTER_ACTION(ConvertToFES,"CONVERT_TO_FES")
+PLUMED_REGISTER_ACTION(InterpolateGrid,"INTERPOLATE_GRID")
 
-void ConvertToFES::registerKeywords( Keywords& keys ){
+void InterpolateGrid::registerKeywords( Keywords& keys ){
   ActionWithInputGrid::registerKeywords( keys );
-  keys.add("optional","TEMP","the temperature at which you are operating");
   keys.reset_style("STRIDE","hidden"); keys.remove("USE_ALL_DATA");
+  keys.add("optional","GRID_BIN","the number of bins for the grid");
+  keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
 }
 
-ConvertToFES::ConvertToFES(const ActionOptions&ao):
+InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
 Action(ao),
 ActionWithInputGrid(ao)
 {
   plumed_assert( mygrid->getNumberOfComponents()==1 );
+  if( mygrid->noDerivatives() ) error("cannot interpolate a grid that does not have derivatives"); 
   // Create the input from the old string
   std::string vstring = "COMPONENTS=" + getLabel() + " " + mygrid->getInputString();
 
@@ -64,48 +75,37 @@ ActionWithInputGrid(ao)
   Keywords keys; GridFunction::registerKeywords( keys );
   vesselbase::VesselOptions dar( da, keys );
   outgrid = new GridFunction(dar); addVessel( outgrid ); 
-  if( mygrid->noDerivatives() ) outgrid->setNoDerivatives();
+
+  parseVector("GRID_BIN",nbin); parseVector("GRID_SPACING",gspacing);
+  if( nbin.size()!=mygrid->getDimension() && gspacing.size()!=mygrid->getDimension() ){
+      error("GRID_BIN or GRID_SPACING must be set");
+  } 
+  outgrid->setBounds( mygrid->getMin(), mygrid->getMax(), nbin, gspacing ); 
   resizeFunctions();
 
-  simtemp=0.; parse("TEMP",simtemp);
-  if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
-  else simtemp=plumed.getAtoms().getKbT();
-  if( simtemp==0 ) error("TEMP not set - use keyword TEMP");
-
   // Now create task list
-  for(unsigned i=0;i<mygrid->getNumberOfPoints();++i) addTaskToList(i);
+  for(unsigned i=0;i<outgrid->getNumberOfPoints();++i) addTaskToList(i);
   // And activate all tasks
   deactivateAllTasks(); 
-  for(unsigned i=0;i<mygrid->getNumberOfPoints();++i) taskFlags[i]=1;
+  for(unsigned i=0;i<outgrid->getNumberOfPoints();++i) taskFlags[i]=1;
   lockContributors();
 }
 
-unsigned ConvertToFES::getNumberOfQuantities() const {
-  if( mygrid->noDerivatives() ) return 2;
+unsigned InterpolateGrid::getNumberOfQuantities() const {
   return 2 + mygrid->getDimension();
 }
 
-void ConvertToFES::performOperationsWithGrid( const bool& from_update ){
-  std::vector<double> fspacing;
-  outgrid->setBounds( mygrid->getMin(), mygrid->getMax(), mygrid->getNbin(), fspacing);
+void InterpolateGrid::performOperationsWithGrid( const bool& from_update ){
+  outgrid->setBounds( mygrid->getMin(), mygrid->getMax(), nbin, gspacing );
   outgrid->clear(); outgrid->setNorm( mygrid->getNorm() ); runAllTasks(); 
 }
 
-void ConvertToFES::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
-  double val=getFunctionValue( current );
-  myvals.setValue( 0, 1.0 ); myvals.setValue(1, -simtemp*std::log(val) );
-  if( !mygrid->noDerivatives() && val>0 ){
-     for(unsigned i=0;i<mygrid->getDimension();++i) myvals.setValue( 2+i, -(simtemp/val)*mygrid->getGridElement(current,i+1) );
-  }
-}
-
-void ConvertToFES::invertTask( const std::vector<double>& indata, std::vector<double>& outdata ){
-  if( fabs( indata[0] )>epsilon ){
-      outdata[0] = exp( -indata[0]/simtemp );
-      for(unsigned i=0;i<mygrid->getDimension();++i) outdata[1+i] = -(outdata[0]/simtemp)*indata[1+i];  
-  } else {
-      for(unsigned i=0;i<outdata.size();++i) outdata[i]=0.;
-  }
+void InterpolateGrid::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
+  std::vector<double> pos( mygrid->getDimension() ); outgrid->getGridPointCoordinates( current, pos );
+  std::vector<double> der( mygrid->getDimension() ); double val = getFunctionValueAndDerivatives( pos, der );
+  myvals.setValue( 0, 1.0 ); myvals.setValue(1, val ); 
+  printf("HELLO GAREHT %d %f %f \n",current,pos[0], val );
+  for(unsigned i=0;i<mygrid->getDimension();++i) myvals.setValue( 2+i, der[i] ); 
 }
 
 }

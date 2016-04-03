@@ -29,16 +29,15 @@ void HistogramOnGrid::registerKeywords( Keywords& keys ){
   GridVessel::registerKeywords( keys );
   keys.add("compulsory","KERNEL","the type of kernel to use");
   keys.add("compulsory","BANDWIDTH","the bandwidths");
-  keys.addFlag("AVERAGE",false,"are we computed a weighted average over the grid");
 }
 
 HistogramOnGrid::HistogramOnGrid( const vesselbase::VesselOptions& da ):
 GridVessel(da),
+noreadin(true),
+save_norm(0.0), 
 bandwidths(dimension),
 discrete(false)
 {
-  parseFlag("AVERAGE",average);
-
   parse("KERNEL",kerneltype); 
   if( kerneltype=="discrete" || kerneltype=="DISCRETE" ){
       discrete=true; setNoDerivatives();
@@ -62,8 +61,10 @@ void HistogramOnGrid::setBounds( const std::vector<std::string>& smin, const std
 
 void HistogramOnGrid::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
   plumed_dbg_assert( myvals.getNumberOfValues()==dimension+2 );
-  // Create a kernel function at the point of interest
-  std::vector<double> point( dimension ); double weight=myvals.get(0)*myvals.get( 1+dimension );
+  // This deals with restarts with memory weights are set equal to 1 / pre_norm
+  double winorm=1.0; if( save_norm>0. ) winorm = 1. / save_norm; 
+
+  std::vector<double> point( dimension ); double weight=winorm*myvals.get(0)*myvals.get( 1+dimension );
   for(unsigned i=0;i<dimension;++i) point[i]=myvals.get( 1+i );
 
   if( discrete ){
@@ -102,17 +103,19 @@ void HistogramOnGrid::accumulate( const unsigned& ipoint, const double& weight, 
   if( der.size()>0 ) for(unsigned j=0;j<dimension;++j) buffer[bufstart+nper*ipoint + 1 + j] += weight*der[j]; 
 }
 
+void HistogramOnGrid::reset(){
+  GridVessel::reset(); 
+  if( noreadin && !nomemory ) save_norm=getNorm(); 
+}
+
 double HistogramOnGrid::getGridElement( const unsigned& ipoint, const unsigned& jelement ) const {
   if( unormalised ) return GridVessel::getGridElement( ipoint, jelement );
   return GridVessel::getGridElement( ipoint, jelement ) / norm;
 } 
 
-void HistogramOnGrid::finish( const std::vector<double>& buffer ){
-  for(unsigned i=0;i<data.size();++i) data[i]+=buffer[bufstart + i];
-}
-
 void HistogramOnGrid::incorporateRestartDataIntoGrid( const double& old_norm, std::vector<double>& indata ){
-  plumed_assert( data.size()==indata.size() ); 
+  plumed_assert( data.size()==indata.size() && !nomemory ); noreadin=false; 
+  save_norm = old_norm + getNorm(); if( old_norm>0 ) setNorm( 1. + getNorm() / old_norm ); 
   if( unormalised ) for(unsigned i=0;i<data.size();++i) data[i] = old_norm*data[i] + indata[i]; 
   else for(unsigned i=0;i<data.size();++i) data[i] += indata[i]; 
 }

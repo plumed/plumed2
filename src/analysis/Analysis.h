@@ -125,13 +125,13 @@ protected:
   double getTemp () const;
 /// Are we analyzing each data block separately (if we are not this also returns the old normalization )
   bool usingMemory() const; 
-/// Convert the stored log weights to proper weights
-  void finalizeWeights( const bool& ignore_weights );
 /// Overwrite ActionWithArguments getArguments() so that we don't return
 /// the bias
   std::vector<Value*> getArguments();
 /// Return the format to use for numbers in output files
   std::string getOutputFormat() const ;
+/// Finalize the weights without using the log sums
+  void finalizeWeightsNoLogSums( const double& onorm );
 public:
   static void registerKeywords( Keywords& keys );
   explicit Analysis(const ActionOptions&);
@@ -150,6 +150,8 @@ public:
   bool isPeriodic(){ plumed_error(); return false; }
   unsigned getNumberOfDerivatives(){ return 0; }
   virtual void setAnalysisStride( const bool& use_all, const unsigned& astride );
+  /// Convert the stored log weights to proper weights
+  virtual void finalizeWeights( const bool& ignore_weights );
 };
 
 inline

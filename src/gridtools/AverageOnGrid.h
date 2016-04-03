@@ -33,7 +33,15 @@ public:
   explicit AverageOnGrid( const vesselbase::VesselOptions& da );
   void accumulate( const unsigned& ipoint, const double& weight, const double& dens, const std::vector<double>& der, std::vector<double>& buffer ) const ;
   double getGridElement( const unsigned& ipoint, const unsigned& jelement ) const ;
+  double getGridElementForPrint( const unsigned& ipoint, const unsigned& jelement ) const ;
+  unsigned getNumberOfComponents() const ;
 };
+
+inline
+unsigned AverageOnGrid::getNumberOfComponents() const {
+  if( noderiv ) return nper - 1;
+  return nper / ( dimension + 1 ) - 1;
+}
 
 }
 }

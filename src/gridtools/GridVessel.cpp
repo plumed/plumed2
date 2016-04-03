@@ -37,11 +37,11 @@ void GridVessel::registerKeywords( Keywords& keys ){
 
 GridVessel::GridVessel( const vesselbase::VesselOptions& da ):
 Vessel(da),
-noderiv(false),
 wascleared(true), 
 bounds_set(false),
 cube_units(1.0),
-norm(1)
+norm(0.0),
+noderiv(false)
 {
   std::vector<std::string> compnames; parseVector("COMPONENTS",compnames);
   std::vector<std::string> coordnames; parseVector("COORDINATES",coordnames);
@@ -201,14 +201,17 @@ double GridVessel::getGridElement( const unsigned& ipoint, const unsigned& jelem
   return data[ nper*ipoint + jelement ];
 }
 
+double GridVessel::getGridElementForPrint( const unsigned& ipoint, const unsigned& jelement ) const {
+  return getGridElement( ipoint, jelement );
+}
+
 void GridVessel::setGridElement( const unsigned& ipoint, const unsigned& jelement, const double& value ){
   plumed_dbg_assert( bounds_set && ipoint<npoints && jelement<nper );
   wascleared=false; data[ nper*ipoint + jelement ] = value;
 }
 
-void GridVessel::addToGridElement( const unsigned& ipoint, const unsigned& jelement, const double& value ){
-  plumed_dbg_assert( bounds_set && ipoint<npoints && jelement<nper );
-  wascleared=false; data[ nper*ipoint + jelement ] += value;
+void GridVessel::finish( const std::vector<double>& buffer ){
+  wascleared=false; for(unsigned i=0;i<data.size();++i) data[i]+=buffer[bufstart + i];
 }
 
 double GridVessel::getGridElement( const std::vector<unsigned>& indices, const unsigned& jelement ) const {
@@ -217,10 +220,6 @@ double GridVessel::getGridElement( const std::vector<unsigned>& indices, const u
 
 void GridVessel::setGridElement( const std::vector<unsigned>& indices, const unsigned& jelement, const double& value ){
   setGridElement( getIndex( indices ), jelement, value );
-}
-
-void GridVessel::addToGridElement( const std::vector<unsigned>& indices, const unsigned& jelement, const double& value ){
-  addToGridElement( getIndex( indices ), jelement, value );
 }
 
 std::vector<std::string> GridVessel::getMin() const {
@@ -282,13 +281,12 @@ void GridVessel::getNeighbors( const std::vector<unsigned>& indices, const std::
 }
 
 void GridVessel::reset(){
-  if( !nomemory ) return ;
   wascleared=true; 
 }
 
 void GridVessel::clear(){
   plumed_assert( wascleared ); 
-  data.assign( data.size(), 0.0 );
+  norm=0.; data.assign( data.size(), 0.0 );
 }
 
 void GridVessel::setCubeUnits( const double& units ){
