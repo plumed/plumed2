@@ -39,6 +39,7 @@ public:
   unsigned getNumberOfDerivatives(){ return 0; }
   unsigned getNumberOfQuantities() const ;
   void performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const ;
+  void invertTask( const std::vector<double>& indata, std::vector<double>& outdata );
   bool isPeriodic(){ return false; }
 };
 
@@ -70,9 +71,14 @@ ActionWithInputGrid(ao)
   simtemp=0.; parse("TEMP",simtemp);
   if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
   else simtemp=plumed.getAtoms().getKbT();
+  if( simtemp==0 ) error("TEMP not set - use keyword TEMP");
 
   // Now create task list
   for(unsigned i=0;i<mygrid->getNumberOfPoints();++i) addTaskToList(i);
+  // And activate all tasks
+  deactivateAllTasks(); 
+  for(unsigned i=0;i<mygrid->getNumberOfPoints();++i) taskFlags[i]=1;
+  lockContributors();
 }
 
 unsigned ConvertToFES::getNumberOfQuantities() const {
@@ -81,19 +87,22 @@ unsigned ConvertToFES::getNumberOfQuantities() const {
 }
 
 void ConvertToFES::performOperationsWithGrid( const bool& from_update ){
-  outgrid->clear(); runAllTasks(); outgrid->reset();
+  outgrid->clear(); outgrid->setNorm( mygrid->getNorm() ); 
+  runAllTasks(); outgrid->reset();
 }
 
 void ConvertToFES::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
-  double val=getGridElement(current, 0);
+  double val=mygrid->getGridElement(current, 0);
   myvals.setValue( 0, 1.0 ); myvals.setValue(1, -simtemp*std::log(val) );
   if( !mygrid->noDerivatives() ){
-     for(unsigned i=0;i<mygrid->getDimension();++i) myvals.setValue( 2+i, -(simtemp/val)*getGridElement(current,i+1) );
+     for(unsigned i=0;i<mygrid->getDimension();++i) myvals.setValue( 2+i, -(simtemp/val)*mygrid->getGridElement(current,i+1) );
   }
 }
 
-
-
+void ConvertToFES::invertTask( const std::vector<double>& indata, std::vector<double>& outdata ){
+  outdata[0] = exp( -indata[0]/simtemp );
+  for(unsigned i=0;i<mygrid->getDimension();++i) outdata[1+i] = -(indata[0]/simtemp)*indata[1+i];  
+}
 
 }
 }

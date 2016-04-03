@@ -138,7 +138,7 @@ outgrid(NULL)
       Keywords keys; GridFunction::registerKeywords( keys );
       vesselbase::VesselOptions dar( da, keys );
       outgrid = new GridFunction(dar); addVessel( outgrid ); 
-      if( mygrid->noDerivatives() ) outgrid->setNoDerivatives();
+      outgrid->setNoDerivatives();
   }
 
   // START OF BIT TO IMPROVE
@@ -228,7 +228,7 @@ void FindContour::performOperationsWithGrid( const bool& from_update ){
      if( cycle ) continue;
 
      // Get the value of a point on the grid
-     double val1=getGridElement( i, mycomp*(mygrid->getDimension()+1) ) - contour;
+     double val1=mygrid->getGridElement( i, mycomp*(mygrid->getDimension()+1) ) - contour;
 
      bool edge=false;
      for(unsigned j=0;j<mygrid->getDimension();++j){
@@ -237,7 +237,7 @@ void FindContour::performOperationsWithGrid( const bool& from_update ){
          if( !mygrid->isPeriodic(j) && (ind[j]+1)==nbin[j] ) continue;
          else if( (ind[j]+1)==nbin[j] ){ edge=true; ind[j]=0; }
          else ind[j]+=1; 
-         double val2=getGridElement(ind,mycomp*(mygrid->getDimension()+1)) - contour;
+         double val2=mygrid->getGridElement(ind,mycomp*(mygrid->getDimension()+1)) - contour;
          if( val1*val2<0 ){
              // Use initial point location as first guess for search
              contour_points[npoints].resize( mygrid->getDimension() );  

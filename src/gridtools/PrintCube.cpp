@@ -72,16 +72,17 @@ void PrintCube::performOperationsWithGrid( const bool& from_update ){
   ofile.printf("PLUMED CUBE FILE\n");
   ofile.printf("OUTER LOOP: X, MIDDLE LOOP: Y, INNER LOOP: Z\n");
   // Number of atoms followed by position of origin (origin set so that center of grid is in center of cell)
-  ofile.printf("%d %f %f %f\n",1,-0.5*lunit*mygrid->getGridExtent(0),-0.5*lunit*mygrid->getGridExtent(1),-0.5*lunit*mygrid->getGridExtent(2));
-  ofile.printf("%u %f %f %f\n",mygrid->getNbin()[0],lunit*mygrid->getGridSpacing()[0],0.0,0.0);  // Number of bins in each direction followed by 
-  ofile.printf("%u %f %f %f\n",mygrid->getNbin()[1],0.0,lunit*mygrid->getGridSpacing()[1],0.0);  // shape of voxel
-  ofile.printf("%u %f %f %f\n",mygrid->getNbin()[2],0.0,0.0,lunit*mygrid->getGridSpacing()[2]);
-  ofile.printf("%u %f %f %f\n",1,0.0,0.0,0.0); // Fake atom otherwise VMD doesn't work
+  std::string ostr = "%d" + fmt + fmt + fmt + "\n";
+  ofile.printf(ostr.c_str(),1,-0.5*lunit*mygrid->getGridExtent(0),-0.5*lunit*mygrid->getGridExtent(1),-0.5*lunit*mygrid->getGridExtent(2));
+  ofile.printf(ostr.c_str(),mygrid->getNbin()[0],lunit*mygrid->getGridSpacing()[0],0.0,0.0);  // Number of bins in each direction followed by 
+  ofile.printf(ostr.c_str(),mygrid->getNbin()[1],0.0,lunit*mygrid->getGridSpacing()[1],0.0);  // shape of voxel
+  ofile.printf(ostr.c_str(),mygrid->getNbin()[2],0.0,0.0,lunit*mygrid->getGridSpacing()[2]);
+  ofile.printf(ostr.c_str(),1,0.0,0.0,0.0); // Fake atom otherwise VMD doesn't work
   std::vector<unsigned> pp(3); std::vector<unsigned> nbin( mygrid->getNbin() );
   for(pp[0]=0;pp[0]<nbin[0];++pp[0]){
       for(pp[1]=0;pp[1]<nbin[1];++pp[1]){
           for(pp[2]=0;pp[2]<nbin[2];++pp[2]){
-              ofile.printf("%f ",getGridElement( pp, 0 ) );
+              ofile.printf(fmt.c_str(),mygrid->getGridElement( pp, 0 ) );
               if(pp[2]%6==5) ofile.printf("\n");
           }
           ofile.printf("\n");

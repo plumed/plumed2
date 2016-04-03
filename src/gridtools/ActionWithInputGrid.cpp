@@ -33,24 +33,23 @@ void ActionWithInputGrid::registerKeywords( Keywords& keys ){
   keys.add("compulsory","GRID","the action that creates the input grid you would like to use");
   keys.add("optional","STRIDE","the frequency with which to output the grid");
   keys.addFlag("USE_ALL_DATA",false,"use the data from the entire trajectory to perform the analysis");
-  keys.addFlag("UNNORMALIZED",false,"output an unormalised grid"); 
 }
 
 ActionWithInputGrid::ActionWithInputGrid(const ActionOptions&ao):
 Action(ao),
 ActionPilot(ao),
 ActionWithVessel(ao),
-norm(0.0),
+single_run(true),
 mygrid(NULL)
 {
   std::string mlab; parse("GRID",mlab);
-  vesselbase::ActionWithVessel* mves= plumed.getActionSet().selectWithLabel<vesselbase::ActionWithVessel*>(mlab);
+  mves= plumed.getActionSet().selectWithLabel<vesselbase::ActionWithVessel*>(mlab);
   if(!mves) error("action labelled " +  mlab + " does not exist or does not have vessels");
   addDependency(mves);
 
   ActionPilot* ap=dynamic_cast<ActionPilot*>( mves );
   if( ap ){
-     if( getStride()!=ap->getStride() ) error("mismatch between strides in " + ap->getLabel() + " and " +  getLabel() );
+     if( getStride()%ap->getStride()!=0 ) error("mismatch between strides in " + ap->getLabel() + " and " +  getLabel() );
   }
 
   log.printf("  using grid calculated by action %s \n",mves->getLabel().c_str() );
@@ -60,29 +59,29 @@ mygrid(NULL)
   }
   if( !mygrid ) error("input action does not calculate a grid");
 
-  parseFlag("UNNORMALIZED",unormalised);
-  if( unormalised ){
-     log.printf("  working with unormalised grid \n");
-     mygrid->switchOffNormalisation(); 
-  }
-
   if( keywords.exists("USE_ALL_DATA") ){
      parseFlag("USE_ALL_DATA",single_run);
      if( !single_run ){
         mves->setAnalysisStride( false, getStride() ); 
         log.printf("  outputting every %u steps \n", getStride() );
-     } else log.printf("  outputting at end of calculation\n");
+     } else {
+        log.printf("  outputting at end of calculation\n");
+     }
   }
 }
 
 void ActionWithInputGrid::setAnalysisStride( const bool& use_all, const unsigned& astride ){
   single_run=use_all;
-  if( !single_run ) setStride( astride );
+  if( !single_run ){
+     setStride( astride ); mves->setAnalysisStride( false, getStride() );
+  }
 }
 
 void ActionWithInputGrid::update(){
-  if( unormalised ) norm = 1.0;
-  else norm=1.0/mygrid->getNorm();
+  // Don't analyse the first frame in the trajectory
+  if( single_run || getStep()==0 ) return;
+  // Now check that all stuff for restarting is done correctly
+  if( !mygrid->foundprint ) error("an additional PRINT_GRID action is required before this action so grid is restarted correctly");
 
   if( checkAllActive() ){
      for(unsigned i=0;i<mygrid->getNumberOfPoints();++i){
@@ -94,9 +93,11 @@ void ActionWithInputGrid::update(){
 
 void ActionWithInputGrid::runFinalJobs(){
   if( !single_run ) return ;
-  if( unormalised ) norm = 1.0;
-  else norm=1.0/mygrid->getNorm();
   performOperationsWithGrid( false );
+}
+
+void ActionWithInputGrid::invertTask( const std::vector<double>& indata, std::vector<double>& outdata ){
+  plumed_merror("Shouldn't appear here");
 }
 
 }

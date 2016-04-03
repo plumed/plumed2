@@ -31,6 +31,8 @@ namespace PLMD {
 namespace gridtools {
 
 class GridVessel : public vesselbase::Vessel {
+friend class ActionWithInputGrid;
+friend class PrintGrid;
 private:
 /// Do we have derivatives
  bool noderiv;
@@ -42,8 +44,8 @@ private:
  unsigned npoints;
 /// Units for Gaussian Cube file
  double cube_units;
-/// The names of the various columns in the grid file
- std::vector<std::string> arg_names;
+/// This flag is used to check if the user has created a valid input 
+ bool foundprint;
 /// The minimum and maximum of the grid stored as doubles
  std::vector<double> min, max;
 /// The numerical distance between adjacent grid points
@@ -53,13 +55,17 @@ private:
 /// The grid point that was requested last by getGridPointCoordinates
  unsigned currentGridPoint;
 protected:
+/// The names of the various columns in the grid file
+ std::vector<std::string> arg_names; 
+/// The normalisation constant to use
+ double norm;
 /// Are we deleting the data after print
  bool nomemory;
+/// Are we outputting unormalised data
+ bool unormalised;
 /// The number of pieces of information we are storing for each 
 /// point in the grid
  unsigned nper;
-/// Number of grids we are accumulating
- unsigned naccumulate_grids;
 /// Is this direction periodic
  std::vector<bool> pbc;
 /// The minimum and maximum in the grid stored as strings 
@@ -127,7 +133,7 @@ public:
 /// Return the volume of one of the grid cells
  double getCellVolume() const ;
 /// Get the value of the ith grid element 
- double getGridElement( const unsigned&, const unsigned& ) const ;
+ virtual double getGridElement( const unsigned&, const unsigned& ) const ;
 /// Get the set of points neighouring a particular location in space
  void getNeighbors( const std::vector<double>& pp, const std::vector<unsigned>& nneigh,
                     unsigned& num_neighbours, std::vector<unsigned>& neighbors ) const ;
@@ -148,8 +154,6 @@ public:
  void setCubeUnits( const double& units );
 /// This ensures that Gaussian cube files are in correct units
  double getCubeUnits() const ;
-/// This gives the normalisation of histograms
- virtual double getNorm() const ;
  virtual void switchOffNormalisation(){}
 /// Return a string containing the input to the grid so we can clone it
  std::string getInputString() const ;
@@ -163,6 +167,11 @@ public:
  void activateThesePoints( const std::vector<bool>& to_activate );
 /// Is this point active
  bool inactive( const unsigned& ip ) const ;
+///
+ virtual void incorporateRestartDataIntoGrid( const double& old_norm, std::vector<double>& indata ) = 0;
+/// Functions for dealing with normalisation constant
+ void setNorm( const double& snorm );
+ double getNorm() const ;
 };
 
 inline
@@ -213,11 +222,6 @@ double GridVessel::getGridExtent( const unsigned& i ) const {
 }
 
 inline
-double GridVessel::getNorm() const {
-  return 1.0;
-}
-
-inline
 bool GridVessel::noDerivatives() const {
   return noderiv;
 }
@@ -231,6 +235,16 @@ inline
 bool GridVessel::inactive( const unsigned& ip ) const {
   plumed_dbg_assert( ip<npoints );
   return !active[ip];
+}
+
+inline
+void GridVessel::setNorm( const double& snorm ){
+  norm=snorm;
+}
+
+inline
+double GridVessel::getNorm() const {
+  return norm;
 }
 
 }

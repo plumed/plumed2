@@ -19,22 +19,20 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_gridtools_HistogramOnGrid_h
-#define __PLUMED_gridtools_HistogramOnGrid_h
+#ifndef __PLUMED_gridtools_AverageOnGrid_h
+#define __PLUMED_gridtools_AverageOnGrid_h
 
-#include "GridVessel.h"
+#include "HistogramOnGrid.h"
 
 namespace PLMD {
 namespace gridtools {
 
-class GridFunction : public GridVessel {
+class AverageOnGrid : public HistogramOnGrid {
 public:
   static void registerKeywords( Keywords& keys );
-  explicit GridFunction( const vesselbase::VesselOptions& da );
-  void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
-  void finish( const std::vector<double>& );
-  bool applyForce(  std::vector<double>& forces ){ return false; }
-  void incorporateRestartDataIntoGrid( const double& old_norm, std::vector<double>& indata );
+  explicit AverageOnGrid( const vesselbase::VesselOptions& da );
+  void accumulate( const unsigned& ipoint, const double& weight, const double& dens, const std::vector<double>& der, std::vector<double>& buffer ) const ;
+  double getGridElement( const unsigned& ipoint, const unsigned& jelement ) const ;
 };
 
 }

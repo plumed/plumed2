@@ -318,7 +318,7 @@ void MultiColvarDensity::update(){
   lockContributors();
   // Now perform All Tasks
   origin = getPosition(0);
-  runAllTasks(); mygrid->addToNorm( 1.0 ); 
+  runAllTasks();  
 }
 
 void MultiColvarDensity::performTask( const unsigned& tindex, const unsigned& current, MultiValue& myvals ) const {

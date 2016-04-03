@@ -145,7 +145,7 @@ void Histogram::registerKeywords( Keywords& keys ){
   keys.add("compulsory","KERNEL","gaussian","the kernel function you are using. Use discrete/DISCRETE if you want to accumulate a discrete histogram. \
                                              More details on the kernels available in plumed can be found in \\ref kernelfunctions.");
   keys.add("optional","BANDWIDTH","the bandwdith for kernel density estimation");
-  keys.addFlag("UNNORMALIZED",false,"Set to TRUE if you don't want histogram to be normalized or free energy to be shifted.");
+  keys.addFlag("UNORMALIZED",false,"Set to TRUE if you don't want histogram to be normalized or free energy to be shifted.");
   keys.use("NOMEMORY");
 }
 
@@ -168,7 +168,12 @@ unnormalized(false)
      if( getPeriodicityInformation(i, dmin, dmax) ) vstring+=",T";
      else vstring+=",F";
   }
-  vstring += " STORE_NORMED COMPONENTS=" + getLabel();
+  bool unorm=false; parseFlag("UNORMALIZED",unorm);
+  if( unorm ){
+     log.printf("  working with unormalised grid \n");
+     vstring += " UNORMALIZED";
+  }
+  vstring += " COMPONENTS=" + getLabel();
   vstring += " COORDINATES=" + getPntrToArgument(0)->getName();
   for(unsigned i=1;i<getNumberOfArguments();++i) vstring += "," + getPntrToArgument(i)->getName(); 
   if( !usingMemory() ) vstring += " NOMEMORY";
@@ -190,9 +195,13 @@ unnormalized(false)
 }
 
 void Histogram::setAnalysisStride( const bool& use_all, const unsigned& astride ){
-  if( getFullNumberOfTasks()>0 && getFullNumberOfTasks()==getNumberOfDataPoints() ) return;
-  Analysis::setAnalysisStride( use_all, astride ); plumed_assert( getFullNumberOfTasks()==0 );
+  Analysis::setAnalysisStride( use_all, astride ); 
+  if( getNumberOfDataPoints()==getFullNumberOfTasks() ) return ;
+  plumed_assert( getFullNumberOfTasks()==0 );
   for(unsigned i=0;i<getNumberOfDataPoints();++i) addTaskToList( i );
+  deactivateAllTasks(); 
+  for(unsigned i=0;i<getNumberOfDataPoints();++i) taskFlags[i]=1;
+  lockContributors();
 }
 
 unsigned Histogram::getNumberOfQuantities() const {
@@ -209,7 +218,7 @@ void Histogram::performTask( const unsigned& task_index, const unsigned& current
 
 void Histogram::performAnalysis(){
   if( mygrid->wasreset() ) mygrid->clear();
-  runAllTasks(); mygrid->setNorm( getNormalization() );
+  mygrid->setNorm( getNormalization() ); runAllTasks();
 }
 
 }

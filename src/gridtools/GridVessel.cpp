@@ -32,6 +32,7 @@ void GridVessel::registerKeywords( Keywords& keys ){
   keys.add("compulsory","COORDINATES","the names of the coordinates of the grid");
   keys.add("compulsory","PBC","is the grid periodic in each direction or not");
   keys.addFlag("NOMEMORY",false,"should the data in the grid be deleted after print/analysis");
+  keys.addFlag("UNORMALIZED",false,"don't normalise grid");
 }
 
 GridVessel::GridVessel( const vesselbase::VesselOptions& da ):
@@ -40,14 +41,15 @@ noderiv(false),
 wascleared(true), 
 bounds_set(false),
 cube_units(1.0),
-naccumulate_grids(1)
+norm(1)
 {
   std::vector<std::string> compnames; parseVector("COMPONENTS",compnames);
   std::vector<std::string> coordnames; parseVector("COORDINATES",coordnames);
   dimension=coordnames.size();
   std::vector<std::string> spbc( dimension ); parseVector("PBC",spbc); 
   str_min.resize( dimension);  str_max.resize( dimension ); 
-  parseFlag("NOMEMORY",nomemory);
+  parseFlag("NOMEMORY",nomemory); parseFlag("UNORMALIZED",unormalised);
+  foundprint=nomemory;
 
   unsigned n=0; nper=compnames.size()*( 1 + coordnames.size() );
   arg_names.resize( coordnames.size() + compnames.size()*( 1 + coordnames.size() ) );
@@ -121,7 +123,7 @@ std::string GridVessel::description(){
 
 void GridVessel::resize(){
   plumed_massert( nper>0, "Number of datapoints at each grid point has not been set");
-  resizeBuffer( naccumulate_grids*npoints*nper ); 
+  resizeBuffer( npoints*nper ); 
   if( data.size()!=npoints*nper ){ 
       data.resize( npoints*nper, 0 ); 
       active.resize( npoints, true );
@@ -281,7 +283,7 @@ void GridVessel::getNeighbors( const std::vector<unsigned>& indices, const std::
 
 void GridVessel::reset(){
   if( !nomemory ) return ;
-  wascleared=true;
+  wascleared=true; 
 }
 
 void GridVessel::clear(){

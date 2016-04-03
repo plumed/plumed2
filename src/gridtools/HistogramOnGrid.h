@@ -29,42 +29,24 @@ namespace gridtools {
 
 class HistogramOnGrid : public GridVessel {
 private:
-  double norm;
   bool average;
-  bool store_normed;
   std::string kerneltype;
   std::vector<double> bandwidths;
-  bool discrete;
   std::vector<unsigned> nneigh;
+protected:
+  bool discrete;
 public:
   static void registerKeywords( Keywords& keys );
   explicit HistogramOnGrid( const vesselbase::VesselOptions& da );
   void setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax,
                   const std::vector<unsigned>& nbins, const std::vector<double>& spacing );
   void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
-  void finish( const std::vector<double>& );
+  virtual void accumulate( const unsigned& ipoint, const double& weight, const double& dens, const std::vector<double>& der, std::vector<double>& buffer ) const ;
+  virtual void finish( const std::vector<double>& );
+  virtual double getGridElement( const unsigned& ipoint, const unsigned& jelement ) const ;
   bool applyForce(  std::vector<double>& forces ){ return false; }
-  void addToNorm( const double& anorm );
-  void setNorm( const double& snorm );
-  double getNorm() const ;
-  void switchOffNormalisation();
-  void clear();
+  void incorporateRestartDataIntoGrid( const double& old_norm, std::vector<double>& indata );
 };
-
-inline
-void HistogramOnGrid::addToNorm( const double& anorm ){
-  norm+=anorm;
-}
-
-inline
-void HistogramOnGrid::setNorm( const double& snorm ){
-  norm=snorm;
-}
-
-inline
-double HistogramOnGrid::getNorm() const {
-  return norm;
-}
 
 }
 }

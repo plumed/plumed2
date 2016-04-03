@@ -89,7 +89,7 @@ ActionPilot(ao),
 ActionAtomistic(ao),
 ActionWithArguments(ao),
 ActionWithVessel(ao),
-single_run(false),
+single_run(true),
 nomemory(true),
 write_chq(false),
 reusing_data(false),
@@ -176,7 +176,6 @@ argument_names(getNumberOfArguments())
          if(simtemp==0) error("The MD engine does not pass the temperature to plumed so you have to specify it using TEMP");
       }
 
-      single_run=true;
       if( keywords.exists("USE_ALL_DATA") ){
           parseFlag("USE_ALL_DATA",single_run); 
           if( !single_run ){
@@ -219,8 +218,8 @@ argument_names(getNumberOfArguments())
 }
 
 void Analysis::setAnalysisStride( const bool& use_all, const unsigned& astride ){
-  if( freq>0 && astride!=freq ) error("frequency for output does not match frequency for run"); 
-  else if( freq>0 || use_all ) return;
+  if( freq>0 && astride!=freq ) error("each histogram can only be output with one stride"); 
+  else if( use_all ) return;  
 
   freq=astride; single_run=false;
   if( astride%getStride()!= 0 ) error("Frequncy of running is not a multiple of the stride");
@@ -407,7 +406,7 @@ void Analysis::runAnalysis(){
      norm=mydatastash->retrieveNorm();
   }
   // This ensures everything is set up to run the calculation
-  setAnalysisStride( single_run, freq );
+  if( single_run ) setAnalysisStride( single_run, freq );
   // And run the analysis
   performAnalysis(); idata=0;
   // Update total normalization constant

@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "GridFunction.h"
+#include "ActionWithInputGrid.h"
 
 namespace PLMD {
 namespace gridtools {
@@ -42,6 +43,17 @@ void GridFunction::calculate( const unsigned& current, MultiValue& myvals, std::
 
 void GridFunction::finish( const std::vector<double>& buffer ){
   for(unsigned i=0;i<data.size();++i) data[i]+=buffer[bufstart + i];
+}
+
+void GridFunction::incorporateRestartDataIntoGrid( const double& old_norm, std::vector<double>& indata ){
+  ActionWithInputGrid* myfunc = dynamic_cast<ActionWithInputGrid*>( getAction() );
+  std::vector<double> pin( nper ), pout( nper ); 
+  for(unsigned i=0;i<getNumberOfPoints();++i){
+      for(unsigned j=0;j<nper;++j) pin[j]=indata[i*nper+j];
+      myfunc->invertTask( pin, pout ); 
+      for(unsigned j=0;j<nper;++j) indata[i*nper+j]=pout[j]; 
+  } 
+  (myfunc->mygrid)->incorporateRestartDataIntoGrid( old_norm, indata );
 }
 
 }

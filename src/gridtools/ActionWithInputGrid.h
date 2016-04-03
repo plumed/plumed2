@@ -32,14 +32,13 @@ class ActionWithInputGrid :
 public ActionPilot,
 public vesselbase::ActionWithVessel
 {
+friend class GridFunction;
 private:
-  double norm;
-  bool unormalised;
+  vesselbase::ActionWithVessel* mves;
 protected:
   bool single_run;
   GridVessel* mygrid;
-  double getGridElement( const std::vector<unsigned>& pp, const unsigned& ind ) const ;
-  double getGridElement( const unsigned& ind, const unsigned& jind ) const ;
+  double getGridElementAndDerivatives( const std::vector<double>& x, std::vector<double>& der ) const ;
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithInputGrid(const ActionOptions&ao);
@@ -50,17 +49,9 @@ public:
   virtual bool checkAllActive() const { return true; }
   virtual void performOperationsWithGrid( const bool& from_update )=0;
   void setAnalysisStride( const bool& use_all, const unsigned& astride );
+  virtual bool isGridPrint() const { return false; }
+  virtual void invertTask( const std::vector<double>& indata, std::vector<double>& outdata );
 };
-
-inline
-double ActionWithInputGrid::getGridElement( const std::vector<unsigned>& pp, const unsigned& ind ) const {
-  return norm*mygrid->getGridElement( pp, ind );
-}
-
-inline
-double ActionWithInputGrid::getGridElement( const unsigned& ind, const unsigned& jind ) const {
-  return norm*mygrid->getGridElement( ind, jind );
-}
 
 }
 }
