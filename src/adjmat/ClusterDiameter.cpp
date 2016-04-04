@@ -96,7 +96,7 @@ void ClusterDiameter::calculate(){
 void ClusterDiameter::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const { 
   unsigned iatom=std::floor(current/getNumberOfNodes()), jatom = current - iatom*getNumberOfNodes();
   Vector distance=getSeparation( getPosition(iatom), getPosition(jatom) );
-  double dd = distance.modulo(), inv = 1.0/dd ; 
+  double dd = distance.modulo();
   myvals.setValue( 0, 1.0 ); myvals.setValue( 1, dd ); 
 }
 
