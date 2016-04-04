@@ -27,6 +27,15 @@
 #include "tools/RootFindingBase.h"
 #include "GridFunction.h"
 
+//+PLUMEDOC GRIDANALYSIS FIND_CONTOUR
+/*
+Find an isocontour in a smooth function.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace gridtools {
 

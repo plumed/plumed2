@@ -29,7 +29,7 @@ using namespace std;
 namespace PLMD{
 namespace generic{
 
-//+PLUMEDOC ANALYSIS DUMPFORCES
+//+PLUMEDOC PRINTANALYSIS DUMPFORCES
 /*
 Dump the force acting on one of a values in a file.  
 

@@ -31,7 +31,7 @@
 namespace PLMD{
 namespace analysis{
 
-//+PLUMEDOC ANALYSIS HISTOGRAM
+//+PLUMEDOC GRIDCALC HISTOGRAM
 /* 
 Calculate the probability density as a function of a few CVs either using kernel density estimation, or a discrete
 histogram estimation. 

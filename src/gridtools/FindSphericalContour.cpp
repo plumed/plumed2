@@ -27,6 +27,15 @@
 #include "tools/RootFindingBase.h"
 #include "tools/Random.h"
 
+//+PLUMEDOC GRIDANALYSIS FIND_SPHERICAL_CONTOUR
+/*
+Find an isocontour in a three dimensional grid by searching over a Fibonacci sphere.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace gridtools {
 

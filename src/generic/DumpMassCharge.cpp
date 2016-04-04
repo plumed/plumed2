@@ -32,7 +32,7 @@ namespace PLMD
 {
 namespace generic{
 
-//+PLUMEDOC ANALYSIS DUMPMASSCHARGE
+//+PLUMEDOC PRINTANALYSIS DUMPMASSCHARGE
 /*
 Dump masses and charges on a selected file.
 

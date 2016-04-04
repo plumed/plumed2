@@ -43,7 +43,7 @@ namespace PLMD
 {
 namespace generic{
 
-//+PLUMEDOC ANALYSIS DUMPATOMS
+//+PLUMEDOC PRINTANALYSIS DUMPATOMS
 /*
 Dump selected atoms on a file.
 

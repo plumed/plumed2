@@ -23,6 +23,15 @@
 #include "ActionWithInputGrid.h"
 #include "tools/OFile.h"
 
+//+PLUMEDOC GRIDANALYSIS PRINT_CUBE
+/*
+Output a three dimensional grid using the Gaussian cube file format.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace gridtools {
 

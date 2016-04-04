@@ -28,7 +28,7 @@ using namespace std;
 namespace PLMD{
 namespace generic{
 
-//+PLUMEDOC ANALYSIS PRINT
+//+PLUMEDOC PRINTANALYSIS PRINT
 /*
 Print quantities to a file.
 

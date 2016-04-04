@@ -43,7 +43,7 @@ namespace PLMD
 {
 namespace multicolvar {
 
-//+PLUMEDOC ANALYSIS MULTICOLVARDENS
+//+PLUMEDOC GRIDCALC MULTICOLVARDENS
 /*
 Evaluate the average value of a multicolvar on a grid.
 
@@ -77,7 +77,7 @@ output the average density at each point on the grid every 500 steps of simulati
 on step 1000 is an average over all 1000 frames of the trajectory.  If you would like to analyse these two blocks 
 of data separately you must use the NOMEMORY flag.
 
-This second example computes an order parameter (in this case \ref FCCCUBIC) and constructs a phase field model
+This second example computes an order parameter (in this case \ref FCCUBIC) and constructs a phase field model
 for this order parameter using the equation above.
 
 \verbatim

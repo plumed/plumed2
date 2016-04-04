@@ -29,7 +29,7 @@ using namespace std;
 namespace PLMD{
 namespace generic{
 
-//+PLUMEDOC ANALYSIS UPDATE_IF
+//+PLUMEDOC PRINTANALYSIS UPDATE_IF
 /*
 Conditional update of other actions.
 

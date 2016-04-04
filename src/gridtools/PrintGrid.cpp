@@ -29,6 +29,15 @@
 namespace PLMD {
 namespace gridtools {
 
+//+PLUMEDOC GRIDANALYSIS MULTICOLVARDENS
+/*
+Output the function on the grid to a file with the PLUMED grid format.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 class PrintGrid : public ActionWithInputGrid {
 private:
   bool printav;

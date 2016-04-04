@@ -27,7 +27,7 @@
 namespace PLMD {
 namespace analysis {
 
-//+PLUMEDOC ANALYSIS CLASSICAL_MDS
+//+PLUMEDOC DIMRED CLASSICAL_MDS
 /*
 Create a low-dimensional projection of a trajectory using the classical multidimensional 
 scaling algorithm.

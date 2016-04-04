@@ -25,6 +25,15 @@
 #include "ActionWithInputGrid.h"
 #include "GridFunction.h"
 
+//+PLUMEDOC GRIDANALYSIS CONVERT_TO_FES
+/*
+Convert a histogram, \f$H(x)\f$, to a free energy surface using \f$F(x) = -k_B T \ln H(x)\f$.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace gridtools {
 
