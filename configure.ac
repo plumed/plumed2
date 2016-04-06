@@ -182,6 +182,7 @@ PLUMED_CONFIG_ENABLE([almost],[almost],[search for almost],[no])
 PLUMED_CONFIG_ENABLE([gsl],[gsl],[search for gsl],[no])
 PLUMED_CONFIG_ENABLE([xdrfile],[xdrfile],[search for xdrfile],[yes])
 PLUMED_CONFIG_ENABLE([boost_graph],[boost_graph],[search for boost graph],[no])
+PLUMED_CONFIG_ENABLE([fftw],[fftw],[search for fftw],[no])
 
 AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
 AC_ARG_VAR(STATIC_LIBS,[variables that should be linked statically directly to MD code - configure will add here -ldl if necessary ])
@@ -466,6 +467,9 @@ if test $xdrfile == true ; then
 fi
 if test $boost_graph == true ; then
   PLUMED_CHECK_PACKAGE([boost/graph/graph_utility.hpp],[exit],[__PLUMED_HAS_BOOST_GRAPH],[boost_graph])
+fi
+if test $fftw == true ; then
+  PLUMED_CHECK_PACKAGE([fftw3.h],[exit],[__PLUMED_HAS_FFTW],[fftw])
 fi
 
 # in non-debug mode, add -DNDEBUG
