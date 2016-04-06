@@ -144,7 +144,7 @@ void CenterOfMultiColvar::calculate(){
   Vector stmp, ctmp, scom, ccom, sder, cder; 
   scom.zero(); ccom.zero(); double norm=0;
   std::vector<double> cvals( mycolv->getNumberOfQuantities() );
-  for(unsigned i=0;i<mycolv->getFullNumberOfTasks();++i){
+  for(unsigned i=0;i<mystash->getNumberOfStoredValues();++i){
       // Retrieve value and derivatives
       mystash->retrieveSequentialValue( i, false, cvals );
       mystash->retrieveDerivatives( mycolv->getActiveTask(i), false, tvals );
