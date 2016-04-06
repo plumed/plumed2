@@ -504,11 +504,7 @@ Once ALMOST is installed, PLUMED 2 can then be configured with ALMOST enabled:
 \endverbatim
 with ALMOST_INSTALL_PATH set to the full path to the ALMOST installation folder.
 
-\page CodeSpecificNotes Code specific notes
-
-Here you can find instructions that are specific for patching each of the supported MD codes.
-
-\section installing Other hints
+\section installinghints Other hints
 
 We here collect a list of suggestions that might be useful on particular
 machines.
@@ -524,9 +520,15 @@ ld: TOC section size exceeds 64k
 ./configure --disable-ld-r
 \endverbatim
 
+\page CodeSpecificNotes Code specific notes
 
+Here you can find instructions that are specific for patching each of the supported MD codes.
+Notice that MD codes with native PLUMED support are not listed here.
 
 @CODES@
+
+
+
  
 */
 

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -116,12 +116,6 @@
 #include "membed.h"
 #include "repl_ex.h"
 
-/* PLUMED */
-#include "../../../Plumed.h"
-extern int    plumedswitch;
-extern plumed plumedmain;
-/* END PLUMED */
-
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
 #endif
@@ -180,7 +174,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_int64_t     step, step_rel;
     double          elapsed_time;
     double          t, t0, lam0[efptNR];
-    gmx_bool        bGStatEveryStep, bGStat, bCalcVir, bCalcEner;
+    gmx_bool        bGStatEveryStep, bGStat, bCalcVir, bCalcEnerStep, bCalcEner;
     gmx_bool        bNS, bNStList, bSimAnn, bStopCM, bRerunMD, bNotLastFrame = FALSE,
                     bFirstStep, bStateFromCP, bStateFromTPX, bInitStep, bLastStep,
                     bBornRadii, bStartingFromCpt;
@@ -235,18 +229,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                                                           simulation stops. If equal to zero, don't
                                                                           communicate any more between multisims.*/
     /* PME load balancing data for GPU kernels */
-    pme_load_balancing_t *pme_loadbal;
+    pme_load_balancing_t *pme_loadbal      = NULL;
     gmx_bool              bPMETune         = FALSE;
     gmx_bool              bPMETunePrinting = FALSE;
 
     /* Interactive MD */
     gmx_bool          bIMDstep = FALSE;
-
-    /* PLUMED */
-    int plumedNeedsEnergy=0;
-    int plumedWantsToStop=0;
-    matrix plumed_vir;
-    /* END PLUMED */
 
 #ifdef GMX_FAHCORE
     /* Temporary addition for FAHCORE checkpointing */
@@ -348,11 +336,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     {
         /* Currently virtual sites don't work with Normal Modes */
         gmx_fatal(FARGS, "Normal Mode analysis is not supported with virtual sites.\nIf you'd like to help with adding support, we have an open discussion at http://redmine.gromacs.org/issues/879\n");
-    }
-
-    if (bRerunMD && fr->cutoff_scheme == ecutsVERLET && ir->opts.ngener > 1 && usingGpu(fr->nbv))
-    {
-        gmx_fatal(FARGS, "The Verlet scheme on GPUs does not support energy groups, so your rerun should probably use a .tpr file without energy groups, or mdrun -nb auto");
     }
 
     if (DEFORM(*ir))
@@ -547,6 +530,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             {
                 gmx_fatal(FARGS, "nstexpanded should be divisible by nstcalclr");
             }
+            nstfep = gmx_greatest_common_divisor(ir->expandedvals->nstexpanded, nstfep);
         }
         if (repl_ex_nst > 0)
         {
@@ -662,52 +646,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         }
         fprintf(fplog, "\n");
     }
-
-    /* PLUMED */
-    if(plumedswitch){
-      /* detect plumed API version */
-      int pversion=0;
-      plumed_cmd(plumedmain,"getApiVersion",&pversion);
-      /* setting kbT is only implemented with api>1) */
-      real kbT=ir->opts.ref_t[0]*BOLTZ;
-      if(pversion>1) plumed_cmd(plumedmain,"setKbT",&kbT);
-      if(pversion>2){
-        int res=1;
-        if( (Flags & MD_STARTFROMCPT) ) plumed_cmd(plumedmain,"setRestart",&res);
-      }
-
-      if(cr->ms && cr->ms->nsim>1) {
-        if(MASTER(cr)) plumed_cmd(plumedmain,"GREX setMPIIntercomm",&cr->ms->mpi_comm_masters);
-        if(PAR(cr)){
-          if(DOMAINDECOMP(cr)) {
-            plumed_cmd(plumedmain,"GREX setMPIIntracomm",&cr->dd->mpi_comm_all);
-          }else{
-            plumed_cmd(plumedmain,"GREX setMPIIntracomm",&cr->mpi_comm_mysim);
-          }
-        }
-        plumed_cmd(plumedmain,"GREX init",NULL);
-      }
-      if(PAR(cr)){
-        if(DOMAINDECOMP(cr)) {
-          plumed_cmd(plumedmain,"setMPIComm",&cr->dd->mpi_comm_all);
-        }
-      }
-      plumed_cmd(plumedmain,"setNatoms",&top_global->natoms);
-      plumed_cmd(plumedmain,"setMDEngine","gromacs");
-      plumed_cmd(plumedmain,"setLog",fplog);
-      real real_delta_t;
-      real_delta_t=ir->delta_t;
-      plumed_cmd(plumedmain,"setTimestep",&real_delta_t);
-      plumed_cmd(plumedmain,"init",NULL);
-
-      if(PAR(cr)){
-        if(DOMAINDECOMP(cr)) {
-          plumed_cmd(plumedmain,"setAtomsNlocal",&cr->dd->nat_home);
-          plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->gatindex);
-        }
-      }
-    }
-    /* END PLUMED */
 
     walltime_accounting_start(walltime_accounting);
     wallcycle_start(wcycle, ewcRUN);
@@ -972,7 +910,13 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             bBornRadii = TRUE;
         }
 
-        do_log     = do_per_step(step, ir->nstlog) || bFirstStep || bLastStep;
+        /* do_log triggers energy and virial calculation. Because this leads
+         * to different code paths, forces can be different. Thus for exact
+         * continuation we should avoid extra log output.
+         * Note that the || bLastStep can result in non-exact continuation
+         * beyond the last step. But we don't consider that to be an issue.
+         */
+        do_log     = do_per_step(step, ir->nstlog) || (bFirstStep && !bStateFromCP) || bLastStep;
         do_verbose = bVerbose &&
             (step % stepout == 0 || bFirstStep || bLastStep);
 
@@ -1009,13 +953,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                     vsite, shellfc, constr,
                                     nrnb, wcycle,
                                     do_verbose && !bPMETunePrinting);
-
-                /* PLUMED */
-                if(plumedswitch){
-                  plumed_cmd(plumedmain,"setAtomsNlocal",&cr->dd->nat_home);
-                  plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->gatindex);
-                }
-                /* END PLUMED */
             }
         }
 
@@ -1066,21 +1003,18 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                but the virial needs to be calculated on both the current step and the 'next' step. Future
                reorganization may be able to get rid of one of the bCalcVir=TRUE steps. */
 
-            bCalcEner = do_per_step(step-1, ir->nstcalcenergy);
-            bCalcVir  = bCalcEner ||
+            /* TODO: This is probably not what we want, we will write to energy file one step after nstcalcenergy steps. */
+            bCalcEnerStep = do_per_step(step - 1, ir->nstcalcenergy);
+            bCalcVir      = bCalcEnerStep ||
                 (ir->epc != epcNO && (do_per_step(step, ir->nstpcouple) || do_per_step(step-1, ir->nstpcouple)));
         }
         else
         {
-            bCalcEner = do_per_step(step, ir->nstcalcenergy);
-            bCalcVir  = bCalcEner ||
+            bCalcEnerStep = do_per_step(step, ir->nstcalcenergy);
+            bCalcVir      = bCalcEnerStep ||
                 (ir->epc != epcNO && do_per_step(step, ir->nstpcouple));
         }
-
-        /* Do we need global communication ? */
-        bGStat = (bCalcVir || bCalcEner || bStopCM ||
-                  do_per_step(step, nstglobalcomm) ||
-                  (bVV && IR_NVT_TROTTER(ir) && do_per_step(step-1, nstglobalcomm)));
+        bCalcEner = bCalcEnerStep;
 
         do_ene = (do_per_step(step, ir->nstenergy) || bLastStep);
 
@@ -1088,8 +1022,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         {
             bCalcVir  = TRUE;
             bCalcEner = TRUE;
-            bGStat    = TRUE;
         }
+
+        /* Do we need global communication ? */
+        bGStat = (bCalcVir || bCalcEner || bStopCM ||
+                  do_per_step(step, nstglobalcomm) ||
+                  (bVV && IR_NVT_TROTTER(ir) && do_per_step(step-1, nstglobalcomm)));
 
         /* these CGLO_ options remain the same throughout the iteration */
         cglo_flags = ((bRerunMD ? CGLO_RERUNMD : 0) |
@@ -1139,45 +1077,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              * This is parallellized as well, and does communication too.
              * Check comments in sim_util.c
              */
-
-            /* PLUMED */
-            plumedNeedsEnergy=0;
-            if(plumedswitch){
-              long int lstep=step; plumed_cmd(plumedmain,"setStepLong",&lstep);
-              plumed_cmd(plumedmain,"setPositions",&state->x[0][0]);
-              plumed_cmd(plumedmain,"setMasses",&mdatoms->massT[0]);
-              plumed_cmd(plumedmain,"setCharges",&mdatoms->chargeA[0]);
-              plumed_cmd(plumedmain,"setBox",&state->box[0][0]);
-              plumed_cmd(plumedmain,"prepareCalc",NULL);
-              plumed_cmd(plumedmain,"setStopFlag",&plumedWantsToStop);
-              plumed_cmd(plumedmain,"setForces",&f[0][0]);
-              plumed_cmd(plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
-              clear_mat(plumed_vir);
-              plumed_cmd(plumedmain,"setVirial",&plumed_vir[0][0]);
-            }
-            /* END PLUMED */
             do_force(fplog, cr, ir, step, nrnb, wcycle, top, groups,
                      state->box, state->x, &state->hist,
                      f, force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,
                      fr, vsite, mu_tot, t, mdoutf_get_fp_field(outf), ed, bBornRadii,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags);
-            /* PLUMED */
-            if(plumedswitch){
-              if(plumedNeedsEnergy){
-                msmul(force_vir,2.0,plumed_vir);
-                plumed_cmd(plumedmain,"setEnergy",&enerd->term[F_EPOT]);
-                plumed_cmd(plumedmain,"performCalc",NULL);
-                msmul(plumed_vir,0.5,force_vir);
-              } else {
-                msmul(plumed_vir,0.5,plumed_vir);
-                m_add(force_vir,plumed_vir,force_vir);
-              }
-              if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
-                 do_per_step(step,repl_ex_nst)) plumed_cmd(plumedmain,"GREX savePositions",NULL);
-              if(plumedWantsToStop) ir->nsteps=step_rel+1;
-            }
-            /* END PLUMED */
         }
 
         if (bVV && !bStartingFromCpt && !bRerunMD)
@@ -1270,6 +1175,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                 | (bTemp ? CGLO_TEMPERATURE : 0)
                                 | (bPres ? CGLO_PRESSURE : 0)
                                 | (bPres ? CGLO_CONSTRAINT : 0)
+                                | (bStopCM ? CGLO_STOPCM : 0)
                                 | CGLO_SCALEEKIN
                                 );
                 /* explanation of above:
@@ -1372,8 +1278,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         /* Check if IMD step and do IMD communication, if bIMD is TRUE. */
         bIMDstep = do_IMD(ir->bIMD, step, cr, bNS, state->box, state->x, ir, t, wcycle);
 
-        /* kludge -- virial is lost with restart for NPT control. Must restart */
-        if (bStartingFromCpt && bVV)
+        /* kludge -- virial is lost with restart for MTTK NPT control. Must reload (saved earlier). */
+        if (bStartingFromCpt && bTrotter)
         {
             copy_mat(state->svir_prev, shake_vir);
             copy_mat(state->fvir_prev, force_vir);
@@ -1431,6 +1337,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         if (bResetCountersHalfMaxH && MASTER(cr) &&
             elapsed_time > max_hours*60.0*60.0*0.495)
         {
+            /* Set flag that will communicate the signal to all ranks in the simulation */
             gs.sig[eglsRESETCOUNTERS] = 1;
         }
 
@@ -1447,26 +1354,21 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             gs.sig[eglsCHKPT] = 1;
         }
 
-        /* at the start of step, randomize or scale the velocities (trotter done elsewhere) */
-        if (EI_VV(ir->eI))
+        /* at the start of step, randomize or scale the velocities ((if vv. Restriction of Andersen controlled
+           in preprocessing */
+
+        if (ETC_ANDERSEN(ir->etc)) /* keep this outside of update_tcouple because of the extra info required to pass */
         {
-            if (!bInitStep)
+            gmx_bool bIfRandomize;
+            bIfRandomize = update_randomize_velocities(ir, step, cr, mdatoms, state, upd, constr);
+            /* if we have constraints, we have to remove the kinetic energy parallel to the bonds */
+            if (constr && bIfRandomize)
             {
-                update_tcouple(step, ir, state, ekind, &MassQ, mdatoms);
-            }
-            if (ETC_ANDERSEN(ir->etc)) /* keep this outside of update_tcouple because of the extra info required to pass */
-            {
-                gmx_bool bIfRandomize;
-                bIfRandomize = update_randomize_velocities(ir, step, cr, mdatoms, state, upd, constr);
-                /* if we have constraints, we have to remove the kinetic energy parallel to the bonds */
-                if (constr && bIfRandomize)
-                {
-                    update_constraints(fplog, step, NULL, ir, mdatoms,
-                                       state, fr->bMolPBC, graph, f,
-                                       &top->idef, tmp_vir,
-                                       cr, nrnb, wcycle, upd, constr,
-                                       TRUE, bCalcVir);
-                }
+                update_constraints(fplog, step, NULL, ir, mdatoms,
+                                   state, fr->bMolPBC, graph, f,
+                                   &top->idef, tmp_vir,
+                                   cr, nrnb, wcycle, upd, constr,
+                                   TRUE, bCalcVir);
             }
         }
         /* #########   START SECOND UPDATE STEP ################# */
@@ -1696,36 +1598,32 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         /* Output stuff */
         if (MASTER(cr))
         {
-            gmx_bool do_dr, do_or;
-
             if (fplog && do_log && bDoExpanded)
             {
                 /* only needed if doing expanded ensemble */
                 PrintFreeEnergyInfoToFile(fplog, ir->fepvals, ir->expandedvals, ir->bSimTemp ? ir->simtempvals : NULL,
                                           &state_global->dfhist, state->fep_state, ir->nstlog, step);
             }
-            if (!(bStartingFromCpt && (EI_VV(ir->eI))))
+            if (bCalcEner)
             {
-                if (bCalcEner)
-                {
-                    upd_mdebin(mdebin, bDoDHDL, TRUE,
-                               t, mdatoms->tmass, enerd, state,
-                               ir->fepvals, ir->expandedvals, lastbox,
-                               shake_vir, force_vir, total_vir, pres,
-                               ekind, mu_tot, constr);
-                }
-                else
-                {
-                    upd_mdebin_step(mdebin);
-                }
-
-                do_dr  = do_per_step(step, ir->nstdisreout);
-                do_or  = do_per_step(step, ir->nstorireout);
-
-                print_ebin(mdoutf_get_fp_ene(outf), do_ene, do_dr, do_or, do_log ? fplog : NULL,
-                           step, t,
-                           eprNORMAL, bCompact, mdebin, fcd, groups, &(ir->opts));
+                upd_mdebin(mdebin, bDoDHDL, bCalcEnerStep,
+                           t, mdatoms->tmass, enerd, state,
+                           ir->fepvals, ir->expandedvals, lastbox,
+                           shake_vir, force_vir, total_vir, pres,
+                           ekind, mu_tot, constr);
             }
+            else
+            {
+                upd_mdebin_step(mdebin);
+            }
+
+            gmx_bool do_dr  = do_per_step(step, ir->nstdisreout);
+            gmx_bool do_or  = do_per_step(step, ir->nstorireout);
+
+            print_ebin(mdoutf_get_fp_ene(outf), do_ene, do_dr, do_or, do_log ? fplog : NULL,
+                       step, t,
+                       eprNORMAL, bCompact, mdebin, fcd, groups, &(ir->opts));
+
             if (ir->bPull)
             {
                 pull_print_output(ir->pull_work, step, t);
@@ -1845,10 +1743,28 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             step_rel++;
         }
 
+        /* TODO make a counter-reset module */
+        /* If it is time to reset counters, set a flag that remains
+           true until counters actually get reset */
         if (step_rel == wcycle_get_reset_counters(wcycle) ||
             gs.set[eglsRESETCOUNTERS] != 0)
         {
-            /* Reset all the counters related to performance over the run */
+            if (pme_loadbal_is_active(pme_loadbal))
+            {
+                /* Do not permit counter reset while PME load
+                 * balancing is active. The only purpose for resetting
+                 * counters is to measure reliable performance data,
+                 * and that can't be done before balancing
+                 * completes.
+                 *
+                 * TODO consider fixing this by delaying the reset
+                 * until after load balancing completes,
+                 * e.g. https://gerrit.gromacs.org/#/c/4964/2 */
+                gmx_fatal(FARGS, "PME tuning was still active when attempting to "
+                          "reset mdrun counters at step %" GMX_PRId64 ". Try "
+                          "resetting counters later in the run, e.g. with gmx "
+                          "mdrun -resetstep.", step);
+            }
             reset_all_counters(fplog, cr, step, &step_rel, ir, wcycle, nrnb, walltime_accounting,
                                use_GPU(fr->nbv) ? fr->nbv : NULL);
             wcycle_set_reset_counters(wcycle, -1);
@@ -1859,7 +1775,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             }
             /* Correct max_hours for the elapsed time */
             max_hours                -= elapsed_time/(60.0*60.0);
-            bResetCountersHalfMaxH    = FALSE;
+            /* If mdrun -maxh -resethway was active, it can only trigger once */
+            bResetCountersHalfMaxH    = FALSE; /* TODO move this to where gs.sig[eglsRESETCOUNTERS] is set */
+            /* Reset can only happen once, so clear the triggering flag. */
             gs.set[eglsRESETCOUNTERS] = 0;
         }
 
