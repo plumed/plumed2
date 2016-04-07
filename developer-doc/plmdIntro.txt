@@ -465,4 +465,12 @@ you can use the exit funciton here, which should work even if you are using temp
 directive that appears around your library calling code and that we discussed earlier.  The last argument meanwhile is the name of the library - 
 the part that appears after the -l.  In the example above the code would thus try and link -llibrary_name. 
 
+Once you have made these edits issue the command:
+
+\verbatim
+autoconf
+\endverbatim
+
+and the necessary changes will be made to the configure script.  <b>You should never edit the configure script directly</b>
+
 */
