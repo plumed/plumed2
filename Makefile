@@ -1,4 +1,6 @@
--include Makefile.conf
+ifneq ($(MAKECMDGOALS),clean)
+ -include Makefile.conf
+endif
 
 
 SRCDIRS := src test
