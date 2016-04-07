@@ -132,15 +132,18 @@ void VolumeTetrapore::setupRegions(){
   // bi = d1 / d1l; len_bi=dotProduct( d3, bi );
   cross = crossProduct( d1, d2 ); double crossmod=cross.modulo(); 
   cross = cross / crossmod; len_cross=dotProduct( d3, cross );
-  Vector truep = crossProduct( cross, bisector ); // len_perp=dotProduct( d3, perp );
+  Vector truep = crossProduct( cross, bisector ); 
 
   // These are our true vectors 45 degrees from bisector
   bi = cos(pi/4.0)*bisector + sin(pi/4.0)*truep;
   perp = cos(pi/4.0)*bisector - sin(pi/4.0)*truep; 
 
   // And the lengths of the various parts average distance to opposite corners of tetetrahedron
-  len_bi=0.5*dotProduct( d1, bi )+0.5*dotProduct( d2, bi); 
-  len_perp=0.5*dotProduct( d1, perp ) + 0.5*dotProduct( d2, perp );
+  len_bi = dotProduct( d1, bi ); double len_bi2 = dotProduct( d2, bi ); unsigned lbi=1;
+  if( len_bi2>len_bi ){ len_bi=len_bi2; lbi=2; }
+  len_perp = dotProduct( d1, perp ); double len_perp2 = dotProduct( d2, perp ); unsigned lpi=1;
+  if( len_perp2>len_perp ){ len_perp=len_perp2; lpi=2; }
+  plumed_assert( lbi!=lpi );
 
   Tensor tcderiv; double cmod3=crossmod*crossmod*crossmod; Vector ucross=crossmod*cross;
   tcderiv.setCol( 0, crossProduct( d1, Vector(-1.0,0.0,0.0) ) + crossProduct( Vector(-1.0,0.0,0.0), d2 ) );
@@ -224,8 +227,8 @@ void VolumeTetrapore::setupRegions(){
   dtruep[1].setCol( 2, ( crossProduct( dcross[1].getCol(2), bisector ) + crossProduct( cross, dbisector[1].getCol(2) ) ) );
 
   dtruep[2].setCol( 0, ( crossProduct( dcross[2].getCol(0), bisector ) + crossProduct( cross, dbisector[2].getCol(0) ) ) );
-  dtruep[2].setCol( 1, ( crossProduct( dcross[2].getCol(1), bisector ) + crossProduct( cross, dbisector[2].getCol(0) ) ) );
-  dtruep[2].setCol( 2, ( crossProduct( dcross[2].getCol(2), bisector ) + crossProduct( cross, dbisector[2].getCol(0) ) ) );
+  dtruep[2].setCol( 1, ( crossProduct( dcross[2].getCol(1), bisector ) + crossProduct( cross, dbisector[2].getCol(1) ) ) );
+  dtruep[2].setCol( 2, ( crossProduct( dcross[2].getCol(2), bisector ) + crossProduct( cross, dbisector[2].getCol(2) ) ) );
 
   // Now convert these to the derivatives of the true axis
   for(unsigned i=0;i<3;++i){
@@ -249,21 +252,20 @@ void VolumeTetrapore::setupRegions(){
   if( len_bi<=0 || len_cross<=0 || len_bi<=0 ) plumed_merror("Invalid box coordinates");
 
   // Now derivatives of lengths
-  Tensor dd3( Tensor::identity() ); 
-  dlbi[0] = 0.5*matmul(d1,dbi[0]) + 0.5*matmul(d2,dbi[0]) - matmul(bi,dd3);  
-  dlbi[1] = 0.5*matmul(d1,dbi[1]) + 0.5*matmul(d2,dbi[1]) + 0.5*matmul(bi,dd3);  // Derivative wrt d1
-  dlbi[2] = 0.5*matmul(d1,dbi[2]) + 0.5*matmul(d2,dbi[2]) + 0.5*matmul(bi,dd3);  // Derivative wrt d2
-  dlbi[3].zero(); 
+  Tensor dd3( Tensor::identity() ); Vector ddb2=d1; if( lbi==2 ) ddb2=d2;
+  dlbi[1].zero(); dlbi[2].zero(); dlbi[3].zero();
+  dlbi[0] = matmul(ddb2,dbi[0]) - matmul(bi,dd3);  
+  dlbi[lbi] = matmul(ddb2,dbi[lbi]) + matmul(bi,dd3);  // Derivative wrt d1
 
   dlcross[0] = matmul(d3,dcross[0]) - matmul(cross,dd3);  
   dlcross[1] = matmul(d3,dcross[1]);
   dlcross[2] = matmul(d3,dcross[2]);
   dlcross[3] = matmul(cross,dd3);
 
-  dlperp[0] = 0.5*matmul(d1,dperp[0]) + 0.5*matmul(d2,dperp[0]) - matmul(perp,dd3);  
-  dlperp[1] = 0.5*matmul(d1,dperp[1]) + 0.5*matmul(d2,dperp[1]) + 0.5*matmul(perp,dd3);
-  dlperp[2] = 0.5*matmul(d1,dperp[2]) + 0.5*matmul(d2,dperp[2]) + 0.5*matmul(perp,dd3);
-  dlperp[3].zero();
+  ddb2=d1; if( lpi==2 ) ddb2=d2; 
+  dlperp[1].zero(); dlperp[2].zero(); dlperp[3].zero();
+  dlperp[0] = matmul(ddb2,dperp[0]) - matmul( perp, dd3 );
+  dlperp[lpi] = matmul(ddb2,dperp[lpi]) + matmul(perp, dd3);
 
   // Need to calculate the jacobian
   Tensor jacob;
