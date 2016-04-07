@@ -66,7 +66,7 @@ mygrid(NULL)
      if( tcomp<0 ) error("component of vector field was not specified - use COMPONENT keyword");
      mycomp=tcomp;
   }
-  log.printf("  using %dth component of grid calculated by action %s \n",mycomp,mves->getLabel().c_str() );
+  log.printf("  using %uth component of grid calculated by action %s \n",mycomp,mves->getLabel().c_str() );
 
   if( keywords.exists("USE_ALL_DATA") ){
      parseFlag("USE_ALL_DATA",single_run);

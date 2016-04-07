@@ -223,11 +223,11 @@ void GridVessel::setGridElement( const std::vector<unsigned>& indices, const uns
 }
 
 std::vector<std::string> GridVessel::getMin() const {
-  plumed_dbg_assert( bounds_set ); return str_min;
+  return str_min;
 }
   
 std::vector<std::string> GridVessel::getMax() const {
-  plumed_dbg_assert( bounds_set ); return str_max;
+  return str_max;
 }
 
 std::vector<unsigned> GridVessel::getNbin() const {

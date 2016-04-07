@@ -211,7 +211,8 @@ void CenterOfMultiColvar::calculate(){
   std::vector<Tensor> fderiv( getNumberOfAtoms() );
   for(unsigned j=0;j<getNumberOfAtoms();++j){
       for(unsigned k=0;k<3;++k){
-          for(unsigned n=0;n<3;++n) fderiv[j](k,n) = myvals.getDerivative( 1+n, 3*j+k ); 
+          if( myvals.isActive(3*j+k) ) for(unsigned n=0;n<3;++n) fderiv[j](k,n) = myvals.getDerivative( 1+n, 3*j+k ); 
+          else for(unsigned n=0;n<3;++n) fderiv[j](k,n) = 0;
       } 
   }
   setAtomsDerivatives( fderiv );

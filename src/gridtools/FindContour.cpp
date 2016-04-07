@@ -92,7 +92,7 @@ outgrid(NULL)
 
   parse("CONTOUR",contour); parse("BUFFER",gbuffer);
   log.printf("  calculating dividing surface along which function equals %f \n", contour);
-  if( gbuffer>0 ) log.printf("  after first step a subset of only %d grid points around where the countour was found will be checked\n",gbuffer);
+  if( gbuffer>0 ) log.printf("  after first step a subset of only %u grid points around where the countour was found will be checked\n",gbuffer);
 
   parseFlag("BUILD_GRID",usegrid);
   std::string searchdir_str; parse("SEARCHDIR",searchdir_str);
@@ -105,14 +105,14 @@ outgrid(NULL)
      if( usegrid && searchdirs.size()>1 ) error("searching for grid is incompatible can only be done if you are searching in one direction");
      nosearch_dirs.assign( nosearch_dirs.size(), true );
      unsigned nn; Tools::convert(searchdirs[0],nn); nosearch_dirs[nn-1]=false;
-     log.printf("  searching for contour along %d", nn);
+     log.printf("  searching for contour along %u", nn);
      for(unsigned i=1;i<searchdirs.size()-1;++i){
          Tools::convert(searchdirs[i],nn); 
-         nosearch_dirs[nn-1]=false; log.printf(", %d",nn);
+         nosearch_dirs[nn-1]=false; log.printf(", %u",nn);
      }
      if( searchdirs.size()>1 ){ 
          Tools::convert(searchdirs[searchdirs.size()-1],nn); 
-         nosearch_dirs[nn-1]=false; log.printf(" and %d directions \n",nn);
+         nosearch_dirs[nn-1]=false; log.printf(" and %u directions \n",nn);
      } else log.printf(" direction \n");
   }
 

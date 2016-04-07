@@ -350,7 +350,7 @@ void ActionWithVessel::calculateAllVessels( const unsigned& taskCode, MultiValue
       // Calculate returns a bool that tells us if this particular
       // quantity is contributing more than the tolerance
       functions[j]->calculate( taskCode, functions[j]->transformDerivatives(taskCode, myvals, bvals), buffer, der_list );
-      if( !actionIsBridged && bvals.getNumberActive()>0 ) bvals.clearAll(); 
+      if( !actionIsBridged ) bvals.clearAll(); 
   }
   return;
 }

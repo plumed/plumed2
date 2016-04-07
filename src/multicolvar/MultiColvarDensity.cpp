@@ -101,7 +101,6 @@ class MultiColvarDensity :
 {
   std::string kerneltype;
   bool nomemory, fractional, single_run;
-  unsigned rstride;
   MultiColvarBase* mycolv;
   std::vector<unsigned> nbins;
   std::vector<double> gspacing;

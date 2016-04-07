@@ -32,7 +32,7 @@
 namespace PLMD {
 namespace gridtools {
 
-//+PLUMEDOC ANALYSYS FOURIER_TRANSFORM
+//+PLUMEDOC GRIDANALYSIS FOURIER_TRANSFORM
 /*
 Compute the Discrete Fourier Transform (DFT) by means of FFTW of data stored on a 2D grid. This action can operate on any other action that outputs scalar data on a two-dimensional grid.
 
