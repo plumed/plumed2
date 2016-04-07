@@ -82,7 +82,7 @@ ActionWithInputGrid(ao)
   if( mygrid->noDerivatives() ) error("cannot find contours if input grid has no derivatives");
 
   parse("NPOINTS",npoints);
-  log.printf("  searching for %u points on dividing surface \n");
+  log.printf("  searching for %u points on dividing surface \n",npoints);
   parse("CONTOUR",contour); 
   log.printf("  calculating dividing surface along which function equals %f \n", contour);
   parse("INNER_RADIUS",min); parse("OUTER_RADIUS",max); parse("NBINS",nbins);

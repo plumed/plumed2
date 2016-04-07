@@ -104,7 +104,6 @@ void InterpolateGrid::performTask( const unsigned& task_index, const unsigned& c
   std::vector<double> pos( mygrid->getDimension() ); outgrid->getGridPointCoordinates( current, pos );
   std::vector<double> der( mygrid->getDimension() ); double val = getFunctionValueAndDerivatives( pos, der );
   myvals.setValue( 0, 1.0 ); myvals.setValue(1, val ); 
-  printf("HELLO GAREHT %d %f %f \n",current,pos[0], val );
   for(unsigned i=0;i<mygrid->getDimension();++i) myvals.setValue( 2+i, der[i] ); 
 }
 
