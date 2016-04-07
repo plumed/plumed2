@@ -73,7 +73,9 @@ ActionWithInputGrid(ao)
   Keywords keys; GridFunction::registerKeywords( keys );
   vesselbase::VesselOptions dar( da, keys );
   outgrid = new GridFunction(dar); addVessel( outgrid ); 
-  if( mygrid->noDerivatives() ) outgrid->setNoDerivatives();
+  if( mygrid->noDerivatives() ) outgrid->setNoDerivatives(); 
+  std::vector<double> fspacing;
+  outgrid->setBounds( mygrid->getMin(), mygrid->getMax(), mygrid->getNbin(), fspacing); 
   resizeFunctions();
 
   simtemp=0.; parse("TEMP",simtemp);
@@ -96,7 +98,7 @@ unsigned ConvertToFES::getNumberOfQuantities() const {
 
 void ConvertToFES::performOperationsWithGrid( const bool& from_update ){
   std::vector<double> fspacing;
-  outgrid->setBounds( mygrid->getMin(), mygrid->getMax(), mygrid->getNbin(), fspacing);
+  outgrid->setBounds( mygrid->getMin(), mygrid->getMax(), mygrid->getNbin(), fspacing); 
   outgrid->clear(); outgrid->setNorm( mygrid->getNorm() ); runAllTasks(); 
 }
 

@@ -80,10 +80,8 @@ mygrid(NULL)
 }
 
 void ActionWithInputGrid::setAnalysisStride( const bool& use_all, const unsigned& astride ){
-  single_run=use_all;
-  if( !single_run ){
-     setStride( astride ); mves->setAnalysisStride( false, getStride() );
-  }
+  single_run=use_all; mves->setAnalysisStride( use_all, astride );
+  if( !single_run ) setStride( astride ); 
 }
 
 void ActionWithInputGrid::update(){

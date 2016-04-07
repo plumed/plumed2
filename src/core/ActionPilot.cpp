@@ -32,7 +32,7 @@ Action(ao),
 stride(1)
 {
   parse("STRIDE",stride);
-  log.printf("  with stride %d\n",stride);
+  if( !keywords.style("STRIDE","hidden") ) log.printf("  with stride %d\n",stride);
 }
 
 bool ActionPilot::onStep()const{
