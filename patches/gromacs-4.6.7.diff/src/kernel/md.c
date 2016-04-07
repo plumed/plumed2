@@ -1187,6 +1187,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
               dd_collect_state(cr->dd,state,state_global);
             else
               pd_collect_state(cr,state_global);
+          } else {
+            copy_state_nonatomdata(state, state_global);
           }
           if(MASTER(cr)){
             if(repl%2==step/repl_ex_nst%2){
@@ -1194,6 +1196,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             }else{
               if(repl+1<nrepl) exchange_state(cr->ms,repl+1,state_global);
             }
+          }
+          if (!DOMAINDECOMP(cr)) {
+            copy_state_nonatomdata(state_global, state);
           }
           if(PAR(cr)){
             if (DOMAINDECOMP(cr)) {
@@ -1227,6 +1232,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
               dd_collect_state(cr->dd,state,state_global);
             else
               pd_collect_state(cr,state_global);
+          } else {
+            copy_state_nonatomdata(state, state_global);
           }
           if(MASTER(cr)){
             if(repl%2==step/repl_ex_nst%2){
@@ -1234,6 +1241,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             }else{
               if(repl+1<nrepl) exchange_state(cr->ms,repl+1,state_global);
             }
+          }
+          if (!DOMAINDECOMP(cr)) {
+            copy_state_nonatomdata(state_global, state);
           }
           if(PAR(cr)){
             if (DOMAINDECOMP(cr)) {
