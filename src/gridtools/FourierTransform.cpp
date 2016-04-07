@@ -34,14 +34,16 @@ namespace gridtools {
 
 //+PLUMEDOC GRIDANALYSIS FOURIER_TRANSFORM
 /*
-Compute the Discrete Fourier Transform (DFT) by means of FFTW of data stored on a 2D grid. This action can operate on any other action that outputs scalar data on a two-dimensional grid.
+Compute the Discrete Fourier Transform (DFT) by means of FFTW of data stored on a 2D grid.
+
+This action can operate on any other action that outputs scalar data on a two-dimensional grid.
 
 Up to now, even if the input data are purely real the action uses a complex DFT.
 
 Just as a quick reference, given a 1D array \f$\mathbf{X}\f$ of size \f$n\f$, this action computes the vector \f$\mathbf{Y}\f$ given by
 
 \f[
-Y_k = \sum_j=0^{n-1} X_j \exp{2\pi\, j k \sqrt{-1}/n}.
+Y_k = \sum_{j=0}^{n-1} X_j e^{2\pi\, j k \sqrt{-1}/n}.
 \f]
 
 This can be easily extended to more than one dimension. All the other details can be found at http://www.fftw.org/doc/What-FFTW-Really-Computes.html#What-FFTW-Really-Computes.
@@ -49,12 +51,17 @@ This can be easily extended to more than one dimension. All the other details ca
 The keyword "FOURIER_PARAMETERS" deserves just a note on the usage. This keyword specifies how the Fourier transform will be normalized. The keyword takes two numerical parameters (\f$a,\,b\f$) that define the normalization according to the following expression
 
 \f[
-\frac{1}{n^{1-a}/2} \sum_j=0^{n-1} X_j \exp{2\pi b\, j k \sqrt{-1}/n}
+\frac{1}{n^{(1-a)/2}} \sum_{j=0}^{n-1} X_j e^{2\pi b\, j k \sqrt{-1}/n}
 \f]
 
 The default values of these parameters are: \f$a=1\f$ and \f$b=1\f$.
 
 \par Examples
+The following example tells Plumed to compute the complex 2D 'backward' Discrete Fourier Transform by taking the data saved on a grid called 'density', and normalizing the output by \f$ \frac{1}{\sqrt{N_x\, N_y}}\f$, where \f$N_x\f$ and \f$N_y\f$ are the number of data on the grid (it can be the case that \f$N_x \neq N_y\f$):
+
+\verbatim
+FOURIER_TRANSFORM STRIDE=1 GRID=density FT_TYPE=complex FOURIER_PARAMETERS=0,-1 FILE=fourier.dat
+\endverbatim
 
 */
 //+ENDPLUMEDOC
@@ -84,17 +91,10 @@ PLUMED_REGISTER_ACTION(FourierTransform,"FOURIER_TRANSFORM")
 
 void FourierTransform::registerKeywords( Keywords& keys ){
   ActionWithInputGrid::registerKeywords( keys );
-  keys.add("optional","FT_TYPE","choose what kind of data you want as output on the grid "
-									" possible values are: ABS - compute the complex modulus of Fourier coefficients (DEFAULT) "
-                                    "                      NORM - compute the norm (i.e. ABS^2) of Fourier coefficients "
-									"					   COMPLEX - store the FFTW complex output on the grid (as a vector) ");
-  keys.add("compulsory","FOURIER_PARAMETERS","default","what kind of normalization is applied to the output and if the Fourier transform in FORWARD or BACKWARD "
-                                                       "this keyword takes the form FOURIER_PARAMETERS=A,B "
-                                                       "where A and B can be 0, 1 or -1. "
-                                                       "the default values are A=1 (no normalization at all) and B=1 (forward FFT) "
-                                                       "other possible choices for A are: "
-                                                       "  A=-1: normalize by the number of data "
-                                                       "  A=0:  normalize by the square root of the number of data (one forward and followed by backward FFT recover the original data) ");
+  keys.add("optional","FT_TYPE","choose what kind of data you want as output on the grid. Possible values are: ABS = compute the complex modulus of Fourier coefficients (DEFAULT); NORM = compute the norm (i.e. ABS^2) of Fourier coefficients; COMPLEX = store the FFTW complex output on the grid (as a vector).");
+  keys.add("compulsory","FOURIER_PARAMETERS","default","what kind of normalization is applied to the output and if the Fourier transform in FORWARD or BACKWARD. This keyword takes the form FOURIER_PARAMETERS=A,B, where A and B can be 0, 1 or -1. The default values are A=1 (no normalization at all) and B=1 (forward FFT). Other possible choices for A are: "
+                                                       "A=-1: normalize by the number of data, "
+                                                       "A=0: normalize by the square root of the number of data (one forward and followed by backward FFT recover the original data). ");
 }
 
 FourierTransform::FourierTransform(const ActionOptions&ao):
@@ -109,7 +109,7 @@ outgrid(NULL)
   error("this feature is only available if you compile PLUMED with FFTW");
 #else
   if( mygrid->getDimension()!=2 ) error("fourier transform currently only works with two dimensional grids");
-  
+
   // Get the type of FT
   parse("FT_TYPE",output_type);
   if (output_type.length()==0) {
@@ -164,6 +164,7 @@ outgrid(NULL)
   for(unsigned i=1; i<gdirs.size(); ++i){
       if( mygrid->isPeriodic(gdirs[i]) ) vstring+=",T"; else vstring+=",F";
   }
+  
 
   // Create a grid on which to store the fourier transform of the input grid
   vesselbase::VesselOptions da("mygrid","",-1,vstring,this);
@@ -269,6 +270,7 @@ void FourierTransform::performOperationsWithGrid( const bool& from_update ){
     
     // Free FFTW stuff
     fftw_destroy_plan(plan_complex);
+    
 }
 #endif
 
