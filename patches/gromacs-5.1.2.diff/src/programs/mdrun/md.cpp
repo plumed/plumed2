@@ -1063,10 +1063,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             repl=replica_exchange_get_repl(repl_ex);
             nrepl=replica_exchange_get_nrepl(repl_ex);
           }
-          if (PAR(cr)) {
-            if (DOMAINDECOMP(cr))
-              dd_collect_state(cr->dd,state,state_global);
-          }
+          if (DOMAINDECOMP(cr))
+            dd_collect_state(cr->dd,state,state_global);
+          else
+            copy_state_nonatomdata(state, state_global);
           if(MASTER(cr)){
             if(repl%2==step/repl_ex_nst%2){
               if(repl-1>=0) exchange_state(cr->ms,repl-1,state_global);
@@ -1074,6 +1074,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
               if(repl+1<nrepl) exchange_state(cr->ms,repl+1,state_global);
             }
           }
+          if (!DOMAINDECOMP(cr))
+            copy_state_nonatomdata(state_global, state);
           if(PAR(cr)){
             if (DOMAINDECOMP(cr)) {
               dd_partition_system(fplog,step,cr,TRUE,1,
@@ -1099,10 +1101,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
           sfree(hrex_enerd);
 
 /* exchange back */
-          if (PAR(cr)) {
-            if (DOMAINDECOMP(cr))
-              dd_collect_state(cr->dd,state,state_global);
-          }
+          if (DOMAINDECOMP(cr))
+            dd_collect_state(cr->dd,state,state_global);
+          else
+            copy_state_nonatomdata(state, state_global);
           if(MASTER(cr)){
             if(repl%2==step/repl_ex_nst%2){
               if(repl-1>=0) exchange_state(cr->ms,repl-1,state_global);
@@ -1110,6 +1112,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
               if(repl+1<nrepl) exchange_state(cr->ms,repl+1,state_global);
             }
           }
+          if (!DOMAINDECOMP(cr))
+            copy_state_nonatomdata(state_global, state);
           if(PAR(cr)){
             if (DOMAINDECOMP(cr)) {
               dd_partition_system(fplog,step,cr,TRUE,1,
