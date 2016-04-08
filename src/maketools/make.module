@@ -5,7 +5,9 @@
 # 
 
 # include the machine dependent configuration
--include ../../Makefile.conf
+ifneq ($(MAKECMDGOALS),clean)
+  -include ../../Makefile.conf
+endif
 
 # if machine dependent configuration has been found:
 ifdef GCCDEP

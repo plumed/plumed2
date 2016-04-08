@@ -18,28 +18,98 @@ fi
 mkdir -p syntax help
 
 cat > syntax/plumedf.vim << \EOF
-syn match plumedFCol2S   /\v\s+/    nextgroup=plumedFCol1 contained
-syn match plumedFCol2    /\v\S+/    nextgroup=plumedFCol2S contained
-syn match plumedFCol1S   /\v\s+/    nextgroup=plumedFCol2 contained
-syn match plumedFCol1    /\v\S+/    nextgroup=plumedFCol1S
 
-syn match plumedNothing  /\v.*/    contained
-syn match plumedSCol2    /\v\S+/    nextgroup=plumedNothing contained
-syn match plumedSCol1S   /\v\s+/    nextgroup=plumedSCol2 contained
-syn match plumedSCol1    /\v\S+/    nextgroup=plumedSCol1S contained
+if exists("b:current_syntax")
+  finish
+endif
 
-highlight link plumedFCol1 Constant
-highlight link plumedFCol2 Keyword
-highlight link plumedSCol1 Type
-highlight link plumedSCol2 Constant
+let b:current_syntax="plumedf"
 
-syntax match   plumedFComment excludenl /\v#.*$/
-highlight link plumedFComment Comment
+if exists("g:plumed_shortcuts")
+  map <F3> :PMinus<CR>
+  map <F4> :PPlus<CR>
+endif
 
-syntax region plumedFieldLine  matchgroup=plumedFieldLine start=/\v[ \t]*\#\![ \t]+FIELDS[ \t]+/ excludenl end=/$/ contains=plumedFCol1
-syntax region plumedSetLine    matchgroup=plumedSetLine start=/\v[ \t]*\#\![ \t]+SET[ \t]+/ excludenl end=/$/ contains=plumedSCol1
-highlight link plumedFieldLine Type
-highlight link plumedSetLine   Type
+command! -nargs=0 -count=1 PPlus call PlumedMove(<count>)
+command! -nargs=0 -count=1 PMinus call PlumedMove(-<count>)
+command! -nargs=0 -count=0 PCol call PlumedColumn(<count>)
+
+" move highlight by count columns
+" count can be negative
+function! PlumedMove(count)
+  if !exists("b:plumedf_column")
+    let b:plumedf_column=0
+  endif
+  let b:plumedf_column=b:plumedf_column+a:count
+  if(b:plumedf_column<0)
+    let b:plumedf_column=0
+  endif
+  call PlumedColumn(b:plumedf_column)
+endfunction
+
+" highlight column col
+function! PlumedColumn(col)
+ let b:plumedf_column=a:col
+ let s=""
+ let c=0
+ while c<=a:col+2
+   let c=c+1
+   if(c==a:col)
+     let s=s.'X'
+   else
+     let s=s.'.'
+   endif
+ endwhile
+ call PlumedColumnPattern(s)
+endfunction
+
+" show a given highlight pattern
+" I keep this separate to allow future implementation
+" of multiple column highlight
+function! PlumedColumnPattern(col)
+ syntax clear
+ let coll=split(a:col,'\zs') " splits in characters
+ let cmax=len(coll)
+ let c=cmax
+ while c >0
+  let cc=c+1
+  if(cc>cmax)
+    let cc=cmax-1
+  endif
+  execute 'syn match plumedFCol' . c . 'S /\v\s+/             nextgroup=plumedFCol' . cc . ' contained'
+  let contained='contained'
+  if(c==1)
+     let contained=''
+  endif
+  execute 'syn match plumedFCol'  . c . ' /\v\S+/             nextgroup=plumedFCol' . c  . 'S ' . contained
+  if(coll[c-1]=='B' || (coll[c-1]=='.' && (c-1)%2!=0) )
+    let type="Keyword"
+  elseif(coll[c-1]=='A' || (coll[c-1]=='.' && (c-1)%2==0) )
+    let type="Constant"
+  elseif(coll[c-1]=='X')
+    let type="Todo"
+  endif
+  execute 'highlight link plumedFCol' .c. ' ' . type
+  let c -= 1
+ endwhile
+
+ syn match plumedNothing  /\v.*/    contained
+ syn match plumedSCol2    /\v\S+/    nextgroup=plumedNothing contained
+ syn match plumedSCol1S   /\v\s+/    nextgroup=plumedSCol2 contained
+ syn match plumedSCol1    /\v\S+/    nextgroup=plumedSCol1S contained
+ highlight link plumedSCol1 Type
+ highlight link plumedSCol2 Constant
+ syntax match   plumedFComment excludenl /\v#.*$/
+ highlight link plumedFComment Comment
+ syntax region plumedFieldLine  matchgroup=plumedFieldLine start=/\v[ \t]*\#\![ \t]+FIELDS[ \t]+/ excludenl end=/$/ contains=plumedFCol1
+ syntax region plumedSetLine    matchgroup=plumedSetLine start=/\v[ \t]*\#\![ \t]+SET[ \t]+/ excludenl end=/$/ contains=plumedSCol1
+ highlight link plumedFieldLine Type
+ highlight link plumedSetLine   Type
+endfunction
+
+" initialize to column zero
+call PlumedColumn(0)
+
 EOF
 
 
@@ -74,7 +144,13 @@ endif
 
 let b:current_syntax="plumed"
 
-let s:path=expand('<sfile>:p:h') . "/../"
+if exists("g:plumed_shortcuts")
+  noremap  <F2> <Esc>:PHelp<CR>
+  inoremap <F2> <C-o>:PHelp<CR>
+endif
+
+" path for plumed plugin
+let s:path=expand('<sfile>:p:h:h')
 
 " All except space and hash are in word
 set iskeyword=33,34,36-126
@@ -86,21 +162,13 @@ highlight link plumedDots Type
 
 let b:plumedActions=[]
 let b:plumedDictionary={}
-let b:plumedFullMan={}
 
 EOF
 for a in $actions ; do
 action_name="${a%%,*}" 
 action_name_=$(echo $action_name | sed s/-/_/g)
 
-echo 'call add(b:plumedActions,{"word":"'"$action_name"'"})'
 
-dictionary='{"word":"LABEL=","menu":"add a label"}'
-
-
-
-#echo "let b:plumedFullMan[\"$action_name\"]=\"$(
-#eval plumed" --no-mpi manual --action $action_name --vim 2>/dev/null | awk '{if(NR>1)printf("%s\\n",$0)}' )"\"
 
 {
 echo "****************************************"
@@ -109,6 +177,7 @@ echo "****************************************"
 plumed --no-mpi manual --action $action_name --vim 2>/dev/null | awk '{if(NR>1) print}'
 } > help/$action_name.txt
 
+dictionary='{"word":"LABEL=","menu":"(label)"}'
 
 for l in $(echo "$a" | sed 's/,/ /g')
 do
@@ -116,37 +185,58 @@ do
   case "$l" in
   (*:LABEL)
 # this is treated differently
-    string=
   ;;
   (flag:*)
     dictionary="$dictionary"'
 {"word":"'${l#flag:}'","menu":"(flag)"}'
-# syntax match   plumedKeywordsDISTANCE "\v<COMPONENTS>" contained
-    string='"\v<'${l#flag:}'>"' ;;
+  ;;
   (numbered:*)
     dictionary="$dictionary"'
 {"word":"'${l#*:}'","menu":"(numbered)"}'
-# syntax match   plumedKeywordsMOVINGRESTRAINT "\v<KAPPA[0-9]*\=[^{ ]*" contained
-    string='"\v<'${l#*:}'[0-9]*\=[^{ #]*"' ;;
+  ;;
   (*:*)
     dictionary="$dictionary"'
-{"word":"'${l#*:}'="}'
-# syntax match   plumedKeywordsMOVINGRESTRAINT "\v<KAPPA[0-9]*\=[^{ ]*" contained
-    string='"\v<'${l#*:}'[0-9]*\=[^{ #]*"' ;;
+{"word":"'${l#*:}'=","menu":"(option)"}'
+  ;;
   esac
-  test -n "$string" && echo "syntax match   plumedKeywords$action_name_ $string contained contains=plumedStringInKeyword"
 done
 
 dictionary="$(
   echo "$dictionary" | sort | tr '\n' ',' | sed 's/,$//'
 )"
-echo "let b:plumedDictionary[\"plumedLine$action_name\"]=[$dictionary]"
+echo "let b:plumedDictionary[\"$action_name\"]=[$dictionary]"
 
-cat << \EOF | sed s/ACTION/$action_name/g | sed s/ACTNAME/$action_name_/g
+done
+
+cat << \EOF
+function! PlumedDefineSyntax()
+
+  for key in sort(keys(b:plumedDictionary))
+    call add(b:plumedActions,{"word":key})
+  endfor
+
+for a in b:plumedActions
+  let action=a["word"]
+" vim variables cannot contain -
+" we convert it to triple ___
+  let action_=substitute(action,"-","___","g")
+
+  for b in b:plumedDictionary[action]
+    if(b["menu"]=="(numbered)")
+      let string='"\v<' . b["word"] . '[0-9]*\=[^{ #]*"'
+    elseif(b["menu"]=="(option)")
+" this is necessary since word for option is e.g ."RESTART="
+      let string='"\v<' . substitute(b["word"],"=","","") . '[0-9]*\=[^{ #]*"'
+    elseif(b["menu"]=="(flag)")
+      let string='"\v<' . b["word"] . '>"'
+    endif
+    execute 'syntax match   plumedKeywords' . action_ . ' ' . string . ' contained contains=plumedStringInKeyword'
+  endfor
+
 " single line, with explicit LABEL
 " matching action at beginning of line, till the end of the line
 " can contain all the keywords associated with this action, plus strings, label, and comments
-syntax region plumedLineACTNAME matchgroup=plumedActionACTNAME start=/\v^\s*ACTION>/ excludenl end=/$/ contains=plumedComment,plumedKeywordsACTNAME,plumedLabel,plumedStringOneline fold
+execute 'syntax region plumedLine' . action_ . ' matchgroup=plumedAction' . action_ . ' start=/\v^\s*' . action . '>/ excludenl end=/$/ contains=plumedComment,plumedKeywords' . action_ . ',plumedLabel,plumedStringOneline fold'
 " multiple line, with explicit LABEL
 " first row might contain extra words before arriving at the dots
 " thus continuation dots are matched by plumedDots
@@ -154,12 +244,12 @@ syntax region plumedLineACTNAME matchgroup=plumedActionACTNAME start=/\v^\s*ACTI
 " ends on dots, possibly followed by the same action name and possibly a comment
 " comments and initial dots are not part of the match
 " can contain all the keywords associated with this action, plus strings, label, and comments
-syntax region plumedCLineACTNAME matchgroup=plumedActionACTNAME start=/\v^\s*ACTION>(.+\.\.\.\s*(#.*)*$)@=/ end=/\v^\s*\.\.\.(\s+ACTION)?\s*((#.*)*$)@=/ contains=plumedComment,plumedKeywordsACTNAME,plumedLabel,plumedString,plumedDots fold
+execute 'syntax region plumedCLine' . action_ . ' matchgroup=plumedAction' . action_ . ' start=/\v^\s*' . action . '>(.+\.\.\.\s*(#.*)*$)@=/ end=/\v^\s*\.\.\.(\s+' . action . ')?\s*((#.*)*$)@=/ contains=plumedComment,plumedKeywords' . action_ . ',plumedLabel,plumedString,plumedDots fold'
 " single line, with label: syntax
 " matching label followed by action
 " can contain all the keywords associated with this action, plus strings and comments
 " labels are not allwed
-syntax region plumedLLineACTNAME matchgroup=plumedActionACTNAME start=/\v^\s*[^ #@][^ #]*:\s+ACTION/ excludenl end=/$/ contains=plumedComment,plumedKeywordsACTNAME,plumedStringOneline fold
+execute 'syntax region plumedLLine' . action_ . ' matchgroup=plumedAction' . action_ . ' start=/\v^\s*[^ #@][^ #]*:\s+' . action . '/ excludenl end=/$/ contains=plumedComment,plumedKeywords' . action_ . ',plumedStringOneline fold'
 " multiple line, with label: syntax
 " first row might contain extra words before arriving at the dots
 " thus continuation dots are matched by plumedDots
@@ -167,22 +257,20 @@ syntax region plumedLLineACTNAME matchgroup=plumedActionACTNAME start=/\v^\s*[^ 
 " comments and dots are not part of the match
 " ends on dots, possibly followed by the same label and possibly a comment
 " comments and initial dots are not part of the match
-syntax region plumedLCLineACTNAME matchgroup=plumedActionACTNAME start=/\v^\s*\z([^ #@][^ #]*\:)\s+ACTION>(.+\.\.\.\s*(#.*)*$)@=/ end=/\v^\s*\.\.\.(\s+\z1)?\s*((#.*)*$)@=/ contains=plumedComment,plumedKeywordsACTNAME,plumedString,plumedDots fold
+execute 'syntax region plumedLCLine' . action_ . ' matchgroup=plumedAction' . action_ . ' start=/\v^\s*\z([^ #@][^ #]*\:)\s+' . action . '>(.+\.\.\.\s*(#.*)*$)@=/ end=/\v^\s*\.\.\.(\s+\z1)?\s*((#.*)*$)@=/ contains=plumedComment,plumedKeywords' . action_ . ',plumedString,plumedDots fold'
 " this is a hack required to match the ACTION when it is in the second line
-syntax match plumedSpecialACTNAME /\v(\.\.\.\s*(#.*)*\_s*)@<=ACTION>/ contained
-highlight link plumedSpecialACTNAME Type
+execute 'syntax match plumedSpecial' . action_ . ' /\v(\.\.\.\s*(#.*)*\_s*)@<=' . action . '>/ contained'
+execute 'highlight link plumedSpecial' . action_ . ' Type'
 " multiple line, with label: syntax
 " here ACTION is on the second line
 " matching label, dots, possibly comments, newline, then action name
 " comments, dots, and action are not part of the match
 " ends on dots possibly followed by the same label and possibly a comment
-syntax region plumedLCLineACTNAME matchgroup=plumedActionACTNAME start=/\v^\s*\z([^ #@][^ #]*\:)\s+(\.\.\.\s*(#.*)*\_s*ACTION)@=/ end=/\v^\s*\.\.\.(\s+\z1)?\s*((#.*)*$)@=/ contains=plumedComment,plumedKeywordsACTNAME,plumedString,plumedSpecialACTNAME,plumedDots fold
-highlight link plumedActionACTNAME Type
-highlight link plumedKeywordsACTNAME Statement
-EOF
+execute 'syntax region plumedLCLine' . action_ . ' matchgroup=plumedAction' . action_ . ' start=/\v^\s*\z([^ #@][^ #]*\:)\s+(\.\.\.\s*(#.*)*\_s*' . action . ')@=/ end=/\v^\s*\.\.\.(\s+\z1)?\s*((#.*)*$)@=/ contains=plumedComment,plumedKeywords' . action_ . ',plumedString,plumedSpecial' . action_ . ',plumedDots fold'
+execute 'highlight link plumedAction' . action_ . ' Type'
+execute 'highlight link plumedKeywords' . action_ . ' Statement'
+endfor
 
-done
-cat << \EOF
 " comments and strings last, with highest priority
 syntax region  plumedString start=/\v\{/  end=/\v\}/ contained contains=plumedString fold
 syntax region  plumedStringOneline start=/\v\{/  end=/\v\}/ oneline contained contains=plumedStringOneline fold
@@ -202,6 +290,9 @@ highlight link plumedLabelWrong Error
 syntax region  plumedComment start="\v^\s*ENDPLUMED>" end="\%$" fold
 syntax match   plumedComment excludenl "\v#.*$"
 highlight link plumedComment Comment
+endfunction
+
+call PlumedDefineSyntax()
 
 
 fun! PlumedGuessRegion()
@@ -258,7 +349,7 @@ fun! PlumedComplete(findstart, base)
             " locate the start of the word
             let line = getline('.')
             let start = col('.') - 1
-            while start > 0 && line[start - 1] =~ '[a-zA-Z\_]'
+            while start > 0 && line[start - 1] =~ '[a-zA-Z\_\=\-\.]'
               let start -= 1
             endwhile
             return start
@@ -279,8 +370,9 @@ fun! PlumedComplete(findstart, base)
               endif
             endif
             let comp=[]
-" normalize key removing L/C/LC indication
-            let key1=substitute(key,"^plumed[LC]*Line","plumedLine","")
+" retrieve action name
+" normalize ___ to -
+            let key1=substitute(substitute(key,"^plumed[LC]*Line","",""),"___","-","g")
             if key ==""
 " if outside of any region, complete with list of actions
               let comp=b:plumedActions
@@ -308,6 +400,18 @@ fun! PlumedComplete(findstart, base)
 " so it should be unlet to iterate the loop
               unlet m
             endfor
+"           if("..." =~ '^' . a:base && (key=~"^plumedLLine.*" || key=~"^plumedLine.*"))
+"             call add(res,{"word":"...","menu":"(start multiline statement)"})
+"           endif
+"           if("..." =~ '^' . a:base && (key=~"^plumedLCLine.*" || key=~"^plumedCLine.*") && getline('.')=~'^\s*$')
+"              call add(res,{"word":"...","menu":"(end multiline statement)"})
+"           endif
+            if("#" =~ '^' . a:base && key!="plumedComment") 
+               call add(res,{"word":"#","menu":"(add comment)"})
+            endif
+            if("ENDPLUMED" =~ '^' . a:base && key =="")
+               call add(res,{"word":"ENDPLUMED","menu":"(end input)"})
+            endif
             return res
           endif
         endfun
