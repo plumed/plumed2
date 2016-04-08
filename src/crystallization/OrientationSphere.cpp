@@ -72,7 +72,6 @@ double OrientationSphere::compute( const unsigned& tindex, multicolvar::AtomValu
    unsigned ncomponents=getBaseMultiColvar(0)->getNumberOfQuantities();
    std::vector<double> catom_orient( ncomponents ), this_orient( ncomponents ), catom_der( ncomponents ); 
 
-   Vector catom_pos = myatoms.getPosition(0);
    getVectorForTask( myatoms.getIndex(0), true, catom_orient ); 
    multicolvar::CatomPack atom0; 
    MultiValue& myder0=getVectorDerivatives( myatoms.getIndex(0), true ); 

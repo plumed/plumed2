@@ -499,6 +499,7 @@ void PlumedMain::readInputFile(std::string str){
   IFile ifile;
   ifile.link(*this);
   ifile.open(str);
+  ifile.allowNoEOL();
   std::vector<std::string> words;
   while(Tools::getParsedLine(ifile,words) && words[0]!="ENDPLUMED") readInputWords(words);
   log.printf("END FILE: %s\n",str.c_str());
