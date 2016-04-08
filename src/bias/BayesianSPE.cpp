@@ -23,6 +23,7 @@
 #include "ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
+#include "tools/Random.h"
 #include <cmath>
 
 using namespace std;
@@ -72,6 +73,8 @@ class BayesianSPE : public Bias
   double scale_min_;
   double scale_max_;
   double Dscale_;
+  double scale_mean_;
+  Random random;
   // sigma is data uncertainty
   double sigma_;
   double sigma_min_;
@@ -224,6 +227,7 @@ MCfirst_(-1)
   else iseed = 0;     
   comm.Sum(&iseed, 1);
   srand(iseed);
+  random.setSeed(-iseed);
 }
 
 double BayesianSPE::getEnergy(const double sigma, const double scale){
