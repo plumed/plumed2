@@ -1051,7 +1051,6 @@ std::vector<Vector>  RMSDCoreData::getDDistanceDReferenceSOMA(){
   if(!isInitialized)plumed_merror("getDDistanceDReference to initialize the coreData first!");
   // get the transpose rotation
   Tensor t_rotation=rotation.transpose();
-  Tensor t_ddist_drr01=ddist_drr01.transpose();	
   
 // third expensive loop: derivatives
   for(unsigned iat=0;iat<n;iat++){

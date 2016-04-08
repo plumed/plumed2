@@ -1,5 +1,7 @@
 # include the machine dependent configuration
--include ../Makefile.conf
+ifneq ($(MAKECMDGOALS),clean)
+  -include ../Makefile.conf
+endif
 
 .PHONY: all clean
 
@@ -13,11 +15,12 @@ all:
 else
 
 all:
-	./extract
-	./go-doxygen
+ifeq ($(make_doc),yes)
+	make_pdfdoc=$(make_pdfdoc) ./extract
+	make_pdfdoc=$(make_pdfdoc) ./go-doxygen
 	cp *png html/
 	./report_errors
-
+endif
 endif
 
 clean:

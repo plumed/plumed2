@@ -1,6 +1,8 @@
 
 # include the machine dependent configuration
--include ../../Makefile.conf
+ifneq ($(MAKECMDGOALS),clean)
+  -include ../../Makefile.conf
+endif
 
 # sed script to edit program name defaults to do nothing
 ifndef program_transform_name
