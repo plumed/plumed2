@@ -132,6 +132,7 @@ eigenvecs( getNumberOfNodes(), getNumberOfNodes() )
    // }
 
    if( !getAdjacencyVessel()->isSymmetric() ) error("input contact matrix is not symmetric");
+   std::vector<AtomNumber> fake_atoms; setupMultiColvarBase( fake_atoms );
 
    // Create all the values
    sqrtn = sqrt( static_cast<double>( getNumberOfNodes() ) );

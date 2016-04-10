@@ -38,8 +38,6 @@ private:
 protected:
 /// Get the derivatives for the central atom with index ind
   CatomPack getCentralAtomPackFromInput( const unsigned& ind ) const ;
-///
-  void getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient0 ) const ;
 /// Build sets by taking one multicolvar from each base
   void buildSets();
 public:
@@ -54,13 +52,6 @@ CatomPack MultiColvarFunction::getCentralAtomPackFromInput( const unsigned& ind 
   unsigned basen=0;
   for(unsigned i=0;i<mmc;++i) basen+=mybasemulticolvars[i]->getNumberOfAtoms();
   return mybasemulticolvars[mmc]->getCentralAtomPack( basen, atom_lab[ind].second );
-}
-
-inline
-void MultiColvarFunction::getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient ) const {
-  plumed_dbg_assert( atom_lab[ind].first>0 ); unsigned mmc=atom_lab[ind].first-1;
-  plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( atom_lab[ind].second ) );
-  mybasedata[mmc]->retrieveValueWithIndex( atom_lab[ind].second, normed, orient );
 }
 
 }

@@ -39,6 +39,9 @@ number_of_cluster(-1)
       if( getNumberOfNodeTypes()!=1 ) error("should only be running clustering with one base multicolvar in function");
       if( !getAdjacencyVessel()->undirectedGraph() ) error("input contact matrix is incompatible with clustering");  
    }
+   if( keywords.exists("MATRIX") ){
+       std::vector<AtomNumber> fake_atoms; setupMultiColvarBase( fake_atoms );
+   }
 }
 
 void ClusteringBase::turnOnDerivatives(){

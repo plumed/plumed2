@@ -72,6 +72,8 @@ private:
   bool setup_completed;
 /// Ensures that retrieving of atoms is only done once per calculation loop
   bool atomsWereRetrieved;
+/// The vessels in these multicolvars in which the data is stored
+  std::vector<vesselbase::StoreDataVessel*> mybasedata;
 /// Add derivatives of center of mass position
   void addComDerivatives( const int& ival, const unsigned& iatom, const Vector& der, multicolvar::AtomValuePack& myatoms ) const ;
 protected:
@@ -79,8 +81,6 @@ protected:
   std::vector< std::pair<unsigned,unsigned> > atom_lab;
 /// The multicolvars from which we construct these quantities
   std::vector<MultiColvarBase*> mybasemulticolvars;
-/// The vessels in these multicolvars in which the data is stored
-  std::vector<vesselbase::StoreDataVessel*> mybasedata;
 /// This remembers where the boundaries are for the tasks. It makes link cells work fast
   Matrix<std::pair<unsigned,unsigned> > bookeeping;
 /// Function that recursively checks if filters have been used in the input to a multicolvar
@@ -104,8 +104,6 @@ protected:
   void setupMultiColvarBase( const std::vector<AtomNumber>& atoms );
 /// Add some derivatives to a particular component of a particular atom
   void addAtomDerivatives( const int& , const unsigned& , const Vector& , multicolvar::AtomValuePack& ) const ;
-/// Retrieve the input derivatives
-  MultiValue& getInputDerivatives( const unsigned& iatom, const bool& normed, const multicolvar::AtomValuePack& myatoms ) const ;
 /// Add derivative of the input value
   void mergeInputDerivatives( const unsigned& ival, const unsigned& start, const unsigned& end, const unsigned& jatom, 
                               const std::vector<double>& der, MultiValue& myder, AtomValuePack& myatoms ) const ;
@@ -176,7 +174,7 @@ public:
 /// Get the number of derivatives for this action
   virtual unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
 /// Checks if an task is being performed at the present time
-  virtual bool isCurrentlyActive( const unsigned& bno, const unsigned& code );
+  virtual bool isCurrentlyActive( const unsigned& code );
 ///
   virtual CatomPack getCentralAtomPack( const unsigned& basn, const unsigned& curr );
 /// Get the index where the central atom is stored
@@ -197,10 +195,14 @@ public:
   MultiColvarBase* getBaseMultiColvar( const unsigned& icolv ) const ;
 /// Get the number of base multicolvars 
   unsigned getNumberOfBaseMultiColvars() const ;
+/// Get an input data
+  virtual void getInputData( const unsigned& ind, const bool& normed, const multicolvar::AtomValuePack& myatoms, std::vector<double>& orient ) const ;
+/// Retrieve the input derivatives
+  virtual MultiValue& getInputDerivatives( const unsigned& iatom, const bool& normed, const multicolvar::AtomValuePack& myatoms ) const ;
 };
 
 inline
-bool MultiColvarBase::isCurrentlyActive( const unsigned& bno, const unsigned& code ){
+bool MultiColvarBase::isCurrentlyActive( const unsigned& code ){
   if( setup_completed && atom_lab[code].first>0 ){
      unsigned mmc=atom_lab[code].first - 1; 
      return mybasedata[mmc]->storedValueIsActive( atom_lab[code].second ); 
@@ -210,6 +212,7 @@ bool MultiColvarBase::isCurrentlyActive( const unsigned& bno, const unsigned& co
 
 inline
 AtomNumber MultiColvarBase::getAbsoluteIndexOfCentralAtom( const unsigned& iatom ) const {
+  plumed_dbg_assert( iatom<atom_lab.size() );
   if( atom_lab[iatom].first>0  ){
       unsigned mmc=atom_lab[iatom].first - 1;
       return mybasemulticolvars[mmc]->getAbsoluteIndexOfCentralAtom( atom_lab[iatom].second ); 
@@ -220,11 +223,12 @@ AtomNumber MultiColvarBase::getAbsoluteIndexOfCentralAtom( const unsigned& iatom
 
 inline
 Vector MultiColvarBase::getPositionOfAtomForLinkCells( const unsigned& iatom ) const {
+  plumed_dbg_assert( iatom<atom_lab.size() );
   if( atom_lab[iatom].first>0  ){ 
       unsigned mmc=atom_lab[iatom].first - 1;
       return mybasemulticolvars[mmc]->getCentralAtomPos( atom_lab[iatom].second );
   }
-  return ActionAtomistic::getPosition( iatom );
+  return ActionAtomistic::getPosition( atom_lab[iatom].second );
 }
 
 inline

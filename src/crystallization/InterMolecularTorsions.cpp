@@ -129,8 +129,8 @@ double InterMolecularTorsions::compute( const unsigned& tindex, AtomValuePack& m
 
    // Retrieve vectors
    std::vector<double> orient0( 5 ), orient1( 5 ); 
-   getVectorForTask( myatoms.getIndex(0), true, orient0 );
-   getVectorForTask( myatoms.getIndex(1), true, orient1 );
+   getInputData( 0, true, myatoms, orient0 );
+   getInputData( 1, true, myatoms, orient1 );
    for(unsigned i=0;i<3;++i){ v1[i]=orient0[2+i]; v2[i]=orient1[2+i]; }
    if( getBaseMultiColvar(0)->getNumberOfQuantities()<3 ) return 1.0;
 

@@ -72,7 +72,7 @@ double OrientationSphere::compute( const unsigned& tindex, multicolvar::AtomValu
    std::vector<double> catom_orient( ncomponents ), this_orient( ncomponents );
    std::vector<double> this_der( ncomponents ), catom_der( ncomponents ); 
 
-   getVectorForTask( myatoms.getIndex(0), true, catom_orient ); 
+   getInputData( 0, true, myatoms, catom_orient ); 
    multicolvar::CatomPack atom0; 
    MultiValue& myder0=getInputDerivatives( 0, true, myatoms ); 
    if( !doNotCalculateDerivatives() ) atom0=getCentralAtomPackFromInput( myatoms.getIndex(0) );
@@ -85,7 +85,7 @@ double OrientationSphere::compute( const unsigned& tindex, multicolvar::AtomValu
  
          sw = switchingFunction.calculateSqr( d2, dfunc );  
  
-         getVectorForTask( myatoms.getIndex(i), true, this_orient );
+         getInputData( i, true, myatoms, this_orient );
          // Calculate the dot product wrt to this position 
          double f_dot = computeVectorFunction( distance, catom_orient, this_orient, ddistance, catom_der, this_der ); 
 

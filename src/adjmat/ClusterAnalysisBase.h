@@ -23,13 +23,15 @@
 #define __PLUMED_adjmat_ClusterAnalysisBase_h
 
 #include "ClusteringBase.h"
-#include "multicolvar/MultiColvarFunction.h"
+#include "multicolvar/MultiColvarBase.h"
 
 namespace PLMD {
 namespace adjmat {
 
-class ClusterAnalysisBase : public multicolvar::MultiColvarFunction {
+class ClusterAnalysisBase : public multicolvar::MultiColvarBase {
 private:
+  MultiValue myfvals;
+  multicolvar::AtomValuePack myfatoms;
   ClusteringBase* myclusters;
 protected:
   unsigned getNumberOfNodes() const ;

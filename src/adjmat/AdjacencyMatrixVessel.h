@@ -39,7 +39,6 @@ class AdjacencyMatrixBase;
 class AdjacencyMatrixVessel : public vesselbase::StoreDataVessel {
 friend class AdjacencyMatrixBase;
 friend class ActionWithInputMatrix;
-friend class MatrixSummationBase;
 private:
 /// Pointer to underlying action
   AdjacencyMatrixBase* function;

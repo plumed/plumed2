@@ -75,7 +75,7 @@ public:
   void calculateNumericalDerivatives( ActionWithValue* a=NULL );
   void apply(){};
 /// Is this atom currently being copied 
-  bool isCurrentlyActive( const unsigned& , const unsigned& );
+  bool isCurrentlyActive( const unsigned& );
 /// This should not be called
   Vector calculateCentralAtomPosition(){ plumed_error(); }
   double compute( const unsigned& tindex, AtomValuePack& myvals ) const { plumed_error(); }
@@ -97,8 +97,8 @@ unsigned BridgedMultiColvarFunction::getNumberOfDerivatives(){
 }
 
 inline
-bool BridgedMultiColvarFunction::isCurrentlyActive( const unsigned& bno, const unsigned& code ){
-  return mycolv->isCurrentlyActive( bno, code );
+bool BridgedMultiColvarFunction::isCurrentlyActive( const unsigned& code ){
+  return mycolv->isCurrentlyActive( code );
 }
 
 inline

@@ -87,8 +87,7 @@ double AlignedMatrixBase::compute( const unsigned& tindex, multicolvar::AtomValu
   unsigned ncomp=getSizeOfInputVectors(); Vector ddistance;
   std::vector<double> orient0(ncomp), orient1(ncomp), dorient0(ncomp), dorient1(ncomp);
   Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
-  getOrientationVector( myatoms.getIndex(0), true, orient0 );
-  getOrientationVector( myatoms.getIndex(1), true, orient1 );
+  getInputData( 0, true, myatoms, orient0 ); getInputData( 1, true, myatoms, orient1 );
   double f_dot = computeVectorFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) )-ncol_t, 
                                         distance, orient0, orient1, ddistance, dorient0, dorient1 );
 
@@ -102,8 +101,8 @@ double AlignedMatrixBase::compute( const unsigned& tindex, multicolvar::AtomValu
 
       // Add derivatives of orientation 
       for(unsigned k=2;k<orient0.size();++k){ dorient0[k]*=sw; dorient1[k]*=sw; }
-      addOrientationDerivatives( 1, 0, dorient0, myatoms );
-      addOrientationDerivatives( 1, 1, dorient1, myatoms );
+      mergeInputDerivatives( 1, 2, orient0.size(), 0, dorient0, getInputDerivatives( 0, true, myatoms ), myatoms );
+      mergeInputDerivatives( 1, 2, orient1.size(), 1, dorient1, getInputDerivatives( 1, true, myatoms ), myatoms );
   }
   return sw*f_dot;
 }

@@ -31,7 +31,8 @@ namespace adjmat {
 class AdjacencyMatrixBase : public multicolvar::MultiColvarBase {
 friend class AdjacencyMatrixVessel;
 friend class ActionWithInputMatrix;
-friend class MatrixSummationBase;
+friend class MatrixColumnSums;
+friend class MatrixRowSums;
 private:
 /// Used for read in of multiple connection descriptors
   unsigned connect_id;
@@ -53,8 +54,6 @@ protected:
   void retrieveTypeDimensions( unsigned& nrows, unsigned& ncols, unsigned& ntype ) const ;
 /// Retrieve the vessel that holds the adjacency matrix
   AdjacencyMatrixVessel* getAdjacencyVessel();
-/// Get the vector for a particular node
-  void getOrientationVector( const unsigned& ind, const bool& normed, std::vector<double>& orient0 ) const ; 
 /// Put the indices of the matrix elements in current atoms
   void setMatrixIndexesForTask( const unsigned& ii );
 /// Add derivatives to a matrix element
@@ -68,8 +67,6 @@ protected:
   unsigned getSizeOfInputVectors() const ;
 /// Return the group this atom is a part of
   unsigned getBaseColvarNumber( const unsigned& ) const ;
-/// Add some derivatives to the relevant orientation
-  void addOrientationDerivatives( const unsigned&, const unsigned& , const std::vector<double>& , multicolvar::AtomValuePack& ) const ;
 public:
   static void registerKeywords( Keywords& keys );
   explicit AdjacencyMatrixBase(const ActionOptions&);
@@ -78,8 +75,6 @@ public:
 /// None of these things are allowed
   bool isPeriodic(){ return false; }
   Vector getCentralAtom(){ plumed_merror("cannot find central atoms for adjacency matrix actions"); Vector dum; return dum; }
-/// Get the absolute index of an atom
-//  AtomNumber getAbsoluteIndexOfCentralAtom(const unsigned& i) const ;
 /// Transforms the stored values in whatever way is required
   virtual double transformStoredValues( const std::vector<double>& myvals, unsigned& vout, double& df ) const ;
 /// Used to check for connections between atoms
@@ -105,15 +100,7 @@ AtomNumber AdjacencyMatrixBase::getAbsoluteIndexOfCentralAtom( const unsigned& i
       unsigned mmc=atom_lab[ iatom ].first - 1;
       return mybasemulticolvars[mmc]->getAbsoluteIndexOfCentralAtom( atom_lab[iatom].second );
   }
-  return ActionAtomistic::getAbsoluteIndex( atom_lab[iatom].first );
-}
-
-
-inline 
-void AdjacencyMatrixBase::getOrientationVector( const unsigned& ind, const bool& normed, std::vector<double>& orient ) const {
-  plumed_dbg_assert( atom_lab[ind].first>0 ); unsigned mmc=atom_lab[ind].first - 1; 
-  plumed_assert( !mybasemulticolvars[mmc]->weightWithDerivatives() ); plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( atom_lab[ind].second ) );
-  mybasedata[mmc]->retrieveValueWithIndex( atom_lab[ind].second, normed, orient );
+  return ActionAtomistic::getAbsoluteIndex( atom_lab[iatom].second );
 }
 
 inline

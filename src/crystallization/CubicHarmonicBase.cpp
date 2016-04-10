@@ -95,9 +95,8 @@ double CubicHarmonicBase::compute( const unsigned& tindex, multicolvar::AtomValu
 
    // Calculate the coordination number
    Vector myder, rotateder, fder; unsigned nat=myatoms.getNumberOfAtoms();
-   double sw, t0, t1, t2, t3, x2, x4, y2, y4, z2, z4, r8, r12, tmp;
-   
-   double d2; 
+ 
+   double d2;
    for(unsigned i=1;i<nat;++i){
       Vector& distance=myatoms.getPosition(i); 
       
@@ -105,7 +104,7 @@ double CubicHarmonicBase::compute( const unsigned& tindex, multicolvar::AtomValu
            (d2+=distance[1]*distance[1])<rcut2 &&
            (d2+=distance[2]*distance[2])<rcut2) {
            
-         sw = switchingFunction.calculateSqr( d2, dfunc ); 
+         double sw = switchingFunction.calculateSqr( d2, dfunc ); 
 
          rotatedis[0]=rotationmatrix[0][0]*distance[0]
                   +rotationmatrix[0][1]*distance[1]

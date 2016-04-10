@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "MatrixSummationBase.h"
+#include "ActionWithInputMatrix.h"
 #include "multicolvar/AtomValuePack.h"
 #include "AdjacencyMatrixVessel.h"
 #include "AdjacencyMatrixBase.h"
@@ -39,7 +39,7 @@ Sum the columns of a contact matrix
 namespace PLMD {
 namespace adjmat {
 
-class MatrixColumnSums : public MatrixSummationBase {
+class MatrixColumnSums : public ActionWithInputMatrix {
 public:
   static void registerKeywords( Keywords& keys );
   explicit MatrixColumnSums(const ActionOptions&);
@@ -49,14 +49,18 @@ public:
 PLUMED_REGISTER_ACTION(MatrixColumnSums,"COLUMNSUMS")
 
 void MatrixColumnSums::registerKeywords( Keywords& keys ){
-  MatrixSummationBase::registerKeywords( keys );
+  ActionWithInputMatrix::registerKeywords( keys );
+  keys.use("ALT_MIN"); keys.use("LOWEST"); keys.use("HIGHEST"); keys.use("MEAN");
+  keys.use("MEAN"); keys.use("MIN"); keys.use("MAX"); keys.use("LESS_THAN");
+  keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
 }
 
 MatrixColumnSums::MatrixColumnSums(const ActionOptions& ao):
 Action(ao),
-MatrixSummationBase(ao)
+ActionWithInputMatrix(ao)
 {
- // Setup the tasks
+  if( (mymatrix->getMatrixAction())->mybasemulticolvars.size()>0 ) error("matrix row sums should only be calculated when inputs are atoms");
+  // Setup the tasks
   unsigned ncols = mymatrix->getNumberOfColumns();  
   ablocks.resize(1); ablocks[0].resize( ncols );
   for(unsigned i=0;i<ncols;++i) addTaskToList( i ); 
@@ -66,10 +70,7 @@ MatrixSummationBase(ao)
   } else {
      for(unsigned i=0;i<ncols;++i) ablocks[0][i]=mymatrix->getNumberOfRows() + i;
   }
-  // Setup the underlying multicolvar
-  ActionAtomistic* matoms = dynamic_cast<ActionAtomistic*>( mymatrix->getMatrixAction() );
-  plumed_assert( matoms ); setupMultiColvarBase( matoms->getAbsoluteIndexes() );
-  addDependency( mymatrix->getMatrixAction() );
+  std::vector<AtomNumber> fake_atoms; setupMultiColvarBase( fake_atoms );
 }
 
 double MatrixColumnSums::compute( const unsigned& tinded, multicolvar::AtomValuePack& myatoms ) const {

@@ -62,7 +62,7 @@ void MultiColvarFunction::buildSets(){
   }
   for(unsigned i=0;i<nblock;++i) addTaskToList( i );
   std::vector<AtomNumber> fake_atoms; setupMultiColvarBase( fake_atoms ); 
-  mybasedata[0]->resizeTemporyMultiValues( mybasemulticolvars.size() ); 
+  // mybasedata[0]->resizeTemporyMultiValues( mybasemulticolvars.size() ); 
 }
 
 }

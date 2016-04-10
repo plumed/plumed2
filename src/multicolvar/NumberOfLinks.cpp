@@ -152,8 +152,8 @@ double NumberOfLinks::compute( const unsigned& tindex, AtomValuePack& myatoms ) 
    unsigned ncomp=getBaseMultiColvar(0)->getNumberOfQuantities();
 
    std::vector<double> orient0( ncomp ), orient1( ncomp );
-   getVectorForTask( myatoms.getIndex(0), true, orient0 ); 
-   getVectorForTask( myatoms.getIndex(1), true, orient1 );
+   getInputData( 0, true, myatoms, orient0 ); 
+   getInputData( 1, true, myatoms, orient1 );
 
    double dot=0;
    for(unsigned k=2;k<orient0.size();++k){

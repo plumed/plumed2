@@ -173,38 +173,6 @@ void AdjacencyMatrixBase::readMaxThreeSpeciesMatrix( const std::string& key0, co
 //   return myinputdata.getAtomicIndex( i );
 // } 
 
-void AdjacencyMatrixBase::addOrientationDerivatives( const unsigned& ival, const unsigned& iatom, const std::vector<double>& der, multicolvar::AtomValuePack& myatoms ) const {
-  unsigned jatom=myatoms.getIndex(iatom); plumed_dbg_assert( jatom<atom_lab.size() );
-  MultiValue myder(0,0); unsigned mmc=atom_lab[ival].first - 1; plumed_assert( !mybasemulticolvars[mmc]->weightWithDerivatives() );
-  plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( atom_lab[ival].second ) );
-  if( myder.getNumberOfValues()!=mybasemulticolvars[mmc]->getNumberOfQuantities() ||
-      myder.getNumberOfDerivatives()!=mybasemulticolvars[mmc]->getNumberOfDerivatives() ){
-          myder.resize( mybasemulticolvars[mmc]->getNumberOfQuantities(), mybasemulticolvars[mmc]->getNumberOfDerivatives() );
-  }
-  mybasedata[mmc]->retrieveDerivatives( atom_lab[ival].second, true, myder );
-
-  // Get start of indices for this atom
-  unsigned basen=0; for(unsigned i=0;i<mmc;++i) basen+=3*mybasemulticolvars[i]->getNumberOfAtoms();
-
-  MultiValue& myvals=myatoms.getUnderlyingMultiValue();
-  // Now get the start of the virial
-  unsigned virbas = myvals.getNumberOfDerivatives()-9;
-  for(unsigned j=0;j<myder.getNumberActive();++j){
-     unsigned jder=myder.getActiveIndex(j);
-     if( jder<3*mybasemulticolvars[mmc]->getNumberOfAtoms() ){
-         unsigned kder=basen+jder;
-         for(unsigned icomp=2;icomp<der.size();++icomp){
-             myvals.addDerivative( ival, kder, der[icomp]*myder.getDerivative( icomp, jder ) );
-         }
-     } else {
-         unsigned kder=virbas + (jder - 3*mybasemulticolvars[mmc]->getNumberOfAtoms());
-         for(unsigned icomp=2;icomp<der.size();++icomp){
-             myvals.addDerivative( ival, kder, der[icomp]*myder.getDerivative( icomp, jder ) );
-         }
-     }
-  }
-}
-
 void AdjacencyMatrixBase::recalculateMatrixElement( const unsigned& myelem, MultiValue& myvals ){
   std::vector<unsigned> myatoms; decodeIndexToAtoms( getTaskCode( myelem ), myatoms );
   unsigned i=myatoms[0], j=myatoms[1];

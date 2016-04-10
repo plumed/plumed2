@@ -456,7 +456,7 @@ void MultiColvarBase::setupLinkCells(){
   // Count number of currently active atoms
   nactive_atoms=0;
   for(unsigned i=0;i<ablocks[iblock].size();++i){
-      if( isCurrentlyActive( iblock, ablocks[iblock][i] ) ) nactive_atoms++;
+      if( isCurrentlyActive( ablocks[iblock][i] ) ) nactive_atoms++;
   }
 
   if( nactive_atoms>0 ){
@@ -466,14 +466,14 @@ void MultiColvarBase::setupLinkCells(){
       nactive_atoms=0;
       if( usespecies ){
          for(unsigned i=0;i<ablocks[0].size();++i){
-            if( !isCurrentlyActive( 0, ablocks[0][i] ) ) continue; 
+            if( !isCurrentlyActive( ablocks[0][i] ) ) continue; 
             ltmp_ind[nactive_atoms]=ablocks[0][i];
             ltmp_pos[nactive_atoms]=getPositionOfAtomForLinkCells( ltmp_ind[nactive_atoms] );
             nactive_atoms++;
          }
       } else {
          for(unsigned i=0;i<ablocks[1].size();++i){
-            if( !isCurrentlyActive( 1, ablocks[1][i] ) ) continue;
+            if( !isCurrentlyActive( ablocks[1][i] ) ) continue;
             ltmp_ind[nactive_atoms]=i; 
             ltmp_pos[nactive_atoms]=getPositionOfAtomForLinkCells( ablocks[1][i] );
             nactive_atoms++; 
@@ -499,7 +499,7 @@ void MultiColvarBase::setupNonUseSpeciesLinkCells( const unsigned& my_always_act
      // Ensure we only do tasks where atoms are in appropriate link cells
      std::vector<unsigned> linked_atoms( 1+ablocks[1].size() ); 
      for(unsigned i=rank;i<ablocks[0].size();i+=stride){
-         if( !isCurrentlyActive( 0, ablocks[0][i] ) ) continue;
+         if( !isCurrentlyActive( ablocks[0][i] ) ) continue;
          unsigned natomsper=1; linked_atoms[0]=my_always_active;  // Note we always check atom 0 because it is simpler than changing LinkCells.cpp
          linkcells.retrieveNeighboringAtoms( getPositionOfAtomForLinkCells( ablocks[0][i] ), natomsper, linked_atoms );
          for(unsigned j=0;j<natomsper;++j){
@@ -514,7 +514,7 @@ void MultiColvarBase::setupNonUseSpeciesLinkCells( const unsigned& my_always_act
 
      unsigned nactive_three=0;
      for(unsigned i=0;i<ablocks[2].size();++i){
-         if( isCurrentlyActive( 2, ablocks[2][i] ) ) nactive_three++;
+         if( isCurrentlyActive( ablocks[2][i] ) ) nactive_three++;
      }
 
      std::vector<Vector> lttmp_pos( nactive_three );
@@ -523,14 +523,14 @@ void MultiColvarBase::setupNonUseSpeciesLinkCells( const unsigned& my_always_act
      nactive_three=0;
      if( allthirdblockintasks ){
          for(unsigned i=0;i<ablocks[2].size();++i){
-             if( !isCurrentlyActive( 2, ablocks[2][i] ) ) continue;
+             if( !isCurrentlyActive( ablocks[2][i] ) ) continue;
              lttmp_ind[nactive_three]=ablocks[2][i];
              lttmp_pos[nactive_three]=getPositionOfAtomForLinkCells( ablocks[2][i] );
              nactive_three++;
          }
      } else {
          for(unsigned i=0;i<ablocks[2].size();++i){
-             if( !isCurrentlyActive( 2, ablocks[2][i] ) ) continue;
+             if( !isCurrentlyActive( ablocks[2][i] ) ) continue;
              lttmp_ind[nactive_three]=i;
              lttmp_pos[nactive_three]=getPositionOfAtomForLinkCells( ablocks[2][i] );
              nactive_three++;
@@ -543,7 +543,7 @@ void MultiColvarBase::setupNonUseSpeciesLinkCells( const unsigned& my_always_act
      std::vector<unsigned> linked_atoms( 1+ablocks[1].size() );
      std::vector<unsigned> tlinked_atoms( 1+ablocks[2].size() );
      for(unsigned i=rank;i<ablocks[0].size();i+=stride){
-         if( !isCurrentlyActive( 0, ablocks[0][i] ) ) continue;
+         if( !isCurrentlyActive( ablocks[0][i] ) ) continue;
          unsigned natomsper=1; linked_atoms[0]=my_always_active;  // Note we always check atom 0 because it is simpler than changing LinkCells.cpp
          linkcells.retrieveNeighboringAtoms( getPositionOfAtomForLinkCells( ablocks[0][i] ), natomsper, linked_atoms );
          if( allthirdblockintasks ) {
@@ -581,6 +581,9 @@ bool MultiColvarBase::setupCurrentAtomList( const unsigned& taskCode, AtomValueP
      std::vector<unsigned> task_atoms(1); task_atoms[0]=taskCode;
      unsigned natomsper=myatoms.setupAtomsFromLinkCells( task_atoms, getLinkCellPosition(task_atoms), linkcells );
      return natomsper>1;
+  } else if( matsums ){
+     myatoms.setNumberOfAtoms( getNumberOfAtoms() );
+     for(unsigned i=0;i<getNumberOfAtoms();++i) myatoms.setAtom( i, i ); 
   } else if( allthirdblockintasks ){ 
      plumed_dbg_assert( ablocks.size()==3 ); std::vector<unsigned> atoms(2); decodeIndexToAtoms( taskCode, atoms );
      unsigned natomsper=myatoms.setupAtomsFromLinkCells( atoms, getLinkCellPosition(atoms), threecells );
@@ -688,7 +691,7 @@ void MultiColvarBase::calculate(){
      // of a peculiarity in linkcells
      unsigned first_active;
      for(unsigned i=0;i<ablocks[0].size();++i){
-        if( !isCurrentlyActive( 1, ablocks[1][i] ) ) continue;
+        if( !isCurrentlyActive( ablocks[1][i] ) ) continue;
         else {
            first_active=i; break;
         }
@@ -756,8 +759,24 @@ void MultiColvarBase::addComDerivatives( const int& ival, const unsigned& iatom,
   myatoms.addComDerivatives( ival, der, atom0 );
 }
 
+void MultiColvarBase::getInputData( const unsigned& ind, const bool& normed, 
+                                    const multicolvar::AtomValuePack& myatoms, 
+                                    std::vector<double>& orient ) const {
+  // Converint input atom to local index
+  unsigned katom = myatoms.getIndex(ind); plumed_dbg_assert( atom_lab[katom].first>0 ); 
+  // Find base colvar
+  unsigned mmc = atom_lab[katom].first - 1; plumed_dbg_assert( mybasemulticolvars[mmc]->taskIsCurrentlyActive( atom_lab[katom].second ) );
+  // Check if orient is the correct size
+  if( orient.size()!=mybasemulticolvars[mmc]->getNumberOfQuantities() ) orient.resize( mybasemulticolvars[mmc]->getNumberOfQuantities() ); 
+  // Retrieve the value 
+  mybasedata[mmc]->retrieveValueWithIndex( atom_lab[katom].second, normed, orient );
+}
+
 MultiValue& MultiColvarBase::getInputDerivatives( const unsigned& iatom, const bool& normed, const multicolvar::AtomValuePack& myatoms ) const {
-  unsigned katom = myatoms.getIndex(iatom), mmc = atom_lab[katom].first - 1;
+  // Converint input atom to local index
+  unsigned katom = myatoms.getIndex(iatom); plumed_dbg_assert( atom_lab[katom].first>0 ); 
+  // Find base colvar
+  unsigned mmc = atom_lab[katom].first - 1; plumed_dbg_assert( mybasemulticolvars[mmc]->taskIsCurrentlyActive( atom_lab[katom].second ) );
   if( usespecies && !normed && iatom==0 ) return mybasedata[mmc]->getTemporyMultiValue(0);
 
   unsigned oval=0; if( iatom>0 ) oval=1;

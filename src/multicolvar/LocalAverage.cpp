@@ -147,7 +147,7 @@ double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) c
   double d2, sw, dfunc; CatomPack atom0, atom1; MultiValue& myvals = myatoms.getUnderlyingMultiValue();
   std::vector<double> values( getBaseMultiColvar(0)->getNumberOfQuantities() ); 
 
-  getVectorForTask( myatoms.getIndex(0), false, values );
+  getInputData( 0, false, myatoms, values );
   myvals.addTemporyValue( values[0] );
   if( values.size()>2 ){
       for(unsigned j=2;j<values.size();++j) myatoms.addValue( j, values[0]*values[j] ); 
@@ -187,7 +187,7 @@ double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) c
 
          sw = switchingFunction.calculateSqr( d2, dfunc );
 
-         getVectorForTask( myatoms.getIndex(i), false, values );
+         getInputData( i, false, myatoms, values );
          if( values.size()>2 ){
              for(unsigned j=2;j<values.size();++j) myatoms.addValue( j, sw*values[0]*values[j] );
          } else {

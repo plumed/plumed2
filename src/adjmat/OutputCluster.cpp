@@ -116,7 +116,7 @@ void OutputCluster::update(){
      if( makewhole ){
         // Retrieve the atom positions 
         atomsin.resize( myatoms.size() ); 
-        for(unsigned i=0;i<myatoms.size();++i) atomsin[i]=myclusters->getNodePosition( myatoms[i] );
+        for(unsigned i=0;i<myatoms.size();++i) atomsin[i]=myclusters->getPositionOfAtomForLinkCells( myatoms[i] );
         // Build a connectivity matrix neglecting the pbc
         nneigh.resize( myatoms.size(), 0 ); adj_list.resize( myatoms.size(), myatoms.size() );
         for(unsigned i=1;i<myatoms.size();++i){
@@ -167,7 +167,7 @@ void OutputCluster::update(){
         for(unsigned i=0;i<myatoms.size();++i) ofile.printf( "X %f %f %f \n", atomsin[i][0], atomsin[i][1], atomsin[i][2] );
      } else {
         for(unsigned i=0;i<myatoms.size();++i){
-          Vector pos=myclusters->getNodePosition( myatoms[i] ); 
+          Vector pos=myclusters->getPositionOfAtomForLinkCells( myatoms[i] ); 
           ofile.printf( "X %f %f %f \n", pos[0], pos[1], pos[2] );
         }
      }
