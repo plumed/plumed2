@@ -6568,17 +6568,17 @@ if test $fftw == true ; then
     ac_fn_cxx_check_header_mongrel "$LINENO" "fftw3.h" "ac_cv_header_fftw3_h" "$ac_includes_default"
 if test "x$ac_cv_header_fftw3_h" = xyes; then :
 
-      ac_fn_cxx_check_func "$LINENO" "exit" "ac_cv_func_exit"
-if test "x$ac_cv_func_exit" = xyes; then :
+      ac_fn_cxx_check_func "$LINENO" "fftw_execute" "ac_cv_func_fftw_execute"
+if test "x$ac_cv_func_fftw_execute" = xyes; then :
   found=ok
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for exit in -lfftw" >&5
-$as_echo_n "checking for exit in -lfftw... " >&6; }
-if ${ac_cv_lib_fftw_exit+:} false; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for fftw_execute in -lfftw3" >&5
+$as_echo_n "checking for fftw_execute in -lfftw3... " >&6; }
+if ${ac_cv_lib_fftw3_fftw_execute+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lfftw  $LIBS"
+LIBS="-lfftw3  $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -6588,28 +6588,28 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 #ifdef __cplusplus
 extern "C"
 #endif
-char exit ();
+char fftw_execute ();
 int
 main ()
 {
-return exit ();
+return fftw_execute ();
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_fftw_exit=yes
+  ac_cv_lib_fftw3_fftw_execute=yes
 else
-  ac_cv_lib_fftw_exit=no
+  ac_cv_lib_fftw3_fftw_execute=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_fftw_exit" >&5
-$as_echo "$ac_cv_lib_fftw_exit" >&6; }
-if test "x$ac_cv_lib_fftw_exit" = xyes; then :
-  LIBS="-lfftw $LIBS" && found=ok
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_fftw3_fftw_execute" >&5
+$as_echo "$ac_cv_lib_fftw3_fftw_execute" >&6; }
+if test "x$ac_cv_lib_fftw3_fftw_execute" = xyes; then :
+  LIBS="-lfftw3 $LIBS" && found=ok
 fi
 
 
