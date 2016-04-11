@@ -105,7 +105,7 @@ For developers:
 - ./configure is automatically relaunched when changing ./configure or Makefile.conf. This makes it more robust
   to switch between branches.
 
-Unreleased changes (will be included in 2.2.2)
+Version 2.2.2 (coming soon)
 ----------------------------------------------
 
 For users:
