@@ -119,7 +119,7 @@ For users:
 - Fixed a bug in the normalization of kernel functions (relevant for \ref HISTOGRAM).
 - Fixed a regression introduced in v2.2 that was making \ref METAD with non-MPI multiple walkers crash
   if reading frequently. See \issue{190}
-- Updated patch for gromacs 5.1. Patches for gromacs 5.0 and 5.1 have been fixed so as to allow
+- Updated patch for gromacs 5.x. Patches for gromacs 5.0 and 5.1 have been fixed so as to allow
   patching in runtime mode.
 - Possibility to control manual generation (including pdf) from ./configure. Pdf manual is now off
   by default. Notice that on travis CI it is still generated.
