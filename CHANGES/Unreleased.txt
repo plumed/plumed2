@@ -32,6 +32,7 @@ Changes from version 2.2 which are relevant for users:
   - \ref ROWSUMS
   - \ref COLUMNSUMS
   - \ref UPDATE_IF
+  - \ref PCA
 - New features in MD patches (require repatch):
   - Patch for amber 14 now passes charges with appropriate units (fixes \issue{165}). Notice that
     the patch is still backward compatible with older PLUMED version, but the charges will only be passed
