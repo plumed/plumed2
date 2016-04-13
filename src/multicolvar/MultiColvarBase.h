@@ -147,6 +147,8 @@ public:
   bool usesPbc() const ;
 /// Apply PBCs over a set of distance vectors
   void applyPbc(std::vector<Vector>& dlist, unsigned max_index=0) const;
+/// Is it safe to use multithreading
+  bool threadSafe() const { return !(mybasemulticolvars.size()>0); }
 /// Do some setup before the calculation
   void prepare();
 /// This is overwritten here in order to make sure that we do not retrieve atoms multiple times
