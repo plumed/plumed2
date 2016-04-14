@@ -32,7 +32,7 @@ namespace crystallization{
 class CubicHarmonicBase : public multicolvar::MultiColvarBase {
 private:
 //  double nl_cut;
-  double rcut2, alpha, a1, b1;
+  double rcut2;
   double rotationmatrix[3][3];
 
   SwitchingFunction switchingFunction;

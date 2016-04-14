@@ -38,7 +38,8 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
 Action(ao),
 MultiColvarBase(ao),
 connect_id(0),
-no_third_dim_accum(true)
+no_third_dim_accum(true),
+mat(NULL)
 {
 }
 

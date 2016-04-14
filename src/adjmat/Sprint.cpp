@@ -91,7 +91,7 @@ private:
 /// Vector that stores max eigenvector
   std::vector< std::pair<double,int> > maxeig;
 /// Adjacency matrix
-  Matrix<double> mymatrix;
+  Matrix<double> thematrix;
 /// Matrix that stores eigenvectors
   Matrix<double> eigenvecs;
 public:
@@ -120,7 +120,7 @@ Action(ao),
 ActionWithInputMatrix(ao),
 eigvals( getNumberOfNodes() ),
 maxeig( getNumberOfNodes() ),
-mymatrix( getNumberOfNodes(), getNumberOfNodes() ),
+thematrix( getNumberOfNodes(), getNumberOfNodes() ),
 eigenvecs( getNumberOfNodes(), getNumberOfNodes() )
 {
    // Check on setup
@@ -150,9 +150,9 @@ eigenvecs( getNumberOfNodes(), getNumberOfNodes() )
 
 void Sprint::calculate(){
    // Get the adjacency matrix
-   getAdjacencyVessel()->retrieveMatrix( active_elements, mymatrix ); 
+   getAdjacencyVessel()->retrieveMatrix( active_elements, thematrix ); 
    // Diagonalize it
-   diagMat( mymatrix, eigvals, eigenvecs );
+   diagMat( thematrix, eigvals, eigenvecs );
    // Get the maximum eigevalue
    double lambda = eigvals[ getNumberOfNodes()-1 ];
    // Get the corresponding eigenvector

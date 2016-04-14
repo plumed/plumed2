@@ -27,6 +27,7 @@ MultiValue::MultiValue( const unsigned& nvals, const unsigned& nder ):
 values(nvals),
 nderivatives(nder),
 derivatives(nvals*nder),
+tmpval(0),
 tmpder(nder),
 atLeastOneSet(false)
 {
