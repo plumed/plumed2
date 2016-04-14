@@ -77,7 +77,7 @@ double MatrixColumnSums::compute( const unsigned& tinded, multicolvar::AtomValue
   double sum=0.0; std::vector<double> tvals( mymatrix->getNumberOfComponents() );
   unsigned nrows = mymatrix->getNumberOfRows();   
   for(unsigned i=0;i<nrows;++i){
-     if( mymatrix->isSymmetric() && tinded==i ) continue;
+     if( mymatrix->undirectedGraph() && tinded==i ) continue;
      sum+=retrieveConnectionValue( i, tinded, tvals ); 
   }
 

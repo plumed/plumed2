@@ -234,7 +234,7 @@ void ActionWithVessel::deactivateAllTasks(){
 }
 
 bool ActionWithVessel::taskIsCurrentlyActive( const unsigned& index ) const {
-  return (taskFlags[index]>0);
+  plumed_dbg_assert( index<taskFlags.size() ); return (taskFlags[index]>0);
 }
 
 void ActionWithVessel::doJobsRequiredBeforeTaskList(){

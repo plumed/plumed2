@@ -64,7 +64,12 @@ bool AdjacencyMatrixVessel::matrixElementIsActive( const unsigned& ielem, const 
 }
 
 unsigned AdjacencyMatrixVessel::getStoreIndexFromMatrixIndices( const unsigned& ielem, const unsigned& jelem ) const {
-  if( !symmetric ) return (function->ablocks[1].size())*ielem + jelem;
+  if( !symmetric && !hbonds ) return (function->ablocks[1].size())*ielem + jelem;
+  if( !symmetric ){
+     plumed_dbg_assert( ielem!=jelem );
+     if( jelem<ielem ) return (function->ablocks[1].size()-1)*ielem + jelem;
+     return (function->ablocks[1].size()-1)*ielem + jelem - 1; 
+  }
   if( ielem>jelem ) return 0.5*ielem*(ielem-1)+jelem;
   return 0.5*jelem*(jelem-1) + ielem; 
 }

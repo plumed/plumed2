@@ -84,7 +84,7 @@ void ActionWithInputMatrix::getInputData( const unsigned& ind, const bool& norme
   if( (mymatrix->function)->mybasemulticolvars.size()==0  ){
      std::vector<double> tvals( mymatrix->getNumberOfComponents() ); orient0.assign(orient0.size(),0);
      for(unsigned i=0;i<mymatrix->getNumberOfColumns();++i){
-         if( mymatrix->isSymmetric() && ind==i ) continue;
+         if( mymatrix->undirectedGraph() && ind==i ) continue;
          orient0[1]+=retrieveConnectionValue( ind, i, tvals );
      } 
      orient0[0]=1.0; return;
@@ -115,7 +115,7 @@ MultiValue& ActionWithInputMatrix::getInputDerivatives( const unsigned& ind, con
      std::vector<double> tvals( mymatrix->getNumberOfComponents() ); 
      MultiValue myvals( 2, (mymatrix->function)->getNumberOfDerivatives() ); 
      for(unsigned i=0;i<mymatrix->getNumberOfColumns();++i){
-         if( mymatrix->isSymmetric() && ind==i ) continue;
+         if( mymatrix->undirectedGraph() && ind==i ) continue;
          addConnectionDerivatives( ind, i, tvals, myvals, myder );
      }
      myder.updateDynamicList(); return myder;
