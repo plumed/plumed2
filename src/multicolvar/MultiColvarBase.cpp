@@ -723,7 +723,7 @@ void MultiColvarBase::mergeInputDerivatives( const unsigned& ival, const unsigne
   plumed_dbg_assert( start<myder.getNumberOfValues() && end<=myder.getNumberOfValues() );
   plumed_dbg_assert( der.size()==myder.getNumberOfValues() && jatom<myatoms.getNumberOfAtoms() );
   // Convert input atom to local index
-  unsigned katom = myatoms.getIndex( jatom ); plumed_dbg_assert( atom_lab[katom].first>0 );
+  unsigned katom = myatoms.getIndex( jatom ); plumed_dbg_assert( katom<atom_lab.size() ); plumed_dbg_assert( atom_lab[katom].first>0 );
   // Find base colvar
   unsigned mmc=atom_lab[katom].first - 1; plumed_dbg_assert( mybasemulticolvars[mmc]->taskIsCurrentlyActive( atom_lab[katom].second ) );
   // Get start of indices for this atom

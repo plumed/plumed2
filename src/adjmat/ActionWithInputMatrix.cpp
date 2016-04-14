@@ -44,7 +44,6 @@ mymatrix(NULL)
   if( keywords.exists("MATRIX") ){
       std::vector<AtomNumber> fake_atoms; 
       if( !parseMultiColvarAtomList("MATRIX",-1,fake_atoms ) ) error("unable to interpret input matrix");
-      atom_lab.resize(0); // Delete all the atom labels that have been created 
       if( mybasemulticolvars.size()!=1 ) error("should be exactly one matrix input");
 
       // Retrieve the adjacency matrix of interest
@@ -53,6 +52,11 @@ mymatrix(NULL)
           if( mymatrix ) break ;
       }
       if( !mymatrix ) error( mybasemulticolvars[0]->getLabel() + " does not calculate an adjacency matrix");
+
+      atom_lab.resize(0); unsigned nnodes; // Delete all the atom labels that have been created  
+      if( mymatrix->undirectedGraph() ) nnodes = (mymatrix->function)->ablocks[0].size(); 
+      else nnodes = (mymatrix->function)->ablocks[0].size() + (mymatrix->function)->ablocks[1].size();
+      for(unsigned i=0;i<nnodes;++i) atom_lab.push_back( std::pair<unsigned,unsigned>( 1, i ) );
   }
 }
 
