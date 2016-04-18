@@ -29,6 +29,8 @@ namespace gridtools {
 
 class GridFunction : public GridVessel {
 friend class PrintGrid;
+private:
+  bool contourfinding;
 public:
   static void registerKeywords( Keywords& keys );
   explicit GridFunction( const vesselbase::VesselOptions& da );

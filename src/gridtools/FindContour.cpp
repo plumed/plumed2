@@ -55,7 +55,7 @@ public:
   explicit FindContour(const ActionOptions&ao);
   bool checkAllActive() const { return gbuffer==0; }
   void performOperationsWithGrid( const bool& from_update );
-  double getDifferenceFromContour( const std::vector<double>& x, std::vector<double>& der );
+  double getDifferenceFromContour( const std::vector<double>& x, std::vector<double>& der ) const ;
   unsigned getNumberOfDerivatives(){ return 0; }
   void performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {}
   bool isPeriodic(){ return false; }
@@ -176,7 +176,7 @@ outgrid(NULL)
   checkRead();
 }
 
-double FindContour::getDifferenceFromContour( const std::vector<double>& x, std::vector<double>& der ){
+double FindContour::getDifferenceFromContour( const std::vector<double>& x, std::vector<double>& der ) const {
   return getFunctionValueAndDerivatives( x, der ) - contour;
 }
 
@@ -300,7 +300,10 @@ void FindContour::performOperationsWithGrid( const bool& from_update ){
               }
               nfound++;
           }
-          if( nfound==0 ) error("failed to find required grid point");
+          if( nfound==0 ){
+             std::string num; Tools::convert( getStep(), num );
+             error("On step " + num + " failed to find required grid point");
+          }
           outgrid->setGridElement( i, 0, minp );
       }
       firsttime=false;

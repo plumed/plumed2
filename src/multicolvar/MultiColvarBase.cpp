@@ -350,7 +350,7 @@ void MultiColvarBase::decodeIndexToAtoms( const unsigned& taskCode, std::vector<
 
 bool MultiColvarBase::setupCurrentAtomList( const unsigned& taskCode, AtomValuePack& myatoms ) const {
   if( usespecies ){
-     if( isDensity() ) return true;
+     if( isDensity() ){ myatoms.setNumberOfAtoms( 1 ); myatoms.setAtom( 0, taskCode ); return true; }
      std::vector<unsigned> task_atoms(1); task_atoms[0]=taskCode;
      unsigned natomsper=myatoms.setupAtomsFromLinkCells( task_atoms, getLinkCellPosition(task_atoms), linkcells );
      return natomsper>1;

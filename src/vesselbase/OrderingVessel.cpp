@@ -49,10 +49,10 @@ void OrderingVessel::finish( const std::vector<double>& buffer ){
   std::vector<double> values( getAction()->getNumberOfQuantities() );
   mydata->retrieveSequentialValue( 0, false, values );
 
-  double min=values[1]; unsigned mini=getAction()->getPositionInFullTaskList(0);
+  double min=values[mycomp]; unsigned mini=getAction()->getPositionInFullTaskList(0);
   for(unsigned i=1;i<mydata->getNumberOfStoredValues();++i){
       mydata->retrieveSequentialValue( i, false, values );
-      double newval = values[1];
+      double newval = values[mycomp];
       if( compare( newval, min ) ){ min=newval; mini=getAction()->getPositionInFullTaskList(i); }
   }
   setOutputValue( min );
@@ -62,7 +62,7 @@ void OrderingVessel::finish( const std::vector<double>& buffer ){
      mydata->retrieveDerivatives( mini, false, myvals ); Value* fval=getFinalValue();
      for(unsigned i=0;i<myvals.getNumberActive();++i){ 
          unsigned ider=myvals.getActiveIndex(i); 
-         fval->setDerivative( ider, myvals.getDerivative(1,ider) );
+         fval->setDerivative( ider, myvals.getDerivative(mycomp,ider) );
      }
   }
 }

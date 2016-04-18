@@ -170,7 +170,7 @@ public:
  virtual double getValueAndDerivatives(const std::vector<unsigned> & indices, std::vector<double>& der) const;
  virtual double getValueAndDerivatives(const std::vector<double> & x, std::vector<double>& der) const;
 /// Get the difference from the contour
- double getDifferenceFromContour(const std::vector<double> & x, std::vector<double>& der); 
+ double getDifferenceFromContour(const std::vector<double> & x, std::vector<double>& der) const ; 
 /// Find a set of points on a contour in the function
  void findSetOfPointsOnContour(const double& target, const std::vector<bool>& nosearch, unsigned& npoints, std::vector<std::vector<double> >& points );
 

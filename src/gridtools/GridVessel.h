@@ -130,6 +130,8 @@ public:
  std::vector<std::string> getMin() const ;
 /// Get the vector containing the maximum value of the grid in each dimension
  std::vector<std::string> getMax() const ;
+/// Get the stride (the distance between the grid points of an index)
+ const std::vector<unsigned>& getStride() const ;
 /// Return the volume of one of the grid cells
  double getCellVolume() const ;
 /// Get the value of the ith grid element 
@@ -248,6 +250,11 @@ void GridVessel::setNorm( const double& snorm ){
 inline
 double GridVessel::getNorm() const {
   return norm;
+}
+
+inline
+const std::vector<unsigned>& GridVessel::getStride() const {
+  return stride;
 }
 
 }

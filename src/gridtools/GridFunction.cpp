@@ -22,6 +22,7 @@
 #include "GridFunction.h"
 #include "HistogramOnGrid.h"
 #include "ActionWithInputGrid.h"
+#include "ContourFindingBase.h"
 
 namespace PLMD {
 namespace gridtools {
@@ -31,7 +32,8 @@ void GridFunction::registerKeywords( Keywords& keys ){
 }
 
 GridFunction::GridFunction( const vesselbase::VesselOptions& da ):
-GridVessel(da)
+GridVessel(da),
+contourfinding(false)
 {
   ActionWithInputGrid* myfunc = dynamic_cast<ActionWithInputGrid*>( getAction() );
   plumed_assert( myfunc ); nomemory=false;
@@ -42,12 +44,15 @@ GridVessel(da)
      if( myhist && (myfunc->mygrid)->foundprint && (!myfunc->single_run  || (myfunc->mygrid)->nomemory) ) error("cannot convert a histogram to a free energy after print");
      else if( myhist ) (myfunc->mygrid)->foundprint=true;
   }
+  // This prevents calculate ballsing stuff up with contour finding
+  ContourFindingBase* mycont = dynamic_cast<ContourFindingBase*>( getAction() );
+  if( mycont ) contourfinding = true;
 }
 
 void GridFunction::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
+  if( contourfinding ) return;
   plumed_dbg_assert( myvals.getNumberOfValues()==(nper+1) );
   for(unsigned i=0;i<nper;++i) buffer[bufstart + nper*current + i] += myvals.get(i+1);
-  return;
 }
 
 void GridFunction::incorporateRestartDataIntoGrid( const double& old_norm, std::vector<double>& indata ){
