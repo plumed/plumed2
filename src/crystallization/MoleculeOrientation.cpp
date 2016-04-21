@@ -51,6 +51,7 @@ PRINT ARG=mm.mean FILE=colvar
 
 class MoleculeOrientation : public VectorMultiColvar {
 private:
+  unsigned nvectors;
 public:
   static void registerKeywords( Keywords& keys );
   explicit MoleculeOrientation( const ActionOptions& ao );
@@ -74,48 +75,38 @@ VectorMultiColvar(ao)
 {
   int natoms=-1; std::vector<AtomNumber> all_atoms;
   readAtomsLikeKeyword("MOL",natoms,all_atoms); 
-  if( natoms!=2 && natoms!=3 ) error("number of atoms in molecule specification is wrong.  Should be two or three.");
+  nvectors = std::floor( natoms / 2 );
+  if( natoms%2!=0 && 2*nvectors+1!=natoms ) error("number of atoms in molecule specification is wrong.  Should be two or three.");
 
   if( all_atoms.size()==0 ) error("No atoms were specified");
-  setVectorDimensionality( 3 ); setupMultiColvarBase( all_atoms );
+  setVectorDimensionality( 3*nvectors ); setupMultiColvarBase( all_atoms );
 
-  if( natoms==3 ){
-    std::vector<bool> catom_ind(3, false); catom_ind[2]=true;
+  if( 2*nvectors+1  ){
+    std::vector<bool> catom_ind(natoms, false); catom_ind[natoms-1]=true;
     setAtomsForCentralAtom( catom_ind );
   } 
 }
 
 void MoleculeOrientation::calculateVector( multicolvar::AtomValuePack& myatoms ) const {
-  Vector distance; distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
+  for(unsigned i=0;i<nvectors;++i){
+      Vector distance; distance=getSeparation( myatoms.getPosition(2*i+0), myatoms.getPosition(2*i+1) );
 
-  addAtomDerivatives( 2, 0, Vector(-1.0,0,0), myatoms ); 
-  addAtomDerivatives( 2, 1, Vector(+1.0,0,0), myatoms ); 
-  myatoms.addBoxDerivatives( 2, Tensor(distance,Vector(-1.0,0,0)) ); 
-  myatoms.addValue( 2, distance[0] ); 
+      addAtomDerivatives( 2+3*i+0, 0, Vector(-1.0,0,0), myatoms ); 
+      addAtomDerivatives( 2+3*i+0, 1, Vector(+1.0,0,0), myatoms ); 
+      myatoms.addBoxDerivatives( 2+3*i+0, Tensor(distance,Vector(-1.0,0,0)) ); 
+      myatoms.addValue( 2+3*i+0, distance[0] ); 
 
-  addAtomDerivatives( 3, 0, Vector(0,-1.0,0), myatoms ); 
-  addAtomDerivatives( 3, 1, Vector(0,+1.0,0), myatoms ); 
-  myatoms.addBoxDerivatives( 3, Tensor(distance,Vector(0,-1.0,0)) ); 
-  myatoms.addValue( 3, distance[1] ); 
+      addAtomDerivatives( 2+3*i+1, 0, Vector(0,-1.0,0), myatoms ); 
+      addAtomDerivatives( 2+3*i+1, 1, Vector(0,+1.0,0), myatoms ); 
+      myatoms.addBoxDerivatives( 2+3*i+1, Tensor(distance,Vector(0,-1.0,0)) ); 
+      myatoms.addValue( 2+3*i+1, distance[1] ); 
 
-  addAtomDerivatives( 4, 0, Vector(0,0,-1.0), myatoms ); 
-  addAtomDerivatives( 4, 1, Vector(0,0,+1.0), myatoms ); 
-  myatoms.addBoxDerivatives( 4, Tensor(distance,Vector(0,0,-1.0)) ); 
-  myatoms.addValue( 4, distance[2] ); 
+      addAtomDerivatives( 2+3*i+2, 0, Vector(0,0,-1.0), myatoms ); 
+      addAtomDerivatives( 2+3*i+2, 1, Vector(0,0,+1.0), myatoms ); 
+      myatoms.addBoxDerivatives( 2+3*i+2, Tensor(distance,Vector(0,0,-1.0)) ); 
+      myatoms.addValue( 2+3*i+2, distance[2] );
+  } 
 }
-
-// Vector MoleculeOrientation::getCentralAtom(){
-//   if( getNAtoms()==2 ){
-//       Vector com; com.zero();
-//       com+=0.5*getPosition(0);
-//       com+=0.5*getPosition(1);
-//       addCentralAtomDerivatives( 0, 0.5*Tensor::identity() );
-//       addCentralAtomDerivatives( 1, 0.5*Tensor::identity() );
-//       return com;
-//   } 
-//   addCentralAtomDerivatives( 2, Tensor::identity() );
-//   return getPosition(2);
-// }
 
 }
 }

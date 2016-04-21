@@ -81,23 +81,30 @@ void SMACMatrix::readOrientationConnector( const unsigned& iv, const unsigned& j
 double SMACMatrix::computeVectorFunction( const unsigned& iv, const unsigned& jv,
                                           const Vector& conn, const std::vector<double>& vec1, const std::vector<double>& vec2,
                                           Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const {
-  double dot=0; Vector v1, v2;
-  for(unsigned k=2;k<vec1.size();++k){
-      dot+=vec1[k]*vec2[k];
-      v1[k-2]=vec1[k]; v2[k-2]=vec2[k];
+
+  unsigned nvectors = ( vec1.size() - 2 ) / 3; plumed_assert( (vec1.size()-2)%3==0 );
+  std::vector<Vector> dv1(nvectors), dv2(nvectors), tdconn(nvectors); Torsion t; std::vector<Vector> v1(nvectors), v2(nvectors);
+  std::vector<Value*> pos; for(unsigned i=0;i<nvectors;++i){ pos.push_back( new Value() ); pos[i]->setDomain( "-pi", "pi" ); }
+   
+  for(unsigned j=0;j<nvectors;++j){
+      for(unsigned k=0;k<3;++k){
+          v1[j][k]=vec1[2+3*j+k]; v2[j][k]=vec2[2+3*j+k];
+      }
+      double angle = t.compute( v1[j], conn, v2[j], dv1[j], tdconn[j], dv2[j] );
+      pos[j]->set( angle );
   }
-  Vector dv1, dv2; Torsion t;
-  double angle = t.compute( v1, conn, v2, dv1, dconn, dv2 );
-  
-  std::vector<Value*> pos; pos.push_back( new Value() ); std::vector<double> deriv(1);
-  pos[0]->setDomain( "-pi", "pi" ); pos[0]->set( angle );
-  double ans=0, df=0; 
+                                 
+  double ans=0; std::vector<double> deriv( nvectors ), df( nvectors, 0 ); 
   for(unsigned i=0;i<kernels(iv,jv).size();++i){
       ans += kernels(iv,jv)[i].evaluate( pos, deriv );
-      df += deriv[0];           
+      for(unsigned j=0;j<nvectors;++j) df[j] += deriv[j];
   }
-  dconn*=df; for(unsigned k=2;k<vec1.size();++k){ dvec1[k]=df*dv1[k-2]; dvec2[k]=df*dv2[k-2]; }
-  delete pos[0]; return ans;
+  dconn.zero(); for(unsigned j=0;j<nvectors;++j) dconn += df[j]*tdconn[j];
+  for(unsigned j=0;j<nvectors;++j){
+      for(unsigned k=0;k<3;++k){ dvec1[2+3*j+k]=df[j]*dv1[j][k]; dvec2[2+3*j+k]=df[j]*dv2[j][k]; }
+      delete pos[j];
+  }
+  return ans;
 }
 
 }
