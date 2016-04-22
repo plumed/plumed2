@@ -326,10 +326,10 @@ multiple_w(false), doInt_(false), isFirstStep(true)
   if(gbin.size()!=0     && gmin.size()==0) error("If GRID_SPACING is present also GRID_MIN should be present");
   if(gmin.size()!=0){
     if(gbin.size()==0 && gspacing.size()==0){
-        log<<"  Binsize not specified, 1/5 of sigma will be be used\n";
+        log<<"  Binsize not specified, 1/10 of sigma will be be used\n";
         plumed_assert(sigma0_.size()==getNumberOfArguments());
         gspacing.resize(getNumberOfArguments());
-        for(unsigned i=0;i<gspacing.size();i++) gspacing[i]=0.2*sigma0_[i];
+        for(unsigned i=0;i<gspacing.size();i++) gspacing[i]=0.1*sigma0_[i];
     } else if(gspacing.size()!=0 && gbin.size()==0){
       log<<"  The number of bins will be estimated from GRID_SPACING\n";
     } else if(gspacing.size()!=0 && gbin.size()!=0){
