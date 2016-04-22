@@ -575,12 +575,6 @@ int gmx_mdrun(int argc, char *argv[])
                   nmultisim, repl_ex_nst, repl_ex_nex, repl_ex_seed,
                   pforce, cpt_period, max_hours, imdport, Flags);
 
-    /* PLUMED */
-    if(plumedswitch){
-      plumed_finalize(plumedmain);
-    }
-    /* END PLUMED */
-
     /* Log file has to be closed in mdrunner if we are appending to it
        (fplog not set here) */
     if (MASTER(cr) && !bDoAppendFiles)
