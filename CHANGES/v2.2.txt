@@ -137,6 +137,15 @@ For developers:
   in cmd strings.
 - ./configure is not automatically relaunched anymore when doing `make clean`.
 
+Version 2.2.3 ()
+----------------------------------------------
+
+For users:
+- Updated patch for gromacs 5.1.x to fix a problem when plumed was trying to write to an already
+  closed gromacs log file.
+
+For developers:
+
 See branch \branch{v2.2} on git repository.
 
 
