@@ -81,7 +81,7 @@ VectorMultiColvar(ao)
   if( all_atoms.size()==0 ) error("No atoms were specified");
   setVectorDimensionality( 3*nvectors ); setupMultiColvarBase( all_atoms );
 
-  if( 2*nvectors+1  ){
+  if( natoms==2*nvectors+1  ){
     std::vector<bool> catom_ind(natoms, false); catom_ind[natoms-1]=true;
     setAtomsForCentralAtom( catom_ind );
   } 
