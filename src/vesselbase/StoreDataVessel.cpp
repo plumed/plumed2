@@ -100,17 +100,9 @@ void StoreDataVessel::storeDerivatives( const unsigned& myelem, MultiValue& myva
 
 void StoreDataVessel::retrieveSequentialValue( const unsigned& jelem, const bool& normed, std::vector<double>& values ) const {
   plumed_assert( values.size()==vecsize );
-  if( normed && values.size()>2 ){
-     unsigned ibuf = jelem * vecsize * nspace;
-     values[0]=local_buffer[ibuf]; ibuf+=nspace;
-     double norm=values[1]=local_buffer[ibuf]; ibuf+=nspace;   // Element 1 contains the norm of the vector
-     if( norm<epsilon ) norm=1.0;
-     for(unsigned i=2;i<vecsize;++i){ values[i]=local_buffer[ibuf]/norm; ibuf+=nspace; }
-  } else {
-     unsigned ibuf = jelem * vecsize * nspace;
-     for(unsigned i=0;i<vecsize;++i){ values[i]=local_buffer[ibuf]; ibuf+=nspace; }
-  }
-
+  unsigned ibuf = jelem * vecsize * nspace;
+  for(unsigned i=0;i<vecsize;++i){ values[i]=local_buffer[ibuf]; ibuf+=nspace; }
+  if( normed && values.size()>2 ) getAction()->normalizeVector( values ); 
 }
 
 void StoreDataVessel::retrieveValueWithIndex( const unsigned& myelem, const bool& normed, std::vector<double>& values ) const {
@@ -129,19 +121,11 @@ void StoreDataVessel::retrieveDerivatives( const unsigned& myelem, const bool& n
   myvals.clearAll();
   if( getAction()->lowmem ){
       recalculateStoredQuantity( myelem, myvals );
-      if( normed ){
-          plumed_dbg_assert( myvals.getNumberOfValues()>2 );
-          double v = myvals.get(1), weight = 1.0 / v,  wdf = 1.0 / ( v*v*v );
-          for(unsigned j=0;j<myvals.getNumberActive();++j){
-              double comp2=0.0; unsigned jder=myvals.getActiveIndex(j);
-              for(unsigned jcomp=2;jcomp<vecsize;++jcomp) comp2 += myvals.get(jcomp)*myvals.getDerivative( jcomp, jder );
-              for(unsigned jcomp=2;jcomp<vecsize;++jcomp) myvals.setDerivative( jcomp, jder, weight*myvals.getDerivative( jcomp, jder ) - wdf*comp2*myvals.get(jcomp) );
-          }
-      }
+      if( normed ) getAction()->normalizeVectorDerivatives( myvals );
   } else {
       unsigned jelem = getStoreIndex( myelem );
       // Retrieve the derivatives for elements 0 and 1 - weight and norm
-      for(unsigned icomp=0;icomp<2;++icomp){
+      for(unsigned icomp=0;icomp<vecsize;++icomp){
           unsigned ibuf = jelem * ( vecsize*nspace ) + icomp*nspace + 1;
           unsigned kder = getNumberOfStoredValues() + jelem * ( nspace - 1 );
           for(unsigned j=0;j<active_der[jelem];++j){
@@ -149,32 +133,7 @@ void StoreDataVessel::retrieveDerivatives( const unsigned& myelem, const bool& n
               kder++; ibuf++;
           }
       }
-
-      // Retrieve the derivatives for the vector
-      if( vecsize>2 && normed ){
-         plumed_dbg_assert( myvals.getNumberOfValues()>2 );
-         unsigned kder = getNumberOfStoredValues() + jelem * ( nspace - 1 );
-         double v = local_buffer[jelem*vecsize*nspace + nspace], weight = 1.0 / v, wdf = 1.0 / ( v*v*v );
-         for(unsigned ider=0;ider<active_der[jelem];++ider){
-             unsigned ibuf = jelem * vecsize * nspace + 2 * nspace + 1 + ider; double comp2=0.0; 
-             for(unsigned jcomp=2;jcomp<vecsize;++jcomp){ comp2 += local_buffer[ibuf-ider-1]*local_buffer[ibuf]; ibuf+=nspace; }  
-             ibuf = jelem * vecsize * nspace + 2 * nspace + 1 + ider;
-             for(unsigned jcomp=2;jcomp<vecsize;++jcomp){
-                 myvals.addDerivative( jcomp, active_der[kder], weight*local_buffer[ibuf] - wdf*comp2*local_buffer[ibuf-ider-1] );
-                 ibuf+=nspace;
-             }
-             kder++;
-         }
-      } else if( vecsize>2 ){
-         for(unsigned icomp=2;icomp<vecsize;++icomp){
-             unsigned ibuf = jelem * ( vecsize*nspace ) + icomp*nspace + 1;
-             unsigned kder = getNumberOfStoredValues() + jelem * ( nspace - 1 );
-             for(unsigned j=0;j<active_der[jelem];++j){
-                 myvals.addDerivative( icomp, active_der[kder], local_buffer[ibuf] );
-                 kder++; ibuf++;
-             } 
-         } 
-      }
+      if( normed ) getAction()->normalizeVectorDerivatives( myvals );
       // Now ensure appropriate parts of list are activated
       myvals.emptyActiveMembers();
       unsigned kder = getNumberOfStoredValues() + jelem * ( nspace - 1 );

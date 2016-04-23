@@ -188,6 +188,9 @@ public:
   Vessel* getVesselWithName( const std::string& mynam );
 /// Does the weight have derivatives
   bool weightWithDerivatives() const ;
+/// These normalizes vectors and is used in StoreDataVessel
+  virtual void normalizeVector( std::vector<double>& vals ) const { plumed_error(); }
+  virtual void normalizeVectorDerivatives( MultiValue& myvals ) const { plumed_error(); }
 };
 
 inline

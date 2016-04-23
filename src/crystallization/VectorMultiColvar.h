@@ -63,6 +63,9 @@ public:
   bool hasDifferentiableOrientation() const { return true; }
 ///  This makes sure we are not calculating the director when we do LocalAverage
   virtual void doNotCalculateDirector();
+/// This does normalizeing of vectors for storeDataVessel
+  virtual void normalizeVector( std::vector<double>& vals ) const ; 
+  virtual void normalizeVectorDerivatives( MultiValue& myvals ) const ;  
 };
 
 inline

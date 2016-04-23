@@ -70,6 +70,23 @@ double VectorMultiColvar::doCalculation( const unsigned& taskIndex, multicolvar:
   return norm;
 }
 
+void VectorMultiColvar::normalizeVector( std::vector<double>& vals ) const {
+  double inorm = 1.0;
+  if( vals[1]>epsilon ) inorm = 1.0 / vals[1];
+  for(unsigned i=2;i<vals.size();++i) vals[i] = inorm*vals[i];
+}
+
+void VectorMultiColvar::normalizeVectorDerivatives( MultiValue& myvals ) const {
+  double v = myvals.get(1), weight = 1.0 / v,  wdf = 1.0 / ( v*v*v );
+  for(unsigned j=0;j<myvals.getNumberActive();++j){
+      double comp2=0.0; unsigned jder=myvals.getActiveIndex(j);
+      for(unsigned jcomp=2;jcomp<myvals.getNumberOfValues();++jcomp) comp2 += myvals.get(jcomp)*myvals.getDerivative( jcomp, jder );
+      for(unsigned jcomp=2;jcomp<myvals.getNumberOfValues();++jcomp){
+          myvals.setDerivative( jcomp, jder, weight*myvals.getDerivative( jcomp, jder ) - wdf*comp2*myvals.get(jcomp) );
+      }
+  }
+}
+
 void VectorMultiColvar::addForcesOnAtoms( const std::vector<double>& inforces ){
   plumed_dbg_assert( inforces.size()==getNumberOfDerivatives() );
   std::vector<double> oldforces( getNumberOfDerivatives() ); 

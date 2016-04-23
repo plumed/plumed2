@@ -56,6 +56,8 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit MoleculeOrientation( const ActionOptions& ao );
   void calculateVector( multicolvar::AtomValuePack& myatoms ) const;
+  void normalizeVector( std::vector<double>& vals ) const ;
+  void normalizeVectorDerivatives( MultiValue& myvals ) const ;
 };
 
 PLUMED_REGISTER_ACTION(MoleculeOrientation,"MOLECULES")
@@ -66,7 +68,7 @@ void MoleculeOrientation::registerKeywords( Keywords& keys ){
                             "the vector connecting the first two atoms specified.  If a third atom is specified its position "
                             "is used to specify where the molecule is.  If a third atom is not present the molecule is assumed "
                             "to be at the center of the vector connecting the first two atoms.");
-  keys.reset_style("MOL","atoms");
+  keys.reset_style("MOL","atoms"); 
 }
 
 MoleculeOrientation::MoleculeOrientation( const ActionOptions& ao ):
@@ -107,6 +109,36 @@ void MoleculeOrientation::calculateVector( multicolvar::AtomValuePack& myatoms )
       myatoms.addValue( 2+3*i+2, distance[2] );
   } 
 }
+
+void MoleculeOrientation::normalizeVector( std::vector<double>& vals ) const { 
+  for(unsigned i=0;i<nvectors;++i){
+      double norm=0;
+      for(unsigned j=0;j<3;++j) norm += vals[2+3*i+j]*vals[2+3*i+j];
+      norm = sqrt(norm);
+     
+      double inorm = 1.0; if( norm>epsilon ) inorm = 1.0 / norm;
+      for(unsigned j=0;j<3;++j) vals[2+3*i+j] = inorm*vals[2+3*i+j];
+  }
+}
+
+void MoleculeOrientation::normalizeVectorDerivatives( MultiValue& myvals ) const {
+  std::vector<double> weight( nvectors ), wdf( nvectors );
+  for(unsigned ivec=0;ivec<nvectors;++ivec){
+      double v=0; for(unsigned jcomp=0;jcomp<3;++jcomp) v += myvals.get( 2+3*ivec+jcomp )*myvals.get( 2+3*ivec+jcomp );
+      v=sqrt(v); weight[ivec]=1.0; wdf[ivec]=1.0; 
+      if( v>epsilon ){ weight[ivec] = 1.0 / v; wdf[ivec] = 1.0 / ( v*v*v ); }
+  }
+
+  for(unsigned j=0;j<myvals.getNumberActive();++j){
+      unsigned jder=myvals.getActiveIndex(j);
+      for(unsigned ivec=0;ivec<nvectors;++ivec){
+          double comp2=0.0; for(unsigned jcomp=0;jcomp<3;++jcomp) comp2 += myvals.get(2+3*ivec+jcomp)*myvals.getDerivative( 2+3*ivec+jcomp, jder );
+          for(unsigned jcomp=0;jcomp<3;++jcomp){
+              myvals.setDerivative( 2+3*ivec+jcomp, jder, weight[ivec]*myvals.getDerivative( 2+3*ivec+jcomp, jder ) - wdf[ivec]*comp2*myvals.get(2+3*ivec+jcomp) );
+          }
+      }
+  }   
+}   
 
 }
 }
