@@ -101,7 +101,7 @@ class BayesianSPE : public Bias
 public:
   BayesianSPE(const ActionOptions&);
   void calculate();
-  void prepare();
+  void update();
   static void registerKeywords(Keywords& keys);
 };
 
@@ -316,7 +316,7 @@ void BayesianSPE::doMonteCarlo(){
  }
 }
 
-void BayesianSPE::prepare(){
+void BayesianSPE::update(){
   // get time step 
   const long int step = getStep();
   // do MC stuff at the right time step

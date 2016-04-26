@@ -101,7 +101,7 @@ class BayesianGJE : public Bias
 public:
   BayesianGJE(const ActionOptions&);
   void calculate();
-  void prepare();
+  void update();
   static void registerKeywords(Keywords& keys);
 };
 
@@ -349,7 +349,7 @@ void BayesianGJE::doMonteCarlo(){
  }
 }
 
-void BayesianGJE::prepare(){
+void BayesianGJE::update(){
   // get time step 
   const long int step = getStep();
   // do MC stuff at the right time step
