@@ -60,9 +60,9 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   noderiv(true),
   actionIsBridged(false),
   mydata(NULL),
+  stopwatch(*new Stopwatch),
   contributorsAreUnlocked(false),
-  weightHasDerivatives(false),
-  stopwatch(*new Stopwatch)
+  weightHasDerivatives(false)
 {
   maxderivatives=309; parse("MAXDERIVATIVES",maxderivatives);
   if( keywords.exists("SERIAL") ) parseFlag("SERIAL",serial);
