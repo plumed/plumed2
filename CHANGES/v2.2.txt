@@ -137,7 +137,7 @@ For developers:
   in cmd strings.
 - ./configure is not automatically relaunched anymore when doing `make clean`.
 
-Version 2.2.3 ()
+Unreleased changes (will be included in 2.2.3)
 ----------------------------------------------
 
 For users:
