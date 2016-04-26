@@ -283,7 +283,6 @@ private:
   OFile gridfile_;
   Grid* BiasGrid_;
   bool storeOldGrids_;
-  string gridfilename_;
   int wgridstride_; 
   bool grid_;
   double height0_;
@@ -557,6 +556,7 @@ last_step_warn_grid(0)
   bool spline=!nospline;
   if(gbin.size()>0){grid_=true;}
   parse("GRID_WSTRIDE",wgridstride_);
+  string gridfilename_;
   parse("GRID_WFILE",gridfilename_); 
   parseFlag("STORE_GRIDS",storeOldGrids_);
   if(grid_ && gridfilename_.length()>0){
@@ -569,6 +569,9 @@ last_step_warn_grid(0)
   string gridreadfilename_;
   parse("GRID_RFILE",gridreadfilename_);
 
+  if(!grid_&&gridfilename_.length()> 0) error("To write a grid you need first to define it!");
+  if(!grid_&&gridreadfilename_.length()>0) error("To read a grid you need first to define it!");
+ 
   if(grid_){ 
     parseVector("REWEIGHTING_NGRID",rewf_grid_); 
     if(rewf_grid_.size()>0 && rewf_grid_.size()!=getNumberOfArguments()){
@@ -689,11 +692,11 @@ last_step_warn_grid(0)
       if(mesh>0.5*sigma0_[i]) log<<"  WARNING: Using a METAD with a Grid Spacing larger than half of the Gaussians width can produce artifacts\n";
     }
     log.printf("  Restarting from %s:",gridreadfilename_.c_str());                  
-    restartedFromGrid=true;
+    if(getRestart()) restartedFromGrid=true;
   }
 
   // initializing and checking grid
-  if(grid_&&!restartedFromGrid){
+  if(grid_&&!(gridreadfilename_.length()>0)){
     // check for adaptive and sigma_min
     if(sigma0min_.size()==0&&adaptive_!=FlexibleBin::none) error("When using Adaptive Gaussians on a grid SIGMA_MIN must be specified");
     // check for mesh and sigma size
@@ -752,7 +755,7 @@ last_step_warn_grid(0)
   if(comm.Get_rank()==0 && walkers_mpi) multi_sim_comm.Barrier();
 
   // Calculate the Tiwary-Parrinello reweighting factor if we are restarting from previous hills
-  if(plumed.getRestart() && rewf_grid_.size()>0 ) computeReweightingFactor();
+  if(getRestart() && rewf_grid_.size()>0 ) computeReweightingFactor();
 
   // open grid file for writing
   if(wgridstride_>0){
