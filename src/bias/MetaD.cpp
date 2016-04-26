@@ -85,6 +85,10 @@ In case you do not provide any information about bin size (neither GRID_BIN nor 
 and if Gaussian width is fixed PLUMED will use 1/5 of the Gaussian width as grid spacing.
 This default choice should be reasonable for most applications.
 
+Metadynamics can be restarted either from a HILLS file as well as from a GRID, in this second
+case one can first save a GRID using GRID_WFILE (and GRID_WSTRIDE) and at a later stage read
+it using GRID_RFILE.
+
 Another option that is available in plumed is well-tempered metadynamics \cite Barducci:2008. In this
 varient of metadynamics the heights of the Gaussian hills are rescaled at each step so the bias is now
 given by:
