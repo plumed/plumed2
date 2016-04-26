@@ -26,8 +26,8 @@ endif
 let b:current_syntax="plumedf"
 
 if exists("g:plumed_shortcuts")
-  map <F3> :PMinus<CR>
-  map <F4> :PPlus<CR>
+  noremap <buffer> <F3> :PMinus<CR>
+  noremap <buffer> <F4> :PPlus<CR>
 endif
 
 command! -nargs=0 -count=1 PPlus call PlumedMove(<count>)
@@ -145,15 +145,15 @@ endif
 let b:current_syntax="plumed"
 
 if exists("g:plumed_shortcuts")
-  noremap  <F2> <Esc>:PHelp<CR>
-  inoremap <F2> <C-o>:PHelp<CR>
+  noremap  <buffer> <F2> :PHelp<CR>
+  inoremap <buffer> <F2> <Esc>:PHelp<CR>
 endif
 
 " path for plumed plugin
 let s:path=expand('<sfile>:p:h:h')
 
 " All except space and hash are in word
-set iskeyword=33,34,36-126
+setlocal iskeyword=33,34,36-126
 
 " Matching dots, possibly followed by a comment
 " Only dots are part of the match
@@ -329,6 +329,10 @@ fun! PlumedContextManual()
       execute 'rightbelow split | view ' name
     endif
     let b:plumed_helpfile=1
+" this is to allow closing the window with F2
+    if exists("g:plumed_shortcuts")
+      noremap  <buffer> <F2> :PHelp<CR>
+    endif
   endif
 endfunction
 
