@@ -177,8 +177,6 @@ MULTIPLE_WALKERS
 PRINT ARG=d1,d2,pb.bias STRIDE=100 FILE=COLVAR
 \endverbatim
 
-  
->>>>>>> v2.2
 */
 //+ENDPLUMEDOC
 
@@ -195,13 +193,14 @@ private:
   vector<double> sigma0_;
   vector< vector<Gaussian> > hills_;
   vector<OFile*> hillsOfiles_;
-  vector<IFile*> ifiles;
+  vector<OFile*> gridfiles_;
   vector<Grid*> BiasGrids_;
   bool    grid_;
   double  height0_;
   double  biasf_;
   double  kbt_;
   int     stride_;
+  int     wgridstride_;
   bool    welltemp_;
   bool    multiple_w;
   vector<double> uppI_;
@@ -242,6 +241,9 @@ void PBMetaD::registerKeywords(Keywords& keys){
   keys.add("optional","BIASFACTOR","use well tempered metadynamics with this biasfactor, one for all biases.  Please note you must also specify temp");
   keys.add("optional","TEMP","the system temperature - this is only needed if you are doing well-tempered metadynamics");
   keys.add("optional","TAU","in well tempered metadynamics, sets height to (kb*DeltaT*pace*timestep)/tau");
+  keys.add("optional","GRID_RFILES", "read grid for the bias");
+  keys.add("optional","GRID_WFILES", "dump grid for the bias");
+  keys.add("optional","GRID_WSTRIDE", "frequency for dumping the grid");
   keys.add("optional","GRID_MIN","the lower bounds for the grid");
   keys.add("optional","GRID_MAX","the upper bounds for the grid");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
@@ -258,6 +260,12 @@ PBMetaD::~PBMetaD(){
   for(unsigned i=0; i<hillsOfiles_.size(); ++i){
    hillsOfiles_[i]->close();
    delete hillsOfiles_[i];
+  }
+  if(wgridstride_ > 0) {
+   for(unsigned i=0; i<gridfiles_.size(); ++i) {
+    gridfiles_[i]->close();
+    delete gridfiles_[i];
+   }
   }
 }
 
@@ -307,6 +315,18 @@ multiple_w(false), doInt_(false), isFirstStep(true)
   
   // MPI version
   parseFlag("MULTIPLE_WALKERS",multiple_w);
+
+  // Grid file
+  vector<string> gridfilenames_;
+  parseVector("GRID_WFILES",gridfilenames_);
+  parse("GRID_WSTRIDE",wgridstride_);
+  if (wgridstride_ == 0 && gridfilenames_.size() > 0) {
+    error("frequency with which to output grid not specified use GRID_WSTRIDE");
+  }
+
+  // Read grid
+  vector<string> gridreadfilenames_;
+  parseVector("GRID_RFILES",gridreadfilenames_);
   
   // Grid Stuff
   vector<std::string> gmin(getNumberOfArguments());
@@ -351,7 +371,10 @@ multiple_w(false), doInt_(false), isFirstStep(true)
   parseFlag("GRID_NOSPLINE",nospline);
   bool spline=!nospline;
   if(gbin.size()>0){grid_=true;}
-  
+ 
+  if(!grid_&&gridfilenames_.size() > 0) error("To write a grid you need first to define it!");
+  if(!grid_&&gridreadfilenames_.size() > 0) error("To read a grid you need first to define it!");
+ 
   // Interval keyword
   parseVector("INTERVAL_MIN",lowI_);
   parseVector("INTERVAL_MAX",uppI_);
@@ -390,14 +413,27 @@ multiple_w(false), doInt_(false), isFirstStep(true)
    log.printf("\n");
    if(spline){log.printf("  Grid uses spline interpolation\n");}
    if(sparsegrid){log.printf("  Grid uses sparse grid\n");}
+   if(wgridstride_>0) {
+    for(unsigned i=0; i<gridfilenames_.size(); ++i) {
+     log.printf("  Grid is written on file %s with stride %d\n",gridfilenames_[i].c_str(),wgridstride_);
+    }
+   }
+   if(gridreadfilenames_.size()>0) {
+    for(unsigned i=0; i<gridreadfilenames_.size(); ++i) {
+     log.printf("  Reading bias from grid in file %s \n",gridreadfilenames_[i].c_str());
+    }
+   }
   }
 
-  addComponentWithDerivatives("bias"); componentIsNotPeriodic("bias");
+  addComponent("bias"); componentIsNotPeriodic("bias");
 
-// initializing vector of hills
+  // initializing vector of hills
   hills_.resize(getNumberOfArguments());
 
-// initializing and checking grid
+  // restart from external grid
+  bool restartedFromGrid=false;
+
+  // initializing and checking grid
   if(grid_){
    // check for mesh and sigma size
    for(unsigned i=0;i<getNumberOfArguments();i++) {
@@ -418,79 +454,122 @@ multiple_w(false), doInt_(false), isFirstStep(true)
     gmax_t[0] = gmax[i];
     gbin_t[0] = gbin[i];
     Grid* BiasGrid_;
-    if(!sparsegrid){BiasGrid_=new Grid(funcl,args,gmin_t,gmax_t,gbin_t,spline,true);}
-    else           {BiasGrid_=new SparseGrid(funcl,args,gmin_t,gmax_t,gbin_t,spline,true);}
-    std::vector<std::string> actualmin=BiasGrid_->getMin();
-    std::vector<std::string> actualmax=BiasGrid_->getMax();
-    if(gmin_t[0]!=actualmin[0]) log<<"  WARNING: GRID_MIN["<<i<<"] has been adjusted to "<<actualmin[0]<<" to fit periodicity\n";
-    if(gmax_t[0]!=actualmax[0]) log<<"  WARNING: GRID_MAX["<<i<<"] has been adjusted to "<<actualmax[0]<<" to fit periodicity\n";
+    // Read grid from file
+    if(gridreadfilenames_.size()>0) {
+     IFile gridfile;
+     gridfile.link(*this);
+     if(gridfile.FileExist(gridreadfilenames_[i])){
+      gridfile.open(gridreadfilenames_[i]);
+     } else {
+      error("The GRID file you want to read: " + gridreadfilenames_[i] + ", cannot be found!");
+     }
+     string funcl = getLabel() + ".bias";
+     BiasGrid_ = Grid::create(funcl, args, gridfile, gmin_t, gmax_t, gbin_t, sparsegrid, spline, true);
+     gridfile.close();
+     if(BiasGrid_->getDimension() != args.size()) {
+      error("mismatch between dimensionality of input grid and number of arguments");
+     }
+     if(getPntrToArgument(i)->isPeriodic() != BiasGrid_->getIsPeriodic()[0]) {
+      error("periodicity mismatch between arguments and input bias");
+     }
+     log.printf("  Restarting from %s:",gridreadfilenames_[i].c_str());                  
+     if(getRestart()) restartedFromGrid=true;
+    } else {
+      if(!sparsegrid){BiasGrid_=new Grid(funcl,args,gmin_t,gmax_t,gbin_t,spline,true);}
+      else           {BiasGrid_=new SparseGrid(funcl,args,gmin_t,gmax_t,gbin_t,spline,true);}
+      std::vector<std::string> actualmin=BiasGrid_->getMin();
+      std::vector<std::string> actualmax=BiasGrid_->getMax();
+      if(gmin_t[0]!=actualmin[0]) log<<"  WARNING: GRID_MIN["<<i<<"] has been adjusted to "<<actualmin[0]<<" to fit periodicity\n";
+      if(gmax_t[0]!=actualmax[0]) log<<"  WARNING: GRID_MAX["<<i<<"] has been adjusted to "<<actualmax[0]<<" to fit periodicity\n";
+    }
     BiasGrids_.push_back(BiasGrid_);
    }
   }
 
-// read Gaussians if restarting
-  for(unsigned i=0;i<hillsfname.size();++i){
-   IFile *ifile = new IFile();
-   ifile->link(*this);
-   if(ifile->FileExist(hillsfname[i])){
-    ifile->open(hillsfname[i]);
-    if(getRestart()){
-     log.printf("  Restarting from %s:",hillsfname[i].c_str());                  
-     readGaussians(i, ifile);                                                    
+  // read Gaussians if restarting
+  if (!restartedFromGrid){
+   for(unsigned i=0;i<hillsfname.size();++i){
+    IFile *ifile = new IFile();
+    ifile->link(*this);
+    if(ifile->FileExist(hillsfname[i])){
+     ifile->open(hillsfname[i]);
+     if(getRestart()){
+      log.printf("  Restarting from %s:",hillsfname[i].c_str());                  
+      readGaussians(i, ifile);                                                    
+     }
+     ifile->reset(false);
+     ifile->close();
+     delete ifile;
     }
-    ifile->reset(false);
-    ifile->close();
-    delete ifile;
    }
   }
 
   comm.Barrier();
-
-// this barrier is needed when using walkers_mpi
-// to be sure that all files have been read before
-// backing them up
-// it should not be used when walkers_mpi is false otherwise
-// it would introduce troubles when using replicas without METAD
-// (e.g. in bias exchange with a neutral replica)
-// see issue #168 on github
+  // this barrier is needed when using walkers_mpi
+  // to be sure that all files have been read before
+  // backing them up
+  // it should not be used when walkers_mpi is false otherwise
+  // it would introduce troubles when using replicas without METAD
+  // (e.g. in bias exchange with a neutral replica)
+  // see issue #168 on github
   if(comm.Get_rank()==0 && multiple_w) multi_sim_comm.Barrier();
 
-// open hills files for writing
- for(unsigned i=0;i<hillsfname.size();++i){
-  OFile *ofile = new OFile();
-  ofile->link(*this);
-  string hillsfname_tmp = hillsfname[i];
-  // if multiple walkers, only rank 0 will write to file
-  if(multiple_w){
+  // open hills files for writing
+  for(unsigned i=0;i<hillsfname.size();++i){
+   OFile *ofile = new OFile();
+   ofile->link(*this);
+   string hillsfname_tmp = hillsfname[i];
+   // if multiple walkers, only rank 0 will write to file
+   if(multiple_w){
     int r=0;
     if(comm.Get_rank()==0) r=multi_sim_comm.Get_rank();
     comm.Bcast(r,0);
     if(r>0) hillsfname_tmp="/dev/null";
     ofile->enforceSuffix("");
-  }
-  ofile->open(hillsfname_tmp);
-  if(fmt.length()>0) ofile->fmtField(fmt);
-  ofile->addConstantField("multivariate");
-  if(doInt_) {
+   }
+   ofile->open(hillsfname_tmp);
+   if(fmt.length()>0) ofile->fmtField(fmt);
+   ofile->addConstantField("multivariate");
+   if(doInt_) {
     ofile->addConstantField("lower_int").printField("lower_int",lowI_[i]);
     ofile->addConstantField("upper_int").printField("upper_int",uppI_[i]);
+   }
+   ofile->setHeavyFlush();
+   // output periodicities of variables
+   ofile->setupPrintValue( getPntrToArgument(i) );
+   // push back
+   hillsOfiles_.push_back(ofile);
   }
-  ofile->setHeavyFlush();
-  // output periodicities of variables
-  ofile->setupPrintValue( getPntrToArgument(i) );
-  // push back
-  hillsOfiles_.push_back(ofile);
- }
+
+  // Dump grid to files
+  if(wgridstride_ > 0) {
+   for(unsigned i = 0; i < gridfilenames_.size(); ++i) {
+    OFile *ofile = new OFile();
+    ofile->link(*this);
+    string gridfname_tmp = gridfilenames_[i];
+    if(multiple_w) {
+     int r = 0;
+     if(comm.Get_rank() == 0) {
+      r = multi_sim_comm.Get_rank();
+     }
+     comm.Bcast(r, 0);
+     if(r>0) {
+      gridfname_tmp = "/dev/null";
+     }
+     ofile->enforceSuffix("");
+    }
+    ofile->open(gridfname_tmp);
+    ofile->setHeavyFlush();
+    gridfiles_.push_back(ofile);
+   }
+  }
 
   log<<"  Bibliography "<<plumed.cite("Pfaendtner and Bonomi. J. Chem. Theory Comput. 11, 5062 (2015)");
   if(doInt_) log<<plumed.cite(
      "Baftizadeh, Cossio, Pietrucci, and Laio, Curr. Phys. Chem. 2, 79 (2012)");
   if(multiple_w) log<<plumed.cite(
     "Raiteri, Laio, Gervasio, Micheletti, and Parrinello, J. Phys. Chem. B 110, 3533 (2006)");   
- 
   log<<"\n";
-
-  turnOnDerivatives();
 }
 
 void PBMetaD::readGaussians(int iarg, IFile *ifile){
@@ -619,6 +698,7 @@ double PBMetaD::getBiasAndDerivatives(int iarg, const vector<double>& cv, double
    bias = BiasGrids_[iarg]->getValue(cv);
   }
  }
+
  return bias;
 }
 
@@ -672,7 +752,6 @@ void PBMetaD::calculate()
   for(unsigned i=0; i<getNumberOfArguments(); ++i){
     const double f = - exp(-bias[i]/kbt_) / (ene) * deriv[i];
     setOutputForce(i, f);
-    getPntrToComponent("bias")->addDerivative(i,-f);
   }
   delete [] der;
 
@@ -688,11 +767,9 @@ void PBMetaD::update()
   if(getStep()%stride_==0 && !isFirstStep ){nowAddAHill=true;}else{nowAddAHill=false;isFirstStep=false;}
 
   if(nowAddAHill){
-
    // get all CVs value
    vector<double> cv(getNumberOfArguments());
    for(unsigned i=0; i<getNumberOfArguments(); ++i) cv[i] = getArgument(i);
-
    // get all biases and heights
    vector<double> bias(getNumberOfArguments());
    vector<double> height(getNumberOfArguments());
@@ -711,7 +788,7 @@ void PBMetaD::update()
      height[i] *=  height0_ / norm;
      if(welltemp_) height[i] *= exp(-bias[i]/(kbt_*(biasf_-1.0)));
    }
-   
+
    // Multiple walkers: share hills and add them all
    if(multiple_w){
      int nw = 0;
@@ -760,7 +837,17 @@ void PBMetaD::update()
       writeGaussian(i, newhill, hillsOfiles_[i]);
     } 
    }
- }
+
+   // write grid files
+   if(wgridstride_>0 && getStep()%wgridstride_==0) {
+     for(unsigned i=0; i<gridfiles_.size(); ++i) {
+       gridfiles_[i]->rewind();
+       BiasGrids_[i]->writeToFile(*gridfiles_[i]);
+       gridfiles_[i]->flush();
+     }
+   }
+
+  }
 }
 
 /// takes a pointer to the file and a template string with values v and gives back the next center, sigma and height 

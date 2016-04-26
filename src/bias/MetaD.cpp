@@ -282,11 +282,9 @@ private:
   OFile hillsOfile_;
   OFile gridfile_;
   Grid* BiasGrid_;
-  Grid* ExtGrid_;
   bool storeOldGrids_;
-  string gridfilename_;
   int wgridstride_; 
-  bool grid_, hasextgrid_;
+  bool grid_;
   double height0_;
   double biasf_;
   double kbt_;
@@ -404,7 +402,7 @@ MetaD::~MetaD(){
 MetaD::MetaD(const ActionOptions& ao):
 PLUMED_BIAS_INIT(ao),
 // Grid stuff initialization
-BiasGrid_(NULL),ExtGrid_(NULL), wgridstride_(0), grid_(false), hasextgrid_(false),
+BiasGrid_(NULL), wgridstride_(0), grid_(false),
 // Metadynamics basic parameters
 height0_(std::numeric_limits<double>::max()), biasf_(1.0), kbt_(0.0),
 stride_(0), welltemp_(false),
@@ -464,14 +462,16 @@ last_step_warn_grid(0)
     } else if(sigma0min_.size()==0) { 
       sigma0min_.resize(getNumberOfArguments());
       for(unsigned i=0;i<getNumberOfArguments();i++){sigma0min_[i]=-1.;}	
-    } 
+    }
+ 
     parseVector("SIGMA_MAX",sigma0max_);
     if(sigma0max_.size()>0 && sigma0max_.size()<getNumberOfArguments()) {
       error("the number of SIGMA_MAX values be at least the number of the arguments"); 
     } else if(sigma0max_.size()==0) { 
       sigma0max_.resize(getNumberOfArguments());
       for(unsigned i=0;i<getNumberOfArguments();i++){sigma0max_[i]=-1.;}	
-    } 
+    }
+ 
     flexbin=new FlexibleBin(adaptive_,this,sigma0_[0],sigma0min_,sigma0max_);
   }
   // note: HEIGHT is not compulsory, since one could use the TAU keyword, see below
@@ -556,6 +556,7 @@ last_step_warn_grid(0)
   bool spline=!nospline;
   if(gbin.size()>0){grid_=true;}
   parse("GRID_WSTRIDE",wgridstride_);
+  string gridfilename_;
   parse("GRID_WFILE",gridfilename_); 
   parseFlag("STORE_GRIDS",storeOldGrids_);
   if(grid_ && gridfilename_.length()>0){
@@ -568,6 +569,9 @@ last_step_warn_grid(0)
   string gridreadfilename_;
   parse("GRID_RFILE",gridreadfilename_);
 
+  if(!grid_&&gridfilename_.length()> 0) error("To write a grid you need first to define it!");
+  if(!grid_&&gridreadfilename_.length()>0) error("To read a grid you need first to define it!");
+ 
   if(grid_){ 
     parseVector("REWEIGHTING_NGRID",rewf_grid_); 
     if(rewf_grid_.size()>0 && rewf_grid_.size()!=getNumberOfArguments()){
@@ -635,9 +639,6 @@ last_step_warn_grid(0)
     if(sparsegrid){log.printf("  Grid uses sparse grid\n");}
     if(wgridstride_>0){log.printf("  Grid is written on file %s with stride %d\n",gridfilename_.c_str(),wgridstride_);} 
   }
-  if(gridreadfilename_.length()>0){
-    log.printf("  Reading an additional bias from grid in file %s \n",gridreadfilename_.c_str());
-  }
 
   if(mw_n_>1){
     if(walkers_mpi) error("MPI version of multiple walkers is not compatible with filesystem version of multiple walkers");
@@ -693,18 +694,51 @@ last_step_warn_grid(0)
   // restart from external grid
   bool restartedFromGrid=false;
   if(gridreadfilename_.length()>0){
-    hasextgrid_=true;
     // read the grid in input, find the keys
-    IFile gridfile; gridfile.open(gridreadfilename_);
-    std::string funcl=getLabel() + ".bias";
-    ExtGrid_=Grid::create(funcl,getArguments(),gridfile,false,false,true);
-    gridfile.close();
-    if(ExtGrid_->getDimension()!=getNumberOfArguments()) error("mismatch between dimensionality of input grid and number of arguments");
-    for(unsigned i=0;i<getNumberOfArguments();++i){
-      if( getPntrToArgument(i)->isPeriodic()!=ExtGrid_->getIsPeriodic()[i] ) error("periodicity mismatch between arguments and input bias");
+    IFile gridfile; 
+    gridfile.link(*this);
+    if(gridfile.FileExist(gridreadfilename_)){
+      gridfile.open(gridreadfilename_);
+    } else {
+      error("The GRID file you want to read: " + gridreadfilename_ + ", cannot be found!");
     }
-    if(getRestart()) restartedFromGrid=true;
+    std::string funcl=getLabel() + ".bias";
+    BiasGrid_=Grid::create(funcl, getArguments(), gridfile, gmin, gmax, gbin, sparsegrid, spline, true);
+    gridfile.close();
+    if(BiasGrid_->getDimension()!=getNumberOfArguments()) error("mismatch between dimensionality of input grid and number of arguments");
+    for(unsigned i=0;i<getNumberOfArguments();++i){
+      if( getPntrToArgument(i)->isPeriodic()!=BiasGrid_->getIsPeriodic()[i] ) error("periodicity mismatch between arguments and input bias");
+      double a, b;
+      Tools::convert(gmin[i],a);
+      Tools::convert(gmax[i],b);
+      double mesh=(b-a)/((double)gbin[i]);
+      if(mesh>0.5*sigma0_[i]) log<<"  WARNING: Using a METAD with a Grid Spacing larger than half of the Gaussians width can produce artifacts\n";
+    }
     log.printf("  Restarting from %s:",gridreadfilename_.c_str());                  
+    if(getRestart()) restartedFromGrid=true;
+  }
+
+  // initializing and checking grid
+  if(grid_&&!(gridreadfilename_.length()>0)){
+    // check for adaptive and sigma_min
+    if(sigma0min_.size()==0&&adaptive_!=FlexibleBin::none) error("When using Adaptive Gaussians on a grid SIGMA_MIN must be specified");
+    // check for mesh and sigma size
+    for(unsigned i=0;i<getNumberOfArguments();i++) {
+      double a,b;
+      Tools::convert(gmin[i],a);
+      Tools::convert(gmax[i],b);
+      double mesh=(b-a)/((double)gbin[i]);
+      if(mesh>0.5*sigma0_[i]) log<<"  WARNING: Using a METAD with a Grid Spacing larger than half of the Gaussians width can produce artifacts\n";
+    }
+    std::string funcl=getLabel() + ".bias";
+    if(!sparsegrid){BiasGrid_=new Grid(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
+    else{BiasGrid_=new SparseGrid(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
+    std::vector<std::string> actualmin=BiasGrid_->getMin();
+    std::vector<std::string> actualmax=BiasGrid_->getMax();
+    for(unsigned i=0;i<getNumberOfArguments();i++){
+      if(gmin[i]!=actualmin[i]) log<<"  WARNING: GRID_MIN["<<i<<"] has been adjusted to "<<actualmin[i]<<" to fit periodicity\n";
+      if(gmax[i]!=actualmax[i]) log<<"  WARNING: GRID_MAX["<<i<<"] has been adjusted to "<<actualmax[i]<<" to fit periodicity\n";
+    }
   }
 
   // creating vector of ifile* for hills reading 
@@ -744,7 +778,7 @@ last_step_warn_grid(0)
   if(comm.Get_rank()==0 && walkers_mpi) multi_sim_comm.Barrier();
 
   // Calculate the Tiwary-Parrinello reweighting factor if we are restarting from previous hills
-  if(plumed.getRestart() && rewf_grid_.size()>0 ) computeReweightingFactor();
+  if(getRestart() && rewf_grid_.size()>0 ) computeReweightingFactor();
 
   // open grid file for writing
   if(wgridstride_>0){
@@ -1015,15 +1049,6 @@ double MetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
      }
   }
 
-  if(hasextgrid_){
-    if(der){
-      vector<double> vder(getNumberOfArguments());
-      bias+=ExtGrid_->getValueAndDerivatives(cv,vder);
-      for(unsigned i=0;i<getNumberOfArguments();++i) {der[i]+=vder[i];}
-    } else {
-      bias+=ExtGrid_->getValue(cv);
-    }
-  }
   return bias;
 }
 
