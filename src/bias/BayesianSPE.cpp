@@ -23,7 +23,6 @@
 #include "ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
-#include "tools/Random.h"
 #include <cmath>
 
 using namespace std;
@@ -67,14 +66,13 @@ class BayesianSPE : public Bias
 {
   const double sqrt2_div_pi;
   // experimental values
-  std::vector<double> parameters;
+  vector<double> parameters;
   // scale is data scaling factor
+  bool   doscale_;
   double scale_;
   double scale_min_;
   double scale_max_;
   double Dscale_;
-  double scale_mean_;
-  Random random;
   // sigma is data uncertainty
   double sigma_;
   double sigma_min_;
@@ -103,7 +101,7 @@ class BayesianSPE : public Bias
 public:
   BayesianSPE(const ActionOptions&);
   void calculate();
-  void update();
+  void prepare();
   static void registerKeywords(Keywords& keys);
 };
 
@@ -115,6 +113,7 @@ void BayesianSPE::registerKeywords(Keywords& keys){
   keys.use("ARG");
   keys.add("optional","PARARG","the input for this action is the scalar output from other actions without derivatives."); 
   keys.add("optional","PARAMETERS","the parameters of the arguments in your function");
+  keys.addFlag("SCALEDATA",false,"Set to TRUE if you want to sample a scaling factor common to all values and replicas.");  
   keys.add("compulsory","SCALE0","initial value of the uncertainty parameter");
   keys.add("compulsory","SCALE_MIN","minimum value of the uncertainty parameter");
   keys.add("compulsory","SCALE_MAX","maximum value of the uncertainty parameter");
@@ -124,11 +123,10 @@ void BayesianSPE::registerKeywords(Keywords& keys){
   keys.add("compulsory","SIGMA_MAX","maximum value of the uncertainty parameter");
   keys.add("compulsory","DSIGMA","maximum MC move of the uncertainty parameter");
   keys.add("compulsory","SIGMA_MEAN","uncertainty in the mean estimate");
-  keys.add("optional","NDATA","number of experimental data points");
   keys.add("optional","TEMP","the system temperature - this is only needed if code doesnt' pass the temperature to plumed");
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_STRIDE","MC stride");
-  componentsAreNotOptional(keys); 
+  componentsAreNotOptional(keys);
   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
   keys.addOutputComponent("sigma", "default","uncertainty parameter");
   keys.addOutputComponent("scale", "default","scale parameter");
@@ -138,7 +136,8 @@ void BayesianSPE::registerKeywords(Keywords& keys){
 BayesianSPE::BayesianSPE(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao), 
 sqrt2_div_pi(0.45015815807855),
-ndata_(0),
+doscale_(false),
+ndata_(getNumberOfArguments()),
 MCsteps_(1), 
 MCstride_(1), 
 MCaccept_(0), 
@@ -163,16 +162,21 @@ MCfirst_(-1)
   if(parameters.size()!=getNumberOfArguments()) 
     error("PARARG or PARAMETERS arrays should include the same number of elements as the arguments in ARG");
 
-  parse("SCALE0",scale_);
-  parse("SCALE_MIN",scale_min_);
-  parse("SCALE_MAX",scale_max_);
-  parse("DSCALE",Dscale_);
+  parseFlag("SCALEDATA", doscale_);
+  if(doscale_) {
+    parse("SCALE0",scale_);
+    parse("SCALE_MIN",scale_min_);
+    parse("SCALE_MAX",scale_max_);
+    parse("DSCALE",Dscale_);
+  } else {
+    scale_=1.0;
+  }
+
   parse("SIGMA0",sigma_);
   parse("SIGMA_MIN",sigma_min_);
   parse("SIGMA_MAX",sigma_max_);
   parse("DSIGMA",Dsigma_);
   parse("SIGMA_MEAN",sigma_mean_);
-  parse("NDATA",ndata_);
   parse("MC_STEPS",MCsteps_);
   parse("MC_STRIDE",MCstride_);
   // get temperature
@@ -181,7 +185,6 @@ MCfirst_(-1)
 
   checkRead();
 
-  if(ndata_==0) ndata_=getNumberOfArguments();
   if(temp>0.0) kbt_=plumed.getAtoms().getKBoltzmann()*temp;
   else kbt_=plumed.getAtoms().getKbT();
 
@@ -197,10 +200,14 @@ MCfirst_(-1)
   // adjust for multiple-time steps
   MCstride_ *= getStride();
 
-  log.printf("  initial scale parameter %f\n",scale_);
-  log.printf("  minimum scale parameter %f\n",scale_min_);
-  log.printf("  maximum scale parameter %f\n",scale_max_);
-  log.printf("  maximum MC move of scale parameter %f\n",Dscale_);
+  if(doscale_) {
+    log.printf("  sampling a common scaling factor with:\n");
+    log.printf("    initial scale parameter %f\n",scale_);
+    log.printf("    minimum scale parameter %f\n",scale_min_);
+    log.printf("    maximum scale parameter %f\n",scale_max_);
+    log.printf("    maximum MC move of scale parameter %f\n",Dscale_);
+  }
+
   log.printf("  initial data uncertainty %f\n",sigma_);
   log.printf("  minimum data uncertainty %f\n",sigma_min_);
   log.printf("  maximum data uncertainty %f\n",sigma_max_);
@@ -212,14 +219,20 @@ MCfirst_(-1)
   log.printf("  MC steps %u\n",MCsteps_);
   log.printf("  MC stride %u\n",MCstride_);
 
-  addComponent("bias");   componentIsNotPeriodic("bias");
-  addComponent("sigma");  componentIsNotPeriodic("sigma");
-  addComponent("scale");  componentIsNotPeriodic("scale");
-  addComponent("accept"); componentIsNotPeriodic("accept");
+  addComponent("bias");
+  componentIsNotPeriodic("bias");
   valueBias=getPntrToComponent("bias");
-  valueSigma=getPntrToComponent("sigma");
-  valueScale=getPntrToComponent("scale");
+  if(doscale_) {
+    addComponent("scale");
+    componentIsNotPeriodic("scale");
+    valueScale=getPntrToComponent("scale");
+  }
+  addComponent("accept");
+  componentIsNotPeriodic("accept");
   valueAccept=getPntrToComponent("accept");
+  addComponent("sigma");
+  componentIsNotPeriodic("sigma");
+  valueSigma=getPntrToComponent("sigma");
 
   // initialize random seed
   unsigned iseed;
@@ -227,7 +240,6 @@ MCfirst_(-1)
   else iseed = 0;     
   comm.Sum(&iseed, 1);
   srand(iseed);
-  random.setSeed(-iseed);
 }
 
 double BayesianSPE::getEnergy(const double sigma, const double scale){
@@ -254,15 +266,19 @@ void BayesianSPE::doMonteCarlo(){
  // cycle on MC steps 
  for(unsigned i=0;i<MCsteps_;++i){
   // propose move for scale
-  const double r1 = static_cast<double>(rand()) / RAND_MAX;
-  const double ds1 = -Dscale_ + r1 * 2.0 * Dscale_;
-  double new_scale = scale_ + ds1;
-  // check boundaries
-  if(new_scale > scale_max_){new_scale = 2.0 * scale_max_ - new_scale;}
-  if(new_scale < scale_min_){new_scale = 2.0 * scale_min_ - new_scale;}
-  // the scaling factor should be the same for all the replicas
-  if(comm.Get_rank()==0) multi_sim_comm.Bcast(new_scale,0);
-  comm.Bcast(new_scale,0);
+  double new_scale = scale_;
+  if(doscale_) {
+    const double r1 = static_cast<double>(rand()) / RAND_MAX;
+    const double ds1 = -Dscale_ + r1 * 2.0 * Dscale_;
+    new_scale += ds1;
+    // check boundaries
+    if(new_scale > scale_max_){new_scale = 2.0 * scale_max_ - new_scale;}
+    if(new_scale < scale_min_){new_scale = 2.0 * scale_min_ - new_scale;}
+    // the scaling factor should be the same for all the replicas
+    if(comm.Get_rank()==0) multi_sim_comm.Bcast(new_scale,0);
+    comm.Bcast(new_scale,0);
+  }
+
   // propose move for sigma
   const double r2 = static_cast<double>(rand()) / RAND_MAX;
   const double ds2 = -Dsigma_ + r2 * 2.0 * Dsigma_;
@@ -291,13 +307,16 @@ void BayesianSPE::doMonteCarlo(){
     MCaccept_++;
    }
   }
-  // the scaling factor should be the same for all the replicas
-  if(comm.Get_rank()==0) multi_sim_comm.Bcast(scale_,0);
-  comm.Bcast(scale_,0);
+
+  if(doscale_) {
+    // the scaling factor should be the same for all the replicas
+    if(comm.Get_rank()==0) multi_sim_comm.Bcast(scale_,0);
+    comm.Bcast(scale_,0);
+  }
  }
 }
 
-void BayesianSPE::update(){
+void BayesianSPE::prepare(){
   // get time step 
   const long int step = getStep();
   // do MC stuff at the right time step
@@ -353,7 +372,7 @@ void BayesianSPE::calculate(){
   // set value of data uncertainty
   valueSigma->set(sigma_);
   // set value of scale parameter 
-  valueScale->set(scale_);
+  if(doscale_) valueScale->set(scale_);
   // set forces
   for(unsigned i=0; i<f.size(); ++i) setOutputForce(i, kbt_ * f[i]);
 }

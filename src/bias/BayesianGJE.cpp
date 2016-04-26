@@ -68,11 +68,13 @@ class BayesianGJE : public Bias
   // experimental values
   vector<double> parameters;
   // scale is data scaling factor
+  bool   doscale_;
   double scale_;
   double scale_min_;
   double scale_max_;
   double Dscale_;
   // sigma is data uncertainty
+  bool   multisigma_;
   vector<double> sigma_;
   double sigma_min_;
   double sigma_max_;
@@ -81,8 +83,6 @@ class BayesianGJE : public Bias
   double sigma_mean_;
   // temperature in kbt
   double kbt_;
-  // number of data points
-  unsigned ndata_;
   // Monte Carlo stuff
   unsigned MCsteps_;
   unsigned MCstride_;
@@ -101,7 +101,7 @@ class BayesianGJE : public Bias
 public:
   BayesianGJE(const ActionOptions&);
   void calculate();
-  void update();
+  void prepare();
   static void registerKeywords(Keywords& keys);
 };
 
@@ -113,6 +113,8 @@ void BayesianGJE::registerKeywords(Keywords& keys){
   keys.use("ARG");
   keys.add("optional","PARARG","the input for this action is the scalar output from other actions without derivatives."); 
   keys.add("optional","PARAMETERS","the parameters of the arguments in your function");
+  keys.addFlag("MULTISIGMA",false,"Set to TRUE if you want to have one sigma for each argument.");  
+  keys.addFlag("SCALEDATA",false,"Set to TRUE if you want to sample a scaling factor common to all values and replicas.");  
   keys.add("compulsory","SCALE0","initial value of the uncertainty parameter");
   keys.add("compulsory","SCALE_MIN","minimum value of the uncertainty parameter");
   keys.add("compulsory","SCALE_MAX","maximum value of the uncertainty parameter");
@@ -122,7 +124,6 @@ void BayesianGJE::registerKeywords(Keywords& keys){
   keys.add("compulsory","SIGMA_MAX","maximum value of the uncertainty parameter");
   keys.add("compulsory","DSIGMA","maximum MC move of the uncertainty parameter");
   keys.add("compulsory","SIGMA_MEAN","uncertainty in the mean estimate");
-  keys.add("optional","NDATA","number of experimental data points");
   keys.add("optional","TEMP","the system temperature - this is only needed if code doesnt' pass the temperature to plumed");
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_STRIDE","MC stride");
@@ -138,7 +139,8 @@ void BayesianGJE::registerKeywords(Keywords& keys){
 BayesianGJE::BayesianGJE(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao), 
 sqrt2pi(2.506628274631001),
-ndata_(0),
+doscale_(false),
+multisigma_(false),
 MCsteps_(1), 
 MCstride_(1), 
 MCaccept_(0), 
@@ -163,17 +165,26 @@ MCfirst_(-1)
   if(parameters.size()!=getNumberOfArguments()) 
     error("PARARG or PARAMETERS arrays should include the same number of elements as the arguments in ARG");
 
-  parse("SCALE0",scale_);
-  parse("SCALE_MIN",scale_min_);
-  parse("SCALE_MAX",scale_max_);
-  parse("DSCALE",Dscale_);
+  parseFlag("SCALEDATA", doscale_);
+  if(doscale_) {
+    parse("SCALE0",scale_);
+    parse("SCALE_MIN",scale_min_);
+    parse("SCALE_MAX",scale_max_);
+    parse("DSCALE",Dscale_);
+  } else {
+    scale_=1.0;
+  }
+
+  parseFlag("MULTISIGMA", multisigma_);
+
   vector<double> readsigma;
   parseVector("SIGMA0",readsigma);
+  if(!multisigma_&&readsigma.size()>1) error("If you want to use more than one sigma you should add MULTISIGMA");
+
   parse("SIGMA_MIN",sigma_min_);
   parse("SIGMA_MAX",sigma_max_);
   parse("DSIGMA",Dsigma_);
   parse("SIGMA_MEAN",sigma_mean_);
-  parse("NDATA",ndata_);
   parse("MC_STEPS",MCsteps_);
   parse("MC_STRIDE",MCstride_);
   // get temperature
@@ -182,17 +193,17 @@ MCfirst_(-1)
 
   checkRead();
 
-  if(ndata_==0) ndata_=getNumberOfArguments();
   if(temp>0.0) kbt_=plumed.getAtoms().getKBoltzmann()*temp;
   else kbt_=plumed.getAtoms().getKbT();
 
-  if(readsigma.size()==ndata_) {
-    sigma_.resize(ndata_);
+  if(readsigma.size()==getNumberOfArguments()) {
+    sigma_.resize(getNumberOfArguments());
     sigma_=readsigma;
   } else if(readsigma.size()==1) {
-    sigma_.resize(ndata_,readsigma[0]);
+    if(multisigma_) sigma_.resize(getNumberOfArguments(),readsigma[0]);
+    else sigma_.resize(1, readsigma[0]);
   } else {
-    plumed_merror("SIGMA0 can accept either one single value or as many values as the number of arguments");
+    error("SIGMA0 can accept either one single value or as many values as the number of arguments (with MULTISIGMA)");
   } 
 
   // get number of replicas
@@ -207,13 +218,18 @@ MCfirst_(-1)
   // adjust for multiple-time steps
   MCstride_ *= getStride();
 
-  log.printf("  initial scale parameter %f\n",scale_);
-  log.printf("  minimum scale parameter %f\n",scale_min_);
-  log.printf("  maximum scale parameter %f\n",scale_max_);
-  log.printf("  maximum MC move of scale parameter %f\n",Dscale_);
+  if(doscale_) {
+    log.printf("  sampling a common scaling factor with:\n");
+    log.printf("    initial scale parameter %f\n",scale_);
+    log.printf("    minimum scale parameter %f\n",scale_min_);
+    log.printf("    maximum scale parameter %f\n",scale_max_);
+    log.printf("    maximum MC move of scale parameter %f\n",Dscale_);
+  }
+
+  if(multisigma_) log.printf("  using one sigma for each argument\n");
   if(readsigma.size()==1) log.printf("  initial data uncertainty %f\n",sigma_[0]);
   else {
-    log.printf("  initial data uncertainty");
+    log.printf("  initial data uncertainties");
     for(unsigned i=0;i<sigma_.size();++i) log.printf(" %f", sigma_[i]);
     log.printf("\n");
   }
@@ -222,23 +238,35 @@ MCfirst_(-1)
   log.printf("  maximum MC move of data uncertainty %f\n",Dsigma_);
   log.printf("  uncertainty in the mean estimate %f\n",sigma_mean_);
   log.printf("  temperature of the system %f\n",kbt_);
-  log.printf("  number of experimental data points %u\n",ndata_);
+  log.printf("  number of experimental data points %u\n",getNumberOfArguments());
   log.printf("  number of replicas %u\n",nrep_);
   log.printf("  MC steps %u\n",MCsteps_);
   log.printf("  MC stride %u\n",MCstride_);
 
-  addComponent("bias");   componentIsNotPeriodic("bias");
-  addComponent("scale");  componentIsNotPeriodic("scale");
-  addComponent("accept"); componentIsNotPeriodic("accept");
+  addComponent("bias");
+  componentIsNotPeriodic("bias");
   valueBias=getPntrToComponent("bias");
-  valueScale=getPntrToComponent("scale");
+  if(doscale_) { 
+    addComponent("scale");  
+    componentIsNotPeriodic("scale");
+    valueScale=getPntrToComponent("scale");
+  }
+  addComponent("accept");
+  componentIsNotPeriodic("accept");
   valueAccept=getPntrToComponent("accept");
-  for(unsigned i=0;i<sigma_.size();++i){
-    std::string num; Tools::convert(i,num);
-    addComponent("sigma_"+num); componentIsNotPeriodic("sigma_"+num);
-    addComponent("kappa_"+num); componentIsNotPeriodic("kappa_"+num);
-    valueSigma.push_back(getPntrToComponent("sigma_"+num));
-    valueKappa.push_back(getPntrToComponent("kappa_"+num));
+  if(multisigma_) {
+    for(unsigned i=0;i<sigma_.size();++i){
+      std::string num; Tools::convert(i,num);
+      addComponent("sigma_"+num); componentIsNotPeriodic("sigma_"+num);
+      addComponent("kappa_"+num); componentIsNotPeriodic("kappa_"+num);
+      valueSigma.push_back(getPntrToComponent("sigma_"+num));
+      valueKappa.push_back(getPntrToComponent("kappa_"+num));
+    }
+  } else {
+    addComponent("sigma"); componentIsNotPeriodic("sigma");
+    addComponent("kappa"); componentIsNotPeriodic("kappa");
+    valueSigma.push_back(getPntrToComponent("sigma"));
+    valueKappa.push_back(getPntrToComponent("kappa"));
   }
   // initialize random seed
   unsigned iseed;
@@ -252,8 +280,9 @@ double BayesianGJE::getEnergy(const vector<double> &sigma, const double scale){
   // cycle on arguments
   double ene = 0.0;
   const double smean2 = sigma_mean_*sigma_mean_;
+  double ss = sigma[0]*sigma[0] + smean2; 
   for(unsigned i=0;i<getNumberOfArguments();++i){
-    const double ss = sigma[i]*sigma[i] + smean2; 
+    if(multisigma_) ss = sigma[i]*sigma[i] + smean2; 
     const double dev = scale*getArgument(i)-parameters[i]; 
     ene += 0.5*dev*dev/ss + std::log(ss*sqrt2pi);
   }
@@ -266,15 +295,19 @@ void BayesianGJE::doMonteCarlo(){
  // cycle on MC steps 
  for(unsigned i=0;i<MCsteps_;++i){
    // propose move for scale
-   const double r1 = static_cast<double>(rand()) / RAND_MAX;
-   const double ds1 = -Dscale_ + r1 * 2.0 * Dscale_;
-   double new_scale = scale_ + ds1;
-   // check boundaries
-   if(new_scale > scale_max_){new_scale = 2.0 * scale_max_ - new_scale;}
-   if(new_scale < scale_min_){new_scale = 2.0 * scale_min_ - new_scale;}
-   // the scaling factor should be the same for all the replicas
-   if(comm.Get_rank()==0) multi_sim_comm.Bcast(new_scale,0);
-   comm.Bcast(new_scale,0);
+   double new_scale = scale_;
+   if(doscale_) {
+     const double r1 = static_cast<double>(rand()) / RAND_MAX;
+     const double ds1 = -Dscale_ + r1 * 2.0 * Dscale_;
+     new_scale += ds1;
+     // check boundaries
+     if(new_scale > scale_max_){new_scale = 2.0 * scale_max_ - new_scale;}
+     if(new_scale < scale_min_){new_scale = 2.0 * scale_min_ - new_scale;}
+     // the scaling factor should be the same for all the replicas
+     if(comm.Get_rank()==0) multi_sim_comm.Bcast(new_scale,0);
+     comm.Bcast(new_scale,0);
+   }
+ 
    // propose move for sigma
    vector<double> new_sigma(sigma_.size());
    for(unsigned j=0;j<sigma_.size();++j) {
@@ -285,8 +318,10 @@ void BayesianGJE::doMonteCarlo(){
      if(new_sigma[j] > sigma_max_){new_sigma[j] = 2.0 * sigma_max_ - new_sigma[j];}
      if(new_sigma[j] < sigma_min_){new_sigma[j] = 2.0 * sigma_min_ - new_sigma[j];}
    }
+
    // calculate new energy
    const double new_energy = getEnergy(new_sigma,new_scale);
+
    // accept or reject
    const double delta = ( new_energy - old_energy ) / kbt_;
    // if delta is negative always accept move
@@ -305,13 +340,16 @@ void BayesianGJE::doMonteCarlo(){
      MCaccept_++;
     }
    }
-   // the scaling factor should be the same for all the replicas
-   if(comm.Get_rank()==0) multi_sim_comm.Bcast(scale_,0);
-   comm.Bcast(scale_,0);
+
+   if(doscale_) {
+     // the scaling factor should be the same for all the replicas
+     if(comm.Get_rank()==0) multi_sim_comm.Bcast(scale_,0);
+     comm.Bcast(scale_,0);
+   }
  }
 }
 
-void BayesianGJE::update(){
+void BayesianGJE::prepare(){
   // get time step 
   const long int step = getStep();
   // do MC stuff at the right time step
@@ -354,20 +392,33 @@ void BayesianGJE::calculate(){
   double ene = 0.0;
   for(unsigned i=0;i<narg;++i){
     const double dev = scale_*getArgument(i)-parameters[i]; 
-    // increment energy
-    ene += 0.5*dev*dev*inv_s2[i] + std::log(ss[i]*sqrt2pi); 
-    // set derivatives
-    setOutputForce(i, -kbt_*dev*scale_*inv_s2[i]);
-    // set value of data uncertainty
-    valueSigma[i]->set(sigma_[i]);
-    // and of the harmonic restraint
-    valueKappa[i]->set(kbt_*inv_s2[i]);
+    if(multisigma_) {
+      // increment energy
+      ene += 0.5*dev*dev*inv_s2[i] + std::log(ss[i]*sqrt2pi); 
+      // set derivatives
+      setOutputForce(i, -kbt_*dev*scale_*inv_s2[i]);
+      // set value of data uncertainty
+      valueSigma[i]->set(sigma_[i]);
+      // and of the harmonic restraint
+      valueKappa[i]->set(kbt_*inv_s2[i]);
+    } else {
+      // increment energy
+      ene += 0.5*dev*dev*inv_s2[0] + std::log(ss[0]*sqrt2pi); 
+      // set derivatives
+      setOutputForce(i, -kbt_*dev*scale_*inv_s2[0]);
+    }
   }
 
+  if(!multisigma_) {
+    // set value of data uncertainty
+    valueSigma[0]->set(sigma_[0]);
+    // and of the harmonic restraint
+    valueKappa[0]->set(kbt_*inv_s2[0]);
+  }
   // set value of the bias
   valueBias->set(kbt_*ene);
   // set value of scale parameter 
-  valueScale->set(scale_);
+  if(doscale_) valueScale->set(scale_);
 }
 
 }
