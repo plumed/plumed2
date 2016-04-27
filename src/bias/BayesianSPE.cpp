@@ -101,7 +101,6 @@ class BayesianSPE : public Bias
 public:
   BayesianSPE(const ActionOptions&);
   void calculate();
-  //void update();
   static void registerKeywords(Keywords& keys);
 };
 
@@ -315,22 +314,6 @@ void BayesianSPE::doMonteCarlo(){
   }
  }
 }
-
-/*
-void BayesianSPE::update(){
-  // get time step 
-  const long int step = getStep();
-  // do MC stuff at the right time step
-  if(step%MCstride_==0) doMonteCarlo();
-  // this is needed when restarting simulations
-  if(MCfirst_==-1) MCfirst_=step;
-  // calculate acceptance
-  const double MCtrials = floor(static_cast<double>(step-MCfirst_) / static_cast<double>(MCstride_))+1.0;
-  const double accept = static_cast<double>(MCaccept_) / static_cast<double>(MCsteps_) / MCtrials;
-  // set value of acceptance
-  valueAccept->set(accept);
-}
-*/
 
 void BayesianSPE::calculate(){
   // get time step 
