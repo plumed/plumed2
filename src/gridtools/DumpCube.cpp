@@ -23,7 +23,7 @@
 #include "ActionWithInputGrid.h"
 #include "tools/OFile.h"
 
-//+PLUMEDOC GRIDANALYSIS PRINT_CUBE
+//+PLUMEDOC GRIDANALYSIS DUMPCUBE
 /*
 Output a three dimensional grid using the Gaussian cube file format.
 
@@ -35,27 +35,27 @@ Output a three dimensional grid using the Gaussian cube file format.
 namespace PLMD {
 namespace gridtools {
 
-class PrintCube : public ActionWithInputGrid {
+class DumpCube : public ActionWithInputGrid {
 private:
   std::string fmt, filename;
 public:
   static void registerKeywords( Keywords& keys );
-  explicit PrintCube(const ActionOptions&ao); 
+  explicit DumpCube(const ActionOptions&ao); 
   void performOperationsWithGrid( const bool& from_update );
   unsigned getNumberOfDerivatives(){ return 0; }
   void performTask( const unsigned& , const unsigned& , MultiValue& ) const {}
   bool isPeriodic(){ return false; }
 };
 
-PLUMED_REGISTER_ACTION(PrintCube,"PRINT_CUBE")
+PLUMED_REGISTER_ACTION(DumpCube,"DUMPCUBE")
 
-void PrintCube::registerKeywords( Keywords& keys ){
+void DumpCube::registerKeywords( Keywords& keys ){
   ActionWithInputGrid::registerKeywords( keys );
   keys.add("compulsory","FILE","density","the file on which to write the grid."); 
   keys.add("optional","FMT","the format that should be used to output real numbers");
 }
 
-PrintCube::PrintCube(const ActionOptions&ao):
+DumpCube::DumpCube(const ActionOptions&ao):
 Action(ao),
 ActionWithInputGrid(ao),
 fmt("%f")
@@ -69,8 +69,8 @@ fmt("%f")
   checkRead();
 }
 
-void PrintCube::performOperationsWithGrid( const bool& from_update ){
-  if( !from_update && !single_run ) return ;
+void DumpCube::performOperationsWithGrid( const bool& from_update ){
+  if( !from_update && getStride()>0 ) return ;
   OFile ofile; ofile.link(*this);
   if( from_update ) ofile.setBackupString("analysis");
   ofile.open( filename );

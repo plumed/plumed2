@@ -56,7 +56,6 @@ PLUMED_REGISTER_ACTION(InterpolateGrid,"INTERPOLATE_GRID")
 
 void InterpolateGrid::registerKeywords( Keywords& keys ){
   ActionWithInputGrid::registerKeywords( keys );
-  keys.reset_style("STRIDE","hidden"); keys.remove("USE_ALL_DATA");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
 }

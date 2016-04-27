@@ -46,7 +46,6 @@ public:
   virtual double getGridElement( const unsigned& ipoint, const unsigned& jelement ) const ;
   bool applyForce(  std::vector<double>& forces ){ return false; }
   void reset();
-  void incorporateRestartDataIntoGrid( const double& old_norm, std::vector<double>& indata );
 };
 
 }

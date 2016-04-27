@@ -34,7 +34,7 @@ class GridVessel : public vesselbase::Vessel {
 friend class ActionWithInputGrid;
 friend class AverageOnGrid;
 friend class GridFunction;
-friend class PrintGrid;
+friend class DumpGrid;
 private:
 /// The grid was recently cleared and bounds can be set
  bool wascleared;
@@ -172,8 +172,6 @@ public:
  void activateThesePoints( const std::vector<bool>& to_activate );
 /// Is this point active
  bool inactive( const unsigned& ip ) const ;
-///
- virtual void incorporateRestartDataIntoGrid( const double& old_norm, std::vector<double>& indata ) = 0;
 /// Functions for dealing with normalisation constant
  void setNorm( const double& snorm );
  double getNorm() const ;

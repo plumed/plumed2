@@ -37,13 +37,7 @@ contourfinding(false)
 {
   ActionWithInputGrid* myfunc = dynamic_cast<ActionWithInputGrid*>( getAction() );
   plumed_assert( myfunc ); nomemory=false;
-  if( (myfunc->mygrid)->nomemory ) nomemory=true; 
 
-  if( !nomemory ){
-     HistogramOnGrid* myhist = dynamic_cast<HistogramOnGrid*>( myfunc->mygrid );
-     if( myhist && (myfunc->mygrid)->foundprint && (!myfunc->single_run  || (myfunc->mygrid)->nomemory) ) error("cannot convert a histogram to a free energy after print");
-     else if( myhist ) (myfunc->mygrid)->foundprint=true;
-  }
   // This prevents calculate ballsing stuff up with contour finding
   ContourFindingBase* mycont = dynamic_cast<ContourFindingBase*>( getAction() );
   if( mycont ) contourfinding = true;
@@ -53,17 +47,6 @@ void GridFunction::calculate( const unsigned& current, MultiValue& myvals, std::
   if( contourfinding ) return;
   plumed_dbg_assert( myvals.getNumberOfValues()==(nper+1) );
   for(unsigned i=0;i<nper;++i) buffer[bufstart + nper*current + i] += myvals.get(i+1);
-}
-
-void GridFunction::incorporateRestartDataIntoGrid( const double& old_norm, std::vector<double>& indata ){
-  ActionWithInputGrid* myfunc = dynamic_cast<ActionWithInputGrid*>( getAction() );
-  std::vector<double> pin( nper ), pout( nper ); setNorm( 1. + getNorm() / old_norm ); 
-  for(unsigned i=0;i<getNumberOfPoints();++i){
-      for(unsigned j=0;j<nper;++j) pin[j]=indata[i*nper+j];
-      myfunc->invertTask( pin, pout ); 
-      for(unsigned j=0;j<nper;++j) indata[i*nper+j]=pout[j]; 
-  } 
-  (myfunc->mygrid)->incorporateRestartDataIntoGrid( old_norm, indata );
 }
 
 }

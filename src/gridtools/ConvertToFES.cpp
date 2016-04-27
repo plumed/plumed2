@@ -57,7 +57,6 @@ PLUMED_REGISTER_ACTION(ConvertToFES,"CONVERT_TO_FES")
 void ConvertToFES::registerKeywords( Keywords& keys ){
   ActionWithInputGrid::registerKeywords( keys );
   keys.add("optional","TEMP","the temperature at which you are operating");
-  keys.reset_style("STRIDE","hidden"); keys.remove("USE_ALL_DATA");
 }
 
 ConvertToFES::ConvertToFES(const ActionOptions&ao):

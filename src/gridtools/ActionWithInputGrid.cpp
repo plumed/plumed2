@@ -31,16 +31,14 @@ void ActionWithInputGrid::registerKeywords( Keywords& keys ){
   ActionPilot::registerKeywords( keys );
   vesselbase::ActionWithVessel::registerKeywords( keys );
   keys.add("compulsory","GRID","the action that creates the input grid you would like to use");
-  keys.add("optional","STRIDE","the frequency with which to output the grid");
+  keys.add("compulsory","STRIDE","0","the frequency with which to output the grid.  Default of zero means analyse all data");
   keys.add("optional","COMPONENT","if your input is a vector field use this to specifiy the component of the input vector field for which you wish to use");
-  keys.addFlag("USE_ALL_DATA",false,"use the data from the entire trajectory to perform the analysis");
 }
 
 ActionWithInputGrid::ActionWithInputGrid(const ActionOptions&ao):
 Action(ao),
 ActionPilot(ao),
 ActionWithVessel(ao),
-single_run(true),
 mygrid(NULL)
 {
   std::string mlab; parse("GRID",mlab);
@@ -50,9 +48,9 @@ mygrid(NULL)
 
   ActionPilot* ap=dynamic_cast<ActionPilot*>( mves );
   if( ap ){
-     if( getStride()%ap->getStride()!=0 ) error("mismatch between strides in " + ap->getLabel() + " and " +  getLabel() );
+     // This is perhaps necessary check what happens if Print is called between kernel adding GAT  
+     if( getStride()>0 && getStride()%ap->getStride()!=0 ) error("mismatch between strides in " + ap->getLabel() + " and " +  getLabel() );
   }
-
   for(unsigned i=0;i<mves->getNumberOfVessels();++i){
       mygrid=dynamic_cast<GridVessel*>( mves->getPntrToVessel(i) );
       if( mygrid ) break; 
@@ -68,27 +66,12 @@ mygrid(NULL)
   }
   log.printf("  using %uth component of grid calculated by action %s \n",mycomp,mves->getLabel().c_str() );
 
-  if( keywords.exists("USE_ALL_DATA") ){
-     parseFlag("USE_ALL_DATA",single_run);
-     if( !single_run ){
-        mves->setAnalysisStride( false, getStride() ); 
-        log.printf("  outputting every %u steps \n", getStride() );
-     } else {
-        log.printf("  outputting at end of calculation\n");
-     }
-  }
-}
-
-void ActionWithInputGrid::setAnalysisStride( const bool& use_all, const unsigned& astride ){
-  single_run=use_all; mves->setAnalysisStride( use_all, astride );
-  if( !single_run ) setStride( astride ); 
+  if( getStride()>0 ) log.printf("  outputting every %u steps \n", getStride() );
 }
 
 void ActionWithInputGrid::update(){
   // Don't analyse the first frame in the trajectory
-  if( single_run || getStep()==0 ) return;
-  // Now check that all stuff for restarting is done correctly
-  if( !mygrid->nomemory && !mygrid->foundprint ) error("an additional PRINT_GRID action is required before this action so grid is restarted correctly");
+  if( getStep()==0 ) return;
 
   if( checkAllActive() ){
      for(unsigned i=0;i<mygrid->getNumberOfPoints();++i){
@@ -96,12 +79,10 @@ void ActionWithInputGrid::update(){
      }
   }
   performOperationsWithGrid( true );
-  // Get the grid ready for next time
-  mygrid->reset();
 }
 
 void ActionWithInputGrid::runFinalJobs(){
-  if( !single_run ) return ;
+  if( getStride()>0 ) return;
   performOperationsWithGrid( false );
 }
 

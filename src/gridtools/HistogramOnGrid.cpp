@@ -113,12 +113,5 @@ double HistogramOnGrid::getGridElement( const unsigned& ipoint, const unsigned& 
   return GridVessel::getGridElement( ipoint, jelement ) / norm;
 } 
 
-void HistogramOnGrid::incorporateRestartDataIntoGrid( const double& old_norm, std::vector<double>& indata ){
-  plumed_assert( data.size()==indata.size() && !nomemory ); noreadin=false; 
-  save_norm = old_norm + getNorm(); if( old_norm>0 ) setNorm( 1. + getNorm() / old_norm ); 
-  if( unormalised ) for(unsigned i=0;i<data.size();++i) data[i] = old_norm*data[i] + indata[i]; 
-  else for(unsigned i=0;i<data.size();++i) data[i] += indata[i]; 
-}
-
 }
 }

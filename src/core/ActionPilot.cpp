@@ -36,7 +36,8 @@ stride(1)
 }
 
 bool ActionPilot::onStep()const{
-  return getStep()%stride==0;
+  if( stride>0 ) return getStep()%stride==0;
+  return false;
 }
 
 int ActionPilot::getStride()const{

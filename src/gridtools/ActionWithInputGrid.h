@@ -33,12 +33,11 @@ public ActionPilot,
 public vesselbase::ActionWithVessel
 {
 friend class GridFunction;
-friend class PrintGrid;
+friend class DumpGrid;
 private:
   unsigned mycomp;
   vesselbase::ActionWithVessel* mves;
 protected:
-  bool single_run;
   GridVessel* mygrid;
   double getFunctionValue( const unsigned& ipoint ) const ;
   double getFunctionValue( const std::vector<unsigned>& ip ) const ;
@@ -52,8 +51,6 @@ public:
   void runFinalJobs();
   virtual bool checkAllActive() const { return true; }
   virtual void performOperationsWithGrid( const bool& from_update )=0;
-  void setAnalysisStride( const bool& use_all, const unsigned& astride );
-  virtual bool isGridPrint() const { return false; }
   virtual void invertTask( const std::vector<double>& indata, std::vector<double>& outdata );
 };
 

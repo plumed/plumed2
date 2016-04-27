@@ -100,7 +100,8 @@ class MultiColvarDensity :
   public vesselbase::ActionWithInputVessel
 {
   std::string kerneltype;
-  bool nomemory, fractional, single_run;
+  unsigned clearstride;
+  bool fractional;
   MultiColvarBase* mycolv;
   std::vector<unsigned> nbins;
   std::vector<double> gspacing;
@@ -118,7 +119,6 @@ public:
   void calculateNumericalDerivatives( ActionWithValue* a=NULL ){ plumed_error(); }
   bool isPeriodic(){ return false; }
   unsigned getNumberOfDerivatives(){ return 0; }
-  void setAnalysisStride( const bool& use_all, const unsigned& astride ){ single_run=use_all; }
   void performTask( const unsigned& , const unsigned& , MultiValue& ) const ;
   void apply(){}
   void update();
@@ -142,8 +142,8 @@ void MultiColvarDensity::registerKeywords( Keywords& keys ){
                                             "in plumed plumed can be found in \\ref kernelfunctions.");
   keys.addFlag("UNORMALIZED",false,"output the unormalized density on the grid.  In other words with this flag \\f$ \\sum_i K(\\mathbf{r}-\\mathbf{r}_i) \\phi_i \\f$ is output");
   keys.addFlag("FRACTIONAL",false,"use fractional coordinates on the x-axis");
-  keys.addFlag("NOMEMORY",false,"do a block averaging rather than a cumulative average");
   keys.addFlag("XREDUCED",false,"limit the calculation of the density/average to a portion of the z-axis only");
+  keys.add("compulsory","CLEAR","0","the frequency with which to clear all the accumulated data.  The default value of 0 implies that all the data will be used");
   keys.add("optional","XLOWER","this is required if you are using XREDUCED. It specifes the lower bound for the region of the x-axis that for "
                                "which you are calculating the density/average");
   keys.add("optional","XUPPER","this is required if you are using XREDUCED. It specifes the upper bound for the region of the x-axis that for "
@@ -165,8 +165,7 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
   ActionPilot(ao),
   ActionAtomistic(ao),
   ActionWithVessel(ao),
-  ActionWithInputVessel(ao),
-  single_run(true)
+  ActionWithInputVessel(ao)
 {
 
   std::vector<AtomNumber> atom;
@@ -258,8 +257,12 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
     else if( directions[i]==1 ) vstring+=",y";
     else if( directions[i]==2 ) vstring+=",z";
   }
-  parseFlag("NOMEMORY",nomemory);
-  if( nomemory ) vstring += " NOMEMORY";
+  parse("CLEAR",clearstride);
+  if( clearstride>0 ){
+      if( clearstride%getStride()!=0 ) error("CLEAR parameter must be a multiple of STRIDE");
+      log.printf("  clearing grid every %d steps \n",clearstride);
+      vstring += " NOMEMORY";
+  }
 
   bool sumflag; parseFlag("UNORMALIZED",sumflag);
   if( sumflag ) vstring += " UNORMALIZED";
@@ -289,7 +292,8 @@ unsigned MultiColvarDensity::getNumberOfQuantities() const {
 }
 
 void MultiColvarDensity::update(){
-  if( !single_run && getStep()==0 ) return;
+  if( getStep()==0 || !onStep() ) return;
+  // Set the normalization constant
 
   if( mygrid->wasreset() ){
      std::vector<double> min(directions.size()), max(directions.size());
@@ -326,6 +330,8 @@ void MultiColvarDensity::update(){
   origin = getPosition(0);
   if( mycolv->isDensity() ) mygrid->setNorm( 1. + mygrid->getNorm() );
   runAllTasks();  
+  // By resetting here we are ensuring that the grid will be cleared at the start of the next step
+  if( clearstride>0 && getStep()%clearstride==0 ) mygrid->reset();
 }
 
 void MultiColvarDensity::performTask( const unsigned& tindex, const unsigned& current, MultiValue& myvals ) const {

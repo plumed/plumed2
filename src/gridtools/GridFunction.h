@@ -36,7 +36,6 @@ public:
   explicit GridFunction( const vesselbase::VesselOptions& da );
   void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
   bool applyForce(  std::vector<double>& forces ){ return false; }
-  void incorporateRestartDataIntoGrid( const double& old_norm, std::vector<double>& indata );
 };
 
 }

@@ -80,7 +80,7 @@ void GridVessel::setNoDerivatives(){
 void GridVessel::setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax,
                             const std::vector<unsigned>& binsin, const std::vector<double>& spacing ){
   plumed_dbg_assert( smin.size()==dimension && smax.size()==dimension );
-  plumed_assert( wascleared && spacing.size()==dimension || binsin.size()==dimension );
+  plumed_assert( (spacing.size()==dimension || binsin.size()==dimension) );
 
   npoints=1; bounds_set=true;
   stride.resize( dimension ); max.resize( dimension );
@@ -285,8 +285,8 @@ void GridVessel::reset(){
 }
 
 void GridVessel::clear(){
-  plumed_assert( wascleared ); 
-  norm=0.; data.assign( data.size(), 0.0 );
+  plumed_assert( wasreset() ); 
+  norm=0; data.assign( data.size(), 0.0 );
 }
 
 void GridVessel::setCubeUnits( const double& units ){
