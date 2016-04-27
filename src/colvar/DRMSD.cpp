@@ -24,6 +24,7 @@
 #include "ActionRegister.h"
 #include "tools/PDB.h"
 #include "reference/DRMSD.h"
+#include "reference/MetricRegister.h"
 #include "core/Atoms.h"
 
 using namespace std;
@@ -95,6 +96,7 @@ void DRMSD::registerKeywords(Keywords& keys){
   keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
   keys.add("compulsory","LOWER_CUTOFF","only pairs of atoms further than LOWER_CUTOFF are considered in the calculation.");
   keys.add("compulsory","UPPER_CUTOFF","only pairs of atoms closer than UPPER_CUTOFF are considered in the calculation.");
+  keys.add("compulsory","TYPE","DRMSD","what kind of DRMSD would you like to calculate");
 }
 
 DRMSD::DRMSD(const ActionOptions&ao):
@@ -120,8 +122,8 @@ PLUMED_COLVAR_INIT(ao), pbc_(true), myvals(1,0), mypack(0,0,myvals)
       error("missing input file " + reference );
 
   // store target_ distance
-  ReferenceConfigurationOptions ro( "DRMSD" );
-  drmsd_= new PLMD::DRMSD( ro );
+  std::string type; parse("TYPE",type);
+  drmsd_= metricRegister().create<PLMD::DRMSD>( type );
   drmsd_->setBoundsOnDistances( !nopbc, lcutoff, ucutoff );
   drmsd_->set( pdb );
 
