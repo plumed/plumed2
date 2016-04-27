@@ -23,16 +23,17 @@ MD code) to stop the calculation one some criteria is satisified.
 
 A number of more complicated forms of analysis can be performed that take a number of frames from 
 the trajectory as input.  In all these commands the STRIDE keyword is used to tell PLUMED how 
-frequently to collect data from the trajectory.  Once a asufficient ammount of data is collected
-some representation of the frames of the trajectory that were collected is output with a notionally 
+frequently to collect data from the trajectory.  Once a sufficient ammount of data is collected
+some representation of the frames of the trajectory that was collected is output with a notionally 
 lower information content.  For example you might output a histogram as a function of some collective 
-variables or some lower dimensionality representation of the block of data.  The following Actions
-allow you to calculate a low-dimensional function from the trajectory. 
+variables or some lower dimensionality representation of the block of data.  
+
+The following Actions allow you to calculate a low-dimensional function from the trajectory. 
 
 @GRIDCALC@
 
-For all the above commands data is accumulated on the grids above until such time as one of the actions 
-detailed below is called on stride.  
+For all the above commands data is accumulated on the grids.  The grid calculated can then be further 
+analysed using one of the actions detailed below at some time.  
 
 @GRIDANALYSIS@
 
@@ -43,29 +44,35 @@ which will be output every 100 steps (i.e. when 20 distances have been added to 
 \verbatim
 x: DISTANCE ATOMS=1,2
 h: HISTOGRAM ARG=x GRID_MIN=0.0 GRID_MAX=3.0 GRID_BIN=100 BANDWIDTH=0.1 STRIDE=5
-PRINT_GRID GRID=h FILE=histo STRIDE=100 
+DUMPGRID GRID=h FILE=histo STRIDE=100 
 \endverbatim
 
 It is important to note when using commands such as the above to post-process trajectories using
 \ref driver that the first frame in the trajectory is assumed to be the initial configuration that
-was input to the MD code and is thus ignored.  If you would like to analyse all the data in the trajectory
-(including the first frame) you can do so using the USE_ALL_DATA keyword as shown in the example below.
+was input to the MD code. It is thus ignored.  Furthermore, if you are running with driver and you would
+like to analyse the whole trajectory (without specifying its length) and then print the result you simply 
+call \ref DUMPGRID (or any of the commands above) without a STRIDE keyword as shown in the example below. 
 
 \verbatim
 x: DISTANCE ATOMS=1,2
 h: HISTOGRAM ARG=x GRID_MIN=0.0 GRID_MAX=3.0 GRID_BIN=100 BANDWIDTH=0.1 STRIDE=5
-PRINT_GRID GRID=h FILE=histo USE_ALL_DATA
+DUMPGRID GRID=h FILE=histo 
 \endverbatim
+
+Please note that even with this calculation the first frame in the trajectory is ignored when computing the 
+histogram.
 
 Notice that all the commands for calculating smooth functions described above calculate some sort of 
 average.  There are two ways that you may wish to average the data in your trajectory:
 
 - You might want to calculate block averages in which the first \f$N\f$N frames in your trajectory are
 averaged separately to the second block of \f$N\f$ frames.  If this is the case you should use the 
-keyword NOMEMORY in the input to the action that calculates the smooth function.
+keyword CLEAR in the input to the action that calculates the smooth function.  This keyword is used to 
+specify how frequently you are clearing the stored data.
 
 - You might want to calculate an accumulate an average over the whole trajectory and output the average
-accumulated at step \f$N\f$, step \f$2N\f$...  This is what PLUMED does by default.
+accumulated at step \f$N\f$, step \f$2N\f$...  This is what PLUMED does by default so you do not need to 
+use CLEAR in this case.
 
 \section dimred Dimensionality Reduction
 
@@ -76,8 +83,8 @@ reduction as detailed below.
 
 As with the grids described previously the STRIDE keyword tells PLUMED how frequently to collect data from 
 the trajectory.  The RUN keyword then tells PLUMED how frequently to do the dimensionality reduction.  As
-described above USE_ALL_DATA can be used to replace RUN if you would like to analyse all the data in a trajectory
-that is input to \ref driver.
+described above if RUN is not present and you are analysing trajectories using \ref driver all the data in 
+the traejctory (with the expection of the first frame) will be analysed. 
 
 */
 
