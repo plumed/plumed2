@@ -42,14 +42,15 @@ void DRMSD::setBoundsOnDistances( bool dopbc, double lbound, double ubound ){
   lower=lbound; upper=ubound;
 }
 
-void DRMSD::read( const PDB& pdb ){
-  readAtomsFromPDB( pdb );
-
+void DRMSD::readBounds(){
   parseFlag("NOPBC",nopbc);  
   parse("LOWER_CUTOFF",lower,true);
   parse("UPPER_CUTOFF",upper,true);
   setBoundsOnDistances( !nopbc, lower, upper );
-  setup_targets();
+}
+
+void DRMSD::read( const PDB& pdb ){
+  readAtomsFromPDB( pdb ); readBounds(); setup_targets();
 }
 
 void DRMSD::setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in ){
