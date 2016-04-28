@@ -141,7 +141,7 @@ Unreleased changes (will be included in 2.2.3)
 ----------------------------------------------
 
 For users:
-- Updated patch for gromacs 5.1.x to fix a problem when plumed was trying to write to an already
+- Updated patches for gromacs 5.1.x and 5.0.x to fix a problem when plumed was trying to write to an already
   closed gromacs log file.
 - When looking for a value outside the GRID now the error include the name of the responsible 
   collective variable
