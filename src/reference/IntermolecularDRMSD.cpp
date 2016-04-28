@@ -38,7 +38,8 @@ PLUMED_REGISTER_METRIC(IntermolecularDRMSD,"INTER-DRMSD")
 
 IntermolecularDRMSD::IntermolecularDRMSD( const ReferenceConfigurationOptions& ro ):
 ReferenceConfiguration( ro ),
-DRMSD( ro )
+DRMSD( ro ),
+nblocks(0)
 {
 }
 
