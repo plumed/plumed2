@@ -37,9 +37,9 @@ void GridVessel::registerKeywords( Keywords& keys ){
 
 GridVessel::GridVessel( const vesselbase::VesselOptions& da ):
 Vessel(da),
-wascleared(true), 
 bounds_set(false),
 cube_units(1.0),
+wascleared(true), 
 norm(0.0),
 noderiv(false)
 {
@@ -123,7 +123,7 @@ std::string GridVessel::description(){
 
 void GridVessel::resize(){
   plumed_massert( nper>0, "Number of datapoints at each grid point has not been set");
-  resizeBuffer( npoints*nper ); 
+  resizeBuffer( getNumberOfBufferPoints()*nper ); 
   if( data.size()!=npoints*nper ){ 
       data.resize( npoints*nper, 0 ); 
       active.resize( npoints, true );

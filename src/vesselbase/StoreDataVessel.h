@@ -89,8 +89,6 @@ public:
   explicit StoreDataVessel( const VesselOptions& );
 /// Get the number of values that have been stored
   virtual unsigned getNumberOfStoredValues() const ;
-/// Get the index to store a particular index inside
-  unsigned getStoreIndex( const unsigned& ) const ;
 /// Recalculate one of the base quantities
   virtual void recalculateStoredQuantity( const unsigned& myelm, MultiValue& myvals );
 /// Set a hard cutoff on the weight of an element
@@ -157,7 +155,7 @@ inline
 bool StoreDataVessel::storedValueIsActive( const unsigned& iatom ) const {
   if( !getAction()->taskIsCurrentlyActive( iatom ) ) return false;
   if( !hard_cut ) return true; 
-  unsigned jatom = getStoreIndex( iatom );
+  unsigned jatom = getAction()->getPositionInCurrentTaskList( iatom );
   plumed_dbg_assert( jatom<getNumberOfStoredValues() );
   return local_buffer[jatom*vecsize*nspace]>wtol;   // (active_val[iatom]==1);
 }
@@ -170,16 +168,6 @@ unsigned StoreDataVessel::getSizeOfDerivativeList() const {
 inline
 unsigned StoreDataVessel::getNumberOfStoredValues() const {
   return getAction()->nactive_tasks;
-}
-
-inline
-unsigned StoreDataVessel::getStoreIndex( const unsigned& ind ) const {
-  if( getAction()->nactive_tasks==getAction()->getFullNumberOfTasks() ) return ind;
-
-  for(unsigned i=0;i<getAction()->nactive_tasks;++i){
-      if( ind==getAction()->indexOfTaskInFullList[i] ) return i;
-  }
-  plumed_merror("requested task is not active");
 }
 
 inline

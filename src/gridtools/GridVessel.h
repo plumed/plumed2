@@ -36,8 +36,6 @@ friend class AverageOnGrid;
 friend class GridFunction;
 friend class DumpGrid;
 private:
-/// The grid was recently cleared and bounds can be set
- bool wascleared;
 /// Have the minimum and maximum for the grid been set
  bool bounds_set;
 /// The number of points in the grid
@@ -55,6 +53,8 @@ private:
 /// The grid point that was requested last by getGridPointCoordinates
  unsigned currentGridPoint;
 protected:
+/// The grid was recently cleared and bounds can be set
+ bool wascleared;
 /// Do we have derivatives
  bool noderiv;
 /// The names of the various columns in the grid file
@@ -130,6 +130,8 @@ public:
  std::vector<std::string> getMin() const ;
 /// Get the vector containing the maximum value of the grid in each dimension
  std::vector<std::string> getMax() const ;
+/// Get the number of points needed in the buffer
+ virtual unsigned getNumberOfBufferPoints() const ;
 /// Get the stride (the distance between the grid points of an index)
  const std::vector<unsigned>& getStride() const ;
 /// Return the volume of one of the grid cells
@@ -150,7 +152,7 @@ public:
 /// Get the extent of the grid in one of the axis
  double getGridExtent( const unsigned& i ) const ;
 /// Copy data from an accumulated buffer into the grid
- void finish( const std::vector<double>& );
+ virtual void finish( const std::vector<double>& );
 /// Clear all the data stored on the grid
  virtual void clear();
 /// Reset the grid so that it is cleared at start of next time it is calculated
@@ -253,6 +255,11 @@ double GridVessel::getNorm() const {
 inline
 const std::vector<unsigned>& GridVessel::getStride() const {
   return stride;
+}
+
+inline
+unsigned GridVessel::getNumberOfBufferPoints() const {
+  return npoints;
 }
 
 }

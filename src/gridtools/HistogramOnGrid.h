@@ -25,12 +25,15 @@
 #include "GridVessel.h"
 
 namespace PLMD {
+
+class KernelFunctions;
+
 namespace gridtools {
 
 class HistogramOnGrid : public GridVessel {
 private:
-  bool noreadin;
-  double save_norm;
+  unsigned neigh_tot;
+  bool addOneKernelAtATime;
   std::string kerneltype;
   std::vector<double> bandwidths;
   std::vector<unsigned> nneigh;
@@ -42,11 +45,21 @@ public:
   void setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax,
                   const std::vector<unsigned>& nbins, const std::vector<double>& spacing );
   void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
+  void finish( const std::vector<double>& buffer );
   virtual void accumulate( const unsigned& ipoint, const double& weight, const double& dens, const std::vector<double>& der, std::vector<double>& buffer ) const ;
   virtual double getGridElement( const unsigned& ipoint, const unsigned& jelement ) const ;
   bool applyForce(  std::vector<double>& forces ){ return false; }
-  void reset();
+  unsigned getNumberOfBufferPoints() const ;
+  KernelFunctions* getKernelAndNeighbors( std::vector<double>& point, unsigned& num_neigh, std::vector<unsigned>& neighbors ) const;
+  std::vector<Value*> getVectorOfValues() const ;
+  void addOneKernelEachTimeOnly(){ addOneKernelAtATime=true; }
 };
+
+inline
+unsigned HistogramOnGrid::getNumberOfBufferPoints() const {
+  if( addOneKernelAtATime ) return neigh_tot;
+  return GridVessel::getNumberOfBufferPoints();
+}
 
 }
 }

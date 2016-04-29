@@ -51,7 +51,6 @@ public:
   void runFinalJobs();
   virtual bool checkAllActive() const { return true; }
   virtual void performOperationsWithGrid( const bool& from_update )=0;
-  virtual void invertTask( const std::vector<double>& indata, std::vector<double>& outdata );
 };
 
 inline

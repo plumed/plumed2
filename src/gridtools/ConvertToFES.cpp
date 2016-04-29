@@ -48,7 +48,6 @@ public:
   unsigned getNumberOfDerivatives(){ return 0; }
   unsigned getNumberOfQuantities() const ;
   void performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const ;
-  void invertTask( const std::vector<double>& indata, std::vector<double>& outdata );
   bool isPeriodic(){ return false; }
 };
 
@@ -57,6 +56,7 @@ PLUMED_REGISTER_ACTION(ConvertToFES,"CONVERT_TO_FES")
 void ConvertToFES::registerKeywords( Keywords& keys ){
   ActionWithInputGrid::registerKeywords( keys );
   keys.add("optional","TEMP","the temperature at which you are operating");
+  keys.reset_style("STRIDE","hidden");
 }
 
 ConvertToFES::ConvertToFES(const ActionOptions&ao):
@@ -98,7 +98,7 @@ unsigned ConvertToFES::getNumberOfQuantities() const {
 void ConvertToFES::performOperationsWithGrid( const bool& from_update ){
   std::vector<double> fspacing;
   outgrid->setBounds( mygrid->getMin(), mygrid->getMax(), mygrid->getNbin(), fspacing); 
-  outgrid->clear(); outgrid->setNorm( mygrid->getNorm() ); runAllTasks(); 
+  outgrid->clear(); outgrid->setNorm( mygrid->getNorm() ); runAllTasks(); outgrid->reset();
 }
 
 void ConvertToFES::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
@@ -106,15 +106,6 @@ void ConvertToFES::performTask( const unsigned& task_index, const unsigned& curr
   myvals.setValue( 0, 1.0 ); myvals.setValue(1, -simtemp*std::log(val) );
   if( !mygrid->noDerivatives() && val>0 ){
      for(unsigned i=0;i<mygrid->getDimension();++i) myvals.setValue( 2+i, -(simtemp/val)*mygrid->getGridElement(current,i+1) );
-  }
-}
-
-void ConvertToFES::invertTask( const std::vector<double>& indata, std::vector<double>& outdata ){
-  if( fabs( indata[0] )>epsilon ){
-      outdata[0] = exp( -indata[0]/simtemp );
-      for(unsigned i=0;i<mygrid->getDimension();++i) outdata[1+i] = -(outdata[0]/simtemp)*indata[1+i];  
-  } else {
-      for(unsigned i=0;i<outdata.size();++i) outdata[i]=0.;
   }
 }
 

@@ -19,14 +19,12 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Analysis.h"
-#include "core/PlumedMain.h"
+#include "core/ActionWithArguments.h"
+#include "core/ActionPilot.h"
 #include "core/ActionRegister.h"
-#include "tools/Grid.h"
 #include "tools/KernelFunctions.h"
-#include "tools/IFile.h"
-#include "tools/OFile.h"
 #include "gridtools/HistogramOnGrid.h"
+#include "vesselbase/ActionWithVessel.h"
 
 namespace PLMD{
 namespace analysis{
@@ -114,68 +112,77 @@ HISTOGRAM ...
 */
 //+ENDPLUMEDOC
 
-class Histogram : public Analysis {
+class Histogram : 
+  public ActionPilot,
+  public ActionWithArguments,
+  public vesselbase::ActionWithVessel 
+  {
 private:
+  unsigned clearstride;
+  KernelFunctions* kernel;
   gridtools::HistogramOnGrid* mygrid;
-  std::vector<double> point, bw;
-  std::vector<unsigned> gbin;
-  std::string gridfname;
-  std::string kerneltype;
-  bool fenergy; 
-  bool unnormalized;
 public:
   static void registerKeywords( Keywords& keys );
   explicit Histogram(const ActionOptions&ao);
-  void performAnalysis();
-  unsigned getNumberOfQuantities() const ;
+  void calculate(){}
+  void apply(){}
+  void update();
+  bool isPeriodic(){ return false; }
+  unsigned getNumberOfDerivatives(){ return getNumberOfArguments(); }
   void performTask( const unsigned& , const unsigned& , MultiValue& ) const ;
-  void setAnalysisStride( const bool& use_all, const unsigned& astride );
-  void finalizeWeights( const bool& ignore_weights );
 };
 
 PLUMED_REGISTER_ACTION(Histogram,"HISTOGRAM")
 
 void Histogram::registerKeywords( Keywords& keys ){
-  Analysis::registerKeywords( keys ); keys.reset_style("METRIC","hidden");
-  keys.remove("ATOMS"); keys.reset_style("ARG","compulsory");
-  keys.remove("RUN"); keys.remove("USE_ALL_DATA");
+  Action::registerKeywords( keys );
+  ActionPilot::registerKeywords( keys );
+  ActionWithArguments::registerKeywords( keys );
+  vesselbase::ActionWithVessel::registerKeywords( keys ); keys.use("ARG");
+  keys.add("compulsory","STRIDE","1","the frequency with which data should be stored for analysis");
   keys.add("compulsory","GRID_MIN","the lower bounds for the grid");
   keys.add("compulsory","GRID_MAX","the upper bounds for the grid");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
+  keys.add("compulsory","CLEAR","0","the frequency with which to clear all the accumulated data.  The default value of 0 implies that all the data will be used");
   keys.add("compulsory","KERNEL","gaussian","the kernel function you are using. Use discrete/DISCRETE if you want to accumulate a discrete histogram. \
                                              More details on the kernels available in plumed can be found in \\ref kernelfunctions.");
   keys.add("optional","BANDWIDTH","the bandwdith for kernel density estimation");
   keys.addFlag("UNORMALIZED",false,"Set to TRUE if you don't want histogram to be normalized or free energy to be shifted.");
-  keys.addFlag("NOMEMORY",false,"analyse each block of data separately");
 }
 
 Histogram::Histogram(const ActionOptions&ao):
-PLUMED_ANALYSIS_INIT(ao),
-mygrid(NULL),
-point(getNumberOfArguments()),
-fenergy(false),
-unnormalized(false)
+Action(ao),
+ActionPilot(ao),
+ActionWithArguments(ao),
+ActionWithVessel(ao),
+kernel(NULL),
+mygrid(NULL)
 {
   // Read stuff for grid
   std::vector<std::string> gmin( getNumberOfArguments() ), gmax( getNumberOfArguments() );
   parseVector("GRID_MIN",gmin); parseVector("GRID_MAX",gmax);
 
   // Setup input for grid vessel
-  std::string dmin, dmax, vstring = getKeyword("KERNEL") + " " + getKeyword("BANDWIDTH");
-  if( getPeriodicityInformation(0, dmin, dmax) ) vstring+=" PBC=T";
+  std::string vstring = getKeyword("KERNEL") + " " + getKeyword("BANDWIDTH");
+  if( getPntrToArgument(0)->isPeriodic() ) vstring+=" PBC=T";
   else vstring+=" PBC=F";
   for(unsigned i=1;i<getNumberOfArguments();++i){
-     if( getPeriodicityInformation(i, dmin, dmax) ) vstring+=",T";
+     if( getPntrToArgument(i)->isPeriodic() ) vstring+=",T";
      else vstring+=",F";
   }
   bool unorm=false; parseFlag("UNORMALIZED",unorm);
-  bool nomem=false; parseFlag("NOMEMORY",nomem);
   if( unorm ){
      log.printf("  working with unormalised grid \n");
      vstring += " UNORMALIZED";
   }
-  if( nomem ) vstring += " NOMEMORY";
+  parse("CLEAR",clearstride);
+  if( clearstride>0 ){
+      if( clearstride%getStride()!=0 ) error("CLEAR parameter must be a multiple of STRIDE");
+      log.printf("  clearing grid every %d steps \n",clearstride);
+      vstring += " NOMEMORY";
+  }
+
   vstring += " COMPONENTS=" + getLabel();
   vstring += " COORDINATES=" + getPntrToArgument(0)->getName();
   for(unsigned i=1;i<getNumberOfArguments();++i) vstring += "," + getPntrToArgument(i)->getName(); 
@@ -189,40 +196,53 @@ unnormalized(false)
   vesselbase::VesselOptions da("mygrid","",-1,vstring,this);
   Keywords keys; gridtools::HistogramOnGrid::registerKeywords( keys );
   vesselbase::VesselOptions dar( da, keys );
-  mygrid = new gridtools::HistogramOnGrid(dar); addVessel( mygrid );
-  mygrid->setBounds( gmin, gmax, nbin, gspacing );
-  resizeFunctions();
+  mygrid = new gridtools::HistogramOnGrid(dar); 
+  mygrid->setBounds( gmin, gmax, nbin, gspacing ); 
+  mygrid->addOneKernelEachTimeOnly();
 
+    // Create a task list
+  for(unsigned i=0;i<mygrid->getNumberOfPoints();++i) addTaskToList(i);
+  addVessel( mygrid ); resizeFunctions();
   checkRead();
 }
 
-void Histogram::setAnalysisStride( const bool& use_all, const unsigned& astride ){
-  Analysis::setAnalysisStride( use_all, astride ); 
-  if( getNumberOfDataPoints()==getFullNumberOfTasks() ) return ;
-  plumed_assert( getFullNumberOfTasks()==0 );
-  for(unsigned i=0;i<getNumberOfDataPoints();++i) addTaskToList( i );
-  deactivateAllTasks(); 
-  for(unsigned i=0;i<getNumberOfDataPoints();++i) taskFlags[i]=1;
-  lockContributors();
-}
+void Histogram::update(){
+  if( getStep()==0 || !onStep() ) return;
+  // Reset if it is time to reset
+  if( mygrid->wasreset() ) mygrid->clear();
+  // Now fetch the kernel and the active points
+  std::vector<double> point( getNumberOfArguments() );  
+  for(unsigned i=0;i<point.size();++i) point[i]=getArgument(i);
+  unsigned num_neigh; std::vector<unsigned> neighbors;
+  kernel = mygrid->getKernelAndNeighbors( point, num_neigh, neighbors );
+  if( num_neigh>1 ){
+      // Activate relevant tasks
+      deactivateAllTasks();
+      for(unsigned i=0;i<num_neigh;++i) taskFlags[neighbors[i]]=1; 
+      lockContributors();
 
-unsigned Histogram::getNumberOfQuantities() const {
-  return getNumberOfArguments() + 2;
+      // Calculate the grid at all relevant points
+      runAllTasks();
+  } else {
+      // This is used when we are not doing kernel density evaluation
+      mygrid->setGridElement( neighbors[0], 0, mygrid->getGridElement( neighbors[0], 0 ) + 1.0 ); 
+  }  
+  delete kernel; mygrid->setNorm( 1. + mygrid->getNorm() );
+
+  // By resetting here we are ensuring that the grid will be cleared at the start of the next step
+  if( clearstride>0 && getStep()%clearstride==0 ) mygrid->reset();
 }
 
 void Histogram::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {  
-  double weight; std::vector<double> point( getNumberOfArguments() );
-  getDataPoint( current, point, weight );
-  myvals.setValue( 0, 1.0 );
-  for(unsigned j=0;j<getNumberOfArguments();++j) myvals.setValue( 1+j, point[j] );
-  myvals.setValue( 1+getNumberOfArguments(), weight );
-}
-
-void Histogram::finalizeWeights( const bool& ignore_weights ){ finalizeWeightsNoLogSums( 1.0 ); }
-
-void Histogram::performAnalysis(){
-  if( mygrid->wasreset() ) mygrid->clear();
-  mygrid->setNorm( getNormalization() ); runAllTasks();
+  std::vector<Value*> vv( mygrid->getVectorOfValues() );
+  std::vector<double> val( getNumberOfArguments() ), der( getNumberOfArguments() ); 
+  // Retrieve the location of the grid point at which we are evaluating the kernel
+  mygrid->getGridPointCoordinates( current, val );
+  for(unsigned i=0;i<getNumberOfArguments();++i) vv[i]->set( val[i] );
+  // Evaluate the histogram at the relevant grid point and set the values 
+  double vvh = kernel->evaluate( vv, der ,true); myvals.setValue( 0, 1.0 ); myvals.setValue( 1, vvh );
+  // Set the derivatives and delete the vector of values
+  for(unsigned i=0;i<getNumberOfArguments();++i){ myvals.setDerivative( 1, i, der[i] ); delete vv[i]; }
 }
 
 }

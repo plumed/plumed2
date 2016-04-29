@@ -46,11 +46,6 @@ mygrid(NULL)
   if(!mves) error("action labelled " +  mlab + " does not exist or does not have vessels");
   addDependency(mves);
 
-  ActionPilot* ap=dynamic_cast<ActionPilot*>( mves );
-  if( ap ){
-     // This is perhaps necessary check what happens if Print is called between kernel adding GAT  
-     if( getStride()>0 && getStride()%ap->getStride()!=0 ) error("mismatch between strides in " + ap->getLabel() + " and " +  getLabel() );
-  }
   for(unsigned i=0;i<mves->getNumberOfVessels();++i){
       mygrid=dynamic_cast<GridVessel*>( mves->getPntrToVessel(i) );
       if( mygrid ) break; 
@@ -84,10 +79,6 @@ void ActionWithInputGrid::update(){
 void ActionWithInputGrid::runFinalJobs(){
   if( getStride()>0 ) return;
   performOperationsWithGrid( false );
-}
-
-void ActionWithInputGrid::invertTask( const std::vector<double>& indata, std::vector<double>& outdata ){
-  plumed_merror("Shouldn't appear here");
 }
 
 }

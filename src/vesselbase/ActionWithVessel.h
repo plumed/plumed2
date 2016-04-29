@@ -190,6 +190,8 @@ public:
   bool weightWithDerivatives() const ;
 /// This is used to set the stride for the output of histograms
   virtual void setAnalysisStride( const bool& use_all, const unsigned& astride ){}
+/// Return the position in the current task list
+  unsigned getPositionInCurrentTaskList( const unsigned& myind ) const ;
 };
 
 inline
@@ -269,6 +271,16 @@ bool ActionWithVessel::derivativesAreRequired() const {
 inline
 bool ActionWithVessel::weightWithDerivatives() const {
   return weightHasDerivatives;
+}
+
+inline
+unsigned ActionWithVessel::getPositionInCurrentTaskList( const unsigned& myind ) const {
+  if( nactive_tasks==fullTaskList.size() ) return myind;
+
+  for(unsigned i=0;i<nactive_tasks;++i){
+      if( myind==indexOfTaskInFullList[i] ) return i;
+  }
+  plumed_merror("requested task is not active");
 }
 
 } 

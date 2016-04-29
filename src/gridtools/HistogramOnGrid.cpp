@@ -33,8 +33,8 @@ void HistogramOnGrid::registerKeywords( Keywords& keys ){
 
 HistogramOnGrid::HistogramOnGrid( const vesselbase::VesselOptions& da ):
 GridVessel(da),
-noreadin(true),
-save_norm(0.0), 
+neigh_tot(0),
+addOneKernelAtATime(false),
 bandwidths(dimension),
 discrete(false)
 {
@@ -51,51 +51,72 @@ void HistogramOnGrid::setBounds( const std::vector<std::string>& smin, const std
   GridVessel::setBounds( smin, smax, nbins, spacing );
   if( !discrete ){ 
       std::vector<double> point(dimension,0);
-      KernelFunctions kernel( point, bandwidths, kerneltype, false, 1.0, true );
+      KernelFunctions kernel( point, bandwidths, kerneltype, false, 1.0, true ); neigh_tot=1;
       nneigh=kernel.getSupport( dx ); std::vector<double> support( kernel.getContinuousSupport() );
       for(unsigned i=0;i<dimension;++i){
           if( pbc[i] && 2*support[i]>getGridExtent(i) ) error("bandwidth is too large for periodic grid");
+          neigh_tot *= (2*nneigh[i]+1); 
       } 
   }
 }
 
-void HistogramOnGrid::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
-  plumed_dbg_assert( myvals.getNumberOfValues()==dimension+2 );
-  // This deals with restarts with memory weights are set equal to 1 / pre_norm
-  double winorm=1.0; if( save_norm>0. ) winorm = 1. / save_norm; 
-
-  std::vector<double> point( dimension ); double weight=winorm*myvals.get(0)*myvals.get( 1+dimension );
-  for(unsigned i=0;i<dimension;++i) point[i]=myvals.get( 1+i );
-
-  if( discrete ){
-      for(unsigned i=0;i<dimension;++i) point[i] += 0.5*dx[i];
-      unsigned ipoint = getIndex( point ); std::vector<double> fake_der;
-      accumulate( ipoint, weight, 1.0, fake_der, buffer );
+KernelFunctions* HistogramOnGrid::getKernelAndNeighbors( std::vector<double>& point, unsigned& num_neigh, std::vector<unsigned>& neighbors ) const {
+  if( discrete ){ 
+     num_neigh=1; for(unsigned i=0;i<dimension;++i) point[i] += 0.5*dx[i];
+     neighbors[0] = getIndex( point ); return NULL;
   } else {
-      KernelFunctions kernel( point, bandwidths, kerneltype, false, 1.0, true );
-
-      unsigned num_neigh; std::vector<unsigned> neighbors; 
-      getNeighbors( kernel.getCenter(), nneigh, num_neigh, neighbors );
-      std::vector<double> xx( dimension ); std::vector<Value*> vv;
-      for(unsigned i=0;i<dimension;++i){
-          vv.push_back(new Value());
-          if( pbc[i] ) vv[i]->setDomain( str_min[i], str_max[i] );
-          else vv[i]->setNotPeriodic();
-      }
-
-      unsigned ntot=nper*getNumberOfPoints();
-      double newval; std::vector<double> der( dimension );
-      for(unsigned i=0;i<num_neigh;++i){
-          unsigned ineigh=neighbors[i];
-          if( inactive( ineigh ) ) continue ;
-          getGridPointCoordinates( ineigh, xx );
-          for(unsigned j=0;j<dimension;++j) vv[j]->set(xx[j]);
-          newval = kernel.evaluate( vv, der, true );
-          accumulate( ineigh, weight, newval, der, buffer );
-      }
-      for(unsigned i=0;i<dimension;++i) delete vv[i];
+     KernelFunctions* kernel = new KernelFunctions( point, bandwidths, kerneltype, false, 1.0, true ); 
+     getNeighbors( kernel->getCenter(), nneigh, num_neigh, neighbors ); 
+     return kernel;
   }
-  return;
+}
+
+std::vector<Value*> HistogramOnGrid::getVectorOfValues() const {
+  std::vector<Value*> vv;
+  for(unsigned i=0;i<dimension;++i){
+      vv.push_back(new Value());
+      if( pbc[i] ) vv[i]->setDomain( str_min[i], str_max[i] );
+      else vv[i]->setNotPeriodic();
+  }
+  return vv;
+}
+
+void HistogramOnGrid::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
+  if( addOneKernelAtATime ){
+     plumed_dbg_assert( myvals.getNumberOfValues()==2 );
+     std::vector<double> der( dimension ); 
+     for(unsigned i=0;i<dimension;++i) der[i]=myvals.getDerivative( 1, i );
+     accumulate( getAction()->getPositionInCurrentTaskList(current), myvals.get(0), myvals.get(1), der, buffer );
+  } else {
+     plumed_dbg_assert( myvals.getNumberOfValues()==dimension+2 );
+     std::vector<double> point( dimension ); double weight=myvals.get(0)*myvals.get( 1+dimension );
+     for(unsigned i=0;i<dimension;++i) point[i]=myvals.get( 1+i );
+
+     // Get the kernel
+     unsigned num_neigh; std::vector<unsigned> neighbors; 
+     std::vector<double> der( dimension ); 
+     KernelFunctions* kernel=getKernelAndNeighbors( point, num_neigh, neighbors );
+
+     if( !kernel ){
+         plumed_dbg_assert( num_neigh==1 );
+         accumulate( neighbors[0], weight, 1.0, der, buffer );
+     } else {
+         std::vector<Value*> vv( getVectorOfValues() );
+
+         unsigned ntot=nper*getNumberOfPoints();
+         double newval; std::vector<double> xx( dimension );
+         for(unsigned i=0;i<num_neigh;++i){
+             unsigned ineigh=neighbors[i];
+             if( inactive( ineigh ) ) continue ;
+             getGridPointCoordinates( ineigh, xx );
+             for(unsigned j=0;j<dimension;++j) vv[j]->set(xx[j]);
+             newval = kernel->evaluate( vv, der, true );
+             accumulate( ineigh, weight, newval, der, buffer );
+         }
+         delete kernel;
+         for(unsigned i=0;i<dimension;++i) delete vv[i];
+     }
+  }
 }
 
 void HistogramOnGrid::accumulate( const unsigned& ipoint, const double& weight, const double& dens, const std::vector<double>& der, std::vector<double>& buffer ) const {
@@ -103,9 +124,15 @@ void HistogramOnGrid::accumulate( const unsigned& ipoint, const double& weight, 
   if( der.size()>0 ) for(unsigned j=0;j<dimension;++j) buffer[bufstart+nper*ipoint + 1 + j] += weight*der[j]; 
 }
 
-void HistogramOnGrid::reset(){
-  GridVessel::reset(); 
-  if( noreadin && !nomemory ) save_norm=getNorm(); 
+void HistogramOnGrid::finish( const std::vector<double>& buffer ){
+  if( addOneKernelAtATime ){
+     wascleared=false; 
+     for(unsigned i=0;i<getAction()->getCurrentNumberOfActiveTasks();++i){ 
+         for(unsigned j=0;j<nper;++j) data[nper*getAction()->getActiveTask(i)+j]+=buffer[bufstart+i*nper+j]; 
+     }
+  } else {
+     GridVessel::finish( buffer );
+  }
 }
 
 double HistogramOnGrid::getGridElement( const unsigned& ipoint, const unsigned& jelement ) const {

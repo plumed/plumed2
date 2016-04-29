@@ -1,4 +1,4 @@
-#! FIELDS x hA2 dhA2_x
+#! FIELDS x hA1 dhA1_x
 #! SET normalisation    2.0000
 #! SET min_x 0.0
 #! SET max_x 3.0

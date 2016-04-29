@@ -1,4 +1,4 @@
-#! FIELDS x fA2 dfA2_x
+#! FIELDS x fA1 dfA1_x
 #! SET normalisation    2.0000
 #! SET min_x 0.0
 #! SET max_x 3.0

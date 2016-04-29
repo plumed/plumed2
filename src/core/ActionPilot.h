@@ -40,8 +40,6 @@ class ActionPilot:
   public virtual Action
 {
   int stride; // multiple time step
-protected:
-  void setStride( const unsigned& ss );
 public:
   explicit ActionPilot(const ActionOptions&);
 /// Create the keywords for actionPilot

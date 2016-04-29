@@ -96,7 +96,7 @@ unsigned InterpolateGrid::getNumberOfQuantities() const {
 
 void InterpolateGrid::performOperationsWithGrid( const bool& from_update ){
   outgrid->setBounds( mygrid->getMin(), mygrid->getMax(), nbin, gspacing );
-  outgrid->clear(); outgrid->setNorm( mygrid->getNorm() ); runAllTasks(); 
+  outgrid->clear(); outgrid->setNorm( mygrid->getNorm() ); runAllTasks(); outgrid->reset();
 }
 
 void InterpolateGrid::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {

@@ -44,10 +44,6 @@ int ActionPilot::getStride()const{
   return stride;
 }
 
-void ActionPilot::setStride( const unsigned& ss ){
-  stride=ss;
-}
-
 }
 
 

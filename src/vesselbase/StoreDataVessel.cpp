@@ -69,7 +69,7 @@ void StoreDataVessel::resize(){
 }
 
 void StoreDataVessel::storeValues( const unsigned& myelem, MultiValue& myvals, std::vector<double>& buffer ) const {
-  unsigned jelem = getStoreIndex( myelem ); plumed_dbg_assert( jelem<getNumberOfStoredValues() );
+  unsigned jelem = getAction()->getPositionInCurrentTaskList( myelem ); plumed_dbg_assert( jelem<getNumberOfStoredValues() );
   unsigned ibuf = bufstart + jelem * vecsize * nspace; 
   for(unsigned icomp=0;icomp<vecsize;++icomp){
       buffer[ibuf] += myvals.get(icomp); ibuf+=nspace;
@@ -78,7 +78,7 @@ void StoreDataVessel::storeValues( const unsigned& myelem, MultiValue& myvals, s
 
 void StoreDataVessel::storeDerivatives( const unsigned& myelem, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
   plumed_dbg_assert( getAction()->derivativesAreRequired() && myelem<getAction()->getFullNumberOfTasks() );
-  unsigned jelem = getStoreIndex( myelem );
+  unsigned jelem = getAction()->getPositionInCurrentTaskList( myelem );
 
   if( getAction()->getFullNumberOfTasks()==getNumberOfStoredValues() ){
       der_list[jelem]=myvals.getNumberActive();
@@ -123,7 +123,7 @@ void StoreDataVessel::retrieveSequentialValue( const unsigned& jelem, const bool
 
 void StoreDataVessel::retrieveValueWithIndex( const unsigned& myelem, const bool& normed, std::vector<double>& values ) const {
   plumed_dbg_assert( values.size()==vecsize );
-  unsigned jelem = getStoreIndex( myelem );
+  unsigned jelem = getAction()->getPositionInCurrentTaskList( myelem );
   retrieveSequentialValue( jelem, normed, values );
 }
 
@@ -143,7 +143,7 @@ void StoreDataVessel::retrieveDerivatives( const unsigned& myelem, const bool& n
           }
       }
   } else {
-      unsigned jelem = getStoreIndex( myelem );
+      unsigned jelem = getAction()->getPositionInCurrentTaskList( myelem );
       // Retrieve the derivatives for elements 0 and 1 - weight and norm
       for(unsigned icomp=0;icomp<2;++icomp){
           unsigned ibuf = jelem * ( vecsize*nspace ) + icomp*nspace + 1;
