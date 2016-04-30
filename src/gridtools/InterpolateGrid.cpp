@@ -23,7 +23,6 @@
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include "ActionWithInputGrid.h"
-#include "GridFunction.h"
 
 //+PLUMEDOC GRIDANALYSIS INTERPOLATE_GRID
 /*
@@ -41,15 +40,15 @@ class InterpolateGrid : public ActionWithInputGrid {
 private:
   std::vector<unsigned> nbin;
   std::vector<double> gspacing;
-  GridFunction* outgrid;
 public:
   static void registerKeywords( Keywords& keys );
   explicit InterpolateGrid(const ActionOptions&ao);
-  void performOperationsWithGrid( const bool& from_update );
   unsigned getNumberOfDerivatives(){ return 0; }
   unsigned getNumberOfQuantities() const ;
-  void performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const ;
+  void clearGrid();
+  void compute( const unsigned& current, MultiValue& myvals ) const ;
   bool isPeriodic(){ return false; }
+  bool onStep() const { return true; }
 };
 
 PLUMED_REGISTER_ACTION(InterpolateGrid,"INTERPOLATE_GRID")
@@ -58,49 +57,46 @@ void InterpolateGrid::registerKeywords( Keywords& keys ){
   ActionWithInputGrid::registerKeywords( keys );
   keys.add("optional","GRID_BIN","the number of bins for the grid");
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
+  keys.remove("STRIDE"); keys.remove("KERNEL"); keys.remove("BANDWIDTH"); keys.remove("CLEAR");
 }
 
 InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
 Action(ao),
 ActionWithInputGrid(ao)
 {
-  plumed_assert( mygrid->getNumberOfComponents()==1 );
-  if( mygrid->noDerivatives() ) error("cannot interpolate a grid that does not have derivatives"); 
+  plumed_assert( ingrid->getNumberOfComponents()==1 );
+  if( ingrid->noDerivatives() ) error("cannot interpolate a grid that does not have derivatives"); 
   // Create the input from the old string
-  std::string vstring = "COMPONENTS=" + getLabel() + " " + mygrid->getInputString();
-
-  // Create a grid
-  vesselbase::VesselOptions da("mygrid","",-1,vstring,this);
-  Keywords keys; GridFunction::registerKeywords( keys );
-  vesselbase::VesselOptions dar( da, keys );
-  outgrid = new GridFunction(dar); addVessel( outgrid ); 
+  createGrid( "grid", "COMPONENTS=" + getLabel() + " " + ingrid->getInputString()  );
+  finishGridSetup();
 
   parseVector("GRID_BIN",nbin); parseVector("GRID_SPACING",gspacing);
-  if( nbin.size()!=mygrid->getDimension() && gspacing.size()!=mygrid->getDimension() ){
+  if( nbin.size()!=ingrid->getDimension() && gspacing.size()!=ingrid->getDimension() ){
       error("GRID_BIN or GRID_SPACING must be set");
   } 
-  outgrid->setBounds( mygrid->getMin(), mygrid->getMax(), nbin, gspacing ); 
+
+  // Need this for creation of tasks
+  mygrid->setBounds( ingrid->getMin(), ingrid->getMax(), nbin, gspacing ); 
   resizeFunctions();
 
   // Now create task list
-  for(unsigned i=0;i<outgrid->getNumberOfPoints();++i) addTaskToList(i);
+  for(unsigned i=0;i<mygrid->getNumberOfPoints();++i) addTaskToList(i);
   // And activate all tasks
   deactivateAllTasks(); 
-  for(unsigned i=0;i<outgrid->getNumberOfPoints();++i) taskFlags[i]=1;
+  for(unsigned i=0;i<mygrid->getNumberOfPoints();++i) taskFlags[i]=1;
   lockContributors();
 }
 
 unsigned InterpolateGrid::getNumberOfQuantities() const {
-  return 2 + mygrid->getDimension();
+  return 2 + ingrid->getDimension();
 }
 
-void InterpolateGrid::performOperationsWithGrid( const bool& from_update ){
-  outgrid->setBounds( mygrid->getMin(), mygrid->getMax(), nbin, gspacing );
-  outgrid->clear(); outgrid->setNorm( mygrid->getNorm() ); runAllTasks(); outgrid->reset();
+void InterpolateGrid::clearGrid(){
+  mygrid->setBounds( ingrid->getMin(), ingrid->getMax(), nbin, gspacing ); mygrid->clear();
 }
 
-void InterpolateGrid::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
-  std::vector<double> pos( mygrid->getDimension() ); outgrid->getGridPointCoordinates( current, pos );
+void InterpolateGrid::compute( const unsigned& current, MultiValue& myvals ) const {
+  std::vector<double> pos( mygrid->getDimension() ); mygrid->getGridPointCoordinates( current, pos );
   std::vector<double> der( mygrid->getDimension() ); double val = getFunctionValueAndDerivatives( pos, der );
   myvals.setValue( 0, 1.0 ); myvals.setValue(1, val ); 
   for(unsigned i=0;i<mygrid->getDimension();++i) myvals.setValue( 2+i, der[i] ); 

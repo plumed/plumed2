@@ -53,11 +53,9 @@ public:
 /// This is not periodic
   bool isPeriodic(){ return false; }
 /// Number of quantities is the number of points in each point on the grid
-  unsigned getNumberOfQuantities() const { return 1 + mygrid->getDimension(); }
+  virtual unsigned getNumberOfQuantities() const { return 1 + ingrid->getDimension(); }
 /// This does output if needs be
-  void performOperationsWithGrid( const bool& from_update );
-/// This will actually find the contour
-  virtual void findContourSurface()=0;
+  void finishTaskSet();
 };
 
 inline

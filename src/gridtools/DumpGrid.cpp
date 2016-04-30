@@ -21,7 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithInputGrid.h"
 #include "core/ActionRegister.h"
-#include "GridFunction.h"
 #include "AverageOnGrid.h"
 #include "tools/IFile.h"
 #include "tools/OFile.h"
@@ -45,9 +44,9 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit DumpGrid(const ActionOptions&ao); 
-  void performOperationsWithGrid( const bool& from_update );
+  void performGridOperations( const bool& from_update );
   unsigned getNumberOfDerivatives(){ return 0; }
-  void performTask( const unsigned& , const unsigned& , MultiValue& ) const {}
+  void compute( const unsigned& , MultiValue& ) const {}
   bool isPeriodic(){ return false; }
 };
 
@@ -66,18 +65,8 @@ ActionWithInputGrid(ao),
 printav(false),
 fmt("%f")
 {
-  // This ensures that restarting of grids works with memory
-  mygrid->foundprint=true;
-  GridFunction* mygf = dynamic_cast<GridFunction*> ( mygrid );
-  if( mygf ){
-      ActionWithInputGrid* ming = dynamic_cast<ActionWithInputGrid*>( mygf->getAction() );
-      plumed_assert( ming ); (ming->mygrid)->foundprint=true; 
-  }
-  AverageOnGrid* myav = dynamic_cast<AverageOnGrid*>( mygrid );
-  if( myav ){
-     parseFlag("PRINT_AVERAGE",printav);
-     if( printav && !mygrid->nomemory && getStride()>0 ) error("cannot use PRINT_AVERAGE flag if you are outputting with a stride");
-   }
+  AverageOnGrid* myav = dynamic_cast<AverageOnGrid*>( ingrid );
+  if( myav ) parseFlag("PRINT_AVERAGE",printav);
 
   parse("FMT",fmt); fmt=" "+fmt; parse("FILE",filename); 
   if(filename.length()==0) error("name out output file was not specified");
@@ -85,7 +74,7 @@ fmt("%f")
   checkRead();
 }
 
-void DumpGrid::performOperationsWithGrid( const bool& from_update ){
+void DumpGrid::performGridOperations( const bool& from_update ){
   if( !from_update && getStride()>0 ) return ;
 
   OFile ofile; ofile.link(*this);
@@ -93,37 +82,37 @@ void DumpGrid::performOperationsWithGrid( const bool& from_update ){
   ofile.open( filename );
 
   ofile.addConstantField("normalisation");
-  for(unsigned i=0;i<mygrid->getDimension();++i){
-     ofile.addConstantField("min_" + mygrid->getComponentName(i) );
-     ofile.addConstantField("max_" + mygrid->getComponentName(i) );
-     ofile.addConstantField("nbins_" + mygrid->getComponentName(i) );
-     ofile.addConstantField("periodic_" + mygrid->getComponentName(i) );
+  for(unsigned i=0;i<ingrid->getDimension();++i){
+     ofile.addConstantField("min_" + ingrid->getComponentName(i) );
+     ofile.addConstantField("max_" + ingrid->getComponentName(i) );
+     ofile.addConstantField("nbins_" + ingrid->getComponentName(i) );
+     ofile.addConstantField("periodic_" + ingrid->getComponentName(i) );
   }
 
-  std::vector<double> xx( mygrid->getDimension() );
-  std::vector<unsigned> ind( mygrid->getDimension() );
-  for(unsigned i=0;i<mygrid->getNumberOfPoints();++i){
-     mygrid->getIndices( i, ind );
-     if(i>0 && mygrid->getDimension()==2 && ind[mygrid->getDimension()-2]==0) ofile.printf("\n");
-     ofile.fmtField(fmt); ofile.printField("normalisation", mygrid->norm );
-     for(unsigned j=0;j<mygrid->getDimension();++j){
-         ofile.printField("min_" + mygrid->getComponentName(j), mygrid->getMin()[j] );
-         ofile.printField("max_" + mygrid->getComponentName(j), mygrid->getMax()[j] );
-         ofile.printField("nbins_" + mygrid->getComponentName(j), static_cast<int>(mygrid->getNbin()[j]) );
-         if( mygrid->isPeriodic(j) ) ofile.printField("periodic_" + mygrid->getComponentName(j), "true" );
-         else          ofile.printField("periodic_" + mygrid->getComponentName(j), "false" );
+  std::vector<double> xx( ingrid->getDimension() );
+  std::vector<unsigned> ind( ingrid->getDimension() );
+  for(unsigned i=0;i<ingrid->getNumberOfPoints();++i){
+     ingrid->getIndices( i, ind );
+     if(i>0 && ingrid->getDimension()==2 && ind[ingrid->getDimension()-2]==0) ofile.printf("\n");
+     ofile.fmtField(fmt); ofile.printField("normalisation", ingrid->norm );
+     for(unsigned j=0;j<ingrid->getDimension();++j){
+         ofile.printField("min_" + ingrid->getComponentName(j), ingrid->getMin()[j] );
+         ofile.printField("max_" + ingrid->getComponentName(j), ingrid->getMax()[j] );
+         ofile.printField("nbins_" + ingrid->getComponentName(j), static_cast<int>(ingrid->getNbin()[j]) );
+         if( ingrid->isPeriodic(j) ) ofile.printField("periodic_" + ingrid->getComponentName(j), "true" );
+         else          ofile.printField("periodic_" + ingrid->getComponentName(j), "false" );
      }
      // Retrieve and print the grid coordinates
-     mygrid->getGridPointCoordinates(i, xx ); 
-     for(unsigned j=0;j<mygrid->getDimension();++j){ ofile.fmtField(fmt); ofile.printField(mygrid->getComponentName(j),xx[j]); }
+     ingrid->getGridPointCoordinates(i, xx ); 
+     for(unsigned j=0;j<ingrid->getDimension();++j){ ofile.fmtField(fmt); ofile.printField(ingrid->getComponentName(j),xx[j]); }
      if( printav ){
-        unsigned nnorm=mygrid->dimension+1; if( mygrid->noderiv ) nnorm=1;
-        for(unsigned j=0;j<mygrid->getNumberOfQuantities()-nnorm;++j){
-           ofile.fmtField(fmt); ofile.printField(mygrid->arg_names[mygrid->dimension+j], mygrid->getGridElement( i, j ) );
+        unsigned nnorm=ingrid->dimension+1; if( ingrid->noderiv ) nnorm=1;
+        for(unsigned j=0;j<ingrid->getNumberOfQuantities()-nnorm;++j){
+           ofile.fmtField(fmt); ofile.printField(ingrid->arg_names[ingrid->dimension+j], ingrid->getGridElement( i, j ) );
         }
      } else {
-        for(unsigned j=0;j<mygrid->getNumberOfQuantities();++j){ 
-           ofile.fmtField(fmt); ofile.printField(mygrid->arg_names[mygrid->dimension+j], mygrid->getGridElementForPrint( i, j ) );  
+        for(unsigned j=0;j<ingrid->getNumberOfQuantities();++j){ 
+           ofile.fmtField(fmt); ofile.printField(ingrid->arg_names[ingrid->dimension+j], ingrid->getGridElementForPrint( i, j ) );  
         }
      }
      ofile.printField();

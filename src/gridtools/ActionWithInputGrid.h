@@ -23,50 +23,43 @@
 #define __PLUMED_gridtools_ActionWithInputGrid_h
 
 #include "core/ActionPilot.h"
-#include "GridVessel.h"
+#include "ActionWithGrid.h"
 
 namespace PLMD {
 namespace gridtools {
 
-class ActionWithInputGrid : 
-public ActionPilot,
-public vesselbase::ActionWithVessel
-{
-friend class GridFunction;
+class ActionWithInputGrid : public ActionWithGrid {
 friend class DumpGrid;
 private:
   unsigned mycomp;
-  vesselbase::ActionWithVessel* mves;
 protected:
-  GridVessel* mygrid;
+  GridVessel* ingrid;
   double getFunctionValue( const unsigned& ipoint ) const ;
   double getFunctionValue( const std::vector<unsigned>& ip ) const ;
   double getFunctionValueAndDerivatives( const std::vector<double>& x, std::vector<double>& der ) const ;
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithInputGrid(const ActionOptions&ao);
-  void calculate(){}
-  void apply(){}
-  void update();
+  bool prepareForTasks();
   void runFinalJobs();
   virtual bool checkAllActive() const { return true; }
-  virtual void performOperationsWithGrid( const bool& from_update )=0;
+  virtual void performGridOperations( const bool& from_update );
 };
 
 inline
 double ActionWithInputGrid::getFunctionValue( const unsigned& ipoint ) const {
-  unsigned dim=mygrid->getDimension(); if( mygrid->noderiv ) dim=0; 
-  return mygrid->getGridElement( ipoint, mycomp*(1+dim) );
+  unsigned dim=ingrid->getDimension(); if( ingrid->noderiv ) dim=0; 
+  return ingrid->getGridElement( ipoint, mycomp*(1+dim) );
 }
 
 inline
 double ActionWithInputGrid::getFunctionValue( const std::vector<unsigned>& ip ) const {
-  return getFunctionValue( mygrid->getIndex(ip) );
+  return getFunctionValue( ingrid->getIndex(ip) );
 }
 
 inline
 double ActionWithInputGrid::getFunctionValueAndDerivatives( const std::vector<double>& x, std::vector<double>& der ) const {
-  return mygrid->getValueAndDerivatives( x, mycomp, der );
+  return ingrid->getValueAndDerivatives( x, mycomp, der );
 } 
 
 }

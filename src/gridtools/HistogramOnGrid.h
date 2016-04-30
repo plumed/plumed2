@@ -48,7 +48,6 @@ public:
   void finish( const std::vector<double>& buffer );
   virtual void accumulate( const unsigned& ipoint, const double& weight, const double& dens, const std::vector<double>& der, std::vector<double>& buffer ) const ;
   virtual double getGridElement( const unsigned& ipoint, const unsigned& jelement ) const ;
-  bool applyForce(  std::vector<double>& forces ){ return false; }
   unsigned getNumberOfBufferPoints() const ;
   KernelFunctions* getKernelAndNeighbors( std::vector<double>& point, unsigned& num_neigh, std::vector<unsigned>& neighbors ) const;
   std::vector<Value*> getVectorOfValues() const ;

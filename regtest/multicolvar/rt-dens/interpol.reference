@@ -1,5 +1,5 @@
 #! FIELDS x interpol dinterpol_x
-#! SET normalisation    4.0000
+#! SET normalisation    0.0000
 #! SET min_x -2.5
 #! SET max_x 2.5
 #! SET nbins_x  100

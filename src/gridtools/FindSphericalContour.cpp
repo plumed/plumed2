@@ -44,8 +44,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit FindSphericalContour(const ActionOptions&ao);
-  void findContourSurface();
-  void performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const ;
+  void compute( const unsigned& current, MultiValue& myvals ) const ;
 };
 
 PLUMED_REGISTER_ACTION(FindSphericalContour,"FIND_SPHERICAL_CONTOUR")
@@ -56,27 +55,26 @@ void FindSphericalContour::registerKeywords( Keywords& keys ){
   keys.add("compulsory","INNER_RADIUS","the minimum radius on which to look for the contour");
   keys.add("compulsory","OUTER_RADIUS","the outer radius on which to look for the contour");
   keys.add("compulsory","NBINS","1","the number of discrete sections in which to divide the distance between the inner and outer radius when searching for a contour");
+  keys.remove("CLEAR");
 }
 
 FindSphericalContour::FindSphericalContour(const ActionOptions&ao):
 Action(ao),
 ContourFindingBase(ao)
 {
-  if( mygrid->getDimension()!=3 ) error("input grid must be three dimensional");
+  if( ingrid->getDimension()!=3 ) error("input grid must be three dimensional");
 
   unsigned npoints; parse("NPOINTS",npoints);
   log.printf("  searching for %u points on dividing surface \n",npoints);
   parse("INNER_RADIUS",min); parse("OUTER_RADIUS",max); parse("NBINS",nbins);
   log.printf("  expecting to find dividing surface at radii between %f and %f \n",min,max);
   log.printf("  looking for contour in windows of length %f \n", (max-min)/nbins);
-
   // Set this here so the same set of grid points are used on every turn
   Random random; rnd = std::floor( npoints*random.RandU01() );
   offset = 2 / static_cast<double>( npoints );
   increment = pi*( 3 - sqrt(5) );
 
   checkRead();
-
   // Create a task list
   for(unsigned i=0;i<npoints;++i) addTaskToList( i );
   deactivateAllTasks();
@@ -84,13 +82,7 @@ ContourFindingBase(ao)
   lockContributors();
 }
 
-void FindSphericalContour::findContourSurface(){
-  runAllTasks();
-}
-
-void FindSphericalContour::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
-  // Set the weight equal to one
-  myvals.setValue(0, 1.0 );
+void FindSphericalContour::compute( const unsigned& current, MultiValue& myvals ) const {
   // Generate contour point on inner sphere
   std::vector<double> contour_point(3), direction(3), der(3), tmp(3);
   contour_point[1] = ((current*offset) - 1) + (offset/2);

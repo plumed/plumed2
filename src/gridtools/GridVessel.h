@@ -151,6 +151,8 @@ public:
  const std::vector<double>& getGridSpacing() const ;
 /// Get the extent of the grid in one of the axis
  double getGridExtent( const unsigned& i ) const ;
+/// Copy data from the action into the grid
+ virtual void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
 /// Copy data from an accumulated buffer into the grid
  virtual void finish( const std::vector<double>& );
 /// Clear all the data stored on the grid
@@ -177,6 +179,7 @@ public:
 /// Functions for dealing with normalisation constant
  void setNorm( const double& snorm );
  double getNorm() const ;
+ bool applyForce(  std::vector<double>& forces ){ return false; }
 };
 
 inline

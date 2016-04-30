@@ -19,23 +19,15 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "core/ActionAtomistic.h"
-#include "core/ActionPilot.h"
 #include "core/ActionRegister.h"
 #include "tools/Pbc.h"
-#include "tools/File.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include "tools/Units.h"
 #include <cstdio>
-#include "core/SetupMolInfo.h"
 #include "core/ActionSet.h"
 #include "MultiColvarBase.h"
-#include "tools/KernelFunctions.h"
-#include "vesselbase/ActionWithInputVessel.h"
-#include "gridtools/HistogramOnGrid.h"
-#include "gridtools/AverageOnGrid.h"
-#include "vesselbase/StoreDataVessel.h"
+#include "gridtools/ActionWithGrid.h"
 
 using namespace std;
 
@@ -93,14 +85,7 @@ model for a particular trajectory frame.  There is no averaging over trajectory 
 */
 //+ENDPLUMEDOC
 
-class MultiColvarDensity :
-  public ActionPilot,
-  public ActionAtomistic,
-  public vesselbase::ActionWithVessel,
-  public vesselbase::ActionWithInputVessel
-{
-  std::string kerneltype;
-  unsigned clearstride;
+class MultiColvarDensity : public gridtools::ActionWithGrid {
   bool fractional;
   MultiColvarBase* mycolv;
   std::vector<unsigned> nbins;
@@ -108,42 +93,30 @@ class MultiColvarDensity :
   std::vector<bool> confined;
   std::vector<double> cmin, cmax;
   vesselbase::StoreDataVessel* stash;
-  gridtools::HistogramOnGrid* mygrid;
   Vector origin;
   std::vector<unsigned> directions;
 public:
   explicit MultiColvarDensity(const ActionOptions&);
   static void registerKeywords( Keywords& keys );
   unsigned getNumberOfQuantities() const ;
-  void calculate(){}
-  void calculateNumericalDerivatives( ActionWithValue* a=NULL ){ plumed_error(); }
   bool isPeriodic(){ return false; }
   unsigned getNumberOfDerivatives(){ return 0; }
-  void performTask( const unsigned& , const unsigned& , MultiValue& ) const ;
-  void apply(){}
-  void update();
+  void clearGrid();
+  bool prepareForTasks();
+  void compute( const unsigned& , MultiValue& ) const ;
 };
 
 PLUMED_REGISTER_ACTION(MultiColvarDensity,"MULTICOLVARDENS")
 
 void MultiColvarDensity::registerKeywords( Keywords& keys ){
-  Action::registerKeywords( keys );
-  ActionPilot::registerKeywords( keys );
-  ActionAtomistic::registerKeywords( keys );
-  ActionWithVessel::registerKeywords( keys );
-  ActionWithInputVessel::registerKeywords( keys );
-  keys.add("compulsory","STRIDE","1","the frequency with which the data should be collected and added to the grid");
+  gridtools::ActionWithGrid::registerKeywords( keys );
   keys.add("atoms","ORIGIN","we will use the position of this atom as the origin");
+  keys.add("compulsory","DATA","the multicolvar which you would like to calculate the density profile for");
   keys.add("compulsory","DIR","the direction in which to calculate the density profile");
   keys.add("optional","NBINS","the number of bins to use to represent the density profile");
   keys.add("optional","SPACING","the approximate grid spacing (to be used as an alternative or together with NBINS)");
-  keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
-  keys.add("compulsory","KERNEL","gaussian","the kernel function you are using.  More details on  the kernels available "
-                                            "in plumed plumed can be found in \\ref kernelfunctions.");
-  keys.addFlag("UNORMALIZED",false,"output the unormalized density on the grid.  In other words with this flag \\f$ \\sum_i K(\\mathbf{r}-\\mathbf{r}_i) \\phi_i \\f$ is output");
-  keys.addFlag("FRACTIONAL",false,"use fractional coordinates on the x-axis");
+  keys.addFlag("FRACTIONAL",false,"use fractional coordinates for the various axes");
   keys.addFlag("XREDUCED",false,"limit the calculation of the density/average to a portion of the z-axis only");
-  keys.add("compulsory","CLEAR","0","the frequency with which to clear all the accumulated data.  The default value of 0 implies that all the data will be used");
   keys.add("optional","XLOWER","this is required if you are using XREDUCED. It specifes the lower bound for the region of the x-axis that for "
                                "which you are calculating the density/average");
   keys.add("optional","XUPPER","this is required if you are using XREDUCED. It specifes the upper bound for the region of the x-axis that for "
@@ -161,28 +134,22 @@ void MultiColvarDensity::registerKeywords( Keywords& keys ){
 }
 
 MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
-  Action(ao),
-  ActionPilot(ao),
-  ActionAtomistic(ao),
-  ActionWithVessel(ao),
-  ActionWithInputVessel(ao)
+Action(ao),
+ActionWithGrid(ao)
 {
-
   std::vector<AtomNumber> atom;
   parseAtomList("ORIGIN",atom);
   if( atom.size()!=1 ) error("should only be one atom specified");
   log.printf("  origin is at position of atom : %d\n",atom[0].serial() );
 
-  readArgument("store");
-  mycolv = dynamic_cast<MultiColvarBase*>( getDependencies()[0] );
-  plumed_assert( getDependencies().size()==1 ); 
-  if(!mycolv) error("action labeled " + mycolv->getLabel() + " is not a multicolvar");
-  stash=dynamic_cast<vesselbase::StoreDataVessel*>( getPntrToArgument() );
+  std::string mlab; parse("DATA",mlab);
+  mycolv = plumed.getActionSet().selectWithLabel<MultiColvarBase*>(mlab);
+  if(!mycolv) error("action labelled " +  mlab + " does not exist or is not a MultiColvar");
+  stash = mycolv->buildDataStashes( false, 0.0, NULL );
 
-  log.printf("  storing data every %d steps \n", getStride() );
   parseFlag("FRACTIONAL",fractional);
   std::string direction; parse("DIR",direction);
-  log.printf("  calculating density profile along ");
+  log.printf("  calculating for %s density profile along ", mycolv->getLabel().c_str() );
   if( direction=="x" ){
       log.printf("x axis");
       directions.resize(1); directions[0]=0;
@@ -240,14 +207,14 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
       }
   }
 
-  std::string vstring = getKeyword("KERNEL") + " " + getKeyword("BANDWIDTH");
-  if( confined[0] ) vstring +=" PBC=F";
+  std::string vstring; 
+  if( confined[0] ) vstring +="PBC=F";
   else vstring += " PBC=T";
   for(unsigned i=1;i<directions.size();++i){
       if( confined[i] ) vstring += ",F";
       else vstring += ",T"; 
   }
-  vstring +=" COMPONENTS=" + getPntrToArgument()->getLabel() + ".dens";
+  vstring +=" COMPONENTS=" + mycolv->getLabel() + ".dens";
   vstring +=" COORDINATES=";
   if( directions[0]==0 ) vstring+="x";
   else if( directions[0]==1 ) vstring+="y";
@@ -257,24 +224,13 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
     else if( directions[i]==1 ) vstring+=",y";
     else if( directions[i]==2 ) vstring+=",z";
   }
-  parse("CLEAR",clearstride);
-  if( clearstride>0 ){
-      if( clearstride%getStride()!=0 ) error("CLEAR parameter must be a multiple of STRIDE");
-      log.printf("  clearing grid every %d steps \n",clearstride);
-      vstring += " NOMEMORY";
-  }
-
-  bool sumflag; parseFlag("UNORMALIZED",sumflag);
-  if( sumflag ) vstring += " UNORMALIZED";
   // Create a task list
   for(unsigned i=0;i<mycolv->getFullNumberOfTasks();++i) addTaskToList(i);
-  vesselbase::VesselOptions da("mygrid","",-1,vstring,this);
-  Keywords keys; gridtools::AverageOnGrid::registerKeywords( keys );
-  vesselbase::VesselOptions dar( da, keys );
-  if( mycolv->isDensity() ){
-     mygrid = new gridtools::HistogramOnGrid(dar); mygrid->setNorm(0);
-  } else mygrid = new gridtools::AverageOnGrid(dar); 
-  addVessel( mygrid );
+  // And create the grid
+  if( mycolv->isDensity() ) createGrid( "histogram", vstring );
+  else createGrid( "average", vstring );
+  // And finish the grid setup
+  finishGridSetup();
 
   // Enusre units for cube files are set correctly
   if( !fractional ){
@@ -291,50 +247,44 @@ unsigned MultiColvarDensity::getNumberOfQuantities() const {
   return directions.size() + 2;
 }
 
-void MultiColvarDensity::update(){
-  if( getStep()==0 || !onStep() ) return;
-  // Set the normalization constant
+void MultiColvarDensity::clearGrid(){
+  plumed_assert( mygrid->wasreset() );
+  std::vector<double> min(directions.size()), max(directions.size());
+  std::vector<std::string> gmin(directions.size()), gmax(directions.size());;
+  for(unsigned i=0;i<directions.size();++i){ min[i]=-0.5; max[i]=0.5; }
+  if( !fractional ){
+     if( !mycolv->getPbc().isOrthorombic() ){
+         error("I think that density profiles with non-orthorhombic cells don't work.  If you want it have a look and see if you can work it out");
+     }
 
-  if( mygrid->wasreset() ){
-     std::vector<double> min(directions.size()), max(directions.size());
-     std::vector<std::string> gmin(directions.size()), gmax(directions.size());;
-     for(unsigned i=0;i<directions.size();++i){ min[i]=-0.5; max[i]=0.5; }
-     if( !fractional ){
-         if( !mycolv->getPbc().isOrthorombic() ){
-             error("I think that density profiles with non-orthorhombic cells don't work.  If you want it have a look and see if you can work it out");
-         }
-
-         for(unsigned i=0;i<directions.size();++i){
-             if( !confined[i] ){ 
-                 min[i]*=mycolv->getBox()(directions[i],directions[i]);
-                 max[i]*=mycolv->getBox()(directions[i],directions[i]); 
-             } else {
-                 min[i]=cmin[i]; max[i]=cmax[i];
-             }
+     for(unsigned i=0;i<directions.size();++i){
+         if( !confined[i] ){ 
+             min[i]*=mycolv->getBox()(directions[i],directions[i]);
+             max[i]*=mycolv->getBox()(directions[i],directions[i]); 
+         } else {
+             min[i]=cmin[i]; max[i]=cmax[i];
          }
      }
-     for(unsigned i=0;i<directions.size();++i){ Tools::convert(min[i],gmin[i]); Tools::convert(max[i],gmax[i]); }
-     mygrid->clear(); mygrid->setBounds( gmin, gmax, nbins, gspacing ); resizeFunctions();
+  }
+  for(unsigned i=0;i<directions.size();++i){ Tools::convert(min[i],gmin[i]); Tools::convert(max[i],gmax[i]); }
+  mygrid->clear(); mygrid->setBounds( gmin, gmax, nbins, gspacing ); resizeFunctions();
+}
 
-  } else {
-      for(unsigned i=0;i<directions.size();++i){
-          double max; Tools::convert( mygrid->getMax()[i], max );
-          if( fabs( 2*max - mycolv->getBox()(directions[i],directions[i]) )>epsilon ) error("box size should be fixed.  Use FRACTIONAL");
-      }
+bool MultiColvarDensity::prepareForTasks(){
+  for(unsigned i=0;i<directions.size();++i){
+      if( confined[i] ) continue;
+      std::string max; Tools::convert( 0.5*mycolv->getBox()(directions[i],directions[i]), max ); 
+      if( max!=mygrid->getMax()[i] ) error("box size should be fixed.  Use FRACTIONAL");
   }
   // Ensure we only work with active multicolvars
   deactivateAllTasks();
   for(unsigned i=0;i<stash->getNumberOfStoredValues();++i) taskFlags[i]=1;
   lockContributors();
-  // Now perform All Tasks
-  origin = getPosition(0);
-  if( mycolv->isDensity() ) mygrid->setNorm( 1. + mygrid->getNorm() );
-  runAllTasks();  
-  // By resetting here we are ensuring that the grid will be cleared at the start of the next step
-  if( clearstride>0 && getStep()%clearstride==0 ) mygrid->reset();
+  // Retrieve the origin
+  origin = getPosition(0); return true;
 }
 
-void MultiColvarDensity::performTask( const unsigned& tindex, const unsigned& current, MultiValue& myvals ) const {
+void MultiColvarDensity::compute( const unsigned& current, MultiValue& myvals ) const {
   std::vector<double> cvals( mycolv->getNumberOfQuantities() ); stash->retrieveSequentialValue( current, false, cvals );
   Vector fpos, apos = pbcDistance( origin, mycolv->getCentralAtomPos( mycolv->getActiveTask(current) ) );
   if( fractional ){ fpos = getPbc().realToScaled( apos ); } else { fpos=apos; }
@@ -342,7 +292,6 @@ void MultiColvarDensity::performTask( const unsigned& tindex, const unsigned& cu
   myvals.setValue( 0, cvals[0] ); for(unsigned j=0;j<directions.size();++j) myvals.setValue( 1+j, fpos[ directions[j] ] );
   myvals.setValue( 1+directions.size(), cvals[1] );
 }
-
 
 }
 }

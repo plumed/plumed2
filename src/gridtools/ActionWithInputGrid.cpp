@@ -27,32 +27,28 @@ namespace PLMD {
 namespace gridtools {
 
 void ActionWithInputGrid::registerKeywords( Keywords& keys ){
-  Action::registerKeywords( keys );
-  ActionPilot::registerKeywords( keys );
-  vesselbase::ActionWithVessel::registerKeywords( keys );
+  ActionWithGrid::registerKeywords( keys );
   keys.add("compulsory","GRID","the action that creates the input grid you would like to use");
-  keys.add("compulsory","STRIDE","0","the frequency with which to output the grid.  Default of zero means analyse all data");
   keys.add("optional","COMPONENT","if your input is a vector field use this to specifiy the component of the input vector field for which you wish to use");
 }
 
 ActionWithInputGrid::ActionWithInputGrid(const ActionOptions&ao):
 Action(ao),
-ActionPilot(ao),
-ActionWithVessel(ao),
-mygrid(NULL)
+ActionWithGrid(ao),
+ingrid(NULL)
 {
   std::string mlab; parse("GRID",mlab);
-  mves= plumed.getActionSet().selectWithLabel<vesselbase::ActionWithVessel*>(mlab);
+  vesselbase::ActionWithVessel* mves= plumed.getActionSet().selectWithLabel<vesselbase::ActionWithVessel*>(mlab);
   if(!mves) error("action labelled " +  mlab + " does not exist or does not have vessels");
   addDependency(mves);
 
   for(unsigned i=0;i<mves->getNumberOfVessels();++i){
-      mygrid=dynamic_cast<GridVessel*>( mves->getPntrToVessel(i) );
-      if( mygrid ) break; 
+      ingrid=dynamic_cast<GridVessel*>( mves->getPntrToVessel(i) );
+      if( ingrid ) break; 
   }
-  if( !mygrid ) error("input action does not calculate a grid");
+  if( !ingrid ) error("input action does not calculate a grid");
 
-  if( mygrid->getNumberOfComponents()==1 ){
+  if( ingrid->getNumberOfComponents()==1 ){
      mycomp=0;
   } else {
      int tcomp=-1; parse("COMPONENT",tcomp);
@@ -60,25 +56,24 @@ mygrid(NULL)
      mycomp=tcomp;
   }
   log.printf("  using %uth component of grid calculated by action %s \n",mycomp,mves->getLabel().c_str() );
-
-  if( getStride()>0 ) log.printf("  outputting every %u steps \n", getStride() );
 }
 
-void ActionWithInputGrid::update(){
-  // Don't analyse the first frame in the trajectory
-  if( getStep()==0 ) return;
-
+bool ActionWithInputGrid::prepareForTasks(){
   if( checkAllActive() ){
-     for(unsigned i=0;i<mygrid->getNumberOfPoints();++i){
-         if( mygrid->inactive(i) ) error("if FIND_CONTOUR is used with BUFFER option then other actions cannot be performed with grid");
+     for(unsigned i=0;i<ingrid->getNumberOfPoints();++i){
+         if( ingrid->inactive(i) ) error("if FIND_CONTOUR is used with BUFFER option then other actions cannot be performed with grid");
      }
   }
-  performOperationsWithGrid( true );
+  return (getFullNumberOfTasks()>0);
 }
 
 void ActionWithInputGrid::runFinalJobs(){
   if( getStride()>0 ) return;
-  performOperationsWithGrid( false );
+  performGridOperations( false );
+}
+
+void ActionWithInputGrid::performGridOperations( const bool& from_update ){
+  plumed_assert( !from_update ); prepareForTasks(); runAllTasks();
 }
 
 }

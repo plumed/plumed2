@@ -23,7 +23,6 @@
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include "ActionWithInputGrid.h"
-#include "GridFunction.h"
 
 //+PLUMEDOC GRIDANALYSIS CONVERT_TO_FES
 /*
@@ -40,15 +39,14 @@ namespace gridtools {
 class ConvertToFES : public ActionWithInputGrid {
 private:
   double simtemp;
-  GridFunction* outgrid;
 public:
   static void registerKeywords( Keywords& keys );
   explicit ConvertToFES(const ActionOptions&ao);
-  void performOperationsWithGrid( const bool& from_update );
   unsigned getNumberOfDerivatives(){ return 0; }
   unsigned getNumberOfQuantities() const ;
-  void performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const ;
+  void compute( const unsigned& current, MultiValue& myvals ) const ;
   bool isPeriodic(){ return false; }
+  bool onStep() const { return true; }
 };
 
 PLUMED_REGISTER_ACTION(ConvertToFES,"CONVERT_TO_FES")
@@ -56,26 +54,21 @@ PLUMED_REGISTER_ACTION(ConvertToFES,"CONVERT_TO_FES")
 void ConvertToFES::registerKeywords( Keywords& keys ){
   ActionWithInputGrid::registerKeywords( keys );
   keys.add("optional","TEMP","the temperature at which you are operating");
-  keys.reset_style("STRIDE","hidden");
+  keys.remove("STRIDE"); keys.remove("KERNEL"); keys.remove("BANDWIDTH"); keys.remove("CLEAR"); 
 }
 
 ConvertToFES::ConvertToFES(const ActionOptions&ao):
 Action(ao),
 ActionWithInputGrid(ao)
 {
-  plumed_assert( mygrid->getNumberOfComponents()==1 );
-  // Create the input from the old string
-  std::string vstring = "COMPONENTS=" + getLabel() + " " + mygrid->getInputString();
+  plumed_assert( ingrid->getNumberOfComponents()==1 );
 
   // Create a grid
-  vesselbase::VesselOptions da("mygrid","",-1,vstring,this);
-  Keywords keys; GridFunction::registerKeywords( keys );
-  vesselbase::VesselOptions dar( da, keys );
-  outgrid = new GridFunction(dar); addVessel( outgrid ); 
-  if( mygrid->noDerivatives() ) outgrid->setNoDerivatives(); 
+  createGrid( "grid", "COMPONENTS=" + getLabel() + " " + ingrid->getInputString() ); 
+  if( ingrid->noDerivatives() ) mygrid->setNoDerivatives(); 
   std::vector<double> fspacing;
-  outgrid->setBounds( mygrid->getMin(), mygrid->getMax(), mygrid->getNbin(), fspacing); 
-  resizeFunctions();
+  mygrid->setBounds( ingrid->getMin(), ingrid->getMax(), ingrid->getNbin(), fspacing); 
+  finishGridSetup(); resizeFunctions();
 
   simtemp=0.; parse("TEMP",simtemp);
   if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
@@ -95,17 +88,10 @@ unsigned ConvertToFES::getNumberOfQuantities() const {
   return 2 + mygrid->getDimension();
 }
 
-void ConvertToFES::performOperationsWithGrid( const bool& from_update ){
-  std::vector<double> fspacing;
-  outgrid->setBounds( mygrid->getMin(), mygrid->getMax(), mygrid->getNbin(), fspacing); 
-  outgrid->clear(); outgrid->setNorm( mygrid->getNorm() ); runAllTasks(); outgrid->reset();
-}
-
-void ConvertToFES::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
-  double val=getFunctionValue( current );
-  myvals.setValue( 0, 1.0 ); myvals.setValue(1, -simtemp*std::log(val) );
+void ConvertToFES::compute( const unsigned& current, MultiValue& myvals ) const {
+  double val=getFunctionValue( current ); myvals.setValue(1, -simtemp*std::log(val) );
   if( !mygrid->noDerivatives() && val>0 ){
-     for(unsigned i=0;i<mygrid->getDimension();++i) myvals.setValue( 2+i, -(simtemp/val)*mygrid->getGridElement(current,i+1) );
+     for(unsigned i=0;i<mygrid->getDimension();++i) myvals.setValue( 2+i, -(simtemp/val)*ingrid->getGridElement(current,i+1) );
   }
 }
 
