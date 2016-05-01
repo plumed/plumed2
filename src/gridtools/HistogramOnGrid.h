@@ -47,11 +47,11 @@ public:
   void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
   void finish( const std::vector<double>& buffer );
   virtual void accumulate( const unsigned& ipoint, const double& weight, const double& dens, const std::vector<double>& der, std::vector<double>& buffer ) const ;
-  virtual double getGridElement( const unsigned& ipoint, const unsigned& jelement ) const ;
   unsigned getNumberOfBufferPoints() const ;
   KernelFunctions* getKernelAndNeighbors( std::vector<double>& point, unsigned& num_neigh, std::vector<unsigned>& neighbors ) const;
   std::vector<Value*> getVectorOfValues() const ;
   void addOneKernelEachTimeOnly(){ addOneKernelAtATime=true; }
+  bool noDiscreteKernels() const ;
 };
 
 inline

@@ -25,15 +25,13 @@
 #include <string>
 #include <cstring>
 #include <vector>
-#include "vesselbase/Vessel.h"
+#include "vesselbase/AveragingVessel.h"
 
 namespace PLMD {
 namespace gridtools {
 
-class GridVessel : public vesselbase::Vessel {
+class GridVessel : public vesselbase::AveragingVessel {
 friend class ActionWithInputGrid;
-friend class AverageOnGrid;
-friend class GridFunction;
 friend class DumpGrid;
 private:
 /// Have the minimum and maximum for the grid been set
@@ -53,18 +51,10 @@ private:
 /// The grid point that was requested last by getGridPointCoordinates
  unsigned currentGridPoint;
 protected:
-/// The grid was recently cleared and bounds can be set
- bool wascleared;
 /// Do we have derivatives
  bool noderiv;
 /// The names of the various columns in the grid file
  std::vector<std::string> arg_names; 
-/// The normalisation constant to use
- double norm;
-/// Are we deleting the data after print
- bool nomemory;
-/// Are we outputting unormalised data
- bool unormalised;
 /// The number of pieces of information we are storing for each 
 /// point in the grid
  unsigned nper;
@@ -78,8 +68,6 @@ protected:
  unsigned dimension;
 /// Which grid points are we actively accumulating
  std::vector<bool> active;
-/// The grid with all the data values on it
- std::vector<double> data;
 /// Convert a point in space the the correspoinding grid point
  unsigned getIndex( const std::vector<double>& p ) const ;
 public:
@@ -138,7 +126,6 @@ public:
  double getCellVolume() const ;
 /// Get the value of the ith grid element 
  virtual double getGridElement( const unsigned&, const unsigned& ) const ;
- virtual double getGridElementForPrint( const unsigned&, const unsigned& ) const ; 
 /// Get the set of points neighouring a particular location in space
  void getNeighbors( const std::vector<double>& pp, const std::vector<unsigned>& nneigh,
                     unsigned& num_neighbours, std::vector<unsigned>& neighbors ) const ;
@@ -153,33 +140,20 @@ public:
  double getGridExtent( const unsigned& i ) const ;
 /// Copy data from the action into the grid
  virtual void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
-/// Copy data from an accumulated buffer into the grid
- virtual void finish( const std::vector<double>& );
-/// Clear all the data stored on the grid
- virtual void clear();
-/// Reset the grid so that it is cleared at start of next time it is calculated
- virtual void reset();
 /// This ensures that Gaussian cube fies are in correct units
  void setCubeUnits( const double& units );
 /// This ensures that Gaussian cube files are in correct units
  double getCubeUnits() const ;
- virtual void switchOffNormalisation(){}
 /// Return a string containing the input to the grid so we can clone it
  std::string getInputString() const ;
 /// Does this have derivatives
  bool noDerivatives() const ;
 /// Get the value and derivatives at a particular location using spline interpolation
  double getValueAndDerivatives( const std::vector<double>& x, const unsigned& ind, std::vector<double>& der ) const ; 
-/// Was the grid cleared on the last step
- bool wasreset() const ;
 /// Deactivate all the grid points
  void activateThesePoints( const std::vector<bool>& to_activate );
 /// Is this point active
  bool inactive( const unsigned& ip ) const ;
-/// Functions for dealing with normalisation constant
- void setNorm( const double& snorm );
- double getNorm() const ;
- bool applyForce(  std::vector<double>& forces ){ return false; }
 };
 
 inline
@@ -235,24 +209,9 @@ bool GridVessel::noDerivatives() const {
 }
 
 inline
-bool GridVessel::wasreset() const {
-  return wascleared;
-}
-
-inline
 bool GridVessel::inactive( const unsigned& ip ) const {
   plumed_dbg_assert( ip<npoints );
   return !active[ip];
-}
-
-inline
-void GridVessel::setNorm( const double& snorm ){
-  norm=snorm;
-}
-
-inline
-double GridVessel::getNorm() const {
-  return norm;
 }
 
 inline

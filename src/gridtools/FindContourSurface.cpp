@@ -47,9 +47,10 @@ public:
   explicit FindContourSurface(const ActionOptions&ao);
   unsigned getNumberOfQuantities() const { return 2; }
   bool checkAllActive() const { return gbuffer==0; }
-  bool prepareForTasks();
+  void clearAverage();
+  void prepareForAveraging();
   void compute( const unsigned& current, MultiValue& myvals ) const ;
-  void finishTaskSet();
+  void finishAveraging();
 };
 
 PLUMED_REGISTER_ACTION(FindContourSurface,"FIND_CONTOUR_SURFACE")
@@ -94,18 +95,23 @@ ones(ingrid->getDimension(),1)
   for(unsigned i=1;i<gdirs.size();++i){
       if( ingrid->isPeriodic(gdirs[i]) ) vstring+=",T"; else vstring+=",F";
   }
-  createGrid( "grid", vstring ); mygrid->setNoDerivatives(); finishGridSetup();
+  createGrid( "grid", vstring ); mygrid->setNoDerivatives(); 
+  setAveragingAction( mygrid, true );
 }
 
-bool FindContourSurface::prepareForTasks(){
+void FindContourSurface::clearAverage(){
   // Set the boundaries of the output grid
   std::vector<double> fspacing; std::vector<unsigned> snbins( ingrid->getDimension()-1 );
   std::vector<std::string> smin( ingrid->getDimension()-1 ), smax( ingrid->getDimension()-1 );
   for(unsigned i=0;i<gdirs.size();++i){
      smin[i]=ingrid->getMin()[gdirs[i]]; smax[i]=ingrid->getMax()[gdirs[i]];
      snbins[i]=ingrid->getNbin()[gdirs[i]];
-  }
+  }   
   mygrid->setBounds( smin, smax, snbins, fspacing); resizeFunctions();
+  ActionWithAveraging::clearAverage();
+}
+
+void FindContourSurface::prepareForAveraging(){
   // Create a task list if first time
   if( firsttime ){
       std::vector<unsigned> find( ingrid->getDimension() );
@@ -124,11 +130,11 @@ bool FindContourSurface::prepareForTasks(){
       direction.resize( ingrid->getDimension(), 0 );
       direction[dir_n] = 0.999999999*ingrid->getGridSpacing()[dir_n];
   }
-  firsttime=false; return true;
+  firsttime=false; 
 }
 
-void FindContourSurface::finishTaskSet(){
-  ContourFindingBase::finishTaskSet();
+void FindContourSurface::finishAveraging(){
+  ContourFindingBase::finishAveraging();
   // And update the list of active grid points
   if( gbuffer>0 ){
       std::vector<double> dx( ingrid->getGridSpacing() );

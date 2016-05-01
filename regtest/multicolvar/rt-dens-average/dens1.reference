@@ -1,5 +1,5 @@
 #! FIELDS x dens.dens ddens.dens_x density ddensity_x
-#! SET normalisation    0.0000
+#! SET normalisation    2.0000
 #! SET min_x -2.5
 #! SET max_x 2.5
 #! SET nbins_x  50

@@ -19,33 +19,28 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_gridtools_ActionWithGrid_h
-#define __PLUMED_gridtools_ActionWithGrid_h
+#ifndef __PLUMED_gridtools_GridPrintingBase_h
+#define __PLUMED_gridtools_GridPrintingBase_h
 
-#include "vesselbase/ActionWithAveraging.h"
-#include "AverageOnGrid.h"
+#include "core/ActionPilot.h"
+#include "GridVessel.h"
+#include "tools/OFile.h"
 
 namespace PLMD {
 namespace gridtools {
 
-class ActionWithGrid : public vesselbase::ActionWithAveraging {
-private:
-/// The total number of bins
-  std::vector<unsigned> nbins;
-/// The spacing between grid points
-  std::vector<double> gspacing;
-/// The weights we are going to use for reweighting
-  std::vector<Value*> weights;
+class GridPrintingBase : public ActionPilot {
 protected:
-/// The grid vessel
-  GridVessel* mygrid;
-/// Read in stuff that is specifically for the grid and create it
-  void createGrid( const std::string& type, const std::string& inputstr );
+  GridVessel* ingrid;
+  std::string fmt, filename;
 public:
   static void registerKeywords( Keywords& keys );
-  explicit ActionWithGrid( const ActionOptions& ); 
-  void performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const ;
-  virtual void compute( const unsigned& current, MultiValue& myvals ) const = 0;
+  explicit GridPrintingBase(const ActionOptions&ao);
+  void calculate(){}
+  void apply(){}
+  void update();
+  void runFinalJobs();
+  virtual void printGrid( OFile& ofile ) const=0;
 };
 
 }

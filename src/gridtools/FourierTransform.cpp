@@ -76,9 +76,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit FourierTransform(const ActionOptions&ao); 
 #ifndef __PLUMED_HAS_FFTW
-  void performOperationsWithGrid( const bool& from_update ){}
+  void performOperations( const bool& from_update ){}
 #else
-  void performOperationsWithGrid( const bool& from_update );
+  void performOperations( const bool& from_update );
 #endif
   unsigned getNumberOfDerivatives(){ return 0; }
   void compute( const unsigned& , MultiValue& ) const {}
@@ -173,7 +173,7 @@ fourier_params(2)
 }
 
 #ifdef __PLUMED_HAS_FFTW
-void FourierTransform::performOperationsWithGrid( const bool& from_update ){
+void FourierTransform::performOperations( const bool& from_update ){
     
     // Spacing of the real grid
     std::vector<double> g_spacing ( ingrid->getGridSpacing() );

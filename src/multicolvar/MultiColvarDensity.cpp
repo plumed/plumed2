@@ -101,8 +101,8 @@ public:
   unsigned getNumberOfQuantities() const ;
   bool isPeriodic(){ return false; }
   unsigned getNumberOfDerivatives(){ return 0; }
-  void clearGrid();
-  bool prepareForTasks();
+  void clearAverage();
+  void prepareForAveraging();
   void compute( const unsigned& , MultiValue& ) const ;
 };
 
@@ -230,7 +230,7 @@ ActionWithGrid(ao)
   if( mycolv->isDensity() ) createGrid( "histogram", vstring );
   else createGrid( "average", vstring );
   // And finish the grid setup
-  finishGridSetup();
+  setAveragingAction( mygrid, true );
 
   // Enusre units for cube files are set correctly
   if( !fractional ){
@@ -247,8 +247,7 @@ unsigned MultiColvarDensity::getNumberOfQuantities() const {
   return directions.size() + 2;
 }
 
-void MultiColvarDensity::clearGrid(){
-  plumed_assert( mygrid->wasreset() );
+void MultiColvarDensity::clearAverage(){
   std::vector<double> min(directions.size()), max(directions.size());
   std::vector<std::string> gmin(directions.size()), gmax(directions.size());;
   for(unsigned i=0;i<directions.size();++i){ min[i]=-0.5; max[i]=0.5; }
@@ -267,10 +266,11 @@ void MultiColvarDensity::clearGrid(){
      }
   }
   for(unsigned i=0;i<directions.size();++i){ Tools::convert(min[i],gmin[i]); Tools::convert(max[i],gmax[i]); }
-  mygrid->clear(); mygrid->setBounds( gmin, gmax, nbins, gspacing ); resizeFunctions();
+  ActionWithAveraging::clearAverage();
+  mygrid->setBounds( gmin, gmax, nbins, gspacing ); resizeFunctions();
 }
 
-bool MultiColvarDensity::prepareForTasks(){
+void MultiColvarDensity::prepareForAveraging(){
   for(unsigned i=0;i<directions.size();++i){
       if( confined[i] ) continue;
       std::string max; Tools::convert( 0.5*mycolv->getBox()(directions[i],directions[i]), max ); 
@@ -281,7 +281,7 @@ bool MultiColvarDensity::prepareForTasks(){
   for(unsigned i=0;i<stash->getNumberOfStoredValues();++i) taskFlags[i]=1;
   lockContributors();
   // Retrieve the origin
-  origin = getPosition(0); return true;
+  origin = getPosition(0); 
 }
 
 void MultiColvarDensity::compute( const unsigned& current, MultiValue& myvals ) const {

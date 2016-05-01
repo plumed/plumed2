@@ -40,10 +40,10 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithInputGrid(const ActionOptions&ao);
-  bool prepareForTasks();
-  void runFinalJobs();
+  virtual void clearAverage();
+  virtual void prepareForAveraging();
   virtual bool checkAllActive() const { return true; }
-  virtual void performGridOperations( const bool& from_update );
+  virtual void performOperations( const bool& from_update );
 };
 
 inline

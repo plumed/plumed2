@@ -54,7 +54,8 @@ PLUMED_REGISTER_ACTION(ConvertToFES,"CONVERT_TO_FES")
 void ConvertToFES::registerKeywords( Keywords& keys ){
   ActionWithInputGrid::registerKeywords( keys );
   keys.add("optional","TEMP","the temperature at which you are operating");
-  keys.remove("STRIDE"); keys.remove("KERNEL"); keys.remove("BANDWIDTH"); keys.remove("CLEAR"); 
+  keys.remove("STRIDE"); keys.remove("KERNEL"); keys.remove("BANDWIDTH"); 
+  keys.remove("LOGWEIGHTS"); keys.remove("CLEAR"); 
 }
 
 ConvertToFES::ConvertToFES(const ActionOptions&ao):
@@ -68,7 +69,7 @@ ActionWithInputGrid(ao)
   if( ingrid->noDerivatives() ) mygrid->setNoDerivatives(); 
   std::vector<double> fspacing;
   mygrid->setBounds( ingrid->getMin(), ingrid->getMax(), ingrid->getNbin(), fspacing); 
-  finishGridSetup(); resizeFunctions();
+  setAveragingAction( mygrid, true );
 
   simtemp=0.; parse("TEMP",simtemp);
   if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();

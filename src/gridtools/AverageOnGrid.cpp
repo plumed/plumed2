@@ -49,23 +49,20 @@ void AverageOnGrid::accumulate( const unsigned& ipoint, const double& weight, co
 }
 
 double AverageOnGrid::getGridElement( const unsigned& ipoint, const unsigned& jelement ) const {
-  if( unormalised ) return data[nper*ipoint + jelement];  
+  if( noAverage() ) return getDataElement( nper*ipoint + jelement);  
 
-  if( noderiv ) return data[nper*ipoint+jelement] / data[nper*(1+ipoint) - 1];
+  if( jelement>=(nper-(dimension+1)) ) return getDataElement( nper*ipoint + jelement ); 
+
+  if( noderiv ) return getDataElement( nper*ipoint+jelement ) / getDataElement( nper*(1+ipoint) - 1);
 
   double rdenom = 1.0; 
-  if( fabs(data[nper*(ipoint+1) -(dimension+1)])>epsilon ) rdenom = 1. / data[nper*(ipoint+1) - (dimension+1)];
+  if( fabs(getDataElement( nper*(ipoint+1) -(dimension+1) ))>epsilon ) rdenom = 1. / getDataElement( nper*(ipoint+1) - (dimension+1) );
   
   unsigned jderiv = jelement%(1+dimension);
-  if( jderiv==0 ) return rdenom*data[nper*ipoint+jelement]; 
+  if( jderiv==0 ) return rdenom*getDataElement( nper*ipoint+jelement ); 
 
   unsigned jfloor = std::floor( jelement / (1+dimension) );
-  return rdenom*data[nper*ipoint+jelement] - rdenom*rdenom*data[nper*ipoint+jfloor]*data[nper*(ipoint+1) - (dimension+1) + jderiv ]; 
-}
-
-double AverageOnGrid::getGridElementForPrint( const unsigned& ipoint, const unsigned& jelement ) const {
-  plumed_assert( bounds_set && ipoint<npoints && jelement<nper && active[ipoint] );
-  return data[nper*ipoint + jelement]; 
+  return rdenom*getDataElement( nper*ipoint+jelement ) - rdenom*rdenom*getDataElement(nper*ipoint+jfloor)*getDataElement(nper*(ipoint+1) - (dimension+1) + jderiv); 
 }
 
 }

@@ -57,7 +57,7 @@ public:
 /// Return a pointer to specific argument
   Value* getPntrToArgument( const unsigned n );
 /// Returns the number of arguments
-  unsigned getNumberOfArguments() const ;
+  virtual unsigned getNumberOfArguments() const ;
 /// Takes the difference taking into account pbc for arg i
   double difference(int, double, double) const;
 /// Takes one value and brings it back into the pbc of argument i 

@@ -55,7 +55,7 @@ public:
 /// Number of quantities is the number of points in each point on the grid
   virtual unsigned getNumberOfQuantities() const { return 1 + ingrid->getDimension(); }
 /// This does output if needs be
-  void finishTaskSet();
+  void finishAveraging();
 };
 
 inline

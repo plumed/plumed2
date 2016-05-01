@@ -294,8 +294,6 @@ void ActionWithVessel::runAllTasks(){
   for(unsigned i=rank;i<nactive_tasks;i+=stride){
       // Calculate the stuff in the loop for this action
       performTask( indexOfTaskInFullList[i], partialTaskList[i], myvals );
-      // Weight should be between zero and one
-      plumed_dbg_assert( myvals.get(0)>=0 && myvals.get(0)<=1.0 );
 
       // Check for conditions that allow us to just to skip the calculation
       // the condition is that the weight of the contribution is low 

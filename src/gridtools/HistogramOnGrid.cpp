@@ -46,6 +46,10 @@ discrete(false)
   }
 }
 
+bool HistogramOnGrid::noDiscreteKernels() const {
+  return !discrete;
+}
+
 void HistogramOnGrid::setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax,
                                  const std::vector<unsigned>& nbins, const std::vector<double>& spacing ){
   GridVessel::setBounds( smin, smax, nbins, spacing );
@@ -103,7 +107,6 @@ void HistogramOnGrid::calculate( const unsigned& current, MultiValue& myvals, st
      } else {
          std::vector<Value*> vv( getVectorOfValues() );
 
-         unsigned ntot=nper*getNumberOfPoints();
          double newval; std::vector<double> xx( dimension );
          for(unsigned i=0;i<num_neigh;++i){
              unsigned ineigh=neighbors[i];
@@ -126,19 +129,13 @@ void HistogramOnGrid::accumulate( const unsigned& ipoint, const double& weight, 
 
 void HistogramOnGrid::finish( const std::vector<double>& buffer ){
   if( addOneKernelAtATime ){
-     wascleared=false; 
      for(unsigned i=0;i<getAction()->getCurrentNumberOfActiveTasks();++i){ 
-         for(unsigned j=0;j<nper;++j) data[nper*getAction()->getActiveTask(i)+j]+=buffer[bufstart+i*nper+j]; 
+         for(unsigned j=0;j<nper;++j) addDataElement( nper*getAction()->getActiveTask(i)+j, buffer[bufstart+i*nper+j] ); 
      }
   } else {
      GridVessel::finish( buffer );
   }
 }
-
-double HistogramOnGrid::getGridElement( const unsigned& ipoint, const unsigned& jelement ) const {
-  if( unormalised ) return GridVessel::getGridElement( ipoint, jelement );
-  return GridVessel::getGridElement( ipoint, jelement ) / norm;
-} 
 
 }
 }

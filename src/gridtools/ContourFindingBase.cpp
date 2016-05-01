@@ -80,7 +80,7 @@ mydata(NULL)
   }
 }
 
-void ContourFindingBase::finishTaskSet(){
+void ContourFindingBase::finishAveraging(){
   // And this looks after the output
   if( mydata ){
       std::vector<double> point( 1 + ingrid->getDimension() );

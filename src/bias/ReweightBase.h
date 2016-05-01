@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -19,28 +19,32 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_gridtools_AverageOnGrid_h
-#define __PLUMED_gridtools_AverageOnGrid_h
+#ifndef __PLUMED_bias_ReweightBase_h
+#define __PLUMED_bias_ReweightBase_h
 
-#include "HistogramOnGrid.h"
+#include "core/ActionWithValue.h"
+#include "core/ActionWithArguments.h"
 
 namespace PLMD {
-namespace gridtools {
+namespace bias {
 
-class AverageOnGrid : public HistogramOnGrid {
+class ReweightBase : 
+public ActionWithValue,
+public ActionWithArguments
+{
+protected:
+/// The temperature at which you are running the simulation
+  double simtemp;
+/// Retrieve all the values with a label ending in .lab
+  void retrieveAllBiases( const std::string& lab, std::vector<Value*>& vals );
 public:
-  static void registerKeywords( Keywords& keys );
-  explicit AverageOnGrid( const vesselbase::VesselOptions& da );
-  void accumulate( const unsigned& ipoint, const double& weight, const double& dens, const std::vector<double>& der, std::vector<double>& buffer ) const ;
-  double getGridElement( const unsigned& ipoint, const unsigned& jelement ) const ;
-  unsigned getNumberOfComponents() const ;
-};
-
-inline
-unsigned AverageOnGrid::getNumberOfComponents() const {
-  if( noderiv ) return nper - 1;
-  return nper / ( dimension + 1 ) - 1;
-}
+  static void registerKeywords(Keywords&);
+  explicit ReweightBase(const ActionOptions&ao);
+  unsigned getNumberOfDerivatives(){ return 0; }
+  void calculate();
+  virtual double getLogWeight() const = 0;
+  void apply(){}
+}; 
 
 }
 }

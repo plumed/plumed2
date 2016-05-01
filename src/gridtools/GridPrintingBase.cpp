@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2014,2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -19,23 +19,27 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ActionWithInputGrid.h"
+#include "GridPrintingBase.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
+#include "vesselbase/ActionWithVessel.h"
 
 namespace PLMD {
 namespace gridtools {
 
-void ActionWithInputGrid::registerKeywords( Keywords& keys ){
-  ActionWithGrid::registerKeywords( keys );
-  keys.add("compulsory","GRID","the action that creates the input grid you would like to use");
-  keys.add("optional","COMPONENT","if your input is a vector field use this to specifiy the component of the input vector field for which you wish to use");
+void GridPrintingBase::registerKeywords( Keywords& keys ){
+  Action::registerKeywords( keys ); ActionPilot::registerKeywords( keys );
+  keys.add("compulsory","GRID","the action that creates the grid you would like to output");
+  keys.add("compulsory","STRIDE","0","the frequency with which the grid should be output to the file.  The default "
+                                     "value of 0 ensures that the grid is only output at the end of the trajectory");
+  keys.add("compulsory","FILE","density","the file on which to write the grid.");
+  keys.add("optional","FMT","the format that should be used to output real numbers");
 }
 
-ActionWithInputGrid::ActionWithInputGrid(const ActionOptions&ao):
+GridPrintingBase::GridPrintingBase(const ActionOptions&ao):
 Action(ao),
-ActionWithGrid(ao),
-ingrid(NULL)
+ActionPilot(ao),
+fmt("%f")
 {
   std::string mlab; parse("GRID",mlab);
   vesselbase::ActionWithVessel* mves= plumed.getActionSet().selectWithLabel<vesselbase::ActionWithVessel*>(mlab);
@@ -44,37 +48,29 @@ ingrid(NULL)
 
   for(unsigned i=0;i<mves->getNumberOfVessels();++i){
       ingrid=dynamic_cast<GridVessel*>( mves->getPntrToVessel(i) );
-      if( ingrid ) break; 
+      if( ingrid ) break;
   }
   if( !ingrid ) error("input action does not calculate a grid");
 
-  if( ingrid->getNumberOfComponents()==1 ){
-     mycomp=0;
-  } else {
-     int tcomp=-1; parse("COMPONENT",tcomp);
-     if( tcomp<0 ) error("component of vector field was not specified - use COMPONENT keyword");
-     mycomp=tcomp;
-  }
-  log.printf("  using %uth component of grid calculated by action %s \n",mycomp,mves->getLabel().c_str() );
+  parse("FMT",fmt); parse("FILE",filename); 
+  if(filename.length()==0) error("name out output file was not specified");
+  log.printf("  outputting grid calculated by action %s to file named %s with format %s \n",mves->getLabel().c_str(),filename.c_str(), fmt.c_str() );
 }
 
-void ActionWithInputGrid::clearAverage(){
-  mygrid->setBounds( ingrid->getMin(), ingrid->getMax(), mygrid->getNbin(), mygrid->getGridSpacing() );
-  ActionWithAveraging::clearAverage();
+void GridPrintingBase::update(){
+  if( getStep()==0 || getStride()==0 ) return ;
+
+  OFile ofile; ofile.link(*this);
+  ofile.setBackupString("analysis");
+  ofile.open( filename ); printGrid( ofile ); ofile.close();
 }
 
-void ActionWithInputGrid::prepareForAveraging(){
-  if( checkAllActive() ){
-     for(unsigned i=0;i<ingrid->getNumberOfPoints();++i){
-         if( ingrid->inactive(i) ) error("if FIND_CONTOUR is used with BUFFER option then other actions cannot be performed with grid");
-     }
-  }
-}
+void GridPrintingBase::runFinalJobs(){
+  if( getStride()>0 ) return;
 
-void ActionWithInputGrid::performOperations( const bool& from_update ){
-  prepareForAveraging(); runAllTasks();
+  OFile ofile; ofile.link(*this);
+  ofile.open( filename ); printGrid( ofile ); ofile.close();
 }
 
 }
 }
-

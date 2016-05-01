@@ -37,18 +37,13 @@ namespace PLMD {
 namespace gridtools {
 
 class InterpolateGrid : public ActionWithInputGrid {
-private:
-  std::vector<unsigned> nbin;
-  std::vector<double> gspacing;
 public:
   static void registerKeywords( Keywords& keys );
   explicit InterpolateGrid(const ActionOptions&ao);
   unsigned getNumberOfDerivatives(){ return 0; }
   unsigned getNumberOfQuantities() const ;
-  void clearGrid();
   void compute( const unsigned& current, MultiValue& myvals ) const ;
   bool isPeriodic(){ return false; }
-  bool onStep() const { return true; }
 };
 
 PLUMED_REGISTER_ACTION(InterpolateGrid,"INTERPOLATE_GRID")
@@ -57,7 +52,7 @@ void InterpolateGrid::registerKeywords( Keywords& keys ){
   ActionWithInputGrid::registerKeywords( keys );
   keys.add("optional","GRID_BIN","the number of bins for the grid");
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
-  keys.remove("STRIDE"); keys.remove("KERNEL"); keys.remove("BANDWIDTH"); keys.remove("CLEAR");
+  keys.remove("KERNEL"); keys.remove("BANDWIDTH"); 
 }
 
 InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
@@ -68,16 +63,16 @@ ActionWithInputGrid(ao)
   if( ingrid->noDerivatives() ) error("cannot interpolate a grid that does not have derivatives"); 
   // Create the input from the old string
   createGrid( "grid", "COMPONENTS=" + getLabel() + " " + ingrid->getInputString()  );
-  finishGridSetup();
 
-  parseVector("GRID_BIN",nbin); parseVector("GRID_SPACING",gspacing);
+  std::vector<unsigned> nbin; parseVector("GRID_BIN",nbin); 
+  std::vector<double> gspacing; parseVector("GRID_SPACING",gspacing);
   if( nbin.size()!=ingrid->getDimension() && gspacing.size()!=ingrid->getDimension() ){
       error("GRID_BIN or GRID_SPACING must be set");
   } 
 
   // Need this for creation of tasks
   mygrid->setBounds( ingrid->getMin(), ingrid->getMax(), nbin, gspacing ); 
-  resizeFunctions();
+  setAveragingAction( mygrid, true );
 
   // Now create task list
   for(unsigned i=0;i<mygrid->getNumberOfPoints();++i) addTaskToList(i);
@@ -89,10 +84,6 @@ ActionWithInputGrid(ao)
 
 unsigned InterpolateGrid::getNumberOfQuantities() const {
   return 2 + ingrid->getDimension();
-}
-
-void InterpolateGrid::clearGrid(){
-  mygrid->setBounds( ingrid->getMin(), ingrid->getMax(), nbin, gspacing ); mygrid->clear();
 }
 
 void InterpolateGrid::compute( const unsigned& current, MultiValue& myvals ) const {

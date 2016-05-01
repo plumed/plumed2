@@ -1,5 +1,5 @@
 #! FIELDS x fA1u dfA1u_x
-#! SET normalisation    0.0000
+#! SET normalisation    1.0000
 #! SET min_x 0.0
 #! SET max_x 3.0
 #! SET nbins_x  100

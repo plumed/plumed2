@@ -27,20 +27,16 @@ namespace PLMD {
 namespace gridtools {
 
 void GridVessel::registerKeywords( Keywords& keys ){
-  Vessel::registerKeywords( keys );
+  AveragingVessel::registerKeywords( keys );
   keys.add("compulsory","COMPONENTS","the names of the components in the vector");
   keys.add("compulsory","COORDINATES","the names of the coordinates of the grid");
   keys.add("compulsory","PBC","is the grid periodic in each direction or not");
-  keys.addFlag("NOMEMORY",false,"should the data in the grid be deleted after print/analysis");
-  keys.addFlag("UNORMALIZED",false,"don't normalise grid");
 }
 
 GridVessel::GridVessel( const vesselbase::VesselOptions& da ):
-Vessel(da),
+AveragingVessel(da),
 bounds_set(false),
 cube_units(1.0),
-wascleared(true), 
-norm(0.0),
 noderiv(false)
 {
   std::vector<std::string> compnames; parseVector("COMPONENTS",compnames);
@@ -48,8 +44,6 @@ noderiv(false)
   dimension=coordnames.size();
   std::vector<std::string> spbc( dimension ); parseVector("PBC",spbc); 
   str_min.resize( dimension);  str_max.resize( dimension ); 
-  parseFlag("NOMEMORY",nomemory); parseFlag("UNORMALIZED",unormalised);
-  foundprint=nomemory;
 
   unsigned n=0; nper=compnames.size()*( 1 + coordnames.size() );
   arg_names.resize( coordnames.size() + compnames.size()*( 1 + coordnames.size() ) );
@@ -90,9 +84,10 @@ void GridVessel::setBounds( const std::vector<std::string>& smin, const std::vec
       Tools::convert( str_min[i], min[i] );
       Tools::convert( str_max[i], max[i] );
       if( spacing.size()==dimension && binsin.size()==dimension ){
-          unsigned spc = std::floor(( max[i] - min[i] ) / spacing[i]) + 1;
-          if( spc>binsin[i] ) nbin[i]=spc;
-          else nbin[i]=binsin[i]; 
+          double range = max[i] - min[i]; unsigned spc = std::floor( range / spacing[i]);
+          // This check ensures that nbins is set correctly if spacing is set the same as the number of bins
+          if( fabs( binsin[i]*spacing[i]-range )>epsilon ) spc += 1;
+          if( spc>binsin[i] ) nbin[i]=spc; else nbin[i]=binsin[i]; 
       } else if( binsin.size()==dimension ) nbin[i]=binsin[i];
       else if( spacing.size()==dimension ) nbin[i] = std::floor(( max[i] - min[i] ) / spacing[i]) + 1; 
       else plumed_error();
@@ -101,6 +96,7 @@ void GridVessel::setBounds( const std::vector<std::string>& smin, const std::vec
       stride[i]=npoints;
       npoints*=nbin[i]; 
   }
+  resize();  // Always resize after setting new bounds as grid size may have have changed 
 } 
 
 std::string GridVessel::description(){
@@ -123,11 +119,8 @@ std::string GridVessel::description(){
 
 void GridVessel::resize(){
   plumed_massert( nper>0, "Number of datapoints at each grid point has not been set");
-  resizeBuffer( getNumberOfBufferPoints()*nper ); 
-  if( data.size()!=npoints*nper ){ 
-      data.resize( npoints*nper, 0 ); 
-      active.resize( npoints, true );
-  }
+  resizeBuffer( getNumberOfBufferPoints()*nper ); setDataSize( npoints*nper ); 
+  if( active.size()!=npoints) active.resize( npoints, true );
 }
 
 unsigned GridVessel::getIndex( const std::vector<unsigned>& indices ) const {
@@ -198,25 +191,17 @@ void GridVessel::getSplineNeighbors( const unsigned& mybox, std::vector<unsigned
 
 double GridVessel::getGridElement( const unsigned& ipoint, const unsigned& jelement ) const {
   plumed_assert( bounds_set && ipoint<npoints && jelement<nper && active[ipoint] );
-  return data[ nper*ipoint + jelement ];
-}
-
-double GridVessel::getGridElementForPrint( const unsigned& ipoint, const unsigned& jelement ) const {
-  return getGridElement( ipoint, jelement );
+  return getDataElement( nper*ipoint + jelement  );
 }
 
 void GridVessel::setGridElement( const unsigned& ipoint, const unsigned& jelement, const double& value ){
   plumed_dbg_assert( bounds_set && ipoint<npoints && jelement<nper );
-  wascleared=false; data[ nper*ipoint + jelement ] = value;
+  setDataElement( nper*ipoint + jelement, value );
 }
 
 void GridVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
   plumed_dbg_assert( myvals.getNumberOfValues()==(nper+1) );
   for(unsigned i=0;i<nper;++i) buffer[bufstart + nper*current + i] += myvals.get(i+1);
-}
-
-void GridVessel::finish( const std::vector<double>& buffer ){
-  wascleared=false; for(unsigned i=0;i<data.size();++i) data[i]+=buffer[bufstart + i];
 }
 
 double GridVessel::getGridElement( const std::vector<unsigned>& indices, const unsigned& jelement ) const {
@@ -283,15 +268,6 @@ void GridVessel::getNeighbors( const std::vector<unsigned>& indices, const std::
           num_neighbors++;
       }
   }
-}
-
-void GridVessel::reset(){
-  wascleared=true; 
-}
-
-void GridVessel::clear(){
-  plumed_assert( wasreset() ); 
-  norm=0; data.assign( data.size(), 0.0 );
 }
 
 void GridVessel::setCubeUnits( const double& units ){

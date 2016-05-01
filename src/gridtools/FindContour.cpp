@@ -42,10 +42,10 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit FindContour(const ActionOptions&ao);
   bool checkAllActive() const { return gbuffer==0; }
-  bool prepareForTasks();
+  void prepareForAveraging();
   bool isPeriodic(){ return false; }
   void compute( const unsigned& current, MultiValue& myvals ) const ;
-  void finishTaskSet();
+  void finishAveraging();
 };
 
 PLUMED_REGISTER_ACTION(FindContour,"FIND_CONTOUR")
@@ -67,7 +67,7 @@ firsttime(true)
   checkRead();
 }
 
-bool FindContour::prepareForTasks(){
+void FindContour::prepareForAveraging(){
   // Create a task list if first time
   if( firsttime ){
       for(unsigned i=0;i<ingrid->getDimension()*ingrid->getNumberOfPoints();++i) addTaskToList( i );
@@ -106,7 +106,7 @@ bool FindContour::prepareForTasks(){
          else ind[j]-=1;
      }
   }
-  lockContributors(); return true;
+  lockContributors(); 
 }
 
 void FindContour::compute( const unsigned& current, MultiValue& myvals ) const {
@@ -126,8 +126,8 @@ void FindContour::compute( const unsigned& current, MultiValue& myvals ) const {
   for(unsigned i=0;i<ingrid->getDimension();++i) myvals.setValue( 1+i, point[i] );
 }
 
-void FindContour::finishTaskSet(){
-  ContourFindingBase::finishTaskSet();
+void FindContour::finishAveraging(){
+  ContourFindingBase::finishAveraging();
   // And update the list of active grid points
   if( gbuffer>0 ){
       std::vector<unsigned> neighbours; unsigned num_neighbours;

@@ -117,8 +117,9 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit Histogram(const ActionOptions&ao);
-  bool prepareForTasks();
-  void finishTaskSet();
+  void prepareForAveraging();
+  void performOperations( const bool& from_update );
+  void finishAveraging();
   bool isPeriodic(){ return false; }
   unsigned getNumberOfDerivatives(){ return getNumberOfArguments(); }
   void compute( const unsigned& , MultiValue& ) const ;
@@ -132,6 +133,7 @@ void Histogram::registerKeywords( Keywords& keys ){
   keys.add("compulsory","GRID_MAX","the upper bounds for the grid");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
+  keys.use("UPDATE_FROM"); keys.use("UPDATE_UNTIL");
 }
 
 Histogram::Histogram(const ActionOptions&ao):
@@ -166,31 +168,29 @@ kernel(NULL)
   plumed_assert( myhist ); myhist->addOneKernelEachTimeOnly();
   // Create a task list
   for(unsigned i=0;i<mygrid->getNumberOfPoints();++i) addTaskToList(i);
-  finishGridSetup(); resizeFunctions(); checkRead();
+  setAveragingAction( mygrid, myhist->noDiscreteKernels() ); checkRead();
 }
 
-bool Histogram::prepareForTasks(){
+void Histogram::prepareForAveraging(){
   // Now fetch the kernel and the active points
   std::vector<double> point( getNumberOfArguments() );  
   for(unsigned i=0;i<point.size();++i) point[i]=getArgument(i);
-  unsigned num_neigh; std::vector<unsigned> neighbors;
+  unsigned num_neigh; std::vector<unsigned> neighbors(1);
   kernel = myhist->getKernelAndNeighbors( point, num_neigh, neighbors );
   if( num_neigh>1 ){
       // Activate relevant tasks
       deactivateAllTasks();
       for(unsigned i=0;i<num_neigh;++i) taskFlags[neighbors[i]]=1; 
       lockContributors();
-
-      // Calculate the grid at all relevant points
-      return true;
   } else {
       // This is used when we are not doing kernel density evaluation
-      mygrid->setGridElement( neighbors[0], 0, mygrid->getGridElement( neighbors[0], 0 ) + 1.0 ); 
-      return false;
+      mygrid->setGridElement( neighbors[0], 0, mygrid->getGridElement( neighbors[0], 0 ) + cweight ); 
   }  
 }
 
-void Histogram::finishTaskSet(){
+void Histogram::performOperations( const bool& from_update ){ plumed_dbg_assert( !myhist->noDiscreteKernels() ); }
+
+void Histogram::finishAveraging(){
   delete kernel;
 }
 

@@ -1,5 +1,5 @@
 #! FIELDS x y ss2
-#! SET normalisation    0.0000
+#! SET normalisation    1.0000
 #! SET min_x -7.27971
 #! SET max_x 7.27971
 #! SET nbins_x  14

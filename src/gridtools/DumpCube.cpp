@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
-#include "ActionWithInputGrid.h"
+#include "GridPrintingBase.h"
 #include "tools/OFile.h"
 
 //+PLUMEDOC GRIDANALYSIS DUMPCUBE
@@ -35,46 +35,42 @@ Output a three dimensional grid using the Gaussian cube file format.
 namespace PLMD {
 namespace gridtools {
 
-class DumpCube : public ActionWithInputGrid {
+class DumpCube : public GridPrintingBase {
 private:
-  std::string fmt, filename;
+  unsigned mycomp;
 public:
   static void registerKeywords( Keywords& keys );
   explicit DumpCube(const ActionOptions&ao); 
-  void performGridOperations( const bool& from_update );
-  unsigned getNumberOfDerivatives(){ return 0; }
-  void compute( const unsigned& , MultiValue& ) const {}
-  bool isPeriodic(){ return false; }
+  void printGrid( OFile& ofile ) const ;
 };
 
 PLUMED_REGISTER_ACTION(DumpCube,"DUMPCUBE")
 
 void DumpCube::registerKeywords( Keywords& keys ){
-  ActionWithInputGrid::registerKeywords( keys );
-  keys.add("compulsory","FILE","density","the file on which to write the grid."); 
-  keys.add("optional","FMT","the format that should be used to output real numbers");
+  GridPrintingBase::registerKeywords( keys );
+  keys.add("optional","COMPONENT","if your input is a vector field use this to specifiy the component of the input vector field for which you wish to output");
 }
 
 DumpCube::DumpCube(const ActionOptions&ao):
 Action(ao),
-ActionWithInputGrid(ao),
-fmt("%f")
+GridPrintingBase(ao)
 {
+  fmt = fmt + " ";
   if( ingrid->getDimension()!=3 ) error("cannot print cube file if grid does not contain three dimensional data");
 
-  parse("FMT",fmt); fmt=fmt +" "; parse("FILE",filename); 
-  if(filename.length()==0) error("name out output file was not specified");
-  log.printf("  outputting grid to file named %s with format %s \n",filename.c_str(), fmt.c_str() );
+  if( ingrid->getNumberOfComponents()==1 ){
+     mycomp=0;
+  } else {
+     int tcomp=-1; parse("COMPONENT",tcomp);
+     if( tcomp<0 ) error("component of vector field was not specified - use COMPONENT keyword");
+     mycomp=tcomp*(1+ingrid->getDimension()); if( ingrid->noDerivatives() ) mycomp=tcomp;
+     log.printf("  using %dth component of grid \n",tcomp );
+  }
 
   checkRead();
 }
 
-void DumpCube::performGridOperations( const bool& from_update ){
-  if( !from_update && getStride()>0 ) return ;
-  OFile ofile; ofile.link(*this);
-  if( from_update ) ofile.setBackupString("analysis");
-  ofile.open( filename );
-
+void DumpCube::printGrid( OFile& ofile ) const {
   double lunit = ingrid->getCubeUnits();
 
   ofile.printf("PLUMED CUBE FILE\n");
@@ -90,14 +86,12 @@ void DumpCube::performGridOperations( const bool& from_update ){
   for(pp[0]=0;pp[0]<nbin[0];++pp[0]){
       for(pp[1]=0;pp[1]<nbin[1];++pp[1]){
           for(pp[2]=0;pp[2]<nbin[2];++pp[2]){
-              ofile.printf(fmt.c_str(), getFunctionValue(pp) );
+              ofile.printf(fmt.c_str(), ingrid->getGridElement( ingrid->getIndex(pp), mycomp ) );
               if(pp[2]%6==5) ofile.printf("\n");
           }
           ofile.printf("\n");
      }
   }
-
-  ofile.close();
 }
 
 }
