@@ -80,7 +80,6 @@ public:
 #else
   void performOperations( const bool& from_update );
 #endif
-  unsigned getNumberOfDerivatives(){ return 0; }
   void compute( const unsigned& , MultiValue& ) const {}
   bool isPeriodic(){ return false; }
 };

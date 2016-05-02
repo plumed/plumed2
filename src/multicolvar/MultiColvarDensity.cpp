@@ -100,7 +100,6 @@ public:
   static void registerKeywords( Keywords& keys );
   unsigned getNumberOfQuantities() const ;
   bool isPeriodic(){ return false; }
-  unsigned getNumberOfDerivatives(){ return 0; }
   void clearAverage();
   void prepareForAveraging();
   void compute( const unsigned& , MultiValue& ) const ;

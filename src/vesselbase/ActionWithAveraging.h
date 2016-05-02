@@ -25,6 +25,7 @@
 #include "core/ActionPilot.h"
 #include "core/ActionWithValue.h"
 #include "core/ActionAtomistic.h"
+#include "core/ActionWithValue.h"
 #include "core/ActionWithArguments.h"
 #include "ActionWithVessel.h"
 #include "AveragingVessel.h"
@@ -45,6 +46,7 @@ class ActionWithAveraging :
   public ActionPilot,
   public ActionAtomistic,
   public ActionWithArguments,
+  public ActionWithValue,
   public ActionWithVessel
 {
 friend class AveragingVessel;
@@ -70,6 +72,7 @@ public:
   void lockRequests();
   void unlockRequests();
   void calculateNumericalDerivatives(PLMD::ActionWithValue*);
+  virtual unsigned getNumberOfDerivatives(){ return 0; }
   unsigned getNumberOfArguments() const ;
   void calculate(){}
   void apply(){}

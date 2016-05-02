@@ -40,7 +40,6 @@ class InterpolateGrid : public ActionWithInputGrid {
 public:
   static void registerKeywords( Keywords& keys );
   explicit InterpolateGrid(const ActionOptions&ao);
-  unsigned getNumberOfDerivatives(){ return 0; }
   unsigned getNumberOfQuantities() const ;
   void compute( const unsigned& current, MultiValue& myvals ) const ;
   bool isPeriodic(){ return false; }

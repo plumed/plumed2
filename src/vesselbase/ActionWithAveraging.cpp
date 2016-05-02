@@ -27,13 +27,13 @@ namespace PLMD {
 namespace vesselbase {
 
 void ActionWithAveraging::registerKeywords( Keywords& keys ){
-  Action::registerKeywords( keys ); ActionPilot::registerKeywords( keys );
-  ActionAtomistic::registerKeywords( keys ); ActionWithArguments::registerKeywords( keys ); ActionWithVessel::registerKeywords( keys );
+  Action::registerKeywords( keys ); ActionPilot::registerKeywords( keys ); ActionAtomistic::registerKeywords( keys ); 
+  ActionWithArguments::registerKeywords( keys ); ActionWithValue::registerKeywords( keys ); ActionWithVessel::registerKeywords( keys );
   keys.add("compulsory","STRIDE","1","the frequency with which the data should be collected and added to the quantity being averaged");
   keys.add("compulsory","CLEAR","0","the frequency with which to clear all the accumulated data.  The default value "
                                     "of 0 implies that all the data will be used and that the grid will never be cleared");
   keys.add("optional","LOGWEIGHTS","list of actions that calculates log weights that should be used to weight configurations when calculating averages");
-  keys.addFlag("UNORMALIZED",false,"output the unaveraged quantity/quantities.");
+  keys.addFlag("UNORMALIZED",false,"output the unaveraged quantity/quantities."); keys.remove("NUMERICAL_DERIVATIVES");
 }
 
 ActionWithAveraging::ActionWithAveraging( const ActionOptions& ao ):
@@ -41,6 +41,7 @@ Action(ao),
 ActionPilot(ao),
 ActionAtomistic(ao),
 ActionWithArguments(ao),
+ActionWithValue(ao),
 ActionWithVessel(ao),
 myaverage(NULL),
 useRunAllTasks(false),
@@ -55,7 +56,7 @@ clearstride(0)
   }
   if( keywords.exists("LOGWEIGHTS") ){
       std::vector<std::string> wwstr; parseVector("LOGWEIGHTS",wwstr);
-      log.printf("  reweighting using weights from ");
+      if( wwstr.size()>0 ) log.printf("  reweighting using weights from ");
       std::vector<Value*> arg( getArguments() );
       for(unsigned i=0;i<wwstr.size();++i){
           ActionWithValue* val = plumed.getActionSet().selectWithLabel<ActionWithValue*>(wwstr[i]);
@@ -64,7 +65,9 @@ clearstride(0)
           arg.push_back( val->copyOutput(val->getLabel()) );
           log.printf("%s ",wwstr[i].c_str() );
       }
-     log.printf("\n"); requestArguments( arg );
+      if( wwstr.size()>0 ) log.printf("\n"); 
+      else log.printf("  weights are all equal to one\n");
+      requestArguments( arg );
   }
   if( keywords.exists("UNORMALIZED") ) parseFlag("UNORMALIZED",unormalised);
 }
