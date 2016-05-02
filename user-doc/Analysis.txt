@@ -23,16 +23,20 @@ MD code) to stop the calculation one some criteria is satisified.
 
 A number of more complicated forms of analysis can be performed that take a number of frames from 
 the trajectory as input.  In all these commands the STRIDE keyword is used to tell PLUMED how 
-frequently to collect data from the trajectory.  Once a sufficient ammount of data is collected
-some representation of the frames of the trajectory that was collected is output with a notionally 
-lower information content.  For example you might output a histogram as a function of some collective 
-variables or some lower dimensionality representation of the block of data.  
+frequently to collect data from the trajectory.  In all these methods the output from the analysis
+is a form of enseble average.  If you are running with a bias it is thus likely that you may want 
+to reweight the trajectory frames in order to remove the effect the bias has on the static behavoir
+of the system.  The following methods can thus be used to calculate weights for the various trajectory
+frames so that the final ensemble average is an average for the cannonical ensemble at the appropriate 
+temperature.
 
-The following Actions allow you to calculate a low-dimensional function from the trajectory. 
+@REWEIGHTING@
+
+You can then calculate ensemble averages using the following actions.
 
 @GRIDCALC@
 
-For all the above commands data is accumulated on the grids.  The grid calculated can then be further 
+For many of the above commands data is accumulated on the grids.  These grids can be further 
 analysed using one of the actions detailed below at some time.  
 
 @GRIDANALYSIS@
@@ -47,11 +51,11 @@ h: HISTOGRAM ARG=x GRID_MIN=0.0 GRID_MAX=3.0 GRID_BIN=100 BANDWIDTH=0.1 STRIDE=5
 DUMPGRID GRID=h FILE=histo STRIDE=100 
 \endverbatim
 
-It is important to note when using commands such as the above to post-process trajectories using
-\ref driver that the first frame in the trajectory is assumed to be the initial configuration that
-was input to the MD code. It is thus ignored.  Furthermore, if you are running with driver and you would
-like to analyse the whole trajectory (without specifying its length) and then print the result you simply 
-call \ref DUMPGRID (or any of the commands above) without a STRIDE keyword as shown in the example below. 
+It is important to note when using commands such as the above the first frame in the trajectory is assumed 
+to be the initial configuration that was input to the MD code. It is thus ignored.  Furthermore, if you are 
+running with driver and you would like to analyse the whole trajectory (without specifying its length) 
+and then print the result you simply call \ref DUMPGRID (or any of the commands above) without a STRIDE 
+keyword as shown in the example below. 
 
 \verbatim
 x: DISTANCE ATOMS=1,2
