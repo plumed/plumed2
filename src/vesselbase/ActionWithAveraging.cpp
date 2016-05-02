@@ -43,6 +43,7 @@ ActionAtomistic(ao),
 ActionWithArguments(ao),
 ActionWithValue(ao),
 ActionWithVessel(ao),
+lweight(0),cweight(0),
 myaverage(NULL),
 useRunAllTasks(false),
 clearstride(0)
@@ -100,9 +101,9 @@ void ActionWithAveraging::update(){
   // Calculate the weight for all reweighting
   if ( weights.size()>0 ){
      double sum=0; for(unsigned i=0;i<weights.size();++i) sum+=weights[i]->get();
-     cweight = exp( sum );
+     lweight=sum; cweight = exp( sum );
   } else {
-     cweight=1.0;
+     lweight=0; cweight=1.0;
   }
   // Prepare to do the averaging
   prepareForAveraging();

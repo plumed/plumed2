@@ -44,6 +44,7 @@ private:
 public:
   static void registerKeywords(Keywords&);
   explicit ReweightTemperature(const ActionOptions&ao);
+  void prepare();
   double getLogWeight() const ;
 };
 
@@ -59,12 +60,15 @@ ReweightTemperature::ReweightTemperature(const ActionOptions&ao):
 Action(ao),
 ReweightBase(ao)
 {
-   plumed.getAtoms().setCollectEnergy(true);
    parse("REWEIGHT_TEMP",rtemp);
    log.printf("  reweighting simulation to probabilities at temperature %f\n",rtemp);
    rtemp*=plumed.getAtoms().getKBoltzmann();
 
    retrieveAllBiases( "bias", biases );
+}
+
+void ReweightTemperature::prepare(){
+   plumed.getAtoms().setCollectEnergy(true);
 }
 
 double ReweightTemperature::getLogWeight() const {

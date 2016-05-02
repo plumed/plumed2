@@ -57,47 +57,28 @@ P(s',t) = \frac{ \sum_{t'}^t \delta( s(x) - s' ) \exp\left( +\frac{V(x,t')}{k_B 
 //+ENDPLUMEDOC
 
 void Analysis::registerKeywords( Keywords& keys ){
-  Action::registerKeywords( keys );
-  ActionPilot::registerKeywords( keys );
-  ActionAtomistic::registerKeywords( keys );
-  ActionWithArguments::registerKeywords( keys );
+  vesselbase::ActionWithAveraging::registerKeywords( keys );
   keys.use("ARG"); keys.reset_style("ARG","optional");
   keys.add("atoms","ATOMS","the atoms whose positions we are tracking for the purpose of analysing the data");
   keys.add("compulsory","METRIC","EUCLIDEAN","how are we measuring the distances between configurations");
-  keys.add("compulsory","STRIDE","1","the frequency with which data should be stored for analysis");
-  keys.addFlag("USE_ALL_DATA",false,"use the data from the entire trajectory to perform the analysis");
-  keys.add("compulsory","RUN","the frequency with which to run the analysis algorithm. This is not required if you specify USE_ALL_DATA");
+  keys.add("compulsory","RUN","0","the frequency with which to run the analysis algorithm. The default value of zero assumes you want to analyse the whole trajectory");
   keys.add("optional","FMT","the format that should be used in analysis output files");
-  keys.addFlag("REWEIGHT_BIAS",false,"reweight the data using all the biases acting on the dynamics. For more information see \\ref reweighting.");
-  keys.add("optional","TEMP","the system temperature.  This is required if you are reweighting or doing free energies.");
-  keys.add("optional","REWEIGHT_TEMP","reweight data from a trajectory at one temperature and output the probability "
-                                      "distribution at a second temperature. For more information see \\ref reweighting. "
-                                      "This is not possible during postprocessing.");
   keys.addFlag("WRITE_CHECKPOINT",false,"write out a checkpoint so that the analysis can be restarted in a later run");
   keys.add("hidden","REUSE_DATA_FROM","eventually this will allow you to analyse the same set of data multiple times");
   keys.add("hidden","IGNORE_REWEIGHTING","this allows you to ignore any reweighting factors");
-  keys.use("RESTART");
-  keys.use("UPDATE_FROM");
-  keys.use("UPDATE_UNTIL");
-  ActionWithVessel::registerKeywords( keys ); keys.remove("TOL"); 
+  keys.use("RESTART"); keys.use("UPDATE_FROM"); keys.use("UPDATE_UNTIL"); keys.remove("TOL"); 
 }
 
 Analysis::Analysis(const ActionOptions&ao):
 Action(ao),
-ActionPilot(ao),
-ActionAtomistic(ao),
-ActionWithArguments(ao),
-ActionWithVessel(ao),
-single_run(true),
+ActionWithAveraging(ao),
 nomemory(true),
 write_chq(false),
 reusing_data(false),
 ignore_reweight(false),
-freq(0),
-needeng(false),
 idata(0),
-firstAnalysisDone(false),
-old_norm(0.0),
+//firstAnalysisDone(false),
+//old_norm(0.0),
 ofmt("%f"),
 current_args(getNumberOfArguments()),
 argument_names(getNumberOfArguments())
@@ -132,59 +113,18 @@ argument_names(getNumberOfArguments())
       if( ignore_reweight ) log.printf("  reusing data stored by %s but ignoring all reweighting\n",prev_analysis.c_str() );
       else log.printf("  reusing data stored by %s\n",prev_analysis.c_str() ); 
   } else { 
-      if( keywords.exists("REWEIGHT_BIAS") ){
-         bool dobias; parseFlag("REWEIGHT_BIAS",dobias);
-         if( dobias ){
-             std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
-             if( all.empty() ) error("your input file is not telling plumed to calculate anything");
-             std::vector<Value*> arg( getArguments() );
-             log.printf("  reweigting using the following biases ");
-             for(unsigned j=0;j<all.size();j++){
-                 std::string flab; flab=all[j]->getLabel() + ".rbias";
-                 if( all[j]->exists(flab) ){ 
-                    biases.push_back( all[j]->copyOutput(flab) ); 
-                    arg.push_back( all[j]->copyOutput(flab) ); 
-                    log.printf(" %s",flab.c_str()); 
-                 } else {
-                     std::string flab2; flab2=all[j]->getLabel() + ".bias";
-                     if( all[j]->exists(flab2) ){
-                        biases.push_back( all[j]->copyOutput(flab2) );
-                        arg.push_back( all[j]->copyOutput(flab2) );
-                        log.printf(" %s",flab2.c_str());
-                     }
-                 } 
-             }
-             log.printf("\n");
-             if( biases.empty() ) error("you are asking to reweight bias but there does not appear to be a bias acting on your system");
-             requestArguments( arg ); 
-         }
-      }
-
-      rtemp=0;      
-      if( keywords.exists("REWEIGHT_TEMP") ) parse("REWEIGHT_TEMP",rtemp);
-      if( rtemp!=0 ){
-         needeng=true;
-         log.printf("  reweighting simulation to probabilities at temperature %f\n",rtemp);
-         rtemp*=plumed.getAtoms().getKBoltzmann(); 
+      parse("RUN",freq); 
+      if( freq==0 ){
+          log.printf("  analyzing all data in trajectory\n");
+      } else {
+          if( freq%getStride()!=0 ) error("frequncy of running is not a multiple of the stride");
+          log.printf("  running analysis every %u steps\n",freq);
+          ndata=freq/getStride(); data.resize( ndata ); logweights.resize( ndata );
+          for(unsigned i=0;i<ndata;++i){
+             data[i]=metricRegister().create<ReferenceConfiguration>( metricname );
+             data[i]->setNamesAndAtomNumbers( getAbsoluteIndexes(), argument_names );
+          } 
       } 
-      simtemp=0.; parse("TEMP",simtemp);
-      if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
-      else simtemp=plumed.getAtoms().getKbT();
-
-      if( rtemp>0 || !biases.empty() ){
-         if(simtemp==0) error("The MD engine does not pass the temperature to plumed so you have to specify it using TEMP");
-      }
-
-      if( keywords.exists("USE_ALL_DATA") ){
-          parseFlag("USE_ALL_DATA",single_run); 
-          if( !single_run ){
-              unsigned astride; parse("RUN",astride);
-              log.printf("  running analysis every %u steps\n",astride);
-              setAnalysisStride( false, astride );
-          } else {       
-              log.printf("  analyzing all data in trajectory\n");
-          }
-      }
       parseFlag("WRITE_CHECKPOINT",write_chq);
       if( write_chq && single_run ){
           write_chq=false;
@@ -208,24 +148,10 @@ argument_names(getNumberOfArguments())
           rfile.open( filename.c_str() );  // In overwrite mode automatically because there is no restart
       }
       if( write_chq ){
-         rfile.addConstantField("old_normalization");
+         //rfile.addConstantField("old_normalization");
          for(unsigned i=0;i<getNumberOfArguments();++i) rfile.setupPrintValue( getPntrToArgument(i) );
       }
   }
-}
-
-void Analysis::setAnalysisStride( const bool& use_all, const unsigned& astride ){
-  if( freq>0 && astride!=freq ) error("each histogram can only be output with one stride"); 
-  else if( use_all ) return;  
-
-  freq=astride; single_run=false;
-  if( astride%getStride()!= 0 ) error("Frequncy of running is not a multiple of the stride");
-  ndata=freq/getStride(); data.resize( ndata );
-  for(unsigned i=0;i<ndata;++i){
-     data[i]=metricRegister().create<ReferenceConfiguration>( metricname );
-     data[i]->setNamesAndAtomNumbers( getAbsoluteIndexes(), argument_names );
-  }
-  logweights.resize( ndata );
 }
 
 void Analysis::readDataFromFile( const std::string& filename ){
@@ -243,7 +169,7 @@ void Analysis::readDataFromFile( const std::string& filename ){
               error("frequency of data storage in " + filename + " is not equal to frequency of data storage plumed.dat file");
            }
            data[idata]->parse("LOG_WEIGHT",logweights[idata]);
-           data[idata]->parse("OLD_NORM",old_norm);
+           //data[idata]->parse("OLD_NORM",old_norm);
            data[idata]->checkRead();
            idata++; first=false; oldtstep=tstep;
         } else{
@@ -252,7 +178,7 @@ void Analysis::readDataFromFile( const std::string& filename ){
      }
     fclose(fp);
   }
-  if(old_norm>0) firstAnalysisDone=true;
+  // if(old_norm>0) firstAnalysisDone=true;
 }
 
 void Analysis::parseOutputFile( const std::string& key, std::string& filename ){
@@ -266,32 +192,11 @@ void Analysis::parseOutputFile( const std::string& key, std::string& filename ){
   } 
 }
 
-void Analysis::prepare(){
-  if(needeng) plumed.getAtoms().setCollectEnergy(true);
-}
-
-void Analysis::calculate(){
-// do nothing
-}
-
 void Analysis::accumulate(){
   // Don't store the first step (also don't store if we are getting data from elsewhere)
   if( (!single_run && getStep()==0) || reusing_data ) return;
   // This is used when we have a full quota of data from the first run
   if( !single_run && idata==logweights.size() ) return; 
-
-  // Retrieve the bias
-  double bias=0.0; for(unsigned i=0;i<biases.size();++i) bias+=biases[i]->get();
-
-  double ww=0;
-  if(needeng){
-     double energy=plumed.getAtoms().getEnergy()+bias;
-     // Reweighting because of temperature difference
-     ww=-( (1.0/rtemp) - (1.0/simtemp) )*(energy+bias);
-  }
-  // Reweighting because of biases
-  if( !biases.empty() ) ww += bias/ simtemp;
-
   // Get the arguments ready to transfer to reference configuration
   for(unsigned i=0;i<getNumberOfArguments();++i) current_args[i]=getArgument(i);
 
@@ -300,17 +205,17 @@ void Analysis::accumulate(){
      plumed_dbg_assert( data.size()==idata+1 );
      data[idata]->setNamesAndAtomNumbers( getAbsoluteIndexes(), argument_names );
      data[idata]->setReferenceConfig( getPositions(), current_args, getMetric() );
-     logweights.push_back(ww);
+     logweights.push_back(lweight);
   } else {
      // Get the arguments and store them in a vector of vectors
      data[idata]->setReferenceConfig( getPositions(), current_args, getMetric() );
-     logweights[idata] = ww; 
+     logweights[idata] = lweight; 
   }
 
   // Write data to checkpoint file
   if( write_chq ){
      rfile.rewind();
-     data[idata]->print( rfile, getTime(), logweights[idata], atoms.getUnits().getLength()/0.1, old_norm );
+     data[idata]->print( rfile, getTime(), logweights[idata], atoms.getUnits().getLength()/0.1, 1.0 ); //old_norm );
      rfile.flush();
   }
   // Increment data counter
@@ -344,7 +249,7 @@ void Analysis::finalizeWeights( const bool& ignore_weights ){
   // Check that we have the correct ammount of data
   if( !reusing_data && idata!=logweights.size() ) error("something has gone wrong.  Am trying to run analysis but I don't have sufficient data");
 
-  norm=0;  // Reset normalization constant
+  double norm=0;  // Reset normalization constant
   if( ignore_weights ){
       for(unsigned i=0;i<logweights.size();++i){
           data[i]->setWeight(1.0); norm+=1.0;
@@ -365,18 +270,20 @@ void Analysis::finalizeWeights( const bool& ignore_weights ){
       }
   // Calculate normalized weights (with memory)
   } else {
-      if( !firstAnalysisDone ) finalizeWeightsNoLogSums( 1.0 );
-      else finalizeWeightsNoLogSums( old_norm );
+      plumed_merror("analysis can now only support block averages");
+      // if( !firstAnalysisDone ) 
+      // finalizeWeightsNoLogSums( 1.0 );
+      // else finalizeWeightsNoLogSums( old_norm );
   }
 }
 
-void Analysis::finalizeWeightsNoLogSums( const double& onorm ){
-  if( !reusing_data && idata!=logweights.size() ) error("something has gone wrong.  Am trying to run analysis but I don't have sufficient data");
-  // Calculate normalization constant
-  norm=0; for(unsigned i=0;i<logweights.size();++i) norm+=exp( logweights[i] );
-  // Calculate weights (with memory)
-  for(unsigned i=0;i<logweights.size();++i) data[i]->setWeight( exp( logweights[i] ) / onorm );
-}
+// void Analysis::finalizeWeightsNoLogSums( const double& onorm ){
+//   if( !reusing_data && idata!=logweights.size() ) error("something has gone wrong.  Am trying to run analysis but I don't have sufficient data");
+//   // Calculate normalization constant
+//   double norm=0; for(unsigned i=0;i<logweights.size();++i) norm+=exp( logweights[i] );
+//   // Calculate weights (with memory)
+//   for(unsigned i=0;i<logweights.size();++i) data[i]->setWeight( exp( logweights[i] ) / norm );
+// }
 
 void Analysis::getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const {
   plumed_dbg_assert( getNumberOfAtoms()==0 );
@@ -399,27 +306,18 @@ void Analysis::runAnalysis(){
      finalizeWeights( ignore_reweight ); 
   } else {
      mydatastash->finalizeWeights( ignore_reweight );
-     norm=mydatastash->retrieveNorm();
+     // norm=mydatastash->retrieveNorm();
   }
   // This ensures everything is set up to run the calculation
-  if( single_run ) setAnalysisStride( single_run, freq );
+  // if( single_run ) setAnalysisStride( single_run, freq );
   // And run the analysis
   performAnalysis(); idata=0;
   // Update total normalization constant
-  old_norm+=norm; firstAnalysisDone=true;
+  // old_norm+=norm; firstAnalysisDone=true;
 
 }
 
-double Analysis::getNormalization() const {
-  if( nomemory || !firstAnalysisDone ) return norm;
-  return ( 1. + norm/old_norm );
-}
-
-double Analysis::getTemp() const {
-  return simtemp;
-}
-
-void Analysis::update(){
+void Analysis::performOperations( const bool& from_update ){
   accumulate();
   if( !single_run ){
     if( getStep()>0 && getStep()%freq==0 ) runAnalysis(); 
@@ -434,7 +332,7 @@ bool Analysis::getPeriodicityInformation(const unsigned& i, std::string& dmin, s
 }
 
 void Analysis::runFinalJobs() {
-  if( !single_run ) return;
+  if( freq>0 ) return;
   if( getNumberOfDataPoints()==0 ) error("no data is available for analysis");
   runAnalysis(); 
 }

@@ -62,8 +62,8 @@ private:
 /// Are we accumulated the unormalized quantity
   bool unormalised;
 protected:
-/// The current weight
-  double cweight;
+/// The current weight and its logarithm
+  double lweight, cweight;
 /// Set the averaging action
   void setAveragingAction( AveragingVessel* av_vessel, const bool& usetasks );
 public:
@@ -74,6 +74,8 @@ public:
   void calculateNumericalDerivatives(PLMD::ActionWithValue*);
   virtual unsigned getNumberOfDerivatives(){ return 0; }
   unsigned getNumberOfArguments() const ;
+/// Overwrite ActionWithArguments getArguments() so that we don't return the bias
+  std::vector<Value*> getArguments();  
   void calculate(){}
   void apply(){}
   void update();
@@ -90,6 +92,13 @@ public:
 inline
 unsigned ActionWithAveraging::getNumberOfArguments() const {
   return ActionWithArguments::getNumberOfArguments() - weights.size();
+}
+
+inline
+std::vector<Value*> ActionWithAveraging::getArguments(){
+  std::vector<Value*> arg_vals( ActionWithArguments::getArguments() );
+  for(unsigned i=0;i<weights.size();++i) arg_vals.erase(arg_vals.end()-1);
+  return arg_vals;
 }
 
 }
