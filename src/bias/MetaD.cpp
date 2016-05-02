@@ -291,6 +291,9 @@ private:
   bool grid_;
   double height0_;
   double biasf_;
+  double dampfactor_;
+  std::string targetfilename_;
+  Grid* TargetGrid_;
   double kbt_;
   int stride_;
   bool welltemp_;
@@ -354,9 +357,11 @@ void MetaD::registerKeywords(Keywords& keys){
   keys.add("compulsory","SIGMA","the widths of the Gaussian hills");
   keys.add("compulsory","PACE","the frequency for hill addition");
   keys.add("compulsory","FILE","HILLS","a file in which the list of added hills is stored");
-  keys.add("optional","HEIGHT","the heights of the Gaussian hills. Compulsory unless TAU, TEMP and BIASFACTOR are given");
+  keys.add("optional","HEIGHT","the heights of the Gaussian hills. Compulsory unless TAU and either BIASFACTOR or DAMPFACTOR are given");
   keys.add("optional","FMT","specify format for HILLS files (useful for decrease the number of digits in regtests)");
   keys.add("optional","BIASFACTOR","use well tempered metadynamics and use this biasfactor.  Please note you must also specify temp");
+  keys.add("optional","DAMPFACTOR","damp hills with exp(-max(V)/(kbT*DAMPFACTOR)");
+  keys.add("optional","TARGET","target to a predefined distribution");
   keys.add("optional","TEMP","the system temperature - this is only needed if you are doing well-tempered metadynamics");
   keys.add("optional","TAU","in well tempered metadynamics, sets height to (kb*DeltaT*pace*timestep)/tau");
   keys.add("optional","GRID_MIN","the lower bounds for the grid");
@@ -393,6 +398,7 @@ void MetaD::registerKeywords(Keywords& keys){
 MetaD::~MetaD(){
   if(flexbin) delete flexbin;
   if(BiasGrid_) delete BiasGrid_;
+  if(TargetGrid_) delete TargetGrid_;
   hillsOfile_.close();
   if(wgridstride_>0) gridfile_.close();
   delete [] dp_;
@@ -408,7 +414,8 @@ PLUMED_BIAS_INIT(ao),
 // Grid stuff initialization
 BiasGrid_(NULL), wgridstride_(0), grid_(false),
 // Metadynamics basic parameters
-height0_(std::numeric_limits<double>::max()), biasf_(1.0), kbt_(0.0),
+height0_(std::numeric_limits<double>::max()), biasf_(1.0), dampfactor_(0.0), TargetGrid_(NULL),
+kbt_(0.0),
 stride_(0), welltemp_(false),
 // Other stuff
 dp_(NULL), adaptive_(FlexibleBin::none),
@@ -486,6 +493,7 @@ last_step_warn_grid(0)
   parse("FILE",hillsfname);
   parse("BIASFACTOR",biasf_);
   if( biasf_<1.0 ) error("well tempered bias factor is nonsensical");
+  parse("DAMPFACTOR",dampfactor_);
   double temp=0.0;
   parse("TEMP",temp);
   if(temp>0.0) kbt_=plumed.getAtoms().getKBoltzmann()*temp;
@@ -494,16 +502,23 @@ last_step_warn_grid(0)
     if(kbt_==0.0) error("Unless the MD engine passes the temperature to plumed, with well-tempered metad you must specify it using TEMP");
     welltemp_=true;
   }
+  if(dampfactor_>0.0){
+    if(kbt_==0.0) error("Unless the MD engine passes the temperature to plumed, with damped metad you must specify it using TEMP");
+  }
+  parse("TARGET",targetfilename_);
+  if(targetfilename_.length()>0 && kbt_==0.0)  error("with TARGET temperature must be specified");
   double tau=0.0;
   parse("TAU",tau);
   if(tau==0.0){
     if(height0_==std::numeric_limits<double>::max()) error("At least one between HEIGHT and TAU should be specified");
     // if tau is not set, we compute it here from the other input parameters
     if(welltemp_) tau=(kbt_*(biasf_-1.0))/height0_*getTimeStep()*stride_;
+    else if(dampfactor_>0.0) tau=(kbt_*dampfactor_)/height0_*getTimeStep()*stride_;
   } else {
-    if(!welltemp_)error("TAU only makes sense in well-tempered metadynamics");
     if(height0_!=std::numeric_limits<double>::max()) error("At most one between HEIGHT and TAU should be specified");
-    height0_=(kbt_*(biasf_-1.0))/tau*getTimeStep()*stride_;
+    if(welltemp_) height0_=(kbt_*(biasf_-1.0))/tau*getTimeStep()*stride_;
+    else if(dampfactor_>0.0) height0_=(kbt_*dampfactor_)/tau*getTimeStep()*stride_;
+    else error("TAU only makes sense in well-tempered or damped metadynamics");
   }
   
   // Grid Stuff
@@ -587,6 +602,9 @@ last_step_warn_grid(0)
     }
     if(adaptive_==FlexibleBin::diffusion || adaptive_==FlexibleBin::geometry) warning("reweighting has not been proven to work with adaptive Gaussians");
     rewf_ustride_=50; parse("REWEIGHTING_NHILLS",rewf_ustride_);
+  }
+  if(dampfactor_>0.0){
+    if(!grid_) error("With DAMPFACTOR you should use grids");
   }
 
   // Multiple walkers
@@ -757,6 +775,16 @@ last_step_warn_grid(0)
   // (e.g. in bias exchange with a neutral replica)
   // see issue #168 on github
   if(comm.Get_rank()==0 && walkers_mpi) multi_sim_comm.Barrier();
+  if(targetfilename_.length()>0){
+    IFile gridfile; gridfile.open(targetfilename_);
+    std::string funcl=getLabel() + ".target";
+    TargetGrid_=Grid::create(funcl,getArguments(),gridfile,false,false,true);
+    gridfile.close();
+    if(TargetGrid_->getDimension()!=getNumberOfArguments()) error("mismatch between dimensionality of input grid and number of arguments");
+    for(unsigned i=0;i<getNumberOfArguments();++i){
+      if( getPntrToArgument(i)->isPeriodic()!=TargetGrid_->getIsPeriodic()[i] ) error("periodicity mismatch between arguments and input bias");
+    }
+  }
 
   // Calculate the Tiwary-Parrinello reweighting factor if we are restarting from previous hills
   if(getRestart() && rewf_grid_.size()>0 ) computeReweightingFactor();
@@ -1138,6 +1166,15 @@ double MetaD::getHeight(const vector<double>& cv)
     double vbias = getBiasAndDerivatives(cv);
     height = height0_*exp(-vbias/(kbt_*(biasf_-1.0)));
   } 
+  if(dampfactor_>0.0){
+    plumed_assert(BiasGrid_);
+    double m=BiasGrid_->getMaxValue();
+    height*=exp(-m/(kbt_*(dampfactor_)));
+  }
+  if(TargetGrid_){
+    double f=TargetGrid_->getValue(cv)-TargetGrid_->getMaxValue();
+    height*=exp(f/kbt_);
+  }
   return height;
 }
 
