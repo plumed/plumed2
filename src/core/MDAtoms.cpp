@@ -64,6 +64,10 @@ public:
   void double2MD(const double&d,void*m)const{
     *(static_cast<T*>(m))=T(d);
   }
+  Vector getMDforces(const unsigned index)const{
+    Vector force(fx[index],fy[index],fz[index]);
+    return force;
+  }
   void getBox(Tensor &)const;
   void getPositions(const vector<int>&index,vector<Vector>&positions)const;
   void getPositions(unsigned j,unsigned k,vector<Vector>&positions)const;

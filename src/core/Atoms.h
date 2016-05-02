@@ -155,6 +155,7 @@ public:
   const Pbc& getPbc()const;
   void getLocalPositions(std::vector<Vector>&);
   void getLocalForces(std::vector<Vector>&);
+  void getLocalMDForces(std::vector<Vector>&);
   const Tensor& getVirial()const;
 
   void setCollectEnergy(bool b){ collectEnergy=b; }
