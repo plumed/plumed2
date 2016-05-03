@@ -260,6 +260,30 @@ factor that can then be used to determine the rate. This method can be used toge
 with \ref COMMITTOR analysis to stop the simulation when the system get to the target basin.
 It must be used together with Well-Tempered Metadynamics.
 
+\par
+You can also provide a target distribution using the keyword TARGET
+\cite white2015designing
+\cite marinelli2015ensemble
+\cite gil2016empirical
+The TARGET should be a grid containing a free-energy (i.e. the -kbT*log of the desired target distribution).
+Gaussians will then be scaled by a factor
+\f[
+e^{\beta(\tilde{F}(s)-\tilde{F}_{max})}
+\f]
+Here \f$\tilde{F}(s)\f$ is the free energy defined on the grid and \f$\tilde{F}_{max}\f$ its maximum value.
+Notice that we here used the maximum value as in ref \cite gil2016empirical
+This choice allows to avoid exceedingly large Gaussians to be added. However,
+it could make the Gaussian too small. You should always choose carefully the HEIGHT parameter
+in this case.
+The grid file should be similar to other PLUMED grid files in that it should contain
+both the target free-energy and its derivatives.
+
+Notice that if you wish your simulation to converge to the target free energy you should use
+the DAMPFACTOR command to provide a global tempering \cite dama2014well
+Alternatively, if you use a BIASFACTOR yout simulation will converge to a free
+energy that is a linear combination of the target free energy and of the intrinsic free energy
+determined by the original force field.
+
 
 */
 //+ENDPLUMEDOC
@@ -842,6 +866,11 @@ last_step_warn_grid(0)
      "Pratyush and Parrinello, J. Phys. Chem. B, 119, 736 (2015)");
   if(concurrent) log<<plumed.cite(
      "Gil-Ley and Bussi, J. Chem. Theory Comput. 11, 1077 (2015)");
+  if(targetfilename_.length()>0){
+    log<<plumed.cite("White, Dama, and Voth, J. Chem. Theory Comput. 11, 2451 (2015)");
+    log<<plumed.cite("Marinelli and Faraldo-Gómez,  Biophys. J. 108, 2779 (2015)");
+    log<<plumed.cite("Gil-Ley, Bottaro, and Bussi, submitted (2016)");
+  }
   log<<"\n";
 
 }
