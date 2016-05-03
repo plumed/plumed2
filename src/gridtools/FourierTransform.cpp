@@ -146,9 +146,9 @@ fourier_params(2)
   plumed_assert( n==ingrid->getDimension() );
   
   if (real_output) { 
-      if (!store_norm) vstring="NOMEMORY COMPONENTS=" + getLabel() + "_abs";
-      else vstring="NOMEMORY COMPONENTS=" + getLabel() + "_norm";
-  } else vstring="NOMEMORY COMPONENTS=" + getLabel() + "_real," + getLabel() + "_imag";
+      if (!store_norm) vstring="COMPONENTS=" + getLabel() + "_abs";
+      else vstring="COMPONENTS=" + getLabel() + "_norm";
+  } else vstring="COMPONENTS=" + getLabel() + "_real," + getLabel() + "_imag";
   
   // Set COORDINATES keyword
   vstring += " COORDINATES=" + ingrid->getComponentName( gdirs[0] );

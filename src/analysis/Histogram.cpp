@@ -29,13 +29,50 @@ namespace analysis{
 
 //+PLUMEDOC GRIDCALC HISTOGRAM
 /* 
-Calculate the probability density as a function of a few CVs either using kernel density estimation, or a discrete
-histogram estimation. 
+Accumulate the average probability density along a few CVs from a trajectory.
 
-In case a kernel density estimation is used the probability density is estimated as a
-continuos function on the grid with a BANDWIDTH defined by the user. In this case the normalisation is such that
-the INTEGRAL over the grid is 1. In case a discrete density estimation is used the probabilty density is estimated
-as a discrete function on the grid. In this case the normalisation is such that the SUM of over the grid is 1.
+When using this method it is supposed that you have some collective variable \f$\zeta\f$ that 
+gives a reasonable description of some physical or chemical phenomenon.  As an example of what we
+mean by this suppose you wish to examine the following SN2 reaction:
+
+\f[
+ \textrm{OH}^- + \textrm{CH}_3Cl  \rightarrow \textrm{CH}_3OH + \textrm{Cl}^-
+\f]
+
+The distance between the chlorine atom and the carbon is an excellent collective variable, \f$\zeta\f$,
+in this case because this distance is short for the reactant, \f$\textrm{CH}_3Cl\f$, because the carbon
+and chlorine are chemically bonded, and because it is long for the product state when these two atoms are 
+not chemically bonded.  We thus might want to accumulate the probability density, \f$P(\zeta)\f$, as a function of this distance
+as this will provide us with information about the overall likelihood of the reaction.   Furthermore, the
+free energy, \f$F(\zeta)\f$, is related to this probability density via:
+
+\f[
+F(\zeta) = - k_B T \ln P(\zeta)
+\f]
+
+Accumulating these probability densities is precisely what this Action can be used to do.  Furthermore, the conversion 
+of the histogram to the free energy can be achieved by using the method \ref CONVERT_TO_FES.  
+
+We calculate histograms within PLUMED using a method known as kernel density estimation, which you can read more about here:
+
+https://en.wikipedia.org/wiki/Kernel_density_estimation
+
+In PLUMED the value of \f$\zeta\f$ at each discrete instant in time in the trajectory is accumulated.  A kernel, \f$K(\zeta-\zeta(t'),\sigma)\f$,
+centered at the current value, \f$\zeta(t)\f$, of this quantity is generated with a bandwith \f$\sigma\f$, which
+is set by the user.  These kernels are then used to accumulate the ensemble average for the probability density:
+
+\f[
+\langle P(\zeta) \rangle = \frac{ \sum_{t'=0}^t w(t') K(\zeta-\zeta(t'),\sigma) }{ \sum_{t'=0}^t w(t') } 
+\f]    
+
+Here the sums run over a portion of the trajectory specified by the user.  The final quantity evalulated is a weighted 
+average as the weights, \f$w(t')\f$, allow us to negate the effect any bias might have on the region of phase space 
+sampled by the system.  This is discussed in the section of the manual on \ref Analysis.
+
+A discrete analogue of kernel density estimation can also be used.  In this analogue the kernels in the above formula
+are replaced by dirac delta functions.   When this method is used the final function calculated is no longer a probability
+density - it is instead a probability mass function as each element of the function tells you the value of an integral 
+between two points on your grid rather than the value of a (continuous) function on a grid. 
 
 Additional material and examples can be also found in the tutorial \ref belfast-1. 
  
@@ -48,13 +85,14 @@ TORSION ATOMS=1,2,3,4 LABEL=r1
 TORSION ATOMS=2,3,4,5 LABEL=r2
 HISTOGRAM ...
   ARG=r1,r2 
-  USE_ALL_DATA 
   GRID_MIN=-3.14,-3.14 
   GRID_MAX=3.14,3.14 
   GRID_BIN=200,200
   BANDWIDTH=0.05,0.05 
-  GRID_WFILE=histo
+  LABEL=hh
 ... HISTOGRAM
+
+DUMPGRID GRID=hh FILE=histo
 \endverbatim
 
 The following input monitors two torsional angles during a simulation
@@ -65,12 +103,14 @@ TORSION ATOMS=2,3,4,5 LABEL=r2
 HISTOGRAM ...
   ARG=r1,r2 
   USE_ALL_DATA
-  KERNEL=discrete 
+  KERNEL=DISCRETE
   GRID_MIN=-3.14,-3.14 
   GRID_MAX=3.14,3.14 
   GRID_BIN=200,200
-  GRID_WFILE=histo
+  LABEL=hh
 ... HISTOGRAM
+
+DUMPGRID GRID=hh FILE=histo
 \endverbatim
 
 The following input monitors two torsional angles during a simulation
@@ -80,32 +120,36 @@ TORSION ATOMS=1,2,3,4 LABEL=r1
 TORSION ATOMS=2,3,4,5 LABEL=r2
 HISTOGRAM ...
   ARG=r1,r2 
-  RUN=100000
   GRID_MIN=-3.14,-3.14  
   GRID_MAX=3.14,3.14 
   GRID_BIN=200,200
   BANDWIDTH=0.05,0.05 
-  GRID_WFILE=histo
+  LABEL=hh
 ... HISTOGRAM
+
+DUMPGRID GRID=hh FILE=histo STRIDE=100000
 \endverbatim
 
 The following input monitors two torsional angles during a simulation
 and outputs a separate histogram for each 100000 steps worth of trajectory.
+Notice how the CLEAR keyword is used here and how it is not used in the 
+previous example.
+
 \verbatim
 TORSION ATOMS=1,2,3,4 LABEL=r1
 TORSION ATOMS=2,3,4,5 LABEL=r2
 HISTOGRAM ...
-  ARG=r1,r2 
-  RUN=100000 NOMEMORY
+  ARG=r1,r2 CLEAR=100000 
   GRID_MIN=-3.14,-3.14  
   GRID_MAX=3.14,3.14 
   GRID_BIN=200,200
   BANDWIDTH=0.05,0.05 
   GRID_WFILE=histo
+  LABEL=hh
 ... HISTOGRAM
-\endverbatim
 
-\bug Option FREE-ENERGY or UNNORMALIZED without USE_ALL_DATA is not working properly. See \issue{175}.
+DUMPGRID GRID=hh FILE=histo STRIDE=100000
+\endverbatim
 
 */
 //+ENDPLUMEDOC

@@ -61,26 +61,27 @@ other words this input instructs plumed to calculate \f$\rho(\mathbf{r}) = \sum_
 \verbatim
 dens: DENSITY SPECIES=1-100
 grid: MULTICOLVARDENS DATA=dens ORIGIN=1 DIR=xyz NBINS=100,100,100 BANDWIDTH=0.05,0.05,0.05 STRIDE=1 
-PRINT_GRID GRID=grid STRIDE=500 FILE=density 
+DUMPGRID GRID=grid STRIDE=500 FILE=density 
 \endverbatim 
 
 In the above example density is added to the grid on every step.  The PRINT_GRID instruction thus tells PLUMED to 
 output the average density at each point on the grid every 500 steps of simulation.  Notice that the that grid output
 on step 1000 is an average over all 1000 frames of the trajectory.  If you would like to analyse these two blocks 
-of data separately you must use the NOMEMORY flag.
+of data separately you must use the CLEAR flag.
 
 This second example computes an order parameter (in this case \ref FCCUBIC) and constructs a phase field model
 for this order parameter using the equation above.
 
 \verbatim
 fcc: FCCUBIC SPECIES=1-5184 SWITCH={CUBIC D_0=1.2 D_MAX=1.5} ALPHA=27
-dens: MULTICOLVARDENS DATA=fcc ORIGIN=1 DIR=xyz NBINS=14,14,28 BANDWIDTH=1.0,1.0,1.0 STRIDE=1 NOMEMORY
-PRINT_CUBE GRID=dens STRIDE=1 FILE=dens.cube
+dens: MULTICOLVARDENS DATA=fcc ORIGIN=1 DIR=xyz NBINS=14,14,28 BANDWIDTH=1.0,1.0,1.0 STRIDE=1 CLEAR=1 
+DUMPCUBE GRID=dens STRIDE=1 FILE=dens.cube
 \endverbatim
 
 In this example the phase field model is computed and output to a file on every step of the simulation.  Furthermore,
-because the NOMEMORY keyword is present on the MULTICOLVARDENS line each Gaussian cube file output is a phase field
-model for a particular trajectory frame.  There is no averaging over trajectory frames in this case. 
+because the CLEAR=1 keyword is set on the MULTICOLVARDENS line each Gaussian cube file output is a phase field
+model for a particular trajectory frame. The average value accumulated thus far is cleared at the start of every single 
+timestep and there is no averaging over trajectory frames in this case. 
 
 */
 //+ENDPLUMEDOC

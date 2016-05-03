@@ -26,6 +26,19 @@
 
 //+PLUMEDOC REWEIGHTING REWEIGHT_TEMP
 /*
+Calculate weights for ensemble averages allow for the computing of ensemble averages at temperatures lower/higher than that used in your original simulation.
+
+We can use our knowledge of the Boltzmann distribution in the cannonical ensemble to reweight the data
+contained in trajectories.  Using this procedure we can take trajectory at temperature \f$T_1\f$ and use it to 
+extract probabilities at a different temperature, \f$T_2\f$, using:
+
+\f[
+P(s',t) = \frac{ \sum_{t'}^t \delta( s(x) - s' ) \exp\left( +( \left[\frac{1}{T_1} - \frac{1}{T_2}\right] \frac{U(x,t')}{k_B} \right) }{ \sum_{t'}^t \exp\left( +\left[\frac{1}{T_1} - \frac{1}{T_2}\right] \frac{U(x,t')}{k_B} \right) }
+\f]
+
+The weights calculated by this action are equal to \f$\exp\left( +( \left[\frac{1}{T_1} - \frac{1}{T_2}\right] \frac{U(x,t')}{k_B} \right)\f$ and take 
+the effect the bias has on the system into account.  These weights can be used in any action 
+that computes ensemble averages.  For example this action can be used in tandem with \ref HISTOGRAM or \ref AVERAGE. 
 
 \par Examples
 

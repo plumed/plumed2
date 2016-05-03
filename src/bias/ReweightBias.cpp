@@ -24,8 +24,43 @@
 
 //+PLUMEDOC REWEIGHTING REWEIGHT_BIAS
 /*
+Calculate weights for ensemble averages that negate the effect the bias has on the region of phase space explored
+
+If a static or pseudo-static bias \f$V(x,t')\f$ is acting on 
+the system we can remove the bias and get the unbiased probability distribution using:
+
+\f[
+\langle P(s',t) \rangle = \frac{ \sum_{t'}^t \delta( s(x) - s' ) \exp\left( +\frac{V(x,t')}{k_B T} \right) }{ \sum_t'^t \exp\left( +\frac{V(x,t')}{k_B T} \right) } 
+\f]
+
+The weights calculated by this action are equal to \f$\exp\left( +\frac{V(x,t')}{k_B T} \right)\f$ these weights can then be used in any action 
+that computes ensemble averages.  For example this action can be used in tandem with \ref HISTOGRAM or \ref AVERAGE. 
 
 \par Examples
+
+In the following example there is a fixed restraint on the distance between atoms 1 and 2.  Clearly, this 
+restraint will have an effect on the region of phase space that will be sampled when an MD simulation is
+run using this variable.  Consequently, when the histogram as a function of the distance, \f$x\f$, is accumulated,
+we use reweighting into order to discount the effect of the bias from our final histogram.
+
+\verbatim 
+x: DISTANCE ATOMS=1,2
+RESTRAINT ARG=x SLOPE=1.0 AT=0.0
+as: REWEIGHT_BIAS TEMP=300
+
+HISTOGRAM ...
+  ARG=x
+  GRID_MIN=0.0
+  GRID_MAX=3.0
+  GRID_BIN=100
+  BANDWIDTH=0.1
+  LOGWEIGHTS=bias
+  LABEL=hB
+... HISTOGRAM
+
+DUMPGRID GRID=hB FILE=histoB STRIDE=1 FMT=%8.4f
+\endverbatim
+
 
 */
 //+ENDPLUMEDOC

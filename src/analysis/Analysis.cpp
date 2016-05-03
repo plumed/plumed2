@@ -34,28 +34,6 @@
 namespace PLMD {
 namespace analysis {
 
-//+PLUMEDOC INTERNAL reweighting
-/*
-Calculate free energies from a biassed/higher temperature trajectory. 
-
-We can use our knowledge of the Boltzmann distribution in the cannonical ensemble to reweight the data
-contained in trajectories.  Using this procedure we can take trajectory at temperature \f$T_1\f$ and use it to 
-extract probabilities at a different temperature, \f$T_2\f$, using:
-
-\f[
-P(s',t) = \frac{ \sum_{t'}^t \delta( s(x) - s' ) \exp\left( +( \left[\frac{1}{T_1} - \frac{1}{T_2}\right] \frac{U(x,t')}{k_B} \right) }{ \sum_{t'}^t \exp\left( +\left[\frac{1}{T_1} - \frac{1}{T_2}\right] \frac{U(x,t')}{k_B} \right) }
-\f]
-
-where \f$U(x,t')\f$ is the potential energy of the system.  Alternatively, if a static or pseudo-static bias \f$V(x,t')\f$ is acting on 
-the system we can remove this bias and get the unbiased probability distribution using:
-
-\f[
-P(s',t) = \frac{ \sum_{t'}^t \delta( s(x) - s' ) \exp\left( +\frac{V(x,t')}{k_B T} \right) }{ \sum_t'^t \exp\left( +\frac{V(x,t')}{k_B T} \right) } 
-\f]
-
-*/
-//+ENDPLUMEDOC
-
 void Analysis::registerKeywords( Keywords& keys ){
   vesselbase::ActionWithAveraging::registerKeywords( keys );
   keys.use("ARG"); keys.reset_style("ARG","optional");

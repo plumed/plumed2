@@ -21,6 +21,13 @@ Changes from version 2.2 which are relevant for users:
     syntax and when specifying MM on e.g. \ref COORDINATION
   - Patch script `plumed patch` now patches by default with `--shared`. This should make the procedure more robust (see \issue{186}).
   - Faster \ref GYRATION but new default behavior is not mass weighted
+  - When using \ref HISTOGRAM you now output the accumulated grid using \ref DUMPGRID or \ref DUMPCUBE to get the free energy you use
+    the method \ref CONVERT_TO_FES.  These changes allow one to use grids calculated within PLUMED in a work flow of tasks similarly to 
+    the way that you can currently use Values.
+  - The way that reweighting is performed is now different.  There are three separate actions \ref REWEIGHT_BIAS, \ref REWEIGHT_TEMP and
+    \ref REWEIGHT_METAD.  These actions calculate the quantities that were calculated using the keywords REWEIGHT_BIAS and REWEIGHT_TEMP that
+    used to appear in the old HISTOGRAM method.  Now those these methods can be used in any methods that calculate ensemble averages for
+    example \ref HISTOGRAM and \ref AVERAGE
 - New actions:
   - \ref FIXEDATOM
   - \ref HBOND_MATRIX
@@ -32,6 +39,17 @@ Changes from version 2.2 which are relevant for users:
   - \ref ROWSUMS
   - \ref COLUMNSUMS
   - \ref UPDATE_IF
+  - \ref DUMPGRID
+  - \ref DUMPCUBE
+  - \ref CONVERT_TO_FES
+  - \ref INTERPOLATE_GRID
+  - \ref FIND_CONTOUR
+  - \ref FIND_SPHERICAL_CONTOUR
+  - \ref FIND_CONTOUR_SURFACE
+  - \ref AVERAGE
+  - \ref REWEIGHT_BIAS
+  - \ref REWEIGHT_TEMP
+  - \ref REWEIGHT_METAD
 - New features in MD patches (require repatch):
   - Patch for amber 14 now passes charges with appropriate units (fixes \issue{165}). Notice that
     the patch is still backward compatible with older PLUMED version, but the charges will only be passed
