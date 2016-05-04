@@ -104,7 +104,7 @@ argument_names(getNumberOfArguments())
           } 
       } 
       parseFlag("WRITE_CHECKPOINT",write_chq);
-      if( write_chq && single_run ){
+      if( write_chq ){
           write_chq=false;
           warning("ignoring WRITE_CHECKPOINT flag because we are analyzing all data");
       }
@@ -113,7 +113,6 @@ argument_names(getNumberOfArguments())
       std::string filename = getName() + "_" + getLabel() + ".chkpnt"; 
       if( write_chq ) rfile.link(*this);
       if( getRestart() ){
-          if( single_run ) error("cannot restart histogram when using the USE_ALL_DATA option");
           if( !write_chq ) warning("restarting without writing a checkpoint file is somewhat strange");
           // Read in data from input file
           readDataFromFile( filename );
@@ -172,23 +171,23 @@ void Analysis::parseOutputFile( const std::string& key, std::string& filename ){
 
 void Analysis::accumulate(){
   // Don't store the first step (also don't store if we are getting data from elsewhere)
-  if( (!single_run && getStep()==0) || reusing_data ) return;
+  if( getStep()==0 || reusing_data ) return;
   // This is used when we have a full quota of data from the first run
-  if( !single_run && idata==logweights.size() ) return; 
+  if( freq>0 && idata==logweights.size() ) return; 
   // Get the arguments ready to transfer to reference configuration
   for(unsigned i=0;i<getNumberOfArguments();++i) current_args[i]=getArgument(i);
 
-  if(single_run){
+  if( freq>0){
+     // Get the arguments and store them in a vector of vectors
+     data[idata]->setReferenceConfig( getPositions(), current_args, getMetric() );
+     logweights[idata] = lweight;
+  } else {
      data.push_back( metricRegister().create<ReferenceConfiguration>( metricname ) );
      plumed_dbg_assert( data.size()==idata+1 );
      data[idata]->setNamesAndAtomNumbers( getAbsoluteIndexes(), argument_names );
      data[idata]->setReferenceConfig( getPositions(), current_args, getMetric() );
      logweights.push_back(lweight);
-  } else {
-     // Get the arguments and store them in a vector of vectors
-     data[idata]->setReferenceConfig( getPositions(), current_args, getMetric() );
-     logweights[idata] = lweight; 
-  }
+  } 
 
   // Write data to checkpoint file
   if( write_chq ){
@@ -297,7 +296,7 @@ void Analysis::runAnalysis(){
 
 void Analysis::performOperations( const bool& from_update ){
   accumulate();
-  if( !single_run ){
+  if( freq>0 ){
     if( getStep()>0 && getStep()%freq==0 ) runAnalysis(); 
     else if( idata==logweights.size() ) error("something has gone wrong. Probably a wrong initial time on restart"); 
   }

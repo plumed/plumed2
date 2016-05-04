@@ -41,8 +41,6 @@ is information as to how to go about implementing a new analysis method.
 
 class Analysis : public vesselbase::ActionWithAveraging {
 private:
-/// Are we running only once for the whole trajectory
-  bool single_run;
 /// Are we treating each block of data separately
   bool nomemory;
 /// Are we writing a checkpoint file
