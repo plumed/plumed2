@@ -293,6 +293,9 @@ MDAtomsTyped<T>::MDAtomsTyped():
   fx(NULL),
   fy(NULL),
   fz(NULL),
+  vx(NULL),
+  vy(NULL),
+  vz(NULL),
   box(NULL),
   virial(NULL)
 {}
