@@ -118,7 +118,7 @@ MultiColvarHistogram::MultiColvarHistogram(const ActionOptions&ao):
   std::vector<std::string> args(1); args[0] = mycolv->getLabel();
   gg = new Grid(funcl,args,str_min,str_max,nbins,true,true,true,pbc,str_min,str_max);
 
-  log.printf(" for colvars calculated by action %s \n",mycolv->getLabel().c_str() );
+  log.printf("  for colvars calculated by action %s \n",mycolv->getLabel().c_str() );
 
   parse("OFILE",filename); 
   if(filename.length()==0) error("name out output file was not specified");
