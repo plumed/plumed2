@@ -37,13 +37,16 @@ GridVessel::GridVessel( const vesselbase::VesselOptions& da ):
 AveragingVessel(da),
 bounds_set(false),
 cube_units(1.0),
-noderiv(false)
+noderiv(false),
+npoints(0)
 {
   std::vector<std::string> compnames; parseVector("COMPONENTS",compnames);
   std::vector<std::string> coordnames; parseVector("COORDINATES",coordnames);
   dimension=coordnames.size();
   std::vector<std::string> spbc( dimension ); parseVector("PBC",spbc); 
-  str_min.resize( dimension);  str_max.resize( dimension ); 
+  str_min.resize( dimension);  str_max.resize( dimension ); stride.resize( dimension ); 
+  max.resize( dimension ); dx.resize( dimension ); nbin.resize( dimension ); min.resize( dimension );
+ 
 
   unsigned n=0; nper=compnames.size()*( 1 + coordnames.size() );
   arg_names.resize( coordnames.size() + compnames.size()*( 1 + coordnames.size() ) );
@@ -77,8 +80,6 @@ void GridVessel::setBounds( const std::vector<std::string>& smin, const std::vec
   plumed_assert( (spacing.size()==dimension || binsin.size()==dimension) );
 
   npoints=1; bounds_set=true;
-  stride.resize( dimension ); max.resize( dimension );
-  dx.resize( dimension ); nbin.resize( dimension ); min.resize( dimension ); 
   for(unsigned i=0;i<dimension;++i){
       str_min[i]=smin[i]; str_max[i]=smax[i];
       Tools::convert( str_min[i], min[i] );

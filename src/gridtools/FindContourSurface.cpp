@@ -130,7 +130,6 @@ void FindContourSurface::prepareForAveraging(){
       direction.resize( ingrid->getDimension(), 0 );
       direction[dir_n] = 0.999999999*ingrid->getGridSpacing()[dir_n];
   }
-  firsttime=false; 
 }
 
 void FindContourSurface::finishAveraging(){
@@ -157,6 +156,7 @@ void FindContourSurface::finishAveraging(){
       }
       ingrid->activateThesePoints( active );
   }
+  firsttime=false;
 }
 
 void FindContourSurface::compute( const unsigned& current, MultiValue& myvals ) const {
@@ -196,18 +196,9 @@ void FindContourSurface::compute( const unsigned& current, MultiValue& myvals ) 
      // Check if the minimum is bracketed 
      if( val1*val2<0 ){ 
          ingrid->getGridPointCoordinates( shiftn, point ); findContour( direction, point ); 
-         for(unsigned j=0;j<gdirs.size();++j) myvals.setValue( 1+gdirs[j], point[gdirs[j]] );
-         if( firsttime ){
-             if( nfound>1 ) error("in first frame found more than one location of dividing surface");
-             minp=point[dir_n];
-         } else if( nfound==0 ){
-             minp=point[dir_n]; minv=std::fabs( point[dir_n] - mygrid->getGridElement( i, 0 ) ); 
-         } else {
-             double tmp = std::fabs( point[dir_n] - mygrid->getGridElement( i, 0 ) );
-             if( tmp<minv ){ minv=tmp; minp=point[dir_n]; }
-         }
-         nfound++;
+         minp=point[dir_n]; nfound++;
      }
+
 
      // This moves us on to the next point
      shiftn += ingrid->getStride()[dir_n];

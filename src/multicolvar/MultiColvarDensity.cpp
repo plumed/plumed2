@@ -178,7 +178,7 @@ ActionWithGrid(ao)
   parseVector("NBINS",nbins); parseVector("SPACING",gspacing);
   if( nbins.size()!=directions.size() && gspacing.size()!=directions.size() ) error("NBINS or SPACING must be set");
 
-  confined.resize( directions.size() ); cmin.resize( directions.size() ); cmax.resize( directions.size() );
+  confined.resize( directions.size() ); cmin.resize( directions.size(), 0 ); cmax.resize( directions.size(), 0 );
   for(unsigned i=0;i<directions.size();++i){
       if( directions[i]==0 ){
           bool tflag; parseFlag("XREDUCED",tflag); confined[i]=tflag;

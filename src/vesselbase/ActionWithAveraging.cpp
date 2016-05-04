@@ -52,7 +52,7 @@ clearstride(0)
       parse("CLEAR",clearstride);
       if( clearstride>0 ){
           if( clearstride%getStride()!=0 ) error("CLEAR parameter must be a multiple of STRIDE");
-          log.printf("  clearing grid every %d steps \n",clearstride);
+          log.printf("  clearing grid every %u steps \n",clearstride);
       }
   }
   if( keywords.exists("LOGWEIGHTS") ){
