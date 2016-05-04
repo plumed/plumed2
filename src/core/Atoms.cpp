@@ -125,6 +125,13 @@ void Atoms::setForces(void*p){
   mdatoms->setf(p);
 }
 
+void Atoms::setVelocities(void*p){
+  plumed_massert( dataCanBeSet ,"setVelocities must be called after setStep in MD code interface");
+  plumed_massert( p || gatindex.size()==0, "NULL velocity pointer with non-zero local atoms");
+  velocitiesHaveBeenSet=3;
+  mdatoms->setv(p);
+}
+
 void Atoms::setPositions(void*p,int i){
   plumed_massert( dataCanBeSet ,"setPositions must be called after setStep in MD code interface");
   plumed_massert( p || gatindex.size()==0, "NULL positions pointer with non-zero local atoms");
@@ -135,6 +142,12 @@ void Atoms::setForces(void*p,int i){
   plumed_massert( dataCanBeSet ,"setForces must be called after setStep in MD code interface");
   plumed_massert( p || gatindex.size()==0, "NULL force pointer with non-zero local atoms");
   mdatoms->setf(p,i); forcesHaveBeenSet++;
+}
+
+void Atoms::setVelocities(void*p,int i){
+  plumed_massert( dataCanBeSet ,"setVelocities must be called after setStep in MD code interface");
+  plumed_massert( p || gatindex.size()==0, "NULL velocity pointer with non-zero local atoms");
+  mdatoms->setv(p,i); velocitiesHaveBeenSet++;
 }
 
 void Atoms::share(){
@@ -513,6 +526,11 @@ void Atoms::getLocalForces(std::vector<Vector>& localForces){
 // carlo: it doesnt'
 //#pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(localForces))
   for(unsigned i=0; i<gatindex.size(); i++) localForces[i] = forces[gatindex[i]];
+}
+
+void Atoms::getLocalVelocities(std::vector<Vector>& localVelocities){
+  localVelocities.resize(gatindex.size());
+  mdatoms->getLocalVelocities(localVelocities);
 }
 
 void Atoms::getLocalMDForces(std::vector<Vector>& localForces){

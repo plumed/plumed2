@@ -66,10 +66,14 @@ public:
   virtual void setVirial(void*)=0;
 /// Set a pointer to the forces array in the MD code
   virtual void setf(void*f)=0;
+/// Set a pointer to the velocities array in the MD code
+  virtual void setv(void*v)=0;
 /// Set a pointer to the position array in the MD code
   virtual void setp(void*p,int i)=0;
 /// Set a pointer to the force array in the MD code
   virtual void setf(void*f,int i)=0;
+/// Set a pointer to the velocity array in the MD code
+  virtual void setv(void*v,int i)=0;
 /// Set internal and MD units
   virtual void setUnits(const Units& units,const Units& MDUnits)=0;
 /// Convert a pointer to an MD-real to a double
@@ -93,6 +97,8 @@ public:
   virtual void getCharges(const std::vector<int>&index,std::vector<double>&c)const=0;
 /// Retrieve local positions.
   virtual void getLocalPositions(std::vector<Vector>&p)const=0;
+/// Retrieve local velocities.
+  virtual void getLocalVelocities(std::vector<Vector>&p)const=0;
 /// Increment the virial by an amount v
   virtual void updateVirial(const Tensor&v)const=0;
 /// Increment the force on selected atoms.

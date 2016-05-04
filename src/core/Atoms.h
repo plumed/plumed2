@@ -49,6 +49,7 @@ class Atoms
   int natoms;
   std::vector<Vector> positions;
   std::vector<Vector> forces;
+  std::vector<Vector> velocities;
   std::vector<double> masses;
   std::vector<double> charges;
   std::vector<ActionWithVirtualAtom*> virtualAtomsActions;
@@ -68,6 +69,7 @@ class Atoms
   bool chargesHaveBeenSet;
   bool boxHasBeenSet;
   unsigned forcesHaveBeenSet;
+  unsigned velocitiesHaveBeenSet;
   bool virialHasBeenSet;
   bool massAndChargeOK;
   unsigned shuffledAtoms;
@@ -155,6 +157,7 @@ public:
   const Pbc& getPbc()const;
   void getLocalPositions(std::vector<Vector>&);
   void getLocalForces(std::vector<Vector>&);
+  void getLocalVelocities(std::vector<Vector>&);
   void getLocalMDForces(std::vector<Vector>&);
   const Tensor& getVirial()const;
 
@@ -173,6 +176,8 @@ public:
   void setPositions(void*,int);
   void setForces(void*);
   void setForces(void*,int);
+  void setVelocities(void*);
+  void setVelocities(void*,int);
   void setMasses(void*);
   void setCharges(void*);
   bool chargesWereSet() const ;
