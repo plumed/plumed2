@@ -145,6 +145,7 @@ For users:
   closed gromacs log file.
 - When looking for a value outside the GRID now the error include the name of the responsible 
   collective variable
+- Numerical check in LatticeReduction made less picky.
 
 For developers:
 
