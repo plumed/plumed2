@@ -67,7 +67,8 @@ public:
   }
   static void registerKeywords( Keywords& keys );
   void calculate(){}
-  void apply(){
+  void apply(){}
+  void update(){
     plumed.fflush();
     log.flush();
     const ActionSet & actionSet(plumed.getActionSet());
