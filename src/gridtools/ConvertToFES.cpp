@@ -39,13 +39,17 @@ namespace gridtools {
 class ConvertToFES : public ActionWithInputGrid {
 private:
   double simtemp;
+  bool activated;
 public:
   static void registerKeywords( Keywords& keys );
   explicit ConvertToFES(const ActionOptions&ao);
   unsigned getNumberOfQuantities() const ;
+  void prepare(){ activated=true; }
+  void prepareForAveraging(){ ActionWithInputGrid::prepareForAveraging(); activated=false; }
   void compute( const unsigned& current, MultiValue& myvals ) const ;
   bool isPeriodic(){ return false; }
-  bool onStep() const { return true; }
+  bool onStep() const { return activated; }
+  void runFinalJobs();
 };
 
 PLUMED_REGISTER_ACTION(ConvertToFES,"CONVERT_TO_FES")
@@ -59,7 +63,8 @@ void ConvertToFES::registerKeywords( Keywords& keys ){
 
 ConvertToFES::ConvertToFES(const ActionOptions&ao):
 Action(ao),
-ActionWithInputGrid(ao)
+ActionWithInputGrid(ao),
+activated(false)
 {
   plumed_assert( ingrid->getNumberOfComponents()==1 );
 
@@ -93,6 +98,10 @@ void ConvertToFES::compute( const unsigned& current, MultiValue& myvals ) const 
   if( !mygrid->noDerivatives() && val>0 ){
      for(unsigned i=0;i<mygrid->getDimension();++i) myvals.setValue( 2+i, -(simtemp/val)*ingrid->getGridElement(current,i+1) );
   }
+}
+
+void ConvertToFES::runFinalJobs(){
+  activated=true; update();
 }
 
 }
