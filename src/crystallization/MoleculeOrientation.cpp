@@ -93,18 +93,18 @@ void MoleculeOrientation::calculateVector( multicolvar::AtomValuePack& myatoms )
   for(unsigned i=0;i<nvectors;++i){
       Vector distance; distance=getSeparation( myatoms.getPosition(2*i+0), myatoms.getPosition(2*i+1) );
 
-      addAtomDerivatives( 2+3*i+0, 0, Vector(-1.0,0,0), myatoms ); 
-      addAtomDerivatives( 2+3*i+0, 1, Vector(+1.0,0,0), myatoms ); 
+      addAtomDerivatives( 2+3*i+0, 2*i+0, Vector(-1.0,0,0), myatoms );
+      addAtomDerivatives( 2+3*i+0, 2*i+1, Vector(+1.0,0,0), myatoms );
       myatoms.addBoxDerivatives( 2+3*i+0, Tensor(distance,Vector(-1.0,0,0)) ); 
-      myatoms.addValue( 2+3*i+0, distance[0] ); 
+      myatoms.addValue( 2+3*i+0, distance[0] );
 
-      addAtomDerivatives( 2+3*i+1, 0, Vector(0,-1.0,0), myatoms ); 
-      addAtomDerivatives( 2+3*i+1, 1, Vector(0,+1.0,0), myatoms ); 
+      addAtomDerivatives( 2+3*i+1, 2*i+0, Vector(0,-1.0,0), myatoms );
+      addAtomDerivatives( 2+3*i+1, 2*i+1, Vector(0,+1.0,0), myatoms );
       myatoms.addBoxDerivatives( 2+3*i+1, Tensor(distance,Vector(0,-1.0,0)) ); 
       myatoms.addValue( 2+3*i+1, distance[1] ); 
 
-      addAtomDerivatives( 2+3*i+2, 0, Vector(0,0,-1.0), myatoms ); 
-      addAtomDerivatives( 2+3*i+2, 1, Vector(0,0,+1.0), myatoms ); 
+      addAtomDerivatives( 2+3*i+2, 2*i+0, Vector(0,0,-1.0), myatoms );
+      addAtomDerivatives( 2+3*i+2, 2*i+1, Vector(0,0,+1.0), myatoms );
       myatoms.addBoxDerivatives( 2+3*i+2, Tensor(distance,Vector(0,0,-1.0)) ); 
       myatoms.addValue( 2+3*i+2, distance[2] );
   } 
