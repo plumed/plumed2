@@ -72,7 +72,7 @@ void InterMolecularTorsions::registerKeywords( Keywords& keys ){
                                "The following provides information on the \\ref switchingfunction that are available. "
                                "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   // Use actionWithDistributionKeywords
-  keys.remove("LOWMEM");
+  keys.remove("LOWMEM"); keys.remove("DATA");
   keys.addFlag("LOWMEM",false,"lower the memory requirements");
 }
 
