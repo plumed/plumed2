@@ -72,7 +72,8 @@ OFile::OFile():
   linked(NULL),
   fieldChanged(false),
   backstring("bck"),
-  enforceRestart_(false)
+  enforceRestart_(false),
+  enforceBackup_(false)
 {
   fmtField();
   buflen=1;
@@ -373,6 +374,7 @@ FileBase& OFile::flush(){
 
 bool OFile::checkRestart()const{
   if(enforceRestart_) return true;
+  else if(enforceBackup_) return false;
   else if(action) return action->getRestart();
   else if(plumed) return plumed->getRestart();
   else return false;
@@ -380,9 +382,15 @@ bool OFile::checkRestart()const{
 
 OFile& OFile::enforceRestart(){
   enforceRestart_=true;
+  enforceBackup_=false;
   return *this;
 }
 
+OFile& OFile::enforceBackup(){
+  enforceBackup_=true;
+  enforceRestart_=false;
+  return *this;
 }
 
 
+}
