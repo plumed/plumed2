@@ -196,7 +196,7 @@ void FindContourSurface::compute( const unsigned& current, MultiValue& myvals ) 
      // Check if the minimum is bracketed 
      if( val1*val2<0 ){ 
          ingrid->getGridPointCoordinates( shiftn, point ); findContour( direction, point ); 
-         minp=point[dir_n]; nfound++;
+         minp=point[dir_n]; nfound++; break;
      }
 
 

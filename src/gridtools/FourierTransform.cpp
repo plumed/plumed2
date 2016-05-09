@@ -165,7 +165,7 @@ fourier_params(2)
   // Create a grid on which to store the fourier transform of the input grid
   createGrid( "grid", vstring );
   if( ingrid->noDerivatives() ) mygrid->setNoDerivatives();
-  finishGridSetup();
+  setAveragingAction( mygrid, false );
 
   checkRead();
 #endif
