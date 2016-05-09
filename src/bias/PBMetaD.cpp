@@ -205,7 +205,7 @@ private:
   bool    multiple_w;
   vector<double> uppI_;
   vector<double> lowI_;
-  bool doInt_;
+  vector<bool>  doInt_;
   bool isFirstStep;
 
   void   readGaussians(int iarg, IFile*);
@@ -273,7 +273,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
 PLUMED_BIAS_INIT(ao),
 grid_(false), height0_(std::numeric_limits<double>::max()),
 biasf_(1.0), kbt_(0.0), stride_(0), welltemp_(false),
-multiple_w(false), doInt_(false), isFirstStep(true)
+multiple_w(false), isFirstStep(true)
 {
 
   parse("FMT",fmt);
@@ -371,19 +371,22 @@ multiple_w(false), doInt_(false), isFirstStep(true)
   parseFlag("GRID_NOSPLINE",nospline);
   bool spline=!nospline;
   if(gbin.size()>0){grid_=true;}
- 
   if(!grid_&&gridfilenames_.size() > 0) error("To write a grid you need first to define it!");
   if(!grid_&&gridreadfilenames_.size() > 0) error("To read a grid you need first to define it!");
- 
+
+  doInt_.resize(getNumberOfArguments(),false);  
   // Interval keyword
   parseVector("INTERVAL_MIN",lowI_);
   parseVector("INTERVAL_MAX",uppI_);
   // various checks
   if(lowI_.size()!=uppI_.size()) error("both a lower and an upper limits must be provided with INTERVAL");
   if(lowI_.size()!=0 && lowI_.size()!=getNumberOfArguments()) error("check number of argument of INTERVAL");
-  for(unsigned i=0; i<lowI_.size(); ++i) if(uppI_[i]<lowI_[i]) error("The Upper limit must be greater than the Lower limit!");
-  if(lowI_.size()>0) doInt_=true;
-  
+  for(unsigned i=0; i<lowI_.size(); ++i) {
+    if(uppI_[i]<lowI_[i]) error("The Upper limit must be greater than the Lower limit!");
+    if(getPntrToArgument(i)->isPeriodic()) warning("INTERVAL is not used for periodic variables");
+    else doInt_[i]=true;
+  }
+ 
   checkRead();
 
   log.printf("  Gaussian width ");
@@ -400,7 +403,9 @@ multiple_w(false), doInt_(false), isFirstStep(true)
     log.printf("  KbT %f\n",kbt_);
   }
   if(multiple_w) log.printf("  Multiple walkers active using MPI communnication\n");
-  if(doInt_) log.printf("  Upper and Lower limits boundaries for the bias are activated\n");
+  for(unsigned i=0; i<doInt_.size();i++) {
+    if(doInt_[i]) log.printf("  Upper and Lower limits boundaries for the bias of CV %i are activated\n", i);
+  }
   if(grid_){
    log.printf("  Grid min");
    for(unsigned i=0;i<gmin.size();++i) log.printf(" %s",gmin[i].c_str() );
@@ -526,11 +531,11 @@ multiple_w(false), doInt_(false), isFirstStep(true)
     comm.Bcast(r,0);
     if(r>0) hillsfname_tmp="/dev/null";
     ofile->enforceSuffix("");
-   }
-   ofile->open(hillsfname_tmp);
-   if(fmt.length()>0) ofile->fmtField(fmt);
-   ofile->addConstantField("multivariate");
-   if(doInt_) {
+  }
+  ofile->open(hillsfname_tmp);
+  if(fmt.length()>0) ofile->fmtField(fmt);
+  ofile->addConstantField("multivariate");
+  if(doInt_[i]) {
     ofile->addConstantField("lower_int").printField("lower_int",lowI_[i]);
     ofile->addConstantField("upper_int").printField("upper_int",uppI_[i]);
    }
@@ -565,7 +570,7 @@ multiple_w(false), doInt_(false), isFirstStep(true)
   }
 
   log<<"  Bibliography "<<plumed.cite("Pfaendtner and Bonomi. J. Chem. Theory Comput. 11, 5062 (2015)");
-  if(doInt_) log<<plumed.cite(
+  if(doInt_[0]) log<<plumed.cite(
      "Baftizadeh, Cossio, Pietrucci, and Laio, Curr. Phys. Chem. 2, 79 (2012)");
   if(multiple_w) log<<plumed.cite(
     "Raiteri, Laio, Gervasio, Micheletti, and Parrinello, J. Phys. Chem. B 110, 3533 (2006)");   
@@ -662,9 +667,8 @@ void PBMetaD::addGaussian(int iarg, const Gaussian& hill){
 
 vector<unsigned> PBMetaD::getGaussianSupport(int iarg, const Gaussian& hill){
  vector<unsigned> nneigh;
- 
- if(doInt_){
-   double cutoff=sqrt(2.0*DP2CUTOFF)*hill.sigma[0];
+ const double cutoff=sqrt(2.0*DP2CUTOFF)*hill.sigma[0];
+ if(doInt_[iarg]){
    if(hill.center[0]+cutoff > uppI_[iarg] || hill.center[0]-cutoff < lowI_[iarg]) { 
      // in this case, we updated the entire grid to avoid problems
      return BiasGrids_[iarg]->getNbin();
@@ -674,7 +678,6 @@ vector<unsigned> PBMetaD::getGaussianSupport(int iarg, const Gaussian& hill){
    }
  }
 
- double cutoff=sqrt(2.0*DP2CUTOFF)*hill.sigma[0];
  nneigh.push_back( static_cast<unsigned>(ceil(cutoff/BiasGrids_[iarg]->getDx()[0])) );
 
  return nneigh;
@@ -714,7 +717,7 @@ double PBMetaD::evaluateGaussian
  const double *pcv=NULL; // pointer to cv
  double tmpcv[1]; // tmp array with cv (to be used with doInt_)
  if(cv.size()>0) pcv=&cv[0];
- if(doInt_){
+ if(doInt_[iarg]){
    plumed_assert(cv.size()==1);
    tmpcv[0]=cv[0];
    if(cv[0]<lowI_[iarg]) tmpcv[0]=lowI_[iarg];
@@ -727,7 +730,7 @@ double PBMetaD::evaluateGaussian
        bias = hill.height*exp(-dp2);
        if(der){der[0]+= -bias * dp / hill.sigma[0];}
  }
- if(doInt_){
+ if(doInt_[iarg]){
    if((cv[0]<lowI_[iarg] || cv[0]>uppI_[iarg]) && der ) der[0] = 0.0;
  }
  return bias;
