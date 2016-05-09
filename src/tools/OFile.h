@@ -183,6 +183,8 @@ public virtual FileBase{
   bool checkRestart()const;
 /// True if restart behavior should be forced
   bool enforceRestart_;
+/// True if backup behavior (i.e. non restart) should be forced
+  bool enforceBackup_;
 public:
 /// Constructor
   OFile();
@@ -251,9 +253,11 @@ this method can be used to clean the field list.
   OFile&rewind();
 /// Flush a file
   virtual FileBase&flush();
-/// Enforce restart, also if the attached plume object is not restarting.
+/// Enforce restart, also if the attached plumed object is not restarting.
 /// Useful for tests
   OFile&enforceRestart();
+/// Enforce backup, even if the attached plumed object is restarting.
+  OFile&enforceBackup();
 };
 
 /// Write using << syntax
