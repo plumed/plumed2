@@ -404,7 +404,7 @@ multiple_w(false), isFirstStep(true)
   }
   if(multiple_w) log.printf("  Multiple walkers active using MPI communnication\n");
   for(unsigned i=0; i<doInt_.size();i++) {
-    if(doInt_[i]) log.printf("  Upper and Lower limits boundaries for the bias of CV %i are activated\n", i);
+    if(doInt_[i]) log.printf("  Upper and Lower limits boundaries for the bias of CV %u are activated\n", i);
   }
   if(grid_){
    log.printf("  Grid min");
