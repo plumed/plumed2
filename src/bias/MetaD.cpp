@@ -284,6 +284,27 @@ Alternatively, if you use a BIASFACTOR yout simulation will converge to a free
 energy that is a linear combination of the target free energy and of the intrinsic free energy
 determined by the original force field.
 
+\verbatim
+DISTANCE ATOMS=3,5 LABEL=d1
+METAD ...
+ LABEL=t1
+ ARG=d1 SIGMA=0.05 TAU=200 DAMPFACTOR=100 PACE=250
+ GRID_MIN=0 GRID_MAX=2 GRID_BIN=200
+ TARGET=dist.dat
+... METAD
+
+PRINT ARG=d1,t1.bias STRIDE=100 FILE=COLVAR
+\endverbatim
+
+The header in the file dist.dat for this calculation would read:
+
+\verbatim
+#! FIELDS d1 t1.target der_d1
+#! SET min_d1 0
+#! SET max_d1 2
+#! SET nbins_d1  200
+#! SET periodic_d1 false
+\endverbatim
 
 */
 //+ENDPLUMEDOC
