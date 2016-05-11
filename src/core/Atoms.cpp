@@ -535,11 +535,8 @@ void Atoms::getLocalVelocities(std::vector<Vector>& localVelocities){
 
 void Atoms::getLocalMDForces(std::vector<Vector>& localForces){
   localForces.resize(gatindex.size());
-// not sure this parallelization helps
-// carlo: it doesnt'
-//#pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(localForces))
   for(unsigned i=0; i<gatindex.size(); i++) {
-    localForces[i] = mdatoms->getMDforces(gatindex[i]);
+    localForces[i] = mdatoms->getMDforces(i);
   }
 }
 

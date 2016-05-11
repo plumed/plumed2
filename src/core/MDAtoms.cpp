@@ -68,7 +68,7 @@ public:
     *(static_cast<T*>(m))=T(d);
   }
   Vector getMDforces(const unsigned index)const{
-    Vector force(fx[index],fy[index],fz[index]);
+    Vector force(fx[stride*index],fy[stride*index],fz[stride*index]);
     return force;
   }
   void getBox(Tensor &)const;
