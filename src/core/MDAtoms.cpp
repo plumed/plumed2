@@ -37,7 +37,7 @@ template <class T>
 class MDAtomsTyped:
 public MDAtomsBase
 {
-  T scalep,scalef,scalevv;
+  T scalep,scalef;
   T scaleb,scalev;
   T scalec,scalem; // factor to scale charges and masses
   int stride;
@@ -45,7 +45,6 @@ public MDAtomsBase
   T *c;
   T *px; T *py; T *pz;
   T *fx; T *fy; T *fz;
-  T *vx; T *vy; T *vz;
   T *box;
   T *virial;
 public:
@@ -58,8 +57,6 @@ public:
   void setf(void*f);
   void setp(void*p,int i);
   void setf(void*f,int i);
-  void setv(void*f);
-  void setv(void*f,int i);
   void setUnits(const Units&,const Units&);
   void MD2double(const void*m,double&d)const{
     d=double(*(static_cast<const T*>(m)));
@@ -75,7 +72,6 @@ public:
   void getPositions(const vector<int>&index,vector<Vector>&positions)const;
   void getPositions(unsigned j,unsigned k,vector<Vector>&positions)const;
   void getLocalPositions(std::vector<Vector>&p)const;
-  void getLocalVelocities(std::vector<Vector>&p)const;
   void getMasses(const vector<int>&index,vector<double>&)const;
   void getCharges(const vector<int>&index,vector<double>&)const;
   void updateVirial(const Tensor&)const;
@@ -87,7 +83,6 @@ public:
 template <class T>
 void MDAtomsTyped<T>::setUnits(const Units& units,const Units& MDUnits){
   double lscale=units.getLength()/MDUnits.getLength();
-  double tscale=units.getTime()/MDUnits.getTime();
   double escale=units.getEnergy()/MDUnits.getEnergy();
   double cscale=units.getCharge()/MDUnits.getCharge();
   double mscale=units.getMass()/MDUnits.getMass();
@@ -95,7 +90,6 @@ void MDAtomsTyped<T>::setUnits(const Units& units,const Units& MDUnits){
   scalep=1.0/lscale;
   scaleb=1.0/lscale;
 // scalef and scalev are used to convert plumed to MD
-  scalevv=tscale/lscale;
   scalef=escale/lscale;
   scalev=escale;
   scalec=1.0/cscale;
@@ -136,16 +130,6 @@ void MDAtomsTyped<T>::getLocalPositions(vector<Vector>&positions)const{
     positions[i][0]=px[stride*i]*scalep;
     positions[i][1]=py[stride*i]*scalep;
     positions[i][2]=pz[stride*i]*scalep;
-  }
-}
-
-template <class T>
-void MDAtomsTyped<T>::getLocalVelocities(vector<Vector>&velocities)const{
-  #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(velocities))
-  for(unsigned i=0;i<velocities.size();++i){
-    velocities[i][0]=vx[stride*i]*scalevv;
-    velocities[i][1]=vy[stride*i]*scalevv;
-    velocities[i][2]=vz[stride*i]*scalevv;
   }
 }
 
@@ -230,16 +214,6 @@ void MDAtomsTyped<T>::setp(void*pp,int i){
 }
 
 template <class T>
-void MDAtomsTyped<T>::setv(void*vv){
-  T*v=static_cast<T*>(vv);
-  plumed_assert(stride==0 || stride==3);
-  vx=v;
-  vy=v+1;
-  vz=v+2;
-  stride=3;
-}
-
-template <class T>
 void MDAtomsTyped<T>::setVirial(void*pp){
   virial=static_cast<T*>(pp);
 }
@@ -252,16 +226,6 @@ void MDAtomsTyped<T>::setf(void*ff,int i){
   if(i==0)fx=f;
   if(i==1)fy=f;
   if(i==2)fz=f;
-  stride=1;
-}
-
-template <class T>
-void MDAtomsTyped<T>::setv(void*vv,int i){
-  T*v=static_cast<T*>(vv);
-  plumed_assert(stride==0 || stride==1);
-  if(i==0)vx=v;
-  if(i==1)vy=v;
-  if(i==2)vz=v;
   stride=1;
 }
 
@@ -279,7 +243,6 @@ template <class T>
 MDAtomsTyped<T>::MDAtomsTyped():
   scalep(1.0),
   scalef(1.0),
-  scalevv(1.0),
   scaleb(1.0),
   scalev(1.0),
   scalec(1.0),
@@ -293,9 +256,6 @@ MDAtomsTyped<T>::MDAtomsTyped():
   fx(NULL),
   fy(NULL),
   fz(NULL),
-  vx(NULL),
-  vy(NULL),
-  vz(NULL),
   box(NULL),
   virial(NULL)
 {}

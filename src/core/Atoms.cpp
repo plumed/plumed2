@@ -23,7 +23,6 @@
 #include "ActionAtomistic.h"
 #include "MDAtoms.h"
 #include "PlumedMain.h"
-//#include "tools/OpenMP.h"
 #include "tools/Pbc.h"
 #include <algorithm>
 #include <iostream>
@@ -125,13 +124,6 @@ void Atoms::setForces(void*p){
   mdatoms->setf(p);
 }
 
-void Atoms::setVelocities(void*p){
-  plumed_massert( dataCanBeSet ,"setVelocities must be called after setStep in MD code interface");
-  plumed_massert( p || gatindex.size()==0, "NULL velocity pointer with non-zero local atoms");
-  velocitiesHaveBeenSet=3;
-  mdatoms->setv(p);
-}
-
 void Atoms::setPositions(void*p,int i){
   plumed_massert( dataCanBeSet ,"setPositions must be called after setStep in MD code interface");
   plumed_massert( p || gatindex.size()==0, "NULL positions pointer with non-zero local atoms");
@@ -142,12 +134,6 @@ void Atoms::setForces(void*p,int i){
   plumed_massert( dataCanBeSet ,"setForces must be called after setStep in MD code interface");
   plumed_massert( p || gatindex.size()==0, "NULL force pointer with non-zero local atoms");
   mdatoms->setf(p,i); forcesHaveBeenSet++;
-}
-
-void Atoms::setVelocities(void*p,int i){
-  plumed_massert( dataCanBeSet ,"setVelocities must be called after setStep in MD code interface");
-  plumed_massert( p || gatindex.size()==0, "NULL velocity pointer with non-zero local atoms");
-  mdatoms->setv(p,i); velocitiesHaveBeenSet++;
 }
 
 void Atoms::share(){
@@ -180,9 +166,6 @@ void Atoms::share(const std::set<AtomNumber>& unique){
   plumed_assert( positionsHaveBeenSet==3 && massesHaveBeenSet );
   virial.zero();
   if(int(gatindex.size())==natoms){
-// not sure this parallelization helps
-// carlo: it doesnt'
-//#pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(forces))
     for(int i=0;i<natoms;i++) forces[i].zero();
   } else {
     for(unsigned i=0;i<gatindex.size();i++) forces[gatindex[i]].zero();
@@ -515,6 +498,11 @@ double Atoms::getMDKBoltzmann()const{
   else return kBoltzmann/MDUnits.getEnergy();
 }
 
+void Atoms::getLocalMasses(std::vector<double>& localMasses){ 
+  localMasses.resize(gatindex.size()); 
+  for(unsigned i=0; i<gatindex.size(); i++) localMasses[i] = masses[gatindex[i]]; 
+}
+
 void Atoms::getLocalPositions(std::vector<Vector>& localPositions){
   localPositions.resize(gatindex.size());
   mdatoms->getLocalPositions(localPositions);
@@ -522,15 +510,7 @@ void Atoms::getLocalPositions(std::vector<Vector>& localPositions){
 
 void Atoms::getLocalForces(std::vector<Vector>& localForces){
   localForces.resize(gatindex.size());
-// not sure this parallelization helps
-// carlo: it doesnt'
-//#pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(localForces))
   for(unsigned i=0; i<gatindex.size(); i++) localForces[i] = forces[gatindex[i]];
-}
-
-void Atoms::getLocalVelocities(std::vector<Vector>& localVelocities){
-  localVelocities.resize(gatindex.size());
-  mdatoms->getLocalVelocities(localVelocities);
 }
 
 void Atoms::getLocalMDForces(std::vector<Vector>& localForces){
