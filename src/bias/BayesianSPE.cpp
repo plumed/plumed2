@@ -99,7 +99,7 @@ class BayesianSPE : public Bias
   double getEnergy(const double sigma, const double scale);
   
 public:
-  BayesianSPE(const ActionOptions&);
+  explicit BayesianSPE(const ActionOptions&);
   void calculate();
   static void registerKeywords(Keywords& keys);
 };

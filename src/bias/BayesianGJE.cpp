@@ -99,7 +99,7 @@ class BayesianGJE : public Bias
   double getEnergy(const vector<double> &sigma, const double scale);
   
 public:
-  BayesianGJE(const ActionOptions&);
+  explicit BayesianGJE(const ActionOptions&);
   void calculate();
   static void registerKeywords(Keywords& keys);
 };
