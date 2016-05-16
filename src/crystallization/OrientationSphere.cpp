@@ -96,7 +96,7 @@ double OrientationSphere::compute( const unsigned& tindex, multicolvar::AtomValu
              mergeInputDerivatives( 1, 2, catom_der.size(), i, this_der, myder1, myatoms );
              myatoms.addComDerivatives( 1, f_dot*(-dfunc)*distance - sw*ddistance, atom0 );
              addAtomDerivatives( 1, i, f_dot*(dfunc)*distance + sw*ddistance, myatoms );
-             myatoms.addBoxDerivatives( 1, (-dfunc)*f_dot*Tensor(distance,distance) - sw*Tensor( ddistance, distance ) );   
+             myatoms.addBoxDerivatives( 1, (-dfunc)*f_dot*Tensor(distance,distance) - sw*extProduct(distance,ddistance) );
              myder1.clearAll();
               
              myatoms.addComDerivatives( -1, (-dfunc)*distance, atom0 );

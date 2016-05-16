@@ -72,7 +72,7 @@ void InterMolecularTorsions::registerKeywords( Keywords& keys ){
                                "The following provides information on the \\ref switchingfunction that are available. "
                                "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   // Use actionWithDistributionKeywords
-  keys.remove("LOWMEM"); keys.remove("DATA");
+  keys.remove("LOWMEM"); keys.remove("DATA"); 
   keys.addFlag("LOWMEM",false,"lower the memory requirements");
 }
 
@@ -145,7 +145,7 @@ double InterMolecularTorsions::compute( const unsigned& tindex, AtomValuePack& m
       MultiValue& myder1=getInputDerivatives( 1, true, myatoms );
       mergeInputDerivatives( 1, 2, orient0.size(), 1, orient1, myder1, myatoms );
       addAtomDerivatives( 1, 0, -dconn, myatoms ); addAtomDerivatives( 1, 1, dconn, myatoms ); 
-      myatoms.addBoxDerivatives( 1, -Tensor( dconn, conn ) );
+      myatoms.addBoxDerivatives( 1, -extProduct( conn, dconn ) );
    }
 
    return angle;

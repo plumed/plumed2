@@ -29,8 +29,6 @@
 Calculate the SMAC collective variable discussed in \cite smac-paper
 
 
-\bug Contribution to virial is wrong
-
 \par Examples
 
 */

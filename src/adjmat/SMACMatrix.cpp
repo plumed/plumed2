@@ -29,9 +29,6 @@
 /*
 Adjacency matrix in which two molecules are adjacent if they are within a certain cutoff and if the angle between them is within certain ranges.
 
-
-\bug Contribution to virial is wrong
-
 \par Examples
 
 */

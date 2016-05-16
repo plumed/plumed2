@@ -95,9 +95,9 @@ double AlignedMatrixBase::compute( const unsigned& tindex, multicolvar::AtomValu
   double dfunc, sw = switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) )-ncol_t ).calculate( distance.modulo(), dfunc ); 
 
   if( !doNotCalculateDerivatives() ){
-      addAtomDerivatives( 1, 0, (-dfunc)*f_dot*distance + sw*ddistance, myatoms );
-      addAtomDerivatives( 1, 1, (+dfunc)*f_dot*distance - sw*ddistance, myatoms ); 
-      myatoms.addBoxDerivatives( 1, (-dfunc)*f_dot*Tensor(distance,distance) - sw*Tensor( ddistance, distance ) ); 
+      addAtomDerivatives( 1, 0, (-dfunc)*f_dot*distance - sw*ddistance, myatoms );
+      addAtomDerivatives( 1, 1, (+dfunc)*f_dot*distance + sw*ddistance, myatoms ); 
+      myatoms.addBoxDerivatives( 1, (-dfunc)*f_dot*Tensor(distance,distance) - sw*extProduct( distance, ddistance ) ); 
 
       // Add derivatives of orientation 
       for(unsigned k=2;k<orient0.size();++k){ dorient0[k]*=sw; dorient1[k]*=sw; }
