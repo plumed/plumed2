@@ -135,6 +135,7 @@ private:
   double         scale;
   vector<double> coupl;
   bool           svd;
+  bool           pbc;
 public:
   explicit RDC(const ActionOptions&);
   static void registerKeywords( Keywords& keys );
@@ -164,8 +165,13 @@ RDC::RDC(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
 Const(0.3356806),
 mu_s(0),
-scale(1)
+scale(1),
+pbc(true)
 {
+  bool nopbc=!pbc;
+  parseFlag("NOPBC",nopbc);
+  pbc=!nopbc;  
+
   // Read in the atoms
   vector<AtomNumber> t, atoms;
   for(int i=1;;++i ){
@@ -251,7 +257,9 @@ void RDC::calculate()
     for(unsigned r=0;r<N;r+=2)
     {
       const unsigned index=r/2;
-      const Vector distance = pbcDistance(getPosition(r),getPosition(r+1));
+      Vector       distance;
+      if(pbc)      distance = pbcDistance(getPosition(r),getPosition(r+1));
+      else         distance = delta(getPosition(r),getPosition(r+1));
       const double d    = distance.modulo();
       const double ind  = 1./d;
       const double id3  = ind*ind*ind; 
@@ -297,8 +305,9 @@ void RDC::calculate()
     unsigned index=0;
     vector<double> dmax(coupl.size());
     for(unsigned r=0; r<getNumberOfAtoms(); r+=2) {
-      Vector distance;
-      distance=pbcDistance(getPosition(r),getPosition(r+1));
+      Vector  distance;
+      if(pbc) distance = pbcDistance(getPosition(r),getPosition(r+1));
+      else    distance = delta(getPosition(r),getPosition(r+1));
       double d    = distance.modulo();
       double d2   = d*d;
       double d3   = d2*d;
