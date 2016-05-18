@@ -37,6 +37,9 @@ public:
      for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i){
          T* mc=dynamic_cast<T*>( getBaseMultiColvar(i) );
          if(!mc){
+            if( getBaseMultiColvar(i)->getNumberOfBaseMultiColvars()==0 ){
+                error("input action is not calculating the correct vectors"); 
+            }
             for(unsigned j=0;j<getBaseMultiColvar(i)->getNumberOfBaseMultiColvars();++j){
                 T* mmc=dynamic_cast<T*>( getBaseMultiColvar(i)->getBaseMultiColvar(j) );
                 if( !mmc ) error("input action is not calculating the correct vectors");
