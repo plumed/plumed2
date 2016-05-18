@@ -46,7 +46,7 @@ class Metainference : public Bias
   vector<double> parameters;
   // noise type
   unsigned noise_type_;
-  enum { GAUSS, MGAUSS, LTAIL};
+  enum { GAUSS, MGAUSS, OUTLIERS};
   // scale is data scaling factor
   bool   doscale_;
   double scale_;
@@ -99,9 +99,8 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.use("ARG");
   keys.add("optional","PARARG","the input for this action is the scalar output from other actions without derivatives."); 
   keys.add("optional","PARAMETERS","the parameters of the arguments in your function");
-  keys.add("compulsory","NOISETYPE","functional form of the noise (GAUSS,MGAUSS,LTAIL)");
+  keys.add("compulsory","NOISETYPE","functional form of the noise (GAUSS,MGAUSS,OUTLIERS)");
   keys.addFlag("SCALEDATA",false,"Set to TRUE if you want to sample a scaling factor common to all values and replicas.");  
-  keys.addFlag("OPTSIGMAMEAN", false, "Set to minimize sigma_mean on the fly");
   keys.add("compulsory","SCALE0","initial value of the uncertainty parameter");
   keys.add("compulsory","SCALE_MIN","minimum value of the uncertainty parameter");
   keys.add("compulsory","SCALE_MAX","maximum value of the uncertainty parameter");
@@ -157,7 +156,7 @@ MCfirst_(-1)
   parse("NOISETYPE",stringa_noise);
   if(stringa_noise=="GAUSS")       noise_type_ = GAUSS; 
   else if(stringa_noise=="MGAUSS") noise_type_ = MGAUSS;
-  else if(stringa_noise=="LTAIL")  noise_type_ = LTAIL;
+  else if(stringa_noise=="OUTLIERS")  noise_type_ = OUTLIERS;
   else error("Unkwnow noise type"); 
 
   parseFlag("SCALEDATA", doscale_);
@@ -223,7 +222,7 @@ MCfirst_(-1)
     case MGAUSS:
       log.printf("  with gaussian noise and a noise parameter for each data point\n");
       break;
-    case LTAIL:
+    case OUTLIERS:
       log.printf("  with long tailed gaussian noise and a single noise parameter for all the data\n");
       break;
   }
@@ -321,7 +320,7 @@ void Metainference::doMonteCarlo(){
       case MGAUSS:
         old_energy = getEnergyGJE(sigma_,scale_);
         break;
-      case LTAIL:
+      case OUTLIERS:
         old_energy = getEnergySPE(sigma_[0],scale_);
         break;
     }
@@ -362,7 +361,7 @@ void Metainference::doMonteCarlo(){
       case MGAUSS:
         new_energy = getEnergyGJE(new_sigma,new_scale);
         break;
-      case LTAIL:
+      case OUTLIERS:
         new_energy = getEnergySPE(new_sigma[0],new_scale);
         break;
     }
@@ -476,7 +475,7 @@ void Metainference::calculate(){
     case MGAUSS:
       ene = getEnergyForceGJE();
       break;
-    case LTAIL:
+    case OUTLIERS:
       ene = getEnergyForceSPE();
       break;
   }
