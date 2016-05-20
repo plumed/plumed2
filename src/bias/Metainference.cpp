@@ -79,7 +79,7 @@ class Metainference : public Bias
   unsigned nrep_;
   unsigned replica_;
 
-  double getEnergySPE(const double sigma, const double scale);
+  double getEnergySPE(const vector<double> &sigma, const double scale);
   double getEnergyGJE(const vector<double> &sigma, const double scale);
   void   doMonteCarlo();
   double getEnergyForceSPE();
@@ -171,7 +171,17 @@ MCfirst_(-1)
 
   vector<double> readsigma;
   parseVector("SIGMA0",readsigma);
-  if(noise_type_!=MGAUSS&&readsigma.size()>1) error("If you want to use more than one sigma you should add MULTISIGMA");
+  if(noise_type_!=MGAUSS&&readsigma.size()>1) error("If you want to use more than one sigma you should use NOISETYPE=MGAUSS");
+  if(noise_type_==MGAUSS) {
+    if(readsigma.size()==getNumberOfArguments()) {
+      sigma_.resize(getNumberOfArguments());
+      sigma_=readsigma;
+    } else if(readsigma.size()==1) {
+      sigma_.resize(getNumberOfArguments(),readsigma[0]);
+    } else {
+      error("SIGMA0 can accept either one single value or as many values as the number of arguments (with NOISETYPE=MGAUSS)");
+    } 
+  } else sigma_.resize(1, readsigma[0]);
 
   parse("SIGMA_MIN",sigma_min_);
   parse("SIGMA_MAX",sigma_max_);
@@ -187,16 +197,6 @@ MCfirst_(-1)
 
   if(temp>0.0) kbt_=plumed.getAtoms().getKBoltzmann()*temp;
   else kbt_=plumed.getAtoms().getKbT();
-
-  if(readsigma.size()==getNumberOfArguments()) {
-    sigma_.resize(getNumberOfArguments());
-    sigma_=readsigma;
-  } else if(readsigma.size()==1) {
-    if(noise_type_==MGAUSS) sigma_.resize(getNumberOfArguments(),readsigma[0]);
-    else sigma_.resize(1, readsigma[0]);
-  } else {
-    error("SIGMA0 can accept either one single value or as many values as the number of arguments (with MULTISIGMA)");
-  } 
 
   // get number of replicas
   if(comm.Get_rank()==0) {
@@ -281,10 +281,10 @@ MCfirst_(-1)
   srand(iseed);
 }
 
-double Metainference::getEnergySPE(const double sigma, const double scale){
+double Metainference::getEnergySPE(const vector<double> &sigma, const double scale){
   // calculate effective sigma
   const double smean2 = sigma_mean_*sigma_mean_;
-  const double s = sqrt( sigma*sigma + smean2 );
+  const double s = sqrt( sigma[0]*sigma[0] + smean2 );
   // cycle on arguments
   double ene = 0.0;
   for(unsigned i=0;i<getNumberOfArguments();++i){
@@ -327,7 +327,7 @@ void Metainference::doMonteCarlo(){
         old_energy = getEnergyGJE(sigma_,scale_);
         break;
       case OUTLIERS:
-        old_energy = getEnergySPE(sigma_[0],scale_);
+        old_energy = getEnergySPE(sigma_,scale_);
         break;
     }
   }
@@ -351,7 +351,7 @@ void Metainference::doMonteCarlo(){
   
     // propose move for sigma
     vector<double> new_sigma(sigma_.size());
-    for(unsigned j=0;j<sigma_.size();++j) {
+    for(unsigned j=0;j<sigma_.size();j++) {
       const double r2 = static_cast<double>(rand()) / RAND_MAX;
       const double ds2 = -Dsigma_ + r2 * 2.0 * Dsigma_;
       new_sigma[j] = sigma_[j] + ds2;
@@ -368,10 +368,9 @@ void Metainference::doMonteCarlo(){
         new_energy = getEnergyGJE(new_sigma,new_scale);
         break;
       case OUTLIERS:
-        new_energy = getEnergySPE(new_sigma[0],new_scale);
+        new_energy = getEnergySPE(new_sigma,new_scale);
         break;
     }
- 
     // accept or reject
     const double delta = ( new_energy - old_energy ) / kbt_;
     // if delta is negative always accept move
