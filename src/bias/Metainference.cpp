@@ -305,10 +305,14 @@ double Metainference::getEnergyGJE(const vector<double> &sigma, const double sca
   const double smean2 = sigma_mean_*sigma_mean_;
   double ss = sigma[0]*sigma[0] + smean2; 
   for(unsigned i=0;i<getNumberOfArguments();++i){
-    if(noise_type_==MGAUSS) ss = sigma[i]*sigma[i] + smean2; 
+    if(noise_type_==MGAUSS){ 
+      ss = sigma[i]*sigma[i] + smean2;
+      ene += std::log(ss);
+    }
     const double dev = scale*getArgument(i)-parameters[i]; 
     ene += 0.5*dev*dev/ss + std::log(ss*sqrt2pi);
   }
+  if(noise_type_==GAUSS) ene += std::log(ss);
   return kbt_ * ene;
 }
 
@@ -451,10 +455,14 @@ double Metainference::getEnergyForceGJE()
   for(unsigned i=0;i<narg;++i){
     const double dev = scale_*getArgument(i)-parameters[i]; 
     unsigned sel_sigma=0;
-    if(noise_type_==MGAUSS) sel_sigma=i;
-    ene += 0.5*dev*dev*inv_s2[sel_sigma] + std::log(ss[sel_sigma]*sqrt2pi); 
+    if(noise_type_==MGAUSS){
+      sel_sigma=i;
+      ene += std::log(ss[sel_sigma]);
+    }
+    ene += 0.5*dev*dev*inv_s2[sel_sigma] + std::log(ss[sel_sigma]*sqrt2pi);
     setOutputForce(i, -kbt_*dev*scale_*inv_s2[sel_sigma]);
   }
+  if(noise_type_==GAUSS) ene += std::log(ss[0]);
   return ene;
 }
 
