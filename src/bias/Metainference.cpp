@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2015,2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -33,7 +33,7 @@ namespace bias{
 
 //+PLUMEDOC BIAS METAINFERENCE
 /*
-Calculate the Metainference Score for a set of experimental Data.
+Calculate the Metainference Score for a set of back calculated experimental data.
 
 */
 //+ENDPLUMEDOC
@@ -97,10 +97,10 @@ PLUMED_REGISTER_ACTION(Metainference,"METAINFERENCE")
 void Metainference::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   keys.use("ARG");
-  keys.add("optional","PARARG","the input for this action is the scalar output from other actions without derivatives."); 
-  keys.add("optional","PARAMETERS","the parameters of the arguments in your function");
+  keys.add("optional","PARARG","reference values for the experimental data, these can be provided as arguments without derivatives"); 
+  keys.add("optional","PARAMETERS","reference values for the experimental data");
   keys.add("compulsory","NOISETYPE","functional form of the noise (GAUSS,MGAUSS,OUTLIERS)");
-  keys.addFlag("SCALEDATA",false,"Set to TRUE if you want to sample a scaling factor common to all values and replicas.");  
+  keys.addFlag("SCALEDATA",false,"Set to TRUE if you want to sample a scaling factor common to all values and replicas");  
   keys.add("compulsory","SCALE0","initial value of the uncertainty parameter");
   keys.add("compulsory","SCALE_MIN","minimum value of the uncertainty parameter");
   keys.add("compulsory","SCALE_MAX","maximum value of the uncertainty parameter");
@@ -279,6 +279,8 @@ MCfirst_(-1)
   else iseed = 0;     
   comm.Sum(&iseed, 1);
   srand(iseed);
+
+  log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");
 }
 
 double Metainference::getEnergySPE(const vector<double> &sigma, const double scale){
