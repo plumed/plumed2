@@ -168,8 +168,14 @@ inline
 unsigned StoreDataVessel::getStoreIndex( const unsigned& ind ) const {
   if( getAction()->nactive_tasks==getAction()->getFullNumberOfTasks() ) return ind;
 
+  // Binary search for required element - faster scaling than sequential search
+  unsigned l=0, r=getAction()->nactive_tasks-1;
   for(unsigned i=0;i<getAction()->nactive_tasks;++i){
-      if( ind==getAction()->indexOfTaskInFullList[i] ) return i;
+      plumed_assert( l<=r );
+      unsigned m = std::floor( (l + r)/2 ); 
+      if( ind==getAction()->indexOfTaskInFullList[m] ) return m;
+      else if( getAction()->indexOfTaskInFullList[m]<ind ) l=m+1;
+      else if( getAction()->indexOfTaskInFullList[m]>ind ) r=m-1;
   }
   plumed_merror("requested task is not active");
 }

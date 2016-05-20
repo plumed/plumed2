@@ -853,7 +853,11 @@ void MultiColvarBase::performTask( const unsigned& task_index, const unsigned& c
           unsigned mmc = atom_lab[myatoms.getIndex(i)].first - 1;
           weight *= mybasedata[mmc]->retrieveWeightWithIndex( atom_lab[myatoms.getIndex(i)].second );
       } 
-  }
+  } else if( usespecies ){
+      if( atom_lab[myatoms.getIndex(0)].first>0 ){
+          if( mybasedata[atom_lab[myatoms.getIndex(0)].first-1]->retrieveWeightWithIndex( atom_lab[myatoms.getIndex(0)].second )<epsilon ) weight=0.;
+      }
+  } 
   // Do a quick check on the size of this contribution  
   double multweight = calculateWeight( current, weight, myatoms ); 
   if( weight*multweight<getTolerance() ){
