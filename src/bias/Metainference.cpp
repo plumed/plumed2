@@ -310,13 +310,13 @@ double Metainference::getEnergyGJE(const vector<double> &sigma, const double sca
     if(noise_type_==MGAUSS){ 
       ss = sigma[i]*sigma[i] + smean2;
       // add Jeffrey's prior - one per sigma
-      ene += std::log(ss);
+      ene += 0.5*std::log(ss);
     }
     const double dev = scale*getArgument(i)-parameters[i]; 
-    ene += 0.5*dev*dev/ss + std::log(ss*sqrt2pi);
+    ene += 0.5*dev*dev/ss + 0.5*std::log(ss);
   }
   // add Jeffrey's prior in case one sigma for all data points
-  if(noise_type_==GAUSS) ene += std::log(ss);
+  if(noise_type_==GAUSS) ene += 0.5*std::log(ss);
   return kbt_ * ene;
 }
 
@@ -461,13 +461,13 @@ double Metainference::getEnergyForceGJE()
     if(noise_type_==MGAUSS){
       sel_sigma=i;
       // add Jeffrey's prior - one per sigma
-      ene += std::log(ss[sel_sigma]);
+      ene += 0.5*std::log(ss[sel_sigma]);
     }
-    ene += 0.5*dev*dev*inv_s2[sel_sigma] + std::log(ss[sel_sigma]*sqrt2pi);
+    ene += 0.5*dev*dev*inv_s2[sel_sigma] + 0.5*std::log(ss[sel_sigma]);
     setOutputForce(i, -kbt_*dev*scale_*inv_s2[sel_sigma]);
   }
   // add Jeffrey's prior in case one sigma for all data points
-  if(noise_type_==GAUSS) ene += std::log(ss[0]);
+  if(noise_type_==GAUSS) ene += 0.5*std::log(ss[0]);
   return ene;
 }
 
