@@ -173,7 +173,7 @@ void Keywords::reset_style( const std::string & k, const std::string & style ){
 }
 
 void Keywords::add( const std::string & t, const std::string & k, const std::string & d ){
-  plumed_assert( !exists(k) && t!="flag" && !reserved(k) && t!="vessel" );  
+  plumed_massert( !exists(k) && t!="flag" && !reserved(k) && t!="vessel" , "keyword " + k + " has already been registered");  
   std::string fd;
   if( t=="numbered" ){
      fd=d + " You can use multiple instances of this keyword i.e. " + k +"1, " + k + "2, " + k + "3...";
@@ -298,6 +298,19 @@ void Keywords::print_template(const std::string& actionname, bool include_option
      }
   }
   printf("\n");
+}
+
+void Keywords::print_vim() const {
+  for(unsigned i=0;i<keys.size();++i){
+     if( (types.find(keys[i])->second).isFlag() ){
+         printf( ",flag:%s", keys[i].c_str() );
+     } else {
+         if( allowmultiple.find(keys[i])->second ) printf(",numbered:%s",keys[i].c_str() );
+         else printf(",option:%s",keys[i].c_str() );
+     }  
+  }
+  fprintf(stdout,"\n");
+  print(stdout);
 }
 
 void Keywords::print_html() const {

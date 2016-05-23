@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithValue.h"
 #include "tools/Exception.h"
+#include "tools/OpenMP.h"
 
 using namespace std;
 namespace PLMD{
@@ -68,6 +69,7 @@ void ActionWithValue::clearInputForces(){
   for(unsigned i=0;i<values.size();i++) values[i]->clearInputForce();
 }
 void ActionWithValue::clearDerivatives(){
+#pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for(unsigned i=0;i<values.size();i++) values[i]->clearDerivatives();
 } 
 
@@ -192,15 +194,15 @@ void ActionWithValue::componentIsNotPeriodic( const std::string& name ){
   values[kk]->setupPeriodicity();
 }
 
+void ActionWithValue::componentIsPeriodic( const std::string& name, const std::string& min, const std::string& max ){
+  int kk=getComponent(name);
+  values[kk]->setDomain(min,max);
+}
+
 void ActionWithValue::setGradientsIfNeeded(){
   if(isOptionOn("GRADIENTS")) {
      for(unsigned i=0;i<values.size();i++) values[i]->setGradients();
   }
-}
-
-void ActionWithValue::componentIsPeriodic( const std::string& name, const std::string& min, const std::string& max ){
-  int kk=getComponent(name);
-  values[kk]->setDomain(min,max);
 }
 
 void ActionWithValue::turnOnDerivatives(){

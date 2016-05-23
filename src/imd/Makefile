@@ -1,4 +1,7 @@
--include ../../Makefile.conf
+# include the machine dependent configuration
+ifneq ($(MAKECMDGOALS),clean)
+  -include ../../Makefile.conf
+endif
 
 all: libimd.$(SOEXT)
 

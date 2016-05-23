@@ -66,12 +66,14 @@ PLUMED_REGISTER_ACTION(Path,"PATH")
 void Path::registerKeywords( Keywords& keys ){
   PathBase::registerKeywords( keys ); keys.remove("PROPERTY");
   keys.addFlag("NOSPATH",false,"do not calculate the spath position");
+  keys.remove("LOWMEM");
 }
 
 Path::Path(const ActionOptions& ao):
 Action(ao),
 PathBase(ao)
 {
+  setLowMemOption( true ); 
   bool nos; parseFlag("NOSPATH",nos);
 
   std::string empty;

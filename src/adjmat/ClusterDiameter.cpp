@@ -84,11 +84,11 @@ void ClusterDiameter::calculate(){
    // Retrieve the atoms in the largest cluster
    std::vector<unsigned> myatoms; retrieveAtomsInCluster( clustr, myatoms );
    // Activate the relevant tasks
-   deactivateAllTasks(); std::vector<unsigned> active_tasks( getFullNumberOfTasks(), 0 );
+   deactivateAllTasks(); 
    for(unsigned i=1;i<myatoms.size();++i){
-       for(unsigned j=0;j<i;++j) active_tasks[ myatoms[i]*getNumberOfNodes() + myatoms[j] ] = 1;  
+       for(unsigned j=0;j<i;++j) taskFlags[ myatoms[i]*getNumberOfNodes() + myatoms[j] ] = 1;  
    }
-   activateTheseTasks( active_tasks );
+   lockContributors();
    // Now do the calculation 
    runAllTasks();
 }
@@ -96,7 +96,7 @@ void ClusterDiameter::calculate(){
 void ClusterDiameter::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const { 
   unsigned iatom=std::floor(current/getNumberOfNodes()), jatom = current - iatom*getNumberOfNodes();
   Vector distance=getSeparation( getPosition(iatom), getPosition(jatom) );
-  double dd = distance.modulo(), inv = 1.0/dd ; 
+  double dd = distance.modulo();
   myvals.setValue( 0, 1.0 ); myvals.setValue( 1, dd ); 
 }
 

@@ -79,7 +79,7 @@ keyword. Thus, everytime it is modified, all the headers are repeated in the out
 - most methods return a reference to the OFile itself, to allow chaining many calls on the same line
 (this is similar to << operator in std::ostream)
 
-\section Using correctly OFile in PLUMED
+\section using-correctly-ofile Using correctly OFile in PLUMED
 
 When a OFile object is used in PLUMED it can be convenient to link() it
 to the Action object where it is defined, or to the PlumedMain object.
@@ -183,6 +183,8 @@ public virtual FileBase{
   bool checkRestart()const;
 /// True if restart behavior should be forced
   bool enforceRestart_;
+/// True if backup behavior (i.e. non restart) should be forced
+  bool enforceBackup_;
 public:
 /// Constructor
   OFile();
@@ -251,9 +253,11 @@ this method can be used to clean the field list.
   OFile&rewind();
 /// Flush a file
   virtual FileBase&flush();
-/// Enforce restart, also if the attached plume object is not restarting.
+/// Enforce restart, also if the attached plumed object is not restarting.
 /// Useful for tests
   OFile&enforceRestart();
+/// Enforce backup, even if the attached plumed object is restarting.
+  OFile&enforceBackup();
 };
 
 /// Write using << syntax

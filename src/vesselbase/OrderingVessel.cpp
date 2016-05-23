@@ -47,13 +47,13 @@ void OrderingVessel::resize(){
 
 void OrderingVessel::finish( const std::vector<double>& buffer ){
   std::vector<double> values( getAction()->getNumberOfQuantities() );
-  mydata->retrieveValue( 0, false, values );
+  mydata->retrieveSequentialValue( 0, false, values );
 
-  double min=values[1]; unsigned mini=0;
+  double min=values[1]; unsigned mini=getAction()->getPositionInFullTaskList(0);
   for(unsigned i=1;i<mydata->getNumberOfStoredValues();++i){
-      mydata->retrieveValue( i, false, values );
+      mydata->retrieveSequentialValue( i, false, values );
       double newval = values[1];
-      if( compare( newval, min ) ){ min=newval; mini=i; }
+      if( compare( newval, min ) ){ min=newval; mini=getAction()->getPositionInFullTaskList(i); }
   }
   setOutputValue( min );
 

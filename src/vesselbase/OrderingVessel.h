@@ -39,7 +39,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit OrderingVessel( const VesselOptions& da );
   void resize();
-  bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const { return true; }
+  void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {}
   void finish( const std::vector<double>& buffer );
   virtual bool compare( const double& , const double& )=0;
 };

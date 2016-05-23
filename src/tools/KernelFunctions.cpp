@@ -96,7 +96,7 @@ KernelFunctions::KernelFunctions( const std::string& input, const bool& normed )
   if(!foundc) plumed_merror("failed to find center keyword in definition of kernel");
   std::vector<double> sig; 
   bool founds = Tools::parseVector(data,"SIGMA",sig);
-  if(!foundc) plumed_merror("failed to find sigma keyword in definition of kernel");
+  if(!founds) plumed_merror("failed to find sigma keyword in definition of kernel");
 
   bool multi=false; Tools::parseFlag(data,"MULTIVARIATE",multi);
   if( center.size()==1 && multi ) plumed_merror("one dimensional kernel cannot be multivariate");
@@ -136,7 +136,7 @@ void KernelFunctions::setData( const std::vector<double>& at, const std::vector<
   if( norm ){
     double det; unsigned ncv=ndim(); 
     if(diagonal){
-       det=1; for(unsigned i=0;i<width.size();++i) det*=width[i];
+       det=1; for(unsigned i=0;i<width.size();++i) det*=width[i]*width[i];
     } else {
        Matrix<double> mymatrix( getMatrix() ), myinv( ncv, ncv );
        Invert(mymatrix,myinv); double logd;

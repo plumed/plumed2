@@ -91,21 +91,13 @@ void MultiColvarFunction::buildSets(){
           error("mismatch between numbers of tasks in various base multicolvars");
      }
   }
-  ablocks.resize( mybasemulticolvars.size() );
-  usespecies=false; 
+  nblock=0; ablocks.resize( mybasemulticolvars.size() );
+  usespecies=false; // current_atoms.resize( mybasemulticolvars.size() );
   for(unsigned i=0;i<mybasemulticolvars.size();++i){
       ablocks[i].resize( nblock ); 
       for(unsigned j=0;j<nblock;++j) ablocks[i][j]=i*nblock+j;  
   }
-  for(unsigned i=0;i<nblock;++i){
-      if( mybasemulticolvars.size()<4 ){
-          unsigned cvcode=0, tmpc=1;
-          for(unsigned j=0;j<ablocks.size();++j){ cvcode +=i*tmpc; tmpc *= nblock; }
-          addTaskToList( cvcode );
-      } else {
-          addTaskToList( i );
-      }
-  }
+  for(unsigned i=0;i<nblock;++i) addTaskToList( i );
   mybasedata[0]->resizeTemporyMultiValues( mybasemulticolvars.size() ); setupAtomLists();
 }
 

@@ -294,7 +294,16 @@ historep(NULL)
     if(uppI_<lowI_) error("The Upper limit must be greater than the Lower limit!");
     doInt=true;
   }
-  if(doInt) log << "  Upper and Lower limits boundaries for the bias are activated at " << lowI_ << " - " << uppI_<<"\n";
+  if(doInt) {
+    log << "  Upper and Lower limits boundaries for the bias are activated at " << lowI_ << " - " << uppI_<<"\n";
+    log << "  Using the same values as boundaries for the grid if not other value was defined (default: 200 bins)\n";
+    std::ostringstream strsmin, strsmax;
+    strsmin << lowI_;
+    strsmax << uppI_;
+    if(gmin.size()==0) gmin.push_back(strsmin.str());
+    if(gmax.size()==0) gmax.push_back(strsmax.str());
+    if(gbin.size()==0) gbin.push_back(200);
+  }
  
 
   // hills file: 

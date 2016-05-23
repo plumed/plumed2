@@ -115,6 +115,10 @@ case "$type" in
   make exe 1>out 2> err
   $mpi $valgrind ./exe $arg >> out 2>> err
  ;;
+(plumed)
+  echo "Run plumed"
+  $mpi $valgrind $plumed $arg > out 2> err
+  ;;
 (*) echo "unknown test type" ; exit 1 ;;
 esac
 

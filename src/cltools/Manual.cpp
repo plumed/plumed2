@@ -71,6 +71,7 @@ PLUMED_REGISTER_CLTOOL(Manual,"manual")
 void Manual::registerKeywords( Keywords& keys ){
   CLTool::registerKeywords( keys );
   keys.add("compulsory","--action","print the manual for this particular action");
+  keys.addFlag("--vim",false,"print the keywords in vim syntax");
 }
 
 Manual::Manual(const CLToolOptions& co ):
@@ -87,7 +88,8 @@ int Manual::main(FILE* in, FILE*out,Communicator& pc){
  std::cerr<<actionRegister()<<"\n"; 
  std::cerr<<"LIST OF DOCUMENTED COMMAND LINE TOOLS:\n";
  std::cerr<<cltoolRegister()<<"\n\n";
- if( !actionRegister().printManual(action) && !cltoolRegister().printManual(action) ){
+ bool vimout; parseFlag("--vim",vimout);
+ if( !actionRegister().printManual(action,vimout) && !cltoolRegister().printManual(action) ){
        fprintf(stderr,"specified action is not registered\n");
        return 1; 
  }

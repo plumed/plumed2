@@ -22,8 +22,6 @@
 #include "Function.h"
 #include "ActionRegister.h"
 
-#include <cmath>
-
 using namespace std;
 
 namespace PLMD{
@@ -31,7 +29,24 @@ namespace function{
 
 //+PLUMEDOC FUNCTION STATS
 /*
+Calculates statistical properties of a set of collective variables with respect to a set of reference values.
+In particular it calculates and store as components the sum of the squared deviations, the correlation, the
+slope and the intercept of a linear fit.
 
+The reference values can be either provided as values using PARAMETERS or using value without derivatives
+from other actions using PARARG (for example using experimental values from collective variables such as
+\ref CS2BACKBONE, \ref RDC, \ref NOE, ref PRE).
+
+\par Examples
+The following input tells plumed to print the distance between three couple of atoms 
+and compare them with three reference distances.
+
+\verbatim
+d1: DISTANCE ATOMS=10,50
+d2: DISTANCE ATOMS=1,100
+d3: DISTANCE ATOMS=45,75
+st: STATS ARG=d1,d2,d3 PARAMETERS=1.5,4.0,2.0
+PRINT ARG=d1,d2,d3,st.*
 \endverbatim
 
 */
@@ -43,6 +58,8 @@ class Stats :
 {
   std::vector<double> parameters;
   bool sqdonly;
+  bool components;
+  bool upperd;
 public:
   explicit Stats(const ActionOptions&);
   void calculate();
@@ -54,29 +71,26 @@ PLUMED_REGISTER_ACTION(Stats,"STATS")
 
 void Stats::registerKeywords(Keywords& keys){
   Function::registerKeywords(keys);
+  useCustomisableComponents(keys);
   keys.use("ARG");
-  keys.add("optional","PARARG","the input for this action is the scalar output from one or more other actions. The particular scalars that you will use "
-                                  "are referenced using the label of the action. If the label appears on its own then it is assumed that the Action calculates "
-                                  "a single scalar value.  The value of this scalar is thus used as the input to this new action.  If * or *.* appears the "
-                                  "scalars calculated by all the proceding actions in the input file are taken.  Some actions have multi-component outputs and "
-                                  "each component of the output has a specific label.  For example a \\ref DISTANCE action labelled dist may have three componets "
-                                  "x, y and z.  To take just the x component you should use dist.x, if you wish to take all three components then use dist.*."
-                                  "More information on the referencing of Actions can be found in the section of the manual on the PLUMED \\ref Syntax.  "
-                                  "Scalar values can also be "
-                                  "referenced using POSIX regular expressions as detailed in the section on \\ref Regex. To use this feature you you must compile "
-                                  "PLUMED with the appropriate flag."); 
+  keys.add("optional","PARARG","the input for this action is the scalar output from one or more other actions without derivatives."); 
   keys.add("optional","PARAMETERS","the parameters of the arguments in your function");
   keys.addFlag("SQDEVSUM",false,"calculates only SQDEVSUM");
+  keys.addFlag("SQDEV",false,"calculates and store the SQDEV as components");
+  keys.addFlag("UPPERDISTS",false,"calculates and store the SQDEV as components");
   keys.addOutputComponent("sqdevsum","default","the sum of the squared deviations between arguments and parameters"); 
   keys.addOutputComponent("corr","default","the correlation between arguments and parameters"); 
   keys.addOutputComponent("slope","default","the slope of a linear fit between arguments and parameters"); 
   keys.addOutputComponent("intercept","default","the intercept of a linear fit between arguments and parameters"); 
+  keys.addOutputComponent("sqd","SQDEV","the squared deviations between arguments and parameters"); 
 }
 
 Stats::Stats(const ActionOptions&ao):
 Action(ao),
 Function(ao),
-sqdonly(false)
+sqdonly(false),
+components(false),
+upperd(false)
 {
   parseVector("PARAMETERS",parameters);
   if(parameters.size()!=static_cast<unsigned>(getNumberOfArguments())&&!parameters.empty())
@@ -94,16 +108,38 @@ sqdonly(false)
     }
   }
 
+  if(parameters.size()!=getNumberOfArguments()) 
+    error("PARARG or PARAMETERS arrays should include the same number of elements as the arguments in ARG");
+
+  if(getNumberOfArguments()<2) error("STATS need at least two arguments to be used");
+
   parseFlag("SQDEVSUM",sqdonly);
+  parseFlag("SQDEV",components);
+  parseFlag("UPPERDISTS",upperd);
+
+  if(sqdonly&&components) error("You cannot used SQDEVSUM and SQDEV at the sametime");
+
+  if(components) sqdonly = true;
 
   if(!arg2.empty()) log.printf("  using %zu parameters from inactive actions:", arg2.size());
   else              log.printf("  using %zu parameters:", arg2.size());
   for(unsigned i=0;i<parameters.size();i++) log.printf(" %f",parameters[i]);
   log.printf("\n");
 
-  addComponentWithDerivatives("sqdevsum");
-  componentIsNotPeriodic("sqdevsum");
-  if(!sqdonly) {
+  if(sqdonly) {
+    if(components) {
+      for(unsigned i=0;i<parameters.size();i++) {
+        std::string num; Tools::convert(i,num);
+        addComponentWithDerivatives("sqd_"+num);
+        componentIsNotPeriodic("sqd_"+num);
+      }
+    } else {
+      addComponentWithDerivatives("sqdevsum");
+      componentIsNotPeriodic("sqdevsum");
+    }
+  } else {
+    addComponentWithDerivatives("sqdevsum");
+    componentIsNotPeriodic("sqdevsum");
     addComponentWithDerivatives("corr");
     componentIsNotPeriodic("corr");
     addComponentWithDerivatives("slope");
@@ -112,49 +148,58 @@ sqdonly(false)
     componentIsNotPeriodic("intercept");
   }
 
+
   checkRead();
 }
 
 void Stats::calculate()
 {
-
   if(sqdonly) {
 
     double nsqd = 0.;
-    Value* valuea=getPntrToComponent("sqdevsum");
+    Value* val;
+    if(!components) val=getPntrToComponent("sqdevsum");
     for(unsigned i=0;i<parameters.size();++i){
       double dev = getArgument(i)-parameters[i];
-      setDerivative(valuea,i,2.*dev);
-      nsqd += dev*dev;
+      if(upperd&&dev<0) dev=0.; 
+      if(components) {
+        val=getPntrToComponent(i);
+        val->set(dev*dev);
+      } else { 
+        nsqd += dev*dev;
+      }
+      setDerivative(val,i,2.*dev);
     }
-    valuea->set(nsqd);
+    if(!components) val->set(nsqd);
 
   } else {
 
     double scx=0., scx2=0., scy=0., scy2=0., scxy=0.;
  
     for(unsigned i=0;i<parameters.size();++i){
-      scx  += getArgument(i);
-      scx2 += getArgument(i)*getArgument(i);
-      scy  += parameters[i];
-      scy2 += parameters[i]*parameters[i];
-      scxy += getArgument(i)*parameters[i];
+      const double tmpx=getArgument(i);
+      const double tmpy=parameters[i];
+      scx  += tmpx;
+      scx2 += tmpx*tmpx;
+      scy  += tmpy;
+      scy2 += tmpy*tmpy;
+      scxy += tmpx*tmpy;
     }
   
-    double ns = parameters.size();
+    const double ns = parameters.size();
 
-    double num = ns*scxy - scx*scy;
-    double idev2x = 1./(ns*scx2-scx*scx);
-    double idevx = sqrt(idev2x);
-    double idevy = 1./sqrt(ns*scy2-scy*scy);
+    const double num = ns*scxy - scx*scy;
+    const double idev2x = 1./(ns*scx2-scx*scx);
+    const double idevx = sqrt(idev2x);
+    const double idevy = 1./sqrt(ns*scy2-scy*scy);
 
     /* sd */
-    double nsqd = scx2 + scy2 - 2.*scxy;
+    const double nsqd = scx2 + scy2 - 2.*scxy;
     /* correlation */
-    double correlation = num * idevx * idevy;
+    const double correlation = num * idevx * idevy;
     /* slope and intercept */
-    double slope = num * idev2x;
-    double inter = (scy - slope * scx)/ns;
+    const double slope = num * idev2x;
+    const double inter = (scy - slope * scx)/ns;
 
     Value* valuea=getPntrToComponent("sqdevsum");
     Value* valueb=getPntrToComponent("corr");
@@ -168,18 +213,18 @@ void Stats::calculate()
 
     /* derivatives */
     for(unsigned i=0;i<parameters.size();++i){
-      double common_d1 = (ns*parameters[i]-scy)*idevx;
-      double common_d2 = num*(ns*getArgument(i)-scx)*idev2x*idevx;
-      double common_d3 = common_d1 - common_d2;
+      const double common_d1 = (ns*parameters[i]-scy)*idevx;
+      const double common_d2 = num*(ns*getArgument(i)-scx)*idev2x*idevx;
+      const double common_d3 = common_d1 - common_d2;
 
       /* sqdevsum */
-      double sq_der = 2.*(getArgument(i)-parameters[i]);
+      const double sq_der = 2.*(getArgument(i)-parameters[i]);
       /* correlation */
-      double co_der = common_d3*idevy;
+      const double co_der = common_d3*idevy;
       /* slope */
-      double sl_der = (common_d1-2.*common_d2)*idevx;
+      const double sl_der = (common_d1-2.*common_d2)*idevx;
       /* intercept */
-      double int_der = -(slope+ scx*sl_der)/ns;
+      const double int_der = -(slope+ scx*sl_der)/ns;
 
       setDerivative(valuea,i,sq_der);
       setDerivative(valueb,i,co_der);

@@ -970,7 +970,6 @@ std::vector<Vector> RMSDCoreData::getDDistanceDPositions(){
   plumed_massert(!retrieve_only_rotation,"You used  only_rotation=true in doCoreCalc therefore you cannot retrieve this information now");
   if(!hasDistance)plumed_merror("getDPositionsDerivatives needs to calculate the distance via getDistance first !");
   if(!isInitialized)plumed_merror("getDPositionsDerivatives needs to initialize the coreData first!");
-  vector<Vector> ddist_tmp(n);
   Vector csum;
   Vector tmp1,tmp2;
   for(unsigned iat=0;iat<n;iat++){
@@ -1003,7 +1002,6 @@ std::vector<Vector>  RMSDCoreData::getDDistanceDReference(){
   derivatives.resize(n);
   double prefactor=1.0;
   if(!distanceIsMSD) prefactor*=0.5/dist;
-  vector<Vector> ddist_tmp(n);
   Vector csum,tmp1,tmp2;
 
   plumed_massert(!retrieve_only_rotation,"You used  only_rotation=true in doCoreCalc therefore you cannot retrieve this information now");
@@ -1046,7 +1044,6 @@ std::vector<Vector>  RMSDCoreData::getDDistanceDReferenceSOMA(){
   derivatives.resize(n);
   double prefactor=1.0;
   if(!distanceIsMSD) prefactor*=0.5/dist;
-  vector<Vector> ddist_tmp(n);
   Vector csum,tmp1,tmp2;
 
   plumed_massert(!retrieve_only_rotation,"You used  only_rotation=true in doCoreCalc therefore you cannot retrieve this information now");
@@ -1054,7 +1051,6 @@ std::vector<Vector>  RMSDCoreData::getDDistanceDReferenceSOMA(){
   if(!isInitialized)plumed_merror("getDDistanceDReference to initialize the coreData first!");
   // get the transpose rotation
   Tensor t_rotation=rotation.transpose();
-  Tensor t_ddist_drr01=ddist_drr01.transpose();	
   
 // third expensive loop: derivatives
   for(unsigned iat=0;iat<n;iat++){

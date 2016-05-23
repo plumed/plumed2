@@ -118,28 +118,30 @@ PLUMED_MULTICOLVAR_INIT(ao)
 }
 
 double DihedralCorrelation::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
-  Vector d10,d11,d12;
-  d10=getSeparation(myatoms.getPosition(1),myatoms.getPosition(0));
-  d11=getSeparation(myatoms.getPosition(2),myatoms.getPosition(1));
-  d12=getSeparation(myatoms.getPosition(3),myatoms.getPosition(2));
+  const Vector d10=getSeparation(myatoms.getPosition(1),myatoms.getPosition(0));
+  const Vector d11=getSeparation(myatoms.getPosition(2),myatoms.getPosition(1));
+  const Vector d12=getSeparation(myatoms.getPosition(3),myatoms.getPosition(2));
 
-  Vector dd10,dd11,dd12; PLMD::Torsion t1;
-  double phi1  = t1.compute(d10,d11,d12,dd10,dd11,dd12);
+  Vector dd10,dd11,dd12;
+  PLMD::Torsion t1;
+  const double phi1  = t1.compute(d10,d11,d12,dd10,dd11,dd12);
 
-  Vector d20,d21,d22;
-  d20=getSeparation(myatoms.getPosition(5),myatoms.getPosition(4));
-  d21=getSeparation(myatoms.getPosition(6),myatoms.getPosition(5));
-  d22=getSeparation(myatoms.getPosition(7),myatoms.getPosition(6));
+  const Vector d20=getSeparation(myatoms.getPosition(5),myatoms.getPosition(4));
+  const Vector d21=getSeparation(myatoms.getPosition(6),myatoms.getPosition(5));
+  const Vector d22=getSeparation(myatoms.getPosition(7),myatoms.getPosition(6));
 
-  Vector dd20,dd21,dd22; PLMD::Torsion t2;
-  double phi2 = t2.compute( d20, d21, d22, dd20, dd21, dd22 );
+  Vector dd20,dd21,dd22;
+  PLMD::Torsion t2;
+  const double phi2 = t2.compute( d20, d21, d22, dd20, dd21, dd22 );
 
   // Calculate value
-  double value = 0.5 * ( 1 + cos( phi2 - phi1 ) );
+  const double diff = phi2 - phi1;
+  const double value = 0.5*(1.+cos(diff));
   // Derivatives wrt phi1
-  dd10 *= 0.5*sin( phi2 - phi1 );
-  dd11 *= 0.5*sin( phi2 - phi1 );
-  dd12 *= 0.5*sin( phi2 - phi1 );
+  const double dval = 0.5*sin(diff);
+  dd10 *= dval; 
+  dd11 *= dval; 
+  dd12 *= dval; 
   // And add
   addAtomDerivatives(1, 0, dd10, myatoms );
   addAtomDerivatives(1, 1, dd11-dd10, myatoms );
@@ -147,9 +149,9 @@ double DihedralCorrelation::compute( const unsigned& tindex, AtomValuePack& myat
   addAtomDerivatives(1, 3, -dd12, myatoms );
   myatoms.addBoxDerivatives  (1, -(extProduct(d10,dd10)+extProduct(d11,dd11)+extProduct(d12,dd12)));
   // Derivative wrt phi2
-  dd20 *= -0.5*sin( phi2 - phi1 );
-  dd21 *= -0.5*sin( phi2 - phi1 );
-  dd22 *= -0.5*sin( phi2 - phi1 );
+  dd20 *= -dval;
+  dd21 *= -dval;
+  dd22 *= -dval;
   // And add
   addAtomDerivatives(1, 4, dd20, myatoms );
   addAtomDerivatives(1, 5, dd21-dd20, myatoms );

@@ -92,6 +92,17 @@ compile with MPI you should use
 > ./configure CXX="$MPICXX"
 \endverbatim
 
+\warning
+This procedure could be somehow confusing since many other programs behave in a different way.
+The flag `--enable-mpi` is perfectly valid but is not needed here.
+Autoconf will check if a code containing MPI calls can be compiled,
+and if so it will enable it. `--disable-mpi` could be used if you are
+using a compiler that supports MPI but you don't want PLUMED to  be compiled
+with MPI support. Thus the correct way to enable MPI is to pass
+to ./configure  the name of a C++ compiler that implements MPI using the CXX option.
+In this way, MPI library is treated similarly to all the other libraries
+that PLUMED tries to link by default.
+
 To tune the compilation options you can use the CXXFLAGS variable:
 \verbatim
 > ./configure CXXFLAGS=-O3
@@ -198,7 +209,7 @@ just set this variable to a blank ("SOEXT=").
 \subsection BlasAndLapack BLAS and LAPACK
 
 We tried to keep PLUMED as independent as possible from external libraries and as such those features
-that require external libraries (e.g. Almost and Matheval) are optional. However, to have a properly working version
+that require external libraries (e.g. Matheval) are optional. However, to have a properly working version
 of plumed PLUMED you need BLAS and LAPACK libraries.  We would strongly recommend you download these libraries and 
 install them separately so as to have the most efficient possible implementations of the functions contained within 
 them.  However, if you cannot install blas and lapack, you can use the internal ones.
@@ -378,6 +389,8 @@ do not want to set up modules, but we believe that using modules as described ab
 
 \section Patching Patching your MD code
 
+A growing number of MD codes can use PLUMED without any modification.
+If you are using one of these codes, refer to its manual to know how to activate PLUMED.
 In case your MD code is not supporting PLUMED already, you should modify it.
 We provide scripts to adjust some of the most popular MD codes
 so as to provide PLUMED support.
@@ -460,42 +473,67 @@ default values this would be `/usr/local/lib/plumed/plumed-*`. These files are n
 to avoid clashes, but can be executed also when plumed is cross compiled and the main plumed executable cannot be
 launched.
 
-\section installingalmost Installing PLUMED with ALMOST
-
-In order to used some of the NMR based collective variables (\ref CS2BACKBONE and \ref CH3SHIFTS) PLUMED needs to be linked with ALMOST.
-To do this the free package ALMOST v.2.2 MUST be dowloaded via SVN (svn checkout svn://svn.code.sf.net/p/almost/code/branches/almost-2.2-plumed almost-2.2).
-Compile it:
-
-\warning ALMOST needs SQLITE3 and  GZIP installed on your computer.
-\warning ALMOST cannot be installed in the same folder of the source code, use --prefix to install it in a different folder
-
-\verbatim
-> ./configure --prefix="wherever you want it" CXXFLAGS="-O3 -fPIC" CFLAGS="-O3 -fPIC" LIBS=-llapack 
-> make
-> make install
-\endverbatim
-Configure can complain about lapack and RDCs but it doesn't matter.
-Sometimes ALMOST can give errors related to the automake tools. To fix them it is often enough to execute
-\verbatim
-> autoreconf -fi
-> automake
-\endverbatim
-and then repeat the configuration and compilation instructions.
-
-Once ALMOST is installed, PLUMED 2 can then be configured with ALMOST enabled: 
-
-\verbatim
-> ./configure --enable-almost CPPFLAGS="-I/ALMOST_INSTALL_PATH/include \
-  -I/ALMOST_INSTALL_PATH/include/almost" LDFLAGS="-L/ALMOST_INSTALL_PATH/lib"
-  
-\endverbatim
-with ALMOST_INSTALL_PATH set to the full path to the ALMOST installation folder.
-
 \page CodeSpecificNotes Code specific notes
 
 Here you can find instructions that are specific for patching each of the supported MD codes.
 
-\section installing Other hints
+\section installingonacluster Installing PLUMED on a cluster
+
+If you are installing PLUMED on a cluster and you want several users to take advantage of it
+consider the following suggestions.
+
+First of all, we highly recommend using the module file that PLUMED provides to set up the environment.
+Just edit it as necessary to make it suitable for your environment.
+
+Notice that PLUMED can take advantage of many additionaly features if specific libraries are available upon
+compiling it. Install libmatheval first and check if PLUMED `./configure` is detecting it. Libmatheval is a must have with PLUMED.
+If someone uses gromacs, install libxdrfile first and check if PLUMED `./configure` is detecting it.
+PLUMED will be able to write trr/xtc file, simplifying analysis.
+
+Try to patch all MD codes with the `--runtime` option. This will allow independent update of PLUMED and MD codes.
+  Users will be able to combine any of the installed gromacs/amber/etc versions with any of the installed PLUMED versions.
+Notice that it is sometime claimed that statically linked codes are faster. In our experience, this is not true.
+In case you absolutely need a static executable, be ready to face non trivial linking issues. PLUMED is written in C++,
+thus required the appropriate C++ library to be linked, and might require additional libraries (e.g. libmatheval).
+
+Sometime we make small fixes on the patches. For this reason, keep track of which version of PLUMED you used
+to patch each of the MD code. Perhaps you can call the MD code modules with names such as `gromacs/4.6.7p1`,
+`gromacs/4.6.7p2` and write somewhere in the module file which version of PLUMED you used. Alternatively, call them
+something like `gromacs/4.6.7p2.2.0`. In this way, when we report a bug on the mailing list, users will know if the version
+they are using is affected by it.
+
+Usually it is not necessary to install both a MPI and a non-MPI PLUMED version. PLUMED library only calls MPI functions
+when the MD code is compiled with MPI. PLUMED executable calls MPI functions only when it is invoked without `--no-mpi`.
+In many machines it is thus sufficient to run the plumed executable on the login node as
+\verbatim
+> plumed --no-mpi
+\endverbatim
+even though PLUMED was compiled with MPI and the login node does not support MPI.
+The only case where you might need two different PLUMED installation for compute
+and login node is when you are cross compiling.
+
+PLUMED needs to be well optimized to run efficiently.
+If you need a single PLUMED binary to run efficiency on machines with different levels of hardware (e.g.: some
+of your workstations support AVX and some do not), with intel compiler you can use something like
+\verbatim
+./configure CXX=mpicxx CXXFLAGS="-O3 -axSSE2,AVX"
+\endverbatim
+It will take more time to compile but it will allow you to use a single module. Otherwise, you should install two
+PLUMED version with different optimization levels.
+
+Using modules, it is not necessary to make the PLUMED module explicitly dependent on the used library. Imagine a
+scenario where you first installed a module `libmatheval`, then load it while you compile PLUMED. If you
+provide the following option to configure `LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH"`, the PLUMED executable and
+library will remember where libmatheval is, without the need to load libmatheval module at runtime.
+Notice that this trick often does not work for fundamental libraries such as C++ and MPI library. As a consequence,
+usually the PLUMED module should load the compiler and MPI modules.
+
+\attention
+In case you found out how to compile PLUMED on some fancy architecture please share your tricks! You can
+either post it in your blog, send it to the mailing list, or ask as to update this paragraph in the manual, we will
+be happy to do so.
+
+\section installinghints Other hints
 
 We here collect a list of suggestions that might be useful on particular
 machines.
@@ -511,9 +549,15 @@ ld: TOC section size exceeds 64k
 ./configure --disable-ld-r
 \endverbatim
 
+\page CodeSpecificNotes Code specific notes
 
+Here you can find instructions that are specific for patching each of the supported MD codes.
+Notice that MD codes with native PLUMED support are not listed here.
 
 @CODES@
+
+
+
  
 */
 

@@ -149,30 +149,28 @@ PLUMED_MULTICOLVAR_INIT(ao)
 }
 
 double AlphaBeta::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
-  Vector d0,d1,d2;
-  d0=getSeparation(myatoms.getPosition(1),myatoms.getPosition(0));
-  d1=getSeparation(myatoms.getPosition(2),myatoms.getPosition(1));
-  d2=getSeparation(myatoms.getPosition(3),myatoms.getPosition(2));
+  const Vector d0=getSeparation(myatoms.getPosition(1),myatoms.getPosition(0));
+  const Vector d1=getSeparation(myatoms.getPosition(2),myatoms.getPosition(1));
+  const Vector d2=getSeparation(myatoms.getPosition(3),myatoms.getPosition(2));
 
   Vector dd0,dd1,dd2;
   PLMD::Torsion t;
-  double value  = t.compute(d0,d1,d2,dd0,dd1,dd2);
-  double svalue = -0.5*sin(value-target[tindex]);
-  double cvalue = 1.+cos(value-target[tindex]);
+  const double value  = t.compute(d0,d1,d2,dd0,dd1,dd2);
+  const double svalue = -0.5*sin(value-target[tindex]);
+  const double cvalue = 1.+cos(value-target[tindex]);
 
   dd0 *= svalue;
   dd1 *= svalue;
   dd2 *= svalue;
-  value = 0.5*cvalue;
 
-  addAtomDerivatives(1, 0,dd0,myatoms);
-  addAtomDerivatives(1, 1,dd1-dd0,myatoms);
-  addAtomDerivatives(1, 2,dd2-dd1,myatoms);
-  addAtomDerivatives(1, 3,-dd2,myatoms);
+  addAtomDerivatives(1, 0, dd0, myatoms);
+  addAtomDerivatives(1, 1, dd1-dd0, myatoms);
+  addAtomDerivatives(1, 2, dd2-dd1, myatoms);
+  addAtomDerivatives(1, 3, -dd2, myatoms);
 
   myatoms.addBoxDerivatives(1, -(extProduct(d0,dd0)+extProduct(d1,dd1)+extProduct(d2,dd2)));
 
-  return value;
+  return 0.5*cvalue;
 }
 
 }

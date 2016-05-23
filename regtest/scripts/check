@@ -26,7 +26,7 @@ dirs=$(
       echo ${file%Makefile}
     done
   done
-  for file in basic/rt*/Makefile
+  for file in basic/rt*/Makefile metainference/rt*/Makefile
   do
     echo ${file%Makefile}
   done

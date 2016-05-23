@@ -1,4 +1,6 @@
--include Makefile.conf
+ifneq ($(MAKECMDGOALS),clean)
+ -include Makefile.conf
+endif
 
 
 SRCDIRS := src test
@@ -13,6 +15,7 @@ SUBDIRSCLEAN:=$(addsuffix .clean,$(SUBDIRS))
 ifdef GCCDEP
 all:
 	$(MAKE) lib
+	$(MAKE) -C vim
 
 lib:
 	$(MAKE)	-C src

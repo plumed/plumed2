@@ -138,7 +138,7 @@ void Mapping::prepare(){
       // Duplicate all frames (duplicates are used by sketch-map)
       mymap->duplicateFrameList();
       // Get the number of frames in the path
-      unsigned nfram=getNumberOfReferencePoints();
+      // unsigned nfram=getNumberOfReferencePoints();
       // fframes.resize( 2*nfram, 0.0 ); dfframes.resize( 2*nfram, 0.0 ); 
       plumed_assert( !mymap->mappingNeedsSetup() );
       // Resize all derivative arrays

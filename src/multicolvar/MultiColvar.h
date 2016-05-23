@@ -54,7 +54,8 @@ protected:
 /// Read two group keywords
   void readTwoGroups( const std::string& key1, const std::string& key2, std::vector<AtomNumber>& all_atoms );
 /// Read three groups
-  void readThreeGroups( const std::string& key1, const std::string& key2, const std::string& key3, const bool& allow2, std::vector<AtomNumber>& all_atoms );
+  void readThreeGroups( const std::string& key1, const std::string& key2, const std::string& key3, 
+                        const bool& allow2, const bool& no_third_dim_accum, std::vector<AtomNumber>& all_atoms );
 /// Add a collective variable
   void addColvar( const std::vector<unsigned>& newatoms );
 public:

@@ -41,6 +41,10 @@ Mapping(ao)
 
   // Create the list of tasks
   for(unsigned i=0;i<getNumberOfReferencePoints();++i) addTaskToList( i );
+  // And activate them all 
+  deactivateAllTasks();
+  for(unsigned i=0;i<getFullNumberOfTasks();++i) taskFlags[i]=1;
+  lockContributors();
 
   std::string empty="LABEL=zpath";
   if(!noz) addVessel("ZPATH",empty,0);

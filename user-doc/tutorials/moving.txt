@@ -317,7 +317,7 @@ equivalent.  You should read the documentation for the PLUMED 2 Action.
 </TR>
 <TR>
   <TD> ELSTPOT </TD>
-  <TD> <b> currently missing </b> </TD>
+  <TD> currently missing, but a related quantity can be obtained with \ref DHENERGY </TD>
 </TR>
 <TR>
   <TD> PUCKERING </TD>

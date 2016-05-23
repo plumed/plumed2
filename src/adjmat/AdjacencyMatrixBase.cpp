@@ -66,6 +66,7 @@ bool AdjacencyMatrixBase::parseAtomList(const std::string& key, const int& num, 
 void AdjacencyMatrixBase::parseConnectionDescriptions( const std::string& key, const unsigned& nrow_t ){
   if( getNumberOfNodeTypes()==1 || (getNumberOfNodeTypes()==2 && nrow_t==1) ){
       std::string sw; parse(key,sw);
+      if(sw.length()==0) error("could not find " + key + " keyword");
       setupConnector( connect_id, 0, 0, sw );
   } else {
       unsigned nr, nc;
@@ -99,6 +100,8 @@ void AdjacencyMatrixBase::parseConnectionDescriptions( const std::string& key, c
 }
 
 unsigned AdjacencyMatrixBase::getSizeOfInputVectors() const {
+  if( mybasemulticolvars.size()==0 ) return 2; 
+
   unsigned nq = mybasemulticolvars[0]->getNumberOfQuantities();
   for(unsigned i=1;i<mybasemulticolvars.size();++i){
      if( mybasemulticolvars[i]->getNumberOfQuantities()!=nq ) error("mismatch between vectors in base colvars");
@@ -157,7 +160,6 @@ void AdjacencyMatrixBase::requestAtoms( const std::vector<AtomNumber>& atoms, co
   } else {
     for(unsigned i=0;i<dims[0];++i){
        for(unsigned j=0;j<dims[1];++j){
-           if( true_square && i==j ) continue;
            bookeeping(i,j).first=getFullNumberOfTasks();
            for(unsigned k=0;k<kcount;++k) addTaskToList( i*icoef + j*jcoef + k*kcoef );
            bookeeping(i,j).second=getFullNumberOfTasks();

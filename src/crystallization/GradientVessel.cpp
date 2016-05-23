@@ -40,7 +40,7 @@ public:
   explicit GradientVessel( const vesselbase::VesselOptions& da );
   std::string value_descriptor();
   void resize();
-  bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
+  void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
   void finish( const std::vector<double>& buffer );
 };
 
@@ -98,7 +98,7 @@ void GradientVessel::resize(){
   }
 }
 
-bool GradientVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
+void GradientVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
   unsigned nder;
   if( getAction()->derivativesAreRequired() ) nder=getAction()->getNumberOfDerivatives();
   else nder=0;
@@ -116,8 +116,6 @@ bool GradientVessel::calculate( const unsigned& current, MultiValue& myvals, std
           myvals.chainRule( wstart + iw, xx + 1 + jc, 1, 0, colvar, bufstart, buffer );
       }
   }
-
-  return true;
 }
 
 void GradientVessel::finish( const std::vector<double>& buffer ){

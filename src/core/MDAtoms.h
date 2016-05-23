@@ -76,6 +76,8 @@ public:
   virtual void MD2double(const void*,double&)const=0;
 /// Convert a double to a pointer to an MD-real
   virtual void double2MD(const double&,void*)const=0;
+
+  virtual Vector getMDforces(const unsigned index)const=0;
 /// Retrieve box as a plumed Tensor
   virtual void getBox(Tensor &)const=0;
 /// Retrieve selected positions.

@@ -34,9 +34,6 @@ friend class VolumeGradientBase;
 private:
 /// Are we storing the director of the vector of the vector
   bool store_director;
-/// Used to make sure central atom position is only calculated
-/// once when using orientation sphere
-  bool firstcall;
 /// How many components does the vector have
   unsigned ncomponents;
 /// These are tempory vectors that are used to store values and directors

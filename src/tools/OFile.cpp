@@ -72,7 +72,8 @@ OFile::OFile():
   linked(NULL),
   fieldChanged(false),
   backstring("bck"),
-  enforceRestart_(false)
+  enforceRestart_(false),
+  enforceBackup_(false)
 {
   fmtField();
   buflen=1;
@@ -265,7 +266,6 @@ void OFile::backupFile( const std::string& bstring, const std::string& fname ){
    if(maxbackup>0 && (!comm || comm->Get_rank()==0)){
      FILE* ff=std::fopen(const_cast<char*>(fname.c_str()),"r");
      if(ff){
-       FILE* fff=NULL;
        std::fclose(ff);
        std::string backup;
        size_t found=fname.find_last_of("/\\");
@@ -276,7 +276,7 @@ void OFile::backupFile( const std::string& bstring, const std::string& fname ){
          Tools::convert(i,num);
          if(i>maxbackup) plumed_merror("cannot backup file "+file+" maximum number of backup is "+num+"\n");
          backup=directory+bstring +"."+num+"."+file;
-         fff=std::fopen(backup.c_str(),"r");
+         FILE* fff=std::fopen(backup.c_str(),"r");
          if(!fff) break;
 	 else std::fclose(fff);
        }
@@ -374,6 +374,7 @@ FileBase& OFile::flush(){
 
 bool OFile::checkRestart()const{
   if(enforceRestart_) return true;
+  else if(enforceBackup_) return false;
   else if(action) return action->getRestart();
   else if(plumed) return plumed->getRestart();
   else return false;
@@ -381,9 +382,15 @@ bool OFile::checkRestart()const{
 
 OFile& OFile::enforceRestart(){
   enforceRestart_=true;
+  enforceBackup_=false;
   return *this;
 }
 
+OFile& OFile::enforceBackup(){
+  enforceBackup_=true;
+  enforceRestart_=false;
+  return *this;
 }
 
 
+}
