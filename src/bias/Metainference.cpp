@@ -59,10 +59,17 @@ class Metainference : public Bias
   double Dsigma_;
   // sigma_mean is uncertainty in the mean estimate
   double sigma_mean_;
+  double sigma_mean_min_;
+  double sigma_mean_max_;
+  double Dsigma_mean_;
+  double max_plumed_force_;
+  double max_md_force_;
   // temperature in kbt
   double   kbt_;
   // number of data points
   unsigned ndata_;
+  // Sigma mean minimisation
+  bool optsigmamean_;
   // Monte Carlo stuff
   double   old_energy;
   unsigned MCsteps_;
@@ -74,9 +81,15 @@ class Metainference : public Bias
   Value* valueScale;
   Value* valueAccept;
   vector<Value*> valueSigma;
+  Value* valueSigmaMean;
+  Value* valueSigmaMeanMin;
+  Value* valueMaxForceMD;
+  Value* valueMaxForcePLUMED;
 
   unsigned nrep_;
   unsigned replica_;
+
+  Atoms& atoms;
 
   double getEnergySPE(const vector<double> &sigma, const double scale);
   double getEnergyGJE(const vector<double> &sigma, const double scale);
@@ -87,6 +100,7 @@ class Metainference : public Bias
 public:
   explicit Metainference(const ActionOptions&);
   void calculate();
+  void update();
   static void registerKeywords(Keywords& keys);
 };
 
@@ -100,6 +114,7 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.add("optional","PARAMETERS","reference values for the experimental data");
   keys.add("compulsory","NOISETYPE","functional form of the noise (GAUSS,MGAUSS,OUTLIERS)");
   keys.addFlag("SCALEDATA",false,"Set to TRUE if you want to sample a scaling factor common to all values and replicas");  
+  keys.addFlag("OPTSIGMAMEAN", false, "Set to minimize sigma_mean on the fly");
   keys.add("compulsory","SCALE0","initial value of the uncertainty parameter");
   keys.add("compulsory","SCALE_MIN","minimum value of the uncertainty parameter");
   keys.add("compulsory","SCALE_MAX","maximum value of the uncertainty parameter");
@@ -108,7 +123,12 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.add("compulsory","SIGMA_MIN","minimum value of the uncertainty parameter");
   keys.add("compulsory","SIGMA_MAX","maximum value of the uncertainty parameter");
   keys.add("compulsory","DSIGMA","maximum MC move of the uncertainty parameter");
-  keys.add("compulsory","SIGMA_MEAN","starting value for the uncertainty in the mean estimate");
+  keys.add("compulsory","SIGMA_MEAN0","starting value for the uncertainty in the mean estimate");
+  keys.add("compulsory","SIGMA_MEAN_MIN","minimum uncertainty in the mean estimate");
+  keys.add("compulsory","SIGMA_MEAN_MAX","maximum uncertainty in the mean estimate");
+  keys.add("compulsory","DSIGMA_MEAN","maximum MC move of the uncertainty parameter");
+  keys.add("compulsory","MAX_FORCE_MD","maximum allowable force");
+  keys.add("compulsory","MAX_FORCE_PLUMED","maximum allowable force");
   keys.add("optional","TEMP","the system temperature - this is only needed if code doesnt' pass the temperature to plumed");
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_STRIDE","MC stride");
@@ -118,6 +138,9 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.addOutputComponent("sigma", "default","uncertainty parameter");
   keys.addOutputComponent("scale", "default","scale parameter");
   keys.addOutputComponent("accept","default","MC acceptance");
+  keys.addOutputComponent("sigmaMean","default","uncertainty in the mean estimate");
+  keys.addOutputComponent("maxForceMD","default","max force on molecule");
+  keys.addOutputComponent("maxForcePLUMED","default","max force on molecule");
 }
 
 Metainference::Metainference(const ActionOptions&ao):
@@ -125,11 +148,13 @@ PLUMED_BIAS_INIT(ao),
 sqrt2_div_pi(0.45015815807855),
 doscale_(false),
 ndata_(getNumberOfArguments()),
+optsigmamean_(false),
 old_energy(0),
 MCsteps_(1), 
 MCstride_(1), 
 MCaccept_(0), 
-MCfirst_(-1)
+MCfirst_(-1),
+atoms(plumed.getAtoms())
 {
   parseVector("PARAMETERS",parameters);
   if(parameters.size()!=static_cast<unsigned>(getNumberOfArguments())&&!parameters.empty())
@@ -167,6 +192,8 @@ MCfirst_(-1)
     scale_=1.0;
   }
 
+  parseFlag("OPTSIGMAMEAN", optsigmamean_);
+
   vector<double> readsigma;
   parseVector("SIGMA0",readsigma);
   if(noise_type_!=MGAUSS&&readsigma.size()>1) error("If you want to use more than one sigma you should use NOISETYPE=MGAUSS");
@@ -189,7 +216,18 @@ MCfirst_(-1)
   // get temperature
   double temp=0.0;
   parse("TEMP",temp);
-  parse("SIGMA_MEAN",sigma_mean_);
+  parse("SIGMA_MEAN0",sigma_mean_);
+
+  // sigma_mean params
+  if(optsigmamean_) {
+    parse("SIGMA_MEAN_MIN", sigma_mean_min_);
+    parse("SIGMA_MEAN_MAX", sigma_mean_max_);
+    parse("DSIGMA_MEAN", Dsigma_mean_);
+    parse("MAX_FORCE_PLUMED", max_plumed_force_);
+    max_plumed_force_ *= max_plumed_force_;
+    parse("MAX_FORCE_MD", max_md_force_);
+    max_md_force_ *= max_md_force_; 
+  }
 
   checkRead();
 
@@ -206,9 +244,6 @@ MCfirst_(-1)
   }
   comm.Sum(&nrep_,1);
   comm.Sum(&replica_,1);
-
-  // divide sigma_mean by the square root of the number of replicas
-  sigma_mean_ /= sqrt(static_cast<double>(nrep_));
 
   // adjust for multiple-time steps
   MCstride_ *= getStride();
@@ -249,6 +284,14 @@ MCfirst_(-1)
   log.printf("  MC steps %u\n",MCsteps_);
   log.printf("  MC stride %u\n",MCstride_);
 
+  if(optsigmamean_) {
+    log.printf("  minimum data uncertainty of the mean %f\n", sigma_mean_min_);
+    log.printf("  maximum data uncertainty of the mean %f\n", sigma_mean_max_);
+    log.printf("  maximum move of data uncertainty of the mean %f\n", Dsigma_mean_);
+    log.printf("  maximum permissible force %f\n", sqrt(max_plumed_force_));
+    log.printf("  maximum permissible force %f\n", sqrt(max_md_force_));
+  }
+
   addComponent("bias");
   componentIsNotPeriodic("bias");
   valueBias=getPntrToComponent("bias");
@@ -260,6 +303,21 @@ MCfirst_(-1)
   addComponent("accept");
   componentIsNotPeriodic("accept");
   valueAccept=getPntrToComponent("accept");
+
+  if(optsigmamean_) {
+    addComponent("sigmaMean");
+    componentIsNotPeriodic("sigmaMean");
+    valueSigmaMean=getPntrToComponent("sigmaMean");
+    addComponent("sigmaMeanMin");
+    componentIsNotPeriodic("sigmaMeanMin");
+    valueSigmaMeanMin=getPntrToComponent("sigmaMeanMin");
+    addComponent("maxForceMD");
+    componentIsNotPeriodic("maxForceMD");
+    valueMaxForceMD=getPntrToComponent("maxForceMD");
+    addComponent("maxForcePLUMED");
+    componentIsNotPeriodic("maxForcePLUMED");
+    valueMaxForcePLUMED=getPntrToComponent("maxForcePLUMED");
+  }
 
   if(noise_type_==MGAUSS) {
     for(unsigned i=0;i<sigma_.size();++i){
@@ -492,6 +550,87 @@ void Metainference::calculate(){
   }
   // set value of the bias
   valueBias->set(kbt_*ene);
+}
+
+void Metainference::update() {
+  if(optsigmamean_) {
+    const double EPS = 0.1;
+    // Get max force of whole system
+    vector<Vector> md_forces;
+    vector<Vector> plumed_forces;
+    vector<double> masses;
+
+    atoms.getLocalMDForces(md_forces);
+    atoms.getLocalForces(plumed_forces);
+    atoms.getLocalMasses(masses);
+
+    vector<double> allforces_plumed;
+    vector<double> allforces_md;
+    for(unsigned i = 0; i < plumed_forces.size(); ++i) {
+      const double pf2 = plumed_forces[i].modulo2();
+      // we are only interested in forces plumed has an effect on
+      if(pf2 > EPS && masses[i] > EPS ) {
+        const double invm2 = 1./(masses[i]*masses[i]);
+        allforces_md.push_back(md_forces[i].modulo2()*invm2);
+        allforces_plumed.push_back(pf2*invm2);
+      }
+    }
+
+    vector<double> fmax_tmp_md(comm.Get_size(),0);
+    vector<double> fmax_tmp_plumed(comm.Get_size(),0);
+    unsigned nfmax = 0;
+    unsigned nfmax_md = 0;
+
+    /* each local thread should look for the maximum force and number of violations */
+    if(allforces_md.size()>0) {
+      fmax_tmp_md[comm.Get_rank()]     = *max_element(allforces_md.begin(), allforces_md.end());
+      fmax_tmp_plumed[comm.Get_rank()] = *max_element(allforces_plumed.begin(), allforces_plumed.end());
+      for(unsigned i = 0; i < allforces_md.size(); ++i) {
+        if(allforces_plumed[i] > max_plumed_force_) {
+          nfmax += 1;
+          if(allforces_md[i] > max_md_force_) {
+            nfmax_md += 1;
+          }
+        }
+      }
+    }
+
+    // the largest forces are shared among the local threads but not over the replicas 
+    comm.Sum(fmax_tmp_md);
+    comm.Sum(fmax_tmp_plumed);
+    // these are the largest forces for a specific replica
+    const double fmax_md     = *max_element(fmax_tmp_md.begin(), fmax_tmp_md.end());
+    const double fmax_plumed = *max_element(fmax_tmp_plumed.begin(), fmax_tmp_plumed.end());
+
+    // the number of violations is summed up over the local thread and over the replicas 
+    comm.Sum(nfmax);
+    comm.Sum(nfmax_md);
+    if(comm.Get_rank() == 0) {
+      multi_sim_comm.Sum(nfmax);
+      multi_sim_comm.Sum(nfmax_md);
+    }
+    // and resent to all the threads
+    comm.Bcast(nfmax,0);
+    comm.Bcast(nfmax_md,0);
+
+    // if no violations then we minimise sigma_mean_ (and also sigma_mean_min_ if needed)
+    if(nfmax == 0) {
+      sigma_mean_ -= Dsigma_mean_ * 0.01 * std::log(sigma_mean_/sigma_mean_min_);
+      if((sigma_mean_-sigma_mean_min_)<Dsigma_mean_) sigma_mean_min_ -= Dsigma_mean_;
+    // otherwise we increase sigma_mean_ and also sigma_mean_min_ if needed
+    } else {
+      sigma_mean_ += Dsigma_mean_ * nfmax;
+      if(nfmax_md > 0) {
+        sigma_mean_min_ += nfmax_md * Dsigma_mean_;
+        sigma_mean_ += Dsigma_mean_ * nfmax_md;
+      }
+    }
+
+    valueMaxForceMD->set(sqrt(fmax_md));
+    valueMaxForcePLUMED->set(sqrt(fmax_plumed));
+    valueSigmaMean->set(sigma_mean_);
+    valueSigmaMeanMin->set(sigma_mean_min_);
+  }
 }
 
 }
