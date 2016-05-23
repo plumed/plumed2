@@ -40,7 +40,6 @@ Calculate the Metainference Score for a set of back calculated experimental data
 
 class Metainference : public Bias
 {
-  const double sqrt2pi;
   const double sqrt2_div_pi;
   // experimental values
   vector<double> parameters;
@@ -123,7 +122,6 @@ void Metainference::registerKeywords(Keywords& keys){
 
 Metainference::Metainference(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao), 
-sqrt2pi(2.506628274631001),
 sqrt2_div_pi(0.45015815807855),
 doscale_(false),
 ndata_(getNumberOfArguments()),
