@@ -51,13 +51,14 @@ private:
   unsigned                 splitb;
   std::vector<double>      q_list;
   std::vector<std::vector<double> >  FF_value;
-  double*                  FF_new;
+  float*                   FF_new;
   std::vector<double>      FF_rank;
   int                      total_device;
 
 public:
   static void registerKeywords( Keywords& keys );
   explicit SAXSGPU(const ActionOptions&);
+  ~SAXSGPU();
   virtual void calculate();
 };
 
@@ -143,7 +144,7 @@ serial(false)
     }
   }
 
-  FF_new = new double[numq*size];  
+  FF_new = new float[numq*size];  
   // Calculate Rank of FF_matrix
   FF_rank.resize(numq);
   for(unsigned k=0;k<numq;++k){
@@ -191,21 +192,18 @@ serial(false)
 #endif
 }
 
+SAXSGPU::~SAXSGPU(){
+  delete FF_new;
+}
+
 void SAXSGPU::calculate(){
 #ifdef __PLUMED_HAS_ARRAYFIRE
   if(pbc) makeWhole();
 
   const unsigned size=getNumberOfAtoms();
   
-  unsigned stride=comm.Get_size();
-  unsigned rank=comm.Get_rank();
-  if(serial){
-    stride=1;
-    rank=0;
-  }
-
-  double* posi;
-  posi = new double[3*size];
+  float* posi;
+  posi = new float[3*size];
   for (unsigned i=0; i<size; i++) {
     const Vector tmp = getPosition(i);
     posi[i*3+0] = tmp[0];
@@ -213,21 +211,15 @@ void SAXSGPU::calculate(){
     posi[i*3+2] = tmp[2];
   }
 
-  double* inten;
-  inten = new double[numq];
-  for (unsigned k=0; k<numq; k++) {
-    inten[k] = 0;
-  }
-
   af::array *sum_device = new af::array[total_device*numq];
   af::array *box_device = new af::array[total_device*numq];
   af::array *deriv_device = new af::array[total_device*numq];
 
-  for (unsigned i=0;i<total_device; i++) {
+  for(unsigned i=0;i<total_device; i++) {
      af::setDevice(i);
-     sum_device[i] = af::constant(0, numq, f64);
-     box_device[i] = af::constant(0, numq, 6, f64);
-     deriv_device[i] = af::constant(0, numq, size, 3, f64);
+     sum_device[i] = af::constant(0, numq, f32);
+     box_device[i] = af::constant(0, numq, 6, f32);
+     deriv_device[i] = af::constant(0, numq, size, 3, f32);
   }
 
   for (unsigned i=0; i<size; i=i+splitb) {
@@ -301,7 +293,7 @@ void SAXSGPU::calculate(){
       deriv_device[dnumber](k, seqb, af::span) = dd(0, af::span, af::span);
 
       dd_all = af::moddims(dd_all, size*sizeb, 3);
-      af::array box_pre = af::array(size*sizeb, 6, f64);
+      af::array box_pre = af::array(size*sizeb, 6, f32);
       box_pre(af::span,0) = atom_box(af::span,0)*dd_all(af::span,0);
       box_pre(af::span,1) = atom_box(af::span,0)*dd_all(af::span,1);
       box_pre(af::span,2) = atom_box(af::span,0)*dd_all(af::span,2);
@@ -327,43 +319,45 @@ void SAXSGPU::calculate(){
   double* deriv;
   deriv = new double[size*3*numq];
 
-    for (unsigned j=0; j<numq; j++) {
-      inten[j] = 0;
-    }
+  double* inten;
+  inten = new double[numq];
 
-    for (unsigned j=0; j<6*numq; j++) {
-      box[j] = 0;
-    }
+  for (unsigned j=0; j<numq; j++) {
+    inten[j] = 0;
+  }
 
-    for (unsigned j=0; j<size*3*numq; j++) {
-      deriv[j] = 0;
-    }
+  for (unsigned j=0; j<6*numq; j++) {
+    box[j] = 0;
+  }
+
+  for (unsigned j=0; j<size*3*numq; j++) {
+    deriv[j] = 0;
+  }
 
   for (unsigned i=0; i< total_device; i++) {
     af::setDevice(i);
-    double* tmp_inten;
-    tmp_inten = new double[numq];
+    float* tmp_inten;
+    tmp_inten = new float[numq];
     sum_device[i].host(tmp_inten);
     for (unsigned j=0; j<numq; j++) {
       inten[j] += tmp_inten[j];
     }
 
-    double* tmp_box;
-    tmp_box = new double[numq*6];
+    float* tmp_box;
+    tmp_box = new float[numq*6];
     box_device[i] = af::flat(box_device[i].T());
     box_device[i].host(tmp_box);
-    for (unsigned j=0; j<6*numq; j++) {
+    for(unsigned j=0; j<6*numq; j++) {
       box[j] += tmp_box[j];
     }
 
-
-    double* tmp_deriv;
-    tmp_deriv = new double[size*3*numq];
+    float* tmp_deriv;
+    tmp_deriv = new float[size*3*numq];
     deriv_device[i] = af::reorder(deriv_device[i], 2, 1, 0);
     deriv_device[i] = af::flat(deriv_device[i]); 
     deriv_device[i].host(tmp_deriv);
 
-    for (unsigned j=0; j<size*3*numq; j++) {
+    for(unsigned j=0; j<size*3*numq; j++) {
       deriv[j] += tmp_deriv[j];
     }
 
@@ -373,7 +367,7 @@ void SAXSGPU::calculate(){
   }
 
   #pragma omp parallel for num_threads(OpenMP::getNumThreads())
-  for (unsigned k=0; k<numq; k++) {
+  for(unsigned k=0; k<numq; k++) {
     Value* val=getPntrToComponent(k);
     val->set(inten[k]);
     // get deriv Tensor
