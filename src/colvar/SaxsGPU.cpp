@@ -51,9 +51,9 @@ private:
   unsigned                 splitb;
   std::vector<double>      q_list;
   std::vector<std::vector<double> >  FF_value;
-  float*                   FF_new;
   std::vector<double>      FF_rank;
   int                      total_device;
+  af::array allFFa;
   af::array *sum_device;
   af::array *box_device;
   af::array *deriv_device;
@@ -147,7 +147,7 @@ serial(false)
     }
   }
 
-  FF_new = new float[numq*size];  
+  float *FF_new = new float[numq*size];  
   // Calculate Rank of FF_matrix
   FF_rank.resize(numq);
   for(unsigned k=0;k<numq;++k){
@@ -156,6 +156,8 @@ serial(false)
        FF_new[k+i*numq]=FF_value[k][i];
     }
   }
+  allFFa= af::array(numq, size, FF_new);
+  delete[] FF_new;
 
   bool exp=false;
   parseFlag("ADDEXPVALUES",exp);
@@ -200,7 +202,6 @@ serial(false)
 }
 
 SAXSGPU::~SAXSGPU(){
-  delete FF_new;
   delete[] sum_device;
   delete[] box_device;
   delete[] deriv_device;
@@ -246,34 +247,27 @@ void SAXSGPU::calculate(){
     // create array a and b containing atomic coordinates
     af::array a = af::array(3, size, posi);
     af::array b = a(af::span, seqb);
-    a += 0.000001; // crapy solution
+    b += 0.000001; // crapy solution
 
     // calculate distance matrix
     af::array b_mod = af::moddims(b, 3, 1, sizeb);
-    af::array a_tiled = af::tile(a, 1, 1, sizeb);
-    af::array b_tiled = af::tile(b_mod, 1, size, 1);
-    af::array xyz_dist = a_tiled - b_tiled;
-
+    // xyz_dist is 3,size,sizeb
+    af::array xyz_dist = af::tile(a, 1, 1, sizeb) -  af::tile(b_mod, 1, size, 1);
+    // square is 1,size,sizeb
     af::array square = af::sum(xyz_dist*xyz_dist);
+    // dist_sqrt is 1,size,sizeb
     af::array dist_sqrt = af::sqrt(square);
 
     // calculate distance vectors
+    // xyz_dist is now size,sizeb,3
     xyz_dist = af::reorder(xyz_dist, 1, 2, 0);
     af::array atom_box = af::moddims(xyz_dist, size*sizeb, 3);
-    af::array allFFa= af::array(numq, size, FF_new);
-    af::array allFFb= allFFa(af::span, seqb);
+    af::array allFFb = allFFa(af::span, seqb);
 
-    //gfor (af::seq kk, 0, 1, numq) {
     for (unsigned k=0; k<numq; k++) {
       // calculate FF matrix
-      af::array FFtmpa = allFFa.row(k);
-      af::array FFtmpb = allFFb.row(k);
-      
-      af::array FFa_mod = af::moddims(FFtmpa, size, 1);
-      af::array FFb_mod = af::moddims(FFtmpb, 1, sizeb);
-      af::array FFa_tiled = af::tile(FFa_mod, 1, sizeb);
-      af::array FFb_tiled = af::tile(FFb_mod, size, 1);
-      af::array FFdist_mod = (FFa_tiled * FFb_tiled);
+      af::array FFdist_mod = (af::tile(af::moddims(allFFa.row(k), size, 1), 1, sizeb) * 
+                              af::tile(af::moddims(allFFb.row(k), 1, sizeb), size, 1));
 
       // get q*dist and sin
       float qvalue = q_list[k];
@@ -281,14 +275,12 @@ void SAXSGPU::calculate(){
       af::array dist_sin = (af::sin(dist_q)/dist_q);
       
       // flat it and get the intensity
-      af::array flat_vec1 = af::flat(dist_sin);
-      af::array flat_vec2 = af::flat(FFdist_mod);
-
-      sum_device[dnumber](k) += af::sum(flat_vec1*flat_vec2);       
+      sum_device[dnumber](k) += af::sum(af::flat(dist_sin)*af::flat(FFdist_mod));
 
       // array get cos and tmp
-      af::array tmp = af::cos(dist_q);
-      tmp = (dist_sin - tmp)/square;
+      // tmp is 1,size,sizeb
+      af::array tmp = (dist_sin - af::cos(dist_q))/square;
+      // tmp to size,sizeb
       tmp = af::moddims(tmp, size, sizeb);
       tmp = tmp*FFdist_mod;
 
@@ -309,13 +301,7 @@ void SAXSGPU::calculate(){
       box_pre(af::span,5) = atom_box(af::span,2)*dd_all(af::span,2);
 
       af::array box_sum = af::sum(box_pre);
-
-      box_device[dnumber](k,0) += box_sum(0,0);
-      box_device[dnumber](k,1) += box_sum(0,1);
-      box_device[dnumber](k,2) += box_sum(0,2);
-      box_device[dnumber](k,3) += box_sum(0,3);
-      box_device[dnumber](k,4) += box_sum(0,4);
-      box_device[dnumber](k,5) += box_sum(0,5);
+      box_device[dnumber](k,af::span) += box_sum(0,af::span);
     }    
   }
 
