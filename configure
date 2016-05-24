@@ -718,6 +718,8 @@ enable_execinfo
 enable_gsl
 enable_xdrfile
 enable_boost_graph
+enable_arrayfire_opencl
+enable_arrayfire_cuda
 enable_openmp
 '
       ac_precious_vars='build_alias
@@ -1383,6 +1385,9 @@ Optional Features:
   --enable-gsl            enable search for gsl, default: no
   --enable-xdrfile        enable search for xdrfile, default: yes
   --enable-boost_graph    enable search for boost graph, default: no
+  --enable-arrayfire_opencl
+                          enable search for arrayfire, default: no
+  --enable-arrayfire_cuda enable search for arrayfire, default: no
   --disable-openmp        do not use OpenMP
 
 Some influential environment variables:
@@ -2842,6 +2847,42 @@ else
   case "no" in
              (yes) boost_graph=true ;;
              (no)  boost_graph=false ;;
+  esac
+
+fi
+
+
+
+af_ocl=
+# Check whether --enable-arrayfire_opencl was given.
+if test "${enable_arrayfire_opencl+set}" = set; then :
+  enableval=$enable_arrayfire_opencl; case "${enableval}" in
+             (yes) af_ocl=true ;;
+             (no)  af_ocl=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-arrayfire_opencl" "$LINENO" 5 ;;
+  esac
+else
+  case "no" in
+             (yes) af_ocl=true ;;
+             (no)  af_ocl=false ;;
+  esac
+
+fi
+
+
+
+af_cuda=
+# Check whether --enable-arrayfire_cuda was given.
+if test "${enable_arrayfire_cuda+set}" = set; then :
+  enableval=$enable_arrayfire_cuda; case "${enableval}" in
+             (yes) af_cuda=true ;;
+             (no)  af_cuda=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-arrayfire_cuda" "$LINENO" 5 ;;
+  esac
+else
+  case "no" in
+             (yes) af_cuda=true ;;
+             (no)  af_cuda=false ;;
   esac
 
 fi
@@ -6312,6 +6353,138 @@ fi
     else
        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_BOOST_GRAPH" >&5
 $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_BOOST_GRAPH" >&2;}
+    fi
+
+fi
+if test $af_ocl == true ; then
+
+    found=ko
+    ac_fn_cxx_check_header_mongrel "$LINENO" "arrayfire.h" "ac_cv_header_arrayfire_h" "$ac_includes_default"
+if test "x$ac_cv_header_arrayfire_h" = xyes; then :
+
+      ac_fn_cxx_check_func "$LINENO" "identifyDevice" "ac_cv_func_identifyDevice"
+if test "x$ac_cv_func_identifyDevice" = xyes; then :
+  found=ok
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for identifyDevice in -lafopencl" >&5
+$as_echo_n "checking for identifyDevice in -lafopencl... " >&6; }
+if ${ac_cv_lib_afopencl_identifyDevice+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lafopencl  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char identifyDevice ();
+int
+main ()
+{
+return identifyDevice ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_lib_afopencl_identifyDevice=yes
+else
+  ac_cv_lib_afopencl_identifyDevice=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_afopencl_identifyDevice" >&5
+$as_echo "$ac_cv_lib_afopencl_identifyDevice" >&6; }
+if test "x$ac_cv_lib_afopencl_identifyDevice" = xyes; then :
+  LIBS="-lafopencl $LIBS" && found=ok
+fi
+
+
+fi
+
+
+fi
+
+
+    if test $found == ok ; then
+      $as_echo "#define __PLUMED_HAS_ARRAYFIRE 1" >>confdefs.h
+
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_ARRAYFIRE" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_ARRAYFIRE" >&2;}
+    fi
+
+fi
+if test $af_cuda == true ; then
+
+    found=ko
+    ac_fn_cxx_check_header_mongrel "$LINENO" "arrayfire.h" "ac_cv_header_arrayfire_h" "$ac_includes_default"
+if test "x$ac_cv_header_arrayfire_h" = xyes; then :
+
+      ac_fn_cxx_check_func "$LINENO" "identifyDevice" "ac_cv_func_identifyDevice"
+if test "x$ac_cv_func_identifyDevice" = xyes; then :
+  found=ok
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for identifyDevice in -lafcuda" >&5
+$as_echo_n "checking for identifyDevice in -lafcuda... " >&6; }
+if ${ac_cv_lib_afcuda_identifyDevice+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lafcuda  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char identifyDevice ();
+int
+main ()
+{
+return identifyDevice ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_lib_afcuda_identifyDevice=yes
+else
+  ac_cv_lib_afcuda_identifyDevice=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_afcuda_identifyDevice" >&5
+$as_echo "$ac_cv_lib_afcuda_identifyDevice" >&6; }
+if test "x$ac_cv_lib_afcuda_identifyDevice" = xyes; then :
+  LIBS="-lafcuda $LIBS" && found=ok
+fi
+
+
+fi
+
+
+fi
+
+
+    if test $found == ok ; then
+      $as_echo "#define __PLUMED_HAS_ARRAYFIRE 1" >>confdefs.h
+
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_ARRAYFIRE" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_ARRAYFIRE" >&2;}
     fi
 
 fi
