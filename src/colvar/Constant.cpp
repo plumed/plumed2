@@ -74,6 +74,7 @@ PLUMED_COLVAR_INIT(ao)
   bool noderiv=false;
   parseFlag("NODERIV",noderiv);
   parseVector("VALUES",values);
+  checkRead();
   if(values.size()==1) {
     if(!noderiv) addValueWithDerivatives();
     else addValue();

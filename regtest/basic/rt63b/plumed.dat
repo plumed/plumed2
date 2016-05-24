@@ -1,6 +1,6 @@
 MOLINFO STRUCTURE=helix.pdb
 
-one: CONSTANT VALUE=1
+one: CONSTANT VALUES=1
 
 # two alternative ways to get the same result:
 
