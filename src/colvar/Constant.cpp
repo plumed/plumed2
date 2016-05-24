@@ -32,9 +32,11 @@ namespace colvar{
 
 //+PLUMEDOC COLVAR CONSTANT
 /*
-Return a constant quantity.
+Return one or more constant quantities
+with or without derivatives.
 
-Useful in combination with functions.
+Useful in combination with functions that
+takes in input constants or parameters.
 
 \par Examples
 
@@ -54,45 +56,64 @@ PRINT ARG=sss.2
 */
 //+ENDPLUMEDOC
 
+using namespace std;
 
 class Constant : public Colvar {
-  double value;
+  vector<double> values;
 public:
   explicit Constant(const ActionOptions&);
-// active methods:
   virtual void calculate();
   static void registerKeywords( Keywords& keys );
 };
 
-
-using namespace std;
-
-
 PLUMED_REGISTER_ACTION(Constant,"CONSTANT")
 
 Constant::Constant(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao),
-value(0.0)
+PLUMED_COLVAR_INIT(ao)
 {
-  parse("VALUE",value);
-  addValueWithDerivatives();
-  setNotPeriodic();
+  bool noderiv=false;
+  parseFlag("NODERIV",noderiv);
+  parseVector("VALUES",values);
+  if(values.size()==1) {
+    if(!noderiv) addValueWithDerivatives();
+    else addValue();
+    setNotPeriodic();
+    setValue(values[0]);
+  } else if(values.size()>1) {
+    for(unsigned i=0;i<values.size();i++) {
+      std::string num; Tools::convert(i,num);
+      if(!noderiv) addComponentWithDerivatives("v_"+num);
+      else addComponent("v_"+num);
+      componentIsNotPeriodic("v_"+num);
+      Value* comp=getPntrToComponent("v_"+num);
+      comp->set(values[i]);
+    }
+  }
 // fake request to avoid errors:
   std::vector<AtomNumber> atoms;
   requestAtoms(atoms);
 }
 
 void Constant::registerKeywords( Keywords& keys ){
-  Action::registerKeywords( keys );
-  ActionAtomistic::registerKeywords( keys );
-  ActionWithValue::registerKeywords( keys );
+  Colvar::registerKeywords( keys );
+  componentsAreNotOptional(keys);
+  useCustomisableComponents(keys);
   keys.remove("NUMERICAL_DERIVATIVES"); 
-  keys.add("compulsory","VALUE","The value of the constant");
+  keys.add("compulsory","VALUES","The values of the constants");
+  keys.addFlag("NODERIV",false,"Set to TRUE if you want values without derivatives.");  
+  keys.addOutputComponent("v","default","the # value"); 
 }
 
 // calculator
 void Constant::calculate(){
-  setValue(value);
+  if(values.size()==1) { 
+    setValue(values[0]);
+    return;
+  }
+  for(unsigned i=0;i<values.size();i++) {
+    Value* comp=getPntrToComponent(i);
+    comp->set(values[i]);
+  }
 }
 
 }
