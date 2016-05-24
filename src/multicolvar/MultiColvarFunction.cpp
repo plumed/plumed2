@@ -24,7 +24,6 @@
 #include "core/ActionSet.h"
 #include "tools/Pbc.h"
 #include "MultiColvarBase.h"
-#include "BridgedMultiColvarFunction.h"
 
 namespace PLMD {
 namespace multicolvar { 

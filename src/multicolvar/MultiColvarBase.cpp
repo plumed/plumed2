@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiColvarBase.h"
-#include "BridgedMultiColvarFunction.h"
 #include "ActionVolume.h"
 #include "MultiColvarFilter.h"
 #include "vesselbase/Vessel.h"
@@ -394,9 +393,7 @@ void MultiColvarBase::setupMultiColvarBase( const std::vector<AtomNumber>& atoms
   // Copy lists of atoms involved from base multicolvars 
   std::vector<AtomNumber> tmp_atoms;
   for(unsigned i=0;i<mybasemulticolvars.size();++i){
-      BridgedMultiColvarFunction* mybr=dynamic_cast<BridgedMultiColvarFunction*>( mybasemulticolvars[i] );
-      if( mybr ) tmp_atoms=(mybr->getPntrToMultiColvar())->getAbsoluteIndexes();
-      else tmp_atoms=mybasemulticolvars[i]->getAbsoluteIndexes();
+      tmp_atoms=mybasemulticolvars[i]->getAbsoluteIndexes();
       for(unsigned j=0;j<tmp_atoms.size();++j) all_atoms.push_back( tmp_atoms[j] );
   } 
 
