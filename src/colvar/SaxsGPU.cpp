@@ -54,6 +54,9 @@ private:
   float*                   FF_new;
   std::vector<double>      FF_rank;
   int                      total_device;
+  af::array *sum_device;
+  af::array *box_device;
+  af::array *deriv_device;
 
 public:
   static void registerKeywords( Keywords& keys );
@@ -187,6 +190,10 @@ serial(false)
     total_device = 1;
   }
 
+  sum_device = new af::array[total_device*numq];
+  box_device = new af::array[total_device*numq];
+  deriv_device = new af::array[total_device*numq];
+
   requestAtoms(atoms);
   checkRead();
 #endif
@@ -194,6 +201,9 @@ serial(false)
 
 SAXSGPU::~SAXSGPU(){
   delete FF_new;
+  delete[] sum_device;
+  delete[] box_device;
+  delete[] deriv_device;
 }
 
 void SAXSGPU::calculate(){
@@ -210,10 +220,6 @@ void SAXSGPU::calculate(){
     posi[i*3+1] = tmp[1];
     posi[i*3+2] = tmp[2];
   }
-
-  af::array *sum_device = new af::array[total_device*numq];
-  af::array *box_device = new af::array[total_device*numq];
-  af::array *deriv_device = new af::array[total_device*numq];
 
   for(unsigned i=0;i<total_device; i++) {
      af::setDevice(i);
@@ -240,7 +246,7 @@ void SAXSGPU::calculate(){
     // create array a and b containing atomic coordinates
     af::array a = af::array(3, size, posi);
     af::array b = a(af::span, seqb);
-    a += 0.0000001; // crapy solution
+    a += 0.000001; // crapy solution
 
     // calculate distance matrix
     af::array b_mod = af::moddims(b, 3, 1, sizeb);
@@ -257,6 +263,7 @@ void SAXSGPU::calculate(){
     af::array allFFa= af::array(numq, size, FF_new);
     af::array allFFb= allFFa(af::span, seqb);
 
+    //gfor (af::seq kk, 0, 1, numq) {
     for (unsigned k=0; k<numq; k++) {
       // calculate FF matrix
       af::array FFtmpa = allFFa.row(k);
@@ -269,7 +276,7 @@ void SAXSGPU::calculate(){
       af::array FFdist_mod = (FFa_tiled * FFb_tiled);
 
       // get q*dist and sin
-      double qvalue = q_list[k];
+      float qvalue = q_list[k];
       af::array dist_q = qvalue*dist_sqrt;
       af::array dist_sin = (af::sin(dist_q)/dist_q);
       
@@ -399,10 +406,6 @@ void SAXSGPU::calculate(){
   delete[] inten;
   delete[] box;
   delete[] deriv;
-
-  delete[] sum_device;
-  delete[] box_device;
-  delete[] deriv_device;
 #endif
 }
 
