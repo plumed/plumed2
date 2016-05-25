@@ -51,10 +51,12 @@ private:
   unsigned            splitb;
   std::vector<double> q_list;
   int                 total_device;
+#ifdef __PLUMED_HAS_ARRAYFIRE
   af::array           allFFa;
   af::array          *sum_device;
   af::array          *box_device;
   af::array          *deriv_device;
+#endif
 
 public:
   static void registerKeywords( Keywords& keys );
@@ -190,9 +192,11 @@ serial(false)
 }
 
 SAXSGPU::~SAXSGPU(){
+#ifdef __PLUMED_HAS_ARRAYFIRE
   delete[] sum_device;
   delete[] box_device;
   delete[] deriv_device;
+#endif
 }
 
 void SAXSGPU::calculate(){
