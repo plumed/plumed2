@@ -19,6 +19,12 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+/* 
+ The sigma_mean optimisation method was developed by Thomas Loehr and
+ Carlo Camilloni 
+*/
+
+
 #include "Bias.h"
 #include "ActionRegister.h"
 #include "core/PlumedMain.h"
