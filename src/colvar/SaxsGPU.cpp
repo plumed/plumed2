@@ -245,6 +245,9 @@ void SAXSGPU::calculate(){
     af::array square = af::sum(xyz_dist*xyz_dist);
     // dist_sqrt is 1,size,sizeb
     af::array dist_sqrt = af::sqrt(square);
+    //this can be alternative to the above addition, but it is a bit slower
+    //dist_sqrt(dist_sqrt == 0.) = 0.000001;
+    
 
     // calculate distance vectors
     // xyz_dist is now size,sizeb,3
@@ -380,6 +383,7 @@ void SAXSGPU::calculate(){
   delete[] inten;
   delete[] box;
   delete[] deriv;
+  delete[] posi;
 #endif
 }
 
