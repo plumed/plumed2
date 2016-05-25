@@ -45,18 +45,16 @@ Calculate SAXSGPU scattered intensity
    
 class SAXSGPU : public Colvar {
 private:
-  bool                     pbc;
-  bool                     serial;
-  unsigned                 numq;
-  unsigned                 splitb;
-  std::vector<double>      q_list;
-  std::vector<std::vector<double> >  FF_value;
-  std::vector<double>      FF_rank;
-  int                      total_device;
-  af::array allFFa;
-  af::array *sum_device;
-  af::array *box_device;
-  af::array *deriv_device;
+  bool                pbc;
+  bool                serial;
+  unsigned            numq;
+  unsigned            splitb;
+  std::vector<double> q_list;
+  int                 total_device;
+  af::array           allFFa;
+  af::array          *sum_device;
+  af::array          *box_device;
+  af::array          *deriv_device;
 
 public:
   static void registerKeywords( Keywords& keys );
@@ -137,23 +135,13 @@ serial(false)
   }
   if( ntarget!=size ) error("found wrong number of parameter vectors");
 
-
-  FF_value.resize(numq,std::vector<double>(size));
+  // Calculate Rank of FF_matrix
+  float *FF_new = new float[numq*size];  
   for(unsigned i=0;i<size;++i) {
     for(unsigned j=0;j<parameter[i].size();++j) {
       for(unsigned k=0;k<numq;++k){
-        FF_value[k][i]+=parameter[i][j]*pow(q_list[k],j);
+        FF_new[k+i*numq]+=parameter[i][j]*pow(q_list[k],j);
       }
-    }
-  }
-
-  float *FF_new = new float[numq*size];  
-  // Calculate Rank of FF_matrix
-  FF_rank.resize(numq);
-  for(unsigned k=0;k<numq;++k){
-    for(unsigned i=0;i<size;i++){
-       FF_rank[k]+=FF_value[k][i]*FF_value[k][i];
-       FF_new[k+i*numq]=FF_value[k][i];
     }
   }
   allFFa= af::array(numq, size, FF_new);
