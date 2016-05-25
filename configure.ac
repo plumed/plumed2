@@ -449,10 +449,10 @@ if test $boost_graph == true ; then
   PLUMED_CHECK_PACKAGE([boost/graph/graph_utility.hpp],[exit],[__PLUMED_HAS_BOOST_GRAPH],[boost_graph])
 fi
 if test $af_ocl == true ; then
-  PLUMED_CHECK_PACKAGE([arrayfire.h],[identifyDevice],[__PLUMED_HAS_ARRAYFIRE],[afopencl])
+  PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afopencl])
 fi
 if test $af_cuda == true ; then
-  PLUMED_CHECK_PACKAGE([arrayfire.h],[identifyDevice],[__PLUMED_HAS_ARRAYFIRE],[afcuda])
+  PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afcuda])
 fi
 
 # in non-debug mode, add -DNDEBUG

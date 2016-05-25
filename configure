@@ -6362,13 +6362,13 @@ if test $af_ocl == true ; then
     ac_fn_cxx_check_header_mongrel "$LINENO" "arrayfire.h" "ac_cv_header_arrayfire_h" "$ac_includes_default"
 if test "x$ac_cv_header_arrayfire_h" = xyes; then :
 
-      ac_fn_cxx_check_func "$LINENO" "identifyDevice" "ac_cv_func_identifyDevice"
-if test "x$ac_cv_func_identifyDevice" = xyes; then :
+      ac_fn_cxx_check_func "$LINENO" "af_is_double" "ac_cv_func_af_is_double"
+if test "x$ac_cv_func_af_is_double" = xyes; then :
   found=ok
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for identifyDevice in -lafopencl" >&5
-$as_echo_n "checking for identifyDevice in -lafopencl... " >&6; }
-if ${ac_cv_lib_afopencl_identifyDevice+:} false; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for af_is_double in -lafopencl" >&5
+$as_echo_n "checking for af_is_double in -lafopencl... " >&6; }
+if ${ac_cv_lib_afopencl_af_is_double+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
@@ -6382,27 +6382,27 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 #ifdef __cplusplus
 extern "C"
 #endif
-char identifyDevice ();
+char af_is_double ();
 int
 main ()
 {
-return identifyDevice ();
+return af_is_double ();
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_afopencl_identifyDevice=yes
+  ac_cv_lib_afopencl_af_is_double=yes
 else
-  ac_cv_lib_afopencl_identifyDevice=no
+  ac_cv_lib_afopencl_af_is_double=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_afopencl_identifyDevice" >&5
-$as_echo "$ac_cv_lib_afopencl_identifyDevice" >&6; }
-if test "x$ac_cv_lib_afopencl_identifyDevice" = xyes; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_afopencl_af_is_double" >&5
+$as_echo "$ac_cv_lib_afopencl_af_is_double" >&6; }
+if test "x$ac_cv_lib_afopencl_af_is_double" = xyes; then :
   LIBS="-lafopencl $LIBS" && found=ok
 fi
 
@@ -6428,13 +6428,13 @@ if test $af_cuda == true ; then
     ac_fn_cxx_check_header_mongrel "$LINENO" "arrayfire.h" "ac_cv_header_arrayfire_h" "$ac_includes_default"
 if test "x$ac_cv_header_arrayfire_h" = xyes; then :
 
-      ac_fn_cxx_check_func "$LINENO" "identifyDevice" "ac_cv_func_identifyDevice"
-if test "x$ac_cv_func_identifyDevice" = xyes; then :
+      ac_fn_cxx_check_func "$LINENO" "af_is_double" "ac_cv_func_af_is_double"
+if test "x$ac_cv_func_af_is_double" = xyes; then :
   found=ok
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for identifyDevice in -lafcuda" >&5
-$as_echo_n "checking for identifyDevice in -lafcuda... " >&6; }
-if ${ac_cv_lib_afcuda_identifyDevice+:} false; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for af_is_double in -lafcuda" >&5
+$as_echo_n "checking for af_is_double in -lafcuda... " >&6; }
+if ${ac_cv_lib_afcuda_af_is_double+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
@@ -6448,27 +6448,27 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 #ifdef __cplusplus
 extern "C"
 #endif
-char identifyDevice ();
+char af_is_double ();
 int
 main ()
 {
-return identifyDevice ();
+return af_is_double ();
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_afcuda_identifyDevice=yes
+  ac_cv_lib_afcuda_af_is_double=yes
 else
-  ac_cv_lib_afcuda_identifyDevice=no
+  ac_cv_lib_afcuda_af_is_double=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_afcuda_identifyDevice" >&5
-$as_echo "$ac_cv_lib_afcuda_identifyDevice" >&6; }
-if test "x$ac_cv_lib_afcuda_identifyDevice" = xyes; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_afcuda_af_is_double" >&5
+$as_echo "$ac_cv_lib_afcuda_af_is_double" >&6; }
+if test "x$ac_cv_lib_afcuda_af_is_double" = xyes; then :
   LIBS="-lafcuda $LIBS" && found=ok
 fi
 
