@@ -52,7 +52,7 @@ private:
   std::vector<double> q_list;
   int                 total_device;
 #ifdef __PLUMED_HAS_ARRAYFIRE
-  af::array           allFFa;
+  af::array          *allFFa;
   af::array          *sum_device;
   af::array          *box_device;
   af::array          *deriv_device;
@@ -146,8 +146,7 @@ serial(false)
       }
     }
   }
-  allFFa= af::array(numq, size, FF_new);
-  delete[] FF_new;
+
 
   bool exp=false;
   parseFlag("ADDEXPVALUES",exp);
@@ -185,6 +184,13 @@ serial(false)
   sum_device = new af::array[total_device*numq];
   box_device = new af::array[total_device*numq];
   deriv_device = new af::array[total_device*numq];
+  allFFa = new af::array[total_device];
+  for(unsigned i=0;i<total_device; i++) {
+     af::setDevice(i);
+     allFFa[i] = af::array(numq, size, FF_new);
+  }
+  delete[] FF_new;
+
 
   requestAtoms(atoms);
   checkRead();
@@ -196,6 +202,7 @@ SAXSGPU::~SAXSGPU(){
   delete[] sum_device;
   delete[] box_device;
   delete[] deriv_device;
+  delete[] allFFa;
 #endif
 }
 
@@ -257,11 +264,12 @@ void SAXSGPU::calculate(){
     // xyz_dist is now size,sizeb,3
     xyz_dist = af::reorder(xyz_dist, 1, 2, 0);
     af::array atom_box = af::moddims(xyz_dist, size*sizeb, 3);
-    af::array allFFb = allFFa(af::span, seqb);
+
+    af::array allFFb = allFFa[dnumber](af::span, seqb);
 
     for (unsigned k=0; k<numq; k++) {
       // calculate FF matrix
-      af::array FFdist_mod = (af::tile(af::moddims(allFFa.row(k), size, 1), 1, sizeb) * 
+      af::array FFdist_mod = (af::tile(af::moddims(allFFa[dnumber].row(k), size, 1), 1, sizeb) * 
                               af::tile(af::moddims(allFFb.row(k), 1, sizeb), size, 1));
 
       // get q*dist and sin
@@ -297,7 +305,7 @@ void SAXSGPU::calculate(){
 
       af::array box_sum = af::sum(box_pre);
       box_device[dnumber](k,af::span) += box_sum(0,af::span);
-    }    
+    }   
   }
 
   // read out results
