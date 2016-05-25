@@ -38,7 +38,7 @@ namespace colvar{
 //+PLUMEDOC COLVAR SAXSGPU
 /*
 
-Calculate SAXSGPU scattered intensity
+Calculate SAXSGPU scattered intensity on GPU
 
 */
 //+ENDPLUMEDOC
