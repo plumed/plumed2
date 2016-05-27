@@ -316,17 +316,11 @@ void SAXSGPU::calculate(){
     float* tmp_inten;
     tmp_inten = new float[numq];
     sum_device[i].host(tmp_inten);
-    //for (unsigned j=0; j<numq; j++) {
-    //  inten[j] += tmp_inten[j];
-    //}
 
     float* tmp_box;
     tmp_box = new float[numq*6];
     box_device[i] = af::flat(box_device[i].T());
     box_device[i].host(tmp_box);
-    //for(unsigned j=0; j<6*numq; j++) {
-    //  box[j] += tmp_box[j];
-    //}
 
     float* tmp_deriv;
     tmp_deriv = new float[size*3*numq];
