@@ -221,15 +221,15 @@ void SAXSGPU::calculate(){
   }
 
   for(unsigned i=0;i<total_device; i++) {
-     af::setDevice(i);
-     sum_device[i] = af::constant(0, numq, f32);
-     box_device[i] = af::constant(0, numq, 6, f32);
-     deriv_device[i] = af::constant(0, numq, size, 3, f32);
+    af::setDevice(i);
+    sum_device[i] = af::constant(0, numq, f32);
+    box_device[i] = af::constant(0, numq, 6, f32);
+    deriv_device[i] = af::constant(0, numq, size, 3, f32);
   }
 
   for (unsigned i=0; i<size; i=i+splitb) {
     //multiple device
-    int dnumber=(i/splitb) % total_device;
+    const int dnumber=(i/splitb) % total_device;
     af::setDevice(dnumber);
     //first step calculate the short size of the matrix
     int sizeb; 
@@ -257,7 +257,6 @@ void SAXSGPU::calculate(){
     xyz_dist = af::moddims(af::reorder(xyz_dist, 1, 2, 0), size, sizeb, 3);
     // atom_box is now size*sizeb,3
     af::array atom_box = af::moddims(xyz_dist, size*sizeb, 3);
-  
 
     af::array square = af::sum(xyz_dist*xyz_dist,2);
     // dist_sqrt is 1,size,sizeb
@@ -357,30 +356,15 @@ void SAXSGPU::calculate(){
     Value* val=getPntrToComponent(k);
     val->set(inten[k]);
     // get deriv Tensor
-    Tensor deriv_box;
-   
     const unsigned bi = k*6;
-
-    deriv_box[0][0]=box[bi+0];
-    deriv_box[0][1]=box[bi+1];
-    deriv_box[0][2]=box[bi+2];
-
-    deriv_box[1][0]=box[bi+1];
-    deriv_box[1][1]=box[bi+3];
-    deriv_box[1][2]=box[bi+4];
-
-    deriv_box[2][0]=box[bi+2];
-    deriv_box[2][1]=box[bi+4];
-    deriv_box[2][2]=box[bi+5];
-
+    const Tensor deriv_box(box[bi+0],box[bi+1],box[bi+2],
+                           box[bi+1],box[bi+3],box[bi+4],
+                           box[bi+2],box[bi+4],box[bi+5]);
+   
     setBoxDerivatives(val, deriv_box);
     for(unsigned i=0;i<size;i++) {
-      Vector dd;
       const unsigned di = k*size*3+i*3;
-      dd[0] = deriv[di+0];
-      dd[1] = deriv[di+1];
-      dd[2] = deriv[di+2];
-
+      const Vector dd(deriv[di+0],deriv[di+1],deriv[di+2]);
       setAtomsDerivatives(val, i, 2*dd);
     }    
   }
