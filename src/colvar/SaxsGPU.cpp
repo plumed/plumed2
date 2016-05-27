@@ -138,7 +138,6 @@ serial(false)
   if( ntarget!=size ) error("found wrong number of parameter vectors");
 
   // Calculate Rank of FF_matrix
-  float *FF_new = new float[numq*size];  
   double *FF_tmp = new double[numq*size];  
   for(unsigned i=0;i<size;++i) {
     for(unsigned j=0;j<parameter[i].size();++j) {
@@ -147,6 +146,7 @@ serial(false)
       }
     }
   }
+  float *FF_new = new float[numq*size];  
   for(unsigned i=0;i<numq*size;i++) FF_new[i] = FF_tmp[i];
   delete[] FF_tmp;
 
@@ -218,21 +218,18 @@ void SAXSGPU::calculate(){
   
   float* posi;
   posi = new float[3*size];
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for (unsigned i=0; i<size; i++) {
     const Vector tmp = getPosition(i);
- //   posi[i*3+0] = tmp[0];
- //   posi[i*3+1] = tmp[1];
- //   posi[i*3+2] = tmp[2];
-
-    posi[i] = tmp[0];
-    posi[i+size] = tmp[1];
+    posi[i]        = tmp[0];
+    posi[i+size]   = tmp[1];
     posi[i+2*size] = tmp[2];
   }
 
   for(unsigned i=0;i<total_device; i++) {
     af::setDevice(i);
-    sum_device[i] = af::constant(0, numq, f32);
-    box_device[i] = af::constant(0, numq, 6, f32);
+    sum_device[i]   = af::constant(0, numq, f32);
+    box_device[i]   = af::constant(0, numq, 6, f32);
     deriv_device[i] = af::constant(0, numq, size, 3, f32);
   }
 
@@ -240,47 +237,29 @@ void SAXSGPU::calculate(){
     //multiple device
     const int dnumber=(i/splitb) % total_device;
     af::setDevice(dnumber);
-    //first step calculate the short size of the matrix
-    int sizeb; 
-    if (size-i > splitb) { 
-      sizeb=splitb;
-    } else {
-      sizeb=size-i;
-    }
 
+    //first step calculate the short size of the matrix
+    unsigned sizeb = size - i; 
+    if(sizeb > splitb) sizeb = splitb;
     af::seq seqb(i, i+sizeb-1);
-    af::seq seqa(0, size-1);
+    const unsigned size2=size*sizeb;
 
     // create array a and b containing atomic coordinates
-    //af::array a = af::array(3, size, posi);
-
-    //a = a.T();
-
-    //af::array b = a(af::span, seqb);
     af::array a = af::array(size, 3, posi);
     af::array b = a(seqb, af::span);
     a += 0.000001; // crapy solution
 
-    // calculate distance matrix
-    //af::array b_mod = af::moddims(b, 3, 1, sizeb);
-    // xyz_dist is 3,size,sizeb
-    //af::array xyz_dist = af::tile(a, 1, 1, sizeb) -  af::tile(b_mod, 1, size, 1);
-    // calculate distance vectors
-    // xyz_dist is now size,sizeb,3
-    //xyz_dist = af::moddims(af::reorder(xyz_dist, 1, 2, 0), size, sizeb, 3);
-
-
     af::array a_mod = af::moddims(a, size, 1, 3);
     af::array b_mod = af::moddims(b, 1, sizeb, 3);
-    af::array xyz_dist = af::tile(a_mod, 1, sizeb, 1) -  af::tile(b_mod, size, 1, 1);
-
+    af::array xyz_dist = af::tile(a_mod, 1, sizeb, 1) - af::tile(b_mod, size, 1, 1);
 
     // atom_box is now size*sizeb,3
-    af::array atom_box = af::moddims(xyz_dist, size*sizeb, 3);
+    af::array atom_box = af::moddims(xyz_dist, size2, 3);
     // square size,sizeb,1
     af::array square = af::sum(xyz_dist*xyz_dist,2);
     // dist_sqrt is size,sizeb,1
     af::array dist_sqrt = af::sqrt(square);
+
     // allFA numq,size
     // allFB numq,sizeb
     af::array allFFb = allFFa[dnumber](af::span, seqb);
@@ -292,37 +271,35 @@ void SAXSGPU::calculate(){
                               af::tile(af::moddims(allFFb.row(k), 1, sizeb), size, 1, 1));
 
       // get q*dist and sin
-      float qvalue = q_list[k];
+      const float qvalue = q_list[k];
       // distq size,sizeb,1
       af::array dist_q = qvalue*dist_sqrt;
       // dist_sin size,sizeb,1
-      af::array dist_sin = (af::sin(dist_q)/dist_q);
+      af::array dist_sin = af::sin(dist_q)/dist_q;
       
       // flat it and get the intensity
       sum_device[dnumber](k) += af::sum(af::flat(dist_sin)*af::flat(FFdist_mod));
 
       // array get cos and tmp
       // tmp is size,sizeb
-      af::array tmp = af::moddims(FFdist_mod*(dist_sin - af::cos(dist_q))/square, size,sizeb);
+      af::array tmp = af::moddims(FFdist_mod*(dist_sin - af::cos(dist_q))/square, size, sizeb);
 
       // increase the tmp size and calculate dd
-      // tmp_tile is size, sizeb, 3
-      af::array tmp_tile = af::tile(tmp, 1, 1, 3);
-      // dd_all is size, sizeb, 3
-      af::array dd_all = (tmp_tile*xyz_dist);
-      af::array dd = af::sum(dd_all);
-      deriv_device[dnumber](k, seqb, af::span) = dd(0, af::span, af::span);
+      // now is size, sizeb, 3
+      af::array dd_all = af::tile(tmp, 1, 1, 3)*xyz_dist;
+      deriv_device[dnumber](k, seqb, af::span) = af::sum(dd_all);
 
       // dd_all to size*sizeb, 3
-      dd_all = af::moddims(dd_all, size*sizeb, 3);
-      af::array box_pre = af::array(size*sizeb, 6, f32);
-      af::seq s(3);
-      box_pre(af::span,s) = atom_box(af::span,af::span)*dd_all(af::span,af::span);
+      dd_all = af::moddims(dd_all, size2, 3);
+      af::array box_pre = af::array(size2, 6, f32);
+      af::seq so0(0,2,1);
       af::seq so1(3,4,1);
       af::seq so2(0,1,1);
       af::seq so3(1,2,1);
+      box_pre(af::span,so0) = atom_box*dd_all;
       box_pre(af::span,so1) = atom_box(af::span,so2)*dd_all(af::span,so3);
-      box_pre(af::span,5) = atom_box(af::span,0)*dd_all(af::span,2);
+      box_pre(af::span,5)   = atom_box(af::span,0)*dd_all(af::span,2);
+
       af::array box_sum = af::sum(box_pre);
       box_device[dnumber](k,af::span) += box_sum(0,af::span);
     }   
