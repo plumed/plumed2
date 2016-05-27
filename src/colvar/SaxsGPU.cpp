@@ -287,17 +287,18 @@ void SAXSGPU::calculate(){
       // dd_all is size, sizeb, 3
       af::array dd_all = (tmp_tile*xyz_dist);
       af::array dd = af::sum(dd_all);
- 
       deriv_device[dnumber](k, seqb, af::span) = dd(0, af::span, af::span);
+
       // dd_all to size*sizeb, 3
       dd_all = af::moddims(dd_all, size*sizeb, 3);
       af::array box_pre = af::array(size*sizeb, 6, f32);
-      box_pre(af::span,0) = atom_box(af::span,0)*dd_all(af::span,0);
-      box_pre(af::span,1) = atom_box(af::span,0)*dd_all(af::span,1);
-      box_pre(af::span,2) = atom_box(af::span,0)*dd_all(af::span,2);
-      box_pre(af::span,3) = atom_box(af::span,1)*dd_all(af::span,1);
-      box_pre(af::span,4) = atom_box(af::span,1)*dd_all(af::span,2);
-      box_pre(af::span,5) = atom_box(af::span,2)*dd_all(af::span,2);
+      af::seq s(3);
+      box_pre(af::span,s) = atom_box(af::span,af::span)*dd_all(af::span,af::span);
+      af::seq so1(3,4,1);
+      af::seq so2(0,1,1);
+      af::seq so3(1,2,1);
+      box_pre(af::span,so1) = atom_box(af::span,so2)*dd_all(af::span,so3);
+      box_pre(af::span,5) = atom_box(af::span,0)*dd_all(af::span,2);
       af::array box_sum = af::sum(box_pre);
       box_device[dnumber](k,af::span) += box_sum(0,af::span);
     }   
@@ -334,11 +335,11 @@ void SAXSGPU::calculate(){
         inten[i] += tmp_inten[i];
         const unsigned wi = 6*i;
         box[wi+0] += tmp_box[wi+0];
-        box[wi+1] += tmp_box[wi+1];
-        box[wi+2] += tmp_box[wi+2];
-        box[wi+3] += tmp_box[wi+3];
+        box[wi+1] += tmp_box[wi+3];
+        box[wi+2] += tmp_box[wi+5];
+        box[wi+3] += tmp_box[wi+1];
         box[wi+4] += tmp_box[wi+4];
-        box[wi+5] += tmp_box[wi+5];
+        box[wi+5] += tmp_box[wi+2];
       }
       #pragma omp for nowait
       for(unsigned i=0; i<size*3*numq; i++) {
