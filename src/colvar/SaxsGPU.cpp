@@ -38,7 +38,7 @@ namespace colvar{
 //+PLUMEDOC COLVAR SAXSGPU
 /*
 
-Calculate SAXSGPU scattered intensity on GPU
+Calculate SAXS scattered intensity on GPU
 
 */
 //+ENDPLUMEDOC
@@ -50,7 +50,7 @@ private:
   unsigned            numq;
   unsigned            splitb;
   std::vector<double> q_list;
-  int                 total_device;
+  unsigned            total_device;
 #ifdef __PLUMED_HAS_ARRAYFIRE
   af::array          *allFFa;
   af::array          *sum_device;
@@ -146,7 +146,6 @@ serial(false)
       }
     }
   }
-
 
   bool exp=false;
   parseFlag("ADDEXPVALUES",exp);
@@ -246,24 +245,23 @@ void SAXSGPU::calculate(){
     // create array a and b containing atomic coordinates
     af::array a = af::array(3, size, posi);
     af::array b = a(af::span, seqb);
-    b += 0.000001; // crapy solution
+    a += 0.000001; // crapy solution
 
     // calculate distance matrix
     af::array b_mod = af::moddims(b, 3, 1, sizeb);
     // xyz_dist is 3,size,sizeb
     af::array xyz_dist = af::tile(a, 1, 1, sizeb) -  af::tile(b_mod, 1, size, 1);
-    // square is 1,size,sizeb
-    af::array square = af::sum(xyz_dist*xyz_dist);
-    // dist_sqrt is 1,size,sizeb
-    af::array dist_sqrt = af::sqrt(square);
-    //this can be alternative to the above addition, but it is a bit slower
-    //dist_sqrt(dist_sqrt == 0.) = 0.000001;
-    
 
     // calculate distance vectors
     // xyz_dist is now size,sizeb,3
-    xyz_dist = af::reorder(xyz_dist, 1, 2, 0);
+    xyz_dist = af::moddims(af::reorder(xyz_dist, 1, 2, 0), size, sizeb, 3);
+    // atom_box is now size*sizeb,3
     af::array atom_box = af::moddims(xyz_dist, size*sizeb, 3);
+  
+
+    af::array square = af::sum(xyz_dist*xyz_dist,2);
+    // dist_sqrt is 1,size,sizeb
+    af::array dist_sqrt = af::sqrt(square);
 
     af::array allFFb = allFFa[dnumber](af::span, seqb);
 
@@ -281,19 +279,18 @@ void SAXSGPU::calculate(){
       sum_device[dnumber](k) += af::sum(af::flat(dist_sin)*af::flat(FFdist_mod));
 
       // array get cos and tmp
-      // tmp is 1,size,sizeb
-      af::array tmp = (dist_sin - af::cos(dist_q))/square;
-      // tmp to size,sizeb
-      tmp = af::moddims(tmp, size, sizeb);
-      tmp = tmp*FFdist_mod;
+      // tmp is size,sizeb
+      af::array tmp = af::moddims(FFdist_mod*(dist_sin - af::cos(dist_q))/square, size,sizeb);
 
       // increase the tmp size and calculate dd
+      // tmp_tile is size, sizeb, 3
       af::array tmp_tile = af::tile(tmp, 1, 1, 3);
+      // dd_all is size, sizeb, 3
       af::array dd_all = (tmp_tile*xyz_dist);
-      af::array dd = af::sum(dd_all, 0);
+      af::array dd = af::sum(dd_all);
  
       deriv_device[dnumber](k, seqb, af::span) = dd(0, af::span, af::span);
-
+      // dd_all to size*sizeb, 3
       dd_all = af::moddims(dd_all, size*sizeb, 3);
       af::array box_pre = af::array(size*sizeb, 6, f32);
       box_pre(af::span,0) = atom_box(af::span,0)*dd_all(af::span,0);
@@ -302,61 +299,61 @@ void SAXSGPU::calculate(){
       box_pre(af::span,3) = atom_box(af::span,1)*dd_all(af::span,1);
       box_pre(af::span,4) = atom_box(af::span,1)*dd_all(af::span,2);
       box_pre(af::span,5) = atom_box(af::span,2)*dd_all(af::span,2);
-
       af::array box_sum = af::sum(box_pre);
       box_device[dnumber](k,af::span) += box_sum(0,af::span);
     }   
   }
+  delete[] posi;
+
+  // accumulate the results
+  std::vector<double> inten; inten.resize(numq,0);
+  std::vector<double> deriv; deriv.resize(numq*size*3,0);
+  std::vector<double> box; box.resize(numq*6,0);
 
   // read out results
-  double* box;
-  box = new double[numq*6];
-
-  double* deriv;
-  deriv = new double[size*3*numq];
-
-  double* inten;
-  inten = new double[numq];
-
-  for (unsigned j=0; j<numq; j++) {
-    inten[j] = 0;
-  }
-
-  for (unsigned j=0; j<6*numq; j++) {
-    box[j] = 0;
-  }
-
-  for (unsigned j=0; j<size*3*numq; j++) {
-    deriv[j] = 0;
-  }
-
-  for (unsigned i=0; i< total_device; i++) {
+  for (unsigned i=0; i<total_device; i++) {
     af::setDevice(i);
     float* tmp_inten;
     tmp_inten = new float[numq];
     sum_device[i].host(tmp_inten);
-    for (unsigned j=0; j<numq; j++) {
-      inten[j] += tmp_inten[j];
-    }
+    //for (unsigned j=0; j<numq; j++) {
+    //  inten[j] += tmp_inten[j];
+    //}
 
     float* tmp_box;
     tmp_box = new float[numq*6];
     box_device[i] = af::flat(box_device[i].T());
     box_device[i].host(tmp_box);
-    for(unsigned j=0; j<6*numq; j++) {
-      box[j] += tmp_box[j];
-    }
+    //for(unsigned j=0; j<6*numq; j++) {
+    //  box[j] += tmp_box[j];
+    //}
 
     float* tmp_deriv;
     tmp_deriv = new float[size*3*numq];
     deriv_device[i] = af::reorder(deriv_device[i], 2, 1, 0);
     deriv_device[i] = af::flat(deriv_device[i]); 
     deriv_device[i].host(tmp_deriv);
-
-    for(unsigned j=0; j<size*3*numq; j++) {
-      deriv[j] += tmp_deriv[j];
+    //for(unsigned j=0; j<size*3*numq; j++) {
+    //  deriv[j] += tmp_deriv[j];
+    //}
+    #pragma omp parallel for num_threads(OpenMP::getNumThreads())
+    for(unsigned i=0; i<numq; i++) {
+      inten[i] += tmp_inten[i];
+      const unsigned wi = 6*i;
+      box[wi+0] += tmp_box[wi+0];
+      box[wi+1] += tmp_box[wi+1];
+      box[wi+2] += tmp_box[wi+2];
+      box[wi+3] += tmp_box[wi+3];
+      box[wi+4] += tmp_box[wi+4];
+      box[wi+5] += tmp_box[wi+5];
+      for(unsigned j=0; j<size; j++) {
+        const unsigned wij = 3*i*j;
+        deriv[wij+0] += tmp_deriv[wij+0];
+        deriv[wij+1] += tmp_deriv[wij+1];
+        deriv[wij+2] += tmp_deriv[wij+2];
+      }
     }
-
+ 
     delete[] tmp_inten;
     delete[] tmp_box;
     delete[] tmp_deriv;
@@ -368,34 +365,32 @@ void SAXSGPU::calculate(){
     val->set(inten[k]);
     // get deriv Tensor
     Tensor deriv_box;
+   
+    const unsigned bi = k*6;
 
-    deriv_box[0][0]=box[k*6+0];
-    deriv_box[0][1]=box[k*6+1];
-    deriv_box[0][2]=box[k*6+2];
+    deriv_box[0][0]=box[bi+0];
+    deriv_box[0][1]=box[bi+1];
+    deriv_box[0][2]=box[bi+2];
 
-    deriv_box[1][0]=box[k*6+1];
-    deriv_box[1][1]=box[k*6+3];
-    deriv_box[1][2]=box[k*6+4];
+    deriv_box[1][0]=box[bi+1];
+    deriv_box[1][1]=box[bi+3];
+    deriv_box[1][2]=box[bi+4];
 
-    deriv_box[2][0]=box[k*6+2];
-    deriv_box[2][1]=box[k*6+4];
-    deriv_box[2][2]=box[k*6+5];
+    deriv_box[2][0]=box[bi+2];
+    deriv_box[2][1]=box[bi+4];
+    deriv_box[2][2]=box[bi+5];
 
     setBoxDerivatives(val, deriv_box);
     for(unsigned i=0;i<size;i++) {
       Vector dd;
-      dd[0] = deriv[k*size*3+i*3+0];
-      dd[1] = deriv[k*size*3+i*3+1];
-      dd[2] = deriv[k*size*3+i*3+2];
+      const unsigned di = k*size*3+i*3;
+      dd[0] = deriv[di+0];
+      dd[1] = deriv[di+1];
+      dd[2] = deriv[di+2];
 
       setAtomsDerivatives(val, i, 2*dd);
     }    
   }
-
-  delete[] inten;
-  delete[] box;
-  delete[] deriv;
-  delete[] posi;
 #endif
 }
 
