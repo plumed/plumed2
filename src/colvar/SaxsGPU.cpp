@@ -334,9 +334,9 @@ void SAXSGPU::calculate(){
     deriv_device[i] = af::flat(deriv_device[i]); 
     deriv_device[i].host(tmp_deriv);
 
-    #pragma omp parallel
+    #pragma omp parallel num_threads(OpenMP::getNumThreads())
     {
-      #pragma omp for num_threads(OpenMP::getNumThreads()) nowait
+      #pragma omp for nowait
       for(unsigned i=0; i<numq; i++) {
         inten[i] += tmp_inten[i];
         const unsigned wi = 6*i;
@@ -347,7 +347,7 @@ void SAXSGPU::calculate(){
         box[wi+4] += tmp_box[wi+4];
         box[wi+5] += tmp_box[wi+5];
       }
-      #pragma omp for num_threads(OpenMP::getNumThreads()) nowait
+      #pragma omp for nowait
       for(unsigned i=0; i<size*3*numq; i++) {
         deriv[i] += tmp_deriv[i];
       }
