@@ -139,13 +139,16 @@ serial(false)
 
   // Calculate Rank of FF_matrix
   float *FF_new = new float[numq*size];  
+  double *FF_tmp = new double[numq*size];  
   for(unsigned i=0;i<size;++i) {
     for(unsigned j=0;j<parameter[i].size();++j) {
       for(unsigned k=0;k<numq;++k){
-        FF_new[k+i*numq]+=parameter[i][j]*pow(q_list[k],j);
+        FF_tmp[k+i*numq] += parameter[i][j]*pow(q_list[k],j);
       }
     }
   }
+  for(unsigned i=0;i<numq*size;i++) FF_new[i] = FF_tmp[i];
+  delete[] FF_tmp;
 
   bool exp=false;
   parseFlag("ADDEXPVALUES",exp);
@@ -183,11 +186,13 @@ serial(false)
   sum_device = new af::array[total_device*numq];
   box_device = new af::array[total_device*numq];
   deriv_device = new af::array[total_device*numq];
+
   allFFa = new af::array[total_device];
   for(unsigned i=0;i<total_device; i++) {
      af::setDevice(i);
      allFFa[i] = af::array(numq, size, FF_new);
   }
+
   delete[] FF_new;
 
 
@@ -257,21 +262,25 @@ void SAXSGPU::calculate(){
     xyz_dist = af::moddims(af::reorder(xyz_dist, 1, 2, 0), size, sizeb, 3);
     // atom_box is now size*sizeb,3
     af::array atom_box = af::moddims(xyz_dist, size*sizeb, 3);
-
+    // square size,sizeb,1
     af::array square = af::sum(xyz_dist*xyz_dist,2);
-    // dist_sqrt is 1,size,sizeb
+    // dist_sqrt is size,sizeb,1
     af::array dist_sqrt = af::sqrt(square);
-
+    // allFA numq,size
+    // allFB numq,sizeb
     af::array allFFb = allFFa[dnumber](af::span, seqb);
 
     for (unsigned k=0; k<numq; k++) {
       // calculate FF matrix
-      af::array FFdist_mod = (af::tile(af::moddims(allFFa[dnumber].row(k), size, 1), 1, sizeb) * 
-                              af::tile(af::moddims(allFFb.row(k), 1, sizeb), size, 1));
+      // FFdist_mod size,sizeb,1
+      af::array FFdist_mod = (af::tile(af::moddims(allFFa[dnumber].row(k), size, 1, 1), 1, sizeb)* 
+                              af::tile(af::moddims(allFFb.row(k), 1, sizeb), size, 1, 1));
 
       // get q*dist and sin
       float qvalue = q_list[k];
+      // distq size,sizeb,1
       af::array dist_q = qvalue*dist_sqrt;
+      // dist_sin size,sizeb,1
       af::array dist_sin = (af::sin(dist_q)/dist_q);
       
       // flat it and get the intensity
