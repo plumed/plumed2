@@ -333,24 +333,23 @@ void SAXSGPU::calculate(){
     deriv_device[i] = af::reorder(deriv_device[i], 2, 1, 0);
     deriv_device[i] = af::flat(deriv_device[i]); 
     deriv_device[i].host(tmp_deriv);
-    //for(unsigned j=0; j<size*3*numq; j++) {
-    //  deriv[j] += tmp_deriv[j];
-    //}
-    #pragma omp parallel for num_threads(OpenMP::getNumThreads())
-    for(unsigned i=0; i<numq; i++) {
-      inten[i] += tmp_inten[i];
-      const unsigned wi = 6*i;
-      box[wi+0] += tmp_box[wi+0];
-      box[wi+1] += tmp_box[wi+1];
-      box[wi+2] += tmp_box[wi+2];
-      box[wi+3] += tmp_box[wi+3];
-      box[wi+4] += tmp_box[wi+4];
-      box[wi+5] += tmp_box[wi+5];
-      for(unsigned j=0; j<size; j++) {
-        const unsigned wij = 3*i*j;
-        deriv[wij+0] += tmp_deriv[wij+0];
-        deriv[wij+1] += tmp_deriv[wij+1];
-        deriv[wij+2] += tmp_deriv[wij+2];
+
+    #pragma omp parallel
+    {
+      #pragma omp for num_threads(OpenMP::getNumThreads()) nowait
+      for(unsigned i=0; i<numq; i++) {
+        inten[i] += tmp_inten[i];
+        const unsigned wi = 6*i;
+        box[wi+0] += tmp_box[wi+0];
+        box[wi+1] += tmp_box[wi+1];
+        box[wi+2] += tmp_box[wi+2];
+        box[wi+3] += tmp_box[wi+3];
+        box[wi+4] += tmp_box[wi+4];
+        box[wi+5] += tmp_box[wi+5];
+      }
+      #pragma omp for num_threads(OpenMP::getNumThreads()) nowait
+      for(unsigned i=0; i<size*3*numq; i++) {
+        deriv[i] += tmp_deriv[i];
       }
     }
  
