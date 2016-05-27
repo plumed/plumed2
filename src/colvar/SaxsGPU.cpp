@@ -220,9 +220,13 @@ void SAXSGPU::calculate(){
   posi = new float[3*size];
   for (unsigned i=0; i<size; i++) {
     const Vector tmp = getPosition(i);
-    posi[i*3+0] = tmp[0];
-    posi[i*3+1] = tmp[1];
-    posi[i*3+2] = tmp[2];
+ //   posi[i*3+0] = tmp[0];
+ //   posi[i*3+1] = tmp[1];
+ //   posi[i*3+2] = tmp[2];
+
+    posi[i] = tmp[0];
+    posi[i+size] = tmp[1];
+    posi[i+2*size] = tmp[2];
   }
 
   for(unsigned i=0;i<total_device; i++) {
@@ -248,18 +252,29 @@ void SAXSGPU::calculate(){
     af::seq seqa(0, size-1);
 
     // create array a and b containing atomic coordinates
-    af::array a = af::array(3, size, posi);
-    af::array b = a(af::span, seqb);
+    //af::array a = af::array(3, size, posi);
+
+    //a = a.T();
+
+    //af::array b = a(af::span, seqb);
+    af::array a = af::array(size, 3, posi);
+    af::array b = a(seqb, af::span);
     a += 0.000001; // crapy solution
 
     // calculate distance matrix
-    af::array b_mod = af::moddims(b, 3, 1, sizeb);
+    //af::array b_mod = af::moddims(b, 3, 1, sizeb);
     // xyz_dist is 3,size,sizeb
-    af::array xyz_dist = af::tile(a, 1, 1, sizeb) -  af::tile(b_mod, 1, size, 1);
-
+    //af::array xyz_dist = af::tile(a, 1, 1, sizeb) -  af::tile(b_mod, 1, size, 1);
     // calculate distance vectors
     // xyz_dist is now size,sizeb,3
-    xyz_dist = af::moddims(af::reorder(xyz_dist, 1, 2, 0), size, sizeb, 3);
+    //xyz_dist = af::moddims(af::reorder(xyz_dist, 1, 2, 0), size, sizeb, 3);
+
+
+    af::array a_mod = af::moddims(a, size, 1, 3);
+    af::array b_mod = af::moddims(b, 1, sizeb, 3);
+    af::array xyz_dist = af::tile(a_mod, 1, sizeb, 1) -  af::tile(b_mod, size, 1, 1);
+
+
     // atom_box is now size*sizeb,3
     af::array atom_box = af::moddims(xyz_dist, size*sizeb, 3);
     // square size,sizeb,1
