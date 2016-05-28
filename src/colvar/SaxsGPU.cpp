@@ -249,14 +249,14 @@ void SAXSGPU::calculate(){
     af::array b = a(seqb, af::span);
     a += 0.000001; // crapy solution
 
-    af::array a_mod = af::moddims(a, size, 1, 3);
-    af::array b_mod = af::moddims(b, 1, sizeb, 3);
-    af::array xyz_dist = af::tile(a_mod, 1, sizeb, 1) - af::tile(b_mod, size, 1, 1);
+    a = af::moddims(a, size, 1, 3);
+    b = af::moddims(b, 1, sizeb, 3);
+    af::array xyz_dist = af::tile(a, 1, sizeb, 1) - af::tile(b, size, 1, 1);
 
-    // atom_box is now size*sizeb,3
-    af::array atom_box = af::moddims(xyz_dist, size2, 3);
-    // square size,sizeb,1
-    af::array square = af::sum(xyz_dist*xyz_dist,2);
+    // xyz_dist is now size*sizeb,3
+    xyz_dist = af::moddims(xyz_dist, size2, 3 , 1);
+    // square size*sizeb,1
+    af::array square = af::sum(xyz_dist*xyz_dist,1);
     // dist_sqrt is size,sizeb,1
     af::array dist_sqrt = af::sqrt(square);
 
@@ -267,41 +267,44 @@ void SAXSGPU::calculate(){
     for (unsigned k=0; k<numq; k++) {
       // calculate FF matrix
       // FFdist_mod size,sizeb,1
-      af::array FFdist_mod = (af::tile(af::moddims(allFFa[dnumber].row(k), size, 1, 1), 1, sizeb)* 
-                              af::tile(af::moddims(allFFb.row(k), 1, sizeb), size, 1, 1));
+      af::array FFdist_mod = af::flat((af::tile(af::moddims(allFFa[dnumber].row(k), size, 1), 1, sizeb)* 
+                                       af::tile(af::moddims(allFFb.row(k), 1, sizeb), size, 1)));
 
-      // get q*dist and sin
       const float qvalue = q_list[k];
-      // distq size,sizeb,1
+      // distq size*sizeb,1
       af::array dist_q = qvalue*dist_sqrt;
-      // dist_sin size,sizeb,1
+      // dist_sin size*sizeb,1
       af::array dist_sin = af::sin(dist_q)/dist_q;
       
       // flat it and get the intensity
-      sum_device[dnumber](k) += af::sum(af::flat(dist_sin)*af::flat(FFdist_mod));
+      sum_device[dnumber](k) += af::sum(dist_sin*FFdist_mod);
 
       // array get cos and tmp
       // tmp is size,sizeb
-      af::array tmp = af::moddims(FFdist_mod*(dist_sin - af::cos(dist_q))/square, size, sizeb);
+      af::array tmp = af::moddims(FFdist_mod*(dist_sin - af::cos(dist_q))/square, size2, 1);
 
       // increase the tmp size and calculate dd
-      // now is size, sizeb, 3
-      af::array dd_all = af::tile(tmp, 1, 1, 3)*xyz_dist;
-      deriv_device[dnumber](k, seqb, af::span) = af::sum(dd_all);
+      // now is size*sizeb, 3
+      af::array dd_all = af::tile(tmp, 1, 3)*xyz_dist;
 
       // dd_all to size*sizeb, 3
       dd_all = af::moddims(dd_all, size2, 3);
       af::array box_pre = af::array(size2, 6, f32);
+      // indices for the derivatives of the box
       af::seq so0(0,2,1);
       af::seq so1(3,4,1);
       af::seq so2(0,1,1);
       af::seq so3(1,2,1);
-      box_pre(af::span,so0) = atom_box*dd_all;
-      box_pre(af::span,so1) = atom_box(af::span,so2)*dd_all(af::span,so3);
-      box_pre(af::span,5)   = atom_box(af::span,0)*dd_all(af::span,2);
+
+      box_pre(af::span,so0) = xyz_dist*dd_all;
+      box_pre(af::span,so1) = xyz_dist(af::span,so2)*dd_all(af::span,so3);
+      box_pre(af::span,5)   = xyz_dist(af::span,0)*dd_all(af::span,2);
 
       af::array box_sum = af::sum(box_pre);
       box_device[dnumber](k,af::span) += box_sum(0,af::span);
+
+      dd_all = af::moddims(dd_all, size, sizeb, 3);
+      deriv_device[dnumber](k, seqb, af::span) = af::sum(dd_all);
     }   
   }
   delete[] posi;
