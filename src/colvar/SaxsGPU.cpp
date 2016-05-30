@@ -250,17 +250,16 @@ void SAXSGPU::calculate(){
 
     a = af::moddims(a, size, 1, 3);
     b = af::moddims(b, 1, sizeb, 3);
-    af::array xyz_dist = af::tile(a, 1, sizeb, 1) - af::tile(b, size, 1, 1);
+    af::array xyz_dist = af::moddims((af::tile(a, 1, sizeb, 1) - af::tile(b, size, 1, 1)), size, sizeb, 3);
 
     // atom_box is now size*sizeb,3
-   // if(npt) {
     af::array atom_box;
     if(npt) {
       atom_box = af::moddims(xyz_dist, size2, 3);
     }
 
     // square size,sizeb,1
-    af::array square = af::sum(xyz_dist*xyz_dist,2);
+    af::array square = af::moddims(af::sum(xyz_dist*xyz_dist,2), size, sizeb);
     // dist_sqrt is size,sizeb,1
     af::array dist_sqrt = af::sqrt(square);
 
@@ -271,8 +270,8 @@ void SAXSGPU::calculate(){
     for (unsigned k=0; k<numq; k++) {
       // calculate FF matrix
       // FFdist_mod size,sizeb,1
-      af::array FFdist_mod = (af::tile(af::moddims(allFFa[dnumber].row(k), size, 1, 1), 1, sizeb)* 
-                              af::tile(af::moddims(allFFb.row(k), 1, sizeb), size, 1, 1));
+      af::array FFdist_mod = (af::tile(af::moddims(allFFa[dnumber].row(k), size, 1), 1, sizeb)* 
+                              af::tile(af::moddims(allFFb.row(k), 1, sizeb), size, 1));
 
       // get q*dist and sin
       const float qvalue = q_list[k];
