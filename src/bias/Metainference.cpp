@@ -70,6 +70,7 @@ class Metainference : public Bias
   double Dsigma_mean_;
   double max_plumed_force_;
   double max_md_force_;
+  unsigned sum_nfmax_;
   // temperature in kbt
   double   kbt_;
   // number of data points
@@ -91,6 +92,7 @@ class Metainference : public Bias
   Value* valueSigmaMeanMin;
   Value* valueMaxForceMD;
   Value* valueMaxForcePLUMED;
+  Value* valueFracViol;
 
   unsigned nrep_;
   unsigned replica_;
@@ -147,12 +149,14 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.addOutputComponent("sigmaMean","default","uncertainty in the mean estimate");
   keys.addOutputComponent("maxForceMD","default","max force on molecule");
   keys.addOutputComponent("maxForcePLUMED","default","max force on molecule");
+  keys.addOutputComponent("fracViol","default","fraction of max force violations");
 }
 
 Metainference::Metainference(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao), 
 sqrt2_div_pi(0.45015815807855),
 doscale_(false),
+sum_nfmax_(0),
 ndata_(getNumberOfArguments()),
 optsigmamean_(false),
 old_energy(0),
@@ -323,6 +327,9 @@ atoms(plumed.getAtoms())
     addComponent("maxForcePLUMED");
     componentIsNotPeriodic("maxForcePLUMED");
     valueMaxForcePLUMED=getPntrToComponent("maxForcePLUMED");
+    addComponent("fracViol");
+    componentIsNotPeriodic("fracViol");
+    valueFracViol=getPntrToComponent("fracViol");
   }
 
   if(noise_type_==MGAUSS) {
@@ -561,6 +568,7 @@ void Metainference::calculate(){
 void Metainference::update() {
   if(optsigmamean_) {
     const double EPS = 0.1;
+    const long int step = getStep();
     // Get max force of whole system
     vector<Vector> md_forces;
     vector<Vector> plumed_forces;
@@ -622,9 +630,13 @@ void Metainference::update() {
     // if no violations then we minimise sigma_mean_ (and also sigma_mean_min_ if needed)
     if(nfmax == 0) {
       sigma_mean_ -= Dsigma_mean_ * 0.01 * std::log(sigma_mean_/sigma_mean_min_);
-      if((sigma_mean_-sigma_mean_min_)<Dsigma_mean_) sigma_mean_min_ -= Dsigma_mean_;
+      if((sigma_mean_-sigma_mean_min_)<Dsigma_mean_) {
+        double sigma_mean_min_new = sigma_mean_min_ - Dsigma_mean_;
+        if(sigma_mean_min_new > 0) sigma_mean_min_ = sigma_mean_min_new;
+      }
     // otherwise we increase sigma_mean_ and also sigma_mean_min_ if needed
     } else {
+      sum_nfmax_ += nfmax;
       sigma_mean_ += Dsigma_mean_ * nfmax;
       if(nfmax_md > 0) {
         sigma_mean_min_ += nfmax_md * Dsigma_mean_;
@@ -636,6 +648,9 @@ void Metainference::update() {
     valueMaxForcePLUMED->set(sqrt(fmax_plumed));
     valueSigmaMean->set(sigma_mean_);
     valueSigmaMeanMin->set(sigma_mean_min_);
+    if(step > 0) { 
+      valueFracViol->set(static_cast<double>(sum_nfmax_) / static_cast<double>(step));
+    }
   }
 }
 
