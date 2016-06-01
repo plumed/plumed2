@@ -71,6 +71,7 @@ class Metainference : public Bias
   double max_plumed_force_;
   double max_md_force_;
   unsigned sum_nfmax_;
+  unsigned sum_nfmax_md_;
   // temperature in kbt
   double   kbt_;
   // number of data points
@@ -93,6 +94,7 @@ class Metainference : public Bias
   Value* valueMaxForceMD;
   Value* valueMaxForcePLUMED;
   Value* valueFracViol;
+  Value* valueFracViolMD;
 
   unsigned nrep_;
   unsigned replica_;
@@ -150,6 +152,7 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.addOutputComponent("maxForceMD","default","max force on molecule");
   keys.addOutputComponent("maxForcePLUMED","default","max force on molecule");
   keys.addOutputComponent("fracViol","default","fraction of max force violations");
+  keys.addOutputComponent("fracViolMD","default","fraction of max force violations");
 }
 
 Metainference::Metainference(const ActionOptions&ao):
@@ -157,6 +160,7 @@ PLUMED_BIAS_INIT(ao),
 sqrt2_div_pi(0.45015815807855),
 doscale_(false),
 sum_nfmax_(0),
+sum_nfmax_md_(0),
 ndata_(getNumberOfArguments()),
 optsigmamean_(false),
 old_energy(0),
@@ -330,6 +334,9 @@ atoms(plumed.getAtoms())
     addComponent("fracViol");
     componentIsNotPeriodic("fracViol");
     valueFracViol=getPntrToComponent("fracViol");
+    addComponent("fracViolMD");
+    componentIsNotPeriodic("fracViolMD");
+    valueFracViolMD=getPntrToComponent("fracViolMD");
   }
 
   if(noise_type_==MGAUSS) {
@@ -639,6 +646,7 @@ void Metainference::update() {
       sum_nfmax_ += nfmax;
       sigma_mean_ += Dsigma_mean_ * nfmax;
       if(nfmax_md > 0) {
+        sum_nfmax_md_ += nfmax_md;
         sigma_mean_min_ += nfmax_md * Dsigma_mean_;
         sigma_mean_ += Dsigma_mean_ * nfmax_md;
       }
@@ -650,6 +658,7 @@ void Metainference::update() {
     valueSigmaMeanMin->set(sigma_mean_min_);
     if(step > 0) { 
       valueFracViol->set(static_cast<double>(sum_nfmax_) / static_cast<double>(step));
+      valueFracViolMD->set(static_cast<double>(sum_nfmax_md_) / static_cast<double>(step));
     }
   }
 }
