@@ -160,10 +160,9 @@ void Ensemble::calculate(){
   double norm = 0.0;
   double fact = 0.0;
 
+  vector<double> bias; bias.resize(ens_dim, 1.0);
   // calculate the weights either from BIAS 
   if(do_reweight){
-    vector<double> bias;
-    bias.resize(ens_dim);
     if(master){
       bias[my_repl] = getArgument(narg); 
       if(ens_dim>1) multi_sim_comm.Sum(&bias[0], ens_dim);  
@@ -201,14 +200,14 @@ void Ensemble::calculate(){
     if(!do_central) {
       if(master) {
         for(unsigned i=0;i<narg;++i) { 
-          const double tmp = fact*pow(getArgument(i),moment-1);
+          const double tmp = bias[my_repl]*pow(getArgument(i),moment-1)/(norm-1.);
           v_moment[i]      = tmp*getArgument(i);
           dv_moment[i]     = moment*tmp;
         }
         if(ens_dim>1) multi_sim_comm.Sum(&v_moment[0], narg);
       } else {
         for(unsigned i=0;i<narg;++i) {
-          const double tmp = fact*pow(getArgument(i),moment-1);
+          const double tmp = bias[my_repl]*pow(getArgument(i),moment-1)/(norm-1.);
           dv_moment[i]     = moment*tmp;
         }
       }
@@ -217,14 +216,14 @@ void Ensemble::calculate(){
       if(master) {
         for(unsigned i=0;i<narg;++i) { 
           const double tmp = pow(getArgument(i)-mean[i],moment-1);
-          v_moment[i]      = fact*tmp*(getArgument(i)-mean[i]);
-          dv_moment[i]     = moment*tmp*(fact-fact/norm);
+          v_moment[i]      = bias[my_repl]*tmp*(getArgument(i)-mean[i])/(norm-1.);
+          dv_moment[i]     = moment*tmp*(bias[my_repl]/(norm-1.0)-fact/norm);
         }
         if(ens_dim>1) multi_sim_comm.Sum(&v_moment[0], narg);
       } else {
         for(unsigned i=0;i<narg;++i) {
           const double tmp = pow(getArgument(i)-mean[i],moment-1);
-          dv_moment[i]     = moment*tmp*(fact-fact/norm);
+          dv_moment[i]     = moment*tmp*(bias[my_repl]/(norm-1.0)-fact/norm);
         }
       }
     }
