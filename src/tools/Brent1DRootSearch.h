@@ -73,21 +73,8 @@ myclass_func(pf)
 template <class FCLASS>
 void Brent1DRootSearch<FCLASS>::bracket( const double& a, const double& b, eng_pointer eng ){
    plumed_assert( a!=b ); ax=a; bx=b; fa=(myclass_func.*eng)(a); fb=(myclass_func.*eng)(b);
-   if( fa*fb<0 ){ bracketed=true; return; }
-
-   // If initial points do not bracket root expand range till they do
-   for(unsigned i=0;i<ITMAX;++i){
-       if( fabs(fa) < fabs(fb) ){ 
-          ax += EXPAND*(ax-bx); fa=(myclass_func.*eng)(ax); 
-       } else {
-          bx += EXPAND*(bx-ax); fb=(myclass_func.*eng)(bx);
-       }
-       if( fa*fb<0 ){ bracketed=true; return; }
-   }
-   plumed_merror("failed to bracket root");
-
-   // if ((fa > 0.0 && fb > 0.0) || (fa < 0.0 && fb < 0.0)) plumed_merror("input points do not bracket root");
-   // bracketed=true;
+   if ((fa > 0.0 && fb > 0.0) || (fa < 0.0 && fb < 0.0)) plumed_merror("input points do not bracket root");
+   bracketed=true;
 }
 
 template <class FCLASS>
