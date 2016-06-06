@@ -128,7 +128,7 @@ class EDS : public Bias{
   std::vector<Value*> outCoupling;
   bool adaptive;
   bool equilibration;
-  int ramp;
+  bool ramp;
   int seed;
   int update_calls;
   int update_period;
@@ -168,10 +168,11 @@ void EDS::registerKeywords(Keywords& keys){
    keys.add("compulsory","RANGE","3.0","The largest magnitude of the force constant which one expects (in kBT) for each CV based");
    keys.add("compulsory","PERIOD","Steps over which to adjust bias");
 
-   keys.add("optional","RAMP","Slowly increase bias constant to a fixed value");
    keys.add("optional","SEED","Seed for random order of changing bias");
    keys.add("optional","FIXED","Fixed values for bias factors (not adaptive)");
    keys.add("optional","TEMP","The system temperature. If not provided will be taken from MD code (if available)");
+
+   keys.addFlag("RAMP",false,"Slowly increase bias constant to a fixed value");
 
    keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
    keys.addOutputComponent("force2","default","squared value of force from the bias");
@@ -219,7 +220,7 @@ coupling_range_increase_factor(1.25),
 b_hard_coupling_range(0),
 adaptive(true),
 equilibration(true),
-ramp(0),
+ramp(false),
 seed(0),
 update_calls(0),
 valueBias(NULL),
@@ -232,8 +233,8 @@ valueForce2(NULL)
   parseVector("FIXED",set_coupling);
   parse("PERIOD",update_period);
   parse("TEMP",temp);
-  parse("RAMP",ramp);
   parse("SEED",seed);
+  parseFlag("RAMP",ramp);
   checkRead();
 
   if(temp>=0.0) kbt=plumed.getAtoms().getKBoltzmann()*temp;
@@ -287,11 +288,11 @@ valueForce2(NULL)
 
 
   //now do setup
-  if(ramp>0){
+  if(ramp){
       update_period*=-1;
   }
 
-  if(!adaptive and !ramp>0){
+  if(!adaptive and !ramp){
     for(unsigned i=0;i<set_coupling.size();i++) current_coupling[i] = set_coupling[i];
   }
 
