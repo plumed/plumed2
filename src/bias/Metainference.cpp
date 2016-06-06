@@ -576,7 +576,7 @@ void Metainference::calculate(){
     if(noise_type_!=MGAUSS) sigma_mean_[0] += idof*variance_[i]/t;
     else sigma_mean_[i] = sqrt(idof*variance_[i]/t);
   }
-  if(noise_type_!=MGAUSS) sigma_mean_[0] = sqrt(sigma_mean_[0]/static_cast<double>(narg-1));
+  if(noise_type_!=MGAUSS) sigma_mean_[0] = sqrt(sigma_mean_[0]);
 
   /* MONTE CARLO */
   if(step%MCstride_==0&&!getExchangeStep()) doMonteCarlo(mean);
