@@ -414,7 +414,7 @@ void EDS::calculate(){
     double tmp;
     for(unsigned i=0;i<ncvs;++i){
        //calulcate step size
-       tmp = 2. * (means[i] - 1) * ssds[i] / (update_calls - 1);
+       tmp = 2. * (means[i]/center[i] - 1) * ssds[i] / (update_calls - 1);
        step_size = tmp / kbt;
        //reset means/vars
        means[i] = 0;
