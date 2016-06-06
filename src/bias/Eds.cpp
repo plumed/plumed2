@@ -118,17 +118,26 @@ class EDS : public Bias{
 //compulsory keywords
   std::vector<double> center;
   std::vector<double> current_coupling;
+  std::vector<double> set_coupling;
   std::vector<double> max_coupling_range;
   std::vector<double> max_coupling_rate;
   std::vector<double> coupling_rate;
   std::vector<double> coupling_accum;
+  std::vector<double> means;
+  std::vector<double> ssds;
   std::vector<Value*> outCoupling;
   bool adaptive;
+  bool equilibration;
   int ramp;
+  int seed;
+  int update_calls;
   int update_period;
   double kbt;
+  double coupling_range_increase_factor;
+  int b_hard_coupling_range;
   Random rand;
   Value* valueBias;
+  Value* valueForce2;
 
 /*
   bool firsttime;
@@ -160,11 +169,13 @@ void EDS::registerKeywords(Keywords& keys){
    keys.add("compulsory","PERIOD","Steps over which to adjust bias");
 
    keys.add("optional","RAMP","Slowly increase bias constant to a fixed value");
+   keys.add("optional","SEED","Seed for random order of changing bias");
    keys.add("optional","FIXED","Fixed values for bias factors (not adaptive)");
    keys.add("optional","TEMP","The system temperature. If not provided will be taken from MD code (if available)");
 
    keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
-   keys.addOutputComponent("_biasfactor","default","For each named CV biased, there will be a corresponding output CV_biasfactor storing the current linear bias prefactor.");
+   keys.addOutputComponent("force2","default","squared value of force from the bias");
+   keys.addOutputComponent("_coupling","default","For each named CV biased, there will be a corresponding output CV_coupling storing the current linear bias prefactor.");
 /*
    keys.add("compulsory","KAPPA","specifies that the restraint is harmonic and what the values of the force constants on each of the variables are");
    keys.add("compulsory","TAU","specifies that the restraint is harmonic and what the values of the force constants on each of the variables are");
@@ -194,25 +205,35 @@ EDS::EDS(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao),
 center(getNumberOfArguments(),0.0),
 current_coupling(getNumberOfArguments(),0.0),
+set_coupling(getNumberOfArguments(),0.0),
 max_coupling_range(getNumberOfArguments(),3.0),
 max_coupling_rate(getNumberOfArguments(),0.0),
 coupling_rate(getNumberOfArguments(),0.0),
 coupling_accum(getNumberOfArguments(),0.0),
+means(getNumberOfArguments(),0.0),
+ssds(getNumberOfArguments(),0.0),
 outCoupling(getNumberOfArguments(),NULL),
 update_period(0),
 kbt(0.0),
+coupling_range_increase_factor(1.25),
+b_hard_coupling_range(0),
 adaptive(true),
+equilibration(true),
 ramp(0),
-valueBias(NULL)
+seed(0),
+update_calls(0),
+valueBias(NULL),
+valueForce2(NULL)
 {
   double temp=-1.0;
 
   parseVector("CENTER",center);
   parseVector("RANGE",max_coupling_range);
-  parseVector("FIXED",current_coupling);
+  parseVector("FIXED",set_coupling);
   parse("PERIOD",update_period);
   parse("TEMP",temp);
   parse("RAMP",ramp);
+  parse("SEED",seed);
   checkRead();
 
   if(temp>=0.0) kbt=plumed.getAtoms().getKBoltzmann()*temp;
@@ -231,14 +252,19 @@ valueBias(NULL)
   }
   log.printf("\n");
 
-  for(unsigned i=0;i<getNumberOfArguments();++i) if(current_coupling[i]!=0.0) adaptive=false;
+  if(seed>0){
+     log.printf("  setting random seed = %i",seed);
+     rand.setSeed(seed);
+  }
+
+  for(unsigned i=0;i<getNumberOfArguments();++i) if(set_coupling[i]!=0.0) adaptive=false;
   if(!adaptive){
     if(ramp>0) {
         log.printf("  ramping up coupling constants over %i steps\n",ramp);
     }
 
     log.printf("  with coupling constants");
-    for(unsigned i=0;i<current_coupling.size();i++) log.printf(" %f",current_coupling[i]);
+    for(unsigned i=0;i<set_coupling.size();i++) log.printf(" %f",set_coupling[i]);
     log.printf("\n");
   }
 
@@ -246,8 +272,12 @@ valueBias(NULL)
   componentIsNotPeriodic("bias");
   valueBias=getPntrToComponent("bias");
 
+  addComponent("force2");
+  componentIsNotPeriodic("force2");
+  valueForce2=getPntrToComponent("force2");
+
   for(unsigned i=0;i<getNumberOfArguments();i++){
-    std::string comp=getPntrToArgument(i)->getName()+"_biasfactor";
+    std::string comp=getPntrToArgument(i)->getName()+"_coupling";
     addComponent(comp);
     componentIsNotPeriodic(comp);
     outCoupling[i]=getPntrToComponent(comp);
@@ -261,11 +291,16 @@ valueBias(NULL)
       update_period*=-1;
   }
 
+  if(!adaptive and !ramp>0){
+    for(unsigned i=0;i<set_coupling.size();i++) current_coupling[i] = set_coupling[i];
+  }
+
   // if adaptive, then first half will be used for equilibrating and second half for statistics
   if(update_period>0){
       update_period/=2;
   }
 
+  //this 10 doesn't seem to have a purpose, as it will be updated later
   for(unsigned i=0;i<max_coupling_range.size();i++) {
       max_coupling_rate[i] = max_coupling_range[i]/(10*update_period);
   }
@@ -298,6 +333,20 @@ valueBias(NULL)
 
 
 void EDS::calculate(){
+  //Compute linear force as in "restraint"
+  double ene=0.0;
+  double totf2=0.0;
+  for(unsigned i=0;i<getNumberOfArguments();++i){
+    const double cv=difference(i,center[i],getArgument(i));
+    const double m=current_coupling[i];
+    const double f=-(m);
+    ene+=m*cv;
+    setOutputForce(i,f);
+    totf2+=f*f;
+  };
+  valueBias->set(ene);
+  valueForce2->set(totf2);
+
 /*
   if(firsttime){
     for(unsigned i=0;i<getNumberOfArguments();++i){
@@ -324,30 +373,100 @@ void EDS::calculate(){
 }
 
 void EDS::update(){
-/*
-  double dt=getTimeStep()*getStride();
-  for(unsigned i=0;i<getNumberOfArguments();++i){
-    double mass=kappa[i]*tau[i]*tau[i]/(4*pi*pi); // should be k/omega**2
-    double c1=exp(-0.5*friction[i]*dt);
-    double c2=sqrt(kbt*(1.0-c1*c1)/mass);
-// consider additional forces on the fictitious particle
-// (e.g. MetaD stuff)
-    ffict[i]+=fictValue[i]->getForce();
+  //adjust parameters according to EDS recipe
 
-// update velocity (half step)
-    vfict[i]+=ffict[i]*0.5*dt/mass;
-// thermostat (half step)
-    vfict[i]=c1*vfict[i]+c2*rand.Gaussian();
-// save full step velocity to be dumped at next step
-    vfict_laststep[i]=vfict[i];
-// thermostat (half step)
-    vfict[i]=c1*vfict[i]+c2*rand.Gaussian();
-// update velocity (half step)
-    vfict[i]+=ffict[i]*0.5*dt/mass;
-// update position (full step)
-    fict[i]+=vfict[i]*dt;
+  if(update_calls == 0 && update_period>0){
+      for(unsigned i=0;i<max_coupling_range.size();i++) {
+          max_coupling_rate[i] = max_coupling_range[i]/(update_period);
+      }
   }
-*/
+  update_calls++;
+
+  int b_finished_equil_flag = 1;
+  double delta;
+
+  //assume forces already applied and saved
+  
+  for(unsigned i=0;i<getNumberOfArguments();++i){
+      //are we ramping to a constant value and not done equilibrating
+      if(update_period<0){
+          if(update_calls<fabs(update_period)){
+              current_coupling[i] += set_coupling[i]/fabs(update_period);
+          }
+          //make sure we don't reset update calls
+          b_finished_equil_flag = 0;
+          continue;
+      } 
+      //not updating
+      else if(update_period==0){
+          continue;
+      }
+
+      //if we aren't wating for the bias to equilibrate, collect data
+      if(!equilibration){
+          //Welford, West, and Hanso online variance method
+          delta = difference(i,means[i],getArgument(i));
+          means[i]+=delta/update_calls;
+          ssds[i]+=delta*difference(i,means[i],getArgument(i));
+      }
+      // equilibrating
+      else {
+          //check if we've reached the setpoint
+          if(coupling_rate[i]==0 || pow(current_coupling[i]-set_coupling[i],2)<pow(coupling_rate[i],2)) {
+             b_finished_equil_flag &= 1;
+          }
+          else{
+              current_coupling[i]+=coupling_rate[i];
+              b_finished_equil_flag = 0;
+          }
+      }
+      //Update max coupling range if allowed
+      if(!b_hard_coupling_range && fabs(current_coupling[i])>max_coupling_range[i]) {
+         max_coupling_range[i]*=coupling_range_increase_factor; 
+      }
+  }
+
+  //reduce all the flags 
+  if(equilibration && b_finished_equil_flag) {
+    equilibration = false;
+    update_calls = 0;
+  }
+
+  //Now we update coupling constant, if necessary
+  if(equilibration && update_period > 0 && update_calls == update_period) {
+    double step_size = 0;
+    double tmp;
+    int ncvs = getNumberOfArguments();
+    for(unsigned i=0;i<ncvs;++i){
+       //calulcate step size
+       tmp = 2. * (means[i] - 1) * ssds[i] / (update_calls - 1);
+       step_size = tmp / kbt;
+       //reset means/vars
+       means[i] = 0;
+       ssds[i] = 0;
+
+      //multidimesional stochastic step
+      if(ncvs == 1 || rand.RandU01() < 1. / ncvs) {
+	    coupling_accum[i] += step_size * step_size;
+            current_coupling[i] = set_coupling[i];
+           //equation 5 in White and Voth, JCTC 2014
+            set_coupling[i] += max_coupling_range[i]/sqrt(coupling_accum[i])*step_size;
+            coupling_rate[i] = (set_coupling[i]-current_coupling[i])/update_period;
+            coupling_rate[i] = copysign( fmin(fabs(coupling_rate[i]),
+                                            max_coupling_rate[i])
+                                          ,coupling_rate[i]);
+        } else {
+            //do not change the bias
+            coupling_rate[i] = 0;
+        }
+
+
+   }
+
+    update_calls = 0;
+    equilibration = true; //back to equilibration now
+  } //close update if
+
 }
 
 void EDS::turnOnDerivatives(){
