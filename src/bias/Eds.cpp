@@ -409,7 +409,7 @@ void EDS::calculate(){
   }
 
   //Now we update coupling constant, if necessary
-  if(equilibration && update_period > 0 && update_calls == update_period) {
+  if(!equilibration && update_period > 0 && update_calls == update_period) {
     double step_size = 0;
     double tmp;
     for(unsigned i=0;i<ncvs;++i){
