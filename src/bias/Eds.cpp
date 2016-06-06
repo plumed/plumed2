@@ -333,10 +333,12 @@ valueForce2(NULL)
 
 
 void EDS::calculate(){
+  int ncvs = getNumberOfArguments();
+
   //Compute linear force as in "restraint"
   double ene=0.0;
   double totf2=0.0;
-  for(unsigned i=0;i<getNumberOfArguments();++i){
+  for(unsigned i=0;i<ncvs;++i){
     const double cv=difference(i,center[i],getArgument(i));
     const double m=current_coupling[i];
     const double f=-(m);
@@ -346,35 +348,8 @@ void EDS::calculate(){
   };
   valueBias->set(ene);
   valueForce2->set(totf2);
-
-/*
-  if(firsttime){
-    for(unsigned i=0;i<getNumberOfArguments();++i){
-      fict[i]=getArgument(i);
-    }
-    firsttime=false;
-  }
-  double ene=0.0;
-  for(unsigned i=0;i<getNumberOfArguments();++i){
-    const double cv=difference(i,fict[i],getArgument(i));
-    const double k=kappa[i];
-    const double f=-k*cv;
-    ene+=0.5*k*cv*cv;
-    setOutputForce(i,f);
-    ffict[i]=-f;
-  };
-  valueBias->set(ene);
-  for(unsigned i=0;i<getNumberOfArguments();++i){
-    fict[i]=fictValue[i]->bringBackInPbc(fict[i]);
-    fictValue[i]->set(fict[i]);
-    vfictValue[i]->set(vfict_laststep[i]);
-  }
-*/
-}
-
-void EDS::update(){
+  
   //adjust parameters according to EDS recipe
-
   if(update_calls == 0 && update_period>0){
       for(unsigned i=0;i<max_coupling_range.size();i++) {
           max_coupling_rate[i] = max_coupling_range[i]/(update_period);
@@ -387,7 +362,7 @@ void EDS::update(){
 
   //assume forces already applied and saved
   
-  for(unsigned i=0;i<getNumberOfArguments();++i){
+  for(unsigned i=0;i<ncvs;++i){
       //are we ramping to a constant value and not done equilibrating
       if(update_period<0){
           if(update_calls<fabs(update_period)){
@@ -436,7 +411,6 @@ void EDS::update(){
   if(equilibration && update_period > 0 && update_calls == update_period) {
     double step_size = 0;
     double tmp;
-    int ncvs = getNumberOfArguments();
     for(unsigned i=0;i<ncvs;++i){
        //calulcate step size
        tmp = 2. * (means[i] - 1) * ssds[i] / (update_calls - 1);
@@ -467,6 +441,37 @@ void EDS::update(){
     equilibration = true; //back to equilibration now
   } //close update if
 
+  //pass couplings out so they are accessible
+  for(unsigned i=0;i<ncvs;++i){
+      outCoupling[i]->set(current_coupling[i]);
+  }
+
+/*
+  if(firsttime){
+    for(unsigned i=0;i<getNumberOfArguments();++i){
+      fict[i]=getArgument(i);
+    }
+    firsttime=false;
+  }
+  double ene=0.0;
+  for(unsigned i=0;i<getNumberOfArguments();++i){
+    const double cv=difference(i,fict[i],getArgument(i));
+    const double k=kappa[i];
+    const double f=-k*cv;
+    ene+=0.5*k*cv*cv;
+    setOutputForce(i,f);
+    ffict[i]=-f;
+  };
+  valueBias->set(ene);
+  for(unsigned i=0;i<getNumberOfArguments();++i){
+    fict[i]=fictValue[i]->bringBackInPbc(fict[i]);
+    fictValue[i]->set(fict[i]);
+    vfictValue[i]->set(vfict_laststep[i]);
+  }
+*/
+}
+
+void EDS::update(){
 }
 
 void EDS::turnOnDerivatives(){
