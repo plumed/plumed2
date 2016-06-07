@@ -31,8 +31,8 @@ checks_were_disabled(false)
 {
 }
 
-void ReferenceAtoms::readAtomsFromPDB( const PDB& pdb ){
-  if( pdb.getNumberOfAtomBlocks()!=1 ) error("found multi-atom-block pdb format but expecting only one block of atoms");  
+void ReferenceAtoms::readAtomsFromPDB( const PDB& pdb, const bool allowblocks  ){
+  if( !allowblocks && pdb.getNumberOfAtomBlocks()!=1 ) error("found multi-atom-block pdb format but expecting only one block of atoms");  
 
   for(unsigned i=0;i<pdb.size();++i){
      indices.push_back( pdb.getAtomNumbers()[i] ); reference_atoms.push_back( pdb.getPositions()[i] );

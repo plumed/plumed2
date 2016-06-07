@@ -8,7 +8,9 @@ DIRS := $(sort ../config ../wrapper ../main  $(KERNEL_MODULES))
 DIRSLINKS:=$(addsuffix .links,$(DIRS))
 
 # include the machine dependent configuration
--include ../../Makefile.conf
+ifneq ($(MAKECMDGOALS),clean)
+  -include ../../Makefile.conf
+endif
 
 # if machine dependent configuration has been found:
 ifdef GCCDEP

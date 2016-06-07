@@ -504,6 +504,62 @@ Once ALMOST is installed, PLUMED 2 can then be configured with ALMOST enabled:
 \endverbatim
 with ALMOST_INSTALL_PATH set to the full path to the ALMOST installation folder.
 
+\section installingonacluster Installing PLUMED on a cluster
+
+If you are installing PLUMED on a cluster and you want several users to take advantage of it
+consider the following suggestions.
+
+First of all, we highly recommend using the module file that PLUMED provides to set up the environment.
+Just edit it as necessary to make it suitable for your environment.
+
+Notice that PLUMED can take advantage of many additionaly features if specific libraries are available upon
+compiling it. Install libmatheval first and check if PLUMED `./configure` is detecting it. Libmatheval is a must have with PLUMED.
+If someone uses gromacs, install libxdrfile first and check if PLUMED `./configure` is detecting it.
+PLUMED will be able to write trr/xtc file, simplifying analysis.
+
+Try to patch all MD codes with the `--runtime` option. This will allow independent update of PLUMED and MD codes.
+  Users will be able to combine any of the installed gromacs/amber/etc versions with any of the installed PLUMED versions.
+Notice that it is sometime claimed that statically linked codes are faster. In our experience, this is not true.
+In case you absolutely need a static executable, be ready to face non trivial linking issues. PLUMED is written in C++,
+thus required the appropriate C++ library to be linked, and might require additional libraries (e.g. libmatheval).
+
+Sometime we make small fixes on the patches. For this reason, keep track of which version of PLUMED you used
+to patch each of the MD code. Perhaps you can call the MD code modules with names such as `gromacs/4.6.7p1`,
+`gromacs/4.6.7p2` and write somewhere in the module file which version of PLUMED you used. Alternatively, call them
+something like `gromacs/4.6.7p2.2.0`. In this way, when we report a bug on the mailing list, users will know if the version
+they are using is affected by it.
+
+Usually it is not necessary to install both a MPI and a non-MPI PLUMED version. PLUMED library only calls MPI functions
+when the MD code is compiled with MPI. PLUMED executable calls MPI functions only when it is invoked without `--no-mpi`.
+In many machines it is thus sufficient to run the plumed executable on the login node as
+\verbatim
+> plumed --no-mpi
+\endverbatim
+even though PLUMED was compiled with MPI and the login node does not support MPI.
+The only case where you might need two different PLUMED installation for compute
+and login node is when you are cross compiling.
+
+PLUMED needs to be well optimized to run efficiently.
+If you need a single PLUMED binary to run efficiency on machines with different levels of hardware (e.g.: some
+of your workstations support AVX and some do not), with intel compiler you can use something like
+\verbatim
+./configure CXX=mpicxx CXXFLAGS="-O3 -axSSE2,AVX"
+\endverbatim
+It will take more time to compile but it will allow you to use a single module. Otherwise, you should install two
+PLUMED version with different optimization levels.
+
+Using modules, it is not necessary to make the PLUMED module explicitly dependent on the used library. Imagine a
+scenario where you first installed a module `libmatheval`, then load it while you compile PLUMED. If you
+provide the following option to configure `LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH"`, the PLUMED executable and
+library will remember where libmatheval is, without the need to load libmatheval module at runtime.
+Notice that this trick often does not work for fundamental libraries such as C++ and MPI library. As a consequence,
+usually the PLUMED module should load the compiler and MPI modules.
+
+\attention
+In case you found out how to compile PLUMED on some fancy architecture please share your tricks! You can
+either post it in your blog, send it to the mailing list, or ask as to update this paragraph in the manual, we will
+be happy to do so.
+
 \section installinghints Other hints
 
 We here collect a list of suggestions that might be useful on particular

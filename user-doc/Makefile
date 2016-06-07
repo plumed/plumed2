@@ -1,5 +1,7 @@
 # include the machine dependent configuration
--include ../Makefile.conf
+ifneq ($(MAKECMDGOALS),clean)
+  -include ../Makefile.conf
+endif
 
 .PHONY: all clean
 
