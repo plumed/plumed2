@@ -54,6 +54,8 @@ public:
 /// Don't actually clear the derivatives when this is called from plumed main.  
 /// They are calculated inside another action and clearing them would be bad  
   void clearDerivatives(){}
+/// Check nothing impossible being done with derivatives
+  virtual void turnOnDerivatives();
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives(); 
 /// Get the size of the atoms with derivatives array
@@ -71,6 +73,8 @@ public:
   Vector retrieveCentralAtomPos();
 /// Get the index of the central atom
   AtomNumber getAbsoluteIndexOfCentralAtom( const unsigned& i ) const ;
+/// Get indicecs involved in this colvar
+  const std::vector<AtomNumber> & getAbsoluteIndexes()const ;
 /// We need our own calculate numerical derivatives here
   void calculateNumericalDerivatives( ActionWithValue* a=NULL );
   void apply(){};
@@ -85,6 +89,11 @@ public:
   Vector getCentralAtomPos( const unsigned& curr );
   CatomPack getCentralAtomPack( const unsigned& basn, const unsigned& curr );
 };
+
+inline
+const std::vector<AtomNumber> & BridgedMultiColvarFunction::getAbsoluteIndexes() const {
+  return mycolv->getAbsoluteIndexes();
+}
 
 inline
 MultiColvarBase* BridgedMultiColvarFunction::getPntrToMultiColvar() const {

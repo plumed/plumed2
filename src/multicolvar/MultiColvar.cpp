@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiColvar.h"
-#include "BridgedMultiColvarFunction.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/SetupMolInfo.h"
