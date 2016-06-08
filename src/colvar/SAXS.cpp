@@ -115,7 +115,7 @@ serial(false)
   }
 
   //read in parameter vector
-  vector<vector<double> > parameter;
+  vector<vector<long double> > parameter;
   parameter.resize(size);
   ntarget=0;
   for(unsigned i=0;i<size;++i){
@@ -125,10 +125,12 @@ serial(false)
   if( ntarget!=size ) error("found wrong number of parameter vectors");
 
   FF_value.resize(numq,vector<double>(size));
+  vector<vector<long double> >  FF_tmp;
+  FF_tmp.resize(numq,vector<long double>(size));
   for(unsigned i=0;i<size;++i) {
     for(unsigned j=0;j<parameter[i].size();++j) {
       for(unsigned k=0;k<numq;++k){
-        FF_value[k][i]+=parameter[i][j]*pow(q_list[k],j);
+        FF_tmp[k][i]+= parameter[i][j]*powl(static_cast<long double>(q_list[k]),j);
       }
     }
   }
@@ -137,6 +139,7 @@ serial(false)
   FF_rank.resize(numq);
   for(unsigned k=0;k<numq;++k){
     for(unsigned i=0;i<size;i++){
+       FF_value[k][i] = static_cast<double>(FF_tmp[k][i]);
        FF_rank[k]+=FF_value[k][i]*FF_value[k][i];
     }
   }

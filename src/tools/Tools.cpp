@@ -103,6 +103,37 @@ bool Tools::convert(const string & str,double & t){
         return remaining.length()==0;
 }
 
+bool Tools::convert(const string & str,long double & t){
+        if(str=="PI" || str=="+PI" || str=="+pi" || str=="pi"){
+          t=pi; return true;
+        } else if(str=="-PI" || str=="-pi"){
+           t=-pi; return true;
+        } else if( str.find("PI")!=std::string::npos ){
+           std::size_t pi_start=str.find_first_of("PI");
+           if(str.substr(pi_start)!="PI") return false;
+           istringstream nstr(str.substr(0,pi_start)); 
+           long double ff=0.0; bool ok=nstr>>ff;
+           if(!ok) return false; 
+           t=ff*pi;
+           std::string remains; nstr>>remains;
+           return remains.length()==0;
+        } else if( str.find("pi")!=std::string::npos ){
+           std::size_t pi_start=str.find_first_of("pi");
+           if(str.substr(pi_start)!="pi") return false;
+           istringstream nstr(str.substr(0,pi_start));
+           long double ff=0.0; bool ok=nstr>>ff;
+           if(!ok) return false;
+           t=ff*pi;
+           std::string remains; nstr>>remains;
+           return remains.length()==0;
+        }
+        istringstream istr(str.c_str());
+        bool ok=istr>>t;
+        if(!ok) return false;
+        string remaining;
+        istr>>remaining;
+        return remaining.length()==0;
+}
 
 bool Tools::convert(const string & str,string & t){
         t=str;
