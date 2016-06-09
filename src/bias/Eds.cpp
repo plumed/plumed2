@@ -119,8 +119,9 @@ class EDS : public Bias{
   std::vector<double> center;
   std::vector<double> current_coupling;
   std::vector<double> set_coupling;
+  std::vector<double> target_coupling;
   std::vector<double> max_coupling_range;
-  std::vector<double> max_coupling_rate;
+  std::vector<double> max_coupling_grad;
   std::vector<double> coupling_rate;
   std::vector<double> coupling_accum;
   std::vector<double> means;
@@ -131,6 +132,7 @@ class EDS : public Bias{
   bool ramp;
   int seed;
   int update_calls;
+  int avg_coupling_count;
   int update_period;
   double kbt;
   double coupling_range_increase_factor;
@@ -169,7 +171,8 @@ void EDS::registerKeywords(Keywords& keys){
    keys.add("compulsory","PERIOD","Steps over which to adjust bias");
 
    keys.add("optional","SEED","Seed for random order of changing bias");
-   keys.add("optional","FIXED","Fixed values for bias factors (not adaptive)");
+   keys.add("optional","INIT","Starting value for coupling coefficients");
+   keys.add("optional","FIXED","Fixed target values for bias factors (not adaptive)");
    keys.add("optional","TEMP","The system temperature. If not provided will be taken from MD code (if available)");
 
    keys.addFlag("RAMP",false,"Slowly increase bias constant to a fixed value");
@@ -207,10 +210,11 @@ PLUMED_BIAS_INIT(ao),
 center(getNumberOfArguments(),0.0),
 current_coupling(getNumberOfArguments(),0.0),
 set_coupling(getNumberOfArguments(),0.0),
+target_coupling(getNumberOfArguments(),0.0),
 max_coupling_range(getNumberOfArguments(),3.0),
-max_coupling_rate(getNumberOfArguments(),0.0),
-coupling_rate(getNumberOfArguments(),0.0),
-coupling_accum(getNumberOfArguments(),0.0),
+max_coupling_grad(getNumberOfArguments(),0.0),
+coupling_rate(getNumberOfArguments(),1.0),
+coupling_accum(getNumberOfArguments(),1.0),
 means(getNumberOfArguments(),0.0),
 ssds(getNumberOfArguments(),0.0),
 outCoupling(getNumberOfArguments(),NULL),
@@ -223,6 +227,7 @@ equilibration(true),
 ramp(false),
 seed(0),
 update_calls(0),
+avg_coupling_count(1),
 valueBias(NULL),
 valueForce2(NULL)
 {
@@ -230,7 +235,8 @@ valueForce2(NULL)
 
   parseVector("CENTER",center);
   parseVector("RANGE",max_coupling_range);
-  parseVector("FIXED",set_coupling);
+  parseVector("FIXED",target_coupling);
+  parseVector("INIT",set_coupling);
   parse("PERIOD",update_period);
   parse("TEMP",temp);
   parse("SEED",seed);
@@ -247,9 +253,11 @@ valueForce2(NULL)
   for(unsigned i=0;i<center.size();i++) log.printf(" %f",center[i]);
   log.printf("\n");
 
-  log.printf("  with ranges");
+  log.printf("  with initial ranges / rates");
   for(unsigned i=0;i<max_coupling_range.size();i++) {
-      log.printf(" %f",max_coupling_range[i]);
+      //this is just an empirical guess. Bigger range, bigger grads. Less frequent updates, bigger changes
+      max_coupling_grad[i] = max_coupling_range[i]*update_period/100.;
+      log.printf(" %f %f",max_coupling_range[i],max_coupling_grad[i]);
   }
   log.printf("\n");
 
@@ -258,14 +266,18 @@ valueForce2(NULL)
      rand.setSeed(seed);
   }
 
-  for(unsigned i=0;i<getNumberOfArguments();++i) if(set_coupling[i]!=0.0) adaptive=false;
+  for(unsigned i=0;i<getNumberOfArguments();++i) if(target_coupling[i]!=0.0) adaptive=false;
+
   if(!adaptive){
     if(ramp>0) {
         log.printf("  ramping up coupling constants over %i steps\n",ramp);
     }
 
-    log.printf("  with coupling constants");
+    log.printf("  with starting coupling constants");
     for(unsigned i=0;i<set_coupling.size();i++) log.printf(" %f",set_coupling[i]);
+    log.printf("\n");
+    log.printf("  and final coupling constants");
+    for(unsigned i=0;i<target_coupling.size();i++) log.printf(" %f",target_coupling[i]);
     log.printf("\n");
   }
 
@@ -292,44 +304,13 @@ valueForce2(NULL)
       update_period*=-1;
   }
 
-  if(!adaptive and !ramp){
-    for(unsigned i=0;i<set_coupling.size();i++) current_coupling[i] = set_coupling[i];
-  }
+  for(unsigned i=0;i<set_coupling.size();i++) current_coupling[i] = set_coupling[i];
 
   // if adaptive, then first half will be used for equilibrating and second half for statistics
   if(update_period>0){
       update_period/=2;
   }
 
-  //this 10 doesn't seem to have a purpose, as it will be updated later
-  for(unsigned i=0;i<max_coupling_range.size();i++) {
-      max_coupling_rate[i] = max_coupling_range[i]/(10*update_period);
-  }
-
-/*
-  parseVector("TAU",tau);
-  parseVector("FRICTION",friction);
-  parseVector("KAPPA",kappa);
-
-
-  log.printf("  with relaxation time");
-  for(unsigned i=0;i<tau.size();i++) log.printf(" %f",tau[i]);
-  log.printf("\n");
-
-  bool hasFriction=false;
-  for(unsigned i=0;i<getNumberOfArguments();++i) if(friction[i]>0.0) hasFriction=true;
-
-  if(hasFriction){
-    log.printf("  with friction");
-    for(unsigned i=0;i<friction.size();i++) log.printf(" %f",friction[i]);
-    log.printf("\n");
-  }
-
-  log.printf("  and kbt");
-  log.printf(" %f",kbt);
-  log.printf("\n");
-
-*/
 }
 
 
@@ -342,7 +323,7 @@ void EDS::calculate(){
   for(unsigned i=0;i<ncvs;++i){
     const double cv=difference(i,center[i],getArgument(i));
     const double m=current_coupling[i];
-    const double f=-(m);
+    const double f=-m;
     ene+=m*cv;
     setOutputForce(i,f);
     totf2+=f*f;
@@ -351,11 +332,6 @@ void EDS::calculate(){
   valueForce2->set(totf2);
   
   //adjust parameters according to EDS recipe
-  if(update_calls == 0 && update_period>0){
-      for(unsigned i=0;i<max_coupling_range.size();i++) {
-          max_coupling_rate[i] = max_coupling_range[i]/(update_period);
-      }
-  }
   update_calls++;
 
   int b_finished_equil_flag = 1;
@@ -367,7 +343,7 @@ void EDS::calculate(){
       //are we ramping to a constant value and not done equilibrating
       if(update_period<0){
           if(update_calls<fabs(update_period)){
-              current_coupling[i] += set_coupling[i]/fabs(update_period);
+              current_coupling[i] += (target_coupling[i]-set_coupling[i])/fabs(update_period);
           }
           //make sure we don't reset update calls
           b_finished_equil_flag = 0;
@@ -399,6 +375,7 @@ void EDS::calculate(){
       //Update max coupling range if allowed
       if(!b_hard_coupling_range && fabs(current_coupling[i])>max_coupling_range[i]) {
          max_coupling_range[i]*=coupling_range_increase_factor; 
+         max_coupling_grad[i]*=coupling_range_increase_factor; 
       }
   }
 
@@ -416,20 +393,24 @@ void EDS::calculate(){
        //calulcate step size
        tmp = 2. * (means[i]/center[i] - 1) * ssds[i] / (update_calls - 1);
        step_size = tmp / kbt;
+
+       //check if the step_size exceeds maximum possible gradient
+       step_size = copysign(fmin(fabs(step_size), max_coupling_grad[i]), step_size);
+
        //reset means/vars
        means[i] = 0;
        ssds[i] = 0;
 
       //multidimesional stochastic step
-      if(ncvs == 1 || rand.RandU01() < 1. / ncvs) {
+      if(ncvs == 1 || (rand.RandU01() < (1. / ncvs) ) ) {
 	    coupling_accum[i] += step_size * step_size;
-            current_coupling[i] = set_coupling[i];
-           //equation 5 in White and Voth, JCTC 2014
+            //equation 5 in White and Voth, JCTC 2014
+	    //no negative sign because it's in step_size
             set_coupling[i] += max_coupling_range[i]/sqrt(coupling_accum[i])*step_size;
             coupling_rate[i] = (set_coupling[i]-current_coupling[i])/update_period;
-            coupling_rate[i] = copysign( fmin(fabs(coupling_rate[i]),
-                                            max_coupling_rate[i])
-                                          ,coupling_rate[i]);
+//            coupling_rate[i] = copysign( fmin(fabs(coupling_rate[i]),
+//                                            max_coupling_rate[i])
+//                                          ,coupling_rate[i]);
         } else {
             //do not change the bias
             coupling_rate[i] = 0;
@@ -439,6 +420,7 @@ void EDS::calculate(){
    }
 
     update_calls = 0;
+    avg_coupling_count++;
     equilibration = true; //back to equilibration now
   } //close update if
 
