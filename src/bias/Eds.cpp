@@ -180,30 +180,7 @@ void EDS::registerKeywords(Keywords& keys){
    keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
    keys.addOutputComponent("force2","default","squared value of force from the bias");
    keys.addOutputComponent("_coupling","default","For each named CV biased, there will be a corresponding output CV_coupling storing the current linear bias prefactor.");
-/*
-   keys.add("compulsory","KAPPA","specifies that the restraint is harmonic and what the values of the force constants on each of the variables are");
-   keys.add("compulsory","TAU","specifies that the restraint is harmonic and what the values of the force constants on each of the variables are");
-   keys.add("compulsory","FRICTION","0.0","add a friction to the variable");
-   componentsAreNotOptional(keys);
-   keys.addOutputComponent("_vfict","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
-                                            "These quantities will named with the arguments of the bias followed by "
-                                            "the character string _tilde. It is NOT possible to add forces on these variable.");
-   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
-*/
 }
-
-/*
-firsttime(true),
-fict(getNumberOfArguments(),0.0),
-vfict(getNumberOfArguments(),0.0),
-vfict_laststep(getNumberOfArguments(),0.0),
-ffict(getNumberOfArguments(),0.0),
-kappa(getNumberOfArguments(),0.0),
-tau(getNumberOfArguments(),0.0),
-friction(getNumberOfArguments(),0.0),
-fictValue(getNumberOfArguments(),NULL),
-vfictValue(getNumberOfArguments(),NULL),
-*/
 
 EDS::EDS(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao),
@@ -428,30 +405,6 @@ void EDS::calculate(){
   for(unsigned i=0;i<ncvs;++i){
       outCoupling[i]->set(current_coupling[i]);
   }
-
-/*
-  if(firsttime){
-    for(unsigned i=0;i<getNumberOfArguments();++i){
-      fict[i]=getArgument(i);
-    }
-    firsttime=false;
-  }
-  double ene=0.0;
-  for(unsigned i=0;i<getNumberOfArguments();++i){
-    const double cv=difference(i,fict[i],getArgument(i));
-    const double k=kappa[i];
-    const double f=-k*cv;
-    ene+=0.5*k*cv*cv;
-    setOutputForce(i,f);
-    ffict[i]=-f;
-  };
-  valueBias->set(ene);
-  for(unsigned i=0;i<getNumberOfArguments();++i){
-    fict[i]=fictValue[i]->bringBackInPbc(fict[i]);
-    fictValue[i]->set(fict[i]);
-    vfictValue[i]->set(vfict_laststep[i]);
-  }
-*/
 }
 
 void EDS::update(){
