@@ -33,6 +33,7 @@ class DistanceFromContour : public MultiColvarBase {
 private:
   unsigned dir;
   bool derivTime;
+  double rcut2;
   double contour;
   std::string kerneltype;
   std::vector<Value*> pval;
@@ -99,7 +100,14 @@ mymin(this)
 
   // Now create a task list
   for(unsigned i=0;i<mybasemulticolvars[0]->getFullNumberOfTasks();++i) addTaskToList(i);
-  
+  // And a cutoff
+  std::vector<double> pp( bw.size(),0 );
+  KernelFunctions kernel( pp, bw, kerneltype, false, 1.0, true );
+  double rcut = kernel.getCutoff( bw[0] ); 
+  for(unsigned j=1;j<bw.size();++j){
+      if( kernel.getCutoff(bw[j])>rcut ) rcut=kernel.getCutoff(bw[j]);
+  }
+  rcut2=rcut*rcut;  
   // Create the value 
   addValueWithDerivatives(); setNotPeriodic();
   // Create sum vessels 
@@ -139,17 +147,21 @@ void DistanceFromContour::calculate(){
   // The nanoparticle is at the origin of our coordinate system
   pos[0]=pos[1]=pos[2]=0.0;
 
-  // Find the closest atom (again make this cleverer
-  dirv[dir]=getSeparation( getPosition(getNumberOfAtoms()-1), getPosition(0) )[dir];
-  for(unsigned j=1;j<getNumberOfAtoms()-1;++j){
-      double mind = getSeparation( getPosition(getNumberOfAtoms()-1), getPosition(j) )[dir];
-      if( fabs(mind)<fabs(dirv[dir]) ) dirv[dir]=mind;
+  // Set bracket as center of mass of membrane in active region
+  double d2; dirv[dir]=0; deactivateAllTasks();
+  for(unsigned j=0;j<getNumberOfAtoms()-1;++j){
+     Vector distance=getSeparation( getPosition(getNumberOfAtoms()-1), getPosition(j) );
+     if( (d2=distance[perp_dirs[0]]*distance[perp_dirs[0]])<rcut2 && 
+         (d2+=distance[perp_dirs[1]]*distance[perp_dirs[1]])<rcut2 ){
+           dirv[dir]+=distance[dir]; taskFlags[j]=1;
+     }
   }
-
-  // Setup the active tasks (this is going to be cleverer)
-  deactivateAllTasks();
-  for(unsigned i=0;i<getFullNumberOfTasks();++i) taskFlags[i]=1;
   lockContributors(); derivTime=false;
+
+//  // Setup the active tasks (this is going to be cleverer)
+//  deactivateAllTasks();
+//  for(unsigned i=0;i<getFullNumberOfTasks();++i) taskFlags[i]=1;
+//  lockContributors(); derivTime=false;
 
   // Now do a search for the contour
   mymin.lsearch( dirv, pos, &DistanceFromContour::getDifferenceFromContour );
