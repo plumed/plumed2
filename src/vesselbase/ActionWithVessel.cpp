@@ -56,12 +56,12 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   noderiv(true),
   actionIsBridged(false),
   nactive_tasks(0),
-  contributorsAreUnlocked(false),
-  mydata(NULL),
-  weightHasDerivatives(false),
   stopwatch(*new Stopwatch),
   dertime_can_be_off(false),
-  dertime(true)
+  dertime(true),
+  contributorsAreUnlocked(false),
+  weightHasDerivatives(false),
+  mydata(NULL)
 {
   maxderivatives=309; parse("MAXDERIVATIVES",maxderivatives);
   if( keywords.exists("SERIAL") ) parseFlag("SERIAL",serial);
@@ -132,7 +132,7 @@ BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ){
   return bv; 
 }
 
-StoreDataVessel* ActionWithVessel::buildDataStashes( const bool& allow_wcutoff, const double& wtol, ActionWithVessel* actionThatUses ){
+StoreDataVessel* ActionWithVessel::buildDataStashes( ActionWithVessel* actionThatUses ){
   if(mydata){
      if( actionThatUses ) mydata->addActionThatUses( actionThatUses );  
      return mydata;
@@ -141,7 +141,6 @@ StoreDataVessel* ActionWithVessel::buildDataStashes( const bool& allow_wcutoff, 
   VesselOptions da("","",0,"",this);
   StoreDataVessel* mm=new StoreDataVessel(da);
   if( actionThatUses ) mm->addActionThatUses( actionThatUses );
-  if( allow_wcutoff ) mm->setHardCutoffOnWeight( wtol );
   addVessel(mm);
 
   // Make sure resizing of vessels is done
@@ -235,7 +234,7 @@ void ActionWithVessel::deactivateAllTasks(){
 }
 
 bool ActionWithVessel::taskIsCurrentlyActive( const unsigned& index ) const {
-  return (taskFlags[index]>0);
+  plumed_dbg_assert( index<taskFlags.size() ); return (taskFlags[index]>0);
 }
 
 void ActionWithVessel::doJobsRequiredBeforeTaskList(){

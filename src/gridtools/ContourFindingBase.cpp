@@ -75,7 +75,7 @@ mydata(NULL)
          of.link(*this); of.open(file); 
 
          // Now create a store data vessel to hold the points
-         mydata=buildDataStashes( false, 0.0, NULL );
+         mydata=buildDataStashes( NULL );
       }
   }
 }

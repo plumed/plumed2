@@ -145,7 +145,7 @@ ActionWithGrid(ao)
   std::string mlab; parse("DATA",mlab);
   mycolv = plumed.getActionSet().selectWithLabel<MultiColvarBase*>(mlab);
   if(!mycolv) error("action labelled " +  mlab + " does not exist or is not a MultiColvar");
-  stash = mycolv->buildDataStashes( false, 0.0, NULL );
+  stash = mycolv->buildDataStashes( NULL );
 
   parseFlag("FRACTIONAL",fractional);
   std::string direction; parse("DIR",direction);

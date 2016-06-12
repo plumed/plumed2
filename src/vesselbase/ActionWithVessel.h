@@ -179,7 +179,7 @@ public:
 /// Do the task if we have a bridge
   virtual void transformBridgedDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals ) const;
 /// Ensure that data required in other vessels is stored
-  StoreDataVessel* buildDataStashes( const bool& allow_wcutoff, const double& wtol, ActionWithVessel* actionThatUses );
+  StoreDataVessel* buildDataStashes( ActionWithVessel* actionThatUses );
 /// Apply forces from bridge vessel - this is rarely used - currently only in ActionVolume
   virtual void applyBridgeForces( const std::vector<double>& bb ){ plumed_error(); }
 /// These are overwritten in MultiColvarFunction
@@ -190,6 +190,9 @@ public:
   bool weightWithDerivatives() const ;
 /// Return the position in the current task list
   unsigned getPositionInCurrentTaskList( const unsigned& myind ) const ;
+/// These normalizes vectors and is used in StoreDataVessel
+  virtual void normalizeVector( std::vector<double>& vals ) const { plumed_error(); }
+  virtual void normalizeVectorDerivatives( MultiValue& myvals ) const { plumed_error(); }
 };
 
 inline

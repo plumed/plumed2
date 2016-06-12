@@ -46,7 +46,6 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit DistanceFromContour( const ActionOptions& );
-  ~DistanceFromContour();
   bool isDensity() const { return true; }
   void calculate();
   unsigned getNumberOfQuantities() const ;
@@ -80,10 +79,16 @@ dirv(3,0.0),
 perp_dirs(2),
 mymin(this)
 {
-  // Read in the multicolvar
-  std::vector<std::string> mlabs; parseVector("DATA",mlabs);
-  usespecies=true; bool found_acts=interpretInputMultiColvars(mlabs,0.0);
-  if( !found_acts ) error("one or more items in input is not the label of a multicolvar");
+  // Read in the multicolvar/atoms
+  std::vector<AtomNumber> all_atoms; 
+  bool read2 = parseMultiColvarAtomList("DATA", -1, all_atoms);
+  if( !read2 ) error("missing DATA keyword");
+  bool read1 = parseMultiColvarAtomList("ATOM", -1, all_atoms);
+  if( !read1 ) error("missing ATOM keyword");
+  if( all_atoms.size()!=1 ) error("should only be one atom specified");
+  // Read in the center of the binding object
+  log.printf("  computing distance of atom %d from contour \n",all_atoms[0].serial() );
+  setupMultiColvarBase( all_atoms ); forces.resize( 3*getNumberOfAtoms() + 9 );
   if( getNumberOfBaseMultiColvars()!=1 ) error("should only be one input multicolvar");
 
   // Get the direction
@@ -122,18 +127,8 @@ mymin(this)
   myderiv_vessel = dynamic_cast<vesselbase::ValueVessel*>( getPntrToVessel(1) ); 
   plumed_assert( myvalue_vessel && myderiv_vessel ); resizeFunctions(); 
 
-  // Read in the center of the binding object
-  std::vector<AtomNumber> atom; parseAtomList("ATOM",atom);
-  if( atom.size()!=1 ) error("should only be one atom specified");
-  log.printf("  computing distance of atom %d from contour \n",atom[0].serial() );
-  setupMultiColvarBase( atom ); forces.resize( 3*getNumberOfAtoms() + 9 );
-
   // Create the vector of values that holds the position
   for(unsigned i=0;i<3;++i) pval.push_back( new Value() );
-}
-
-DistanceFromContour::~DistanceFromContour(){
-  for(unsigned i=0;i<3;++i) delete pval[i];
 }
 
 unsigned DistanceFromContour::getNumberOfQuantities() const {
@@ -148,20 +143,16 @@ void DistanceFromContour::calculate(){
   pos[0]=pos[1]=pos[2]=0.0;
 
   // Set bracket as center of mass of membrane in active region
-  double d2; dirv[dir]=0; deactivateAllTasks();
+  double d2, norm=0.0; dirv[dir]=0; deactivateAllTasks();
   for(unsigned j=0;j<getNumberOfAtoms()-1;++j){
      Vector distance=getSeparation( getPosition(getNumberOfAtoms()-1), getPosition(j) );
      if( (d2=distance[perp_dirs[0]]*distance[perp_dirs[0]])<rcut2 && 
          (d2+=distance[perp_dirs[1]]*distance[perp_dirs[1]])<rcut2 ){
-           dirv[dir]+=distance[dir]; taskFlags[j]=1;
+           dirv[dir]+=distance[dir]; taskFlags[j]=1; norm+=1.0;
      }
   }
+  dirv[dir] = dirv[dir] / norm;
   lockContributors(); derivTime=false;
-
-//  // Setup the active tasks (this is going to be cleverer)
-//  deactivateAllTasks();
-//  for(unsigned i=0;i<getFullNumberOfTasks();++i) taskFlags[i]=1;
-//  lockContributors(); derivTime=false;
 
   // Now do a search for the contour
   mymin.lsearch( dirv, pos, &DistanceFromContour::getDifferenceFromContour );
@@ -197,12 +188,12 @@ double DistanceFromContour::compute( const unsigned& tindex, AtomValuePack& myat
   KernelFunctions kernel( pp, bw, kerneltype, false, 1.0, true );
   double newval = kernel.evaluate( pval, der, true );
 
-  if( isDensity() ){ 
+  if( mybasemulticolvars[0]->isDensity() ){ 
       if( !doNotCalculateDerivatives() && derivTime ){
           MultiValue& myvals=myatoms.getUnderlyingMultiValue();
-          Vector vder; unsigned abase = myvals.getNumberOfDerivatives() - 12;
+          Vector vder; unsigned basen=myvals.getNumberOfDerivatives() - 12;
           for(unsigned i=0;i<3;++i){ 
-              vder[i]=der[i]; myvals.addDerivative( 1, abase+i, vder[i] ); 
+              vder[i]=der[i]; myvals.addDerivative( 1, basen+i, vder[i] ); 
           }
           myatoms.setValue( 2, der[dir] );
           addAtomDerivatives( 1, 0, -vder, myatoms );

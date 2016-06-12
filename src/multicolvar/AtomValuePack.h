@@ -62,6 +62,8 @@ public:
 /// Set the index for one of the atoms
   void setIndex( const unsigned& , const unsigned& );
 ///
+  void setAtomIndex( const unsigned& j, const unsigned& ind );
+///
   void setAtom( const unsigned& j, const unsigned& ind );
 ///
   unsigned setupAtomsFromLinkCells( const std::vector<unsigned>& cind, const Vector& cpos, const LinkCells& linkcells );
@@ -114,9 +116,13 @@ void AtomValuePack::setIndex( const unsigned& j, const unsigned& ind ){
 }
 
 inline
-void AtomValuePack::setAtom( const unsigned& j, const unsigned& ind ){
+void AtomValuePack::setAtomIndex( const unsigned& j, const unsigned& ind ){
   plumed_dbg_assert( j<natoms ); indices[j]=ind;
-  myatoms[j]=mycolv->getPositionOfAtomForLinkCells( ind );
+}
+
+inline
+void AtomValuePack::setAtom( const unsigned& j, const unsigned& ind ){
+  setAtomIndex( j, ind ); myatoms[j]=mycolv->getPositionOfAtomForLinkCells( ind );
 }
 
 inline

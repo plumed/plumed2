@@ -105,8 +105,8 @@ For the impatients:
 :let &runtimepath.=','.$PLUMED_VIMPATH
 " This makes autocompletion work in the expected way:
 :set completeopt=longest,menuone
-" This binds the F2 key to toggle short helps
-: nmap <F2> : PHelp<CR>
+" This enables bindings of F2/F3/F4 to plumed specific commands:
+:let plumed_shortcuts=1
 \endverbatim
 - When you open a PLUMED input file, you can enable syntax highlighting with:
 \verbatim
@@ -117,12 +117,14 @@ This will also enable autocompletion. Use `<CTRL-X><CTRL-O>` to autocomplete a w
 \verbatim
 :setlocal foldmethod=syntax
 \endverbatim
-- While in vim normal mode, you can use the button `<F2>` to show in a split window a short
-  help about the action defined in the line where the cursor is. Hitting `<F2>` again you will
+- While editing a plumed input file, you can use command `:PHelp` (or shortcut `<F2>`)
+  to show in a split window a short help about the action defined in the line where the cursor is.
+  Typing `:PHelp` again (or pushing `<F2>`) you will
   close that window. With `<CTRL-W><CTRL-W>` you go back and forth between the two windows.
 - When you open a file starting with `#! FIELDS`, VIM will automatically understand it
   is a PLUMED outpt file (VIM filetype = plumedf) and will color fields and data columns with
-  alternating colors.
+  alternating colors. Typing `:PPlus` and `:PMinus` (or pushing `<F3>` and `<F4>`)
+  you can move a highlighted column.
 
 See below for more detailed instructions.
 
@@ -308,8 +310,8 @@ To make the navigation easier, you can add a shortcut in your .vimrc file. For e
 : nmap <F2> : PHelp<CR>
 \endverbatim
 you should be able to open and close the manual hitting the F2 key.
-We prefer not to set this in the PLUMED syntax file to avoid clashing with other shortcuts you might
-have bound to the F2 key.
+This is done automatically in the PLUMED syntax file if you add `let plumed_shortcuts=1` to your
+vimrc file.
 
 \par Displaying output files
 
@@ -333,6 +335,32 @@ and data columns with alternating colors (e.g. dark/light/dark/light).
 The colors in the columns are consistent with those shown in the FIELD line.
 In the example above, 1, 2, and 3 will be of the same color as A, B, and C respectively.
 This should make it much easier to find which columns correspond to a given quantity.
+
+It is also possible to highlight a specific field of the file. Typing
+\verbatim
+:5PCol
+\endverbatim
+you will highlight the fifth field. Notice that in the `FIELDS` line (the first line of the file)
+the 7th word of the line will be highlighted, which is the one containing the name of the field.
+This allows for easy matching of values shown
+in the file and tags provided in the `FIELDS` line.
+The highlighted column can be moved back and forth using `:PPlus` and `:PMinus`.
+Adding a count to the command will move the highlighted column more. E.g. `:2PPlus` will move
+the column to the right twice.
+
+If you have a long output file, it might be convenient to split it with
+`:split` so that one of the two windows will only show the header. The other window
+can be used to navigate the file.
+
+
+To make the navigation easier, you can add a shortcut in your .vimrc file. For example, adding:
+\verbatim
+: map <F3> :PMinus<CR>
+: map <F4> :PPlus<CR>
+\endverbatim
+you should be able to move the highlight column using F3 and F4 buttons.
+This is done automatically in the PLUMED syntax file if you add `let plumed_shortcuts=1` to your
+vimrc file.
 
 \page includes Including other files 
 
