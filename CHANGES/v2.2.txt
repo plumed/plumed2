@@ -147,6 +147,7 @@ For users:
   collective variable
 - Numerical check in LatticeReduction made less picky.
 - Added --disable-dependency-tracking to ./configure
+- \ref LOAD now works also when plumed is installed with a suffix.
 
 For developers:
 
