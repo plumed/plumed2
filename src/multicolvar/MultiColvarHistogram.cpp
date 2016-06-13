@@ -113,7 +113,7 @@ void MultiColvarHistogram::prepareForAveraging(){
       taskFlags[i]=1; stash->retrieveSequentialValue(i, false, cvals ); 
       norm += cvals[0];
   }
-  lockContributors(); ww = 1.0 / norm;
+  lockContributors(); ww = cweight / norm;
 }
 
 unsigned MultiColvarHistogram::getNumberOfQuantities() const {

@@ -289,7 +289,7 @@ void MultiColvarDensity::compute( const unsigned& current, MultiValue& myvals ) 
   Vector fpos, apos = pbcDistance( origin, mycolv->getCentralAtomPos( mycolv->getActiveTask(current) ) );
   if( fractional ){ fpos = getPbc().realToScaled( apos ); } else { fpos=apos; }
 
-  myvals.setValue( 0, cvals[0] ); for(unsigned j=0;j<directions.size();++j) myvals.setValue( 1+j, fpos[ directions[j] ] );
+  myvals.setValue( 0, cweight*cvals[0] ); for(unsigned j=0;j<directions.size();++j) myvals.setValue( 1+j, fpos[ directions[j] ] );
   myvals.setValue( 1+directions.size(), cvals[1] );
 }
 
