@@ -163,6 +163,7 @@ PLUMED_CONFIG_ENABLE([basic_warnings],[basic-warnings],[basic warnings],[yes])
 PLUMED_CONFIG_ENABLE([fussy],[fussy],[fussy warnings],[no])
 PLUMED_CONFIG_ENABLE([debug_glibcxx],[debug-glibcxx],[enable boundary check],[no])
 PLUMED_CONFIG_ENABLE([shared],[shared],[shared libs],[yes])
+PLUMED_CONFIG_ENABLE([dependency_tracking],[dependency-tracking],[dependency tracking],[yes])
 PLUMED_CONFIG_ENABLE([cxx_exceptions],[cxx-exceptions],[c++ exceptions],[no])
 PLUMED_CONFIG_ENABLE([ld_r],[ld-r],[group object files],[yes])
 PLUMED_CONFIG_ENABLE([mpi],[mpi],[search for mpi],[yes])
@@ -588,6 +589,16 @@ AC_CHECK_PROG([xxd],[xxd],[found])
 if test "$xxd" != found
 then
   AC_MSG_ERROR([xxd should be installed for PLUMED to compile properly])
+fi
+
+AC_SUBST(disable_dependency_tracking)
+if test "$dependency_tracking" = true
+then
+  AC_MSG_NOTICE([dependency tracking enabled])
+  disable_dependency_tracking=no
+else
+  AC_MSG_NOTICE([dependency tracking disabled])
+  disable_dependency_tracking=yes
 fi
 
 AC_SUBST(program_can_run)

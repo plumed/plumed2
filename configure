@@ -625,6 +625,7 @@ program_name
 LD_RO
 program_can_run_mpi
 program_can_run
+disable_dependency_tracking
 xxd
 make_pdfdoc
 dot
@@ -700,6 +701,7 @@ enable_basic_warnings
 enable_fussy
 enable_debug_glibcxx
 enable_shared
+enable_dependency_tracking
 enable_cxx_exceptions
 enable_ld_r
 enable_mpi
@@ -1360,6 +1362,8 @@ Optional Features:
   --enable-fussy          enable fussy warnings, default: no
   --enable-debug-glibcxx  enable enable boundary check, default: no
   --enable-shared         enable shared libs, default: yes
+  --enable-dependency-tracking
+                          enable dependency tracking, default: yes
   --enable-cxx-exceptions enable c++ exceptions, default: no
   --enable-ld-r           enable group object files, default: yes
   --enable-mpi            enable search for mpi, default: yes
@@ -2518,6 +2522,24 @@ else
   case "yes" in
              (yes) shared=true ;;
              (no)  shared=false ;;
+  esac
+
+fi
+
+
+
+dependency_tracking=
+# Check whether --enable-dependency-tracking was given.
+if test "${enable_dependency_tracking+set}" = set; then :
+  enableval=$enable_dependency_tracking; case "${enableval}" in
+             (yes) dependency_tracking=true ;;
+             (no)  dependency_tracking=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-dependency-tracking" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) dependency_tracking=true ;;
+             (no)  dependency_tracking=false ;;
   esac
 
 fi
@@ -6741,6 +6763,18 @@ fi
 if test "$xxd" != found
 then
   as_fn_error $? "xxd should be installed for PLUMED to compile properly" "$LINENO" 5
+fi
+
+
+if test "$dependency_tracking" = true
+then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: dependency tracking enabled" >&5
+$as_echo "$as_me: dependency tracking enabled" >&6;}
+  disable_dependency_tracking=no
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: dependency tracking disabled" >&5
+$as_echo "$as_me: dependency tracking disabled" >&6;}
+  disable_dependency_tracking=yes
 fi
 
 
