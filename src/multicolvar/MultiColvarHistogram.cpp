@@ -68,7 +68,8 @@ void MultiColvarHistogram::registerKeywords( Keywords& keys ){
 
 MultiColvarHistogram::MultiColvarHistogram(const ActionOptions&ao):
   Action(ao),
-  ActionWithGrid(ao)
+  ActionWithGrid(ao),
+  ww(1.0)
 {
   std::string mlab; parse("DATA",mlab);
   mycolv = plumed.getActionSet().selectWithLabel<MultiColvarBase*>(mlab);
