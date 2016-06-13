@@ -146,6 +146,8 @@ For users:
 - When looking for a value outside the GRID now the error include the name of the responsible 
   collective variable
 - Numerical check in LatticeReduction made less picky.
+- Added --disable-dependency-tracking to ./configure
+- \ref LOAD now works also when plumed is installed with a suffix.
 
 For developers:
 
