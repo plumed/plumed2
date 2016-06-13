@@ -41,7 +41,7 @@ namespace PLMD
 {
 namespace multicolvar {
 
-//+PLUMEDOC ANALYSIS MULTIHISTOGRAM
+//+PLUMEDOC ANALYSIS MULTICOLVARHISTOGRAM
 /*
 Evaluate the histogram for a particular multicolvar
 
@@ -59,6 +59,7 @@ class MultiColvarHistogram :
   bool nomemory;
   double norm;
   unsigned rstride;
+  std::string fmt;
   std::vector<double> bw;
   std::string filename;
   Grid* gg;
@@ -89,6 +90,7 @@ void MultiColvarHistogram::registerKeywords( Keywords& keys ){
                                             "in plumed plumed can be found in \\ref kernelfunctions.");
   keys.add("compulsory","OFILE","density","the file on which to write the profile. If you use the extension .cube a Gaussian cube file will be output "
                                           "if you run with the xyz option for DIR");
+  keys.add("optional","FMT","the format that should be used in output files");
   keys.addFlag("NOMEMORY",false,"do a block averaging rather than a cumulative average");
 }
 
@@ -97,8 +99,10 @@ MultiColvarHistogram::MultiColvarHistogram(const ActionOptions&ao):
   ActionPilot(ao),
   ActionWithInputVessel(ao),
   norm(0),
+  fmt("%f"),
   gg(NULL)
 {
+  parse("FMT",fmt);  // Read the format for output files
   readArgument("store");
   mycolv = dynamic_cast<MultiColvarBase*>( getDependencies()[0] );
   plumed_assert( getDependencies().size()==1 ); 
@@ -143,12 +147,12 @@ void MultiColvarHistogram::update(){
   }
 
   // Output and reset the counter if required
-  if( getStep()%rstride==0 ){  // && getStep()>0 ){
+  if( getStep()%rstride==0 && getStep()>0 ){
       // Normalise prior to output
       gg->scaleAllValuesAndDerivatives( 1.0 / norm );
 
       OFile gridfile; gridfile.link(*this); gridfile.setBackupString("analysis");
-      gridfile.open( filename ); 
+      gridfile.open( filename ); gg->setOutputFmt( fmt );
       gg->writeToFile( gridfile ); 
       gridfile.close();
 
