@@ -144,7 +144,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
       }
     } else if(a=="--standalone-executable"){
       standalone_executable=true;
-    } else if(a.find("--load=")==0){
+    } else if(Tools::startWith(a,"--load=")){
       a.erase(0,a.find("=")+1);
       prefix="";
       void *p=dlloader.load(a);
