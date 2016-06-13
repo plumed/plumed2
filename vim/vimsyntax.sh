@@ -1,19 +1,6 @@
 #! /bin/bash
 
-# Making sure that plumed executable is available
-echo -n "Searching for plumed ..."
-if plumed --no-mpi 2>/dev/null 1>/dev/null ; then
-  echo " found"
-else
-  echo " not found"
-  echo -n "Sourcing sourceme.sh and searching again ..."
-  if source ../sourceme.sh && plumed --no-mpi 2>/dev/null 1>/dev/null ; then
-    echo " found"
-  else
-    echo "ERROR: you should compile plumed first!"
-    exit 1
-  fi
-fi
+source ../sourceme.sh
 
 mkdir -p syntax help
 
@@ -115,7 +102,7 @@ EOF
 
 
 actions=$(
-plumed --no-mpi manual --action 2>&1 | awk '{
+../src/lib/plumed --no-mpi manual --action 2>&1 | awk '{
   if(NR==1) next;
   if(NF!=1) exit;
   print $1
@@ -127,7 +114,7 @@ actions="$(
 for a in $actions
 do
 
-plumed --no-mpi manual --action $a --vim 2>/dev/null | head -n 1
+../src/lib/plumed --no-mpi manual --action $a --vim 2>/dev/null | head -n 1
 
 done
 )"
@@ -174,7 +161,7 @@ action_name_=$(echo $action_name | sed s/-/_/g)
 echo "****************************************"
 echo "Short helpfile for action $action_name"
 echo "****************************************"
-plumed --no-mpi manual --action $action_name --vim 2>/dev/null | awk '{if(NR>1) print}'
+../src/lib/plumed --no-mpi manual --action $action_name --vim 2>/dev/null | awk '{if(NR>1) print}'
 } > help/$action_name.txt
 
 dictionary='{"word":"LABEL=","menu":"(label)"}'
