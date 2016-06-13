@@ -21,6 +21,7 @@ Changes from version 2.2 which are relevant for users:
     syntax and when specifying MM on e.g. \ref COORDINATION
   - Patch script `plumed patch` now patches by default with `--shared`. This should make the procedure more robust (see \issue{186}).
   - Faster \ref GYRATION but new default behavior is not mass weighted
+  - Manual is now build with locally compiled plumed
 - New actions:
   - \ref FIXEDATOM
   - \ref HBOND_MATRIX
