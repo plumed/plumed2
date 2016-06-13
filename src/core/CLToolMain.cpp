@@ -243,8 +243,12 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
     plumed_massert(out==stdout,"shell tools can only work on stdin");
     string cmd=config::getEnvCommand()+" \""+root+"/scripts/"+command+".sh\"";
     for(int j=i+1;j<argc;j++) cmd+=string(" ")+argv[j];
-    system(cmd.c_str());
-    return 0;
+    int r=system(cmd.c_str());
+// this is necessary since system seems to return numbers which are multiple
+// of 256. this would make the interpretation by the shell wrong
+// I just return 1 in case of failure and 0 in case of success
+    if(r!=0) return 1;
+    else return 0;
   }
 
   string msg="ERROR: unknown command " + command + ". Use 'plumed help' for help";
