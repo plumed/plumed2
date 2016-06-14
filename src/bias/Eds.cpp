@@ -36,80 +36,26 @@ namespace bias{
 
 //+PLUMEDOC BIAS EDS
 /*
-Add extended Lagrangian.
+Add a linear bias on a set of observables.
 
-This action can be used to create fictitious collective variables coupled to the real ones.
-Given \f$x_i\f$ the i-th argument of this bias potential, potential
-and kinetic contributions are added to the energy of the system as
+This force is the same as the linear part of the bias in \ref RESTRAINT, 
+but this bias has the ability to compute prefactors
+adaptively using the scheme of White and Voth, JCTC 2014 in order to match 
+target observable values for a set of CVs.
+
+The addition to the potential is of the form 
 \f[
-  V=\sum_i \frac{k_i}{2} (x_i-s_i)^2 + \sum_i \frac{\dot{s}_i^2}{2m_i}
-\f].
+  \sum_i \{alpha}_i*x_i
+\f],
 
-The resulting potential is thus similar to a \ref RESTRAINT,
-but the restraint center moved with time following Hamiltonian
-dynamics with mass \f$m_i\f$.
-
-This bias potential accepts thus vectorial keywords (one element per argument)
-to define the coupling constant (KAPPA) and a relaxation time \f$tau\f$ (TAU).
-The mass is them computed as \f$m=k(\frac{\tau}{2\pi})^2\f$.
-
-Notice that this action creates several components.
-The ones named XX_fict are the fictitious coordinates. It is possible
-to add further forces on them by means of other bias potential,
-e.g. to obtain an indirect \ref METAD as in \cite continua .
-Also notice that the velocities of the fictitious coordinates
-are reported (XX_vfict). However, printed velocities are the ones
-at the previous step.
-
-It is also possible to provide a non-zero friction (one value per component).
-This is then used to implement a Langevin thermostat, so as to implement
-TAMD/dAFED method \cite Maragliano2006 \cite AbramsJ2008 . Notice that
-here a massive Langevin thermostat is used, whereas usually
-TAMD employs an overamped Langevin dynamics and dAFED
-a Gaussian thermostat.
+where for CV \f$x_i\f$, a coupling \f$\{alpha}_i\f$ is determined adaptively 
+or set by the user to match a target value for \f$x_i\f$.
 
 \warning
-The bias potential is reported in the component bias.
-Notice that this bias potential, although formally compatible with
-replica exchange framework, probably does not work as expected in that case.
-Indeed, since fictitious coordinates are not swapped upon exchange,
-acceptace can be expected to be extremely low unless (by chance) two neighboring
-replicas have the fictitious variables located properly in space.
-
-\warning
-\ref RESTART is not properly supported by this action. Indeed,
-at every start the postion of the fictitious variable is reset to the value
-of the real variable, and its velocity is set to zero.
-This is not expected to introduce big errors, but certainly is
-introducing a small inconsistency between a single long run
-and many shorter runs.
+Currently, the target observable value should not be zero if using the adaptive scheme. If this is needed, 
+\ref COMBINE can be used to shift the observable by a constant amount, and then a non-zero target can be used.
 
 \par Examples
-
-The following input tells plumed to perform a metadynamics
-with an extended Lagrangian on two torsional angles.
-\verbatim
-phi: TORSION ATOMS=5,7,9,15
-psi: TORSION ATOMS=7,9,15,17
-ex: EDS ARG=phi,psi KAPPA=20,20.0 TAU=0.1,0.1
-METAD ARG=ex.phi_fict,ex.psi_fict PACE=100 SIGMA=0.35,0.35 HEIGHT=0.1
-# monitor the two variables
-PRINT STRIDE=10 ARG=phi,psi,ex.phi_fict,ex.psi_fict FILE=COLVAR
-\endverbatim
-(See also \ref TORSION, \ref METAD, and \ref PRINT).
-
-The following input tells plumed to perform a TAMD (or dAFED)
-calculation on two torsional angles, keeping the two variables
-at a fictitious temperature of 3000K with a Langevin thermostat
-with friction 10
-\verbatim
-phi: TORSION ATOMS=5,7,9,15
-psi: TORSION ATOMS=7,9,15,17
-ex: EDS ARG=phi,psi KAPPA=20,20.0 TAU=0.1,0.1 FRICTION=10,10 TEMP=3000
-# monitor the two variables
-PRINT STRIDE=10 ARG=phi,psi,ex.phi_fict,ex.psi_fict FILE=COLVAR
-\endverbatim
-(See also \ref TORSION and \ref PRINT)
 
 */
 //+ENDPLUMEDOC
