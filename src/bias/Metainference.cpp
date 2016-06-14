@@ -359,7 +359,7 @@ double Metainference::getEnergyGJE(const vector<double> &mean, const vector<doub
       ene += 0.5*std::log(ss);
     }
     const double dev = scale*mean[i]-parameters[i]; 
-    ene += 0.5*dev*dev/ss + 0.5*sqrt2_pi*std::log(ss);
+    ene += 0.5*dev*dev/ss + 0.5*std::log(ss*sqrt2_pi);
   }
   // add Jeffrey's prior in case one sigma for all data points
   if(noise_type_==GAUSS) ene += 0.5*std::log(ss);
@@ -537,7 +537,7 @@ double Metainference::getEnergyForceGJE(const vector<double> &mean, const double
       // add Jeffrey's prior - one per sigma
       ene += 0.5*std::log(ss[sel_sigma]);
     }
-    ene += 0.5*dev*dev*inv_s2[sel_sigma] + 0.5*sqrt2_pi*std::log(ss[sel_sigma]);
+    ene += 0.5*dev*dev*inv_s2[sel_sigma] + 0.5*std::log(ss[sel_sigma]*sqrt2_pi);
     setOutputForce(i, -kbt_*fact*dev*scale_*inv_s2[sel_sigma]);
     if(do_reweight) w_tmp += -fact*(getArgument(i) - mean[i])*dev*scale_*inv_s2[sel_sigma];
   }
