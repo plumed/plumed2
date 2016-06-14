@@ -87,18 +87,6 @@ class EDS : public Bias{
   Value* valueBias;
   Value* valueForce2;
 
-/*
-  bool firsttime;
-
-  std::vector<double> kappa;
-  std::vector<double> tau;
-  std::vector<double> friction;
-  std::vector<double> fict;
-  std::vector<double> vfict_laststep;
-  std::vector<double> ffict;
-  std::vector<Value*> fictValue;
-  std::vector<Value*> vfictValue;
-*/
 public:
   explicit EDS(const ActionOptions&);
   void calculate();
