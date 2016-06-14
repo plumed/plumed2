@@ -40,15 +40,15 @@ Add a linear bias on a set of observables.
 
 This force is the same as the linear part of the bias in \ref RESTRAINT, 
 but this bias has the ability to compute prefactors
-adaptively using the scheme of White and Voth, JCTC 2014 in order to match 
+adaptively using the scheme of White and Voth \cite white2 in order to match 
 target observable values for a set of CVs.
 
 The addition to the potential is of the form 
 \f[
-  \sum_i \{alpha}_i*x_i
-\f],
+  \sum_i {\alpha}_i*x_i
+\f]
 
-where for CV \f$x_i\f$, a coupling \f$\{alpha}_i\f$ is determined adaptively 
+where for CV \f$x_i\f$, a coupling \f${\alpha}_i\f$ is determined adaptively 
 or set by the user to match a target value for \f$x_i\f$.
 
 \warning
