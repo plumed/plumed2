@@ -34,7 +34,7 @@ namespace colvar {
 
 //+PLUMEDOC COLVAR NOE 
 /*
-Calculates the deviation of current distances from experimental NOE derived distances.
+Calculates simple noe intensities as 1/r^6, also averaging over multiple equivalent atoms.
 
 NOE distances are calculated between couple of atoms, averaging over equivalent couples.
 Each NOE is defined by two groups containing the same number of atoms, distances are
@@ -90,10 +90,10 @@ void NOE::registerKeywords( Keywords& keys ){
                    "calculated for each ATOM keyword you specify.");
   keys.reset_style("GROUPA","atoms");
   keys.reset_style("GROUPB","atoms");
-  keys.addFlag("ADDDISTANCES",false,"Set to TRUE if you want to have fixed components with the experimetnal values.");  
+  keys.addFlag("ADDEXP",false,"Set to TRUE if you want to have fixed components with the experimental reference values.");  
   keys.add("numbered","NOEDIST","Add an experimental value for each NOE.");
   keys.addOutputComponent("noe","default","the # NOE");
-  keys.addOutputComponent("exp","ADDDISTANCES","the # NOE experimental distance");
+  keys.addOutputComponent("exp","ADDEXP","the # NOE experimental distance");
 }
 
 NOE::NOE(const ActionOptions&ao):
@@ -126,11 +126,11 @@ pbc(true)
   // Create neighbour lists
   nl= new NeighborList(ga_lista,gb_lista,true,pbc,getPbc());
 
-  bool addistance=false;
-  parseFlag("ADDDISTANCES",addistance);
+  bool addexp=false;
+  parseFlag("ADDEXP",addexp);
 
   vector<double> noedist;
-  if(addistance) {
+  if(addexp) {
     noedist.resize( nga.size() ); 
     unsigned ntarget=0;
 
@@ -160,12 +160,13 @@ pbc(true)
     componentIsNotPeriodic("noe_"+num);
   }
 
-  if(addistance) {
+  if(addexp) {
     for(unsigned i=0;i<nga.size();i++) {
       string num; Tools::convert(i,num);
       addComponent("exp_"+num);
       componentIsNotPeriodic("exp_"+num);
-      Value* comp=getPntrToComponent("exp_"+num); comp->set(noedist[i]);
+      Value* comp=getPntrToComponent("exp_"+num);
+      comp->set(noedist[i]);
     }
   }
 

@@ -36,7 +36,7 @@ namespace PLMD{
 
 //+PLUMEDOC COLVAR RDC 
 /*
-Calculates the Residual Dipolar Coupling between two atoms. 
+Calculates the (Residual) Dipolar Coupling between two atoms. 
 
 The RDC between two atomic nuclei depends on the \f$\theta\f$ angle between 
 the inter-nuclear vector and the external magnetic field. In isotropic media RDCs average to zero because of the orientational 

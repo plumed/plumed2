@@ -34,7 +34,12 @@ namespace colvar {
 
 //+PLUMEDOC COLVAR PRE 
 /*
-Calculates the PRE intensity ratio.
+Calculates the Paramegnetic Resonance Enhancement  intensity ratio between two atoms.
+The reference atom for the spin label is added with SPINLABEL, the affected atom(s)
+are give as numbered GROUPA1, GROUPA2, ...
+The additional parameters needed for the calculation are given as INEPT, the inept
+time, TAUC the correlation time, OMEGA, the larmor frequency and RTWO for the relaxation
+time.
 
 */
 //+ENDPLUMEDOC
@@ -69,10 +74,10 @@ void PRE::registerKeywords( Keywords& keys ){
   keys.reset_style("GROUPA","atoms");
   keys.add("numbered","RTWO","The relaxation of the atom/atoms in the corresponding GROUPA of atoms. "
                    "Keywords like RTWO1, RTWO2, RTWO3,... should be listed.");
-  keys.addFlag("ADDEXPVALUES",false,"Set to TRUE if you want to have fixed components with the experimetnal values.");  
+  keys.addFlag("ADDEXP",false,"Set to TRUE if you want to have fixed components with the experimetnal values.");  
   keys.add("numbered","PREINT","Add an experimental value for each PRE.");
   keys.addOutputComponent("pre","default","the # PRE");
-  keys.addOutputComponent("exp","ADDEXPVALUES","the # PRE experimental intensity");
+  keys.addOutputComponent("exp","ADDEXP","the # PRE experimental intensity");
 }
 
 PRE::PRE(const ActionOptions&ao):
@@ -130,11 +135,11 @@ pbc(true)
                                         // in nm^6/s^2
   constant = (4.*tauc*ns2s+(3.*tauc*ns2s)/(1+omega*omega*MHz2Hz*MHz2Hz*tauc*tauc*ns2s*ns2s))*Kappa;
 
-  bool addistance=false;
-  parseFlag("ADDEXPVALUES",addistance);
+  bool addexp=false;
+  parseFlag("ADDEXP",addexp);
 
   vector<double> exppre;
-  if(addistance) {
+  if(addexp) {
     exppre.resize( nga.size() ); 
     unsigned ntarget=0;
 
@@ -170,12 +175,13 @@ pbc(true)
     componentIsNotPeriodic("pre_"+num);
   }
 
-  if(addistance) {
+  if(addexp) {
     for(unsigned i=0;i<nga.size();i++) {
       string num; Tools::convert(i,num);
       addComponent("exp_"+num);
       componentIsNotPeriodic("exp_"+num);
-      Value* comp=getPntrToComponent("exp_"+num); comp->set(exppre[i]);
+      Value* comp=getPntrToComponent("exp_"+num); 
+      comp->set(exppre[i]);
     }
   }
 

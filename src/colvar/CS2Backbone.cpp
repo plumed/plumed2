@@ -54,7 +54,7 @@ This collective variable calculates the backbone chemical shifts for a protein.
 
 The functional form is that of CamShift \cite Kohlhoff:2009us. The chemical shifts
 of the selected nuclei/residues are saved as components. Reference experimental values
-can also be stored as components. The two kind of components can then be used to calculate
+can also be stored as components. The two components can then be used to calculate
 either a scoring function as in \cite Robustelli:2010dn \cite Granata:2013dk or to calculate
 ensemble averages as in \cite Camilloni:2012je \cite Camilloni:2013hs (see \ref STATS and
 \ref ENSEMBLE).
@@ -62,15 +62,15 @@ ensemble averages as in \cite Camilloni:2012je \cite Camilloni:2013hs (see \ref 
 CamShift calculation is relatively heavy because it often uses a large number of atoms, in order
 to make it faster it is currently parallelised with \ref OpenMP.
 
-In general the system for which chemical shifts are to be calculated must be completly included in
+In general the system for which chemical shifts are calculated must be completly included in
 ATOMS and a TEMPLATE pdb file for the same atoms should be provided as well in the folder DATA. 
-The atoms are made automatically whole unless NOPBC is used, in particular if the pdb is composed
+The atoms are made automatically whole unless NOPBC is used, in particular if the system is made of 
 by multiple chains it is usually better to use NOPBC and make the molecule whole \ref WHOLEMOLECULES
 selecting an appropriate order.
  
 In addition to a pdb file one needs to provide a list of chemical shifts to be calculated using one
-file per nuclues type (CAshifts.dat, CBshifts.dat, Cshifts.dat, Hshifts.dat, HAshifts.dat, Nshifts.dat), 
-all the six files should always be present. A chemical shifts for a nucleus is calculated if a value
+file per nucleus type (CAshifts.dat, CBshifts.dat, Cshifts.dat, Hshifts.dat, HAshifts.dat, Nshifts.dat), 
+all the six files should always be present. A chemical shift for a nucleus is calculated if a value
 greater than 0 is provided. For practical purposes the value can correspond to the experimental value.
 Residues numbers should go from 1 to N irrespectively of the numbers used in the pdb file. The first and
 last residue of each chain should be preceeded by a # character. Termini groups like ACE or NME should
@@ -89,7 +89,7 @@ CAshifts.dat:
 #last of second chain
 \endverbatim
 
-The default behaviour is to store the values for the active nuclei are stored in components (ca_#, cb_#,
+The default behaviour is to store the values for the active nuclei in components (ca_#, cb_#,
 co_#, ha_#, hn_#, nh_# and expca_#, expcb_#, expco_#, expha_#, exphn_#, exp_nh#) with NOEXP it is possible
 to only store the backcalculated values.
  
