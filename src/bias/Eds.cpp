@@ -167,6 +167,7 @@ valueForce2(NULL)
   log.printf("  with initial ranges / rates");
   for(unsigned i=0;i<max_coupling_range.size();i++) {
       //this is just an empirical guess. Bigger range, bigger grads. Less frequent updates, bigger changes
+      max_coupling_range[i]*=kbt;
       max_coupling_grad[i] = max_coupling_range[i]*update_period/100.;
       log.printf(" %f %f",max_coupling_range[i],max_coupling_grad[i]);
   }
