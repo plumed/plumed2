@@ -47,6 +47,7 @@ Calculate the Metainference Score for a set of back calculated experimental data
 class Metainference : public Bias
 {
   const double sqrt2_div_pi;
+  const double sqrt2_pi;
   // experimental values
   vector<double> parameters;
   // noise type
@@ -135,6 +136,7 @@ void Metainference::registerKeywords(Keywords& keys){
 Metainference::Metainference(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao), 
 sqrt2_div_pi(0.45015815807855),
+sqrt2_pi(2.50662827463100050240),
 doscale_(false),
 ndata_(getNumberOfArguments()),
 MCsteps_(1), 
@@ -330,7 +332,7 @@ do_reweight(false)
 
 double Metainference::getEnergySPE(const vector<double> &mean, const vector<double> &sigma, const double scale){
   // calculate effective sigma
-  const double smean2 = scale*scale*sigma_mean_[0]*sigma_mean_[0];
+  const double smean2 = sigma_mean_[0]*sigma_mean_[0];
   const double s = sqrt( sigma[0]*sigma[0] + smean2 );
   // cycle on arguments
   double ene = 0.0;
@@ -349,17 +351,15 @@ double Metainference::getEnergySPE(const vector<double> &mean, const vector<doub
 double Metainference::getEnergyGJE(const vector<double> &mean, const vector<double> &sigma, const double scale){
   // cycle on arguments
   double ene = 0.0;
-  double smean2 = scale*scale*sigma_mean_[0]*sigma_mean_[0];
-  double ss = sigma[0]*sigma[0] + smean2; 
+  double ss = sigma[0]*sigma[0] + sigma_mean_[0]*sigma_mean_[0]; 
   for(unsigned i=0;i<narg;++i){
     if(noise_type_==MGAUSS){ 
-      smean2 = scale*scale*sigma_mean_[i]*sigma_mean_[i];
-      ss = sigma[i]*sigma[i] + smean2;
+      ss = sigma[i]*sigma[i] + sigma_mean_[i]*sigma_mean_[i];
       // add Jeffrey's prior - one per sigma
       ene += 0.5*std::log(ss);
     }
     const double dev = scale*mean[i]-parameters[i]; 
-    ene += 0.5*dev*dev/ss + 0.5*std::log(ss);
+    ene += 0.5*dev*dev/ss + 0.5*sqrt2_pi*std::log(ss);
   }
   // add Jeffrey's prior in case one sigma for all data points
   if(noise_type_==GAUSS) ene += 0.5*std::log(ss);
@@ -394,6 +394,39 @@ void Metainference::doMonteCarlo(const vector<double> &mean_){
       // the scaling factor should be the same for all the replicas
       if(master) multi_sim_comm.Bcast(new_scale,0);
       comm.Bcast(new_scale,0);
+
+      // calculate new energy
+      double new_energy=0;
+      switch(noise_type_) {
+        case GAUSS:
+        case MGAUSS:
+          new_energy = getEnergyGJE(mean_,sigma_,new_scale);
+          break;
+        case OUTLIERS:
+          new_energy = getEnergySPE(mean_,sigma_,new_scale);
+          break;
+      }
+
+      // accept or reject
+      const double delta = ( new_energy - old_energy ) / kbt_;
+      // if delta is negative always accept move
+      if( delta <= 0.0 ){
+        old_energy = new_energy;
+        scale_ = new_scale;
+        MCaccept_++;
+      // otherwise extract random number
+      } else {
+        const double s = static_cast<double>(rand()) / RAND_MAX;
+        if( s < exp(-delta) ){
+          old_energy = new_energy;
+          scale_ = new_scale;
+          MCaccept_++;
+        }
+      }
+ 
+      // the scaling factor should be the same for all the replicas
+      if(master) multi_sim_comm.Bcast(scale_,0);
+      comm.Bcast(scale_,0);
     }
   
     // propose move for sigma
@@ -412,10 +445,10 @@ void Metainference::doMonteCarlo(const vector<double> &mean_){
     switch(noise_type_) {
       case GAUSS:
       case MGAUSS:
-        new_energy = getEnergyGJE(mean_,new_sigma,new_scale);
+        new_energy = getEnergyGJE(mean_,new_sigma,scale_);
         break;
       case OUTLIERS:
-        new_energy = getEnergySPE(mean_,new_sigma,new_scale);
+        new_energy = getEnergySPE(mean_,new_sigma,scale_);
         break;
     }
 
@@ -424,7 +457,6 @@ void Metainference::doMonteCarlo(const vector<double> &mean_){
     // if delta is negative always accept move
     if( delta <= 0.0 ){
       old_energy = new_energy;
-      scale_ = new_scale;
       sigma_ = new_sigma;
       MCaccept_++;
     // otherwise extract random number
@@ -432,17 +464,11 @@ void Metainference::doMonteCarlo(const vector<double> &mean_){
       const double s = static_cast<double>(rand()) / RAND_MAX;
       if( s < exp(-delta) ){
         old_energy = new_energy;
-        scale_ = new_scale;
         sigma_ = new_sigma;
         MCaccept_++;
       }
     }
  
-    if(doscale_) {
-      // the scaling factor should be the same for all the replicas
-      if(master) multi_sim_comm.Bcast(scale_,0);
-      comm.Bcast(scale_,0);
-    }
   }
   /* save the result of the sampling */
   if(doscale_) valueScale->set(scale_);
@@ -453,7 +479,7 @@ double Metainference::getEnergyForceSPE(const vector<double> &mean, const double
 {
   double ene = 0.0;
 
-  const double smean2 = scale_*scale_*sigma_mean_[0]*sigma_mean_[0]; 
+  const double smean2 = sigma_mean_[0]*sigma_mean_[0]; 
   const double s = sqrt( sigma_[0]*sigma_[0] + smean2 );
   vector<double> f(narg,0);
   
@@ -495,7 +521,7 @@ double Metainference::getEnergyForceGJE(const vector<double> &mean, const double
   vector<double> inv_s2(ssize, 0.);
   // if this is not MGAUSS ssize is 1
   for(unsigned i=0;i<ssize; ++i) {
-    ss[i] = sigma_[i]*sigma_[i] + scale_*scale_*sigma_mean_[i]*sigma_mean_[i];
+    ss[i] = sigma_[i]*sigma_[i] + sigma_mean_[i]*sigma_mean_[i];
     if(master) inv_s2[i] = 1.0/ss[i];
   }
 
@@ -511,7 +537,7 @@ double Metainference::getEnergyForceGJE(const vector<double> &mean, const double
       // add Jeffrey's prior - one per sigma
       ene += 0.5*std::log(ss[sel_sigma]);
     }
-    ene += 0.5*dev*dev*inv_s2[sel_sigma] + 0.5*std::log(ss[sel_sigma]);
+    ene += 0.5*dev*dev*inv_s2[sel_sigma] + 0.5*sqrt2_pi*std::log(ss[sel_sigma]);
     setOutputForce(i, -kbt_*fact*dev*scale_*inv_s2[sel_sigma]);
     if(do_reweight) w_tmp += -fact*(getArgument(i) - mean[i])*dev*scale_*inv_s2[sel_sigma];
   }
@@ -569,21 +595,26 @@ void Metainference::calculate(){
   }
   comm.Sum(&v_moment[0], narg);
 
+  /* this is SIGMA_MEAN before the corrections due to the #DOF and the SCALING */
   sigma_mean_[0] = 0.; 
   for(unsigned i=0;i<narg;++i) { 
     variance_[i] += v_moment[i];
     const double t = static_cast<double>(step-MCfirst_+1);
-    if(noise_type_!=MGAUSS) sigma_mean_[0] += idof*variance_[i]/t;
-    else sigma_mean_[i] = sqrt(idof*variance_[i]/t);
+    if(noise_type_!=MGAUSS) sigma_mean_[0] += variance_[i]/t;
+    else sigma_mean_[i] = sqrt(variance_[i]/t);
   }
   if(noise_type_!=MGAUSS) sigma_mean_[0] = sqrt(sigma_mean_[0]);
 
   /* MONTE CARLO */
   if(step%MCstride_==0&&!getExchangeStep()) doMonteCarlo(mean);
 
-  const double MCtrials = floor(static_cast<double>(step-MCfirst_) / static_cast<double>(MCstride_))+1.0;
+  double MCtrials = floor(static_cast<double>(step-MCfirst_) / static_cast<double>(MCstride_))+1.0;
+  if(doscale_) MCtrials *=2;
   const double accept = static_cast<double>(MCaccept_) / static_cast<double>(MCsteps_) / MCtrials;
   valueAccept->set(accept);
+
+  /* fix sigma_mean_ for the weighted average and the scaling factor */
+  for(unsigned i=0;i<sigma_mean_.size();++i) sigma_mean_[i] *= scale_*sqrt(idof);
 
   // calculate bias and forces
   double ene = 0; 
