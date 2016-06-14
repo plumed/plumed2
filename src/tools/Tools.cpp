@@ -353,4 +353,9 @@ std::string Tools::extension(const std::string&s){
   return ext;
 }
 
+bool Tools::startWith(const std::string & full,const std::string &start){
+  return (full.substr(0,start.length())==start);
+}
+
+
 }

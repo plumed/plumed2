@@ -73,7 +73,7 @@ ClusterAnalysisBase(ao)
        for(unsigned j=0;j<getNumberOfNodes();++j) addTaskToList( i*getNumberOfNodes() + j );
    }
    // Now create a higest vessel
-   addVessel("HIGHEST", "", -1); setupAtomLists();
+   addVessel("HIGHEST", "", -1); std::vector<AtomNumber> fake_atoms; setupMultiColvarBase( fake_atoms ); 
 }
 
 void ClusterDiameter::turnOnDerivatives(){
