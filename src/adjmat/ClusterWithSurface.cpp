@@ -58,13 +58,17 @@ public:
 ///
   void retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const ;
 ///
-  void getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient0 ) const ;
+  void getInputData( const unsigned& ind, const bool& normed, const multicolvar::AtomValuePack& myatoms, std::vector<double>& orient0 ) const ;
 ///
-  void getVectorDerivatives( const unsigned& ind, const bool& normed, MultiValue& myder0 ) const ;
+  MultiValue& getInputDerivatives( const unsigned& ind, const bool& normed, const multicolvar::AtomValuePack& myatoms ) const ;
 ///
   unsigned getNumberOfQuantities() const ;
 /// Do the calculation
   void performClustering(){};
+///
+  double  getCutoffForConnection() const ;  
+///
+  Vector getPositionOfAtomForLinkCells( const unsigned& taskIndex ) const ;
 };
 
 PLUMED_REGISTER_ACTION(ClusterWithSurface,"CLUSTER_WITHSURFACE")
@@ -81,13 +85,13 @@ ClusterWithSurface::ClusterWithSurface(const ActionOptions&ao):
 Action(ao),
 ClusteringBase(ao)
 {
-   std::vector<std::string> cname(1); parse("CLUSTERS",cname[0]);
-   bool found_cname=interpretInputMultiColvars(cname,0.0);
-   if(!found_cname) error("unable to interpret input clusters " + cname[0] );
+   std::vector<AtomNumber> fake_atoms;
+   if( !parseMultiColvarAtomList("CLUSTERS",-1,fake_atoms ) ) error("unable to find CLUSTERS input");
+   if( mybasemulticolvars.size()!=1 ) error("should be exactly one multicolvar input");
 
    // Retrieve the adjacency matrix of interest
-   myclusters = dynamic_cast<ClusteringBase*>( mybasemulticolvars[0] ); 
-   if( !myclusters ) error( cname[0] + " does not calculate clusters");
+   atom_lab.resize(0); myclusters = dynamic_cast<ClusteringBase*>( mybasemulticolvars[0] ); 
+   if( !myclusters ) error( mybasemulticolvars[0]->getLabel() + " does not calculate clusters");
 
    // Setup switching function for surface atoms
    double rcut_surf; parse("RCUT_SURF",rcut_surf);
@@ -95,7 +99,7 @@ ClusteringBase(ao)
    rcut_surf2=rcut_surf*rcut_surf;
 
    // And now finish the setup of everything in the base
-   setupAtomLists();
+   setupMultiColvarBase( fake_atoms ); 
 }
 
 unsigned ClusterWithSurface::getNumberOfDerivatives(){
@@ -110,16 +114,22 @@ AtomNumber ClusterWithSurface::getAbsoluteIndexOfCentralAtom(const unsigned& i) 
   return myclusters->getAbsoluteIndexOfCentralAtom(i);
 }
 
-void ClusterWithSurface::getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient0 ) const {
-  myclusters->getVectorForTask( ind, normed, orient0 );
+void ClusterWithSurface::getInputData( const unsigned& ind, const bool& normed, const multicolvar::AtomValuePack& myatoms, std::vector<double>& orient0 ) const {
+  myclusters->getInputData( ind, normed, myatoms, orient0 );
 }
 
-void ClusterWithSurface::getVectorDerivatives( const unsigned& ind, const bool& normed, MultiValue& myder0 ) const {
-  myclusters->getVectorDerivatives( ind, normed, myder0 );
+MultiValue& ClusterWithSurface::getInputDerivatives( const unsigned& ind, const bool& normed, const multicolvar::AtomValuePack& myatoms ) const {
+  return myclusters->getInputDerivatives( ind, normed, myatoms );
 }
 
 unsigned ClusterWithSurface::getNumberOfQuantities() const {
   return myclusters->getNumberOfQuantities();
+}
+
+double  ClusterWithSurface::getCutoffForConnection() const {
+  double tcut = myclusters->getCutoffForConnection();
+  if( tcut>sqrt(rcut_surf2) ) return tcut;
+  return sqrt(rcut_surf2);
 }
 
 void ClusterWithSurface::retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const {
@@ -149,6 +159,10 @@ void ClusterWithSurface::retrieveAtomsInCluster( const unsigned& clust, std::vec
       if( surface_atom[j] ){ myatoms[nn]=j; nn++; }
   }
   plumed_assert( nn==myatoms.size() );
+}
+
+Vector ClusterWithSurface::getPositionOfAtomForLinkCells( const unsigned& iatom ) const {
+  return myclusters->getPositionOfAtomForLinkCells( iatom );
 }
 
 }

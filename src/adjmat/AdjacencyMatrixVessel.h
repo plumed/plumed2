@@ -39,7 +39,6 @@ class AdjacencyMatrixBase;
 class AdjacencyMatrixVessel : public vesselbase::StoreDataVessel {
 friend class AdjacencyMatrixBase;
 friend class ActionWithInputMatrix;
-friend class MatrixSummationBase;
 private:
 /// Pointer to underlying action
   AdjacencyMatrixBase* function;
@@ -76,6 +75,12 @@ public:
   unsigned getNumberOfRows() const ;
 /// Get the number of columns
   unsigned getNumberOfColumns() const ;
+/// Are these two nodes connected
+  bool nodesAreConnected( const unsigned& iatom, const unsigned& jatom ) const ;
+/// Get the cutoff that we are using for connections
+  double getCutoffForConnection() const ;
+///
+  Vector getNodePosition( const unsigned& taskIndex ) const ;
 };
 
 }

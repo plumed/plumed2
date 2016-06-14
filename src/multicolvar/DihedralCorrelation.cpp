@@ -100,7 +100,8 @@ DihedralCorrelation::DihedralCorrelation(const ActionOptions&ao):
 PLUMED_MULTICOLVAR_INIT(ao)
 {
   // Read in the atoms
-  int natoms=8; readAtoms( natoms );
+  int natoms=8; std::vector<AtomNumber> all_atoms;
+  readAtoms( natoms, all_atoms );
   // Stuff for central atoms
   std::vector<bool> catom_ind(8, false); 
   catom_ind[1]=catom_ind[2]=catom_ind[5]=catom_ind[6]=true;
