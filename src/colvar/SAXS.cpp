@@ -26,6 +26,9 @@
 
 #include "Colvar.h"
 #include "ActionRegister.h"
+#include "core/ActionSet.h"
+#include "core/PlumedMain.h"
+#include "core/SetupMolInfo.h"
 #include "tools/Communicator.h"
 #include "tools/OpenMP.h"
 
@@ -57,6 +60,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit SAXS(const ActionOptions&);
+  void getStructureFactors(const vector<AtomNumber> &atoms, vector<vector<long double> > &parameter);
   virtual void calculate();
 };
 
@@ -67,13 +71,13 @@ void SAXS::registerKeywords(Keywords& keys){
   componentsAreNotOptional(keys);
   useCustomisableComponents(keys);
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
-  keys.add("compulsory","NUMQ","Number of used q values");
-  keys.add("compulsory","SCEXP","SCALING value of the experimental data");
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
-  keys.add("numbered","qvalue","Used qvalue Keywords like q_value1, q_value2, qvalue_3,... should be listed.");
-  keys.add("numbered","parameter","Used parameter Keywords like parameter1, parameter2, parameter3,... should be listed.");
-  keys.addFlag("ADDEXPVALUES",false,"Set to TRUE if you want to have fixed components with the experimetnal values.");
-  keys.add("numbered","EXPINT","Add an experimental value for each PRE.");
+  keys.add("compulsory","NUMQ","Number of used q values");
+  keys.add("numbered","QVALUE","Used qvalue Keywords like QVALUE1, QVALUE2, to list the scattering length to calculate SAXS.");
+  keys.add("numbered","PARAMETERS","Used parameter Keywords like PARAMETERS1, PARAMETERS2. These are used to calculate the structure factor for the i-th atom/bead.");
+  keys.addFlag("ADDEXPVALUES",false,"Set to TRUE if you want to have fixed components with the experimental values.");
+  keys.add("numbered","EXPINT","Add an experimental value for each q value.");
+  keys.add("compulsory","SCEXP","SCALING value of the experimental data. Usefull to simplify the comparison.");
 }
 
 SAXS::SAXS(const ActionOptions&ao):
@@ -102,7 +106,7 @@ serial(false)
   q_list.resize( numq );
   unsigned ntarget=0;
   for(unsigned i=0;i<numq;++i){
-    if( !parseNumbered( "qvalue", i+1, q_list[i]) ) break;
+    if( !parseNumbered( "QVALUE", i+1, q_list[i]) ) break;
     ntarget++;
   }
   if( ntarget!=numq ) error("found wrong number of qvalue values");
@@ -119,10 +123,11 @@ serial(false)
   parameter.resize(size);
   ntarget=0;
   for(unsigned i=0;i<size;++i){
-    if( !parseNumberedVector( "parameter", i+1, parameter[i]) ) break;
+    if( !parseNumberedVector( "PARAMETERS", i+1, parameter[i]) ) break;
     ntarget++;
   }
-  if( ntarget!=size ) error("found wrong number of parameter vectors");
+  if( ntarget==0 ) getStructureFactors(atoms, parameter);
+  else if( ntarget!=size ) error("found wrong number of parameter vectors");
 
   FF_value.resize(numq,vector<double>(size));
   vector<vector<long double> >  FF_tmp;
@@ -171,6 +176,453 @@ serial(false)
 
   requestAtoms(atoms);
   checkRead();
+}
+
+void SAXS::getStructureFactors(const vector<AtomNumber> &atoms, vector<vector<long double> > &parameter)
+{
+  vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
+  if( moldat.size()==1 ){
+    log<<"  MOLINFO DATA found, using proper atom names\n";
+    for(unsigned i=0;i<atoms.size();++i){
+      string Aname = moldat[0]->getAtomName(atoms[i]);
+      string Rname = moldat[0]->getResidueName(atoms[i]);
+      if(Rname=="ALA") {
+        if(Aname=="BB") {
+          parameter[i].push_back(9.045);
+          parameter[i].push_back(-0.098114);
+          parameter[i].push_back(7.54281);
+          parameter[i].push_back(-1.97438);
+          parameter[i].push_back(-8.32689);
+          parameter[i].push_back(6.09318);
+          parameter[i].push_back(-1.18913);
+        } else error("Atom name not known");
+      } else if(Rname=="ARG") {
+        if(Aname=="BB") {
+          parameter[i].push_back(10.729);
+          parameter[i].push_back(-0.0392574);
+          parameter[i].push_back(1.15382);
+          parameter[i].push_back(-0.155999);
+          parameter[i].push_back(-2.43619);
+          parameter[i].push_back(1.72922);
+          parameter[i].push_back(-0.33799);
+        } else if(Aname=="SC1"){
+          parameter[i].push_back(-2.797);
+          parameter[i].push_back(0.472403);
+          parameter[i].push_back(8.07424);
+          parameter[i].push_back(4.37299);
+          parameter[i].push_back(-10.7398);
+          parameter[i].push_back(4.95677);
+          parameter[i].push_back(-0.725797);
+        } else if(Aname=="SC2"){
+          parameter[i].push_back(15.396);
+          parameter[i].push_back(0.0636736);
+          parameter[i].push_back(-1.258);
+          parameter[i].push_back(1.93135);
+          parameter[i].push_back(-4.45031);
+          parameter[i].push_back(2.49356);
+          parameter[i].push_back(-0.410721);
+        } else error("Atom name not known");
+      } else if(Rname=="ASN") {
+        if(Aname=="BB") {
+          parameter[i].push_back(10.738);
+          parameter[i].push_back(-0.0402162);
+          parameter[i].push_back(1.03007);
+          parameter[i].push_back(-0.254174);
+          parameter[i].push_back(-2.12015);
+          parameter[i].push_back(1.55535);
+          parameter[i].push_back(-0.30963);
+        } else if(Aname=="SC1"){
+          parameter[i].push_back(9.249);
+          parameter[i].push_back(-0.0148678);
+          parameter[i].push_back(5.52169);
+          parameter[i].push_back(0.00853212);
+          parameter[i].push_back(-6.71992);
+          parameter[i].push_back(3.93622);
+          parameter[i].push_back(-0.64973);
+        } else error("Atom name not known");
+      } else if(Rname=="ASP") {
+        if(Aname=="BB") {
+          parameter[i].push_back(10.695);
+          parameter[i].push_back(-0.0410247);
+          parameter[i].push_back(1.03656);
+          parameter[i].push_back(-0.298558);
+          parameter[i].push_back(-2.06064);
+          parameter[i].push_back(1.53495);
+          parameter[i].push_back(-0.308365);
+        } else if(Aname=="SC1"){
+          parameter[i].push_back(9.476);
+          parameter[i].push_back(-0.0254664);
+          parameter[i].push_back(5.57899);
+          parameter[i].push_back(-0.395027);
+          parameter[i].push_back(-5.9407);
+          parameter[i].push_back(3.48836);
+          parameter[i].push_back(-0.569402);
+        } else error("Atom name not known");
+      } else if(Rname=="CYS") {
+        if(Aname=="BB") {
+          parameter[i].push_back(10.698);
+          parameter[i].push_back(-0.0233493);
+          parameter[i].push_back(1.18257);
+          parameter[i].push_back(0.0684463);
+          parameter[i].push_back(-2.792);
+          parameter[i].push_back(1.88995);
+          parameter[i].push_back(-0.360229);
+        } else if(Aname=="SC1"){
+          parameter[i].push_back(8.199);
+          parameter[i].push_back(-0.0261569);
+          parameter[i].push_back(6.79677);
+          parameter[i].push_back(-0.343845);
+          parameter[i].push_back(-5.03578);
+          parameter[i].push_back(2.7076);
+          parameter[i].push_back(-0.420714);
+        } else error("Atom name not known");
+      } else if(Rname=="GLN") {
+        if(Aname=="BB") {
+          parameter[i].push_back(10.728);
+          parameter[i].push_back(-0.0391984);
+          parameter[i].push_back(1.09264);
+          parameter[i].push_back(-0.261555);
+          parameter[i].push_back(-2.21245);
+          parameter[i].push_back(1.62071);
+          parameter[i].push_back(-0.322325);
+        } else if(Aname=="SC1"){
+          parameter[i].push_back(8.317);
+          parameter[i].push_back(-0.229045);
+          parameter[i].push_back(12.6338);
+          parameter[i].push_back(-7.6719);
+          parameter[i].push_back(-5.8376);
+          parameter[i].push_back(5.53784);
+          parameter[i].push_back(-1.12604);
+        } else error("Atom name not known");
+      } else if(Rname=="GLU") {
+        if(Aname=="BB") {
+          parameter[i].push_back(10.694);
+          parameter[i].push_back(-0.0521961);
+          parameter[i].push_back(1.11153);
+          parameter[i].push_back(-0.491995);
+          parameter[i].push_back(-1.86236);
+          parameter[i].push_back(1.45332);
+          parameter[i].push_back(-0.29708);
+        } else if(Aname=="SC1"){
+          parameter[i].push_back(8.544);
+          parameter[i].push_back(-0.249555);
+          parameter[i].push_back(12.8031);
+          parameter[i].push_back(-8.42696);
+          parameter[i].push_back(-4.66486);
+          parameter[i].push_back(4.90004);
+          parameter[i].push_back(-1.01204);
+        } else error("Atom name not known");
+      } else if(Rname=="GLY") {
+        if(Aname=="BB") {
+          parameter[i].push_back(9.977);
+          parameter[i].push_back(-0.0285799);
+          parameter[i].push_back(1.84236);
+          parameter[i].push_back(-0.0315192);
+          parameter[i].push_back(-2.88326);
+          parameter[i].push_back(1.87323);
+          parameter[i].push_back(-0.345773);
+        } else error("Atom name not known");
+      } else if(Rname=="HIS") {
+        if(Aname=="BB") {
+          parameter[i].push_back(10.721);
+          parameter[i].push_back(-0.0379337);
+          parameter[i].push_back(1.06028);
+          parameter[i].push_back(-0.236143);
+          parameter[i].push_back(-2.17819);
+          parameter[i].push_back(1.58357);
+          parameter[i].push_back(-0.31345);
+        } else if(Aname=="SC1"){
+          parameter[i].push_back(-0.424);
+          parameter[i].push_back(0.665176);
+          parameter[i].push_back(3.4369);
+          parameter[i].push_back(2.93795);
+          parameter[i].push_back(-5.18288);
+          parameter[i].push_back(2.12381);
+          parameter[i].push_back(-0.284224);
+        } else if(Aname=="SC2"){
+          parameter[i].push_back(5.363);
+          parameter[i].push_back(-0.0176945);
+          parameter[i].push_back(2.9506);
+          parameter[i].push_back(-0.387018);
+          parameter[i].push_back(-1.83951);
+          parameter[i].push_back(0.9703);
+          parameter[i].push_back(-0.1458);
+        } else if(Aname=="SC3"){
+          parameter[i].push_back(5.784);
+          parameter[i].push_back(-0.0293129);
+          parameter[i].push_back(2.74167);
+          parameter[i].push_back(-0.520875);
+          parameter[i].push_back(-1.62949);
+          parameter[i].push_back(0.902379);
+          parameter[i].push_back(-0.139957);
+        } else error("Atom name not known");
+      } else if(Rname=="ILE") {
+        if(Aname=="BB") {
+          parameter[i].push_back(10.699);
+          parameter[i].push_back(-0.0188962);
+          parameter[i].push_back(1.217);
+          parameter[i].push_back(0.242481);
+          parameter[i].push_back(-3.13898);
+          parameter[i].push_back(2.07916);
+          parameter[i].push_back(-0.392574);
+        } else if(Aname=="SC1"){
+          parameter[i].push_back(-4.448);
+          parameter[i].push_back(1.20996);
+          parameter[i].push_back(11.5141);
+          parameter[i].push_back(6.98895);
+          parameter[i].push_back(-19.1948);
+          parameter[i].push_back(9.89207);
+          parameter[i].push_back(-1.60877);
+        } else error("Atom name not known");
+      } else if(Rname=="LEU") {
+        if(Aname=="BB") {
+          parameter[i].push_back(10.692);
+          parameter[i].push_back(-0.209448);
+          parameter[i].push_back(1.73738);
+          parameter[i].push_back(-1.33726);
+          parameter[i].push_back(-1.3065);
+          parameter[i].push_back(1.25273);
+          parameter[i].push_back(-0.265001);
+        } else if(Aname=="SC1"){
+          parameter[i].push_back(-4.448);
+          parameter[i].push_back(2.1063);
+          parameter[i].push_back(6.72381);
+          parameter[i].push_back(14.6954);
+          parameter[i].push_back(-23.7197);
+          parameter[i].push_back(10.7247);
+          parameter[i].push_back(-1.59146);
+        } else error("Atom name not known");
+      } else if(Rname=="LYS") {
+        if(Aname=="BB") {
+          parameter[i].push_back(10.706);
+          parameter[i].push_back(-0.0468629);
+          parameter[i].push_back(1.09477);
+          parameter[i].push_back(-0.432751);
+          parameter[i].push_back(-1.94335);
+          parameter[i].push_back(1.49109);
+          parameter[i].push_back(-0.302589);
+        } else if(Aname=="SC1"){
+          parameter[i].push_back(-2.796);
+          parameter[i].push_back(0.508044);
+          parameter[i].push_back(7.91436);
+          parameter[i].push_back(4.54097);
+          parameter[i].push_back(-10.8051);
+          parameter[i].push_back(4.96204);
+          parameter[i].push_back(-0.724414);
+        } else if(Aname=="SC2"){
+          parameter[i].push_back(3.070);
+          parameter[i].push_back(-0.0101448);
+          parameter[i].push_back(4.67994);
+          parameter[i].push_back(-0.792529);
+          parameter[i].push_back(-2.09142);
+          parameter[i].push_back(1.02933);
+          parameter[i].push_back(-0.137787);
+        } else error("Atom name not known");
+      } else if(Rname=="MET") {
+        if(Aname=="BB") {
+          parameter[i].push_back(10.671);
+          parameter[i].push_back(-0.0433724);
+          parameter[i].push_back(1.13784);
+          parameter[i].push_back(-0.40768);
+          parameter[i].push_back(-2.00555);
+          parameter[i].push_back(1.51673);
+          parameter[i].push_back(-0.305547);
+        } else if(Aname=="SC1"){
+          parameter[i].push_back(5.85);
+          parameter[i].push_back(-0.0485798);
+          parameter[i].push_back(17.0391);
+          parameter[i].push_back(-3.65327);
+          parameter[i].push_back(-13.174);
+          parameter[i].push_back(8.68286);
+          parameter[i].push_back(-1.56095);
+        } else error("Atom name not known");
+      } else if(Rname=="PHE") {
+        if(Aname=="BB") {
+          parameter[i].push_back(10.741);
+          parameter[i].push_back(-0.0317276);
+          parameter[i].push_back(1.15599);
+          parameter[i].push_back(0.0276186);
+          parameter[i].push_back(-2.74757);
+          parameter[i].push_back(1.88783);
+          parameter[i].push_back(-0.363525);
+        } else if(Aname=="SC1"){
+          parameter[i].push_back(-0.636);
+          parameter[i].push_back(0.527882);
+          parameter[i].push_back(6.77612);
+          parameter[i].push_back(3.18508);
+          parameter[i].push_back(-8.92826);
+          parameter[i].push_back(4.29752);
+          parameter[i].push_back(-0.65187);
+        } else if(Aname=="SC2"){
+          parameter[i].push_back(-0.424);
+          parameter[i].push_back(0.389174);
+          parameter[i].push_back(4.11761);
+          parameter[i].push_back(2.29527);
+          parameter[i].push_back(-4.7652);
+          parameter[i].push_back(1.97023);
+          parameter[i].push_back(-0.262318);
+        } else if(Aname=="SC3"){
+          parameter[i].push_back(-0.424);
+          parameter[i].push_back(0.38927);
+          parameter[i].push_back(4.11708);
+          parameter[i].push_back(2.29623);
+          parameter[i].push_back(-4.76592);
+          parameter[i].push_back(1.97055);
+          parameter[i].push_back(-0.26238);
+        } else error("Atom name not known");
+      } else if(Rname=="PRO") {
+        if(Aname=="BB") {
+          parameter[i].push_back(11.434);
+          parameter[i].push_back(-0.033323);
+          parameter[i].push_back(0.472014);
+          parameter[i].push_back(-0.290854);
+          parameter[i].push_back(-1.81409);
+          parameter[i].push_back(1.39751);
+          parameter[i].push_back(-0.280407);
+        } else if(Aname=="SC1"){
+          parameter[i].push_back(-2.796);
+          parameter[i].push_back(0.95668);
+          parameter[i].push_back(6.84197);
+          parameter[i].push_back(6.43774);
+          parameter[i].push_back(-12.5068);
+          parameter[i].push_back(5.64597);
+          parameter[i].push_back(-0.825206);
+        } else error("Atom name not known");
+      } else if(Rname=="SER") {
+        if(Aname=="BB") {
+          parameter[i].push_back(10.699);
+          parameter[i].push_back(-0.0325828);
+          parameter[i].push_back(1.20329);
+          parameter[i].push_back(-0.0674351);
+          parameter[i].push_back(-2.60749);
+          parameter[i].push_back(1.80318);
+          parameter[i].push_back(-0.346803);
+        } else if(Aname=="SC1"){
+          parameter[i].push_back(3.298);
+          parameter[i].push_back(-0.0366801);
+          parameter[i].push_back(5.11077);
+          parameter[i].push_back(-1.46774);
+          parameter[i].push_back(-1.48421);
+          parameter[i].push_back(0.800326);
+          parameter[i].push_back(-0.108314);
+        } else error("Atom name not known");
+      } else if(Rname=="THR") {
+        if(Aname=="BB") {
+          parameter[i].push_back(10.697);
+          parameter[i].push_back(-0.0242955);
+          parameter[i].push_back(1.24671);
+          parameter[i].push_back(0.146423);
+          parameter[i].push_back(-2.97429);
+          parameter[i].push_back(1.97513);
+          parameter[i].push_back(-0.371479);
+        } else if(Aname=="SC1"){
+          parameter[i].push_back(2.366);
+          parameter[i].push_back(0.0297604);
+          parameter[i].push_back(11.9216);
+          parameter[i].push_back(-9.32503);
+          parameter[i].push_back(1.9396);
+          parameter[i].push_back(0.0804861);
+          parameter[i].push_back(-0.0302721);
+        } else error("Atom name not known");
+      } else if(Rname=="TRP") {
+        if(Aname=="BB") {
+          parameter[i].push_back(10.689);
+          parameter[i].push_back(-0.0265879);
+          parameter[i].push_back(1.17819);
+          parameter[i].push_back(0.0386457);
+          parameter[i].push_back(-2.75634);
+          parameter[i].push_back(1.88065);
+          parameter[i].push_back(-0.360217);
+        } else if(Aname=="SC1"){
+          parameter[i].push_back(0.084);
+          parameter[i].push_back(0.752407);
+          parameter[i].push_back(5.3802);
+          parameter[i].push_back(4.09281);
+          parameter[i].push_back(-9.28029);
+          parameter[i].push_back(4.45923);
+          parameter[i].push_back(-0.689008);
+        } else if(Aname=="SC2"){
+          parameter[i].push_back(5.739);
+          parameter[i].push_back(0.0298492);
+          parameter[i].push_back(4.60446);
+          parameter[i].push_back(1.34463);
+          parameter[i].push_back(-5.69968);
+          parameter[i].push_back(2.84924);
+          parameter[i].push_back(-0.433781);
+        } else if(Aname=="SC3"){
+          parameter[i].push_back(-0.424);
+          parameter[i].push_back(0.388576);
+          parameter[i].push_back(4.11859);
+          parameter[i].push_back(2.29485);
+          parameter[i].push_back(-4.76255);
+          parameter[i].push_back(1.96849);
+          parameter[i].push_back(-0.262015);
+        } else if(Aname=="SC4"){
+          parameter[i].push_back(-0.424);
+          parameter[i].push_back(0.387685);
+          parameter[i].push_back(4.12153);
+          parameter[i].push_back(2.29144);
+          parameter[i].push_back(-4.7589);
+          parameter[i].push_back(1.96686);
+          parameter[i].push_back(-0.261786);
+        } else error("Atom name not known");
+      } else if(Rname=="TYR") {
+        if(Aname=="BB") {
+          parameter[i].push_back(10.689);
+          parameter[i].push_back(-0.0193526);
+          parameter[i].push_back(1.18241);
+          parameter[i].push_back(0.207318);
+          parameter[i].push_back(-3.0041);
+          parameter[i].push_back(1.99335);
+          parameter[i].push_back(-0.376482);
+        } else if(Aname=="SC1"){
+          parameter[i].push_back(-0.636);
+          parameter[i].push_back(0.528902);
+          parameter[i].push_back(6.78168);
+          parameter[i].push_back(3.17769);
+          parameter[i].push_back(-8.93667);
+          parameter[i].push_back(4.30692);
+          parameter[i].push_back(-0.653993);
+        } else if(Aname=="SC2"){
+          parameter[i].push_back(-0.424);
+          parameter[i].push_back(0.388811);
+          parameter[i].push_back(4.11851);
+          parameter[i].push_back(2.29545);
+          parameter[i].push_back(-4.7668);
+          parameter[i].push_back(1.97131);
+          parameter[i].push_back(-0.262534);
+        } else if(Aname=="SC3"){
+          parameter[i].push_back(4.526);
+          parameter[i].push_back(-0.00381305);
+          parameter[i].push_back(5.8567);
+          parameter[i].push_back(-0.214086);
+          parameter[i].push_back(-4.63649);
+          parameter[i].push_back(2.52869);
+          parameter[i].push_back(-0.39894);
+        } else error("Atom name not known");
+      } else if(Rname=="VAL") {
+        if(Aname=="BB") {
+          parameter[i].push_back(10.691);
+          parameter[i].push_back(-0.0162929);
+          parameter[i].push_back(1.24446);
+          parameter[i].push_back(0.307914);
+          parameter[i].push_back(-3.27446);
+          parameter[i].push_back(2.14788);
+          parameter[i].push_back(-0.403259);
+        } else if(Aname=="SC1"){
+          parameter[i].push_back(-3.516);
+          parameter[i].push_back(1.62307);
+          parameter[i].push_back(5.43064);
+          parameter[i].push_back(9.28809);
+          parameter[i].push_back(-14.9927);
+          parameter[i].push_back(6.6133);
+          parameter[i].push_back(-0.964977);
+        } else error("Atom name not known");
+      } else error("Residue not known");
+    }
+  } else {
+    error("MOLINFO DATA not found\n");
+  }
 }
 
 void SAXS::calculate(){
