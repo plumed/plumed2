@@ -34,6 +34,7 @@
 
 #include <string>
 #include <cmath>
+#include <map>
 
 using namespace std;
 
@@ -60,7 +61,8 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit SAXS(const ActionOptions&);
-  void getStructureFactors(const vector<AtomNumber> &atoms, vector<vector<long double> > &parameter);
+  void getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long double> > &parameter);
+  void calculateASF(const vector<AtomNumber> &atoms, vector<vector<long double> > &FF_tmp);
   virtual void calculate();
 };
 
@@ -71,6 +73,7 @@ void SAXS::registerKeywords(Keywords& keys){
   componentsAreNotOptional(keys);
   useCustomisableComponents(keys);
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
+  keys.addFlag("ATOMISTIC",false,"calculate SAXS for an atomistic model");
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
   keys.add("compulsory","NUMQ","Number of used q values");
   keys.add("numbered","QVALUE","Used qvalue Keywords like QVALUE1, QVALUE2, to list the scattering length to calculate SAXS.");
@@ -118,30 +121,37 @@ serial(false)
     componentIsNotPeriodic("q_"+num);
   }
 
-  //read in parameter vector
-  vector<vector<long double> > parameter;
-  parameter.resize(size);
-  ntarget=0;
-  for(unsigned i=0;i<size;++i){
-    if( !parseNumberedVector( "PARAMETERS", i+1, parameter[i]) ) break;
-    ntarget++;
-  }
-  if( ntarget==0 ) getStructureFactors(atoms, parameter);
-  else if( ntarget!=size ) error("found wrong number of parameter vectors");
+  bool atomistic=false;
+  parseFlag("ATOMISTIC",atomistic);
 
-  FF_value.resize(numq,vector<double>(size));
   vector<vector<long double> >  FF_tmp;
   FF_tmp.resize(numq,vector<long double>(size));
-  for(unsigned i=0;i<size;++i) {
-    for(unsigned j=0;j<parameter[i].size();++j) {
+  if(!atomistic) {
+    //read in parameter vector
+    vector<vector<long double> > parameter;
+    parameter.resize(size);
+    ntarget=0;
+    for(unsigned i=0;i<size;++i){
+      if( !parseNumberedVector( "PARAMETERS", i+1, parameter[i]) ) break;
+      ntarget++;
+    }
+    if( ntarget==0 ) getMartiniSFparam(atoms, parameter);
+    else if( ntarget!=size ) error("found wrong number of parameter vectors");
+ 
+    for(unsigned i=0;i<size;++i) {
       for(unsigned k=0;k<numq;++k){
-        FF_tmp[k][i]+= parameter[i][j]*powl(static_cast<long double>(q_list[k]),j);
+        for(unsigned j=0;j<parameter[i].size();++j) {
+          FF_tmp[k][i]+= parameter[i][j]*powl(static_cast<long double>(q_list[k]),j);
+        }
       }
     }
+  } else {
+    calculateASF(atoms, FF_tmp);
   }
 
   // Calculate Rank of FF_matrix
   FF_rank.resize(numq);
+  FF_value.resize(numq,vector<double>(size));
   for(unsigned k=0;k<numq;++k){
     for(unsigned i=0;i<size;i++){
        FF_value[k][i] = static_cast<double>(FF_tmp[k][i]);
@@ -178,7 +188,7 @@ serial(false)
   checkRead();
 }
 
-void SAXS::getStructureFactors(const vector<AtomNumber> &atoms, vector<vector<long double> > &parameter)
+void SAXS::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long double> > &parameter)
 {
   vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
   if( moldat.size()==1 ){
@@ -619,6 +629,105 @@ void SAXS::getStructureFactors(const vector<AtomNumber> &atoms, vector<vector<lo
           parameter[i].push_back(-0.964977);
         } else error("Atom name not known");
       } else error("Residue not known");
+    }
+  } else {
+    error("MOLINFO DATA not found\n");
+  }
+}
+
+void SAXS::calculateASF(const vector<AtomNumber> &atoms, vector<vector<long double> > &FF_tmp)
+{
+   enum { H, C, N, O, P, S, NTT };
+   map<string, unsigned> AA_map;
+   AA_map["H"] = H;
+   AA_map["C"] = C;
+   AA_map["N"] = N;
+   AA_map["O"] = O;
+   AA_map["P"] = P;
+   AA_map["S"] = S;
+ 
+   vector<vector<double> > param_a;
+   vector<vector<double> > param_b;
+   vector<double> param_c;
+   vector<double> param_v;
+
+   param_a.resize(NTT, vector<double>(5));
+   param_b.resize(NTT, vector<double>(5));
+   param_c.resize(NTT);
+   param_v.resize(NTT);
+
+   param_a[H][0] = 0.493002; param_b[H][0] = 10.5109; param_c[H] = 0.003038;
+   param_a[H][1] = 0.322912; param_b[H][1] = 26.1257; param_v[H] = 5.15;
+   param_a[H][2] = 0.140191; param_b[H][2] = 3.14236;
+   param_a[H][3] = 0.040810; param_b[H][3] = 57.7997;
+   param_a[H][4] = 0.0;      param_b[H][4] = 1.0;
+
+   param_a[C][0] = 2.31000; param_b[C][0] = 20.8439; param_c[C] = 0.215600;
+   param_a[C][1] = 1.02000; param_b[C][1] = 10.2075; param_v[C] = 16.44;
+   param_a[C][2] = 1.58860; param_b[C][2] = 0.56870;
+   param_a[C][3] = 0.86500; param_b[C][3] = 51.6512;
+   param_a[C][4] = 0.0;     param_b[C][4] = 1.0;
+
+   param_a[N][0] = 12.2126; param_b[N][0] = 0.00570; param_c[N] = -11.529;
+   param_a[N][1] = 3.13220; param_b[N][1] = 9.89330; param_v[N] = 2.49;
+   param_a[N][2] = 2.01250; param_b[N][2] = 28.9975;
+   param_a[N][3] = 1.16630; param_b[N][3] = 0.58260;
+   param_a[N][4] = 0.0;     param_b[N][4] = 1.0;
+
+   param_a[O][0] = 3.04850; param_b[O][0] = 13.2771; param_c[O] = 0.250800 ;
+   param_a[O][1] = 2.28680; param_b[O][1] = 5.70110; param_v[O] = 9.13;
+   param_a[O][2] = 1.54630; param_b[O][2] = 0.32390;
+   param_a[O][3] = 0.86700; param_b[O][3] = 32.9089;
+   param_a[O][4] = 0.0;     param_b[O][4] = 1.0;
+
+   param_a[P][0] = 6.43450; param_b[P][0] = 1.90670; param_c[P] = 1.11490;
+   param_a[P][1] = 4.17910; param_b[P][1] = 27.1570; param_v[P] = 5.73;
+   param_a[P][2] = 1.78000; param_b[P][2] = 0.52600;
+   param_a[P][3] = 1.49080; param_b[P][3] = 68.1645;
+   param_a[P][4] = 0.0;     param_b[P][4] = 1.0;
+
+   param_a[S][0] = 6.90530; param_b[S][0] = 1.46790; param_c[S] = 0.866900;
+   param_a[S][1] = 5.20340; param_b[S][1] = 22.2151; param_v[S] = 19.86;
+   param_a[S][2] = 1.43790; param_b[S][2] = 0.25360;
+   param_a[S][3] = 1.58630; param_b[S][3] = 56.1720;
+   param_a[S][4] = 0.0;     param_b[S][4] = 1.0;
+
+   vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
+
+   if( moldat.size()==1 ){
+    log<<"  MOLINFO DATA found, using proper atom names\n";
+    for(unsigned i=0;i<atoms.size();++i){
+      // get atom name
+      string name = moldat[0]->getAtomName(atoms[i]);
+      char type;
+      // get atom type
+      char first = name.at(0);
+      // GOLDEN RULE: type is first letter, if not a number
+      if (!isdigit(first)){
+         type = first;
+      // otherwise is the second
+      } else {
+         type = name.at(1);
+      }
+      std::string type_s = std::string(1,type);
+      if(AA_map.find(type_s) != AA_map.end()){
+        const unsigned index=AA_map[type_s];
+        const double rho = 0.334;
+        const double volr = pow(param_v[index], (2.0/3.0)) /(16. * M_PI);
+        for(unsigned k=0;k<numq;++k){
+          const double q = q_list[k];
+          const double s = q / (4. * M_PI);
+          FF_tmp[k][i] = param_c[index];
+          // SUM [a_i * EXP( - b_i * (q/4pi)^2 )] Waasmaier and Kirfel (1995)
+          for(unsigned j=0;j<5;j++) {
+             FF_tmp[k][i] += param_a[index][j]*exp(-param_b[index][j]*s*s);
+          }
+          // subtract solvation: rho * v_i * EXP( (- v_i^(2/3) / (4pi)) * q^2  )
+          FF_tmp[k][i] -= rho*param_v[index]*exp(-volr*q*q);
+        }
+      } else {
+        error("Wrong atom type "+type_s+" from atom name "+name+"\n"); 
+      }
     }
   } else {
     error("MOLINFO DATA not found\n");
