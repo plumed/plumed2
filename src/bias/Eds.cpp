@@ -183,6 +183,59 @@ valueForce2(NULL)
       parse("IRESTARTFILE",_irestartfilename);
       parse("ORESTARTFILE",_orestartfilename);
       checkRead();
+/*
+      if(temp>=0.0) kbt=plumed.getAtoms().getKBoltzmann()*temp;
+      else kbt=plumed.getAtoms().getKbT();
+    
+      log.printf("  with kBT = %f\n",kbt);
+      log.printf("  Updating every %i steps\n",update_period);
+    
+      log.printf("  with centers");
+      for(unsigned i=0;i<center.size();i++) log.printf(" %f",center[i]);
+      log.printf("\n");
+    
+      log.printf("  with initial ranges / rates");
+      for(unsigned i=0;i<max_coupling_range.size();i++) {
+          //this is just an empirical guess. Bigger range, bigger grads. Less frequent updates, bigger changes
+          max_coupling_range[i]*=kbt;
+          max_coupling_grad[i] = max_coupling_range[i]*update_period/100.;
+          log.printf(" %f %f",max_coupling_range[i],max_coupling_grad[i]);
+      }
+      log.printf("\n");
+    
+      if(seed>0){
+         log.printf("  setting random seed = %i",seed);
+         rand.setSeed(seed);
+      }
+    
+      for(unsigned i=0;i<getNumberOfArguments();++i) if(target_coupling[i]!=0.0) adaptive=false;
+    
+      if(!adaptive){
+        if(ramp>0) {
+            log.printf("  ramping up coupling constants over %i steps\n",ramp);
+        }
+    
+        log.printf("  with starting coupling constants");
+        for(unsigned i=0;i<set_coupling.size();i++) log.printf(" %f",set_coupling[i]);
+        log.printf("\n");
+        log.printf("  and final coupling constants");
+        for(unsigned i=0;i<target_coupling.size();i++) log.printf(" %f",target_coupling[i]);
+        log.printf("\n");
+      }
+    
+      //now do setup
+      if(ramp){
+          update_period*=-1;
+      }
+    
+      for(unsigned i=0;i<set_coupling.size();i++) current_coupling[i] = set_coupling[i];
+    
+      // if adaptive, then first half will be used for equilibrating and second half for statistics
+      if(update_period>0){
+          update_period/=2;
+      }
+ 
+*/
   }
   else{
       parseVector("CENTER",center);
@@ -275,16 +328,23 @@ void EDS::write_orestart(){
     std::string init_name;
     std::string target_name;
     std::string coupling_name;
+    std::string maxrange_name;
+    std::string maxgrad_name;
     orestartfile_.printField("time",getTimeStep()*getStep());
+
 
     for(unsigned i=0;i<getNumberOfArguments();++i) {
         init_name = getPntrToArgument(i)->getName()+"_init";
         target_name = getPntrToArgument(i)->getName()+"_target";
         coupling_name = getPntrToArgument(i)->getName()+"_coupling";
+        maxrange_name = getPntrToArgument(i)->getName()+"_maxrange";
+        maxgrad_name = getPntrToArgument(i)->getName()+"_maxgrad";
 
         orestartfile_.printField(init_name,set_coupling[i]);
         orestartfile_.printField(target_name,target_coupling[i]);
         orestartfile_.printField(coupling_name,current_coupling[i]);
+        orestartfile_.printField(maxrange_name,max_coupling_range[i]);
+        orestartfile_.printField(maxgrad_name,max_coupling_grad[i]);
     }
     orestartfile_.printField();
 }
