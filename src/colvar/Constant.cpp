@@ -45,10 +45,9 @@ between atoms 1 and 2. If this distance is between 1.0 and 2.0, it is
 printed. If it is lower than 1.0 (larger than 2.0), 1.0 (2.0) is printed
 
 \verbatim
-one: CONSTANT VALUE=1.0
-two: CONSTANT VALUE=2.0
+cn: CONSTANT VALUES=1.0,2.0
 dis: DISTANCE ATOMS=1,2
-sss: SORT ARG=one,dis,two
+sss: SORT ARG=cn.v_0,dis,cn.v_1
 PRINT ARG=sss.2
 \endverbatim
 (See also \ref DISTANCE, \ref SORT, and \ref PRINT).
