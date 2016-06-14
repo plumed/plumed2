@@ -22,6 +22,11 @@ Changes from version 2.2 which are relevant for users:
   - Patch script `plumed patch` now patches by default with `--shared`. This should make the procedure more robust (see \issue{186}).
   - Faster \ref GYRATION but new default behavior is not mass weighted
   - Manual is now build with locally compiled plumed
+  - Removed CH3SHIFT
+  - \ref CS2BACKBONE is now native in PLUMED removing the need to link ALMOST, small syntax differences
+  - \ref CS2BACKBONE, \ref NOE, ref \RDC, removed the keyword ENSEMBLE: now ensemble averages can only be calculated using \ref ENSEMBLE
+  - \ref RDC, syntax changes
+  - \ref CONSTANT, syntax changes and added the possibility of storing more values as components with or without derivatives
 - New actions:
   - \ref FIXEDATOM
   - \ref HBOND_MATRIX
@@ -34,6 +39,8 @@ Changes from version 2.2 which are relevant for users:
   - \ref COLUMNSUMS
   - \ref UPDATE_IF
   - \ref PCA
+  - \ref PRE
+  - \ref STATS
 - New features in MD patches (require repatch):
   - Patch for amber 14 now passes charges with appropriate units (fixes \issue{165}). Notice that
     the patch is still backward compatible with older PLUMED version, but the charges will only be passed
@@ -49,6 +56,7 @@ Changes from version 2.2 which are relevant for users:
   - \ref driver now allows --trajectory-stride to be set to zero when reading with --ixtc/--itrr. In this case, step number is read from the trajectory file.
   - MetaD and PBMetaD can now be restarted from a GRID 
   - Added keywords TARGET and DAMPFACTOR in \ref METAD
+  - \ref ENSEMBLE added keywords for weighted averages, and calculation of higher momenta
 - Other features:
   - Added a plumed-config command line tool. Can be used to inspect configuration also when cross compiling.
 
