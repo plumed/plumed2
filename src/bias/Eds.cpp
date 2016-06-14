@@ -162,6 +162,22 @@ valueBias(NULL),
 valueForce2(NULL)
 {
   double temp=-1.0;
+
+  addComponent("bias");
+  componentIsNotPeriodic("bias");
+  valueBias=getPntrToComponent("bias");
+
+  addComponent("force2");
+  componentIsNotPeriodic("force2");
+  valueForce2=getPntrToComponent("force2");
+
+  for(unsigned i=0;i<getNumberOfArguments();i++){
+    std::string comp=getPntrToArgument(i)->getName()+"_coupling";
+    addComponent(comp);
+    componentIsNotPeriodic(comp);
+    outCoupling[i]=getPntrToComponent(comp);
+  }
+    
   parseFlag("EDSRESTART",restart);
   if(restart){
       parse("IRESTARTFILE",_irestartfilename);
@@ -217,21 +233,6 @@ valueForce2(NULL)
         log.printf("  and final coupling constants");
         for(unsigned i=0;i<target_coupling.size();i++) log.printf(" %f",target_coupling[i]);
         log.printf("\n");
-      }
-    
-      addComponent("bias");
-      componentIsNotPeriodic("bias");
-      valueBias=getPntrToComponent("bias");
-    
-      addComponent("force2");
-      componentIsNotPeriodic("force2");
-      valueForce2=getPntrToComponent("force2");
-    
-      for(unsigned i=0;i<getNumberOfArguments();i++){
-        std::string comp=getPntrToArgument(i)->getName()+"_coupling";
-        addComponent(comp);
-        componentIsNotPeriodic(comp);
-        outCoupling[i]=getPntrToComponent(comp);
       }
     
       //now do setup
