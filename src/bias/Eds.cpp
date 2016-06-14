@@ -22,6 +22,7 @@
 #include "Bias.h"
 #include "ActionRegister.h"
 #include "tools/Random.h"
+#include "tools/File.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 
@@ -73,9 +74,15 @@ class EDS : public Bias{
   std::vector<double> means;
   std::vector<double> ssds;
   std::vector<Value*> outCoupling;
+  std::string _irestartfilename;
+  std::string _orestartfilename;
+  OFile orestartfile_;
+  IFile irestartfile_;
   bool adaptive;
   bool equilibration;
   bool ramp;
+  bool restart;
+  bool b_write_restart;
   int seed;
   int update_calls;
   int avg_coupling_count;
@@ -92,7 +99,10 @@ public:
   void calculate();
   void update();
   void turnOnDerivatives();
+  void setup_orestart();
+  void write_orestart();
   static void registerKeywords(Keywords& keys);
+  ~EDS();
 };
 
 PLUMED_REGISTER_ACTION(EDS,"EDS")
@@ -109,7 +119,12 @@ void EDS::registerKeywords(Keywords& keys){
    keys.add("optional","FIXED","Fixed target values for bias factors (not adaptive)");
    keys.add("optional","TEMP","The system temperature. If not provided will be taken from MD code (if available)");
 
+   keys.add("optional","ORESTARTFILE","Output file for all information needed to continue EDS simulation");
+   keys.add("optional","IRESTARTFILE","Read this file to continue an EDS simulation (if same as above, will be overwritten)");
+
    keys.addFlag("RAMP",false,"Slowly increase bias constant to a fixed value");
+   keys.addFlag("FREEZE",false,"Fix bias at current level (only used for restarting)");
+   keys.addFlag("EDSRESTART",false,"Get settings from IRESTARTFILE");
 
    keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
    keys.addOutputComponent("force2","default","squared value of force from the bias");
@@ -129,6 +144,8 @@ coupling_accum(getNumberOfArguments(),1.0),
 means(getNumberOfArguments(),0.0),
 ssds(getNumberOfArguments(),0.0),
 outCoupling(getNumberOfArguments(),NULL),
+_irestartfilename(""),
+_orestartfilename(""),
 update_period(0),
 kbt(0.0),
 coupling_range_increase_factor(1.25),
@@ -136,6 +153,8 @@ b_hard_coupling_range(0),
 adaptive(true),
 equilibration(true),
 ramp(false),
+restart(false),
+b_write_restart(false),
 seed(0),
 update_calls(0),
 avg_coupling_count(1),
@@ -143,88 +162,131 @@ valueBias(NULL),
 valueForce2(NULL)
 {
   double temp=-1.0;
-
-  parseVector("CENTER",center);
-  parseVector("RANGE",max_coupling_range);
-  parseVector("FIXED",target_coupling);
-  parseVector("INIT",set_coupling);
-  parse("PERIOD",update_period);
-  parse("TEMP",temp);
-  parse("SEED",seed);
-  parseFlag("RAMP",ramp);
-  checkRead();
-
-  if(temp>=0.0) kbt=plumed.getAtoms().getKBoltzmann()*temp;
-  else kbt=plumed.getAtoms().getKbT();
-
-  log.printf("  with kBT = %f\n",kbt);
-  log.printf("  Updating every %i steps\n",update_period);
-
-  log.printf("  with centers");
-  for(unsigned i=0;i<center.size();i++) log.printf(" %f",center[i]);
-  log.printf("\n");
-
-  log.printf("  with initial ranges / rates");
-  for(unsigned i=0;i<max_coupling_range.size();i++) {
-      //this is just an empirical guess. Bigger range, bigger grads. Less frequent updates, bigger changes
-      max_coupling_range[i]*=kbt;
-      max_coupling_grad[i] = max_coupling_range[i]*update_period/100.;
-      log.printf(" %f %f",max_coupling_range[i],max_coupling_grad[i]);
+  parseFlag("EDSRESTART",restart);
+  if(restart){
+      parse("IRESTARTFILE",_irestartfilename);
+      parse("ORESTARTFILE",_orestartfilename);
+      checkRead();
   }
-  log.printf("\n");
+  else{
+      parseVector("CENTER",center);
+      parseVector("RANGE",max_coupling_range);
+      parseVector("FIXED",target_coupling);
+      parseVector("INIT",set_coupling);
+      parse("PERIOD",update_period);
+      parse("TEMP",temp);
+      parse("SEED",seed);
+      parse("ORESTARTFILE",_orestartfilename);
+      parseFlag("RAMP",ramp);
+      checkRead();
+    
+      if(temp>=0.0) kbt=plumed.getAtoms().getKBoltzmann()*temp;
+      else kbt=plumed.getAtoms().getKbT();
+    
+      log.printf("  with kBT = %f\n",kbt);
+      log.printf("  Updating every %i steps\n",update_period);
+    
+      log.printf("  with centers");
+      for(unsigned i=0;i<center.size();i++) log.printf(" %f",center[i]);
+      log.printf("\n");
+    
+      log.printf("  with initial ranges / rates");
+      for(unsigned i=0;i<max_coupling_range.size();i++) {
+          //this is just an empirical guess. Bigger range, bigger grads. Less frequent updates, bigger changes
+          max_coupling_range[i]*=kbt;
+          max_coupling_grad[i] = max_coupling_range[i]*update_period/100.;
+          log.printf(" %f %f",max_coupling_range[i],max_coupling_grad[i]);
+      }
+      log.printf("\n");
+    
+      if(seed>0){
+         log.printf("  setting random seed = %i",seed);
+         rand.setSeed(seed);
+      }
+    
+      for(unsigned i=0;i<getNumberOfArguments();++i) if(target_coupling[i]!=0.0) adaptive=false;
+    
+      if(!adaptive){
+        if(ramp>0) {
+            log.printf("  ramping up coupling constants over %i steps\n",ramp);
+        }
+    
+        log.printf("  with starting coupling constants");
+        for(unsigned i=0;i<set_coupling.size();i++) log.printf(" %f",set_coupling[i]);
+        log.printf("\n");
+        log.printf("  and final coupling constants");
+        for(unsigned i=0;i<target_coupling.size();i++) log.printf(" %f",target_coupling[i]);
+        log.printf("\n");
+      }
+    
+      addComponent("bias");
+      componentIsNotPeriodic("bias");
+      valueBias=getPntrToComponent("bias");
+    
+      addComponent("force2");
+      componentIsNotPeriodic("force2");
+      valueForce2=getPntrToComponent("force2");
+    
+      for(unsigned i=0;i<getNumberOfArguments();i++){
+        std::string comp=getPntrToArgument(i)->getName()+"_coupling";
+        addComponent(comp);
+        componentIsNotPeriodic(comp);
+        outCoupling[i]=getPntrToComponent(comp);
+      }
+    
+      //now do setup
+      if(ramp){
+          update_period*=-1;
+      }
+    
+      for(unsigned i=0;i<set_coupling.size();i++) current_coupling[i] = set_coupling[i];
+    
+      // if adaptive, then first half will be used for equilibrating and second half for statistics
+      if(update_period>0){
+          update_period/=2;
+      }
 
-  if(seed>0){
-     log.printf("  setting random seed = %i",seed);
-     rand.setSeed(seed);
-  }
 
-  for(unsigned i=0;i<getNumberOfArguments();++i) if(target_coupling[i]!=0.0) adaptive=false;
-
-  if(!adaptive){
-    if(ramp>0) {
-        log.printf("  ramping up coupling constants over %i steps\n",ramp);
     }
 
-    log.printf("  with starting coupling constants");
-    for(unsigned i=0;i<set_coupling.size();i++) log.printf(" %f",set_coupling[i]);
-    log.printf("\n");
-    log.printf("  and final coupling constants");
-    for(unsigned i=0;i<target_coupling.size();i++) log.printf(" %f",target_coupling[i]);
-    log.printf("\n");
-  }
+    if(_orestartfilename.length()>0) {
+        log.printf("  writing restart information every %i steps to file: %s\n",abs(update_period),_orestartfilename.c_str());
+        b_write_restart = true;
+        setup_orestart();
+    }
 
-  addComponent("bias");
-  componentIsNotPeriodic("bias");
-  valueBias=getPntrToComponent("bias");
-
-  addComponent("force2");
-  componentIsNotPeriodic("force2");
-  valueForce2=getPntrToComponent("force2");
-
-  for(unsigned i=0;i<getNumberOfArguments();i++){
-    std::string comp=getPntrToArgument(i)->getName()+"_coupling";
-    addComponent(comp);
-    componentIsNotPeriodic(comp);
-    outCoupling[i]=getPntrToComponent(comp);
-  }
-
-  log<<"  Bibliography "<<plumed.cite("White and Voth, J. Chem. Theory Comput. 10 (8), 3023-3030 (2014)")<<"\n";
-
-
-  //now do setup
-  if(ramp){
-      update_period*=-1;
-  }
-
-  for(unsigned i=0;i<set_coupling.size();i++) current_coupling[i] = set_coupling[i];
-
-  // if adaptive, then first half will be used for equilibrating and second half for statistics
-  if(update_period>0){
-      update_period/=2;
-  }
-
+    log<<"  Bibliography "<<plumed.cite("White and Voth, J. Chem. Theory Comput. 10 (8), 3023-3030 (2014)")<<"\n";
 }
 
+void EDS::setup_orestart(){
+    orestartfile_.open(_orestartfilename);
+    orestartfile_.setHeavyFlush();
+
+    orestartfile_.addConstantField("adaptive").printField("adaptive",adaptive);
+    orestartfile_.addConstantField("update_period").printField("update_period",update_period);
+    orestartfile_.addConstantField("seed").printField("seed",seed);
+    orestartfile_.addConstantField("kbt").printField("kbt",kbt);
+
+    write_orestart();
+}
+
+void EDS::write_orestart(){
+    std::string init_name;
+    std::string target_name;
+    std::string coupling_name;
+    orestartfile_.printField("time",getTimeStep()*getStep());
+
+    for(unsigned i=0;i<getNumberOfArguments();++i) {
+        init_name = getPntrToArgument(i)->getName()+"_init";
+        target_name = getPntrToArgument(i)->getName()+"_target";
+        coupling_name = getPntrToArgument(i)->getName()+"_coupling";
+
+        orestartfile_.printField(init_name,set_coupling[i]);
+        orestartfile_.printField(target_name,target_coupling[i]);
+        orestartfile_.printField(coupling_name,current_coupling[i]);
+    }
+    orestartfile_.printField();
+}
 
 void EDS::calculate(){
   int ncvs = getNumberOfArguments();
@@ -245,6 +307,10 @@ void EDS::calculate(){
   
   //adjust parameters according to EDS recipe
   update_calls++;
+
+  if(b_write_restart && update_calls%abs(update_period)==0){
+     write_orestart();
+  }
 
   int b_finished_equil_flag = 1;
   double delta;
@@ -343,6 +409,10 @@ void EDS::calculate(){
 }
 
 void EDS::update(){
+}
+
+EDS::~EDS(){
+    orestartfile_.close();
 }
 
 void EDS::turnOnDerivatives(){
