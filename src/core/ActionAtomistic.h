@@ -109,7 +109,7 @@ public:
 /// Applies  PBCs to a seriens of positions or distances
   void pbcApply(std::vector<Vector>& dlist, unsigned max_index=0) const;
 /// Get the vector of absolute indexes
-  const std::vector<AtomNumber> & getAbsoluteIndexes()const;
+  virtual const std::vector<AtomNumber> & getAbsoluteIndexes()const;
 /// Get the absolute index of an atom
   AtomNumber getAbsoluteIndex(int i)const;
 /// Parse a list of atoms without a numbered keyword

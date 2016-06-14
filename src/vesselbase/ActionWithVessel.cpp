@@ -132,7 +132,7 @@ BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ){
   return bv; 
 }
 
-StoreDataVessel* ActionWithVessel::buildDataStashes( const bool& allow_wcutoff, const double& wtol, ActionWithVessel* actionThatUses ){
+StoreDataVessel* ActionWithVessel::buildDataStashes( ActionWithVessel* actionThatUses ){
   if(mydata){
      if( actionThatUses ) mydata->addActionThatUses( actionThatUses );  
      return mydata;
@@ -141,7 +141,6 @@ StoreDataVessel* ActionWithVessel::buildDataStashes( const bool& allow_wcutoff, 
   VesselOptions da("","",0,"",this);
   StoreDataVessel* mm=new StoreDataVessel(da);
   if( actionThatUses ) mm->addActionThatUses( actionThatUses );
-  if( allow_wcutoff ) mm->setHardCutoffOnWeight( wtol );
   addVessel(mm);
 
   // Make sure resizing of vessels is done
@@ -235,7 +234,7 @@ void ActionWithVessel::deactivateAllTasks(){
 }
 
 bool ActionWithVessel::taskIsCurrentlyActive( const unsigned& index ) const {
-  return (taskFlags[index]>0);
+  plumed_dbg_assert( index<taskFlags.size() ); return (taskFlags[index]>0);
 }
 
 void ActionWithVessel::doJobsRequiredBeforeTaskList(){
@@ -350,7 +349,7 @@ void ActionWithVessel::calculateAllVessels( const unsigned& taskCode, MultiValue
       // Calculate returns a bool that tells us if this particular
       // quantity is contributing more than the tolerance
       functions[j]->calculate( taskCode, functions[j]->transformDerivatives(taskCode, myvals, bvals), buffer, der_list );
-      if( !actionIsBridged && bvals.getNumberActive()>0 ) bvals.clearAll(); 
+      if( !actionIsBridged ) bvals.clearAll(); 
   }
   return;
 }

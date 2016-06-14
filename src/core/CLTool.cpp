@@ -94,7 +94,7 @@ bool CLTool::readCommandLineArgs( int argc, char**argv, FILE*out ){
                if( a==thiskey ){
                    prefix=thiskey+"="; found=true;
                    inputData.insert(std::pair<std::string,std::string>(thiskey,""));
-               } else if( a.find(thiskey+"=")==0){
+               } else if(Tools::startWith(a,thiskey+"=")){
                    a.erase(0,a.find("=")+1); prefix=""; found=true;
                    if(inputData.count(thiskey)==0){
                       inputData.insert(std::pair<std::string,std::string>(thiskey,a));
