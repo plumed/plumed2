@@ -57,6 +57,7 @@ Currently, the target observable value should not be zero if using the adaptive 
 \ref COMBINE can be used to shift the observable by a constant amount, and then a non-zero target can be used.
 
 \par Examples
+
 The following input for a harmonic oscillator of two beads will adaptively find a linear bias to change the mean and variance to the target values. The PRINT line shows how to access the value of the coupling constants. 
 
 \verbatim 
@@ -70,6 +71,28 @@ dc2: COMBINE ARG=dc POWERS=2 PERIODIC=NO
 eds: EDS ARG=d1,dc2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 
 PRINT ARG=d1,dc2,eds.d1_coupling,eds.dc2_coupling,eds.bias,eds.force2 FILE=colvars.dat STRIDE=100
 \endverbatim
+
+Rather than trying to find the coupling constants adaptively, can ramp up to a constant value.
+\verbatim
+#ramp couplings from 0,0 to -1,1 over 50000 steps
+eds: EDS ARG=d1,dc2 CENTER=2.0,1.0 FIXED=-1,1 RAMP PERIOD=50000 TEMP=1.0
+
+#same as above, except starting at -0.5,0.5 rather than default of 0,0
+eds: EDS ARG=d1,dc2 CENTER=2.0,1.0 FIXED=-1,1 INIT=-0.5,0.5 RAMP PERIOD=50000 TEMP=1.0
+\endverbatim
+
+A restart file can be added to dump information needed to restart/continue simulation using these parameters every STRIDE.
+\verbatim 
+#add the option to write to a restart file
+eds: EDS ARG=d1,dc2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 ORESTARTFILE=restart.dat
+
+#add the option to read in a previous restart file
+eds: EDS ARG=d1,dc2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IRESTARTFILE=restart.dat EDSRESTART
+
+#add the option to read in a previous restart file and freeze the bias at the final level from the previous simulation
+eds: EDS ARG=d1,dc2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IRESTARTFILE=restart.dat EDSRESTART FREEZE
+\endverbatim
+
 
 */
 //+ENDPLUMEDOC
