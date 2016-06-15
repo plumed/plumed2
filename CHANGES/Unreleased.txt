@@ -38,6 +38,7 @@ Changes from version 2.2 which are relevant for users:
   - Patch for amber 14 now passes charges with appropriate units (fixes \issue{165}). Notice that
     the patch is still backward compatible with older PLUMED version, but the charges will only be passed
     when using PLUMED 2.3 or later.
+  - Patches for GROMACS 4.6 and 5.1 incorporate Hamiltonian replica exchange, see \ref hrex
 - New features for existing actions:
   - The SPECIES and SPECIESA keyword in MultiColvars can now take a multicolvar as input.  This allows one
     to calculate quantities such as the Q4 parameters for those atoms that have a coordination number greater
