@@ -41,7 +41,7 @@ Add a linear bias on a set of observables.
 
 This force is the same as the linear part of the bias in \ref RESTRAINT, 
 but this bias has the ability to compute prefactors
-adaptively using the scheme of White and Voth \cite white2 in order to match 
+adaptively using the scheme of White and Voth (JCTC 2014) in order to match 
 target observable values for a set of CVs.
 
 The addition to the potential is of the form 
@@ -57,6 +57,19 @@ Currently, the target observable value should not be zero if using the adaptive 
 \ref COMBINE can be used to shift the observable by a constant amount, and then a non-zero target can be used.
 
 \par Examples
+The following input for a harmonic oscillator of two beads will adaptively find a linear bias to change the mean and variance to the target values. The PRINT line shows how to access the value of the coupling constants. 
+
+\verbatim 
+d1: DISTANCE ATOMS=1,2
+#set center of new distribution here
+dc: COMBINE ARG=d1,d1 POWERS=0,1 PERIODIC=NO COEFFICIENTS=-2.0,1.0
+# this is the squared deviation from the target value of the mean
+dc2: COMBINE ARG=dc POWERS=2 PERIODIC=NO
+
+#bias mean and variance, use the raw distance so target mean is not zero
+eds: EDS ARG=d1,dc2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 
+PRINT ARG=d1,dc2,eds.d1_coupling,eds.dc2_coupling,eds.bias,eds.force2 FILE=colvars.dat STRIDE=100
+\endverbatim
 
 */
 //+ENDPLUMEDOC
@@ -79,6 +92,7 @@ class EDS : public Bias{
   OFile orestartfile_;
   IFile irestartfile_;
   bool adaptive;
+  bool freeze;
   bool equilibration;
   bool ramp;
   bool restart;
@@ -124,7 +138,7 @@ void EDS::registerKeywords(Keywords& keys){
    keys.add("optional","IRESTARTFILE","Read this file to continue an EDS simulation (if same as above, will be overwritten)");
 
    keys.addFlag("RAMP",false,"Slowly increase bias constant to a fixed value");
-   keys.addFlag("FREEZE",false,"Fix bias at current level (only used for restarting)");
+   keys.addFlag("FREEZE",false,"Fix bias at current level (only used for restarting). Can also set PERIOD=0 if not using EDSRESTART.");
    keys.addFlag("EDSRESTART",false,"Get settings from IRESTARTFILE");
 
    keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
@@ -154,6 +168,7 @@ b_hard_coupling_range(0),
 adaptive(true),
 equilibration(true),
 ramp(false),
+freeze(false),
 restart(false),
 b_write_restart(false),
 seed(0),
@@ -188,6 +203,7 @@ valueForce2(NULL)
   parse("SEED",seed);
   parse("ORESTARTFILE",_orestartfilename);
   parseFlag("RAMP",ramp);
+  parseFlag("FREEZE",freeze);
   parseFlag("EDSRESTART",restart);
   parse("IRESTARTFILE",_irestartfilename);
   parse("ORESTARTFILE",_orestartfilename);
@@ -252,6 +268,11 @@ valueForce2(NULL)
       }
 
 
+    }
+
+    if(freeze){
+        adaptive=false;
+        log.printf("  freezing bias at current level\n");
     }
 
     if(_orestartfilename.length()>0) {
@@ -430,7 +451,7 @@ void EDS::calculate(){
   for(unsigned i=0;i<ncvs;++i){
       //are we ramping to a constant value and not done equilibrating
       if(update_period<0){
-          if(update_calls<fabs(update_period)){
+          if(update_calls<fabs(update_period) && !freeze){
               current_coupling[i] += (target_coupling[i]-set_coupling[i])/fabs(update_period);
           }
           //make sure we don't reset update calls
@@ -474,7 +495,7 @@ void EDS::calculate(){
   }
 
   //Now we update coupling constant, if necessary
-  if(!equilibration && update_period > 0 && update_calls == update_period) {
+  if(!equilibration && update_period > 0 && update_calls == update_period && !freeze) {
     double step_size = 0;
     double tmp;
     for(unsigned i=0;i<ncvs;++i){
