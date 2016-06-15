@@ -13,6 +13,7 @@ SOEXT=@SOEXT@
 LD=@LD@
 LDSO=@LDSO@
 GCCDEP=@CXX@
+disable_dependency_tracking=@disable_dependency_tracking@
 prefix=@prefix@
 program_name=@program_name@
 program_transform_name=@program_transform_name@

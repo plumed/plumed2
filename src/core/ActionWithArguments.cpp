@@ -143,6 +143,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
       	           str+=plumed.getActionSet().getLabelList()+")";
       	  	 error("cannot find action named " + a + str);
       	     }
+             if( action->getNumberOfComponents()==0 ) error("found " + a +".* indicating use all components calculated by action with label " + a + " but this action has no components");
       	     for(int k=0;k<action->getNumberOfComponents();++k) arg.push_back(action->copyOutput(k));
       	  } else if ( a=="*" ){
       	     // Take components from all actions with a specific name

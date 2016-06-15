@@ -39,8 +39,6 @@ MultiColvarBase(ao)
   std::string mlab; parse("DATA",mlab);
   mycolv = plumed.getActionSet().selectWithLabel<MultiColvarBase*>(mlab);
   if(!mycolv) error("action labeled " + mlab + " does not exist or is not a multicolvar");
-  BridgedMultiColvarFunction* check = dynamic_cast<BridgedMultiColvarFunction*>( mycolv );
-  if(check) error("cannot create a bridge of a bridge");
 
   // When using numerical derivatives here we must use numerical derivatives
   // in base multicolvar
@@ -50,6 +48,14 @@ MultiColvarBase(ao)
   weightHasDerivatives=true; usespecies=mycolv->usespecies;
   // Number of tasks is the same as the number in the underlying MultiColvar
   for(unsigned i=0;i<mycolv->getFullNumberOfTasks();++i) addTaskToList( mycolv->getTaskCode(i) );
+}
+
+void BridgedMultiColvarFunction::turnOnDerivatives(){
+  BridgedMultiColvarFunction* check = dynamic_cast<BridgedMultiColvarFunction*>( mycolv );
+  if( check ){
+    if( check->getNumberOfAtoms()>0 ) error("cannot calculate required derivatives of this quantity");
+  }
+  MultiColvarBase::turnOnDerivatives();
 }
 
 void BridgedMultiColvarFunction::transformBridgedDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals ) const {
