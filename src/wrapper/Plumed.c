@@ -124,6 +124,16 @@ plumed_plumedmain_function_holder* plumed_kernel_register(const plumed_plumedmai
   void* p;
   if(first && f==NULL){
     path=getenv("PLUMED_KERNEL");
+#ifdef __PLUMED_DEFAULT_KERNEL
+/*
+  This variable allows a default path for the kernel to be hardcoded.
+  Can be usedful for hardcoding the predefined plumed location
+  still allowing the user to override this choice setting PLUMED_KERNEL.
+  The path should be chosen at compile time adding e.g.
+  -D__PLUMED_DEFAULT_KERNEL=\"/opt/local/lib/libplumed.dylib\"
+*/
+    if(! (path && (*path) )) path=__PLUMED_DEFAULT_KERNEL;
+#endif
     if(path && (*path)){
       fprintf(stderr,"+++ Loading the PLUMED kernel runtime +++\n");
       fprintf(stderr,"+++ PLUMED_KERNEL=\"%s\" +++\n",path);
