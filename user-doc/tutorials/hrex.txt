@@ -1,16 +1,26 @@
 /**
 \page hrex Using Hamiltonian replica exchange with GROMACS
 
-If you patch GROMACS using this special PLUMED branch you should be able to perform
-Hamiltonian replica exchange with different topologies. This patch is modifying GROMACS
-much more than the original PLUMED patch, so: be even more careful!
+When patching GROMACS with PLUMED, it is also possible to perform 
+Hamiltonian replica exchange with different topologies.
+Although this feature is provided together with PLUMED, it is actually
+a new feature for GROMACS itself that can be enabled using the `-hrex`
+flag of `mdrun`.
 This implementation is very close to the one used to produce the data in this paper
-\cite bussi2013mp.
+\cite bussi2013mp. In case you find it useful, please cite this paper.
+
+\warning This feature is currently used by several groups and should be
+robust enough. However, be sure that you understand its limitations and
+to perform all the tests discussed in this page before using it in production.
 
 \section multipletopologies Generate multiple topologies
 
-Use the plumed partial_tempering command line tool.
+Plumed comes with a `partial_tempering` command line tool that can be used to generate
+multiple topologies. Notice that you might want to generate these topologies
+by userself. This step is totally independent from the use of the `-hrex` flag.
 
+
+The `partial_tempering` tool can be invoked as follows:
 \verbatim
   plumed partial_tempering scale < processed.top
 \endverbatim
@@ -72,11 +82,11 @@ all other terms (bonds/bends) are identical.
 
 \section hrexpatch Run GROMACS
 
-If GROMACS has been patched with this version of PLUMED it should accept the -hrex option
-in mdrun. Please double check this (mdrun -h should list this possibility). Also
-notice that only the patch for gromacs 4.6.5 implementes hrex.
+If GROMACS has been patched with PLUMED it should accept the -hrex option
+in mdrun. Please double check this (mdrun -h should list this possibility).
+Notice that not all the versions of GROMACS allow this feature.
 First of all prepare separate topologies for each replicas using plumed partial_tempering
-tool as shown above. Then run a normal replica exchange with gromacs adding the flag "-hrex" on the command line.
+tool as shown above (or using some other tool). Then run a normal replica exchange with gromacs adding the flag "-hrex" on the command line.
 
 A complete run script could be adapted from the following
 \verbatim
