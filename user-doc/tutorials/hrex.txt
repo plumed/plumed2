@@ -132,13 +132,22 @@ Notice that total cell could be charged. This happens whenever the scaled portio
 is not neutral. There should be no problem in this. When used with pbc, GROMACS
 will add a compensating background.
 
-Suggested checks:
+Suggested check:
 - Try with several identical force fields (hardcode the same lambda for all replicas in the
   script above) and different seed/starting point. Acceptance should be 1.0
 
+Notice that when you run with GPUs acceptance could be different from 1.0.
+The reason is that to compute the acceptance GROMACS is sending the coordinates to the neighboring
+replicas which then recompute energy. If all the tpr files are identical, one would expect
+energy to be identically to the originally computed one. However, calculations
+made with GPUs are typically not reproducible to machine precision. For a large system, even
+an error in the total energy for the last significant digit could be on the order of a kJ.
+This results in practice in a lower acceptance. The error induced on the final ensemble is
+expected to be very small.
+
+
 Warnings:
 - Topologies should have the same number of atoms, same masses and same constraint topology
-- Acceptance is not computed correctly if rcoulomb!=rvdw.
 - Choose neighbor list update (nstlist) that divides replex. Notice that running with GPUs
   GROMACS is going to change nstlist automatically, be sure that it still divides replex.
 - Option -hrex requires also option -plumed. If you do not care about plumed, just provide an empty
