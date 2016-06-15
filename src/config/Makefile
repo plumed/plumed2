@@ -16,10 +16,14 @@ endif
 
 # default target
 all:
-	$(MAKE) PLUMED_FORCE=yes ConfigInstall.cpp Config.cpp version.h
+	$(MAKE) PLUMED_FORCE=yes ConfigInstall.cpp Config.cpp version.h config.txt
 	$(MAKE) Config.o ConfigInstall.o compile_options.sh
 
 obj: all
+
+config.txt: ../../Makefile.conf
+	@echo "Updating config.txt file"
+	@ ../maketools/update-config-txt.sh config.txt $(CPPFLAGS)
 
 version.h:
 	@echo "Updating version.h"
@@ -68,7 +72,7 @@ compile_options.sh:
 
 .PHONY: clean
 clean:
-	rm -f Config.cpp compile_options.sh Makefile_conf version.h
+	rm -f Config.cpp compile_options.sh Makefile_conf version.h config.txt
 	rm -fr deps 
 	rm -f Config.cpp ConfigInstall.cpp compile_options.sh install.conf
 	rm -f $(CLEANLIST)

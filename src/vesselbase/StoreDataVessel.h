@@ -63,10 +63,6 @@ private:
    unsigned tmp_index;
    std::vector<MultiValue> my_tmp_vals;
 protected:
-/// Apply a hard cutoff on the weight
-  bool hard_cut;
-/// The value of the cutoff on the weight
-  double wtol;
 /// Is the weight differentiable
   bool weightHasDerivatives();
 /// Are we using low mem option
@@ -97,13 +93,12 @@ public:
   void setHardCutoffOnWeight( const double& mytol );
 /// Add an action that uses this data 
   void addActionThatUses( ActionWithVessel* actionThatUses );
-/// Is the hard weight cutoff on
-  bool weightCutoffIsOn() const ;
 /// Return the number of components in the vector
   unsigned getNumberOfComponents() const { return vecsize; }
 /// Get the values of all the components in the vector
   void retrieveSequentialValue( const unsigned& myelem, const bool& normed, std::vector<double>& values ) const ;
   void retrieveValueWithIndex( const unsigned& myelem, const bool& normed, std::vector<double>& values ) const ;
+  double retrieveWeightWithIndex( const unsigned& myelem ) const ;
 /// Get the derivatives for one of the components in the vector
   virtual void retrieveDerivatives( const unsigned& myelem, const bool& normed, MultiValue& myvals );
 /// Do all resizing of data
@@ -132,10 +127,8 @@ public:
   ActionWithVessel* getDataUser( const unsigned& );
 /// Set the number of tempory multivalues we need
   void resizeTemporyMultiValues( const unsigned& nvals );
-/// Reset the tempory multi values at the start of the calculation 
-  void resetTemporyMultiValues();
 /// Return a tempory multi value - we do this so as to avoid vector resizing
-  MultiValue& getTemporyMultiValue();
+  MultiValue& getTemporyMultiValue( const unsigned& ind );
 };
 
 inline
@@ -156,10 +149,9 @@ unsigned StoreDataVessel::getNumberOfDerivativeSpacesPerComponent() const {
 inline
 bool StoreDataVessel::storedValueIsActive( const unsigned& iatom ) const {
   if( !getAction()->taskIsCurrentlyActive( iatom ) ) return false;
-  if( !hard_cut ) return true; 
   unsigned jatom = getStoreIndex( iatom );
   plumed_dbg_assert( jatom<getNumberOfStoredValues() );
-  return local_buffer[jatom*vecsize*nspace]>wtol;   // (active_val[iatom]==1);
+  return local_buffer[jatom*vecsize*nspace]>epsilon;   
 }
 
 inline
@@ -176,8 +168,14 @@ inline
 unsigned StoreDataVessel::getStoreIndex( const unsigned& ind ) const {
   if( getAction()->nactive_tasks==getAction()->getFullNumberOfTasks() ) return ind;
 
+  // Binary search for required element - faster scaling than sequential search
+  unsigned l=0, r=getAction()->nactive_tasks-1;
   for(unsigned i=0;i<getAction()->nactive_tasks;++i){
-      if( ind==getAction()->indexOfTaskInFullList[i] ) return i;
+      plumed_assert( l<=r );
+      unsigned m = std::floor( (l + r)/2 ); 
+      if( ind==getAction()->indexOfTaskInFullList[m] ) return m;
+      else if( getAction()->indexOfTaskInFullList[m]<ind ) l=m+1;
+      else if( getAction()->indexOfTaskInFullList[m]>ind ) r=m-1;
   }
   plumed_merror("requested task is not active");
 }

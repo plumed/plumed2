@@ -47,7 +47,9 @@ lib:
 install:
 	cd ../lib ; make install
 
+ifneq ($(disable_dependency_tracking),yes)
 -include $(DEP)
+endif
 
 # if machine dependent configuration has not been found:
 else
