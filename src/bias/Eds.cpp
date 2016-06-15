@@ -112,12 +112,12 @@ void EDS::registerKeywords(Keywords& keys){
    Bias::registerKeywords(keys);
    keys.use("ARG");
    keys.add("compulsory","CENTER","The desired centers (equilibrium values) which will be sought during the adaptive linear biasing.");
-   keys.add("compulsory","RANGE","3.0","The largest magnitude of the force constant which one expects (in kBT) for each CV based");
    keys.add("compulsory","PERIOD","Steps over which to adjust bias");
 
-   keys.add("optional","SEED","Seed for random order of changing bias");
-   keys.add("optional","INIT","Starting value for coupling coefficients");
-   keys.add("optional","FIXED","Fixed target values for bias factors (not adaptive)");
+   keys.add("compulsory","RANGE","3.0","The largest magnitude of the force constant which one expects (in kBT) for each CV based");
+   keys.add("compulsory","SEED","0","Seed for random order of changing bias");
+   keys.add("compulsory","INIT","0","Starting value for coupling coefficients");
+   keys.add("compulsory","FIXED","0","Fixed target values for bias factors (not adaptive)");
    keys.add("optional","TEMP","The system temperature. If not provided will be taken from MD code (if available)");
 
    keys.add("optional","ORESTARTFILE","Output file for all information needed to continue EDS simulation");
@@ -273,9 +273,9 @@ void EDS::read_irestart(){
     /*
     std::vector<std::string> fields;
     irestartfile_.scanFieldList(fields);
-    for(unsigned i=0;i<fields.size();i++){
-        log.printf("field %i %s\n",i,fields[i].c_str());
-    } 
+    log.printf("field");
+    for(unsigned i=0;i<fields.size();i++) log.printf(" %s",fields[i].c_str());
+    log.printf("\n");
     */
 
     if(irestartfile_.FieldExist("kbt")){
@@ -310,6 +310,7 @@ void EDS::read_irestart(){
     std::string maxrange_name;
     std::string maxgrad_name;
     while(irestartfile_.scanField("time",time)){
+
         for(unsigned i=0;i<getNumberOfArguments();++i) {
             center_name = getPntrToArgument(i)->getName()+"_center";
             init_name = getPntrToArgument(i)->getName()+"_init";
@@ -325,6 +326,7 @@ void EDS::read_irestart(){
             irestartfile_.scanField(maxrange_name,max_coupling_range[i]);
             irestartfile_.scanField(maxgrad_name,max_coupling_grad[i]);
        }
+
        irestartfile_.scanField();
    }
 
@@ -343,7 +345,7 @@ void EDS::read_irestart(){
    if(!adaptive && update_period<0){
        log.printf("  ramping up coupling constants over %i steps\n",-update_period);
    }
-    
+
    log.printf("  with current coupling constants:\n    ");
    for(unsigned i=0;i<current_coupling.size();i++) log.printf(" %f",current_coupling[i]);
    log.printf("\n");
