@@ -631,7 +631,7 @@ static void copy_ints(const int *s, int *d, int n)
 #define scopy_reals(v, n) copy_reals(state->v, state_local->v, n);
 #define scopy_ints(v, n)   copy_ints(state->v, state_local->v, n);
 
-static void copy_state_nonatomdata(t_state *state, t_state *state_local)
+void copy_state_nonatomdata(t_state *state, t_state *state_local)
 {
     /* When t_state changes, this code should be updated. */
     int ngtc, nnhpres;
