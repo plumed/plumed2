@@ -156,11 +156,14 @@ AC_ARG_ENABLE([modules],
 
 
 # set enable flags for ./configure
+PLUMED_CONFIG_ENABLE([doc],[doc],[documentation],[yes])
+PLUMED_CONFIG_ENABLE([pdfdoc],[pdfdoc],[pdf version of the manual],[no])
 PLUMED_CONFIG_ENABLE([debug],[debug],[debugging],[no])
 PLUMED_CONFIG_ENABLE([basic_warnings],[basic-warnings],[basic warnings],[yes])
 PLUMED_CONFIG_ENABLE([fussy],[fussy],[fussy warnings],[no])
 PLUMED_CONFIG_ENABLE([debug_glibcxx],[debug-glibcxx],[enable boundary check],[no])
 PLUMED_CONFIG_ENABLE([shared],[shared],[shared libs],[yes])
+PLUMED_CONFIG_ENABLE([dependency_tracking],[dependency-tracking],[dependency tracking],[yes])
 PLUMED_CONFIG_ENABLE([cxx_exceptions],[cxx-exceptions],[c++ exceptions],[no])
 PLUMED_CONFIG_ENABLE([ld_r],[ld-r],[group object files],[yes])
 PLUMED_CONFIG_ENABLE([mpi],[mpi],[search for mpi],[yes])
@@ -534,6 +537,13 @@ then
 fi
 #### Options for dynamic library to work properly ####
 
+AC_SUBST(make_doc)
+make_doc=no
+if test "$doc" == true
+then
+
+make_doc=yes
+
 ### Look for doxygen
 AC_CHECK_PROG([doxygen],[doxygen],[found])
 if test "$doxygen" == found
@@ -543,13 +553,35 @@ then
   then
     AC_MSG_NOTICE([Doxygen version is fine])
   else
-    AC_MSG_WARN([Doxygen version is <1.8. You might have problems in generating manuals])
+    AC_MSG_WARN([Doxygen version is <1.8])
+    make_doc=no
   fi
   AC_CHECK_PROG([dot],[dot],[found])
   if test "$dot" != found
   then
     AC_MSG_WARN([You will not be able to see diagrams in the manual])
   fi
+else
+  make_doc=no
+fi
+fi
+
+if test "$make_doc" = yes
+then
+  AC_MSG_NOTICE([Manuals will be generated])
+else
+  AC_MSG_NOTICE([Manuals will not be generated])
+fi
+
+AC_SUBST(make_pdfdoc)
+make_pdfdoc=""
+if test "$pdfdoc" == true && test "$make_doc" == yes
+then
+  AC_MSG_NOTICE([A PDF version of the manual will be generated])
+  make_pdfdoc=yes
+else
+  AC_MSG_NOTICE([A PDF version of the manual will not be generated])
+  make_pdfdoc=no
 fi
 
 ### Look for xxd
@@ -557,6 +589,16 @@ AC_CHECK_PROG([xxd],[xxd],[found])
 if test "$xxd" != found
 then
   AC_MSG_ERROR([xxd should be installed for PLUMED to compile properly])
+fi
+
+AC_SUBST(disable_dependency_tracking)
+if test "$dependency_tracking" = true
+then
+  AC_MSG_NOTICE([dependency tracking enabled])
+  disable_dependency_tracking=no
+else
+  AC_MSG_NOTICE([dependency tracking disabled])
+  disable_dependency_tracking=yes
 fi
 
 AC_SUBST(program_can_run)

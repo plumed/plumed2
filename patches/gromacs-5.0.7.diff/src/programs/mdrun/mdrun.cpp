@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -668,14 +668,14 @@ int gmx_mdrun(int argc, char *argv[])
         gmx_fatal(FARGS, "Replica exchange number of exchanges needs to be positive");
     }
 
-    if (nmultisim > 1)
+    if (nmultisim >= 1)
     {
 #ifndef GMX_THREAD_MPI
         gmx_bool bParFn = (multidir == NULL);
         init_multisystem(cr, nmultisim, multidir, NFILE, fnm, bParFn);
 #else
-        gmx_fatal(FARGS, "mdrun -multi is not supported with the thread library. "
-                  "Please compile GROMACS with MPI support");
+        gmx_fatal(FARGS, "mdrun -multi or -multidir are not supported with the thread-MPI library. "
+                  "Please compile GROMACS with a proper external MPI library.");
 #endif
     }
 
@@ -769,6 +769,9 @@ int gmx_mdrun(int argc, char *argv[])
     {
         gmx_log_open(ftp2fn(efLOG, NFILE, fnm), cr,
                      !bSepPot, Flags & MD_APPENDFILES, &fplog);
+        please_cite(fplog, "Abraham2015");
+        please_cite(fplog, "Pall2015");
+        please_cite(fplog, "Pronk2013");
         please_cite(fplog, "Hess2008b");
         please_cite(fplog, "Spoel2005a");
         please_cite(fplog, "Lindahl2001a");
@@ -820,12 +823,6 @@ int gmx_mdrun(int argc, char *argv[])
                   nsteps, nstepout, resetstep,
                   nmultisim, repl_ex_nst, repl_ex_nex, repl_ex_seed,
                   pforce, cpt_period, max_hours, deviceOptions, imdport, Flags);
-
-    /* PLUMED */
-    if(plumedswitch){
-      plumed_finalize(plumedmain);
-    }
-    /* END PLUMED */
 
     /* Log file has to be closed in mdrunner if we are appending to it
        (fplog not set here) */

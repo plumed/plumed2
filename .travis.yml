@@ -22,11 +22,11 @@ matrix:
   - os: linux
     dist: trusty
     sudo: required
-    env: CPPCHECK=yes CPPCHECK_VERSION=1.69
+    env: CPPCHECK=yes CPPCHECK_VERSION=1.71
   - os: linux
     dist: trusty
     sudo: required
-    env: CPPCHECK=yes CPPCHECK_VERSION=1.71
+    env: CPPCHECK=yes CPPCHECK_VERSION=1.74
 # then check with different optimization flags
   - os: linux
     dist: trusty
@@ -50,7 +50,7 @@ matrix:
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3
   allow_failures:
 # I allow this to fail temporarily
-    - env: CPPCHECK=yes CPPCHECK_VERSION=1.71
+    - env: CPPCHECK=yes CPPCHECK_VERSION=1.74
 # Possible additional variables:
 #   VALGRIND=yes to make valgrind tests, only when log contains string [valgrind]
 install:
@@ -97,6 +97,7 @@ install:
 script:
 # we enable crystallization and manyrestraints modules
   - CONFIG_FLAGS="$CONFIG_FLAGS --enable-modules=crystallization:manyrestraints"
+  - if test "$MAKEDOC" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-pdfdoc" ; fi
 
 # BUILD:
 # this is done only if PLUMED_CXX is defined

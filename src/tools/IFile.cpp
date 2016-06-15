@@ -187,7 +187,8 @@ IFile& IFile::scanField(){
 
 IFile::IFile():
   inMiddleOfField(false),
-  ignoreFields(false)
+  ignoreFields(false),
+  noEOL(false)
 {
 }
 
@@ -198,9 +199,8 @@ IFile::~IFile(){
 IFile& IFile::getline(std::string &str){
   char tmp=0;
   str="";
-// I comment out this (see note below on commented fgetpos):
-// fpos_t pos;
-// fgetpos(fp,&pos);
+  fpos_t pos;
+  fgetpos(fp,&pos);
   while(llread(&tmp,1)==1 && tmp && tmp!='\n' && tmp!='\r' && !eof && !err){
     str+=tmp;
   }
@@ -208,11 +208,12 @@ IFile& IFile::getline(std::string &str){
     llread(&tmp,1);
     plumed_massert(tmp=='\n',"plumed only accepts \\n (unix) or \\r\\n (dos) new lines");
   }
-  if(eof){
-    if(str.length()>0) eof=false;
-  } else if(err || tmp!='\n'){
+ if(eof && noEOL){
+   if(str.length()>0) eof=false;
+ } else if(eof || err || tmp!='\n'){
     eof = true;
     str="";
+    if(!err) fsetpos(fp,&pos);
 // there was a fsetpos here that apparently is not necessary
 //  fsetpos(fp,&pos);
 // I think it was necessary to have rewind working correctly
@@ -243,6 +244,10 @@ void IFile::reset(bool reset){
 
 void IFile::allowIgnoredFields(){
   ignoreFields=true;
+}
+
+void IFile::allowNoEOL(){
+  noEOL=true;
 }
 
 }

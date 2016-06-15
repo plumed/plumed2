@@ -600,6 +600,7 @@ last_step_warn_grid(0)
     uppI_=tmpI.at(1);
     if(getNumberOfArguments()!=1) error("INTERVAL limits correction works only for monodimensional metadynamics!");
     if(uppI_<lowI_) error("The Upper limit must be greater than the Lower limit!");
+    if(getPntrToArgument(0)->isPeriodic()) error("INTERVAL cannot be used with periodic variables!");
     doInt_=true;
   }
 
