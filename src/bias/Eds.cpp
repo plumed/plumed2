@@ -99,6 +99,7 @@ public:
   void calculate();
   void update();
   void turnOnDerivatives();
+  void read_irestart();
   void setup_orestart();
   void write_orestart();
   static void registerKeywords(Keywords& keys);
@@ -133,7 +134,7 @@ void EDS::registerKeywords(Keywords& keys){
 
 EDS::EDS(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao),
-center(getNumberOfArguments(),0.0),
+center(getNumberOfArguments(),1.0),
 current_coupling(getNumberOfArguments(),0.0),
 set_coupling(getNumberOfArguments(),0.0),
 target_coupling(getNumberOfArguments(),0.0),
@@ -178,76 +179,24 @@ valueForce2(NULL)
     outCoupling[i]=getPntrToComponent(comp);
   }
     
+  parseVector("CENTER",center);
+  parseVector("RANGE",max_coupling_range);
+  parseVector("FIXED",target_coupling);
+  parseVector("INIT",set_coupling);
+  parse("PERIOD",update_period);
+  parse("TEMP",temp);
+  parse("SEED",seed);
+  parse("ORESTARTFILE",_orestartfilename);
+  parseFlag("RAMP",ramp);
   parseFlag("EDSRESTART",restart);
+  parse("IRESTARTFILE",_irestartfilename);
+  parse("ORESTARTFILE",_orestartfilename);
+  checkRead();
   if(restart){
-      parse("IRESTARTFILE",_irestartfilename);
-      parse("ORESTARTFILE",_orestartfilename);
-      checkRead();
-/*
-      if(temp>=0.0) kbt=plumed.getAtoms().getKBoltzmann()*temp;
-      else kbt=plumed.getAtoms().getKbT();
-    
-      log.printf("  with kBT = %f\n",kbt);
-      log.printf("  Updating every %i steps\n",update_period);
-    
-      log.printf("  with centers");
-      for(unsigned i=0;i<center.size();i++) log.printf(" %f",center[i]);
-      log.printf("\n");
-    
-      log.printf("  with initial ranges / rates");
-      for(unsigned i=0;i<max_coupling_range.size();i++) {
-          //this is just an empirical guess. Bigger range, bigger grads. Less frequent updates, bigger changes
-          max_coupling_range[i]*=kbt;
-          max_coupling_grad[i] = max_coupling_range[i]*update_period/100.;
-          log.printf(" %f %f",max_coupling_range[i],max_coupling_grad[i]);
-      }
-      log.printf("\n");
-    
-      if(seed>0){
-         log.printf("  setting random seed = %i",seed);
-         rand.setSeed(seed);
-      }
-    
-      for(unsigned i=0;i<getNumberOfArguments();++i) if(target_coupling[i]!=0.0) adaptive=false;
-    
-      if(!adaptive){
-        if(ramp>0) {
-            log.printf("  ramping up coupling constants over %i steps\n",ramp);
-        }
-    
-        log.printf("  with starting coupling constants");
-        for(unsigned i=0;i<set_coupling.size();i++) log.printf(" %f",set_coupling[i]);
-        log.printf("\n");
-        log.printf("  and final coupling constants");
-        for(unsigned i=0;i<target_coupling.size();i++) log.printf(" %f",target_coupling[i]);
-        log.printf("\n");
-      }
-    
-      //now do setup
-      if(ramp){
-          update_period*=-1;
-      }
-    
-      for(unsigned i=0;i<set_coupling.size();i++) current_coupling[i] = set_coupling[i];
-    
-      // if adaptive, then first half will be used for equilibrating and second half for statistics
-      if(update_period>0){
-          update_period/=2;
-      }
- 
-*/
+      log.printf("  reading all simulation information from file: %s\n",_irestartfilename.c_str());
+      read_irestart();
   }
   else{
-      parseVector("CENTER",center);
-      parseVector("RANGE",max_coupling_range);
-      parseVector("FIXED",target_coupling);
-      parseVector("INIT",set_coupling);
-      parse("PERIOD",update_period);
-      parse("TEMP",temp);
-      parse("SEED",seed);
-      parse("ORESTARTFILE",_orestartfilename);
-      parseFlag("RAMP",ramp);
-      checkRead();
     
       if(temp>=0.0) kbt=plumed.getAtoms().getKBoltzmann()*temp;
       else kbt=plumed.getAtoms().getKbT();
@@ -256,17 +205,19 @@ valueForce2(NULL)
       log.printf("  Updating every %i steps\n",update_period);
     
       log.printf("  with centers");
-      for(unsigned i=0;i<center.size();i++) log.printf(" %f",center[i]);
+      for(unsigned i=0;i<center.size();i++){
+          if(center[i]==0) error("Cannot set any target values to zero due to the formulation of the algorithm. See doc for Eds bias");
+          log.printf(" %f",center[i]);
+      }
       log.printf("\n");
     
-      log.printf("  with initial ranges / rates");
+      log.printf("  with initial ranges / rates:\n");
       for(unsigned i=0;i<max_coupling_range.size();i++) {
           //this is just an empirical guess. Bigger range, bigger grads. Less frequent updates, bigger changes
           max_coupling_range[i]*=kbt;
           max_coupling_grad[i] = max_coupling_range[i]*update_period/100.;
-          log.printf(" %f %f",max_coupling_range[i],max_coupling_grad[i]);
+          log.printf("    %f / %f\n",max_coupling_range[i],max_coupling_grad[i]);
       }
-      log.printf("\n");
     
       if(seed>0){
          log.printf("  setting random seed = %i",seed);
@@ -277,7 +228,7 @@ valueForce2(NULL)
     
       if(!adaptive){
         if(ramp>0) {
-            log.printf("  ramping up coupling constants over %i steps\n",ramp);
+            log.printf("  ramping up coupling constants over %i steps\n",update_period);
         }
     
         log.printf("  with starting coupling constants");
@@ -312,6 +263,100 @@ valueForce2(NULL)
     log<<"  Bibliography "<<plumed.cite("White and Voth, J. Chem. Theory Comput. 10 (8), 3023-3030 (2014)")<<"\n";
 }
 
+void EDS::read_irestart(){
+    int adaptive_i;
+
+
+    irestartfile_.open(_irestartfilename);
+
+    //some sample code to get the field names:
+    /*
+    std::vector<std::string> fields;
+    irestartfile_.scanFieldList(fields);
+    for(unsigned i=0;i<fields.size();i++){
+        log.printf("field %i %s\n",i,fields[i].c_str());
+    } 
+    */
+
+    if(irestartfile_.FieldExist("kbt")){
+        irestartfile_.scanField("kbt",kbt);
+    }else{ error("No field 'kbt' in restart file"); }
+    log.printf("  with kBT = %f\n",kbt);
+
+    if(irestartfile_.FieldExist("update_period")){
+        irestartfile_.scanField("update_period",update_period);
+    }else{ error("No field 'update_period' in restart file"); }
+    log.printf("  Updating every %i steps\n",update_period);
+
+    if(irestartfile_.FieldExist("adaptive")){
+        //note, no version of scanField for boolean
+        irestartfile_.scanField("adaptive",adaptive_i);
+    }else{ error("No field 'adaptive' in restart file"); }
+    adaptive = bool(adaptive_i);
+
+    if(irestartfile_.FieldExist("seed")){
+        irestartfile_.scanField("seed",seed);
+    }else{ error("No field 'seed' in restart file"); }
+    if(seed>0){
+       log.printf("  setting random seed = %i",seed);
+       rand.setSeed(seed);
+    }
+
+    double time;
+    std::string center_name;
+    std::string init_name;
+    std::string target_name;
+    std::string coupling_name;
+    std::string maxrange_name;
+    std::string maxgrad_name;
+    while(irestartfile_.scanField("time",time)){
+        for(unsigned i=0;i<getNumberOfArguments();++i) {
+            center_name = getPntrToArgument(i)->getName()+"_center";
+            init_name = getPntrToArgument(i)->getName()+"_init";
+            target_name = getPntrToArgument(i)->getName()+"_target";
+            coupling_name = getPntrToArgument(i)->getName()+"_coupling";
+            maxrange_name = getPntrToArgument(i)->getName()+"_maxrange";
+            maxgrad_name = getPntrToArgument(i)->getName()+"_maxgrad";
+    
+            irestartfile_.scanField(center_name,center[i]);
+            irestartfile_.scanField(init_name,set_coupling[i]);
+            irestartfile_.scanField(target_name,target_coupling[i]);
+            irestartfile_.scanField(coupling_name,current_coupling[i]);
+            irestartfile_.scanField(maxrange_name,max_coupling_range[i]);
+            irestartfile_.scanField(maxgrad_name,max_coupling_grad[i]);
+       }
+       irestartfile_.scanField();
+   }
+
+   log.printf("  with centers");
+   for(unsigned i=0;i<center.size();i++) {
+       if(center[i]==0) error("Cannot set any target values to zero due to the formulation of the algorithm. See doc for Eds bias");
+       log.printf(" %f",center[i]);
+   }
+   log.printf("\n");
+
+   log.printf("  with initial ranges / rates:\n");
+   for(unsigned i=0;i<max_coupling_range.size();i++) {
+      log.printf("    %f / %f\n",max_coupling_range[i],max_coupling_grad[i]);
+   }
+    
+   if(!adaptive && update_period<0){
+       log.printf("  ramping up coupling constants over %i steps\n",-update_period);
+   }
+    
+   log.printf("  with current coupling constants:\n    ");
+   for(unsigned i=0;i<current_coupling.size();i++) log.printf(" %f",current_coupling[i]);
+   log.printf("\n");
+   log.printf("  with initial coupling constants:\n    ");
+   for(unsigned i=0;i<set_coupling.size();i++) log.printf(" %f",set_coupling[i]);
+   log.printf("\n");
+   log.printf("  and final coupling constants:\n    ");
+   for(unsigned i=0;i<target_coupling.size();i++) log.printf(" %f",target_coupling[i]);
+   log.printf("\n");
+    
+   irestartfile_.close();
+}
+
 void EDS::setup_orestart(){
     orestartfile_.open(_orestartfilename);
     orestartfile_.setHeavyFlush();
@@ -325,6 +370,7 @@ void EDS::setup_orestart(){
 }
 
 void EDS::write_orestart(){
+    std::string center_name;
     std::string init_name;
     std::string target_name;
     std::string coupling_name;
@@ -332,14 +378,15 @@ void EDS::write_orestart(){
     std::string maxgrad_name;
     orestartfile_.printField("time",getTimeStep()*getStep());
 
-
     for(unsigned i=0;i<getNumberOfArguments();++i) {
+        center_name = getPntrToArgument(i)->getName()+"_center";
         init_name = getPntrToArgument(i)->getName()+"_init";
         target_name = getPntrToArgument(i)->getName()+"_target";
         coupling_name = getPntrToArgument(i)->getName()+"_coupling";
         maxrange_name = getPntrToArgument(i)->getName()+"_maxrange";
         maxgrad_name = getPntrToArgument(i)->getName()+"_maxgrad";
 
+        orestartfile_.printField(center_name,center[i]);
         orestartfile_.printField(init_name,set_coupling[i]);
         orestartfile_.printField(target_name,target_coupling[i]);
         orestartfile_.printField(coupling_name,current_coupling[i]);
