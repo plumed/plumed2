@@ -1096,7 +1096,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                        GMX_FORCE_VIRIAL |
                        GMX_FORCE_ENERGY |
                        GMX_FORCE_DHDL |
-                       GMX_FORCE_NS);
+                       GMX_FORCE_NS |
+                       ( ( fr->bTwinRange && do_per_step(step, ir->nstcalclr) ) ? GMX_FORCE_DO_LR :0) );
           plumed_cmd(plumedmain,"GREX cacheLocalUSwap",&hrex_enerd->term[F_EPOT]);
           sfree(hrex_enerd);
 
