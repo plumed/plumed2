@@ -76,11 +76,11 @@ void SAXS::registerKeywords(Keywords& keys){
   keys.addFlag("ATOMISTIC",false,"calculate SAXS for an atomistic model");
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
   keys.add("compulsory","NUMQ","Number of used q values");
-  keys.add("numbered","QVALUE","Used qvalue Keywords like QVALUE1, QVALUE2, to list the scattering length to calculate SAXS.");
+  keys.add("numbered","QVALUE","Selected scattering lenghts in Angstrom are given as QVALUE1, QVALUE2, ... .");
   keys.add("numbered","PARAMETERS","Used parameter Keywords like PARAMETERS1, PARAMETERS2. These are used to calculate the structure factor for the i-th atom/bead.");
   keys.addFlag("ADDEXPVALUES",false,"Set to TRUE if you want to have fixed components with the experimental values.");
   keys.add("numbered","EXPINT","Add an experimental value for each q value.");
-  keys.add("compulsory","SCEXP","SCALING value of the experimental data. Usefull to simplify the comparison.");
+  keys.add("compulsory","SCEXP","1.0","SCALING value of the experimental data. Usefull to simplify the comparison.");
 }
 
 SAXS::SAXS(const ActionOptions&ao):
@@ -104,7 +104,7 @@ serial(false)
 
   double scexp = 0;
   parse("SCEXP",scexp);
-  if(scexp==0) error("SCEXP must be set");  
+  if(scexp==0) scexp=1.0;  
 
   q_list.resize( numq );
   unsigned ntarget=0;
@@ -186,6 +186,64 @@ serial(false)
 
   requestAtoms(atoms);
   checkRead();
+}
+
+void SAXS::calculate(){
+  if(pbc) makeWhole();
+
+  const unsigned size=getNumberOfAtoms();
+  
+  unsigned stride=comm.Get_size();
+  unsigned rank=comm.Get_rank();
+  if(serial){
+    stride=1;
+    rank=0;
+  }
+
+  vector<Vector> deriv(numq*size);
+  vector<Tensor> deriv_box(numq);
+  vector<double> sum(numq,0);
+
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
+  for (unsigned k=0; k<numq; k++) {
+    const unsigned kdx=k*size;
+    for (unsigned i=rank; i<size-1; i+=stride) {
+      const unsigned kdxi=kdx+i;
+      const double FF=2.*FF_value[k][i];
+      const Vector posi=getPosition(i);
+      for (unsigned j=i+1; j<size ; j++) {
+        const Vector c_distances = delta(posi,getPosition(j));
+        const double m_distances = c_distances.modulo();
+        const double qdist       = q_list[k]*m_distances;
+        const double FFF = FF*FF_value[k][j];
+        const double tsq = FFF*sin(qdist)/qdist;
+        const double tcq = FFF*cos(qdist);
+        const double tmp = (tcq-tsq)/(m_distances*m_distances);
+        const Vector dd  = c_distances*tmp;
+        sum[k]       += tsq;
+        deriv_box[k] += Tensor(c_distances,dd);
+        deriv[kdxi ] -= dd;
+        deriv[kdx+j] += dd;
+      }
+    }
+  }
+
+  if(!serial) {
+    comm.Sum(&deriv[0][0], 3*deriv.size());
+    comm.Sum(&deriv_box[0][0][0], numq*9);
+    comm.Sum(&sum[0], numq);
+  }
+
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
+  for (unsigned k=0; k<numq; k++) {
+    const unsigned kdx=k*size;
+    Value* val=getPntrToComponent(k);
+    for(unsigned i=0; i<size; i++) setAtomsDerivatives(val, i, deriv[kdx+i]);
+    sum[k]+=FF_rank[k];
+    setBoxDerivatives(val, -deriv_box[k]);
+    val->set(sum[k]);
+  }
+
 }
 
 void SAXS::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long double> > &parameter)
@@ -695,101 +753,43 @@ void SAXS::calculateASF(const vector<AtomNumber> &atoms, vector<vector<long doub
    vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
 
    if( moldat.size()==1 ){
-    log<<"  MOLINFO DATA found, using proper atom names\n";
-    for(unsigned i=0;i<atoms.size();++i){
-      // get atom name
-      string name = moldat[0]->getAtomName(atoms[i]);
-      char type;
-      // get atom type
-      char first = name.at(0);
-      // GOLDEN RULE: type is first letter, if not a number
-      if (!isdigit(first)){
+     log<<"  MOLINFO DATA found, using proper atom names\n";
+     for(unsigned i=0;i<atoms.size();++i){
+       // get atom name
+       string name = moldat[0]->getAtomName(atoms[i]);
+       char type;
+       // get atom type
+       char first = name.at(0);
+       // GOLDEN RULE: type is first letter, if not a number
+       if (!isdigit(first)){
          type = first;
-      // otherwise is the second
-      } else {
+       // otherwise is the second
+       } else {
          type = name.at(1);
-      }
-      std::string type_s = std::string(1,type);
-      if(AA_map.find(type_s) != AA_map.end()){
-        const unsigned index=AA_map[type_s];
-        const double rho = 0.334;
-        const double volr = pow(param_v[index], (2.0/3.0)) /(16. * M_PI);
-        for(unsigned k=0;k<numq;++k){
-          const double q = q_list[k];
-          const double s = q / (4. * M_PI);
-          FF_tmp[k][i] = param_c[index];
-          // SUM [a_i * EXP( - b_i * (q/4pi)^2 )] Waasmaier and Kirfel (1995)
-          for(unsigned j=0;j<5;j++) {
+       }
+       std::string type_s = std::string(1,type);
+       if(AA_map.find(type_s) != AA_map.end()){
+         const unsigned index=AA_map[type_s];
+         const double rho = 0.334;
+         const double volr = pow(param_v[index], (2.0/3.0)) /(16. * M_PI);
+         for(unsigned k=0;k<numq;++k){
+           const double q = q_list[k];
+           const double s = q / (4. * M_PI);
+           FF_tmp[k][i] = param_c[index];
+           // SUM [a_i * EXP( - b_i * (q/4pi)^2 )] Waasmaier and Kirfel (1995)
+           for(unsigned j=0;j<5;j++) {
              FF_tmp[k][i] += param_a[index][j]*exp(-param_b[index][j]*s*s);
-          }
-          // subtract solvation: rho * v_i * EXP( (- v_i^(2/3) / (4pi)) * q^2  )
-          FF_tmp[k][i] -= rho*param_v[index]*exp(-volr*q*q);
-        }
-      } else {
-        error("Wrong atom type "+type_s+" from atom name "+name+"\n"); 
-      }
-    }
-  } else {
-    error("MOLINFO DATA not found\n");
-  }
-}
-
-void SAXS::calculate(){
-  if(pbc) makeWhole();
-
-  const unsigned size=getNumberOfAtoms();
-  
-  unsigned stride=comm.Get_size();
-  unsigned rank=comm.Get_rank();
-  if(serial){
-    stride=1;
-    rank=0;
-  }
-
-  vector<Vector> deriv(numq*size);
-  vector<Tensor> deriv_box(numq);
-  vector<double> sum(numq);
-
-  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
-  for (unsigned k=0; k<numq; k++) {
-    const unsigned kdx=k*size;
-    for (unsigned i=rank; i<size-1; i+=stride) {
-      const unsigned kdxi=kdx+i;
-      const double FF=2.*FF_value[k][i];
-      const Vector posi=getPosition(i);
-      for (unsigned j=i+1; j<size ; j++) {
-        const Vector c_distances = delta(posi,getPosition(j));
-        const double m_distances = c_distances.modulo();
-        const double qdist     = q_list[k]*m_distances;
-        const double FFF = FF*FF_value[k][j];
-        const double tsq = FFF*sin(qdist)/qdist;
-        const double tcq = FFF*cos(qdist);
-        const double tmp = (tcq-tsq)/(m_distances*m_distances);
-        const Vector dd  = c_distances*tmp;
-        sum[k] += tsq;
-        deriv_box[k] += Tensor(c_distances,dd);
-        deriv[kdxi ] -= dd;
-        deriv[kdx+j] += dd;
-      }
-    }
-  }
-
-  if(!serial) {
-    comm.Sum(&deriv[0][0], 3*deriv.size());
-    comm.Sum(&deriv_box[0][0][0], numq*9);
-    comm.Sum(&sum[0], numq);
-  }
-
-  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
-  for (unsigned k=0; k<numq; k++) {
-    const unsigned kdx=k*size;
-    Value* val=getPntrToComponent(k);
-    for(unsigned i=0; i<size; i++) setAtomsDerivatives(val, i, deriv[kdx+i]);
-    sum[k]+=FF_rank[k];
-    setBoxDerivatives(val, -deriv_box[k]);
-    val->set(sum[k]);
-  }
-
+           }
+           // subtract solvation: rho * v_i * EXP( (- v_i^(2/3) / (4pi)) * q^2  )
+           FF_tmp[k][i] -= rho*param_v[index]*exp(-volr*q*q);
+         }
+       } else {
+         error("Wrong atom type "+type_s+" from atom name "+name+"\n"); 
+       }
+     }
+   } else {
+     error("MOLINFO DATA not found\n");
+   }
 }
 
 }
