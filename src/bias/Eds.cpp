@@ -404,6 +404,7 @@ void EDS::read_irestart(){
 }
 
 void EDS::setup_orestart(){
+    orestartfile_.link(*this);
     orestartfile_.open(_orestartfilename);
     orestartfile_.setHeavyFlush();
 
