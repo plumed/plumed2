@@ -2341,10 +2341,14 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 ##################################################################
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Optional modules are disabled by default" >&5
+$as_echo "$as_me: Optional modules are disabled by default" >&6;}
+rm -f src/*.on src/*.off
+
 # Check whether --enable-modules was given.
 if test "${enable_modules+set}" = set; then :
   enableval=$enable_modules;
-   rm -fr src/*.on src/*.off
+   rm -f src/*.on src/*.off
    if test "${enableval}" == yes ; then
      enableval=reset
    fi

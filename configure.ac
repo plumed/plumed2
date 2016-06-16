@@ -100,10 +100,13 @@ AC_DEFUN([PLUMED_CHECK_PACKAGE], [
 
 ##################################################################
 
+AC_MSG_NOTICE([Optional modules are disabled by default])
+rm -f src/*.on src/*.off
+
 AC_ARG_ENABLE([modules],
   AS_HELP_STRING([--enable-modules], [all/none/reset or : separated list such as +crystallization:-bias default: reset]),
   [
-   rm -fr src/*.on src/*.off
+   rm -f src/*.on src/*.off
    if test "${enableval}" == yes ; then
      enableval=reset
    fi
