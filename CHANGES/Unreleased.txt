@@ -22,6 +22,7 @@ Changes from version 2.2 which are relevant for users:
   - Patch script `plumed patch` now patches by default with `--shared`. This should make the procedure more robust (see \issue{186}).
   - Faster \ref GYRATION but new default behavior is not mass weighted
   - Manual is now build with locally compiled plumed
+  - It is not possible anymore to select modules using `modulename.on` and `modulename.off` files. Use `./configure --enable-modules` instead.
 - New actions:
   - \ref FIXEDATOM
   - \ref HBOND_MATRIX
