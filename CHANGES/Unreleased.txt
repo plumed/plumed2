@@ -54,5 +54,10 @@ Changes from version 2.2 which are relevant for users:
 - Other features:
   - Added a plumed-config command line tool. Can be used to inspect configuration also when cross compiling.
   - Added a `--mpi` option to `plumed`, symmetric to `--no-mpi`. Currently, it has no effect (MPI is initialized by default when available).
+  - PLUMED now generate a VIM syntax file, see \ref VimSyntax
+
+For developers:
+- Added new strings for plumed cmd: setMDMassUnits, setMDChargeUnits, readInputLine, performCalcNoUpdate, and update.
+
 
 */
