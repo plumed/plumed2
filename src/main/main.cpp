@@ -39,6 +39,7 @@ int main(int argc,char**argv){
 #ifdef __PLUMED_HAS_MPI
   bool nompi=false;
   if(argc>1 && !strcmp(argv[1],"--no-mpi")) nompi=true;
+  if(argc>1 && !strcmp(argv[1],"--mpi"))    nompi=false;
   if(!nompi) MPI_Init(&argc,&argv);
 #endif
   int ret=0;

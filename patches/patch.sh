@@ -55,6 +55,7 @@ multiple_actions=
 otherfiles=
 save_originals=
 quiet=
+mdroot=
 
 for option
 do
@@ -73,9 +74,11 @@ do
     (--new=*)           test -n "$action" && multiple_actions=yes ; action=new ; newpatch="${prefix_option#--new=}" ;;
     (--description)     echo "patch an MD engine" ; exit ;;
     (--engine=*) engine="${prefix_option#--engine=}" ;;
+    (--mdroot=*) mdroot="${prefix_option#--mdroot=}" ;;
     (--mode=*) mode="${prefix_option#--mode=}" ;;
     (--diff=*) diff="${prefix_option#--diff=}" ;;
     (--engine|-e) prefix="--engine=" ;;
+    (--mdroot) prefix="--mdroot" ;;
     (--root=*) prefix="--root="; PLUMED_ROOT="${prefix_option#--root=}" ;;
     (--diff|-d) prefix="--diff=" ;;
     (--mode|-m) prefix="--mode=" ;;
@@ -90,6 +93,13 @@ do
       exit
   esac
 done
+
+if [ -n "$mdroot" ] ; then
+  if ! cd "$mdroot" ; then
+    echo "Directory $mdroot does not exist"
+    exit
+  fi
+fi
 
 if [ -n "$multiple_actions" ] ; then
   echo "Too many actions. -h for help"
