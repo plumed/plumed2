@@ -40,6 +40,10 @@ in their official distribution. If your favorite MD code is available "PLUMED re
 you will have to compile PLUMED first, then (optionally) install it, then check the MD codes' manual to
 discover how to link it.
 
+If you are using a Mac, notice that we are providing tentative port files to install
+PLUMED with MacPorts. Follow the instructions <a href=\"http://github.com/plumed/ports">here</a>
+and report feedbacks on the mailing list.
+
 \section ConfiguringPlumed Configuring PLUMED
 
 The `./configure` command 

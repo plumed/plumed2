@@ -27,6 +27,7 @@ Changes from version 2.2 which are relevant for users:
   - \ref CS2BACKBONE, \ref NOE, ref \RDC, removed the keyword ENSEMBLE: now ensemble averages can only be calculated using \ref ENSEMBLE
   - \ref RDC, syntax changes
   - \ref CONSTANT, syntax changes and added the possibility of storing more values as components with or without derivatives
+  - It is not possible anymore to select modules using `modulename.on` and `modulename.off` files. Use `./configure --enable-modules` instead.
 - New actions:
   - \ref FIXEDATOM
   - \ref HBOND_MATRIX
@@ -46,6 +47,7 @@ Changes from version 2.2 which are relevant for users:
   - Patch for amber 14 now passes charges with appropriate units (fixes \issue{165}). Notice that
     the patch is still backward compatible with older PLUMED version, but the charges will only be passed
     when using PLUMED 2.3 or later.
+  - Patches for GROMACS 4.6 and 5.1 incorporate Hamiltonian replica exchange, see \ref hrex
 - New features for existing actions:
   - The SPECIES and SPECIESA keyword in MultiColvars can now take a multicolvar as input.  This allows one
     to calculate quantities such as the Q4 parameters for those atoms that have a coordination number greater
@@ -60,5 +62,11 @@ Changes from version 2.2 which are relevant for users:
   - \ref ENSEMBLE added keywords for weighted averages, and calculation of higher momenta
 - Other features:
   - Added a plumed-config command line tool. Can be used to inspect configuration also when cross compiling.
+  - Added a `--mpi` option to `plumed`, symmetric to `--no-mpi`. Currently, it has no effect (MPI is initialized by default when available).
+  - PLUMED now generate a VIM syntax file, see \ref VimSyntax
+
+For developers:
+- Added new strings for plumed cmd: setMDMassUnits, setMDChargeUnits, readInputLine, performCalcNoUpdate, and update.
+
 
 */

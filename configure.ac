@@ -100,10 +100,13 @@ AC_DEFUN([PLUMED_CHECK_PACKAGE], [
 
 ##################################################################
 
+AC_MSG_NOTICE([Optional modules are disabled by default])
+rm -f src/*.on src/*.off
+
 AC_ARG_ENABLE([modules],
   AS_HELP_STRING([--enable-modules], [all/none/reset or : separated list such as +crystallization:-bias default: reset]),
   [
-   rm -fr src/*.on src/*.off
+   rm -f src/*.on src/*.off
    if test "${enableval}" == yes ; then
      enableval=reset
    fi
@@ -276,6 +279,36 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([ class A{explicit A(){}};])],
   [AC_MSG_RESULT([yes])],
   [AC_MSG_RESULT([no]) ;
    AC_DEFINE([explicit],[])])
+
+AC_SUBST(disable_dependency_tracking)
+
+if test "$dependency_tracking" = true
+then
+  AC_MSG_CHECKING([whether $CXX can generate dependency file with -MM -MF])
+  dependency=ko
+  echo "#include \"conftest1.h\"" > conftest.cpp
+  echo "#include \"conftest2.h\"" > conftest1.h
+  echo "/* */" > conftest2.h
+  $CXX $CXXFLAGS -c -MM -MFconftest.d conftest.cpp 1> /dev/null 2> /dev/null
+  grep conftest2 conftest.d 1> /dev/null 2>/dev/null && dependency=ok
+  if test "$dependency" = ok ; then
+    AC_MSG_RESULT([yes])
+    disable_dependency_tracking=no
+  else
+    AC_MSG_RESULT([no])
+    disable_dependency_tracking=yes
+  fi
+else
+  disable_dependency_tracking=yes
+fi
+
+if test "$disable_dependency_tracking" = yes ; then
+  AC_MSG_WARN([dependencies tracking disabled - always make clean before make])
+else
+  AC_MSG_NOTICE([dependency tracking enabled])
+fi
+
+
 
 
 #### Compulsory libraries ####
@@ -580,16 +613,6 @@ AC_CHECK_PROG([xxd],[xxd],[found])
 if test "$xxd" != found
 then
   AC_MSG_ERROR([xxd should be installed for PLUMED to compile properly])
-fi
-
-AC_SUBST(disable_dependency_tracking)
-if test "$dependency_tracking" = true
-then
-  AC_MSG_NOTICE([dependency tracking enabled])
-  disable_dependency_tracking=no
-else
-  AC_MSG_NOTICE([dependency tracking disabled])
-  disable_dependency_tracking=yes
 fi
 
 AC_SUBST(program_can_run)
