@@ -223,6 +223,10 @@ pbc(true)
     log.printf("\n");
   }
 
+  log<<"  Bibliography "
+     <<plumed.cite("Camilloni C, Vendruscolo M, J. Phys. Chem. B 119, 653 (2015)")
+     <<plumed.cite("Camilloni C, Vendruscolo M, Biochemistry 54, 7470 (2015)") <<"\n";
+
   checkRead();
 
   for(unsigned i=0;i<ndata;i++) {
