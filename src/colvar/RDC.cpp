@@ -22,6 +22,7 @@
 
 #include "Colvar.h"
 #include "ActionRegister.h"
+#include "core/PlumedMain.h"
 
 #ifdef __PLUMED_HAS_GSL
 #include <gsl/gsl_vector.h>
