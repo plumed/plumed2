@@ -67,6 +67,7 @@ class Metainference : public Bias
   // sigma_mean is uncertainty in the mean estimate
   vector<double> sigma_mean_;
   vector<double> variance_;
+  vector<double> h_mean_;
   // temperature in kbt
   double   kbt_;
   // number of data points
@@ -229,7 +230,8 @@ do_reweight(false)
   else kbt_=plumed.getAtoms().getKbT();
 
   // variance is always the size of narg
-  variance_.resize(narg);
+  variance_.resize(narg,0);
+  h_mean_.resize(narg,0);
   // while sigma_mean_ has the same size of sigma
   vector<double> read_sigma_mean_;
   parseVector("SIGMA_MEAN0",read_sigma_mean_);
@@ -351,7 +353,8 @@ double Metainference::getEnergySPE(const vector<double> &mean, const vector<doub
 double Metainference::getEnergyGJE(const vector<double> &mean, const vector<double> &sigma, const double scale){
   // cycle on arguments
   double ene = 0.0;
-  double ss = sigma[0]*sigma[0] + sigma_mean_[0]*sigma_mean_[0]; 
+  double ss = sigma[0]*sigma[0] + sigma_mean_[0]*sigma_mean_[0];
+
   for(unsigned i=0;i<narg;++i){
     if(noise_type_==MGAUSS){ 
       ss = sigma[i]*sigma[i] + sigma_mean_[i]*sigma_mean_[i];
@@ -406,27 +409,35 @@ void Metainference::doMonteCarlo(const vector<double> &mean_){
           new_energy = getEnergySPE(mean_,sigma_,new_scale);
           break;
       }
+      // for the scale we need to consider the total energy
+      vector<double> totenergies(2);
+      if(master) {
+        totenergies[0] = old_energy;
+        totenergies[1] = new_energy;
+        multi_sim_comm.Sum(totenergies);
+      } else {
+        totenergies[0] = 0;
+        totenergies[1] = 0;
+      }
+      comm.Sum(totenergies);
 
       // accept or reject
-      const double delta = ( new_energy - old_energy ) / kbt_;
+      const double delta = ( totenergies[1] - totenergies[0] ) / kbt_;
       // if delta is negative always accept move
       if( delta <= 0.0 ){
         old_energy = new_energy;
         scale_ = new_scale;
-        MCaccept_++;
       // otherwise extract random number
       } else {
-        const double s = static_cast<double>(rand()) / RAND_MAX;
+        double s = static_cast<double>(rand()) / RAND_MAX;
+        // all replicas run the random number, but then only one is used
+        if(master) multi_sim_comm.Bcast(s,0);
+        comm.Bcast(s,0);
         if( s < exp(-delta) ){
           old_energy = new_energy;
           scale_ = new_scale;
-          MCaccept_++;
         }
       }
- 
-      // the scaling factor should be the same for all the replicas
-      if(master) multi_sim_comm.Bcast(scale_,0);
-      comm.Bcast(scale_,0);
     }
   
     // propose move for sigma
@@ -586,35 +597,28 @@ void Metainference::calculate(){
   }
   comm.Sum(&mean[0], narg);
 
-  vector<double> v_moment;
-  v_moment.resize(narg,0);
-  // calculate the variance
-  if(master) {
-    for(unsigned i=0;i<narg;++i) v_moment[i] = fact*(getArgument(i)-mean[i])*(getArgument(i)-mean[i]);
-    if(nrep_>1) multi_sim_comm.Sum(&v_moment[0], narg);
-  }
-  comm.Sum(&v_moment[0], narg);
-
   /* this is SIGMA_MEAN before the corrections due to the #DOF and the SCALING */
   sigma_mean_[0] = 0.; 
+  const double it = 1./static_cast<double>(step-MCfirst_+1);
   for(unsigned i=0;i<narg;++i) { 
-    variance_[i] += v_moment[i];
-    const double t = static_cast<double>(step-MCfirst_+1);
-    if(noise_type_!=MGAUSS) sigma_mean_[0] += variance_[i]/t;
-    else sigma_mean_[i] = sqrt(variance_[i]/t);
+    variance_[i] += mean[i]*mean[i];
+    h_mean_[i] += mean[i];
+    if(noise_type_!=MGAUSS) sigma_mean_[0] += variance_[i]*it-h_mean_[i]*h_mean_[i]*it*it;
+    else sigma_mean_[i] = sqrt(variance_[i]*it-h_mean_[i]*h_mean_[i]*it*it);
   }
   if(noise_type_!=MGAUSS) sigma_mean_[0] = sqrt(sigma_mean_[0]);
+  for(unsigned i=0; i<sigma_mean_.size(); i++) valueSigmaMean[i]->set(sigma_mean_[i]);
 
   /* MONTE CARLO */
   if(step%MCstride_==0&&!getExchangeStep()) doMonteCarlo(mean);
 
   double MCtrials = floor(static_cast<double>(step-MCfirst_) / static_cast<double>(MCstride_))+1.0;
-  if(doscale_) MCtrials *=2;
   const double accept = static_cast<double>(MCaccept_) / static_cast<double>(MCsteps_) / MCtrials;
   valueAccept->set(accept);
 
   /* fix sigma_mean_ for the weighted average and the scaling factor */
-  for(unsigned i=0;i<sigma_mean_.size();++i) sigma_mean_[i] *= scale_*sqrt(idof);
+  double modifier = scale_*sqrt(idof);
+  for(unsigned i=0;i<sigma_mean_.size();++i) sigma_mean_[i] *= modifier;
 
   // calculate bias and forces
   double ene = 0; 
@@ -630,7 +634,6 @@ void Metainference::calculate(){
 
   // set value of the bias
   valueBias->set(ene);
-  for(unsigned i=0; i<sigma_mean_.size(); i++) valueSigmaMean[i]->set(sigma_mean_[i]);
 }
 
 }
