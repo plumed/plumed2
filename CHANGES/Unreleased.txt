@@ -29,6 +29,7 @@ Changes from version 2.2 which are relevant for users:
     used to appear in the old HISTOGRAM method.  Now those these methods can be used in any methods that calculate ensemble averages for
     example \ref HISTOGRAM and \ref AVERAGE
   - Manual is now build with locally compiled plumed
+  - It is not possible anymore to select modules using `modulename.on` and `modulename.off` files. Use `./configure --enable-modules` instead.
 - New actions:
   - \ref FIXEDATOM
   - \ref HBOND_MATRIX
@@ -56,6 +57,7 @@ Changes from version 2.2 which are relevant for users:
   - Patch for amber 14 now passes charges with appropriate units (fixes \issue{165}). Notice that
     the patch is still backward compatible with older PLUMED version, but the charges will only be passed
     when using PLUMED 2.3 or later.
+  - Patches for GROMACS 4.6 and 5.1 incorporate Hamiltonian replica exchange, see \ref hrex
 - New features for existing actions:
   - The SPECIES and SPECIESA keyword in MultiColvars can now take a multicolvar as input.  This allows one
     to calculate quantities such as the Q4 parameters for those atoms that have a coordination number greater
@@ -65,9 +67,15 @@ Changes from version 2.2 which are relevant for users:
   - \ref COMMITTOR can now be used to define multiple basins
   - The number of atoms admitted in \ref BRIDGE has been significantly increased, see \issue{185}.
   - \ref driver now allows --trajectory-stride to be set to zero when reading with --ixtc/--itrr. In this case, step number is read from the trajectory file.
-  - MetaD and PBMetaD can now be restarted from a GRID 
+  - \ref METAD and \ref PBMETAD can now be restarted from a GRID 
   - Added keywords TARGET and DAMPFACTOR in \ref METAD
 - Other features:
   - Added a plumed-config command line tool. Can be used to inspect configuration also when cross compiling.
+  - Added a `--mpi` option to `plumed`, symmetric to `--no-mpi`. Currently, it has no effect (MPI is initialized by default when available).
+  - PLUMED now generate a VIM syntax file, see \ref VimSyntax
+
+For developers:
+- Added new strings for plumed cmd: setMDMassUnits, setMDChargeUnits, readInputLine, performCalcNoUpdate, and update.
+
 
 */

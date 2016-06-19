@@ -142,9 +142,15 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
         fprintf(stderr,"--no-mpi option can only be used as the first option");
         return 1;
       }
+    } else if(a=="--mpi"){
+// this is ignored, as it is parsed in main
+      if(i>1){
+        fprintf(stderr,"--mpi option can only be used as the first option");
+        return 1;
+      }
     } else if(a=="--standalone-executable"){
       standalone_executable=true;
-    } else if(a.find("--load=")==0){
+    } else if(Tools::startWith(a,"--load=")){
       a.erase(0,a.find("=")+1);
       prefix="";
       void *p=dlloader.load(a);

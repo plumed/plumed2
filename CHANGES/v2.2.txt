@@ -146,10 +146,23 @@ For users:
 - When looking for a value outside the GRID now the error include the name of the responsible 
   collective variable
 - Numerical check in LatticeReduction made less picky.
-- Added --disable-dependency-tracking to ./configure
+- Files are now flushed at the correct step. Before this fix, they were flushed at the step before the requested one
+  (e.g. with \ref FLUSH STRIDE=100 at step 99, 199, etc).
+- In \ref METAD, INTERVAL with periodic variables now report an error.
 - \ref LOAD now works also when plumed is installed with a suffix.
+- Added `--md-root` option to `plumed patch` which allows it to be run from a directory different from the one
+  where the md code is located.
 
 For developers:
+- `./configure` checks if dependencies can be generated. If not, they are disabled.
+- Added --disable-dependency-tracking to ./configure
+- Added a make target `all_plus_doc` that builds both code and docs.
+- Added possibility to set a default location for plumed library in runtime binding.
+  If the plumed wrapped is compiled with `-D__PLUMED_DEFAULT_KERNEL=/path/libplumedKernel.so`,
+  then if the env var PLUMED_KERNEL is undefined or empty PLUMED will look in the path at compile time.
+- Tentative port files are now available <a href=\"http://github.com/plumed/ports">here</a>. They can be used to install PLUMED
+  using MacPorts.
+
 
 See branch \branch{v2.2} on git repository.
 

@@ -50,11 +50,8 @@ are available in plumed and tells you whether or not they are active by default.
 
 @MODULES@
 
-Until PLUMED 2.1, the you could only switch on or off modules by adding files
-in the plumed2/src directory:
-- To activate a module add a file called modulename.on to the plumed2/src directory  
-- To deactivate a module add a file called modulename.off to the plumed2/src directory
-Obviously, in the above instructions modulename should be replaced by the name of the
-module that you would like to activate or deactivate.
+Until PLUMED 2.2, it was also possible to switch on or off modules by adding files
+in the plumed2/src directory. Since PLUMED 2.3 this is discouraged, since any choice made
+in this manner will be overwritten next time `./configure` is used.
 
 */

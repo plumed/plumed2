@@ -625,7 +625,6 @@ program_name
 LD_RO
 program_can_run_mpi
 program_can_run
-disable_dependency_tracking
 xxd
 make_pdfdoc
 dot
@@ -636,6 +635,7 @@ OPENMP_CXXFLAGS
 EGREP
 GREP
 CXXCPP
+disable_dependency_tracking
 ac_ct_FC
 FCFLAGS
 FC
@@ -2343,10 +2343,14 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 ##################################################################
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Optional modules are disabled by default" >&5
+$as_echo "$as_me: Optional modules are disabled by default" >&6;}
+rm -f src/*.on src/*.off
+
 # Check whether --enable-modules was given.
 if test "${enable_modules+set}" = set; then :
   enableval=$enable_modules;
-   rm -fr src/*.on src/*.off
+   rm -f src/*.on src/*.off
    if test "${enableval}" == yes ; then
      enableval=reset
    fi
@@ -5024,6 +5028,41 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 
+
+if test "$dependency_tracking" = true
+then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX can generate dependency file with -MM -MF" >&5
+$as_echo_n "checking whether $CXX can generate dependency file with -MM -MF... " >&6; }
+  dependency=ko
+  echo "#include \"conftest1.h\"" > conftest.cpp
+  echo "#include \"conftest2.h\"" > conftest1.h
+  echo "/* */" > conftest2.h
+  $CXX $CXXFLAGS -c -MM -MFconftest.d conftest.cpp 1> /dev/null 2> /dev/null
+  grep conftest2 conftest.d 1> /dev/null 2>/dev/null && dependency=ok
+  if test "$dependency" = ok ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+    disable_dependency_tracking=no
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+    disable_dependency_tracking=yes
+  fi
+else
+  disable_dependency_tracking=yes
+fi
+
+if test "$disable_dependency_tracking" = yes ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: dependencies tracking disabled - always make clean before make" >&5
+$as_echo "$as_me: WARNING: dependencies tracking disabled - always make clean before make" >&2;}
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: dependency tracking enabled" >&5
+$as_echo "$as_me: dependency tracking enabled" >&6;}
+fi
+
+
+
+
 #### Compulsory libraries ####
 # some of them might be made optional if we find that are not available in some system
 { $as_echo "$as_me:${as_lineno-$LINENO}: Now we will check compulsory headers and libraries" >&5
@@ -6935,18 +6974,6 @@ fi
 if test "$xxd" != found
 then
   as_fn_error $? "xxd should be installed for PLUMED to compile properly" "$LINENO" 5
-fi
-
-
-if test "$dependency_tracking" = true
-then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: dependency tracking enabled" >&5
-$as_echo "$as_me: dependency tracking enabled" >&6;}
-  disable_dependency_tracking=no
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: dependency tracking disabled" >&5
-$as_echo "$as_me: dependency tracking disabled" >&6;}
-  disable_dependency_tracking=yes
 fi
 
 
