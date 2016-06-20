@@ -6568,6 +6568,7 @@ fi
 $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_ARRAYFIRE" >&2;}
     fi
 
+fi
 if test $fftw == true ; then
 
     found=ko
