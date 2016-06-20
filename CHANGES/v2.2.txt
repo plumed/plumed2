@@ -160,8 +160,8 @@ For developers:
 - Added possibility to set a default location for plumed library in runtime binding.
   If the plumed wrapped is compiled with `-D__PLUMED_DEFAULT_KERNEL=/path/libplumedKernel.so`,
   then if the env var PLUMED_KERNEL is undefined or empty PLUMED will look in the path at compile time.
-- Tentative port files are now available <a href=\"http://github.com/plumed/ports">here</a>. They can be used to install PLUMED
-  using MacPorts.
+- Tentative port files are now available at [this link](http://github.com/plumed/ports). 
+  They can be used to install PLUMED using MacPorts.
 
 
 See branch \branch{v2.2} on git repository.
