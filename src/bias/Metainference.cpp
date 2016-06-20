@@ -222,8 +222,6 @@ do_reweight(false)
   parse("MC_STRIDE",MCstride_);
   // adjust for multiple-time steps
   MCstride_ *= getStride();
-  // this is needed when restarting simulations
-  if(MCfirst_==-1) MCfirst_=getStep();
   // get temperature
   double temp=0.0;
   parse("TEMP",temp);
@@ -246,10 +244,8 @@ do_reweight(false)
     } else {
       error("SIGMA_MEAN0 can accept either one single value or as many values as the number of arguments (with NOISETYPE=MGAUSS)");
     }
-    for(unsigned i=0;i<narg;i++) variance_[i] = sigma_mean_[i]*sigma_mean_[i]*(getStep()+1.); 
   } else {
     sigma_mean_.resize(1, read_sigma_mean_[0]);
-    for(unsigned i=0;i<narg;i++) variance_[i] = sigma_mean_[0]*sigma_mean_[0]*(getStep()+1.);
   } 
 
   checkRead();
@@ -567,6 +563,8 @@ double Metainference::getEnergyForceGJE(const vector<double> &mean, const double
 
 void Metainference::calculate(){
   const long int step = getStep();
+  // this is needed when restarting simulations
+  if(MCfirst_==-1) MCfirst_=step;
 
   double norm = 0.0;
   double fact = 0.0;
