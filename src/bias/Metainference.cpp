@@ -81,6 +81,7 @@ class Metainference : public Bias
   Value* valueBias;
   Value* valueScale;
   Value* valueAccept;
+  Value* valueRSigmaMean;
   vector<Value*> valueSigma;
   vector<Value*> valueSigmaMean;
 
@@ -305,6 +306,10 @@ do_reweight(false)
   addComponent("accept");
   componentIsNotPeriodic("accept");
   valueAccept=getPntrToComponent("accept");
+  
+  addComponent("rewSigmaMean");
+  componentIsNotPeriodic("rewSigmaMean");
+  valueRSigmaMean=getPntrToComponent("rewSigmaMean");
 
   if(noise_type_==MGAUSS) {
     for(unsigned i=0;i<sigma_mean_.size();++i){
@@ -620,6 +625,7 @@ void Metainference::calculate(){
 
   /* fix sigma_mean_ for the weighted average and the scaling factor */
   double modifier = scale_*sqrt(idof);
+  valueRSigmaMean->set(modifier);
   for(unsigned i=0;i<sigma_mean_.size();++i) sigma_mean_[i] *= modifier;
 
   // calculate bias and forces
