@@ -846,10 +846,17 @@ void PBMetaD::update()
 
    // write grid files
    if(wgridstride_>0 && getStep()%wgridstride_==0) {
-     for(unsigned i=0; i<gridfiles_.size(); ++i) {
-       gridfiles_[i]->rewind();
-       BiasGrids_[i]->writeToFile(*gridfiles_[i]);
-       gridfiles_[i]->flush();
+     int r = 0;
+     if(multiple_w) {
+       if(comm.Get_rank()==0) r=multi_sim_comm.Get_rank();
+       comm.Bcast(r,0);
+     } 
+     if(r==0) {
+       for(unsigned i=0; i<gridfiles_.size(); ++i) {
+         gridfiles_[i]->rewind();
+         BiasGrids_[i]->writeToFile(*gridfiles_[i]);
+         gridfiles_[i]->flush();
+       }
      }
    }
 

@@ -188,7 +188,7 @@ equivalent.  You should read the documentation for the PLUMED 2 Action.
 </TR>
 <TR>
   <TD> READ_GRID </TD>
-  <TD> <b> currently missing </b> </TD>
+  <TD> \ref METAD with GRID_RFILE </TD>
 </TR>
 <TR>
   <TD> MULTIPLE_WALKERS </TD>
