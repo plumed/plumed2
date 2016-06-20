@@ -1351,7 +1351,14 @@ void MetaD::update(){
     if(storeOldGrids_) gridfile_.clearFields();
     // in case only latest grid is stored, file should be rewound
     // this will overwrite previously written grids
-    else gridfile_.rewind();
+    else {
+      int r = 0;
+      if(walkers_mpi) {
+        if(comm.Get_rank()==0) r=multi_sim_comm.Get_rank();
+        comm.Bcast(r,0);
+      } 
+      if(r==0) gridfile_.rewind();
+    }
     BiasGrid_->writeToFile(gridfile_); 
     // if a single grid is stored, it is necessary to flush it, otherwise
     // the file might stay empty forever (when a single grid is not large enough to
