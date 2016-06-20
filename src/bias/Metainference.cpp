@@ -395,7 +395,7 @@ void Metainference::doMonteCarlo(const vector<double> &mean_){
       if(new_scale > scale_max_){new_scale = 2.0 * scale_max_ - new_scale;}
       if(new_scale < scale_min_){new_scale = 2.0 * scale_min_ - new_scale;}
       // the scaling factor should be the same for all the replicas
-      if(master) multi_sim_comm.Bcast(new_scale,0);
+      if(master && nrep_>1 ) multi_sim_comm.Bcast(new_scale,0);
       comm.Bcast(new_scale,0);
 
       // calculate new energy
@@ -414,7 +414,7 @@ void Metainference::doMonteCarlo(const vector<double> &mean_){
       if(master) {
         totenergies[0] = old_energy;
         totenergies[1] = new_energy;
-        multi_sim_comm.Sum(totenergies);
+        if(nrep_>1) multi_sim_comm.Sum(totenergies);
       } else {
         totenergies[0] = 0;
         totenergies[1] = 0;
@@ -431,7 +431,7 @@ void Metainference::doMonteCarlo(const vector<double> &mean_){
       } else {
         double s = static_cast<double>(rand()) / RAND_MAX;
         // all replicas run the random number, but then only one is used
-        if(master) multi_sim_comm.Bcast(s,0);
+        if(master && nrep_>1) multi_sim_comm.Bcast(s,0);
         comm.Bcast(s,0);
         if( s < exp(-delta) ){
           old_energy = new_energy;
@@ -506,8 +506,10 @@ double Metainference::getEnergyForceSPE(const vector<double> &mean, const double
      f[i] = -scale_*dev*(dit/smean2 + 1./a2);
    }
    // collect contribution to forces and energy from other replicas
-   multi_sim_comm.Sum(&f[0],narg);
-   multi_sim_comm.Sum(&ene,1);
+   if(nrep_>1) {
+     multi_sim_comm.Sum(&f[0],narg);
+     multi_sim_comm.Sum(&ene,1);
+   }
    // add normalizations and priors of local replica
    ene += std::log(s) - static_cast<double>(ndata_)*std::log(sqrt2_div_pi*s);
   }
@@ -536,7 +538,7 @@ double Metainference::getEnergyForceGJE(const vector<double> &mean, const double
     if(master) inv_s2[i] = 1.0/ss[i];
   }
 
-  if(master) multi_sim_comm.Sum(&inv_s2[0],ssize); 
+  if(master && nrep_>1) multi_sim_comm.Sum(&inv_s2[0],ssize); 
   comm.Sum(&inv_s2[0],ssize);  
   
   double w_tmp = 0.;
