@@ -68,6 +68,13 @@ class Metainference : public Bias
   vector<double> sigma_mean_;
   vector<double> variance_;
   vector<double> h_mean_;
+
+  // forces
+  double max_plumed_force_;
+  double max_md_force_;
+  unsigned sum_nfmax_;
+  unsigned sum_nfmax_md_;
+
   // temperature in kbt
   double   kbt_;
   // number of data points
@@ -84,12 +91,18 @@ class Metainference : public Bias
   Value* valueRSigmaMean;
   vector<Value*> valueSigma;
   vector<Value*> valueSigmaMean;
+  Value* valueMaxForceMD;
+  Value* valueMaxForcePLUMED;
 
   bool     master;
   bool     do_reweight;
+  bool     do_optsigmamean_;
   unsigned nrep_;
   unsigned replica_;
   unsigned narg;
+
+  // we need this for the forces
+  Atoms& atoms;
 
   double getEnergySPE(const vector<double> &mean, const vector<double> &sigma, const double scale);
   double getEnergyGJE(const vector<double> &mean, const vector<double> &sigma, const double scale);
@@ -100,6 +113,7 @@ class Metainference : public Bias
 public:
   explicit Metainference(const ActionOptions&);
   void calculate();
+  void update();
   static void registerKeywords(Keywords& keys);
 };
 
@@ -114,6 +128,7 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.add("optional","PARAMETERS","reference values for the experimental data");
   keys.add("compulsory","NOISETYPE","functional form of the noise (GAUSS,MGAUSS,OUTLIERS)");
   keys.addFlag("SCALEDATA",false,"Set to TRUE if you want to sample a scaling factor common to all values and replicas");  
+  keys.addFlag("OPTSIGMAMEAN",false,"Set to TRUE if you want to scale sigma_mean to prevent too high forces");  
   keys.add("compulsory","SCALE0","initial value of the uncertainty parameter");
   keys.add("compulsory","SCALE_MIN","minimum value of the uncertainty parameter");
   keys.add("compulsory","SCALE_MAX","maximum value of the uncertainty parameter");
@@ -123,6 +138,8 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.add("compulsory","SIGMA_MAX","maximum value of the uncertainty parameter");
   keys.add("compulsory","DSIGMA","maximum MC move of the uncertainty parameter");
   keys.add("compulsory","SIGMA_MEAN0","starting value for the uncertainty in the mean estimate");
+  keys.add("compulsory","MAX_FORCE_MD","maximum allowable force");
+  keys.add("compulsory","MAX_FORCE_PLUMED","maximum allowable force");
   keys.add("optional","TEMP","the system temperature - this is only needed if code doesnt' pass the temperature to plumed");
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_STRIDE","MC stride");
@@ -133,6 +150,8 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.addOutputComponent("sigmaMean","default","uncertainty in the mean estimate");
   keys.addOutputComponent("scale", "default","scale parameter");
   keys.addOutputComponent("accept","default","MC acceptance");
+  keys.addOutputComponent("maxForceMD","default","max force on molecule");
+  keys.addOutputComponent("maxForcePLUMED","default","max force on molecule");
 }
 
 Metainference::Metainference(const ActionOptions&ao):
@@ -140,12 +159,16 @@ PLUMED_BIAS_INIT(ao),
 sqrt2_div_pi(0.45015815807855),
 sqrt2_pi(2.50662827463100050240),
 doscale_(false),
+sum_nfmax_(0),
+sum_nfmax_md_(0),
 ndata_(getNumberOfArguments()),
 MCsteps_(1), 
 MCstride_(1), 
 MCaccept_(0), 
 MCfirst_(-1),
-do_reweight(false)
+do_reweight(false),
+do_optsigmamean_(false),
+atoms(plumed.getAtoms())
 {
   // set up replica stuff 
   master = (comm.Get_rank()==0);
@@ -199,6 +222,8 @@ do_reweight(false)
     scale_=1.0;
   }
 
+  parseFlag("OPTSIGMAMEAN", do_optsigmamean_);
+
   vector<double> readsigma;
   parseVector("SIGMA0",readsigma);
   if(noise_type_!=MGAUSS&&readsigma.size()>1) error("If you want to use more than one SIGMA you should use NOISETYPE=MGAUSS");
@@ -247,6 +272,14 @@ do_reweight(false)
   } else {
     sigma_mean_.resize(1, read_sigma_mean_[0]);
   } 
+
+  // sigma mean optimisation
+  if(do_optsigmamean_) {
+      parse("MAX_FORCE_PLUMED", max_plumed_force_);
+      max_plumed_force_ *= max_plumed_force_;
+      parse("MAX_FORCE_MD", max_md_force_);
+      max_md_force_ *= max_md_force_;
+  }
 
   checkRead();
 
@@ -320,6 +353,15 @@ do_reweight(false)
     valueSigmaMean.push_back(getPntrToComponent("sigmaMean"));
     addComponent("sigma"); componentIsNotPeriodic("sigma");
     valueSigma.push_back(getPntrToComponent("sigma"));
+  }
+
+  if(do_optsigmamean_) {
+      addComponent("maxForceMD");
+      componentIsNotPeriodic("maxForceMD");
+      valueMaxForceMD=getPntrToComponent("maxForceMD");
+      addComponent("maxForcePLUMED");
+      componentIsNotPeriodic("maxForcePLUMED");
+      valueMaxForcePLUMED=getPntrToComponent("maxForcePLUMED");
   }
 
   // initialize random seed
@@ -561,6 +603,75 @@ double Metainference::getEnergyForceGJE(const vector<double> &mean, const double
   return kbt_*ene;
 }
 
+void Metainference::update() {
+  if(do_optsigmamean_) {
+    const double EPS = 0.1;
+    // Get max force of whole system
+    vector<Vector> md_forces;
+    vector<Vector> plumed_forces;
+    vector<double> masses;
+
+    atoms.getLocalMDForces(md_forces);
+    atoms.getLocalForces(plumed_forces);
+    atoms.getLocalMasses(masses);
+
+    vector<double> allforces_plumed;
+    vector<double> allforces_md;
+    for(unsigned i = 0; i < plumed_forces.size(); ++i) {
+      const double pf2 = plumed_forces[i].modulo2();
+      // we are only interested in forces plumed has an effect on
+      if(pf2 > EPS && masses[i] > EPS ) {
+        const double invm2 = 1./(masses[i]*masses[i]);
+        allforces_md.push_back(md_forces[i].modulo2()*invm2);
+        allforces_plumed.push_back(pf2*invm2);
+      }
+    }
+
+    vector<double> fmax_tmp_md(comm.Get_size(),0);
+    vector<double> fmax_tmp_plumed(comm.Get_size(),0);
+    unsigned nfmax = 0;
+    unsigned nfmax_md = 0;
+
+    /* each local thread should look for the maximum force and number of violations */
+    if(allforces_md.size()>0) {
+      fmax_tmp_md[comm.Get_rank()]     = *max_element(allforces_md.begin(), allforces_md.end());
+      fmax_tmp_plumed[comm.Get_rank()] = *max_element(allforces_plumed.begin(), allforces_plumed.end());
+      for(unsigned i = 0; i < allforces_md.size(); ++i) {
+        if(allforces_plumed[i] > max_plumed_force_) {
+          nfmax += 1;
+          if(allforces_md[i] > max_md_force_) {
+            nfmax_md += 1;
+          }
+        }
+      }
+    }
+
+    sum_nfmax_ = nfmax;
+    sum_nfmax_md_ = nfmax_md;
+
+    // the largest forces are shared among the local threads but not over the replicas 
+    comm.Sum(fmax_tmp_md);
+    comm.Sum(fmax_tmp_plumed);
+    // these are the largest forces for a specific replica
+    const double fmax_md     = *max_element(fmax_tmp_md.begin(), fmax_tmp_md.end());
+    const double fmax_plumed = *max_element(fmax_tmp_plumed.begin(), fmax_tmp_plumed.end());
+
+    // the number of violations is summed up over the local thread and over the replicas 
+    comm.Sum(nfmax);
+    comm.Sum(nfmax_md);
+    if(comm.Get_rank() == 0) {
+      multi_sim_comm.Sum(nfmax);
+      multi_sim_comm.Sum(nfmax_md);
+    }
+    // and resent to all the threads
+    comm.Bcast(nfmax,0);
+    comm.Bcast(nfmax_md,0);
+
+    valueMaxForceMD->set(sqrt(fmax_md));
+    valueMaxForcePLUMED->set(sqrt(fmax_plumed));
+  }
+}
+
 void Metainference::calculate(){
   const long int step = getStep();
   // this is needed when restarting simulations
@@ -623,6 +734,10 @@ void Metainference::calculate(){
 
   /* fix sigma_mean_ for the weighted average and the scaling factor */
   double modifier = scale_*sqrt(idof);
+
+  if(do_optsigmamean_) {
+      modifier *= static_cast<double>(sum_nfmax_ + 1) * static_cast<double>(sum_nfmax_md_ + 1);
+  }
   valueRSigmaMean->set(modifier);
   for(unsigned i=0;i<sigma_mean_.size();++i) sigma_mean_[i] *= modifier;
 
