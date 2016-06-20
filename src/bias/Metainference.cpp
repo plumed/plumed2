@@ -69,6 +69,9 @@ class Metainference : public Bias
   vector<double> variance_;
   vector<double> h_mean_;
 
+  // this is needed for a numerically stable variance calc
+  vector<double> loc_par_;
+
   // forces
   double max_plumed_force_;
   double max_md_force_;
@@ -256,6 +259,7 @@ atoms(plumed.getAtoms())
   // variance is always the size of narg
   variance_.resize(narg,0);
   h_mean_.resize(narg,0);
+  loc_par_.resize(narg,0);
   // while sigma_mean_ has the same size of sigma
   vector<double> read_sigma_mean_;
   parseVector("SIGMA_MEAN0",read_sigma_mean_);
@@ -272,6 +276,13 @@ atoms(plumed.getAtoms())
   } else {
     sigma_mean_.resize(1, read_sigma_mean_[0]);
   } 
+
+  // create a vector for the shifted mean calc
+  if(master) {
+    for(unsigned i=0;i<narg;++i) loc_par_[i] = getArgument(i); 
+    if(nrep_>1) multi_sim_comm.Sum(&loc_par_[0], narg);
+  }
+  comm.Sum(&loc_par_[0], narg);
 
   // sigma mean optimisation
   if(do_optsigmamean_) {
@@ -717,8 +728,8 @@ void Metainference::calculate(){
   sigma_mean_[0] = 0.; 
   const double it = 1./static_cast<double>(step-MCfirst_+1);
   for(unsigned i=0;i<narg;++i) { 
-    variance_[i] += mean[i]*mean[i];
-    h_mean_[i] += mean[i];
+    variance_[i] += (mean[i]-loc_par_[i])*(mean[i]-loc_par_[i]);
+    h_mean_[i] += mean[i]-loc_par_[i];
     if(noise_type_!=MGAUSS) sigma_mean_[0] += variance_[i]*it-h_mean_[i]*h_mean_[i]*it*it;
     else sigma_mean_[i] = sqrt(variance_[i]*it-h_mean_[i]*h_mean_[i]*it*it);
   }
