@@ -35,7 +35,14 @@ MultiColvarFilter::MultiColvarFilter(const ActionOptions&ao):
 Action(ao),
 BridgedMultiColvarFunction(ao)
 {
-  if( getPntrToMultiColvar()->isDensity() ) error("filtering density makes no sense");
+  if( getPntrToMultiColvar()->isDensity() ) error("filtering/transforming density makes no sense");
+
+  if( getName().find("MFILTER")!=std::string::npos ) filter=true;
+  else {
+    plumed_assert( getName().find("MTRANSFORM")!=std::string::npos );
+    filter=false;
+  }
+
   readVesselKeywords(); 
 }
 
@@ -52,7 +59,7 @@ void MultiColvarFilter::completeTask( const unsigned& curr, MultiValue& invals, 
   double val=invals.get(1), df, weight=applyFilter( val, df );
 
   // Now propegate derivatives
-  if( !getPntrToMultiColvar()->weightHasDerivatives ){
+  if( filter && !getPntrToMultiColvar()->weightHasDerivatives ){
      outvals.setValue( 0, weight );
      if( derivativesAreRequired() ){
          for(unsigned i=0;i<invals.getNumberActive();++i){
@@ -60,12 +67,20 @@ void MultiColvarFilter::completeTask( const unsigned& curr, MultiValue& invals, 
              outvals.addDerivative( 0, jder, df*invals.getDerivative(1, jder ) );
          }
      }
-  } else {
+  } else if( filter ) {
      double ww=outvals.get(0); outvals.setValue( 0, ww*weight );
      if( derivativesAreRequired() ){
          for(unsigned i=0;i<outvals.getNumberActive();++i){
              unsigned ider=outvals.getActiveIndex(i);
              outvals.setDerivative( 0, ider, weight*outvals.getDerivative(1,ider) + ww*df*outvals.getDerivative(0,ider) );
+         }
+     }
+  } else {
+     outvals.setValue( 1, weight );
+     if( derivativesAreRequired() ){
+         for(unsigned i=0;i<invals.getNumberActive();++i){
+             unsigned jder=invals.getActiveIndex(i);
+             outvals.setDerivative( 1, jder, df*invals.getDerivative(1, jder ) );
          }
      }
   }

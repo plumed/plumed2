@@ -356,11 +356,9 @@ void MultiColvarBase::setupMultiColvarBase( const std::vector<AtomNumber>& atoms
         if( pow( double(nblock), double(ablocks.size()) )>std::numeric_limits<unsigned>::max() ) error("number of atoms in groups is too big for PLUMED to handle");
      }
      unsigned code=1; for(unsigned i=0;i<decoder.size();++i){ decoder[decoder.size()-1-i]=code; code *= nblock; }
-     for(unsigned i=0;i<atoms.size();++i) all_atoms.push_back( atoms[i] );
   } else if( !usespecies ){
      ncentral=ablocks.size(); use_for_central_atom.resize( ablocks.size(), true );
      numberForCentralAtom = 1.0 / static_cast<double>( ablocks.size() );
-     for(unsigned i=0;i<atoms.size();++i) all_atoms.push_back( atoms[i] );
   } else if( keywords.exists("SPECIESA") ){
      plumed_assert( atom_lab.size()==0 && all_atoms.size()==0 ); 
      ablocks.resize( 1 ); bool readspecies=parseMultiColvarAtomList("SPECIES", -1, all_atoms); 
@@ -396,6 +394,10 @@ void MultiColvarBase::setupMultiColvarBase( const std::vector<AtomNumber>& atoms
       tmp_atoms=mybasemulticolvars[i]->getAbsoluteIndexes();
       for(unsigned j=0;j<tmp_atoms.size();++j) all_atoms.push_back( tmp_atoms[j] );
   } 
+  // Copy atom lists from input
+  if( !usespecies ){
+      for(unsigned i=0;i<atoms.size();++i) all_atoms.push_back( atoms[i] );
+  }
 
   // Now make sure we get all the atom positions 
   ActionAtomistic::requestAtoms( all_atoms );
@@ -573,8 +575,9 @@ void MultiColvarBase::decodeIndexToAtoms( const unsigned& taskCode, std::vector<
 }
 
 bool MultiColvarBase::setupCurrentAtomList( const unsigned& taskCode, AtomValuePack& myatoms ) const {
-  if( usespecies ){
-     if( isDensity() ) return true;
+  if( isDensity() ){ 
+     myatoms.setNumberOfAtoms( 1 ); myatoms.setAtom( 0, taskCode ); return true; 
+  } else if( usespecies ){
      std::vector<unsigned> task_atoms(1); task_atoms[0]=taskCode;
      unsigned natomsper=myatoms.setupAtomsFromLinkCells( task_atoms, getLinkCellPosition(task_atoms), linkcells );
      return natomsper>1;

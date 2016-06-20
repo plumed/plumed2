@@ -22,10 +22,7 @@
 #ifndef __PLUMED_analysis_Analysis_h
 #define __PLUMED_analysis_Analysis_h
 
-#include "core/ActionPilot.h"
-#include "core/ActionAtomistic.h"
-#include "core/ActionWithArguments.h"
-#include "vesselbase/ActionWithVessel.h"
+#include "vesselbase/ActionWithAveraging.h"
 
 #define PLUMED_ANALYSIS_INIT(ao) Action(ao),Analysis(ao)
 
@@ -42,15 +39,8 @@ is information as to how to go about implementing a new analysis method.
 
 */
 
-class Analysis :
-  public ActionPilot,
-  public ActionAtomistic,
-  public ActionWithArguments,
-  public vesselbase::ActionWithVessel
-  {
+class Analysis : public vesselbase::ActionWithAveraging {
 private:
-/// Are we running only once for the whole trajectory
-  bool single_run;
 /// Are we treating each block of data separately
   bool nomemory;
 /// Are we writing a checkpoint file
@@ -71,16 +61,14 @@ private:
   double rtemp;
 /// Do we need the energy (are we reweighting at a different temperature)
   bool needeng;
-/// The biases we are using in reweighting and the args we store them separately
-  std::vector<Value*> biases;
 /// The piece of data we are inserting
   unsigned idata;
 /// The weights of all the data points
   std::vector<double> logweights;
 /// Have we analyzed the data for the first time
-  bool firstAnalysisDone;
+//  bool firstAnalysisDone;
 /// The value of the old normalization constant
-  double norm, old_norm;
+//  double norm, old_norm;
 /// The format to use in output files
   std::string ofmt;
 /// Tempory vector to store values of arguments
@@ -91,11 +79,6 @@ private:
   OFile rfile;
 /// Read in data from a file
   void readDataFromFile( const std::string& filename );
-/// This retrieves the value of norm from the analysis action.
-/// It is only used to transfer data from one analysis action to
-/// another. You should never need to use it.  If you think you need it
-/// you probably need getNormalization()
-  double retrieveNorm() const ;
 /// Get the metric if we are using malonobius distance and flexible hill
   std::vector<double> getMetric() const ;
 protected:
@@ -109,8 +92,6 @@ protected:
   std::vector<ReferenceConfiguration*> data;
 /// Get the name of the metric we are using to measure distances
   std::string getMetricName() const ;
-/// Return the number of arguments (this overwrites the one in ActionWithArguments)
-  unsigned getNumberOfArguments() const;
 /// Return the number of data points
   unsigned getNumberOfDataPoints() const;
 /// Return the weight of the ith point
@@ -119,53 +100,29 @@ protected:
   void getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const ;
 /// Returns true if argument i is periodic together with the domain 
   bool getPeriodicityInformation(const unsigned& i, std::string& dmin, std::string& dmax);
-/// Return the normalization constant
-  double getNormalization() const;
-/// Return the set temperature (N.B. k_B T is what is returned by this function)
-  double getTemp () const;
 /// Are we analyzing each data block separately (if we are not this also returns the old normalization )
   bool usingMemory() const; 
-/// Convert the stored log weights to proper weights
-  void finalizeWeights( const bool& ignore_weights );
-/// Overwrite ActionWithArguments getArguments() so that we don't return
-/// the bias
-  std::vector<Value*> getArguments();
 /// Return the format to use for numbers in output files
   std::string getOutputFormat() const ;
+/// Finalize the weights without using the log sums
+//  void finalizeWeightsNoLogSums( const double& onorm );
 public:
   static void registerKeywords( Keywords& keys );
   explicit Analysis(const ActionOptions&);
   ~Analysis();
-  void prepare();
-  void calculate();
-  void update();
   void accumulate();
+  void performOperations( const bool& from_update );
   virtual void performAnalysis()=0;
-  void apply(){}
   void runFinalJobs();
   void runAnalysis();
-  void lockRequests();
-  void unlockRequests();
-  void calculateNumericalDerivatives( ActionWithValue* a=NULL ){ plumed_error(); }
   bool isPeriodic(){ plumed_error(); return false; }
-  unsigned getNumberOfDerivatives(){ plumed_error(); return 0; }
+  /// Convert the stored log weights to proper weights
+  virtual void finalizeWeights( const bool& ignore_weights );
 };
 
 inline
 std::string Analysis::getMetricName() const {
   return metricname;
-}
-
-inline 
-void Analysis::lockRequests(){
-  ActionAtomistic::lockRequests();
-  ActionWithArguments::lockRequests();
-} 
-
-inline
-void Analysis::unlockRequests(){ 
-  ActionAtomistic::unlockRequests();
-  ActionWithArguments::unlockRequests();
 }
 
 inline
@@ -185,24 +142,6 @@ bool Analysis::usingMemory() const {
   } else {
       return mydatastash->usingMemory();
   }
-}
-
-inline
-unsigned Analysis::getNumberOfArguments() const {
-  unsigned nargs=ActionWithArguments::getNumberOfArguments();
-  return nargs - biases.size(); 
-}
-
-inline
-double Analysis::retrieveNorm() const {
-  return norm;
-}
-
-inline
-std::vector<Value*> Analysis::getArguments(){
-  std::vector<Value*> arg_vals( ActionWithArguments::getArguments() );
-  for(unsigned i=0;i<biases.size();++i) arg_vals.erase(arg_vals.end()-1);
-  return arg_vals;
 }
 
 inline

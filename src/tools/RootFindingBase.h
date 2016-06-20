@@ -32,20 +32,21 @@ class RootFindingBase {
 private:
 /// This is the pointer to the member funciton in the energy
 /// calculating class that calculates the energy
-  typedef double(FCLASS::*engf_pointer)( const std::vector<double>& p, std::vector<double>& der );
+  typedef double(FCLASS::*engf_pointer)( const std::vector<double>& p, std::vector<double>& der ) const ;
+  typedef double(FCLASS::*engfnc_pointer)( const std::vector<double>& p, std::vector<double>& der ) ;
 /// The class that calculates the energy given a position
   FCLASS* myclass_func;
+/// This actually does the search for a root
+  void doSearch( const std::vector<double>& dir, std::vector<double>& p, F1dim<FCLASS>& f1dim  ) const ;
 public:
   explicit RootFindingBase( FCLASS* funcc ) : myclass_func(funcc) {}
 /// This is the line minimiser
-  void linesearch( const std::vector<double>& dir, std::vector<double>& p, engf_pointer myfunc );
+  void linesearch( const std::vector<double>& dir, std::vector<double>& p, engf_pointer myfunc ) const ;
+  void lsearch( const std::vector<double>& dir, std::vector<double>& p, engfnc_pointer myfunc ) const ;
 };
 
 template <class FCLASS>
-void RootFindingBase<FCLASS>::linesearch( const std::vector<double>& dir, std::vector<double>& p, engf_pointer myfunc ){
-  // Construct the object that turns points on a line into vectors 
-  F1dim<FCLASS> f1dim( p, dir, myclass_func, myfunc );
-
+void RootFindingBase<FCLASS>::doSearch( const std::vector<double>& dir, std::vector<double>& p, F1dim<FCLASS>& f1dim ) const {
   // Construct an object that will do the line search for the minimum
   Brent1DRootSearch<F1dim<FCLASS> > bb(f1dim);
 
@@ -54,6 +55,22 @@ void RootFindingBase<FCLASS>::linesearch( const std::vector<double>& dir, std::v
   bb.bracket( ax, xx, &F1dim<FCLASS>::getEng );
   double xmin=bb.search( &F1dim<FCLASS>::getEng );
   for(unsigned i=0;i<p.size();++i) p[i] += xmin*dir[i];
+}
+
+template <class FCLASS>
+void RootFindingBase<FCLASS>::linesearch( const std::vector<double>& dir, std::vector<double>& p, engf_pointer myfunc ) const {
+  // Construct the object that turns points on a line into vectors 
+  F1dim<FCLASS> f1dim( p, dir, myclass_func, myfunc, NULL );
+  // Actually do the search
+  doSearch( dir, p, f1dim ); 
+}
+
+template <class FCLASS>
+void RootFindingBase<FCLASS>::lsearch( const std::vector<double>& dir, std::vector<double>& p, engfnc_pointer myfunc ) const {
+  // Construct the object that turns points on a line into vectors 
+  F1dim<FCLASS> f1dim( p, dir, myclass_func, NULL, myfunc );
+  // Actually do the search
+  doSearch( dir, p, f1dim );
 }
 
 }

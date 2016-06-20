@@ -30,7 +30,7 @@ using namespace std;
 namespace PLMD{
 namespace generic{
 
-//+PLUMEDOC ANALYSIS DUMPDERIVATIVES
+//+PLUMEDOC PRINTANALYSIS DUMPDERIVATIVES
 /*
 Dump the derivatives with respect to the input parameters for one or more objects (generally CVs, functions or biases).
 

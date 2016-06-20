@@ -72,13 +72,13 @@ private:
   bool setup_completed;
 /// Ensures that retrieving of atoms is only done once per calculation loop
   bool atomsWereRetrieved;
-/// The vessels in these multicolvars in which the data is stored
-  std::vector<vesselbase::StoreDataVessel*> mybasedata;
 /// Add derivatives of center of mass position
   void addComDerivatives( const int& ival, const unsigned& iatom, const Vector& der, multicolvar::AtomValuePack& myatoms ) const ;
 protected:
 /// This is used to keep track of what is calculated where
   std::vector< std::pair<unsigned,unsigned> > atom_lab;
+/// The vessels in these multicolvars in which the data is stored
+  std::vector<vesselbase::StoreDataVessel*> mybasedata;
 /// The multicolvars from which we construct these quantities
   std::vector<MultiColvarBase*> mybasemulticolvars;
 /// This remembers where the boundaries are for the tasks. It makes link cells work fast
