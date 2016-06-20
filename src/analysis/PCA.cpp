@@ -157,16 +157,18 @@ void PCA::performAnalysis(){
   std::vector<Vector> spos( getNumberOfAtoms() );
   for(unsigned i=0;i<getNumberOfAtoms();++i) spos[i].zero();  
  
-  // Calculate the average displacement from the first frame 
+  // Calculate the average displacement from the first frame
+  double norm=getWeight(0); 
   for(unsigned i=1;i<getNumberOfDataPoints();++i){
       double d = data[0]->calc( data[i]->getReferencePositions(), getPbc(), getArguments(), data[i]->getReferenceArguments(), mypack, true );
       // Accumulate average displacement of arguments (Here PBC could do fucked up things - really needs Berry Phase ) GAT
       for(unsigned j=0;j<getNumberOfArguments();++j) sarg[j] += 0.5*getWeight(i)*mypack.getArgumentDerivative(j); 
       // Accumulate average displacement of position
       for(unsigned j=0;j<getNumberOfAtoms();++j) spos[j] += getWeight(i)*mypack.getAtomsDisplacementVector()[j];
+      norm += getWeight(i);
   }
   // Now normalise the displacements to get the average and add these to the first frame
-  double inorm = 1.0 / getNormalization(); 
+  double inorm = 1.0 / norm ; 
   for(unsigned j=0;j<getNumberOfArguments();++j) sarg[j] = inorm*sarg[j] + data[0]->getReferenceArguments()[j];
   for(unsigned j=0;j<getNumberOfAtoms();++j) spos[j] = inorm*spos[j] + data[0]->getReferencePositions()[j]; 
   // And set the reference configuration

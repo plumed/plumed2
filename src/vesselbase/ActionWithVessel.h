@@ -188,6 +188,8 @@ public:
   Vessel* getVesselWithName( const std::string& mynam );
 /// Does the weight have derivatives
   bool weightWithDerivatives() const ;
+/// Return the position in the current task list
+  unsigned getPositionInCurrentTaskList( const unsigned& myind ) const ;
 /// These normalizes vectors and is used in StoreDataVessel
   virtual void normalizeVector( std::vector<double>& vals ) const { plumed_error(); }
   virtual void normalizeVectorDerivatives( MultiValue& myvals ) const { plumed_error(); }
@@ -270,6 +272,16 @@ bool ActionWithVessel::derivativesAreRequired() const {
 inline
 bool ActionWithVessel::weightWithDerivatives() const {
   return weightHasDerivatives;
+}
+
+inline
+unsigned ActionWithVessel::getPositionInCurrentTaskList( const unsigned& myind ) const {
+  if( nactive_tasks==fullTaskList.size() ) return myind;
+
+  for(unsigned i=0;i<nactive_tasks;++i){
+      if( myind==indexOfTaskInFullList[i] ) return i;
+  }
+  plumed_merror("requested task is not active");
 }
 
 } 

@@ -40,7 +40,7 @@ namespace PLMD
 {
 namespace multicolvar {
 
-//+PLUMEDOC ANALYSIS DUMPMULTICOLVAR 
+//+PLUMEDOC PRINTANALYSIS DUMPMULTICOLVAR 
 /*
 Dump atom positions and multicolvar on a file.
 
@@ -164,7 +164,7 @@ void DumpMultiColvar::update(){
     const char* name=defname;
 
     Vector apos = mycolv->getCentralAtomPos( mycolv->getTaskCode(i) );
-    if( getNumberOfAtoms()>0 ) apos=pbcDistance( apos, getPosition(0) );
+    if( getNumberOfAtoms()>0 ) apos=pbcDistance( getPosition(0), apos );
     of.printf(("%s "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz).c_str(),name,lenunit*apos[0],lenunit*apos[1],lenunit*apos[2]);
     stash->retrieveSequentialValue( i, true, cvals );
     if( mycolv->weightWithDerivatives() ){

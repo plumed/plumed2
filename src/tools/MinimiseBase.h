@@ -31,7 +31,8 @@ class F1dim {
 private:
 /// This is the pointer to the member funciton in the energy
 /// calculating class that calculates the energy
-  typedef double(FCLASS::*engf_pointer)( const std::vector<double>& p, std::vector<double>& der );
+  typedef double(FCLASS::*engf_pointer)( const std::vector<double>& p, std::vector<double>& der ) const ;
+  typedef double(FCLASS::*engfnc_pointer)( const std::vector<double>& p, std::vector<double>& der ) ;
 /// Pointer to the vector containing an initial position on the vector
   const std::vector<double>& p;
 /// The direction of the vector we are minimising along
@@ -44,27 +45,32 @@ private:
   FCLASS* func;
 /// Member of class that calculates the energy we are trying to mnimise
   engf_pointer calc;
+/// Member of class that calcualtes the energy we are trying to minimise
+  engfnc_pointer calc2;
 public: 
-  explicit F1dim( const std::vector<double>& pp, const std::vector<double>& dd, FCLASS* ff, engf_pointer cc );
+  explicit F1dim( const std::vector<double>& pp, const std::vector<double>& dd, FCLASS* ff, engf_pointer cc, engfnc_pointer cc2 );
 /// Calculate the energy at \f$\mathbf{p} + xt*\mathbf{dir}\f$
   double getEng( const double& xt );
 };
 
 template <class FCLASS>
-F1dim<FCLASS>::F1dim( const std::vector<double>& pp, const std::vector<double>& dd, FCLASS* ff, engf_pointer cc ):
+F1dim<FCLASS>::F1dim( const std::vector<double>& pp, const std::vector<double>& dd, FCLASS* ff, engf_pointer cc, engfnc_pointer cc2 ):
 p(pp),
 dir(dd),
 pt(pp.size()),
 fake_der(pp.size()),
 func(ff),
-calc(cc)
+calc(cc),
+calc2(cc2)
 {
+  plumed_assert( calc || calc2 );
 }
 
 template <class FCLASS>
 double F1dim<FCLASS>::getEng( const double& xt ){
   for(unsigned j=0;j<pt.size();++j) pt[j] = p[j] + xt*dir[j];
-  return (func->*calc)(pt,fake_der); 
+  if( calc ) return (func->*calc)(pt,fake_der); 
+  return (func->*calc2)(pt,fake_der);
 }
 
 template <class FCLASS>
@@ -87,7 +93,7 @@ public:
 template <class FCLASS>
 double MinimiseBase<FCLASS>::linemin( const std::vector<double>& dir, std::vector<double>& p, engf_pointer myfunc ){
   // Construct the object that turns points on a line into vectors 
-  F1dim<FCLASS> f1dim( p, dir, myclass_func, myfunc );
+  F1dim<FCLASS> f1dim( p, dir, myclass_func, NULL, myfunc );
 
   // Construct an object that will do the line search for the minimum
   Minimise1DBrent<F1dim<FCLASS> > bb(f1dim);

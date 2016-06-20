@@ -123,6 +123,9 @@ public:
 /// Return true if we are doing a restart
   bool getRestart()const;
 
+/// Just read one of the keywords and return the whole thing as a string
+  std::string getKeyword(const std::string& key);
+
 /// Parse one keyword as generic type
   template<class T>
   void parse(const std::string&key,T&t);

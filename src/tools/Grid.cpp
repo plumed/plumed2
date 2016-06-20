@@ -680,7 +680,7 @@ Grid::index_t SparseGrid::getMaxSize() const {
  return maxsize_; 
 }
 
-double Grid::getDifferenceFromContour( const std::vector<double>& x, std::vector<double>& der ){
+double Grid::getDifferenceFromContour( const std::vector<double>& x, std::vector<double>& der ) const {
  return getValueAndDerivatives( x, der ) - contour_location; 
 }
 

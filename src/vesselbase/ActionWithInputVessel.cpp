@@ -32,6 +32,7 @@ void ActionWithInputVessel::registerKeywords(Keywords& keys){
   keys.add("compulsory","DATA","certain actions in plumed work by calculating a list of variables and summing over them. "
                                "This particular action can be used to calculate functions of these base variables or prints "
                                "them to a file. This keyword thus takes the label of one of those such variables as input.");
+  keys.reserve("compulsory","GRID","the action that creates the input grid you would like to use");
 }
 
 ActionWithInputVessel::ActionWithInputVessel(const ActionOptions&ao):
@@ -42,7 +43,8 @@ ActionWithInputVessel::ActionWithInputVessel(const ActionOptions&ao):
 }
 
 void ActionWithInputVessel::readArgument( const std::string& type ){
-  std::string mlab; parse("DATA",mlab);
+  std::string mlab; 
+  if( keywords.exists("DATA") && type!="grid" ) parse("DATA",mlab);
   ActionWithVessel* mves= plumed.getActionSet().selectWithLabel<ActionWithVessel*>(mlab);
   if(!mves) error("action labelled " +  mlab + " does not exist or does not have vessels");
   addDependency(mves);

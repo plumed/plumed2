@@ -31,17 +31,23 @@ ActionPilot::ActionPilot(const ActionOptions&ao):
 Action(ao),
 stride(1)
 {
-  parse("STRIDE",stride);
-  log.printf("  with stride %d\n",stride);
+  if( keywords.exists("STRIDE") ){
+     parse("STRIDE",stride);
+     if( !keywords.style("STRIDE","hidden") ) log.printf("  with stride %d\n",stride);
+  } else {
+     stride=0;
+  }
 }
 
 bool ActionPilot::onStep()const{
-  return getStep()%stride==0;
+  if( stride>0 ) return getStep()%stride==0;
+  return false;
 }
 
 int ActionPilot::getStride()const{
   return stride;
 }
+
 }
 
 
