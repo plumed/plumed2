@@ -46,6 +46,7 @@ public:
 }; 
 
 PLUMED_REGISTER_ACTION(FilterBetween,"MFILTER_BETWEEN")
+PLUMED_REGISTER_ACTION(FilterBetween,"MTRANSFORM_BETWEEN")
 
 void FilterBetween::registerKeywords( Keywords& keys ){
   MultiColvarFilter::registerKeywords( keys );

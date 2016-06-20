@@ -119,6 +119,24 @@ void Action::fflush(){
   }
 }
 
+std::string Action::getKeyword(const std::string& key){
+  // Check keyword has been registered 
+  plumed_massert(keywords.exists(key), "keyword " + key + " has not been registered");
+
+  std::string outkey;
+  if( Tools::getKey(line,key,outkey ) ) return key + outkey;
+
+  if( keywords.style(key,"compulsory") ){
+      if( keywords.getDefaultValue(key,outkey) ){
+          if( outkey.length()==0 ) error("keyword " + key + " has weird default value");
+          return key + "=" +  outkey; 
+      } else {
+          error("keyword " + key + " is compulsory for this action");
+      }
+  }  
+  return "";
+}
+
 void Action::parseFlag(const std::string&key,bool & t){
   // Check keyword has been registered
   plumed_massert(keywords.exists(key), "keyword " + key + " has not been registered");

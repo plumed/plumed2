@@ -41,6 +41,8 @@ private:
 /// A small number that protects against trying to achieve fractional 
 /// accuracy for a minimum that happens to be exactly zero
   const double EPS;
+/// The factor by which to expand the range when bracketing
+  const double EXPAND;
 /// This is the type specifier for the function to minimise
   typedef double(FCLASS::*eng_pointer)( const double& val );
 /// Three points bracketting the minimum and the corresponding function values
@@ -61,6 +63,7 @@ bracketed(false),
 tol(t),
 ITMAX(100),
 EPS(3.0E-8),
+EXPAND(1.6),
 ax(0), bx(0),
 fa(0), fb(0),
 myclass_func(pf)
@@ -69,7 +72,7 @@ myclass_func(pf)
 
 template <class FCLASS>
 void Brent1DRootSearch<FCLASS>::bracket( const double& a, const double& b, eng_pointer eng ){
-   ax=a; bx=b; fa=(myclass_func.*eng)(a); fb=(myclass_func.*eng)(b);
+   plumed_assert( a!=b ); ax=a; bx=b; fa=(myclass_func.*eng)(a); fb=(myclass_func.*eng)(b);
    if ((fa > 0.0 && fb > 0.0) || (fa < 0.0 && fb < 0.0)) plumed_merror("input points do not bracket root");
    bracketed=true;
 }

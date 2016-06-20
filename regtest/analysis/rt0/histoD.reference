@@ -1,7 +1,8 @@
-#! FIELDS x probs
+#! FIELDS x hD
+#! SET normalisation    4.0542
 #! SET min_x 0.0
 #! SET max_x 3.0
-#! SET nbins_x  101
+#! SET nbins_x  100
 #! SET periodic_x false
    0.0000   0.0000
    0.0300   0.0000
@@ -36,7 +37,7 @@
    0.9000   0.0000
    0.9300   0.0000
    0.9600   0.0000
-   0.9900   1.4932
+   0.9900   0.0000
    1.0200   0.0000
    1.0500   0.0000
    1.0800   0.0000

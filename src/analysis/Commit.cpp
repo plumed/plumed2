@@ -28,7 +28,7 @@
 namespace PLMD {
 namespace analysis {
 
-//+PLUMEDOC ANALYSIS COMMITTOR 
+//+PLUMEDOC PRINTANALYSIS COMMITTOR 
 /*
 Does a committor analysis.
 
