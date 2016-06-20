@@ -646,9 +646,6 @@ void Metainference::update() {
       }
     }
 
-    sum_nfmax_ = nfmax;
-    sum_nfmax_md_ = nfmax_md;
-
     // the largest forces are shared among the local threads but not over the replicas 
     comm.Sum(fmax_tmp_md);
     comm.Sum(fmax_tmp_plumed);
@@ -666,6 +663,9 @@ void Metainference::update() {
     // and resent to all the threads
     comm.Bcast(nfmax,0);
     comm.Bcast(nfmax_md,0);
+
+    sum_nfmax_ = nfmax;
+    sum_nfmax_md_ = nfmax_md;
 
     valueMaxForceMD->set(sqrt(fmax_md));
     valueMaxForcePLUMED->set(sqrt(fmax_plumed));
