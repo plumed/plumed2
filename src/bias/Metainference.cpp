@@ -277,13 +277,6 @@ atoms(plumed.getAtoms())
     sigma_mean_.resize(1, read_sigma_mean_[0]);
   } 
 
-  // create a vector for the shifted mean calc
-  if(master) {
-    for(unsigned i=0;i<narg;++i) loc_par_[i] = getArgument(i); 
-    if(nrep_>1) multi_sim_comm.Sum(&loc_par_[0], narg);
-  }
-  comm.Sum(&loc_par_[0], narg);
-
   // sigma mean optimisation
   if(do_optsigmamean_) {
       parse("MAX_FORCE_PLUMED", max_plumed_force_);
@@ -685,8 +678,18 @@ void Metainference::update() {
 
 void Metainference::calculate(){
   const long int step = getStep();
+  bool isFirstStep = false;
   // this is needed when restarting simulations
-  if(MCfirst_==-1) MCfirst_=step;
+  if(MCfirst_==-1) {
+    isFirstStep = true;
+    MCfirst_=step;
+    // create a vector for the shifted mean calc
+    if(master) {
+      for(unsigned i=0;i<narg;++i) loc_par_[i] = getArgument(i); 
+      if(nrep_>1) multi_sim_comm.Bcast(&loc_par_[0], narg, 0);
+    }
+    comm.Bcast(&loc_par_[0], narg, 0);
+  }
 
   double norm = 0.0;
   double fact = 0.0;
@@ -730,8 +733,10 @@ void Metainference::calculate(){
   for(unsigned i=0;i<narg;++i) { 
     variance_[i] += (mean[i]-loc_par_[i])*(mean[i]-loc_par_[i]);
     h_mean_[i] += mean[i]-loc_par_[i];
-    if(noise_type_!=MGAUSS) sigma_mean_[0] += variance_[i]*it-h_mean_[i]*h_mean_[i]*it*it;
-    else sigma_mean_[i] = sqrt(variance_[i]*it-h_mean_[i]*h_mean_[i]*it*it);
+    if(!isFirstStep) {
+      if(noise_type_!=MGAUSS) sigma_mean_[0] += variance_[i]*it-h_mean_[i]*h_mean_[i]*it*it;
+      else sigma_mean_[i] = sqrt(variance_[i]*it-h_mean_[i]*h_mean_[i]*it*it);
+    }
   }
   if(noise_type_!=MGAUSS) sigma_mean_[0] = sqrt(sigma_mean_[0]);
   for(unsigned i=0; i<sigma_mean_.size(); i++) valueSigmaMean[i]->set(sigma_mean_[i]);
