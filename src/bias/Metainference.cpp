@@ -69,14 +69,17 @@ class Metainference : public Bias
   vector<double> variance_;
   vector<double> h_mean_;
 
+  // sigma_mean rescue params
+  double sm_mod_;
+  double sm_mod_min_;
+  double Dsm_mod_;
+
   // this is needed for a numerically stable variance calc
   vector<double> loc_par_;
 
   // forces
   double max_plumed_force_;
   double max_md_force_;
-  unsigned sum_nfmax_;
-  unsigned sum_nfmax_md_;
 
   // temperature in kbt
   double   kbt_;
@@ -94,6 +97,8 @@ class Metainference : public Bias
   Value* valueRSigmaMean;
   vector<Value*> valueSigma;
   vector<Value*> valueSigmaMean;
+  Value* valueSMmod;
+  Value* valueSMmodMin;
   Value* valueMaxForceMD;
   Value* valueMaxForcePLUMED;
 
@@ -141,6 +146,9 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.add("compulsory","SIGMA_MAX","maximum value of the uncertainty parameter");
   keys.add("compulsory","DSIGMA","maximum MC move of the uncertainty parameter");
   keys.add("compulsory","SIGMA_MEAN0","starting value for the uncertainty in the mean estimate");
+  keys.add("compulsory","SIGMA_MEAN_MOD0","starting value for sm modifier");
+  keys.add("compulsory","DSIGMA_MEAN_MOD","step value for sm modifier");
+  keys.add("compulsory","SIGMA_MEAN_MOD_MIN","min value for sm modifier");
   keys.add("compulsory","MAX_FORCE_MD","maximum allowable force");
   keys.add("compulsory","MAX_FORCE_PLUMED","maximum allowable force");
   keys.add("optional","TEMP","the system temperature - this is only needed if code doesnt' pass the temperature to plumed");
@@ -162,8 +170,6 @@ PLUMED_BIAS_INIT(ao),
 sqrt2_div_pi(0.45015815807855),
 sqrt2_pi(2.50662827463100050240),
 doscale_(false),
-sum_nfmax_(0),
-sum_nfmax_md_(0),
 ndata_(getNumberOfArguments()),
 MCsteps_(1), 
 MCstride_(1), 
@@ -283,6 +289,9 @@ atoms(plumed.getAtoms())
       max_plumed_force_ *= max_plumed_force_;
       parse("MAX_FORCE_MD", max_md_force_);
       max_md_force_ *= max_md_force_;
+      parse("SIGMA_MEAN_MOD0", sm_mod_);
+      parse("SIGMA_MEAN_MOD_MIN", sm_mod_min_);
+      parse("DSIGMA_MEAN_MOD", Dsm_mod_);
   }
 
   checkRead();
@@ -366,6 +375,12 @@ atoms(plumed.getAtoms())
       addComponent("maxForcePLUMED");
       componentIsNotPeriodic("maxForcePLUMED");
       valueMaxForcePLUMED=getPntrToComponent("maxForcePLUMED");
+      addComponent("smMod");
+      componentIsNotPeriodic("smMod");
+      valueSMmod=getPntrToComponent("smMod");
+      addComponent("smModMin");
+      componentIsNotPeriodic("smModMin");
+      valueSMmodMin=getPntrToComponent("smModMin");
   }
 
   // initialize random seed
@@ -621,6 +636,9 @@ void Metainference::update() {
 
     vector<double> allforces_plumed;
     vector<double> allforces_md;
+    allforces_plumed.reserve(plumed_forces.size());
+    allforces_md.reserve(md_forces.size());
+
     for(unsigned i = 0; i < plumed_forces.size(); ++i) {
       const double pf2 = plumed_forces[i].modulo2();
       // we are only interested in forces plumed has an effect on
@@ -668,9 +686,24 @@ void Metainference::update() {
     comm.Bcast(nfmax,0);
     comm.Bcast(nfmax_md,0);
 
-    sum_nfmax_ = nfmax;
-    sum_nfmax_md_ = nfmax_md;
+    // if no violations then we minimise sm_mod_ (and also sm_mod_min_ if needed)
+    if(nfmax == 0) {
+      sm_mod_ -= Dsm_mod_ * 0.01 * std::log(sm_mod_/sm_mod_min_);
+      if((sm_mod_-sm_mod_min_)<Dsm_mod_) {
+        double sm_mod_min_new = sm_mod_min_ - Dsm_mod_;
+        if(sm_mod_min_new > 0) sm_mod_min_ = sm_mod_min_new;
+      }
+    // otherwise we increase sm_mod_ and also sm_mod_min_ if needed
+    } else {
+      sm_mod_ += Dsm_mod_ * nfmax;
+      if(nfmax_md > 0) {
+        sm_mod_min_ += nfmax_md * Dsm_mod_;
+        sm_mod_ += Dsm_mod_ * nfmax_md;
+      }
+    }
 
+    valueSMmod->set(sm_mod_);
+    valueSMmodMin->set(sm_mod_min_);
     valueMaxForceMD->set(sqrt(fmax_md));
     valueMaxForcePLUMED->set(sqrt(fmax_plumed));
   }
@@ -694,6 +727,7 @@ void Metainference::calculate(){
   double norm = 0.0;
   double fact = 0.0;
   double idof = 1.0;
+  double shifted_mean;
 
   // calculate the weights either from BIAS 
   if(do_reweight){
@@ -731,8 +765,9 @@ void Metainference::calculate(){
   sigma_mean_[0] = 0.; 
   const double it = 1./static_cast<double>(step-MCfirst_+1);
   for(unsigned i=0;i<narg;++i) { 
-    variance_[i] += (mean[i]-loc_par_[i])*(mean[i]-loc_par_[i]);
-    h_mean_[i] += mean[i]-loc_par_[i];
+    shifted_mean = mean[i]-loc_par_[i];
+    variance_[i] += shifted_mean*shifted_mean;
+    h_mean_[i] += shifted_mean;
     if(!isFirstStep) {
       if(noise_type_!=MGAUSS) sigma_mean_[0] += variance_[i]*it-h_mean_[i]*h_mean_[i]*it*it;
       else sigma_mean_[i] = sqrt(variance_[i]*it-h_mean_[i]*h_mean_[i]*it*it);
@@ -752,7 +787,7 @@ void Metainference::calculate(){
   double modifier = scale_*sqrt(idof);
 
   if(do_optsigmamean_) {
-      modifier *= static_cast<double>(sum_nfmax_ + 1) * static_cast<double>(sum_nfmax_md_ + 1);
+      modifier *= sm_mod_;
   }
   valueRSigmaMean->set(modifier);
   for(unsigned i=0;i<sigma_mean_.size();++i) sigma_mean_[i] *= modifier;
