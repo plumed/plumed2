@@ -90,7 +90,11 @@ the enforceRestart() method before opening a file.
 
 To have all files managed consistently, it is important to use OFile in the proper way.
 This should allow multi-replica plumed, restart and backups to work in
-the expected way.
+the expected way. For this reason all the operations in OFile and IFile 
+are synchronizing all the processors of the group, so call to OFile functions
+should always be performed by all processes; for this reason is also not usefull
+to use Log for debugging because only master threads will actually write.
+For debugging is better to use the standard stderr.
 
 \verbatim
 int main(){
