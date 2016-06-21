@@ -133,6 +133,9 @@ private:
 /// Flag for restart
   bool restart;
 
+/// Flag for checkpointig
+  bool doCheckPoint;
+
   std::set<FileBase*> files;
   typedef std::set<FileBase*>::iterator files_iterator;
 

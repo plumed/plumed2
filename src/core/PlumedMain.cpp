@@ -80,6 +80,7 @@ PlumedMain::PlumedMain():
   exchangePatterns(*new(ExchangePatterns)),
   exchangeStep(false),
   restart(false),
+  doCheckPoint(false),
   stopFlag(NULL),
   stopNow(false),
   novirial(false),
@@ -368,6 +369,14 @@ void PlumedMain::cmd(const std::string & word,void*val){
         CHECK_NOTNULL(val,word);
         if(*static_cast<int*>(val)!=0) restart=true;
         break;
+      /* ADDED WITH API==4 */
+      case cmd_doCheckPoint:
+        CHECK_INIT(initialized,word);
+        CHECK_NOTNULL(val,word);
+        doCheckPoint = false;
+        if(*static_cast<int*>(val)!=0) doCheckPoint = true;
+        break;
+      /* STOP API */
       case cmd_setMDEngine:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
@@ -504,9 +513,6 @@ void PlumedMain::readInputFile(std::string str){
   while(Tools::getParsedLine(ifile,words) && words[0]!="ENDPLUMED") readInputWords(words);
   log.printf("END FILE: %s\n",str.c_str());
   log.flush();
-
-  //comm.Barrier();	
-  //if(comm.Get_rank()==0) multi_sim_comm.Barrier();	
 
   pilots=actionSet.select<ActionPilot*>();
 }
@@ -736,7 +742,8 @@ void PlumedMain::update(){
 
 // flush by default every 10000 steps
 // hopefully will not affect performance
-  if(step%10000==0){
+// also if receive checkpointing signal
+  if(step%10000==0||doCheckPoint){
     fflush();
     log.flush();
     for(ActionSet::const_iterator p=actionSet.begin();p!=actionSet.end();++p) (*p)->fflush();

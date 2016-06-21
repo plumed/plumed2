@@ -61,11 +61,13 @@ Changes from version 2.2 which are relevant for users:
   - \ref PRE
   - \ref STATS
   - \ref METAINFERENCE
+  - \ref LOCALENSEMBLE
 - New features in MD patches (require repatch):
   - Patch for amber 14 now passes charges with appropriate units (fixes \issue{165}). Notice that
     the patch is still backward compatible with older PLUMED version, but the charges will only be passed
     when using PLUMED 2.3 or later.
   - Patches for GROMACS 4.6 and 5.1 incorporate Hamiltonian replica exchange, see \ref hrex
+  - Gromacs 5.1 flushes the plumed output files upon checkpointing 
 - New features for existing actions:
   - The SPECIES and SPECIESA keyword in MultiColvars can now take a multicolvar as input.  This allows one
     to calculate quantities such as the Q4 parameters for those atoms that have a coordination number greater
@@ -82,9 +84,11 @@ Changes from version 2.2 which are relevant for users:
   - Added a plumed-config command line tool. Can be used to inspect configuration also when cross compiling.
   - Added a `--mpi` option to `plumed`, symmetric to `--no-mpi`. Currently, it has no effect (MPI is initialized by default when available).
   - PLUMED now generate a VIM syntax file, see \ref VimSyntax
+  - The Update cycle is now parallelised in MPI/OpenMP in case many collective variables are used.
 
 For developers:
-- Added new strings for plumed cmd: setMDMassUnits, setMDChargeUnits, readInputLine, performCalcNoUpdate, and update.
-
+- Added new strings for plumed cmd: setMDMassUnits, setMDChargeUnits, readInputLine, performCalcNoUpdate, update and doCheckPoint.
+- Easier to add actions with multiple arguments
+- New functions to access local quantities in domain decomposition
 
 */

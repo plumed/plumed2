@@ -23,6 +23,9 @@
 #include "tools/KernelFunctions.h"
 #include "gridtools/ActionWithGrid.h"
 #include "vesselbase/ActionWithVessel.h"
+#include "vesselbase/StoreDataVessel.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
 
 namespace PLMD{
 namespace analysis{
@@ -156,16 +159,20 @@ DUMPGRID GRID=hh FILE=histo STRIDE=100000
 
 class Histogram : public gridtools::ActionWithGrid { 
 private:
+  double ww;
   KernelFunctions* kernel;
+  vesselbase::ActionWithVessel* myvessel;
+  vesselbase::StoreDataVessel* stash;
   gridtools::HistogramOnGrid* myhist; 
 public:
   static void registerKeywords( Keywords& keys );
   explicit Histogram(const ActionOptions&ao);
+  unsigned getNumberOfQuantities() const ;
   void prepareForAveraging();
   void performOperations( const bool& from_update );
   void finishAveraging();
   bool isPeriodic(){ return false; }
-  unsigned getNumberOfDerivatives(){ return getNumberOfArguments(); }
+  unsigned getNumberOfDerivatives(); 
   void compute( const unsigned& , MultiValue& ) const ;
 };
 
@@ -173,6 +180,7 @@ PLUMED_REGISTER_ACTION(Histogram,"HISTOGRAM")
 
 void Histogram::registerKeywords( Keywords& keys ){
   gridtools::ActionWithGrid::registerKeywords( keys ); keys.use("ARG");
+  keys.add("optional","DATA","input data from action with vessel and compute histogram");
   keys.add("compulsory","GRID_MIN","the lower bounds for the grid");
   keys.add("compulsory","GRID_MAX","the upper bounds for the grid");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
@@ -183,71 +191,140 @@ void Histogram::registerKeywords( Keywords& keys ){
 Histogram::Histogram(const ActionOptions&ao):
 Action(ao),
 ActionWithGrid(ao),
-kernel(NULL)
+ww(0.0),
+kernel(NULL),
+myvessel(NULL),
+stash(NULL)
 {
+  // Read in arguments 
+  std::string mlab; parse("DATA",mlab);
+  if( mlab.length()>0 ){
+     myvessel = plumed.getActionSet().selectWithLabel<ActionWithVessel*>(mlab);
+     if(!myvessel) error("action labelled " + mlab + " does not exist or is not an ActionWithVessel");
+     stash = myvessel->buildDataStashes( NULL );
+     log.printf("  for all base quantities calculated by %s \n",myvessel->getLabel().c_str() );
+     // Add the dependency
+     addDependency( myvessel );
+  } else {
+     std::vector<Value*> arg; parseArgumentList("ARG",arg);
+     if(!arg.empty()){
+        log.printf("  with arguments");
+        for(unsigned i=0;i<arg.size();i++) log.printf(" %s",arg[i]->getName().c_str());
+        log.printf("\n");
+        // Retrieve the bias acting and make sure we request this also
+        std::vector<Value*> bias( ActionWithArguments::getArguments() );
+        for(unsigned i=0;i<bias.size();++i) arg.push_back( bias[i] ); 
+        requestArguments(arg);
+     }
+  } 
+
   // Read stuff for grid
-  std::vector<std::string> gmin( getNumberOfArguments() ), gmax( getNumberOfArguments() );
+  unsigned narg = getNumberOfArguments();
+  if( myvessel ) narg=1;
+  std::vector<std::string> gmin( narg ), gmax( narg );
   parseVector("GRID_MIN",gmin); parseVector("GRID_MAX",gmax);
   std::vector<unsigned> nbin; parseVector("GRID_BIN",nbin);
   std::vector<double> gspacing; parseVector("GRID_SPACING",gspacing);
-  if( nbin.size()!=getNumberOfArguments() && gspacing.size()!=getNumberOfArguments() ){
+  if( nbin.size()!=narg && gspacing.size()!=narg ){
       error("GRID_BIN or GRID_SPACING must be set");
   }  
 
   // Input of name and labels
   std::string vstring="COMPONENTS=" + getLabel();
-  vstring += " COORDINATES=" + getPntrToArgument(0)->getName();
-  for(unsigned i=1;i<getNumberOfArguments();++i) vstring += "," + getPntrToArgument(i)->getName();
-  // Input for PBC
-  if( getPntrToArgument(0)->isPeriodic() ) vstring+=" PBC=T";
-  else vstring+=" PBC=F";
-  for(unsigned i=1;i<getNumberOfArguments();++i){
-     if( getPntrToArgument(i)->isPeriodic() ) vstring+=",T";
-     else vstring+=",F";
+  if( myvessel ){
+     vstring += " COORDINATES=" + myvessel->getLabel();
+     // Input for PBC
+     if( myvessel->isPeriodic() ) vstring+=" PBC=T";
+     else vstring+=" PBC=F";
+  } else {
+     vstring += " COORDINATES=" + getPntrToArgument(0)->getName();
+     for(unsigned i=1;i<getNumberOfArguments();++i) vstring += "," + getPntrToArgument(i)->getName();
+     // Input for PBC
+     if( getPntrToArgument(0)->isPeriodic() ) vstring+=" PBC=T";
+     else vstring+=" PBC=F";
+     for(unsigned i=1;i<getNumberOfArguments();++i){
+        if( getPntrToArgument(i)->isPeriodic() ) vstring+=",T";
+        else vstring+=",F";
+     }
   }
   // And create the grid
   createGrid( "histogram", vstring ); 
   mygrid->setBounds( gmin, gmax, nbin, gspacing ); 
   myhist = dynamic_cast<gridtools::HistogramOnGrid*>( mygrid ); 
-  plumed_assert( myhist ); myhist->addOneKernelEachTimeOnly();
-  // Create a task list
-  for(unsigned i=0;i<mygrid->getNumberOfPoints();++i) addTaskToList(i);
-  setAveragingAction( mygrid, myhist->noDiscreteKernels() ); checkRead();
+  plumed_assert( myhist ); 
+  if( myvessel ){
+     // Create a task list
+     for(unsigned i=0;i<myvessel->getFullNumberOfTasks();++i) addTaskToList(i);
+     setAveragingAction( mygrid, true );
+  } else {
+     // Create a task list
+     for(unsigned i=0;i<mygrid->getNumberOfPoints();++i) addTaskToList(i);
+     myhist->addOneKernelEachTimeOnly();
+     setAveragingAction( mygrid, myhist->noDiscreteKernels() ); 
+  }
+  checkRead(); 
+}
+
+unsigned Histogram::getNumberOfDerivatives(){ 
+  if( myvessel) return 1; 
+  return getNumberOfArguments(); 
+}
+
+unsigned Histogram::getNumberOfQuantities() const {
+  if( myvessel ) return 3;
+  return 2;
 }
 
 void Histogram::prepareForAveraging(){
-  // Now fetch the kernel and the active points
-  std::vector<double> point( getNumberOfArguments() );  
-  for(unsigned i=0;i<point.size();++i) point[i]=getArgument(i);
-  unsigned num_neigh; std::vector<unsigned> neighbors(1);
-  kernel = myhist->getKernelAndNeighbors( point, num_neigh, neighbors );
-  if( num_neigh>1 ){
-      // Activate relevant tasks
-      deactivateAllTasks();
-      for(unsigned i=0;i<num_neigh;++i) taskFlags[neighbors[i]]=1; 
-      lockContributors();
+  if( myvessel ){
+      deactivateAllTasks(); double norm=0;
+      std::vector<double> cvals( myvessel->getNumberOfQuantities() );
+      for(unsigned i=0;i<stash->getNumberOfStoredValues();++i){
+          taskFlags[i]=1; stash->retrieveSequentialValue(i, false, cvals );
+          norm += cvals[0];
+      }
+      lockContributors(); ww = cweight / norm;
   } else {
-      // This is used when we are not doing kernel density evaluation
-      mygrid->setGridElement( neighbors[0], 0, mygrid->getGridElement( neighbors[0], 0 ) + cweight ); 
-  }  
+      // Now fetch the kernel and the active points
+      std::vector<double> point( getNumberOfArguments() );  
+      for(unsigned i=0;i<point.size();++i) point[i]=getArgument(i);
+      unsigned num_neigh; std::vector<unsigned> neighbors(1);
+      kernel = myhist->getKernelAndNeighbors( point, num_neigh, neighbors );
+
+      if( num_neigh>1 ){
+          // Activate relevant tasks
+          deactivateAllTasks();
+          for(unsigned i=0;i<num_neigh;++i) taskFlags[neighbors[i]]=1; 
+          lockContributors();
+      } else {
+          // This is used when we are not doing kernel density evaluation
+          mygrid->setGridElement( neighbors[0], 0, mygrid->getGridElement( neighbors[0], 0 ) + cweight ); 
+      }  
+  }
 }
 
-void Histogram::performOperations( const bool& from_update ){ plumed_dbg_assert( !myhist->noDiscreteKernels() ); }
+void Histogram::performOperations( const bool& from_update ){ if( !myvessel ) plumed_dbg_assert( !myhist->noDiscreteKernels() ); }
 
 void Histogram::finishAveraging(){
-  delete kernel;
+  if( !myvessel ) delete kernel;
 }
 
 void Histogram::compute( const unsigned& current, MultiValue& myvals ) const {  
-  std::vector<Value*> vv( myhist->getVectorOfValues() );
-  std::vector<double> val( getNumberOfArguments() ), der( getNumberOfArguments() ); 
-  // Retrieve the location of the grid point at which we are evaluating the kernel
-  mygrid->getGridPointCoordinates( current, val );
-  for(unsigned i=0;i<getNumberOfArguments();++i) vv[i]->set( val[i] );
-  // Evaluate the histogram at the relevant grid point and set the values 
-  double vvh = kernel->evaluate( vv, der ,true); myvals.setValue( 1, vvh );
-  // Set the derivatives and delete the vector of values
-  for(unsigned i=0;i<getNumberOfArguments();++i){ myvals.setDerivative( 1, i, der[i] ); delete vv[i]; }
+  if( myvessel ){
+      std::vector<double> cvals( myvessel->getNumberOfQuantities() );
+      stash->retrieveSequentialValue( current, false, cvals );
+      myvals.setValue( 0, cvals[0] ); myvals.setValue( 1, cvals[1] ); myvals.setValue( 2, ww );
+  } else {
+      std::vector<Value*> vv( myhist->getVectorOfValues() );
+      std::vector<double> val( getNumberOfArguments() ), der( getNumberOfArguments() ); 
+      // Retrieve the location of the grid point at which we are evaluating the kernel
+      mygrid->getGridPointCoordinates( current, val );
+      for(unsigned i=0;i<getNumberOfArguments();++i) vv[i]->set( val[i] );
+      // Evaluate the histogram at the relevant grid point and set the values 
+      double vvh = kernel->evaluate( vv, der ,true); myvals.setValue( 1, vvh );
+      // Set the derivatives and delete the vector of values
+      for(unsigned i=0;i<getNumberOfArguments();++i){ myvals.setDerivative( 1, i, der[i] ); delete vv[i]; }
+  }
 }
 
 }
