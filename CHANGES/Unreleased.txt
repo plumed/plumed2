@@ -58,6 +58,7 @@ Changes from version 2.2 which are relevant for users:
     the patch is still backward compatible with older PLUMED version, but the charges will only be passed
     when using PLUMED 2.3 or later.
   - Patches for GROMACS 4.6 and 5.1 incorporate Hamiltonian replica exchange, see \ref hrex
+  - Gromacs 5.1 flushes the plumed output files upon checkpointing 
 - New features for existing actions:
   - The SPECIES and SPECIESA keyword in MultiColvars can now take a multicolvar as input.  This allows one
     to calculate quantities such as the Q4 parameters for those atoms that have a coordination number greater
@@ -75,7 +76,7 @@ Changes from version 2.2 which are relevant for users:
   - PLUMED now generate a VIM syntax file, see \ref VimSyntax
 
 For developers:
-- Added new strings for plumed cmd: setMDMassUnits, setMDChargeUnits, readInputLine, performCalcNoUpdate, and update.
+- Added new strings for plumed cmd: setMDMassUnits, setMDChargeUnits, readInputLine, performCalcNoUpdate, update and doCheckPoint.
 
 
 */
