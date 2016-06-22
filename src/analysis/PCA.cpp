@@ -35,7 +35,7 @@ Principal component analysis is a statistical technique that uses an orthogonal 
 poorly correlated variables into a set of linearly uncorrelated variables.  You can read more about the specifics of this technique
 here: https://en.wikipedia.org/wiki/Principal_component_analysis
 
-When used in context with molecular dynamics simulations a set of frames taken from the trajectory, \f$\{X_i\}\f$, or the values of 
+When used with molecular dynamics simulations a set of frames taken from the trajectory, \f$\{X_i\}\f$, or the values of 
 a number of collective variables which are calculated from the trajectory frames are used as input.  In this second instance your 
 input to the PCA analysis algorithm is thus a set of high-dimensional vectors of collective variables.  However, if
 collective variables are calculated from the positions of the atoms or if the positions are used directly the assumption is that 
