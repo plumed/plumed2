@@ -2,7 +2,26 @@
 
 \page Performances Performances 
 
+In this page we collect hints on how to use the feature available in PLUMED to speed
+up your calculation. Please note that PLUMED perform many different operations, it
+can calculate a number of different collective variables, functions, bias, etc, this
+means that there cannot be a single strategy to speed up all these calculations. 
+
+PLUMED make use of MPI and OpenMP to parallelise some of its function, try to always
+compile it with these feature enabled. Furthemore, we noticed that newer compilers
+with proper optimisation flags can result in drammatically increase of the performances.
+Try to use newer compilers and read the documentation about the possible optimisation
+flags.  
+
+PLUMED collects atoms from an external code and sends back forces, a key point for
+highly parallel calculations is to minimise the number of atoms involved in the calculaton
+of collective variables. The less is the number of atoms you need to send to PLUMED
+the less will be the overhand in the comunication between PLUMED and the code.
+
+
+
 - \subpage Neighbour 
+- \subpage Secondary
 - \subpage Multicolvar 
 - \subpage Openmp
 - \subpage MTS
@@ -10,7 +29,35 @@
 
 \page Neighbour Neighbour Lists
 
+Collective variables that can be speed up making us of neighbour lists:
+- \ref COORDINATION
+- \ref DHENERGY
+- \ref PATHMSD (in this case the neighbour list is related not to the atoms but to the points in the path)
+
+By tuning the cut-off for the neighbour list and the frequency for the recalculation of the list it is
+possible to balance between accuracy and performances.
+
 \page Multicolvar Multicolvar
+
+TO DO
+
+\page Secondary Secondary Structure
+
+Secondary Structure collective variables (\ref ALPHARMSD, \ref PARABETARMSD and \ref ANTIBETARMSD)
+can become particulary demanding if you want to calculate them for a full protein. 
+This is particularty true for the one calculating beta structures because it is a non-local property
+of the system. 
+
+The FIRST thing to do to speed up \ref PARABETARMSD and \ref ANTIBETARMSD is to use the keyword
+STRANDS_CUTOFF (i.e. STRANDS_CUTOFF=1), in this way only a subset of possible fragments, the one
+less than 1. nm apart, are used in the calculation.
+
+The metric used to compare your fragments with the ideal secondary structure elements defined is the
+code can also influence the performances, try to use TYPE=OPTIMAL or TYPE=OPTIMAL-FAST instead
+of TYPE=DRMSD.
+
+At last, try to reduce the number of residues in the calculation.
+ 
 
 \page Openmp OpenMP
 
@@ -63,6 +110,35 @@ The technique is discussed in details here \cite Ferrarotti2015
 See also \subpage EFFECTIVE_ENERGY_DRIFT.
 
 \page GMXGPU GROMACS and PLUMED with GPU
+
+Since version 4.6.x GROMACS can run in an hybrid mode making use of both
+your CPU and your GPU (either using CUDA or OpenCL for newer versions of
+GROMCAS). The calculation of the short-range non-bonded interactions is 
+performed on the GPU while long-range and bonded interactions are at the
+same time calculated on the CPU. By varing the cut-off for short-range
+interactions GROMACS can optimise the balance between the two calculations
+and obtain amazing performances.
+
+GROMACS patched with PLUMED consider PLUMED in its load-balancing, adding
+the PLUMED timings to the one resulting from bonded interactions and long-
+range interactions. This means that if PLUMED is used the balance will
+be shifted to take it into account.
+
+It is important to notice that the optimal setup to use GROMACS alone
+on the GPU or GROMACS + PLUMED can be different, try to change the number
+of MPI/OpenMP processes (\ref Openmp) used by GROMACS and PLUMED to find
+optimal performances. Remember that in GROMACS multiple MPI threads
+can use the same GPU:
+
+i.e. if you have 4 cores and 2 GPU you can:
+
+- use 2 MPI/2GPU/2OPENMP
+export PLUMED_NUM_THREADS=2
+mpiexec -np 2 gmx_mpi mdrun -nb gpu -ntomp 2 -pin on -gpu_id 01
+
+- use 4 MPI/2GPU
+export PLUMED_NUM_THREADS=1
+mpiexec -np 4 gmx_mpi mdrun -nb gpu -ntomp 1 -pin on -gpu_id 0011
 
 
 */
