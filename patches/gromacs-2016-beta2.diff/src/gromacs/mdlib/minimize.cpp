@@ -82,6 +82,13 @@
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/trajectory_writing.h"
+/* PLUMED */
+#include "../../../Plumed.h"
+extern int    plumedswitch;
+extern plumed plumedmain;
+extern void(*plumedcmd)(plumed,const char*,const void*);
+/* END PLUMED */
+
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -472,6 +479,43 @@ void init_em(FILE *fplog, const char *title,
 
     clear_rvec(mu_tot);
     calc_shifts(ems->s.box, fr->shift_vec);
+
+    /* PLUMED */
+    if(plumedswitch){
+      if(cr->ms && cr->ms->nsim>1) {
+        if(MASTER(cr)) (*plumedcmd) (plumedmain,"GREX setMPIIntercomm",&cr->ms->mpi_comm_masters);
+        if(PAR(cr)){
+          if(DOMAINDECOMP(cr)) {
+            (*plumedcmd) (plumedmain,"GREX setMPIIntracomm",&cr->dd->mpi_comm_all);
+          }else{
+            (*plumedcmd) (plumedmain,"GREX setMPIIntracomm",&cr->mpi_comm_mysim);
+          }
+        }
+        (*plumedcmd) (plumedmain,"GREX init",NULL);
+      }
+      if(PAR(cr)){
+        if(DOMAINDECOMP(cr)) {
+          (*plumedcmd) (plumedmain,"setMPIComm",&cr->dd->mpi_comm_all);
+        }else{
+          (*plumedcmd) (plumedmain,"setMPIComm",&cr->mpi_comm_mysim);
+        }
+      }
+      (*plumedcmd) (plumedmain,"setNatoms",&top_global->natoms);
+      (*plumedcmd) (plumedmain,"setMDEngine","gromacs");
+      (*plumedcmd) (plumedmain,"setLog",fplog);
+      real real_delta_t;
+      real_delta_t=ir->delta_t;
+      (*plumedcmd) (plumedmain,"setTimestep",&real_delta_t);
+      (*plumedcmd) (plumedmain,"init",NULL);
+
+      if(PAR(cr)){
+        if(DOMAINDECOMP(cr)) {
+          (*plumedcmd) (plumedmain,"setAtomsNlocal",&cr->dd->nat_home);
+          (*plumedcmd) (plumedmain,"setAtomsGatindex",cr->dd->gatindex);
+        }
+      }
+    }
+    /* END PLUMED */
 }
 
 //! Finalize the minimization
@@ -570,8 +614,10 @@ static void write_em_traj(FILE *fplog, t_commrec *cr,
     }
 }
 
-//! Do one minimization step
-static void do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
+//! \brief Do one minimization step
+//
+// \returns true when the step succeeded, false when a constraint error occurred
+static bool do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
                        gmx_bool bMolPBC,
                        em_state_t *ems1, real a, rvec *f, em_state_t *ems2,
                        gmx_constr_t constr, gmx_localtop_t *top,
@@ -585,6 +631,8 @@ static void do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
     rvec    *x1, *x2;
     real     dvdl_constr;
     int      nthreads gmx_unused;
+
+    bool     validStep = true;
 
     s1 = &ems1->s;
     s2 = &ems2->s;
@@ -700,13 +748,23 @@ static void do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
     {
         wallcycle_start(wcycle, ewcCONSTR);
         dvdl_constr = 0;
-        constrain(NULL, TRUE, TRUE, constr, &top->idef,
-                  ir, cr, count, 0, 1.0, md,
-                  s1->x, s2->x, NULL, bMolPBC, s2->box,
-                  s2->lambda[efptBONDED], &dvdl_constr,
-                  NULL, NULL, nrnb, econqCoord);
+        validStep   =
+            constrain(NULL, TRUE, TRUE, constr, &top->idef,
+                      ir, cr, count, 0, 1.0, md,
+                      s1->x, s2->x, NULL, bMolPBC, s2->box,
+                      s2->lambda[efptBONDED], &dvdl_constr,
+                      NULL, NULL, nrnb, econqCoord);
         wallcycle_stop(wcycle, ewcCONSTR);
+
+        // We should move this check to the different minimizers
+        if (!validStep && ir->eI != eiSteep)
+        {
+            gmx_fatal(FARGS, "The coordinates could not be constrained. Minimizer '%s' can not handle constraint failures, use minimizer '%s' before using '%s'.",
+                      EI(ir->eI), EI(eiSteep), EI(ir->eI));
+        }
     }
+
+    return validStep;
 }
 
 //! Prepare EM for using domain decomposition parallellization
@@ -783,6 +841,23 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
     /* do_force always puts the charge groups in the box and shifts again
      * We do not unshift, so molecules are always whole in congrad.c
      */
+    /* PLUMED */
+    int plumedNeedsEnergy=0;
+    matrix plumed_vir;
+    if(plumedswitch){
+      long int lstep=count; (*plumedcmd)(plumedmain,"setStepLong",&lstep);
+      (*plumedcmd) (plumedmain,"setPositions",&ems->s.x[0][0]);
+      (*plumedcmd) (plumedmain,"setMasses",&mdatoms->massT[0]);
+      (*plumedcmd) (plumedmain,"setCharges",&mdatoms->chargeA[0]);
+      (*plumedcmd) (plumedmain,"setBox",&ems->s.box[0][0]);
+      (*plumedcmd) (plumedmain,"prepareCalc",NULL);
+      (*plumedcmd) (plumedmain,"setForces",&ems->f[0][0]);
+      (*plumedcmd) (plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
+      clear_mat(plumed_vir);
+      (*plumedcmd) (plumedmain,"setVirial",&plumed_vir[0][0]);
+    }
+    /* END PLUMED */
+
     do_force(fplog, cr, inputrec,
              count, nrnb, wcycle, top, &top_global->groups,
              ems->s.box, ems->s.x, &ems->s.hist,
@@ -791,6 +866,19 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
              GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES |
              GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY |
              (bNS ? GMX_FORCE_NS : 0));
+    /* PLUMED */
+    if(plumedswitch){
+      if(plumedNeedsEnergy) {
+        msmul(force_vir,2.0,plumed_vir);
+        (*plumedcmd) (plumedmain,"setEnergy",&enerd->term[F_EPOT]);
+        (*plumedcmd) (plumedmain,"performCalc",NULL);
+        msmul(plumed_vir,0.5,force_vir);
+      } else {
+        msmul(plumed_vir,0.5,plumed_vir);
+        m_add(force_vir,plumed_vir,force_vir);
+      }
+    }
+    /* END PLUMED */
 
     /* Clear the unused shake virial and pressure */
     clear_mat(shake_vir);
@@ -2561,18 +2649,28 @@ double do_steep(FILE *fplog, t_commrec *cr,
         bAbort = (nsteps >= 0) && (count == nsteps);
 
         /* set new coordinates, except for first step */
+        bool validStep = true;
         if (count > 0)
         {
-            do_em_step(cr, inputrec, mdatoms, fr->bMolPBC,
-                       s_min, stepsize, s_min->f, s_try,
-                       constr, top, nrnb, wcycle, count);
+            validStep =
+                do_em_step(cr, inputrec, mdatoms, fr->bMolPBC,
+                           s_min, stepsize, s_min->f, s_try,
+                           constr, top, nrnb, wcycle, count);
         }
 
-        evaluate_energy(fplog, cr,
-                        top_global, s_try, top,
-                        inputrec, nrnb, wcycle, gstat,
-                        vsite, constr, fcd, graph, mdatoms, fr,
-                        mu_tot, enerd, vir, pres, count, count == 0);
+        if (validStep)
+        {
+            evaluate_energy(fplog, cr,
+                            top_global, s_try, top,
+                            inputrec, nrnb, wcycle, gstat,
+                            vsite, constr, fcd, graph, mdatoms, fr,
+                            mu_tot, enerd, vir, pres, count, count == 0);
+        }
+        else
+        {
+            // Signal constraint error during stepping with energy=inf
+            s_try->epot = std::numeric_limits<real>::infinity();
+        }
 
         if (MASTER(cr))
         {
