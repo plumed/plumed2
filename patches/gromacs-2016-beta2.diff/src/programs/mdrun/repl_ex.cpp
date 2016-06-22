@@ -976,6 +976,8 @@ test_for_replica_exchange(FILE                 *fplog,
         pind[i] = re->ind[i];
     }
 
+    rng.restart( step, 0 );
+
     /* PLUMED */
     int plumed_test_exchange_pattern=0;
     /* END PLUMED */
@@ -985,10 +987,13 @@ test_for_replica_exchange(FILE                 *fplog,
         /* multiple random switch exchange */
         int nself = 0;
 
-        rng.restart( step, 0 );
 
         for (i = 0; i < re->nex + nself; i++)
         {
+            // For now this is superfluous, but just in case we ever add more
+            // calls in different branches it is safer to always reset the distribution.
+            uniformNreplDist.reset();
+
             /* randomly select a pair  */
             /* in theory, could reduce this by identifying only which switches had a nonneglibible
                probability of occurring (log p > -100) and only operate on those switches */
@@ -1033,7 +1038,10 @@ test_for_replica_exchange(FILE                 *fplog,
                 {
                     prob[0] = exp(-delta);
                 }
-                /* roll a number to determine if accepted */
+                // roll a number to determine if accepted. For now it is superfluous to
+                // reset, but just in case we ever add more calls in different branches
+                // it is safer to always reset the distribution.
+                uniformRealDist.reset();
                 bEx[0] = uniformRealDist(rng) < prob[0];
             }
             re->prob_sum[0] += prob[0];
@@ -1116,7 +1124,10 @@ test_for_replica_exchange(FILE                 *fplog,
                     {
                         prob[i] = exp(-delta);
                     }
-                    /* roll a number to determine if accepted */
+                    // roll a number to determine if accepted. For now it is superfluous to
+                    // reset, but just in case we ever add more calls in different branches
+                    // it is safer to always reset the distribution.
+                    uniformRealDist.reset();
                     bEx[i] = uniformRealDist(rng) < prob[i];
                 }
                 re->prob_sum[i] += prob[i];
