@@ -27,7 +27,7 @@
 #include "reference/ReferenceValuePack.h"
 #include "core/ActionRegister.h"
 
-//+PLUMEDOC ANALYSIS PCA
+//+PLUMEDOC DIMRED PCA
 /* 
 Perform principal component analysis (PCA) using either the positions of the atoms a large number of collective variables as input.
 
