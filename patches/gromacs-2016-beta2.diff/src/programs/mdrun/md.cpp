@@ -1165,6 +1165,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             /* PLUMED */
             plumedNeedsEnergy=0;
             if(plumedswitch){
+              int pversion=0;
+              plumed_cmd(plumedmain,"getApiVersion",&pversion);
               long int lstep=step; plumed_cmd(plumedmain,"setStepLong",&lstep);
               plumed_cmd(plumedmain,"setPositions",&state->x[0][0]);
               plumed_cmd(plumedmain,"setMasses",&mdatoms->massT[0]);
@@ -1172,6 +1174,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
               plumed_cmd(plumedmain,"setBox",&state->box[0][0]);
               plumed_cmd(plumedmain,"prepareCalc",NULL);
               plumed_cmd(plumedmain,"setStopFlag",&plumedWantsToStop);
+              int checkp=0; if(bCPT) checkp=1;
+              if(pversion>3) plumed_cmd(plumedmain,"doCheckPoint",&checkp);
               plumed_cmd(plumedmain,"setForces",&f[0][0]);
               plumed_cmd(plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
               clear_mat(plumed_vir);

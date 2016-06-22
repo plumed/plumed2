@@ -257,7 +257,7 @@ equivalent.  You should read the documentation for the PLUMED 2 Action.
 </TR>
 <TR>
   <TD> DISTANCE </TD>
-  <TD> \ref DISTANCE </TD>
+  <TD> \ref DISTANCE  - POINT_FROM_AXIS and PROJ_ON_AXIS can be reproduced with \ref DISTANCE and \ref MATHEVAL </TD>
 </TR>
 <TR>
   <TD> POSITION </TD>
