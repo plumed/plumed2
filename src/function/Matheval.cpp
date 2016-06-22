@@ -129,6 +129,39 @@ create. The equivalent of the AND operator is the product: `step(1.0-x)*step(x-0
 only equal to 1 when x is between 0.5 and 1.0. By combining negation and AND you can obtain an OR. That is,
 `1-step(1.0-x)*step(x-0.5)` is only equal to 1 when x is outside the 0.5-1.0 interval.
 
+MATHEVAL can be used in combination with \ref DISTANCE to implement variants of the
+DISTANCE keyword that were present in PLUMED 1.3 and that allowed to compute
+the distance of a point from a line defined by two other points, or the progression
+along that line.
+\verbatim
+# take center of atoms 1 to 10 as reference point 1
+p1: CENTER ATOMS=1-10
+# take center of atoms 11 to 20 as reference point 2
+p2: CENTER ATOMS=11-20
+# take center of atoms 21 to 30 as reference point 3
+p3: CENTER ATOMS=21-30
+
+# compute distances
+d12: DISTANCE ATOMS=p1,p2
+d13: DISTANCE ATOMS=p1,p3
+d23: DISTANCE ATOMS=p2,p3
+
+# compute progress variable of the projection of point p3
+# along the vector joining p1 and p2
+# notice that progress is measured from the middle point
+onaxis: MATHEVAL ARG=d13,d23,d12 FUNC=(0.5*(y^2-x^2)/z) PERIODIC=NO
+
+# compute between point p3 and the vector joining p1 and p2
+fromaxis: MATHEVAL ARG=d13,d23,d12,onaxis VAR=x,y,z,o FUNC=(0.5*(y^2+x^2)-o^2-0.25*z^2) PERIODIC=NO
+
+PRINT ARG=onaxis,fromaxis
+
+\endverbatim
+
+Notice that these equations have been used to combine \ref RMSD
+from different snapshots of a protein so as to define
+progression (S) and distance (Z) variables \cite perez2015atp.
+
 
 */
 //+ENDPLUMEDOC
