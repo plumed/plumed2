@@ -320,7 +320,7 @@ Most of the PLUMED output files look like this
 \endverbatim
 This is useful since in the header you can see the name of the quantities that are printed in the
 data lines. However, when you have an output file with many columns it might be a bit error prone to count them.
-To simplify this, when PLUMED syntax for VIM is configure properly VIM should be able to:
+To simplify this, when PLUMED syntax for VIM is configured properly VIM should be able to:
 - Detect that this file is a PLUMED output file with fields, automatically setting its type to `plumedf`. If not, just type
   `:set ft=plumedf`.
 - Show this file with syntax highlighting to increase its readability.
