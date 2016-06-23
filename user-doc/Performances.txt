@@ -3,36 +3,43 @@
 \page Performances Performances 
 
 In this page we collect hints on how to use the feature available in PLUMED to speed
-up your calculation. Please note that PLUMED perform many different operations, it
-can calculate a number of different collective variables, functions, bias, etc, this
-means that there cannot be a single strategy to speed up all these calculations. 
+up your calculation. Please note that PLUMED performs many different operations, it
+can calculate a number of different collective variables, functions of collective 
+variables, bias, analysis, etc in a way that is also compatible with a number of
+different molecular dynamics codes. This means that there cannot be a single 
+strategy to speed up all the possible calculations. 
 
 PLUMED make use of MPI and OpenMP to parallelise some of its function, try to always
 compile it with these feature enabled. Furthemore, we noticed that newer compilers
-with proper optimisation flags can result in drammatically increase of the performances.
-Try to use newer compilers and read the documentation about the possible optimisation
+with proper optimisation flags can provide a drammatic boost to performances.
+Try to use newer compilers and read the documentation about the different optimisation
 flags.  
 
-PLUMED collects atoms from an external code and sends back forces, a key point for
-highly parallel calculations is to minimise the number of atoms involved in the calculaton
-of collective variables. The less is the number of atoms you need to send to PLUMED
-the less will be the overhand in the comunication between PLUMED and the code.
+PLUMED collects atoms from an external code and sends back forces, a key point in minimise
+the effect of PLUMED on highly parallel calculations is to minimise the number of atoms 
+used by PLUMED at every calculation step. The less is the number of atoms you need to send 
+to PLUMED the less will be the overhand in the comunication between PLUMED and the code.
 
+In the following you can find specific strategies for specific calculations, these could
+help in taking the most by using PLUMED for your simulations.
 
-
-- \subpage Neighbour 
-- \subpage Secondary
-- \subpage Multicolvar 
-- \subpage Openmp
-- \subpage MTS
 - \subpage GMXGPU 
+- \subpage Metad
+- \subpage MTS
+- \subpage Multicolvar 
+- \subpage Neighbour 
+- \subpage Openmp
+- \subpage Secondary
+
+
+\page Metad Metadynamics
 
 \page Neighbour Neighbour Lists
 
 Collective variables that can be speed up making us of neighbour lists:
 - \ref COORDINATION
 - \ref DHENERGY
-- \ref PATHMSD (in this case the neighbour list is related not to the atoms but to the points in the path)
+- \ref PATHMSD
 
 By tuning the cut-off for the neighbour list and the frequency for the recalculation of the list it is
 possible to balance between accuracy and performances.
@@ -44,17 +51,15 @@ TO DO
 \page Secondary Secondary Structure
 
 Secondary Structure collective variables (\ref ALPHARMSD, \ref PARABETARMSD and \ref ANTIBETARMSD)
-can become particulary demanding if you want to calculate them for a full protein. 
-This is particularty true for the one calculating beta structures because it is a non-local property
-of the system. 
+can be particulary demanding if you want to calculate them for a full protein. 
+This is particularty true for the calculation of beta structures.
 
 The FIRST thing to do to speed up \ref PARABETARMSD and \ref ANTIBETARMSD is to use the keyword
 STRANDS_CUTOFF (i.e. STRANDS_CUTOFF=1), in this way only a subset of possible fragments, the one
 less than 1. nm apart, are used in the calculation.
 
-The metric used to compare your fragments with the ideal secondary structure elements defined is the
-code can also influence the performances, try to use TYPE=OPTIMAL or TYPE=OPTIMAL-FAST instead
-of TYPE=DRMSD.
+The metric used to calculate the distance from ideal secondary structure elements can also influence 
+the performances, try to use TYPE=OPTIMAL or TYPE=OPTIMAL-FAST instead of TYPE=DRMSD.
 
 At last, try to reduce the number of residues in the calculation.
  
@@ -113,16 +118,16 @@ See also \subpage EFFECTIVE_ENERGY_DRIFT.
 
 Since version 4.6.x GROMACS can run in an hybrid mode making use of both
 your CPU and your GPU (either using CUDA or OpenCL for newer versions of
-GROMCAS). The calculation of the short-range non-bonded interactions is 
+GROMACS). The calculation of the short-range non-bonded interactions is 
 performed on the GPU while long-range and bonded interactions are at the
 same time calculated on the CPU. By varing the cut-off for short-range
-interactions GROMACS can optimise the balance between the two calculations
+interactions GROMACS can optimise the balance between GPU/CPU loading 
 and obtain amazing performances.
 
-GROMACS patched with PLUMED consider PLUMED in its load-balancing, adding
-the PLUMED timings to the one resulting from bonded interactions and long-
-range interactions. This means that if PLUMED is used the balance will
-be shifted to take it into account.
+GROMACS patched with PLUMED takes into account PLUMED in its load-balancing, 
+adding the PLUMED timings to the one resulting from bonded interactions and long-
+range interactions. This means that the CPU/GPU balance will be optimised 
+automatically to take into account PLUMED!  
 
 It is important to notice that the optimal setup to use GROMACS alone
 on the GPU or GROMACS + PLUMED can be different, try to change the number
