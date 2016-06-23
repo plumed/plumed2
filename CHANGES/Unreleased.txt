@@ -86,6 +86,7 @@ Changes from version 2.2 which are relevant for users:
   - Added a `--mpi` option to `plumed`, symmetric to `--no-mpi`. Currently, it has no effect (MPI is initialized by default when available).
   - PLUMED now generate a VIM syntax file, see \ref VimSyntax
   - The Update cycle is now parallelised in MPI/OpenMP in case many collective variables are used.
+  - More and more documentation
 
 For developers:
 - Added new strings for plumed cmd: setMDMassUnits, setMDChargeUnits, readInputLine, performCalcNoUpdate, update and doCheckPoint.
