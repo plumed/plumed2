@@ -24,95 +24,13 @@ In the following you can find specific strategies for specific calculations, the
 help in taking the most by using PLUMED for your simulations.
 
 - \subpage GMXGPU 
-- \subpage Metad
+- \subpage Metadyn
 - \subpage MTS
 - \subpage Multicolvar 
 - \subpage Neighbour 
 - \subpage Openmp
 - \subpage Secondary
 
-
-\page Metad Metadynamics
-
-\page Neighbour Neighbour Lists
-
-Collective variables that can be speed up making us of neighbour lists:
-- \ref COORDINATION
-- \ref DHENERGY
-- \ref PATHMSD
-
-By tuning the cut-off for the neighbour list and the frequency for the recalculation of the list it is
-possible to balance between accuracy and performances.
-
-\page Multicolvar Multicolvar
-
-TO DO
-
-\page Secondary Secondary Structure
-
-Secondary Structure collective variables (\ref ALPHARMSD, \ref PARABETARMSD and \ref ANTIBETARMSD)
-can be particulary demanding if you want to calculate them for a full protein. 
-This is particularty true for the calculation of beta structures.
-
-The FIRST thing to do to speed up \ref PARABETARMSD and \ref ANTIBETARMSD is to use the keyword
-STRANDS_CUTOFF (i.e. STRANDS_CUTOFF=1), in this way only a subset of possible fragments, the one
-less than 1. nm apart, are used in the calculation.
-
-The metric used to calculate the distance from ideal secondary structure elements can also influence 
-the performances, try to use TYPE=OPTIMAL or TYPE=OPTIMAL-FAST instead of TYPE=DRMSD.
-
-At last, try to reduce the number of residues in the calculation.
- 
-
-\page Openmp OpenMP
-
-PLUMED is partly parallelized using OpenMP.
-This should be enabled by default if your compiler supports it,
-and can be disabled with `--disable-openmp`..
-At runtime, you should set the environment variable
-PLUMED_NUM_THREADS to the number of threads you wish to use with PLUMED.
-By default (if PLUMED_NUM_THREADS is unset) openmp will be disabled at
-runtime. E.g., to run with gromacs you should do:
-\verbatim
-export PLUMED_NUM_THREADS=8
-mdrun -plumed
-\endverbatim
-
-Notice that:
-- This option is likely to improve the performance, but could also slow down
-  the code in some case.
-- Results could be slightly different because of numerical roundoff and
-  different order in summations. This should be harmless.
-- The optimum number of threads is not necessary "all of them", nor should be
-  equal to the number of threads used to parallelize MD.
-- Only a few CVs are parallelized with opemMP (currently, \ref COORDINATION and
-  \ref DHENERGY).
-- You might want to tune also the environmental variable PLUMED_CACHELINE_SIZE,
-  by default 512, to set the size of cachelines on your machine. This is used
-  by PLUMED to decrease the number of threads to be used in each loop so as to
-  avoid clashes in memory access. This variable is expected to affect
-  performance only, not results.
-
-\page MTS Multiple time stepping
-
-By setting a STRIDE different from 1, you change how frequently
-an action is calculated. In the case of actions such as \ref PRINT, this just
-means how frequently you dump some quantity on the disk.
-Notice that variables are only computed when necessary. Thus,
-if a variable is only appearing as the argument of a \ref PRINT statement with
-STRIDE=10, it will be computed every 10 steps.
-
-In a similar fashion, the STRIDE keyword can be used in a bias potential
-so as to apply the bias potential every few steps.
-In this case, forces from this bias potential are scaled up by
-a factor equal to STRIDE.
-
-This technique can allow your simulation to run faster if you need
-the apply a bias potential on some very expensive collective variable.
-
-The technique is discussed in details here \cite Ferrarotti2015
-
-See also \subpage EFFECTIVE_ENERGY_DRIFT.
 
 \page GMXGPU GROMACS and PLUMED with GPU
 
@@ -147,5 +65,94 @@ mpiexec -np 2 gmx_mpi mdrun -nb gpu -ntomp 2 -pin on -gpu_id 01
 export PLUMED_NUM_THREADS=1
 mpiexec -np 4 gmx_mpi mdrun -nb gpu -ntomp 1 -pin on -gpu_id 0011
 
+
+\page Metadyn Metadynamics
+
+TO DO
+
+
+\page MTS Multiple time stepping
+
+By setting a STRIDE different from 1, you change how frequently
+an action is calculated. In the case of actions such as \ref PRINT, this just
+means how frequently you dump some quantity on the disk.
+Notice that variables are only computed when necessary. Thus,
+if a variable is only appearing as the argument of a \ref PRINT statement with
+STRIDE=10, it will be computed every 10 steps.
+
+In a similar fashion, the STRIDE keyword can be used in a bias potential
+so as to apply the bias potential every few steps.
+In this case, forces from this bias potential are scaled up by
+a factor equal to STRIDE.
+
+This technique can allow your simulation to run faster if you need
+the apply a bias potential on some very expensive collective variable.
+
+The technique is discussed in details here \cite Ferrarotti2015
+
+See also \subpage EFFECTIVE_ENERGY_DRIFT.
+
+
+\page Multicolvar Multicolvar
+
+TO DO
+
+
+\page Neighbour Neighbour Lists
+
+Collective variables that can be speed up making us of neighbour lists:
+- \ref COORDINATION
+- \ref DHENERGY
+- \ref PATHMSD
+
+By tuning the cut-off for the neighbour list and the frequency for the recalculation of the list it is
+possible to balance between accuracy and performances.
+
+
+\page Openmp OpenMP
+
+PLUMED is partly parallelized using OpenMP.
+This should be enabled by default if your compiler supports it,
+and can be disabled with `--disable-openmp`..
+At runtime, you should set the environment variable
+PLUMED_NUM_THREADS to the number of threads you wish to use with PLUMED.
+By default (if PLUMED_NUM_THREADS is unset) openmp will be disabled at
+runtime. E.g., to run with gromacs you should do:
+\verbatim
+export PLUMED_NUM_THREADS=8
+mdrun -plumed
+\endverbatim
+
+Notice that:
+- This option is likely to improve the performance, but could also slow down
+  the code in some case.
+- Results could be slightly different because of numerical roundoff and
+  different order in summations. This should be harmless.
+- The optimum number of threads is not necessary "all of them", nor should be
+  equal to the number of threads used to parallelize MD.
+- Only a few CVs are parallelized with opemMP (currently, \ref COORDINATION and
+  \ref DHENERGY).
+- You might want to tune also the environmental variable PLUMED_CACHELINE_SIZE,
+  by default 512, to set the size of cachelines on your machine. This is used
+  by PLUMED to decrease the number of threads to be used in each loop so as to
+  avoid clashes in memory access. This variable is expected to affect
+  performance only, not results.
+
+
+\page Secondary Secondary Structure
+
+Secondary Structure collective variables (\ref ALPHARMSD, \ref PARABETARMSD and \ref ANTIBETARMSD)
+can be particulary demanding if you want to calculate them for a full protein. 
+This is particularty true for the calculation of beta structures.
+
+The FIRST thing to do to speed up \ref PARABETARMSD and \ref ANTIBETARMSD is to use the keyword
+STRANDS_CUTOFF (i.e. STRANDS_CUTOFF=1), in this way only a subset of possible fragments, the one
+less than 1. nm apart, are used in the calculation.
+
+The metric used to calculate the distance from ideal secondary structure elements can also influence 
+the performances, try to use TYPE=OPTIMAL or TYPE=OPTIMAL-FAST instead of TYPE=DRMSD.
+
+At last, try to reduce the number of residues in the calculation.
+ 
 
 */
