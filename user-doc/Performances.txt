@@ -68,8 +68,25 @@ mpiexec -np 4 gmx_mpi mdrun -nb gpu -ntomp 1 -pin on -gpu_id 0011
 
 \page Metadyn Metadynamics
 
-TO DO
+Metadynamics can be sped up significantly using grids,
+which are activated setting the GRID_MIN and GRID_MAX keywords of \ref METAD.
+This makes addition of a hill to the list a bit slower (since
+the Gaussian has to be evaluated for many grid points)
+but the evaluation of the potential very fast. Since
+the latter is usually done every few hundred steps, whereas the former
+typically ad every step, using grids will make the simulation
+much faster.
 
+Notice that when restarting a simulation the history is read  by default
+from a file and hills are added again to the grid.
+This allows one to change the grid boundaries upon restart. However,
+the first step after restart is usually very slow.
+Since PLUMED 2.3 you can also store the grid on a file
+and read it upon restart. This can be particularly
+useful if you perform many restarts and if your hills file has
+become very large.
+
+For the precise syntax, see \ref METAD
 
 \page MTS Multiple time stepping
 
