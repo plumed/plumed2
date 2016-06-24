@@ -137,11 +137,13 @@ can use the same GPU:
 
 i.e. if you have 4 cores and 2 GPU you can:
 
-- use 2 MPI/2GPU/2OPENMP
+- use 2 MPI/2GPU/2OPENMP:
+
 export PLUMED_NUM_THREADS=2
 mpiexec -np 2 gmx_mpi mdrun -nb gpu -ntomp 2 -pin on -gpu_id 01
 
-- use 4 MPI/2GPU
+- use 4 MPI/2GPU:
+
 export PLUMED_NUM_THREADS=1
 mpiexec -np 4 gmx_mpi mdrun -nb gpu -ntomp 1 -pin on -gpu_id 0011
 
