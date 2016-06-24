@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -241,10 +241,10 @@ template <typename T> int diagMat( const Matrix<T>& A, std::vector<double>& eige
    // of each of them is positive
    // We can do it because the phase is arbitrary, and helps making
    // the result reproducible
-   for(unsigned i=0;i<n;++i) {
-     unsigned j;
+   for(int i=0;i<n;++i) {
+     int j;
      for(j=0;j<n;j++) if(eigenvecs(i,j)*eigenvecs(i,j)>1e-14) break;
-     if(j<n) if(eigenvecs(i,j)<0.0) for(unsigned j=0;j<n;j++) eigenvecs(i,j)*=-1;
+     if(j<n) if(eigenvecs(i,j)<0.0) for(j=0;j<n;j++) eigenvecs(i,j)*=-1;
    }
 
    // Deallocate all the memory used by the various arrays
@@ -277,16 +277,16 @@ template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<double>& pseu
   if(info!=0) return info; 
 
   // Compute the tolerance on the singular values ( machine epsilon * number of singular values * maximum singular value )
-  double tol; tol=S[0]; for(unsigned i=1;i<nsv;++i){ if( S[i]>tol ){ tol=S[i]; } } tol*=nsv*epsilon;
+  double tol; tol=S[0]; for(int i=1;i<nsv;++i){ if( S[i]>tol ){ tol=S[i]; } } tol*=nsv*epsilon;
 
   // Get the inverses of the singlular values
   Matrix<double> Si( ncols, nrows ); Si=0.0;
-  for(unsigned i=0;i<nsv;++i){ if( S[i]>tol ){ Si(i,i)=1./S[i]; }else{ Si(i,i)=0.0; } }
+  for(int i=0;i<nsv;++i){ if( S[i]>tol ){ Si(i,i)=1./S[i]; }else{ Si(i,i)=0.0; } }
 
   // Now extract matrices for pseudoinverse
   Matrix<double> V( ncols, ncols ), UT( nrows, nrows ), tmp( ncols, nrows ); 
-  k=0; for(unsigned i=0;i<nrows;++i){ for(unsigned j=0;j<nrows;++j){ UT(i,j)=U[k++]; } }
-  k=0; for(unsigned i=0;i<ncols;++i){ for(unsigned j=0;j<ncols;++j){ V(i,j)=VT[k++]; } }
+  k=0; for(int i=0;i<nrows;++i){ for(int j=0;j<nrows;++j){ UT(i,j)=U[k++]; } }
+  k=0; for(int i=0;i<ncols;++i){ for(int j=0;j<ncols;++j){ V(i,j)=VT[k++]; } }
 
   // And do matrix algebra to construct the pseudoinverse
   if( pseudoinverse.rw!=ncols || pseudoinverse.cl!=nrows ) pseudoinverse.resize( ncols, nrows );

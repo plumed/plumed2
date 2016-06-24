@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -23,7 +23,7 @@
 #include "tools/Pbc.h"
 #include "ActionVolume.h"
 
-//+PLUMEDOC MCOLVARF AROUND
+//+PLUMEDOC VOLUMES AROUND
 /*
 This quantity can be used to calculate functions of the distribution of collective 
 variables for the atoms that lie in a particular, user-specified part of of the cell.

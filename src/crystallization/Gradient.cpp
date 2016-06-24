@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014,2015 The plumed team
+   Copyright (c) 2014-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -25,6 +25,15 @@
 
 namespace PLMD {
 namespace crystallisation {
+
+//+PLUMEDOC MCOLVARF GRADIENT
+/*
+Calculate the gradient of the average value of a multicolvar value
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
 
 PLUMED_REGISTER_ACTION(Gradient,"GRADIENT")
 

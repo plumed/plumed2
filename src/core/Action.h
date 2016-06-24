@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -123,6 +123,9 @@ public:
 /// Return true if we are doing a restart
   bool getRestart()const;
 
+/// Just read one of the keywords and return the whole thing as a string
+  std::string getKeyword(const std::string& key);
+
 /// Parse one keyword as generic type
   template<class T>
   void parse(const std::string&key,T&t);
@@ -197,6 +200,15 @@ public:
 /// This method is called one time per step.
 /// The set of all Actions is applied in backward order.
   virtual void apply()=0;
+
+/// Before Update.
+/// This is a special method that is called just
+/// before the update() method. It can be used by
+/// actions that want to do something irrespectively
+/// of the fact that update() is active or not.
+/// In other words, this is *always* called, even when action
+/// is not active.
+  virtual void beforeUpdate(){}
 
 /// Update.
 /// This method is called one time per step.

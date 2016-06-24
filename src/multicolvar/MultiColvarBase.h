@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -36,6 +36,7 @@ namespace multicolvar {
 class AtomValuePack;
 class CatomPack;
 class BridgedMultiColvarFunction;
+class ActionVolume;
 
 class MultiColvarBase :
   public ActionAtomistic,
@@ -45,9 +46,8 @@ class MultiColvarBase :
  friend class BridgedMultiColvarFunction;
  friend class VolumeGradientBase;
  friend class MultiColvarFilter;
+ friend class AtomValuePack;
 private:
-/// Are we in the part where we have to recalculate the base colvars for numerical derivatives
-  bool numder_func;
 /// Use periodic boundary conditions
   bool usepbc;
 /// The forces we are going to apply to things
@@ -56,29 +56,40 @@ private:
   bool allthirdblockintasks;
 /// In certain cases we can make three atom link cells faster
   bool uselinkforthree;
+/// Number of atoms that are active on this step
+  unsigned nactive_atoms;
 /// Stuff for link cells - this is used to make coordination number like variables faster
   LinkCells linkcells;
 /// Link cells for third block of atoms
   LinkCells threecells;
+/// Number of atoms that are being used for central atom position
+  unsigned ncentral;
 /// Bool vector telling us which atoms are required to calculate central atom position
   std::vector<bool> use_for_central_atom;
 /// 1/number of atoms involved in central atoms
   double numberForCentralAtom;
+/// Ensures that setup is only performed once per loop
+  bool setup_completed;
+/// Ensures that retrieving of atoms is only done once per calculation loop
+  bool atomsWereRetrieved;
+/// Add derivatives of center of mass position
+  void addComDerivatives( const int& ival, const unsigned& iatom, const Vector& der, multicolvar::AtomValuePack& myatoms ) const ;
 protected:
 /// This is used to keep track of what is calculated where
-  std::vector<unsigned> colvar_label;
-/// The multicolvars from which we construct these quantities
-  std::vector<MultiColvarBase*> mybasemulticolvars;
+  std::vector< std::pair<unsigned,unsigned> > atom_lab;
 /// The vessels in these multicolvars in which the data is stored
   std::vector<vesselbase::StoreDataVessel*> mybasedata;
+/// The multicolvars from which we construct these quantities
+  std::vector<MultiColvarBase*> mybasemulticolvars;
 /// This remembers where the boundaries are for the tasks. It makes link cells work fast
   Matrix<std::pair<unsigned,unsigned> > bookeeping;
-/// Read in a set of multicolvar labels as the input to the action
-  bool interpretInputMultiColvars( const std::vector<std::string>& key, const double& wtolerance );
-/// Convert an index in the global array to an index in the individual base colvars
-  unsigned convertToLocalIndex( const unsigned& index, const unsigned& mcv_code ) const ;
+/// Function that recursively checks if filters have been used in the input to a multicolvar
+/// we need this to ensure that setupLinkCells is run in calculate with some actions
+  bool filtersUsedAsInput();
 /// This resizes the arrays that are used for link cell update
   void resizeBookeepingArray( const unsigned& num1, const unsigned& num2 );
+/// Are we doing sums of matrix rows
+  bool matsums;
 /// Using the species keyword to read in atoms
   bool usespecies;
 /// Number of atoms in each block
@@ -93,36 +104,67 @@ protected:
   void setupMultiColvarBase( const std::vector<AtomNumber>& atoms );
 /// Add some derivatives to a particular component of a particular atom
   void addAtomDerivatives( const int& , const unsigned& , const Vector& , multicolvar::AtomValuePack& ) const ;
+/// Add derivative of the input value
+  void mergeInputDerivatives( const unsigned& ival, const unsigned& start, const unsigned& end, const unsigned& jatom, 
+                              const std::vector<double>& der, MultiValue& myder, AtomValuePack& myatoms ) const ;
+/// This is used to accumulate functions of the coordination sphere.  Ensures weights are taken into account
+  void accumulateSymmetryFunction( const int& ival, const unsigned& iatom, const double& val, const Vector& der, const Tensor& vir, multicolvar::AtomValuePack& myatoms ) const ;
 /// Set which atoms are to be used to calculate the central atom position
   void setAtomsForCentralAtom( const std::vector<bool>& catom_ind );
 /// Set the value of the cutoff for the link cells
-  void setLinkCellCutoff( const double& lcut );
+  void setLinkCellCutoff( const double& lcut, double tcut=-1.0 );
+/// Setup the link cells and neighbour list stuff
+  void setupActiveTaskSet( std::vector<unsigned>& active_tasks, const std::string& input_label );
 /// Setup link cells in order to make this calculation faster
   void setupLinkCells();
+/// Get the cutoff for the link cells
+  double getLinkCellCutoff()  const ;
+/// This does setup of link cell stuff that is specific to the non-use of the usespecies keyword
+  void setupNonUseSpeciesLinkCells( const unsigned& );
 /// Get the separation between a pair of vectors
   Vector getSeparation( const Vector& vec1, const Vector& vec2 ) const ;
 /// This sets up the list of atoms that are involved in this colvar
   bool setupCurrentAtomList( const unsigned& taskCode, AtomValuePack& myatoms ) const ;
 /// Decode indices if there are 2 or 3 atoms involved
   void decodeIndexToAtoms( const unsigned& taskCode, std::vector<unsigned>& atoms ) const ;
+/// Read in some atoms
+  bool parseMultiColvarAtomList(const std::string& key, const int& num, std::vector<AtomNumber>& t);
+/// Read in two groups of atoms and setup multicolvars to calculate
+  void readTwoGroups( const std::string& key0, const std::string& key1, const std::string& key2, std::vector<AtomNumber>& all_atoms );
+/// Read in three groups of atoms
+  void readGroupKeywords( const std::string& key0, const std::string& key1, const std::string& key2, const std::string& key3,
+                          const bool& no_third_dim_accum, const bool& symmetric, std::vector<AtomNumber>& all_atoms );
+/// Read in three groups of atoms and construct CVs involving at least one
+  void readThreeGroups( const std::string& key1, const std::string& key2, const std::string& key3,
+                        const bool& allow2, const bool& no_third_dim_accum, std::vector<AtomNumber>& all_atoms );
 public:
   explicit MultiColvarBase(const ActionOptions&);
   ~MultiColvarBase(){}
   static void registerKeywords( Keywords& keys );
 /// Turn on the derivatives 
-  void turnOnDerivatives();
+  virtual void turnOnDerivatives();
 /// Do we use pbc to calculate this quantity
   bool usesPbc() const ;
 /// Apply PBCs over a set of distance vectors
   void applyPbc(std::vector<Vector>& dlist, unsigned max_index=0) const;
+/// Is it safe to use multithreading
+  bool threadSafe() const { return !(mybasemulticolvars.size()>0); }
+/// Do some setup before the calculation
+  void prepare();
+/// This is overwritten here in order to make sure that we do not retrieve atoms multiple times
+  void retrieveAtoms();
 /// Do the calculation
-  void calculate();
+  virtual void calculate();
+/// Calculate numerical derivatives
+  virtual void calculateNumericalDerivatives( ActionWithValue* a=NULL );
 /// Perform one of the tasks
   virtual void performTask( const unsigned& , const unsigned& , MultiValue& ) const ;
 /// Update the active atoms
   virtual void updateActiveAtoms( AtomValuePack& myatoms ) const ;
 /// This gets the position of an atom for the link cell setup
   virtual Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const ;
+/// Returns the position where we should assume the center is for link cell calculations
+  virtual Vector getLinkCellPosition( const std::vector<unsigned>& atoms ) const ;
 /// And a virtual function which actually computes the colvar
   virtual double doCalculation( const unsigned& tindex, AtomValuePack& myatoms ) const ;  
 /// Get the absolute index of the central atom
@@ -134,13 +176,13 @@ public:
 /// Get the number of derivatives for this action
   virtual unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
 /// Checks if an task is being performed at the present time
-  virtual bool isCurrentlyActive( const unsigned& bno, const unsigned& code );
+  virtual bool isCurrentlyActive( const unsigned& code );
 ///
   virtual CatomPack getCentralAtomPack( const unsigned& basn, const unsigned& curr );
 /// Get the index where the central atom is stored
   virtual Vector getCentralAtomPos( const unsigned& curr );
 /// You can use this to screen contributions that are very small so we can avoid expensive (and pointless) calculations
-  virtual void calculateWeight( const unsigned& taskCode, AtomValuePack& myatoms ) const ;
+  virtual double calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& myatoms ) const ;
 /// Is this a density?
   virtual bool isDensity() const { return false; }
 /// Is the iatom'th stored value currently active
@@ -151,41 +193,50 @@ public:
   virtual void doNotCalculateDirector(){}
 /// Ensure that derivatives are only calculated when needed
   bool doNotCalculateDerivatives() const ;
+/// Get the icolv th base multicolvar 
+  MultiColvarBase* getBaseMultiColvar( const unsigned& icolv ) const ;
+/// Get the number of base multicolvars 
+  unsigned getNumberOfBaseMultiColvars() const ;
+/// Get an input data
+  virtual void getInputData( const unsigned& ind, const bool& normed, const multicolvar::AtomValuePack& myatoms, std::vector<double>& orient ) const ;
+/// Retrieve the input derivatives
+  virtual MultiValue& getInputDerivatives( const unsigned& iatom, const bool& normed, const multicolvar::AtomValuePack& myatoms ) const ;
 };
 
 inline
-unsigned MultiColvarBase::convertToLocalIndex( const unsigned& index, const unsigned& mcv_code ) const {
-  unsigned t1 = index;
-  for(unsigned k=0;k<mcv_code;++k) t1 -= mybasemulticolvars[k]->getFullNumberOfTasks();
-  return t1;
-}
-
-inline
-bool MultiColvarBase::isCurrentlyActive( const unsigned& bno, const unsigned& code ){
-  if( code<colvar_label.size() ){
-     unsigned mmc=colvar_label[code]; 
-     return mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(code,mmc) ); 
+bool MultiColvarBase::isCurrentlyActive( const unsigned& code ){
+  if( setup_completed && atom_lab[code].first>0 ){
+     unsigned mmc=atom_lab[code].first - 1; 
+     return mybasedata[mmc]->storedValueIsActive( atom_lab[code].second ); 
   }
   return true;
 }
 
 inline
 AtomNumber MultiColvarBase::getAbsoluteIndexOfCentralAtom( const unsigned& iatom ) const {
-  if( iatom<colvar_label.size() ){
-      unsigned mmc=colvar_label[ iatom ];
-      return mybasemulticolvars[mmc]->getAbsoluteIndexOfCentralAtom( convertToLocalIndex(iatom,mmc) ); 
+  plumed_dbg_assert( iatom<atom_lab.size() );
+  if( atom_lab[iatom].first>0  ){
+      unsigned mmc=atom_lab[iatom].first - 1;
+      return mybasemulticolvars[mmc]->getAbsoluteIndexOfCentralAtom( atom_lab[iatom].second ); 
   }
-  return ActionAtomistic::getAbsoluteIndex( getTaskCode(iatom) );
+  plumed_dbg_assert( usespecies );
+  return ActionAtomistic::getAbsoluteIndex( atom_lab[getTaskCode(iatom)].second );
 } 
 
 inline
 Vector MultiColvarBase::getPositionOfAtomForLinkCells( const unsigned& iatom ) const {
-  if( iatom<colvar_label.size()  ){ 
-      unsigned mmc=colvar_label[ iatom ];
-      return mybasemulticolvars[mmc]->getCentralAtomPos( convertToLocalIndex(iatom,mmc) );
+  plumed_dbg_assert( iatom<atom_lab.size() );
+  if( atom_lab[iatom].first>0  ){ 
+      unsigned mmc=atom_lab[iatom].first - 1;
+      return mybasemulticolvars[mmc]->getCentralAtomPos( atom_lab[iatom].second );
   }
-  return ActionAtomistic::getPosition( iatom );
+  return ActionAtomistic::getPosition( atom_lab[iatom].second );
 }
+
+inline
+Vector MultiColvarBase::getLinkCellPosition( const std::vector<unsigned>& atoms ) const {
+  return getPositionOfAtomForLinkCells( atoms[0] );
+} 
 
 inline
 unsigned MultiColvarBase::getNumberOfDerivatives(){
@@ -202,6 +253,18 @@ bool MultiColvarBase::doNotCalculateDerivatives() const {
   if( !dertime ) return true;
   return ActionWithValue::doNotCalculateDerivatives();
 }
+
+inline
+unsigned MultiColvarBase::getNumberOfBaseMultiColvars() const {
+  return mybasemulticolvars.size(); 
+} 
+
+inline 
+MultiColvarBase* MultiColvarBase::getBaseMultiColvar( const unsigned& icolv ) const {
+  plumed_dbg_assert( icolv<mybasemulticolvars.size() );
+  return mybasemulticolvars[icolv]; 
+} 
+
 
 }
 }

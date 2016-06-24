@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -142,9 +142,15 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
         fprintf(stderr,"--no-mpi option can only be used as the first option");
         return 1;
       }
+    } else if(a=="--mpi"){
+// this is ignored, as it is parsed in main
+      if(i>1){
+        fprintf(stderr,"--mpi option can only be used as the first option");
+        return 1;
+      }
     } else if(a=="--standalone-executable"){
       standalone_executable=true;
-    } else if(a.find("--load=")==0){
+    } else if(Tools::startWith(a,"--load=")){
       a.erase(0,a.find("=")+1);
       prefix="";
       void *p=dlloader.load(a);
@@ -243,8 +249,12 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
     plumed_massert(out==stdout,"shell tools can only work on stdin");
     string cmd=config::getEnvCommand()+" \""+root+"/scripts/"+command+".sh\"";
     for(int j=i+1;j<argc;j++) cmd+=string(" ")+argv[j];
-    system(cmd.c_str());
-    return 0;
+    int r=system(cmd.c_str());
+// this is necessary since system seems to return numbers which are multiple
+// of 256. this would make the interpretation by the shell wrong
+// I just return 1 in case of failure and 0 in case of success
+    if(r!=0) return 1;
+    else return 0;
   }
 
   string msg="ERROR: unknown command " + command + ". Use 'plumed help' for help";

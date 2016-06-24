@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -46,16 +46,17 @@ void SingleDomainRMSD::readReference( const PDB& pdb ){
 
 void SingleDomainRMSD::setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in ){
   reference_atoms.resize( conf.size() ); align.resize( conf.size() ); 
-  displace.resize( conf.size() ); der_index.resize( conf.size() );
+  displace.resize( conf.size() ); atom_der_index.resize( conf.size() );
   double wa=0, wd=0; 
   for(unsigned i=0;i<conf.size();++i){ wa+=align_in[i]; wd+=displace_in[i]; }
  
   Vector center; 
   for(unsigned i=0;i<conf.size();++i){
      align[i]=align_in[i] / wa; displace[i]=displace_in[i] / wd; 
-     center+=conf[i]*align[i]; der_index[i]=i;
+     center+=conf[i]*align[i]; atom_der_index[i]=i;
   }
   for(unsigned i=0;i<conf.size();++i) reference_atoms[i]=conf[i]-center;
+  setupRMSDObject();
 }
 
 double SingleDomainRMSD::calculate( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceValuePack& myder, const bool& squared ) const {

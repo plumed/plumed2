@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -19,7 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "MultiColvar.h"
+#include "MultiColvarBase.h"
+#include "AtomValuePack.h"
 #include "tools/NeighborList.h"
 #include "core/ActionRegister.h"
 #include "tools/SwitchingFunction.h"
@@ -62,7 +63,7 @@ COORDINATIONNUMBER SPECIESA=101-110 SPECIESB=1-100 R_0=3.0 MORE_THAN={RATIONAL R
 //+ENDPLUMEDOC
 
 
-class CoordinationNumbers : public MultiColvar {
+class CoordinationNumbers : public MultiColvarBase {
 private:
 //  double nl_cut;
   double rcut2;
@@ -79,10 +80,10 @@ public:
 PLUMED_REGISTER_ACTION(CoordinationNumbers,"COORDINATIONNUMBER")
 
 void CoordinationNumbers::registerKeywords( Keywords& keys ){
-  MultiColvar::registerKeywords( keys );
+  MultiColvarBase::registerKeywords( keys );
   keys.use("SPECIES"); keys.use("SPECIESA"); keys.use("SPECIESB");
   keys.add("compulsory","NN","6","The n parameter of the switching function ");
-  keys.add("compulsory","MM","12","The m parameter of the switching function ");
+  keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
   keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
@@ -95,7 +96,8 @@ void CoordinationNumbers::registerKeywords( Keywords& keys ){
 }
 
 CoordinationNumbers::CoordinationNumbers(const ActionOptions&ao):
-PLUMED_MULTICOLVAR_INIT(ao)
+Action(ao),
+MultiColvarBase(ao)
 {
   // Read in the switching function
   std::string sw, errors; parse("SWITCH",sw);
@@ -113,34 +115,26 @@ PLUMED_MULTICOLVAR_INIT(ao)
   // Set the link cell cutoff
   setLinkCellCutoff( switchingFunction.get_dmax() );
   rcut2 = switchingFunction.get_dmax()*switchingFunction.get_dmax();
-  
-  // Read in the atoms
-  int natoms=2; readAtoms( natoms );
+
   // And setup the ActionWithVessel
-  checkRead();
+  std::vector<AtomNumber> all_atoms; setupMultiColvarBase( all_atoms ); checkRead();
 }
 
 double CoordinationNumbers::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
-   double value=0, dfunc; 
-
    // Calculate the coordination number
-   double d2, sw;
+   double dfunc, d2, sw;
    for(unsigned i=1;i<myatoms.getNumberOfAtoms();++i){
-      Vector& distance=myatoms.getPosition(i);  // getSeparation( myatoms.getPosition(0), myatoms.getPosition(i) );
+      Vector& distance=myatoms.getPosition(i);  
       if ( (d2=distance[0]*distance[0])<rcut2 && 
            (d2+=distance[1]*distance[1])<rcut2 &&
            (d2+=distance[2]*distance[2])<rcut2) {
   
          sw = switchingFunction.calculateSqr( d2, dfunc );
-  
-         value += sw;             
-         addAtomDerivatives( 1, 0, (-dfunc)*distance, myatoms );
-         addAtomDerivatives( 1, i,  (dfunc)*distance, myatoms );
-         myatoms.addBoxDerivatives( 1, (-dfunc)*Tensor(distance,distance) );
+         accumulateSymmetryFunction( 1, i, sw, (dfunc)*distance, (-dfunc)*Tensor(distance,distance), myatoms );  
       }
    }
 
-   return value;
+   return myatoms.getValue(1);
 }
 
 }

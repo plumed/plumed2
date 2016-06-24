@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015 The plumed team
+   Copyright (c) 2015,2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -132,7 +132,6 @@ public:
   explicit ExtendedLagrangian(const ActionOptions&);
   void calculate();
   void update();
-  void turnOnDerivatives();
   static void registerKeywords(Keywords& keys);
 };
 
@@ -278,13 +277,6 @@ void ExtendedLagrangian::update(){
   }
 }
 
-void ExtendedLagrangian::turnOnDerivatives(){
-  // do nothing
-  // this is to avoid errors triggered when a bias is used as a CV
 }
-
-
-}
-
 
 }

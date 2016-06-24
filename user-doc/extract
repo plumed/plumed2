@@ -1,28 +1,14 @@
 #! /bin/bash
 
-# Making sure that plumed executable is available
-echo -n "Searching for plumed ..."
-if plumed --no-mpi 2>/dev/null 1>/dev/null ; then
-  echo " found"
-else
-  echo " not found"
-  echo -n "Sourcing sourceme.sh and searching again ..."
-  if source ../sourceme.sh && plumed --no-mpi 2>/dev/null 1>/dev/null ; then
-    echo " found"
-  else
-    echo "ERROR: you should compile plumed first!"
-    exit 1
-  fi
-fi
-
+source ../sourceme.sh
 
 # initial cleanup
 rm -f errors
 rm -rf automatic
 mkdir automatic
 
-long_version="$(plumed --no-mpi info --long-version)"
-git_version="$(plumed --no-mpi info --git-version)"
+long_version="$(../src/lib/plumed --no-mpi info --long-version)"
+git_version="$(../src/lib/plumed --no-mpi info --git-version)"
 
 cat > automatic/version.tmp << EOF
 This manual has been compiled from PLUMED version <b> $long_version </b>
@@ -46,6 +32,17 @@ for file in ../CHANGES/* ; do
 echo "- Changes for \\subpage $(cat $file | grep "@page" | awk '{print $2}')"
 done > automatic/changes.tmp
 
+if test "$make_pdfdoc" = yes ; then
+cat > automatic/pdfmanual.tmp << \EOF
+\htmlonly
+An experimental PDF copy of this manual can be found
+<a href="../manual.pdf"> here </a>.
+\endhtmlonly
+EOF
+else
+touch automatic/pdfmanual.tmp
+fi
+
 # Check for files that register actions with no documentation
 for file in ../src/*/*.cpp
 do
@@ -67,7 +64,7 @@ do
    echo "- \subpage $mytag " >> automatic/codes.list
    echo "/**" >> automatic/$myengine.txt
    echo "\page $mytag $myengine" >> automatic/$myengine.txt
-   plumed --no-mpi patch -e $myengine -i -q >> automatic/$myengine.txt
+   ../src/lib/plumed --no-mpi patch -e $myengine -i -q >> automatic/$myengine.txt
    echo "*/" >> automatic/$myengine.txt 
 done
 
@@ -79,23 +76,24 @@ awk 'BEGIN{gfile="automatic/GLOSSARY.list"; dfile="automatic/DICTIONARY.list"; }
      print "*/" >output
   }
   if(inside>=2 && NF==0){
-     print "</td> </tr>" > lfile
+     print "</td> </tr>" >> lfile
      if(inside==2){ printf "</td> </tr>\n" > gfile; }
      if(inside==3){ printf "</td> </tr>\n" > dfile; }
      inside=1
   }
-  if(inside==1 && $1!="/*" && $1!="*/") print $0 >output
+  if(inside==1 && $1!="/*" && $1!="*/") print $0 > output
   if(inside>=2 && $1!="/*" && $1!="*/" ){
      print $0 > output
-     printf "%s", $0 > lfile
+     printf "%s", $0 >> lfile
      if(inside==2){ printf "%s", $0 > gfile; }
      if(inside==3){ printf "%s", $0 > dfile; }
   }
   if($1=="//+PLUMEDOC"){
-    if( $2=="TOPOLOGY" || $2=="COLVAR" || $2=="MCOLVAR" || $2=="DCOLVAR"|| $2=="MCOLVARF" || $2=="MCOLVARB" || $2=="MATRIX" || $2=="MATRIXF" || $2=="FUNCTION" || $2=="ANALYSIS" || $2=="BIAS" || $2=="GENERIC" || $2=="VATOM" || $2=="TOOLS" ){
+    if( $2=="TOPOLOGY" || $2=="COLVAR" || $2=="MCOLVAR" || $2=="DCOLVAR"|| $2=="MFILTERS" || $2=="VOLUMES" || $2=="MCOLVARF" || $2=="MCOLVARB" || $2=="MATRIX" || $2=="MATRIXF" || $2=="CONCOMP" || $2=="FUNCTION" || $2=="GRIDCALC" || $2=="REWEIGHTING"|| $2=="PRINTANALYSIS" || $2=="DIMRED" || $2=="GRIDANALYSIS" || $2=="BIAS" || $2=="GENERIC" || $2=="VATOM" || $2=="TOOLS" ){
+      if(lfile!="") close(lfile)
       lfile="automatic/"$2".list"
       
-      printf "<tr> <td width=%s> \\subpage %s </td> <td>","5%", $3 > lfile
+      printf "<tr> <td width=%s> \\subpage %s </td> <td>","5%", $3 >> lfile
 #       printf "<tr> <td width=5%> \\ref %s </td><td> %s </td><td>",$3, $2 > gfile
       printf "<tr> <td width=%s> \\ref %s </td><td> %s </td><td>","5%",$3, $2 > gfile
 
@@ -219,7 +217,7 @@ do
   if grep -q '//+PLUMEDOC INTERNAL' $file 1>/dev/null 2>/dev/null ; then
        cp $file automatic/$flag.txt
   else
-     if ! plumed --no-mpi manual --action=$flag > automatic/$flag.man 2> /dev/null ; then 
+     if ! ../src/lib/plumed --no-mpi manual --action=$flag > automatic/$flag.man 2> /dev/null ; then 
         echo Full manual for action $flag will not be generated as you are building the manual from a code where this action was not compiled >> errors
      elif ! grep -q "\par Examples" $file 1>/dev/null 2>/dev/null
      then
@@ -236,8 +234,8 @@ done
 sed -ie 's/<b> --/<b> \\c \\-\\-/g' automatic/*.txt
 rm automatic/*.txte
 
-for file in COLVAR MCOLVAR DCOLVAR MCOLVARF MCOLVARB MATRIX MATRIXF ANALYSIS BIAS GLOSSARY \
-            DICTIONARY TUTORIALS WEBSITES FUNCTION TOPOLOGY VATOM \
+for file in COLVAR MCOLVAR MFILTERS VOLUMES DCOLVAR MCOLVARF MCOLVARB MATRIX MATRIXF CONCOMP REWEIGHTING PRINTANALYSIS BIAS GLOSSARY \
+            DICTIONARY TUTORIALS WEBSITES FUNCTION TOPOLOGY VATOM GRIDCALC GRIDANALYSIS DIMRED \
             TOOLS
 do
   mv automatic/$file.list automatic/$file.1.list
@@ -267,11 +265,18 @@ cat $file.txt |
     /^ *@COLVAR@ *$/r     automatic/COLVAR.list
     /^ *@MCOLVAR@ *$/r    automatic/MCOLVAR.list
     /^ *@DCOLVAR@ *$/r    automatic/DCOLVAR.list
+    /^ *@MFILTERS@ *$/r   automatic/MFILTERS.list
+    /^ *@VOLUMES@ *$/r    automatic/VOLUMES.list
     /^ *@MCOLVARF@ *$/r   automatic/MCOLVARF.list
     /^ *@MCOLVARB@ *$/r   automatic/MCOLVARB.list
-    /^ *@ANALYSIS@ *$/r   automatic/ANALYSIS.list
+    /^ *@REWEIGHTING@ *$/r   automatic/REWEIGHTING.list
+    /^ *@PRINTANALYSIS@ *$/r   automatic/PRINTANALYSIS.list
+    /^ *@GRIDCALC@ *$/r   automatic/GRIDCALC.list
+    /^ *@GRIDANALYSIS@ *$/r   automatic/GRIDANALYSIS.list
+    /^ *@DIMRED@ *$/r   automatic/DIMRED.list
     /^ *@MATRIX@ *$/r   automatic/MATRIX.list
     /^ *@MATRIXF@ *$/r   automatic/MATRIXF.list
+    /^ *@CONCOMP@ *$/r   automatic/CONCOMP.list
     /^ *@BIAS@ *$/r       automatic/BIAS.list
     /^ *@GLOSSARY@ *$/r   automatic/GLOSSARY.list
     /^ *@DICTIONARY@ *$/r automatic/DICTIONARY.list
@@ -286,5 +291,6 @@ cat $file.txt |
     /^ *@CODESL@ *$/r     automatic/codesl.list
     /^ *@VERSION@ *$/r    automatic/version.tmp
     /^ *@CHANGES@ *$/r    automatic/changes.tmp
+    /^ *@PDFMANUAL@ *$/r  automatic/pdfmanual.tmp
 " | grep -Ev '^ *@[A-Z]*@ *$' > ${file}PP.txt
 done

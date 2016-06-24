@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015 The plumed team
+   Copyright (c) 2015,2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -69,7 +69,7 @@ PLUMED_MULTICOLVAR_INIT(ao)
 {
   // Read in the atoms
   std::vector<AtomNumber> all_atoms;
-  readThreeGroups("GROUP","VECTORSTART","VECTOREND",false, all_atoms);
+  readThreeGroups("GROUP","VECTORSTART","VECTOREND",false,false,all_atoms);
 
   // Check atoms are OK
   if( getFullNumberOfTasks()!=getNumberOfAtoms()-2 ) error("you should specify one atom for VECTORSTART and one atom for VECTOREND only");

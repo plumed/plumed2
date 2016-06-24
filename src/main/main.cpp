@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -39,6 +39,7 @@ int main(int argc,char**argv){
 #ifdef __PLUMED_HAS_MPI
   bool nompi=false;
   if(argc>1 && !strcmp(argv[1],"--no-mpi")) nompi=true;
+  if(argc>1 && !strcmp(argv[1],"--mpi"))    nompi=false;
   if(!nompi) MPI_Init(&argc,&argv);
 #endif
   int ret=0;

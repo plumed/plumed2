@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015 The plumed team
+   Copyright (c) 2015,2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -33,7 +33,11 @@ void OrderingVessel::registerKeywords( Keywords& keys ){
 OrderingVessel::OrderingVessel( const VesselOptions& da ) :
 ValueVessel(da)
 {
-  mydata = getAction()->buildDataStashes( false, 0.0 );
+  mydata = getAction()->buildDataStashes( NULL );
+  for(unsigned i=0;i<getAction()->getNumberOfVessels();++i){
+      if( getAction()->getPntrToVessel(i)->getName()==getName() ) 
+           error("calculating lowest/highest value multiple times serves no purpose");
+  }
 }
 
 void OrderingVessel::resize(){
@@ -43,13 +47,13 @@ void OrderingVessel::resize(){
 
 void OrderingVessel::finish( const std::vector<double>& buffer ){
   std::vector<double> values( getAction()->getNumberOfQuantities() );
-  mydata->retrieveValue( 0, false, values );
+  mydata->retrieveSequentialValue( 0, false, values );
 
-  double min=values[1]; unsigned mini=0;
+  double min=values[mycomp]; unsigned mini=getAction()->getPositionInFullTaskList(0);
   for(unsigned i=1;i<mydata->getNumberOfStoredValues();++i){
-      mydata->retrieveValue( i, false, values );
-      double newval = values[1];
-      if( compare( newval, min ) ){ min=newval; mini=i; }
+      mydata->retrieveSequentialValue( i, false, values );
+      double newval = values[mycomp];
+      if( compare( newval, min ) ){ min=newval; mini=getAction()->getPositionInFullTaskList(i); }
   }
   setOutputValue( min );
 
@@ -58,7 +62,7 @@ void OrderingVessel::finish( const std::vector<double>& buffer ){
      mydata->retrieveDerivatives( mini, false, myvals ); Value* fval=getFinalValue();
      for(unsigned i=0;i<myvals.getNumberActive();++i){ 
          unsigned ider=myvals.getActiveIndex(i); 
-         fval->setDerivative( ider, myvals.getDerivative(1,ider) );
+         fval->setDerivative( ider, myvals.getDerivative(mycomp,ider) );
      }
   }
 }

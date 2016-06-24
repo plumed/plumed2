@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -25,6 +25,7 @@
 #include "wrapper/Plumed.h"
 #include "tools/Communicator.h"
 #include "tools/Random.h"
+#include "tools/Pbc.h"
 #include <cstdio>
 #include <cstring>
 #include <vector>
@@ -168,6 +169,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Driver(const CLToolOptions& co );
   int main(FILE* in,FILE*out,Communicator& pc);
+  void evaluateNumericalDerivatives( const int& step, Plumed& p, const std::vector<real>& coordinates,
+                                     const std::vector<real>& masses, const std::vector<real>& charges,
+                                     std::vector<real>& cell, const double& base, std::vector<real>& numder );
   string description()const;
 };
 
@@ -177,7 +181,12 @@ void Driver<real>::registerKeywords( Keywords& keys ){
   keys.addFlag("--help-debug",false,"print special options that can be used to create regtests");
   keys.add("compulsory","--plumed","plumed.dat","specify the name of the plumed input file");
   keys.add("compulsory","--timestep","1.0","the timestep that was used in the calculation that produced this trajectory in picoseconds");
-  keys.add("compulsory","--trajectory-stride","1","the frequency with which frames were output to this trajectory during the simulation");
+  keys.add("compulsory","--trajectory-stride","1","the frequency with which frames were output to this trajectory during the simulation"
+#ifdef __PLUMED_HAS_XDRFILE
+                                       " (0 means that the number of the step is read from the trajectory file,"
+                                       " currently working only for xtc/trr files read with --ixtc/--trr)"
+#endif
+          );
   keys.add("compulsory","--multi","0","set number of replicas for multi environment (needs mpi)");
   keys.addFlag("--noatoms",false,"don't read in a trajectory.  Just use colvar files as specified in plumed.dat");
   keys.add("atoms","--ixyz","the trajectory in xyz format");
@@ -187,6 +196,8 @@ void Driver<real>::registerKeywords( Keywords& keys ){
   keys.add("atoms","--itrr","the trajectory in trr format (xdrfile implementation)");
 #endif
   keys.add("optional","--length-units","units for length, either as a string or a number");
+  keys.add("optional","--mass-units","units for mass in pdb and mc file, either as a string or a number");
+  keys.add("optional","--charge-units","units for charge in pdb and mc file, either as a string or a number");
   keys.add("optional","--dump-forces","dump the forces on a file");
   keys.add("optional","--dump-forces-fmt","( default=%%f ) the format to use to dump the forces");
   keys.addFlag("--dump-full-virial",false,"with --dump-forces, it dumps the 9 components of the virial");
@@ -194,6 +205,8 @@ void Driver<real>::registerKeywords( Keywords& keys ){
   keys.add("optional","--mc","provides a file with masses and charges as produced with DUMPMASSCHARGE");
   keys.add("optional","--box","comma-separated box dimensions (3 for orthorombic, 9 for generic)");
   keys.add("optional","--natoms","provides number of atoms - only used if file format does not contain number of atoms");
+  keys.add("optional","--debug-forces","output a file containing the forces due to the bias evaluated using numerical derivatives "
+                                       "and using the analytical derivatives implemented in plumed");
   keys.add("hidden","--debug-float","turns on the single precision version (to check float interface)");
   keys.add("hidden","--debug-dd","use a fake domain decomposition");
   keys.add("hidden","--debug-pd","use a fake particle decomposition");
@@ -295,11 +308,16 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 // the stride
   unsigned stride; parse("--trajectory-stride",stride);
 // are we writing forces
-  string dumpforces(""), dumpforcesFmt("%f");; 
+  string dumpforces(""), debugforces(""), dumpforcesFmt("%f");; 
   bool dumpfullvirial=false;
-  if(!noatoms) parse("--dump-forces",dumpforces);
-  if(dumpforces!="") parse("--dump-forces-fmt",dumpforcesFmt);
+  if(!noatoms){
+     parse("--dump-forces",dumpforces);
+     parse("--debug-forces",debugforces);
+  }
+  if(dumpforces!="" || debugforces!="" ) parse("--dump-forces-fmt",dumpforcesFmt);
   if(dumpforces!="") parseFlag("--dump-full-virial",dumpfullvirial);
+  if( debugforces!="" && (debug_dd || debug_pd) ) error("cannot debug forces and domain/particle decomposition at same time");
+  if( debugforces!="" && sizeof(real)!=sizeof(double) ) error("cannot debug forces in single precision mode");
 
   string trajectory_fmt;
 
@@ -375,6 +393,10 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
      }
      string lengthUnits(""); parse("--length-units",lengthUnits);
      if(lengthUnits.length()>0) units.setLength(lengthUnits);
+     string chargeUnits(""); parse("--charge-units",chargeUnits);
+     if(chargeUnits.length()>0) units.setCharge(chargeUnits);
+     string massUnits(""); parse("--mass-units",massUnits);
+     if(massUnits.length()>0) units.setMass(massUnits);
   
      parse("--pdb",pdbfile);
      if(pdbfile.length()>0){
@@ -423,6 +445,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
     p.cmd("setMPIComm",&intracomm.Get_comm());
   } 
   p.cmd("setMDLengthUnits",&units.getLength());
+  p.cmd("setMDChargeUnits",&units.getCharge());
+  p.cmd("setMDMassUnits",&units.getMass());
   p.cmd("setMDEngine","driver");
   p.cmd("setTimestep",&timestep);
   p.cmd("setPlumedDat",plumedFile.c_str());
@@ -437,7 +461,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 
   int natoms;
 
-  FILE* fp=NULL; FILE* fp_forces=NULL;
+  FILE* fp=NULL; FILE* fp_forces=NULL; OFile fp_dforces;
 #ifdef __PLUMED_HAS_XDRFILE
   XDRFILE* xd=NULL;
 #endif
@@ -482,6 +506,14 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
        }
        fp_forces=fopen(dumpforces.c_str(),"w");
      }
+     if(debugforces.length()>0){
+       if(Communicator::initialized() && pc.Get_size()>1){
+         string n;
+         Tools::convert(pc.Get_rank(),n);
+         debugforces+="."+n;
+       }
+       fp_dforces.open(debugforces);
+     }
   }
 
   std::string line;
@@ -491,6 +523,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
   std::vector<real> charges;
   std::vector<real> cell;
   std::vector<real> virial;
+  std::vector<real> numder;
 
 // variables to test particle decomposition
   int pd_nlocal;
@@ -536,8 +569,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
       pd_nlocal=natoms;
       pd_start=0;
       first_step=true;
-      masses.assign(natoms,real(1.0));
-      charges.assign(natoms,real(0.0));
+      masses.assign(natoms,NAN);
+      charges.assign(natoms,NAN);
 //case pdb: structure
       if(pdbfile.length()>0){
         for(unsigned i=0;i<pdb.size();++i){
@@ -629,8 +662,6 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
     }
 
     int plumedStopCondition=0;
-    p.cmd("setStep",&step);
-    p.cmd("setStopFlag",&plumedStopCondition);
     if(!noatoms){
        if(use_molfile){
 #ifdef __PLUMED_HAS_MOLFILE_PLUGINS
@@ -668,14 +699,15 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 #endif
        }else if(trajectory_fmt=="xdr-xtc" || trajectory_fmt=="xdr-trr"){
 #ifdef __PLUMED_HAS_XDRFILE
-         int step;
+         int localstep;
          float time;
          matrix box;
          rvec* pos=new rvec[natoms];
          float prec,lambda;
          int ret;
-         if(trajectory_fmt=="xdr-xtc") ret=read_xtc(xd,natoms,&step,&time,box,pos,&prec);
-         if(trajectory_fmt=="xdr-trr") ret=read_trr(xd,natoms,&step,&time,&lambda,box,pos,NULL,NULL);
+         if(trajectory_fmt=="xdr-xtc") ret=read_xtc(xd,natoms,&localstep,&time,box,pos,&prec);
+         if(trajectory_fmt=="xdr-trr") ret=read_trr(xd,natoms,&localstep,&time,&lambda,box,pos,NULL,NULL);
+         if(stride==0) step=localstep;
          if(ret==exdrENDOFFILE) break;
          if(ret!=exdrOK) break;
          for(unsigned i=0;i<3;i++) for(unsigned j=0;j<3;j++) cell[3*i+j]=box[i][j];
@@ -757,6 +789,9 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 
      }
 
+     p.cmd("setStep",&step);
+     p.cmd("setStopFlag",&plumedStopCondition);
+
        if(debug_dd){
          for(int i=0;i<dd_nlocal;++i){
            int kk=dd_gatindex[i];
@@ -776,6 +811,9 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
        }
        p.cmd("setBox",&cell[0]);
        p.cmd("setVirial",&virial[0]);
+   }else{
+    p.cmd("setStep",&step);
+    p.cmd("setStopFlag",&plumedStopCondition);
    }
    p.cmd("calc");
 
@@ -827,6 +865,29 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
      for(int i=0;i<natoms;i++)
        fprintf(fp_forces,fmt.c_str(),forces[3*i],forces[3*i+1],forces[3*i+2]);
    }
+   if(debugforces.length()>0){
+      // Now call the routine to work out the derivatives numerically
+      numder.assign(3*natoms+9,real(0.0)); real base=0;
+      p.cmd("getBias",&base);
+      if( fabs(base)<epsilon ) printf("WARNING: bias for configuration appears to be zero so debugging forces is trivial");
+      evaluateNumericalDerivatives( step, p, coordinates, masses, charges, cell, base, numder );  
+
+      // And output everything to a file
+      fp_dforces.fmtField(" " + dumpforcesFmt);
+      for(int i=0;i<3*natoms;++i){
+         fp_dforces.printField("parameter",(int)i);
+         fp_dforces.printField("analytical",forces[i]);
+         fp_dforces.printField("numerical",-numder[i]);
+         fp_dforces.printField();
+      }
+      // And print the virial
+      for(int i=0;i<9;++i){
+         fp_dforces.printField("parameter",3*natoms+i );
+         fp_dforces.printField("analytical",virial[i] );
+         fp_dforces.printField("numerical",-numder[3*natoms+i]);
+         fp_dforces.printField();
+      }
+   }
 
     if(noatoms && plumedStopCondition) break;
 
@@ -835,6 +896,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
   p.cmd("runFinalJobs");
 
   if(fp_forces) fclose(fp_forces);
+  if(debugforces.length()>0) fp_dforces.close();
   if(fp && fp!=in)fclose(fp);
 #ifdef __PLUMED_HAS_XDRFILE
   if(xd) xdrfile_close(xd);
@@ -847,6 +909,64 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 
   return 0;
 }
+
+template<typename real>
+void Driver<real>::evaluateNumericalDerivatives( const int& step, Plumed& p, const std::vector<real>& coordinates,
+                                                 const std::vector<real>& masses, const std::vector<real>& charges,
+                                                 std::vector<real>& cell, const double& base, std::vector<real>& numder ){
+
+  int natoms = coordinates.size() / 3; real delta = sqrt(epsilon);
+  std::vector<Vector> pos(natoms); real bias=0; 
+  std::vector<real> fake_forces( 3*natoms ), fake_virial(9);
+  for(int i=0;i<natoms;++i){
+     for(unsigned j=0;j<3;++j) pos[i][j]=coordinates[3*i+j];
+  }
+
+  for(int i=0;i<natoms;++i){
+     for(unsigned j=0;j<3;++j){
+         pos[i][j]=pos[i][j]+delta;
+         p.cmd("setStep",&step);
+         p.cmd("setPositions",&pos[0][0]);
+         p.cmd("setForces",&fake_forces[0]);
+         p.cmd("setMasses",&masses[0]);
+         p.cmd("setCharges",&charges[0]);
+         p.cmd("setBox",&cell[0]);
+         p.cmd("setVirial",&fake_virial[0]);
+         p.cmd("prepareCalc");
+         p.cmd("performCalcNoUpdate");
+         p.cmd("getBias",&bias);
+         pos[i][j]=coordinates[3*i+j]; 
+         numder[3*i+j] = (bias - base) / delta;
+     }
+  }
+
+  // Create the cell
+  Tensor box( cell[0], cell[1], cell[2], cell[3], cell[4], cell[5], cell[6], cell[7], cell[8] );
+  // And the virial
+  Pbc pbc; pbc.setBox( box ); Tensor nvirial; 
+  for(unsigned i=0;i<3;i++) for(unsigned k=0;k<3;k++){ 
+     double arg0=box(i,k);
+     for(int j=0;j<natoms;++j) pos[j]=pbc.realToScaled( pos[j] );
+     cell[3*i+k]=box(i,k)=box(i,k)+delta; pbc.setBox(box); 
+     for(int j=0;j<natoms;j++) pos[j]=pbc.scaledToReal( pos[j] );
+     p.cmd("setStep",&step);
+     p.cmd("setPositions",&pos[0][0]);
+     p.cmd("setForces",&fake_forces[0]);
+     p.cmd("setMasses",&masses[0]);
+     p.cmd("setCharges",&charges[0]);
+     p.cmd("setBox",&cell[0]);
+     p.cmd("setVirial",&fake_virial[0]);
+     p.cmd("prepareCalc");
+     p.cmd("performCalcNoUpdate"); 
+     p.cmd("getBias",&bias);
+     cell[3*i+k]=box(i,k)=arg0; pbc.setBox(box);
+     for(int j=0;j<natoms;j++) for(unsigned n=0;n<3;++n) pos[j][n]=coordinates[3*j+n];
+     nvirial(i,k) = ( bias - base ) / delta;
+  }       
+  nvirial=-matmul(box.transpose(),nvirial);
+  for(unsigned i=0;i<3;i++) for(unsigned k=0;k<3;k++)  numder[3*natoms+3*i+k] = nvirial(i,k);  
+
+} 
 
 }
 }

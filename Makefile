@@ -1,4 +1,6 @@
--include Makefile.conf
+ifneq ($(MAKECMDGOALS),clean)
+ -include Makefile.conf
+endif
 
 
 SRCDIRS := src test
@@ -7,12 +9,19 @@ SUBDIRS := $(SRCDIRS) user-doc developer-doc regtest
 SUBDIRSCLEAN:=$(addsuffix .clean,$(SUBDIRS))
 
      
-.PHONY: all lib clean $(SRCDIRS) doc docclean check cppcheck distclean
+.PHONY: all lib clean $(SRCDIRS) doc docclean check cppcheck distclean all_plus_docs
 
 # if machine dependent configuration has been found:
 ifdef GCCDEP
 all:
 	$(MAKE) lib
+	$(MAKE) -C vim
+
+# target useful for macports
+# it builds the code then the documentation
+all_plus_docs:
+	$(MAKE) all
+	$(MAKE) docs
 
 lib:
 	$(MAKE)	-C src

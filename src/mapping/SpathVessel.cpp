@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -37,7 +37,7 @@ public:
   explicit SpathVessel( const vesselbase::VesselOptions& da );
   std::string value_descriptor();
   void prepare();
-  bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const ;
+  void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const ;
 };
 
 PLUMED_REGISTER_VESSEL(SpathVessel,"SPATH")
@@ -74,16 +74,15 @@ void SpathVessel::prepare(){
   foundoneclose=false;
 }
 
-bool SpathVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const {
+void SpathVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const {
   double pp=mymap->getPropertyValue( current, mycoordnumber ), weight=myvals.get(0);
-  if( weight<getTolerance() ) return false;
+  if( weight<getTolerance() ) return;
   unsigned nderivatives=getFinalValue()->getNumberOfDerivatives();
   buffer[bufstart] += weight*pp; buffer[bufstart+1+nderivatives] += weight; 
   if( getAction()->derivativesAreRequired() ){
      myvals.chainRule( 0, 0, 1, 0, pp, bufstart, buffer );
      myvals.chainRule( 0, 1, 1, 0, 1.0, bufstart, buffer );
   }
-  return true;
 }
 
 }

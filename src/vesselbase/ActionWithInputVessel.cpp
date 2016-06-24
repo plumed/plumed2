@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2014-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -32,6 +32,7 @@ void ActionWithInputVessel::registerKeywords(Keywords& keys){
   keys.add("compulsory","DATA","certain actions in plumed work by calculating a list of variables and summing over them. "
                                "This particular action can be used to calculate functions of these base variables or prints "
                                "them to a file. This keyword thus takes the label of one of those such variables as input.");
+  keys.reserve("compulsory","GRID","the action that creates the input grid you would like to use");
 }
 
 ActionWithInputVessel::ActionWithInputVessel(const ActionOptions&ao):
@@ -42,7 +43,8 @@ ActionWithInputVessel::ActionWithInputVessel(const ActionOptions&ao):
 }
 
 void ActionWithInputVessel::readArgument( const std::string& type ){
-  std::string mlab; parse("DATA",mlab);
+  std::string mlab; 
+  if( keywords.exists("DATA") && type!="grid" ) parse("DATA",mlab);
   ActionWithVessel* mves= plumed.getActionSet().selectWithLabel<ActionWithVessel*>(mlab);
   if(!mves) error("action labelled " +  mlab + " does not exist or does not have vessels");
   addDependency(mves);
@@ -60,7 +62,7 @@ void ActionWithInputVessel::readArgument( const std::string& type ){
      plumed_assert(aves); myBridgeVessel = mves->addBridgingVessel( aves ); 
      arguments = dynamic_cast<Vessel*>( myBridgeVessel );
   } else  if( type=="store" ){ 
-     arguments = dynamic_cast<Vessel*>( mves->buildDataStashes( false, 0.0 ) );  
+     arguments = dynamic_cast<Vessel*>( mves->buildDataStashes( NULL ) );  
   } else {
      plumed_error();
   }

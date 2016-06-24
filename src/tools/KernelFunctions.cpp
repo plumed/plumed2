@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -65,6 +65,8 @@ The following variants are available.
 </tr> <tr> 
 <td> gaussian </td> <td> \f$f(r) = \frac{1}{(2 \pi)^{n} \sqrt{|\Sigma^{-1}|}} \exp\left(-0.5 r^2 \right)\f$ </td>
 </tr> <tr>
+<td> truncated-gaussian </td> <td> \f$f(r) = \frac{1}{(2 \pi)^{n} \sqrt{|\Sigma^{-1}|} \left(\frac{\erf(-6.25/sqrt{2}) - \erf(-6.25/sqrt{2})}{2}\right)^n} \exp\left(-0.5 r^2 \right)\f$ </td>
+</tr> <tr>
 <td> triangular </td> <td> \f$f(r) = \frac{3}{V} ( 1 - | r | )H(1-|r|) \f$ </td>
 </tr> <tr>
 <td> uniform </td> <td> \f$f(r) = \frac{1}{V}H(1-|r|)\f$ </td>
@@ -82,7 +84,11 @@ V &=& | \Sigma^{-1} | \frac{ 2^{\frac{n+1}{2}} \pi^{\frac{n-1}{2}} }{ n!! }
 
 In \ref METAD the normalization constants are ignored so that the value of the function at \f$r=0\f$ is equal
 to one.  In addition in \ref METAD we must be able to differentiate the bias in order to get forces.  This limits 
-the kernels we can use in this method.
+the kernels we can use in this method.  Notice also that Gaussian kernels should have infinite support.  When used 
+with grids, however, they are assumed to only be non-zero over a finite range.  The difference between the 
+truncated-gaussian and regular gaussian is that the trucated gaussian is scaled so that its integral over the grid
+is equal to one when it is normalised.  The integral of a regular gaussian when it is evaluated on a grid will be 
+slightly less that one because of the truncation of a function that should have infinite support. 
 */
 //+ENDPLUMEDOC
 
@@ -96,7 +102,7 @@ KernelFunctions::KernelFunctions( const std::string& input, const bool& normed )
   if(!foundc) plumed_merror("failed to find center keyword in definition of kernel");
   std::vector<double> sig; 
   bool founds = Tools::parseVector(data,"SIGMA",sig);
-  if(!foundc) plumed_merror("failed to find sigma keyword in definition of kernel");
+  if(!founds) plumed_merror("failed to find sigma keyword in definition of kernel");
 
   bool multi=false; Tools::parseFlag(data,"MULTIVARIATE",multi);
   if( center.size()==1 && multi ) plumed_merror("one dimensional kernel cannot be multivariate");
@@ -123,7 +129,7 @@ void KernelFunctions::setData( const std::vector<double>& at, const std::vector<
   if (multivariate==false ) diagonal=true;
 
   // Setup the kernel type
-  if(type=="GAUSSIAN" || type=="gaussian"){
+  if(type=="GAUSSIAN" || type=="gaussian" || type=="TRUNCATED-GAUSSIAN" || type=="truncated-gaussian" ){
       ktype=gaussian;
   } else if(type=="UNIFORM" || type=="uniform"){
       ktype=uniform;
@@ -136,7 +142,7 @@ void KernelFunctions::setData( const std::vector<double>& at, const std::vector<
   if( norm ){
     double det; unsigned ncv=ndim(); 
     if(diagonal){
-       det=1; for(unsigned i=0;i<width.size();++i) det*=width[i];
+       det=1; for(unsigned i=0;i<width.size();++i) det*=width[i]*width[i];
     } else {
        Matrix<double> mymatrix( getMatrix() ), myinv( ncv, ncv );
        Invert(mymatrix,myinv); double logd;
@@ -145,7 +151,12 @@ void KernelFunctions::setData( const std::vector<double>& at, const std::vector<
     }
     double volume;
     if( ktype==gaussian ){
-       volume=pow( 2*pi, 0.5*ncv ) * pow( det, 0.5 );
+       if( type=="GAUSSIAN" || type=="gaussian" ) volume=pow( 2*pi, 0.5*ncv ) * pow( det, 0.5 );
+       else {
+          // This makes it so the gaussian integrates to one over the range over which it has support
+          const double DP2CUTOFF=sqrt(6.25);
+          volume=pow( 2*pi, 0.5*ncv ) * pow( det, 0.5 ) * pow( 0.5 * ( erf(DP2CUTOFF) - erf(-DP2CUTOFF) ), ncv);
+       }
     } else if( ktype==uniform || ktype==triangular ){
        if( ncv%2==1 ){
           double dfact=1;

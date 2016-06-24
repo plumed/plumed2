@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -121,6 +121,9 @@ public:
   static std::string extension(const std::string&);
 /// Fast int power
   static double fastpow(double base,int exp);
+/// Check if a string full starts with string start.
+/// Same as full.find(start)==0
+  static bool startWith(const std::string & full,const std::string &start);
 };
 
 template <class T>

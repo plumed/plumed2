@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -27,7 +27,7 @@
 namespace PLMD {
 namespace analysis {
 
-//+PLUMEDOC ANALYSIS CLASSICAL_MDS
+//+PLUMEDOC DIMRED CLASSICAL_MDS
 /*
 Create a low-dimensional projection of a trajectory using the classical multidimensional 
 scaling algorithm.
@@ -239,7 +239,7 @@ void ClassicalMultiDimensionalScaling::analyzeLandmarks(){
   if( efilename!="dont output"){
      OFile afile; afile.link(*this); afile.setBackupString("analysis");
      afile.open( efilename.c_str() );
-     myembedding->print( "classical mds", getTime(), afile, getOutputFormat() );
+     myembedding->print( "classical mds", getTime(), afile, getOutputFormat(), atoms.getUnits().getLength()/0.1 );
      afile.close();
   }
 }

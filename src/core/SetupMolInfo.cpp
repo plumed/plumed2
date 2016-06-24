@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -97,7 +97,6 @@ pdb(*new(PDB))
 void SetupMolInfo::getBackbone( std::vector<std::string>& restrings, const std::string& fortype, std::vector< std::vector<AtomNumber> >& backbone ){
   if( fortype!=mytype ) error("cannot calculate a variable designed for " + fortype + " molecules for molecule type " + mytype );
   if( MolDataClass::numberOfAtomsPerResidueInBackbone( mytype )==0 ) error("backbone is not defined for molecule type " + mytype );
-  bool useter=false; // This is used to deal with terminal groups in WHOLEMOLECULES
 
   if( read_backbone.size()!=0 ){
       if( restrings.size()!=1 ) error("cannot interpret anything other than all for residues when using CHAIN keywords");
@@ -108,6 +107,7 @@ void SetupMolInfo::getBackbone( std::vector<std::string>& restrings, const std::
           for(unsigned j=0;j<read_backbone[i].size();++j) backbone[i][j]=read_backbone[i][j];
       }
   } else {
+      bool useter=false; // This is used to deal with terminal groups in WHOLEMOLECULES
       if( restrings.size()==1 ){
           useter=( restrings[0].find("ter")!=std::string::npos );
           if( restrings[0].find("all")!=std::string::npos ){

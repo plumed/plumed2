@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -28,7 +28,7 @@
 namespace PLMD {
 namespace analysis {
 
-//+PLUMEDOC ANALYSIS COMMITTOR 
+//+PLUMEDOC PRINTANALYSIS COMMITTOR 
 /*
 Does a committor analysis.
 
@@ -43,10 +43,10 @@ TORSION ATOMS=2,3,4,5 LABEL=r2
 COMMITTOR ...
   ARG=r1,r2 
   STRIDE=10
-  BASIN_A_LOWER=0.15,0.20 
-  BASIN_A_UPPER=0.25,0.40 
-  BASIN_B_LOWER=-0.15,-0.20 
-  BASIN_B_UPPER=-0.25,-0.40 
+  BASIN_LL1=0.15,0.20 
+  BASIN_UL1=0.25,0.40 
+  BASIN_LL2=-0.15,-0.20 
+  BASIN_UL2=-0.25,-0.40 
 ... COMMITTOR 
 \endverbatim
 
@@ -61,8 +61,9 @@ private:
   std::string file;
   OFile ofile;
   std::string fmt;
-  std::vector<double> amin, amax; 
-  std::vector<double> bmin, bmax;
+  std::vector< std::vector<double> > lowerlimits; 
+  std::vector< std::vector<double> > upperlimits;
+  unsigned nbasins;
 public:
   static void registerKeywords( Keywords& keys );
   explicit Committor(const ActionOptions&ao);
@@ -77,12 +78,11 @@ void Committor::registerKeywords( Keywords& keys ){
   ActionPilot::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
   keys.use("ARG");
+  keys.add("numbered", "BASIN_LL","List of lower limits for basin #");
+  keys.add("numbered", "BASIN_UL","List of upper limits for basin #");
+  keys.reset_style("BASIN_LL","compulsory"); keys.reset_style("BASIN_UL","compulsory");
   keys.add("compulsory","STRIDE","1","the frequency with which the CVs are analysed");
-  keys.add("compulsory","BASIN_A_LOWER","the lower bounds of Basin A");
-  keys.add("compulsory","BASIN_A_UPPER","the upper bounds of Basin A");
-  keys.add("compulsory","BASIN_B_LOWER","the lower bounds of Basin B");
-  keys.add("compulsory","BASIN_B_UPPER","the upper bounds of Basin B");
-  keys.add("optional","FILE","the name of the file on which to output these quantities");
+  keys.add("optional","FILE","the name of the file on which to output the reached basin");
   keys.add("optional","FMT","the format that should be used to output real numbers");
 }
 
@@ -104,32 +104,45 @@ fmt("%f")
   parse("FMT",fmt);
   fmt=" "+fmt;
   log.printf("  with format %s\n",fmt.c_str());
-  for(unsigned i=0;i<getNumberOfArguments();++i) ofile.setupPrintValue( getPntrToArgument(i) );
-  parseVector("BASIN_A_LOWER",amin);
-  if(amin.size()!=getNumberOfArguments()) error("Wrong number of values for BASIN_A_LOWER: they should be equal to the number of arguments");
-  parseVector("BASIN_A_UPPER",amax);
-  if(amax.size()!=getNumberOfArguments()) error("Wrong number of values for BASIN_A_UPPER: they should be equal to the number of arguments");
-  parseVector("BASIN_B_LOWER",bmin);
-  if(bmin.size()!=getNumberOfArguments()) error("Wrong number of values for BASIN_B_LOWER: they should be equal to the number of arguments");
-  parseVector("BASIN_B_UPPER",bmax);
-  if(bmax.size()!=getNumberOfArguments()) error("Wrong number of values for BASIN_B_UPPER: they should be equal to the number of arguments");
-  checkRead();
-  if(bmin>bmax||amin>amax) error("COMMITTOR: UPPER bounds must always be greater than LOWER bounds");
 
-  log.printf("  BASIN A definition\n");
-  for(unsigned i=0;i<amin.size();++i) log.printf(" %f - %f\n", amin[i], amax[i]);
-  log.printf("  BASIN B definition\n");
-  for(unsigned i=0;i<bmin.size();++i) log.printf(" %f - %f\n", bmin[i], bmax[i]);
+  for(unsigned i=0;i<getNumberOfArguments();++i) ofile.setupPrintValue( getPntrToArgument(i) );
+
+  for(unsigned b=1;;++b ){
+
+     std::vector<double> tmpl, tmpu;
+     parseNumberedVector("BASIN_LL", b, tmpl );
+     parseNumberedVector("BASIN_UL", b, tmpu );
+     if( tmpl.empty() && tmpu.empty() ) break;
+     if( tmpl.size()!=getNumberOfArguments()) error("Wrong number of values for BASIN_LL: they should be equal to the number of arguments");
+     if( tmpu.size()!=getNumberOfArguments()) error("Wrong number of values for BASIN_UL: they should be equal to the number of arguments");
+     lowerlimits.push_back(tmpl);
+     upperlimits.push_back(tmpu);
+     nbasins=b;
+  }
+  checkRead();
+
+
+  for(unsigned b=0;b<nbasins;b++) {
+    log.printf("  BASIN %u definition:\n", b+1);
+    for(unsigned i=0;i<getNumberOfArguments();++i){
+      if(lowerlimits[b][i]>upperlimits[b][i]) error("COMMITTOR: UPPER bounds must always be greater than LOWER bounds");
+      log.printf(" %f - %f\n", lowerlimits[b][i], upperlimits[b][i]);
+    }
+  }
 }
 
 void Committor::calculate(){
-  unsigned ba=1,bb=1;
+  std::vector<unsigned> inbasin;
+  inbasin.assign (nbasins,1);
 
-  for(unsigned i=0;i<getNumberOfArguments();++i){
-     if(getArgument(i)>amin[i]&&getArgument(i)<amax[i]) ba*=1; else ba*=0;
-     if(getArgument(i)>bmin[i]&&getArgument(i)<bmax[i]) bb*=1; else bb*=0;
+  for(unsigned b=0;b<nbasins;++b){
+    for(unsigned i=0;i<getNumberOfArguments();++i){
+       if(getArgument(i)>lowerlimits[b][i]&&getArgument(i)<upperlimits[b][i]) inbasin[b]*=1; else inbasin[b]*=0;
+    }
   }
-  if(ba||bb) {
+
+  for(unsigned b=0;b<nbasins;++b){
+    if(inbasin[b]==1) {
       ofile.fmtField(" %f");
       ofile.printField("time",getTime());
       for(unsigned i=0;i<getNumberOfArguments();i++){
@@ -137,11 +150,13 @@ void Committor::calculate(){
         ofile.printField( getPntrToArgument(i), getArgument(i) );
       }
       ofile.printField();
-      if(ba) ofile.addConstantField("COMMITTED TO BASIN A");
-      if(bb) ofile.addConstantField("COMMITTED TO BASIN B");
+      std::string num; Tools::convert( b+1, num );
+      std::string str = "COMMITED TO BASIN " + num;  
+      ofile.addConstantField(str);
       ofile.printField();
       ofile.flush();
       plumed.stop();
+    }
   }
 }
 

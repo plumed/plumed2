@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -106,25 +106,25 @@ void Moments::finish( const std::vector<double>& buffer ){
      double pfactor, min, max; Tools::convert(str_min,min); Tools::convert(str_max,max);
      pfactor = 2*pi / ( max-min ); myvalue.setDomain( str_min, str_max );
      double sinsum=0, cossum=0, val;
-     for(unsigned i=0;i<nvals;++i){ val=pfactor*( buffer[i*nspace*vecsize+nspace] - min ); sinsum+=sin(val); cossum+=cos(val); }
+     for(unsigned i=0;i<nvals;++i){ val=pfactor*( buffer[bufstart + i*nspace*vecsize+nspace] - min ); sinsum+=sin(val); cossum+=cos(val); }
      mean = 0.5 + atan2( sinsum / static_cast<double>( nvals ) , cossum / static_cast<double>( nvals ) ) / (2*pi);
      mean = min + (max-min)*mean;
   } else {
-     for(unsigned i=0;i<nvals;++i) mean+=buffer[i*nspace*vecsize+nspace];    
+     for(unsigned i=0;i<nvals;++i) mean+=buffer[bufstart + i*nspace*vecsize+nspace];
      mean/=static_cast<double>( nvals ); myvalue.setNotPeriodic();
   }
 
   for(unsigned npow=0;npow<powers.size();++npow){
      double dev1=0; 
      if( value_out[0]->getNumberOfDerivatives()>0 ){
-         for(unsigned i=0;i<nvals;++i) dev1+=pow( myvalue.difference( mean, buffer[i*nspace*vecsize+nspace] ), powers[npow] - 1 ); 
+         for(unsigned i=0;i<nvals;++i) dev1+=pow( myvalue.difference( mean, buffer[bufstart + i*nspace*vecsize+nspace] ), powers[npow] - 1 );
          dev1/=static_cast<double>( nvals );
      }
 
      double moment=0;
      MultiValue myvals( getNumberOfComponents(), getAction()->getNumberOfDerivatives() ); myvals.clearAll();
      for(unsigned i=0;i<nvals;++i){
-         double tmp=myvalue.difference( mean, buffer[i*nspace*vecsize+nspace] );
+         double tmp=myvalue.difference( mean, buffer[bufstart + i*nspace*vecsize+nspace] );
          moment+=pow( tmp, powers[npow] );
          if( value_out[npow]->getNumberOfDerivatives() ){
              double pref=pow( tmp, powers[npow] - 1 ) - dev1;

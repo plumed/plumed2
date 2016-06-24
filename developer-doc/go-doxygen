@@ -1,9 +1,11 @@
 #! /bin/bash
 
+source ../sourceme.sh
+
 {
   cat Doxyfile
-  echo "PROJECT_NUMBER = \"$(plumed --no-mpi info --version)\""
-  echo "INPUT+=" ../src/*/ ../src/*/*/
+  echo "PROJECT_NUMBER = \"$(../src/lib/plumed --no-mpi info --version)\""
+  echo "INPUT+=" ../src/*/ ../src/*/*/ ../.github/*.md
   echo "REFERENCES_RELATION=NO"
   echo "REFERENCED_BY_RELATION=NO"
 } | doxygen -

@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -68,7 +68,7 @@ void FlexibleBin::update(bool nowAddAHill){
 	unsigned dimension=ncv*(ncv+1)/2;	
 	// this is done all the times from scratch. It is not an accumulator 
 	unsigned  k=0;
-	unsigned i,j;
+	unsigned i;
 	vector<double> cv;
 	vector<double> delta;
 	// if you use this below then the decay is in time units
@@ -104,7 +104,7 @@ void FlexibleBin::update(bool nowAddAHill){
 		}else{
 			k=0;
 			for(i=0;i<ncv;i++){
-				for(j=i;j<ncv;j++){ // upper diagonal loop
+				for(unsigned j=i;j<ncv;j++){ // upper diagonal loop
 					variance[k]+=decay*(delta[i]*delta[j]-variance[k]);
 					k++;
 				}

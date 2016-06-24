@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -75,7 +75,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit NumberOfLinks(const ActionOptions&);
 /// Do the stuff with the switching functions
-  void calculateWeight( const unsigned& taskCode, AtomValuePack& myatoms ) const ;
+  double calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& myatoms ) const ;
 /// Actually do the calculation
   double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
 /// Is the variable periodic
@@ -86,15 +86,18 @@ PLUMED_REGISTER_ACTION(NumberOfLinks,"NLINKS")
 
 void NumberOfLinks::registerKeywords( Keywords& keys ){
   MultiColvarFunction::registerKeywords( keys );
+  keys.add("atoms","GROUP","");
+  keys.add("atoms-1","GROUPA","");
+  keys.add("atoms-1","GROUPB","");
   keys.add("compulsory","NN","6","The n parameter of the switching function ");
-  keys.add("compulsory","MM","12","The m parameter of the switching function ");
+  keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
   keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
                                "The following provides information on the \\ref switchingfunction that are available. "
                                "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   // Use actionWithDistributionKeywords
-  keys.remove("LOWMEM"); 
+  keys.remove("LOWMEM"); keys.remove("DATA");
   keys.addFlag("LOWMEM",false,"lower the memory requirements");
 }
 
@@ -117,7 +120,8 @@ MultiColvarFunction(ao)
      switchingFunction.set(nn,mm,r_0,d_0);
   }
   log.printf("  calculating number of links with atoms separation of %s\n",( switchingFunction.description() ).c_str() );
-  buildAtomListWithPairs( false ); setLinkCellCutoff( switchingFunction.get_dmax() ); 
+  std::vector<AtomNumber> all_atoms; readTwoGroups( "GROUP", "GROUPA", "GROUPB", all_atoms ); 
+  setupMultiColvarBase( all_atoms ); setLinkCellCutoff( switchingFunction.get_dmax() ); 
 
   for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i){
     if( !getBaseMultiColvar(i)->hasDifferentiableOrientation() ) error("cannot use multicolvar of type " + getBaseMultiColvar(i)->getName() );
@@ -130,16 +134,16 @@ MultiColvarFunction(ao)
   readVesselKeywords();
 }
 
-void NumberOfLinks::calculateWeight( const unsigned& taskCode, AtomValuePack& myatoms ) const {
+double NumberOfLinks::calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& myatoms ) const {
   Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
   double dfunc, sw = switchingFunction.calculateSqr( distance.modulo2(), dfunc );
-  myatoms.setValue(0,sw);
 
   if( !doNotCalculateDerivatives() ){
-      addAtomDerivatives( 0, 0, (-dfunc)*distance, myatoms );
-      addAtomDerivatives( 0, 1, (dfunc)*distance, myatoms );
-      myatoms.addBoxDerivatives( 0, (-dfunc)*Tensor(distance,distance) ); 
+      addAtomDerivatives( 0, 0, (-dfunc)*weight*distance, myatoms );
+      addAtomDerivatives( 0, 1, (dfunc)*weight*distance, myatoms );
+      myatoms.addBoxDerivatives( 0, (-dfunc)*weight*Tensor(distance,distance) ); 
   }
+  return sw;
 }
 
 double NumberOfLinks::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
@@ -148,8 +152,8 @@ double NumberOfLinks::compute( const unsigned& tindex, AtomValuePack& myatoms ) 
    unsigned ncomp=getBaseMultiColvar(0)->getNumberOfQuantities();
 
    std::vector<double> orient0( ncomp ), orient1( ncomp );
-   getVectorForTask( myatoms.getIndex(0), true, orient0 ); 
-   getVectorForTask( myatoms.getIndex(1), true, orient1 );
+   getInputData( 0, true, myatoms, orient0 ); 
+   getInputData( 1, true, myatoms, orient1 );
 
    double dot=0;
    for(unsigned k=2;k<orient0.size();++k){
@@ -157,12 +161,10 @@ double NumberOfLinks::compute( const unsigned& tindex, AtomValuePack& myatoms ) 
    }
 
    if( !doNotCalculateDerivatives() ){
-     unsigned nder=myatoms.getNumberOfDerivatives();   //getNumberOfDerivatives();
-     MultiValue myder0(ncomp,nder), myder1(ncomp,nder);
-     getVectorDerivatives( myatoms.getIndex(0), true, myder0 );
-     mergeVectorDerivatives( 1, 2, orient1.size(), myatoms.getIndex(0), orient1, myder0, myatoms );
-     getVectorDerivatives( myatoms.getIndex(1), true, myder1 ); 
-     mergeVectorDerivatives( 1, 2, orient0.size(), myatoms.getIndex(1), orient0, myder1, myatoms );
+     MultiValue& myder0=getInputDerivatives( 0, true, myatoms );
+     mergeInputDerivatives( 1, 2, orient1.size(), 0, orient1, myder0, myatoms );
+     MultiValue& myder1=getInputDerivatives( 1, true, myatoms ); 
+     mergeInputDerivatives( 1, 2, orient0.size(), 1, orient0, myder1, myatoms );
    }
 
    return dot;

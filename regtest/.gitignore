@@ -15,7 +15,7 @@
 !/scripts
 !/manyrestraints
 !/molfile_plugin
-!/has-almost
+!/metainference
 # These files we just want to ignore completely
 tmp
 report.txt

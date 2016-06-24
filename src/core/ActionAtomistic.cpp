@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -136,7 +136,7 @@ void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, c
   for(int j=0;j<nval;j++){
     Value* v=a->copyOutput(j);
     double ref=v->get();
-    if(v->getNumberOfDerivatives()>0){
+    if(v->hasDerivatives()>0){
       for(int i=0;i<natoms;i++) for(int k=0;k<3;k++) {
         double d=(value[j*natoms+i][k]-ref)/delta;
         v->addDerivative(startnum+3*i+k,d);

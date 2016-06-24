@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -24,6 +24,7 @@
 #include "ActionRegister.h"
 #include "tools/PDB.h"
 #include "reference/DRMSD.h"
+#include "reference/MetricRegister.h"
 #include "core/Atoms.h"
 
 using namespace std;
@@ -68,7 +69,29 @@ position. Only pairs of atoms whose distance in the reference structure is withi
 DRMSD REFERENCE=file.pdb LOWER_CUTOFF=0.1 UPPER_CUTOFF=0.8
 \endverbatim
 
-...
+The following tells plumed to calculate a DRMSD value for a pair of molecules.  
+
+\verbatim
+DRMSD REFERENCE=file.pdb LOWER_CUTOFF=0.1 UPPER_CUTOFF=0.8 TYPE=INTER-RMSD
+\endverbatim
+
+In the input reference file (file.pdb) the atoms in each of the two molecules are separated by a TER
+command as shown below.
+
+\verbatim
+ATOM      8  HT3 ALA     2      -1.480  -1.560   1.212  1.00  1.00      DIA  H
+ATOM      9  CAY ALA     2      -0.096   2.144  -0.669  1.00  1.00      DIA  C
+ATOM     10  HY1 ALA     2       0.871   2.385  -0.588  1.00  1.00      DIA  H
+TER
+ATOM     12  HY3 ALA     2      -0.520   2.679  -1.400  1.00  1.00      DIA  H
+ATOM     14  OY  ALA     2      -1.139   0.931  -0.973  1.00  1.00      DIA  O
+END
+\endverbatim
+
+In this example the INTER-DRMSD type ensures that the set of distances from which the final
+quantity is computed involve one atom from each of the two molecules.  If this is replaced 
+by INTRA-RMSD then only those distances involving pairs of atoms that are both in the same 
+molecule are computed. 
 
 */
 //+ENDPLUMEDOC
@@ -95,6 +118,10 @@ void DRMSD::registerKeywords(Keywords& keys){
   keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
   keys.add("compulsory","LOWER_CUTOFF","only pairs of atoms further than LOWER_CUTOFF are considered in the calculation.");
   keys.add("compulsory","UPPER_CUTOFF","only pairs of atoms closer than UPPER_CUTOFF are considered in the calculation.");
+  keys.add("compulsory","TYPE","DRMSD","what kind of DRMSD would you like to calculate.  You can use either the normal DRMSD involving all the distances between "
+                                       "the atoms in your molecule.  Alternatively, if you have multiple molecules you can use the type INTER-DRMSD "
+                                       "to compute DRMSD values involving only those distances between the atoms at least two molecules or the type INTRA-DRMSD "
+                                       "to compute DRMSD values involving only those distances between atoms in the same molecule");
 }
 
 DRMSD::DRMSD(const ActionOptions&ao):
@@ -110,8 +137,6 @@ PLUMED_COLVAR_INIT(ao), pbc_(true), myvals(1,0), mypack(0,0,myvals)
   parseFlag("NOPBC",nopbc);
   pbc_=!nopbc;
 
-  checkRead();
-
   addValueWithDerivatives(); setNotPeriodic(); 
 
   // read everything in ang and transform to nm if we are not in natural units
@@ -120,10 +145,11 @@ PLUMED_COLVAR_INIT(ao), pbc_(true), myvals(1,0), mypack(0,0,myvals)
       error("missing input file " + reference );
 
   // store target_ distance
-  ReferenceConfigurationOptions ro( "DRMSD" );
-  drmsd_= new PLMD::DRMSD( ro );
+  std::string type; parse("TYPE",type);
+  drmsd_= metricRegister().create<PLMD::DRMSD>( type );
   drmsd_->setBoundsOnDistances( !nopbc, lcutoff, ucutoff );
   drmsd_->set( pdb );
+  checkRead();
 
   std::vector<AtomNumber> atoms; 
   drmsd_->getAtomRequests( atoms );
@@ -147,15 +173,11 @@ DRMSD::~DRMSD(){
 void DRMSD::calculate(){
 
  double drmsd; Tensor virial; mypack.clear();
-
  drmsd=drmsd_->calculate(getPositions(), getPbc(), mypack, false);
 
  setValue(drmsd);
  for(unsigned i=0;i<getNumberOfAtoms();++i) { if( myvals.isActive(3*i) ) setAtomsDerivatives( i, mypack.getAtomDerivative(i) ); }
  setBoxDerivatives( mypack.getBoxDerivatives() );   
-
- // drmsd_->getVirial( virial ); setBoxDerivatives(virial);
-
 }
 
 }

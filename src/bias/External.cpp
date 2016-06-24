@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -41,7 +41,7 @@ The following is an input for a calculation with an external potential that is
 defined in the file bias.dat and that acts on the distance between atoms 3 and 5.
 \verbatim
 DISTANCE ATOMS=3,5 LABEL=d1
-EXTERNAL ARG=d1 FILENAME=bias.dat LABEL=external 
+EXTERNAL ARG=d1 FILE=bias.dat LABEL=external 
 \endverbatim
 (See also \ref DISTANCE \ref PRINT).
 
@@ -64,7 +64,7 @@ potential acting on two torsional angles:
 \verbatim
 TORSION ATOMS=4,5,6,7 LABEL=t1
 TORSION ATOMS=6,7,8,9 LABEL=t2
-EXTERNAL ARG=t1,t2 FILENAME=bias.dat LABEL=ext
+EXTERNAL ARG=t1,t2 FILE=bias.dat LABEL=ext
 \endverbatim
 
 The header in the file bias.dat for this calculation would read:

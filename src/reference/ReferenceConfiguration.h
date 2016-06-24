@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -144,8 +144,8 @@ public:
 /// Set the reference structure (perhaps should also pass the pbc and align and displace )
   void setReferenceConfig( const std::vector<Vector>& pos, const std::vector<double>& arg, const std::vector<double>& metric );
 /// Print a pdb file containing the reference configuration
-  void print( OFile& ofile, const double& time, const double& weight, const double& old_norm );
-  void print( OFile& ofile, const std::string& fmt );
+  void print( OFile& ofile, const double& time, const double& weight, const double& lunits, const double& old_norm );
+  void print( OFile& ofile, const std::string& fmt, const double& lunits );
 /// Get one of the referene arguments
   virtual double getReferenceArgument( const unsigned& i ) const { plumed_error(); return 0.0; }
 /// These are overwritten in ReferenceArguments and ReferenceAtoms but are required here 

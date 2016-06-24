@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -112,7 +112,7 @@ public:
 /// Applies  PBCs to a seriens of positions or distances
   void pbcApply(std::vector<Vector>& dlist, unsigned max_index=0) const;
 /// Get the vector of absolute indexes
-  const std::vector<AtomNumber> & getAbsoluteIndexes()const;
+  virtual const std::vector<AtomNumber> & getAbsoluteIndexes()const;
 /// Get the absolute index of an atom
   AtomNumber getAbsoluteIndex(int i)const;
 /// Parse a list of atoms without a numbered keyword
@@ -157,7 +157,7 @@ public:
 /// ActionWithArguments and ActionAtomistic
   void calculateAtomicNumericalDerivatives( ActionWithValue* a, const unsigned& startnum );
 
-  void retrieveAtoms();
+  virtual void retrieveAtoms();
   void applyForces();
   void lockRequests();
   void unlockRequests();
