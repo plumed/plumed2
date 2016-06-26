@@ -2,23 +2,23 @@
 
 \page Performances Performances 
 
-In this page we collect hints on how to use the feature available in PLUMED to speed
-up your calculation. Please note that PLUMED performs many different operations, it
+In this page we collect hints on how to use the features available in PLUMED to speed
+up your calculations. Please note that PLUMED performs many different tasks, it
 can calculate a number of different collective variables, functions of collective 
-variables, bias, analysis, etc in a way that is also compatible with a number of
+variables, bias, on-the-fly analysis, etc in a way that is compatible with a number of
 different molecular dynamics codes. This means that there cannot be a single 
 strategy to speed up all the possible calculations. 
 
-PLUMED make use of MPI and OpenMP to parallelise some of its function, try to always
-compile it with these feature enabled. Furthemore, we noticed that newer compilers
+PLUMED makes use of MPI and OpenMP to parallelise some of its function, try to always
+compile it with these features enabled. Furthemore, we noticed that newer compilers
 with proper optimisation flags can provide a drammatic boost to performances.
 Try to use newer compilers and read the documentation about the different optimisation
 flags.  
 
-PLUMED collects atoms from an external code and sends back forces, a key point in minimise
-the effect of PLUMED on highly parallel calculations is to minimise the number of atoms 
+PLUMED collects atoms from an external code and sends back forces, a key point to minimise
+the effect of PLUMED on highly parallel calculations is to reduce the number of atoms 
 used by PLUMED at every calculation step. The less is the number of atoms you need to send 
-to PLUMED the less will be the overhand in the comunication between PLUMED and the code.
+to PLUMED the less will be the overhead in the comunication between PLUMED and the code.
 
 In the following you can find specific strategies for specific calculations, these could
 help in taking the most by using PLUMED for your simulations.
@@ -58,11 +58,13 @@ i.e. if you have 4 cores and 2 GPU you can:
 - use 2 MPI/2GPU/2OPENMP:
 
 export PLUMED_NUM_THREADS=2
+
 mpiexec -np 2 gmx_mpi mdrun -nb gpu -ntomp 2 -pin on -gpu_id 01
 
 - use 4 MPI/2GPU:
 
 export PLUMED_NUM_THREADS=1
+
 mpiexec -np 4 gmx_mpi mdrun -nb gpu -ntomp 1 -pin on -gpu_id 0011
 
 
@@ -159,10 +161,10 @@ Notice that:
 \page Secondary Secondary Structure
 
 Secondary Structure collective variables (\ref ALPHARMSD, \ref PARABETARMSD and \ref ANTIBETARMSD)
-can be particulary demanding if you want to calculate them for a full protein. 
+can be particulary demanding if you want to calculate them for all the residues of a protein. 
 This is particularty true for the calculation of beta structures.
 
-The FIRST thing to do to speed up \ref PARABETARMSD and \ref ANTIBETARMSD is to use the keyword
+The FIRST thing to speed up \ref PARABETARMSD and \ref ANTIBETARMSD is to use the keyword
 STRANDS_CUTOFF (i.e. STRANDS_CUTOFF=1), in this way only a subset of possible fragments, the one
 less than 1. nm apart, are used in the calculation.
 
