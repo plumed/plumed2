@@ -211,15 +211,21 @@ void Keywords::addFlag( const std::string & k, const bool def, const std::string
 } 
 
 void Keywords::remove( const std::string & k ){
-  bool found=false; unsigned j=0;
+  bool found=false; unsigned j=0, n=0;
 
   while(true){
     for(j=0;j<keys.size();j++) if(keys[j]==k)break;
+    for(n=0;n<reserved_keys.size();n++) if(reserved_keys[n]==k)break;
     if(j<keys.size()){
       keys.erase(keys.begin()+j);
       found=true;
+    } else if(n<reserved_keys.size()){
+      reserved_keys.erase(reserved_keys.begin()+n);
+      found=true;
     } else break;
   }
+  // Delete documentation, type and so on from the description
+  types.erase(k); documentation.erase(k); allowmultiple.erase(k); booldefs.erase(k); numdefs.erase(k);
   plumed_massert(found,"You are trying to forbid " + k + " a keyword that isn't there"); // You have tried to forbid a keyword that isn't there
 }
 
