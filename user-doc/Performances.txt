@@ -127,6 +127,16 @@ Collective variables that can be speed up making us of neighbour lists:
 By tuning the cut-off for the neighbour list and the frequency for the recalculation of the list it is
 possible to balance between accuracy and performances.
 
+Notice that for \ref COORDINATION and \ref DHENERGY using a neighbor list could imply that a smaller
+number of atoms are requested to the host MD engine. This is typically true when considering
+\ref COORDINATION of a small number of atoms (e.g. a ligand) again many atoms (e.g. water).
+When the neighbor list is used, only the water atoms close to the ligand will be requested at each step.
+
+\warning
+Notice that the calculation of the neighbour list is not not parallelized for \ref COORDINATION and \ref DHENERGY.
+As a consequence, if you run
+with many processors and/or OpenMP threads, the neighbor list might even make the calculation slower.
+
 
 \page Openmp OpenMP
 
