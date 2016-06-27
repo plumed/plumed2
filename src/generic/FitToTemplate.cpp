@@ -63,7 +63,9 @@ change the result. Examples are:
   from the original ones.
 - \ref CELL components for a similar reason.
 
-In the present implementation only TYPE=SIMPLE is implemented. As a consequence, only \ref POSITION CV can be affected by the fit.
+\attention
+The implementation of TYPE=OPTIMAL is available but should be considered in testing phase. Please report any
+strange behavior. 
 
 \attention
 This directive modifies the stored position at the precise moment
