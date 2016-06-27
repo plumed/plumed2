@@ -57,6 +57,10 @@ the second lattice vector is in the form (bx,by,0), and the third lattice vector
 arbitrary.
 
 \attention
+The implementation of this action is available but should be considered in testing phase. Please report any
+strange behavior. 
+
+\attention
 This directive modifies the stored position at the precise moment
 it is executed. This means that only collective variables
 which are below it in the input script will see the corrected positions.
