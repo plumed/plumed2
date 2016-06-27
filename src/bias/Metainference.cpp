@@ -30,6 +30,7 @@
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include "core/Value.h"
+#include "tools/OpenMP.h"
 #include <cmath>
 
 using namespace std;
@@ -691,7 +692,7 @@ void Metainference::update() {
       sm_mod_ -= Dsm_mod_ * 0.01 * std::log(sm_mod_/sm_mod_min_);
       if((sm_mod_-sm_mod_min_)<Dsm_mod_) {
         double sm_mod_min_new = sm_mod_min_ - Dsm_mod_;
-        if(sm_mod_min_new > 0) sm_mod_min_ = sm_mod_min_new;
+        if(sm_mod_min_new > 0.000001) sm_mod_min_ = sm_mod_min_new;
       }
     // otherwise we increase sm_mod_ and also sm_mod_min_ if needed
     } else {
