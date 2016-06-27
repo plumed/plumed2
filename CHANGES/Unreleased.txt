@@ -82,6 +82,7 @@ Changes from version 2.2 which are relevant for users:
   - Added keywords TARGET and DAMPFACTOR in \ref METAD
   - \ref ENSEMBLE added keywords for weighted averages, and calculation of higher momenta
   - \ref MOLINFO now allows single atoms to be picked by name.
+  - \ref FIT_TO_TEMPLATE now supports optimal alignment.
 - Other features:
   - Added a plumed-config command line tool. Can be used to inspect configuration also when cross compiling.
   - Added a `--mpi` option to `plumed`, symmetric to `--no-mpi`. Currently, it has no effect (MPI is initialized by default when available).
