@@ -177,8 +177,7 @@ void ABMD::calculate(){
       ene += 0.5*k*(cv2-min[i])*(cv2-min[i]);
       totf2+=f*f;
     }
-    std::string str_min=getPntrToArgument(i)->getName()+"_min";
-    getPntrToComponent(str_min)->set(min[i]);
+    getPntrToComponent(i+1)->set(min[i]);
   }
   setBias(ene);
   getPntrToComponent("force2")->set(totf2);

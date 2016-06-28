@@ -150,7 +150,6 @@ void ExtendedLagrangian::registerKeywords(Keywords& keys){
    keys.addOutputComponent("_vfict","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
                                             "These quantities will named with the arguments of the bias followed by "
                                             "the character string _tilde. It is NOT possible to add forces on these variable.");
-   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
 }
 
 ExtendedLagrangian::ExtendedLagrangian(const ActionOptions&ao):
