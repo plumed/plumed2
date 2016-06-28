@@ -230,7 +230,6 @@ PLUMED_REGISTER_ACTION(PBMetaD,"PBMETAD")
 
 void PBMetaD::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
-  componentsAreNotOptional(keys);
   keys.use("ARG");
   keys.add("compulsory","SIGMA","the widths of the Gaussian hills");
   keys.add("compulsory","PACE","the frequency for hill addition, one for all biases");

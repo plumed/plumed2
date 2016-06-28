@@ -113,7 +113,6 @@ void External::registerKeywords(Keywords& keys){
   keys.add("compulsory","FILE","the name of the file containing the external potential.");
   keys.addFlag("NOSPLINE",false,"specifies that no spline interpolation is to be used when calculating the energy and forces due to the external potential");
   keys.addFlag("SPARSE",false,"specifies that the external potential uses a sparse grid");
-  componentsAreNotOptional(keys);
 }
 
 External::~External(){

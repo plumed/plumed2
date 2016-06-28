@@ -111,7 +111,6 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.add("optional","TEMP","the system temperature - this is only needed if code doesnt' pass the temperature to plumed");
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_STRIDE","MC stride");
-  componentsAreNotOptional(keys);
   useCustomisableComponents(keys);
   keys.addOutputComponent("sigma", "default","uncertainty parameter");
   keys.addOutputComponent("scale", "default","scale parameter");

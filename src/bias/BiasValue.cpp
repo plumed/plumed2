@@ -91,7 +91,6 @@ PLUMED_REGISTER_ACTION(BiasValue,"BIASVALUE")
 void BiasValue::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   keys.use("ARG");
-  componentsAreNotOptional(keys);
   // Should be _bias below
   keys.addOutputComponent("_bias","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
                                             "these quantities will named with  the arguments of the bias followed by "
