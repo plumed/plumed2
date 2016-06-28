@@ -32,6 +32,10 @@ ActionWithValue(ao),
 ActionWithArguments(ao),
 outputForces(getNumberOfArguments(),0.0)
 {
+  addComponentWithDerivatives("bias"); 
+  componentIsNotPeriodic("bias");
+  valueBias=getPntrToComponent("bias");
+
   if(getStride()>1){
     log<<"  multiple time step "<<getStride()<<" ";
     log<<cite("Ferrarotti, Bottaro, Perez-Villa, and Bussi, J. Chem. Theory Comput. 11, 139 (2015)")<<"\n";
@@ -39,9 +43,8 @@ outputForces(getNumberOfArguments(),0.0)
   for(unsigned i=0;i<getNumberOfArguments();++i){
      (getPntrToArgument(i)->getPntrToAction())->turnOnDerivatives();
   }
-  addComponentWithDerivatives("bias"); 
-  componentIsNotPeriodic("bias");
-  valueBias=getPntrToComponent("bias");
+
+  turnOnDerivatives();
 }
 
 void Bias::registerKeywords( Keywords& keys ){
@@ -60,7 +63,6 @@ void Bias::apply(){
   if(onStep()) { 
     double gstr = static_cast<double>(getStride());
     for(unsigned i=0;i<noa;++i) {
-      //valueBias->addDerivative(i,-outputForces[i]);
       getPntrToArgument(i)->addForce(gstr*outputForces[i]);
     }
   }

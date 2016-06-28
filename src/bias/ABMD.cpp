@@ -105,7 +105,6 @@ void ABMD::registerKeywords(Keywords& keys){
   keys.add("optional","NOISE","Array of white noise intensities (add a temperature to the ABMD)");
   keys.add("optional","SEED","Array of seeds for the white noise (add a temperature to the ABMD)");
   componentsAreNotOptional(keys);
-  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
   keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
   keys.addOutputComponent("_min","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
                                  " These quantities will be named with the arguments of the bias followed by "

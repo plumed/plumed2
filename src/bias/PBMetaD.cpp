@@ -231,7 +231,6 @@ PLUMED_REGISTER_ACTION(PBMetaD,"PBMETAD")
 void PBMetaD::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   componentsAreNotOptional(keys);
-  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
   keys.use("ARG");
   keys.add("compulsory","SIGMA","the widths of the Gaussian hills");
   keys.add("compulsory","PACE","the frequency for hill addition, one for all biases");
@@ -573,8 +572,6 @@ multiple_w(false), isFirstStep(true)
   if(multiple_w) log<<plumed.cite(
     "Raiteri, Laio, Gervasio, Micheletti, and Parrinello, J. Phys. Chem. B 110, 3533 (2006)");   
   log<<"\n";
-
-  turnOnDerivatives();
 }
 
 void PBMetaD::readGaussians(int iarg, IFile *ifile){

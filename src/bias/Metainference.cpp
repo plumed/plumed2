@@ -113,7 +113,6 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.add("optional","MC_STRIDE","MC stride");
   componentsAreNotOptional(keys);
   useCustomisableComponents(keys);
-  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
   keys.addOutputComponent("sigma", "default","uncertainty parameter");
   keys.addOutputComponent("scale", "default","scale parameter");
   keys.addOutputComponent("accept","default","MC acceptance");

@@ -392,7 +392,6 @@ PLUMED_REGISTER_ACTION(MetaD,"METAD")
 void MetaD::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   componentsAreNotOptional(keys);
-  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
   keys.addOutputComponent("rbias","REWEIGHTING_NGRID","the instantaneous value of the bias normalized using the \\f$c(t)\\f$ reweighting factor [rbias=bias-c(t)]."
                                                       "This component can be used to obtain a reweighted histogram.");
   keys.addOutputComponent("rct","REWEIGHTING_NGRID","the reweighting factor \\f$c(t)\\f$.");
@@ -916,8 +915,6 @@ last_step_warn_grid(0)
     log<<plumed.cite("Gil-Ley, Bottaro, and Bussi, submitted (2016)");
   }
   log<<"\n";
-
-  turnOnDerivatives();
 }
 
 void MetaD::readGaussians(IFile *ifile)

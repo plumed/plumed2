@@ -58,6 +58,7 @@ public:
 inline
 void Bias::setOutputForce(int i,double f){
   outputForces[i]=f;
+  valueBias->addDerivative(i,-f);
 }
 
 inline

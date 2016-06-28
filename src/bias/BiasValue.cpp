@@ -97,7 +97,6 @@ void BiasValue::registerKeywords(Keywords& keys){
                                             "these quantities will named with  the arguments of the bias followed by "
                                             "the character string _bias. These quantities tell the user how much the bias is "
                                             "due to each of the colvars.");
-  keys.addOutputComponent("bias","default","total bias");
 }
 
 BiasValue::BiasValue(const ActionOptions&ao):

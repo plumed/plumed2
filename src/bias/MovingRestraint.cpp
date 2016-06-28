@@ -136,7 +136,6 @@ void MovingRestraint::registerKeywords( Keywords& keys ){
                               "are kept constant during the interval of time between STEPx-1 and STEPx.");
   keys.reset_style("KAPPA","compulsory");
   componentsAreNotOptional(keys);
-  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
   keys.addOutputComponent("work","default","the total work performed changing this restraint");
   keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
   keys.addOutputComponent("_cntr","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
