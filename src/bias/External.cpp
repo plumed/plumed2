@@ -140,8 +140,6 @@ BiasGrid_(NULL)
   if(spline){log.printf("  External potential uses spline interpolation\n");}
   if(sparsegrid){log.printf("  External potential uses sparse grid\n");}
   
-  addComponent("bias"); componentIsNotPeriodic("bias");
-
 // read grid
   IFile gridfile; gridfile.open(filename);
   std::string funcl=getLabel() + ".bias";  
@@ -162,12 +160,11 @@ void External::calculate()
 
   double ene=BiasGrid_->getValueAndDerivatives(cv,der);
 
-  getPntrToComponent("bias")->set(ene);
+  setBias(ene);
 
-// set Forces 
   for(unsigned i=0;i<ncv;++i){
-   const double f=-der[i];
-   setOutputForce(i,f);
+    const double f=-der[i];
+    setOutputForce(i,f);
   }
 }
 

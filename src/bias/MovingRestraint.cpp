@@ -187,7 +187,6 @@ verse(getNumberOfArguments())
     log.printf("\n");
   };
 
-  addComponent("bias"); componentIsNotPeriodic("bias");
   addComponent("force2"); componentIsNotPeriodic("force2");
 
   // add the centers of the restraint as additional components that can be retrieved (useful for debug)
@@ -258,7 +257,7 @@ void MovingRestraint::calculate(){
   oldaa=aa;
   oldk=kk;
   olddpotdk=dpotdk;
-  getPntrToComponent("bias")->set(ene);
+  setBias(ene);
   getPntrToComponent("force2")->set(totf2);
 }
 

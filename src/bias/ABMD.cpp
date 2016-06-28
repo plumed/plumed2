@@ -147,7 +147,6 @@ random(getNumberOfArguments())
      if(min[i]!=-1.0) getPntrToComponent(str_min)->set(min[i]);
   }
   for(unsigned i=0;i<getNumberOfArguments();i++) {random[i].setSeed(-seed[i]);}
-  addComponent("bias"); componentIsNotPeriodic("bias");
   addComponent("force2"); componentIsNotPeriodic("force2");
 }
 
@@ -182,7 +181,7 @@ void ABMD::calculate(){
     std::string str_min=getPntrToArgument(i)->getName()+"_min";
     getPntrToComponent(str_min)->set(min[i]);
   }
-  getPntrToComponent("bias")->set(ene);
+  setBias(ene);
   getPntrToComponent("force2")->set(totf2);
 }
 

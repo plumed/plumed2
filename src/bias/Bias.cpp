@@ -39,6 +39,9 @@ outputForces(getNumberOfArguments(),0.0)
   for(unsigned i=0;i<getNumberOfArguments();++i){
      (getPntrToArgument(i)->getPntrToAction())->turnOnDerivatives();
   }
+  addComponentWithDerivatives("bias"); 
+  componentIsNotPeriodic("bias");
+  valueBias=getPntrToComponent("bias");
 }
 
 void Bias::registerKeywords( Keywords& keys ){
@@ -47,6 +50,7 @@ void Bias::registerKeywords( Keywords& keys ){
   ActionWithValue::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
   keys.add("hidden","STRIDE","the frequency with which the forces due to the bias should be calculated.  This can be used to correctly set up multistep algorithms");
+  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
 }
 
 void Bias::apply(){
@@ -54,9 +58,11 @@ void Bias::apply(){
   const unsigned ncp=getNumberOfComponents();
 
   if(onStep()) { 
-    double gstr = static_cast<double>(getStride()); 
-    for(unsigned i=0;i<noa;++i)
+    double gstr = static_cast<double>(getStride());
+    for(unsigned i=0;i<noa;++i) {
+      //valueBias->addDerivative(i,-outputForces[i]);
       getPntrToArgument(i)->addForce(gstr*outputForces[i]);
+    }
   }
 
   // additional forces on the bias component

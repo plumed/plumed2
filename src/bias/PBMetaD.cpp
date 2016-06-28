@@ -430,8 +430,6 @@ multiple_w(false), isFirstStep(true)
    }
   }
 
-  addComponentWithDerivatives("bias"); componentIsNotPeriodic("bias");
-
   // initializing vector of hills
   hills_.resize(getNumberOfArguments());
 
@@ -757,13 +755,12 @@ void PBMetaD::calculate()
   for(unsigned i=0; i<getNumberOfArguments(); ++i){
     const double f = - exp(-bias[i]/kbt_) / (ene) * deriv[i];
     setOutputForce(i, f);
-    getPntrToComponent("bias")->addDerivative(i,-f);
   }
   delete [] der;
 
   // set bias
   ene = -kbt_ * (std::log(ene) - std::log(ncv));
-  getPntrToComponent("bias")->set(ene);
+  setBias(ene);
 }
 
 void PBMetaD::update()

@@ -125,7 +125,6 @@ class ExtendedLagrangian : public Bias{
   std::vector<double> friction;
   std::vector<Value*> fictValue;
   std::vector<Value*> vfictValue;
-  Value* valueBias;
   double kbt;
   Random rand;
 public:
@@ -166,7 +165,6 @@ tau(getNumberOfArguments(),0.0),
 friction(getNumberOfArguments(),0.0),
 fictValue(getNumberOfArguments(),NULL),
 vfictValue(getNumberOfArguments(),NULL),
-valueBias(NULL),
 kbt(0.0)
 {
   parseVector("TAU",tau);
@@ -214,10 +212,6 @@ kbt(0.0)
     vfictValue[i]=getPntrToComponent(comp);
   }
 
-  addComponent("bias");
-  componentIsNotPeriodic("bias");
-  valueBias=getPntrToComponent("bias");
-
   log<<"  Bibliography "<<plumed.cite("Iannuzzi, Laio, and Parrinello, Phys. Rev. Lett. 90, 238302 (2003)");
   if(hasFriction){
     log<<plumed.cite("Maragliano and Vanden-Eijnden, Chem. Phys. Lett. 426, 168 (2006)");
@@ -244,7 +238,7 @@ void ExtendedLagrangian::calculate(){
     setOutputForce(i,f);
     ffict[i]=-f;
   };
-  valueBias->set(ene);
+  setBias(ene);
   for(unsigned i=0;i<getNumberOfArguments();++i){
     fict[i]=fictValue[i]->bringBackInPbc(fict[i]);
     fictValue[i]->set(fict[i]);

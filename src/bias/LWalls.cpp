@@ -123,7 +123,6 @@ offset(getNumberOfArguments(),0.0)
   for(unsigned i=0;i<eps.size();i++) log.printf(" %f",eps[i]);
   log.printf("\n");
 
-  addComponent("bias"); componentIsNotPeriodic("bias");
   addComponent("force2"); componentIsNotPeriodic("force2");
 }
 
@@ -146,7 +145,7 @@ void LWalls::calculate(){
     }
     setOutputForce(i,f);
   }
-  getPntrToComponent("bias")->set(ene); 
+  setBias(ene);
   getPntrToComponent("force2")->set(totf2);  
 }
 

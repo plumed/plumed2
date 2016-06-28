@@ -105,25 +105,21 @@ PLUMED_BIAS_INIT(ao)
 {
   checkRead();
   // add one bias for each argument  
- // addComponent("bias");
   for(unsigned i=0;i<getNumberOfArguments();++i){ 
-	//log<<getPntrToArgument(i)->getName()<<"\n";
         string ss=getPntrToArgument(i)->getName()+"_bias";
 	addComponent(ss); componentIsNotPeriodic(ss);
   }
-  addComponent("bias"); componentIsNotPeriodic("bias");
 }
 
 void BiasValue::calculate(){
   double bias=0.0;
-for(unsigned i=0;i< getNumberOfArguments() ;++i){
-  double val; val=getArgument(i); 
-//  log<<"BIAS "<<val<<"\n";
-  getPntrToComponent(i)->set(val);
-  setOutputForce(i,-1.);
-  bias+=val;
-}
-  getPntrToComponent(getNumberOfArguments())->set(bias);
+  for(unsigned i=0;i< getNumberOfArguments() ;++i){
+    double val; val=getArgument(i); 
+    getPntrToComponent(i)->set(val);
+    setOutputForce(i,-1.);
+    bias+=val;
+  }
+  setBias(bias);
 }
 
 }

@@ -43,9 +43,11 @@ class Bias :
   public ActionWithArguments
 {
   std::vector<double> outputForces;
+  Value *valueBias;
 protected:
   void resetOutputForces();
   void setOutputForce(int i,double g);
+  void setBias(double bias);
 public:
   static void registerKeywords(Keywords&);
   explicit Bias(const ActionOptions&ao);
@@ -56,6 +58,11 @@ public:
 inline
 void Bias::setOutputForce(int i,double f){
   outputForces[i]=f;
+}
+
+inline
+void Bias::setBias(double bias){
+ valueBias->set(bias); 
 }
 
 inline

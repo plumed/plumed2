@@ -70,7 +70,6 @@ class Metainference : public Bias
   unsigned MCaccept_;
   long int MCfirst_;
   // output
-  Value* valueBias;
   Value* valueScale;
   Value* valueAccept;
   vector<Value*> valueSigma;
@@ -249,9 +248,6 @@ MCfirst_(-1)
   log.printf("  MC steps %u\n",MCsteps_);
   log.printf("  MC stride %u\n",MCstride_);
 
-  addComponent("bias");
-  componentIsNotPeriodic("bias");
-  valueBias=getPntrToComponent("bias");
   if(doscale_) { 
     addComponent("scale");  
     componentIsNotPeriodic("scale");
@@ -491,7 +487,7 @@ void Metainference::calculate(){
       break;
   }
   // set value of the bias
-  valueBias->set(kbt_*ene);
+  setBias(kbt_*ene);
 }
 
 }

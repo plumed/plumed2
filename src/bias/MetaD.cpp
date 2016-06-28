@@ -718,7 +718,6 @@ last_step_warn_grid(0)
     if(walkers_mpi) log.printf("  Multiple walkers active using MPI communnication\n"); 
   }
 
-  addComponentWithDerivatives("bias"); componentIsNotPeriodic("bias");
   if( rewf_grid_.size()>0 ){ 
     addComponent("rbias"); componentIsNotPeriodic("rbias");
     addComponent("rct"); componentIsNotPeriodic("rct"); 
@@ -1267,7 +1266,7 @@ void MetaD::calculate()
     der[i]=0.;
   }
   const double ene = getBiasAndDerivatives(cv,der);
-  getPntrToComponent("bias")->set(ene);
+  setBias(ene);
   if( rewf_grid_.size()>0 ) getPntrToComponent("rbias")->set(ene - reweight_factor);
   // calculate the acceleration factor
   if(acceleration&&!isFirstStep) {
@@ -1278,9 +1277,7 @@ void MetaD::calculate()
   getPntrToComponent("work")->set(work_);
   // set Forces 
   for(unsigned i=0;i<ncv;++i){
-    const double f=-der[i];
-    setOutputForce(i,f);
-    getPntrToComponent("bias")->addDerivative(i,der[i]);
+    setOutputForce(i,-der[i]);
   }
   delete [] der;
 }
