@@ -39,7 +39,7 @@ Changes from version 2.2 which are relevant for users:
   - Manual is now build with locally compiled plumed
   - Removed CH3SHIFT
   - \ref CS2BACKBONE is now native in PLUMED removing the need to link ALMOST, small syntax differences
-  - \ref CS2BACKBONE, \ref NOE, \ref \RDC, removed the keyword ENSEMBLE: now ensemble averages can only be calculated using \ref ENSEMBLE
+  - \ref CS2BACKBONE, \ref NOE, \ref RDC, removed the keyword ENSEMBLE: now ensemble averages can only be calculated using \ref ENSEMBLE
   - \ref RDC, syntax changes
   - \ref CONSTANT, syntax changes and added the possibility of storing more values as components with or without derivatives
   - It is not possible anymore to select modules using `modulename.on` and `modulename.off` files. Use `./configure --enable-modules` instead.
@@ -76,8 +76,10 @@ Changes from version 2.2 which are relevant for users:
   - Patch for amber 14 now passes charges with appropriate units (fixes \issue{165}). Notice that
     the patch is still backward compatible with older PLUMED version, but the charges will only be passed
     when using PLUMED 2.3 or later.
-  - Patches for GROMACS 4.6 and 5.1 incorporate Hamiltonian replica exchange, see \ref hrex
-  - Gromacs 2016, 5.1.x, 5.0.x, flush the plumed output files upon checkpointing 
+  - Patch for GROMACS 5.1 incorporates Hamiltonian replica exchange, see \ref hrex
+  - Gromacs 2016, 5.1.x, 5.0.x, flush the plumed output files upon checkpointing
+  - Added patch for Gromacs 2016
+  - Removed the patch for Gromacs 4.6.x 
 - New features for existing actions:
   - The SPECIES and SPECIESA keyword in MultiColvars can now take a multicolvar as input.  This allows one
     to calculate quantities such as the Q4 parameters for those atoms that have a coordination number greater
