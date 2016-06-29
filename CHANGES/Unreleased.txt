@@ -92,6 +92,9 @@ Changes from version 2.2 which are relevant for users:
   - More and more documentation
 
 For developers:
+- IMPORTANT: BIAS can now be BIASED as well, this changes can lead to some incompatibility: now the "bias" component is always defined automatically
+  by the constructure as a componentWithDerivatives, derivatives are automaticcaly obtained by forces. The main change is that you don't have to define
+  the bias component anymore in your constructor and that you can use setBias(value) to set the value of the bias component in calculate. 
 - Added new strings for plumed cmd: setMDMassUnits, setMDChargeUnits, readInputLine, performCalcNoUpdate, update and doCheckPoint.
 - Easier to add actions with multiple arguments
 - New functions to access local quantities in domain decomposition
