@@ -69,9 +69,6 @@ namespace PLMD {
 namespace bias {
 
 class ReweightBias : public ReweightBase {
-private:
-/// The biases we are using in reweighting and the args we store them separately
-  std::vector<Value*> biases;
 public:
   static void registerKeywords(Keywords&);
   explicit ReweightBias(const ActionOptions&ao);
@@ -81,20 +78,19 @@ public:
 PLUMED_REGISTER_ACTION(ReweightBias,"REWEIGHT_BIAS")
 
 void ReweightBias::registerKeywords(Keywords& keys ){
-  ReweightBase::registerKeywords( keys );
+  ReweightBase::registerKeywords( keys ); keys.remove("ARG");
+  keys.add("compulsory","ARG","*.bias","the biases that must be taken into account when reweighting");
 }
 
 ReweightBias::ReweightBias(const ActionOptions&ao):
 Action(ao),
 ReweightBase(ao)
 {
-   retrieveAllBiases( "bias", biases );
-   if( biases.empty() ) error("there does not appear to be a bias acting on your system");
 }
 
 double ReweightBias::getLogWeight() const {
    // Retrieve the bias
-   double bias=0.0; for(unsigned i=0;i<biases.size();++i) bias+=biases[i]->get();  
+   double bias=0.0; for(unsigned i=0;i<getNumberOfArguments();++i) bias+=getArgument(i);
    return bias / simtemp;
 }
 

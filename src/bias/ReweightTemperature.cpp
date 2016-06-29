@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
+#include "core/ActionSet.h"
 #include "core/Atoms.h"
 #include "ReweightBase.h"
 
@@ -77,7 +78,17 @@ ReweightBase(ao)
    log.printf("  reweighting simulation to probabilities at temperature %f\n",rtemp);
    rtemp*=plumed.getAtoms().getKBoltzmann();
 
-   retrieveAllBiases( "bias", biases );
+   std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
+   if( all.empty() ) error("your input file is not telling plumed to calculate anything");
+   log.printf("  using the following biases in reweighting ");
+   for(unsigned j=0;j<all.size();j++){
+       std::string flab; flab=all[j]->getLabel() + ".bias";
+       if( all[j]->exists(flab) ){
+           biases.push_back( all[j]->copyOutput(flab) );
+           log.printf(" %s", flab.c_str());
+       }
+   }
+   log.printf("\n");
 }
 
 void ReweightTemperature::prepare(){

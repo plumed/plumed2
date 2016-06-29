@@ -1,4 +1,4 @@
-SUBDIRS := basic $(shell ./scripts/find_modules.sh)
+SUBDIRS := basic metainference $(shell ./scripts/find_modules.sh)
 SUBDIRSCLEAN := $(addsuffix .clean,$(SUBDIRS))
 SUBDIRSVALGRIND := $(addsuffix .valgrind,$(SUBDIRS))
 

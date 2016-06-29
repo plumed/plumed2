@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/PlumedMain.h"
-#include "core/ActionSet.h"
 #include "core/Atoms.h"
 #include "ReweightBase.h"
 
@@ -47,21 +46,6 @@ ActionWithArguments(ao)
    if(simtemp==0) error("The MD engine does not pass the temperature to plumed so you have to specify it using TEMP");
    // Create something to hold the weight 
    addValue(); setNotPeriodic();
-}
-
-void ReweightBase::retrieveAllBiases( const std::string& lab, std::vector<Value*>& vals ){
-   std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
-   if( all.empty() ) error("your input file is not telling plumed to calculate anything");
-   log.printf("  using the following biases in reweighting ");
-   for(unsigned j=0;j<all.size();j++){
-       std::string flab; flab=all[j]->getLabel() + "." + lab;
-       if( all[j]->exists(flab) ){
-           vals.push_back( all[j]->copyOutput(flab) );
-           log.printf(" %s", flab.c_str());
-       }
-   }
-   log.printf("\n");
-   if( !vals.empty() ) requestArguments( vals );   
 }
 
 void ReweightBase::calculate(){

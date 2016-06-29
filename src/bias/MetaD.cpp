@@ -391,8 +391,6 @@ PLUMED_REGISTER_ACTION(MetaD,"METAD")
 
 void MetaD::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
-  componentsAreNotOptional(keys);
-  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
   keys.addOutputComponent("rbias","REWEIGHTING_NGRID","the instantaneous value of the bias normalized using the \\f$c(t)\\f$ reweighting factor [rbias=bias-c(t)]."
                                                       "This component can be used to obtain a reweighted histogram.");
   keys.addOutputComponent("rct","REWEIGHTING_NGRID","the reweighting factor \\f$c(t)\\f$.");
@@ -718,7 +716,6 @@ last_step_warn_grid(0)
     if(walkers_mpi) log.printf("  Multiple walkers active using MPI communnication\n"); 
   }
 
-  addComponentWithDerivatives("bias"); componentIsNotPeriodic("bias");
   if( rewf_grid_.size()>0 ){ 
     addComponent("rbias"); componentIsNotPeriodic("rbias");
     addComponent("rct"); componentIsNotPeriodic("rct"); 
@@ -917,8 +914,6 @@ last_step_warn_grid(0)
     log<<plumed.cite("Gil-Ley, Bottaro, and Bussi, submitted (2016)");
   }
   log<<"\n";
-
-  turnOnDerivatives();
 }
 
 void MetaD::readGaussians(IFile *ifile)
@@ -1267,7 +1262,7 @@ void MetaD::calculate()
     der[i]=0.;
   }
   const double ene = getBiasAndDerivatives(cv,der);
-  getPntrToComponent("bias")->set(ene);
+  setBias(ene);
   if( rewf_grid_.size()>0 ) getPntrToComponent("rbias")->set(ene - reweight_factor);
   // calculate the acceleration factor
   if(acceleration&&!isFirstStep) {
@@ -1278,9 +1273,7 @@ void MetaD::calculate()
   getPntrToComponent("work")->set(work_);
   // set Forces 
   for(unsigned i=0;i<ncv;++i){
-    const double f=-der[i];
-    setOutputForce(i,f);
-    getPntrToComponent("bias")->addDerivative(i,der[i]);
+    setOutputForce(i,-der[i]);
   }
   delete [] der;
 }
