@@ -39,7 +39,7 @@ Changes from version 2.2 which are relevant for users:
   - Manual is now build with locally compiled plumed
   - Removed CH3SHIFT
   - \ref CS2BACKBONE is now native in PLUMED removing the need to link ALMOST, small syntax differences
-  - \ref CS2BACKBONE, \ref NOE, \ref \RDC, removed the keyword ENSEMBLE: now ensemble averages can only be calculated using \ref ENSEMBLE
+  - \ref CS2BACKBONE, \ref NOE, \ref RDC, removed the keyword ENSEMBLE: now ensemble averages can only be calculated using \ref ENSEMBLE
   - \ref RDC, syntax changes
   - \ref CONSTANT, syntax changes and added the possibility of storing more values as components with or without derivatives
   - It is not possible anymore to select modules using `modulename.on` and `modulename.off` files. Use `./configure --enable-modules` instead.
