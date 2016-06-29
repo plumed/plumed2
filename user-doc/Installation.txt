@@ -41,7 +41,7 @@ you will have to compile PLUMED first, then (optionally) install it, then check 
 discover how to link it.
 
 If you are using a Mac, notice that we are providing tentative port files to install
-PLUMED with MacPorts. Follow the instructions <a href=\"http://github.com/plumed/ports">here</a>
+PLUMED with MacPorts. Follow the instructions at [this link](http://github.com/plumed/ports)
 and report feedbacks on the mailing list.
 
 \section ConfiguringPlumed Configuring PLUMED

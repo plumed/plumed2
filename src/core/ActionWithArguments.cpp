@@ -47,7 +47,11 @@ void ActionWithArguments::registerKeywords(Keywords& keys){
 }
 
 void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Value*>&arg){
-  vector<string> c; arg.clear(); parseVector(key,c); interpretArgumentList(c,arg);
+  vector<string> c; arg.clear(); parseVector(key,c); 
+  if( c.size()==0 && (keywords.style(key,"compulsory") || keywords.style(key,"hidden")) ){
+    std::string def; if( keywords.getDefaultValue(key,def) ) c.push_back( def );
+  }
+  interpretArgumentList(c,arg);
 }
 
 bool ActionWithArguments::parseArgumentList(const std::string&key,int i,std::vector<Value*>&arg){
@@ -60,7 +64,6 @@ bool ActionWithArguments::parseArgumentList(const std::string&key,int i,std::vec
 }
 
 void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& c, std::vector<Value*>&arg){
-  
   for(unsigned i=0;i<c.size();i++){
       // is a regex? then just interpret it. The signal is () 
       std::size_t found1 = c[i].find("(");

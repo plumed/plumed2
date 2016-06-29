@@ -35,8 +35,6 @@ public ActionWithArguments
 protected:
 /// The temperature at which you are running the simulation
   double simtemp;
-/// Retrieve all the values with a label ending in .lab
-  void retrieveAllBiases( const std::string& lab, std::vector<Value*>& vals );
 public:
   static void registerKeywords(Keywords&);
   explicit ReweightBase(const ActionOptions&ao);

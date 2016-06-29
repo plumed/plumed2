@@ -32,6 +32,10 @@ ActionWithValue(ao),
 ActionWithArguments(ao),
 outputForces(getNumberOfArguments(),0.0)
 {
+  addComponentWithDerivatives("bias"); 
+  componentIsNotPeriodic("bias");
+  valueBias=getPntrToComponent("bias");
+
   if(getStride()>1){
     log<<"  multiple time step "<<getStride()<<" ";
     log<<cite("Ferrarotti, Bottaro, Perez-Villa, and Bussi, J. Chem. Theory Comput. 11, 139 (2015)")<<"\n";
@@ -39,6 +43,8 @@ outputForces(getNumberOfArguments(),0.0)
   for(unsigned i=0;i<getNumberOfArguments();++i){
      (getPntrToArgument(i)->getPntrToAction())->turnOnDerivatives();
   }
+
+  turnOnDerivatives();
 }
 
 void Bias::registerKeywords( Keywords& keys ){
@@ -47,6 +53,8 @@ void Bias::registerKeywords( Keywords& keys ){
   ActionWithValue::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
   keys.add("hidden","STRIDE","the frequency with which the forces due to the bias should be calculated.  This can be used to correctly set up multistep algorithms");
+  componentsAreNotOptional(keys);
+  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
 }
 
 void Bias::apply(){
@@ -54,9 +62,10 @@ void Bias::apply(){
   const unsigned ncp=getNumberOfComponents();
 
   if(onStep()) { 
-    double gstr = static_cast<double>(getStride()); 
-    for(unsigned i=0;i<noa;++i)
+    double gstr = static_cast<double>(getStride());
+    for(unsigned i=0;i<noa;++i) {
       getPntrToArgument(i)->addForce(gstr*outputForces[i]);
+    }
   }
 
   // additional forces on the bias component

@@ -113,8 +113,6 @@ void External::registerKeywords(Keywords& keys){
   keys.add("compulsory","FILE","the name of the file containing the external potential.");
   keys.addFlag("NOSPLINE",false,"specifies that no spline interpolation is to be used when calculating the energy and forces due to the external potential");
   keys.addFlag("SPARSE",false,"specifies that the external potential uses a sparse grid");
-  componentsAreNotOptional(keys);
-  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
 }
 
 External::~External(){
@@ -140,8 +138,6 @@ BiasGrid_(NULL)
   if(spline){log.printf("  External potential uses spline interpolation\n");}
   if(sparsegrid){log.printf("  External potential uses sparse grid\n");}
   
-  addComponent("bias"); componentIsNotPeriodic("bias");
-
 // read grid
   IFile gridfile; gridfile.open(filename);
   std::string funcl=getLabel() + ".bias";  
@@ -162,12 +158,11 @@ void External::calculate()
 
   double ene=BiasGrid_->getValueAndDerivatives(cv,der);
 
-  getPntrToComponent("bias")->set(ene);
+  setBias(ene);
 
-// set Forces 
   for(unsigned i=0;i<ncv;++i){
-   const double f=-der[i];
-   setOutputForce(i,f);
+    const double f=-der[i];
+    setOutputForce(i,f);
   }
 }
 

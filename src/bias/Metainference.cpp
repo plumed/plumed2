@@ -92,7 +92,6 @@ class Metainference : public Bias
   unsigned MCaccept_;
   long int MCfirst_;
   // output
-  Value* valueBias;
   Value* valueScale;
   Value* valueAccept;
   Value* valueRSigmaMean;
@@ -155,9 +154,7 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.add("optional","TEMP","the system temperature - this is only needed if code doesnt' pass the temperature to plumed");
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_STRIDE","MC stride");
-  componentsAreNotOptional(keys);
   useCustomisableComponents(keys);
-  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
   keys.addOutputComponent("sigma", "default","uncertainty parameter");
   keys.addOutputComponent("sigmaMean","default","uncertainty in the mean estimate");
   keys.addOutputComponent("scale", "default","scale parameter");
@@ -338,9 +335,6 @@ atoms(plumed.getAtoms())
     log.printf("\n");
   }
 
-  addComponent("bias");
-  componentIsNotPeriodic("bias");
-  valueBias=getPntrToComponent("bias");
   if(doscale_) { 
     addComponent("scale");  
     componentIsNotPeriodic("scale");
@@ -806,7 +800,7 @@ void Metainference::calculate(){
   }
 
   // set value of the bias
-  valueBias->set(ene);
+  setBias(ene);
 }
 
 }
