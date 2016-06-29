@@ -1,8 +1,16 @@
 /**
 
-@page CHANGES-UNRELEASED Unreleased changes
+@page CHANGES-2-3 Version 2.3
 
-This page contains changes that will end up in 2.3
+Version 2.3 beta (xxx)
+----------------------------
+
+Version 2.3 contains several improvements with respect to 2.2. Users currently working with 2.2
+should have a look at the section "Changes leading to incompatible behavior" below and
+might need tiny adjustments in their input files.
+
+Below you find a list of all the changes with respect to version 2.2.
+Notice that version 2.3 includes already all the fixes in branch 2.2 up to 2.2.4 indicated in \ref CHANGES-2-2 .
 
 Changes from version 2.2 which are relevant for users:
 - Changes leading to incompatible behavior:
