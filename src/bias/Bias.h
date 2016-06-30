@@ -42,11 +42,16 @@ class Bias :
   public ActionWithValue,
   public ActionWithArguments
 {
+/// the vector of the forces
   std::vector<double> outputForces;
+/// the pointer to the bias component
   Value *valueBias;
 protected:
+/// set the forces to zero
   void resetOutputForces();
-  void setOutputForce(int i,double g);
+/// set the force from the bias on argument i, this automatically set the partial derivative of the bias with respect to i to -f
+  void setOutputForce(int i,double f);
+/// set the value of the bias
   void setBias(double bias);
 public:
   static void registerKeywords(Keywords&);

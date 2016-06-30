@@ -42,6 +42,73 @@ namespace bias{
 /*
 Calculate the Metainference Score for a set of back calculated experimental data.
 
+
+The back calculated data, that are expected to be averages over replicas (NR=1,2,..,N)
+The functional form of this bias can be chosen between three variants selected
+with NOISE=GAUSS,MGAUSS,OUTLIERS which correspond to modelling the noise for
+the arguments as a single gaussian common to all the data points, a gaussian per data
+point or a single long-tailed gaussian common to all the data points.
+
+As from Metainference theory there are two sigma values: SIGMA_MEAN represent the
+error of calculating an average quanity using a finite set of replica and should
+be set as small as possible following the guidelines for replica-averaged simulations
+in the framework of the Maximum Entropy Principle. 
+SIGMA_BIAS is an uncertainty parameter, sampled by a MC algorithm in the bounded interval 
+defined by SIGMA_MIN and SIGMA_MAX. The initial value is set at SIGMA0. The MC move is a 
+random displacement of maximum value equal to DSIGMA.
+
+\par Examples
+
+In the following example we calculate a set of \ref RDC, take the replica-average of
+them and comparing them with a set of experimental values. RDCs are compared with
+the experimental data but for a multiplication factor SCALE that is also sampled by
+MC on-the-fly
+
+\verbatim
+RDC ...
+LABEL=rdc
+SCALE=0.0001
+GYROM=-72.5388
+ATOMS1=22,23
+ATOMS2=25,27
+ATOMS3=29,31
+ATOMS4=33,34
+... RDC
+
+ardc: ENSEMBLE ARG=rdc.*
+
+METAINFERENCE ...
+ARG=ardc.*
+NOISETYPE=MGAUSS
+PARAMETERS=1.9190,2.9190,3.9190,4.9190
+SCALEDATA SCALE0=1 SCALE_MIN=0.00001 SCALE_MAX=3 DSCALE=0.00 
+SIGMA0=0.01 SIGMA_MIN=0.00001 SIGMA_MAX=3 DSIGMA=0.00 
+SIGMA_MEAN=0.001
+TEMP=300
+LABEL=spe
+... METAINFERENCE 
+
+PRINT ARG=spe.bias FILE=BIAS STRIDE=1 
+\endverbatim
+
+in the following example instead of using one uncertainty parameter per data point we use
+a single uncertainty value in a long-tailed gaussian to take into account for outliers.
+
+\verbatim
+METAINFERENCE ...
+ARG=ardc.*
+NOISETYPE=OUTLIERS
+PARAMETERS=1.9190,2.9190,3.9190,4.9190
+SCALEDATA SCALE0=1 SCALE_MIN=0.00001 SCALE_MAX=3 DSCALE=0.00 
+SIGMA0=0.01 SIGMA_MIN=0.00001 SIGMA_MAX=3 DSIGMA=0.00 
+SIGMA_MEAN=0.001
+TEMP=300
+LABEL=spe
+... METAINFERENCE 
+\endverbatim
+
+(See also \ref RDC and \ref ENSEMBLE).
+
 */
 //+ENDPLUMEDOC
 

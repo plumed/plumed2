@@ -137,7 +137,7 @@ For developers:
   in cmd strings.
 - ./configure is not automatically relaunched anymore when doing `make clean`.
 
-Unreleased changes (will be included in 2.2.3)
+Version 2.2.3 (coming soon)
 ----------------------------------------------
 
 For users:
@@ -152,6 +152,7 @@ For users:
 - \ref LOAD now works also when plumed is installed with a suffix.
 - Added `--md-root` option to `plumed patch` which allows it to be run from a directory different from the one
   where the md code is located.
+- Wham script in \ref munster tutorial now writes weights in scientific notation.
 
 For developers:
 - `./configure` checks if dependencies can be generated. If not, they are disabled.
