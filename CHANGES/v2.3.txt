@@ -2,10 +2,10 @@
 
 @page CHANGES-2-3 Version 2.3
 
-Version 2.3 beta (xxx)
+Version 2.3 (coming soon)
 ----------------------------
 
-Version 2.3 contains several improvements with respect to 2.2. Users currently working with 2.2
+Version 2.3 (coming soon)
 should have a look at the section "Changes leading to incompatible behavior" below and
 might need tiny adjustments in their input files.
 
