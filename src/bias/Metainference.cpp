@@ -828,7 +828,7 @@ void Metainference::calculate(){
   comm.Sum(&mean[0], narg);
 
   /* this is SIGMA_MEAN before the corrections due to the #DOF and the SCALING */
-  sigma_mean_[0] = 0.; 
+  if(!isFirstStep) sigma_mean_[0] = 0.; 
   const double it = 1./static_cast<double>(step-MCfirst_+1);
   for(unsigned i=0;i<narg;++i) { 
     shifted_mean = mean[i]-loc_par_[i];
