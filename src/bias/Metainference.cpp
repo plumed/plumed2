@@ -73,6 +73,7 @@ class Metainference : public Bias
   // sigma_mean rescue params
   double sm_mod_;
   double sm_mod_min_;
+  double sm_mod_min_hard_;
   double Dsm_mod_;
 
   // this is needed for a numerically stable variance calc
@@ -290,6 +291,7 @@ atoms(plumed.getAtoms())
       parse("SIGMA_MEAN_MOD0", sm_mod_);
       parse("SIGMA_MEAN_MOD_MIN", sm_mod_min_);
       parse("DSIGMA_MEAN_MOD", Dsm_mod_);
+      sm_mod_min_hard_=sm_mod_;
   }
 
   checkRead();
@@ -646,8 +648,8 @@ void Metainference::update() {
 
     vector<double> fmax_tmp_md(comm.Get_size(),0);
     vector<double> fmax_tmp_plumed(comm.Get_size(),0);
-    unsigned nfmax = 0;
-    unsigned nfmax_md = 0;
+    vector<double> nfmax(nrep_, 0);
+    vector<double> nfmax_md(nrep_, 0);
 
     /* each local thread should look for the maximum force and number of violations */
     if(allforces_md.size()>0) {
@@ -655,10 +657,10 @@ void Metainference::update() {
       fmax_tmp_plumed[comm.Get_rank()] = *max_element(allforces_plumed.begin(), allforces_plumed.end());
       for(unsigned i = 0; i < allforces_md.size(); ++i) {
         if(allforces_plumed[i] > max_plumed_force_) {
-          nfmax += 1;
-          if(allforces_md[i] > max_md_force_) {
-            nfmax_md += 1;
-          }
+          nfmax[replica_] += allforces_plumed[i]/max_plumed_force_;
+        }
+        if(allforces_md[i] > max_md_force_) {
+          nfmax_md[replica_] += allforces_md[i]/max_md_force_;
         }
       }
     }
@@ -673,27 +675,29 @@ void Metainference::update() {
     // the number of violations is summed up over the local thread and over the replicas 
     comm.Sum(nfmax);
     comm.Sum(nfmax_md);
-    if(comm.Get_rank() == 0) {
+    if(master && nrep_ > 1) {
       multi_sim_comm.Sum(nfmax);
       multi_sim_comm.Sum(nfmax_md);
     }
-    // and resent to all the threads
-    comm.Bcast(nfmax,0);
-    comm.Bcast(nfmax_md,0);
+    comm.Bcast(&nfmax[0], nrep_, 0);
+    comm.Bcast(&nfmax_md[0], nrep_, 0);
+    
+    const double nnfmax_md = (*max_element(nfmax_md.begin(), nfmax_md.end()))*nrep_;
+    const double nnfmax    = (*max_element(nfmax.begin(), nfmax.end()))*nrep_;
 
     // if no violations then we minimise sm_mod_ (and also sm_mod_min_ if needed)
-    if(nfmax == 0) {
+    if(nnfmax == 0 && nnfmax_md == 0) {
       sm_mod_ -= Dsm_mod_ * 0.01 * std::log(sm_mod_/sm_mod_min_);
       if((sm_mod_-sm_mod_min_)<Dsm_mod_) {
         double sm_mod_min_new = sm_mod_min_ - Dsm_mod_;
-        if(sm_mod_min_new > 0.000001) sm_mod_min_ = sm_mod_min_new;
+        if(sm_mod_min_new > sm_mod_min_hard_) sm_mod_min_ = sm_mod_min_new;
       }
     // otherwise we increase sm_mod_ and also sm_mod_min_ if needed
     } else {
-      sm_mod_ += Dsm_mod_ * nfmax;
-      if(nfmax_md > 0) {
-        sm_mod_min_ += nfmax_md * Dsm_mod_;
-        sm_mod_ += Dsm_mod_ * nfmax_md;
+      sm_mod_ += Dsm_mod_ * nnfmax;
+      if(nnfmax_md > 0) {
+        sm_mod_min_ += nnfmax_md * Dsm_mod_;
+        sm_mod_ += Dsm_mod_ * nnfmax_md;
       }
     }
 
