@@ -93,7 +93,7 @@ IFile& IFile::advanceField(){
           }
           done=true;
       } else if( !words.empty() ) {
-          plumed_merror("mismatch between number of fields in file and expected number");
+          plumed_merror(getPath() + " mismatch between number of fields in file and expected number");
       }
     }
   }
