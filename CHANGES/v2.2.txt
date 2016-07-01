@@ -137,7 +137,7 @@ For developers:
   in cmd strings.
 - ./configure is not automatically relaunched anymore when doing `make clean`.
 
-Version 2.2.3 (coming soon)
+Version 2.2.3 (Jun 30, 2016)
 ----------------------------------------------
 
 For users:
@@ -145,7 +145,8 @@ For users:
   closed gromacs log file.
 - When looking for a value outside the GRID now the error include the name of the responsible 
   collective variable
-- Numerical check in LatticeReduction made less picky.
+- Numerical check in LatticeReduction made less picky. This should solve some of the internal errors reported
+  by `LatticeReduction.cpp` when using aggressive compilers.
 - Files are now flushed at the correct step. Before this fix, they were flushed at the step before the requested one
   (e.g. with \ref FLUSH STRIDE=100 at step 99, 199, etc).
 - In \ref METAD, INTERVAL with periodic variables now report an error.
