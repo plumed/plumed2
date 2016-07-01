@@ -66,10 +66,9 @@ nframes(0)
          RMSD mymsd; 
          do_read=mypdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
          if(do_read){
-            unsigned nat=0;
             nframes++;
             if(mypdb.getAtomNumbers().size()==0) error("number of atoms in a frame should be more than zero");
-            if(nat==0) nat=mypdb.getAtomNumbers().size();
+            unsigned nat=mypdb.getAtomNumbers().size();
             if(nat!=mypdb.getAtomNumbers().size()) error("frames should have the same number of atoms");
             if(aaa.empty()) aaa=mypdb.getAtomNumbers();
             if(aaa!=mypdb.getAtomNumbers()) error("frames should contain same atoms in same order");
