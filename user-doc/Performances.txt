@@ -114,8 +114,17 @@ See also \subpage EFFECTIVE_ENERGY_DRIFT.
 
 \page Multicolvar Multicolvar
 
-TO DO
+Whenever you have a multicolvar action such as:
 
+\verbatim
+COORDINATIONNUMBER SPECIES=1-100 SWITCH={RATIONAL R_0=1. D_MAX=3.0} MORE_THAN={RATIONAL R_0=6.0 NN=6 MM=12 D_0=0}
+\endvarbatim
+
+You will get a collosal speedup by specifying the D_MAX keyword in all switching functions that act on distances.
+D_MAX tells PLUMED that the switching function is strictly zero if the distance is greater than this value.  As a result
+PLUMED knows that it does not need to calculate these zero terms in what are essentially sums with a very lage number of terms.
+In fact when D_MAX is set PLUMED uses linked lists when calculating these coordination numbers, which is what 
+gives you such a dramatic increase in performance.
 
 \page Neighbour Neighbour Lists
 
