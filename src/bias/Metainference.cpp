@@ -135,7 +135,6 @@ class Metainference : public Bias
   // sigma_mean is uncertainty in the mean estimate
   vector<double> sigma_mean_;
   vector<double> variance_;
-  vector<double> h_mean_;
 
   // sigma_mean rescue params
   double sm_mod_;
@@ -330,7 +329,6 @@ atoms(plumed.getAtoms())
 
   // variance is always the size of narg
   variance_.resize(narg,0);
-  h_mean_.resize(narg,0);
   loc_par_.resize(narg,0);
   // while sigma_mean_ has the same size of sigma
   vector<double> read_sigma_mean_;
@@ -358,7 +356,7 @@ atoms(plumed.getAtoms())
       parse("SIGMA_MEAN_MOD0", sm_mod_);
       parse("SIGMA_MEAN_MOD_MIN", sm_mod_min_);
       parse("DSIGMA_MEAN_MOD", Dsm_mod_);
-      sm_mod_min_hard_=sm_mod_;
+      sm_mod_min_hard_=sm_mod_min_;
   }
 
   checkRead();
@@ -761,10 +759,10 @@ void Metainference::update() {
       }
     // otherwise we increase sm_mod_ and also sm_mod_min_ if needed
     } else {
-      sm_mod_ += Dsm_mod_ * nnfmax;
+      sm_mod_ += Dsm_mod_ * std::log(nnfmax_md+1.);
       if(nnfmax_md > 0) {
-        sm_mod_min_ += nnfmax_md * Dsm_mod_;
-        sm_mod_ += Dsm_mod_ * nnfmax_md;
+        sm_mod_min_ += std::log(nnfmax_md+1.) * Dsm_mod_;
+        sm_mod_ += Dsm_mod_ * std::log(nnfmax_md+1.);
       }
     }
 
@@ -829,17 +827,35 @@ void Metainference::calculate(){
 
   /* this is SIGMA_MEAN before the corrections due to the #DOF and the SCALING */
   if(!isFirstStep) sigma_mean_[0] = 0.; 
-  const double it = 1./static_cast<double>(step-MCfirst_+1);
+  vector<double> v_moment;
+  v_moment.resize(narg,0);
+  if(master) {
+    for(unsigned i=0;i<narg;++i) { 
+      const double tmp = getArgument(i)-mean[i];
+      v_moment[i]      = fact*tmp*(getArgument(i)-mean[i]);
+    }
+    if(nrep_>1) multi_sim_comm.Sum(&v_moment[0], narg);
+  } else {
+    for(unsigned i=0;i<narg;++i) {
+      const double tmp = getArgument(i)-mean[i];
+    }
+  }
+  comm.Sum(&v_moment[0], narg);
+ 
+  for(unsigned i=0;i<narg;++i) 
+    if(v_moment[i]>variance_[i]) 
+      variance_[i] = v_moment[i];
+
   for(unsigned i=0;i<narg;++i) { 
-    shifted_mean = mean[i]-loc_par_[i];
-    variance_[i] += shifted_mean*shifted_mean;
-    h_mean_[i] += shifted_mean;
+    //shifted_mean = mean[i];//-loc_par_[i];
+    //variance_[i] += shifted_mean*shifted_mean;
     if(!isFirstStep) {
-      if(noise_type_!=MGAUSS) sigma_mean_[0] += variance_[i]*it-h_mean_[i]*h_mean_[i]*it*it;
-      else sigma_mean_[i] = sqrt(variance_[i]*it-h_mean_[i]*h_mean_[i]*it*it);
+      if(noise_type_!=MGAUSS) sigma_mean_[0] += v_moment[i];
+      else sigma_mean_[i] = sqrt(variance_[i]/static_cast<double>(nrep_));
     }
   }
   if(noise_type_!=MGAUSS) sigma_mean_[0] = sqrt(sigma_mean_[0]);
+
   for(unsigned i=0; i<sigma_mean_.size(); i++) valueSigmaMean[i]->set(sigma_mean_[i]);
 
   /* MONTE CARLO */

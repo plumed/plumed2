@@ -250,6 +250,15 @@ pbc(true)
     }
   }
 
+  if(svd) {
+    addComponent("Sxx"); componentIsNotPeriodic("Sxx");
+    addComponent("Syy"); componentIsNotPeriodic("Syy");
+    addComponent("Szz"); componentIsNotPeriodic("Szz");
+    addComponent("Sxy"); componentIsNotPeriodic("Sxy");
+    addComponent("Sxz"); componentIsNotPeriodic("Sxz");
+    addComponent("Syz"); componentIsNotPeriodic("Syz");
+  }
+
   requestAtoms(atoms);
 }
 
@@ -333,14 +342,27 @@ void RDC::calculate()
     gsl_matrix_memcpy(A,coef_mat);
     gsl_linalg_SV_decomp(A, V, Stmp, work);
     gsl_linalg_SV_solve(A, V, Stmp, rdc_vec, S);
-    /* tensor 
+    /* tensor */ 
+    Value* tensor;
+    tensor=getPntrToComponent("Sxx");
     double Sxx = gsl_vector_get(S,0);
+    tensor->set(Sxx);
+    tensor=getPntrToComponent("Syy");
     double Syy = gsl_vector_get(S,1);
+    tensor->set(Syy);
+    tensor=getPntrToComponent("Szz");
     double Szz = -Sxx-Syy;
+    tensor->set(Szz);
+    tensor=getPntrToComponent("Sxy");
     double Sxy = gsl_vector_get(S,2);
+    tensor->set(Sxy);
+    tensor=getPntrToComponent("Sxz");
     double Sxz = gsl_vector_get(S,3);
+    tensor->set(Sxz);
+    tensor=getPntrToComponent("Syz");
     double Syz = gsl_vector_get(S,4);
-    */
+    tensor->set(Syz);
+
     gsl_blas_dgemv(CblasNoTrans, 1.0, coef_mat, S, 0., bc);
     for(index=0; index<coupl.size(); index++) {
       double rdc = gsl_vector_get(bc,index)*dmax[index];
