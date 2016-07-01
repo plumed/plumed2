@@ -96,16 +96,10 @@ void Colvar::apply(){
         }
       }
       #pragma omp critical
-      for(unsigned j=0;j<nat;++j) f[j]+=omp_f[j]; 
-      v(0,0)+=omp_v(0,0);
-      v(0,1)+=omp_v(0,1);
-      v(0,2)+=omp_v(0,2);
-      v(1,0)+=omp_v(1,0);
-      v(1,1)+=omp_v(1,1);
-      v(1,2)+=omp_v(1,2);
-      v(2,0)+=omp_v(2,0);
-      v(2,1)+=omp_v(2,1);
-      v(2,2)+=omp_v(2,2);
+      {
+        for(unsigned j=0;j<nat;++j) f[j]+=omp_f[j]; 
+        v+=omp_v;
+      }
     }
 
     if(ncp>comm.Get_size()) {

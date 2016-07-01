@@ -2,15 +2,16 @@
 
 @page CHANGES-2-3 Version 2.3
 
-Version 2.3 beta (xxx)
+Version 2.3 (Jun 30, 2016)
 ----------------------------
 
-Version 2.3 contains several improvements with respect to 2.2. Users currently working with 2.2
+Version
+2.3 contains several improvements with respect to 2.2. Users currently working with 2.2
 should have a look at the section "Changes leading to incompatible behavior" below and
 might need tiny adjustments in their input files.
 
 Below you find a list of all the changes with respect to version 2.2.
-Notice that version 2.3 includes already all the fixes in branch 2.2 up to 2.2.4 indicated in \ref CHANGES-2-2 .
+Notice that version 2.3 includes already all the fixes in branch 2.2 up to 2.2.3 indicated in \ref CHANGES-2-2 .
 
 Changes from version 2.2 which are relevant for users:
 - Changes leading to incompatible behavior:
@@ -108,5 +109,13 @@ For developers:
 - Added new strings for plumed cmd: setMDMassUnits, setMDChargeUnits, readInputLine, performCalcNoUpdate, update and doCheckPoint.
 - Easier to add actions with multiple arguments
 - New functions to access local quantities in domain decomposition
+
+Fixes in beta
+-------------
+
+Fixes since 2.3b. Relevant things could be merged in the changelog above when we relase 2.3.0
+
+- Fixed critical pragma in openmp of Colvar. This could have lead to wrong virial accumulation.
+
 
 */

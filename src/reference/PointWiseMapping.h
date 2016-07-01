@@ -87,7 +87,7 @@ bool PointWiseMapping::mappingNeedsSetup() const {
 
 inline
 void PointWiseMapping::copyFrameDerivatives( const unsigned& from, const unsigned& to ){
-  plumed_dbg_assert( to>=frames.size()/2 & from<frames.size()/2 );
+  plumed_dbg_assert( to>=frames.size()/2 && from<frames.size()/2 );
   frames[to]->copyDerivatives( frames[from] );
 }
 
