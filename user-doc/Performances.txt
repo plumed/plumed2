@@ -118,7 +118,7 @@ Whenever you have a multicolvar action such as:
 
 \verbatim
 COORDINATIONNUMBER SPECIES=1-100 SWITCH={RATIONAL R_0=1. D_MAX=3.0} MORE_THAN={RATIONAL R_0=6.0 NN=6 MM=12 D_0=0}
-\endvarbatim
+\endverbatim
 
 You will get a collosal speedup by specifying the D_MAX keyword in all switching functions that act on distances.
 D_MAX tells PLUMED that the switching function is strictly zero if the distance is greater than this value.  As a result
