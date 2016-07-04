@@ -481,16 +481,30 @@ if test $almost == true ; then
     AC_MSG_ERROR([--enable-almost: cannot find almost])
   fi
 fi
+
+save_LIBS="$LIBS"
+
 if test $gsl == true ; then
   found=ko
-  AC_CHECK_LIB([gsl],[main],[found=ok],[found=ko],[-lgslcblas])
+  AC_CHECK_FUNC(  [cblas_dgemv], [found=ok], [
+  AC_CHECK_LIB(   [gslcblas],[cblas_dgemv], [LIBS="-lgslcblas $LIBS"] [found=ok]
+  ) ])
+  if test $found == ok ; then
+    found=ko
+    AC_CHECK_HEADER(  [gsl/gsl_vector.h], [
+      AC_CHECK_FUNC(  [gsl_vector_alloc], [found=ok], [
+      AC_CHECK_LIB(   [gsl],[gsl_vector_alloc], [LIBS="-lgsl $LIBS"] [found=ok]
+      ) ])
+    ])
+  fi
   if test $found == ok ; then
     AC_DEFINE([__PLUMED_HAS_GSL])
-    LIBS="-lgsl -lgslcblas $LIBS"
-  else 
-    AC_MSG_ERROR([--enable-gsl: cannot find gsl])
+  else
+     LIBS="$save_LIBS"
+     AC_MSG_WARN([cannot enable __PLUMED_HAS_GSL])
   fi
 fi
+
 if test $xdrfile == true ; then
   PLUMED_CHECK_PACKAGE([xdrfile/xdrfile_xtc.h],[write_xtc],[__PLUMED_HAS_XDRFILE],[xdrfile])
 fi
