@@ -1363,7 +1363,7 @@ void MetaD::update(){
   work_+=vbias1-vbias;
 
   // dump grid on file
-  if(wgridstride_>0&&getStep()%wgridstride_==0){
+  if(wgridstride_>0&&(getStep()%wgridstride_==0||getCPT())){
     // in case old grids are stored, a sequence of grids should appear
     // this call results in a repetition of the header:
     if(storeOldGrids_) gridfile_.clearFields();
