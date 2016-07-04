@@ -216,16 +216,16 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.add("compulsory","SIGMA_MIN","minimum value of the uncertainty parameter");
   keys.add("compulsory","SIGMA_MAX","maximum value of the uncertainty parameter");
   keys.add("compulsory","DSIGMA","maximum MC move of the uncertainty parameter");
-  keys.add("compulsory","SIGMA_MEAN0","starting value for the uncertainty in the mean estimate");
-  keys.add("compulsory","SIGMA_MEAN_MOD0","starting value for sm modifier");
-  keys.add("compulsory","DSIGMA_MEAN_MOD","step value for sm modifier");
-  keys.add("compulsory","SIGMA_MEAN_MOD_MIN","min value for sm modifier");
-  keys.add("compulsory","MAX_FORCE","maximum allowable force");
+  keys.add("optional","SIGMA_MEAN0","starting value for the uncertainty in the mean estimate");
+  keys.add("optional","SIGMA_MEAN_MOD0","starting value for sm modifier");
+  keys.add("optional","SIGMA_MEAN_MOD_MIN","starting value for sm modifier");
+  keys.add("optional","DSIGMA_MEAN_MOD","step value for sm modifier");
+  keys.add("optional","MAX_FORCE","maximum allowable force");
   keys.add("optional","TEMP","the system temperature - this is only needed if code doesnt' pass the temperature to plumed");
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_STRIDE","MC stride");
-  keys.add("compulsory","STATUS_FILE","MISTATUS","write a file with all the data usefull for restart/continuation of Metainference");
-  keys.add("compulsory","WRITE_STRIDE","write the status to a file every N steps");
+  keys.add("optional","STATUS_FILE","write a file with all the data usefull for restart/continuation of Metainference");
+  keys.add("compulsory","WRITE_STRIDE","write the status to a file every N steps, this can be used for restart/continuation");
   useCustomisableComponents(keys);
   keys.addOutputComponent("sigma", "default","uncertainty parameter");
   keys.addOutputComponent("sigmaMean","default","uncertainty in the mean estimate");
@@ -290,11 +290,12 @@ atoms(plumed.getAtoms())
   if(stringa_noise=="GAUSS")         noise_type_ = GAUSS; 
   else if(stringa_noise=="MGAUSS")   noise_type_ = MGAUSS;
   else if(stringa_noise=="OUTLIERS") noise_type_ = OUTLIERS;
-  else error("Unkwnow noise type"); 
+  else error("Unknown noise type!"); 
 
   parse("WRITE_STRIDE",write_stride_);
   string status_file_name_;
   parse("STATUS_FILE",status_file_name_);
+  if(status_file_name_=="") status_file_name_ = "MISTATUS"+getLabel();
 
   parseFlag("SCALEDATA", doscale_);
   if(doscale_) {
@@ -340,32 +341,41 @@ atoms(plumed.getAtoms())
   // while sigma_mean_ has the same size of sigma
   vector<double> read_sigma_mean_;
   parseVector("SIGMA_MEAN0",read_sigma_mean_);
-  if(noise_type_!=MGAUSS&&read_sigma_mean_.size()>1) 
-     error("If you want to use more than one SIGMA_MEAN0 you should use NOISETYPE=MGAUSS");
   if(noise_type_==MGAUSS) {
     if(read_sigma_mean_.size()==narg) {
       sigma_mean_.resize(narg);
-      variance_=read_sigma_mean_;
       sigma_mean_=read_sigma_mean_;
     } else if(read_sigma_mean_.size()==1) {
       sigma_mean_.resize(narg,read_sigma_mean_[0]);
-      variance_.resize(narg,read_sigma_mean_[0]);
+    } else if(read_sigma_mean_.size()==0) {
+      sigma_mean_.resize(narg,0.000001);
     } else {
       error("SIGMA_MEAN0 can accept either one single value or as many values as the arguments (with NOISETYPE=MGAUSS)");
     }
+    for(unsigned i=0;i<narg;i++) if(sigma_mean_[i]>0) variance_[i] = sigma_mean_[i]*sigma_mean_[i]*static_cast<double>(nrep_);
   } else {
-    sigma_mean_.resize(1, read_sigma_mean_[0]);
-    variance_.resize(narg,read_sigma_mean_[0]);
+    if(read_sigma_mean_.size()==1) {
+      sigma_mean_.resize(1, read_sigma_mean_[0]);
+    } else if(read_sigma_mean_.size()==0) {
+      sigma_mean_.resize(narg,0.000001);
+    } else {
+      error("If you want to use more than one SIGMA_MEAN0 you should use NOISETYPE=MGAUSS");
+    }
+    for(unsigned i=0;i<narg;i++) if(sigma_mean_[i]>0) variance_[i] = sigma_mean_[i]*sigma_mean_[i]*static_cast<double>(nrep_);
   } 
 
   parseFlag("OPTSIGMAMEAN", do_optsigmamean_);
 
   // sigma mean optimisation
   if(do_optsigmamean_) {
+    max_force_=2750.;
     parse("MAX_FORCE", max_force_);
     max_force_ *= max_force_;
+    sm_mod_=1.0;
     parse("SIGMA_MEAN_MOD0", sm_mod_);
+    sm_mod_min_=1.0;
     parse("SIGMA_MEAN_MOD_MIN", sm_mod_min_);
+    Dsm_mod_=0.01;
     parse("DSIGMA_MEAN_MOD", Dsm_mod_);
     sm_mod_min_hard_=sm_mod_min_;
   }
@@ -379,10 +389,10 @@ atoms(plumed.getAtoms())
     log.printf("  Restarting from %s\n", status_file_name_.c_str());
     double dummy;
     if(restart_sfile.scanField("time",dummy)){
-      for(unsigned i=0;i<sigma_mean_.size();++i) {
+      for(unsigned i=0;i<variance_.size();++i) {
         std::string msg;
         Tools::convert(i,msg);
-        restart_sfile.scanField("sigma_mean_"+msg,sigma_mean_[i]);
+        restart_sfile.scanField("variance_"+msg,variance_[i]);
       }
       for(unsigned i=0;i<sigma_.size();++i) {
         std::string msg;
@@ -795,10 +805,11 @@ void Metainference::update() {
 
     // if no violations then we minimise sm_mod_ (and also sm_mod_min_ if needed)
     if(nnfmax == 0 && nnfmax_md == 0) {
-      sm_mod_ -= Dsm_mod_ * 0.01 * std::log(sm_mod_/sm_mod_min_);
-      if((sm_mod_-sm_mod_min_)<Dsm_mod_) {
-        double sm_mod_min_new = sm_mod_min_ - Dsm_mod_;
-        if(sm_mod_min_new > sm_mod_min_hard_) sm_mod_min_ = sm_mod_min_new;
+      sm_mod_ -= Dsm_mod_ * 0.01 * std::log(sm_mod_/sm_mod_min_hard_);
+      if((sm_mod_<=sm_mod_min_hard_)) {
+        //double sm_mod_min_new = sm_mod_min_ - Dsm_mod_;
+        //if(sm_mod_min_new > sm_mod_min_hard_) sm_mod_min_ = sm_mod_min_new;
+        sm_mod_=sm_mod_min_hard_;
       }
     // otherwise we increase sm_mod_ and also sm_mod_min_ if needed
     } else {
@@ -818,10 +829,8 @@ void Metainference::update() {
 
 void Metainference::calculate(){
   const long int step = getStep();
-  bool isFirstStep = false;
   // this is needed when restarting simulations
   if(MCfirst_==-1) {
-    isFirstStep = true;
     MCfirst_=step;
   }
 
@@ -862,13 +871,11 @@ void Metainference::calculate(){
   comm.Sum(&mean[0], narg);
 
   /* this is SIGMA_MEAN before the corrections due to the #DOF and the SCALING */
-  if(!isFirstStep) sigma_mean_[0] = 0.; 
-  vector<double> v_moment;
-  v_moment.resize(narg,0);
+  vector<double> v_moment(narg,0);
   if(master) {
     for(unsigned i=0;i<narg;++i) { 
-      const double tmp = getArgument(i)-mean[i];
-      v_moment[i]      = fact*tmp*(getArgument(i)-mean[i]);
+      double tmp  = getArgument(i)-mean[i];
+      v_moment[i] = fact*tmp*tmp;
     }
     if(nrep_>1) multi_sim_comm.Sum(&v_moment[0], narg);
   }
@@ -878,15 +885,16 @@ void Metainference::calculate(){
     if(v_moment[i]>variance_[i]) 
       variance_[i] = v_moment[i];
 
-  for(unsigned i=0;i<narg;++i) { 
-    if(!isFirstStep) {
-      if(noise_type_!=MGAUSS) sigma_mean_[0] += v_moment[i];
-      else sigma_mean_[i] = sqrt(variance_[i]/static_cast<double>(nrep_));
+  if(noise_type_==MGAUSS) {
+    for(unsigned i=0;i<narg;++i) { 
+      sigma_mean_[i] = sqrt(variance_[i]/static_cast<double>(nrep_));
+      valueSigmaMean[i]->set(sigma_mean_[i]);
     }
+  } else {
+    sigma_mean_[0] = *max_element(variance_.begin(), variance_.end());
+    sigma_mean_[0] = sqrt(sigma_mean_[0]/static_cast<double>(nrep_));
+    valueSigmaMean[0]->set(sigma_mean_[0]);
   }
-  if(noise_type_!=MGAUSS) sigma_mean_[0] = sqrt(sigma_mean_[0]);
-
-  for(unsigned i=0; i<sigma_mean_.size(); i++) valueSigmaMean[i]->set(sigma_mean_[i]);
 
   /* MONTE CARLO */
   if(step%MCstride_==0&&!getExchangeStep()) doMonteCarlo(mean);
@@ -896,14 +904,12 @@ void Metainference::calculate(){
   valueAccept->set(accept);
 
   // write status file
-  if(write_stride_>0&& (getStep()%write_stride_==0 || getCPT()) ) writeStatus();
+  if(write_stride_>0&& (step%write_stride_==0 || getCPT()) ) writeStatus();
 
   /* fix sigma_mean_ for the weighted average and the scaling factor */
   double modifier = scale_*sqrt(idof);
 
-  if(do_optsigmamean_) {
-      modifier *= sm_mod_;
-  }
+  if(do_optsigmamean_) modifier *= sm_mod_;
   valueRSigmaMean->set(modifier);
   for(unsigned i=0;i<sigma_mean_.size();++i) sigma_mean_[i] *= modifier;
 
@@ -927,10 +933,10 @@ void Metainference::writeStatus()
 {
   sfile_.rewind();
   sfile_.printField("time",getTimeStep()*getStep());
-  for(unsigned i=0;i<sigma_mean_.size();++i) {
+  for(unsigned i=0;i<variance_.size();++i) {
     std::string msg;
     Tools::convert(i,msg);
-    sfile_.printField("sigma_mean_"+msg,sigma_mean_[i]);
+    sfile_.printField("variance_"+msg,variance_[i]);
   }
   for(unsigned i=0;i<sigma_.size();++i) {
     std::string msg;
