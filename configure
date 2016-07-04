@@ -6218,52 +6218,127 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_ZLIB" >&2;}
     fi
 
 fi
+
+save_LIBS="$LIBS"
+
 if test $gsl == true ; then
   found=ko
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lgsl" >&5
-$as_echo_n "checking for main in -lgsl... " >&6; }
-if ${ac_cv_lib_gsl_main+:} false; then :
+  ac_fn_cxx_check_func "$LINENO" "cblas_dgemv" "ac_cv_func_cblas_dgemv"
+if test "x$ac_cv_func_cblas_dgemv" = xyes; then :
+  found=ok
+else
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for cblas_dgemv in -lgslcblas" >&5
+$as_echo_n "checking for cblas_dgemv in -lgslcblas... " >&6; }
+if ${ac_cv_lib_gslcblas_cblas_dgemv+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lgsl -lgslcblas $LIBS"
+LIBS="-lgslcblas  $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char cblas_dgemv ();
 int
 main ()
 {
-return main ();
+return cblas_dgemv ();
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_gsl_main=yes
+  ac_cv_lib_gslcblas_cblas_dgemv=yes
 else
-  ac_cv_lib_gsl_main=no
+  ac_cv_lib_gslcblas_cblas_dgemv=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_gsl_main" >&5
-$as_echo "$ac_cv_lib_gsl_main" >&6; }
-if test "x$ac_cv_lib_gsl_main" = xyes; then :
-  found=ok
-else
-  found=ko
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_gslcblas_cblas_dgemv" >&5
+$as_echo "$ac_cv_lib_gslcblas_cblas_dgemv" >&6; }
+if test "x$ac_cv_lib_gslcblas_cblas_dgemv" = xyes; then :
+  LIBS="-lgslcblas $LIBS" found=ok
+
+fi
+
 fi
 
   if test $found == ok ; then
+    found=ko
+    ac_fn_cxx_check_header_mongrel "$LINENO" "gsl/gsl_vector.h" "ac_cv_header_gsl_gsl_vector_h" "$ac_includes_default"
+if test "x$ac_cv_header_gsl_gsl_vector_h" = xyes; then :
+
+      ac_fn_cxx_check_func "$LINENO" "gsl_vector_alloc" "ac_cv_func_gsl_vector_alloc"
+if test "x$ac_cv_func_gsl_vector_alloc" = xyes; then :
+  found=ok
+else
+
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for gsl_vector_alloc in -lgsl" >&5
+$as_echo_n "checking for gsl_vector_alloc in -lgsl... " >&6; }
+if ${ac_cv_lib_gsl_gsl_vector_alloc+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lgsl  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char gsl_vector_alloc ();
+int
+main ()
+{
+return gsl_vector_alloc ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_lib_gsl_gsl_vector_alloc=yes
+else
+  ac_cv_lib_gsl_gsl_vector_alloc=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_gsl_gsl_vector_alloc" >&5
+$as_echo "$ac_cv_lib_gsl_gsl_vector_alloc" >&6; }
+if test "x$ac_cv_lib_gsl_gsl_vector_alloc" = xyes; then :
+  LIBS="-lgsl $LIBS" found=ok
+
+fi
+
+fi
+
+
+fi
+
+
+  fi
+  if test $found == ok ; then
     $as_echo "#define __PLUMED_HAS_GSL 1" >>confdefs.h
 
-    LIBS="-lgsl -lgslcblas $LIBS"
   else
-    as_fn_error $? "--enable-gsl: cannot find gsl" "$LINENO" 5
+     LIBS="$save_LIBS"
+     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_GSL" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_GSL" >&2;}
   fi
 fi
+
 if test $xdrfile == true ; then
 
     found=ko

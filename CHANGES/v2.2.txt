@@ -165,8 +165,12 @@ For developers:
 - Tentative port files are now available at [this link](http://github.com/plumed/ports). 
   They can be used to install PLUMED using MacPorts.
 
-
+Version 2.2.4
+-------------
 See branch \branch{v2.2} on git repository.
 
+For users:
+- GSL library is now treated by `./configure` in the same way as other libraries, that is `-lgsl -lgslcblas` are only
+  added if necessary.
 
 */
