@@ -421,24 +421,18 @@ atoms(plumed.getAtoms())
 
   log.printf("  number of experimental data points %u\n",narg);
   log.printf("  number of replicas %u\n",nrep_);
-  if(readsigma.size()==1) log.printf("  initial data uncertainty %f\n",sigma_[0]);
-  else {
-    log.printf("  initial data uncertainties");
-    for(unsigned i=0;i<sigma_.size();++i) log.printf(" %f", sigma_[i]);
-    log.printf("\n");
-  }
+  log.printf("  initial data uncertainties");
+  for(unsigned i=0;i<sigma_.size();++i) log.printf(" %f", sigma_[i]);
+  log.printf("\n");
   log.printf("  minimum data uncertainty %f\n",sigma_min_);
   log.printf("  maximum data uncertainty %f\n",sigma_max_);
   log.printf("  maximum MC move of data uncertainty %f\n",Dsigma_);
   log.printf("  temperature of the system %f\n",kbt_);
   log.printf("  MC steps %u\n",MCsteps_);
   log.printf("  MC stride %u\n",MCstride_);
-  if(readsigma.size()==1) log.printf("  initial standard error of the mean %f\n",sigma_mean_[0]);
-  else {
-    log.printf("  initial standard errors of the mean");
-    for(unsigned i=0;i<sigma_mean_.size();++i) log.printf(" %f", sigma_mean_[i]);
-    log.printf("\n");
-  }
+  log.printf("  initial standard errors of the mean");
+  for(unsigned i=0;i<sigma_mean_.size();++i) log.printf(" %f", sigma_mean_[i]);
+  log.printf("\n");
 
   if(doscale_) { 
     addComponent("scale");  
