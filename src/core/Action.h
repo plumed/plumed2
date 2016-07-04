@@ -97,6 +97,8 @@ private:
 
   bool restart;
 
+  bool doCheckPoint;
+
 public:
 
 /// Reference to main plumed object
@@ -122,6 +124,9 @@ public:
 
 /// Return true if we are doing a restart
   bool getRestart()const;
+
+/// Return true if we are doing at a checkpoint step 
+  bool getCPT()const;
 
 /// Just read one of the keywords and return the whole thing as a string
   std::string getKeyword(const std::string& key);
@@ -412,6 +417,11 @@ bool Action::isOptionOn(const std::string &s)const{
 inline
 bool Action::getRestart()const{
   return restart;
+}
+
+inline
+bool Action::getCPT()const{
+  return doCheckPoint;
 }
 
 }

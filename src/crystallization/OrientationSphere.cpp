@@ -67,7 +67,7 @@ MultiColvarFunction(ao)
 }
 
 double OrientationSphere::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {
-   double d2, sw, value=0, denom=0, dot, f_dot, dot_df, dfunc; Vector ddistance;
+   double d2, sw, value=0, denom=0, dfunc; Vector ddistance;
    unsigned ncomponents=getBaseMultiColvar(0)->getNumberOfQuantities();
    std::vector<double> catom_orient( ncomponents ), this_orient( ncomponents );
    std::vector<double> this_der( ncomponents ), catom_der( ncomponents ); 
