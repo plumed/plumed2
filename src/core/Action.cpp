@@ -61,6 +61,7 @@ Action::Action(const ActionOptions&ao):
   update_until(std::numeric_limits<double>::max()),
   active(false),
   restart(ao.plumed.getRestart()),
+  doCheckPoint(ao.plumed.getCPT()),
   plumed(ao.plumed),
   log(plumed.getLog()),
   comm(plumed.comm),

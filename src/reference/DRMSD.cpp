@@ -30,8 +30,8 @@ PLUMED_REGISTER_METRIC(DRMSD,"DRMSD")
 DRMSD::DRMSD( const ReferenceConfigurationOptions& ro ):
 ReferenceConfiguration( ro ),
 SingleDomainRMSD( ro ),
-bounds_were_set(false),
 nopbc(true),
+bounds_were_set(false),
 lower(0),
 upper(std::numeric_limits<double>::max( ))
 {

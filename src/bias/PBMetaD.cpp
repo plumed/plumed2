@@ -838,7 +838,7 @@ void PBMetaD::update()
    }
 
    // write grid files
-   if(wgridstride_>0 && getStep()%wgridstride_==0) {
+   if(wgridstride_>0 && (getStep()%wgridstride_==0 || getCPT())) {
      int r = 0;
      if(multiple_w) {
        if(comm.Get_rank()==0) r=multi_sim_comm.Get_rank();
