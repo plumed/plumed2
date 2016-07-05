@@ -31,7 +31,6 @@
 #include "core/Atoms.h"
 #include "core/Value.h"
 #include "tools/File.h"
-#include "tools/OpenMP.h"
 #include <cmath>
 
 using namespace std;
@@ -121,7 +120,7 @@ class Metainference : public Bias
   vector<double> parameters;
   // noise type
   unsigned noise_type_;
-  enum { GAUSS, MGAUSS, OUTLIERS};
+  enum { GAUSS, MGAUSS, OUTLIERS };
   // scale is data scaling factor
   bool   doscale_;
   double scale_;
@@ -293,6 +292,8 @@ atoms(plumed.getAtoms())
   parse("STATUS_FILE",status_file_name_);
   if(status_file_name_=="") status_file_name_ = "MISTATUS"+getLabel();
 
+  parseFlag("OPTSIGMAMEAN", do_optsigmamean_);
+
   parseFlag("SCALEDATA", doscale_);
   if(doscale_) {
     parse("SCALE0",scale_);
@@ -337,6 +338,9 @@ atoms(plumed.getAtoms())
   // while sigma_mean_ has the same size of sigma
   vector<double> read_sigma_mean_;
   parseVector("SIGMA_MEAN0",read_sigma_mean_);
+  if(!do_optsigmamean_ && read_sigma_mean_.size()==0 && !getRestart()) 
+    error("If you don't use OPTSIGMAMEAN and you are not RESTARTING then you MUST SET SIGMA_MEAN0");
+
   if(noise_type_==MGAUSS) {
     if(read_sigma_mean_.size()==narg) {
       sigma_mean_.resize(narg);
@@ -359,8 +363,6 @@ atoms(plumed.getAtoms())
     }
     for(unsigned i=0;i<narg;i++) if(sigma_mean_[i]>0) variance_[i] = sigma_mean_[i]*sigma_mean_[i]*static_cast<double>(nrep_);
   } 
-
-  parseFlag("OPTSIGMAMEAN", do_optsigmamean_);
 
   // sigma mean optimisation
   if(do_optsigmamean_) {
@@ -828,20 +830,22 @@ void Metainference::calculate(){
   }
   comm.Sum(&mean[0], narg);
 
-  /* this is SIGMA_MEAN before the corrections due to the #DOF and the SCALING */
-  vector<double> v_moment(narg,0);
-  if(master) {
-    for(unsigned i=0;i<narg;++i) { 
-      double tmp  = getArgument(i)-mean[i];
-      v_moment[i] = fact*tmp*tmp;
+  if(do_optsigmamean_) {
+    /* this is SIGMA_MEAN before the corrections due to the #DOF and the SCALING */
+    vector<double> v_moment(narg,0);
+    if(master) {
+      for(unsigned i=0;i<narg;++i) { 
+        double tmp  = getArgument(i)-mean[i];
+        v_moment[i] = fact*tmp*tmp;
+      }
+      if(nrep_>1) multi_sim_comm.Sum(&v_moment[0], narg);
     }
-    if(nrep_>1) multi_sim_comm.Sum(&v_moment[0], narg);
-  }
-  comm.Sum(&v_moment[0], narg);
+    comm.Sum(&v_moment[0], narg);
  
-  for(unsigned i=0;i<narg;++i) 
-    if(v_moment[i]>variance_[i]) 
-      variance_[i] = v_moment[i];
+    for(unsigned i=0;i<narg;++i) 
+      if(v_moment[i]>variance_[i]) 
+        variance_[i] = v_moment[i];
+  }
 
   if(noise_type_==MGAUSS) {
     for(unsigned i=0;i<narg;++i) { 
@@ -866,6 +870,7 @@ void Metainference::calculate(){
 
   /* fix sigma_mean_ for the weighted average and the scaling factor */
   double modifier = scale_*sqrt(idof);
+  /* fix sigma_mean_ for the effect of large forces */
   if(do_optsigmamean_) modifier *= sm_mod_;
   valueRSigmaMean->set(modifier);
   for(unsigned i=0;i<sigma_mean_.size();++i) sigma_mean_[i] *= modifier;
