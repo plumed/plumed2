@@ -1387,7 +1387,7 @@ Optional Features:
   --enable-cregex         enable search for C regular expression, default: yes
   --enable-dlopen         enable search for dlopen, default: yes
   --enable-execinfo       enable search for execinfo, default: yes
-  --enable-gsl            enable search for gsl, default: no
+  --enable-gsl            enable search for gsl, default: yes
   --enable-xdrfile        enable search for xdrfile, default: yes
   --enable-boost_graph    enable search for boost graph, default: no
   --enable-arrayfire_opencl
@@ -2836,7 +2836,7 @@ if test "${enable_gsl+set}" = set; then :
              (*)   as_fn_error $? "wrong argument to --enable-gsl" "$LINENO" 5 ;;
   esac
 else
-  case "no" in
+  case "yes" in
              (yes) gsl=true ;;
              (no)  gsl=false ;;
   esac
