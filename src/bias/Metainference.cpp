@@ -140,7 +140,6 @@ class Metainference : public Bias
   // sigma_mean rescue params
   double sm_mod_;
   double sm_mod_min_;
-  double sm_mod_min_hard_;
   double Dsm_mod_;
   double max_force_;
 
@@ -162,9 +161,7 @@ class Metainference : public Bias
   vector<Value*> valueSigma;
   vector<Value*> valueSigmaMean;
   Value*   valueSMmod;
-  Value*   valueSMmodMin;
   Value*   valueMaxForceMD;
-  Value*   valueMaxForcePLUMED;
 
   // restart
   unsigned write_stride_;
@@ -232,7 +229,6 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.addOutputComponent("scale", "default","scale parameter");
   keys.addOutputComponent("accept","default","MC acceptance");
   keys.addOutputComponent("maxForceMD","default","max force on molecule");
-  keys.addOutputComponent("maxForcePLUMED","default","max force on molecule");
 }
 
 Metainference::Metainference(const ActionOptions&ao):
@@ -377,7 +373,6 @@ atoms(plumed.getAtoms())
     parse("SIGMA_MEAN_MOD_MIN", sm_mod_min_);
     Dsm_mod_=0.01;
     parse("DSIGMA_MEAN_MOD", Dsm_mod_);
-    sm_mod_min_hard_=sm_mod_min_;
   }
 
   checkRead();
@@ -402,7 +397,6 @@ atoms(plumed.getAtoms())
       if(doscale_) restart_sfile.scanField("scale0_",scale_);
       if(do_optsigmamean_) {
         restart_sfile.scanField("sigma_mean_mod0",sm_mod_);
-        restart_sfile.scanField("sigma_mean_mod_min",sm_mod_min_);
       }
     }
     restart_sfile.scanField();
@@ -461,15 +455,9 @@ atoms(plumed.getAtoms())
     addComponent("maxForceMD");
     componentIsNotPeriodic("maxForceMD");
     valueMaxForceMD=getPntrToComponent("maxForceMD");
-    addComponent("maxForcePLUMED");
-    componentIsNotPeriodic("maxForcePLUMED");
-    valueMaxForcePLUMED=getPntrToComponent("maxForcePLUMED");
     addComponent("smMod");
     componentIsNotPeriodic("smMod");
     valueSMmod=getPntrToComponent("smMod");
-    addComponent("smModMin");
-    componentIsNotPeriodic("smModMin");
-    valueSMmodMin=getPntrToComponent("smModMin");
   }
 
   if(noise_type_==MGAUSS) {
@@ -749,9 +737,7 @@ void Metainference::update() {
     atoms.getLocalForces(plumed_forces);
     atoms.getLocalMasses(masses);
 
-    vector<double> allforces_plumed;
     vector<double> allforces_md;
-    allforces_plumed.reserve(plumed_forces.size());
     allforces_md.reserve(md_forces.size());
 
     for(unsigned i = 0; i < plumed_forces.size(); ++i) {
@@ -760,70 +746,42 @@ void Metainference::update() {
       if(pf2 > EPS && masses[i] > EPS ) {
         const double invm2 = 1./(masses[i]*masses[i]);
         allforces_md.push_back(md_forces[i].modulo2()*invm2);
-        allforces_plumed.push_back(pf2*invm2);
       }
     }
 
     vector<double> fmax_tmp_md(comm.Get_size(),0);
-    vector<double> fmax_tmp_plumed(comm.Get_size(),0);
-    vector<double> nfmax(nrep_, 0);
     vector<double> nfmax_md(nrep_, 0);
 
     /* each local thread should look for the maximum force and number of violations */
     if(allforces_md.size()>0) {
-      fmax_tmp_md[comm.Get_rank()]     = *max_element(allforces_md.begin(), allforces_md.end());
-      fmax_tmp_plumed[comm.Get_rank()] = *max_element(allforces_plumed.begin(), allforces_plumed.end());
+      fmax_tmp_md[comm.Get_rank()] = *max_element(allforces_md.begin(), allforces_md.end());
       for(unsigned i = 0; i < allforces_md.size(); ++i) {
-        if(allforces_plumed[i] > max_force_) {
-          nfmax[replica_] += allforces_plumed[i]/max_force_;
-        }
         if(allforces_md[i] > max_force_) {
           nfmax_md[replica_] += allforces_md[i]/max_force_;
         }
       }
     }
-
     // the largest forces are shared among the local threads but not over the replicas 
     comm.Sum(fmax_tmp_md);
-    comm.Sum(fmax_tmp_plumed);
     // these are the largest forces for a specific replica
-    const double fmax_md     = *max_element(fmax_tmp_md.begin(), fmax_tmp_md.end());
-    const double fmax_plumed = *max_element(fmax_tmp_plumed.begin(), fmax_tmp_plumed.end());
+    const double fmax_md = *max_element(fmax_tmp_md.begin(), fmax_tmp_md.end());
 
     // the number of violations is summed up over the local thread and over the replicas 
-    comm.Sum(nfmax);
     comm.Sum(nfmax_md);
-    if(master && nrep_ > 1) {
-      multi_sim_comm.Sum(nfmax);
-      multi_sim_comm.Sum(nfmax_md);
-    }
-    comm.Bcast(&nfmax[0], nrep_, 0);
+    if(master && nrep_ > 1) multi_sim_comm.Sum(nfmax_md);
     comm.Bcast(&nfmax_md[0], nrep_, 0);
     
     const double nnfmax_md = (*max_element(nfmax_md.begin(), nfmax_md.end()))*nrep_;
-    const double nnfmax    = (*max_element(nfmax.begin(), nfmax.end()))*nrep_;
 
-    // if no violations then we minimise sm_mod_ (and also sm_mod_min_ if needed)
-    if(nnfmax == 0 && nnfmax_md == 0) {
-      sm_mod_ -= Dsm_mod_ * 0.01 * std::log(sm_mod_/sm_mod_min_hard_);
-      if((sm_mod_<=sm_mod_min_hard_)) {
-        //double sm_mod_min_new = sm_mod_min_ - Dsm_mod_;
-        //if(sm_mod_min_new > sm_mod_min_hard_) sm_mod_min_ = sm_mod_min_new;
-        sm_mod_=sm_mod_min_hard_;
-      }
-    // otherwise we increase sm_mod_ and also sm_mod_min_ if needed
+    if( nnfmax_md == 0) {
+      sm_mod_ -= Dsm_mod_ * 0.01 * std::log(sm_mod_/sm_mod_min_);
+      if(sm_mod_<sm_mod_min_) sm_mod_=sm_mod_min_;
     } else {
       sm_mod_ += Dsm_mod_ * std::log(nnfmax_md+1.);
-      if(nnfmax_md > 0) {
-        sm_mod_min_ += std::log(nnfmax_md+1.) * Dsm_mod_;
-        sm_mod_ += Dsm_mod_ * std::log(nnfmax_md+1.);
-      }
     }
 
     valueSMmod->set(sm_mod_);
-    valueSMmodMin->set(sm_mod_min_);
     valueMaxForceMD->set(sqrt(fmax_md));
-    valueMaxForcePLUMED->set(sqrt(fmax_plumed));
   }
 }
 
@@ -837,10 +795,11 @@ void Metainference::calculate(){
   double norm = 0.0;
   double fact = 0.0;
   double idof = 1.0;
+  double dnrep = static_cast<double>(nrep_);
 
   // calculate the weights either from BIAS 
   if(do_reweight){
-    vector<double> bias; bias.resize(nrep_,0);
+    vector<double> bias(nrep_,0);
     if(master){
       bias[replica_] = getArgument(narg); 
       if(nrep_>1) multi_sim_comm.Sum(&bias[0], nrep_);  
@@ -857,12 +816,11 @@ void Metainference::calculate(){
     idof = 1./(1. - n2/(norm*norm));
   // or arithmetic ones
   } else {
-    norm = static_cast<double>(nrep_); 
+    norm = dnrep; 
     fact = 1.0/norm; 
   }
 
-  vector<double> mean;
-  mean.resize(narg,0);
+  vector<double> mean(narg,0);
   // calculate the mean 
   if(master) {
     for(unsigned i=0;i<narg;++i) mean[i] = fact*getArgument(i); 
@@ -887,12 +845,12 @@ void Metainference::calculate(){
 
   if(noise_type_==MGAUSS) {
     for(unsigned i=0;i<narg;++i) { 
-      sigma_mean_[i] = sqrt(variance_[i]/static_cast<double>(nrep_));
+      sigma_mean_[i] = sqrt(variance_[i]/dnrep);
       valueSigmaMean[i]->set(sigma_mean_[i]);
     }
   } else {
     sigma_mean_[0] = *max_element(variance_.begin(), variance_.end());
-    sigma_mean_[0] = sqrt(sigma_mean_[0]/static_cast<double>(nrep_));
+    sigma_mean_[0] = sqrt(sigma_mean_[0]/dnrep);
     valueSigmaMean[0]->set(sigma_mean_[0]);
   }
 
@@ -900,7 +858,7 @@ void Metainference::calculate(){
   if(step%MCstride_==0&&!getExchangeStep()) doMonteCarlo(mean);
 
   double MCtrials = floor(static_cast<double>(step-MCfirst_) / static_cast<double>(MCstride_))+1.0;
-  const double accept = static_cast<double>(MCaccept_) / static_cast<double>(MCsteps_) / MCtrials;
+  double accept = static_cast<double>(MCaccept_) / static_cast<double>(MCsteps_) / MCtrials;
   valueAccept->set(accept);
 
   // write status file
@@ -908,7 +866,6 @@ void Metainference::calculate(){
 
   /* fix sigma_mean_ for the weighted average and the scaling factor */
   double modifier = scale_*sqrt(idof);
-
   if(do_optsigmamean_) modifier *= sm_mod_;
   valueRSigmaMean->set(modifier);
   for(unsigned i=0;i<sigma_mean_.size();++i) sigma_mean_[i] *= modifier;
@@ -948,7 +905,6 @@ void Metainference::writeStatus()
   }
   if(do_optsigmamean_) {
     sfile_.printField("sigma_mean_mod0",sm_mod_);
-    sfile_.printField("sigma_mean_mod_min",sm_mod_min_);
   }
   sfile_.printField();
   sfile_.flush();
