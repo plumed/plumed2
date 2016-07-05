@@ -62,7 +62,7 @@ cd -
 if ((mpiprocs>0)); then
 mpi="${PLUMED_MPIRUN:-mpirun} -np $mpiprocs"
 
-if ! plumed --has-mpi
+if ! plumed config -q has mpi
 then
   echo "NOT_APPLIABLE (MPI NOT INSTALLED)"
   exit 0;
@@ -83,7 +83,7 @@ fi
 for need in $plumed_needs
 do
   echo "Checking for $need"
-  if ! $plumed --has-$need
+  if ! $plumed config -q has $need
   then
     echo "NOT_APPLIABLE ($need NOT INSTALLED)"
     exit 0;

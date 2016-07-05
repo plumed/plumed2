@@ -118,5 +118,6 @@ Fixes since 2.3b. Relevant things could be merged in the changelog above when we
 - Fixed critical pragma in openmp of Colvar. This could have lead to wrong virial accumulation.
 - Extended checkpoint infrastracture, now \ref METAD and \ref PBMETAD will write GRIDS also on checkpoint step (only the GROMACS patch
   is currently using the checkpointing interface)
+- GSL library is now searched by default during `./configure`.
 
 */

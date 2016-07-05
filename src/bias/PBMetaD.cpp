@@ -203,6 +203,7 @@ private:
   int     wgridstride_;
   bool    welltemp_;
   bool    multiple_w;
+  unsigned nw_;
   vector<double> uppI_;
   vector<double> lowI_;
   vector<bool>  doInt_;
@@ -513,7 +514,13 @@ multiple_w(false), isFirstStep(true)
   // it would introduce troubles when using replicas without METAD
   // (e.g. in bias exchange with a neutral replica)
   // see issue #168 on github
-  if(comm.Get_rank()==0 && multiple_w) multi_sim_comm.Barrier();
+  if(multiple_w){
+    if(comm.Get_rank()==0) {
+      multi_sim_comm.Barrier();
+      nw_ = multi_sim_comm.Get_size();
+    }
+    comm.Bcast(nw_,0);
+  }
 
   // open hills files for writing
   for(unsigned i=0;i<hillsfname.size();++i){
@@ -790,20 +797,9 @@ void PBMetaD::update()
 
    // Multiple walkers: share hills and add them all
    if(multiple_w){
-     int nw = 0;
-     int mw = 0;  
-     if(comm.Get_rank()==0){
-     // Only root of group can communicate with other walkers
-       nw = multi_sim_comm.Get_size();
-       mw = multi_sim_comm.Get_rank();
-     }
-     // Communicate to the other members of the same group
-     // info about number of walkers and walker index
-     comm.Bcast(nw,0);
-     comm.Bcast(mw,0);
      // Allocate arrays to store all walkers hills
-     std::vector<double> all_cv(nw*cv.size(), 0.0);
-     std::vector<double> all_height(nw*height.size(), 0.0);
+     std::vector<double> all_cv(nw_*cv.size(), 0.0);
+     std::vector<double> all_height(nw_*height.size(), 0.0);
      if(comm.Get_rank()==0){
      // Communicate (only root)
        multi_sim_comm.Allgather(cv, all_cv);
@@ -813,7 +809,7 @@ void PBMetaD::update()
      comm.Bcast(all_cv,0);
      comm.Bcast(all_height,0);
      // now add hills one by one
-     for(int j=0; j<nw; ++j){
+     for(unsigned j=0; j<nw_; ++j){
       for(unsigned i=0; i<getNumberOfArguments(); ++i){
        cv_tmp[0]    = all_cv[j*cv.size()+i];
        sigma_tmp[0] = sigma0_[i];
