@@ -62,7 +62,7 @@ For protein residues, the following groups are available:
 
 that select the appropriate atoms that define each dihedral angle for residue #.
 
-For RNA or RNA residues, the following groups are available:
+For DNA or RNA residues, the following groups are available:
 
 \verbatim
 # quadruplets for backbone dihedral angles
@@ -86,13 +86,14 @@ For RNA or RNA residues, the following groups are available:
 @base-#
 \endverbatim
 
-Notice that `zeta` and `epsilon` groups should not be used on 3' end and `alpha` should not be used on 5' end.
+Notice that `zeta` and `epsilon` groups should not be used on 3' end residue and `alpha` and `beta`
+should not be used on 5' end residue.
 
 If the chosen group name does not match any of the default ones, the parser looks for a single atom
 with the same name. This means that it is also possible to pick single atoms using the syntax
 `@atom-residue~.
 
-\warning If a residue-chain is repeated twice only the first entry will be selected.
+\warning If a residue-chain is repeated twice in the reference pdb only the first entry will be selected.
 
 \bug At the moment the HA1 atoms in a GLY residues are treated as if they are the CB atoms. This may or
 may not be true - GLY is problematic for secondary structure residues as it is achiral. 
