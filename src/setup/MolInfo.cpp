@@ -36,8 +36,13 @@ make up the molecules in your system using the chainIDs and resnumbers from the 
 then use this information in later commands to specify atom lists in terms residues.  For example
 using this command you can find the backbone atoms in your structure automatically. 
 
+\warning
 Please be aware that the pdb parser in plumed is far from perfect. You should thus check the log file
 and examine what plumed is actually doing whenenver you use the MOLINFO action.
+Also make sure that the atoms are listed in the pdb with the correct order.
+If you are using gromacs, the safest way is to use reference pdb file
+generated with `gmx editconf -f topol.tpr -o reference.pdb`.
+
 
 Using MOLINFO with a protein's pdb extend the possibility of atoms selection using the @ special
 symbol.
