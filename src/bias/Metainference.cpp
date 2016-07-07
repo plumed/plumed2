@@ -367,7 +367,7 @@ atoms(plumed.getAtoms())
 
   // sigma mean optimisation
   if(do_optsigmamean_) {
-    max_force_=2750.;
+    max_force_=3000.;
     parse("MAX_FORCE", max_force_);
     max_force_ *= max_force_;
     sm_mod_=1.0;
@@ -502,7 +502,7 @@ Metainference::~Metainference()
 
 double Metainference::getEnergySPE(const vector<double> &mean, const vector<double> &sigma, const double scale){
   // calculate effective sigma
-  const double smean2 = sigma_mean_[0]*sigma_mean_[0];
+  const double smean2 = scale*scale*sigma_mean_[0]*sigma_mean_[0];
   const double s = sqrt( sigma[0]*sigma[0] + smean2 );
   // cycle on arguments
   double ene = 0.0;
@@ -521,11 +521,11 @@ double Metainference::getEnergySPE(const vector<double> &mean, const vector<doub
 double Metainference::getEnergyGJE(const vector<double> &mean, const vector<double> &sigma, const double scale){
   // cycle on arguments
   double ene = 0.0;
-  double ss = sigma[0]*sigma[0] + sigma_mean_[0]*sigma_mean_[0];
+  double ss = sigma[0]*sigma[0] + scale*scale*sigma_mean_[0]*sigma_mean_[0];
 
   for(unsigned i=0;i<narg;++i){
     if(noise_type_==MGAUSS){ 
-      ss = sigma[i]*sigma[i] + sigma_mean_[i]*sigma_mean_[i];
+      ss = sigma[i]*sigma[i] + scale*scale*sigma_mean_[i]*sigma_mean_[i];
       // add Jeffrey's prior - one per sigma
       ene += 0.5*std::log(ss);
     }
