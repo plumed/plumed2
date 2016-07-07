@@ -235,6 +235,7 @@ PLUMED_BIAS_INIT(ao),
 sqrt2_div_pi(0.45015815807855),
 sqrt2_pi(2.50662827463100050240),
 doscale_(false),
+sm_mod_(1.),
 ndata_(getNumberOfArguments()),
 MCsteps_(1), 
 MCstride_(1), 
@@ -537,7 +538,7 @@ double Metainference::getEnergyGJE(const vector<double> &mean, const vector<doub
 }
 
 void Metainference::doMonteCarlo(const vector<double> &mean_){
-  // calculate old energy with the updated sigma_mean_
+  // calculate old energy with the updated coordinates
   double old_energy=0.;
   switch(noise_type_) {
     case GAUSS:
@@ -815,7 +816,7 @@ void Metainference::calculate(){
       n2 += bias[i]*bias[i];
     }
     fact = bias[replica_]/norm;
-    idof = 1./(1. - n2/(norm*norm));
+    //idof = 1./(1. - n2/(norm*norm));
   // or arithmetic ones
   } else {
     norm = dnrep; 
