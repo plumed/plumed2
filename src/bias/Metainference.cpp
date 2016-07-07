@@ -108,11 +108,12 @@ LABEL=spe
 class Metainference : public Bias
 {
   const double sqrt2_div_pi;
+  const double sqrt2_pi;
   // experimental values
   vector<double> parameters;
   // noise type
   unsigned noise_type_;
-  enum { GAUSS, MGAUSS, OUTLIERS};
+  enum { GAUSS, MGAUSS, OUTLIERS };
   // scale is data scaling factor
   bool   doscale_;
   double scale_;
@@ -186,6 +187,7 @@ void Metainference::registerKeywords(Keywords& keys){
 Metainference::Metainference(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao), 
 sqrt2_div_pi(0.45015815807855),
+sqrt2_pi(2.50662827463100050240),
 doscale_(false),
 ndata_(getNumberOfArguments()),
 MCsteps_(1), 
@@ -370,7 +372,7 @@ double Metainference::getEnergyGJE(const vector<double> &sigma, const double sca
       ene += 0.5*std::log(ss);
     }
     const double dev = scale*getArgument(i)-parameters[i]; 
-    ene += 0.5*dev*dev/ss + 0.5*std::log(ss);
+    ene += 0.5*dev*dev/ss + 0.5*std::log(ss*sqrt2_pi);
   }
   // add Jeffrey's prior in case one sigma for all data points
   if(noise_type_==GAUSS) ene += 0.5*std::log(ss);
@@ -518,7 +520,7 @@ double Metainference::getEnergyForceGJE()
       // add Jeffrey's prior - one per sigma
       ene += 0.5*std::log(ss[sel_sigma]);
     }
-    ene += 0.5*dev*dev*inv_s2[sel_sigma] + 0.5*std::log(ss[sel_sigma]);
+    ene += 0.5*dev*dev*inv_s2[sel_sigma] + 0.5*std::log(ss[sel_sigma]*sqrt2_pi);
     setOutputForce(i, -kbt_*dev*scale_*inv_s2[sel_sigma]);
   }
   // add Jeffrey's prior in case one sigma for all data points
