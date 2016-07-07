@@ -362,7 +362,7 @@ atoms(plumed.getAtoms())
     } else {
       error("If you want to use more than one SIGMA_MEAN0 you should use NOISETYPE=MGAUSS");
     }
-    for(unsigned i=0;i<narg;i++) if(sigma_mean_[i]>0) variance_[i] = sigma_mean_[i]*sigma_mean_[i]*static_cast<double>(nrep_);
+    for(unsigned i=0;i<narg;i++) variance_[i] = sigma_mean_[0]*sigma_mean_[0]*static_cast<double>(nrep_);
   } 
 
   // sigma mean optimisation
