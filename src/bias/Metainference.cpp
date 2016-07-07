@@ -514,7 +514,7 @@ double Metainference::getEnergySPE(const vector<double> &mean, const vector<doub
     ene += std::log( 2.0 * a2 / ( 1.0 - exp(- a2 / smean2) ) );
   }
   // add normalization and Jeffrey's prior
-  ene += std::log(s) - static_cast<double>(ndata_)*std::log(sqrt2_div_pi*s);
+  ene += std::log(sqrt(sigma[0]*sigma[0] + sigma_mean_[0]*sigma_mean_[0]) - static_cast<double>(ndata_)*std::log(sqrt2_div_pi*s);
   return kbt_ * ene;
 }
 
@@ -527,10 +527,11 @@ double Metainference::getEnergyGJE(const vector<double> &mean, const vector<doub
     if(noise_type_==MGAUSS){ 
       ss = sigma[i]*sigma[i] + scale*scale*sigma_mean_[i]*sigma_mean_[i];
       // add Jeffrey's prior - one per sigma
-      ene += 0.5*std::log(ss);
+      ene += 0.5*std::log(sigma[i]*sigma[i]+sigma_mean_[i]*sigma_mean_[i]);
     }
-    const double dev = scale*mean[i]-parameters[i]; 
-    ene += 0.5*dev*dev/ss + 0.5*std::log(ss*sqrt2_pi);
+    const double dev = scale*mean[i]-parameters[i];
+    // deviation and normalisation 
+    ene += 0.5*dev*dev/ss + 0.5*std::log(ss*2.*M_PI);
   }
   // add Jeffrey's prior in case one sigma for all data points
   if(noise_type_==GAUSS) ene += 0.5*std::log(ss);
@@ -868,14 +869,14 @@ void Metainference::calculate(){
 
   // write status file
   if(write_stride_>0&& (step%write_stride_==0 || getCPT()) ) writeStatus();
-
+  
   /* fix sigma_mean_ for the weighted average and the scaling factor */
   double modifier = scale_*sqrt(idof);
   /* fix sigma_mean_ for the effect of large forces */
   if(do_optsigmamean_) modifier *= sm_mod_;
   valueRSigmaMean->set(modifier);
   for(unsigned i=0;i<sigma_mean_.size();++i) sigma_mean_[i] *= modifier;
-
+  
   // calculate bias and forces
   double ene = 0; 
   switch(noise_type_) {
