@@ -816,7 +816,7 @@ void Metainference::calculate(){
       n2 += bias[i]*bias[i];
     }
     fact = bias[replica_]/norm;
-    //idof = 1./(1. - n2/(norm*norm));
+    idof = 1./(1. - n2/(norm*norm));
   // or arithmetic ones
   } else {
     norm = dnrep; 
