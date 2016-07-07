@@ -131,7 +131,6 @@ class Metainference : public Bias
   // number of data points
   unsigned ndata_;
   // Monte Carlo stuff
-  double   old_energy;
   unsigned MCsteps_;
   unsigned MCstride_;
   unsigned MCaccept_;
@@ -189,7 +188,6 @@ PLUMED_BIAS_INIT(ao),
 sqrt2_div_pi(0.45015815807855),
 doscale_(false),
 ndata_(getNumberOfArguments()),
-old_energy(0),
 MCsteps_(1), 
 MCstride_(1), 
 MCaccept_(0), 
@@ -380,17 +378,15 @@ double Metainference::getEnergyGJE(const vector<double> &sigma, const double sca
 }
 
 void Metainference::doMonteCarlo(){
-  // calculate old energy (first time only)
-  if(MCfirst_==-1) {
-    switch(noise_type_) {
-      case GAUSS:
-      case MGAUSS:
-        old_energy = getEnergyGJE(sigma_,scale_);
-        break;
-      case OUTLIERS:
-        old_energy = getEnergySPE(sigma_,scale_);
-        break;
-    }
+  double old_energy;
+  switch(noise_type_) {
+    case GAUSS:
+    case MGAUSS:
+      old_energy = getEnergyGJE(sigma_,scale_);
+      break;
+    case OUTLIERS:
+      old_energy = getEnergySPE(sigma_,scale_);
+      break;
   }
  
   // cycle on MC steps 
