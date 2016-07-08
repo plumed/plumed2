@@ -62,6 +62,8 @@ protected:
   void storeDistanceFunction( const unsigned& ifunc );
 /// Get the value of the weight
   double getWeight( const unsigned& weight ) const ;
+/// Return the vector of refernece configurations
+  std::vector<ReferenceConfiguration*>& getAllReferenceConfigurations();
 /// Return a pointer to one of the reference configurations
   ReferenceConfiguration* getReferenceConfiguration( const unsigned& ifunc );
 public:
@@ -150,6 +152,11 @@ void Mapping::storeDistanceFunction( const unsigned& ifunc ){
   unsigned storef=getNumberOfReferencePoints()+ifunc;
   fframes[storef]=fframes[ifunc]; dfframes[storef]=dfframes[ifunc];
   mymap->copyFrameDerivatives( ifunc, storef );
+}
+
+inline
+std::vector<ReferenceConfiguration*>& Mapping::getAllReferenceConfigurations(){
+  return mymap->getReferenceConfigurations();
 }
 
 }

@@ -120,6 +120,7 @@ void PathReparameterization::reparameterizePart( const int& istart, const int& i
 }
 
 void PathReparameterization::reparameterize( const int& ifix1, const int& ifix2, const double& TOL ){ 
+  plumed_dbg_assert( ifix1<ifix2 );
   // First reparameterize the part between the fixed frames
   reparameterizePart( ifix1, ifix2, -1.0, TOL );
 
