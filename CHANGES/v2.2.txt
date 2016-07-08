@@ -173,4 +173,7 @@ For users:
 - GSL library is now treated by `./configure` in the same way as other libraries, that is `-lgsl -lgslcblas` are only
   added if necessary.
 
+For developers:
+- Macports portile is now tested on travis at every plumed push.
+
 */
