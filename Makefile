@@ -4,12 +4,12 @@ endif
 
 
 SRCDIRS := src test
-SUBDIRS := $(SRCDIRS) user-doc developer-doc regtest
+SUBDIRS := $(SRCDIRS) user-doc developer-doc regtest macports
 
 SUBDIRSCLEAN:=$(addsuffix .clean,$(SUBDIRS))
 
      
-.PHONY: all lib clean $(SRCDIRS) doc docclean check cppcheck distclean all_plus_docs
+.PHONY: all lib clean $(SRCDIRS) doc docclean check cppcheck distclean all_plus_docs macports
 
 # if machine dependent configuration has been found:
 ifdef GCCDEP
@@ -89,6 +89,9 @@ docclean:
 
 cppcheck:
 	$(MAKE) -C src cppcheck
+
+macports:
+	$(MAKE) -C macports
 
 # stamp-h file keeps track of when ./configure was last applied
 # the procedure below is taken from:
