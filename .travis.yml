@@ -53,7 +53,7 @@ matrix:
     env: PLUMED_MACPORTS="plumed"
 # osx serial macports debug variant
   - os: osx
-    env: PLUMED_MACPORTS="plumed +crystallization +manyrestraints"
+    env: PLUMED_MACPORTS="plumed +crystallization +manyrestraints +adjmat"
 # I don't put any mpi variant with macports since it takes too long to compile
   allow_failures:
 # I allow this to fail temporarily
