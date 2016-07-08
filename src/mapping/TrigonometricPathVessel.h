@@ -40,7 +40,6 @@ private:
   double dx;
   std::vector<double> cargs;
   unsigned iclose1, iclose2;
-  Direction projdir;
   std::vector<double> mypack1_stashd_args;
   std::vector<Vector> mypack1_stashd_atoms;
   MultiValue mydpack1, mydpack2, mydpack3;

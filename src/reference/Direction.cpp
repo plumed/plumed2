@@ -46,6 +46,29 @@ void Direction::setDirection( const std::vector<Vector>& conf, const std::vector
   for(unsigned i=0;i<conf.size();++i){ align[i]=1.0; displace[i]=1.0; atom_der_index[i]=i; reference_atoms[i]=conf[i]; }
 }
 
+void Direction::setDirection( ReferenceValuePack& myder ){
+  plumed_dbg_assert( myder.getNumberOfArguments()==getNumberOfReferenceArguments() && myder.getNumberOfAtoms()==reference_atoms.size() );
+  for(unsigned i=0;i<reference_args.size();++i) reference_args[i] = 0.5*myder.getArgumentDerivative(i); 
+  for(unsigned i=0;i<reference_atoms.size();++i) reference_atoms[i] = myder.getAtomsDisplacementVector()[i];  // Should this be scaled by number of atoms ?
+}
+
+void Direction::addDirection( const double& weight, ReferenceValuePack& myder ){
+  plumed_dbg_assert( myder.getNumberOfArguments()==getNumberOfReferenceArguments() && myder.getNumberOfAtoms()==reference_atoms.size() );
+  for(unsigned i=0;i<reference_args.size();++i) reference_args[i] += 0.5*weight*myder.getArgumentDerivative(i);
+  for(unsigned i=0;i<reference_atoms.size();++i) reference_atoms[i] += weight*myder.getAtomsDisplacementVector()[i];
+}
+
+void Direction::addDirection( const double& weight, const Direction& dir ){
+  plumed_dbg_assert( dir.getNumberOfReferenceArguments()==getNumberOfReferenceArguments() && dir.reference_atoms.size()==reference_atoms.size() );
+  for(unsigned i=0;i<reference_args.size();++i) reference_args[i] += weight*dir.reference_args[i];
+  for(unsigned i=0;i<reference_atoms.size();++i) reference_atoms[i] += weight*dir.reference_atoms[i];
+}
+
+void Direction::zeroDirection(){
+  for(unsigned i=0;i<reference_args.size();++i) reference_args[i] = 0.;
+  for(unsigned i=0;i<reference_atoms.size();++i) reference_atoms[i].zero();
+}
+
 double Direction::calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& args, 
                         ReferenceValuePack& myder, const bool& squared ) const {
   plumed_assert( squared );

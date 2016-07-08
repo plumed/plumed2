@@ -37,6 +37,7 @@ class Value;
 class Pbc;
 class OFile;
 class PDB;
+class Direction;
 
 class ReferenceConfigurationOptions {
 friend class ReferenceConfiguration;
@@ -143,6 +144,8 @@ public:
   void setNamesAndAtomNumbers( const std::vector<AtomNumber>& numbers, const std::vector<std::string>& arg );
 /// Set the reference structure (perhaps should also pass the pbc and align and displace )
   void setReferenceConfig( const std::vector<Vector>& pos, const std::vector<double>& arg, const std::vector<double>& metric );
+/// Move the position of the reference configuration
+  void moveReferenceConfig( const std::vector<Vector>& pos, const std::vector<double>& arg );
 /// Print a pdb file containing the reference configuration
   void print( OFile& ofile, const double& time, const double& weight, const double& lunits, const double& old_norm );
   void print( OFile& ofile, const std::string& fmt, const double& lunits );
@@ -165,6 +168,8 @@ public:
   bool isDirection() const ;
 /// Stuff to setup pca
   virtual void setupPCAStorage( ReferenceValuePack& mypack ){ plumed_error(); }
+/// Move the reference configuration by an ammount specified using a Direction
+  void displaceReferenceConfiguration( const double& weight, Direction& dir );
 };
 
 // inline

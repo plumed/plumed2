@@ -37,7 +37,11 @@ public:
   double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& args,
                ReferenceValuePack& myder, const bool& squared ) const ;
   void setDirection( const std::vector<Vector>& conf, const std::vector<double>& args );
+  void setDirection( ReferenceValuePack& myder );
+  void addDirection( const double& weight, ReferenceValuePack& myder );
+  void addDirection( const double& weight, const Direction& dir );
   void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in ){ plumed_error(); }
+  void zeroDirection();
 };
 
 }

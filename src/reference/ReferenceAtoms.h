@@ -75,8 +75,6 @@ protected:
   const std::vector<double> & getDisplace() const ;
 /// Get the position of the ith atom
   Vector getReferencePosition( const unsigned& iatom ) const ;  
-/// Get the reference positions
-  const std::vector<Vector> & getReferencePositions() const ; 
 /// Add derivatives to iatom th atom in list
 //  void addAtomicDerivatives( const unsigned& , const Vector& );
 /// Get the atomic derivatives on the ith atom in the list
@@ -89,6 +87,8 @@ public:
   explicit ReferenceAtoms( const ReferenceConfigurationOptions& ro );
 /// This returns the number of reference atom positions
   unsigned getNumberOfReferencePositions() const ;
+/// Get the reference positions
+  const std::vector<Vector> & getReferencePositions() const ;
 /// This allows us to use a single pos array with RMSD objects using different atom indexes
   unsigned getAtomIndex( const unsigned& ) const ;
 /// Get the atoms required (additional checks are required when we have multiple domains)
@@ -103,6 +103,8 @@ public:
   const std::vector<AtomNumber>& getAbsoluteIndexes();
 /// This returns how many atoms there should be
   unsigned getNumberOfAtoms() const ;
+/// Displace the positions of the reference atoms a bit
+  void displaceReferenceAtoms( const double& weight, const std::vector<Vector>& dir ); 
 };
 
 inline

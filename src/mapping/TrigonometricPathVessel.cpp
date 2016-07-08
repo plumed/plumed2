@@ -20,31 +20,10 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "vesselbase/VesselRegister.h"
-#include "vesselbase/StoreDataVessel.h"
-#include "core/Value.h"
-#include "reference/ReferenceValuePack.h"
-#include "Mapping.h"
+#include "TrigonometricPathVessel.h"
 
 namespace PLMD {
 namespace mapping {
-
-class TrigonometricPathVessel : public vesselbase::StoreDataVessel {
-private:
-  Value* sp; 
-  Value* zp;
-  Mapping* mymap;
-  Matrix<Vector> myeig;
-  std::vector<Vector> mypack1_stashd;
-  MultiValue mydpack1, mydpack2, mydpack3;
-  ReferenceValuePack mypack1, mypack2, mypack3;
-public:
-  static void registerKeywords( Keywords& keys );
-  static void reserveKeyword( Keywords& keys );
-  TrigonometricPathVessel( const vesselbase::VesselOptions& da );
-  std::string description();
-  void resize();
-  void finish( const std::vector<double>& buffer );
-};
 
 PLUMED_REGISTER_VESSEL(TrigonometricPathVessel,"GPATH")
 
@@ -118,7 +97,7 @@ void TrigonometricPathVessel::finish( const std::vector<double>& buffer ){
   std::vector<double> dist( getNumberOfComponents() ), dist2( getNumberOfComponents() );;
   retrieveSequentialValue( 0, false, dist ); 
   retrieveSequentialValue( 1, false, dist2 );
-  unsigned iclose1=getStoreIndex(0), iclose2=getStoreIndex(1);
+  iclose1=getStoreIndex(0); iclose2=getStoreIndex(1);
   double mindist1=dist[0], mindist2=dist2[0]; 
   if( lambda>0.0 ){
       mindist1=-std::log( dist[0] ) / lambda;
@@ -173,7 +152,7 @@ void TrigonometricPathVessel::finish( const std::vector<double>& buffer ){
   // This computes s value
   double spacing = mymap->getPropertyValue( iclose1, 0 ) - mymap->getPropertyValue( iclose2, 0 );
   double root = sqrt( v1v2*v1v2 - v2v2 * ( v1v1 - v3v3) );
-  double dx = 0.5 * ( (root - v1v2) / v2v2 - 1.);
+  dx = 0.5 * ( (root - v1v2) / v2v2 - 1.);
   double path_s = mymap->getPropertyValue(iclose1, 0) + spacing * dx; sp->set( path_s ); 
   double fact = 0.25*spacing / v2v2; 
   // Derivative of s wrt arguments

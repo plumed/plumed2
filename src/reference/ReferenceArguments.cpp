@@ -74,8 +74,7 @@ void ReferenceArguments::setArgumentNames( const std::vector<std::string>& arg_v
 }
 
 void ReferenceArguments::setReferenceArguments( const std::vector<double>& arg_vals, const std::vector<double>& sigma ){
-  plumed_dbg_assert( reference_args.size()==arg_vals.size() );
-  for(unsigned i=0;i<arg_vals.size();++i) reference_args[i]=arg_vals[i];
+  moveReferenceArguments( arg_vals );
   
   if( hasmetric ){
      unsigned k=0;
@@ -89,6 +88,11 @@ void ReferenceArguments::setReferenceArguments( const std::vector<double>& arg_v
      plumed_assert( reference_args.size()==sigma.size() );
      for(unsigned i=0;i<reference_args.size();++i) weights[i]=sigma[i];
   } 
+}
+
+void ReferenceArguments::moveReferenceArguments( const std::vector<double>& arg_vals ){
+  plumed_dbg_assert( reference_args.size()==arg_vals.size() );
+  for(unsigned i=0;i<arg_vals.size();++i) reference_args[i]=arg_vals[i];
 }
 
 void ReferenceArguments::getArgumentRequests( std::vector<std::string>& argout, bool disable_checks ){
@@ -192,4 +196,10 @@ double ReferenceArguments::calculateArgumentDistance( const std::vector<Value*> 
   }
   return r;
 }
+
+void ReferenceArguments::displaceReferenceArguments( const double& weight, const std::vector<double>& displace ){
+  plumed_dbg_assert( displace.size()==getNumberOfReferenceArguments() );
+  for(unsigned i=0;i<displace.size();++i) reference_args[i] += weight*displace[i];
+}
+
 }
