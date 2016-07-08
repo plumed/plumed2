@@ -514,7 +514,7 @@ double Metainference::getEnergySPE(const vector<double> &mean, const vector<doub
     ene += std::log( 2.0 * a2 / ( 1.0 - exp(- a2 / smean2) ) );
   }
   // add normalization and Jeffrey's prior
-  ene += std::log(sqrt(sigma[0]*sigma[0] + sigma_mean_[0]*sigma_mean_[0]) - static_cast<double>(ndata_)*std::log(sqrt2_div_pi*s);
+  ene += std::log(sqrt(sigma[0]*sigma[0] + sigma_mean_[0]*sigma_mean_[0])) - static_cast<double>(ndata_)*std::log(sqrt2_div_pi*s);
   return kbt_ * ene;
 }
 
