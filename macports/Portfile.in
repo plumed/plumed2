@@ -101,6 +101,10 @@ variant manyrestraints description {Enable manyrestraints module} {
   set plumed_modules ${plumed_modules}+manyrestraints
 }
 
+variant adjmat description {Enable adjmat module} {
+  set plumed_modules ${plumed_modules}+adjmat
+}
+
 #### I leave this out momentarily since it has problems
 # variant imd description {Enable imd module - includes some proprietary code} {
 #   license ${license} Restrictive
