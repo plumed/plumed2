@@ -116,7 +116,6 @@ LABEL=spe
 class Metainference : public Bias
 {
   const double sqrt2_div_pi;
-  const double sqrt2_pi;
   // experimental values
   vector<double> parameters;
   // noise type
@@ -234,15 +233,16 @@ void Metainference::registerKeywords(Keywords& keys){
   useCustomisableComponents(keys);
   keys.addOutputComponent("sigma", "default","uncertainty parameter");
   keys.addOutputComponent("sigmaMean","default","uncertainty in the mean estimate");
-  keys.addOutputComponent("scale", "default","scale parameter");
+  keys.addOutputComponent("rewSigmaMean","default","sigma mean multiplier");
+  keys.addOutputComponent("scale", "SCALEDATA","scale parameter");
   keys.addOutputComponent("accept","default","MC acceptance");
-  keys.addOutputComponent("maxForceMD","default","max force on molecule");
+  keys.addOutputComponent("maxForceMD","OPTSIGMAMEAN","max force on atoms");
+  keys.addOutputComponent("smMod","OPTSIGMAMEAN","modifier for all sigma mean");
 }
 
 Metainference::Metainference(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao), 
 sqrt2_div_pi(0.45015815807855),
-sqrt2_pi(2.50662827463100050240),
 doscale_(false),
 scale_mu_(0),
 scale_sigma_(-1),
@@ -767,7 +767,7 @@ double Metainference::getEnergyForceGJE(const vector<double> &mean, const double
       // add Jeffrey's prior - one per sigma
       ene += 0.5*std::log(ss[sel_sigma]);
     }
-    ene += 0.5*dev*dev*inv_s2[sel_sigma] + 0.5*std::log(ss[sel_sigma]*sqrt2_pi);
+    ene += 0.5*dev*dev*inv_s2[sel_sigma] + 0.5*std::log(ss[sel_sigma]*2*M_PI);
     setOutputForce(i, -kbt_*fact*dev*scale_*inv_s2[sel_sigma]);
     if(do_reweight) w_tmp += -fact*(getArgument(i) - mean[i])*dev*scale_*inv_s2[sel_sigma];
   }
