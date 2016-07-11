@@ -31,6 +31,7 @@
 #include "core/Atoms.h"
 #include "core/Value.h"
 #include "tools/File.h"
+#include "tools/Random.h"
 #include <cmath>
 
 using namespace std;
@@ -122,8 +123,13 @@ class Metainference : public Bias
   unsigned noise_type_;
   enum { GAUSS, MGAUSS, OUTLIERS };
   // scale is data scaling factor
+  // noise type
+  unsigned scale_prior_;
+  enum { SC_GAUSS, SC_FLAT };
   bool   doscale_;
   double scale_;
+  double scale_mu_;
+  double scale_sigma_;
   double scale_min_;
   double scale_max_;
   double Dscale_;
@@ -148,10 +154,11 @@ class Metainference : public Bias
   unsigned ndata_;
 
   // Monte Carlo stuff
+  vector<Random> random;
   unsigned MCsteps_;
   unsigned MCstride_;
-  unsigned MCaccept_;
-  long int MCfirst_;
+  long unsigned MCaccept_;
+  long unsigned MCtrial_;
 
   // output
   Value*   valueScale;
@@ -205,13 +212,15 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.addFlag("SCALEDATA",false,"Set to TRUE if you want to sample a scaling factor common to all values and replicas");  
   keys.addFlag("OPTSIGMAMEAN",false,"Set to TRUE if you want to scale sigma_mean to prevent too high forces");  
   keys.add("compulsory","SCALE0","initial value of the uncertainty parameter");
-  keys.add("compulsory","SCALE_MIN","minimum value of the uncertainty parameter");
-  keys.add("compulsory","SCALE_MAX","maximum value of the uncertainty parameter");
-  keys.add("compulsory","DSCALE","maximum MC move of the uncertainty parameter");
+  keys.add("compulsory","SCALE_PRIOR","FLAT","either FLAT or GAUSSIAN");
+  keys.add("optional","SCALE_MIN","minimum value of the uncertainty parameter");
+  keys.add("optional","SCALE_MAX","maximum value of the uncertainty parameter");
+  keys.add("optional","SCALE_SIGMA","maximum value of the uncertainty parameter");
+  keys.add("optional","DSCALE","maximum MC move of the uncertainty parameter");
   keys.add("compulsory","SIGMA0","initial value of the uncertainty parameter");
   keys.add("compulsory","SIGMA_MIN","minimum value of the uncertainty parameter");
   keys.add("compulsory","SIGMA_MAX","maximum value of the uncertainty parameter");
-  keys.add("compulsory","DSIGMA","maximum MC move of the uncertainty parameter");
+  keys.add("optional","DSIGMA","maximum MC move of the uncertainty parameter");
   keys.add("optional","SIGMA_MEAN0","starting value for the uncertainty in the mean estimate");
   keys.add("optional","SIGMA_MEAN_MOD0","starting value for sm modifier");
   keys.add("optional","SIGMA_MEAN_MOD_MIN","starting value for sm modifier");
@@ -235,12 +244,19 @@ PLUMED_BIAS_INIT(ao),
 sqrt2_div_pi(0.45015815807855),
 sqrt2_pi(2.50662827463100050240),
 doscale_(false),
+scale_mu_(0),
+scale_sigma_(-1),
+scale_min_(1),
+scale_max_(-1),
+Dscale_(-1),
+Dsigma_(-1),
 sm_mod_(1.),
 ndata_(getNumberOfArguments()),
+random(2),
 MCsteps_(1), 
 MCstride_(1), 
 MCaccept_(0), 
-MCfirst_(-1),
+MCtrial_(0),
 write_stride_(0),
 do_reweight(false),
 do_optsigmamean_(false),
@@ -297,10 +313,28 @@ atoms(plumed.getAtoms())
 
   parseFlag("SCALEDATA", doscale_);
   if(doscale_) {
+    string stringa_noise;
+    parse("SCALE_PRIOR",stringa_noise);
+    if(stringa_noise=="GAUSS")     scale_prior_ = SC_GAUSS; 
+    else if(stringa_noise=="FLAT") scale_prior_ = SC_FLAT;
+    else error("Unknown SCALE_PRIOR type!");
     parse("SCALE0",scale_);
-    parse("SCALE_MIN",scale_min_);
-    parse("SCALE_MAX",scale_max_);
+    if(scale_prior_==SC_GAUSS) {
+      parse("SCALE_SIGMA",scale_sigma_);
+      scale_mu_=scale_;
+    } else {
+      parse("SCALE_MIN",scale_min_);
+      parse("SCALE_MAX",scale_max_);
+    }
+    if(scale_prior_==SC_GAUSS&&scale_sigma_<0.) 
+      error("SCALE_SIGMA must be set when using SCALE_PRIOR=GAUSS");
+    if(scale_prior_==SC_FLAT&&scale_max_<scale_min_) 
+      error("SCALE_MAX and SCALE_MIN must be set when using SCALE_PRIOR=FLAT");
     parse("DSCALE",Dscale_);
+    if(Dscale_<0) {
+      if(scale_prior_==SC_FLAT) Dscale_ = 0.05*(scale_max_ - scale_min_);
+      if(scale_prior_==SC_GAUSS) Dscale_ = 0.05*scale_sigma_;
+    }
   } else {
     scale_=1.0;
   }
@@ -322,6 +356,7 @@ atoms(plumed.getAtoms())
   parse("SIGMA_MIN",sigma_min_);
   parse("SIGMA_MAX",sigma_max_);
   parse("DSIGMA",Dsigma_);
+  if(Dsigma_<0) Dsigma_ = 0.05*(sigma_max_ - sigma_min_);
 
   // monte carlo stuff
   parse("MC_STEPS",MCsteps_);
@@ -483,7 +518,14 @@ atoms(plumed.getAtoms())
   if(master) iseed = time(NULL)+replica_;
   else iseed = 0;     
   comm.Sum(&iseed, 1);
-  srand(iseed);
+  random[0].setSeed(-iseed);
+  if(doscale_) {
+    // in this case we want the same seed everywhere
+    iseed = time(NULL);
+    if(master) multi_sim_comm.Bcast(iseed,0);
+    comm.Bcast(iseed,0);
+    random[1].setSeed(-iseed);
+  }
 
   // outfile stuff
   if(write_stride_>0) {
@@ -557,15 +599,19 @@ void Metainference::doMonteCarlo(const vector<double> &mean_){
     // propose move for scale
     double new_scale = scale_;
     if(doscale_) {
-      const double r1 = static_cast<double>(rand()) / RAND_MAX;
-      const double ds1 = -Dscale_ + r1 * 2.0 * Dscale_;
-      new_scale += ds1;
-      // check boundaries
-      if(new_scale > scale_max_){new_scale = 2.0 * scale_max_ - new_scale;}
-      if(new_scale < scale_min_){new_scale = 2.0 * scale_min_ - new_scale;}
-      // the scaling factor should be the same for all the replicas
-      if(master && nrep_>1 ) multi_sim_comm.Bcast(new_scale,0);
-      comm.Bcast(new_scale,0);
+      MCtrial_++;
+      if(scale_prior_==SC_FLAT) {
+        const double r1 = random[1].Gaussian();
+        const double ds1 = sqrt(Dscale_)*r1;
+        new_scale += ds1;
+        // check boundaries
+        if(new_scale > scale_max_){new_scale = 2.0 * scale_max_ - new_scale;}
+        if(new_scale < scale_min_){new_scale = 2.0 * scale_min_ - new_scale;}
+      } else {
+        const double r1 = random[1].Gaussian();
+        const double ds1 = (scale_mu_-new_scale)*Dscale_+scale_sigma_*sqrt(2.*Dscale_)*r1;
+        new_scale += ds1;
+      }
 
       // calculate new energy
       double new_energy=0;
@@ -596,24 +642,24 @@ void Metainference::doMonteCarlo(const vector<double> &mean_){
       if( delta <= 0.0 ){
         old_energy = new_energy;
         scale_ = new_scale;
+        MCaccept_++;
       // otherwise extract random number
       } else {
-        double s = static_cast<double>(rand()) / RAND_MAX;
-        // all replicas run the random number, but then only one is used
-        if(master && nrep_>1) multi_sim_comm.Bcast(s,0);
-        comm.Bcast(s,0);
+        double s = random[1].RandU01();
         if( s < exp(-delta) ){
           old_energy = new_energy;
           scale_ = new_scale;
+          MCaccept_++;
         }
       }
     }
   
     // propose move for sigma
+    MCtrial_++;
     vector<double> new_sigma(sigma_.size());
     for(unsigned j=0;j<sigma_.size();j++) {
-      const double r2 = static_cast<double>(rand()) / RAND_MAX;
-      const double ds2 = -Dsigma_ + r2 * 2.0 * Dsigma_;
+      const double r2 = random[1].Gaussian();
+      const double ds2 = sqrt(Dsigma_)*r2;
       new_sigma[j] = sigma_[j] + ds2;
       // check boundaries
       if(new_sigma[j] > sigma_max_){new_sigma[j] = 2.0 * sigma_max_ - new_sigma[j];}
@@ -641,7 +687,7 @@ void Metainference::doMonteCarlo(const vector<double> &mean_){
       MCaccept_++;
     // otherwise extract random number
     } else {
-      const double s = static_cast<double>(rand()) / RAND_MAX;
+      const double s = random[0].RandU01();
       if( s < exp(-delta) ){
         old_energy = new_energy;
         sigma_ = new_sigma;
@@ -651,6 +697,8 @@ void Metainference::doMonteCarlo(const vector<double> &mean_){
  
   }
   /* save the result of the sampling */
+  double accept = static_cast<double>(MCaccept_) / static_cast<double>(MCtrial_);
+  valueAccept->set(accept);
   if(doscale_) valueScale->set(scale_);
   for(unsigned i=0; i<sigma_.size(); i++) valueSigma[i]->set(sigma_[i]);
 }
@@ -790,12 +838,6 @@ void Metainference::update() {
 }
 
 void Metainference::calculate(){
-  const long int step = getStep();
-  // this is needed when restarting simulations
-  if(MCfirst_==-1) {
-    MCfirst_=step;
-  }
-
   double norm = 0.0;
   double fact = 0.0;
   double idof = 1.0;
@@ -861,11 +903,8 @@ void Metainference::calculate(){
   }
 
   /* MONTE CARLO */
+  const long int step = getStep();
   if(step%MCstride_==0&&!getExchangeStep()) doMonteCarlo(mean);
-
-  double MCtrials = floor(static_cast<double>(step-MCfirst_) / static_cast<double>(MCstride_))+1.0;
-  double accept = static_cast<double>(MCaccept_) / static_cast<double>(MCsteps_) / MCtrials;
-  valueAccept->set(accept);
 
   // write status file
   if(write_stride_>0&& (step%write_stride_==0 || getCPT()) ) writeStatus();
