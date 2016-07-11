@@ -271,7 +271,7 @@ PBMetaD::~PBMetaD(){
 PBMetaD::PBMetaD(const ActionOptions& ao):
 PLUMED_BIAS_INIT(ao),
 grid_(false), height0_(std::numeric_limits<double>::max()),
-biasf_(1.0), kbt_(0.0), stride_(0), welltemp_(false),
+biasf_(1.0), kbt_(0.0), stride_(0), wgridstride_(0), welltemp_(false),
 multiple_w(false), isFirstStep(true)
 {
 
