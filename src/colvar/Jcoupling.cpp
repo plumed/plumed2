@@ -33,21 +33,58 @@ using namespace std;
 namespace PLMD{
     namespace colvar{
 
-        //+PLUMEDOC COLVAR JCOUPLING
-        /*
-           Calculates 3J coupling constants for a dihedral angle.
+//+PLUMEDOC COLVAR JCOUPLING
+/*
+Calculates \f$^3J\f$ coupling constants for a dihedral angle.
 
-           The J-coupling between two atoms is given by the Karplus relation:
-           \f[
-           ^3J(\psi)=A\cos^2(\psi+\Delta\psi)+B\cos(\psi+\Delta\psi)+C
-           \f]
+The J-coupling between two atoms is given by the Karplus relation:
 
-           \par Examples
+\f[
+^3J(\theta)=A\cos^2(\theta+\Delta\theta)+B\cos(\theta+\Delta\theta)+C
+\f]
 
-           <!---You should put an example of how to use your CV here--->
+where \f$A\f$, \f$B\f$ and \f$C\f$ are the Karplus parameters and \f$\Delta\theta\f$ is an additional constant
+added on to the dihedral angle \f$\theta\f$. The Karplus parameters are determined empirically and are dependent
+on the type of J-coupling.
+
+This collective variable computes the J-couplings for a set of atoms defining a dihedral angle. You can specify
+the atoms involved using the \ref MOLINFO notation. You can also specify the experimental couplings using the
+ADDCOUPLINGS flag and COUPLING keywords. These will be included in the output. You must choose the type of
+coupling using the type keyword, you can also supply custom Karplus parameters using TYPE=CUSTOM and the A, B, C
+and SHIFT keywords.
+
+\par Examples
+In the following example we calculate the Ha-N J-coupling from a set of atoms involved in
+dihedral \f$\psi\f$ angles in the peptide backbone. We also add the experimental datapoints and compute
+the correlation and other measures and finally print the results.
+
+\verbatim
+
+MOLINFO MOLTYPE=protein STRUCTURE=peptide.pdb
+WHOLEMOLECULES ENTITY0=1-111
+
+JCOUPLING ...
+    ADDCOUPLINGS
+    TYPE=HAN
+    ATOMS1=@psi-2 COUPLING1=-0.49
+    ATOMS2=@psi-4 COUPLING2=-0.54
+    ATOMS3=@psi-5 COUPLING3=-0.53
+    ATOMS4=@psi-7 COUPLING4=-0.39
+    ATOMS5=@psi-8 COUPLING5=-0.39
+    LABEL=jhan
+... JCOUPLING
+
+jhanst: STATS ARG=(jhan\.j_.*) PARARG=(jhan\.exp_.*)
+
+PRINT ARG=jhanst.*,jhan.* FILE=COLVAR STRIDE=100
+
+ENDPLUMED
+
+\endverbatim
+(See also \ref PRINT, \ref STATS)
 
 */
-        //+ENDPLUMEDOC
+//+ENDPLUMEDOC
 
         class JCoupling : public Colvar {
             private:
@@ -77,12 +114,12 @@ namespace PLMD{
                          "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one J-coupling will be "
                          "calculated for each ATOMS keyword you specify.");
                 keys.reset_style("ATOMS", "atoms");
-                keys.addFlag("ADDCOUPLINGS", false, "Set to TRUE if you want to have fixed components with the experimetnal values.");  
+                keys.addFlag("ADDCOUPLINGS", false, "Set this flag if you want to have fixed components with the experimental values.");  
                 keys.add("compulsory", "TYPE", "Type of J-coupling to compute (HAN,HAHN,CCG,NCG,CUSTOM)");
                 keys.add("optional", "A", "Karplus parameter A");
                 keys.add("optional", "B", "Karplus parameter B");
                 keys.add("optional", "C", "Karplus parameter C");
-                keys.add("optional", "SHIFT", "Angle shift");
+                keys.add("optional", "SHIFT", "Angle shift in radians");
                 keys.add("numbered", "COUPLING", "Add an experimental value for each coupling");
                 keys.addOutputComponent("j", "default", "the calculated J-coupling");
                 keys.addOutputComponent("exp", "ADDCOUPLINGS", "the experimental J-coupling");
