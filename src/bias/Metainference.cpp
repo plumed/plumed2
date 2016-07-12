@@ -315,7 +315,7 @@ atoms(plumed.getAtoms())
   if(doscale_) {
     string stringa_noise;
     parse("SCALE_PRIOR",stringa_noise);
-    if(stringa_noise=="GAUSS")     scale_prior_ = SC_GAUSS; 
+    if(stringa_noise=="GAUSSIAN")     scale_prior_ = SC_GAUSS; 
     else if(stringa_noise=="FLAT") scale_prior_ = SC_FLAT;
     else error("Unknown SCALE_PRIOR type!");
     parse("SCALE0",scale_);
