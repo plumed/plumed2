@@ -143,7 +143,7 @@ if [ "$pdf" = "yes" ]; then
   ps2pdf $temp/out.ps $temp/out.pdf
   output="$temp/out.pdf"
   if [ "$crop" = "yes" ]; then
-    pdfcrop $output $temp/outcrop.pdf
+    (cd $temp;     pdfcrop $temp/out.pdf $temp/outcrop.pdf > /dev/null   )
     output="$temp/outcrop.pdf"
   fi
 else
