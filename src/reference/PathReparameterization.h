@@ -45,6 +45,8 @@ private:
   std::vector<ReferenceConfiguration*>& mypath;
 /// These are the current separations and the total length of the path
   std::vector<double> len, sumlen, sfrac;
+/// Maximum number of cycles in path reparameterization
+  unsigned MAXCYCLES;
 /// This function is used to work out when we are at loop ends as we go through them in positive and negative order
   bool loopEnd( const int& index, const int& end, const int& inc ) const ;
 /// Calculate the current spacings for the frames between istart and iend and return the average spacing

@@ -44,9 +44,10 @@ class ReferenceArguments :
   virtual public ReferenceConfiguration
 {
 friend class Direction;
+friend class ReferenceConfiguration;
 private:
 /// The weights for normed euclidean distance
-  std::vector<double> weights;
+  std::vector<double> weights, sqrtweight;
 /// The N X N matrix we are using to calculate our Malanobius distance
   Matrix<double> metric;
   std::vector<double> trig_metric;
@@ -82,7 +83,7 @@ public:
 /// Print the arguments out
   void printArguments( OFile& ofile, const std::string& fmt ) const ;
 /// Return all the reference arguments
-  const std::vector<double>& getReferenceArguments();
+  const std::vector<double>& getReferenceArguments() const ;
   const std::vector<double>& getReferenceMetric();
 /// Return names
   const std::vector<std::string>& getArgumentNames();
@@ -91,6 +92,10 @@ public:
   virtual double calculateArgumentDistance( const std::vector<Value*> & vals, const std::vector<double>& arg, ReferenceValuePack& myder, const bool& squared ) const ;
 /// Displace the positions of the reference atoms
   void displaceReferenceArguments( const double& weight, const std::vector<double>& displace );
+/// Extract the displacement from a position in a space
+  virtual void extractArgumentDisplacement( const std::vector<Value*>& vals, const std::vector<double>& arg, std::vector<double>& dirout ) const ;
+/// Project the displacement of the arguments on a vector
+  double projectArgDisplacementOnVector( const std::vector<double>& eigv, const std::vector<Value*>& vals, const std::vector<double>& arg, ReferenceValuePack& mypack ) const ;
 };
 
 inline
@@ -100,7 +105,7 @@ double ReferenceArguments::getReferenceArgument( const unsigned& i ) const {
 }
 
 inline
-const std::vector<double>& ReferenceArguments::getReferenceArguments(){
+const std::vector<double>& ReferenceArguments::getReferenceArguments() const {
   return reference_args;
 }
 

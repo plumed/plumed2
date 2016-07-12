@@ -32,7 +32,8 @@ args(iargs),
 mydir(ReferenceConfigurationOptions("DIRECTION")), 
 len(pp.size()), 
 sumlen(pp.size()), 
-sfrac(pp.size()) 
+sfrac(pp.size()),
+MAXCYCLES(100) 
 {
   mydir.setNamesAndAtomNumbers( pp[0]->getAbsoluteIndexes(), pp[0]->getArgumentNames() ); 
   mydir.zeroDirection(); pp[0]->setupPCAStorage( mypack );
@@ -47,7 +48,7 @@ bool PathReparameterization::loopEnd( const int& index, const int& end, const in
 void PathReparameterization::calcCurrentPathSpacings( const int& istart, const int& iend ){
   plumed_dbg_assert( istart<len.size() && iend<len.size() );
   len[istart] = sumlen[istart]=0;
-  // printf("HELLO PATH SPACINGS ARE CURRENTLY \n");
+  //printf("HELLO PATH SPACINGS ARE CURRENTLY \n");
 
   // Get the spacings given we can go forward and backwards
   int incr=1; if( istart>iend ){ incr=-1; }
@@ -55,7 +56,7 @@ void PathReparameterization::calcCurrentPathSpacings( const int& istart, const i
   for(int i=istart+incr;loopEnd(i,iend+incr,incr)==false;i+=incr){
       len[i] = mypath[i-incr]->calc( mypath[i]->getReferencePositions(), pbc, args, mypath[i]->getReferenceArguments(), mypack, false );
       sumlen[i] = sumlen[i-incr] + len[i];
-      // printf("FRAME %d TO FRAME %d EQUALS %f : %f \n",i-incr,i,len[i],sumlen[i] );
+      //printf("FRAME %d TO FRAME %d EQUALS %f : %f \n",i-incr,i,len[i],sumlen[i] );
   }
 }
 
@@ -82,7 +83,8 @@ void PathReparameterization::reparameterizePart( const int& istart, const int& i
   }
 
   double prevsum=0.;
-  while( fabs(sumlen[iend] - prevsum)>TOL){
+  for(unsigned iter=0;iter<MAXCYCLES;++iter){
+     if( fabs(sumlen[iend] - prevsum)<=TOL ) break ;
      prevsum = sumlen[iend];
      // If no target is set we redistribute length
      if( target<0 ){
@@ -102,11 +104,13 @@ void PathReparameterization::reparameterizePart( const int& istart, const int& i
          }
          double dr = (sfrac[i]-sumlen[k])/len[k+incr];
          // Calculate the displacement between the appropriate points
-         double dd = mypath[k]->calc( mypath[k+incr]->getReferencePositions(), pbc, args, mypath[k+incr]->getReferenceArguments(), mypack, true );
+         // double dd = mypath[k]->calc( mypath[k+incr]->getReferencePositions(), pbc, args, mypath[k+incr]->getReferenceArguments(), mypack, true );
          // Copy the reference configuration from the configuration to a tempory direction
          newpath[i].setDirection( mypath[k]->getReferencePositions(), mypath[k]->getReferenceArguments() );  
+         // Get the displacement of the path
+         mypath[k]->extractDisplacementVector( mypath[k+incr]->getReferencePositions(), args, mypath[k+incr]->getReferenceArguments(), false, false, mydir );
          // Set our direction equal to the displacement
-         mydir.setDirection( mypack );
+         // mydir.setDirection( mypack );
          // Shift the reference configuration by this ammount
          newpath[i].displaceReferenceConfiguration( dr, mydir );
      }
@@ -130,7 +134,7 @@ void PathReparameterization::reparameterize( const int& ifix1, const int& ifix2,
   // And reparameterize the begining and end of the path
   if( ifix1>0 ) reparameterizePart( ifix1, 0, target, TOL );
   if( ifix2<(mypath.size()-1) ) reparameterizePart( ifix2, mypath.size()-1, target, TOL );
-  // calcCurrentPathSpacings( 0, mypath.size()-1 ); 
+//  calcCurrentPathSpacings( 0, mypath.size()-1 ); 
 }
 
 }

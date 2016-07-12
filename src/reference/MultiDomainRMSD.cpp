@@ -158,12 +158,25 @@ void MultiDomainRMSD::setupPCAStorage( ReferenceValuePack& mypack ){
 //   }
 // }
 
-double MultiDomainRMSD::projectAtomicDisplacementOnVector( const unsigned& iv, const Matrix<Vector>& vecs, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const {
-  double totd=0.; Matrix<Vector> tvecs; std::vector<Vector> mypos; mypack.clear(); 
+void MultiDomainRMSD::extractAtomicDisplacement( const std::vector<Vector>& pos, const bool& anflag, std::vector<Vector>& direction ) const {
+   std::vector<Vector> mypos, mydir; 
+   for(unsigned i=0;i<domains.size();++i){
+      // Must extract appropriate positions here
+      mypos.resize( blocks[i+1] - blocks[i] ); mydir.resize( blocks[i+1] - blocks[i] );
+      unsigned n=0; for(unsigned j=blocks[i];j<blocks[i+1];++j){ mypos[n]=pos[j]; n++; }
+      // Do the calculation
+      domains[i]->extractAtomicDisplacement( mypos, anflag, mydir );
+      // Extract the direction
+      n=0; for(unsigned j=blocks[i];j<blocks[i+1];++j){ direction[j]=weights[i]*mydir[n];  n++; }
+   }   
+}
+
+double MultiDomainRMSD::projectAtomicDisplacementOnVector( const std::vector<Vector>& vecs, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const {
+  double totd=0.; std::vector<Vector> tvecs; std::vector<Vector> mypos; mypack.clear(); 
   MultiValue tvals( 1, mypack.getNumberOfDerivatives() ); ReferenceValuePack tder( 0, getNumberOfAtoms(), tvals ); 
   for(unsigned i=0;i<domains.size();++i){
       // Must extract appropriate positions here 
-      mypos.resize( blocks[i+1] - blocks[i] ); tvecs.resize( 1, blocks[i+1] - blocks[i] );
+      mypos.resize( blocks[i+1] - blocks[i] ); tvecs.resize( blocks[i+1] - blocks[i] );
       domains[i]->setupPCAStorage( tder );
       if( tder.centeredpos.size()>0 ){
          for(unsigned p=0;p<3;++p) for(unsigned q=0;q<3;++q) tder.DRotDPos(p,q).resize( mypos.size() );
@@ -172,7 +185,7 @@ double MultiDomainRMSD::projectAtomicDisplacementOnVector( const unsigned& iv, c
       if( tder.centeredpos.size()>0 ) tder.rot[0]=mypack.rot[i];
       unsigned n=0;
       for(unsigned j=blocks[i];j<blocks[i+1];++j){
-          mypos[n]=pos[j]; tder.setAtomIndex(n,j); tvecs( 0, n ) = vecs( iv, j );
+          mypos[n]=pos[j]; tder.setAtomIndex(n,j); tvecs[n] = vecs[j];
           tder.displacement[n]=mypack.displacement[j] / weights[i];
           if( tder.centeredpos.size()>0 ){
               tder.centeredpos[n]=mypack.centeredpos[j];
@@ -183,7 +196,7 @@ double MultiDomainRMSD::projectAtomicDisplacementOnVector( const unsigned& iv, c
       for(unsigned k=n;k<getNumberOfAtoms();++k) tder.setAtomIndex(k,3*pos.size()+10);
       
       // Do the calculations
-      totd += weights[i]*domains[i]->projectAtomicDisplacementOnVector( 0, tvecs, mypos, tder );
+      totd += weights[i]*domains[i]->projectAtomicDisplacementOnVector( tvecs, mypos, tder );
  
       // And derivatives
       mypack.copyScaledDerivatives( 0, weights[i], tvals );

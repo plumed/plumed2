@@ -39,6 +39,7 @@ void TrigonometricPathVessel::reserveKeyword( Keywords& keys ){
 
 TrigonometricPathVessel::TrigonometricPathVessel( const vesselbase::VesselOptions& da ):
 StoreDataVessel(da),
+projdir(ReferenceConfigurationOptions("DIRECTION")),
 mydpack1( 1, getAction()->getNumberOfDerivatives() ),
 mydpack2( 1, getAction()->getNumberOfDerivatives() ),
 mydpack3( 1, getAction()->getNumberOfDerivatives() ),
@@ -68,12 +69,14 @@ mypack3( 0, 0, mydpack3 )
       if( mymap->getNumberOfArguments()!=(mymap->getReferenceConfiguration(i))->getNumberOfReferenceArguments() ) error("all frames must use the same set of arguments"); 
   }
 
-  myeig.resize( 1, mymap->getNumberOfAtoms() );
+  cargs.resize( mymap->getNumberOfArguments() ); std::vector<std::string> argument_names( mymap->getNumberOfArguments() );
+  for(unsigned i=0;i<mymap->getNumberOfArguments();++i) argument_names[i] = (mymap->getPntrToArgument(i))->getName();
+  projdir.setNamesAndAtomNumbers( mymap->getAbsoluteIndexes(), argument_names );
   mypack1.resize( mymap->getNumberOfArguments(), mymap->getNumberOfAtoms() ); ref0->setupPCAStorage( mypack1 );
   mypack2.resize( mymap->getNumberOfArguments(), mymap->getNumberOfAtoms() ); ref0->setupPCAStorage( mypack2 );
   mypack3.resize( mymap->getNumberOfArguments(), mymap->getNumberOfAtoms() ); 
   for(unsigned i=0;i<mymap->getNumberOfAtoms();++i){ mypack1.setAtomIndex(i,i); mypack2.setAtomIndex(i,i); mypack3.setAtomIndex(i,i); }
-  mypack1_stashd.resize( mymap->getNumberOfAtoms() );
+  mypack1_stashd_atoms.resize( mymap->getNumberOfAtoms() ); mypack1_stashd_args.resize( mymap->getNumberOfArguments() );
 }
 
 std::string TrigonometricPathVessel::description(){
@@ -91,6 +94,8 @@ void TrigonometricPathVessel::resize(){
 void TrigonometricPathVessel::finish( const std::vector<double>& buffer ){
   // Store the data calculated during mpi loop
   StoreDataVessel::finish( buffer );
+  // Get current value of all arguments 
+  for(unsigned i=0;i<cargs.size();++i) cargs[i]=mymap->getArgument(i);
 
   // Determine closest and second closest point to current position
   double lambda=mymap->getLambda();
@@ -130,41 +135,38 @@ void TrigonometricPathVessel::finish( const std::vector<double>& buffer ){
      ReferenceConfiguration* conf2=mymap->getReferenceConfiguration( iclose1 );
      v2v2=(mymap->getReferenceConfiguration( iclose2 ))->calc( conf2->getReferencePositions(), mymap->getPbc(), mymap->getArguments(), 
                                                                conf2->getReferenceArguments(), mypack2, true ); 
+     (mymap->getReferenceConfiguration( iclose2 ))->extractDisplacementVector( conf2->getReferencePositions(), mymap->getArguments(), 
+                                                                               conf2->getReferenceArguments(), true, false, projdir );
   } else {
      ReferenceConfiguration* conf2=mymap->getReferenceConfiguration( iclose3 );
      v2v2=(mymap->getReferenceConfiguration( iclose1 ))->calc( conf2->getReferencePositions(), mymap->getPbc(), mymap->getArguments(), 
                                                                conf2->getReferenceArguments(), mypack2, true ); 
+     (mymap->getReferenceConfiguration( iclose1 ))->extractDisplacementVector( conf2->getReferencePositions(), mymap->getArguments(), 
+                                                                               conf2->getReferenceArguments(), true, false, projdir );
   }
 
+  // Stash derivatives of v1v1
+  for(unsigned i=0;i<mymap->getNumberOfArguments();++i) mypack1_stashd_args[i]=mypack1.getArgumentDerivative(i);
+  for(unsigned i=0;i<mymap->getNumberOfAtoms();++i) mypack1_stashd_atoms[i]=mypack1.getAtomDerivative(i);
   // Calculate the dot product of v1 with v2
-  double v1v2=0; for(unsigned j=0;j<mymap->getNumberOfArguments();++j) v1v2-=0.25*mypack1.getArgumentDerivative(j)*mypack2.getArgumentDerivative(j);
-  // Calculate the dot product for the atoms using pca routines
-  if( mymap->getNumberOfAtoms()>0 ){
-     // Divide projection on pca by number of atoms here as this is what is done when 
-     // calculating rmsd distance
-     double dnatoms=static_cast<double>( mymap->getNumberOfAtoms() );
-     for(unsigned i=0;i<mymap->getNumberOfAtoms();++i){
-         myeig(0,i) = -mypack2.getAtomsDisplacementVector()[i] / dnatoms; mypack1_stashd[i]=mypack1.getAtomDerivative(i);
-     }
-     v1v2 += (mymap->getReferenceConfiguration(iclose1))->projectAtomicDisplacementOnVector( 0, myeig, mymap->getPositions(), mypack1 );
-  }
+  double v1v2 = (mymap->getReferenceConfiguration(iclose1))->projectDisplacementOnVector( projdir, mymap->getPositions(), mymap->getArguments(), cargs, mypack1 );
   
   // This computes s value
   double spacing = mymap->getPropertyValue( iclose1, 0 ) - mymap->getPropertyValue( iclose2, 0 );
   double root = sqrt( v1v2*v1v2 - v2v2 * ( v1v1 - v3v3) );
-  dx = 0.5 * ( (root - v1v2) / v2v2 - 1.);
+  dx = 0.5 * ( (root + v1v2) / v2v2 - 1.);
   double path_s = mymap->getPropertyValue(iclose1, 0) + spacing * dx; sp->set( path_s ); 
   double fact = 0.25*spacing / v2v2; 
   // Derivative of s wrt arguments
   for(unsigned i=0;i<mymap->getNumberOfArguments();++i){
-    sp->setDerivative( i, fact*( mypack2.getArgumentDerivative(i) + (v2v2 * (-mypack1.getArgumentDerivative(i) + mypack3.getArgumentDerivative(i)) 
-                                 - v1v2*mypack2.getArgumentDerivative(i) )/root ) );
+    sp->setDerivative( i, fact*( mypack2.getArgumentDerivative(i) + (v2v2 * (-mypack1_stashd_args[i] + mypack3.getArgumentDerivative(i)) 
+                                 + v1v2*mypack2.getArgumentDerivative(i) )/root ) );
   }
   // Derivative of s wrt atoms
   unsigned narg=mymap->getNumberOfArguments(); Tensor vir; vir.zero(); fact = 0.5*spacing / v2v2;
   if( mymap->getNumberOfAtoms()>0 ){
       for(unsigned i=0;i<mymap->getNumberOfAtoms();++i){
-        Vector ader = fact*(( v1v2*mypack1.getAtomDerivative(i) + 0.5*v2v2*(-mypack1_stashd[i] + mypack3.getAtomDerivative(i) ) )/root - mypack1.getAtomDerivative(i) );
+        Vector ader = fact*(( v1v2*mypack1.getAtomDerivative(i) + 0.5*v2v2*(-mypack1_stashd_atoms[i] + mypack3.getAtomDerivative(i) ) )/root + mypack1.getAtomDerivative(i) );
         for(unsigned k=0;k<3;++k) sp->setDerivative( narg+3*i+k, ader[k] );  
         vir-=Tensor( mymap->getPosition(i), ader );
       }
@@ -177,25 +179,21 @@ void TrigonometricPathVessel::finish( const std::vector<double>& buffer ){
   ReferenceConfiguration* conf2=mymap->getReferenceConfiguration( iclose1 );
   double v4v4=(mymap->getReferenceConfiguration( iclose2 ))->calc( conf2->getReferencePositions(), mymap->getPbc(), mymap->getArguments(), 
                                                                    conf2->getReferenceArguments(), mypack2, true );
-  // First part of z due to arguments
-  double proj=0, path_z = v1v1 + dx*dx*v4v4; 
-  for(unsigned i=0;i<mymap->getNumberOfArguments();++i) path_z -= 0.5*dx*mypack1.getArgumentDerivative(i)*mypack2.getArgumentDerivative(i);
-  // Next part of z due to atoms
-  double dnatoms=static_cast<double>( mymap->getNumberOfAtoms() );
-  for(unsigned i=0;i<mymap->getNumberOfAtoms();++i) myeig(0,i) = mypack2.getAtomsDisplacementVector()[i] / dnatoms;
-  if( mymap->getNumberOfAtoms()>0 ){
-     proj = (mymap->getReferenceConfiguration(iclose1))->projectAtomicDisplacementOnVector( 0, myeig, mymap->getPositions(), mypack1 );
-     path_z -= 2*dx*proj;
-  }
+  // Extract vector connecting frames
+  (mymap->getReferenceConfiguration( iclose2 ))->extractDisplacementVector( conf2->getReferencePositions(), mymap->getArguments(),
+                                                                            conf2->getReferenceArguments(), true, false, projdir ); 
+  // Calculate projection of vector on line connnecting frames
+  double proj = (mymap->getReferenceConfiguration(iclose1))->projectDisplacementOnVector( projdir, mymap->getPositions(), mymap->getArguments(), cargs, mypack1 );
+  double path_z = v1v1 + dx*dx*v4v4 - 2*dx*proj; 
 
   // Derivatives for z path 
   path_z = sqrt(path_z); zp->set( path_z ); vir.zero(); 
-  for(unsigned i=0;i<mymap->getNumberOfArguments();++i) zp->setDerivative( i, (mypack1.getArgumentDerivative(i) - dx*mypack2.getArgumentDerivative(i))/(2.0*path_z) );
+  for(unsigned i=0;i<mymap->getNumberOfArguments();++i) zp->setDerivative( i, (mypack1_stashd_args[i] - 2*dx*mypack1.getArgumentDerivative(i))/(2.0*path_z) );
   // Derivative wrt atoms
   if( mymap->getNumberOfAtoms()>0 ){
       for(unsigned i=0;i<mymap->getNumberOfAtoms();++i){
           Vector dxder; for(unsigned k=0;k<3;++k) dxder[k] = ( 2*v4v4*dx - 2*proj )*spacing*sp->getDerivative( narg + 3*i+k );
-          Vector ader = ( mypack1_stashd[i] - 2.*dx*mypack1.getAtomDerivative(i) + dxder ) / (2.0*path_z); 
+          Vector ader = ( mypack1_stashd_atoms[i] - 2.*dx*mypack1.getAtomDerivative(i) + dxder )/ (2.0*path_z);
           for(unsigned k=0;k<3;++k) zp->setDerivative( narg+3*i+k, ader[k] );
           vir-=Tensor( mymap->getPosition(i), ader );
       }

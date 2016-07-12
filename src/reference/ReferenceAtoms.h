@@ -46,6 +46,7 @@ class ReferenceAtoms :
 {
 friend class Direction;
 friend class SingleDomainRMSD;
+friend class ReferenceConfiguration;
 private:
 /// This flag tells us if the user has disabled checking of the input in order to
 /// do fancy paths with weird inputs
@@ -105,6 +106,14 @@ public:
   unsigned getNumberOfAtoms() const ;
 /// Displace the positions of the reference atoms a bit
   void displaceReferenceAtoms( const double& weight, const std::vector<Vector>& dir ); 
+/// Extract a displacement from a position in space
+  virtual void extractAtomicDisplacement( const std::vector<Vector>& pos, const bool & anflag, std::vector<Vector>& direction ) const {
+     plumed_error(); 
+  }
+/// Project the displacement on a vector
+  virtual double projectAtomicDisplacementOnVector( const std::vector<Vector>& eigv, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const {
+     plumed_error(); return 1;
+  }
 };
 
 inline

@@ -154,18 +154,19 @@ public:
 /// These are overwritten in ReferenceArguments and ReferenceAtoms but are required here 
 /// to make PLMD::distance work
   virtual const std::vector<Vector>& getReferencePositions() const ; 
-  virtual const std::vector<double>& getReferenceArguments(); 
+  virtual const std::vector<double>& getReferenceArguments() const ; 
   virtual const std::vector<double>& getReferenceMetric();
 /// These are overwritten in ReferenceArguments and ReferenceAtoms to make frame copying work
   virtual const std::vector<AtomNumber>& getAbsoluteIndexes();
   virtual const std::vector<std::string>& getArgumentNames();
+/// Extract a Direction giving you the displacement from some position
+  void extractDisplacementVector( const std::vector<Vector>& pos, const std::vector<Value*>& vals,
+                                  const std::vector<double>& arg, const bool& anflag, const bool& nflag, 
+                                  Direction& mydir ) const ;
 /// Stuff for pca
   virtual bool pcaIsEnabledForThisReference(){ return false; }
-  virtual double projectAtomicDisplacementOnVector( const unsigned& i, const Matrix<Vector>& eigv, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const {
-     plumed_error(); return 1; 
-  }
-/// Stuff for sanity checks on distance
-  bool isDirection() const ;
+  double projectDisplacementOnVector( const Direction& mydir, const std::vector<Vector>& pos, const std::vector<Value*>& vals, 
+                                      const std::vector<double>& arg, ReferenceValuePack& mypack ) const ;
 /// Stuff to setup pca
   virtual void setupPCAStorage( ReferenceValuePack& mypack ){ plumed_error(); }
 /// Move the reference configuration by an ammount specified using a Direction
@@ -214,7 +215,7 @@ const std::vector<Vector>& ReferenceConfiguration::getReferencePositions() const
 }
 
 inline
-const std::vector<double>& ReferenceConfiguration::getReferenceArguments(){
+const std::vector<double>& ReferenceConfiguration::getReferenceArguments() const {
   return fake_refargs;
 }
 
