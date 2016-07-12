@@ -119,5 +119,6 @@ Fixes since 2.3b. Relevant things could be merged in the changelog above when we
 - Extended checkpoint infrastracture, now \ref METAD and \ref PBMETAD will write GRIDS also on checkpoint step (only the GROMACS patch
   is currently using the checkpointing interface)
 - GSL library is now searched by default during `./configure`.
+- Removed IMD modules. In case someone is interested in restoring it, please contact the PLUMED developers.
 
 */

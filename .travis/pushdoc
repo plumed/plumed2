@@ -46,10 +46,11 @@ Precompiled manual for PLUMED ${TRAVIS_BRANCH}
 -----------------------------
 
 This repository hosts a precompiled manual
-for PLUMED ${TRAVIS_BRANCH}, git revision $hash, $(date).
+for PLUMED ${TRAVIS_BRANCH}, git revision $hash, on $(date).
+
 This manual has been compiled on [travis](http://travis-ci.org/plumed/plumed2).
-To browse the manual you should go
-[here](http://plumed.github.io/doc-${TRAVIS_BRANCH}).
+
+To browse the manual you should go [here](http://plumed.github.io/doc-${TRAVIS_BRANCH}).
 
 EOF
 git add --all .
