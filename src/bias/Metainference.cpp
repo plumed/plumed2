@@ -144,6 +144,7 @@ class Metainference : public Bias
   // sigma_mean rescue params
   double sm_mod_;
   double sm_mod_min_;
+  double sm_mod_max_;
   double Dsm_mod_;
   double max_force_;
 
@@ -223,6 +224,7 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.add("optional","SIGMA_MEAN0","starting value for the uncertainty in the mean estimate");
   keys.add("optional","SIGMA_MEAN_MOD0","starting value for sm modifier");
   keys.add("optional","SIGMA_MEAN_MOD_MIN","starting value for sm modifier");
+  keys.add("optional","SIGMA_MEAN_MOD_MAX","starting value for sm modifier");
   keys.add("optional","DSIGMA_MEAN_MOD","step value for sm modifier");
   keys.add("optional","MAX_FORCE","maximum allowable force");
   keys.add("optional","TEMP","the system temperature - this is only needed if code doesnt' pass the temperature to plumed");
@@ -409,6 +411,8 @@ atoms(plumed.getAtoms())
     parse("SIGMA_MEAN_MOD0", sm_mod_);
     sm_mod_min_=1.0;
     parse("SIGMA_MEAN_MOD_MIN", sm_mod_min_);
+    sm_mod_max_=5.0;
+    parse("SIGMA_MEAN_MOD_MAX", sm_mod_max_);
     Dsm_mod_=0.01;
     parse("DSIGMA_MEAN_MOD", Dsm_mod_);
   }
@@ -829,7 +833,12 @@ void Metainference::update() {
       sm_mod_ -= Dsm_mod_ * 0.01 * std::log(sm_mod_/sm_mod_min_);
       if(sm_mod_<sm_mod_min_) sm_mod_=sm_mod_min_;
     } else {
-      sm_mod_ += Dsm_mod_ * std::log(nnfmax_md+1.);
+      const double sm_mod_new = sm_mod_ + Dsm_mod_ * std::log(nnfmax_md+1.);
+      if(sm_mod_new > sm_mod_max_) {
+        sm_mod_ = sm_mod_max_;
+      } else {
+        sm_mod_ = sm_mod_new;
+      }
     }
 
     valueSMmod->set(sm_mod_);
