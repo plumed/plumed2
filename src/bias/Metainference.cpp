@@ -411,7 +411,7 @@ atoms(plumed.getAtoms())
     parse("SIGMA_MEAN_MOD0", sm_mod_);
     sm_mod_min_=1.0;
     parse("SIGMA_MEAN_MOD_MIN", sm_mod_min_);
-    sm_mod_max_=5.0;
+    sm_mod_max_=sqrt(10.);
     parse("SIGMA_MEAN_MOD_MAX", sm_mod_max_);
     Dsm_mod_=0.01;
     parse("DSIGMA_MEAN_MOD", Dsm_mod_);
