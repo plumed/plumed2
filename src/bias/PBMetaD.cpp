@@ -209,14 +209,14 @@ private:
   vector<bool>  doInt_;
   bool isFirstStep;
 
-  void   readGaussians(int iarg, IFile*);
-  bool   readChunkOfGaussians(int iarg, IFile *ifile, unsigned n);
-  void   writeGaussian(int iarg, const Gaussian&, OFile*);
-  void   addGaussian(int iarg, const Gaussian&);
-  double getBiasAndDerivatives(int iarg, const vector<double>&,double* der=NULL);
-  double evaluateGaussian(int iarg, const vector<double>&, const Gaussian&,double* der=NULL);
-  vector<unsigned> getGaussianSupport(int iarg, const Gaussian&);
-  bool   scanOneHill(int iarg, IFile *ifile,  vector<Value> &v, vector<double> &center, vector<double>  &sigma, double &height);
+  void   readGaussians(unsigned iarg, IFile*);
+  bool   readChunkOfGaussians(unsigned iarg, IFile *ifile, unsigned n);
+  void   writeGaussian(unsigned iarg, const Gaussian&, OFile*);
+  void   addGaussian(unsigned iarg, const Gaussian&);
+  double getBiasAndDerivatives(unsigned iarg, const vector<double>&, double* der=NULL);
+  double evaluateGaussian(unsigned iarg, const vector<double>&, const Gaussian&,double* der=NULL);
+  vector<unsigned> getGaussianSupport(unsigned iarg, const Gaussian&);
+  bool   scanOneHill(unsigned iarg, IFile *ifile,  vector<Value> &v, vector<double> &center, vector<double>  &sigma, double &height);
   std::string fmt;
 
 public:
@@ -534,11 +534,11 @@ multiple_w(false), isFirstStep(true)
     comm.Bcast(r,0);
     if(r>0) hillsfname_tmp="/dev/null";
     ofile->enforceSuffix("");
-  }
-  ofile->open(hillsfname_tmp);
-  if(fmt.length()>0) ofile->fmtField(fmt);
-  ofile->addConstantField("multivariate");
-  if(doInt_[i]) {
+   }
+   ofile->open(hillsfname_tmp);
+   if(fmt.length()>0) ofile->fmtField(fmt);
+   ofile->addConstantField("multivariate");
+   if(doInt_[i]) {
     ofile->addConstantField("lower_int").printField("lower_int",lowI_[i]);
     ofile->addConstantField("upper_int").printField("upper_int",uppI_[i]);
    }
@@ -580,7 +580,7 @@ multiple_w(false), isFirstStep(true)
   log<<"\n";
 }
 
-void PBMetaD::readGaussians(int iarg, IFile *ifile){
+void PBMetaD::readGaussians(unsigned iarg, IFile *ifile){
  vector<double> center(1);
  vector<double> sigma(1);
  double height;
@@ -597,7 +597,7 @@ void PBMetaD::readGaussians(int iarg, IFile *ifile){
  log.printf("      %d Gaussians read\n",nhills);
 }
 
-bool PBMetaD::readChunkOfGaussians(int iarg, IFile *ifile, unsigned n){
+bool PBMetaD::readChunkOfGaussians(unsigned iarg, IFile *ifile, unsigned n){
  vector<double> center(1);
  vector<double> sigma(1);
  double height;
@@ -618,7 +618,7 @@ bool PBMetaD::readChunkOfGaussians(int iarg, IFile *ifile, unsigned n){
  return false;
 }
 
-void PBMetaD::writeGaussian(int iarg, const Gaussian& hill, OFile *ofile){
+void PBMetaD::writeGaussian(unsigned iarg, const Gaussian& hill, OFile *ofile){
   ofile->printField("time",getTimeStep()*getStep());
   ofile->printField(getPntrToArgument(iarg),hill.center[0]);
   ofile->printField("multivariate","false");
@@ -630,7 +630,7 @@ void PBMetaD::writeGaussian(int iarg, const Gaussian& hill, OFile *ofile){
   ofile->printField();
 }
 
-void PBMetaD::addGaussian(int iarg, const Gaussian& hill){
+void PBMetaD::addGaussian(unsigned iarg, const Gaussian& hill){
  if(!grid_){hills_[iarg].push_back(hill);} 
  else{
   vector<unsigned> nneighb=getGaussianSupport(iarg, hill);
@@ -666,7 +666,7 @@ void PBMetaD::addGaussian(int iarg, const Gaussian& hill){
  }
 }
 
-vector<unsigned> PBMetaD::getGaussianSupport(int iarg, const Gaussian& hill){
+vector<unsigned> PBMetaD::getGaussianSupport(unsigned iarg, const Gaussian& hill){
  vector<unsigned> nneigh;
  const double cutoff=sqrt(2.0*DP2CUTOFF)*hill.sigma[0];
  if(doInt_[iarg]){
@@ -684,55 +684,52 @@ vector<unsigned> PBMetaD::getGaussianSupport(int iarg, const Gaussian& hill){
  return nneigh;
 }
 
-double PBMetaD::getBiasAndDerivatives(int iarg, const vector<double>& cv, double* der)
+double PBMetaD::getBiasAndDerivatives(unsigned iarg, const vector<double>& cv, double* der)
 {
  double bias=0.0;
  if(!grid_){
-  unsigned stride=comm.Get_size();
-  unsigned rank=comm.Get_rank();
-  for(unsigned i=rank;i<hills_[iarg].size();i+=stride){
-   bias += evaluateGaussian(iarg,cv,hills_[iarg][i],der);
-  }
-  comm.Sum(bias);
-  if(der) comm.Sum(der,1);
+   unsigned stride=comm.Get_size();
+   unsigned rank=comm.Get_rank();
+   for(unsigned i=rank;i<hills_[iarg].size();i+=stride){
+     bias += evaluateGaussian(iarg,cv,hills_[iarg][i],der);
+   }
+   comm.Sum(bias);
+   if(der) comm.Sum(der,1);
  }else{
-  if(der){
-   vector<double> vder(1);
-   bias = BiasGrids_[iarg]->getValueAndDerivatives(cv,vder);
-   der[0] = vder[0];
-  }else{
-   bias = BiasGrids_[iarg]->getValue(cv);
-  }
+   if(der){
+     vector<double> vder(1);
+     bias = BiasGrids_[iarg]->getValueAndDerivatives(cv,vder);
+     der[0] = vder[0];
+   }else{
+     bias = BiasGrids_[iarg]->getValue(cv);
+   }
  }
 
  return bias;
 }
 
-double PBMetaD::evaluateGaussian
- (int iarg, const vector<double>& cv, const Gaussian& hill, double* der)
+double PBMetaD::evaluateGaussian(unsigned iarg, const vector<double>& cv, const Gaussian& hill, double* der)
 {
  double bias=0.0;
-// I use a pointer here because cv is const (and should be const)
-// but when using doInt it is easier to locally replace cv[0] with
-// the upper/lower limit in case it is out of range
- const double *pcv=NULL; // pointer to cv
+ // I use a pointer here because cv is const (and should be const)
+ // but when using doInt it is easier to locally replace cv[0] with
+ // the upper/lower limit in case it is out of range
+ const double *pcv=NULL;
  double tmpcv[1]; // tmp array with cv (to be used with doInt_)
- if(cv.size()>0) pcv=&cv[0];
+ tmpcv[0]=cv[0];
+ bool isOutOfInt = false; 
  if(doInt_[iarg]){
-   plumed_assert(cv.size()==1);
-   tmpcv[0]=cv[0];
-   if(cv[0]<lowI_[iarg]) tmpcv[0]=lowI_[iarg];
-   if(cv[0]>uppI_[iarg]) tmpcv[0]=uppI_[iarg];
-   pcv=&(tmpcv[0]);
+   if(cv[0]<lowI_[iarg]) { tmpcv[0]=lowI_[iarg]; isOutOfInt = true; }
+   else if(cv[0]>uppI_[iarg]) { tmpcv[0]=uppI_[iarg]; isOutOfInt = true; }
  }
- double dp = difference(0,hill.center[0],pcv[0]) / hill.sigma[0];
+ pcv=&(tmpcv[0]);
+ double dp  = difference(iarg, hill.center[0],pcv[0]) / hill.sigma[0];
  double dp2 = 0.5 * dp * dp;
  if(dp2<DP2CUTOFF){
-       bias = hill.height*exp(-dp2);
-       if(der){der[0]+= -bias * dp / hill.sigma[0];}
- }
- if(doInt_[iarg]){
-   if((cv[0]<lowI_[iarg] || cv[0]>uppI_[iarg]) && der ) der[0] = 0.0;
+   bias = hill.height*exp(-dp2);
+   if(der &&!isOutOfInt){
+     der[0] += -bias * dp / hill.sigma[0];
+   }
  }
  return bias;
 }
@@ -740,18 +737,17 @@ double PBMetaD::evaluateGaussian
 void PBMetaD::calculate()
 {
   vector<double> cv(1);
-  double* der=new double[1];
+  double der[1];
   vector<double> bias(getNumberOfArguments());
   vector<double> deriv(getNumberOfArguments());
 
   double ene = 0.;
-  double ncv = (double) getNumberOfArguments();
   for(unsigned i=0; i<getNumberOfArguments(); ++i){
-   cv[0] = getArgument(i);
-   der[0] = 0.0;
-   bias[i] = getBiasAndDerivatives(i, cv, der);
-   deriv[i] = der[0];
-   ene += exp(-bias[i]/kbt_);
+    cv[0]    = getArgument(i);
+    der[0]   = 0.0;
+    bias[i]  = getBiasAndDerivatives(i, cv, der);
+    deriv[i] = der[0];
+    ene += exp(-bias[i]/kbt_);
   }
       
   // set Forces 
@@ -759,9 +755,9 @@ void PBMetaD::calculate()
     const double f = - exp(-bias[i]/kbt_) / (ene) * deriv[i];
     setOutputForce(i, f);
   }
-  delete [] der;
 
   // set bias
+  double ncv = static_cast<double>(getNumberOfArguments());
   ene = -kbt_ * (std::log(ene) - std::log(ncv));
   setBias(ene);
 }
@@ -773,87 +769,86 @@ void PBMetaD::update()
   if(getStep()%stride_==0 && !isFirstStep ){nowAddAHill=true;}else{nowAddAHill=false;isFirstStep=false;}
 
   if(nowAddAHill){
-   // get all CVs value
-   vector<double> cv(getNumberOfArguments());
-   for(unsigned i=0; i<getNumberOfArguments(); ++i) cv[i] = getArgument(i);
-   // get all biases and heights
-   vector<double> bias(getNumberOfArguments());
-   vector<double> height(getNumberOfArguments());
-   vector<double> cv_tmp(1);
-   vector<double> sigma_tmp(1);
-   double norm = 0.0;
-   for(unsigned i=0; i<getNumberOfArguments(); ++i){
-     cv_tmp[0] = cv[i];
-     bias[i] = getBiasAndDerivatives(i, cv_tmp);
-     double h = exp(-bias[i]/kbt_);
-     norm += h;
-     height[i] = h;
-   }
-   // normalize and apply welltemp correction
-   for(unsigned i=0; i<getNumberOfArguments(); ++i){
-     height[i] *=  height0_ / norm;
-     if(welltemp_) height[i] *= exp(-bias[i]/(kbt_*(biasf_-1.0)));
-   }
-
-   // Multiple walkers: share hills and add them all
-   if(multiple_w){
-     // Allocate arrays to store all walkers hills
-     std::vector<double> all_cv(nw_*cv.size(), 0.0);
-     std::vector<double> all_height(nw_*height.size(), 0.0);
-     if(comm.Get_rank()==0){
-     // Communicate (only root)
-       multi_sim_comm.Allgather(cv, all_cv);
-       multi_sim_comm.Allgather(height, all_height);
-     }
-     // Share info with group members
-     comm.Bcast(all_cv,0);
-     comm.Bcast(all_height,0);
-     // now add hills one by one
-     for(unsigned j=0; j<nw_; ++j){
-      for(unsigned i=0; i<getNumberOfArguments(); ++i){
-       cv_tmp[0]    = all_cv[j*cv.size()+i];
-       sigma_tmp[0] = sigma0_[i];
-       // new Gaussian
-       Gaussian newhill = Gaussian(cv_tmp, sigma_tmp, all_height[j*cv.size()+i]);
-       addGaussian(i, newhill);
-       // print on HILLS file
-       writeGaussian(i, newhill, hillsOfiles_[i]);
-      }
-     }  
-   // just add your own hills  
-   }else{
+    // get all CVs value
+    vector<double> cv(getNumberOfArguments());
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) cv[i] = getArgument(i);
+    // get all biases and heights
+    vector<double> bias(getNumberOfArguments());
+    vector<double> height(getNumberOfArguments());
+    vector<double> cv_tmp(1);
+    vector<double> sigma_tmp(1);
+    double norm = 0.0;
     for(unsigned i=0; i<getNumberOfArguments(); ++i){
-      cv_tmp[0]    = cv[i];
-      sigma_tmp[0] = sigma0_[i];
-      // new Gaussian
-      Gaussian newhill = Gaussian(cv_tmp, sigma_tmp, height[i]);
-      addGaussian(i, newhill);
-      // print on HILLS file
-      writeGaussian(i, newhill, hillsOfiles_[i]);
-    } 
-   }
+      cv_tmp[0] = cv[i];
+      bias[i]   = getBiasAndDerivatives(i, cv_tmp);
+      double h  = exp(-bias[i]/kbt_);
+      norm     += h;
+      height[i] = h;
+    }
+    // normalize and apply welltemp correction
+    for(unsigned i=0; i<getNumberOfArguments(); ++i){
+      height[i] *=  height0_ / norm;
+      if(welltemp_) height[i] *= exp(-bias[i]/(kbt_*(biasf_-1.0)));
+    }
 
-   // write grid files
-   if(wgridstride_>0 && (getStep()%wgridstride_==0 || getCPT())) {
-     int r = 0;
-     if(multiple_w) {
-       if(comm.Get_rank()==0) r=multi_sim_comm.Get_rank();
-       comm.Bcast(r,0);
-     } 
-     if(r==0) {
-       for(unsigned i=0; i<gridfiles_.size(); ++i) {
-         gridfiles_[i]->rewind();
-         BiasGrids_[i]->writeToFile(*gridfiles_[i]);
-         gridfiles_[i]->flush();
-       }
-     }
-   }
+    // Multiple walkers: share hills and add them all
+    if(multiple_w){
+      // Allocate arrays to store all walkers hills
+      vector<double> all_cv(nw_*cv.size(), 0.0);
+      vector<double> all_height(nw_*height.size(), 0.0);
+      if(comm.Get_rank()==0){
+      // Communicate (only root)
+        multi_sim_comm.Allgather(cv, all_cv);
+        multi_sim_comm.Allgather(height, all_height);
+      }
+      // Share info with group members
+      comm.Bcast(all_cv,0);
+      comm.Bcast(all_height,0);
+      // now add hills one by one
+      for(unsigned j=0; j<nw_; ++j){
+        for(unsigned i=0; i<getNumberOfArguments(); ++i){
+          cv_tmp[0]    = all_cv[j*cv.size()+i];
+          sigma_tmp[0] = sigma0_[i];
+          // new Gaussian
+          Gaussian newhill = Gaussian(cv_tmp, sigma_tmp, all_height[j*cv.size()+i]);
+          addGaussian(i, newhill);
+          // print on HILLS file
+          writeGaussian(i, newhill, hillsOfiles_[i]);
+        }
+      }  
+      // just add your own hills  
+    }else{
+      for(unsigned i=0; i<getNumberOfArguments(); ++i){
+        cv_tmp[0]    = cv[i];
+        sigma_tmp[0] = sigma0_[i];
+        // new Gaussian
+        Gaussian newhill = Gaussian(cv_tmp, sigma_tmp, height[i]);
+        addGaussian(i, newhill);
+        // print on HILLS file
+        writeGaussian(i, newhill, hillsOfiles_[i]);
+      } 
+    }
 
+    // write grid files
+    if(wgridstride_>0 && (getStep()%wgridstride_==0 || getCPT())) {
+      int r = 0;
+      if(multiple_w) {
+        if(comm.Get_rank()==0) r=multi_sim_comm.Get_rank();
+        comm.Bcast(r,0);
+      } 
+      if(r==0) {
+        for(unsigned i=0; i<gridfiles_.size(); ++i) {
+          gridfiles_[i]->rewind();
+          BiasGrids_[i]->writeToFile(*gridfiles_[i]);
+          gridfiles_[i]->flush();
+        }
+      }
+    }
   }
 }
 
 /// takes a pointer to the file and a template string with values v and gives back the next center, sigma and height 
-bool PBMetaD::scanOneHill(int iarg, IFile *ifile,  vector<Value> &tmpvalues, vector<double> &center, vector<double>  &sigma, double &height){
+bool PBMetaD::scanOneHill(unsigned iarg, IFile *ifile,  vector<Value> &tmpvalues, vector<double> &center, vector<double>  &sigma, double &height){
   double dummy;
  
    if(ifile->scanField("time",dummy)){
