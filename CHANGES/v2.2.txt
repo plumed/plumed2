@@ -170,6 +170,7 @@ Version 2.2.4
 See branch \branch{v2.2} on git repository.
 
 For users:
+- Fix a bug in \ref PBMETAD when biasing periodic and not periodic collective variables at the same time 
 - GSL library is now treated by `./configure` in the same way as other libraries, that is `-lgsl -lgslcblas` are only
   added if necessary.
 
