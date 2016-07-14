@@ -31,6 +31,9 @@ test -f config || {
 
 mpiprocs=0
 
+plumed_needs=
+plumed_modules=
+
 source ./config
 
 for file in $extra_files
@@ -85,7 +88,17 @@ do
   echo "Checking for $need"
   if ! $plumed config -q has $need
   then
-    echo "NOT_APPLIABLE ($need NOT INSTALLED)"
+    echo "NOT_APPLIABLE ($need NOT ENABLED)"
+    exit 0;
+  fi
+done
+
+for module in $plumed_modules
+do
+  echo "Checking for $module"
+  if ! $plumed config -q module $module
+  then
+    echo "NOT_APPLIABLE ($need MODULE NOT INSTALLED)"
     exit 0;
   fi
 done
