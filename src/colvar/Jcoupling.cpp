@@ -21,6 +21,7 @@
    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
 #include "ActionRegister.h"
+#include "core/PlumedMain.h"
 #include "tools/Torsion.h"
 
 #include <string>
@@ -51,7 +52,12 @@ This collective variable computes the J-couplings for a set of atoms defining a 
 the atoms involved using the \ref MOLINFO notation. You can also specify the experimental couplings using the
 ADDCOUPLINGS flag and COUPLING keywords. These will be included in the output. You must choose the type of
 coupling using the type keyword, you can also supply custom Karplus parameters using TYPE=CUSTOM and the A, B, C
-and SHIFT keywords.
+and SHIFT keywords. You will need to make sure you are using the correct dihedral angle:
+
+- Ha-N: \f$\psi\f$
+- Ha-HN: \f$\phi\f$
+- N-C\f$\gamma\f$: \f$\chi_1\f$
+- CO-C\f$\gamma\f$: \f$\chi_1\f$
 
 \par Examples
 In the following example we calculate the Ha-N J-coupling from a set of atoms involved in
@@ -213,6 +219,8 @@ ENDPLUMED
                     kc_ = -0.27;
                     kshift_ = PI / 3.0;
                     log.printf("J-coupling type is HAN, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
+                    log << "  Bibliography "
+                        << plumed.cite("Wang A C, Bax A, J. Am. Chem. Soc. 117, 1810 (1995)") << "\n";
                     break;
                 case HAHN:
                     ka_ = 7.09;
@@ -220,6 +228,8 @@ ENDPLUMED
                     kc_ = 1.55;
                     kshift_ = -PI / 3.0;
                     log.printf("J-coupling type is HAHN, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
+                    log << "  Bibliography "
+                        << plumed.cite("Hu J-S, Bax A, J. Am. Chem. Soc. 119, 6360 (1997)") << "\n";
                     break;
                 case CCG:
                     ka_ = 2.31;
@@ -227,6 +237,8 @@ ENDPLUMED
                     kc_ = 0.55;
                     kshift_ = (2.0 * PI) / 3.0;
                     log.printf("J-coupling type is CCG, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
+                    log << "  Bibliography "
+                        << plumed.cite("Perez C, Löhr F, Rüterjans H, Schmidt J, J. Am. Chem. Soc. 123, 7081 (2001)") << "\n";
                     break;
                 case NCG:
                     ka_ = 1.29;
@@ -234,6 +246,8 @@ ENDPLUMED
                     kc_ = 0.37;
                     kshift_ = 0.0;
                     log.printf("J-coupling type is NCG, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
+                    log << "  Bibliography "
+                        << plumed.cite("Perez C, Löhr F, Rüterjans H, Schmidt J, J. Am. Chem. Soc. 123, 7081 (2001)") << "\n";
                     break;
                 case CUSTOM:
                     log.printf("J-coupling type is custom, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
@@ -254,12 +268,6 @@ ENDPLUMED
             } else {
                 log.printf("  without periodic boundary conditions\n");
             }
-
-            /* TODO add karplus param papers */
-            /* log<<"  Bibliography " */
-            /*    <<plumed.cite("Camilloni C, Vendruscolo M, J. Phys. Chem. B 119, 653 (2015)") */
-            /*    <<plumed.cite("Camilloni C, Vendruscolo M, Biochemistry 54, 7470 (2015)") <<"\n"; */
-
 
             for (unsigned i = 0; i < ndata; i++) {
                 std::string num; Tools::convert(i, num);
