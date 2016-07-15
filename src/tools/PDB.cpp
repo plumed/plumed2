@@ -49,7 +49,7 @@ void PDB::setAtomPositions( const std::vector<Vector>& pos ){
 void PDB::setArgumentValue( const std::string& argname, const double& val ){
   bool replaced=false; std::string num; Tools::convert( val, num );
   for(unsigned i=0;i<remark.size();++i){
-      if( remark[i].find(argname+"=")!=std::string::npos){
+      if( remark[i].find(argname+"=")!=std::string::npos && remark[i].find("sigma_")==std::string::npos ){
           remark[i]=argname + "=" + num; replaced=true;
       }
   }

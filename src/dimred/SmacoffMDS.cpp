@@ -65,7 +65,6 @@ DimensionalityReductionBase(ao)
 }
 
 void SmacofMDS::calculateProjections( const Matrix<double>& targets, Matrix<double>& projections ){
-abort();
    // Take the square root of all the distances and the weights
    Matrix<double> weights( targets.nrows(), targets.ncols() );
    Matrix<double> distances( targets.nrows(), targets.ncols() ); 
