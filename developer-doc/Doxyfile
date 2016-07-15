@@ -765,7 +765,8 @@ INPUT                  = ./Intro.txt \
                          ./AddingACLTool.txt \
                          ./AddingAMeasure.txt \
                          ./AddingAMultColvar.txt \
-                         ./InstallationLayout.txt
+                         ./InstallationLayout.txt \
+                         ./intro-git.txt
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
