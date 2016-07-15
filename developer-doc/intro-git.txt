@@ -1,3 +1,8 @@
+// This document is formatted for Doxygen
+/**
+
+\page intro-git A brief introduction to git
+
 Clone the repository
 $git clone git@git.assembla.com:plumed2.git
 $cd plumed2
@@ -82,3 +87,4 @@ All these things can be done with a GUI:
 $git gui
 
 
+*/
