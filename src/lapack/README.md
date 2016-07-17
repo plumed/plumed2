@@ -1,4 +1,3 @@
-/**
 \defgroup internal-lapack Internal LAPACK
 
 Internal implementation of LAPACK, imported from GROMACS.
@@ -22,4 +21,3 @@ Within the PLUMED doxygen (this page) the available
 macros are listed but not documented. Have a look
 at the corresponding documentation at http://www.netlib.org/lapack
 
-*/
