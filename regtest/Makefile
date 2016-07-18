@@ -1,4 +1,5 @@
-SUBDIRS := basic metainference crystallization manyrestraints adjmat
+SUBDIRS := basic adjmat analysis basic crystallization manyrestraints mapping metainference multicolvar secondarystructure
+
 SUBDIRSCLEAN := $(addsuffix .clean,$(SUBDIRS))
 SUBDIRSVALGRIND := $(addsuffix .valgrind,$(SUBDIRS))
 
