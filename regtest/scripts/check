@@ -61,6 +61,17 @@ if [ -n "$fail" ] ; then
   exit 1
 fi
 fi
+
+if [ "$PLUMED_ALL_TESTS" = yes ] ; then
+  if (($notapp>0)) ; then
+    echo "+ You are running with PLUMED_ALL_TESTS=yes and some tests are not appliable"
+    echo "+ This is likely happening on the first job under TRAVIS-CI"
+    echo "+ Please check that all modules have been properly enabled!"
+    if [ -n "$fail" ] ; then
+      exit 1
+    fi
+  fi
+fi
 echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo
 echo
