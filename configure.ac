@@ -100,10 +100,13 @@ AC_DEFUN([PLUMED_CHECK_PACKAGE], [
 
 ##################################################################
 
+AC_MSG_NOTICE([Optional modules are disabled by default])
+rm -f src/*.on src/*.off
+
 AC_ARG_ENABLE([modules],
   AS_HELP_STRING([--enable-modules], [all/none/reset or : separated list such as +crystallization:-bias default: reset]),
   [
-   rm -fr src/*.on src/*.off
+   rm -f src/*.on src/*.off
    if test "${enableval}" == yes ; then
      enableval=reset
    fi
@@ -156,11 +159,14 @@ AC_ARG_ENABLE([modules],
 
 
 # set enable flags for ./configure
+PLUMED_CONFIG_ENABLE([doc],[doc],[documentation],[yes])
+PLUMED_CONFIG_ENABLE([pdfdoc],[pdfdoc],[pdf version of the manual],[no])
 PLUMED_CONFIG_ENABLE([debug],[debug],[debugging],[no])
 PLUMED_CONFIG_ENABLE([basic_warnings],[basic-warnings],[basic warnings],[yes])
 PLUMED_CONFIG_ENABLE([fussy],[fussy],[fussy warnings],[no])
 PLUMED_CONFIG_ENABLE([debug_glibcxx],[debug-glibcxx],[enable boundary check],[no])
 PLUMED_CONFIG_ENABLE([shared],[shared],[shared libs],[yes])
+PLUMED_CONFIG_ENABLE([dependency_tracking],[dependency-tracking],[dependency tracking],[yes])
 PLUMED_CONFIG_ENABLE([cxx_exceptions],[cxx-exceptions],[c++ exceptions],[no])
 PLUMED_CONFIG_ENABLE([ld_r],[ld-r],[group object files],[yes])
 PLUMED_CONFIG_ENABLE([mpi],[mpi],[search for mpi],[yes])
@@ -176,10 +182,10 @@ PLUMED_CONFIG_ENABLE([readdir_r],[readdir-r],[search for readdir_r (threadsafe)]
 PLUMED_CONFIG_ENABLE([cregex],[cregex],[search for C regular expression],[yes])
 PLUMED_CONFIG_ENABLE([dlopen],[dlopen],[search for dlopen],[yes])
 PLUMED_CONFIG_ENABLE([execinfo],[execinfo],[search for execinfo],[yes])
-PLUMED_CONFIG_ENABLE([almost],[almost],[search for almost],[no])
-PLUMED_CONFIG_ENABLE([gsl],[gsl],[search for gsl],[no])
+PLUMED_CONFIG_ENABLE([gsl],[gsl],[search for gsl],[yes])
 PLUMED_CONFIG_ENABLE([xdrfile],[xdrfile],[search for xdrfile],[yes])
 PLUMED_CONFIG_ENABLE([boost_graph],[boost_graph],[search for boost graph],[no])
+PLUMED_CONFIG_ENABLE([fftw],[fftw],[search for fftw],[no])
 
 AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
 AC_ARG_VAR(STATIC_LIBS,[variables that should be linked statically directly to MD code - configure will add here -ldl if necessary ])
@@ -228,8 +234,8 @@ AC_MSG_NOTICE([Initial CXXFLAGS:    $CXXFLAGS])
 AC_MSG_NOTICE([Initial CPPFLAGS:    $CPPFLAGS])
 AC_MSG_NOTICE([Initial CFLAGS:      $CFLAGS])
 AC_MSG_NOTICE([Initial LDFLAGS:     $LDFLAGS])
-AC_MSG_NOTICE([Initial LIBS:        $LDFLAGS])
-AC_MSG_NOTICE([Initial STATIC_LIBS: $LDFLAGS])
+AC_MSG_NOTICE([Initial LIBS:        $LIBS])
+AC_MSG_NOTICE([Initial STATIC_LIBS: $STATIC_LIBS])
 AC_MSG_NOTICE([Initial LD:          $LD])
 AC_MSG_NOTICE([Initial LDSO:        $LDSO])
 AC_MSG_NOTICE([Initial SOEXT:       $SOEXT])
@@ -272,6 +278,36 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([ class A{explicit A(){}};])],
   [AC_MSG_RESULT([yes])],
   [AC_MSG_RESULT([no]) ;
    AC_DEFINE([explicit],[])])
+
+AC_SUBST(disable_dependency_tracking)
+
+if test "$dependency_tracking" = true
+then
+  AC_MSG_CHECKING([whether $CXX can generate dependency file with -MM -MF])
+  dependency=ko
+  echo "#include \"conftest1.h\"" > conftest.cpp
+  echo "#include \"conftest2.h\"" > conftest1.h
+  echo "/* */" > conftest2.h
+  $CXX $CXXFLAGS -c -MM -MFconftest.d conftest.cpp 1> /dev/null 2> /dev/null
+  grep conftest2 conftest.d 1> /dev/null 2>/dev/null && dependency=ok
+  if test "$dependency" = ok ; then
+    AC_MSG_RESULT([yes])
+    disable_dependency_tracking=no
+  else
+    AC_MSG_RESULT([no])
+    disable_dependency_tracking=yes
+  fi
+else
+  disable_dependency_tracking=yes
+fi
+
+if test "$disable_dependency_tracking" = yes ; then
+  AC_MSG_WARN([dependencies tracking disabled - always make clean before make])
+else
+  AC_MSG_NOTICE([dependency tracking enabled])
+fi
+
+
 
 
 #### Compulsory libraries ####
@@ -429,41 +465,38 @@ fi
 if test $zlib == true ; then
   PLUMED_CHECK_PACKAGE([zlib.h],[gzopen],[__PLUMED_HAS_ZLIB],[z])
 fi
-if test $almost == true ; then
-  bz2=ko
-  AC_CHECK_HEADER([bzlib.h], AC_SEARCH_LIBS([BZ2_bzReadOpen], [bz2], [bz2=ok]))
-  found=ko
-  if test $bz2 == ok; then
-    AC_CHECK_HEADER([almost.h], AC_SEARCH_LIBS([init_camshift], [Alm], [found=ok] , AC_MSG_NOTICE(["Almost not found"]), [-lsqlite3 -lz -lbz2 -lnbimpl -lshx]))
-  else 
-    AC_CHECK_HEADER([almost.h], AC_SEARCH_LIBS([init_camshift], [Alm], [found=ok] , AC_MSG_NOTICE(["Almost not found"]), [-lsqlite3 -lz -lnbimpl -lshx]))
-  fi
-  if test $found == ok; then
-    AC_DEFINE([__PLUMED_HAS_ALMOST])
-    if test $bz2 == ok; then 
-      LIBS="$LIBS -lsqlite3 -lz -lbz2 -lnbimpl -lshx"
-    else
-      LIBS="$LIBS -lsqlite3 -lz -lnbimpl -lshx"
-    fi
-  else 
-    AC_MSG_ERROR([--enable-almost: cannot find almost])
-  fi
-fi
+
+save_LIBS="$LIBS"
+
 if test $gsl == true ; then
   found=ko
-  AC_CHECK_LIB([gsl],[main],[found=ok],[found=ko],[-lgslcblas])
+  AC_CHECK_FUNC(  [cblas_dgemv], [found=ok], [
+  AC_CHECK_LIB(   [gslcblas],[cblas_dgemv], [LIBS="-lgslcblas $LIBS"] [found=ok]
+  ) ])
+  if test $found == ok ; then
+    found=ko
+    AC_CHECK_HEADER(  [gsl/gsl_vector.h], [
+      AC_CHECK_FUNC(  [gsl_vector_alloc], [found=ok], [
+      AC_CHECK_LIB(   [gsl],[gsl_vector_alloc], [LIBS="-lgsl $LIBS"] [found=ok]
+      ) ])
+    ])
+  fi
   if test $found == ok ; then
     AC_DEFINE([__PLUMED_HAS_GSL])
-    LIBS="-lgsl -lgslcblas $LIBS"
-  else 
-    AC_MSG_ERROR([--enable-gsl: cannot find gsl])
+  else
+     LIBS="$save_LIBS"
+     AC_MSG_WARN([cannot enable __PLUMED_HAS_GSL])
   fi
 fi
+
 if test $xdrfile == true ; then
   PLUMED_CHECK_PACKAGE([xdrfile/xdrfile_xtc.h],[write_xtc],[__PLUMED_HAS_XDRFILE],[xdrfile])
 fi
 if test $boost_graph == true ; then
   PLUMED_CHECK_PACKAGE([boost/graph/graph_utility.hpp],[exit],[__PLUMED_HAS_BOOST_GRAPH],[boost_graph])
+fi
+if test $fftw == true ; then
+  PLUMED_CHECK_PACKAGE([fftw3.h],[fftw_execute],[__PLUMED_HAS_FFTW],[fftw3])
 fi
 
 # in non-debug mode, add -DNDEBUG
@@ -538,6 +571,13 @@ then
 fi
 #### Options for dynamic library to work properly ####
 
+AC_SUBST(make_doc)
+make_doc=no
+if test "$doc" == true
+then
+
+make_doc=yes
+
 ### Look for doxygen
 AC_CHECK_PROG([doxygen],[doxygen],[found])
 if test "$doxygen" == found
@@ -547,13 +587,35 @@ then
   then
     AC_MSG_NOTICE([Doxygen version is fine])
   else
-    AC_MSG_WARN([Doxygen version is <1.8. You might have problems in generating manuals])
+    AC_MSG_WARN([Doxygen version is <1.8])
+    make_doc=no
   fi
   AC_CHECK_PROG([dot],[dot],[found])
   if test "$dot" != found
   then
     AC_MSG_WARN([You will not be able to see diagrams in the manual])
   fi
+else
+  make_doc=no
+fi
+fi
+
+if test "$make_doc" = yes
+then
+  AC_MSG_NOTICE([Manuals will be generated])
+else
+  AC_MSG_NOTICE([Manuals will not be generated])
+fi
+
+AC_SUBST(make_pdfdoc)
+make_pdfdoc=""
+if test "$pdfdoc" == true && test "$make_doc" == yes
+then
+  AC_MSG_NOTICE([A PDF version of the manual will be generated])
+  make_pdfdoc=yes
+else
+  AC_MSG_NOTICE([A PDF version of the manual will not be generated])
+  make_pdfdoc=no
 fi
 
 ### Look for xxd
@@ -732,6 +794,9 @@ if test "$(echo "$program_name" | tr '[A-Z]' '[a-z]')" != "$(echo "$program_name
 fi
 if test "$(echo "$program_name" | tr '[A-Z]' '[a-z]')" != "$(echo "$program_name" | tr '[A-Z]' '[a-z]' | sed 's/-patch$//')" ; then
   AC_MSG_ERROR([$program_name is not a valid program name (should not terminate with -patch)])
+fi
+if test "$(echo "$program_name" | tr '[A-Z]' '[a-z]')" != "$(echo "$program_name" | tr '[A-Z]' '[a-z]' | sed 's/-config$//')" ; then
+  AC_MSG_ERROR([$program_name is not a valid program name (should not terminate with -config)])
 fi
 
 AC_MSG_NOTICE([**** PLUMED will be installed using the following paths:])

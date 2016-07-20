@@ -34,22 +34,32 @@ namespace vesselbase{
 
 class ValueVessel : public Vessel {
 private: 
+  bool no_output_value;
   Value* final_value;
 protected:
-  Value* getFinalValue() const ;
+/// The component that is being averaged/accumulated whatever
+  unsigned mycomp;
 /// Set the final value
   void setOutputValue( const double& val );
 public:
   static void registerKeywords( Keywords& keys );
   explicit ValueVessel( const VesselOptions& da );
+  ~ValueVessel(); 
   std::string description();
   virtual std::string value_descriptor()=0;
   bool applyForce( std::vector<double>& forces );
+  double getOutputValue() const ;
+  Value* getFinalValue() const ;
 };
 
 inline
 Value* ValueVessel::getFinalValue() const {
   return final_value;
+}
+
+inline
+double ValueVessel::getOutputValue() const {
+  return final_value->get();
 }
 
 inline

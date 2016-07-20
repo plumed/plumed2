@@ -40,11 +40,14 @@ number_of_cluster(-1)
       if( getNumberOfNodeTypes()!=1 ) error("should only be running clustering with one base multicolvar in function");
       if( !getAdjacencyVessel()->undirectedGraph() ) error("input contact matrix is incompatible with clustering");  
    }
+   if( keywords.exists("MATRIX") ){
+       std::vector<AtomNumber> fake_atoms; setupMultiColvarBase( fake_atoms );
+   }
 }
 
 void ClusteringBase::turnOnDerivatives(){
    // Check base multicolvar isn't density probably other things shouldn't be allowed here as well
-   if( (getAdjacencyVessel()->getMatrixAction())->usingBaseColvars() ){
+   if( (getAdjacencyVessel()->getMatrixAction())->getNumberOfBaseMultiColvars()>0 ){
       if( getBaseMultiColvar(0)->isDensity() ) error("DFS clustering cannot be differentiated if base multicolvar is DENSITY");
    }   
 
@@ -66,6 +69,14 @@ void ClusteringBase::retrieveAtomsInCluster( const unsigned& clust, std::vector<
    for(unsigned i=0;i<getNumberOfNodes();++i){
       if( which_cluster[i]==cluster_sizes[cluster_sizes.size() - clust].second ){ myatoms[n]=i; n++; }
    }
+}
+
+bool ClusteringBase::areConnected( const unsigned& iatom, const unsigned& jatom ) const {
+   return getAdjacencyVessel()->nodesAreConnected( iatom, jatom );
+}
+
+double ClusteringBase::getCutoffForConnection() const {
+  return getAdjacencyVessel()->getCutoffForConnection();
 }
 
 }

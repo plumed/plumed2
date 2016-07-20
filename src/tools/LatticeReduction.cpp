@@ -28,10 +28,11 @@ namespace PLMD{
 const double epsilon=1e-14;
 
 void LatticeReduction::sort(Vector v[3]){
+  const double onePlusEpsilon=(1.0+epsilon);
   for(int i=0;i<3;i++) for(int j=i+1;j<3;j++) if(modulo2(v[i])>modulo2(v[j])){
     Vector x=v[i]; v[i]=v[j]; v[j]=x;
   }
-  for(int i=0;i<2;i++) plumed_assert(modulo2(v[i])<=modulo2(v[i+1]));
+  for(int i=0;i<2;i++) plumed_assert(modulo2(v[i])<=modulo2(v[i+1])*onePlusEpsilon);
 }
 
 void LatticeReduction::reduce(Vector&a,Vector&b){

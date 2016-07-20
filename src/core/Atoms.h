@@ -153,8 +153,10 @@ public:
   const long int& getDdStep()const;
   const std::vector<int>& getGatindex()const;
   const Pbc& getPbc()const;
+  void getLocalMasses(std::vector<double>&);
   void getLocalPositions(std::vector<Vector>&);
   void getLocalForces(std::vector<Vector>&);
+  void getLocalMDForces(std::vector<Vector>&);
   const Tensor& getVirial()const;
 
   void setCollectEnergy(bool b){ collectEnergy=b; }

@@ -39,7 +39,6 @@ class AdjacencyMatrixBase;
 class AdjacencyMatrixVessel : public vesselbase::StoreDataVessel {
 friend class AdjacencyMatrixBase;
 friend class ActionWithInputMatrix;
-friend class MatrixSummationBase;
 private:
 /// Pointer to underlying action
   AdjacencyMatrixBase* function;
@@ -51,10 +50,8 @@ public:
   explicit AdjacencyMatrixVessel( const vesselbase::VesselOptions& );
 /// Get the underlying adjacency matrix action object
   AdjacencyMatrixBase* getMatrixAction();
-/// Get the number of elements in the matrix
-  unsigned getNumberOfStoredValues() const ;
-/// Get the index we are storing this data inside
-  unsigned getStoreIndex( const unsigned& ) const ;
+/// Is an element of the matrix currently active
+  bool matrixElementIsActive( const unsigned& ielem, const unsigned& jelem ) const ;
 /// Get the index that a particular element is stored in from the matrix indices
   unsigned getStoreIndexFromMatrixIndices( const unsigned& ielem, const unsigned& jelem ) const ;
 /// Get the adjacency matrix
@@ -73,6 +70,12 @@ public:
   unsigned getNumberOfRows() const ;
 /// Get the number of columns
   unsigned getNumberOfColumns() const ;
+/// Are these two nodes connected
+  bool nodesAreConnected( const unsigned& iatom, const unsigned& jatom ) const ;
+/// Get the cutoff that we are using for connections
+  double getCutoffForConnection() const ;
+///
+  Vector getNodePosition( const unsigned& taskIndex ) const ;
 };
 
 }

@@ -55,11 +55,11 @@ public:
 /// Get the number of quantities that we must compute
   unsigned getNumberOfQuantities() const ;
 /// Create the ith, ith switching function
-  void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::string& desc );
+  void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc );
 /// Get the position that we should use as the center of our link cells
   Vector getLinkCellPosition( const std::vector<unsigned>& atoms ) const ;
 /// This actually calculates the value of the contact function
-  void calculateWeight( const unsigned& taskCode, multicolvar::AtomValuePack& myatoms ) const ;
+  double calculateWeight( const unsigned& taskCode, const double& weight, multicolvar::AtomValuePack& myatoms ) const ;
 /// This does nothing
   double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
 /// Calculate the contribution from one of the atoms in the third element of the pack
@@ -93,12 +93,20 @@ void TopologyMatrix::registerKeywords( Keywords& keys ){
   keys.use("SUM"); keys.use("LESS_THAN");
   keys.add("compulsory","SIGMA","the width of the function to be used for kernel density estimation");
   keys.add("compulsory","KERNEL","gaussian","the type of kernel function to be used");
+  keys.add("hidden","FAKE","");
 }
 
 TopologyMatrix::TopologyMatrix( const ActionOptions& ao ):
 Action(ao),
 AdjacencyMatrixBase(ao)
 {
+  readMaxThreeSpeciesMatrix("NODES", "FAKE", "FAKE", "ATOMS", true );
+  unsigned nrows, ncols, ndonor_types; retrieveTypeDimensions( nrows, ncols, ndonor_types );
+  switchingFunction.resize( nrows, ncols ); parseConnectionDescriptions("SWITCH",false,ndonor_types);
+  cylinder_sw.resize( nrows, ncols ); parseConnectionDescriptions("RADIUS",false,ndonor_types);
+  low_sf.resize( nrows, ncols ); parseConnectionDescriptions("CYLINDER_SWITCH",false,ndonor_types);
+  binw_mat.resize( nrows, ncols ); cell_volume.resize( nrows, ncols );
+  parseConnectionDescriptions("BIN_SIZE",false,ndonor_types);
   // Read in stuff for grid
   parse("SIGMA",sigma); parse("KERNEL",kerneltype);
   // Read in threshold for density cutoff
@@ -108,24 +116,24 @@ AdjacencyMatrixBase(ao)
   log.printf("  threshold on density of atoms in cylinder equals %s\n",threshold_switch.description().c_str() );
 
   // The weight now does indeed have derivatives
-  weightHasDerivatives=true;
+  // weightHasDerivatives=true;
   // Read in the atomic positions
-  std::vector<unsigned> dims(3);
-  std::vector<AtomNumber> all_atoms, atoms; parseAtomList("NODES",-1,atoms); 
-  if( atoms.size()>0 ){ 
-      dims[0]=dims[1]=atoms.size(); 
-      for(unsigned i=0;i<atoms.size();++i) all_atoms.push_back( atoms[i] );
-  } else{ dims[0]=dims[1]=colvar_label.size(); }
+  // std::vector<unsigned> dims(3);
+  // std::vector<AtomNumber> all_atoms, atoms; parseAtomList("NODES",-1,atoms); 
+  // if( atoms.size()>0 ){ 
+  //     dims[0]=dims[1]=atoms.size(); 
+  //     for(unsigned i=0;i<atoms.size();++i) all_atoms.push_back( atoms[i] );
+  // } else{ dims[0]=dims[1]=colvar_label.size(); }
 
-  switchingFunction.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
-  parseConnectionDescriptions("SWITCH",0);
-  cylinder_sw.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
-  parseConnectionDescriptions("RADIUS",0);
-  low_sf.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
-  parseConnectionDescriptions("CYLINDER_SWITCH",0);
-  binw_mat.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
-  cell_volume.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
-  parseConnectionDescriptions("BIN_SIZE",0);
+//  switchingFunction.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
+//  parseConnectionDescriptions("SWITCH",0);
+//  cylinder_sw.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
+//  parseConnectionDescriptions("RADIUS",0);
+//  low_sf.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
+//  parseConnectionDescriptions("CYLINDER_SWITCH",0);
+//  binw_mat.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
+//  cell_volume.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
+//  parseConnectionDescriptions("BIN_SIZE",0);
   for(unsigned i=0;i<getNumberOfNodeTypes();++i){
       for(unsigned j=0;j<getNumberOfNodeTypes();++j){
           double r=cylinder_sw(i,j).get_d0() + cylinder_sw(i,j).get_r0();
@@ -134,10 +142,10 @@ AdjacencyMatrixBase(ao)
   }
 
   // Read in atoms 
-  atoms.resize(0); parseAtomList("ATOMS",-1,atoms);
-  if( atoms.size()==0 ) error("no atoms were specified");
-  for(unsigned i=0;i<atoms.size();++i) all_atoms.push_back( atoms[i] );
-  dims[2]=atoms.size();
+  // atoms.resize(0); parseAtomList("ATOMS",-1,atoms);
+  // if( atoms.size()==0 ) error("no atoms were specified");
+  // for(unsigned i=0;i<atoms.size();++i) all_atoms.push_back( atoms[i] );
+  // dims[2]=atoms.size();
 
   // Find the largest sf cutoff
   double sfmax=switchingFunction(0,0).get_dmax();
@@ -166,35 +174,38 @@ AdjacencyMatrixBase(ao)
       }
   }
   // Set the maximum number of bins that we will need to compute
-  maxbins = std::floor( sfmax / maxsize ) + 1;   
+  maxbins = std::floor( sfmax / maxsize ) + 1; 
+  // Need to resize functions again here to ensure that vector sizes
+  // are set correctly in AdjacencyMatrixVessel
+  resizeFunctions();
   
   // And request the atoms involved in this colvar
-  requestAtoms( all_atoms, true, false, dims );
+  // requestAtoms( all_atoms, true, false, dims );
 }
 
 unsigned TopologyMatrix::getNumberOfQuantities() const {
   return maxbins+1;
 }
 
-void TopologyMatrix::setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::string& desc ){ 
+void TopologyMatrix::setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ){ 
   plumed_assert( id<4 );
   if( id==0 ){
-     std::string errors; switchingFunction(j,i).set(desc,errors);
+     std::string errors; switchingFunction(j,i).set(desc[0],errors);
      if( errors.length()!=0 ) error("problem reading switching function description " + errors);
-     if( j!=i) switchingFunction(i,j).set(desc,errors);
+     if( j!=i) switchingFunction(i,j).set(desc[0],errors);
      log.printf("  %d th and %d th multicolvar groups must be within %s\n",i+1,j+1,(switchingFunction(i,j).description()).c_str() );
   } else if( id==1 ){
-     std::string errors; cylinder_sw(j,i).set(desc,errors);
+     std::string errors; cylinder_sw(j,i).set(desc[0],errors);
      if( errors.length()!=0 ) error("problem reading switching function description " + errors);
-     if( j!=i) cylinder_sw(i,j).set(desc,errors);
+     if( j!=i) cylinder_sw(i,j).set(desc[0],errors);
      log.printf("  there must be not atoms within the cylinder connections atoms of multicolvar groups %d th and %d th.  This cylinder has radius %s \n",i+1,j+1,(cylinder_sw(i,j).description()).c_str() );
   } else if( id==2 ){
-     std::string errors; low_sf(j,i).set(desc,errors);
+     std::string errors; low_sf(j,i).set(desc[0],errors);
      if( errors.length()!=0 ) error("problem reading switching function description " + errors);
-     if( j!=i ) low_sf(i,j).set(desc,errors);
+     if( j!=i ) low_sf(i,j).set(desc[0],errors);
      log.printf("  %d th and %d th multicolvar groups must be further apart than %s\n",i+1,j+1,(low_sf(j,i).description()).c_str() );
   } else if( id==3 ){
-     Tools::convert( desc, binw_mat(j,i) ); 
+     Tools::convert( desc[0], binw_mat(j,i) ); 
      if( i!=j ) binw_mat(i,j)=binw_mat(j,i);
      log.printf("  cylinder for %d th and %d th multicolvar groups is split into bins of length %f \n",binw_mat(i,j) );    
   }
@@ -205,13 +216,10 @@ Vector TopologyMatrix::getLinkCellPosition( const std::vector<unsigned>& atoms )
   return myatom + 0.5*pbcDistance( getPositionOfAtomForLinkCells( atoms[1] ), myatom );
 }
 
-void TopologyMatrix::calculateWeight( const unsigned& taskCode, multicolvar::AtomValuePack& myatoms ) const {
+double TopologyMatrix::calculateWeight( const unsigned& taskCode, const double& weight, multicolvar::AtomValuePack& myatoms ) const {
   Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
-  if( distance.modulo()<switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) ).get_dmax() ){
-      myatoms.setValue(0,1);
-  } else {
-      myatoms.setValue(0,0);
-  }
+  if( distance.modulo2()<switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) ).get_dmax2() ) return 1.0;
+  return 0.0;
 }
 
 double TopologyMatrix::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {
@@ -226,7 +234,7 @@ double TopologyMatrix::compute( const unsigned& tindex, multicolvar::AtomValuePa
   d1 = d1 / d1_len;
   if( myatoms.getNumberOfAtoms()>3 ){
       for(unsigned i=2;i<myatoms.getNumberOfAtoms();++i) calculateForThreeAtoms( i, d1, d1_len, sw, dfuncl, bead, myatoms );
-      // printf("HELLO DENSITY %d %d %f %f \n",myatoms.getIndex(0), myatoms.getIndex(1), d1_len, myatoms.getValue(1) );
+  // std::cout<<"HELLO DENSITY "<<myatoms.getIndex(0)<<" "<<myatoms.getIndex(1)<<" "<<d1_len<<" "<<myatoms.getValue(1)<<std::endl;
   } else {
       plumed_dbg_assert( myatoms.getNumberOfAtoms()==3 );
       calculateForThreeAtoms( 2, d1, d1_len, sw, dfuncl, bead, myatoms );

@@ -90,6 +90,7 @@ print "Number of bias entries::", len(bias_ts)
 ws = get_wham_weights(NBIAS_, nframes, bias_ts)
 
 # printout WHAM weights to file
+print "Weights have been written to weights.dat"
 log = open("weights.dat", "w")
-for i in range(0, len(ws)): log.write("%22.20lf\n" % ws[i])
+for i in range(0, len(ws)): log.write("%16.12e\n" % ws[i])
 log.close()

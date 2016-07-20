@@ -54,28 +54,29 @@ public:
 /// Constructor
   explicit HBondMatrix(const ActionOptions&);
 /// Create the ith, ith switching function
-  void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::string& desc );
+  void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc );
 /// This actually calculates the value of the contact function
-  void calculateWeight( const unsigned& taskCode, multicolvar::AtomValuePack& myatoms ) const ;
+  double calculateWeight( const unsigned& taskCode, const double& weight, multicolvar::AtomValuePack& myatoms ) const ;
 /// This does nothing
   double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
 ///
   double calculateForThree( const unsigned& iat, const unsigned& ano, const unsigned& dno, const Vector& ood,
                             const double& ood_df , const double& ood_sw, multicolvar::AtomValuePack& myatoms ) const ;
-/// Used to check for connections between atoms
-  bool checkForConnection( const std::vector<double>& myvals ) const { return !(myvals[1]>epsilon); }
 };
 
 PLUMED_REGISTER_ACTION(HBondMatrix,"HBOND_MATRIX")
 
 void HBondMatrix::registerKeywords( Keywords& keys ){
   AdjacencyMatrixBase::registerKeywords( keys );
- keys.add("atoms-1","ATOMS","The list of atoms which can be part of a hydrogen bond.  When this command is used the set of atoms that can donate a "
+  keys.add("atoms","ATOMS","The list of atoms which can be part of a hydrogen bond.  When this command is used the set of atoms that can donate a "
                              "hydrogen bond is assumed to be the same as the set of atoms that can form hydrogen bonds.  The atoms involved must be specified"
                               "as a list of labels of \\ref mcolv or labels of a \\ref multicolvarfunction actions.  If you would just like to use "
                               "the atomic positions you can use a \\ref DENSITY command to specify a group of atoms.  Specifying your atomic positions using labels of "
                               "other \\ref mcolv or \\ref multicolvarfunction commands is useful, however, as you can then exploit a much wider "
                               "variety of functions of the contact matrix as described in \\ref contactmatrix");
+  keys.add("atoms","HYDROGENS","The list of hydrogen atoms that can form part of a hydrogen bond.  The atoms must be specified using a comma separated list, "
+                               "an index range or by using a \\ref GROUP.  A list of hydrogen atoms is always required even if you specify the other atoms using "
+                               "DONORS and ACCEPTORS as described below.");
   keys.add("atoms-2","DONORS","The list of atoms which can donate a hydrogen bond.  The atoms involved must be specified "
                               "as a list of labels of \\ref mcolv or labels of a \\ref multicolvarfunction actions.  If you would just like to use "
                               "the atomic positions you can use a \\ref DENSITY command to specify a group of atoms.  Specifying your atomic positions using labels of "
@@ -86,8 +87,6 @@ void HBondMatrix::registerKeywords( Keywords& keys ){
                                  "the atomic positions you can use a \\ref DENSITY command to specify a group of atoms.  Specifying your atomic positions using labels of "
                                  "other \\ref mcolv or \\ref multicolvarfunction commands is useful, however, as you can then exploit a much wider "
                                  "variety of functions of the contact matrix as described in \\ref contactmatrix");
-  keys.add("atoms","HYDROGENS","The list of hydrogen atoms that can form part of a hydrogen bond.  The atoms must be specified using a comma separated list, "
-                               "an index range or by using a \\ref GROUP");
   keys.add("numbered","SWITCH","The \\ref switchingfunction that specifies how close a pair of atoms must be together for there to be a hydrogen bond between them");
   keys.add("numbered","HSWITCH","The \\ref switchingfunction that specifies how close the hydrogen must be to the donor atom of the hydrogen bond for it to be "
                                 "considered a hydrogen bond");
@@ -100,53 +99,12 @@ HBondMatrix::HBondMatrix( const ActionOptions& ao ):
 Action(ao),
 AdjacencyMatrixBase(ao)
 {
-  bool donors_eq_accept=false;
-  std::vector<unsigned> dims(3); std::vector<AtomNumber> all_atoms, atoms;
-  bool check=parseAtomList("DONORS",-1,atoms);
-  if( check ){
-      if( atoms.size()>0 ){
-          plumed_assert( colvar_label.size()==0 );
-          dims[0]=atoms.size(); ndonor_types=0;
-      } else {
-          dims[0]=colvar_label.size();
-          ndonor_types=getNumberOfNodeTypes();
-      }
-      for(unsigned i=0;i<atoms.size();++i) all_atoms.push_back( atoms[i] );
-      parseAtomList("ACCEPTORS",-1,atoms);
-      for(unsigned i=0;i<atoms.size();++i) all_atoms.push_back( atoms[i] );
-      if( atoms.size()>0 ){
-          plumed_assert( colvar_label.size()==0 ); dims[1]=atoms.size();
-          if( ndonor_types==0 ){ distanceOOSwitch.resize( 1, 1 ); distanceOHSwitch.resize( 1, 1 ); angleSwitch.resize( 1, 1 ); }
-          else { distanceOOSwitch.resize( ndonor_types, 1 ); distanceOHSwitch.resize( 1, 1 ); angleSwitch.resize( 1, 1 ); }
-      } else {
-          dims[1]=colvar_label.size()-dims[0];
-          distanceOOSwitch.resize( ndonor_types, getNumberOfNodeTypes()-ndonor_types );
-          distanceOHSwitch.resize( ndonor_types, getNumberOfNodeTypes()-ndonor_types );
-          angleSwitch.resize( ndonor_types, getNumberOfNodeTypes()-ndonor_types );
-      }
-  } else {
-      parseAtomList("ATOMS",-1,atoms); ndonor_types=0;
-      distanceOOSwitch.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
-      distanceOHSwitch.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
-      angleSwitch.resize( getNumberOfNodeTypes(), getNumberOfNodeTypes() );
-      if( atoms.size()>0 ){
-         plumed_assert( colvar_label.size()==0 ); dims[0]=dims[1]=atoms.size();
-      } else {
-         dims[0]=dims[1]=colvar_label.size();
-      }
-      for(unsigned i=0;i<atoms.size();++i) all_atoms.push_back( atoms[i] );
-      donors_eq_accept=true;
-  }
-
-  parseAtomList("HYDROGENS",-1,atoms); dims[2]=atoms.size();
-  if( atoms.size()==0 ) error("no hydrogen atoms were specified");
-  log.printf("  involving hydrogen atoms : ");
-  for(unsigned i=0;i<atoms.size();++i){ all_atoms.push_back( atoms[i] );  log.printf("%d ",atoms[i].serial() ); }
-  log.printf("\n");
-
-  parseConnectionDescriptions("SWITCH",ndonor_types);
-  parseConnectionDescriptions("HSWITCH",ndonor_types);
-  parseConnectionDescriptions("ASWITCH",ndonor_types);
+  readMaxThreeSpeciesMatrix( "ATOMS", "DONORS", "ACCEPTORS", "HYDROGENS", false );
+  unsigned nrows, ncols; retrieveTypeDimensions( nrows, ncols, ndonor_types );
+  distanceOOSwitch.resize( nrows, ncols ); distanceOHSwitch.resize( nrows, ncols ); angleSwitch.resize( nrows, ncols ); 
+  parseConnectionDescriptions("SWITCH",false,ndonor_types);
+  parseConnectionDescriptions("HSWITCH",false,ndonor_types);
+  parseConnectionDescriptions("ASWITCH",false,ndonor_types);
 
   // Find the largest sf cutoff
   double sfmax=distanceOOSwitch(0,0).get_dmax();
@@ -158,38 +116,35 @@ AdjacencyMatrixBase(ao)
   }
   // Set the link cell cutoff
   setLinkCellCutoff( sfmax );
- 
-  // And request the atoms involved in this colvar
-  requestAtoms( all_atoms, false, donors_eq_accept, dims );
 }
 
-void HBondMatrix::setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::string& desc ){ 
-  plumed_assert( id<3 );
+void HBondMatrix::setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ){ 
+  plumed_assert( id<3 && desc.size()==1 );
   if( id==0 ){
-     std::string errors; distanceOOSwitch(j,i).set(desc,errors);
+     std::string errors; distanceOOSwitch(j,i).set(desc[0],errors);
      if( errors.length()!=0 ) error("problem reading switching function description " + errors);
-     if( j!=i) distanceOOSwitch(i,j).set(desc,errors);
-     log.printf("  atoms of type %d and %d must be within %s\n",i+1,j+1,(distanceOOSwitch(i,j).description()).c_str() );
+     if( j!=i) distanceOOSwitch(i,j).set(desc[0],errors);
+     log.printf("  atoms of type %u and %u must be within %s\n",i+1,j+1,(distanceOOSwitch(i,j).description()).c_str() );
   } else if( id==1 ){
-     std::string errors; distanceOHSwitch(j,i).set(desc,errors);
+     std::string errors; distanceOHSwitch(j,i).set(desc[0],errors);
      if( errors.length()!=0 ) error("problem reading switching function description " + errors);
-     if( j!=i) distanceOHSwitch(i,j).set(desc,errors);
-     log.printf("  for atoms of type %d and %d the OH distance must be less than %s \n",i+1,j+1,(distanceOHSwitch(i,j).description()).c_str() );
+     if( j!=i) distanceOHSwitch(i,j).set(desc[0],errors);
+     log.printf("  for atoms of type %u and %u the OH distance must be less than %s \n",i+1,j+1,(distanceOHSwitch(i,j).description()).c_str() );
   } else if( id==2 ){
-     std::string errors; angleSwitch(j,i).set(desc,errors);
+     std::string errors; angleSwitch(j,i).set(desc[0],errors);
      if( errors.length()!=0 ) error("problem reading switching function description " + errors);
-     if( j!=i) angleSwitch(i,j).set(desc,errors);
-     log.printf("  for atoms of type %d and %d the OOH angle must be less than %s \n",i+1,j+1,(angleSwitch(i,j).description()).c_str() );
+     if( j!=i) angleSwitch(i,j).set(desc[0],errors);
+     log.printf("  for atoms of type %u and %u the OOH angle must be less than %s \n",i+1,j+1,(angleSwitch(i,j).description()).c_str() );
   } 
 }
 
-void HBondMatrix::calculateWeight( const unsigned& taskCode, multicolvar::AtomValuePack& myatoms ) const {
+double HBondMatrix::calculateWeight( const unsigned& taskCode, const double& weight, multicolvar::AtomValuePack& myatoms ) const {
+  // Ensure we skip diagonal elements of square matrix
+  if( myatoms.getIndex(0)==myatoms.getIndex(1) ) return 0.0; 
+
   Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
-  if( distance.modulo()<distanceOOSwitch( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) ).get_dmax() ){
-      myatoms.setValue(0,1);
-  } else {
-      myatoms.setValue(0,0);
-  }
+  if( distance.modulo2()<distanceOOSwitch( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) ).get_dmax2() ) return 1.0;
+  return 0.0;
 }
 
 double HBondMatrix::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {

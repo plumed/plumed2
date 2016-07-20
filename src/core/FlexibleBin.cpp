@@ -68,7 +68,7 @@ void FlexibleBin::update(bool nowAddAHill){
 	unsigned dimension=ncv*(ncv+1)/2;	
 	// this is done all the times from scratch. It is not an accumulator 
 	unsigned  k=0;
-	unsigned i,j;
+	unsigned i;
 	vector<double> cv;
 	vector<double> delta;
 	// if you use this below then the decay is in time units
@@ -104,7 +104,7 @@ void FlexibleBin::update(bool nowAddAHill){
 		}else{
 			k=0;
 			for(i=0;i<ncv;i++){
-				for(j=i;j<ncv;j++){ // upper diagonal loop
+				for(unsigned j=i;j<ncv;j++){ // upper diagonal loop
 					variance[k]+=decay*(delta[i]*delta[j]-variance[k]);
 					k++;
 				}

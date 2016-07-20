@@ -46,6 +46,7 @@ public:
 }; 
 
 PLUMED_REGISTER_ACTION(FilterMore,"MFILTER_MORE")
+PLUMED_REGISTER_ACTION(FilterMore,"MTRANSFORM_MORE")
 
 void FilterMore::registerKeywords( Keywords& keys ){
   MultiColvarFilter::registerKeywords( keys );

@@ -61,6 +61,10 @@ public:
 /// It writes on the ostream the list of all the bibliographic items
 /// prefixed with their reference number
   friend std::ostream &operator<<(std::ostream &,const Citations&);
+/// Delete all references
+  void clear();
+/// Check if bibliography is empty
+  bool empty()const;
 };
 
 std::ostream & operator<<(std::ostream &,const Citations&);

@@ -40,14 +40,14 @@ class ActionPilot:
   public virtual Action
 {
   int stride; // multiple time step
-protected:
-  int getStride()const;
 public:
   explicit ActionPilot(const ActionOptions&);
 /// Create the keywords for actionPilot
   static void registerKeywords(Keywords& keys);
 /// Check if the action is active on this step
-  bool onStep()const;
+  virtual bool onStep()const;
+/// Get the stride
+  int getStride()const;
 };
 
 }

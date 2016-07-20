@@ -55,14 +55,16 @@ void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vecto
     allcells.resize( pos.size() ); lcell_lists.resize( pos.size() ); 
   }
 
-  if( !mypbc.isOrthorombic() ){
-     ncells[0]=ncells[1]=ncells[2]=1;
-  } else {
-     ncells[0] = std::floor( mypbc.getBox().getRow(0).modulo() / link_cutoff );
+   {
+// This is the reciprocal lattice
+// notice that reciprocal.getRow(0) is a vector that is orthogonal to b and c
+// This allows to use linked cells in non orthorhomic boxes
+     Tensor reciprocal(transpose(mypbc.getInvBox()));
+     ncells[0] = std::floor( 1.0/ reciprocal.getRow(0).modulo() / link_cutoff );
      if( ncells[0]==0 ) ncells[0]=1;
-     ncells[1] = std::floor( mypbc.getBox().getRow(1).modulo() / link_cutoff );
+     ncells[1] = std::floor( 1.0/ reciprocal.getRow(1).modulo() / link_cutoff );
      if( ncells[1]==0 ) ncells[1]=1;
-     ncells[2] = std::floor( mypbc.getBox().getRow(2).modulo() / link_cutoff );
+     ncells[2] = std::floor( 1.0/ reciprocal.getRow(2).modulo() / link_cutoff );
      if( ncells[2]==0 ) ncells[2]=1;
   }
   // Setup the strides

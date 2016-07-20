@@ -64,6 +64,10 @@ public:
   void double2MD(const double&d,void*m)const{
     *(static_cast<T*>(m))=T(d);
   }
+  Vector getMDforces(const unsigned index)const{
+    Vector force(fx[stride*index],fy[stride*index],fz[stride*index]);
+    return force;
+  }
   void getBox(Tensor &)const;
   void getPositions(const vector<int>&index,vector<Vector>&positions)const;
   void getPositions(unsigned j,unsigned k,vector<Vector>&positions)const;
@@ -110,7 +114,7 @@ void MDAtomsTyped<T>::getPositions(const vector<int>&index,vector<Vector>&positi
 
 template <class T>
 void MDAtomsTyped<T>::getPositions(unsigned j,unsigned k,vector<Vector>&positions)const{
-#pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(&positions[j],(k-j)))
+  #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(&positions[j],(k-j)))
   for(unsigned i=j;i<k;++i){
     positions[i][0]=px[stride*i]*scalep;
     positions[i][1]=py[stride*i]*scalep;
@@ -121,7 +125,7 @@ void MDAtomsTyped<T>::getPositions(unsigned j,unsigned k,vector<Vector>&position
 
 template <class T>
 void MDAtomsTyped<T>::getLocalPositions(vector<Vector>&positions)const{
-#pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(positions))
+  #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(positions))
   for(unsigned i=0;i<positions.size();++i){
     positions[i][0]=px[stride*i]*scalep;
     positions[i][1]=py[stride*i]*scalep;
@@ -149,8 +153,7 @@ void MDAtomsTyped<T>::updateVirial(const Tensor&virial)const{
 
 template <class T>
 void MDAtomsTyped<T>::updateForces(const vector<int>&index,const vector<Vector>&forces){
-  unsigned nt=OpenMP::getGoodNumThreads(fx,stride*index.size());
-#pragma omp parallel for num_threads(nt)
+  #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(fx,stride*index.size()))
   for(unsigned i=0;i<index.size();++i){
     fx[stride*i]+=scalef*T(forces[index[i]][0]);
     fy[stride*i]+=scalef*T(forces[index[i]][1]);
@@ -161,8 +164,7 @@ void MDAtomsTyped<T>::updateForces(const vector<int>&index,const vector<Vector>&
 template <class T>
 void MDAtomsTyped<T>::rescaleForces(const vector<int>&index,double factor){
   if(virial) for(unsigned i=0;i<3;i++)for(unsigned j=0;j<3;j++) virial[3*i+j]*=T(factor);
-  unsigned nt=OpenMP::getGoodNumThreads(fx,stride*index.size());
-#pragma omp parallel for num_threads(nt)
+  #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(fx,stride*index.size()))
   for(unsigned i=0;i<index.size();++i){
     fx[stride*i]*=T(factor);
     fy[stride*i]*=T(factor);

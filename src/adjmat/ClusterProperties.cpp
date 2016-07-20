@@ -82,16 +82,16 @@ ClusterAnalysisBase(ao)
    for(unsigned i=0;i<getNumberOfNodes();++i) addTaskToList(i);
 
    // And now finish the setup of everything in the base
-   setupAtomLists();
+   std::vector<AtomNumber> fake_atoms; setupMultiColvarBase( fake_atoms ); 
 }
 
 void ClusterProperties::calculate(){
    // Retrieve the atoms in the largest cluster
    std::vector<unsigned> myatoms; retrieveAtomsInCluster( clustr, myatoms );
    // Activate the relevant tasks
-   deactivateAllTasks(); std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
-   for(unsigned i=0;i<myatoms.size();++i) active_tasks[myatoms[i]]=1;
-   activateTheseTasks( active_tasks );
+   deactivateAllTasks(); 
+   for(unsigned i=0;i<myatoms.size();++i) taskFlags[myatoms[i]]=1;
+   lockContributors();
    // Now do the calculation 
    runAllTasks(); 
 }

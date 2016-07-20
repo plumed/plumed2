@@ -8,7 +8,9 @@ DIRS := $(sort ../config ../wrapper ../main  $(KERNEL_MODULES))
 DIRSLINKS:=$(addsuffix .links,$(DIRS))
 
 # include the machine dependent configuration
--include ../../Makefile.conf
+ifneq ($(MAKECMDGOALS),clean)
+  -include ../../Makefile.conf
+endif
 
 # if machine dependent configuration has been found:
 ifdef GCCDEP
@@ -71,6 +73,7 @@ endif
 ifneq ($(PLUMED_INSTALL),Install)
 	$(MAKE) install-build
 endif
+
 
 dirs:
 	@echo "*** Compiling all directories ***"
@@ -159,6 +162,8 @@ endif
 	cp ../colvar/Template.cpp "$(DESTDIR)$(libdir)/$(program_name)/src/colvar/"
 # copy compile_options.sh file (we leave it in src/colvar/ for backward compatibility)
 	cp ../config/compile_options.sh "$(DESTDIR)$(libdir)/$(program_name)/src/config/compile_options.sh"
+# copy config.txt file (we leave it in src/colvar/ for backward compatibility)
+	cp ../config/config.txt "$(DESTDIR)$(libdir)/$(program_name)/src/config/config.txt"
 ifdef LD_RO
 	cp install/kernel.o "$(DESTDIR)$(libdir)/$(program_name)/obj/kernel.o"
 else
@@ -172,6 +177,8 @@ endif
 	cp install/plumed "$(DESTDIR)$(bindir)/$(program_name)"
 # patch file for cross compiling
 	cp install/plumed-patch "$(DESTDIR)$(bindir)/$(program_name)-patch"
+# config file for cross compiling
+	cp install/plumed-patch "$(DESTDIR)$(bindir)/$(program_name)-config"
 # copy include files for cmake and make
 # we leave it in src/lib/ for backward compatibility
 	cp install/Plumed.cmake* "$(DESTDIR)$(libdir)/$(program_name)/src/lib/"
@@ -184,6 +191,10 @@ ifdef SOEXT
 endif
 # modulefile
 	cp install/modulefile "$(DESTDIR)$(libdir)/$(program_name)/modulefile"
+# vim syntax file
+	if test -d ../../vim/syntax ; then mkdir -p "$(DESTDIR)$(libdir)/$(program_name)" && cd ../../ && tar cf - vim/syntax | tar xf - -C "$(DESTDIR)$(libdir)/$(program_name)/" ; fi
+	if test -d ../../vim/help ; then mkdir -p "$(DESTDIR)$(libdir)/$(program_name)" && cd ../../ && tar cf - vim/help | tar xf - -C "$(DESTDIR)$(libdir)/$(program_name)/" ; fi
+	if test -f ../../vim/scripts.vim ; then cp ../../vim/scripts.vim  "$(DESTDIR)$(libdir)/$(program_name)/vim/" ; fi
 # making everything visible:
 	chmod -R go+rX,go-w "$(DESTDIR)$(libdir)/$(program_name)"
 	chmod -R go+rX,go-w "$(DESTDIR)$(includedir)/$(program_name)"
@@ -216,13 +227,21 @@ endif
 	@echo $(includedir)/$(program_name)
 	@echo $(bindir)/$(program_name)
 	@echo $(bindir)/$(program_name)-patch
+	@echo $(bindir)/$(program_name)-config
 ifdef SOEXT
 	@echo $(libdir)/lib$(program_name).$(SOEXT)
 	@echo $(libdir)/lib$(program_name)Kernel.$(SOEXT)
 endif
+	@if test -d ../../vim/help ; then echo "A vim plugin can be found here: $(libdir)/$(program_name)/vim/" ; fi
+	@if test -d ../../vim/help ; then echo "Copy it to $(HOME)/.vim/ directory" ; fi
+	@if test -d ../../vim/help ; then echo "Alternatively:" ; fi
+	@if test -d ../../vim/help ; then echo "- Set this environment variable         : PLUMED_VIMPATH=$(libdir)/$(program_name)/vim" ; fi
+	@if test -d ../../vim/help ; then echo "- Add the command 'let &runtimepath.=','.\$$PLUMED_VIMPATH' to your .vimrc file" ; fi
+	@if test -d ../../vim/help ; then echo "From vim, you can use :set syntax=$(program_name) to enable it" ; fi
 ifeq ($(program_can_run),no)
 	@echo "WARNING: $(program_name) executable will not run on this machine"
 	@echo "WARNING: to patch an MD code use 'plumed-patch'"
+	@echo "WARNING: to verify configuration use 'plumed-config'"
 	@echo "WARNING: a few other command line tools are avalable as $(libdir)/$(program_name)/plumed-*"
 else ifeq ($(program_can_run_mpi),no)
 	@echo "WARNING: $(program_name) executable will not run on this machine"
@@ -242,6 +261,7 @@ uninstall:
 	@echo "$(DESTDIR)$(includedir)/$(program_name)"
 	@echo "$(DESTDIR)$(bindir)/$(program_name)"
 	@echo "$(DESTDIR)$(bindir)/$(program_name)-patch"
+	@echo "$(DESTDIR)$(bindir)/$(program_name)-config"
 	@echo "$(DESTDIR)$(libdir)/lib$(program_name).$(SOEXT)"
 	@echo "$(DESTDIR)$(libdir)/lib$(program_name)Kernel.$(SOEXT)"
 	../maketools/confirm_uninstall
@@ -251,6 +271,7 @@ uninstall:
 	rm -fr "$(DESTDIR)$(includedir)/$(program_name)"
 	rm -f "$(DESTDIR)$(bindir)/$(program_name)"
 	rm -f "$(DESTDIR)$(bindir)/$(program_name)-patch"
+	rm -f "$(DESTDIR)$(bindir)/bin/$(program_name)-config"
 	rm -f "$(DESTDIR)$(libdir)/lib$(program_name).$(SOEXT)"
 	rm -f "$(DESTDIR)$(libdir)/lib$(program_name)Kernel.$(SOEXT)"
 
@@ -404,6 +425,9 @@ clean:
 	rm -f $(CLEANLIST)
 	rm -f $(PLUMED_MAIN_STATIC) $(PLUMED_MAIN_SHARED) $(PLUMED_MAIN_RUNTIME)
 	rm -f Plumed.inc* plumed-* Plumed.cmake*
+# this is not necessary, I leave it here to remove spurious plumed.vim files generated with
+# the first version of plumed.vim syntax file:
+	rm -f plumed.vim
 	rm -f .lib*
 	rm -fr install/
 

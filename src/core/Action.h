@@ -97,6 +97,8 @@ private:
 
   bool restart;
 
+  bool doCheckPoint;
+
 public:
 
 /// Reference to main plumed object
@@ -122,6 +124,12 @@ public:
 
 /// Return true if we are doing a restart
   bool getRestart()const;
+
+/// Return true if we are doing at a checkpoint step 
+  bool getCPT()const;
+
+/// Just read one of the keywords and return the whole thing as a string
+  std::string getKeyword(const std::string& key);
 
 /// Parse one keyword as generic type
   template<class T>
@@ -197,6 +205,15 @@ public:
 /// This method is called one time per step.
 /// The set of all Actions is applied in backward order.
   virtual void apply()=0;
+
+/// Before Update.
+/// This is a special method that is called just
+/// before the update() method. It can be used by
+/// actions that want to do something irrespectively
+/// of the fact that update() is active or not.
+/// In other words, this is *always* called, even when action
+/// is not active.
+  virtual void beforeUpdate(){}
 
 /// Update.
 /// This method is called one time per step.
@@ -400,6 +417,11 @@ bool Action::isOptionOn(const std::string &s)const{
 inline
 bool Action::getRestart()const{
   return restart;
+}
+
+inline
+bool Action::getCPT()const{
+  return doCheckPoint;
 }
 
 }

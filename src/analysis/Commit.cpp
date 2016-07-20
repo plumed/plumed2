@@ -28,7 +28,7 @@
 namespace PLMD {
 namespace analysis {
 
-//+PLUMEDOC ANALYSIS COMMITTOR 
+//+PLUMEDOC PRINTANALYSIS COMMITTOR 
 /*
 Does a committor analysis.
 
@@ -123,7 +123,7 @@ fmt("%f")
 
 
   for(unsigned b=0;b<nbasins;b++) {
-    log.printf("  BASIN %i definition:\n", b+1);
+    log.printf("  BASIN %u definition:\n", b+1);
     for(unsigned i=0;i<getNumberOfArguments();++i){
       if(lowerlimits[b][i]>upperlimits[b][i]) error("COMMITTOR: UPPER bounds must always be greater than LOWER bounds");
       log.printf(" %f - %f\n", lowerlimits[b][i], upperlimits[b][i]);

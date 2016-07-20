@@ -34,16 +34,13 @@ friend class VolumeGradientBase;
 private:
 /// Are we storing the director of the vector of the vector
   bool store_director;
-/// Used to make sure central atom position is only calculated
-/// once when using orientation sphere
-  bool firstcall;
 /// How many components does the vector have
   unsigned ncomponents;
 /// These are tempory vectors that are used to store values and directors
   std::vector<double> vv1, vv2;
 protected:
 /// Set the dimensionality of the vector
-  void setVectorDimensionality( const unsigned&, const int& );
+  void setVectorDimensionality( const unsigned& );
 /// Used in vector average to add forces from vector the the forces from here
   void addForcesOnAtoms( const std::vector<double>& inforces );
 public:
@@ -66,6 +63,9 @@ public:
   bool hasDifferentiableOrientation() const { return true; }
 ///  This makes sure we are not calculating the director when we do LocalAverage
   virtual void doNotCalculateDirector();
+/// This does normalizeing of vectors for storeDataVessel
+  virtual void normalizeVector( std::vector<double>& vals ) const ; 
+  virtual void normalizeVectorDerivatives( MultiValue& myvals ) const ;  
 };
 
 inline

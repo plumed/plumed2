@@ -22,6 +22,7 @@
 #include "Colvar.h"
 #include "ActionRegister.h"
 #include "tools/NeighborList.h"
+#include "tools/OpenMP.h"
 
 #include <string>
 #include <cmath>
@@ -33,7 +34,12 @@ namespace colvar {
 
 //+PLUMEDOC COLVAR PRE 
 /*
-Calculates the PRE intensity ratio.
+Calculates the Paramegnetic Resonance Enhancement  intensity ratio between two atoms.
+The reference atom for the spin label is added with SPINLABEL, the affected atom(s)
+are give as numbered GROUPA1, GROUPA2, ...
+The additional parameters needed for the calculation are given as INEPT, the inept
+time, TAUC the correlation time, OMEGA, the larmor frequency and RTWO for the relaxation
+time.
 
 */
 //+ENDPLUMEDOC
@@ -41,7 +47,6 @@ Calculates the PRE intensity ratio.
 class PRE : public Colvar {   
 private:
   bool             pbc;
-  bool             serial;
   double           constant, inept;
   vector<double>   rtwo;
   vector<unsigned> nga;
@@ -57,6 +62,8 @@ PLUMED_REGISTER_ACTION(PRE,"PRE")
 
 void PRE::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords( keys );
+  componentsAreNotOptional(keys);
+  useCustomisableComponents(keys);
   keys.add("compulsory","INEPT","is the INEPT time (in ms).");
   keys.add("compulsory","TAUC","is the correlation time (in ns) for this electron-nuclear interaction.");
   keys.add("compulsory","OMEGA","is the Larmor frequency of the nuclear spin (in MHz).");
@@ -67,25 +74,23 @@ void PRE::registerKeywords( Keywords& keys ){
   keys.reset_style("GROUPA","atoms");
   keys.add("numbered","RTWO","The relaxation of the atom/atoms in the corresponding GROUPA of atoms. "
                    "Keywords like RTWO1, RTWO2, RTWO3,... should be listed.");
-  keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
+  keys.addFlag("ADDEXP",false,"Set to TRUE if you want to have fixed components with the experimetnal values.");  
+  keys.add("numbered","PREINT","Add an experimental value for each PRE.");
   keys.addOutputComponent("pre","default","the # PRE");
+  keys.addOutputComponent("exp","ADDEXP","the # PRE experimental intensity");
 }
 
 PRE::PRE(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
-pbc(true),
-serial(false)
+pbc(true)
 {
-  parseFlag("SERIAL",serial);
-
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;  
 
   vector<AtomNumber> atom;
   parseAtomList("SPINLABEL",atom);
-  if(atom.size()!=1)
-    error("Number of specified atom should be 1");
+  if(atom.size()!=1) error("Number of specified atom should be 1");
 
   // Read in the atoms
   vector<AtomNumber> t, ga_lista, gb_lista;
@@ -130,6 +135,21 @@ serial(false)
                                         // in nm^6/s^2
   constant = (4.*tauc*ns2s+(3.*tauc*ns2s)/(1+omega*omega*MHz2Hz*MHz2Hz*tauc*tauc*ns2s*ns2s))*Kappa;
 
+  bool addexp=false;
+  parseFlag("ADDEXP",addexp);
+
+  vector<double> exppre;
+  if(addexp) {
+    exppre.resize( nga.size() ); 
+    unsigned ntarget=0;
+
+    for(unsigned i=0;i<nga.size();++i){
+       if( !parseNumbered( "PREINT", i+1, exppre[i] ) ) break;
+       ntarget++; 
+    }
+    if( ntarget!=nga.size() ) error("found wrong number of PREINT values");
+  }
+
   // Create neighbour lists
   nl= new NeighborList(gb_lista,ga_lista,true,pbc,getPbc());
 
@@ -146,15 +166,23 @@ serial(false)
     log.printf("\n");
   }
 
-  if(!serial)  log.printf("  The PREs are calculated in parallel\n");
-  else         log.printf("  The PREs are calculated in serial\n");
   if(pbc)      log.printf("  using periodic boundary conditions\n");
   else         log.printf("  without periodic boundary conditions\n");
 
   for(unsigned i=0;i<nga.size();i++) {
-    std::string num; Tools::convert(i,num);
+    string num; Tools::convert(i,num);
     addComponentWithDerivatives("pre_"+num);
     componentIsNotPeriodic("pre_"+num);
+  }
+
+  if(addexp) {
+    for(unsigned i=0;i<nga.size();i++) {
+      string num; Tools::convert(i,num);
+      addComponent("exp_"+num);
+      componentIsNotPeriodic("exp_"+num);
+      Value* comp=getPntrToComponent("exp_"+num); 
+      comp->set(exppre[i]);
+    }
   }
 
   requestAtoms(nl->getFullAtomList());
@@ -165,78 +193,53 @@ PRE::~PRE(){
   delete nl;
 } 
 
-void PRE::calculate(){ 
-  unsigned sga = nga.size();
-  std::vector<Vector> deriv(getNumberOfAtoms());
-  std::vector<Tensor> dervir(sga);
-  vector<double> pre(sga), ratio(sga);
-
-  // internal parallelisation
-  unsigned stride=comm.Get_size();
-  unsigned rank=comm.Get_rank();
-  if(serial){
-    stride=1;
-    rank=0;
-  }
- 
-  for(unsigned i=0;i<sga;i++) ratio[i]=pre[i]=0.;
-
-  unsigned index=0; for(unsigned k=0;k<rank;k++) index += nga[k];
-
-  for(unsigned i=rank;i<sga;i+=stride) { //cycle over the number of pre 
+void PRE::calculate()
+{
+// cycle over the number of PRE
+#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
+  for(unsigned i=0;i<nga.size();i++) {
+    vector<Vector> deriv; 
+    Tensor dervir;
+    double pre=0;
+    unsigned index=0;
+    for(unsigned k=0; k<i; k++) index+=nga[k]; 
+    // cycle over equivalent atoms 
     for(unsigned j=0;j<nga[i];j++) {
-      double aver=1./((double)nga[i]);
-      unsigned i0=nl->getClosePair(index).first;
-      unsigned i1=nl->getClosePair(index).second;
+      const double c_aver=constant/((double)nga[i]);
+      // the first atom is always the same (the paramagnetic group)
+      const unsigned i0=nl->getClosePair(index+j).first;
+      const unsigned i1=nl->getClosePair(index+j).second;
+
       Vector distance;
-      if(pbc){
-        distance=pbcDistance(getPosition(i0),getPosition(i1));
-      } else {
-        distance=delta(getPosition(i0),getPosition(i1));
-      }
-      double d=distance.modulo();
-      double r2=d*d;
-      double r6=r2*r2*r2;
-      double r8=r6*r2;
-      double tmpir6=constant*aver/r6;
-      double tmpir8=-6.*constant*aver/r8;
+      if(pbc) distance=pbcDistance(getPosition(i0),getPosition(i1));
+      else    distance=delta(getPosition(i0),getPosition(i1));
 
-      pre[i] += tmpir6;
+      const double r2=distance.modulo2();
+      const double r6=r2*r2*r2;
+      const double r8=r6*r2;
+      const double tmpir6=c_aver/r6;
+      const double tmpir8=-6.*c_aver/r8;
 
-      deriv[i0] = -tmpir8*distance;
-      deriv[i1] = +tmpir8*distance;
+      pre += tmpir6;
 
-      dervir[i] += Tensor(distance,deriv[i0]);
-
-      index++;
+      Vector tmpv = -tmpir8*distance;
+      deriv.push_back(tmpv);
+      dervir   +=  Tensor(distance,tmpv);
     }
-    ratio[i] = rtwo[i]*exp(-pre[i]*inept) / (rtwo[i]+pre[i]);
-    for(unsigned k=i+1;k<i+stride;k++) index += nga[k];
-  }
+    const double ratio = rtwo[i]*exp(-pre*inept) / (rtwo[i]+pre);
+    const double fact = -ratio*(inept+1./(rtwo[i]+pre));
 
-  if(!serial){
-    comm.Sum(&pre[0],sga);
-    comm.Sum(&ratio[0],sga);
-    comm.Sum(&deriv[0][0],3*deriv.size());
-    comm.Sum(&dervir[0][0][0],9*sga);
-  }
-
-  index = 0;
-  for(unsigned i=0;i<sga;i++) { //cycle over the number of pre 
     Value* val=getPntrToComponent(i);
-    val->set(ratio[i]);
-    double fact = -ratio[i]*(inept+1./(rtwo[i]+pre[i]));
-    Tensor virial = fact*dervir[i];
-    setBoxDerivatives(val, virial);
+    val->set(ratio);
+    setBoxDerivatives(val, fact*dervir);
+
     for(unsigned j=0;j<nga[i];j++) {
-      unsigned i0=nl->getClosePair(index).first;
-      unsigned i1=nl->getClosePair(index).second;
-      setAtomsDerivatives(val, i0, fact*deriv[i0]);
-      setAtomsDerivatives(val, i1, fact*deriv[i1]); 
-      index++;
+      const unsigned i0=nl->getClosePair(index+j).first;
+      const unsigned i1=nl->getClosePair(index+j).second;
+      setAtomsDerivatives(val, i0,  fact*deriv[j]);
+      setAtomsDerivatives(val, i1, -fact*deriv[j]);
     }
   }
-
 }
 
 }

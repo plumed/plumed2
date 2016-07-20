@@ -57,13 +57,15 @@ public:
 /// Return a pointer to specific argument
   Value* getPntrToArgument( const unsigned n );
 /// Returns the number of arguments
-  unsigned getNumberOfArguments() const ;
+  virtual unsigned getNumberOfArguments() const ;
 /// Takes the difference taking into account pbc for arg i
   double difference(int, double, double) const;
 /// Takes one value and brings it back into the pbc of argument i 
   double bringBackInPbc(int i,double d1)const;
 /// Parse a list of arguments
   void parseArgumentList(const std::string&key,std::vector<Value*>&args);
+/// Parse a numbered list of arguments
+  bool parseArgumentList(const std::string&key,int i,std::vector<Value*>&args);
 /// Setup the dependencies
   void requestArguments(const std::vector<Value*> &arg);
 /// Add forces to arguments (used in apply)

@@ -97,12 +97,11 @@ WHOLEMOLECULES STRIDE=1 ENTITY0=1-20
 DUMPATOMS FILE=dump.xyz ATOMS=1-20
 \endverbatim
 
-Notice that since PLUMED 2.1 it is also possible to shift coordinates stored within PLUMED
-so as to align them to a template structure, using the \subpage FIT_TO_TEMPLATE keyword.
-
-Finally, you can bring a set of atom as close as possible to another set of
-atoms using the \subpage WRAPAROUND keyword.
-
+Notice that there are other ways to manipulate the coordinates stored within PLUMED:
+- Using the \subpage FIT_TO_TEMPLATE they can be aligned to a template structure.
+- Using \subpage WRAPAROUND you can bring a set of atom as close as possible to another set of
+  atoms.
+- Using \subpage RESET_CELL you can rotate the periodic cell.
 
 \section vatoms Virtual Atoms
 

@@ -241,14 +241,15 @@ For users:
 - Fixed a bug in derivatives of kernel functions with non-diagonal covariances. This affects the 
   derivatives output by \ref sum_hills
 
-Unreleased changes (will be included in 2.1.5)
+Version 2.1.5 (Jan 18, 2016)
 ---------------------------------------------
+Notice that branch 2.1 will not be longer maintained!
+All users are invited to switch to version 2.2.
 
 For users:
 - PLUMED now reports an error when using \ref HISTOGRAM with FREE-ENERGY without USE_ALL_DATA. See \issue{175}
 - Fixed a bug in configure together with --enable-almost. The check for lbz2 library was not working properly.
 
-See branch \branch{v2.1} on git repository.
 
 
 */

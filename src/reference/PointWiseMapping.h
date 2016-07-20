@@ -71,7 +71,8 @@ public:
 /// Get a pointer to the matrix of pairwise distances
   Matrix<double>& modifyDmat();
 /// Print out the low dimensional mapping
-  void print( const std::string& method, const double & time, OFile& afile, const std::string& fmt );
+  void print( const std::string& method, const double & time, OFile& afile, 
+              const std::string& fmt, const double& lunits );
 /// Get the low dimensional embedding coordinate
   double getProjectionCoordinate( const unsigned& iframe, const unsigned& jcoord ) const ;
 /// Set the value of the projection coordinate
@@ -86,7 +87,7 @@ bool PointWiseMapping::mappingNeedsSetup() const {
 
 inline
 void PointWiseMapping::copyFrameDerivatives( const unsigned& from, const unsigned& to ){
-  plumed_dbg_assert( to>=frames.size()/2 & from<frames.size()/2 );
+  plumed_dbg_assert( to>=frames.size()/2 && from<frames.size()/2 );
   frames[to]->copyDerivatives( frames[from] );
 }
 

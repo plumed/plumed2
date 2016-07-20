@@ -20,13 +20,7 @@ echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo "+ Test session ended at $(date)"
 
 dirs=$(
-  for mod in `./scripts/find_modules.sh` ; do 
-    for file in $mod/rt*/Makefile
-    do
-      echo ${file%Makefile}
-    done
-  done
-  for file in basic/rt*/Makefile
+  for file in {basic,metainference,crystallization,manyrestraints,adjmat}/rt*/Makefile
   do
     echo ${file%Makefile}
   done

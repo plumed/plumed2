@@ -5,7 +5,14 @@
 Version 2.2 (Oct 13, 2015)
 ----------------------------
 
-Include all fixes in branch 2.1 indicated in \ref CHANGES-2-1 .
+Version 2.2 contains several improvements with respect to 2.1. Users currently working with 2.1
+should have a look at the section "Changes leading to incompatible behavior" below and
+might need tiny adjustments in their input files. In 2.2 we restored more features of 1.3
+that were missing in 2.1, so users still working with 1.3 could opt for an upgrade.
+A tutorial explaining how to move from PLUMED 1 to PLUMED 2 is available (see \ref moving).
+
+Below you find a list of all the changes with respect to version 2.1.
+Notice that version 2.2 includes already all the fixes in branch 2.1 up to 2.1.4 indicated in \ref CHANGES-2-1 .
 
 Changes from version 2.1 which are relevant for users:
 - Changes leading to incompatible behavior:
@@ -89,10 +96,11 @@ at what has been done to the other multicolvars in there for guidance.  Sorry fo
 - Changed the logic of several PLUMED ifdef macros so as to make them consistent.
   Now every feature based on external libraries is identified by a __PLUMED_HAS_* macro.
 
-Unreleased changes (will be included in 2.2.1)
+Version 2.2.1 (Jan 18, 2016)
 ---------------------------------------------
 
 For users:
+- \ref PBMETAD implement the new Parallel Bias Metadynamics flavor of the Metadynamics sampling method.
 - PLUMED now reports an error when using \ref HISTOGRAM with UNNORMALIZED without USE_ALL_DATA. See \issue{175}
 - Fixed a bug in configure together with --enable-almost. The check for lbz2 library was not working properly.
 - Fixed a bug in install procedure that was introducing an error in linking with CP2K.
@@ -104,7 +112,69 @@ For developers:
 - ./configure is automatically relaunched when changing ./configure or Makefile.conf. This makes it more robust
   to switch between branches.
 
+Version 2.2.2 (Apr 13, 2016)
+----------------------------------------------
+
+For users:
+- \ref MOLINFO for RNA accepts more residue names, see \issue{180}.
+- added two mpi barries (one was missing in PBMetaD for multiple walkers) to help syncronise initialisation
+- Fixed a bug in internal stopwatches that was making \ref DEBUG logRequestedAtoms not working
+- Some multicolvars (including \ref BRIDGE, \ref ANGLES, and \ref INPLANEDISTANCES) now crashes if one
+  asks for too many atoms, see \issue{185}.
+- Optimisations (activation of the dependencies, secondary structures, DRMSD)
+- Fixed a performance regression with RMSD=OPTIMAL-FAST
+- Fixed a bug in the normalization of kernel functions (relevant for \ref HISTOGRAM).
+- Fixed a regression introduced in v2.2 that was making \ref METAD with non-MPI multiple walkers crash
+  if reading frequently. See \issue{190}
+- Updated patch for gromacs 5.x. Patches for gromacs 5.0 and 5.1 have been fixed so as to allow
+  patching in runtime mode.
+- Possibility to control manual generation (including pdf) from ./configure. Pdf manual is now off
+  by default. Notice that on travis CI it is still generated.
+
+For developers:
+- Fixed a bug in the interpretation of cmd strings. Namely, an erroneous string was not triggering an error.
+  This is harmless for MD codes properly patched, but could have introduced problems in MD codes with typoes
+  in cmd strings.
+- ./configure is not automatically relaunched anymore when doing `make clean`.
+
+Version 2.2.3 (Jun 30, 2016)
+----------------------------------------------
+
+For users:
+- Updated patches for gromacs 5.1.x and 5.0.x to fix a problem when plumed was trying to write to an already
+  closed gromacs log file.
+- When looking for a value outside the GRID now the error include the name of the responsible 
+  collective variable
+- Numerical check in LatticeReduction made less picky. This should solve some of the internal errors reported
+  by `LatticeReduction.cpp` when using aggressive compilers.
+- Files are now flushed at the correct step. Before this fix, they were flushed at the step before the requested one
+  (e.g. with \ref FLUSH STRIDE=100 at step 99, 199, etc).
+- In \ref METAD, INTERVAL with periodic variables now report an error.
+- \ref LOAD now works also when plumed is installed with a suffix.
+- Added `--md-root` option to `plumed patch` which allows it to be run from a directory different from the one
+  where the md code is located.
+- Wham script in \ref munster tutorial now writes weights in scientific notation.
+
+For developers:
+- `./configure` checks if dependencies can be generated. If not, they are disabled.
+- Added --disable-dependency-tracking to ./configure
+- Added a make target `all_plus_doc` that builds both code and docs.
+- Added possibility to set a default location for plumed library in runtime binding.
+  If the plumed wrapped is compiled with `-D__PLUMED_DEFAULT_KERNEL=/path/libplumedKernel.so`,
+  then if the env var PLUMED_KERNEL is undefined or empty PLUMED will look in the path at compile time.
+- Tentative port files are now available at [this link](http://github.com/plumed/ports). 
+  They can be used to install PLUMED using MacPorts.
+
+Version 2.2.4
+-------------
 See branch \branch{v2.2} on git repository.
 
+For users:
+- Fix a bug in \ref PBMETAD when biasing periodic and not periodic collective variables at the same time 
+- GSL library is now treated by `./configure` in the same way as other libraries, that is `-lgsl -lgslcblas` are only
+  added if necessary.
+
+For developers:
+- Macports portile is now tested on travis at every plumed push.
 
 */

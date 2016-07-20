@@ -162,8 +162,9 @@ void BiasRepresentation::pushKernel( IFile *ifile ){
  	//cerr<<"now with "<<hills.size()<<endl;
         if(hasgrid){
                  vector<unsigned> nneighb;
-                 if(doInt_) nneighb=BiasGrid_->getNbin();
-                 else nneighb=kk->getSupport(BiasGrid_->getDx());
+                 if(doInt_&&(kk->getCenter()[0]+kk->getContinuousSupport()[0] > uppI_ || kk->getCenter()[0]-kk->getContinuousSupport()[0] < lowI_ )) {
+                  nneighb=BiasGrid_->getNbin();
+                 } else nneighb=kk->getSupport(BiasGrid_->getDx());
                  vector<Grid::index_t> neighbors=BiasGrid_->getNeighbors(kk->getCenter(),nneighb);
                  vector<double> der(ndim);
                  vector<double> xx(ndim);
