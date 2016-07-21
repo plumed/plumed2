@@ -86,7 +86,7 @@ double MatrixColumnSums::compute( const unsigned& tinded, multicolvar::AtomValue
       MultiValue& myvout=myatoms.getUnderlyingMultiValue();
       for(unsigned i=0;i<nrows;++i){
           if( mymatrix->isSymmetric() && tinded==i ) continue ;
-          addConnectionDerivatives( i, tinded, tvals, myvals, myvout );
+          addConnectionDerivatives( i, tinded, myvals, myvout );
       }
   }
   return sum;

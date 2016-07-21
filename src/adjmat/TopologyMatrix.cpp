@@ -65,11 +65,6 @@ public:
 /// Calculate the contribution from one of the atoms in the third element of the pack
   void calculateForThreeAtoms( const unsigned& iat, const Vector& d1, const double& d1_len, 
                                HistogramBead& bead, multicolvar::AtomValuePack& myatoms ) const ; 
-///
-  double transformStoredValues( const std::vector<double>& myvals, unsigned& vout, double& df ) const ;
-///
-  /// Used to check for connections between atoms
-  bool checkForConnection( const std::vector<double>& myvals ) const ;
 };
 
 PLUMED_REGISTER_ACTION(TopologyMatrix,"TOPOLOGY_MATRIX")
@@ -154,7 +149,7 @@ AdjacencyMatrixBase(ao)
 }
 
 unsigned TopologyMatrix::getNumberOfQuantities() const {
-  return maxbins+2;
+  return maxbins+3;
 }
 
 void TopologyMatrix::setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ){ 
@@ -204,34 +199,34 @@ double TopologyMatrix::compute( const unsigned& tindex, multicolvar::AtomValuePa
   // std::vector<double> binvals( 1+maxbins ); for(unsigned i=1;i<maxbins;++i) binvals[i]=myatoms.getValue(i);
   // unsigned ii; double fdf;
   //std::cout<<"HELLO DENSITY "<<myatoms.getIndex(0)<<" "<<myatoms.getIndex(1)<<" "<<transformStoredValues( binvals, ii, fdf )<<std::endl;
-  // Now calculate derivative of distance between atoms 1 and 2
+
+  // Now find the element for which the density is maximal
+  unsigned vout=2; double max=myatoms.getValue( 2 );
+  for(unsigned i=3;i<myatoms.getUnderlyingMultiValue().getNumberOfValues()-1;++i){
+     if( myatoms.getValue(i)>max ){ max=myatoms.getValue(i); vout=i; }
+  }
+  // Calculate value and derivative of switching function between atoms 1 and 2
   double dfuncl, sw = switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ),
                                          getBaseColvarNumber( myatoms.getIndex(1) ) ).calculate( d1_len, dfuncl );
+  // Transform the density
+  double df, tsw = threshold_switch.calculate( max, df );
   if( !doNotCalculateDerivatives() ){
       // Factor of d1_len is required here because d1 is normalized
       d1 *= d1_len;
-      addAtomDerivatives( 1, 0, -dfuncl*d1, myatoms );
-      addAtomDerivatives( 1, 1, dfuncl*d1, myatoms );
-      myatoms.addBoxDerivatives( 1, (-dfuncl)*Tensor(d1,d1) );
+      addAtomDerivatives( 2+maxbins, 0, -dfuncl*d1, myatoms );
+      addAtomDerivatives( 2+maxbins, 1, dfuncl*d1, myatoms );
+      myatoms.addBoxDerivatives( 2+maxbins, (-dfuncl)*Tensor(d1,d1) );
+      // Update active atoms so that next bit works
+      updateActiveAtoms( myatoms );
+      // Now finish caclulation of derivatives
+      MultiValue& myvals=myatoms.getUnderlyingMultiValue();
+      for(unsigned jd=0;jd<myvals.getNumberActive();++jd){
+          unsigned ider=myvals.getActiveIndex(jd);
+          myvals.addDerivative( 1, ider, sw*df*max*myvals.getDerivative( vout, ider ) + tsw*myvals.getDerivative( 2+maxbins, ider ) );
+      }
   }
-  return sw;
+  return sw*tsw;
 }
-
-
-
-
-
-double TopologyMatrix::transformStoredValues( const std::vector<double>& myvals, unsigned& vout, double& df ) const {
-  plumed_dbg_assert( myvals.size()==(maxbins+2) ); vout=2; double max=myvals[2];
-  for(unsigned i=3;i<myvals.size();++i){
-      if( myvals[i]>max ){ max=myvals[i]; vout=i; }
-  }
-  double ff = myvals[1]*threshold_switch.calculate( max, df ); df*=max;
-  return ff;
-} 
-
-
-
 
 void TopologyMatrix::calculateForThreeAtoms( const unsigned& iat, const Vector& d1, const double& d1_len, 
                                              HistogramBead& bead, multicolvar::AtomValuePack& myatoms ) const {
@@ -312,14 +307,6 @@ void TopologyMatrix::calculateForThreeAtoms( const unsigned& iat, const Vector& 
       }
   }
 }
-
-
-
-bool TopologyMatrix::checkForConnection( const std::vector<double>& myvals ) const { 
-  double dfake; unsigned vfake;
-  return (transformStoredValues( myvals, vfake, dfake)>epsilon);
-} 
-
 
 }
 }
