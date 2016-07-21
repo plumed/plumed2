@@ -1,0 +1,2 @@
+type=driver
+arg="--plumed plumed.dat --mf_pdb traj.pdb --dump-forces atom_forces"

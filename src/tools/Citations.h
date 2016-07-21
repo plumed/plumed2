@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -61,6 +61,10 @@ public:
 /// It writes on the ostream the list of all the bibliographic items
 /// prefixed with their reference number
   friend std::ostream &operator<<(std::ostream &,const Citations&);
+/// Delete all references
+  void clear();
+/// Check if bibliography is empty
+  bool empty()const;
 };
 
 std::ostream & operator<<(std::ostream &,const Citations&);

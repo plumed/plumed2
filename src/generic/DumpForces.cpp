@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -29,7 +29,7 @@ using namespace std;
 namespace PLMD{
 namespace generic{
 
-//+PLUMEDOC ANALYSIS DUMPFORCES
+//+PLUMEDOC PRINTANALYSIS DUMPFORCES
 /*
 Dump the force acting on one of a values in a file.  
 
@@ -58,6 +58,7 @@ public ActionPilot,
 public ActionWithArguments
 {
   string file;
+  string fmt;
   OFile of;
 public:
   void calculate(){}
@@ -77,6 +78,7 @@ void DumpForces::registerKeywords(Keywords& keys){
   keys.use("ARG");
   keys.add("compulsory","STRIDE","1","the frequency with which the forces should be output");
   keys.add("compulsory","FILE","the name of the file on which to output the forces");
+  keys.add("compulsory","FMT","%15.10f","the format with which the derivatives should be output");
   keys.use("RESTART");
   keys.use("UPDATE_FROM");
   keys.use("UPDATE_UNTIL");
@@ -85,13 +87,17 @@ void DumpForces::registerKeywords(Keywords& keys){
 DumpForces::DumpForces(const ActionOptions&ao):
 Action(ao),
 ActionPilot(ao),
-ActionWithArguments(ao)
+ActionWithArguments(ao),
+fmt("%15.10f")
 {
   parse("FILE",file);
   if( file.length()==0 ) error("name of file was not specified");
+  parse("FMT",fmt);
+  fmt=" "+fmt;
   of.link(*this);
   of.open(file);
   log.printf("  on file %s\n",file.c_str());
+  log.printf("  with format %s\n",fmt.c_str());
   if( getNumberOfArguments()==0 ) error("no arguments have been specified");
   checkRead();
 }
@@ -101,7 +107,8 @@ void DumpForces::update(){
   of.fmtField(" %f");
   of.printField("time",getTime());
   for(unsigned i=0;i<getNumberOfArguments();i++){
-    of.fmtField(" %15.10f").printField(getPntrToArgument(i)->getName(),getPntrToArgument(i)->getForce());
+    of.fmtField(fmt);
+    of.printField(getPntrToArgument(i)->getName(),getPntrToArgument(i)->getForce());
   }
   of.printField();
 }

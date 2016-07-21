@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014,2015 The plumed team
+   Copyright (c) 2014-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -39,6 +39,9 @@ number_of_cluster(-1)
       if( getNumberOfNodeTypes()!=1 ) error("should only be running clustering with one base multicolvar in function");
       if( !getAdjacencyVessel()->undirectedGraph() ) error("input contact matrix is incompatible with clustering");  
    }
+   if( keywords.exists("MATRIX") ){
+       std::vector<AtomNumber> fake_atoms; setupMultiColvarBase( fake_atoms );
+   }
 }
 
 void ClusteringBase::turnOnDerivatives(){
@@ -63,6 +66,14 @@ void ClusteringBase::retrieveAtomsInCluster( const unsigned& clust, std::vector<
    for(unsigned i=0;i<getNumberOfNodes();++i){
       if( which_cluster[i]==cluster_sizes[cluster_sizes.size() - clust].second ){ myatoms[n]=i; n++; }
    }
+}
+
+bool ClusteringBase::areConnected( const unsigned& iatom, const unsigned& jatom ) const {
+   return getAdjacencyVessel()->nodesAreConnected( iatom, jatom );
+}
+
+double ClusteringBase::getCutoffForConnection() const {
+  return getAdjacencyVessel()->getCutoffForConnection();
 }
 
 }

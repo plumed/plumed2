@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -30,8 +30,8 @@ PLUMED_REGISTER_METRIC(DRMSD,"DRMSD")
 DRMSD::DRMSD( const ReferenceConfigurationOptions& ro ):
 ReferenceConfiguration( ro ),
 SingleDomainRMSD( ro ),
-bounds_were_set(false),
 nopbc(true),
+bounds_were_set(false),
 lower(0),
 upper(std::numeric_limits<double>::max( ))
 {
@@ -42,14 +42,15 @@ void DRMSD::setBoundsOnDistances( bool dopbc, double lbound, double ubound ){
   lower=lbound; upper=ubound;
 }
 
-void DRMSD::read( const PDB& pdb ){
-  readAtomsFromPDB( pdb );
-
+void DRMSD::readBounds(){
   parseFlag("NOPBC",nopbc);  
   parse("LOWER_CUTOFF",lower,true);
   parse("UPPER_CUTOFF",upper,true);
   setBoundsOnDistances( !nopbc, lower, upper );
-  setup_targets();
+}
+
+void DRMSD::read( const PDB& pdb ){
+  readAtomsFromPDB( pdb ); readBounds(); setup_targets();
 }
 
 void DRMSD::setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in ){
@@ -76,38 +77,38 @@ double DRMSD::calc( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceVal
   plumed_dbg_assert(!targets.empty());
 
   Vector distance; 
-  myder.clear(); double drmsd=0.; 
+  myder.clear(); 
+  double drmsd=0.; 
   for(std::map< std::pair <unsigned,unsigned> , double>::const_iterator it=targets.begin();it!=targets.end();++it){
       
-      unsigned i=getAtomIndex( it->first.first );
-      unsigned j=getAtomIndex( it->first.second );
+      const unsigned i=getAtomIndex( it->first.first );
+      const unsigned j=getAtomIndex( it->first.second );
 
-      if(nopbc){ distance=delta( pos[i] , pos[j] ); }
-      else{ distance=pbc.distance( pos[i] , pos[j] ); }
+      if(nopbc) distance=delta( pos[i] , pos[j] ); 
+      else      distance=pbc.distance( pos[i] , pos[j] );
 
-      double len = distance.modulo();
-      double diff = len - it->second;
+      const double len = distance.modulo();
+      const double diff = len - it->second;
+      const double der = diff / len; 
 
       drmsd += diff * diff;
-      myder.addAtomDerivatives( i, -( diff / len ) * distance );
-      myder.addAtomDerivatives( j, ( diff / len ) * distance );
-      myder.addBoxDerivatives( -( diff / len ) * Tensor(distance,distance) );
+      myder.addAtomDerivatives( i, -der * distance );
+      myder.addAtomDerivatives( j,  der * distance );
+      myder.addBoxDerivatives( - der * Tensor(distance,distance) );
   }
 
-  double npairs = static_cast<double>(targets.size());
+  const double inpairs = 1./static_cast<double>(targets.size());
   double idrmsd;
 
   if(squared){
-     drmsd = drmsd / npairs;
-     idrmsd = 2.0 / npairs;
+     drmsd = drmsd * inpairs;
+     idrmsd = 2.0 * inpairs;
   } else {
-     drmsd = sqrt( drmsd / npairs );
-     idrmsd = 1.0/( drmsd * npairs );
+     drmsd = sqrt( drmsd * inpairs );
+     idrmsd = inpairs / drmsd ;
   }
 
   myder.scaleAllDerivatives( idrmsd );
-  // virial *= idrmsd; 
-  // for(unsigned i=0;i<getNumberOfAtoms();++i){atom_ders[i] *= idrmsd;}
 
   return drmsd;
 }

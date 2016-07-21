@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -162,8 +162,9 @@ void BiasRepresentation::pushKernel( IFile *ifile ){
  	//cerr<<"now with "<<hills.size()<<endl;
         if(hasgrid){
                  vector<unsigned> nneighb;
-                 if(doInt_) nneighb=BiasGrid_->getNbin();
-                 else nneighb=kk->getSupport(BiasGrid_->getDx());
+                 if(doInt_&&(kk->getCenter()[0]+kk->getContinuousSupport()[0] > uppI_ || kk->getCenter()[0]-kk->getContinuousSupport()[0] < lowI_ )) {
+                  nneighb=BiasGrid_->getNbin();
+                 } else nneighb=kk->getSupport(BiasGrid_->getDx());
                  vector<Grid::index_t> neighbors=BiasGrid_->getNeighbors(kk->getCenter(),nneighb);
                  vector<double> der(ndim);
                  vector<double> xx(ndim);

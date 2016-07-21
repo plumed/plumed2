@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -81,14 +81,11 @@ MultiValue& BridgeVessel::transformDerivatives( const unsigned& current, MultiVa
   return outvals;
 }
 
-bool BridgeVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
+void BridgeVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
   // in_normal_calculate=true;
-  if( myvals.get(0)<myOutputAction->getTolerance() ){
-      return ( !myOutputAction->contributorsAreUnlocked || myvals.get(0)>=myOutputAction->getNLTolerance() );
-  }
-  bool keep=myOutputAction->calculateAllVessels( current, myvals, myvals, buffer, der_list );    
-  // in_normal_calculate=false;
-  return ( !myOutputAction->contributorsAreUnlocked || keep );
+  if( myvals.get(0)<myOutputAction->getTolerance() ) return;
+  myOutputAction->calculateAllVessels( current, myvals, myvals, buffer, der_list );    
+  return; 
 }
 
 void BridgeVessel::finish( const std::vector<double>& buffer ){
@@ -178,6 +175,12 @@ bool BridgeVessel::applyForce( std::vector<double>& outforces ){
   }
   if(hasforce) myOutputAction->applyBridgeForces( eforces );
   return hasforce;
+}
+
+void BridgeVessel::copyTaskFlags(){
+  myOutputAction->deactivateAllTasks();
+  for(unsigned i=0;i<getAction()->nactive_tasks;++i) myOutputAction->taskFlags[ getAction()->indexOfTaskInFullList[i] ] = 1;
+  myOutputAction->lockContributors();
 }
 
 }

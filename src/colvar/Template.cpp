@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -61,7 +61,7 @@ void Template::registerKeywords(Keywords& keys){
   keys.addFlag("TEMPLATE_DEFAULT_ON_FLAG",true,"flags that are by default performed should be specified like this");
   keys.add("compulsory","TEMPLATE_COMPULSORY","all compulsory keywords should be added like this with a description here");
   keys.add("optional","TEMPLATE_OPTIONAL","all optional keywords that have input should be added like a description here");
-  keys.add("atoms","TEMPLATE_INPUT","the keyword with which you specify what atoms to use should be added like this");
+  keys.add("atoms","ATOMS","the keyword with which you specify what atoms to use should be added like this");
 }
 
 Template::Template(const ActionOptions&ao):

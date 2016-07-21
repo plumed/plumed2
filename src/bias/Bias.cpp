@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -32,6 +32,10 @@ ActionWithValue(ao),
 ActionWithArguments(ao),
 outputForces(getNumberOfArguments(),0.0)
 {
+  addComponentWithDerivatives("bias"); 
+  componentIsNotPeriodic("bias");
+  valueBias=getPntrToComponent("bias");
+
   if(getStride()>1){
     log<<"  multiple time step "<<getStride()<<" ";
     log<<cite("Ferrarotti, Bottaro, Perez-Villa, and Bussi, J. Chem. Theory Comput. 11, 139 (2015)")<<"\n";
@@ -39,6 +43,8 @@ outputForces(getNumberOfArguments(),0.0)
   for(unsigned i=0;i<getNumberOfArguments();++i){
      (getPntrToArgument(i)->getPntrToAction())->turnOnDerivatives();
   }
+
+  turnOnDerivatives();
 }
 
 void Bias::registerKeywords( Keywords& keys ){
@@ -47,16 +53,39 @@ void Bias::registerKeywords( Keywords& keys ){
   ActionWithValue::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
   keys.add("hidden","STRIDE","the frequency with which the forces due to the bias should be calculated.  This can be used to correctly set up multistep algorithms");
-}
-
-void Bias::turnOnDerivatives(){
-  error("a bias cannot be used as a collective variable");
+  componentsAreNotOptional(keys);
+  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
 }
 
 void Bias::apply(){
-  if(onStep()) for(unsigned i=0;i<getNumberOfArguments();++i){
-    getPntrToArgument(i)->addForce(getStride()*outputForces[i]);
+  const unsigned noa=getNumberOfArguments();
+  const unsigned ncp=getNumberOfComponents();
+
+  if(onStep()) { 
+    double gstr = static_cast<double>(getStride());
+    for(unsigned i=0;i<noa;++i) {
+      getPntrToArgument(i)->addForce(gstr*outputForces[i]);
+    }
   }
+
+  // additional forces on the bias component
+  std::vector<double> f(noa,0.0);
+  std::vector<double> forces(noa);
+
+  bool at_least_one_forced=false;
+  for(unsigned i=0;i<ncp;++i){
+    if(getPntrToComponent(i)->applyForce(forces)){
+       at_least_one_forced=true;
+       for(unsigned j=0;j<noa;j++) f[j]+=forces[j]; 
+    }
+  }
+
+  if(at_least_one_forced && !onStep()) error("you are biasing a bias with an inconsistent STRIDE");
+
+  if(at_least_one_forced) for(unsigned i=0;i<noa;++i){
+    getPntrToArgument(i)->addForce(f[i]);
+  }
+
 }
 
 }

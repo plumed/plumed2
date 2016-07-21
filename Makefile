@@ -1,18 +1,27 @@
--include Makefile.conf
+ifneq ($(MAKECMDGOALS),clean)
+ -include Makefile.conf
+endif
 
 
 SRCDIRS := src test
-SUBDIRS := $(SRCDIRS) user-doc developer-doc regtest
+SUBDIRS := $(SRCDIRS) user-doc developer-doc regtest macports
 
 SUBDIRSCLEAN:=$(addsuffix .clean,$(SUBDIRS))
 
      
-.PHONY: all lib clean $(SRCDIRS) doc docclean check cppcheck distclean
+.PHONY: all lib clean $(SRCDIRS) doc docclean check cppcheck distclean all_plus_docs macports
 
 # if machine dependent configuration has been found:
 ifdef GCCDEP
 all:
 	$(MAKE) lib
+	$(MAKE) -C vim
+
+# target useful for macports
+# it builds the code then the documentation
+all_plus_docs:
+	$(MAKE) all
+	$(MAKE) docs
 
 lib:
 	$(MAKE)	-C src
@@ -81,6 +90,9 @@ docclean:
 
 cppcheck:
 	$(MAKE) -C src cppcheck
+
+macports:
+	$(MAKE) -C macports
 
 # stamp-h file keeps track of when ./configure was last applied
 # the procedure below is taken from:

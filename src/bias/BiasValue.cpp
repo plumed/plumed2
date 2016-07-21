@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -91,13 +91,11 @@ PLUMED_REGISTER_ACTION(BiasValue,"BIASVALUE")
 void BiasValue::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   keys.use("ARG");
-  componentsAreNotOptional(keys);
   // Should be _bias below
   keys.addOutputComponent("_bias","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
                                             "these quantities will named with  the arguments of the bias followed by "
                                             "the character string _bias. These quantities tell the user how much the bias is "
                                             "due to each of the colvars.");
-  keys.addOutputComponent("bias","default","total bias");
 }
 
 BiasValue::BiasValue(const ActionOptions&ao):
@@ -105,25 +103,21 @@ PLUMED_BIAS_INIT(ao)
 {
   checkRead();
   // add one bias for each argument  
- // addComponent("bias");
   for(unsigned i=0;i<getNumberOfArguments();++i){ 
-	//log<<getPntrToArgument(i)->getName()<<"\n";
-        string ss=getPntrToArgument(i)->getName()+"_bias";
-	addComponent(ss); componentIsNotPeriodic(ss);
+    string ss=getPntrToArgument(i)->getName()+"_bias";
+    addComponent(ss); componentIsNotPeriodic(ss);
   }
-  addComponent("bias"); componentIsNotPeriodic("bias");
 }
 
 void BiasValue::calculate(){
   double bias=0.0;
-for(unsigned i=0;i< getNumberOfArguments() ;++i){
-  double val; val=getArgument(i); 
-//  log<<"BIAS "<<val<<"\n";
-  getPntrToComponent(i)->set(val);
-  setOutputForce(i,-1.);
-  bias+=val;
-}
-  getPntrToComponent(getNumberOfArguments())->set(bias);
+  for(unsigned i=0;i<getNumberOfArguments();++i){
+    double val; val=getArgument(i); 
+    getPntrToComponent(i+1)->set(val);
+    setOutputForce(i,-1.);
+    bias+=val;
+  }
+  setBias(bias);
 }
 
 }

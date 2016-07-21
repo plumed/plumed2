@@ -1,0 +1,24 @@
+p: POSITION ATOM=1
+
+PRINT FILE=c1 ARG=p.*
+
+UPDATE_IF ARG=p.x LESS_THAN=0.5 
+PRINT FILE=c2 ARG=p.*
+UPDATE_IF ARG=p.x END
+
+PRINT FILE=c3 ARG=p.*
+
+UPDATE_IF ARG=p.x LESS_THAN=0.5
+UPDATE_IF ARG=p.y MORE_THAN=0.5
+PRINT FILE=c4 ARG=p.*
+UPDATE_IF ARG=p.y END
+UPDATE_IF ARG=p.x END
+
+UPDATE_IF ARG=p.x,p.y LESS_THAN=0.5,1000.0 MORE_THAN=-1000.0,0.5
+PRINT FILE=c4b ARG=p.*
+
+# at end of file all the blocks are implicitly closed
+# thus next line is not necessary
+# UPDATE_IF ARG=p.x,p.y END
+
+

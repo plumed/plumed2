@@ -1,3 +1,4 @@
 type=driver
+plumed_modules=adjmat
 # this is to test a different name
 arg="--plumed plumed.dat --ixyz isomers.xyz"

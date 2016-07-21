@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015 The plumed team
+   Copyright (c) 2015,2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -30,27 +30,34 @@ void ValueVessel::registerKeywords( Keywords& keys ){
 }
 
 ValueVessel::ValueVessel( const VesselOptions& da ):
-Vessel(da)
+Vessel(da),
+no_output_value(false)
 {
+  parse("COMPONENT",mycomp);
   ActionWithValue* a=dynamic_cast<ActionWithValue*>( getAction() );
   plumed_massert(a,"cannot create passable values as base action does not inherit from ActionWithValue");
   int numval = getNumericalLabel();
-  if( numval<0 ){   // This allows us to make multicolvars pretend to be colvars - this is used in AlphaRMSD etc
-     plumed_massert( a->getNumberOfComponents()==0,"you can't multiple values with the action label");
+  if( numval<0 && a->getNumberOfComponents()==0 ){   // This allows us to make multicolvars pretend to be colvars - this is used in AlphaRMSD etc
      a->addValueWithDerivatives();
      a->setNotPeriodic();
+     final_value=a->copyOutput( a->getNumberOfComponents()-1 );
+  } else if( numval<0 ){
+     no_output_value=true; final_value=new Value(); final_value->setNotPeriodic();    
   } else {
      plumed_massert( !a->exists(getAction()->getLabel() + "." + getLabel() ), "you can't create the name multiple times");
      a->addComponentWithDerivatives( getLabel() );
      a->componentIsNotPeriodic( getLabel() );
+     final_value=a->copyOutput( a->getNumberOfComponents()-1 );
   }
-  final_value=a->copyOutput( a->getNumberOfComponents()-1 );
-  parse("COMPONENT",mycomponent);
+}
+
+ValueVessel::~ValueVessel(){
+  if( no_output_value ) delete final_value;
 }
 
 std::string ValueVessel::description(){
   if( final_value->getName()==getAction()->getLabel() ) return "value " + getAction()->getLabel() + " contains " + value_descriptor();
-  std::string compstr; Tools::convert(mycomponent,compstr);
+  std::string compstr; Tools::convert(mycomp,compstr);
   return "value " + getAction()->getLabel() + "." + getLabel() + " is obtained by taking the " + compstr + "th component and finding " + value_descriptor();
 }
 

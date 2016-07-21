@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -34,7 +34,7 @@ private:
 /// Is the metric matrix diagonal
   enum {diagonal,multi,vonmises} dtype;
 /// What type of kernel are we using
-  enum {gaussian,uniform,triangular} ktype;
+  enum {gaussian,truncatedgaussian,uniform,triangular} ktype;
 /// The center of the kernel function
   std::vector<double> center;
 /// The width of the kernel
@@ -45,8 +45,6 @@ private:
   void setData( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const std::string& mtype, const double& w );
 /// Convert the width into matrix form
   Matrix<double> getMatrix() const;
-/// Get the cutoff for a kernel
-  double getCutoff( const double& width ) const ;
 public:
   KernelFunctions( const std::string& input );
   KernelFunctions( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const std::string& mtype, const double& w );
@@ -55,6 +53,8 @@ public:
   void normalize( const std::vector<Value*>& myvals );
 /// Get the dimensionality of the kernel
   unsigned ndim() const;
+/// Get the cutoff for a kernel
+  double getCutoff( const double& width ) const ;
 /// Get the position of the center 
   std::vector<double> getCenter() const;
 /// Get the support

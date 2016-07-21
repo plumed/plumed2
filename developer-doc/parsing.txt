@@ -1,7 +1,7 @@
 // This document is formatted for Doxygen
 /**
 
-\page parsing parsing functionality
+\page parsing Parsing functionality
 
 By now you are probably familiar with the way that plumed2 input looks:
 

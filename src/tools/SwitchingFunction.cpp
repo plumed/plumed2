@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -416,8 +416,8 @@ SwitchingFunction::SwitchingFunction():
   b(0.0),
   c(0.0),
   d(0.0),
-  beta(0.0),
   lambda(0.0),
+  beta(0.0),
   ref(0.0),
   invr0_2(0.0),
   dmax_2(0.0),
@@ -440,8 +440,8 @@ SwitchingFunction::SwitchingFunction(const SwitchingFunction&sf):
   b(sf.b),
   c(sf.c),
   d(sf.d),
-  beta(sf.beta),
   lambda(sf.lambda),
+  beta(sf.beta),
   ref(sf.ref),
   invr0_2(sf.invr0_2),
   dmax_2(sf.dmax_2),
@@ -479,6 +479,10 @@ double SwitchingFunction::get_d0() const {
 
 double SwitchingFunction::get_dmax() const {
   return dmax;
+}
+
+double SwitchingFunction::get_dmax2() const {
+  return dmax_2;
 }
 
 SwitchingFunction::~SwitchingFunction(){

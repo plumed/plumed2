@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -66,12 +66,14 @@ PLUMED_REGISTER_ACTION(Path,"PATH")
 void Path::registerKeywords( Keywords& keys ){
   PathBase::registerKeywords( keys ); keys.remove("PROPERTY");
   keys.addFlag("NOSPATH",false,"do not calculate the spath position");
+  keys.remove("LOWMEM");
 }
 
 Path::Path(const ActionOptions& ao):
 Action(ao),
 PathBase(ao)
 {
+  setLowMemOption( true ); 
   bool nos; parseFlag("NOSPATH",nos);
 
   std::string empty;

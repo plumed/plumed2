@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014,2015 The plumed team
+   Copyright (c) 2015,2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -58,13 +58,17 @@ public:
 ///
   void retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const ;
 ///
-  void getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient0 ) const ;
+  void getInputData( const unsigned& ind, const bool& normed, const multicolvar::AtomValuePack& myatoms, std::vector<double>& orient0 ) const ;
 ///
-  void getVectorDerivatives( const unsigned& ind, const bool& normed, MultiValue& myder0 ) const ;
+  MultiValue& getInputDerivatives( const unsigned& ind, const bool& normed, const multicolvar::AtomValuePack& myatoms ) const ;
 ///
   unsigned getNumberOfQuantities() const ;
 /// Do the calculation
   void performClustering(){};
+///
+  double  getCutoffForConnection() const ;  
+///
+  Vector getPositionOfAtomForLinkCells( const unsigned& taskIndex ) const ;
 };
 
 PLUMED_REGISTER_ACTION(ClusterWithSurface,"CLUSTER_WITHSURFACE")
@@ -81,13 +85,13 @@ ClusterWithSurface::ClusterWithSurface(const ActionOptions&ao):
 Action(ao),
 ClusteringBase(ao)
 {
-   std::vector<std::string> cname(1); parse("CLUSTERS",cname[0]);
-   bool found_cname=interpretInputMultiColvars(cname,0.0);
-   if(!found_cname) error("unable to interpret input clusters " + cname[0] );
+   std::vector<AtomNumber> fake_atoms;
+   if( !parseMultiColvarAtomList("CLUSTERS",-1,fake_atoms ) ) error("unable to find CLUSTERS input");
+   if( mybasemulticolvars.size()!=1 ) error("should be exactly one multicolvar input");
 
    // Retrieve the adjacency matrix of interest
-   myclusters = dynamic_cast<ClusteringBase*>( mybasemulticolvars[0] ); 
-   if( !myclusters ) error( cname[0] + " does not calculate clusters");
+   atom_lab.resize(0); myclusters = dynamic_cast<ClusteringBase*>( mybasemulticolvars[0] ); 
+   if( !myclusters ) error( mybasemulticolvars[0]->getLabel() + " does not calculate clusters");
 
    // Setup switching function for surface atoms
    double rcut_surf; parse("RCUT_SURF",rcut_surf);
@@ -95,7 +99,7 @@ ClusteringBase(ao)
    rcut_surf2=rcut_surf*rcut_surf;
 
    // And now finish the setup of everything in the base
-   setupAtomLists( true );
+   setupMultiColvarBase( fake_atoms ); 
 }
 
 unsigned ClusterWithSurface::getNumberOfDerivatives(){
@@ -110,40 +114,55 @@ AtomNumber ClusterWithSurface::getAbsoluteIndexOfCentralAtom(const unsigned& i) 
   return myclusters->getAbsoluteIndexOfCentralAtom(i);
 }
 
-void ClusterWithSurface::getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient0 ) const {
-  myclusters->getVectorForTask( ind, normed, orient0 );
+void ClusterWithSurface::getInputData( const unsigned& ind, const bool& normed, const multicolvar::AtomValuePack& myatoms, std::vector<double>& orient0 ) const {
+  myclusters->getInputData( ind, normed, myatoms, orient0 );
 }
 
-void ClusterWithSurface::getVectorDerivatives( const unsigned& ind, const bool& normed, MultiValue& myder0 ) const {
-  myclusters->getVectorDerivatives( ind, normed, myder0 );
+MultiValue& ClusterWithSurface::getInputDerivatives( const unsigned& ind, const bool& normed, const multicolvar::AtomValuePack& myatoms ) const {
+  return myclusters->getInputDerivatives( ind, normed, myatoms );
 }
 
 unsigned ClusterWithSurface::getNumberOfQuantities() const {
   return myclusters->getNumberOfQuantities();
 }
 
+double  ClusterWithSurface::getCutoffForConnection() const {
+  double tcut = myclusters->getCutoffForConnection();
+  if( tcut>sqrt(rcut_surf2) ) return tcut;
+  return sqrt(rcut_surf2);
+}
+
 void ClusterWithSurface::retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const {
   std::vector<unsigned> tmpat; myclusters->retrieveAtomsInCluster( clust, tmpat );
 
+  // Prevent double counting
+  std::vector<bool> incluster( getNumberOfNodes(), false );
+  for(unsigned i=0;i<tmpat.size();++i) incluster[tmpat[i]]=true;
+
   // Find the atoms in the the clusters
-  std::vector<bool> atoms( getNumberOfNodes(), false ); 
+  std::vector<bool> surface_atom( getNumberOfNodes(), false ); 
   for(unsigned i=0;i<tmpat.size();++i){
       for(unsigned j=0;j<getNumberOfNodes();++j){
+         if( incluster[j] ) continue;
          double dist2=getSeparation( getPosition(tmpat[i]), getPosition(j) ).modulo2();
-         if( dist2<rcut_surf2 ){ atoms[j]=true; }
+         if( dist2<rcut_surf2 ){ surface_atom[j]=true; }
       }
   }
   unsigned nsurf_at=0; 
   for(unsigned j=0;j<getNumberOfNodes();++j){
-     if( atoms[j] ) nsurf_at++; 
+     if( surface_atom[j] ) nsurf_at++; 
   }
   myatoms.resize( nsurf_at + tmpat.size() );
   for(unsigned i=0;i<tmpat.size();++i) myatoms[i]=tmpat[i];
   unsigned nn=tmpat.size();
   for(unsigned j=0;j<getNumberOfNodes();++j){
-      if( atoms[j] ){ myatoms[nn]=j; nn++; }
+      if( surface_atom[j] ){ myatoms[nn]=j; nn++; }
   }
   plumed_assert( nn==myatoms.size() );
+}
+
+Vector ClusterWithSurface::getPositionOfAtomForLinkCells( const unsigned& iatom ) const {
+  return myclusters->getPositionOfAtomForLinkCells( iatom );
 }
 
 }

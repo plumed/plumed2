@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014,2015 The plumed team
+   Copyright (c) 2014-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -60,6 +60,8 @@ public:
 /// Set the index for one of the atoms
   void setIndex( const unsigned& , const unsigned& );
 ///
+  void setAtomIndex( const unsigned& j, const unsigned& ind );
+///
   void setAtom( const unsigned& j, const unsigned& ind );
 ///
   unsigned setupAtomsFromLinkCells( const std::vector<unsigned>& cind, const Vector& cpos, const LinkCells& linkcells );
@@ -114,9 +116,13 @@ void AtomValuePack::setIndex( const unsigned& j, const unsigned& ind ){
 }
 
 inline
-void AtomValuePack::setAtom( const unsigned& j, const unsigned& ind ){
+void AtomValuePack::setAtomIndex( const unsigned& j, const unsigned& ind ){
   plumed_dbg_assert( j<natoms ); indices[j]=ind;
-  myatoms[j]=mycolv->getPositionOfAtomForLinkCells( ind );
+}
+
+inline
+void AtomValuePack::setAtom( const unsigned& j, const unsigned& ind ){
+  setAtomIndex( j, ind ); myatoms[j]=mycolv->getPositionOfAtomForLinkCells( ind );
 }
 
 inline

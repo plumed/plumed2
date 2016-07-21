@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -153,8 +153,10 @@ public:
   const long int& getDdStep()const;
   const std::vector<int>& getGatindex()const;
   const Pbc& getPbc()const;
+  void getLocalMasses(std::vector<double>&);
   void getLocalPositions(std::vector<Vector>&);
   void getLocalForces(std::vector<Vector>&);
+  void getLocalMDForces(std::vector<Vector>&);
   const Tensor& getVirial()const;
 
   void setCollectEnergy(bool b){ collectEnergy=b; }
@@ -194,6 +196,8 @@ public:
   void setMDEnergyUnits(double d){MDUnits.setEnergy(d);}
   void setMDLengthUnits(double d){MDUnits.setLength(d);}
   void setMDTimeUnits(double d){MDUnits.setTime(d);}
+  void setMDChargeUnits(double d){MDUnits.setCharge(d);}
+  void setMDMassUnits(double d){MDUnits.setMass(d);}
   const Units& getMDUnits(){return MDUnits;}
   void setUnits(const Units&u){units=u;}
   const Units& getUnits(){return units;}

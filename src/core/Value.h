@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -131,7 +131,7 @@ public:
   void  addForce(double f);
 /// Get the value of the force on this colvar
   double getForce() const ;
-/// Apply the forces to the derivatives using the chain rule (if there are no forces this routine returns false
+/// Apply the forces to the derivatives using the chain rule (if there are no forces this routine returns false)
   bool applyForce( std::vector<double>& forces ) const ;
 /// Calculate the difference between the instantaneous value of the function and some other point: other_point-inst_val
   double difference(double)const;
@@ -270,7 +270,7 @@ void Value::clearDerivatives(){
 
 inline
 void Value::addForce(double f){
-  plumed_massert(hasDerivatives(),"forces can only be added to values with derivatives");
+  plumed_dbg_massert(hasDerivatives(),"forces can only be added to values with derivatives");
   hasForce=true;
   inputForce+=f;
 }

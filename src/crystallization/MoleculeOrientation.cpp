@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -51,10 +51,13 @@ PRINT ARG=mm.mean FILE=colvar
 
 class MoleculeOrientation : public VectorMultiColvar {
 private:
+  unsigned nvectors;
 public:
   static void registerKeywords( Keywords& keys );
   explicit MoleculeOrientation( const ActionOptions& ao );
   void calculateVector( multicolvar::AtomValuePack& myatoms ) const;
+  void normalizeVector( std::vector<double>& vals ) const ;
+  void normalizeVectorDerivatives( MultiValue& myvals ) const ;
 };
 
 PLUMED_REGISTER_ACTION(MoleculeOrientation,"MOLECULES")
@@ -65,7 +68,7 @@ void MoleculeOrientation::registerKeywords( Keywords& keys ){
                             "the vector connecting the first two atoms specified.  If a third atom is specified its position "
                             "is used to specify where the molecule is.  If a third atom is not present the molecule is assumed "
                             "to be at the center of the vector connecting the first two atoms.");
-  keys.reset_style("MOL","atoms");
+  keys.reset_style("MOL","atoms"); 
 }
 
 MoleculeOrientation::MoleculeOrientation( const ActionOptions& ao ):
@@ -74,49 +77,68 @@ VectorMultiColvar(ao)
 {
   int natoms=-1; std::vector<AtomNumber> all_atoms;
   readAtomsLikeKeyword("MOL",natoms,all_atoms); 
-  if( natoms!=2 && natoms!=3 ) error("number of atoms in molecule specification is wrong.  Should be two or three.");
+  nvectors = std::floor( natoms / 2 );
+  if( natoms%2!=0 && 2*nvectors+1!=natoms ) error("number of atoms in molecule specification is wrong.  Should be two or three.");
 
   if( all_atoms.size()==0 ) error("No atoms were specified");
-  setVectorDimensionality( 3, natoms );
-  ActionAtomistic::requestAtoms( all_atoms );
+  setVectorDimensionality( 3*nvectors ); setupMultiColvarBase( all_atoms );
 
-  if( natoms==3 ){
-    std::vector<bool> catom_ind(3, false); catom_ind[2]=true;
+  if( natoms==2*nvectors+1  ){
+    std::vector<bool> catom_ind(natoms, false); catom_ind[natoms-1]=true;
     setAtomsForCentralAtom( catom_ind );
   } 
 }
 
 void MoleculeOrientation::calculateVector( multicolvar::AtomValuePack& myatoms ) const {
-  Vector distance; distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
+  for(unsigned i=0;i<nvectors;++i){
+      Vector distance; distance=getSeparation( myatoms.getPosition(2*i+0), myatoms.getPosition(2*i+1) );
 
-  addAtomDerivatives( 2, 0, Vector(-1.0,0,0), myatoms ); 
-  addAtomDerivatives( 2, 1, Vector(+1.0,0,0), myatoms ); 
-  myatoms.addBoxDerivatives( 2, Tensor(distance,Vector(-1.0,0,0)) ); 
-  myatoms.addValue( 2, distance[0] ); 
+      addAtomDerivatives( 2+3*i+0, 2*i+0, Vector(-1.0,0,0), myatoms );
+      addAtomDerivatives( 2+3*i+0, 2*i+1, Vector(+1.0,0,0), myatoms );
+      myatoms.addBoxDerivatives( 2+3*i+0, Tensor(distance,Vector(-1.0,0,0)) ); 
+      myatoms.addValue( 2+3*i+0, distance[0] );
 
-  addAtomDerivatives( 3, 0, Vector(0,-1.0,0), myatoms ); 
-  addAtomDerivatives( 3, 1, Vector(0,+1.0,0), myatoms ); 
-  myatoms.addBoxDerivatives( 3, Tensor(distance,Vector(0,-1.0,0)) ); 
-  myatoms.addValue( 3, distance[1] ); 
+      addAtomDerivatives( 2+3*i+1, 2*i+0, Vector(0,-1.0,0), myatoms );
+      addAtomDerivatives( 2+3*i+1, 2*i+1, Vector(0,+1.0,0), myatoms );
+      myatoms.addBoxDerivatives( 2+3*i+1, Tensor(distance,Vector(0,-1.0,0)) ); 
+      myatoms.addValue( 2+3*i+1, distance[1] ); 
 
-  addAtomDerivatives( 4, 0, Vector(0,0,-1.0), myatoms ); 
-  addAtomDerivatives( 4, 1, Vector(0,0,+1.0), myatoms ); 
-  myatoms.addBoxDerivatives( 4, Tensor(distance,Vector(0,0,-1.0)) ); 
-  myatoms.addValue( 4, distance[2] ); 
+      addAtomDerivatives( 2+3*i+2, 2*i+0, Vector(0,0,-1.0), myatoms );
+      addAtomDerivatives( 2+3*i+2, 2*i+1, Vector(0,0,+1.0), myatoms );
+      myatoms.addBoxDerivatives( 2+3*i+2, Tensor(distance,Vector(0,0,-1.0)) ); 
+      myatoms.addValue( 2+3*i+2, distance[2] );
+  } 
 }
 
-// Vector MoleculeOrientation::getCentralAtom(){
-//   if( getNAtoms()==2 ){
-//       Vector com; com.zero();
-//       com+=0.5*getPosition(0);
-//       com+=0.5*getPosition(1);
-//       addCentralAtomDerivatives( 0, 0.5*Tensor::identity() );
-//       addCentralAtomDerivatives( 1, 0.5*Tensor::identity() );
-//       return com;
-//   } 
-//   addCentralAtomDerivatives( 2, Tensor::identity() );
-//   return getPosition(2);
-// }
+void MoleculeOrientation::normalizeVector( std::vector<double>& vals ) const { 
+  for(unsigned i=0;i<nvectors;++i){
+      double norm=0;
+      for(unsigned j=0;j<3;++j) norm += vals[2+3*i+j]*vals[2+3*i+j];
+      norm = sqrt(norm);
+     
+      double inorm = 1.0; if( norm>epsilon ) inorm = 1.0 / norm;
+      for(unsigned j=0;j<3;++j) vals[2+3*i+j] = inorm*vals[2+3*i+j];
+  }
+}
+
+void MoleculeOrientation::normalizeVectorDerivatives( MultiValue& myvals ) const {
+  std::vector<double> weight( nvectors ), wdf( nvectors );
+  for(unsigned ivec=0;ivec<nvectors;++ivec){
+      double v=0; for(unsigned jcomp=0;jcomp<3;++jcomp) v += myvals.get( 2+3*ivec+jcomp )*myvals.get( 2+3*ivec+jcomp );
+      v=sqrt(v); weight[ivec]=1.0; wdf[ivec]=1.0; 
+      if( v>epsilon ){ weight[ivec] = 1.0 / v; wdf[ivec] = 1.0 / ( v*v*v ); }
+  }
+
+  for(unsigned j=0;j<myvals.getNumberActive();++j){
+      unsigned jder=myvals.getActiveIndex(j);
+      for(unsigned ivec=0;ivec<nvectors;++ivec){
+          double comp2=0.0; for(unsigned jcomp=0;jcomp<3;++jcomp) comp2 += myvals.get(2+3*ivec+jcomp)*myvals.getDerivative( 2+3*ivec+jcomp, jder );
+          for(unsigned jcomp=0;jcomp<3;++jcomp){
+              myvals.setDerivative( 2+3*ivec+jcomp, jder, weight[ivec]*myvals.getDerivative( 2+3*ivec+jcomp, jder ) - wdf[ivec]*comp2*myvals.get(2+3*ivec+jcomp) );
+          }
+      }
+  }   
+}   
 
 }
 }

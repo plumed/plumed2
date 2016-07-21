@@ -9,6 +9,9 @@ test -d ../.git  || {
 
 DIRS=$1
 
+# remove trailing "/"
+DIRS=${DIRS%%/*}
+
 test -z "$DIRS" && DIRS=*
 
 for dir in $DIRS
@@ -45,7 +48,7 @@ else
    Copyright (c) $years The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
