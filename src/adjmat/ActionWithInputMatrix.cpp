@@ -78,9 +78,10 @@ AtomNumber ActionWithInputMatrix::getAbsoluteIndexOfCentralAtom(const unsigned& 
 
 double ActionWithInputMatrix::retrieveConnectionValue( const unsigned& i, const unsigned& j, std::vector<double>& vals ) const {
   if( !mymatrix->matrixElementIsActive( i, j ) ) return 0;
-  unsigned vi, myelem = mymatrix->getStoreIndexFromMatrixIndices( i, j );
+  unsigned myelem = mymatrix->getStoreIndexFromMatrixIndices( i, j );
  
-  mymatrix->retrieveValueWithIndex( myelem, false, vals ); double df;
+  unsigned vi; double df;
+  mymatrix->retrieveValueWithIndex( myelem, false, vals ); 
   return (mymatrix->function)->transformStoredValues( vals, vi, df );
 }
 
@@ -98,14 +99,24 @@ void ActionWithInputMatrix::getInputData( const unsigned& ind, const bool& norme
 
 void ActionWithInputMatrix::addConnectionDerivatives( const unsigned& i, const unsigned& j, std::vector<double>& vals, MultiValue& myvals, MultiValue& myvout ) const {
   if( !mymatrix->matrixElementIsActive( i, j ) ) return;
-  unsigned vi, myelem = mymatrix->getStoreIndexFromMatrixIndices( i, j );
+  unsigned myelem = mymatrix->getStoreIndexFromMatrixIndices( i, j );
 
   mymatrix->retrieveValueWithIndex( myelem, false, vals );
-  double df, val = (mymatrix->function)->transformStoredValues( vals, vi, df );
+  unsigned vi; double df, sw = (mymatrix->function)->transformStoredValues( vals, vi, df );
   mymatrix->retrieveDerivatives( myelem, false, myvals );
-  for(unsigned jd=0;jd<myvals.getNumberActive();++jd){
-      unsigned ider=myvals.getActiveIndex(jd);
-      myvout.addDerivative( 1, ider, df*myvals.getDerivative( vi, ider ) );
+  // Hacky fix to make derivaives of topology matrix work well
+  if( vi>1 ){
+      // This is used when input matrix is topology matrix
+      for(unsigned jd=0;jd<myvals.getNumberActive();++jd){
+          unsigned ider=myvals.getActiveIndex(jd);
+          myvout.addDerivative( 1, ider, vals[1]*df*myvals.getDerivative( vi, ider ) + sw*myvals.getDerivative( 1, ider ) / vals[1] );
+      }
+  } else {
+      // This is used in all other cases
+      for(unsigned jd=0;jd<myvals.getNumberActive();++jd){
+          unsigned ider=myvals.getActiveIndex(jd);
+          myvout.addDerivative( 1, ider, df*myvals.getDerivative( vi, ider ) );
+      }
   }
 }
 

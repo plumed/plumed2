@@ -1,4 +1,4 @@
 mpiprocs=4
 type=driver
 # this is to test a different name
-arg="--plumed plumed.dat --ixyz system.xyz"
+arg=" --plumed plumed.dat --ixyz frame_no_373.xyz --length-units 0.1"
