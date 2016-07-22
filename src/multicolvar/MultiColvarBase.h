@@ -102,9 +102,15 @@ protected:
   void addTaskToList( const unsigned& taskCode );
 /// Finish setting up the multicolvar base
   void setupMultiColvarBase( const std::vector<AtomNumber>& atoms );
-/// Add derivative of the input value
+/// This routine take the vector of input derivatives and adds all the vectors to ivalth output derivatives
+/// In other words end-start sets of derivatives come in and one set of derivatives come out
   void mergeInputDerivatives( const unsigned& ival, const unsigned& start, const unsigned& end, const unsigned& jatom, 
                               const std::vector<double>& der, MultiValue& myder, AtomValuePack& myatoms ) const ;
+/// This routine take the ith set of input derivatives and adds it to each of the (end-start) output derivatives
+/// In other words one set of derivatives comes in and end-start sets of derivatives come out
+  void splitInputDerivatives( const unsigned& ival, const unsigned& start, const unsigned& end,
+                              const unsigned& jatom, const std::vector<double>& der,
+                              MultiValue& myder, AtomValuePack& myatoms ) const ;
 /// This is used to accumulate functions of the coordination sphere.  Ensures weights are taken into account
   void accumulateSymmetryFunction( const int& ival, const unsigned& iatom, const double& val, const Vector& der, const Tensor& vir, multicolvar::AtomValuePack& myatoms ) const ;
 /// Set which atoms are to be used to calculate the central atom position

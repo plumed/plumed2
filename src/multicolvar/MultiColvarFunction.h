@@ -43,9 +43,6 @@ protected:
 public:
   explicit MultiColvarFunction(const ActionOptions&);
   static void registerKeywords( Keywords& keys );
-  void superChainRule( const unsigned& ival, const unsigned& start, const unsigned& end,
-                                          const unsigned& jatom, const std::vector<double>& der,
-                                          MultiValue& myder, AtomValuePack& myatoms ) const ;
 };
 
 inline

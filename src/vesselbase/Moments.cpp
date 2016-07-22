@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "VesselRegister.h"
+#include "Vessel.h"
 #include "StoreDataVessel.h"
 #include "ActionWithVessel.h"
 
@@ -30,7 +31,7 @@ namespace vesselbase{
 // The calculation of all the colvars is parallelized 
 // but the loops for calculating moments are not
 // Feel free to reimplement this if you know how
-class Moments : public StoreDataVessel {
+class Moments : public Vessel {
 private:
   unsigned mycomponent;
   StoreDataVessel* mystash;
@@ -42,6 +43,7 @@ public:
   explicit Moments( const vesselbase::VesselOptions& da );
   std::string description();
   void resize();
+  void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {}
   void finish( const std::vector<double>& buffer );
   bool applyForce( std::vector<double>& forces );
 };
@@ -69,8 +71,9 @@ void Moments::reserveKeyword( Keywords& keys ){
 }
 
 Moments::Moments( const vesselbase::VesselOptions& da) :
-StoreDataVessel(da)
+Vessel(da)
 {
+   mystash = getAction()->buildDataStashes( NULL );
    ActionWithValue* a=dynamic_cast<ActionWithValue*>( getAction() );
    plumed_massert(a,"cannot create passable values as base action does not inherit from ActionWithValue");
 
@@ -133,25 +136,35 @@ void Moments::finish( const std::vector<double>& buffer ){
      double pfactor, min, max; Tools::convert(str_min,min); Tools::convert(str_max,max);
      pfactor = 2*pi / ( max-min ); myvalue.setDomain( str_min, str_max );
      double sinsum=0, cossum=0, val;
-     for(unsigned i=0;i<nvals;++i){ val=pfactor*( buffer[bufstart + i*nspace*vecsize+nspace] - min ); sinsum+=sin(val); cossum+=cos(val); }
+     for(unsigned i=0;i<mystash->getNumberOfStoredValues();++i){ 
+         mystash->retrieveSequentialValue( i, false, myvalues );  
+         val=pfactor*( myvalues[mycomponent] - min ); 
+         sinsum+=sin(val); cossum+=cos(val);
+     }
      mean = 0.5 + atan2( sinsum / static_cast<double>( nvals ) , cossum / static_cast<double>( nvals ) ) / (2*pi);
      mean = min + (max-min)*mean;
   } else {
-     for(unsigned i=0;i<nvals;++i) mean+=buffer[bufstart + i*nspace*vecsize+nspace];
+     for(unsigned i=0;i<mystash->getNumberOfStoredValues();++i){
+         mystash->retrieveSequentialValue( i, false, myvalues ); mean+=myvalues[mycomponent];        
+     }
      mean/=static_cast<double>( nvals ); myvalue.setNotPeriodic();
   }
 
   for(unsigned npow=0;npow<powers.size();++npow){
      double dev1=0; 
      if( value_out[0]->getNumberOfDerivatives()>0 ){
-         for(unsigned i=0;i<nvals;++i) dev1+=pow( myvalue.difference( mean, buffer[bufstart + i*nspace*vecsize+nspace] ), powers[npow] - 1 );
+         for(unsigned i=0;i<mystash->getNumberOfStoredValues();++i){
+             mystash->retrieveSequentialValue( i, false, myvalues );
+             dev1+=pow( myvalue.difference( mean, myvalues[mycomponent] ), powers[npow] - 1 );
+         }
          dev1/=static_cast<double>( nvals );
      }
 
      double moment=0;
      MultiValue myvals( getAction()->getNumberOfQuantities(), getAction()->getNumberOfDerivatives() ); myvals.clearAll();
-     for(unsigned i=0;i<nvals;++i){
-         double tmp=myvalue.difference( mean, buffer[bufstart + i*nspace*vecsize+nspace] );
+     for(unsigned i=0;i<mystash->getNumberOfStoredValues();++i){
+         mystash->retrieveSequentialValue( i, false, myvalues );
+         double tmp=myvalue.difference( mean, myvalues[mycomponent] );
          moment+=pow( tmp, powers[npow] );
          if( value_out[npow]->getNumberOfDerivatives() ){
              double pref=pow( tmp, powers[npow] - 1 ) - dev1;

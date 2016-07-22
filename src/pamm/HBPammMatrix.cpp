@@ -91,11 +91,13 @@ Action(ao),
 AdjacencyMatrixBase(ao)
 {
   readMaxThreeSpeciesMatrix("SITES", "DONORS", "ACCEPTORS", "HYDROGENS", false ); 
+  // Retrieve dimensions of hbonding matrix and resize
   unsigned nrows, ncols; retrieveTypeDimensions( nrows, ncols, ndonor_types );
-  // Read in the switching functions
-  parseConnectionDescriptions("CLUSTERS",false,ndonor_types);
+  myhb_objs.resize( nrows, ncols );
   // Read in the regularisation parameter
   parse("REGULARISE",regulariser);
+  // Read in the switching functions
+  parseConnectionDescriptions("CLUSTERS",false,ndonor_types);
 
   // Find cutoff for link cells   
   double sfmax=0;
