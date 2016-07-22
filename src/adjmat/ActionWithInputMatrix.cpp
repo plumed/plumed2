@@ -115,7 +115,7 @@ MultiValue& ActionWithInputMatrix::getInputDerivatives( const unsigned& ind, con
          myder.resize( 2, (mymatrix->function)->getNumberOfDerivatives() );
      }
      myder.clearAll();
-     MultiValue myvals( 2, (mymatrix->function)->getNumberOfDerivatives() ); 
+     MultiValue myvals( (mymatrix->function)->getNumberOfQuantities(), (mymatrix->function)->getNumberOfDerivatives() ); 
      for(unsigned i=0;i<mymatrix->getNumberOfColumns();++i){
          if( mymatrix->undirectedGraph() && ind==i ) continue;
          addConnectionDerivatives( ind, i, myvals, myder );

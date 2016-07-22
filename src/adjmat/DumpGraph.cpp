@@ -91,11 +91,11 @@ void DumpGraph::update(){
    OFile ofile; ofile.link(*this); ofile.setBackupString("graph");
    ofile.open( filename ); ofile.printf("graph G { \n");
    // Print all nodes
-   for(unsigned i=0;i<mymatrix->getNumberOfRows();++i) ofile.printf("%d [label=\"%d\"];\n",i,i);
+   for(unsigned i=0;i<mymatrix->getNumberOfRows();++i) ofile.printf("%u [label=\"%u\"];\n",i,i);
    // Now retrieve connectivitives
    unsigned nedge; std::vector<std::pair<unsigned,unsigned> > edge_list( mymatrix->getNumberOfRows()*maxconnections );
    mymatrix->retrieveEdgeList( nedge, edge_list );
-   for(unsigned i=0;i<nedge;++i) ofile.printf("%d -- %d \n", edge_list[i].first, edge_list[i].second );
+   for(unsigned i=0;i<nedge;++i) ofile.printf("%u -- %u \n", edge_list[i].first, edge_list[i].second );
    ofile.printf("} \n"); ofile.close(); 
 }
 

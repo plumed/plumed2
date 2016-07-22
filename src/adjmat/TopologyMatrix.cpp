@@ -158,21 +158,21 @@ void TopologyMatrix::setupConnector( const unsigned& id, const unsigned& i, cons
      std::string errors; switchingFunction(j,i).set(desc[0],errors);
      if( errors.length()!=0 ) error("problem reading switching function description " + errors);
      if( j!=i) switchingFunction(i,j).set(desc[0],errors);
-     log.printf("  %d th and %d th multicolvar groups must be within %s\n",i+1,j+1,(switchingFunction(i,j).description()).c_str() );
+     log.printf("  %u th and %u th multicolvar groups must be within %s\n",i+1,j+1,(switchingFunction(i,j).description()).c_str() );
   } else if( id==1 ){
      std::string errors; cylinder_sw(j,i).set(desc[0],errors);
      if( errors.length()!=0 ) error("problem reading switching function description " + errors);
      if( j!=i) cylinder_sw(i,j).set(desc[0],errors);
-     log.printf("  there must be not atoms within the cylinder connections atoms of multicolvar groups %d th and %d th.  This cylinder has radius %s \n",i+1,j+1,(cylinder_sw(i,j).description()).c_str() );
+     log.printf("  there must be not atoms within the cylinder connections atoms of multicolvar groups %u th and %u th.  This cylinder has radius %s \n",i+1,j+1,(cylinder_sw(i,j).description()).c_str() );
   } else if( id==2 ){
      std::string errors; low_sf(j,i).set(desc[0],errors);
      if( errors.length()!=0 ) error("problem reading switching function description " + errors);
      if( j!=i ) low_sf(i,j).set(desc[0],errors);
-     log.printf("  %d th and %d th multicolvar groups must be further apart than %s\n",i+1,j+1,(low_sf(j,i).description()).c_str() );
+     log.printf("  %u th and %u th multicolvar groups must be further apart than %s\n",i+1,j+1,(low_sf(j,i).description()).c_str() );
   } else if( id==3 ){
      Tools::convert( desc[0], binw_mat(j,i) ); 
      if( i!=j ) binw_mat(i,j)=binw_mat(j,i);
-     log.printf("  cylinder for %d th and %d th multicolvar groups is split into bins of length %f \n",binw_mat(i,j) );    
+     log.printf("  cylinder for %u th and %u th multicolvar groups is split into bins of length %f \n",i,j,binw_mat(i,j) );    
   }
 }
 
