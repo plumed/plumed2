@@ -41,6 +41,7 @@ class Mapping :
   public ActionWithValue,
   public vesselbase::ActionWithVessel
   {
+friend class TrigonometricPathVessel;
 private:
 //  The derivative wrt to the distance from the frame
   std::vector<double> dfframes;
@@ -86,6 +87,8 @@ public:
   std::string getPropertyName( const unsigned& iprop ) const ;
 /// Get the index of a particular named property 
   unsigned getPropertyIndex( const std::string& name ) const ;
+/// Set the value of one of the projection coordinates
+  void setPropertyValue( const unsigned& iframe, const unsigned& iprop, const double& property );
 /// Get the name of the ith argument
   std::string getArgumentName( unsigned& iarg );
 /// Get the value of the ith property for the current frame

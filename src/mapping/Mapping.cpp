@@ -152,6 +152,10 @@ unsigned Mapping::getPropertyIndex( const std::string& name ) const {
   return mymap->getPropertyIndex( name );
 }
 
+void Mapping::setPropertyValue( const unsigned& iframe, const unsigned& jprop, const double& property ){
+  mymap->setProjectionCoordinate( iframe, jprop, property );
+}
+
 double Mapping::getLambda(){
   plumed_merror("lambda is not defined in this mapping type");
 }
