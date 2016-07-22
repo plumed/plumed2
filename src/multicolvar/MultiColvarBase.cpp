@@ -396,9 +396,7 @@ void MultiColvarBase::setupMultiColvarBase( const std::vector<AtomNumber>& atoms
       for(unsigned j=0;j<tmp_atoms.size();++j) all_atoms.push_back( tmp_atoms[j] );
   } 
   // Copy atom lists from input
-  if( !usespecies ){
-      for(unsigned i=0;i<atoms.size();++i) all_atoms.push_back( atoms[i] );
-  }
+  for(unsigned i=0;i<atoms.size();++i) all_atoms.push_back( atoms[i] );
 
   // Now make sure we get all the atom positions 
   ActionAtomistic::requestAtoms( all_atoms );
@@ -757,9 +755,9 @@ void MultiColvarBase::splitInputDerivatives( const unsigned& ival, const unsigne
                                              const unsigned& jatom, const std::vector<double>& der,
                                              MultiValue& myder, AtomValuePack& myatoms ) const {
   MultiValue& myvals=myatoms.getUnderlyingMultiValue();
-  plumed_dbg_assert( ival<myatoms.getUnderlyingMultiValue().getNumberOfValues() );
-  plumed_dbg_assert( start<myder.getNumberOfValues() && end<=myder.getNumberOfValues() );
-  plumed_dbg_assert( der.size()==myder.getNumberOfValues() && jatom<myatoms.getNumberOfAtoms() );
+  plumed_dbg_assert( ival<myder.getNumberOfValues() );
+  plumed_dbg_assert( start<myvals.getNumberOfValues() && end<=myvals.getNumberOfValues() );
+  plumed_dbg_assert( der.size()==myatoms.getUnderlyingMultiValue().getNumberOfValues() && jatom<myatoms.getNumberOfAtoms() );
   // Convert input atom to local index
   unsigned katom = myatoms.getIndex( jatom ); plumed_dbg_assert( katom<atom_lab.size() ); plumed_dbg_assert( atom_lab[katom].first>0 );
   // Find base colvar
@@ -894,7 +892,7 @@ void MultiColvarBase::performTask( const unsigned& task_index, const unsigned& c
       if( atom_lab[myatoms.getIndex(0)].first>0 ){
           if( mybasedata[atom_lab[myatoms.getIndex(0)].first-1]->retrieveWeightWithIndex( atom_lab[myatoms.getIndex(0)].second )<epsilon ) weight=0.;
       }
-  } 
+  }
   // Do a quick check on the size of this contribution  
   double multweight = calculateWeight( current, weight, myatoms ); 
   if( weight*multweight<getTolerance() ){
