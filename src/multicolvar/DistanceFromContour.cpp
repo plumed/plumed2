@@ -46,6 +46,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit DistanceFromContour( const ActionOptions& );
+  ~DistanceFromContour();
   bool isDensity() const { return true; }
   void calculate();
   unsigned getNumberOfQuantities() const ;
@@ -131,6 +132,10 @@ mymin(this)
   for(unsigned i=0;i<3;++i) pval.push_back( new Value() );
 }
 
+DistanceFromContour::~DistanceFromContour(){
+  for(unsigned i=0;i<3;++i) delete pval[i];
+}
+
 unsigned DistanceFromContour::getNumberOfQuantities() const {
   return 3;
 }
@@ -143,15 +148,17 @@ void DistanceFromContour::calculate(){
   pos[0]=pos[1]=pos[2]=0.0;
 
   // Set bracket as center of mass of membrane in active region
-  double d2, norm=0.0; dirv[dir]=0; deactivateAllTasks();
-  for(unsigned j=0;j<getNumberOfAtoms()-1;++j){
+  deactivateAllTasks();
+  Vector myvec = getSeparation( getPosition(getNumberOfAtoms()-1), getPosition(0) ); dirv[dir]=myvec[dir];
+  taskFlags[0]=1; double d2, mindist = myvec[ perp_dirs[0] ]*myvec[ perp_dirs[0] ] + myvec[ perp_dirs[1] ]*myvec[ perp_dirs[1] ];
+  for(unsigned j=1;j<getNumberOfAtoms()-1;++j){
      Vector distance=getSeparation( getPosition(getNumberOfAtoms()-1), getPosition(j) );
      if( (d2=distance[perp_dirs[0]]*distance[perp_dirs[0]])<rcut2 && 
          (d2+=distance[perp_dirs[1]]*distance[perp_dirs[1]])<rcut2 ){
-           dirv[dir]+=distance[dir]; taskFlags[j]=1; norm+=1.0;
+           if( d2<mindist ){ dirv[dir]=distance[dir]; mindist = d2; }
+           taskFlags[j]=1; ;
      }
   }
-  dirv[dir] = dirv[dir] / norm;
   lockContributors(); derivTime=false;
 
   // Now do a search for the contour
