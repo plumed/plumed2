@@ -172,6 +172,12 @@ else
   echo
   echo "Please upload the file plumed-$version.tgz on the download directory"
   echo "Remember to notify the mailing list"
+  cd macports
+  plumed_repository=https://github.com/plumed/plumed2.git make
+  cd ../
+  echo
+  echo "In directory macports/science/plumed you can find a Portfile for this release"
+  echo "Please inspect it manually and add it to the ports repository"
 fi
 
 
