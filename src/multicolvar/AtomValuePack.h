@@ -50,8 +50,6 @@ private:
 /// This holds atom positions
   std::vector<Vector>& myatoms;
 ///
-  void addDerivative( const unsigned& , const unsigned& , const double& );
-///
   void addAtomsDerivatives( const unsigned& , const unsigned& , const Vector& );
 ///
   void addTemporyAtomsDerivatives( const unsigned& jder, const Vector& der );
@@ -93,6 +91,8 @@ public:
   void addComDerivatives( const int& , const Vector& , CatomPack& );
 ///
   MultiValue& getUnderlyingMultiValue();
+///
+  void addDerivative( const unsigned& , const unsigned& , const double& );
 };
 
 inline

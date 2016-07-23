@@ -55,7 +55,7 @@ void HistogramOnGrid::setBounds( const std::vector<std::string>& smin, const std
   GridVessel::setBounds( smin, smax, nbins, spacing );
   if( !discrete ){ 
       std::vector<double> point(dimension,0);
-      KernelFunctions kernel( point, bandwidths, kerneltype, false, 1.0, true ); neigh_tot=1;
+      KernelFunctions kernel( point, bandwidths, kerneltype, "DIAGONAL", 1.0 ); neigh_tot=1;
       nneigh=kernel.getSupport( dx ); std::vector<double> support( kernel.getContinuousSupport() );
       for(unsigned i=0;i<dimension;++i){
           if( pbc[i] && 2*support[i]>getGridExtent(i) ) error("bandwidth is too large for periodic grid");
@@ -69,8 +69,8 @@ KernelFunctions* HistogramOnGrid::getKernelAndNeighbors( std::vector<double>& po
      num_neigh=1; for(unsigned i=0;i<dimension;++i) point[i] += 0.5*dx[i];
      neighbors[0] = getIndex( point ); return NULL;
   } else {
-     KernelFunctions* kernel = new KernelFunctions( point, bandwidths, kerneltype, false, 1.0, true ); 
-     getNeighbors( kernel->getCenter(), nneigh, num_neigh, neighbors ); 
+     KernelFunctions* kernel = new KernelFunctions( point, bandwidths, kerneltype, "DIAGONAL", 1.0 ); 
+     kernel->normalize( getVectorOfValues() ); getNeighbors( kernel->getCenter(), nneigh, num_neigh, neighbors ); 
      return kernel;
   }
 }

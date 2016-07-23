@@ -68,7 +68,7 @@ AlignedMatrixBase(ao)
 
 void SMACMatrix::readOrientationConnector( const unsigned& iv, const unsigned& jv, const std::vector<std::string>& desc ){
    for(int i=0;i<desc.size();i++){
-      KernelFunctions mykernel( desc[i], false );
+      KernelFunctions mykernel( desc[i] );
       kernels(iv,jv).push_back( mykernel );
       if( jv!=iv ) kernels(jv,iv).push_back( mykernel );
    }

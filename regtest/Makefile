@@ -1,4 +1,4 @@
-SUBDIRS := basic metainference crystallization manyrestraints adjmat
+SUBDIRS := basic metainference crystallization manyrestraints adjmat pamm
 SUBDIRSCLEAN := $(addsuffix .clean,$(SUBDIRS))
 SUBDIRSVALGRIND := $(addsuffix .valgrind,$(SUBDIRS))
 

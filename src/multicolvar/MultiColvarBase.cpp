@@ -71,6 +71,7 @@ void MultiColvarBase::registerKeywords( Keywords& keys ){
                                   "using the label of another multicolvar");
   keys.reserve("atoms-4","SPECIESB","this keyword is used for colvars such as the coordination number.  It must appear with SPECIESA.  For a full explanation see "
                                   "the documentation for that keyword");
+  keys.add("hidden","ALL_INPUT_SAME_TYPE","remove this keyword to remove certain checks in the input on the sanity of your input file.  See code for details");
 } 
 
 MultiColvarBase::MultiColvarBase(const ActionOptions&ao):
@@ -110,9 +111,9 @@ bool MultiColvarBase::parseMultiColvarAtomList(const std::string& key, const int
       // Check all base multicolvars are of same type
       if( i==0 ){
           mname = mycolv->getName();
-          if( mycolv->isPeriodic() ) error("multicolvar functions don't work with this multicolvar");
+          if( keywords.exists("ALL_INPUT_SAME_TYPE") && mycolv->isPeriodic() ) error("multicolvar functions don't work with this multicolvar");
       } else {
-          if( mname!=mycolv->getName() ) error("All input multicolvars must be of same type");
+          if( keywords.exists("ALL_INPUT_SAME_TYPE") && mname!=mycolv->getName() ) error("All input multicolvars must be of same type");
       }
       // And track which variable stores each colvar
       for(unsigned j=0;j<mycolv->getFullNumberOfTasks();++j) atom_lab.push_back( std::pair<unsigned,unsigned>( mybasemulticolvars.size()+1, j ) );
@@ -397,9 +398,7 @@ void MultiColvarBase::setupMultiColvarBase( const std::vector<AtomNumber>& atoms
       for(unsigned j=0;j<tmp_atoms.size();++j) all_atoms.push_back( tmp_atoms[j] );
   } 
   // Copy atom lists from input
-  if( !usespecies ){
-      for(unsigned i=0;i<atoms.size();++i) all_atoms.push_back( atoms[i] );
-  }
+  for(unsigned i=0;i<atoms.size();++i) all_atoms.push_back( atoms[i] );
 
   // Now make sure we get all the atom positions 
   ActionAtomistic::requestAtoms( all_atoms );
@@ -429,8 +428,14 @@ void MultiColvarBase::turnOnDerivatives(){
 void MultiColvarBase::setLinkCellCutoff( const double& lcut, double tcut ){
   plumed_assert( usespecies || ablocks.size()<4 );
   if( tcut<0 ) tcut=lcut;
-  linkcells.setCutoff( lcut ); 
-  threecells.setCutoff( tcut );
+
+  if( !linkcells.enabled() ){
+     linkcells.setCutoff( lcut ); 
+     threecells.setCutoff( tcut );
+  } else {
+     if( lcut>linkcells.getCutoff() ) linkcells.setCutoff( lcut );
+     if( tcut>threecells.getCutoff() ) threecells.setCutoff( tcut ); 
+  }
 }
 
 double MultiColvarBase::getLinkCellCutoff()  const {
@@ -731,7 +736,6 @@ void MultiColvarBase::mergeInputDerivatives( const unsigned& ival, const unsigne
   // Get start of indices for this atom
   unsigned basen=0; for(unsigned i=0;i<mmc;++i) basen+=mybasemulticolvars[i]->getNumberOfDerivatives() - 9;
   plumed_dbg_assert( basen%3==0 ); // Check the number of atoms is consistent with input derivatives
-
   unsigned virbas = myvals.getNumberOfDerivatives()-9;
   for(unsigned j=0;j<myder.getNumberActive();++j){
      unsigned jder=myder.getActiveIndex(j);
@@ -744,6 +748,37 @@ void MultiColvarBase::mergeInputDerivatives( const unsigned& ival, const unsigne
          unsigned kder=virbas + (jder - mybasemulticolvars[mmc]->getNumberOfDerivatives() + 9);
          for(unsigned icomp=start;icomp<end;++icomp){
              myvals.addDerivative( ival, kder, der[icomp]*myder.getDerivative( icomp, jder ) );
+         }
+     }
+  }
+}
+
+void MultiColvarBase::splitInputDerivatives( const unsigned& ival, const unsigned& start, const unsigned& end,
+                                             const unsigned& jatom, const std::vector<double>& der,
+                                             MultiValue& myder, AtomValuePack& myatoms ) const {
+  MultiValue& myvals=myatoms.getUnderlyingMultiValue();
+  plumed_dbg_assert( ival<myder.getNumberOfValues() );
+  plumed_dbg_assert( start<myvals.getNumberOfValues() && end<=myvals.getNumberOfValues() );
+  plumed_dbg_assert( der.size()==myatoms.getUnderlyingMultiValue().getNumberOfValues() && jatom<myatoms.getNumberOfAtoms() );
+  // Convert input atom to local index
+  unsigned katom = myatoms.getIndex( jatom ); plumed_dbg_assert( katom<atom_lab.size() ); plumed_dbg_assert( atom_lab[katom].first>0 );
+  // Find base colvar
+  unsigned mmc=atom_lab[katom].first - 1; plumed_dbg_assert( mybasemulticolvars[mmc]->taskIsCurrentlyActive( atom_lab[katom].second ) );
+  // Get start of indices for this atom
+  unsigned basen=0; for(unsigned i=0;i<mmc;++i) basen+=mybasemulticolvars[i]->getNumberOfDerivatives() - 9;
+  plumed_dbg_assert( basen%3==0 ); // Check the number of atoms is consistent with input derivatives
+  unsigned virbas = myvals.getNumberOfDerivatives()-9;
+  for(unsigned j=0;j<myder.getNumberActive();++j){
+     unsigned jder=myder.getActiveIndex(j);
+     if( jder<mybasemulticolvars[mmc]->getNumberOfDerivatives()-9 ){
+         unsigned kder=basen+jder;
+         for(unsigned icomp=start;icomp<end;++icomp){
+             myvals.addDerivative( icomp, kder, der[icomp]*myder.getDerivative( ival, jder ) );
+         }
+     } else {
+         unsigned kder=virbas + (jder - mybasemulticolvars[mmc]->getNumberOfDerivatives() + 9);
+         for(unsigned icomp=start;icomp<end;++icomp){
+             myvals.addDerivative( icomp, kder, der[icomp]*myder.getDerivative( ival, jder ) );
          }
      }
   }
@@ -859,7 +894,7 @@ void MultiColvarBase::performTask( const unsigned& task_index, const unsigned& c
       if( atom_lab[myatoms.getIndex(0)].first>0 ){
           if( mybasedata[atom_lab[myatoms.getIndex(0)].first-1]->retrieveWeightWithIndex( atom_lab[myatoms.getIndex(0)].second )<epsilon ) weight=0.;
       }
-  } 
+  }
   // Do a quick check on the size of this contribution  
   double multweight = calculateWeight( current, weight, myatoms ); 
   if( weight*multweight<getTolerance() ){

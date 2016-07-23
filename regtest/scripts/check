@@ -20,7 +20,7 @@ echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo "+ Test session ended at $(date)"
 
 dirs=$(
-  for file in {basic,metainference,crystallization,manyrestraints,adjmat}/rt*/Makefile
+  for file in {basic,metainference,crystallization,manyrestraints,adjmat,pamm}/rt*/Makefile
   do
     echo ${file%Makefile}
   done
