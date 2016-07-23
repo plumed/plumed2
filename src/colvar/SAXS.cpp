@@ -115,6 +115,7 @@ serial(false)
   if( ntarget!=numq ) error("found wrong number of qvalue values");
 
   for(unsigned i=0;i<numq;i++) {
+    if(q_list[i]==0.) error("it is not possible to set q=0\n"); 
     log.printf("  my q: %lf \n",q_list[i]);    
     std::string num; Tools::convert(i,num);
     addComponentWithDerivatives("q_"+num);
@@ -169,7 +170,7 @@ serial(false)
        if( !parseNumbered( "EXPINT", i+1, expint[i] ) ) break;
        ntarget++; 
     }
-    if( ntarget!=numq ) error("found wrong number of NOEDIST values");
+    if( ntarget!=numq ) error("found wrong number of EXPINT values");
 
     for(unsigned i=0;i<numq;i++) {
       std::string num; Tools::convert(i,num);
