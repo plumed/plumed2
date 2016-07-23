@@ -20,9 +20,13 @@ echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo "+ Test session ended at $(date)"
 
 dirs=$(
-  for file in {basic,adjmat,analysis,crystallization,manyrestraints,mapping,metainference,multicolvar,secondarystructure}/rt*/Makefile
-  do
-    echo ${file%Makefile}
+  ll=$(ls */Makefile)
+  ll=${ll///Makefile/ }
+  for d in $ll ; do
+    for file in $d/rt*/Makefile
+    do
+      echo ${file%Makefile}
+    done
   done
 )
 
