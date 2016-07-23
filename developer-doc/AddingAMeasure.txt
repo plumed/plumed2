@@ -6,7 +6,9 @@
 To implement a new method for calculating the distance between a pair of trajectory frames you will need to work with the
 PLMD::reference module.  This module is used in many parts of PLUMED (e.g. path collective variables, field-cvs and analysis methods).
 Consequently, if you implment your distance measure using the functionality in this class you will be able to use it in a 
-wide variety of difffernt contexts.
+wide variety of difffernt contexts.  As always if you would like us to incorporate your measure in the release version of 
+PLUMED you will need to write at least one regression test for it.  Details on how to write regression tests are provided 
+here: \ref regtests  
 
 The classes in PLMD::reference allow one to calculate the distance between pairs of trajectory frames.  The reason that this is 
 a module rather than a single method is that there are a wide variety of different ways of calculating the distance between

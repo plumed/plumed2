@@ -766,6 +766,7 @@ INPUT                  = ./Intro.txt \
                          ./AddingAMeasure.txt \
                          ./AddingAMultColvar.txt \
                          ./InstallationLayout.txt \
+                         ./AddingRegressionTests.txt
                          ./intro-git.txt
 
 # This tag can be used to specify the character encoding of the source files
