@@ -91,6 +91,10 @@ header files.  It is a good idea to bundle all these files together into a singl
 such as crystallisation, adjmat and metainference.  Within your cpp files it is also a good idea to put all your new code into its own
 separate namespace within the main PLMD namespace.  By doing so you prevent naming conflicts with other developers.  
 
+Notice that conflicts may still happen if you pick a name for your collective variable that collides with something
+else existing in the code. In this respect, before merging your contribution, the core developers may ask you to change
+the name of some of the keywords that you added.
+
 The first step in writing your new feature will thus be to create a sub-directory within src in which to hold your new feature.  Before you 
 write any c++ code you will need to create two files within this directory. The first of these files will be called module.type and will 
 just contain the following text:
@@ -139,13 +143,15 @@ In particular:
 
 - Please ensure that you fully document all the new features that you add to the code and that you include examples in your documentation.
 There is information on how to write documentation for PLUMED on this page: \ref usingDoxygen.  Note that whenever you make a commit that 
-changes the documentation for the code you need to add the string [makedocs] somewhere in the commit message to update the website.  
+changes the documentation for the code you need to add the string [makedoc] somewhere in the commit message to update the website.  
 - We ask that you maintain the portability of plumed by only using the STL library and lapack in modifications.
 If you need to use any less standard library (e.g. Boost, Sockets) please ensure that your functionality is not 
 installed during a default compilation.  Instead add new options to the configure script in order to make it search for 
 libraries so as to make compilation straightforward for users who are using/not using your new feature.  There is information 
 on how to add complilation options on this page: \ref UsingExternalLibs.  N.B. you should only need to modify the configure
 scripts if you are using modules.  Flags for activating your module at configure time will be generated automatically.
+- We ask you not to include C++ features that are too new and not supported by the vast majority of compilers.
+As of PLUMED v2.3, we are not using any C++11 feature. This might change in the future as compilers are improved.
 
 \subsection ctesting Writing regression tests 
 
@@ -183,6 +189,9 @@ code into the main PLUMED repository.  Once we have merged your code it is very 
 If you need to make changes to your source code files you will first need to change them in your own forked repository.  Once you have made these changes
 you will then need to <b> submit another pull request</b> in order to change the release version of the code.  Remember also that you are responsible for
 maintaining your source code in perpetuity and that we may therefore contact you and ask you to fix something in response to some change we have made.  
+In case you will not have time to do it, we will be forced to delete your module from the main PLUMED repository. People
+will still be able to download it from your fork, but obviosuly your module won't benefit anymore from the further
+enhancement we will add to the main PLUMED repository.
 As always this fix should be done on your fork of the repository first and then merged into the release version of PLUMED using a pull request. 
 
 */
