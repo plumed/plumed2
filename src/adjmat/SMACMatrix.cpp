@@ -29,7 +29,48 @@
 /*
 Adjacency matrix in which two molecules are adjacent if they are within a certain cutoff and if the angle between them is within certain ranges.
 
+In this case the elements of the adjacency matrix are calculated using:
+
+\f[
+A_{ij} = \sigma(r_{ij}) \sum_n K_n(\theta_{ij}) 
+\f]
+
+In this expression \f$r_{ij}\f$ is the distance between molecule \f$i\f$ and molecule \f$j\f$ and \f$\sigma(r_{ij}\f$ is a
+\ref switchingfunction that acts on this distance.  The $K_n functions are \ref kernelfunctions that take the torsion angle, \f$\theta_{ij}\f$, between the 
+internal orientation vectors for molecules \f$i\f$ and \f$j\f$ as input.  These kernel functions should be set so that they are
+equal to one when the relative orientation of the moleclues are as they are in the solid and equal to zero otherwise.
+As the above matrix element is a product of functions it is only equal to one when the centers of mass of molecules \f$i\f$ and\f$j\f$
+are with a certain distance of each other and when the molecules are aligned in some desirable way.  
+
 \par Examples
+
+In the following example an adjacency matrix is constructed in which the \f$(i,j)\f$ element is equal to one if 
+molecules \f$i\f$ and \f$j\f$ are within 6 angstroms of each other and if the torsional angle between the orientations 
+of these molecules is close to 0 or \pi.  The various connected components of this matrix are determined using the 
+\ref DFSCLUSTERING algorithm and then the size of the largest cluster of connectes molecules is output to a colvar file
+
+\verbatim
+UNITS LENGTH=A
+
+MOLECULES ...
+MOL1=1,2,1
+MOL2=5,6,5
+MOL3=9,10,9
+MOL4=13,14,13
+MOL5=17,18,17
+LABEL=m1
+... MOLECULES
+
+SMAC_MATRIX ... 
+   ATOMS=m1 SWITCH={RATIONAL D_0=5.99 R_0=0.1 D_MAX=6.0} 
+   KERNEL1={TRIANGULAR CENTER=0 SIGMA=1.0} KERNEL2={TRIANGULAR CENTER=pi SIGMA=0.6}
+   LABEL=smacm
+... SMAC_MATRIX
+
+dfs1: DFSCLUSTERING MATRIX=smacm
+cc2: CLUSTER_NATOMS CLUSTERS=dfs1 CLUSTER=1
+PRINT ARG=smac.*,cc1.*,cc2 FILE=colvar
+\endverbatim
 
 */
 //+ENDPLUMEDOC
