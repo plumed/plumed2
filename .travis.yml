@@ -71,7 +71,8 @@ install:
   - export LD_LIBRARY_PATH="$HOME/opt/lib:$LD_LIBRARY_PATH"
 # build the manual, only if log contains string [makedoc]
   - export PLUMED_NUM_THREADS=2
-  - ./.travis/check.log makedoc  || MAKEDOC=no
+# accept both [makedoc] and [makedocs] as an option
+  - ./.travis/check.log makedoc  || ./.travis/check.log makedocs || MAKEDOC=no
   - ./.travis/check.log valgrind || VALGRIND=no
 # update packages
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]] && test -z "$PLUMED_MACPORTS" ; then brew update > /dev/null ; fi
