@@ -49,6 +49,8 @@ private:
   std::vector<unsigned>& sort_vector;
 /// This holds atom positions
   std::vector<Vector>& myatoms;
+/// This is stuff for link cells
+  std::vector<unsigned> cells_required; 
 ///
   void addDerivative( const unsigned& , const unsigned& , const double& );
 ///

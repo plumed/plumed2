@@ -161,6 +161,10 @@ public:
   virtual void performTask( const unsigned& , const unsigned& , MultiValue& ) const ;
 /// Update the active atoms
   virtual void updateActiveAtoms( AtomValuePack& myatoms ) const ;
+/// This builds the list of link cells that we need during this calculation.  Its a virtual function
+/// because it has to be redefined in TopologyMatrix
+  virtual void buildListOfLinkCells( const std::vector<unsigned>& cind, const LinkCells& linkc,
+                                     unsigned& ncells_required, std::vector<unsigned>& cells_required ) const ; 
 /// This gets the position of an atom for the link cell setup
   virtual Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const ;
 /// Returns the position where we should assume the center is for link cell calculations

@@ -106,32 +106,79 @@ void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vecto
 #define LINKC_MAX(n) ((n<3)? 1 : 2)
 #define LINKC_PBC(n,num) ((n<0)? num-1 : n%num )
 
-void LinkCells::retrieveNeighboringAtoms( const Vector& pos, unsigned& natomsper, std::vector<unsigned>& atoms ) const {
-  plumed_assert( natomsper==1 || natomsper==2 );  // This is really a bug. If you are trying to reuse this ask GAT for help
-  std::vector<unsigned> celn( findMyCell( pos ) );
-
+void LinkCells::addRequiredCells( const std::vector<unsigned>& celn, unsigned& ncells_required,
+                                  std::vector<unsigned>& cells_required ) const {
+  unsigned nnew_cells=0;
   for(int nx=LINKC_MIN(ncells[0]);nx<LINKC_MAX(ncells[0]);++nx){
-     int xval = celn[0] + nx;  
-     xval=LINKC_PBC(xval,ncells[0])*nstride[0]; 
+     int xval = celn[0] + nx;
+     xval=LINKC_PBC(xval,ncells[0])*nstride[0];
      for(int ny=LINKC_MIN(ncells[1]);ny<LINKC_MAX(ncells[1]);++ny){
-         int yval = celn[1] + ny;  
-         yval=LINKC_PBC(yval,ncells[1])*nstride[1]; 
+         int yval = celn[1] + ny;
+         yval=LINKC_PBC(yval,ncells[1])*nstride[1];
          for(int nz=LINKC_MIN(ncells[2]);nz<LINKC_MAX(ncells[2]);++nz){
              int zval = celn[2] + nz;
-             zval=LINKC_PBC(zval,ncells[2])*nstride[2]; 
-
-             unsigned mybox=xval+yval+zval;
-             for(unsigned k=0;k<lcell_tots[mybox];++k){
-                 unsigned myatom = lcell_lists[lcell_starts[mybox]+k];
-                 if( myatom!=atoms[0] ){  // Ideally would provide an option to not do this
-                     atoms[natomsper]=myatom;
-                     natomsper++;
-                 } 
+             zval=LINKC_PBC(zval,ncells[2])*nstride[2];
+            
+             unsigned mybox=xval+yval+zval; bool added=false;
+             for(unsigned k=0;k<ncells_required;++k){
+                 if( mybox==cells_required[k] ){ added=true; break; }
              }
+             if( !added ){ cells_required[ncells_required+nnew_cells]=mybox; nnew_cells++; }
          }
      }
   }
+  ncells_required += nnew_cells;
+} 
+
+void LinkCells::retrieveNeighboringAtoms( const Vector& pos, std::vector<unsigned>& cell_list, 
+                                          unsigned& natomsper, std::vector<unsigned>& atoms ) const {
+  if( cell_list.size()!=getNumberOfCells() ) cell_list.resize( getNumberOfCells() );
+  unsigned ncellt=0; addRequiredCells( findMyCell( pos ), ncellt, cell_list );
+  retrieveAtomsInCells( ncellt, cell_list, natomsper, atoms ); 
 }
+
+// void LinkCells::retrieveNeighboringAtoms( const Vector& pos, unsigned& natomsper, std::vector<unsigned>& atoms ) const {
+//   plumed_assert( natomsper==1 || natomsper==2 );  // This is really a bug. If you are trying to reuse this ask GAT for help
+//   std::vector<unsigned> celn( findMyCell( pos ) );
+// 
+//   for(int nx=LINKC_MIN(ncells[0]);nx<LINKC_MAX(ncells[0]);++nx){
+//      int xval = celn[0] + nx;  
+//      xval=LINKC_PBC(xval,ncells[0])*nstride[0]; 
+//      for(int ny=LINKC_MIN(ncells[1]);ny<LINKC_MAX(ncells[1]);++ny){
+//          int yval = celn[1] + ny;  
+//          yval=LINKC_PBC(yval,ncells[1])*nstride[1]; 
+//          for(int nz=LINKC_MIN(ncells[2]);nz<LINKC_MAX(ncells[2]);++nz){
+//              int zval = celn[2] + nz;
+//              zval=LINKC_PBC(zval,ncells[2])*nstride[2]; 
+// 
+//              unsigned mybox=xval+yval+zval;
+//              for(unsigned k=0;k<lcell_tots[mybox];++k){
+//                  unsigned myatom = lcell_lists[lcell_starts[mybox]+k];
+//                  if( myatom!=atoms[0] ){  // Ideally would provide an option to not do this
+//                      atoms[natomsper]=myatom;
+//                      natomsper++;
+//                  } 
+//              }
+//          }
+//      }
+//   }
+// }
+
+void LinkCells::retrieveAtomsInCells( const unsigned& ncells_required, 
+                                      const std::vector<unsigned>& cells_required, 
+                                      unsigned& natomsper, std::vector<unsigned>& atoms ) const {
+  plumed_assert( natomsper==1 || natomsper==2 );  // This is really a bug. If you are trying to reuse this ask GAT for help
+  for(unsigned i=0;i<ncells_required;++i){
+      unsigned mybox=cells_required[i];
+      for(unsigned k=0;k<lcell_tots[mybox];++k){
+          unsigned myatom = lcell_lists[lcell_starts[mybox]+k];  
+          if( myatom!=atoms[0] ){  // Ideally would provide an option to not do this
+              atoms[natomsper]=myatom;
+              natomsper++;
+          }
+      }
+  }
+} 
 
 std::vector<unsigned> LinkCells::findMyCell( const Vector& pos ) const {
   Vector fpos=mypbc.realToScaled( pos ); std::vector<unsigned> celn(3);
