@@ -150,13 +150,14 @@ void DistanceFromContour::calculate(){
   // Set bracket as center of mass of membrane in active region
   deactivateAllTasks();
   Vector myvec = getSeparation( getPosition(getNumberOfAtoms()-1), getPosition(0) ); dirv[dir]=myvec[dir];
-  taskFlags[0]=1; double d2, mindist = myvec[ perp_dirs[0] ]*myvec[ perp_dirs[0] ] + myvec[ perp_dirs[1] ]*myvec[ perp_dirs[1] ];
+  taskFlags[0]=1; double d2, mindist = myvec.modulo2();
   for(unsigned j=1;j<getNumberOfAtoms()-1;++j){
      Vector distance=getSeparation( getPosition(getNumberOfAtoms()-1), getPosition(j) );
      if( (d2=distance[perp_dirs[0]]*distance[perp_dirs[0]])<rcut2 && 
          (d2+=distance[perp_dirs[1]]*distance[perp_dirs[1]])<rcut2 ){
+           d2+=distance[dir]*distance[dir];
            if( d2<mindist ){ dirv[dir]=distance[dir]; mindist = d2; }
-           taskFlags[j]=1; ;
+           taskFlags[j]=1; 
      }
   }
   lockContributors(); derivTime=false;
