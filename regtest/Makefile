@@ -1,4 +1,5 @@
-SUBDIRS := basic metainference crystallization manyrestraints adjmat
+SUBDIRS := $(subst /,,$(dir $(shell ls */Makefile)))
+
 SUBDIRSCLEAN := $(addsuffix .clean,$(SUBDIRS))
 SUBDIRSVALGRIND := $(addsuffix .valgrind,$(SUBDIRS))
 

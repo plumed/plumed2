@@ -46,13 +46,28 @@ void Direction::setDirection( const std::vector<Vector>& conf, const std::vector
   for(unsigned i=0;i<conf.size();++i){ align[i]=1.0; displace[i]=1.0; atom_der_index[i]=i; reference_atoms[i]=conf[i]; }
 }
 
-double Direction::calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& args, 
+void Direction::addDirection( const double& weight, const Direction& dir ){
+  plumed_dbg_assert( dir.getNumberOfReferenceArguments()==getNumberOfReferenceArguments() && dir.reference_atoms.size()==reference_atoms.size() );
+  for(unsigned i=0;i<reference_args.size();++i) reference_args[i] += weight*dir.reference_args[i];
+  for(unsigned i=0;i<reference_atoms.size();++i) reference_atoms[i] += weight*dir.reference_atoms[i];
+}
+
+void Direction::zeroDirection(){
+  for(unsigned i=0;i<reference_args.size();++i) reference_args[i] = 0.;
+  for(unsigned i=0;i<reference_atoms.size();++i) reference_atoms[i].zero();
+}
+
+double Direction::calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& args,
                         ReferenceValuePack& myder, const bool& squared ) const {
-  plumed_assert( squared );
-  for(unsigned i=0;i<getNumberOfReferenceArguments();++i) myder.addArgumentDerivatives( i, -2.*getReferenceArgument(i) );
-  for(unsigned i=0;i<getNumberOfAtoms();++i) myder.getAtomsDisplacementVector()[i]=getReferencePosition(i);
-  
-  return 0.0;
+  plumed_merror("You should never be calling calc for a direction"); return 1.0; 
+}
+
+void Direction::extractArgumentDisplacement( const std::vector<Value*>& vals, const std::vector<double>& arg, std::vector<double>& dirout ) const {
+  for(unsigned i=0;i<getNumberOfReferenceArguments();++i) dirout[i]=getReferenceArgument(i);
+}
+
+void Direction::extractAtomicDisplacement( const std::vector<Vector>& pos, const bool& anflag, std::vector<Vector>& dirout ) const {
+  for(unsigned i=0;i<getNumberOfAtoms();++i) dirout[i]=getReferencePosition(i); 
 }
 
 }

@@ -265,7 +265,6 @@ MultiColvarBase* MultiColvarBase::getBaseMultiColvar( const unsigned& icolv ) co
   return mybasemulticolvars[icolv]; 
 } 
 
-
 }
 }
 

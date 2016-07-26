@@ -189,11 +189,13 @@ void MultiColvarBase::readGroupKeywords( const std::string& key0, const std::str
           for(unsigned i=0;i<ablocks[0].size();++i) ablocks[0][i]=ablocks[1][i]=i;
           resizeBookeepingArray( nblock, nblock );
           if( symmetric ){
+              // This ensures that later parts of the code don't switch off allthirdblockintasks
+              for(unsigned i=0;i<nblock;++i){ bookeeping(i,i).first=0; bookeeping(i,i).second=1; }
               for(unsigned i=1;i<nblock;++i){
                   for(unsigned j=0;j<i;++j){
-                      bookeeping(i,j).first=getFullNumberOfTasks();
+                      bookeeping(j,i).first=bookeeping(i,j).first=getFullNumberOfTasks();
                       addTaskToList( i*nblock + j );
-                      bookeeping(i,j).second=getFullNumberOfTasks(); 
+                      bookeeping(j,i).second=bookeeping(i,j).second=getFullNumberOfTasks(); 
                   }
               }
           } else {

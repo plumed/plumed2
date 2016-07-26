@@ -52,7 +52,7 @@ public:
 /// Get the vector for task ind
   virtual void getInputData( const unsigned& ind, const bool& normed, const multicolvar::AtomValuePack& myatoms, std::vector<double>& orient0 ) const ;
 /// Add the derivatives on a connection
-  void addConnectionDerivatives( const unsigned& i, const unsigned& j, std::vector<double>& vals, MultiValue& myvals, MultiValue& myvout ) const ;
+  void addConnectionDerivatives( const unsigned& i, const unsigned& j, MultiValue& myvals, MultiValue& myvout ) const ;
 /// Get vector derivatives
   virtual MultiValue& getInputDerivatives( const unsigned& ind, const bool& normed, const multicolvar::AtomValuePack& myatoms ) const ;
   virtual unsigned getNumberOfDerivatives();
