@@ -37,7 +37,7 @@ Calculate torsions between axis of adjacent molecules
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace multicolvar {
+namespace crystallization {
 
 class InterMolecularTorsions : public MultiColvarFunction {
 private:

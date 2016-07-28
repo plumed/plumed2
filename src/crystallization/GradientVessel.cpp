@@ -27,7 +27,7 @@
 #include "Gradient.h"
 
 namespace PLMD {
-namespace crystallisation {
+namespace crystallization {
 
 class GradientVessel : public vesselbase::FunctionVessel {
 private:
