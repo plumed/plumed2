@@ -138,6 +138,8 @@ script:
 # notice that this is done automatically in build
   - if test "$CPPCHECK" == yes ; then make -C src/lib/ dirslinks ; fi
 # then we do cppcheck
-  - if test "$CPPCHECK" == yes ; then make cppcheck ; fi
+# notice that with make codecheck we also run the maketools/plumedcheck
+# script which check if coding policies are satisfied
+  - if test "$CPPCHECK" == yes ; then make codecheck ; fi
 after_success:
   - if test "$MAKEDOC" == yes ; then ./.travis/pushdoc ; fi 
