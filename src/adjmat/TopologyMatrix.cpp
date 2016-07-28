@@ -45,6 +45,8 @@ private:
   Matrix<SwitchingFunction> switchingFunction;
   Matrix<SwitchingFunction> cylinder_sw;
   Matrix<SwitchingFunction> low_sf;
+  int bstart;
+  double beadrad, lsfmax;
   Matrix<double> binw_mat;
   SwitchingFunction threshold_switch;
 public:
@@ -65,6 +67,9 @@ public:
 /// Calculate the contribution from one of the atoms in the third element of the pack
   void calculateForThreeAtoms( const unsigned& iat, const Vector& d1, const double& d1_len, 
                                HistogramBead& bead, multicolvar::AtomValuePack& myatoms ) const ; 
+///
+  void buildListOfLinkCells( const std::vector<unsigned>& cind, const LinkCells& linkc,
+                             unsigned& ncells_required, std::vector<unsigned>& cells_required ) const ;
 };
 
 PLUMED_REGISTER_ACTION(TopologyMatrix,"TOPOLOGY_MATRIX")
@@ -116,6 +121,7 @@ AdjacencyMatrixBase(ao)
   }
 
   // Find the largest sf cutoff
+  lsfmax=low_sf(0,0).get_dmax();
   double sfmax=switchingFunction(0,0).get_dmax();
   double rfmax=cylinder_sw(0,0).get_dmax();
   for(unsigned i=0;i<getNumberOfNodeTypes();++i){
@@ -124,16 +130,19 @@ AdjacencyMatrixBase(ao)
           if( tsf>sfmax ) sfmax=tsf;
           double rsf=cylinder_sw(i,j).get_dmax();
           if( rsf>rfmax ) rfmax=rsf;
+          double lsf=low_sf(i,j).get_dmax();
+          if( lsf>lsfmax ) lsfmax=lsf;
       }
   }
   // Get the width of the bead
   HistogramBead bead; bead.isNotPeriodic(); 
   bead.setKernelType( kerneltype ); bead.set( 0.0, 1.0, sigma );
-  double radmax = sfmax/2.0 + bead.getCutoff(); radmax2=radmax*radmax;
+  beadrad = bead.getCutoff(); bstart = std::floor( beadrad / rfmax ) + 1;
+  double radmax = sfmax/2.0 + beadrad; radmax2=radmax*radmax;
 
   // Set the link cell cutoff
-  log.printf("  setting cutoffs %f %f \n",sfmax, sqrt( radmax*radmax + rfmax*rfmax ) );
-  setLinkCellCutoff( sfmax, sqrt( radmax*radmax + rfmax*rfmax ) );
+  log.printf("  setting cutoffs %f %f \n", sfmax, rfmax );
+  setLinkCellCutoff( sfmax, rfmax );
 
   double maxsize=0;
   for(unsigned i=0;i<getNumberOfNodeTypes();++i){
@@ -174,6 +183,23 @@ void TopologyMatrix::setupConnector( const unsigned& id, const unsigned& i, cons
      if( i!=j ) binw_mat(i,j)=binw_mat(j,i);
      log.printf("  cylinder for %u th and %u th multicolvar groups is split into bins of length %f \n",i,j,binw_mat(i,j) );    
   }
+}
+
+void TopologyMatrix::buildListOfLinkCells( const std::vector<unsigned>& cind, const LinkCells& linkc,
+                                           unsigned& ncells_required, std::vector<unsigned>& cells_required ) const {
+  Vector distance=getSeparation( getPositionOfAtomForLinkCells( cind[0] ), getPositionOfAtomForLinkCells( cind[1] ) );
+  double binw = binw_mat( getBaseColvarNumber( cind[0] ), getBaseColvarNumber( cind[1] ) ); 
+  double len = distance.modulo(); distance /= len; double lcylinder = (std::floor( len / binw ) + 1)*binw;
+
+  unsigned np = std::floor( (lcylinder+beadrad) / linkc.getCutoff() ) + 1; 
+  double delr = (lcylinder + 2*beadrad) / static_cast<double>( np ); 
+  ncells_required=0; int prev=-1;
+  for(int i=0;i<=np;++i){
+      Vector pp = getPositionOfAtomForLinkCells( cind[0] ) + (i-bstart)*delr*distance;
+      unsigned myceln = linkc.findCell(pp);
+      if( myceln!=prev ) linkc.addRequiredCells( linkc.findMyCell(pp), ncells_required, cells_required );
+      prev = myceln; 
+ }
 }
 
 Vector TopologyMatrix::getLinkCellPosition( const std::vector<unsigned>& atoms ) const {
@@ -255,7 +281,6 @@ void TopologyMatrix::calculateForThreeAtoms( const unsigned& iat, const Vector& 
       double dfuncr, val = cylinder_sw( getBaseColvarNumber( myatoms.getIndex(0) ), 
                                         getBaseColvarNumber( myatoms.getIndex(1) ) ).calculateSqr( cm, dfuncr );
       double cellv = cell_volume( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) );
-
       Vector dc1, dc2, dc3, dd1, dd2, dd3, de1, de2, de3;
       if( !doNotCalculateDerivatives() ){
           Tensor d1_a1; 
