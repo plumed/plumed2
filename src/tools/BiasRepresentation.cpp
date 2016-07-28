@@ -26,6 +26,8 @@
 
 namespace PLMD {
 
+using namespace std;
+
 /// the constructor here
 BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc ):hasgrid(false),rescaledToBias(false),mycomm(cc),BiasGrid_(NULL){
     lowI_=0.0;

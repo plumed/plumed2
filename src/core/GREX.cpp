@@ -26,7 +26,7 @@
 #include "tools/Communicator.h"
 #include <sstream>
 
-#include "GREXEnum.tmp"
+#include "GREXEnum.inc"
 
 using namespace std;
 namespace PLMD{
@@ -35,7 +35,7 @@ std::map<std::string, int> & GREXWordMap(){
   static std::map<std::string, int> word_map;
   static bool init=false;
   if(!init){
-#include "GREXMap.tmp"
+#include "GREXMap.inc"
   }
   init=true;
   return word_map;

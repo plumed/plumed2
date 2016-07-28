@@ -24,7 +24,7 @@
 #include "Gradient.h"
 
 namespace PLMD {
-namespace crystallisation {
+namespace crystallization {
 
 //+PLUMEDOC MCOLVARF GRADIENT
 /*

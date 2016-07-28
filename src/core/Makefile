@@ -3,19 +3,21 @@ USE=config tools
 # generic makefile
 include ../maketools/make.module
 
-PlumedMain.o: PlumedMainMap.tmp PlumedMainEnum.tmp
+CLEANLIST:=$(CLEANLIST) PlumedMainMap.inc PlumedMainEnum.inc GREXMap.inc GREXEnum.inc
 
-PlumedMainMap.tmp: PlumedMain.cpp
-	../maketools/makecmd map < PlumedMain.cpp > PlumedMainMap.tmp
+PlumedMain.o: PlumedMainMap.inc PlumedMainEnum.inc
 
-PlumedMainEnum.tmp: PlumedMain.cpp
-	../maketools/makecmd enum < PlumedMain.cpp > PlumedMainEnum.tmp
+PlumedMainMap.inc: PlumedMain.cpp
+	../maketools/makecmd map < PlumedMain.cpp > PlumedMainMap.inc
 
-GREX.o: GREXMap.tmp GREXEnum.tmp
+PlumedMainEnum.inc: PlumedMain.cpp
+	../maketools/makecmd enum < PlumedMain.cpp > PlumedMainEnum.inc
 
-GREXMap.tmp: GREX.cpp
-	../maketools/makecmd map < GREX.cpp > GREXMap.tmp
+GREX.o: GREXMap.inc GREXEnum.inc
 
-GREXEnum.tmp: GREX.cpp
-	../maketools/makecmd enum < GREX.cpp > GREXEnum.tmp
+GREXMap.inc: GREX.cpp
+	../maketools/makecmd map < GREX.cpp > GREXMap.inc
+
+GREXEnum.inc: GREX.cpp
+	../maketools/makecmd enum < GREX.cpp > GREXEnum.inc
 	

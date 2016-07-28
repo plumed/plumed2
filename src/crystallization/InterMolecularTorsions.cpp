@@ -48,7 +48,7 @@ the torsional angle between an orientation vector for molecule \f$i\f$ and molec
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace multicolvar {
+namespace crystallization {
 
 class InterMolecularTorsions : public MultiColvarFunction {
 private:

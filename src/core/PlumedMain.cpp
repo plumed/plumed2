@@ -47,7 +47,7 @@
 
 using namespace std;
 
-#include "PlumedMainEnum.tmp"
+#include "PlumedMainEnum.inc"
 
 namespace PLMD{
 
@@ -55,7 +55,7 @@ std::map<std::string, int> & plumedMainWordMap(){
   static std::map<std::string, int> word_map;
   static bool init=false;
   if(!init){
-#include "PlumedMainMap.tmp"
+#include "PlumedMainMap.inc"
   }
   init=true;
   return word_map;
