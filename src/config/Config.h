@@ -89,8 +89,6 @@ bool hasMatheval();
 
 bool hasDlopen();
 
-bool hasAlmost();
-
 bool isInstalled();
 
 bool hasCregex();
