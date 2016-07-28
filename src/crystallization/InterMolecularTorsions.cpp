@@ -50,7 +50,7 @@ the torsional angle between an orientation vector for molecule \f$i\f$ and molec
 namespace PLMD {
 namespace crystallization {
 
-class InterMolecularTorsions : public MultiColvarFunction {
+class InterMolecularTorsions : public multicolvar::MultiColvarFunction {
 private:
 /// The switching function that tells us if atoms are close enough together
   SwitchingFunction switchingFunction;
@@ -58,9 +58,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit InterMolecularTorsions(const ActionOptions&);
 /// Do the stuff with the switching functions
-  double calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& myatoms ) const ;
+  double calculateWeight( const unsigned& taskCode, const double& weight, multicolvar::AtomValuePack& myatoms ) const ;
 /// Actually do the calculation
-  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
+  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
 /// Is the variable periodic
   bool isPeriodic(){ return true; }
   void retrieveDomain( std::string& min, std::string& max ){ min="-pi"; max="+pi"; }
@@ -123,7 +123,7 @@ MultiColvarFunction(ao)
   readVesselKeywords();
 }
 
-double InterMolecularTorsions::calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& myatoms ) const {
+double InterMolecularTorsions::calculateWeight( const unsigned& taskCode, const double& weight, multicolvar::AtomValuePack& myatoms ) const {
   Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
   double dfunc, sw = switchingFunction.calculateSqr( distance.modulo2(), dfunc );
 
@@ -135,7 +135,7 @@ double InterMolecularTorsions::calculateWeight( const unsigned& taskCode, const 
   return sw;
 }
 
-double InterMolecularTorsions::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
+double InterMolecularTorsions::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {
    Vector v1, v2, dv1, dv2, dconn, conn = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
 
    // Retrieve vectors
