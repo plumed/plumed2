@@ -22,6 +22,8 @@
 #ifndef __PLUMED_tools_Minimise1DBrent_h
 #define __PLUMED_tools_Minimise1DBrent_h
 
+#include "Tools.h"
+
 #include <vector>
 #include <string>
 

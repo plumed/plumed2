@@ -22,6 +22,8 @@
 #ifndef __PLUMED_tools_Brent1DRootSearch_h
 #define __PLUMED_tools_Brent1DRootSearch_h
 
+#include "Tools.h"
+
 #include <vector>
 #include <string>
 

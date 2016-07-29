@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,29 +19,6 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_vesselbase_HistogramOnGrid_h
-#define __PLUMED_vesselbase_HistogramOnGrid_h
+#include "Colvar.h"
 
-#include "GridVessel.h"
 
-namespace PLMD {
-namespace vesselbase {
-
-class HistogramOnGrid : public GridVessel {
-private:
-  std::string kerneltype;
-  std::vector<double> bandwidths;
-  std::vector<unsigned> nneigh;
-public:
-  static void registerKeywords( Keywords& keys );
-  explicit HistogramOnGrid( const VesselOptions& da );
-  void setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax );
-  std::string description(){ return ""; }
-  bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
-  void finish( const std::vector<double>& );
-  bool applyForce(  std::vector<double>& forces ){ return false; }
-};
-
-}
-}
-#endif

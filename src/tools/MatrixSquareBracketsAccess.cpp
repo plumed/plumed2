@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,29 +19,6 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_reference_SimpleRMSD_h
-#define __PLUMED_reference_SimpleRMSD_h
+#include "MatrixSquareBracketsAccess.h"
 
-#include <vector>
-#include <string>
-#include "SingleDomainRMSD.h"
 
-namespace PLMD {
-
-class SimpleRMSD : public SingleDomainRMSD {
-private:
-  std::vector<double> weights;
-public:
-  SimpleRMSD( const std::string& thisname, Action* );
-  void read( const PDB& );
-  double dist( const std::vector<Vector>& pos, const bool& squared );
-  double calc( const bool& squared );
-  double simpleAlignment(const  std::vector<double>  & align,
-                         const  std::vector<double>  & displace,
-                         const std::vector<Vector> & positions,
-                         bool squared); 
-};
-
-}
-
-#endif
