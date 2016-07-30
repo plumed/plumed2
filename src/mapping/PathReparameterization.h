@@ -19,16 +19,17 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_reference_PathReparameterization_h
-#define __PLUMED_reference_PathReparameterization_h
+#ifndef __PLUMED_mapping_PathReparameterization_h
+#define __PLUMED_mapping_PathReparameterization_h
 
-#include "ReferenceConfiguration.h"
-#include "Direction.h"
+#include "reference/ReferenceConfiguration.h"
+#include "reference/Direction.h"
 
 /// \ingroup TOOLBOX
 /// This class can be used to make a set of reference configurations equidistant
 
 namespace PLMD {
+namespace mapping {
 
 class PathReparameterization {
 private:
@@ -59,5 +60,6 @@ public:
   void reparameterize( const int& istart, const int& iend, const double& TOL );
 };
 
+}
 }
 #endif
