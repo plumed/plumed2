@@ -26,6 +26,46 @@
 #include "tools/RootFindingBase.h"
 #include "vesselbase/ValueVessel.h"
 
+//+PLUMEDOC COLVAR DISTANCE_FROM_CONTOUR
+/*
+Calculate the perpendicular distance from a Willard-Chandler dividing surface.
+
+Suppose that you have calculated a multicolvar.  By doing so you have calculated a
+set of colvars, \f$s_i\f$, and each of these colvars has a well defined position in 
+space \f$(x_i,y_i,z_i)\f$.  You can use this information to calculate a phase-field
+model of the colvar density using:
+
+\f[
+p(x,y,x) = \sum_{i} s_i K\left[\frac{x-x_i}{\sigma_x},\frac{y-y_i}{\sigma_y},\frac{z-z_i}{\sigma_z} \right]
+\f]
+
+In this expression \f$\sigma_x, \sigma_y\f$ and \f$\sigma_z\f$ are bandwidth parameters and 
+\f$K\f$ is one of the \ref kernelfunctions.  This is what is done within \ref MULTICOLVARDENS
+
+The Willard-Chandler surface is a surface of constant density in the above phase field \f$p(x,y,z)\f$.
+In other words, it is a set of points, \f$(x',y',z')\f$, in your box which have:
+
+\f[
+p(x',y',z') = \rho
+\f]
+
+where \f$\rho\f$ is some target density.  This action caculates the distance projected on the \f$x, y\f$ or
+\f$z\f$ axis between the position of some test particle and this surface of constant field density.    
+
+\par Examples
+
+In this example atoms 2-100 are assumed to be concentraed along some part of the \f$z\f$ axis so that you 
+an interface between a liquid/solid and the vapour.  The quantity dc measures the distance between the 
+surface at which the density of 2-100 atoms is equal to 0.2 and the position of the test particle atom 1. 
+
+\verbatim
+dens: DENSITY SPECIES=2-100
+dc: DISTANCE_FROM_CONTOUR DATA=dens ATOM=1 BANDWIDTH=0.5,0.5,0.5 DIR=z CONTOUR=0.2
+\endverbatim
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace multicolvar {
 

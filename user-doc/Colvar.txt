@@ -148,6 +148,13 @@ taking dot products of vectors on adjacent atoms as described below:
 
 @MCOLVARF@ 
 
+The final set of functions that you can apply on multicolvars are functions that transform all the colvars calculated using a 
+multicolvar using a function.  This can be useful if you are calculating some complicated derived quantity of some simpler 
+quantity.  It is also useful if you are calculating a Willard Chandler surface or a histogram.  The actions that you can use to 
+perform these transforms are:
+
+@MTRANSFORMS@
+
 \section multicolvarbias MultiColvar bias
 
 There may be occasitions when you want add restraints on many collective variables. For instance if you are studying a cluster
