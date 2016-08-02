@@ -44,6 +44,10 @@ during your dynamics (it will crash!)
 In the future one could implement periodic integration during the metadynamics 
 or straightforward MD as a tool to check convergence
 
+\par Examples
+
+There are currently no examples for this keyword.
+
 */
 //+ENDPLUMEDOC
 

@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ActionWithVessel.h"
 #include "Vessel.h"
+#include "ActionWithVessel.h"
 #include "tools/Exception.h"
 #include "tools/Communicator.h"
 #include "tools/Log.h"

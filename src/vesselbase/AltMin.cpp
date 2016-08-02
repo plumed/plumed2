@@ -23,7 +23,7 @@
 #include "FunctionVessel.h"
 
 namespace PLMD {
-namespace mapping {
+namespace vesselbase {
 
 class AltMin : public vesselbase::FunctionVessel {
 private:

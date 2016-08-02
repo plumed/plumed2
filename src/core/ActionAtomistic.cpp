@@ -34,7 +34,8 @@
 #include "tools/PDB.h"
 
 using namespace std;
-using namespace PLMD;
+
+namespace PLMD {
 
 ActionAtomistic::~ActionAtomistic(){
 // forget the pending request
@@ -279,4 +280,6 @@ void ActionAtomistic::makeWhole(){
     Vector & second (positions[j+1]);
     second=first+pbcDistance(first,second);
   }
+}
+
 }

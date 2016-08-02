@@ -34,6 +34,7 @@
 using namespace std;
 
 namespace PLMD{
+namespace colvar{
 
 //+PLUMEDOC COLVAR RDC 
 /*
@@ -382,4 +383,5 @@ void RDC::calculate()
 
 }
 
+}
 }

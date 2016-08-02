@@ -19,11 +19,11 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#include "CLToolMain.h"
 #include "config/Config.h"
 #include "tools/Exception.h"
 #include "tools/Communicator.h"
 #include "CLTool.h"
-#include "CLToolMain.h"
 #include "CLToolRegister.h"
 #include "tools/Tools.h"
 #include "tools/DLLoader.h"
