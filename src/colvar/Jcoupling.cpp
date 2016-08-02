@@ -27,8 +27,6 @@
 #include <string>
 #include <cmath>
 
-#define PI 3.141562
-
 using namespace std;
 
 namespace PLMD{
@@ -217,7 +215,7 @@ ENDPLUMED
                     ka_ = -0.88;
                     kb_ = -0.61;
                     kc_ = -0.27;
-                    kshift_ = PI / 3.0;
+                    kshift_ = pi / 3.0;
                     log.printf("J-coupling type is HAN, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
                     log << "  Bibliography "
                         << plumed.cite("Wang A C, Bax A, J. Am. Chem. Soc. 117, 1810 (1995)") << "\n";
@@ -226,7 +224,7 @@ ENDPLUMED
                     ka_ = 7.09;
                     kb_ = -1.42;
                     kc_ = 1.55;
-                    kshift_ = -PI / 3.0;
+                    kshift_ = -pi / 3.0;
                     log.printf("J-coupling type is HAHN, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
                     log << "  Bibliography "
                         << plumed.cite("Hu J-S, Bax A, J. Am. Chem. Soc. 119, 6360 (1997)") << "\n";
@@ -235,7 +233,7 @@ ENDPLUMED
                     ka_ = 2.31;
                     kb_ = -0.87;
                     kc_ = 0.55;
-                    kshift_ = (2.0 * PI) / 3.0;
+                    kshift_ = (2.0 * pi) / 3.0;
                     log.printf("J-coupling type is CCG, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
                     log << "  Bibliography "
                         << plumed.cite("Perez C, Löhr F, Rüterjans H, Schmidt J, J. Am. Chem. Soc. 123, 7081 (2001)") << "\n";
