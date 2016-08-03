@@ -21,9 +21,11 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "LatticeReduction.h"
 #include "Exception.h"
-#include <stdio.h>
+#include <cstdio>
 
 namespace PLMD{
+
+using namespace std;
 
 const double epsilon=1e-14;
 
