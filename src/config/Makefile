@@ -11,12 +11,12 @@ endif
 
 .PHONY: all obj
 ifdef PLUMED_FORCE
-.PHONY: ConfigInstall.cpp Config.cpp version.h
+.PHONY: ConfigInstall.inc Config.inc version.h
 endif
 
 # default target
 all:
-	$(MAKE) PLUMED_FORCE=yes ConfigInstall.cpp Config.cpp version.h config.txt
+	$(MAKE) PLUMED_FORCE=yes ConfigInstall.inc Config.inc version.h config.txt
 	$(MAKE) Config.o ConfigInstall.o compile_options.sh
 
 obj: all
@@ -29,9 +29,9 @@ version.h:
 	@echo "Updating version.h"
 	@ ../maketools/update-version.sh version.h
 
-ConfigInstall.cpp: Config.cpp.in
-	@echo "Updating ConfigInstall.cpp"
-	@sed "s/@SOEXT@/$(SOEXT)/g" Config.cpp.in | \
+ConfigInstall.inc: Config.inc.in
+	@echo "Updating ConfigInstall.inc"
+	@sed "s/@SOEXT@/$(SOEXT)/g" Config.inc.in | \
          sed "s/@ISINSTALLED@/true/g" | \
          sed "s|@PLUMED_ROOT@|$(libdir)/$(program_name)|g" | \
          sed "s|@htmldir@|$(htmldir)|g" | \
@@ -42,8 +42,8 @@ ConfigInstall.cpp: Config.cpp.in
 	rm $@~
 
 # file to import compilation options inside c++
-Config.cpp: Config.cpp.in
-	@echo "Updating Config.cpp"
+Config.inc: Config.inc.in
+	@echo "Updating Config.inc"
 	@sed "s/@SOEXT@/$(SOEXT)/g" $< | \
          sed "s/@ISINSTALLED@/false/g" | \
          sed "s|@htmldir@|xxxxNAxxxx|g" | \
@@ -57,8 +57,8 @@ links:
 	@echo Nothing to do in $(CURDIR)
 
 
-Config.o: Config.cpp Makefile.conf.xxd version.h
-ConfigInstall.o: ConfigInstall.cpp Makefile.conf.xxd version.h
+Config.o: Config.inc Makefile.conf.xxd version.h
+ConfigInstall.o: ConfigInstall.inc Makefile.conf.xxd version.h
 
 Makefile.conf.xxd: ../../Makefile.conf
 	cat ../../Makefile.conf | xxd -i > Makefile.conf.xxd
@@ -72,9 +72,9 @@ compile_options.sh:
 
 .PHONY: clean
 clean:
-	rm -f Config.cpp compile_options.sh Makefile_conf version.h config.txt
+	rm -f Config.inc compile_options.sh Makefile_conf version.h config.txt
 	rm -fr deps 
-	rm -f Config.cpp ConfigInstall.cpp compile_options.sh install.conf
+	rm -f Config.inc ConfigInstall.inc compile_options.sh install.conf
 	rm -f $(CLEANLIST)
 
 # generic makefile rules
