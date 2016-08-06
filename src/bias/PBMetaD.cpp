@@ -322,7 +322,8 @@ multiple_w(false), isFirstStep(true)
   if (wgridstride_ == 0 && gridfilenames_.size() > 0) {
     error("frequency with which to output grid not specified use GRID_WSTRIDE");
   }
-  if (gridfilenames_.size() != hillsfname.size()) error("number of GRID_WFILES arguments does not match number of HILLS files");
+  if(gridfilenames_.size() > 0 && hillsfname.size() > 0 && gridfilenames_.size() != hillsfname.size()) 
+    error("number of GRID_WFILES arguments does not match number of HILLS files");
 
   // Read grid
   vector<string> gridreadfilenames_;
