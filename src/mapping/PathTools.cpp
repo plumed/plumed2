@@ -189,7 +189,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc){
      ReferenceValuePack mypack( frames[0]->getNumberOfReferenceArguments(), frames[0]->getNumberOfReferencePositions(), myvpack );
      for(unsigned i=1;i<frames.size();++i){ 
         double len = frames[i]->calc( frames[i-1]->getReferencePositions(), fake_pbc, vals, frames[i-1]->getReferenceArguments(), mypack, false );
-        printf("FINAL DISTANCE BETWEEN FRAME %d AND %d IS %f \n",i-1,i,len );
+        printf("FINAL DISTANCE BETWEEN FRAME %u AND %u IS %f \n",i-1,i,len );
         mean+=len;
      }
      printf("SUGGESTED LAMBDA PARAMETER IS THUS %f \n",2.3/mean/static_cast<double>( frames.size()-1 ) );
@@ -277,7 +277,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc){
  double mean=0; printf("DISTANCE BETWEEN ORIGINAL FRAMES %f \n",pathlen);
  for(unsigned i=1;i<final_path.size();++i){
     double len = final_path[i]->calc( final_path[i-1]->getReferencePositions(), fpbc, args, final_path[i-1]->getReferenceArguments(), mypack, false );
-    printf("FINAL DISTANCE BETWEEN FRAME %d AND %d IS %f \n",i-1,i,len );
+    printf("FINAL DISTANCE BETWEEN FRAME %u AND %u IS %f \n",i-1,i,len );
     mean+=len;
  }
  printf("SUGGESTED LAMBDA PARAMETER IS THUS %f \n",2.3/mean/static_cast<double>( final_path.size()-1 ) );

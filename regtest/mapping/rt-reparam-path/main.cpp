@@ -1,6 +1,6 @@
 #include "plumed/reference/ReferenceConfiguration.h"
 #include "plumed/reference/MultiReferenceBase.h"
-#include "plumed/reference/PathReparameterization.h"
+#include "plumed/mapping/PathReparameterization.h"
 #include "plumed/tools/AtomNumber.h"
 #include "plumed/core/Value.h"
 #include "plumed/tools/PDB.h"
@@ -40,7 +40,7 @@ int main(){
       fvals.push_back( new PLMD::Value() ); fvals[i]->setNotPeriodic();
   } 
   // Reparameterize the path
-  PLMD::PathReparameterization myreparam = PLMD::PathReparameterization( fpbc, fvals, mymap.getReferenceConfigurations() );
+  PLMD::mapping::PathReparameterization myreparam = PLMD::mapping::PathReparameterization( fpbc, fvals, mymap.getReferenceConfigurations() );
   myreparam.reparameterize( 0, nfram-1, 1.E-6 );
   // Needs something to print reparameterized path
   PLMD::OFile ofile; ofile.open("epath-out.pdb");
@@ -70,7 +70,7 @@ int main(){
   mymap2.getAtomAndArgumentRequirements( atoms, args );
 
   // Reparaemterize the path
-  PLMD::PathReparameterization myreparam2 = PLMD::PathReparameterization( fpbc, fvals, mymap2.getReferenceConfigurations() );
+  PLMD::mapping::PathReparameterization myreparam2 = PLMD::mapping::PathReparameterization( fpbc, fvals, mymap2.getReferenceConfigurations() );
   myreparam2.reparameterize( 3, 6, 1.E-6 );
 
   // Needs something to print reparameterized path
