@@ -156,7 +156,7 @@ unsigned ReadDissimilarityMatrix::getNumberOfDataPoints() const {
 }
 
 double ReadDissimilarityMatrix::getDissimilarity( const unsigned& iframe, const unsigned& jframe ){
-  return dissimilarities( iframe, jframe );
+  return dissimilarities( iframe, jframe )*dissimilarities( iframe, jframe );
 }
 
 ReferenceConfiguration* ReadDissimilarityMatrix::getReferenceConfiguration( const unsigned& idata, const bool& calcdist ){

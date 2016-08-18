@@ -79,7 +79,7 @@ void DimensionalityReductionBase::performAnalysis(){
       }
   }
   // Calculate matrix of dissimilarities
-  Matrix<double> targets( getNumberOfDataPoints(), getNumberOfDataPoints() );
+  Matrix<double> targets( getNumberOfDataPoints(), getNumberOfDataPoints() ); targets=0;
   for(unsigned i=1;i<getNumberOfDataPoints();++i){
      for(unsigned j=0;j<i;++j) targets(i,j)=targets(j,i)=getDissimilarity( i, j );
   }
