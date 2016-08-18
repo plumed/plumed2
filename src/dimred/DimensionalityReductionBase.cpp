@@ -64,6 +64,7 @@ void DimensionalityReductionBase::getDataPoint( const unsigned& idata, std::vect
 }
 
 void DimensionalityReductionBase::performAnalysis(){
+  log.printf("Generating projections required by action %s \n",getLabel().c_str() );
   // Resize the tempory array (this is used for out of sample)
   dtargets.resize( getNumberOfDataPoints() );
   // Resize the projections array
@@ -84,6 +85,7 @@ void DimensionalityReductionBase::performAnalysis(){
   }
   // This calculates the projections of the points
   calculateProjections( targets, projections );
+  log.printf("Generated projections required by action %s \n",getLabel().c_str() );
 }
 
 double DimensionalityReductionBase::calculateStress( const std::vector<double>& p, std::vector<double>& d ){

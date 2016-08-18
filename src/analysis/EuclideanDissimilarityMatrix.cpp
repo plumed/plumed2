@@ -37,7 +37,6 @@ namespace analysis {
 
 class EuclideanDissimilarityMatrix : public AnalysisWithDataCollection {
 private:
-  bool lowmem;
   Matrix<double> dissimilarities;
 public:
   static void registerKeywords( Keywords& keys );
@@ -57,27 +56,24 @@ PLUMED_REGISTER_ACTION(EuclideanDissimilarityMatrix,"EUCLIDEAN_DISSIMILARITIES")
 void EuclideanDissimilarityMatrix::registerKeywords( Keywords& keys ){
   AnalysisWithDataCollection::registerKeywords( keys );
   keys.reset_style("METRIC","atoms-1"); keys.use("FRAMES");
-  keys.addFlag("LOWMEM",false,"lower the memory requirements of the calculation");
 }
 
 EuclideanDissimilarityMatrix::EuclideanDissimilarityMatrix( const ActionOptions& ao ):
 Action(ao),
 AnalysisWithDataCollection(ao)
 {
-  parseFlag("LOWMEM",lowmem);
-  if( lowmem ) log.printf("  lowering memory requirements \n");
 }
 
 void EuclideanDissimilarityMatrix::performAnalysis(){
   // Resize dissimilarities matrix and set all elements to zero
-  if( !lowmem ){
+  if( !usingLowMem() ){
      dissimilarities.resize( getNumberOfDataPoints(), getNumberOfDataPoints() ); dissimilarities=0;
   }
 }
 
 double EuclideanDissimilarityMatrix::getDissimilarity( const unsigned& iframe, const unsigned& jframe ){
   plumed_dbg_assert( iframe<getNumberOfDataPoints() && jframe<getNumberOfDataPoints() );
-  if( !lowmem ){
+  if( !usingLowMem() ){
       if( dissimilarities(iframe,jframe)>0. ){ return dissimilarities(iframe,jframe); }
   }
   if( iframe!=jframe ){
@@ -85,9 +81,11 @@ double EuclideanDissimilarityMatrix::getDissimilarity( const unsigned& iframe, c
      if( mydata ){ myref1=AnalysisBase::getReferenceConfiguration(iframe,true); myref2=AnalysisBase::getReferenceConfiguration(jframe,true); }
      else { myref1 = data[iframe]; myref2 = data[jframe]; }
      if( myref1->getNumberOfProperties()>0 ){
-        dissimilarities(iframe,jframe) = dissimilarities(jframe,iframe) = property_distance( myref1, myref2, true );
+        if( !usingLowMem() ) dissimilarities(iframe,jframe) = dissimilarities(jframe,iframe) = property_distance( myref1, myref2, true );
+        else return property_distance( myref1, myref2, true );
      } else {
-        dissimilarities(iframe,jframe) = dissimilarities(jframe,iframe) = distance( getPbc(), getArguments(), myref1, myref2, true ); 
+        if( !usingLowMem() ) dissimilarities(iframe,jframe) = dissimilarities(jframe,iframe) = distance( getPbc(), getArguments(), myref1, myref2, true ); 
+        else return distance( getPbc(), getArguments(), myref1, myref2, true );
      }
      return dissimilarities(iframe,jframe);
   }
