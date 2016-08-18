@@ -123,6 +123,37 @@ double SketchMapBase::calculateStress( const std::vector<double>& p, std::vector
   return stress;
 }
 
+double SketchMapBase::calculateFullStress( const std::vector<double>& p, std::vector<double>& d ){
+  // Zero derivative and stress accumulators
+  for(unsigned i=0;i<p.size();++i) d[i]=0.0; 
+  double stress=0; std::vector<double> dtmp( p.size() );
+  
+  for(unsigned i=1;i<distances.nrows();++i){
+      for(unsigned j=0;j<i;++j){
+          // Calculate distance in low dimensional space
+          double dd=0; 
+          for(unsigned k=0;k<nlow;++k){ dtmp[k]=p[nlow*i+k] - p[nlow*j+k]; dd+=dtmp[k]*dtmp[k]; }
+          dd = sqrt(dd);
+          
+          // Now do transformations and calculate differences
+          double df, fd = transformLowDimensionalDistance( dd, df );
+          double ddiff = dd - distances(i,j);
+          double fdiff = fd - transformed(i,j);;
+          
+          // Calculate derivatives
+          double pref = 2.*getWeight(i)*getWeight(j) / dd;
+          for(unsigned k=0;k<p.size();++k){
+              d[nlow*i+k] += pref*( (1-mixparam)*fdiff*df + mixparam*ddiff )*dtmp[k];
+              d[nlow*j+k] -= pref*( (1-mixparam)*fdiff*df + mixparam*ddiff )*dtmp[k];
+          }
+
+          // Accumulate the total stress 
+          stress += getWeight(i)*getWeight(j)*( (1-mixparam)*fdiff*fdiff + mixparam*ddiff*ddiff );
+      }
+  }
+  return stress;
+}
+
 }
 }
 

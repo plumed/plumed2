@@ -64,6 +64,9 @@ public:
 /// This function makes use of the distance data in dtargets and ftargets
 /// It is used in PLMD::dimred::ProjectOutOfSample and in pointwise optimisation
   double calculateStress( const std::vector<double>& p, std::vector<double>& d );
+/// Calculate the total stress when the projections are placed at point p.  Notice
+/// this is a vectorized version of the matrix of projections
+  double calculateFullStress( const std::vector<double>& p, std::vector<double>& d );
 };
 
 inline
