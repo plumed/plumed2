@@ -71,7 +71,7 @@ void PrintDissimilarityMatrix::performAnalysis(){
   std::string ofmt=" "+fmt;
   OFile ofile; ofile.setBackupString("analysis"); ofile.open(fname); 
   for(unsigned i=0;i<getNumberOfDataPoints();++i){
-      for(unsigned j=0;j<getNumberOfDataPoints();++j) ofile.printf(ofmt.c_str(), mydata->getDissimilarity( i,j ) );
+      for(unsigned j=0;j<getNumberOfDataPoints();++j) ofile.printf(ofmt.c_str(), sqrt( mydata->getDissimilarity( i,j ) ) );
       ofile.printf("\n");
   }   
   ofile.close();
