@@ -89,7 +89,10 @@ void OutputColvarFile::performAnalysis(){
   gfile.open( filename.c_str() );
 
   ReferenceConfiguration* myp = getReferenceConfiguration(0,false);
-  if( myp->getNumberOfProperties()==0 ) plumed_assert( !dynamic_cast<ReferenceAtoms*>( myp ) );
+  if( myp->getNumberOfProperties()==0 ){
+      plumed_assert( !dynamic_cast<ReferenceAtoms*>( myp ) );
+      for(unsigned j=0;j<myp->getReferenceArguments().size();++j) gfile.setupPrintValue( getArguments()[j] );
+  }
 
   // Print embedding coordinates
   for(unsigned i=0;i<getNumberOfDataPoints();++i){
@@ -101,9 +104,10 @@ void OutputColvarFile::performAnalysis(){
           ReferenceArguments* myref=dynamic_cast<ReferenceArguments*>( mypoint );
           plumed_assert( myref );
           for(unsigned j=0;j<myref->getReferenceArguments().size();++j){
-              gfile.printField( myref->getArgumentNames()[j], myref->getReferenceArgument(j) );
+              gfile.printField( getArguments()[j], myref->getReferenceArgument(j) );
           }
       }
+      gfile.printField( "weight", getWeight(i) );
       gfile.printField();
   }  
   gfile.close();

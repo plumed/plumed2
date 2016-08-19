@@ -60,7 +60,7 @@ void LandmarkSelectionBase::performAnalysis(){
       std::vector<unsigned> tmpass( mydata->getNumberOfDataPoints() );
       voronoiAnalysis( landmark_indices, lweights, tmpass );
   } else {
-      for(unsigned i=0;i<nlandmarks;++i) lweights[i]=getWeight( landmark_indices[i] );
+      for(unsigned i=0;i<nlandmarks;++i) lweights[i]=mydata->getWeight( landmark_indices[i] );
   }
 }
 

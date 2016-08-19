@@ -81,6 +81,8 @@ public:
   virtual double getDissimilarity( const unsigned& i, const unsigned& j );
 /// This returns the label of the object that contains the base data
   virtual std::string getBaseDataLabel() const ;
+/// Overwrite getArguments so we get arguments from underlying class
+  virtual const std::vector<Value*>    & getArguments() const ;
 /// Get the ith data point
   virtual void getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const ;
 /// Get a reference configuration (in dimensionality reduction this returns the projection)
@@ -151,6 +153,11 @@ bool AnalysisBase::dissimilaritiesWereSet() const {
 inline
 double AnalysisBase::getDissimilarity( const unsigned& i, const unsigned& j ){
   return mydata->getDissimilarity( i, j );
+}
+
+inline
+const std::vector<Value*> & AnalysisBase::getArguments() const {
+  return mydata->getArguments();
 }
 
 inline
