@@ -80,13 +80,13 @@ double EuclideanDissimilarityMatrix::getDissimilarity( const unsigned& iframe, c
      ReferenceConfiguration* myref1; ReferenceConfiguration* myref2; 
      if( mydata ){ myref1=AnalysisBase::getReferenceConfiguration(iframe,true); myref2=AnalysisBase::getReferenceConfiguration(jframe,true); }
      else { myref1 = data[iframe]; myref2 = data[jframe]; }
-     if( myref1->getNumberOfProperties()>0 ){
-        if( !usingLowMem() ) dissimilarities(iframe,jframe) = dissimilarities(jframe,iframe) = property_distance( myref1, myref2, true );
-        else return property_distance( myref1, myref2, true );
-     } else {
-        if( !usingLowMem() ) dissimilarities(iframe,jframe) = dissimilarities(jframe,iframe) = distance( getPbc(), getArguments(), myref1, myref2, true ); 
-        else return distance( getPbc(), getArguments(), myref1, myref2, true );
-     }
+//      if( myref1->getNumberOfProperties()>0 ){
+//         if( !usingLowMem() ) dissimilarities(iframe,jframe) = dissimilarities(jframe,iframe) = property_distance( myref1, myref2, true );
+//         else return property_distance( myref1, myref2, true );
+//      } else {
+     if( !usingLowMem() ) dissimilarities(iframe,jframe) = dissimilarities(jframe,iframe) = distance( getPbc(), getArguments(), myref1, myref2, true ); 
+     else return distance( getPbc(), getArguments(), myref1, myref2, true );
+//     }
      return dissimilarities(iframe,jframe);
   }
   return 0.0;

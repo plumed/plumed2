@@ -61,9 +61,9 @@ smapbase(NULL)
       log.printf("  reusing low dimensional filter function defined in previous sketch-map action\n");
   } else {
       reuse_ld=false; 
-      lowdf.set(hinput,errors);
+      lowdf.set(linput,errors);
       if(errors.length()>0) error(errors);
-      log.printf("  filter function for distances in low dimensionality space has cutoff %s \n",highdf.description().c_str() );
+      log.printf("  filter function for distances in low dimensionality space has cutoff %s \n",lowdf.description().c_str() );
   }
 
   // Read the mixing parameter
@@ -127,7 +127,13 @@ double SketchMapBase::calculateFullStress( const std::vector<double>& p, std::ve
   // Zero derivative and stress accumulators
   for(unsigned i=0;i<p.size();++i) d[i]=0.0; 
   double stress=0; std::vector<double> dtmp( p.size() );
-  
+ 
+  // Compute normalization for weights
+  double normw = 0;
+  for(unsigned i=1;i<distances.nrows();++i){
+      for(unsigned j=0;j<i;++j) normw += getWeight(i)*getWeight(j);
+  }
+ 
   for(unsigned i=1;i<distances.nrows();++i){
       for(unsigned j=0;j<i;++j){
           // Calculate distance in low dimensional space
@@ -141,14 +147,14 @@ double SketchMapBase::calculateFullStress( const std::vector<double>& p, std::ve
           double fdiff = fd - transformed(i,j);;
           
           // Calculate derivatives
-          double pref = 2.*getWeight(i)*getWeight(j) / dd;
+          double pref = 2.*getWeight(i)*getWeight(j) / (normw*dd);
           for(unsigned k=0;k<p.size();++k){
               d[nlow*i+k] += pref*( (1-mixparam)*fdiff*df + mixparam*ddiff )*dtmp[k];
               d[nlow*j+k] -= pref*( (1-mixparam)*fdiff*df + mixparam*ddiff )*dtmp[k];
           }
 
           // Accumulate the total stress 
-          stress += getWeight(i)*getWeight(j)*( (1-mixparam)*fdiff*fdiff + mixparam*ddiff*ddiff );
+          stress += getWeight(i)*getWeight(j)*( (1-mixparam)*fdiff*fdiff + mixparam*ddiff*ddiff ) / normw;
       }
   }
   return stress;
