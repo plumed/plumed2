@@ -46,7 +46,8 @@ private:
   unsigned nnodes;
   ReferenceConfiguration* fake_data;
   std::string fname, wfile;
-  Matrix<double> dissimilarities;
+//  Matrix<double> dissimilarities;
+  std::vector<std::vector<double> > dissimilarities;
   std::vector<double> weights;
 public:
   static void registerKeywords( Keywords& keys );
@@ -127,16 +128,19 @@ void ReadDissimilarityMatrix::performAnalysis(){
      Tools::getParsedLine( mfile, words );
      nnodes=words.size(); 
   }
-  dissimilarities.resize( nnodes, nnodes ); 
-  for(unsigned j=0;j<nnodes;++j) Tools::convert( words[j], dissimilarities(0,j) );
+  if( mydata && nnodes!=getNumberOfDataPoints() ) error("mismatch between number of data points in trajectory and the dimensions of the dissimilarity matrix");
 
-  for(unsigned i=1;i<nnodes;++i){
-       Tools::getParsedLine( mfile, words );
-       if( words.size()!=nnodes ) error("bad formatting in matrix file");
-       for(unsigned j=0;j<nnodes;++j) Tools::convert( words[j], dissimilarities(i,j) ); 
+  std::vector<double> tmpdis( nnodes );
+  for(unsigned j=0;j<nnodes;++j) Tools::convert( words[j], tmpdis[j] );
+  dissimilarities.push_back( tmpdis );
+
+  while( Tools::getParsedLine( mfile, words ) ){
+     if( words.size()!=nnodes ) error("bad formatting in matrix file");
+     for(unsigned j=0;j<nnodes;++j) Tools::convert( words[j], tmpdis[j] ); 
+     dissimilarities.push_back( tmpdis );
   }
   mfile.close();
-  if( mydata && nnodes!=getNumberOfDataPoints() ) error("mismatch between number of data points in trajectory and the dimensions of the dissimilarity matrix");
+  if( dissimilarities.size()>nnodes ) error("number of rows in input matrix should be less than or equal to the number of columns");
 
   weights.resize( nnodes );
   if( wfile.length()>0 ){
@@ -156,7 +160,7 @@ unsigned ReadDissimilarityMatrix::getNumberOfDataPoints() const {
 }
 
 double ReadDissimilarityMatrix::getDissimilarity( const unsigned& iframe, const unsigned& jframe ){
-  return dissimilarities( iframe, jframe )*dissimilarities( iframe, jframe );
+  return dissimilarities[iframe][jframe]*dissimilarities[iframe][jframe];
 }
 
 ReferenceConfiguration* ReadDissimilarityMatrix::getReferenceConfiguration( const unsigned& idata, const bool& calcdist ){
