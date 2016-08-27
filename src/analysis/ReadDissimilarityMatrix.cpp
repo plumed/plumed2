@@ -128,7 +128,6 @@ void ReadDissimilarityMatrix::performAnalysis(){
      Tools::getParsedLine( mfile, words );
      nnodes=words.size(); 
   }
-  if( mydata && nnodes!=getNumberOfDataPoints() ) error("mismatch between number of data points in trajectory and the dimensions of the dissimilarity matrix");
 
   std::vector<double> tmpdis( nnodes );
   for(unsigned j=0;j<nnodes;++j) Tools::convert( words[j], tmpdis[j] );
@@ -140,12 +139,14 @@ void ReadDissimilarityMatrix::performAnalysis(){
      dissimilarities.push_back( tmpdis );
   }
   mfile.close();
-  if( dissimilarities.size()>nnodes ) error("number of rows in input matrix should be less than or equal to the number of columns");
+  if( mydata && dissimilarities.size()!=getNumberOfDataPoints() ){
+     error("mismatch between number of data points in trajectory and the dimensions of the dissimilarity matrix");
+  }
 
-  weights.resize( nnodes );
+  weights.resize( dissimilarities.size() );
   if( wfile.length()>0 ){
      IFile wfilef; wfilef.open(wfile); 
-     for(unsigned i=0;i<nnodes;++i){ 
+     for(unsigned i=0;i<weights.size();++i){ 
        Tools::getParsedLine( wfilef, words ); Tools::convert( words[0], weights[i] );
      }
      wfilef.close();
@@ -156,7 +157,7 @@ void ReadDissimilarityMatrix::performAnalysis(){
 
 unsigned ReadDissimilarityMatrix::getNumberOfDataPoints() const { 
   if( mydata ) return AnalysisBase::getNumberOfDataPoints();
-  return nnodes;
+  return dissimilarities.size();
 }
 
 double ReadDissimilarityMatrix::getDissimilarity( const unsigned& iframe, const unsigned& jframe ){
@@ -176,7 +177,7 @@ void ReadDissimilarityMatrix::getDataPoint( const unsigned& idata, std::vector<d
 }
 
 double ReadDissimilarityMatrix::getWeight( const unsigned& idata ) const {
-  plumed_assert( idata<nnodes ); return weights[idata]; 
+  plumed_assert( idata<dissimilarities.size() ); return weights[idata]; 
 }
 
 }

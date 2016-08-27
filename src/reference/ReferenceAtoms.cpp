@@ -45,7 +45,7 @@ void ReferenceAtoms::readAtomsFromPDB( const PDB& pdb ){
 void ReferenceAtoms::printAtoms( const double& lunits, SetupMolInfo* mymoldat, OFile& ofile ) const {
   if( !mymoldat ){
       for(unsigned i=0;i<reference_atoms.size();++i){
-          ofile.printf("ATOM  %4d X    RES   %4u %8.3f %8.3f %8.3f %6.2f %6.2f\n",
+          ofile.printf("ATOM  %5d X    RES  %4u    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
             indices[i].serial(), i, 
             lunits*reference_atoms[i][0], lunits*reference_atoms[i][1], lunits*reference_atoms[i][2],
             align[i], displace[i] );

@@ -81,9 +81,10 @@ mybase(NULL)
   std::string myproj; parse("PROJECTION",myproj);
   mybase = plumed.getActionSet().selectWithLabel<DimensionalityReductionBase*>( myproj );
   if( !mybase ) error("could not find projection of data named " + myproj ); 
-  nlow = mybase->nlow;
-
-  if( mybase->getBaseDataLabel()!=getBaseDataLabel() ) error("mismatch between base data labels"); 
+  // Shit fix for the time being but we want to improve this GAT
+  mybase->confirmStride( freq, use_all_data );
+  // Add the dependency and set the dimensionality
+  addDependency( mybase ); nlow = mybase->nlow;
 
   log.printf("  generating out-of-sample projections using projection with label %s \n",myproj.c_str() );
   parse("CGTOL",cgtol);
@@ -91,10 +92,10 @@ mybase(NULL)
 
 void ProjectNonLandmarkPoints::generateProjection( const unsigned& idat, std::vector<double>& point ){
   ConjugateGradient<ProjectNonLandmarkPoints> myminimiser( this );
-  unsigned closest=0; double mindist = sqrt( getDissimilarity( idat, mybase->getDataPointIndexInBase(0) ) );
-  mybase->setTargetDistance( 0, mindist );
+  unsigned closest=0; double mindist = sqrt( getDissimilarity( mybase->getDataPointIndexInBase(0), idat ) );
+  mybase->setTargetDistance( 0, mindist ); 
   for(unsigned i=1;i<mybase->getNumberOfDataPoints();++i){
-      double dist = sqrt( getDissimilarity( idat, mybase->getDataPointIndexInBase(i) ) );
+      double dist = sqrt( getDissimilarity( mybase->getDataPointIndexInBase(i), idat ) );
       mybase->setTargetDistance( i, dist );
       if( dist<mindist ){ mindist=dist; closest=i; }
   }

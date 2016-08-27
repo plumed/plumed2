@@ -49,12 +49,11 @@ class AnalysisBase :
 friend class ReselectLandmarks;
 friend class ReadDissimilarityMatrix; 
 friend class AnalysisWithDataCollection;
-private:
+protected:
 /// Just run the analysis a single time
   bool use_all_data;
 /// The frequency with which we are performing analysis
   unsigned freq;
-protected:
 /// The Analysis action that we are reusing data from
   AnalysisBase* mydata;
 public:
@@ -79,8 +78,6 @@ public:
   virtual bool dissimilaritiesWereSet() const ;
 /// Get the squared dissimilarity between two reference configurations
   virtual double getDissimilarity( const unsigned& i, const unsigned& j );
-/// This returns the label of the object that contains the base data
-  virtual std::string getBaseDataLabel() const ;
 /// Overwrite getArguments so we get arguments from underlying class
   virtual const std::vector<Value*>    & getArguments() const ;
 /// Get the ith data point
@@ -101,6 +98,8 @@ public:
 /// This calls the analysis to be performed in the final step of the calculation 
 /// i.e. when use_all_data is true
   virtual void runFinalJobs();
+/// We would like a cleaner way of doing this if possible
+  void confirmStride( const unsigned& istride, const unsigned& all );
 };
 
 inline
@@ -161,8 +160,8 @@ const std::vector<Value*> & AnalysisBase::getArguments() const {
 }
 
 inline
-std::string AnalysisBase::getBaseDataLabel() const {
-  return mydata->getBaseDataLabel();
+void AnalysisBase::confirmStride( const unsigned& istride, const unsigned& all ){
+  freq=istride; use_all_data=all;
 }
 
 inline

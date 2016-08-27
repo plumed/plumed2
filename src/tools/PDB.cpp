@@ -70,7 +70,6 @@ bool PDB::hasRequiredProperties( const std::vector<std::string>& inproperties ){
   for(unsigned i=0;i<inproperties.size();++i){
       hasprop=false;
       for(unsigned j=0;j<remark.size();++j){ 
-          printf("SEARCHING FOR %s FOUND %s \n",inproperties[i].c_str(),remark[i].c_str() );
           if( remark[i].find(inproperties[i]+"=")!=std::string::npos){ hasprop=true; break; }
       }
       if( !hasprop ) return false;  

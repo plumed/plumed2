@@ -94,8 +94,6 @@ public:
   virtual double getNormalization() const ;
 /// By default dissimilarities are not set - they are only set in dissimilarity objects
   virtual bool dissimilaritiesWereSet() const ; 
-/// This returns the label of the object that contains the base data
-  std::string getBaseDataLabel() const ;
 /// Get the ith data point
   virtual void getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const ;
 /// Get a reference configuration (in dimensionality reduction this returns the projection)
@@ -148,12 +146,6 @@ double AnalysisWithDataCollection::getNormalization() const {
       return ( 1. + norm/old_norm );
   } 
   return AnalysisBase::getNormalization();
-}
-
-inline
-std::string AnalysisWithDataCollection::getBaseDataLabel() const {
-  if( !mydata ) return getLabel();
-  return AnalysisBase::getBaseDataLabel();
 }
 
 inline

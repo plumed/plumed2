@@ -38,7 +38,7 @@ DimensionalityReductionBase(ao),
 smapbase(NULL)
 {
   // Check if we have data from a input sketch-map object - we can reuse switching functions wahoo!!
-  smapbase = dynamic_cast<SketchMapBase*>( dimredbase );
+  if( dimredbase ) smapbase = dynamic_cast<SketchMapBase*>( dimredbase );
 
   // Read in the switching functions
   std::string linput,hinput, errors;
@@ -80,7 +80,6 @@ void SketchMapBase::calculateProjections( const Matrix<double>& targets, Matrix<
       transformed.resize( targets.nrows(), targets.ncols() );
       distances.resize( targets.nrows(), targets.ncols() ); 
   }
-
   // Transform the high dimensional distances
   double df; distances=0.; transformed=0.;
   for(unsigned i=1;i<distances.ncols();++i){
@@ -94,11 +93,9 @@ void SketchMapBase::calculateProjections( const Matrix<double>& targets, Matrix<
 }
 
 double SketchMapBase::calculateStress( const std::vector<double>& p, std::vector<double>& d ){
-      
   // Zero derivative and stress accumulators
   for(unsigned i=0;i<p.size();++i) d[i]=0.0;
   double stress=0; std::vector<double> dtmp( p.size() );
-
   // Now accumulate total stress on system
   for(unsigned i=0;i<ftargets.size();++i){
       if( dtargets[i]<epsilon ) continue ;

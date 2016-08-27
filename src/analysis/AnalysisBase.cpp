@@ -73,7 +73,7 @@ void AnalysisBase::runFinalJobs(){
   // Nothing to do if we are not analysing all the data in the trajectory
   if( !use_all_data ) return;
   // Erm ... user has done something weird
-  if( getNumberOfDataPoints()==0 ) error("no data is available for analysis");
+  // if( getNumberOfDataPoints()==0 ) error("no data is available for analysis");
   // And do the analysis
   if( use_all_data ) performAnalysis();
 }

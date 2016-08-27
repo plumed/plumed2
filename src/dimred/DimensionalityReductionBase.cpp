@@ -38,18 +38,21 @@ analysis::AnalysisBase(ao),
 dimredbase(NULL)
 {
   // Check that some dissimilarity information is available
-  if( !dissimilaritiesWereSet() ) error("dissimilarities have not been calcualted in input actions");
-  // Now we check if the input was a dimensionality reduction object
-  if( mydata ) dimredbase = dynamic_cast<DimensionalityReductionBase*>( mydata );
+  if( mydata ){
+      if( !dissimilaritiesWereSet() ) error("dissimilarities have not been calcualted in input actions");
+      // Now we check if the input was a dimensionality reduction object
+      dimredbase = dynamic_cast<DimensionalityReductionBase*>( mydata );
+  }
 
   // Retrieve the dimension in the low dimensionality space
   if( dimredbase ){
       nlow=dimredbase->nlow;
-  } else {
+      log.printf("  projecting in %d dimensional space \n",nlow);
+  } else if( keywords.exists("NLOW_DIM") ){
       parse("NLOW_DIM",nlow);
       if( nlow<1 ) error("dimensionality of low dimensional space must be at least one");
+      log.printf("  projecting in %d dimensional space \n",nlow);
   }
-  log.printf("  projecting in %d dimensional space \n",nlow);
 }
 
 ReferenceConfiguration* DimensionalityReductionBase::getReferenceConfiguration( const unsigned& idat, const bool& calcdist ){
@@ -69,7 +72,6 @@ void DimensionalityReductionBase::performAnalysis(){
   dtargets.resize( getNumberOfDataPoints() );
   // Resize the projections array
   projections.resize( getNumberOfDataPoints(), nlow );
-
   // Retreive the projections from the previous calculation
   if( dimredbase ){
       std::vector<double> newp( nlow ); double w;
