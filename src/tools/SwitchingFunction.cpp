@@ -286,7 +286,7 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const{
      dfunc=0.0;
   }else{
     if(type==smap){
-      double sx=c*pow( rdist, a ); 
+      double sx=c*Tools::fastpow( rdist, a ); 
       result=pow( 1.0 + sx, d ); 
       dfunc=-b*sx/rdist*result/(1.0+sx); 
     } else if(type==rational){

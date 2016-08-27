@@ -75,11 +75,17 @@ smapbase(NULL)
 void SketchMapBase::calculateProjections( const Matrix<double>& targets, Matrix<double>& projections ){
   if( dtargets.size()!=targets.nrows() ){
       // These hold data so that we can do stress calculations
-      dtargets.resize( targets.nrows() ); ftargets.resize( targets.nrows() );
+      dtargets.resize( targets.nrows() ); ftargets.resize( targets.nrows() ); pweights.resize( targets.nrows() );
       // Matrices for storing input data
       transformed.resize( targets.nrows(), targets.ncols() );
-      distances.resize( targets.nrows(), targets.ncols() ); 
+      distances.resize( targets.nrows(), targets.ncols() );
   }
+
+  // Stores the weights in an array for faster access, as well as the normalization
+  normw=0;
+  for(unsigned i=0;i<targets.nrows() ;++i) { pweights[i] = getWeight(i); normw+=pweights[i]; }
+  normw*=normw;
+
   // Transform the high dimensional distances
   double df; distances=0.; transformed=0.;
   for(unsigned i=1;i<distances.ncols();++i){
@@ -123,16 +129,12 @@ double SketchMapBase::calculateStress( const std::vector<double>& p, std::vector
 double SketchMapBase::calculateFullStress( const std::vector<double>& p, std::vector<double>& d ){
   // Zero derivative and stress accumulators
   for(unsigned i=0;i<p.size();++i) d[i]=0.0; 
-  double stress=0; std::vector<double> dtmp( p.size() );
- 
-  // Compute normalization for weights
-  double normw = 0;
-  for(unsigned i=1;i<distances.nrows();++i){
-      for(unsigned j=0;j<i;++j) normw += getWeight(i)*getWeight(j);
-  }
+  double stress=0; std::vector<double> dtmp( nlow );
  
   for(unsigned i=1;i<distances.nrows();++i){
+      double iweight = pweights[i];
       for(unsigned j=0;j<i;++j){
+          double jweight =  pweights[j];
           // Calculate distance in low dimensional space
           double dd=0; 
           for(unsigned k=0;k<nlow;++k){ dtmp[k]=p[nlow*i+k] - p[nlow*j+k]; dd+=dtmp[k]*dtmp[k]; }
@@ -144,16 +146,16 @@ double SketchMapBase::calculateFullStress( const std::vector<double>& p, std::ve
           double fdiff = fd - transformed(i,j);;
           
           // Calculate derivatives
-          double pref = 2.*getWeight(i)*getWeight(j) / (normw*dd);
-          for(unsigned k=0;k<p.size();++k){
-              d[nlow*i+k] += pref*( (1-mixparam)*fdiff*df + mixparam*ddiff )*dtmp[k];
-              d[nlow*j+k] -= pref*( (1-mixparam)*fdiff*df + mixparam*ddiff )*dtmp[k];
+          double pref = 2.*iweight*jweight*( (1-mixparam)*fdiff*df + mixparam*ddiff ) / dd;
+          for(unsigned k=0;k<nlow;++k){
+              double dterm=pref*dtmp[k]; d[nlow*i+k]+=dterm; d[nlow*j+k]-=dterm;
           }
 
           // Accumulate the total stress 
-          stress += getWeight(i)*getWeight(j)*( (1-mixparam)*fdiff*fdiff + mixparam*ddiff*ddiff ) / normw;
+          stress += iweight*jweight*( (1-mixparam)*fdiff*fdiff + mixparam*ddiff*ddiff );
       }
   }
+  stress /= normw; for (unsigned k=0; k < d.size(); ++k) d[k] /= normw;
   return stress;
 }
 
