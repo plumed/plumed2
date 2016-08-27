@@ -1,0 +1,2 @@
+type=plumed
+arg="pathtools --start start.pdb --end end.pdb --nframes 5 --nframes-after-end 4 --metric EUCLIDEAN --out mypath.pdb --arg-fmt %8.4f" 
