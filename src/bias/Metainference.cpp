@@ -177,6 +177,7 @@ class Metainference : public Bias
   bool     master;
   bool     do_reweight;
   bool     do_optsigmamean_;
+  bool     do_mc_single_;
   unsigned nrep_;
   unsigned replica_;
   unsigned narg;
@@ -211,6 +212,7 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.add("compulsory","NOISETYPE","functional form of the noise (GAUSS,MGAUSS,OUTLIERS)");
   keys.addFlag("SCALEDATA",false,"Set to TRUE if you want to sample a scaling factor common to all values and replicas");  
   keys.addFlag("OPTSIGMAMEAN",false,"Set to TRUE if you want to scale sigma_mean to prevent too high forces");  
+  keys.addFlag("MCSINGLE",false,"Set to TRUE if you want to change a single sigma per MC move (only for NOISETYPE=MGAUSS)");  
   keys.add("compulsory","SCALE0","initial value of the uncertainty parameter");
   keys.add("compulsory","SCALE_PRIOR","FLAT","either FLAT or GAUSSIAN");
   keys.add("optional","SCALE_MIN","minimum value of the uncertainty parameter");
@@ -262,6 +264,7 @@ MCtrial_(0),
 write_stride_(0),
 do_reweight(false),
 do_optsigmamean_(false),
+do_mc_single_(false),
 atoms(plumed.getAtoms())
 {
   // set up replica stuff 
@@ -312,6 +315,10 @@ atoms(plumed.getAtoms())
   if(status_file_name_=="") status_file_name_ = "MISTATUS"+getLabel();
 
   parseFlag("OPTSIGMAMEAN", do_optsigmamean_);
+  parseFlag("MCSINGLE", do_mc_single_);
+  if (noise_type_ != MGAUSS && do_mc_single_) {
+      error("MCSINGLE is only available with MGAUSS");
+  }
 
   parseFlag("SCALEDATA", doscale_);
   if(doscale_) {
@@ -531,6 +538,9 @@ atoms(plumed.getAtoms())
     random[1].setSeed(-iseed);
   }
 
+  // Also seed the RNG for random index selection
+  srand (time(NULL));
+
   // outfile stuff
   if(write_stride_>0) {
     sfile_.link(*this);
@@ -660,14 +670,32 @@ void Metainference::doMonteCarlo(const vector<double> &mean_){
   
     // propose move for sigma
     MCtrial_++;
+
+    // Change a random element
     vector<double> new_sigma(sigma_.size());
-    for(unsigned j=0;j<sigma_.size();j++) {
+    if (do_mc_single_) {
+      new_sigma = sigma_;
+
+      // TODO: remove slight bias towards lower values
+      // choose random element
+      unsigned random_index = rand() % sigma_.size();
+
       const double r2 = random[1].Gaussian();
       const double ds2 = sqrt(Dsigma_)*r2;
-      new_sigma[j] = sigma_[j] + ds2;
+      new_sigma[random_index] = sigma_[random_index] + ds2;
       // check boundaries
-      if(new_sigma[j] > sigma_max_){new_sigma[j] = 2.0 * sigma_max_ - new_sigma[j];}
-      if(new_sigma[j] < sigma_min_){new_sigma[j] = 2.0 * sigma_min_ - new_sigma[j];}
+      if(new_sigma[random_index] > sigma_max_){new_sigma[random_index] = 2.0 * sigma_max_ - new_sigma[random_index];}
+      if(new_sigma[random_index] < sigma_min_){new_sigma[random_index] = 2.0 * sigma_min_ - new_sigma[random_index];}
+    } else {
+      // or change all sigmas
+      for(unsigned j=0;j<sigma_.size();j++) {
+        const double r2 = random[1].Gaussian();
+        const double ds2 = sqrt(Dsigma_)*r2;
+        new_sigma[j] = sigma_[j] + ds2;
+        // check boundaries
+        if(new_sigma[j] > sigma_max_){new_sigma[j] = 2.0 * sigma_max_ - new_sigma[j];}
+        if(new_sigma[j] < sigma_min_){new_sigma[j] = 2.0 * sigma_min_ - new_sigma[j];}
+      }
     }
  
     // calculate new energy
