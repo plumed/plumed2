@@ -185,7 +185,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc){
 
      // Ouput data on spacings
      double mean=0;
-     MultiValue myvpack( 2, frames[0]->getNumberOfReferenceArguments() + 3*frames[0]->getNumberOfReferencePositions() );
+     MultiValue myvpack( 1, frames[0]->getNumberOfReferenceArguments() + 3*frames[0]->getNumberOfReferencePositions() + 9 );
      ReferenceValuePack mypack( frames[0]->getNumberOfReferenceArguments(), frames[0]->getNumberOfReferencePositions(), myvpack );
      for(unsigned i=1;i<frames.size();++i){ 
         double len = frames[i]->calc( frames[i-1]->getReferencePositions(), fake_pbc, vals, frames[i-1]->getReferenceArguments(), mypack, false );
@@ -237,7 +237,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc){
  }
 
  // Calculate the distance between the start and the end
- MultiValue myvpack( 2, sframe->getNumberOfReferenceArguments() + 3*sframe->getNumberOfReferencePositions() ); 
+ MultiValue myvpack( 1, sframe->getNumberOfReferenceArguments() + 3*sframe->getNumberOfReferencePositions() + 9); 
  ReferenceValuePack mypack( sframe->getNumberOfReferenceArguments(), sframe->getNumberOfReferencePositions(), myvpack );
  double pathlen = sframe->calc( eframe->getReferencePositions(), fpbc, args, eframe->getReferenceArguments(), mypack, false );
  // And the spacing between frames
