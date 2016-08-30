@@ -577,13 +577,16 @@ double Metainference::getEnergySPE(const vector<double> &mean, const vector<doub
 double Metainference::getEnergyGJE(const vector<double> &mean, const vector<double> &sigma, const double scale){
   // cycle on arguments
   double ene = 0.0;
-  double ss = sigma[0]*sigma[0] + scale*scale*sigma_mean_[0]*sigma_mean_[0];
+  const double scale2 = scale * scale;
+  double ss = sigma[0]*sigma[0] + scale2*sigma_mean_[0]*sigma_mean_[0];
 
   for(unsigned i=0;i<narg;++i){
     if(noise_type_==MGAUSS){ 
-      ss = sigma[i]*sigma[i] + scale*scale*sigma_mean_[i]*sigma_mean_[i];
+      const double sigma2 = sigma[i] * sigma[i];
+      const double sigma_mean2 = sigma_mean_[i] * sigma_mean_[i];
+      ss = sigma2 + scale2*sigma_mean2;
       // add Jeffrey's prior - one per sigma
-      ene += 0.5*std::log(sigma[i]*sigma[i]+sigma_mean_[i]*sigma_mean_[i]);
+      ene += 0.5*std::log(sigma2+sigma_mean2);
     }
     const double dev = scale*mean[i]-parameters[i];
     // deviation and normalisation 
