@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -43,6 +43,15 @@ std::ostream & operator<<(std::ostream &log,const Citations&cit){
     log<<"  ["<<i+1<<"] "<<cit.items[i]<<"\n";
   return log;
 }
+
+void Citations::clear(){
+  items.clear();
+}
+
+bool Citations::empty()const{
+  return items.empty();
+}
+
 }
 
 

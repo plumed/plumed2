@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -86,8 +86,6 @@ void LWalls::registerKeywords(Keywords& keys){
   keys.add("compulsory","OFFSET","0.0","the offset for the start of the wall.  The o_i in the expression for a wall.");
   keys.add("compulsory","EXP","2.0","the powers for the walls.  The e_i in the expression for a wall.");
   keys.add("compulsory","EPS","1.0","the values for s_i in the expression for a wall");
-  componentsAreNotOptional(keys);
-  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
   keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
 }
 
@@ -123,7 +121,6 @@ offset(getNumberOfArguments(),0.0)
   for(unsigned i=0;i<eps.size();i++) log.printf(" %f",eps[i]);
   log.printf("\n");
 
-  addComponent("bias"); componentIsNotPeriodic("bias");
   addComponent("force2"); componentIsNotPeriodic("force2");
 }
 
@@ -146,7 +143,7 @@ void LWalls::calculate(){
     }
     setOutputForce(i,f);
   }
-  getPntrToComponent("bias")->set(ene); 
+  setBias(ene);
   getPntrToComponent("force2")->set(totf2);  
 }
 

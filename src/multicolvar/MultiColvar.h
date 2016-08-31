@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -39,30 +39,15 @@ thereof, whtin it there is \ref AddingAMultiColvar "information" as to how to go
 */
 
 class MultiColvar : public MultiColvarBase {
-private:
-/// Do we want lots of details in the output
-  bool verbose_output;
-/// Read in the various GROUP keywords
-  void readGroupsKeyword( int& natoms, std::vector<AtomNumber>& all_atoms );
 protected:
-/// Read in the various SPECIES keywords
-  void readSpeciesKeyword( const std::string& str1, const std::string& str2, int& natoms, std::vector<AtomNumber>& all_atoms );
 /// Read in all the keywords that can be used to define atoms
-  void readAtoms( int& natoms );
+  void readAtoms( int& natoms, std::vector<AtomNumber> all_atoms );
 /// Read in ATOMS keyword
   void readAtomsLikeKeyword( const std::string & key, int& natoms, std::vector<AtomNumber>& all_atoms );
-/// Read two group keywords
-  void readTwoGroups( const std::string& key1, const std::string& key2, std::vector<AtomNumber>& all_atoms );
-/// Read three groups
-  void readThreeGroups( const std::string& key1, const std::string& key2, const std::string& key3, const bool& allow2, std::vector<AtomNumber>& all_atoms );
-/// Add a collective variable
-  void addColvar( const std::vector<unsigned>& newatoms );
 public:
   explicit MultiColvar(const ActionOptions&);
   ~MultiColvar(){}
   static void registerKeywords( Keywords& keys );
-/// Get the position of atom iatom
-  const Vector & getPosition(unsigned) const;
 };
 
 }

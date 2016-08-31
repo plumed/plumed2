@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014,2015 The plumed team
+   Copyright (c) 2014-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -257,7 +257,7 @@ mypack(0,0,myvals)
   fclose(fp);
 
   if( nfram<2 ) error("no eigenvectors were specified");
-  log.printf("  found %d eigenvectors in file %s \n",nfram-1,reference.c_str() );
+  log.printf("  found %u eigenvectors in file %s \n",nfram-1,reference.c_str() );
 
   // Finish the setup of the mapping object
   // Get the arguments and atoms that are required

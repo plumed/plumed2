@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -107,6 +107,8 @@ public ActionPilot{
   double initialBias;
   bool isFirstStep;
 
+  bool ensemble;
+
 public:
   explicit EffectiveEnergyDrift(const ActionOptions&);
   ~EffectiveEnergyDrift();
@@ -127,6 +129,7 @@ void EffectiveEnergyDrift::registerKeywords( Keywords& keys ){
   keys.add("compulsory","STRIDE","1","should be set to 1. Effective energy drift computation has to be active at each step.");
   keys.add("compulsory", "FILE", "file on which to output the effective energy drift.");
   keys.add("compulsory", "PRINT_STRIDE", "frequency to which output the effective energy drift on FILE");
+  keys.addFlag("ENSEMBLE",false,"Set to TRUE if you want to average over multiple replicas.");
   keys.use("RESTART");
   keys.use("UPDATE_FROM");
   keys.use("UPDATE_UNTIL");
@@ -139,7 +142,9 @@ eed(0.0),
 atoms(plumed.getAtoms()),
 nProc(plumed.comm.Get_size()),
 initialBias(0.0),
-isFirstStep(true){
+isFirstStep(true),
+ensemble(false)
+{
   //stride must be == 1
   if(getStride()!=1) error("EFFECTIVE_ENERGY_DRIFT must have STRIDE=1 to work properly");
 
@@ -153,11 +158,18 @@ isFirstStep(true){
   //parse PRINT_STRIDE
   parse("PRINT_STRIDE",printStride);
 
+  //parse ENSEMBLE
+  ensemble=false;
+  parseFlag("ENSEMBLE",ensemble);
+  if(ensemble&&comm.Get_rank()==0) {
+    if(multi_sim_comm.Get_size()<2) error("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
+  } 
+
   log<<"Bibliography "<<cite("Ferrarotti, Bottaro, Perez-Villa, and Bussi, submitted (2014)")<<"\n";
 
   //construct biases from ActionWithValue with a component named bias
   vector<ActionWithValue*> tmpActions=plumed.getActionSet().select<ActionWithValue*>();
-  for(int i=0;i<tmpActions.size();i++) if(tmpActions[i]->exists(tmpActions[i]->getLabel()+".bias")) biases.push_back(tmpActions[i]);
+  for(unsigned i=0;i<tmpActions.size();i++) if(tmpActions[i]->exists(tmpActions[i]->getLabel()+".bias")) biases.push_back(tmpActions[i]);
 
   //resize counters and displacements useful to communicate with MPI_Allgatherv
   indexCnt.resize(nProc);
@@ -186,7 +198,7 @@ void EffectiveEnergyDrift::update(){
     Tensor B=atoms.getPbc().getBox();
     Tensor IB=atoms.getPbc().getInvBox();
 #pragma omp parallel for
-    for(int i=0;i<positions.size();++i){
+    for(unsigned i=0;i<positions.size();++i){
       positions[i]=matmul(positions[i],IB);
       forces[i]=matmul(B,forces[i]);
     }
@@ -246,7 +258,7 @@ void EffectiveEnergyDrift::update(){
     pForces.resize(nLocalAtoms);
 
     //compute backmap
-    for(int j=0;j<indexR.size();j++) backmap[indexR[j]]=j;
+    for(unsigned j=0;j<indexR.size();j++) backmap[indexR[j]]=j;
 
     //fill the vectors pGatindex, pPositions and pForces
     for(int i=0; i<nLocalAtoms; i++){
@@ -286,11 +298,20 @@ void EffectiveEnergyDrift::update(){
 
     //we cannot just use plumed.getBias() because it will be ==0.0 if PRINT_STRIDE
     //is not a multiple of the bias actions stride
-    for(int i=0;i<biases.size();i++) bias+=biases[i]->getOutputQuantity("bias");
+    for(unsigned i=0;i<biases.size();i++) bias+=biases[i]->getOutputQuantity("bias");
 
     plumed.comm.Sum(&eedSum,1);
+ 
+    double effective = eedSum+bias-initialBias-plumed.getWork();
+    // this is to take into account ensemble averaging
+    if(ensemble) {
+      if(plumed.comm.Get_rank()==0) plumed.multi_sim_comm.Sum(&effective,1);
+      else effective=0.;
+      plumed.comm.Sum(&effective,1);
+    }
+
     output.printField("time",getTime());
-    output.printField("effective-energy",eedSum+bias-initialBias-plumed.getWork());
+    output.printField("effective-energy",effective);
     output.printField();
   }
 

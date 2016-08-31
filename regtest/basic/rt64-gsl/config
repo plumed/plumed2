@@ -1,0 +1,3 @@
+type=driver
+plumed_needs="gsl"
+arg="--plumed plumed.dat --trajectory-stride 10 --timestep 0.005 --ixyz trajectory.xyz"

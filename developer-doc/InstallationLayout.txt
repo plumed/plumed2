@@ -33,12 +33,13 @@ the same path.
 
 When a plumed command line tool implemented as script is invoked by the plumed executable,
 thus transfering the control from C++ to
-an external script, the environment is consistently set. This is done in method \ref config::getEnvCommand()
+an external script, the environment should be consistently set. This is done in method \ref config::getEnvCommand()
 which builds a string in the form "env PLUMED_ROOT=/path env PLUMED_INCLUDEDIR=/path " etc.
+In this ways, the scripts are run in an environment with the correct settings.
 
 The following paths need to be set for plumed to work properly. Here they are listed
 together with the name of the corresponding environment variable (that can be used in plumed
-scrits) and the method that can be used to retrieve them from C++ code.
+scripts) and the method that can be used to retrieve them from C++ code.
 - Root of plumed: PLUMED_ROOT \ref config::getPlumedRoot()
 - Path to include files: PLUMED_INCLUDEDIR \ref config::getPlumedIncludedir()
 - Path to html files: PLUMED_HTMLDIR \ref config::getPlumedHtmldir()
@@ -54,7 +55,7 @@ value reported below:
 These paths are hardcoded in `plumed` executable and in `plumed-*` scripts when they are compiled.
 Notice that it is possible to set the PLUMED_ROOT variable before calling plumed overriding the hard code values.
 E.g., you can compile plumed in directory `/build/directory1`, move it to `/build/directory2`, and launch it
-with `PLUMED_ROOT /build/directory2/src/lib/plumed`. Notice however that although plumed will find all the
+with `PLUMED_ROOT=/build/directory2 /build/directory2/src/lib/plumed`. Notice however that although plumed will find all the
 required resources in this way, it won't be possible to perform some task such as patching MD code.
 
 When using plumed after installed, these paths will be set to the
@@ -70,12 +71,12 @@ When using an installed copy of plumed one can override the hard code values by 
 PLUMED_ROOT PLUMED_INCLUDEDIR PLUMED_HTMLDIR and PLUMED_PROGRAM_NAME before launching plumed.
 
 Notice that to enforce a consistent behavior of scripts and plumed executable the same logic needed to
-be implemented twice. One implementation is found in the src/config/Config.cpp file, another implementation
+be implemented twice. One implementation is found in the src/config/Config.inc.in file, another implementation
 is prependend to the installed scripts by the src/config/Makefile.
 
 Also consider that environment is inherited by subprocesses. That means that if you want to
 launch another plumed version from a plumed script (crazy idea, perhaps nobody will ever do it)
-you should unexport the relevant environemnt variable to that the second plumed executable
+you should unexport the relevant environment variables so that the second plumed executable
 will find its paths correctly.
 
 \section InstallationLayout-files Installed files
@@ -94,15 +95,22 @@ Notice that `/usr/local/bin/plumed` described above is equal to the combination 
 
 `/usr/local/lib/libplumedKernel.so`: this is a library containing almost all the plumed routines,
 with the exception of those called from MD engines.
-Notice that `/usr/local/lib/libplumedKernel.so` described above is equal to the combination of
+Notice that `/usr/local/lib/libplumed.so` described above is equal to the combination of
 `/usr/local/lib/libplumedKernel.so` with a single object file compiled from `buildroot/src/wrapper/PlumedStatic.cpp`
 
+To summarize:
+- `bin/plumed` = `buildroot/src/main/main.cpp` + `lib/libplumed.so`
+- `lib/libplumed.so` = `buildroot/src/wrapper/PlumedStatic.cpp` + `lib/libplumedKernel.so`
+
 The logic of this subdivision is that it is possible to either link the MD code to `/usr/local/lib/libplumed.so`
-or to link it to a single object file (the one compiled from `buildroot/src/wrapper/Plumed.cpp`)
+or to link it to a single object file (the one compiled from `buildroot/src/wrapper/Plumed.c`)
 so as to allow linking at run time an a posteriori chosen plumed library. This is the trick behind the `--runtime` patching procedure.
 
-Notice that the only difference between `buildroot/src/wrapper/PlumedStatic.cpp` and `buildroot/src/wrapper/Plumed.cpp` is that
-runtime binding is disabled for the first one.
+Notice that the only differences between `buildroot/src/wrapper/PlumedStatic.cpp` and `buildroot/src/wrapper/Plumed.c` are that
+runtime binding is disabled for the first one and that the second one is compiled as plain C.
+This makes it less likely to do mistakes when linking lib/libplumed.so (by unintentionally using a different version
+of plumed), and makes C++ library unnecessary if an external code is only interesting in linking the PLUMED
+wrappers in `buildroot/src/wrapper/Plumed.c`.
 
 We can then dissect more the content of `/usr/local/lib/libplumedKernel.so`.
 This library puts together a large list of object files. The same object files will be located after install
@@ -116,18 +124,22 @@ Whereas the special flags could be found by autoconf, it seems simpler to direct
 Also notice that this library changes slighlty in the installed version (`/usr/local/lib/libplumedKernel.so`)
 and in the pre-install version (`buildroot/src/lib/libplumedKernel.so`). Indeed, whereas the former
 include the object file from `buildroot/src/config/ConfigInstall.cpp` the latter includes the object file from
-`buildroot/src/config/Config.cpp`. This object file is the one containing the hardcoded paths discussed above.
+`buildroot/src/config/Config.cpp`. This object file is the one containing the hardcoded paths discussed above,
+and thus should include different strings in the installed and pre-install versions.
 
 \section InstallationLayout-installation Installation procedure
 
-When `make` is invoked, several things are performed. First, plumed is compiled. Then, the "to be installed" versions
-of the library files are produced and located in `buildroot/src/lib/install`. These are different from
-those located in `buildroot/src/lib` in that they include the `buildroot/src/config/ConfigInstall.o` object so has
+When `make` is invoked, several things are performed. First, all the source files are compiled.
+The `plumed` executable and the library files are put in `buildroot/src/lib`.
+Then, the "to be installed" versions
+of the executable and library files are produced and located in `buildroot/src/lib/install`. These are different from
+those located in `buildroot/src/lib` in that they include the `buildroot/src/config/ConfigInstall.o` object so as
 to hardcode the proper paths.
 
 When `make install` is invoked, the makefile checks if the objects in `buildroot/src/lib/install` should be updated
-and, if necessary, recompiles them. If not, it just copy all the material in place. Notice that all the resulting
-files are real files (no symlinks). This is a novelty with respect to PLUMED 2.1.
+and, if necessary, recompiles them. If not, it just copies all the material in place. Notice that all the resulting
+files are real files (no symlinks). This is a novelty with respect to PLUMED 2.1 and allows for a proper implementation
+of the DESTDIR feature required by unix distributions.
 
 Using the standard behavior explained in the autoconf documentation, it is possible to change the paths
 for plumed install either during configure (with `--prefix`) or by setting `prefix` during `make install`.

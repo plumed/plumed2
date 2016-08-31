@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -19,9 +19,9 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "vesselbase/ActionWithVessel.h"
 #include "AdjacencyMatrixVessel.h"
 #include "AdjacencyMatrixBase.h" 
+#include "vesselbase/ActionWithVessel.h"
 
 namespace PLMD {
 namespace adjmat {
@@ -59,21 +59,19 @@ unsigned AdjacencyMatrixVessel::getNumberOfColumns() const {
   return function->ablocks[1].size();
 }
 
-unsigned AdjacencyMatrixVessel::getNumberOfStoredValues() const {
-  if( symmetric ){ unsigned nnodes=function->ablocks[0].size(); return 0.5*nnodes*(nnodes-1); }
-  return function->ablocks[0].size()*function->ablocks[1].size();
+bool AdjacencyMatrixVessel::matrixElementIsActive( const unsigned& ielem, const unsigned& jelem ) const {
+  return StoreDataVessel::storedValueIsActive( getStoreIndexFromMatrixIndices( ielem, jelem ) );
 }
 
 unsigned AdjacencyMatrixVessel::getStoreIndexFromMatrixIndices( const unsigned& ielem, const unsigned& jelem ) const {
-  if( !symmetric ) return (function->ablocks[1].size())*ielem + jelem;
+  if( !symmetric && !hbonds ) return (function->ablocks[1].size())*ielem + jelem;
+  if( !symmetric ){
+     plumed_dbg_assert( ielem!=jelem );
+     if( jelem<ielem ) return (function->ablocks[1].size()-1)*ielem + jelem;
+     return (function->ablocks[1].size()-1)*ielem + jelem - 1; 
+  }
   if( ielem>jelem ) return 0.5*ielem*(ielem-1)+jelem;
-  return 0.5*jelem*(jelem-1) + ielem;
-}
-
-unsigned AdjacencyMatrixVessel::getStoreIndex( const unsigned& myelem ) const {
-  unsigned ielem, jelem;
-  getMatrixIndices( myelem, ielem, jelem );
-  return getStoreIndexFromMatrixIndices( ielem, jelem );
+  return 0.5*jelem*(jelem-1) + ielem; 
 }
 
 AdjacencyMatrixBase* AdjacencyMatrixVessel::getMatrixAction() {
@@ -90,14 +88,14 @@ void AdjacencyMatrixVessel::retrieveMatrix( DynamicList<unsigned>& myactive_elem
   unsigned vin; double df;
   myactive_elements.deactivateAll(); std::vector<double> vals( getNumberOfComponents() ); 
   for(unsigned i=0;i<getNumberOfStoredValues();++i){
-      // Ignore any non active members
-      if( !storedValueIsActive(i) ) continue ;
-      myactive_elements.activate(i);
-      unsigned j, k; getMatrixIndices( i, k, j );
-      retrieveValue( i, false, vals );
+      retrieveSequentialValue( i, false, vals );
+      if( vals[0]<epsilon ) continue ;
 
-      if( symmetric ) mymatrix(k,j)=mymatrix(j,k)=function->transformStoredValues( vals, vin, df );      
-      else mymatrix(k,j)=function->transformStoredValues( vals, vin, df );                                 
+      myactive_elements.activate(i);
+      unsigned j, k; getMatrixIndices( function->getPositionInFullTaskList(i), k, j );
+
+      if( symmetric ) mymatrix(k,j)=mymatrix(j,k)=vals[0]*function->transformStoredValues( vals, vin, df );
+      else mymatrix(k,j)=vals[0]*function->transformStoredValues( vals, vin, df );
   }
   myactive_elements.updateActiveMembers();  
 }
@@ -110,13 +108,13 @@ void AdjacencyMatrixVessel::retrieveAdjacencyLists( std::vector<unsigned>& nneig
   // And set up the adjacency list
   std::vector<double> myvals( getNumberOfComponents() );
   for(unsigned i=0;i<getNumberOfStoredValues();++i){
-      // Ignore any non active members
-      if( !storedValueIsActive(i) ) continue ;
       // Check if atoms are connected 
-      retrieveValue( i, false, myvals );
-      unsigned j, k; getMatrixIndices( i, k, j ); 
-      if( !function->checkForConnection( myvals ) ) continue ;       
-      
+      retrieveSequentialValue( i, false, myvals );
+      if( myvals[0]<epsilon || !function->checkForConnection( myvals ) ) continue ; 
+
+      unsigned j, k; getMatrixIndices( function->getPositionInFullTaskList(i), k, j ); 
+
+      if( nneigh[j]>=adj_list.ncols() || nneigh[k]>=adj_list.ncols() ) error("adjacency lists are not large enough, increase maxconnections"); 
       // Store if atoms are connected
       // unsigned j, k; getMatrixIndices( i, k, j );
       adj_list(k,nneigh[k])=j; nneigh[k]++;
@@ -127,23 +125,32 @@ void AdjacencyMatrixVessel::retrieveAdjacencyLists( std::vector<unsigned>& nneig
 void AdjacencyMatrixVessel::retrieveEdgeList( unsigned& nedge, std::vector<std::pair<unsigned,unsigned> >& edge_list ){
   plumed_dbg_assert( undirectedGraph() ); nedge=0;
   std::vector<double> myvals( getNumberOfComponents() );
-  for(unsigned i=0;i<getNumberOfStoredValues();++i){
-      // Ignore any non active members
-      if( !storedValueIsActive(i) ) continue ;
-      // Check if atoms are connected 
-      retrieveValue( i, false, myvals );
-      if( !function->checkForConnection( myvals ) ) continue ;
+  if( getNumberOfStoredValues()>edge_list.size() ) error("adjacency lists are not large enough, increase maxconnections");
 
-      getMatrixIndices( i, edge_list[nedge].first, edge_list[nedge].second );
+  for(unsigned i=0;i<getNumberOfStoredValues();++i){
+      // Check if atoms are connected 
+      retrieveSequentialValue( i, false, myvals );
+      if( myvals[0]<epsilon || !function->checkForConnection( myvals ) ) continue ;
+
+      getMatrixIndices( function->getPositionInFullTaskList(i), edge_list[nedge].first, edge_list[nedge].second );
       nedge++;
   }
+}
+
+bool AdjacencyMatrixVessel::nodesAreConnected( const unsigned& iatom, const unsigned& jatom ) const {
+  if( !matrixElementIsActive( iatom, jatom ) ) return false;
+  unsigned ind=getStoreIndexFromMatrixIndices( iatom, jatom );
+
+  std::vector<double> myvals( getNumberOfComponents() ); 
+  retrieveValueWithIndex( ind, false, myvals );
+  return ( myvals[0]>epsilon && function->checkForConnection( myvals ) );
 }
 
 void AdjacencyMatrixVessel::retrieveDerivatives( const unsigned& myelem, const bool& normed, MultiValue& myvals ){
   StoreDataVessel::retrieveDerivatives( myelem, normed, myvals );
   if( !function->weightHasDerivatives ) return ;
 
-  unsigned vi; std::vector<double> vals( getNumberOfComponents() ); retrieveValue( myelem, normed, vals ); 
+  unsigned vi; std::vector<double> vals( getNumberOfComponents() ); retrieveValueWithIndex( myelem, normed, vals ); 
   double df, max=function->transformStoredValues( vals, vi, df );
 
   double pref = max/(vals[0]*vals[0]);
@@ -155,6 +162,10 @@ void AdjacencyMatrixVessel::retrieveDerivatives( const unsigned& myelem, const b
 
 void AdjacencyMatrixVessel::recalculateStoredQuantity( const unsigned& myelem, MultiValue& myvals ){
   function->recalculateMatrixElement( myelem, myvals );
+}
+
+double AdjacencyMatrixVessel::getCutoffForConnection() const {
+  return function->getLinkCellCutoff();
 }
 
 }

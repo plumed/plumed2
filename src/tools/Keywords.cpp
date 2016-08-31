@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -173,7 +173,7 @@ void Keywords::reset_style( const std::string & k, const std::string & style ){
 }
 
 void Keywords::add( const std::string & t, const std::string & k, const std::string & d ){
-  plumed_assert( !exists(k) && t!="flag" && !reserved(k) && t!="vessel" );  
+  plumed_massert( !exists(k) && t!="flag" && !reserved(k) && t!="vessel" , "keyword " + k + " has already been registered");  
   std::string fd;
   if( t=="numbered" ){
      fd=d + " You can use multiple instances of this keyword i.e. " + k +"1, " + k + "2, " + k + "3...";
@@ -211,15 +211,21 @@ void Keywords::addFlag( const std::string & k, const bool def, const std::string
 } 
 
 void Keywords::remove( const std::string & k ){
-  bool found=false; unsigned j=0;
+  bool found=false; unsigned j=0, n=0;
 
   while(true){
     for(j=0;j<keys.size();j++) if(keys[j]==k)break;
+    for(n=0;n<reserved_keys.size();n++) if(reserved_keys[n]==k)break;
     if(j<keys.size()){
       keys.erase(keys.begin()+j);
       found=true;
+    } else if(n<reserved_keys.size()){
+      reserved_keys.erase(reserved_keys.begin()+n);
+      found=true;
     } else break;
   }
+  // Delete documentation, type and so on from the description
+  types.erase(k); documentation.erase(k); allowmultiple.erase(k); booldefs.erase(k); numdefs.erase(k);
   plumed_massert(found,"You are trying to forbid " + k + " a keyword that isn't there"); // You have tried to forbid a keyword that isn't there
 }
 
@@ -298,6 +304,19 @@ void Keywords::print_template(const std::string& actionname, bool include_option
      }
   }
   printf("\n");
+}
+
+void Keywords::print_vim() const {
+  for(unsigned i=0;i<keys.size();++i){
+     if( (types.find(keys[i])->second).isFlag() ){
+         printf( ",flag:%s", keys[i].c_str() );
+     } else {
+         if( allowmultiple.find(keys[i])->second ) printf(",numbered:%s",keys[i].c_str() );
+         else printf(",option:%s",keys[i].c_str() );
+     }  
+  }
+  fprintf(stdout,"\n");
+  print(stdout);
 }
 
 void Keywords::print_html() const {
@@ -411,15 +430,13 @@ void Keywords::print_html() const {
      for(unsigned i=0;i<keys.size();++i){
         if ( (types.find(keys[i])->second).isFlag() ) print_html_item( keys[i] );
      }
-     std::cout<<"\n";
+     std::cout<<"\n"; 
   }
-  std::cout<<"</table>\n\n";
   nkeys=0;
   for(unsigned i=0;i<keys.size();++i){
      if ( (types.find(keys[i])->second).isOptional() || (types.find(keys[i])->second).isVessel() ) nkeys++;
   }
   if( nkeys>0 ){
-     std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
      for(unsigned i=0;i<keys.size();++i){
         if ( (types.find(keys[i])->second).isOptional() || (types.find(keys[i])->second).isVessel() ) print_html_item( keys[i] );
      }
@@ -597,6 +614,9 @@ void Keywords::setComponentsIntroduction( const std::string& instr ){
 void Keywords::addOutputComponent( const std::string& name, const std::string& key, const std::string& descr ){
   plumed_assert( !outputComponentExists( name, false ) );
   plumed_massert( name.find("-")==std::string::npos,"dash is reseved character in component names" );
+
+  std::size_t num2=name.find_first_of("_");
+  if( num2!=std::string::npos ) plumed_massert( num2==0, "underscore is reserved character in component names that has special meaning"); 
 
   ckey.insert( std::pair<std::string,std::string>(name,key) );
   cdocs.insert( std::pair<std::string,std::string>(name,descr) );

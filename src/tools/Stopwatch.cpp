@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -106,11 +106,10 @@ const Stopwatch::Time & Stopwatch::Time::operator+=(const Time&t2){
 }
 
 Stopwatch::Watch::Watch():
-  cycles(0),running(false),paused(false) { }
+  cycles(0),running(0) { }
 
 void Stopwatch::Watch::start(){
-  plumed_assert(!running);
-  running=true;
+  running++;
   lastStart=Time::get();
 }
 
@@ -124,9 +123,10 @@ void Stopwatch::Watch::stop(){
 } 
 
 void Stopwatch::Watch::pause(){
+  plumed_assert(running>0);
+  running--;
+  if(running!=0) return;
   lap+=Time::get()-lastStart;
-  plumed_assert(running);
-  running=false;
 } 
 
 void Stopwatch::start(const std::string & name){

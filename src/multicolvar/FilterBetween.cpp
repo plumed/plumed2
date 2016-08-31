@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014,2015 The plumed team
+   Copyright (c) 2014-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -23,12 +23,111 @@
 #include "tools/HistogramBead.h"
 #include "MultiColvarFilter.h"
 
-//+PLUMEDOC MCOLVARF MFILTER_BETWEEN
+//+PLUMEDOC MTRANSFORMS MTRANSFORM_BETWEEN
 /*
-This action can be used to filter the distribution of colvar values in a multicolvar 
-so that one can compute the mean and so on for only those multicolvars within a certain range.
+This action can be useed to transform the colvar values calculated by a multicolvar using a \ref histogrambead
+
+In this action each colvar, \f$s_i\f$, calculated by multicolvar is transformed by a \ref histogrambead function that 
+is equal to one if the colvar is within a certain range and which is equal to zero otherwise.  In other words, we 
+compute:
+
+\f[
+f_i = \int_a^b K\left( \frac{s-s_i}{w} \right)
+\f]
+
+where \f$a, b\f$ and \f$w\f$ are parameters.  
+
+It is important to understand the distinction between what is done here and what is done by \ref MFILTER_BETWEEN.  
+In \ref MFILTER_BETWEEN a weight, \f$w_i\f$ for the colvar is calculated using the \ref histogrambead.  If one calculates the
+MEAN for \ref MFILTER_BETWEEN one is thus calculating:
+
+\f[
+\mu = \frac{ \sum_i f_i s_i }{ \sum_i f_i}
+\f]
+
+In this action by contrast the colvar is being transformed by the \ref histogram bead.  If one thus calculates a MEAN for 
+thia action one computes:
+
+\f[
+\mu = \frac{ \sum_{i=1}^N f_i }{ N } 
+\f]
+
+In other words, you are calculating the mean for the transformed colvar.
 
 \par Examples
+
+The following input gives an example of how a MTRANSFORM_BETWEEN action can be used to duplicate 
+functionality that is elsehwere in PLUMED. 
+
+\verbatim
+DISTANCES ...
+ GROUPA=1-10 GROUPB=11-20
+ LABEL=d1
+... DISTANCES
+MTRANSFORM_BETWEEN DATA=d1 LOWER=1.0 UPPER=2.0 SMEAR=0.5  
+\endverbatim
+
+In this case you can achieve the same result by using:
+
+\verbatim
+DISTANCES ...
+ GROUPA=1-10 GROUPB=11-20 
+ BETWEEN={GAUSSIAN LOWER=1.0 UPPER=2.0} 
+... DISTANCES
+\endverbatim
+(see \ref DISTANCES)
+
+The advantage of MTRANSFORM_BETWEEN comes, however, if you want to use transformed colvars as input
+for \ref MULTICOLVARDENS 
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC MFILTERS MFILTER_BETWEEN
+/*
+This action can be used to filter the colvar values calculated by a multicolvar 
+so that one can compute the mean and so on for only those multicolvars within a certain range.
+
+This action can be used to create a dynamic group of atom based on the value of a multicolvar.
+In this action a multicolvar is within the dynamic group if its value lies in a particular range.
+In practise a weight, \f$w_i\f$  is ascribed to each colvar, \f$s_i\f$ calculated by a multicolvar
+and this weight measures the degree to which a colvar is a member of the group.  This weight is 
+calculated using a \ref histogrambead so it is given by:
+
+\f[
+w_i = \int_a^b K\left( \frac{s - s_i}{w} \right)
+\f]
+
+where \f$a, b\f$ and \f$w\f$ are parameters.  If one calculates a function of the set of multicolvars
+these weights are included in the calculation.  As such if one calculates the MEAN, $f\mu\f$ of a filtered 
+multicolvar what is computed is the following:
+
+\f[
+\mu = \frac{ \sum_i w_i s_i }{ \sum_i w_i}
+\f]
+
+One is thus calculating the mean for those colvars that are within the range of interest.
+
+\par Examples
+
+The example shown below calculates the mean for those distances that are between 0 and 3 nm in length
+
+\verbatim
+DISTANCES GROUPA=1 GROUPB=2-50 MEAN LABEL=d1
+MFILTER_BETWEEN DATA=d1 LOWER=0 UPPER=3.0 SMEAR=0.0001 MEAN LABEL=d4
+\endverbatim
+
+More complicated things can be done by using the label of a filter as input to a new multicolvar as shown 
+in the example below.  Here the coordination numbers of all atoms are computed.  The atoms with a coordination 
+number between 4 and 6 are then identified using the filter.  This reduced list of atoms is then used as input
+to a second coordination number calculation.  This second coordination number thus measures the number of atoms 
+4-6 coordinated atoms each of the 4-6 coordination atoms is bound to.
+
+\verbatim
+c1: COORDINATIONNUMBER SPECIES=1-150 SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0}
+cf: MFILTER_BETWEEN DATA=c1 LOWER=4 UPPER=6 SMEAR=0.5 LOWMEM
+c2: COORDINATIONNUMBER SPECIES=cf SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0} MORE_THAN={RATIONAL D_0=2.0 R_0=0.1}
+\endverbatim
 
 */
 //+ENDPLUMEDOC
@@ -46,6 +145,7 @@ public:
 }; 
 
 PLUMED_REGISTER_ACTION(FilterBetween,"MFILTER_BETWEEN")
+PLUMED_REGISTER_ACTION(FilterBetween,"MTRANSFORM_BETWEEN")
 
 void FilterBetween::registerKeywords( Keywords& keys ){
   MultiColvarFilter::registerKeywords( keys );

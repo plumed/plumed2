@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -43,7 +43,7 @@ namespace PLMD
 {
 namespace generic{
 
-//+PLUMEDOC ANALYSIS DUMPATOMS
+//+PLUMEDOC PRINTANALYSIS DUMPATOMS
 /*
 Dump selected atoms on a file.
 
@@ -208,9 +208,9 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
   of.link(*this);
   of.open(file);
   std::string path=of.getPath();
-  std::string mode=of.getMode();
   log<<"  Writing on file "<<path<<"\n";
 #ifdef __PLUMED_HAS_XDRFILE
+  std::string mode=of.getMode();
   if(type=="xtc"){
     of.close();
     xd=xdrfile_open(path.c_str(),mode.c_str());

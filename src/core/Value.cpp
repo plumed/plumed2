@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -79,8 +79,9 @@ bool Value::isPeriodic()const{
 
 bool Value::applyForce(std::vector<double>& forces ) const {
   if( !hasForce ) return false;
-  plumed_massert( derivatives.size()==forces.size()," forces array has wrong size" );
-  for(unsigned i=0;i<derivatives.size();++i) forces[i]=inputForce*derivatives[i]; 
+  plumed_dbg_massert( derivatives.size()==forces.size()," forces array has wrong size" );
+  const unsigned N=derivatives.size();
+  for(unsigned i=0;i<N;++i) forces[i]=inputForce*derivatives[i]; 
   return true;
 }
 
@@ -179,10 +180,3 @@ void add( const Value& val1, Value* val2 ){
 }
 
 }
-
-
-
-
-
-
-

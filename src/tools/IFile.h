@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -55,6 +55,8 @@ public virtual FileBase{
   bool inMiddleOfField;
 /// Set to true if you want to allow fields to be ignored in the read in file
   bool ignoreFields;
+/// Set to true to allow files without end-of-line at the end
+  bool noEOL;
 /// Advance to next field (= read one line)
   IFile& advanceField();
 /// Find field index by name
@@ -93,6 +95,10 @@ Typically used as
   IFile& scanField(Value* val);
 /// Allow some of the fields in the input to be ignored
   void allowIgnoredFields();
+/// Allow files without EOL at the end.
+/// This in practice should be only used when opening
+/// plumed input files
+  void allowNoEOL();
 };
 
 }

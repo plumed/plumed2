@@ -1,0 +1,27 @@
+# Calculate coordination numbers
+c1: COORDINATIONNUMBER SPECIES=1-512 SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0}
+# Select coordination numbers that are more than 2.0
+cf: MFILTER_MORE DATA=c1 SWITCH={RATIONAL D_0=2.0 R_0=0.1} LOWMEM 
+# Build a contact matrix
+mat: CONTACT_MATRIX ATOMS=cf SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0} 
+# Find largest cluster
+dfs: DFSCLUSTERING MATRIX=mat
+clust1: CLUSTER_PROPERTIES CLUSTERS=dfs CLUSTER=1 
+nat: CLUSTER_NATOMS CLUSTERS=dfs CLUSTER=1
+
+PRINT ARG=nat FILE=colvar
+
+# Find center of largest cluster
+trans1: MTRANSFORM_MORE DATA=clust1 SWITCH={RATIONAL D_0=2.0 R_0=0.1} LOWMEM
+cent: CENTER_OF_MULTICOLVAR DATA=trans1
+
+# Dumpmulticolvar with origin at center 
+DUMPMULTICOLVAR DATA=trans1 ORIGIN=cent FILE=multicolvar.xyz UNITS=A
+
+# Calculate the density of the dnesity of the multicolvar
+dens: MULTICOLVARDENS DATA=trans1 ORIGIN=cent DIR=xyz NBINS=30,30,30 BANDWIDTH=2.0,2.0,2.0
+# 
+# Print the cube and find a contour
+DUMPCUBE GRID=dens FILE=dens.cube
+FIND_SPHERICAL_CONTOUR GRID=dens CONTOUR=0.85 INNER_RADIUS=10.0 OUTER_RADIUS=40.0 FILE=mysurface.xyz UNITS=A PRECISION=4 NPOINTS=100
+# FIND_CONTOUR GRID=dens CONTOUR=250.0 USE_ALL_DATA FILE=surface.xyz PRECISION=4 UNITS=A 

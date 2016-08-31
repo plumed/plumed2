@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -26,8 +26,20 @@
 #include "tools/Communicator.h"
 #include <sstream>
 
+#include "GREXEnum.inc"
+
 using namespace std;
 namespace PLMD{
+
+std::map<std::string, int> & GREXWordMap(){
+  static std::map<std::string, int> word_map;
+  static bool init=false;
+  if(!init){
+#include "GREXMap.inc"
+  }
+  init=true;
+  return word_map;
+}
 
 GREX::GREX(PlumedMain&p):
   initialized(false),
@@ -52,101 +64,128 @@ GREX::~GREX(){
 
 #define CHECK_INIT(ini,word) plumed_massert(ini,"cmd(\"" + word +"\") should be only used after GREX initialization")
 #define CHECK_NOTINIT(ini,word) plumed_massert(!(ini),"cmd(\"" + word +"\") should be only used before GREX initialization")
-#define CHECK_NULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"GREX " + word + "\")");
+#define CHECK_NOTNULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"GREX " + word + "\")");
 
 void GREX::cmd(const string&key,void*val){
-  if(false){
-  }else if(key=="initialized"){
-    CHECK_NULL(val,key);
-    *static_cast<int*>(val)=initialized;
-  }else if(key=="setMPIIntracomm"){
-    CHECK_NOTINIT(initialized,key);
-    intracomm.Set_comm(val);
-  }else if(key=="setMPIIntercomm"){
-    CHECK_NOTINIT(initialized,key);
-    intercomm.Set_comm(val);
-    plumedMain.multi_sim_comm.Set_comm(val);
-  }else if(key=="setMPIFIntracomm"){
-    CHECK_NOTINIT(initialized,key);
-    intracomm.Set_fcomm(val);
-  }else if(key=="setMPIFIntercomm"){
-    CHECK_NOTINIT(initialized,key);
-    intercomm.Set_fcomm(val);
-    plumedMain.multi_sim_comm.Set_fcomm(val);
-  }else if(key=="init"){
-    CHECK_NOTINIT(initialized,key);
-    initialized=true;
-    std::string s;
+  std::vector<std::string> words=Tools::getWords(key);
+  unsigned nw=words.size();
+  if(nw==0){
+    // do nothing
+  } else {
+    int iword=-1;
+    std::map<std::string, int>::const_iterator it=GREXWordMap().find(words[0]);
+    if(it!=GREXWordMap().end()) iword=it->second;
+    switch(iword){
+    case cmd_initialized:
+      CHECK_NOTNULL(val,key);
+      *static_cast<int*>(val)=initialized;
+      break;
+    case cmd_setMPIIntracomm:
+      CHECK_NOTINIT(initialized,key);
+      intracomm.Set_comm(val);
+      break;
+    case cmd_setMPIIntercomm:
+      CHECK_NOTINIT(initialized,key);
+      intercomm.Set_comm(val);
+      plumedMain.multi_sim_comm.Set_comm(val);
+      break;
+    case cmd_setMPIFIntracomm:
+      CHECK_NOTINIT(initialized,key);
+      intracomm.Set_fcomm(val);
+      break;
+    case cmd_setMPIFIntercomm:
+      CHECK_NOTINIT(initialized,key);
+      intercomm.Set_fcomm(val);
+      plumedMain.multi_sim_comm.Set_fcomm(val);
+      break;
+    case cmd_init:
+      CHECK_NOTINIT(initialized,key);
+      initialized=true;
 // note that for PEs!=root this is automatically 0 (comm defaults to MPI_COMM_SELF)
-    myreplica=intercomm.Get_rank();
-    intracomm.Sum(myreplica);
-    Tools::convert(myreplica,s);
-    plumedMain.setSuffix("."+s);
-  }else if(key=="prepare"){
-    CHECK_INIT(initialized,key);
-    if(intracomm.Get_rank()==0) return;
-    intracomm.Bcast(partner,0);
-    calculate();
-  }else if(key=="setPartner"){
-    CHECK_INIT(initialized,key);
-    partner=*static_cast<int*>(val);
-  }else if(key=="savePositions"){
-    CHECK_INIT(initialized,key);
-    savePositions();
-  }else if(key=="calculate"){
-    CHECK_INIT(initialized,key);
-    if(intracomm.Get_rank()!=0) return;
-    intracomm.Bcast(partner,0);
-    calculate();
-  }else if(key=="getLocalDeltaBias"){
-    CHECK_INIT(initialized,key);
-    CHECK_NULL(val,key);
-    double x=localDeltaBias/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
-    atoms.double2MD(x,val);
-  }else if(key=="cacheLocalUNow"){
-    CHECK_INIT(initialized,key);
-    CHECK_NULL(val,key);
-    double x;
-    atoms.MD2double(val,x);
-    localUNow=x*(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
-    intracomm.Sum(localUNow);
-  }else if(key=="cacheLocalUSwap"){
-    CHECK_INIT(initialized,key);
-    CHECK_NULL(val,key);
-    double x;
-    atoms.MD2double(val,x);
-    localUSwap=x*(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
-    intracomm.Sum(localUSwap);
-  }else if(key=="getForeignDeltaBias"){
-    CHECK_INIT(initialized,key);
-    CHECK_NULL(val,key);
-    double x=foreignDeltaBias/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
-    atoms.double2MD(x,val);
-  }else if(key=="shareAllDeltaBias"){
-    CHECK_INIT(initialized,key);
-    if(intracomm.Get_rank()!=0) return;
-    allDeltaBias.assign(intercomm.Get_size(),0.0);
-    allDeltaBias[intercomm.Get_rank()]=localDeltaBias;
-    intercomm.Sum(allDeltaBias);
-  }else{
-// multi word commands
-     std::vector<std::string> words=Tools::getWords(key);
-     int nw=words.size();
-     if(false){
-     } else if(nw==2 && words[0]=="getDeltaBias"){
-       CHECK_INIT(initialized,key);
-       CHECK_NULL(val,key);
-       plumed_massert(allDeltaBias.size()==static_cast<unsigned>(intercomm.Get_size()),
-           "to retrieve bias with cmd(\"GREX getDeltaBias\"), first share it with cmd(\"GREX shareAllDeltaBias\")");
-       unsigned rep;
-       Tools::convert(words[1],rep);
-       plumed_massert(rep<allDeltaBias.size(),"replica index passed to cmd(\"GREX getDeltaBias\") is out of range");
-       double d=allDeltaBias[rep]/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
-       atoms.double2MD(d,val);
-     } else{
-       plumed_merror("cannot interpret cmd(\"GREX " + key + "\"). check plumed developers manual to see the available commands.");
-     };
-  };
+      myreplica=intercomm.Get_rank();
+      intracomm.Sum(myreplica);
+      {
+        std::string s;
+        Tools::convert(myreplica,s);
+        plumedMain.setSuffix("."+s);
+      }
+      break;
+    case cmd_prepare:
+      CHECK_INIT(initialized,key);
+      if(intracomm.Get_rank()==0) return;
+      intracomm.Bcast(partner,0);
+      calculate();
+      break;
+    case cmd_setPartner:
+      CHECK_INIT(initialized,key);
+      partner=*static_cast<int*>(val);
+      break;
+    case cmd_savePositions:
+      CHECK_INIT(initialized,key);
+      savePositions();
+      break;
+    case cmd_calculate:
+      CHECK_INIT(initialized,key);
+      if(intracomm.Get_rank()!=0) return;
+      intracomm.Bcast(partner,0);
+      calculate();
+      break;
+    case cmd_getLocalDeltaBias:
+      CHECK_INIT(initialized,key);
+      CHECK_NOTNULL(val,key);
+      atoms.double2MD(localDeltaBias/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy()),val);
+      break;
+    case cmd_cacheLocalUNow:
+      CHECK_INIT(initialized,key);
+      CHECK_NOTNULL(val,key);
+      {
+        double x;
+        atoms.MD2double(val,x);
+        localUNow=x*(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
+        intracomm.Sum(localUNow);
+      }
+      break;
+    case cmd_cacheLocalUSwap:
+      CHECK_INIT(initialized,key);
+      CHECK_NOTNULL(val,key);
+      {
+        double x;
+        atoms.MD2double(val,x);
+        localUSwap=x*(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
+        intracomm.Sum(localUSwap);
+      }
+      break;
+    case cmd_getForeignDeltaBias:
+      CHECK_INIT(initialized,key);
+      CHECK_NOTNULL(val,key);
+      atoms.double2MD(foreignDeltaBias/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy()),val);
+      break;
+    case cmd_shareAllDeltaBias:
+      CHECK_INIT(initialized,key);
+      if(intracomm.Get_rank()!=0) return;
+      allDeltaBias.assign(intercomm.Get_size(),0.0);
+      allDeltaBias[intercomm.Get_rank()]=localDeltaBias;
+      intercomm.Sum(allDeltaBias);
+      break;
+    case cmd_getDeltaBias:
+      CHECK_INIT(initialized,key);
+      CHECK_NOTNULL(val,key);
+      plumed_assert(nw==2);
+      plumed_massert(allDeltaBias.size()==static_cast<unsigned>(intercomm.Get_size()),
+        "to retrieve bias with cmd(\"GREX getDeltaBias\"), first share it with cmd(\"GREX shareAllDeltaBias\")");
+      {
+        unsigned rep;
+        Tools::convert(words[1],rep);
+        plumed_massert(rep<allDeltaBias.size(),"replica index passed to cmd(\"GREX getDeltaBias\") is out of range");
+        double d=allDeltaBias[rep]/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
+        atoms.double2MD(d,val);
+      }
+      break;
+    default:
+      plumed_merror("cannot interpret cmd(\" GREX" + key + "\"). check plumed developers manual to see the available commands.");
+      break;
+    }
+  }
 }
 
 void GREX::savePositions(){

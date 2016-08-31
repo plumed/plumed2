@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -30,9 +30,21 @@ using namespace std;
 namespace PLMD{
 namespace generic{
 
-//+PLUMEDOC ANALYSIS DUMPPROJECTIONS
+//+PLUMEDOC PRINTANALYSIS DUMPPROJECTIONS
 /*
 Dump the derivatives with respect to the input parameters for one or more objects (generally CVs, functions or biases).
+
+\par Examples
+
+Compute the distance between two groups and write on a file the
+derivatives of this distance with respect to all the atoms of the two groups
+
+\verbatim
+x1: CENTER ATOMS=1-10
+x2: CENTER ATOMS=11-20
+d: DISTANCE ATOMS=x1,x2
+DUMPPROJECTIONS ARG=d FILE=proj STRIDE=20
+\endverbatim
 
 */
 //+ENDPLUMEDOC

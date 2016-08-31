@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -135,8 +135,6 @@ void MovingRestraint::registerKeywords( Keywords& keys ){
                               "parameter is linearly interpolated.  If no KAPPAx is specified for STEPx then the values of KAPPAx "
                               "are kept constant during the interval of time between STEPx-1 and STEPx.");
   keys.reset_style("KAPPA","compulsory");
-  componentsAreNotOptional(keys);
-  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
   keys.addOutputComponent("work","default","the total work performed changing this restraint");
   keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
   keys.addOutputComponent("_cntr","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
@@ -187,7 +185,6 @@ verse(getNumberOfArguments())
     log.printf("\n");
   };
 
-  addComponent("bias"); componentIsNotPeriodic("bias");
   addComponent("force2"); componentIsNotPeriodic("force2");
 
   // add the centers of the restraint as additional components that can be retrieved (useful for debug)
@@ -258,7 +255,7 @@ void MovingRestraint::calculate(){
   oldaa=aa;
   oldk=kk;
   olddpotdk=dpotdk;
-  getPntrToComponent("bias")->set(ene);
+  setBias(ene);
   getPntrToComponent("force2")->set(totf2);
 }
 

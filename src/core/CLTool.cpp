@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -94,7 +94,7 @@ bool CLTool::readCommandLineArgs( int argc, char**argv, FILE*out ){
                if( a==thiskey ){
                    prefix=thiskey+"="; found=true;
                    inputData.insert(std::pair<std::string,std::string>(thiskey,""));
-               } else if( a.find(thiskey+"=")==0){
+               } else if(Tools::startWith(a,thiskey+"=")){
                    a.erase(0,a.find("=")+1); prefix=""; found=true;
                    if(inputData.count(thiskey)==0){
                       inputData.insert(std::pair<std::string,std::string>(thiskey,a));

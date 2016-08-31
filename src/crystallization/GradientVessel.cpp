@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014,2015 The plumed team
+   Copyright (c) 2014-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -27,7 +27,7 @@
 #include "Gradient.h"
 
 namespace PLMD {
-namespace crystallisation {
+namespace crystallization {
 
 class GradientVessel : public vesselbase::FunctionVessel {
 private:
@@ -40,7 +40,7 @@ public:
   explicit GradientVessel( const vesselbase::VesselOptions& da );
   std::string value_descriptor();
   void resize();
-  bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
+  void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
   void finish( const std::vector<double>& buffer );
 };
 
@@ -98,7 +98,7 @@ void GradientVessel::resize(){
   }
 }
 
-bool GradientVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
+void GradientVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
   unsigned nder;
   if( getAction()->derivativesAreRequired() ) nder=getAction()->getNumberOfDerivatives();
   else nder=0;
@@ -116,8 +116,6 @@ bool GradientVessel::calculate( const unsigned& current, MultiValue& myvals, std
           myvals.chainRule( wstart + iw, xx + 1 + jc, 1, 0, colvar, bufstart, buffer );
       }
   }
-
-  return true;
 }
 
 void GradientVessel::finish( const std::vector<double>& buffer ){

@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -91,7 +91,7 @@ private:
 /// Vector that stores max eigenvector
   std::vector< std::pair<double,int> > maxeig;
 /// Adjacency matrix
-  Matrix<double> mymatrix;
+  Matrix<double> thematrix;
 /// Matrix that stores eigenvectors
   Matrix<double> eigenvecs;
 public:
@@ -103,8 +103,6 @@ public:
   void calculate();
 /// Sprint needs its only apply routine as it creates values
   void apply();
-/// This does nothing
-  void performTask( const unsigned& , const unsigned& , MultiValue& ) const {}
 };
 
 PLUMED_REGISTER_ACTION(Sprint,"SPRINT")
@@ -122,7 +120,7 @@ Action(ao),
 ActionWithInputMatrix(ao),
 eigvals( getNumberOfNodes() ),
 maxeig( getNumberOfNodes() ),
-mymatrix( getNumberOfNodes(), getNumberOfNodes() ),
+thematrix( getNumberOfNodes(), getNumberOfNodes() ),
 eigenvecs( getNumberOfNodes(), getNumberOfNodes() )
 {
    // Check on setup
@@ -134,6 +132,7 @@ eigenvecs( getNumberOfNodes(), getNumberOfNodes() )
    // }
 
    if( !getAdjacencyVessel()->isSymmetric() ) error("input contact matrix is not symmetric");
+   std::vector<AtomNumber> fake_atoms; setupMultiColvarBase( fake_atoms );
 
    // Create all the values
    sqrtn = sqrt( static_cast<double>( getNumberOfNodes() ) );
@@ -151,9 +150,9 @@ eigenvecs( getNumberOfNodes(), getNumberOfNodes() )
 
 void Sprint::calculate(){
    // Get the adjacency matrix
-   getAdjacencyVessel()->retrieveMatrix( active_elements, mymatrix ); 
+   getAdjacencyVessel()->retrieveMatrix( active_elements, thematrix ); 
    // Diagonalize it
-   diagMat( mymatrix, eigvals, eigenvecs );
+   diagMat( thematrix, eigvals, eigenvecs );
    // Get the maximum eigevalue
    double lambda = eigvals[ getNumberOfNodes()-1 ];
    // Get the corresponding eigenvector

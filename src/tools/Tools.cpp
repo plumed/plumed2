@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -19,13 +19,13 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include <iostream>
 #include "Tools.h"
 #include "AtomNumber.h"
 #include "Exception.h"
 #include "IFile.h"
 #include <cstring>
 #include <dirent.h>
+#include <iostream>
 
 using namespace std;
 namespace PLMD{
@@ -321,5 +321,10 @@ std::string Tools::extension(const std::string&s){
   }
   return ext;
 }
+
+bool Tools::startWith(const std::string & full,const std::string &start){
+  return (full.substr(0,start.length())==start);
+}
+
 
 }

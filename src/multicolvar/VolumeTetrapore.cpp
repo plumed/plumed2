@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014,2015 The plumed team
+   Copyright (c) 2014-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -26,8 +26,87 @@
 #include "tools/Pbc.h"
 #include "ActionVolume.h"
 
-//+PLUMEDOC MCOLVARF TETRAHEDRALPORE 
+//+PLUMEDOC VOLUMES TETRAHEDRALPORE 
 /*
+This quantity can be used to calculate functions of the distribution of collective variables
+for the atoms lie that lie in a box defined by the positions of four atoms at the corners of a tetrahedron.
+
+Each of the base quantities calculated by a multicolvar can can be assigned to a particular point in three 
+dimensional space. For example, if we have the coordination numbers for all the atoms in the
+system each coordination number can be assumed to lie on the position of the central atom. 
+Because each base quantity can be assigned to a particular point in space we can calculate functions of the
+distribution of base quantities in a particular part of the box by using:
+
+\f[
+\overline{s}_{\tau} = \frac{ \sum_i f(s_i) w(u_i,v_i,w_i) }{ \sum_i w(u_i,v_i,w_i) }  
+\f]  
+
+where the sum is over the collective variables, \f$s_i\f$, each of which can be thought to be at \f$ (u_i,v_i,z_i)\f$.
+The function \f$(s_i)\f$ can be any of the usual LESS_THAN, MORE_THAN, WITHIN etc that are used in all other multicolvars.
+Notice that here (at variance with what is done in \ref AROUND) we have transformed from the usual \f$(x_i,y_i,z_i)\f$ 
+position to a position in \f$ (u_i,v_i,z_i)\f$.  This is done using a rotation matrix as follows:
+
+\f[
+\left(
+\begin{matrix}
+ u_i \\
+ v_i \\
+ w_i
+\end{matrix}
+\right) = \mathbf{R}
+\left(
+\begin{matrix}
+ x_i - x_o \\
+ y_i - y_o \\
+ z_i - z_o
+\end{matrix}
+\right)
+\f]
+
+where \f$\mathbf{R}\f$ is a rotation matrix that is calculated by constructing a set of three orthonormal vectors from the 
+refererence positions specified by the user.  Initially unit vectors are found by calculating the bisector, \f$\mathbf{b}\f$, and 
+cross product, \f$\mathbf{c}\f$, of the vectors connecting atoms 1 and 2.  A third unit vector, \f$\mathbf{p}\f$ is then found by taking the cross 
+product between the cross product calculated during the first step, \f$\mathbf{c}\f$ and the bisector, \f$\mathbf{b}\f$.  From this 
+second cross product \f$\mathbf{p}\f$ and the bisector \f$\mathbf{b}\f$ two new vectors are calculated using:
+
+\f[
+v_1 = \cos\left(\frac{\pi}{4}\right)\mathbf{b} + \sin\left(\frac{\pi}{4}\right)\mathbf{p} \qquad \textrm{and} \qquad
+v_2 = \cos\left(\frac{\pi}{4}\right)\mathbf{b} - \sin\left(\frac{\pi}{4}\right)\mathbf{p}
+\f]
+
+In the previous function \f$ w(u_i,v_i,w_i) \f$ measures whether or not the system is in the subregion of interest. It
+is equal to:
+
+\f[
+w(u_i,v_i,w_i) = \int_{0}^{u'} \int_{0}^{v'} \int_{0}^{w'} \textrm{d}u\textrm{d}v\textrm{d}w 
+   K\left( \frac{u - u_i}{\sigma} \right)K\left( \frac{v - v_i}{\sigma} \right)K\left( \frac{w - w_i}{\sigma} \right) 
+\f]
+
+where \f$K\f$ is one of the kernel functions described on \ref histogrambead and \f$\sigma\f$ is a bandwidth parameter. 
+The values of \f$u'\f$ and \f$v'\f$ are found by finding the projections of the vectors connecting atoms 1 and 2 and 1 
+and 3 \f$v_1\f$ and \f$v_2\f$.  This gives four projections: the largest two projections are used in the remainder of 
+the calculations.  \f$w'\f$ is calculated by taking the projection of the vector connecting atoms 1 and 4 on the vector
+\f$\mathbf{c}\f$.  Notice that the manner by which this box is constructed differs from the way this is done in \ref CAVITY.
+This is in fact the only point of difference between these two actions.
+
+\par Examples
+
+The following commands tell plumed to calculate the number of atom inside a tetrahedral cavity.  The extent of the tetrahedral
+cavity is calculated from the positions of atoms 1, 4, 5, and 11,  The final value will be labeled cav.
+
+\verbatim
+d1: DENSITY SPECIES=20-500 
+TETRAHEDRALPORE DATA=d1 ATOMS=1,4,5,11 SIGMA=0.1 LABEL=cav
+\endverbatim
+
+The following command tells plumed to calculate the coordination numbers (with other water molecules) for the water 
+molecules in the tetrahedral cavity described above.  The average coordination number and the number of coordination
+numbers more than 4 is then calculated.  The values of these two quantities are given the labels cav.mean and cav.morethan
+
+\verbatim
+d1: COORDINATIONNUMBER SPECIES=20-500
+CAVITY DATA=d1 ATOMS=1,4,5,11 SIGMA=0.1 MEAN MORE_THAN={RATIONAL R_0=4} LABEL=cav
+\endverbatim
 
 */
 //+ENDPLUMEDOC
@@ -132,15 +211,18 @@ void VolumeTetrapore::setupRegions(){
   // bi = d1 / d1l; len_bi=dotProduct( d3, bi );
   cross = crossProduct( d1, d2 ); double crossmod=cross.modulo(); 
   cross = cross / crossmod; len_cross=dotProduct( d3, cross );
-  Vector truep = crossProduct( cross, bisector ); // len_perp=dotProduct( d3, perp );
+  Vector truep = crossProduct( cross, bisector ); 
 
   // These are our true vectors 45 degrees from bisector
   bi = cos(pi/4.0)*bisector + sin(pi/4.0)*truep;
   perp = cos(pi/4.0)*bisector - sin(pi/4.0)*truep; 
 
   // And the lengths of the various parts average distance to opposite corners of tetetrahedron
-  len_bi=0.5*dotProduct( d1, bi )+0.5*dotProduct( d2, bi); 
-  len_perp=0.5*dotProduct( d1, perp ) + 0.5*dotProduct( d2, perp );
+  len_bi = dotProduct( d1, bi ); double len_bi2 = dotProduct( d2, bi ); unsigned lbi=1;
+  if( len_bi2>len_bi ){ len_bi=len_bi2; lbi=2; }
+  len_perp = dotProduct( d1, perp ); double len_perp2 = dotProduct( d2, perp ); unsigned lpi=1;
+  if( len_perp2>len_perp ){ len_perp=len_perp2; lpi=2; }
+  plumed_assert( lbi!=lpi );
 
   Tensor tcderiv; double cmod3=crossmod*crossmod*crossmod; Vector ucross=crossmod*cross;
   tcderiv.setCol( 0, crossProduct( d1, Vector(-1.0,0.0,0.0) ) + crossProduct( Vector(-1.0,0.0,0.0), d2 ) );
@@ -224,8 +306,8 @@ void VolumeTetrapore::setupRegions(){
   dtruep[1].setCol( 2, ( crossProduct( dcross[1].getCol(2), bisector ) + crossProduct( cross, dbisector[1].getCol(2) ) ) );
 
   dtruep[2].setCol( 0, ( crossProduct( dcross[2].getCol(0), bisector ) + crossProduct( cross, dbisector[2].getCol(0) ) ) );
-  dtruep[2].setCol( 1, ( crossProduct( dcross[2].getCol(1), bisector ) + crossProduct( cross, dbisector[2].getCol(0) ) ) );
-  dtruep[2].setCol( 2, ( crossProduct( dcross[2].getCol(2), bisector ) + crossProduct( cross, dbisector[2].getCol(0) ) ) );
+  dtruep[2].setCol( 1, ( crossProduct( dcross[2].getCol(1), bisector ) + crossProduct( cross, dbisector[2].getCol(1) ) ) );
+  dtruep[2].setCol( 2, ( crossProduct( dcross[2].getCol(2), bisector ) + crossProduct( cross, dbisector[2].getCol(2) ) ) );
 
   // Now convert these to the derivatives of the true axis
   for(unsigned i=0;i<3;++i){
@@ -249,21 +331,20 @@ void VolumeTetrapore::setupRegions(){
   if( len_bi<=0 || len_cross<=0 || len_bi<=0 ) plumed_merror("Invalid box coordinates");
 
   // Now derivatives of lengths
-  Tensor dd3( Tensor::identity() ); 
-  dlbi[0] = 0.5*matmul(d1,dbi[0]) + 0.5*matmul(d2,dbi[0]) - matmul(bi,dd3);  
-  dlbi[1] = 0.5*matmul(d1,dbi[1]) + 0.5*matmul(d2,dbi[1]) + 0.5*matmul(bi,dd3);  // Derivative wrt d1
-  dlbi[2] = 0.5*matmul(d1,dbi[2]) + 0.5*matmul(d2,dbi[2]) + 0.5*matmul(bi,dd3);  // Derivative wrt d2
-  dlbi[3].zero(); 
+  Tensor dd3( Tensor::identity() ); Vector ddb2=d1; if( lbi==2 ) ddb2=d2;
+  dlbi[1].zero(); dlbi[2].zero(); dlbi[3].zero();
+  dlbi[0] = matmul(ddb2,dbi[0]) - matmul(bi,dd3);  
+  dlbi[lbi] = matmul(ddb2,dbi[lbi]) + matmul(bi,dd3);  // Derivative wrt d1
 
   dlcross[0] = matmul(d3,dcross[0]) - matmul(cross,dd3);  
   dlcross[1] = matmul(d3,dcross[1]);
   dlcross[2] = matmul(d3,dcross[2]);
   dlcross[3] = matmul(cross,dd3);
 
-  dlperp[0] = 0.5*matmul(d1,dperp[0]) + 0.5*matmul(d2,dperp[0]) - matmul(perp,dd3);  
-  dlperp[1] = 0.5*matmul(d1,dperp[1]) + 0.5*matmul(d2,dperp[1]) + 0.5*matmul(perp,dd3);
-  dlperp[2] = 0.5*matmul(d1,dperp[2]) + 0.5*matmul(d2,dperp[2]) + 0.5*matmul(perp,dd3);
-  dlperp[3].zero();
+  ddb2=d1; if( lpi==2 ) ddb2=d2; 
+  dlperp[1].zero(); dlperp[2].zero(); dlperp[3].zero();
+  dlperp[0] = matmul(ddb2,dperp[0]) - matmul( perp, dd3 );
+  dlperp[lpi] = matmul(ddb2,dperp[lpi]) + matmul(perp, dd3);
 
   // Need to calculate the jacobian
   Tensor jacob;

@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -27,31 +27,67 @@
 namespace PLMD{
 namespace config{
 
+/// Return the extension of shared libraries on this system.
+/// It is either "so" or "dylib". In case shared libraries are disabled, it returns an empty string.
 std::string getSoExt();
 
+/// Return path to the root of the PLUMED package.
 std::string getPlumedRoot();
 
+/// Return path to documentation.
+/// User documentation is located in `getPlumedHtmldir()+"/user-doc/html/index.html"`
+/// Developer documentation is located in `getPlumedHtmldir()+"/developer-doc/html/index.html"`
 std::string getPlumedHtmldir();
 
+/// Return path to the include directory.
+/// The header file for PLUMED wrapper is in `getPlumedIncludedir()+getPlumedProgramName()+"/wrapper/Plumed.h"`
 std::string getPlumedIncludedir();
 
+/// Return the name used for installing PLUMED.
+/// E.g. if PLUMED has been compiled with `./configure --program-suffix _mpi`
+/// it returns "plumed_mpi"
 std::string getPlumedProgramName();
 
+/**
+Return a string containing a sequence of environment variables.
+
+The returned string has the form:
+\verbatim
+PLUMED_ROOT=/path PLUMED_HTMLDIR=/path ... etc
+\endverbatim
+This string is used internally in PLUMED to run scripts located in plumedroot/script.
+For instance, the `patch` script can be run executing the following command:
+\verbatim
+config::getEnvCommand()+" \""+getPlumedRoot()+"\"/scripts/patch.sh";
+\endverbatim
+Notice that the getPlumedRoot() output is enclosed in escaped quotes. This
+allows this directory to have spaces in its name.
+*/
 std::string getEnvCommand();
 
+/// Return the content of `Makefile.conf` in a single string.
+/// Can be used to inspect the variables used to customize PLUMED.
+/// Notice that this reflects the content of the `Makefile.conf` file.
+/// Since some of the there defined variables can be overwritten at install
+/// (e.g., one can use `make install prefix=/new/path` to change the installation path)
+/// their values could be not faithful
 std::string getMakefile();
 
+/// Return the short PLUMED version.
+/// E.g. "2.2"
 std::string getVersion();
 
+/// Return the long PLUMED version.
+/// E.g. "2.2.3"
 std::string getVersionLong();
 
+/// Return the git PLUMED verion
+/// E.g. "c5badb091cd30"
 std::string getVersionGit();
 
 bool hasMatheval();
 
 bool hasDlopen();
-
-bool hasAlmost();
 
 bool isInstalled();
 

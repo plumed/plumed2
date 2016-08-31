@@ -8,11 +8,8 @@ dsx: MATHEVAL ARG=ds.a,ds.b,ds.c,cc.ax,cc.bx,cc.cx VAR=sa,sb,sc,ca,cb,cc FUNC=sa
 dsy: MATHEVAL ARG=ds.a,ds.b,ds.c,cc.ay,cc.by,cc.cy VAR=sa,sb,sc,ca,cb,cc FUNC=sa*ca+sb*cb+sc*cc PERIODIC=NO
 dsz: MATHEVAL ARG=ds.a,ds.b,ds.c,cc.az,cc.bz,cc.cz VAR=sa,sb,sc,ca,cb,cc FUNC=sa*ca+sb*cb+sc*cc PERIODIC=NO
 
-PRINT FILE=colvar ARG=dsx,dsy,dsz
-
 # this is to test forces
-BIASVALUE ARG=dc.x
-# this should be equivalent
-# BIASVALUE ARG=dsx
+b: BIASVALUE ARG=dc.x,dsx
 
+PRINT FILE=colvar ARG=dsx,dsy,dsz,b.*
 

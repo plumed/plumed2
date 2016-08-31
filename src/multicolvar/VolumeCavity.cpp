@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014,2015 The plumed team
+   Copyright (c) 2014-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -26,7 +26,7 @@
 #include "tools/Pbc.h"
 #include "ActionVolume.h"
 
-//+PLUMEDOC MCOLVARF CAVITY
+//+PLUMEDOC VOLUMES CAVITY
 /*
 This quantity can be used to calculate functions of the distribution of collective 
 variables for the atoms that lie in a box defined by the positions of four atoms.
@@ -42,6 +42,7 @@ distribution of base quantities in a particular part of the box by using:
 \f]  
 
 where the sum is over the collective variables, \f$s_i\f$, each of which can be thought to be at \f$ (u_i,v_i,z_i)\f$.
+The function \f$(s_i)\f$ can be any of the usual LESS_THAN, MORE_THAN, WITHIN etc that are used in all other multicolvars.
 Notice that here (at variance with what is done in \ref AROUND) we have transformed from the usual \f$(x_i,y_i,z_i)\f$ 
 position to a position in \f$ (u_i,v_i,z_i)\f$.  This is done using a rotation matrix as follows:
 
@@ -76,7 +77,6 @@ w(u_i,v_i,w_i) = \int_{0}^{u'} \int_{0}^{v'} \int_{0}^{w'} \textrm{d}u\textrm{d}
 \f]
 
 where \f$K\f$ is one of the kernel functions described on \ref histogrambead and \f$\sigma\f$ is a bandwidth parameter.
-The function \f$(s_i)\f$ can be any of the usual LESS_THAN, MORE_THAN, WITHIN etc that are used in all other multicolvars. 
 The vector connecting atom 1 to atom 4 is used to define the extent of the box in each of the \f$u\f$, \f$v\f$ and \f$w\f$ 
 directions.  Essentially the vector connecting atom 1 to atom 4 is projected onto the three unit vectors
 described above and the resulting projections determine the \f$u'\f$, \f$v'\f$ and \f$w'\f$ parameters in the above expression. 
@@ -93,7 +93,7 @@ CAVITY DATA=d1 ATOMS=1,4,5,11 SIGMA=0.1 LABEL=cav
 
 The following command tells plumed to calculate the coordination numbers (with other water molecules) for the water 
 molecules in the protein channel described above.  The average coordination number and the number of coordination
-numbers more than 4 is then calculated.  The values of these two quantities are given the labels cav.mean and cav.more-than
+numbers more than 4 is then calculated.  The values of these two quantities are given the labels cav.mean and cav.morethan
 
 \verbatim
 d1: COORDINATIONNUMBER SPECIES=20-500

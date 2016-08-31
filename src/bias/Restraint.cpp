@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -64,7 +64,6 @@ class Restraint : public Bias{
   std::vector<double> at;
   std::vector<double> kappa;
   std::vector<double> slope;
-  Value* valueBias;
   Value* valueForce2;
 public:
   explicit Restraint(const ActionOptions&);
@@ -80,8 +79,6 @@ void Restraint::registerKeywords(Keywords& keys){
    keys.add("compulsory","SLOPE","0.0","specifies that the restraint is linear and what the values of the force constants on each of the variables are");
    keys.add("compulsory","KAPPA","0.0","specifies that the restraint is harmonic and what the values of the force constants on each of the variables are");
    keys.add("compulsory","AT","the position of the restraint");
-   componentsAreNotOptional(keys);
-   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
    keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
 }
 
@@ -106,9 +103,8 @@ slope(getNumberOfArguments(),0.0)
   for(unsigned i=0;i<slope.size();i++) log.printf(" %f",slope[i]);
   log.printf("\n");
 
-  addComponent("bias"); componentIsNotPeriodic("bias");
-  addComponent("force2"); componentIsNotPeriodic("force2");
-  valueBias=getPntrToComponent("bias");
+  addComponent("force2");
+  componentIsNotPeriodic("force2");
   valueForce2=getPntrToComponent("force2");
 }
 
@@ -124,8 +120,8 @@ void Restraint::calculate(){
     ene+=0.5*k*cv*cv+m*cv;
     setOutputForce(i,f);
     totf2+=f*f;
-  };
-  valueBias->set(ene);
+  }
+  setBias(ene);
   valueForce2->set(totf2);
 }
 

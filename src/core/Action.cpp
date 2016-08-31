@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -61,6 +61,7 @@ Action::Action(const ActionOptions&ao):
   update_until(std::numeric_limits<double>::max()),
   active(false),
   restart(ao.plumed.getRestart()),
+  doCheckPoint(ao.plumed.getCPT()),
   plumed(ao.plumed),
   log(plumed.getLog()),
   comm(plumed.comm),
@@ -119,6 +120,24 @@ void Action::fflush(){
   }
 }
 
+std::string Action::getKeyword(const std::string& key){
+  // Check keyword has been registered 
+  plumed_massert(keywords.exists(key), "keyword " + key + " has not been registered");
+
+  std::string outkey;
+  if( Tools::getKey(line,key,outkey ) ) return key + outkey;
+
+  if( keywords.style(key,"compulsory") ){
+      if( keywords.getDefaultValue(key,outkey) ){
+          if( outkey.length()==0 ) error("keyword " + key + " has weird default value");
+          return key + "=" +  outkey; 
+      } else {
+          error("keyword " + key + " is compulsory for this action");
+      }
+  }  
+  return "";
+}
+
 void Action::parseFlag(const std::string&key,bool & t){
   // Check keyword has been registered
   plumed_massert(keywords.exists(key), "keyword " + key + " has not been registered");
@@ -151,7 +170,7 @@ void Action::activate(){
     this->unlockRequests();
     prepare();
     this->lockRequests();
-  }
+  } else return;
   for(Dependencies::iterator p=after.begin();p!=after.end();++p) (*p)->activate();
   active=true;
 }
@@ -212,7 +231,6 @@ void Action::prepare(){
 
 void Action::error( const std::string & msg ) const {
   log.printf("ERROR in input to action %s with label %s : %s \n \n", name.c_str(), label.c_str(), msg.c_str() );
-  if( !line.empty() ) keywords.print( log );
   plumed_merror("ERROR in input to action " + name + " with label " + label + " : " + msg );
 }
 

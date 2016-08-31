@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -60,7 +60,6 @@ PRINT ARG=a1.mean FILE=colvar
 
 class Bridge : public MultiColvar {
 private:
-  double rcut2;
   Vector dij, dik;
   SwitchingFunction sf1;
   SwitchingFunction sf2;
@@ -69,7 +68,6 @@ public:
   explicit Bridge(const ActionOptions&);
 // active methods:
   virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
-  void calculateWeight( const unsigned& taskCode, AtomValuePack& myatoms ) const ;
   bool isPeriodic(){ return false; }
 };
 
@@ -93,8 +91,8 @@ Bridge::Bridge(const ActionOptions&ao):
 PLUMED_MULTICOLVAR_INIT(ao)
 {
   // Read in the atoms
-  weightHasDerivatives=true; std::vector<AtomNumber> all_atoms;
-  readThreeGroups("BRIDGING_ATOMS","GROUPA","GROUPB",false, all_atoms);
+  std::vector<AtomNumber> all_atoms;
+  readThreeGroups("GROUPA","GROUPB","BRIDGING_ATOMS",false,true,all_atoms);
   // Setup the multicolvar base
   setupMultiColvarBase( all_atoms );
   // Setup Central atom atoms
@@ -125,8 +123,7 @@ PLUMED_MULTICOLVAR_INIT(ao)
   log.printf("  distance between bridging atoms and atoms in GROUPB must be less than %s\n",sf2.description().c_str());
 
   // Setup link cells
-  setLinkCellCutoff( sf1.get_dmax() );
-  rcut2 = sf1.get_dmax()*sf1.get_dmax();
+  setLinkCellCutoff( sf1.get_dmax() + sf2.get_dmax() );
 
   // And setup the ActionWithVessel
   if( getNumberOfVessels()!=0 ) error("should not have vessels for this action");
@@ -137,27 +134,22 @@ PLUMED_MULTICOLVAR_INIT(ao)
   checkRead();
 }
 
-void Bridge::calculateWeight( const unsigned& taskCode, AtomValuePack& myatoms ) const {
-  Vector dij=getSeparation( myatoms.getPosition(0), myatoms.getPosition(2) );
-  double ldij = dij.modulo2();
-  if( ldij>rcut2 ) { myatoms.setValue(0,0); return; }
-  double dw, w=sf2.calculateSqr( ldij, dw );
-  myatoms.setValue( 0, w );
-
-  addAtomDerivatives( 0, 0, -dw*dij, myatoms );
-  addAtomDerivatives( 0, 2, dw*dij, myatoms );
-  myatoms.addBoxDerivatives( 0, (-dw)*Tensor(dij,dij) );
-}
-
 double Bridge::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
-  Vector dik=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
-  double dw, w=sf1.calculateSqr( dik.modulo2(), dw );
+  double tot=0;
+  for(unsigned i=2;i<myatoms.getNumberOfAtoms();++i){
+      Vector dij=getSeparation( myatoms.getPosition(i), myatoms.getPosition(0) );
+      double dw1, w1=sf1.calculateSqr( dij.modulo2(), dw1 );
+      Vector dik=getSeparation( myatoms.getPosition(i), myatoms.getPosition(1) );
+      double dw2, w2=sf2.calculateSqr( dik.modulo2(), dw2 );
 
-  // And finish the calculation
-  addAtomDerivatives( 1, 0, -dw*dik, myatoms );
-  addAtomDerivatives( 1, 1,  dw*dik, myatoms );
-  myatoms.addBoxDerivatives( 1, (-dw)*Tensor(dik,dik) );
-  return w;
+      tot += w1*w2;
+      // And finish the calculation
+      addAtomDerivatives( 1, 0,  w2*dw1*dij, myatoms );
+      addAtomDerivatives( 1, 1,  w1*dw2*dik, myatoms ); 
+      addAtomDerivatives( 1, i, -w1*dw2*dik-w2*dw1*dij, myatoms );
+      myatoms.addBoxDerivatives( 1, w1*(-dw2)*Tensor(dik,dik)+w2*(-dw1)*Tensor(dij,dij) );
+  }
+  return tot;
 }
 
 }

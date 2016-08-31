@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -65,11 +65,13 @@ public:
 /// This transforms the derivatives using the output value
   MultiValue& transformDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals );
 /// Actually do the calculation
-  bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const ;
+  void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const ;
 /// Finish the calculation
   void finish( const std::vector<double>& buffer );
 /// Calculate numerical derivatives
   void completeNumericalDerivatives();
+/// Set the task flags in the bridged class the same as in the original class
+  void copyTaskFlags();
 };
 
 inline

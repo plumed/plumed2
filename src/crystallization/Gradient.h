@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -25,7 +25,7 @@
 #include "multicolvar/VolumeGradientBase.h"
 
 namespace PLMD {
-namespace crystallisation {
+namespace crystallization {
 
 class Gradient : public multicolvar::VolumeGradientBase {
 friend class GradientVessel;
@@ -42,7 +42,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Gradient(const ActionOptions&);
 /// Get the number of quantities that are calculated each time
-  virtual unsigned getNumberOfQuantities();
+  virtual unsigned getNumberOfQuantities() const ;
 /// Check on pbc - is it orthorhombic
   void setupRegions();
 /// Calculate whats in the volume
@@ -50,7 +50,7 @@ public:
 };
 
 inline
-unsigned Gradient::getNumberOfQuantities(){
+unsigned Gradient::getNumberOfQuantities() const {
   return nquantities;
 } 
 

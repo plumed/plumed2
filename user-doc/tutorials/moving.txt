@@ -188,7 +188,7 @@ equivalent.  You should read the documentation for the PLUMED 2 Action.
 </TR>
 <TR>
   <TD> READ_GRID </TD>
-  <TD> <b> currently missing </b> </TD>
+  <TD> \ref METAD with GRID_RFILE </TD>
 </TR>
 <TR>
   <TD> MULTIPLE_WALKERS </TD>
@@ -257,7 +257,7 @@ equivalent.  You should read the documentation for the PLUMED 2 Action.
 </TR>
 <TR>
   <TD> DISTANCE </TD>
-  <TD> \ref DISTANCE </TD>
+  <TD> \ref DISTANCE  - POINT_FROM_AXIS and PROJ_ON_AXIS can be reproduced with \ref DISTANCE and \ref MATHEVAL </TD>
 </TR>
 <TR>
   <TD> POSITION </TD>
@@ -317,7 +317,7 @@ equivalent.  You should read the documentation for the PLUMED 2 Action.
 </TR>
 <TR>
   <TD> ELSTPOT </TD>
-  <TD> <b> currently missing </b> </TD>
+  <TD> currently missing, but a related quantity can be obtained with \ref DHENERGY </TD>
 </TR>
 <TR>
   <TD> PUCKERING </TD>

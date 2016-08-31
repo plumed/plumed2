@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -19,19 +19,22 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Exception.h"
 #include "LatticeReduction.h"
-#include <stdio.h>
+#include "Exception.h"
+#include <cstdio>
 
 namespace PLMD{
+
+using namespace std;
 
 const double epsilon=1e-14;
 
 void LatticeReduction::sort(Vector v[3]){
+  const double onePlusEpsilon=(1.0+epsilon);
   for(int i=0;i<3;i++) for(int j=i+1;j<3;j++) if(modulo2(v[i])>modulo2(v[j])){
     Vector x=v[i]; v[i]=v[j]; v[j]=x;
   }
-  for(int i=0;i<2;i++) plumed_assert(modulo2(v[i])<=modulo2(v[i+1]));
+  for(int i=0;i<2;i++) plumed_assert(modulo2(v[i])<=modulo2(v[i+1])*onePlusEpsilon);
 }
 
 void LatticeReduction::reduce(Vector&a,Vector&b){

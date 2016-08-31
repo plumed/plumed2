@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -133,6 +133,8 @@ public:
   bool style( const std::string & k, const std::string & t ) const ;
 /// Print an html version of the documentation
   void print_html() const ;
+/// Print keywords in form readable by vim
+  void print_vim() const ;
 /// Print the template version for the documenation
   void print_template( const std::string& actionname, bool include_optional) const ;
 /// Change the style of a keyword
