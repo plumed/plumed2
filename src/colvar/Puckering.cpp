@@ -309,12 +309,12 @@ void Puckering::calculate6m(){
 
 
 // qx
-    double qx = B/sqrt(3);
+    double qx = A/sqrt(3);
 
 // qx derivaties
     vector<Vector> dqx_dR(6);
     for(unsigned j=0;j<6;j++){
-      dqx_dR[j]=1/sqrt(3) * dB_dR[j];
+      dqx_dR[j]=1/sqrt(3) * dA_dR[j];
     }
 
     Value* vqx=getPntrToComponent("qx");
@@ -328,12 +328,12 @@ void Puckering::calculate6m(){
     setBoxDerivativesNoPbc(vqx);
 
 // qy
-   double qy = -A/sqrt(3);
+   double qy = -B/sqrt(3);
 
 // qy derivatives
     vector<Vector> dqy_dR(6);
     for(unsigned j=0;j<6;j++){
-      dqy_dR[j]=-1/sqrt(3) * dA_dR[j];
+      dqy_dR[j]=-1/sqrt(3) * dB_dR[j];
     }
 
     Value* vqy=getPntrToComponent("qy");
