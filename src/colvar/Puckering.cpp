@@ -52,7 +52,7 @@ namespace colvar{
  For 6-membered rings the implementation is the general Cremer-Pople one \cite cremer1975general 
  as also discussed in \cite biarnes2007conformational .
  This implementation provides both a triplet with Cartesian components (qx, qy, and qz)
- and a triplet of polar components (amplitude, phase, and theta).
+ and a triplet of polar components (amplitude, phi, and theta).
  Applications of this particular implentation are to be published (paper in preparation).
  
  Components of this action are:
@@ -89,7 +89,7 @@ void Puckering::registerKeywords(Keywords& keys){
    keys.addOutputComponent("amp","default","Pseudorotation amplitude (5 membered rings)");
    keys.addOutputComponent("Zx","default","Pseudorotation x cartesian component (5 membered rings)");
    keys.addOutputComponent("Zy","default","Pseudorotation y cartesian component (5 membered rings)");
-   keys.addOutputComponent("phase","default","Pseudorotation phase (6 membered rings)");
+   keys.addOutputComponent("phi","default","Pseudorotation phase (6 membered rings)");
    keys.addOutputComponent("theta","default","Theta angle (6 membered rings)");
    keys.addOutputComponent("amplitude","default","Pseudorotation amplitude (6 membered rings)");
    keys.addOutputComponent("qx","default","Cartesian component x (6 membered rings)");
@@ -120,7 +120,7 @@ PLUMED_COLVAR_INIT(ao)
     addComponentWithDerivatives("qx"); componentIsNotPeriodic("qx");
     addComponentWithDerivatives("qy"); componentIsNotPeriodic("qy");
     addComponentWithDerivatives("qz"); componentIsNotPeriodic("qz");
-    addComponentWithDerivatives("phase"); componentIsPeriodic("phase","0","2pi");
+    addComponentWithDerivatives("phi"); componentIsPeriodic("phi","0","2pi");
     addComponentWithDerivatives("theta"); componentIsNotPeriodic("theta");
     addComponentWithDerivatives("amplitude"); componentIsNotPeriodic("amplitude");
   }
@@ -367,23 +367,23 @@ void Puckering::calculate6m(){
 
 
 // PHASE
-    double phase=atan2(-A,B);
+    double phi=atan2(-A,B);
 
 // PHASE DERIVATIVES
-    vector<Vector> dphase_dR(6);
+    vector<Vector> dphi_dR(6);
     for(unsigned j=0;j<6;j++){
-      dphase_dR[j]=1.0/(A*A+B*B) * (-B*dA_dR[j] + A*dB_dR[j]);
+      dphi_dR[j]=1.0/(A*A+B*B) * (-B*dA_dR[j] + A*dB_dR[j]);
     }
 
-    Value* vphase=getPntrToComponent("phase");
-    vphase->set(phase);
-    setAtomsDerivatives (vphase,0, dphase_dR[0] );
-    setAtomsDerivatives (vphase,1, dphase_dR[1] );
-    setAtomsDerivatives (vphase,2, dphase_dR[2] );
-    setAtomsDerivatives (vphase,3, dphase_dR[3] );
-    setAtomsDerivatives (vphase,4, dphase_dR[4] );
-    setAtomsDerivatives (vphase,5, dphase_dR[5] );
-    setBoxDerivativesNoPbc(vphase);
+    Value* vphi=getPntrToComponent("phi");
+    vphi->set(phi);
+    setAtomsDerivatives (vphi,0, dphi_dR[0] );
+    setAtomsDerivatives (vphi,1, dphi_dR[1] );
+    setAtomsDerivatives (vphi,2, dphi_dR[2] );
+    setAtomsDerivatives (vphi,3, dphi_dR[3] );
+    setAtomsDerivatives (vphi,4, dphi_dR[4] );
+    setAtomsDerivatives (vphi,5, dphi_dR[5] );
+    setBoxDerivativesNoPbc(vphi);
 
 //  AMPLITUDE
     double amplitude=sqrt((2*(A*A+B*B)+C*C)/6);
