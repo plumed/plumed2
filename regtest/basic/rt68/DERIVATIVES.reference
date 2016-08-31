@@ -1,4 +1,4 @@
-#! FIELDS time parameter puck.qx puck.qy puck.qz puck.phase puck.theta puck.amplitude
+#! FIELDS time parameter puck.qx puck.qy puck.qz puck.phi puck.theta puck.amplitude
  0.000000 0  0.3993 -0.2885  0.3115 -0.4675 -0.8218 -0.0314
  0.000000 1 -0.3402  0.2458 -0.2654  0.3983  0.7002  0.0268
  0.000000 2 -0.0347  0.0251 -0.0271  0.0407  0.0715  0.0027

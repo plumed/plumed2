@@ -1,6 +1,6 @@
-#! FIELDS time puck.qx puck.qy puck.qz puck.phase puck.theta puck.amplitude
-#! SET min_puck.phase 0
-#! SET max_puck.phase 2pi
+#! FIELDS time puck.qx puck.qy puck.qz puck.phi puck.theta puck.amplitude
+#! SET min_puck.phi 0
+#! SET max_puck.phi 2pi
  0.000000 -0.2126  0.3497  0.5290  2.1170  0.6585  0.6689
  1.000000  0.0592  0.8718  0.5768  1.5030  0.9874  1.0471
  2.000000  0.2001  1.0110  0.5779  1.3755  1.0598  1.1816
