@@ -22,7 +22,7 @@ cd $dir
 FIX_COPYRIGHT=""
 test -f COPYRIGHT && FIX_COPYRIGHT="$(<COPYRIGHT)"
 
-for file in *.c *.cpp *.h *.cpp.in
+for file in *.c *.cpp *.h *.inc.in
 do
 
 test -f "$file" || continue

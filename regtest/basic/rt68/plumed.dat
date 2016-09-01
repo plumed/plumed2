@@ -1,0 +1,16 @@
+puck: PUCKERING ATOMS=13-18
+
+PRINT ARG=puck.qx,puck.qy,puck.qz,puck.phi,puck.theta,puck.amplitude FILE=COLVAR FMT=%7.4f
+
+DUMPDERIVATIVES ...
+  ARG=puck.qx,puck.qy,puck.qz,puck.phi,puck.theta,puck.amplitude
+  FILE=DERIVATIVES
+  FMT=%7.4f
+...
+
+## puckn: PUCKERING ATOMS=13-18 NUMERICAL_DERIVATIVES
+##  DUMPDERIVATIVES ...
+##    ARG=puckn.qx,puckn.qy,puckn.qz,puckn.phi,puckn.theta,puckn.amplitude
+##    FILE=NDERIVATIVES
+##    FMT=%7.4f
+##  ...

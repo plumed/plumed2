@@ -19,11 +19,11 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#include "Plumed.h"
+
 #ifdef __PLUMED_HAS_DLOPEN
 #include <dlfcn.h>
 #endif
-
-#include "Plumed.h"
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>

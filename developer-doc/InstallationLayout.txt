@@ -71,7 +71,7 @@ When using an installed copy of plumed one can override the hard code values by 
 PLUMED_ROOT PLUMED_INCLUDEDIR PLUMED_HTMLDIR and PLUMED_PROGRAM_NAME before launching plumed.
 
 Notice that to enforce a consistent behavior of scripts and plumed executable the same logic needed to
-be implemented twice. One implementation is found in the src/config/Config.cpp file, another implementation
+be implemented twice. One implementation is found in the src/config/Config.inc.in file, another implementation
 is prependend to the installed scripts by the src/config/Makefile.
 
 Also consider that environment is inherited by subprocesses. That means that if you want to

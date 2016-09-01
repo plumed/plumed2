@@ -22,6 +22,7 @@
 #include "PathReparameterization.h"
 
 namespace PLMD {
+namespace mapping {
 
 PathReparameterization::PathReparameterization( const Pbc& ipbc, const std::vector<Value*>& iargs, std::vector<ReferenceConfiguration*>& pp ): 
 mydpack( 1, pp[0]->getNumberOfReferenceArguments() + 3*pp[0]->getNumberOfReferencePositions() + 9 ),
@@ -116,8 +117,10 @@ void PathReparameterization::reparameterizePart( const int& istart, const int& i
      }
      
      // Copy the positions of the new path to the new paths
-     for(int i=istart+incr;loopEnd(i,cfin,incr)==false;i+=incr) mypath[i]->moveReferenceConfig( newpath[i].getReferencePositions(), newpath[i].getReferenceArguments() ); 
-     
+     for(int i=istart+incr;loopEnd(i,cfin,incr)==false;i+=incr){
+        mypath[i]->setReferenceConfig( newpath[i].getReferencePositions(), newpath[i].getReferenceArguments(), mypath[i]->getReferenceMetric() ); 
+     }    
+ 
      // Recompute the separations between frames
      calcCurrentPathSpacings( istart, iend );
   }
@@ -137,4 +140,5 @@ void PathReparameterization::reparameterize( const int& ifix1, const int& ifix2,
 //  calcCurrentPathSpacings( 0, mypath.size()-1 ); 
 }
 
+}
 }
