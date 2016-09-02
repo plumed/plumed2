@@ -410,6 +410,10 @@ class CS2Backbone : public Colvar {
     Fragment() { 
       comp.resize(6);
       exp_cs.resize(6,0);
+      res_type_prev = res_type_curr = res_type_next = 0;
+      res_kind = 0;
+      fd = 0;
+      res_name = ""; 
       pos.resize(6,-1);
       prev.reserve(5);
       curr.reserve(6);
@@ -421,6 +425,7 @@ class CS2Backbone : public Colvar {
       phi.reserve(4);
       psi.reserve(4);
       chi1.reserve(4);
+      t_phi = t_psi = t_chi1 = 0;
       dd0.resize(3); 
       dd10.resize(3); 
       dd21.resize(3); 
