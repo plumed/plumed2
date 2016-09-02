@@ -19,12 +19,12 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include <algorithm>
-#include <string>
 #include "MDAtoms.h"
 #include "tools/Tools.h"
 #include "tools/OpenMP.h"
 #include "tools/Exception.h"
+#include <algorithm>
+#include <string>
 
 using namespace std;
 

@@ -121,5 +121,7 @@ Fixes since 2.3b. Relevant things could be merged in the changelog above when we
 - GSL library is now searched by default during `./configure`.
 - Removed IMD modules. In case someone is interested in restoring it, please contact the PLUMED developers.
 - (for developers) Active modules to enable regtests are chosen using `plumed config`.
+- New CV for Jcouplings
+- \ref PUCKERING now supports 6 membered rings.
 
 */

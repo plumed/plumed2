@@ -19,12 +19,12 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#include "Gradient.h"
 #include "core/ActionRegister.h"
 #include "tools/HistogramBead.h"
-#include "Gradient.h"
 
 namespace PLMD {
-namespace crystallisation {
+namespace crystallization {
 
 //+PLUMEDOC MCOLVARF GRADIENT
 /*

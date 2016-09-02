@@ -19,13 +19,13 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include <vector>
-#include <algorithm>
+#include "NeighborList.h"
 #include "Vector.h"
 #include "Pbc.h"
 #include "AtomNumber.h"
 #include "Tools.h"
-#include "NeighborList.h"
+#include <vector>
+#include <algorithm>
 
 namespace PLMD{
 using namespace std;

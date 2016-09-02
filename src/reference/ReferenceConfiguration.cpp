@@ -111,25 +111,6 @@ void ReferenceConfiguration::setNamesAndAtomNumbers( const std::vector<AtomNumbe
   }
 }
 
-void ReferenceConfiguration::moveReferenceConfig( const std::vector<Vector>& pos, const std::vector<double>& arg ){
-//  plumed_dbg_assert( pos.size()==atom_ders.size() && arg.size()==arg_ders.size() );
-  // Copy the atomic positions to the reference
-  ReferenceAtoms* atoms=dynamic_cast<ReferenceAtoms*>( this );
-  if(!atoms){
-     plumed_massert( pos.size()==0, "expecting no atomic positions");
-  } else {
-     std::vector<double> align_in( pos.size(), 1.0 ), displace_in( pos.size(), 1.0 );
-     atoms->setReferenceAtoms( pos, align_in, displace_in );
-  }
-  // Copy the arguments to the reference
-  ReferenceArguments* args=dynamic_cast<ReferenceArguments*>( this );
-  if(!args){
-     plumed_massert( arg.size()==0, "expecting no arguments");
-  } else {
-     args->moveReferenceArguments( arg );
-  }
-}
-
 void ReferenceConfiguration::setReferenceConfig( const std::vector<Vector>& pos, const std::vector<double>& arg, const std::vector<double>& metric ){
 //  plumed_dbg_assert( pos.size()==atom_ders.size() && arg.size()==arg_ders.size() );
   // Copy the atomic positions to the reference
