@@ -311,7 +311,7 @@ double DistanceFromContour::compute( const unsigned& tindex, AtomValuePack& myat
 }
 
 void DistanceFromContour::apply(){
-  if( getPntrToValue()->applyForce( forces ) ) setForcesOnAtoms( forces );
+  if( getPntrToComponent("dist")->applyForce( forces ) ) setForcesOnAtoms( forces );
 }
 
 }
