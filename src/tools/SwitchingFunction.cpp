@@ -184,6 +184,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   else if(name=="GAUSSIAN") type=gaussian;
   else if(name=="CUBIC") type=cubic;
   else if(name=="TANH") type=tanh;
+  else if(name=="NONE") type=none;
   else errormsg="cannot understand switching function type '"+name+"'";
   if( !data.empty() ){
       errormsg="found the following rogue keywords in switching function input : ";
@@ -214,6 +215,8 @@ std::string SwitchingFunction::description() const {
      ostr<<"cubic";
   } else if(type==tanh){
      ostr<<"tanh";
+  } else if(type==none){
+     ostr<<"none";     
   } else{
      plumed_merror("Unknown switching function type");
   }
@@ -305,6 +308,9 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const{
       double tmp1=std::tanh(rdist);
       result = 1.0 - tmp1;
       dfunc=-(1-tmp1*tmp1);
+    }else if(type==none){
+      result = rdist * rdist;
+      dfunc = rdist;
     }else plumed_merror("Unknown switching function type");
 // this is for the chain rule:
     dfunc*=invr0;
