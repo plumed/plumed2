@@ -101,6 +101,8 @@ PLUMED_REGISTER_ACTION(DistanceFromContour,"DISTANCE_FROM_CONTOUR")
 
 void DistanceFromContour::registerKeywords( Keywords& keys ){
   MultiColvarBase::registerKeywords( keys );
+  keys.addOutputComponent("dist","default","the distance between the reference atom and the contour");
+  keys.addOutputComponent("thickness","default","the distance between the two contours on the line from the reference atom");
   keys.add("compulsory","DATA","The input base multicolvar which is being used to calculate the contour");
   keys.add("atoms","ATOM","The atom whose perpendicular distance we are calculating from the contour");
   keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
@@ -156,8 +158,9 @@ mymin(this)
       if( kernel.getCutoff(bw[j])>rcut ) rcut=kernel.getCutoff(bw[j]);
   }
   rcut2=rcut*rcut;  
-  // Create the value 
-  addValueWithDerivatives(); setNotPeriodic();
+  // Create the values 
+  addComponent("thickness"); componentIsNotPeriodic("thickness");
+  addComponentWithDerivatives("dist"); componentIsNotPeriodic("dist");
   // Create sum vessels 
   std::string fake_input; std::string deriv_input="COMPONENT=2";
   if( mybasemulticolvars[0]->isDensity() ){
@@ -243,6 +246,7 @@ void DistanceFromContour::calculate(){
   // Calculate the separation between the two roots using PBC
   Vector root1, root2; root1.zero(); root1[dir]=fpos1; root2.zero(); root2[dir]=pval[dir]->get(); 
   Vector sep = getSeparation( root1, root2 ); double spacing = fabs( sep[dir] ); plumed_assert( spacing>epsilon );
+  getPntrToComponent("thickness")->set( spacing );
 
   // Make sure the sign is right
   double fval, predir=(fpos1*pval[dir]->get()<0)? -1 : 1; 
@@ -251,15 +255,15 @@ void DistanceFromContour::calculate(){
   // the contour
   if( predir==-1 && (fabs(fpos1)+fabs(pval[dir]->get()))>(spacing+bw[dir]) ) predir=1;
   // Set the final value to root that is closest to the "origin" = position of atom
-  if( fabs(fpos1)<fabs(pval[dir]->get()) ){ setValue( predir*fabs(fpos1) ); fval=fpos1; }
-  else { setValue( predir*fabs(pval[dir]->get()) ); fval=pval[dir]->get(); }
+  if( fabs(fpos1)<fabs(pval[dir]->get()) ){ getPntrToComponent("dist")->set( predir*fabs(fpos1) ); fval=fpos1; }
+  else { getPntrToComponent("dist")->set( predir*fabs(pval[dir]->get()) ); fval=pval[dir]->get(); }
 
   // Now calculate the derivatives
   if( !doNotCalculateDerivatives() ){
       Value* ival=myvalue_vessel->getFinalValue(); ival->clearDerivatives(); pos1[0]=pos1[1]=pos1[2]=0.0; pos1[dir]=fval;
       derivTime=true; double prefactor; std::vector<double> der(3); getDifferenceFromContour( pos1, der );
       if( mybasemulticolvars[0]->isDensity() ) prefactor = predir / myderiv_vessel->getOutputValue(); else plumed_error();
-      Value* val=getPntrToValue(); 
+      Value* val=getPntrToComponent("dist"); 
       for(unsigned i=0;i<val->getNumberOfDerivatives();++i) val->setDerivative( i, -prefactor*ival->getDerivative(i) );
   }
 }
