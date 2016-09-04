@@ -66,7 +66,7 @@ public:
   }
   Vector getMDforces(const unsigned index)const{
     Vector force(fx[stride*index],fy[stride*index],fz[stride*index]);
-    return force;
+    return force/scalef;
   }
   void getBox(Tensor &)const;
   void getPositions(const vector<int>&index,vector<Vector>&positions)const;
