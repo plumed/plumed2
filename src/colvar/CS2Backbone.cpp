@@ -55,8 +55,9 @@ This collective variable calculates the backbone chemical shifts for a protein.
 The functional form is that of CamShift \cite Kohlhoff:2009us. The chemical shifts
 of the selected nuclei/residues are saved as components. Reference experimental values
 can also be stored as components. The two components can then be used to calculate
-either a scoring function as in \cite Robustelli:2010dn \cite Granata:2013dk or to calculate
-ensemble averages as in \cite Camilloni:2012je \cite Camilloni:2013hs (see \ref STATS and
+either a scoring function as in \cite Robustelli:2010dn \cite Granata:2013dk, using
+the keyword CAMSHIFT or to calculate ensemble averages chemical shift per chemical
+shift as in \cite Camilloni:2012je \cite Camilloni:2013hs (see \ref STATS and
 \ref ENSEMBLE).
 
 CamShift calculation is relatively heavy because it often uses a large number of atoms, in order
@@ -497,8 +498,8 @@ void CS2Backbone::registerKeywords( Keywords& keys ){
   keys.add("compulsory","TEMPLATE","template.pdb","A PDB file of the protein system to initialise ALMOST.");
   keys.add("compulsory","NEIGH_FREQ","25","Period in step for neighbour list update.");
   keys.add("compulsory","NRES","Number of residues, corresponding to the number of chemical shifts.");
-  keys.addFlag("NOEXP",false,"Set to TRUE if you don't want to have fixed components with the experimetnal values.");  
   keys.addFlag("CAMSHIFT",false,"Set to TRUE if you to calculate a single CamShift score."); 
+  keys.addFlag("NOEXP",false,"Set to TRUE if you don't want to have fixed components with the experimetnal values.");  
   keys.addOutputComponent("ha","default","the calculated Ha hydrogen chemical shifts"); 
   keys.addOutputComponent("hn","default","the calculated H hydrogen chemical shifts"); 
   keys.addOutputComponent("nh","default","the calculated N nitrogen chemical shifts"); 
@@ -746,6 +747,15 @@ void CS2Backbone::calculate()
 
   double score = 0.;
 
+  vector<double> camshift_sigma2(6);
+  camshift_sigma2[0] = 0.08; // HA 
+  camshift_sigma2[1] = 0.30; // HN
+  camshift_sigma2[2] = 9.00; // NH
+  camshift_sigma2[3] = 1.30; // CA
+  camshift_sigma2[4] = 1.56; // CB
+  camshift_sigma2[5] = 1.70; // CO
+  
+
   unsigned index=0;
   const unsigned chainsize = atom.size();
   const unsigned atleastned = 72+ringInfo.size()*6;
@@ -753,7 +763,7 @@ void CS2Backbone::calculate()
   // CYCLE OVER MULTIPLE CHAINS
   for(unsigned s=0;s<chainsize;s++){
     const unsigned psize = atom[s].size();
-    #pragma omp parallel for num_threads(OpenMP::getNumThreads())  
+    #pragma omp parallel for num_threads(OpenMP::getNumThreads()) reduction(+:score) 
     // SKIP FIRST AND LAST RESIDUE OF EACH CHAIN
     for(unsigned a=1;a<psize-1;a++){
 
@@ -1072,8 +1082,8 @@ void CS2Backbone::calculate()
           } else {
             // but I would also divide for the weights derived with metainference
             comp = getPntrToValue();
-            score += (cs - atom[s][a].exp_cs[at_kind])*(cs - atom[s][a].exp_cs[at_kind]);
-            fact = 2.0*(cs - atom[s][a].exp_cs[at_kind]);
+            score += (cs - atom[s][a].exp_cs[at_kind])*(cs - atom[s][a].exp_cs[at_kind])/camshift_sigma2[at_kind];
+            fact = 2.0*(cs - atom[s][a].exp_cs[at_kind])/camshift_sigma2[at_kind];
             for(unsigned i=0;i<list.size();i++) setAtomsDerivatives(comp,list[i],fact*ff[i]);
           }
         } 
