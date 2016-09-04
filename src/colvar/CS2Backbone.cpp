@@ -754,16 +754,18 @@ void CS2Backbone::calculate()
   camshift_sigma2[3] = 1.30; // CA
   camshift_sigma2[4] = 1.56; // CB
   camshift_sigma2[5] = 1.70; // CO
-  
 
   unsigned index=0;
   const unsigned chainsize = atom.size();
   const unsigned atleastned = 72+ringInfo.size()*6;
 
   // CYCLE OVER MULTIPLE CHAINS
+  #pragma omp parallel num_threads(OpenMP::getNumThreads())
   for(unsigned s=0;s<chainsize;s++){
     const unsigned psize = atom[s].size();
-    #pragma omp parallel for num_threads(OpenMP::getNumThreads()) reduction(+:score) 
+    vector<Vector> omp_deriv;
+    if(camshift) omp_deriv.resize(getNumberOfAtoms(), Vector(0,0,0));
+    #pragma omp for reduction(+:score) 
     // SKIP FIRST AND LAST RESIDUE OF EACH CHAIN
     for(unsigned a=1;a<psize-1;a++){
 
@@ -1084,11 +1086,13 @@ void CS2Backbone::calculate()
             comp = getPntrToValue();
             score += (cs - atom[s][a].exp_cs[at_kind])*(cs - atom[s][a].exp_cs[at_kind])/camshift_sigma2[at_kind];
             fact = 2.0*(cs - atom[s][a].exp_cs[at_kind])/camshift_sigma2[at_kind];
-            for(unsigned i=0;i<list.size();i++) setAtomsDerivatives(comp,list[i],fact*ff[i]);
+            for(unsigned i=0;i<list.size();i++) omp_deriv[list[i]] += fact*ff[i];
           }
         } 
       }
     }
+    #pragma omp critical
+    if(camshift) for(int i=0;i<getPositions().size();i++) setAtomsDerivatives(i,omp_deriv[i]);
     index += psize;
   }
 
