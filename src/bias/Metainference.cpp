@@ -33,6 +33,7 @@
 #include "tools/File.h"
 #include "tools/Random.h"
 #include <cmath>
+#include <ctime>
 
 using namespace std;
 
