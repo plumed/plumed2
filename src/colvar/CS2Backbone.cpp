@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-#define cutOffNB      0.65	// buffer distance for neighbour-lists 
+#define cutOffNB      0.70	// buffer distance for neighbour-lists 
 #define cutOffDist    0.50  	// cut off distance for non-bonded pairwise forces
 #define cutOnDist     0.32   	// cut off distance for non-bonded pairwise forces
 #define cutOffNB2     cutOffNB*cutOffNB // squared buffer distance for neighbour-lists 
@@ -55,8 +55,9 @@ This collective variable calculates the backbone chemical shifts for a protein.
 The functional form is that of CamShift \cite Kohlhoff:2009us. The chemical shifts
 of the selected nuclei/residues are saved as components. Reference experimental values
 can also be stored as components. The two components can then be used to calculate
-either a scoring function as in \cite Robustelli:2010dn \cite Granata:2013dk or to calculate
-ensemble averages as in \cite Camilloni:2012je \cite Camilloni:2013hs (see \ref STATS and
+either a scoring function as in \cite Robustelli:2010dn \cite Granata:2013dk, using
+the keyword CAMSHIFT or to calculate ensemble averages chemical shift per chemical
+shift as in \cite Camilloni:2012je \cite Camilloni:2013hs (see \ref STATS and
 \ref ENSEMBLE).
 
 CamShift calculation is relatively heavy because it often uses a large number of atoms, in order
@@ -355,6 +356,7 @@ public:
         plumed_merror(str_err);
       }
     }
+    in.close();
   }
 
 private:
@@ -382,8 +384,8 @@ private:
 
 class CS2Backbone : public Colvar {
   struct Fragment {
-    vector<bool> csdoit;
-    bool doit;
+    vector<Value*> comp;
+    vector<double> exp_cs;
     unsigned res_type_prev;
     unsigned res_type_curr;
     unsigned res_type_next;
@@ -405,6 +407,32 @@ class CS2Backbone : public Colvar {
     double t_psi;
     double t_chi1;
     vector<Vector> dd0, dd10, dd21, dd2;
+
+    Fragment() { 
+      comp.resize(6);
+      exp_cs.resize(6,0);
+      res_type_prev = res_type_curr = res_type_next = 0;
+      res_kind = 0;
+      fd = 0;
+      res_name = ""; 
+      pos.resize(6,-1);
+      prev.reserve(5);
+      curr.reserve(6);
+      next.reserve(5);
+      side_chain.reserve(20);
+      xd1.reserve(27); 
+      xd2.reserve(27); 
+      box_nb.reserve(250);
+      phi.reserve(4);
+      psi.reserve(4);
+      chi1.reserve(4);
+      t_phi = t_psi = t_chi1 = 0;
+      dd0.resize(3); 
+      dd10.resize(3); 
+      dd21.resize(3); 
+      dd2.resize(3); 
+    }
+
   };
 
   struct RingInfo{
@@ -423,19 +451,18 @@ class CS2Backbone : public Colvar {
   enum atom_t {D_C, D_H, D_N, D_O, D_S, D_C2, D_N2, D_O2};
 
   CS2BackboneDB    db;
+  vector<vector<Fragment> > atom;
+  vector<RingInfo> ringInfo;
   vector<unsigned> seg_last;
   vector<unsigned> type;
   vector<unsigned> res_num;
-  vector<RingInfo> ringInfo;
   unsigned         box_nupdate;
   unsigned         box_count;
-  vector<vector<Fragment> > atom;
-  unsigned         numResidues;
-  vector<vector<unsigned> > c_sh;
+  bool             camshift;
   bool             pbc;
 
   void remove_problematic(const string &res, const string &nucl);
-  void read_cs(const string &file, const string &k, vector<vector<double> > &exp_cs);
+  void read_cs(const string &file, const string &k);
   void update_neighb();
   void compute_ring_parameters();
   void compute_dihedrals();
@@ -471,6 +498,7 @@ void CS2Backbone::registerKeywords( Keywords& keys ){
   keys.add("compulsory","TEMPLATE","template.pdb","A PDB file of the protein system to initialise ALMOST.");
   keys.add("compulsory","NEIGH_FREQ","25","Period in step for neighbour list update.");
   keys.add("compulsory","NRES","Number of residues, corresponding to the number of chemical shifts.");
+  keys.addFlag("CAMSHIFT",false,"Set to TRUE if you to calculate a single CamShift score."); 
   keys.addFlag("NOEXP",false,"Set to TRUE if you don't want to have fixed components with the experimetnal values.");  
   keys.addOutputComponent("ha","default","the calculated Ha hydrogen chemical shifts"); 
   keys.addOutputComponent("hn","default","the calculated H hydrogen chemical shifts"); 
@@ -487,10 +515,14 @@ void CS2Backbone::registerKeywords( Keywords& keys ){
 }
 
 CS2Backbone::CS2Backbone(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao)
+PLUMED_COLVAR_INIT(ao),
+camshift(false),
+pbc(true)
 {
   string stringadb;
   string stringapdb;
+
+  parseFlag("CAMSHIFT",camshift);
 
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
@@ -509,6 +541,7 @@ PLUMED_COLVAR_INIT(ao)
   box_nupdate=25;
   parse("NEIGH_FREQ", box_nupdate);
 
+  unsigned numResidues;
   parse("NRES", numResidues);
 
   stringadb  = stringa_data + string("/camshift.db");
@@ -532,26 +565,25 @@ PLUMED_COLVAR_INIT(ao)
 #ifndef NDEBUG
   debug_report();
 #endif
-  vector<vector<double> > exp_cs(numResidues,vector<double>(6));
   log.printf("  Reading experimental data ...\n"); log.flush();
   stringadb = stringa_data + string("/CAshifts.dat");
   log.printf("  Initializing CA shifts %s\n", stringadb.c_str()); log.flush();
-  read_cs(stringadb, "CA", exp_cs);
+  read_cs(stringadb, "CA");
   stringadb = stringa_data + string("/CBshifts.dat");
   log.printf("  Initializing CB shifts %s\n", stringadb.c_str()); log.flush();
-  read_cs(stringadb, "CB", exp_cs);
+  read_cs(stringadb, "CB");
   stringadb = stringa_data + string("/Cshifts.dat");
   log.printf("  Initializing C' shifts %s\n", stringadb.c_str()); log.flush();
-  read_cs(stringadb, "C", exp_cs);
+  read_cs(stringadb, "C");
   stringadb = stringa_data + string("/HAshifts.dat");
   log.printf("  Initializing HA shifts %s\n", stringadb.c_str()); log.flush();
-  read_cs(stringadb, "HA", exp_cs);
+  read_cs(stringadb, "HA");
   stringadb = stringa_data + string("/Hshifts.dat");
   log.printf("  Initializing H shifts %s\n", stringadb.c_str()); log.flush();
-  read_cs(stringadb, "H", exp_cs);
+  read_cs(stringadb, "H");
   stringadb = stringa_data + string("/Nshifts.dat");
   log.printf("  Initializing N shifts %s\n", stringadb.c_str()); log.flush();
-  read_cs(stringadb, "N", exp_cs);
+  read_cs(stringadb, "N");
 
   /* this is a workaround for those chemical shifts that can result in too large forces */
   remove_problematic("GLN", "CB");
@@ -600,33 +632,52 @@ PLUMED_COLVAR_INIT(ao)
 
   log<<"  Bibliography "
      <<plumed.cite("Kohlhoff K, Robustelli P, Cavalli A, Salvatella A, Vendruscolo M, J. Am. Chem. Soc. 131, 13894 (2009)")
-     <<plumed.cite("Camilloni C, Robustelli P, De Simone A, Cavalli A, Vendruscolo M, J. Am. Chem. Soc. 134, 3968 (2012)") <<"\n";
+     <<plumed.cite("Camilloni C, Robustelli P, De Simone A, Cavalli A, Vendruscolo M, J. Am. Chem. Soc. 134, 3968 (2012)")
+     <<plumed.cite("Granata D, Camilloni C, Vendruscolo M, Laio A, Proc. Natl. Acad. Sci. USA 110, 6817 (2013)")<<"\n";
 
-  c_sh.resize(numResidues, vector<unsigned>(6));
   const string str_cs[] = {"ha_","hn_","nh_","ca_","cb_","co_"};
-  unsigned k=0;
   unsigned index=0;
-  for(unsigned i=0;i<atom.size();i++) {
-    for(unsigned a=0;a<atom[i].size();a++) {
-      unsigned res=index+a;
-      std::string num; Tools::convert(res,num);
-      for(unsigned at_kind=0;at_kind<6;at_kind++){
-        if(atom[i][a].csdoit[at_kind]) {
-          addComponentWithDerivatives(str_cs[at_kind]+num);
-          componentIsNotPeriodic(str_cs[at_kind]+num);
-          c_sh[res][at_kind]=k;
-          k++; 
-          if(!noexp) { 
-            addComponent("exp"+str_cs[at_kind]+num); 
-            componentIsNotPeriodic("exp"+str_cs[at_kind]+num);
-            Value* comp=getPntrToComponent("exp"+str_cs[at_kind]+num);
-            comp->set(exp_cs[res][at_kind]);
-            k++;
+  if(camshift) noexp = true;
+  if(!camshift) {
+    for(unsigned i=0;i<atom.size();i++) {
+      for(unsigned a=0;a<atom[i].size();a++) {
+        unsigned res=index+a;
+        std::string num; Tools::convert(res,num);
+        for(unsigned at_kind=0;at_kind<6;at_kind++){
+          if(atom[i][a].exp_cs[at_kind]!=0) {
+            addComponentWithDerivatives(str_cs[at_kind]+num);
+            componentIsNotPeriodic(str_cs[at_kind]+num);
+            atom[i][a].comp[at_kind] = getPntrToComponent(str_cs[at_kind]+num);
           }
         }
       }
+      index += atom[i].size();
     }
-    index += atom[i].size();
+  } else {
+    addValueWithDerivatives();
+    setNotPeriodic();
+    for(unsigned i=0;i<atom.size();i++) {
+      index += atom[i].size();
+    }
+  }
+
+  if(!noexp) {
+    index = 0; 
+    for(unsigned i=0;i<atom.size();i++) {
+      for(unsigned a=0;a<atom[i].size();a++) {
+        unsigned res=index+a;
+        std::string num; Tools::convert(res,num);
+        for(unsigned at_kind=0;at_kind<6;at_kind++){
+          if(atom[i][a].exp_cs[at_kind]!=0) {
+            addComponent("exp"+str_cs[at_kind]+num); 
+            componentIsNotPeriodic("exp"+str_cs[at_kind]+num);
+            Value* comp=getPntrToComponent("exp"+str_cs[at_kind]+num);
+            comp->set(atom[i][a].exp_cs[at_kind]);
+          }
+        }
+      }
+      index += atom[i].size();
+    }
   }
 
   /* temporary check, the idea is that I can remove NRES completely */
@@ -648,15 +699,13 @@ void CS2Backbone::remove_problematic(const string &res, const string &nucl) {
   for(unsigned i=0;i<atom.size();i++){
     for(unsigned a=0;a<atom[i].size();a++){
       if(atom[i][a].res_name.c_str()==res) {
-        atom[i][a].csdoit[n] = false;
-        atom[i][a].doit = false; 
-        for(unsigned at_kind=0;at_kind<6;at_kind++) if(atom[i][a].csdoit[at_kind]) {atom[i][a].doit = true; break;} 
+        atom[i][a].exp_cs[n] = 0;
       }
     }
   }
 }
 
-void CS2Backbone::read_cs(const string &file, const string &nucl, vector<vector<double> > &exp_cs){
+void CS2Backbone::read_cs(const string &file, const string &nucl){
   ifstream in;
   in.open(file.c_str());
   if(!in) error("CS2Backbone: Unable to open " + file);
@@ -677,42 +726,48 @@ void CS2Backbone::read_cs(const string &file, const string &nucl, vector<vector<
     if(tok[0]=='#'){ ++iter; continue;}
     unsigned p = atoi(tok.c_str());
     p = p - 1;
-    unsigned res = p;
     const unsigned seg = frag_segment(p);
     p = frag_relitive_index(p,seg);
     tok = *iter; ++iter;
     double cs = atof(tok.c_str());
     if(atom[seg][p].pos[n]<=0) cs=0;
-    exp_cs[res][n] = cs; 
-    if(cs!=0) {
-      atom[seg][p].csdoit[n]=true; 
-      atom[seg][p].doit=true;
-    }
+    atom[seg][p].exp_cs[n] = cs; 
   }
+  in.close();
 }
 
 void CS2Backbone::calculate()
 {
   if(pbc) makeWhole();
-
   if(getExchangeStep()) box_count=0;
-
   if(box_count==0) update_neighb();
 
   compute_ring_parameters();
-
   compute_dihedrals();
+
+  double score = 0.;
+
+  vector<double> camshift_sigma2(6);
+  camshift_sigma2[0] = 0.08; // HA 
+  camshift_sigma2[1] = 0.30; // HN
+  camshift_sigma2[2] = 9.00; // NH
+  camshift_sigma2[3] = 1.30; // CA
+  camshift_sigma2[4] = 1.56; // CB
+  camshift_sigma2[5] = 1.70; // CO
 
   unsigned index=0;
   const unsigned chainsize = atom.size();
   const unsigned atleastned = 72+ringInfo.size()*6;
+
   // CYCLE OVER MULTIPLE CHAINS
+  #pragma omp parallel num_threads(OpenMP::getNumThreads())
   for(unsigned s=0;s<chainsize;s++){
     const unsigned psize = atom[s].size();
-    #pragma omp parallel for num_threads(OpenMP::getNumThreads())  
+    vector<Vector> omp_deriv;
+    if(camshift) omp_deriv.resize(getNumberOfAtoms(), Vector(0,0,0));
+    #pragma omp for reduction(+:score) 
     // SKIP FIRST AND LAST RESIDUE OF EACH CHAIN
     for(unsigned a=1;a<psize-1;a++){
-      if(!atom[s][a].doit) continue;
 
       const Fragment *myfrag = &atom[s][a];
       const unsigned aa_kind = myfrag->res_kind;
@@ -734,7 +789,7 @@ void CS2Backbone::calculate()
 
       // CYCLE OVER THE SIX BACKBONE CHEMICAL SHIFTS
       for(unsigned at_kind=0;at_kind<6;at_kind++){
-        if(myfrag->csdoit[at_kind]){
+        if(atom[s][a].exp_cs[at_kind]!=0){
           // Common constant and AATYPE
           const double * CONSTAACURR = db.CONSTAACURR(aa_kind,at_kind);
           const double * CONSTAANEXT = db.CONSTAANEXT(aa_kind,at_kind);
@@ -945,7 +1000,7 @@ void CS2Backbone::calculate()
                   g = delta(getPosition(ringInfo[i].atom[((at+2-limit) % 3) + limit]), getPosition(ringInfo[i].atom[((at+1-limit) % 3) + limit])); 
                 // atom 2 (5-membered rings)
     	        } else g = delta(getPosition(ringInfo[i].atom[4]) , getPosition(ringInfo[i].atom[3])) + 
-                           delta(getPosition(ringInfo[i].atom[1]) , getPosition(ringInfo[i].atom[2]));
+                           delta(getPosition(ringInfo[i].atom[1]) , getPosition(ringInfo[i].atom[0]));
 
                 const Vector ab = crossProduct(d,g);
                 const Vector c  = crossProduct(n,g);
@@ -1019,19 +1074,32 @@ void CS2Backbone::calculate()
           }
           //END OF DIHE
 
-          Value* comp=getPntrToComponent(c_sh[index+a][at_kind]);
-          comp->set(cs);
-          Tensor virial;
-          const unsigned listsize = list.size();
-          for(unsigned i=0;i<listsize;i++) {
-            setAtomsDerivatives(comp,list[i],ff[i]);
-            virial+=Tensor(getPosition(list[i]),ff[i]);
+          Value * comp;
+          double fact = 1.0;
+          if(!camshift) { 
+            comp = atom[s][a].comp[at_kind];
+            comp->set(cs);
+            for(unsigned i=0;i<list.size();i++) setAtomsDerivatives(comp,list[i],fact*ff[i]);
+            setBoxDerivativesNoPbc(comp);
+          } else {
+            // but I would also divide for the weights derived with metainference
+            comp = getPntrToValue();
+            score += (cs - atom[s][a].exp_cs[at_kind])*(cs - atom[s][a].exp_cs[at_kind])/camshift_sigma2[at_kind];
+            fact = 2.0*(cs - atom[s][a].exp_cs[at_kind])/camshift_sigma2[at_kind];
+            for(unsigned i=0;i<list.size();i++) omp_deriv[list[i]] += fact*ff[i];
           }
-          setBoxDerivatives(comp,-virial);
         } 
       }
     }
+    #pragma omp critical
+    if(camshift) for(int i=0;i<getPositions().size();i++) setAtomsDerivatives(i,omp_deriv[i]);
     index += psize;
+  }
+
+  // in the case of camshift we calculate the virial at the end
+  if(camshift) {
+    setBoxDerivativesNoPbc();
+    setValue(score);
   }
 
   ++box_count;
@@ -1044,16 +1112,15 @@ void CS2Backbone::update_neighb(){
     const unsigned psize = atom[s].size();
     #pragma omp parallel for num_threads(OpenMP::getNumThreads())  
     for(unsigned a=1;a<psize-1;a++){
-      if(!atom[s][a].doit) continue;
       const unsigned boxsize = getNumberOfAtoms();
       atom[s][a].box_nb.clear();
-      atom[s][a].box_nb.reserve(3*numResidues);
+      atom[s][a].box_nb.reserve(300);
       const unsigned res_curr = res_num[atom[s][a].pos[0]];
       for(unsigned bat=0; bat<boxsize; bat++) {
         const unsigned res_dist = abs(static_cast<int>(res_curr-res_num[bat]));
         if(res_dist<2) continue;
         for(unsigned at_kind=0;at_kind<6; at_kind++) {
-          if(!atom[s][a].csdoit[at_kind]) continue;
+          if(atom[s][a].exp_cs[at_kind]==0.) continue;
           const unsigned ipos = atom[s][a].pos[at_kind]; 
           const Vector distance = delta(getPosition(bat),getPosition(ipos));
           const double d2=distance.modulo2();
@@ -1100,7 +1167,6 @@ void CS2Backbone::compute_dihedrals(){
     const unsigned psize = atom[s].size();
     #pragma omp parallel for num_threads(OpenMP::getNumThreads())  
     for(unsigned a=1;a<psize-1;a++){
-      if(!atom[s][a].doit) continue;
       const Fragment *myfrag = &atom[s][a];
       if(myfrag->phi.size()==4){
         const Vector d0 = delta(getPosition(myfrag->phi[1]), getPosition(myfrag->phi[0]));
@@ -1168,25 +1234,14 @@ void CS2Backbone::init_backbone(const PDB &pdb){
     vector<int> C_;
     vector<int> O_;
     vector<int> CX_;
-    N_.resize (resrange);
-    H_.resize (resrange);
-    CA_.resize(resrange);
-    CB_.resize(resrange);
-    HA_.resize(resrange);
-    C_.resize (resrange);
-    O_.resize (resrange);
-    CX_.resize(resrange);
-
-    for(unsigned a=0;a<resrange;a++){
-      N_[a]  = -1;
-      H_[a]  = -1;
-      CA_[a] = -1;
-      CB_[a] = -1;
-      HA_[a] = -1;
-      C_[a]  = -1;
-      O_[a]  = -1;
-      CX_[a] = -1;
-    }
+    N_.resize (resrange,-1);
+    H_.resize (resrange,-1);
+    CA_.resize(resrange,-1);
+    CB_.resize(resrange,-1);
+    HA_.resize(resrange,-1);
+    C_.resize (resrange,-1);
+    O_.resize (resrange,-1);
+    CX_.resize(resrange,-1);
 
     vector<AtomNumber> allatoms = pdb.getAtomsInChain(chains[i]);
     // cycle over all the atoms in the chain
@@ -1214,17 +1269,12 @@ void CS2Backbone::init_backbone(const PDB &pdb){
     for(unsigned a=start;a<=end;a++){
       unsigned f_idx = a - res_offset;
       Fragment at;
-      at.pos.resize(6); 
-      at.csdoit.resize(6,false);
-      at.doit = false; 
-      {
-        at.pos[0] = HA_[f_idx];
-        at.pos[1] =  H_[f_idx];
-        at.pos[2] =  N_[f_idx];
-        at.pos[3] = CA_[f_idx];
-        at.pos[4] = CB_[f_idx];
-        at.pos[5] =  C_[f_idx];
-      }
+      at.pos[0] = HA_[f_idx];
+      at.pos[1] =  H_[f_idx];
+      at.pos[2] =  N_[f_idx];
+      at.pos[3] = CA_[f_idx];
+      at.pos[4] = CB_[f_idx];
+      at.pos[5] =  C_[f_idx];
       at.res_type_prev = at.res_type_curr = at.res_type_next = 0;
       at.res_name = pdb.getResidueName(a, chains[i]); 
       at.res_kind = db.kind(at.res_name);
@@ -1278,10 +1328,6 @@ void CS2Backbone::init_backbone(const PDB &pdb){
           at.chi1.push_back(CB_[f_idx]);
           at.chi1.push_back(CX_[f_idx]);
         }
-        at.dd0.resize(3);
-        at.dd10.resize(3);
-        at.dd21.resize(3);
-        at.dd2.resize(3);
       }
       atm_.push_back(at);
     }
@@ -1421,12 +1467,12 @@ void CS2Backbone::init_types(const PDB &pdb){
       else if (atom_type == 'H') t = D_H;
       else if (atom_type == 'N') t = D_N;
       else if (atom_type == 'S') t = D_S;
-      else plumed_merror("Camshift:init_type: unknown atom type!\n");
+      else plumed_merror("CS2Backbone:init_type: unknown atom type!\n");
     }else{
       if (atom_type == 'C') t = D_C2;
       else if (atom_type == 'O') t = D_O2;
       else if (atom_type == 'N') t = D_N2;
-      else plumed_merror("Camshift:init_type: unknown atom type!\n");
+      else plumed_merror("CS2Backbone:init_type: unknown atom type!\n");
     }
     type.push_back(t);
   }
