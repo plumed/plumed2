@@ -236,6 +236,8 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.add("optional","STATUS_FILE","write a file with all the data usefull for restart/continuation of Metainference");
   keys.add("compulsory","WRITE_STRIDE","write the status to a file every N steps, this can be used for restart/continuation");
   useCustomisableComponents(keys);
+  keys.addOutputComponent("weight", "default","weights of the weighted average");
+  keys.addOutputComponent("MetaDf", "default","force on metadynamics");
   keys.addOutputComponent("sigma", "default","uncertainty parameter");
   keys.addOutputComponent("sigmaMean","default","uncertainty in the mean estimate");
   keys.addOutputComponent("rewSigmaMean","default","sigma mean multiplier");
@@ -487,6 +489,15 @@ atoms(plumed.getAtoms())
   log.printf("  initial standard errors of the mean");
   for(unsigned i=0;i<sigma_mean_.size();++i) log.printf(" %f", sigma_mean_[i]);
   log.printf("\n");
+
+
+
+  addComponent("MetaDf");
+  componentIsNotPeriodic("MetaDf");
+  valueRSigmaMean=getPntrToComponent("MetaDf");
+  addComponent("weight");
+  componentIsNotPeriodic("weight");
+  valueRSigmaMean=getPntrToComponent("weight");
 
   if(doscale_) { 
     addComponent("scale");  
@@ -808,6 +819,9 @@ double Metainference::getEnergyForceGJE(const vector<double> &mean, const double
     if(do_reweight) w_tmp += -fact*(getArgument(i) - mean[i])*dev*scale_*inv_s2[sel_sigma];
   }
   if(do_reweight) setOutputForce(narg, w_tmp);
+
+  getPntrToComponent("MetaDf")->set(w_tmp);
+  getPntrToComponent("weight")->set(fact);
   // add Jeffrey's prior in case one sigma for all data points
   if(noise_type_==GAUSS) ene += 0.5*std::log(ss[0]);
   return kbt_*ene;
