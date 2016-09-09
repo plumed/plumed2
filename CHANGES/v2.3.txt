@@ -118,6 +118,7 @@ Fixes since 2.3b. Relevant things could be merged in the changelog above when we
 - Fixed critical pragma in openmp of Colvar. This could have lead to wrong virial accumulation.
 - Extended checkpoint infrastracture, now \ref METAD and \ref PBMETAD will write GRIDS also on checkpoint step (only the GROMACS patch
   is currently using the checkpointing interface)
+- Fixed a bug in \ref PBMETAD that was preventing the writing of GRIDS if a hill was not added in that same step 
 - GSL library is now searched by default during `./configure`.
 - Removed IMD modules. In case someone is interested in restoring it, please contact the PLUMED developers.
 - (for developers) Active modules to enable regtests are chosen using `plumed config`.
