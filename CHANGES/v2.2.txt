@@ -173,6 +173,7 @@ For users:
 - Fix a bug in \ref PBMETAD when biasing periodic and not periodic collective variables at the same time 
 - GSL library is now treated by `./configure` in the same way as other libraries, that is `-lgsl -lgslcblas` are only
   added if necessary.
+- Fix a bug in \ref METAD when using INTERVAL and ADAPTIVE gaussians at the same time
 
 For developers:
 - Macports portile is now tested on travis at every plumed push.
