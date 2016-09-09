@@ -931,54 +931,56 @@ void MetaD::addGaussian(const Gaussian& hill){
 
 vector<unsigned> MetaD::getGaussianSupport(const Gaussian& hill)
 {
- vector<unsigned> nneigh;
- if(doInt_){
-   double cutoff=sqrt(2.0*DP2CUTOFF)*hill.sigma[0];
-   if(hill.center[0]+cutoff > uppI_ || hill.center[0]-cutoff < lowI_) { 
-     // in this case, we updated the entire grid to avoid problems
-     return BiasGrid_->getNbin();
-   } else {
-     nneigh.push_back( static_cast<unsigned>(ceil(cutoff/BiasGrid_->getDx()[0])) );
-     return nneigh;
-   }
- }
+  vector<unsigned> nneigh;
+  vector<double> cutoff; 
+  unsigned ncv=getNumberOfArguments();
 
- // traditional or flexible hill? 
- if(hill.multivariate){
-	unsigned ncv=getNumberOfArguments();
-	unsigned k=0;
-	//log<<"------- GET GAUSSIAN SUPPORT --------\n"; 
-	Matrix<double> mymatrix(ncv,ncv);
-	for(unsigned i=0;i<ncv;i++){
-		for(unsigned j=i;j<ncv;j++){
-			mymatrix(i,j)=mymatrix(j,i)=hill.sigma[k]; // recompose the full inverse matrix
-			k++;
-		}
-	}
-        // Reinvert so to have the ellipses 
-	Matrix<double> myinv(ncv,ncv);
-	Invert(mymatrix,myinv);
-	Matrix<double> myautovec(ncv,ncv);
-	vector<double> myautoval(ncv); //should I take this or their square root? 
-	diagMat(myinv,myautoval,myautovec);
-	double maxautoval;maxautoval=0.;
-        unsigned ind_maxautoval;ind_maxautoval=ncv; 
-	for (unsigned i=0;i<ncv;i++){
-		if(myautoval[i]>maxautoval){maxautoval=myautoval[i];ind_maxautoval=i;}
-        }  
-	for (unsigned i=0;i<ncv;i++){
-		double cutoff=sqrt(2.0*DP2CUTOFF)*abs(sqrt(maxautoval)*myautovec(i,ind_maxautoval));
-		//log<<"AUTOVAL "<<myautoval[0]<<" COMP "<<abs(myautoval[0]*myautovec(i,0)) <<" CUTOFF "<<cutoff<<"\n";
-	  	nneigh.push_back( static_cast<unsigned>(ceil(cutoff/BiasGrid_->getDx()[i])) );
-        }
- }else{
-	 for(unsigned i=0;i<getNumberOfArguments();++i){
-	  double cutoff=sqrt(2.0*DP2CUTOFF)*hill.sigma[i];
-	  nneigh.push_back( static_cast<unsigned>(ceil(cutoff/BiasGrid_->getDx()[i])) );
- 	}
- }
-	//log<<"------- END GET GAUSSIAN SUPPORT --------\n"; 
- return nneigh;
+  // traditional or flexible hill? 
+  if(hill.multivariate){
+    unsigned k=0;
+    Matrix<double> mymatrix(ncv,ncv);
+    for(unsigned i=0;i<ncv;i++){
+      for(unsigned j=i;j<ncv;j++){
+        // recompose the full inverse matrix
+        mymatrix(i,j)=mymatrix(j,i)=hill.sigma[k];
+        k++;
+      }
+    }
+    // Reinvert so to have the ellipses 
+    Matrix<double> myinv(ncv,ncv);
+    Invert(mymatrix,myinv);
+    Matrix<double> myautovec(ncv,ncv);
+    vector<double> myautoval(ncv); //should I take this or their square root? 
+    diagMat(myinv,myautoval,myautovec);
+    double maxautoval=0.;
+    unsigned ind_maxautoval;ind_maxautoval=ncv; 
+    for(unsigned i=0;i<ncv;i++){
+      if(myautoval[i]>maxautoval){maxautoval=myautoval[i];ind_maxautoval=i;}
+    }  
+    for(unsigned i=0;i<ncv;i++){
+      cutoff.push_back(sqrt(2.0*DP2CUTOFF)*abs(sqrt(maxautoval)*myautovec(i,ind_maxautoval)));
+    }
+  } else {
+    for(unsigned i=0;i<ncv;++i){
+      cutoff.push_back(sqrt(2.0*DP2CUTOFF)*hill.sigma[i]);
+    }
+  }
+
+  if(doInt_){
+    if(hill.center[0]+cutoff[0] > uppI_ || hill.center[0]-cutoff[0] < lowI_) { 
+      // in this case, we updated the entire grid to avoid problems
+      return BiasGrid_->getNbin();
+    } else {
+      nneigh.push_back( static_cast<unsigned>(ceil(cutoff[0]/BiasGrid_->getDx()[0])) );
+      return nneigh;
+    }
+  } else {
+    for(unsigned i=0;i<ncv;i++){
+      nneigh.push_back( static_cast<unsigned>(ceil(cutoff[i]/BiasGrid_->getDx()[i])) );
+    }
+  }
+ 
+  return nneigh;
 }
 
 double MetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
