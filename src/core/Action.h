@@ -214,6 +214,8 @@ public:
 /// In other words, this is *always* called, even when action
 /// is not active.
   virtual void beforeUpdate(){}
+  virtual void setSpecialUpdate(){}
+  virtual void unsetSpecialUpdate(){}
 
 /// Update.
 /// This method is called one time per step.

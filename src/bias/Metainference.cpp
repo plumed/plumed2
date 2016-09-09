@@ -815,10 +815,15 @@ double Metainference::getEnergyForceGJE(const vector<double> &mean, const double
       ene += 0.5*std::log(ss[sel_sigma]);
     }
     ene += 0.5*dev*dev*inv_s2[sel_sigma] + 0.5*std::log(ss[sel_sigma]*2*M_PI);
-    setOutputForce(i, -kbt_*fact*dev*scale_*inv_s2[sel_sigma]);
-    if(do_reweight) w_tmp += -fact*(getArgument(i) - mean[i])*dev*scale_*inv_s2[sel_sigma];
+    const double mult = fact*dev*scale_*inv_s2[sel_sigma];
+    setOutputForce(i, -kbt_*mult);
+    w_tmp += (getArgument(i)-mean[i])*mult;
   }
-  if(do_reweight) setOutputForce(narg, w_tmp);
+  if(do_reweight) {
+    setOutputForce(narg, -w_tmp);
+    if(w_tmp>0) (getPntrToArgument(narg)->getPntrToAction())->setSpecialUpdate();
+    else (getPntrToArgument(narg)->getPntrToAction())->unsetSpecialUpdate();
+  }
 
   getPntrToComponent("MetaDf")->set(w_tmp);
   getPntrToComponent("weight")->set(fact);

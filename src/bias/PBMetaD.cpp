@@ -194,7 +194,7 @@ private:
   vector< vector<Gaussian> > hills_;
   vector<OFile*> hillsOfiles_;
   vector<OFile*> gridfiles_;
-  vector<Grid*> BiasGrids_;
+  vector<Grid*>  BiasGrids_;
   bool    grid_;
   double  height0_;
   double  biasf_;
@@ -207,7 +207,8 @@ private:
   vector<double> uppI_;
   vector<double> lowI_;
   vector<bool>  doInt_;
-  bool isFirstStep;
+  bool    isFirstStep;
+  bool    addZeroHills;
 
   void   readGaussians(unsigned iarg, IFile*);
   bool   readChunkOfGaussians(unsigned iarg, IFile *ifile, unsigned n);
@@ -224,6 +225,8 @@ public:
   ~PBMetaD();
   void calculate();
   void update();
+  void setSpecialUpdate(){addZeroHills=true;}
+  void unsetSpecialUpdate(){addZeroHills=false;}
   static void registerKeywords(Keywords& keys);
 };
 
@@ -272,7 +275,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
 PLUMED_BIAS_INIT(ao),
 grid_(false), height0_(std::numeric_limits<double>::max()),
 biasf_(1.0), kbt_(0.0), stride_(0), wgridstride_(0), welltemp_(false),
-multiple_w(false), isFirstStep(true)
+multiple_w(false), isFirstStep(true), addZeroHills(false)
 {
 
   parse("FMT",fmt);
@@ -791,7 +794,9 @@ void PBMetaD::update()
     for(unsigned i=0; i<getNumberOfArguments(); ++i){
       height[i] *=  height0_ / norm;
       if(welltemp_) height[i] *= exp(-bias[i]/(kbt_*(biasf_-1.0)));
+      if(addZeroHills) height[i]=0.;
     }
+    addZeroHills = false;
 
     // Multiple walkers: share hills and add them all
     if(multiple_w){
