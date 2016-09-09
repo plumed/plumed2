@@ -435,44 +435,43 @@ last_step_warn_grid(0)
   }else{
 		  error("I do not know this type of adaptive scheme");	
   }
-  // parse the sigma
-  parseVector("SIGMA",sigma0_);
 
   parse("FMT",fmt);
 
-  if (adaptive_==FlexibleBin::none){
-         // if you use normal sigma you need one sigma per argument 
-         if( sigma0_.size()!=getNumberOfArguments() ) error("number of arguments does not match number of SIGMA parameters");
-  }else{
-         // if you use flexible hills you need one sigma  
-         if(sigma0_.size()!=1){
-        	 error("If you choose ADAPTIVE you need only one sigma according to your choice of type (GEOM/DIFF)");
-         } 
-	 // if adaptive then the number must be an integer
- 	 if(adaptive_==FlexibleBin::diffusion){
-		if(int(sigma0_[0])-sigma0_[0]>1.e-9 || int(sigma0_[0])-sigma0_[0] <-1.e-9 || int(sigma0_[0])<1 ){
-		 	error("In case of adaptive hills with diffusion, the sigma must be an integer which is the number of timesteps\n");	
-		} 
-	 } 
-	 // here evtl parse the sigma min and max values
-	 
-	 parseVector("SIGMA_MIN",sigma0min_);
-	 if(sigma0min_.size()>0 && sigma0min_.size()<getNumberOfArguments()) {
-           error("the number of SIGMA_MIN values be at least the number of the arguments");
-	 } else if(sigma0min_.size()==0) { 
-           sigma0min_.resize(getNumberOfArguments());
-           for(unsigned i=0;i<getNumberOfArguments();i++){sigma0min_[i]=-1.;}	
-         } 
-
-	 parseVector("SIGMA_MAX",sigma0max_);
-	 if(sigma0max_.size()>0 && sigma0max_.size()<getNumberOfArguments()) {
-           error("the number of SIGMA_MAX values be at least the number of the arguments"); 
-         } else if(sigma0max_.size()==0) { 
-           sigma0max_.resize(getNumberOfArguments());
-           for(unsigned i=0;i<getNumberOfArguments();i++){sigma0max_[i]=-1.;}	
-         } 
-
-         flexbin=new FlexibleBin(adaptive_,this,sigma0_[0],sigma0min_,sigma0max_);
+  // parse the sigma
+  parseVector("SIGMA",sigma0_);
+  if(adaptive_==FlexibleBin::none){
+    // if you use normal sigma you need one sigma per argument 
+    if( sigma0_.size()!=getNumberOfArguments() ) error("number of arguments does not match number of SIGMA parameters");
+  } else {
+    // if you use flexible hills you need one sigma  
+    if(sigma0_.size()!=1){
+      error("If you choose ADAPTIVE you need only one sigma according to your choice of type (GEOM/DIFF)");
+    } 
+    // if adaptive then the number must be an integer
+    if(adaptive_==FlexibleBin::diffusion){
+      if(int(sigma0_[0])-sigma0_[0]>1.e-9 || int(sigma0_[0])-sigma0_[0] <-1.e-9 || int(sigma0_[0])<1 ){
+       	error("In case of adaptive hills with diffusion, the sigma must be an integer which is the number of timesteps\n");	
+      } 
+    } 
+    // here evtl parse the sigma min and max values
+    parseVector("SIGMA_MIN",sigma0min_);
+    if(sigma0min_.size()>0 && sigma0min_.size()<getNumberOfArguments()) {
+      error("the number of SIGMA_MIN values be at least the number of the arguments");
+    } else if(sigma0min_.size()==0) { 
+      sigma0min_.resize(getNumberOfArguments());
+      for(unsigned i=0;i<getNumberOfArguments();i++){sigma0min_[i]=-1.;}	
+    }
+ 
+    parseVector("SIGMA_MAX",sigma0max_);
+    if(sigma0max_.size()>0 && sigma0max_.size()<getNumberOfArguments()) {
+      error("the number of SIGMA_MAX values be at least the number of the arguments"); 
+    } else if(sigma0max_.size()==0) { 
+      sigma0max_.resize(getNumberOfArguments());
+      for(unsigned i=0;i<getNumberOfArguments();i++){sigma0max_[i]=-1.;}	
+    }
+ 
+    flexbin=new FlexibleBin(adaptive_,this,sigma0_[0],sigma0min_,sigma0max_);
   }
   // note: HEIGHT is not compulsory, since one could use the TAU keyword, see below
   parse("HEIGHT",height0_);
@@ -1092,14 +1091,13 @@ double MetaD::evaluateGaussian
        bias=hill.height*exp(-dp2);
        if(der){
         for(unsigned i=0;i<cv.size();++i){
-                double tmp=0.0;
-                k=i;
-                for(unsigned j=0;j<cv.size();++j){
-                                tmp+=   dp_[j]*mymatrix(i,j)*bias;
-                        }
-                        der[i]-=tmp;
-                }   
-       }
+          double tmp=0.0;
+          for(unsigned j=0;j<cv.size();++j){
+            tmp += dp_[j]*mymatrix(i,j)*bias;
+          }
+          der[i]-=tmp;
+        }   
+      }
     }
  }else{
     for(unsigned i=0;i<cv.size();++i){
