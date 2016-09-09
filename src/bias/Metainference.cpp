@@ -783,9 +783,16 @@ double Metainference::getEnergyForceSPE(const vector<double> &mean, const double
   double w_tmp = 0.;
   for(unsigned i=0; i<narg; ++i) {
     setOutputForce(i, kbt_ * fact * f[i]);
-    if(do_reweight) w_tmp = -fact*(getArgument(i) - mean[i])*f[i];
+    w_tmp = fact*(getArgument(i) - mean[i])*f[i];
   }
-  if(do_reweight) setOutputForce(narg, w_tmp);
+  if(do_reweight) {
+    setOutputForce(narg, -w_tmp);
+    if(w_tmp>0) (getPntrToArgument(narg)->getPntrToAction())->setSpecialUpdate();
+    else (getPntrToArgument(narg)->getPntrToAction())->unsetSpecialUpdate();
+  }
+
+  getPntrToComponent("MetaDf")->set(w_tmp);
+  getPntrToComponent("weight")->set(fact);
   return kbt_*ene;
 }
 
