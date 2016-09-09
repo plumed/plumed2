@@ -252,6 +252,9 @@ void PBMetaD::registerKeywords(Keywords& keys){
   keys.add("optional","INTERVAL_MIN","monodimensional lower limits, outside the limits the system will not feel the biasing force.");
   keys.add("optional","INTERVAL_MAX","monodimensional upper limits, outside the limits the system will not feel the biasing force.");
   keys.addFlag("MULTIPLE_WALKERS",false,"Switch on MPI version of multiple walkers");
+  keys.use("RESTART");
+  keys.use("UPDATE_FROM");
+  keys.use("UPDATE_UNTIL");
 }
 
 PBMetaD::~PBMetaD(){
