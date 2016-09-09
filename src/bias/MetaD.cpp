@@ -491,11 +491,11 @@ last_step_warn_grid(0)
   } else {
     error("I do not know this type of adaptive scheme");	
   }
-  // parse the sigma
-  parseVector("SIGMA",sigma0_);
 
   parse("FMT",fmt);
 
+  // parse the sigma
+  parseVector("SIGMA",sigma0_);
   if(adaptive_==FlexibleBin::none){
     // if you use normal sigma you need one sigma per argument 
     if( sigma0_.size()!=getNumberOfArguments() ) error("number of arguments does not match number of SIGMA parameters");
@@ -1060,20 +1060,11 @@ void MetaD::addGaussian(const Gaussian& hill)
 vector<unsigned> MetaD::getGaussianSupport(const Gaussian& hill)
 {
   vector<unsigned> nneigh;
-  if(doInt_){
-    double cutoff=sqrt(2.0*DP2CUTOFF)*hill.sigma[0];
-    if(hill.center[0]+cutoff > uppI_ || hill.center[0]-cutoff < lowI_) { 
-      // in this case, we updated the entire grid to avoid problems
-      return BiasGrid_->getNbin();
-    } else {
-      nneigh.push_back( static_cast<unsigned>(ceil(cutoff/BiasGrid_->getDx()[0])) );
-      return nneigh;
-    }
-  }
- 
+  vector<double> cutoff; 
+  unsigned ncv=getNumberOfArguments();
+
   // traditional or flexible hill? 
   if(hill.multivariate){
-    unsigned ncv=getNumberOfArguments();
     unsigned k=0;
     Matrix<double> mymatrix(ncv,ncv);
     for(unsigned i=0;i<ncv;i++){
@@ -1095,15 +1086,28 @@ vector<unsigned> MetaD::getGaussianSupport(const Gaussian& hill)
       if(myautoval[i]>maxautoval){maxautoval=myautoval[i];ind_maxautoval=i;}
     }  
     for(unsigned i=0;i<ncv;i++){
-      const double cutoff=sqrt(2.0*DP2CUTOFF)*abs(sqrt(maxautoval)*myautovec(i,ind_maxautoval));
-      nneigh.push_back( static_cast<unsigned>(ceil(cutoff/BiasGrid_->getDx()[i])) );
+      cutoff.push_back(sqrt(2.0*DP2CUTOFF)*abs(sqrt(maxautoval)*myautovec(i,ind_maxautoval)));
     }
   } else {
-    for(unsigned i=0;i<getNumberOfArguments();++i){
-      const double cutoff=sqrt(2.0*DP2CUTOFF)*hill.sigma[i];
-      nneigh.push_back( static_cast<unsigned>(ceil(cutoff/BiasGrid_->getDx()[i])) );
+    for(unsigned i=0;i<ncv;++i){
+      cutoff.push_back(sqrt(2.0*DP2CUTOFF)*hill.sigma[i]);
     }
   }
+
+  if(doInt_){
+    if(hill.center[0]+cutoff[0] > uppI_ || hill.center[0]-cutoff[0] < lowI_) { 
+      // in this case, we updated the entire grid to avoid problems
+      return BiasGrid_->getNbin();
+    } else {
+      nneigh.push_back( static_cast<unsigned>(ceil(cutoff[0]/BiasGrid_->getDx()[0])) );
+      return nneigh;
+    }
+  } else {
+    for(unsigned i=0;i<ncv;i++){
+      nneigh.push_back( static_cast<unsigned>(ceil(cutoff[i]/BiasGrid_->getDx()[i])) );
+    }
+  }
+ 
   return nneigh;
 }
 
@@ -1209,7 +1213,6 @@ double MetaD::evaluateGaussian(const vector<double>& cv, const Gaussian& hill, d
       if(der){
         for(unsigned i=0;i<cv.size();++i){
           double tmp=0.0;
-          k=i;
           for(unsigned j=0;j<cv.size();++j){
             tmp += dp_[j]*mymatrix(i,j)*bias;
           }
