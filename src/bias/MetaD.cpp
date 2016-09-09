@@ -491,11 +491,11 @@ last_step_warn_grid(0)
   } else {
     error("I do not know this type of adaptive scheme");	
   }
-  // parse the sigma
-  parseVector("SIGMA",sigma0_);
 
   parse("FMT",fmt);
 
+  // parse the sigma
+  parseVector("SIGMA",sigma0_);
   if(adaptive_==FlexibleBin::none){
     // if you use normal sigma you need one sigma per argument 
     if( sigma0_.size()!=getNumberOfArguments() ) error("number of arguments does not match number of SIGMA parameters");
@@ -1213,7 +1213,6 @@ double MetaD::evaluateGaussian(const vector<double>& cv, const Gaussian& hill, d
       if(der){
         for(unsigned i=0;i<cv.size();++i){
           double tmp=0.0;
-          k=i;
           for(unsigned j=0;j<cv.size();++j){
             tmp += dp_[j]*mymatrix(i,j)*bias;
           }
