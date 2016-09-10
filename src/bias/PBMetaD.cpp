@@ -252,6 +252,9 @@ void PBMetaD::registerKeywords(Keywords& keys){
   keys.add("optional","INTERVAL_MIN","monodimensional lower limits, outside the limits the system will not feel the biasing force.");
   keys.add("optional","INTERVAL_MAX","monodimensional upper limits, outside the limits the system will not feel the biasing force.");
   keys.addFlag("MULTIPLE_WALKERS",false,"Switch on MPI version of multiple walkers");
+  keys.use("RESTART");
+  keys.use("UPDATE_FROM");
+  keys.use("UPDATE_UNTIL");
 }
 
 PBMetaD::~PBMetaD(){
@@ -830,23 +833,21 @@ void PBMetaD::update()
       writeGaussian(i, newhill, hillsOfiles_[i]);
     } 
    }
-
-   // write grid files
-   if(wgridstride_>0 && (getStep()%wgridstride_==0 || getCPT())) {
-     int r = 0;
-     if(multiple_w) {
-       if(comm.Get_rank()==0) r=multi_sim_comm.Get_rank();
-       comm.Bcast(r,0);
-     } 
-     if(r==0) {
-       for(unsigned i=0; i<gridfiles_.size(); ++i) {
-         gridfiles_[i]->rewind();
-         BiasGrids_[i]->writeToFile(*gridfiles_[i]);
-         gridfiles_[i]->flush();
-       }
-     }
-   }
-
+  }
+  // write grid files
+  if(wgridstride_>0 && (getStep()%wgridstride_==0 || getCPT())) {
+    int r = 0;
+    if(multiple_w) {
+      if(comm.Get_rank()==0) r=multi_sim_comm.Get_rank();
+      comm.Bcast(r,0);
+    } 
+    if(r==0) {
+      for(unsigned i=0; i<gridfiles_.size(); ++i) {
+        gridfiles_[i]->rewind();
+        BiasGrids_[i]->writeToFile(*gridfiles_[i]);
+        gridfiles_[i]->flush();
+      }
+    }
   }
 }
 
