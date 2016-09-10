@@ -359,7 +359,7 @@ isFirstStep(true), addZeroHills(false)
       vector<double> tmp_smin, tmp_smax;
       tmp_smin.resize(1,sigma0min_[i]);
       tmp_smax.resize(1,sigma0max_[i]);
-      flexbin.push_back(FlexibleBin(adaptive_,this,sigma0_[0],tmp_smin,tmp_smax));
+      flexbin.push_back(FlexibleBin(adaptive_,this,i,sigma0_[0],tmp_smin,tmp_smax));
     }
   }
  
@@ -441,7 +441,6 @@ isFirstStep(true), addZeroHills(false)
         plumed_assert(sigma0_.size()==getNumberOfArguments());
         gspacing.resize(getNumberOfArguments());
         for(unsigned i=0;i<gspacing.size();i++) gspacing[i]=0.2*sigma0min_[i];
-        //error("At least one among GRID_BIN and GRID_SPACING should be used");
       }
     } else if(gspacing.size()!=0 && gbin.size()==0){
       log<<"  The number of bins will be estimated from GRID_SPACING\n";
@@ -912,7 +911,7 @@ void PBMetaD::update()
 
   // if you use adaptive, call the FlexibleBin 
   if(adaptive_!=FlexibleBin::none){
-    for(unsigned i=0;i<getNumberOfArguments();i++) flexbin[i].update(nowAddAHill);
+    for(unsigned i=0;i<getNumberOfArguments();i++) flexbin[i].update(nowAddAHill,i);
     multivariate=true;
   } else {
     multivariate=false;
@@ -928,7 +927,7 @@ void PBMetaD::update()
     vector<double> sigma_tmp(1);
     double norm = 0.0;
     for(unsigned i=0; i<getNumberOfArguments(); ++i){
-      if(adaptive_!=FlexibleBin::none) thissigma[i]=flexbin[i].getInverseMatrix()[0];
+      if(adaptive_!=FlexibleBin::none) thissigma[i]=flexbin[i].getInverseMatrix(i)[0];
       else thissigma[i]=sigma0_[i];
       cv[i]     = getArgument(i);
       cv_tmp[0] = getArgument(i);

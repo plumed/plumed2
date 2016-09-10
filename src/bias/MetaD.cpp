@@ -590,7 +590,7 @@ last_step_warn_grid(0)
         for(unsigned i=0;i<gspacing.size();i++) gspacing[i]=0.2*sigma0_[i];
       } else {
         // with adaptive hills and grid a sigma min must be specified
-        if(sigma0min_.size()==0) error("When using Adaptive Gaussians on a grid SIGMA_MIN must be specified");
+        if(sigma0min_.size()==0) error("When using ADAPTIVE Gaussians on a GRID, SIGMA_MIN must be specified");
         log<<"  Binsize not specified, 1/5 of sigma_min will be be used\n";
         plumed_assert(sigma0_.size()==getNumberOfArguments());
         gspacing.resize(getNumberOfArguments());
