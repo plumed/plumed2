@@ -50,6 +50,13 @@ const double pi(3.14159265358979323846264338327950288419716939937510582097494459
 /// \ingroup TOOLBOX
 /// Empty class which just contains several (static) tools
 class Tools{
+/// class to convert a string to a generic type T
+  template<class T>
+  static bool convertToAny(const std::string & str,T &t);
+/// class to convert a string to a real type T.
+/// T should be either float, double, or long double
+  template<class T>
+  static bool convertToReal(const std::string & str,T &t);
 public:
 /// Split the line in words using separators.
 /// It also take into account parenthesis. Outer parenthesis found are removed from
