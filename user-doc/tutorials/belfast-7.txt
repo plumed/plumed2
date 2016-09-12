@@ -177,7 +177,7 @@ so there seems not to be any problem on this side.
 We can use the second file to reconstruct the continuous trajectories of each replica in temperature:
 
 \verbatim
-trjcat_mpi -f traj0.trr traj1.trr -demux replica_index.xvg
+gmx_mpi trjcat -f traj0.trr traj1.trr -demux replica_index.xvg
 \endverbatim
 
 and the following PLUMED input file (plumed_demux.dat) to recalculate the value of the CVs on the demuxed trajectories,
