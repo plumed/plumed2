@@ -58,7 +58,7 @@ folder (see first example in the resources tarball), one file for each nucleus. 
 This example can be executed as
 
 \verbatim
-mdrun_mpi -s topol -plumed plumed
+gmx_mpi mdrun -s topol -plumed plumed
 \endverbatim
 
 \subsection belfast-9-replica Replica-Averaged Restrained Simulations 
@@ -104,7 +104,7 @@ force field.
 
 This example can be executed as
 \verbatim
-mpiexec -np 4 mdrun_mpi -s topol -plumed plumed -multi 4
+mpiexec -np 4 gmx_mpi mdrun -s topol -plumed plumed -multi 4
 \endverbatim
 
 The third example show how \ref RDC (calculated with the theta-methods) can be employed in the same way, in this case to describe the native state of Ubiquitin. In 
@@ -128,7 +128,7 @@ In this input the first four N-H RDCs are defined.
  
 This example can be executed as
 \verbatim
-mpiexec -np 8 mdrun_mpi -s topol -plumed plumed -multi 8
+mpiexec -np 8 gmx_mpi mdrun -s topol -plumed plumed -multi 8
 \endverbatim
 
 \section belfast-9-refer Reference
