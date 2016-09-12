@@ -19,12 +19,12 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include <algorithm>
-#include <string>
 #include "MDAtoms.h"
 #include "tools/Tools.h"
 #include "tools/OpenMP.h"
 #include "tools/Exception.h"
+#include <algorithm>
+#include <string>
 
 using namespace std;
 
@@ -66,7 +66,7 @@ public:
   }
   Vector getMDforces(const unsigned index)const{
     Vector force(fx[stride*index],fy[stride*index],fz[stride*index]);
-    return force;
+    return force/scalef;
   }
   void getBox(Tensor &)const;
   void getPositions(const vector<int>&index,vector<Vector>&positions)const;

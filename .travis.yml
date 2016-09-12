@@ -4,10 +4,12 @@ matrix:
 # list of configurations to be attempted:
 # MPI + doc
 # this is the "master" one, it is going to update the manual if log contains [makedoc]
+# Variable PLUMED_ALL_TESTS=yes ensures that all the regtests can be run.
+# If some of them is not enabled, the whole suite will fail.
   - os: linux
     dist: trusty
     sudo: required
-    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes
+    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes PLUMED_ALL_TESTS=yes
 # the following are with debug flags
   - os: linux
     dist: trusty
@@ -48,6 +50,13 @@ matrix:
 # osx parallel
   - os: osx
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3
+# osx serial macports
+  - os: osx
+    env: PLUMED_MACPORTS="plumed"
+# osx serial macports debug variant
+  - os: osx
+    env: PLUMED_MACPORTS="plumed +crystallization +manyrestraints +adjmat"
+# I don't put any mpi variant with macports since it takes too long to compile
   allow_failures:
 # I allow this to fail temporarily
     - env: CPPCHECK=yes CPPCHECK_VERSION=1.74
@@ -62,10 +71,11 @@ install:
   - export LD_LIBRARY_PATH="$HOME/opt/lib:$LD_LIBRARY_PATH"
 # build the manual, only if log contains string [makedoc]
   - export PLUMED_NUM_THREADS=2
-  - ./.travis/check.log makedoc  || MAKEDOC=no
+# accept both [makedoc] and [makedocs] as an option
+  - ./.travis/check.log makedoc  || ./.travis/check.log makedocs || MAKEDOC=no
   - ./.travis/check.log valgrind || VALGRIND=no
 # update packages
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update > /dev/null ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]] && test -z "$PLUMED_MACPORTS" ; then brew update > /dev/null ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update -qq ; fi
 # install some package - these are fast, we install them anyway
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libmatheval-dev libfftw3-dev gsl-bin libgsl0-dev ; fi
@@ -89,6 +99,15 @@ install:
 # moreover, we hardcode path to dynamic library, required for xdrfile to link properly
 # I do it only when LD_LIBRARY_PATH is non blank, since otherwise clang gives problems
   - if test -n "$LD_LIBRARY_PATH" ; then PLUMED_LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH" ; fi
+# macports related stuff
+  - if test -n "$PLUMED_MACPORTS" ; then stty rows 40 columns 80 ; fi
+  - if test -n "$PLUMED_MACPORTS" ; then wget https://distfiles.macports.org/MacPorts/MacPorts-2.3.4.tar.bz2 && tar xvfj MacPorts-2.3.4.tar.bz2 ; fi
+  - if test -n "$PLUMED_MACPORTS" ; then cd MacPorts-2.3.4 && ./configure && sudo make install && cd - && sudo rm -fr MacPorts-2.3.4 ; fi
+  - if test -n "$PLUMED_MACPORTS" ; then export PATH=/opt/local/bin:$PATH ; fi
+  - if test -n "$PLUMED_MACPORTS" ; then sudo port -v selfupdate ; fi
+  - if test -n "$PLUMED_MACPORTS" ; then make macports ; fi
+  - if test -n "$PLUMED_MACPORTS" ; then ./.travis/config.macports.sh ; fi
+
 script:
 # we enable crystallization and manyrestraints modules
   - CONFIG_FLAGS="$CONFIG_FLAGS --enable-modules=crystallization:manyrestraints:adjmat"
@@ -104,12 +123,15 @@ script:
 # we install plumed so that it is in the path
   - if test "$PLUMED_CXX" ; then make install prefix="$HOME/opt" ; fi
 
+# build using macports
+  - if test -n "$PLUMED_MACPORTS" ; then sudo port install $PLUMED_MACPORTS ; fi
+
 # TEST:
   - if test "$VALGRIND" == yes ; then OPT=valgrind ; else OPT="" ; fi
-  - if test "$PLUMED_CXX" ; then make -C regtest $OPT ; fi
+  - if test "$PLUMED_CXX" || test -n "$PLUMED_MACPORTS" ; then make -C regtest $OPT ; fi
   - if test "$MAKEDOC" == yes ; then make -C regtest copytodoc ; fi
   - if test "$MAKEDOC" == yes ; then make doc >/dev/null ; fi
-  - if test "$PLUMED_CXX" ; then make -C regtest checkfail ; fi
+  - if test "$PLUMED_CXX" || test -n "$PLUMED_MACPORTS" ; then make -C regtest checkfail ; fi
 
 # CPPCHECK:
 # this is required so as to have all the include files inplace:

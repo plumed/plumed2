@@ -350,6 +350,7 @@ private:
   int mw_id_;
   int mw_rstride_;
   bool walkers_mpi;
+  unsigned mpi_nw_;
   bool acceleration;
   double acc;
   vector<IFile*> ifiles;
@@ -465,7 +466,7 @@ dp_(NULL), adaptive_(FlexibleBin::none),
 flexbin(NULL),
 // Multiple walkers initialization
 mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1),
-walkers_mpi(false),
+walkers_mpi(false), mpi_nw_(0),
 acceleration(false), acc(0.0),
 // Interval initialization
 uppI_(-1), lowI_(-1), doInt_(false),
@@ -490,11 +491,11 @@ last_step_warn_grid(0)
   } else {
     error("I do not know this type of adaptive scheme");	
   }
-  // parse the sigma
-  parseVector("SIGMA",sigma0_);
 
   parse("FMT",fmt);
 
+  // parse the sigma
+  parseVector("SIGMA",sigma0_);
   if(adaptive_==FlexibleBin::none){
     // if you use normal sigma you need one sigma per argument 
     if( sigma0_.size()!=getNumberOfArguments() ) error("number of arguments does not match number of SIGMA parameters");
@@ -713,7 +714,16 @@ last_step_warn_grid(0)
     log.printf("  reading stride %d\n",mw_rstride_);
     log.printf("  directory with hills files %s\n",mw_dir_.c_str());
   } else {
-    if(walkers_mpi) log.printf("  Multiple walkers active using MPI communnication\n"); 
+    if(walkers_mpi) {
+      log.printf("  Multiple walkers active using MPI communnication\n"); 
+      if(comm.Get_rank()==0){
+        // Only root of group can communicate with other walkers
+        mpi_nw_=multi_sim_comm.Get_size();
+      }
+      // Communicate to the other members of the same group
+      // info abount number of walkers and walker index
+      comm.Bcast(mpi_nw_,0);
+    }
   }
 
   if( rewf_grid_.size()>0 ){ 
@@ -1050,20 +1060,11 @@ void MetaD::addGaussian(const Gaussian& hill)
 vector<unsigned> MetaD::getGaussianSupport(const Gaussian& hill)
 {
   vector<unsigned> nneigh;
-  if(doInt_){
-    double cutoff=sqrt(2.0*DP2CUTOFF)*hill.sigma[0];
-    if(hill.center[0]+cutoff > uppI_ || hill.center[0]-cutoff < lowI_) { 
-      // in this case, we updated the entire grid to avoid problems
-      return BiasGrid_->getNbin();
-    } else {
-      nneigh.push_back( static_cast<unsigned>(ceil(cutoff/BiasGrid_->getDx()[0])) );
-      return nneigh;
-    }
-  }
- 
+  vector<double> cutoff; 
+  unsigned ncv=getNumberOfArguments();
+
   // traditional or flexible hill? 
   if(hill.multivariate){
-    unsigned ncv=getNumberOfArguments();
     unsigned k=0;
     Matrix<double> mymatrix(ncv,ncv);
     for(unsigned i=0;i<ncv;i++){
@@ -1085,15 +1086,28 @@ vector<unsigned> MetaD::getGaussianSupport(const Gaussian& hill)
       if(myautoval[i]>maxautoval){maxautoval=myautoval[i];ind_maxautoval=i;}
     }  
     for(unsigned i=0;i<ncv;i++){
-      const double cutoff=sqrt(2.0*DP2CUTOFF)*abs(sqrt(maxautoval)*myautovec(i,ind_maxautoval));
-      nneigh.push_back( static_cast<unsigned>(ceil(cutoff/BiasGrid_->getDx()[i])) );
+      cutoff.push_back(sqrt(2.0*DP2CUTOFF)*abs(sqrt(maxautoval)*myautovec(i,ind_maxautoval)));
     }
   } else {
-    for(unsigned i=0;i<getNumberOfArguments();++i){
-      const double cutoff=sqrt(2.0*DP2CUTOFF)*hill.sigma[i];
-      nneigh.push_back( static_cast<unsigned>(ceil(cutoff/BiasGrid_->getDx()[i])) );
+    for(unsigned i=0;i<ncv;++i){
+      cutoff.push_back(sqrt(2.0*DP2CUTOFF)*hill.sigma[i]);
     }
   }
+
+  if(doInt_){
+    if(hill.center[0]+cutoff[0] > uppI_ || hill.center[0]-cutoff[0] < lowI_) { 
+      // in this case, we updated the entire grid to avoid problems
+      return BiasGrid_->getNbin();
+    } else {
+      nneigh.push_back( static_cast<unsigned>(ceil(cutoff[0]/BiasGrid_->getDx()[0])) );
+      return nneigh;
+    }
+  } else {
+    for(unsigned i=0;i<ncv;i++){
+      nneigh.push_back( static_cast<unsigned>(ceil(cutoff[i]/BiasGrid_->getDx()[i])) );
+    }
+  }
+ 
   return nneigh;
 }
 
@@ -1199,7 +1213,6 @@ double MetaD::evaluateGaussian(const vector<double>& cv, const Gaussian& hill, d
       if(der){
         for(unsigned i=0;i<cv.size();++i){
           double tmp=0.0;
-          k=i;
           for(unsigned j=0;j<cv.size();++j){
             tmp += dp_[j]*mymatrix(i,j)*bias;
           }
@@ -1313,22 +1326,11 @@ void MetaD::update(){
 
     // In case we use walkers_mpi, it is now necessary to communicate with other replicas.
     if(walkers_mpi){
-      int nw=0;
-      int mw=0;
-      if(comm.Get_rank()==0){
-        // Only root of group can communicate with other walkers
-        nw=multi_sim_comm.Get_size();
-        mw=multi_sim_comm.Get_rank();
-      }
-      // Communicate to the other members of the same group
-      // info abount number of walkers and walker index
-      comm.Bcast(nw,0);
-      comm.Bcast(mw,0);
       // Allocate arrays to store all walkers hills
-      std::vector<double> all_cv(nw*cv.size(),0.0);
-      std::vector<double> all_sigma(nw*thissigma.size(),0.0);
-      std::vector<double> all_height(nw,0.0);
-      std::vector<int>    all_multivariate(nw,0);
+      std::vector<double> all_cv(mpi_nw_*cv.size(),0.0);
+      std::vector<double> all_sigma(mpi_nw_*thissigma.size(),0.0);
+      std::vector<double> all_height(mpi_nw_,0.0);
+      std::vector<int>    all_multivariate(mpi_nw_,0);
       if(comm.Get_rank()==0){
         // Communicate (only root)
         multi_sim_comm.Allgather(cv,all_cv);
@@ -1341,7 +1343,7 @@ void MetaD::update(){
       comm.Bcast(all_sigma,0);
       comm.Bcast(all_height,0);
       comm.Bcast(all_multivariate,0);
-      for(int i=0;i<nw;i++){
+      for(unsigned i=0;i<mpi_nw_;i++){
         // actually add hills one by one
         std::vector<double> cv_now(cv.size());
         std::vector<double> sigma_now(thissigma.size());

@@ -19,11 +19,11 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#include "CLToolMain.h"
 #include "config/Config.h"
 #include "tools/Exception.h"
 #include "tools/Communicator.h"
 #include "CLTool.h"
-#include "CLToolMain.h"
 #include "CLToolRegister.h"
 #include "tools/Tools.h"
 #include "tools/DLLoader.h"
@@ -120,8 +120,6 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
       else return 1;
     } else if(a=="--has-matheval"){
       return (config::hasMatheval()?0:1);
-    } else if(a=="--has-almost"){
-      return (config::hasAlmost()?0:1);
     } else if(a=="--has-cregex"){
       return (config::hasCregex()?0:1);
     } else if(a=="--has-dlopen"){
@@ -202,7 +200,6 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
         "  [--is-installed]          : fails if plumed is not installed\n"
         "  [--has-mpi]               : fails if plumed is running without MPI\n"
         "  [--has-matheval]          : fails if plumed is compiled without matheval\n"
-        "  [--has-almost]            : fails if plumed is compiled without almost\n"
         "  [--has-dlopen]            : fails if plumed is compiled without dlopen\n"
         "  [--load LIB]              : loads a shared object (typically a plugin library)\n"
         "  [--standalone-executable] : tells plumed not to look for commands implemented as scripts\n"

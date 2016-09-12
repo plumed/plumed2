@@ -1,4 +1,5 @@
-SUBDIRS := basic metainference $(shell ./scripts/find_modules.sh)
+SUBDIRS := $(subst /,,$(dir $(shell ls */Makefile)))
+
 SUBDIRSCLEAN := $(addsuffix .clean,$(SUBDIRS))
 SUBDIRSVALGRIND := $(addsuffix .valgrind,$(SUBDIRS))
 

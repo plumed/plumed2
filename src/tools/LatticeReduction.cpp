@@ -19,11 +19,13 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Exception.h"
 #include "LatticeReduction.h"
-#include <stdio.h>
+#include "Exception.h"
+#include <cstdio>
 
 namespace PLMD{
+
+using namespace std;
 
 const double epsilon=1e-14;
 

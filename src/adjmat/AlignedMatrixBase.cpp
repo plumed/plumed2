@@ -33,8 +33,14 @@ void AlignedMatrixBase::registerKeywords( Keywords& keys ){
                            "have an orientation so your list will be a list of the labels of \\ref mcolv or \\ref multicolvarfunction "
                            "as PLUMED calculates the orientations of molecules within these operations.  Please note also that the majority "
                            "of \\ref mcolv and \\ref multicolvarfunction do not calculate a molecular orientation.");
-  keys.add("atoms-1","ATOMSA","");
-  keys.add("atoms-1","ATOMSB","");
+  keys.add("atoms-1","ATOMSA","The list of molecules that you would like to use for the rows of the contact matrix.  The molecules involved must "
+                              "have an orientation so your list will be a list of the labels of \\ref mcolv or \\ref multicolvarfunction "
+                              "as PLUMED calculates the orientations of molecules within these operations.  Please note also that the majority "
+                              "of \\ref mcolv and \\ref multicolvarfunction do not calculate a molecular orientation.");
+  keys.add("atoms-1","ATOMSB","The list of molecules that you would like to use for the columns of the contact matrix.  The molecules involved must "
+                              "have an orientation so your list will be a list of the labels of \\ref mcolv or \\ref multicolvarfunction "
+                              "as PLUMED calculates the orientations of molecules within these operations.  Please note also that the majority "
+                              "of \\ref mcolv and \\ref multicolvarfunction do not calculate a molecular orientation.");
   keys.add("numbered","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
                                "The following provides information on the \\ref switchingfunction that are available. "
                                "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");

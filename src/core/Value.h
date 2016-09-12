@@ -229,12 +229,12 @@ double Value::getDerivative(const unsigned n) const {
 
 inline
 bool Value::hasDerivatives() const {
-  return hasDeriv; // (!derivatives.empty());
+  return hasDeriv;
 }
 
 inline
 void Value::resizeDerivatives(int n){
-  derivatives.resize(n);
+  if(hasDeriv) derivatives.resize(n);
 }
 
 inline

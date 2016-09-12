@@ -4205,10 +4205,10 @@ $as_echo "$as_me: Initial CPPFLAGS:    $CPPFLAGS" >&6;}
 $as_echo "$as_me: Initial CFLAGS:      $CFLAGS" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: Initial LDFLAGS:     $LDFLAGS" >&5
 $as_echo "$as_me: Initial LDFLAGS:     $LDFLAGS" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial LIBS:        $LDFLAGS" >&5
-$as_echo "$as_me: Initial LIBS:        $LDFLAGS" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial STATIC_LIBS: $LDFLAGS" >&5
-$as_echo "$as_me: Initial STATIC_LIBS: $LDFLAGS" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial LIBS:        $LIBS" >&5
+$as_echo "$as_me: Initial LIBS:        $LIBS" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial STATIC_LIBS: $STATIC_LIBS" >&5
+$as_echo "$as_me: Initial STATIC_LIBS: $STATIC_LIBS" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: Initial LD:          $LD" >&5
 $as_echo "$as_me: Initial LD:          $LD" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: Initial LDSO:        $LDSO" >&5

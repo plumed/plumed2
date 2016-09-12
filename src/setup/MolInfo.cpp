@@ -36,8 +36,13 @@ make up the molecules in your system using the chainIDs and resnumbers from the 
 then use this information in later commands to specify atom lists in terms residues.  For example
 using this command you can find the backbone atoms in your structure automatically. 
 
+\warning
 Please be aware that the pdb parser in plumed is far from perfect. You should thus check the log file
 and examine what plumed is actually doing whenenver you use the MOLINFO action.
+Also make sure that the atoms are listed in the pdb with the correct order.
+If you are using gromacs, the safest way is to use reference pdb file
+generated with `gmx editconf -f topol.tpr -o reference.pdb`.
+
 
 Using MOLINFO with a protein's pdb extend the possibility of atoms selection using the @ special
 symbol.
@@ -57,7 +62,7 @@ For protein residues, the following groups are available:
 
 that select the appropriate atoms that define each dihedral angle for residue #.
 
-For RNA or RNA residues, the following groups are available:
+For DNA or RNA residues, the following groups are available:
 
 \verbatim
 # quadruplets for backbone dihedral angles
@@ -81,13 +86,14 @@ For RNA or RNA residues, the following groups are available:
 @base-#
 \endverbatim
 
-Notice that `zeta` and `epsilon` groups should not be used on 3' end and `alpha` should not be used on 5' end.
+Notice that `zeta` and `epsilon` groups should not be used on 3' end residue and `alpha` and `beta`
+should not be used on 5' end residue.
 
 If the chosen group name does not match any of the default ones, the parser looks for a single atom
 with the same name. This means that it is also possible to pick single atoms using the syntax
 `@atom-residue~.
 
-\warning If a residue-chain is repeated twice only the first entry will be selected.
+\warning If a residue-chain is repeated twice in the reference pdb only the first entry will be selected.
 
 \bug At the moment the HA1 atoms in a GLY residues are treated as if they are the CB atoms. This may or
 may not be true - GLY is problematic for secondary structure residues as it is achiral. 
