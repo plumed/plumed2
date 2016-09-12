@@ -124,5 +124,6 @@ Fixes since 2.3b. Relevant things could be merged in the changelog above when we
 - (for developers) Active modules to enable regtests are chosen using `plumed config`.
 - New CV: \ref JCOUPLING
 - \ref PUCKERING now supports 6 membered rings.
+- Tutorials have been (partially) updated to reflect some of the changes in the syntax
 
 */

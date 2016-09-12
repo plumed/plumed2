@@ -150,7 +150,7 @@ Once the PLUMED input file is prepared, one has to run Gromacs with the option t
 read the input file:
 
 \verbatim
-mdrun_mpi -plumed
+gmx_mpi mdrun -plumed
 \endverbatim
 
 During the metadynamics simulation, PLUMED will create two files, named COLVAR and HILLS.
@@ -359,7 +359,7 @@ The, in this case, two replicas start from the same GROMACS topology file replic
 Finally, GROMACS is launched as a parallel run on 4 cores, with one replica per core, with the command 
 
 \verbatim
-mpirun -np 4 mdrun_mpi -s topol -plumed plumed -multi 4 -replex 10000 >& log &
+mpirun -np 4 gmx_mpi mdrun -s topol -plumed plumed -multi 4 -replex 10000 >& log &
 \endverbatim
 
 where -replex 10000 indicates that every 10000 molecular-dynamics steps exchanges are attempted
