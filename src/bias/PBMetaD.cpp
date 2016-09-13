@@ -885,9 +885,9 @@ void PBMetaD::calculate()
   double ncv = (double) getNumberOfArguments();
   double bmin = 1.0e+19;
   for(unsigned i=0; i<getNumberOfArguments(); ++i){
-   cv[0] = getArgument(i);
-   der[0] = 0.0;
-   bias[i] = getBiasAndDerivatives(i, cv, der);
+   cv[0]    = getArgument(i);
+   der[0]   = 0.0;
+   bias[i]  = getBiasAndDerivatives(i, cv, der);
    deriv[i] = der[0];
    if(bias[i] < bmin) bmin = bias[i];
   }
@@ -927,24 +927,23 @@ void PBMetaD::update()
   }
 
   if(nowAddAHill){
-    // get all CVs value
-    vector<double> cv(getNumberOfArguments());
     // get all biases and heights
+    vector<double> cv(getNumberOfArguments());
     vector<double> bias(getNumberOfArguments());
     vector<double> thissigma(getNumberOfArguments());
     vector<double> height(getNumberOfArguments());
     vector<double> cv_tmp(1);
     vector<double> sigma_tmp(1);
+    double norm = 0.0;
     double bmin = 1.0e+19;
     for(unsigned i=0; i<getNumberOfArguments(); ++i){
       if(adaptive_!=FlexibleBin::none) thissigma[i]=flexbin[i].getInverseMatrix(i)[0];
       else thissigma[i]=sigma0_[i];
       cv[i]     = getArgument(i);
-      cv_tmp[0] = cv[i];
+      cv_tmp[0] = getArgument(i);
       bias[i] = getBiasAndDerivatives(i, cv_tmp);
       if(bias[i] < bmin) bmin = bias[i];
     }
-    double norm = 0.0;
     // calculate heights and norm
     for(unsigned i=0; i<getNumberOfArguments(); ++i){
       double h  = exp((-bias[i]+bmin)/kbt_);
@@ -968,7 +967,8 @@ void PBMetaD::update()
         // fill in value
         for(unsigned i=0; i<getNumberOfArguments(); ++i){
           unsigned j = mw_ * getNumberOfArguments() + i;
-          all_cv[j] = cv[i];
+          all_cv[j]     = cv[i];
+          all_sigma[j]  = thissigma[i];
           all_height[j] = height[i];
         }
         // Communicate (only root)
