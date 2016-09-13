@@ -204,6 +204,7 @@ private:
   bool    welltemp_;
   bool    multiple_w;
   unsigned nw_;
+  unsigned mw_;
   vector<double> uppI_;
   vector<double> lowI_;
   vector<bool>  doInt_;
@@ -523,8 +524,10 @@ multiple_w(false), isFirstStep(true)
     if(comm.Get_rank()==0) {
       multi_sim_comm.Barrier();
       nw_ = multi_sim_comm.Get_size();
+      mw_ = multi_sim_comm.Get_rank();
     }
     comm.Bcast(nw_,0);
+    comm.Bcast(mw_,0);
   }
 
   // open hills files for writing
@@ -813,7 +816,7 @@ void PBMetaD::update()
      if(comm.Get_rank()==0){
        // fill in value
        for(unsigned i=0; i<getNumberOfArguments(); ++i){
-        unsigned j = mw * getNumberOfArguments() + i;
+        unsigned j = mw_ * getNumberOfArguments() + i;
         all_cv[j] = cv[i];
         all_height[j] = height[i];
        }
