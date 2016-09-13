@@ -93,7 +93,10 @@ function warning(msg)
 # if we are in atomtypes section, check which fields are present
 # use same heuristics as in src/kernel/toppush.c
   if(rec=="atomtypes" && NF>=4){
-    if((length($4)==1 && $4~"[a-zA-Z]")) error("in atomtypes");
+    if((length($4)==1 && $4~"[a-zA-Z]")){
+      bondtypefield=1;
+      epsilonfield=6;
+    }
     else if((length($6)==1 && $6~"[a-zA-Z]")){
       bondtypefield=2;
       epsilonfield=8;
@@ -202,7 +205,7 @@ function warning(msg)
     if($5!=9 && n!=2){
 # in case of multiple dihedrals !=9, all parameters should be the same, otherwise I suspect there is some problem
       for(i=3;i<=n;i++){
-        if(array[i]!=array[2]) error("multiple dihedrals !=9: parameters "array[i]" and "array[2]" are different\n");
+        if((array[i]-array[2])**2>1e-20) error("multiple dihedrals !=9: parameters "array[i]" and "array[2]" are different\n");
       }
 # then, I just take one of the instances
       param=array[1]":"array[2];
