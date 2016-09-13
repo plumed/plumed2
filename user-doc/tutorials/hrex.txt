@@ -125,7 +125,7 @@ do
 # -maxwarn is often needed because box could be charged
   grompp_mpi_d  -maxwarn 1 -o topol$i.tpr -f grompp$i.mdp -p topol$i.top
 done
-mpirun -np $nrep mdrun_mpi_d -v -plumed plumed.dat -multi $nrep -replex 100 -nsteps 15000000 -hrex
+mpirun -np $nrep gmx_mpi mdrun_d -v -plumed plumed.dat -multi $nrep -replex 100 -nsteps 15000000 -hrex
 \endverbatim
 
 Notice that total cell could be charged. This happens whenever the scaled portion of the system
