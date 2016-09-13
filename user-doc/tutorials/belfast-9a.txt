@@ -30,7 +30,7 @@ that represent a state and measure the current deviation from the set. In plumed
 experimental observables: Chemical Shifts (only for proteins) \ref CS2BACKBONE, \ref NOE distances, \ref JCOUPLING, \ref PRE intensities, 
 and Residual Dipolar couplings/pseudocontact shifts \ref RDC. 
 
-In the following we will write the \ref CS2BACKBONE collective variable that has been used in Gratana et al. (2013).
+In the following we will write the \ref CS2BACKBONE collective variable that has been used in Granata et al. (2013).
 
 \verbatim
 prot: GROUP ATOMS=1-862
@@ -128,7 +128,7 @@ mpiexec -np 8 gmx_mpi mdrun -s topol -plumed plumed -multi 8
 
 1. Granata, D., Camilloni, C., Vendruscolo, M. & Laio, A. Characterization of the free-energy landscapes of proteins by NMR-guided metadynamics. Proc. Natl. Acad. Sci. U.S.A. 110, 6817–6822 (2013).
 2. Cavalli, A., Camilloni, C. & Vendruscolo, M.  Molecular dynamics simulations with replica-averaged structural restraints generate structural ensembles according to the maximum entropy principle. J. Chem. Phys. 138, 094112 (2013).
-3. Camilloni, C., Cavalli, A. & Vendruscolo, M. Replica-Averaged Metadynamics. Journal of Chemical Theory … 9, 5610–5617 (2013).
+3. Camilloni, C., Cavalli, A. & Vendruscolo, M. Replica-Averaged Metadynamics. JCTC 9, 5610–5617 (2013).
 4. Roux, B. & Weare, J. On the statistical equivalence of restrained-ensemble simulations with the maximum entropy method. J. Chem. Phys. 138, 084107 (2013).
 5. Boomsma, W., Lindorff-Larsen, K. & Ferkinghoff-Borg, J. Combining Experiments and Simulations Using the Maximum Entropy Principle. PLoS Comput. Biol. 10, e1003406 (2014).
 6. Camilloni, C. & Vendruscolo M. A Tensor-Free Method for the Structural and Dynamical Refinement of Proteins using Residual Dipolar Couplings. J. PHYS. CHEM. B 119, 653 (2015).
