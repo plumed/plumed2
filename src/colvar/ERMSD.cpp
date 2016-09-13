@@ -67,6 +67,12 @@ eRMSD = \sqrt{\frac{1}{N} \sum_{j,k} \vert \vec{G}(\tilde{\vec{r}}_{jk}^{\alpha}
 
 Using the default cutoff, two structures with eRMSD of 0.7 or lower can be considered as significantly similar. A full description of the eRMSD can be found in \cite bott14
 
+\warning Notice that the ERMSD implemented here is not integrated with the other metrics in plumed. As a consequence, it is not (yet) possible
+to e.g. build path collective variables using ERMSD
+
+\warning Notice that ERMSD expect a single molecule and makes coordinate whole before anything else. As such, results might be unexpected
+for a multi molecular system.
+
 \par Examples
 
 Calculate the eRMSD from reference structure reference.pdb using the default cutoff (2.4). The list of residues involved in the calculation has to be specified. In this example, the eRMSD is calculated 
