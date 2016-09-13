@@ -47,7 +47,7 @@ class ERMSD {
 
   public:
 /// Constructor
-     ERMSD(): natoms(0),nresidues(0) {}
+     ERMSD(): natoms(0),nresidues(0), cutoff(0.0) {}
 
 /// clear the structure
      void clear();

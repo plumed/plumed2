@@ -150,7 +150,7 @@ PLUMED_COLVAR_INIT(ao), pbc(true)
   // store target_ distance
   vector <Vector> reference_positions;
   unsigned natoms = atoms_.size();
-  log.printf("Read %d atoms\n",natoms);
+  log.printf("Read %u atoms\n",natoms);
 
   reference_positions.resize(natoms);
   for(unsigned i=0;i<natoms;i++){
@@ -167,7 +167,7 @@ PLUMED_COLVAR_INIT(ao), pbc(true)
   derivs.resize(natoms);
 
   log.printf("  reference from file %s\n",reference.c_str());
-  log.printf("  which contains %d atoms\n",natoms);
+  log.printf("  which contains %u atoms\n",natoms);
   
 }
 
