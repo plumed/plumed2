@@ -903,7 +903,7 @@ void PBMetaD::calculate()
   }
 
   // set bias
-  ene = -kbt_ * (std::log(ene) - std::log(ncv));
+  ene = -kbt_ * (std::log(ene) - std::log(ncv)) + bmin;
   setBias(ene);
 }
 
