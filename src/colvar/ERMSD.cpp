@@ -171,8 +171,14 @@ void ERMSD::calculate(){
  for(unsigned i=0;i<derivs.size();++i) {derivs[i].zero();}
  double ermsdist;
  Tensor virial;
+// This is a trick to avoid explicit virial calculation
+// 1. we make the molecule whole
  makeWhole();
- ermsdist=ermsd.calculate(getPositions(),getPbc(),derivs,virial);
+// 2. we ignore pbcs
+ Pbc fake_pbc;
+// Notice that this might have problems when having 2 RNA molecules (hybridization).
+
+ ermsdist=ermsd.calculate(getPositions(),fake_pbc,derivs,virial);
  setValue(ermsdist);
 
  for(unsigned i=0;i<derivs.size();++i) {setAtomsDerivatives(i,derivs[i]);}
