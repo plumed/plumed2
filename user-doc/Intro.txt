@@ -3,6 +3,8 @@
 
 PLUMED is a plugin that works with a large number of molecular dynamics codes.  It can be used
 to analyse features of the dynamics on-the-fly or to perform a wide variety of free energy methods.
+PLUMED can also work as a standalone tool to perform analysis on trajectories saved in most of the
+existing formats.
 The original PLUMED 1 \cite plumed1
 was highly successful and had over 1000 users.  PLUMED 2 \cite plumed2 constitues an 
 extensive rewrite of the original in a way that makes it more modular and thus easier to implement 
@@ -10,21 +12,18 @@ new methods, more straightforward to add it to MD codes and hopefully simpler to
 This is the user manual -  if you want to modify PLUMED or to understand how it works internally, have a look at the 
 <a href="../../developer-doc/html/index.html"> developer manual </a>.
 
-@PDFMANUAL@
+To follow the development of PLUMED 2, you can look at the detailed \ref Changelog.
 
-To understand the difference between PLUMED 1 and PLUMED 2, and to
-follow the development of PLUMED 2, you can look at the detailed \ref Changelog.
-
-A short tutorial explaining why it is a good idea to move from PLUMED 1 to PLUMED 2
-and how to do it in practice is also available (see \ref moving).
-
+\ref tutorials are available to introduce in a more practical way basic as well as more
+advanced features of PLUMED.
+ 
 To install PLUMED 2, see this page: \ref Installation
 
 \section AboutManual About this manual
 
 @VERSION@
 
-Since version 2.1 we optionally provide an experimental PDF manual.
+@PDFMANUAL@
 The PDF version is still not complete and has some known issue (e.g. some
 links are not working properly and images are not correctly included),
 and the html documentation should be considered as the official one.
@@ -75,7 +74,7 @@ Additionally, we provide patching procedures for the following codes:
 @CODESL@
 
 Alternatively, one
-can use PLUMED as a standalone tool for postprocessing the results from molecular dynamics 
+can use PLUMED as a \ref tools for postprocessing the results from molecular dynamics 
 or enhanced sampling calculations.
 
 \page Changelog Change Log
