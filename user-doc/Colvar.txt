@@ -10,7 +10,7 @@ implemented in PLUMED - there values can be monitored using \ref PRINT, \ref Fun
 or they can be analyzed or biased using the \ref Analysis and \ref Bias "Biasing" methods implemented in PLUMED.
 Before doing any of these things however we first have to tell PLUMED how to calculate them.
 
-The simplest collective variables that are implemented in PLUMED 2 take in a
+The simplest collective variables that are implemented in PLUMED take in a
 set of atomic positions and output one or multiple scalar CV values.  Information on these variables is given on the page entitled 
 \ref Colvar while information as to how sets of atoms can be selected
 can be found in the pages on \ref Group.  Please be aware that PLUMED contains implementations of many other collective variables 
@@ -34,7 +34,7 @@ implement all these collective variables without implementing having an unmanigi
 
 \page Colvar CV Documentation
 
-The following list contains descriptions of a number of the colvars that are currently implemented in PLUMED 2.
+The following list contains descriptions of a number of the colvars that are currently implemented in PLUMED.
 
 @COLVAR@
 
