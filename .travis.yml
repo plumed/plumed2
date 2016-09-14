@@ -24,11 +24,7 @@ matrix:
   - os: linux
     dist: trusty
     sudo: required
-    env: CPPCHECK=yes CPPCHECK_VERSION=1.71
-  - os: linux
-    dist: trusty
-    sudo: required
-    env: CPPCHECK=yes CPPCHECK_VERSION=1.74
+    env: CPPCHECK=yes CPPCHECK_VERSION=1.75
 # then check with different optimization flags
   - os: linux
     dist: trusty
@@ -57,10 +53,11 @@ matrix:
   - os: osx
     env: PLUMED_MACPORTS="plumed +crystallization +manyrestraints +adjmat"
 # I don't put any mpi variant with macports since it takes too long to compile
-  allow_failures:
-# I allow this to fail temporarily
-    - env: CPPCHECK=yes CPPCHECK_VERSION=1.74
-# Possible additional variables:
+## This command can be used to allow failures:
+##  allow_failures:
+## # I allow this to fail temporarily
+##    - env: CPPCHECK=yes CPPCHECK_VERSION=1.74
+## Possible additional variables:
 #   VALGRIND=yes to make valgrind tests, only when log contains string [valgrind]
 install:
 # setup environment to allow install on the home directory
