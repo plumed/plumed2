@@ -262,7 +262,6 @@ PRINT ARG=abeta.lessthan,dd.mean,dd.min,dd.max,dd.moment-2 STRIDE=1 FILE=COLVAR
 HISTOGRAM ...
 ARG=abeta.lessthan,dd.mean
 LABEL=hh
-USE_ALL_DATA
 KERNEL=DISCRETE
 GRID_MIN=0,0.8
 GRID_MAX=4,1.2
@@ -290,7 +289,6 @@ and the BANDWIDTH should be smaller (i.e. one order of magnitude) than the varia
 HISTOGRAM ...
 LABEL=hh
 ARG=abeta.lessthan,dd.mean
-USE_ALL_DATA
 GRID_MIN=0,0.8
 GRID_MAX=4,1.2
 GRID_SPACING=0.04,0.004
