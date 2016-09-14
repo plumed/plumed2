@@ -512,8 +512,8 @@ last_step_warn_grid(0)
     } 
     // here evtl parse the sigma min and max values
     parseVector("SIGMA_MIN",sigma0min_);
-    if(sigma0min_.size()>0 && sigma0min_.size()<getNumberOfArguments()) {
-      error("the number of SIGMA_MIN values be at least the number of the arguments");
+    if(sigma0min_.size()>0 && sigma0min_.size()!=getNumberOfArguments()) {
+      error("the number of SIGMA_MIN values be the same of the number of the arguments");
     } else if(sigma0min_.size()==0) { 
       sigma0min_.resize(getNumberOfArguments());
       for(unsigned i=0;i<getNumberOfArguments();i++){sigma0min_[i]=-1.;}	
@@ -590,12 +590,10 @@ last_step_warn_grid(0)
         for(unsigned i=0;i<gspacing.size();i++) gspacing[i]=0.2*sigma0_[i];
       } else {
         // with adaptive hills and grid a sigma min must be specified
-        if(sigma0min_.size()==0) error("When using Adaptive Gaussians on a grid SIGMA_MIN must be specified");
+        for(unsigned i=0;i<sigma0min_.size();i++) if(sigma0min_[i]<=0) error("When using Adaptive Gaussians on a grid SIGMA_MIN must be specified");
         log<<"  Binsize not specified, 1/5 of sigma_min will be be used\n";
-        plumed_assert(sigma0_.size()==getNumberOfArguments());
         gspacing.resize(getNumberOfArguments());
         for(unsigned i=0;i<gspacing.size();i++) gspacing[i]=0.2*sigma0min_[i];
-        //error("At least one among GRID_BIN and GRID_SPACING should be used");
       }
     } else if(gspacing.size()!=0 && gbin.size()==0){
       log<<"  The number of bins will be estimated from GRID_SPACING\n";
@@ -745,25 +743,27 @@ last_step_warn_grid(0)
 
   // initializing and checking grid
   if(grid_){
-    // check for adaptive and sigma_min
-    if(sigma0min_.size()==0&&adaptive_!=FlexibleBin::none) error("When using Adaptive Gaussians on a grid SIGMA_MIN must be specified");
-    // check for mesh and sigma size
-    for(unsigned i=0;i<getNumberOfArguments();i++) {
-      double a,b;
-      Tools::convert(gmin[i],a);
-      Tools::convert(gmax[i],b);
-      double mesh=(b-a)/((double)gbin[i]);
-      if(mesh>0.5*sigma0_[i]) log<<"  WARNING: Using a METAD with a Grid Spacing larger than half of the Gaussians width can produce artifacts\n";
-    }
-    std::string funcl=getLabel() + ".bias";
-    if(!sparsegrid){BiasGrid_=new Grid(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
-    else{BiasGrid_=new SparseGrid(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
-    std::vector<std::string> actualmin=BiasGrid_->getMin();
-    std::vector<std::string> actualmax=BiasGrid_->getMax();
-    for(unsigned i=0;i<getNumberOfArguments();i++){
-      if(gmin[i]!=actualmin[i]) log<<"  WARNING: GRID_MIN["<<i<<"] has been adjusted to "<<actualmin[i]<<" to fit periodicity\n";
-      if(gmax[i]!=actualmax[i]) log<<"  WARNING: GRID_MAX["<<i<<"] has been adjusted to "<<actualmax[i]<<" to fit periodicity\n";
-    }
+   // check for mesh and sigma size
+   for(unsigned i=0;i<getNumberOfArguments();i++) {
+     double a,b;
+     Tools::convert(gmin[i],a);
+     Tools::convert(gmax[i],b);
+     double mesh=(b-a)/((double)gbin[i]);
+     if(adaptive_==FlexibleBin::none) {
+       if(mesh>0.5*sigma0_[i]) log<<"  WARNING: Using a METAD with a Grid Spacing larger than half of the Gaussians width can produce artifacts\n";
+     } else {
+       if(mesh>0.5*sigma0min_[i]||sigma0min_[i]<0.) log<<"  WARNING: to use a METAD with a GRID and ADAPTIVE you need to set a Grid Spacing larger than half of the Gaussians \n";
+     }
+   }
+   std::string funcl=getLabel() + ".bias";
+   if(!sparsegrid){BiasGrid_=new Grid(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
+   else{BiasGrid_=new SparseGrid(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
+   std::vector<std::string> actualmin=BiasGrid_->getMin();
+   std::vector<std::string> actualmax=BiasGrid_->getMax();
+   for(unsigned i=0;i<getNumberOfArguments();i++){
+     if(gmin[i]!=actualmin[i]) log<<"  WARNING: GRID_MIN["<<i<<"] has been adjusted to "<<actualmin[i]<<" to fit periodicity\n";
+     if(gmax[i]!=actualmax[i]) log<<"  WARNING: GRID_MAX["<<i<<"] has been adjusted to "<<actualmax[i]<<" to fit periodicity\n";
+   }
   }
 
   // restart from external grid
