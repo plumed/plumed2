@@ -1,5 +1,8 @@
-#! /usr/bin/env gawk -f
-# needs gawk
+#! /bin/bash
+
+TEMP=$(mktemp)
+
+cat > $TEMP << \EOF
 
 # print usage 
 function usage(){
@@ -353,3 +356,6 @@ END{
   }
 }
 
+EOF
+
+gawk -f $TEMP $@
