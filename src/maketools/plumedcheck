@@ -1,4 +1,4 @@
-#! /usr/bin/env gawk -E
+#! /usr/bin/env gawk -f
 # needs gawk
 
 # print usage 
