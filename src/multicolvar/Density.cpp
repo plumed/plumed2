@@ -76,7 +76,7 @@ void Density::registerKeywords( Keywords& keys ){
 Density::Density(const ActionOptions&ao):
 PLUMED_MULTICOLVAR_INIT(ao)
 {
-  std::vector<AtomNumber> all_atoms; bool read = parseMultiColvarAtomList("SPECIES", -1, all_atoms);
+  std::vector<AtomNumber> all_atoms; parseMultiColvarAtomList("SPECIES", -1, all_atoms);
   ablocks.resize(1); ablocks[0].resize( atom_lab.size() ); 
   for(unsigned i=0;i<atom_lab.size();++i){ addTaskToList(i); ablocks[0][i]=i; }
   setupMultiColvarBase( all_atoms );

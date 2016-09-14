@@ -175,7 +175,6 @@ void OutputCluster::update(){
 
         // Now find broken bonds and run iterative deepening depth first search to reconstruct
         for(unsigned jj=0;jj<maxgoes;++jj){
-            unsigned nvisits=0;
 
             for(unsigned j=0;j<myatoms.size();++j){
                 if( !visited[j] ) continue;
