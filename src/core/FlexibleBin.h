@@ -30,7 +30,7 @@ class ActionWithArguments;
 
 class FlexibleBin{
 	private:
-		const int type;
+		int type;
 		// this contains all the infos about the CVs including periodicity
 		ActionWithArguments *paction;
 		double sigma;	
