@@ -697,6 +697,7 @@ enable_modules
 enable_doc
 enable_pdfdoc
 enable_debug
+enable_gcov
 enable_basic_warnings
 enable_fussy
 enable_debug_glibcxx
@@ -1359,6 +1360,7 @@ Optional Features:
   --enable-doc            enable documentation, default: yes
   --enable-pdfdoc         enable pdf version of the manual, default: no
   --enable-debug          enable debugging, default: no
+  --enable-gcov           enable gcov to estimate code coverage, default: no
   --enable-basic-warnings enable basic warnings, default: yes
   --enable-fussy          enable fussy warnings, default: no
   --enable-debug-glibcxx  enable enable boundary check, default: no
@@ -2456,6 +2458,24 @@ else
   case "no" in
              (yes) debug=true ;;
              (no)  debug=false ;;
+  esac
+
+fi
+
+
+
+gcov=
+# Check whether --enable-gcov was given.
+if test "${enable_gcov+set}" = set; then :
+  enableval=$enable_gcov; case "${enableval}" in
+             (yes) gcov=true ;;
+             (no)  gcov=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-gcov" "$LINENO" 5 ;;
+  esac
+else
+  case "no" in
+             (yes) gcov=true ;;
+             (no)  gcov=false ;;
   esac
 
 fi
@@ -4517,6 +4537,59 @@ $as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
+fi
+
+if test $gcov == true
+then
+
+  save_CXXFLAGS="$CXXFLAGS"
+  CXXFLAGS="$CXXFLAGS --coverage"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts --coverage" >&5
+$as_echo_n "checking whether $CXX accepts --coverage... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not linking" >&5
+$as_echo "not linking" >&6; }; CXXFLAGS="$save_CXXFLAGS"
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+  CFLAGS="$CFLAGS --coverage"
+  LDFLAGS="$CFLAGS --coverage"
+  STATIC_LIBS="$STATIC_LIBS --coverage"
 fi
 
 if test $fussy == true
