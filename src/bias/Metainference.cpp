@@ -565,6 +565,7 @@ atoms(plumed.getAtoms())
   }
 
   log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");
+  if(do_reweight) log<<plumed.cite("Bonomi, Camilloni, Vendruscolo, Sci. Rep. 6, 31232 (2016)");
   log<<"\n";
 }
 
