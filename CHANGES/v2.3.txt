@@ -125,5 +125,6 @@ Fixes since 2.3b. Relevant things could be merged in the changelog above when we
 - New CV: \ref JCOUPLING
 - \ref PUCKERING now supports 6 membered rings.
 - Tutorials have been (partially) updated to reflect some of the changes in the syntax
+- gromacs 5.1.x patch updated to 5.1.4
 
 */
