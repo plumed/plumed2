@@ -796,7 +796,7 @@ double Metainference::getEnergyForceSPE(const vector<double> &mean, const double
   double w_tmp = 0.;
   for(unsigned i=0; i<narg; ++i) {
     setOutputForce(i, kbt_ * fact * f[i]);
-    w_tmp = fact*(getArgument(i) - mean[i])*f[i];
+    w_tmp += fact*(getArgument(i) - mean[i])*f[i];
   }
   if(do_reweight) {
     setOutputForce(narg, -w_tmp);
