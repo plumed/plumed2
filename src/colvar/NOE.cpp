@@ -34,15 +34,18 @@ namespace colvar {
 
 //+PLUMEDOC COLVAR NOE 
 /*
-Calculates simple noe intensities as 1/r^6, also averaging over multiple equivalent atoms.
+Calculates NOE intensities as sums of 1/r^6, also averaging over multiple equivalent atoms
+or ambiguous NOE.
 
-NOE distances are calculated between couple of atoms, averaging over equivalent couples.
 Each NOE is defined by two groups containing the same number of atoms, distances are
-calculated in pairs and saved as components.
+calculated in pairs, transformed in 1/r^6, summed and saved as components.
 
 \f[
 NOE() = (\frac{1}{N_{eq}}\sum_j^{N_{eq}} (\frac{1}{r_j^6}))^{\frac{-1}{6}} 
 \f]
+
+Intensities can then in principle ensemble averaged using \ref ENSEMBLE and used to
+calculate a scoring function for example with \ref METAINFERENCE.
 
 \par Examples
 In the following examples three noes are defined, the first is calculated based on the distances
