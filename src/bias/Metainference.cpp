@@ -354,7 +354,7 @@ atoms(plumed.getAtoms())
 
   vector<double> readsigma;
   parseVector("SIGMA0",readsigma);
-  if((noise_type_!=MGAUSS||noise_type_!=MLOGNORMAL)&&readsigma.size()>1) 
+  if((noise_type_!=MGAUSS&&noise_type_!=MLOGNORMAL)&&readsigma.size()>1) 
     error("If you want to use more than one SIGMA you should use NOISETYPE=MGAUSS/MLOGNORMAL");
   if(noise_type_==MGAUSS||noise_type_==MLOGNORMAL) {
     if(readsigma.size()==narg) {
