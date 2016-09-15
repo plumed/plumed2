@@ -116,16 +116,6 @@
 #include "membed.h"
 #include "repl_ex.h"
 
-/* PLUMED */
-#include "../../../Plumed.h"
-extern int    plumedswitch;
-extern plumed plumedmain;
-/* END PLUMED */
-
-/* PLUMED HREX */
-extern int plumed_hrex;
-/* END PLUMED HREX */
-
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
 #endif
@@ -245,12 +235,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
     /* Interactive MD */
     gmx_bool          bIMDstep = FALSE;
-
-    /* PLUMED */
-    int plumedNeedsEnergy=0;
-    int plumedWantsToStop=0;
-    matrix plumed_vir;
-    /* END PLUMED */
 
 #ifdef GMX_FAHCORE
     /* Temporary addition for FAHCORE checkpointing */
@@ -388,8 +372,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     else
     {
         top = gmx_mtop_generate_local_top(top_global, ir);
-
-        forcerec_set_excl_load(fr, top);
 
         state    = serial_init_local_state(state_global);
         f_global = f;
@@ -663,52 +645,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         fprintf(fplog, "\n");
     }
 
-    /* PLUMED */
-    if(plumedswitch){
-      /* detect plumed API version */
-      int pversion=0;
-      plumed_cmd(plumedmain,"getApiVersion",&pversion);
-      /* setting kbT is only implemented with api>1) */
-      real kbT=ir->opts.ref_t[0]*BOLTZ;
-      if(pversion>1) plumed_cmd(plumedmain,"setKbT",&kbT);
-      if(pversion>2){
-        int res=1;
-        if( (Flags & MD_STARTFROMCPT) ) plumed_cmd(plumedmain,"setRestart",&res);
-      }
-
-      if(cr->ms && cr->ms->nsim>1) {
-        if(MASTER(cr)) plumed_cmd(plumedmain,"GREX setMPIIntercomm",&cr->ms->mpi_comm_masters);
-        if(PAR(cr)){
-          if(DOMAINDECOMP(cr)) {
-            plumed_cmd(plumedmain,"GREX setMPIIntracomm",&cr->dd->mpi_comm_all);
-          }else{
-            plumed_cmd(plumedmain,"GREX setMPIIntracomm",&cr->mpi_comm_mysim);
-          }
-        }
-        plumed_cmd(plumedmain,"GREX init",NULL);
-      }
-      if(PAR(cr)){
-        if(DOMAINDECOMP(cr)) {
-          plumed_cmd(plumedmain,"setMPIComm",&cr->dd->mpi_comm_all);
-        }
-      }
-      plumed_cmd(plumedmain,"setNatoms",&top_global->natoms);
-      plumed_cmd(plumedmain,"setMDEngine","gromacs");
-      plumed_cmd(plumedmain,"setLog",fplog);
-      real real_delta_t;
-      real_delta_t=ir->delta_t;
-      plumed_cmd(plumedmain,"setTimestep",&real_delta_t);
-      plumed_cmd(plumedmain,"init",NULL);
-
-      if(PAR(cr)){
-        if(DOMAINDECOMP(cr)) {
-          plumed_cmd(plumedmain,"setAtomsNlocal",&cr->dd->nat_home);
-          plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->gatindex);
-        }
-      }
-    }
-    /* END PLUMED */
-
     walltime_accounting_start(walltime_accounting);
     wallcycle_start(wcycle, ewcRUN);
     print_start(fplog, cr, walltime_accounting, "mdrun");
@@ -798,7 +734,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         /* check how many steps are left in other sims */
         multisim_nsteps = get_multisim_nsteps(cr, ir->nsteps);
     }
-
+    if (MULTISIM(cr) && max_hours > 0)
+    {
+        gmx_fatal(FARGS, "The combination of mdrun -maxh and mdrun -multi is not supported. Please use the nsteps .mdp field.");
+    }
 
     /* and stop now if we should */
     bLastStep = (bRerunMD || (ir->nsteps >= 0 && step_rel > ir->nsteps) ||
@@ -1015,13 +954,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                     vsite, shellfc, constr,
                                     nrnb, wcycle,
                                     do_verbose && !bPMETunePrinting);
-
-                /* PLUMED */
-                if(plumedswitch){
-                  plumed_cmd(plumedmain,"setAtomsNlocal",&cr->dd->nat_home);
-                  plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->gatindex);
-                }
-                /* END PLUMED */
             }
         }
 
@@ -1048,88 +980,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                             CGLO_RERUNMD | CGLO_GSTAT | CGLO_TEMPERATURE);
         }
         clear_mat(force_vir);
-
-/* PLUMED HREX */
-        gmx_bool bHREX;
-        bHREX= repl_ex_nst > 0 && (step>0) && !bLastStep && do_per_step(step,repl_ex_nst) && plumed_hrex;
-
-        if(plumedswitch) if(bHREX){
-          gmx_enerdata_t *hrex_enerd;
-          snew(hrex_enerd,1);
-          init_enerdata(top_global->groups.grps[egcENER].nr,ir->fepvals->n_lambda,hrex_enerd);
-          int repl=-1;
-          int nrepl=-1;
-          if(MASTER(cr)){
-            repl=replica_exchange_get_repl(repl_ex);
-            nrepl=replica_exchange_get_nrepl(repl_ex);
-          }
-          if (DOMAINDECOMP(cr))
-            dd_collect_state(cr->dd,state,state_global);
-          else
-            copy_state_nonatomdata(state, state_global);
-          if(MASTER(cr)){
-            if(repl%2==step/repl_ex_nst%2){
-              if(repl-1>=0) exchange_state(cr->ms,repl-1,state_global);
-            }else{
-              if(repl+1<nrepl) exchange_state(cr->ms,repl+1,state_global);
-            }
-          }
-          if (!DOMAINDECOMP(cr))
-            copy_state_nonatomdata(state_global, state);
-          if(PAR(cr)){
-            if (DOMAINDECOMP(cr)) {
-              dd_partition_system(fplog,step,cr,TRUE,1,
-                              state_global,top_global,ir,
-                              state,&f,mdatoms,top,fr,vsite,shellfc,constr,
-                              nrnb,wcycle,FALSE);
-            }
-          }
-          do_force(fplog, cr, ir, step, nrnb, wcycle, top, groups,
-                     state->box, state->x, &state->hist,
-                     f, force_vir, mdatoms, hrex_enerd, fcd,
-                     state->lambda, graph,
-                     fr, vsite, mu_tot, t, mdoutf_get_fp_field(outf), ed, bBornRadii,
-                    GMX_FORCE_STATECHANGED |
-                       ((DYNAMIC_BOX(*ir) || bRerunMD) ? GMX_FORCE_DYNAMICBOX : 0) |
-                       GMX_FORCE_ALLFORCES |
-                       GMX_FORCE_SEPLRF |
-                       GMX_FORCE_VIRIAL |
-                       GMX_FORCE_ENERGY |
-                       GMX_FORCE_DHDL |
-                       GMX_FORCE_NS |
-                       ( ( fr->bTwinRange && do_per_step(step, ir->nstcalclr) ) ? GMX_FORCE_DO_LR :0) );
-          plumed_cmd(plumedmain,"GREX cacheLocalUSwap",&hrex_enerd->term[F_EPOT]);
-          sfree(hrex_enerd);
-
-/* exchange back */
-          if (DOMAINDECOMP(cr))
-            dd_collect_state(cr->dd,state,state_global);
-          else
-            copy_state_nonatomdata(state, state_global);
-          if(MASTER(cr)){
-            if(repl%2==step/repl_ex_nst%2){
-              if(repl-1>=0) exchange_state(cr->ms,repl-1,state_global);
-            }else{
-              if(repl+1<nrepl) exchange_state(cr->ms,repl+1,state_global);
-            }
-          }
-          if (!DOMAINDECOMP(cr))
-            copy_state_nonatomdata(state_global, state);
-          if(PAR(cr)){
-            if (DOMAINDECOMP(cr)) {
-              dd_partition_system(fplog,step,cr,TRUE,1,
-                              state_global,top_global,ir,
-                              state,&f,mdatoms,top,fr,vsite,shellfc,constr,
-                              nrnb,wcycle,FALSE);
-              if(plumedswitch){
-                plumed_cmd(plumedmain,"setAtomsNlocal",&cr->dd->nat_home);
-                plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->gatindex);
-              }
-            }
-          }
-
-        }
-/* END PLUMED HREX */
 
         /* We write a checkpoint at this MD step when:
          * either at an NS step when we signalled through gs,
@@ -1228,51 +1078,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              * This is parallellized as well, and does communication too.
              * Check comments in sim_util.c
              */
-
-            /* PLUMED */
-            plumedNeedsEnergy=0;
-            if(plumedswitch){
-              int pversion=0;
-              plumed_cmd(plumedmain,"getApiVersion",&pversion);
-              long int lstep=step; plumed_cmd(plumedmain,"setStepLong",&lstep);
-              plumed_cmd(plumedmain,"setPositions",&state->x[0][0]);
-              plumed_cmd(plumedmain,"setMasses",&mdatoms->massT[0]);
-              plumed_cmd(plumedmain,"setCharges",&mdatoms->chargeA[0]);
-              plumed_cmd(plumedmain,"setBox",&state->box[0][0]);
-              plumed_cmd(plumedmain,"prepareCalc",NULL);
-              plumed_cmd(plumedmain,"setStopFlag",&plumedWantsToStop);
-              int checkp=0; if(bCPT) checkp=1;
-              if(pversion>3) plumed_cmd(plumedmain,"doCheckPoint",&checkp);
-              plumed_cmd(plumedmain,"setForces",&f[0][0]);
-              plumed_cmd(plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
-              clear_mat(plumed_vir);
-              plumed_cmd(plumedmain,"setVirial",&plumed_vir[0][0]);
-            }
-            /* END PLUMED */
             do_force(fplog, cr, ir, step, nrnb, wcycle, top, groups,
                      state->box, state->x, &state->hist,
                      f, force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,
                      fr, vsite, mu_tot, t, mdoutf_get_fp_field(outf), ed, bBornRadii,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags);
-            /* PLUMED */
-            if(plumedswitch){
-              if(plumedNeedsEnergy){
-                msmul(force_vir,2.0,plumed_vir);
-                plumed_cmd(plumedmain,"setEnergy",&enerd->term[F_EPOT]);
-                plumed_cmd(plumedmain,"performCalc",NULL);
-                msmul(plumed_vir,0.5,force_vir);
-              } else {
-                msmul(plumed_vir,0.5,plumed_vir);
-                m_add(force_vir,plumed_vir,force_vir);
-              }
-              if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
-                 do_per_step(step,repl_ex_nst)) plumed_cmd(plumedmain,"GREX savePositions",NULL);
-              if(plumedWantsToStop) ir->nsteps=step_rel+1;
-              if(bHREX)
-                 plumed_cmd(plumedmain,"GREX cacheLocalUNow",&enerd->term[F_EPOT]);
-            }
-            /* END PLUMED */
         }
 
         if (bVV && !bStartingFromCpt && !bRerunMD)
