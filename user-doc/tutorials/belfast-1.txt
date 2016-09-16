@@ -92,7 +92,7 @@ following input file is wrong:
 
 \verbatim
 #printout frequency
-PRINT ARG=cvdist STRIDE=1 FILE=COLVAR 
+PRINT ARG=e2edist STRIDE=1 FILE=COLVAR 
 #my first plumed input:
 DISTANCE ATOMS=2,253 LABEL=e2edist
 #endofinput 
@@ -262,7 +262,6 @@ PRINT ARG=abeta.lessthan,dd.mean,dd.min,dd.max,dd.moment-2 STRIDE=1 FILE=COLVAR
 HISTOGRAM ...
 ARG=abeta.lessthan,dd.mean
 LABEL=hh
-USE_ALL_DATA
 KERNEL=DISCRETE
 GRID_MIN=0,0.8
 GRID_MAX=4,1.2
@@ -278,7 +277,8 @@ NOTE: HISTOGRAM ... means that what follow is part of the \ref HISTOGRAM functio
 in PLUMED.
 
 The above input tells PLUMED to accumulate the two collective variables on a GRID. In addition the 
-probability can be converted to a free-energy using the flag FREE-ENERGY and setting the temperature using TEMP (i.e. 300K).
+probability can be converted to a free-energy using the \ref CONVERT_TO_FES method and then use
+\ref DUMPGRID to write it.
 Histograms can be accumulated in a smoother way by using a KERNEL function, a kernel is a normalised function, 
 for example a normalised gaussian is the default kernel in PLUMED, that is added to the histogram centered in the position of the data. 
 Estimating a probability density using kernels can in principle give more accurate results, on the other hand in 
@@ -290,7 +290,6 @@ and the BANDWIDTH should be smaller (i.e. one order of magnitude) than the varia
 HISTOGRAM ...
 LABEL=hh
 ARG=abeta.lessthan,dd.mean
-USE_ALL_DATA
 GRID_MIN=0,0.8
 GRID_MAX=4,1.2
 GRID_SPACING=0.04,0.004

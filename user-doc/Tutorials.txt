@@ -2,7 +2,7 @@
 
 @page tutorials Tutorials 
 
-The following pages describe how to perform a variety of tasks using PLUMED 2
+The following pages describe how to perform a variety of tasks using PLUMED
 
 @TUTORIALS@
 

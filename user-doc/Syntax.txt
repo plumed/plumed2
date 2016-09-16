@@ -1,14 +1,12 @@
 /**
 \page Syntax Getting started 
 
-To run PLUMED 2 you need to provide one input file.  In this file you specify what it
+To run PLUMED you need to provide one input file.  In this file you specify what it
 is that PLUMED should do during the course of the run.  Typically this will involve calculating 
 one or more collective variables, perhaps calculating a function of these CVs
  and then doing some analysis of values of your collective variables/functions or running
 some free energy method. A very brief introduction to the syntax used in the PLUMED input file
 is provided in this <a href="http://www.youtube.com/watch?v=PxJP16qNCYs"> 10-minute video </a>.
-
-Additional material and examples can be also found in the tutorial \ref belfast-1. 
 
 Within this input file every line is an instruction for PLUMED to perform some particular action.  This could be
  the calculation of a colvar, an occasional analysis of the trajectory or a biassing of the dynamics.  The first
@@ -57,6 +55,13 @@ Actions can be referred also with POSIX regular expressions (see \ref Regex) if 
 and detected at configure time.
 You can also add \ref comments to the input or set up your input over multiple files and then create a composite input by
 \ref includes.
+
+More information on the input syntax as well as details on the the various trajectory
+analisys tools that come with PLUMED are given in: 
+
+- \ref colvarintro tells you about the ways that you can calculate functions of the positions of the atoms.
+- \ref Analysis tells you about the various forms of analysis you can run on trajectories using PLUMED.
+- \ref Bias tells you about the methods that you can use to bias molecular dynamics simulations with PLUMED.
 
 \section units Plumed units
 By default the PLUMED inputs and outputs quantities in the following units:

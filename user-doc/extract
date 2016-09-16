@@ -36,7 +36,18 @@ if test "$make_pdfdoc" = yes ; then
 cat > automatic/pdfmanual.tmp << \EOF
 \htmlonly
 An experimental PDF copy of this manual can be found
-<a href="../manual.pdf"> here </a>.
+<a href="../manual.pdf"> here</a>, but the html documentation should 
+be considered as the official one.
+The PDF version has some known issue (e.g. some
+links are not working properly and images are not correctly included).
+The goal of the PDF manual is to allow people to download a full copy on the documentation for offline
+access and to perform easily full-text searches.
+Notice that the manual is updated very frequently (sometime more than once per week),
+so keep your local version of the PDF manual up to date. 
+Since the PDF manual is 200+ pages and is continuously updated,
+<b>
+please do not print it!
+</b>
 \endhtmlonly
 EOF
 else

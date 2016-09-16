@@ -74,6 +74,20 @@ links: Makefile
 	@echo Verify modules and create links in $(CURDIR)
 	@for dir in $(USE) ; do ../maketools/check_module.sh $$dir ; ../maketools/makelinks.sh $$dir ;  done
 
+.PHONY: cppcheck
+cppcheck:
+	../maketools/codecheck --cppcheck --local
+
+.PHONY: plumedcheck
+plumedcheck:
+	../maketools/codecheck --plumedcheck --local
+
+.PHONY: codecheck
+codecheck:
+	../maketools/codecheck --local
+
+
+
 # generic makefile rules
 include ../maketools/make.rules
 

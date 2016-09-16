@@ -113,7 +113,7 @@ For developers:
 Fixes in beta
 -------------
 
-Fixes since 2.3b. Relevant things could be merged in the changelog above when we relase 2.3.0
+Fixes since 2.3b. Relevant things could be merged in the changelog above when we release 2.3.0
 
 - Fixed critical pragma in openmp of Colvar. This could have lead to wrong virial accumulation.
 - Extended checkpoint infrastracture, now \ref METAD and \ref PBMETAD will write GRIDS also on checkpoint step (only the GROMACS patch
@@ -125,5 +125,8 @@ Fixes since 2.3b. Relevant things could be merged in the changelog above when we
 - New CV: \ref JCOUPLING
 - \ref PUCKERING now supports 6 membered rings.
 - Tutorials have been (partially) updated to reflect some of the changes in the syntax
-
+- gromacs 5.1.x patch updated to 5.1.4
+- (for developers) A script is available to check if source code complies plumed standard. Notice that this script is run together with cppcheck on travis-ci.
+- (for developers) Cppcheck on travis-ci has been updated to 1.75. Several small issues triggering errors on 1.75 were fixed (e.g. structures passed by value
+   are now passed by const ref) and false positives marked as such.
 */

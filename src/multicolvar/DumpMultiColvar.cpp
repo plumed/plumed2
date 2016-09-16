@@ -72,7 +72,7 @@ class DumpMultiColvar:
   MultiColvarBase* mycolv; 
   std::string fmt_xyz;
 public:
-  DumpMultiColvar(const ActionOptions&);
+  explicit DumpMultiColvar(const ActionOptions&);
   ~DumpMultiColvar();
   static void registerKeywords( Keywords& keys );
   void calculate(){}

@@ -323,7 +323,7 @@ vector<string> Tools::ls(const string&d){
 // (portability) Non reentrant function 'readdir' called. For threadsafe applications it is recommended to use the reentrant replacement function 'readdir_r'.
 // since we use it only if readdir_r is not available, I suppress the warning
 // GB
-// cppcheck-suppress nonreentrantFunctionsreaddir
+// cppcheck-suppress readdirCalled
       res=readdir(dir);
 #endif
       if(!res) break;

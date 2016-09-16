@@ -240,8 +240,8 @@ void ActionAtomistic::setForcesOnAtoms( const std::vector<double>& forcesToApply
   virial(1,2)=forcesToApply[ind]; ind++;
   virial(2,0)=forcesToApply[ind]; ind++;
   virial(2,1)=forcesToApply[ind]; ind++;
-  virial(2,2)=forcesToApply[ind]; ind++;
-  plumed_dbg_assert( ind==forcesToApply.size() );
+  virial(2,2)=forcesToApply[ind];
+  plumed_dbg_assert( ind+1==forcesToApply.size());
 }
 
 void ActionAtomistic::applyForces(){

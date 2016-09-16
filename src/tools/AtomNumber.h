@@ -43,8 +43,6 @@ class AtomNumber{
   explicit AtomNumber(unsigned);
 public:
 /// Initialize to index=0 (serial=1)
-// The following line triggers a warning in cppcheck,
-// cppcheck-suppress noExplicitConstructor
   AtomNumber();
 /// Returns the serial number
   unsigned serial()const;
