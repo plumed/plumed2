@@ -19,6 +19,12 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
+/*
+ This vast majority of the source code in this file was writting by
+ Sandro Bottaro with some help from Giovanni Bussi
+*/
+
 #include "ERMSD.h"
 #include "PDB.h"
 #include "Matrix.h"
