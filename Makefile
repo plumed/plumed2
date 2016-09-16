@@ -9,7 +9,7 @@ SUBDIRS := $(SRCDIRS) user-doc developer-doc regtest macports
 SUBDIRSCLEAN:=$(addsuffix .clean,$(SUBDIRS))
 
      
-.PHONY: all lib clean $(SRCDIRS) doc docclean check cppcheck distclean all_plus_docs macports
+.PHONY: all lib clean $(SRCDIRS) doc docclean check cppcheck distclean all_plus_docs macports codecheck plumedcheck
 
 # if machine dependent configuration has been found:
 ifdef GCCDEP
@@ -90,6 +90,12 @@ docclean:
 
 cppcheck:
 	$(MAKE) -C src cppcheck
+
+codecheck:
+	$(MAKE) -C src codecheck
+
+plumedcheck:
+	$(MAKE) -C src plumedcheck
 
 macports:
 	$(MAKE) -C macports
