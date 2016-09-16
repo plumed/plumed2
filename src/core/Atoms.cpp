@@ -381,8 +381,9 @@ void Atoms::setAtomsContiguous(int start){
 }
 
 void Atoms::setRealPrecision(int p){
+  MDAtomsBase *x=MDAtomsBase::create(p);
   delete mdatoms;
-  mdatoms=MDAtomsBase::create(p);
+  mdatoms=x;
 }
 
 int Atoms::getRealPrecision()const{
