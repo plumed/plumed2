@@ -178,8 +178,6 @@ public:
 };
 
 template<unsigned n,unsigned m>
-// notice that d[] is initialized in LoopUnroller<n*m>::_zero(d);
-// cppcheck-suppress uninitMemberVar
 TensorGeneric<n,m>::TensorGeneric(){
   LoopUnroller<n*m>::_zero(d);
 }
