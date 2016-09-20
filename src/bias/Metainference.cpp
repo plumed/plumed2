@@ -599,10 +599,16 @@ double Metainference::getEnergyGJE(const vector<double> &mean, const vector<doub
   double ss = sigma[0]*sigma[0] + scale2*sigma_mean_[0]*sigma_mean_[0];
 
   for(unsigned i=0;i<narg;++i){
-    if(noise_type_==MGAUSS||noise_type_==MLOGNORMAL){ 
+    if(noise_type_==MGAUSS){ 
       const double sigma2 = sigma[i] * sigma[i];
       const double sigma_mean2 = sigma_mean_[i] * sigma_mean_[i];
       ss = sigma2 + scale2*sigma_mean2;
+      // add Jeffrey's prior - one per sigma
+      ene += 0.5*std::log(sigma2+sigma_mean2);
+    } else if(noise_type_==MLOGNORMAL) {
+      const double sigma2 = sigma[i] * sigma[i];
+      const double sigma_mean2 = sigma_mean_[i] * sigma_mean_[i] / (mean[i]*mean[i]);
+      ss = sigma2 + sigma_mean2;
       // add Jeffrey's prior - one per sigma
       ene += 0.5*std::log(sigma2+sigma_mean2);
     }
@@ -819,7 +825,8 @@ double Metainference::getEnergyForceGJE(const vector<double> &mean, const double
   vector<double> inv_s2(ssize, 0.);
   // if this is not MGAUSS ssize is 1
   for(unsigned i=0;i<ssize; ++i) {
-    ss[i] = sigma_[i]*sigma_[i] + sigma_mean_[i]*sigma_mean_[i];
+    if(noise_type_==MLOGNORMAL) ss[i] = sigma_[i]*sigma_[i] + sigma_mean_[i]*sigma_mean_[i]/(scale_*scale_*mean[i]*mean[i]);
+    else ss[i] = sigma_[i]*sigma_[i] + sigma_mean_[i]*sigma_mean_[i];
     if(master) inv_s2[i] = 1.0/ss[i];
   }
 
