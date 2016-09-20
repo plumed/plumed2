@@ -57,7 +57,6 @@ class EMOutrestraint : public Bias
   // exp data points
   vector<double> ovdd_;
   // output
-  Value* valueBias;
   Value* valueSigma;
   Value* valueAccept;
   
@@ -124,10 +123,8 @@ MCfirst_(-1)
   log.printf("  MC steps %u\n",MCsteps_);
   log.printf("  MC stride %u\n",MCstride_);
 
-  addComponent("bias");   componentIsNotPeriodic("bias");
   addComponent("sigma");  componentIsNotPeriodic("sigma");
   addComponent("accept"); componentIsNotPeriodic("accept");
-  valueBias=getPntrToComponent("bias");
   valueSigma=getPntrToComponent("sigma");
   valueAccept=getPntrToComponent("accept");
   
@@ -239,7 +236,7 @@ void EMOutrestraint::calculate()
   ene += std::log(sigma_) - ndata_zero*std::log(sqrt2_div_pi*sigma_);
 
   // set value of the bias
-  valueBias->set(kbt_ * ene);
+  setBias(kbt_ * ene);
   // set value of data uncertainty
   valueSigma->set(sigma_);
 }

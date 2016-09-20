@@ -44,8 +44,6 @@ class EMrestraint : public Bias
   double kbt_;
   // exp data points
   vector<double> ovdd_;
-  // output
-  Value* valueBias;
   
 public:
   EMrestraint(const ActionOptions&);
@@ -78,10 +76,6 @@ PLUMED_BIAS_INIT(ao)
 
   log.printf("  temperature of the system %f\n",kbt_);
   log.printf("  number of experimental data points %u\n",static_cast<unsigned>(ovdd_.size()));
-
-  addComponent("bias");   componentIsNotPeriodic("bias");
-
-  valueBias=getPntrToComponent("bias");
   
 }
 
@@ -125,7 +119,7 @@ void EMrestraint::calculate(){
   }
 
   // set value of the bias
-  valueBias->set(fact * std::log(ene));
+  setBias(fact * std::log(ene));
 }
 
 

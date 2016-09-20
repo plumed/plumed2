@@ -128,7 +128,6 @@ void CrossLinkMSRestraint::registerKeywords(Keywords& keys){
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_STRIDE","MC stride");
   componentsAreNotOptional(keys); 
-  keys.addOutputComponent("bias",   "default","the instantaneous value of the bias potential");
   keys.addOutputComponent("sigma",  "default","uncertainty parameter");
   keys.addOutputComponent("accsig", "default","MC acceptance sigma");
   keys.addOutputComponent("psi",    "COMPONENTS","psi parameter");
@@ -178,7 +177,6 @@ entropic_(false)
   log.printf("  number of MC steps %d\n",MCsteps_);
   log.printf("  do MC every %d steps\n", MCstride_);
 
-  addComponent("bias");   componentIsNotPeriodic("bias");
   addComponent("sigma");  componentIsNotPeriodic("sigma");
   addComponent("accsig"); componentIsNotPeriodic("accsig");
   for(unsigned i=0;i<ndata_.size();i++) {
@@ -390,7 +388,7 @@ void CrossLinkMSRestraint::calculate(){
   // add Jeffrey's priors on psi_
   for(unsigned i=0;i<psi_.size();++i) ene += kbt_ * std::log(psi_[i]);
   // set value of the bias
-  getPntrToComponent("bias")->set(ene);
+  setBias(ene);
   // set value of uncertainty
   getPntrToComponent("sigma")->set(sigma_);
   // set value of psi 
