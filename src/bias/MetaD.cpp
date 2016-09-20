@@ -887,6 +887,7 @@ last_step_warn_grid(0)
     if(r>0) ifilesnames[mw_id_]="/dev/null";
     hillsOfile_.enforceSuffix("");
   }
+  if(mw_n_>1) hillsOfile_.enforceSuffix("");
   hillsOfile_.open(ifilesnames[mw_id_]);
   if(fmt.length()>0) hillsOfile_.fmtField(fmt);
   hillsOfile_.addConstantField("multivariate");
