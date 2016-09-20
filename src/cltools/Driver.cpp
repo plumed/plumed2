@@ -512,6 +512,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
          if(!fp){
            string msg="ERROR: Error opening trajectory file "+trajectoryFile;
            fprintf(stderr,"%s\n",msg.c_str());
+// cppcheck detects a false positive here. I suppress it:
+// cppcheck-suppress memleak
            return 1;
          }
        }

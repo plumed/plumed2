@@ -99,7 +99,7 @@ public:
  /// clear grid
  virtual void clear();
  /// this constructor here is Value-aware  
- Grid(const std::string& funcl, std::vector<Value*> args, const std::vector<std::string> & gmin, 
+ Grid(const std::string& funcl, const std::vector<Value*> & args, const std::vector<std::string> & gmin, 
       const std::vector<std::string> & gmax, const std::vector<unsigned> & nbin, bool dospline, 
       bool usederiv, bool doclear=true);
  /// this constructor here is not Value-aware  
@@ -150,9 +150,9 @@ public:
  void writeHeader(OFile& file);
 
 /// read grid from file
- static Grid* create(const std::string&,std::vector<Value*>,IFile&,bool,bool,bool);
+ static Grid* create(const std::string&,const std::vector<Value*>&,IFile&,bool,bool,bool);
 /// read grid from file and check boundaries are what is expected from input
- static Grid* create(const std::string&, std::vector<Value*>, IFile&,
+ static Grid* create(const std::string&,const std::vector<Value*>&, IFile&,
                      const std::vector<std::string>&,const std::vector<std::string>&,
                      const std::vector<unsigned>&,bool,bool,bool); 
 /// get grid size
@@ -229,7 +229,7 @@ class SparseGrid : public Grid
  void clear(); 
  
  public:
- SparseGrid(const std::string& funcl, std::vector<Value*> args, const std::vector<std::string> & gmin, 
+ SparseGrid(const std::string& funcl, const std::vector<Value*> & args, const std::vector<std::string> & gmin, 
             const std::vector<std::string> & gmax, 
             const std::vector<unsigned> & nbin, bool dospline, bool usederiv):
             Grid(funcl,args,gmin,gmax,nbin,dospline,usederiv,false){}

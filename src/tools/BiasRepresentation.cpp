@@ -29,7 +29,7 @@ namespace PLMD {
 using namespace std;
 
 /// the constructor here
-BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc ):hasgrid(false),rescaledToBias(false),mycomm(cc),BiasGrid_(NULL){
+BiasRepresentation::BiasRepresentation(const vector<Value*> & tmpvalues, Communicator &cc ):hasgrid(false),rescaledToBias(false),mycomm(cc),BiasGrid_(NULL){
     lowI_=0.0;
     uppI_=0.0;
     doInt_=false;
@@ -40,7 +40,7 @@ BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &c
     } 
 }
 /// overload the constructor: add the sigma  at constructor time 
-BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc,  vector<double> sigma ):hasgrid(false), rescaledToBias(false), histosigma(sigma),mycomm(cc),BiasGrid_(NULL){
+BiasRepresentation::BiasRepresentation(const vector<Value*> & tmpvalues, Communicator &cc,  const vector<double> & sigma ):hasgrid(false), rescaledToBias(false), histosigma(sigma),mycomm(cc),BiasGrid_(NULL){
     lowI_=0.0;
     uppI_=0.0;
     doInt_=false;
@@ -51,8 +51,8 @@ BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &c
     } 
 } 
 /// overload the constructor: add the grid at constructor time 
-BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc , vector<string> gmin, vector<string> gmax, 
-                                       vector<unsigned> nbin, bool doInt, double lowI, double uppI ):hasgrid(false), rescaledToBias(false), mycomm(cc), BiasGrid_(NULL){
+BiasRepresentation::BiasRepresentation(const vector<Value*> & tmpvalues, Communicator &cc , const vector<string> & gmin, const vector<string> & gmax, 
+                                       const vector<unsigned> & nbin, bool doInt, double lowI, double uppI ):hasgrid(false), rescaledToBias(false), mycomm(cc), BiasGrid_(NULL){
     ndim=tmpvalues.size();
     for(int  i=0;i<ndim;i++){
          values.push_back(tmpvalues[i]);
@@ -65,7 +65,7 @@ BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &c
     addGrid(gmin,gmax,nbin);
 } 
 /// overload the constructor with some external sigmas: needed for histogram
-BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc , vector<string> gmin, vector<string> gmax, vector<unsigned> nbin , vector<double> sigma):hasgrid(false), rescaledToBias(false),histosigma(sigma),mycomm(cc),BiasGrid_(NULL){
+BiasRepresentation::BiasRepresentation(const vector<Value*> & tmpvalues, Communicator &cc , const vector<string> & gmin, const vector<string> & gmax, const vector<unsigned> & nbin , const vector<double> & sigma):hasgrid(false), rescaledToBias(false),histosigma(sigma),mycomm(cc),BiasGrid_(NULL){
     lowI_=0.0;
     uppI_=0.0;
     doInt_=false;
@@ -83,7 +83,7 @@ BiasRepresentation::~BiasRepresentation(){
   for(unsigned i=0;i<hills.size();i++) delete hills[i];
 }
 
-void  BiasRepresentation::addGrid( vector<string> gmin, vector<string> gmax, vector<unsigned> nbin ){
+void  BiasRepresentation::addGrid( const vector<string> & gmin, const vector<string> & gmax, const vector<unsigned> & nbin ){
     plumed_massert(hills.size()==0,"you can set the grid before loading the hills");
     plumed_massert(hasgrid==false,"to build the grid you should not having the grid in this bias representation");
     string ss; ss="file.free"; 

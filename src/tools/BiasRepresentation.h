@@ -42,20 +42,20 @@ namespace PLMD{
 class BiasRepresentation {
   public:
           /// create a bias representation from a list of pointer to values
-	  BiasRepresentation(std::vector<Value*> tmpvalues, Communicator &cc  ); 
+	  BiasRepresentation(const std::vector<Value*> & tmpvalues, Communicator &cc  ); 
           /// create a bias using explicit sigma in input (needed for histogram building) 
-	  BiasRepresentation(std::vector<Value*> tmpvalues, Communicator &cc  ,  std::vector<double> sigma); 
+	  BiasRepresentation(const std::vector<Value*> & tmpvalues, Communicator &cc  ,  const std::vector<double> & sigma); 
           /// create a bias containing a grid representation 
-	  BiasRepresentation(std::vector<Value*> tmpvalues, Communicator &cc , std::vector<std::string> gmin, std::vector<std::string> gmax, 
-                             std::vector<unsigned> nbin, bool doInt, double lowI_, double uppI_);
+	  BiasRepresentation(const std::vector<Value*> & tmpvalues, Communicator &cc , const std::vector<std::string> &  gmin, const std::vector<std::string> & gmax, 
+                             const std::vector<unsigned> & nbin, bool doInt, double lowI_, double uppI_);
           /// create a histogram with grid representation and sigmas in input
-	  BiasRepresentation(std::vector<Value*> tmpvalues, Communicator &cc , std::vector<std::string> gmin, std::vector<std::string> gmax, std::vector<unsigned> nbin , std::vector<double> sigma);
+	  BiasRepresentation(const std::vector<Value*> & tmpvalues, Communicator &cc , const std::vector<std::string> & gmin, const std::vector<std::string> & gmax, const std::vector<unsigned> & nbin , const std::vector<double> & sigma);
 	  /// destructor
 	  ~BiasRepresentation();
           /// retrieve the number of dimension of the representation
 	  unsigned 	getNumberOfDimensions();
           /// add the grid to the representation
-	  void 		addGrid( std::vector<std::string> gmin, std::vector<std::string> gmax, std::vector<unsigned> nbin );
+	  void 		addGrid(const std::vector<std::string> & gmin, const std::vector<std::string> & gmax, const std::vector<unsigned> & nbin );
           /// push a kernel on the representation (includes widths and height)
 	  void 		pushKernel( IFile * ff);
           /// set the flag that rescales the free energy to the bias 

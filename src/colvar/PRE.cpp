@@ -41,6 +41,8 @@ The additional parameters needed for the calculation are given as INEPT, the ine
 time, TAUC the correlation time, OMEGA, the larmor frequency and RTWO for the relaxation
 time.
 
+\par Examples
+
 */
 //+ENDPLUMEDOC
 

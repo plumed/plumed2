@@ -157,9 +157,9 @@ void MultiColvarBase::readTwoGroups( const std::string& key0, const std::string&
           }
       } 
   } else {
-      bool readkey1=parseMultiColvarAtomList(key1,-1,all_atoms);
+      parseMultiColvarAtomList(key1,-1,all_atoms);
       ablocks[0].resize( atom_lab.size() ); for(unsigned i=0;i<ablocks[0].size();++i) ablocks[0][i]=i;
-      bool readkey2=parseMultiColvarAtomList(key2,-1,all_atoms);
+      parseMultiColvarAtomList(key2,-1,all_atoms);
       ablocks[1].resize( atom_lab.size() - ablocks[0].size() ); for(unsigned i=0;i<ablocks[1].size();++i) ablocks[1][i]=ablocks[0].size() + i;
 
       if( ablocks[0].size()>ablocks[1].size() ) nblock = ablocks[0].size();
@@ -588,7 +588,7 @@ bool MultiColvarBase::setupCurrentAtomList( const unsigned& taskCode, AtomValueP
      for(unsigned i=0;i<getNumberOfAtoms();++i) myatoms.setAtom( i, i ); 
   } else if( allthirdblockintasks ){ 
      plumed_dbg_assert( ablocks.size()==3 ); std::vector<unsigned> atoms(2); decodeIndexToAtoms( taskCode, atoms );
-     unsigned natomsper=myatoms.setupAtomsFromLinkCells( atoms, getLinkCellPosition(atoms), threecells );
+     myatoms.setupAtomsFromLinkCells( atoms, getLinkCellPosition(atoms), threecells );
   } else if( nblock>0 ){
      std::vector<unsigned> atoms( ablocks.size() );
      decodeIndexToAtoms( taskCode, atoms ); myatoms.setNumberOfAtoms( ablocks.size() );
