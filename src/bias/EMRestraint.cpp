@@ -59,7 +59,6 @@ void EMrestraint::registerKeywords(Keywords& keys){
   keys.use("ARG");
   keys.add("compulsory","TEMP","temperature in energy units");
   componentsAreNotOptional(keys); 
-  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
 }
 
 EMrestraint::EMrestraint(const ActionOptions&ao):

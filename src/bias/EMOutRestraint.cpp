@@ -84,7 +84,6 @@ void EMOutrestraint::registerKeywords(Keywords& keys){
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_STRIDE","MC stride");
   componentsAreNotOptional(keys); 
-  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
   keys.addOutputComponent("sigma", "default","uncertainty parameter");
   keys.addOutputComponent("accept","default","MC acceptance");
 }

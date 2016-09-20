@@ -51,7 +51,7 @@ to print the values of the uncertainty parameter, MC acceptance, and Bayesian sc
 \verbatim
 WHOLEMOLECULES ENTITY0=1-174
 cs:  CS2BACKBONE ATOMS=1-174 DATA=data/ FF=a03_gromacs.mdb FLAT=0.0 NRES=13 ENSEMBLE COMPONENTS
-csb: BAYESIANSP ARG=cs.ha SIGMA0=1.0 SIGMA_MIN=0.00001 SIGMA_MAX=10.0 DSIGMA=0.1 KBT=2.494 MC_STEPS=1 MC_STRIDE=1 MC_SEED=1234
+csb: BAYESIANSP ARG=cs.ha SIGMA0=1.0 SIGMA_MIN=0.00001 SIGMA_MAX=10.0 DSIGMA=0.1 TEMP=2.494 MC_STEPS=1 MC_STRIDE=1 MC_SEED=1234
 PRINT ARG=csb.sigma,csb.accept,csb.bias
 \endverbatim
 (See also \ref CS2BACKBONE and \ref PRINT).
@@ -121,7 +121,7 @@ void CrossLinkMSRestraint::registerKeywords(Keywords& keys){
   keys.add("compulsory","PSI_MAX","maximum value of the psi parameter");
   keys.add("compulsory","DPSI","maximum MC move of the psi parameter");
   keys.add("compulsory","LENGTH","length of XL");
-  keys.add("compulsory","KBT","temperature");
+  keys.add("compulsory","TEMP","temperature in energy units");
   keys.add("compulsory","NDATA","number of data points per class");
   keys.add("optional","SLOPE","slope");
   keys.addFlag("ENTROPY",false,"add entropic contribution");
@@ -150,7 +150,7 @@ entropic_(false)
   parse("DPSI",     Dpsi_);
   parse("LENGTH",   length_);
   parse("SLOPE",    slope_);
-  parse("KBT",      kbt_);
+  parse("TEMP",      kbt_);
   parseVector("NDATA", ndata_);
   parse("MC_STEPS", MCsteps_);
   parse("MC_STRIDE",MCstride_);
