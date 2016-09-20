@@ -464,8 +464,8 @@ last_step_warn_grid(0)
     }
  
     parseVector("SIGMA_MAX",sigma0max_);
-    if(sigma0max_.size()>0 && sigma0max_.size()<getNumberOfArguments()) {
-      error("the number of SIGMA_MAX values be at least the number of the arguments"); 
+    if(sigma0max_.size()>0 && sigma0max_.size()!=getNumberOfArguments()) {
+      error("the number of SIGMA_MAX values be the same of the number of the arguments"); 
     } else if(sigma0max_.size()==0) { 
       sigma0max_.resize(getNumberOfArguments());
       for(unsigned i=0;i<getNumberOfArguments();i++){sigma0max_[i]=-1.;}	
