@@ -62,6 +62,8 @@ private:
  vector<double> ovdd_; 
  // and derivatives
  vector<Vector> ovmd_der_;
+ vector<Vector> atom_der_;
+ vector<double> ene_der_;
  
  // prefactor for overlap between two components of model and data GMM
  // fact_md = w_m * w_d / (2pi)**1.5 / sqrt(det_md)
@@ -187,9 +189,12 @@ serial_(false)
   // prepare neighbor list - or full list
   for(unsigned i=0; i<GMM_d_w_.size(); ++i)
      for(unsigned j=0; j<GMM_m_w_.size(); ++j) nl_.push_back(make_pair(i,j));
+
   // and prepare temporary vectors
   ovmd_.resize(GMM_d_w_.size());
+  ene_der_.resize(GMM_d_w_.size());
   ovmd_der_.resize(nl_.size());
+  atom_der_.resize(GMM_m_w_.size());
 
   // request the atoms
   requestAtoms(atoms);
@@ -428,8 +433,7 @@ void EM3Dmap::calculate_overlap(){
   for(unsigned i=0; i<ovmd_der_.size(); ++i) ovmd_der_[i] = Vector(0,0,0);
   
   // we have to cycle over all model and data GMM components in the neighbor list
-  if(serial_){
-   for(unsigned i=rank_;i<nl_.size();i=i+size_) {
+  for(unsigned i=rank_;i<nl_.size();i=i+size_) {
       // get indexes of data and model component
       unsigned id = nl_[i].first;
       unsigned im = nl_[i].second;
@@ -438,19 +442,9 @@ void EM3Dmap::calculate_overlap(){
       // add overlap with im component of model GMM
       ovmd_[id] += get_overlap(getPosition(im), GMM_d_m_[id], fact_md_[j],
                                inv_cov_md_[j], ovmd_der_[i]);
-   }
-  } else {
-   for(unsigned i=rank_;i<nl_.size();i=i+size_) {
-      // get indexes of data and model component
-      unsigned id = nl_[i].first;
-      unsigned im = nl_[i].second;
-      // get index in 1D array of constant parameters
-      unsigned j = id*GMM_m_w_.size()+im;
-      // add overlap with im component of model GMM
-      ovmd_[id] += get_overlap(getPosition(im), GMM_d_m_[id], fact_md_[j],
-                               inv_cov_md_[j], ovmd_der_[i]);
-   }
-   // Communicate    
+  }
+  // if parallel, communicate stuff
+  if(!serial_){
    comm.Sum(&ovmd_[0], ovmd_.size());
    comm.Sum(&ovmd_der_[0][0], 3*ovmd_der_.size());
   }
@@ -463,17 +457,15 @@ void EM3Dmap::calculate(){
 
   // calculate "restraint"
   double ene = 0.0;
-  vector<double> ene_der(ovmd_.size(), 0.0);
-  
-  // cycle on arguments
   // count number of non-zero overlaps
   double ndata_zero = 0.0;
   for(unsigned i=0;i<ovmd_.size();++i){
+    ene_der_[i] = 0.0;
     if(ovmd_[i] > 0.0){
      // individual term
-     ene_der[i] = std::log(ovmd_[i]/ovdd_[i]);
+     ene_der_[i] = std::log(ovmd_[i]/ovdd_[i]);
      // increment energy
-     ene += ene_der[i] * ene_der[i];
+     ene += ene_der_[i] * ene_der_[i];
      // increment counter
      ndata_zero += 1.0;
     }
@@ -482,33 +474,26 @@ void EM3Dmap::calculate(){
   // constant factor
   double fact = kbt_ * 0.5 * ndata_zero;
 
-  // get derivatives of bias with respect to ovmd_[i]
-  for(unsigned i=0;i<ovmd_.size();++i){
-    // check for zero overlaps
-    if(ovmd_[i] > 0.0 && ene > 0.0){
-     // calculate derivative
-     double der = 2.0 * fact / ene * ene_der[i] / ovmd_[i];
-     // store it 
-     ene_der[i] = der; 
-    }
-  }
+  // clear temporary vector
+  for(unsigned i=0; i<atom_der_.size(); ++i) atom_der_[i] = Vector(0,0,0);
 
   // get derivatives of bias with respect to atoms
-  vector<Vector>  atom_der(GMM_m_w_.size());
-  for(unsigned i=0; i<atom_der.size(); ++i) atom_der[i] = Vector(0,0,0);
-
-  for(unsigned i=0;i<nl_.size();++i) {
+  for(unsigned i=rank_;i<nl_.size();i=i+size_) {
      // get indexes of data and model component
      unsigned id = nl_[i].first;
      unsigned im = nl_[i].second;
-     // chain rule
-     atom_der[im] += ene_der[id] * ovmd_der_[i];
+     // check for zero overlaps
+     if(ovmd_[id] > 0.0 && ene > 0.0){
+      double der = 2.0 * fact / ene * ene_der_[id] / ovmd_[id];
+      // chain rule
+      atom_der_[im] += der * ovmd_der_[i];
+     }
   }
-
+  // if parallel, communicate stuff
+  if(!serial_) comm.Sum(&atom_der_[0][0], 3*atom_der_.size());
+ 
   // set derivative
-  for(unsigned i=0;i<atom_der.size();++i) { 
-     setAtomsDerivatives(i, atom_der[i]);
-  }
+  for(unsigned i=0;i<atom_der_.size();++i) setAtomsDerivatives(i, atom_der_[i]);
 
   // set value of the bias
   setValue(fact * std::log(ene));
