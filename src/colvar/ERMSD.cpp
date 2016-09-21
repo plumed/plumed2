@@ -174,6 +174,10 @@ PLUMED_COLVAR_INIT(ao), pbc(true)
 
   log.printf("  reference from file %s\n",reference.c_str());
   log.printf("  which contains %u atoms\n",natoms);
+
+  log<<"  Bibliography "
+     <<plumed.cite("Bottaro, Di Palma, and Bussi, Nucleic Acids Res. 42, 13306 (2014)")
+     <<plumed.cite("Bottaro, Banas, Sponer, and Bussi, submitted (2016)")<<"\n";
   
 }
 
