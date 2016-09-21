@@ -368,6 +368,15 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
           numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N7",resnum,chainid));
           numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C8",resnum,chainid));
         } else plumed_error();
+      } else if( name=="lcs" ) {
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C2",resnum,chainid));
+        if(basetype=="T" || basetype=="U" || basetype=="C"){
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C4",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C6",resnum,chainid));
+        } else if(basetype=="G" || basetype=="A"){
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C6",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C4",resnum,chainid));
+        } else plumed_error(); 
       } else numbers.push_back(mypdb.getNamedAtomFromResidueAndChain(name,resnum,chainid));
     }
   }
