@@ -108,6 +108,8 @@ public:
   unsigned getNumberOfAtomBlocks() const ;
 /// Set the position array
   void setPositions(const std::vector<Vector> &v);
+/// Access to the position array
+  Vector getPosition(AtomNumber a)const;
 };
 
 }

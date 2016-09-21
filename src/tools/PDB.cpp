@@ -296,5 +296,14 @@ Log& operator<<(Log& ostr, const PDB&  pdb){
    return ostr;
 }
 
+Vector PDB::getPosition(AtomNumber a)const{
+     std::map<AtomNumber,unsigned>::const_iterator p;
+     p=number2index.find(a);
+     if(p==number2index.end()) plumed_merror("atom not available");
+     else return positions[p->second];
+}
+
+
+
 }
 
