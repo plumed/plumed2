@@ -1,0 +1,17 @@
+MOLINFO STRUCTURE=ref.pdb
+
+e: ERMSD ATOMS=@lcs-1,@lcs-2,@lcs-3,@lcs-4,@lcs-5,@lcs-6,@lcs-7,@lcs-8,@lcs-9,@lcs-10,@lcs-11,@lcs-12,@lcs-13,@lcs-14,@lcs-15,@lcs-16,@lcs-17,@lcs-18,@lcs-19,@lcs-20,@lcs-21,@lcs-22,@lcs-23,@lcs-24,@lcs-25,@lcs-26,@lcs-27,@lcs-28,@lcs-29,@lcs-30,@lcs-31,@lcs-32,@lcs-33,@lcs-34,@lcs-35,@lcs-36,@lcs-37,@lcs-38,@lcs-39,@lcs-40,@lcs-41,@lcs-42,@lcs-43,@lcs-44,@lcs-45,@lcs-46,@lcs-47,@lcs-48,@lcs-49,@lcs-50,@lcs-51,@lcs-52,@lcs-53,@lcs-54,@lcs-55,@lcs-56,@lcs-57,@lcs-58,@lcs-59,@lcs-60,@lcs-61,@lcs-62,@lcs-63,@lcs-64,@lcs-65,@lcs-66,@lcs-67,@lcs-68,@lcs-69,@lcs-70,@lcs-71 REFERENCE=ref.pdb
+
+e2: ERMSD ATOMS=@lcs-1,@lcs-2,@lcs-3,@lcs-4,@lcs-5,@lcs-6,@lcs-7,@lcs-8,@lcs-9,@lcs-10,@lcs-11,@lcs-12,@lcs-13,@lcs-14,@lcs-15,@lcs-16,@lcs-17,@lcs-18,@lcs-19,@lcs-20,@lcs-21,@lcs-22,@lcs-23,@lcs-24,@lcs-25,@lcs-26,@lcs-27,@lcs-28,@lcs-29,@lcs-30,@lcs-31,@lcs-32,@lcs-33,@lcs-34,@lcs-35,@lcs-36,@lcs-37,@lcs-38,@lcs-39,@lcs-40,@lcs-41,@lcs-42,@lcs-43,@lcs-44,@lcs-45,@lcs-46,@lcs-47,@lcs-48,@lcs-49,@lcs-50,@lcs-51,@lcs-52,@lcs-53,@lcs-54,@lcs-55,@lcs-56,@lcs-57,@lcs-58,@lcs-59,@lcs-60,@lcs-61,@lcs-62,@lcs-63,@lcs-64,@lcs-65,@lcs-66,@lcs-67,@lcs-68,@lcs-69,@lcs-70,@lcs-71 REFERENCE=ref.pdb PAIRS=1,2,1,3,1,4,2,3,2,4,3,4
+
+DUMPDERIVATIVES ARG=e,e2 FILE=der FMT=%9.5f
+
+PRINT ARG=e,e2 FILE=colvar FMT=%9.5f
+
+# ne: ERMSD ATOMS=@lcs-1,@lcs-2,@lcs-3,@lcs-4,@lcs-5,@lcs-6,@lcs-7,@lcs-8,@lcs-9,@lcs-10,@lcs-11,@lcs-12,@lcs-13,@lcs-14,@lcs-15,@lcs-16,@lcs-17,@lcs-18,@lcs-19,@lcs-20,@lcs-21,@lcs-22,@lcs-23,@lcs-24,@lcs-25,@lcs-26,@lcs-27,@lcs-28,@lcs-29,@lcs-30,@lcs-31,@lcs-32,@lcs-33,@lcs-34,@lcs-35,@lcs-36,@lcs-37,@lcs-38,@lcs-39,@lcs-40,@lcs-41,@lcs-42,@lcs-43,@lcs-44,@lcs-45,@lcs-46,@lcs-47,@lcs-48,@lcs-49,@lcs-50,@lcs-51,@lcs-52,@lcs-53,@lcs-54,@lcs-55,@lcs-56,@lcs-57,@lcs-58,@lcs-59,@lcs-60,@lcs-61,@lcs-62,@lcs-63,@lcs-64,@lcs-65,@lcs-66,@lcs-67,@lcs-68,@lcs-69,@lcs-70,@lcs-71 REFERENCE=ref.pdb NUMERICAL_DERIVATIVES
+
+ # ne2: ERMSD ATOMS=@lcs-1,@lcs-2,@lcs-3,@lcs-4,@lcs-5,@lcs-6,@lcs-7,@lcs-8,@lcs-9,@lcs-10,@lcs-11,@lcs-12,@lcs-13,@lcs-14,@lcs-15,@lcs-16,@lcs-17,@lcs-18,@lcs-19,@lcs-20,@lcs-21,@lcs-22,@lcs-23,@lcs-24,@lcs-25,@lcs-26,@lcs-27,@lcs-28,@lcs-29,@lcs-30,@lcs-31,@lcs-32,@lcs-33,@lcs-34,@lcs-35,@lcs-36,@lcs-37,@lcs-38,@lcs-39,@lcs-40,@lcs-41,@lcs-42,@lcs-43,@lcs-44,@lcs-45,@lcs-46,@lcs-47,@lcs-48,@lcs-49,@lcs-50,@lcs-51,@lcs-52,@lcs-53,@lcs-54,@lcs-55,@lcs-56,@lcs-57,@lcs-58,@lcs-59,@lcs-60,@lcs-61,@lcs-62,@lcs-63,@lcs-64,@lcs-65,@lcs-66,@lcs-67,@lcs-68,@lcs-69,@lcs-70,@lcs-71 REFERENCE=ref.pdb PAIRS=1,2,1,3,1,4,2,3,2,4,3,4 NUMERICAL_DERIVATIVES
+
+ # DUMPDERIVATIVES ARG=e,ne FILE=der
+
+
