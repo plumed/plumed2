@@ -720,6 +720,8 @@ void CS2Backbone::read_cs(const string &file, const string &nucl){
   else if(nucl=="C") n=5;
   else return;
 
+  int oldseg = -1;
+  int oldp = -1;
   while(iter!=end){
     string tok;
     tok = *iter; ++iter;
@@ -728,10 +730,19 @@ void CS2Backbone::read_cs(const string &file, const string &nucl){
     p = p - 1;
     const unsigned seg = frag_segment(p);
     p = frag_relitive_index(p,seg);
+    if(oldp==-1) oldp=p;
+    if(oldseg==-1) oldseg=seg;
+    if(p<oldp&&seg==oldseg) {
+      string errmsg = "Error while reading " + file + "! The same residue number has been used twice!";
+      error(errmsg);
+    }
     tok = *iter; ++iter;
     double cs = atof(tok.c_str());
+    log.printf("%lf %i %i %i\n", cs, seg, p, n); log.flush();
     if(atom[seg][p].pos[n]<=0) cs=0;
-    atom[seg][p].exp_cs[n] = cs; 
+    else atom[seg][p].exp_cs[n] = cs;
+    oldseg = seg;
+    oldp = p;
   }
   in.close();
 }
