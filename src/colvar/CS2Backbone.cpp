@@ -738,7 +738,6 @@ void CS2Backbone::read_cs(const string &file, const string &nucl){
     }
     tok = *iter; ++iter;
     double cs = atof(tok.c_str());
-    log.printf("%lf %i %i %i\n", cs, seg, p, n); log.flush();
     if(atom[seg][p].pos[n]<=0) cs=0;
     else atom[seg][p].exp_cs[n] = cs;
     oldseg = seg;
