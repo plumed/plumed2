@@ -64,8 +64,10 @@ private:
  vector<Vector> ovmd_der_;
  vector<Vector> atom_der_;
  vector<double> ene_der_;
+ // constant quantity;
+ double cfact_;
  
- // prefactor for overlap between two components of model and data GMM
+ // list of prefactors for overlap between two components of model and data GMM
  // fact_md = w_m * w_d / (2pi)**1.5 / sqrt(det_md)
  vector< double > fact_md_;
  // inverse of the sum of model and data covariances matrices
@@ -79,6 +81,8 @@ private:
  bool serial_;
  unsigned size_;
  unsigned rank_;
+ // other bool
+ bool all_over_;
  
  // calculate model GMM weights and covariances - these are constants
  void get_GMM_m(vector<AtomNumber> &atoms);
@@ -87,12 +91,14 @@ private:
  // normalize GMM
  void normalize_GMM(vector<double> &w);
 
+ // get fact_md and inv_cov_md
+ double get_prefactor_inverse (Matrix<double> GMM_cov_0, Matrix<double> GMM_cov_1,
+        double GMM_w_0, double GMM_w_1, Matrix<double> &inv_sum);
  // get constant parameters for overlap between two components of model and data GMM:
- // fact_md_ and inv_cov_md_
  void get_auxiliary_stuff();
  // calculate self overlaps between data GMM components - ovdd_
- double get_self_overlap(double d_w, Matrix <double> d_cov);
- // calculate overlap between two components of model and data GMM
+ double get_self_overlap(unsigned id);
+ // calculate overlap between two components
  double get_overlap(Vector m_m, Vector d_m, double fact_md,
                     Matrix<double> &inv_cov_md, Vector &ov_der);
  // update the neighbor list
@@ -115,6 +121,7 @@ void EM3Dmap::registerKeywords( Keywords& keys ){
   keys.add("compulsory","GMM_FILE","file with the parameters of the GMM components");
   keys.add("compulsory","TEMP","temperature in energy units");
   keys.addFlag("SERIAL",false,"perform the calculation in serial - for debug purpose");
+  keys.addFlag("ALL_OVER",false,"self overlap with all components");
   keys.addFlag("NLIST",false,"use neighbor lists");
   keys.add("optional","NL_CUTOFF","The cutoff in overlap for the neighbor list");
   keys.add("optional","NL_STRIDE","The frequency with which we are updating the neighbor list");
@@ -127,8 +134,9 @@ EM3Dmap::EM3Dmap(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
 do_nl_(false),
 nl_cutoff_(-1.0), nl_stride_(0),
-serial_(false)
+serial_(false), all_over_(false)
 {
+  
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   
@@ -154,6 +162,9 @@ serial_(false)
     size_=comm.Get_size(); rank_=comm.Get_rank();
   }
   
+  // all over stuff
+  parseFlag("ALL_OVER", all_over_);
+  
   checkRead();
 
   log.printf("  atoms involved : ");
@@ -165,6 +176,9 @@ serial_(false)
     log.printf("  neighbor list overlap cutoff : %lf\n", nl_cutoff_);
     log.printf("  neighbor list stride : %u\n",  nl_stride_);
   }
+
+  // set constant quantity before calculating stuff
+  cfact_ = 1.0/pow( 2.0*pi, 1.5 );
   
   // calculate model GMM constant parameters
   get_GMM_m(atoms);
@@ -182,7 +196,7 @@ serial_(false)
   
   // get self overlaps between data GMM components
   for(unsigned i=0;i<GMM_d_w_.size();++i) {
-      double ov = get_self_overlap(GMM_d_w_[i], GMM_d_cov_[i]);
+      double ov = get_self_overlap(i);
       ovdd_.push_back(ov);
   }
 
@@ -310,51 +324,75 @@ void EM3Dmap::normalize_GMM(vector<double> &w)
    for(unsigned i=0; i<w.size(); ++i) w[i] /= norm;
  }
 
+// get prefactors
+double EM3Dmap::get_prefactor_inverse
+(Matrix<double> GMM_cov_0, Matrix<double> GMM_cov_1,
+           double GMM_w_0,           double GMM_w_1, 
+ Matrix<double> &inv_sum)
+{
+ // we need the sum of the covariance matrices
+ Matrix<double> sum_0_1(3,3);
+ for(unsigned k1=0; k1<3; ++k1){ 
+  for(unsigned k2=0; k2<3; ++k2){ 
+     sum_0_1[k1][k2] = GMM_cov_0[k1][k2] + GMM_cov_1[k1][k2];
+  }
+ }   
+ // and to calculate its determinant
+ double det; logdet(sum_0_1, det);
+ // the prefactor is 
+ double pre_fact =  cfact_ / sqrt(exp(det)) * GMM_w_0 * GMM_w_1;
+ // and its inverse
+ Invert(sum_0_1, inv_sum);
+ // return pre-factor
+ return pre_fact;
+}
+
 void EM3Dmap::get_auxiliary_stuff()
 {
- // let's calculate first constant quantity
- double cfact = 1.0/pow( 2.0*pi, 1.5 );
-
  // cycle on data GMM components
  for(unsigned i=0; i<GMM_d_w_.size(); ++i){
   // cycle on model GMM components
   for(unsigned j=0; j<GMM_m_w_.size(); ++j){
-   // we need the sum of the covariance matrices of data GMM i and model j
-   Matrix<double> sum_i_j(3,3);
-   for(unsigned k1=0; k1<3; ++k1){ 
-    for(unsigned k2=0; k2<3; ++k2){ 
-     sum_i_j[k1][k2] = GMM_d_cov_[i][k1][k2] + GMM_m_cov_[j][k1][k2];
-    }
-   }   
-   // and to calculate its determinant
-   double det; logdet(sum_i_j, det);
+   // call auxiliary method 
+   Matrix<double> inv_sum_i_j;
+   double pre_fact = get_prefactor_inverse(GMM_d_cov_[i], GMM_m_cov_[j], 
+   											 GMM_d_w_[i], GMM_m_w_[j],
+   											 inv_sum_i_j);											 
    // the prefactor is stored
-   fact_md_.push_back( cfact / sqrt(exp(det)) * GMM_d_w_[i] * GMM_m_w_[j]);
-   // and its inverse
-   Matrix<double> inv_sum_i_j; Invert(sum_i_j, inv_sum_i_j);
+   fact_md_.push_back(pre_fact);
+   // and the inverse matrix also
    inv_cov_md_.push_back(inv_sum_i_j); 
   }
  } 
-
 }
 
-double EM3Dmap::get_self_overlap(double d_w, Matrix <double> d_cov)
+double EM3Dmap::get_self_overlap(unsigned id)
 {
-  // let's calculate first constant quantity
-  double cfact = 1.0/pow( 2.0*pi, 1.5 );  
-  // we need 2 * covariance matrix
-  Matrix<double> sum_i_i(3,3);
-  for(unsigned k1=0; k1<3; ++k1){ 
-    for(unsigned k2=0; k2<3; ++k2){ 
-     sum_i_i[k1][k2] = 2.0*d_cov[k1][k2];
-    }
-  }
-  // and to calculate its determinant
-  double det; logdet(sum_i_i, det);
-  // the self overlap is 
-  double ov = cfact / sqrt(exp(det)) * d_w * d_w;
-  
-  return ov;
+ unsigned i0, i1;
+ // define boundaries for the loop
+ if(!all_over_){
+   i0 = id; 
+   i1 = id+1;
+ } else {
+   i0 = 0; 
+   i1 = GMM_d_w_.size();
+ }
+ double ov = 0.0;
+ // start loop
+ for(unsigned i=i0; i<i1; ++i){
+   // call auxiliary method
+   Matrix<double> inv_sum_id_i;
+   double pre_fact = get_prefactor_inverse(GMM_d_cov_[id], GMM_d_cov_[i], 
+                                             GMM_d_w_[id], GMM_d_w_[i],
+                                           inv_sum_id_i); 
+   // temporary vector
+   Vector ov_der;	
+   // calculate overlap
+   double ov_tmp = get_overlap(GMM_d_m_[id], GMM_d_m_[i], pre_fact, inv_sum_id_i, ov_der);
+   // add to overlap
+   ov += ov_tmp;
+ }
+ return ov;
 }
 
 double EM3Dmap::get_overlap(Vector m_m, Vector d_m, double fact_md,
