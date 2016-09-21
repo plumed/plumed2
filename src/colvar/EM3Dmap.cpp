@@ -389,12 +389,6 @@ void EM3Dmap::update_neighbor_list()
   nl_.clear();
   // cycle on all overlaps
   for(unsigned i=0; i<GMM_d_w_.size(); ++i){
-     // number of neighbors of i-th component
-     int nneigh = 0;
-     // maximum overlap of i-th component
-     double ov_max = 0.0;
-     // index of maximum overlap
-     unsigned j_ov_max = 0;
      for(unsigned j=0; j<GMM_m_w_.size(); ++j){
       // get index in 1D array of constant parameters
       unsigned k = i*GMM_m_w_.size()+j;
@@ -402,18 +396,8 @@ void EM3Dmap::update_neighbor_list()
       double ov = get_overlap(getPosition(j), GMM_d_m_[i], fact_md_[k],
                               inv_cov_md_[k], ovmd_der);
       // fill the neighbor list
-      if(ov >= nl_cutoff_){
-        nl_.push_back(make_pair(i,j));
-        nneigh += 1;
-      }
-      // store maximum overlap
-      if(ov >= ov_max){
-        ov_max = ov;
-        j_ov_max = j;
-      }
+      if(ov >= nl_cutoff_) nl_.push_back(make_pair(i,j));
      }
-     // if overlaps are all below thresold, add the greatest
-     if(nneigh==0) nl_.push_back(make_pair(i,j_ov_max));
   }
 }
 
