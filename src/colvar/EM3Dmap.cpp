@@ -327,8 +327,7 @@ void EM3Dmap::normalize_GMM(vector<double> &w)
 // get prefactors
 double EM3Dmap::get_prefactor_inverse
 (Matrix<double> GMM_cov_0, Matrix<double> GMM_cov_1,
-           double GMM_w_0,           double GMM_w_1, 
- Matrix<double> &inv_sum)
+           double GMM_w_0,           double GMM_w_1, Matrix<double> &inv_sum)
 {
  // we need the sum of the covariance matrices
  Matrix<double> sum_0_1(3,3);
@@ -356,8 +355,7 @@ void EM3Dmap::get_auxiliary_stuff()
    // call auxiliary method 
    Matrix<double> inv_sum_i_j;
    double pre_fact = get_prefactor_inverse(GMM_d_cov_[i], GMM_m_cov_[j], 
-   											 GMM_d_w_[i], GMM_m_w_[j],
-   											 inv_sum_i_j);											 
+                                             GMM_d_w_[i],   GMM_m_w_[j], inv_sum_i_j);											 
    // the prefactor is stored
    fact_md_.push_back(pre_fact);
    // and the inverse matrix also
@@ -383,8 +381,7 @@ double EM3Dmap::get_self_overlap(unsigned id)
    // call auxiliary method
    Matrix<double> inv_sum_id_i;
    double pre_fact = get_prefactor_inverse(GMM_d_cov_[id], GMM_d_cov_[i], 
-                                             GMM_d_w_[id], GMM_d_w_[i],
-                                           inv_sum_id_i); 
+                                             GMM_d_w_[id],   GMM_d_w_[i], inv_sum_id_i); 
    // temporary vector
    Vector ov_der;	
    // calculate overlap
@@ -427,15 +424,14 @@ void EM3Dmap::update_neighbor_list()
   nl_.clear();
   // cycle on all overlaps
   for(unsigned i=0; i<GMM_d_w_.size(); ++i){
-     for(unsigned j=0; j<GMM_m_w_.size(); ++j){
+   for(unsigned j=0; j<GMM_m_w_.size(); ++j){
       // get index in 1D array of constant parameters
       unsigned k = i*GMM_m_w_.size()+j;
       // calculate overlap
-      double ov = get_overlap(getPosition(j), GMM_d_m_[i], fact_md_[k],
-                              inv_cov_md_[k], ovmd_der);
+      double ov = get_overlap(GMM_d_m_[i], getPosition(j), fact_md_[k], inv_cov_md_[k], ovmd_der);
       // fill the neighbor list
       if(ov >= nl_cutoff_) nl_.push_back(make_pair(i,j));
-     }
+   }
   }
 }
 
