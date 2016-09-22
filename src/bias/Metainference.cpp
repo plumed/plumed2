@@ -31,6 +31,7 @@
 #include "core/Atoms.h"
 #include "core/Value.h"
 #include "tools/File.h"
+#include "tools/OpenMP.h"
 #include "tools/Random.h"
 #include <cmath>
 #include <ctime>
@@ -47,7 +48,7 @@ Calculate the Metainference Score for a set of back calculated experimental data
 
 The back calculated data, that are expected to be averages over replicas (NR=1,2,..,N)
 The functional form of this bias can be chosen between three variants selected
-with NOISE=GAUSS,MGAUSS,MLOGNORMAL,OUTLIERS which correspond to modelling the noise for
+with NOISE=GAUSS,MGAUSS,OUTLIERS which correspond to modelling the noise for
 the arguments as a single gaussian common to all the data points, a gaussian per data
 point, a lognormal per data point, or a single long-tailed gaussian common to all the data points.
 
@@ -121,7 +122,7 @@ class Metainference : public Bias
   vector<double> parameters;
   // noise type
   unsigned noise_type_;
-  enum { GAUSS, MGAUSS, MLOGNORMAL, OUTLIERS };
+  enum { GAUSS, MGAUSS, OUTLIERS };
   // scale is data scaling factor
   // noise type
   unsigned scale_prior_;
@@ -187,9 +188,11 @@ class Metainference : public Bias
   Atoms& atoms;
 
   double getEnergySPE(const vector<double> &mean, const vector<double> &sigma, const double scale);
+  double getEnergyGJ(const vector<double> &mean, const vector<double> &sigma, const double scale);
   double getEnergyGJE(const vector<double> &mean, const vector<double> &sigma, const double scale);
   void   doMonteCarlo(const vector<double> &mean);
   double getEnergyForceSPE(const vector<double> &mean, const double fact);
+  double getEnergyForceGJ(const vector<double> &mean, const double fact);
   double getEnergyForceGJE(const vector<double> &mean, const double fact);
   void   writeStatus();
   
@@ -210,10 +213,10 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.addFlag("REWEIGHT",false,"simple REWEIGHT using the latest ARG as energy"); 
   keys.add("optional","PARARG","reference values for the experimental data, these can be provided as arguments without derivatives"); 
   keys.add("optional","PARAMETERS","reference values for the experimental data");
-  keys.add("compulsory","NOISETYPE","functional form of the noise (GAUSS,MGAUSS,MLOGNORMAL,OUTLIERS)");
+  keys.add("compulsory","NOISETYPE","functional form of the noise (GAUSS,MGAUSS,OUTLIERS)");
   keys.addFlag("SCALEDATA",false,"Set to TRUE if you want to sample a scaling factor common to all values and replicas");  
   keys.addFlag("OPTSIGMAMEAN",false,"Set to TRUE if you want to scale sigma_mean to prevent too high forces");  
-  keys.addFlag("MCSINGLE",false,"Set to TRUE if you want to change a single sigma per MC move (only for NOISETYPE=MGAUSS/MLOGNORMAL)");  
+  keys.addFlag("MCSINGLE",false,"Set to TRUE if you want to change a single sigma per MC move (only for NOISETYPE=MGAUSS)");  
   keys.add("compulsory","SCALE0","initial value of the uncertainty parameter");
   keys.add("compulsory","SCALE_PRIOR","FLAT","either FLAT or GAUSSIAN");
   keys.add("optional","SCALE_MIN","minimum value of the uncertainty parameter");
@@ -309,7 +312,6 @@ atoms(plumed.getAtoms())
   parse("NOISETYPE",stringa_noise);
   if(stringa_noise=="GAUSS")           noise_type_ = GAUSS; 
   else if(stringa_noise=="MGAUSS")     noise_type_ = MGAUSS;
-  else if(stringa_noise=="MLOGNORMAL") noise_type_ = MLOGNORMAL;
   else if(stringa_noise=="OUTLIERS")   noise_type_ = OUTLIERS;
   else error("Unknown noise type!"); 
 
@@ -320,8 +322,8 @@ atoms(plumed.getAtoms())
 
   parseFlag("OPTSIGMAMEAN", do_optsigmamean_);
   parseFlag("MCSINGLE", do_mc_single_);
-  if ((noise_type_ != MGAUSS || noise_type_ != MLOGNORMAL) && do_mc_single_) {
-      error("MCSINGLE is only available with MGAUSS and MLOGNORMAL");
+  if ((noise_type_ != MGAUSS) && do_mc_single_) {
+      error("MCSINGLE is only available with MGAUSS");
   }
 
   parseFlag("SCALEDATA", doscale_);
@@ -354,16 +356,16 @@ atoms(plumed.getAtoms())
 
   vector<double> readsigma;
   parseVector("SIGMA0",readsigma);
-  if((noise_type_!=MGAUSS&&noise_type_!=MLOGNORMAL)&&readsigma.size()>1) 
-    error("If you want to use more than one SIGMA you should use NOISETYPE=MGAUSS/MLOGNORMAL");
-  if(noise_type_==MGAUSS||noise_type_==MLOGNORMAL) {
+  if((noise_type_!=MGAUSS)&&readsigma.size()>1) 
+    error("If you want to use more than one SIGMA you should use NOISETYPE=MGAUSS");
+  if(noise_type_==MGAUSS) {
     if(readsigma.size()==narg) {
       sigma_.resize(narg);
       sigma_=readsigma;
     } else if(readsigma.size()==1) {
       sigma_.resize(narg,readsigma[0]);
     } else {
-      error("SIGMA0 can accept either one single value or as many values as the number of arguments (with NOISETYPE=MGAUSS/MLOGNORMAL)");
+      error("SIGMA0 can accept either one single value or as many values as the number of arguments (with NOISETYPE=MGAUSS)");
     } 
   } else sigma_.resize(1, readsigma[0]);
 
@@ -391,7 +393,7 @@ atoms(plumed.getAtoms())
   if(!do_optsigmamean_ && read_sigma_mean_.size()==0 && !getRestart()) 
     error("If you don't use OPTSIGMAMEAN and you are not RESTARTING then you MUST SET SIGMA_MEAN0");
 
-  if(noise_type_==MGAUSS||noise_type_==MLOGNORMAL) {
+  if(noise_type_==MGAUSS) {
     if(read_sigma_mean_.size()==narg) {
       sigma_mean_.resize(narg);
       sigma_mean_=read_sigma_mean_;
@@ -400,7 +402,7 @@ atoms(plumed.getAtoms())
     } else if(read_sigma_mean_.size()==0) {
       sigma_mean_.resize(narg,0.000001);
     } else {
-      error("SIGMA_MEAN0 can accept either one single value or as many values as the arguments (with NOISETYPE=MGAUSS/MLOGNORMAL)");
+      error("SIGMA_MEAN0 can accept either one single value or as many values as the arguments (with NOISETYPE=MGAUSS)");
     }
     for(unsigned i=0;i<narg;i++) if(sigma_mean_[i]>0) variance_[i] = sigma_mean_[i]*sigma_mean_[i]*static_cast<double>(nrep_);
   } else {
@@ -409,7 +411,7 @@ atoms(plumed.getAtoms())
     } else if(read_sigma_mean_.size()==0) {
       sigma_mean_.resize(narg,0.000001);
     } else {
-      error("If you want to use more than one SIGMA_MEAN0 you should use NOISETYPE=MGAUSS/MLOGNORMAL");
+      error("If you want to use more than one SIGMA_MEAN0 you should use NOISETYPE=MGAUSS");
     }
     for(unsigned i=0;i<narg;i++) variance_[i] = sigma_mean_[0]*sigma_mean_[0]*static_cast<double>(nrep_);
   } 
@@ -463,9 +465,6 @@ atoms(plumed.getAtoms())
       break;
     case MGAUSS:
       log.printf("  with gaussian noise and a noise parameter for each data point\n");
-      break;
-    case MLOGNORMAL:
-      log.printf("  with lognormal noise and a noise parameter for each data point\n");
       break;
     case OUTLIERS:
       log.printf("  with long tailed gaussian noise and a single noise parameter for all the data\n");
@@ -526,7 +525,7 @@ atoms(plumed.getAtoms())
     valueSMmod=getPntrToComponent("smMod");
   }
 
-  if(noise_type_==MGAUSS||noise_type_==MLOGNORMAL) {
+  if(noise_type_==MGAUSS) {
     for(unsigned i=0;i<sigma_mean_.size();++i){
       std::string num; Tools::convert(i,num);
       addComponent("sigmaMean_"+num); componentIsNotPeriodic("sigmaMean_"+num);
@@ -592,37 +591,38 @@ double Metainference::getEnergySPE(const vector<double> &mean, const vector<doub
   return kbt_ * ene;
 }
 
-double Metainference::getEnergyGJE(const vector<double> &mean, const vector<double> &sigma, const double scale){
+double Metainference::getEnergyGJ(const vector<double> &mean, const vector<double> &sigma, const double scale){
   // cycle on arguments
   double ene = 0.0;
   const double scale2 = scale * scale;
   double ss = sigma[0]*sigma[0] + scale2*sigma_mean_[0]*sigma_mean_[0];
 
   for(unsigned i=0;i<narg;++i){
-    if(noise_type_==MGAUSS){ 
+    double dev = scale*mean[i]-parameters[i];
+    ene += 0.5*dev*dev/ss;
+  }
+  // add Jeffrey's prior in case one sigma for all data points + one normalisation per datapoint
+  ene += 0.5*std::log(ss) + 0.5*narg*std::log(ss*2.*M_PI);;
+  return kbt_ * ene;
+}
+
+double Metainference::getEnergyGJE(const vector<double> &mean, const vector<double> &sigma, const double scale){
+  double ene = 0.0;
+  const double scale2 = scale * scale;
+
+  #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(ene)
+  { 
+    #pragma omp for reduction( + : ene)
+    for(unsigned i=0;i<narg;++i){
       const double sigma2 = sigma[i] * sigma[i];
       const double sigma_mean2 = sigma_mean_[i] * sigma_mean_[i];
-      ss = sigma2 + scale2*sigma_mean2;
-      // add Jeffrey's prior - one per sigma
-      ene += 0.5*std::log(sigma2+sigma_mean2);
-    } else if(noise_type_==MLOGNORMAL) {
-      const double sigma2 = sigma[i] * sigma[i];
-      const double sigma_mean2 = sigma_mean_[i] * sigma_mean_[i] / (mean[i]*mean[i]);
-      ss = sigma2 + sigma_mean2;
-      // add Jeffrey's prior - one per sigma
-      ene += 0.5*std::log(sigma2+sigma_mean2);
+      const double sss = sigma2 + scale2*sigma_mean2;
+      const double ss = sigma2 + sigma_mean2;
+      double dev = scale*mean[i]-parameters[i];
+      // deviation + normalisation + jeffrey
+      ene += 0.5*dev*dev/ss + 0.5*std::log(sss*2.*M_PI) + 0.5*std::log(ss);
     }
-    double dev = 0.;
-    if(noise_type_==MLOGNORMAL) {
-      dev = std::log(scale*mean[i]/parameters[i]);
-    } else {
-      dev = scale*mean[i]-parameters[i];
-    }
-    // deviation and normalisation 
-    ene += 0.5*dev*dev/ss + 0.5*std::log(ss*2.*M_PI);
   }
-  // add Jeffrey's prior in case one sigma for all data points
-  if(noise_type_==GAUSS) ene += 0.5*std::log(ss);
   return kbt_ * ene;
 }
 
@@ -631,8 +631,9 @@ void Metainference::doMonteCarlo(const vector<double> &mean_){
   double old_energy=0.;
   switch(noise_type_) {
     case GAUSS:
+      old_energy = getEnergyGJ(mean_,sigma_,scale_);
+      break;
     case MGAUSS:
-    case MLOGNORMAL:
       old_energy = getEnergyGJE(mean_,sigma_,scale_);
       break;
     case OUTLIERS:
@@ -664,8 +665,9 @@ void Metainference::doMonteCarlo(const vector<double> &mean_){
       double new_energy=0;
       switch(noise_type_) {
         case GAUSS:
+          new_energy = getEnergyGJ(mean_,sigma_,new_scale);
+          break;
         case MGAUSS:
-        case MLOGNORMAL:
           new_energy = getEnergyGJE(mean_,sigma_,new_scale);
           break;
         case OUTLIERS:
@@ -736,8 +738,9 @@ void Metainference::doMonteCarlo(const vector<double> &mean_){
     double new_energy=0;
     switch(noise_type_) {
       case GAUSS:
+        new_energy = getEnergyGJ(mean_,new_sigma,scale_);
+        break;
       case MGAUSS:
-      case MLOGNORMAL:
         new_energy = getEnergyGJE(mean_,new_sigma,scale_);
         break;
       case OUTLIERS:
@@ -816,41 +819,22 @@ double Metainference::getEnergyForceSPE(const vector<double> &mean, const double
   return kbt_*ene;
 }
 
-double Metainference::getEnergyForceGJE(const vector<double> &mean, const double fact)
+double Metainference::getEnergyForceGJ(const vector<double> &mean, const double fact)
 {
   double ene = 0.0;
-
-  const unsigned ssize = sigma_.size();
-  vector<double> ss(ssize);
-  vector<double> inv_s2(ssize, 0.);
-  // if this is not MGAUSS ssize is 1
-  for(unsigned i=0;i<ssize; ++i) {
-    if(noise_type_==MLOGNORMAL) ss[i] = sigma_[i]*sigma_[i] + sigma_mean_[i]*sigma_mean_[i]/(scale_*scale_*mean[i]*mean[i]);
-    else ss[i] = sigma_[i]*sigma_[i] + sigma_mean_[i]*sigma_mean_[i];
-    if(master) inv_s2[i] = 1.0/ss[i];
-  }
-
-  if(master && nrep_>1) multi_sim_comm.Sum(&inv_s2[0],ssize); 
-  comm.Sum(&inv_s2[0],ssize);  
-  
+  double inv_s2=0.;
+  const double ss = sigma_[0]*sigma_[0] + sigma_mean_[0]*sigma_mean_[0];
+  if(master) {
+    inv_s2 = 1.0/ss;
+    if(nrep_>1) multi_sim_comm.Sum(inv_s2);
+  } 
+  comm.Sum(inv_s2);  
   double w_tmp = 0.;
+
   for(unsigned i=0;i<narg;++i){
-    double dev = 0.;
-    double dlogn = 1.;
-    if(noise_type_==MLOGNORMAL) {
-      dev = std::log(scale_*mean[i]/parameters[i]);
-      dlogn = 1./(scale_*mean[i]);
-    } else {
-      dev = scale_*mean[i]-parameters[i];
-    }
-    unsigned sel_sigma=0;
-    if(noise_type_==MGAUSS||noise_type_==MLOGNORMAL){
-      sel_sigma=i;
-      // add Jeffrey's prior - one per sigma
-      ene += 0.5*std::log(ss[sel_sigma]);
-    }
-    ene += 0.5*dev*dev*inv_s2[sel_sigma] + 0.5*std::log(ss[sel_sigma]*2*M_PI);
-    const double mult = fact*dlogn*dev*scale_*inv_s2[sel_sigma];
+    const double dev = scale_*mean[i]-parameters[i];
+    const double mult = fact*dev*scale_*inv_s2;
+    ene += 0.5*dev*dev*inv_s2;
     setOutputForce(i, -kbt_*mult);
     w_tmp += (getArgument(i)-mean[i])*mult;
   }
@@ -862,8 +846,43 @@ double Metainference::getEnergyForceGJE(const vector<double> &mean, const double
 
   getPntrToComponent("MetaDf")->set(w_tmp);
   getPntrToComponent("weight")->set(fact);
-  // add Jeffrey's prior in case one sigma for all data points
-  if(noise_type_==GAUSS) ene += 0.5*std::log(ss[0]);
+  // add Jeffrey's prior in case one sigma for all data points + npoints normalisations
+  ene += 0.5*std::log(ss) + 0.5*narg*std::log(ss*2*M_PI);
+  return kbt_*ene;
+}
+
+double Metainference::getEnergyForceGJE(const vector<double> &mean, const double fact)
+{
+  double ene = 0.0;
+
+  const unsigned ssize = sigma_.size();
+  vector<double> ss(ssize);
+  vector<double> inv_s2(ssize, 0.);
+
+  for(unsigned i=0;i<ssize; ++i) {
+    ss[i] = sigma_[i]*sigma_[i] + sigma_mean_[i]*sigma_mean_[i];
+    if(master) inv_s2[i] = 1.0/ss[i];
+  }
+
+  if(master && nrep_>1) multi_sim_comm.Sum(&inv_s2[0],ssize); 
+  comm.Sum(&inv_s2[0],ssize);  
+  
+  double w_tmp = 0.;
+  for(unsigned i=0;i<narg;++i){
+    const double dev  = scale_*mean[i]-parameters[i];
+    const double mult = fact*dev*scale_*inv_s2[i];
+    // add Jeffrey's prior - one per sigma and one normalisation per sigma
+    ene += 0.5*dev*dev*inv_s2[i] + std::log(ss[i]);
+    setOutputForce(i, -kbt_*mult);
+    w_tmp += (getArgument(i)-mean[i])*mult;
+  }
+  if(do_reweight) {
+    setOutputForce(narg, -w_tmp);
+    if(w_tmp<0) (getPntrToArgument(narg)->getPntrToAction())->setSpecialUpdate();
+    else (getPntrToArgument(narg)->getPntrToAction())->unsetSpecialUpdate();
+  }
+  getPntrToComponent("MetaDf")->set(w_tmp);
+  getPntrToComponent("weight")->set(fact);
   return kbt_*ene;
 }
 
@@ -986,7 +1005,7 @@ void Metainference::calculate(){
         variance_[i] = v_moment[i];
   }
 
-  if(noise_type_==MGAUSS||noise_type_==MLOGNORMAL) {
+  if(noise_type_==MGAUSS) {
     for(unsigned i=0;i<narg;++i) { 
       sigma_mean_[i] = sqrt(variance_[i]/dnrep);
       valueSigmaMean[i]->set(sigma_mean_[i]);
@@ -1015,8 +1034,9 @@ void Metainference::calculate(){
   double ene = 0; 
   switch(noise_type_) {
     case GAUSS:
+      ene = getEnergyForceGJ(mean, fact);
+      break;
     case MGAUSS:
-    case MLOGNORMAL:
       ene = getEnergyForceGJE(mean, fact);
       break;
     case OUTLIERS:
