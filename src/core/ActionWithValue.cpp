@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithValue.h"
 #include "tools/Exception.h"
+#include "tools/OpenMP.h"
 
 using namespace std;
 namespace PLMD{
@@ -69,7 +70,12 @@ void ActionWithValue::clearInputForces(){
 }
 
 void ActionWithValue::clearDerivatives(){
-  for(unsigned i=0;i<values.size();i++) values[i]->clearDerivatives();
+  unsigned nt = OpenMP::getGoodNumThreads(values);
+  #pragma omp parallel num_threads(nt)
+  { 
+    #pragma omp for
+    for(unsigned i=0;i<values.size();i++) values[i]->clearDerivatives();
+  }
 } 
 
 // -- These are the routine for copying the value pointers to other classes -- //
