@@ -765,7 +765,6 @@ void CS2Backbone::calculate()
   camshift_sigma2[4] = 1.56; // CB
   camshift_sigma2[5] = 1.70; // CO
 
-  unsigned index=0;
   const unsigned chainsize = atom.size();
   const unsigned atleastned = 72+ringInfo.size()*6;
 
@@ -1103,7 +1102,6 @@ void CS2Backbone::calculate()
     }
     #pragma omp critical
     if(camshift) for(int i=0;i<getPositions().size();i++) setAtomsDerivatives(i,omp_deriv[i]);
-    index += psize;
   }
 
   // in the case of camshift we calculate the virial at the end
