@@ -161,6 +161,7 @@ class Metainference : public Bias
   unsigned MCstride_;
   long unsigned MCaccept_;
   long unsigned MCtrial_;
+  unsigned MCchunksize_;
 
   // output
   Value*   valueScale;
@@ -179,7 +180,6 @@ class Metainference : public Bias
   bool     master;
   bool     do_reweight;
   bool     do_optsigmamean_;
-  bool     do_mc_single_;
   unsigned nrep_;
   unsigned replica_;
   unsigned narg;
@@ -216,7 +216,6 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.add("compulsory","NOISETYPE","functional form of the noise (GAUSS,MGAUSS,OUTLIERS)");
   keys.addFlag("SCALEDATA",false,"Set to TRUE if you want to sample a scaling factor common to all values and replicas");  
   keys.addFlag("OPTSIGMAMEAN",false,"Set to TRUE if you want to scale sigma_mean to prevent too high forces");  
-  keys.addFlag("MCSINGLE",false,"Set to TRUE if you want to change a single sigma per MC move (only for NOISETYPE=MGAUSS)");  
   keys.add("compulsory","SCALE0","initial value of the uncertainty parameter");
   keys.add("compulsory","SCALE_PRIOR","FLAT","either FLAT or GAUSSIAN");
   keys.add("optional","SCALE_MIN","minimum value of the uncertainty parameter");
@@ -236,6 +235,7 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.add("optional","TEMP","the system temperature - this is only needed if code doesnt' pass the temperature to plumed");
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_STRIDE","MC stride");
+  keys.add("optional","MC_CHUNKSIZE","MC chunksize");
   keys.add("optional","STATUS_FILE","write a file with all the data usefull for restart/continuation of Metainference");
   keys.add("compulsory","WRITE_STRIDE","write the status to a file every N steps, this can be used for restart/continuation");
   useCustomisableComponents(keys);
@@ -262,15 +262,15 @@ Dscale_(-1),
 Dsigma_(-1),
 sm_mod_(1.),
 ndata_(getNumberOfArguments()),
-random(2),
+random(3),
 MCsteps_(1), 
 MCstride_(1), 
 MCaccept_(0), 
 MCtrial_(0),
+MCchunksize_(0),
 write_stride_(0),
 do_reweight(false),
 do_optsigmamean_(false),
-do_mc_single_(false),
 atoms(plumed.getAtoms())
 {
   // set up replica stuff 
@@ -321,10 +321,6 @@ atoms(plumed.getAtoms())
   if(status_file_name_=="") status_file_name_ = "MISTATUS"+getLabel();
 
   parseFlag("OPTSIGMAMEAN", do_optsigmamean_);
-  parseFlag("MCSINGLE", do_mc_single_);
-  if ((noise_type_ != MGAUSS) && do_mc_single_) {
-      error("MCSINGLE is only available with MGAUSS");
-  }
 
   parseFlag("SCALEDATA", doscale_);
   if(doscale_) {
@@ -377,6 +373,7 @@ atoms(plumed.getAtoms())
   // monte carlo stuff
   parse("MC_STEPS",MCsteps_);
   parse("MC_STRIDE",MCstride_);
+  parse("MC_CHUNKSIZE", MCchunksize_);
   // adjust for multiple-time steps
   MCstride_ *= getStride();
   // get temperature
@@ -546,6 +543,8 @@ atoms(plumed.getAtoms())
   else iseed = 0;     
   comm.Sum(&iseed, 1);
   random[0].setSeed(-iseed);
+  // Random chunk
+  random[2].setSeed(-iseed);
   if(doscale_) {
     // in this case we want the same seed everywhere
     iseed = time(NULL);
@@ -553,9 +552,6 @@ atoms(plumed.getAtoms())
     comm.Bcast(iseed,0);
     random[1].setSeed(-iseed);
   }
-
-  // Also seed the RNG for random index selection
-  srand (time(NULL));
 
   // outfile stuff
   if(write_stride_>0) {
@@ -707,32 +703,38 @@ void Metainference::doMonteCarlo(const vector<double> &mean_){
     // propose move for sigma
     MCtrial_++;
 
-    // Change a random element
     vector<double> new_sigma(sigma_.size());
-    if (do_mc_single_) {
-      new_sigma = sigma_;
 
-      // TODO: remove slight bias towards lower values
-      // choose random element
-      unsigned random_index = rand() % sigma_.size();
+    // change MCchunksize_ sigmas
+    if (MCchunksize_ > 0) {
+        vector<unsigned> indices;
+        for (unsigned j=0; j<sigma_.size(); j++) {
+            indices.push_back(j);
+        }
+        random[2].Shuffle(indices);
 
-      const double r2 = random[1].Gaussian();
-      const double ds2 = sqrt(Dsigma_)*r2;
-      new_sigma[random_index] = sigma_[random_index] + ds2;
-      // check boundaries
-      if(new_sigma[random_index] > sigma_max_){new_sigma[random_index] = 2.0 * sigma_max_ - new_sigma[random_index];}
-      if(new_sigma[random_index] < sigma_min_){new_sigma[random_index] = 2.0 * sigma_min_ - new_sigma[random_index];}
+        // change random sigmas
+        for(unsigned j=0;j<MCchunksize_;j++) {
+            const unsigned index = indices[j];
+            const double r2 = random[1].Gaussian();
+            const double ds2 = sqrt(Dsigma_)*r2;
+            new_sigma[index] = sigma_[index] + ds2;
+            // check boundaries
+            if(new_sigma[index] > sigma_max_){new_sigma[index] = 2.0 * sigma_max_ - new_sigma[index];}
+            if(new_sigma[index] < sigma_min_){new_sigma[index] = 2.0 * sigma_min_ - new_sigma[index];}
+        }
     } else {
-      // or change all sigmas
-      for(unsigned j=0;j<sigma_.size();j++) {
-        const double r2 = random[1].Gaussian();
-        const double ds2 = sqrt(Dsigma_)*r2;
-        new_sigma[j] = sigma_[j] + ds2;
-        // check boundaries
-        if(new_sigma[j] > sigma_max_){new_sigma[j] = 2.0 * sigma_max_ - new_sigma[j];}
-        if(new_sigma[j] < sigma_min_){new_sigma[j] = 2.0 * sigma_min_ - new_sigma[j];}
-      }
+        // change all sigmas
+        for(unsigned j=0;j<sigma_.size();j++) {
+            const double r2 = random[1].Gaussian();
+            const double ds2 = sqrt(Dsigma_)*r2;
+            new_sigma[j] = sigma_[j] + ds2;
+            // check boundaries
+            if(new_sigma[j] > sigma_max_){new_sigma[j] = 2.0 * sigma_max_ - new_sigma[j];}
+            if(new_sigma[j] < sigma_min_){new_sigma[j] = 2.0 * sigma_min_ - new_sigma[j];}
+        }
     }
+
  
     // calculate new energy
     double new_energy=0;
