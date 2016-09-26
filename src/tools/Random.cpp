@@ -24,6 +24,8 @@
 #include <cstdlib>
 #include <sstream>
 #include <iostream>
+#include <algorithm>
+#include <functional>
 
 namespace PLMD{
 
@@ -70,6 +72,15 @@ double Random::U01d ()
 	return (u < 1.0) ? u : (u - 1.0);
 }
 
+
+void Random::Shuffle(std::vector<unsigned>& vec) {
+    // Passing a lambda is neccessary here because we need to bind to the Random object
+    std::random_shuffle(vec.begin(), vec.end(), [this](int i) {return (int)round(RandU01() * IM) % i;});
+}
+
+int Random::RandInt(int i) {
+    return (int)round(RandU01() * IM) % i;
+}
 
 double Random::U01(){
 	int j,k;
