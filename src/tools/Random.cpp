@@ -78,10 +78,6 @@ void Random::Shuffle(std::vector<unsigned>& vec) {
     std::random_shuffle(vec.begin(), vec.end(), [this](int i) {return (int)round(RandU01() * IM) % i;});
 }
 
-int Random::RandInt(int i) {
-    return (int)round(RandU01() * IM) % i;
-}
-
 double Random::U01(){
 	int j,k;
 	double temp;
