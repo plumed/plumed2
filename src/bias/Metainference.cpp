@@ -853,8 +853,6 @@ double Metainference::getEnergyForceGJ(const vector<double> &mean, const double 
 
 double Metainference::getEnergyForceGJE(const vector<double> &mean, const double fact)
 {
-  double ene = 0.0;
-
   const unsigned ssize = sigma_.size();
   vector<double> ss(ssize);
   vector<double> inv_s2(ssize, 0.);
@@ -867,14 +865,19 @@ double Metainference::getEnergyForceGJE(const vector<double> &mean, const double
   if(master && nrep_>1) multi_sim_comm.Sum(&inv_s2[0],ssize); 
   comm.Sum(&inv_s2[0],ssize);  
   
+  double ene = 0.0;
   double w_tmp = 0.;
-  for(unsigned i=0;i<narg;++i){
-    const double dev  = scale_*mean[i]-parameters[i];
-    const double mult = fact*dev*scale_*inv_s2[i];
-    // add Jeffrey's prior - one per sigma and one normalisation per sigma
-    ene += 0.5*dev*dev*inv_s2[i] + std::log(ss[i]);
-    setOutputForce(i, -kbt_*mult);
-    w_tmp += (getArgument(i)-mean[i])*mult;
+  #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(ene,w_tmp)
+  { 
+    #pragma omp for reduction( + : ene,w_tmp)
+    for(unsigned i=0;i<narg;++i){
+      const double dev  = scale_*mean[i]-parameters[i];
+      const double mult = fact*dev*scale_*inv_s2[i];
+      // add Jeffrey's prior - one per sigma and one normalisation per sigma
+      ene += 0.5*dev*dev*inv_s2[i] + std::log(ss[i]);
+      setOutputForce(i, -kbt_*mult);
+      w_tmp += (getArgument(i)-mean[i])*mult;
+    }
   }
   if(do_reweight) {
     setOutputForce(narg, -w_tmp);
