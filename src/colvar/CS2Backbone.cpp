@@ -775,7 +775,11 @@ void CS2Backbone::calculate()
     const unsigned psize = atom[s].size();
     vector<Vector> omp_deriv;
     if(camshift) omp_deriv.resize(getNumberOfAtoms(), Vector(0,0,0));
-    #pragma omp for reduction(+:score) 
+    #ifdef __PLUMED_HAS_OMPSIMD
+    #pragma omp for simd reduction(+:score)
+    #else
+    #pragma omp for reduction(+:score)
+    #endif
     // SKIP FIRST AND LAST RESIDUE OF EACH CHAIN
     for(unsigned a=1;a<psize-1;a++){
 
@@ -1089,8 +1093,12 @@ void CS2Backbone::calculate()
           if(!camshift) { 
             comp = atom[s][a].comp[at_kind];
             comp->set(cs);
-            for(unsigned i=0;i<list.size();i++) setAtomsDerivatives(comp,list[i],fact*ff[i]);
-            setBoxDerivativesNoPbc(comp);
+            Tensor virial;
+            for(unsigned i=0;i<list.size();i++) {
+                setAtomsDerivatives(comp,list[i],fact*ff[i]);
+                virial-=Tensor(getPosition(list[i]),fact*ff[i]);
+            }
+            setBoxDerivatives(comp,virial);
           } else {
             // but I would also divide for the weights derived with metainference
             comp = getPntrToValue();
@@ -1120,7 +1128,11 @@ void CS2Backbone::update_neighb(){
   const unsigned chainsize = atom.size();
   for(unsigned s=0;s<chainsize;s++){
     const unsigned psize = atom[s].size();
-    #pragma omp parallel for num_threads(OpenMP::getNumThreads())  
+    #ifdef __PLUMED_HAS_OMPSIMD
+    #pragma omp parallel for simd num_threads(OpenMP::getNumThreads())
+    #else
+    #pragma omp parallel for num_threads(OpenMP::getNumThreads())
+    #endif
     for(unsigned a=1;a<psize-1;a++){
       const unsigned boxsize = getNumberOfAtoms();
       atom[s][a].box_nb.clear();
