@@ -179,7 +179,7 @@ class Metainference : public Bias
   // others
   bool     master;
   bool     do_reweight;
-  bool     do_optsigmamean_;
+  unsigned do_optsigmamean_;
   unsigned nrep_;
   unsigned replica_;
   unsigned narg;
@@ -210,12 +210,11 @@ PLUMED_REGISTER_ACTION(Metainference,"METAINFERENCE")
 void Metainference::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   keys.use("ARG");
-  keys.addFlag("REWEIGHT",false,"simple REWEIGHT using the latest ARG as energy"); 
   keys.add("optional","PARARG","reference values for the experimental data, these can be provided as arguments without derivatives"); 
   keys.add("optional","PARAMETERS","reference values for the experimental data");
   keys.add("compulsory","NOISETYPE","functional form of the noise (GAUSS,MGAUSS,OUTLIERS)");
+  keys.addFlag("REWEIGHT",false,"simple REWEIGHT using the latest ARG as energy"); 
   keys.addFlag("SCALEDATA",false,"Set to TRUE if you want to sample a scaling factor common to all values and replicas");  
-  keys.addFlag("OPTSIGMAMEAN",false,"Set to TRUE if you want to scale sigma_mean to prevent too high forces");  
   keys.add("compulsory","SCALE0","initial value of the uncertainty parameter");
   keys.add("compulsory","SCALE_PRIOR","FLAT","either FLAT or GAUSSIAN");
   keys.add("optional","SCALE_MIN","minimum value of the uncertainty parameter");
@@ -226,6 +225,7 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.add("compulsory","SIGMA_MIN","minimum value of the uncertainty parameter");
   keys.add("compulsory","SIGMA_MAX","maximum value of the uncertainty parameter");
   keys.add("optional","DSIGMA","maximum MC move of the uncertainty parameter");
+  keys.add("compulsory","OPTSIGMAMEAN","NONE","Set to NONE/SEM/FULL to manually set sigma mean, or to estimate it on the fly and use the safety check on forces");  
   keys.add("optional","SIGMA_MEAN0","starting value for the uncertainty in the mean estimate");
   keys.add("optional","SIGMA_MEAN_MOD0","starting value for sm modifier");
   keys.add("optional","SIGMA_MEAN_MOD_MIN","starting value for sm modifier");
@@ -239,15 +239,15 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.add("optional","STATUS_FILE","write a file with all the data usefull for restart/continuation of Metainference");
   keys.add("compulsory","WRITE_STRIDE","write the status to a file every N steps, this can be used for restart/continuation");
   useCustomisableComponents(keys);
-  keys.addOutputComponent("weight", "default","weights of the weighted average");
-  keys.addOutputComponent("MetaDf", "default","force on metadynamics");
-  keys.addOutputComponent("sigma", "default","uncertainty parameter");
-  keys.addOutputComponent("sigmaMean","default","uncertainty in the mean estimate");
-  keys.addOutputComponent("rewSigmaMean","default","sigma mean multiplier");
-  keys.addOutputComponent("scale", "SCALEDATA","scale parameter");
-  keys.addOutputComponent("accept","default","MC acceptance");
-  keys.addOutputComponent("maxForceMD","OPTSIGMAMEAN","max force on atoms");
-  keys.addOutputComponent("smMod","OPTSIGMAMEAN","modifier for all sigma mean");
+  keys.addOutputComponent("sigma",        "default",      "uncertainty parameter");
+  keys.addOutputComponent("sigmaMean",    "default",      "uncertainty in the mean estimate");
+  keys.addOutputComponent("rewSigmaMean", "default",      "sigma mean multiplier (give by scale, reweight and optimisation)");
+  keys.addOutputComponent("accept",       "default",      "MC acceptance");
+  keys.addOutputComponent("weight",       "REWEIGHT",     "weights of the weighted average");
+  keys.addOutputComponent("MetaDf",       "REWEIGHT",     "force on metadynamics");
+  keys.addOutputComponent("scale",        "SCALEDATA",    "scale parameter");
+  keys.addOutputComponent("maxForceMD",   "OPTSIGMAMEAN", "max force on atoms");
+  keys.addOutputComponent("smMod",        "OPTSIGMAMEAN", "modifier for all sigma mean");
 }
 
 Metainference::Metainference(const ActionOptions&ao):
@@ -270,7 +270,7 @@ MCtrial_(0),
 MCchunksize_(0),
 write_stride_(0),
 do_reweight(false),
-do_optsigmamean_(false),
+do_optsigmamean_(0),
 atoms(plumed.getAtoms())
 {
   // set up replica stuff 
@@ -320,7 +320,11 @@ atoms(plumed.getAtoms())
   parse("STATUS_FILE",status_file_name_);
   if(status_file_name_=="") status_file_name_ = "MISTATUS"+getLabel();
 
-  parseFlag("OPTSIGMAMEAN", do_optsigmamean_);
+  string stringa_optsigma;
+  parse("OPTSIGMAMEAN", stringa_optsigma);
+  if(stringa_optsigma=="NONE")      do_optsigmamean_=0;
+  else if(stringa_optsigma=="SEM")  do_optsigmamean_=1;
+  else if(stringa_optsigma=="FULL") do_optsigmamean_=2;
 
   parseFlag("SCALEDATA", doscale_);
   if(doscale_) {
@@ -414,7 +418,7 @@ atoms(plumed.getAtoms())
   } 
 
   // sigma mean optimisation
-  if(do_optsigmamean_) {
+  if(do_optsigmamean_==2) {
     max_force_=3000.;
     parse("MAX_FORCE", max_force_);
     max_force_ *= max_force_;
@@ -448,7 +452,7 @@ atoms(plumed.getAtoms())
         restart_sfile.scanField("sigma_"+msg,sigma_[i]);
       }
       if(doscale_) restart_sfile.scanField("scale0_",scale_);
-      if(do_optsigmamean_) {
+      if(do_optsigmamean_==2) {
         restart_sfile.scanField("sigma_mean_mod0",sm_mod_);
       }
     }
@@ -491,20 +495,21 @@ atoms(plumed.getAtoms())
   for(unsigned i=0;i<sigma_mean_.size();++i) log.printf(" %f", sigma_mean_[i]);
   log.printf("\n");
 
-
-
-  addComponent("MetaDf");
-  componentIsNotPeriodic("MetaDf");
-  valueRSigmaMean=getPntrToComponent("MetaDf");
-  addComponent("weight");
-  componentIsNotPeriodic("weight");
-  valueRSigmaMean=getPntrToComponent("weight");
+  if(do_reweight_)
+    addComponent("MetaDf");
+    componentIsNotPeriodic("MetaDf");
+    valueRSigmaMean=getPntrToComponent("MetaDf");
+    addComponent("weight");
+    componentIsNotPeriodic("weight");
+    valueRSigmaMean=getPntrToComponent("weight");
+  }
 
   if(doscale_) { 
     addComponent("scale");  
     componentIsNotPeriodic("scale");
     valueScale=getPntrToComponent("scale");
   }
+
   addComponent("accept");
   componentIsNotPeriodic("accept");
   valueAccept=getPntrToComponent("accept");
@@ -513,7 +518,7 @@ atoms(plumed.getAtoms())
   componentIsNotPeriodic("rewSigmaMean");
   valueRSigmaMean=getPntrToComponent("rewSigmaMean");
 
-  if(do_optsigmamean_) {
+  if(do_optsigmamean_==2) {
     addComponent("maxForceMD");
     componentIsNotPeriodic("maxForceMD");
     valueMaxForceMD=getPntrToComponent("maxForceMD");
@@ -818,10 +823,10 @@ double Metainference::getEnergyForceSPE(const vector<double> &mean, const double
     setOutputForce(narg, -w_tmp);
     if(w_tmp<-epsilon) (getPntrToArgument(narg)->getPntrToAction())->setSpecialUpdate();
     else (getPntrToArgument(narg)->getPntrToAction())->unsetSpecialUpdate();
+    getPntrToComponent("MetaDf")->set(w_tmp);
+    getPntrToComponent("weight")->set(fact);
   }
 
-  getPntrToComponent("MetaDf")->set(w_tmp);
-  getPntrToComponent("weight")->set(fact);
   return kbt_*ene;
 }
 
@@ -848,10 +853,10 @@ double Metainference::getEnergyForceGJ(const vector<double> &mean, const double 
     setOutputForce(narg, -w_tmp);
     if(w_tmp<-epsilon) (getPntrToArgument(narg)->getPntrToAction())->setSpecialUpdate();
     else (getPntrToArgument(narg)->getPntrToAction())->unsetSpecialUpdate();
+    getPntrToComponent("MetaDf")->set(w_tmp);
+    getPntrToComponent("weight")->set(fact);
   }
 
-  getPntrToComponent("MetaDf")->set(w_tmp);
-  getPntrToComponent("weight")->set(fact);
   // add Jeffrey's prior in case one sigma for all data points + npoints normalisations
   ene += 0.5*std::log(ss) + 0.5*narg*std::log(ss*2*M_PI);
   return kbt_*ene;
@@ -885,18 +890,20 @@ double Metainference::getEnergyForceGJE(const vector<double> &mean, const double
       w_tmp += (getArgument(i)-mean[i])*mult;
     }
   }
+
   if(do_reweight) {
     setOutputForce(narg, -w_tmp);
     if(w_tmp<-epsilon) (getPntrToArgument(narg)->getPntrToAction())->setSpecialUpdate();
     else (getPntrToArgument(narg)->getPntrToAction())->unsetSpecialUpdate();
+    getPntrToComponent("MetaDf")->set(w_tmp);
+    getPntrToComponent("weight")->set(fact);
   }
-  getPntrToComponent("MetaDf")->set(w_tmp);
-  getPntrToComponent("weight")->set(fact);
+
   return kbt_*ene;
 }
 
 void Metainference::update() {
-  if(do_optsigmamean_) {
+  if(do_optsigmamean_==2) {
     const double EPS = 0.1;
     // Get max force of whole system
     vector<Vector> md_forces;
@@ -997,7 +1004,7 @@ void Metainference::calculate(){
   }
   comm.Sum(&mean[0], narg);
 
-  if(do_optsigmamean_) {
+  if(do_optsigmamean_>0) {
     /* this is SIGMA_MEAN before the corrections due to the #DOF and the SCALING */
     vector<double> v_moment(narg,0);
     if(master) {
@@ -1035,7 +1042,7 @@ void Metainference::calculate(){
   /* fix sigma_mean_ for the weighted average and the scaling factor */
   double modifier = scale_*sqrt(idof);
   /* fix sigma_mean_ for the effect of large forces */
-  if(do_optsigmamean_) modifier *= sm_mod_;
+  if(do_optsigmamean_==2) modifier *= sm_mod_;
   valueRSigmaMean->set(modifier);
   for(unsigned i=0;i<sigma_mean_.size();++i) sigma_mean_[i] *= modifier;
   
@@ -1074,7 +1081,7 @@ void Metainference::writeStatus()
   if(doscale_) {
     sfile_.printField("scale0_",scale_);
   }
-  if(do_optsigmamean_) {
+  if(do_optsigmamean_==2) {
     sfile_.printField("sigma_mean_mod0",sm_mod_);
   }
   sfile_.printField();
