@@ -495,7 +495,7 @@ atoms(plumed.getAtoms())
   for(unsigned i=0;i<sigma_mean_.size();++i) log.printf(" %f", sigma_mean_[i]);
   log.printf("\n");
 
-  if(do_reweight_)
+  if(do_reweight) {
     addComponent("MetaDf");
     componentIsNotPeriodic("MetaDf");
     valueRSigmaMean=getPntrToComponent("MetaDf");
