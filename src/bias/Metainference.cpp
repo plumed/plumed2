@@ -816,7 +816,7 @@ double Metainference::getEnergyForceSPE(const vector<double> &mean, const double
   }
   if(do_reweight) {
     setOutputForce(narg, -w_tmp);
-    if(w_tmp<0) (getPntrToArgument(narg)->getPntrToAction())->setSpecialUpdate();
+    if(w_tmp<-epsilon) (getPntrToArgument(narg)->getPntrToAction())->setSpecialUpdate();
     else (getPntrToArgument(narg)->getPntrToAction())->unsetSpecialUpdate();
   }
 
@@ -846,7 +846,7 @@ double Metainference::getEnergyForceGJ(const vector<double> &mean, const double 
   }
   if(do_reweight) {
     setOutputForce(narg, -w_tmp);
-    if(w_tmp<0) (getPntrToArgument(narg)->getPntrToAction())->setSpecialUpdate();
+    if(w_tmp<-epsilon) (getPntrToArgument(narg)->getPntrToAction())->setSpecialUpdate();
     else (getPntrToArgument(narg)->getPntrToAction())->unsetSpecialUpdate();
   }
 
@@ -887,7 +887,7 @@ double Metainference::getEnergyForceGJE(const vector<double> &mean, const double
   }
   if(do_reweight) {
     setOutputForce(narg, -w_tmp);
-    if(w_tmp<0) (getPntrToArgument(narg)->getPntrToAction())->setSpecialUpdate();
+    if(w_tmp<-epsilon) (getPntrToArgument(narg)->getPntrToAction())->setSpecialUpdate();
     else (getPntrToArgument(narg)->getPntrToAction())->unsetSpecialUpdate();
   }
   getPntrToComponent("MetaDf")->set(w_tmp);
