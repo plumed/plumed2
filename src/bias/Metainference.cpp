@@ -707,6 +707,7 @@ void Metainference::doMonteCarlo(const vector<double> &mean_){
     MCtrial_++;
 
     vector<double> new_sigma(sigma_.size());
+    new_sigma = sigma_;
 
     // change MCchunksize_ sigmas
     if (MCchunksize_ > 0) {
