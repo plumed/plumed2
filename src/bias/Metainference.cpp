@@ -544,6 +544,9 @@ atoms(plumed.getAtoms())
   comm.Sum(&iseed, 1);
   random[0].setSeed(-iseed);
   // Random chunk
+  if(master) iseed = time(NULL)+replica_;
+  else iseed = 0;     
+  comm.Sum(&iseed, 1);
   random[2].setSeed(-iseed);
   if(doscale_) {
     // in this case we want the same seed everywhere
