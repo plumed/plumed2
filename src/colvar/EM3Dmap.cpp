@@ -99,6 +99,8 @@ private:
  // calculate overlap between two components
  double get_overlap(Vector m_m, Vector d_m, double fact_md,
                     Matrix<double> &inv_cov_md, Vector &ov_der);
+ double get_overlap(Vector m_m, Vector d_m, double fact_md,
+                    Matrix<double> &inv_cov_md);
  // update the neighbor list
  void update_neighbor_list();
  // calculate overlap
@@ -306,7 +308,7 @@ void EM3Dmap::normalize_GMM(vector<double> &w)
 // get prefactors
 double EM3Dmap::get_prefactor_inverse
 (Matrix<double> GMM_cov_0, Matrix<double> GMM_cov_1,
-           double GMM_w_0,           double GMM_w_1, Matrix<double> &inv_sum)
+           double GMM_w_0, double GMM_w_1, Matrix<double> &inv_sum)
 {
  // we need the sum of the covariance matrices
  Matrix<double> sum_0_1(3,3);
@@ -330,16 +332,14 @@ double EM3Dmap::get_self_overlap(unsigned id)
 {
 
  double ov = 0.0;
+ Matrix<double> inv_sum_id_i;
  // start loop
  for(unsigned i=0; i<GMM_d_w_.size(); ++i){
    // call auxiliary method
-   Matrix<double> inv_sum_id_i;
    double pre_fact = get_prefactor_inverse(GMM_d_cov_[id], GMM_d_cov_[i], 
                                              GMM_d_w_[id],   GMM_d_w_[i], inv_sum_id_i); 
-   // temporary vector
-   Vector ov_der;	
    // calculate overlap
-   double ov_tmp = get_overlap(GMM_d_m_[id], GMM_d_m_[i], pre_fact, inv_sum_id_i, ov_der);
+   double ov_tmp = get_overlap(GMM_d_m_[id], GMM_d_m_[i], pre_fact, inv_sum_id_i);
    // add to overlap
    ov += ov_tmp;
  }
@@ -370,21 +370,39 @@ double EM3Dmap::get_overlap(Vector m_m, Vector d_m, double fact_md,
   return ov;
 }
 
+double EM3Dmap::get_overlap(Vector m_m, Vector d_m, double fact_md,
+                            Matrix<double> &inv_cov_md)
+{
+  // calculate vector difference m_m-d_m
+  Vector md = m_m - d_m;
+  // calculate its transpose
+  Matrix<double> md_t(1,3);
+  for(unsigned i=0; i<3; ++i) md_t[0][i] = md[i];
+  // calculate product of md_t and inv_cov_md 
+  Matrix<double> prod(1,3);
+  mult(md_t, inv_cov_md, prod);
+  // calculate product of prod and md
+  double ov = 0.0;
+  for(unsigned i=0; i<3; ++i) ov += prod[0][i]*md[i];
+  // final calculation
+  ov = fact_md * exp(-0.5*ov);
+  return ov;
+}
+
 void EM3Dmap::update_neighbor_list()
 {
-  // derivative
-  Vector ovmd_der;
+  // temporary stuff
+  Matrix<double> inv_sum_i_j;
   // clear old neighbor list and auxiliary vectors
   nl_.clear(); fact_md_.clear(); inv_cov_md_.clear();
   // cycle on all overlaps
   for(unsigned i=0; i<GMM_d_w_.size(); ++i){
    for(unsigned j=0; j<GMM_m_w_.size(); ++j){
       // call auxiliary method 
-      Matrix<double> inv_sum_i_j;
       double pre_fact = get_prefactor_inverse(GMM_d_cov_[i], GMM_m_cov_[j], 
                                                 GMM_d_w_[i],   GMM_m_w_[j], inv_sum_i_j);	
       // calculate overlap
-      double ov = get_overlap(GMM_d_m_[i], getPosition(j), pre_fact, inv_sum_i_j, ovmd_der);
+      double ov = get_overlap(GMM_d_m_[i], getPosition(j), pre_fact, inv_sum_i_j);
       // fill the neighbor list and auxiliary vectors
       if(ov >= nl_cutoff_){
         nl_.push_back(make_pair(i,j));
