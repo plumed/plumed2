@@ -75,6 +75,7 @@ private:
  // neighbor list
  double   nl_cutoff_;
  unsigned nl_stride_;
+ bool first_time_;
  vector < pair<unsigned, unsigned > > nl_;
  // parallel stuff
  bool serial_;
@@ -128,7 +129,7 @@ void EM3Dmap::registerKeywords( Keywords& keys ){
 EM3Dmap::EM3Dmap(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
 nl_cutoff_(-1.0), nl_stride_(0),
-serial_(false)
+first_time_(true), serial_(false)
 {
   
   vector<AtomNumber> atoms;
@@ -177,23 +178,15 @@ serial_(false)
   normalize_GMM(GMM_m_w_);
   normalize_GMM(GMM_d_w_);
   
-  // get constant parameters for the model-data overlaps
-  get_auxiliary_stuff();
-  
   // get self overlaps between data GMM components
   for(unsigned i=0;i<GMM_d_w_.size();++i) {
       double ov = get_self_overlap(i);
       ovdd_.push_back(ov);
   }
 
-  // prepare neighbor list - or full list
-  for(unsigned i=0; i<GMM_d_w_.size(); ++i)
-     for(unsigned j=0; j<GMM_m_w_.size(); ++j) nl_.push_back(make_pair(i,j));
-
   // and prepare temporary vectors
   ovmd_.resize(GMM_d_w_.size());
   ene_der_.resize(GMM_d_w_.size());
-  ovmd_der_.resize(nl_.size());
   atom_der_.resize(GMM_m_w_.size());
 
   // request the atoms
@@ -332,23 +325,6 @@ double EM3Dmap::get_prefactor_inverse
  return pre_fact;
 }
 
-void EM3Dmap::get_auxiliary_stuff()
-{
- // cycle on data GMM components
- for(unsigned i=0; i<GMM_d_w_.size(); ++i){
-  // cycle on model GMM components
-  for(unsigned j=0; j<GMM_m_w_.size(); ++j){
-   // call auxiliary method 
-   Matrix<double> inv_sum_i_j;
-   double pre_fact = get_prefactor_inverse(GMM_d_cov_[i], GMM_m_cov_[j], 
-                                             GMM_d_w_[i],   GMM_m_w_[j], inv_sum_i_j);											 
-   // the prefactor is stored
-   fact_md_.push_back(pre_fact);
-   // and the inverse matrix also
-   inv_cov_md_.push_back(inv_sum_i_j); 
-  }
- } 
-}
 
 double EM3Dmap::get_self_overlap(unsigned id)
 {
@@ -398,17 +374,23 @@ void EM3Dmap::update_neighbor_list()
 {
   // derivative
   Vector ovmd_der;
-  // clear old neighbor list
-  nl_.clear();
+  // clear old neighbor list and auxiliary vectors
+  nl_.clear(); fact_md_.clear(); inv_cov_md_.clear();
   // cycle on all overlaps
   for(unsigned i=0; i<GMM_d_w_.size(); ++i){
    for(unsigned j=0; j<GMM_m_w_.size(); ++j){
-      // get index in 1D array of constant parameters
-      unsigned k = i*GMM_m_w_.size()+j;
+      // call auxiliary method 
+      Matrix<double> inv_sum_i_j;
+      double pre_fact = get_prefactor_inverse(GMM_d_cov_[i], GMM_m_cov_[j], 
+                                                GMM_d_w_[i],   GMM_m_w_[j], inv_sum_i_j);	
       // calculate overlap
-      double ov = get_overlap(GMM_d_m_[i], getPosition(j), fact_md_[k], inv_cov_md_[k], ovmd_der);
-      // fill the neighbor list
-      if(ov >= nl_cutoff_) nl_.push_back(make_pair(i,j));
+      double ov = get_overlap(GMM_d_m_[i], getPosition(j), pre_fact, inv_sum_i_j, ovmd_der);
+      // fill the neighbor list and auxiliary vectors
+      if(ov >= nl_cutoff_){
+        nl_.push_back(make_pair(i,j));
+        fact_md_.push_back(pre_fact);
+        inv_cov_md_.push_back(inv_sum_i_j);
+      }
    }
   }
   // now resize derivatives
@@ -421,7 +403,10 @@ void EM3Dmap::calculate_overlap(){
   //makeWhole();
   
   // update neighbor list ?
-  if(getStep()%nl_stride_==0) update_neighbor_list();
+  if(first_time_ || getStep()%nl_stride_==0){
+     update_neighbor_list();
+     first_time_=false;
+  }
   
   // clean temporary vectors
   for(unsigned i=0; i<ovmd_.size(); ++i)     ovmd_[i] = 0.0;
@@ -432,11 +417,9 @@ void EM3Dmap::calculate_overlap(){
       // get indexes of data and model component
       unsigned id = nl_[i].first;
       unsigned im = nl_[i].second;
-      // get index in 1D array of constant parameters
-      unsigned j = id*GMM_m_w_.size()+im;
       // add overlap with im component of model GMM
-      ovmd_[id] += get_overlap(getPosition(im), GMM_d_m_[id], fact_md_[j],
-                               inv_cov_md_[j], ovmd_der_[i]);
+      ovmd_[id] += get_overlap(getPosition(im), GMM_d_m_[id], fact_md_[i],
+                               inv_cov_md_[i], ovmd_der_[i]);
   }
   // if parallel, communicate stuff
   if(!serial_){
