@@ -90,16 +90,14 @@ private:
  void normalize_GMM(vector<double> &w);
 
  // get fact_md and inv_cov_md
- double get_prefactor_inverse (Matrix<double> GMM_cov_0, Matrix<double> GMM_cov_1,
-        double GMM_w_0, double GMM_w_1, Matrix<double> &inv_sum);
- // get constant parameters for overlap between two components of model and data GMM:
- void get_auxiliary_stuff();
+ double get_prefactor_inverse (Matrix<double> &GMM_cov_0, Matrix<double> &GMM_cov_1,
+        double &GMM_w_0, double &GMM_w_1, Matrix<double> &inv_sum);
  // calculate self overlaps between data GMM components - ovdd_
  double get_self_overlap(unsigned id);
  // calculate overlap between two components
- double get_overlap(Vector m_m, Vector d_m, double fact_md,
+ double get_overlap(Vector &m_m, Vector d_m, double &fact_md,
                     Matrix<double> &inv_cov_md, Vector &ov_der);
- double get_overlap(Vector m_m, Vector d_m, double fact_md,
+ double get_overlap(Vector &m_m, Vector d_m, double &fact_md,
                     Matrix<double> &inv_cov_md);
  // update the neighbor list
  void update_neighbor_list();
@@ -307,8 +305,8 @@ void EM3Dmap::normalize_GMM(vector<double> &w)
 
 // get prefactors
 double EM3Dmap::get_prefactor_inverse
-(Matrix<double> GMM_cov_0, Matrix<double> GMM_cov_1,
-           double GMM_w_0, double GMM_w_1, Matrix<double> &inv_sum)
+(Matrix<double> &GMM_cov_0, Matrix<double> &GMM_cov_1,
+           double &GMM_w_0, double &GMM_w_1, Matrix<double> &inv_sum)
 {
  // we need the sum of the covariance matrices
  Matrix<double> sum_0_1(3,3);
@@ -346,7 +344,7 @@ double EM3Dmap::get_self_overlap(unsigned id)
  return ov;
 }
 
-double EM3Dmap::get_overlap(Vector m_m, Vector d_m, double fact_md,
+double EM3Dmap::get_overlap(Vector &m_m, Vector d_m, double &fact_md,
                             Matrix<double> &inv_cov_md, Vector &ov_der)
 {
   // calculate vector difference m_m-d_m
@@ -370,7 +368,7 @@ double EM3Dmap::get_overlap(Vector m_m, Vector d_m, double fact_md,
   return ov;
 }
 
-double EM3Dmap::get_overlap(Vector m_m, Vector d_m, double fact_md,
+double EM3Dmap::get_overlap(Vector &m_m, Vector d_m, double &fact_md,
                             Matrix<double> &inv_cov_md)
 {
   // calculate vector difference m_m-d_m
@@ -436,7 +434,7 @@ void EM3Dmap::calculate_overlap(){
       unsigned id = nl_[i].first;
       unsigned im = nl_[i].second;
       // add overlap with im component of model GMM
-      ovmd_[id] += get_overlap(getPosition(im), GMM_d_m_[id], fact_md_[i],
+      ovmd_[id] += get_overlap(GMM_d_m_[id], getPosition(im), fact_md_[i],
                                inv_cov_md_[i], ovmd_der_[i]);
   }
   // if parallel, communicate stuff
