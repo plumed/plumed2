@@ -95,9 +95,9 @@ private:
  // calculate self overlaps between data GMM components - ovdd_
  double get_self_overlap(unsigned id);
  // calculate overlap between two components
- double get_overlap(Vector &m_m, Vector d_m, double &fact_md,
+ double get_overlap(Vector m_m, Vector d_m, double fact_md,
                     Matrix<double> &inv_cov_md, Vector &ov_der);
- double get_overlap(Vector &m_m, Vector d_m, double &fact_md,
+ double get_overlap(Vector m_m, Vector d_m, double fact_md,
                     Matrix<double> &inv_cov_md);
  // update the neighbor list
  void update_neighbor_list();
@@ -354,7 +354,7 @@ double EM3Dmap::get_self_overlap(unsigned id)
  return ov;
 }
 
-double EM3Dmap::get_overlap(Vector &m_m, Vector d_m, double &fact_md,
+double EM3Dmap::get_overlap(Vector m_m, Vector d_m, double fact_md,
                             Matrix<double> &inv_cov_md, Vector &ov_der)
 {
   // calculate vector difference m_m-d_m
@@ -374,11 +374,11 @@ double EM3Dmap::get_overlap(Vector &m_m, Vector d_m, double &fact_md,
   double x = md[0]*inv_cov_md[0][0] + md[1]*inv_cov_md[0][1] + md[2]*inv_cov_md[0][2];
   double y = md[0]*inv_cov_md[0][1] + md[1]*inv_cov_md[1][1] + md[2]*inv_cov_md[1][2];
   double z = md[0]*inv_cov_md[0][2] + md[1]*inv_cov_md[1][2] + md[2]*inv_cov_md[2][2];
-  ov_der = ov * Vector(-x, -y, -z); 
+  ov_der = ov * Vector(x, y, z); 
   return ov;
 }
 
-double EM3Dmap::get_overlap(Vector &m_m, Vector d_m, double &fact_md,
+double EM3Dmap::get_overlap(Vector m_m, Vector d_m, double fact_md,
                             Matrix<double> &inv_cov_md)
 {
   // calculate vector difference m_m-d_m
