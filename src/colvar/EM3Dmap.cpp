@@ -96,9 +96,9 @@ private:
  double get_self_overlap(unsigned id);
  // calculate overlap between two components
  double get_overlap(Vector m_m, Vector d_m, double fact_md,
-                    Matrix<double> &inv_cov_md, Vector &ov_der);
+                    Matrix<double> &inv_cov_md, Vector &ov_der, Matrix<double> &md_t, Matrix<double> &prod);
  double get_overlap(Vector m_m, Vector d_m, double fact_md,
-                    Matrix<double> &inv_cov_md);
+                    Matrix<double> &inv_cov_md, Matrix<double> &md_t, Matrix<double> &prod);
  // update the neighbor list
  void update_neighbor_list();
  // calculate overlap
@@ -341,13 +341,15 @@ double EM3Dmap::get_self_overlap(unsigned id)
 
  double ov = 0.0;
  Matrix<double> inv_sum_id_i(3,3);
+ Matrix<double> md_t(1,3);
+ Matrix<double> prod(1,3);
  // start loop
  for(unsigned i=0; i<GMM_d_w_.size(); ++i){
    // call auxiliary method
    double pre_fact = get_prefactor_inverse(GMM_d_cov_[id], GMM_d_cov_[i], 
                                              GMM_d_w_[id],   GMM_d_w_[i], inv_sum_id_i); 
    // calculate overlap
-   double ov_tmp = get_overlap(GMM_d_m_[id], GMM_d_m_[i], pre_fact, inv_sum_id_i);
+   double ov_tmp = get_overlap(GMM_d_m_[id], GMM_d_m_[i], pre_fact, inv_sum_id_i, md_t, prod);
    // add to overlap
    ov += ov_tmp;
  }
@@ -355,15 +357,14 @@ double EM3Dmap::get_self_overlap(unsigned id)
 }
 
 double EM3Dmap::get_overlap(Vector m_m, Vector d_m, double fact_md,
-                            Matrix<double> &inv_cov_md, Vector &ov_der)
+                            Matrix<double> &inv_cov_md, Vector &ov_der,
+                            Matrix<double> &md_t, Matrix<double> &prod)
 {
   // calculate vector difference m_m-d_m
   Vector md = m_m - d_m;
   // calculate its transpose
-  Matrix<double> md_t(1,3);
   for(unsigned i=0; i<3; ++i) md_t[0][i] = md[i];
   // calculate product of md_t and inv_cov_md 
-  Matrix<double> prod(1,3);
   mult(md_t, inv_cov_md, prod);
   // calculate product of prod and md
   double ov = 0.0;
@@ -379,15 +380,14 @@ double EM3Dmap::get_overlap(Vector m_m, Vector d_m, double fact_md,
 }
 
 double EM3Dmap::get_overlap(Vector m_m, Vector d_m, double fact_md,
-                            Matrix<double> &inv_cov_md)
+                            Matrix<double> &inv_cov_md,
+                            Matrix<double> &md_t, Matrix<double> &prod)
 {
   // calculate vector difference m_m-d_m
   Vector md = m_m - d_m;
   // calculate its transpose
-  Matrix<double> md_t(1,3);
   for(unsigned i=0; i<3; ++i) md_t[0][i] = md[i];
   // calculate product of md_t and inv_cov_md 
-  Matrix<double> prod(1,3);
   mult(md_t, inv_cov_md, prod);
   // calculate product of prod and md
   double ov = 0.0;
@@ -401,6 +401,8 @@ void EM3Dmap::update_neighbor_list()
 {
   // temporary stuff
   Matrix<double> inv_sum_i_j(3,3);
+  Matrix<double> md_t(1,3);
+  Matrix<double> prod(1,3);
   // clear old neighbor list and auxiliary vectors
   nl_.clear(); fact_md_.clear(); inv_cov_md_.clear();
   // cycle on all overlaps
@@ -410,7 +412,7 @@ void EM3Dmap::update_neighbor_list()
       double pre_fact = get_prefactor_inverse(GMM_d_cov_[i], GMM_m_cov_[j], 
                                                 GMM_d_w_[i],   GMM_m_w_[j], inv_sum_i_j);	
       // calculate overlap
-      double ov = get_overlap(GMM_d_m_[i], getPosition(j), pre_fact, inv_sum_i_j);
+      double ov = get_overlap(GMM_d_m_[i], getPosition(j), pre_fact, inv_sum_i_j, md_t, prod);
       // fill the neighbor list and auxiliary vectors
       if(ov >= nl_cutoff_){
         nl_.push_back(make_pair(i,j));
@@ -427,6 +429,8 @@ void EM3Dmap::update_neighbor_list()
 void EM3Dmap::calculate_overlap(){
 
   //makeWhole();
+  Matrix<double> md_t(1,3);
+  Matrix<double> prod(1,3);
   
   // update neighbor list ?
   if(first_time_ || getStep()%nl_stride_==0){
@@ -445,7 +449,7 @@ void EM3Dmap::calculate_overlap(){
       unsigned im = nl_[i].second;
       // add overlap with im component of model GMM
       ovmd_[id] += get_overlap(GMM_d_m_[id], getPosition(im), fact_md_[i],
-                               inv_cov_md_[i], ovmd_der_[i]);
+                               inv_cov_md_[i], ovmd_der_[i], md_t, prod);
   }
   // if parallel, communicate stuff
   if(!serial_){
