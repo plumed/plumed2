@@ -73,7 +73,6 @@ private:
  // inverse of the sum of model and data covariances matrices
  vector< Matrix<double> > inv_cov_md_;
  // neighbor list
- bool     do_nl_;
  double   nl_cutoff_;
  unsigned nl_stride_;
  vector < pair<unsigned, unsigned > > nl_;
@@ -119,7 +118,6 @@ void EM3Dmap::registerKeywords( Keywords& keys ){
   keys.add("compulsory","GMM_FILE","file with the parameters of the GMM components");
   keys.add("compulsory","TEMP","temperature in energy units");
   keys.addFlag("SERIAL",false,"perform the calculation in serial - for debug purpose");
-  keys.addFlag("NLIST",false,"use neighbor lists");
   keys.add("optional","NL_CUTOFF","The cutoff in overlap for the neighbor list");
   keys.add("optional","NL_STRIDE","The frequency with which we are updating the neighbor list");
   componentsAreNotOptional(keys);
@@ -129,7 +127,6 @@ void EM3Dmap::registerKeywords( Keywords& keys ){
 
 EM3Dmap::EM3Dmap(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
-do_nl_(false),
 nl_cutoff_(-1.0), nl_stride_(0),
 serial_(false)
 {
@@ -143,13 +140,10 @@ serial_(false)
   parse("TEMP",kbt_);
  
   // neighbor list stuff
-  parseFlag("NLIST",do_nl_);
-  if(do_nl_){
-   parse("NL_CUTOFF",nl_cutoff_);
-   if(nl_cutoff_<=0.0) error("NL_CUTOFF should be explicitly specified and positive");
-   parse("NL_STRIDE",nl_stride_);
-   if(nl_stride_<=0) error("NL_STRIDE should be explicitly specified and positive");
-  }
+  parse("NL_CUTOFF",nl_cutoff_);
+  if(nl_cutoff_<=0.0) error("NL_CUTOFF should be explicitly specified and positive");
+  parse("NL_STRIDE",nl_stride_);
+  if(nl_stride_<=0) error("NL_STRIDE should be explicitly specified and positive");
   
   // serial or parallel
   parseFlag("SERIAL",serial_);
@@ -166,10 +160,8 @@ serial_(false)
   log.printf("\n");
   log.printf("  GMM data file : %s\n", GMM_file.c_str());
   if(serial_) log.printf("  serial calculation\n");
-  if(do_nl_){
-    log.printf("  neighbor list overlap cutoff : %lf\n", nl_cutoff_);
-    log.printf("  neighbor list stride : %u\n",  nl_stride_);
-  }
+  log.printf("  neighbor list overlap cutoff : %lf\n", nl_cutoff_);
+  log.printf("  neighbor list stride : %u\n",  nl_stride_);
 
   // set constant quantity before calculating stuff
   cfact_ = 1.0/pow( 2.0*pi, 1.5 );
@@ -419,6 +411,8 @@ void EM3Dmap::update_neighbor_list()
       if(ov >= nl_cutoff_) nl_.push_back(make_pair(i,j));
    }
   }
+  // now resize derivatives
+  ovmd_der_.resize(nl_.size());
 }
 
 // overlap calculator
@@ -427,10 +421,7 @@ void EM3Dmap::calculate_overlap(){
   //makeWhole();
   
   // update neighbor list ?
-  if(do_nl_ && getStep()%nl_stride_==0){
-    update_neighbor_list();
-    ovmd_der_.resize(nl_.size());
-  }
+  if(getStep()%nl_stride_==0) update_neighbor_list();
   
   // clean temporary vectors
   for(unsigned i=0; i<ovmd_.size(); ++i)     ovmd_[i] = 0.0;
