@@ -316,11 +316,21 @@ double EM3Dmap::get_prefactor_inverse
   }
  }   
  // and to calculate its determinant
- double det; logdet(sum_0_1, det);
+ double det = sum_0_1[0][0]*(sum_0_1[1][1]*sum_0_1[2][2]-sum_0_1[1][2]*sum_0_1[2][1]);
+       det -= sum_0_1[0][1]*(sum_0_1[1][0]*sum_0_1[2][2]-sum_0_1[1][2]*sum_0_1[2][0]);
+       det += sum_0_1[0][2]*(sum_0_1[1][0]*sum_0_1[2][1]-sum_0_1[1][1]*sum_0_1[2][0]);
  // the prefactor is 
- double pre_fact =  cfact_ / sqrt(exp(det)) * GMM_w_0 * GMM_w_1;
+ double pre_fact =  cfact_ / sqrt(det) * GMM_w_0 * GMM_w_1;
  // and its inverse
- Invert(sum_0_1, inv_sum);
+ inv_sum[0][0] = (sum_0_1[1][1]*sum_0_1[2][2] - sum_0_1[1][2]*sum_0_1[2][1])/det;
+ inv_sum[0][1] = (sum_0_1[0][2]*sum_0_1[2][1] - sum_0_1[0][1]*sum_0_1[2][2])/det;
+ inv_sum[0][2] = (sum_0_1[0][1]*sum_0_1[1][2] - sum_0_1[0][2]*sum_0_1[1][1])/det;
+ inv_sum[1][0] = (sum_0_1[1][2]*sum_0_1[2][0] - sum_0_1[1][0]*sum_0_1[2][2])/det;
+ inv_sum[1][1] = (sum_0_1[0][0]*sum_0_1[2][2] - sum_0_1[0][2]*sum_0_1[2][0])/det;
+ inv_sum[1][2] = (sum_0_1[0][2]*sum_0_1[1][0] - sum_0_1[0][0]*sum_0_1[1][2])/det;
+ inv_sum[2][0] = (sum_0_1[1][0]*sum_0_1[2][1] - sum_0_1[1][1]*sum_0_1[2][0])/det;
+ inv_sum[2][1] = (sum_0_1[0][1]*sum_0_1[2][0] - sum_0_1[0][0]*sum_0_1[2][1])/det;
+ inv_sum[2][2] = (sum_0_1[0][0]*sum_0_1[1][1] - sum_0_1[0][1]*sum_0_1[1][0])/det;
  // return pre-factor
  return pre_fact;
 }
@@ -330,7 +340,7 @@ double EM3Dmap::get_self_overlap(unsigned id)
 {
 
  double ov = 0.0;
- Matrix<double> inv_sum_id_i;
+ Matrix<double> inv_sum_id_i(3,3);
  // start loop
  for(unsigned i=0; i<GMM_d_w_.size(); ++i){
    // call auxiliary method
@@ -390,7 +400,7 @@ double EM3Dmap::get_overlap(Vector &m_m, Vector d_m, double &fact_md,
 void EM3Dmap::update_neighbor_list()
 {
   // temporary stuff
-  Matrix<double> inv_sum_i_j;
+  Matrix<double> inv_sum_i_j(3,3);
   // clear old neighbor list and auxiliary vectors
   nl_.clear(); fact_md_.clear(); inv_cov_md_.clear();
   // cycle on all overlaps
