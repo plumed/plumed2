@@ -404,9 +404,13 @@ void EM3Dmap::update_neighbor_list()
   VectorGeneric<9> inv_sum;
   // clear old neighbor list and auxiliary vectors
   nl_.clear(); fact_md_.clear(); inv_cov_md_.clear();
+  // local stuff
+  vector< VectorGeneric<9> > inv_cov_md_l;
+  vector < unsigned > nl_l;
+  vector < double > fact_md_l;
   // cycle on all overlaps
   unsigned nover = GMM_d_w_.size() * GMM_m_w_.size();
-  for(unsigned k=0; k<nover; ++k){
+  for(unsigned k=rank_; k<nover; k=k+size_){
       // get indexes
       unsigned i = k / GMM_m_w_.size();
       unsigned j = k % GMM_m_w_.size();
@@ -417,13 +421,35 @@ void EM3Dmap::update_neighbor_list()
       double ov = get_overlap(GMM_d_m_[i], getPosition(j), pre_fact, inv_sum);
       // fill the neighbor list and auxiliary vectors
       if(ov >= nl_cutoff_){
-        nl_.push_back(k);
-        fact_md_.push_back(pre_fact);
-        inv_cov_md_.push_back(inv_sum);
+        nl_l.push_back(k);
+        fact_md_l.push_back(pre_fact);
+        inv_cov_md_l.push_back(inv_sum);
       }
   }
+  // find total dimension of neighborlist
+  vector <unsigned> size(size_, 0);
+  size[rank_] = nl_l.size();
+  comm.Sum(&size[0], size_);
+  unsigned tot_size = accumulate(size.begin(), size.end(), 0);
+  // resize stuff
+  nl_.resize(tot_size, 0);
+  fact_md_.resize(tot_size, 0.0);
+  inv_cov_md_.resize(tot_size);
+  // calculate rank size
+  unsigned rank_size = 0;
+  for (unsigned i=0; i<rank_; ++i) rank_size += size[i];
+  // fill in stuff
+  for(unsigned i=rank_size; i<rank_size+size[rank_]; ++i){
+     nl_[i]         = nl_l[i-rank_size];
+     fact_md_[i]    = fact_md_l[i-rank_size];
+     inv_cov_md_[i] = inv_cov_md_l[i-rank_size];
+  }
+  // sum
+  comm.Sum(&nl_[0], nl_.size());
+  comm.Sum(&fact_md_[0], fact_md_.size());
+  comm.Sum(&inv_cov_md_[0][0], 9*inv_cov_md_.size());
   // now resize derivatives
-  ovmd_der_.resize(nl_.size());
+  ovmd_der_.resize(tot_size);
 }
 
 // overlap calculator
