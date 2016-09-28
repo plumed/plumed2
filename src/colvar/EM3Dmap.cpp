@@ -81,8 +81,6 @@ private:
  bool serial_;
  unsigned size_;
  unsigned rank_;
- // other bool
- bool all_over_;
  
  // calculate model GMM weights and covariances - these are constants
  void get_GMM_m(vector<AtomNumber> &atoms);
@@ -121,7 +119,6 @@ void EM3Dmap::registerKeywords( Keywords& keys ){
   keys.add("compulsory","GMM_FILE","file with the parameters of the GMM components");
   keys.add("compulsory","TEMP","temperature in energy units");
   keys.addFlag("SERIAL",false,"perform the calculation in serial - for debug purpose");
-  keys.addFlag("ALL_OVER",false,"self overlap with all components");
   keys.addFlag("NLIST",false,"use neighbor lists");
   keys.add("optional","NL_CUTOFF","The cutoff in overlap for the neighbor list");
   keys.add("optional","NL_STRIDE","The frequency with which we are updating the neighbor list");
@@ -134,7 +131,7 @@ EM3Dmap::EM3Dmap(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
 do_nl_(false),
 nl_cutoff_(-1.0), nl_stride_(0),
-serial_(false), all_over_(false)
+serial_(false)
 {
   
   vector<AtomNumber> atoms;
@@ -161,9 +158,6 @@ serial_(false), all_over_(false)
   } else {
     size_=comm.Get_size(); rank_=comm.Get_rank();
   }
-  
-  // all over stuff
-  parseFlag("ALL_OVER", all_over_);
   
   checkRead();
 
@@ -366,18 +360,10 @@ void EM3Dmap::get_auxiliary_stuff()
 
 double EM3Dmap::get_self_overlap(unsigned id)
 {
- unsigned i0, i1;
- // define boundaries for the loop
- if(!all_over_){
-   i0 = id; 
-   i1 = id+1;
- } else {
-   i0 = 0; 
-   i1 = GMM_d_w_.size();
- }
+
  double ov = 0.0;
  // start loop
- for(unsigned i=i0; i<i1; ++i){
+ for(unsigned i=0; i<GMM_d_w_.size(); ++i){
    // call auxiliary method
    Matrix<double> inv_sum_id_i;
    double pre_fact = get_prefactor_inverse(GMM_d_cov_[id], GMM_d_cov_[i], 
