@@ -427,27 +427,29 @@ void EM3Dmap::update_neighbor_list()
       }
   }
   // find total dimension of neighborlist
-  vector <unsigned> size(size_, 0);
-  size[rank_] = nl_l.size();
-  comm.Sum(&size[0], size_);
-  unsigned tot_size = accumulate(size.begin(), size.end(), 0);
+  vector <int> recvcounts(size_, 0);
+  recvcounts[rank_] = nl_l.size();
+  comm.Sum(&recvcounts[0], size_);
+  int tot_size = accumulate(recvcounts.begin(), recvcounts.end(), 0);
   // resize stuff
-  nl_.resize(tot_size, 0);
-  fact_md_.resize(tot_size, 0.0);
-  inv_cov_md_.resize(tot_size);
-  // calculate rank size
-  unsigned rank_size = 0;
-  for (unsigned i=0; i<rank_; ++i) rank_size += size[i];
-  // fill in stuff
-  for(unsigned i=rank_size; i<rank_size+size[rank_]; ++i){
-     nl_[i]         = nl_l[i-rank_size];
-     fact_md_[i]    = fact_md_l[i-rank_size];
-     inv_cov_md_[i] = inv_cov_md_l[i-rank_size];
+  nl_.resize(tot_size); fact_md_.resize(tot_size); inv_cov_md_.resize(tot_size);
+  // calculate vector of displacement
+  vector<int> disp(size_);
+  disp[0] = 0;
+  int rank_size = 0;
+  for(unsigned i=0; i<size_-1; ++i){
+    rank_size += recvcounts[i];
+    disp[i+1] = rank_size;
   }
-  // sum
-  comm.Sum(&nl_[0], nl_.size());
-  comm.Sum(&fact_md_[0], fact_md_.size());
-  comm.Sum(&inv_cov_md_[0][0], 9*inv_cov_md_.size());
+  // Allgather
+  comm.Allgatherv(&nl_l[0],      recvcounts[rank_], &nl_[0],      &recvcounts[0], &disp[0]);
+  comm.Allgatherv(&fact_md_l[0], recvcounts[rank_], &fact_md_[0], &recvcounts[0], &disp[0]);
+  // adapt for Vector generic
+  for(unsigned i=0; i<size_; ++i){
+   recvcounts[i] *= 9;
+   disp[i] *= 9;
+  }
+  comm.Allgatherv(&inv_cov_md_l[0][0], recvcounts[rank_], &inv_cov_md_[0][0], &recvcounts[0], &disp[0]);
   // now resize derivatives
   ovmd_der_.resize(tot_size);
 }
