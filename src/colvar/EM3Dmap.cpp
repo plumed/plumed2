@@ -91,7 +91,8 @@ private:
 
  // get fact_md and inv_cov_md
  double get_prefactor_inverse (Matrix<double> &GMM_cov_0, Matrix<double> &GMM_cov_1,
-        double &GMM_w_0, double &GMM_w_1, VectorGeneric<9> &inv_sum);
+        double &GMM_w_0, double &GMM_w_1, 
+        Matrix<double> &sum, VectorGeneric<9> &inv_sum);
  // calculate self overlaps between data GMM components - ovdd_
  double get_self_overlap(unsigned id);
  // calculate overlap between two components
@@ -306,10 +307,10 @@ void EM3Dmap::normalize_GMM(vector<double> &w)
 // get prefactors
 double EM3Dmap::get_prefactor_inverse
 (Matrix<double> &GMM_cov_0, Matrix<double> &GMM_cov_1,
-           double &GMM_w_0, double &GMM_w_1, VectorGeneric<9> &inv_sum)
+           double &GMM_w_0, double &GMM_w_1, 
+           Matrix<double> &sum_0_1, VectorGeneric<9> &inv_sum)
 {
  // we need the sum of the covariance matrices
- Matrix<double> sum_0_1(3,3);
  for(unsigned k1=0; k1<3; ++k1){ 
   for(unsigned k2=0; k2<3; ++k2){ 
      sum_0_1[k1][k2] = GMM_cov_0[k1][k2] + GMM_cov_1[k1][k2];
@@ -340,12 +341,13 @@ double EM3Dmap::get_self_overlap(unsigned id)
 {
 
  double ov = 0.0;
+ Matrix<double> sum(3,3);
  VectorGeneric<9> inv_sum;
  // start loop
  for(unsigned i=0; i<GMM_d_w_.size(); ++i){
    // call auxiliary method
    double pre_fact = get_prefactor_inverse(GMM_d_cov_[id], GMM_d_cov_[i], 
-                                             GMM_d_w_[id],   GMM_d_w_[i], inv_sum); 
+                                             GMM_d_w_[id],   GMM_d_w_[i], sum, inv_sum); 
    // calculate overlap
    double ov_tmp = get_overlap(GMM_d_m_[id], GMM_d_m_[i], pre_fact, inv_sum);
    // add to overlap
@@ -401,6 +403,7 @@ double EM3Dmap::get_overlap(Vector m_m, Vector d_m, double fact_md,
 void EM3Dmap::update_neighbor_list()
 {
   // temporary stuff
+  Matrix<double> sum(3,3);
   VectorGeneric<9> inv_sum;
   // clear old neighbor list and auxiliary vectors
   nl_.clear(); fact_md_.clear(); inv_cov_md_.clear();
@@ -416,7 +419,8 @@ void EM3Dmap::update_neighbor_list()
       unsigned j = k % GMM_m_w_.size();
       // call auxiliary method 
       double pre_fact = get_prefactor_inverse(GMM_d_cov_[i], GMM_m_cov_[j], 
-                                                GMM_d_w_[i],   GMM_m_w_[j], inv_sum);	
+                                                GMM_d_w_[i],   GMM_m_w_[j], 
+                                                sum, inv_sum);	
       // calculate overlap
       double ov = get_overlap(GMM_d_m_[i], getPosition(j), pre_fact, inv_sum);
       // fill the neighbor list and auxiliary vectors
