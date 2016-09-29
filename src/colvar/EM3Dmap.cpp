@@ -420,7 +420,7 @@ void EM3Dmap::update_neighbor_list()
       // calculate overlap
       double ov = get_overlap(GMM_d_m_[i], getPosition(j), pre_fact, inv_sum);
       // fill the neighbor list and auxiliary vectors
-      if(ov >= nl_cutoff_){
+      if(ov >= nl_cutoff_ * ovdd_[i]){
         nl_l.push_back(k);
         fact_md_l.push_back(pre_fact);
         inv_cov_md_l.push_back(inv_sum);
@@ -464,7 +464,7 @@ void EM3Dmap::calculate_overlap(){
      update_neighbor_list();
      first_time_=false;
   }
-  
+
   // clean temporary vectors
   for(unsigned i=0; i<ovmd_.size(); ++i)     ovmd_[i] = 0.0;
   for(unsigned i=0; i<ovmd_der_.size(); ++i) ovmd_der_[i] = Vector(0,0,0);
