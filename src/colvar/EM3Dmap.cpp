@@ -50,12 +50,12 @@ private:
 
  // temperature in kbt
  double kbt_;
- // model GMM - weights and covariances
- vector<double>           GMM_m_w_;
- vector< VectorGeneric<9> > GMM_m_cov_;
+ // model GMM - weights and atom types
+ vector<double>   GMM_m_w_;
+ vector<unsigned> GMM_m_type_;
  // data GMM - means, weights, and covariances
- vector<Vector>           GMM_d_m_;
- vector<double>           GMM_d_w_;
+ vector<Vector>             GMM_d_m_;
+ vector<double>             GMM_d_w_;
  vector< VectorGeneric<9> > GMM_d_cov_;
  // overlaps 
  vector<double> ovmd_;
@@ -67,6 +67,9 @@ private:
  // constant quantity;
  double cfact_;
  
+ // auxiliary stuff
+ // list of atom sigmas
+ vector<double> s_map_;
  // list of prefactors for overlap between two components of model and data GMM
  // fact_md = w_m * w_d / (2pi)**1.5 / sqrt(det_md)
  vector< double > fact_md_;
@@ -89,6 +92,8 @@ private:
  // normalize GMM
  void normalize_GMM(vector<double> &w);
 
+ // get auxiliary stuff
+ void get_auxiliary_stuff();
  // get fact_md and inv_cov_md
  double get_prefactor_inverse (const VectorGeneric<9> &GMM_cov_0, const VectorGeneric<9> &GMM_cov_1,
         double &GMM_w_0, double &GMM_w_1, 
@@ -182,11 +187,18 @@ first_time_(true), serial_(false)
       double ov = get_self_overlap(i);
       ovdd_.push_back(ov);
   }
+  
+  // calculate auxiliary stuff
+  get_auxiliary_stuff();
+  
 
   // and prepare temporary vectors
   ovmd_.resize(GMM_d_w_.size());
   ene_der_.resize(GMM_d_w_.size());
   atom_der_.resize(GMM_m_w_.size());
+  
+  // clear things that are not needed anymore
+  GMM_d_cov_.clear();
 
   // request the atoms
   requestAtoms(atoms);
@@ -199,18 +211,28 @@ first_time_(true), serial_(false)
 void EM3Dmap::get_GMM_m(vector<AtomNumber> &atoms)
 {
   vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
-  VectorGeneric<9> cov;
 
   // map of atom types to A and B coefficients of scattering factor
   // f(s) = A * exp(-B*s**2)
   // B is in Angstrom squared
   // data from here
   // http://fg.oisin.rc-harwell.ac.uk/scm/loggerhead/cctbx/cctbx/view/head:/cctbx/eltbx/xray_scattering/n_gaussian_raw.cpp
-  map<string, double> A_map, B_map;
-  A_map["C"] = 5.96792806111; B_map["C"] = 14.8957682987;
-  A_map["O"] = 7.9652690671;  B_map["O"] = 9.0526662027;
-  A_map["N"] = 6.96715024214; B_map["N"] = 11.4372299305;
-  A_map["S"] = 15.911119329;  B_map["S"] = 10.8469011094;
+  map<string, double> w_map;
+  w_map["C"] = 5.96792806111; // type 0
+  w_map["O"] = 7.9652690671;  // type 1
+  w_map["N"] = 6.96715024214; // type 2
+  w_map["S"] = 15.911119329;  // type 3
+  // map between an atom type and an index
+  map<string, unsigned> type_map;
+  type_map["C"]=0;
+  type_map["O"]=1;
+  type_map["N"]=2;
+  type_map["S"]=3;
+  // fill in the sigma vector
+  s_map_.push_back(14.8957682987);
+  s_map_.push_back(9.0526662027);
+  s_map_.push_back(11.4372299305);
+  s_map_.push_back(10.8469011094);
   
   // check if MOLINFO line is present 
   if( moldat.size()==1 ){
@@ -230,18 +252,11 @@ void EM3Dmap::get_GMM_m(vector<AtomNumber> &atoms)
       }
       // check if key in map
       std::string type_s = std::string(1,type);
-      if(A_map.find(type_s) != A_map.end()){
-        // convert to sigma in nm
-        // the Gaussian in density (real) space is the FT of scattering factor
-        // f(r) = A * (pi/B)**1.5 * exp(-pi**2/B*r**2)
-        double s = sqrt ( 0.5 * B_map[type_s] ) / pi * 0.1;
-        // covariance matrix for spherical Gaussian
-        cov[0]=s*s; cov[1]=0.0; cov[2]=0.0;
-        cov[3]=0.0; cov[4]=s*s; cov[5]=0.0;
-        cov[6]=0.0; cov[7]=0.0; cov[8]=s*s;
-        GMM_m_cov_.push_back(cov);
+      if(w_map.find(type_s) != w_map.end()){
+        // save atom type
+        GMM_m_type_.push_back(type_map[type_s]);
         // this will be normalized to 1 in the final density
-        GMM_m_w_.push_back(A_map[type_s]); 
+        GMM_m_w_.push_back(w_map[type_s]); 
       } else {
         error("Wrong atom type "+type_s+" from atom name "+name+"\n"); 
       }
@@ -300,6 +315,46 @@ void EM3Dmap::normalize_GMM(vector<double> &w)
  {
    double norm = accumulate(w.begin(), w.end(), 0.0);
    for(unsigned i=0; i<w.size(); ++i) w[i] /= norm;
+ }
+ 
+ void EM3Dmap::get_auxiliary_stuff()
+ {
+  VectorGeneric<9> cov, sum, inv_sum;
+  // cycle on all atoms types
+  for(unsigned i=0; i<4; ++i){
+   // the Gaussian in density (real) space is the FT of scattering factor
+   // f(r) = A * (pi/B)**1.5 * exp(-pi**2/B*r**2)
+   double s = sqrt ( 0.5 * s_map_[i] ) / pi * 0.1;
+   // covariance matrix for spherical Gaussian
+   cov[0]=s*s; cov[1]=0.0; cov[2]=0.0;
+   cov[3]=0.0; cov[4]=s*s; cov[5]=0.0;
+   cov[6]=0.0; cov[7]=0.0; cov[8]=s*s;
+   // cycle on all data GMM
+   for(unsigned j=0; j<GMM_d_m_.size(); ++j){
+     // we need the sum of the covariance matrices
+     for(unsigned k=0; k<9; ++k) sum[k] = cov[k] + GMM_d_cov_[j][k];
+     // and to calculate its determinant
+     double det = sum[0]*(sum[4]*sum[8]-sum[5]*sum[7]);
+           det -= sum[1]*(sum[3]*sum[8]-sum[5]*sum[6]);
+           det += sum[2]*(sum[3]*sum[7]-sum[4]*sum[6]);
+     // the constant part of the prefactor is
+     double pre_fact =  cfact_ / sqrt(det);
+     // and its inverse
+     inv_sum[0] = (sum[4]*sum[8] - sum[5]*sum[7])/det;
+     inv_sum[1] = (sum[2]*sum[7] - sum[1]*sum[8])/det;
+     inv_sum[2] = (sum[1]*sum[5] - sum[2]*sum[4])/det;
+     inv_sum[3] = (sum[5]*sum[6] - sum[3]*sum[8])/det;
+     inv_sum[4] = (sum[0]*sum[8] - sum[2]*sum[6])/det;
+     inv_sum[5] = (sum[2]*sum[3] - sum[0]*sum[5])/det;
+     inv_sum[6] = (sum[3]*sum[7] - sum[4]*sum[6])/det;
+     inv_sum[7] = (sum[1]*sum[6] - sum[0]*sum[7])/det;
+     inv_sum[8] = (sum[0]*sum[4] - sum[1]*sum[3])/det;
+     // now we store the pre_fact and the inverse of the sum
+     fact_md_.push_back(pre_fact);
+     inv_cov_md_.push_back(inv_sum);    
+   } 
+  } 
+ 
  }
 
 // get prefactors
@@ -394,41 +449,34 @@ double EM3Dmap::get_overlap(const Vector &m_m, const Vector &d_m, double &fact_m
 
 void EM3Dmap::update_neighbor_list()
 {
-  // temporary stuff
-  VectorGeneric<9> sum;
-  VectorGeneric<9> inv_sum;
-  // clear old neighbor list and auxiliary vectors
-  nl_.clear(); fact_md_.clear(); inv_cov_md_.clear();
-  // local stuff
-  vector< VectorGeneric<9> > inv_cov_md_l;
+  // local neighbor list
   vector < unsigned > nl_l;
-  vector < double > fact_md_l;
-  // cycle on all overlaps
+  // clear old neighbor list
+  nl_.clear();
+  // cycle on all overlaps (in parallel)
   unsigned nover = GMM_d_w_.size() * GMM_m_w_.size();
   for(unsigned k=rank_; k<nover; k=k+size_){
       // get indexes
       unsigned i = k / GMM_m_w_.size();
       unsigned j = k % GMM_m_w_.size();
-      // call auxiliary method 
-      double pre_fact = get_prefactor_inverse(GMM_d_cov_[i], GMM_m_cov_[j], 
-                                                GMM_d_w_[i],   GMM_m_w_[j], 
-                                                sum, inv_sum);	
+      // get atom type
+      unsigned jtype = GMM_m_type_[j];
+      // get index in auxiliary lists
+      unsigned kaux = jtype * GMM_d_m_.size() + i;
+      // get prefactor and multiply by weights
+      double pre_fact = fact_md_[kaux] * GMM_d_w_[i] * GMM_m_w_[j];
       // calculate overlap
-      double ov = get_overlap(GMM_d_m_[i], getPosition(j), pre_fact, inv_sum);
+      double ov = get_overlap(GMM_d_m_[i], getPosition(j), pre_fact, inv_cov_md_[kaux]);
       // fill the neighbor list and auxiliary vectors
-      if(ov >= nl_cutoff_ * ovdd_[i]){
-        nl_l.push_back(k);
-        fact_md_l.push_back(pre_fact);
-        inv_cov_md_l.push_back(inv_sum);
-      }
+      if(ov >= nl_cutoff_ * ovdd_[i]) nl_l.push_back(k);
   }
   // find total dimension of neighborlist
   vector <int> recvcounts(size_, 0);
   recvcounts[rank_] = nl_l.size();
   comm.Sum(&recvcounts[0], size_);
   int tot_size = accumulate(recvcounts.begin(), recvcounts.end(), 0);
-  // resize stuff
-  nl_.resize(tot_size); fact_md_.resize(tot_size); inv_cov_md_.resize(tot_size);
+  // resize neighbor stuff
+  nl_.resize(tot_size);
   // calculate vector of displacement
   vector<int> disp(size_);
   disp[0] = 0;
@@ -437,15 +485,8 @@ void EM3Dmap::update_neighbor_list()
     rank_size += recvcounts[i];
     disp[i+1] = rank_size;
   }
-  // Allgather
-  comm.Allgatherv(&nl_l[0],      recvcounts[rank_], &nl_[0],      &recvcounts[0], &disp[0]);
-  comm.Allgatherv(&fact_md_l[0], recvcounts[rank_], &fact_md_[0], &recvcounts[0], &disp[0]);
-  // adapt for Vector generic
-  for(unsigned i=0; i<size_; ++i){
-   recvcounts[i] *= 9;
-   disp[i] *= 9;
-  }
-  comm.Allgatherv(&inv_cov_md_l[0][0], recvcounts[rank_], &inv_cov_md_[0][0], &recvcounts[0], &disp[0]);
+  // Allgather neighbor list
+  comm.Allgatherv(&nl_l[0], recvcounts[rank_], &nl_[0], &recvcounts[0], &disp[0]);
   // now resize derivatives
   ovmd_der_.resize(tot_size);
 }
@@ -470,9 +511,15 @@ void EM3Dmap::calculate_overlap(){
       // get indexes of data and model component
       unsigned id = nl_[i] / GMM_m_w_.size();
       unsigned im = nl_[i] % GMM_m_w_.size();
+      // get atom type
+      unsigned jtype = GMM_m_type_[im];
+      // get index in auxiliary lists
+      unsigned kaux = jtype * GMM_d_m_.size() + id;
+      // get prefactor and multiply by weights
+      double pre_fact = fact_md_[kaux] * GMM_d_w_[id] * GMM_m_w_[im];
       // add overlap with im component of model GMM
-      ovmd_[id] += get_overlap(GMM_d_m_[id], getPosition(im), fact_md_[i],
-                               inv_cov_md_[i], ovmd_der_[i]);
+      ovmd_[id] += get_overlap(GMM_d_m_[id], getPosition(im), pre_fact,
+                               inv_cov_md_[kaux], ovmd_der_[i]);
   }
   // if parallel, communicate stuff
   if(!serial_){
