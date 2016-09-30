@@ -52,11 +52,11 @@ private:
  double kbt_;
  // model GMM - weights and covariances
  vector<double>           GMM_m_w_;
- vector< Matrix<double> > GMM_m_cov_;
+ vector< VectorGeneric<9> > GMM_m_cov_;
  // data GMM - means, weights, and covariances
  vector<Vector>           GMM_d_m_;
  vector<double>           GMM_d_w_;
- vector< Matrix<double> > GMM_d_cov_;
+ vector< VectorGeneric<9> > GMM_d_cov_;
  // overlaps 
  vector<double> ovmd_;
  vector<double> ovdd_; 
@@ -90,9 +90,9 @@ private:
  void normalize_GMM(vector<double> &w);
 
  // get fact_md and inv_cov_md
- double get_prefactor_inverse (Matrix<double> &GMM_cov_0, Matrix<double> &GMM_cov_1,
+ double get_prefactor_inverse (VectorGeneric<9> &GMM_cov_0, VectorGeneric<9> &GMM_cov_1,
         double &GMM_w_0, double &GMM_w_1, 
-        Matrix<double> &sum, VectorGeneric<9> &inv_sum);
+        VectorGeneric<9> &sum, VectorGeneric<9> &inv_sum);
  // calculate self overlaps between data GMM components - ovdd_
  double get_self_overlap(unsigned id);
  // calculate overlap between two components
@@ -201,7 +201,7 @@ first_time_(true), serial_(false)
 void EM3Dmap::get_GMM_m(vector<AtomNumber> &atoms)
 {
   vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
-  Matrix <double> cov(3,3);
+  VectorGeneric<9> cov;
 
   // map of atom types to A and B coefficients of scattering factor
   // f(s) = A * exp(-B*s**2)
@@ -238,9 +238,9 @@ void EM3Dmap::get_GMM_m(vector<AtomNumber> &atoms)
         // f(r) = A * (pi/B)**1.5 * exp(-pi**2/B*r**2)
         double s = sqrt ( 0.5 * B_map[type_s] ) / pi * 0.1;
         // covariance matrix for spherical Gaussian
-        cov(0,0)=s*s; cov(0,1)=0.0; cov(0,2)=0.0;
-        cov(1,0)=0.0; cov(1,1)=s*s; cov(1,2)=0.0;
-        cov(2,0)=0.0; cov(2,1)=0.0; cov(2,2)=s*s;
+        cov[0]=s*s; cov[1]=0.0; cov[2]=0.0;
+        cov[3]=0.0; cov[4]=s*s; cov[5]=0.0;
+        cov[6]=0.0; cov[7]=0.0; cov[8]=s*s;
         GMM_m_cov_.push_back(cov);
         // this will be normalized to 1 in the final density
         GMM_m_w_.push_back(A_map[type_s]); 
@@ -258,7 +258,7 @@ void EM3Dmap::get_GMM_d(string GMM_file)
 {
  int idcomp;
  double w, m0, m1, m2;
- Matrix <double> cov(3,3);
+ VectorGeneric<9> cov;
  
  // open file
  IFile *ifile = new IFile();
@@ -269,15 +269,15 @@ void EM3Dmap::get_GMM_d(string GMM_file)
      ifile->scanField("Mean_0",m0);
      ifile->scanField("Mean_1",m1);
      ifile->scanField("Mean_2",m2);
-     ifile->scanField("Cov_00",cov(0,0));
-     ifile->scanField("Cov_01",cov(0,1));
-     ifile->scanField("Cov_02",cov(0,2));
-     ifile->scanField("Cov_10",cov(1,0));
-     ifile->scanField("Cov_11",cov(1,1));
-     ifile->scanField("Cov_12",cov(1,2));
-     ifile->scanField("Cov_20",cov(2,0));
-     ifile->scanField("Cov_21",cov(2,1));
-     ifile->scanField("Cov_22",cov(2,2));
+     ifile->scanField("Cov_00",cov[0]);
+     ifile->scanField("Cov_01",cov[1]);
+     ifile->scanField("Cov_02",cov[2]);
+     ifile->scanField("Cov_10",cov[3]);
+     ifile->scanField("Cov_11",cov[4]);
+     ifile->scanField("Cov_12",cov[5]);
+     ifile->scanField("Cov_20",cov[6]);
+     ifile->scanField("Cov_21",cov[7]);
+     ifile->scanField("Cov_22",cov[8]);
      // center of the Gaussian
      GMM_d_m_.push_back(Vector(m0,m1,m2));
      // covariance matrix
@@ -306,32 +306,29 @@ void EM3Dmap::normalize_GMM(vector<double> &w)
 
 // get prefactors
 double EM3Dmap::get_prefactor_inverse
-(Matrix<double> &GMM_cov_0, Matrix<double> &GMM_cov_1,
-           double &GMM_w_0, double &GMM_w_1, 
-           Matrix<double> &sum_0_1, VectorGeneric<9> &inv_sum)
+(VectorGeneric<9> &GMM_cov_0, VectorGeneric<9> &GMM_cov_1,
+ double &GMM_w_0, double &GMM_w_1, 
+ VectorGeneric<9> &sum_0_1, VectorGeneric<9> &inv_sum)
 {
  // we need the sum of the covariance matrices
- for(unsigned k1=0; k1<3; ++k1){ 
-  for(unsigned k2=0; k2<3; ++k2){ 
-     sum_0_1[k1][k2] = GMM_cov_0[k1][k2] + GMM_cov_1[k1][k2];
-  }
- }   
+ for(unsigned k=0; k<9; ++k) sum_0_1[k] = GMM_cov_0[k] + GMM_cov_1[k]; 
+    
  // and to calculate its determinant
- double det = sum_0_1[0][0]*(sum_0_1[1][1]*sum_0_1[2][2]-sum_0_1[1][2]*sum_0_1[2][1]);
-       det -= sum_0_1[0][1]*(sum_0_1[1][0]*sum_0_1[2][2]-sum_0_1[1][2]*sum_0_1[2][0]);
-       det += sum_0_1[0][2]*(sum_0_1[1][0]*sum_0_1[2][1]-sum_0_1[1][1]*sum_0_1[2][0]);
+ double det = sum_0_1[0]*(sum_0_1[4]*sum_0_1[8]-sum_0_1[5]*sum_0_1[7]);
+       det -= sum_0_1[1]*(sum_0_1[3]*sum_0_1[8]-sum_0_1[5]*sum_0_1[6]);
+       det += sum_0_1[2]*(sum_0_1[3]*sum_0_1[7]-sum_0_1[4]*sum_0_1[6]);
  // the prefactor is 
  double pre_fact =  cfact_ / sqrt(det) * GMM_w_0 * GMM_w_1;
  // and its inverse
- inv_sum[0] = (sum_0_1[1][1]*sum_0_1[2][2] - sum_0_1[1][2]*sum_0_1[2][1])/det;
- inv_sum[1] = (sum_0_1[0][2]*sum_0_1[2][1] - sum_0_1[0][1]*sum_0_1[2][2])/det;
- inv_sum[2] = (sum_0_1[0][1]*sum_0_1[1][2] - sum_0_1[0][2]*sum_0_1[1][1])/det;
- inv_sum[3] = (sum_0_1[1][2]*sum_0_1[2][0] - sum_0_1[1][0]*sum_0_1[2][2])/det;
- inv_sum[4] = (sum_0_1[0][0]*sum_0_1[2][2] - sum_0_1[0][2]*sum_0_1[2][0])/det;
- inv_sum[5] = (sum_0_1[0][2]*sum_0_1[1][0] - sum_0_1[0][0]*sum_0_1[1][2])/det;
- inv_sum[6] = (sum_0_1[1][0]*sum_0_1[2][1] - sum_0_1[1][1]*sum_0_1[2][0])/det;
- inv_sum[7] = (sum_0_1[0][1]*sum_0_1[2][0] - sum_0_1[0][0]*sum_0_1[2][1])/det;
- inv_sum[8] = (sum_0_1[0][0]*sum_0_1[1][1] - sum_0_1[0][1]*sum_0_1[1][0])/det;
+ inv_sum[0] = (sum_0_1[4]*sum_0_1[8] - sum_0_1[5]*sum_0_1[7])/det;
+ inv_sum[1] = (sum_0_1[2]*sum_0_1[7] - sum_0_1[1]*sum_0_1[8])/det;
+ inv_sum[2] = (sum_0_1[1]*sum_0_1[5] - sum_0_1[2]*sum_0_1[4])/det;
+ inv_sum[3] = (sum_0_1[5]*sum_0_1[6] - sum_0_1[3]*sum_0_1[8])/det;
+ inv_sum[4] = (sum_0_1[0]*sum_0_1[8] - sum_0_1[2]*sum_0_1[6])/det;
+ inv_sum[5] = (sum_0_1[2]*sum_0_1[3] - sum_0_1[0]*sum_0_1[5])/det;
+ inv_sum[6] = (sum_0_1[3]*sum_0_1[7] - sum_0_1[4]*sum_0_1[6])/det;
+ inv_sum[7] = (sum_0_1[1]*sum_0_1[6] - sum_0_1[0]*sum_0_1[7])/det;
+ inv_sum[8] = (sum_0_1[0]*sum_0_1[4] - sum_0_1[1]*sum_0_1[3])/det;
  // return pre-factor
  return pre_fact;
 }
@@ -341,7 +338,7 @@ double EM3Dmap::get_self_overlap(unsigned id)
 {
 
  double ov = 0.0;
- Matrix<double> sum(3,3);
+ VectorGeneric<9> sum;
  VectorGeneric<9> inv_sum;
  // start loop
  for(unsigned i=0; i<GMM_d_w_.size(); ++i){
@@ -403,7 +400,7 @@ double EM3Dmap::get_overlap(Vector m_m, Vector d_m, double fact_md,
 void EM3Dmap::update_neighbor_list()
 {
   // temporary stuff
-  Matrix<double> sum(3,3);
+  VectorGeneric<9> sum;
   VectorGeneric<9> inv_sum;
   // clear old neighbor list and auxiliary vectors
   nl_.clear(); fact_md_.clear(); inv_cov_md_.clear();
