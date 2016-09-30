@@ -774,11 +774,7 @@ void CS2Backbone::calculate()
     const unsigned psize = atom[s].size();
     vector<Vector> omp_deriv;
     if(camshift) omp_deriv.resize(getNumberOfAtoms(), Vector(0,0,0));
-    #ifdef __PLUMED_HAS_OMPSIMD
-    #pragma omp for simd reduction(+:score)
-    #else
     #pragma omp for reduction(+:score)
-    #endif
     // SKIP FIRST AND LAST RESIDUE OF EACH CHAIN
     for(unsigned a=1;a<psize-1;a++){
 
@@ -1126,11 +1122,7 @@ void CS2Backbone::update_neighb(){
   const unsigned chainsize = atom.size();
   for(unsigned s=0;s<chainsize;s++){
     const unsigned psize = atom[s].size();
-    #ifdef __PLUMED_HAS_OMPSIMD
-    #pragma omp parallel for simd num_threads(OpenMP::getNumThreads())
-    #else
     #pragma omp parallel for num_threads(OpenMP::getNumThreads())
-    #endif
     for(unsigned a=1;a<psize-1;a++){
       const unsigned boxsize = getNumberOfAtoms();
       atom[s][a].box_nb.clear();

@@ -161,8 +161,8 @@ class Histogram : public gridtools::ActionWithGrid {
 private:
   double ww;
   KernelFunctions* kernel;
-  vesselbase::ActionWithVessel* myvessel;
-  vesselbase::StoreDataVessel* stash;
+  std::vector<vesselbase::ActionWithVessel*> myvessels;
+  std::vector<vesselbase::StoreDataVessel*> stashes;
   gridtools::HistogramOnGrid* myhist; 
 public:
   static void registerKeywords( Keywords& keys );
@@ -192,19 +192,26 @@ Histogram::Histogram(const ActionOptions&ao):
 Action(ao),
 ActionWithGrid(ao),
 ww(0.0),
-kernel(NULL),
-myvessel(NULL),
-stash(NULL)
+kernel(NULL)
 {
   // Read in arguments 
-  std::string mlab; parse("DATA",mlab);
-  if( mlab.length()>0 ){
-     myvessel = plumed.getActionSet().selectWithLabel<ActionWithVessel*>(mlab);
-     if(!myvessel) error("action labelled " + mlab + " does not exist or is not an ActionWithVessel");
-     stash = myvessel->buildDataStashes( NULL );
-     log.printf("  for all base quantities calculated by %s \n",myvessel->getLabel().c_str() );
-     // Add the dependency
-     addDependency( myvessel );
+  std::vector<std::string> mlab; parseVector("DATA",mlab);
+  if( mlab.size()>0 ){
+     for(unsigned i=0;i<mlab.size();++i){
+         ActionWithVessel* myv = plumed.getActionSet().selectWithLabel<ActionWithVessel*>( mlab[i] );
+         if( !myv ) error("action labelled " + mlab[i] + " does not exist or is not an ActionWithVessel");
+         myvessels.push_back( myv ); stashes.push_back( myv->buildDataStashes( NULL ) );
+         // log.printf("  for all base quantities calculated by %s \n",myvessel->getLabel().c_str() );
+         // Add the dependency
+         addDependency( myv );
+     }
+     unsigned nvals = myvessels[0]->getFullNumberOfTasks();
+     for(unsigned i=1;i<mlab.size();++i){
+         if( nvals!=myvessels[i]->getFullNumberOfTasks() ) error("mismatched number of quantities calculated by actions input to histogram");
+     }
+     log.printf("  for all base quantities calculated by %s ", myvessels[0]->getLabel().c_str() );
+     for(unsigned i=1;i<mlab.size();++i) log.printf(", %s \n", myvessels[i]->getLabel().c_str() );
+     log.printf("\n");
   } else {
      std::vector<Value*> arg; parseArgumentList("ARG",arg);
      if(!arg.empty()){
@@ -220,7 +227,7 @@ stash(NULL)
 
   // Read stuff for grid
   unsigned narg = getNumberOfArguments();
-  if( myvessel ) narg=1;
+  if( myvessels.size()>0 ) narg=myvessels.size();
   std::vector<std::string> gmin( narg ), gmax( narg );
   parseVector("GRID_MIN",gmin); parseVector("GRID_MAX",gmax);
   std::vector<unsigned> nbin; parseVector("GRID_BIN",nbin);
@@ -231,11 +238,16 @@ stash(NULL)
 
   // Input of name and labels
   std::string vstring="COMPONENTS=" + getLabel();
-  if( myvessel ){
-     vstring += " COORDINATES=" + myvessel->getLabel();
+  if( myvessels.size()>0 ){
+     vstring += " COORDINATES=" + myvessels[0]->getLabel();
+     for(unsigned i=1;i<myvessels.size();++i) vstring +="," + myvessels[i]->getLabel();
      // Input for PBC
-     if( myvessel->isPeriodic() ) vstring+=" PBC=T";
+     if( myvessels[0]->isPeriodic() ) vstring+=" PBC=T";
      else vstring+=" PBC=F";
+     for(unsigned i=1;i<myvessels.size();++i){
+         if( myvessels[i]->isPeriodic() ) vstring+=",T";
+         else vstring+=",F";
+     }
   } else {
      vstring += " COORDINATES=" + getPntrToArgument(0)->getName();
      for(unsigned i=1;i<getNumberOfArguments();++i) vstring += "," + getPntrToArgument(i)->getName();
@@ -252,9 +264,9 @@ stash(NULL)
   mygrid->setBounds( gmin, gmax, nbin, gspacing ); 
   myhist = dynamic_cast<gridtools::HistogramOnGrid*>( mygrid ); 
   plumed_assert( myhist ); 
-  if( myvessel ){
+  if( myvessels.size()>0 ){
      // Create a task list
-     for(unsigned i=0;i<myvessel->getFullNumberOfTasks();++i) addTaskToList(i);
+     for(unsigned i=0;i<myvessels[0]->getFullNumberOfTasks();++i) addTaskToList(i);
      setAveragingAction( mygrid, true );
   } else {
      // Create a task list
@@ -266,22 +278,28 @@ stash(NULL)
 }
 
 unsigned Histogram::getNumberOfDerivatives(){ 
-  if( myvessel) return 1; 
+  if( myvessels.size()>0 ) return myvessels.size(); 
   return getNumberOfArguments(); 
 }
 
 unsigned Histogram::getNumberOfQuantities() const {
-  if( myvessel ) return 3;
+  if( myvessels.size()>0 ) return myvessels.size()+2;
   return 2;
 }
 
 void Histogram::prepareForAveraging(){
-  if( myvessel ){
+  if( myvessels.size()>0 ){
       deactivateAllTasks(); double norm=0;
-      std::vector<double> cvals( myvessel->getNumberOfQuantities() );
-      for(unsigned i=0;i<stash->getNumberOfStoredValues();++i){
-          taskFlags[i]=1; stash->retrieveSequentialValue(i, false, cvals );
-          norm += cvals[0];
+      for(unsigned i=0;i<stashes[0]->getNumberOfStoredValues();++i){
+          std::vector<double> cvals( myvessels[0]->getNumberOfQuantities() ); 
+          stashes[0]->retrieveSequentialValue( i, false, cvals ); 
+          unsigned itask=myvessels[0]->getActiveTask(i); double tnorm = cvals[0];
+          for(unsigned j=1;j<myvessels.size();++j){
+              if( myvessels[j]->getActiveTask(i)!=itask ) error("mismatched task identities in histogram suggests histogram is meaningless");
+              if( cvals.size()!=myvessels[j]->getNumberOfQuantities() ) cvals.resize( myvessels[j]->getNumberOfQuantities() );
+              stashes[j]->retrieveSequentialValue( i, false, cvals ); tnorm *= cvals[0];
+          }
+          norm += tnorm; taskFlags[i]=1;
       }
       lockContributors(); ww = cweight / norm;
   } else {
@@ -303,17 +321,23 @@ void Histogram::prepareForAveraging(){
   }
 }
 
-void Histogram::performOperations( const bool& from_update ){ if( !myvessel ) plumed_dbg_assert( !myhist->noDiscreteKernels() ); }
+void Histogram::performOperations( const bool& from_update ){ if( myvessels.size()==0 ) plumed_dbg_assert( !myhist->noDiscreteKernels() ); }
 
 void Histogram::finishAveraging(){
-  if( !myvessel ) delete kernel;
+  if( myvessels.size()==0 ) delete kernel;
 }
 
 void Histogram::compute( const unsigned& current, MultiValue& myvals ) const {  
-  if( myvessel ){
-      std::vector<double> cvals( myvessel->getNumberOfQuantities() );
-      stash->retrieveSequentialValue( current, false, cvals );
-      myvals.setValue( 0, cvals[0] ); myvals.setValue( 1, cvals[1] ); myvals.setValue( 2, ww );
+  if( myvessels.size()>0 ){
+      std::vector<double> cvals( myvessels[0]->getNumberOfQuantities() );
+      stashes[0]->retrieveSequentialValue( current, false, cvals );
+      double tnorm = cvals[0]; myvals.setValue( 1, cvals[1] ); 
+      for(unsigned i=1;i<myvessels.size();++i){
+          if( cvals.size()!=myvessels[i]->getNumberOfQuantities() ) cvals.resize( myvessels[i]->getNumberOfQuantities() );
+          stashes[i]->retrieveSequentialValue( current, false, cvals );
+          tnorm *= cvals[0]; myvals.setValue( 1+i, cvals[1] ); 
+      }
+      myvals.setValue( 0, tnorm ); myvals.setValue( 1+myvessels.size(), ww );
   } else {
       std::vector<Value*> vv( myhist->getVectorOfValues() );
       std::vector<double> val( getNumberOfArguments() ), der( getNumberOfArguments() ); 
