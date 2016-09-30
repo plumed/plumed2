@@ -90,16 +90,16 @@ private:
  void normalize_GMM(vector<double> &w);
 
  // get fact_md and inv_cov_md
- double get_prefactor_inverse (VectorGeneric<9> &GMM_cov_0, VectorGeneric<9> &GMM_cov_1,
+ double get_prefactor_inverse (const VectorGeneric<9> &GMM_cov_0, const VectorGeneric<9> &GMM_cov_1,
         double &GMM_w_0, double &GMM_w_1, 
         VectorGeneric<9> &sum, VectorGeneric<9> &inv_sum);
  // calculate self overlaps between data GMM components - ovdd_
  double get_self_overlap(unsigned id);
  // calculate overlap between two components
- double get_overlap(Vector m_m, Vector d_m, double fact_md,
-                    VectorGeneric<9> &inv_cov_md, Vector &ov_der);
- double get_overlap(Vector m_m, Vector d_m, double fact_md,
-                    VectorGeneric<9> &inv_cov_md);
+ double get_overlap(const Vector &m_m, const Vector &d_m, double &fact_md,
+                    const VectorGeneric<9> &inv_cov_md, Vector &ov_der);
+ double get_overlap(const Vector &m_m, const Vector &d_m, double &fact_md,
+                    const VectorGeneric<9> &inv_cov_md);
  // update the neighbor list
  void update_neighbor_list();
  // calculate overlap
@@ -123,8 +123,6 @@ void EM3Dmap::registerKeywords( Keywords& keys ){
   keys.add("optional","NL_CUTOFF","The cutoff in overlap for the neighbor list");
   keys.add("optional","NL_STRIDE","The frequency with which we are updating the neighbor list");
   componentsAreNotOptional(keys);
-  keys.addOutputComponent("ovmd", "COMPONENTS","overlap of the model with individual data GMM components");
-  keys.addOutputComponent("ovdd", "COMPONENTS","overlap between individual data GMM components");
 }
 
 EM3Dmap::EM3Dmap(const ActionOptions&ao):
@@ -306,7 +304,7 @@ void EM3Dmap::normalize_GMM(vector<double> &w)
 
 // get prefactors
 double EM3Dmap::get_prefactor_inverse
-(VectorGeneric<9> &GMM_cov_0, VectorGeneric<9> &GMM_cov_1,
+(const VectorGeneric<9> &GMM_cov_0, const VectorGeneric<9> &GMM_cov_1,
  double &GMM_w_0, double &GMM_w_1, 
  VectorGeneric<9> &sum_0_1, VectorGeneric<9> &inv_sum)
 {
@@ -336,7 +334,6 @@ double EM3Dmap::get_prefactor_inverse
 
 double EM3Dmap::get_self_overlap(unsigned id)
 {
-
  double ov = 0.0;
  VectorGeneric<9> sum;
  VectorGeneric<9> inv_sum;
@@ -353,45 +350,43 @@ double EM3Dmap::get_self_overlap(unsigned id)
  return ov;
 }
 
-double EM3Dmap::get_overlap(Vector m_m, Vector d_m, double fact_md,
-                            VectorGeneric<9> &inv_cov_md, Vector &ov_der)
+double EM3Dmap::get_overlap(const Vector &m_m, const Vector &d_m, double &fact_md,
+                            const VectorGeneric<9> &inv_cov_md, Vector &ov_der)
 {
-  // temporary stuff
-  Vector prod;
   // calculate vector difference m_m-d_m
-  Vector md = m_m - d_m;
+  double md_x = m_m[0] - d_m[0];
+  double md_y = m_m[1] - d_m[1];
+  double md_z = m_m[2] - d_m[2];
   // calculate product of transpose of md and inv_cov_md
-  prod[0]= md[0]*inv_cov_md[0]+md[1]*inv_cov_md[3]+md[2]*inv_cov_md[6];
-  prod[1]= md[0]*inv_cov_md[1]+md[1]*inv_cov_md[4]+md[2]*inv_cov_md[7];
-  prod[2]= md[0]*inv_cov_md[2]+md[1]*inv_cov_md[5]+md[2]*inv_cov_md[8];
+  double p_x = md_x*inv_cov_md[0]+md_y*inv_cov_md[3]+md_z*inv_cov_md[6];
+  double p_y = md_x*inv_cov_md[1]+md_y*inv_cov_md[4]+md_z*inv_cov_md[7];
+  double p_z = md_x*inv_cov_md[2]+md_y*inv_cov_md[5]+md_z*inv_cov_md[8];
   // calculate product of prod and md
-  double ov = 0.0;
-  for(unsigned i=0; i<3; ++i) ov += prod[i]*md[i];
+  double ov = md_x*p_x+md_y*p_y+md_z*p_z; 
   // final calculation
   ov = fact_md * exp(-0.5*ov);
   // derivatives
-  double x = md[0]*inv_cov_md[0] + md[1]*inv_cov_md[1] + md[2]*inv_cov_md[2];
-  double y = md[0]*inv_cov_md[1] + md[1]*inv_cov_md[4] + md[2]*inv_cov_md[5];
-  double z = md[0]*inv_cov_md[2] + md[1]*inv_cov_md[5] + md[2]*inv_cov_md[8];
+  double x = md_x*inv_cov_md[0] + md_y*inv_cov_md[1] + md_z*inv_cov_md[2];
+  double y = md_x*inv_cov_md[1] + md_y*inv_cov_md[4] + md_z*inv_cov_md[5];
+  double z = md_x*inv_cov_md[2] + md_y*inv_cov_md[5] + md_z*inv_cov_md[8];
   ov_der = ov * Vector(x, y, z); 
   return ov;
 }
 
-double EM3Dmap::get_overlap(Vector m_m, Vector d_m, double fact_md, 
-                            VectorGeneric<9> &inv_cov_md)
+double EM3Dmap::get_overlap(const Vector &m_m, const Vector &d_m, double &fact_md, 
+                            const VectorGeneric<9> &inv_cov_md)
                         
 {
-  // temporary stuff
-  Vector prod;
   // calculate vector difference m_m-d_m
-  Vector md = m_m - d_m;
+  double md_x = m_m[0] - d_m[0];
+  double md_y = m_m[1] - d_m[1];
+  double md_z = m_m[2] - d_m[2];
   // calculate product of transpose of md and inv_cov_md
-  prod[0]= md[0]*inv_cov_md[0]+md[1]*inv_cov_md[3]+md[2]*inv_cov_md[6];
-  prod[1]= md[0]*inv_cov_md[1]+md[1]*inv_cov_md[4]+md[2]*inv_cov_md[7];
-  prod[2]= md[0]*inv_cov_md[2]+md[1]*inv_cov_md[5]+md[2]*inv_cov_md[8];
+  double p_x = md_x*inv_cov_md[0]+md_y*inv_cov_md[3]+md_z*inv_cov_md[6];
+  double p_y = md_x*inv_cov_md[1]+md_y*inv_cov_md[4]+md_z*inv_cov_md[7];
+  double p_z = md_x*inv_cov_md[2]+md_y*inv_cov_md[5]+md_z*inv_cov_md[8];
   // calculate product of prod and md
-  double ov = 0.0;
-  for(unsigned i=0; i<3; ++i) ov += prod[i]*md[i];
+  double ov = md_x*p_x+md_y*p_y+md_z*p_z; 
   // final calculation
   ov = fact_md * exp(-0.5*ov);
   return ov;
