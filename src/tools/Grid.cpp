@@ -39,9 +39,9 @@ namespace PLMD{
 Grid::Grid(const std::string& funcl, std::vector<Value*> args, const vector<std::string> & gmin, 
            const vector<std::string> & gmax, const vector<unsigned> & nbin, bool dospline, bool usederiv, bool doclear){
 // various checks
- plumed_massert(args.size()==gmin.size(),"grid dimensions in input do not match number of arguments");
- plumed_massert(args.size()==nbin.size(),"grid dimensions in input do not match number of arguments");
- plumed_massert(args.size()==gmax.size(),"grid dimensions in input do not match number of arguments");
+ plumed_massert(args.size()==gmin.size(),"grid min dimensions in input do not match number of arguments");
+ plumed_massert(args.size()==nbin.size(),"number of bins on input do not match number of arguments");
+ plumed_massert(args.size()==gmax.size(),"grid max dimensions in input do not match number of arguments");
  unsigned dim=gmax.size(); 
  std::vector<std::string> names; 
  std::vector<bool> isperiodic; 
