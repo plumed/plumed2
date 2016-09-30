@@ -44,9 +44,11 @@ matrix:
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes CONFIG_FLAGS="--disable-external-lapack"
 # osx serial
   - os: osx
+    osx_image: xcode7.3
     env: PLUMED_CC=clang PLUMED_CXX=clang++ PLUMED_CXXFLAGS=-O3
 # osx parallel
   - os: osx
+    osx_image: xcode7.3
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3
 # osx serial macports
   - os: osx
