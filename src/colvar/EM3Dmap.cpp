@@ -191,7 +191,6 @@ first_time_(true), serial_(false)
   // calculate auxiliary stuff
   get_auxiliary_stuff();
   
-
   // and prepare temporary vectors
   ovmd_.resize(GMM_d_w_.size());
   ene_der_.resize(GMM_d_w_.size());
@@ -449,20 +448,23 @@ double EM3Dmap::get_overlap(const Vector &m_m, const Vector &d_m, double &fact_m
 
 void EM3Dmap::update_neighbor_list()
 {
+  // temp stuff
+  unsigned GMM_d_w_size = GMM_d_w_.size();
+  unsigned GMM_m_w_size = GMM_m_w_.size();
   // local neighbor list
   vector < unsigned > nl_l;
   // clear old neighbor list
   nl_.clear();
   // cycle on all overlaps (in parallel)
-  unsigned nover = GMM_d_w_.size() * GMM_m_w_.size();
+  unsigned nover = GMM_d_w_size * GMM_m_w_size;
   for(unsigned k=rank_; k<nover; k=k+size_){
       // get indexes
-      unsigned i = k / GMM_m_w_.size();
-      unsigned j = k % GMM_m_w_.size();
+      unsigned i = k / GMM_m_w_size;
+      unsigned j = k % GMM_m_w_size;
       // get atom type
       unsigned jtype = GMM_m_type_[j];
       // get index in auxiliary lists
-      unsigned kaux = jtype * GMM_d_m_.size() + i;
+      unsigned kaux = jtype * GMM_d_w_size + i;
       // get prefactor and multiply by weights
       double pre_fact = fact_md_[kaux] * GMM_d_w_[i] * GMM_m_w_[j];
       // calculate overlap
@@ -507,14 +509,16 @@ void EM3Dmap::calculate_overlap(){
   for(unsigned i=0; i<ovmd_der_.size(); ++i) ovmd_der_[i] = Vector(0,0,0);
   
   // we have to cycle over all model and data GMM components in the neighbor list
+  unsigned GMM_d_w_size = GMM_d_w_.size();
+  unsigned GMM_m_w_size = GMM_m_w_.size();
   for(unsigned i=rank_;i<nl_.size();i=i+size_) {
       // get indexes of data and model component
-      unsigned id = nl_[i] / GMM_m_w_.size();
-      unsigned im = nl_[i] % GMM_m_w_.size();
+      unsigned id = nl_[i] / GMM_m_w_size;
+      unsigned im = nl_[i] % GMM_m_w_size;
       // get atom type
       unsigned jtype = GMM_m_type_[im];
       // get index in auxiliary lists
-      unsigned kaux = jtype * GMM_d_m_.size() + id;
+      unsigned kaux = jtype * GMM_d_w_size + id;
       // get prefactor and multiply by weights
       double pre_fact = fact_md_[kaux] * GMM_d_w_[id] * GMM_m_w_[im];
       // add overlap with im component of model GMM
