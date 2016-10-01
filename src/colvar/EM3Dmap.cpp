@@ -59,7 +59,8 @@ private:
  vector< VectorGeneric<9> > GMM_d_cov_;
  // overlaps 
  vector<double> ovmd_;
- vector<double> ovdd_; 
+ vector<double> ovdd_;
+ double ov_cut_;
  // and derivatives
  vector<Vector> ovmd_der_;
  vector<Vector> atom_der_;
@@ -94,6 +95,8 @@ private:
 
  // get auxiliary stuff
  void get_auxiliary_stuff();
+ // get cutoff in overlap
+ void get_cutoff_ov();
  // get fact_md and inv_cov_md
  double get_prefactor_inverse (const VectorGeneric<9> &GMM_cov_0, const VectorGeneric<9> &GMM_cov_1,
         double &GMM_w_0, double &GMM_w_1, 
@@ -190,6 +193,9 @@ first_time_(true), serial_(false)
   
   // calculate auxiliary stuff
   get_auxiliary_stuff();
+  
+  // get cutoff for overlap calculation - avoid millions of exp calculations
+  get_cutoff_ov();
   
   // and prepare temporary vectors
   ovmd_.resize(GMM_d_w_.size());
@@ -348,8 +354,9 @@ void EM3Dmap::normalize_GMM(vector<double> &w)
      inv_sum[6] = (sum[3]*sum[7] - sum[4]*sum[6])/det;
      inv_sum[7] = (sum[1]*sum[6] - sum[0]*sum[7])/det;
      inv_sum[8] = (sum[0]*sum[4] - sum[1]*sum[3])/det;
-     // now we store the pre_fact and the inverse of the sum
+     // now we store the pre_fact
      fact_md_.push_back(pre_fact);
+     // and the inverse of the sum
      inv_cov_md_.push_back(inv_sum);    
    } 
   } 
@@ -385,25 +392,52 @@ double EM3Dmap::get_prefactor_inverse
  return pre_fact;
 }
 
+// this is to avoid the calculation of millions of exp function
+// when updating the neighbor list using calculate_overlap
+void EM3Dmap::get_cutoff_ov()
+{
+  // temporary stuff
+  unsigned GMM_d_w_size = GMM_d_w_.size();
+  // set ov_cut_ to a huge number
+  ov_cut_ = 1.0+9;  
+  // calculate minimum value needed for cutoff
+  for(unsigned i=0; i<GMM_d_w_.size(); ++i){
+   for(unsigned j=0; j<GMM_m_w_.size(); ++j){
+     // get atom type
+     unsigned jtype = GMM_m_type_[j];
+     // get index in auxiliary lists
+     unsigned kaux = jtype * GMM_d_w_size + i;
+     // get prefactor and multiply by weights
+     double pre_fact = fact_md_[kaux] * GMM_d_w_[i] * GMM_m_w_[j];
+     // calculate ov
+     double ov = nl_cutoff_ * ovdd_[i] / pre_fact;
+     // check
+     if(ov < ov_cut_) ov_cut_ = ov;
+   }
+  }
+  // set cutoff
+  ov_cut_ = -2.0 * std::log(ov_cut_);
+}
 
 double EM3Dmap::get_self_overlap(unsigned id)
 {
  double ov = 0.0;
- VectorGeneric<9> sum;
- VectorGeneric<9> inv_sum;
+ VectorGeneric<9> sum, inv_sum;
+ Vector ov_der;
  // start loop
  for(unsigned i=0; i<GMM_d_w_.size(); ++i){
    // call auxiliary method
    double pre_fact = get_prefactor_inverse(GMM_d_cov_[id], GMM_d_cov_[i], 
                                              GMM_d_w_[id],   GMM_d_w_[i], sum, inv_sum); 
    // calculate overlap
-   double ov_tmp = get_overlap(GMM_d_m_[id], GMM_d_m_[i], pre_fact, inv_sum);
+   double ov_tmp = get_overlap(GMM_d_m_[id], GMM_d_m_[i], pre_fact, inv_sum, ov_der);
    // add to overlap
    ov += ov_tmp;
  }
  return ov;
 }
 
+// version with derivatives
 double EM3Dmap::get_overlap(const Vector &m_m, const Vector &d_m, double &fact_md,
                             const VectorGeneric<9> &inv_cov_md, Vector &ov_der)
 {
@@ -427,6 +461,7 @@ double EM3Dmap::get_overlap(const Vector &m_m, const Vector &d_m, double &fact_m
   return ov;
 }
 
+// fast version without derivatives and cutoff used for neighbor list
 double EM3Dmap::get_overlap(const Vector &m_m, const Vector &d_m, double &fact_md, 
                             const VectorGeneric<9> &inv_cov_md)
                         
@@ -442,7 +477,11 @@ double EM3Dmap::get_overlap(const Vector &m_m, const Vector &d_m, double &fact_m
   // calculate product of prod and md
   double ov = md_x*p_x+md_y*p_y+md_z*p_z; 
   // final calculation
-  ov = fact_md * exp(-0.5*ov);
+  if( ov > ov_cut_ ){ 
+    ov = 0.0;
+  } else { 
+    ov = fact_md * exp(-0.5*ov);
+  }
   return ov;
 }
 
