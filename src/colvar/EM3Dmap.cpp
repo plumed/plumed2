@@ -92,7 +92,9 @@ private:
  void get_GMM_d(string gmm_file);
  // normalize GMM
  void normalize_GMM(vector<double> &w);
-
+ // check GMM data
+ void check_GMM_d(VectorGeneric<9> &cov, double w);
+ 
  // get auxiliary stuff
  void get_auxiliary_stuff();
  // get cutoff in overlap
@@ -276,6 +278,20 @@ void EM3Dmap::get_GMM_m(vector<AtomNumber> &atoms)
   }
 }
 
+	
+void EM3Dmap::check_GMM_d(VectorGeneric<9> &cov, double w)
+{
+ // check if symmetric
+ if((cov[1]!=cov[3]) || (cov[2]!=cov[6]) || (cov[5]!=cov[7]))
+  error("check data GMM: covariance matrix is not symmetric");
+ 
+ // check if positive defined 
+ 
+ // check weight is positive
+ if(w<=0.0) error("check data GMM: weight must be positive");
+}
+
+
 // read GMM data file in PLUMED format:
 void EM3Dmap::get_GMM_d(string GMM_file)
 {
@@ -301,6 +317,8 @@ void EM3Dmap::get_GMM_d(string GMM_file)
      ifile->scanField("Cov_20",cov[6]);
      ifile->scanField("Cov_21",cov[7]);
      ifile->scanField("Cov_22",cov[8]);
+     // check input
+     check_GMM_d(cov, w);
      // center of the Gaussian
      GMM_d_m_.push_back(Vector(m0,m1,m2));
      // covariance matrix
@@ -375,14 +393,16 @@ double EM3Dmap::get_prefactor_inverse
  VectorGeneric<9> &sum_0_1, VectorGeneric<9> &inv_sum)
 {
  // we need the sum of the covariance matrices
- for(unsigned k=0; k<9; ++k) sum_0_1[k] = GMM_cov_0[k] + GMM_cov_1[k]; 
-    
+ for(unsigned k=0; k<9; ++k) sum_0_1[k] = GMM_cov_0[k] + GMM_cov_1[k];
+  
  // and to calculate its determinant
  double det = sum_0_1[0]*(sum_0_1[4]*sum_0_1[8]-sum_0_1[5]*sum_0_1[7]);
        det -= sum_0_1[1]*(sum_0_1[3]*sum_0_1[8]-sum_0_1[5]*sum_0_1[6]);
        det += sum_0_1[2]*(sum_0_1[3]*sum_0_1[7]-sum_0_1[4]*sum_0_1[6]);
+      
  // the prefactor is 
  double pre_fact =  cfact_ / sqrt(det) * GMM_w_0 * GMM_w_1;
+
  // and its inverse
  inv_sum[0] = (sum_0_1[4]*sum_0_1[8] - sum_0_1[5]*sum_0_1[7])/det;
  inv_sum[1] = (sum_0_1[2]*sum_0_1[7] - sum_0_1[1]*sum_0_1[8])/det;
