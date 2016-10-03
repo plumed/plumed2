@@ -10,6 +10,8 @@
 *.dll
 *.sw?
 *.exe
+*.gcda
+*.gcno
 a.out
 makefile.dep
 /Makefile.conf

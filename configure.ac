@@ -162,6 +162,7 @@ AC_ARG_ENABLE([modules],
 PLUMED_CONFIG_ENABLE([doc],[doc],[documentation],[yes])
 PLUMED_CONFIG_ENABLE([pdfdoc],[pdfdoc],[pdf version of the manual],[no])
 PLUMED_CONFIG_ENABLE([debug],[debug],[debugging],[no])
+PLUMED_CONFIG_ENABLE([gcov],[gcov],[gcov to estimate code coverage],[no])
 PLUMED_CONFIG_ENABLE([basic_warnings],[basic-warnings],[basic warnings],[yes])
 PLUMED_CONFIG_ENABLE([fussy],[fussy],[fussy warnings],[no])
 PLUMED_CONFIG_ENABLE([debug_glibcxx],[debug-glibcxx],[enable boundary check],[no])
@@ -257,6 +258,14 @@ fi
 if test $debug == true
 then
   PLUMED_CHECK_CXXFLAG([-g])
+fi
+
+if test $gcov == true
+then
+  PLUMED_CHECK_CXXFLAG([--coverage])
+  CFLAGS="$CFLAGS --coverage"
+  LDFLAGS="$CFLAGS --coverage"
+  STATIC_LIBS="$STATIC_LIBS --coverage"
 fi
 
 if test $fussy == true

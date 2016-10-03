@@ -131,4 +131,5 @@ Fixes since 2.3b. Relevant things could be merged in the changelog above when we
 - (for developers) A script is available to check if source code complies plumed standard. Notice that this script is run together with cppcheck on travis-ci.
 - (for developers) Cppcheck on travis-ci has been updated to 1.75. Several small issues triggering errors on 1.75 were fixed (e.g. structures passed by value
    are now passed by const ref) and false positives marked as such.
+- (for developers) Added coverage scan.
 */
