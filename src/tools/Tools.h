@@ -110,6 +110,8 @@ public:
   static bool parseVector(std::vector<std::string>&line,const std::string&key,std::vector<T>&val);
 /// Find a keyword without arguments on the input line
   static bool parseFlag(std::vector<std::string>&line,const std::string&key,bool&val);
+/// Find a keyword on the input line, just reporting if it exists or not
+  static bool findKeyword(const std::vector<std::string>&line,const std::string&key);
 /// Interpret atom ranges
   static void interpretRanges(std::vector<std::string>&);
 /// Remove duplicates from a vector of type T 

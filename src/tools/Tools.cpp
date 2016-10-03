@@ -321,5 +321,14 @@ bool Tools::startWith(const std::string & full,const std::string &start){
   return (full.substr(0,start.length())==start);
 }
 
+bool Tools::findKeyword(const std::vector<std::string>&line,const std::string&key){
+  const std::string search(key+"=");
+  for(vector<string>::const_iterator p=line.begin();p!=line.end();++p){
+    if(startWith(*p,search)) return true;
+  }
+  return false;
+}
+
+
 
 }
