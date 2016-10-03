@@ -285,7 +285,13 @@ void EM3Dmap::check_GMM_d(VectorGeneric<9> &cov, double w)
  if((cov[1]!=cov[3]) || (cov[2]!=cov[6]) || (cov[5]!=cov[7]))
   error("check data GMM: covariance matrix is not symmetric");
  
- // check if positive defined 
+ // check if positive defined, by calculating the 3 leading principal minors
+ double pm1 = cov[0]; 
+ double pm2 = cov[0]*cov[4]-cov[1]*cov[3];
+ double pm3 = cov[0]*(cov[4]*cov[8]-cov[5]*cov[7])-cov[1]*(cov[3]*cov[8]-cov[5]*cov[6])+cov[2]*(cov[3]*cov[7]-cov[4]*cov[6]);
+ // apply Sylvester’s criterion
+ if(pm1<=0.0 || pm2<=0.0 || pm3<=0.0)
+  error("check data GMM: covariance matrix is not positive defined");
  
  // check weight is positive
  if(w<=0.0) error("check data GMM: weight must be positive");
