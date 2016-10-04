@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,6 +69,13 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+/* PLUMED */
+#include "../../../Plumed.h"
+int    plumedswitch=0;
+plumed plumedmain;
+void(*plumedcmd)(plumed,const char*,const void*)=NULL;
+/* END PLUMED */
+
 
 void ns(FILE              *fp,
         t_forcerec        *fr,
@@ -476,8 +483,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                     *dvdlt_q  = 0;
                     *dvdlt_lj = 0;
 
-                    ewald_LRcorrection(fr->excl_load[t], fr->excl_load[t+1],
-                                       cr, t, fr,
+                    ewald_LRcorrection(md->homenr, cr, nthreads, t, fr,
                                        md->chargeA, md->chargeB,
                                        md->sqrt_c6A, md->sqrt_c6B,
                                        md->sigmaA, md->sigmaB,
@@ -668,6 +674,13 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         pr_rvecs(debug, 0, "fshift after bondeds", fr->fshift, SHIFTS);
     }
 
+    /* PLUMED */
+    if(plumedswitch){
+      int plumedNeedsEnergy;
+      (*plumedcmd)(plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
+      if(!plumedNeedsEnergy) (*plumedcmd)(plumedmain,"performCalc",NULL);
+    }
+    /* END PLUMED */
 }
 
 void init_enerdata(int ngener, int n_lambda, gmx_enerdata_t *enerd)
