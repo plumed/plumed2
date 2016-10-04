@@ -1,4 +1,4 @@
-USE=core tools reference vesselbase gridtools
+USE=core tools reference vesselbase gridtools multicolvar
 
 #generic makefile
 include ../maketools/make.module

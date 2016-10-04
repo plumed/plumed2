@@ -50,7 +50,13 @@ private:
  std::vector<unsigned> nbin;
 /// The grid point that was requested last by getGridPointCoordinates
  unsigned currentGridPoint;
+/// Is forced
+ bool wasforced;
+/// The forces that will be output at the end of the calculation
+ std::vector<double> finalForces;
 protected:
+/// Forces acting on grid elements
+ std::vector<double> forces;
 /// Do we have derivatives
  bool noderiv;
 /// The names of the various columns in the grid file
@@ -140,6 +146,8 @@ public:
  double getGridExtent( const unsigned& i ) const ;
 /// Copy data from the action into the grid
  virtual void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
+/// Finish the calculation
+ virtual void finish( const std::vector<double>& buffer );
 /// This ensures that Gaussian cube fies are in correct units
  void setCubeUnits( const double& units );
 /// This ensures that Gaussian cube files are in correct units
@@ -154,6 +162,14 @@ public:
  void activateThesePoints( const std::vector<bool>& to_activate );
 /// Is this point active
  bool inactive( const unsigned& ip ) const ;
+/// This retrieves the final force
+ virtual void getFinalForces( const std::vector<double>& buffer, std::vector<double>& finalForces ){ plumed_error(); }
+/// Apply the forces
+ void setForce( const std::vector<double>& inforces ); 
+/// Was a force added to the grid
+ bool wasForced() const ;
+/// And retrieve the forces
+ bool applyForce( std::vector<double>& fforces );
 };
 
 inline

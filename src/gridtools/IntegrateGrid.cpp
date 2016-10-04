@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,39 +19,35 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ActionPilot.h"
+#include "core/ActionRegister.h"
+#include "ActionWithIntegral.h"
 
-using namespace std;
-namespace PLMD{
+namespace PLMD {
+namespace gridtools {
 
-void ActionPilot::registerKeywords(Keywords& keys){
+class IntegrateGrid : public ActionWithIntegral {
+public:
+  static void registerKeywords( Keywords& keys );
+  explicit IntegrateGrid(const ActionOptions&ao);
+  void compute( const unsigned& current, MultiValue& myvals ) const ;
+};
+
+PLUMED_REGISTER_ACTION(IntegrateGrid,"INTEGRATE_GRID")
+
+void IntegrateGrid::registerKeywords( Keywords& keys ){
+  ActionWithIntegral::registerKeywords( keys );
 }
 
-ActionPilot::ActionPilot(const ActionOptions&ao):
+IntegrateGrid::IntegrateGrid(const ActionOptions&ao):
 Action(ao),
-stride(1)
+ActionWithIntegral(ao)
 {
-  if( keywords.exists("STRIDE") ){
-     parse("STRIDE",stride);
-     if( !keywords.style("STRIDE","hidden") ) log.printf("  with stride %d\n",stride);
-  } else {
-     stride=0;
-  }
 }
 
-bool ActionPilot::onStep()const{
-  if( stride>0 ) return getStep()%stride==0;
-  return false;
-}
-
-int ActionPilot::getStride()const{
-  return stride;
-}
-
-void ActionPilot::setStride( const int& n ){
-  stride=n;
+void IntegrateGrid::compute( const unsigned& current, MultiValue& myvals ) const {
+  myvals.setValue( 0, 1.0 ); myvals.setValue( 1, getVolume()*getFunctionValue( current ) );
+  if( !doNotCalculateDerivatives() ) myvals.addDerivative( 1, current, getVolume() );
 }
 
 }
-
-
+}

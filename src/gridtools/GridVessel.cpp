@@ -38,7 +38,8 @@ AveragingVessel(da),
 bounds_set(false),
 cube_units(1.0),
 noderiv(false),
-npoints(0)
+npoints(0),
+wasforced(false)
 {
   std::vector<std::string> compnames; parseVector("COMPONENTS",compnames);
   std::vector<std::string> coordnames; parseVector("COORDINATES",coordnames);
@@ -120,7 +121,8 @@ std::string GridVessel::description(){
 
 void GridVessel::resize(){
   plumed_massert( nper>0, "Number of datapoints at each grid point has not been set");
-  resizeBuffer( getNumberOfBufferPoints()*nper ); setDataSize( npoints*nper ); 
+  resizeBuffer( getNumberOfBufferPoints()*nper + 1 + 2*getAction()->getNumberOfDerivatives() ); 
+  setDataSize( npoints*nper ); forces.resize( npoints );
   if( active.size()!=npoints) active.resize( npoints, true );
 }
 
@@ -203,6 +205,11 @@ void GridVessel::setGridElement( const unsigned& ipoint, const unsigned& jelemen
 void GridVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
   plumed_dbg_assert( myvals.getNumberOfValues()==(nper+1) );
   for(unsigned i=0;i<nper;++i) buffer[bufstart + nper*current + i] += myvals.get(i+1);
+}
+
+void GridVessel::finish( const std::vector<double>& buffer ){
+  if( wasforced ) getFinalForces( buffer, finalForces );
+  else AveragingVessel::finish( buffer );
 }
 
 double GridVessel::getGridElement( const std::vector<unsigned>& indices, const unsigned& jelement ) const {
@@ -342,6 +349,22 @@ double GridVessel::getValueAndDerivatives( const std::vector<double>& x, const u
 void GridVessel::activateThesePoints( const std::vector<bool>& to_activate ){
   plumed_dbg_assert( to_activate.size()==npoints );
   for(unsigned i=0;i<npoints;++i) active[i]=to_activate[i];
+}
+
+void GridVessel::setForce( const std::vector<double>& inforces ){
+  plumed_dbg_assert( inforces.size()==npoints );
+  wasforced=true; for(unsigned i=0;i<npoints;++i) forces[i]=inforces[i];
+}
+
+bool GridVessel::wasForced() const {
+  return wasforced;
+}
+
+bool GridVessel::applyForce( std::vector<double>& fforces ){
+  plumed_dbg_assert( fforces.size()==finalForces.size() ); 
+  if( !wasforced ) return false;
+  for(unsigned i=0;i<finalForces.size();++i) fforces[i]=finalForces[i]; 
+  wasforced=false; return true;
 }
 
 }

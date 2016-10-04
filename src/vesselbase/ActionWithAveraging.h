@@ -53,19 +53,21 @@ friend class AveragingVessel;
 private:
 /// The vessel which is used to compute averages
   AveragingVessel* myaverage;
-/// This ensures runAllTasks is used
-  bool useRunAllTasks;
-/// The frequency with which to clear the grid
-  unsigned clearstride;
 /// The weights we are going to use for reweighting
   std::vector<Value*> weights;
 /// Are we accumulated the unormalized quantity
   bool unormalised;
 protected:
+/// This ensures runAllTasks is used
+  bool useRunAllTasks;
+/// The frequency with which to clear the grid
+  unsigned clearstride;
 /// The current weight and its logarithm
   double lweight, cweight;
 /// Set the averaging action
   void setAveragingAction( AveragingVessel* av_vessel, const bool& usetasks );
+/// Check if we are using the normalization condition when calculating this quantity
+  bool noNormalization() const ;
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithAveraging( const ActionOptions& );
@@ -76,8 +78,6 @@ public:
   unsigned getNumberOfArguments() const ;
 /// Overwrite ActionWithArguments getArguments() so that we don't return the bias
   std::vector<Value*> getArguments();  
-  void calculate(){}
-  void apply(){}
   void update();
 /// This does the clearing of the action
   virtual void clearAverage();
@@ -99,6 +99,11 @@ std::vector<Value*> ActionWithAveraging::getArguments(){
   std::vector<Value*> arg_vals( ActionWithArguments::getArguments() );
   for(unsigned i=0;i<weights.size();++i) arg_vals.erase(arg_vals.end()-1);
   return arg_vals;
+}
+
+inline
+bool ActionWithAveraging::noNormalization() const {
+  return unormalised;
 }
 
 }
