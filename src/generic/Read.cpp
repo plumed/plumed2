@@ -198,7 +198,7 @@ unsigned Read::getNumberOfDerivatives(){
 
 void Read::turnOnDerivatives(){
   if( !ignore_forces ) error("cannot calculate derivatives for colvars that are read in from a file.  If you are postprocessing and "
-                             "these forces do not matter add the flag INGORE_FORCES to all READ actions");
+                             "these forces do not matter add the flag IGNORE_FORCES to all READ actions");
 }
 
 void Read::prepare(){
