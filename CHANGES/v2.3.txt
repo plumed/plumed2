@@ -128,7 +128,9 @@ Fixes since 2.3b. Relevant things could be merged in the changelog above when we
 - Tutorials have been (partially) updated to reflect some of the changes in the syntax
 - gromacs 5.1.x patch updated to 5.1.4
 - When using \ref METAD with file-based multple walkers and parallel jobs (i.e. mpirun) extra suffix is not added (thanks to Marco De La Pierre).
+- Parser now reports errors when passing numbers that cannot be parsed instead of silently replacing their default value. See \issue{104}.
 - (for developers) A script is available to check if source code complies plumed standard. Notice that this script is run together with cppcheck on travis-ci.
 - (for developers) Cppcheck on travis-ci has been updated to 1.75. Several small issues triggering errors on 1.75 were fixed (e.g. structures passed by value
    are now passed by const ref) and false positives marked as such.
+- (for developers) Added coverage scan.
 */
