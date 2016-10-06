@@ -975,11 +975,11 @@ void Metainference::update() {
 void Metainference::calculate(){
   double norm = 0.0;
   double fact = 0.0;
-  double idof = 1.0;
+  double idof = 0.0;
   double dnrep = static_cast<double>(nrep_);
 
-  // calculate the weights either from BIAS 
   if(do_reweight){
+    // calculate the weights either from BIAS 
     vector<double> bias(nrep_,0);
     if(master){
       bias[replica_] = getArgument(narg); 
@@ -987,18 +987,17 @@ void Metainference::calculate(){
     }
     comm.Sum(&bias[0], nrep_);
     const double maxbias = *(std::max_element(bias.begin(), bias.end()));
-    double n2=0.;
     for(unsigned i=0; i<nrep_; ++i){
       bias[i] = exp((bias[i]-maxbias)/kbt_); 
       norm += bias[i];
-      n2 += bias[i]*bias[i];
     }
+    for(unsigned i=0; i<nrep_; ++i) idof += bias[i]*bias[i]/(norm*norm);
     fact = bias[replica_]/norm;
-    idof = 1./(1. - n2/(norm*norm));
-  // or arithmetic ones
   } else {
+    // or arithmetic ones
     norm = dnrep; 
     fact = 1.0/norm; 
+    for(unsigned i=0; i<nrep_; ++i) idof += fact*fact;
   }
 
   vector<double> mean(narg,0);
@@ -1037,6 +1036,9 @@ void Metainference::calculate(){
     valueSigmaMean[0]->set(sigma_mean_[0]);
   }
 
+  // correct sigma_mean for the weighted average effect
+  for(unsigned i=0;i<sigma_mean_.size();++i) sigma_mean_[i] *= sqrt(dnrep*idof);
+
   /* MONTE CARLO */
   const long int step = getStep();
   if(step%MCstride_==0&&!getExchangeStep()) doMonteCarlo(mean);
@@ -1044,12 +1046,13 @@ void Metainference::calculate(){
   // write status file
   if(write_stride_>0&& (step%write_stride_==0 || getCPT()) ) writeStatus();
   
-  /* fix sigma_mean_ for the weighted average and the scaling factor */
-  double modifier = scale_*sqrt(idof);
+  /* fix sigma_mean_ for the scaling factor */
+  double modifier = scale_;
   /* fix sigma_mean_ for the effect of large forces */
   if(do_optsigmamean_==2) modifier *= sm_mod_;
-  valueRSigmaMean->set(modifier);
   for(unsigned i=0;i<sigma_mean_.size();++i) sigma_mean_[i] *= modifier;
+
+  valueRSigmaMean->set(modifier*sqrt(dnrep*idof));
   
   // calculate bias and forces
   double ene = 0; 
