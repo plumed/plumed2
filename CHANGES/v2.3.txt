@@ -127,6 +127,7 @@ Fixes since 2.3b. Relevant things could be merged in the changelog above when we
 - \ref PUCKERING now supports 6 membered rings.
 - Tutorials have been (partially) updated to reflect some of the changes in the syntax
 - gromacs 5.1.x patch updated to 5.1.4
+- LAMMPS patch updated to support multiple walkers and report plumed bias to LAMMPS (thanks to Pablo Piaggi).
 - When using \ref METAD with file-based multple walkers and parallel jobs (i.e. mpirun) extra suffix is not added (thanks to Marco De La Pierre).
 - Parser now reports errors when passing numbers that cannot be parsed instead of silently replacing their default value. See \issue{104}.
 - (for developers) A script is available to check if source code complies plumed standard. Notice that this script is run together with cppcheck on travis-ci.

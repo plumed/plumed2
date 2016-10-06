@@ -875,6 +875,7 @@ last_step_warn_grid(0)
       if(r>0) gridfilename_="/dev/null";
       gridfile_.enforceSuffix("");
     }
+    if(mw_n_>1) gridfile_.enforceSuffix("");
     gridfile_.open(gridfilename_);
   }
 
