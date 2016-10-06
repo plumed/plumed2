@@ -652,23 +652,23 @@ void PlumedMain::justCalculate(){
   int iaction=0;
 // calculate the active actions in order (assuming *backward* dependence)
   for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();++p){
-    std::string actionNumberLabel;
-    if(detailedTimers){
-      Tools::convert(iaction,actionNumberLabel);
-      actionNumberLabel="4A "+actionNumberLabel+" "+(*p)->getLabel();
-      stopwatch.start(actionNumberLabel);
-    }
-    ActionWithValue*av=dynamic_cast<ActionWithValue*>(*p);
-    ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(*p);
-    {
-      if(av) av->clearInputForces();
-      if(av) av->clearDerivatives();
-    }
-    {
-      if(aa) aa->clearOutputForces();
-      if(aa) if(aa->isActive()) aa->retrieveAtoms();
-    }
     if((*p)->isActive()){
+      std::string actionNumberLabel;
+      if(detailedTimers){
+        Tools::convert(iaction,actionNumberLabel);
+        actionNumberLabel="4A "+actionNumberLabel+" "+(*p)->getLabel();
+        stopwatch.start(actionNumberLabel);
+      }
+      ActionWithValue*av=dynamic_cast<ActionWithValue*>(*p);
+      ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(*p);
+      {
+        if(av) av->clearInputForces();
+        if(av) av->clearDerivatives();
+      }
+      {
+        if(aa) aa->clearOutputForces();
+        if(aa) if(aa->isActive()) aa->retrieveAtoms();
+      }
       if((*p)->checkNumericalDerivatives()) (*p)->calculateNumericalDerivatives();
       else (*p)->calculate();
       // This retrieves components called bias 
@@ -677,9 +677,8 @@ void PlumedMain::justCalculate(){
       if(av)av->setGradientsIfNeeded();	
       ActionWithVirtualAtom*avv=dynamic_cast<ActionWithVirtualAtom*>(*p);
       if(avv)avv->setGradientsIfNeeded();	
+      if(detailedTimers) stopwatch.stop(actionNumberLabel);
     }
-
-    if(detailedTimers) stopwatch.stop(actionNumberLabel);
     iaction++;
   }
   stopwatch.stop("4 Calculating (forward loop)");
