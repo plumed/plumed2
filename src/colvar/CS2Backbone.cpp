@@ -115,11 +115,9 @@ in NMR driven Metadynamics \cite Granata:2013dk:
 \verbatim
 whole: GROUP ATOMS=2612-2514:-1,961-1:-1,2466-962:-1,2513-2467:-1
 WHOLEMOLECULES ENTITY0=whole
-cs: CS2BACKBONE ATOMS=1-2612 NRES=176 DATA=../data/ TEMPLATE=template.pdb NEIGH_FREQ=10
-score: STATS ARG=(cs\.hn_.*),(cs\.nh_.*),(cs\.ca_.*),(cs\.cb_.*),(cs\.co_.*),(cs\.ha_.*) PARARG=(cs\.exphn_.*),(cs\.expnh_.*),(cs\.expca_.*),(cs\.expcb.*),(cs\.expco_.*),(cs\.expha_.*) SQDEVSUM  
-metad: METAD ARG=score.sqdevsum ...
-PRINT ARG=(cs\.hn_.*),(cs\.nh_.*),(cs\.ca_.*),(cs\.cb_.*),(cs\.co_.*),(cs\.ha_.*) FILE=CS.dat STRIDE=100 
-PRINT ARG=score FILE=COLVAR STRIDE=100 
+cs: CS2BACKBONE ATOMS=1-2612 NRES=176 DATA=../data/ TEMPLATE=template.pdb CAMSHIFT 
+metad: METAD ARG=cs HEIGHT=0.5 SIGMA=0.1 PACE=200 BIASFACTOR=10
+PRINT ARG=cs,metad.bias FILE=COLVAR STRIDE=100 
 \endverbatim
 
 In this second example the chemical shifts are used as replica-averaged restrained as in \cite Camilloni:2012je \cite Camilloni:2013hs. 
@@ -496,7 +494,7 @@ void CS2Backbone::registerKeywords( Keywords& keys ){
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
   keys.add("compulsory","DATA","data/","The folder with the experimental chemical shifts.");
   keys.add("compulsory","TEMPLATE","template.pdb","A PDB file of the protein system to initialise ALMOST.");
-  keys.add("compulsory","NEIGH_FREQ","25","Period in step for neighbour list update.");
+  keys.add("compulsory","NEIGH_FREQ","20","Period in step for neighbour list update.");
   keys.add("compulsory","NRES","Number of residues, corresponding to the number of chemical shifts.");
   keys.addFlag("CAMSHIFT",false,"Set to TRUE if you to calculate a single CamShift score."); 
   keys.addFlag("NOEXP",false,"Set to TRUE if you don't want to have fixed components with the experimetnal values.");  
@@ -538,7 +536,7 @@ pbc(true)
   parse("TEMPLATE",stringa_template);
 
   box_count=0;
-  box_nupdate=25;
+  box_nupdate=20;
   parse("NEIGH_FREQ", box_nupdate);
 
   unsigned numResidues;
