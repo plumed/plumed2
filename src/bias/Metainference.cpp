@@ -975,7 +975,8 @@ void Metainference::update() {
 void Metainference::calculate(){
   double norm = 0.0;
   double fact = 0.0;
-  double idof = 0.0;
+  //double idof = 0.0;
+  double idof = 1.0;
   double dnrep = static_cast<double>(nrep_);
 
   if(do_reweight){
@@ -987,17 +988,20 @@ void Metainference::calculate(){
     }
     comm.Sum(&bias[0], nrep_);
     const double maxbias = *(std::max_element(bias.begin(), bias.end()));
+    double n2=0.;
     for(unsigned i=0; i<nrep_; ++i){
       bias[i] = exp((bias[i]-maxbias)/kbt_); 
       norm += bias[i];
+      n2 += bias[i]*bias[i];
     }
-    for(unsigned i=0; i<nrep_; ++i) idof += bias[i]*bias[i]/(norm*norm);
+    //for(unsigned i=0; i<nrep_; ++i) idof += bias[i]*bias[i]/(norm*norm);
     fact = bias[replica_]/norm;
+    idof = 1./(1. - n2/(norm*norm));
   } else {
     // or arithmetic ones
     norm = dnrep; 
     fact = 1.0/norm; 
-    for(unsigned i=0; i<nrep_; ++i) idof += fact*fact;
+    //for(unsigned i=0; i<nrep_; ++i) idof += fact*fact;
   }
 
   vector<double> mean(narg,0);
@@ -1037,7 +1041,8 @@ void Metainference::calculate(){
   }
 
   // correct sigma_mean for the weighted average effect
-  for(unsigned i=0;i<sigma_mean_.size();++i) sigma_mean_[i] *= sqrt(dnrep*idof);
+  //for(unsigned i=0;i<sigma_mean_.size();++i) sigma_mean_[i] *= sqrt(dnrep*idof);
+  for(unsigned i=0;i<sigma_mean_.size();++i) sigma_mean_[i] *= sqrt(idof);
 
   /* MONTE CARLO */
   const long int step = getStep();
@@ -1052,7 +1057,8 @@ void Metainference::calculate(){
   if(do_optsigmamean_==2) modifier *= sm_mod_;
   for(unsigned i=0;i<sigma_mean_.size();++i) sigma_mean_[i] *= modifier;
 
-  valueRSigmaMean->set(modifier*sqrt(dnrep*idof));
+  //valueRSigmaMean->set(modifier*sqrt(dnrep*idof));
+  valueRSigmaMean->set(modifier*sqrt(idof));
   
   // calculate bias and forces
   double ene = 0; 
