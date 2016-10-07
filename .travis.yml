@@ -93,10 +93,12 @@ install:
   - if test "$MAKEDOC" == yes ; then sudo apt-get install -y graphviz            ; fi
 # install doxygen-latex
   - if test "$MAKEDOC" == yes ; then sudo apt-get install -y doxygen-latex ; fi
+# install lcov
+  - if test "$MAKEDOC" == yes ; then sudo apt-get install -y lcov ; fi
 # then replace doxygen with the desided version
 # I use 1.8.10 instead of 1.8.11 since it looks like 1.8.11 have troubles with
 # non case sensitive files (it writes capitalized filenames)
-  - if test "$MAKEDOC" == yes ; then ./.travis/install.doxygen Release_1_8_10 ; fi
+  - if test "$MAKEDOC" == yes ; then ./.travis/install.doxygen Release_1_8_12 ; fi
   - if test "$VALGRIND" == yes ; then sudo apt-get install -y valgrind           ; fi
   - if test "$LAPACK" == yes ; then sudo apt-get -y install libatlas-base-dev      ; fi
 # moreover, we hardcode path to dynamic library, required for xdrfile to link properly
@@ -121,6 +123,7 @@ script:
 # we enable fftw, which is off by default
   - CONFIG_FLAGS="$CONFIG_FLAGS --enable-fftw"
   - if test "$MAKEDOC" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-pdfdoc" ; fi
+  - if test "$MAKEDOC" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-gcov" ; fi
 
 # BUILD:
 # this is done only if PLUMED_CXX is defined
@@ -139,6 +142,7 @@ script:
   - if test "$VALGRIND" == yes ; then OPT=valgrind ; else OPT="" ; fi
   - if test "$PLUMED_CXX" || test -n "$PLUMED_MACPORTS" ; then make -C regtest $OPT ; fi
   - if test "$MAKEDOC" == yes ; then make -C regtest copytodoc ; fi
+  - if test "$MAKEDOC" == yes ; then make -C developer-doc coverage ; fi
   - if test "$MAKEDOC" == yes ; then make doc >/dev/null ; fi
   - if test "$PLUMED_CXX" || test -n "$PLUMED_MACPORTS" ; then make -C regtest checkfail ; fi
 

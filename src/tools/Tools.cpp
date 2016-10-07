@@ -30,109 +30,73 @@
 using namespace std;
 namespace PLMD{
 
-bool Tools::convert(const string & str,int & t){
+template<class T>
+bool Tools::convertToAny(const string & str,T & t){
         istringstream istr(str.c_str());
         bool ok=static_cast<bool>(istr>>t);
         if(!ok) return false;
         string remaining;
         istr>>remaining;
         return remaining.length()==0;
+}
+
+bool Tools::convert(const string & str,int & t){
+        return convertToAny(str,t);
 }
 
 bool Tools::convert(const string & str,long int & t){
-        istringstream istr(str.c_str());
-        bool ok=static_cast<bool>(istr>>t);
-        if(!ok) return false;
-        string remaining;
-        istr>>remaining;
-        return remaining.length()==0;
+        return convertToAny(str,t);
 }
 
 bool Tools::convert(const string & str,unsigned & t){
-        istringstream istr(str.c_str());
-        bool ok=static_cast<bool>(istr>>t);
-        if(!ok) return false;
-        string remaining;
-        istr>>remaining;
-        return remaining.length()==0;
+        return convertToAny(str,t);
 }
 
 bool Tools::convert(const string & str,AtomNumber &a){
-  int i;
+  unsigned i;
   bool r=convert(str,i);
   if(r) a.setSerial(i);
   return r;
 }
 
+template<class T>
+bool Tools::convertToReal(const string & str,T & t){
+        if(str=="PI" || str=="+PI" || str=="+pi" || str=="pi"){
+          t=pi; return true;
+        } else if(str=="-PI" || str=="-pi"){
+           t=-pi; return true;
+        } else if( str.find("PI")!=std::string::npos ){
+           std::size_t pi_start=str.find_first_of("PI");
+           if(str.substr(pi_start)!="PI") return false;
+           istringstream nstr(str.substr(0,pi_start)); 
+           T ff=0.0; bool ok=static_cast<bool>(nstr>>ff);
+           if(!ok) return false; 
+           t=ff*pi;
+           std::string remains; nstr>>remains;
+           return remains.length()==0;
+        } else if( str.find("pi")!=std::string::npos ){
+           std::size_t pi_start=str.find_first_of("pi");
+           if(str.substr(pi_start)!="pi") return false;
+           istringstream nstr(str.substr(0,pi_start));
+           T ff=0.0; bool ok=static_cast<bool>(nstr>>ff);
+           if(!ok) return false;
+           t=ff*pi;
+           std::string remains; nstr>>remains;
+           return remains.length()==0;
+        }
+        return convertToAny(str,t);
+}
+
 bool Tools::convert(const string & str,float & t){
-  double tt;
-  bool r=convert(str,tt);
-  t=double(tt);
-  return r;
+           return convertToReal(str,t);
 }
 
 bool Tools::convert(const string & str,double & t){
-        if(str=="PI" || str=="+PI" || str=="+pi" || str=="pi"){
-          t=pi; return true;
-        } else if(str=="-PI" || str=="-pi"){
-           t=-pi; return true;
-        } else if( str.find("PI")!=std::string::npos ){
-           std::size_t pi_start=str.find_first_of("PI");
-           if(str.substr(pi_start)!="PI") return false;
-           istringstream nstr(str.substr(0,pi_start)); 
-           double ff=0.0; bool ok=static_cast<bool>(nstr>>ff);
-           if(!ok) return false; 
-           t=ff*pi;
-           std::string remains; nstr>>remains;
-           return remains.length()==0;
-        } else if( str.find("pi")!=std::string::npos ){
-           std::size_t pi_start=str.find_first_of("pi");
-           if(str.substr(pi_start)!="pi") return false;
-           istringstream nstr(str.substr(0,pi_start));
-           double ff=0.0; bool ok=static_cast<bool>(nstr>>ff);
-           if(!ok) return false;
-           t=ff*pi;
-           std::string remains; nstr>>remains;
-           return remains.length()==0;
-        }
-        istringstream istr(str.c_str());
-        bool ok=static_cast<bool>(istr>>t);
-        if(!ok) return false;
-        string remaining;
-        istr>>remaining;
-        return remaining.length()==0;
+           return convertToReal(str,t);
 }
 
 bool Tools::convert(const string & str,long double & t){
-        if(str=="PI" || str=="+PI" || str=="+pi" || str=="pi"){
-          t=pi; return true;
-        } else if(str=="-PI" || str=="-pi"){
-           t=-pi; return true;
-        } else if( str.find("PI")!=std::string::npos ){
-           std::size_t pi_start=str.find_first_of("PI");
-           if(str.substr(pi_start)!="PI") return false;
-           istringstream nstr(str.substr(0,pi_start)); 
-           long double ff=0.0; bool ok=static_cast<bool>(nstr>>ff);
-           if(!ok) return false; 
-           t=ff*pi;
-           std::string remains; nstr>>remains;
-           return remains.length()==0;
-        } else if( str.find("pi")!=std::string::npos ){
-           std::size_t pi_start=str.find_first_of("pi");
-           if(str.substr(pi_start)!="pi") return false;
-           istringstream nstr(str.substr(0,pi_start));
-           long double ff=0.0; bool ok=static_cast<bool>(nstr>>ff);
-           if(!ok) return false;
-           t=ff*pi;
-           std::string remains; nstr>>remains;
-           return remains.length()==0;
-        }
-        istringstream istr(str.c_str());
-        bool ok=static_cast<bool>(istr>>t);
-        if(!ok) return false;
-        string remaining;
-        istr>>remaining;
-        return remaining.length()==0;
+           return convertToReal(str,t);
 }
 
 bool Tools::convert(const string & str,string & t){
@@ -356,6 +320,15 @@ std::string Tools::extension(const std::string&s){
 bool Tools::startWith(const std::string & full,const std::string &start){
   return (full.substr(0,start.length())==start);
 }
+
+bool Tools::findKeyword(const std::vector<std::string>&line,const std::string&key){
+  const std::string search(key+"=");
+  for(vector<string>::const_iterator p=line.begin();p!=line.end();++p){
+    if(startWith(*p,search)) return true;
+  }
+  return false;
+}
+
 
 
 }

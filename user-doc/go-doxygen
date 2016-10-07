@@ -22,6 +22,8 @@ if test "$TRAVIS" == true ; then
   version="${TRAVIS_BRANCH}"
 fi
 
+# THIS IS FOR DOXYGEN <= 1.8.10
+# I leave it here for the moment
 for file in html/*.html
 do
 awk -v version="$version" '{
@@ -37,6 +39,18 @@ awk -v version="$version" '{
 }' $file > $file.tmp
 mv $file.tmp $file
 done
+# end of DOXYGEN <=1.8.10
+
+# Same stuff for DOXYGEN >=1.8.12
+cat > html/menudata.js << EOF
+var menudata={children:[
+{text:'Home ($version)',url:'index.html'},
+{text:'Getting started',url:'_syntax.html'},
+{text:'Tutorials',url:'tutorials.html'},
+{text:'Index of Actions',url:'glossary.html'}]}
+EOF
+# end of DOXYGEN >=1.8.12
+
 
 cat html/doxygen.css plumed.css > html/doxygen.css.tmp
 mv html/doxygen.css.tmp html/doxygen.css
