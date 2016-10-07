@@ -200,7 +200,7 @@ AC_ARG_VAR(LDSO,[command for linking shared library - configure will use CXX plu
 # include symbol information (obj files are huge)
 if test -z "$CXXFLAGS"
 then
-  CXXFLAGS=-O
+  CXXFLAGS="-O3 -std=c++11"
 fi
 
 # this is list if copied from a generated ./configure script
