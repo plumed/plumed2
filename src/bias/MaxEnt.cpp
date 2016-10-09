@@ -137,7 +137,6 @@ class MaxEnt : public Bias{
   double alfa;
   double avg_counter;
   int learn_replica;
-  Value* valueBias;
   Value* valueForce2;
   Value* valueWork;
   OFile lagmultOfile_;
@@ -193,7 +192,6 @@ void MaxEnt::registerKeywords(Keywords& keys){
   keys.addFlag("REWEIGHT",false,"to be used with plumed driver in order to reweight a trajectory a posteriori");
   keys.addFlag("NO_BROADCAST",false,"If active will avoid Lagrangian multipliers to be comunicated to other replicas.");
   keys.add("optional","TEMP","the system temperature.  This is required if you are reweighting.");
-  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
   keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
   keys.addOutputComponent("work","default","the instantaneous value of the work done by the biasing force");
   keys.addOutputComponent("_work","default","the instantaneous value of the work done by the biasing force for each argument. "
@@ -299,10 +297,8 @@ done_average(getNumberOfArguments(),false)
   //  if(apply_weights[irep]!=0)
   //    log.printf("%d",irep);
   //  }
-  addComponent("bias"); componentIsNotPeriodic("bias");
   addComponent("force2"); componentIsNotPeriodic("force2");
   addComponent("work"); componentIsNotPeriodic("work");
-  valueBias=getPntrToComponent("bias");
   valueForce2=getPntrToComponent("force2");
   valueWork=getPntrToComponent("work");
 
@@ -481,7 +477,7 @@ void MaxEnt::calculate(){
     ene+=KbT*convert_lambda(type,lambda[i])*getArgument(i)*apply_weights[myrep];
     setOutputForce(i,f);
   }
-  valueBias->set(ene);
+  setBias(ene);
   valueForce2->set(totf2);
 }
 
