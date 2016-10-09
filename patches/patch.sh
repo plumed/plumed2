@@ -14,7 +14,7 @@ Actions (choose one):
   -s, --save
                     save, this needs *.preplumed files (*)
   --save-originals
-                    same as save, but save also original files
+                    same as save, but save also original files (*)
   -n NEWENGINE, --new NEWENGINE
                     create a new patch named NEWENGINE (*)
   -i, --info
