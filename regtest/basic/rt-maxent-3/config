@@ -1,0 +1,5 @@
+mpiprocs=6
+type=driver
+plumed_needs="matheval"
+# this is to test a different name
+arg="--plumed plumed.dat --mf_xtc traj.xtc --dump-forces forces --multi 6 --dump-forces-fmt=%8.4f"
