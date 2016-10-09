@@ -50,6 +50,10 @@ namespace bias{
 /*
 Adds a linear biasing potential on one or more variables satisfing maximum entropy principle.  .  
 
+\warning
+    Notice that syntax is still under revision and might change
+\endwarning
+
 The resulting biasing potential is given by: 
 \f[
   V_{BIAS}(\boldsymbol{x},t)=K_{B}T\sum_{i=1}^{\#arguments}f_{i}(\boldsymbol{x},t)\lambda_{i}(t)
