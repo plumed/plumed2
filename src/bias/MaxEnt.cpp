@@ -234,7 +234,6 @@ done_average(getNumberOfArguments(),false)
   if(comm.Get_rank()==0) myrep=multi_sim_comm.Get_rank();
   comm.Bcast(nrep,0);
   comm.Bcast(myrep,0);
-  apply_weights.resize(nrep,1.0);
   parseFlag("NO_BROADCAST",no_broadcast);
   //if(no_broadcast){
   //for(int irep=0;irep<nrep;irep++){
@@ -249,6 +248,7 @@ done_average(getNumberOfArguments(),false)
   
   parse("LEARN_REPLICA",learn_replica);
   parseVector("APPLY_WEIGHTS",apply_weights);
+  if(apply_weights.size()==0) apply_weights.resize(nrep,1.0);
   parseVector("KAPPA",kappa);
   parseVector("AT",at);
   parseVector("TAU",tau);
