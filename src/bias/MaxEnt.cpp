@@ -288,9 +288,9 @@ done_average(getNumberOfArguments(),false)
   log.printf("Dumping times for the learning rates are (ps): ");
   for(unsigned i=0;i<tau.size();i++) log.printf(" %f",tau[i]);
   log.printf("\n");
-  log.printf("Lagrangian multipliers are updated every %d steps (PACE)\n",pace_);
+  log.printf("Lagrangian multipliers are updated every %ld steps (PACE)\n",pace_);
   log.printf("Lagrangian multipliers output file %s\n",lagmultfname.c_str());
-  log.printf("Lagrangian multipliers are written every %d steps (PRINT_STRIDE)\n",stride_);
+  log.printf("Lagrangian multipliers are written every %ld steps (PRINT_STRIDE)\n",stride_);
   if(fmt.length()>0)
     log.printf("The format for real number in Lagrangian multipliers file is %s\n",fmt.c_str());
   if(tstart >-1.0 && tend>-1.0)
