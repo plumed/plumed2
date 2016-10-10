@@ -83,6 +83,9 @@ bool Tools::convertToReal(const string & str,T & t){
            t=ff*pi;
            std::string remains; nstr>>remains;
            return remains.length()==0;
+        } else if(str=="NAN"){
+           t=NAN;
+           return true;
         }
         return convertToAny(str,t);
 }
