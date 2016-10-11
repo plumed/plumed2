@@ -3049,7 +3049,7 @@ fi
 # include symbol information (obj files are huge)
 if test -z "$CXXFLAGS"
 then
-  CXXFLAGS="-O3 -std=c++11"
+  CXXFLAGS=-O3
 fi
 
 # this is list if copied from a generated ./configure script
@@ -4568,9 +4568,9 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 
   save_CXXFLAGS="$CXXFLAGS"
-  CXXFLAGS="$CXXFLAGS -ansi"
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -ansi" >&5
-$as_echo_n "checking whether $CXX accepts -ansi... " >&6; }
+  CXXFLAGS="$CXXFLAGS -std=c++11"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -std=c++11" >&5
+$as_echo_n "checking whether $CXX accepts -std=c++11... " >&6; }
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 

@@ -201,7 +201,7 @@ AC_ARG_VAR(LDSO,[command for linking shared library - configure will use CXX plu
 # include symbol information (obj files are huge)
 if test -z "$CXXFLAGS"
 then
-  CXXFLAGS="-O3 -std=c++11"
+  CXXFLAGS=-O3
 fi
 
 # this is list if copied from a generated ./configure script
@@ -255,7 +255,7 @@ if test $basic_warnings == true
 then
   PLUMED_CHECK_CXXFLAG([-Wall])
   PLUMED_CHECK_CXXFLAG([-pedantic])
-  PLUMED_CHECK_CXXFLAG([-ansi])
+  PLUMED_CHECK_CXXFLAG([-std=c++11])
 fi
 
 if test $debug == true
