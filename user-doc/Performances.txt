@@ -214,7 +214,7 @@ At last, try to reduce the number of residues in the calculation.
 \page Time Time your Input
 
 Once you have prepared your plumed input file you can run a test simulation, or use driver, 
-to see which collective variable, function, bias or analisys is consuming more time and can 
+to see which collective variable, function, bias or analysis is consuming more time and can 
 thus be the target for a different definition (use less atoms, change relevant parameters,
 or just use somenthing else)
 
