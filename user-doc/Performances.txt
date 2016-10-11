@@ -30,7 +30,7 @@ help in taking the most by using PLUMED for your simulations.
 - \subpage Neighbour 
 - \subpage Openmp
 - \subpage Secondary
-
+- \subpage Time
 
 \page GMXGPU GROMACS and PLUMED with GPU
 
@@ -210,6 +210,15 @@ The metric used to calculate the distance from ideal secondary structure element
 the performances, try to use TYPE=OPTIMAL or TYPE=OPTIMAL-FAST instead of TYPE=DRMSD.
 
 At last, try to reduce the number of residues in the calculation.
- 
+
+\page Time Time your Input
+
+Once you have prepared your plumed input file you can run a test simulation, or use driver, 
+to see which collective variable, function, bias or analisys is consuming more time and can 
+thus be the target for a different definition (use less atoms, change relevant parameters,
+or just use somenthing else)
+
+To have an accurate timing of your input you can use the \ref DEBUG DETAILED_TIMERS.
+  
 
 */
