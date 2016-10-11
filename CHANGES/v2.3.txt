@@ -42,7 +42,6 @@ Changes from version 2.2 which are relevant for users:
   - \ref CS2BACKBONE is now native in PLUMED removing the need to link ALMOST, small syntax differences
   - \ref CS2BACKBONE, \ref NOE, \ref RDC, removed the keyword ENSEMBLE: now ensemble averages can only be calculated using \ref ENSEMBLE
   - \ref RDC, syntax changes
-  - \ref CONSTANT, syntax changes and added the possibility of storing more values as components with or without derivatives
   - It is not possible anymore to select modules using `modulename.on` and `modulename.off` files. Use `./configure --enable-modules` instead.
 - New actions:
   - \ref FIXEDATOM
@@ -95,6 +94,7 @@ Changes from version 2.2 which are relevant for users:
   - \ref ENSEMBLE added keywords for weighted averages, and calculation of higher momenta
   - \ref MOLINFO now allows single atoms to be picked by name.
   - \ref FIT_TO_TEMPLATE now supports optimal alignment.
+  - \ref CONSTANT added the possibility of storing more values as components with or without derivatives
 - Other features:
   - Added a plumed-config command line tool. Can be used to inspect configuration also when cross compiling.
   - Added a `--mpi` option to `plumed`, symmetric to `--no-mpi`. Currently, it has no effect (MPI is initialized by default when available).
