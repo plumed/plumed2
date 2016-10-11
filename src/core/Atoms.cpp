@@ -336,6 +336,11 @@ void Atoms::setAtomsNlocal(int n){
   gatindex.resize(n);
   if(dd){
     dd.g2l.resize(natoms,-1);
+// Since these vectors are sent with MPI by using e.g.
+// &dd.positionsToBeSent[0]
+// we make sure they are non-zero-sized so as to
+// avoid errors when doing boundary check
+    if(n==0) n++;
     dd.positionsToBeSent.resize(n*5,0.0);
     dd.positionsToBeReceived.resize(natoms*5,0.0);
     dd.indexToBeSent.resize(n,0);
