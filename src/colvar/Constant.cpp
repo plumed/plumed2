@@ -52,6 +52,14 @@ PRINT ARG=sss.2
 \endverbatim
 (See also \ref DISTANCE, \ref SORT, and \ref PRINT).
 
+In case you want to pass a single value you can use VALUE:
+\verbatim
+cn: CONSTANT VALUE=1.0
+dis: DISTANCE ATOMS=1
+sss: SORT ARG=cn,dis
+PRINT ARG=sss.1
+\endverbatim
+
 */
 //+ENDPLUMEDOC
 
@@ -73,6 +81,16 @@ PLUMED_COLVAR_INIT(ao)
   bool noderiv=false;
   parseFlag("NODERIV",noderiv);
   parseVector("VALUES",values);
+  if(values.size()==0){
+    double v;
+    parse("VALUE",v);
+// this checks if v is different from NAN
+    if(v*2!=v || v==0.0){
+      values.resize(1);
+      values[0]=v;
+    }
+  }
+  if(values.size()==0) error("Either VALUE or VALUES should be used with CONSTANT");
   checkRead();
   if(values.size()==1) {
     if(!noderiv) addValueWithDerivatives();
@@ -99,7 +117,8 @@ void Constant::registerKeywords( Keywords& keys ){
   componentsAreNotOptional(keys);
   useCustomisableComponents(keys);
   keys.remove("NUMERICAL_DERIVATIVES"); 
-  keys.add("compulsory","VALUES","The values of the constants");
+  keys.add("compulsory","VALUES","NAN","The values of the constants");
+  keys.add("compulsory","VALUE","NAN","The value of the constant");
   keys.addFlag("NODERIV",false,"Set to TRUE if you want values without derivatives.");  
   keys.addOutputComponent("v","default","the # value"); 
 }
