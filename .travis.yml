@@ -124,6 +124,8 @@ script:
   - CONFIG_FLAGS="$CONFIG_FLAGS --enable-fftw"
   - if test "$MAKEDOC" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-pdfdoc" ; fi
   - if test "$MAKEDOC" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-gcov" ; fi
+# when running lcov plumed should be compiled with -O0
+  - if test "$MAKEDOC" == yes ; then PLUMED_CXXFLAGS=-O0 ; fi
 
 # BUILD:
 # this is done only if PLUMED_CXX is defined
