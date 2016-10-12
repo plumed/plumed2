@@ -119,6 +119,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit EM3Dmap(const ActionOptions&);
 // active methods:
+  void prepare();
   virtual void calculate();
 };
 
@@ -549,6 +550,11 @@ void EM3Dmap::update_neighbor_list()
   comm.Allgatherv(&nl_l[0], recvcounts[rank_], &nl_[0], &recvcounts[0], &disp[0]);
   // now resize derivatives
   ovmd_der_.resize(tot_size);
+}
+
+void EM3Dmap::prepare()
+{
+  if(getExchangeStep()) first_time_=true;
 }
 
 
