@@ -118,12 +118,14 @@ install:
   - if test -n "$PLUMED_MACPORTS" ; then ./.travis/config.macports.sh ; fi
 
 script:
-# we enable crystallization and manyrestraints modules
-  - CONFIG_FLAGS="$CONFIG_FLAGS --enable-modules=crystallization:manyrestraints:adjmat"
+# make sure all modules are enabled
+  - CONFIG_FLAGS="$CONFIG_FLAGS --enable-modules=all"
 # we enable fftw, which is off by default
   - CONFIG_FLAGS="$CONFIG_FLAGS --enable-fftw"
   - if test "$MAKEDOC" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-pdfdoc" ; fi
   - if test "$MAKEDOC" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-gcov" ; fi
+# when running lcov plumed should be compiled with -O0
+  - if test "$MAKEDOC" == yes ; then PLUMED_CXXFLAGS=-O0 ; fi
 
 # BUILD:
 # this is done only if PLUMED_CXX is defined
