@@ -119,7 +119,6 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit EM3Dmap(const ActionOptions&);
 // active methods:
-  void prepare();
   virtual void calculate();
 };
 
@@ -553,20 +552,13 @@ void EM3Dmap::update_neighbor_list()
 }
 
 
-void EM3Dmap::prepare()
-{
-  if(getExchangeStep()) first_time_=true;
-}
-
 // overlap calculator
 void EM3Dmap::calculate_overlap(){
 
   //makeWhole();
-  if(first_time_ || getStep()%nl_stride_==0){
+  if(first_time_ || getExchangeStep() || getStep()%nl_stride_==0){
      update_neighbor_list();
      first_time_=false;
-  } else {
-     if(getExchangeStep()) error("Neighbor lists should be updated on exchange steps - choose a NL_STRIDE which divides the exchange stride!");
   }
   
   // clean temporary vectors
