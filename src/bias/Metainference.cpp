@@ -582,43 +582,50 @@ Metainference::~Metainference()
   if(sfile_.isOpen()) sfile_.close();
 }
 
-double Metainference::getEnergySPE(const vector<double> &mean, const vector<double> &sigma, const double scale){
-  // calculate effective sigma
+double Metainference::getEnergySPE(const vector<double> &mean, const vector<double> &sigma, const double scale)
+{
   const double smean2 = scale*scale*sigma_mean_[0]*sigma_mean_[0];
   const double s = sqrt( sigma[0]*sigma[0] + smean2 );
-  // cycle on arguments
+
   double ene = 0.0;
-  for(unsigned i=0;i<narg;++i){
-    const double dev = scale*mean[i]-parameters[i]; 
-    // argument
-    const double a2 = 0.5*dev*dev + s*s;
-    // increment energy
-    ene += std::log( 2.0 * a2 / ( 1.0 - exp(- a2 / smean2) ) );
+  #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(ene)
+  {
+    #pragma omp for reduction( + : ene)
+    for(unsigned i=0;i<narg;++i){
+      const double dev = scale*mean[i]-parameters[i]; 
+      const double a2 = 0.5*dev*dev + s*s;
+      ene += std::log( 2.0 * a2 / ( 1.0 - exp(- a2 / smean2) ) );
+    }
   }
   // add normalization and Jeffrey's prior
   ene += std::log(sqrt(sigma[0]*sigma[0] + sigma_mean_[0]*sigma_mean_[0])) - static_cast<double>(ndata_)*std::log(sqrt2_div_pi*s);
   return kbt_ * ene;
 }
 
-double Metainference::getEnergyGJ(const vector<double> &mean, const vector<double> &sigma, const double scale){
-  // cycle on arguments
-  double ene = 0.0;
+double Metainference::getEnergyGJ(const vector<double> &mean, const vector<double> &sigma, const double scale)
+{
   const double scale2 = scale * scale;
-  double ss = sigma[0]*sigma[0] + scale2*sigma_mean_[0]*sigma_mean_[0];
+  const double ss = sigma[0]*sigma[0] + scale2*sigma_mean_[0]*sigma_mean_[0];
 
-  for(unsigned i=0;i<narg;++i){
-    double dev = scale*mean[i]-parameters[i];
-    ene += 0.5*dev*dev/ss;
+  double ene = 0.0;
+  #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(ene)
+  {
+    #pragma omp for reduction( + : ene)
+    for(unsigned i=0;i<narg;++i){
+      double dev = scale*mean[i]-parameters[i];
+      ene += 0.5*dev*dev/ss;
+    }
   }
   // add Jeffrey's prior in case one sigma for all data points + one normalisation per datapoint
   ene += 0.5*std::log(ss) + 0.5*narg*std::log(ss*2.*M_PI);;
   return kbt_ * ene;
 }
 
-double Metainference::getEnergyGJE(const vector<double> &mean, const vector<double> &sigma, const double scale){
-  double ene = 0.0;
+double Metainference::getEnergyGJE(const vector<double> &mean, const vector<double> &sigma, const double scale)
+{
   const double scale2 = scale * scale;
 
+  double ene = 0.0;
   #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(ene)
   { 
     #pragma omp for reduction( + : ene)
@@ -837,7 +844,6 @@ double Metainference::getEnergyForceSPE(const vector<double> &mean, const double
 
 double Metainference::getEnergyForceGJ(const vector<double> &mean, const double fact)
 {
-  double ene = 0.0;
   double inv_s2=0.;
   const double ss = sigma_[0]*sigma_[0] + sigma_mean_[0]*sigma_mean_[0];
   if(master) {
@@ -845,14 +851,19 @@ double Metainference::getEnergyForceGJ(const vector<double> &mean, const double 
     if(nrep_>1) multi_sim_comm.Sum(inv_s2);
   } 
   comm.Sum(inv_s2);  
-  double w_tmp = 0.;
 
-  for(unsigned i=0;i<narg;++i){
-    const double dev = scale_*mean[i]-parameters[i];
-    const double mult = fact*dev*scale_*inv_s2;
-    ene += 0.5*dev*dev*inv_s2;
-    setOutputForce(i, -kbt_*mult);
-    w_tmp += (getArgument(i)-mean[i])*mult;
+  double ene = 0.0;
+  double w_tmp = 0.;
+  #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(ene,w_tmp)
+  { 
+    #pragma omp for reduction( + : ene,w_tmp)
+    for(unsigned i=0;i<narg;++i){
+      const double dev = scale_*mean[i]-parameters[i];
+      const double mult = fact*dev*scale_*inv_s2;
+      ene += 0.5*dev*dev*inv_s2;
+      setOutputForce(i, -kbt_*mult);
+      w_tmp += (getArgument(i)-mean[i])*mult;
+    }
   }
   if(do_reweight) {
     setOutputForce(narg, -w_tmp);
