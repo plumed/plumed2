@@ -602,22 +602,15 @@ void EM3Dmap::calculate(){
 
   // calculate "restraint"
   double ene = 0.0;
-  // count number of non-zero overlaps
-  double ndata_zero = 0.0;
   for(unsigned i=0;i<ovmd_.size();++i){
-    ene_der_[i] = 0.0;
-    if(ovmd_[i] > 0.0){
      // individual term
-     ene_der_[i] = std::log(ovmd_[i]/ovdd_[i]);
+     ene_der_[i] = (ovmd_[i]-ovdd_[i]);
      // increment energy
      ene += ene_der_[i] * ene_der_[i];
-     // increment counter
-     ndata_zero += 1.0;
-    }
   };
   
   // constant factor
-  double fact = kbt_ * 0.5 * ndata_zero;
+  double fact = kbt_ * 0.5 * static_cast<double>(ovmd_.size());
 
   // clear temporary vector
   for(unsigned i=0; i<atom_der_.size(); ++i) atom_der_[i] = Vector(0,0,0);
@@ -627,12 +620,9 @@ void EM3Dmap::calculate(){
      // get indexes of data and model component
      unsigned id = nl_[i] / GMM_m_w_.size();
      unsigned im = nl_[i] % GMM_m_w_.size();
-     // check for zero overlaps
-     if(ovmd_[id] > 0.0 && ene > 0.0){
-      double der = 2.0 * fact / ene * ene_der_[id] / ovmd_[id];
-      // chain rule
-      atom_der_[im] += der * ovmd_der_[i];
-     }
+     double der = fact / ene * 2.0 * ene_der_[id];
+     // chain rule
+     atom_der_[im] += der * ovmd_der_[i];
   }
   // if parallel, communicate stuff
   if(!serial_) comm.Sum(&atom_der_[0][0], 3*atom_der_.size());
