@@ -47,8 +47,6 @@ class Bias :
 /// the pointer to the bias component
   Value *valueBias;
 protected:
-/// set the forces to zero
-  void resetOutputForces();
 /// set the force from the bias on argument i, this automatically set the partial derivative of the bias with respect to i to -f
   void setOutputForce(int i,double f);
 /// set the value of the bias
@@ -69,11 +67,6 @@ void Bias::setOutputForce(int i,double f){
 inline
 void Bias::setBias(double bias){
  valueBias->set(bias); 
-}
-
-inline
-void Bias::resetOutputForces(){
-  for(unsigned i=0;i<outputForces.size();++i) outputForces[i]=0.0;
 }
 
 inline
