@@ -772,7 +772,7 @@ void Metainference::doMonteCarlo(const vector<double> &mean_)
         // change random sigmas
         for(unsigned j=0;j<MCchunksize_;j++) {
             const unsigned index = indices[j];
-            const double r2 = random[1].Gaussian();
+            const double r2 = random[0].Gaussian();
             const double ds2 = sqrt(Dsigma_)*r2;
             new_sigma[index] = sigma_[index] + ds2;
             // check boundaries
@@ -782,7 +782,7 @@ void Metainference::doMonteCarlo(const vector<double> &mean_)
     } else {
         // change all sigmas
         for(unsigned j=0;j<sigma_.size();j++) {
-            const double r2 = random[1].Gaussian();
+            const double r2 = random[0].Gaussian();
             const double ds2 = sqrt(Dsigma_)*r2;
             new_sigma[j] = sigma_[j] + ds2;
             // check boundaries
