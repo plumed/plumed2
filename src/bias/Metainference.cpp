@@ -842,15 +842,19 @@ double Metainference::getEnergyForceSP(const vector<double> &mean, const double 
   
   if(master){
     double omp_ene=0.;
-    for(unsigned i=0;i<narg;++i){
-      const double dev = scale_*mean[i]-parameters[i]; 
-      const double a2 = 0.5*dev*dev + ss;
-      const double t = exp(-a2/sm2);
-      const double dt = 1./t;
-      const double it = 1./(1.-t);
-      const double dit = 1./(1.-dt);
-      omp_ene += std::log(2.*a2*it);
-      f[i] = -scale_*dev*(dit/sm2 + 1./a2);
+    #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(omp_ene)
+    { 
+      #pragma omp for reduction( + : omp_ene)
+      for(unsigned i=0;i<narg;++i){
+        const double dev = scale_*mean[i]-parameters[i]; 
+        const double a2 = 0.5*dev*dev + ss;
+        const double t = exp(-a2/sm2);
+        const double dt = 1./t;
+        const double it = 1./(1.-t);
+        const double dit = 1./(1.-dt);
+        omp_ene += std::log(2.*a2*it);
+        f[i] = -scale_*dev*(dit/sm2 + 1./a2);
+      }
     }
     f[narg] = omp_ene;
     // collect contribution to forces and energy from other replicas
@@ -882,22 +886,26 @@ double Metainference::getEnergyForceSPE(const vector<double> &mean, const double
   vector<double> f(narg+1,0);
 
   if(master){
-   double omp_ene = 0;
-   for(unsigned i=0;i<narg;++i){
-     const double sm2 = sigma_mean_[i]*sigma_mean_[i]; 
-     const double ss  = sigma_[i]*sigma_[i] + sm2;
-     const double dev = scale_*mean[i]-parameters[i]; 
-     const double a2  = 0.5*dev*dev + ss;
-     const double t   = exp(-a2/sm2);
-     const double dt  = 1./t;
-     const double it  = 1./(1.-t);
-     const double dit = 1./(1.-dt);
-     omp_ene += std::log(2.*a2*it);
-     f[i] = -scale_*dev*(dit/sm2 + 1./a2);
-   }
-   f[narg] = omp_ene;
-   // collect contribution to forces and energy from other replicas
-   if(nrep_>1) multi_sim_comm.Sum(&f[0],narg+1);
+    double omp_ene = 0;
+    #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(omp_ene)
+    { 
+      #pragma omp for reduction( + : omp_ene)
+      for(unsigned i=0;i<narg;++i){
+        const double sm2 = sigma_mean_[i]*sigma_mean_[i]; 
+        const double ss  = sigma_[i]*sigma_[i] + sm2;
+        const double dev = scale_*mean[i]-parameters[i]; 
+        const double a2  = 0.5*dev*dev + ss;
+        const double t   = exp(-a2/sm2);
+        const double dt  = 1./t;
+        const double it  = 1./(1.-t);
+        const double dit = 1./(1.-dt);
+        omp_ene += std::log(2.*a2*it);
+        f[i] = -scale_*dev*(dit/sm2 + 1./a2);
+      }
+    }
+    f[narg] = omp_ene;
+    // collect contribution to forces and energy from other replicas
+    if(nrep_>1) multi_sim_comm.Sum(&f[0],narg+1);
   }
   comm.Sum(&f[0],narg+1);
 
