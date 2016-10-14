@@ -688,7 +688,17 @@ void Metainference::doMonteCarlo(const vector<double> &mean_)
       old_energy = getEnergySPE(mean_,sigma_,scale_);
       break;
   }
- 
+
+  // Create vector of random sigma indices
+  vector<unsigned> indices;
+  if (MCchunksize_ > 0) {
+      for (unsigned j=0; j<sigma_.size(); j++) {
+          indices.push_back(j);
+      }
+      random[2].Shuffle(indices);
+  }
+  bool breaknow = false;
+
   // cycle on MC steps 
   for(unsigned i=0;i<MCsteps_;++i){
  
@@ -763,15 +773,19 @@ void Metainference::doMonteCarlo(const vector<double> &mean_)
 
     // change MCchunksize_ sigmas
     if (MCchunksize_ > 0) {
-        vector<unsigned> indices;
-        for (unsigned j=0; j<sigma_.size(); j++) {
-            indices.push_back(j);
+        if ((MCchunksize_ * i) >= sigma_.size()) {
+            // This means we are not moving any sigma, so we should break immediately
+            breaknow = true;
         }
-        random[2].Shuffle(indices);
 
         // change random sigmas
         for(unsigned j=0;j<MCchunksize_;j++) {
-            const unsigned index = indices[j];
+            const unsigned shuffle_index = j + MCchunksize_ * i;
+            if (shuffle_index >= sigma_.size()) {
+                // Going any further will segfault but we should still evaluate the sigmas we changed
+                break;
+            }
+            const unsigned index = indices[shuffle_index];
             const double r2 = random[0].Gaussian();
             const double ds2 = sqrt(Dsigma_)*r2;
             new_sigma[index] = sigma_[index] + ds2;
@@ -789,6 +803,11 @@ void Metainference::doMonteCarlo(const vector<double> &mean_)
             if(new_sigma[j] > sigma_max_){new_sigma[j] = 2.0 * sigma_max_ - new_sigma[j];}
             if(new_sigma[j] < sigma_min_){new_sigma[j] = 2.0 * sigma_min_ - new_sigma[j];}
         }
+    }
+
+    if (breaknow) {
+        // We didnt move any sigmas, so no sense in evaluating anything
+        break;
     }
 
  
