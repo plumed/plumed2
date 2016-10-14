@@ -135,9 +135,9 @@ class Metainference : public Bias
   double Dscale_;
   // sigma is data uncertainty
   vector<double> sigma_;
-  double sigma_min_;
-  double sigma_max_;
-  double Dsigma_;
+  vector<double> sigma_min_;
+  vector<double> sigma_max_;
+  vector<double> Dsigma_;
   // sigma_mean is uncertainty in the mean estimate
   vector<double> sigma_mean_;
   vector<double> variance_;
@@ -261,7 +261,6 @@ scale_sigma_(-1),
 scale_min_(1),
 scale_max_(-1),
 Dscale_(-1),
-Dsigma_(-1),
 sm_mod_(1.),
 ndata_(getNumberOfArguments()),
 random(3),
@@ -373,10 +372,16 @@ atoms(plumed.getAtoms())
     } 
   } else sigma_.resize(1, readsigma[0]);
 
-  parse("SIGMA_MIN",sigma_min_);
-  parse("SIGMA_MAX",sigma_max_);
-  parse("DSIGMA",Dsigma_);
-  if(Dsigma_<0) Dsigma_ = 0.05*(sigma_max_ - sigma_min_);
+  double read_smin_;
+  parse("SIGMA_MIN",read_smin_);
+  sigma_min_.resize(sigma_.size(),read_smin_);
+  double read_smax_;
+  parse("SIGMA_MAX",read_smax_);
+  sigma_max_.resize(sigma_.size(),read_smax_);
+  double read_dsigma_=-1.;
+  parse("DSIGMA",read_dsigma_);
+  if(read_dsigma_<0) read_dsigma_ = 0.05*(read_smax_ - read_smin_);
+  Dsigma_.resize(sigma_.size(),read_dsigma_);
 
   // monte carlo stuff
   parse("MC_STEPS",MCsteps_);
@@ -494,9 +499,9 @@ atoms(plumed.getAtoms())
   log.printf("  initial data uncertainties");
   for(unsigned i=0;i<sigma_.size();++i) log.printf(" %f", sigma_[i]);
   log.printf("\n");
-  log.printf("  minimum data uncertainty %f\n",sigma_min_);
-  log.printf("  maximum data uncertainty %f\n",sigma_max_);
-  log.printf("  maximum MC move of data uncertainty %f\n",Dsigma_);
+  log.printf("  minimum data uncertainty %f\n",read_smin_);
+  log.printf("  maximum data uncertainty %f\n",read_smax_);
+  log.printf("  maximum MC move of data uncertainty %f\n",read_dsigma_);
   log.printf("  temperature of the system %f\n",kbt_);
   log.printf("  MC steps %u\n",MCsteps_);
   log.printf("  MC stride %u\n",MCstride_);
@@ -708,14 +713,14 @@ void Metainference::doMonteCarlo(const vector<double> &mean_)
       MCtrial_++;
       if(scale_prior_==SC_FLAT) {
         const double r1 = random[1].Gaussian();
-        const double ds1 = sqrt(Dscale_)*r1;
+        const double ds1 = Dscale_*r1;
         new_scale += ds1;
         // check boundaries
         if(new_scale > scale_max_){new_scale = 2.0 * scale_max_ - new_scale;}
         if(new_scale < scale_min_){new_scale = 2.0 * scale_min_ - new_scale;}
       } else {
         const double r1 = random[1].Gaussian();
-        const double ds1 = (scale_mu_-new_scale)*Dscale_+scale_sigma_*sqrt(2.*Dscale_)*r1;
+        const double ds1 = 0.5*(scale_mu_-new_scale)+scale_sigma_*exp(1)/M_PI*r1;
         new_scale += ds1;
       }
 
@@ -787,21 +792,21 @@ void Metainference::doMonteCarlo(const vector<double> &mean_)
             }
             const unsigned index = indices[shuffle_index];
             const double r2 = random[0].Gaussian();
-            const double ds2 = sqrt(Dsigma_)*r2;
+            const double ds2 = Dsigma_[index]*r2;
             new_sigma[index] = sigma_[index] + ds2;
             // check boundaries
-            if(new_sigma[index] > sigma_max_){new_sigma[index] = 2.0 * sigma_max_ - new_sigma[index];}
-            if(new_sigma[index] < sigma_min_){new_sigma[index] = 2.0 * sigma_min_ - new_sigma[index];}
+            if(new_sigma[index] > sigma_max_[index]){new_sigma[index] = 2.0 * sigma_max_[index] - new_sigma[index];}
+            if(new_sigma[index] < sigma_min_[index]){new_sigma[index] = 2.0 * sigma_min_[index] - new_sigma[index];}
         }
     } else {
         // change all sigmas
         for(unsigned j=0;j<sigma_.size();j++) {
             const double r2 = random[0].Gaussian();
-            const double ds2 = sqrt(Dsigma_)*r2;
+            const double ds2 = Dsigma_[j]*r2;
             new_sigma[j] = sigma_[j] + ds2;
             // check boundaries
-            if(new_sigma[j] > sigma_max_){new_sigma[j] = 2.0 * sigma_max_ - new_sigma[j];}
-            if(new_sigma[j] < sigma_min_){new_sigma[j] = 2.0 * sigma_min_ - new_sigma[j];}
+            if(new_sigma[j] > sigma_max_[j]){new_sigma[j] = 2.0 * sigma_max_[j] - new_sigma[j];}
+            if(new_sigma[j] < sigma_min_[j]){new_sigma[j] = 2.0 * sigma_min_[j] - new_sigma[j];}
         }
     }
 
@@ -1091,7 +1096,7 @@ void Metainference::calculate()
   double norm = 0.0;
   double fact = 0.0;
   double idof = 1.0;
-  double dnrep = static_cast<double>(nrep_);
+  const double dnrep = static_cast<double>(nrep_);
 
   if(do_reweight){
     // calculate the weights either from BIAS 
@@ -1141,14 +1146,24 @@ void Metainference::calculate()
         variance_[i] = v_moment[i];
   }
 
+  const double sq_dnrep = sqrt(dnrep);
   if(noise_type_==MGAUSS||noise_type_==MOUTLIERS) {
-    for(unsigned i=0;i<narg;++i) { 
-      sigma_mean_[i] = sqrt(variance_[i]/dnrep);
+    for(unsigned i=0;i<narg;++i) {
+      double s_v = sqrt(variance_[i]);
+      if(sigma_max_[i] < s_v) {
+        Dsigma_[i] *= s_v/sigma_max_[i]; 
+        sigma_max_[i] = s_v;
+      }
+      sigma_mean_[i] = s_v/sq_dnrep;
       valueSigmaMean[i]->set(sigma_mean_[i]);
     }
   } else {
-    sigma_mean_[0] = *max_element(variance_.begin(), variance_.end());
-    sigma_mean_[0] = sqrt(sigma_mean_[0]/dnrep);
+    double s_v = sqrt(*max_element(variance_.begin(), variance_.end()));
+    if(sigma_max_[0] < s_v) {
+      Dsigma_[0] *= s_v/sigma_max_[0]; 
+      sigma_max_[0] = s_v;
+    }
+    sigma_mean_[0] = s_v/sq_dnrep;
     valueSigmaMean[0]->set(sigma_mean_[0]);
   }
 
