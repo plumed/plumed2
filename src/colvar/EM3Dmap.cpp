@@ -61,6 +61,7 @@ private:
  vector<double> ovmd_;
  vector<double> ovdd_;
  double ov_cut_;
+ vector<double> ovdd_cut_;
  // and derivatives
  vector<Vector> ovmd_der_;
  vector<Vector> atom_der_;
@@ -187,17 +188,13 @@ first_time_(true), serial_(false)
   // normalize GMMs
   normalize_GMM(GMM_m_w_);
   normalize_GMM(GMM_d_w_);
-  
+ 
   // get self overlaps between data GMM components
   for(unsigned i=0;i<GMM_d_w_.size();++i) {
       double ov = get_self_overlap(i);
       ovdd_.push_back(ov);
   }
  
-  // adjust cutoff in terms of maximum value of ovdd_
-  double max_ovdd = *(std::max_element(ovdd_.begin(), ovdd_.end()));
-  nl_cutoff_ *= max_ovdd; 
-
   // calculate auxiliary stuff
   get_auxiliary_stuff();
   
@@ -412,6 +409,42 @@ double EM3Dmap::get_prefactor_inverse
  return pre_fact;
 }
 
+double EM3Dmap::get_self_overlap(unsigned id)
+{
+ vector<double> ov;
+ VectorGeneric<6> sum, inv_sum;
+ Vector ov_der;
+ // start loop
+ for(unsigned i=0; i<GMM_d_w_.size(); ++i){
+   // call auxiliary method
+   double pre_fact = get_prefactor_inverse(GMM_d_cov_[id], GMM_d_cov_[i], 
+                                             GMM_d_w_[id],   GMM_d_w_[i], sum, inv_sum); 
+   // calculate overlap
+   double ov_tmp = get_overlap(GMM_d_m_[id], GMM_d_m_[i], pre_fact, inv_sum, ov_der);
+   // add to list
+   ov.push_back(ov_tmp);
+ }
+ // calculate total
+ double ov_tot = accumulate(ov.begin(), ov.end(), 0.0);
+ // sort in ascending order
+ std::sort(ov.begin(), ov.end());
+ // get cutoff = nl_cutoff_ * ov_tot
+ double ov_cut = ov_tot * nl_cutoff_;
+ // integrate tail of ov
+ double ov_sum = 0.0;
+ for(unsigned i=1; i<ov.size(); ++i){
+    ov_sum += ov[i];
+    if(ov_sum >= ov_cut){
+       ov_cut = ov[i-1];
+       break;
+    } 
+ }
+ // store 
+ ovdd_cut_.push_back(ov_cut);
+ // and return it
+ return ov_tot;
+}
+
 // this is to avoid the calculation of millions of exp function
 // when updating the neighbor list using calculate_overlap
 void EM3Dmap::get_cutoff_ov()
@@ -430,31 +463,13 @@ void EM3Dmap::get_cutoff_ov()
      // get prefactor and multiply by weights
      double pre_fact = fact_md_[kaux] * GMM_d_w_[i] * GMM_m_w_[j];
      // calculate ov
-     double ov = nl_cutoff_ / pre_fact;
+     double ov = ovdd_cut_[i] / pre_fact;
      // check
      if(ov < ov_cut_) ov_cut_ = ov;
    }
   }
   // set cutoff
   ov_cut_ = -2.0 * std::log(ov_cut_);
-}
-
-double EM3Dmap::get_self_overlap(unsigned id)
-{
- double ov = 0.0;
- VectorGeneric<6> sum, inv_sum;
- Vector ov_der;
- // start loop
- for(unsigned i=0; i<GMM_d_w_.size(); ++i){
-   // call auxiliary method
-   double pre_fact = get_prefactor_inverse(GMM_d_cov_[id], GMM_d_cov_[i], 
-                                             GMM_d_w_[id],   GMM_d_w_[i], sum, inv_sum); 
-   // calculate overlap
-   double ov_tmp = get_overlap(GMM_d_m_[id], GMM_d_m_[i], pre_fact, inv_sum, ov_der);
-   // add to overlap
-   ov += ov_tmp;
- }
- return ov;
 }
 
 // version with derivatives
@@ -528,8 +543,8 @@ void EM3Dmap::update_neighbor_list()
       double pre_fact = fact_md_[kaux] * GMM_d_w_[i] * GMM_m_w_[j];
       // calculate overlap
       double ov = get_overlap(GMM_d_m_[i], getPosition(j), pre_fact, inv_cov_md_[kaux]);
-      // fill the neighbor list and auxiliary vectors
-      if(ov >= nl_cutoff_) nl_l.push_back(k);
+      // fill the neighbor list
+      if(ov >= ovdd_cut_[i]) nl_l.push_back(k);
   }
   // find total dimension of neighborlist
   vector <int> recvcounts(size_, 0);
