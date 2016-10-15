@@ -130,7 +130,7 @@ void EM3Dmap::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords( keys );
   keys.add("atoms","ATOMS","atoms for which we calculate the density map");
   keys.add("compulsory","GMM_FILE","file with the parameters of the GMM components");
-  keys.add("compulsory","TEMP","temperature in energy units");
+  keys.add("compulsory","TEMP","temperature");
   keys.addFlag("SERIAL",false,"perform the calculation in serial - for debug purpose");
   keys.add("optional","NL_CUTOFF","The cutoff in overlap for the neighbor list");
   keys.add("optional","NL_STRIDE","The frequency with which we are updating the neighbor list");
@@ -149,7 +149,12 @@ first_time_(true), serial_(false)
   string GMM_file;
   parse("GMM_FILE",GMM_file);
  
-  parse("TEMP",kbt_);
+  // get temperature
+  double temp=0.0;
+  parse("TEMP",temp);
+  // convert temp to kbt
+  if(temp>0.0) kbt_=plumed.getAtoms().getKBoltzmann()*temp;
+  else kbt_=plumed.getAtoms().getKbT();
  
   // neighbor list stuff
   parse("NL_CUTOFF",nl_cutoff_);
