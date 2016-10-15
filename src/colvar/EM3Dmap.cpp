@@ -65,7 +65,6 @@ private:
  // and derivatives
  vector<Vector> ovmd_der_;
  vector<Vector> atom_der_;
- vector<double> ene_der_;
  // constant quantity;
  double cfact_;
  
@@ -208,7 +207,6 @@ first_time_(true), serial_(false)
   
   // and prepare temporary vectors
   ovmd_.resize(GMM_d_w_.size());
-  ene_der_.resize(GMM_d_w_.size());
   atom_der_.resize(GMM_m_w_.size());
   
   // clear things that are not needed anymore
@@ -623,10 +621,8 @@ void EM3Dmap::calculate(){
   // calculate "restraint"
   double ene = 0.0;
   for(unsigned i=0;i<ovmd_.size();++i){
-     // individual term
-     ene_der_[i] = (ovmd_[i]-ovdd_[i]);
      // increment energy
-     ene += ene_der_[i] * ene_der_[i];
+     ene += (ovmd_[i]-ovdd_[i]) * (ovmd_[i]-ovdd_[i]);
   };
   
   // constant factor
@@ -640,7 +636,7 @@ void EM3Dmap::calculate(){
      // get indexes of data and model component
      unsigned id = nl_[i] / GMM_m_w_.size();
      unsigned im = nl_[i] % GMM_m_w_.size();
-     double der = fact / ene * 2.0 * ene_der_[id];
+     double der = fact / ene * 2.0 * (ovmd_[id]-ovdd_[id]);
      // chain rule
      atom_der_[im] += der * ovmd_der_[i];
   }
