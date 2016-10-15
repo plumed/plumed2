@@ -132,8 +132,8 @@ void EM3Dmap::registerKeywords( Keywords& keys ){
   keys.add("compulsory","GMM_FILE","file with the parameters of the GMM components");
   keys.add("compulsory","TEMP","temperature");
   keys.addFlag("SERIAL",false,"perform the calculation in serial - for debug purpose");
-  keys.add("optional","NL_CUTOFF","The cutoff in overlap for the neighbor list");
-  keys.add("optional","NL_STRIDE","The frequency with which we are updating the neighbor list");
+  keys.add("compulsory","NL_CUTOFF","The cutoff in overlap for the neighbor list");
+  keys.add("compulsory","NL_STRIDE","The frequency with which we are updating the neighbor list");
   componentsAreNotOptional(keys);
 }
 
