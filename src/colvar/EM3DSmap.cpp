@@ -82,8 +82,10 @@ private:
  Value* valueSigma;
  Value* valueAccept;
  Value* valueScore;
- // constant
- double sqrt2_pi_;
+ // metainference
+ unsigned nrep_;
+ unsigned replica_;
+ double sigma_mean_;
   
  // auxiliary stuff
  // list of atom sigmas
@@ -158,6 +160,7 @@ void EM3DSmap::registerKeywords( Keywords& keys ){
   keys.add("compulsory","SIGMA_MIN","minimum value of the uncertainty parameter");
   keys.add("compulsory","SIGMA_MAX","maximum value of the uncertainty parameter");
   keys.add("compulsory","DSIGMA","maximum MC move of the uncertainty parameter");
+  keys.add("compulsory","SIGMA_MEAN","starting value for the uncertainty in the mean estimate");
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_STRIDE","MC stride");
   keys.addOutputComponent("sigma", "default","uncertainty parameter");
@@ -167,7 +170,6 @@ void EM3DSmap::registerKeywords( Keywords& keys ){
 
 EM3DSmap::EM3DSmap(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
-sqrt2_pi_(2.50662827463100050240),
 MCsteps_(1), MCstride_(1),
 MCaccept_(0), MCfirst_(-1),
 nl_cutoff_(-1.0), nl_stride_(0),
@@ -180,13 +182,16 @@ first_time_(true), serial_(false)
   string GMM_file;
   parse("GMM_FILE",GMM_file);
    
+  // uncertainty stuff 
   parse("SIGMA0", sigma_); 
   parse("SIGMA_MIN",sigma_min_);
   parse("SIGMA_MAX",sigma_max_);
   parse("DSIGMA",Dsigma_);
+  parse("SIGMA_MEAN",sigma_mean_);
+  // MC parameters
   parse("MC_STEPS",MCsteps_);
   parse("MC_STRIDE",MCstride_);
-  // get temperature
+  // temperature
   double temp=0.0;
   parse("TEMP",temp);
   // convert temp to kbt
@@ -209,6 +214,20 @@ first_time_(true), serial_(false)
   
   checkRead();
   
+  // get number of replicas
+  if(comm.Get_rank()==0) {
+    nrep_ = multi_sim_comm.Get_size();
+    replica_ = multi_sim_comm.Get_rank();
+  } else {
+    nrep_ = 0;
+    replica_ = 0;
+  }
+  comm.Sum(&nrep_,1);
+  comm.Sum(&replica_,1);
+  
+  // divide sigma_mean by the square root of the number of replicas
+  sigma_mean_ /= sqrt(static_cast<double>(nrep_));
+  
   log.printf("  atoms involved : ");
   for(unsigned i=0;i<atoms.size();++i) log.printf("%d ",atoms[i].serial());
   log.printf("\n");
@@ -220,9 +239,12 @@ first_time_(true), serial_(false)
   log.printf("  minimum data uncertainty %f\n",sigma_min_);
   log.printf("  maximum data uncertainty %f\n",sigma_max_);
   log.printf("  maximum MC move of data uncertainty %f\n",Dsigma_);
+  log.printf("  uncertainty in the mean estimate %f\n",sigma_mean_);
   log.printf("  temperature of the system in energy unit %f\n",kbt_);
+  log.printf("  number of replicas %u\n",nrep_);
   log.printf("  MC steps %u\n",MCsteps_);
   log.printf("  MC stride %u\n",MCstride_);
+  
 
   addComponent("sigma"); componentIsNotPeriodic("sigma");
   valueSigma=getPntrToComponent("sigma");
@@ -232,8 +254,13 @@ first_time_(true), serial_(false)
   valueScore=getPntrToComponent("score");
   
   // initialize random seed
-  unsigned iseed = time(NULL);
+  unsigned iseed;
+  if(comm.Get_rank()==0) iseed = time(NULL)+replica_;
+  else iseed = 0;     
+  comm.Sum(&iseed, 1);
   srand(iseed);
+  
+  log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");
 
   // set constant quantity before calculating stuff
   cfact_ = 1.0/pow( 2.0*pi, 1.5 );
@@ -668,15 +695,18 @@ void EM3DSmap::calculate_overlap(){
 
 double EM3DSmap::getEnergy(double sigma)
 {
-  double ene = 0.0;
+  // calculate effective sigma squared
+  double ss2 = sigma_mean_*sigma_mean_+sigma*sigma;
+  
+  double ene = 0.0;  
   for(unsigned i=0;i<ovmd_.size();++i){
      // increment energy
      ene += (ovmd_[i]-ovdd_[i]) * (ovmd_[i]-ovdd_[i]);
   };  
   // pre factor
-  double fact = kbt_ * 0.5 / sigma / sigma ;
+  double fact = kbt_ * 0.5 / ss2 ;
   // add normalization of the Gaussian and Jeffrey's prior
-  ene = fact * ene + kbt_ * ( static_cast<double>(ovmd_.size()) * std::log(sqrt2_pi_*sigma) + std::log(sigma) );
+  ene = fact * ene + kbt_ * ( static_cast<double>(ovmd_.size()) * 0.5 * std::log(ss2) + 0.5 * std::log(ss2) );
   
   return ene;
 }
@@ -722,11 +752,23 @@ void EM3DSmap::doMonteCarlo()
   valueSigma->set(sigma_);
 }
 
-
 void EM3DSmap::calculate(){
 
   // calculate CV 
   calculate_overlap();
+  
+  // rescale factor for ensemble average
+  double escale = 1.0 / static_cast<double>(nrep_);
+  
+  // calculate average of ovmd_ across replicas
+  if(comm.Get_rank()==0){
+     multi_sim_comm.Sum(&ovmd_[0], ovmd_.size());
+     for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] *= escale;
+  } else {
+     for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i]  = 0.0;
+  }
+  comm.Sum(&ovmd_[0], ovmd_.size());
+  
   
   // MONTE CARLO 
   const long int step = getStep();
@@ -737,6 +779,16 @@ void EM3DSmap::calculate(){
   const double accept = static_cast<double>(MCaccept_) / static_cast<double>(MCsteps_) / MCtrials;
   valueAccept->set(accept);
   
+  // calculate effective sigma squared
+  double ss2 = sigma_mean_*sigma_mean_+sigma_*sigma_;
+  // calculate intensity
+  double inv_s2 = 0.0;
+  if(comm.Get_rank()==0){
+    inv_s2 = 1.0 / ss2;
+    multi_sim_comm.Sum(&inv_s2,1);
+  }
+  comm.Sum(&inv_s2,1);  
+  
   // calculate "restraint"
   double ene = 0.0;
   for(unsigned i=0;i<ovmd_.size();++i){
@@ -745,7 +797,7 @@ void EM3DSmap::calculate(){
   };
   
   // pre factor
-  double fact = kbt_ * 0.5 / sigma_ / sigma_ ;
+  double fact = kbt_ * 0.5 * inv_s2;
 
   // clear temporary vector
   for(unsigned i=0; i<atom_der_.size(); ++i) atom_der_[i] = Vector(0,0,0);
@@ -757,7 +809,7 @@ void EM3DSmap::calculate(){
      unsigned im = nl_[i] % GMM_m_w_.size();
      double der = fact * 2.0 * (ovmd_[id]-ovdd_[id]);
      // chain rule
-     atom_der_[im] += der * ovmd_der_[i];
+     atom_der_[im] += der * ovmd_der_[i] * escale;
   }
   // if parallel, communicate stuff
   if(!serial_) comm.Sum(&atom_der_[0][0], 3*atom_der_.size());
@@ -766,7 +818,7 @@ void EM3DSmap::calculate(){
   for(unsigned i=0;i<atom_der_.size();++i) setAtomsDerivatives(valueScore, i, atom_der_[i]);
 
   // add normalization of the Gaussian and Jeffrey's prior
-  ene = fact * ene + kbt_ * ( static_cast<double>(ovmd_.size()) * std::log(sqrt2_pi_*sigma_) + std::log(sigma_) );
+  ene = fact * ene + kbt_ * ( static_cast<double>(ovmd_.size()) * 0.5 * std::log(ss2) + 0.5 * std::log(ss2) );
 
   // set value of the score
   valueScore->set(ene);
