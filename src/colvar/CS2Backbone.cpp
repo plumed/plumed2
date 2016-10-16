@@ -63,6 +63,10 @@ shift as in \cite Camilloni:2012je \cite Camilloni:2013hs (see \ref STATS and
 CamShift calculation is relatively heavy because it often uses a large number of atoms, in order
 to make it faster it is currently parallelised with \ref OpenMP.
 
+As a general rule, when using \ref CS2BACKBONE or other experimental restraints it is better to 
+increase the accuracy of the constraint algorithm due to the increased strain on the bonded structure. 
+In the case of GROMACS it is safer to use lincs-iter=2 and lincs-order=6.
+
 In general the system for which chemical shifts are calculated must be completly included in
 ATOMS and a TEMPLATE pdb file for the same atoms should be provided as well in the folder DATA. 
 The atoms are made automatically whole unless NOPBC is used, in particular if the system is made of 

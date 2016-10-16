@@ -33,7 +33,9 @@ and Residual Dipolar couplings/pseudocontact shifts \ref RDC.
 In the following we will write the \ref CS2BACKBONE collective variable similar to the one used in Granata et al. (2013) (while the collective
 variable is still proportional to the square sum of the deviation of the calculated and experimental chemical shifts divided by a typical
 error, the exact definition is not the same. The sum is not done anymore with a flat bottom difference and the error used are not the one
-published, so the exact result of the scoring function can be different). 
+published, so the exact result of the scoring function can be different).
+
+As a general rule, when using \ref CS2BACKBONE or other experimental restraints it is better to increase the accuracy of the constraint algorithm due to the increased strain on the bonded structure. In the case of GROMACS it is safer to use lincs-iter=2 and lincs-order=6. 
 
 \verbatim
 prot: GROUP ATOMS=1-862
