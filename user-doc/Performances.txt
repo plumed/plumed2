@@ -9,14 +9,12 @@ variables, bias, on-the-fly analysis, etc in a way that is compatible with a num
 different molecular dynamics codes. This means that there cannot be a single 
 strategy to speed up all the possible calculations. 
 
-PLUMED makes use of MPI and OpenMP to parallelise some of its function, try to always
-compile it with these features enabled. Furthemore, we noticed that newer compilers
-with proper optimisation flags can provide a drammatic boost to performances.
-Try to use newer compilers and read the documentation about the different optimisation
-flags.  
+PLUMED makes use of MPI and OpenMP to parallelise some of its functions, try to always
+compile it with these features enabled. Furthermore, newer compilers with proper optimisation 
+flags can provide a drammatic boost to performances.
 
-PLUMED collects atoms from an external code and sends back forces, a key point to minimise
-the effect of PLUMED on highly parallel calculations is to reduce the number of atoms 
+PLUMED collects atoms from an external code and sends back forces, so it is key to minimise
+the effect of PLUMED on highly parallel calculations to keep to the minimum the number of atoms 
 used by PLUMED at every calculation step. The less is the number of atoms you need to send 
 to PLUMED the less will be the overhead in the comunication between PLUMED and the code.
 
