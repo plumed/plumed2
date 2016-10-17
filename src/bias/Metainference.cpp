@@ -151,8 +151,6 @@ class Metainference : public Bias
 
   // temperature in kbt
   double   kbt_;
-  // number of data points
-  unsigned ndata_;
 
   // Monte Carlo stuff
   vector<Random> random;
@@ -261,7 +259,6 @@ scale_min_(1),
 scale_max_(-1),
 Dscale_(-1),
 sm_mod_(1.),
-ndata_(getNumberOfArguments()),
 random(3),
 MCsteps_(1), 
 MCstride_(1), 
@@ -613,7 +610,7 @@ double Metainference::getEnergySP(const vector<double> &mean, const vector<doubl
     }
   }
   // add one single Jeffrey's prior and one normalisation per data point
-  ene += std::log(sigma[0]+sigma_mean_[0]*modifier) - static_cast<double>(ndata_)*0.5*std::log(2./(M_PI*M_PI)*ss);
+  ene += std::log(sigma[0]+sigma_mean_[0]*modifier) - static_cast<double>(narg)*0.5*std::log(2./(M_PI*M_PI)*ss);
   return kbt_ * ene;
 }
 
