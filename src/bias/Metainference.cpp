@@ -241,6 +241,7 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.add("optional","MC_CHUNKSIZE","MC chunksize");
   keys.add("optional","STATUS_FILE","write a file with all the data usefull for restart/continuation of Metainference");
   keys.add("compulsory","WRITE_STRIDE","write the status to a file every N steps, this can be used for restart/continuation");
+  keys.use("RESTART");
   useCustomisableComponents(keys);
   keys.addOutputComponent("sigma",        "default",      "uncertainty parameter");
   keys.addOutputComponent("sigmaMean",    "default",      "uncertainty in the mean estimate");
@@ -468,6 +469,13 @@ atoms(plumed.getAtoms())
     }
     restart_sfile.scanField();
     restart_sfile.close();
+    /* set sigma_mean from variance */
+    if(noise_type_==MGAUSS||noise_type_==MOUTLIERS) {
+      for(unsigned i=0;i<variance_.size();++i) sigma_mean_[i] = sqrt(variance_[i]/static_cast<double>(nrep_));
+    } else {
+      double s_v = *max_element(variance_.begin(), variance_.end());
+      sigma_mean_[0] = sqrt(s_v/static_cast<double>(nrep_));
+    }
   }
 
   switch(noise_type_) {
@@ -545,14 +553,18 @@ atoms(plumed.getAtoms())
       std::string num; Tools::convert(i,num);
       addComponent("sigmaMean_"+num); componentIsNotPeriodic("sigmaMean_"+num);
       valueSigmaMean.push_back(getPntrToComponent("sigmaMean_"+num));
+      getPntrToComponent("sigmaMean_"+num)->set(sigma_mean_[i]);
       addComponent("sigma_"+num); componentIsNotPeriodic("sigma_"+num);
       valueSigma.push_back(getPntrToComponent("sigma_"+num));
+      getPntrToComponent("sigma_"+num)->set(sigma_[i]);
     }
   } else {
     addComponent("sigmaMean"); componentIsNotPeriodic("sigmaMean");
     valueSigmaMean.push_back(getPntrToComponent("sigmaMean"));
+    getPntrToComponent("sigmaMean")->set(sigma_mean_[0]);
     addComponent("sigma"); componentIsNotPeriodic("sigma");
     valueSigma.push_back(getPntrToComponent("sigma"));
+    getPntrToComponent("sigma")->set(sigma_[0]);
   }
 
   // initialize random seed
