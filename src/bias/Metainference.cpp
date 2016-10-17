@@ -612,8 +612,8 @@ double Metainference::getEnergySP(const vector<double> &mean, const vector<doubl
       ene += std::log( 2.0 * a2 / ( 1.0 - exp(- a2 / sm2) ) );
     }
   }
-  // add normalization and Jeffrey's prior
-  ene += 0.5*std::log(sigma[0]*sigma[0] + sigma_mean_[0]*sigma_mean_[0]*modifier*modifier) - static_cast<double>(ndata_)*0.5*std::log(2./M_PI*ss);
+  // add one single Jeffrey's prior and one normalisation per data point
+  ene += std::log(sigma[0]+sigma_mean_[0]*modifier) - static_cast<double>(ndata_)*0.5*std::log(2./(M_PI*M_PI)*ss);
   return kbt_ * ene;
 }
 
@@ -634,7 +634,7 @@ double Metainference::getEnergySPE(const vector<double> &mean, const vector<doub
       // deviation + jeffreys + normalisation
       // ene += 0.5*std::log(sss) - 0.5*std::log(sqrt2_div_pi*ss);
       // this is equivalent to (but with less log)
-      const double add = 0.5*std::log(0.5*M_PI*sss/ss); 
+      const double add = 0.5*std::log(0.5*M_PI*M_PI*sss/ss); 
       ene += std::log( 2.0 * a2 / ( 1.0 - exp(- a2 / sm2) ) ) + add;
     }
   }
@@ -1124,9 +1124,6 @@ void Metainference::calculate()
   const long int step = getStep();
   if(step%MCstride_==0&&!getExchangeStep()) doMonteCarlo(mean, sigma_mean_modifier);
 
-  // write status file
-  if(write_stride_>0&& (step%write_stride_==0 || getCPT()) ) writeStatus();
-  
   /* fix sigma_mean_ for the scaling factor */
   sigma_mean_modifier *= scale_;
   /* fix sigma_mean_ for the effect of large forces */
