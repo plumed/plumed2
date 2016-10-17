@@ -179,7 +179,6 @@ class Metainference : public Bias
   bool     master;
   bool     do_reweight;
   unsigned do_optsigmamean_;
-  long int relaxation;
   unsigned nrep_;
   unsigned replica_;
   unsigned narg;
@@ -222,7 +221,6 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.add("optional","SCALE_MIN","minimum value of the uncertainty parameter");
   keys.add("optional","SCALE_MAX","maximum value of the uncertainty parameter");
   keys.add("optional","SCALE_SIGMA","maximum value of the uncertainty parameter");
-  keys.add("optional","RELAXATION","Relaxation time for the interaction with MetaD");
   keys.add("optional","DSCALE","maximum MC move of the uncertainty parameter");
   keys.add("compulsory","SIGMA0","initial value of the uncertainty parameter");
   keys.add("compulsory","SIGMA_MIN","minimum value of the uncertainty parameter");
@@ -271,7 +269,6 @@ MCaccept_(0),
 MCtrial_(0),
 MCchunksize_(0),
 write_stride_(0),
-relaxation(0),
 do_reweight(false),
 do_optsigmamean_(0),
 atoms(plumed.getAtoms())
@@ -440,8 +437,6 @@ atoms(plumed.getAtoms())
     Dsm_mod_=0.01;
     parse("DSIGMA_MEAN_MOD", Dsm_mod_);
   }
-
-  parse("RELAXATION", relaxation);
 
   checkRead();
 
@@ -920,8 +915,6 @@ double Metainference::getEnergyForceSP(const vector<double> &mean, const double 
 
   if(do_reweight) {
     setOutputForce(narg, -w_tmp);
-    if(w_tmp<-epsilon&&getStep()<relaxation) (getPntrToArgument(narg)->getPntrToAction())->setSpecialUpdate();
-    else (getPntrToArgument(narg)->getPntrToAction())->unsetSpecialUpdate();
     getPntrToComponent("MetaDf")->set(w_tmp);
     getPntrToComponent("weight")->set(fact);
   }
@@ -967,8 +960,6 @@ double Metainference::getEnergyForceSPE(const vector<double> &mean, const double
 
   if(do_reweight) {
     setOutputForce(narg, -w_tmp);
-    if(w_tmp<-epsilon&&getStep()<relaxation) (getPntrToArgument(narg)->getPntrToAction())->setSpecialUpdate();
-    else (getPntrToArgument(narg)->getPntrToAction())->unsetSpecialUpdate();
     getPntrToComponent("MetaDf")->set(w_tmp);
     getPntrToComponent("weight")->set(fact);
   }
@@ -1001,8 +992,6 @@ double Metainference::getEnergyForceGJ(const vector<double> &mean, const double 
   }
   if(do_reweight) {
     setOutputForce(narg, -w_tmp);
-    if(w_tmp<-epsilon&&getStep()<relaxation) (getPntrToArgument(narg)->getPntrToAction())->setSpecialUpdate();
-    else (getPntrToArgument(narg)->getPntrToAction())->unsetSpecialUpdate();
     getPntrToComponent("MetaDf")->set(w_tmp);
     getPntrToComponent("weight")->set(fact);
   }
@@ -1043,8 +1032,6 @@ double Metainference::getEnergyForceGJE(const vector<double> &mean, const double
 
   if(do_reweight) {
     setOutputForce(narg, -w_tmp);
-    if(w_tmp<-epsilon&&getStep()<relaxation) (getPntrToArgument(narg)->getPntrToAction())->setSpecialUpdate();
-    else (getPntrToArgument(narg)->getPntrToAction())->unsetSpecialUpdate();
     getPntrToComponent("MetaDf")->set(w_tmp);
     getPntrToComponent("weight")->set(fact);
   }

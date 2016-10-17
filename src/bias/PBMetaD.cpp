@@ -227,7 +227,6 @@ private:
   int adaptive_;
   vector<FlexibleBin> flexbin;
   bool isFirstStep;
-  bool    addZeroHills;
 
   void   readGaussians(unsigned iarg, IFile*);
   bool   readChunkOfGaussians(unsigned iarg, IFile *ifile, unsigned n);
@@ -244,8 +243,6 @@ public:
   ~PBMetaD();
   void calculate();
   void update();
-  void setSpecialUpdate(){addZeroHills=true;}
-  void unsetSpecialUpdate(){addZeroHills=false;}
   static void registerKeywords(Keywords& keys);
   bool checkNeedsGradients()const{if(adaptive_==FlexibleBin::geometry){return true;}else{return false;}}
 };
@@ -303,7 +300,7 @@ PLUMED_BIAS_INIT(ao),
 grid_(false), height0_(std::numeric_limits<double>::max()),
 biasf_(1.0), kbt_(0.0), stride_(0), wgridstride_(0), welltemp_(false),
 multiple_w(false), adaptive_(FlexibleBin::none),
-isFirstStep(true), addZeroHills(false)
+isFirstStep(true)
 {
   // parse the flexible hills
   string adaptiveoption;
@@ -953,7 +950,6 @@ void PBMetaD::update()
     }
     // normalize and apply welltemp correction
     for(unsigned i=0; i<getNumberOfArguments(); ++i){
-      if(addZeroHills) { height[i]=0.; continue;}
       height[i] *=  height0_ / norm;
       if(welltemp_) height[i] *= exp(-bias[i]/(kbt_*(biasf_-1.0)));
     }
@@ -987,11 +983,9 @@ void PBMetaD::update()
           cv_tmp[0] = all_cv[j*cv.size()+i];
           double height_tmp = all_height[j*cv.size()+i];
           sigma_tmp[0] = all_sigma[j*cv.size()+i];
-          if(height_tmp!=0) {
-            Gaussian newhill = Gaussian(cv_tmp, sigma_tmp, height_tmp, multivariate);
-            addGaussian(i, newhill);
-            writeGaussian(i, newhill, hillsOfiles_[i]);
-          }
+          Gaussian newhill = Gaussian(cv_tmp, sigma_tmp, height_tmp, multivariate);
+          addGaussian(i, newhill);
+          writeGaussian(i, newhill, hillsOfiles_[i]);
         }
       }  
     // just add your own hills  
