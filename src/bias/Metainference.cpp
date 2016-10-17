@@ -691,7 +691,8 @@ double Metainference::getEnergyGJE(const vector<double> &mean, const vector<doub
 void Metainference::doMonteCarlo(const vector<double> &mean_, const double modifier)
 {
   // calculate old energy with the updated coordinates
-  double old_energy;
+  double old_energy=0.;
+
   switch(noise_type_) {
     case GAUSS:
       old_energy = getEnergyGJ(mean_,sigma_,scale_,modifier);
@@ -738,7 +739,8 @@ void Metainference::doMonteCarlo(const vector<double> &mean_, const double modif
       }
 
       // calculate new energy
-      double new_energy;
+      double new_energy = 0.;
+
       switch(noise_type_) {
         case GAUSS:
           new_energy = getEnergyGJ(mean_,sigma_,new_scale,modifier);
