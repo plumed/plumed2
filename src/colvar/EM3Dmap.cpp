@@ -178,6 +178,8 @@ first_time_(true), serial_(false)
   if(serial_) log.printf("  serial calculation\n");
   log.printf("  neighbor list overlap cutoff : %lf\n", nl_cutoff_);
   log.printf("  neighbor list stride : %u\n",  nl_stride_);
+  log.printf("  temperature of the system in energy unit %f\n",kbt_);
+
 
   // set constant quantity before calculating stuff
   cfact_ = 1.0/pow( 2.0*pi, 1.5 );
