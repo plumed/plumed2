@@ -307,13 +307,11 @@ void EM3DSmap::get_GMM_m(vector<AtomNumber> &atoms)
   // map of atom types to A and B coefficients of scattering factor
   // f(s) = A * exp(-B*s**2)
   // B is in Angstrom squared
-  // data from here
-  // http://fg.oisin.rc-harwell.ac.uk/scm/loggerhead/cctbx/cctbx/view/head:/cctbx/eltbx/xray_scattering/n_gaussian_raw.cpp
   map<string, double> w_map;
-  w_map["C"] = 5.96792806111; // type 0
-  w_map["O"] = 7.9652690671;  // type 1
-  w_map["N"] = 6.96715024214; // type 2
-  w_map["S"] = 15.911119329;  // type 3
+  w_map["C"] = 2.49982; // type 0
+  w_map["O"] = 1.97692;  // type 1
+  w_map["N"] = 2.20402; // type 2
+  w_map["S"] = 5.14099;  // type 3
   // map between an atom type and an index
   map<string, unsigned> type_map;
   type_map["C"]=0;
@@ -321,10 +319,10 @@ void EM3DSmap::get_GMM_m(vector<AtomNumber> &atoms)
   type_map["N"]=2;
   type_map["S"]=3;
   // fill in the sigma vector
-  s_map_.push_back(14.8957682987);
-  s_map_.push_back(9.0526662027);
-  s_map_.push_back(11.4372299305);
-  s_map_.push_back(10.8469011094);
+  s_map_.push_back(15.146);
+  s_map_.push_back(8.59722);
+  s_map_.push_back(11.1116);
+  s_map_.push_back(15.8952);
   
   // check if MOLINFO line is present 
   if( moldat.size()==1 ){
