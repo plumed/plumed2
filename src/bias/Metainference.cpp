@@ -529,17 +529,25 @@ atoms(plumed.getAtoms())
   if(doscale_) {
     log.printf("  sampling a common scaling factor with:\n");
     log.printf("    initial scale parameter %f\n",scale_);
-    log.printf("    minimum scale parameter %f\n",scale_min_);
-    log.printf("    maximum scale parameter %f\n",scale_max_);
-    log.printf("    maximum MC move of scale parameter %f\n",Dscale_);
+    if(scale_prior_==SC_GAUSS) {
+      log.printf("    gaussian prior with mean %f and width %f\n",scale_mu_,Dscale_);
+    }
+    if(scale_prior_==SC_FLAT) {
+      log.printf("    flat prior between %f - %f\n",scale_min_,scale_max_);
+      log.printf("    maximum MC move of scale parameter %f\n",Dscale_);
+    }
   }
 
   if(dooffset_) {
-    log.printf("  sampling a common scaling factor with:\n");
+    log.printf("  sampling a common offset with:\n");
     log.printf("    initial offset parameter %f\n",offset_);
-    log.printf("    minimum offset parameter %f\n",offset_min_);
-    log.printf("    maximum offset parameter %f\n",offset_max_);
-    log.printf("    maximum MC move of offset parameter %f\n",Doffset_);
+    if(offset_prior_==SC_GAUSS) {
+      log.printf("    gaussian prior with mean %f and width %f\n",offset_mu_,Doffset_);
+    }
+    if(offset_prior_==SC_FLAT) {
+      log.printf("    flat prior between %f - %f\n",offset_min_,offset_max_);
+      log.printf("    maximum MC move of offset parameter %f\n",Doffset_);
+    }
   }
 
   log.printf("  number of experimental data points %u\n",narg);
@@ -1246,6 +1254,9 @@ void Metainference::writeStatus()
   }
   if(doscale_) {
     sfile_.printField("scale0_",scale_);
+  }
+  if(dooffset_) {
+    sfile_.printField("offset0_",offset_);
   }
   if(do_optsigmamean_==2) {
     sfile_.printField("sigma_mean_mod0",sm_mod_);
