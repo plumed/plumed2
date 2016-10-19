@@ -86,7 +86,7 @@ private:
  // neighbor list
  double   nl_cutoff_;
  unsigned nl_stride_;
- bool first_time_;
+ bool first_time_, no_aver_;
  vector < unsigned > nl_;
  // parallel stuff
  bool serial_;
@@ -138,6 +138,7 @@ void EM3DMSmap::registerKeywords( Keywords& keys ){
   keys.add("compulsory","GMM_FILE","file with the parameters of the GMM components");
   keys.add("compulsory","TEMP","temperature");
   keys.addFlag("SERIAL",false,"perform the calculation in serial - for debug purpose");
+  keys.addFlag("NO_AVER",false,"don't do ensemble averaging");
   keys.add("compulsory","NL_CUTOFF","The cutoff in overlap for the neighbor list");
   keys.add("compulsory","NL_STRIDE","The frequency with which we are updating the neighbor list");
   keys.add("compulsory","SIGMA_MEAN","starting value for the uncertainty in the mean estimate");
@@ -147,7 +148,7 @@ void EM3DMSmap::registerKeywords( Keywords& keys ){
 EM3DMSmap::EM3DMSmap(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
 nl_cutoff_(-1.0), nl_stride_(0),
-first_time_(true), serial_(false),
+first_time_(true), no_aver_(false), serial_(false),
 inv_sqrt2_(0.707106781186548),
 sqrt2_pi_(0.797884560802865)
 {
@@ -181,13 +182,20 @@ sqrt2_pi_(0.797884560802865)
   } else {
     size_=comm.Get_size(); rank_=comm.Get_rank();
   }
-  
+ 
+  parseFlag("NO_AVER",no_aver_);
+ 
   checkRead();
   
   // get number of replicas
   if(comm.Get_rank()==0) {
-    nrep_ = multi_sim_comm.Get_size();
-    replica_ = multi_sim_comm.Get_rank();
+    if(no_aver_){
+     nrep_ = 1;
+     replica_ = 0;
+    } else {
+     nrep_ = multi_sim_comm.Get_size();
+     replica_ = multi_sim_comm.Get_rank();
+    }
   } else {
     nrep_ = 0;
     replica_ = 0;
@@ -203,19 +211,13 @@ sqrt2_pi_(0.797884560802865)
   log.printf("\n");
   log.printf("  GMM data file : %s\n", GMM_file.c_str());
   if(serial_) log.printf("  serial calculation\n");
+  if(no_aver_) log.printf("  without ensemble averaging\n");
   log.printf("  neighbor list overlap cutoff : %lf\n", nl_cutoff_);
   log.printf("  neighbor list stride : %u\n",  nl_stride_);
   log.printf("  uncertainty in the mean estimate %f\n",sigma_mean_);
   log.printf("  temperature of the system in energy unit %f\n",kbt_);
   log.printf("  number of replicas %u\n",nrep_);
    
-  // initialize random seed
-  unsigned iseed;
-  if(comm.Get_rank()==0) iseed = time(NULL)+replica_;
-  else iseed = 0;     
-  comm.Sum(&iseed, 1);
-  srand(iseed);
-  
   log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");
 
   // set constant quantity before calculating stuff
@@ -661,14 +663,16 @@ void EM3DMSmap::calculate(){
   double escale = 1.0 / static_cast<double>(nrep_);
   
   // calculate average of ovmd_ across replicas
-  if(comm.Get_rank()==0){
-     multi_sim_comm.Sum(&ovmd_[0], ovmd_.size());
-     for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] *= escale;
-  } else {
-     for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i]  = 0.0;
+  if(!no_aver_){
+   if(comm.Get_rank()==0){
+      multi_sim_comm.Sum(&ovmd_[0], ovmd_.size());
+      for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] *= escale;
+   } else {
+      for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i]  = 0.0;
+   }
+   comm.Sum(&ovmd_[0], ovmd_.size());
   }
-  comm.Sum(&ovmd_[0], ovmd_.size());
-  
+ 
   // calculate "restraint"
   double ene = 0.0; 
   for(unsigned i=0;i<ovmd_.size();++i){
