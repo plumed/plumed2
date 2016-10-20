@@ -38,14 +38,14 @@ using namespace std;
 namespace PLMD{
 namespace colvar{
 
-//+PLUMEDOC COLVAR EM3DMAP
+//+PLUMEDOC COLVAR EM3D
 /*
 Put Documentation here 
 
 */
 //+ENDPLUMEDOC
    
-class EM3DMSmap : public Colvar {
+class EM3D : public Colvar {
 
 private:
 
@@ -124,15 +124,15 @@ private:
   
 public:
   static void registerKeywords( Keywords& keys );
-  explicit EM3DMSmap(const ActionOptions&);
+  explicit EM3D(const ActionOptions&);
 // active methods:
   void prepare();
   virtual void calculate();
 };
 
-PLUMED_REGISTER_ACTION(EM3DMSmap,"EM3DMSMAP")
+PLUMED_REGISTER_ACTION(EM3D,"EM3D")
 
-void EM3DMSmap::registerKeywords( Keywords& keys ){
+void EM3D::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords( keys );
   keys.add("atoms","ATOMS","atoms for which we calculate the density map");
   keys.add("compulsory","GMM_FILE","file with the parameters of the GMM components");
@@ -145,12 +145,12 @@ void EM3DMSmap::registerKeywords( Keywords& keys ){
   componentsAreNotOptional(keys);
 }
 
-EM3DMSmap::EM3DMSmap(const ActionOptions&ao):
+EM3D::EM3D(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
-nl_cutoff_(-1.0), nl_stride_(0),
-first_time_(true), no_aver_(false), serial_(false),
 inv_sqrt2_(0.707106781186548),
-sqrt2_pi_(0.797884560802865)
+sqrt2_pi_(0.797884560802865),
+nl_cutoff_(-1.0), nl_stride_(0),
+first_time_(true), no_aver_(false), serial_(false)
 {
   
   vector<AtomNumber> atoms;
@@ -262,7 +262,7 @@ sqrt2_pi_(0.797884560802865)
      
 }
 
-void EM3DMSmap::get_GMM_m(vector<AtomNumber> &atoms)
+void EM3D::get_GMM_m(vector<AtomNumber> &atoms)
 {
   vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
 
@@ -319,7 +319,7 @@ void EM3DMSmap::get_GMM_m(vector<AtomNumber> &atoms)
 }
 
 	
-void EM3DMSmap::check_GMM_d(VectorGeneric<6> &cov, double w)
+void EM3D::check_GMM_d(VectorGeneric<6> &cov, double w)
 {
  
  // check if positive defined, by calculating the 3 leading principal minors
@@ -336,7 +336,7 @@ void EM3DMSmap::check_GMM_d(VectorGeneric<6> &cov, double w)
 
 
 // read GMM data file in PLUMED format:
-void EM3DMSmap::get_GMM_d(string GMM_file)
+void EM3D::get_GMM_d(string GMM_file)
 {
  int idcomp;
  double w, m0, m1, m2;
@@ -379,13 +379,13 @@ void EM3DMSmap::get_GMM_d(string GMM_file)
 // normalize GMM to sum to 1
 // since all the GMM components are individually normalized, we just need to 
 // divide each weight for the sum of the weights
-void EM3DMSmap::normalize_GMM(vector<double> &w)
+void EM3D::normalize_GMM(vector<double> &w)
  {
    double norm = accumulate(w.begin(), w.end(), 0.0);
    for(unsigned i=0; i<w.size(); ++i) w[i] /= norm;
  }
  
- void EM3DMSmap::get_auxiliary_stuff()
+ void EM3D::get_auxiliary_stuff()
  {
   VectorGeneric<6> cov, sum, inv_sum;
   // cycle on all atoms types
@@ -424,7 +424,7 @@ void EM3DMSmap::normalize_GMM(vector<double> &w)
  }
 
 // get prefactors
-double EM3DMSmap::get_prefactor_inverse
+double EM3D::get_prefactor_inverse
 (const VectorGeneric<6> &GMM_cov_0, const VectorGeneric<6> &GMM_cov_1,
  double &GMM_w_0, double &GMM_w_1, 
  VectorGeneric<6> &sum, VectorGeneric<6> &inv_sum)
@@ -452,7 +452,7 @@ double EM3DMSmap::get_prefactor_inverse
  return pre_fact;
 }
 
-double EM3DMSmap::get_self_overlap(unsigned id)
+double EM3D::get_self_overlap(unsigned id)
 {
  vector<double> ov;
  VectorGeneric<6> sum, inv_sum;
@@ -490,7 +490,7 @@ double EM3DMSmap::get_self_overlap(unsigned id)
 
 // this is to avoid the calculation of millions of exp function
 // when updating the neighbor list using calculate_overlap
-void EM3DMSmap::get_cutoff_ov()
+void EM3D::get_cutoff_ov()
 {
   // temporary stuff
   unsigned GMM_d_w_size = GMM_d_w_.size();
@@ -516,7 +516,7 @@ void EM3DMSmap::get_cutoff_ov()
 }
 
 // version with derivatives
-double EM3DMSmap::get_overlap(const Vector &m_m, const Vector &d_m, double &fact_md,
+double EM3D::get_overlap(const Vector &m_m, const Vector &d_m, double &fact_md,
                             const VectorGeneric<6> &inv_cov_md, Vector &ov_der)
 {
   // calculate vector difference m_m-d_m
@@ -540,7 +540,7 @@ double EM3DMSmap::get_overlap(const Vector &m_m, const Vector &d_m, double &fact
 }
 
 // fast version without derivatives and cutoff used for neighbor list
-double EM3DMSmap::get_overlap(const Vector &m_m, const Vector &d_m, double &fact_md, 
+double EM3D::get_overlap(const Vector &m_m, const Vector &d_m, double &fact_md, 
                             const VectorGeneric<6> &inv_cov_md)
                         
 {
@@ -563,7 +563,7 @@ double EM3DMSmap::get_overlap(const Vector &m_m, const Vector &d_m, double &fact
   return ov;
 }
 
-void EM3DMSmap::update_neighbor_list()
+void EM3D::update_neighbor_list()
 {
   // temp stuff
   unsigned GMM_d_w_size = GMM_d_w_.size();
@@ -610,14 +610,14 @@ void EM3DMSmap::update_neighbor_list()
   ovmd_der_.resize(tot_size);
 }
 
-void EM3DMSmap::prepare()
+void EM3D::prepare()
 {
   if(getExchangeStep()) first_time_=true;
 }
 
 
 // overlap calculator
-void EM3DMSmap::calculate_overlap(){
+void EM3D::calculate_overlap(){
 
   //makeWhole();
   if(first_time_ || getExchangeStep() || getStep()%nl_stride_==0){
@@ -654,7 +654,7 @@ void EM3DMSmap::calculate_overlap(){
 }
 
 
-void EM3DMSmap::calculate(){
+void EM3D::calculate(){
 
   // calculate CV 
   calculate_overlap();
