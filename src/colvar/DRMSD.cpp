@@ -72,7 +72,7 @@ DRMSD REFERENCE=file.pdb LOWER_CUTOFF=0.1 UPPER_CUTOFF=0.8
 The following tells plumed to calculate a DRMSD value for a pair of molecules.  
 
 \verbatim
-DRMSD REFERENCE=file.pdb LOWER_CUTOFF=0.1 UPPER_CUTOFF=0.8 TYPE=INTER-RMSD
+DRMSD REFERENCE=file.pdb LOWER_CUTOFF=0.1 UPPER_CUTOFF=0.8 TYPE=INTER-DRMSD
 \endverbatim
 
 In the input reference file (file.pdb) the atoms in each of the two molecules are separated by a TER
