@@ -90,7 +90,7 @@ END
 
 In this example the INTER-DRMSD type ensures that the set of distances from which the final
 quantity is computed involve one atom from each of the two molecules.  If this is replaced 
-by INTRA-RMSD then only those distances involving pairs of atoms that are both in the same 
+by INTRA-DRMSD then only those distances involving pairs of atoms that are both in the same 
 molecule are computed. 
 
 */
