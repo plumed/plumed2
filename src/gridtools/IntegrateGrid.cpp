@@ -22,6 +22,15 @@
 #include "core/ActionRegister.h"
 #include "ActionWithIntegral.h"
 
+//+PLUMEDOC GRIDANALYSIS INTEGRATE_GRID
+/*
+Calculate the total integral of the function on the input grid
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace gridtools {
 
