@@ -50,11 +50,11 @@ private:
  std::vector<unsigned> nbin;
 /// The grid point that was requested last by getGridPointCoordinates
  unsigned currentGridPoint;
-/// Is forced
- bool wasforced;
 /// The forces that will be output at the end of the calculation
  std::vector<double> finalForces;
 protected:
+/// Is forced
+ bool wasforced;
 /// Forces acting on grid elements
  std::vector<double> forces;
 /// Do we have derivatives

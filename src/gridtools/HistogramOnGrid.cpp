@@ -165,11 +165,11 @@ void HistogramOnGrid::getFinalForces( const std::vector<double>& buffer, std::ve
   for(unsigned i=0;i<finalForces.size();++i) finalForces[i] = buffer[ bufstart + gridbuf + i ]; 
   // Derivatives due to normalization
   if( !noAverage() ){
-      unsigned wderstart = bufstart + gridbuf + nder;
+      unsigned wderstart = bufstart + gridbuf + nder; double pref=0;
       for(unsigned ipoint=0;ipoint<getNumberOfPoints();++ipoint){
-           double pref = forces[ipoint]*buffer[ bufstart + ipoint*nper ] / buffer[wderstart];
-           for(unsigned j=0;j<finalForces.size();++j) finalForces[j] -= pref*buffer[ wderstart + 1 + j ];
-      }
+          pref += forces[ipoint]*buffer[ bufstart + ipoint*nper ] / buffer[wderstart];
+      } 
+      for(unsigned j=0;j<finalForces.size();++j) finalForces[j] -= pref*buffer[ wderstart + 1 + j ];
   }
 }
 
