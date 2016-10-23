@@ -43,10 +43,10 @@ ActionAtomistic(ao),
 ActionWithArguments(ao),
 ActionWithValue(ao),
 ActionWithVessel(ao),
-lweight(0),cweight(0),
 myaverage(NULL),
 useRunAllTasks(false),
-clearstride(0)
+clearstride(0),
+lweight(0),cweight(0)
 {
   if( keywords.exists("CLEAR") ){
       parse("CLEAR",clearstride);
@@ -93,7 +93,7 @@ void ActionWithAveraging::calculateNumericalDerivatives(PLMD::ActionWithValue*){
 }
 
 void ActionWithAveraging::update(){
-  if( getStep()==0 || !onStep() ) return;
+  if( (clearstride!=1 && getStep()==0) || !onStep() ) return;
   // Clear if it is time to reset
   if( myaverage ){
       if( myaverage->wasreset() ) clearAverage();

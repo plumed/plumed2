@@ -46,7 +46,10 @@ Additionally, we provide patching procedures for the following codes:
 
 Alternatively, one
 can use PLUMED as a \ref tools for postprocessing the results from molecular dynamics 
-or enhanced sampling calculations.
+or enhanced sampling calculations.  Notice that PLUMED can be used as an analysis tool
+also from the following packages:
+- [PLUMED-GUI](http://github.com/tonigi/vmd_plumed) is a [VMD](http://www.ks.uiuc.edu/Research/vmd/) plugin that computes PLUMED collective variables.
+- [HTMD](http://www.htmd.org/) can use PLUMED collective variables for analysis.
 
 \page Changelog Change Log
 
