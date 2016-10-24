@@ -27,6 +27,8 @@
 #include <af/util.h>
 #endif
 
+using namespace std;
+
 namespace PLMD{
 namespace colvar{
 
@@ -75,7 +77,7 @@ void SAXSGPU::registerKeywords(Keywords& keys){
   keys.addFlag("ADDEXPVALUES",false,"Set to TRUE if you want to have fixed components with the experimetnal values.");
   keys.add("numbered","EXPINT","Add an experimental value for each PRE.");
   keys.addFlag("MULTIGPU",false,"Set to TRUE if you want to use multiple GPU");
-  keys.addFlag("NPT",false,"Set to TRUE if you want to use NPT");
+  //keys.addFlag("NPT",false,"Set to TRUE if you want to use NPT");
 
 }
 
@@ -179,8 +181,8 @@ serial(false)
     total_device = 1;
   }
 
-  npt=false;
-  parseFlag("NPT",npt);
+ // npt=false;
+ // parseFlag("NPT",npt);
 
   sum_device = new af::array[total_device*numq];
   box_device = new af::array[total_device*numq];
@@ -228,7 +230,7 @@ void SAXSGPU::calculate(){
   for(unsigned i=0;i<total_device; i++) {
     af::setDevice(i);
     sum_device[i]   = af::constant(0, numq, f32);
-    if(npt) box_device[i]   = af::constant(0, numq, 6, f32);
+   // if(npt) box_device[i]   = af::constant(0, numq, 6, f32);
     deriv_device[i] = af::constant(0, numq, size, 3, f32);
   }
 
@@ -253,10 +255,10 @@ void SAXSGPU::calculate(){
     af::array xyz_dist = af::moddims((af::tile(a, 1, sizeb, 1) - af::tile(b, size, 1, 1)), size, sizeb, 3);
 
     // atom_box is now size*sizeb,3
-    af::array atom_box;
-    if(npt) {
-      atom_box = af::moddims(xyz_dist, size2, 3);
-    }
+   // af::array atom_box;
+   // if(npt) {
+   //   atom_box = af::moddims(xyz_dist, size2, 3);
+   // }
 
     // square size,sizeb,1
     af::array square = af::moddims(af::sum(xyz_dist*xyz_dist,2), size, sizeb);
@@ -291,6 +293,7 @@ void SAXSGPU::calculate(){
       af::array dd_all = af::tile(tmp, 1, 1, 3)*xyz_dist;
       deriv_device[dnumber](k, seqb, af::span) = af::sum(dd_all);
 
+      /*
       if(npt) {
         // dd_all to size*sizeb, 3
         dd_all = af::moddims(dd_all, size2, 3);
@@ -306,6 +309,7 @@ void SAXSGPU::calculate(){
         af::array box_sum = af::sum(box_pre);
         box_device[dnumber](k,af::span) += box_sum(0,af::span);
       }
+       */
     }   
   }
   delete[] posi;
@@ -314,7 +318,7 @@ void SAXSGPU::calculate(){
   std::vector<double> inten; inten.resize(numq,0);
   std::vector<double> deriv; deriv.resize(numq*size*3,0);
   std::vector<double> box; 
-  if(npt) box.resize(numq*6,0);
+  //if(npt) box.resize(numq*6,0);
 
   // read out results
   for (unsigned i=0; i<total_device; i++) {
@@ -324,11 +328,11 @@ void SAXSGPU::calculate(){
     sum_device[i].host(tmp_inten);
 
     float* tmp_box;
-    if (npt) {
-      tmp_box = new float[numq*6];
-      box_device[i] = af::flat(box_device[i].T());
-      box_device[i].host(tmp_box);
-    }
+   // if (npt) {
+   //   tmp_box = new float[numq*6];
+   //   box_device[i] = af::flat(box_device[i].T());
+   //   box_device[i].host(tmp_box);
+   // }
 
     float* tmp_deriv;
     tmp_deriv = new float[size*3*numq];
@@ -342,15 +346,15 @@ void SAXSGPU::calculate(){
       #pragma omp for nowait
       for(unsigned i=0; i<numq; i++) {
         inten[i] += tmp_inten[i];
-        if (npt) {
-          const unsigned wi = 6*i;
-          box[wi+0] += tmp_box[wi+0];
-          box[wi+1] += tmp_box[wi+3];
-          box[wi+2] += tmp_box[wi+5];
-          box[wi+3] += tmp_box[wi+1];
-          box[wi+4] += tmp_box[wi+4];
-          box[wi+5] += tmp_box[wi+2];
-        }
+     //   if (npt) {
+     //     const unsigned wi = 6*i;
+     //    box[wi+0] += tmp_box[wi+0];
+     //     box[wi+1] += tmp_box[wi+3];
+     //     box[wi+2] += tmp_box[wi+5];
+     //     box[wi+3] += tmp_box[wi+1];
+     //     box[wi+4] += tmp_box[wi+4];
+     //     box[wi+5] += tmp_box[wi+2];
+     //   }
       }
       #pragma omp for nowait
       for(unsigned i=0; i<size*3*numq; i++) {
@@ -359,9 +363,9 @@ void SAXSGPU::calculate(){
     }
  
     delete[] tmp_inten;
-    if (npt) {
-      delete[] tmp_box;
-    }
+   // if (npt) {
+   //   delete[] tmp_box;
+   // }
     delete[] tmp_deriv;
   }
 
@@ -370,18 +374,22 @@ void SAXSGPU::calculate(){
     Value* val=getPntrToComponent(k);
     val->set(inten[k]);
     // get deriv Tensor
-    if(npt) {
-      const unsigned bi = k*6;
-      const Tensor deriv_box(box[bi+0],box[bi+1],box[bi+2],
-                             box[bi+1],box[bi+3],box[bi+4],
-                             box[bi+2],box[bi+4],box[bi+5]);
+   // if(npt) {
+   //   const unsigned bi = k*6;
+   //   const Tensor deriv_box(box[bi+0],box[bi+1],box[bi+2],
+   //                          box[bi+1],box[bi+3],box[bi+4],
+   //                          box[bi+2],box[bi+4],box[bi+5]);
    
-      setBoxDerivatives(val, deriv_box);
-    }
+  //    setBoxDerivatives(val, deriv_box);
+   // }
+    vector <Tensor> deriv_box(numq);
     for(unsigned i=0;i<size;i++) {
       const unsigned di = k*size*3+i*3;
       const Vector dd(deriv[di+0],deriv[di+1],deriv[di+2]);
       setAtomsDerivatives(val, i, 2*dd);
+      const Vector posi=getPosition(i);
+      deriv_box[k] = Tensor(posi,2*dd);
+      setBoxDerivatives(val, -deriv_box[k]);
     }    
   }
 #endif

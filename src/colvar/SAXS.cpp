@@ -222,7 +222,7 @@ void SAXS::calculate(){
         const double tmp = (tcq-tsq)/(m_distances*m_distances);
         const Vector dd  = c_distances*tmp;
         sum[k]       += tsq;
-        deriv_box[k] += Tensor(c_distances,dd);
+        //deriv_box[k] += Tensor(c_distances,dd);
         deriv[kdxi ] -= dd;
         deriv[kdx+j] += dd;
       }
@@ -239,9 +239,14 @@ void SAXS::calculate(){
   for (unsigned k=0; k<numq; k++) {
     const unsigned kdx=k*size;
     Value* val=getPntrToComponent(k);
-    for(unsigned i=0; i<size; i++) setAtomsDerivatives(val, i, deriv[kdx+i]);
+    for(unsigned i=0; i<size; i++) { 
+      setAtomsDerivatives(val, i, deriv[kdx+i]);
+      const Vector posi=getPosition(i);
+      deriv_box[k] = Tensor(posi,deriv[kdx+i]);
+      setBoxDerivatives(val, -deriv_box[k]);
+    }
     sum[k]+=FF_rank[k];
-    setBoxDerivatives(val, -deriv_box[k]);
+    
     val->set(sum[k]);
   }
 
