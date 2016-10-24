@@ -111,7 +111,37 @@ positions.  Here distances are calculated using the \ref DRMSD measure.
 MULTI-RMSD REFERENCE=file.pdb TYPE=MULTI-DRMSD
 \endverbatim 
 
-...
+in this case it is possible to use the following DRMSD options in the pdb file using the REMARK syntax:
+\verbatim
+NOPBC to calculate distances without PBC
+LOWER_CUTOFF=# only pairs of atoms further than LOWER_CUTOFF are considered in the calculation
+UPPER_CUTOFF=# only pairs of atoms further than UPPER_CUTOFF are considered in the calculation
+\endverbatim
+as shown in the following example 
+
+\verbatim
+REMARK NOPBC
+REMARK LOWER_CUTOFF=0.1
+REMARK UPPER_CUTOFF=0.8
+ATOM      2  O   ALA     2      -0.926  -2.447  -0.497  1.00  1.00      DIA  O
+ATOM      4  HNT ALA     2       0.533  -0.396   1.184  1.00  1.00      DIA  H
+ATOM      6  HT1 ALA     2      -0.216  -2.590   1.371  1.00  1.00      DIA  H
+ATOM      7  HT2 ALA     2      -0.309  -1.255   2.315  1.00  1.00      DIA  H
+ATOM      8  HT3 ALA     2      -1.480  -1.560   1.212  1.00  1.00      DIA  H
+ATOM      9  CAY ALA     2      -0.096   2.144  -0.669  1.00  1.00      DIA  C
+ATOM     10  HY1 ALA     2       0.871   2.385  -0.588  1.00  1.00      DIA  H
+TER
+ATOM     12  HY3 ALA     2      -0.520   2.679  -1.400  1.00  1.00      DIA  H
+ATOM     14  OY  ALA     2      -1.139   0.931  -0.973  1.00  1.00      DIA  O
+ATOM     16  HN  ALA     2       1.713   1.021  -0.873  1.00  1.00      DIA  H
+ATOM     18  HA  ALA     2       0.099  -0.774  -2.218  1.00  1.00      DIA  H
+ATOM     19  CB  ALA     2       2.063  -1.223  -1.276  1.00  1.00      DIA  C
+ATOM     20  HB1 ALA     2       2.670  -0.716  -2.057  1.00  1.00      DIA  H
+ATOM     21  HB2 ALA     2       2.556  -1.051  -0.295  1.00  1.00      DIA  H
+ATOM     22  HB3 ALA     2       2.070  -2.314  -1.490  1.00  1.00      DIA  H
+END
+\endverbatim
+ 
 
 */
 //+ENDPLUMEDOC
@@ -123,6 +153,7 @@ void MultiRMSD::registerKeywords(Keywords& keys){
   keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
   keys.add("compulsory","TYPE","MULTI-SIMPLE","the manner in which RMSD alignment is performed.  Should be MULTI-OPTIMAL, MULTI-OPTIMAL-FAST,  MULTI-SIMPLE or MULTI-DRMSD.");
   keys.addFlag("SQUARED",false," This should be setted if you want MSD instead of RMSD ");
+  keys.remove("NOPBC");
 }
 
 MultiRMSD::MultiRMSD(const ActionOptions&ao):
