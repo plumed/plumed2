@@ -373,6 +373,7 @@ void SAXSGPU::calculate(){
   for(unsigned k=0; k<numq; k++) {
     Value* val=getPntrToComponent(k);
     val->set(inten[k]);
+    Tensor deriv_box;
     // get deriv Tensor
    // if(npt) {
    //   const unsigned bi = k*6;
@@ -382,15 +383,15 @@ void SAXSGPU::calculate(){
    
   //    setBoxDerivatives(val, deriv_box);
    // }
-    vector <Tensor> deriv_box(numq);
+    //vector <Tensor> deriv_box(numq);
     for(unsigned i=0;i<size;i++) {
       const unsigned di = k*size*3+i*3;
       const Vector dd(deriv[di+0],deriv[di+1],deriv[di+2]);
       setAtomsDerivatives(val, i, 2*dd);
       const Vector posi=getPosition(i);
-      deriv_box[k] = Tensor(posi,2*dd);
-      setBoxDerivatives(val, -deriv_box[k]);
-    }    
+      deriv_box += Tensor(posi,2*dd);
+    }
+    setBoxDerivatives(val, -deriv_box);    
   }
 #endif
 }
