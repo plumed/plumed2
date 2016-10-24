@@ -1,19 +1,29 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2015,2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
+
    See http://www.plumed.org for more information.
+
    This file is part of plumed, version 2.
+
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
+
    plumed is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU Lesser General Public License for more details.
+
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+/* 
+ This class was originally written by Alexander Jussupow with some contribution 
+ by Carlo Camilloni 
+*/
+
 #include "Colvar.h"
 #include "ActionRegister.h"
 #include "tools/Communicator.h"
@@ -42,7 +52,6 @@ class SAXSGPU : public Colvar {
 private:
   bool                pbc;
   bool                serial;
-  bool                npt;
   unsigned            numq;
   unsigned            splitb;
   std::vector<double> q_list;
@@ -50,7 +59,6 @@ private:
 #ifdef __PLUMED_HAS_ARRAYFIRE
   af::array          *allFFa;
   af::array          *sum_device;
-  af::array          *box_device;
   af::array          *deriv_device;
 #endif
 
@@ -77,8 +85,6 @@ void SAXSGPU::registerKeywords(Keywords& keys){
   keys.addFlag("ADDEXPVALUES",false,"Set to TRUE if you want to have fixed components with the experimetnal values.");
   keys.add("numbered","EXPINT","Add an experimental value for each PRE.");
   keys.addFlag("MULTIGPU",false,"Set to TRUE if you want to use multiple GPU");
-  //keys.addFlag("NPT",false,"Set to TRUE if you want to use NPT");
-
 }
 
 SAXSGPU::SAXSGPU(const ActionOptions&ao):
@@ -181,11 +187,7 @@ serial(false)
     total_device = 1;
   }
 
- // npt=false;
- // parseFlag("NPT",npt);
-
   sum_device = new af::array[total_device*numq];
-  box_device = new af::array[total_device*numq];
   deriv_device = new af::array[total_device*numq];
 
   allFFa = new af::array[total_device];
@@ -205,7 +207,6 @@ serial(false)
 SAXSGPU::~SAXSGPU(){
 #ifdef __PLUMED_HAS_ARRAYFIRE
   delete[] sum_device;
-  delete[] box_device;
   delete[] deriv_device;
   delete[] allFFa;
 #endif
@@ -230,7 +231,6 @@ void SAXSGPU::calculate(){
   for(unsigned i=0;i<total_device; i++) {
     af::setDevice(i);
     sum_device[i]   = af::constant(0, numq, f32);
-   // if(npt) box_device[i]   = af::constant(0, numq, 6, f32);
     deriv_device[i] = af::constant(0, numq, size, 3, f32);
   }
 
@@ -243,7 +243,6 @@ void SAXSGPU::calculate(){
     unsigned sizeb = size - i; 
     if(sizeb > splitb) sizeb = splitb;
     af::seq seqb(i, i+sizeb-1);
-    const unsigned size2=size*sizeb;
 
     // create array a and b containing atomic coordinates
     af::array a = af::array(size, 3, posi);
@@ -253,12 +252,6 @@ void SAXSGPU::calculate(){
     a = af::moddims(a, size, 1, 3);
     b = af::moddims(b, 1, sizeb, 3);
     af::array xyz_dist = af::moddims((af::tile(a, 1, sizeb, 1) - af::tile(b, size, 1, 1)), size, sizeb, 3);
-
-    // atom_box is now size*sizeb,3
-   // af::array atom_box;
-   // if(npt) {
-   //   atom_box = af::moddims(xyz_dist, size2, 3);
-   // }
 
     // square size,sizeb,1
     af::array square = af::moddims(af::sum(xyz_dist*xyz_dist,2), size, sizeb);
@@ -292,24 +285,6 @@ void SAXSGPU::calculate(){
       // now is size, sizeb, 3
       af::array dd_all = af::tile(tmp, 1, 1, 3)*xyz_dist;
       deriv_device[dnumber](k, seqb, af::span) = af::sum(dd_all);
-
-      /*
-      if(npt) {
-        // dd_all to size*sizeb, 3
-        dd_all = af::moddims(dd_all, size2, 3);
-        af::array box_pre = af::array(size2, 6, f32);
-        af::seq so0(0,2,1);
-        af::seq so1(3,4,1);
-        af::seq so2(0,1,1);
-        af::seq so3(1,2,1);
-        box_pre(af::span,so0) = atom_box*dd_all;
-        box_pre(af::span,so1) = atom_box(af::span,so2)*dd_all(af::span,so3);
-        box_pre(af::span,5)   = atom_box(af::span,0)*dd_all(af::span,2);
-
-        af::array box_sum = af::sum(box_pre);
-        box_device[dnumber](k,af::span) += box_sum(0,af::span);
-      }
-       */
     }   
   }
   delete[] posi;
@@ -317,8 +292,6 @@ void SAXSGPU::calculate(){
   // accumulate the results
   std::vector<double> inten; inten.resize(numq,0);
   std::vector<double> deriv; deriv.resize(numq*size*3,0);
-  std::vector<double> box; 
-  //if(npt) box.resize(numq*6,0);
 
   // read out results
   for (unsigned i=0; i<total_device; i++) {
@@ -326,13 +299,6 @@ void SAXSGPU::calculate(){
     float* tmp_inten;
     tmp_inten = new float[numq];
     sum_device[i].host(tmp_inten);
-
-    float* tmp_box;
-   // if (npt) {
-   //   tmp_box = new float[numq*6];
-   //   box_device[i] = af::flat(box_device[i].T());
-   //   box_device[i].host(tmp_box);
-   // }
 
     float* tmp_deriv;
     tmp_deriv = new float[size*3*numq];
@@ -342,30 +308,13 @@ void SAXSGPU::calculate(){
 
     #pragma omp parallel num_threads(OpenMP::getNumThreads())
     {
-      
       #pragma omp for nowait
-      for(unsigned i=0; i<numq; i++) {
-        inten[i] += tmp_inten[i];
-     //   if (npt) {
-     //     const unsigned wi = 6*i;
-     //    box[wi+0] += tmp_box[wi+0];
-     //     box[wi+1] += tmp_box[wi+3];
-     //     box[wi+2] += tmp_box[wi+5];
-     //     box[wi+3] += tmp_box[wi+1];
-     //     box[wi+4] += tmp_box[wi+4];
-     //     box[wi+5] += tmp_box[wi+2];
-     //   }
-      }
+      for(unsigned i=0; i<numq; i++) inten[i] += tmp_inten[i];
       #pragma omp for nowait
-      for(unsigned i=0; i<size*3*numq; i++) {
-        deriv[i] += tmp_deriv[i];
-      }
+      for(unsigned i=0; i<size*3*numq; i++) deriv[i] += tmp_deriv[i];
     }
  
     delete[] tmp_inten;
-   // if (npt) {
-   //   delete[] tmp_box;
-   // }
     delete[] tmp_deriv;
   }
 
@@ -374,16 +323,6 @@ void SAXSGPU::calculate(){
     Value* val=getPntrToComponent(k);
     val->set(inten[k]);
     Tensor deriv_box;
-    // get deriv Tensor
-   // if(npt) {
-   //   const unsigned bi = k*6;
-   //   const Tensor deriv_box(box[bi+0],box[bi+1],box[bi+2],
-   //                          box[bi+1],box[bi+3],box[bi+4],
-   //                          box[bi+2],box[bi+4],box[bi+5]);
-   
-  //    setBoxDerivatives(val, deriv_box);
-   // }
-    //vector <Tensor> deriv_box(numq);
     for(unsigned i=0;i<size;i++) {
       const unsigned di = k*size*3+i*3;
       const Vector dd(deriv[di+0],deriv[di+1],deriv[di+2]);
