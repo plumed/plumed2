@@ -152,7 +152,7 @@ void DumpMultiColvar::update(){
     const char* defname="X";
     const char* name=defname;
 
-    Vector apos = mycolv->getCentralAtomPos( mycolv->getTaskCode(i) );
+    Vector apos = mycolv->getCentralAtomPos(i);
     of.printf(("%s "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz).c_str(),name,lenunit*apos[0],lenunit*apos[1],lenunit*apos[2]);
     stash->retrieveValue( i, true, cvals );
     if( mycolv->weightWithDerivatives() ){
