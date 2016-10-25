@@ -163,7 +163,7 @@ void DumpMultiColvar::update(){
     const char* defname="X";
     const char* name=defname;
 
-    Vector apos = mycolv->getCentralAtomPos( mycolv->getTaskCode(i) );
+    Vector apos = mycolv->getCentralAtomPos( mycolv->getPositionInFullTaskList(i) );
     if( getNumberOfAtoms()>0 ) apos=pbcDistance( getPosition(0), apos );
     of.printf(("%s "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz).c_str(),name,lenunit*apos[0],lenunit*apos[1],lenunit*apos[2]);
     stash->retrieveSequentialValue( i, true, cvals );
