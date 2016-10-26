@@ -20,11 +20,24 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-#include "Colvar.h"
+// TODO:
+// delta_g_free temperature correction  [ ]
+// dihedral correction                  [ ]
+// distance dependent dielectric        [ ] (?)
+// neutralize ionic sidechains          [ ] (?)
+// implement neighborlist               [x]
+// cutoff distance                      [x]
+
 #include "ActionRegister.h"
 #include "core/ActionSet.h"
 #include "core/PlumedMain.h"
 #include "core/SetupMolInfo.h"
+
+#include "CoordinationBase.h"
+#include "tools/SwitchingFunction.h"
+#include "core/Atoms.h"
+
+#define INV_PI_SQRT_PI 0.179587122
 
 using namespace std;
 
@@ -39,363 +52,326 @@ Calculate EEF1-SB solvation free energy
 */
 //+ENDPLUMEDOC
 
-        class Implicit : public Colvar {
+        class Implicit : public CoordinationBase {
             private:
-                bool pbc;
                 vector<vector<double> > parameter;
             public:
                 static void registerKeywords(Keywords& keys);
                 explicit Implicit(const ActionOptions&);
-                virtual void calculate();
-                void setupConstants(const vector<AtomNumber> &atoms, vector<vector<double> > &parameter);
+                void setupConstants();
+                virtual double pairing(double distance, double &dfunc, unsigned i, unsigned j) const;
         };
 
         PLUMED_REGISTER_ACTION(Implicit,"IMPLICIT")
 
         void Implicit::registerKeywords(Keywords& keys) {
-            Colvar::registerKeywords(keys);
-            componentsAreNotOptional(keys);
-            useCustomisableComponents(keys);
-            keys.add("atoms", "ATOMS", "The atoms to be included in the calculation, e.g. the whole protein.");
+            CoordinationBase::registerKeywords(keys);
         }
 
         Implicit::Implicit(const ActionOptions&ao):
-            PLUMED_COLVAR_INIT(ao),
-            pbc(true)
+            Action(ao),
+            CoordinationBase(ao)
         {
-            vector<AtomNumber> atoms;
-            parseAtomList("ATOMS", atoms);
-            const unsigned size = atoms.size();
-
-            bool nopbc = !pbc;
-            parseFlag("NOPBC", nopbc);
-            pbc = !nopbc;
-
             checkRead();
+            setupConstants();
+        }
 
+        double Implicit::pairing(double distance, double &dfunc, unsigned i, unsigned j) const {
+            const double vdw_volume   = parameter[j][0]; // angstrom^3 -> nm^3
+            /* const double delta_g_ref  = parameter[i][1]; // kcal/mol -> kJ/mol */
+            const double delta_g_free = parameter[i][2]; // kcal/mol -> kJ/mol
+            const double lambda       = parameter[i][5]; // angstrom -> nm
+            const double vdw_radius   = parameter[i][6]; // nm
+
+            const double rij = sqrt(distance);
+            const double inv_lambda2 = 1.0 / (lambda * lambda);
+            const double inv_rij = 1.0 / rij;
+            const double inv_rij2 = 1.0 / (rij * rij);
+            const double rij_vdwr_diff = rij - vdw_radius;
+            const double expo = exp(-inv_lambda2 * rij_vdwr_diff * rij_vdwr_diff);
+            const double fact = INV_PI_SQRT_PI * vdw_volume * delta_g_free * inv_rij2 / lambda * expo; 
+            dfunc = fact * inv_rij * (inv_rij + (rij_vdwr_diff * inv_lambda2));
+            return -0.5 * fact;
+        }
+
+        void Implicit::setupConstants() {
+            vector<AtomNumber> &atoms = getAtomNumbers();
+            const unsigned size = atoms.size();
             parameter.resize(size);
             for (unsigned i=0; i<size; ++i) {
                 parameter[i].resize(8, 0.0);
             }
-            setupConstants(atoms, parameter);
 
-            addValueWithDerivatives();
-            setNotPeriodic();
-            requestAtoms(atoms);
-        }
-
-        void Implicit::calculate() {
-            if(pbc) makeWhole();
-            const unsigned size=getNumberOfAtoms();
-
-            const double prefact = 1.0 / (M_PI * sqrt(M_PI));
-            vector<Vector> fedensity_deriv(size);
-
-            double bias = 0.0;
-            for (unsigned i=0; i<size; ++i) {
-                const double delta_g_ref = 4.184 * parameter[i][1];  // kcal/mol -> kJ/mol
-                const double delta_g_free = 4.184 * parameter[i][2];  // kcal/mol -> kJ/mol
-                const double lambda = 0.1 * parameter[i][5];  // angstrom -> nm
-                const double vdw_radius = parameter[i][6];  // nm
-
-                double fedensity = 0.0;
-                for (unsigned j=0; j<size; ++j) {
-                    if (i == j) {
-                        continue;
-                    }
-                    const double vdw_volume = 0.001 * parameter[j][0];  // angstrom^3 -> nm^3
-                    const Vector dist = delta(getPosition(i), getPosition(j));
-                    const double rij = dist.modulo();
-                    const double expo = exp(-((rij - vdw_radius) * (rij - vdw_radius)) / (lambda * lambda));
-                    const double deriv = -delta_g_free * vdw_volume * expo * prefact / (lambda * rij *rij) * ((1.0 / rij) + ((rij - vdw_radius) / (lambda * lambda)));
-                    fedensity += vdw_volume * (delta_g_free / (lambda * rij * rij)) * expo;
-                    fedensity_deriv[i] += deriv * dist / rij;
-                    fedensity_deriv[j] -= deriv * dist / rij;
-                }
-
-                const double delta_g_solv = delta_g_ref - 0.5 * prefact * fedensity;
-                bias += delta_g_solv;
-            }
-
-            for (unsigned i=0; i<size; ++i) {
-                setAtomsDerivatives(i, fedensity_deriv[i]);
-            }
-
-            setBoxDerivativesNoPbc();
-            setValue(bias);
-        }
-
-        void Implicit::setupConstants(const vector<AtomNumber> &atoms, vector<vector<double> > &parameter) {
             vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
             if (moldat.size() == 1) {
                 log << "  MOLINFO DATA found, using proper atom names\n";
-                for(unsigned i=0; i<atoms.size(); ++i) {
+                for(unsigned i=0; i<size; ++i) {
                     string Aname = moldat[0]->getAtomName(atoms[i]);
                     string Rname = moldat[0]->getResidueName(atoms[i]);
 					// Volume ∆Gref ∆Gfree ∆H ∆Cp λ vdw_radius
 					if (Aname == "C") {
-						parameter[i][0] = 14.720;
-						parameter[i][1] = 0.000;
-						parameter[i][2] = 0.000;
+						parameter[i][0] = 0.001 * 14.720;
+						parameter[i][1] = 4.184 * 0.000;
+						parameter[i][2] = 4.184 * 0.000;
 						parameter[i][3] = 0.000;
 						parameter[i][4] = 0.0;
-						parameter[i][5] = 3.5;
+						parameter[i][5] = 0.1 * 3.5;
 						parameter[i][6] = 0.17;
 					} else if (Aname == "CD") {
-						parameter[i][0] = 14.720;
-						parameter[i][1] = 0.000;
-						parameter[i][2] = 0.000;
+						parameter[i][0] = 0.001 * 14.720;
+						parameter[i][1] = 4.184 * 0.000;
+						parameter[i][2] = 4.184 * 0.000;
 						parameter[i][3] = 0.000;
 						parameter[i][4] = 0.0;
-						parameter[i][5] = 3.5;
+						parameter[i][5] = 0.1 * 3.5;
 						parameter[i][6] = 0.17;
 					} else if (Aname == "CT1") {
-						parameter[i][0] = 11.507;
-						parameter[i][1] = -0.187;
-						parameter[i][2] = -0.187;
+						parameter[i][0] = 0.001 * 11.507;
+						parameter[i][1] = 4.184 * -0.187;
+						parameter[i][2] = 4.184 * -0.187;
 						parameter[i][3] = 0.876;
 						parameter[i][4] = 0.0;
-						parameter[i][5] = 3.5;
+						parameter[i][5] = 0.1 * 3.5;
 						parameter[i][6] = 0.17;
 					} else if (Aname == "CT2") {
-						parameter[i][0] = 18.850;
-						parameter[i][1] = 0.372;
-						parameter[i][2] = 0.372;
+						parameter[i][0] = 0.001 * 18.850;
+						parameter[i][1] = 4.184 * 0.372;
+						parameter[i][2] = 4.184 * 0.372;
 						parameter[i][3] = -0.610;
 						parameter[i][4] = 18.6;
-						parameter[i][5] = 3.5;
+						parameter[i][5] = 0.1 * 3.5;
 						parameter[i][6] = 0.17;
 					} else if (Aname == "CT2A") {
-						parameter[i][0] = 18.666;
-						parameter[i][1] = 0.372;
-						parameter[i][2] = 0.372;
+						parameter[i][0] = 0.001 * 18.666;
+						parameter[i][1] = 4.184 * 0.372;
+						parameter[i][2] = 4.184 * 0.372;
 						parameter[i][3] = -0.610;
 						parameter[i][4] = 18.6;
-						parameter[i][5] = 3.5;
+						parameter[i][5] = 0.1 * 3.5;
 						parameter[i][6] = 0.17;
 					} else if (Aname == "CT3") {
-						parameter[i][0] = 27.941;
-						parameter[i][1] = 1.089;
-						parameter[i][2] = 1.089;
+						parameter[i][0] = 0.001 * 27.941;
+						parameter[i][1] = 4.184 * 1.089;
+						parameter[i][2] = 4.184 * 1.089;
 						parameter[i][3] = -1.779;
 						parameter[i][4] = 35.6;
-						parameter[i][5] = 3.5;
+						parameter[i][5] = 0.1 * 3.5;
 						parameter[i][6] = 0.17;
 					} else if (Aname == "CPH1") {
-						parameter[i][0] = 5.275;
-						parameter[i][1] = 0.057;
-						parameter[i][2] = 0.080;
+						parameter[i][0] = 0.001 * 5.275;
+						parameter[i][1] = 4.184 * 0.057;
+						parameter[i][2] = 4.184 * 0.080;
 						parameter[i][3] = -0.973;
 						parameter[i][4] = 6.9;
-						parameter[i][5] = 3.5;
+						parameter[i][5] = 0.1 * 3.5;
 						parameter[i][6] = 0.17;
 					} else if (Aname == "CPH2") {
-						parameter[i][0] = 11.796;
-						parameter[i][1] = 0.057;
-						parameter[i][2] = 0.080;
+						parameter[i][0] = 0.001 * 11.796;
+						parameter[i][1] = 4.184 * 0.057;
+						parameter[i][2] = 4.184 * 0.080;
 						parameter[i][3] = -0.973;
 						parameter[i][4] = 6.9;
-						parameter[i][5] = 3.5;
+						parameter[i][5] = 0.1 * 3.5;
 						parameter[i][6] = 0.17;
 					} else if (Aname == "CPT") {
-						parameter[i][0] = 4.669;
-						parameter[i][1] = -0.890;
-						parameter[i][2] = -0.890;
+						parameter[i][0] = 0.001 * 4.669;
+						parameter[i][1] = 4.184 * -0.890;
+						parameter[i][2] = 4.184 * -0.890;
 						parameter[i][3] = 2.220;
 						parameter[i][4] = 6.9;
-						parameter[i][5] = 3.5;
+						parameter[i][5] = 0.1 * 3.5;
 						parameter[i][6] = 0.17;
 					} else if (Aname == "CY") {
-						parameter[i][0] = 10.507;
-						parameter[i][1] = -0.890;
-						parameter[i][2] = -0.890;
+						parameter[i][0] = 0.001 * 10.507;
+						parameter[i][1] = 4.184 * -0.890;
+						parameter[i][2] = 4.184 * -0.890;
 						parameter[i][3] = 2.220;
 						parameter[i][4] = 6.9;
-						parameter[i][5] = 3.5;
+						parameter[i][5] = 0.1 * 3.5;
 						parameter[i][6] = 0.17;
 					} else if (Aname == "CP1") {
-						parameter[i][0] = 25.458;
-						parameter[i][1] = -0.187;
-						parameter[i][2] = -0.187;
+						parameter[i][0] = 0.001 * 25.458;
+						parameter[i][1] = 4.184 * -0.187;
+						parameter[i][2] = 4.184 * -0.187;
 						parameter[i][3] = 0.876;
 						parameter[i][4] = 0.0;
-						parameter[i][5] = 3.5;
+						parameter[i][5] = 0.1 * 3.5;
 						parameter[i][6] = 0.17;
 					} else if (Aname == "CP2") {
-						parameter[i][0] = 19.880;
-						parameter[i][1] = 0.372;
-						parameter[i][2] = 0.372;
+						parameter[i][0] = 0.001 * 19.880;
+						parameter[i][1] = 4.184 * 0.372;
+						parameter[i][2] = 4.184 * 0.372;
 						parameter[i][3] = -0.610;
 						parameter[i][4] = 18.6;
-						parameter[i][5] = 3.5;
+						parameter[i][5] = 0.1 * 3.5;
 						parameter[i][6] = 0.17;
 					} else if (Aname == "CP3") {
-						parameter[i][0] = 26.731;
-						parameter[i][1] = 0.372;
-						parameter[i][2] = 0.372;
+						parameter[i][0] = 0.001 * 26.731;
+						parameter[i][1] = 4.184 * 0.372;
+						parameter[i][2] = 4.184 * 0.372;
 						parameter[i][3] = -0.610;
 						parameter[i][4] = 18.6;
-						parameter[i][5] = 3.5;
+						parameter[i][5] = 0.1 * 3.5;
 						parameter[i][6] = 0.17;
 					} else if (Aname == "CC") {
-						parameter[i][0] = 16.539;
-						parameter[i][1] = 0.000;
-						parameter[i][2] = 0.000;
+						parameter[i][0] = 0.001 * 16.539;
+						parameter[i][1] = 4.184 * 0.000;
+						parameter[i][2] = 4.184 * 0.000;
 						parameter[i][3] = 0.000;
 						parameter[i][4] = 0.0;
-						parameter[i][5] = 3.5;
+						parameter[i][5] = 0.1 * 3.5;
 						parameter[i][6] = 0.17;
 					} else if (Aname == "CAI") {
-						parameter[i][0] = 18.249;
-						parameter[i][1] = 0.057;
-						parameter[i][2] = 0.057;
+						parameter[i][0] = 0.001 * 18.249;
+						parameter[i][1] = 4.184 * 0.057;
+						parameter[i][2] = 4.184 * 0.057;
 						parameter[i][3] = -0.973;
 						parameter[i][4] = 6.9;
-						parameter[i][5] = 3.5;
+						parameter[i][5] = 0.1 * 3.5;
 						parameter[i][6] = 0.17;
 					} else if (Aname == "CA") {
-						parameter[i][0] = 18.249;
-						parameter[i][1] = 0.057;
-						parameter[i][2] = 0.057;
+						parameter[i][0] = 0.001 * 18.249;
+						parameter[i][1] = 4.184 * 0.057;
+						parameter[i][2] = 4.184 * 0.057;
 						parameter[i][3] = -0.973;
 						parameter[i][4] = 6.9;
-						parameter[i][5] = 3.5;
+						parameter[i][5] = 0.1 * 3.5;
 						parameter[i][6] = 0.17;
 					} else if (Aname == "N") {
-						parameter[i][0] = 0.000;
-						parameter[i][1] = -1.000;
-						parameter[i][2] = -1.000;
+						parameter[i][0] = 0.001 * 0.000;
+						parameter[i][1] = 4.184 * -1.000;
+						parameter[i][2] = 4.184 * -1.000;
 						parameter[i][3] = -1.250;
 						parameter[i][4] = 8.8;
-						parameter[i][5] = 3.5;
+						parameter[i][5] = 0.1 * 3.5;
 						parameter[i][6] = 0.155;
 					} else if (Aname == "NR1") {
-						parameter[i][0] = 15.273;
-						parameter[i][1] = -5.950;
-						parameter[i][2] = -5.950;
+						parameter[i][0] = 0.001 * 15.273;
+						parameter[i][1] = 4.184 * -5.950;
+						parameter[i][2] = 4.184 * -5.950;
 						parameter[i][3] = -9.059;
 						parameter[i][4] = -8.8;
-						parameter[i][5] = 3.5;
+						parameter[i][5] = 0.1 * 3.5;
 						parameter[i][6] = 0.155;
 					} else if (Aname == "NR2") {
-						parameter[i][0] = 15.111;
-						parameter[i][1] = -3.820;
-						parameter[i][2] = -3.820;
+						parameter[i][0] = 0.001 * 15.111;
+						parameter[i][1] = 4.184 * -3.820;
+						parameter[i][2] = 4.184 * -3.820;
 						parameter[i][3] = -4.654;
 						parameter[i][4] = -8.8;
-						parameter[i][5] = 3.5;
+						parameter[i][5] = 0.1 * 3.5;
 						parameter[i][6] = 0.155;
 					} else if (Aname == "NR3") {
-						parameter[i][0] = 15.071;
-						parameter[i][1] = -5.950;
-						parameter[i][2] = -5.950;
+						parameter[i][0] = 0.001 * 15.071;
+						parameter[i][1] = 4.184 * -5.950;
+						parameter[i][2] = 4.184 * -5.950;
 						parameter[i][3] = -9.059;
 						parameter[i][4] = -8.8;
-						parameter[i][5] = 3.5;
+						parameter[i][5] = 0.1 * 3.5;
 						parameter[i][6] = 0.155;
 					} else if (Aname == "NH1") {
-						parameter[i][0] = 10.197;
-						parameter[i][1] = -5.950;
-						parameter[i][2] = -5.950;
+						parameter[i][0] = 0.001 * 10.197;
+						parameter[i][1] = 4.184 * -5.950;
+						parameter[i][2] = 4.184 * -5.950;
 						parameter[i][3] = -9.059;
 						parameter[i][4] = -8.8;
-						parameter[i][5] = 3.5;
+						parameter[i][5] = 0.1 * 3.5;
 						parameter[i][6] = 0.155;
 					} else if (Aname == "NH2") {
-						parameter[i][0] = 18.182;
-						parameter[i][1] = -5.950;
-						parameter[i][2] = -5.950;
+						parameter[i][0] = 0.001 * 18.182;
+						parameter[i][1] = 4.184 * -5.950;
+						parameter[i][2] = 4.184 * -5.950;
 						parameter[i][3] = -9.059;
 						parameter[i][4] = -8.8;
-						parameter[i][5] = 3.5;
+						parameter[i][5] = 0.1 * 3.5;
 						parameter[i][6] = 0.155;
 					} else if (Aname == "NH3") {
-						parameter[i][0] = 18.817;
-						parameter[i][1] = -20.000;
-						parameter[i][2] = -20.000;
+						parameter[i][0] = 0.001 * 18.817;
+						parameter[i][1] = 4.184 * -20.000;
+						parameter[i][2] = 4.184 * -20.000;
 						parameter[i][3] = -25.000;
 						parameter[i][4] = -18.0;
-						parameter[i][5] = 6.0;
+						parameter[i][5] = 0.1 * 6.0;
 						parameter[i][6] = 0.155;
 					} else if (Aname == "NC2") {
-						parameter[i][0] = 18.215;
-						parameter[i][1] = -10.000;
-						parameter[i][2] = -10.000;
+						parameter[i][0] = 0.001 * 18.215;
+						parameter[i][1] = 4.184 * -10.000;
+						parameter[i][2] = 4.184 * -10.000;
 						parameter[i][3] = -12.000;
 						parameter[i][4] = -7.0;
-						parameter[i][5] = 6.0;
+						parameter[i][5] = 0.1 * 6.0;
 						parameter[i][6] = 0.155;
 					} else if (Aname == "NY") {
-						parameter[i][0] = 12.001;
-						parameter[i][1] = -5.950;
-						parameter[i][2] = -5.950;
+						parameter[i][0] = 0.001 * 12.001;
+						parameter[i][1] = 4.184 * -5.950;
+						parameter[i][2] = 4.184 * -5.950;
 						parameter[i][3] = -9.059;
 						parameter[i][4] = -8.8;
-						parameter[i][5] = 3.5;
+						parameter[i][5] = 0.1 * 3.5;
 						parameter[i][6] = 0.155;
 					} else if (Aname == "NP") {
-						parameter[i][0] = 4.993;
-						parameter[i][1] = -20.000;
-						parameter[i][2] = -20.000;
+						parameter[i][0] = 0.001 * 4.993;
+						parameter[i][1] = 4.184 * -20.000;
+						parameter[i][2] = 4.184 * -20.000;
 						parameter[i][3] = -25.000;
 						parameter[i][4] = -18.0;
-						parameter[i][5] = 6.0;
+						parameter[i][5] = 0.1 * 6.0;
 						parameter[i][6] = 0.155;
 					} else if (Aname == "O") {
-						parameter[i][0] = 11.772;
-						parameter[i][1] = -5.330;
-						parameter[i][2] = -5.330;
+						parameter[i][0] = 0.001 * 11.772;
+						parameter[i][1] = 4.184 * -5.330;
+						parameter[i][2] = 4.184 * -5.330;
 						parameter[i][3] = -5.787;
 						parameter[i][4] = -8.8;
-						parameter[i][5] = 3.5;
+						parameter[i][5] = 0.1 * 3.5;
 						parameter[i][6] = 0.152;
 					} else if (Aname == "OB") {
-						parameter[i][0] = 11.694;
-						parameter[i][1] = -5.330;
-						parameter[i][2] = -5.330;
+						parameter[i][0] = 0.001 * 11.694;
+						parameter[i][1] = 4.184 * -5.330;
+						parameter[i][2] = 4.184 * -5.330;
 						parameter[i][3] = -5.787;
 						parameter[i][4] = -8.8;
-						parameter[i][5] = 3.5;
+						parameter[i][5] = 0.1 * 3.5;
 						parameter[i][6] = 0.152;
 					} else if (Aname == "OC") {
-						parameter[i][0] = 12.003;
-						parameter[i][1] = -10.000;
-						parameter[i][2] = -10.000;
+						parameter[i][0] = 0.001 * 12.003;
+						parameter[i][1] = 4.184 * -10.000;
+						parameter[i][2] = 4.184 * -10.000;
 						parameter[i][3] = -12.000;
 						parameter[i][4] = -9.4;
-						parameter[i][5] = 6.0;
+						parameter[i][5] = 0.1 * 6.0;
 						parameter[i][6] = 0.152;
 					} else if (Aname == "OH1") {
-						parameter[i][0] = 15.528;
-						parameter[i][1] = -5.920;
-						parameter[i][2] = -5.920;
+						parameter[i][0] = 0.001 * 15.528;
+						parameter[i][1] = 4.184 * -5.920;
+						parameter[i][2] = 4.184 * -5.920;
 						parameter[i][3] = -9.264;
 						parameter[i][4] = -11.2;
-						parameter[i][5] = 3.5;
+						parameter[i][5] = 0.1 * 3.5;
 						parameter[i][6] = 0.152;
 					} else if (Aname == "OS") {
-						parameter[i][0] = 6.774;
-						parameter[i][1] = -2.900;
-						parameter[i][2] = -2.900;
+						parameter[i][0] = 0.001 * 6.774;
+						parameter[i][1] = 4.184 * -2.900;
+						parameter[i][2] = 4.184 * -2.900;
 						parameter[i][3] = -3.150;
 						parameter[i][4] = -4.8;
-						parameter[i][5] = 3.5;
+						parameter[i][5] = 0.1 * 3.5;
 						parameter[i][6] = 0.152;
 					} else if (Aname == "S") {
-						parameter[i][0] = 20.703;
-						parameter[i][1] = -3.240;
-						parameter[i][2] = -3.240;
+						parameter[i][0] = 0.001 * 20.703;
+						parameter[i][1] = 4.184 * -3.240;
+						parameter[i][2] = 4.184 * -3.240;
 						parameter[i][3] = -4.475;
 						parameter[i][4] = -39.9;
-						parameter[i][5] = 3.5;
+						parameter[i][5] = 0.1 * 3.5;
 						parameter[i][6] = 0.18;
 					} else if (Aname == "SM") {
-						parameter[i][0] = 21.306;
-						parameter[i][1] = -3.240;
-						parameter[i][2] = -3.240;
+						parameter[i][0] = 0.001 * 21.306;
+						parameter[i][1] = 4.184 * -3.240;
+						parameter[i][2] = 4.184 * -3.240;
 						parameter[i][3] = -4.475;
 						parameter[i][4] = -39.9;
-						parameter[i][5] = 3.5;
+						parameter[i][5] = 0.1 * 3.5;
 						parameter[i][6] = 0.18;
                     } else {
 						parameter[i][0] = 0.0;
@@ -403,7 +379,7 @@ Calculate EEF1-SB solvation free energy
 						parameter[i][2] = 0.0;
 						parameter[i][3] = 0.0;
 						parameter[i][4] = 0.0;
-						parameter[i][5] = 3.5; // We need to avoid division by zero
+						parameter[i][5] = 0.1 * 3.5; // We need to avoid division by zero
 						parameter[i][6] = 0.0;
                     }
 
