@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,31 +19,44 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_gridtools_AverageOnGrid_h
-#define __PLUMED_gridtools_AverageOnGrid_h
+#include "core/ActionRegister.h"
+#include "ActionWithIntegral.h"
 
-#include "HistogramOnGrid.h"
+//+PLUMEDOC GRIDANALYSIS INTEGRATE_GRID
+/*
+Calculate the total integral of the function on the input grid
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
 
 namespace PLMD {
 namespace gridtools {
 
-class AverageOnGrid : public HistogramOnGrid {
+class IntegrateGrid : public ActionWithIntegral {
 public:
   static void registerKeywords( Keywords& keys );
-  explicit AverageOnGrid( const vesselbase::VesselOptions& da );
-  void accumulate( const unsigned& ipoint, const double& weight, const double& dens, const std::vector<double>& der, std::vector<double>& buffer ) const ;
-  void accumulateForce( const unsigned& ipoint, const double& weight, const std::vector<double>& der, std::vector<double>& intforce ) const { plumed_error(); }
-  double getGridElement( const unsigned& ipoint, const unsigned& jelement ) const ;
-  unsigned getNumberOfComponents() const ;
-  void getFinalForces( const std::vector<double>& buffer, std::vector<double>& finalForces ){ plumed_error(); }
+  explicit IntegrateGrid(const ActionOptions&ao);
+  void compute( const unsigned& current, MultiValue& myvals ) const ;
 };
 
-inline
-unsigned AverageOnGrid::getNumberOfComponents() const {
-  if( noderiv ) return nper - 1;
-  return nper / ( dimension + 1 ) - 1;
+PLUMED_REGISTER_ACTION(IntegrateGrid,"INTEGRATE_GRID")
+
+void IntegrateGrid::registerKeywords( Keywords& keys ){
+  ActionWithIntegral::registerKeywords( keys );
+}
+
+IntegrateGrid::IntegrateGrid(const ActionOptions&ao):
+Action(ao),
+ActionWithIntegral(ao)
+{
+}
+
+void IntegrateGrid::compute( const unsigned& current, MultiValue& myvals ) const {
+  myvals.setValue( 0, 1.0 ); myvals.setValue( 1, getVolume()*getFunctionValue( current ) );
+  if( !doNotCalculateDerivatives() ) myvals.addDerivative( 1, current, getVolume() );
 }
 
 }
 }
-#endif

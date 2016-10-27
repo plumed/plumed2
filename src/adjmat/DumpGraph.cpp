@@ -30,6 +30,16 @@
 namespace PLMD {
 namespace adjmat {
 
+//+PLUMEDOC CONCOMP DUMPGRAPH
+/*
+Write out the connnectivity of the nodes in the graph in dot format.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+
 class DumpGraph : public ActionPilot {
 private:
 ///
