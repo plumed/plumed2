@@ -504,10 +504,25 @@ atoms(plumed.getAtoms())
     restart_sfile.close();
     /* set sigma_mean from variance */
     if(noise_type_==MGAUSS||noise_type_==MOUTLIERS) {
-      for(unsigned i=0;i<variance_.size();++i) sigma_mean_[i] = sqrt(variance_[i]/static_cast<double>(nrep_));
+      for(unsigned i=0;i<variance_.size();++i) {
+        double s_v = sqrt(variance_[i]);
+        sigma_mean_[i] = s_v/sqrt(static_cast<double>(nrep_));
+        if(do_optsigmamean_>0) {
+          if(sigma_max_[i] < s_v) {
+            Dsigma_[i] *= s_v/sigma_max_[i]; 
+            sigma_max_[i] = s_v;
+          }
+        }
+      }
     } else {
-      double s_v = *max_element(variance_.begin(), variance_.end());
-      sigma_mean_[0] = sqrt(s_v/static_cast<double>(nrep_));
+      double s_v = sqrt(*max_element(variance_.begin(), variance_.end()));
+      sigma_mean_[0] = s_v/sqrt(static_cast<double>(nrep_));
+      if(do_optsigmamean_>0) {
+        if(sigma_max_[0] < s_v) {
+          Dsigma_[0] *= s_v/sigma_max_[0]; 
+          sigma_max_[0] = s_v;
+        }
+      }
     }
   }
 
