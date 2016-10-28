@@ -202,7 +202,6 @@ void SAXS::calculate(){
   }
 
   vector<Vector> deriv(numq*size);
-  //vector<Tensor> deriv_box(numq);
   vector<double> sum(numq,0);
 
   #pragma omp parallel for num_threads(OpenMP::getNumThreads())
@@ -222,7 +221,6 @@ void SAXS::calculate(){
         const double tmp = (tcq-tsq)/(m_distances*m_distances);
         const Vector dd  = c_distances*tmp;
         sum[k]       += tsq;
-        //deriv_box[k] += Tensor(c_distances,dd);
         deriv[kdxi ] -= dd;
         deriv[kdx+j] += dd;
       }
@@ -231,7 +229,6 @@ void SAXS::calculate(){
 
   if(!serial) {
     comm.Sum(&deriv[0][0], 3*deriv.size());
-    //comm.Sum(&deriv_box[0][0][0], numq*9);
     comm.Sum(&sum[0], numq);
   }
 
@@ -242,8 +239,7 @@ void SAXS::calculate(){
     Tensor deriv_box;
     for(unsigned i=0; i<size; i++) { 
       setAtomsDerivatives(val, i, deriv[kdx+i]);
-      const Vector posi=getPosition(i);
-      deriv_box += Tensor(posi,deriv[kdx+i]);
+      deriv_box += Tensor(getPosition(i),deriv[kdx+i]);
     }
     sum[k]+=FF_rank[k];
     val->set(sum[k]);
