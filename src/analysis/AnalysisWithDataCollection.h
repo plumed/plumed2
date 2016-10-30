@@ -101,38 +101,38 @@ public:
 
 inline
 unsigned AnalysisWithDataCollection::getNumberOfDataPoints() const {
-  if( !mydata ) return data.size();
+  if( !my_input_data ) return data.size();
   return AnalysisBase::getNumberOfDataPoints();
 }
 
 inline
 std::string AnalysisWithDataCollection::getMetricName() const {
-  if( !mydata ) return metricname; 
+  if( !my_input_data ) return metricname; 
   return AnalysisBase::getMetricName();
 }
 
 
 inline
 unsigned AnalysisWithDataCollection::getDataPointIndexInBase( const unsigned& idata ) const {
-  if( !mydata ) return idata;
+  if( !my_input_data ) return idata;
   return AnalysisBase::getDataPointIndexInBase( idata );
 }
 
 inline
 bool AnalysisWithDataCollection::usingMemory() const {
-  if( !mydata ) return !nomemory;
+  if( !my_input_data ) return !nomemory;
   return AnalysisBase::usingMemory();
 }
 
 inline
 bool AnalysisWithDataCollection::dissimilaritiesWereSet() const { 
-  if( !mydata ) return false; 
+  if( !my_input_data ) return false; 
   return AnalysisBase::dissimilaritiesWereSet();
 }
 
 inline
 double AnalysisWithDataCollection::getNormalization() const {
-  if( !mydata ){
+  if( !my_input_data ){
       if( nomemory || !firstAnalysisDone ) return norm;
       return ( 1. + norm/old_norm );
   } 
@@ -147,7 +147,7 @@ unsigned AnalysisWithDataCollection::getNumberOfArguments() const {
 
 inline
 const std::vector<Value*> & AnalysisWithDataCollection::getArguments() const {
-  if( !mydata ) return ActionWithArguments::getArguments();
+  if( !my_input_data ) return ActionWithArguments::getArguments();
   return AnalysisBase::getArguments();
 } 
 

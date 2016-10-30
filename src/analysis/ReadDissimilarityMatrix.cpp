@@ -93,7 +93,7 @@ fake_data(NULL)
   if( mytraj.length()>0 ){
      ReadAnalysisFrames* mtraj = plumed.getActionSet().selectWithLabel<ReadAnalysisFrames*>( mytraj );
      if( !mtraj ) error(mytraj + " is not the label of a READ_ANALYSIS_FRAMES object");
-     mydata = dynamic_cast<AnalysisBase*>( mtraj ); mydata->use_all_data=true;
+     my_input_data = dynamic_cast<AnalysisBase*>( mtraj ); my_input_data->use_all_data=true;
   } else {
      fake_data=metricRegister().create<ReferenceConfiguration>( "OPTIMAL" );
   }
@@ -118,7 +118,7 @@ ReadDissimilarityMatrix::~ReadDissimilarityMatrix(){
   if( fake_data ) delete fake_data;
 }
 
-void ReadDissimilarityMatrix::update(){ if(!mydata) plumed.stop(); }
+void ReadDissimilarityMatrix::update(){ if(!my_input_data) plumed.stop(); }
 
 void ReadDissimilarityMatrix::performAnalysis(){
   IFile mfile; mfile.open(fname); 
@@ -139,7 +139,7 @@ void ReadDissimilarityMatrix::performAnalysis(){
      dissimilarities.push_back( tmpdis );
   }
   mfile.close();
-  if( mydata && dissimilarities.size()!=getNumberOfDataPoints() ){
+  if( my_input_data && dissimilarities.size()!=getNumberOfDataPoints() ){
      error("mismatch between number of data points in trajectory and the dimensions of the dissimilarity matrix");
   }
 
@@ -156,7 +156,7 @@ void ReadDissimilarityMatrix::performAnalysis(){
 }
 
 unsigned ReadDissimilarityMatrix::getNumberOfDataPoints() const { 
-  if( mydata ) return AnalysisBase::getNumberOfDataPoints();
+  if( my_input_data ) return AnalysisBase::getNumberOfDataPoints();
   return dissimilarities.size();
 }
 
@@ -166,13 +166,13 @@ double ReadDissimilarityMatrix::getDissimilarity( const unsigned& iframe, const 
 
 ReferenceConfiguration* ReadDissimilarityMatrix::getReferenceConfiguration( const unsigned& idata, const bool& calcdist ){
   plumed_massert( !calcdist, "cannot calc dist as this data was read in from input");
-  if( mydata ) return AnalysisBase::getReferenceConfiguration( idata, calcdist );
+  if( my_input_data ) return AnalysisBase::getReferenceConfiguration( idata, calcdist );
   return fake_data;
   return NULL;
 }
 
 void ReadDissimilarityMatrix::getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const {
-  if( mydata ){ AnalysisBase::getDataPoint( idata, point, weight ); return; } 
+  if( my_input_data ){ AnalysisBase::getDataPoint( idata, point, weight ); return; } 
   plumed_merror("cannot get data points from read in dissmimilarity matrix");
 }
 

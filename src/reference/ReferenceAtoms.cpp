@@ -52,7 +52,7 @@ void ReferenceAtoms::printAtoms( const double& lunits, SetupMolInfo* mymoldat, O
       }
   } else {
       for(unsigned i=0;i<reference_atoms.size();++i){
-          ofile.printf("ATOM  %5d %-4s %3s  %4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+          ofile.printf("ATOM  %5d %-4s %3s  %4u    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
             indices[i].serial(), mymoldat->getAtomName(indices[i]).c_str(), 
             mymoldat->getResidueName(indices[i]).c_str(), mymoldat->getResidueNumber(indices[i]),
             lunits*reference_atoms[i][0], lunits*reference_atoms[i][1], lunits*reference_atoms[i][2],

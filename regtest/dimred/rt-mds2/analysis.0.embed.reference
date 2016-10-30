@@ -1,4 +1,4 @@
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -11,7 +11,7 @@ ATOM     5  X    RES     4    -0.336   1.085   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.712  -0.919   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.103   0.252   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -24,7 +24,7 @@ ATOM     5  X    RES     4    -0.323   1.092   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.739  -0.939   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.101   0.254   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -37,7 +37,7 @@ ATOM     5  X    RES     4    -0.321   1.092   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.770  -0.946   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.089   0.244   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -50,7 +50,7 @@ ATOM     5  X    RES     4    -0.329   1.092   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.779  -0.944   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.070   0.222   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -63,7 +63,7 @@ ATOM     5  X    RES     4    -0.330   1.081   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.771  -0.931   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.061   0.204   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -76,7 +76,7 @@ ATOM     5  X    RES     4    -0.339   1.072   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.758  -0.908   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.070   0.186   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -89,7 +89,7 @@ ATOM     5  X    RES     4    -0.346   1.064   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.746  -0.876   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.104   0.173   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -102,7 +102,7 @@ ATOM     5  X    RES     4    -0.355   1.055   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.727  -0.857   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.148   0.168   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -115,7 +115,7 @@ ATOM     5  X    RES     4    -0.369   1.033   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.701  -0.848   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.187   0.173   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -128,7 +128,7 @@ ATOM     5  X    RES     4    -0.385   1.010   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.684  -0.858   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.212   0.183   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -141,7 +141,7 @@ ATOM     5  X    RES     4    -0.405   0.986   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.674  -0.872   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.220   0.185   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -154,7 +154,7 @@ ATOM     5  X    RES     4    -0.430   0.968   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.673  -0.877   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.219   0.185   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -167,7 +167,7 @@ ATOM     5  X    RES     4    -0.458   0.969   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.685  -0.867   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.206   0.173   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -180,7 +180,7 @@ ATOM     5  X    RES     4    -0.487   0.985   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.708  -0.852   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.186   0.146   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -193,7 +193,7 @@ ATOM     5  X    RES     4    -0.508   1.006   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.730  -0.844   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.161   0.127   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -206,7 +206,7 @@ ATOM     5  X    RES     4    -0.528   1.029   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.745  -0.846   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.134   0.115   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -219,7 +219,7 @@ ATOM     5  X    RES     4    -0.545   1.058   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.754  -0.876   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.110   0.114   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -232,7 +232,7 @@ ATOM     5  X    RES     4    -0.546   1.082   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.753  -0.924   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.102   0.131   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -245,7 +245,7 @@ ATOM     5  X    RES     4    -0.524   1.102   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.751  -0.963   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.105   0.149   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -258,7 +258,7 @@ ATOM     5  X    RES     4    -0.501   1.110   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.739  -0.981   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.104   0.165   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -271,7 +271,7 @@ ATOM     5  X    RES     4    -0.491   1.105   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.723  -0.982   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.096   0.175   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -284,7 +284,7 @@ ATOM     5  X    RES     4    -0.506   1.090   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.708  -0.963   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.084   0.180   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -297,7 +297,7 @@ ATOM     5  X    RES     4    -0.528   1.080   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.695  -0.934   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.066   0.176   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -310,7 +310,7 @@ ATOM     5  X    RES     4    -0.534   1.083   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.677  -0.897   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.053   0.150   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -323,7 +323,7 @@ ATOM     5  X    RES     4    -0.526   1.091   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.657  -0.856   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.048   0.105   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -336,7 +336,7 @@ ATOM     5  X    RES     4    -0.504   1.092   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.629  -0.849   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.069   0.079   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -349,7 +349,7 @@ ATOM     5  X    RES     4    -0.476   1.091   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.599  -0.881   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.108   0.081   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -362,7 +362,7 @@ ATOM     5  X    RES     4    -0.448   1.080   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.589  -0.913   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.151   0.096   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -375,7 +375,7 @@ ATOM     5  X    RES     4    -0.426   1.076   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.591  -0.936   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.183   0.114   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -388,7 +388,7 @@ ATOM     5  X    RES     4    -0.414   1.076   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.598  -0.948   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.202   0.130   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -401,7 +401,7 @@ ATOM     5  X    RES     4    -0.416   1.078   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.599  -0.948   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.212   0.147   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -414,7 +414,7 @@ ATOM     5  X    RES     4    -0.414   1.083   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.602  -0.937   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.212   0.161   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -427,7 +427,7 @@ ATOM     5  X    RES     4    -0.418   1.081   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.604  -0.928   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.202   0.176   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -440,7 +440,7 @@ ATOM     5  X    RES     4    -0.423   1.073   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.605  -0.926   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.179   0.190   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -453,7 +453,7 @@ ATOM     5  X    RES     4    -0.430   1.060   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.601  -0.929   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.149   0.194   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -466,7 +466,7 @@ ATOM     5  X    RES     4    -0.440   1.041   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.605  -0.929   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.120   0.184   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -479,7 +479,7 @@ ATOM     5  X    RES     4    -0.449   1.021   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.614  -0.924   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.099   0.160   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -492,7 +492,7 @@ ATOM     5  X    RES     4    -0.452   1.016   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.623  -0.918   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.100   0.133   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -505,7 +505,7 @@ ATOM     5  X    RES     4    -0.459   1.027   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.636  -0.914   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.116   0.105   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -518,7 +518,7 @@ ATOM     5  X    RES     4    -0.481   1.041   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.660  -0.908   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.137   0.082   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -531,7 +531,7 @@ ATOM     5  X    RES     4    -0.501   1.034   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.682  -0.900   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.158   0.072   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -544,7 +544,7 @@ ATOM     5  X    RES     4    -0.519   1.022   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.697  -0.898   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.183   0.071   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -557,7 +557,7 @@ ATOM     5  X    RES     4    -0.542   1.003   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.703  -0.896   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.199   0.075   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -570,7 +570,7 @@ ATOM     5  X    RES     4    -0.562   0.982   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.698  -0.894   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.208   0.083   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -583,7 +583,7 @@ ATOM     5  X    RES     4    -0.584   0.974   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.681  -0.888   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.224   0.090   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -596,7 +596,7 @@ ATOM     5  X    RES     4    -0.602   0.974   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.654  -0.885   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.238   0.095   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -609,7 +609,7 @@ ATOM     5  X    RES     4    -0.608   0.977   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.622  -0.872   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.255   0.093   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -622,7 +622,7 @@ ATOM     5  X    RES     4    -0.608   0.980   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.607  -0.862   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.273   0.078   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -635,7 +635,7 @@ ATOM     5  X    RES     4    -0.607   0.969   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.619  -0.857   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.278   0.066   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -648,7 +648,7 @@ ATOM     5  X    RES     4    -0.604   0.954   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.647  -0.858   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.271   0.059   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -661,7 +661,7 @@ ATOM     5  X    RES     4    -0.595   0.941   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.668  -0.865   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.272   0.057   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -674,7 +674,7 @@ ATOM     5  X    RES     4    -0.595   0.943   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.681  -0.874   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.270   0.061   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -687,7 +687,7 @@ ATOM     5  X    RES     4    -0.596   0.954   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.687  -0.880   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.264   0.069   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -700,7 +700,7 @@ ATOM     5  X    RES     4    -0.590   0.976   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.680  -0.887   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.255   0.075   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -713,7 +713,7 @@ ATOM     5  X    RES     4    -0.570   0.992   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.676  -0.911   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.246   0.091   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -726,7 +726,7 @@ ATOM     5  X    RES     4    -0.541   1.000   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.676  -0.943   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.226   0.110   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -739,7 +739,7 @@ ATOM     5  X    RES     4    -0.512   1.000   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.676  -0.975   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.201   0.123   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -752,7 +752,7 @@ ATOM     5  X    RES     4    -0.484   0.999   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.666  -1.000   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.171   0.132   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -765,7 +765,7 @@ ATOM     5  X    RES     4    -0.477   0.998   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.648  -1.020   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.138   0.138   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -778,7 +778,7 @@ ATOM     5  X    RES     4    -0.490   1.005   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.623  -1.029   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.110   0.133   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -791,7 +791,7 @@ ATOM     5  X    RES     4    -0.493   1.027   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.588  -1.026   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.098   0.111   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -804,7 +804,7 @@ ATOM     5  X    RES     4    -0.486   1.055   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.564  -1.011   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.092   0.080   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -817,7 +817,7 @@ ATOM     5  X    RES     4    -0.478   1.071   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.555  -0.984   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.094   0.057   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -830,7 +830,7 @@ ATOM     5  X    RES     4    -0.465   1.076   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.579  -0.959   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.096   0.033   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -843,7 +843,7 @@ ATOM     5  X    RES     4    -0.452   1.063   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.622  -0.934   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.099   0.024   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -856,7 +856,7 @@ ATOM     5  X    RES     4    -0.439   1.035   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.658  -0.925   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.114   0.030   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -869,7 +869,7 @@ ATOM     5  X    RES     4    -0.444   1.013   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.681  -0.930   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.137   0.052   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -882,7 +882,7 @@ ATOM     5  X    RES     4    -0.454   0.999   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.696  -0.942   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.156   0.089   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -895,7 +895,7 @@ ATOM     5  X    RES     4    -0.460   0.990   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.713  -0.950   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.162   0.124   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -908,7 +908,7 @@ ATOM     5  X    RES     4    -0.469   0.991   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.722  -0.960   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.161   0.151   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -921,7 +921,7 @@ ATOM     5  X    RES     4    -0.476   0.993   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.716  -0.969   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.163   0.163   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -934,7 +934,7 @@ ATOM     5  X    RES     4    -0.474   1.000   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.706  -0.970   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.159   0.168   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -947,7 +947,7 @@ ATOM     5  X    RES     4    -0.463   1.011   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.702  -0.957   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.147   0.163   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -960,7 +960,7 @@ ATOM     5  X    RES     4    -0.453   1.026   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.695  -0.925   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.127   0.149   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -973,7 +973,7 @@ ATOM     5  X    RES     4    -0.443   1.042   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.696  -0.890   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.103   0.131   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -986,7 +986,7 @@ ATOM     5  X    RES     4    -0.432   1.057   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.707  -0.861   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.088   0.120   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -999,7 +999,7 @@ ATOM     5  X    RES     4    -0.420   1.069   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.717  -0.850   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.100   0.136   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -1012,7 +1012,7 @@ ATOM     5  X    RES     4    -0.410   1.072   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.723  -0.858   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.131   0.167   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -1025,7 +1025,7 @@ ATOM     5  X    RES     4    -0.397   1.067   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.733  -0.870   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.162   0.207   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -1038,7 +1038,7 @@ ATOM     5  X    RES     4    -0.370   1.060   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.736  -0.871   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.178   0.250   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -1051,7 +1051,7 @@ ATOM     5  X    RES     4    -0.341   1.042   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.732  -0.863   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.177   0.288   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -1064,7 +1064,7 @@ ATOM     5  X    RES     4    -0.314   1.028   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.728  -0.858   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.166   0.315   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -1077,7 +1077,7 @@ ATOM     5  X    RES     4    -0.295   1.015   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.723  -0.850   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.152   0.332   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -1090,7 +1090,7 @@ ATOM     5  X    RES     4    -0.289   1.017   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.722  -0.842   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.141   0.337   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -1103,7 +1103,7 @@ ATOM     5  X    RES     4    -0.296   1.033   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.728  -0.838   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.134   0.334   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -1116,7 +1116,7 @@ ATOM     5  X    RES     4    -0.306   1.052   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.740  -0.847   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.126   0.321   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -1129,7 +1129,7 @@ ATOM     5  X    RES     4    -0.313   1.076   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.753  -0.853   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.111   0.297   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -1142,7 +1142,7 @@ ATOM     5  X    RES     4    -0.307   1.101   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.765  -0.851   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.094   0.263   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -1155,7 +1155,7 @@ ATOM     5  X    RES     4    -0.291   1.124   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.772  -0.842   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.076   0.230   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -1168,7 +1168,7 @@ ATOM     5  X    RES     4    -0.273   1.140   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.774  -0.833   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.072   0.204   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -1181,7 +1181,7 @@ ATOM     5  X    RES     4    -0.258   1.147   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.771  -0.829   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.107   0.191   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -1194,7 +1194,7 @@ ATOM     5  X    RES     4    -0.245   1.145   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.774  -0.830   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.150   0.188   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -1207,7 +1207,7 @@ ATOM     5  X    RES     4    -0.236   1.140   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.772  -0.834   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.182   0.205   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -1220,7 +1220,7 @@ ATOM     5  X    RES     4    -0.242   1.132   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.765  -0.842   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.214   0.232   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -1233,7 +1233,7 @@ ATOM     5  X    RES     4    -0.256   1.117   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.762  -0.850   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.236   0.258   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -1246,7 +1246,7 @@ ATOM     5  X    RES     4    -0.275   1.102   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.759  -0.858   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.249   0.277   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -1259,7 +1259,7 @@ ATOM     5  X    RES     4    -0.302   1.079   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.757  -0.862   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.247   0.293   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -1272,7 +1272,7 @@ ATOM     5  X    RES     4    -0.331   1.047   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.761  -0.865   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.236   0.307   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2
@@ -1285,7 +1285,7 @@ ATOM     5  X    RES     4    -0.359   1.016   0.000  0.14  0.14
 ATOM     6  X    RES     5    -0.771  -0.854   0.000  0.14  0.14
 ATOM     7  X    RES     6    -1.213   0.309   0.000  0.14  0.14
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @21 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 REMARK PROPERTIES=mds.1,mds.2

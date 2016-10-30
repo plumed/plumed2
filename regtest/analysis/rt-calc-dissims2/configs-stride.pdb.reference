@@ -1,4 +1,4 @@
-DESCRIPTION: analysis data from calculation done at time 0.200000 
+DESCRIPTION: analysis data from calculation done by @5 at time 0.200000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 ATOM     1  X    RES     0    -4.506 -11.060 -17.545  0.05  0.05
@@ -22,7 +22,7 @@ ATOM    18  X    RES    17     3.305   5.096   7.190  0.05  0.05
 ATOM    19  X    RES    18     4.331  14.345   0.009  0.05  0.05
 ATOM    20  X    RES    19    -3.402  14.752   7.866  0.05  0.05
 END
-DESCRIPTION: analysis data from calculation done at time 0.200000 
+DESCRIPTION: analysis data from calculation done by @5 at time 0.200000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 ATOM     1  X    RES     0    -4.670 -11.130 -17.511  0.05  0.05
@@ -46,7 +46,7 @@ ATOM    18  X    RES    17     2.779   4.548   6.887  0.05  0.05
 ATOM    19  X    RES    18     4.460  14.224   0.649  0.05  0.05
 ATOM    20  X    RES    19    -3.049  14.991   8.360  0.05  0.05
 END
-DESCRIPTION: analysis data from calculation done at time 0.200000 
+DESCRIPTION: analysis data from calculation done by @5 at time 0.200000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 ATOM     1  X    RES     0    -4.797 -10.892 -17.524  0.05  0.05
@@ -70,7 +70,7 @@ ATOM    18  X    RES    17     2.962   4.118   6.770  0.05  0.05
 ATOM    19  X    RES    18     4.381  13.795   0.873  0.05  0.05
 ATOM    20  X    RES    19    -3.386  14.709   8.831  0.05  0.05
 END
-DESCRIPTION: analysis data from calculation done at time 0.200000 
+DESCRIPTION: analysis data from calculation done by @5 at time 0.200000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 ATOM     1  X    RES     0    -4.972 -10.651 -17.468  0.05  0.05
@@ -94,7 +94,7 @@ ATOM    18  X    RES    17     3.390   3.801   6.837  0.05  0.05
 ATOM    19  X    RES    18     4.216  13.533   0.747  0.05  0.05
 ATOM    20  X    RES    19    -3.871  14.225   9.145  0.05  0.05
 END
-DESCRIPTION: analysis data from calculation done at time 0.200000 
+DESCRIPTION: analysis data from calculation done by @5 at time 0.200000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=OPTIMAL
 ATOM     1  X    RES     0    -5.103 -10.424 -17.164  0.05  0.05

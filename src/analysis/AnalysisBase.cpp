@@ -42,7 +42,7 @@ ActionPilot(ao),
 ActionAtomistic(ao),        
 ActionWithArguments(ao),
 ActionWithVessel(ao),
-mydata(NULL)
+my_input_data(NULL)
 {
   // We have an if statement here so that this doesn't break with READ_DISSIMILARITIES
   std::string datastr; if( keywords.exists("USE_OUTPUT_DATA_FROM") ) parse("USE_OUTPUT_DATA_FROM",datastr);
@@ -50,12 +50,12 @@ mydata(NULL)
       datastr.length()==0 && 
       !keywords.exists("REUSE_INPUT_DATA_FROM") ) error("input analysis action was not specified use USE_OUTPUT_DATA_FROM");
   if( datastr.length()>0 ){
-      mydata=plumed.getActionSet().selectWithLabel<AnalysisBase*>( datastr );
-      ReadAnalysisFrames* checkt = dynamic_cast<ReadAnalysisFrames*>( mydata );
+      my_input_data=plumed.getActionSet().selectWithLabel<AnalysisBase*>( datastr );
+      ReadAnalysisFrames* checkt = dynamic_cast<ReadAnalysisFrames*>( my_input_data );
       if( checkt ) error("READ_ANALYSIS_FRAMES should only be used in input to the FRAMES keyword"); 
       log.printf("  performing analysis on output from %s \n",datastr.c_str() );
-      if( !mydata ) error("could not find analysis action named " + datastr );
-      freq=mydata->freq; use_all_data=mydata->use_all_data;
+      if( !my_input_data ) error("could not find analysis action named " + datastr );
+      freq=my_input_data->freq; use_all_data=my_input_data->use_all_data;
       if( !use_all_data ) setStride( freq );
   }
 }

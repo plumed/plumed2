@@ -65,7 +65,7 @@ LandmarkSelectionBase(ao)
 
 void LandmarkStaged::selectLandmarks(){
   unsigned int n = getNumberOfDataPoints(); // The number of landmarks to pick
-  unsigned int N = mydata->getNumberOfDataPoints();  // The total number of frames we can choose from 
+  unsigned int N = my_input_data->getNumberOfDataPoints();  // The total number of frames we can choose from 
   unsigned int m = static_cast<int>( sqrt(n*N) );
   std::vector<unsigned> fpslandmarks(m);
   // Select first point at random
@@ -76,7 +76,7 @@ void LandmarkStaged::selectLandmarks(){
   // Now find distance to all other points
   Matrix<double> distances( m, N );
   for(unsigned int i=0;i<N;++i) {
-      distances(0,i) = mydata->getDissimilarity( fpslandmarks[0], i );
+      distances(0,i) = my_input_data->getDissimilarity( fpslandmarks[0], i );
   }
 
   // Now find all other landmarks
@@ -90,7 +90,7 @@ void LandmarkStaged::selectLandmarks(){
           }
           if( mind>maxd ){ maxd=mind; fpslandmarks[i]=j; }
       }
-      for(unsigned k=0;k<N;++k) distances(i,k) = mydata->getDissimilarity( fpslandmarks[i], k );
+      for(unsigned k=0;k<N;++k) distances(i,k) = my_input_data->getDissimilarity( fpslandmarks[i], k );
   }
 
   // Initial FPS selection of m landmarks completed

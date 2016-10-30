@@ -78,7 +78,7 @@ double EuclideanDissimilarityMatrix::getDissimilarity( const unsigned& iframe, c
   }
   if( iframe!=jframe ){
      ReferenceConfiguration* myref1; ReferenceConfiguration* myref2; 
-     if( mydata ){ myref1=AnalysisBase::getReferenceConfiguration(iframe,true); myref2=AnalysisBase::getReferenceConfiguration(jframe,true); }
+     if( my_input_data ){ myref1=AnalysisBase::getReferenceConfiguration(iframe,true); myref2=AnalysisBase::getReferenceConfiguration(jframe,true); }
      else { myref1 = data[iframe]; myref2 = data[jframe]; }
 //      if( myref1->getNumberOfProperties()>0 ){
 //         if( !usingLowMem() ) dissimilarities(iframe,jframe) = dissimilarities(jframe,iframe) = property_distance( myref1, myref2, true );

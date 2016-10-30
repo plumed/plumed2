@@ -63,8 +63,8 @@ LandmarkSelectionBase(ao)
   if( !mylandmarks ) error("input to LANDMARKS is not a landmark selection action");
   nlandmarks = mylandmarks->nlandmarks;
 
-  if( (mylandmarks->mydata)->getNumberOfDataPoints()!=mydata->getNumberOfDataPoints() ||
-      mylandmarks->use_all_data!=mydata->use_all_data ) error("mismatch between ammount of landmark class and base class"); 
+  if( (mylandmarks->my_input_data)->getNumberOfDataPoints()!=my_input_data->getNumberOfDataPoints() ||
+      mylandmarks->use_all_data!=my_input_data->use_all_data ) error("mismatch between ammount of landmark class and base class"); 
 }
 
 void ReselectLandmarks::selectLandmarks(){

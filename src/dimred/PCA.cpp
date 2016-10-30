@@ -90,9 +90,9 @@ PCA ARG=d1,d2,d3,d4,d5,d6 METRIC=EUCLIDEAN STRIDE=5 RUN=1000 NLOW_DIM=2 REWEIGHT
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace analysis {
+namespace dimred {
 
-class PCA : public AnalysisWithDataCollection {
+class PCA : public analysis::AnalysisWithDataCollection {
 private:
   unsigned ndim;
 /// The position of the reference configuration (the one we align to)

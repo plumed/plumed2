@@ -107,7 +107,7 @@ void ProjectNonLandmarkPoints::generateProjection( const unsigned& idat, std::ve
 
 ReferenceConfiguration* ProjectNonLandmarkPoints::getReferenceConfiguration( const unsigned& idat, const bool& calcdist ){
   std::vector<double> pp(nlow); generateProjection( idat, pp ); std::string num;
-  ReferenceConfiguration* myref = mydata->getReferenceConfiguration( idat, calcdist ); myref->clearAllProperties();
+  ReferenceConfiguration* myref = my_input_data->getReferenceConfiguration( idat, calcdist ); myref->clearAllProperties();
   for(unsigned i=0;i<nlow;++i){ Tools::convert(i+1,num); myref->attachProperty( getLabel() + "." + num, pp[i] ); }
   return myref;
 }

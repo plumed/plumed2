@@ -36,7 +36,7 @@ Action(ao),
 AnalysisBase(ao)
 {
   if( keywords.exists("NLANDMARKS") ) parse("NLANDMARKS",nlandmarks); 
-  log.printf("  selecting %d landmark points \n",nlandmarks);
+  log.printf("  selecting %u landmark points \n",nlandmarks);
   lweights.resize( nlandmarks );
 
   parseFlag("NOVORONOI",novoronoi); 
@@ -57,25 +57,25 @@ void LandmarkSelectionBase::performAnalysis(){
 
   if( !novoronoi ){
       lweights.assign(lweights.size(),0.0);
-      std::vector<unsigned> tmpass( mydata->getNumberOfDataPoints() );
+      std::vector<unsigned> tmpass( my_input_data->getNumberOfDataPoints() );
       voronoiAnalysis( landmark_indices, lweights, tmpass );
   } else {
-      for(unsigned i=0;i<nlandmarks;++i) lweights[i]=mydata->getWeight( landmark_indices[i] );
+      for(unsigned i=0;i<nlandmarks;++i) lweights[i]=my_input_data->getWeight( landmark_indices[i] );
   }
 }
 
 void LandmarkSelectionBase::voronoiAnalysis( const std::vector<unsigned>& myindices, std::vector<double>& lweights, std::vector<unsigned>& assignments ) const {
-  plumed_dbg_assert( myindices.size()==lweights.size() && assignments.size()==mydata->getNumberOfDataPoints() );
+  plumed_dbg_assert( myindices.size()==lweights.size() && assignments.size()==my_input_data->getNumberOfDataPoints() );
   lweights.assign( lweights.size(), 0 ); 
   unsigned rank=comm.Get_rank(), size=comm.Get_size();
-  for(unsigned i=rank;i<mydata->getNumberOfDataPoints();i+=size){
+  for(unsigned i=rank;i<my_input_data->getNumberOfDataPoints();i+=size){
       assignments[i]=0;
-      double mindist=mydata->getDissimilarity( i, myindices[0] );
+      double mindist=my_input_data->getDissimilarity( i, myindices[0] );
       for(unsigned j=1;j<nlandmarks;++j){
-          double dist=mydata->getDissimilarity( i, myindices[j] );
+          double dist=my_input_data->getDissimilarity( i, myindices[j] );
           if( dist<mindist ){ mindist=dist; assignments[i]=j; }
       }
-      lweights[ assignments[i] ] += mydata->getWeight(i);
+      lweights[ assignments[i] ] += my_input_data->getWeight(i);
   }
   comm.Sum( &lweights[0], lweights.size() );
   comm.Sum( &assignments[0], assignments.size() );

@@ -61,7 +61,7 @@ DimensionalityReductionBase(ao)
   if( !dimredbase ) error("SMACOF must be initialised using output from dimensionality reduction object");
 
   parse("SMACOF_TOL",tol); parse("SMACOF_MAXCYC",maxloops);
-  log.printf("  running smacof to convergence at %f or for a maximum of %d steps \n",tol,maxloops);
+  log.printf("  running smacof to convergence at %f or for a maximum of %u steps \n",tol,maxloops);
 }
 
 void SmacofMDS::calculateProjections( const Matrix<double>& targets, Matrix<double>& projections ){

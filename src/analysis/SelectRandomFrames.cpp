@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "LandmarkSelectionBase.h"
 #include "core/ActionRegister.h"
-#include "../tools/Random.h"
+#include "tools/Random.h"
 
 //+PLUMEDOC LANDMARKS LANDMARK_SELECT_RANDOM
 /* 
@@ -60,7 +60,7 @@ LandmarkSelectionBase(ao)
 
 void SelectRandomFrames::selectLandmarks(){
   Random r; r.setSeed(-seed);
-  unsigned nframe=mydata->getNumberOfDataPoints();
+  unsigned nframe=my_input_data->getNumberOfDataPoints();
   unsigned nland=getNumberOfDataPoints();
 
   std::vector<bool> selected( nframe, false );

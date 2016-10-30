@@ -55,7 +55,7 @@ protected:
 /// The frequency with which we are performing analysis
   unsigned freq;
 /// The Analysis action that we are reusing data from
-  AnalysisBase* mydata;
+  AnalysisBase* my_input_data;
 public:
   static void registerKeywords( Keywords& keys );
   AnalysisBase(const ActionOptions&);
@@ -116,47 +116,47 @@ void AnalysisBase::unlockRequests(){
 
 inline
 unsigned AnalysisBase::getNumberOfDataPoints() const {
-  return mydata->getNumberOfDataPoints();
+  return my_input_data->getNumberOfDataPoints();
 }
 
 inline
 unsigned AnalysisBase::getDataPointIndexInBase( const unsigned& idata ) const {
-  return mydata->getDataPointIndexInBase( idata );
+  return my_input_data->getDataPointIndexInBase( idata );
 }
 
 inline
 std::string AnalysisBase::getMetricName() const {
-  return mydata->getMetricName();
+  return my_input_data->getMetricName();
 }
 
 inline
 double AnalysisBase::getWeight( const unsigned& idata ) const {
-  return mydata->getWeight( idata );
+  return my_input_data->getWeight( idata );
 }
 
 inline
 bool AnalysisBase::usingMemory() const {
-  return mydata->usingMemory();
+  return my_input_data->usingMemory();
 }
 
 inline
 double AnalysisBase::getNormalization() const {
-  return mydata->getNormalization();
+  return my_input_data->getNormalization();
 }
 
 inline
 bool AnalysisBase::dissimilaritiesWereSet() const {
-  return mydata->dissimilaritiesWereSet();
+  return my_input_data->dissimilaritiesWereSet();
 }
 
 inline
 double AnalysisBase::getDissimilarity( const unsigned& i, const unsigned& j ){
-  return mydata->getDissimilarity( i, j );
+  return my_input_data->getDissimilarity( i, j );
 }
 
 inline
 const std::vector<Value*> & AnalysisBase::getArguments() const {
-  return mydata->getArguments();
+  return my_input_data->getArguments();
 }
 
 inline
@@ -166,12 +166,12 @@ void AnalysisBase::confirmStride( const unsigned& istride, const unsigned& all )
 
 inline
 void AnalysisBase::getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const {
-  mydata->getDataPoint( idata, point, weight );
+  my_input_data->getDataPoint( idata, point, weight );
 }
 
 inline
 ReferenceConfiguration* AnalysisBase::getReferenceConfiguration( const unsigned& idata, const bool& calcdist ){
-  return mydata->getReferenceConfiguration( idata, calcdist );
+  return my_input_data->getReferenceConfiguration( idata, calcdist );
 }
 
 }

@@ -1,4 +1,4 @@
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -6,7 +6,7 @@ REMARK mds.1=0.0873   mds.2=0.0013
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7551   c1.moment-3=1.3322   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -14,7 +14,7 @@ REMARK mds.1=0.0535   mds.2=0.0044
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7434   c1.moment-3=1.3003   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -22,7 +22,7 @@ REMARK mds.1=0.0150   mds.2=0.0044
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7333   c1.moment-3=1.2632   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -30,7 +30,7 @@ REMARK mds.1=-0.0136  mds.2=0.0019
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7283   c1.moment-3=1.2349   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -38,7 +38,7 @@ REMARK mds.1=-0.0308  mds.2=-0.0012
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7268   c1.moment-3=1.2175   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -46,7 +46,7 @@ REMARK mds.1=-0.0355  mds.2=-0.0018
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7262   c1.moment-3=1.2128   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -54,7 +54,7 @@ REMARK mds.1=-0.0090  mds.2=-0.0015
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7327   c1.moment-3=1.2385   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -62,7 +62,7 @@ REMARK mds.1=0.0145   mds.2=0.0004
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7371   c1.moment-3=1.2616   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -70,7 +70,7 @@ REMARK mds.1=0.0191   mds.2=0.0022
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7366   c1.moment-3=1.2666   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -78,7 +78,7 @@ REMARK mds.1=0.0278   mds.2=0.0015
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7394   c1.moment-3=1.2748   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -86,7 +86,7 @@ REMARK mds.1=0.0091   mds.2=-0.0004
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7365   c1.moment-3=1.2562   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -94,7 +94,7 @@ REMARK mds.1=-0.0359  mds.2=-0.0012
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7255   c1.moment-3=1.2126   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -102,7 +102,7 @@ REMARK mds.1=-0.0540  mds.2=0.0004
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7193   c1.moment-3=1.1955   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -110,7 +110,7 @@ REMARK mds.1=-0.0322  mds.2=-0.0034
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7286   c1.moment-3=1.2156   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -118,7 +118,7 @@ REMARK mds.1=-0.0205  mds.2=-0.0150
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7429   c1.moment-3=1.2239   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -126,7 +126,7 @@ REMARK mds.1=-0.0282  mds.2=-0.0289
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7542   c1.moment-3=1.2128   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -134,7 +134,7 @@ REMARK mds.1=-0.0530  mds.2=-0.0358
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7544   c1.moment-3=1.1871   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -142,7 +142,7 @@ REMARK mds.1=-0.0769  mds.2=-0.0312
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7438   c1.moment-3=1.1652   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -150,7 +150,7 @@ REMARK mds.1=-0.0893  mds.2=-0.0259
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7355   c1.moment-3=1.1546   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -158,7 +158,7 @@ REMARK mds.1=-0.0697  mds.2=-0.0246
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7393   c1.moment-3=1.1739   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -166,7 +166,7 @@ REMARK mds.1=-0.0302  mds.2=-0.0196
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7448   c1.moment-3=1.2133   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -174,7 +174,7 @@ REMARK mds.1=0.0093   mds.2=-0.0072
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7430   c1.moment-3=1.2547   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -182,7 +182,7 @@ REMARK mds.1=0.0274   mds.2=0.0009
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7400   c1.moment-3=1.2742   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -190,7 +190,7 @@ REMARK mds.1=0.0301   mds.2=0.0016
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7400   c1.moment-3=1.2770   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -198,7 +198,7 @@ REMARK mds.1=0.0265   mds.2=-0.0033
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7438   c1.moment-3=1.2723   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -206,7 +206,7 @@ REMARK mds.1=0.0433   mds.2=-0.0053
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7501   c1.moment-3=1.2879   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -214,7 +214,7 @@ REMARK mds.1=0.0514   mds.2=-0.0019
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7489   c1.moment-3=1.2967   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -222,7 +222,7 @@ REMARK mds.1=0.0222   mds.2=0.0031
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7365   c1.moment-3=1.2698   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -230,7 +230,7 @@ REMARK mds.1=-0.0129  mds.2=0.0061
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7245   c1.moment-3=1.2366   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -238,7 +238,7 @@ REMARK mds.1=-0.0322  mds.2=0.0084
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7172   c1.moment-3=1.2186   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -246,7 +246,7 @@ REMARK mds.1=-0.0355  mds.2=0.0080
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7168   c1.moment-3=1.2153   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -254,7 +254,7 @@ REMARK mds.1=-0.0337  mds.2=0.0067
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7185   c1.moment-3=1.2168   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -262,7 +262,7 @@ REMARK mds.1=-0.0308  mds.2=0.0047
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7211   c1.moment-3=1.2191   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -270,7 +270,7 @@ REMARK mds.1=-0.0253  mds.2=0.0016
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7255   c1.moment-3=1.2235   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -278,7 +278,7 @@ REMARK mds.1=-0.0132  mds.2=-0.0021
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7323   c1.moment-3=1.2343   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -286,7 +286,7 @@ REMARK mds.1=0.0040   mds.2=-0.0031
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7377   c1.moment-3=1.2506   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -294,7 +294,7 @@ REMARK mds.1=0.0107   mds.2=0.0011
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7354   c1.moment-3=1.2582   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -302,7 +302,7 @@ REMARK mds.1=0.0299   mds.2=0.0060
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7357   c1.moment-3=1.2780   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -310,7 +310,7 @@ REMARK mds.1=0.0540   mds.2=0.0070
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7410   c1.moment-3=1.3015   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -318,7 +318,7 @@ REMARK mds.1=0.0650   mds.2=0.0039
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7468   c1.moment-3=1.3114   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -326,7 +326,7 @@ REMARK mds.1=0.0415   mds.2=0.0025
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7421   c1.moment-3=1.2882   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -334,7 +334,7 @@ REMARK mds.1=0.0074   mds.2=0.0033
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7325   c1.moment-3=1.2555   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -342,7 +342,7 @@ REMARK mds.1=-0.0185  mds.2=0.0059
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7232   c1.moment-3=1.2312   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -350,7 +350,7 @@ REMARK mds.1=-0.0413  mds.2=0.0073
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7158   c1.moment-3=1.2096   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -358,7 +358,7 @@ REMARK mds.1=-0.0548  mds.2=0.0074
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7123   c1.moment-3=1.1966   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -366,7 +366,7 @@ REMARK mds.1=-0.0385  mds.2=0.0041
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7197   c1.moment-3=1.2114   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -374,7 +374,7 @@ REMARK mds.1=-0.0383  mds.2=-0.0006
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7243   c1.moment-3=1.2104   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -382,7 +382,7 @@ REMARK mds.1=-0.0584  mds.2=-0.0008
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7192   c1.moment-3=1.1910   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -390,7 +390,7 @@ REMARK mds.1=-0.0584  mds.2=0.0023
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7162   c1.moment-3=1.1918   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -398,7 +398,7 @@ REMARK mds.1=-0.0553  mds.2=0.0090
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7105   c1.moment-3=1.1965   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -406,7 +406,7 @@ REMARK mds.1=-0.0772  mds.2=0.0146
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.6995   c1.moment-3=1.1768   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -414,7 +414,7 @@ REMARK mds.1=-0.0757  mds.2=0.0157
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.6988   c1.moment-3=1.1785   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -422,7 +422,7 @@ REMARK mds.1=-0.0644  mds.2=0.0144
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7030   c1.moment-3=1.1891   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -430,7 +430,7 @@ REMARK mds.1=-0.0816  mds.2=0.0141
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.6988   c1.moment-3=1.1724   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -438,7 +438,7 @@ REMARK mds.1=-0.1045  mds.2=0.0148
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.6922   c1.moment-3=1.1504   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -446,7 +446,7 @@ REMARK mds.1=-0.0867  mds.2=0.0111
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7004   c1.moment-3=1.1667   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -454,7 +454,7 @@ REMARK mds.1=-0.0365  mds.2=0.0014
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7228   c1.moment-3=1.2126   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -462,7 +462,7 @@ REMARK mds.1=0.0113   mds.2=-0.0067
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7431   c1.moment-3=1.2567   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -470,7 +470,7 @@ REMARK mds.1=0.0272   mds.2=-0.0074
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7479   c1.moment-3=1.2718   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -478,7 +478,7 @@ REMARK mds.1=0.0381   mds.2=-0.0012
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7448   c1.moment-3=1.2840   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -486,7 +486,7 @@ REMARK mds.1=0.0548   mds.2=0.0021
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7459   c1.moment-3=1.3010   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -494,7 +494,7 @@ REMARK mds.1=0.0470   mds.2=0.0012
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7447   c1.moment-3=1.2933   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -502,7 +502,7 @@ REMARK mds.1=0.0227   mds.2=-0.0019
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7414   c1.moment-3=1.2690   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -510,7 +510,7 @@ REMARK mds.1=0.0132   mds.2=-0.0022
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7392   c1.moment-3=1.2597   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -518,7 +518,7 @@ REMARK mds.1=0.0040   mds.2=0.0004
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7343   c1.moment-3=1.2515   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -526,7 +526,7 @@ REMARK mds.1=-0.0045  mds.2=0.0008
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7317   c1.moment-3=1.2434   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -534,7 +534,7 @@ REMARK mds.1=-0.0145  mds.2=0.0006
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7293   c1.moment-3=1.2337   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -542,7 +542,7 @@ REMARK mds.1=-0.0116  mds.2=0.0025
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7282   c1.moment-3=1.2370   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -550,7 +550,7 @@ REMARK mds.1=-0.0031  mds.2=0.0044
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7286   c1.moment-3=1.2457   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -558,7 +558,7 @@ REMARK mds.1=-0.0148  mds.2=0.0086
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7216   c1.moment-3=1.2355   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -566,7 +566,7 @@ REMARK mds.1=-0.0318  mds.2=0.0109
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7149   c1.moment-3=1.2196   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -574,7 +574,7 @@ REMARK mds.1=-0.0166  mds.2=0.0078
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7218   c1.moment-3=1.2336   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -582,7 +582,7 @@ REMARK mds.1=0.0154   mds.2=0.0036
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7342   c1.moment-3=1.2633   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -590,7 +590,7 @@ REMARK mds.1=0.0451   mds.2=0.0018
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7437   c1.moment-3=1.2915   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -598,7 +598,7 @@ REMARK mds.1=0.0364   mds.2=0.0021
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7411   c1.moment-3=1.2832   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -606,7 +606,7 @@ REMARK mds.1=0.0125   mds.2=0.0036
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7335   c1.moment-3=1.2606   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -614,7 +614,7 @@ REMARK mds.1=0.0330   mds.2=0.0045
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7379   c1.moment-3=1.2806   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -622,7 +622,7 @@ REMARK mds.1=0.0605   mds.2=0.0048
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7448   c1.moment-3=1.3072   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -630,7 +630,7 @@ REMARK mds.1=0.0417   mds.2=0.0041
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7406   c1.moment-3=1.2889   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -638,7 +638,7 @@ REMARK mds.1=0.0115   mds.2=0.0011
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7356   c1.moment-3=1.2590   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -646,7 +646,7 @@ REMARK mds.1=0.0257   mds.2=-0.0018
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7421   c1.moment-3=1.2719   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -654,7 +654,7 @@ REMARK mds.1=0.0451   mds.2=-0.0029
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7483   c1.moment-3=1.2904   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -662,7 +662,7 @@ REMARK mds.1=0.0387   mds.2=-0.0032
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7469   c1.moment-3=1.2841   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -670,7 +670,7 @@ REMARK mds.1=0.0254   mds.2=-0.0017
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7420   c1.moment-3=1.2716   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -678,7 +678,7 @@ REMARK mds.1=0.0311   mds.2=-0.0001
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7418   c1.moment-3=1.2775   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -686,7 +686,7 @@ REMARK mds.1=0.0448   mds.2=0.0006
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7448   c1.moment-3=1.2909   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -694,7 +694,7 @@ REMARK mds.1=0.0499   mds.2=0.0020
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7448   c1.moment-3=1.2962   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -702,7 +702,7 @@ REMARK mds.1=0.0543   mds.2=0.0037
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7443   c1.moment-3=1.3009   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -710,7 +710,7 @@ REMARK mds.1=0.0486   mds.2=0.0054
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7412   c1.moment-3=1.2959   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -718,7 +718,7 @@ REMARK mds.1=0.0459   mds.2=0.0051
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7407   c1.moment-3=1.2932   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -726,7 +726,7 @@ REMARK mds.1=0.0715   mds.2=-0.0001
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7524   c1.moment-3=1.3166   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -734,7 +734,7 @@ REMARK mds.1=0.0764   mds.2=-0.0063
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7597   c1.moment-3=1.3196   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -742,7 +742,7 @@ REMARK mds.1=0.0603   mds.2=-0.0119
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7609   c1.moment-3=1.3027   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -750,7 +750,7 @@ REMARK mds.1=0.0378   mds.2=-0.0153
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7583   c1.moment-3=1.2800   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -758,7 +758,7 @@ REMARK mds.1=0.0214   mds.2=-0.0124
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7512   c1.moment-3=1.2649   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -766,7 +766,7 @@ REMARK mds.1=0.0063   mds.2=-0.0091
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7441   c1.moment-3=1.2513   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -774,7 +774,7 @@ REMARK mds.1=-0.0095  mds.2=-0.0016
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7327   c1.moment-3=1.2380   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -782,7 +782,7 @@ REMARK mds.1=-0.0259  mds.2=0.0036
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7234   c1.moment-3=1.2235   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2
@@ -790,7 +790,7 @@ REMARK mds.1=-0.0234  mds.2=0.0061
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7217   c1.moment-3=1.2265   
 END
-DESCRIPTION: analysis data from calculation done at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @20 at time 5.000000 
 REMARK WEIGHT=1.0000  
 REMARK TYPE=EUCLIDEAN
 REMARK PROPERTIES=mds.1,mds.2

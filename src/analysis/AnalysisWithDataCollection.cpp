@@ -64,11 +64,11 @@ firstAnalysisDone(false),
 old_norm(0.0),
 myframes(NULL)
 {
-  if( !mydata ){
+  if( !my_input_data ){
       // Check for FRAMES keyword that allows us to read reference configurations from elsewhere
       std::string instring; if( keywords.exists("FRAMES") ) parse("FRAMES",instring);
       if( instring.length()>0 ){
-          if( mydata ) error("frames keyword is not compatible with USE_OUTPUT_DATA_FROM");
+          if( my_input_data ) error("frames keyword is not compatible with USE_OUTPUT_DATA_FROM");
           myframes=plumed.getActionSet().selectWithLabel<ReadAnalysisFrames*>( instring );
           if( !myframes ) error( instring + " is not the name of an object that collects trajectory data");
           log.printf("  frames are stored by object with label %s \n",instring.c_str() );
@@ -84,9 +84,9 @@ myframes(NULL)
          if( !checkd) error("cannot reuse input data from action with label " + datastr + " as this does not store data");
          ReadAnalysisFrames* checkt = dynamic_cast<ReadAnalysisFrames*>( checkd );
          if( checkt ) error("READ_ANALYSIS_FRAMES should only be used in association with READ_DISSSIMILARITY_MATRIX");
-         mydata=dynamic_cast<AnalysisBase*>( checkd );                       
+         my_input_data=dynamic_cast<AnalysisBase*>( checkd );                       
          log.printf("  performing analysis on input data stored in from %s \n",datastr.c_str() );
-         freq=mydata->freq; use_all_data=mydata->use_all_data;
+         freq=my_input_data->freq; use_all_data=my_input_data->use_all_data;
          if( !use_all_data ) setStride( freq );
       // If we are not using input data from elsewhere or output data from another object then
       // we must collect data from the trajectory
@@ -179,7 +179,7 @@ myframes(NULL)
 
          // Setup reference configuration objects to store data
          if( !use_all_data ){
-             plumed_assert( !mydata );
+             plumed_assert( !my_input_data );
              log.printf("  running analysis every %u steps\n",freq);
              unsigned ndata=freq/getStride(); data.resize(ndata); logweights.resize( ndata );
              for(unsigned i=0;i<ndata;++i) data[i]=metricRegister().create<ReferenceConfiguration>( metricname );
@@ -244,12 +244,12 @@ void AnalysisWithDataCollection::readCheckPointFile( const std::string& filename
 }
 
 double AnalysisWithDataCollection::getWeight( const unsigned& idat ) const {
-  if( !mydata ){ plumed_dbg_assert( idat<data.size() ); return data[idat]->getWeight(); }
+  if( !my_input_data ){ plumed_dbg_assert( idat<data.size() ); return data[idat]->getWeight(); }
   return AnalysisBase::getWeight( idat );
 } 
 
 void AnalysisWithDataCollection::getDataPoint( const unsigned& idat, std::vector<double>& point, double& weight ) const {
-  if( !mydata ){
+  if( !my_input_data ){
       plumed_dbg_assert( idat<data.size() && point.size()==getNumberOfArguments() );
       weight = data[idat]->getWeight();
       for(unsigned i=0;i<point.size();++i) point[i]=data[idat]->getReferenceArgument(i);
@@ -259,7 +259,7 @@ void AnalysisWithDataCollection::getDataPoint( const unsigned& idat, std::vector
 }
 
 ReferenceConfiguration* AnalysisWithDataCollection::getReferenceConfiguration( const unsigned& idat, const bool& calcdist ){
-  if( !mydata ){ 
+  if( !my_input_data ){ 
      plumed_dbg_assert( idat<data.size() ); 
      if( !calcdist && myframes ) return myframes->getReferenceConfiguration( idat, false );
      return data[idat]; 
@@ -268,7 +268,7 @@ ReferenceConfiguration* AnalysisWithDataCollection::getReferenceConfiguration( c
 }
 
 void AnalysisWithDataCollection::update(){
-  if( mydata ){ AnalysisBase::update(); return; }
+  if( my_input_data ){ AnalysisBase::update(); return; }
   // Ignore first bit of data if we are not using all data - this is a weird choice - I am not sure I understand GAT (perhaps this should be changed)?
   if( !use_all_data && getStep()==0 ) return ;
 
@@ -313,7 +313,7 @@ void AnalysisWithDataCollection::update(){
 }
 
 void AnalysisWithDataCollection::runFinalJobs(){
-  if( mydata ){ AnalysisBase::runFinalJobs(); return; }
+  if( my_input_data ){ AnalysisBase::runFinalJobs(); return; }
   if( use_all_data ) runAnalysis();
 }
 

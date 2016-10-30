@@ -38,25 +38,25 @@ analysis::AnalysisBase(ao),
 dimredbase(NULL)
 {
   // Check that some dissimilarity information is available
-  if( mydata ){
+  if( my_input_data ){
       if( !dissimilaritiesWereSet() ) error("dissimilarities have not been calcualted in input actions");
       // Now we check if the input was a dimensionality reduction object
-      dimredbase = dynamic_cast<DimensionalityReductionBase*>( mydata );
+      dimredbase = dynamic_cast<DimensionalityReductionBase*>( my_input_data );
   }
 
   // Retrieve the dimension in the low dimensionality space
   if( dimredbase ){
       nlow=dimredbase->nlow;
-      log.printf("  projecting in %d dimensional space \n",nlow);
+      log.printf("  projecting in %u dimensional space \n",nlow);
   } else if( keywords.exists("NLOW_DIM") ){
       parse("NLOW_DIM",nlow);
       if( nlow<1 ) error("dimensionality of low dimensional space must be at least one");
-      log.printf("  projecting in %d dimensional space \n",nlow);
+      log.printf("  projecting in %u dimensional space \n",nlow);
   }
 }
 
 ReferenceConfiguration* DimensionalityReductionBase::getReferenceConfiguration( const unsigned& idat, const bool& calcdist ){
-  ReferenceConfiguration* myref = mydata->getReferenceConfiguration( idat, calcdist ); std::string num; myref->clearAllProperties();
+  ReferenceConfiguration* myref = my_input_data->getReferenceConfiguration( idat, calcdist ); std::string num; myref->clearAllProperties();
   for(unsigned i=0;i<nlow;++i){ Tools::convert(i+1,num); myref->attachProperty( getLabel() + "." + num, projections(idat,i) ); }
   return myref; 
 }
