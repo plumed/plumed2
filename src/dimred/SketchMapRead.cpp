@@ -66,6 +66,7 @@ void SketchMapRead::registerKeywords( Keywords& keys ){
                                               "\\ref dists");
   keys.add("compulsory","REFERENCE","the file containing the sketch-map projection");
   keys.add("compulsory","PROPERTY","the property to be used in the index. This should be in the REMARK of the reference");
+  keys.addFlag("DISABLE_CHECKS",false,"disable checks on reference input structures.");
 }
 
 SketchMapRead::SketchMapRead( const ActionOptions& ao ):
@@ -74,6 +75,7 @@ SketchMapBase(ao)
 {
   std::string mtype; parse("TYPE",mtype); 
   parseVector("PROPERTY",property); nlow=property.size();
+  bool skipchecks; parseFlag("DISABLE_CHECKS",skipchecks);
   std::string ifilename; parse("REFERENCE",ifilename);
   FILE* fp=fopen(ifilename.c_str(),"r"); 
   if(!fp) error("could not open reference file " + ifilename ); 
@@ -96,6 +98,13 @@ SketchMapBase(ao)
      wnorm+=ww; nfram++;
   }
   fclose(fp); 
+  // Finish the setup of the object by getting the arguments and atoms that are required
+  std::vector<AtomNumber> atoms; std::vector<std::string> args;
+  for(unsigned i=0;i<myframes.size();++i){ myframes[i]->getAtomRequests( atoms, skipchecks ); myframes[i]->getArgumentRequests( args, skipchecks ); }
+  requestAtoms( atoms ); std::vector<Value*> req_args;
+  interpretArgumentList( args, req_args ); requestArguments( req_args );
+  // Set stride in and read
+  freq=0; use_all_data=true;
 
   if(nfram==0 ) error("no reference configurations were specified");
   log.printf("  found %u configurations in file %s\n",nfram,ifilename.c_str() );
@@ -122,13 +131,14 @@ unsigned SketchMapRead::getNumberOfDataPoints() const {
 }
 
 unsigned SketchMapRead::getDataPointIndexInBase( const unsigned& idata ) const {
+  error("cannot use read in sketch-map to out of sample project data");
   return idata;
 }
 
 // Highly unsatisfactory solution to problem GAT
 double SketchMapRead::getDissimilarity( const unsigned& i, const unsigned& j ){
-  plumed_merror("Cannot read in dissimilarities");
-  return 0.0;
+  plumed_assert( i<myframes.size() && j<myframes.size() );
+  return distance( getPbc(), ActionWithArguments::getArguments(), myframes[i], myframes[j], true );
 }
 
 double SketchMapRead::getWeight( const unsigned& idata ) const {
