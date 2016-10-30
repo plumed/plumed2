@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -32,20 +32,20 @@ checks_were_disabled(false)
 {
 }
 
-void ReferenceAtoms::readAtomsFromPDB( const PDB& pdb ){
-  if( pdb.getNumberOfAtomBlocks()!=1 ) error("found multi-atom-block pdb format but expecting only one block of atoms");  
+void ReferenceAtoms::readAtomsFromPDB( const PDB& pdb, const bool allowblocks  ){
+  if( !allowblocks && pdb.getNumberOfAtomBlocks()!=1 ) error("found multi-atom-block pdb format but expecting only one block of atoms");  
 
-  indices.resize(0); reference_atoms.resize(0); align.resize(0); displace.resize(0); der_index.resize(0);
+  indices.resize(0); reference_atoms.resize(0); align.resize(0); displace.resize(0); atom_der_index.resize(0);
   for(unsigned i=0;i<pdb.size();++i){
      indices.push_back( pdb.getAtomNumbers()[i] ); reference_atoms.push_back( pdb.getPositions()[i] );
-     align.push_back( pdb.getOccupancy()[i] ); displace.push_back( pdb.getBeta()[i] ); der_index.push_back(i);
+     align.push_back( pdb.getOccupancy()[i] ); displace.push_back( pdb.getBeta()[i] ); atom_der_index.push_back(i);
   }
 }
 
 void ReferenceAtoms::printAtoms( const double& lunits, SetupMolInfo* mymoldat, OFile& ofile ) const {
   if( !mymoldat ){
       for(unsigned i=0;i<reference_atoms.size();++i){
-          ofile.printf("ATOM  %5d X    RES  %4u    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+          ofile.printf("ATOM  %4d  X    RES  %4u  %8.3f%8.3f%8.3f%6.2f%6.2f\n",
             indices[i].serial(), i, 
             lunits*reference_atoms[i][0], lunits*reference_atoms[i][1], lunits*reference_atoms[i][2],
             align[i], displace[i] );
@@ -88,12 +88,12 @@ void ReferenceAtoms::getAtomRequests( std::vector<AtomNumber>& numbers, bool dis
 
 void ReferenceAtoms::singleDomainRequests( std::vector<AtomNumber>& numbers, bool disable_checks ){
   checks_were_disabled=disable_checks;
-  der_index.resize( indices.size() );
+  atom_der_index.resize( indices.size() );
 
   if( numbers.size()==0 ){
       for(unsigned i=0;i<indices.size();++i){
          numbers.push_back( indices[i] );
-         der_index[i]=i;
+         atom_der_index[i]=i;
       }
   } else {
       if(!disable_checks){
@@ -105,17 +105,22 @@ void ReferenceAtoms::singleDomainRequests( std::vector<AtomNumber>& numbers, boo
          found=false;
          if(!disable_checks){
             if( indices[i]!=numbers[i] ) error("found mismatched reference atoms in pdb frames");
-            der_index[i]=i;
+            atom_der_index[i]=i;
          } else {
             for(unsigned j=0;j<numbers.size();++j){
-              if( indices[i]==numbers[j] ){ found=true; der_index[i]=j; break; }
+              if( indices[i]==numbers[j] ){ found=true; atom_der_index[i]=j; break; }
             } 
             if( !found ){
-              der_index[i]=numbers.size(); numbers.push_back( indices[i] );
+              atom_der_index[i]=numbers.size(); numbers.push_back( indices[i] );
             }
          }
       }
   }
+}
+
+void ReferenceAtoms::displaceReferenceAtoms( const double& weight, const std::vector<Vector>& dir ){
+  plumed_dbg_assert( dir.size()==reference_atoms.size() );
+  for(unsigned i=0;i<dir.size();++i) reference_atoms[i] += weight*dir[i]; 
 }
 
 }

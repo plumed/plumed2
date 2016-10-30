@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -138,7 +138,7 @@ double Kearsley::calculate(bool rmsd) {
 		if (verbose){
 			log->printf("P0 RESET\n");
 			for(i=0;i<natoms;i++){
-				log->printf("ATOM %6d  C   ALA     1    %8.3f%8.3f%8.3f  1.00  1.00\n",i+1,p0reset[i][0]/myscale,p0reset[i][1]/myscale,p0reset[i][2]/myscale);
+				log->printf("ATOM %6u  C   ALA     1    %8.3f%8.3f%8.3f  1.00  1.00\n",i+1,p0reset[i][0]/myscale,p0reset[i][1]/myscale,p0reset[i][2]/myscale);
 			}
 			log->printf("END\n");
 		}
@@ -168,7 +168,7 @@ double Kearsley::calculate(bool rmsd) {
 		if(verbose){
 			log->printf("P1 RESET\n");
 			for(i=0;i<natoms;i++){
-				log->printf("ATOM %6d  C   ALA     1    %8.3f%8.3f%8.3f  1.00  1.00\n",i+1,p1reset[i][0]/myscale,p1reset[i][1]/myscale,p1reset[i][2]/myscale);
+				log->printf("ATOM %6u  C   ALA     1    %8.3f%8.3f%8.3f  1.00  1.00\n",i+1,p1reset[i][0]/myscale,p1reset[i][1]/myscale,p1reset[i][2]/myscale);
 			}
 			log->printf("END\n");
 		}
@@ -664,12 +664,12 @@ double Kearsley::calculate(bool rmsd) {
 		if(verbose){
 			log->printf("P1-RESET-AND-ROTATED\n");
 			for(i=0;i<natoms;i++){
-				log->printf("ATOM %6d  C   ALA     2    %8.3f%8.3f%8.3f  1.00  1.00\n",i+1,p1rotated[i][0]/myscale,p1rotated[i][1]/myscale,p1rotated[i][2]/myscale);
+				log->printf("ATOM %6u  C   ALA     2    %8.3f%8.3f%8.3f  1.00  1.00\n",i+1,p1rotated[i][0]/myscale,p1rotated[i][1]/myscale,p1rotated[i][2]/myscale);
 			}
 			log->printf("END\n");
 			log->printf("P0-RESET\n");
 			for(i=0;i<natoms;i++){
-				log->printf("ATOM %6d  C   ALA     2    %8.3f%8.3f%8.3f  1.00  1.00\n",i+1,p0reset[i][0]/myscale,p0reset[i][1]/myscale,p0reset[i][2]/myscale);
+				log->printf("ATOM %6u  C   ALA     2    %8.3f%8.3f%8.3f  1.00  1.00\n",i+1,p0reset[i][0]/myscale,p0reset[i][1]/myscale,p0reset[i][2]/myscale);
 			}
 			log->printf("END\n");
 		}
@@ -689,12 +689,12 @@ double Kearsley::calculate(bool rmsd) {
 		if(verbose){
 			log->printf("P0-RESET AND INVERSE ROTATED\n");
 			for(i=0;i<natoms;i++){
-				log->printf("ATOM %6d  C   ALA     1    %8.3f%8.3f%8.3f  1.00  1.00\n",i+1,p0rotated[i][0]/myscale,p0rotated[i][1]/myscale,p0rotated[i][2]/myscale);
+				log->printf("ATOM %6u  C   ALA     1    %8.3f%8.3f%8.3f  1.00  1.00\n",i+1,p0rotated[i][0]/myscale,p0rotated[i][1]/myscale,p0rotated[i][2]/myscale);
 			}
 			log->printf("END\n");
 			log->printf("P1-RESET\n");
 			for(i=0;i<natoms;i++){
-				log->printf("ATOM %6d  C   ALA     2    %8.3f%8.3f%8.3f  1.00  1.00\n",i+1,p1reset[i][0]/myscale,p1reset[i][1]/myscale,p1reset[i][2]/myscale);
+				log->printf("ATOM %6u  C   ALA     2    %8.3f%8.3f%8.3f  1.00  1.00\n",i+1,p1reset[i][0]/myscale,p1reset[i][1]/myscale,p1reset[i][2]/myscale);
 			}
 			log->printf("END\n");
 		}

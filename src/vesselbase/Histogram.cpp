@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -30,7 +30,7 @@ class Histogram : public ShortcutVessel {
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
-  Histogram( const VesselOptions& da );
+  explicit Histogram( const VesselOptions& da );
 };
 
 PLUMED_REGISTER_VESSEL(Histogram,"HISTOGRAM")
@@ -43,8 +43,8 @@ void Histogram::registerKeywords( Keywords& keys ){
 }
 
 void Histogram::reserveKeyword( Keywords& keys ){
-  keys.reserve("optional","HISTOGRAM","calculate a discretized histogram of the distribution of values. "
-                                      "This shortcut allows you to calculates NBIN quantites like BETWEEN.");
+  keys.reserve("vessel","HISTOGRAM","calculate a discretized histogram of the distribution of values. "
+                                    "This shortcut allows you to calculates NBIN quantites like BETWEEN.");
 }
 
 Histogram::Histogram( const VesselOptions& da ):

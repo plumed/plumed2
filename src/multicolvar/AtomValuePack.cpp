@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014,2015 The plumed team
+   Copyright (c) 2014-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -41,10 +41,10 @@ myatoms( vals.getAtomVector() )
   }
 }
 
-unsigned AtomValuePack::setupAtomsFromLinkCells( const unsigned& cind, const Vector& cpos, const LinkCells& linkcells ){
-  indices[0]=cind; natoms=1; linkcells.retrieveNeighboringAtoms( cpos, natoms, indices );
-  myatoms[0]=Vector(0.0,0.0,0.0);
-  for(unsigned i=1;i<natoms;++i) myatoms[i]=mycolv->getPositionOfAtomForLinkCells( indices[i] ) - cpos;
+unsigned AtomValuePack::setupAtomsFromLinkCells( const std::vector<unsigned>& cind, const Vector& cpos, const LinkCells& linkcells ){
+  natoms=cind.size(); for(unsigned i=0;i<natoms;++i) indices[i]=cind[i];
+  linkcells.retrieveNeighboringAtoms( cpos, natoms, indices ); 
+  for(unsigned i=0;i<natoms;++i) myatoms[i]=mycolv->getPositionOfAtomForLinkCells( indices[i] ) - cpos;
   if( mycolv->usesPbc() ) mycolv->applyPbc( myatoms, natoms );
   return natoms;
 }
@@ -73,12 +73,21 @@ void AtomValuePack::updateUsingIndices(){
   myvals.completeUpdate();
 }
 
-void AtomValuePack::addComDerivatives( const unsigned& ind, const Vector& der, CatomPack& catom_der ){
-  for(unsigned ider=0;ider<catom_der.getNumberOfAtomsWithDerivatives();++ider){
-      unsigned jder=3*catom_der.getIndex(ider);
-      myvals.addDerivative( ind, jder+0, catom_der.getDerivative(ider,0,der) );
-      myvals.addDerivative( ind, jder+1, catom_der.getDerivative(ider,1,der) );
-      myvals.addDerivative( ind, jder+2, catom_der.getDerivative(ider,2,der) );
+void AtomValuePack::addComDerivatives( const int& ind, const Vector& der, CatomPack& catom_der ){
+  if( ind<0 ){
+      for(unsigned ider=0;ider<catom_der.getNumberOfAtomsWithDerivatives();++ider){
+          unsigned jder=3*catom_der.getIndex(ider);
+          myvals.addTemporyDerivative( jder+0, catom_der.getDerivative(ider,0,der) );
+          myvals.addTemporyDerivative( jder+1, catom_der.getDerivative(ider,1,der) );
+          myvals.addTemporyDerivative( jder+2, catom_der.getDerivative(ider,2,der) );
+      }
+  } else {
+      for(unsigned ider=0;ider<catom_der.getNumberOfAtomsWithDerivatives();++ider){
+          unsigned jder=3*catom_der.getIndex(ider);
+          myvals.addDerivative( ind, jder+0, catom_der.getDerivative(ider,0,der) );
+          myvals.addDerivative( ind, jder+1, catom_der.getDerivative(ider,1,der) );
+          myvals.addDerivative( ind, jder+2, catom_der.getDerivative(ider,2,der) );
+      }
   }
 }
 

@@ -92,7 +92,7 @@ following input file is wrong:
 
 \verbatim
 #printout frequency
-PRINT ARG=cvdist STRIDE=1 FILE=COLVAR 
+PRINT ARG=e2edist STRIDE=1 FILE=COLVAR 
 #my first plumed input:
 DISTANCE ATOMS=2,253 LABEL=e2edist
 #endofinput 
@@ -102,14 +102,14 @@ here I can write what I want it won't be read.
 
 Try to run it.
 
-Sometimes, when calculating a collective variable, you may not want to use the positions of a number of atoms directly. Instead you may wish to use the position of a virtual atom whose position is generated based on the positions of a collection of other atoms. For example you might want to use the center of mass of a group of atoms (\ref COM):
+Sometimes, when calculating a collective variable, you may not want to use the positions of a number of atoms directly. Instead you may wish to use the position of a virtual atom whose position is generated based on the positions of a collection of other atoms. For example you might want to use the center of a group of atoms (\ref CENTER):
 
 Since PLUMED executes the input in order you need to define the new Virtual Atom before using it:
 
 \verbatim
 
-first: COM ATOMS=1,2,3,4,5,6
-last: COM ATOMS=251-256
+first: CENTER ATOMS=1,2,3,4,5,6
+last: CENTER ATOMS=251-256
 
 e2edist: DISTANCE ATOMS=2,253
 comdist: DISTANCE ATOMS=first,last
@@ -119,17 +119,17 @@ PRINT ARG=e2edist,comdist STRIDE=1 FILE=COLVAR
 ENDPLUMED
 \endverbatim
 
-NOTE: an action (i.e. COM or DISTANCE here) can be either label using LABEL as we did before or as label: ACTION as we have just done here.
+NOTE: an action (i.e. CENTER or DISTANCE here) can be either label using LABEL as we did before or as label: ACTION as we have just done here.
 
 With the above input this is what happen inside PLUMED with a STRIDE=1:
 
-1. calculates the position of the Virtual Atom 'first' as the \ref COM of atoms from 1 to 6;
-2. calculates the position of the Virtual Atom 'last' as the \ref COM of atoms from 251 to 256;
+1. calculates the position of the Virtual Atom 'first' as the \ref CENTER of atoms from 1 to 6;
+2. calculates the position of the Virtual Atom 'last' as the \ref CENTER of atoms from 251 to 256;
 3. calculates the distance between atoms 2 and 253 and saves it in 'e2edist';
 4. calculates the distance between the two atoms 'first' and 'last' and saves it in 'comdist';
 5. print the content of 'e2edist' and 'comdist' in the file COLVAR
 
-In the above input we have used to different ways of writing the atoms used in \ref COM calculation:
+In the above input we have used to different ways of writing the atoms used in \ref CENTER calculation:
 
 1. ATOMS=1,2,3,4,5,6 is the explicit list of the atoms we need
 2. ATOMS=251-256 is the range of atoms needed
@@ -156,8 +156,8 @@ Virtual atoms can be used in place of standard atoms everywhere an atom can be g
 with standard atoms. So for example we can analyse the \ref TORSION angle for a set of Virtual and Standard atoms:
 
 \verbatim
-first: COM ATOMS=1-6
-last: COM ATOMS=251-256
+first: CENTER ATOMS=1-6
+last: CENTER ATOMS=251-256
 cvtor: TORSION ATOMS=first,102,138,last
 
 PRINT ARG=cvtor STRIDE=1 FILE=COLVAR 
@@ -261,13 +261,14 @@ PRINT ARG=abeta.lessthan,dd.mean,dd.min,dd.max,dd.moment-2 STRIDE=1 FILE=COLVAR
 
 HISTOGRAM ...
 ARG=abeta.lessthan,dd.mean
-USE_ALL_DATA
-KERNEL=discrete
+LABEL=hh
+KERNEL=DISCRETE
 GRID_MIN=0,0.8
 GRID_MAX=4,1.2
 GRID_BIN=40,40
-GRID_WFILE=histo
 ... HISTOGRAM
+
+DUMPGRID GRID=hh FILE=histo
 
 ENDPLUMED
 \endverbatim
@@ -276,7 +277,8 @@ NOTE: HISTOGRAM ... means that what follow is part of the \ref HISTOGRAM functio
 in PLUMED.
 
 The above input tells PLUMED to accumulate the two collective variables on a GRID. In addition the 
-probability can be converted to a free-energy using the flag FREE-ENERGY and setting the temperature using TEMP (i.e. 300K).
+probability can be converted to a free-energy using the \ref CONVERT_TO_FES method and then use
+\ref DUMPGRID to write it.
 Histograms can be accumulated in a smoother way by using a KERNEL function, a kernel is a normalised function, 
 for example a normalised gaussian is the default kernel in PLUMED, that is added to the histogram centered in the position of the data. 
 Estimating a probability density using kernels can in principle give more accurate results, on the other hand in 
@@ -286,14 +288,15 @@ and the BANDWIDTH should be smaller (i.e. one order of magnitude) than the varia
 
 \verbatim
 HISTOGRAM ...
+LABEL=hh
 ARG=abeta.lessthan,dd.mean
-USE_ALL_DATA
 GRID_MIN=0,0.8
 GRID_MAX=4,1.2
 GRID_SPACING=0.04,0.004
 BANDWIDTH=0.08,0.008
-GRID_WFILE=histo
 ... HISTOGRAM
+
+DUMPGRID GRID=hh FILE=histo
 
 ENDPLUMED
 \endverbatim

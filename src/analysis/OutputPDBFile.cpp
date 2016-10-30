@@ -59,8 +59,7 @@ void OutputPDBFile::registerKeywords( Keywords& keys ){
   keys.add("optional","FMT","the format to use in the output file");
   keys.reset_style("ATOMS","hidden"); keys.reset_style("STRIDE","hidden");
   keys.reset_style("RUN","hidden"); keys.reset_style("USE_ALL_DATA","hidden");
-  keys.reset_style("REWEIGHT_BIAS","hidden"); keys.reset_style("REWEIGHT_TEMP","hidden");
-  keys.reset_style("TEMP","hidden"); keys.reset_style("REUSE_INPUT_DATA_FROM","hidden");
+  keys.reset_style("REUSE_INPUT_DATA_FROM","hidden");
   keys.reset_style("WRITE_CHECKPOINT","hidden"); keys.reset_style("NOMEMORY","hidden");
   keys.reset_style("RESTART","hidden"); keys.reset_style("UPDATE_FROM","hidden");
   keys.reset_style("UPDATE_UNTIL","hidden"); keys.reset_style("ARG","hidden");
@@ -88,7 +87,7 @@ void OutputPDBFile::performAnalysis(){
 
   // Output the embedding in plumed pdb format
   OFile afile; afile.link(*this); afile.setBackupString("analysis"); std::size_t psign=fmt.find("%");
-  afile.open( filename.c_str() ); std::string descr="REMARK WEIGHT=%-" + fmt.substr(psign+1) + " TYPE=" + getMetricName() + "\n";
+  afile.open( filename.c_str() ); std::string descr="REMARK WEIGHT=%-" + fmt.substr(psign+1) + "\n";
   for(unsigned j=0;j<getNumberOfDataPoints();++j){
       afile.printf("DESCRIPTION: analysis data from calculation done at time %f \n",getLabel().c_str(),getTime() );
       afile.printf(descr.c_str(),getWeight(j) ); 

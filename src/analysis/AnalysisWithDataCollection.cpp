@@ -44,15 +44,11 @@ void AnalysisWithDataCollection::registerKeywords( Keywords& keys ){
   keys.add("atoms-1","STRIDE","the frequency with which data should be stored for analysis.  By default data is collected on every step");
   keys.add("atoms-1","RUN","the frequency with which to run the analysis algorithms.");
   keys.addFlag("USE_ALL_DATA",false,"just analyse all the data in the trajectory.  This option should be used in tandem with ATOMS/ARG + STRIDE");
-  keys.addFlag("REWEIGHT_BIAS",false,"reweight the data using all the biases acting on the dynamics.  This option must be used in tandem with ATOMS/ARG + STRIDE + RUN/USE_ALL_DATA. " 
-                                     "For more information see \\ref analysisbas");
   keys.reserve("optional","FRAMES","with this keyword you can specify the atomic configurations that you would like to store using "
                                    "an COLLECT_FRAMES action.  When the projection is output in dimensionality reduction you will then "
                                    "print the underlying atoms and their projection");
-  keys.add("optional","REWEIGHT_TEMP","reweight data from a trajectory at one temperature and output the probability distribution at a second temperature.  This option must be used in tandem with ATOMS/ARG + STRIDE + RUN/USE_ALL_DATA. "
-                                      "For more information see \\ref analysisbas");
-  keys.add("optional","TEMP","the system temperature. This is required if you are reweighting (REWEIGHT_BIAS/REWEIGHT_TEMP) or if you are calculating free energies. You are not required to specify the temperature if this is passed by the underlying MD code.");
   keys.add("atoms-3","REUSE_INPUT_DATA_FROM","do a second form of analysis on the data stored by a previous analysis object");
+  keys.add("optional","LOGWEIGHTS","list of actions that calculates log weights that should be used to weight configurations when calculating averages");
   keys.addFlag("WRITE_CHECKPOINT",false,"write out a checkpoint so that the analysis can be restarted in a later run.  This option must be used in tandem with ATOMS/ARG + STRIDE + RUN.");
   keys.addFlag("NOMEMORY",false,"do a block averaging i.e. analyse each block of data separately.  This option must be used in tandem with ATOMS/ARG + STRIDE + RUN.");
   keys.use("RESTART"); keys.use("UPDATE_FROM"); keys.use("UPDATE_UNTIL");
@@ -63,7 +59,6 @@ Action(ao),
 AnalysisBase(ao),
 nomemory(false),
 write_chq(false),
-rtemp(0),
 idata(0),
 firstAnalysisDone(false),
 old_norm(0.0),
@@ -144,7 +139,6 @@ myframes(NULL)
              metricname="";
          }
 
-         bool dobias;
          if( !myframes ){
              // Read in the information about how often to run the analysis (storage is read in in ActionPilot.cpp)
              if( keywords.exists("USE_ALL_DATA") ){
@@ -164,46 +158,25 @@ myframes(NULL)
              }
 
              // Read in stuff for reweighting of trajectories
-
-             // Reweighting for biases
-             if( keywords.exists("REWEIGHT_BIAS") ) parseFlag("REWEIGHT_BIAS",dobias);
-
-             // Reweighting for temperatures
-             rtemp=0; 
-             if( keywords.exists("REWEIGHT_TEMP") ) parse("REWEIGHT_TEMP",rtemp);
-             if( rtemp!=0 ){ 
-                 rtemp*=plumed.getAtoms().getKBoltzmann(); 
-                 log.printf("  reweighting simulation to probabilities at temperature %f\n",rtemp);
-             }
-             // Now retrieve the temperature in the simulation
-             simtemp=0; 
-             if( keywords.exists("TEMP") ) parse("TEMP",simtemp); 
-             if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
-             else simtemp=plumed.getAtoms().getKbT();
-             if(simtemp==0 && (rtemp!=0 || !biases.empty()) ) error("The MD engine does not pass the temperature to plumed so you have to specify it using TEMP");
-         } else {
-             nomemory = myframes->nomemory; dobias = (myframes->biases.size()>0);
-             rtemp = myframes->rtemp; simtemp = myframes->simtemp;
-         }
-
-         // Setup bias reweighting
-         if( dobias ){
-             std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
-             if( all.empty() ) error("your input file is not telling plumed to calculate anything");
-             std::vector<Value*> arg( getArguments() );
-             log.printf("  reweigting using the following biases ");
-             for(unsigned j=0;j<all.size();j++){
-                 std::string flab; flab=all[j]->getLabel() + ".bias";
-                 if( all[j]->exists(flab) ){
-                    biases.push_back( all[j]->copyOutput(flab) );
-                    arg.push_back( all[j]->copyOutput(flab) );
-                    log.printf(" %s",flab.c_str());
+             if( keywords.exists("LOGWEIGHTS") ){
+                 std::vector<std::string> wwstr; parseVector("LOGWEIGHTS",wwstr);
+                 if( wwstr.size()>0 ) log.printf("  reweighting using weights from ");
+                 std::vector<Value*> arg( getArguments() );
+                 for(unsigned i=0;i<wwstr.size();++i){
+                     ActionWithValue* val = plumed.getActionSet().selectWithLabel<ActionWithValue*>(wwstr[i]);
+                     if( !val ) error("could not find value named");
+                     weight_vals.push_back( val->copyOutput(val->getLabel()) );
+                     arg.push_back( val->copyOutput(val->getLabel()) );
+                     log.printf("%s ",wwstr[i].c_str() );
                  }
+                 if( wwstr.size()>0 ) log.printf("\n");           
+                 else log.printf("  weights are all equal to one\n");
+                 requestArguments( arg );
              }
-             log.printf("\n");
-             if( biases.empty() ) error("you are asking to reweight bias but there does not appear to be a bias acting on your system");
-             requestArguments( arg );
+         } else {
+             nomemory = myframes->nomemory; 
          }
+
          // Setup reference configuration objects to store data
          if( !use_all_data ){
              plumed_assert( !mydata );
@@ -270,10 +243,6 @@ void AnalysisWithDataCollection::readCheckPointFile( const std::string& filename
   if(old_norm>0) firstAnalysisDone=true;
 }
 
-void AnalysisWithDataCollection::prepare(){
-  if(rtemp!=0) plumed.getAtoms().setCollectEnergy(true);
-}
-
 double AnalysisWithDataCollection::getWeight( const unsigned& idat ) const {
   if( !mydata ){ plumed_dbg_assert( idat<data.size() ); return data[idat]->getWeight(); }
   return AnalysisBase::getWeight( idat );
@@ -305,17 +274,7 @@ void AnalysisWithDataCollection::update(){
 
   // This bit does the collection of data
   if( idata<logweights.size() || use_all_data ){
-      // Retrieve the bias
-      double bias=0.0; for(unsigned i=0;i<biases.size();++i) bias+=biases[i]->get();
-
-      double ww=0;
-      if(rtemp!=0){
-         double energy=plumed.getAtoms().getEnergy()+bias;
-         // Reweighting because of temperature difference
-         ww=-( (1.0/rtemp) - (1.0/simtemp) )*(energy+bias);
-      }
-      // Reweighting because of biases
-      if( !biases.empty() ) ww += bias/simtemp;
+      double ww=0; for(unsigned i=0;i<weight_vals.size();++i) ww+=weight_vals[i]->get(); 
 
       // Pass the atom positions to the pdb
       mypdb.setAtomPositions( getPositions() );
@@ -368,7 +327,7 @@ void AnalysisWithDataCollection::runAnalysis(){
       if( getNumberOfDataPoints()==0 ) error("no data is available for analysis");
       if( idata!=logweights.size() ) error("something has gone wrong.  Am trying to run analysis but I don't have sufficient data"); 
       norm=0;  // Reset normalization constant
-      if( biases.empty() && rtemp==0 ){
+      if( weight_vals.empty() ){
           for(unsigned i=0;i<logweights.size();++i){
               data[i]->setWeight(1.0); norm+=1.0;
           } 

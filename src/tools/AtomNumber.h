@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -40,7 +40,7 @@ class AtomNumber{
   unsigned index_;
 /// Construct with a given index.
 /// This constructor is kept private to avoid implicit cast.
-  AtomNumber(unsigned);
+  explicit AtomNumber(unsigned);
 public:
 /// Initialize to index=0 (serial=1)
   AtomNumber();

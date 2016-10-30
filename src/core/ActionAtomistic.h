@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -86,6 +86,9 @@ public:
 /// Get modifiable virial
 /// Should be used by action that need to modify the stored virial
   Tensor & modifyGlobalVirial();
+/// Get modifiable PBC
+/// Should be used by action that need to modify the stored box
+  Pbc & modifyGlobalPbc();
 /// Get box shape
   const Tensor & getBox()const;
 /// Get the array of all positions
@@ -109,13 +112,15 @@ public:
 /// Applies  PBCs to a seriens of positions or distances
   void pbcApply(std::vector<Vector>& dlist, unsigned max_index=0) const;
 /// Get the vector of absolute indexes
-  const std::vector<AtomNumber> & getAbsoluteIndexes()const;
+  virtual const std::vector<AtomNumber> & getAbsoluteIndexes()const;
 /// Get the absolute index of an atom
   AtomNumber getAbsoluteIndex(int i)const;
 /// Parse a list of atoms without a numbered keyword
   void parseAtomList(const std::string&key,std::vector<AtomNumber> &t);
 /// Parse an list of atom with a numbred keyword
   void parseAtomList(const std::string&key,const int num, std::vector<AtomNumber> &t);
+/// Convert a set of read in strings into an atom list (this is used in parseAtomList)
+  void interpretAtomList( std::vector<std::string>& strings, std::vector<AtomNumber> &t);
 /// Change the box shape 
   void changeBox( const Tensor& newbox );
 /// Get reference to Pbc
@@ -138,7 +143,7 @@ public:
 
 // virtual functions:
 
-  ActionAtomistic(const ActionOptions&ao);
+  explicit ActionAtomistic(const ActionOptions&ao);
   ~ActionAtomistic();
 
   static void registerKeywords( Keywords& keys );
@@ -152,7 +157,7 @@ public:
 /// ActionWithArguments and ActionAtomistic
   void calculateAtomicNumericalDerivatives( ActionWithValue* a, const unsigned& startnum );
 
-  void retrieveAtoms();
+  virtual void retrieveAtoms();
   void applyForces();
   void lockRequests();
   void unlockRequests();
@@ -261,6 +266,11 @@ const std::set<AtomNumber> & ActionAtomistic::getUnique()const{
 inline
 unsigned ActionAtomistic::getTotAtoms()const{
   return atoms.positions.size();
+}
+
+inline
+Pbc & ActionAtomistic::modifyGlobalPbc(){
+  return atoms.pbc;
 }
 
 

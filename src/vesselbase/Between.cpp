@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -20,8 +20,8 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-#include "VesselRegister.h"
 #include "Between.h"
+#include "VesselRegister.h"
 
 namespace PLMD {
 namespace vesselbase {
@@ -35,9 +35,9 @@ void Between::registerKeywords( Keywords& keys ){
 }
 
 void Between::reserveKeyword( Keywords& keys ){
-  keys.reserve("numbered","BETWEEN","calculate the number of values that are within a certain range. "
+  keys.reserve("vessel","BETWEEN","calculate the number of values that are within a certain range. "
                                     "These quantities are calculated using kernel density estimation as described on "
-                                    "\\ref histogrambead.",true); 
+                                    "\\ref histogrambead."); 
   keys.addOutputComponent("between","BETWEEN","the number/fraction of values within a certain range. This is calculated using one of the "
                                               "formula described in the description of the keyword so as to make it continuous. "
                                               "You can calculate this quantity multiple times using different parameters."); 

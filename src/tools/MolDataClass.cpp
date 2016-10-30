@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -87,10 +87,22 @@ bool MolDataClass::allowedResidue( const std::string& type, const std::string& r
       else if(residuename=="DCN") return true;
       else return false;
   } else if( type=="rna" ){
-      if(residuename=="A") return true;
+           if(residuename=="A") return true;
+      else if(residuename=="A5") return true;
+      else if(residuename=="A3") return true;
+      else if(residuename=="AN") return true;
       else if(residuename=="G") return true;
+      else if(residuename=="G5") return true;
+      else if(residuename=="G3") return true;
+      else if(residuename=="GN") return true;
       else if(residuename=="U") return true;
+      else if(residuename=="U5") return true;
+      else if(residuename=="U3") return true;
+      else if(residuename=="UN") return true;
       else if(residuename=="C") return true;
+      else if(residuename=="C5") return true;
+      else if(residuename=="C3") return true;
+      else if(residuename=="CN") return true;
       else if(residuename=="RA") return true;
       else if(residuename=="RA5") return true;
       else if(residuename=="RA3") return true;
@@ -216,7 +228,7 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
           numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("OG",resnum,chainid));
         else
           numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CG",resnum,chainid));
-      } else plumed_merror("protein name not recognized "+name);
+      } else numbers.push_back(mypdb.getNamedAtomFromResidueAndChain(name,resnum,chainid));
     } else if( allowedResidue("rna",resname) || allowedResidue("dna",resname)){
       std::string basetype;
       if(resname.find_first_of("A")!=std::string::npos) basetype+="A";
@@ -356,7 +368,16 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
           numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N7",resnum,chainid));
           numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C8",resnum,chainid));
         } else plumed_error();
-      } else plumed_merror("RNA/DNA name not recognized "+name);
+      } else if( name=="lcs" ) {
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C2",resnum,chainid));
+        if(basetype=="T" || basetype=="U" || basetype=="C"){
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C4",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C6",resnum,chainid));
+        } else if(basetype=="G" || basetype=="A"){
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C6",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C4",resnum,chainid));
+        } else plumed_error(); 
+      } else numbers.push_back(mypdb.getNamedAtomFromResidueAndChain(name,resnum,chainid));
     }
   }
   else {

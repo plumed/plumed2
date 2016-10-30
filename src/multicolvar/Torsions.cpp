@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -74,7 +74,7 @@ Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle o
 class Torsions : public MultiColvar {
 public:
   static void registerKeywords( Keywords& keys );
-  Torsions(const ActionOptions&);
+  explicit Torsions(const ActionOptions&);
   virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
   bool isPeriodic(){ return true; }
   void retrieveDomain( std::string& min, std::string& max ){ min="-pi"; max="pi"; }
@@ -91,7 +91,8 @@ Torsions::Torsions(const ActionOptions&ao):
 PLUMED_MULTICOLVAR_INIT(ao)
 {
   // Read in the atoms
-  int natoms=4; readAtoms( natoms );
+  int natoms=4; std::vector<AtomNumber> all_atoms; 
+  readAtoms( natoms, all_atoms );
   std::vector<bool> catom_ind(4, false); 
   catom_ind[1]=catom_ind[2]=true;
   setAtomsForCentralAtom( catom_ind );
@@ -110,10 +111,10 @@ double Torsions::compute( const unsigned& tindex, AtomValuePack& myatoms ) const
   Vector dd0,dd1,dd2; PLMD::Torsion t;
   double value  = t.compute(d0,d1,d2,dd0,dd1,dd2);
 
-  myatoms.addAtomsDerivatives(1,0,dd0);
-  myatoms.addAtomsDerivatives(1,1,dd1-dd0);
-  myatoms.addAtomsDerivatives(1,2,dd2-dd1);
-  myatoms.addAtomsDerivatives(1,3,-dd2);
+  addAtomDerivatives(1,0,dd0,myatoms);
+  addAtomDerivatives(1,1,dd1-dd0,myatoms);
+  addAtomDerivatives(1,2,dd2-dd1,myatoms);
+  addAtomDerivatives(1,3,-dd2,myatoms);
 
   myatoms.addBoxDerivatives  (1, -(extProduct(d0,dd0)+extProduct(d1,dd1)+extProduct(d2,dd2)));
 

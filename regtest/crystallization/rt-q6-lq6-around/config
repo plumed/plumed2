@@ -1,0 +1,4 @@
+type=driver
+plumed_modules=crystallization
+# this is to test a different name
+arg="--ixyz lq6_test.xyz --box 61.8440,71.5360,150.00000"

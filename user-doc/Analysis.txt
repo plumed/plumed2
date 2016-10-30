@@ -2,13 +2,12 @@
 
 \page Analysis Analysis
 
-\section analysisbas Introduction
-
-A molecular dynamics trajectory is in essence an ordered set of configurations of atoms.  Trajectory
-analysis algorithms are methods that allow us to extract meaningful information from this extremely
-high-dimensionality information.  In extracting this information much of the information in the trajectory
-will be discarded and assumed to be irrelevant to the problem at hand.  For example, when we calculate a
-histogram from a trajectory we throw away all information on the order the frames were visited during the
+PLUMED can be used to analyse trajectories either on the fly during an MD run or via
+postprocessing a trajectory using \ref driver.  A molecular dynamics trajectory is in essence an ordered 
+set of configurations of atoms.  Trajectory analysis algorithms are methods that allow us to extract meaningful 
+information from this extremely high-dimensionality information.  In extracting this information much of the 
+information in the trajectory will be discarded and assumed to be irrelevant to the problem at hand.  For example, 
+when we calculate a histogram from a trajectory we throw away all information on the order the frames were visited during the
 trajectory.  We instead opt to display a time average that shows the parts of configuration space that were  
 visited most frequently.  There are many situations in which this is a reasonable thing to do as we know that
 time averages are equivalent to ensemble averages in the long timescale limit and that these average probabilities
@@ -17,57 +16,80 @@ energy, \f$F(s)\f$, via:
 \f[
 F(s) = - k_B T \ln P(s)
 \f]
-In fact we can even exploit our understanding of statistical thermodynamics and basic algebra and derive expressions
-that connect the time average of the probability of being in a particular configuration in a simulaton at one temperature,
-\f$T_1\f$, with the free energy at a second different temperature, \f$T_2\f$:
+About the simplest form of analysis 
+that PLUMED can perform involves printing information to a file.  PLUMED can output
+various different kinds of information to files as described below:
 
-\f[
-P(s',t) = \frac{ \sum_{t'=0}^t \delta( s(x) - s' ) \exp\left( +( \left[\frac{1}{T_1} - \frac{1}{T_2}\right] \frac{U(x,t')}{k_B} \right) }{ \sum_{t'=0}^t \exp\left( +\left[\frac{1}{T_1} - \frac{1}{T_2}\right] \frac{U(x,t')}{k_B} \right) }
-\f]
+@PRINTANALYSIS@  
 
-Similarly, we can exploit statistical thermodynamics to calculate the free energy of a configuration from the probability
-of being in that configuration that was calculated in an biased simulation.
+The \ref UPDATE_IF action allows you to do more complex things using the above print
+commands. As detailed in the documentation for \ref UPDATE_IF when you put any of the above 
+actions within an UPDATE_IF block then data will only be output to the file if colvars
+are within particular ranges.  In other words, the above printing commands, in tandem 
+with \ref UPDATE_IF, allow you to identify the frames in your trajectory that satisfy
+some particular criteria and output information on those frames only.
 
-\f[
-P(s',t) = \frac{ \sum_{t'=0}^t \delta( s(x) - s' ) \exp\left( +\frac{V(x,t')}{k_B T} \right) }{ \sum_{t'=0}^t \exp\left( +\frac{V(x,t')}{k_B T} \right) }
-\f]
+Another useful command is the \ref COMMITTOR command.  This command can only be used when running
+an molecular dynamics trajectory - it cannot be used when analysing a trajectory using \ref driver.
+As detailed in the documentation for \ref COMMITTOR this command tells PLUMED (and the underlying 
+MD code) to stop the calculation one some criteria is satisfied.
 
-In both of these expressions we have a number of frames from a trajectory of length \f$t'\f$.  In the first of these expressions
-\f$U(x,t')\f$ is the potential energy of the system (including any biases) at time \f$t'\f$.  Meanwhile, in the second of
-these expressions \f$V(x,t')\f$ is the value of the simulation bias at time \f$t'\f$.  The dirac delta function, \f$\delta\f$,
-on the first lines of these expressions indicates that we are going to calculate a \ref HISTOGRAM as a function of some
-collective variable \f$s(x)\f$ that can be calulated from the atomic positions \f$x\f$.  Herein lies the central problem:
-what collective variable function should we use in this expression?  What \f$s(x)\f$ will give us the most meaningful
-interpretation of the trajectory data?  Obviously, we can use any one of the \ref colvarintro implemented in tandem
-with \ref HISTOGRAM.  We can also, however, use a number of other algorithms that essentially ``learn" from our simulation
-trajectory and that thus provide ways of alternative ways of displaying the probability information that can be calculated
-using the various formula above.  These techniques are described in the following sections.
+A number of more complicated forms of analysis can be performed that take a number of frames from 
+the trajectory as input.  In all these commands the STRIDE keyword is used to tell PLUMED how 
+frequently to collect data from the trajectory.  In all these methods the output from the analysis
+is a form of ensemble average.  If you are running with a bias it is thus likely that you may want 
+to reweight the trajectory frames in order to remove the effect the bias has on the static behavior
+of the system.  The following methods can thus be used to calculate weights for the various trajectory
+frames so that the final ensemble average is an average for the cannonical ensemble at the appropriate 
+temperature.
 
-\section basanal Basic analysis
+@REWEIGHTING@
 
-PLUMED contains a suite of tools that can be used to analyse simulation trjaectories.
-These tools can be employed on the fly during an MD run or through driver using the 
-\ref driver tool.  The simplest of these tools are:
+You can then calculate ensemble averages using the following actions.
 
-<table align=center frame=void width=95%% cellpadding=5%%>
-<tr> <td width=5%> \subpage PRINT </td> <td>Print quantities to a file.</td> </tr>
-<tr> <td width=5%> \subpage DUMPATOMS </td> <td>Dump selected atoms on a file.</td> </tr>
-</table>
+@GRIDCALC@
 
-These allow you to print colvar values or the positions of atoms to a file. 
+For many of the above commands data is accumulated on the grids.  These grids can be further 
+analysed using one of the actions detailed below at some time.  
 
-A more complex way of analysing the data in your trajectory is to calculate a histogram
-as function of a small number of collective variables.  Alternatively, by running a large 
-number of simulations you can calculate committor probabilities.  The commands for doing these 
-sorts of analyses within PLUMED are as follows:
+@GRIDANALYSIS@
 
-<table align=center frame=void width=95%% cellpadding=5%%>
-<tr> <td width=5%> \subpage HISTOGRAM </td> <td>Calculate the probability density as a function of a few CVs either using kernel density estimation, or a discretehistogram estimation. </td> </tr>
-<tr> <td width=5%> \subpage COMMITTOR </td> <td>Does a committor analysis.</td> </tr> 
-</table>
+As an example the following set of commands instructs PLUMED to calculate the distance between 
+atoms 1 and 2 for every 5th frame in the trajectory and to accumulate a histogram from this data
+which will be output every 100 steps (i.e. when 20 distances have been added to the histogram).
 
-PLUMED then has a number of other tools for doing more sophisticated forms of analysis that are 
-described in the sections that follow.
+\verbatim
+x: DISTANCE ATOMS=1,2
+h: HISTOGRAM ARG=x GRID_MIN=0.0 GRID_MAX=3.0 GRID_BIN=100 BANDWIDTH=0.1 STRIDE=5
+DUMPGRID GRID=h FILE=histo STRIDE=100 
+\endverbatim
+
+It is important to note when using commands such as the above the first frame in the trajectory is assumed 
+to be the initial configuration that was input to the MD code. It is thus ignored.  Furthermore, if you are 
+running with driver and you would like to analyse the whole trajectory (without specifying its length) 
+and then print the result you simply call \ref DUMPGRID (or any of the commands above) without a STRIDE 
+keyword as shown in the example below. 
+
+\verbatim
+x: DISTANCE ATOMS=1,2
+h: HISTOGRAM ARG=x GRID_MIN=0.0 GRID_MAX=3.0 GRID_BIN=100 BANDWIDTH=0.1 STRIDE=5
+DUMPGRID GRID=h FILE=histo 
+\endverbatim
+
+Please note that even with this calculation the first frame in the trajectory is ignored when computing the 
+histogram.
+
+Notice that all the commands for calculating smooth functions described above calculate some sort of 
+average.  There are two ways that you may wish to average the data in your trajectory:
+
+- You might want to calculate block averages in which the first \f$N\f$N frames in your trajectory are
+averaged separately to the second block of \f$N\f$ frames.  If this is the case you should use the 
+keyword CLEAR in the input to the action that calculates the smooth function.  This keyword is used to 
+specify how frequently you are clearing the stored data.
+
+- You might want to calculate an accumulate an average over the whole trajectory and output the average
+accumulated at step \f$N\f$, step \f$2N\f$...  This is what PLUMED does by default so you do not need to 
+use CLEAR in this case.
 
 \section diag Diagnostic tools
 
@@ -123,7 +145,10 @@ external file
 <tr> <td width=5%> \subpage READ_ANALYSIS_FRAMES </td> <td> Store the frames in trajectory to use in tandem with a dissimilarity matrix read using \ref READ_DISSIMILARITY_MATRIX </td> </tr>
 </table>
  
-N.B. You can only use the two commands above when you are doing post-processing.  
+N.B. You can only use the two commands above when you are doing post-processing.  Furthermore, as with the grids described previously the 
+STRIDE keyword tells PLUMED how frequently to collect data from the trajectory.  The RUN keyword then tells PLUMED how frequently to calculate the matrix
+of dissimilarities.  As described above if RUN is not present and you are analysing trajectories using \ref driver all the data in 
+the trajectory (with the exception of the first frame) will be analysed.  
 
 \section landmarks Landmark Selection
 
@@ -211,7 +236,6 @@ will give you a PDB that contains the position of the input point, the projectio
 
 A nice feature of plumed is that when you use \ref landmarks algorithms or \ref dimred algorithms the output information is just a vector of 
 variables.  As such you can use \ref HISTOGRAM to construct a histogram of the information generated by these algorithms.
-
 
 */
 

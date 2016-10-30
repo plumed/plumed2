@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -19,11 +19,11 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#include "Plumed.h"
+
 #ifdef __PLUMED_HAS_DLOPEN
 #include <dlfcn.h>
 #endif
-
-#include "Plumed.h"
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
@@ -124,6 +124,19 @@ plumed_plumedmain_function_holder* plumed_kernel_register(const plumed_plumedmai
   void* p;
   if(first && f==NULL){
     path=getenv("PLUMED_KERNEL");
+#ifdef __PLUMED_DEFAULT_KERNEL
+/*
+  This variable allows a default path for the kernel to be hardcoded.
+  Can be useful for hardcoding the predefined plumed location
+  still allowing the user to override this choice setting PLUMED_KERNEL.
+  The path should be chosen at compile time adding e.g.
+  -D__PLUMED_DEFAULT_KERNEL=/opt/local/lib/libplumed.dylib
+*/
+/* This is required to add quotes */
+#define PLUMED_QUOTE_DIRECT(name) #name
+#define PLUMED_QUOTE(macro) PLUMED_QUOTE_DIRECT(macro)
+    if(! (path && (*path) )) path=PLUMED_QUOTE(__PLUMED_DEFAULT_KERNEL);
+#endif
     if(path && (*path)){
       fprintf(stderr,"+++ Loading the PLUMED kernel runtime +++\n");
       fprintf(stderr,"+++ PLUMED_KERNEL=\"%s\" +++\n",path);

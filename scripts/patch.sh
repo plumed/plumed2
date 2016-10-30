@@ -1,4 +1,4 @@
 #! /bin/bash
 
-${PLUMED_ROOT}/patches/patch.sh "$@"
+"${PLUMED_ROOT}"/patches/patch.sh "$@"
 

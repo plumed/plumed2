@@ -1,0 +1,30 @@
+UNITS NATURAL
+
+dens: COORDINATIONNUMBER SPECIESA=2 SPECIESB=3-5 SWITCH={RATIONAL D_0=1.1 R_0=0.001 D_MAX=2.0}  
+
+# Print the average (whole trajectory) density with a stride of one 
+dens1: MULTICOLVARDENS DATA=dens ORIGIN=1 DIR=x NBINS=50 UNORMALIZED BANDWIDTH=0.2 
+DUMPGRID GRID=dens1 STRIDE=1 FILE=dens1 FMT=%8.4f
+# Print the average density with a stride of two 
+DUMPGRID GRID=dens1 STRIDE=2 FILE=dens2 FMT=%8.4f
+# Print the average density (whole trajectory)
+DUMPGRID GRID=dens1 FILE=dens5 FMT=%8.4f
+
+# Print the average (whole trajectory) density with a stride of one 
+dens1a: MULTICOLVARDENS DATA=dens ORIGIN=1 DIR=x NBINS=50 BANDWIDTH=0.2
+DUMPGRID GRID=dens1a FILE=dens5a FMT=%8.4f
+
+# Print unormalized averages (over two frames) of the density
+dens1b: MULTICOLVARDENS DATA=dens ORIGIN=1 DIR=x NBINS=50 CLEAR=1 UNORMALIZED BANDWIDTH=0.2
+DUMPGRID GRID=dens1b STRIDE=1 FILE=dens1b FMT=%8.4f
+
+# Print block averages (over two frames) of the density
+dens1ba: MULTICOLVARDENS DATA=dens ORIGIN=1 DIR=x NBINS=50 CLEAR=1 BANDWIDTH=0.2
+DUMPGRID GRID=dens1ba STRIDE=1 FILE=dens1ba FMT=%8.4f
+
+# Interpolate onto a finer grid and test
+fine: MULTICOLVARDENS DATA=dens ORIGIN=1 DIR=x NBINS=100 BANDWIDTH=0.1
+interpol: INTERPOLATE_GRID GRID=dens1a STRIDE=2 GRID_BIN=100
+
+DUMPGRID GRID=fine FILE=fine_grid FMT=%8.4f
+DUMPGRID GRID=interpol FILE=interpol FMT=%8.4f

@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -78,7 +78,7 @@ public:
   const std::map<AtomNumber,Tensor> & getGradients()const;
 /// Return the atom id of the corresponding virtual atom
   AtomNumber getIndex()const;
-  ActionWithVirtualAtom(const ActionOptions&ao);
+  explicit ActionWithVirtualAtom(const ActionOptions&ao);
   ~ActionWithVirtualAtom();
   static void registerKeywords(Keywords& keys);
   void setGradientsIfNeeded();

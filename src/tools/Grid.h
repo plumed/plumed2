@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -42,7 +42,7 @@ class WeightBase{
 class BiasWeight:public WeightBase{
     public:
       double beta,invbeta;
-      BiasWeight(double v){beta=v;invbeta=1./beta;}
+      explicit BiasWeight(double v){beta=v;invbeta=1./beta;}
       double projectInnerLoop(double &input, double &v){return  input+exp(beta*v);}
       double projectOuterLoop(double &v){return -invbeta*std::log(v);}
 };
@@ -50,7 +50,7 @@ class BiasWeight:public WeightBase{
 class ProbWeight:public WeightBase{
     public:
       double beta,invbeta;
-      ProbWeight(double v){beta=v;invbeta=1./beta;}
+      explicit ProbWeight(double v){beta=v;invbeta=1./beta;}
       double projectInnerLoop(double &input, double &v){return  input+v;}
       double projectOuterLoop(double &v){return -invbeta*std::log(v);}
 };
@@ -64,6 +64,7 @@ class Value;
 class IFile;
 class OFile;
 class KernelFunctions;
+class Communicator;
 
 /// \ingroup TOOLBOX
 class Grid  
@@ -76,6 +77,7 @@ public:
 // to restore old implementation (unsigned) use the following instead:
 // typedef unsigned index_t;
 private:
+ double contour_location;
  std::vector<double> grid_;
  std::vector< std::vector<double> > der_;
 protected:
@@ -98,7 +100,7 @@ public:
  /// clear grid
  virtual void clear();
  /// this constructor here is Value-aware  
- Grid(const std::string& funcl, std::vector<Value*> args, const std::vector<std::string> & gmin, 
+ Grid(const std::string& funcl, const std::vector<Value*> & args, const std::vector<std::string> & gmin, 
       const std::vector<std::string> & gmax, const std::vector<unsigned> & nbin, bool dospline, 
       bool usederiv, bool doclear=true);
  /// this constructor here is not Value-aware  
@@ -152,9 +154,9 @@ public:
  void writeHeader(OFile& file);
 
 /// read grid from file
- static Grid* create(const std::string&,std::vector<Value*>,IFile&,bool,bool,bool);
+ static Grid* create(const std::string&,const std::vector<Value*>&,IFile&,bool,bool,bool);
 /// read grid from file and check boundaries are what is expected from input
- static Grid* create(const std::string&, std::vector<Value*>, IFile&,
+ static Grid* create(const std::string&,const std::vector<Value*>&, IFile&,
                      const std::vector<std::string>&,const std::vector<std::string>&,
                      const std::vector<unsigned>&,bool,bool,bool); 
 /// get grid size
@@ -171,6 +173,10 @@ public:
  virtual double getValueAndDerivatives(index_t index, std::vector<double>& der) const ;
  virtual double getValueAndDerivatives(const std::vector<unsigned> & indices, std::vector<double>& der) const;
  virtual double getValueAndDerivatives(const std::vector<double> & x, std::vector<double>& der) const;
+/// Get the difference from the contour
+ double getDifferenceFromContour(const std::vector<double> & x, std::vector<double>& der) const ; 
+/// Find a set of points on a contour in the function
+ void findSetOfPointsOnContour(const double& target, const std::vector<bool>& nosearch, unsigned& npoints, std::vector<std::vector<double> >& points );
 
 /// set grid value 
  virtual void setValue(index_t index, double value);
@@ -198,7 +204,7 @@ public:
 /// dump grid on file
  virtual void writeToFile(OFile&);
 /// dump grid to gaussian cube file
- void writeCubeFile(OFile&);
+ void writeCubeFile(OFile&, const double& lunit);
 
  virtual ~Grid(){}
 
@@ -208,6 +214,10 @@ public:
  void projectOnLowDimension(double &val , std::vector<int> &varHigh, WeightBase* ptr2obj ); 
 /// set output format
  void setOutputFmt(std::string ss){fmt_=ss;}
+/// Integrate the function calculated on the grid
+ double integrate( std::vector<unsigned>& npoints );
+///
+ void mpiSumValuesAndDerivatives( Communicator& comm );
 };
 
   
@@ -223,7 +233,7 @@ class SparseGrid : public Grid
  void clear(); 
  
  public:
- SparseGrid(const std::string& funcl, std::vector<Value*> args, const std::vector<std::string> & gmin, 
+ SparseGrid(const std::string& funcl, const std::vector<Value*> & args, const std::vector<std::string> & gmin, 
             const std::vector<std::string> & gmax, 
             const std::vector<unsigned> & nbin, bool dospline, bool usederiv):
             Grid(funcl,args,gmin,gmax,nbin,dospline,usederiv,false){}

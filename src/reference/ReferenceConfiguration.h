@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -47,15 +47,27 @@ class SetupMolInfo;
 /// permutations and in order make it easy to add new ways of calculating the distance 
 /// we have implemented this using polymorphism and multiple inheritance. 
 
+class Direction;
+
 class ReferenceConfigurationOptions {
 friend class ReferenceConfiguration;
 private:
   std::string tt;
 public:
-  ReferenceConfigurationOptions( const std::string& type );
+  explicit ReferenceConfigurationOptions( const std::string& type );
   bool usingFastOption() const ;
   std::string getMultiRMSDType() const ;
 };
+
+/// \ingroup INHERIT
+/// Abstract base class for calculating the distance from a reference configuration.
+/// A reference configuration can either have a particular set of atoms in a particular
+/// given configuration or it can be that a particular set of colvars have a particular 
+/// set of values.  It could also be a combination of both.  To allow all the posible
+/// permutations and in order make it easy to add new ways of calculating the distance 
+/// we have implemented this using polymorphism and multiple inheritance.  The following 
+/// provides \ref AddingAMetric "information" on how to implement a new method for 
+/// calculating the distance between a pair of configurations
 
 class ReferenceConfiguration {
 friend class SingleDomainRMSD;
@@ -82,7 +94,7 @@ protected:
 /// Crash with an error
   void error(const std::string& msg);
 public:
-  ReferenceConfiguration( const ReferenceConfigurationOptions& ro );
+  explicit ReferenceConfiguration( const ReferenceConfigurationOptions& ro );
 /// Destructor
   virtual ~ReferenceConfiguration();
 /// Return the name of this metric
@@ -127,18 +139,19 @@ public:
 /// These are overwritten in ReferenceArguments and ReferenceAtoms but are required here 
 /// to make PLMD::distance work
   virtual const std::vector<Vector>& getReferencePositions() const ; 
-  virtual const std::vector<double>& getReferenceArguments(); 
+  virtual const std::vector<double>& getReferenceArguments() const ; 
   virtual const std::vector<double>& getReferenceMetric();
 /// These are overwritten in ReferenceArguments and ReferenceAtoms to make frame copying work
   virtual const std::vector<AtomNumber>& getAbsoluteIndexes();
   virtual const std::vector<std::string>& getArgumentNames();
+/// Extract a Direction giving you the displacement from some position
+  void extractDisplacementVector( const std::vector<Vector>& pos, const std::vector<Value*>& vals,
+                                  const std::vector<double>& arg, const bool& anflag, const bool& nflag, 
+                                  Direction& mydir ) const ;
 /// Stuff for pca
   virtual bool pcaIsEnabledForThisReference(){ return false; }
-  virtual double projectAtomicDisplacementOnVector( const unsigned& i, const Matrix<Vector>& eigv, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const {
-     plumed_error(); return 1; 
-  }
-/// Stuff for sanity checks on distance
-  bool isDirection() const ;
+  double projectDisplacementOnVector( const Direction& mydir, const std::vector<Vector>& pos, const std::vector<Value*>& vals, 
+                                      const std::vector<double>& arg, ReferenceValuePack& mypack ) const ;
 /// Stuff to setup pca
   virtual void setupPCAStorage( ReferenceValuePack& mypack ){ plumed_error(); }
 /// This clears the set of properties that have been attached to the file
@@ -153,6 +166,8 @@ public:
   double getPropertyValue( const std::string& myname ) const ;
 /// Get the name of the inum th property value
   std::string getPropertyName( const unsigned& inum ) const ;
+/// Move the reference configuration by an ammount specified using a Direction
+  void displaceReferenceConfiguration( const double& weight, Direction& dir );
 };
 
 inline
@@ -185,7 +200,7 @@ const std::vector<Vector>& ReferenceConfiguration::getReferencePositions() const
 }
 
 inline
-const std::vector<double>& ReferenceConfiguration::getReferenceArguments(){
+const std::vector<double>& ReferenceConfiguration::getReferenceArguments() const {
   return fake_refargs;
 }
 

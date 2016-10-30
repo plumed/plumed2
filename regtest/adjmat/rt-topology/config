@@ -1,0 +1,5 @@
+mpiprocs=4
+type=driver
+plumed_modules=adjmat
+# this is to test a different name
+arg=" --plumed plumed.dat --ixyz frame_no_373.xyz --length-units 0.1"

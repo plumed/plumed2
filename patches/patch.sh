@@ -14,7 +14,7 @@ Actions (choose one):
   -s, --save
                     save, this needs *.preplumed files (*)
   --save-originals
-                    same as save, but save also original files
+                    same as save, but save also original files (*)
   -n NEWENGINE, --new NEWENGINE
                     create a new patch named NEWENGINE (*)
   -i, --info
@@ -22,7 +22,7 @@ Actions (choose one):
 Options:
   -e ENGINE, --engine ENGINE
                     set MD engine to ENGINE (default: choose interactively)
-  -m MODE, --mode MODE (default: static)
+  -m MODE, --mode MODE (default: shared)
                     set link mode to MODE, which can be either static, shared or runtime
   --static
                     same as --mode static
@@ -46,7 +46,7 @@ prefix=""
 action=""
 engine=""
 diff=""
-mode=static
+mode=shared
 force=""
 newpatch=
 
@@ -55,6 +55,7 @@ multiple_actions=
 otherfiles=
 save_originals=
 quiet=
+mdroot=
 
 for option
 do
@@ -73,9 +74,11 @@ do
     (--new=*)           test -n "$action" && multiple_actions=yes ; action=new ; newpatch="${prefix_option#--new=}" ;;
     (--description)     echo "patch an MD engine" ; exit ;;
     (--engine=*) engine="${prefix_option#--engine=}" ;;
+    (--mdroot=*) mdroot="${prefix_option#--mdroot=}" ;;
     (--mode=*) mode="${prefix_option#--mode=}" ;;
     (--diff=*) diff="${prefix_option#--diff=}" ;;
     (--engine|-e) prefix="--engine=" ;;
+    (--mdroot) prefix="--mdroot" ;;
     (--root=*) prefix="--root="; PLUMED_ROOT="${prefix_option#--root=}" ;;
     (--diff|-d) prefix="--diff=" ;;
     (--mode|-m) prefix="--mode=" ;;
@@ -90,6 +93,13 @@ do
       exit
   esac
 done
+
+if [ -n "$mdroot" ] ; then
+  if ! cd "$mdroot" ; then
+    echo "Directory $mdroot does not exist"
+    exit
+  fi
+fi
 
 if [ -n "$multiple_actions" ] ; then
   echo "Too many actions. -h for help"
@@ -237,13 +247,13 @@ case "$action" in
       plumed_before_patch
     fi
     test -n "$quiet" || echo "Linking Plumed.h and Plumed.inc ($mode mode)"
-    ln -s "$PLUMED_ROOT/src/wrapper/Plumed.h"
+    ln -s "$PLUMED_INCLUDEDIR/$PLUMED_PROGRAM_NAME/wrapper/Plumed.h" Plumed.h
     ln -s "$PLUMED_ROOT/src/lib/Plumed.inc.$mode" Plumed.inc
     ln -s "$PLUMED_ROOT/src/lib/Plumed.cmake.$mode" Plumed.cmake
 
     if [ -d "$diff" ]; then
       test -n "$quiet" || echo "Patching with on-the-fly diff from stored originals"
-      PREPLUMED=$(cd $diff ; find . -name "*.preplumed" | sort)
+      PREPLUMED=$(cd "$diff" ; find . -name "*.preplumed" | sort)
       for bckfile in $PREPLUMED ; do
         file="${bckfile%.preplumed}"
         if test -e "$file" ; then
@@ -258,8 +268,21 @@ case "$action" in
       bash "$diff"
     fi
 
+    if [ "$PLUMED_IS_INSTALLED" = no  ] && [ "$mode" = shared ] ; then
+      echo ""
+      echo "You are patching in shared mode from a non installed PLUMED"
+      echo "Be warned that if you 'make clean' PLUMED the patched code won't work anymore"
+    fi
+
+    if [ "$mode" = runtime ] ; then
+      echo ""
+      echo "You are patching in runtime mode"
+      echo "Be warned that when you will run MD you will use the PLUMED version pointed at"
+      echo "by the PLUMED_KERNEL environment variable"
+    fi
+
     echo ""
-    if grep -q "D__PLUMED_MPI=1" $PLUMED_ROOT/src/config/compile_options.sh ; then
+    if grep -q "D__PLUMED_HAS_MPI=1" "$PLUMED_ROOT"/src/config/compile_options.sh ; then
       echo "PLUMED is compiled with MPI support so you can configure $engine with MPI" 
     else
       echo "PLUMED is compiled WITHOUT MPI support so you CANNOT configure $engine with MPI"

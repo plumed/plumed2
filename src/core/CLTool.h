@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -27,7 +27,6 @@
 #include <cstdio>
 #include "tools/Tools.h"
 #include "tools/Keywords.h"
-#include <iostream>
 
 namespace PLMD{
 
@@ -42,7 +41,7 @@ private:
   const Keywords& keys;
   static Keywords emptyKeys;
 public:
-  CLToolOptions(const std::string &name);
+  explicit CLToolOptions(const std::string &name);
   CLToolOptions(const CLToolOptions& co, const Keywords& k);
 };
 
@@ -89,7 +88,7 @@ public:
   enum {unset,commandline,ifile} inputdata;
 /// Create the help keywords 
   static void registerKeywords( Keywords& keys );
-  CLTool(const CLToolOptions& co ); 
+  explicit CLTool(const CLToolOptions& co ); 
 /// Read the arguments from the command line
   bool readInput( int argc, char**argv, FILE* in, FILE*out );
 /// virtual function mapping to the specific main for each tool

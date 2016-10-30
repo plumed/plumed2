@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -144,6 +144,9 @@ public:
 /// vector-matrix multiplication
   template<unsigned n_,unsigned m_>
   friend VectorGeneric<n_> matmul(const VectorGeneric<m_>&,const TensorGeneric<m_,n_>&);
+/// vector-vector multiplication (maps to dotProduct)
+  template<unsigned n_>
+  friend double matmul(const VectorGeneric<n_>&,const VectorGeneric<n_>&);
 /// matrix-matrix-matrix multiplication
   template<unsigned n_,unsigned m_,unsigned l_,unsigned i_>
   friend TensorGeneric<n_,i_> matmul(const TensorGeneric<n_,m_>&,const TensorGeneric<m_,l_>&,const TensorGeneric<l_,i_>&);
@@ -153,6 +156,9 @@ public:
 /// vector-matrix-matrix multiplication
   template<unsigned n_,unsigned m_,unsigned l_>
   friend VectorGeneric<l_> matmul(const VectorGeneric<n_>&,const TensorGeneric<n_,m_>&,const TensorGeneric<m_,l_>&);
+/// vector-matrix-vector multiplication
+  template<unsigned n_,unsigned m_>
+  friend double matmul(const VectorGeneric<n_>&,const TensorGeneric<n_,m_>&,const VectorGeneric<m_>&);
 /// returns the determinant of a tensor
   friend double determinant(const TensorGeneric<3,3>&);
 /// returns the inverse of a tensor (same as inverse())
@@ -165,11 +171,17 @@ public:
   friend TensorGeneric<n_,m_> extProduct(const VectorGeneric<n>&,const VectorGeneric<m>&);
   friend TensorGeneric<3,3> dcrossDv1(const VectorGeneric<3>&,const VectorGeneric<3>&);
   friend TensorGeneric<3,3> dcrossDv2(const VectorGeneric<3>&,const VectorGeneric<3>&);
+  friend TensorGeneric<3,3> VcrossTensor(const VectorGeneric<3>&,const TensorGeneric<3,3>&);
+  friend TensorGeneric<3,3> VcrossTensor(const TensorGeneric<3,3>&,const VectorGeneric<3>&);
+/// Derivative of a normalized vector
+  friend TensorGeneric<3,3> deriNorm(const VectorGeneric<3>&,const TensorGeneric<3,3>&);
+/// << operator.
+/// Allows printing tensor `t` with `std::cout<<t;`
+  template<unsigned n_,unsigned m_>
+  friend std::ostream & operator<<(std::ostream &os, const TensorGeneric<n_,m_>&);
 };
 
 template<unsigned n,unsigned m>
-// notice that d[] is initialized in LoopUnroller<n*m>::_zero(d);
-// cppcheck-suppress uninitMemberVar
 TensorGeneric<n,m>::TensorGeneric(){
   LoopUnroller<n*m>::_zero(d);
 }
@@ -377,6 +389,11 @@ VectorGeneric<n> matmul(const VectorGeneric<m>&a,const TensorGeneric<m,n>&b){
   return t;
 }
 
+template<unsigned n_>
+double matmul(const VectorGeneric<n_>&a,const VectorGeneric<n_>&b){
+  return dotProduct(a,b);
+}
+
 template<unsigned n,unsigned m,unsigned l,unsigned i>
 TensorGeneric<n,i> matmul(const TensorGeneric<n,m>&a,const TensorGeneric<m,l>&b,const TensorGeneric<l,i>&c){
   return matmul(matmul(a,b),c);
@@ -389,6 +406,11 @@ VectorGeneric<n> matmul(const TensorGeneric<n,m>&a,const TensorGeneric<m,l>&b,co
 
 template<unsigned n,unsigned m,unsigned l> 
 VectorGeneric<l> matmul(const VectorGeneric<n>&a,const TensorGeneric<n,m>&b,const TensorGeneric<m,l>&c){
+  return matmul(matmul(a,b),c);
+}
+
+template<unsigned n,unsigned m>
+double matmul(const VectorGeneric<n>&a,const TensorGeneric<n,m>&b,const VectorGeneric<m>&c){
   return matmul(matmul(a,b),c);
 }
 
@@ -430,6 +452,15 @@ TensorGeneric<3,3> dcrossDv2(const VectorGeneric<3>&v1,const VectorGeneric<3>&v2
     -v1[1],v1[0],0.0);
 }
 
+template<unsigned n,unsigned m>
+std::ostream & operator<<(std::ostream &os, const TensorGeneric<n,m>& t){
+  for(unsigned i=0;i<n;i++)for(unsigned j=0;j<m;j++){
+    if(i!=(n-1) || j!=(m-1)) os<<t(i,j)<<" ";
+    else os<<t(i,j);
+  }
+  return os;
+}
+
 /// \ingroup TOOLBOX
 typedef TensorGeneric<2,2> Tensor2d;
 /// \ingroup TOOLBOX
@@ -439,6 +470,33 @@ typedef TensorGeneric<4,4> Tensor4d;
 /// \ingroup TOOLBOX
 typedef Tensor3d Tensor;
 
+inline
+TensorGeneric<3,3> VcrossTensor(const VectorGeneric<3>&v1,const TensorGeneric<3,3>&v2){
+
+     TensorGeneric<3,3> t;
+     for(unsigned i=0;i<3;i++){
+          t.setRow(i,matmul(dcrossDv2(v1,v1),v2.getRow(i)));
+     }
+     return t;
+}
+
+inline
+TensorGeneric<3,3> VcrossTensor(const TensorGeneric<3,3>&v2,const VectorGeneric<3>&v1){
+     TensorGeneric<3,3> t;
+     for(unsigned i=0;i<3;i++){
+          t.setRow(i,-matmul(dcrossDv2(v1,v1),v2.getRow(i)));
+     }
+     return t;
+}
+
+
+inline
+TensorGeneric<3,3> deriNorm(const VectorGeneric<3>&v1,const TensorGeneric<3,3>&v2){
+  // delta(v) = delta(v1/v1.norm) = 1/v1.norm*(delta(v1) - (v.delta(v1))cross v;
+  double over_norm = 1./v1.modulo();
+  return over_norm*(v2 - over_norm*over_norm*(extProduct(matmul(v2,v1),v1)));
+}
+  
 
 
 

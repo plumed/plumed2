@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -37,7 +37,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
-  Moments( const vesselbase::VesselOptions& da );
+  explicit Moments( const vesselbase::VesselOptions& da );
   std::string description();
   void resize();
   void finish( const std::vector<double>& buffer );
@@ -55,6 +55,7 @@ void Moments::reserveKeyword( Keywords& keys ){
   "The \\f$m\\f$th moment of a distribution is calculated using \\f$\\frac{1}{N} \\sum_{i=1}^N ( s_i - \\overline{s} )^m \\f$, where \\f$\\overline{s}\\f$ is "
   "the average for the distribution. The moments keyword takes a lists of integers as input or a range. Each integer is a value of \\f$m\\f$. The final "
   "calculated values can be referenced using moment-\\f$m\\f$.");  
+  keys.reset_style("MOMENTS","vessel");
   keys.addOutputComponent("moment","MOMENTS","the central moments of the distribution of values. The second moment "
                                              "would be referenced elsewhere in the input file using "
                                              "<em>label</em>.moment-2, the third as <em>label</em>.moment-3, etc.");
@@ -105,25 +106,25 @@ void Moments::finish( const std::vector<double>& buffer ){
      double pfactor, min, max; Tools::convert(str_min,min); Tools::convert(str_max,max);
      pfactor = 2*pi / ( max-min ); myvalue.setDomain( str_min, str_max );
      double sinsum=0, cossum=0, val;
-     for(unsigned i=0;i<nvals;++i){ val=pfactor*( buffer[i*nspace*vecsize+nspace] - min ); sinsum+=sin(val); cossum+=cos(val); }
+     for(unsigned i=0;i<nvals;++i){ val=pfactor*( buffer[bufstart + i*nspace*vecsize+nspace] - min ); sinsum+=sin(val); cossum+=cos(val); }
      mean = 0.5 + atan2( sinsum / static_cast<double>( nvals ) , cossum / static_cast<double>( nvals ) ) / (2*pi);
      mean = min + (max-min)*mean;
   } else {
-     for(unsigned i=0;i<nvals;++i) mean+=buffer[i*nspace*vecsize+nspace];    
+     for(unsigned i=0;i<nvals;++i) mean+=buffer[bufstart + i*nspace*vecsize+nspace];
      mean/=static_cast<double>( nvals ); myvalue.setNotPeriodic();
   }
 
   for(unsigned npow=0;npow<powers.size();++npow){
      double dev1=0; 
      if( value_out[0]->getNumberOfDerivatives()>0 ){
-         for(unsigned i=0;i<nvals;++i) dev1+=pow( myvalue.difference( mean, buffer[i*nspace*vecsize+nspace] ), powers[npow] - 1 ); 
+         for(unsigned i=0;i<nvals;++i) dev1+=pow( myvalue.difference( mean, buffer[bufstart + i*nspace*vecsize+nspace] ), powers[npow] - 1 );
          dev1/=static_cast<double>( nvals );
      }
 
      double moment=0;
      MultiValue myvals( getNumberOfComponents(), getAction()->getNumberOfDerivatives() ); myvals.clearAll();
      for(unsigned i=0;i<nvals;++i){
-         double tmp=myvalue.difference( mean, buffer[i*nspace*vecsize+nspace] );
+         double tmp=myvalue.difference( mean, buffer[bufstart + i*nspace*vecsize+nspace] );
          moment+=pow( tmp, powers[npow] );
          if( value_out[npow]->getNumberOfDerivatives() ){
              double pref=pow( tmp, powers[npow] - 1 ) - dev1;

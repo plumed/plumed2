@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "File.h"
+#include "OFile.h"
 #include "Exception.h"
 #include "core/Action.h"
 #include "core/PlumedMain.h"
@@ -55,6 +55,15 @@ size_t OFile::llwrite(const char*ptr,size_t s){
       r=fwrite(ptr,1,s,fp);
     }
   }
+//  This barrier is apparently useless since it comes
+//  just before a Bcast.
+//  
+//  Anyway, it looks like it is solving an issue that appeared on
+//  TRAVIS (at least on my laptop) so I add it here.
+//  GB
+  if(comm) comm->Barrier();
+
+
   if(comm) comm->Bcast(r,0);
   return r;
 }
@@ -63,7 +72,8 @@ OFile::OFile():
   linked(NULL),
   fieldChanged(false),
   backstring("bck"),
-  enforceRestart_(false)
+  enforceRestart_(false),
+  enforceBackup_(false)
 {
   fmtField();
   buflen=1;
@@ -256,7 +266,6 @@ void OFile::backupFile( const std::string& bstring, const std::string& fname ){
    if(maxbackup>0 && (!comm || comm->Get_rank()==0)){
      FILE* ff=std::fopen(const_cast<char*>(fname.c_str()),"r");
      if(ff){
-       FILE* fff=NULL;
        std::fclose(ff);
        std::string backup;
        size_t found=fname.find_last_of("/\\");
@@ -267,7 +276,7 @@ void OFile::backupFile( const std::string& bstring, const std::string& fname ){
          Tools::convert(i,num);
          if(i>maxbackup) plumed_merror("cannot backup file "+file+" maximum number of backup is "+num+"\n");
          backup=directory+bstring +"."+num+"."+file;
-         fff=std::fopen(backup.c_str(),"r");
+         FILE* fff=std::fopen(backup.c_str(),"r");
          if(!fff) break;
 	 else std::fclose(fff);
        }
@@ -365,6 +374,7 @@ FileBase& OFile::flush(){
 
 bool OFile::checkRestart()const{
   if(enforceRestart_) return true;
+  else if(enforceBackup_) return false;
   else if(action) return action->getRestart();
   else if(plumed) return plumed->getRestart();
   else return false;
@@ -372,9 +382,15 @@ bool OFile::checkRestart()const{
 
 OFile& OFile::enforceRestart(){
   enforceRestart_=true;
+  enforceBackup_=false;
   return *this;
 }
 
+OFile& OFile::enforceBackup(){
+  enforceBackup_=true;
+  enforceRestart_=false;
+  return *this;
 }
 
 
+}

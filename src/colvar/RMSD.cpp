@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -41,7 +41,7 @@ class RMSD : public Colvar {
   bool squared; 
 
 public:
-  RMSD(const ActionOptions&);
+  explicit RMSD(const ActionOptions&);
   ~RMSD();
   virtual void calculate();
   static void registerKeywords(Keywords& keys);
@@ -149,6 +149,7 @@ void RMSD::registerKeywords(Keywords& keys){
   keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
   keys.add("compulsory","TYPE","SIMPLE","the manner in which RMSD alignment is performed.  Should be OPTIMAL or SIMPLE.");
   keys.addFlag("SQUARED",false," This should be setted if you want MSD instead of RMSD ");
+  keys.remove("NOPBC");
 }
 
 RMSD::RMSD(const ActionOptions&ao):

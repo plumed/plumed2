@@ -1,49 +1,64 @@
 
 # include the machine dependent configuration
--include ../../Makefile.conf
+ifneq ($(MAKECMDGOALS),clean)
+  -include ../../Makefile.conf
+endif
 
 # sed script to edit program name defaults to do nothing
 ifndef program_transform_name
   program_transform_name=s,x,x,
 endif
 
-# default target
 .PHONY: all obj
+ifdef PLUMED_FORCE
+.PHONY: ConfigInstall.inc Config.inc version.h
+endif
+
+# default target
 all:
-	@echo "Updating ConfigInstall.cpp"
-	@sed "s/@SOEXT@/$(SOEXT)/g" Config.cpp.in | \
-         sed "s/@ISINSTALLED@/true/g" | \
-	env prefix="${prefix}" env program_transform_name="${program_transform_name}" ../maketools/update-plumedroot.sh ConfigInstall.cpp
-	@echo "Updating version file"
-	@ ../maketools/update-version.sh version.h
-	$(MAKE) do-all
+	$(MAKE) PLUMED_FORCE=yes ConfigInstall.inc Config.inc version.h config.txt
+	$(MAKE) Config.o ConfigInstall.o compile_options.sh
 
 obj: all
 
-do-all: Config.o ConfigInstall.o compile_options.sh 
-	make ConfigInstall.o
+config.txt: ../../Makefile.conf
+	@echo "Updating config.txt file"
+	@ ../maketools/update-config-txt.sh config.txt $(CPPFLAGS)
 
-ConfigInstall.cpp:
-	@echo "Updating ConfigInstall.cpp"
-	@sed "s/@SOEXT@/$(SOEXT)/g" Config.cpp.in | \
-         sed "s/@ISINSTALLED@/true/g" | \
-         ../maketools/update-plumedroot.sh ConfigInstall.cpp
-	@echo "Updating version file"
+version.h:
+	@echo "Updating version.h"
 	@ ../maketools/update-version.sh version.h
 
+ConfigInstall.inc: Config.inc.in
+	@echo "Updating ConfigInstall.inc"
+	@sed "s/@SOEXT@/$(SOEXT)/g" Config.inc.in | \
+         sed "s/@ISINSTALLED@/true/g" | \
+         sed "s|@PLUMED_ROOT@|$(libdir)/$(program_name)|g" | \
+         sed "s|@htmldir@|$(htmldir)|g" | \
+         sed "s|@includedir@|$(includedir)|g" | \
+         sed "s|@program_name@|$(program_name)|g" | \
+         sed "s|@libdir@|$(libdir)|g" > $@~
+	cmp -s $@~ $@ || cp $@~ $@
+	rm $@~
+
 # file to import compilation options inside c++
-Config.cpp: Config.cpp.in Config.h
-	@echo Building Config.cpp, a object containing configuration infos
+Config.inc: Config.inc.in
+	@echo "Updating Config.inc"
 	@sed "s/@SOEXT@/$(SOEXT)/g" $< | \
          sed "s/@ISINSTALLED@/false/g" | \
-         sed "s|@PLUMED_ROOT@|$(CURDIR:src/config=)|g" > $@
+         sed "s|@htmldir@|xxxxNAxxxx|g" | \
+         sed "s|@includedir@|xxxxNAxxxx|g" | \
+         sed "s|@program_name@|xxxxNAxxxx|g" | \
+         sed "s|@PLUMED_ROOT@|$(CURDIR:src/config=)|g" > $@~
+	cmp -s $@~ $@ || cp $@~ $@
+	rm $@~
 
 links: 
 	@echo Nothing to do in $(CURDIR)
 
 
-Config.o: Config.cpp Makefile.conf.xxd version.h
-ConfigInstall.o: ConfigInstall.cpp Makefile.conf.xxd version.h
+Config.o: Config.inc Makefile.conf.xxd version.h
+ConfigInstall.o: ConfigInstall.inc Makefile.conf.xxd version.h
 
 Makefile.conf.xxd: ../../Makefile.conf
 	cat ../../Makefile.conf | xxd -i > Makefile.conf.xxd
@@ -51,15 +66,15 @@ Makefile.conf.xxd: ../../Makefile.conf
 # file to import compilation options inside a bash script
 compile_options.sh:
 	@echo Building compile_options.sh, a sourceable bash script with some compilation options
-	@echo "compile='"$(CXX) -c -I'$$PLUMED_ROOT'/src $(CPPFLAGS) $(CXXFLAGS) -o"'" > $@
-	@echo "link='"$(LDSO) -o"'" >> $@
+	@echo "compile='"$(CXX) -c -I'"$$PLUMED_INCLUDEDIR/$$PLUMED_PROGRAM_NAME"'/ $(CPPFLAGS) $(CXXFLAGS) -o"'" > $@
+	@echo "link='"$(LDSO) $(DYNAMIC_LIBS) -o"'" >> $@
 	@echo "soext='"$(SOEXT)"'" >> $@
 
 .PHONY: clean
 clean:
-	rm -f Config.cpp compile_options.sh Makefile_conf version.h
+	rm -f Config.inc compile_options.sh Makefile_conf version.h config.txt
 	rm -fr deps 
-	rm -f Config.cpp ConfigInstall.cpp compile_options.sh install.conf
+	rm -f Config.inc ConfigInstall.inc compile_options.sh install.conf
 	rm -f $(CLEANLIST)
 
 # generic makefile rules

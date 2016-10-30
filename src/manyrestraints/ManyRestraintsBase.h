@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -42,7 +42,7 @@ private:
   vesselbase::ActionWithVessel* aves;
 public:
   static void registerKeywords( Keywords& keys );
-  ManyRestraintsBase(const ActionOptions&);
+  explicit ManyRestraintsBase(const ActionOptions&);
   bool isPeriodic(){ return false; }
   unsigned getNumberOfDerivatives();
 /// Routines that have to be defined so as not to have problems with virtual methods

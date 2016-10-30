@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -107,6 +107,12 @@ ActionWithVessel(ao)
   for(unsigned i=0;i<myframes.size();++i){ myframes[i]->getAtomRequests( atoms, skipchecks ); myframes[i]->getArgumentRequests( args, skipchecks ); }
   requestAtoms( atoms ); std::vector<Value*> req_args;
   interpretArgumentList( args, req_args ); requestArguments( req_args );
+  // Duplicate all frames (duplicates are used by sketch-map)
+  // mymap->duplicateFrameList(); 
+  // fframes.resize( 2*nfram, 0.0 ); dfframes.resize( 2*nfram, 0.0 );
+  // plumed_assert( !mymap->mappingNeedsSetup() );
+  // Resize all derivative arrays
+  // mymap->setNumberOfAtomsAndArguments( atoms.size(), args.size() );
   // Resize forces array
   if( getNumberOfAtoms()>0 ){ 
      forcesToApply.resize( 3*getNumberOfAtoms() + 9 + getNumberOfArguments() );

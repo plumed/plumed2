@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -34,7 +34,8 @@
 #include "tools/PDB.h"
 
 using namespace std;
-using namespace PLMD;
+
+namespace PLMD {
 
 ActionAtomistic::~ActionAtomistic(){
 // forget the pending request
@@ -136,7 +137,7 @@ void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, c
   for(int j=0;j<nval;j++){
     Value* v=a->copyOutput(j);
     double ref=v->get();
-    if(v->getNumberOfDerivatives()>0){
+    if(v->hasDerivatives()){
       for(int i=0;i<natoms;i++) for(int k=0;k<3;k++) {
         double d=(value[j*natoms+i][k]-ref)/delta;
         v->addDerivative(startnum+3*i+k,d);
@@ -155,7 +156,7 @@ void ActionAtomistic::parseAtomList(const std::string&key, std::vector<AtomNumbe
 }
 
 void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::vector<AtomNumber> &t){
-  plumed_massert( keywords.style(key,"atoms"), "keyword " + key + " should be registered as atoms");
+  plumed_massert( keywords.style(key,"atoms") || keywords.style(key,"hidden"), "keyword " + key + " should be registered as atoms");
   vector<string> strings;
   if( num<0 ){
       parseVector(key,strings);
@@ -163,7 +164,10 @@ void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::ve
   } else {
       if ( !parseNumberedVector(key,num,strings) ) return;
   }
+  interpretAtomList( strings, t );
+}
 
+void ActionAtomistic::interpretAtomList( std::vector<std::string>& strings, std::vector<AtomNumber> &t){
   Tools::interpretRanges(strings); t.resize(0);
   for(unsigned i=0;i<strings.size();++i){
    AtomNumber atom;
@@ -236,8 +240,8 @@ void ActionAtomistic::setForcesOnAtoms( const std::vector<double>& forcesToApply
   virial(1,2)=forcesToApply[ind]; ind++;
   virial(2,0)=forcesToApply[ind]; ind++;
   virial(2,1)=forcesToApply[ind]; ind++;
-  virial(2,2)=forcesToApply[ind]; ind++;
-  plumed_dbg_assert( ind==forcesToApply.size() );
+  virial(2,2)=forcesToApply[ind];
+  plumed_dbg_assert( ind+1==forcesToApply.size());
 }
 
 void ActionAtomistic::applyForces(){
@@ -276,4 +280,6 @@ void ActionAtomistic::makeWhole(){
     Vector & second (positions[j+1]);
     second=first+pbcDistance(first,second);
   }
+}
+
 }

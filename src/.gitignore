@@ -3,6 +3,7 @@
 # Only track modules that are part of the plumed core
 !/Makefile
 !/README
+!/adjmat
 !/analysis
 !/bias
 !/blas
@@ -14,6 +15,7 @@
 !/dimred
 !/function
 !/generic
+!/gridtools
 !/header.sh
 !/release.sh
 !/imd

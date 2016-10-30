@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -72,7 +72,7 @@ class DHEnergy : public CoordinationBase{
   double epsilon;
 
 public:
-  DHEnergy(const ActionOptions&);
+  explicit DHEnergy(const ActionOptions&);
 // active methods:
   static void registerKeywords( Keywords& keys );
   virtual double pairing(double distance,double&dfunc,unsigned i,unsigned j)const;
@@ -122,7 +122,7 @@ constant(0.0)
   parse("EPSILON",epsilon);
   checkRead();
   if( plumed.getAtoms().usingNaturalUnits() ) error("DHENERGY cannot be used for calculations performed with natural units");
-  constant=138.935458111/atoms.getUnits().getEnergy()/atoms.getUnits().getLength();
+  constant=138.935458111/atoms.getUnits().getEnergy()/atoms.getUnits().getLength()*atoms.getUnits().getCharge()*atoms.getUnits().getCharge();
   k=sqrt(I/(epsilon*T))*502.903741125*atoms.getUnits().getLength();
   checkRead();
   log<<"  with solvent dielectric constant "<<epsilon<<"\n";

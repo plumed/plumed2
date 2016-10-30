@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014,2015 The plumed team
+   Copyright (c) 2014-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -29,13 +29,15 @@ namespace PLMD {
 namespace crystallization {
 
 class VectorSum : public vesselbase::FunctionVessel {
+private:
+  unsigned nder;
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
-  VectorSum( const vesselbase::VesselOptions& da );
+  explicit VectorSum( const vesselbase::VesselOptions& da );
   std::string value_descriptor();
   void resize();
-  bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
+  void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
   void finish( const std::vector<double>& buffer );
 };
 
@@ -46,13 +48,14 @@ void VectorSum::registerKeywords( Keywords& keys ){
 }
 
 void VectorSum::reserveKeyword( Keywords& keys ){
-  keys.reserveFlag("VSUM",false,"calculate the norm of the sum of vectors.",true);
+  keys.reserve("vessel","VSUM","calculate the norm of the sum of vectors.");
   keys.addOutputComponent("vsum","VSUM","the norm of sum of vectors. The output component can be refererred to elsewhere in the input "
                                         "file by using the label.vsum");
 }
 
 VectorSum::VectorSum( const vesselbase::VesselOptions& da ) :
-FunctionVessel(da)
+FunctionVessel(da),
+nder(0)
 {
 }
 
@@ -64,32 +67,34 @@ void VectorSum::resize(){
   unsigned ncomp=getAction()->getNumberOfQuantities() - 2;
 
   if( getAction()->derivativesAreRequired() ){
-     unsigned nder=getAction()->getNumberOfDerivatives();
+     nder=getAction()->getNumberOfDerivatives();
      resizeBuffer( (1+nder)*ncomp ); getFinalValue()->resizeDerivatives( nder );
   } else {
-     resizeBuffer(ncomp);
+     nder=0; resizeBuffer(ncomp);
   }
 }
 
-bool VectorSum::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
-  unsigned ncomp=getAction()->getNumberOfQuantities()-2, nder=getAction()->getNumberOfDerivatives();
+void VectorSum::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
+  unsigned ncomp=getAction()->getNumberOfQuantities()-2;
 
   double weight=myvals.get(0); 
   plumed_dbg_assert( weight>=getTolerance() );
   buffer[bufstart] += weight;
+  for(unsigned i=0;i<ncomp;++i) buffer[bufstart + i*(1+nder)] += weight*myvals.get(2+i);
+  if( !getAction()->derivativesAreRequired() ) return;
+
   for(unsigned i=0;i<ncomp;++i){
-      double colvar=myvals.get(2+i);  
-      buffer[bufstart + i*(1+nder)] += weight*colvar;
+      double colvar=myvals.get(2+i);
       myvals.chainRule( 2+i, i, 1, 0, weight, bufstart, buffer );
       if( diffweight ) myvals.chainRule( 0, i, 1, 0, colvar, bufstart, buffer );
   }
-  return true;
+  return;
 }
 
 void VectorSum::finish( const std::vector<double>& buffer ){
   unsigned ncomp=getAction()->getNumberOfQuantities()-2;
 
-  double sum=0; unsigned nder=getAction()->getNumberOfDerivatives();
+  double sum=0; 
   for(unsigned i=0;i<ncomp;++i){ 
      double tmp = buffer[bufstart+(nder+1)*i]; 
      sum+=tmp*tmp; 

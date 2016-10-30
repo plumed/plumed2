@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -91,11 +91,11 @@ private:
   SwitchingFunction sf2;
 public:
   static void registerKeywords( Keywords& keys );
-  Angles(const ActionOptions&);
+  explicit Angles(const ActionOptions&);
 /// Updates neighbor list
   virtual double compute( const unsigned& tindex, AtomValuePack& ) const ;
 /// Returns the number of coordinates of the field
-  void calculateWeight( AtomValuePack& ) const ;
+  double calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& ) const ;
   bool isPeriodic(){ return false; }
 };
 
@@ -153,7 +153,9 @@ use_sf(false)
       }
   }
   // Read in the atoms
-  int natoms=3; readAtoms( natoms );
+  std::vector<AtomNumber> all_atoms;
+  readGroupKeywords( "GROUP", "GROUPA", "GROUPB", "GROUPC", false, true, all_atoms );
+  int natoms=3; readAtoms( natoms, all_atoms );
   // Set cutoff for link cells 
   if( use_sf ){ 
     setLinkCellCutoff( sf1.get_dmax() ); 
@@ -168,8 +170,8 @@ use_sf(false)
   setAtomsForCentralAtom( catom_ind );
 }
 
-void Angles::calculateWeight( AtomValuePack& myatoms ) const {
-  if(!use_sf){ myatoms.setValue( 0, 1.0 ); return; }
+double Angles::calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& myatoms ) const {
+  if(!use_sf) return 1.0; 
   Vector dij=getSeparation( myatoms.getPosition(0), myatoms.getPosition(2) );
   Vector dik=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
 
@@ -177,18 +179,18 @@ void Angles::calculateWeight( AtomValuePack& myatoms ) const {
   double ldij = dij.modulo2(), ldik = dik.modulo2(); 
 
   if( use_sf ){
-     if( ldij>rcut2_1 || ldik>rcut2_2 ){ myatoms.setValue(0,0.0); return; }
+     if( ldij>rcut2_1 || ldik>rcut2_2 ) return 0.0; 
   }
 
   w1=sf1.calculateSqr( ldij, dw1 );
   w2=sf2.calculateSqr( ldik, dw2 );
-  wtot=w1*w2; dw1*=w2; dw2*=w1; 
+  wtot=w1*w2; dw1*=weight*w2; dw2*=weight*w1; 
 
-  myatoms.setValue( 0, wtot );
-  myatoms.addAtomsDerivatives( 0, 1, dw2*dik );
-  myatoms.addAtomsDerivatives( 0, 0, -dw1*dij - dw2*dik ); 
-  myatoms.addAtomsDerivatives( 0, 2, dw1*dij );
+  addAtomDerivatives( 0, 1, dw2*dik, myatoms );
+  addAtomDerivatives( 0, 0, -dw1*dij - dw2*dik, myatoms ); 
+  addAtomDerivatives( 0, 2, dw1*dij, myatoms );
   myatoms.addBoxDerivatives( 0, (-dw1)*Tensor(dij,dij) + (-dw2)*Tensor(dik,dik) );
+  return wtot;
 }
 
 double Angles::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
@@ -199,9 +201,9 @@ double Angles::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
   double angle=a.compute(dij,dik,ddij,ddik);
 
   // And finish the calculation
-  myatoms.addAtomsDerivatives( 1, 1, ddik );
-  myatoms.addAtomsDerivatives( 1, 0, - ddik - ddij );
-  myatoms.addAtomsDerivatives( 1, 2, ddij );
+  addAtomDerivatives( 1, 1, ddik, myatoms );
+  addAtomDerivatives( 1, 0, - ddik - ddij, myatoms );
+  addAtomDerivatives( 1, 2, ddij, myatoms );
   myatoms.addBoxDerivatives( 1, -(Tensor(dij,ddij)+Tensor(dik,ddik)) );
 
   return angle;

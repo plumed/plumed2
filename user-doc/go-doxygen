@@ -1,38 +1,35 @@
 #! /bin/bash
 
-# Making sure that plumed executable is available
-echo -n "Searching for plumed ..."
-if plumed --no-mpi 2>/dev/null 1>/dev/null ; then
-  echo " found"
-else
-  echo " not found"
-  echo -n "Sourcing sourceme.sh and searching again ..."
-  if source ../sourceme.sh && plumed --no-mpi 2>/dev/null 1>/dev/null ; then
-    echo " found"
-  else
-    echo "ERROR: you should compile plumed first!"
-    exit 1
-  fi
-fi
+source ../sourceme.sh
 
 LIST="
  IntroPP.txt ../CHANGES InstallationPP.txt SyntaxPP.txt ColvarPP.txt GroupPP.txt FunctionsPP.txt AnalysisPP.txt
-  BiasPP.txt ToolsPP.txt MiscPP.txt RegexPP.txt FilesPP.txt ModulesPP.txt TutorialsPP.txt GlossaryPP.txt automatic tutorials"
+  BiasPP.txt ToolsPP.txt MiscPP.txt PerformancesPP.txt RegexPP.txt FilesPP.txt ModulesPP.txt TutorialsPP.txt GlossaryPP.txt automatic tutorials"
 
 {
   cat Doxyfile
-  echo "PROJECT_NUMBER = \"$(plumed --no-mpi info --long-version)\""
+  echo "PROJECT_NUMBER = \"$(../src/lib/plumed --no-mpi info --long-version)\""
   echo "INPUT+=" $LIST
   # add this to manually control layout:
   # echo "LAYOUT_FILE=PlumedLayout.xml"
 } | doxygen -
 
+version=v$(../src/lib/plumed --no-mpi info --version)
+
+# in the online manual better to put the branch name
+# which is available through the TRAVIS_BRANCH env var
+if test "$TRAVIS" == true ; then
+  version="${TRAVIS_BRANCH}"
+fi
+
+# THIS IS FOR DOXYGEN <= 1.8.10
+# I leave it here for the moment
 for file in html/*.html
 do
-awk -v version=$(plumed --no-mpi info --version) '{
+awk -v version="$version" '{
   if(match($0,"<span>Main&#160;Page</span>")){
     sub("Main","Home",$0);
-    sub("Page","(v"version")",$0);
+    sub("Page","("version")",$0);
     print
   } else if(match($0,"<span>Related&#160;Pages</span>")){
     print "      <li><a href=\"_syntax.html\"><span>Getting&#160;started</span></a></li>"
@@ -42,9 +39,25 @@ awk -v version=$(plumed --no-mpi info --version) '{
 }' $file > $file.tmp
 mv $file.tmp $file
 done
+# end of DOXYGEN <=1.8.10
+
+# Same stuff for DOXYGEN >=1.8.12
+cat > html/menudata.js << EOF
+var menudata={children:[
+{text:'Home ($version)',url:'index.html'},
+{text:'Getting started',url:'_syntax.html'},
+{text:'Tutorials',url:'tutorials.html'},
+{text:'Index of Actions',url:'glossary.html'}]}
+EOF
+# end of DOXYGEN >=1.8.12
+
 
 cat html/doxygen.css plumed.css > html/doxygen.css.tmp
 mv html/doxygen.css.tmp html/doxygen.css
+
+if [ "$make_pdfdoc" != yes ] ; then
+  exit
+fi
 
 cd latex
 

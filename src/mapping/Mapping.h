@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -42,6 +42,7 @@ class Mapping :
   public vesselbase::ActionWithVessel
   {
 friend class PropertyMap;
+friend class TrigonometricPathVessel;
 private:
 //  The derivative wrt to the distance from the frame
   std::vector<double> dfframes;
@@ -62,11 +63,13 @@ protected:
   double calculateDistanceFunction( const unsigned& ifunc, ReferenceValuePack& myder, const bool& squared ) const ;
 /// Get the value of the weight
   double getWeight( const unsigned& weight ) const ;
+/// Return the vector of refernece configurations
+  std::vector<ReferenceConfiguration*>& getAllReferenceConfigurations();
 /// Return a pointer to one of the reference configurations
   ReferenceConfiguration* getReferenceConfiguration( const unsigned& ifunc );
 public:
   static void registerKeywords( Keywords& keys );
-  Mapping(const ActionOptions&);
+  explicit Mapping(const ActionOptions&);
   ~Mapping();
 /// Overload the virtual functions that appear in both ActionAtomistic and ActionWithArguments
   void turnOnDerivatives();
@@ -81,6 +84,8 @@ public:
   virtual double getLambda();
 /// This does the transformation of the distance by whatever function is required
   virtual double transformHD( const double& dist, double& df ) const=0;
+/// Get the number of properties we are projecting onto
+  unsigned getNumberOfProperties() const ;
 /// Get the name of the ith argument
   std::string getArgumentName( unsigned& iarg );
 /// Get the value of the ith property for the current frame
@@ -121,6 +126,16 @@ double Mapping::getPropertyValue( const unsigned& cur, const std::string& name )
 inline
 double Mapping::getWeight( const unsigned& current ) const {
   return myframes[current]->getWeight(); 
+}
+
+inline
+std::vector<ReferenceConfiguration*>& Mapping::getAllReferenceConfigurations(){
+  return myframes; 
+}
+
+inline
+unsigned Mapping::getNumberOfProperties() const {
+  return property.size();
 }
 
 }

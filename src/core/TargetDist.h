@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -37,7 +37,7 @@ private:
   std::vector<double> target;
   Log &log;
 public:
-  TargetDist(Log& log) : log(log) {}
+  explicit TargetDist(Log& log) : log(log) {}
   void read( const PDB& pdb, std::vector<Value*> args ); 
   void read( const std::vector<double>& targ, std::vector<Value*> ar );
   double calculate( std::vector<double>& derivs );

@@ -41,12 +41,8 @@ private:
   bool nomemory;
 /// Are we writing a checkpoint file
   bool write_chq;
-/// The temperature at which we are running the calculation
-  double simtemp;
-/// The temperature at which we want the histogram
-  double rtemp;
 /// The biases we are using in reweighting and the args we store them separately
-  std::vector<Value*> biases;
+  std::vector<Value*> weight_vals;
 /// The piece of data we are inserting
   unsigned idata;
 /// The data we are going to analyze
@@ -71,9 +67,6 @@ private:
   void runAnalysis();
 /// Read the checkpoint file  (this is used to read the nodes in readDissimilarityMatrix)
   void readCheckPointFile( const std::string& filename );
-protected:
-/// Return the temperature (used by Histogram)
-  double getTemp() const { return simtemp; }
 public:
   static void registerKeywords( Keywords& keys );
   AnalysisWithDataCollection(const ActionOptions&);
@@ -100,8 +93,6 @@ public:
   virtual ReferenceConfiguration* getReferenceConfiguration( const unsigned& idat, const bool& calcdist );
 /// Now we can get the arguments from the right place
   const std::vector<Value*>    & getArguments() const ;
-/// This ensures that the energy is stored if we are reweighting
-  void prepare();
 /// This stores the data and calls the analysis to be performed
   void update();
 /// This does the analysis if it is to be done in the final step of the calculation
@@ -151,7 +142,7 @@ double AnalysisWithDataCollection::getNormalization() const {
 inline
 unsigned AnalysisWithDataCollection::getNumberOfArguments() const {
   unsigned nargs=ActionWithArguments::getNumberOfArguments();
-  return nargs - biases.size(); 
+  return nargs - weight_vals.size(); 
 }
 
 inline

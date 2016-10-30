@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -19,11 +19,11 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#include "CLToolMain.h"
 #include "config/Config.h"
 #include "tools/Exception.h"
 #include "tools/Communicator.h"
 #include "CLTool.h"
-#include "CLToolMain.h"
 #include "CLToolRegister.h"
 #include "tools/Tools.h"
 #include "tools/DLLoader.h"
@@ -120,8 +120,6 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
       else return 1;
     } else if(a=="--has-matheval"){
       return (config::hasMatheval()?0:1);
-    } else if(a=="--has-almost"){
-      return (config::hasAlmost()?0:1);
     } else if(a=="--has-cregex"){
       return (config::hasCregex()?0:1);
     } else if(a=="--has-dlopen"){
@@ -142,9 +140,15 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
         fprintf(stderr,"--no-mpi option can only be used as the first option");
         return 1;
       }
+    } else if(a=="--mpi"){
+// this is ignored, as it is parsed in main
+      if(i>1){
+        fprintf(stderr,"--mpi option can only be used as the first option");
+        return 1;
+      }
     } else if(a=="--standalone-executable"){
       standalone_executable=true;
-    } else if(a.find("--load=")==0){
+    } else if(Tools::startWith(a,"--load=")){
       a.erase(0,a.find("=")+1);
       prefix="";
       void *p=dlloader.load(a);
@@ -196,21 +200,20 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
         "  [--is-installed]          : fails if plumed is not installed\n"
         "  [--has-mpi]               : fails if plumed is running without MPI\n"
         "  [--has-matheval]          : fails if plumed is compiled without matheval\n"
-        "  [--has-almost]            : fails if plumed is compiled without almost\n"
         "  [--has-dlopen]            : fails if plumed is compiled without dlopen\n"
         "  [--load LIB]              : loads a shared object (typically a plugin library)\n"
         "  [--standalone-executable] : tells plumed not to look for commands implemented as scripts\n"
         "Commands:\n";
     fprintf(out,"%s",msg.c_str());
     for(unsigned j=0;j<availableCxx.size();++j){
-      CLTool *cl=cltoolRegister().create(availableCxx[j]);
+      CLTool *cl=cltoolRegister().create(CLToolOptions(availableCxx[j]));
       plumed_assert(cl);
       string manual=availableCxx[j]+" : "+cl->description();
       delete cl;
       fprintf(out,"  plumed %s\n", manual.c_str());
     }
     for(unsigned j=0;j<availableShell.size();++j){
-      string cmd="env PLUMED_ROOT="+root+" "+root+"/scripts/"+availableShell[j]+".sh --description";
+      string cmd=config::getEnvCommand()+" \""+root+"/scripts/"+availableShell[j]+".sh\" --description";
       FILE *fp=popen(cmd.c_str(),"r");
       string line,manual;
       while(Tools::getline(fp,line))manual+=line;
@@ -229,7 +232,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
   string command(argv[i]);
 
   if(find(availableCxx.begin(),availableCxx.end(),command)!=availableCxx.end()){
-    CLTool *cl=cltoolRegister().create(command);
+    CLTool *cl=cltoolRegister().create(CLToolOptions(command));
     plumed_assert(cl); 
     // Read the command line options (returns false if we are just printing help)
     if( !cl->readInput( argc-i,&argv[i],in,out ) ){ delete cl; return 0; } 
@@ -241,10 +244,14 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
   if(find(availableShell.begin(),availableShell.end(),command)!=availableShell.end()){
     plumed_massert(in==stdin,"shell tools can only work on stdin");
     plumed_massert(out==stdout,"shell tools can only work on stdin");
-    string cmd="env PLUMED_ROOT="+root+" "+root+"/scripts/"+command+".sh";
+    string cmd=config::getEnvCommand()+" \""+root+"/scripts/"+command+".sh\"";
     for(int j=i+1;j<argc;j++) cmd+=string(" ")+argv[j];
-    system(cmd.c_str());
-    return 0;
+    int r=system(cmd.c_str());
+// this is necessary since system seems to return numbers which are multiple
+// of 256. this would make the interpretation by the shell wrong
+// I just return 1 in case of failure and 0 in case of success
+    if(r!=0) return 1;
+    else return 0;
   }
 
   string msg="ERROR: unknown command " + command + ". Use 'plumed help' for help";

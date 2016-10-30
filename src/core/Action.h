@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -97,6 +97,8 @@ private:
 
   bool restart;
 
+  bool doCheckPoint;
+
 public:
 
 /// Reference to main plumed object
@@ -122,6 +124,12 @@ public:
 
 /// Return true if we are doing a restart
   bool getRestart()const;
+
+/// Return true if we are doing at a checkpoint step 
+  bool getCPT()const;
+
+/// Just read one of the keywords and return the whole thing as a string
+  std::string getKeyword(const std::string& key);
 
 /// Parse one keyword as generic type
   template<class T>
@@ -157,12 +165,12 @@ public:
 
 public:
 /// Standard constructor from ActionOptions
-  Action(const ActionOptions&);
+  explicit Action(const ActionOptions&);
 /// Destructor
   virtual ~Action();
 private:
 /// Copy constructor is disabled (private and unimplemented)
-  Action(const Action&a);
+  explicit Action(const Action&a);
 /// Assignment operator is disabled (private and unimplemented)
   Action& operator=(const Action&a);
 public:
@@ -197,6 +205,15 @@ public:
 /// This method is called one time per step.
 /// The set of all Actions is applied in backward order.
   virtual void apply()=0;
+
+/// Before Update.
+/// This is a special method that is called just
+/// before the update() method. It can be used by
+/// actions that want to do something irrespectively
+/// of the fact that update() is active or not.
+/// In other words, this is *always* called, even when action
+/// is not active.
+  virtual void beforeUpdate(){}
 
 /// Update.
 /// This method is called one time per step.
@@ -296,8 +313,10 @@ void Action::parse(const std::string&key,T&t){
   plumed_massert(keywords.exists(key),"keyword " + key + " has not been registered");
 
   // Now try to read the keyword
-  bool found; std::string def; 
-  found=Tools::parse(line,key,t);
+  std::string def; 
+  bool present=Tools::findKeyword(line,key);
+  bool found=Tools::parse(line,key,t);
+  if(present && !found) error("keyword " + key +" could not be read correctly");
   
   // If it isn't read and it is compulsory see if a default value was specified 
   if ( !found && (keywords.style(key,"compulsory") || keywords.style(key,"hidden")) ){
@@ -337,8 +356,10 @@ void Action::parseVector(const std::string&key,std::vector<T>&t){
   if(size==0) skipcheck=true;
 
   // Now try to read the keyword
-  bool found; std::string def; T val;
-  found=Tools::parseVector(line,key,t);
+  std::string def; T val;
+  bool present=Tools::findKeyword(line,key);
+  bool found=Tools::parseVector(line,key,t);
+  if(present && !found) error("keyword " + key +" could not be read correctly");
 
   // Check vectors size is correct (not if this is atoms or ARG)
   if( !keywords.style(key,"atoms") && found ){
@@ -372,7 +393,10 @@ bool Action::parseNumberedVector(const std::string&key, const int no, std::vecto
   unsigned size=t.size(); bool skipcheck=false;
   if(size==0) skipcheck=true;
   std::string num; Tools::convert(no,num);
+  bool present=Tools::findKeyword(line,key);
   bool found=Tools::parseVector(line,key+num,t);
+  if(present && !found) error("keyword " + key +" could not be read correctly");
+
   if(  keywords.style(key,"compulsory") ){
     if (!skipcheck && found && t.size()!=size ) error("vector read in for keyword " + key + num + " has the wrong size");  
   } else if ( !found ){
@@ -400,6 +424,11 @@ bool Action::isOptionOn(const std::string &s)const{
 inline
 bool Action::getRestart()const{
   return restart;
+}
+
+inline
+bool Action::getCPT()const{
+  return doCheckPoint;
 }
 
 }

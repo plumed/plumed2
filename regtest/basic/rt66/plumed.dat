@@ -12,8 +12,8 @@ t10: TORSION ATOMS=@v2-10
 t11: TORSION ATOMS=@v3-11
 t12: TORSION ATOMS=@v4-12
 
-c1: COM ATOMS=@base-4
-c2: COM ATOMS=@base-5
+c1: CENTER ATOMS=@base-4
+c2: CENTER ATOMS=@base-5
 d1: DISTANCE ATOMS=c1,c2
 
 puck1: PUCKERING ATOMS=@sugar-1
@@ -31,7 +31,12 @@ puck12: PUCKERING ATOMS=@sugar-12
 puck13: PUCKERING ATOMS=@sugar-13
 puck14: PUCKERING ATOMS=@sugar-14
 
-PRINT ARG=t2,t3,t4,t5,t6,t7,t8,t9,t10,t12,d1 FILE=COLVAR FMT=%6.3f
+hb1: DISTANCE ATOMS=@N2-1,@O2-14
+hb2: DISTANCE ATOMS=@N1-1,@N3-14
+hb3: DISTANCE ATOMS=@O6-1,@N4-14
+
+
+PRINT ARG=t2,t3,t4,t5,t6,t7,t8,t9,t10,t12,d1,hb1,hb2,hb3 FILE=COLVAR FMT=%6.3f
 
 DUMPDERIVATIVES ...
   ARG=puck1.amp,puck1.phs,puck1.Zx,puck1.Zy,puck2.Zx,puck2.Zy,puck3.Zx,puck3.Zy,puck4.Zx,puck4.Zy,puck5.Zx,puck5.Zy,puck6.Zx,puck6.Zy,puck7.Zx,puck7.Zy,puck8.Zx,puck8.Zy,puck9.Zx,puck9.Zy,puck10.Zx,puck10.Zy,puck11.Zx,puck11.Zy,puck12.Zx,puck12.Zy,puck13.Zx,puck13.Zy,puck14.Zx,puck14.Zy

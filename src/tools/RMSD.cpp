@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -35,12 +35,12 @@ RMSD::RMSD() : alignmentMethod(SIMPLE),reference_center_is_calculated(false),ref
 /// general method to set all the rmsd property at once by using a pdb where occupancy column sets the weights for the atoms involved in the 
 /// alignment and beta sets the weight that are used for calculating the displacement. 
 ///
-void RMSD::set(const PDB&pdb, string mytype, bool remove_center, bool normalize_weights ){
+void RMSD::set(const PDB&pdb, const string & mytype, bool remove_center, bool normalize_weights ){
 
  	set(pdb.getOccupancy(),pdb.getBeta(),pdb.getPositions(),mytype,remove_center,normalize_weights);
 
 }
-void RMSD::set(const std::vector<double> & align, const std::vector<double> & displace, const std::vector<Vector> & reference , string mytype, bool remove_center, bool normalize_weights ){
+void RMSD::set(const std::vector<double> & align, const std::vector<double> & displace, const std::vector<Vector> & reference , const string & mytype, bool remove_center, bool normalize_weights ){
 
         setReference(reference); // this by default remove the com and assumes uniform weights
         setAlign(align, normalize_weights, remove_center); // this recalculates the com with weights. If remove_center=false then it restore the center back
@@ -49,7 +49,7 @@ void RMSD::set(const std::vector<double> & align, const std::vector<double> & di
 
 }
 
-void RMSD::setType(string mytype){
+void RMSD::setType(const string & mytype){
 
 	alignmentMethod=SIMPLE; // initialize with the simplest case: no rotation
 	if (mytype=="SIMPLE"){
@@ -970,7 +970,6 @@ std::vector<Vector> RMSDCoreData::getDDistanceDPositions(){
   plumed_massert(!retrieve_only_rotation,"You used  only_rotation=true in doCoreCalc therefore you cannot retrieve this information now");
   if(!hasDistance)plumed_merror("getDPositionsDerivatives needs to calculate the distance via getDistance first !");
   if(!isInitialized)plumed_merror("getDPositionsDerivatives needs to initialize the coreData first!");
-  vector<Vector> ddist_tmp(n);
   Vector csum;
   Vector tmp1,tmp2;
   for(unsigned iat=0;iat<n;iat++){
@@ -1003,7 +1002,6 @@ std::vector<Vector>  RMSDCoreData::getDDistanceDReference(){
   derivatives.resize(n);
   double prefactor=1.0;
   if(!distanceIsMSD) prefactor*=0.5/dist;
-  vector<Vector> ddist_tmp(n);
   Vector csum,tmp1,tmp2;
 
   plumed_massert(!retrieve_only_rotation,"You used  only_rotation=true in doCoreCalc therefore you cannot retrieve this information now");
@@ -1046,7 +1044,6 @@ std::vector<Vector>  RMSDCoreData::getDDistanceDReferenceSOMA(){
   derivatives.resize(n);
   double prefactor=1.0;
   if(!distanceIsMSD) prefactor*=0.5/dist;
-  vector<Vector> ddist_tmp(n);
   Vector csum,tmp1,tmp2;
 
   plumed_massert(!retrieve_only_rotation,"You used  only_rotation=true in doCoreCalc therefore you cannot retrieve this information now");
@@ -1054,7 +1051,6 @@ std::vector<Vector>  RMSDCoreData::getDDistanceDReferenceSOMA(){
   if(!isInitialized)plumed_merror("getDDistanceDReference to initialize the coreData first!");
   // get the transpose rotation
   Tensor t_rotation=rotation.transpose();
-  Tensor t_ddist_drr01=ddist_drr01.transpose();	
   
 // third expensive loop: derivatives
   for(unsigned iat=0;iat<n;iat++){
@@ -1221,6 +1217,28 @@ Tensor RMSDCoreData::getRotationMatrixPositionsToReference(){
 	  if(!isInitialized)plumed_merror("getRotationMatrixReferenceToPositions needs to initialize the coreData first!");
 	  return rotation.transpose();
 }
+
+
+template double RMSD::optimalAlignment<true,true>(const  std::vector<double>  & align,
+                                     const  std::vector<double>  & displace,
+                                     const std::vector<Vector> & positions,
+                                     const std::vector<Vector> & reference ,
+                                     std::vector<Vector>  & derivatives, bool squared)const;
+template double RMSD::optimalAlignment<true,false>(const  std::vector<double>  & align,
+                                     const  std::vector<double>  & displace,
+                                     const std::vector<Vector> & positions,
+                                     const std::vector<Vector> & reference ,
+                                     std::vector<Vector>  & derivatives, bool squared)const;
+template double RMSD::optimalAlignment<false,true>(const  std::vector<double>  & align,
+                                     const  std::vector<double>  & displace,
+                                     const std::vector<Vector> & positions,
+                                     const std::vector<Vector> & reference ,
+                                     std::vector<Vector>  & derivatives, bool squared)const;
+template double RMSD::optimalAlignment<false,false>(const  std::vector<double>  & align,
+                                     const  std::vector<double>  & displace,
+                                     const std::vector<Vector> & positions,
+                                     const std::vector<Vector> & reference ,
+                                     std::vector<Vector>  & derivatives, bool squared)const;
 
 
 

@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -118,6 +118,8 @@ protected:
   double getTolerance() const ;
 /// Return the value of the neighbor list tolerance
   double getNLTolerance() const ;
+/// Return the size of the buffer
+  unsigned getSizeOfBuffer() const ;
 /// Set the size of the data buffer
   void resizeBuffer( const unsigned& n );
 public:
@@ -128,7 +130,7 @@ public:
 /// Convert the name to the label of the component
   static std::string transformName( const std::string& name );
 /// The constructor
-  Vessel( const VesselOptions& da );
+  explicit Vessel( const VesselOptions& da );
 /// Virtual destructor needed for proper inheritance
   virtual ~Vessel(){}
 /// Return the name
@@ -146,7 +148,7 @@ public:
 /// This is replaced in bridges so we can transform the derivatives
   virtual MultiValue& transformDerivatives( const unsigned& current, MultiValue& myvals, MultiValue& bvals );
 /// Calculate the part of the vessel that is done in the loop
-  virtual bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const = 0;
+  virtual void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const = 0;
 /// Complete the calculation once the loop is finished
   virtual void finish( const std::vector<double>& )=0;
 /// Reset the size of the buffers
@@ -235,6 +237,11 @@ double Vessel::getNLTolerance() const {
 inline
 ActionWithVessel* Vessel::getAction() const {
   return action;
+}
+
+inline
+unsigned Vessel::getSizeOfBuffer() const {
+  return bufsize;
 }
 
 }

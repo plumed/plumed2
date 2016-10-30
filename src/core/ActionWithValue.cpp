@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithValue.h"
 #include "tools/Exception.h"
+#include "tools/OpenMP.h"
 
 using namespace std;
 namespace PLMD{
@@ -67,8 +68,14 @@ ActionWithValue::~ActionWithValue(){
 void ActionWithValue::clearInputForces(){
   for(unsigned i=0;i<values.size();i++) values[i]->clearInputForce();
 }
+
 void ActionWithValue::clearDerivatives(){
-  for(unsigned i=0;i<values.size();i++) values[i]->clearDerivatives();
+  unsigned nt = OpenMP::getGoodNumThreads(values);
+  #pragma omp parallel num_threads(nt)
+  { 
+    #pragma omp for
+    for(unsigned i=0;i<values.size();i++) values[i]->clearDerivatives();
+  }
 } 
 
 // -- These are the routine for copying the value pointers to other classes -- //
@@ -127,14 +134,15 @@ Value* ActionWithValue::getPntrToValue(){
 // -- HERE WE HAVE THE STUFF FOR NAMED VALUES / COMPONENTS -- //
 
 void ActionWithValue::addComponent( const std::string& name ){
-//  plumed_massert( keywords.outputComponentExists(name,true), "a description of component " + name + " has not been added to the manual");
   if( !keywords.outputComponentExists(name,true) ){
      warning("a description of component " + name + " has not been added to the manual. Components should be registered like keywords in "
-             "registerKeywords as described in the developer docs. In version 2.2 this warning will turn into an error i.e. component registration will be compulsory"); 
+             "registerKeywords as described in the developer docs."); 
   }
   std::string thename; thename=getLabel() + "." + name;
   for(unsigned i=0;i<values.size();++i){
      plumed_massert(values[i]->name!=getLabel(),"Cannot mix single values with components");
+     plumed_massert(values[i]->name!=thename&&name!="bias","Since PLUMED 2.3 the component 'bias' is automatically added to all biases by the general constructor!\n"
+                                                            "Remove the line addComponent(\"bias\") from your bias.");
      plumed_massert(values[i]->name!=thename,"there is already a value with this name");
   }
   values.push_back(new Value(this,thename, false ) );
@@ -143,14 +151,15 @@ void ActionWithValue::addComponent( const std::string& name ){
 }
 
 void ActionWithValue::addComponentWithDerivatives( const std::string& name ){
-//  plumed_massert( keywords.outputComponentExists(name,true), "a description of component " + name + " has not been added to the manual");
   if( !keywords.outputComponentExists(name,true) ){ 
      warning("a description of component " + name + " has not been added to the manual. Components should be registered like keywords in "
-             "registerKeywords as described in the developer doc. In version 2.2 this warning will turn into an error i.e. component registration will be compulsory");
+             "registerKeywords as described in the developer doc.");
   }
   std::string thename; thename=getLabel() + "." + name;
   for(unsigned i=0;i<values.size();++i){
      plumed_massert(values[i]->name!=getLabel(),"Cannot mix single values with components");
+     plumed_massert(values[i]->name!=thename&&name!="bias","Since PLUMED 2.3 the component 'bias' is automatically added to all biases by the general constructor!\n"
+                                                            "Remove the line addComponentWithDerivatives(\"bias\") from your bias.");
      plumed_massert(values[i]->name!=thename,"there is already a value with this name");
   }
   values.push_back(new Value(this,thename, true ) );
@@ -170,7 +179,6 @@ int ActionWithValue::getComponent( const std::string& name ) const {
 
 std::string ActionWithValue::getComponentsList( ) const {
   std::string complist;
-  //plumed_massert( !exists( getLabel() ), "You should not be calling this routine if you are using a value");
   for(unsigned i=0;i<values.size();++i){
      complist+=values[i]->name+" ";
   }
@@ -179,7 +187,6 @@ std::string ActionWithValue::getComponentsList( ) const {
 
 std::vector<std::string> ActionWithValue::getComponentsVector( ) const {
   std::vector<std::string> complist;
-  //plumed_massert( !exists( getLabel() ), "You should not be calling this routine if you are using a value");
   for(unsigned i=0;i<values.size();++i){
      complist.push_back(values[i]->name);
   }
@@ -192,15 +199,15 @@ void ActionWithValue::componentIsNotPeriodic( const std::string& name ){
   values[kk]->setupPeriodicity();
 }
 
+void ActionWithValue::componentIsPeriodic( const std::string& name, const std::string& min, const std::string& max ){
+  int kk=getComponent(name);
+  values[kk]->setDomain(min,max);
+}
+
 void ActionWithValue::setGradientsIfNeeded(){
   if(isOptionOn("GRADIENTS")) {
      for(unsigned i=0;i<values.size();i++) values[i]->setGradients();
   }
-}
-
-void ActionWithValue::componentIsPeriodic( const std::string& name, const std::string& min, const std::string& max ){
-  int kk=getComponent(name);
-  values[kk]->setDomain(min,max);
 }
 
 void ActionWithValue::turnOnDerivatives(){

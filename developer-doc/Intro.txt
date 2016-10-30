@@ -14,10 +14,21 @@ And finally, for the developers of MD codes, we provide information as to how to
 
 \ref HowToPlumedYourMD
 
-Lastly, we ask that contributors endeavor to maintain the portability of plumed by, as much as possible, using only the STL library and lapack in modifications.  If you need to use any less standard library (e.g. Boost, Sockets) please ensure that your functionality is not installed during a default compilation.  However, do feel free to provide alternative compilation options that incorperate your functionality.
+If you would like to contribute new functionalities to PLUMED please read the following guidance:
+
+\ref HowToContributeToPlumed
+
+We ask that contributors endeavor to maintain the portability of plumed by, as much as possible, by only using the STL library and lapack in modifications.  
+If you need to use any less standard library (e.g. Boost, Sockets) please ensure that your functionality is not installed during a default compilation.  
+However, do feel free to provide alternative compilation options that incorperate your functionality.
 
 Information about C++
 http://www.parashift.com/c++-faq-lite/
+
+\par Code Coverage
+
+This manual might  also contain a detailed analysis of which parts of the PLUMED code have been tested when compiling it.
+In case so, you will find it at <a href="../coverage/index.html"> this link </a>.
 
 \defgroup TOOLBOX Tool Box
 @{
@@ -89,6 +100,7 @@ from other classes.
 Each of these classes provides one directive for the plumed input file.
 This list is built automatically based on the PLUMED_REGISTER_ACTION macro.
 @}
+
 
 
 */

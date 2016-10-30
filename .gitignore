@@ -10,6 +10,8 @@
 *.dll
 *.sw?
 *.exe
+*.gcda
+*.gcno
 a.out
 makefile.dep
 /Makefile.conf
@@ -18,4 +20,4 @@ makefile.dep
 /codes
 /config.*
 /autom4*
-
+/stamp-h

@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -46,7 +46,7 @@ The following example calculates switching functions based on the distances betw
 to a file named colvar.
 
 \verbatim
-CONTACTMAP ATOMS1=1,2 ATOMS2=3,4 ATOMS3=4,5 ATOMS4=5,6 SWITCH=(RATIONAL R_0=1.5) LABEL=f1
+CONTACTMAP ATOMS1=1,2 ATOMS2=3,4 ATOMS3=4,5 ATOMS4=5,6 SWITCH={RATIONAL R_0=1.5} LABEL=f1
 PRINT ARG=f1.* FILE=colvar
 \endverbatim
 
@@ -61,14 +61,45 @@ ATOMS1=1,2 REFERENCE1=0.1 WEIGHT1=0.5
 ATOMS2=3,4 REFERENCE2=0.5 WEIGHT2=1.0 
 ATOMS3=4,5 REFERENCE3=0.25 WEIGHT3=1.0 
 ATOMS4=5,6 REFERENCE4=0.0 WEIGHT4=0.5 
-SWITCH=(RATIONAL R_0=1.5) 
+SWITCH={RATIONAL R_0=1.5} 
 LABEL=cmap
 CMDIST
 ... CONTACTMAP
 
 PRINT ARG=cmap FILE=colvar
 \endverbatim
-(See also \ref PRINT)
+
+The next example calculates calculates fraction of native contacts (Q) 
+for Trp-cage mini-protein. R_0 is the distance at which the switch function is guaranteed to 
+be 1.0 – it doesn't really matter for Q and  should be something very small, like 1 A. 
+REF is the reference distance for the contact, e.g. the distance from a crystal structure. 
+LAMBDA is the tolerance for the distance – if set to 1.0, the contact would have to have exactly 
+the reference value to be formed; instead for lambda values of 1.5–1.8 are usually used to allow some slack. 
+BETA is the softness of the switch function, default is 50nm. 
+WEIGHT is the 1/(number of contacts) giving equal weight to each contact. 
+
+When using native contact Q switch function, please cite \cite best2013
+
+\verbatim
+# Full example available in regtest/basic/rt72/
+
+CONTACTMAP ...
+ATOMS1=1,67 SWITCH1={Q R_0=0.01 BETA=50.0 LAMBDA=1.5 REF=0.4059} WEIGHT1=0.003597
+ATOMS2=1,68 SWITCH2={Q R_0=0.01 BETA=50.0 LAMBDA=1.5 REF=0.4039} WEIGHT2=0.003597
+ATOMS3=1,69 SWITCH3={Q R_0=0.01 BETA=50.0 LAMBDA=1.5 REF=0.3215} WEIGHT3=0.003597
+[snip] 
+ATOMS275=183,213 SWITCH275={Q R_0=0.01 BETA=50.0 LAMBDA=1.5 REF=0.355} WEIGHT275=0.003597
+ATOMS276=183,234 SWITCH276={Q R_0=0.01 BETA=50.0 LAMBDA=1.5 REF=0.428} WEIGHT276=0.003597
+ATOMS277=183,250 SWITCH277={Q R_0=0.01 BETA=50.0 LAMBDA=1.5 REF=0.3832} WEIGHT277=0.003597
+ATOMS278=197,220 SWITCH278={Q R_0=0.01 BETA=50.0 LAMBDA=1.5 REF=0.3827} WEIGHT278=0.003597
+LABEL=cmap
+SUM
+... CONTACTMAP
+
+PRINT ARG=cmap FILE=colvar
+\endverbatim
+
+(See also \ref PRINT and \ref switchingfunction)
 
 */
 //+ENDPLUMEDOC
@@ -81,7 +112,7 @@ private:
   vector<double> reference, weight;
 public:
   static void registerKeywords( Keywords& keys );
-  ContactMap(const ActionOptions&);
+  explicit ContactMap(const ActionOptions&);
   ~ContactMap();
 // active methods:
   virtual void calculate();
@@ -203,7 +234,7 @@ docmdist(false)
 
   // Ouput details of all contacts 
   for(unsigned i=0;i<sfs.size();++i){
-     log.printf("  The %dth contact is calculated from atoms : %d %d. Inflection point of switching function is at %s. Reference contact value is %f\n", 
+     log.printf("  The %uth contact is calculated from atoms : %d %d. Inflection point of switching function is at %s. Reference contact value is %f\n", 
                 i+1, ga_lista[i].serial(), gb_lista[i].serial() , ( sfs[i].description() ).c_str(), reference[i] );
   }
 

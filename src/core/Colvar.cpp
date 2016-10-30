@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
+#include "tools/OpenMP.h"
 #include <vector>
 #include <string>
 
@@ -47,44 +48,65 @@ void Colvar::requestAtoms(const vector<AtomNumber> & a){
   ActionAtomistic::requestAtoms(a);
 // Resize the derivatives of all atoms
   for(int i=0;i<getNumberOfComponents();++i) getPntrToComponent(i)->resizeDerivatives(3*a.size()+9);
-// Set the size of the forces array
-  forces.resize(3*getNumberOfAtoms()+9);
 }
 
 void Colvar::apply(){
   vector<Vector>&   f(modifyForces());
   Tensor&           v(modifyVirial());
-  unsigned          nat=getNumberOfAtoms();
+  const unsigned    nat=getNumberOfAtoms();
+  const unsigned    ncp=getNumberOfComponents();
+  const unsigned    fsz=f.size();
 
-  for(unsigned i=0;i<f.size();i++){
-    f[i][0]=0.0;
-    f[i][1]=0.0;
-    f[i][2]=0.0;
+  unsigned stride=1;
+  unsigned rank=0;
+  if(ncp>4*comm.Get_size()) {
+    stride=comm.Get_size();
+    rank=comm.Get_rank();
   }
-  v.zero();
+
+  unsigned nt=OpenMP::getNumThreads();
+  if(nt>ncp/(2.*stride)) nt=1;
 
   if(!isEnergy){
-    for(int i=0;i<getNumberOfComponents();++i){
-      if( getPntrToComponent(i)->applyForce( forces ) ){
-       for(unsigned j=0;j<nat;++j){
-          f[j][0]+=forces[3*j+0];
-          f[j][1]+=forces[3*j+1];
-          f[j][2]+=forces[3*j+2];
-       }
-       v(0,0)+=forces[3*nat+0];
-       v(0,1)+=forces[3*nat+1];
-       v(0,2)+=forces[3*nat+2];
-       v(1,0)+=forces[3*nat+3];
-       v(1,1)+=forces[3*nat+4];
-       v(1,2)+=forces[3*nat+5];
-       v(2,0)+=forces[3*nat+6];
-       v(2,1)+=forces[3*nat+7];
-       v(2,2)+=forces[3*nat+8];
+    #pragma omp parallel num_threads(nt) 
+    {
+      vector<Vector> omp_f(fsz);
+      Tensor         omp_v;
+      vector<double> forces(3*nat+9);
+      #pragma omp for 
+      for(unsigned i=rank;i<ncp;i+=stride){
+        if(getPntrToComponent(i)->applyForce(forces)){
+          for(unsigned j=0;j<nat;++j){
+            omp_f[j][0]+=forces[3*j+0];
+            omp_f[j][1]+=forces[3*j+1];
+            omp_f[j][2]+=forces[3*j+2];
+          }
+          omp_v(0,0)+=forces[3*nat+0];
+          omp_v(0,1)+=forces[3*nat+1];
+          omp_v(0,2)+=forces[3*nat+2];
+          omp_v(1,0)+=forces[3*nat+3];
+          omp_v(1,1)+=forces[3*nat+4];
+          omp_v(1,2)+=forces[3*nat+5];
+          omp_v(2,0)+=forces[3*nat+6];
+          omp_v(2,1)+=forces[3*nat+7];
+          omp_v(2,2)+=forces[3*nat+8];
+        }
+      }
+      #pragma omp critical
+      {
+        for(unsigned j=0;j<nat;++j) f[j]+=omp_f[j]; 
+        v+=omp_v;
+      }
     }
-   }
+
+    if(ncp>4*comm.Get_size()) {
+      if(fsz>0) comm.Sum(&f[0][0],3*fsz);
+      comm.Sum(&v[0][0],9);
+    }
+
   } else if( isEnergy ){
-     forces.resize(1);
-     if( getPntrToComponent(0)->applyForce( forces ) ) modifyForceOnEnergy()+=forces[0];
+    vector<double> forces(1);
+    if(getPntrToComponent(0)->applyForce(forces)) modifyForceOnEnergy()+=forces[0];
   }
 }
 

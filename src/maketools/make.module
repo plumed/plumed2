@@ -5,7 +5,9 @@
 # 
 
 # include the machine dependent configuration
--include ../../Makefile.conf
+ifneq ($(MAKECMDGOALS),clean)
+  -include ../../Makefile.conf
+endif
 
 # if machine dependent configuration has been found:
 ifdef GCCDEP
@@ -45,7 +47,9 @@ lib:
 install:
 	cd ../lib ; make install
 
+ifneq ($(disable_dependency_tracking),yes)
 -include $(DEP)
+endif
 
 # if machine dependent configuration has not been found:
 else
@@ -69,6 +73,20 @@ clean:
 links: Makefile
 	@echo Verify modules and create links in $(CURDIR)
 	@for dir in $(USE) ; do ../maketools/check_module.sh $$dir ; ../maketools/makelinks.sh $$dir ;  done
+
+.PHONY: cppcheck
+cppcheck:
+	../maketools/codecheck --cppcheck --local
+
+.PHONY: plumedcheck
+plumedcheck:
+	../maketools/codecheck --plumedcheck --local
+
+.PHONY: codecheck
+codecheck:
+	../maketools/codecheck --local
+
+
 
 # generic makefile rules
 include ../maketools/make.rules

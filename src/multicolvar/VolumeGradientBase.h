@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -47,7 +47,7 @@ protected:
   void setNumberInVolume( const unsigned& , const unsigned& , const double& , const Vector& , const Tensor& , const std::vector<Vector>& , MultiValue& ) const ;
 public:
   static void registerKeywords( Keywords& keys );
-  VolumeGradientBase(const ActionOptions&);
+  explicit VolumeGradientBase(const ActionOptions&);
 /// Do jobs required before tasks are undertaken
   void doJobsRequiredBeforeTaskList();
 /// Actually do what we are asked

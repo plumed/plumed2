@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -40,15 +40,16 @@ class ActionPilot:
   public virtual Action
 {
   int stride; // multiple time step
-protected:
-  int getStride()const;
-  void setStride( const unsigned& s );
 public:
-  ActionPilot(const ActionOptions&);
+  explicit ActionPilot(const ActionOptions&);
 /// Create the keywords for actionPilot
   static void registerKeywords(Keywords& keys);
 /// Check if the action is active on this step
-  bool onStep()const;
+  virtual bool onStep()const;
+/// Set the value of the stride
+  void setStride( const int& n );
+/// Get the stride
+  int getStride()const;
 };
 
 }

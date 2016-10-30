@@ -1,6 +1,6 @@
 #! /bin/bash
 
-source $PLUMED_ROOT/src/config/compile_options.sh
+source "$PLUMED_ROOT"/src/config/compile_options.sh
 
 if [ "$1" = --description ] ; then
   echo "compile a .cpp file into a shared library"

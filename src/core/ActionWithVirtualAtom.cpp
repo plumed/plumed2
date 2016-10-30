@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -79,6 +79,7 @@ void ActionWithVirtualAtom::setGradients(){
 
 void ActionWithVirtualAtom::setBoxDerivatives(const std::vector<Tensor> &d){
   boxDerivatives=d;
+  plumed_assert(d.size()==3);
 // Subtract the trivial part coming from a distorsion applied to the ghost atom first.
 // Notice that this part alone should exactly cancel the already accumulated virial
 // due to forces on this atom.

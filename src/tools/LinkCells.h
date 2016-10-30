@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2014-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -60,11 +60,13 @@ private:
   unsigned findCell( const Vector& pos ) const ;
 public:
 ///
-  LinkCells( Communicator& comm );
+  explicit LinkCells( Communicator& comm );
 /// Have the link cells been enabled
   bool enabled() const ;
 /// Set the value of the cutoff
   void setCutoff( const double& lcut );
+/// Get the value of the cutoff
+  double getCutoff() const ;
 /// Build the link cell lists
   void buildCellLists( const std::vector<Vector>& pos, const std::vector<unsigned>& indices, const Pbc& pbc );
 /// Find a list of relevant atoms

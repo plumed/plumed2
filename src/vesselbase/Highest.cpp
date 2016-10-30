@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -29,7 +29,7 @@ class Highest : public OrderingVessel {
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
-  Highest( const VesselOptions& da );
+  explicit Highest( const VesselOptions& da );
   std::string value_descriptor();
   bool compare( const double& , const double& );
 };
@@ -41,7 +41,7 @@ void Highest::registerKeywords( Keywords& keys ){
 }
 
 void Highest::reserveKeyword( Keywords& keys ){
-  keys.reserveFlag("HIGHEST",false,"calculate the highest of these variables.",true);
+  keys.reserve("vessel","HIGHEST","this flag allows you to recover the highest of these variables.");
   keys.addOutputComponent("highest","HIGHEST","the lowest of the quantitities calculated by this action");
 }
 

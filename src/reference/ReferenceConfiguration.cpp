@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -22,6 +22,7 @@
 #include "ReferenceConfiguration.h"
 #include "ReferenceArguments.h"
 #include "ReferenceAtoms.h"
+#include "Direction.h"
 #include "core/Value.h"
 #include "tools/OFile.h"
 #include "tools/PDB.h"
@@ -89,10 +90,6 @@ void ReferenceConfiguration::checkRead(){
   }
 }
 
-bool ReferenceConfiguration::isDirection() const {
-  return ( name=="DIRECTION" );
-}
-
 double ReferenceConfiguration::calculate( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, 
                                           ReferenceValuePack& myder, const bool& squared ) const {
   std::vector<double> tmparg( vals.size() );
@@ -106,6 +103,7 @@ void ReferenceConfiguration::print( const double& lunits, OFile& ofile, const do
 }
 
 void ReferenceConfiguration::print( const double& lunits, SetupMolInfo* mymoldat, OFile& ofile, const std::string& fmt ){
+  ofile.printf("REMARK TYPE=%s\n",getName().c_str() );
   ReferenceArguments* args=dynamic_cast<ReferenceArguments*>(this);
   if( property_names.size()>0 ){
       ofile.printf("REMARK PROPERTIES=%s", property_names[0].c_str() ); 
@@ -156,6 +154,49 @@ double property_distance( ReferenceConfiguration* ref1, ReferenceConfiguration* 
   if(squared) return dist;
   return sqrt(dist);
 }
+
+void ReferenceConfiguration::displaceReferenceConfiguration( const double& weight, Direction& dir ){
+  ReferenceArguments* args=dynamic_cast<ReferenceArguments*>(this);
+  if( args ) args->displaceReferenceArguments( weight, dir.getReferenceArguments() );
+  ReferenceAtoms* atoms=dynamic_cast<ReferenceAtoms*>(this);
+  if( atoms ) atoms->displaceReferenceAtoms( weight, dir.getReferencePositions() );
+}
+
+void ReferenceConfiguration::extractDisplacementVector( const std::vector<Vector>& pos, const std::vector<Value*>& vals, 
+                                                        const std::vector<double>& arg, const bool & anflag, const bool& nflag, 
+                                                        Direction& mydir ) const {
+  const ReferenceAtoms* atoms=dynamic_cast<const ReferenceAtoms*>( this );
+  if( atoms ) atoms->extractAtomicDisplacement( pos, anflag, mydir.reference_atoms );
+  const ReferenceArguments* args=dynamic_cast<const ReferenceArguments*>( this );
+  if( args ) args->extractArgumentDisplacement( vals, arg, mydir.reference_args );
+
+  // Normalize direction if required
+  if( nflag ){
+      // Calculate length of vector
+      double tmp, norm=0;
+      for(unsigned i=0;i<mydir.getReferencePositions().size();++i){
+          for(unsigned k=0;k<3;++k){ tmp=mydir.getReferencePositions()[i][k]; norm+=tmp*tmp; }
+      }
+      for(unsigned i=0;i<mydir.getReferenceArguments().size();++i){ tmp=mydir.getReferenceArguments()[i]; norm+=tmp*tmp; }
+      norm = sqrt( norm );
+      // And normalize
+      for(unsigned i=0;i<mydir.getReferencePositions().size();++i){ 
+          for(unsigned k=0;k<3;++k){ mydir.reference_atoms[i][k] /=norm; }
+      }
+      for(unsigned i=0;i<mydir.getReferenceArguments().size();++i){ mydir.reference_args[i] /= norm; }
+  }
+}
+
+double ReferenceConfiguration::projectDisplacementOnVector( const Direction& mydir, const std::vector<Vector>& pos,
+                                                            const std::vector<Value*>& vals, const std::vector<double>& arg, 
+                                                            ReferenceValuePack& mypack ) const {
+  double proj=0;
+  const ReferenceAtoms* atoms=dynamic_cast<const ReferenceAtoms*>( this );
+  if( atoms ) proj += atoms->projectAtomicDisplacementOnVector( mydir.getReferencePositions(), pos, mypack );
+  const ReferenceArguments* args=dynamic_cast<const ReferenceArguments*>( this );
+  if( args ) proj += args->projectArgDisplacementOnVector( mydir.getReferenceArguments(), vals, arg, mypack );
+  return proj;
+} 
 
 double distance( const Pbc& pbc, const std::vector<Value*> & vals, ReferenceConfiguration* ref1, ReferenceConfiguration* ref2, const bool& squared ){
   unsigned nder;

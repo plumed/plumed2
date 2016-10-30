@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -19,15 +19,17 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#include "BiasRepresentation.h"
 #include "core/Value.h"
 #include "Communicator.h"
-#include "BiasRepresentation.h"
 #include <iostream>
 
 namespace PLMD {
 
+using namespace std;
+
 /// the constructor here
-BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc ):hasgrid(false),rescaledToBias(false),mycomm(cc),BiasGrid_(NULL){
+BiasRepresentation::BiasRepresentation(const vector<Value*> & tmpvalues, Communicator &cc ):hasgrid(false),rescaledToBias(false),mycomm(cc),BiasGrid_(NULL){
     lowI_=0.0;
     uppI_=0.0;
     doInt_=false;
@@ -38,7 +40,7 @@ BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &c
     } 
 }
 /// overload the constructor: add the sigma  at constructor time 
-BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc,  vector<double> sigma ):hasgrid(false), rescaledToBias(false), histosigma(sigma),mycomm(cc),BiasGrid_(NULL){
+BiasRepresentation::BiasRepresentation(const vector<Value*> & tmpvalues, Communicator &cc,  const vector<double> & sigma ):hasgrid(false), rescaledToBias(false), histosigma(sigma),mycomm(cc),BiasGrid_(NULL){
     lowI_=0.0;
     uppI_=0.0;
     doInt_=false;
@@ -49,8 +51,8 @@ BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &c
     } 
 } 
 /// overload the constructor: add the grid at constructor time 
-BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc , vector<string> gmin, vector<string> gmax, 
-                                       vector<unsigned> nbin, bool doInt, double lowI, double uppI ):hasgrid(false), rescaledToBias(false), mycomm(cc), BiasGrid_(NULL){
+BiasRepresentation::BiasRepresentation(const vector<Value*> & tmpvalues, Communicator &cc , const vector<string> & gmin, const vector<string> & gmax, 
+                                       const vector<unsigned> & nbin, bool doInt, double lowI, double uppI ):hasgrid(false), rescaledToBias(false), mycomm(cc), BiasGrid_(NULL){
     ndim=tmpvalues.size();
     for(int  i=0;i<ndim;i++){
          values.push_back(tmpvalues[i]);
@@ -63,7 +65,7 @@ BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &c
     addGrid(gmin,gmax,nbin);
 } 
 /// overload the constructor with some external sigmas: needed for histogram
-BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc , vector<string> gmin, vector<string> gmax, vector<unsigned> nbin , vector<double> sigma):hasgrid(false), rescaledToBias(false),histosigma(sigma),mycomm(cc),BiasGrid_(NULL){
+BiasRepresentation::BiasRepresentation(const vector<Value*> & tmpvalues, Communicator &cc , const vector<string> & gmin, const vector<string> & gmax, const vector<unsigned> & nbin , const vector<double> & sigma):hasgrid(false), rescaledToBias(false),histosigma(sigma),mycomm(cc),BiasGrid_(NULL){
     lowI_=0.0;
     uppI_=0.0;
     doInt_=false;
@@ -81,7 +83,7 @@ BiasRepresentation::~BiasRepresentation(){
   for(unsigned i=0;i<hills.size();i++) delete hills[i];
 }
 
-void  BiasRepresentation::addGrid( vector<string> gmin, vector<string> gmax, vector<unsigned> nbin ){
+void  BiasRepresentation::addGrid( const vector<string> & gmin, const vector<string> & gmax, const vector<unsigned> & nbin ){
     plumed_massert(hills.size()==0,"you can set the grid before loading the hills");
     plumed_massert(hasgrid==false,"to build the grid you should not having the grid in this bias representation");
     string ss; ss="file.free"; 
@@ -162,8 +164,9 @@ void BiasRepresentation::pushKernel( IFile *ifile ){
  	//cerr<<"now with "<<hills.size()<<endl;
         if(hasgrid){
                  vector<unsigned> nneighb;
-                 if(doInt_) nneighb=BiasGrid_->getNbin();
-                 else nneighb=kk->getSupport(BiasGrid_->getDx());
+                 if(doInt_&&(kk->getCenter()[0]+kk->getContinuousSupport()[0] > uppI_ || kk->getCenter()[0]-kk->getContinuousSupport()[0] < lowI_ )) {
+                  nneighb=BiasGrid_->getNbin();
+                 } else nneighb=kk->getSupport(BiasGrid_->getDx());
                  vector<Grid::index_t> neighbors=BiasGrid_->getNeighbors(kk->getCenter(),nneighb);
                  vector<double> der(ndim);
                  vector<double> xx(ndim);

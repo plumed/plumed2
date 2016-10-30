@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -89,6 +89,80 @@ PRINT ARG=theta
 \endverbatim
 (See also \ref PRINT and \ref DISTANCE).
 
+Notice that the matheval library implements a large number of functions (trigonometric, exp, log, etc).
+Among the useful functions, have a look at the step function (that is the Heaviside function).
+`step(x)` is defined as 1 when `x` is positive and `0` when x is negative. This allows for
+a straightforward implementation of if clauses.
+
+For example, imagine that you want to implement a restraint that only acts when a
+distance is larger than 0.5. You can do it with
+\verbatim
+d: DISTANCE ATOMS=10,15
+m: MATHEVAL ARG=d FUNC=0.5*step(0.5-x)+x*step(x-0.5) PERIODIC=NO
+# check the function you are applying:
+PRINT ARG=d,n FILE=checkme
+RESTRAINT ARG=d AT=0.5 KAPPA=10.0
+\endverbatim
+(see also \ref DISTANCE, \ref PRINT, and \ref RESTRAINT)
+
+The meaning of the function `0.5*step(0.5-x)+x*step(x-0.5)` is:
+- If x<0.5 (step(0.5-x)!=0) use 0.5
+- If x>0.5 (step(x-0.5)!=0) use x
+Notice that the same could have been obtained using an \ref UPPER_WALLS
+However, with MATHEVAL you can create way more complex definitions.
+
+\warning If you apply forces on the variable (as in the previous example) you should
+make sure that the variable is continuous!
+Conversely, if you are just analyzing a trajectory you can safely use
+discontinuous variables.
+
+A possible continuity check with gnuplot is
+\verbatim
+# this allow to step function to be used in gnuplot:
+gnuplot> step(x)=0.5*(erf(x*10000000)+1)
+# here you can test your function
+gnuplot> p 0.5*step(0.5-x)+x*step(x-0.5)
+\endverbatim
+
+Also notice that you can easily make logical operations on the conditions that you
+create. The equivalent of the AND operator is the product: `step(1.0-x)*step(x-0.5)` is
+only equal to 1 when x is between 0.5 and 1.0. By combining negation and AND you can obtain an OR. That is,
+`1-step(1.0-x)*step(x-0.5)` is only equal to 1 when x is outside the 0.5-1.0 interval.
+
+MATHEVAL can be used in combination with \ref DISTANCE to implement variants of the
+DISTANCE keyword that were present in PLUMED 1.3 and that allowed to compute
+the distance of a point from a line defined by two other points, or the progression
+along that line.
+\verbatim
+# take center of atoms 1 to 10 as reference point 1
+p1: CENTER ATOMS=1-10
+# take center of atoms 11 to 20 as reference point 2
+p2: CENTER ATOMS=11-20
+# take center of atoms 21 to 30 as reference point 3
+p3: CENTER ATOMS=21-30
+
+# compute distances
+d12: DISTANCE ATOMS=p1,p2
+d13: DISTANCE ATOMS=p1,p3
+d23: DISTANCE ATOMS=p2,p3
+
+# compute progress variable of the projection of point p3
+# along the vector joining p1 and p2
+# notice that progress is measured from the middle point
+onaxis: MATHEVAL ARG=d13,d23,d12 FUNC=(0.5*(y^2-x^2)/z) PERIODIC=NO
+
+# compute between point p3 and the vector joining p1 and p2
+fromaxis: MATHEVAL ARG=d13,d23,d12,onaxis VAR=x,y,z,o FUNC=(0.5*(y^2+x^2)-o^2-0.25*z^2) PERIODIC=NO
+
+PRINT ARG=onaxis,fromaxis
+
+\endverbatim
+
+Notice that these equations have been used to combine \ref RMSD
+from different snapshots of a protein so as to define
+progression (S) and distance (Z) variables \cite perez2015atp.
+
+
 */
 //+ENDPLUMEDOC
 
@@ -103,7 +177,7 @@ class Matheval :
   vector<double> values;
   vector<char*> names;
 public:
-  Matheval(const ActionOptions&);
+  explicit Matheval(const ActionOptions&);
   ~Matheval();
   void calculate();
   static void registerKeywords(Keywords& keys);
@@ -170,6 +244,9 @@ names(getNumberOfArguments())
   log.printf("  with variables :");
   for(unsigned i=0;i<var.size();i++) log.printf(" %s",var[i].c_str());
   log.printf("\n");
+  log.printf("  function as parsed by matheval: %s\n", evaluator_get_string(evaluator));
+  log.printf("  derivatives as computed by matheval:\n");
+  for(unsigned i=0;i<var.size();i++) log.printf("    %s\n",evaluator_get_string(evaluator_deriv[i]));
 }
 
 void Matheval::calculate(){

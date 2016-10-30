@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -100,11 +100,11 @@ public:
 /// clear the structure
   void clear();
 /// set reference, align and displace from input pdb structure: evtl remove com from the initial structure and normalize the input weights from the pdb 
-  void set(const PDB&, std::string mytype, bool remove_center=true, bool normalize_weights=true);
+  void set(const PDB&,const std::string & mytype, bool remove_center=true, bool normalize_weights=true);
 /// set align displace reference and type from input vectors
-  void set(const std::vector<double> & align, const std::vector<double> & displace, const std::vector<Vector> & reference , std::string mytype, bool remove_center=true , bool normalize_weights=true );
+  void set(const std::vector<double> & align, const std::vector<double> & displace, const std::vector<Vector> & reference ,const std::string & mytype, bool remove_center=true , bool normalize_weights=true );
 /// set the type of alignment we are doing
-  void setType(std::string mytype);
+  void setType(const std::string & mytype);
 /// set reference coordinates, remove the com by using uniform weights
   void setReference(const std::vector<Vector> & reference);
 /// set weights and remove the center from reference with normalized weights. If the com has been removed, it resets to the new value

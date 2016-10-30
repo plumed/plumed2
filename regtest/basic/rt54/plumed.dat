@@ -23,7 +23,7 @@ DUMPATOMS FILE=helix-pr.gro ATOMS=1-132 PRECISION=12
 DUMPATOMS FILE=helix-pr.xyz ATOMS=1-132 PRECISION=12
 
 # dump only a subset, plus a fictitious atom (without molinfo data)
-c: COM ATOMS=1-6,127-132 NOPBC
+c: CENTER ATOMS=1-6,127-132 NOPBC
 DUMPATOMS FILE=helix-sub.xyz ATOMS=1-6,127-132,c
 DUMPATOMS FILE=helix-sub.gro ATOMS=1-6,127-132,c
 

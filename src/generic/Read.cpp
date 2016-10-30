@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -67,6 +67,7 @@ public ActionWithValue
 {
 private:
   bool ignore_time;
+  bool ignore_forces;
   bool cloned_file;
   unsigned nlinesPerStep;
   std::string filename;
@@ -74,7 +75,7 @@ private:
   std::vector<Value*> readvals;
 public:
   static void registerKeywords( Keywords& keys );
-  Read(const ActionOptions&);
+  explicit Read(const ActionOptions&);
   ~Read();
   void prepare();
   void apply(){}
@@ -98,6 +99,8 @@ void Read::registerKeywords(Keywords& keys){
   keys.add("compulsory","FILE","the name of the file from which to read these quantities");
   keys.addFlag("IGNORE_TIME",false,"ignore the time in the colvar file. When this flag is not present read will be quite strict "
                                    "about the start time of the simulation and the stride between frames");
+  keys.addFlag("IGNORE_FORCES",false,"use this flag if the forces added by any bias can be safely ignored.  As an example forces can be "
+                                     "safely ignored if you are doing postprocessing that does not involve outputting forces");
   keys.remove("NUMERICAL_DERIVATIVES");
   keys.use("UPDATE_FROM");
   keys.use("UPDATE_UNTIL");
@@ -109,12 +112,15 @@ Action(ao),
 ActionPilot(ao),
 ActionWithValue(ao),
 ignore_time(false),
+ignore_forces(false),
 nlinesPerStep(1)
 {
   // Read the file name from the input line
   parse("FILE",filename);
   // Check if time is to be ignored
   parseFlag("IGNORE_TIME",ignore_time);
+  // Check if forces are to be ignored
+  parseFlag("IGNORE_FORCES",ignore_forces);
   // Open the file if it is not already opened
   cloned_file=false;
   std::vector<Read*> other_reads=plumed.getActionSet().select<Read*>();
@@ -147,25 +153,25 @@ nlinesPerStep(1)
          ifile->scanFieldList( fieldnames );
          for(unsigned i=0;i<fieldnames.size();++i){
              if( fieldnames[i].substr(0,dot)==label ){
-                 readvals.push_back(new Value(this, fieldnames[i], false) ); addComponent( fieldnames[i].substr(dot+1) ); 
+                 readvals.push_back(new Value(this, fieldnames[i], false) ); addComponentWithDerivatives( fieldnames[i].substr(dot+1) ); 
                  if( ifile->FieldExist("min_" + fieldnames[i]) ) componentIsPeriodic( fieldnames[i].substr(dot+1), "-pi","pi" );
                  else componentIsNotPeriodic( fieldnames[i].substr(dot+1) );
              }
          }
       } else {
-         readvals.push_back(new Value(this, valread[0], false) ); addComponent( name ); 
+         readvals.push_back(new Value(this, valread[0], false) ); addComponentWithDerivatives( name ); 
          if( ifile->FieldExist("min_" + valread[0]) ) componentIsPeriodic( valread[0].substr(dot+1), "-pi", "pi" );
          else componentIsNotPeriodic( valread[0].substr(dot+1) );
          for(unsigned i=1;i<valread.size();++i) {
              if( valread[i].substr(0,dot)!=label ) error("all values must be from the same Action when using READ");;
-             readvals.push_back(new Value(this, valread[i], false) ); addComponent( valread[i].substr(dot+1) ); 
+             readvals.push_back(new Value(this, valread[i], false) ); addComponentWithDerivatives( valread[i].substr(dot+1) ); 
              if( ifile->FieldExist("min_" + valread[i]) ) componentIsPeriodic( valread[i].substr(dot+1), "-pi", "pi" );
              else componentIsNotPeriodic( valread[i].substr(dot+1) );
          }
       }
   } else {
       if( valread.size()!=1 ) error("all values must be from the same Action when using READ");
-      readvals.push_back(new Value(this, valread[0], false) ); addValue();
+      readvals.push_back(new Value(this, valread[0], false) ); addValueWithDerivatives();
       if( ifile->FieldExist("min_" + valread[0]) ) setPeriodic( "-pi", "pi" ); 
       else setNotPeriodic();
       log.printf("  reading value %s and storing as %s\n",valread[0].c_str() ,getLabel().c_str() );   
@@ -191,7 +197,8 @@ unsigned Read::getNumberOfDerivatives(){
 }
 
 void Read::turnOnDerivatives(){
-  error("cannot calculate derivatives for colvars that are read in from a file");
+  if( !ignore_forces ) error("cannot calculate derivatives for colvars that are read in from a file.  If you are postprocessing and "
+                             "these forces do not matter add the flag IGNORE_FORCES to all READ actions");
 }
 
 void Read::prepare(){

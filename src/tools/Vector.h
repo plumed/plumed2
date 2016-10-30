@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -23,6 +23,7 @@
 #define __PLUMED_tools_Vector_h
 
 #include <cmath>
+#include <iosfwd>
 #include "LoopUnroller.h"
 
 #ifdef _GLIBCXX_DEBUG
@@ -146,6 +147,10 @@ public:
 /// friend version of modulo (to simplify some syntax)
   template<unsigned m>
   friend double modulo(const VectorGeneric<m>&);
+/// << operator.
+/// Allows printing vector `v` with `std::cout<<v;`
+  template<unsigned m>
+  friend std::ostream & operator<<(std::ostream &os, const VectorGeneric<m>&);
 };
 
 template<>
@@ -178,8 +183,6 @@ void VectorGeneric<n>::zero(){
 }
 
 template <unsigned n>
-// notice that d[] is initialized in LoopUnroller<n>::_zero(d)
-// cppcheck-suppress uninitMemberVar
 VectorGeneric<n>::VectorGeneric(){
   LoopUnroller<n>::_zero(d);
 }
@@ -316,6 +319,13 @@ double modulo2(const VectorGeneric<n>&v){
 template<unsigned n>
 double modulo(const VectorGeneric<n>&v){
   return v.modulo();
+}
+
+template<unsigned n>
+std::ostream & operator<<(std::ostream &os, const VectorGeneric<n>& v){
+  for(unsigned i=0;i<n-1;i++) os<<v(i)<<" ";
+  os<<v(n-1);
+  return os;
 }
 
 

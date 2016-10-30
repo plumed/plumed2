@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "tools/Communicator.h"
 #include "ActionWithVessel.h"
+#include "tools/Communicator.h"
 #include "Vessel.h"
 #include "ShortcutVessel.h"
 #include "StoreDataVessel.h"
@@ -40,10 +40,6 @@ void ActionWithVessel::registerKeywords(Keywords& keys){
                           "terms are numbers inbetween zero and one it is assumed that terms less than a certain tolerance "
                           "make only a small contribution to the sum.  They can thus be safely ignored as can the the derivatives "
                           "wrt these small quantities.");
-  keys.reserve("hidden","NL_TOL","this keyword can be used to speed up your calculation.  It must be used in conjuction with the TOL "
-                                 "keyword and the value for NL_TOL must be set less than the value for TOL.  This keyword ensures that "
-                                 "quantities, which are much less than TOL and which will thus not added to the sums being accumulated "
-                                 "are not calculated at every step. They are only calculated when the neighbor list is updated.");
   keys.add("hidden","MAXDERIVATIVES","The maximum number of derivatives that can be used when storing data.  This controls when "
                                      "we have to start using lowmem");
   keys.addFlag("SERIAL",false,"do the calculation in serial.  Do not parallelize");
@@ -59,10 +55,13 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   lowmem(false),
   noderiv(true),
   actionIsBridged(false),
-  mydata(NULL),
+  nactive_tasks(0),
+  stopwatch(*new Stopwatch),
+  dertime_can_be_off(false),
+  dertime(true),
   contributorsAreUnlocked(false),
   weightHasDerivatives(false),
-  stopwatch(*new Stopwatch)
+  mydata(NULL)
 {
   maxderivatives=309; parse("MAXDERIVATIVES",maxderivatives);
   if( keywords.exists("SERIAL") ) parseFlag("SERIAL",serial);
@@ -71,7 +70,10 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   if( keywords.exists("LOWMEM") ){
      plumed_assert( !keywords.exists("HIGHMEM") );
      parseFlag("LOWMEM",lowmem);
-     if(lowmem)log.printf("  lowering memory requirements\n");
+     if(lowmem){ 
+        log.printf("  lowering memory requirements\n");
+        dertime_can_be_off=true;
+     }
   } 
   if( keywords.exists("HIGHMEM") ){
      plumed_assert( !keywords.exists("LOWMEM") );
@@ -82,11 +84,7 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   tolerance=nl_tolerance=epsilon; 
   if( keywords.exists("TOL") ) parse("TOL",tolerance);
   if( tolerance>epsilon){
-     if( keywords.exists("NL_TOL") ) parse("NL_TOL",nl_tolerance);
-     if( nl_tolerance>tolerance ) error("NL_TOL must be smaller than TOL"); 
-     log.printf(" Ignoring contributions less than %f",tolerance);
-     if( nl_tolerance>epsilon ) log.printf(" and ignoring quantities less than %f inbetween neighbor list update steps\n",nl_tolerance);
-     else log.printf("\n");
+     log.printf(" Ignoring contributions less than %f \n",tolerance);
   }
   parseFlag("TIMINGS",timers);
   stopwatch.start(); stopwatch.pause();
@@ -121,24 +119,28 @@ void ActionWithVessel::addVessel( Vessel* vv ){
   StoreDataVessel* mm=dynamic_cast<StoreDataVessel*>( vv );
   if( mydata && mm ) error("cannot have more than one StoreDataVessel in one action");
   else if( mm ) mydata=mm;
+  else dertime_can_be_off=false; 
 }
 
 BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ){
   VesselOptions da("","",0,"",this); 
   BridgeVessel* bv=new BridgeVessel(da);
   bv->setOutputAction( tome );
-  tome->actionIsBridged=true;
+  tome->actionIsBridged=true; dertime_can_be_off=false;
   functions.push_back( dynamic_cast<Vessel*>(bv) );
   resizeFunctions();
   return bv; 
 }
 
-StoreDataVessel* ActionWithVessel::buildDataStashes( const bool& allow_wcutoff, const double& wtol ){
-  if(mydata) return mydata;
-  
+StoreDataVessel* ActionWithVessel::buildDataStashes( ActionWithVessel* actionThatUses ){
+  if(mydata){
+     if( actionThatUses ) mydata->addActionThatUses( actionThatUses );  
+     return mydata;
+  } 
+ 
   VesselOptions da("","",0,"",this);
   StoreDataVessel* mm=new StoreDataVessel(da);
-  if( allow_wcutoff ) mm->setHardCutoffOnWeight( wtol );
+  if( actionThatUses ) mm->addActionThatUses( actionThatUses );
   addVessel(mm);
 
   // Make sure resizing of vessels is done
@@ -148,10 +150,8 @@ StoreDataVessel* ActionWithVessel::buildDataStashes( const bool& allow_wcutoff, 
 }
 
 void ActionWithVessel::addTaskToList( const unsigned& taskCode ){
-  indexOfTaskInFullList.push_back( fullTaskList.size() );
-  fullTaskList.push_back( taskCode ); partialTaskList.push_back( taskCode ); 
-  taskFlags.push_back(0); nactive_tasks = fullTaskList.size();
-  plumed_assert( partialTaskList.size()==nactive_tasks && indexOfTaskInFullList.size()==nactive_tasks && taskFlags.size()==nactive_tasks );
+  fullTaskList.push_back( taskCode ); taskFlags.push_back(0); 
+  plumed_assert( fullTaskList.size()==taskFlags.size() );
 }
 
 void ActionWithVessel::readVesselKeywords(){
@@ -163,29 +163,21 @@ void ActionWithVessel::readVesselKeywords(){
       std::string thiskey,input; thiskey=keywords.getKeyword(i);
       // Check if this is a key for a vessel
       if( vesselRegister().check(thiskey) ){
-          // If the keyword is a flag read it in as a flag
-          if( keywords.style(thiskey,"flag") ){
-              bool dothis; parseFlag(thiskey,dothis);
-              if(dothis) addVessel( thiskey, input );
-          // If it is numbered read it in as a numbered thing
-          } else if( keywords.numbered(thiskey) ) {
-              parse(thiskey,input);
-              if(input.size()!=0){ 
-                    addVessel( thiskey, input );
-              } else {
-                 for(unsigned i=1;;++i){
-                    if( !parseNumbered(thiskey,i,input) ) break;
-                    std::string ss; Tools::convert(i,ss);
-                    addVessel( thiskey, input, i ); 
-                    input.clear();
-                 } 
-              }
-          // Otherwise read in the keyword the normal way
+          plumed_assert( keywords.style(thiskey,"vessel") );
+          bool dothis=false; parseFlag(thiskey,dothis);
+          if(dothis) addVessel( thiskey, input );
+
+          parse(thiskey,input);
+          if(input.size()!=0){ 
+                addVessel( thiskey, input );
           } else {
-              parse(thiskey, input);
-              if(input.size()!=0) addVessel(thiskey,input);
+             for(unsigned i=1;;++i){
+                if( !parseNumbered(thiskey,i,input) ) break;
+                std::string ss; Tools::convert(i,ss);
+                addVessel( thiskey, input, i ); 
+                input.clear();
+             } 
           }
-          input.clear();
       }
   }
 
@@ -201,7 +193,7 @@ void ActionWithVessel::needsDerivatives(){
   // Turn on the derivatives and resize
   noderiv=false; resizeFunctions(); 
   // Setting contributors unlocked here ensures that link cells are ignored
-  contributorsAreUnlocked=true; finishTaskListUpdate(); contributorsAreUnlocked=false;
+  contributorsAreUnlocked=true; contributorsAreUnlocked=false;
   // And turn on the derivatives in all actions on which we are dependent
   for(unsigned i=0;i<getDependencies().size();++i){
       ActionWithVessel* vv=dynamic_cast<ActionWithVessel*>( getDependencies()[i] );
@@ -209,64 +201,40 @@ void ActionWithVessel::needsDerivatives(){
   }
 }
 
-void ActionWithVessel::unlockContributors(){
-  if( contributorsAreUnlocked ) return;
-  nactive_tasks = fullTaskList.size();
-  for(unsigned i=0;i<fullTaskList.size();++i){ 
-     partialTaskList[i] = fullTaskList[i]; taskFlags[i]=0; 
-     indexOfTaskInFullList[i]=i;
-  }
-  finishTaskListUpdate();
-  contributorsAreUnlocked=true;
-  resizeFunctions();
-}
-
 void ActionWithVessel::lockContributors(){
   nactive_tasks = 0;
   for(unsigned i=0;i<fullTaskList.size();++i){
+      if( taskFlags[i]>0 ) nactive_tasks++;
+  }
+
+  unsigned n=0;
+  partialTaskList.resize( nactive_tasks );
+  indexOfTaskInFullList.resize( nactive_tasks );  
+  for(unsigned i=0;i<fullTaskList.size();++i){
       // Deactivate sets inactive tasks to number not equal to zero
-      if( taskFlags[i]==0 ){
-          partialTaskList[nactive_tasks] = fullTaskList[i]; 
-          indexOfTaskInFullList[nactive_tasks]=i;
-          nactive_tasks++; 
+      if( taskFlags[i]>0 ){
+          partialTaskList[n] = fullTaskList[i]; 
+          indexOfTaskInFullList[n]=i;
+          n++; 
       } 
   }
+  plumed_dbg_assert( n==nactive_tasks );
+  for(unsigned i=0;i<functions.size();++i){
+     BridgeVessel* bb = dynamic_cast<BridgeVessel*>( functions[i] );
+     if( bb ) bb->copyTaskFlags();
+  }
+  // Resize mydata to accomodate all active tasks
+  if( mydata ) mydata->resize();
   contributorsAreUnlocked=false;
-  finishTaskListUpdate();
-  resizeFunctions();
 }
 
 void ActionWithVessel::deactivateAllTasks(){
   contributorsAreUnlocked=true; nactive_tasks = 0;
+  taskFlags.assign(taskFlags.size(),0);
 }
 
-void ActionWithVessel::activateTheseTasks( std::vector<unsigned>& additionalTasks ){
-  plumed_dbg_assert( additionalTasks.size()==fullTaskList.size() );
-  // Activate tasks that are already active locally
-  for(unsigned i=0;i<nactive_tasks;++i) additionalTasks[ indexOfTaskInFullList[i] ] = 1;
-
-  nactive_tasks = 0;
-  for(unsigned i=0;i<fullTaskList.size();++i){
-      // Deactivate sets inactive tasks to number not equal to zero
-      if( additionalTasks[i]>0 ){
-          partialTaskList[nactive_tasks] = fullTaskList[i]; 
-          indexOfTaskInFullList[nactive_tasks]=i;
-          nactive_tasks++;
-      } else {
-          taskFlags[i]=1;
-      }
-  }
-  contributorsAreUnlocked=false;
-}
-
-void ActionWithVessel::deactivate_task( const unsigned & task_index ){
-  plumed_dbg_assert( contributorsAreUnlocked );
-  taskFlags[task_index]=1;
-}
-
-void ActionWithVessel::deactivateTasksInRange( const unsigned& lower, const unsigned& upper ){
-  plumed_dbg_assert( contributorsAreUnlocked && lower<upper && upper<taskFlags.size() );
-  for(unsigned i=lower;i<upper;++i) taskFlags[i]=1;
+bool ActionWithVessel::taskIsCurrentlyActive( const unsigned& index ) const {
+  plumed_dbg_assert( index<taskFlags.size() ); return (taskFlags[index]>0);
 }
 
 void ActionWithVessel::doJobsRequiredBeforeTaskList(){
@@ -285,8 +253,7 @@ unsigned ActionWithVessel::getSizeOfBuffer( unsigned& bufsize ){
 }
 
 void ActionWithVessel::runAllTasks(){
-  if( getExchangeStep() && nactive_tasks!=fullTaskList.size()  ) error("contributors must be unlocked during exchange steps");
-  plumed_massert( functions.size()>0, "you must have a call to readVesselKeywords somewhere" );
+  plumed_massert( !contributorsAreUnlocked && functions.size()>0, "you must have a call to readVesselKeywords somewhere" );
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
   if(serial){ stride=1; rank=0; }
@@ -298,14 +265,15 @@ void ActionWithVessel::runAllTasks(){
 
   // Get number of threads for OpenMP
   unsigned nt=OpenMP::getNumThreads();
-  if( nt*stride*10>nactive_tasks) nt=nactive_tasks/stride/10;
-  if( nt==0 ) nt=1;
+  if( nt*stride*10>nactive_tasks ) nt=nactive_tasks/stride/10;
+  if( nt==0 || !threadSafe() ) nt=1;
 
   // Get size for buffer
   unsigned bsize=0, bufsize=getSizeOfBuffer( bsize ); 
   // Clear buffer
   buffer.assign( buffer.size(), 0.0 );
-
+  // Switch off calculation of derivatives in main loop
+  if( dertime_can_be_off ) dertime=false;
   // std::vector<unsigned> der_list;
   // if( mydata ) der_list.resize( mydata->getSizeOfDerivativeList(), 0 ); 
 
@@ -325,15 +293,11 @@ void ActionWithVessel::runAllTasks(){
   for(unsigned i=rank;i<nactive_tasks;i+=stride){
       // Calculate the stuff in the loop for this action
       performTask( indexOfTaskInFullList[i], partialTaskList[i], myvals );
-      // Weight should be between zero and one
-      plumed_dbg_assert( myvals.get(0)>=0 && myvals.get(0)<=1.0 );
 
       // Check for conditions that allow us to just to skip the calculation
       // the condition is that the weight of the contribution is low 
       // N.B. Here weights are assumed to be between zero and one
       if( myvals.get(0)<tolerance ){
-         // Deactivate task if it is less than the neighbor list tolerance
-         if( myvals.get(0)<nl_tolerance && contributorsAreUnlocked ) deactivate_task( indexOfTaskInFullList[i] );
          // Clear the derivatives
          myvals.clearAll();
          continue;
@@ -343,9 +307,9 @@ void ActionWithVessel::runAllTasks(){
       // If the contribution of this quantity is very small at neighbour list time ignore it
       // untill next neighbour list time
       if( nt>1 ){
-          if( !calculateAllVessels( indexOfTaskInFullList[i], myvals, bvals, omp_buffer, der_list ) && contributorsAreUnlocked ) deactivate_task( indexOfTaskInFullList[i] );
+          calculateAllVessels( indexOfTaskInFullList[i], myvals, bvals, omp_buffer, der_list );
       } else {
-          if( !calculateAllVessels( indexOfTaskInFullList[i], myvals, bvals, buffer, der_list ) && contributorsAreUnlocked ) deactivate_task( indexOfTaskInFullList[i] );
+          calculateAllVessels( indexOfTaskInFullList[i], myvals, bvals, buffer, der_list );
       }
 
       // Clear the value
@@ -355,6 +319,8 @@ void ActionWithVessel::runAllTasks(){
   if(nt>1) for(unsigned i=0;i<bufsize;++i) buffer[i]+=omp_buffer[i];
 }
   if(timers) stopwatch.stop("2 Loop over tasks");
+  // Turn back on derivative calculation
+  dertime=true;
 
   if(timers) stopwatch.start("3 MPI gather");
   // MPI Gather everything
@@ -365,7 +331,6 @@ void ActionWithVessel::runAllTasks(){
   }
   // Update the elements that are makign contributions to the sum here
   // this causes problems if we do it in prepare
-  if( !serial && contributorsAreUnlocked ) comm.Sum( taskFlags );
   if(timers) stopwatch.stop("3 MPI gather");
 
   if(timers) stopwatch.start("4 Finishing computations");
@@ -377,15 +342,14 @@ void ActionWithVessel::transformBridgedDerivatives( const unsigned& current, Mul
   plumed_error();
 }
 
-bool ActionWithVessel::calculateAllVessels( const unsigned& taskCode, MultiValue& myvals, MultiValue& bvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ){
-  bool keep=false; 
+void ActionWithVessel::calculateAllVessels( const unsigned& taskCode, MultiValue& myvals, MultiValue& bvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ){
   for(unsigned j=0;j<functions.size();++j){
       // Calculate returns a bool that tells us if this particular
       // quantity is contributing more than the tolerance
-      if( functions[j]->calculate( taskCode, functions[j]->transformDerivatives(taskCode, myvals, bvals), buffer, der_list ) ) keep=true;
-      if( !actionIsBridged && bvals.getNumberActive()>0 ) bvals.clearAll(); 
+      functions[j]->calculate( taskCode, functions[j]->transformDerivatives(taskCode, myvals, bvals), buffer, der_list );
+      if( !actionIsBridged ) bvals.clearAll(); 
   }
-  return keep;
+  return;
 }
 
 void ActionWithVessel::finishComputations( const std::vector<double>& buffer ){

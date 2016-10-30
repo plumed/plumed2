@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -30,7 +30,7 @@ class Mean : public FunctionVessel {
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
-  Mean( const vesselbase::VesselOptions& da );
+  explicit Mean( const vesselbase::VesselOptions& da );
   std::string value_descriptor();
   double calcTransform( const double& val, double& dv ) const ;
 };
@@ -42,7 +42,7 @@ void Mean::registerKeywords( Keywords& keys ){
 }
 
 void Mean::reserveKeyword( Keywords& keys ){
-  keys.reserveFlag("MEAN",false,"take the mean of these variables.",true);
+  keys.reserve("vessel","MEAN","take the mean of these variables.");
   keys.addOutputComponent("mean","MEAN","the mean value. The output component can be refererred to elsewhere in the input "
                                         "file by using the label.mean");
 }

@@ -12,13 +12,15 @@ endif
 # rule for c++
 %.o: %.cpp
 	@echo "compiling " $*.cpp
+	@-test -d deps || mkdir deps
+ifneq ($(disable_dependency_tracking),yes)
 	$(AT)$(CXXDEP) -c -MM -MF$*.d $(CPPFLAGS) $(ADDCPPFLAGS) $(CXXFLAGS) $*.cpp
 	@cp -f $*.d $*.d.tmp
-	@-test -d deps || mkdir deps
 	@sed -e 's/.*://' -e 's/\\$$//' < $*.d.tmp | fmt -1 | \
 	 sed -e 's/^ *//' -e 's/$$/:/' >> $*.d
 	@mv $*.d deps/$*.d
 	@rm -f $*.d.tmp
+endif
 ifndef XLF
 	$(AT)$(CXX) -c $(CPPFLAGS) $(ADDCPPFLAGS) $(CXXFLAGS) $*.cpp -o $*.o
 endif
@@ -26,17 +28,19 @@ endif
 # rule for c
 %.o: %.c
 	@echo "compiling " $*.c
+	@-test -d deps || mkdir deps
+ifneq ($(disable_dependency_tracking),yes)
 	$(AT)$(CXXDEP) -c -MM -MF$*.d $(CPPFLAGS) $(ADDCPPFLAGS) $(CFLAGS) $*.c -o $*.o
 	@cp -f $*.d $*.d.tmp
-	@-test -d deps || mkdir deps
 	@sed -e 's/.*://' -e 's/\\$$//' < $*.d.tmp | fmt -1 | \
 	 sed -e 's/^ *//' -e 's/$$/:/' >> $*.d
 	@mv $*.d deps/$*.d
 	@rm -f $*.d.tmp
+endif
 ifndef XLF
 	$(AT)$(CC) -c $(CPPFLAGS) $(ADDCPPFLAGS) $(CFLAGS) $*.c -o $*.o
 endif
 
 #
-CLEANLIST=*~ *.tmp *.xxd *.o *.so *.dylib
+CLEANLIST=*~ *.tmp *.xxd *.o *.so *.dylib *.gcda *.gcno
 

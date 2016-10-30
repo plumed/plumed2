@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -32,7 +32,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
-  Max( const VesselOptions& da );
+  explicit Max( const VesselOptions& da );
   std::string value_descriptor();
   double calcTransform( const double& val, double& dv ) const ;
   double finalTransform( const double& val, double& dv );
@@ -46,10 +46,10 @@ void Max::registerKeywords( Keywords& keys ){
 }
 
 void Max::reserveKeyword( Keywords& keys ){
-  keys.reserve("optional","MAX","calculate the maximum value. "
+  keys.reserve("vessel","MAX","calculate the maximum value. "
                                 "To make this quantity continuous the maximum is calculated using "
                                 "\\f$ \\textrm{max} = \\beta \\log \\sum_i \\exp\\left( \\frac{s_i}{\\beta}\\right) \\f$ "
-                                "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$)",true);
+                                "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$)");
   keys.addOutputComponent("max","MAX","the maximum value. This is calculated using the formula described in the description of the "
                                       "keyword so as to make it continuous.");
 

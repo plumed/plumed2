@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -87,7 +87,7 @@ private:
   unsigned myc1, myc2;
 public:
   static void registerKeywords( Keywords& keys );
-  XYDistances(const ActionOptions&);
+  explicit XYDistances(const ActionOptions&);
 // active methods:
   virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
 /// Returns the number of coordinates of the field
@@ -123,7 +123,9 @@ PLUMED_MULTICOLVAR_INIT(ao)
   } else plumed_error();
 
   // Read in the atoms
-  int natoms=2; readAtoms( natoms );
+  std::vector<AtomNumber> all_atoms;
+  readTwoGroups( "GROUP", "GROUPA", "GROUPB", all_atoms );
+  int natoms=2; readAtoms( natoms, all_atoms );
   // And check everything has been read in correctly
   checkRead();
 }
@@ -136,8 +138,8 @@ double XYDistances::compute( const unsigned& tindex, AtomValuePack& myatoms ) co
 
    Vector myvec; myvec.zero(); 
    // And finish the calculation
-   myvec[myc1]=+invvalue*distance[myc1]; myvec[myc2]=+invvalue*distance[myc2]; myatoms.addAtomsDerivatives( 1, 1, myvec  );
-   myvec[myc1]=-invvalue*distance[myc1]; myvec[myc2]=-invvalue*distance[myc2]; myatoms.addAtomsDerivatives( 1, 0, myvec );
+   myvec[myc1]=+invvalue*distance[myc1]; myvec[myc2]=+invvalue*distance[myc2]; addAtomDerivatives( 1, 1, myvec, myatoms  );
+   myvec[myc1]=-invvalue*distance[myc1]; myvec[myc2]=-invvalue*distance[myc2]; addAtomDerivatives( 1, 0, myvec, myatoms );
    myatoms.addBoxDerivatives( 1, Tensor(distance,myvec) );
    return value;
 }

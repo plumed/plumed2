@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014,2015 The plumed team
+   Copyright (c) 2014-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -38,6 +38,10 @@ private:
   unsigned nderivatives;
 /// Derivatives
   std::vector<double> derivatives;
+/// Tempory value
+  double tmpval;
+/// Tempory vector of derivatives (used for calculating quotients
+  std::vector<double> tmpder;
 /// Logical to check if any derivatives were set
   bool atLeastOneSet;
 /// This is a fudge to save on vector resizing in MultiColvar
@@ -60,14 +64,22 @@ public:
   void addValue( const unsigned&,  const double& );
 /// Add derivative
   void addDerivative( const unsigned& , const unsigned& , const double& );
+/// Add to the tempory value
+  void addTemporyValue( const double& val );
+/// Add tempory derivatives - this is used for calculating quotients
+  void addTemporyDerivative( const unsigned& jder, const double& der );
 /// Set the value of the derivative
   void setDerivative( const unsigned& ival, const unsigned& jder, const double& der);
 /// Return the ith value
   double get( const unsigned& ) const ;
 /// Return a derivative value
   double getDerivative( const unsigned&, const unsigned& ) const ;
+/// Get one of the tempory derivatives
+  double getTemporyDerivative( const unsigned& jder ) const ; 
 /// Clear all values
   void clearAll();
+/// Clear the tempory derivatives
+  void clearTemporyDerivatives();
 /// Clear a value
   void clear( const unsigned& );
 /// Functions for accessing active list
@@ -90,7 +102,7 @@ public:
 ///
   void copyDerivatives( MultiValue& );
 ///
-  void quotientRule( const unsigned& nder, const unsigned& dder, const unsigned& oder );
+  void quotientRule( const unsigned& nder, const unsigned& oder );
 };
 
 inline
@@ -128,6 +140,18 @@ void MultiValue::addDerivative( const unsigned& ival, const unsigned& jder, cons
 }
 
 inline
+void MultiValue::addTemporyValue( const double& val ){
+  tmpval += val;
+}
+
+inline
+void MultiValue::addTemporyDerivative( const unsigned& jder, const double& der ){
+  plumed_dbg_assert( jder<nderivatives ); atLeastOneSet=true;
+  hasDerivatives.activate(jder); tmpder[jder] += der;
+}
+
+
+inline
 void MultiValue::setDerivative( const unsigned& ival, const unsigned& jder, const double& der){
   plumed_dbg_assert( ival<=values.size() && jder<nderivatives ); atLeastOneSet=true;
   hasDerivatives.activate(jder); derivatives[nderivatives*ival+jder]=der;
@@ -138,6 +162,12 @@ inline
 double MultiValue::getDerivative( const unsigned& ival, const unsigned& jder ) const {
   plumed_dbg_assert( jder<nderivatives && hasDerivatives.isActive(jder) );
   return derivatives[nderivatives*ival+jder];
+}
+
+inline
+double MultiValue::getTemporyDerivative( const unsigned& jder ) const {
+  plumed_dbg_assert( jder<nderivatives && hasDerivatives.isActive(jder) );
+  return tmpder[jder];
 }
 
 inline
@@ -183,7 +213,7 @@ unsigned MultiValue::getActiveIndex( const unsigned& ind ) const {
 
 inline
 void MultiValue::updateDynamicList(){
-  hasDerivatives.updateActiveMembers();
+  if( atLeastOneSet ) hasDerivatives.updateActiveMembers();
 }
 
 inline

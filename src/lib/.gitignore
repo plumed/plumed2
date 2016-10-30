@@ -3,3 +3,5 @@
 /compile_options.sh
 /plumed-*
 /plumed
+/install
+/plumed.vim

@@ -20,15 +20,13 @@ echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo "+ Test session ended at $(date)"
 
 dirs=$(
-  for mod in `./scripts/find_modules.sh` ; do 
-    for file in $mod/rt*/Makefile
+  ll=$(ls */Makefile)
+  ll=${ll///Makefile/ }
+  for d in $ll ; do
+    for file in $d/rt*/Makefile
     do
       echo ${file%Makefile}
     done
-  done
-  for file in basic/rt*/Makefile
-  do
-    echo ${file%Makefile}
   done
 )
 
@@ -66,6 +64,17 @@ echo "+ type 'make reset'"
 if [ -n "$fail" ] ; then
   exit 1
 fi
+fi
+
+if [ "$PLUMED_ALL_TESTS" = yes ] ; then
+  if (($notapp>0)) ; then
+    echo "+ You are running with PLUMED_ALL_TESTS=yes and some tests are not appliable"
+    echo "+ This is likely happening on the first job under TRAVIS-CI"
+    echo "+ Please check that all modules have been properly enabled!"
+    if [ -n "$fail" ] ; then
+      exit 1
+    fi
+  fi
 fi
 echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo

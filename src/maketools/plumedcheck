@@ -1,0 +1,361 @@
+#! /bin/bash
+
+TEMP=$(mktemp)
+
+cat > $TEMP << \EOF
+
+# print usage 
+function usage(){
+  print "Usage:"
+  print " plumedcheck [options] [files]"
+  print
+  print "Possible options are:"
+  print " -h/--help: print help"
+  print " --global-check: run global check; requires all sources and ac files to be passed"
+  print
+  print "Files can be"
+  print " .h files: interpreted as c++ header file"
+  print " .cpp files: interpreted as c++ source file"
+  print " .ac files: interpreted as autoconf files"
+  exit(0)
+}
+
+# print message
+function message(severity,id,mes){
+  if(global_check){
+    printf("[global_check] (%s) :plmd_%s: %s\n",severity,id,mes) > "/dev/stderr";
+  } else {
+    printf("[%s:%s] (%s) :plmd_%s: %s\n",FILENAME,FNR,severity,id,mes) > "/dev/stderr";
+  }
+}
+
+# print error message
+# error messages make codecheck fail
+function error(id,mes){
+  message("error",id,mes)
+}
+
+# print information message
+# information messages are neutral
+function information(id,mes){
+  message("information",id,mes)
+}
+
+# print style message
+# style messages are possibly bad ideas but do not trigger errors
+function style(id,mes){
+  message("style",id,mes)
+}
+
+BEGIN{
+# interpret command line arguments
+  newargv[0]=ARGV[0]
+  pre=""
+  opt_global_check=0
+  for(i=1;i<ARGC;i++){
+    opt=pre ARGV[i]
+    pre=""
+    switch(opt){
+      case "-h":
+      case "--help":
+        usage(); break;
+      case "--global-check":
+        opt_global_check=1; break;
+      case /-.*/:
+        print "Unknown option " opt; exit(1)
+      default:
+        newargv[length(newargv)]=opt
+    }
+  }
+# copy new command arguments
+  ARGC=length(newargv)
+  for(i=1;i<ARGC;i++) ARGV[i]=newargv[i]
+
+# no arguments, print help
+  if(ARGC==1) usage()
+
+
+# setup:
+
+# list of deprecated c++ headers
+  deprecated_headers["complex.h"]=1
+  deprecated_headers["ctype.h"]=1
+  deprecated_headers["errno.h"]=1
+  deprecated_headers["fenv.h"]=1
+  deprecated_headers["float.h"]=1
+  deprecated_headers["inttypes.h"]=1
+  deprecated_headers["iso646.h"]=1
+  deprecated_headers["limits.h"]=1
+  deprecated_headers["locale.h"]=1
+  deprecated_headers["math.h"]=1
+  deprecated_headers["setjmp.h"]=1
+  deprecated_headers["signal.h"]=1
+  deprecated_headers["stdalign.h"]=1
+  deprecated_headers["stdarg.h"]=1
+  deprecated_headers["stdbool.h"]=1
+  deprecated_headers["stddef.h"]=1
+  deprecated_headers["stdint.h"]=1
+  deprecated_headers["stdio.h"]=1
+  deprecated_headers["stdlib.h"]=1
+  deprecated_headers["string.h"]=1
+  deprecated_headers["tgmath.h"]=1
+}
+
+# for each input file
+BEGINFILE{
+# these variables are used to track if a file containes at least one item of a specific kind
+# as such they should be reset for every new input file
+  found_namespace_plmd=0
+  found_namespace_module=0
+  found_guard_ifdef=0
+  found_non_preprocessor_lines=0
+
+## not used, see below
+#  found_include_system_header=0
+#  report_include_system_headers=0
+
+# guess module name from directory
+# only works when path is specified
+  filename=FILENAME
+  gsub("/[.]/","/",filename);
+  gsub("^[.]/","",filename);
+  if(!match(filename,".*/.*")) filename=ENVIRON["PWD"] "/" filename
+  gsub("/+","/",filename); # fix multiple slashes
+  module=""
+  nf=split(filename,ff,"/");
+  if(nf>1){
+    module=ff[nf-1];
+    if(!(module in module_type)){
+      path=filename
+      sub("/.*$","/module.type",path);
+      if((getline < path > 0) ){
+        module_type[module]=$0
+        information("module_type","module " module " has type '" module_type[module] "'" );
+      }
+    }
+  }
+  file=ff[nf];
+  filebase=file;
+  sub("\\..*","",filebase);
+
+# guess type of file from extension
+  filetype=""
+  if(match(FILENAME,".*\\.h")) filetype="header"
+  if(match(FILENAME,".*\\.cpp")) filetype="source"
+  if(match(FILENAME,".*\\.ac")) filetype="autoconf"
+
+# checks that are done only on some modules will be skipped if the module name is not known
+  if((filetype=="source" || filetype=="header") && !module) information("missing_module_name","module name is not know, some check will be skipped");
+
+}
+
+# line by line analysis
+{
+  if(filetype=="source" || filetype=="header"){
+# detect plumed manual
+    if(match($0,"^//[+]PLUMEDOC ")) in_plumed_doc=$NF
+# detect doxygen manual - at least with /** and */ on separate lines
+    if($1=="/**") in_doxygen=1
+# detect copyright lines
+    if($0=="/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++") in_copyright=1;
+# check direct inclusion of headers that would bypass module dependencies
+    if(match($0,"^# *include +\\\"\\.\\.")) error("include_dots","cannot include files using .. path");
+
+# check if there is anything behind copyright and preprocessor commands
+    if(!in_copyright && !match($0,"^# *include") && !match($0,"^# *ifndef") && !match($0,"^# *endif") && !match($0,"^# *define") && !match($0,"^ *$")) found_non_preprocessor_lines=1
+
+## check if system headers are included after local headers.
+## I am not sure it is a good idea, so I let it commented for now.
+#    if(match($0,"^# *include +<")) found_include_system_header=1
+## it is a bad habit to include local headers after system headers
+## notice that I explicitly check for the final "h" in the included file so as to exclude
+## included files ending with tmp that are somewhere used in plumed to include automatically generated source code
+#   if(match($0,"^# *include +\\\".*h\\\"")){
+#     if(found_include_system_header && !report_include_system_headers){
+#       style("include_system_headers","include system headers before local headers is discouraged");
+#       report_include_system_headers=1 # only report once per file
+#     }
+#   }
+
+# check if deprecated headers are included
+    if(match($0,"^# *include +<[^>]+>.*$")){
+      h=$0
+      sub("^# *include +<","",h)
+      sub(">.*$","",h)
+      if(h in deprecated_headers) error("deprecated_header","including deprecated header " h);
+    }
+
+# check if namespace PLMD is present
+    if(match($0,"^ *namespace *PLMD")) found_namespace_plmd=1
+
+# check if namespace for module is present
+    if(match($0,"^ *namespace *" module)) found_namespace_module=1
+
+# take note of registered actions
+    if(match($0,"^ *PLUMED_REGISTER_ACTION")){
+      action=$0
+      sub("^ *PLUMED_REGISTER_ACTION\\(.*, *[\"]","",action);
+      sub("[\"].*$","",action);
+      information("registered_action","action " action);
+      if(action in registered_actions) error("multi_registered","action " action " already registered at "registered_actions[action]);
+      registered_actions[action]=FILENAME ":" FNR;
+    }
+
+# take note of registered cltools
+    if(match($0,"^ *PLUMED_REGISTER_CLTOOL")){
+      cltool=$0
+      sub("^ *PLUMED_REGISTER_CLTOOL\\(.*, *[\"]","",cltool);
+      sub("[\"].*$","",cltool);
+      information("registered_cltool","cltool " cltool);
+      if(cltool in registered_cltools) error("multi_registered","cltool " cltool " already registered at "registered_cltools[cltool]);
+      registered_cltools[cltool]=FILENAME ":" FNR;
+    }
+
+# take note of documented actions or cltools
+    if(match($0,"^//[+]PLUMEDOC ")){
+      doc=$NF;
+      information("documented","doc " doc);
+      if(doc in plumed_doc) error("multi_doc","doc " doc " already at "plumed_doc[action]);
+      plumed_doc[doc]=FILENAME ":" FNR;
+    }
+
+# check if, besides the \par Examples text, there is a verbatim command
+    if(in_plumed_doc && (in_plumed_doc in provide_examples) && match($0,"^ *\\\\verbatim *$")){
+      provide_verbatim[in_plumed_doc]=1
+    }
+#print match($0,"^ *\\\\verbatim *$"),"X" $0 "X"
+
+# take note of actions or cltools that provide examples
+    if(match($0,"\\par Examples")){
+      provide_examples[in_plumed_doc]=FILENAME ":" FNR;
+    }
+
+# check if guard is present
+    guard="^#ifndef __PLUMED_" module "_" filebase "_h"
+    if(match($0,guard)) found_guard_ifdef=1
+
+# check that "using namespace" statements are not used in header files
+    if(filetype=="header" && match($0,"using *namespace") && !in_plumed_doc && !in_doxygen) error("using_namespace_in_header","using namespace statement in header file")
+  }
+
+# analyze HAS macros (bouth source and autoconf)
+  if(match($0,"__PLUMED_HAS_[A-Z_]*")){
+    string=substr( $0, RSTART, RLENGTH )
+    sub("__PLUMED_HAS_","",string);
+    if(filetype=="autoconf"){
+# take note of defined HAS macros
+      information("defined_has",string);
+      plumed_definehas[string]=FILENAME ":" FNR;
+    } else {
+# take note of used HAS macros
+      information("used_has",string);
+      plumed_usehas[string]=FILENAME ":" FNR;
+    }
+  }
+
+  if(filetype=="source" || filetype=="header"){
+# detect plumed manual
+    if(match($0,"^//[+]ENDPLUMEDOC")) in_plumed_doc=0
+# detect doxygen manual - at least with /** and */ on separate lines
+    if($1=="*/") in_doxygen=0
+# detect copyright lines
+    if($0=="+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */") in_copyright=0;
+  }
+
+}
+
+# at the end of each file:
+ENDFILE{
+# check for namespaces
+# this is done only for non-trivial files (i.e. we skip files that just include an header)
+# we also skip special modules wrapper and main here, which do not define PLMD namespace
+  if(found_non_preprocessor_lines && (filetype=="source" || filetype=="header") && module!="wrapper" && module!="main" ){
+    if(!found_namespace_plmd) error("missing_namespace_plmd","missing PLMD namespace");
+# files belonging to "core modules" are not supposed to have a module namespace
+      if(module!="core" && module!="tools" && module!="reference"){
+      # this can be done only if module name is known:
+      if(module && !found_namespace_module) error("missing_namespace_module","missing " module " namespace")
+    }
+  }
+
+# check if header guard is present
+# check is done only if module is known since module name is used to build the macro name
+  if(filetype=="header"){
+    # this can be done only if module name is known:
+    if(module && !found_guard_ifdef) error("missing_guard","missing ifndef guard");
+  }
+
+# check if every header has a corresponding cpp
+# this is done only for non-trivial headers (i.e. we skip headers that just include another header)
+   if(filetype=="header" && found_non_preprocessor_lines){
+     notfound=0
+     cppfile=FILENAME
+     sub("\\.h$",".cpp",cppfile);
+     if((getline < cppfile < 0)){
+       cppfile=FILENAME
+       sub("\\.h$",".c",cppfile);
+       if((getline < cppfile < 0)) notfound=1
+     }
+     if(notfound){
+       error("non_existing_cpp","file " file " is a header but there is no corresponding source");
+     }
+     while((getline < cppfile)>=0){
+       if(match($0,"^ *#include")){
+         sub("^ *#include","");
+         if($1!="\"" file "\"") error("non_included_h","file " file " is a header but " cppfile " does not include it as first include");
+         break;
+       }
+     }
+   }
+}
+
+# after processing all files, perform some global check
+END{
+
+# checks are only done if enabled
+  if(!opt_global_check) exit(0)
+
+# this is required to properly report messages
+  global_check=1
+
+# check that all registered actions were documented
+  for(action in registered_actions){
+    if(!(action in plumed_doc)){
+      error("undocumented_action","action " action " at " registered_actions[action] " is not documented")
+    } else if(!(action in provide_examples)){
+      error("action_without_examples","action " action " at " plumed_doc[action] " has no example")
+    } else if(!(action in provide_verbatim)){
+# this should be made into an error:
+      style("action_without_verbatim","action " action " at " provide_examples[action] " has no verbatim")
+    }
+  }
+
+# check that all registered cltools were documented
+  for(cltool in registered_cltools){
+    if(!(cltool in plumed_doc)){
+      error("undocumented_cltool","cltool " cltool " at " registered_cltools[cltool] " is not documented")
+    } else if(!(cltool in provide_examples)){
+      error("cltool_without_examples","cltool " cltool " at " plumed_doc[cltool] " has no example")
+    } else if(!(cltool in provide_verbatim)){
+      error("cltool_without_verbatim","cltool " cltool " at " provide_examples[cltool] " has no verbatim")
+    }
+  }
+
+# check that all used __PLUMED_HAS macros have been defined in autoconf
+  for(has in plumed_usehas){
+    if(!(has in plumed_definehas)){
+      error("undefined_has","has " has " at " plumed_usehas[has] " is not defined")
+    }
+  }
+
+# check that all defined  __PLUMED_HAS macros have been used in source code
+  for(has in plumed_definehas){
+    if(!(has in plumed_usehas)){
+      error("unused_has","has " has " at " plumed_definehas[has] " is not used")
+    }
+  }
+}
+
+EOF
+
+gawk -f $TEMP $@

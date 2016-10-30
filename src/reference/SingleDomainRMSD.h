@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -32,7 +32,7 @@ class SingleDomainRMSD : public ReferenceAtoms {
 protected:
   void readReference( const PDB& pdb );
 public:
-  SingleDomainRMSD( const ReferenceConfigurationOptions& ro );
+  explicit SingleDomainRMSD( const ReferenceConfigurationOptions& ro );
 /// Set the reference structure
   virtual void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in );
 /// Calculate

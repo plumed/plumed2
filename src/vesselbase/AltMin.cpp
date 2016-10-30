@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -23,7 +23,7 @@
 #include "FunctionVessel.h"
 
 namespace PLMD {
-namespace mapping {
+namespace vesselbase {
 
 class AltMin : public vesselbase::FunctionVessel {
 private:
@@ -31,7 +31,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
-  AltMin( const vesselbase::VesselOptions& da );
+  explicit AltMin( const vesselbase::VesselOptions& da );
   std::string value_descriptor();
   double calcTransform( const double& val, double& dv ) const ;
   double finalTransform( const double& val, double& dv );
@@ -45,10 +45,10 @@ void AltMin::registerKeywords( Keywords& keys ){
 }
 
 void AltMin::reserveKeyword( Keywords& keys ){
-  keys.reserve("optional","ALT_MIN","calculate the minimum value. "
+  keys.reserve("vessel","ALT_MIN","calculate the minimum value. "
                                 "To make this quantity continuous the minimum is calculated using "
                                 "\\f$ \\textrm{min} = -\\frac{1}{\\beta} \\log \\sum_i \\exp\\left( -\\beta s_i \\right)  \\f$ "
-                                "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$).",true);
+                                "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$).");
   keys.addOutputComponent("altmin","ALT_MIN","the minimum value. This is calculated using the formula described in the description of the "
                                              "keyword so as to make it continuous.");
 }

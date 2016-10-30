@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -50,6 +50,13 @@ const double pi(3.14159265358979323846264338327950288419716939937510582097494459
 /// \ingroup TOOLBOX
 /// Empty class which just contains several (static) tools
 class Tools{
+/// class to convert a string to a generic type T
+  template<class T>
+  static bool convertToAny(const std::string & str,T &t);
+/// class to convert a string to a real type T.
+/// T should be either float, double, or long double
+  template<class T>
+  static bool convertToReal(const std::string & str,T &t);
 public:
 /// Split the line in words using separators.
 /// It also take into account parenthesis. Outer parenthesis found are removed from
@@ -65,6 +72,8 @@ public:
   static bool getParsedLine(IFile&ifile,std::vector<std::string> & line);
 /// Convert a string to a double, reading it
   static bool convert(const std::string & str,double & t);
+/// Convert a string to a long double, reading it
+  static bool convert(const std::string & str,long double & t);
 /// Convert a string to a float, reading it
   static bool convert(const std::string & str,float & t);
 /// Convert a string to a int, reading it
@@ -101,6 +110,8 @@ public:
   static bool parseVector(std::vector<std::string>&line,const std::string&key,std::vector<T>&val);
 /// Find a keyword without arguments on the input line
   static bool parseFlag(std::vector<std::string>&line,const std::string&key,bool&val);
+/// Find a keyword on the input line, just reporting if it exists or not
+  static bool findKeyword(const std::vector<std::string>&line,const std::string&key);
 /// Interpret atom ranges
   static void interpretRanges(std::vector<std::string>&);
 /// Remove duplicates from a vector of type T 
@@ -121,6 +132,9 @@ public:
   static std::string extension(const std::string&);
 /// Fast int power
   static double fastpow(double base,int exp);
+/// Check if a string full starts with string start.
+/// Same as full.find(start)==0
+  static bool startWith(const std::string & full,const std::string &start);
 };
 
 template <class T>

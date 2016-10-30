@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2015,2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -21,6 +21,8 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #ifndef __PLUMED_tools_Minimise1DBrent_h
 #define __PLUMED_tools_Minimise1DBrent_h
+
+#include "Tools.h"
 
 #include <vector>
 #include <string>
@@ -45,7 +47,7 @@ private:
 /// Use to prevent any possible division by zero
   const double TINY;
 /// Maximum number of interactions in line minimiser
-  const int ITMAX;
+  const unsigned ITMAX;
 /// The value of the golden ratio
   const double CGOLD;
 /// A small number that protects against trying to achieve fractional 
@@ -58,7 +60,7 @@ private:
 /// The class containing the function we are trying to minimise
   FCLASS myclass_func;
 public:
-  Minimise1DBrent( const FCLASS& pf,  const double& t=3.0E-8 );
+  explicit Minimise1DBrent( const FCLASS& pf,  const double& t=3.0E-8 );
 /// Bracket the minium 
   void bracket( const double& ax, const double& xx, eng_pointer eng );
 /// Find the minimum between two brackets
@@ -70,6 +72,7 @@ public:
 template <class FCLASS>
 Minimise1DBrent<FCLASS>::Minimise1DBrent( const FCLASS& pf, const double& t ):
 bracketed(false),
+minimised(false),
 tol(t),
 GOLD(1.618034),
 GLIMIT(100.0),
@@ -77,6 +80,9 @@ TINY(1.0E-20),
 ITMAX(100),
 CGOLD(0.3819660),
 ZEPS(epsilon*1.0E-3),
+ax(0),bx(0),cx(0),
+fa(0),fb(0),fc(0),
+fmin(0),
 myclass_func(pf)
 {
 }

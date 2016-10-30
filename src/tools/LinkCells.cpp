@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014,2015 The plumed team
+   Copyright (c) 2014-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -38,6 +38,10 @@ void LinkCells::setCutoff( const double& lcut ){
   cutoffwasset=true; link_cutoff=lcut;
 }
 
+double LinkCells::getCutoff() const {
+  plumed_assert( cutoffwasset ); return link_cutoff;
+}
+
 void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vector<unsigned>& indices, const Pbc& pbc ){
   plumed_assert( cutoffwasset && pos.size()==indices.size() );
 
@@ -51,14 +55,16 @@ void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vecto
     allcells.resize( pos.size() ); lcell_lists.resize( pos.size() ); 
   }
 
-  if( !mypbc.isOrthorombic() ){
-     ncells[0]=ncells[1]=ncells[2]=1;
-  } else {
-     ncells[0] = std::floor( mypbc.getBox().getRow(0).modulo() / link_cutoff );
+   {
+// This is the reciprocal lattice
+// notice that reciprocal.getRow(0) is a vector that is orthogonal to b and c
+// This allows to use linked cells in non orthorhomic boxes
+     Tensor reciprocal(transpose(mypbc.getInvBox()));
+     ncells[0] = std::floor( 1.0/ reciprocal.getRow(0).modulo() / link_cutoff );
      if( ncells[0]==0 ) ncells[0]=1;
-     ncells[1] = std::floor( mypbc.getBox().getRow(1).modulo() / link_cutoff );
+     ncells[1] = std::floor( 1.0/ reciprocal.getRow(1).modulo() / link_cutoff );
      if( ncells[1]==0 ) ncells[1]=1;
-     ncells[2] = std::floor( mypbc.getBox().getRow(2).modulo() / link_cutoff );
+     ncells[2] = std::floor( 1.0/ reciprocal.getRow(2).modulo() / link_cutoff );
      if( ncells[2]==0 ) ncells[2]=1;
   }
   // Setup the strides
@@ -101,7 +107,7 @@ void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vecto
 #define LINKC_PBC(n,num) ((n<0)? num-1 : n%num )
 
 void LinkCells::retrieveNeighboringAtoms( const Vector& pos, unsigned& natomsper, std::vector<unsigned>& atoms ) const {
-  plumed_assert( natomsper==1 );  // This is really a bug. If you are trying to reuse this ask GAT for help
+  plumed_assert( natomsper==1 || natomsper==2 );  // This is really a bug. If you are trying to reuse this ask GAT for help
   std::vector<unsigned> celn( findMyCell( pos ) );
 
   for(int nx=LINKC_MIN(ncells[0]);nx<LINKC_MAX(ncells[0]);++nx){

@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -131,7 +131,7 @@ public:
   void  addForce(double f);
 /// Get the value of the force on this colvar
   double getForce() const ;
-/// Apply the forces to the derivatives using the chain rule (if there are no forces this routine returns false
+/// Apply the forces to the derivatives using the chain rule (if there are no forces this routine returns false)
   bool applyForce( std::vector<double>& forces ) const ;
 /// Calculate the difference between the instantaneous value of the function and some other point: other_point-inst_val
   double difference(double)const;
@@ -161,9 +161,11 @@ void Value::applyPeriodicity(){
 inline
 void product( const Value& val1, const Value& val2, Value& valout ){
   plumed_assert( val1.derivatives.size()==val2.derivatives.size() );
-  if( valout.derivatives.size()!=val1.derivatives.size() ) valout.derivatives.resize( val1.derivatives.size() );
-  valout.value_set=false; valout.derivatives.assign(valout.derivatives.size(),0.0);
-  double u, v; u=val1.value; v=val2.value;
+  if( valout.derivatives.size()!=val1.derivatives.size() ) valout.resizeDerivatives( val1.derivatives.size() );
+  valout.value_set=false; 
+  valout.clearDerivatives();
+  double u=val1.value; 
+  double v=val2.value;
   for(unsigned i=0;i<val1.derivatives.size();++i){
      valout.addDerivative(i, u*val2.derivatives[i] + v*val1.derivatives[i] );
   }
@@ -173,9 +175,11 @@ void product( const Value& val1, const Value& val2, Value& valout ){
 inline
 void quotient( const Value& val1, const Value& val2, Value* valout ){
   plumed_assert( val1.derivatives.size()==val2.derivatives.size() );
-  if( valout->derivatives.size()!=val1.derivatives.size() ) valout->derivatives.resize( val1.derivatives.size() );
-  valout->value_set=false; valout->derivatives.assign(valout->derivatives.size(),0.0);
-  double u, v; u=val1.get(); v=val2.get();
+  if( valout->derivatives.size()!=val1.derivatives.size() ) valout->resizeDerivatives( val1.derivatives.size() );
+  valout->value_set=false; 
+  valout->clearDerivatives();
+  double u=val1.get(); 
+  double v=val2.get();
   for(unsigned i=0;i<val1.getNumberOfDerivatives();++i){
      valout->addDerivative(i, v*val1.getDerivative(i) - u*val2.getDerivative(i) );
   }
@@ -225,12 +229,12 @@ double Value::getDerivative(const unsigned n) const {
 
 inline
 bool Value::hasDerivatives() const {
-  return hasDeriv; // (!derivatives.empty());
+  return hasDeriv;
 }
 
 inline
 void Value::resizeDerivatives(int n){
-  derivatives.resize(n);
+  if(hasDeriv) derivatives.resize(n);
 }
 
 inline
@@ -259,12 +263,12 @@ void Value::clearInputForce(){
 inline
 void Value::clearDerivatives(){
   value_set=false;
-  derivatives.assign(derivatives.size(),0.0);
+  std::fill(derivatives.begin(), derivatives.end(), 0);
 }
 
 inline
 void Value::addForce(double f){
-  plumed_massert(hasDerivatives(),"forces can only be added to values with derivatives");
+  plumed_dbg_massert(hasDerivatives(),"forces can only be added to values with derivatives");
   hasForce=true;
   inputForce+=f;
 }

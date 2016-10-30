@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -254,9 +254,8 @@ void DynamicList<T>::setupMPICommunication( Communicator& comm ){
 
 template <typename T>
 int DynamicList<T>::getIndexOfElement( const T& t ) const {
-  bool found=false;
   for(unsigned i=0;i<all.size();++i){
-     if( t==all[i] ){ found=true; return i; }
+     if( t==all[i] ){return i; }
   }
   plumed_merror("Could not find an element in the dynamic list");
   return 0;

@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -44,8 +44,10 @@ class Pbc;
 class ReferenceAtoms :
   virtual public ReferenceConfiguration
 {
+friend class Direction;
 friend class SingleDomainRMSD;
 friend class MultiDomainRMSD;
+friend class ReferenceConfiguration;
 private:
 /// This flag tells us if the user has disabled checking of the input in order to
 /// do fancy paths with weird inputs
@@ -61,10 +63,12 @@ private:
 /// The indices of the atoms in the pdb file
   std::vector<AtomNumber> indices;
 /// The indeces for setting derivatives
-  std::vector<unsigned> der_index;
+  std::vector<unsigned> atom_der_index;
 protected:
 /// Read in the atoms from the pdb file
-  void readAtomsFromPDB( const PDB& );
+  void readAtomsFromPDB( const PDB&, const bool allowblocks=false );
+/// Add atom indices to list
+  void setAtomIndices( const std::vector<AtomNumber>& atomnumbers );
 /// Read a list of atoms from the pdb input file
   bool parseAtomList( const std::string& , std::vector<unsigned>& );
 /// Get the vector of alignment weights
@@ -73,14 +77,20 @@ protected:
   const std::vector<double> & getDisplace() const ;
 /// Get the position of the ith atom
   Vector getReferencePosition( const unsigned& iatom ) const ;  
-/// Get the reference positions
-  const std::vector<Vector> & getReferencePositions() const ; 
+/// Add derivatives to iatom th atom in list
+//  void addAtomicDerivatives( const unsigned& , const Vector& );
+/// Get the atomic derivatives on the ith atom in the list
+//  Vector retrieveAtomicDerivatives( const unsigned& ) const ;
+/// Add derivatives to the viral
+//  void addBoxDerivatives( const Tensor& );
 /// This does the checks that are always required
   void singleDomainRequests( std::vector<AtomNumber>&, bool disable_checks );
 public:
-  ReferenceAtoms( const ReferenceConfigurationOptions& ro );
+  explicit ReferenceAtoms( const ReferenceConfigurationOptions& ro );
 /// This returns the number of reference atom positions
   unsigned getNumberOfReferencePositions() const ;
+/// Get the reference positions
+  const std::vector<Vector> & getReferencePositions() const ;
 /// This allows us to use a single pos array with RMSD objects using different atom indexes
   unsigned getAtomIndex( const unsigned& ) const ;
 /// Get the atoms required (additional checks are required when we have multiple domains)
@@ -93,6 +103,16 @@ public:
   const std::vector<AtomNumber>& getAbsoluteIndexes();
 /// This returns how many atoms there should be
   unsigned getNumberOfAtoms() const ;
+/// Displace the positions of the reference atoms a bit
+  void displaceReferenceAtoms( const double& weight, const std::vector<Vector>& dir ); 
+/// Extract a displacement from a position in space
+  virtual void extractAtomicDisplacement( const std::vector<Vector>& pos, const bool & anflag, std::vector<Vector>& direction ) const {
+     plumed_error(); 
+  }
+/// Project the displacement on a vector
+  virtual double projectAtomicDisplacementOnVector( const std::vector<Vector>& eigv, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const {
+     plumed_error(); return 1;
+  }
 };
 
 inline
@@ -107,19 +127,20 @@ const std::vector<double> & ReferenceAtoms::getDisplace() const {
 
 inline
 unsigned ReferenceAtoms::getNumberOfReferencePositions() const {
-  return der_index.size(); // reference_atoms.size();
+  plumed_dbg_assert( atom_der_index.size()==reference_atoms.size() );
+  return reference_atoms.size();
 }
 
 inline
 unsigned ReferenceAtoms::getNumberOfAtoms() const {
-  return der_index.size(); // reference_atoms.size();
+  return atom_der_index.size(); // reference_atoms.size();
 }
 
 inline
 unsigned ReferenceAtoms::getAtomIndex( const unsigned& iatom ) const {
-  plumed_dbg_assert( iatom<der_index.size() );
-  plumed_dbg_assert( der_index[iatom]<reference_atoms.size() );
-  return der_index[iatom];
+  plumed_dbg_assert( iatom<atom_der_index.size() );
+  plumed_dbg_assert( atom_der_index[iatom]<reference_atoms.size() );
+  return atom_der_index[iatom];
 }
 
 inline
