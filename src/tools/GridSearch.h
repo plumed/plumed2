@@ -25,7 +25,7 @@
 #include "MinimiseBase.h"
 #include "Grid.h"
 #include <iostream>
-#include <math.h>
+
 namespace PLMD{
 
 template <class FCLASS>
