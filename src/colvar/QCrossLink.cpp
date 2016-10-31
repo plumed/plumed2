@@ -292,7 +292,7 @@ double QCrossLink::get_rho(double dist, double Rslope, double alpha)
  return rho;
 }
 
-// used to update a single psi
+// used to update all the Bayesian parameters
 double QCrossLink::getEnergy(double sigma, double w, double beta, double Rslope, double alpha)
 {
   // calculate energy
@@ -487,6 +487,9 @@ void QCrossLink::calculate()
   double ene = 0.0;
   // cycle on arguments
   for(unsigned i=0;i<dexp_.size();++i){
+    // retrieve atom indexes
+    unsigned id0 = pair_list_[i].first;
+    unsigned id1 = pair_list_[i].second;
     // calculate rho
     if(is_state_A_){ 
       rho_A = get_rho(dexp_[i].modulo(),   Rslope_, alpha_);
@@ -496,14 +499,32 @@ void QCrossLink::calculate()
       rho_B = get_rho(dexp_[i].modulo(),   Rslope_, alpha_);
     }
     // calculate forward model
-    double fmod = W_ * (1.0-exp(-beta_*rho_A)) / (1.0-exp(-beta_*rho_B));
+    double fmod_A = (1.0-exp(-beta_*rho_A));
+    double fmod_B = (1.0-exp(-beta_*rho_B));
+    double fmod  = W_ * fmod_A / fmod_B;
     // calculate argument
     double tmp0 = std::log(ratio_list_[i] / fmod);
     double tmp1 = tmp0 * tmp0 + 2.0 * sigma_ * sigma_;
     // increment energy
     ene += kbt_ * std::log(tmp1);
-    // calculate derivatives
-    
+    // calculate derivative of score with respect to fmod
+    double score_der_fmod = - kbt_ / tmp1 * 2.0 * tmp0 / fmod ;
+    // derivative of fmod with respect to rho
+    double fmod_der_rho; 
+    if(is_state_A_){
+      // calculate derivative of fmod with respect to rho_A
+      fmod_der_rho = - W_ * (-fmod_A + 1.0 ) / fmod_B * beta_;
+    } else {
+      // calculate derivative of fmod with respect to rho_B
+      fmod_der_rho =   W_ * fmod_A / fmod_B / fmod_B * (-fmod_B + 1.0) * beta_;
+    }
+    // calculate derivative of rho with respect to distance
+    // rho = 1.0 - 1.0 / (1.0+exp(-alpha*(dist-Rslope)));
+    double tmp_rho = exp(-alpha_*(dexp_[i].modulo()-Rslope_));
+    double rho_der_dist = - 1.0 / ( 1.0 + tmp_rho ) / ( 1.0 + tmp_rho ) * tmp_rho * alpha_;
+    // add to derivatives with respect to atom positions
+    atom_der_[id0] -= score_der_fmod * fmod_der_rho * rho_der_dist * dexp_[i] / dexp_[i].modulo();
+    atom_der_[id1] += score_der_fmod * fmod_der_rho * rho_der_dist * dexp_[i] / dexp_[i].modulo();
   }
   // add Jeffrey's priors + constant terms in sigma;
   ene += kbt_ * std::log(sigma_) - kbt_ * static_cast<double>(dexp_.size()) * std::log(sigma_);
