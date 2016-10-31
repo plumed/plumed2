@@ -33,7 +33,8 @@ void LandmarkSelectionBase::registerKeywords( Keywords& keys ){
 
 LandmarkSelectionBase::LandmarkSelectionBase( const ActionOptions& ao ):
 Action(ao),
-AnalysisBase(ao)
+AnalysisBase(ao),
+nlandmarks(0)
 {
   if( keywords.exists("NLANDMARKS") ) parse("NLANDMARKS",nlandmarks); 
   log.printf("  selecting %u landmark points \n",nlandmarks);
