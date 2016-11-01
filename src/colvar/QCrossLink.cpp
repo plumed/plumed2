@@ -70,6 +70,8 @@ class QCrossLink : public Colvar
   double alpha_;
   // temperature in kbt
   double kbt_;
+  // pbc
+  bool nopbc_;
   // Monte Carlo stuff
   int MCsteps_;
   int MCstride_;
@@ -84,7 +86,11 @@ class QCrossLink : public Colvar
   unsigned rank_f_;
   bool is_state_A_;
   bool is_state_B_;
-  // data map
+  unsigned rank_local_;
+  unsigned size_local_;
+  bool serial_;
+  
+  // experimental data vectors
   vector< pair <unsigned,unsigned> > pair_list_;
   vector< double > ratio_list_;
   // auxiliary stuff
@@ -94,7 +100,7 @@ class QCrossLink : public Colvar
   
   void get_data(string data_file, vector<AtomNumber> atoms);
   double get_rho(double dist, double Rslope, double alpha);
-  void doMonteCarlo();
+  void doMonteCarlo(long int step);
   double getEnergy(double sigma, double w, double beta, double Rslope, double alpha);
   double proposeMove(double x, double xmin, double xmax, double dxmax);
   bool doAccept(double oldE, double newE);
@@ -111,12 +117,31 @@ PLUMED_REGISTER_ACTION(QCrossLink,"QXL")
 
 void QCrossLink::registerKeywords(Keywords& keys){
   Colvar::registerKeywords( keys );
-  keys.add("atoms","ATOMS","atoms for which we calculate the density map");
+  keys.add("atoms","ATOMS","atoms for which we have cross-linking data");
   keys.add("compulsory","DATA_FILE","file with experimental data");
-  keys.add("compulsory","TEMP","temperature");
+  keys.add("compulsory","SIGMA0","initial value of the uncertainty parameter");
+  keys.add("compulsory","SIGMA_MIN","minimum value of the uncertainty parameter");
+  keys.add("compulsory","SIGMA_MAX","maximum value of the uncertainty parameter");
+  keys.add("compulsory","DSIGMA","maximum MC move of the uncertainty parameter");
+  keys.add("compulsory","BETA0","initial value of the beta parameter");
+  keys.add("compulsory","BETA_MIN","minimum value of the beta parameter");
+  keys.add("compulsory","BETA_MAX","maximum value of the beta parameter");
+  keys.add("compulsory","DBETA","maximum MC move of the beta parameter");
+  keys.add("compulsory","RSLOPE0","initial value of the Rslope parameter");
+  keys.add("compulsory","RSLOPE_MIN","minimum value of the Rslope parameter");
+  keys.add("compulsory","RSLOPE_MAX","maximum value of the Rslope parameter");
+  keys.add("compulsory","DRSLOPE","maximum MC move of the Rslope parameter");
+  keys.add("compulsory","W0","initial value of the W parameter");
+  keys.add("compulsory","W_MIN","minimum value of the W parameter");
+  keys.add("compulsory","W_MAX","maximum value of the W parameter");
+  keys.add("compulsory","DW","maximum MC move of the W parameter");
   keys.add("compulsory","ALPHA","Value of the alpha parameter");
   keys.add("compulsory","RANK_A","MPI rank of state A");
   keys.add("compulsory","RANK_B","MPI rank of state B");
+  keys.add("compulsory","TEMP","temperature");
+  keys.addFlag("SERIAL",false,"perform the calculation in serial - for debug purpose");
+  keys.add("optional","MC_STEPS","number of MC steps");
+  keys.add("optional","MC_STRIDE","MC stride");
   componentsAreNotOptional(keys); 
   keys.addOutputComponent("sigma",    "default","uncertainty parameter");
   keys.addOutputComponent("accsig",   "default","MC acceptance sigma");
@@ -130,12 +155,12 @@ void QCrossLink::registerKeywords(Keywords& keys){
 }
 
 QCrossLink::QCrossLink(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao),
-alpha_(1.0),
+PLUMED_COLVAR_INIT(ao), alpha_(1.0), nopbc_(false),
 MCsteps_(1), MCstride_(1),MCfirst_(-1),
 MCaccsig_(0), MCaccbeta_(0), MCaccRslope_(0), MCaccW_(0),
-is_state_A_(false), is_state_B_(false)
+is_state_A_(false), is_state_B_(false), serial_(false)
 {
+  // list of atoms
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   // data file
@@ -163,6 +188,8 @@ is_state_A_(false), is_state_B_(false)
   parse("DW",   DW_);
   // alpha parameter (constant)
   parse("ALPHA", alpha_);
+  // disable pbc
+  parseFlag("NOPBC",nopbc_);
   // rank of state A
   unsigned rank_A;
   parse("RANK_A", rank_A);
@@ -175,10 +202,19 @@ is_state_A_(false), is_state_B_(false)
   // convert temp to kbt
   if(temp>0.0) kbt_=plumed.getAtoms().getKBoltzmann()*temp;
   else kbt_=plumed.getAtoms().getKbT();
+  // serial or parallel
+  parseFlag("SERIAL",serial_);
+  if(serial_){
+    size_local_=1; rank_local_=0;
+  } else {
+    size_local_=comm.Get_size(); rank_local_=comm.Get_rank();
+  }
+  parse("MC_STEPS",MCsteps_);
+  parse("MC_STRIDE",MCstride_);
 
   checkRead();
   
-  // get number of replicas
+  // get rank in replica parallelism
   if(comm.Get_rank()==0) {
     rank_ = multi_sim_comm.Get_rank();
   } else {
@@ -186,7 +222,7 @@ is_state_A_(false), is_state_B_(false)
   }
   comm.Sum(&rank_,1);
   
-  // find out if state A or B
+  // find out if this rank will model A or B
   if(rank_==rank_A){
     is_state_A_ = true;
     rank_f_ = rank_B;
@@ -195,14 +231,17 @@ is_state_A_(false), is_state_B_(false)
     is_state_B_ = true;
     rank_f_ = rank_A;
   }
+  // check that I am either state A or state B
   if(is_state_A_==is_state_B_) error("Each replica must be in either state A or B\n");
   
   log.printf("  atoms involved : ");
   for(unsigned i=0;i<atoms.size();++i) log.printf("%d ",atoms[i].serial());
   log.printf("\n");
-  log.printf("  data file %s", data_file.c_str());
+  log.printf("  data file %s\n", data_file.c_str());
   if(is_state_A_) log.printf("  this replica is modelling state A\n");
   if(is_state_B_) log.printf("  this replica is modelling state B\n");
+  if(serial_)     log.printf("  serial calculation\n");
+  if(nopbc_)      log.printf("  distances are calculated without pbc\n");
   log.printf("  initial value of uncertainty %f\n",sigma_);
   log.printf("  minimum value of uncertainty %f\n",sigma_min_);
   log.printf("  maximum value of uncertainty %f\n",sigma_max_);
@@ -234,7 +273,6 @@ is_state_A_(false), is_state_B_(false)
   addComponent("accW");     componentIsNotPeriodic("accW");
   addComponentWithDerivatives("score"); componentIsNotPeriodic("score");
   
-
   // initialize random seed
   srand (time(NULL)+rank_);
   
@@ -242,7 +280,7 @@ is_state_A_(false), is_state_B_(false)
   get_data(data_file, atoms);
   log.printf("  number of data points : %u\n", static_cast<unsigned>(ratio_list_.size()));
   
-  // resize stuff
+  // resize auxiliary vectors
   dexp_.resize(ratio_list_.size());
   dexp_f_.resize(ratio_list_.size());
   atom_der_.resize(atoms.size());
@@ -264,15 +302,15 @@ void QCrossLink::get_data(string data_file, vector<AtomNumber> atoms)
  if(ifile->FileExist(data_file)){
     ifile->open(data_file);
     while(ifile->scanField("Id",id)){
-     ifile->scanField("Atom0",at0);
-     ifile->scanField("Atom1",at1);
+     ifile->scanField("Atom1",at0);
+     ifile->scanField("Atom2",at1);
      ifile->scanField("Ratio",ratio);
      // find indexes of at0 and at1 inside atoms
      for(unsigned i=0; i<atoms.size(); ++i){
        if(atoms[i].serial() == at0) id0 = i;
        if(atoms[i].serial() == at1) id1 = i;     
      }
-     // add data to map
+     // add data to lists
      pair_list_.push_back(make_pair(id0,id1));
      ratio_list_.push_back(ratio);
      // new line
@@ -295,11 +333,11 @@ double QCrossLink::get_rho(double dist, double Rslope, double alpha)
 // used to update all the Bayesian parameters
 double QCrossLink::getEnergy(double sigma, double w, double beta, double Rslope, double alpha)
 {
-  // calculate energy
   double rho_A, rho_B;
+  // calculate energy
   double ene = 0.0;
   // cycle on arguments
-  for(unsigned i=0;i<dexp_.size();++i){
+  for(unsigned i=rank_local_;i<dexp_.size();i=i+size_local_){
     // calculate rho
     if(is_state_A_){ 
       rho_A = get_rho(dexp_[i].modulo(),   Rslope, alpha);
@@ -316,8 +354,10 @@ double QCrossLink::getEnergy(double sigma, double w, double beta, double Rslope,
     // increment energy
     ene += kbt_ * std::log(tmp1);    
   }
-  // add Jeffrey's priors + constant terms in sigma;
-  ene += kbt_ * std::log(sigma) - kbt_ * static_cast<double>(dexp_.size()) * std::log(sigma);
+  // if not serial, sum all the energies
+  if(!serial_) comm.Sum(&ene,1);
+  // add Jeffrey's prior + constant terms in sigma;
+  ene += kbt_ * ( 1.0 - static_cast<double>(dexp_.size()) ) * std::log(sigma);
   return ene;
 }
 
@@ -347,12 +387,10 @@ bool QCrossLink::doAccept(double oldE, double newE){
   return accept;
 }
     
-void QCrossLink::doMonteCarlo()
+void QCrossLink::doMonteCarlo(long int step)
 {
  double oldE, newE;
  bool accept;
- // get step
- long int step = getStep();
  // this is needed when restarting simulations
  if(MCfirst_==-1) MCfirst_=step;
  // calculate acceptance
@@ -405,8 +443,32 @@ void QCrossLink::doMonteCarlo()
    oldE = newE;
    MCaccRslope_++;
   }
+  // if debug, print out info about MC sampling
+  // TO DO
  }
- // set values
+ // send values of parameters to state B, via buffer
+  vector<double> buff(8, 0.0);
+  if(comm.Get_rank()==0){
+   if(is_state_A_){
+    buff[0]=sigma_;    buff[1]=beta_;      buff[2]=Rslope_;      buff[3]=W_;
+    buff[4]=MCaccsig_; buff[5]=MCaccbeta_; buff[6]=MCaccRslope_; buff[7]=MCaccW_;
+    multi_sim_comm.Isend(buff, rank_f_, 400);
+   } else {
+    multi_sim_comm.Recv(buff,  rank_f_, 400);
+    sigma_=buff[0];    beta_=buff[1];      Rslope_=buff[2];      W_=buff[3];
+    MCaccsig_=buff[4]; MCaccbeta_=buff[5]; MCaccRslope_=buff[6]; MCaccW_=buff[7];
+   }
+  } else {
+    sigma_  = 0.0;
+    beta_   = 0.0;
+    Rslope_ = 0.0;
+    W_      = 0.0;
+  }
+  comm.Sum(&sigma_, 1);
+  comm.Sum(&beta_, 1);
+  comm.Sum(&Rslope_, 1);
+  comm.Sum(&W_, 1);
+ // set values of Bayesian parameters
  // sigma
  getPntrToComponent("sigma")->set(sigma_);
  // sigma acceptance
@@ -436,7 +498,8 @@ void QCrossLink::calculate()
    for(unsigned i=0; i<dexp_.size(); ++i){
      unsigned id0 = pair_list_[i].first;
      unsigned id1 = pair_list_[i].second;
-     dexp_[i] = pbcDistance(getPosition(id0),getPosition(id1)); 
+     if(!nopbc_) dexp_[i] = pbcDistance(getPosition(id0),getPosition(id1));
+     else        dexp_[i] = delta(getPosition(id0),getPosition(id1));
    }
    // send and receive dexp_ with partner
    multi_sim_comm.Isend(dexp_, rank_f_,123);
@@ -453,31 +516,7 @@ void QCrossLink::calculate()
   // get time step 
   long int step = getStep();
   // do MC stuff at the right time step
-  if(step%MCstride_==0&&!getExchangeStep()) doMonteCarlo();
-
-  // send values of parameters to state B
-  if(comm.Get_rank()==0){
-   if(is_state_A_){
-    multi_sim_comm.Isend(sigma_, rank_f_,400);
-    multi_sim_comm.Isend(beta_, rank_f_,401);
-    multi_sim_comm.Isend(Rslope_, rank_f_,402);
-    multi_sim_comm.Isend(W_, rank_f_,403);
-   } else {
-    multi_sim_comm.Recv(sigma_,rank_f_,400);
-    multi_sim_comm.Recv(beta_,rank_f_,401);
-    multi_sim_comm.Recv(Rslope_,rank_f_,402);
-    multi_sim_comm.Recv(W_,rank_f_,403);
-   }
-  } else {
-    sigma_  = 0.0;
-    beta_   = 0.0;
-    Rslope_ = 0.0;
-    W_      = 0.0;
-  }
-  comm.Sum(&sigma_, 1);
-  comm.Sum(&beta_, 1);
-  comm.Sum(&Rslope_, 1);
-  comm.Sum(&W_, 1);
+  if(step%MCstride_==0&&!getExchangeStep()) doMonteCarlo(step);
   
   // clear derivatives
   for(unsigned i=0; i<atom_der_.size(); ++i) atom_der_[i] = Vector(0,0,0);
@@ -485,11 +524,8 @@ void QCrossLink::calculate()
   // calculate energy
   double rho_A, rho_B;
   double ene = 0.0;
-  // cycle on arguments
-  for(unsigned i=0;i<dexp_.size();++i){
-    // retrieve atom indexes
-    unsigned id0 = pair_list_[i].first;
-    unsigned id1 = pair_list_[i].second;
+  // cycle on data points, in parallel
+  for(unsigned i=rank_local_;i<dexp_.size();i=i+size_local_){
     // calculate rho
     if(is_state_A_){ 
       rho_A = get_rho(dexp_[i].modulo(),   Rslope_, alpha_);
@@ -507,27 +543,35 @@ void QCrossLink::calculate()
     double tmp1 = tmp0 * tmp0 + 2.0 * sigma_ * sigma_;
     // increment energy
     ene += kbt_ * std::log(tmp1);
-    // calculate derivative of score with respect to fmod
-    double score_der_fmod = - kbt_ / tmp1 * 2.0 * tmp0 / fmod ;
+    // calculate derivative of energy with respect to fmod
+    double dene_dfmod = - kbt_ / tmp1 * 2.0 * tmp0 / fmod ;
     // derivative of fmod with respect to rho
-    double fmod_der_rho; 
+    double dfmod_drho; 
     if(is_state_A_){
       // calculate derivative of fmod with respect to rho_A
-      fmod_der_rho = - W_ * (-fmod_A + 1.0 ) / fmod_B * beta_;
+      dfmod_drho =  - W_ / fmod_B * (fmod_A - 1.0) * beta_;
     } else {
       // calculate derivative of fmod with respect to rho_B
-      fmod_der_rho =   W_ * fmod_A / fmod_B / fmod_B * (-fmod_B + 1.0) * beta_;
+      dfmod_drho =  + W_ * fmod_A / fmod_B / fmod_B * (fmod_B - 1.0) * beta_;
     }
     // calculate derivative of rho with respect to distance
     // rho = 1.0 - 1.0 / (1.0+exp(-alpha*(dist-Rslope)));
     double tmp_rho = exp(-alpha_*(dexp_[i].modulo()-Rslope_));
-    double rho_der_dist = - 1.0 / ( 1.0 + tmp_rho ) / ( 1.0 + tmp_rho ) * tmp_rho * alpha_;
+    double drho_ddist = - 1.0 / ( 1.0 + tmp_rho ) / ( 1.0 + tmp_rho ) * tmp_rho * alpha_;
+    // retrieve atom indexes
+    unsigned id0 = pair_list_[i].first;
+    unsigned id1 = pair_list_[i].second;
     // add to derivatives with respect to atom positions
-    atom_der_[id0] -= score_der_fmod * fmod_der_rho * rho_der_dist * dexp_[i] / dexp_[i].modulo();
-    atom_der_[id1] += score_der_fmod * fmod_der_rho * rho_der_dist * dexp_[i] / dexp_[i].modulo();
+    atom_der_[id0] -= dene_dfmod * dfmod_drho * drho_ddist * dexp_[i] / dexp_[i].modulo();
+    atom_der_[id1] += dene_dfmod * dfmod_drho * drho_ddist * dexp_[i] / dexp_[i].modulo();
+  }
+  // gather contributions if parallel
+  if(!serial_){
+    comm.Sum(&ene, 1);
+    comm.Sum(&atom_der_[0], 3*atom_der_.size());
   }
   // add Jeffrey's priors + constant terms in sigma;
-  ene += kbt_ * std::log(sigma_) - kbt_ * static_cast<double>(dexp_.size()) * std::log(sigma_);
+  ene += kbt_ * ( 1.0 - static_cast<double>(dexp_.size()) ) * std::log(sigma_);
   // set value of the bias
   getPntrToComponent("score")->set(ene);
   // set derivatives
