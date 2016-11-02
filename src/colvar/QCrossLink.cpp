@@ -27,7 +27,6 @@
 
 #include <string>
 #include <cmath>
-#include <map>
 #include <numeric>
 #include <ctime>
 
@@ -220,7 +219,7 @@ is_state_A_(false), is_state_B_(false), serial_(false)
   } else {
     rank_ = 0;
   }
-  comm.Sum(&rank_,1);
+  if(comm.Get_size()>1) comm.Sum(&rank_,1);
   
   // find out if this rank will model A or B
   if(rank_==rank_A){
@@ -284,7 +283,7 @@ is_state_A_(false), is_state_B_(false), serial_(false)
   dexp_.resize(ratio_list_.size());
   dexp_f_.resize(ratio_list_.size());
   atom_der_.resize(atoms.size());
-  
+ 
   // request the atoms
   requestAtoms(atoms);
 }
@@ -354,8 +353,8 @@ double QCrossLink::getEnergy(double sigma, double w, double beta, double Rslope,
     // increment energy
     ene += kbt_ * std::log(tmp1);    
   }
-  // if not serial, sum all the energies
-  if(!serial_) comm.Sum(&ene,1);
+  // if parallel, sum all the energies
+  if(!serial_ && comm.Get_size()>1) comm.Sum(&ene,1);
   // add Jeffrey's prior + constant terms in sigma;
   ene += kbt_ * ( 1.0 - static_cast<double>(dexp_.size()) ) * std::log(sigma);
   return ene;
@@ -372,7 +371,8 @@ double QCrossLink::proposeMove(double x, double xmin, double xmax, double dxmax)
  return x_new;
 }
 
-bool QCrossLink::doAccept(double oldE, double newE){
+bool QCrossLink::doAccept(double oldE, double newE)
+{
   bool accept = false;
   // calculate delta energy 
   double delta = ( newE - oldE ) / kbt_;
@@ -447,16 +447,25 @@ void QCrossLink::doMonteCarlo(long int step)
   // TO DO
  }
  // send values of parameters to state B, via buffer
-  vector<double> buff(8, 0.0);
+ vector<double>       buff_d(4, 0.0), buff_d_r(4, 0.0);
+ vector<unsigned int> buff_u(4, 0),   buff_u_r(4, 0);
   if(comm.Get_rank()==0){
-   if(is_state_A_){
-    buff[0]=sigma_;    buff[1]=beta_;      buff[2]=Rslope_;      buff[3]=W_;
-    buff[4]=MCaccsig_; buff[5]=MCaccbeta_; buff[6]=MCaccRslope_; buff[7]=MCaccW_;
-    multi_sim_comm.Isend(buff, rank_f_, 400);
-   } else {
-    multi_sim_comm.Recv(buff,  rank_f_, 400);
-    sigma_=buff[0];    beta_=buff[1];      Rslope_=buff[2];      W_=buff[3];
-    MCaccsig_=buff[4]; MCaccbeta_=buff[5]; MCaccRslope_=buff[6]; MCaccW_=buff[7];
+   // prepare buffer double
+   buff_d[0]=sigma_;    buff_d[1]=beta_;      buff_d[2]=Rslope_;      buff_d[3]=W_;
+   // send and receive
+   Communicator::Request req_d=multi_sim_comm.Isend(buff_d, rank_f_, 400);
+   multi_sim_comm.Recv(buff_d_r, rank_f_, 400);
+   req_d.wait();
+   // prepare buffer unsigned 
+   buff_u[0]=MCaccsig_; buff_u[1]=MCaccbeta_; buff_u[2]=MCaccRslope_; buff_u[3]=MCaccW_;
+   // send and receive
+   Communicator::Request req_u=multi_sim_comm.Isend(buff_u, rank_f_, 401);
+   multi_sim_comm.Recv(buff_u_r, rank_f_, 401);
+   req_u.wait();   
+   // if state B write received buffer into variables
+   if(is_state_B_){
+    sigma_=buff_d_r[0];    beta_=buff_d_r[1];      Rslope_=buff_d_r[2];      W_=buff_d_r[3];
+    MCaccsig_=buff_u_r[0]; MCaccbeta_=buff_u_r[1]; MCaccRslope_=buff_u_r[2]; MCaccW_=buff_u_r[3];
    }
   } else {
     sigma_  = 0.0;
@@ -464,10 +473,15 @@ void QCrossLink::doMonteCarlo(long int step)
     Rslope_ = 0.0;
     W_      = 0.0;
   }
-  comm.Sum(&sigma_, 1);
-  comm.Sum(&beta_, 1);
-  comm.Sum(&Rslope_, 1);
-  comm.Sum(&W_, 1);
+  // wait for things to be done
+  multi_sim_comm.Barrier();
+  // local communication
+  if(comm.Get_size()>1){
+   comm.Sum(&sigma_, 1);
+   comm.Sum(&beta_, 1);
+   comm.Sum(&Rslope_, 1);
+   comm.Sum(&W_, 1);
+  }
  // set values of Bayesian parameters
  // sigma
  getPntrToComponent("sigma")->set(sigma_);
@@ -502,17 +516,22 @@ void QCrossLink::calculate()
      else        dexp_[i] = delta(getPosition(id0),getPosition(id1));
    }
    // send and receive dexp_ with partner
-   multi_sim_comm.Isend(dexp_, rank_f_,123);
-   multi_sim_comm.Recv(dexp_f_,rank_f_,123);
+   Communicator::Request req=multi_sim_comm.Isend(dexp_, rank_f_, 123);
+   multi_sim_comm.Recv(dexp_f_, rank_f_, 123);
+   req.wait();
   } else {
    for(unsigned i=0; i<dexp_.size(); ++i){
      dexp_[i] = Vector(0,0,0);
      dexp_f_[i] = Vector(0,0,0);
    }
   }
-  comm.Sum(&dexp_[0],   3*dexp_.size());
-  comm.Sum(&dexp_f_[0], 3*dexp_f_.size());
-  
+  // wait for things to be done
+  multi_sim_comm.Barrier();
+  // local communication
+  if(comm.Get_size()>1){
+   comm.Sum(&dexp_[0],   3*dexp_.size());
+   comm.Sum(&dexp_f_[0], 3*dexp_f_.size());
+  }
   // get time step 
   long int step = getStep();
   // do MC stuff at the right time step
@@ -566,7 +585,7 @@ void QCrossLink::calculate()
     atom_der_[id1] += dene_dfmod * dfmod_drho * drho_ddist * dexp_[i] / dexp_[i].modulo();
   }
   // gather contributions if parallel
-  if(!serial_){
+  if(!serial_ && comm.Get_size()>1){
     comm.Sum(&ene, 1);
     comm.Sum(&atom_der_[0], 3*atom_der_.size());
   }
