@@ -208,9 +208,9 @@ void SAXS::calculate(){
   for (unsigned k=0; k<numq; k++) {
     const unsigned kdx=k*size;
     for (unsigned i=rank; i<size-1; i+=stride) {
-      const unsigned kdxi=kdx+i;
       const double FF=2.*FF_value[k][i];
       const Vector posi=getPosition(i);
+      Vector dsum;
       for (unsigned j=i+1; j<size ; j++) {
         const Vector c_distances = delta(posi,getPosition(j));
         const double m_distances = c_distances.modulo();
@@ -220,10 +220,11 @@ void SAXS::calculate(){
         const double tcq = FFF*cos(qdist);
         const double tmp = (tcq-tsq)/(m_distances*m_distances);
         const Vector dd  = c_distances*tmp;
-        sum[k]       += tsq;
-        deriv[kdxi ] -= dd;
+        dsum         += dd;
         deriv[kdx+j] += dd;
+        sum[k]       += tsq;
       }
+      deriv[kdx+i] -= dsum;
     }
   }
 
