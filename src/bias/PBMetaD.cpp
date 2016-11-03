@@ -33,6 +33,7 @@
 #include "time.h"
 #include <iostream>
 #include <limits>
+#include <ctime>
 
 #define DP2CUTOFF 6.25
 
@@ -134,7 +135,7 @@ boundaries. Note that:
 - If in the region outside the limit sw the system has a free energy minimum, the INTERVAL keyword should 
   be used together with a \ref UPPER_WALLS or \ref LOWER_WALLS at sw.
   
-Multiple walkers  \cite multiplewalkers can also be used, in the MPI implementation only. See below the examples.
+Multiple walkers  \cite multiplewalkers can also be used. See below the examples.
 
 \par Examples
 The following input is for PBMetaD calculation using as
@@ -164,7 +165,7 @@ PRINT ARG=d1,d2,pb.bias STRIDE=100 FILE=COLVAR
 \endverbatim
 
 \par 
-Only the MPI version of multiple-walkers is currently implemented.
+The following input enables the MPI version of multiple-walkers.
 \verbatim
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
@@ -172,10 +173,35 @@ PBMETAD ...
 ARG=d1,d2 SIGMA=0.2,0.2 HEIGHT=0.3 
 PACE=500 BIASFACTOR=8 LABEL=pb 
 FILE=HILLS_d1,HILLS_d2
-MULTIPLE_WALKERS
+WALKERS_MPI
 ... PBMETAD
 PRINT ARG=d1,d2,pb.bias STRIDE=100 FILE=COLVAR
 \endverbatim
+
+\par
+The disk version of multiple-walkers can be 
+enabled by setting the number of walker used, the id of the  
+current walker which interprets the input file, the directory where the   
+hills containing files resides, and the frequency to read the other walkers.
+Here is an example
+\verbatim
+DISTANCE ATOMS=3,5 LABEL=d1
+DISTANCE ATOMS=2,4 LABEL=d2
+PBMETAD ...
+ARG=d1,d2 SIGMA=0.2,0.2 HEIGHT=0.3 
+PACE=500 BIASFACTOR=8 LABEL=pb 
+FILE=HILLS_d1,HILLS_d2
+WALKERS_N=10
+WALKERS_ID=3
+WALKERS_DIR=../
+WALKERS_RSTRIDE=100
+... PBMETAD
+PRINT ARG=d1,d2,pb.bias STRIDE=100 FILE=COLVAR
+\endverbatim
+where  WALKERS_N is the total number of walkers, WALKERS_ID is the   
+id of the present walker (starting from 0 ) and the WALKERS_DIR is the directory  
+where all the walkers are located. WALKERS_RSTRIDE is the number of step between 
+one update and the other. 
 
 */
 //+ENDPLUMEDOC
@@ -202,9 +228,16 @@ private:
   int     stride_;
   int     wgridstride_;
   bool    welltemp_;
-  bool    multiple_w;
-  unsigned nw_;
-  unsigned mw_;
+  int mw_n_;
+  string mw_dir_;
+  int mw_id_;
+  int mw_rstride_;
+  bool    walkers_mpi;
+  unsigned mpi_nw_;
+  unsigned mpi_id_;
+  vector<string> hillsfname;
+  vector<IFile*> ifiles;
+  vector<string> ifilesnames;
   vector<double> uppI_;
   vector<double> lowI_;
   vector<bool>  doInt_;
@@ -250,9 +283,13 @@ void PBMetaD::registerKeywords(Keywords& keys){
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
   keys.addFlag("GRID_SPARSE",false,"use a sparse grid to store hills");
   keys.addFlag("GRID_NOSPLINE",false,"don't use spline interpolation with grids");
+  keys.add("optional","WALKERS_ID", "walker id");
+  keys.add("optional","WALKERS_N", "number of walkers");
+  keys.add("optional","WALKERS_DIR", "shared directory with the hills files from all the walkers");
+  keys.add("optional","WALKERS_RSTRIDE","stride for reading hills files");
   keys.add("optional","INTERVAL_MIN","monodimensional lower limits, outside the limits the system will not feel the biasing force.");
   keys.add("optional","INTERVAL_MAX","monodimensional upper limits, outside the limits the system will not feel the biasing force.");
-  keys.addFlag("MULTIPLE_WALKERS",false,"Switch on MPI version of multiple walkers");
+  keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with other WALKERS_* options");
   keys.use("RESTART");
   keys.use("UPDATE_FROM");
   keys.use("UPDATE_UNTIL");
@@ -270,13 +307,21 @@ PBMetaD::~PBMetaD(){
     delete gridfiles_[i];
    }
   }
+  // close files
+  for(unsigned i=0;i<ifiles.size();++i){
+   if(ifiles[i]->isOpen()) ifiles[i]->close();
+   delete ifiles[i];
+  }
 }
 
 PBMetaD::PBMetaD(const ActionOptions& ao):
 PLUMED_BIAS_INIT(ao),
 grid_(false), height0_(std::numeric_limits<double>::max()),
 biasf_(1.0), kbt_(0.0), stride_(0), wgridstride_(0), welltemp_(false),
-multiple_w(false), isFirstStep(true)
+// Multiple walkers initialization
+mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1),
+walkers_mpi(false), mpi_nw_(0),
+isFirstStep(true)
 {
 
   parse("FMT",fmt);
@@ -290,7 +335,6 @@ multiple_w(false), isFirstStep(true)
   parse("PACE",stride_);
   if(stride_<=0) error("frequency for hill addition is nonsensical");
   
-  vector<string> hillsfname;
   parseVector("FILE",hillsfname);
   if(hillsfname.size()==0) {
     for(unsigned i=0;i<getNumberOfArguments();i++) hillsfname.push_back("HILLS."+getPntrToArgument(i)->getName());
@@ -321,8 +365,15 @@ multiple_w(false), isFirstStep(true)
     height0_=(kbt_*(biasf_-1.0))/tau*getTimeStep()*stride_;
   }
   
+  // Multiple walkers
+  parse("WALKERS_N",mw_n_);
+  parse("WALKERS_ID",mw_id_);
+  if(mw_n_<=mw_id_) error("walker ID should be a numerical value less than the total number of walkers");
+  parse("WALKERS_DIR",mw_dir_);
+  parse("WALKERS_RSTRIDE",mw_rstride_);
+
   // MPI version
-  parseFlag("MULTIPLE_WALKERS",multiple_w);
+  parseFlag("WALKERS_MPI",walkers_mpi);
 
   // Grid file
   vector<string> gridfilenames_;
@@ -412,7 +463,29 @@ multiple_w(false), isFirstStep(true)
     log.printf("  Hills relaxation time (tau) %f\n",tau);
     log.printf("  KbT %f\n",kbt_);
   }
-  if(multiple_w) log.printf("  Multiple walkers active using MPI communnication\n");
+
+//  if(walkers_mpi) log.printf("  Multiple walkers active using MPI communnication\n");
+  if(mw_n_>1){
+    if(walkers_mpi) error("MPI version of multiple walkers is not compatible with filesystem version of multiple walkers");
+    log.printf("  %d multiple walkers active\n",mw_n_);
+    log.printf("  walker id %d\n",mw_id_);
+    log.printf("  reading stride %d\n",mw_rstride_);
+    log.printf("  directory with hills files %s\n",mw_dir_.c_str());
+  } else {
+    if(walkers_mpi) {
+      log.printf("  Multiple walkers active using MPI communnication\n"); 
+      if(comm.Get_rank()==0){
+        // Only root of group can communicate with other walkers
+        mpi_nw_ = multi_sim_comm.Get_size();
+        mpi_id_ = multi_sim_comm.Get_rank();
+      }
+      // Communicate to the other members of the same group
+      // info abount number of walkers and walker index
+      comm.Bcast(mpi_nw_,0);
+      comm.Bcast(mpi_id_,0);
+    }
+  }
+
   for(unsigned i=0; i<doInt_.size();i++) {
     if(doInt_[i]) log.printf("  Upper and Lower limits boundaries for the bias of CV %u are activated\n", i);
   }
@@ -499,22 +572,35 @@ multiple_w(false), isFirstStep(true)
    }
   }
 
-  // read Gaussians if restarting
-  if (!restartedFromGrid){
-   for(unsigned i=0;i<hillsfname.size();++i){
-    IFile *ifile = new IFile();
-    ifile->link(*this);
-    if(ifile->FileExist(hillsfname[i])){
-     ifile->open(hillsfname[i]);
-     if(getRestart()){
-      log.printf("  Restarting from %s:",hillsfname[i].c_str());                  
-      readGaussians(i, ifile);                                                    
-     }
-     ifile->reset(false);
-     ifile->close();
-     delete ifile;
+//cout<<"I am "<<multi_sim_comm.Get_rank()<<" . DISK - "<<mw_n_<<" ; MPI - "<<mpi_nw_<<" ; mpi real - "<<multi_sim_comm.Get_size()<<" ."<<endl;
+
+// creating vector of ifile* for hills reading 
+// open all files at the beginning and read Gaussians if restarting
+  for(int j=0;j<mw_n_;++j){
+    for(unsigned i=0;i<hillsfname.size();++i){
+      unsigned k=j*hillsfname.size()+i;
+      string fname;
+      if(mw_n_>1) {
+        stringstream out; out << j;
+        fname = mw_dir_+"/"+hillsfname[i]+"."+out.str();
+      } else {
+        fname = hillsfname[i];
+      }
+      IFile *ifile = new IFile();
+      ifile->link(*this);
+      ifiles.push_back(ifile);
+      ifilesnames.push_back(fname);
+      if(ifile->FileExist(fname)){
+        ifile->open(fname);
+        if(getRestart()&&!restartedFromGrid){
+          log.printf("  Restarting from %s:",ifilesnames[k].c_str());
+          readGaussians(i,ifiles[k]);
+        }
+        ifiles[k]->reset(false);
+        // close only the walker own hills file for later writing
+        if(j==mw_id_) ifiles[k]->close();
+      }
     }
-   }
   }
 
   comm.Barrier();
@@ -525,30 +611,31 @@ multiple_w(false), isFirstStep(true)
   // it would introduce troubles when using replicas without METAD
   // (e.g. in bias exchange with a neutral replica)
   // see issue #168 on github
-  if(multiple_w){
-    if(comm.Get_rank()==0) {
-      multi_sim_comm.Barrier();
-      nw_ = multi_sim_comm.Get_size();
-      mw_ = multi_sim_comm.Get_rank();
-    }
-    comm.Bcast(nw_,0);
-    comm.Bcast(mw_,0);
-  }
+//   if(walkers_mpi){
+//     if(comm.Get_rank()==0) {
+//       multi_sim_comm.Barrier();
+//       mpi_nw_ = multi_sim_comm.Get_size();
+//       mpi_id_ = multi_sim_comm.Get_rank();
+//     }
+//     comm.Bcast(mpi_nw_,0);
+//     comm.Bcast(mpi_id_,0);
+//   }
+  if(comm.Get_rank()==0 && walkers_mpi) multi_sim_comm.Barrier();
 
   // open hills files for writing
   for(unsigned i=0;i<hillsfname.size();++i){
    OFile *ofile = new OFile();
    ofile->link(*this);
-   string hillsfname_tmp = hillsfname[i];
-   // if multiple walkers, only rank 0 will write to file
-   if(multiple_w){
+   // if MPI multiple walkers, only rank 0 will write to file
+   if(walkers_mpi){
     int r=0;
     if(comm.Get_rank()==0) r=multi_sim_comm.Get_rank();
     comm.Bcast(r,0);
-    if(r>0) hillsfname_tmp="/dev/null";
+    if(r>0) ifilesnames[mw_id_*hillsfname.size()+i]="/dev/null";
     ofile->enforceSuffix("");
    }
-   ofile->open(hillsfname_tmp);
+   if(mw_n_>1) ofile->enforceSuffix("");
+   ofile->open(ifilesnames[mw_id_*hillsfname.size()+i]);
    if(fmt.length()>0) ofile->fmtField(fmt);
    ofile->addConstantField("multivariate");
    if(doInt_[i]) {
@@ -568,7 +655,7 @@ multiple_w(false), isFirstStep(true)
     OFile *ofile = new OFile();
     ofile->link(*this);
     string gridfname_tmp = gridfilenames_[i];
-    if(multiple_w) {
+    if(walkers_mpi) {
      int r = 0;
      if(comm.Get_rank() == 0) {
       r = multi_sim_comm.Get_rank();
@@ -579,6 +666,7 @@ multiple_w(false), isFirstStep(true)
      }
      ofile->enforceSuffix("");
     }
+    if(mw_n_>1) ofile->enforceSuffix("");
     ofile->open(gridfname_tmp);
     ofile->setHeavyFlush();
     gridfiles_.push_back(ofile);
@@ -588,7 +676,7 @@ multiple_w(false), isFirstStep(true)
   log<<"  Bibliography "<<plumed.cite("Pfaendtner and Bonomi. J. Chem. Theory Comput. 11, 5062 (2015)");
   if(doInt_[0]) log<<plumed.cite(
      "Baftizadeh, Cossio, Pietrucci, and Laio, Curr. Phys. Chem. 2, 79 (2012)");
-  if(multiple_w) log<<plumed.cite(
+  if(mw_n_>1||walkers_mpi) log<<plumed.cite(
     "Raiteri, Laio, Gervasio, Micheletti, and Parrinello, J. Phys. Chem. B 110, 3533 (2006)");   
   log<<"\n";
 }
@@ -640,6 +728,7 @@ void PBMetaD::writeGaussian(unsigned iarg, const Gaussian& hill, OFile *ofile){
   if(welltemp_){height *= biasf_/(biasf_-1.0);}
   ofile->printField("height",height);
   ofile->printField("biasf",biasf_);
+  if(mw_n_>1) ofile->printField("clock",int(std::time(0)));
   ofile->printField();
 }
 
@@ -813,15 +902,15 @@ void PBMetaD::update()
      if(welltemp_) height[i] *= exp(-bias[i]/(kbt_*(biasf_-1.0)));
    }
 
-   // Multiple walkers: share hills and add them all
-   if(multiple_w){
+   // MPI Multiple walkers: share hills and add them all
+   if(walkers_mpi){
      // Allocate arrays to store all walkers hills
-     std::vector<double> all_cv(nw_*cv.size(), 0.0);
-     std::vector<double> all_height(nw_*height.size(), 0.0);
+     std::vector<double> all_cv(mpi_nw_*cv.size(), 0.0);
+     std::vector<double> all_height(mpi_nw_*height.size(), 0.0);
      if(comm.Get_rank()==0){
        // fill in value
        for(unsigned i=0; i<getNumberOfArguments(); ++i){
-        unsigned j = mw_ * getNumberOfArguments() + i;
+        unsigned j = mpi_id_ * getNumberOfArguments() + i;
         all_cv[j] = cv[i];
         all_height[j] = height[i];
        }
@@ -833,7 +922,7 @@ void PBMetaD::update()
      comm.Sum(&all_cv[0], all_cv.size());
      comm.Sum(&all_height[0], all_height.size());
      // now add hills one by one
-     for(unsigned j=0; j<nw_; ++j){
+     for(unsigned j=0; j<mpi_nw_; ++j){
       for(unsigned i=0; i<getNumberOfArguments(); ++i){
        cv_tmp[0]    = all_cv[j*cv.size()+i];
        sigma_tmp[0] = sigma0_[i];
@@ -857,21 +946,47 @@ void PBMetaD::update()
     } 
    }
   }
-  // write grid files
-  if(wgridstride_>0 && (getStep()%wgridstride_==0 || getCPT())) {
-    int r = 0;
-    if(multiple_w) {
-      if(comm.Get_rank()==0) r=multi_sim_comm.Get_rank();
-      comm.Bcast(r,0);
-    } 
-    if(r==0) {
-      for(unsigned i=0; i<gridfiles_.size(); ++i) {
-        gridfiles_[i]->rewind();
-        BiasGrids_[i]->writeToFile(*gridfiles_[i]);
-        gridfiles_[i]->flush();
+
+   // write grid files
+   if(wgridstride_>0 && (getStep()%wgridstride_==0 || getCPT())) {
+     int r = 0;
+     if(walkers_mpi) {
+       if(comm.Get_rank()==0) r=multi_sim_comm.Get_rank();
+       comm.Bcast(r,0);
+     } 
+     if(r==0) {
+       for(unsigned i=0; i<gridfiles_.size(); ++i) {
+         gridfiles_[i]->rewind();
+         BiasGrids_[i]->writeToFile(*gridfiles_[i]);
+         gridfiles_[i]->flush();
+       }
+     }
+   }
+
+  // if multiple walkers and time to read Gaussians
+  if(mw_n_>1 && getStep()%mw_rstride_==0){
+    for(int j=0;j<mw_n_;++j){
+      for(unsigned i=0;i<hillsfname.size();++i){
+        unsigned k=j*hillsfname.size()+i;
+        // don't read your own Gaussians
+        if(j==mw_id_) continue;
+        // if the file is not open yet 
+        if(!(ifiles[k]->isOpen())){
+          // check if it exists now and open it!
+          if(ifiles[k]->FileExist(ifilesnames[k])) {
+            ifiles[k]->open(ifilesnames[k]);
+            ifiles[k]->reset(false);
+          }
+          // otherwise read the new Gaussians 
+        } else {
+          log.printf("  Reading hills from %s:",ifilesnames[k].c_str());
+          readGaussians(i,ifiles[k]);
+          ifiles[k]->reset(false);
+        }
       }
     }
   }
+
 }
 
 /// takes a pointer to the file and a template string with values v and gives back the next center, sigma and height 
