@@ -51,11 +51,9 @@ public:
 /// Return the index of the data point in the base class
   unsigned getDataPointIndexInBase( const unsigned& idata ) const ;
 /// Get the weight
-  double getWeight( const unsigned& idata ) const ;
-/// Get the ith data point
-  void getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const ;
+  double getWeight( const unsigned& idata );
 /// Get a reference configuration
-  ReferenceConfiguration* getReferenceConfiguration( const unsigned& idat, const bool& calcdist );
+  DataCollectionObject& getStoredData( const unsigned& idat, const bool& calcdist );
 /// Select landmark configurations
   void performAnalysis();
   virtual void selectLandmarks()=0;
@@ -76,18 +74,13 @@ unsigned LandmarkSelectionBase::getDataPointIndexInBase( const unsigned& idata )
 }
 
 inline
-double LandmarkSelectionBase::getWeight( const unsigned& idata ) const {
+double LandmarkSelectionBase::getWeight( const unsigned& idata ){
   return lweights[idata];
 }
 
 inline
-void LandmarkSelectionBase::getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const {
-  AnalysisBase::getDataPoint( landmark_indices[idata], point, weight );
-}
-
-inline
-ReferenceConfiguration* LandmarkSelectionBase::getReferenceConfiguration( const unsigned& idat, const bool& calcdist ){
-  return AnalysisBase::getReferenceConfiguration( landmark_indices[idat], calcdist );
+DataCollectionObject& LandmarkSelectionBase::getStoredData( const unsigned& idat, const bool& calcdist ){
+  return AnalysisBase::getStoredData( landmark_indices[idat], calcdist );
 }
 
 inline

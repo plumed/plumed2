@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "AnalysisWithDataCollection.h"
+#include "AnalysisBase.h"
 #include "reference/ReferenceAtoms.h"
 #include "reference/ReferenceArguments.h"
 #include "core/ActionRegister.h"
@@ -44,10 +44,11 @@ using that dimensionality reduction algorithms out-of-sample extension algorithm
 */
 //+ENDPLUMEDOC
 
-class OutputColvarFile : public AnalysisWithDataCollection {
+class OutputColvarFile : public AnalysisBase {
 private:
   std::string fmt;
   std::string filename;
+  std::vector<std::string> req_vals;
 public:
   static void registerKeywords( Keywords& keys );
   OutputColvarFile( const ActionOptions& );
@@ -58,56 +59,44 @@ public:
 PLUMED_REGISTER_ACTION(OutputColvarFile,"OUTPUT_ANALYSIS_DATA_TO_COLVAR")
 
 void OutputColvarFile::registerKeywords( Keywords& keys ){
-  AnalysisWithDataCollection::registerKeywords( keys );
+  AnalysisBase::registerKeywords( keys ); keys.use("ARG");
   keys.add("compulsory","FILE","the name of the file to output to");
+  keys.add("compulsory","STRIDE","0","the frequency with which to perform the required analysis and to output the data.  The default value of 0 tells plumed to use all the data");
   keys.add("optional","FMT","the format to output the data using");
-  keys.reset_style("ATOMS","hidden"); keys.reset_style("STRIDE","hidden"); 
-  keys.reset_style("RUN","hidden"); keys.reset_style("USE_ALL_DATA","hidden");
-  keys.reset_style("REUSE_INPUT_DATA_FROM","hidden");
-  keys.reset_style("WRITE_CHECKPOINT","hidden"); keys.reset_style("NOMEMORY","hidden");
-  keys.reset_style("RESTART","hidden"); keys.reset_style("UPDATE_FROM","hidden");
-  keys.reset_style("UPDATE_UNTIL","hidden"); keys.reset_style("ARG","hidden");
 } 
 
 OutputColvarFile::OutputColvarFile( const ActionOptions& ao ):
 Action(ao),
-AnalysisWithDataCollection(ao),
+AnalysisBase(ao),
 fmt("%f")
 {
   parse("FILE",filename); parse("FMT",fmt);
   if( !getRestart() ){ OFile ofile; ofile.link(*this); ofile.setBackupString("analysis"); ofile.backupAllFiles(filename); }
   log.printf("  printing data to file named %s \n",filename.c_str() );
+  if( getArguments().size()==0 ){
+     std::vector<std::string> tmp_vals( my_input_data->getArgumentNames() );
+     req_vals.resize( tmp_vals.size() ); for(unsigned i=0;i<tmp_vals.size();++i) req_vals[i]=tmp_vals[i];
+  } else {
+     req_vals.resize( getArguments().size() ); for(unsigned i=0;i<req_vals.size();++i) req_vals[i]=getPntrToArgument(i)->getName();
+  }
+  plumed_assert( req_vals.size()>0 );
+  log.printf("  outputting %s", req_vals[0].c_str() );
+  for(unsigned i=1;i<req_vals.size();++i) log.printf(",", req_vals[i].c_str() );
+  log.printf("\n");
 }
 
 void OutputColvarFile::performAnalysis(){
-
   // Output the embedding as long lists of data
   OFile gfile; gfile.link(*this); 
   gfile.setBackupString("analysis");
   gfile.fmtField(fmt+" ");
   gfile.open( filename.c_str() );
 
-  ReferenceConfiguration* myp = getReferenceConfiguration(0,false);
-  if( myp->getNumberOfProperties()==0 ){
-      plumed_assert( !dynamic_cast<ReferenceAtoms*>( myp ) );
-      for(unsigned j=0;j<myp->getReferenceArguments().size();++j) gfile.setupPrintValue( getArguments()[j] );
-  }
-
   // Print embedding coordinates
   for(unsigned i=0;i<getNumberOfDataPoints();++i){
-      ReferenceConfiguration* mypoint=getReferenceConfiguration(i,false);
-      for(unsigned j=0;j<mypoint->getNumberOfProperties();++j){
-          gfile.printField( mypoint->getPropertyName(j), mypoint->getPropertyValue(j) );
-      }
-      if( mypoint->getNumberOfProperties()==0 ){
-          ReferenceArguments* myref=dynamic_cast<ReferenceArguments*>( mypoint );
-          plumed_assert( myref );
-          for(unsigned j=0;j<myref->getReferenceArguments().size();++j){
-              gfile.printField( getArguments()[j], myref->getReferenceArgument(j) );
-          }
-      }
-      gfile.printField( "weight", getWeight(i) );
-      gfile.printField();
+      DataCollectionObject& mydata=getStoredData(i, false);
+      for(unsigned j=0;j<req_vals.size();++j) gfile.printField( req_vals[j], mydata.getArgumentValue(req_vals[j]) );
+      gfile.printField( "weight", getWeight(i) ); gfile.printField();
   }  
   gfile.close();
 }

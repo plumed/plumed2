@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "AnalysisWithDataCollection.h"
+#include "AnalysisBase.h"
 #include "reference/ReferenceAtoms.h"
 #include "reference/ReferenceArguments.h"
 #include "core/ActionRegister.h"
@@ -27,6 +27,7 @@
 #include "core/ActionSet.h"
 #include "core/Atoms.h"
 #include "core/SetupMolInfo.h"
+#include "tools/PDB.h"
 
 namespace PLMD {
 namespace analysis {
@@ -40,8 +41,9 @@ This can be used to output the data that has been stored in an Analysis object.
 */
 //+ENDPLUMEDOC
 
-class OutputPDBFile : public AnalysisWithDataCollection {
+class OutputPDBFile : public AnalysisBase {
 private:
+  PDB mypdb;
   std::string fmt;
   std::string filename;
 public:
@@ -54,22 +56,21 @@ public:
 PLUMED_REGISTER_ACTION(OutputPDBFile,"OUTPUT_ANALYSIS_DATA_TO_PDB")
 
 void OutputPDBFile::registerKeywords( Keywords& keys ){
-  AnalysisWithDataCollection::registerKeywords( keys );
+  AnalysisBase::registerKeywords( keys );
   keys.add("compulsory","FILE","the name of the file to output to");
   keys.add("optional","FMT","the format to use in the output file");
-  keys.reset_style("ATOMS","hidden"); keys.reset_style("STRIDE","hidden");
-  keys.reset_style("RUN","hidden"); keys.reset_style("USE_ALL_DATA","hidden");
-  keys.reset_style("REUSE_INPUT_DATA_FROM","hidden");
-  keys.reset_style("WRITE_CHECKPOINT","hidden"); keys.reset_style("NOMEMORY","hidden");
-  keys.reset_style("RESTART","hidden"); keys.reset_style("UPDATE_FROM","hidden");
-  keys.reset_style("UPDATE_UNTIL","hidden"); keys.reset_style("ARG","hidden");
+  keys.add("compulsory","STRIDE","0","the frequency with which to perform the required analysis and to output the data.  The default value of 0 tells plumed to use all the data");
 }
 
 OutputPDBFile::OutputPDBFile( const ActionOptions& ao ):
 Action(ao),
-AnalysisWithDataCollection(ao),
+AnalysisBase(ao),
 fmt("%f")
 {
+  // Get setup the pdb
+  mypdb.setAtomNumbers( my_input_data->getAtomIndexes() );
+  mypdb.setArgumentNames( my_input_data->getArgumentNames() );
+
   // Find a moldata object
   std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
   if( moldat.empty() ) warning("PDB output files do not have atom types unless you use MOLDATA");
@@ -84,15 +85,15 @@ void OutputPDBFile::performAnalysis(){
   std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
   if( moldat.size()>1 ) error("you should only have one MOLINFO action in your input file"); 
   SetupMolInfo* mymoldat=NULL; if( moldat.size()==1 ) mymoldat=moldat[0];
-
   // Output the embedding in plumed pdb format
   OFile afile; afile.link(*this); afile.setBackupString("analysis"); std::size_t psign=fmt.find("%");
   afile.open( filename.c_str() ); std::string descr="REMARK WEIGHT=%-" + fmt.substr(psign+1) + "\n";
   for(unsigned j=0;j<getNumberOfDataPoints();++j){
       afile.printf("DESCRIPTION: analysis data from calculation done by %s at time %f \n",getLabel().c_str(),getTime() );
-      afile.printf(descr.c_str(),getWeight(j) ); 
-      if( plumed.getAtoms().usingNaturalUnits() ) getReferenceConfiguration(j,false)->print( 1.0, mymoldat, afile, fmt );
-      else getReferenceConfiguration(j,false)->print( plumed.getAtoms().getUnits().getLength()/0.1, mymoldat, afile, fmt );
+      if( dissimilaritiesWereSet() ) afile.printf("REMARK %s \n", getDissimilarityInstruction().c_str() );
+      afile.printf(descr.c_str(),getWeight(j) ); getStoredData(j,false).transferDataToPDB( mypdb ); 
+      if( plumed.getAtoms().usingNaturalUnits() ) mypdb.print( 1.0, mymoldat, afile, fmt );
+      else mypdb.print( plumed.getAtoms().getUnits().getLength()/0.1, mymoldat, afile, fmt );
   }
   afile.close();
 }

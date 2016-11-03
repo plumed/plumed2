@@ -34,7 +34,7 @@ ReferenceArguments(ro)
 }
 
 void Direction::read( const PDB& pdb ){
-  readAtomsFromPDB( pdb );
+  readAtomsFromPDB( pdb, true );
   readArgumentsFromPDB( pdb );
 }
 

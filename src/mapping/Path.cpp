@@ -134,12 +134,6 @@ PathBase(ao)
 
   std::string empty;
   if(!nos){
-     for(unsigned i=0;i<getNumberOfReferencePoints();++i){
-        ReferenceConfiguration* myconf = getReferenceConfiguration(i);
-        if( myconf->getNumberOfProperties()>1 || myconf->getPropertyName(0)!="spath" ){
-           error("paths only work when there is a single property called spath being calculated"); 
-        }
-     }
      if( getLambda()==0 ) error("you must set LAMBDA parameter in order to calculate spath position.  Use LAMBDA/NOSPATH keyword");
      empty="LABEL=spath"; 
      addVessel("SPATH",empty,0);    

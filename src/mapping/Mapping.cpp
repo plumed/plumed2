@@ -36,7 +36,7 @@ void Mapping::registerKeywords( Keywords& keys ){
   ActionWithValue::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys ); 
   ActionAtomistic::registerKeywords( keys ); 
-  vesselbase::ActionWithVessel::registerKeywords( keys );
+  vesselbase::ActionWithVessel::registerKeywords( keys ); 
   keys.add("compulsory","REFERENCE","a pdb file containing the set of reference configurations");
   keys.add("compulsory","PROPERTY","the property to be used in the index. This should be in the REMARK of the reference");
   keys.add("compulsory","TYPE","OPTIMAL-FAST","the manner in which distances are calculated. More information on the different "
@@ -59,10 +59,11 @@ ActionWithVessel(ao)
   // Read the properties we require
   bool ispath=false;
   if( keywords.exists("PROPERTY") ){
-     parseVector("PROPERTY",property);
-     if(property.size()==0) error("no properties were specified");
+     std::vector<std::string> propnames; parseVector("PROPERTY",propnames);
+     if(propnames.size()==0) error("no properties were specified");
+     for(unsigned i=0;i<propnames.size();++i) property.insert( std::pair<std::string,std::vector<double> >( propnames[i], std::vector<double>() ) );
   } else {
-     property.resize(1); property[0]="spath"; ispath=true;
+     property.insert( std::pair<std::string,std::vector<double> >( "spath", std::vector<double>() ) ); ispath=true;
   }
 
   // Open reference file
@@ -71,35 +72,34 @@ ActionWithVessel(ao)
   if(!fp) error("could not open reference file " + reference );
 
   // Read all reference configurations 
-  bool do_read=true; std::vector<double> weights; 
-  unsigned nfram=0, wnorm=0., ww;
+  bool do_read=true; unsigned nfram=0; double wnorm=0., ww;
   while (do_read){
-     PDB mypdb; 
      // Read the pdb file
-     do_read=mypdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
+     PDB mypdb; do_read=mypdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
      // Break if we are done
      if( !do_read ) break ;
      // Check for required properties
      if( !ispath ){
-         if( !mypdb.hasRequiredProperties( property ) ) error("pdb input does not have contain required properties");
+         double prop;
+         for(std::map<std::string,std::vector<double> >::iterator it=property.begin(); it!=property.end();it++){
+             if( !mypdb.getArgumentValue( it->first, prop ) ) error("pdb input does not have contain property named " + it->first ); 
+             it->second.push_back(prop);
+         }
      } else {
-         std::vector<std::string> pathremarks(2); std::string num; Tools::convert( myframes.size()+1, num );
-         pathremarks[0]="PROPERTIES=spath"; pathremarks[1]="spath=" + num;
-         mypdb.addRemark( pathremarks );
+         property.find("spath")->second.push_back( myframes.size()+1 );
      }
      // Fix argument names
      expandArgKeywordInPDB( mypdb );
      // And read the frame
      myframes.push_back( metricRegister().create<ReferenceConfiguration>( mtype, mypdb ) );
-     myframes[nfram]->checkRead(); ww=myframes[nfram]->getWeight(); 
-     weights.push_back( ww );
-     wnorm+=ww; nfram++;
+     if( !mypdb.getArgumentValue( "WEIGHT", ww ) ) ww=1.0;
+     weights.push_back( ww ); wnorm+=ww; nfram++;
   }
   fclose(fp); 
 
   if(nfram==0 ) error("no reference configurations were specified");
   log.printf("  found %u configurations in file %s\n",nfram,reference.c_str() );
-  for(unsigned i=0;i<weights.size();++i) myframes[i]->setWeight( weights[i]/wnorm );
+  for(unsigned i=0;i<weights.size();++i) weights[i] = weights[i]/wnorm;
 
   // Finish the setup of the mapping object
   // Get the arguments and atoms that are required

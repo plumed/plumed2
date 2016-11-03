@@ -199,7 +199,7 @@ void PCAVars::registerKeywords( Keywords& keys ){
   ActionWithValue::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys );
-  componentsAreNotOptional(keys);
+  componentsAreNotOptional(keys); keys.use("ARG");
   keys.addOutputComponent("eig","default","the projections on each eigenvalue are stored on values labeled eig-1, eig-2, ..."); 
   keys.addOutputComponent("residual","default","the distance of the configuration from the linear subspace defined "
                                                "by the vectors, \\f$e_i\\f$, that are contained in the rows of \\f$A\\f$.  In other words this is "
@@ -237,7 +237,6 @@ mypack(0,0,myvals)
      // Read the pdb file
      do_read=mypdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
      // Fix argument names
-     expandArgKeywordInPDB( mypdb );
      if(do_read){
         if( nfram==0 ){
            myref = metricRegister().create<ReferenceConfiguration>( mtype, mypdb );
@@ -287,10 +286,10 @@ mypack(0,0,myvals)
 
   // Resize the matrices that will hold our eivenvectors 
   PDB mypdb; mypdb.setAtomNumbers( atoms ); mypdb.addBlockEnd( atoms.size() );
-  if( args.size()>0 ) mypdb.addArgumentNames( args );
+  if( args.size()>0 ) mypdb.setArgumentNames( args );
   // Resize the matrices that will hold our eivenvectors 
   for(unsigned i=0;i<myframes.size();++i){ 
-      directions.push_back( Direction(ReferenceConfigurationOptions("DIRECTION"))); directions[i].set( mypdb );
+      directions.push_back( Direction(ReferenceConfigurationOptions("DIRECTION"))); directions[i].read( mypdb );
   }
 
   // Create fake periodic boundary condition (these would only be used for DRMSD which is not allowed)

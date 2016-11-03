@@ -45,6 +45,7 @@ dimredbase(NULL)
   }
 
   // Retrieve the dimension in the low dimensionality space
+  nlow=0;
   if( dimredbase ){
       nlow=dimredbase->nlow;
       log.printf("  projecting in %u dimensional space \n",nlow);
@@ -53,15 +54,26 @@ dimredbase(NULL)
       if( nlow<1 ) error("dimensionality of low dimensional space must be at least one");
       log.printf("  projecting in %u dimensional space \n",nlow);
   }
+  // Now add fake components to the underlying ActionWithValue for the arguments
+  std::string num; 
+  for(unsigned i=0;i<nlow;++i){ 
+    Tools::convert(i+1,num); addComponent( num ); componentIsNotPeriodic( num );
+  }
 }
 
-ReferenceConfiguration* DimensionalityReductionBase::getReferenceConfiguration( const unsigned& idat, const bool& calcdist ){
-  ReferenceConfiguration* myref = my_input_data->getReferenceConfiguration( idat, calcdist ); std::string num; myref->clearAllProperties();
-  for(unsigned i=0;i<nlow;++i){ Tools::convert(i+1,num); myref->attachProperty( getLabel() + "." + num, projections(idat,i) ); }
+analysis::DataCollectionObject& DimensionalityReductionBase::getStoredData( const unsigned& idat, const bool& calcdist ){
+  analysis::DataCollectionObject& myref=AnalysisBase::getStoredData(idat,calcdist); std::string num;
+  for(unsigned i=0;i<nlow;++i){ Tools::convert(i+1,num); myref.setArgument( getLabel() + "." + num, projections(idat,i) ); }
   return myref; 
 }
 
-void DimensionalityReductionBase::getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const {
+std::vector<Value*> DimensionalityReductionBase::getArgumentList(){
+   std::vector<Value*> arglist( analysis::AnalysisBase::getArgumentList() );
+   for(unsigned i=0;i<nlow;++i) arglist.push_back( getPntrToComponent(i) );
+   return arglist;
+}
+
+void DimensionalityReductionBase::getProjection( const unsigned& idata, std::vector<double>& point, double& weight ){
   if( point.size()!=nlow ) point.resize( nlow );
   weight = getWeight(idata); for(unsigned i=0;i<nlow;++i) point[i]=projections(idata,i);
 }
@@ -76,7 +88,7 @@ void DimensionalityReductionBase::performAnalysis(){
   if( dimredbase ){
       std::vector<double> newp( nlow ); double w;
       for(unsigned i=0;i<getNumberOfDataPoints();++i){ 
-         dimredbase->getDataPoint( i, newp, w ); plumed_dbg_assert( newp.size()==nlow );
+         dimredbase->getProjection( i, newp, w ); plumed_dbg_assert( newp.size()==nlow );
          for(unsigned j=0;j<nlow;++j) projections(i,j)=newp[j]; 
       }
   }

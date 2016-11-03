@@ -28,6 +28,7 @@
 #include "vesselbase/ActionWithVessel.h"
 #include "reference/ReferenceConfiguration.h"
 #include <vector>
+#include <map>
 
 namespace PLMD {
 
@@ -50,8 +51,10 @@ private:
   std::vector<ReferenceConfiguration*> myframes;
 /// The forces on each of the derivatives (used in apply)
   std::vector<double> forcesToApply;
+/// The weights of the various configurations
+  std::vector<double> weights;
 /// The list of properties in the property map
-  std::vector<std::string> property;
+  std::map<std::string,std::vector<double> > property;
 protected:
 /// The (transformed) distance from each frame
   std::vector<double> fframes;
@@ -120,12 +123,12 @@ void Mapping::unlockRequests(){
 
 inline
 double Mapping::getPropertyValue( const unsigned& cur, const std::string& name ) const {
-  return myframes[cur]->getPropertyValue( name ); 
+  return property.find(name)->second[cur]; 
 }
 
 inline
 double Mapping::getWeight( const unsigned& current ) const {
-  return myframes[current]->getWeight(); 
+  return weights[current]; 
 }
 
 inline

@@ -53,10 +53,10 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   ProjectNonLandmarkPoints( const ActionOptions& ao );
-/// Get the ith data point (this returns the projection)
-  void getDataPoint( const unsigned& idat, std::vector<double>& point );
 /// Get a reference configuration (this returns the projection)
-  ReferenceConfiguration* getReferenceConfiguration( const unsigned& idat, const bool& calcdist );
+  analysis::DataCollectionObject& getStoredData( const unsigned& idat, const bool& calcdist );
+/// Overwrite getArguments so we get arguments from underlying class
+  std::vector<Value*> getArgumentList();
 /// This does nothing -- projections are calculated when getDataPoint and getReferenceConfiguration are called
   void performAnalysis(){}
 /// This just calls calculate stress in the underlying projection object
@@ -81,14 +81,23 @@ mybase(NULL)
   std::string myproj; parse("PROJECTION",myproj);
   mybase = plumed.getActionSet().selectWithLabel<DimensionalityReductionBase*>( myproj );
   if( !mybase ) error("could not find projection of data named " + myproj ); 
-  // Shit fix for the time being but we want to improve this GAT
-  mybase->confirmStride( freq, use_all_data );
   // Add the dependency and set the dimensionality
   addDependency( mybase ); nlow = mybase->nlow;
+  // Add fake components to the underlying ActionWithValue for the arguments
+  std::string num; 
+  for(unsigned i=0;i<nlow;++i){ 
+    Tools::convert(i+1,num); addComponent( num ); componentIsNotPeriodic( num );
+  }
 
   log.printf("  generating out-of-sample projections using projection with label %s \n",myproj.c_str() );
   parse("CGTOL",cgtol);
 }
+
+std::vector<Value*> ProjectNonLandmarkPoints::getArgumentList(){
+   std::vector<Value*> arglist( analysis::AnalysisBase::getArgumentList() );
+   for(unsigned i=0;i<nlow;++i) arglist.push_back( getPntrToComponent(i) );
+   return arglist;
+} 
 
 void ProjectNonLandmarkPoints::generateProjection( const unsigned& idat, std::vector<double>& point ){
   ConjugateGradient<ProjectNonLandmarkPoints> myminimiser( this );
@@ -105,16 +114,11 @@ void ProjectNonLandmarkPoints::generateProjection( const unsigned& idat, std::ve
   myminimiser.minimise( cgtol, point, &ProjectNonLandmarkPoints::calculateStress );
 }
 
-ReferenceConfiguration* ProjectNonLandmarkPoints::getReferenceConfiguration( const unsigned& idat, const bool& calcdist ){
+analysis::DataCollectionObject& ProjectNonLandmarkPoints::getStoredData( const unsigned& idat, const bool& calcdist ){
   std::vector<double> pp(nlow); generateProjection( idat, pp ); std::string num;
-  ReferenceConfiguration* myref = my_input_data->getReferenceConfiguration( idat, calcdist ); myref->clearAllProperties();
-  for(unsigned i=0;i<nlow;++i){ Tools::convert(i+1,num); myref->attachProperty( getLabel() + "." + num, pp[i] ); }
+  analysis::DataCollectionObject& myref=AnalysisBase::getStoredData(idat,calcdist); 
+  for(unsigned i=0;i<nlow;++i){ Tools::convert(i+1,num); myref.setArgument( getLabel() + "." + num, pp[i] ); }
   return myref;
-}
-
-void ProjectNonLandmarkPoints::getDataPoint( const unsigned& idat, std::vector<double>& point ){
-  if( point.size()!=nlow ) point.resize( nlow );
-  generateProjection( idat, point );
 }
 
 double ProjectNonLandmarkPoints::calculateStress( const std::vector<double>& pp, std::vector<double>& der ){

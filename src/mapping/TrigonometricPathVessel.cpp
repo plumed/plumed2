@@ -73,8 +73,8 @@ mypack3( 0, 0, mydpack3 )
   cargs.resize( mymap->getNumberOfArguments() ); std::vector<std::string> argument_names( mymap->getNumberOfArguments() );
   for(unsigned i=0;i<mymap->getNumberOfArguments();++i) argument_names[i] = (mymap->getPntrToArgument(i))->getName();
   PDB mypdb; mypdb.setAtomNumbers( mymap->getAbsoluteIndexes() ); mypdb.addBlockEnd( mymap->getAbsoluteIndexes().size() );
-  if( argument_names.size()>0 ) mypdb.addArgumentNames(  argument_names );
-  projdir.set( mypdb );
+  if( argument_names.size()>0 ) mypdb.setArgumentNames( argument_names );
+  projdir.read( mypdb );
   mypack1.resize( mymap->getNumberOfArguments(), mymap->getNumberOfAtoms() ); ref0->setupPCAStorage( mypack1 );
   mypack2.resize( mymap->getNumberOfArguments(), mymap->getNumberOfAtoms() ); ref0->setupPCAStorage( mypack2 );
   mypack3.resize( mymap->getNumberOfArguments(), mymap->getNumberOfAtoms() ); 
@@ -155,10 +155,10 @@ void TrigonometricPathVessel::finish( const std::vector<double>& buffer ){
   double v1v2 = (mymap->getReferenceConfiguration(iclose1))->projectDisplacementOnVector( projdir, mymap->getPositions(), mymap->getArguments(), cargs, mypack1 );
 
   // This computes s value
-  double spacing = mymap->getPropertyValue( iclose1, mymap->property[0] ) - mymap->getPropertyValue( iclose2, mymap->property[0] );
+  double spacing = mymap->getPropertyValue( iclose1, (mymap->property.begin())->first ) - mymap->getPropertyValue( iclose2, (mymap->property.begin())->first );
   double root = sqrt( v1v2*v1v2 - v2v2 * ( v1v1 - v3v3) );
   dx = 0.5 * ( (root + v1v2) / v2v2 - 1.);
-  double path_s = mymap->getPropertyValue(iclose1, mymap->property[0] ) + spacing * dx; sp->set( path_s ); 
+  double path_s = mymap->getPropertyValue(iclose1, (mymap->property.begin())->first ) + spacing * dx; sp->set( path_s ); 
   double fact = 0.25*spacing / v2v2; 
   // Derivative of s wrt arguments
   for(unsigned i=0;i<mymap->getNumberOfArguments();++i){
