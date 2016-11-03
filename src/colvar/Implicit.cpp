@@ -26,8 +26,8 @@
 // dihedral correction                   [x]
 // distance dependent dielectric         [x]
 // neutralize ionic sidechains           [x]
-// implement neighborlist                [ ]
-// cutoff distance                       [ ]
+// implement neighborlist                [x]
+// cutoff distance                       [x]
 
 #include "Colvar.h"
 #include "ActionRegister.h"
@@ -53,11 +53,16 @@ Calculate EEF1-SB solvation free energy
         class Implicit : public Colvar {
             private:
                 bool pbc;
+                double cutoff;
+                unsigned stride;
+                unsigned nl_update;
+                vector<vector<unsigned> > nl;
                 vector<vector<double> > parameter;
             public:
                 static void registerKeywords(Keywords& keys);
                 explicit Implicit(const ActionOptions&);
                 virtual void calculate();
+                void update_neighb();
                 void setupConstants(const vector<AtomNumber> &atoms, vector<vector<double> > &parameter);
         };
 
@@ -68,21 +73,31 @@ Calculate EEF1-SB solvation free energy
             componentsAreNotOptional(keys);
             useCustomisableComponents(keys);
             keys.add("atoms", "ATOMS", "The atoms to be included in the calculation, e.g. the whole protein.");
+            keys.add("compulsory", "NL_CUTOFF", "The cutoff used when calculating pairwise interactions.");
+            keys.add("compulsory", "NL_STRIDE", "The frequency with which the neighbourlist is updated.");
         }
 
         Implicit::Implicit(const ActionOptions&ao):
             PLUMED_COLVAR_INIT(ao),
-            pbc(true)
+            pbc(true),
+            cutoff(1.0),
+            stride(10),
+            nl_update(0)
         {
             vector<AtomNumber> atoms;
             parseAtomList("ATOMS", atoms);
             const unsigned size = atoms.size();
+
+            parse("NL_CUTOFF", cutoff);
+            parse("NL_STRIDE", stride);
 
             bool nopbc = !pbc;
             parseFlag("NOPBC", nopbc);
             pbc = !nopbc;
 
             checkRead();
+
+            nl.resize(size);
 
             parameter.resize(size);
             for (unsigned i=0; i<size; ++i) {
@@ -95,20 +110,46 @@ Calculate EEF1-SB solvation free energy
             requestAtoms(atoms);
         }
 
+        void Implicit::update_neighb() {
+            const unsigned size=getNumberOfAtoms();
+            for (unsigned i=0; i<size; ++i) {
+                const Vector posi = getPosition(i);
+
+                // Clear old values, reserve space for new indices
+                nl[i].clear();
+                nl[i].reserve(100);
+
+                // Loop through neighboring atoms, add the ones below cutoff
+                for (unsigned j=i+1; j<size; ++j) {
+                    const double dist = delta(posi, getPosition(j)).modulo();
+                    if (dist < cutoff && i != j) {
+                        nl[i].push_back(j);
+                    }
+                }
+            }
+        }
+
         void Implicit::calculate() {
             if(pbc) makeWhole();
-            const unsigned size=getNumberOfAtoms();
 
+            if (nl_update == 0) {
+                update_neighb();
+            }
+
+            const unsigned size=getNumberOfAtoms();
             vector<Vector> fedensity_deriv(size);
 
             double bias = 0.0;
             for (unsigned i=0; i<size; ++i) {
+                const Vector posi = getPosition(i);
                 const double delta_g_ref = parameter[i][1];
-
                 double fedensity = 0.0;
+
                 // The pairwise interactions are unsymmetric, but we can get away with calculating the distance only once
-                for (unsigned j=i+1; j<size; ++j) {
-                    const Vector dist = delta(getPosition(i), getPosition(j));
+                /* for (unsigned j=i+1; j<size; ++j) { */
+                for (unsigned i_nl=0; i_nl<nl[i].size(); ++i_nl) {
+                    const unsigned j = nl[i][i_nl];
+                    const Vector dist = delta(posi, getPosition(j));
                     const double rij = dist.modulo();
                     const double inv_rij = 1.0 / rij;
                     const double inv_rij2 = inv_rij * inv_rij;
@@ -160,6 +201,12 @@ Calculate EEF1-SB solvation free energy
 
             setBoxDerivativesNoPbc();
             setValue(bias);
+
+            // Keep track of the neighbourlist updates
+            ++nl_update;
+            if (nl_update == stride) {
+                nl_update = 0;
+            }
         }
 
         void Implicit::setupConstants(const vector<AtomNumber> &atoms, vector<vector<double> > &parameter) {
@@ -169,279 +216,279 @@ Calculate EEF1-SB solvation free energy
                 for(unsigned i=0; i<atoms.size(); ++i) {
                     string Aname = moldat[0]->getAtomName(atoms[i]);
                     string Rname = moldat[0]->getResidueName(atoms[i]);
-					// Volume ∆Gref ∆Gfree ∆H ∆Cp λ vdw_radius
-					if (Aname == "C") {
-						parameter[i][0] = 0.001 * 14.720;
-						parameter[i][1] = 4.184 * 0.000;
-						parameter[i][2] = 4.184 * 0.000;
-						parameter[i][3] = 0.000;
-						parameter[i][4] = 0.0;
-						parameter[i][5] = 0.1 * 3.5;
-						parameter[i][6] = 0.17;
-					} else if (Aname == "CD") {
-						parameter[i][0] = 0.001 * 14.720;
-						parameter[i][1] = 4.184 * 0.000;
-						parameter[i][2] = 4.184 * 0.000;
-						parameter[i][3] = 0.000;
-						parameter[i][4] = 0.0;
-						parameter[i][5] = 0.1 * 3.5;
-						parameter[i][6] = 0.17;
-					} else if (Aname == "CT1") {
-						parameter[i][0] = 0.001 * 11.507;
-						parameter[i][1] = 4.184 * -0.187;
-						parameter[i][2] = 4.184 * -0.187;
-						parameter[i][3] = 0.876;
-						parameter[i][4] = 0.0;
-						parameter[i][5] = 0.1 * 3.5;
-						parameter[i][6] = 0.17;
-					} else if (Aname == "CT2") {
-						parameter[i][0] = 0.001 * 18.850;
-						parameter[i][1] = 4.184 * 0.372;
-						parameter[i][2] = 4.184 * 0.372;
-						parameter[i][3] = -0.610;
-						parameter[i][4] = 18.6;
-						parameter[i][5] = 0.1 * 3.5;
-						parameter[i][6] = 0.17;
-					} else if (Aname == "CT2A") {
-						parameter[i][0] = 0.001 * 18.666;
-						parameter[i][1] = 4.184 * 0.372;
-						parameter[i][2] = 4.184 * 0.372;
-						parameter[i][3] = -0.610;
-						parameter[i][4] = 18.6;
-						parameter[i][5] = 0.1 * 3.5;
-						parameter[i][6] = 0.17;
-					} else if (Aname == "CT3") {
-						parameter[i][0] = 0.001 * 27.941;
-						parameter[i][1] = 4.184 * 1.089;
-						parameter[i][2] = 4.184 * 1.089;
-						parameter[i][3] = -1.779;
-						parameter[i][4] = 35.6;
-						parameter[i][5] = 0.1 * 3.5;
-						parameter[i][6] = 0.17;
-					} else if (Aname == "CPH1") {
-						parameter[i][0] = 0.001 * 5.275;
-						parameter[i][1] = 4.184 * 0.057;
-						parameter[i][2] = 4.184 * 0.080;
-						parameter[i][3] = -0.973;
-						parameter[i][4] = 6.9;
-						parameter[i][5] = 0.1 * 3.5;
-						parameter[i][6] = 0.17;
-					} else if (Aname == "CPH2") {
-						parameter[i][0] = 0.001 * 11.796;
-						parameter[i][1] = 4.184 * 0.057;
-						parameter[i][2] = 4.184 * 0.080;
-						parameter[i][3] = -0.973;
-						parameter[i][4] = 6.9;
-						parameter[i][5] = 0.1 * 3.5;
-						parameter[i][6] = 0.17;
-					} else if (Aname == "CPT") {
-						parameter[i][0] = 0.001 * 4.669;
-						parameter[i][1] = 4.184 * -0.890;
-						parameter[i][2] = 4.184 * -0.890;
-						parameter[i][3] = 2.220;
-						parameter[i][4] = 6.9;
-						parameter[i][5] = 0.1 * 3.5;
-						parameter[i][6] = 0.17;
-					} else if (Aname == "CY") {
-						parameter[i][0] = 0.001 * 10.507;
-						parameter[i][1] = 4.184 * -0.890;
-						parameter[i][2] = 4.184 * -0.890;
-						parameter[i][3] = 2.220;
-						parameter[i][4] = 6.9;
-						parameter[i][5] = 0.1 * 3.5;
-						parameter[i][6] = 0.17;
-					} else if (Aname == "CP1") {
-						parameter[i][0] = 0.001 * 25.458;
-						parameter[i][1] = 4.184 * -0.187;
-						parameter[i][2] = 4.184 * -0.187;
-						parameter[i][3] = 0.876;
-						parameter[i][4] = 0.0;
-						parameter[i][5] = 0.1 * 3.5;
-						parameter[i][6] = 0.17;
-					} else if (Aname == "CP2") {
-						parameter[i][0] = 0.001 * 19.880;
-						parameter[i][1] = 4.184 * 0.372;
-						parameter[i][2] = 4.184 * 0.372;
-						parameter[i][3] = -0.610;
-						parameter[i][4] = 18.6;
-						parameter[i][5] = 0.1 * 3.5;
-						parameter[i][6] = 0.17;
-					} else if (Aname == "CP3") {
-						parameter[i][0] = 0.001 * 26.731;
-						parameter[i][1] = 4.184 * 0.372;
-						parameter[i][2] = 4.184 * 0.372;
-						parameter[i][3] = -0.610;
-						parameter[i][4] = 18.6;
-						parameter[i][5] = 0.1 * 3.5;
-						parameter[i][6] = 0.17;
-					} else if (Aname == "CC") {
-						parameter[i][0] = 0.001 * 16.539;
-						parameter[i][1] = 4.184 * 0.000;
-						parameter[i][2] = 4.184 * 0.000;
-						parameter[i][3] = 0.000;
-						parameter[i][4] = 0.0;
-						parameter[i][5] = 0.1 * 3.5;
-						parameter[i][6] = 0.17;
-					} else if (Aname == "CAI") {
-						parameter[i][0] = 0.001 * 18.249;
-						parameter[i][1] = 4.184 * 0.057;
-						parameter[i][2] = 4.184 * 0.057;
-						parameter[i][3] = -0.973;
-						parameter[i][4] = 6.9;
-						parameter[i][5] = 0.1 * 3.5;
-						parameter[i][6] = 0.17;
-					} else if (Aname == "CA") {
-						parameter[i][0] = 0.001 * 18.249;
-						parameter[i][1] = 4.184 * 0.057;
-						parameter[i][2] = 4.184 * 0.057;
-						parameter[i][3] = -0.973;
-						parameter[i][4] = 6.9;
-						parameter[i][5] = 0.1 * 3.5;
-						parameter[i][6] = 0.17;
-					} else if (Aname == "N") {
-						parameter[i][0] = 0.001 * 0.000;
-						parameter[i][1] = 4.184 * -1.000;
-						parameter[i][2] = 4.184 * -1.000;
-						parameter[i][3] = -1.250;
-						parameter[i][4] = 8.8;
-						parameter[i][5] = 0.1 * 3.5;
-						parameter[i][6] = 0.155;
-					} else if (Aname == "NR1") {
-						parameter[i][0] = 0.001 * 15.273;
-						parameter[i][1] = 4.184 * -5.950;
-						parameter[i][2] = 4.184 * -5.950;
-						parameter[i][3] = -9.059;
-						parameter[i][4] = -8.8;
-						parameter[i][5] = 0.1 * 3.5;
-						parameter[i][6] = 0.155;
-					} else if (Aname == "NR2") {
-						parameter[i][0] = 0.001 * 15.111;
-						parameter[i][1] = 4.184 * -3.820;
-						parameter[i][2] = 4.184 * -3.820;
-						parameter[i][3] = -4.654;
-						parameter[i][4] = -8.8;
-						parameter[i][5] = 0.1 * 3.5;
-						parameter[i][6] = 0.155;
-					} else if (Aname == "NR3") {
-						parameter[i][0] = 0.001 * 15.071;
-						parameter[i][1] = 4.184 * -5.950;
-						parameter[i][2] = 4.184 * -5.950;
-						parameter[i][3] = -9.059;
-						parameter[i][4] = -8.8;
-						parameter[i][5] = 0.1 * 3.5;
-						parameter[i][6] = 0.155;
-					} else if (Aname == "NH1") {
-						parameter[i][0] = 0.001 * 10.197;
-						parameter[i][1] = 4.184 * -5.950;
-						parameter[i][2] = 4.184 * -5.950;
-						parameter[i][3] = -9.059;
-						parameter[i][4] = -8.8;
-						parameter[i][5] = 0.1 * 3.5;
-						parameter[i][6] = 0.155;
-					} else if (Aname == "NH2") {
-						parameter[i][0] = 0.001 * 18.182;
-						parameter[i][1] = 4.184 * -5.950;
-						parameter[i][2] = 4.184 * -5.950;
-						parameter[i][3] = -9.059;
-						parameter[i][4] = -8.8;
-						parameter[i][5] = 0.1 * 3.5;
-						parameter[i][6] = 0.155;
-					} else if (Aname == "NH3") {
-						parameter[i][0] = 0.001 * 18.817;
-						parameter[i][1] = 4.184 * -20.000;
-						parameter[i][2] = 4.184 * -20.000;
-						parameter[i][3] = -25.000;
-						parameter[i][4] = -18.0;
-						parameter[i][5] = 0.1 * 6.0;
-						parameter[i][6] = 0.155;
-					} else if (Aname == "NC2") {
-						parameter[i][0] = 0.001 * 18.215;
-						parameter[i][1] = 4.184 * -10.000;
-						parameter[i][2] = 4.184 * -10.000;
-						parameter[i][3] = -12.000;
-						parameter[i][4] = -7.0;
-						parameter[i][5] = 0.1 * 6.0;
-						parameter[i][6] = 0.155;
-					} else if (Aname == "NY") {
-						parameter[i][0] = 0.001 * 12.001;
-						parameter[i][1] = 4.184 * -5.950;
-						parameter[i][2] = 4.184 * -5.950;
-						parameter[i][3] = -9.059;
-						parameter[i][4] = -8.8;
-						parameter[i][5] = 0.1 * 3.5;
-						parameter[i][6] = 0.155;
-					} else if (Aname == "NP") {
-						parameter[i][0] = 0.001 * 4.993;
-						parameter[i][1] = 4.184 * -20.000;
-						parameter[i][2] = 4.184 * -20.000;
-						parameter[i][3] = -25.000;
-						parameter[i][4] = -18.0;
-						parameter[i][5] = 0.1 * 6.0;
-						parameter[i][6] = 0.155;
-					} else if (Aname == "O") {
-						parameter[i][0] = 0.001 * 11.772;
-						parameter[i][1] = 4.184 * -5.330;
-						parameter[i][2] = 4.184 * -5.330;
-						parameter[i][3] = -5.787;
-						parameter[i][4] = -8.8;
-						parameter[i][5] = 0.1 * 3.5;
-						parameter[i][6] = 0.152;
-					} else if (Aname == "OB") {
-						parameter[i][0] = 0.001 * 11.694;
-						parameter[i][1] = 4.184 * -5.330;
-						parameter[i][2] = 4.184 * -5.330;
-						parameter[i][3] = -5.787;
-						parameter[i][4] = -8.8;
-						parameter[i][5] = 0.1 * 3.5;
-						parameter[i][6] = 0.152;
-					} else if (Aname == "OC") {
-						parameter[i][0] = 0.001 * 12.003;
-						parameter[i][1] = 4.184 * -10.000;
-						parameter[i][2] = 4.184 * -10.000;
-						parameter[i][3] = -12.000;
-						parameter[i][4] = -9.4;
-						parameter[i][5] = 0.1 * 6.0;
-						parameter[i][6] = 0.152;
-					} else if (Aname == "OH1") {
-						parameter[i][0] = 0.001 * 15.528;
-						parameter[i][1] = 4.184 * -5.920;
-						parameter[i][2] = 4.184 * -5.920;
-						parameter[i][3] = -9.264;
-						parameter[i][4] = -11.2;
-						parameter[i][5] = 0.1 * 3.5;
-						parameter[i][6] = 0.152;
-					} else if (Aname == "OS") {
-						parameter[i][0] = 0.001 * 6.774;
-						parameter[i][1] = 4.184 * -2.900;
-						parameter[i][2] = 4.184 * -2.900;
-						parameter[i][3] = -3.150;
-						parameter[i][4] = -4.8;
-						parameter[i][5] = 0.1 * 3.5;
-						parameter[i][6] = 0.152;
-					} else if (Aname == "S") {
-						parameter[i][0] = 0.001 * 20.703;
-						parameter[i][1] = 4.184 * -3.240;
-						parameter[i][2] = 4.184 * -3.240;
-						parameter[i][3] = -4.475;
-						parameter[i][4] = -39.9;
-						parameter[i][5] = 0.1 * 3.5;
-						parameter[i][6] = 0.18;
-					} else if (Aname == "SM") {
-						parameter[i][0] = 0.001 * 21.306;
-						parameter[i][1] = 4.184 * -3.240;
-						parameter[i][2] = 4.184 * -3.240;
-						parameter[i][3] = -4.475;
-						parameter[i][4] = -39.9;
-						parameter[i][5] = 0.1 * 3.5;
-						parameter[i][6] = 0.18;
+                    // Volume ∆Gref ∆Gfree ∆H ∆Cp λ vdw_radius
+                    if (Aname == "C") {
+                        parameter[i][0] = 0.001 * 14.720;
+                        parameter[i][1] = 4.184 * 0.000;
+                        parameter[i][2] = 4.184 * 0.000;
+                        parameter[i][3] = 0.000;
+                        parameter[i][4] = 0.0;
+                        parameter[i][5] = 0.1 * 3.5;
+                        parameter[i][6] = 0.17;
+                    } else if (Aname == "CD") {
+                        parameter[i][0] = 0.001 * 14.720;
+                        parameter[i][1] = 4.184 * 0.000;
+                        parameter[i][2] = 4.184 * 0.000;
+                        parameter[i][3] = 0.000;
+                        parameter[i][4] = 0.0;
+                        parameter[i][5] = 0.1 * 3.5;
+                        parameter[i][6] = 0.17;
+                    } else if (Aname == "CT1") {
+                        parameter[i][0] = 0.001 * 11.507;
+                        parameter[i][1] = 4.184 * -0.187;
+                        parameter[i][2] = 4.184 * -0.187;
+                        parameter[i][3] = 0.876;
+                        parameter[i][4] = 0.0;
+                        parameter[i][5] = 0.1 * 3.5;
+                        parameter[i][6] = 0.17;
+                    } else if (Aname == "CT2") {
+                        parameter[i][0] = 0.001 * 18.850;
+                        parameter[i][1] = 4.184 * 0.372;
+                        parameter[i][2] = 4.184 * 0.372;
+                        parameter[i][3] = -0.610;
+                        parameter[i][4] = 18.6;
+                        parameter[i][5] = 0.1 * 3.5;
+                        parameter[i][6] = 0.17;
+                    } else if (Aname == "CT2A") {
+                        parameter[i][0] = 0.001 * 18.666;
+                        parameter[i][1] = 4.184 * 0.372;
+                        parameter[i][2] = 4.184 * 0.372;
+                        parameter[i][3] = -0.610;
+                        parameter[i][4] = 18.6;
+                        parameter[i][5] = 0.1 * 3.5;
+                        parameter[i][6] = 0.17;
+                    } else if (Aname == "CT3") {
+                        parameter[i][0] = 0.001 * 27.941;
+                        parameter[i][1] = 4.184 * 1.089;
+                        parameter[i][2] = 4.184 * 1.089;
+                        parameter[i][3] = -1.779;
+                        parameter[i][4] = 35.6;
+                        parameter[i][5] = 0.1 * 3.5;
+                        parameter[i][6] = 0.17;
+                    } else if (Aname == "CPH1") {
+                        parameter[i][0] = 0.001 * 5.275;
+                        parameter[i][1] = 4.184 * 0.057;
+                        parameter[i][2] = 4.184 * 0.080;
+                        parameter[i][3] = -0.973;
+                        parameter[i][4] = 6.9;
+                        parameter[i][5] = 0.1 * 3.5;
+                        parameter[i][6] = 0.17;
+                    } else if (Aname == "CPH2") {
+                        parameter[i][0] = 0.001 * 11.796;
+                        parameter[i][1] = 4.184 * 0.057;
+                        parameter[i][2] = 4.184 * 0.080;
+                        parameter[i][3] = -0.973;
+                        parameter[i][4] = 6.9;
+                        parameter[i][5] = 0.1 * 3.5;
+                        parameter[i][6] = 0.17;
+                    } else if (Aname == "CPT") {
+                        parameter[i][0] = 0.001 * 4.669;
+                        parameter[i][1] = 4.184 * -0.890;
+                        parameter[i][2] = 4.184 * -0.890;
+                        parameter[i][3] = 2.220;
+                        parameter[i][4] = 6.9;
+                        parameter[i][5] = 0.1 * 3.5;
+                        parameter[i][6] = 0.17;
+                    } else if (Aname == "CY") {
+                        parameter[i][0] = 0.001 * 10.507;
+                        parameter[i][1] = 4.184 * -0.890;
+                        parameter[i][2] = 4.184 * -0.890;
+                        parameter[i][3] = 2.220;
+                        parameter[i][4] = 6.9;
+                        parameter[i][5] = 0.1 * 3.5;
+                        parameter[i][6] = 0.17;
+                    } else if (Aname == "CP1") {
+                        parameter[i][0] = 0.001 * 25.458;
+                        parameter[i][1] = 4.184 * -0.187;
+                        parameter[i][2] = 4.184 * -0.187;
+                        parameter[i][3] = 0.876;
+                        parameter[i][4] = 0.0;
+                        parameter[i][5] = 0.1 * 3.5;
+                        parameter[i][6] = 0.17;
+                    } else if (Aname == "CP2") {
+                        parameter[i][0] = 0.001 * 19.880;
+                        parameter[i][1] = 4.184 * 0.372;
+                        parameter[i][2] = 4.184 * 0.372;
+                        parameter[i][3] = -0.610;
+                        parameter[i][4] = 18.6;
+                        parameter[i][5] = 0.1 * 3.5;
+                        parameter[i][6] = 0.17;
+                    } else if (Aname == "CP3") {
+                        parameter[i][0] = 0.001 * 26.731;
+                        parameter[i][1] = 4.184 * 0.372;
+                        parameter[i][2] = 4.184 * 0.372;
+                        parameter[i][3] = -0.610;
+                        parameter[i][4] = 18.6;
+                        parameter[i][5] = 0.1 * 3.5;
+                        parameter[i][6] = 0.17;
+                    } else if (Aname == "CC") {
+                        parameter[i][0] = 0.001 * 16.539;
+                        parameter[i][1] = 4.184 * 0.000;
+                        parameter[i][2] = 4.184 * 0.000;
+                        parameter[i][3] = 0.000;
+                        parameter[i][4] = 0.0;
+                        parameter[i][5] = 0.1 * 3.5;
+                        parameter[i][6] = 0.17;
+                    } else if (Aname == "CAI") {
+                        parameter[i][0] = 0.001 * 18.249;
+                        parameter[i][1] = 4.184 * 0.057;
+                        parameter[i][2] = 4.184 * 0.057;
+                        parameter[i][3] = -0.973;
+                        parameter[i][4] = 6.9;
+                        parameter[i][5] = 0.1 * 3.5;
+                        parameter[i][6] = 0.17;
+                    } else if (Aname == "CA") {
+                        parameter[i][0] = 0.001 * 18.249;
+                        parameter[i][1] = 4.184 * 0.057;
+                        parameter[i][2] = 4.184 * 0.057;
+                        parameter[i][3] = -0.973;
+                        parameter[i][4] = 6.9;
+                        parameter[i][5] = 0.1 * 3.5;
+                        parameter[i][6] = 0.17;
+                    } else if (Aname == "N") {
+                        parameter[i][0] = 0.001 * 0.000;
+                        parameter[i][1] = 4.184 * -1.000;
+                        parameter[i][2] = 4.184 * -1.000;
+                        parameter[i][3] = -1.250;
+                        parameter[i][4] = 8.8;
+                        parameter[i][5] = 0.1 * 3.5;
+                        parameter[i][6] = 0.155;
+                    } else if (Aname == "NR1") {
+                        parameter[i][0] = 0.001 * 15.273;
+                        parameter[i][1] = 4.184 * -5.950;
+                        parameter[i][2] = 4.184 * -5.950;
+                        parameter[i][3] = -9.059;
+                        parameter[i][4] = -8.8;
+                        parameter[i][5] = 0.1 * 3.5;
+                        parameter[i][6] = 0.155;
+                    } else if (Aname == "NR2") {
+                        parameter[i][0] = 0.001 * 15.111;
+                        parameter[i][1] = 4.184 * -3.820;
+                        parameter[i][2] = 4.184 * -3.820;
+                        parameter[i][3] = -4.654;
+                        parameter[i][4] = -8.8;
+                        parameter[i][5] = 0.1 * 3.5;
+                        parameter[i][6] = 0.155;
+                    } else if (Aname == "NR3") {
+                        parameter[i][0] = 0.001 * 15.071;
+                        parameter[i][1] = 4.184 * -5.950;
+                        parameter[i][2] = 4.184 * -5.950;
+                        parameter[i][3] = -9.059;
+                        parameter[i][4] = -8.8;
+                        parameter[i][5] = 0.1 * 3.5;
+                        parameter[i][6] = 0.155;
+                    } else if (Aname == "NH1") {
+                        parameter[i][0] = 0.001 * 10.197;
+                        parameter[i][1] = 4.184 * -5.950;
+                        parameter[i][2] = 4.184 * -5.950;
+                        parameter[i][3] = -9.059;
+                        parameter[i][4] = -8.8;
+                        parameter[i][5] = 0.1 * 3.5;
+                        parameter[i][6] = 0.155;
+                    } else if (Aname == "NH2") {
+                        parameter[i][0] = 0.001 * 18.182;
+                        parameter[i][1] = 4.184 * -5.950;
+                        parameter[i][2] = 4.184 * -5.950;
+                        parameter[i][3] = -9.059;
+                        parameter[i][4] = -8.8;
+                        parameter[i][5] = 0.1 * 3.5;
+                        parameter[i][6] = 0.155;
+                    } else if (Aname == "NH3") {
+                        parameter[i][0] = 0.001 * 18.817;
+                        parameter[i][1] = 4.184 * -20.000;
+                        parameter[i][2] = 4.184 * -20.000;
+                        parameter[i][3] = -25.000;
+                        parameter[i][4] = -18.0;
+                        parameter[i][5] = 0.1 * 6.0;
+                        parameter[i][6] = 0.155;
+                    } else if (Aname == "NC2") {
+                        parameter[i][0] = 0.001 * 18.215;
+                        parameter[i][1] = 4.184 * -10.000;
+                        parameter[i][2] = 4.184 * -10.000;
+                        parameter[i][3] = -12.000;
+                        parameter[i][4] = -7.0;
+                        parameter[i][5] = 0.1 * 6.0;
+                        parameter[i][6] = 0.155;
+                    } else if (Aname == "NY") {
+                        parameter[i][0] = 0.001 * 12.001;
+                        parameter[i][1] = 4.184 * -5.950;
+                        parameter[i][2] = 4.184 * -5.950;
+                        parameter[i][3] = -9.059;
+                        parameter[i][4] = -8.8;
+                        parameter[i][5] = 0.1 * 3.5;
+                        parameter[i][6] = 0.155;
+                    } else if (Aname == "NP") {
+                        parameter[i][0] = 0.001 * 4.993;
+                        parameter[i][1] = 4.184 * -20.000;
+                        parameter[i][2] = 4.184 * -20.000;
+                        parameter[i][3] = -25.000;
+                        parameter[i][4] = -18.0;
+                        parameter[i][5] = 0.1 * 6.0;
+                        parameter[i][6] = 0.155;
+                    } else if (Aname == "O") {
+                        parameter[i][0] = 0.001 * 11.772;
+                        parameter[i][1] = 4.184 * -5.330;
+                        parameter[i][2] = 4.184 * -5.330;
+                        parameter[i][3] = -5.787;
+                        parameter[i][4] = -8.8;
+                        parameter[i][5] = 0.1 * 3.5;
+                        parameter[i][6] = 0.152;
+                    } else if (Aname == "OB") {
+                        parameter[i][0] = 0.001 * 11.694;
+                        parameter[i][1] = 4.184 * -5.330;
+                        parameter[i][2] = 4.184 * -5.330;
+                        parameter[i][3] = -5.787;
+                        parameter[i][4] = -8.8;
+                        parameter[i][5] = 0.1 * 3.5;
+                        parameter[i][6] = 0.152;
+                    } else if (Aname == "OC") {
+                        parameter[i][0] = 0.001 * 12.003;
+                        parameter[i][1] = 4.184 * -10.000;
+                        parameter[i][2] = 4.184 * -10.000;
+                        parameter[i][3] = -12.000;
+                        parameter[i][4] = -9.4;
+                        parameter[i][5] = 0.1 * 6.0;
+                        parameter[i][6] = 0.152;
+                    } else if (Aname == "OH1") {
+                        parameter[i][0] = 0.001 * 15.528;
+                        parameter[i][1] = 4.184 * -5.920;
+                        parameter[i][2] = 4.184 * -5.920;
+                        parameter[i][3] = -9.264;
+                        parameter[i][4] = -11.2;
+                        parameter[i][5] = 0.1 * 3.5;
+                        parameter[i][6] = 0.152;
+                    } else if (Aname == "OS") {
+                        parameter[i][0] = 0.001 * 6.774;
+                        parameter[i][1] = 4.184 * -2.900;
+                        parameter[i][2] = 4.184 * -2.900;
+                        parameter[i][3] = -3.150;
+                        parameter[i][4] = -4.8;
+                        parameter[i][5] = 0.1 * 3.5;
+                        parameter[i][6] = 0.152;
+                    } else if (Aname == "S") {
+                        parameter[i][0] = 0.001 * 20.703;
+                        parameter[i][1] = 4.184 * -3.240;
+                        parameter[i][2] = 4.184 * -3.240;
+                        parameter[i][3] = -4.475;
+                        parameter[i][4] = -39.9;
+                        parameter[i][5] = 0.1 * 3.5;
+                        parameter[i][6] = 0.18;
+                    } else if (Aname == "SM") {
+                        parameter[i][0] = 0.001 * 21.306;
+                        parameter[i][1] = 4.184 * -3.240;
+                        parameter[i][2] = 4.184 * -3.240;
+                        parameter[i][3] = -4.475;
+                        parameter[i][4] = -39.9;
+                        parameter[i][5] = 0.1 * 3.5;
+                        parameter[i][6] = 0.18;
                     } else {
-						parameter[i][0] = 0.0;
-						parameter[i][1] = 0.0;
-						parameter[i][2] = 0.0;
-						parameter[i][3] = 0.0;
-						parameter[i][4] = 0.0;
-						parameter[i][5] = 0.1 * 3.5; // We need to avoid division by zero
-						parameter[i][6] = 0.0;
+                        parameter[i][0] = 0.0;
+                        parameter[i][1] = 0.0;
+                        parameter[i][2] = 0.0;
+                        parameter[i][3] = 0.0;
+                        parameter[i][4] = 0.0;
+                        parameter[i][5] = 0.1 * 3.5; // We need to avoid division by zero
+                        parameter[i][6] = 0.0;
                     }
 
                     // Charge corrections
