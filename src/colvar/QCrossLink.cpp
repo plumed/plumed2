@@ -411,6 +411,7 @@ void QCrossLink::print_MC(long int MDstep, long int MCstep, double sigma,
    dfile_.link(*this);
    dfile_.open(dfile_name_);
    dfile_.setHeavyFlush();
+   dfile_.fmtField("%12.6f"); 
  }
  // write fields
  dfile_.printField("MD step", static_cast<int>(MDstep));
