@@ -568,8 +568,8 @@ void QCrossLink::calculate()
   multi_sim_comm.Barrier();
   // local communication
   if(comm.Get_size()>1){
-   comm.Sum(&dexp_[0],   3*dexp_.size());
-   comm.Sum(&dexp_f_[0], 3*dexp_f_.size());
+   comm.Sum(&dexp_[0][0],   3*dexp_.size());
+   comm.Sum(&dexp_f_[0][0], 3*dexp_f_.size());
   }
   // get time step 
   long int step = getStep();
@@ -626,7 +626,7 @@ void QCrossLink::calculate()
   // gather contributions if parallel
   if(!serial_ && comm.Get_size()>1){
     comm.Sum(&ene, 1);
-    comm.Sum(&atom_der_[0], 3*atom_der_.size());
+    comm.Sum(&atom_der_[0][0], 3*atom_der_.size());
   }
   // add Jeffrey's priors + constant terms in sigma;
   ene += kbt_ * ( 1.0 - static_cast<double>(dexp_.size()) ) * std::log(sigma_);
