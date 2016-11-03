@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015,2016 The plumed team
+   Copyright (c) 2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,20 +22,17 @@
 
 // TODO:
 // delta_g_free temperature correction  [ ]
-// dihedral correction                  [ ]
-// distance dependent dielectric        [ ] (?)
-// neutralize ionic sidechains          [ ] (?)
+// dihedral correction                  [x]
+// distance dependent dielectric        [x]
+// neutralize ionic sidechains          [x]
 // implement neighborlist               [x]
 // cutoff distance                      [x]
 
+#include "Colvar.h"
 #include "ActionRegister.h"
 #include "core/ActionSet.h"
 #include "core/PlumedMain.h"
 #include "core/SetupMolInfo.h"
-
-#include "CoordinationBase.h"
-#include "tools/SwitchingFunction.h"
-#include "core/Atoms.h"
 
 #define INV_PI_SQRT_PI 0.179587122
 
@@ -52,60 +49,105 @@ Calculate EEF1-SB solvation free energy
 */
 //+ENDPLUMEDOC
 
-        class Implicit : public CoordinationBase {
+        class Implicit : public Colvar {
             private:
+                bool pbc;
                 vector<vector<double> > parameter;
             public:
                 static void registerKeywords(Keywords& keys);
                 explicit Implicit(const ActionOptions&);
-                void setupConstants();
-                virtual double pairing(double distance, double &dfunc, unsigned i, unsigned j) const;
+                virtual void calculate();
+                void setupConstants(const vector<AtomNumber> &atoms, vector<vector<double> > &parameter);
         };
 
         PLUMED_REGISTER_ACTION(Implicit,"IMPLICIT")
 
         void Implicit::registerKeywords(Keywords& keys) {
-            CoordinationBase::registerKeywords(keys);
+            Colvar::registerKeywords(keys);
+            componentsAreNotOptional(keys);
+            useCustomisableComponents(keys);
+            keys.add("atoms", "ATOMS", "The atoms to be included in the calculation, e.g. the whole protein.");
         }
 
         Implicit::Implicit(const ActionOptions&ao):
-            Action(ao),
-            CoordinationBase(ao)
+            PLUMED_COLVAR_INIT(ao),
+            pbc(true)
         {
-            checkRead();
-            setupConstants();
-        }
-
-        double Implicit::pairing(double distance, double &dfunc, unsigned i, unsigned j) const {
-            const double vdw_volume   = parameter[j][0]; // angstrom^3 -> nm^3
-            /* const double delta_g_ref  = parameter[i][1]; // kcal/mol -> kJ/mol */
-            const double delta_g_free = parameter[i][2]; // kcal/mol -> kJ/mol
-            const double lambda       = parameter[i][5]; // angstrom -> nm
-            const double vdw_radius   = parameter[i][6]; // nm
-
-            const double rij = sqrt(distance);
-            const double inv_lambda2 = 1.0 / (lambda * lambda);
-            const double inv_rij = 1.0 / rij;
-            const double inv_rij2 = 1.0 / (rij * rij);
-            const double rij_vdwr_diff = rij - vdw_radius;
-            const double expo = exp(-inv_lambda2 * rij_vdwr_diff * rij_vdwr_diff);
-            const double fact = INV_PI_SQRT_PI * vdw_volume * delta_g_free * inv_rij2 / lambda * expo; 
-            dfunc = fact * inv_rij * (inv_rij + (rij_vdwr_diff * inv_lambda2));
-            return -0.5 * fact;
-        }
-
-        void Implicit::setupConstants() {
-            vector<AtomNumber> &atoms = getAtomNumbers();
+            vector<AtomNumber> atoms;
+            parseAtomList("ATOMS", atoms);
             const unsigned size = atoms.size();
+
+            bool nopbc = !pbc;
+            parseFlag("NOPBC", nopbc);
+            pbc = !nopbc;
+
+            checkRead();
+
             parameter.resize(size);
             for (unsigned i=0; i<size; ++i) {
                 parameter[i].resize(8, 0.0);
             }
+            setupConstants(atoms, parameter);
 
+            addValueWithDerivatives();
+            setNotPeriodic();
+            requestAtoms(atoms);
+        }
+
+        void Implicit::calculate() {
+            if(pbc) makeWhole();
+            const unsigned size=getNumberOfAtoms();
+
+            vector<Vector> fedensity_deriv(size);
+
+            double bias = 0.0;
+            for (unsigned i=0; i<size; ++i) {
+                const double delta_g_ref = parameter[i][1];  // kcal/mol -> kJ/mol
+                const double delta_g_free = parameter[i][2];  // kcal/mol -> kJ/mol
+                const double lambda = parameter[i][5];  // angstrom -> nm
+                const double vdw_radius = parameter[i][6];  // nm
+
+                const double inv_lambda = 1.0 / lambda;
+                const double inv_lambda2 = inv_lambda * inv_lambda;
+
+                double fedensity = 0.0;
+                for (unsigned j=0; j<size; ++j) {
+                    if (i == j) {
+                        continue;
+                    }
+                    const double vdw_volume = parameter[j][0];  // angstrom^3 -> nm^3
+                    const Vector dist = delta(getPosition(i), getPosition(j));
+                    const double rij = dist.modulo();
+
+                    const double inv_rij = 1.0 / rij;
+                    const double inv_rij2 = inv_rij * inv_rij;
+                    const double rij_vdwr_diff = rij - vdw_radius;
+
+                    const double expo = exp(-inv_lambda2 * rij_vdwr_diff * rij_vdwr_diff);
+                    const double fact = -delta_g_free * vdw_volume * expo * INV_PI_SQRT_PI * inv_rij2 * inv_lambda;
+                    const double deriv = inv_rij * fact * (inv_rij + rij_vdwr_diff * inv_lambda2);
+                    fedensity += -fact;
+                    fedensity_deriv[i] += deriv * dist;
+                    fedensity_deriv[j] -= deriv * dist;
+                }
+
+                const double delta_g_solv = delta_g_ref - 0.5 * fedensity;
+                bias += delta_g_solv;
+            }
+
+            for (unsigned i=0; i<size; ++i) {
+                setAtomsDerivatives(i, fedensity_deriv[i]);
+            }
+
+            setBoxDerivativesNoPbc();
+            setValue(bias);
+        }
+
+        void Implicit::setupConstants(const vector<AtomNumber> &atoms, vector<vector<double> > &parameter) {
             vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
             if (moldat.size() == 1) {
                 log << "  MOLINFO DATA found, using proper atom names\n";
-                for(unsigned i=0; i<size; ++i) {
+                for(unsigned i=0; i<atoms.size(); ++i) {
                     string Aname = moldat[0]->getAtomName(atoms[i]);
                     string Rname = moldat[0]->getResidueName(atoms[i]);
 					// Volume ∆Gref ∆Gfree ∆H ∆Cp λ vdw_radius
