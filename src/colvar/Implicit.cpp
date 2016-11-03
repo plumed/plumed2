@@ -34,6 +34,7 @@
 #include "core/ActionSet.h"
 #include "core/PlumedMain.h"
 #include "core/SetupMolInfo.h"
+#include "tools/OpenMP.h"
 
 #define INV_PI_SQRT_PI 0.179587122
 
@@ -138,61 +139,66 @@ Calculate EEF1-SB solvation free energy
 
             const unsigned size=getNumberOfAtoms();
             vector<Vector> fedensity_deriv(size);
-
             double bias = 0.0;
-            for (unsigned i=0; i<size; ++i) {
-                const Vector posi = getPosition(i);
-                const double delta_g_ref = parameter[i][1];
-                double fedensity = 0.0;
 
-                // The pairwise interactions are unsymmetric, but we can get away with calculating the distance only once
-                /* for (unsigned j=i+1; j<size; ++j) { */
-                for (unsigned i_nl=0; i_nl<nl[i].size(); ++i_nl) {
-                    const unsigned j = nl[i][i_nl];
-                    const Vector dist = delta(posi, getPosition(j));
-                    const double rij = dist.modulo();
-                    const double inv_rij = 1.0 / rij;
-                    const double inv_rij2 = inv_rij * inv_rij;
+            const unsigned nt = OpenMP::getGoodNumThreads(nl);
+            #pragma omp parallel num_threads(nt)
+            {
+                #pragma omp for
+                for (unsigned i=0; i<size; ++i) {
+                    const Vector posi = getPosition(i);
+                    const double delta_g_ref = parameter[i][1];
+                    double fedensity = 0.0;
 
-                    // i-j interaction
-                    {
-                        const double delta_g_free = parameter[i][2];
-                        const double lambda = parameter[i][5];
-                        const double vdw_radius = parameter[i][6];
-                        const double inv_lambda = 1.0 / lambda;
-                        const double inv_lambda2 = inv_lambda * inv_lambda;
-                        const double vdw_volume = parameter[j][0];
+                    // The pairwise interactions are unsymmetric, but we can get away with calculating the distance only once
+                    #pragma omp simd
+                    for (unsigned i_nl=0; i_nl<nl[i].size(); ++i_nl) {
+                        const unsigned j = nl[i][i_nl];
+                        const Vector dist = delta(posi, getPosition(j));
+                        const double rij = dist.modulo();
+                        const double inv_rij = 1.0 / rij;
+                        const double inv_rij2 = inv_rij * inv_rij;
 
-                        const double rij_vdwr_diff = rij - vdw_radius;
-                        const double expo = exp(-inv_lambda2 * rij_vdwr_diff * rij_vdwr_diff);
-                        const double fact = -delta_g_free * vdw_volume * expo * INV_PI_SQRT_PI * inv_rij2 * inv_lambda;
-                        const double deriv = inv_rij * fact * (inv_rij + rij_vdwr_diff * inv_lambda2);
+                        // i-j interaction
+                        {
+                            const double delta_g_free = parameter[i][2];
+                            const double lambda = parameter[i][5];
+                            const double vdw_radius = parameter[i][6];
+                            const double inv_lambda = 1.0 / lambda;
+                            const double inv_lambda2 = inv_lambda * inv_lambda;
+                            const double vdw_volume = parameter[j][0];
 
-                        fedensity += -fact;
-                        fedensity_deriv[i] += deriv * dist;
-                        fedensity_deriv[j] -= deriv * dist;
+                            const double rij_vdwr_diff = rij - vdw_radius;
+                            const double expo = exp(-inv_lambda2 * rij_vdwr_diff * rij_vdwr_diff);
+                            const double fact = -delta_g_free * vdw_volume * expo * INV_PI_SQRT_PI * inv_rij2 * inv_lambda;
+                            const double deriv = inv_rij * fact * (inv_rij + rij_vdwr_diff * inv_lambda2);
+
+                            fedensity += -fact;
+                            fedensity_deriv[i] += deriv * dist;
+                            fedensity_deriv[j] -= deriv * dist;
+                        }
+
+                        // j-i interaction
+                        {
+                            const double delta_g_free = parameter[j][2];
+                            const double lambda = parameter[j][5];
+                            const double vdw_radius = parameter[j][6];
+                            const double inv_lambda = 1.0 / lambda;
+                            const double inv_lambda2 = inv_lambda * inv_lambda;
+                            const double vdw_volume = parameter[i][0];
+
+                            const double rij_vdwr_diff = rij - vdw_radius;
+                            const double expo = exp(-inv_lambda2 * rij_vdwr_diff * rij_vdwr_diff);
+                            const double fact = -delta_g_free * vdw_volume * expo * INV_PI_SQRT_PI * inv_rij2 * inv_lambda;
+                            const double deriv = inv_rij * fact * (inv_rij + rij_vdwr_diff * inv_lambda2);
+
+                            fedensity += -fact;
+                            fedensity_deriv[i] += deriv * dist;
+                            fedensity_deriv[j] -= deriv * dist;
+                        }
                     }
-
-                    // j-i interaction
-                    {
-                        const double delta_g_free = parameter[j][2];
-                        const double lambda = parameter[j][5];
-                        const double vdw_radius = parameter[j][6];
-                        const double inv_lambda = 1.0 / lambda;
-                        const double inv_lambda2 = inv_lambda * inv_lambda;
-                        const double vdw_volume = parameter[i][0];
-
-                        const double rij_vdwr_diff = rij - vdw_radius;
-                        const double expo = exp(-inv_lambda2 * rij_vdwr_diff * rij_vdwr_diff);
-                        const double fact = -delta_g_free * vdw_volume * expo * INV_PI_SQRT_PI * inv_rij2 * inv_lambda;
-                        const double deriv = inv_rij * fact * (inv_rij + rij_vdwr_diff * inv_lambda2);
-
-                        fedensity += -fact;
-                        fedensity_deriv[i] += deriv * dist;
-                        fedensity_deriv[j] -= deriv * dist;
-                    }
+                    bias += delta_g_ref - 0.5 * fedensity;
                 }
-                bias += delta_g_ref - 0.5 * fedensity;
             }
 
             for (unsigned i=0; i<size; ++i) {
