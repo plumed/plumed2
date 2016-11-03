@@ -79,6 +79,10 @@ class QCrossLink : public Colvar
   unsigned int MCaccbeta_;
   unsigned int MCaccRslope_;
   unsigned int MCaccW_;
+  // debug stuff
+  bool debug_;
+  string dfile_name_;
+  OFile dfile_;
 
   // parallel stuff
   unsigned rank_;
@@ -99,6 +103,7 @@ class QCrossLink : public Colvar
   
   void get_data(string data_file, vector<AtomNumber> atoms);
   double get_rho(double dist, double Rslope, double alpha);
+  void print_MC(long int MDstep, long int MCstep, double sigma, double beta, double Rslope, double W, double ene);
   void doMonteCarlo(long int step);
   double getEnergy(double sigma, double w, double beta, double Rslope, double alpha);
   double proposeMove(double x, double xmin, double xmax, double dxmax);
@@ -107,6 +112,7 @@ class QCrossLink : public Colvar
 public:
   static void registerKeywords( Keywords& keys );
   explicit QCrossLink(const ActionOptions&);
+  ~QCrossLink();
 // active methods:
   virtual void calculate();
 };
@@ -134,13 +140,15 @@ void QCrossLink::registerKeywords(Keywords& keys){
   keys.add("compulsory","W_MIN","minimum value of the W parameter");
   keys.add("compulsory","W_MAX","maximum value of the W parameter");
   keys.add("compulsory","DW","maximum MC move of the W parameter");
-  keys.add("compulsory","ALPHA","Value of the alpha parameter");
   keys.add("compulsory","RANK_A","MPI rank of state A");
   keys.add("compulsory","RANK_B","MPI rank of state B");
   keys.add("compulsory","TEMP","temperature");
   keys.addFlag("SERIAL",false,"perform the calculation in serial - for debug purpose");
+  keys.add("optional","ALPHA","Value of the alpha parameter");
+  keys.add("optional","DEBUG_FILE","file with MC optimization details");
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_STRIDE","MC stride");
+  
   componentsAreNotOptional(keys); 
   keys.addOutputComponent("sigma",    "default","uncertainty parameter");
   keys.addOutputComponent("accsig",   "default","MC acceptance sigma");
@@ -153,10 +161,15 @@ void QCrossLink::registerKeywords(Keywords& keys){
   keys.addOutputComponent("score",    "default","Bayesian score");
 }
 
+QCrossLink::~QCrossLink()
+{
+  if(debug_) dfile_.close();
+}
+
 QCrossLink::QCrossLink(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao), alpha_(1.0), nopbc_(false),
 MCsteps_(1), MCstride_(1),MCfirst_(-1),
-MCaccsig_(0), MCaccbeta_(0), MCaccRslope_(0), MCaccW_(0),
+MCaccsig_(0), MCaccbeta_(0), MCaccRslope_(0), MCaccW_(0), debug_(false),
 is_state_A_(false), is_state_B_(false), serial_(false)
 {
   // list of atoms
@@ -210,6 +223,8 @@ is_state_A_(false), is_state_B_(false), serial_(false)
   }
   parse("MC_STEPS",MCsteps_);
   parse("MC_STRIDE",MCstride_);
+  parse("DEBUG_FILE",dfile_name_);
+  if(dfile_name_.length()>0) debug_ = true;
 
   checkRead();
   
@@ -261,6 +276,7 @@ is_state_A_(false), is_state_B_(false), serial_(false)
   log.printf("  temperature of the system in energy unit %f\n",kbt_);
   log.printf("  number of MC steps %d\n",MCsteps_);
   log.printf("  do MC every %d steps\n", MCstride_);
+  if(debug_) log.printf("  printing MC optimization details to %s\n", dfile_name_.c_str());
 
   addComponent("sigma");    componentIsNotPeriodic("sigma");
   addComponent("accsig");   componentIsNotPeriodic("accsig");
@@ -386,7 +402,28 @@ bool QCrossLink::doAccept(double oldE, double newE)
   }
   return accept;
 }
-    
+
+void QCrossLink::print_MC(long int MDstep, long int MCstep, double sigma,
+  double beta, double Rslope, double W, double ene)
+{
+ // open the file if we are at the first MD and MC steps
+ if(MDstep==0 && MCstep==0){
+   dfile_.link(*this);
+   dfile_.open(dfile_name_);
+   dfile_.setHeavyFlush();
+ }
+ // write fields
+ dfile_.printField("MD step", static_cast<int>(MDstep));
+ dfile_.printField("MC step", static_cast<int>(MCstep));
+ dfile_.printField("Sigma",   sigma);
+ dfile_.printField("Beta",    beta);
+ dfile_.printField("Rslope",  Rslope);
+ dfile_.printField("W",       W);
+ dfile_.printField("Energy",  ene);
+ dfile_.printField();
+}
+
+
 void QCrossLink::doMonteCarlo(long int step)
 {
  double oldE, newE;
@@ -444,7 +481,8 @@ void QCrossLink::doMonteCarlo(long int step)
    MCaccRslope_++;
   }
   // if debug, print out info about MC sampling
-  // TO DO
+  if(debug_ && rank_==0 && comm.Get_rank()==0)
+    print_MC(getStep(), i, sigma_, beta_, Rslope_, W_, newE);
  }
  // send values of parameters to state B, via buffer
  vector<double>       buff_d(4, 0.0), buff_d_r(4, 0.0);
