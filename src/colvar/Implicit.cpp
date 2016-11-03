@@ -21,12 +21,13 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 // TODO:
-// delta_g_free temperature correction  [ ]
-// dihedral correction                  [x]
-// distance dependent dielectric        [x]
-// neutralize ionic sidechains          [x]
-// implement neighborlist               [x]
-// cutoff distance                      [x]
+// delta_g_free temperature correction   [ ]
+// try constant vdw_radius approximation [ ]
+// dihedral correction                   [x]
+// distance dependent dielectric         [x]
+// neutralize ionic sidechains           [x]
+// implement neighborlist                [ ]
+// cutoff distance                       [ ]
 
 #include "Colvar.h"
 #include "ActionRegister.h"
@@ -102,37 +103,55 @@ Calculate EEF1-SB solvation free energy
 
             double bias = 0.0;
             for (unsigned i=0; i<size; ++i) {
-                const double delta_g_ref = parameter[i][1];  // kcal/mol -> kJ/mol
-                const double delta_g_free = parameter[i][2];  // kcal/mol -> kJ/mol
-                const double lambda = parameter[i][5];  // angstrom -> nm
-                const double vdw_radius = parameter[i][6];  // nm
-
-                const double inv_lambda = 1.0 / lambda;
-                const double inv_lambda2 = inv_lambda * inv_lambda;
+                const double delta_g_ref = parameter[i][1];
 
                 double fedensity = 0.0;
-                for (unsigned j=0; j<size; ++j) {
-                    if (i == j) {
-                        continue;
-                    }
-                    const double vdw_volume = parameter[j][0];  // angstrom^3 -> nm^3
+                // The pairwise interactions are unsymmetric, but we can get away with calculating the distance only once
+                for (unsigned j=i+1; j<size; ++j) {
                     const Vector dist = delta(getPosition(i), getPosition(j));
                     const double rij = dist.modulo();
-
                     const double inv_rij = 1.0 / rij;
                     const double inv_rij2 = inv_rij * inv_rij;
-                    const double rij_vdwr_diff = rij - vdw_radius;
 
-                    const double expo = exp(-inv_lambda2 * rij_vdwr_diff * rij_vdwr_diff);
-                    const double fact = -delta_g_free * vdw_volume * expo * INV_PI_SQRT_PI * inv_rij2 * inv_lambda;
-                    const double deriv = inv_rij * fact * (inv_rij + rij_vdwr_diff * inv_lambda2);
-                    fedensity += -fact;
-                    fedensity_deriv[i] += deriv * dist;
-                    fedensity_deriv[j] -= deriv * dist;
+                    // i-j interaction
+                    {
+                        const double delta_g_free = parameter[i][2];
+                        const double lambda = parameter[i][5];
+                        const double vdw_radius = parameter[i][6];
+                        const double inv_lambda = 1.0 / lambda;
+                        const double inv_lambda2 = inv_lambda * inv_lambda;
+                        const double vdw_volume = parameter[j][0];
+
+                        const double rij_vdwr_diff = rij - vdw_radius;
+                        const double expo = exp(-inv_lambda2 * rij_vdwr_diff * rij_vdwr_diff);
+                        const double fact = -delta_g_free * vdw_volume * expo * INV_PI_SQRT_PI * inv_rij2 * inv_lambda;
+                        const double deriv = inv_rij * fact * (inv_rij + rij_vdwr_diff * inv_lambda2);
+
+                        fedensity += -fact;
+                        fedensity_deriv[i] += deriv * dist;
+                        fedensity_deriv[j] -= deriv * dist;
+                    }
+
+                    // j-i interaction
+                    {
+                        const double delta_g_free = parameter[j][2];
+                        const double lambda = parameter[j][5];
+                        const double vdw_radius = parameter[j][6];
+                        const double inv_lambda = 1.0 / lambda;
+                        const double inv_lambda2 = inv_lambda * inv_lambda;
+                        const double vdw_volume = parameter[i][0];
+
+                        const double rij_vdwr_diff = rij - vdw_radius;
+                        const double expo = exp(-inv_lambda2 * rij_vdwr_diff * rij_vdwr_diff);
+                        const double fact = -delta_g_free * vdw_volume * expo * INV_PI_SQRT_PI * inv_rij2 * inv_lambda;
+                        const double deriv = inv_rij * fact * (inv_rij + rij_vdwr_diff * inv_lambda2);
+
+                        fedensity += -fact;
+                        fedensity_deriv[i] += deriv * dist;
+                        fedensity_deriv[j] -= deriv * dist;
+                    }
                 }
-
-                const double delta_g_solv = delta_g_ref - 0.5 * fedensity;
-                bias += delta_g_solv;
+                bias += delta_g_ref - 0.5 * fedensity;
             }
 
             for (unsigned i=0; i<size; ++i) {
