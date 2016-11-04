@@ -149,14 +149,13 @@ Calculate EEF1-SB solvation free energy
             const unsigned nt = OpenMP::getGoodNumThreads(nl);
             #pragma omp parallel num_threads(nt)
             {
-                #pragma omp for
+                #pragma omp for reduction(+:bias)
                 for (unsigned i=0; i<size; ++i) {
                     const Vector posi = getPosition(i);
                     const double delta_g_ref = parameter[i][1];
                     double fedensity = 0.0;
 
                     // The pairwise interactions are unsymmetric, but we can get away with calculating the distance only once
-                    #pragma omp simd
                     for (unsigned i_nl=0; i_nl<nl[i].size(); ++i_nl) {
                         const unsigned j = nl[i][i_nl];
                         const Vector dist = delta(posi, getPosition(j));
@@ -178,9 +177,13 @@ Calculate EEF1-SB solvation free energy
                             const double fact = -delta_g_free * vdw_volume * expo * INV_PI_SQRT_PI * inv_rij2 * inv_lambda;
                             const double deriv = inv_rij * fact * (inv_rij + rij_vdwr_diff * inv_lambda2);
 
-                            fedensity += -fact;
-                            fedensity_deriv[i] += deriv * dist;
-                            fedensity_deriv[j] -= deriv * dist;
+                            // This is needed for correct box derivs
+                            #pragma omp critical(deriv)
+                            {
+                                fedensity += -fact;
+                                fedensity_deriv[i] += deriv * dist;
+                                fedensity_deriv[j] -= deriv * dist;
+                            }
                         }
 
                         // j-i interaction
@@ -197,9 +200,12 @@ Calculate EEF1-SB solvation free energy
                             const double fact = -delta_g_free * vdw_volume * expo * INV_PI_SQRT_PI * inv_rij2 * inv_lambda;
                             const double deriv = inv_rij * fact * (inv_rij + rij_vdwr_diff * inv_lambda2);
 
-                            fedensity += -fact;
-                            fedensity_deriv[i] += deriv * dist;
-                            fedensity_deriv[j] -= deriv * dist;
+                            #pragma omp critical(deriv)
+                            {
+                                fedensity += -fact;
+                                fedensity_deriv[i] += deriv * dist;
+                                fedensity_deriv[j] -= deriv * dist;
+                            }
                         }
                     }
                     bias += delta_g_ref - 0.5 * fedensity;
@@ -208,9 +214,10 @@ Calculate EEF1-SB solvation free energy
 
             Tensor deriv_box;
             const unsigned ntd = OpenMP::getGoodNumThreads(fedensity_deriv);
+            #pragma omp declare reduction(tensor_sum:Tensor: omp_out += omp_in) initializer(omp_priv = Tensor())
             #pragma omp parallel num_threads(ntd)
             {
-                #pragma omp for
+                #pragma omp for reduction(tensor_sum:deriv_box)
                 for (unsigned i=0; i<size; ++i) {
                     setAtomsDerivatives(i, fedensity_deriv[i]);
                     deriv_box += Tensor(getPosition(i), fedensity_deriv[i]);
