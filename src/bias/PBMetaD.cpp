@@ -339,9 +339,9 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
 PLUMED_BIAS_INIT(ao),
 grid_(false), height0_(std::numeric_limits<double>::max()),
 biasf_(1.0), kbt_(0.0), stride_(0), wgridstride_(0), welltemp_(false),
-adaptive_(FlexibleBin::none),
 mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1),
 walkers_mpi(false), mpi_nw_(0),
+adaptive_(FlexibleBin::none),
 isFirstStep(true)
 {
   // parse the flexible hills
@@ -547,7 +547,6 @@ isFirstStep(true)
     log.printf("  KbT %f\n",kbt_);
   }
 
-//  if(walkers_mpi) log.printf("  Multiple walkers active using MPI communnication\n");
   if(mw_n_>1){
     if(walkers_mpi) error("MPI version of multiple walkers is not compatible with filesystem version of multiple walkers");
     log.printf("  %d multiple walkers active\n",mw_n_);
@@ -1032,15 +1031,15 @@ void PBMetaD::update()
    if(walkers_mpi){
      // Allocate arrays to store all walkers hills
      std::vector<double> all_cv(mpi_nw_*cv.size(), 0.0);
-      vector<double> all_sigma(nw_*getNumberOfArguments(), 0.0);
+      vector<double> all_sigma(mpi_nw_*getNumberOfArguments(), 0.0);
      std::vector<double> all_height(mpi_nw_*height.size(), 0.0);
      if(comm.Get_rank()==0){
        // fill in value
        for(unsigned i=0; i<getNumberOfArguments(); ++i){
-        unsigned j = mpi_id_ * getNumberOfArguments() + i;
-        all_cv[j] = cv[i];
-        all_sigma[j]  = thissigma[i];
-        all_height[j] = height[i];
+         unsigned j = mpi_id_ * getNumberOfArguments() + i;
+         all_cv[j] = cv[i];
+         all_sigma[j]  = thissigma[i];
+         all_height[j] = height[i];
        }
        // Communicate (only root)
        multi_sim_comm.Sum(&all_cv[0], all_cv.size());
@@ -1055,14 +1054,13 @@ void PBMetaD::update()
      for(unsigned j=0; j<mpi_nw_; ++j){
       for(unsigned i=0; i<getNumberOfArguments(); ++i){
        cv_tmp[0]    = all_cv[j*cv.size()+i];
-       sigma_tmp[0] = all_sigma[j*cv.size()+i];
        double height_tmp = all_height[j*cv.size()+i];
-       // new Gaussian
+       sigma_tmp[0] = all_sigma[j*cv.size()+i];
        Gaussian newhill = Gaussian(cv_tmp, sigma_tmp, height_tmp, multivariate);
        addGaussian(i, newhill);
-       // print on HILLS file
        writeGaussian(i, newhill, hillsOfiles_[i]);
-      }  
+      }
+     }  
     // just add your own hills  
     }else{
       for(unsigned i=0; i<getNumberOfArguments(); ++i){
