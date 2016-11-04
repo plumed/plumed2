@@ -113,18 +113,23 @@ Calculate EEF1-SB solvation free energy
 
         void Implicit::update_neighb() {
             const unsigned size=getNumberOfAtoms();
-            for (unsigned i=0; i<size; ++i) {
-                const Vector posi = getPosition(i);
+            const unsigned nt = OpenMP::getGoodNumThreads(nl);
+            #pragma omp parallel num_threads(nt)
+            {
+                #pragma omp for
+                for (unsigned i=0; i<size; ++i) {
+                    const Vector posi = getPosition(i);
 
-                // Clear old values, reserve space for new indices
-                nl[i].clear();
-                nl[i].reserve(100);
+                    // Clear old values, reserve space for new indices
+                    nl[i].clear();
+                    nl[i].reserve(100);
 
-                // Loop through neighboring atoms, add the ones below cutoff
-                for (unsigned j=i+1; j<size; ++j) {
-                    const double dist = delta(posi, getPosition(j)).modulo();
-                    if (dist < cutoff && i != j) {
-                        nl[i].push_back(j);
+                    // Loop through neighboring atoms, add the ones below cutoff
+                    for (unsigned j=i+1; j<size; ++j) {
+                        const double dist = delta(posi, getPosition(j)).modulo();
+                        if (dist < cutoff && i != j) {
+                            nl[i].push_back(j);
+                        }
                     }
                 }
             }
@@ -201,11 +206,18 @@ Calculate EEF1-SB solvation free energy
                 }
             }
 
-            for (unsigned i=0; i<size; ++i) {
-                setAtomsDerivatives(i, fedensity_deriv[i]);
+            Tensor deriv_box;
+            const unsigned ntd = OpenMP::getGoodNumThreads(fedensity_deriv);
+            #pragma omp parallel num_threads(ntd)
+            {
+                #pragma omp for
+                for (unsigned i=0; i<size; ++i) {
+                    setAtomsDerivatives(i, fedensity_deriv[i]);
+                    deriv_box += Tensor(getPosition(i), fedensity_deriv[i]);
+                }
             }
 
-            setBoxDerivativesNoPbc();
+            setBoxDerivatives(-deriv_box);
             setValue(bias);
 
             // Keep track of the neighbourlist updates
