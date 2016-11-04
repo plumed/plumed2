@@ -809,7 +809,7 @@ void PBMetaD::writeGaussian(unsigned iarg, const Gaussian& hill, OFile *ofile)
     ofile->printField("sigma_"+getPntrToArgument(iarg)->getName(),hill.sigma[0]);
   }
   double height=hill.height;
-  if(welltemp_) height*=biasf_/(biasf_-1.0); 
+  if(welltemp_) height *= biasf_/(biasf_-1.0); 
   ofile->printField("height",height);
   ofile->printField("biasf",biasf_);
   if(mw_n_>1) ofile->printField("clock",int(std::time(0)));
@@ -998,48 +998,48 @@ void PBMetaD::update()
   }
 
   if(nowAddAHill){
-    // get all biases and heights
-    vector<double> cv(getNumberOfArguments());
-    vector<double> bias(getNumberOfArguments());
-    vector<double> thissigma(getNumberOfArguments());
-    vector<double> height(getNumberOfArguments());
-    vector<double> cv_tmp(1);
-    vector<double> sigma_tmp(1);
-    double norm = 0.0;
-    double bmin = 1.0e+19;
-    for(unsigned i=0; i<getNumberOfArguments(); ++i){
-      if(adaptive_!=FlexibleBin::none) thissigma[i]=flexbin[i].getInverseMatrix(i)[0];
-      else thissigma[i]=sigma0_[i];
-      cv[i]     = getArgument(i);
-      cv_tmp[0] = getArgument(i);
-      bias[i] = getBiasAndDerivatives(i, cv_tmp);
-      if(bias[i] < bmin) bmin = bias[i];
-    }
-    // calculate heights and norm
-    for(unsigned i=0; i<getNumberOfArguments(); ++i){
-      double h  = exp((-bias[i]+bmin)/kbt_);
-      norm     += h;
-      height[i] = h;
-    }
-    // normalize and apply welltemp correction
-    for(unsigned i=0; i<getNumberOfArguments(); ++i){
-      height[i] *=  height0_ / norm;
-      if(welltemp_) height[i] *= exp(-bias[i]/(kbt_*(biasf_-1.0)));
-    }
+   // get all biases and heights
+   vector<double> cv(getNumberOfArguments());
+   vector<double> bias(getNumberOfArguments());
+   vector<double> thissigma(getNumberOfArguments());
+   vector<double> height(getNumberOfArguments());
+   vector<double> cv_tmp(1);
+   vector<double> sigma_tmp(1);
+   double norm = 0.0;
+   double bmin = 1.0e+19;
+   for(unsigned i=0; i<getNumberOfArguments(); ++i){
+     if(adaptive_!=FlexibleBin::none) thissigma[i]=flexbin[i].getInverseMatrix(i)[0];
+     else thissigma[i]=sigma0_[i];
+     cv[i]     = getArgument(i);
+     cv_tmp[0] = getArgument(i);
+     bias[i] = getBiasAndDerivatives(i, cv_tmp);
+     if(bias[i] < bmin) bmin = bias[i];
+   }
+   // calculate heights and norm
+   for(unsigned i=0; i<getNumberOfArguments(); ++i){
+     double h = exp((-bias[i]+bmin)/kbt_);
+     norm += h;
+     height[i] = h;
+   }
+   // normalize and apply welltemp correction
+   for(unsigned i=0; i<getNumberOfArguments(); ++i){
+     height[i] *=  height0_ / norm;
+     if(welltemp_) height[i] *= exp(-bias[i]/(kbt_*(biasf_-1.0)));
+   }
 
    // MPI Multiple walkers: share hills and add them all
    if(walkers_mpi){
      // Allocate arrays to store all walkers hills
      std::vector<double> all_cv(mpi_nw_*cv.size(), 0.0);
-      vector<double> all_sigma(mpi_nw_*getNumberOfArguments(), 0.0);
+     std::vector<double> all_sigma(mpi_nw_*getNumberOfArguments(), 0.0);
      std::vector<double> all_height(mpi_nw_*height.size(), 0.0);
      if(comm.Get_rank()==0){
        // fill in value
        for(unsigned i=0; i<getNumberOfArguments(); ++i){
-         unsigned j = mpi_id_ * getNumberOfArguments() + i;
-         all_cv[j] = cv[i];
-         all_sigma[j]  = thissigma[i];
-         all_height[j] = height[i];
+        unsigned j = mpi_id_ * getNumberOfArguments() + i;
+        all_cv[j] = cv[i];
+        all_sigma[j]  = thissigma[i];
+        all_height[j] = height[i];
        }
        // Communicate (only root)
        multi_sim_comm.Sum(&all_cv[0], all_cv.size());
@@ -1061,17 +1061,17 @@ void PBMetaD::update()
        writeGaussian(i, newhill, hillsOfiles_[i]);
       }
      }  
-    // just add your own hills  
-    }else{
-      for(unsigned i=0; i<getNumberOfArguments(); ++i){
-        cv_tmp[0] = cv[i];
-        if(adaptive_!=FlexibleBin::none) sigma_tmp[0]=thissigma[i];
-        else sigma_tmp[0] = sigma0_[i];
-        Gaussian newhill = Gaussian(cv_tmp, sigma_tmp, height[i], multivariate);
-        addGaussian(i, newhill);
-        writeGaussian(i, newhill, hillsOfiles_[i]);
-      } 
-    }
+   // just add your own hills  
+   }else{
+    for(unsigned i=0; i<getNumberOfArguments(); ++i){
+      cv_tmp[0] = cv[i];
+      if(adaptive_!=FlexibleBin::none) sigma_tmp[0]=thissigma[i];
+      else sigma_tmp[0] = sigma0_[i];
+      Gaussian newhill = Gaussian(cv_tmp, sigma_tmp, height[i], multivariate);
+      addGaussian(i, newhill);
+      writeGaussian(i, newhill, hillsOfiles_[i]);
+    } 
+   }
   }
 
    // write grid files
@@ -1155,7 +1155,7 @@ bool PBMetaD::scanOneHill(unsigned iarg, IFile *ifile, vector<Value> &tmpvalues,
     return true;
   } else { 
     return false; 
-  }  
+  } 
 }
 
 }
