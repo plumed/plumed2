@@ -112,6 +112,7 @@ Calculate EEF1-SB solvation free energy
         }
 
         void Implicit::update_neighb() {
+            const double c2 = cutoff*cutoff;
             const unsigned size=getNumberOfAtoms();
             const unsigned nt = OpenMP::getGoodNumThreads(nl);
             #pragma omp parallel num_threads(nt)
@@ -126,8 +127,8 @@ Calculate EEF1-SB solvation free energy
 
                     // Loop through neighboring atoms, add the ones below cutoff
                     for (unsigned j=i+1; j<size; ++j) {
-                        const double dist = delta(posi, getPosition(j)).modulo();
-                        if (dist < cutoff && i != j) {
+                        const double d2 = delta(posi, getPosition(j)).modulo2();
+                        if (d2 < c2 && i != j) {
                             nl[i].push_back(j);
                         }
                     }
@@ -160,6 +161,7 @@ Calculate EEF1-SB solvation free energy
                         const unsigned j = nl[i][i_nl];
                         const Vector dist = delta(posi, getPosition(j));
                         const double rij = dist.modulo();
+                        if (rij > cutoff) continue;
                         const double inv_rij = 1.0 / rij;
                         const double inv_rij2 = inv_rij * inv_rij;
 
