@@ -59,6 +59,8 @@ Calculate EEF1-SB solvation free energy
                 unsigned nl_update;
                 vector<vector<unsigned> > nl;
                 vector<vector<double> > parameter;
+                map<string, map<string, string> > typemap;
+                void setupTypeMap();
             public:
                 static void registerKeywords(Keywords& keys);
                 explicit Implicit(const ActionOptions&);
@@ -236,15 +238,528 @@ Calculate EEF1-SB solvation free energy
             }
         }
 
+        void Implicit::setupTypeMap() {
+            typemap = {
+                {"ALA", {
+                            {"N",   "NH1"},
+                            {"HN",  "H"  },
+                            {"CA",  "CT1"},
+                            {"HA",  "HB1"},
+                            {"CB",  "CT3"},
+                            {"HB1", "HA3"},
+                            {"HB2", "HA3"},
+                            {"HB3", "HA3"},
+                            {"C",   "C"  },
+                            {"O",   "O"  }
+                        }
+                },
+                {"ARG", {
+                            {"N",    "NH1"},
+                            {"HN",   "H"  },
+                            {"CA",   "CT1"},
+                            {"HA",   "HB1"},
+                            {"CB",   "CT2"},
+                            {"HB1",  "HA2"},
+                            {"HB2",  "HA2"},
+                            {"CG",   "CT2"},
+                            {"HG1",  "HA2"},
+                            {"HG2",  "HA2"},
+                            {"CD",   "CT2"},
+                            {"HD1",  "HA2"},
+                            {"HD2",  "HA2"},
+                            {"NE",   "NC2"},
+                            {"HE",   "HC" },
+                            {"CZ",   "C"  },
+                            {"NH1",  "NC2"},
+                            {"HH11", "HC" },
+                            {"HH12", "HC" },
+                            {"NH2",  "NC2"},
+                            {"HH21", "HC" },
+                            {"HH22", "HC" },
+                            {"C",    "C"  },
+                            {"O",    "O"  }
+                        }
+                },
+                {"ASN", {
+                            {"N",    "NH1"},
+                            {"HN",   "H"  },
+                            {"CA",   "CT1"},
+                            {"HA",   "HB1"},
+                            {"CB",   "CT2"},
+                            {"HB1",  "HA2"},
+                            {"HB2",  "HA2"},
+                            {"CG",   "CC" },
+                            {"OD1",  "O"  },
+                            {"ND2",  "NH2"},
+                            {"HD21", "H"  },
+                            {"HD22", "H"  },
+                            {"C",    "C"  },
+                            {"O",    "O"  }
+                        }
+                },
+                {"ASPP", {
+                             {"N",   "NH1"},
+                             {"HN",  "H"  },
+                             {"CA",  "CT1"},
+                             {"HA",  "HB1"},
+                             {"CB",  "CT2"},
+                             {"HB1", "HA2"},
+                             {"HB2", "HA2"},
+                             {"CG",  "CD" },
+                             {"OD1", "OB" },
+                             {"OD2", "OH1"},
+                             {"HD2", "H"  },
+                             {"C",   "C"  },
+                             {"O",   "O"  }
+                         }
+                },
+                {"ASP", {
+                            {"N",   "NH1"},
+                            {"HN",  "H"  },
+                            {"CA",  "CT1"},
+                            {"HA",  "HB1"},
+                            {"CB",  "CT2"},
+                            {"HB1", "HA2"},
+                            {"HB2", "HA2"},
+                            {"CG",  "CC" },
+                            {"OD1", "OC" },
+                            {"OD2", "OC" },
+                            {"C",   "C"  },
+                            {"O",   "O"  }
+                        }
+                },
+                {"CYS", {
+                            {"N",   "NH1"},
+                            {"HN",  "H"  },
+                            {"CA",  "CT1"},
+                            {"HA",  "HB1"},
+                            {"CB",  "CT2"},
+                            {"HB1", "HA2"},
+                            {"HB2", "HA2"},
+                            {"SG",  "S"  },
+                            {"HG1", "HS" },
+                            {"C",   "C"  },
+                            {"O",   "O"  }
+                        }
+                },
+                {"GLN", {
+                            {"N",    "NH1" },
+                            {"HN",   "H"   },
+                            {"CA",   "CT1" },
+                            {"HA",   "HB1" },
+                            {"CB",   "CT2" },
+                            {"HB1",  "HA2" },
+                            {"HB2",  "HA2" },
+                            {"CG",   "CT2" },
+                            {"HG1",  "HA2" },
+                            {"HG2",  "HA2" },
+                            {"CD",   "CC"  },
+                            {"OE1",  "O"   },
+                            {"NE2",  "NH2" },
+                            {"HE21", "H"   },
+                            {"HE22", "H"   },
+                            {"C",    "C"   },
+                            {"O",    "O"   }
+                        }
+                },
+                {"GLUP", {
+                             {"N",   "NH1"},
+                             {"HN",  "H"  },
+                             {"CA",  "CT1"},
+                             {"HA",  "HB1"},
+                             {"CB",  "CT2"},
+                             {"HB1", "HA2"},
+                             {"HB2", "HA2"},
+                             {"CG",  "CT2"},
+                             {"HG1", "HA2"},
+                             {"HG2", "HA2"},
+                             {"CD",  "CD" },
+                             {"OE1", "OB" },
+                             {"OE2", "OH1"},
+                             {"HE2", "H"  },
+                             {"C",   "C"  },
+                             {"O",   "O"  }
+                         }
+                },
+                {"GLU", {
+                            {"N",   "NH1"},
+                            {"HN",  "H"  },
+                            {"CA",  "CT1"},
+                            {"HA",  "HB1"},
+                            {"CB",  "CT2"},
+                            {"HB1", "HA2"},
+                            {"HB2", "HA2"},
+                            {"CG",  "CT2"},
+                            {"HG1", "HA2"},
+                            {"HG2", "HA2"},
+                            {"CD",  "CC" },
+                            {"OE1", "OC" },
+                            {"OE2", "OC" },
+                            {"C",   "C"  },
+                            {"O",   "O"  }
+                        }
+                },
+                {"GLY", {
+                            {"N",   "NH1"},
+                            {"HN",  "H"  },
+                            {"CA",  "CT2"},
+                            {"HA1", "HB2"},
+                            {"HA2", "HB2"},
+                            {"C",   "C"  },
+                            {"O",   "O"  }
+                        }
+                },
+                {"HSD", {
+                            {"N",   "NH1"},
+                            {"HN",  "H"  },
+                            {"CA",  "CT1"},
+                            {"HA",  "HB1"},
+                            {"CB",  "CT2"},
+                            {"HB1", "HA2"},
+                            {"HB2", "HA2"},
+                            {"ND1", "NR1"},
+                            {"HD1", "H"  },
+                            {"CG",  "CPH"},
+                            {"CE1", "CPH"},
+                            {"HE1", "HR1"},
+                            {"NE2", "NR2"},
+                            {"CD2", "CPH"},
+                            {"HD2", "HR3"},
+                            {"C",   "C"  },
+                            {"O",   "O"  }
+                        }
+                },
+                {"HSE", {
+                            {"N",   "NH1"},
+                            {"HN",  "H"  },
+                            {"CA",  "CT1"},
+                            {"HA",  "HB1"},
+                            {"CB",  "CT2"},
+                            {"HB1", "HA2"},
+                            {"HB2", "HA2"},
+                            {"ND1", "NR2"},
+                            {"CG",  "CPH"},
+                            {"CE1", "CPH"},
+                            {"HE1", "HR1"},
+                            {"NE2", "NR1"},
+                            {"HE2", "H"  },
+                            {"CD2", "CPH"},
+                            {"HD2", "HR3"},
+                            {"C",   "C"  },
+                            {"O",   "O"  }
+                        }
+                },
+                {"HSP", {
+                            {"N",   "NH1"},
+                            {"HN",  "H"  },
+                            {"CA",  "CT1"},
+                            {"HA",  "HB1"},
+                            {"CB",  "CT2"},
+                            {"HB1", "HA2"},
+                            {"HB2", "HA2"},
+                            {"CD2", "CPH"},
+                            {"HD2", "HR1"},
+                            {"CG",  "CPH"},
+                            {"NE2", "NR3"},
+                            {"HE2", "H"  },
+                            {"ND1", "NR3"},
+                            {"HD1", "H"  },
+                            {"CE1", "CPH"},
+                            {"HE1", "HR2"},
+                            {"C",   "C"  },
+                            {"O",   "O"  }
+                        }
+                },
+                {"ILE", {
+                            {"N",    "NH1"},
+                            {"HN",   "H"  },
+                            {"CA",   "CT1"},
+                            {"HA",   "HB1"},
+                            {"CB",   "CT1"},
+                            {"HB",   "HA1"},
+                            {"CG2",  "CT3"},
+                            {"HG21", "HA3"},
+                            {"HG22", "HA3"},
+                            {"HG23", "HA3"},
+                            {"CG1",  "CT2"},
+                            {"HG11", "HA2"},
+                            {"HG12", "HA2"},
+                            {"CD",   "CT3"},
+                            {"HD1",  "HA3"},
+                            {"HD2",  "HA3"},
+                            {"HD3",  "HA3"},
+                            {"C",    "C"  },
+                            {"O",    "O"  }
+                        }
+                },
+                {"LEU", {
+                            {"N",    "NH1"},
+                            {"HN",   "H"  },
+                            {"CA",   "CT1"},
+                            {"HA",   "HB1"},
+                            {"CB",   "CT2"},
+                            {"HB1",  "HA2"},
+                            {"HB2",  "HA2"},
+                            {"CG",   "CT1"},
+                            {"HG",   "HA1"},
+                            {"CD1",  "CT3"},
+                            {"HD11", "HA3"},
+                            {"HD12", "HA3"},
+                            {"HD13", "HA3"},
+                            {"CD2",  "CT3"},
+                            {"HD21", "HA3"},
+                            {"HD22", "HA3"},
+                            {"HD23", "HA3"},
+                            {"C",    "C"  },
+                            {"O",    "O"  }
+                        }
+                },
+                {"LYS", {
+                            {"N",   "NH1"},
+                            {"HN",  "H"  },
+                            {"CA",  "CT1"},
+                            {"HA",  "HB1"},
+                            {"CB",  "CT2"},
+                            {"HB1", "HA2"},
+                            {"HB2", "HA2"},
+                            {"CG",  "CT2"},
+                            {"HG1", "HA2"},
+                            {"HG2", "HA2"},
+                            {"CD",  "CT2"},
+                            {"HD1", "HA2"},
+                            {"HD2", "HA2"},
+                            {"CE",  "CT2"},
+                            {"HE1", "HA2"},
+                            {"HE2", "HA2"},
+                            {"NZ",  "NH3"},
+                            {"HZ1", "HC" },
+                            {"HZ2", "HC" },
+                            {"HZ3", "HC" },
+                            {"C",   "C"  },
+                            {"O",   "O"  }
+                        }
+                },
+                {"MET", {
+                            {"N",   "NH1"},
+                            {"HN",  "H"  },
+                            {"CA",  "CT1"},
+                            {"HA",  "HB1"},
+                            {"CB",  "CT2"},
+                            {"HB1", "HA2"},
+                            {"HB2", "HA2"},
+                            {"CG",  "CT2"},
+                            {"HG1", "HA2"},
+                            {"HG2", "HA2"},
+                            {"SD",  "S"  },
+                            {"CE",  "CT3"},
+                            {"HE1", "HA3"},
+                            {"HE2", "HA3"},
+                            {"HE3", "HA3"},
+                            {"C",   "C"  },
+                            {"O",   "O"  }
+                        }
+                },
+                {"PHE", {
+                            {"N",   "NH1"},
+                            {"HN",  "H"  },
+                            {"CA",  "CT1"},
+                            {"HA",  "HB1"},
+                            {"CB",  "CT2"},
+                            {"HB1", "HA2"},
+                            {"HB2", "HA2"},
+                            {"CG",  "CA" },
+                            {"CD1", "CA" },
+                            {"HD1", "HP" },
+                            {"CE1", "CA" },
+                            {"HE1", "HP" },
+                            {"CZ",  "CA" },
+                            {"HZ",  "HP" },
+                            {"CD2", "CA" },
+                            {"HD2", "HP" },
+                            {"CE2", "CA" },
+                            {"HE2", "HP" },
+                            {"C",   "C"  },
+                            {"O",   "O"  }
+                        }
+                },
+                {"PRO", {
+                            {"N",   "N"  },
+                            {"CD",  "CP3"},
+                            {"HD1", "HA2"},
+                            {"HD2", "HA2"},
+                            {"CA",  "CP1"},
+                            {"HA",  "HB1"},
+                            {"CB",  "CP2"},
+                            {"HB1", "HA2"},
+                            {"HB2", "HA2"},
+                            {"CG",  "CP2"},
+                            {"HG1", "HA2"},
+                            {"HG2", "HA2"},
+                            {"C",   "C"  },
+                            {"O",   "O"  }
+                        }
+                },
+                {"SER", {
+                            {"N",   "NH1"},
+                            {"HN",  "H"  },
+                            {"CA",  "CT1"},
+                            {"HA",  "HB1"},
+                            {"CB",  "CT2"},
+                            {"HB1", "HA2"},
+                            {"HB2", "HA2"},
+                            {"OG",  "OH1"},
+                            {"HG1", "H"  },
+                            {"C",   "C"  },
+                            {"O",   "O"  }
+                        }
+                },
+                {"THR", {
+                            {"N",    "NH1"},
+                            {"HN",   "H"  },
+                            {"CA",   "CT1"},
+                            {"HA",   "HB1"},
+                            {"CB",   "CT1"},
+                            {"HB",   "HA1"},
+                            {"OG1",  "OH1"},
+                            {"HG1",  "H"  },
+                            {"CG2",  "CT3"},
+                            {"HG21", "HA3"},
+                            {"HG22", "HA3"},
+                            {"HG23", "HA3"},
+                            {"C",    "C"  },
+                            {"O",    "O"  }
+                        }
+                },
+                {"TRP", {
+                            {"N",   "NH1"},
+                            {"HN",  "H"  },
+                            {"CA",  "CT1"},
+                            {"HA",  "HB1"},
+                            {"CB",  "CT2"},
+                            {"HB1", "HA2"},
+                            {"HB2", "HA2"},
+                            {"CG",  "CY" },
+                            {"CD1", "CA" },
+                            {"HD1", "HP" },
+                            {"NE1", "NY" },
+                            {"HE1", "H"  },
+                            {"CE2", "CPT"},
+                            {"CD2", "CPT"},
+                            {"CE3", "CAI"},
+                            {"HE3", "HP" },
+                            {"CZ3", "CA" },
+                            {"HZ3", "HP" },
+                            {"CZ2", "CAI"},
+                            {"HZ2", "HP" },
+                            {"CH2", "CA" },
+                            {"HH2", "HP" },
+                            {"C",   "C"  },
+                            {"O",   "O"  }
+                        }
+                },
+                {"TYR", {
+                            {"N",   "NH1"},
+                            {"HN",  "H"  },
+                            {"CA",  "CT1"},
+                            {"HA",  "HB1"},
+                            {"CB",  "CT2"},
+                            {"HB1", "HA2"},
+                            {"HB2", "HA2"},
+                            {"CG",  "CA" },
+                            {"CD1", "CA" },
+                            {"HD1", "HP" },
+                            {"CE1", "CA" },
+                            {"HE1", "HP" },
+                            {"CZ",  "CA" },
+                            {"OH",  "OH1"},
+                            {"HH",  "H"  },
+                            {"CD2", "CA" },
+                            {"HD2", "HP" },
+                            {"CE2", "CA" },
+                            {"HE2", "HP" },
+                            {"C",   "C"  },
+                            {"O",   "O"  }
+                        }
+                },
+                {"VAL", {
+                            {"N",    "NH1"},
+                            {"HN",   "H"  },
+                            {"CA",   "CT1"},
+                            {"HA",   "HB1"},
+                            {"CB",   "CT1"},
+                            {"HB",   "HA1"},
+                            {"CG1",  "CT3"},
+                            {"HG11", "HA3"},
+                            {"HG12", "HA3"},
+                            {"HG13", "HA3"},
+                            {"CG2",  "CT3"},
+                            {"HG21", "HA3"},
+                            {"HG22", "HA3"},
+                            {"HG23", "HA3"},
+                            {"C",    "C"  },
+                            {"O",    "O"  },
+                        }
+                }
+            };
+        }
+
         void Implicit::setupConstants(const vector<AtomNumber> &atoms, vector<vector<double> > &parameter) {
-            vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
+            setupTypeMap();
+            vector<SetupMolInfo*> moldat = plumed.getActionSet().select<SetupMolInfo*>();
             if (moldat.size() == 1) {
                 log << "  MOLINFO DATA found, using proper atom names\n";
                 for(unsigned i=0; i<atoms.size(); ++i) {
+
+                    // Get atom and residue names
                     string Aname = moldat[0]->getAtomName(atoms[i]);
                     string Rname = moldat[0]->getResidueName(atoms[i]);
+                    string Atype = typemap[Rname][Aname];
+
+                    // Check for terminal COOH or COO- (different atomtypes & parameters!)
+                    if (moldat[0]->getAtomName(atoms[i]) == "OT1") {
+                        // We create a temporary AtomNumber object to access future atoms
+                        unsigned ai = atoms[i].index();
+                        AtomNumber tmp_an;
+                        tmp_an.setIndex(ai + 2);
+                        if (moldat[0]->getAtomName(tmp_an) == "HT2") {
+                            // COOH
+                            Atype = "OB";
+                        } else {
+                            // COO-
+                            Atype = "OC";
+                        }
+                    }
+                    if (moldat[0]->getAtomName(atoms[i]) == "OT2") {
+                        unsigned ai = atoms[i].index();
+                        AtomNumber tmp_an;
+                        tmp_an.setIndex(ai + 1);
+                        if (moldat[0]->getAtomName(tmp_an) == "HT2") {
+                            // COOH
+                            Atype = "OH1";
+                        } else {
+                            // COO-
+                            Atype = "OC";
+                        }
+                    }
+
+                    // Check for H-atoms
+                    char type;
+                    char first = Aname.at(0);
+
+                    // GOLDEN RULE: type is first letter, if not a number
+                    if (!isdigit(first)){
+                        type = first;
+                        // otherwise is the second
+                    } else {
+                        type = Aname.at(1);
+                    }
+
+                    if (type == 'H') {
+                        error("EEF1-SB does not allow the use of hydrogen atoms!\n");
+                    }
+
                     // Volume ∆Gref ∆Gfree ∆H ∆Cp λ vdw_radius
-                    if (Aname == "C") {
+                    if (Atype == "C") {
                         parameter[i][0] = 0.001 * 14.720;
                         parameter[i][1] = 4.184 * 0.000;
                         parameter[i][2] = 4.184 * 0.000;
@@ -252,7 +767,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][4] = 0.0;
                         parameter[i][5] = 0.1 * 3.5;
                         parameter[i][6] = 0.17;
-                    } else if (Aname == "CD") {
+                    } else if (Atype == "CD") {
                         parameter[i][0] = 0.001 * 14.720;
                         parameter[i][1] = 4.184 * 0.000;
                         parameter[i][2] = 4.184 * 0.000;
@@ -260,7 +775,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][4] = 0.0;
                         parameter[i][5] = 0.1 * 3.5;
                         parameter[i][6] = 0.17;
-                    } else if (Aname == "CT1") {
+                    } else if (Atype == "CT1") {
                         parameter[i][0] = 0.001 * 11.507;
                         parameter[i][1] = 4.184 * -0.187;
                         parameter[i][2] = 4.184 * -0.187;
@@ -268,7 +783,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][4] = 0.0;
                         parameter[i][5] = 0.1 * 3.5;
                         parameter[i][6] = 0.17;
-                    } else if (Aname == "CT2") {
+                    } else if (Atype == "CT2") {
                         parameter[i][0] = 0.001 * 18.850;
                         parameter[i][1] = 4.184 * 0.372;
                         parameter[i][2] = 4.184 * 0.372;
@@ -276,7 +791,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][4] = 18.6;
                         parameter[i][5] = 0.1 * 3.5;
                         parameter[i][6] = 0.17;
-                    } else if (Aname == "CT2A") {
+                    } else if (Atype == "CT2A") {
                         parameter[i][0] = 0.001 * 18.666;
                         parameter[i][1] = 4.184 * 0.372;
                         parameter[i][2] = 4.184 * 0.372;
@@ -284,7 +799,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][4] = 18.6;
                         parameter[i][5] = 0.1 * 3.5;
                         parameter[i][6] = 0.17;
-                    } else if (Aname == "CT3") {
+                    } else if (Atype == "CT3") {
                         parameter[i][0] = 0.001 * 27.941;
                         parameter[i][1] = 4.184 * 1.089;
                         parameter[i][2] = 4.184 * 1.089;
@@ -292,7 +807,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][4] = 35.6;
                         parameter[i][5] = 0.1 * 3.5;
                         parameter[i][6] = 0.17;
-                    } else if (Aname == "CPH1") {
+                    } else if (Atype == "CPH1") {
                         parameter[i][0] = 0.001 * 5.275;
                         parameter[i][1] = 4.184 * 0.057;
                         parameter[i][2] = 4.184 * 0.080;
@@ -300,7 +815,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][4] = 6.9;
                         parameter[i][5] = 0.1 * 3.5;
                         parameter[i][6] = 0.17;
-                    } else if (Aname == "CPH2") {
+                    } else if (Atype == "CPH2") {
                         parameter[i][0] = 0.001 * 11.796;
                         parameter[i][1] = 4.184 * 0.057;
                         parameter[i][2] = 4.184 * 0.080;
@@ -308,7 +823,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][4] = 6.9;
                         parameter[i][5] = 0.1 * 3.5;
                         parameter[i][6] = 0.17;
-                    } else if (Aname == "CPT") {
+                    } else if (Atype == "CPT") {
                         parameter[i][0] = 0.001 * 4.669;
                         parameter[i][1] = 4.184 * -0.890;
                         parameter[i][2] = 4.184 * -0.890;
@@ -316,7 +831,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][4] = 6.9;
                         parameter[i][5] = 0.1 * 3.5;
                         parameter[i][6] = 0.17;
-                    } else if (Aname == "CY") {
+                    } else if (Atype == "CY") {
                         parameter[i][0] = 0.001 * 10.507;
                         parameter[i][1] = 4.184 * -0.890;
                         parameter[i][2] = 4.184 * -0.890;
@@ -324,7 +839,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][4] = 6.9;
                         parameter[i][5] = 0.1 * 3.5;
                         parameter[i][6] = 0.17;
-                    } else if (Aname == "CP1") {
+                    } else if (Atype == "CP1") {
                         parameter[i][0] = 0.001 * 25.458;
                         parameter[i][1] = 4.184 * -0.187;
                         parameter[i][2] = 4.184 * -0.187;
@@ -332,7 +847,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][4] = 0.0;
                         parameter[i][5] = 0.1 * 3.5;
                         parameter[i][6] = 0.17;
-                    } else if (Aname == "CP2") {
+                    } else if (Atype == "CP2") {
                         parameter[i][0] = 0.001 * 19.880;
                         parameter[i][1] = 4.184 * 0.372;
                         parameter[i][2] = 4.184 * 0.372;
@@ -340,7 +855,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][4] = 18.6;
                         parameter[i][5] = 0.1 * 3.5;
                         parameter[i][6] = 0.17;
-                    } else if (Aname == "CP3") {
+                    } else if (Atype == "CP3") {
                         parameter[i][0] = 0.001 * 26.731;
                         parameter[i][1] = 4.184 * 0.372;
                         parameter[i][2] = 4.184 * 0.372;
@@ -348,7 +863,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][4] = 18.6;
                         parameter[i][5] = 0.1 * 3.5;
                         parameter[i][6] = 0.17;
-                    } else if (Aname == "CC") {
+                    } else if (Atype == "CC") {
                         parameter[i][0] = 0.001 * 16.539;
                         parameter[i][1] = 4.184 * 0.000;
                         parameter[i][2] = 4.184 * 0.000;
@@ -356,7 +871,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][4] = 0.0;
                         parameter[i][5] = 0.1 * 3.5;
                         parameter[i][6] = 0.17;
-                    } else if (Aname == "CAI") {
+                    } else if (Atype == "CAI") {
                         parameter[i][0] = 0.001 * 18.249;
                         parameter[i][1] = 4.184 * 0.057;
                         parameter[i][2] = 4.184 * 0.057;
@@ -364,7 +879,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][4] = 6.9;
                         parameter[i][5] = 0.1 * 3.5;
                         parameter[i][6] = 0.17;
-                    } else if (Aname == "CA") {
+                    } else if (Atype == "CA") {
                         parameter[i][0] = 0.001 * 18.249;
                         parameter[i][1] = 4.184 * 0.057;
                         parameter[i][2] = 4.184 * 0.057;
@@ -372,7 +887,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][4] = 6.9;
                         parameter[i][5] = 0.1 * 3.5;
                         parameter[i][6] = 0.17;
-                    } else if (Aname == "N") {
+                    } else if (Atype == "N") {
                         parameter[i][0] = 0.001 * 0.000;
                         parameter[i][1] = 4.184 * -1.000;
                         parameter[i][2] = 4.184 * -1.000;
@@ -380,7 +895,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][4] = 8.8;
                         parameter[i][5] = 0.1 * 3.5;
                         parameter[i][6] = 0.155;
-                    } else if (Aname == "NR1") {
+                    } else if (Atype == "NR1") {
                         parameter[i][0] = 0.001 * 15.273;
                         parameter[i][1] = 4.184 * -5.950;
                         parameter[i][2] = 4.184 * -5.950;
@@ -388,7 +903,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][4] = -8.8;
                         parameter[i][5] = 0.1 * 3.5;
                         parameter[i][6] = 0.155;
-                    } else if (Aname == "NR2") {
+                    } else if (Atype == "NR2") {
                         parameter[i][0] = 0.001 * 15.111;
                         parameter[i][1] = 4.184 * -3.820;
                         parameter[i][2] = 4.184 * -3.820;
@@ -396,7 +911,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][4] = -8.8;
                         parameter[i][5] = 0.1 * 3.5;
                         parameter[i][6] = 0.155;
-                    } else if (Aname == "NR3") {
+                    } else if (Atype == "NR3") {
                         parameter[i][0] = 0.001 * 15.071;
                         parameter[i][1] = 4.184 * -5.950;
                         parameter[i][2] = 4.184 * -5.950;
@@ -404,7 +919,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][4] = -8.8;
                         parameter[i][5] = 0.1 * 3.5;
                         parameter[i][6] = 0.155;
-                    } else if (Aname == "NH1") {
+                    } else if (Atype == "NH1") {
                         parameter[i][0] = 0.001 * 10.197;
                         parameter[i][1] = 4.184 * -5.950;
                         parameter[i][2] = 4.184 * -5.950;
@@ -412,7 +927,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][4] = -8.8;
                         parameter[i][5] = 0.1 * 3.5;
                         parameter[i][6] = 0.155;
-                    } else if (Aname == "NH2") {
+                    } else if (Atype == "NH2") {
                         parameter[i][0] = 0.001 * 18.182;
                         parameter[i][1] = 4.184 * -5.950;
                         parameter[i][2] = 4.184 * -5.950;
@@ -420,7 +935,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][4] = -8.8;
                         parameter[i][5] = 0.1 * 3.5;
                         parameter[i][6] = 0.155;
-                    } else if (Aname == "NH3") {
+                    } else if (Atype == "NH3") {
                         parameter[i][0] = 0.001 * 18.817;
                         parameter[i][1] = 4.184 * -20.000;
                         parameter[i][2] = 4.184 * -20.000;
@@ -428,7 +943,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][4] = -18.0;
                         parameter[i][5] = 0.1 * 6.0;
                         parameter[i][6] = 0.155;
-                    } else if (Aname == "NC2") {
+                    } else if (Atype == "NC2") {
                         parameter[i][0] = 0.001 * 18.215;
                         parameter[i][1] = 4.184 * -10.000;
                         parameter[i][2] = 4.184 * -10.000;
@@ -436,7 +951,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][4] = -7.0;
                         parameter[i][5] = 0.1 * 6.0;
                         parameter[i][6] = 0.155;
-                    } else if (Aname == "NY") {
+                    } else if (Atype == "NY") {
                         parameter[i][0] = 0.001 * 12.001;
                         parameter[i][1] = 4.184 * -5.950;
                         parameter[i][2] = 4.184 * -5.950;
@@ -444,7 +959,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][4] = -8.8;
                         parameter[i][5] = 0.1 * 3.5;
                         parameter[i][6] = 0.155;
-                    } else if (Aname == "NP") {
+                    } else if (Atype == "NP") {
                         parameter[i][0] = 0.001 * 4.993;
                         parameter[i][1] = 4.184 * -20.000;
                         parameter[i][2] = 4.184 * -20.000;
@@ -452,7 +967,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][4] = -18.0;
                         parameter[i][5] = 0.1 * 6.0;
                         parameter[i][6] = 0.155;
-                    } else if (Aname == "O") {
+                    } else if (Atype == "O") {
                         parameter[i][0] = 0.001 * 11.772;
                         parameter[i][1] = 4.184 * -5.330;
                         parameter[i][2] = 4.184 * -5.330;
@@ -460,7 +975,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][4] = -8.8;
                         parameter[i][5] = 0.1 * 3.5;
                         parameter[i][6] = 0.152;
-                    } else if (Aname == "OB") {
+                    } else if (Atype == "OB") {
                         parameter[i][0] = 0.001 * 11.694;
                         parameter[i][1] = 4.184 * -5.330;
                         parameter[i][2] = 4.184 * -5.330;
@@ -468,7 +983,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][4] = -8.8;
                         parameter[i][5] = 0.1 * 3.5;
                         parameter[i][6] = 0.152;
-                    } else if (Aname == "OC") {
+                    } else if (Atype == "OC") {
                         parameter[i][0] = 0.001 * 12.003;
                         parameter[i][1] = 4.184 * -10.000;
                         parameter[i][2] = 4.184 * -10.000;
@@ -476,7 +991,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][4] = -9.4;
                         parameter[i][5] = 0.1 * 6.0;
                         parameter[i][6] = 0.152;
-                    } else if (Aname == "OH1") {
+                    } else if (Atype == "OH1") {
                         parameter[i][0] = 0.001 * 15.528;
                         parameter[i][1] = 4.184 * -5.920;
                         parameter[i][2] = 4.184 * -5.920;
@@ -484,7 +999,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][4] = -11.2;
                         parameter[i][5] = 0.1 * 3.5;
                         parameter[i][6] = 0.152;
-                    } else if (Aname == "OS") {
+                    } else if (Atype == "OS") {
                         parameter[i][0] = 0.001 * 6.774;
                         parameter[i][1] = 4.184 * -2.900;
                         parameter[i][2] = 4.184 * -2.900;
@@ -492,7 +1007,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][4] = -4.8;
                         parameter[i][5] = 0.1 * 3.5;
                         parameter[i][6] = 0.152;
-                    } else if (Aname == "S") {
+                    } else if (Atype == "S") {
                         parameter[i][0] = 0.001 * 20.703;
                         parameter[i][1] = 4.184 * -3.240;
                         parameter[i][2] = 4.184 * -3.240;
@@ -500,7 +1015,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][4] = -39.9;
                         parameter[i][5] = 0.1 * 3.5;
                         parameter[i][6] = 0.18;
-                    } else if (Aname == "SM") {
+                    } else if (Atype == "SM") {
                         parameter[i][0] = 0.001 * 21.306;
                         parameter[i][1] = 4.184 * -3.240;
                         parameter[i][2] = 4.184 * -3.240;
@@ -509,13 +1024,7 @@ Calculate EEF1-SB solvation free energy
                         parameter[i][5] = 0.1 * 3.5;
                         parameter[i][6] = 0.18;
                     } else {
-                        parameter[i][0] = 0.0;
-                        parameter[i][1] = 0.0;
-                        parameter[i][2] = 0.0;
-                        parameter[i][3] = 0.0;
-                        parameter[i][4] = 0.0;
-                        parameter[i][5] = 0.1 * 3.5; // We need to avoid division by zero
-                        parameter[i][6] = 0.0;
+                        error("Invalid atom type!\n");
                     }
 
                     // Charge corrections
