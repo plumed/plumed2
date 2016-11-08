@@ -140,7 +140,7 @@ Calculate EEF1-SB solvation free energy
 
         void Implicit::calculate() {
             if(pbc) makeWhole();
-
+            if(getExchangeStep()) nl_update = 0;
             if (nl_update == 0) {
                 update_neighb();
             }
