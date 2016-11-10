@@ -44,7 +44,7 @@ Atoms::Atoms(PlumedMain&plumed):
   pbc(*new Pbc),
   energy(0.0),
   dataCanBeSet(false),
-  collectEnergy(0.0),
+  collectEnergy(false),
   energyHasBeenSet(false),
   positionsHaveBeenSet(0),
   massesHaveBeenSet(false),
