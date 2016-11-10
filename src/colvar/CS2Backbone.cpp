@@ -1095,7 +1095,6 @@ void CS2Backbone::calculate()
             }
             setBoxDerivatives(comp,virial);
           } else {
-            // but I would also divide for the weights derived with metainference
             comp = getPntrToValue();
             score += (cs - atom[s][a].exp_cs[at_kind])*(cs - atom[s][a].exp_cs[at_kind])/camshift_sigma2[at_kind];
             fact = 2.0*(cs - atom[s][a].exp_cs[at_kind])/camshift_sigma2[at_kind];
