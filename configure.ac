@@ -406,6 +406,68 @@ then
   AC_DEFINE([F77_NO_UNDERSCORE])
 fi
 
+if test -n "$blas_found" ; then
+
+AC_DEFUN([PLUMED_TEST_SDOT],[
+#if ! defined(F77_NO_UNDERSCORE)
+#define sdot sdot_
+#endif
+extern "C"{
+$1 sdot(int *n, float *dx, int *incx, float *dy, int *incy);
+}
+
+int main(){
+  int size=5;
+// notice that [[]] is required to cheat autoconf
+  float af[[5]],bf[[5]];
+  for(unsigned i=0;i<size;i++){
+    af[[i]]=size;
+    bf[[i]]=size-i;
+  }
+  int inca=1;
+  int incb=1;
+  $1 f=sdot(&size,af,&inca,bf,&incb)-75;
+  if(f*f<1e-10) return 0;
+  else return 1;
+}
+])
+
+
+AC_MSG_CHECKING([whether sdot returns float])
+AC_RUN_IFELSE([AC_LANG_SOURCE([PLUMED_TEST_SDOT([float])])],
+  [ sdot_returns_float=yes ; AC_MSG_RESULT([yes]) ],
+  [ sdot_returns_float=no ;  AC_MSG_RESULT([no]) ],
+  [ AC_MSG_RESULT([not checked (cross compiling)]) ]
+)
+
+if test "$sdot_returns_float" == no ;
+then
+
+AC_MSG_CHECKING([whether sdot returns double])
+AC_RUN_IFELSE([AC_LANG_SOURCE([PLUMED_TEST_SDOT([double])])],
+  [ sdot_returns_double=yes ; AC_MSG_RESULT([yes]) ],
+  [ sdot_returns_double=no ;  AC_MSG_RESULT([no]) ],
+  [ AC_MSG_RESULT([not checked (cross compiling)]) ]
+)
+
+fi
+
+if test "$sdot_returns_double" = yes ; then
+  AC_MSG_NOTICE([Setting workaround for blas float functions returning double])
+  AC_DEFINE(__PLUMED_BLAS_RETURNS_FLOAT,double)
+  if test -n "$lapack_found" ; then
+    AC_MSG_NOTICE([Setting workaround for lapack float functions returning double])
+    AC_DEFINE(__PLUMED_LAPACK_RETURNS_FLOAT,double)
+  fi
+else if test "$sdot_returns_float" = no && test "$sdot_returns_double" = no ;
+then
+  AC_MSG_WARN([There is a problem with your blas implementation])
+fi
+
+fi
+
+fi
+
 #### End of compulsory libraries ####
 
 #### Optional libraries ####
