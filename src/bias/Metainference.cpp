@@ -731,7 +731,7 @@ double Metainference::getEnergySPE(const vector<double> &mean, const vector<doub
 double Metainference::getEnergyGJ(const vector<double> &mean, const vector<double> &sigma, 
                                   const double scale, const double offset, const double modifier)
 {
-  const double inv_s2 = 1./(sigma[0]*sigma[0] + modifier*modifier*scale*scale*sigma_mean_[0]*sigma_mean_[0]);
+  const double inv_s2 = 1./(scale*scale*sigma[0]*sigma[0] + modifier*modifier*scale*scale*sigma_mean_[0]*sigma_mean_[0]);
   const double inv_sss = 1./(sigma[0]*sigma[0] + modifier*modifier*sigma_mean_[0]*sigma_mean_[0]);
 
   double ene = 0.0;
@@ -745,7 +745,13 @@ double Metainference::getEnergyGJ(const vector<double> &mean, const vector<doubl
   }
   // add Jeffrey's prior in case one sigma for all data points + one normalisation per datapoint
   // scale doens't enter in the jeffrey, because we don't want the scale to be biased towards zero
-  ene += -0.5*std::log(inv_sss) - 0.5*static_cast<double>(narg)*std::log(scale*scale*inv_s2/(2.*M_PI));
+  ene += -0.5*std::log(1./inv_sss) - 0.5*static_cast<double>(narg)*std::log(scale*scale*inv_s2/(2.*M_PI));
+  if(doscale_) {
+    ene += -0.5*std::log(1./inv_sss);
+  }
+  if(dooffset_) {
+    ene += -0.5*std::log(1./inv_sss);
+  }
   return kbt_ * ene;
 }
 
