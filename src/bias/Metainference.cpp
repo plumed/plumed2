@@ -360,14 +360,12 @@ atoms(plumed.getAtoms())
     else error("Unknown SCALE_PRIOR type!");
     parse("SCALE0",scale_);
     parse("DSCALE",Dscale_);
+    if(Dscale_<0.) error("DSCALE must be set when using SCALEDATA");
     if(scale_prior_==SC_GAUSS) {
       scale_mu_=scale_;
-      if(Dscale_<0.) error("DSCALE must be set when using SCALE_PRIOR=GAUSS");
     } else {
       parse("SCALE_MIN",scale_min_);
       parse("SCALE_MAX",scale_max_);
-      //if(Dscale_<0) Dscale_ = 0.05*(scale_max_ - scale_min_);
-      if(Dscale_<0) Dscale_ = 0.5*scale_min_;
       if(scale_max_<scale_min_) error("SCALE_MAX and SCALE_MIN must be set when using SCALE_PRIOR=FLAT");
     }
   } else {
