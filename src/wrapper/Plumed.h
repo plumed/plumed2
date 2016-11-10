@@ -289,7 +289,6 @@ void plumed_gfinalize(void);
     This function can be used to convert a plumed object created in C to
     a plumed handler that can be used in FORTRAN.
 \verbatim
-#include <stdio.h>
 #include <plumed/wrapper/Plumed.h>
 int main(int argc,char*argv[]){
   plumed p;
