@@ -1249,6 +1249,8 @@ void Metainference::calculate()
 
   // correct sigma_mean for the weighted average effect
   double sigma_mean_modifier = idof;
+  // rescale sigma_mean by a user supplied constant 
+  sigma_mean_modifier *= sigma_mean_correction_;
 
   /* MONTE CARLO */
   const long int step = getStep();
@@ -1256,8 +1258,6 @@ void Metainference::calculate()
 
   /* fix sigma_mean_ for the scaling factor */
   sigma_mean_modifier *= scale_;
-  /* rescale sigma_mean by a user supplied constant */
-  sigma_mean_modifier *= sigma_mean_correction_;
   /* fix sigma_mean_ for the effect of large forces */
   if(do_optsigmamean_==2) sigma_mean_modifier *= sm_mod_;
 
