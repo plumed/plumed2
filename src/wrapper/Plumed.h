@@ -285,6 +285,25 @@ void plumed_gfinalize(void);
 
     \param p The C handler
     \param c The FORTRAN handler (a char[32])
+
+    This function can be used to convert a plumed object created in C to
+    a plumed handler that can be used in FORTRAN.
+\verbatim
+#include <stdio.h>
+#include <plumed/wrapper/Plumed.h>
+int main(int argc,char*argv[]){
+  plumed p;
+  p=plumed_create();
+  char fortran_handler[32];
+  plumed_c2f(p,fortran_handler);
+  printf("DEBUG: this is a string representation for the plumed handler: %s\n",fortran_handler);
+  fortran_routine(fortran_handler);
+  plumed_finalize(p);
+  return 0;
+}
+\endverbatim
+  Here `fortran_routine` is a routine implemented in FORTRAN that manipulates the
+  fortran_handler.
 */
 void   plumed_c2f(plumed p,char* c);
 
@@ -292,6 +311,18 @@ void   plumed_c2f(plumed p,char* c);
     \brief Converts a FORTRAN handler to a C handler
     \param c The FORTRAN handler (a char[32])
     \return The C handler
+
+    This function can be used to convert a plumed object created in FORTRAN
+    to a plumed handler that can be used in C.
+\verbatim
+void c_routine(char handler[32]){
+  plumed p;
+  p=plumed_f2c(handler);
+  plumed_cmd(p,"init",NULL);
+}
+\endverbatim
+  Here `c_routine` is a C function that can be called from FORTRAN
+  and interact with the provided plumed handler.
 */
 plumed plumed_f2c(const char* c);
 
