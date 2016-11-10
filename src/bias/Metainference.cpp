@@ -151,6 +151,7 @@ class Metainference : public Bias
   vector<double> variance_;
 
   // sigma_mean rescue params
+  double sigma_mean_correction_;
   double sm_mod_;
   double sm_mod_min_;
   double sm_mod_max_;
@@ -250,6 +251,7 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.add("optional","SIGMA_MEAN_MOD_MIN","starting value for sm modifier");
   keys.add("optional","SIGMA_MEAN_MOD_MAX","starting value for sm modifier");
   keys.add("optional","DSIGMA_MEAN_MOD","step value for sm modifier");
+  keys.add("optional","SIGMA_MEAN_CORRECTION","sigma_mean correction modifier");
   keys.add("optional","MAX_FORCE","maximum allowable force");
   keys.add("optional","TEMP","the system temperature - this is only needed if code doesnt' pass the temperature to plumed");
   keys.add("optional","MC_STEPS","number of MC steps");
@@ -285,6 +287,7 @@ offset_min_(1),
 offset_max_(-1),
 Doffset_(-1),
 sm_mod_(1.),
+sigma_mean_correction_(1.),
 random(3),
 MCsteps_(1), 
 MCstride_(1), 
@@ -462,6 +465,8 @@ atoms(plumed.getAtoms())
     }
     for(unsigned i=0;i<narg;i++) variance_[i] = sigma_mean_[0]*sigma_mean_[0]*static_cast<double>(nrep_);
   } 
+
+  parse("SIGMA_MEAN_CORRECTION", sigma_mean_correction_);
 
   // sigma mean optimisation
   if(do_optsigmamean_==2) {
@@ -1251,6 +1256,8 @@ void Metainference::calculate()
 
   /* fix sigma_mean_ for the scaling factor */
   sigma_mean_modifier *= scale_;
+  /* rescale sigma_mean by a user supplied constant */
+  sigma_mean_modifier *= sigma_mean_correction_;
   /* fix sigma_mean_ for the effect of large forces */
   if(do_optsigmamean_==2) sigma_mean_modifier *= sm_mod_;
 
