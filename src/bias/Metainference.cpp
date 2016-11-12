@@ -749,7 +749,6 @@ double Metainference::getEnergyGJ(const vector<double> &mean, const vector<doubl
     }
   }
   // add Jeffrey's prior in case one sigma for all data points + one normalisation per datapoint
-  // scale doens't enter in the jeffrey, because we don't want the scale to be biased towards zero
   ene += -0.5*std::log(1./inv_sss) - 0.5*static_cast<double>(narg)*std::log(scale*scale*inv_s2/(2.*M_PI));
   if(doscale_) {
     ene += -0.5*std::log(1./inv_sss);
