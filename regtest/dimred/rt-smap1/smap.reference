@@ -1,4 +1,4 @@
-#! FIELDS smap.1 smap.2 weight
+#! FIELDS smap.coord-1 smap.coord-2 weight
  18.8066  10.1521   1.0000 
  14.0852   9.9268   1.0000 
   8.3328   9.6157   1.0000 

@@ -1,8 +1,8 @@
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7340   c1.moment-3=1.2672   mds.1=0.0594   mds.2=0.0053   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7340   c1.moment-3=1.2672   mds.coord-1=0.0594   mds.coord-2=0.0053   
 ATOM     1  X    RES     0     7.398  -1.829   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.877   0.120   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.050  -0.784   0.000  1.00  1.00
@@ -14,8 +14,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7371   c1.moment-3=1.2758   mds.1=0.0683   mds.2=0.0034   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7371   c1.moment-3=1.2758   mds.coord-1=0.0683   mds.coord-2=0.0034   
 ATOM     1  X    RES     0     7.396  -1.834   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.865   0.130   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.084  -0.784   0.000  1.00  1.00
@@ -27,8 +27,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7401   c1.moment-3=1.2777   mds.1=0.0705   mds.2=0.0006   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7401   c1.moment-3=1.2777   mds.coord-1=0.0705   mds.coord-2=0.0006   
 ATOM     1  X    RES     0     7.383  -1.843   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.850   0.143   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.112  -0.775   0.000  1.00  1.00
@@ -40,8 +40,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7428   c1.moment-3=1.2796   mds.1=0.0729   mds.2=-0.0019  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7428   c1.moment-3=1.2796   mds.coord-1=0.0729   mds.coord-2=-0.0019  
 ATOM     1  X    RES     0     7.369  -1.838   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.829   0.180   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.120  -0.760   0.000  1.00  1.00
@@ -53,8 +53,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7497   c1.moment-3=1.2934   mds.1=0.0874   mds.2=-0.0069  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7497   c1.moment-3=1.2934   mds.coord-1=0.0874   mds.coord-2=-0.0069  
 ATOM     1  X    RES     0     7.357  -1.826   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.805   0.227   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.111  -0.733   0.000  1.00  1.00
@@ -66,8 +66,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7533   c1.moment-3=1.3018   mds.1=0.0961   mds.2=-0.0095  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7533   c1.moment-3=1.3018   mds.coord-1=0.0961   mds.coord-2=-0.0095  
 ATOM     1  X    RES     0     7.340  -1.810   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.807   0.261   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.098  -0.707   0.000  1.00  1.00
@@ -79,8 +79,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7489   c1.moment-3=1.2928   mds.1=0.0867   mds.2=-0.0062  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7489   c1.moment-3=1.2928   mds.coord-1=0.0867   mds.coord-2=-0.0062  
 ATOM     1  X    RES     0     7.340  -1.792   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.828   0.278   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.085  -0.692   0.000  1.00  1.00
@@ -92,8 +92,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7417   c1.moment-3=1.2788   mds.1=0.0719   mds.2=-0.0008  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7417   c1.moment-3=1.2788   mds.coord-1=0.0719   mds.coord-2=-0.0008  
 ATOM     1  X    RES     0     7.356  -1.772   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.852   0.284   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.083  -0.680   0.000  1.00  1.00
@@ -105,8 +105,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7360   c1.moment-3=1.2651   mds.1=0.0575   mds.2=0.0031   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7360   c1.moment-3=1.2651   mds.coord-1=0.0575   mds.coord-2=0.0031   
 ATOM     1  X    RES     0     7.384  -1.749   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.877   0.286   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.093  -0.657   0.000  1.00  1.00
@@ -118,8 +118,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7354   c1.moment-3=1.2628   mds.1=0.0552   mds.2=0.0034   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7354   c1.moment-3=1.2628   mds.coord-1=0.0552   mds.coord-2=0.0034   
 ATOM     1  X    RES     0     7.414  -1.724   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.898   0.273   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.099  -0.630   0.000  1.00  1.00
@@ -131,8 +131,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7405   c1.moment-3=1.2753   mds.1=0.0682   mds.2=-0.0002  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7405   c1.moment-3=1.2753   mds.coord-1=0.0682   mds.coord-2=-0.0002  
 ATOM     1  X    RES     0     7.435  -1.698   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.909   0.246   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.088  -0.603   0.000  1.00  1.00
@@ -144,8 +144,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7440   c1.moment-3=1.2847   mds.1=0.0781   mds.2=-0.0024  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7440   c1.moment-3=1.2847   mds.coord-1=0.0781   mds.coord-2=-0.0024  
 ATOM     1  X    RES     0     7.440  -1.682   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.917   0.208   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.077  -0.572   0.000  1.00  1.00
@@ -157,8 +157,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7441   c1.moment-3=1.2852   mds.1=0.0785   mds.2=-0.0025  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7441   c1.moment-3=1.2852   mds.coord-1=0.0785   mds.coord-2=-0.0025  
 ATOM     1  X    RES     0     7.436  -1.675   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.917   0.179   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.063  -0.545   0.000  1.00  1.00
@@ -170,8 +170,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7441   c1.moment-3=1.2829   mds.1=0.0763   mds.2=-0.0027  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7441   c1.moment-3=1.2829   mds.coord-1=0.0763   mds.coord-2=-0.0027  
 ATOM     1  X    RES     0     7.429  -1.666   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.907   0.172   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.056  -0.534   0.000  1.00  1.00
@@ -183,8 +183,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7454   c1.moment-3=1.2820   mds.1=0.0755   mds.2=-0.0041  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7454   c1.moment-3=1.2820   mds.coord-1=0.0755   mds.coord-2=-0.0041  
 ATOM     1  X    RES     0     7.434  -1.651   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.878   0.190   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.061  -0.534   0.000  1.00  1.00
@@ -196,8 +196,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7486   c1.moment-3=1.2853   mds.1=0.0792   mds.2=-0.0069  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7486   c1.moment-3=1.2853   mds.coord-1=0.0792   mds.coord-2=-0.0069  
 ATOM     1  X    RES     0     7.457  -1.633   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.844   0.221   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.077  -0.544   0.000  1.00  1.00
@@ -209,8 +209,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7477   c1.moment-3=1.2840   mds.1=0.0778   mds.2=-0.0062  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7477   c1.moment-3=1.2840   mds.coord-1=0.0778   mds.coord-2=-0.0062  
 ATOM     1  X    RES     0     7.483  -1.611   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.816   0.258   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.085  -0.560   0.000  1.00  1.00
@@ -222,8 +222,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7434   c1.moment-3=1.2795   mds.1=0.0727   mds.2=-0.0025  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7434   c1.moment-3=1.2795   mds.coord-1=0.0727   mds.coord-2=-0.0025  
 ATOM     1  X    RES     0     7.505  -1.590   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.802   0.290   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.083  -0.566   0.000  1.00  1.00
@@ -235,8 +235,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7396   c1.moment-3=1.2798   mds.1=0.0726   mds.2=0.0014   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7396   c1.moment-3=1.2798   mds.coord-1=0.0726   mds.coord-2=0.0014   
 ATOM     1  X    RES     0     7.525  -1.569   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.796   0.313   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.085  -0.565   0.000  1.00  1.00
@@ -248,8 +248,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7384   c1.moment-3=1.2830   mds.1=0.0756   mds.2=0.0030   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7384   c1.moment-3=1.2830   mds.coord-1=0.0756   mds.coord-2=0.0030   
 ATOM     1  X    RES     0     7.550  -1.548   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.789   0.332   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.089  -0.556   0.000  1.00  1.00
@@ -261,8 +261,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7405   c1.moment-3=1.2893   mds.1=0.0821   mds.2=0.0017   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7405   c1.moment-3=1.2893   mds.coord-1=0.0821   mds.coord-2=0.0017   
 ATOM     1  X    RES     0     7.562  -1.527   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.785   0.347   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.094  -0.533   0.000  1.00  1.00
@@ -274,8 +274,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7420   c1.moment-3=1.2886   mds.1=0.0816   mds.2=0.0001   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7420   c1.moment-3=1.2886   mds.coord-1=0.0816   mds.coord-2=0.0001   
 ATOM     1  X    RES     0     7.564  -1.516   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.779   0.361   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.093  -0.509   0.000  1.00  1.00
@@ -287,8 +287,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7407   c1.moment-3=1.2845   mds.1=0.0774   mds.2=0.0008   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7407   c1.moment-3=1.2845   mds.coord-1=0.0774   mds.coord-2=0.0008   
 ATOM     1  X    RES     0     7.560  -1.506   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.775   0.373   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.104  -0.489   0.000  1.00  1.00
@@ -300,8 +300,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7407   c1.moment-3=1.2837   mds.1=0.0766   mds.2=0.0008   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7407   c1.moment-3=1.2837   mds.coord-1=0.0766   mds.coord-2=0.0008   
 ATOM     1  X    RES     0     7.554  -1.499   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.779   0.384   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.107  -0.471   0.000  1.00  1.00
@@ -313,8 +313,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7429   c1.moment-3=1.2906   mds.1=0.0838   mds.2=-0.0005  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7429   c1.moment-3=1.2906   mds.coord-1=0.0838   mds.coord-2=-0.0005  
 ATOM     1  X    RES     0     7.547  -1.481   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.781   0.401   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.114  -0.446   0.000  1.00  1.00
@@ -326,8 +326,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7452   c1.moment-3=1.2997   mds.1=0.0931   mds.2=-0.0016  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7452   c1.moment-3=1.2997   mds.coord-1=0.0931   mds.coord-2=-0.0016  
 ATOM     1  X    RES     0     7.539  -1.469   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.789   0.421   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.110  -0.420   0.000  1.00  1.00
@@ -339,8 +339,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7446   c1.moment-3=1.3004   mds.1=0.0936   mds.2=-0.0010  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7446   c1.moment-3=1.3004   mds.coord-1=0.0936   mds.coord-2=-0.0010  
 ATOM     1  X    RES     0     7.526  -1.446   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.797   0.439   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.099  -0.394   0.000  1.00  1.00
@@ -352,8 +352,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7443   c1.moment-3=1.2990   mds.1=0.0923   mds.2=-0.0009  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7443   c1.moment-3=1.2990   mds.coord-1=0.0923   mds.coord-2=-0.0009  
 ATOM     1  X    RES     0     7.496  -1.415   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.808   0.464   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.089  -0.378   0.000  1.00  1.00
@@ -365,8 +365,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7440   c1.moment-3=1.2974   mds.1=0.0906   mds.2=-0.0008  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7440   c1.moment-3=1.2974   mds.coord-1=0.0906   mds.coord-2=-0.0008  
 ATOM     1  X    RES     0     7.473  -1.390   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.819   0.485   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.065  -0.364   0.000  1.00  1.00
@@ -378,8 +378,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7382   c1.moment-3=1.2780   mds.1=0.0706   mds.2=0.0025   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7382   c1.moment-3=1.2780   mds.coord-1=0.0706   mds.coord-2=0.0025   
 ATOM     1  X    RES     0     7.457  -1.376   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.832   0.498   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.037  -0.342   0.000  1.00  1.00
@@ -391,8 +391,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7352   c1.moment-3=1.2741   mds.1=0.0664   mds.2=0.0050   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7352   c1.moment-3=1.2741   mds.coord-1=0.0664   mds.coord-2=0.0050   
 ATOM     1  X    RES     0     7.449  -1.368   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.842   0.502   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.030  -0.320   0.000  1.00  1.00
@@ -404,8 +404,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7412   c1.moment-3=1.2972   mds.1=0.0901   mds.2=0.0019   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7412   c1.moment-3=1.2972   mds.coord-1=0.0901   mds.coord-2=0.0019   
 ATOM     1  X    RES     0     7.445  -1.368   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.847   0.497   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.052  -0.306   0.000  1.00  1.00
@@ -417,8 +417,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7467   c1.moment-3=1.3125   mds.1=0.1059   mds.2=-0.0015  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7467   c1.moment-3=1.3125   mds.coord-1=0.1059   mds.coord-2=-0.0015  
 ATOM     1  X    RES     0     7.441  -1.365   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.845   0.489   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.095  -0.304   0.000  1.00  1.00
@@ -430,8 +430,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7428   c1.moment-3=1.2986   mds.1=0.0917   mds.2=0.0006   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7428   c1.moment-3=1.2986   mds.coord-1=0.0917   mds.coord-2=0.0006   
 ATOM     1  X    RES     0     7.439  -1.348   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.836   0.497   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.130  -0.307   0.000  1.00  1.00
@@ -443,8 +443,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7407   c1.moment-3=1.2948   mds.1=0.0876   mds.2=0.0021   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7407   c1.moment-3=1.2948   mds.coord-1=0.0876   mds.coord-2=0.0021   
 ATOM     1  X    RES     0     7.440  -1.328   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.824   0.527   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.140  -0.316   0.000  1.00  1.00
@@ -456,8 +456,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7446   c1.moment-3=1.3076   mds.1=0.1008   mds.2=-0.0001  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7446   c1.moment-3=1.3076   mds.coord-1=0.1008   mds.coord-2=-0.0001  
 ATOM     1  X    RES     0     7.459  -1.324   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.828   0.569   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.120  -0.317   0.000  1.00  1.00
@@ -469,8 +469,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7452   c1.moment-3=1.3022   mds.1=0.0955   mds.2=-0.0014  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7452   c1.moment-3=1.3022   mds.coord-1=0.0955   mds.coord-2=-0.0014  
 ATOM     1  X    RES     0     7.478  -1.336   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.854   0.603   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.104  -0.299   0.000  1.00  1.00
@@ -482,8 +482,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7444   c1.moment-3=1.2925   mds.1=0.0858   mds.2=-0.0018  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7444   c1.moment-3=1.2925   mds.coord-1=0.0858   mds.coord-2=-0.0018  
 ATOM     1  X    RES     0     7.492  -1.338   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.891   0.618   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.107  -0.270   0.000  1.00  1.00
@@ -495,8 +495,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7436   c1.moment-3=1.2963   mds.1=0.0894   mds.2=-0.0005  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7436   c1.moment-3=1.2963   mds.coord-1=0.0894   mds.coord-2=-0.0005  
 ATOM     1  X    RES     0     7.505  -1.333   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.925   0.610   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.126  -0.244   0.000  1.00  1.00
@@ -508,8 +508,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7420   c1.moment-3=1.2992   mds.1=0.0922   mds.2=0.0014   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7420   c1.moment-3=1.2992   mds.coord-1=0.0922   mds.coord-2=0.0014   
 ATOM     1  X    RES     0     7.512  -1.321   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.953   0.601   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.150  -0.225   0.000  1.00  1.00
@@ -521,8 +521,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7423   c1.moment-3=1.2987   mds.1=0.0917   mds.2=0.0010   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7423   c1.moment-3=1.2987   mds.coord-1=0.0917   mds.coord-2=0.0010   
 ATOM     1  X    RES     0     7.517  -1.305   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.968   0.575   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.170  -0.210   0.000  1.00  1.00
@@ -534,8 +534,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7477   c1.moment-3=1.2989   mds.1=0.0925   mds.2=-0.0043  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7477   c1.moment-3=1.2989   mds.coord-1=0.0925   mds.coord-2=-0.0043  
 ATOM     1  X    RES     0     7.524  -1.282   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.977   0.545   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.188  -0.198   0.000  1.00  1.00
@@ -547,8 +547,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7541   c1.moment-3=1.3023   mds.1=0.0967   mds.2=-0.0102  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7541   c1.moment-3=1.3023   mds.coord-1=0.0967   mds.coord-2=-0.0102  
 ATOM     1  X    RES     0     7.531  -1.257   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.983   0.544   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.195  -0.188   0.000  1.00  1.00
@@ -560,8 +560,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7548   c1.moment-3=1.3129   mds.1=0.1073   mds.2=-0.0096  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7548   c1.moment-3=1.3129   mds.coord-1=0.1073   mds.coord-2=-0.0096  
 ATOM     1  X    RES     0     7.548  -1.249   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.990   0.578   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.186  -0.190   0.000  1.00  1.00
@@ -573,8 +573,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7499   c1.moment-3=1.3126   mds.1=0.1065   mds.2=-0.0047  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7499   c1.moment-3=1.3126   mds.coord-1=0.1065   mds.coord-2=-0.0047  
 ATOM     1  X    RES     0     7.569  -1.251   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.995   0.632   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.180  -0.198   0.000  1.00  1.00
@@ -586,8 +586,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7439   c1.moment-3=1.3003   mds.1=0.0935   mds.2=-0.0003  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7439   c1.moment-3=1.3003   mds.coord-1=0.0935   mds.coord-2=-0.0003  
 ATOM     1  X    RES     0     7.592  -1.260   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.010   0.678   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.180  -0.203   0.000  1.00  1.00
@@ -599,8 +599,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7353   c1.moment-3=1.2745   mds.1=0.0668   mds.2=0.0049   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7353   c1.moment-3=1.2745   mds.coord-1=0.0668   mds.coord-2=0.0049   
 ATOM     1  X    RES     0     7.606  -1.282   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.037   0.708   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.188  -0.200   0.000  1.00  1.00
@@ -612,8 +612,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7284   c1.moment-3=1.2494   mds.1=0.0411   mds.2=0.0087   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7284   c1.moment-3=1.2494   mds.coord-1=0.0411   mds.coord-2=0.0087   
 ATOM     1  X    RES     0     7.615  -1.306   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.064   0.731   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.209  -0.195   0.000  1.00  1.00
@@ -625,8 +625,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7242   c1.moment-3=1.2352   mds.1=0.0264   mds.2=0.0110   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7242   c1.moment-3=1.2352   mds.coord-1=0.0264   mds.coord-2=0.0110   
 ATOM     1  X    RES     0     7.609  -1.326   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.078   0.743   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.245  -0.196   0.000  1.00  1.00
@@ -638,8 +638,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7226   c1.moment-3=1.2344   mds.1=0.0254   mds.2=0.0125   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7226   c1.moment-3=1.2344   mds.coord-1=0.0254   mds.coord-2=0.0125   
 ATOM     1  X    RES     0     7.596  -1.342   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.082   0.735   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.286  -0.196   0.000  1.00  1.00
@@ -651,8 +651,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7297   c1.moment-3=1.2586   mds.1=0.0503   mds.2=0.0085   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7297   c1.moment-3=1.2586   mds.coord-1=0.0503   mds.coord-2=0.0085   
 ATOM     1  X    RES     0     7.578  -1.353   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.085   0.710   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.301  -0.193   0.000  1.00  1.00
@@ -664,8 +664,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7419   c1.moment-3=1.2925   mds.1=0.0855   mds.2=0.0007   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7419   c1.moment-3=1.2925   mds.coord-1=0.0855   mds.coord-2=0.0007   
 ATOM     1  X    RES     0     7.563  -1.352   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.071   0.686   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.295  -0.190   0.000  1.00  1.00
@@ -677,8 +677,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7469   c1.moment-3=1.3039   mds.1=0.0975   mds.2=-0.0028  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7469   c1.moment-3=1.3039   mds.coord-1=0.0975   mds.coord-2=-0.0028  
 ATOM     1  X    RES     0     7.575  -1.338   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.056   0.662   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.283  -0.193   0.000  1.00  1.00
@@ -690,8 +690,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7477   c1.moment-3=1.3047   mds.1=0.0983   mds.2=-0.0035  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7477   c1.moment-3=1.3047   mds.coord-1=0.0983   mds.coord-2=-0.0035  
 ATOM     1  X    RES     0     7.610  -1.312   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.036   0.647   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.286  -0.205   0.000  1.00  1.00
@@ -703,8 +703,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7487   c1.moment-3=1.3059   mds.1=0.0997   mds.2=-0.0044  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7487   c1.moment-3=1.3059   mds.coord-1=0.0997   mds.coord-2=-0.0044  
 ATOM     1  X    RES     0     7.651  -1.280   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.012   0.633   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.309  -0.233   0.000  1.00  1.00
@@ -716,8 +716,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7449   c1.moment-3=1.2944   mds.1=0.0877   mds.2=-0.0021  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7449   c1.moment-3=1.2944   mds.coord-1=0.0877   mds.coord-2=-0.0021  
 ATOM     1  X    RES     0     7.699  -1.256   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.988   0.616   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.335  -0.262   0.000  1.00  1.00
@@ -729,8 +729,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7328   c1.moment-3=1.2580   mds.1=0.0501   mds.2=0.0053   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7328   c1.moment-3=1.2580   mds.coord-1=0.0501   mds.coord-2=0.0053   
 ATOM     1  X    RES     0     7.743  -1.245   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.979   0.594   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.364  -0.273   0.000  1.00  1.00
@@ -742,8 +742,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7192   c1.moment-3=1.2197   mds.1=0.0104   mds.2=0.0140   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7192   c1.moment-3=1.2197   mds.coord-1=0.0104   mds.coord-2=0.0140   
 ATOM     1  X    RES     0     7.787  -1.265   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.989   0.581   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.383  -0.266   0.000  1.00  1.00
@@ -755,8 +755,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7074   c1.moment-3=1.1907   mds.1=-0.0199  mds.2=0.0221   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7074   c1.moment-3=1.1907   mds.coord-1=-0.0199  mds.coord-2=0.0221   
 ATOM     1  X    RES     0     7.826  -1.297   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.011   0.584   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.392  -0.262   0.000  1.00  1.00
@@ -768,8 +768,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.6990   c1.moment-3=1.1698   mds.1=-0.0416  mds.2=0.0277   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.6990   c1.moment-3=1.1698   mds.coord-1=-0.0416  mds.coord-2=0.0277   
 ATOM     1  X    RES     0     7.859  -1.339   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.037   0.601   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.388  -0.278   0.000  1.00  1.00
@@ -781,8 +781,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.6895   c1.moment-3=1.1436   mds.1=-0.0688  mds.2=0.0338   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.6895   c1.moment-3=1.1436   mds.coord-1=-0.0688  mds.coord-2=0.0338   
 ATOM     1  X    RES     0     7.888  -1.381   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.061   0.619   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.381  -0.300   0.000  1.00  1.00
@@ -794,8 +794,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.6858   c1.moment-3=1.1269   mds.1=-0.0858  mds.2=0.0354   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.6858   c1.moment-3=1.1269   mds.coord-1=-0.0858  mds.coord-2=0.0354   
 ATOM     1  X    RES     0     7.903  -1.412   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.073   0.629   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.394  -0.316   0.000  1.00  1.00
@@ -807,8 +807,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.6894   c1.moment-3=1.1226   mds.1=-0.0897  mds.2=0.0313   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.6894   c1.moment-3=1.1226   mds.coord-1=-0.0897  mds.coord-2=0.0313   
 ATOM     1  X    RES     0     7.909  -1.428   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.074   0.635   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.416  -0.315   0.000  1.00  1.00
@@ -820,8 +820,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.6950   c1.moment-3=1.1195   mds.1=-0.0920  mds.2=0.0254   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.6950   c1.moment-3=1.1195   mds.coord-1=-0.0920  mds.coord-2=0.0254   
 ATOM     1  X    RES     0     7.918  -1.433   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.076   0.635   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.443  -0.300   0.000  1.00  1.00
@@ -833,8 +833,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.6945   c1.moment-3=1.0946   mds.1=-0.1168  mds.2=0.0227   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.6945   c1.moment-3=1.0946   mds.coord-1=-0.1168  mds.coord-2=0.0227   
 ATOM     1  X    RES     0     7.937  -1.421   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.067   0.637   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.477  -0.285   0.000  1.00  1.00
@@ -846,8 +846,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.6910   c1.moment-3=1.0669   mds.1=-0.1447  mds.2=0.0227   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.6910   c1.moment-3=1.0669   mds.coord-1=-0.1447  mds.coord-2=0.0227   
 ATOM     1  X    RES     0     7.956  -1.394   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.045   0.652   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.507  -0.279   0.000  1.00  1.00
@@ -859,8 +859,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.6892   c1.moment-3=1.0481   mds.1=-0.1636  mds.2=0.0221   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.6892   c1.moment-3=1.0481   mds.coord-1=-0.1636  mds.coord-2=0.0221   
 ATOM     1  X    RES     0     7.971  -1.361   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.022   0.675   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.541  -0.297   0.000  1.00  1.00
@@ -872,8 +872,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.6953   c1.moment-3=1.0650   mds.1=-0.1461  mds.2=0.0182   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.6953   c1.moment-3=1.0650   mds.coord-1=-0.1461  mds.coord-2=0.0182   
 ATOM     1  X    RES     0     7.989  -1.322   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.004   0.700   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.558  -0.334   0.000  1.00  1.00
@@ -885,8 +885,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7027   c1.moment-3=1.0891   mds.1=-0.1212  mds.2=0.0139   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7027   c1.moment-3=1.0891   mds.coord-1=-0.1212  mds.coord-2=0.0139   
 ATOM     1  X    RES     0     8.015  -1.297   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.986   0.722   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.559  -0.367   0.000  1.00  1.00
@@ -898,8 +898,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7164   c1.moment-3=1.1314   mds.1=-0.0775  mds.2=0.0056   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7164   c1.moment-3=1.1314   mds.coord-1=-0.0775  mds.coord-2=0.0056   
 ATOM     1  X    RES     0     8.052  -1.296   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.974   0.730   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.554  -0.372   0.000  1.00  1.00
@@ -911,8 +911,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7358   c1.moment-3=1.2063   mds.1=-0.0008  mds.2=-0.0041  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7358   c1.moment-3=1.2063   mds.coord-1=-0.0008  mds.coord-2=-0.0041  
 ATOM     1  X    RES     0     8.092  -1.309   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.957   0.722   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.545  -0.348   0.000  1.00  1.00
@@ -924,8 +924,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7415   c1.moment-3=1.2537   mds.1=0.0469   mds.2=-0.0038  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7415   c1.moment-3=1.2537   mds.coord-1=0.0469   mds.coord-2=-0.0038  
 ATOM     1  X    RES     0     8.134  -1.325   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.936   0.698   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.552  -0.332   0.000  1.00  1.00
@@ -937,8 +937,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7419   c1.moment-3=1.2840   mds.1=0.0771   mds.2=-0.0004  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7419   c1.moment-3=1.2840   mds.coord-1=0.0771   mds.coord-2=-0.0004  
 ATOM     1  X    RES     0     8.172  -1.338   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.926   0.675   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.560  -0.336   0.000  1.00  1.00
@@ -950,8 +950,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7428   c1.moment-3=1.2986   mds.1=0.0917   mds.2=0.0005   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7428   c1.moment-3=1.2986   mds.coord-1=0.0917   mds.coord-2=0.0005   
 ATOM     1  X    RES     0     8.193  -1.352   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.927   0.662   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.561  -0.363   0.000  1.00  1.00
@@ -963,8 +963,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7359   c1.moment-3=1.2732   mds.1=0.0656   mds.2=0.0042   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7359   c1.moment-3=1.2732   mds.coord-1=0.0656   mds.coord-2=0.0042   
 ATOM     1  X    RES     0     8.207  -1.366   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.930   0.651   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.564  -0.403   0.000  1.00  1.00
@@ -976,8 +976,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7200   c1.moment-3=1.2057   mds.1=-0.0034  mds.2=0.0115   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7200   c1.moment-3=1.2057   mds.coord-1=-0.0034  mds.coord-2=0.0115   
 ATOM     1  X    RES     0     8.236  -1.375   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.929   0.642   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.572  -0.444   0.000  1.00  1.00
@@ -989,8 +989,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7064   c1.moment-3=1.1200   mds.1=-0.0901  mds.2=0.0141   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7064   c1.moment-3=1.1200   mds.coord-1=-0.0901  mds.coord-2=0.0141   
 ATOM     1  X    RES     0     8.263  -1.369   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.940   0.632   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.603  -0.478   0.000  1.00  1.00
@@ -1002,8 +1002,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7024   c1.moment-3=1.0315   mds.1=-0.1784  mds.2=0.0069   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7024   c1.moment-3=1.0315   mds.coord-1=-0.1784  mds.coord-2=0.0069   
 ATOM     1  X    RES     0     8.291  -1.358   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.948   0.609   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.652  -0.498   0.000  1.00  1.00
@@ -1015,8 +1015,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7109   c1.moment-3=0.9832   mds.1=-0.2253  mds.2=-0.0077  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7109   c1.moment-3=0.9832   mds.coord-1=-0.2253  mds.coord-2=-0.0077  
 ATOM     1  X    RES     0     8.329  -1.372   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.966   0.582   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.695  -0.503   0.000  1.00  1.00
@@ -1028,8 +1028,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7264   c1.moment-3=0.9692   mds.1=-0.2372  mds.2=-0.0248  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7264   c1.moment-3=0.9692   mds.coord-1=-0.2372  mds.coord-2=-0.0248  
 ATOM     1  X    RES     0     8.368  -1.403   0.000  1.00  1.00
 ATOM     2  X    RES     1     7.990   0.559   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.728  -0.502   0.000  1.00  1.00
@@ -1041,8 +1041,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7456   c1.moment-3=0.9624   mds.1=-0.2415  mds.2=-0.0448  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7456   c1.moment-3=0.9624   mds.coord-1=-0.2415  mds.coord-2=-0.0448  
 ATOM     1  X    RES     0     8.400  -1.434   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.017   0.538   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.742  -0.506   0.000  1.00  1.00
@@ -1054,8 +1054,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7529   c1.moment-3=0.9466   mds.1=-0.2562  mds.2=-0.0539  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7529   c1.moment-3=0.9466   mds.coord-1=-0.2562  mds.coord-2=-0.0539  
 ATOM     1  X    RES     0     8.431  -1.461   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.046   0.536   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.746  -0.523   0.000  1.00  1.00
@@ -1067,8 +1067,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7381   c1.moment-3=0.9144   mds.1=-0.2901  mds.2=-0.0433  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7381   c1.moment-3=0.9144   mds.coord-1=-0.2901  mds.coord-2=-0.0433  
 ATOM     1  X    RES     0     8.459  -1.475   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.072   0.540   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.751  -0.545   0.000  1.00  1.00
@@ -1080,8 +1080,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7130   c1.moment-3=0.8902   mds.1=-0.3173  mds.2=-0.0215  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7130   c1.moment-3=0.8902   mds.coord-1=-0.3173  mds.coord-2=-0.0215  
 ATOM     1  X    RES     0     8.488  -1.477   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.088   0.550   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.774  -0.560   0.000  1.00  1.00
@@ -1093,8 +1093,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.6829   c1.moment-3=0.8996   mds.1=-0.3117  mds.2=0.0096   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.6829   c1.moment-3=0.8996   mds.coord-1=-0.3117  mds.coord-2=0.0096   
 ATOM     1  X    RES     0     8.516  -1.476   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.095   0.562   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.797  -0.570   0.000  1.00  1.00
@@ -1106,8 +1106,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.6651   c1.moment-3=0.9352   mds.1=-0.2787  mds.2=0.0317   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.6651   c1.moment-3=0.9352   mds.coord-1=-0.2787  mds.coord-2=0.0317   
 ATOM     1  X    RES     0     8.541  -1.469   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.096   0.560   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.813  -0.581   0.000  1.00  1.00
@@ -1119,8 +1119,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.6656   c1.moment-3=0.9823   mds.1=-0.2319  mds.2=0.0372   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.6656   c1.moment-3=0.9823   mds.coord-1=-0.2319  mds.coord-2=0.0372   
 ATOM     1  X    RES     0     8.560  -1.457   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.098   0.551   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.833  -0.586   0.000  1.00  1.00
@@ -1132,8 +1132,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.6776   c1.moment-3=1.0233   mds.1=-0.1897  mds.2=0.0305   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.6776   c1.moment-3=1.0233   mds.coord-1=-0.1897  mds.coord-2=0.0305   
 ATOM     1  X    RES     0     8.573  -1.439   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.109   0.537   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.854  -0.591   0.000  1.00  1.00
@@ -1145,8 +1145,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.6975   c1.moment-3=1.0515   mds.1=-0.1592  mds.2=0.0142   
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.6975   c1.moment-3=1.0515   mds.coord-1=-0.1592  mds.coord-2=0.0142   
 ATOM     1  X    RES     0     8.598  -1.408   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.147   0.516   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.874  -0.594   0.000  1.00  1.00
@@ -1158,8 +1158,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7213   c1.moment-3=1.0868   mds.1=-0.1211  mds.2=-0.0049  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7213   c1.moment-3=1.0868   mds.coord-1=-0.1211  mds.coord-2=-0.0049  
 ATOM     1  X    RES     0     8.630  -1.383   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.203   0.504   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.891  -0.591   0.000  1.00  1.00
@@ -1171,8 +1171,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7345   c1.moment-3=1.1105   mds.1=-0.0960  mds.2=-0.0150  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7345   c1.moment-3=1.1105   mds.coord-1=-0.0960  mds.coord-2=-0.0150  
 ATOM     1  X    RES     0     8.664  -1.373   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.254   0.495   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.896  -0.584   0.000  1.00  1.00
@@ -1184,8 +1184,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7372   c1.moment-3=1.1221   mds.1=-0.0842  mds.2=-0.0162  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7372   c1.moment-3=1.1221   mds.coord-1=-0.0842  mds.coord-2=-0.0162  
 ATOM     1  X    RES     0     8.696  -1.386   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.307   0.483   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.890  -0.572   0.000  1.00  1.00
@@ -1197,8 +1197,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7401   c1.moment-3=1.1246   mds.1=-0.0813  mds.2=-0.0187  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7401   c1.moment-3=1.1246   mds.coord-1=-0.0813  mds.coord-2=-0.0187  
 ATOM     1  X    RES     0     8.723  -1.408   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.365   0.474   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.885  -0.551   0.000  1.00  1.00
@@ -1210,8 +1210,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7406   c1.moment-3=1.1235   mds.1=-0.0823  mds.2=-0.0193  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7406   c1.moment-3=1.1235   mds.coord-1=-0.0823  mds.coord-2=-0.0193  
 ATOM     1  X    RES     0     8.745  -1.426   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.417   0.480   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.884  -0.539   0.000  1.00  1.00
@@ -1223,8 +1223,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7398   c1.moment-3=1.1287   mds.1=-0.0773  mds.2=-0.0179  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7398   c1.moment-3=1.1287   mds.coord-1=-0.0773  mds.coord-2=-0.0179  
 ATOM     1  X    RES     0     8.764  -1.436   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.449   0.497   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.891  -0.522   0.000  1.00  1.00
@@ -1236,8 +1236,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7440   c1.moment-3=1.1435   mds.1=-0.0621  mds.2=-0.0202  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7440   c1.moment-3=1.1435   mds.coord-1=-0.0621  mds.coord-2=-0.0202  
 ATOM     1  X    RES     0     8.789  -1.432   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.463   0.527   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.910  -0.498   0.000  1.00  1.00
@@ -1249,8 +1249,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7475   c1.moment-3=1.1604   mds.1=-0.0449  mds.2=-0.0215  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7475   c1.moment-3=1.1604   mds.coord-1=-0.0449  mds.coord-2=-0.0215  
 ATOM     1  X    RES     0     8.805  -1.425   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.472   0.553   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.932  -0.475   0.000  1.00  1.00
@@ -1262,8 +1262,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7589   c1.moment-3=1.1770   mds.1=-0.0269  mds.2=-0.0307  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7589   c1.moment-3=1.1770   mds.coord-1=-0.0269  mds.coord-2=-0.0307  
 ATOM     1  X    RES     0     8.809  -1.412   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.491   0.566   0.000  1.00  1.00
 ATOM     3  X    RES     2     7.973  -0.456   0.000  1.00  1.00
@@ -1275,8 +1275,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7673   c1.moment-3=1.1955   mds.1=-0.0075  mds.2=-0.0368  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7673   c1.moment-3=1.1955   mds.coord-1=-0.0075  mds.coord-2=-0.0368  
 ATOM     1  X    RES     0     8.794  -1.411   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.526   0.563   0.000  1.00  1.00
 ATOM     3  X    RES     2     8.023  -0.447   0.000  1.00  1.00
@@ -1288,8 +1288,8 @@ END
 DESCRIPTION: analysis data from calculation done by @21 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
-REMARK ARG=c1.moment-2,c1.moment-3,mds.1,mds.2
-REMARK c1.moment-2=0.7690   c1.moment-3=1.2297   mds.1=0.0266   mds.2=-0.0342  
+REMARK ARG=c1.moment-2,c1.moment-3,mds.coord-1,mds.coord-2
+REMARK c1.moment-2=0.7690   c1.moment-3=1.2297   mds.coord-1=0.0266   mds.coord-2=-0.0342  
 ATOM     1  X    RES     0     8.764  -1.408   0.000  1.00  1.00
 ATOM     2  X    RES     1     8.562   0.547   0.000  1.00  1.00
 ATOM     3  X    RES     2     8.065  -0.448   0.000  1.00  1.00

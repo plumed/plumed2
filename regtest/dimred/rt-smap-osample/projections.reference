@@ -1,4 +1,4 @@
-#! FIELDS pp.1 pp.2 weight
+#! FIELDS pp.coord-1 pp.coord-2 weight
     0.75     1.97     1.00 
    -0.40    -2.01     1.00 
    -1.23     0.97     1.00 

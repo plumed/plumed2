@@ -30,6 +30,7 @@ namespace dimred {
 void DimensionalityReductionBase::registerKeywords( Keywords& keys ){
   analysis::AnalysisBase::registerKeywords( keys );
   keys.add("compulsory","NLOW_DIM","number of low-dimensional coordinates required");
+  keys.addOutputComponent("coord","default","the low-dimensional projections of the various input configurations");
 }
 
 DimensionalityReductionBase::DimensionalityReductionBase( const ActionOptions& ao ):
@@ -57,13 +58,13 @@ dimredbase(NULL)
   // Now add fake components to the underlying ActionWithValue for the arguments
   std::string num; 
   for(unsigned i=0;i<nlow;++i){ 
-    Tools::convert(i+1,num); addComponent( num ); componentIsNotPeriodic( num );
+    Tools::convert(i+1,num); addComponent( "coord-" + num ); componentIsNotPeriodic( "coord-" + num );
   }
 }
 
 analysis::DataCollectionObject& DimensionalityReductionBase::getStoredData( const unsigned& idat, const bool& calcdist ){
   analysis::DataCollectionObject& myref=AnalysisBase::getStoredData(idat,calcdist); std::string num;
-  for(unsigned i=0;i<nlow;++i){ Tools::convert(i+1,num); myref.setArgument( getLabel() + "." + num, projections(idat,i) ); }
+  for(unsigned i=0;i<nlow;++i){ Tools::convert(i+1,num); myref.setArgument( getLabel() + ".coord-" + num, projections(idat,i) ); }
   return myref; 
 }
 

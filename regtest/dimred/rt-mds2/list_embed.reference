@@ -1,4 +1,4 @@
-#! FIELDS mds.1 mds.2 weight
+#! FIELDS mds.coord-1 mds.coord-2 weight
   0.0594   0.0053   1.0000 
   0.0683   0.0034   1.0000 
   0.0705   0.0006   1.0000 

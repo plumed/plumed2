@@ -71,6 +71,7 @@ void ProjectNonLandmarkPoints::registerKeywords( Keywords& keys ){
   analysis::AnalysisBase::registerKeywords( keys );
   keys.add("compulsory","PROJECTION","the projection that you wish to generate out-of-sample projections with");
   keys.add("compulsory","CGTOL","1E-6","the tolerance for the conjugate gradient optimisation");
+  keys.addOutputComponent("coord","default","the low-dimensional projections of the various input configurations");
 }
 
 ProjectNonLandmarkPoints::ProjectNonLandmarkPoints( const ActionOptions& ao ):
@@ -86,7 +87,7 @@ mybase(NULL)
   // Add fake components to the underlying ActionWithValue for the arguments
   std::string num; 
   for(unsigned i=0;i<nlow;++i){ 
-    Tools::convert(i+1,num); addComponent( num ); componentIsNotPeriodic( num );
+    Tools::convert(i+1,num); addComponent( "coord-" + num ); componentIsNotPeriodic( "coord-" + num );
   }
 
   log.printf("  generating out-of-sample projections using projection with label %s \n",myproj.c_str() );
@@ -117,7 +118,7 @@ void ProjectNonLandmarkPoints::generateProjection( const unsigned& idat, std::ve
 analysis::DataCollectionObject& ProjectNonLandmarkPoints::getStoredData( const unsigned& idat, const bool& calcdist ){
   std::vector<double> pp(nlow); generateProjection( idat, pp ); std::string num;
   analysis::DataCollectionObject& myref=AnalysisBase::getStoredData(idat,calcdist); 
-  for(unsigned i=0;i<nlow;++i){ Tools::convert(i+1,num); myref.setArgument( getLabel() + "." + num, pp[i] ); }
+  for(unsigned i=0;i<nlow;++i){ Tools::convert(i+1,num); myref.setArgument( getLabel() + ".coord-" + num, pp[i] ); }
   return myref;
 }
 
