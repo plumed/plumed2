@@ -22,7 +22,6 @@
 #include "core/ActionRegister.h"
 #include "SketchMapBase.h"
 #include "tools/ConjugateGradient.h"
-#include "tools/GridSearch.h"
 
 //+PLUMEDOC DIMRED SKETCHMAP_CONJGRAD
 /*

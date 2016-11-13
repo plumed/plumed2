@@ -22,7 +22,6 @@
 #include "core/ActionSetup.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include "tools/Exception.h"
 
 using namespace std;

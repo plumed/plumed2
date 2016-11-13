@@ -23,8 +23,6 @@
 #include "SketchMapBase.h"
 #include "reference/ReferenceConfiguration.h"
 #include "reference/MetricRegister.h"
-#include "tools/ConjugateGradient.h"
-#include "tools/GridSearch.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include "tools/PDB.h"

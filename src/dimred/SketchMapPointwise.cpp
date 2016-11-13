@@ -22,7 +22,7 @@
 #include "core/ActionRegister.h"
 #include "SketchMapBase.h"
 #include "tools/ConjugateGradient.h"
-#include "tools/GridSearch.h"
+#include "gridtools/GridSearch.h"
 
 //+PLUMEDOC DIMRED SKETCHMAP_POINTWISE
 /*
@@ -101,7 +101,7 @@ void SketchMapPointwise::minimise( Matrix<double>& projections ){
 
   // And do the search
   ConjugateGradient<SketchMapPointwise> mycgminimise( this );
-  GridSearch<SketchMapPointwise> mygridsearch( gmin, gmax, npoints, nfgrid, this );
+  gridtools::GridSearch<SketchMapPointwise> mygridsearch( gmin, gmax, npoints, nfgrid, this );
   // Run multiple loops over all projections
   for(unsigned i=0;i<ncycles;++i){
       for(unsigned j=0;j<getNumberOfDataPoints();++j){
