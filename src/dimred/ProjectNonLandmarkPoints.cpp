@@ -104,7 +104,7 @@ std::vector<Value*> ProjectNonLandmarkPoints::getArgumentList(){
 void ProjectNonLandmarkPoints::generateProjection( const unsigned& idat, std::vector<double>& point ){
   PCA* ispca = dynamic_cast<PCA*>( mybase );
   if( ispca ){
-      ispca->getProjection( getStoredData(idat,false), point ); 
+      ispca->getProjection( my_input_data->getStoredData(idat,false), point ); 
   } else {
       ConjugateGradient<ProjectNonLandmarkPoints> myminimiser( this );
       unsigned closest=0; double mindist = sqrt( getDissimilarity( mybase->getDataPointIndexInBase(0), idat ) );
