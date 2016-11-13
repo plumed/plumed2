@@ -40,7 +40,7 @@ dimredbase(NULL)
 {
   // Check that some dissimilarity information is available
   if( my_input_data ){
-      if( !dissimilaritiesWereSet() ) error("dissimilarities have not been calcualted in input actions");
+      if( getName()!="PCA" && !dissimilaritiesWereSet() ) error("dissimilarities have not been calcualted in input actions");
       // Now we check if the input was a dimensionality reduction object
       dimredbase = dynamic_cast<DimensionalityReductionBase*>( my_input_data );
   }

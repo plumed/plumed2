@@ -27,6 +27,7 @@
 #include "analysis/AnalysisBase.h"
 #include "reference/ReferenceConfiguration.h"
 #include "DimensionalityReductionBase.h"
+#include "PCA.h"
 
 //+PLUMEDOC DIMRED PROJECT_ALL_ANALYSIS_DATA
 /*
@@ -101,18 +102,23 @@ std::vector<Value*> ProjectNonLandmarkPoints::getArgumentList(){
 } 
 
 void ProjectNonLandmarkPoints::generateProjection( const unsigned& idat, std::vector<double>& point ){
-  ConjugateGradient<ProjectNonLandmarkPoints> myminimiser( this );
-  unsigned closest=0; double mindist = sqrt( getDissimilarity( mybase->getDataPointIndexInBase(0), idat ) );
-  mybase->setTargetDistance( 0, mindist ); 
-  for(unsigned i=1;i<mybase->getNumberOfDataPoints();++i){
-      double dist = sqrt( getDissimilarity( mybase->getDataPointIndexInBase(i), idat ) );
-      mybase->setTargetDistance( i, dist );
-      if( dist<mindist ){ mindist=dist; closest=i; }
+  PCA* ispca = dynamic_cast<PCA*>( mybase );
+  if( ispca ){
+      ispca->getProjection( getStoredData(idat,false), point ); 
+  } else {
+      ConjugateGradient<ProjectNonLandmarkPoints> myminimiser( this );
+      unsigned closest=0; double mindist = sqrt( getDissimilarity( mybase->getDataPointIndexInBase(0), idat ) );
+      mybase->setTargetDistance( 0, mindist ); 
+      for(unsigned i=1;i<mybase->getNumberOfDataPoints();++i){
+          double dist = sqrt( getDissimilarity( mybase->getDataPointIndexInBase(i), idat ) );
+          mybase->setTargetDistance( i, dist );
+          if( dist<mindist ){ mindist=dist; closest=i; }
+      }
+      // Put the initial guess near to the closest landmark  -- may wish to use grid here again Sandip??
+      Random random; random.setSeed(-1234);
+      for(unsigned j=0;j<nlow;++j) point[j]=mybase->projections(closest,j) + (random.RandU01() - 0.5)*0.01;
+      myminimiser.minimise( cgtol, point, &ProjectNonLandmarkPoints::calculateStress );
   }
-  // Put the initial guess near to the closest landmark  -- may wish to use grid here again Sandip??
-  Random random; random.setSeed(-1234);
-  for(unsigned j=0;j<nlow;++j) point[j]=mybase->projections(closest,j) + (random.RandU01() - 0.5)*0.01;
-  myminimiser.minimise( cgtol, point, &ProjectNonLandmarkPoints::calculateStress );
 }
 
 analysis::DataCollectionObject& ProjectNonLandmarkPoints::getStoredData( const unsigned& idat, const bool& calcdist ){
