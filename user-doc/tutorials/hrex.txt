@@ -13,12 +13,16 @@ This implementation is very close to the one used to produce the data in this pa
 robust enough. However, be sure that you understand its limitations and
 to perform all the tests discussed in this page before using it in production.
 
-\section multipletopologies Generate multiple topologies
+In this short tutorial you will learn how to do two things:
+- Generate scaled topologies with `plumed partial_tempering`. This is actually not directly related to
+  the `-hrex` flag.
+- Run GROMACS with replica exchange and multiple topologies.
+
+\section multipletopologies Generate scaled topologies
 
 Plumed comes with a `partial_tempering` command line tool that can be used to generate
-multiple topologies. Notice that you might want to generate these topologies
-by userself. This step is totally independent from the use of the `-hrex` flag.
-
+scaled topologies. Notice that you might want to generate these topologies
+by yourself. This step is totally independent from the use of the `-hrex` flag.
 
 The `partial_tempering` tool can be invoked as follows:
 \verbatim
@@ -85,7 +89,7 @@ all other terms (bonds/bends) are identical.
 If GROMACS has been patched with PLUMED it should accept the -hrex option
 in mdrun. Please double check this (mdrun -h should list this possibility).
 Notice that not all the versions of GROMACS allow this feature.
-First of all prepare separate topologies for each replicas using plumed partial_tempering
+First of all prepare separate topologies for each replicas using `plumed partial_tempering`
 tool as shown above (or using some other tool). Then run a normal replica exchange with gromacs adding the flag "-hrex" on the command line.
 
 A complete run script could be adapted from the following
@@ -147,7 +151,9 @@ expected to be very small.
 
 
 Warnings:
-- Topologies should have the same number of atoms, same masses and same constraint topology
+- Topologies should have the same number of atoms, same masses and same constraint topology.
+  Some of these differences (e.g. masses) are not explicitly checked and might lead to
+  unnoticed errors in the final results.
 - Choose neighbor list update (nstlist) that divides replex. Notice that running with GPUs
   GROMACS is going to change nstlist automatically, be sure that it still divides replex.
 - Option -hrex requires also option -plumed. If you do not care about plumed, just provide an empty
