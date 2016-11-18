@@ -32,7 +32,7 @@ class Random;
 public:
   ExchangePatterns();
   ~ExchangePatterns();
-  enum PatternFlags { NONE, RANDOM, NEIGHBOR, TOTAL };
+  enum PatternFlags { NONE, RANDOM, NEIGHBOR, NEIGHBOR2, TOTAL };
   void setNofR(const int);
   void setSeed(const int);
   void setFlag(const int);

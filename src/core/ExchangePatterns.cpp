@@ -71,6 +71,11 @@ void ExchangePatterns::getList(int *ind)
     case NEIGHBOR:
       for(int i=0;i<NumberOfReplicas;i++) ind[i]=i; 
       break; 
+    case NEIGHBOR2:
+      int j=0;
+      for(int i=0;i<NumberOfReplicas;i=i+2)   {ind[j]=i; ++j;}
+      for(int i=NumberOfReplicas-1;i>0;i=i-2) {ind[j]=i; ++j;} 
+      break;   
   }
 }
 
