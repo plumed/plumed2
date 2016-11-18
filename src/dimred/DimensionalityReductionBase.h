@@ -46,8 +46,6 @@ public:
   DimensionalityReductionBase( const ActionOptions& );
 /// Get the ith data point (this returns the projection)
   virtual void getProjection( const unsigned& idata, std::vector<double>& point, double& weight );
-/// Get a reference configuration (this returns the projection)
-  analysis::DataCollectionObject& getStoredData( const unsigned& idata, const bool& calcdist ); 
 /// Actually perform the analysis
   virtual void performAnalysis();
 /// Overwrite getArguments so we get arguments from underlying class

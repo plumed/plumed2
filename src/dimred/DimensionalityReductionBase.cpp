@@ -62,12 +62,6 @@ dimredbase(NULL)
   }
 }
 
-analysis::DataCollectionObject& DimensionalityReductionBase::getStoredData( const unsigned& idat, const bool& calcdist ){
-  analysis::DataCollectionObject& myref=AnalysisBase::getStoredData(idat,calcdist); std::string num;
-  for(unsigned i=0;i<nlow;++i){ Tools::convert(i+1,num); myref.setArgument( getLabel() + ".coord-" + num, projections(idat,i) ); }
-  return myref; 
-}
-
 std::vector<Value*> DimensionalityReductionBase::getArgumentList(){
    std::vector<Value*> arglist( analysis::AnalysisBase::getArgumentList() );
    for(unsigned i=0;i<nlow;++i) arglist.push_back( getPntrToComponent(i) );
@@ -100,6 +94,13 @@ void DimensionalityReductionBase::performAnalysis(){
   }
   // This calculates the projections of the points
   calculateProjections( targets, projections );
+  // Now set the projection values in the underlying object
+  if( my_input_data ){
+      for(unsigned idat=0;idat<getNumberOfDataPoints();++idat){
+          analysis::DataCollectionObject& myref=AnalysisBase::getStoredData(idat,false); std::string num;
+          for(unsigned i=0;i<nlow;++i){ Tools::convert(i+1,num); myref.setArgument( getLabel() + ".coord-" + num, projections(idat,i) ); } 
+      }
+  }
   log.printf("Generated projections required by action %s \n",getLabel().c_str() );
 }
 
