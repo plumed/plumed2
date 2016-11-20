@@ -571,6 +571,7 @@ void QCrossLink::calculate()
    comm.Sum(&dexp_[0][0],   3*dexp_.size());
    comm.Sum(&dexp_f_[0][0], 3*dexp_f_.size());
   }
+  
   // get time step 
   long int step = getStep();
   // do MC stuff at the right time step
