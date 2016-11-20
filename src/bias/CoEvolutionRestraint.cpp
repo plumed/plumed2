@@ -175,6 +175,8 @@ double CoEvolutionRestraint::getEnergy(double R0, double psi, double alpha)
     // add to energy
     ene += -kbt_ * std::log(psi+(1.0-psi)*p);
   }
+  // add prior
+  ene += kbt_ * 0.5 * std::log(psi);
   return ene;
 }
 
@@ -298,9 +300,11 @@ void CoEvolutionRestraint::calculate(){
     double force = -dene_dp * dp_ddist;
     setOutputForce(i, force);
    }
+   // add prior
+   ene += kbt_ * 0.5 * std::log(psi_);
   // marginal version 
   } else {
-    for(unsigned i=0;i<getNumberOfArguments();++i){
+   for(unsigned i=0;i<getNumberOfArguments();++i){
     // get distance
     double dist = getArgument(i);
     // calculate probability
