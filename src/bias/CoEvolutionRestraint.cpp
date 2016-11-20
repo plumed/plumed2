@@ -171,14 +171,14 @@ double CoEvolutionRestraint::getEnergy(double R0, double psi, double alpha)
     // get distance
     double dist = getArgument(i);
     // calculate probability
-    double p = 1.0 - 1.0 / (1.0+exp(-alpha*(dist-R0)));;
+    double p = 1.0 - 1.0 / (1.0+exp(-alpha*(dist-R0)));
     // add to energy
     ene += -kbt_ * std::log(psi+(1.0-psi)*p);
   }
   return ene;
 }
 
-// used to update Bayesian parameters - marginal version
+// used to update Bayesian parameters - marginal version, with 1/sqrt(psi) prior
 double CoEvolutionRestraint::getEnergy(double R0, double alpha)
 {
   // calculate energy
@@ -187,9 +187,9 @@ double CoEvolutionRestraint::getEnergy(double R0, double alpha)
     // get distance
     double dist = getArgument(i);
     // calculate probability
-    double p = 1.0 - 1.0 / (1.0+exp(-alpha*(dist-R0)));;
+    double p = 1.0 - 1.0 / (1.0+exp(-alpha*(dist-R0)));
     // add to energy
-    ene += -kbt_ * std::log(0.5 * (1.0 + p));
+    ene += -kbt_ * std::log(1.0 + 2.0*p);
   }
   return ene;
 }
@@ -257,10 +257,15 @@ void CoEvolutionRestraint::doMonteCarlo(long int step)
    }
   } 
  }
+ // set values of Bayesian parameters
+ // R0
+ getPntrToComponent("R0")->set(R0_);
  // R0 acceptance
  double accR0 = static_cast<double>(MCaccR0_) / static_cast<double>(MCsteps_) / MCtrials;
  getPntrToComponent("accR0")->set(accR0);
  if(!marginal_){
+  // psi
+  getPntrToComponent("psi")->set(psi_);
   // psi acceptance
   double accpsi = static_cast<double>(MCaccpsi_) / static_cast<double>(MCsteps_) / MCtrials;
   getPntrToComponent("accpsi")->set(accpsi);
@@ -302,9 +307,9 @@ void CoEvolutionRestraint::calculate(){
     double tmp = exp(-alpha_*(dist-R0_));
     double p = 1.0 - 1.0 / (1.0+tmp);
     // add to energy
-    ene += -kbt_ * std::log(0.5 * (1.0 + p));
+    ene += -kbt_ * std::log(1.0 + 2.0*p);
     // calculate force
-    double dene_dp  = -kbt_ / (1.0 + p);
+    double dene_dp  = -kbt_ / (1.0 + 2.0*p) * 2.0;
     double dp_ddist = -1.0 / (1.0+tmp) / (1.0+tmp) * tmp * alpha_;
     double force = -dene_dp * dp_ddist;
     setOutputForce(i, force);
