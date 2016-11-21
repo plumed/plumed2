@@ -20,8 +20,8 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-#include "Colvar.h"
-#include "ActionRegister.h"
+#include "colvar/Colvar.h"
+#include "colvar/ActionRegister.h"
 #include "core/PlumedMain.h"
 
 #ifdef __PLUMED_HAS_GSL
