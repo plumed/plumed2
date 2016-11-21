@@ -310,7 +310,8 @@ atoms(plumed.getAtoms())
   comm.Sum(&replica_,1);
 
   // reweight implies a different number of arguments (the latest one must always be the bias) 
-  parseFlag("REWEIGHT", do_reweight); 
+  parseFlag("REWEIGHT", do_reweight);
+  if(do_reweight&&nrep_==0) error("REWEIGHT can only be used in parallel with 2 or more replicas"); 
   narg = getNumberOfArguments();
   if(do_reweight) narg--;
 
