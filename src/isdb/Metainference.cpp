@@ -36,7 +36,7 @@
 using namespace std;
 
 namespace PLMD{
-namespace bias{
+namespace isdb{
 
 //+PLUMEDOC BIAS METAINFERENCE
 /*
@@ -112,7 +112,7 @@ LABEL=spe
 */
 //+ENDPLUMEDOC
 
-class Metainference : public Bias
+class Metainference : public bias::Bias
 {
   // experimental values
   vector<double> parameters;
@@ -283,8 +283,8 @@ offset_mu_(0),
 offset_min_(1),
 offset_max_(-1),
 Doffset_(-1),
-sm_mod_(1.),
 sigma_mean_correction_(1.),
+sm_mod_(1.),
 random(3),
 MCsteps_(1), 
 MCstride_(1), 

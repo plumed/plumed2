@@ -29,7 +29,7 @@
 using namespace std;
 
 namespace PLMD{
-namespace colvar{
+namespace isdb{
 
 //+PLUMEDOC COLVAR FRET
 /*
