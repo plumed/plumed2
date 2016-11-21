@@ -97,8 +97,8 @@ void CoEvolutionRestraint::registerKeywords(Keywords& keys){
   componentsAreNotOptional(keys); 
   keys.addOutputComponent("R0",    "default","R0 parameter");
   keys.addOutputComponent("accR0", "default","MC acceptance R0");
-  keys.addOutputComponent("psi",   "default","psi parameter");
-  keys.addOutputComponent("accpsi","default","MC acceptance psi");
+  keys.addOutputComponent("psi",   "MARGINAL","psi parameter");
+  keys.addOutputComponent("accpsi","MARGINAL","MC acceptance psi");
 }
 
 CoEvolutionRestraint::CoEvolutionRestraint(const ActionOptions&ao):
@@ -154,9 +154,11 @@ MCaccpsi_(0), MCfirst_(-1), marginal_(false)
 
   addComponent("R0");     componentIsNotPeriodic("R0");
   addComponent("accR0");  componentIsNotPeriodic("accR0");
-  addComponent("psi");    componentIsNotPeriodic("psi");
-  addComponent("accpsi"); componentIsNotPeriodic("accpsi");
-
+  if(!marginal_){
+   addComponent("psi");    componentIsNotPeriodic("psi");
+   addComponent("accpsi"); componentIsNotPeriodic("accpsi");
+  }
+  
   // initialize random seed
   srand (time(NULL));
 
