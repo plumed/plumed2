@@ -671,7 +671,6 @@ infodir
 docdir
 oldincludedir
 includedir
-runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -722,8 +721,6 @@ enable_execinfo
 enable_gsl
 enable_xdrfile
 enable_boost_graph
-enable_arrayfire_opencl
-enable_arrayfire_cuda
 enable_fftw
 enable_openmp
 '
@@ -782,7 +779,6 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
-runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE_TARNAME}'
@@ -1035,15 +1031,6 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
-  -runstatedir | --runstatedir | --runstatedi | --runstated \
-  | --runstate | --runstat | --runsta | --runst | --runs \
-  | --run | --ru | --r)
-    ac_prev=runstatedir ;;
-  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
-  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
-  | --run=* | --ru=* | --r=*)
-    runstatedir=$ac_optarg ;;
-
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1181,7 +1168,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir runstatedir
+		libdir localedir mandir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1334,7 +1321,6 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
-  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -1404,9 +1390,6 @@ Optional Features:
   --enable-gsl            enable search for gsl, default: yes
   --enable-xdrfile        enable search for xdrfile, default: yes
   --enable-boost_graph    enable search for boost graph, default: no
-  --enable-arrayfire_opencl
-                          enable search for arrayfire, default: no
-  --enable-arrayfire_cuda enable search for arrayfire, default: no
   --enable-fftw           enable search for fftw, default: no
   --disable-openmp        do not use OpenMP
 
@@ -2984,42 +2967,8 @@ else
 fi
 
 
-
-af_ocl=
-# Check whether --enable-arrayfire_opencl was given.
-if test "${enable_arrayfire_opencl+set}" = set; then :
-  enableval=$enable_arrayfire_opencl; case "${enableval}" in
-             (yes) af_ocl=true ;;
-             (no)  af_ocl=false ;;
-             (*)   as_fn_error $? "wrong argument to --enable-arrayfire_opencl" "$LINENO" 5 ;;
-  esac
-else
-  case "no" in
-             (yes) af_ocl=true ;;
-             (no)  af_ocl=false ;;
-  esac
-
-fi
-
-
-
-af_cuda=
-# Check whether --enable-arrayfire_cuda was given.
-if test "${enable_arrayfire_cuda+set}" = set; then :
-  enableval=$enable_arrayfire_cuda; case "${enableval}" in
-             (yes) af_cuda=true ;;
-             (no)  af_cuda=false ;;
-             (*)   as_fn_error $? "wrong argument to --enable-arrayfire_cuda" "$LINENO" 5 ;;
-  esac
-else
-  case "no" in
-             (yes) af_cuda=true ;;
-             (no)  af_cuda=false ;;
-  esac
-
-fi
-
-
+#PLUMED_CONFIG_ENABLE([af_ocl],[arrayfire_opencl],[search for arrayfire],[no])
+#PLUMED_CONFIG_ENABLE([af_cuda],[arrayfire_cuda],[search for arrayfire],[no])
 
 fftw=
 # Check whether --enable-fftw was given.
@@ -6763,138 +6712,12 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_BOOST_GRAPH" >&2;}
     fi
 
 fi
-if test $af_ocl == true ; then
-
-    found=ko
-    ac_fn_cxx_check_header_mongrel "$LINENO" "arrayfire.h" "ac_cv_header_arrayfire_h" "$ac_includes_default"
-if test "x$ac_cv_header_arrayfire_h" = xyes; then :
-
-      ac_fn_cxx_check_func "$LINENO" "af_is_double" "ac_cv_func_af_is_double"
-if test "x$ac_cv_func_af_is_double" = xyes; then :
-  found=ok
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for af_is_double in -lafopencl" >&5
-$as_echo_n "checking for af_is_double in -lafopencl... " >&6; }
-if ${ac_cv_lib_afopencl_af_is_double+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lafopencl  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char af_is_double ();
-int
-main ()
-{
-return af_is_double ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_afopencl_af_is_double=yes
-else
-  ac_cv_lib_afopencl_af_is_double=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_afopencl_af_is_double" >&5
-$as_echo "$ac_cv_lib_afopencl_af_is_double" >&6; }
-if test "x$ac_cv_lib_afopencl_af_is_double" = xyes; then :
-  LIBS="-lafopencl $LIBS" && found=ok
-fi
-
-
-fi
-
-
-fi
-
-
-    if test $found == ok ; then
-      $as_echo "#define __PLUMED_HAS_ARRAYFIRE 1" >>confdefs.h
-
-    else
-       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_ARRAYFIRE" >&5
-$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_ARRAYFIRE" >&2;}
-    fi
-
-fi
-if test $af_cuda == true ; then
-
-    found=ko
-    ac_fn_cxx_check_header_mongrel "$LINENO" "arrayfire.h" "ac_cv_header_arrayfire_h" "$ac_includes_default"
-if test "x$ac_cv_header_arrayfire_h" = xyes; then :
-
-      ac_fn_cxx_check_func "$LINENO" "af_is_double" "ac_cv_func_af_is_double"
-if test "x$ac_cv_func_af_is_double" = xyes; then :
-  found=ok
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for af_is_double in -lafcuda" >&5
-$as_echo_n "checking for af_is_double in -lafcuda... " >&6; }
-if ${ac_cv_lib_afcuda_af_is_double+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lafcuda  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char af_is_double ();
-int
-main ()
-{
-return af_is_double ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_afcuda_af_is_double=yes
-else
-  ac_cv_lib_afcuda_af_is_double=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_afcuda_af_is_double" >&5
-$as_echo "$ac_cv_lib_afcuda_af_is_double" >&6; }
-if test "x$ac_cv_lib_afcuda_af_is_double" = xyes; then :
-  LIBS="-lafcuda $LIBS" && found=ok
-fi
-
-
-fi
-
-
-fi
-
-
-    if test $found == ok ; then
-      $as_echo "#define __PLUMED_HAS_ARRAYFIRE 1" >>confdefs.h
-
-    else
-       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_ARRAYFIRE" >&5
-$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_ARRAYFIRE" >&2;}
-    fi
-
-fi
+#if test $af_ocl == true ; then
+#  PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afopencl])
+#fi
+#if test $af_cuda == true ; then
+#  PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afcuda])
+#fi
 if test $fftw == true ; then
 
     found=ko

@@ -187,8 +187,8 @@ PLUMED_CONFIG_ENABLE([execinfo],[execinfo],[search for execinfo],[yes])
 PLUMED_CONFIG_ENABLE([gsl],[gsl],[search for gsl],[yes])
 PLUMED_CONFIG_ENABLE([xdrfile],[xdrfile],[search for xdrfile],[yes])
 PLUMED_CONFIG_ENABLE([boost_graph],[boost_graph],[search for boost graph],[no])
-PLUMED_CONFIG_ENABLE([af_ocl],[arrayfire_opencl],[search for arrayfire],[no])
-PLUMED_CONFIG_ENABLE([af_cuda],[arrayfire_cuda],[search for arrayfire],[no])
+#PLUMED_CONFIG_ENABLE([af_ocl],[arrayfire_opencl],[search for arrayfire],[no])
+#PLUMED_CONFIG_ENABLE([af_cuda],[arrayfire_cuda],[search for arrayfire],[no])
 PLUMED_CONFIG_ENABLE([fftw],[fftw],[search for fftw],[no])
 
 AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
@@ -531,12 +531,12 @@ fi
 if test $boost_graph == true ; then
   PLUMED_CHECK_PACKAGE([boost/graph/graph_utility.hpp],[exit],[__PLUMED_HAS_BOOST_GRAPH],[boost_graph])
 fi
-if test $af_ocl == true ; then
-  PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afopencl])
-fi
-if test $af_cuda == true ; then
-  PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afcuda])
-fi
+#if test $af_ocl == true ; then
+#  PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afopencl])
+#fi
+#if test $af_cuda == true ; then
+#  PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afcuda])
+#fi
 if test $fftw == true ; then
   PLUMED_CHECK_PACKAGE([fftw3.h],[fftw_execute],[__PLUMED_HAS_FFTW],[fftw3])
 fi
