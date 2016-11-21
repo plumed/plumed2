@@ -956,9 +956,9 @@ void PBMetaD::calculate()
   double ncv = (double) getNumberOfArguments();
   double bmin = 1.0e+19;
   for(unsigned i=0; i<getNumberOfArguments(); ++i){
-   cv[0] = getArgument(i);
-   der[0] = 0.0;
-   bias[i] = getBiasAndDerivatives(i, cv, der);
+   cv[0]    = getArgument(i);
+   der[0]   = 0.0;
+   bias[i]  = getBiasAndDerivatives(i, cv, der);
    deriv[i] = der[0];
    if(bias[i] < bmin) bmin = bias[i];
   }

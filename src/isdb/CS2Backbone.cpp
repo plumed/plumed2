@@ -782,9 +782,6 @@ void CS2Backbone::calculate()
 
       const Fragment *myfrag = &atom[s][a];
       const unsigned aa_kind = myfrag->res_kind;
-      const unsigned res_type_curr = myfrag->res_type_curr;
-      const unsigned res_type_prev = myfrag->res_type_prev;
-      const unsigned res_type_next = myfrag->res_type_next;
       const unsigned needed_atoms = atleastned+myfrag->box_nb.size();
 
       /* Extra Distances are the same for each residue */
@@ -806,9 +803,9 @@ void CS2Backbone::calculate()
           const double * CONSTAANEXT = db.CONSTAANEXT(aa_kind,at_kind);
           const double * CONSTAAPREV = db.CONSTAAPREV(aa_kind,at_kind);
 
-          double cs = CONSTAACURR[res_type_curr] + 
-                      CONSTAANEXT[res_type_next] + 
-                      CONSTAAPREV[res_type_prev];
+          double cs = CONSTAACURR[myfrag->res_type_curr] + 
+                      CONSTAANEXT[myfrag->res_type_next] + 
+                      CONSTAAPREV[myfrag->res_type_prev];
           // this is the atom for which we are calculating the chemical shift 
           const unsigned ipos = myfrag->pos[at_kind];
 
@@ -875,7 +872,7 @@ void CS2Backbone::calculate()
           }
 
           //SIDE CHAIN
-          const double * CONST_SC2 = db.CONST_SC2(aa_kind,at_kind,res_type_curr);
+          const double * CONST_SC2 = db.CONST_SC2(aa_kind,at_kind,myfrag->res_type_curr);
           const unsigned sidsize = myfrag->side_chain.size();
           for(unsigned q=0;q<sidsize;q++){
             const double cs2q = CONST_SC2[q]; 
@@ -1092,12 +1089,12 @@ void CS2Backbone::calculate()
             comp->set(cs);
             Tensor virial;
             for(unsigned i=0;i<list.size();i++) {
-                setAtomsDerivatives(comp,list[i],fact*ff[i]);
-                virial-=Tensor(getPosition(list[i]),fact*ff[i]);
+              Vector add = fact*ff[i];
+              setAtomsDerivatives(comp,list[i],add);
+              virial-=Tensor(getPosition(list[i]),add);
             }
             setBoxDerivatives(comp,virial);
           } else {
-            // but I would also divide for the weights derived with metainference
             comp = getPntrToValue();
             score += (cs - atom[s][a].exp_cs[at_kind])*(cs - atom[s][a].exp_cs[at_kind])/camshift_sigma2[at_kind];
             fact = 2.0*(cs - atom[s][a].exp_cs[at_kind])/camshift_sigma2[at_kind];

@@ -265,6 +265,5 @@ bool Action::checkUpdate()const{
   else return false;
 }
 
-
 }
 

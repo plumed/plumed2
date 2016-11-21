@@ -11,6 +11,7 @@
 # if one has to update configure.ac
 AC_PREREQ([2.68])
 AC_INIT([PLUMED], [2])
+m4_include([./m4/m4_ax_openmp.m4])
 
 ##################################################################
 # Here we define a few useful macros
@@ -186,6 +187,8 @@ PLUMED_CONFIG_ENABLE([execinfo],[execinfo],[search for execinfo],[yes])
 PLUMED_CONFIG_ENABLE([gsl],[gsl],[search for gsl],[yes])
 PLUMED_CONFIG_ENABLE([xdrfile],[xdrfile],[search for xdrfile],[yes])
 PLUMED_CONFIG_ENABLE([boost_graph],[boost_graph],[search for boost graph],[no])
+PLUMED_CONFIG_ENABLE([af_ocl],[arrayfire_opencl],[search for arrayfire],[no])
+PLUMED_CONFIG_ENABLE([af_cuda],[arrayfire_cuda],[search for arrayfire],[no])
 PLUMED_CONFIG_ENABLE([fftw],[fftw],[search for fftw],[no])
 
 AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
@@ -198,7 +201,7 @@ AC_ARG_VAR(LDSO,[command for linking shared library - configure will use CXX plu
 # include symbol information (obj files are huge)
 if test -z "$CXXFLAGS"
 then
-  CXXFLAGS=-O
+  CXXFLAGS=-O3
 fi
 
 # this is list if copied from a generated ./configure script
@@ -252,7 +255,7 @@ if test $basic_warnings == true
 then
   PLUMED_CHECK_CXXFLAG([-Wall])
   PLUMED_CHECK_CXXFLAG([-pedantic])
-  PLUMED_CHECK_CXXFLAG([-ansi])
+  PLUMED_CHECK_CXXFLAG([-std=c++11])
 fi
 
 if test $debug == true
@@ -450,6 +453,30 @@ fi
 # when configuring with --disable-openmp
 AC_OPENMP
 
+# check for OpenMP SIMD instruction
+AX_OPENMP([
+  AC_MSG_CHECKING([whether PLUMED can use OpenMP 4+ SIMD flag])
+  rm -f conftest-*
+
+  cat << EOF > conftest-main.cpp
+  int main() {
+    unsigned y = 0;
+    #pragma omp simd
+    for (unsigned i=0; i<10; i++) y += 2 * i;
+    return 0;
+  }
+EOF
+
+  $CXX $CXXFLAGS conftest-main.cpp -o conftest.exe 1> /dev/null 2> /dev/null
+
+  if test -f conftest.exe; then
+    AC_MSG_RESULT([yes])
+    AC_DEFINE([__PLUMED_HAS_OMPSIMD])
+  else
+    AC_MSG_RESULT([no])
+  fi
+])
+
 if test $matheval == true ; then
   PLUMED_CHECK_PACKAGE([matheval.h],[evaluator_create],[__PLUMED_HAS_MATHEVAL],[matheval])
 fi
@@ -503,6 +530,12 @@ if test $xdrfile == true ; then
 fi
 if test $boost_graph == true ; then
   PLUMED_CHECK_PACKAGE([boost/graph/graph_utility.hpp],[exit],[__PLUMED_HAS_BOOST_GRAPH],[boost_graph])
+fi
+if test $af_ocl == true ; then
+  PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afopencl])
+fi
+if test $af_cuda == true ; then
+  PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afcuda])
 fi
 if test $fftw == true ; then
   PLUMED_CHECK_PACKAGE([fftw3.h],[fftw_execute],[__PLUMED_HAS_FFTW],[fftw3])
