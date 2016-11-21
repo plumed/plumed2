@@ -35,8 +35,8 @@
 #include <iterator>
 #include <sstream>
 
-#include "Colvar.h"
-#include "ActionRegister.h"
+#include "colvar/Colvar.h"
+#include "colvar/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "tools/OpenMP.h"
 #include "tools/Pbc.h"
