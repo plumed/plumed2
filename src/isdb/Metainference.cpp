@@ -40,22 +40,30 @@ namespace isdb{
 
 //+PLUMEDOC BIAS METAINFERENCE
 /*
-Calculate the Metainference Score for a set of back calculated experimental data.
+Calculate the Metainference energy for a set of back calculated experimental data.
 
-
-The back calculated data, that are expected to be averages over replicas (NR=1,2,..,N)
-The functional form of this bias can be chosen between three variants selected
+The data can be averaged by using multiple replicas and weighted for a bias if present.
+The functional form of Metainference can be chosen among four variants selected
 with NOISE=GAUSS,MGAUSS,OUTLIERS,MOUTLIERS which correspond to modelling the noise for
 the arguments as a single gaussian common to all the data points, a gaussian per data
-point, a log-tailed gaussian per data point, or a single long-tailed gaussian common to all the data points.
+point, a single long-tailed gaussian common to all the data points or a log-tailed
+ gaussian per data point.
 
 As from Metainference theory there are two sigma values: SIGMA_MEAN represent the
-error of calculating an average quanity using a finite set of replica and should
+error of calculating an average quantity using a finite set of replica and should
 be set as small as possible following the guidelines for replica-averaged simulations
-in the framework of the Maximum Entropy Principle. 
+in the framework of the Maximum Entropy Principle. Alternatively this can be obtained
+automatically using the internal sigma mean optimisation (OPTSIGMAMEAN=SEM or FULL). 
 SIGMA_BIAS is an uncertainty parameter, sampled by a MC algorithm in the bounded interval 
 defined by SIGMA_MIN and SIGMA_MAX. The initial value is set at SIGMA0. The MC move is a 
-random displacement of maximum value equal to DSIGMA.
+random displacement of maximum value equal to DSIGMA. If the number of data point is
+too large and the acceptance rate drops it is possible to make the MC move over mutually
+exclusive, random subset of size MC_CHUNKSIZE and run more than one move setting MC_STRIDE
+in such a way that MC_CHUNKSIZE*MC_STRIDE will cover all the data points.
+
+Calculated and experimental data can be compared but for a scaling factor and/or an offset
+using SCALEDATA and/or ADDOFFSET, the sampling is obtained by a MC algorithm either using
+a flat or a gaussian prior setting it with SCALE_PRIOR or OFFSET_PRIOR.
 
 \par Examples
 
@@ -75,16 +83,13 @@ ATOMS3=29,31
 ATOMS4=33,34
 ... RDC
 
-ardc: ENSEMBLE ARG=rdc.*
-
 METAINFERENCE ...
-ARG=ardc.*
+ARG=rdc.*
 NOISETYPE=MGAUSS
 PARAMETERS=1.9190,2.9190,3.9190,4.9190
-SCALEDATA SCALE0=1 SCALE_MIN=0.00001 SCALE_MAX=3 DSCALE=0.00 
-SIGMA0=0.01 SIGMA_MIN=0.00001 SIGMA_MAX=3 DSIGMA=0.00 
+SCALEDATA SCALE0=1 SCALE_MIN=0.1 SCALE_MAX=3 DSCALE=0.01 
+SIGMA0=0.01 SIGMA_MIN=0.00001 SIGMA_MAX=3 DSIGMA=0.01 
 SIGMA_MEAN=0.001
-TEMP=300
 LABEL=spe
 ... METAINFERENCE 
 
@@ -92,22 +97,27 @@ PRINT ARG=spe.bias FILE=BIAS STRIDE=1
 \endverbatim
 
 in the following example instead of using one uncertainty parameter per data point we use
-a single uncertainty value in a long-tailed gaussian to take into account for outliers.
+a single uncertainty value in a long-tailed gaussian to take into account for outliers, furthermore
+the data are weighted for the bias applied to other variables of the system.
 
 \verbatim
+cv1: TORSION ATOMS=1,2,3,4
+cv2: TORSION ATOMS=2,3,4,5
+mm: METAD ARG=cv1,cv2 HEIGHT=0.5 SIGMA=0.3,0.3 PACE=200 BIASFACTOR=8 WALKERS_MPI
+
 METAINFERENCE ...
-ARG=ardc.*
+ARG=rdc.*,mm.bias
+REWEIGHT
 NOISETYPE=OUTLIERS
 PARAMETERS=1.9190,2.9190,3.9190,4.9190
-SCALEDATA SCALE0=1 SCALE_MIN=0.00001 SCALE_MAX=3 DSCALE=0.00 
-SIGMA0=0.01 SIGMA_MIN=0.00001 SIGMA_MAX=3 DSIGMA=0.00 
+SCALEDATA SCALE0=1 SCALE_MIN=0.1 SCALE_MAX=3 DSCALE=0.01 
+SIGMA0=0.01 SIGMA_MIN=0.00001 SIGMA_MAX=3 DSIGMA=0.01 
 SIGMA_MEAN=0.001
-TEMP=300
 LABEL=spe
 ... METAINFERENCE 
 \endverbatim
 
-(See also \ref RDC and \ref ENSEMBLE).
+(See also \ref RDC, \ref PBMETAD).
 
 */
 //+ENDPLUMEDOC
