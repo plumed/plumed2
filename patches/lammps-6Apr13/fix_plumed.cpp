@@ -103,9 +103,9 @@ FixPlumed::FixPlumed(LAMMPS *lmp, int narg, char **arg) :
     else if(next==1){
       // Each replica writes an independent log file
       //  with suffix equal to the replica id
-      char str_num[32], *logFile;
+      char str_num[32], logFile[1024];
       sprintf(str_num,".%d",universe->iworld);
-      logFile=arg[i];
+      strncpy(logFile,arg[i],1024);
       strcat(logFile,str_num);
       p->cmd("setLogFile",logFile);
       next=0;
