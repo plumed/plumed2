@@ -24,7 +24,7 @@
 #include <cstdlib>
 #include <sstream>
 #include <iostream>
-#include <algorithm>
+#include <iterator>
 #include <functional>
 
 namespace PLMD{
@@ -70,12 +70,6 @@ double Random::U01d ()
     u = U01();
 	u += U01() * fact;
 	return (u < 1.0) ? u : (u - 1.0);
-}
-
-
-void Random::Shuffle(std::vector<unsigned>& vec) {
-    // Passing a lambda is neccessary here because we need to bind to the Random object
-    std::random_shuffle(vec.begin(), vec.end(), [this](int i) {return (int)round(RandU01() * IM) % i;});
 }
 
 double Random::U01(){
@@ -161,5 +155,14 @@ double Random::Gaussian(){
         switchGaussian=true;
 	return v2*fac;
 }
+
+void Random::Shuffle(std::vector<unsigned>& vec) {
+    std::iterator_traits<std::vector<unsigned>::iterator >::difference_type i, n;
+    n = vec.end() - vec.begin();
+    for(i=n-1; i>0; --i) {
+      std::swap(vec[i], vec[(int)round(RandU01() * IM) % i]);
+    }
+}
+
 
 }
