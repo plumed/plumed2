@@ -106,7 +106,7 @@ FixPlumed::FixPlumed(LAMMPS *lmp, int narg, char **arg) :
         //  with suffix equal to the replica id
         char str_num[32], logFile[1024];
         sprintf(str_num,".%d",universe->iworld);
-        strncpy(logFile,arg[i],1024);
+        strncpy(logFile,arg[i],1024-32);
         strcat(logFile,str_num);
         p->cmd("setLogFile",logFile);
         next=0;
