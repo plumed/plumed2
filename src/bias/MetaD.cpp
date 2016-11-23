@@ -824,8 +824,10 @@ last_step_warn_grid(0)
     if(mw_n_>1) {
       stringstream out; out << i;
       fname = mw_dir_+"/"+hillsfname+"."+out.str();
-    } else {
+    } else if(walkers_mpi) {
       fname = mw_dir_+"/"+hillsfname;
+    } else {
+      fname = hillsfname;
     }
     IFile *ifile = new IFile();
     ifile->link(*this);

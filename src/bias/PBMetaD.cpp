@@ -669,8 +669,10 @@ isFirstStep(true)
       if(mw_n_>1) {
         stringstream out; out << j;
         fname = mw_dir_+"/"+hillsfname[i]+"."+out.str();
-      } else {
+      } else if(walkers_mpi) {
         fname = mw_dir_+"/"+hillsfname[i];
+      } else {
+        fname = hillsfname[i];
       }
       IFile *ifile = new IFile();
       ifile->link(*this);
