@@ -39,10 +39,10 @@ namespace isdb{
 
 //+PLUMEDOC COLVAR RDC 
 /*
-Calculates the (Residual) Dipolar Coupling between two atoms or the Pseudocontact shift of a nucleus determined by a metal ion. 
+Calculates the (Residual) Dipolar Coupling between two atoms. 
 
-The RDC/PCS between two atomic nuclei depends on the \f$\theta\f$ angle between 
-the inter-nuclear vector and the external magnetic field. In isotropic media RDCs average to zero because of the orientational 
+The RDC between two atomic nuclei depends on the \f$\theta\f$ angle between 
+the inter-nuclear vector and the external magnetic field. In isotropic media RDCs average to zero because of the rotational 
 averaging, but when the rotational symmetry is broken, either through the introduction of an alignment medium or for molecules 
 with highly anisotropic paramagnetic susceptibility, RDCs become measurable.
 
@@ -85,7 +85,76 @@ the rotational diffusion, but this variable can be used to break the rotational 
 RDCs can also be calculated using a Single Value Decomposition approach, in this case the code rely on the
 a set of function from the GNU Scientific Library (GSL). (With SVD forces are not currently implemented).
 
-Replica-Averaged restrained simulations can be performed with this CV and the function \ref ENSEMBLE.
+Metainference simulations can be performed with this CV and \ref METAINFERENCE.
+
+Additional material and examples can be also found in the tutorial \ref belfast-9
+
+\par Examples
+In the following example five N-H RDCs are defined and their correlation with
+respect to a set of experimental data is calculated and restrained. In addition,
+and only for analysis purposes, the same RDCs are calculated using a Single Value
+Decomposition algorithm. 
+
+\verbatim
+RDC ...
+GYROM=-72.5388
+SCALE=1.0 
+ATOMS1=20,21
+ATOMS2=37,38
+ATOMS3=56,57
+ATOMS4=76,77
+ATOMS5=92,93
+LABEL=nh
+... RDC
+
+STATS ARG=nh.* PARAMETERS=8.17,-8.271,-10.489,-9.871,-9.152
+
+rdce: RESTRAINT ARG=nh.corr KAPPA=0. SLOPE=-25000.0 AT=1.
+
+RDC ...
+GYROM=-72.5388
+SCALE=1.0
+SVD 
+ATOMS1=20,21 COUPLING1=8.17
+ATOMS2=37,38 COUPLING2=-8.271
+ATOMS3=56,57 COUPLING3=-10.489
+ATOMS4=76,77 COUPLING4=-9.871
+ATOMS5=92,93 COUPLING5=-9.152
+LABEL=svd
+... RDC
+
+PRINT ARG=nh.corr,rdce.bias FILE=colvar
+PRINT ARG=svd.* FILE=svd
+\endverbatim
+(See also \ref PRINT, \ref RESTRAINT) 
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC COLVAR PCS 
+/*
+Calculates the Pseudocontact shift of a nucleus determined by a metal ion. 
+
+The PCS of an atomic nucleus depends on the \f$\theta\f$ angle between the vector from the spin-label to the nucleus
+ and the external magnetic field and the module of the vector itself. 
+
+\f[
+D=D_{max}0.5(3\cos^2(\theta)-1)
+\f]
+
+where
+
+\f[
+D_{max}=-\mu_0\gamma_1\gamma_2h/(8\pi^3r^3)
+\f]
+
+that is the maximal value of the dipolar coupling for the two nuclear spins with gyromagnetic ratio \f$\gamma\f$. 
+\f$\mu\f$ is the magnetic constant and h is the Planck constant. 
+
+PCSs can also be calculated using a Single Value Decomposition approach, in this case the code rely on the
+a set of function from the GNU Scientific Library (GSL). (With SVD forces are not currently implemented).
+
+Metainference simulations can be performed with this CV and \ref METAINFERENCE.
 
 Additional material and examples can be also found in the tutorial \ref belfast-9
 
