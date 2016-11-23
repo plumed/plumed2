@@ -432,7 +432,7 @@ void MetaD::registerKeywords(Keywords& keys){
   keys.add("optional","INTERVAL","monodimensional lower and upper limits, outside the limits the system will not feel the biasing force.");
   keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
-  keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with other WALKERS_* options");
+  keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with WALKERS_* options other than WALKERS_DIR");
   keys.addFlag("ACCELERATION",false,"Set to TRUE if you want to compute the metadynamics acceleration factor.");  
   keys.use("RESTART");
   keys.use("UPDATE_FROM");
@@ -714,6 +714,7 @@ last_step_warn_grid(0)
   } else {
     if(walkers_mpi) {
       log.printf("  Multiple walkers active using MPI communnication\n"); 
+      log.printf("  directory with hills files %s\n",mw_dir_.c_str());
       if(comm.Get_rank()==0){
         // Only root of group can communicate with other walkers
         mpi_nw_=multi_sim_comm.Get_size();
@@ -824,7 +825,7 @@ last_step_warn_grid(0)
       stringstream out; out << i;
       fname = mw_dir_+"/"+hillsfname+"."+out.str();
     } else {
-      fname = hillsfname;
+      fname = mw_dir_+"/"+hillsfname;
     }
     IFile *ifile = new IFile();
     ifile->link(*this);

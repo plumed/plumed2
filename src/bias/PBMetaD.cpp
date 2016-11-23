@@ -310,7 +310,7 @@ void PBMetaD::registerKeywords(Keywords& keys){
   keys.add("optional","ADAPTIVE","use a geometric (=GEOM) or diffusion (=DIFF) based hills width scheme. Sigma is one number that has distance units or timestep dimensions");
   keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
-  keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with other WALKERS_* options");
+  keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with WALKERS_* options other than WALKERS_DIR");
   keys.use("RESTART");
   keys.use("UPDATE_FROM");
   keys.use("UPDATE_UNTIL");
@@ -556,6 +556,7 @@ isFirstStep(true)
   } else {
     if(walkers_mpi) {
       log.printf("  Multiple walkers active using MPI communnication\n"); 
+      log.printf("  directory with hills files %s\n",mw_dir_.c_str());
       if(comm.Get_rank()==0){
         // Only root of group can communicate with other walkers
         mpi_nw_ = multi_sim_comm.Get_size();
@@ -669,7 +670,7 @@ isFirstStep(true)
         stringstream out; out << j;
         fname = mw_dir_+"/"+hillsfname[i]+"."+out.str();
       } else {
-        fname = hillsfname[i];
+        fname = mw_dir_+"/"+hillsfname[i];
       }
       IFile *ifile = new IFile();
       ifile->link(*this);
