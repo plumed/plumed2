@@ -39,9 +39,9 @@ namespace isdb{
 
 //+PLUMEDOC COLVAR RDC 
 /*
-Calculates the (Residual) Dipolar Coupling between two atoms. 
+Calculates the (Residual) Dipolar Coupling between two atoms or the Pseudocontact shift of a nucleus determined by a metal ion. 
 
-The RDC between two atomic nuclei depends on the \f$\theta\f$ angle between 
+The RDC/PCS between two atomic nuclei depends on the \f$\theta\f$ angle between 
 the inter-nuclear vector and the external magnetic field. In isotropic media RDCs average to zero because of the orientational 
 averaging, but when the rotational symmetry is broken, either through the introduction of an alignment medium or for molecules 
 with highly anisotropic paramagnetic susceptibility, RDCs become measurable.
@@ -133,7 +133,7 @@ PRINT ARG=svd.* FILE=svd
 
 class RDC : public Colvar {
 private:
-  const double   Const;
+  double         Const;
   double         mu_s;
   double         scale;
   vector<double> coupl;
@@ -146,6 +146,7 @@ public:
 };
 
 PLUMED_REGISTER_ACTION(RDC,"RDC")
+PLUMED_REGISTER_ACTION(RDC,"PCS")
 
 void RDC::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords( keys );
@@ -155,8 +156,8 @@ void RDC::registerKeywords( Keywords& keys ){
                              "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one dipolar coupling will be "
                              "calculated for each ATOMS keyword you specify.");
   keys.reset_style("ATOMS","atoms");
-  keys.add("compulsory","GYROM","Add the product of the gyromagnetic constants for the bond. ");
-  keys.add("compulsory","SCALE","Add the scaling factor to take into account concentration and other effects. ");
+  keys.add("compulsory","GYROM","1.","Add the product of the gyromagnetic constants for the bond. ");
+  keys.add("compulsory","SCALE","1.","Add the scaling factor to take into account concentration and other effects. ");
   keys.addFlag("SVD",false,"Set to TRUE if you want to backcalculate using Single Value Decomposition (need GSL at compilation time)."); 
   keys.addFlag("ADDCOUPLINGS",false,"Set to TRUE if you want to have fixed components with the experimetnal values.");  
   keys.add("numbered","COUPLING","Add an experimental value for each coupling (needed by SVD and usefull for \ref STATS).");
@@ -166,14 +167,21 @@ void RDC::registerKeywords( Keywords& keys ){
 
 RDC::RDC(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
-Const(0.3356806),
-mu_s(0),
-scale(1),
+Const(1.),
+mu_s(1.),
+scale(1.),
 pbc(true)
 {
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
-  pbc=!nopbc;  
+  pbc=!nopbc; 
+ 
+  const double RDCConst = 0.3356806;
+  const double PCSConst = 1.0;
+  bool rdc = true;
+
+  if( getName().find("RDC")!=std::string::npos){ Const *= RDCConst; rdc=true;}
+  else if( getName().find("PCS")!=std::string::npos){ Const *= PCSConst; rdc=false;}
 
   // Read in the atoms
   vector<AtomNumber> t, atoms;
@@ -193,11 +201,11 @@ pbc(true)
  
   // Read in GYROMAGNETIC constants
   parse("GYROM", mu_s);
-  if(mu_s==0.) error("GYROM must be set");
+  if(mu_s==0.) error("GYROM cannot be 0");
 
   // Read in SCALING factors 
   parse("SCALE", scale);
-  if(scale==0.) error("SCALE must be different from 0");
+  if(scale==0.) error("SCALE cannot be 0");
 
   svd=false;
   parseFlag("SVD",svd);
