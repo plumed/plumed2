@@ -55,10 +55,8 @@ class CoEvolutionRestraint : public Bias
   int MCstride_;
   unsigned int MCaccpsi_;
   long int MCfirst_;
-  // marginal and prior stuff
+  // marginal posterior
   bool marginal_;
-  bool prior_;
-  double prior_c_;
   
   void doMonteCarlo(long int step);
   double getEnergy(double psi);
@@ -87,7 +85,6 @@ void CoEvolutionRestraint::registerKeywords(Keywords& keys){
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_STRIDE","MC stride");
   keys.addFlag("MARGINAL",false,"use marginal version of posterior");
-  keys.addFlag("PRIOR",   false,"add prior to psi");
   componentsAreNotOptional(keys);
   keys.addOutputComponent("psi",   "MARGINAL","psi parameter");
   keys.addOutputComponent("accpsi","MARGINAL","MC acceptance psi");
@@ -97,7 +94,7 @@ CoEvolutionRestraint::CoEvolutionRestraint(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao), alpha_(1.0),
 MCsteps_(1), MCstride_(1),
 MCaccpsi_(0), MCfirst_(-1),
-marginal_(false), prior_(false)
+marginal_(false)
 {
   // psi stuff
   parse("PSI0",     psi_);
@@ -119,11 +116,6 @@ marginal_(false), prior_(false)
   parse("MC_STRIDE",MCstride_);
   // marginal version
   parseFlag("MARGINAL",marginal_);
-  // add prior
-  parseFlag("PRIOR",prior_);
-  // set coefficient based on prior
-  if(prior_) prior_c_ = 2.0;
-  else       prior_c_ = 1.0;
 
   checkRead();
 
@@ -138,7 +130,6 @@ marginal_(false), prior_(false)
   } else {
    log.printf("  using marginal version\n"); 
   }
-  if(prior_) log.printf("  add prior to psi\n"); 
   log.printf("  value of R0 parameter %f\n",R0_);
   log.printf("  value of alpha parameter %f\n", alpha_);
   log.printf("  temperature of the system in energy unit %f\n",kbt_);
@@ -169,7 +160,7 @@ double CoEvolutionRestraint::getEnergy(double psi)
     ene += -kbt_ * std::log( 0.5*p*(1.0-psi*psi)+psi*(1.0-p)*(1.0-psi) );
   }
   // add prior
-  if(prior_) ene += kbt_ * 0.5 * std::log(psi);
+  ene += kbt_ * 0.5 * std::log(psi);
   return ene;
 }
 
@@ -259,7 +250,7 @@ void CoEvolutionRestraint::calculate(){
     setOutputForce(i, force);
    }
    // add prior
-   if(prior_) ene += kbt_ * 0.5 * std::log(psi_);
+   ene += kbt_ * 0.5 * std::log(psi_);
   // marginal version 
   } else {
    for(unsigned i=0;i<getNumberOfArguments();++i){
@@ -269,9 +260,9 @@ void CoEvolutionRestraint::calculate(){
     double tmp = exp(-alpha_*(dist-R0_));
     double p = 1.0 - 1.0 / (1.0+tmp);
     // add to energy
-    ene += -kbt_ * std::log(1.0 + prior_c_*p);
+    ene += -kbt_ * std::log(1.0 + 2.0*p);
     // calculate force
-    double dene_dp  = -kbt_ / (1.0 + prior_c_*p) * prior_c_;
+    double dene_dp  = -kbt_ / (1.0 + 2.0*p) * 2.0;
     double dp_ddist = -1.0 / (1.0+tmp) / (1.0+tmp) * tmp * alpha_;
     double force = -dene_dp * dp_ddist;
     setOutputForce(i, force);
