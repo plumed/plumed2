@@ -220,6 +220,7 @@ void CoEvolutionRestraint::doMonteCarlo(long int step)
    if(accept){
     psi_ = new_psi;
     MCaccpsi_++;
+    oldE = newE;
    }
  }
  // set values of psi
