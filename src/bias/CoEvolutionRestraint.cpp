@@ -40,32 +40,28 @@ namespace bias{
 
 class CoEvolutionRestraint : public Bias
 {
-  // cutoff distance parameter
-  double R0_;
-  double R0_min_;
-  double R0_max_;
-  double DR0_;
   // psi parameter - for non marginal version
   double psi_;
   double psi_min_;
   double psi_max_;
   double Dpsi_;
-  // slope parameter;
+  // cutoff and slope parameters;
+  double R0_;
   double alpha_;
   // temperature in kbt
   double kbt_;
   // Monte Carlo stuff
   int MCsteps_;
   int MCstride_;
-  unsigned int MCaccR0_;
   unsigned int MCaccpsi_;
   long int MCfirst_;
-  // marginal version
+  // marginal and prior stuff
   bool marginal_;
+  bool prior_;
+  double prior_c_;
   
   void doMonteCarlo(long int step);
-  double getEnergy(double R0, double psi, double alpha);
-  double getEnergy(double R0, double alpha);
+  double getEnergy(double psi);
   double proposeMove(double x, double xmin, double xmax, double dxmax);
   bool doAccept(double oldE, double newE);
 
@@ -81,41 +77,35 @@ PLUMED_REGISTER_ACTION(CoEvolutionRestraint,"COEVOLUTION")
 void CoEvolutionRestraint::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   keys.use("ARG");
-  keys.add("compulsory","R0","initial value of the R0 parameter");
-  keys.add("compulsory","R0_MIN","minimum value of the R0 parameter");
-  keys.add("compulsory","R0_MAX","maximum value of the R0 parameter");
-  keys.add("compulsory","DR0","maximum MC move of the R0 parameter");
   keys.add("optional","PSI0","initial value of the psi parameter");
   keys.add("optional","PSI_MIN","minimum value of the psi parameter");
   keys.add("optional","PSI_MAX","maximum value of the psi parameter");
   keys.add("optional","DPSI","maximum MC move of the psi parameter");
+  keys.add("compulsory","R0","Value of the R0 parameter");
   keys.add("optional","ALPHA","Value of the alpha parameter");
   keys.add("compulsory","TEMP","temperature in energy units");
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_STRIDE","MC stride");
   keys.addFlag("MARGINAL",false,"use marginal version of posterior");
-  componentsAreNotOptional(keys); 
-  keys.addOutputComponent("R0",    "default","R0 parameter");
-  keys.addOutputComponent("accR0", "default","MC acceptance R0");
+  keys.addFlag("PRIOR",   false,"add prior to psi");
+  componentsAreNotOptional(keys);
   keys.addOutputComponent("psi",   "MARGINAL","psi parameter");
   keys.addOutputComponent("accpsi","MARGINAL","MC acceptance psi");
 }
 
 CoEvolutionRestraint::CoEvolutionRestraint(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao), alpha_(1.0),
-MCsteps_(1), MCstride_(1), MCaccR0_(0),
-MCaccpsi_(0), MCfirst_(-1), marginal_(false)
+MCsteps_(1), MCstride_(1),
+MCaccpsi_(0), MCfirst_(-1),
+marginal_(false), prior_(false)
 {
-  // R0 stuff
-  parse("R0",    R0_);
-  parse("R0_MIN",R0_min_);
-  parse("R0_MAX",R0_max_);
-  parse("DR0",   DR0_);
-  // Psi stuff
+  // psi stuff
   parse("PSI0",     psi_);
   parse("PSI_MIN",  psi_min_);
   parse("PSI_MAX",  psi_max_);
   parse("DPSI",     Dpsi_);
+  // R0 stuff
+  parse("R0", R0_);
   // alpha parameter
   parse("ALPHA", alpha_);
   // temperature
@@ -129,16 +119,17 @@ MCaccpsi_(0), MCfirst_(-1), marginal_(false)
   parse("MC_STRIDE",MCstride_);
   // marginal version
   parseFlag("MARGINAL",marginal_);
+  // add prior
+  parseFlag("PRIOR",prior_);
+  // set coefficient based on prior
+  if(prior_) prior_c_ = 2.0;
+  else       prior_c_ = 1.0;
 
   checkRead();
 
   // adjust for multiple-time steps
   MCstride_ *= getStride();
 
-  log.printf("  initial value of R0 %f\n",R0_);
-  log.printf("  minimum value of R0 %f\n",R0_min_);
-  log.printf("  maximum value of R0 %f\n",R0_max_);
-  log.printf("  maximum MC move of the R0 parameter %f\n",DR0_);
   if(!marginal_){
    log.printf("  initial value of psi %f\n",psi_);
    log.printf("  minimum value of psi %f\n",psi_min_);
@@ -147,13 +138,13 @@ MCaccpsi_(0), MCfirst_(-1), marginal_(false)
   } else {
    log.printf("  using marginal version\n"); 
   }
-  log.printf("  alpha parameter %f\n", alpha_);
+  if(prior_) log.printf("  add prior to psi\n"); 
+  log.printf("  value of R0 parameter %f\n",R0_);
+  log.printf("  value of alpha parameter %f\n", alpha_);
   log.printf("  temperature of the system in energy unit %f\n",kbt_);
   log.printf("  number of MC steps %d\n",MCsteps_);
   log.printf("  do MC every %d steps\n", MCstride_);
 
-  addComponent("R0");     componentIsNotPeriodic("R0");
-  addComponent("accR0");  componentIsNotPeriodic("accR0");
   if(!marginal_){
    addComponent("psi");    componentIsNotPeriodic("psi");
    addComponent("accpsi"); componentIsNotPeriodic("accpsi");
@@ -164,8 +155,8 @@ MCaccpsi_(0), MCfirst_(-1), marginal_(false)
 
 }
 
-// used to update Bayesian parameters
-double CoEvolutionRestraint::getEnergy(double R0, double psi, double alpha)
+// used to update Bayesian parameters - non marginal version
+double CoEvolutionRestraint::getEnergy(double psi)
 {
   // calculate energy
   double ene = 0.0;
@@ -173,28 +164,12 @@ double CoEvolutionRestraint::getEnergy(double R0, double psi, double alpha)
     // get distance
     double dist = getArgument(i);
     // calculate probability
-    double p = 1.0 - 1.0 / (1.0+exp(-alpha*(dist-R0)));
+    double p = 1.0 - 1.0 / (1.0+exp(-alpha_*(dist-R0_)));
     // add to energy
-    ene += -kbt_ * std::log(psi+(1.0-psi)*p);
+    ene += -kbt_ * std::log( 0.5*p*(1.0-psi*psi)+psi*(1.0-p)*(1.0-psi) );
   }
   // add prior
-  ene += kbt_ * 0.5 * std::log(psi);
-  return ene;
-}
-
-// used to update Bayesian parameters - marginal version, with 1/sqrt(psi) prior
-double CoEvolutionRestraint::getEnergy(double R0, double alpha)
-{
-  // calculate energy
-  double ene = 0.0;
-  for(unsigned i=0;i<getNumberOfArguments();++i){
-    // get distance
-    double dist = getArgument(i);
-    // calculate probability
-    double p = 1.0 - 1.0 / (1.0+exp(-alpha*(dist-R0)));
-    // add to energy
-    ene += -kbt_ * std::log(1.0 + 2.0*p);
-  }
+  if(prior_) ene += kbt_ * 0.5 * std::log(psi);
   return ene;
 }
 
@@ -233,47 +208,25 @@ void CoEvolutionRestraint::doMonteCarlo(long int step)
  // calculate acceptance
  double MCtrials = std::floor(static_cast<double>(step-MCfirst_) / static_cast<double>(MCstride_))+1.0;
  // store old energy
- if(!marginal_) oldE = getEnergy(R0_, psi_, alpha_);
- else           oldE = getEnergy(R0_, alpha_);
+ oldE = getEnergy(psi_);
  // cycle on MC steps 
  for(unsigned i=0;i<MCsteps_;++i){
-  // propose move in R0
-  double new_R0 = proposeMove(R0_,R0_min_,R0_max_,DR0_);
-  // calculate new energy
-  if(!marginal_) newE = getEnergy(new_R0, psi_, alpha_);
-  else           newE = getEnergy(new_R0, alpha_);
-  // accept or reject
-  accept = doAccept(oldE, newE);
-  if(accept){
-   R0_ = new_R0;
-   MCaccR0_++;
-  }
-  if(!marginal_){
    // propose move in psi
    double new_psi = proposeMove(psi_,psi_min_,psi_max_,Dpsi_);
    // calculate new energy
-   newE = getEnergy(R0_, new_psi, alpha_);
+   newE = getEnergy(new_psi);
    // accept or reject
    accept = doAccept(oldE, newE);
    if(accept){
     psi_ = new_psi;
     MCaccpsi_++;
    }
-  } 
  }
- // set values of Bayesian parameters
- // R0
- getPntrToComponent("R0")->set(R0_);
- // R0 acceptance
- double accR0 = static_cast<double>(MCaccR0_) / static_cast<double>(MCsteps_) / MCtrials;
- getPntrToComponent("accR0")->set(accR0);
- if(!marginal_){
-  // psi
-  getPntrToComponent("psi")->set(psi_);
-  // psi acceptance
-  double accpsi = static_cast<double>(MCaccpsi_) / static_cast<double>(MCsteps_) / MCtrials;
-  getPntrToComponent("accpsi")->set(accpsi);
- }
+ // set values of psi
+ getPntrToComponent("psi")->set(psi_);
+ // psi acceptance
+ double accpsi = static_cast<double>(MCaccpsi_) / static_cast<double>(MCsteps_) / MCtrials;
+ getPntrToComponent("accpsi")->set(accpsi);
 }
 
 void CoEvolutionRestraint::calculate(){
@@ -281,7 +234,7 @@ void CoEvolutionRestraint::calculate(){
   // get time step 
   long int step = getStep();
   // do MC stuff at the right time step
-  if(step%MCstride_==0&&!getExchangeStep()) doMonteCarlo(step);
+  if(step%MCstride_==0&&!getExchangeStep()&&!marginal_) doMonteCarlo(step);
   
   // energy
   double ene = 0.0;
@@ -294,16 +247,18 @@ void CoEvolutionRestraint::calculate(){
     // calculate probability
     double tmp = exp(-alpha_*(dist-R0_));
     double p = 1.0 - 1.0 / (1.0+tmp);
+    double post = 0.5*p*(1.0-psi_*psi_)+psi_*(1.0-p)*(1.0-psi_);
     // add to energy
-    ene += -kbt_ * std::log(psi_+(1.0-psi_)*p);
+    ene += -kbt_ * std::log(post);
     // calculate force
-    double dene_dp  = -kbt_ / (psi_+(1.0-psi_)*p) * (1.0-psi_);
-    double dp_ddist = -1.0 / (1.0+tmp) / (1.0+tmp) * tmp * alpha_;
-    double force = -dene_dp * dp_ddist;
+    double dene_dpost = -kbt_ / post;
+    double dpost_dp   = 0.5*(1.0-psi_*psi_)-psi_*(1.0-psi_);
+    double dp_ddist   = -1.0 / (1.0+tmp) / (1.0+tmp) * tmp * alpha_;
+    double force = -dene_dpost * dpost_dp * dp_ddist;
     setOutputForce(i, force);
    }
    // add prior
-   ene += kbt_ * 0.5 * std::log(psi_);
+   if(prior_) ene += kbt_ * 0.5 * std::log(psi_);
   // marginal version 
   } else {
    for(unsigned i=0;i<getNumberOfArguments();++i){
@@ -313,15 +268,14 @@ void CoEvolutionRestraint::calculate(){
     double tmp = exp(-alpha_*(dist-R0_));
     double p = 1.0 - 1.0 / (1.0+tmp);
     // add to energy
-    ene += -kbt_ * std::log(1.0 + 2.0*p);
+    ene += -kbt_ * std::log(1.0 + prior_c_*p);
     // calculate force
-    double dene_dp  = -kbt_ / (1.0 + 2.0*p) * 2.0;
+    double dene_dp  = -kbt_ / (1.0 + prior_c_*p) * prior_c_;
     double dp_ddist = -1.0 / (1.0+tmp) / (1.0+tmp) * tmp * alpha_;
     double force = -dene_dp * dp_ddist;
     setOutputForce(i, force);
    }
   }
-
   // set value of the bias
   setBias(ene);
 }
