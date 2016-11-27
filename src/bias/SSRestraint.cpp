@@ -25,7 +25,6 @@
 #include "core/Atoms.h"
 #include <math.h>
 #include <string.h>
-#include <iostream>
 
 
 using namespace std;
