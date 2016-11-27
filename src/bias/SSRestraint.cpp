@@ -149,14 +149,22 @@ void SSRestraint::set_reference_dihedrals(std::string Spred)
   for(unsigned i=0; i<Spred.length(); ++i){
     c = Spred[i];
     // assign dihedrals
+    // right-handed HELIX
     if(c == 'H'){
       phi0_.push_back(-1.05);
       psi0_.push_back(-0.79);
       dlist_.push_back(i);
     }
+    // beta strand
     if(c == 'E'){
       phi0_.push_back(-2.36);
       psi0_.push_back(2.36);
+      dlist_.push_back(i);
+    }
+    // polyproline
+    if(c == 'P'){
+      phi0_.push_back(-1.31);
+      psi0_.push_back(2.71);
       dlist_.push_back(i);
     }
   }
