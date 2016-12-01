@@ -697,8 +697,8 @@ Metainference::~Metainference()
 double Metainference::getEnergySP(const vector<double> &mean, const vector<double> &sigma, 
                                   const double scale, const double offset, const double modifier)
 {
-  const double sm2 = scale*scale*sigma_mean_[0]*sigma_mean_[0]*modifier*modifier;
-  const double ss = sigma[0]*sigma[0] + sm2;
+  const double sm2 = scale*scale*modifier*modifier*sigma_mean_[0]*sigma_mean_[0];
+  const double ss2 = scale*scale*modifier*modifier*sigma[0]*sigma[0] + sm2;
 
   double ene = 0.0;
   #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(ene)
@@ -706,12 +706,12 @@ double Metainference::getEnergySP(const vector<double> &mean, const vector<doubl
     #pragma omp for reduction( + : ene)
     for(unsigned i=0;i<narg;++i){
       const double dev = scale*mean[i]-parameters[i]+offset; 
-      const double a2 = 0.5*dev*dev + ss;
+      const double a2 = 0.5*dev*dev + ss2;
       ene += std::log( 2.0 * a2 / ( 1.0 - exp(- a2 / sm2) ) );
     }
   }
   // add one single Jeffrey's prior and one normalisation per data point
-  ene += std::log(sigma[0]+sigma_mean_[0]*modifier) - static_cast<double>(narg)*0.5*std::log(2./(M_PI*M_PI)*ss);
+  ene += std::log(sigma[0]*modifier+sigma_mean_[0]*modifier) - static_cast<double>(narg)*0.5*std::log(2./(M_PI*M_PI)*ss2);
   return kbt_ * ene;
 }
 
@@ -726,14 +726,14 @@ double Metainference::getEnergySPE(const vector<double> &mean, const vector<doub
     #pragma omp for reduction( + : ene)
     for(unsigned i=0;i<narg;++i){
       const double sm2 = mul_sm2*sigma_mean_[i]*sigma_mean_[i];
-      const double ss  = sigma[i]*sigma[i] + sm2;
-      const double sss = sigma[i]*sigma[i] + sigma_mean_[i]*sigma_mean_[i]*m2;
+      const double ss2 = mul_sm2*sigma[i]*sigma[i] + sm2;
+      const double sss = sigma[i]*sigma[i]*m2 + sigma_mean_[i]*sigma_mean_[i]*m2;
       const double dev = scale*mean[i]-parameters[i]+offset; 
-      const double a2  = 0.5*dev*dev + ss;
+      const double a2  = 0.5*dev*dev + ss2;
       // deviation + jeffreys + normalisation
       // ene += 0.5*std::log(sss) - 0.5*std::log(sqrt2_div_pi*ss);
       // this is equivalent to (but with less log)
-      const double add = 0.5*std::log(0.5*M_PI*M_PI*sss/ss); 
+      const double add = 0.5*std::log(0.5*M_PI*M_PI*sss/ss2); 
       ene += std::log( 2.0 * a2 / ( 1.0 - exp(- a2 / sm2) ) ) + add;
     }
   }
@@ -744,8 +744,8 @@ double Metainference::getEnergySPE(const vector<double> &mean, const vector<doub
 double Metainference::getEnergyGJ(const vector<double> &mean, const vector<double> &sigma, 
                                   const double scale, const double offset, const double modifier)
 {
-  const double inv_s2 = 1./(scale*scale*sigma[0]*sigma[0] + modifier*modifier*scale*scale*sigma_mean_[0]*sigma_mean_[0]);
-  const double inv_sss = 1./(sigma[0]*sigma[0] + modifier*modifier*sigma_mean_[0]*sigma_mean_[0]);
+  const double inv_s2 = 1./(modifier*modifier*scale*scale*sigma[0]*sigma[0] + modifier*modifier*scale*scale*sigma_mean_[0]*sigma_mean_[0]);
+  const double inv_sss = 1./(modifier*modifier*sigma[0]*sigma[0] + modifier*modifier*sigma_mean_[0]*sigma_mean_[0]);
 
   double ene = 0.0;
   #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(ene)
@@ -781,8 +781,8 @@ double Metainference::getEnergyGJE(const vector<double> &mean, const vector<doub
     for(unsigned i=0;i<narg;++i){
       const double sigma2 = sigma[i] * sigma[i];
       const double sigma_mean2 = sigma_mean_[i] * sigma_mean_[i];
-      const double sss = scale2*sigma2 + mul_sm2*sigma_mean2;
-      const double ss = sigma2 + mu2*sigma_mean2;
+      const double sss = mul_sm2*sigma2 + mul_sm2*sigma_mean2;
+      const double ss = mu2*sigma2 + mu2*sigma_mean2;
       double dev = scale*mean[i]-parameters[i]+offset;
       // deviation + normalisation + jeffrey
       // ene += 0.5*dev*dev/ss + 0.5*std::log(sss*2.*M_PI) - 0.5*std::log(2/ss);
@@ -1017,7 +1017,7 @@ void Metainference::doMonteCarlo(const vector<double> &mean_, const double modif
 double Metainference::getEnergyForceSP(const vector<double> &mean, const double fact, const double modifier)
 {
   const double sm2 = modifier*modifier*sigma_mean_[0]*sigma_mean_[0]; 
-  const double ss = sigma_[0]*sigma_[0] + sm2;
+  const double ss2 = modifier*modifier*sigma_[0]*sigma_[0] + sm2;
   vector<double> f(narg+1,0);
   
   if(master){
@@ -1027,7 +1027,7 @@ double Metainference::getEnergyForceSP(const vector<double> &mean, const double 
       #pragma omp for reduction( + : omp_ene)
       for(unsigned i=0;i<narg;++i){
         const double dev = scale_*mean[i]-parameters[i]+offset_; 
-        const double a2 = 0.5*dev*dev + ss;
+        const double a2 = 0.5*dev*dev + ss2;
         const double t = exp(-a2/sm2);
         const double dt = 1./t;
         const double it = 1./(1.-t);
@@ -1071,9 +1071,9 @@ double Metainference::getEnergyForceSPE(const vector<double> &mean, const double
       #pragma omp for reduction( + : omp_ene)
       for(unsigned i=0;i<narg;++i){
         const double sm2 = mul_sm2*sigma_mean_[i]*sigma_mean_[i]; 
-        const double ss  = sigma_[i]*sigma_[i] + sm2;
+        const double ss2 = mul_sm2*sigma_[i]*sigma_[i] + sm2;
         const double dev = scale_*mean[i]-parameters[i]+offset_; 
-        const double a2  = 0.5*dev*dev + ss;
+        const double a2  = 0.5*dev*dev + ss2;
         const double t   = exp(-a2/sm2);
         const double dt  = 1./t;
         const double it  = 1./(1.-t);
@@ -1108,7 +1108,7 @@ double Metainference::getEnergyForceGJ(const vector<double> &mean, const double 
 {
   double inv_s2=0.;
   if(master) {
-    const double ss = sigma_[0]*sigma_[0] + modifier*modifier*sigma_mean_[0]*sigma_mean_[0];
+    const double ss = modifier*modifier*sigma_[0]*sigma_[0] + modifier*modifier*sigma_mean_[0]*sigma_mean_[0];
     inv_s2 = 1.0/ss;
     if(nrep_>1) multi_sim_comm.Sum(inv_s2);
   } 
@@ -1143,7 +1143,7 @@ double Metainference::getEnergyForceGJE(const vector<double> &mean, const double
 
   if(master) {
     for(unsigned i=0;i<sigma_.size(); ++i) {
-      const double ss = scale_*scale_*sigma_[i]*sigma_[i] + sm_m2*sigma_mean_[i]*sigma_mean_[i];
+      const double ss = sm_m2*sigma_[i]*sigma_[i] + sm_m2*sigma_mean_[i]*sigma_mean_[i];
       inv_s2[i] = 1.0/ss;
     }
     if(nrep_>1) multi_sim_comm.Sum(&inv_s2[0],sigma_.size());
