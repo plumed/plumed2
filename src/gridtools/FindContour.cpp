@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
+#include "vesselbase/StoreDataVessel.h"
 #include "ContourFindingBase.h"
 
 //+PLUMEDOC GRIDANALYSIS FIND_CONTOUR
@@ -38,12 +39,15 @@ class FindContour : public ContourFindingBase {
 private:
   bool firsttime;
   unsigned gbuffer;
+/// The data is stored in a grid
+  vesselbase::StoreDataVessel* mydata;
 public:
   static void registerKeywords( Keywords& keys );
   explicit FindContour(const ActionOptions&ao);
   bool checkAllActive() const { return gbuffer==0; }
   void prepareForAveraging();
   bool isPeriodic(){ return false; }
+  unsigned getNumberOfQuantities() const { return 1 + ingrid->getDimension(); }
   void compute( const unsigned& current, MultiValue& myvals ) const ;
   void finishAveraging();
 };
@@ -64,7 +68,7 @@ firsttime(true)
 
   parse("BUFFER",gbuffer);
   if( gbuffer>0 ) log.printf("  after first step a subset of only %u grid points around where the countour was found will be checked\n",gbuffer);
-  checkRead();
+  checkRead(); mydata=buildDataStashes( NULL );
 }
 
 void FindContour::prepareForAveraging(){
@@ -127,7 +131,6 @@ void FindContour::compute( const unsigned& current, MultiValue& myvals ) const {
 }
 
 void FindContour::finishAveraging(){
-  ContourFindingBase::finishAveraging();
   // And update the list of active grid points
   if( gbuffer>0 ){
       std::vector<unsigned> neighbours; unsigned num_neighbours;
@@ -144,6 +147,14 @@ void FindContour::finishAveraging(){
           for(unsigned n=0;n<num_neighbours;++n) active[ neighbours[n] ]=true;  
       }
       ingrid->activateThesePoints( active );
+  }
+  std::vector<double> point( 1 + ingrid->getDimension() );
+  of.printf("%u\n",mydata->getNumberOfStoredValues());
+  of.printf("Points found on isocontour\n");
+  for(unsigned i=0;i<mydata->getNumberOfStoredValues();++i){
+      mydata->retrieveSequentialValue( i, false, point ); of.printf("X");
+      for(unsigned j=0;j<ingrid->getDimension();++j) of.printf( (" " + fmt_xyz).c_str(), lenunit*point[1+j] );
+      of.printf("\n");
   }
 }
 

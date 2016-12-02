@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ContourFindingBase.h"
-#include "vesselbase/StoreDataVessel.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 
@@ -39,8 +38,7 @@ void ContourFindingBase::registerKeywords( Keywords& keys ){
 ContourFindingBase::ContourFindingBase(const ActionOptions&ao):
 Action(ao),
 ActionWithInputGrid(ao),
-mymin(this),
-mydata(NULL)
+mymin(this)
 {
   if( ingrid->noDerivatives() ) error("cannot find contours if input grid has no derivatives");
   parse("CONTOUR",contour); 
@@ -73,24 +71,7 @@ mydata(NULL)
          else lenunit=1.0; 
 
          of.link(*this); of.open(file); 
-
-         // Now create a store data vessel to hold the points
-         mydata=buildDataStashes( NULL );
       }
-  }
-}
-
-void ContourFindingBase::finishAveraging(){
-  // And this looks after the output
-  if( mydata ){
-      std::vector<double> point( 1 + ingrid->getDimension() );
-      of.printf("%u\n",mydata->getNumberOfStoredValues());  
-      of.printf("Points found on isocontour\n");
-      for(unsigned i=0;i<mydata->getNumberOfStoredValues();++i){
-          mydata->retrieveSequentialValue( i, false, point ); of.printf("X");
-          for(unsigned j=0;j<ingrid->getDimension();++j) of.printf( (" " + fmt_xyz).c_str(), lenunit*point[1+j] );
-          of.printf("\n");
-      }   
   }
 }
 

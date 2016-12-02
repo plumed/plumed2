@@ -34,10 +34,15 @@ class GridVessel : public vesselbase::AveragingVessel {
 friend class ActionWithInputGrid;
 friend class DumpGrid;
 private:
+/// The way that grid points are constructed
+ enum {flat,fibonacci} gtype;
 /// Have the minimum and maximum for the grid been set
  bool bounds_set;
 /// The number of points in the grid
  unsigned npoints;
+/// Stuff for fibonacci grids
+ int fib_rnd;
+ double fib_offset, fib_increment;
 /// Units for Gaussian Cube file
  double cube_units;
 /// This flag is used to check if the user has created a valid input 
@@ -83,8 +88,12 @@ public:
  explicit GridVessel( const vesselbase::VesselOptions& );
 /// Remove the derivatives 
  void setNoDerivatives();
+/// Get the type of grid we are using
+ std::string getType() const ;
 /// Set the minimum and maximum of the grid
  virtual void setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax, const std::vector<unsigned>& nbins, const std::vector<double>& spacing );
+/// Setup the grid if it is a fibonacci grid on the surface of a sphere
+ void setupFibonacciGrid( const unsigned& np );
 /// Get a description of the grid to output to the log
  std::string description();
 /// Convert an index into indices
@@ -184,13 +193,20 @@ unsigned GridVessel::getNumberOfPoints() const {
 
 inline
 const std::vector<double>& GridVessel::getGridSpacing() const {
+  if( gtype==flat ) return dx;
+  plumed_merror("dont understand what spacing means for spherical grids");
   return dx;
 }
 
 inline
 double GridVessel::getCellVolume() const {
-  double myvol=1.0; for(unsigned i=0;i<dimension;++i) myvol *= dx[i];
-  return myvol;
+  if( gtype==flat ){
+      double myvol=1.0; for(unsigned i=0;i<dimension;++i) myvol *= dx[i];
+      return myvol;
+  } else {
+      plumed_merror("cell volume for surface grid not worked out yet"); 
+      return 0.0; 
+  }
 }
 
 inline
@@ -200,6 +216,7 @@ unsigned GridVessel::getDimension() const {
 
 inline
 bool GridVessel::isPeriodic( const unsigned& i ) const {
+  plumed_dbg_assert( gtype==flat );
   return pbc[i];
 }
 
@@ -216,6 +233,7 @@ unsigned GridVessel::getNumberOfComponents() const {
 
 inline
 double GridVessel::getGridExtent( const unsigned& i ) const {
+  plumed_dbg_assert( gtype==flat );
   return max[i] - min[i];
 }
 
@@ -232,12 +250,20 @@ bool GridVessel::inactive( const unsigned& ip ) const {
 
 inline
 const std::vector<unsigned>& GridVessel::getStride() const {
+  plumed_dbg_assert( gtype==flat );
   return stride;
 }
 
 inline
 unsigned GridVessel::getNumberOfBufferPoints() const {
   return npoints;
+}
+
+inline
+std::string GridVessel::getType() const {
+  if( gtype==flat ) return "flat";
+  else if( gtype==fibonacci ) return "fibonacci";
+  plumed_error();
 }
 
 }
