@@ -79,7 +79,6 @@ private:
  vector<double> Averatios_;
  double nframe_;
  vector<Value*> valueAvesigma_;
- bool do_relative_;
  
  // auxiliary stuff
  // list of atom sigmas
@@ -158,8 +157,7 @@ EM3DSigma::EM3DSigma(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
 inv_sqrt2_(0.707106781186548),
 sqrt_2pi_(2.506628274631001),
-nframe_(0.0), do_relative_(false),
-nl_cutoff_(-1.0), nl_stride_(0),
+nframe_(0.0), nl_cutoff_(-1.0), nl_stride_(0),
 first_time_(true), no_aver_(false), serial_(false)
 {
   
@@ -196,7 +194,6 @@ first_time_(true), no_aver_(false), serial_(false)
   }
  
   parseFlag("NO_AVER",no_aver_);
-  parseFlag("RELATIVE",do_relative_);
  
   checkRead();
   
@@ -225,7 +222,6 @@ first_time_(true), no_aver_(false), serial_(false)
   log.printf("  GMM data file : %s\n", GMM_file.c_str());
   if(serial_) log.printf("  serial calculation\n");
   if(no_aver_) log.printf("  without ensemble averaging\n");
-  if(do_relative_) log.printf("  calculate relative error\n");
   log.printf("  neighbor list overlap cutoff : %lf\n", nl_cutoff_);
   log.printf("  neighbor list stride : %u\n",  nl_stride_);
   log.printf("  uncertainty in the mean estimate %f\n",sigma_mean);
@@ -705,8 +701,8 @@ void EM3DSigma::calculate(){
      double err_f = erf ( ( ovmd_[i]-ovdd_[i] ) * inv_sqrt2_ / sigma_mean_[i] );
      // marginal probability
      double marg_p = 0.5 / (ovmd_[i]-ovdd_[i]) * err_f;
-     // calculate effective sigma
-     double sigma_eff2 =  sigma_mean_[i]*sigma_mean_[i] + sigma_[j]*sigma_[j];
+     // calculate (absolute) effective sigma
+     double sigma_eff2 =  sigma_mean_[i]*sigma_mean_[i] + sigma_[j]*sigma_[j]*ovdd_[i]*ovdd_[i];
      // non-marginal probability
      double non_marg_p = 1.0 / sqrt_2pi_ / sigma_eff2 * exp( - 0.5 * ( ovmd_[i]-ovdd_[i] ) * ( ovmd_[i]-ovdd_[i] ) / sigma_eff2);
      // calculate ratio of probabilities 
@@ -749,11 +745,7 @@ void EM3DSigma::calculate(){
   }
   
   // set value of components
-  if(do_relative_){
-   for(unsigned i=0; i<valueAvesigma_.size(); ++i) valueAvesigma_[i]->set(num[i]/den[i]/ovdd_[i]);
-  } else {
-   for(unsigned i=0; i<valueAvesigma_.size(); ++i) valueAvesigma_[i]->set(num[i]/den[i]);
-  }  
+  for(unsigned i=0; i<valueAvesigma_.size(); ++i) valueAvesigma_[i]->set(num[i]/den[i]);
 }
 
 }
