@@ -73,7 +73,7 @@ private:
  // metainference
  unsigned nrep_;
  unsigned replica_;
- double sigma_mean_;
+ vector<double> sigma_mean_;
   
  // auxiliary stuff
  // list of atom sigmas
@@ -159,8 +159,9 @@ first_time_(true), no_aver_(false), serial_(false)
   string GMM_file;
   parse("GMM_FILE",GMM_file);
    
-  // uncertainty stuff 
-  parse("SIGMA_MEAN",sigma_mean_);
+  // uncertainty stuff
+  double sigma_mean; 
+  parse("SIGMA_MEAN",sigma_mean);
  
   // temperature
   double temp=0.0;
@@ -204,7 +205,7 @@ first_time_(true), no_aver_(false), serial_(false)
   comm.Sum(&replica_,1);
   
   // divide sigma_mean by the square root of the number of replicas
-  sigma_mean_ /= sqrt(static_cast<double>(nrep_));
+  sigma_mean /= sqrt(static_cast<double>(nrep_));
   
   log.printf("  atoms involved : ");
   for(unsigned i=0;i<atoms.size();++i) log.printf("%d ",atoms[i].serial());
@@ -214,7 +215,7 @@ first_time_(true), no_aver_(false), serial_(false)
   if(no_aver_) log.printf("  without ensemble averaging\n");
   log.printf("  neighbor list overlap cutoff : %lf\n", nl_cutoff_);
   log.printf("  neighbor list stride : %u\n",  nl_stride_);
-  log.printf("  uncertainty in the mean estimate %f\n",sigma_mean_);
+  log.printf("  uncertainty in the mean estimate %f\n",sigma_mean);
   log.printf("  temperature of the system in energy unit %f\n",kbt_);
   log.printf("  number of replicas %u\n",nrep_);
    
@@ -238,6 +239,7 @@ first_time_(true), no_aver_(false), serial_(false)
   for(unsigned i=0;i<GMM_d_w_.size();++i) {
       double ov = get_self_overlap(i);
       ovdd_.push_back(ov);
+      sigma_mean_.push_back(sigma_mean*ov);
   }
  
   // calculate auxiliary stuff
@@ -677,7 +679,7 @@ void EM3D::calculate(){
   double ene = 0.0; 
   for(unsigned i=0;i<ovmd_.size();++i){
      // calculate and store err function
-     err_f[i] = erf ( ( ovmd_[i]-ovdd_[i] ) * inv_sqrt2_ / sigma_mean_ ); 
+     err_f[i] = erf ( ( ovmd_[i]-ovdd_[i] ) * inv_sqrt2_ / sigma_mean_[i] ); 
      // increment energy
      ene += -kbt_ * std::log ( 0.5 / (ovmd_[i]-ovdd_[i]) * err_f[i] ) ;
   }
@@ -694,7 +696,7 @@ void EM3D::calculate(){
      unsigned id = nl_[i] / GMM_m_w_.size();
      unsigned im = nl_[i] % GMM_m_w_.size();
      // first part of derivative
-     double der = - kbt_/err_f[id]*sqrt2_pi_*exp(-0.5*(ovmd_[id]-ovdd_[id])*(ovmd_[id]-ovdd_[id])/sigma_mean_/sigma_mean_)/sigma_mean_;
+     double der = - kbt_/err_f[id]*sqrt2_pi_*exp(-0.5*(ovmd_[id]-ovdd_[id])*(ovmd_[id]-ovdd_[id])/sigma_mean_[id]/sigma_mean_[id])/sigma_mean_[id];
      // second part
      der += kbt_ / (ovmd_[id]-ovdd_[id]);
      // chain rule
