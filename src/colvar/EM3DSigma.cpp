@@ -71,10 +71,9 @@ private:
  // metainference
  unsigned nrep_;
  unsigned replica_;
- double sigma_mean_;
+ vector<double> sigma_mean_;
  // non-marginal version
  vector<double> sigma_;
- vector<double> sigma_eff2_;
  // calculate average sigma
  vector<double> ratios_;
  vector<double> Averatios_;
@@ -170,8 +169,9 @@ first_time_(true), no_aver_(false), serial_(false)
   string GMM_file;
   parse("GMM_FILE",GMM_file);
    
-  // uncertainty stuff 
-  parse("SIGMA_MEAN",sigma_mean_);
+  // uncertainty stuff
+  double sigma_mean; 
+  parse("SIGMA_MEAN",sigma_mean);
   parseVector("SIGMA",sigma_);
   
   // temperature
@@ -217,11 +217,7 @@ first_time_(true), no_aver_(false), serial_(false)
   comm.Sum(&replica_,1);
   
   // divide sigma_mean by the square root of the number of replicas
-  sigma_mean_ /= sqrt(static_cast<double>(nrep_));
- 
-  // prepare sigma eff squared
-  for(unsigned i=0; i<sigma_.size(); ++i)
-      sigma_eff2_.push_back(sigma_[i]*sigma_[i] + sigma_mean_*sigma_mean_);
+  sigma_mean /= sqrt(static_cast<double>(nrep_));
  
   log.printf("  atoms involved : ");
   for(unsigned i=0;i<atoms.size();++i) log.printf("%d ",atoms[i].serial());
@@ -232,7 +228,7 @@ first_time_(true), no_aver_(false), serial_(false)
   if(do_relative_) log.printf("  calculate relative error\n");
   log.printf("  neighbor list overlap cutoff : %lf\n", nl_cutoff_);
   log.printf("  neighbor list stride : %u\n",  nl_stride_);
-  log.printf("  uncertainty in the mean estimate %f\n",sigma_mean_);
+  log.printf("  uncertainty in the mean estimate %f\n",sigma_mean);
   log.printf("  temperature of the system in energy unit %f\n",kbt_);
   log.printf("  number of replicas %u\n",nrep_);
    
@@ -256,6 +252,7 @@ first_time_(true), no_aver_(false), serial_(false)
   for(unsigned i=0;i<GMM_d_w_.size();++i) {
       double ov = get_self_overlap(i);
       ovdd_.push_back(ov);
+      sigma_mean_.push_back(sigma_mean*ov);
   }
  
   // calculate auxiliary stuff
@@ -705,11 +702,13 @@ void EM3DSigma::calculate(){
      unsigned i = k / sigma_.size();
      unsigned j = k % sigma_.size();
      // calculate  err function
-     double err_f = erf ( ( ovmd_[i]-ovdd_[i] ) * inv_sqrt2_ / sigma_mean_ ); 
+     double err_f = erf ( ( ovmd_[i]-ovdd_[i] ) * inv_sqrt2_ / sigma_mean_[i] );
      // marginal probability
      double marg_p = 0.5 / (ovmd_[i]-ovdd_[i]) * err_f;
+     // calculate effective sigma
+     double sigma_eff2 =  sigma_mean_[i]*sigma_mean_[i] + sigma_[j]*sigma_[j];
      // non-marginal probability
-     double non_marg_p = 1.0 / sqrt_2pi_ / sigma_eff2_[j] * exp( - 0.5 * ( ovmd_[i]-ovdd_[i] ) * ( ovmd_[i]-ovdd_[i] ) / sigma_eff2_[j] );
+     double non_marg_p = 1.0 / sqrt_2pi_ / sigma_eff2 * exp( - 0.5 * ( ovmd_[i]-ovdd_[i] ) * ( ovmd_[i]-ovdd_[i] ) / sigma_eff2);
      // calculate ratio of probabilities 
      ratios_[k] = pow(non_marg_p / marg_p, nrep_); 
   }
