@@ -56,6 +56,7 @@ Action(ao),
 GridPrintingBase(ao)
 {
   fmt = fmt + " ";
+  if( ingrid->getType()!="flat" ) error("cannot dump grid of type " + ingrid->getType() + " using DUMPCUBE");
   if( ingrid->getDimension()!=3 ) error("cannot print cube file if grid does not contain three dimensional data");
 
   if( ingrid->getNumberOfComponents()==1 ){

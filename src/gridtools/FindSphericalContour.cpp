@@ -45,7 +45,6 @@ public:
   explicit FindSphericalContour(const ActionOptions&ao);
   unsigned getNumberOfQuantities() const { return 2; }
   void compute( const unsigned& current, MultiValue& myvals ) const ;
-  void finishAveraging();
 };
 
 PLUMED_REGISTER_ACTION(FindSphericalContour,"FIND_SPHERICAL_CONTOUR")
@@ -105,18 +104,6 @@ void FindSphericalContour::compute( const unsigned& current, MultiValue& myvals 
      for(unsigned j=0;j<3;++j) contour_point[j] = tmp[j]; 
   } 
   if( !found ) error("range does not bracket the dividing surface");
-}
-
-void FindSphericalContour::finishAveraging(){
-   std::vector<double> point( 3 );
-   of.printf("%u\n",mygrid->getNumberOfPoints());  
-   of.printf("Points found on isocontour\n");
-   for(unsigned i=0;i<mygrid->getNumberOfPoints();++i){
-       mygrid->getGridPointCoordinates( i, point );
-       of.printf("X"); double val=mygrid->getGridElement( i, 0 );
-       for(unsigned j=0;j<3;++j) of.printf( (" " + fmt_xyz).c_str(), val*lenunit*point[j] );
-       of.printf("\n");
-   } 
 }
 
 }

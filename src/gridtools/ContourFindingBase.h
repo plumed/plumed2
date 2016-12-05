@@ -33,10 +33,6 @@ private:
 /// This is the object that does the root finding
   RootFindingBase<ContourFindingBase> mymin;
 protected:
-/// Stuff for output 
-  OFile of;
-  double lenunit;
-  std::string fmt_xyz;
 /// Where you would like to find the contour
   double contour;
 /// Find a contour along line specified by direction
