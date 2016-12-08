@@ -186,6 +186,7 @@ PLUMED_REGISTER_ACTION(Histogram,"HISTOGRAM")
 void Histogram::registerKeywords( Keywords& keys ){
   gridtools::ActionWithGrid::registerKeywords( keys ); keys.use("ARG");
   keys.add("optional","DATA","input data from action with vessel and compute histogram");
+  keys.add("compulsory","GRID_TYPE","flat","the type of grid on which to compute the histogram");
   keys.add("compulsory","GRID_MIN","the lower bounds for the grid");
   keys.add("compulsory","GRID_MAX","the upper bounds for the grid");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
@@ -234,40 +235,51 @@ kernel(NULL)
   // Read stuff for grid
   unsigned narg = getNumberOfArguments();
   if( myvessels.size()>0 ) narg=myvessels.size();
-  std::vector<std::string> gmin( narg ), gmax( narg );
-  parseVector("GRID_MIN",gmin); parseVector("GRID_MAX",gmax);
-  std::vector<unsigned> nbin; parseVector("GRID_BIN",nbin);
-  std::vector<double> gspacing; parseVector("GRID_SPACING",gspacing);
-  if( nbin.size()!=narg && gspacing.size()!=narg ){
-      error("GRID_BIN or GRID_SPACING must be set");
-  }  
 
   // Input of name and labels
-  std::string vstring="COMPONENTS=" + getLabel();
+  std::string gtype; parse("GRID_TYPE",gtype);
+  std::string vstring="TYPE=" + gtype + " COMPONENTS=" + getLabel();
   if( myvessels.size()>0 ){
      vstring += " COORDINATES=" + myvessels[0]->getLabel();
      for(unsigned i=1;i<myvessels.size();++i) vstring +="," + myvessels[i]->getLabel();
      // Input for PBC
-     if( myvessels[0]->isPeriodic() ) vstring+=" PBC=T";
-     else vstring+=" PBC=F";
-     for(unsigned i=1;i<myvessels.size();++i){
-         if( myvessels[i]->isPeriodic() ) vstring+=",T";
-         else vstring+=",F";
+     if( gtype=="flat" ){
+         if( myvessels[0]->isPeriodic() ) vstring+=" PBC=T";
+         else vstring+=" PBC=F";
+         for(unsigned i=1;i<myvessels.size();++i){
+             if( myvessels[i]->isPeriodic() ) vstring+=",T";
+             else vstring+=",F";
+         }
      }
   } else {
      vstring += " COORDINATES=" + getPntrToArgument(0)->getName();
      for(unsigned i=1;i<getNumberOfArguments();++i) vstring += "," + getPntrToArgument(i)->getName();
      // Input for PBC
-     if( getPntrToArgument(0)->isPeriodic() ) vstring+=" PBC=T";
-     else vstring+=" PBC=F";
-     for(unsigned i=1;i<getNumberOfArguments();++i){
-        if( getPntrToArgument(i)->isPeriodic() ) vstring+=",T";
-        else vstring+=",F";
+     if( gtype=="flat" ){
+         if( getPntrToArgument(0)->isPeriodic() ) vstring+=" PBC=T";
+         else vstring+=" PBC=F";
+         for(unsigned i=1;i<getNumberOfArguments();++i){
+            if( getPntrToArgument(i)->isPeriodic() ) vstring+=",T";
+            else vstring+=",F";
+         }
      }
   }
   // And create the grid
   createGrid( "histogram", vstring ); 
-  if( mygrid->getType()=="flat" ) mygrid->setBounds( gmin, gmax, nbin, gspacing ); 
+  if( mygrid->getType()=="flat" ){
+      std::vector<std::string> gmin( narg ), gmax( narg );
+      parseVector("GRID_MIN",gmin); parseVector("GRID_MAX",gmax);
+      std::vector<unsigned> nbin; parseVector("GRID_BIN",nbin);
+      std::vector<double> gspacing; parseVector("GRID_SPACING",gspacing);
+      if( nbin.size()!=narg && gspacing.size()!=narg ){
+          error("GRID_BIN or GRID_SPACING must be set");
+      }
+      mygrid->setBounds( gmin, gmax, nbin, gspacing ); 
+  } else {
+      std::vector<unsigned> nbin; parseVector("GRID_BIN",nbin);
+      if( nbin.size()!=1 ) error("should only be one index for number of bins with spherical grid");
+      if( mygrid->getType()=="fibonacci" ) mygrid->setupFibonacciGrid( nbin[0] );
+  }
   myhist = dynamic_cast<gridtools::HistogramOnGrid*>( mygrid ); 
   plumed_assert( myhist ); 
   if( myvessels.size()>0 ){
