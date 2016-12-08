@@ -267,7 +267,7 @@ kernel(NULL)
   }
   // And create the grid
   createGrid( "histogram", vstring ); 
-  mygrid->setBounds( gmin, gmax, nbin, gspacing ); 
+  if( mygrid->getType()=="flat" ) mygrid->setBounds( gmin, gmax, nbin, gspacing ); 
   myhist = dynamic_cast<gridtools::HistogramOnGrid*>( mygrid ); 
   plumed_assert( myhist ); 
   if( myvessels.size()>0 ){
@@ -404,9 +404,18 @@ void Histogram::compute( const unsigned& current, MultiValue& myvals ) const {
       std::vector<double> val( getNumberOfArguments() ), der( getNumberOfArguments() ); 
       // Retrieve the location of the grid point at which we are evaluating the kernel
       mygrid->getGridPointCoordinates( current, val );
-      for(unsigned i=0;i<getNumberOfArguments();++i) vv[i]->set( val[i] );
-      // Evaluate the histogram at the relevant grid point and set the values 
-      double vvh = kernel->evaluate( vv, der ,true); myvals.setValue( 1, vvh );
+      if( kernel ){
+          for(unsigned i=0;i<getNumberOfArguments();++i) vv[i]->set( val[i] );
+          // Evaluate the histogram at the relevant grid point and set the values 
+          double vvh = kernel->evaluate( vv, der ,true); myvals.setValue( 1, vvh );
+      } else {
+          // Evalulate dot product
+          double dot=0; for(unsigned j=0;j<getNumberOfArguments();++j){ dot+=val[j]*getArgument(j); der[j]=val[j]; }
+          // Von misses distribution for concentration parameter
+          double newval = (myhist->von_misses_norm)*exp( (myhist->von_misses_concentration)*dot ); myvals.setValue( 1, newval );
+          // And final derivatives
+          for(unsigned j=0;j<getNumberOfArguments();++j) der[j] *= (myhist->von_misses_concentration)*newval;
+      }
       // Set the derivatives and delete the vector of values
       for(unsigned i=0;i<getNumberOfArguments();++i){ myvals.setDerivative( 1, i, der[i] ); delete vv[i]; }
   }
