@@ -68,7 +68,7 @@ ContourFindingBase(ao)
   log.printf("  expecting to find dividing surface at radii between %f and %f \n",min,max);
   log.printf("  looking for contour in windows of length %f \n", (max-min)/nbins);
   // Set this here so the same set of grid points are used on every turn
-  std::string vstring = "TYPE=fibonacci COMPONENTS=" + getLabel() + " COORDINATES=x,y,z";
+  std::string vstring = "TYPE=fibonacci COMPONENTS=" + getLabel() + " COORDINATES=x,y,z PBC=F,F,F";
   createGrid( "grid", vstring ); mygrid->setNoDerivatives();
   setAveragingAction( mygrid, true ); mygrid->setupFibonacciGrid( npoints );
 
