@@ -51,15 +51,8 @@ wasforced(false)
   std::vector<std::string> coordnames; parseVector("COORDINATES",coordnames);
   if( gtype==flat ){
       dimension=coordnames.size();
-      std::vector<std::string> spbc( dimension ); parseVector("PBC",spbc);
       str_min.resize( dimension);  str_max.resize( dimension ); stride.resize( dimension ); 
       max.resize( dimension ); dx.resize( dimension ); nbin.resize( dimension ); min.resize( dimension ); 
-       pbc.resize( dimension );
-       for(unsigned i=0;i<dimension;++i){
-           if( spbc[i]=="F" ) pbc[i]=false;
-           else if( spbc[i]=="T" ) pbc[i]=true;
-           else plumed_error();
-       }
   } else if( gtype==fibonacci ){
       if( coordnames.size()!=3 ) error("cannot generate fibonacci grid points on surface of sphere if not 3 input coordinates");
       dimension=3; 
@@ -71,6 +64,13 @@ wasforced(false)
   for(unsigned i=0;i<compnames.size();++i){
       arg_names[n]=compnames[i]; n++;
       for(unsigned j=0;j<coordnames.size();++j){ arg_names[n] = "d" + compnames[i] + "_" + coordnames[j]; n++; }
+  }
+  pbc.resize( dimension );
+  std::vector<std::string> spbc( dimension ); parseVector("PBC",spbc);
+  for(unsigned i=0;i<dimension;++i){
+      if( spbc[i]=="F" ) pbc[i]=false;
+      else if( spbc[i]=="T" ) pbc[i]=true;
+      else plumed_error();
   }
 }
 

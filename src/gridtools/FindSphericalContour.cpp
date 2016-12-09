@@ -37,7 +37,6 @@ namespace gridtools {
 
 class FindSphericalContour : public ContourFindingBase {
 private:
-  int rnd;
   unsigned nbins;
   double min, max;
 public:

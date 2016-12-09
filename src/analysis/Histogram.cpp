@@ -186,7 +186,6 @@ PLUMED_REGISTER_ACTION(Histogram,"HISTOGRAM")
 void Histogram::registerKeywords( Keywords& keys ){
   gridtools::ActionWithGrid::registerKeywords( keys ); keys.use("ARG");
   keys.add("optional","DATA","input data from action with vessel and compute histogram");
-  keys.add("compulsory","GRID_TYPE","flat","the type of grid on which to compute the histogram");
   keys.add("compulsory","GRID_MIN","the lower bounds for the grid");
   keys.add("compulsory","GRID_MAX","the upper bounds for the grid");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
@@ -237,31 +236,26 @@ kernel(NULL)
   if( myvessels.size()>0 ) narg=myvessels.size();
 
   // Input of name and labels
-  std::string gtype; parse("GRID_TYPE",gtype);
-  std::string vstring="TYPE=" + gtype + " COMPONENTS=" + getLabel();
+  std::string vstring="COMPONENTS=" + getLabel();
   if( myvessels.size()>0 ){
      vstring += " COORDINATES=" + myvessels[0]->getLabel();
      for(unsigned i=1;i<myvessels.size();++i) vstring +="," + myvessels[i]->getLabel();
      // Input for PBC
-     if( gtype=="flat" ){
-         if( myvessels[0]->isPeriodic() ) vstring+=" PBC=T";
-         else vstring+=" PBC=F";
-         for(unsigned i=1;i<myvessels.size();++i){
-             if( myvessels[i]->isPeriodic() ) vstring+=",T";
-             else vstring+=",F";
-         }
+     if( myvessels[0]->isPeriodic() ) vstring+=" PBC=T";
+     else vstring+=" PBC=F";
+     for(unsigned i=1;i<myvessels.size();++i){
+         if( myvessels[i]->isPeriodic() ) vstring+=",T";
+         else vstring+=",F";
      }
   } else {
      vstring += " COORDINATES=" + getPntrToArgument(0)->getName();
      for(unsigned i=1;i<getNumberOfArguments();++i) vstring += "," + getPntrToArgument(i)->getName();
      // Input for PBC
-     if( gtype=="flat" ){
-         if( getPntrToArgument(0)->isPeriodic() ) vstring+=" PBC=T";
-         else vstring+=" PBC=F";
-         for(unsigned i=1;i<getNumberOfArguments();++i){
-            if( getPntrToArgument(i)->isPeriodic() ) vstring+=",T";
-            else vstring+=",F";
-         }
+     if( getPntrToArgument(0)->isPeriodic() ) vstring+=" PBC=T";
+     else vstring+=" PBC=F";
+     for(unsigned i=1;i<getNumberOfArguments();++i){
+        if( getPntrToArgument(i)->isPeriodic() ) vstring+=",T";
+        else vstring+=",F";
      }
   }
   // And create the grid
