@@ -706,7 +706,7 @@ void EM3DSigma::calculate(){
      // non-marginal probability
      double non_marg_p = 1.0 / sqrt_2pi_ / sigma_eff2 * exp( - 0.5 * ( ovmd_[i]-ovdd_[i] ) * ( ovmd_[i]-ovdd_[i] ) / sigma_eff2);
      // calculate ratio of probabilities 
-     ratios_[k] = pow(non_marg_p / marg_p, nrep_); 
+     ratios_[k] = non_marg_p / marg_p; 
   }
   
   // now sum if parallel
@@ -731,7 +731,7 @@ void EM3DSigma::calculate(){
      if(j==sigma_.size()-1) continue;
      
      // calculate p
-     double p = pow(Averatios_[k] / nframe_, escale);
+     double p = Averatios_[k] / nframe_;
      
      // increment num and den
      num[i] += sigma_[j] * p * ( sigma_[j+1] - sigma_[j] );
