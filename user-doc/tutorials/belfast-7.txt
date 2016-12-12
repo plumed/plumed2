@@ -119,7 +119,7 @@ PRINT STRIDE=10 ARG=phi,psi FILE=COLVAR
 To submit this simulation with Gromacs, we need the following command line.
 
 \verbatim
-mpirun -np 2 mdrun_mpi -s TOPO/topol -plumed -multi 2 -replex 100
+mpirun -np 2 gmx_mpi mdrun -s TOPO/topol -plumed -multi 2 -replex 100
 \endverbatim
 
 This command will execute two MPI processess in parallel, using the topology files
@@ -177,7 +177,7 @@ so there seems not to be any problem on this side.
 We can use the second file to reconstruct the continuous trajectories of each replica in temperature:
 
 \verbatim
-trjcat_mpi -f traj0.trr traj1.trr -demux replica_index.xvg
+gmx_mpi trjcat -f traj0.trr traj1.trr -demux replica_index.xvg
 \endverbatim
 
 and the following PLUMED input file (plumed_demux.dat) to recalculate the value of the CVs on the demuxed trajectories,
@@ -198,11 +198,11 @@ For the analysis of the demuxed trajectories, we can use the -rerun option of Gr
 
 \verbatim
 # rerun Gromacs on replica 0 trajectory
-mdrun_mpi -s TOPO/topol0.tpr -plumed plumed_demux.dat -rerun 0_trajout.xtc
+gmx_mpi mdrun -s TOPO/topol0.tpr -plumed plumed_demux.dat -rerun 0_trajout.xtc
 # rename the output
 mv COLVAR_DEMUX COLVAR_DEMUX.0
 # rerun Gromacs on replica 1 trajectory
-mdrun_mpi -s TOPO/topol1.tpr -plumed plumed_demux.dat -rerun 1_trajout.xtc
+gmx_mpi mdrun -s TOPO/topol1.tpr -plumed plumed_demux.dat -rerun 1_trajout.xtc
 # rename the output
 mv COLVAR_DEMUX COLVAR_DEMUX.1
 \endverbatim
@@ -236,7 +236,7 @@ of the simulation. We will now use 4 replicas at the following temperatures: 300
 We can use the same PLUMED input file described above (plumed.dat), and execute Gromacs using the following command line:
 
 \verbatim
- mpirun -np 4 mdrun_mpi -s TOPO/topol -plumed -multi 4 -replex 100
+ mpirun -np 4 gmx_mpi mdrun -s TOPO/topol -plumed -multi 4 -replex 100
 \endverbatim
 
 At the end of the simulation, we first monitor the diffusion in temperature space of each replica.
@@ -320,7 +320,7 @@ PRINT STRIDE=10 ARG=phi,psi,metad.bias FILE=COLVAR
 The PTMetaD simulation is executed in the same way as the PT:
 
 \verbatim
- mpirun -np 4 mdrun_mpi -s TOPO/topol -plumed -multi 4 -replex 100
+ mpirun -np 4 gmx_mpi mdrun -s TOPO/topol -plumed -multi 4 -replex 100
 \endverbatim
 
 and it will produce one COLVAR and HILLS file per temperature (COLVAR.0, HILLS.0, ...).
@@ -376,7 +376,7 @@ PRINT STRIDE=10 ARG=phi,psi,ene FILE=COLVAR_PT
 As usual, the simulation is run for 400ps using the following command:
 
 \verbatim
- mpirun -np 4 mdrun_mpi -s TOPO/topol -plumed plumed_PT.dat -multi 4 -replex 100
+ mpirun -np 4 gmx_mpi mdrun -s TOPO/topol -plumed plumed_PT.dat -multi 4 -replex 100
 \endverbatim
 
 At the end of the run, we want to analyze the acceptance rate between exchanges.
@@ -433,7 +433,7 @@ potential energy at 300K, as calculated from the preliminary PT run.
 We run the simulation following the usual procedure:
 
 \verbatim
- mpirun -np 4 mdrun_mpi -s TOPO/topol -plumed plumed_PTWTE.dat -multi 4 -replex 100
+ mpirun -np 4 gmx_mpi mdrun -s TOPO/topol -plumed plumed_PTWTE.dat -multi 4 -replex 100
 \endverbatim
 
 If we analyze the average acceptance probability in this run:
@@ -512,7 +512,7 @@ parameters and biasfactors in the two metadynamics runs.
 The simulation is carried out using the usual procedure:
 
 \verbatim
- mpirun -np 4 mdrun_mpi -s TOPO/topol -plumed plumed_PTMetaDWTE.dat -multi 4 -replex 100
+ mpirun -np 4 gmx_mpi mdrun -s TOPO/topol -plumed plumed_PTMetaDWTE.dat -multi 4 -replex 100
 \endverbatim
 
 

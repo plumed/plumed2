@@ -171,6 +171,10 @@ public:
   friend TensorGeneric<n_,m_> extProduct(const VectorGeneric<n>&,const VectorGeneric<m>&);
   friend TensorGeneric<3,3> dcrossDv1(const VectorGeneric<3>&,const VectorGeneric<3>&);
   friend TensorGeneric<3,3> dcrossDv2(const VectorGeneric<3>&,const VectorGeneric<3>&);
+  friend TensorGeneric<3,3> VcrossTensor(const VectorGeneric<3>&,const TensorGeneric<3,3>&);
+  friend TensorGeneric<3,3> VcrossTensor(const TensorGeneric<3,3>&,const VectorGeneric<3>&);
+/// Derivative of a normalized vector
+  friend TensorGeneric<3,3> deriNorm(const VectorGeneric<3>&,const TensorGeneric<3,3>&);
 /// << operator.
 /// Allows printing tensor `t` with `std::cout<<t;`
   template<unsigned n_,unsigned m_>
@@ -178,8 +182,6 @@ public:
 };
 
 template<unsigned n,unsigned m>
-// notice that d[] is initialized in LoopUnroller<n*m>::_zero(d);
-// cppcheck-suppress uninitMemberVar
 TensorGeneric<n,m>::TensorGeneric(){
   LoopUnroller<n*m>::_zero(d);
 }
@@ -468,6 +470,33 @@ typedef TensorGeneric<4,4> Tensor4d;
 /// \ingroup TOOLBOX
 typedef Tensor3d Tensor;
 
+inline
+TensorGeneric<3,3> VcrossTensor(const VectorGeneric<3>&v1,const TensorGeneric<3,3>&v2){
+
+     TensorGeneric<3,3> t;
+     for(unsigned i=0;i<3;i++){
+          t.setRow(i,matmul(dcrossDv2(v1,v1),v2.getRow(i)));
+     }
+     return t;
+}
+
+inline
+TensorGeneric<3,3> VcrossTensor(const TensorGeneric<3,3>&v2,const VectorGeneric<3>&v1){
+     TensorGeneric<3,3> t;
+     for(unsigned i=0;i<3;i++){
+          t.setRow(i,-matmul(dcrossDv2(v1,v1),v2.getRow(i)));
+     }
+     return t;
+}
+
+
+inline
+TensorGeneric<3,3> deriNorm(const VectorGeneric<3>&v1,const TensorGeneric<3,3>&v2){
+  // delta(v) = delta(v1/v1.norm) = 1/v1.norm*(delta(v1) - (v.delta(v1))cross v;
+  double over_norm = 1./v1.modulo();
+  return over_norm*(v2 - over_norm*over_norm*(extProduct(matmul(v2,v1),v1)));
+}
+  
 
 
 

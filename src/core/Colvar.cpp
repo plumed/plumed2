@@ -57,12 +57,9 @@ void Colvar::apply(){
   const unsigned    ncp=getNumberOfComponents();
   const unsigned    fsz=f.size();
 
-  for(unsigned i=0;i<fsz;i++) f[i].zero();
-  v.zero();
-
   unsigned stride=1;
   unsigned rank=0;
-  if(ncp>comm.Get_size()) {
+  if(ncp>4*comm.Get_size()) {
     stride=comm.Get_size();
     rank=comm.Get_rank();
   }
@@ -102,7 +99,7 @@ void Colvar::apply(){
       }
     }
 
-    if(ncp>comm.Get_size()) {
+    if(ncp>4*comm.Get_size()) {
       if(fsz>0) comm.Sum(&f[0][0],3*fsz);
       comm.Sum(&v[0][0],9);
     }

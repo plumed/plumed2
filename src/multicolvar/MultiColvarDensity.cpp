@@ -104,6 +104,7 @@ public:
   void clearAverage();
   void prepareForAveraging();
   void compute( const unsigned& , MultiValue& ) const ;
+  void apply(){}
 };
 
 PLUMED_REGISTER_ACTION(MultiColvarDensity,"MULTICOLVARDENS")

@@ -46,6 +46,8 @@ public:
   static void registerKeywords(Keywords& keys);
 /// Check if the action is active on this step
   virtual bool onStep()const;
+/// Set the value of the stride
+  void setStride( const int& n );
 /// Get the stride
   int getStride()const;
 };

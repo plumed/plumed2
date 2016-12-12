@@ -1,0 +1,110 @@
+#! /bin/bash
+
+set -e
+
+# I use a "tee" here so that errors qre written both immediately (to see progress)
+# and on a file (for later report)
+
+do_plumedcheck=true
+do_cppcheck=true
+do_local=false
+
+for opt
+do
+  case $opt in
+  (--cppcheck) do_plumedcheck=false ;;
+  (--plumedcheck) do_cppcheck=false ;;
+  (--local) do_local=true ;;
+  esac
+done
+
+{
+
+if [ $do_plumedcheck == true ] ; then
+  if [ $do_local == true ] ; then
+    ../maketools/plumedcheck *.{h,cpp} ../../configure.ac
+  else
+    maketools/plumedcheck --global-check */*.{h,cpp} ../configure.ac
+  fi
+fi
+
+if [ $do_cppcheck == true ] ; then
+  if [ $do_local == true ] ; then
+    files="$(echo *.{h,cpp})"
+  else
+    files="$(echo */*.{h,cpp})"
+  fi
+  cppcheck --std=c++03 --std=posix 4 -j 4 --platform=unix64 \
+  --template='[{file}:{line}] ({severity}) :{id}: {message}' --enable=all --inline-suppr --force \
+  $files
+fi
+
+} 2> >(tee codecheck.log >&2)
+
+## this part could be useful to clean the code
+# echo "+++++++ THIS IS A COMPLETE LIST OF ERRORS +++++++"
+# cat codecheck.log
+# echo "+++++++++++++++++++++++++++++++++++++"
+# echo "summary from codecheck report:
+# for t in error warning performance portability style
+# do
+#   echo "$t: $(cat codecheck.log | grep "($t)" | wc -l)"
+# done
+# echo "+++++++++++++++++++++++++++++++++++++"
+
+TMPDIR="$(mktemp -d)"
+FATAL_FILE="$TMPDIR/codecheck.fatal"
+CLEAN_FILE="$TMPDIR/codecheck.clean"
+
+echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+echo "  In the following analysis we exclude:"
+echo "    src/molfile src/lapack src/blas"
+echo "  since they are full of false positives"
+cat codecheck.log |
+ gawk '{
+  if(match($0,":plmd_")){
+# with plumed we only exclude specific warnings from lapack and blas
+    if(match($0,"[[]lapack/")) next;
+    if(match($0,"[[]blas/")) next;
+    if(match($0,"[[]molfile/")) next;
+  } else {
+# with cppcheck we exclude molfile lapack and blas
+    if(match($0,"[[]molfile/")) next;
+    if(match($0,"[[]lapack/")) next;
+    if(match($0,"[[]blas/")) next;
+  }
+  print
+}' > "${CLEAN_FILE}"
+
+## Here I make a summary of the (style) and (information) messages
+echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+echo "  Summary of reported (style) and (information) messages"
+## (the "true" command is necessary so that the script does not fail if some string is not found)
+awk '{if($2=="(style)")print $3}' "${CLEAN_FILE}" | sort  | uniq  -c || true
+awk '{if($2=="(information)")print $3}' "${CLEAN_FILE}" | sort  | uniq  -c || true
+echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+## Here I also exclude (style) and (information) messages
+## perhaps we could keep some of them to make to code cleaner at some point
+## (the "true" command is necessary so that the script does not fail if some string is not found)
+grep -v "(style)" "${CLEAN_FILE}" | grep -v "(information)" > "${FATAL_FILE}" || true
+count=$(cat "${FATAL_FILE}" | wc -l)
+echo 
+echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+if ((count==0))
+then
+  echo "      codecheck did not find any fatal error"
+  echo "      excluding (style) and (information)"
+echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+  exit 0
+fi
+
+echo "      codecheck reported the following fatal errors:"
+echo "      excluding (style) and (information)"
+echo
+cat "${FATAL_FILE}"
+echo
+echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+echo
+
+exit 1
+

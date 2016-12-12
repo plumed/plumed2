@@ -322,7 +322,7 @@ ENDPLUMED
                 setAtomsDerivatives(val, r + 3, derj * -dd1);
                 setAtomsDerivatives(val, r + 4, derj * dd2);
                 setAtomsDerivatives(val, r + 5, derj * -dd2);
-                setBoxDerivativesNoPbc();
+                setBoxDerivativesNoPbc(val);
             }
         }
     }

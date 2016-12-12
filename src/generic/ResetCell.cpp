@@ -93,7 +93,7 @@ class ResetCell:
   Tensor rotation,newbox;
         
 public:
-  ResetCell(const ActionOptions&ao);
+  explicit ResetCell(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
   void calculate();
   void apply();

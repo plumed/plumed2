@@ -26,13 +26,15 @@
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include "tools/Exception.h"
+#include "core/FlexibleBin.h"
+#include "tools/Matrix.h"
 #include "tools/Random.h"
 #include <string>
 #include <cstring>
 #include "tools/File.h"
-#include "time.h"
 #include <iostream>
 #include <limits>
+#include <ctime>
 
 #define DP2CUTOFF 6.25
 
@@ -119,6 +121,13 @@ Also notice that with well-tempered metadynamics the HILLS files do not contain 
 but the negative of the free-energy estimate. This choice has the advantage that
 one can restart a simulation using a different value for the \f$\Delta T\f$. The applied bias will be scaled accordingly.
 
+Note that you can use here also the flexible gaussian approach  \cite Branduardi:2012dl
+in which you can adapt the gaussian to the extent of Cartesian space covered by a variable or
+to the space in collective variable covered in a given time. In this case the width of the deposited
+gaussian potential is denoted by one value only that is a Cartesian space (ADAPTIVE=GEOM) or a time
+(ADAPTIVE=DIFF). Note that a specific integration technique for the deposited gaussians
+should be used in this case. Check the documentation for utility sum_hills.
+
 With the keyword INTERVAL one changes the metadynamics algorithm setting the bias force equal to zero 
 outside boundary \cite baftizadeh2012protein. If, for example, metadynamics is performed on a CV s and one is interested only 
 to the free energy for s > sw, the history dependent potential is still updated according to the above
@@ -134,7 +143,7 @@ boundaries. Note that:
 - If in the region outside the limit sw the system has a free energy minimum, the INTERVAL keyword should 
   be used together with a \ref UPPER_WALLS or \ref LOWER_WALLS at sw.
   
-Multiple walkers  \cite multiplewalkers can also be used, in the MPI implementation only. See below the examples.
+Multiple walkers  \cite multiplewalkers can also be used. See below the examples.
 
 \par Examples
 The following input is for PBMetaD calculation using as
@@ -164,7 +173,7 @@ PRINT ARG=d1,d2,pb.bias STRIDE=100 FILE=COLVAR
 \endverbatim
 
 \par 
-Only the MPI version of multiple-walkers is currently implemented.
+The following input enables the MPI version of multiple-walkers.
 \verbatim
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
@@ -172,10 +181,35 @@ PBMETAD ...
 ARG=d1,d2 SIGMA=0.2,0.2 HEIGHT=0.3 
 PACE=500 BIASFACTOR=8 LABEL=pb 
 FILE=HILLS_d1,HILLS_d2
-MULTIPLE_WALKERS
+WALKERS_MPI
 ... PBMETAD
 PRINT ARG=d1,d2,pb.bias STRIDE=100 FILE=COLVAR
 \endverbatim
+
+\par
+The disk version of multiple-walkers can be 
+enabled by setting the number of walker used, the id of the  
+current walker which interprets the input file, the directory where the   
+hills containing files resides, and the frequency to read the other walkers.
+Here is an example
+\verbatim
+DISTANCE ATOMS=3,5 LABEL=d1
+DISTANCE ATOMS=2,4 LABEL=d2
+PBMETAD ...
+ARG=d1,d2 SIGMA=0.2,0.2 HEIGHT=0.3 
+PACE=500 BIASFACTOR=8 LABEL=pb 
+FILE=HILLS_d1,HILLS_d2
+WALKERS_N=10
+WALKERS_ID=3
+WALKERS_DIR=../
+WALKERS_RSTRIDE=100
+... PBMETAD
+PRINT ARG=d1,d2,pb.bias STRIDE=100 FILE=COLVAR
+\endverbatim
+where  WALKERS_N is the total number of walkers, WALKERS_ID is the   
+id of the present walker (starting from 0 ) and the WALKERS_DIR is the directory  
+where all the walkers are located. WALKERS_RSTRIDE is the number of step between 
+one update and the other. 
 
 */
 //+ENDPLUMEDOC
@@ -187,10 +221,17 @@ private:
    vector<double> center;
    vector<double> sigma;
    double height;
-   Gaussian(const vector<double> & center,const vector<double> & sigma, double height):
-     center(center),sigma(sigma),height(height){}
+   bool   multivariate; // this is required to discriminate the one dimensional case 
+   vector<double> invsigma;
+   Gaussian(const vector<double> & center,const vector<double> & sigma, double height, bool multivariate):
+     center(center),sigma(sigma),height(height),multivariate(multivariate),invsigma(sigma){
+       // to avoid troubles from zero element in flexible hills
+       for(unsigned i=0;i<invsigma.size();++i) abs(invsigma[i])>1.e-20?invsigma[i]=1.0/invsigma[i]:0.; 
+     }
   };
   vector<double> sigma0_;
+  vector<double> sigma0min_;
+  vector<double> sigma0max_;
   vector< vector<Gaussian> > hills_;
   vector<OFile*> hillsOfiles_;
   vector<OFile*> gridfiles_;
@@ -202,11 +243,21 @@ private:
   int     stride_;
   int     wgridstride_;
   bool    welltemp_;
-  bool    multiple_w;
-  unsigned nw_;
+  int mw_n_;
+  string mw_dir_;
+  int mw_id_;
+  int mw_rstride_;
+  bool    walkers_mpi;
+  unsigned mpi_nw_;
+  unsigned mpi_id_;
+  vector<string> hillsfname;
+  vector<IFile*> ifiles;
+  vector<string> ifilesnames;
   vector<double> uppI_;
   vector<double> lowI_;
   vector<bool>  doInt_;
+  int adaptive_;
+  vector<FlexibleBin> flexbin;
   bool isFirstStep;
 
   void   readGaussians(unsigned iarg, IFile*);
@@ -216,7 +267,7 @@ private:
   double getBiasAndDerivatives(unsigned iarg, const vector<double>&, double* der=NULL);
   double evaluateGaussian(unsigned iarg, const vector<double>&, const Gaussian&,double* der=NULL);
   vector<unsigned> getGaussianSupport(unsigned iarg, const Gaussian&);
-  bool   scanOneHill(unsigned iarg, IFile *ifile,  vector<Value> &v, vector<double> &center, vector<double>  &sigma, double &height);
+  bool   scanOneHill(unsigned iarg, IFile *ifile,  vector<Value> &v, vector<double> &center, vector<double>  &sigma, double &height, bool &multivariate);
   std::string fmt;
 
 public:
@@ -225,6 +276,7 @@ public:
   void calculate();
   void update();
   static void registerKeywords(Keywords& keys);
+  bool checkNeedsGradients()const{if(adaptive_==FlexibleBin::geometry){return true;}else{return false;}}
 };
 
 PLUMED_REGISTER_ACTION(PBMetaD,"PBMETAD")
@@ -234,7 +286,7 @@ void PBMetaD::registerKeywords(Keywords& keys){
   keys.use("ARG");
   keys.add("compulsory","SIGMA","the widths of the Gaussian hills");
   keys.add("compulsory","PACE","the frequency for hill addition, one for all biases");
-  keys.add("compulsory","FILE","files in which the lists of added hills are stored");
+  keys.add("optional","FILE","files in which the lists of added hills are stored");
   keys.add("optional","HEIGHT","the height of the Gaussian hills, one for all biases. Compulsory unless TAU, TEMP and BIASFACTOR are given");
   keys.add("optional","FMT","specify format for HILLS files (useful for decrease the number of digits in regtests)");
   keys.add("optional","BIASFACTOR","use well tempered metadynamics with this biasfactor, one for all biases.  Please note you must also specify temp");
@@ -249,9 +301,19 @@ void PBMetaD::registerKeywords(Keywords& keys){
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
   keys.addFlag("GRID_SPARSE",false,"use a sparse grid to store hills");
   keys.addFlag("GRID_NOSPLINE",false,"don't use spline interpolation with grids");
+  keys.add("optional","WALKERS_ID", "walker id");
+  keys.add("optional","WALKERS_N", "number of walkers");
+  keys.add("optional","WALKERS_DIR", "shared directory with the hills files from all the walkers");
+  keys.add("optional","WALKERS_RSTRIDE","stride for reading hills files");
   keys.add("optional","INTERVAL_MIN","monodimensional lower limits, outside the limits the system will not feel the biasing force.");
   keys.add("optional","INTERVAL_MAX","monodimensional upper limits, outside the limits the system will not feel the biasing force.");
-  keys.addFlag("MULTIPLE_WALKERS",false,"Switch on MPI version of multiple walkers");
+  keys.add("optional","ADAPTIVE","use a geometric (=GEOM) or diffusion (=DIFF) based hills width scheme. Sigma is one number that has distance units or timestep dimensions");
+  keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
+  keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
+  keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with other WALKERS_* options");
+  keys.use("RESTART");
+  keys.use("UPDATE_FROM");
+  keys.use("UPDATE_UNTIL");
 }
 
 PBMetaD::~PBMetaD(){
@@ -266,29 +328,93 @@ PBMetaD::~PBMetaD(){
     delete gridfiles_[i];
    }
   }
+  // close files
+  for(unsigned i=0;i<ifiles.size();++i){
+   if(ifiles[i]->isOpen()) ifiles[i]->close();
+   delete ifiles[i];
+  }
 }
 
 PBMetaD::PBMetaD(const ActionOptions& ao):
 PLUMED_BIAS_INIT(ao),
 grid_(false), height0_(std::numeric_limits<double>::max()),
 biasf_(1.0), kbt_(0.0), stride_(0), wgridstride_(0), welltemp_(false),
-multiple_w(false), isFirstStep(true)
+mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1),
+walkers_mpi(false), mpi_nw_(0),
+adaptive_(FlexibleBin::none),
+isFirstStep(true)
 {
+  // parse the flexible hills
+  string adaptiveoption;
+  adaptiveoption="NONE";
+  parse("ADAPTIVE",adaptiveoption);
+  if(adaptiveoption=="GEOM"){
+    log.printf("  Uses Geometry-based hills width: sigma must be in distance units and only one sigma is needed\n");
+    adaptive_=FlexibleBin::geometry;	
+  } else if(adaptiveoption=="DIFF"){
+    log.printf("  Uses Diffusion-based hills width: sigma must be in timesteps and only one sigma is needed\n");
+    adaptive_=FlexibleBin::diffusion;	
+  } else if(adaptiveoption=="NONE"){
+    adaptive_=FlexibleBin::none;	
+  } else {
+    error("I do not know this type of adaptive scheme");	
+  }
 
   parse("FMT",fmt);
 
   // parse the sigma
   parseVector("SIGMA",sigma0_);
-  if( sigma0_.size()!=getNumberOfArguments() ) error("number of arguments does not match number of SIGMA parameters");
+  if(adaptive_==FlexibleBin::none){
+    // if you use normal sigma you need one sigma per argument 
+    if( sigma0_.size()!=getNumberOfArguments() ) error("number of arguments does not match number of SIGMA parameters");
+  } else {
+    // if you use flexible hills you need one sigma  
+    if(sigma0_.size()!=1){
+      error("If you choose ADAPTIVE you need only one sigma according to your choice of type (GEOM/DIFF)");
+    } 
+    // if adaptive then the number must be an integer
+    if(adaptive_==FlexibleBin::diffusion){
+      if(int(sigma0_[0])-sigma0_[0]>1.e-9 || int(sigma0_[0])-sigma0_[0] <-1.e-9 || int(sigma0_[0])<1 ){
+       	error("In case of adaptive hills with diffusion, the sigma must be an integer which is the number of timesteps\n");	
+      } 
+    } 
+    // here evtl parse the sigma min and max values
+    parseVector("SIGMA_MIN",sigma0min_);
+    if(sigma0min_.size()>0 && sigma0min_.size()!=getNumberOfArguments()) {
+      error("the number of SIGMA_MIN values be the same of the number of the arguments");
+    } else if(sigma0min_.size()==0) { 
+      sigma0min_.resize(getNumberOfArguments());
+      for(unsigned i=0;i<getNumberOfArguments();i++){sigma0min_[i]=-1.;}	
+    }
+ 
+    parseVector("SIGMA_MAX",sigma0max_);
+    if(sigma0max_.size()>0 && sigma0max_.size()!=getNumberOfArguments()) {
+      error("the number of SIGMA_MAX values be the same of the number of the arguments"); 
+    } else if(sigma0max_.size()==0) { 
+      sigma0max_.resize(getNumberOfArguments());
+      for(unsigned i=0;i<getNumberOfArguments();i++){sigma0max_[i]=-1.;}	
+    }
+ 
+    for(unsigned i=0;i<getNumberOfArguments();i++) {
+      vector<double> tmp_smin, tmp_smax;
+      tmp_smin.resize(1,sigma0min_[i]);
+      tmp_smax.resize(1,sigma0max_[i]);
+      flexbin.push_back(FlexibleBin(adaptive_,this,i,sigma0_[0],tmp_smin,tmp_smax));
+    }
+  }
  
   // note: HEIGHT is not compulsory, since one could use the TAU keyword, see below
   parse("HEIGHT",height0_);
   parse("PACE",stride_);
   if(stride_<=0) error("frequency for hill addition is nonsensical");
   
-  vector<string> hillsfname;
   parseVector("FILE",hillsfname);
-  if( hillsfname.size()!=getNumberOfArguments() ) error("number of FILE arguments does not match number of HILLS files");
+  if(hillsfname.size()==0) {
+    for(unsigned i=0;i<getNumberOfArguments();i++) hillsfname.push_back("HILLS."+getPntrToArgument(i)->getName());
+  } 
+  if( hillsfname.size()!=getNumberOfArguments() ) {
+    error("number of FILE arguments does not match number of HILLS files");
+  }
 
   parse("BIASFACTOR",biasf_);
   if( biasf_<1.0 ) error("well tempered bias factor is nonsensical");
@@ -312,8 +438,15 @@ multiple_w(false), isFirstStep(true)
     height0_=(kbt_*(biasf_-1.0))/tau*getTimeStep()*stride_;
   }
   
+  // Multiple walkers
+  parse("WALKERS_N",mw_n_);
+  parse("WALKERS_ID",mw_id_);
+  if(mw_n_<=mw_id_) error("walker ID should be a numerical value less than the total number of walkers");
+  parse("WALKERS_DIR",mw_dir_);
+  parse("WALKERS_RSTRIDE",mw_rstride_);
+
   // MPI version
-  parseFlag("MULTIPLE_WALKERS",multiple_w);
+  parseFlag("WALKERS_MPI",walkers_mpi);
 
   // Grid file
   vector<string> gridfilenames_;
@@ -347,10 +480,18 @@ multiple_w(false), isFirstStep(true)
   if(gbin.size()!=0     && gmin.size()==0) error("If GRID_SPACING is present also GRID_MIN should be present");
   if(gmin.size()!=0){
     if(gbin.size()==0 && gspacing.size()==0){
+      if(adaptive_==FlexibleBin::none){
         log<<"  Binsize not specified, 1/10 of sigma will be be used\n";
         plumed_assert(sigma0_.size()==getNumberOfArguments());
         gspacing.resize(getNumberOfArguments());
         for(unsigned i=0;i<gspacing.size();i++) gspacing[i]=0.1*sigma0_[i];
+      } else {
+        // with adaptive hills and grid a sigma min must be specified
+        for(unsigned i=0;i<sigma0min_.size();i++) if(sigma0min_[i]<=0) error("When using Adaptive Gaussians on a grid SIGMA_MIN must be specified");
+        log<<"  Binsize not specified, 1/5 of sigma_min will be be used\n";
+        gspacing.resize(getNumberOfArguments());
+        for(unsigned i=0;i<gspacing.size();i++) gspacing[i]=0.2*sigma0min_[i];
+      }
     } else if(gspacing.size()!=0 && gbin.size()==0){
       log<<"  The number of bins will be estimated from GRID_SPACING\n";
     } else if(gspacing.size()!=0 && gbin.size()!=0){
@@ -391,6 +532,8 @@ multiple_w(false), isFirstStep(true)
   checkRead();
 
   log.printf("  Gaussian width ");
+  if (adaptive_==FlexibleBin::diffusion)log.printf(" (Note: The units of sigma are in timesteps) ");
+  if (adaptive_==FlexibleBin::geometry)log.printf(" (Note: The units of sigma are in dist units) ");
   for(unsigned i=0;i<sigma0_.size();++i) log.printf(" %f",sigma0_[i]);
   log.printf("  Gaussian height %f\n",height0_);
   log.printf("  Gaussian deposition pace %d\n",stride_); 
@@ -403,7 +546,28 @@ multiple_w(false), isFirstStep(true)
     log.printf("  Hills relaxation time (tau) %f\n",tau);
     log.printf("  KbT %f\n",kbt_);
   }
-  if(multiple_w) log.printf("  Multiple walkers active using MPI communnication\n");
+
+  if(mw_n_>1){
+    if(walkers_mpi) error("MPI version of multiple walkers is not compatible with filesystem version of multiple walkers");
+    log.printf("  %d multiple walkers active\n",mw_n_);
+    log.printf("  walker id %d\n",mw_id_);
+    log.printf("  reading stride %d\n",mw_rstride_);
+    log.printf("  directory with hills files %s\n",mw_dir_.c_str());
+  } else {
+    if(walkers_mpi) {
+      log.printf("  Multiple walkers active using MPI communnication\n"); 
+      if(comm.Get_rank()==0){
+        // Only root of group can communicate with other walkers
+        mpi_nw_ = multi_sim_comm.Get_size();
+        mpi_id_ = multi_sim_comm.Get_rank();
+      }
+      // Communicate to the other members of the same group
+      // info abount number of walkers and walker index
+      comm.Bcast(mpi_nw_,0);
+      comm.Bcast(mpi_id_,0);
+    }
+  }
+
   for(unsigned i=0; i<doInt_.size();i++) {
     if(doInt_[i]) log.printf("  Upper and Lower limits boundaries for the bias of CV %u are activated\n", i);
   }
@@ -445,7 +609,11 @@ multiple_w(false), isFirstStep(true)
      Tools::convert(gmin[i],a);
      Tools::convert(gmax[i],b);
      double mesh=(b-a)/((double)gbin[i]);
-     if(mesh>0.5*sigma0_[i]) log<<"  WARNING: Using a METAD with a Grid Spacing larger than half of the Gaussians width can produce artifacts\n";
+     if(adaptive_==FlexibleBin::none) {
+       if(mesh>0.5*sigma0_[i]) log<<"  WARNING: Using a METAD with a Grid Spacing larger than half of the Gaussians width can produce artifacts\n";
+     } else {
+       if(mesh>0.5*sigma0min_[i]||sigma0min_[i]<0.) log<<"  WARNING: to use a METAD with a GRID and ADAPTIVE you need to set a Grid Spacing larger than half of the Gaussians \n";
+     }
    }
    std::string funcl=getLabel() + ".bias";
    for(unsigned i=0; i<getNumberOfArguments(); ++i){
@@ -490,54 +658,53 @@ multiple_w(false), isFirstStep(true)
    }
   }
 
-  // read Gaussians if restarting
-  if (!restartedFromGrid){
-   for(unsigned i=0;i<hillsfname.size();++i){
-    IFile *ifile = new IFile();
-    ifile->link(*this);
-    if(ifile->FileExist(hillsfname[i])){
-     ifile->open(hillsfname[i]);
-     if(getRestart()){
-      log.printf("  Restarting from %s:",hillsfname[i].c_str());                  
-      readGaussians(i, ifile);                                                    
-     }
-     ifile->reset(false);
-     ifile->close();
-     delete ifile;
+
+// creating vector of ifile* for hills reading 
+// open all files at the beginning and read Gaussians if restarting
+  for(int j=0;j<mw_n_;++j){
+    for(unsigned i=0;i<hillsfname.size();++i){
+      unsigned k=j*hillsfname.size()+i;
+      string fname;
+      if(mw_n_>1) {
+        stringstream out; out << j;
+        fname = mw_dir_+"/"+hillsfname[i]+"."+out.str();
+      } else {
+        fname = hillsfname[i];
+      }
+      IFile *ifile = new IFile();
+      ifile->link(*this);
+      ifiles.push_back(ifile);
+      ifilesnames.push_back(fname);
+      if(ifile->FileExist(fname)){
+        ifile->open(fname);
+        if(getRestart()&&!restartedFromGrid){
+          log.printf("  Restarting from %s:",ifilesnames[k].c_str());
+          readGaussians(i,ifiles[k]);
+        }
+        ifiles[k]->reset(false);
+        // close only the walker own hills file for later writing
+        if(j==mw_id_) ifiles[k]->close();
+      }
     }
-   }
   }
 
   comm.Barrier();
-  // this barrier is needed when using walkers_mpi
-  // to be sure that all files have been read before
-  // backing them up
-  // it should not be used when walkers_mpi is false otherwise
-  // it would introduce troubles when using replicas without METAD
-  // (e.g. in bias exchange with a neutral replica)
-  // see issue #168 on github
-  if(multiple_w){
-    if(comm.Get_rank()==0) {
-      multi_sim_comm.Barrier();
-      nw_ = multi_sim_comm.Get_size();
-    }
-    comm.Bcast(nw_,0);
-  }
+  if(comm.Get_rank()==0 && walkers_mpi) multi_sim_comm.Barrier();
 
   // open hills files for writing
   for(unsigned i=0;i<hillsfname.size();++i){
    OFile *ofile = new OFile();
    ofile->link(*this);
-   string hillsfname_tmp = hillsfname[i];
-   // if multiple walkers, only rank 0 will write to file
-   if(multiple_w){
+   // if MPI multiple walkers, only rank 0 will write to file
+   if(walkers_mpi){
     int r=0;
     if(comm.Get_rank()==0) r=multi_sim_comm.Get_rank();
     comm.Bcast(r,0);
-    if(r>0) hillsfname_tmp="/dev/null";
+    if(r>0) ifilesnames[mw_id_*hillsfname.size()+i]="/dev/null";
     ofile->enforceSuffix("");
    }
-   ofile->open(hillsfname_tmp);
+   if(mw_n_>1) ofile->enforceSuffix("");
+   ofile->open(ifilesnames[mw_id_*hillsfname.size()+i]);
    if(fmt.length()>0) ofile->fmtField(fmt);
    ofile->addConstantField("multivariate");
    if(doInt_[i]) {
@@ -557,7 +724,7 @@ multiple_w(false), isFirstStep(true)
     OFile *ofile = new OFile();
     ofile->link(*this);
     string gridfname_tmp = gridfilenames_[i];
-    if(multiple_w) {
+    if(walkers_mpi) {
      int r = 0;
      if(comm.Get_rank() == 0) {
       r = multi_sim_comm.Get_rank();
@@ -568,6 +735,7 @@ multiple_w(false), isFirstStep(true)
      }
      ofile->enforceSuffix("");
     }
+    if(mw_n_>1) ofile->enforceSuffix("");
     ofile->open(gridfname_tmp);
     ofile->setHeavyFlush();
     gridfiles_.push_back(ofile);
@@ -577,39 +745,45 @@ multiple_w(false), isFirstStep(true)
   log<<"  Bibliography "<<plumed.cite("Pfaendtner and Bonomi. J. Chem. Theory Comput. 11, 5062 (2015)");
   if(doInt_[0]) log<<plumed.cite(
      "Baftizadeh, Cossio, Pietrucci, and Laio, Curr. Phys. Chem. 2, 79 (2012)");
-  if(multiple_w) log<<plumed.cite(
+  if(mw_n_>1||walkers_mpi) log<<plumed.cite(
     "Raiteri, Laio, Gervasio, Micheletti, and Parrinello, J. Phys. Chem. B 110, 3533 (2006)");   
+  if(adaptive_!=FlexibleBin::none) log<<plumed.cite(
+    "Branduardi, Bussi, and Parrinello, J. Chem. Theory Comput. 8, 2247 (2012)");
   log<<"\n";
 }
 
-void PBMetaD::readGaussians(unsigned iarg, IFile *ifile){
+void PBMetaD::readGaussians(unsigned iarg, IFile *ifile)
+{
  vector<double> center(1);
  vector<double> sigma(1);
  double height;
  int nhills=0; 
+ bool multivariate=false;
 
  std::vector<Value> tmpvalues;
  tmpvalues.push_back( Value( this, getPntrToArgument(iarg)->getName(), false ) ); 
 
- while(scanOneHill(iarg,ifile,tmpvalues,center,sigma,height)){;
+ while(scanOneHill(iarg,ifile,tmpvalues,center,sigma,height,multivariate)){;
   nhills++;
   if(welltemp_){height*=(biasf_-1.0)/biasf_;}
-  addGaussian(iarg, Gaussian(center,sigma,height));
+  addGaussian(iarg, Gaussian(center,sigma,height,multivariate));
  }     
  log.printf("      %d Gaussians read\n",nhills);
 }
 
-bool PBMetaD::readChunkOfGaussians(unsigned iarg, IFile *ifile, unsigned n){
+bool PBMetaD::readChunkOfGaussians(unsigned iarg, IFile *ifile, unsigned n)
+{
  vector<double> center(1);
  vector<double> sigma(1);
  double height;
  unsigned nhills=0;
+ bool multivariate=false;
  std::vector<Value> tmpvalues;
  tmpvalues.push_back( Value( this, getPntrToArgument(iarg)->getName(), false ) ); 
 
- while(scanOneHill(iarg,ifile,tmpvalues,center,sigma,height)){;
+ while(scanOneHill(iarg,ifile,tmpvalues,center,sigma,height,multivariate)){;
   if(welltemp_){height*=(biasf_-1.0)/biasf_;}
-  addGaussian(iarg, Gaussian(center,sigma,height));
+  addGaussian(iarg, Gaussian(center,sigma,height,multivariate));
   if(nhills==n){
       log.printf("      %u Gaussians read\n",nhills);
       return true;
@@ -620,19 +794,30 @@ bool PBMetaD::readChunkOfGaussians(unsigned iarg, IFile *ifile, unsigned n){
  return false;
 }
 
-void PBMetaD::writeGaussian(unsigned iarg, const Gaussian& hill, OFile *ofile){
+void PBMetaD::writeGaussian(unsigned iarg, const Gaussian& hill, OFile *ofile)
+{
   ofile->printField("time",getTimeStep()*getStep());
   ofile->printField(getPntrToArgument(iarg),hill.center[0]);
-  ofile->printField("multivariate","false");
-  ofile->printField("sigma_"+getPntrToArgument(iarg)->getName(),hill.sigma[0]);
+
+  if(hill.multivariate){
+    ofile->printField("multivariate","true");
+    double lower = sqrt(1./hill.sigma[0]);
+    ofile->printField("sigma_"+getPntrToArgument(iarg)->getName()+"_"+
+                               getPntrToArgument(iarg)->getName(),lower);
+  } else {
+    ofile->printField("multivariate","false");
+    ofile->printField("sigma_"+getPntrToArgument(iarg)->getName(),hill.sigma[0]);
+  }
   double height=hill.height;
-  if(welltemp_){height *= biasf_/(biasf_-1.0);}
+  if(welltemp_) height *= biasf_/(biasf_-1.0); 
   ofile->printField("height",height);
   ofile->printField("biasf",biasf_);
+  if(mw_n_>1) ofile->printField("clock",int(std::time(0)));
   ofile->printField();
 }
 
-void PBMetaD::addGaussian(unsigned iarg, const Gaussian& hill){
+void PBMetaD::addGaussian(unsigned iarg, const Gaussian& hill)
+{
  if(!grid_){hills_[iarg].push_back(hill);} 
  else{
   vector<unsigned> nneighb=getGaussianSupport(iarg, hill);
@@ -668,9 +853,17 @@ void PBMetaD::addGaussian(unsigned iarg, const Gaussian& hill){
  }
 }
 
-vector<unsigned> PBMetaD::getGaussianSupport(unsigned iarg, const Gaussian& hill){
+vector<unsigned> PBMetaD::getGaussianSupport(unsigned iarg, const Gaussian& hill)
+{
  vector<unsigned> nneigh;
- const double cutoff=sqrt(2.0*DP2CUTOFF)*hill.sigma[0];
+ double cutoff;
+ if(hill.multivariate){
+   double maxautoval=1./hill.sigma[0];
+   cutoff=sqrt(2.0*DP2CUTOFF*maxautoval);
+ } else {
+   cutoff=sqrt(2.0*DP2CUTOFF)*hill.sigma[0];
+ }
+
  if(doInt_[iarg]){
    if(hill.center[0]+cutoff > uppI_[iarg] || hill.center[0]-cutoff < lowI_[iarg]) { 
      // in this case, we updated the entire grid to avoid problems
@@ -725,65 +918,106 @@ double PBMetaD::evaluateGaussian(unsigned iarg, const vector<double>& cv, const 
    else if(cv[0]>uppI_[iarg]) { tmpcv[0]=uppI_[iarg]; isOutOfInt = true; }
  }
  pcv=&(tmpcv[0]);
- double dp  = difference(iarg, hill.center[0],pcv[0]) / hill.sigma[0];
- double dp2 = 0.5 * dp * dp;
- if(dp2<DP2CUTOFF){
-   bias = hill.height*exp(-dp2);
-   if(der &&!isOutOfInt){
-     der[0] += -bias * dp / hill.sigma[0];
+
+ if(hill.multivariate){ 
+   double dp  = difference(iarg, hill.center[0], pcv[0]);
+   double dp2 = 0.5 * dp * dp * hill.sigma[0];
+   if(dp2<DP2CUTOFF){
+     bias = hill.height*exp(-dp2);
+     if(der && !isOutOfInt){
+       der[0] += -bias * dp * hill.sigma[0];
+     }
+   }
+ } else {
+   double dp  = difference(iarg, hill.center[0], pcv[0]) * hill.invsigma[0];
+   double dp2 = 0.5 * dp * dp;
+   if(dp2<DP2CUTOFF){
+     bias = hill.height*exp(-dp2);
+     if(der && !isOutOfInt){
+       der[0] += -bias * dp * hill.invsigma[0];
+     }
    }
  }
+
  return bias;
 }
 
 void PBMetaD::calculate()
 {
+  // this is because presently there is no way to properly pass information
+  // on adaptive hills (diff) after exchanges:
+  if(adaptive_==FlexibleBin::diffusion && getExchangeStep()) error("ADAPTIVE=DIFF is not compatible with replica exchange");
+
   vector<double> cv(1);
   double der[1];
   vector<double> bias(getNumberOfArguments());
   vector<double> deriv(getNumberOfArguments());
 
+  double ncv = (double) getNumberOfArguments();
+  double bmin = 1.0e+19;
+  for(unsigned i=0; i<getNumberOfArguments(); ++i){
+   cv[0] = getArgument(i);
+   der[0] = 0.0;
+   bias[i] = getBiasAndDerivatives(i, cv, der);
+   deriv[i] = der[0];
+   if(bias[i] < bmin) bmin = bias[i];
+  }
   double ene = 0.;
   for(unsigned i=0; i<getNumberOfArguments(); ++i){
-    cv[0]    = getArgument(i);
-    der[0]   = 0.0;
-    bias[i]  = getBiasAndDerivatives(i, cv, der);
-    deriv[i] = der[0];
-    ene += exp(-bias[i]/kbt_);
+    ene += exp((-bias[i]+bmin)/kbt_);
   }
-      
+ 
   // set Forces 
   for(unsigned i=0; i<getNumberOfArguments(); ++i){
-    const double f = - exp(-bias[i]/kbt_) / (ene) * deriv[i];
+    const double f = - exp((-bias[i]+bmin)/kbt_) / (ene) * deriv[i];
     setOutputForce(i, f);
   }
 
   // set bias
-  double ncv = static_cast<double>(getNumberOfArguments());
-  ene = -kbt_ * (std::log(ene) - std::log(ncv));
+  ene = -kbt_ * (std::log(ene) - std::log(ncv)) + bmin;
   setBias(ene);
 }
 
 void PBMetaD::update()
 {
+  bool multivariate;
   // adding hills criteria
   bool nowAddAHill; 
-  if(getStep()%stride_==0 && !isFirstStep ){nowAddAHill=true;}else{nowAddAHill=false;isFirstStep=false;}
+  if(getStep()%stride_==0 && !isFirstStep) nowAddAHill=true; 
+  else {
+    nowAddAHill=false;
+    isFirstStep=false;
+  }
+
+  // if you use adaptive, call the FlexibleBin 
+  if(adaptive_!=FlexibleBin::none){
+    for(unsigned i=0;i<getNumberOfArguments();i++) flexbin[i].update(nowAddAHill,i);
+    multivariate=true;
+  } else {
+    multivariate=false;
+  }
 
   if(nowAddAHill){
-   // get all CVs value
-   vector<double> cv(getNumberOfArguments());
-   for(unsigned i=0; i<getNumberOfArguments(); ++i) cv[i] = getArgument(i);
    // get all biases and heights
+   vector<double> cv(getNumberOfArguments());
    vector<double> bias(getNumberOfArguments());
+   vector<double> thissigma(getNumberOfArguments());
    vector<double> height(getNumberOfArguments());
    vector<double> cv_tmp(1);
    vector<double> sigma_tmp(1);
    double norm = 0.0;
+   double bmin = 1.0e+19;
    for(unsigned i=0; i<getNumberOfArguments(); ++i){
-     cv_tmp[0] = cv[i];
+     if(adaptive_!=FlexibleBin::none) thissigma[i]=flexbin[i].getInverseMatrix(i)[0];
+     else thissigma[i]=sigma0_[i];
+     cv[i]     = getArgument(i);
+     cv_tmp[0] = getArgument(i);
      bias[i] = getBiasAndDerivatives(i, cv_tmp);
-     double h = exp(-bias[i]/kbt_);
+     if(bias[i] < bmin) bmin = bias[i];
+   }
+   // calculate heights and norm
+   for(unsigned i=0; i<getNumberOfArguments(); ++i){
+     double h = exp((-bias[i]+bmin)/kbt_);
      norm += h;
      height[i] = h;
    }
@@ -793,48 +1027,57 @@ void PBMetaD::update()
      if(welltemp_) height[i] *= exp(-bias[i]/(kbt_*(biasf_-1.0)));
    }
 
-   // Multiple walkers: share hills and add them all
-   if(multiple_w){
+   // MPI Multiple walkers: share hills and add them all
+   if(walkers_mpi){
      // Allocate arrays to store all walkers hills
-     std::vector<double> all_cv(nw_*cv.size(), 0.0);
-     std::vector<double> all_height(nw_*height.size(), 0.0);
+     std::vector<double> all_cv(mpi_nw_*cv.size(), 0.0);
+     std::vector<double> all_sigma(mpi_nw_*getNumberOfArguments(), 0.0);
+     std::vector<double> all_height(mpi_nw_*height.size(), 0.0);
      if(comm.Get_rank()==0){
-     // Communicate (only root)
-       multi_sim_comm.Allgather(cv, all_cv);
-       multi_sim_comm.Allgather(height, all_height);
+       // fill in value
+       for(unsigned i=0; i<getNumberOfArguments(); ++i){
+        unsigned j = mpi_id_ * getNumberOfArguments() + i;
+        all_cv[j] = cv[i];
+        all_sigma[j]  = thissigma[i];
+        all_height[j] = height[i];
+       }
+       // Communicate (only root)
+       multi_sim_comm.Sum(&all_cv[0], all_cv.size());
+       multi_sim_comm.Sum(&all_sigma[0], all_sigma.size());
+       multi_sim_comm.Sum(&all_height[0], all_height.size());
      }
      // Share info with group members
-     comm.Bcast(all_cv,0);
-     comm.Bcast(all_height,0);
+     comm.Sum(&all_cv[0], all_cv.size());
+     comm.Sum(&all_sigma[0], all_sigma.size());
+     comm.Sum(&all_height[0], all_height.size());
      // now add hills one by one
-     for(unsigned j=0; j<nw_; ++j){
+     for(unsigned j=0; j<mpi_nw_; ++j){
       for(unsigned i=0; i<getNumberOfArguments(); ++i){
        cv_tmp[0]    = all_cv[j*cv.size()+i];
-       sigma_tmp[0] = sigma0_[i];
-       // new Gaussian
-       Gaussian newhill = Gaussian(cv_tmp, sigma_tmp, all_height[j*cv.size()+i]);
+       double height_tmp = all_height[j*cv.size()+i];
+       sigma_tmp[0] = all_sigma[j*cv.size()+i];
+       Gaussian newhill = Gaussian(cv_tmp, sigma_tmp, height_tmp, multivariate);
        addGaussian(i, newhill);
-       // print on HILLS file
        writeGaussian(i, newhill, hillsOfiles_[i]);
       }
      }  
    // just add your own hills  
    }else{
     for(unsigned i=0; i<getNumberOfArguments(); ++i){
-      cv_tmp[0]    = cv[i];
-      sigma_tmp[0] = sigma0_[i];
-      // new Gaussian
-      Gaussian newhill = Gaussian(cv_tmp, sigma_tmp, height[i]);
+      cv_tmp[0] = cv[i];
+      if(adaptive_!=FlexibleBin::none) sigma_tmp[0]=thissigma[i];
+      else sigma_tmp[0] = sigma0_[i];
+      Gaussian newhill = Gaussian(cv_tmp, sigma_tmp, height[i], multivariate);
       addGaussian(i, newhill);
-      // print on HILLS file
       writeGaussian(i, newhill, hillsOfiles_[i]);
     } 
    }
+  }
 
    // write grid files
    if(wgridstride_>0 && (getStep()%wgridstride_==0 || getCPT())) {
      int r = 0;
-     if(multiple_w) {
+     if(walkers_mpi) {
        if(comm.Get_rank()==0) r=multi_sim_comm.Get_rank();
        comm.Bcast(r,0);
      } 
@@ -847,39 +1090,72 @@ void PBMetaD::update()
      }
    }
 
+  // if multiple walkers and time to read Gaussians
+  if(mw_n_>1 && getStep()%mw_rstride_==0){
+    for(int j=0;j<mw_n_;++j){
+      for(unsigned i=0;i<hillsfname.size();++i){
+        unsigned k=j*hillsfname.size()+i;
+        // don't read your own Gaussians
+        if(j==mw_id_) continue;
+        // if the file is not open yet 
+        if(!(ifiles[k]->isOpen())){
+          // check if it exists now and open it!
+          if(ifiles[k]->FileExist(ifilesnames[k])) {
+            ifiles[k]->open(ifilesnames[k]);
+            ifiles[k]->reset(false);
+          }
+          // otherwise read the new Gaussians 
+        } else {
+          log.printf("  Reading hills from %s:",ifilesnames[k].c_str());
+          readGaussians(i,ifiles[k]);
+          ifiles[k]->reset(false);
+        }
+      }
+    }
   }
+
 }
 
 /// takes a pointer to the file and a template string with values v and gives back the next center, sigma and height 
-bool PBMetaD::scanOneHill(unsigned iarg, IFile *ifile,  vector<Value> &tmpvalues, vector<double> &center, vector<double>  &sigma, double &height){
+bool PBMetaD::scanOneHill(unsigned iarg, IFile *ifile, vector<Value> &tmpvalues, vector<double> &center, vector<double> &sigma, double &height, bool &multivariate)
+{
   double dummy;
- 
-   if(ifile->scanField("time",dummy)){
-     ifile->scanField( &tmpvalues[0] );
-     if( tmpvalues[0].isPeriodic() && ! getPntrToArgument(iarg)->isPeriodic() ){
-        error("in hills file periodicity for variable " + tmpvalues[0].getName() + " does not match periodicity in input");
-     } else if( tmpvalues[0].isPeriodic() ){
-        std::string imin, imax; tmpvalues[0].getDomain( imin, imax );
-        std::string rmin, rmax; getPntrToArgument(iarg)->getDomain( rmin, rmax );
-        if( imin!=rmin || imax!=rmax ){
-          error("in hills file periodicity for variable " + tmpvalues[0].getName() + " does not match periodicity in input");
-        }
-     }
-     center[0]=tmpvalues[0].get();
-     // scan for multivariate label: record the actual file position so to eventually rewind 
-     std::string sss;
-     ifile->scanField("multivariate",sss);
-     ifile->scanField("sigma_"+getPntrToArgument(iarg)->getName(),sigma[0]); 
-     ifile->scanField("height",height);
-     ifile->scanField("biasf",dummy);
-     if(ifile->FieldExist("clock")) ifile->scanField("clock",dummy);
-     if(ifile->FieldExist("lower_int")) ifile->scanField("lower_int",dummy);
-     if(ifile->FieldExist("upper_int")) ifile->scanField("upper_int",dummy);
-     ifile->scanField();
-     return true;
-  }else{ 
+  multivariate=false;
+  if(ifile->scanField("time",dummy)){
+    ifile->scanField( &tmpvalues[0] );
+    if( tmpvalues[0].isPeriodic() && ! getPntrToArgument(iarg)->isPeriodic() ){
+       error("in hills file periodicity for variable " + tmpvalues[0].getName() + " does not match periodicity in input");
+    } else if( tmpvalues[0].isPeriodic() ){
+       std::string imin, imax; tmpvalues[0].getDomain( imin, imax );
+       std::string rmin, rmax; getPntrToArgument(iarg)->getDomain( rmin, rmax );
+       if( imin!=rmin || imax!=rmax ){
+         error("in hills file periodicity for variable " + tmpvalues[0].getName() + " does not match periodicity in input");
+       }
+    }
+    center[0]=tmpvalues[0].get();
+    std::string sss;
+    ifile->scanField("multivariate",sss);
+    if(sss=="true") multivariate=true;
+    else if(sss=="false") multivariate=false;
+    else plumed_merror("cannot parse multivariate = "+ sss);
+
+    if(multivariate){
+      ifile->scanField("sigma_"+getPntrToArgument(iarg)->getName()+"_"+
+                                getPntrToArgument(iarg)->getName(),sigma[0]);
+      sigma[0] = 1./(sigma[0]*sigma[0]);
+    } else {
+      ifile->scanField("sigma_"+getPntrToArgument(iarg)->getName(),sigma[0]);
+    }
+    ifile->scanField("height",height);
+    ifile->scanField("biasf",dummy);
+    if(ifile->FieldExist("clock")) ifile->scanField("clock",dummy);
+    if(ifile->FieldExist("lower_int")) ifile->scanField("lower_int",dummy);
+    if(ifile->FieldExist("upper_int")) ifile->scanField("upper_int",dummy);
+    ifile->scanField();
+    return true;
+  } else { 
     return false; 
-  }; 
+  } 
 }
 
 }

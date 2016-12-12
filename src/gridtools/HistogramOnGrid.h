@@ -40,6 +40,8 @@ private:
 protected:
   bool discrete;
 public:
+  double  von_misses_norm;
+  double von_misses_concentration;
   static void registerKeywords( Keywords& keys );
   explicit HistogramOnGrid( const vesselbase::VesselOptions& da );
   void setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax,
@@ -47,10 +49,12 @@ public:
   void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
   void finish( const std::vector<double>& buffer );
   virtual void accumulate( const unsigned& ipoint, const double& weight, const double& dens, const std::vector<double>& der, std::vector<double>& buffer ) const ;
+  virtual void accumulateForce( const unsigned& ipoint, const double& weight, const std::vector<double>& der, std::vector<double>& intforce ) const ;
   unsigned getNumberOfBufferPoints() const ;
   KernelFunctions* getKernelAndNeighbors( std::vector<double>& point, unsigned& num_neigh, std::vector<unsigned>& neighbors ) const;
   std::vector<Value*> getVectorOfValues() const ;
   void addOneKernelEachTimeOnly(){ addOneKernelAtATime=true; }
+  virtual void getFinalForces( const std::vector<double>& buffer, std::vector<double>& finalForces );
   bool noDiscreteKernels() const ;
 };
 
