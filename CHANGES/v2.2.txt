@@ -165,7 +165,7 @@ For developers:
 - Tentative port files are now available at [this link](http://github.com/plumed/ports). 
   They can be used to install PLUMED using MacPorts.
 
-Version 2.2.4
+Version 2.2.4 (coming soon)
 -------------
 See branch \branch{v2.2} on git repository.
 
