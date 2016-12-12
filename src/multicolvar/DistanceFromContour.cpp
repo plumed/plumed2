@@ -75,6 +75,7 @@ private:
   bool derivTime;
   double rcut2;
   double contour;
+  double pbc_param;
   std::string kerneltype;
   std::vector<Value*> pval;
   std::vector<double> bw, pos1, pos2, dirv, dirv2;
@@ -110,6 +111,12 @@ void DistanceFromContour::registerKeywords( Keywords& keys ){
                                             "in plumed plumed can be found in \\ref kernelfunctions.");
   keys.add("compulsory","DIR","the direction perpendicular to the contour that you are looking for");
   keys.add("compulsory","CONTOUR","the value we would like for the contour");
+  keys.add("compulsory","TOLERANCE","0.1","this parameter is used to manage periodic boundary conditions.  The problem "
+                                          "here is that we can be between contours even when we are not within the membrane "
+                                          "because of periodic boundary conditions.  When we are in the contour, however, we "
+                                          "should have it so that the sums of the absoluate values of the distances to the two "
+                                          "contours is approximately the distance between the two contours.  There can be numerical errors in these calculations, however, so "
+                                          "we specify a small tolerance here");
 }
 
 DistanceFromContour::DistanceFromContour( const ActionOptions& ao ):
@@ -125,7 +132,7 @@ perp_dirs(2),
 mymin(this)
 {
   // Read in the multicolvar/atoms
-  std::vector<AtomNumber> all_atoms; 
+  std::vector<AtomNumber> all_atoms; parse("TOLERANCE",pbc_param); 
   bool read2 = parseMultiColvarAtomList("DATA", -1, all_atoms);
   if( !read2 ) error("missing DATA keyword");
   bool read1 = parseMultiColvarAtomList("ATOM", -1, all_atoms);
@@ -253,7 +260,7 @@ void DistanceFromContour::calculate(){
   // This deals with periodic boundary conditions - if we are inside the membrane the sum of the absolute 
   // distances from the contours should add up to the spacing.  When this is not the case we must be outside
   // the contour
-  if( predir==-1 && (fabs(fpos1)+fabs(pval[dir]->get()))>(spacing+bw[dir]) ) predir=1;
+  if( predir==-1 && (fabs(fpos1)+fabs(pval[dir]->get()))>(spacing+pbc_param) ) predir=1;
   // Set the final value to root that is closest to the "origin" = position of atom
   if( fabs(fpos1)<fabs(pval[dir]->get()) ){ getPntrToComponent("dist")->set( predir*fabs(fpos1) ); fval=fpos1; }
   else { getPntrToComponent("dist")->set( predir*fabs(pval[dir]->get()) ); fval=pval[dir]->get(); }
@@ -261,8 +268,8 @@ void DistanceFromContour::calculate(){
   // Now calculate the derivatives
   if( !doNotCalculateDerivatives() ){
       Value* ival=myvalue_vessel->getFinalValue(); ival->clearDerivatives(); pos1[0]=pos1[1]=pos1[2]=0.0; pos1[dir]=fval;
-      derivTime=true; double prefactor; std::vector<double> der(3); getDifferenceFromContour( pos1, der );
-      if( mybasemulticolvars[0]->isDensity() ) prefactor = predir / myderiv_vessel->getOutputValue(); else plumed_error();
+      derivTime=true; double prefactor = (fval<0)? -1. : 1.; std::vector<double> der(3); getDifferenceFromContour( pos1, der );
+      if( mybasemulticolvars[0]->isDensity() ) prefactor *= predir / myderiv_vessel->getOutputValue(); else plumed_error();
       Value* val=getPntrToComponent("dist"); 
       for(unsigned i=0;i<val->getNumberOfDerivatives();++i) val->setDerivative( i, -prefactor*ival->getDerivative(i) );
   }
