@@ -101,14 +101,20 @@ FixPlumed::FixPlumed(LAMMPS *lmp, int narg, char **arg) :
   for(int i=3;i<narg;++i){
     if(!strcmp(arg[i],"outfile")) next=1;
     else if(next==1){
-      // Each replica writes an independent log file
-      //  with suffix equal to the replica id
-      char str_num[32], *logFile;
-      sprintf(str_num,".%d",universe->iworld);
-      logFile=arg[i];
-      strcat(logFile,str_num);
-      p->cmd("setLogFile",logFile);
-      next=0;
+      if(universe->existflag == 1){
+        // Each replica writes an independent log file
+        //  with suffix equal to the replica id
+        char str_num[32], logFile[1024];
+        sprintf(str_num,".%d",universe->iworld);
+        strncpy(logFile,arg[i],1024-32);
+        strcat(logFile,str_num);
+        p->cmd("setLogFile",logFile);
+        next=0;
+      } else {
+        // partition option not used
+        p->cmd("setLogFile",arg[i]);
+        next=0;
+      }
     }
     else if(!strcmp(arg[i],"plumedfile"))next=2;
     else if(next==2){
