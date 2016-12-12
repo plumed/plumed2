@@ -2,7 +2,7 @@
 
 @page CHANGES-2-3 Version 2.3
 
-Version 2.3 (coming soon)
+Version 2.3 (Dec 12, 2016)
 ----------------------------
 
 Version
