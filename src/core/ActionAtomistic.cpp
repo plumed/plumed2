@@ -34,7 +34,8 @@
 #include "tools/PDB.h"
 
 using namespace std;
-using namespace PLMD;
+
+namespace PLMD {
 
 ActionAtomistic::~ActionAtomistic(){
 // forget the pending request
@@ -239,8 +240,8 @@ void ActionAtomistic::setForcesOnAtoms( const std::vector<double>& forcesToApply
   virial(1,2)=forcesToApply[ind]; ind++;
   virial(2,0)=forcesToApply[ind]; ind++;
   virial(2,1)=forcesToApply[ind]; ind++;
-  virial(2,2)=forcesToApply[ind]; ind++;
-  plumed_dbg_assert( ind==forcesToApply.size() );
+  virial(2,2)=forcesToApply[ind];
+  plumed_dbg_assert( ind+1==forcesToApply.size());
 }
 
 void ActionAtomistic::applyForces(){
@@ -279,4 +280,6 @@ void ActionAtomistic::makeWhole(){
     Vector & second (positions[j+1]);
     second=first+pbcDistance(first,second);
   }
+}
+
 }

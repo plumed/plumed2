@@ -254,9 +254,8 @@ void DynamicList<T>::setupMPICommunication( Communicator& comm ){
 
 template <typename T>
 int DynamicList<T>::getIndexOfElement( const T& t ) const {
-  bool found=false;
   for(unsigned i=0;i<all.size();++i){
-     if( t==all[i] ){ found=true; return i; }
+     if( t==all[i] ){return i; }
   }
   plumed_merror("Could not find an element in the dynamic list");
   return 0;

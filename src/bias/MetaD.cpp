@@ -491,11 +491,11 @@ last_step_warn_grid(0)
   } else {
     error("I do not know this type of adaptive scheme");	
   }
-  // parse the sigma
-  parseVector("SIGMA",sigma0_);
 
   parse("FMT",fmt);
 
+  // parse the sigma
+  parseVector("SIGMA",sigma0_);
   if(adaptive_==FlexibleBin::none){
     // if you use normal sigma you need one sigma per argument 
     if( sigma0_.size()!=getNumberOfArguments() ) error("number of arguments does not match number of SIGMA parameters");
@@ -512,16 +512,16 @@ last_step_warn_grid(0)
     } 
     // here evtl parse the sigma min and max values
     parseVector("SIGMA_MIN",sigma0min_);
-    if(sigma0min_.size()>0 && sigma0min_.size()<getNumberOfArguments()) {
-      error("the number of SIGMA_MIN values be at least the number of the arguments");
+    if(sigma0min_.size()>0 && sigma0min_.size()!=getNumberOfArguments()) {
+      error("the number of SIGMA_MIN values be the same of the number of the arguments");
     } else if(sigma0min_.size()==0) { 
       sigma0min_.resize(getNumberOfArguments());
       for(unsigned i=0;i<getNumberOfArguments();i++){sigma0min_[i]=-1.;}	
     }
  
     parseVector("SIGMA_MAX",sigma0max_);
-    if(sigma0max_.size()>0 && sigma0max_.size()<getNumberOfArguments()) {
-      error("the number of SIGMA_MAX values be at least the number of the arguments"); 
+    if(sigma0max_.size()>0 && sigma0max_.size()!=getNumberOfArguments()) {
+      error("the number of SIGMA_MAX values be the same of the number of the arguments"); 
     } else if(sigma0max_.size()==0) { 
       sigma0max_.resize(getNumberOfArguments());
       for(unsigned i=0;i<getNumberOfArguments();i++){sigma0max_[i]=-1.;}	
@@ -590,12 +590,10 @@ last_step_warn_grid(0)
         for(unsigned i=0;i<gspacing.size();i++) gspacing[i]=0.2*sigma0_[i];
       } else {
         // with adaptive hills and grid a sigma min must be specified
-        if(sigma0min_.size()==0) error("When using Adaptive Gaussians on a grid SIGMA_MIN must be specified");
+        for(unsigned i=0;i<sigma0min_.size();i++) if(sigma0min_[i]<=0) error("When using Adaptive Gaussians on a grid SIGMA_MIN must be specified");
         log<<"  Binsize not specified, 1/5 of sigma_min will be be used\n";
-        plumed_assert(sigma0_.size()==getNumberOfArguments());
         gspacing.resize(getNumberOfArguments());
         for(unsigned i=0;i<gspacing.size();i++) gspacing[i]=0.2*sigma0min_[i];
-        //error("At least one among GRID_BIN and GRID_SPACING should be used");
       }
     } else if(gspacing.size()!=0 && gbin.size()==0){
       log<<"  The number of bins will be estimated from GRID_SPACING\n";
@@ -745,25 +743,27 @@ last_step_warn_grid(0)
 
   // initializing and checking grid
   if(grid_){
-    // check for adaptive and sigma_min
-    if(sigma0min_.size()==0&&adaptive_!=FlexibleBin::none) error("When using Adaptive Gaussians on a grid SIGMA_MIN must be specified");
-    // check for mesh and sigma size
-    for(unsigned i=0;i<getNumberOfArguments();i++) {
-      double a,b;
-      Tools::convert(gmin[i],a);
-      Tools::convert(gmax[i],b);
-      double mesh=(b-a)/((double)gbin[i]);
-      if(mesh>0.5*sigma0_[i]) log<<"  WARNING: Using a METAD with a Grid Spacing larger than half of the Gaussians width can produce artifacts\n";
-    }
-    std::string funcl=getLabel() + ".bias";
-    if(!sparsegrid){BiasGrid_=new Grid(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
-    else{BiasGrid_=new SparseGrid(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
-    std::vector<std::string> actualmin=BiasGrid_->getMin();
-    std::vector<std::string> actualmax=BiasGrid_->getMax();
-    for(unsigned i=0;i<getNumberOfArguments();i++){
-      if(gmin[i]!=actualmin[i]) log<<"  WARNING: GRID_MIN["<<i<<"] has been adjusted to "<<actualmin[i]<<" to fit periodicity\n";
-      if(gmax[i]!=actualmax[i]) log<<"  WARNING: GRID_MAX["<<i<<"] has been adjusted to "<<actualmax[i]<<" to fit periodicity\n";
-    }
+   // check for mesh and sigma size
+   for(unsigned i=0;i<getNumberOfArguments();i++) {
+     double a,b;
+     Tools::convert(gmin[i],a);
+     Tools::convert(gmax[i],b);
+     double mesh=(b-a)/((double)gbin[i]);
+     if(adaptive_==FlexibleBin::none) {
+       if(mesh>0.5*sigma0_[i]) log<<"  WARNING: Using a METAD with a Grid Spacing larger than half of the Gaussians width can produce artifacts\n";
+     } else {
+       if(mesh>0.5*sigma0min_[i]||sigma0min_[i]<0.) log<<"  WARNING: to use a METAD with a GRID and ADAPTIVE you need to set a Grid Spacing larger than half of the Gaussians \n";
+     }
+   }
+   std::string funcl=getLabel() + ".bias";
+   if(!sparsegrid){BiasGrid_=new Grid(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
+   else{BiasGrid_=new SparseGrid(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
+   std::vector<std::string> actualmin=BiasGrid_->getMin();
+   std::vector<std::string> actualmax=BiasGrid_->getMax();
+   for(unsigned i=0;i<getNumberOfArguments();i++){
+     if(gmin[i]!=actualmin[i]) log<<"  WARNING: GRID_MIN["<<i<<"] has been adjusted to "<<actualmin[i]<<" to fit periodicity\n";
+     if(gmax[i]!=actualmax[i]) log<<"  WARNING: GRID_MAX["<<i<<"] has been adjusted to "<<actualmax[i]<<" to fit periodicity\n";
+   }
   }
 
   // restart from external grid
@@ -875,6 +875,7 @@ last_step_warn_grid(0)
       if(r>0) gridfilename_="/dev/null";
       gridfile_.enforceSuffix("");
     }
+    if(mw_n_>1) gridfile_.enforceSuffix("");
     gridfile_.open(gridfilename_);
   }
 
@@ -887,6 +888,7 @@ last_step_warn_grid(0)
     if(r>0) ifilesnames[mw_id_]="/dev/null";
     hillsOfile_.enforceSuffix("");
   }
+  if(mw_n_>1) hillsOfile_.enforceSuffix("");
   hillsOfile_.open(ifilesnames[mw_id_]);
   if(fmt.length()>0) hillsOfile_.fmtField(fmt);
   hillsOfile_.addConstantField("multivariate");
@@ -1060,20 +1062,11 @@ void MetaD::addGaussian(const Gaussian& hill)
 vector<unsigned> MetaD::getGaussianSupport(const Gaussian& hill)
 {
   vector<unsigned> nneigh;
-  if(doInt_){
-    double cutoff=sqrt(2.0*DP2CUTOFF)*hill.sigma[0];
-    if(hill.center[0]+cutoff > uppI_ || hill.center[0]-cutoff < lowI_) { 
-      // in this case, we updated the entire grid to avoid problems
-      return BiasGrid_->getNbin();
-    } else {
-      nneigh.push_back( static_cast<unsigned>(ceil(cutoff/BiasGrid_->getDx()[0])) );
-      return nneigh;
-    }
-  }
- 
+  vector<double> cutoff; 
+  unsigned ncv=getNumberOfArguments();
+
   // traditional or flexible hill? 
   if(hill.multivariate){
-    unsigned ncv=getNumberOfArguments();
     unsigned k=0;
     Matrix<double> mymatrix(ncv,ncv);
     for(unsigned i=0;i<ncv;i++){
@@ -1095,15 +1088,28 @@ vector<unsigned> MetaD::getGaussianSupport(const Gaussian& hill)
       if(myautoval[i]>maxautoval){maxautoval=myautoval[i];ind_maxautoval=i;}
     }  
     for(unsigned i=0;i<ncv;i++){
-      const double cutoff=sqrt(2.0*DP2CUTOFF)*abs(sqrt(maxautoval)*myautovec(i,ind_maxautoval));
-      nneigh.push_back( static_cast<unsigned>(ceil(cutoff/BiasGrid_->getDx()[i])) );
+      cutoff.push_back(sqrt(2.0*DP2CUTOFF)*abs(sqrt(maxautoval)*myautovec(i,ind_maxautoval)));
     }
   } else {
-    for(unsigned i=0;i<getNumberOfArguments();++i){
-      const double cutoff=sqrt(2.0*DP2CUTOFF)*hill.sigma[i];
-      nneigh.push_back( static_cast<unsigned>(ceil(cutoff/BiasGrid_->getDx()[i])) );
+    for(unsigned i=0;i<ncv;++i){
+      cutoff.push_back(sqrt(2.0*DP2CUTOFF)*hill.sigma[i]);
     }
   }
+
+  if(doInt_){
+    if(hill.center[0]+cutoff[0] > uppI_ || hill.center[0]-cutoff[0] < lowI_) { 
+      // in this case, we updated the entire grid to avoid problems
+      return BiasGrid_->getNbin();
+    } else {
+      nneigh.push_back( static_cast<unsigned>(ceil(cutoff[0]/BiasGrid_->getDx()[0])) );
+      return nneigh;
+    }
+  } else {
+    for(unsigned i=0;i<ncv;i++){
+      nneigh.push_back( static_cast<unsigned>(ceil(cutoff[i]/BiasGrid_->getDx()[i])) );
+    }
+  }
+ 
   return nneigh;
 }
 
@@ -1209,7 +1215,6 @@ double MetaD::evaluateGaussian(const vector<double>& cv, const Gaussian& hill, d
       if(der){
         for(unsigned i=0;i<cv.size();++i){
           double tmp=0.0;
-          k=i;
           for(unsigned j=0;j<cv.size();++j){
             tmp += dp_[j]*mymatrix(i,j)*bias;
           }

@@ -61,6 +61,24 @@ using namespace std;
 namespace PLMD {
 namespace cltools{
 
+//+PLUMEDOC TOOLS driver-float
+/*
+Equivalent to \ref driver, but using single precision reals.
+
+The purpose of this tool is just to test what PLUMED does when linked from
+a single precision code.
+
+\par Examples
+
+\verbatim
+plumed driver-float --plumed plumed.dat --ixyz trajectory.xyz
+\endverbatim
+
+See also examples in \ref driver
+
+*/
+
+
 //+PLUMEDOC TOOLS driver
 /*
 driver is a tool that allows one to to use plumed to post-process an existing trajectory.
@@ -494,6 +512,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
          if(!fp){
            string msg="ERROR: Error opening trajectory file "+trajectoryFile;
            fprintf(stderr,"%s\n",msg.c_str());
+// cppcheck detects a false positive here. I suppress it:
+// cppcheck-suppress memleak
            return 1;
          }
        }

@@ -233,7 +233,7 @@ void plumed_finalize(plumed p);
 /** \relates plumed
     \brief Check if plumed is installed (for runtime binding)
 
-    \return 1 if plumed is installed, to 0 otherwise
+    \return 1 if plumed is installed, 0 otherwise
 */
 int plumed_installed(void);
 
@@ -254,7 +254,7 @@ int plumed_ginitialized(void);
 /** \relates plumed
     \brief Constructor for the global interface.
 
-    \note Equivalent to plumed_create(), but initialize a static global plumed object
+    \note Equivalent to plumed_create(), but initialize the static global plumed object
 */
 void plumed_gcreate(void);
 
@@ -265,14 +265,16 @@ void plumed_gcreate(void);
     \param val The argument. It is declared as const to allow calls like plumed_gcmd("A","B"),
                but for some choice of key it can change the content
 
-    \note Equivalent to plumed_cmd(), but skipping the plumed argument
+    \note Equivalent to plumed_cmd(), but acting on the global plumed object.
+          It thus does not require the plumed object to be specified.
 */
 void plumed_gcmd(const char* key,const void* val);
 
 /** \relates plumed
     \brief Destructor for the global interface.
 
-    \note Equivalent to plumed_finalize(), but skipping the plumed argument
+    \note Equivalent to plumed_finalize(), but acting on the global plumed object.
+          It thus does not require the plumed object to be specified.
 */
 void plumed_gfinalize(void);
 
@@ -283,6 +285,24 @@ void plumed_gfinalize(void);
 
     \param p The C handler
     \param c The FORTRAN handler (a char[32])
+
+    This function can be used to convert a plumed object created in C to
+    a plumed handler that can be used in FORTRAN.
+\verbatim
+#include <plumed/wrapper/Plumed.h>
+int main(int argc,char*argv[]){
+  plumed p;
+  p=plumed_create();
+  char fortran_handler[32];
+  plumed_c2f(p,fortran_handler);
+  printf("DEBUG: this is a string representation for the plumed handler: %s\n",fortran_handler);
+  fortran_routine(fortran_handler);
+  plumed_finalize(p);
+  return 0;
+}
+\endverbatim
+  Here `fortran_routine` is a routine implemented in FORTRAN that manipulates the
+  fortran_handler.
 */
 void   plumed_c2f(plumed p,char* c);
 
@@ -290,6 +310,18 @@ void   plumed_c2f(plumed p,char* c);
     \brief Converts a FORTRAN handler to a C handler
     \param c The FORTRAN handler (a char[32])
     \return The C handler
+
+    This function can be used to convert a plumed object created in FORTRAN
+    to a plumed handler that can be used in C.
+\verbatim
+void c_routine(char handler[32]){
+  plumed p;
+  p=plumed_f2c(handler);
+  plumed_cmd(p,"init",NULL);
+}
+\endverbatim
+  Here `c_routine` is a C function that can be called from FORTRAN
+  and interact with the provided plumed handler.
 */
 plumed plumed_f2c(const char* c);
 
@@ -312,6 +344,9 @@ namespace PLMD {
 */
 
 class Plumed{
+/**
+  C structure.
+*/
   plumed main;
 /**
    keeps track if the object was created from scratch using 
@@ -325,16 +360,19 @@ public:
 /**
    Check if plumed is installed (for runtime binding)
    \return true if plumed is installed, false otherwise
+   \note Equivalent to plumed_installed() but returns a bool
 */
   static bool installed();
 /**
    Check if global-plumed has been initialized
    \return true if global plumed object (see global()) is initialized (i.e. if gcreate() has been
            called), false otherwise.
+   \note Equivalent to plumed_ginitialized() but returns a bool
 */
   static bool ginitialized();
 /**
-   Initialize global-plumed
+   Initialize global-plumed.
+   \note Equivalent to plumed_gcreate()
 */
   static void gcreate();
 /**
@@ -342,6 +380,7 @@ public:
     \param key The name of the command to be executed
     \param val The argument. It is declared as const to allow calls like gcmd("A","B"),
                but for some choice of key it can change the content
+   \note Equivalent to plumed_gcmd()
 */
   static void gcmd(const char* key,const void* val);
 /**
@@ -354,7 +393,8 @@ public:
 */
   static Plumed global();
 /**
-   Constructor
+   Constructor.
+  \note Performs the same task a plumed_create()
 */
   Plumed();
 /**
@@ -407,6 +447,7 @@ public:
     \param key The name of the command to be executed
     \param val The argument. It is declared as const to allow calls like p.cmd("A","B"),
                but for some choice of key it can change the content
+    \note Equivalent to plumed_cmd()
 */
   void cmd(const char*key,const void*val=NULL);
 /**

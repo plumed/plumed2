@@ -173,10 +173,11 @@ neigh_stride(-1.)
   checkRead();
   log.printf("  lambda is %f\n",lambda);
   // list the action involved and check the type 
-  for(unsigned i=0;i<getNumberOfArguments();i++){
+  std::string myname=getPntrToArgument(0)->getPntrToAction()->getName();
+  if(myname!="RMSD"&&myname!="CONTACTMAP"&&myname!="DISTANCE") error("One or more of your arguments is not of RMSD/CONTACTMAP/DISTANCE type!!!");
+  for(unsigned i=1;i<getNumberOfArguments();i++){
        // for each value get the name and the label of the corresponding action
-       std::string myname=getPntrToArgument(i)->getPntrToAction()->getName(); 
-       if(myname!="RMSD"&&myname!="CONTACTMAP")plumed_merror("This argument is not of RMSD type!!!");
+       if( getPntrToArgument(i)->getPntrToAction()->getName()!=myname ) error("mismatch between the types of arguments");
   }   
   log.printf("  Consistency check completed! Your path cvs look good!\n"); 
   // do some neighbor printout

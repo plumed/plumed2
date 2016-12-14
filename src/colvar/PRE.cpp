@@ -41,6 +41,30 @@ The additional parameters needed for the calculation are given as INEPT, the ine
 time, TAUC the correlation time, OMEGA, the larmor frequency and RTWO for the relaxation
 time.
 
+\par Examples
+
+In the following example five PRE intensities are calculated using the distance between the
+oxigen of the spin label and the backbone hydrogens. Omega is the NMR frequency, RTWO the
+R2 for the hydrogens, INEPT of 8 ms for the experiment and a TAUC of 1.21 ns
+
+\verbatim
+PRE ...
+LABEL=HN_pre
+INEPT=8
+TAUC=1.21
+OMEGA=900
+SPINLABEL=1818
+GROUPA1=86  RTWO1=0.0120272827
+GROUPA2=177 RTWO2=0.0263953158
+GROUPA3=285 RTWO3=0.0058899829
+GROUPA4=335 RTWO4=0.0102072646
+GROUPA5=451 RTWO5=0.0086341843
+... PRE
+
+PRINT ARG=HN_pre.* FILE=PRE.dat STRIDE=1
+
+\endverbatim
+
 */
 //+ENDPLUMEDOC
 

@@ -20,8 +20,8 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-#include "VesselRegister.h"
 #include "Between.h"
+#include "VesselRegister.h"
 
 namespace PLMD {
 namespace vesselbase {

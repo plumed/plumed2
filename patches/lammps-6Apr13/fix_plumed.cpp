@@ -9,10 +9,16 @@
 #include "error.h"
 #include "group.h"
 #include "fix_plumed.h"
+#include "universe.h"
+#include "compute.h"
+#include "modify.h"
+#include "pair.h"
 
 using namespace LAMMPS_NS;
 using namespace PLMD;
 using namespace FixConst;
+
+#define INVOKED_SCALAR 1
 
 FixPlumed::FixPlumed(LAMMPS *lmp, int narg, char **arg) :
   Fix(lmp, narg, arg),
@@ -26,6 +32,26 @@ FixPlumed::FixPlumed(LAMMPS *lmp, int narg, char **arg) :
   if (!atom->tag_enable) error->all(FLERR,"fix plumed requires atom tags");
 // Initialize plumed:
   p=new PLMD::Plumed;
+
+// If the -partition option is activated then enable inter-partition communication
+  if (universe->existflag == 1) {
+     int me;
+     MPI_Comm inter_comm;
+     MPI_Comm_rank(world,&me);
+     // Change MPI_COMM_WORLD to universe->uworld which seems more appropriate
+     MPI_Comm_split(universe->uworld,me,0,&inter_comm);
+     p->cmd("GREX setMPIIntracomm",&world);
+     if (me == 0) {
+        // The inter-partition communicator is only defined for the root in
+        //    each partition (a.k.a. world). This is due to the way in which
+        //    it is defined inside plumed.
+        p->cmd("GREX setMPIIntercomm",&inter_comm);
+     }
+     p->cmd("GREX init",NULL);
+  }
+  // The general communicator is independent of the existence of partitions,
+  //   if there are partitions, world is defined within each partition,
+  //   whereas if partitions are not defined then world is equal to MPI_COMM_WORLD.
   p->cmd("setMPIComm",&world);
 
 // Set up units
@@ -75,7 +101,13 @@ FixPlumed::FixPlumed(LAMMPS *lmp, int narg, char **arg) :
   for(int i=3;i<narg;++i){
     if(!strcmp(arg[i],"outfile")) next=1;
     else if(next==1){
-      p->cmd("setLogFile",arg[i]);
+      // Each replica writes an independent log file
+      //  with suffix equal to the replica id
+      char str_num[32], *logFile;
+      sprintf(str_num,".%d",universe->iworld);
+      logFile=arg[i];
+      strcat(logFile,str_num);
+      p->cmd("setLogFile",logFile);
       next=0;
     }
     else if(!strcmp(arg[i],"plumedfile"))next=2;
@@ -97,10 +129,17 @@ FixPlumed::FixPlumed(LAMMPS *lmp, int narg, char **arg) :
   p->cmd("setTimestep",&dt);
 
   virial_flag=1;
+  scalar_flag = 1;
 
 // This is the real initialization:
   p->cmd("init");
 
+// Define compute to calculate potential energy
+  char *id_pe = (char *) "thermo_pe";
+  int ipe = modify->find_compute(id_pe);
+  c_pe = modify->compute[ipe];
+  // Trigger computation of potential energy every step
+  c_pe->addstep(update->ntimestep+1);
 }
 
 FixPlumed::~FixPlumed()
@@ -110,7 +149,7 @@ FixPlumed::~FixPlumed()
 
 int FixPlumed::setmask()
 {
-  // set with a bitmask how and when apply the force from plumed 
+  // set with a bitmask how and when apply the force from plumed
   int mask = 0;
   mask |= POST_FORCE;
   mask |= THERMO_ENERGY;
@@ -188,7 +227,7 @@ void FixPlumed::post_force(int vflag)
   box[2][1]=domain->h[3];
   box[2][0]=domain->h[4];
   box[1][0]=domain->h[5];
-  
+
 // local variable with timestep:
   int step=update->ntimestep;
 
@@ -200,6 +239,21 @@ void FixPlumed::post_force(int vflag)
   p->cmd("setMasses",&masses[0]);
   if(atom->q) p->cmd("setCharges",&charges[0]);
   p->cmd("setVirial",&virial[0][0]);
+  p->cmd("getBias",&bias);
+
+// pass the energy
+  double pot_energy = 0.;
+  c_pe->compute_scalar();
+  c_pe->invoked_flag |= INVOKED_SCALAR;
+  pot_energy = c_pe->scalar;
+  int nprocs;
+  // Divide energy by number of processors 
+  // Plumed wants it this way
+  MPI_Comm_size(world,&nprocs);
+  pot_energy /= nprocs;
+  p->cmd("setEnergy",&pot_energy);
+  // Trigger computation of potential energy every step
+  c_pe->addstep(update->ntimestep+1);
 
 // do the real calculation:
   p->cmd("calc");
@@ -222,4 +276,10 @@ void FixPlumed::min_post_force(int vflag)
 {
   post_force(vflag);
 }
+
+double FixPlumed::compute_scalar()
+{
+  return bias;
+}
+
 

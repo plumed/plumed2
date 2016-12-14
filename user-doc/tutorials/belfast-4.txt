@@ -209,7 +209,7 @@ The <a href="tutorial-resources/belfast-4.tar.gz" download="belfast-4.tar.gz">ta
 By working in the directory where the topol.tpr file is stored, one can launch gromacs
 with the command
 \verbatim
-mdrun_mpi -plumed plumed.dat -nsteps 100000
+gmx_mpi mdrun -plumed plumed.dat -nsteps 100000
 \endverbatim
 (notice that the -nsteps flag allows the number of steps to be changed).
 
@@ -409,7 +409,7 @@ restraint-phi: RESTRAINT ARG=phi KAPPA=40.0 AT=$AT
 PRINT STRIDE=10 ARG=phi,psi,restraint-phi.bias FILE=COLVAR$AT
 EOF
 
-mdrun_mpi -plumed plumed.dat -nsteps 100000 -x traj$AT.xtc
+gmx_mpi mdrun -plumed plumed.dat -nsteps 100000 -x traj$AT.xtc
 
 done
 
@@ -425,7 +425,7 @@ can be mixed and it is not necessary to keep track of which restraint was used t
 every single frame. Let's get the concatenated trajectory
 
 \verbatim
-trjcat -cat -f traj*.xtc -o alltraj.xtc
+gmx_mpi trjcat -cat -f traj*.xtc -o alltraj.xtc
 \endverbatim
 
 Now we should compute the value of each of the bias potentials on the entire (concatenated) trajectory

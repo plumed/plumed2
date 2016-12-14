@@ -85,7 +85,7 @@ available).
 
 \verbatim
 INCLUDE FILE=plumed-common.dat
-be: METAD ARG=cv1 HEIGHT=0.2 SIGMA=0.2 PACE=100 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=200 
+be: METAD ARG=cv1 HEIGHT=0.2 SIGMA=0.2 PACE=100 GRID_MIN=-pi GRID_MAX=pi 
 PRINT ARG=cv1,cv2,cv3,cv4 STRIDE=1000 FILE=COLVAR
 \endverbatim
 
@@ -102,7 +102,7 @@ The four replicas start from the same GROMACS topology file replicated four time
 Finally, GROMACS is launched as a parallel run on 4 cores, with one replica per core, with the command 
 
 \verbatim
-mpirun -np 4 mdrun_mpi -s topol -plumed plumed -multi 4 -replex 2000 >& log &
+mpirun -np 4 gmx_mpi mdrun -s topol -plumed plumed -multi 4 -replex 2000 >& log &
 \endverbatim
 
 where -replex 2000 indicates that every 2000 molecular-dynamics steps
@@ -292,7 +292,7 @@ We can use the same common input file defined above and then we can define four 
 was done above for bias-exchange but now all the biases are defined on the same collective variables:
 
 \verbatim
-plumed.dat.#
+plumed.#.dat
 INCLUDE FILE=plumed-common.dat
 
 METAD ...
@@ -302,10 +302,8 @@ SIGMA=0.3,0.3
 HEIGHT=0.2 
 PACE=100
 BIASFACTOR=8
-TEMP=300 
 GRID_MIN=-pi,-pi 
 GRID_MAX=pi,pi 
-GRID_BIN=200,200
 WALKERS_MPI
 ... METAD
 
@@ -315,7 +313,7 @@ PRINT ARG=cv1,cv2,cv3,cv4 STRIDE=1000 FILE=COLVAR
 and the simulation can be run in a similar way without doing exchanges:
 
 \verbatim
-mpirun -np 4 mdrun_mpi -s topol -plumed plumed -multi 4  >& log &
+mpirun -np 4 gmx_mpi mdrun -s topol -plumed plumed -multi 4  >& log &
 \endverbatim
 
 alternatively Multiple Walkers can be run as independent simulations sharing via the file system the biasing potential,

@@ -95,6 +95,8 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit Average( const ActionOptions& );
+  void calculate(){}
+  void apply(){}
   void performOperations( const bool& from_update );
   void finishAveraging();
   bool isPeriodic(){ return false; } 

@@ -9,8 +9,11 @@ RESTRAINT ARG=st.sqdevsum,ste.corr AT=0,1 KAPPA=0,0 SLOPE=1,1
 
 DUMPFORCES ARG=(cs\.ca_.*),(cs\.cb_.*),(cs\.hn_.*),(cs\.nh_.*) FILE=forces
 
-PRINT ARG=(cs\.ca_.*),(cs\.cb_.*),(cs\.hn_.*),(cs\.nh_.*) STRIDE=1 FILE=colvar FMT=%8.4f
+csa: CS2BACKBONE ATOMS=1-2612 NRES=176 DATA=../data/ TEMPLATE=template.pdb NEIGH_FREQ=1 NOPBC CAMSHIFT
+RESTRAINT ARG=csa AT=0 KAPPA=0 SLOPE=1.0
+
+PRINT ARG=csa,(cs\.ca_.*),(cs\.cb_.*),(cs\.hn_.*),(cs\.nh_.*) STRIDE=1 FILE=colvar FMT=%8.4f
 PRINT ARG=ens.* STRIDE=1 FILE=ecolvar FMT=%8.4f
 
-#csn: CS2BACKBONE ATOMS=1-2612 NRES=176 DATA=../data/ TEMPLATE=template.pdb NEIGH_FREQ=1 NOEXP NOPBC NUMERICAL_DERIVATIVES 
-#DUMPDERIVATIVES ARG=cs.ca_4,csn.ca_4  FILE=derivatives1 FMT=%8.2f STRIDE=1
+#csn: CS2BACKBONE ATOMS=1-2612 NRES=176 DATA=../data/ TEMPLATE=template.pdb NEIGH_FREQ=1 NOPBC CAMSHIFT NUMERICAL_DERIVATIVES 
+#DUMPDERIVATIVES ARG=csa,csn  FILE=derivatives1 FMT=%8.2f STRIDE=1
