@@ -413,7 +413,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
   int rr=sizeof(real);
   p.cmd("setRealPrecision",&rr);
   int checknatoms=-1;
-  int step=0;
+  long int step=0;
   if(Communicator::initialized()){
     if(multi){
       if(intracomm.Get_rank()==0) p.cmd("GREX setMPIIntercomm",&intercomm.Get_comm());
@@ -629,7 +629,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
     }
 
     int plumedStopCondition=0;
-    p.cmd("setStep",&step);
+    p.cmd("setStepLong",&step);
     p.cmd("setStopFlag",&plumedStopCondition);
     if(!noatoms){
        if(use_molfile){
