@@ -42,7 +42,7 @@ class TopologyMatrix : public AdjacencyMatrixBase {
 private:
 /// The width to use for the kernel density estimation and the 
 /// sizes of the bins to be used in kernel density estimation
-  double sigma, radmax2;
+  double sigma;
   std::string kerneltype;
 /// The maximum number of bins that will be used 
 /// This is calculated based on the dmax of the switching functions
@@ -53,7 +53,6 @@ private:
   Matrix<SwitchingFunction> switchingFunction;
   Matrix<SwitchingFunction> cylinder_sw;
   Matrix<SwitchingFunction> low_sf;
-  int bstart;
   double beadrad, lsfmax;
   Matrix<double> binw_mat;
   SwitchingFunction threshold_switch;
@@ -145,12 +144,11 @@ AdjacencyMatrixBase(ao)
   // Get the width of the bead
   HistogramBead bead; bead.isNotPeriodic(); 
   bead.setKernelType( kerneltype ); bead.set( 0.0, 1.0, sigma );
-  beadrad = bead.getCutoff(); bstart = std::floor( beadrad / rfmax ) + 1;
-  double radmax = sfmax/2.0 + beadrad; radmax2=radmax*radmax;
+  beadrad = bead.getCutoff(); 
 
   // Set the link cell cutoff
   log.printf("  setting cutoffs %f %f \n", sfmax, rfmax );
-  setLinkCellCutoff( sfmax, rfmax );
+  setLinkCellCutoff( sfmax, 3*rfmax );
 
   double maxsize=0;
   for(unsigned i=0;i<getNumberOfNodeTypes();++i){
@@ -195,19 +193,16 @@ void TopologyMatrix::setupConnector( const unsigned& id, const unsigned& i, cons
 
 void TopologyMatrix::buildListOfLinkCells( const std::vector<unsigned>& cind, const LinkCells& linkc,
                                            unsigned& ncells_required, std::vector<unsigned>& cells_required ) const {
+  // Shift ends of cylinder from positions of atoms to generate line of interest
   Vector distance=getSeparation( getPositionOfAtomForLinkCells( cind[0] ), getPositionOfAtomForLinkCells( cind[1] ) );
-  double binw = binw_mat( getBaseColvarNumber( cind[0] ), getBaseColvarNumber( cind[1] ) ); 
-  double len = distance.modulo(); distance /= len; double lcylinder = (std::floor( len / binw ) + 1)*binw;
-
-  unsigned np = std::floor( (lcylinder+beadrad) / linkc.getCutoff() ) + 1; 
-  double delr = (lcylinder + 2*beadrad) / static_cast<double>( np ); 
-  ncells_required=0; int prev=-1;
-  for(int i=0;i<=np;++i){
-      Vector pp = getPositionOfAtomForLinkCells( cind[0] ) + (i-bstart)*delr*distance;
-      unsigned myceln = linkc.findCell(pp);
-      if( myceln!=prev ) linkc.addRequiredCells( linkc.findMyCell(pp), ncells_required, cells_required );
-      prev = myceln; 
- }
+  double len = distance.modulo(); distance /= len; 
+  Vector p1 = getPositionOfAtomForLinkCells( cind[0] ) - beadrad*distance; 
+  double binw = binw_mat( getBaseColvarNumber( cind[0] ), getBaseColvarNumber( cind[1] ) );
+  double lcylinder = (std::floor( len / binw ) + 1)*binw;
+  Vector p2 = p1 + (lcylinder + beadrad)*distance;
+  // And get the appropriate atoms
+  unsigned ncells=0; ncells_required = 0;
+  linkc.getCellsThatLinePassesThrough( p1, p2, ncells_required, cells_required );
 }
 
 Vector TopologyMatrix::getLinkCellPosition( const std::vector<unsigned>& atoms ) const {
@@ -259,6 +254,8 @@ double TopologyMatrix::compute( const unsigned& tindex, multicolvar::AtomValuePa
           myvals.addDerivative( 1, ider, sw*df*max*myvals.getDerivative( vout, ider ) + tsw*myvals.getDerivative( 2+maxbins, ider ) );
       }
   }
+  for(unsigned i=0;i<maxbins;++i) printf("HEL %f ", myatoms.getValue(2+i) );
+  printf("\n");
   return sw*tsw;
 }
 
@@ -266,7 +263,6 @@ void TopologyMatrix::calculateForThreeAtoms( const unsigned& iat, const Vector& 
                                              HistogramBead& bead, multicolvar::AtomValuePack& myatoms ) const {
   // Calculate if there are atoms in the cylinder (can use delta here as pbc are done in atom setup)
   Vector d2 = delta( myatoms.getPosition(0), myatoms.getPosition(iat) );
-  if ( d2.modulo2()>radmax2 ) return; 
   // Now calculate projection of d2 on d1
   double proj=dotProduct(d2,d1);
   // This tells us if we are outside the end of the cylinder

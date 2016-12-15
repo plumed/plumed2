@@ -102,6 +102,57 @@ void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vecto
   }
 }
 
+bool LinkCells::checkLineBox( const double& dist1, const double& dist2, const Vector& fpos1, const Vector& fpos2, 
+                              const Vector& plow, const Vector& phigh, const unsigned& axis ) const {
+  if( dist1*dist2>=0.0 || dist1==dist2 ) return false;
+  Vector hit = fpos1 + ( fpos2 - fpos1 ) * ( -dist1/(dist2-dist1) );
+  if( axis==0 && hit[2]>plow[2] && hit[2]<phigh[2] && hit[1]>plow[1] && hit[1]<phigh[1] ) return true;
+  if( axis==1 && hit[2]>plow[2] && hit[2]<phigh[2] && hit[0]>plow[0] && hit[0]<phigh[0] ) return true;
+  if( axis==2 && hit[0]>plow[0] && hit[0]<phigh[0] && hit[1]>plow[1] && hit[1]<phigh[1] ) return true;
+  return false;
+}
+
+void LinkCells::getCellsThatLinePassesThrough( const Vector& pos1, const Vector& pos2, unsigned& ncells_required, 
+                                               std::vector<unsigned>& cells_required ) const {
+  // Retrieve the cell indices of the extrema for the line segment
+  std::vector<double> delx(3); std::vector<unsigned> celln(3); 
+  for(unsigned i=0;i<3;++i) delx[i] =  1.0 / static_cast<double>(ncells[i]);
+
+  // Now loop over the indices that are important
+  Vector plow, phigh, fpos1 = mypbc.realToScaled( pos1 ), fpos2 = mypbc.realToScaled( pos2 );
+  for(celln[0]=0;celln[0]<ncells[0];++celln[0]){
+      plow[0] = -0.5 + celln[0] * delx[0]; phigh[0] = plow[0] + delx[0];
+      if( fpos1[0]<plow[0] && fpos2[0]<plow[0] ) continue;
+      if( fpos1[0]>phigh[0] && fpos2[0]>phigh[0] ) continue;
+      for(celln[1]=0;celln[1]<ncells[1];++celln[1]){ 
+          plow[1] = -0.5 + celln[1] * delx[1]; phigh[1] = plow[1] + delx[1]; 
+          if( fpos1[1]<plow[1] && fpos2[1]<plow[1] ) continue;
+          if( fpos1[1]>phigh[1] && fpos2[1]>phigh[1] ) continue;
+          for(celln[2]=0;celln[2]<ncells[2];++celln[2]){
+              plow[2] = -0.5 + celln[2] * delx[2]; phigh[2] = plow[2] + delx[2];
+              if( fpos1[2]<plow[2] && fpos2[2]<plow[2] ) continue;
+              if( fpos1[2]>phigh[2] && fpos2[2]>phigh[2] ) continue;
+              // Check if first point is in this bounding box
+              if( fpos1[0]>plow[0] && fpos1[0]<phigh[0] && 
+                  fpos1[1]>plow[1] && fpos1[1]<phigh[1] && 
+                  fpos1[2]>plow[2] && fpos1[2]<phigh[2] ){ 
+                     addRequiredCells( celln, ncells_required, cells_required ); 
+                     continue;
+              }
+              // Now check for intersection with line
+              if( checkLineBox( fpos1[0] - plow[0], fpos2[0] - plow[0], fpos1, fpos2, plow, phigh, 0 ) ||
+                  checkLineBox( fpos1[1] - plow[1], fpos2[1] - plow[1], fpos1, fpos2, plow, phigh, 1 ) ||
+                  checkLineBox( fpos1[2] - plow[2], fpos2[2] - plow[2], fpos1, fpos2, plow, phigh, 2 ) ||
+                  checkLineBox( fpos1[0] - phigh[0], fpos2[0] - phigh[0], fpos1, fpos2, plow, phigh, 0 ) ||
+                  checkLineBox( fpos1[1] - phigh[1], fpos2[1] - phigh[1], fpos1, fpos2, plow, phigh, 1 ) || 
+                  checkLineBox( fpos1[2] - phigh[2], fpos2[2] - phigh[2], fpos1, fpos2, plow, phigh, 2 ) ){
+                     addRequiredCells( celln, ncells_required, cells_required );
+              }
+          }
+      }
+  } 
+}
+
 #define LINKC_MIN(n) ((n<2)? 0 : -1)
 #define LINKC_MAX(n) ((n<3)? 1 : 2)
 #define LINKC_PBC(n,num) ((n<0)? num-1 : n%num )
@@ -137,33 +188,6 @@ void LinkCells::retrieveNeighboringAtoms( const Vector& pos, std::vector<unsigne
   retrieveAtomsInCells( ncellt, cell_list, natomsper, atoms ); 
 }
 
-// void LinkCells::retrieveNeighboringAtoms( const Vector& pos, unsigned& natomsper, std::vector<unsigned>& atoms ) const {
-//   plumed_assert( natomsper==1 || natomsper==2 );  // This is really a bug. If you are trying to reuse this ask GAT for help
-//   std::vector<unsigned> celn( findMyCell( pos ) );
-// 
-//   for(int nx=LINKC_MIN(ncells[0]);nx<LINKC_MAX(ncells[0]);++nx){
-//      int xval = celn[0] + nx;  
-//      xval=LINKC_PBC(xval,ncells[0])*nstride[0]; 
-//      for(int ny=LINKC_MIN(ncells[1]);ny<LINKC_MAX(ncells[1]);++ny){
-//          int yval = celn[1] + ny;  
-//          yval=LINKC_PBC(yval,ncells[1])*nstride[1]; 
-//          for(int nz=LINKC_MIN(ncells[2]);nz<LINKC_MAX(ncells[2]);++nz){
-//              int zval = celn[2] + nz;
-//              zval=LINKC_PBC(zval,ncells[2])*nstride[2]; 
-// 
-//              unsigned mybox=xval+yval+zval;
-//              for(unsigned k=0;k<lcell_tots[mybox];++k){
-//                  unsigned myatom = lcell_lists[lcell_starts[mybox]+k];
-//                  if( myatom!=atoms[0] ){  // Ideally would provide an option to not do this
-//                      atoms[natomsper]=myatom;
-//                      natomsper++;
-//                  } 
-//              }
-//          }
-//      }
-//   }
-// }
-
 void LinkCells::retrieveAtomsInCells( const unsigned& ncells_required, 
                                       const std::vector<unsigned>& cells_required, 
                                       unsigned& natomsper, std::vector<unsigned>& atoms ) const {
@@ -189,9 +213,13 @@ std::vector<unsigned> LinkCells::findMyCell( const Vector& pos ) const {
   return celn;
 }
 
+unsigned LinkCells::convertIndicesToIndex( const unsigned& nx, const unsigned& ny, const unsigned& nz ) const {
+  return nx*nstride[0] + ny*nstride[1] + nz*nstride[2];
+}
+
 unsigned LinkCells::findCell( const Vector& pos ) const {
   std::vector<unsigned> celn( findMyCell(pos ) );
-  return celn[0]*nstride[0] + celn[1]*nstride[1] + celn[2]*nstride[2];
+  return convertIndicesToIndex( celn[0], celn[1], celn[2] );
 }
 
 

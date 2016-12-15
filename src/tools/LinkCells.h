@@ -54,6 +54,9 @@ private:
   std::vector<unsigned> lcell_tots;
 /// The atoms ordered by link cells
   std::vector<unsigned> lcell_lists;
+/// Checks if a line passes through a link cell
+  bool checkLineBox( const double& dist1, const double& dist2, const Vector& fpos1, const Vector& fpos2,
+                     const Vector& plow, const Vector& phigh, const unsigned& axis ) const ;
 public:
 ///
   explicit LinkCells( Communicator& comm );
@@ -67,10 +70,15 @@ public:
   unsigned getNumberOfCells() const ;
 /// Build the link cell lists
   void buildCellLists( const std::vector<Vector>& pos, const std::vector<unsigned>& indices, const Pbc& pbc );
+/// Take three indices and return the index of the corresponding cell
+  unsigned convertIndicesToIndex( const unsigned& nx, const unsigned& ny, const unsigned& nz ) const ;
 /// Find the cell index in which this position is contained
   unsigned findCell( const Vector& pos ) const ;
 /// Find the cell in which this position is contained
   std::vector<unsigned> findMyCell( const Vector& pos ) const ;   
+/// Get the cells that a line passes through so we can build a list of atoms
+  void getCellsThatLinePassesThrough( const Vector& pos1, const Vector& pos2, unsigned& ncells_required,
+                                      std::vector<unsigned>& cells_required ) const ;
 /// Get the list of cells we need to surround the a particular cell
   void addRequiredCells( const std::vector<unsigned>& celn, unsigned& ncells_required,
                          std::vector<unsigned>& cells_required ) const ;
