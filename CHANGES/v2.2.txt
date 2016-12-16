@@ -167,7 +167,6 @@ For developers:
 
 Version 2.2.4 (Dec 12, 2016)
 -------------
-See branch \branch{v2.2} on git repository.
 
 For users:
 - Fix a bug in \ref PBMETAD when biasing periodic and not periodic collective variables at the same time 
@@ -182,5 +181,12 @@ For users:
 
 For developers:
 - Macports portile is now tested on travis at every plumed push.
+
+Version 2.2.5
+-------------
+See branch \branch{v2.2} on git repository.
+
+For users:
+- Fixed a problem with large step numbers in driver (see \issue{209}).
 
 */
