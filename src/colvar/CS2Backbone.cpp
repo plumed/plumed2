@@ -1003,16 +1003,9 @@ void CS2Backbone::calculate()
 
               if(ringInfo[i].numAtoms==6) {
     	        // update forces on ring atoms
-                vector<Vector> g(6);
-                g[0] = delta(getPosition(ringInfo[i].atom[4]),getPosition(ringInfo[i].atom[2]));
-                g[1] = delta(getPosition(ringInfo[i].atom[5]),getPosition(ringInfo[i].atom[3]));
-                g[2] = delta(getPosition(ringInfo[i].atom[0]),getPosition(ringInfo[i].atom[4]));
-                g[3] = delta(getPosition(ringInfo[i].atom[1]),getPosition(ringInfo[i].atom[5]));
-                g[4] = delta(getPosition(ringInfo[i].atom[2]),getPosition(ringInfo[i].atom[0]));
-                g[5] = delta(getPosition(ringInfo[i].atom[3]),getPosition(ringInfo[i].atom[1]));
                 for(unsigned at=0;at<6;at++) {
-                  const Vector ab = crossProduct(d,g[at]);
-                  const Vector c  = crossProduct(n,g[at]);
+                  const Vector ab = crossProduct(d,ringInfo[i].g[at]);
+                  const Vector c  = crossProduct(n,ringInfo[i].g[at]);
     	          const Vector factor3 = 0.5*dL_nL*c;
                   const Vector factor1 = 0.5*ab;
                   const Vector gradU   = fU*( dLnL*(factor1 - factor2) -dn*(factor3 - factor4) );
@@ -1020,13 +1013,9 @@ void CS2Backbone::calculate()
                   list.push_back(ringInfo[i].atom[at]);
                 }
               } else {
-                vector<Vector> g(3);
-                g[0] = delta(getPosition(ringInfo[i].atom[3]),getPosition(ringInfo[i].atom[2]));
-                g[1] = delta(getPosition(ringInfo[i].atom[0]),getPosition(ringInfo[i].atom[3]));
-                g[2] = delta(getPosition(ringInfo[i].atom[2]),getPosition(ringInfo[i].atom[0]));
                 for(unsigned at=0;at<3;at++) {
-                  const Vector ab = crossProduct(d,g[at]);
-                  const Vector c  = crossProduct(n,g[at]);
+                  const Vector ab = crossProduct(d,ringInfo[i].g[at]);
+                  const Vector c  = crossProduct(n,ringInfo[i].g[at]);
     	          const Vector factor3 = dL_nL*c;
                   const Vector factor1 = ab;
                   const Vector gradU   = fU*( dLnL*(factor1 - factor2) -dn*(factor3 - factor4) );
@@ -1164,6 +1153,12 @@ void CS2Backbone::compute_ring_parameters(){
   for(unsigned i=0;i<ringInfo.size();i++){
     const unsigned size = ringInfo[i].numAtoms;
     if(size==6) {
+      ringInfo[i].g[0] = delta(getPosition(ringInfo[i].atom[4]),getPosition(ringInfo[i].atom[2]));
+      ringInfo[i].g[1] = delta(getPosition(ringInfo[i].atom[5]),getPosition(ringInfo[i].atom[3]));
+      ringInfo[i].g[2] = delta(getPosition(ringInfo[i].atom[0]),getPosition(ringInfo[i].atom[4]));
+      ringInfo[i].g[3] = delta(getPosition(ringInfo[i].atom[1]),getPosition(ringInfo[i].atom[5]));
+      ringInfo[i].g[4] = delta(getPosition(ringInfo[i].atom[2]),getPosition(ringInfo[i].atom[0]));
+      ringInfo[i].g[5] = delta(getPosition(ringInfo[i].atom[3]),getPosition(ringInfo[i].atom[1]));
       vector<Vector> a(size);
       a[0] = getPosition(ringInfo[i].atom[0]);
       // ring center
@@ -1182,6 +1177,9 @@ void CS2Backbone::compute_ring_parameters(){
       // ring plane normal vector is average of n1 and n2
       ringInfo[i].normVect = 0.5*(ringInfo[i].n1 + ringInfo[i].n2);
     } else {
+      ringInfo[i].g[0] = delta(getPosition(ringInfo[i].atom[3]),getPosition(ringInfo[i].atom[2]));
+      ringInfo[i].g[1] = delta(getPosition(ringInfo[i].atom[0]),getPosition(ringInfo[i].atom[3]));
+      ringInfo[i].g[2] = delta(getPosition(ringInfo[i].atom[2]),getPosition(ringInfo[i].atom[0]));
       vector<Vector> a(size);
       for(unsigned j=0; j<size; j++) {
         a[j] = getPosition(ringInfo[i].atom[j]);
