@@ -1,0 +1,7 @@
+rmsd0:   RMSD TYPE=OPTIMAL REFERENCE=test0.pdb
+
+PRINT ...
+  STRIDE=1
+  ARG=*
+  FILE=COLVAR FMT=%6.3f
+... PRINT
