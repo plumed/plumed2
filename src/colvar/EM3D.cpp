@@ -66,10 +66,11 @@ private:
  // model GMM - weights and atom types
  vector<double>   GMM_m_w_;
  vector<unsigned> GMM_m_type_;
- // data GMM - means, weights, and covariances
+ // data GMM - means, weights, and covariances + beta option
  vector<Vector>             GMM_d_m_;
  vector<double>             GMM_d_w_;
  vector< VectorGeneric<6> > GMM_d_cov_;
+ vector<int>                GMM_d_beta_;
  // overlaps 
  vector<double> ovmd_;
  vector<double> ovdd_;
@@ -184,6 +185,8 @@ void EM3D::registerKeywords( Keywords& keys ){
   keys.addOutputComponent("accbeta", "default","MC acceptance beta");
   keys.addOutputComponent("wtbias",  "default","well-tempered bias");
   keys.addOutputComponent("score",   "default","Bayesian score");
+  keys.addOutputComponent("scoreb",  "default","Beta Bayesian score");
+
 }
 
 EM3D::EM3D(const ActionOptions&ao):
@@ -339,7 +342,8 @@ first_time_(true), no_aver_(false), serial_(false)
   // add components
   addComponent("ibeta");    componentIsNotPeriodic("ibeta");
   addComponent("accbeta");  componentIsNotPeriodic("accbeta");
-  addComponent("wtbias");   componentIsNotPeriodic("wtbias"); 
+  addComponent("wtbias");   componentIsNotPeriodic("wtbias");
+  addComponent("scoreb");   componentIsNotPeriodic("scoreb");
   addComponentWithDerivatives("score"); componentIsNotPeriodic("score"); 
   
   // initialize random seed
@@ -459,10 +463,9 @@ void EM3D::check_GMM_d(VectorGeneric<6> &cov, double w)
 // read GMM data file in PLUMED format:
 void EM3D::get_GMM_d(string GMM_file)
 {
- int idcomp;
+ int idcomp, beta;
  double w, m0, m1, m2;
  VectorGeneric<6> cov;
- 
  // open file
  IFile *ifile = new IFile();
  if(ifile->FileExist(GMM_file)){
@@ -478,6 +481,7 @@ void EM3D::get_GMM_d(string GMM_file)
      ifile->scanField("Cov_11",cov[3]);
      ifile->scanField("Cov_12",cov[4]);
      ifile->scanField("Cov_22",cov[5]);
+     ifile->scanField("Beta",beta);
      // check input
      check_GMM_d(cov, w);
      // center of the Gaussian
@@ -486,6 +490,8 @@ void EM3D::get_GMM_d(string GMM_file)
      GMM_d_cov_.push_back(cov);
      // weights
      GMM_d_w_.push_back(w);
+     // beta
+     GMM_d_beta_.push_back(beta);
      // new line
      ifile->scanField();
     }
@@ -885,16 +891,25 @@ void EM3D::calculate(){
   }
  
   // calculate "restraint"
-  double ene = 0.0; 
+  double ene = 0.0;
+  double ene_beta = 0.0; 
   for(unsigned i=0;i<ovmd_.size();++i){
      // calculate and store err function
      err_f[i] = erf ( ( ovmd_[i]-ovdd_[i] ) * inv_sqrt2_ / sigma_mean_[i] ); 
-     // increment energy
-     ene += -kbt_ * std::log ( 0.5 / (ovmd_[i]-ovdd_[i]) * err_f[i] ) ;
+     // energy term
+     double ene_tmp = -kbt_ * std::log ( 0.5 / (ovmd_[i]-ovdd_[i]) * err_f[i] ) ;
+     // beta
+     if(GMM_d_beta_[i] == 1){
+      ene      += ene_tmp / beta_[ibeta_];
+      ene_beta += ene_tmp / beta_[ibeta_];
+     } else {
+      ene      += ene_tmp;
+     }
   }
   
-  // multiply by number of replicas and divide by beta
-  ene = ene / escale / beta_[ibeta_];
+  // multiply by number of replicas
+  ene      /= escale;
+  ene_beta /= escale;
    
   // clear temporary vector
   for(unsigned i=0; i<atom_der_.size(); ++i) atom_der_[i] = Vector(0,0,0);
@@ -909,7 +924,8 @@ void EM3D::calculate(){
      // second part
      der += kbt_ / (ovmd_[id]-ovdd_[id]);
      // chain rule and divide by beta_
-     atom_der_[im] += der * ovmd_der_[i] / beta_[ibeta_];
+     if(GMM_d_beta_[id] == 1) atom_der_[im] += der * ovmd_der_[i] / beta_[ibeta_];
+     else                     atom_der_[im] += der * ovmd_der_[i];
   }
     
   // if parallel, communicate stuff
@@ -920,6 +936,8 @@ void EM3D::calculate(){
 
   // set value of the score
   getPntrToComponent("score")->set(ene);
+  // set value of the beta score
+  getPntrToComponent("scoreb")->set(ene_beta);
   // set value of bias
   getPntrToComponent("wtbias")->set(bias_[ibeta_]);
   // set values of beta
@@ -936,7 +954,7 @@ void EM3D::calculate(){
   if(step%Biasstride_==0) print_bias(step);
     
   // do MC stuff at the right time step
-  if(step%MCstride_==0&&!getExchangeStep()) doMonteCarlo(step, ene);
+  if(step%MCstride_==0&&!getExchangeStep()) doMonteCarlo(step, ene_beta);
 }
 
 }
