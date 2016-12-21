@@ -185,7 +185,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
 
   present=Tools::findKeyword(data,"D_MAX");
   if(present && !Tools::parse(data,"D_MAX",dmax)) errormsg="could not parse D_MAX";
-  dmax_2=dmax*dmax;
+  if(dmax<std::sqrt(std::numeric_limits<double>::max())) dmax_2=dmax*dmax;
   bool dostretch=false;
   Tools::parseFlag(data,"STRETCH",dostretch); // this is ignored now
   dostretch=true;
