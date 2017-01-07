@@ -354,10 +354,9 @@ void EM3DSigma::check_GMM_d(VectorGeneric<6> &cov, double w)
 // read GMM data file in PLUMED format:
 void EM3DSigma::get_GMM_d(string GMM_file)
 {
- int idcomp;
+ int idcomp, beta;
  double w, m0, m1, m2;
  VectorGeneric<6> cov;
- 
  // open file
  IFile *ifile = new IFile();
  if(ifile->FileExist(GMM_file)){
@@ -373,6 +372,7 @@ void EM3DSigma::get_GMM_d(string GMM_file)
      ifile->scanField("Cov_11",cov[3]);
      ifile->scanField("Cov_12",cov[4]);
      ifile->scanField("Cov_22",cov[5]);
+     ifile->scanField("Beta",beta);
      // check input
      check_GMM_d(cov, w);
      // center of the Gaussian
