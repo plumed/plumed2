@@ -1005,8 +1005,8 @@ double Metainference::getEnergyForceSP(const vector<double> &mean, const double 
 {
   const double mod2   = modifier*modifier; /* this is now modifiers */
   const double scale2 = scale_*scale_;
-  const double sm2    = mod2*scale2*sigma_mean_[0]*sigma_mean_[0]; 
-  const double ss2    = sigma_[0]*sigma_[0] + sm2;
+  const double sm2    = mod2*sigma_mean_[0]*sigma_mean_[0]; 
+  const double ss2    = sigma_[0]*sigma_[0] + scale2*sm2;
   vector<double> f(narg+1,0);
   
   if(master){
@@ -1060,8 +1060,8 @@ double Metainference::getEnergyForceSPE(const vector<double> &mean, const double
     { 
       #pragma omp for reduction( + : omp_ene)
       for(unsigned i=0;i<narg;++i){
-        const double sm2 = mod2*scale2*sigma_mean_[i]*sigma_mean_[i]; 
-        const double ss2 = sigma_[i]*sigma_[i] + sm2;
+        const double sm2 = mod2*sigma_mean_[i]*sigma_mean_[i]; 
+        const double ss2 = sigma_[i]*sigma_[i] + scale2*sm2;
         const double dev = scale_*mean[i]-parameters[i]+offset_; 
         const double a2  = 0.5*dev*dev + ss2;
         const double t   = exp(-a2/sm2);
