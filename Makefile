@@ -4,7 +4,7 @@ endif
 
 
 SRCDIRS := src test
-SUBDIRS := $(SRCDIRS) user-doc developer-doc regtest macports
+SUBDIRS := $(SRCDIRS) user-doc developer-doc regtest macports vim
 
 SUBDIRSCLEAN:=$(addsuffix .clean,$(SUBDIRS))
 

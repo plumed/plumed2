@@ -52,6 +52,7 @@ DumpGrid::DumpGrid(const ActionOptions&ao):
 Action(ao),
 GridPrintingBase(ao)
 {
+  if( ingrid->getType()!="flat" ) error("cannot dump grid of type " + ingrid->getType() + " using DUMPGRID");
   fmt = " " + fmt; checkRead();
 }
 

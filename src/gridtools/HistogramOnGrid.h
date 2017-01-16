@@ -40,6 +40,8 @@ private:
 protected:
   bool discrete;
 public:
+  double  von_misses_norm;
+  double von_misses_concentration;
   static void registerKeywords( Keywords& keys );
   explicit HistogramOnGrid( const vesselbase::VesselOptions& da );
   void setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax,

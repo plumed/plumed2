@@ -52,9 +52,14 @@ fmt("%f")
   }
   if( !ingrid ) error("input action does not calculate a grid");
 
-  parse("FMT",fmt); parse("FILE",filename); 
+  parse("FILE",filename); 
   if(filename.length()==0) error("name out output file was not specified");
-  log.printf("  outputting grid calculated by action %s to file named %s with format %s \n",mves->getLabel().c_str(),filename.c_str(), fmt.c_str() );
+  log.printf("  outputting grid calculated by action %s to file named %s",mves->getLabel().c_str(), filename.c_str() );
+  if( keywords.exists("FMT") ){
+      parse("FMT",fmt); log.printf(" with format %s \n", fmt.c_str() ); 
+  } else {
+      log.printf("\n");
+  }
 }
 
 void GridPrintingBase::update(){

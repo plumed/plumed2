@@ -165,9 +165,8 @@ For developers:
 - Tentative port files are now available at [this link](http://github.com/plumed/ports). 
   They can be used to install PLUMED using MacPorts.
 
-Version 2.2.4
+Version 2.2.4 (Dec 12, 2016)
 -------------
-See branch \branch{v2.2} on git repository.
 
 For users:
 - Fix a bug in \ref PBMETAD when biasing periodic and not periodic collective variables at the same time 
@@ -182,5 +181,14 @@ For users:
 
 For developers:
 - Macports portile is now tested on travis at every plumed push.
+
+Version 2.2.5
+-------------
+See branch \branch{v2.2} on git repository.
+
+For users:
+- Fixed a problem with large step numbers in driver (see \issue{209}).
+- Fixed a problem leading to crashes when using switching functions without cutoff with some compiler (see \issue{210}).
+- Root dir is logged to allow easier debugging of problems.
 
 */
