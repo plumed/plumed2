@@ -34,7 +34,7 @@ matrix:
   - os: linux
     dist: precise
     sudo: required
-    env: PLUMED_CC=gcc   PLUMED_CXX=g++
+    env: PLUMED_CC=gcc   PLUMED_CXX=g++     PLUMED_CXXFLAGS=-std=c++0x
 # test using external blas with internal lapack
   - os: linux
     dist: trusty
