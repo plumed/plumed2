@@ -284,6 +284,8 @@ then
   PLUMED_CHECK_CXXFLAG([-Wold-style-cast])
 fi
 
+PLUMED_CHECK_CXXFLAG([-std=c++11])
+
 AC_MSG_CHECKING([whether $CXX supports explicit])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([ class A{explicit A(){}};])],
   [AC_MSG_RESULT([yes])],
