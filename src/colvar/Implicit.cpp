@@ -487,10 +487,7 @@ PRINT ARG=solv FILE=SOLV
 
             Tensor deriv_box;
             const unsigned ntd = OpenMP::getGoodNumThreads(fedensity_deriv);
-            #pragma omp declare reduction(tensor_sum:Tensor: omp_out += omp_in) initializer(omp_priv = Tensor())
-            #pragma omp parallel num_threads(ntd)
             {
-                #pragma omp for reduction(tensor_sum:deriv_box)
                 for (unsigned i=0; i<size; ++i) {
                     setAtomsDerivatives(i, -fedensity_deriv[i]);
                     deriv_box += Tensor(getPosition(i), -fedensity_deriv[i]);
