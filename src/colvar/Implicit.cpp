@@ -28,6 +28,7 @@
 #include "core/PlumedMain.h"
 #include "core/SetupMolInfo.h"
 #include "tools/OpenMP.h"
+#include <initializer_list>
 
 // These are only required when using the vectorized version
 #include "emmintrin.h"
