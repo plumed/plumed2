@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 /* This class was originally written by Thomas Loehr */
+#ifdef ENABLEC11 
 
 #include "Colvar.h"
 #include "ActionRegister.h"
@@ -1405,3 +1406,4 @@ PRINT ARG=solv FILE=SOLV
         }
     }
 }
+#endif
