@@ -142,7 +142,7 @@ atomic positions.  This weight varies between zero and one and it is this weight
 and volume methods described in the lists above.  
 
 In addition to these volume and filtering methods it is also possible to calculate the local average of a quantities in the manner 
-described in \cite dellago-q6-average using the \ref LOCAL_AVERAGE method.  Furthermore, in many cases \ref Q6, \ref MOLECULES and 
+described in \cite dellago-q6 using the \ref LOCAL_AVERAGE method.  Furthermore, in many cases \ref Q6, \ref MOLECULES and 
 \ref PLANES the symmetry function being evaluated is a vector.  You can thus construct a variety of novel collective variables by
 taking dot products of vectors on adjacent atoms as described below: 
 
