@@ -140,5 +140,6 @@ See branch \branch{v2.3} on git repository.
 
 For developers:
 - Cppcheck on travis-ci has been updated to 1.77.
+- Doxygen on travis-ci has been updated to 1.8.13
 
 */
