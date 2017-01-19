@@ -61,7 +61,7 @@ shift as in \cite Camilloni:2012je \cite Camilloni:2013hs (see \ref STATS and
 \ref ENSEMBLE).
 
 CamShift calculation is relatively heavy because it often uses a large number of atoms, in order
-to make it faster it is currently parallelised with \ref OpenMP.
+to make it faster it is currently parallelised with \ref Openmp.
 
 As a general rule, when using \ref CS2BACKBONE or other experimental restraints it is better to 
 increase the accuracy of the constraint algorithm due to the increased strain on the bonded structure. 
@@ -114,7 +114,7 @@ Additional material and examples can be also found in the tutorial \ref belfast-
 \par Examples
 
 In this first example the chemical shifts are used to calculate a scoring function to be used
-in NMR driven Metadynamics \cite Granata:2013dk:
+in NMR driven Metadynamics \cite Granata:2013dk :
 
 \verbatim
 whole: GROUP ATOMS=2612-2514:-1,961-1:-1,2466-962:-1,2513-2467:-1
