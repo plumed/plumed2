@@ -86,7 +86,7 @@ In practise a weight, \f$w_i\f$ is ascribed to each colvar, \f$s_i\f$ calculated
 and this weight measures the degree to which a colvar is a member of the group.  This weight is a number 
 between 0 and 1 that is calculated using a \ref switchingfunction , \f$\sigma\f$. 
 If one calculates a function of the set of multicolvars
-these weights are included in the calculation.  As such if one calculates the MEAN, $f\mu\f$ of a filtered 
+these weights are included in the calculation.  As such if one calculates the MEAN, \f$\mu\f$ of a filtered 
 multicolvar what is computed is the following:
 
 \f[

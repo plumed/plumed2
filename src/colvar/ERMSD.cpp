@@ -112,7 +112,7 @@ void ERMSD::registerKeywords(Keywords& keys){
 
   keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
   keys.add("compulsory","CUTOFF","2.4","only pairs of atoms closer than CUTOFF are considered in the calculation.");
-  keys.add("atoms","ATOMS","the list of atoms (use @lcs-nn)");
+  keys.add("atoms","ATOMS","the list of atoms (use lcs)");
   keys.add("optional","PAIRS","List of pairs considered. All pairs are considered if this value is not specified.");
 
 }
