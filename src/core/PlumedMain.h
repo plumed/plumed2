@@ -144,7 +144,7 @@ private:
   bool stopNow;
 
 /// Stack for update flags.
-/// Store information used in class \ref UPDATE_IF 
+/// Store information used in class \ref generic::UpdateIf
   std::stack<bool> updateFlags;
 
 public:

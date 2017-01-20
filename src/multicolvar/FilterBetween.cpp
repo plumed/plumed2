@@ -99,7 +99,7 @@ w_i = \int_a^b K\left( \frac{s - s_i}{w} \right)
 \f]
 
 where \f$a, b\f$ and \f$w\f$ are parameters.  If one calculates a function of the set of multicolvars
-these weights are included in the calculation.  As such if one calculates the MEAN, $f\mu\f$ of a filtered 
+these weights are included in the calculation.  As such if one calculates the MEAN, \f$\mu\f$ of a filtered 
 multicolvar what is computed is the following:
 
 \f[
