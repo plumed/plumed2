@@ -45,7 +45,7 @@ MEAN for \ref MFILTER_BETWEEN one is thus calculating:
 \mu = \frac{ \sum_i f_i s_i }{ \sum_i f_i}
 \f]
 
-In this action by contrast the colvar is being transformed by the \ref histogram bead.  If one thus calculates a MEAN for 
+In this action by contrast the colvar is being transformed by the \ref histogrambead.  If one thus calculates a MEAN for 
 thia action one computes:
 
 \f[

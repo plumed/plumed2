@@ -10,8 +10,5 @@ The list of enhanced sampling algorithms contained in PLUMED is as follows:
 Methods, such as \ref METAD or \ref PBMETAD, that work by introducing a history dependent bias can be restarted 
 using the \subpage RESTART keyword
 
-You can also use PLUMED in conjunction with VMD's interactive MD module by taking
-advantage of the \subpage IMD action.
-
 */
 

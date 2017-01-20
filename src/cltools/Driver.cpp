@@ -77,6 +77,8 @@ plumed driver-float --plumed plumed.dat --ixyz trajectory.xyz
 See also examples in \ref driver
 
 */
+//+ENDPLUMEDOC
+//
 
 
 //+PLUMEDOC TOOLS driver
