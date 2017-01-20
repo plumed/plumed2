@@ -148,7 +148,7 @@ AdjacencyMatrixBase(ao)
 
   // Set the link cell cutoff
   log.printf("  setting cutoffs %f %f \n", sfmax, rfmax );
-  setLinkCellCutoff( sfmax, 3*rfmax );
+  setLinkCellCutoff( sfmax, std::numeric_limits<double>::max() );  // rfmax ); // std::numeric_limits<double>::max() );
 
   double maxsize=0;
   for(unsigned i=0;i<getNumberOfNodeTypes();++i){
@@ -196,13 +196,13 @@ void TopologyMatrix::buildListOfLinkCells( const std::vector<unsigned>& cind, co
   // Shift ends of cylinder from positions of atoms to generate line of interest
   Vector distance=getSeparation( getPositionOfAtomForLinkCells( cind[0] ), getPositionOfAtomForLinkCells( cind[1] ) );
   double len = distance.modulo(); distance /= len; 
-  Vector p1 = getPositionOfAtomForLinkCells( cind[0] ) - beadrad*distance; 
+  std::vector<Vector> p(2); p[0] = getPositionOfAtomForLinkCells( cind[0] ) - beadrad*distance; 
   double binw = binw_mat( getBaseColvarNumber( cind[0] ), getBaseColvarNumber( cind[1] ) );
-  double lcylinder = (std::floor( len / binw ) + 1)*binw;
-  Vector p2 = p1 + (lcylinder + beadrad)*distance;
+  double lcylinder = (std::floor( len / binw ) + 1)*binw; 
+  p[1] = p[0] + (lcylinder + 2*beadrad)*distance; pbcApply( p, 2 );  
   // And get the appropriate atoms
   unsigned ncells=0; ncells_required = 0;
-  linkc.getCellsThatLinePassesThrough( p1, p2, ncells_required, cells_required );
+  linkc.getCellsThatLinePassesThrough( p[0], p[1], ncells_required, cells_required );
 }
 
 Vector TopologyMatrix::getLinkCellPosition( const std::vector<unsigned>& atoms ) const {
@@ -222,7 +222,7 @@ double TopologyMatrix::compute( const unsigned& tindex, multicolvar::AtomValuePa
   // Initialise to zero density on all bins
   for(unsigned bin=0;bin<maxbins;++bin) myatoms.setValue(bin+1,0);
   // Calculate whether or not atoms 1 and 2 are within cutoff (can use delta here as pbc are done in atom setup)
-  Vector d1 = delta( myatoms.getPosition(0), myatoms.getPosition(1) ); double d1_len = d1.modulo();
+  Vector d1 = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) ); double d1_len = d1.modulo();
   d1 = d1 / d1_len;  // Convert vector into director
   for(unsigned i=2;i<myatoms.getNumberOfAtoms();++i) calculateForThreeAtoms( i, d1, d1_len, bead, myatoms );
   // std::vector<double> binvals( 1+maxbins ); for(unsigned i=1;i<maxbins;++i) binvals[i]=myatoms.getValue(i);
@@ -254,15 +254,13 @@ double TopologyMatrix::compute( const unsigned& tindex, multicolvar::AtomValuePa
           myvals.addDerivative( 1, ider, sw*df*max*myvals.getDerivative( vout, ider ) + tsw*myvals.getDerivative( 2+maxbins, ider ) );
       }
   }
-  for(unsigned i=0;i<maxbins;++i) printf("HEL %f ", myatoms.getValue(2+i) );
-  printf("\n");
   return sw*tsw;
 }
 
 void TopologyMatrix::calculateForThreeAtoms( const unsigned& iat, const Vector& d1, const double& d1_len, 
                                              HistogramBead& bead, multicolvar::AtomValuePack& myatoms ) const {
   // Calculate if there are atoms in the cylinder (can use delta here as pbc are done in atom setup)
-  Vector d2 = delta( myatoms.getPosition(0), myatoms.getPosition(iat) );
+  Vector d2 = getSeparation( myatoms.getPosition(0), myatoms.getPosition(iat) );
   // Now calculate projection of d2 on d1
   double proj=dotProduct(d2,d1);
   // This tells us if we are outside the end of the cylinder
