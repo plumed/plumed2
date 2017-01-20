@@ -32,6 +32,9 @@ Adjacency matrix in which two atoms are adjacent if they are connected topologic
 
 \par Examples
 
+\bug Link cells not working
+\bug Virial contribution not calculated correctly
+
 */
 //+ENDPLUMEDOC
 
