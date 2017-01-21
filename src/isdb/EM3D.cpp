@@ -114,7 +114,7 @@ private:
  
  // Monte Carlo
  void doMonteCarlo(long int step, double oldE);
- int  proposeMove(unsigned x, unsigned xmin, unsigned xmax);
+ unsigned  proposeMove(unsigned x, unsigned xmin, unsigned xmax);
  bool doAccept(double oldE, double newE, double oldB, double newB);
  // read and print bias
  void read_bias();
@@ -642,18 +642,21 @@ void EM3D::get_cutoff_ov()
   ov_cut_ = -2.0 * std::log(ov_cut_);
 }
 
-int EM3D::proposeMove(unsigned x, unsigned xmin, unsigned xmax)
+
+unsigned EM3D::proposeMove(unsigned x, unsigned xmin, unsigned xmax)
 {
+ int xmin_i = static_cast<int>(xmin);
+ int xmax_i = static_cast<int>(xmax);
  int dx;
  int r = rand() % 2;
  if( r % 2 == 0 ) dx = +1;
  else             dx = -1;
- // new index
- int x_new = x + dx;
+ // new index, integer
+ int x_new = static_cast<int>(x) + dx;
  // check boundaries
- if(x_new >= xmax) x_new = xmax-1;
- if(x_new <  xmin) x_new = xmin;
- return x_new;
+ if(x_new >= xmax_i) x_new = xmax_i-1;
+ if(x_new <  xmin_i) x_new = xmin_i;
+ return static_cast<unsigned>(x_new);
 }
 
 bool EM3D::doAccept(double oldE, double newE, double oldB, double newB)
