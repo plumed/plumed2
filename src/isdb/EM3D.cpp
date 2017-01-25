@@ -32,7 +32,6 @@
 #include <map>
 #include <numeric>
 #include <ctime>
-#include <sstream>
 
 using namespace std;
 
@@ -50,27 +49,15 @@ class EM3D : public Colvar {
 
 private:
 
- // beta parameter
- vector<double> beta_;
- unsigned       ibeta_;
- double         w0_;
- double         biasf_;
- vector<double> bias_;
- // print bias
- unsigned int   Biasstride_;
- string         Biasfilename_;
- bool           first_bias_;
- OFile          Biasfile_;
  // temperature in kbt
  double kbt_;
  // model GMM - weights and atom types
  vector<double>   GMM_m_w_;
  vector<unsigned> GMM_m_type_;
- // data GMM - means, weights, and covariances + beta option
+ // data GMM - means, weights, and covariances
  vector<Vector>             GMM_d_m_;
  vector<double>             GMM_d_w_;
  vector< VectorGeneric<6> > GMM_d_cov_;
- vector<int>                GMM_d_beta_;
  // overlaps 
  vector<double> ovmd_;
  vector<double> ovdd_;
@@ -87,13 +74,7 @@ private:
  unsigned nrep_;
  unsigned replica_;
  vector<double> sigma_mean_;
- // Monte Carlo stuff
- int MCsteps_;
- int MCstride_;
- long int MCfirst_;
- unsigned int MCaccbeta_;
-
-
+  
  // auxiliary stuff
  // list of atom sigmas
  vector<double> s_map_;
@@ -111,14 +92,6 @@ private:
  bool serial_;
  unsigned size_;
  unsigned rank_;
- 
- // Monte Carlo
- void doMonteCarlo(long int step, double oldE);
- unsigned  proposeMove(unsigned x, unsigned xmin, unsigned xmax);
- bool doAccept(double oldE, double newE, double oldB, double newB);
- // read and print bias
- void read_bias();
- void print_bias(long int step);
  
  // calculate model GMM weights and covariances - these are constants
  void get_GMM_m(vector<AtomNumber> &atoms);
@@ -152,7 +125,6 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit EM3D(const ActionOptions&);
-  ~EM3D();
 // active methods:
   void prepare();
   virtual void calculate();
@@ -165,35 +137,18 @@ void EM3D::registerKeywords( Keywords& keys ){
   keys.add("atoms","ATOMS","atoms for which we calculate the density map");
   keys.add("compulsory","GMM_FILE","file with the parameters of the GMM components");
   keys.add("compulsory","TEMP","temperature");
-  keys.add("compulsory","IBETA0","initial value of the ibeta parameter");
-  keys.add("compulsory","BETA_MIN","minimum value of the beta parameter");
-  keys.add("compulsory","BETA_MAX","maximum value of the beta parameter");
-  keys.add("compulsory","NBIN","number of bins for beta grid");
-  keys.add("compulsory","W0", "initial bias height");
-  keys.add("compulsory","BIASFACTOR", "bias factor");
-  keys.add("compulsory","BSTRIDE", "stride for writing bias");
-  keys.add("compulsory","BFILE", "file name for bias");
   keys.addFlag("SERIAL",false,"perform the calculation in serial - for debug purpose");
   keys.addFlag("NO_AVER",false,"don't do ensemble averaging");
   keys.add("compulsory","NL_CUTOFF","The cutoff in overlap for the neighbor list");
   keys.add("compulsory","NL_STRIDE","The frequency with which we are updating the neighbor list");
   keys.add("compulsory","SIGMA_MEAN","starting value for the uncertainty in the mean estimate");
-  keys.add("optional","MC_STEPS","number of MC steps");
-  keys.add("optional","MC_STRIDE","MC stride");
   componentsAreNotOptional(keys);
-  keys.addOutputComponent("ibeta",   "default","ibeta parameter");
-  keys.addOutputComponent("accbeta", "default","MC acceptance beta");
-  keys.addOutputComponent("wtbias",  "default","well-tempered bias");
-  keys.addOutputComponent("score",   "default","Bayesian score");
-  keys.addOutputComponent("scoreb",  "default","Beta Bayesian score");
-
 }
 
 EM3D::EM3D(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao), first_bias_(true),
+PLUMED_COLVAR_INIT(ao),
 inv_sqrt2_(0.707106781186548),
 sqrt2_pi_(0.797884560802865),
-MCsteps_(1), MCstride_(1),MCfirst_(-1), MCaccbeta_(0),
 nl_cutoff_(-1.0), nl_stride_(0),
 first_time_(true), no_aver_(false), serial_(false)
 {
@@ -207,31 +162,6 @@ first_time_(true), no_aver_(false), serial_(false)
   // uncertainty stuff
   double sigma_mean; 
   parse("SIGMA_MEAN",sigma_mean);
-  
-  // beta parameter
-  parse("IBETA0",   ibeta_);
-  double beta_min;
-  parse("BETA_MIN", beta_min);
-  double beta_max;
-  parse("BETA_MAX", beta_max);
-  unsigned nbin;
-  parse("NBIN",     nbin);
-  parse("W0",       w0_);
-  parse("BIASFACTOR", biasf_);
-  // allocate stuff
-  for(unsigned i=0; i<nbin; ++i){
-    // bias grid
-    bias_.push_back(0.0);
-    // beta ladder
-    double beta = exp( static_cast<double>(i) / static_cast<double>(nbin-1) * std::log(beta_max/beta_min) ) * beta_min; 
-    beta_.push_back(beta);
-  } 
-  // print bias to file
-  parse("BSTRIDE", Biasstride_);
-  parse("BFILE",   Biasfilename_);  
-  // MC stuff
-  parse("MC_STEPS", MCsteps_);
-  parse("MC_STRIDE",MCstride_);
  
   // temperature
   double temp=0.0;
@@ -287,17 +217,7 @@ first_time_(true), no_aver_(false), serial_(false)
   log.printf("  neighbor list stride : %u\n",  nl_stride_);
   log.printf("  uncertainty in the mean estimate %f\n",sigma_mean);
   log.printf("  temperature of the system in energy unit %f\n",kbt_);
-  log.printf("  initial value of beta %f\n",beta_[ibeta_]);
-  log.printf("  minimum value of beta %f\n",beta_min);
-  log.printf("  maximum value of beta %f\n",beta_max);
-  log.printf("  number of bins in beta grid %u\n",nbin);
-  log.printf("  biasfactor %f\n",biasf_);
-  log.printf("  initial hills height %f\n",w0_);
-  log.printf("  stride to write bias to file %u\n",Biasstride_);
-  log.printf("  write bias to file : %s\n",Biasfilename_.c_str());
   log.printf("  number of replicas %u\n",nrep_);
-  log.printf("  number of MC steps %d\n",MCsteps_);
-  log.printf("  do MC every %d steps\n", MCstride_);
    
   log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");
 
@@ -339,52 +259,9 @@ first_time_(true), no_aver_(false), serial_(false)
   // request the atoms
   requestAtoms(atoms);
   
-  // add components
-  addComponent("ibeta");    componentIsNotPeriodic("ibeta");
-  addComponent("accbeta");  componentIsNotPeriodic("accbeta");
-  addComponent("wtbias");   componentIsNotPeriodic("wtbias");
-  addComponent("scoreb");   componentIsNotPeriodic("scoreb");
-  addComponentWithDerivatives("score"); componentIsNotPeriodic("score"); 
-  
-  // initialize random seed
-  srand (time(NULL));
-  
-  // read bias if restarting
-  if(getRestart()) read_bias();    
-}
-
-EM3D::~EM3D()
-{
-  Biasfile_.close();
-}
-
-void EM3D::read_bias()
-{
- double MDtime;
- // open file
- IFile *ifile = new IFile();
- ifile->link(*this);
- if(ifile->FileExist(Biasfilename_)){
-    ifile->open(Biasfilename_);
-    // read all the lines, store last value of bias
-    while(ifile->scanField("MD_time",MDtime)){
-     for(unsigned i=0; i<bias_.size(); ++i){
-      // convert i to string
-      stringstream ss;
-      ss << i;
-      // label
-      string label = "b" + ss.str();
-      // read entry
-      ifile->scanField(label, bias_[i]);
-     }
-     // new line
-     ifile->scanField();
-    }
-    ifile->close();
- } else {
-    error("Cannot find bias file "+Biasfilename_+"\n"); 
- }
- delete ifile;
+  // add value
+  addValueWithDerivatives(); setNotPeriodic();
+     
 }
 
 void EM3D::get_GMM_m(vector<AtomNumber> &atoms)
@@ -463,9 +340,10 @@ void EM3D::check_GMM_d(VectorGeneric<6> &cov, double w)
 // read GMM data file in PLUMED format:
 void EM3D::get_GMM_d(string GMM_file)
 {
- int idcomp, beta;
+ int idcomp;
  double w, m0, m1, m2;
  VectorGeneric<6> cov;
+ 
  // open file
  IFile *ifile = new IFile();
  if(ifile->FileExist(GMM_file)){
@@ -481,7 +359,6 @@ void EM3D::get_GMM_d(string GMM_file)
      ifile->scanField("Cov_11",cov[3]);
      ifile->scanField("Cov_12",cov[4]);
      ifile->scanField("Cov_22",cov[5]);
-     ifile->scanField("Beta",beta);
      // check input
      check_GMM_d(cov, w);
      // center of the Gaussian
@@ -490,8 +367,6 @@ void EM3D::get_GMM_d(string GMM_file)
      GMM_d_cov_.push_back(cov);
      // weights
      GMM_d_w_.push_back(w);
-     // beta
-     GMM_d_beta_.push_back(beta);
      // new line
      ifile->scanField();
     }
@@ -640,99 +515,6 @@ void EM3D::get_cutoff_ov()
   }
   // set cutoff
   ov_cut_ = -2.0 * std::log(ov_cut_);
-}
-
-
-unsigned EM3D::proposeMove(unsigned x, unsigned xmin, unsigned xmax)
-{
- int xmin_i = static_cast<int>(xmin);
- int xmax_i = static_cast<int>(xmax);
- int dx;
- int r = rand() % 2;
- if( r % 2 == 0 ) dx = +1;
- else             dx = -1;
- // new index, integer
- int x_new = static_cast<int>(x) + dx;
- // check boundaries
- if(x_new >= xmax_i) x_new = xmax_i-1;
- if(x_new <  xmin_i) x_new = xmin_i;
- return static_cast<unsigned>(x_new);
-}
-
-bool EM3D::doAccept(double oldE, double newE, double oldB, double newB)
-{
-  bool accept = false;
-  // calculate delta energy 
-  double delta = ( newE + newB - oldE - oldB) / kbt_;
-  // if delta is negative always accept move
-  if( delta < 0.0 ){ 
-   accept = true;
-  }else{
-   // otherwise extract random number   
-   double s = static_cast<double>(rand()) / RAND_MAX;
-   if( s < exp(-delta) ) { accept = true; }
-  }
-  return accept;
-}
-
-void EM3D::doMonteCarlo(long int step, double oldE)
-{
- double newE;
- bool accept;
- // cycle on MC steps 
- for(unsigned i=0;i<MCsteps_;++i){
-  // propose move in ibeta
-  unsigned new_ibeta = proposeMove(ibeta_, 0, beta_.size());
-  // calculate new energy
-  newE = oldE * beta_[ibeta_] / beta_[new_ibeta];
-  // accept or reject
-  accept = doAccept(oldE, newE, bias_[ibeta_], bias_[new_ibeta]);
-  if(accept){
-   ibeta_ = new_ibeta;
-   oldE = newE;
-   MCaccbeta_++;
-  }
- }
- // send values of parameters to all replicas
- if(comm.Get_rank()==0){
-   if(multi_sim_comm.Get_rank()!=0) ibeta_ = 0;
-   multi_sim_comm.Sum(&ibeta_, 1); 
- } else {
-   ibeta_ = 0;
- }
- // wait for things to be done
- multi_sim_comm.Barrier();
- // local communication
- if(comm.Get_size()>1) comm.Sum(&ibeta_, 1);
- // add well-tempered like bias
- double kbDT = kbt_ * ( biasf_ - 1.0 );
- bias_[ibeta_] += w0_ * exp(-bias_[ibeta_] / kbDT);
-}
-
-void EM3D::print_bias(long int step)
-{
- // if first time open the file
- if(first_bias_){
-  first_bias_ = false;
-  Biasfile_.link(*this);
-  Biasfile_.open(Biasfilename_);
-  Biasfile_.setHeavyFlush();
-  Biasfile_.fmtField("%30.5f");
- }
-
- // write fields
- double MDtime = static_cast<double>(step)*getTimeStep();
- Biasfile_.printField("MD_time", MDtime);
- for(unsigned i=0; i<bias_.size(); ++i){
-   // convert i to string
-   stringstream ss;
-   ss << i;
-   // label
-   string label = "b" + ss.str();
-   // print entry
-   Biasfile_.printField(label, bias_[i]);
- }
- Biasfile_.printField();
 }
 
 // version with derivatives
@@ -895,24 +677,15 @@ void EM3D::calculate(){
  
   // calculate "restraint"
   double ene = 0.0;
-  double ene_beta = 0.0; 
   for(unsigned i=0;i<ovmd_.size();++i){
      // calculate and store err function
      err_f[i] = erf ( ( ovmd_[i]-ovdd_[i] ) * inv_sqrt2_ / sigma_mean_[i] ); 
-     // energy term
-     double ene_tmp = -kbt_ * std::log ( 0.5 / (ovmd_[i]-ovdd_[i]) * err_f[i] ) ;
-     // beta
-     if(GMM_d_beta_[i] == 1){
-      ene      += ene_tmp / beta_[ibeta_];
-      ene_beta += ene_tmp / beta_[ibeta_];
-     } else {
-      ene      += ene_tmp;
-     }
+     // increment energy
+     ene += -kbt_ * std::log ( 0.5 / (ovmd_[i]-ovdd_[i]) * err_f[i] ) ;
   }
   
   // multiply by number of replicas
-  ene      /= escale;
-  ene_beta /= escale;
+  ene /= escale;
    
   // clear temporary vector
   for(unsigned i=0; i<atom_der_.size(); ++i) atom_der_[i] = Vector(0,0,0);
@@ -926,38 +699,18 @@ void EM3D::calculate(){
      double der = - kbt_/err_f[id]*sqrt2_pi_*exp(-0.5*(ovmd_[id]-ovdd_[id])*(ovmd_[id]-ovdd_[id])/sigma_mean_[id]/sigma_mean_[id])/sigma_mean_[id];
      // second part
      der += kbt_ / (ovmd_[id]-ovdd_[id]);
-     // chain rule and divide by beta_
-     if(GMM_d_beta_[id] == 1) atom_der_[im] += der * ovmd_der_[i] / beta_[ibeta_];
-     else                     atom_der_[im] += der * ovmd_der_[i];
+     // chain rule
+     atom_der_[im] += der * ovmd_der_[i];
   }
     
   // if parallel, communicate stuff
   if(!serial_) comm.Sum(&atom_der_[0][0], 3*atom_der_.size());
  
   // set derivative
-  for(unsigned i=0;i<atom_der_.size();++i) setAtomsDerivatives(getPntrToComponent("score"), i, atom_der_[i]);
+  for(unsigned i=0;i<atom_der_.size();++i) setAtomsDerivatives(i, atom_der_[i]);
 
   // set value of the score
-  getPntrToComponent("score")->set(ene);
-  // set value of the beta score
-  getPntrToComponent("scoreb")->set(ene_beta);
-  // set value of bias
-  getPntrToComponent("wtbias")->set(bias_[ibeta_]);
-  // set values of beta
-  getPntrToComponent("ibeta")->set(ibeta_);
-  // beta acceptance
-  long int step = getStep();
-  if(MCfirst_==-1) MCfirst_=step;
-  // calculate acceptance
-  double MCtrials = std::floor(static_cast<double>(step-MCfirst_) / static_cast<double>(MCstride_))+1.0;
-  double accbeta = static_cast<double>(MCaccbeta_) / static_cast<double>(MCsteps_) / MCtrials;
-  getPntrToComponent("accbeta")->set(accbeta);
-  
-  // print bias
-  if(step%Biasstride_==0) print_bias(step);
-    
-  // do MC stuff at the right time step
-  if(step%MCstride_==0&&!getExchangeStep()) doMonteCarlo(step, ene_beta);
+  setValue(ene);
 }
 
 }
