@@ -32,6 +32,7 @@
 #include <map>
 #include <numeric>
 #include <ctime>
+#include <sstream>
 
 using namespace std;
 
@@ -62,6 +63,7 @@ private:
  // overlaps 
  vector<double> ovmd_;
  vector<double> ovdd_;
+ vector<double> ovmd_ave_;
  double ov_cut_;
  vector<double> ovdd_cut_;
  // and derivatives
@@ -94,6 +96,12 @@ private:
  bool serial_;
  unsigned size_;
  unsigned rank_;
+ 
+ // analysis mode
+ bool analysis_;
+ OFile Devfile_;
+ double nframe_;
+
  
  // calculate model GMM weights and covariances - these are constants
  void get_GMM_m(vector<AtomNumber> &atoms);
@@ -141,6 +149,7 @@ void EM3D::registerKeywords( Keywords& keys ){
   keys.add("compulsory","TEMP","temperature");
   keys.addFlag("SERIAL",false,"perform the calculation in serial - for debug purpose");
   keys.addFlag("NO_AVER",false,"don't do ensemble averaging");
+  keys.addFlag("ANALYSIS",false,"run in analysis mode");
   keys.add("compulsory","NL_CUTOFF","The cutoff in overlap for the neighbor list");
   keys.add("compulsory","NL_STRIDE","The frequency with which we are updating the neighbor list");
   keys.add("compulsory","SIGMA_MEAN","starting value for the uncertainty in the mean estimate");
@@ -154,7 +163,8 @@ PLUMED_COLVAR_INIT(ao),
 inv_sqrt2_(0.707106781186548),
 sqrt2_pi_(0.797884560802865),
 nl_cutoff_(-1.0), nl_stride_(0),
-first_time_(true), no_aver_(false), serial_(false)
+first_time_(true), no_aver_(false), serial_(false),
+analysis_(false), nframe_(0.0)
 {
   
   vector<AtomNumber> atoms;
@@ -189,6 +199,7 @@ first_time_(true), no_aver_(false), serial_(false)
   }
  
   parseFlag("NO_AVER",no_aver_);
+  parseFlag("ANALYSIS",analysis_);
  
   checkRead();
   
@@ -667,9 +678,12 @@ void EM3D::calculate_overlap(){
 
 void EM3D::calculate(){
 
-  // calculate CV 
-  calculate_overlap();
+ // calculate CV 
+ calculate_overlap();
   
+ if(!analysis_){
+ 
+  // BIASING MODE
   // rescale factor for ensemble average
   double escale = 1.0 / static_cast<double>(nrep_);
   
@@ -733,6 +747,42 @@ void EM3D::calculate(){
   getPntrToComponent("score")->set(ene);
   // set value of the beta score
   getPntrToComponent("scoreb")->set(ene_b);
+  
+  } else {
+  
+   // ANALYSIS MODE   
+   // prepare stuff for the first time
+   if(nframe_ <= 0.0){
+     Devfile_.link(*this);
+     Devfile_.open("ovmd_deviations.dat");
+     Devfile_.setHeavyFlush();
+     Devfile_.fmtField("%9.6f");
+     ovmd_ave_.resize(GMM_d_w_.size());
+     for(unsigned i=0; i<ovmd_ave_.size(); ++i) ovmd_ave_[i] = 0.0;
+   }
+   
+   // increment number of frames
+   nframe_ += 1.0;
+
+   // add average ovmd_
+   for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_ave_[i] += ovmd_[i];
+
+   // print stuff
+   for(unsigned i=0; i<ovmd_.size(); ++i){
+     // convert i to string
+     stringstream ss;
+     ss << i;
+     // labels
+     string label = "ovmd_" + ss.str();
+     // print entry
+     double ave = ovmd_ave_[i] / nframe_;
+     double dev2 = (ave-ovdd_[i])*(ave-ovdd_[i])/ovdd_[i]/ovdd_[i];
+     double dev = sqrt(dev2);
+     Devfile_.printField(label, dev);
+   }
+   Devfile_.printField();
+  }
+  
 }
 
 }
