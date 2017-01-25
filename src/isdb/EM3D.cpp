@@ -54,10 +54,11 @@ private:
  // model GMM - weights and atom types
  vector<double>   GMM_m_w_;
  vector<unsigned> GMM_m_type_;
- // data GMM - means, weights, and covariances
+ // data GMM - means, weights, and covariances + beta option
  vector<Vector>             GMM_d_m_;
  vector<double>             GMM_d_w_;
  vector< VectorGeneric<6> > GMM_d_cov_;
+ vector<int>                GMM_d_beta_;
  // overlaps 
  vector<double> ovmd_;
  vector<double> ovdd_;
@@ -66,7 +67,8 @@ private:
  // and derivatives
  vector<Vector> ovmd_der_;
  vector<Vector> atom_der_;
- vector<double> err_f;
+ vector<Vector> atom_der_b_;
+ vector<double> err_f_;
  // constant quantities;
  double cfact_;
  double inv_sqrt2_, sqrt2_pi_;
@@ -143,6 +145,8 @@ void EM3D::registerKeywords( Keywords& keys ){
   keys.add("compulsory","NL_STRIDE","The frequency with which we are updating the neighbor list");
   keys.add("compulsory","SIGMA_MEAN","starting value for the uncertainty in the mean estimate");
   componentsAreNotOptional(keys);
+  keys.addOutputComponent("score",   "default","Bayesian score");
+  keys.addOutputComponent("scoreb",  "default","Beta Bayesian score");
 }
 
 EM3D::EM3D(const ActionOptions&ao):
@@ -250,17 +254,19 @@ first_time_(true), no_aver_(false), serial_(false)
   
   // and prepare temporary vectors
   ovmd_.resize(GMM_d_w_.size());
-  err_f.resize(GMM_d_w_.size());
+  err_f_.resize(GMM_d_w_.size());
   atom_der_.resize(GMM_m_w_.size());
-  
+  atom_der_b_.resize(GMM_m_w_.size());
+
   // clear things that are not needed anymore
   GMM_d_cov_.clear();
 
   // request the atoms
   requestAtoms(atoms);
   
-  // add value
-  addValueWithDerivatives(); setNotPeriodic();
+  // add components
+  addComponentWithDerivatives("score");  componentIsNotPeriodic("score"); 
+  addComponentWithDerivatives("scoreb"); componentIsNotPeriodic("scoreb"); 
      
 }
 
@@ -340,7 +346,7 @@ void EM3D::check_GMM_d(VectorGeneric<6> &cov, double w)
 // read GMM data file in PLUMED format:
 void EM3D::get_GMM_d(string GMM_file)
 {
- int idcomp;
+ int idcomp, beta;
  double w, m0, m1, m2;
  VectorGeneric<6> cov;
  
@@ -359,6 +365,7 @@ void EM3D::get_GMM_d(string GMM_file)
      ifile->scanField("Cov_11",cov[3]);
      ifile->scanField("Cov_12",cov[4]);
      ifile->scanField("Cov_22",cov[5]);
+     ifile->scanField("Beta",beta);
      // check input
      check_GMM_d(cov, w);
      // center of the Gaussian
@@ -367,6 +374,8 @@ void EM3D::get_GMM_d(string GMM_file)
      GMM_d_cov_.push_back(cov);
      // weights
      GMM_d_w_.push_back(w);
+     // beta
+     GMM_d_beta_.push_back(beta);
      // new line
      ifile->scanField();
     }
@@ -675,20 +684,26 @@ void EM3D::calculate(){
    comm.Sum(&ovmd_[0], ovmd_.size());
   }
  
-  // calculate "restraint"
+  // calculate score and scoreb
   double ene = 0.0;
+  double ene_b = 0.0;
   for(unsigned i=0;i<ovmd_.size();++i){
      // calculate and store err function
-     err_f[i] = erf ( ( ovmd_[i]-ovdd_[i] ) * inv_sqrt2_ / sigma_mean_[i] ); 
+     err_f_[i] = erf ( ( ovmd_[i]-ovdd_[i] ) * inv_sqrt2_ / sigma_mean_[i] );
+     // energy term
+     double ene_tmp = -kbt_ * std::log ( 0.5 / (ovmd_[i]-ovdd_[i]) * err_f_[i]) ;
      // increment energy
-     ene += -kbt_ * std::log ( 0.5 / (ovmd_[i]-ovdd_[i]) * err_f[i] ) ;
+     if(GMM_d_beta_[i] == 1) ene_b += ene_tmp;
+     else                    ene   += ene_tmp;
   }
   
   // multiply by number of replicas
-  ene /= escale;
+  ene   /= escale;
+  ene_b /= escale;
    
   // clear temporary vector
-  for(unsigned i=0; i<atom_der_.size(); ++i) atom_der_[i] = Vector(0,0,0);
+  for(unsigned i=0; i<atom_der_.size(); ++i)   atom_der_[i]   = Vector(0,0,0);
+  for(unsigned i=0; i<atom_der_b_.size(); ++i) atom_der_b_[i] = Vector(0,0,0);
 
   // get derivatives of bias with respect to atoms
   for(unsigned i=rank_;i<nl_.size();i=i+size_) {
@@ -696,21 +711,28 @@ void EM3D::calculate(){
      unsigned id = nl_[i] / GMM_m_w_.size();
      unsigned im = nl_[i] % GMM_m_w_.size();
      // first part of derivative
-     double der = - kbt_/err_f[id]*sqrt2_pi_*exp(-0.5*(ovmd_[id]-ovdd_[id])*(ovmd_[id]-ovdd_[id])/sigma_mean_[id]/sigma_mean_[id])/sigma_mean_[id];
+     double der = - kbt_/err_f_[id]*sqrt2_pi_*exp(-0.5*(ovmd_[id]-ovdd_[id])*(ovmd_[id]-ovdd_[id])/sigma_mean_[id]/sigma_mean_[id])/sigma_mean_[id];
      // second part
      der += kbt_ / (ovmd_[id]-ovdd_[id]);
      // chain rule
-     atom_der_[im] += der * ovmd_der_[i];
+     if(GMM_d_beta_[id] == 1) atom_der_b_[im] += der * ovmd_der_[i];
+     else                     atom_der_[im]   += der * ovmd_der_[i];
   }
     
   // if parallel, communicate stuff
-  if(!serial_) comm.Sum(&atom_der_[0][0], 3*atom_der_.size());
- 
-  // set derivative
-  for(unsigned i=0;i<atom_der_.size();++i) setAtomsDerivatives(i, atom_der_[i]);
+  if(!serial_){
+    comm.Sum(&atom_der_[0][0],   3*atom_der_.size());
+    comm.Sum(&atom_der_b_[0][0], 3*atom_der_b_.size());
+  }
+  
+  // set derivatives
+  for(unsigned i=0;i<atom_der_.size();++i)   setAtomsDerivatives(getPntrToComponent("score"), i,  atom_der_[i]);
+  for(unsigned i=0;i<atom_der_b_.size();++i) setAtomsDerivatives(getPntrToComponent("scoreb"), i, atom_der_b_[i]);
 
   // set value of the score
-  setValue(ene);
+  getPntrToComponent("score")->set(ene);
+  // set value of the beta score
+  getPntrToComponent("scoreb")->set(ene_b);
 }
 
 }
