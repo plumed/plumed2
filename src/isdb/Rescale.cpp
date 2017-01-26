@@ -386,7 +386,8 @@ void Rescale::calculate()
   vector<double> args(getNumberOfArguments()-nores_);
   for(unsigned i=0; i<args.size(); ++i)  args[i]  = all_args[i];
   // and terms that should not
-  vector<double> bargs(nores_);
+  vector<double> bargs;
+  if(nores_>0) bargs.resize(nores_);
   for(unsigned i=0; i<bargs.size(); ++i) bargs[i] = all_args[i+args.size()];
      
   // calculate energy and forces, only on rescaled terms
