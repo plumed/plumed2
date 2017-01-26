@@ -989,16 +989,16 @@ void PBMetaD::calculate()
  
   // set Forces - set them to zero if SELECTOR is active 
   if(do_select_) current_value_ = static_cast<unsigned>(plumed.passMap[selector_]);
+
   if(!do_select_ || (do_select_ && select_value_==current_value_)){
    for(unsigned i=0; i<getNumberOfArguments(); ++i){
      const double f = - exp((-bias[i]+bmin)/kbt_) / (ene) * deriv[i];
      setOutputForce(i, f);
    }
   }
+
   if(do_select_ && select_value_!=current_value_){
-   for(unsigned i=0; i<getNumberOfArguments(); ++i){
-     setOutputForce(i, 0.0);
-   }
+   for(unsigned i=0; i<getNumberOfArguments(); ++i) setOutputForce(i, 0.0);
   }
 
   // set bias

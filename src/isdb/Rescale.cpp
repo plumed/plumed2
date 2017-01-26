@@ -74,7 +74,7 @@ class Rescale : public bias::Bias
 
   // Monte Carlo
   void doMonteCarlo(unsigned igamma, double oldE, vector<double> args, vector<double> bargs);
-  unsigned  proposeMove(unsigned x, unsigned xmin, unsigned xmax);
+  unsigned proposeMove(unsigned x, unsigned xmin, unsigned xmax);
   bool doAccept(double oldE, double newE);
   // read and print bias
   void read_bias();
@@ -101,8 +101,8 @@ void Rescale::registerKeywords(Keywords& keys){
   keys.add("compulsory","BIASFACTOR", "bias factor");
   keys.add("compulsory","BSTRIDE", "stride for writing bias");
   keys.add("compulsory","BFILE", "file name for bias");
-  keys.add("optional","NOT_SHARED",   "arguments not summed across replicas");
-  keys.add("optional","NOT_RESCALED", "number of arguments (the last) that should not be rescaled");
+  keys.add("optional","NOT_SHARED",   "list of arguments (from 1 to N ) not summed across replicas");
+  keys.add("optional","NOT_RESCALED", "these last N arguments will not be rescaled");
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_STRIDE","MC stride");
   componentsAreNotOptional(keys);
@@ -140,14 +140,14 @@ MCsteps_(1), MCstride_(1), MCfirst_(-1), MCaccgamma_(0)
   
   // number of bias
   parse("NOT_RESCALED", nores_);
-  if(nores_>0 && nores_!=nbin) error("The number of not rescaled arguments should be equal to either 0 or the number of bins");
+  if(nores_>0 && nores_!=nbin) error("The number of non rescaled arguments must be equal to either 0 or the number of bins");
 
   // maximum value of beta 
   vector<double> beta_max;
   parseVector("BETA_MAX", beta_max);
   // check dimension of beta_max
   if(beta_max.size()!=(getNumberOfArguments()-nores_))
-    error("Size of BETA_MAX array should be the same as of the number of arguments that need to be rescaled");
+    error("Size of BETA_MAX array must be equal to the number of arguments that will to be rescaled");
 
   // calculate exponents
   double igamma_max = static_cast<double>(nbin);
@@ -166,14 +166,18 @@ MCsteps_(1), MCstride_(1), MCfirst_(-1), MCaccgamma_(0)
   parse("BSTRIDE", Biasstride_);
   parse("BFILE",   Biasfilename_);
   
+  // create vectors of shared arguments
+  // by default they are all shared
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) shared_.push_back(1);
   // share across replicas or not
   vector<unsigned> not_shared;
   parseVector("NOT_SHARED", not_shared);
-  // create the shared vector
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) shared_.push_back(1);
   // and change the non-shared
   for(unsigned i=0; i<not_shared.size(); ++i){
-     if((not_shared[i]-1)>=(getNumberOfArguments()-nores_)) error("NOT_RESCALED should be always shared and NOT_SHARED lower than ARG");
+     if((not_shared[i]-1)>=(getNumberOfArguments()-nores_) && nrep_>1)
+      error("NOT_RESCALED args must always be shared when using multiple replicas");
+     if((not_shared[i]-1)>=getNumberOfArguments())
+      error("NOT_SHARED args should be lower than total number of arguments"); 
      shared_[not_shared[i]-1] = 0;
   }
   
@@ -194,8 +198,8 @@ MCsteps_(1), MCstride_(1), MCfirst_(-1), MCaccgamma_(0)
   log.printf("  temperature of the system in energy unit %f\n",kbt_);
   log.printf("  name of the SELECTOR use for this action %s\n",selector_.c_str());
   log.printf("  number of bins in gamma grid %u\n",nbin);
-  log.printf("  number of arguments that should not be rescaled %u\n",nores_);
-  log.printf("  number of arguments that should not be summed across replicas %u\n",not_shared.size());
+  log.printf("  number of arguments that will not be rescaled %u\n",nores_);
+  if(nrep_>1) log.printf("  number of arguments that will not be summed across replicas %u\n",not_shared.size());
   log.printf("  biasfactor %f\n",biasf_);
   log.printf("  initial hills height %f\n",w0_);
   log.printf("  stride to write bias to file %u\n",Biasstride_);
@@ -300,7 +304,7 @@ void Rescale::doMonteCarlo(unsigned igamma, double oldE,
     double fact = 1.0/pow(gamma_[new_igamma], expo_[j]) - 1.0;
     newE += args[j] * fact;
   }
-  // calculate total bias contributions
+  // calculate contributions from non-rescaled terms
   if(bargs.size()>0){
      oldB = bias_[igamma]+bargs[igamma];
      newB = bias_[new_igamma]+bargs[new_igamma];
@@ -316,7 +320,7 @@ void Rescale::doMonteCarlo(unsigned igamma, double oldE,
    MCaccgamma_++;
   }
  }
- // send values of parameters to all replicas
+ // send values of gamma to all replicas
  if(comm.Get_rank()==0){
    if(multi_sim_comm.Get_rank()!=0) igamma = 0;
    multi_sim_comm.Sum(&igamma, 1); 
@@ -326,7 +330,7 @@ void Rescale::doMonteCarlo(unsigned igamma, double oldE,
  // local communication
  comm.Sum(&igamma, 1);
 
- // set the value of gamma
+ // set the value of gamma into passMap
  plumed.passMap[selector_]=static_cast<double>(igamma); 
  
  // add well-tempered like bias
@@ -378,10 +382,10 @@ void Rescale::calculate()
      }
   }
   
-  // now separate terms to rescale 
+  // now separate terms that should be rescaled
   vector<double> args(getNumberOfArguments()-nores_);
   for(unsigned i=0; i<args.size(); ++i)  args[i]  = all_args[i];
-  // and biases
+  // and terms that should not
   vector<double> bargs(nores_);
   for(unsigned i=0; i<bargs.size(); ++i) bargs[i] = all_args[i+args.size()];
      
