@@ -50,7 +50,7 @@ PLUMED_REGISTER_ACTION(Selector,"SELECTOR")
 void Selector::registerKeywords( Keywords& keys ){
   Action::registerKeywords(keys);
   keys.add("compulsory","NAME","name of the SELECTOR");
-  keys.add("compulsory","START","initial value of the SELECTOR");
+  keys.add("compulsory","VALUE","set (initial) value of the SELECTOR");
 }
 
 Selector::Selector(const ActionOptions&ao):
@@ -58,10 +58,9 @@ Action(ao)
 {
   string name;
   parse("NAME", name);
-  double sel; 
-  parse("START", sel);
-  if(sel>=0.) plumed.passMap[name] = sel;
-  else error("The initial value of the SELECTOR specified by START must be positive");
+  double value;
+  parse("VALUE", value);
+  plumed.passMap[name] = value;
 }
 
 }
