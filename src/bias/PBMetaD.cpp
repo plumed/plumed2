@@ -259,6 +259,11 @@ private:
   int adaptive_;
   vector<FlexibleBin> flexbin;
   bool isFirstStep;
+  // variable for selector
+  string selector_;
+  bool  do_select_;
+  unsigned select_value_;
+  unsigned current_value_;
 
   void   readGaussians(unsigned iarg, IFile*);
   bool   readChunkOfGaussians(unsigned iarg, IFile *ifile, unsigned n);
@@ -301,6 +306,8 @@ void PBMetaD::registerKeywords(Keywords& keys){
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
   keys.addFlag("GRID_SPARSE",false,"use a sparse grid to store hills");
   keys.addFlag("GRID_NOSPLINE",false,"don't use spline interpolation with grids");
+  keys.add("optional","SELECTOR", "add forces and do update based on the value of SELECTOR");
+  keys.add("optional","SELECTOR_ID", "value of SELECTOR");
   keys.add("optional","WALKERS_ID", "walker id");
   keys.add("optional","WALKERS_N", "number of walkers");
   keys.add("optional","WALKERS_DIR", "shared directory with the hills files from all the walkers");
@@ -342,7 +349,8 @@ biasf_(1.0), kbt_(0.0), stride_(0), wgridstride_(0), welltemp_(false),
 mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1),
 walkers_mpi(false), mpi_nw_(0),
 adaptive_(FlexibleBin::none),
-isFirstStep(true)
+isFirstStep(true),
+do_select_(false)
 {
   // parse the flexible hills
   string adaptiveoption;
@@ -528,6 +536,13 @@ isFirstStep(true)
     if(getPntrToArgument(i)->isPeriodic()) warning("INTERVAL is not used for periodic variables");
     else doInt_[i]=true;
   }
+
+  // parse selector stuff
+  parse("SELECTOR", selector_);
+  if(selector_.length()>0){
+    do_select_ = true;
+    parse("SELECTOR_ID", select_value_); 
+  }
  
   checkRead();
 
@@ -545,6 +560,11 @@ isFirstStep(true)
     log.printf("  Well-Tempered Bias Factor %f\n",biasf_);
     log.printf("  Hills relaxation time (tau) %f\n",tau);
     log.printf("  KbT %f\n",kbt_);
+  }
+
+  if(do_select_){
+    log.printf("  Add forces and update bias based on the value of SELECTOR %s\n",selector_.c_str());
+    log.printf("  Id of the SELECTOR for this action %u\n", select_value_);
   }
 
   if(mw_n_>1){
@@ -967,10 +987,18 @@ void PBMetaD::calculate()
     ene += exp((-bias[i]+bmin)/kbt_);
   }
  
-  // set Forces 
-  for(unsigned i=0; i<getNumberOfArguments(); ++i){
-    const double f = - exp((-bias[i]+bmin)/kbt_) / (ene) * deriv[i];
-    setOutputForce(i, f);
+  // set Forces - set them to zero if SELECTOR is active 
+  if(do_select_) current_value_ = static_cast<unsigned>(plumed.passMap[selector_]);
+  if(!do_select_ || (do_select_ && select_value_==current_value_)){
+   for(unsigned i=0; i<getNumberOfArguments(); ++i){
+     const double f = - exp((-bias[i]+bmin)/kbt_) / (ene) * deriv[i];
+     setOutputForce(i, f);
+   }
+  }
+  if(do_select_ && select_value_!=current_value_){
+   for(unsigned i=0; i<getNumberOfArguments(); ++i){
+     setOutputForce(i, 0.0);
+   }
   }
 
   // set bias
@@ -997,7 +1025,7 @@ void PBMetaD::update()
     multivariate=false;
   }
 
-  if(nowAddAHill){
+  if(nowAddAHill && (!do_select_ || (do_select_ && select_value_==current_value_))){
    // get all biases and heights
    vector<double> cv(getNumberOfArguments());
    vector<double> bias(getNumberOfArguments());
@@ -1074,8 +1102,8 @@ void PBMetaD::update()
    }
   }
 
-   // write grid files
-   if(wgridstride_>0 && (getStep()%wgridstride_==0 || getCPT())) {
+  // write grid files
+  if(wgridstride_>0 && (getStep()%wgridstride_==0 || getCPT())) {
      int r = 0;
      if(walkers_mpi) {
        if(comm.Get_rank()==0) r=multi_sim_comm.Get_rank();
@@ -1088,7 +1116,7 @@ void PBMetaD::update()
          gridfiles_[i]->flush();
        }
      }
-   }
+  }
 
   // if multiple walkers and time to read Gaussians
   if(mw_n_>1 && getStep()%mw_rstride_==0){
