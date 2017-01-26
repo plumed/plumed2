@@ -95,7 +95,7 @@ void Rescale::registerKeywords(Keywords& keys){
   keys.use("ARG");
   keys.add("compulsory","TEMP","temperature");
   keys.add("compulsory","SELECTOR", "name of the SELECTOR used for rescaling");
-  keys.add("compulsory","BETA_MAX","maximum values of the beta parameter");
+  keys.add("compulsory","MAX_RESCALE","maximum values for rescaling");
   keys.add("compulsory","NBIN","number of bins for gamma grid");
   keys.add("compulsory","W0", "initial bias height");
   keys.add("compulsory","BIASFACTOR", "bias factor");
@@ -142,17 +142,17 @@ MCsteps_(1), MCstride_(1), MCfirst_(-1), MCaccgamma_(0)
   parse("NOT_RESCALED", nores_);
   if(nores_>0 && nores_!=nbin) error("The number of non rescaled arguments must be equal to either 0 or the number of bins");
 
-  // maximum value of beta 
-  vector<double> beta_max;
-  parseVector("BETA_MAX", beta_max);
-  // check dimension of beta_max
-  if(beta_max.size()!=(getNumberOfArguments()-nores_))
-    error("Size of BETA_MAX array must be equal to the number of arguments that will to be rescaled");
+  // maximum value of rescale 
+  vector<double> max_rescale;
+  parseVector("MAX_RESCALE", max_rescale);
+  // check dimension of max_rescale
+  if(max_rescale.size()!=(getNumberOfArguments()-nores_))
+    error("Size of MAX_RESCALE array must be equal to the number of arguments that will to be rescaled");
 
   // calculate exponents
   double igamma_max = static_cast<double>(nbin);
-  for(unsigned i=0; i<beta_max.size(); ++i)
-    expo_.push_back(std::log(beta_max[i])/std::log(igamma_max));
+  for(unsigned i=0; i<max_rescale.size(); ++i)
+    expo_.push_back(std::log(max_rescale[i])/std::log(igamma_max));
   
   // allocate gamma grid and set bias to zero
   for(unsigned i=0; i<nbin; ++i){
@@ -197,7 +197,7 @@ MCsteps_(1), MCstride_(1), MCfirst_(-1), MCaccgamma_(0)
 
   log.printf("  temperature of the system in energy unit %f\n",kbt_);
   log.printf("  name of the SELECTOR use for this action %s\n",selector_.c_str());
-  log.printf("  number of bins in gamma grid %u\n",nbin);
+  log.printf("  number of bins in grid %u\n",nbin);
   log.printf("  number of arguments that will not be rescaled %u\n",nores_);
   if(nrep_>1) log.printf("  number of arguments that will not be summed across replicas %u\n",not_shared.size());
   log.printf("  biasfactor %f\n",biasf_);
