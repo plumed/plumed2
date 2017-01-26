@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -144,7 +144,7 @@ private:
   bool stopNow;
 
 /// Stack for update flags.
-/// Store information used in class \ref UPDATE_IF 
+/// Store information used in class \ref generic::UpdateIf
   std::stack<bool> updateFlags;
 
 public:
