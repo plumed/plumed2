@@ -106,7 +106,8 @@ void TopologyMatrix::registerKeywords( Keywords& keys ){
 
 TopologyMatrix::TopologyMatrix( const ActionOptions& ao ):
 Action(ao),
-AdjacencyMatrixBase(ao)
+AdjacencyMatrixBase(ao),
+maxbins(0)
 {
   readMaxThreeSpeciesMatrix("NODES", "FAKE", "FAKE", "ATOMS", true );
   unsigned nrows, ncols, ndonor_types; retrieveTypeDimensions( nrows, ncols, ndonor_types );
