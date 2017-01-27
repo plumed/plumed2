@@ -383,7 +383,8 @@ void Rescale::calculate()
   }
   
   // now separate terms that should be rescaled
-  vector<double> args(getNumberOfArguments()-nores_);
+  vector<double> args;
+  if(getNumberOfArguments()-nores_>0) args.resize(getNumberOfArguments()-nores_);
   for(unsigned i=0; i<args.size(); ++i)  args[i]  = all_args[i];
   // and terms that should not
   vector<double> bargs;
