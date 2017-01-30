@@ -20,30 +20,29 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "PlumedMain.h"
-#include "tools/Tools.h"
-#include "tools/OpenMP.h"
-#include <cstring>
-#include "ActionPilot.h"
-#include "ActionWithValue.h"
 #include "ActionAtomistic.h"
+#include "ActionPilot.h"
+#include "ActionRegister.h"
+#include "ActionSet.h"
+#include "ActionWithValue.h"
 #include "ActionWithVirtualAtom.h"
 #include "Atoms.h"
-#include <set>
-#include "config/Config.h"
-#include <cstdlib>
-#include "ActionRegister.h"
-#include "GREX.h"
-#include "tools/Exception.h"
-#include "Atoms.h"
-#include "ActionSet.h"
-#include "tools/Log.h"
-#include "tools/DLLoader.h"
-#include "tools/Communicator.h"
 #include "CLToolMain.h"
-#include "tools/Stopwatch.h"
-#include "tools/Citations.h"
 #include "ExchangePatterns.h"
+#include "GREX.h"
+#include "config/Config.h"
+#include "tools/Citations.h"
+#include "tools/Communicator.h"
+#include "tools/DLLoader.h"
+#include "tools/Exception.h"
 #include "tools/IFile.h"
+#include "tools/Log.h"
+#include "tools/OpenMP.h"
+#include "tools/Tools.h"
+#include "tools/Stopwatch.h"
+#include <cstdlib>
+#include <cstring>
+#include <set>
 
 using namespace std;
 
