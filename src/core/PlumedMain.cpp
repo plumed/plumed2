@@ -19,6 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#include "PlumedMain.h"
 #include "ActionAtomistic.h"
 #include "ActionPilot.h"
 #include "ActionRegister.h"
@@ -29,7 +30,6 @@
 #include "CLToolMain.h"
 #include "ExchangePatterns.h"
 #include "GREX.h"
-#include "PlumedMain.h"
 #include "config/Config.h"
 #include "tools/Citations.h"
 #include "tools/Communicator.h"
