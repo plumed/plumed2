@@ -68,7 +68,8 @@ If you want to change these units you can do this using the \ref UNITS keyword.
 
 \subsection lugano-1-introinput Introduction to the PLUMED input file
 
-A typical input file for PLUMED provides specifications for one or more CVs, the printout frequency and a termination line.
+Many input files for PLUMED provides specifications for one or more CVs.  These specifications are then followed by an instruction to PLUMED
+to \ref PRINT these CVs and a termination line.
 Comments are denoted with a # and the termination of the input for PLUMED is marked with the keyword ENDPLUMED. Any words that 
 follow the ENDPLUMED line are ignored by PLUMED. You can also introduce blank lines as these will not be interpreted by PLUMED.
 
