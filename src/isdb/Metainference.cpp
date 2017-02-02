@@ -755,9 +755,13 @@ double Metainference::getEnergyMIGEN(const vector<double> &mean, const vector<do
       const double inv_sb2  = 1./(sigma[i]*sigma[i]);
       const double inv_sm2  = 1./sigma_mean2_[i];
       double devb = scale*ftilde[i]-parameters[i]+offset;
+      // this is the lognormal
+      //double devb = std::log(scale*ftilde[i]/parameters[i]);
       double devm = mean[i] - ftilde[i];
       // deviation + normalisation + jeffrey
       const double normb         = -0.5*std::log(0.5/M_PI*inv_sb2);
+      // this is the lognormal
+      //const double normb         = -0.5*std::log(0.5/M_PI*inv_sb2/(parameters[i]*parameters[i]));
       const double normm         = -0.5*std::log(0.5/M_PI*inv_sm2);
       const double jeffreys      = -0.5*std::log(2.*inv_sb2);
       ene += 0.5*devb*devb*inv_sb2 + 0.5*devm*devm*inv_sm2 + normb + normm + jeffreys;
@@ -1371,6 +1375,10 @@ void Metainference::calculate()
           if(sigma_max_[i] < s_v) {
             Dsigma_[i] *= s_v/sigma_max_[i]; 
             sigma_max_[i] = s_v;
+          }
+          if(noise_type==GENERIC) {
+            sigma_min_[i] = sqrt(sigma_mean2_[i]);
+            if(sigma_[i] < sigma_min_[i]) sigma_[i] = sigma_min_[i];
           }
         }
       }
