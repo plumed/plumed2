@@ -31,7 +31,7 @@ The <a href="tutorial-resources/belfast-3.tar.gz" download="belfast-3.tar.gz"> t
 \subsection belfast-3-vis-traj Visualising the trajectory
 
 The aim of this tutorial is to understand the data contained in the trajectory called trajectory-short.pdb.  This file contains some
-frames from a simulation from a 16 residue protein.  As a start point then let load this trajectory with vmd and have a look
+frames from a simulation of a 16 residue protein.  As a start point then lets load this trajectory with vmd and have a look
 at it.  Type the following command into the command line:
 
 \verbatim
@@ -88,7 +88,7 @@ and construct a plumed input to calculate them and print them to a file.  You wi
 in order to do this.  Once you have created your plumed input use driver to calculate the torsional angles using the following command:
 
 \verbatim
-plumed driver --plumed plumed.dat --ixyz trajectory.xyz
+plumed driver --plumed plumed.dat --ixyz trajectory-short.xyz
 \endverbatim 
 
 If you have done this correctly you should have an output file containing your torsional angles.  We can use vmd+GISMO to visualise
@@ -114,12 +114,12 @@ with a different pair of ramachandran angles?
 What we have done in most of the other exercises here is seek out a function that takes as input the position of all the atoms in the system - a \f$3N\f$
 dimensional vector, where \f$N\f$ is the number of atoms.  This function then outputs a single number - the value of the collective variable -
 that tells us where in a low dimensional space we should project that configuration.  Problems can arise because this collective-variable function 
-is many-to-one.  As you have hopefully seen in the previous exercise markedly different confifgurations of the protein can actually have quite
+is many-to-one.  As you have hopefully seen in the previous exercise markedly different configurations of the protein can actually have quite
 similar values of a particular ramachandran angle.
 
 We are going to spend the rest of this session introducing an alternative approach to this bussiness of finding collective variables.  In this alternative
-approach we are going to stop trying to seek out a function that can take any configuration of the atoms (any \f$3N\f$-dimensional vector) and find it's
-low dimensional proejection on the collective variable axis.  Instead we are going to take a set of configurations of the atoms (a set of \f$3N\f$-dimensional
+approach we are going to stop trying to seek out a function that can take any configuration of the atoms (any \f$3N\f$-dimensional vector) and find its
+low dimensional projection on the collective variable axis.  Instead we are going to take a set of configurations of the atoms (a set of \f$3N\f$-dimensional
 vectors of atom positions) and try to find a sensible set of projections for these configurations.  We already touched on this idea earlier when we looked at
 paths.  Our assumption, when we introduced this idea, was that we could find an ordered set of high-dimensional configurations that represented the 
 transtion pathway the system takes as it crossed a barrier and changed between two particularly interesting configurations. Lets say we have a path defined by 
