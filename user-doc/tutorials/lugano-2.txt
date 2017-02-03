@@ -4,7 +4,7 @@
 \section lugano-2-aims Aims
 
 Consider the two overlain protein structures that are shown in the figure below.  
-Can you see the difference between these structures?  Can you think of a collective variable that could be used to study the substantial change in structure?
+Can you see the difference between these two structures?  Can you think of a collective variable that could be used to study the substantial change in structure?
 
 \anchor belfast-2-cdk-fig
 \image html belfast-2-cdk.png "CDK2 conformational change, PDB code 2C5X and 2C5Y."
