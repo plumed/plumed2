@@ -129,6 +129,8 @@ class Metainference : public bias::Bias
   // noise type
   unsigned noise_type_;
   enum { GAUSS, MGAUSS, OUTLIERS, MOUTLIERS, GENERIC };
+  unsigned gen_likelihood_;
+  enum { LIKE_GAUSS, LIKE_LOGN };
   // scale is data scaling factor
   // noise type
   unsigned scale_prior_;
@@ -157,6 +159,7 @@ class Metainference : public bias::Bias
   vector<double> sigma_mean2_;
   // this is the estimator of the mean value per replica for generic metainference
   vector<double> ftilde_;
+  double Dftilde_;
 
   // sigma_mean rescue params
   double sigma_mean_correction_;
@@ -196,7 +199,7 @@ class Metainference : public bias::Bias
   OFile    sfile_;
 
   // others
-  bool     firsttime;
+  bool     firstTime;
   bool     master;
   bool     do_reweight;
   unsigned do_optsigmamean_;
@@ -242,6 +245,7 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.add("optional","PARARG","reference values for the experimental data, these can be provided as arguments without derivatives"); 
   keys.add("optional","PARAMETERS","reference values for the experimental data");
   keys.add("compulsory","NOISETYPE","functional form of the noise (GAUSS,MGAUSS,OUTLIERS,MOUTLIERS)");
+  keys.add("compulsory","LIKELIHOOD","GAUSS","the likelihood for the GENERIC metainference model, at present GAUSS or LOGN");
   keys.addFlag("REWEIGHT",false,"simple REWEIGHT using the latest ARG as energy"); 
   keys.addFlag("SCALEDATA",false,"Set to TRUE if you want to sample a scaling factor common to all values and replicas");  
   keys.addFlag("ADDOFFSET",false,"Set to TRUE if you want to sample an offset common to all values and replicas");  
@@ -259,6 +263,7 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.add("compulsory","SIGMA_MIN","minimum value of the uncertainty parameter");
   keys.add("compulsory","SIGMA_MAX","maximum value of the uncertainty parameter");
   keys.add("optional","DSIGMA","maximum MC move of the uncertainty parameter");
+  keys.add("compulsory","DFTILDE","0.1","fraction of sigma_mean used to evolve ftilde");
   keys.add("compulsory","OPTSIGMAMEAN","NONE","Set to NONE/SEM/FULL to manually set sigma mean, or to estimate it on the fly and use the safety check on forces");  
   keys.add("optional","SIGMA_MEAN0","starting value for the uncertainty in the mean estimate");
   keys.add("optional","SIGMA_MEAN_MOD0","starting value for sm modifier");
@@ -283,6 +288,7 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.addOutputComponent("MetaDf",       "REWEIGHT",     "force on metadynamics");
   keys.addOutputComponent("scale",        "SCALEDATA",    "scale parameter");
   keys.addOutputComponent("offset",       "ADDOFFSET",    "offset parameter");
+  keys.addOutputComponent("ftilde",       "GENERIC",      "ensemble average estimator");
   keys.addOutputComponent("maxForceMD",   "OPTSIGMAMEAN", "max force on atoms");
   keys.addOutputComponent("smMod",        "OPTSIGMAMEAN", "modifier for all sigma mean");
 }
@@ -299,6 +305,7 @@ offset_mu_(0),
 offset_min_(1),
 offset_max_(-1),
 Doffset_(-1),
+Dftilde_(0.1),
 sigma_mean_correction_(1.),
 sm_mod_(1.),
 random(3),
@@ -310,7 +317,7 @@ MCacceptFT_(0),
 MCtrial_(0),
 MCchunksize_(0),
 write_stride_(0),
-firsttime(true),
+firstTime(true),
 do_reweight(false),
 do_optsigmamean_(0),
 atoms(plumed.getAtoms())
@@ -359,6 +366,16 @@ atoms(plumed.getAtoms())
   else if(stringa_noise=="MOUTLIERS")  noise_type_ = MOUTLIERS;
   else if(stringa_noise=="GENERIC")    noise_type_ = GENERIC;
   else error("Unknown noise type!"); 
+
+  if(noise_type_== GENERIC) {
+    string stringa_like;
+    parse("LIKELIHOOD",stringa_like);
+    if(stringa_like=="GAUSS") gen_likelihood_ = LIKE_GAUSS;
+    else if(stringa_like=="LOGN") gen_likelihood_ = LIKE_LOGN;
+    else error("Unknown likelihood type!");
+
+    parse("DFTILDE",Dftilde_);
+  }
 
   parse("WRITE_STRIDE",write_stride_);
   string status_file_name_;
@@ -501,6 +518,7 @@ atoms(plumed.getAtoms())
   IFile restart_sfile;
   restart_sfile.link(*this);
   if(getRestart()&&restart_sfile.FileExist(status_file_name_)) {
+    firstTime = false;
     restart_sfile.open(status_file_name_);
     log.printf("  Restarting from %s\n", status_file_name_.c_str());
     double dummy;
@@ -516,6 +534,13 @@ atoms(plumed.getAtoms())
         std::string msg;
         Tools::convert(i,msg);
         restart_sfile.scanField("sigma_"+msg,sigma_[i]);
+      }
+      if(noise_type_==GENERIC) {
+        for(unsigned i=0;i<ftilde_.size();++i) {
+          std::string msg;
+          Tools::convert(i,msg);
+          restart_sfile.scanField("ftilde_"+msg,ftilde_[i]);
+        }
       }
       if(doscale_)  restart_sfile.scanField("scale0_",scale_);
       if(dooffset_) restart_sfile.scanField("offset0_",offset_);
@@ -539,7 +564,11 @@ atoms(plumed.getAtoms())
 
   switch(noise_type_) {
     case GENERIC:
-      log.printf("  with general metainference\n");
+      log.printf("  with general metainference ");
+      if(gen_likelihood_==LIKE_GAUSS) log.printf(" and a gaussian likelihood\n");
+      else if(gen_likelihood_==LIKE_LOGN) log.printf(" and a log-normal likelihood\n");
+      log.printf("  ensemble average parameter sampled with a step %lf of sigma_mean\n", Dftilde_);
+      break;
     case GAUSS:
       log.printf("  with gaussian noise and a single noise parameter for all the data\n");
       break;
@@ -754,14 +783,14 @@ double Metainference::getEnergyMIGEN(const vector<double> &mean, const vector<do
     for(unsigned i=0;i<narg;++i){
       const double inv_sb2  = 1./(sigma[i]*sigma[i]);
       const double inv_sm2  = 1./sigma_mean2_[i];
-      double devb = scale*ftilde[i]-parameters[i]+offset;
-      // this is the lognormal
-      //double devb = std::log(scale*ftilde[i]/parameters[i]);
+      double devb = 0;
+      if(gen_likelihood_==LIKE_GAUSS)     devb = scale*ftilde[i]-parameters[i]+offset;
+      else if(gen_likelihood_==LIKE_LOGN) devb = std::log(scale*ftilde[i]/parameters[i]);
       double devm = mean[i] - ftilde[i];
       // deviation + normalisation + jeffrey
-      const double normb         = -0.5*std::log(0.5/M_PI*inv_sb2);
-      // this is the lognormal
-      //const double normb         = -0.5*std::log(0.5/M_PI*inv_sb2/(parameters[i]*parameters[i]));
+      double normb = 0.;
+      if(gen_likelihood_==LIKE_GAUSS)     normb = -0.5*std::log(0.5/M_PI*inv_sb2);
+      else if(gen_likelihood_==LIKE_LOGN) normb = -0.5*std::log(0.5/M_PI*inv_sb2/(parameters[i]*parameters[i]));
       const double normm         = -0.5*std::log(0.5/M_PI*inv_sm2);
       const double jeffreys      = -0.5*std::log(2.*inv_sb2);
       ene += 0.5*devb*devb*inv_sb2 + 0.5*devm*devm*inv_sm2 + normb + normm + jeffreys;
@@ -870,7 +899,7 @@ void Metainference::doMonteCarlo(const vector<double> &mean_, const double modif
       // change all sigmas
       for(unsigned j=0;j<sigma_.size();j++) {
         const double r3 = random[0].Gaussian();
-        const double ds3 = 0.1*sqrt(sigma_mean2_[j])*r3;
+        const double ds3 = Dftilde_*sqrt(sigma_mean2_[j])*r3;
         new_ftilde[j] = ftilde_[j] + ds3;
       }
       // calculate new energy
@@ -1332,7 +1361,7 @@ void Metainference::calculate()
   // set the derivative of the mean with respect to the bias
   for(unsigned i=0;i<narg;++i) dmean_b[i] = fact/kbt_*(getArgument(i)-mean[i]);
 
-  if(firsttime) {ftilde_ = mean; firsttime = false;}
+  if(firstTime) {ftilde_ = mean; firstTime = false;}
 
   if(do_optsigmamean_>0) {
     /* this is the current estimate of sigma mean for each argument
@@ -1376,7 +1405,7 @@ void Metainference::calculate()
             Dsigma_[i] *= s_v/sigma_max_[i]; 
             sigma_max_[i] = s_v;
           }
-          if(noise_type==GENERIC) {
+          if(noise_type_==GENERIC) {
             sigma_min_[i] = sqrt(sigma_mean2_[i]);
             if(sigma_[i] < sigma_min_[i]) sigma_[i] = sigma_min_[i];
           }
@@ -1444,6 +1473,13 @@ void Metainference::writeStatus()
     std::string msg;
     Tools::convert(i,msg);
     sfile_.printField("sigma_"+msg,sigma_[i]);
+  }
+  if(noise_type_==GENERIC) {
+    for(unsigned i=0;i<ftilde_.size();++i) {
+      std::string msg;
+      Tools::convert(i,msg);
+      sfile_.printField("ftilde_"+msg,ftilde_[i]);
+    }
   }
   if(doscale_) {
     sfile_.printField("scale0_",scale_);
