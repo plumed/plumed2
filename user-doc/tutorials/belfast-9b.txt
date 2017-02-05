@@ -6,8 +6,11 @@
 This tutorial is concerned with the collective variables that we use to study order/disorder
 transitions such as the transition between the solid and liquid phase.  In this tutorial
 we will look at the transition from solid to liquid as this is easier to study using simulation.
-The CVs we will intorduce can, and have, been used to study the transition from liquid to solid.
+The CVs we will introduce can, and have, been used to study the transition from liquid to solid.
 More information can be found in the further reading section.
+
+<b> You will need to ensure that you have compiled PLUMED with the crystalisation module enabled in order to complete this tutorial. </b>
+To learn how to activate this module consult the information in the manual about the \ref mymodules.
 
 \subsection belfast-10-lo Learning Outcomes
 
@@ -62,10 +65,10 @@ At what temperatures did the simulations melt?  What then is the melting point o
 
 \subsection belfast-10-cvs Coordination Numbers
 
-At the end of the previous section you were able to make very sophisticated judegements about whether or not the arrangment of atoms
+At the end of the previous section you were able to make very sophisticated judgements about whether or not the arrangment of atoms
 in your system was solid-like or liquid-like by simply looking at the configuration.  The aim in the rest of this tutorial is to 
 see if we can derive collective variables that are able to make an equally sophisticated judgement.  For our first attempt lets use
-a CV which we have encoutered elsewhere, the \ref COORDINATIONNUMBER.  Rerun the calculations from the previous section but at variance
+a CV which we have encountered elsewhere, the \ref COORDINATIONNUMBER.  Rerun the calculations from the previous section but at variance
 with the previous section use the plumed input file below instead of a empty file.  This input will ensure that the average 
 \ref COORDINATIONNUMBER of the atoms in your system is computed and printed.
 
@@ -132,7 +135,7 @@ surprising - as you go from solid to liquid the distribution of the geometries o
 atoms in the coordination spheres in a much wider variety of different poses.  Importantly, however, the fact that an atom is in a liquid does not preclude
 it from having a very-ordered, solid-like coordination environment. As such in the liquid state we will find the occasional atom with a high value
 for the Q6 parameter.  Consequently, an ordred coordination environment does not always differentiate solid-like atoms from liquid-like atoms.  The major
-difference is the liquid the ordered atoms will always be isolated.  That is to say in the liquid atoms with an ordered coordination will always be surrounded 
+difference is in the liquid the ordered atoms will always be isolated.  That is to say in the liquid atoms with an ordered coordination will always be surrounded 
 by atoms with a disordered coordination sphere. By contrast in the solid each ordered atom will be surrounded by further ordered atoms.  This observation 
 forms the basis of the local Steinhardt parameters and the locally averaged Steinhardt parameters that are explained in this 
 <a href="https://www.youtube.com/watch?v=JBtIs5qYIPE&feature=youtu.be"> video </a>. 
