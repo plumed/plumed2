@@ -744,7 +744,7 @@ double Metainference::getEnergySP(const vector<double> &mean, const vector<doubl
     }
   }
   // add one single Jeffrey's prior and one normalisation per data point
-  ene += std::log(sss) + static_cast<double>(narg)*0.5*std::log(0.5*M_PI*M_PI/ss2);
+  ene += 0.5*std::log(sss) + static_cast<double>(narg)*0.5*std::log(0.5*M_PI*M_PI/ss2);
   if(doscale_)  ene += std::log(sss);
   if(dooffset_) ene += std::log(sss);
   return kbt_ * ene;
@@ -765,7 +765,7 @@ double Metainference::getEnergySPE(const vector<double> &mean, const vector<doub
       const double sss = sigma[i]*sigma[i] + sm2;
       const double dev = scale*mean[i]-parameters[i]+offset; 
       const double a2  = 0.5*dev*dev + ss2;
-      ene += std::log(sss) + 0.5*std::log(0.5*M_PI*M_PI/ss2) + std::log(2.0*a2/(1.0-exp(-a2/sm2)));
+      ene += 0.5*std::log(sss) + 0.5*std::log(0.5*M_PI*M_PI/ss2) + std::log(2.0*a2/(1.0-exp(-a2/sm2)));
       if(doscale_)  ene += 0.5*std::log(sss);
       if(dooffset_) ene += 0.5*std::log(sss);
     }
