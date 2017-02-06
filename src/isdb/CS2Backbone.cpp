@@ -379,8 +379,10 @@ private:
   }
   
   void assign(double * f, const vector<string> & v, const double scale){
-    for(unsigned i=1;i<v.size();i++)
+    for(unsigned i=1;i<v.size();i++) {
       f[i-1] = scale*(atof(v[i].c_str()));
+      if(fabs(f[i-1])<0.000001) f[i-1]=0.;
+    }
   }
 };
 
@@ -969,7 +971,9 @@ void CS2Backbone::calculate()
 
               const Vector d = delta(ringInfo[i].position, getPosition(ipos));
     	      const double dL2 = d.modulo2();
-    	      const double dL  = sqrt(dL2);
+    	      double dL  = sqrt(dL2);
+              unsigned cont_r = 0;
+              if(dL<0.25) {dL=0.25; cont_r=1;} 
     	      const double idL3 = 1./(dL2*dL);
 
     	      const double dn    = dotProduct(d,n);
@@ -982,6 +986,7 @@ void CS2Backbone::calculate()
               const double cc   = rc[ringInfo[i].rtype];
 
               cs += cc*u*idL3;
+              if(cont_r) continue;
              
               const double fUU    = -6*dn*inL2; 
     	      const double fUQ    = fUU/dL;
