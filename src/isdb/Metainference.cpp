@@ -519,7 +519,7 @@ atoms(plumed.getAtoms())
     if(read_sigma_mean_.size()==1) {
       sigma_mean2_.resize(1, read_sigma_mean_[0]*read_sigma_mean_[0]);
     } else if(read_sigma_mean_.size()==0) {
-      sigma_mean2_.resize(narg,0.000001);
+      sigma_mean2_.resize(1, 0.000001);
     } else {
       error("If you want to use more than one SIGMA_MEAN0 you should use NOISETYPE=MGAUSS|MOUTLIERS");
     }
