@@ -6,6 +6,7 @@ This page contains changes that will end up in 2.4
 
 Changes from version 2.3 which are relevant for users:
   - \ref PBMETAD : multiple walkers using files (thanks to Marco De La Pierre).
-  - \ref PBMETAD : adaptive gaussians 
+  - \ref PBMETAD : adaptive gaussians
+  - \ref PBMETAD : default names for GRID and FILE (usefull with many collective variables) 
   - \ref IMPLICIT : EEF1-SB implicit solvent solvation energy
 */
