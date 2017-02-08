@@ -16,7 +16,7 @@ These answers are interesting as they cut to the very heart of what is interesti
 why such systems are so widely studied.  If you think for a moment about solid state systems any transition usually involves a substantial change in symmetry.  
 Low energy configurations are usually high symmetry while higher energy configurations have a low symmetry.  This makes it easy to design collective variables 
 to study solid state transitions - you simply measure the degree of symmetry in the system (see \ref belfast-10).  In biomolecular systems by constrast the 
-symmetry does not change substantially during a folding transitions.  The unfolded state has a low symmetry but the folded state also has a low symmetry, 
+symmetry does not change substantially during a folding transition.  The unfolded state has a low symmetry but the folded state also has a low symmetry, 
 which is part of the reason that it is so difficult to find the folded state from the amino acid sequence alone.
 
 With all this in mind the purpose of this tutorial is to learn about how we can design collective variables that can be used to study 
@@ -112,10 +112,10 @@ PRINT ARG=t1,t2,tc FILE=colvar
 Try calculating the values of the above collective variables for each of the configurations in the transformation.pdb file by using the 
 command that was given earlier.
 
-Notice that what we are using here are some well known results on the cross product of two vectors.  Essentially if the values of the 
+Notice that what we are using here are some well known results on the dot product of two vectors here.  Essentially if the values of the 
 ramachandran angles in the C7eq configuration are \f$(\phi_1,\psi_1)\f$ and the ramachandran angles in the C7ax configuration are
-\f$(\phi_2,\psi_2)\f$ we can calculate the projection of the angle \f$(\phi_3,\psi_3)\f$ on the vector connecting the C7eq state to the 
-C7ax state using:
+\f$(\phi_2,\psi_2)\f$. If our instantaneous configuration is \f$(\phi_3,\psi_3)\f$ we can thus calculate the following projection 
+on the vector connecting the C7eq state to the C7ax state:
 
 \f[
 s = (\phi_2 - \phi_1).(\phi_3 - \phi_1) + (\psi_2 - \psi_1).(\psi_3 - \psi_1)
@@ -159,7 +159,7 @@ configuration and if the instanenous configuration of the atoms is \f$\mathbf{x}
 s = \sum_{i=1}^{3N} (x^{(2)}_i - x^{(1)}_i ) (x^{(3)}_i - x^{(1)}_i ) 
 \f]
 where the sum here runs over the \f$3N\f$-dimensional vector that defines the positions of the \f$N\f$ atoms in the system.  This is what
-(in a manner of speaking - I will return to this point momentarily is calculated by this PLUMED input):
+(in a manner of speaking - I will return to this point momentarily) is calculated by this PLUMED input:
 
 \verbatim
 t1: TORSION ATOMS=2,4,6,9
@@ -363,10 +363,6 @@ What is plotted by these commands is slightly different from what was plotted in
 Instead of plotting the value of the CV against simulation time the above commands plot the values that 2CVs take during the simulation.  The 
 script called script_path.gplt plots the value of the \f$S(X)\f$ collective variable on the x-axis and the value of the following quantity
 on the y-axis:
- 
-
-In many applications of this method the quantity, \f$Z(X)\f$, which is shown in green in the figure above and which measures the distance from the path
-is also used.  This CV is calculated using:
 
 \f[
 Z(X)=-\frac{1}{\lambda}\log (\sum_{i=1}^{N} \ \exp^{-\lambda \vert X-X_i \vert })
