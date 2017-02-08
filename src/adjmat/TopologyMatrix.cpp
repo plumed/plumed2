@@ -317,6 +317,8 @@ void TopologyMatrix::calculateForThreeAtoms( const unsigned& iat, const Vector& 
           de3 = edf*excess*dd3; 
       }
 
+      Vector pos1 = myatoms.getPosition(0) + d1_len*d1;
+      Vector pos2 = myatoms.getPosition(0) + d2;
       Vector g1derivf,g2derivf,lderivf; Tensor vir;
       for(unsigned bin=0;bin<maxbins;++bin){
           bead.set( bin*binw, (bin+1)*binw, sigma ); 
@@ -332,7 +334,7 @@ void TopologyMatrix::calculateForThreeAtoms( const unsigned& iat, const Vector& 
               lderivf=contr*eval*dc3 + val*eval*der*dd3 + contr*val*de3; 
               addAtomDerivatives( 2+bin, iat, lderivf, myatoms );
               // Virial 
-              vir = -Tensor( myatoms.getPosition(0), g1derivf ) - Tensor( myatoms.getPosition(1), g2derivf ) - Tensor( myatoms.getPosition(iat), lderivf );
+              vir = -Tensor( myatoms.getPosition(0), g1derivf ) - Tensor( pos1, g2derivf ) - Tensor( pos2, lderivf );
               myatoms.addBoxDerivatives( 2+bin, vir );
           }
       }
