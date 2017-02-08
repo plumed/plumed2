@@ -286,15 +286,15 @@ void PBMetaD::registerKeywords(Keywords& keys){
   keys.use("ARG");
   keys.add("compulsory","SIGMA","the widths of the Gaussian hills");
   keys.add("compulsory","PACE","the frequency for hill addition, one for all biases");
-  keys.add("optional","FILE","files in which the lists of added hills are stored");
+  keys.add("optional","FILE","files in which the lists of added hills are stored, default names are assigned using arguments if FILE is not found");
   keys.add("optional","HEIGHT","the height of the Gaussian hills, one for all biases. Compulsory unless TAU, TEMP and BIASFACTOR are given");
   keys.add("optional","FMT","specify format for HILLS files (useful for decrease the number of digits in regtests)");
   keys.add("optional","BIASFACTOR","use well tempered metadynamics with this biasfactor, one for all biases.  Please note you must also specify temp");
   keys.add("optional","TEMP","the system temperature - this is only needed if you are doing well-tempered metadynamics");
   keys.add("optional","TAU","in well tempered metadynamics, sets height to (kb*DeltaT*pace*timestep)/tau");
   keys.add("optional","GRID_RFILES", "read grid for the bias");
-  keys.add("optional","GRID_WFILES", "dump grid for the bias");
   keys.add("optional","GRID_WSTRIDE", "frequency for dumping the grid");
+  keys.add("optional","GRID_WFILES", "dump grid for the bias, default names are used if GRID_WSTRIDE is used without GRID_WFILES.");
   keys.add("optional","GRID_MIN","the lower bounds for the grid");
   keys.add("optional","GRID_MAX","the upper bounds for the grid");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
@@ -449,12 +449,15 @@ isFirstStep(true)
   parseFlag("WALKERS_MPI",walkers_mpi);
 
   // Grid file
+  parse("GRID_WSTRIDE",wgridstride_);
   vector<string> gridfilenames_;
   parseVector("GRID_WFILES",gridfilenames_);
-  parse("GRID_WSTRIDE",wgridstride_);
   if (wgridstride_ == 0 && gridfilenames_.size() > 0) {
     error("frequency with which to output grid not specified use GRID_WSTRIDE");
   }
+  if(gridfilenames_.size()==0 && wgridstride_ > 0) {
+    for(unsigned i=0;i<getNumberOfArguments();i++) gridfilenames_.push_back("GRID."+getPntrToArgument(i)->getName());
+  } 
   if(gridfilenames_.size() > 0 && hillsfname.size() > 0 && gridfilenames_.size() != hillsfname.size()) 
     error("number of GRID_WFILES arguments does not match number of HILLS files");
 
