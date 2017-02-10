@@ -145,6 +145,10 @@ ActionAtomistic(ao)
   for(unsigned i=0;i<weights.size();++i) center+=positions[i]*weights[i];
 
   doNotRetrieve();
+
+  // this is required so as to allow modifyGlobalForce() to return correct
+  // also for forces that are not owned (and thus not zeored) by all processors.
+  allowToAccessGlobalForces();
 }
 
 void FitToTemplate::calculate(){
