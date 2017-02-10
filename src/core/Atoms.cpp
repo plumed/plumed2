@@ -59,6 +59,7 @@ Atoms::Atoms(PlumedMain&plumed):
   naturalUnits(false),
   timestep(0.0),
   forceOnEnergy(0.0),
+  zeroallforces(false),
   kbT(0.0),
   asyncSent(false),
   atomsNeeded(false),
@@ -166,7 +167,7 @@ void Atoms::shareAll(){
 void Atoms::share(const std::set<AtomNumber>& unique){
   plumed_assert( positionsHaveBeenSet==3 && massesHaveBeenSet );
   virial.zero();
-  if(int(gatindex.size())==natoms){
+  if(zeroallforces || int(gatindex.size())==natoms){
 // not sure this parallelization helps
 #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(forces))
     for(unsigned i=0;i<natoms;i++) forces[i].zero();
