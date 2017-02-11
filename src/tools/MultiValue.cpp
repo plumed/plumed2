@@ -29,16 +29,11 @@ nderivatives(nder),
 derivatives(nvals*nder),
 tmpval(0),
 tmpder(nder),
-atLeastOneSet(false),
-myvalpntr(NULL)
+atLeastOneSet(false)
 {
   std::vector<unsigned> myind( nder );
   for(unsigned i=0;i<nder;++i) myind[i]=i;
   hasDerivatives.createIndexListFromVector( myind ); 
-}
-
-MultiValue::~MultiValue(){
-  if( myvalpntr ) delete myvalpntr;
 }
 
 void MultiValue::resize( const unsigned& nvals, const unsigned& nder ){
@@ -120,10 +115,6 @@ void MultiValue::quotientRule( const unsigned& nder, const unsigned& oder ){
       derivatives[obase+jder] = wpref*derivatives[nbase+jder]  - pref*tmpder[jder];
   }
   values[oder] = wpref*values[nder];
-}
-
-void MultiValue::setMultiValuePointer( MultiValue* myival ){
-  myvalpntr = myival;
 }
 
 }

@@ -32,7 +32,8 @@ Vessel(da),
 inum(0),
 // in_normal_calculate(false)
 myOutputAction(NULL),
-myOutputValues(NULL)
+myOutputValues(NULL),
+my_tmp_val(0,0)
 {
 }
 
@@ -181,6 +182,10 @@ void BridgeVessel::copyTaskFlags(){
   myOutputAction->deactivateAllTasks();
   for(unsigned i=0;i<getAction()->nactive_tasks;++i) myOutputAction->taskFlags[ getAction()->indexOfTaskInFullList[i] ] = 1;
   myOutputAction->lockContributors();
+}
+
+MultiValue& BridgeVessel::getTemporyMultiValue(){
+  return my_tmp_val;
 }
 
 }

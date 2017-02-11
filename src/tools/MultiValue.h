@@ -47,13 +47,8 @@ private:
 /// This is a fudge to save on vector resizing in MultiColvar
   std::vector<unsigned> indices, sort_indices;
   std::vector<Vector> tmp_atoms;
-/// Here we have a pointer to a MultiValue.  This is used in places
-/// where we like to avoid allocating memory.  For instance when we
-/// are looping over bridged actions.
-  MultiValue* myvalpntr;
 public:
   MultiValue( const unsigned& , const unsigned& );
-  ~MultiValue();
   void resize( const unsigned& , const unsigned& );
 ///
   std::vector<unsigned>& getIndices();
@@ -108,10 +103,6 @@ public:
   void copyDerivatives( MultiValue& );
 ///
   void quotientRule( const unsigned& nder, const unsigned& oder );
-///
-  void setMultiValuePointer( MultiValue* myival );
-///
-  MultiValue* getMultiValuePointer();
 };
 
 inline
@@ -243,11 +234,6 @@ std::vector<Vector>& MultiValue::getAtomVector(){
 inline
 bool MultiValue::isActive( const unsigned& ind ) const {
   return hasDerivatives.isActive( ind );
-}
-
-inline
-MultiValue* MultiValue::getMultiValuePointer(){
-  return myvalpntr;
 }
 
 }

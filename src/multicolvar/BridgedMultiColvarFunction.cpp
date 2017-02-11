@@ -77,13 +77,13 @@ void BridgedMultiColvarFunction::transformBridgedDerivatives( const unsigned& cu
 
 void BridgedMultiColvarFunction::performTask( const unsigned& taskIndex, const unsigned& current, MultiValue& myvals ) const {
   // This allows us to speed up the code as we don't need to reallocate memory on every call of perform task
-  MultiValue* invals = myvals.getMultiValuePointer();
-  if( !invals ){
-      invals = new MultiValue( mycolv->getNumberOfQuantities(), mycolv->getNumberOfDerivatives() );
-      myvals.setMultiValuePointer( invals );
+  MultiValue& invals=myBridgeVessel->getTemporyMultiValue();
+  if( invals.getNumberOfValues()!=mycolv->getNumberOfQuantities() ||
+      invals.getNumberOfDerivatives()!=mycolv->getNumberOfDerivatives() ){
+        invals.resize( mycolv->getNumberOfQuantities(), mycolv->getNumberOfDerivatives() );
   }
-  invals->clearAll(); mycolv->performTask( taskIndex, current, *invals );
-  transformBridgedDerivatives( taskIndex, *invals, myvals ); 
+  invals.clearAll(); mycolv->performTask( taskIndex, current, invals );
+  transformBridgedDerivatives( taskIndex, invals, myvals ); 
 }
 
 void BridgedMultiColvarFunction::calculateNumericalDerivatives( ActionWithValue* a ){
