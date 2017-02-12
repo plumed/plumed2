@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "GridVessel.h"
 #include "vesselbase/ActionWithVessel.h"
+#include "tools/Random.h"
 #include "tools/Tools.h"
 
 namespace PLMD {
@@ -28,6 +29,7 @@ namespace gridtools {
 
 void GridVessel::registerKeywords( Keywords& keys ){
   AveragingVessel::registerKeywords( keys );
+  keys.add("compulsory","TYPE","flat","how the grid points are being generated");
   keys.add("compulsory","COMPONENTS","the names of the components in the vector");
   keys.add("compulsory","COORDINATES","the names of the coordinates of the grid");
   keys.add("compulsory","PBC","is the grid periodic in each direction or not");
@@ -41,13 +43,20 @@ noderiv(false),
 npoints(0),
 wasforced(false)
 {
+  std::string geom; parse("TYPE",geom);
+  if( geom=="flat" ) gtype=flat;
+  else if( geom=="fibonacci" ) gtype=fibonacci;
+  else plumed_merror( geom + " is invalid geometry type");
   std::vector<std::string> compnames; parseVector("COMPONENTS",compnames);
   std::vector<std::string> coordnames; parseVector("COORDINATES",coordnames);
-  dimension=coordnames.size();
-  std::vector<std::string> spbc( dimension ); parseVector("PBC",spbc); 
-  str_min.resize( dimension);  str_max.resize( dimension ); stride.resize( dimension ); 
-  max.resize( dimension ); dx.resize( dimension ); nbin.resize( dimension ); min.resize( dimension );
- 
+  if( gtype==flat ){
+      dimension=coordnames.size();
+      str_min.resize( dimension);  str_max.resize( dimension ); stride.resize( dimension ); 
+      max.resize( dimension ); dx.resize( dimension ); nbin.resize( dimension ); min.resize( dimension ); 
+  } else if( gtype==fibonacci ){
+      if( coordnames.size()!=3 ) error("cannot generate fibonacci grid points on surface of sphere if not 3 input coordinates");
+      dimension=3; 
+  }
 
   unsigned n=0; nper=compnames.size()*( 1 + coordnames.size() );
   arg_names.resize( coordnames.size() + compnames.size()*( 1 + coordnames.size() ) );
@@ -56,10 +65,10 @@ wasforced(false)
       arg_names[n]=compnames[i]; n++;
       for(unsigned j=0;j<coordnames.size();++j){ arg_names[n] = "d" + compnames[i] + "_" + coordnames[j]; n++; }
   }
-
-  pbc.resize( dimension ); 
+  pbc.resize( dimension );
+  std::vector<std::string> spbc( dimension ); parseVector("PBC",spbc);
   for(unsigned i=0;i<dimension;++i){
-      if( spbc[i]=="F" ) pbc[i]=false;   
+      if( spbc[i]=="F" ) pbc[i]=false;
       else if( spbc[i]=="T" ) pbc[i]=true;
       else plumed_error();
   }
@@ -78,7 +87,7 @@ void GridVessel::setNoDerivatives(){
 void GridVessel::setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax,
                             const std::vector<unsigned>& binsin, const std::vector<double>& spacing ){
   plumed_dbg_assert( smin.size()==dimension && smax.size()==dimension );
-  plumed_assert( (spacing.size()==dimension || binsin.size()==dimension) );
+  plumed_assert( gtype==flat && (spacing.size()==dimension || binsin.size()==dimension) );
 
   npoints=1; bounds_set=true;
   for(unsigned i=0;i<dimension;++i){
@@ -101,21 +110,35 @@ void GridVessel::setBounds( const std::vector<std::string>& smin, const std::vec
   resize();  // Always resize after setting new bounds as grid size may have have changed 
 } 
 
+void GridVessel::setupFibonacciGrid( const unsigned& np ){
+  bounds_set=true;
+  npoints = np; fib_increment = pi*( 3 - sqrt(5) );
+  fib_offset = 2 / static_cast<double>( npoints ); 
+  Random random; fib_rnd = std::floor( npoints*random.RandU01() );
+  resize();
+}
+
 std::string GridVessel::description(){
   if( !bounds_set ) return "";
  
-  std::string des="grid of "; std::string num;
-  for(unsigned i=0;i<dimension-1;++i){
-      Tools::convert( nbin[i], num );
-      des += num + " X ";
+  std::string des;
+  if( gtype==flat ){
+      des="grid of "; std::string num;
+      for(unsigned i=0;i<dimension-1;++i){
+          Tools::convert( nbin[i], num );
+          des += num + " X ";
+      }
+      Tools::convert( nbin[dimension-1], num );
+      des += num + " equally spaced points between (";
+      for(unsigned i=0;i<dimension-1;++i) des += str_min[i] + ",";
+      Tools::convert( nbin[dimension-1], num );
+      des += str_min[dimension-1] + ") and (";
+      for(unsigned i=0;i<dimension-1;++i) des += str_max[i] + ",";
+      des += str_max[dimension-1] + ")";
+  } else if( gtype==fibonacci ){
+     std::string num; Tools::convert( npoints, num );
+     des += "fibonacci grid of " + num + " points on spherical surface"; 
   }
-  Tools::convert( nbin[dimension-1], num );
-  des += num + " equally spaced points between (";
-  for(unsigned i=0;i<dimension-1;++i) des += str_min[i] + ",";
-  Tools::convert( nbin[dimension-1], num );
-  des += str_min[dimension-1] + ") and (";
-  for(unsigned i=0;i<dimension-1;++i) des += str_max[i] + ",";
-  des += str_max[dimension-1] + ")";
   return des;
 }
 
@@ -127,7 +150,7 @@ void GridVessel::resize(){
 }
 
 unsigned GridVessel::getIndex( const std::vector<unsigned>& indices ) const {
-  plumed_dbg_assert( bounds_set && indices.size()==dimension );
+  plumed_dbg_assert( gtype==flat && bounds_set && indices.size()==dimension );
   // indices are flattended using a column-major order
   unsigned index=indices[dimension-1];
   for(unsigned i=dimension-1;i>0;--i){
@@ -137,7 +160,7 @@ unsigned GridVessel::getIndex( const std::vector<unsigned>& indices ) const {
 }
 
 void GridVessel::getIndices( const std::vector<double>& point, std::vector<unsigned>& indices ) const { 
-  plumed_dbg_assert( bounds_set && point.size()==dimension && indices.size()==dimension );
+  plumed_dbg_assert( gtype==flat && bounds_set && point.size()==dimension && indices.size()==dimension );
   for(unsigned i=0;i<dimension;++i){
       indices[i]=std::floor( (point[i] - min[i])/dx[i] );
       if( pbc[i] ) indices[i]=indices[i]%nbin[i];
@@ -145,14 +168,13 @@ void GridVessel::getIndices( const std::vector<double>& point, std::vector<unsig
 }
 
 unsigned GridVessel::getIndex( const std::vector<double>& point ) const {
-  plumed_dbg_assert( bounds_set && point.size()==dimension );
+  plumed_dbg_assert( gtype==flat && bounds_set && point.size()==dimension );
   std::vector<unsigned> indices(dimension); getIndices( point, indices );
   return getIndex( indices );
 }
 
 void GridVessel::convertIndexToIndices( const unsigned& index, const std::vector<unsigned>& nnbin, std::vector<unsigned>& indices ) const {
- unsigned kk=index;
- indices[0]=index%nnbin[0];
+ plumed_dbg_assert( gtype==flat ); unsigned kk=index; indices[0]=index%nnbin[0];
  for(unsigned i=1;i<dimension-1;++i){
     kk=(kk-indices[i-1])/nnbin[i-1];
     indices[i]=kk%nnbin[i];
@@ -164,17 +186,30 @@ void GridVessel::convertIndexToIndices( const unsigned& index, const std::vector
 }
 
 void GridVessel::getIndices( const unsigned& index, std::vector<unsigned>& indices ) const {
- convertIndexToIndices( index, nbin, indices );
+ plumed_dbg_assert( gtype==flat ); convertIndexToIndices( index, nbin, indices );
 }
 
 void GridVessel::getGridPointCoordinates( const unsigned& ipoint , std::vector<double>& x ) const {
-  plumed_dbg_assert( x.size()==dimension && ipoint<npoints );
-  std::vector<unsigned> tindices( dimension ); getIndices( ipoint, tindices ); 
-  for(unsigned i=0;i<dimension;++i) x[i] = min[i] + dx[i]*tindices[i];
+  plumed_dbg_assert( bounds_set && x.size()==dimension && ipoint<npoints );
+  if( gtype==flat ){
+      std::vector<unsigned> tindices( dimension ); getIndices( ipoint, tindices ); 
+      for(unsigned i=0;i<dimension;++i) x[i] = min[i] + dx[i]*tindices[i];
+  } else if( gtype==fibonacci ){
+      x[1] = ((ipoint*fib_offset) - 1) + (fib_offset/2);
+      double r = sqrt( 1 -x[1]*x[1] );
+      double phi = ((ipoint+fib_rnd)%npoints)*fib_increment;
+      x[0] = r*cos(phi); x[2] = r*sin(phi);
+      double norm=0; 
+      for(unsigned j=0;j<3;++j) norm+=x[j]*x[j]; 
+      norm = sqrt(norm);
+      for(unsigned j=0;j<3;++j) x[j] = x[j] / norm;
+  } else {
+      plumed_error();
+  }
 }
 
 void GridVessel::getSplineNeighbors( const unsigned& mybox, std::vector<unsigned>& mysneigh ) const {
-  mysneigh.resize( static_cast<unsigned>(pow(2.,dimension)) );
+  plumed_dbg_assert( gtype==flat ); mysneigh.resize( static_cast<unsigned>(pow(2.,dimension)) );
 
   std::vector<unsigned> tmp_indices( dimension );
   std::vector<unsigned> my_indices( dimension );
@@ -221,15 +256,15 @@ void GridVessel::setGridElement( const std::vector<unsigned>& indices, const uns
 }
 
 std::vector<std::string> GridVessel::getMin() const {
-  return str_min;
+  plumed_dbg_assert( gtype==flat ); return str_min;
 }
   
 std::vector<std::string> GridVessel::getMax() const {
-  return str_max;
+  plumed_dbg_assert( gtype==flat ); return str_max;
 }
 
 std::vector<unsigned> GridVessel::getNbin() const {
-  plumed_dbg_assert( bounds_set );
+  plumed_dbg_assert( gtype==flat && bounds_set );
   std::vector<unsigned> ngrid( dimension );
   for(unsigned i=0;i<dimension;++i){
       if( !pbc[i] ) ngrid[i]=nbin[i] - 1;
@@ -240,7 +275,7 @@ std::vector<unsigned> GridVessel::getNbin() const {
 
 void GridVessel::getNeighbors( const std::vector<double>& pp, const std::vector<unsigned>& nneigh,
                                unsigned& num_neighbors, std::vector<unsigned>& neighbors ) const {
-  plumed_dbg_assert( bounds_set && nneigh.size()==dimension );
+  plumed_dbg_assert( gtype==flat && bounds_set && nneigh.size()==dimension );
 
   std::vector<unsigned> indices( dimension );
   for(unsigned i=0;i<dimension;++i) indices[i] = std::floor( (pp[i]-min[i])/dx[i] );
@@ -249,7 +284,7 @@ void GridVessel::getNeighbors( const std::vector<double>& pp, const std::vector<
 
 void GridVessel::getNeighbors( const std::vector<unsigned>& indices, const std::vector<unsigned>& nneigh, 
                                unsigned& num_neighbors, std::vector<unsigned>& neighbors ) const {
-  plumed_dbg_assert( bounds_set && nneigh.size()==dimension );
+  plumed_dbg_assert( gtype==flat && bounds_set && nneigh.size()==dimension );
 
   unsigned num_neigh=1; std::vector<unsigned> small_bin( dimension );
   for(unsigned i=0;i<dimension;++i){
@@ -279,28 +314,32 @@ void GridVessel::getNeighbors( const std::vector<unsigned>& indices, const std::
 }
 
 void GridVessel::setCubeUnits( const double& units ){
-  cube_units=units;
+  plumed_dbg_assert( gtype==flat ); cube_units=units;
 }
 
 double GridVessel::getCubeUnits() const {
-  return cube_units;
+  plumed_dbg_assert( gtype==flat ); return cube_units;
 }
 
 std::string GridVessel::getInputString() const {
   std::string mstring="COORDINATES="+arg_names[0];
   for(unsigned i=1;i<dimension;++i) mstring+="," + arg_names[i];
-  mstring += " PBC=";
-  if( pbc[0] ) mstring +="T";
-  else mstring +="F";
-  for(unsigned i=1;i<dimension;++i){
-     if( pbc[i] ) mstring +=",T";
-     else mstring +=",F";
+  if( gtype==flat ){
+      mstring += " TYPE=flat PBC=";
+      if( pbc[0] ) mstring +="T";
+      else mstring +="F";
+      for(unsigned i=1;i<dimension;++i){
+         if( pbc[i] ) mstring +=",T";
+         else mstring +=",F";
+      }
+  } else if( gtype==fibonacci ){
+      mstring += " TYPE=fibonacci";
   }
   return mstring;
 }
 
 double GridVessel::getValueAndDerivatives( const std::vector<double>& x, const unsigned& ind, std::vector<double>& der ) const {
-  plumed_dbg_assert( der.size()==dimension && !noderiv && ind<getNumberOfComponents() );
+  plumed_dbg_assert( gtype==flat && der.size()==dimension && !noderiv && ind<getNumberOfComponents() );
 
   double X,X2,X3,value=0; der.assign(der.size(),0.0);
   std::vector<double> fd(dimension);

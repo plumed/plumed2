@@ -179,7 +179,7 @@ endif
 # patch file for cross compiling
 	cp install/plumed-patch "$(DESTDIR)$(bindir)/$(program_name)-patch"
 # config file for cross compiling
-	cp install/plumed-patch "$(DESTDIR)$(bindir)/$(program_name)-config"
+	cp install/plumed-config "$(DESTDIR)$(bindir)/$(program_name)-config"
 # copy include files for cmake and make
 # we leave it in src/lib/ for backward compatibility
 	cp install/Plumed.cmake* "$(DESTDIR)$(libdir)/$(program_name)/src/lib/"

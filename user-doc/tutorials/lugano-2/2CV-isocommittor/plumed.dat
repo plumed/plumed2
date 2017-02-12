@@ -1,0 +1,3 @@
+pca: PCAVARS REFERENCE=pca-reference.pdb TYPE=OPTIMAL
+path: PATH REFERENCE=path-reference.pdb TYPE=OPTIMAL LAMBDA=15100.
+PRINT ARG=* STRIDE=2 FILE=colvar FMT=%12.8f

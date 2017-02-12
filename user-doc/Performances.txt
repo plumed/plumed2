@@ -115,7 +115,7 @@ This performs a \ref METAD simulation biasing the distance between two
 centers of mass. Since computing these centers requires a lot of atoms
 to be imported from the MD engine, it could slow down significantly the
 simulation. Notice that whereas the bias is changed every PACE=500 steps,
-it is applied every STEP step, where STEP=1 by default.
+it is applied every STRIDE step, where STRIDE=1 by default.
 The following input could lead to a significantly faster simulation at the price
 of a negligible systematic error
 \verbatim

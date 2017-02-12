@@ -59,7 +59,7 @@ ingrid(NULL)
 }
 
 void ActionWithInputGrid::clearAverage(){
-  mygrid->setBounds( ingrid->getMin(), ingrid->getMax(), mygrid->getNbin(), mygrid->getGridSpacing() );
+  if( mygrid->getType()=="flat" ) mygrid->setBounds( ingrid->getMin(), ingrid->getMax(), mygrid->getNbin(), mygrid->getGridSpacing() );
   ActionWithAveraging::clearAverage();
 }
 

@@ -59,7 +59,6 @@ void FindContourSurface::registerKeywords( Keywords& keys ){
   ContourFindingBase::registerKeywords( keys );
   keys.add("compulsory","SEARCHDIR","In which directions do you wish to search for the contour.");
   keys.add("compulsory","BUFFER","0","number of buffer grid points around location where grid was found on last step.  If this is zero the full grid is calculated on each step");
-  keys.remove("FILE"); keys.remove("UNITS"); keys.remove("PRECISION");
 }
 
 FindContourSurface::FindContourSurface(const ActionOptions&ao):

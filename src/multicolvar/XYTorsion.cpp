@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -143,7 +143,8 @@ public:
   virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
   double calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& ) const ;
 /// Returns the number of coordinates of the field
-  bool isPeriodic(){ return false; }
+  bool isPeriodic(){ return true; }
+  void retrieveDomain( std::string& min, std::string& max){ min="-pi"; max="pi"; }
 };
 
 PLUMED_REGISTER_ACTION(XYTorsion,"XYTORSIONS")

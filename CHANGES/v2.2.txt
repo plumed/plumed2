@@ -165,9 +165,8 @@ For developers:
 - Tentative port files are now available at [this link](http://github.com/plumed/ports). 
   They can be used to install PLUMED using MacPorts.
 
-Version 2.2.4
+Version 2.2.4 (Dec 12, 2016)
 -------------
-See branch \branch{v2.2} on git repository.
 
 For users:
 - Fix a bug in \ref PBMETAD when biasing periodic and not periodic collective variables at the same time 
@@ -177,8 +176,19 @@ For users:
 - Updated gromacs patch for 5.1.x to 5.1.4
 - Fix a performance regression in the calculate loop where derivatives and forces were set to zero even if an action
   was not active, this is relevant for postprocessing and for the on-the-fly analysis
+- Torsion calculation has been made slightly faster and improved so as to provide correct
+  derivatives even for special angles (e.g. +pi/2 and -pi/2).
 
 For developers:
 - Macports portile is now tested on travis at every plumed push.
+
+Version 2.2.5
+-------------
+See branch \branch{v2.2} on git repository.
+
+For users:
+- Fixed a problem with large step numbers in driver (see \issue{209}).
+- Fixed a problem leading to crashes when using switching functions without cutoff with some compiler (see \issue{210}).
+- Root dir is logged to allow easier debugging of problems.
 
 */

@@ -27,6 +27,7 @@
 #include <vector>
 #include "Vessel.h"
 #include "core/Value.h"
+#include "tools/MultiValue.h"
 
 namespace PLMD {
 namespace vesselbase {
@@ -44,6 +45,8 @@ private:
   std::vector<double> mynumerical_values;
   ActionWithVessel* myOutputAction;
   ActionWithValue* myOutputValues;
+  // We create a tempory multivalue here so as to avoid vector resizing
+  MultiValue my_tmp_val;
 public:
   explicit BridgeVessel( const VesselOptions& );
 /// Does this have derivatives
@@ -72,6 +75,8 @@ public:
   void completeNumericalDerivatives();
 /// Set the task flags in the bridged class the same as in the original class
   void copyTaskFlags();
+/// Return a tempory multi value - we do this so as to avoid vector resizing
+  MultiValue& getTemporyMultiValue();  
 };
 
 inline

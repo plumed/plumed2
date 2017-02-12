@@ -30,7 +30,7 @@ character now has a special usage in component names.
   if these libraries are not installed.
 - New actions:
   - \ref SPRINT topological collective variables.
-  - \ref CH3SHIFTS collective variable.
+  - CH3SHIFTS collective variable.
   - \ref POSITION collective variable.
   - \ref FIT_TO_TEMPLATE.
   - \ref COMMITTOR analysis.
