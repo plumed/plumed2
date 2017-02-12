@@ -91,22 +91,21 @@ PRINT ARG=solv FILE=SOLV
         class Implicit : public Colvar {
             private:
                 bool pbc;
-                bool tcorr;
                 double buffer;
+                double delta_g_ref;
                 unsigned stride;
                 unsigned nl_update;
                 vector<vector<unsigned> > nl;
                 vector<vector<double> > parameter;
-                map<string, map<string, string> > typemap;
-                map<string, vector<double> > valuemap;
-                void setupTypeMap();
+                void setupConstants(const vector<AtomNumber> &atoms, vector<vector<double> > &parameter, bool tcorr);
+                map<string, map<string, string> > setupTypeMap();
+                map<string, vector<double> > setupValueMap();
+                void update_neighb();
 
             public:
                 static void registerKeywords(Keywords& keys);
                 explicit Implicit(const ActionOptions&);
                 virtual void calculate();
-                void update_neighb();
-                void setupConstants(const vector<AtomNumber> &atoms, vector<vector<double> > &parameter);
         };
 
         PLUMED_REGISTER_ACTION(Implicit,"IMPLICIT")
@@ -124,15 +123,15 @@ PRINT ARG=solv FILE=SOLV
         Implicit::Implicit(const ActionOptions&ao):
             PLUMED_COLVAR_INIT(ao),
             pbc(true),
-            tcorr(false),
             buffer(0.1),
+            delta_g_ref(0.),
             stride(10),
             nl_update(0)
         {
             vector<AtomNumber> atoms;
             parseAtomList("ATOMS", atoms);
             const unsigned size = atoms.size();
-
+            bool tcorr = false;
             parseFlag("TEMP_CORRECTION", tcorr);
             parse("NL_BUFFER", buffer);
             parse("NL_STRIDE", stride);
@@ -149,7 +148,7 @@ PRINT ARG=solv FILE=SOLV
 
             nl.resize(size);
             parameter.resize(size);
-            setupConstants(atoms, parameter);
+            setupConstants(atoms, parameter, tcorr);
 
             addValueWithDerivatives();
             setNotPeriodic();
@@ -159,37 +158,22 @@ PRINT ARG=solv FILE=SOLV
         void Implicit::update_neighb() {
             const double lower_c2 = 0.24 * 0.24; // this is the cut-off for bonded atoms
             const unsigned size = getNumberOfAtoms();
-            const unsigned nt = OpenMP::getGoodNumThreads(nl);
-            #pragma omp parallel num_threads(nt)
-            {
-                #pragma omp for
-                for (unsigned i=0; i<size; ++i) {
-                    const Vector posi = getPosition(i);
-
-                    // Clear old values, reserve space for new indices
-                    nl[i].clear();
-                    nl[i].reserve(100);
-
-                    // Loop through neighboring atoms, add the ones below cutoff
-                    for (unsigned j=i+1; j<size; ++j) {
-                        const double d2 = delta(posi, getPosition(j)).modulo2();
-                        if (d2 < lower_c2 && j < i+14) {
-                            // crude approximation for i-i+1/2 interactions,
-                            // we want to exclude atoms separated by less than three bonds
-                            continue;
-                        }
-
-                        double mlambda = parameter[i][5];
-                        if (parameter[j][5] > mlambda) {
-                            // We choose the maximum lambda value and use a more conservative cutoff
-                            mlambda = parameter[j][5];
-                        }
-
-                        double c2 = (3. * mlambda + buffer) * (3. * mlambda + buffer);
-                        if (d2 < c2 ) {
-                            nl[i].push_back(j);
-                        }
+            for (unsigned i=0; i<size; ++i) {
+                nl[i].clear();
+                const Vector posi = getPosition(i);
+                // Loop through neighboring atoms, add the ones below cutoff
+                for (unsigned j=i+1; j<size; ++j) {
+                    const double d2 = delta(posi, getPosition(j)).modulo2();
+                    if (d2 < lower_c2 && j < i+14) {
+                        // crude approximation for i-i+1/2 interactions,
+                        // we want to exclude atoms separated by less than three bonds
+                        continue;
                     }
+                    // We choose the maximum lambda value and use a more conservative cutoff
+                    double mlambda = 1./parameter[i][5];
+                    if (1./parameter[j][5] > mlambda) mlambda = 1./parameter[j][5];
+                    double c2 = (4. * mlambda + buffer) * (4. * mlambda + buffer);
+                    if (d2 < c2 ) nl[i].push_back(j);
                 }
             }
         }
@@ -415,88 +399,76 @@ PRINT ARG=solv FILE=SOLV
             }
 
             const unsigned size=getNumberOfAtoms();
-            vector<Vector> fedensity_deriv(size);
             double bias = 0.0;
-
-            const unsigned nt = OpenMP::getGoodNumThreads(nl);
+            Tensor deriv_box;
+            unsigned nt=OpenMP::getNumThreads();
+            const unsigned nn=nl.size();
+            if(nt*10>nn) nt=nn/10;
+            if(nt==0)nt=1;
             #pragma omp parallel num_threads(nt)
             {
+                vector<Vector> deriv_omp(size);
                 #pragma omp for reduction(+:bias)
                 for (unsigned i=0; i<size; ++i) {
                     const Vector posi = getPosition(i);
-                    const double delta_g_ref = parameter[i][1];
                     double fedensity = 0.0;
+                    Vector deriv_i;
+                    const double vdw_volume_i = parameter[i][0];
+                    const double delta_g_free_i = parameter[i][2];
+                    const double inv_lambda_i = parameter[i][5];
+                    const double vdw_radius_i = parameter[i][6];
 
                     // The pairwise interactions are unsymmetric, but we can get away with calculating the distance only once
                     for (unsigned i_nl=0; i_nl<nl[i].size(); ++i_nl) {
                         const unsigned j = nl[i][i_nl];
                         const Vector dist = delta(posi, getPosition(j));
                         const double rij = dist.modulo();
+                        const double inv_lambda_j=parameter[j][5];
                         const double inv_rij = 1.0 / rij;
                         const double inv_rij2 = inv_rij * inv_rij;
+                        double deriv = 0.;
 
                         // i-j interaction
-                        if(rij < 3.*parameter[i][5])
+                        if(inv_rij > 0.25*inv_lambda_i )
                         {
-                            const double delta_g_free = parameter[i][2];
-                            const double lambda = parameter[i][5];
-                            const double vdw_radius = parameter[i][6];
-                            const double inv_lambda = 1.0 / lambda;
-                            const double inv_lambda2 = inv_lambda * inv_lambda;
                             const double vdw_volume = parameter[j][0];
-
-                            const double rij_vdwr_diff = rij - vdw_radius;
+                            const double inv_lambda2 = inv_lambda_i * inv_lambda_i;
+                            const double rij_vdwr_diff = rij - vdw_radius_i;
                             const double expo = exp(-inv_lambda2 * rij_vdwr_diff * rij_vdwr_diff);
-                            const double fact = delta_g_free * vdw_volume * expo * INV_PI_SQRT_PI * inv_rij2 * inv_lambda;
-                            const double deriv = inv_rij * fact * (inv_rij + rij_vdwr_diff * inv_lambda2);
-
-                            // This is needed for correct box derivs
-                            #pragma omp critical(deriv)
-                            {
-                                fedensity += fact;
-                                fedensity_deriv[i] += deriv * dist;
-                                fedensity_deriv[j] -= deriv * dist;
-                            }
+                            const double fact = delta_g_free_i * vdw_volume * expo * INV_PI_SQRT_PI * inv_rij2 * inv_lambda_i;
+                            fedensity += fact;
+                            deriv     += inv_rij * fact * (inv_rij + rij_vdwr_diff * inv_lambda2);
                         }
 
                         // j-i interaction
-                        if(rij < 3.*parameter[j][5])
+                        if(inv_rij > 0.25*inv_lambda_j)
                         {
                             const double delta_g_free = parameter[j][2];
-                            const double lambda = parameter[j][5];
                             const double vdw_radius = parameter[j][6];
-                            const double inv_lambda = 1.0 / lambda;
-                            const double inv_lambda2 = inv_lambda * inv_lambda;
-                            const double vdw_volume = parameter[i][0];
-
+                            const double inv_lambda2 = inv_lambda_j * inv_lambda_j;
                             const double rij_vdwr_diff = rij - vdw_radius;
                             const double expo = exp(-inv_lambda2 * rij_vdwr_diff * rij_vdwr_diff);
-                            const double fact = delta_g_free * vdw_volume * expo * INV_PI_SQRT_PI * inv_rij2 * inv_lambda;
-                            const double deriv = inv_rij * fact * (inv_rij + rij_vdwr_diff * inv_lambda2);
-
-                            #pragma omp critical(deriv)
-                            {
-                                fedensity += fact;
-                                fedensity_deriv[i] += deriv * dist;
-                                fedensity_deriv[j] -= deriv * dist;
-                            }
+                            const double fact = delta_g_free * vdw_volume_i * expo * INV_PI_SQRT_PI * inv_rij2 * inv_lambda_j;
+                            fedensity += fact;
+                            deriv     += inv_rij * fact * (inv_rij + rij_vdwr_diff * inv_lambda2);
                         }
-                    }
-                    bias += delta_g_ref - 0.5 * fedensity;
-                }
-            }
 
-            Tensor deriv_box;
-            const unsigned ntd = OpenMP::getGoodNumThreads(fedensity_deriv);
-            {
-                for (unsigned i=0; i<size; ++i) {
-                    setAtomsDerivatives(i, -fedensity_deriv[i]);
-                    deriv_box += Tensor(getPosition(i), -fedensity_deriv[i]);
+                        const Vector dd = deriv*dist;
+                        deriv_i      += dd;
+                        deriv_omp[j] -= dd;
+                    }
+                    deriv_omp[i] += deriv_i; 
+                    bias += - 0.5 * fedensity;
+                }
+                #pragma omp critical
+                for(unsigned i=0;i<size;i++) {
+                  setAtomsDerivatives(i, -deriv_omp[i]);
+                  deriv_box += Tensor(getPosition(i), -deriv_omp[i]);
                 }
             }
 
             setBoxDerivatives(-deriv_box);
-            setValue(bias);
+            setValue(delta_g_ref + bias);
 
             // Keep track of the neighbourlist updates
             ++nl_update;
@@ -506,8 +478,11 @@ PRINT ARG=solv FILE=SOLV
         }
 #endif
 
-        void Implicit::setupConstants(const vector<AtomNumber> &atoms, vector<vector<double> > &parameter) {
-            setupTypeMap();
+        void Implicit::setupConstants(const vector<AtomNumber> &atoms, vector<vector<double> > &parameter, bool tcorr) {
+            map<string, vector<double> > valuemap;
+            map<string, map<string, string> > typemap;
+            valuemap = setupValueMap();
+            typemap  = setupTypeMap();
             vector<SetupMolInfo*> moldat = plumed.getActionSet().select<SetupMolInfo*>();
             if (moldat.size() == 1) {
                 log << "  MOLINFO DATA found, using proper atom names\n";
@@ -584,9 +559,11 @@ PRINT ARG=solv FILE=SOLV
             } else {
                 error("MOLINFO DATA not found\n");
             }
+            for(unsigned i=0; i<atoms.size(); ++i) delta_g_ref += parameter[i][1];
         }
 
-        void Implicit::setupTypeMap() {
+        map<string, map<string, string> > Implicit::setupTypeMap()  {
+            map<string, map<string, string> > typemap;
             typemap = {
                 {"ALA", {
                             {"N",   "NH1"},
@@ -1069,8 +1046,12 @@ PRINT ARG=solv FILE=SOLV
                         }
                 }
             };
+            return typemap;
+        }
 
+        map<string, vector<double> > Implicit::setupValueMap() {
             // Volume ∆Gref ∆Gfree ∆H ∆Cp λ vdw_radius
+            map<string, vector<double> > valuemap;
             valuemap = {
                 {"C", {
                           ANG3_TO_NM3 * 14.720,
@@ -1078,7 +1059,7 @@ PRINT ARG=solv FILE=SOLV
                           KCAL_TO_KJ * 0.000,
                           KCAL_TO_KJ * 0.000,
                           KCAL_TO_KJ * 0.0,
-                          ANG_TO_NM * 3.5,
+                          1. / (ANG_TO_NM * 3.5),
                           0.20,
                       }
                 },
@@ -1088,7 +1069,7 @@ PRINT ARG=solv FILE=SOLV
                            KCAL_TO_KJ * 0.000,
                            KCAL_TO_KJ * 0.000,
                            KCAL_TO_KJ * 0.0,
-                           ANG_TO_NM * 3.5,
+                           1. / (ANG_TO_NM * 3.5),
                            0.20,
                        }
                 },
@@ -1098,7 +1079,7 @@ PRINT ARG=solv FILE=SOLV
                             KCAL_TO_KJ * -0.187,
                             KCAL_TO_KJ * 0.876,
                             KCAL_TO_KJ * 0.0,
-                            ANG_TO_NM * 3.5,
+                            1. / (ANG_TO_NM * 3.5),
                             0.20,
                         }
                 },
@@ -1108,7 +1089,7 @@ PRINT ARG=solv FILE=SOLV
                             KCAL_TO_KJ * 0.372,
                             KCAL_TO_KJ * -0.610,
                             KCAL_TO_KJ * 18.6,
-                            ANG_TO_NM * 3.5,
+                            1. / (ANG_TO_NM * 3.5),
                             0.20,
                         }
                 },
@@ -1118,7 +1099,7 @@ PRINT ARG=solv FILE=SOLV
                              KCAL_TO_KJ * 0.372,
                              KCAL_TO_KJ * -0.610,
                              KCAL_TO_KJ * 18.6,
-                             ANG_TO_NM * 3.5,
+                             1. / (ANG_TO_NM * 3.5),
                              0.20,
                          }
                 },
@@ -1128,7 +1109,7 @@ PRINT ARG=solv FILE=SOLV
                             KCAL_TO_KJ * 1.089,
                             KCAL_TO_KJ * -1.779,
                             KCAL_TO_KJ * 35.6,
-                            ANG_TO_NM * 3.5,
+                            1. / (ANG_TO_NM * 3.5),
                             0.204,
                         }
                 },
@@ -1138,7 +1119,7 @@ PRINT ARG=solv FILE=SOLV
                              KCAL_TO_KJ * 0.080,
                              KCAL_TO_KJ * -0.973,
                              KCAL_TO_KJ * 6.9,
-                             ANG_TO_NM * 3.5,
+                             1. / (ANG_TO_NM * 3.5),
                              0.18,
                          }
                 },
@@ -1148,7 +1129,7 @@ PRINT ARG=solv FILE=SOLV
                              KCAL_TO_KJ * 0.080,
                              KCAL_TO_KJ * -0.973,
                              KCAL_TO_KJ * 6.9,
-                             ANG_TO_NM * 3.5,
+                             1. / (ANG_TO_NM * 3.5),
                              0.18,
                          }
                 },
@@ -1158,7 +1139,7 @@ PRINT ARG=solv FILE=SOLV
                             KCAL_TO_KJ * -0.890,
                             KCAL_TO_KJ * 2.220,
                             KCAL_TO_KJ * 6.9,
-                            ANG_TO_NM * 3.5,
+                            1. / (ANG_TO_NM * 3.5),
                             0.186,
                         }
                 },
@@ -1168,7 +1149,7 @@ PRINT ARG=solv FILE=SOLV
                            KCAL_TO_KJ * -0.890,
                            KCAL_TO_KJ * 2.220,
                            KCAL_TO_KJ * 6.9,
-                           ANG_TO_NM * 3.5,
+                           1. / (ANG_TO_NM * 3.5),
                            0.199,
                        }
                 },
@@ -1178,7 +1159,7 @@ PRINT ARG=solv FILE=SOLV
                             KCAL_TO_KJ * -0.187,
                             KCAL_TO_KJ * 0.876,
                             KCAL_TO_KJ * 0.0,
-                            ANG_TO_NM * 3.5,
+                            1. / (ANG_TO_NM * 3.5),
                             0.227,
                         }
                 },
@@ -1188,7 +1169,7 @@ PRINT ARG=solv FILE=SOLV
                             KCAL_TO_KJ * 0.372,
                             KCAL_TO_KJ * -0.610,
                             KCAL_TO_KJ * 18.6,
-                            ANG_TO_NM * 3.5,
+                            1. / (ANG_TO_NM * 3.5),
                             0.217,
                         }
                 },
@@ -1198,7 +1179,7 @@ PRINT ARG=solv FILE=SOLV
                             KCAL_TO_KJ * 0.372,
                             KCAL_TO_KJ * -0.610,
                             KCAL_TO_KJ * 18.6,
-                            ANG_TO_NM * 3.5,
+                            1. / (ANG_TO_NM * 3.5),
                             0.217,
                         }
                 },
@@ -1208,7 +1189,7 @@ PRINT ARG=solv FILE=SOLV
                            KCAL_TO_KJ * 0.000,
                            KCAL_TO_KJ * 0.000,
                            KCAL_TO_KJ * 0.0,
-                           ANG_TO_NM * 3.5,
+                           1. / (ANG_TO_NM * 3.5),
                            0.20,
                        }
                 },
@@ -1218,7 +1199,7 @@ PRINT ARG=solv FILE=SOLV
                             KCAL_TO_KJ * 0.057,
                             KCAL_TO_KJ * -0.973,
                             KCAL_TO_KJ * 6.9,
-                            ANG_TO_NM * 3.5,
+                            1. / (ANG_TO_NM * 3.5),
                             0.199,
                         }
                 },
@@ -1228,7 +1209,7 @@ PRINT ARG=solv FILE=SOLV
                            KCAL_TO_KJ * 0.057,
                            KCAL_TO_KJ * -0.973,
                            KCAL_TO_KJ * 6.9,
-                           ANG_TO_NM * 3.5,
+                           1. / (ANG_TO_NM * 3.5),
                            0.199,
                        }
                 },
@@ -1238,7 +1219,7 @@ PRINT ARG=solv FILE=SOLV
                           KCAL_TO_KJ * -1.000,
                           KCAL_TO_KJ * -1.250,
                           KCAL_TO_KJ * 8.8,
-                          ANG_TO_NM * 3.5,
+                          1. / (ANG_TO_NM * 3.5),
                           0.185,
                       }
                 },
@@ -1248,7 +1229,7 @@ PRINT ARG=solv FILE=SOLV
                             KCAL_TO_KJ * -5.950,
                             KCAL_TO_KJ * -9.059,
                             KCAL_TO_KJ * -8.8,
-                            ANG_TO_NM * 3.5,
+                            1. / (ANG_TO_NM * 3.5),
                             0.185,
                         }
                 },
@@ -1258,7 +1239,7 @@ PRINT ARG=solv FILE=SOLV
                             KCAL_TO_KJ * -3.820,
                             KCAL_TO_KJ * -4.654,
                             KCAL_TO_KJ * -8.8,
-                            ANG_TO_NM * 3.5,
+                            1. / (ANG_TO_NM * 3.5),
                             0.185,
                         }
                 },
@@ -1268,7 +1249,7 @@ PRINT ARG=solv FILE=SOLV
                             KCAL_TO_KJ * -5.950,
                             KCAL_TO_KJ * -9.059,
                             KCAL_TO_KJ * -8.8,
-                            ANG_TO_NM * 3.5,
+                            1. / (ANG_TO_NM * 3.5),
                             0.185,
                         }
                 },
@@ -1278,7 +1259,7 @@ PRINT ARG=solv FILE=SOLV
                             KCAL_TO_KJ * -5.950,
                             KCAL_TO_KJ * -9.059,
                             KCAL_TO_KJ * -8.8,
-                            ANG_TO_NM * 3.5,
+                            1. / (ANG_TO_NM * 3.5),
                             0.185,
                         }
                 },
@@ -1288,7 +1269,7 @@ PRINT ARG=solv FILE=SOLV
                             KCAL_TO_KJ * -5.950,
                             KCAL_TO_KJ * -9.059,
                             KCAL_TO_KJ * -8.8,
-                            ANG_TO_NM * 3.5,
+                            1. / (ANG_TO_NM * 3.5),
                             0.185,
                         }
                 },
@@ -1298,7 +1279,7 @@ PRINT ARG=solv FILE=SOLV
                             KCAL_TO_KJ * -20.000,
                             KCAL_TO_KJ * -25.000,
                             KCAL_TO_KJ * -18.0,
-                            ANG_TO_NM * 6.0,
+                            1. / (ANG_TO_NM * 6.0),
                             0.185,
                         }
                 },
@@ -1308,7 +1289,7 @@ PRINT ARG=solv FILE=SOLV
                             KCAL_TO_KJ * -10.000,
                             KCAL_TO_KJ * -12.000,
                             KCAL_TO_KJ * -7.0,
-                            ANG_TO_NM * 6.0,
+                            1. / (ANG_TO_NM * 6.0),
                             0.185,
                         }
                 },
@@ -1318,7 +1299,7 @@ PRINT ARG=solv FILE=SOLV
                            KCAL_TO_KJ * -5.950,
                            KCAL_TO_KJ * -9.059,
                            KCAL_TO_KJ * -8.8,
-                           ANG_TO_NM * 3.5,
+                           1. / (ANG_TO_NM * 3.5),
                            0.185,
                        }
                 },
@@ -1328,7 +1309,7 @@ PRINT ARG=solv FILE=SOLV
                            KCAL_TO_KJ * -20.000,
                            KCAL_TO_KJ * -25.000,
                            KCAL_TO_KJ * -18.0,
-                           ANG_TO_NM * 6.0,
+                           1. / (ANG_TO_NM * 6.0),
                            0.185,
                        }
                 },
@@ -1338,7 +1319,7 @@ PRINT ARG=solv FILE=SOLV
                           KCAL_TO_KJ * -5.330,
                           KCAL_TO_KJ * -5.787,
                           KCAL_TO_KJ * -8.8,
-                          ANG_TO_NM * 3.5,
+                          1. / (ANG_TO_NM * 3.5),
                           0.170,
                       }
                 },
@@ -1348,7 +1329,7 @@ PRINT ARG=solv FILE=SOLV
                            KCAL_TO_KJ * -5.330,
                            KCAL_TO_KJ * -5.787,
                            KCAL_TO_KJ * -8.8,
-                           ANG_TO_NM * 3.5,
+                           1. / (ANG_TO_NM * 3.5),
                            0.170,
                        }
                 },
@@ -1358,7 +1339,7 @@ PRINT ARG=solv FILE=SOLV
                            KCAL_TO_KJ * -10.000,
                            KCAL_TO_KJ * -12.000,
                            KCAL_TO_KJ * -9.4,
-                           ANG_TO_NM * 6.0,
+                           1. / (ANG_TO_NM * 6.0),
                            0.170,
                        }
                 },
@@ -1368,7 +1349,7 @@ PRINT ARG=solv FILE=SOLV
                             KCAL_TO_KJ * -5.920,
                             KCAL_TO_KJ * -9.264,
                             KCAL_TO_KJ * -11.2,
-                            ANG_TO_NM * 3.5,
+                            1. / (ANG_TO_NM * 3.5),
                             0.177,
                         }
                 },
@@ -1378,7 +1359,7 @@ PRINT ARG=solv FILE=SOLV
                            KCAL_TO_KJ * -2.900,
                            KCAL_TO_KJ * -3.150,
                            KCAL_TO_KJ * -4.8,
-                           ANG_TO_NM * 3.5,
+                           1. / (ANG_TO_NM * 3.5),
                            0.177,
                        }
                 },
@@ -1388,7 +1369,7 @@ PRINT ARG=solv FILE=SOLV
                           KCAL_TO_KJ * -3.240,
                           KCAL_TO_KJ * -4.475,
                           KCAL_TO_KJ * -39.9,
-                          ANG_TO_NM * 3.5,
+                          1. / (ANG_TO_NM * 3.5),
                           0.20,
                       }
                 },
@@ -1398,11 +1379,12 @@ PRINT ARG=solv FILE=SOLV
                            KCAL_TO_KJ * -3.240,
                            KCAL_TO_KJ * -4.475,
                            KCAL_TO_KJ * -39.9,
-                           ANG_TO_NM * 3.5,
+                           1. / (ANG_TO_NM * 3.5),
                            0.197,
                        }
                 }
             };
+            return valuemap;
         }
     }
 }
