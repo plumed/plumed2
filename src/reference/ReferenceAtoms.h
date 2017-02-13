@@ -69,8 +69,6 @@ protected:
   void readAtomsFromPDB( const PDB&, const bool allowblocks=false );
 /// Add atom indices to list
   void setAtomIndices( const std::vector<AtomNumber>& atomnumbers );
-/// Read a list of atoms from the pdb input file
-  bool parseAtomList( const std::string& , std::vector<unsigned>& );
 /// Get the vector of alignment weights
   const std::vector<double> & getAlign() const ;
 /// Get the vector of displacement weights
@@ -97,8 +95,6 @@ public:
   virtual void getAtomRequests( std::vector<AtomNumber>&, bool disable_checks=false );
 /// Set the positions of the reference atoms
   virtual void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in )=0;
-/// Print the atomic positions
-  void printAtoms( const double& lunits, SetupMolInfo* mymoldat, OFile& ofile ) const ;
 /// Return all atom indexes
   const std::vector<AtomNumber>& getAbsoluteIndexes();
 /// This returns how many atoms there should be

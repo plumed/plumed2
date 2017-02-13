@@ -1,4 +1,4 @@
 type=driver
 # this is to test a different name
-arg="--plumed plumed.dat --ixyz trajectory.xyz --dump-forces forces --dump-forces-fmt=%10.6f"
-extra_files="../../trajectories/trajectory.xyz"
+arg="--plumed plumed.dat --ixyz traj.xyz"
+extra_files="../rt-read-dissims2/traj.xyz"

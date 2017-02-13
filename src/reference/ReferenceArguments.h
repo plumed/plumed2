@@ -78,8 +78,6 @@ public:
   void moveReferenceArguments( const std::vector<double>& arg_vals );
 /// Get the value of the ith reference argument
   double getReferenceArgument( const unsigned& i ) const ;
-/// Print the arguments out
-  void printArguments( OFile& ofile, const std::string& fmt ) const ;
 /// Return all the reference arguments
   const std::vector<double>& getReferenceArguments() const ;
   const std::vector<double>& getReferenceMetric();

@@ -44,7 +44,7 @@ namespace analysis {
 class ReadDissimilarityMatrix : public AnalysisBase {
 private:
   unsigned nnodes;
-  ReferenceConfiguration* fake_data;
+  DataCollectionObject fake_data;
   std::string fname, wfile;
 //  Matrix<double> dissimilarities;
   std::vector<std::vector<double> > dissimilarities;
@@ -52,22 +52,21 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   ReadDissimilarityMatrix( const ActionOptions& ao );
-  ~ReadDissimilarityMatrix();
   unsigned getNumberOfDataPoints() const ;
 /// This gives an error as if we read in the matrix we dont have the coordinates
-  ReferenceConfiguration* getReferenceConfiguration( const unsigned& idata, const bool& calcdist );
-/// This gives an error as if we read in the matrix we dont have the coordinates
-  void getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const ;
+  DataCollectionObject& getStoredData( const unsigned& idata, const bool& calcdist );
 /// Tell everyone we have dissimilarities
   bool dissimilaritiesWereSet() const { return true; }
 /// Get the dissimilarity between two data points 
   double getDissimilarity( const unsigned& , const unsigned& );
 /// Get the weight from the input file
-  double getWeight( const unsigned& idata ) const ;
+  double getWeight( const unsigned& idata );
 /// Just tell plumed to stop
   void update();
 /// Read in the dissimilarity matrix
-  void performAnalysis();
+  void runFinalJobs();
+/// This does nothing
+  void performAnalysis(){};
 /// Overwrite virtual function in base class
   void performTask( const unsigned& , const unsigned& , MultiValue& ) const { plumed_error(); }
 };
@@ -75,32 +74,21 @@ public:
 PLUMED_REGISTER_ACTION(ReadDissimilarityMatrix,"READ_DISSIMILARITY_MATRIX")
 
 void ReadDissimilarityMatrix::registerKeywords( Keywords& keys ){
-  AnalysisBase::registerKeywords( keys ); keys.remove("USE_OUTPUT_DATA_FROM");
+  AnalysisBase::registerKeywords( keys ); 
   keys.add("compulsory","FILE","an input file containing the matrix of dissimilarities");
-  keys.add("optional","FRAMES","with this keyword you can specify the atomic configurations that you would like to store using "
-                               "an COLLECT_FRAMES action.  When the projection is output in dimensionality reduction you will then "
-                               "print the underlying atoms and their projection");
   keys.add("optional","WFILE","input file containing weights of points");
+  keys.reset_style("USE_OUTPUT_DATA_FROM","optional");
 }
 
 ReadDissimilarityMatrix::ReadDissimilarityMatrix( const ActionOptions& ao ):
 Action(ao),
 AnalysisBase(ao),
-nnodes(1),
-fake_data(NULL)
+nnodes(1)
 {
-  std::string mytraj; parse("FRAMES",mytraj);
-  if( mytraj.length()>0 ){
-     ReadAnalysisFrames* mtraj = plumed.getActionSet().selectWithLabel<ReadAnalysisFrames*>( mytraj );
-     if( !mtraj ) error(mytraj + " is not the label of a READ_ANALYSIS_FRAMES object");
-     my_input_data = dynamic_cast<AnalysisBase*>( mtraj ); my_input_data->use_all_data=true;
-  } else {
-     fake_data=metricRegister().create<ReferenceConfiguration>( "OPTIMAL" );
-  }
-  
+  setStride(1); // Set the stride equal to one to ensure we don't get stuck in an infinite loop
   std::vector<ActionSetup*> setupActions=plumed.getActionSet().select<ActionSetup*>();
-  if( mytraj.length()>0 && (plumed.getActionSet().size()-setupActions.size())!=1 ) error("should only be this action and the READ_ANALYSIS_FRAMES command in the input file");
-  if( mytraj.length()==0 && plumed.getActionSet().size()!=0 ) error("read dissimilarity matrix command must be at top of input file");
+  if( my_input_data && (plumed.getActionSet().size()-setupActions.size())!=1 ) error("should only be this action and the READ_ANALYSIS_FRAMES command in the input file");
+  if( !my_input_data && plumed.getActionSet().size()!=0 ) error("read dissimilarity matrix command must be at top of input file");
 
   parse("FILE",fname);
   log.printf("  reading dissimilarity matrix from file %s \n",fname.c_str() );
@@ -108,19 +96,11 @@ fake_data(NULL)
 
   if( wfile.length()>0 ) log.printf("  reading weights of nodes from file named %s \n",wfile.c_str() );
   else log.printf("  setting weights of all nodes equal to one\n");
-
-  // We have to set the information on how often we are reading data from the trajectory and how 
-  // often we are running here so that the code behaves
-  use_all_data=true; freq=1; setStride(1);
-}
-
-ReadDissimilarityMatrix::~ReadDissimilarityMatrix(){
-  if( fake_data ) delete fake_data;
 }
 
 void ReadDissimilarityMatrix::update(){ if(!my_input_data) plumed.stop(); }
 
-void ReadDissimilarityMatrix::performAnalysis(){
+void ReadDissimilarityMatrix::runFinalJobs(){
   IFile mfile; mfile.open(fname); 
   // Read in first line
   std::vector<std::string> words; nnodes=0;
@@ -164,19 +144,13 @@ double ReadDissimilarityMatrix::getDissimilarity( const unsigned& iframe, const 
   return dissimilarities[iframe][jframe]*dissimilarities[iframe][jframe];
 }
 
-ReferenceConfiguration* ReadDissimilarityMatrix::getReferenceConfiguration( const unsigned& idata, const bool& calcdist ){
+DataCollectionObject& ReadDissimilarityMatrix::getStoredData( const unsigned& idata, const bool& calcdist ){
   plumed_massert( !calcdist, "cannot calc dist as this data was read in from input");
-  if( my_input_data ) return AnalysisBase::getReferenceConfiguration( idata, calcdist );
+  if( my_input_data ) return AnalysisBase::getStoredData( idata, calcdist );
   return fake_data;
-  return NULL;
 }
 
-void ReadDissimilarityMatrix::getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const {
-  if( my_input_data ){ AnalysisBase::getDataPoint( idata, point, weight ); return; } 
-  plumed_merror("cannot get data points from read in dissmimilarity matrix");
-}
-
-double ReadDissimilarityMatrix::getWeight( const unsigned& idata ) const {
+double ReadDissimilarityMatrix::getWeight( const unsigned& idata ){
   plumed_assert( idata<dissimilarities.size() ); return weights[idata]; 
 }
 

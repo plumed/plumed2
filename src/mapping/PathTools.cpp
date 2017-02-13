@@ -153,7 +153,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc){
         do_read=mypdb.readFromFilepointer(fp,false,0.1);
         if( do_read ){ 
             ReferenceConfiguration* mymsd=metricRegister().create<ReferenceConfiguration>( mtype, mypdb );
-            frames.push_back( mymsd ); mymsd->checkRead();
+            frames.push_back( mymsd ); 
         }
      }
      std::vector<unsigned> fixed; parseVector("--fixed",fixed);
@@ -195,7 +195,15 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc){
 
      // Delete all the frames
      OFile ofile; ofile.open(ofilename);
-     for(unsigned i=0;i<frames.size();++i){ frames[i]->print( 10, NULL, ofile, ofmt ); delete frames[i]; }
+     std::vector<std::string> argnames; frames[0]->getArgumentRequests( argnames );
+     std::vector<AtomNumber> atindices; frames[0]->getAtomRequests( atindices );
+     PDB mypdb; mypdb.setAtomNumbers( atindices ); mypdb.setArgumentNames( argnames );
+     for(unsigned i=0;i<frames.size();++i){ 
+        mypdb.setAtomPositions( frames[i]->getReferencePositions() );
+        for(unsigned j=0;j<argnames.size();++j) mypdb.setArgumentValue( argnames[j], frames[i]->getReferenceArguments()[j] );
+        ofile.printf("REMARK TYPE=%s\n",mtype.c_str() );
+        mypdb.print( 10, NULL, ofile, ofmt ); delete frames[i]; 
+     }
      // Delete the vals as we don't need them
      for(unsigned i=0;i<vals.size();++i) delete vals[i]; 
      // Return as we are done
@@ -242,48 +250,46 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc){
  double delr = 1.0 / static_cast<double>( nbetween );
  // Calculate the vector connecting the start to the end
  PDB mypdb; mypdb.setAtomNumbers( sframe->getAbsoluteIndexes() ); mypdb.addBlockEnd( sframe->getAbsoluteIndexes().size() );
- if( sframe->getArgumentNames().size()>0 ) mypdb.addArgumentNames( sframe->getArgumentNames() );
- Direction mydir(ReferenceConfigurationOptions("DIRECTION")); sframe->setupPCAStorage( mypack ); mydir.set( mypdb ); mydir.zeroDirection();
+ if( sframe->getArgumentNames().size()>0 ) mypdb.setArgumentNames( sframe->getArgumentNames() );
+ Direction mydir(ReferenceConfigurationOptions("DIRECTION")); sframe->setupPCAStorage( mypack ); mydir.read( mypdb ); mydir.zeroDirection();
  sframe->extractDisplacementVector( eframe->getReferencePositions(), args, eframe->getReferenceArguments(), false, false, mydir );
 
  // Now create frames
- std::vector<ReferenceConfiguration*> final_path; 
- Direction pos(ReferenceConfigurationOptions("DIRECTION")); pos.set( mypdb ); 
+ OFile ofile; ofile.open(ofilename); unsigned nframes=0;
+ Direction pos(ReferenceConfigurationOptions("DIRECTION")); pos.read( mypdb ); 
  for(int i=0;i<nbefore;++i){
     pos.setDirection( sframe->getReferencePositions(), sframe->getReferenceArguments() );
     pos.displaceReferenceConfiguration( -i*delr, mydir ); 
-    final_path.push_back( metricRegister().create<ReferenceConfiguration>(mtype) ); 
     mypdb.setAtomPositions( pos.getReferencePositions() );
     for(unsigned j=0;j<pos.getReferenceArguments().size();++j) mypdb.setArgumentValue( sframe->getArgumentNames()[j], pos.getReferenceArgument(j) ); 
-    final_path[final_path.size()-1]->set( mypdb );
+    ofile.printf("REMARK TYPE=%s\n",mtype.c_str() );
+    mypdb.print( 10, NULL, ofile, ofmt ); nframes++;
  }
  for(unsigned i=1;i<nbetween;++i){
     pos.setDirection( sframe->getReferencePositions(), sframe->getReferenceArguments() );
     pos.displaceReferenceConfiguration( i*delr, mydir );
-    final_path.push_back( metricRegister().create<ReferenceConfiguration>(mtype) ); 
     mypdb.setAtomPositions( pos.getReferencePositions() );
     for(unsigned j=0;j<pos.getReferenceArguments().size();++j) mypdb.setArgumentValue( sframe->getArgumentNames()[j], pos.getReferenceArgument(j) );
-    final_path[final_path.size()-1]->set( mypdb ); 
+    ofile.printf("REMARK TYPE=%s\n",mtype.c_str() );
+    mypdb.print( 10, NULL, ofile, ofmt ); nframes++;
  }
  for(unsigned i=0;i<nafter;++i){
     pos.setDirection( eframe->getReferencePositions(), eframe->getReferenceArguments() );
     pos.displaceReferenceConfiguration( i*delr, mydir );
-    final_path.push_back( metricRegister().create<ReferenceConfiguration>(mtype) );
     mypdb.setAtomPositions( pos.getReferencePositions() );
     for(unsigned j=0;j<pos.getReferenceArguments().size();++j) mypdb.setArgumentValue( sframe->getArgumentNames()[j], pos.getReferenceArgument(j) );
-    final_path[final_path.size()-1]->set( mypdb );
+    ofile.printf("REMARK TYPE=%s\n",mtype.c_str() );
+    mypdb.print( 10, NULL, ofile, ofmt ); nframes++;
  }  
 
- double mean=0; printf("DISTANCE BETWEEN ORIGINAL FRAMES %f \n",pathlen);
- for(unsigned i=1;i<final_path.size();++i){
-    double len = final_path[i]->calc( final_path[i-1]->getReferencePositions(), fpbc, args, final_path[i-1]->getReferenceArguments(), mypack, false );
-    printf("FINAL DISTANCE BETWEEN FRAME %u AND %u IS %f \n",i-1,i,len );
-    mean+=len;
- }
- printf("SUGGESTED LAMBDA PARAMETER IS THUS %f \n",2.3/mean/static_cast<double>( final_path.size()-1 ) );
+// double mean=0; printf("DISTANCE BETWEEN ORIGINAL FRAMES %f \n",pathlen);
+// for(unsigned i=1;i<final_path.size();++i){
+//    double len = final_path[i]->calc( final_path[i-1]->getReferencePositions(), fpbc, args, final_path[i-1]->getReferenceArguments(), mypack, false );
+//    printf("FINAL DISTANCE BETWEEN FRAME %u AND %u IS %f \n",i-1,i,len );
+//    mean+=len;
+// }
+// printf("SUGGESTED LAMBDA PARAMETER IS THUS %f \n",2.3/mean/static_cast<double>( final_path.size()-1 ) );
 
- OFile ofile; ofile.open(ofilename); 
- for(unsigned i=0;i<final_path.size();++i){ final_path[i]->print( 10, NULL, ofile, ofmt ); delete final_path[i]; }
  // Delete the args as we don't need them anymore
  for(unsigned i=0;i<args.size();++i) delete args[i];
  ofile.close(); delete sframe; delete eframe; return 0;

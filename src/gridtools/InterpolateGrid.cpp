@@ -21,7 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include "ActionWithInputGrid.h"
 
 //+PLUMEDOC GRIDANALYSIS INTERPOLATE_GRID

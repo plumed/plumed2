@@ -23,8 +23,6 @@
 #include "SketchMapBase.h"
 #include "reference/ReferenceConfiguration.h"
 #include "reference/MetricRegister.h"
-#include "tools/ConjugateGradient.h"
-#include "tools/GridSearch.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include "tools/PDB.h"
@@ -43,18 +41,26 @@ namespace dimred {
 
 class SketchMapRead : public SketchMapBase {
 private:
-  std::vector<std::string> property;
+  std::string mtype;
+  PDB mypdb;
+  std::vector<Value*> all_values;
+  std::vector<double> weights;
+/// The list of properties in the property map
+  std::map<std::string,std::vector<double> > property;
+/// The data collection objects we have
+  std::vector<analysis::DataCollectionObject> data;
+/// The frames that we are using to calculate distances    
   std::vector<ReferenceConfiguration*> myframes;
 public:
   static void registerKeywords( Keywords& keys ); 
   SketchMapRead( const ActionOptions& ao );
   void minimise( Matrix<double>& );
-  void getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const ;
-  ReferenceConfiguration* getReferenceConfiguration( const unsigned& idata, const bool& calcdist );
+  analysis::DataCollectionObject& getStoredData( const unsigned& idata, const bool& calcdist );
   unsigned getNumberOfDataPoints() const ;
+  std::vector<Value*> getArgumentList();
   unsigned getDataPointIndexInBase( const unsigned& idata ) const ;
   double getDissimilarity( const unsigned& i, const unsigned& j );
-  double getWeight( const unsigned& idata ) const ;
+  double getWeight( const unsigned& idata );
 };
 
 PLUMED_REGISTER_ACTION(SketchMapRead,"SKETCHMAP_READ")
@@ -73,57 +79,79 @@ SketchMapRead::SketchMapRead( const ActionOptions& ao ):
 Action(ao),
 SketchMapBase(ao)
 {
-  std::string mtype; parse("TYPE",mtype); 
-  parseVector("PROPERTY",property); nlow=property.size();
-  bool skipchecks; parseFlag("DISABLE_CHECKS",skipchecks);
+  std::vector<std::string> propnames; parseVector("PROPERTY",propnames);
+  if(propnames.size()==0) error("no properties were specified"); 
+  nlow=propnames.size(); 
+  for(unsigned i=0;i<nlow;++i){
+      std::size_t dot=propnames[i].find_first_of( getLabel() + "." ); std::string substr=propnames[i].c_str();
+      if( dot!=std::string::npos ){ substr.erase(dot,getLabel().length()+1); }
+      log.printf(",%s", propnames[i].c_str() ); addComponent( substr ); componentIsNotPeriodic( substr );
+      property.insert( std::pair<std::string,std::vector<double> >( propnames[i], std::vector<double>() ) );
+  }
+  log.printf("  mapped properties are %s ",propnames[0].c_str() );
+  for(unsigned i=1;i<nlow;++i) log.printf(",%s", propnames[i].c_str() );
+  log.printf("\n"); 
+
+  parse("TYPE",mtype); bool skipchecks; parseFlag("DISABLE_CHECKS",skipchecks);
   std::string ifilename; parse("REFERENCE",ifilename);
   FILE* fp=fopen(ifilename.c_str(),"r"); 
   if(!fp) error("could not open reference file " + ifilename ); 
 
   // Read in the embedding
-  bool do_read=true; std::vector<double> weights; 
-  unsigned nfram=0, wnorm=0., ww;
+  bool do_read=true; double val, ww, wnorm=0, prop; unsigned nfram=0;
   while (do_read){
-     PDB mypdb;
+     PDB inpdb;
      // Read the pdb file
-     do_read=mypdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
+     do_read=inpdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
      // Break if we are done
      if( !do_read ) break ;
      // Check for required properties
-     if( !mypdb.hasRequiredProperties( property ) ) error("pdb input does not have contain required properties");
-     // And read the frame
-     myframes.push_back( metricRegister().create<ReferenceConfiguration>( mtype, mypdb ) );
-     myframes[nfram]->checkRead(); ww=myframes[nfram]->getWeight();
-     weights.push_back( ww );
-     wnorm+=ww; nfram++;
+     for(std::map<std::string,std::vector<double> >::iterator it=property.begin(); it!=property.end();it++){
+         if( !inpdb.getArgumentValue( it->first, prop ) ) error("pdb input does not have contain property named " + it->first );
+         it->second.push_back(prop);
+     } 
+     // And read the frame ( create a measure )
+     myframes.push_back( metricRegister().create<ReferenceConfiguration>( mtype, inpdb ) );
+     if( !inpdb.getArgumentValue( "WEIGHT", ww ) ) error("could not find weights in input pdb");
+     weights.push_back( ww ); wnorm += ww; nfram++;
+     // And create a data collection object 
+     analysis::DataCollectionObject new_data; new_data.setAtomNumbersAndArgumentNames( inpdb.getAtomNumbers(), inpdb.getArgumentNames() );
+     new_data.setAtomPositions( inpdb.getPositions() );
+     for(unsigned i=0;i<inpdb.getArgumentNames().size();++i){
+         std::string aname = inpdb.getArgumentNames()[i];
+         if( !inpdb.getArgumentValue( aname, val ) ) error("failed to find argument named " + aname);
+         new_data.setArgument( aname, val );
+     }
+     data.push_back( new_data );
   }
   fclose(fp); 
   // Finish the setup of the object by getting the arguments and atoms that are required
   std::vector<AtomNumber> atoms; std::vector<std::string> args;
-  for(unsigned i=0;i<myframes.size();++i){ myframes[i]->getAtomRequests( atoms, skipchecks ); myframes[i]->getArgumentRequests( args, skipchecks ); }
-  requestAtoms( atoms ); std::vector<Value*> req_args;
-  interpretArgumentList( args, req_args ); requestArguments( req_args );
-  // Set stride in and read
-  freq=0; use_all_data=true;
+  for(unsigned i=0;i<myframes.size();++i){ weights[i] /= wnorm; myframes[i]->getAtomRequests( atoms, skipchecks ); myframes[i]->getArgumentRequests( args, skipchecks ); }
+  requestAtoms( atoms ); std::vector<Value*> req_args; std::vector<std::string> fargs;
+  for(unsigned i=0;i<args.size();++i){ 
+      bool found=false;
+      for(std::map<std::string,std::vector<double> >::iterator it=property.begin(); it!=property.end();it++){
+          if( args[i]==it->first ){ found=true; break; }
+      }
+      if( !found ){ fargs.push_back( args[i] ); }
+  }
+  interpretArgumentList( fargs, req_args ); mypdb.setArgumentNames( fargs ); requestArguments( req_args );
 
   if(nfram==0 ) error("no reference configurations were specified");
-  log.printf("  found %u configurations in file %s\n",nfram,ifilename.c_str() );
-  for(unsigned i=0;i<weights.size();++i) myframes[i]->setWeight( weights[i]/wnorm );
+  log.printf(" found %u configurations in file %s\n",nfram,ifilename.c_str() );
 }
 
 void SketchMapRead::minimise( Matrix<double>& projections ){
-  for(unsigned i=0;i<myframes.size();++i){
-      for(unsigned j=0;j<property.size();++j) projections(i,j) = myframes[i]->getPropertyValue( property[j] );
+  unsigned j=0; 
+  for(std::map<std::string,std::vector<double> >::iterator it=property.begin(); it!=property.end();it++){
+      for(unsigned i=0;i<myframes.size();++i) projections(i,j) = it->second[i];
+      j++;
   }
 }
 
-void SketchMapRead::getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const {
-  for(unsigned j=0;j<property.size();++j) point[j] = myframes[idata]->getPropertyValue( property[j] );
-  weight = myframes[idata]->getWeight();
-}
-
-ReferenceConfiguration* SketchMapRead::getReferenceConfiguration( const unsigned& idata, const bool& calcdist ){
-  return myframes[idata];
+analysis::DataCollectionObject & SketchMapRead::getStoredData( const unsigned& idata, const bool& calcdist ){ 
+  return data[idata];
 }
 
 unsigned SketchMapRead::getNumberOfDataPoints() const {
@@ -135,14 +163,28 @@ unsigned SketchMapRead::getDataPointIndexInBase( const unsigned& idata ) const {
   return idata;
 }
 
+std::vector<Value*> SketchMapRead::getArgumentList(){
+  std::vector<Value*> arglist( ActionWithArguments::getArguments() ); 
+  for(unsigned i=0;i<nlow;++i) arglist.push_back( getPntrToComponent(i) );
+  return arglist;
+}
+
 // Highly unsatisfactory solution to problem GAT
 double SketchMapRead::getDissimilarity( const unsigned& i, const unsigned& j ){
   plumed_assert( i<myframes.size() && j<myframes.size() );
-  return distance( getPbc(), ActionWithArguments::getArguments(), myframes[i], myframes[j], true );
+  if( i!=j ){
+     double dd;
+     getStoredData( i, true ).transferDataToPDB( mypdb ); ReferenceConfiguration* myref1=metricRegister().create<ReferenceConfiguration>(mtype, mypdb);
+     getStoredData( j, true ).transferDataToPDB( mypdb ); ReferenceConfiguration* myref2=metricRegister().create<ReferenceConfiguration>(mtype, mypdb);
+     dd=distance( getPbc(), ActionWithArguments::getArguments(), myref1, myref2, true );
+     delete myref1; delete myref2; return dd;
+  }
+  return 0.0;
 }
 
-double SketchMapRead::getWeight( const unsigned& idata ) const {
-  return myframes[idata]->getWeight();
+double SketchMapRead::getWeight( const unsigned& idata ){
+  plumed_assert( idata<weights.size() );
+  return weights[idata]; 
 }
 
 }

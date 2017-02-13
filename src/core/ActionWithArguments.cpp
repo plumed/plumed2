@@ -210,15 +210,10 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
 }
 
 void ActionWithArguments::expandArgKeywordInPDB( PDB& pdb ){
-  std::vector<std::string> pdb_remark=pdb.getRemark();
-  std::vector<std::string> arg_names;
-  bool found=Tools::parseVector(pdb_remark,"ARG",arg_names);
-  if( found ){ 
+  std::vector<std::string> arg_names = pdb.getArgumentNames();
+  if( arg_names.size()>0 ){ 
       std::vector<Value*> arg_vals;
       interpretArgumentList( arg_names, arg_vals );
-      std::string new_args="ARG=" + arg_vals[0]->getName();
-      for(unsigned i=1;i<arg_vals.size();++i) new_args = new_args + "," + arg_vals[i]->getName();
-      pdb.setArgKeyword( new_args );
   }
 }
 

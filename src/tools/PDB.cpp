@@ -23,6 +23,7 @@
 #include "Tools.h"
 #include <cstdio>
 #include <iostream>
+#include "core/SetupMolInfo.h"
 
 using namespace std;
 
@@ -34,48 +35,50 @@ void PDB::setAtomNumbers( const std::vector<AtomNumber>& atoms ){
   for(unsigned i=0;i<atoms.size();++i){ numbers[i]=atoms[i]; beta[i]=1.0; occupancy[i]=1.0; }
 }
 
-void PDB::addArgumentNames( const std::vector<std::string>& argument_names ){
-  std::string newrem = "ARG="+argument_names[0];
-  for(unsigned i=1;i<argument_names.size();++i) newrem+="," + argument_names[i];
-  remark.push_back( newrem );
-  for(unsigned i=0;i<argument_names.size();++i) remark.push_back( argument_names[i] + "=0" );
+void PDB::setArgumentNames( const std::vector<std::string>& argument_names ){
+  argnames.resize( argument_names.size() );
+  for(unsigned i=0;i<argument_names.size();++i){
+      argnames[i]=argument_names[i]; 
+      arg_data.insert( std::pair<std::string,double>( argnames[i], 0.0 ) ); 
+  }
+}
+
+bool PDB::getArgumentValue( const std::string& name, double& value ) const {
+  std::map<std::string,double>::const_iterator it = arg_data.find(name);
+  if( it!=arg_data.end() ){ value = it->second; return true; }
+  return false;
 }
 
 void PDB::setAtomPositions( const std::vector<Vector>& pos ){
-  plumed_dbg_assert( pos.size()==positions.size() );
+  plumed_assert( pos.size()==positions.size() );
   for(unsigned i=0;i<positions.size();++i) positions[i]=pos[i];
 }
 
 void PDB::setArgumentValue( const std::string& argname, const double& val ){
-  bool replaced=false; std::string num; Tools::convert( val, num );
-  for(unsigned i=0;i<remark.size();++i){
-      if( remark[i].find(argname+"=")!=std::string::npos && remark[i].find("sigma_")==std::string::npos ){
-          remark[i]=argname + "=" + num; replaced=true;
-      }
-  }
-  plumed_assert( replaced ); 
+  // First set the value of the value of the argument in the map
+  arg_data.find(argname)->second = val;
 }
 
-bool PDB::hasRequiredProperties( const std::vector<std::string>& inproperties ){
-  bool hasprop=false;
-  for(unsigned i=0;i<remark.size();++i){
-      if( remark[i].find("PROPERTIES=")!=std::string::npos){ hasprop=true; break; }
-  }
-  if( !hasprop ){
-      std::string mypropstr="PROPERTIES=" + inproperties[0];
-      for(unsigned i=1;i<inproperties.size();++i) mypropstr += "," + inproperties[i];
-      remark.push_back( mypropstr );
-  }
-  // Now check that all required properties are there
-  for(unsigned i=0;i<inproperties.size();++i){
-      hasprop=false;
-      for(unsigned j=0;j<remark.size();++j){ 
-          if( remark[j].find(inproperties[i]+"=")!=std::string::npos){ hasprop=true; break; }
-      }
-      if( !hasprop ) return false;  
-  }
-  return true;
-}
+// bool PDB::hasRequiredProperties( const std::vector<std::string>& inproperties ){
+//   bool hasprop=false;
+//   for(unsigned i=0;i<remark.size();++i){
+//       if( remark[i].find("PROPERTIES=")!=std::string::npos){ hasprop=true; break; }
+//   }
+//   if( !hasprop ){
+//       std::string mypropstr="PROPERTIES=" + inproperties[0];
+//       for(unsigned i=1;i<inproperties.size();++i) mypropstr += "," + inproperties[i];
+//       remark.push_back( mypropstr );
+//   }
+//   // Now check that all required properties are there
+//   for(unsigned i=0;i<inproperties.size();++i){
+//       hasprop=false;
+//       for(unsigned j=0;j<remark.size();++j){ 
+//           if( remark[j].find(inproperties[i]+"=")!=std::string::npos){ hasprop=true; break; }
+//       }
+//       if( !hasprop ) return false;  
+//   }
+//   return true;
+// }
 
 void PDB::addBlockEnd( const unsigned& end ){
   block_ends.push_back( end );
@@ -106,13 +109,29 @@ const std::vector<double> & PDB::getBeta()const{
   return beta;
 }
 
-const std::vector<std::string> & PDB::getRemark()const{
-  return remark;
+void PDB::addRemark( std::vector<std::string>& v1 ){
+  Tools::parse(v1,"TYPE",mtype); 
+  Tools::parseVector(v1,"ARG",argnames);
+  for(unsigned i=0;i<v1.size();++i){
+      if( v1[i].find("=")!=std::string::npos ){
+          std::size_t eq=v1[i].find_first_of('=');
+          std::string name=v1[i].substr(0,eq);
+          std::string sval=v1[i].substr(eq+1);
+          double val; Tools::convert( sval, val );
+          arg_data.insert( std::pair<std::string,double>( name, val ) );
+      } else {
+          flags.push_back(v1[i]);
+      }
+  }
 }
 
-void PDB::addRemark( const std::vector<std::string>& v1 ){
-  remark.insert(remark.begin(),v1.begin(),v1.end());
+bool PDB::hasFlag( const std::string& fname ) const {
+  for(unsigned i=0;i<flags.size();++i){
+      if( flags[i]==fname ) return true;
+  }
+  return false;
 }
+
 
 const std::vector<AtomNumber> & PDB::getAtomNumbers()const{
   return numbers;
@@ -201,16 +220,6 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale){
   }
   if( between_ters ) block_ends.push_back( positions.size() );
   return file_is_alive;
-}
-
-void PDB::setArgKeyword( const std::string& new_args ){
-  bool replaced=false;
-  for(unsigned i=0;i<remark.size();++i){
-      if( remark[i].find("ARG=")!=std::string::npos){
-          remark[i]=new_args; replaced=true;
-      }
-  }
-  plumed_assert( replaced );
 }
 
 bool PDB::read(const std::string&file,bool naturalUnits,double scale){
@@ -356,6 +365,49 @@ Vector PDB::getPosition(AtomNumber a)const{
      else return positions[p->second];
 }
 
+std::vector<std::string> PDB::getArgumentNames()const {
+    return argnames;
+}
+
+std::string PDB::getMtype() const {
+  return mtype;
+}
+
+void PDB::print( const double& lunits, SetupMolInfo* mymoldat, OFile& ofile, const std::string& fmt ){
+  if( argnames.size()>0 ){
+      ofile.printf("REMARK ARG=%s", argnames[0].c_str() ); 
+      for(unsigned i=1;i<argnames.size();++i) ofile.printf(",%s",argnames[i].c_str() ); 
+      ofile.printf("\n"); ofile.printf("REMARK ");
+  }
+  std::string descr2;
+  if(fmt.find("-")!=std::string::npos){
+      descr2="%s=" + fmt + " ";
+  } else {
+     // This ensures numbers are left justified (i.e. next to the equals sign
+     std::size_t psign=fmt.find("%");
+     plumed_assert( psign!=std::string::npos );
+     descr2="%s=%-" + fmt.substr(psign+1) + " ";
+  }
+  for(std::map<std::string,double>::iterator it=arg_data.begin(); it!=arg_data.end();it++) ofile.printf( descr2.c_str(),it->first.c_str(), it->second ); 
+  if( argnames.size()>0 ) ofile.printf("\n");
+  if( !mymoldat ){
+      for(unsigned i=0;i<positions.size();++i){
+          ofile.printf("ATOM  %4d  X    RES  %4u  %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+            numbers[i].serial(), i,
+            lunits*positions[i][0], lunits*positions[i][1], lunits*positions[i][2],
+            occupancy[i], beta[i] );
+      }
+  } else {
+      for(unsigned i=0;i<positions.size();++i){
+          ofile.printf("ATOM  %5d %-4s %3s  %4u    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+            numbers[i].serial(), mymoldat->getAtomName(numbers[i]).c_str(),
+            mymoldat->getResidueName(numbers[i]).c_str(), mymoldat->getResidueNumber(numbers[i]),
+            lunits*positions[i][0], lunits*positions[i][1], lunits*positions[i][2],
+            occupancy[i], beta[i] );
+      }
+  }
+  ofile.printf("END\n");
+}
 
 
 }

@@ -30,6 +30,7 @@ namespace dimred {
 void DimensionalityReductionBase::registerKeywords( Keywords& keys ){
   analysis::AnalysisBase::registerKeywords( keys );
   keys.add("compulsory","NLOW_DIM","number of low-dimensional coordinates required");
+  keys.addOutputComponent("coord","default","the low-dimensional projections of the various input configurations");
 }
 
 DimensionalityReductionBase::DimensionalityReductionBase( const ActionOptions& ao ):
@@ -39,12 +40,13 @@ dimredbase(NULL)
 {
   // Check that some dissimilarity information is available
   if( my_input_data ){
-      if( !dissimilaritiesWereSet() ) error("dissimilarities have not been calcualted in input actions");
+      if( getName()!="PCA" && !dissimilaritiesWereSet() ) error("dissimilarities have not been calcualted in input actions");
       // Now we check if the input was a dimensionality reduction object
       dimredbase = dynamic_cast<DimensionalityReductionBase*>( my_input_data );
   }
 
   // Retrieve the dimension in the low dimensionality space
+  nlow=0;
   if( dimredbase ){
       nlow=dimredbase->nlow;
       log.printf("  projecting in %u dimensional space \n",nlow);
@@ -53,15 +55,20 @@ dimredbase(NULL)
       if( nlow<1 ) error("dimensionality of low dimensional space must be at least one");
       log.printf("  projecting in %u dimensional space \n",nlow);
   }
+  // Now add fake components to the underlying ActionWithValue for the arguments
+  std::string num; 
+  for(unsigned i=0;i<nlow;++i){ 
+    Tools::convert(i+1,num); addComponent( "coord-" + num ); componentIsNotPeriodic( "coord-" + num );
+  }
 }
 
-ReferenceConfiguration* DimensionalityReductionBase::getReferenceConfiguration( const unsigned& idat, const bool& calcdist ){
-  ReferenceConfiguration* myref = my_input_data->getReferenceConfiguration( idat, calcdist ); std::string num; myref->clearAllProperties();
-  for(unsigned i=0;i<nlow;++i){ Tools::convert(i+1,num); myref->attachProperty( getLabel() + "." + num, projections(idat,i) ); }
-  return myref; 
+std::vector<Value*> DimensionalityReductionBase::getArgumentList(){
+   std::vector<Value*> arglist( analysis::AnalysisBase::getArgumentList() );
+   for(unsigned i=0;i<nlow;++i) arglist.push_back( getPntrToComponent(i) );
+   return arglist;
 }
 
-void DimensionalityReductionBase::getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const {
+void DimensionalityReductionBase::getProjection( const unsigned& idata, std::vector<double>& point, double& weight ){
   if( point.size()!=nlow ) point.resize( nlow );
   weight = getWeight(idata); for(unsigned i=0;i<nlow;++i) point[i]=projections(idata,i);
 }
@@ -76,7 +83,7 @@ void DimensionalityReductionBase::performAnalysis(){
   if( dimredbase ){
       std::vector<double> newp( nlow ); double w;
       for(unsigned i=0;i<getNumberOfDataPoints();++i){ 
-         dimredbase->getDataPoint( i, newp, w ); plumed_dbg_assert( newp.size()==nlow );
+         dimredbase->getProjection( i, newp, w ); plumed_dbg_assert( newp.size()==nlow );
          for(unsigned j=0;j<nlow;++j) projections(i,j)=newp[j]; 
       }
   }
@@ -87,6 +94,13 @@ void DimensionalityReductionBase::performAnalysis(){
   }
   // This calculates the projections of the points
   calculateProjections( targets, projections );
+  // Now set the projection values in the underlying object
+  if( my_input_data ){
+      for(unsigned idat=0;idat<getNumberOfDataPoints();++idat){
+          analysis::DataCollectionObject& myref=AnalysisBase::getStoredData(idat,false); std::string num;
+          for(unsigned i=0;i<nlow;++i){ Tools::convert(i+1,num); myref.setArgument( getLabel() + ".coord-" + num, projections(idat,i) ); } 
+      }
+  }
   log.printf("Generated projections required by action %s \n",getLabel().c_str() );
 }
 

@@ -25,7 +25,9 @@
 #include "core/ActionPilot.h"
 #include "core/ActionAtomistic.h"
 #include "core/ActionWithArguments.h"
+#include "core/ActionWithValue.h"
 #include "vesselbase/ActionWithVessel.h"
+#include "DataCollectionObject.h"
 
 namespace PLMD {
 
@@ -42,18 +44,14 @@ This is the abstract base class to use for implementing new methods for analyzin
 
 class AnalysisBase :
   public ActionPilot,
+  public ActionWithValue,
   public ActionAtomistic,
   public ActionWithArguments,
   public vesselbase::ActionWithVessel
   {
 friend class ReselectLandmarks;
 friend class ReadDissimilarityMatrix; 
-friend class AnalysisWithDataCollection;
 protected:
-/// Just run the analysis a single time
-  bool use_all_data;
-/// The frequency with which we are performing analysis
-  unsigned freq;
 /// The Analysis action that we are reusing data from
   AnalysisBase* my_input_data;
 public:
@@ -67,7 +65,7 @@ public:
 /// Return the index of the data point in the base class
   virtual unsigned getDataPointIndexInBase( const unsigned& idata ) const ; 
 /// Return the weight of the ith point
-  virtual double getWeight( const unsigned& idata ) const ;
+  virtual double getWeight( const unsigned& idata );
 /// Get the name of the metric that is being used
   virtual std::string getMetricName() const ;
 /// Are we using memory in this calculation this affects the weights of points
@@ -76,14 +74,18 @@ public:
   virtual double getNormalization() const ;
 /// Ensures that dissimilarities were set somewhere 
   virtual bool dissimilaritiesWereSet() const ;
+/// Get the information on how dissimilarities were calculated for output PDB
+  virtual std::string getDissimilarityInstruction() const ;
 /// Get the squared dissimilarity between two reference configurations
   virtual double getDissimilarity( const unsigned& i, const unsigned& j );
+/// Get the indices of the atoms that have been stored
+  virtual const std::vector<AtomNumber>& getAtomIndexes() const ;
 /// Overwrite getArguments so we get arguments from underlying class
-  virtual const std::vector<Value*>    & getArguments() const ;
-/// Get the ith data point
-  virtual void getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const ;
+  virtual std::vector<Value*> getArgumentList();
+/// Get the list of argument names in the base
+  std::vector<std::string> getArgumentNames();
 /// Get a reference configuration (in dimensionality reduction this returns the projection)
-  virtual ReferenceConfiguration* getReferenceConfiguration( const unsigned& idata, const bool& calcdist  );
+  virtual DataCollectionObject& getStoredData( const unsigned& idata, const bool& calcdist );
 /// This actually performs the analysis
   virtual void performAnalysis()=0;
 /// These overwrite things from inherited classes (this is a bit of a fudge)
@@ -98,8 +100,6 @@ public:
 /// This calls the analysis to be performed in the final step of the calculation 
 /// i.e. when use_all_data is true
   virtual void runFinalJobs();
-/// We would like a cleaner way of doing this if possible
-  void confirmStride( const unsigned& istride, const unsigned& all );
 };
 
 inline
@@ -130,7 +130,7 @@ std::string AnalysisBase::getMetricName() const {
 }
 
 inline
-double AnalysisBase::getWeight( const unsigned& idata ) const {
+double AnalysisBase::getWeight( const unsigned& idata ){
   return my_input_data->getWeight( idata );
 }
 
@@ -155,23 +155,23 @@ double AnalysisBase::getDissimilarity( const unsigned& i, const unsigned& j ){
 }
 
 inline
-const std::vector<Value*> & AnalysisBase::getArguments() const {
-  return my_input_data->getArguments();
+std::vector<Value*> AnalysisBase::getArgumentList(){
+  return my_input_data->getArgumentList();
 }
 
 inline
-void AnalysisBase::confirmStride( const unsigned& istride, const unsigned& all ){
-  freq=istride; use_all_data=all;
+DataCollectionObject& AnalysisBase::getStoredData( const unsigned& idata, const bool& calcdist ){
+  return my_input_data->getStoredData( idata, calcdist );
 }
 
 inline
-void AnalysisBase::getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const {
-  my_input_data->getDataPoint( idata, point, weight );
+const std::vector<AtomNumber>& AnalysisBase::getAtomIndexes() const {
+  return my_input_data->getAtomIndexes();
 }
 
 inline
-ReferenceConfiguration* AnalysisBase::getReferenceConfiguration( const unsigned& idata, const bool& calcdist ){
-  return my_input_data->getReferenceConfiguration( idata, calcdist );
+std::string AnalysisBase::getDissimilarityInstruction() const {
+  return my_input_data->getDissimilarityInstruction();
 }
 
 }

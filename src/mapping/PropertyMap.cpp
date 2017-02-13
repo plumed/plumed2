@@ -70,8 +70,8 @@ PathBase(ao)
 
   std::string empty;
   if(!nos){
-     for(unsigned i=0;i<property.size();++i){
-        empty="LABEL="+property[i]; addVessel( "SPATH", empty, 0 );    
+     for(std::map<std::string,std::vector<double> >::iterator it=property.begin();it!=property.end();it++){ 
+        empty="LABEL="+it->first; addVessel( "SPATH", empty, 0 );    
      }
   }
   readVesselKeywords();

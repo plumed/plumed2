@@ -37,8 +37,8 @@ sfrac(pp.size()),
 MAXCYCLES(100) 
 {
   mypdb.setAtomNumbers(  pp[0]->getAbsoluteIndexes() ); mypdb.addBlockEnd( pp[0]->getAbsoluteIndexes().size() );
-  if( pp[0]->getArgumentNames().size()>0 ) mypdb.addArgumentNames( pp[0]->getArgumentNames() );
-  mydir.set( mypdb ); mydir.zeroDirection(); pp[0]->setupPCAStorage( mypack );
+  if( pp[0]->getArgumentNames().size()>0 ) mypdb.setArgumentNames( pp[0]->getArgumentNames() );
+  mydir.read( mypdb ); mydir.zeroDirection(); pp[0]->setupPCAStorage( mypack );
 }
 
 bool PathReparameterization::loopEnd( const int& index, const int& end, const int& inc ) const {
@@ -80,7 +80,7 @@ void PathReparameterization::reparameterizePart( const int& istart, const int& i
 
   std::vector<Direction> newpath;
   for(unsigned i=0;i<mypath.size();++i){
-      newpath.push_back( Direction(ReferenceConfigurationOptions("DIRECTION")) ); newpath[i].set( mypdb );
+      newpath.push_back( Direction(ReferenceConfigurationOptions("DIRECTION")) ); newpath[i].read( mypdb );
   }
 
   double prevsum=0.;
@@ -120,7 +120,7 @@ void PathReparameterization::reparameterizePart( const int& istart, const int& i
      for(int i=istart+incr;loopEnd(i,cfin,incr)==false;i+=incr){
          mypdb.setAtomPositions( newpath[i].getReferencePositions() ); 
          for(unsigned j=0;j<newpath[i].getNumberOfReferenceArguments();++j) mypdb.setArgumentValue( mypath[i]->getArgumentNames()[j], newpath[i].getReferenceArgument(j) );
-         mypath[i]->set( mypdb ); 
+         mypath[i]->read( mypdb ); 
      }
  
      // Recompute the separations between frames

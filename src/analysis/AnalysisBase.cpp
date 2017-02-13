@@ -28,10 +28,9 @@ namespace PLMD {
 namespace analysis {
 
 void AnalysisBase::registerKeywords( Keywords& keys ){
-  Action::registerKeywords( keys );
-  ActionPilot::registerKeywords( keys );
-  ActionAtomistic::registerKeywords( keys );
-  ActionWithArguments::registerKeywords( keys );
+  Action::registerKeywords( keys ); ActionPilot::registerKeywords( keys );
+  ActionWithValue::registerKeywords( keys ); ActionAtomistic::registerKeywords( keys );
+  ActionWithArguments::registerKeywords( keys ); keys.remove("NUMERICAL_DERIVATIVES");
   ActionWithVessel::registerKeywords( keys ); keys.remove("TOL"); keys.reset_style("TIMINGS","hidden"); keys.isAnalysis();  
   keys.add("atoms-2","USE_OUTPUT_DATA_FROM","use the ouput of the analysis performed by this object as input to your new analysis object");
 }
@@ -39,43 +38,44 @@ void AnalysisBase::registerKeywords( Keywords& keys ){
 AnalysisBase::AnalysisBase(const ActionOptions&ao):
 Action(ao),
 ActionPilot(ao),
+ActionWithValue(ao),
 ActionAtomistic(ao),        
 ActionWithArguments(ao),
 ActionWithVessel(ao),
 my_input_data(NULL)
 {
   // We have an if statement here so that this doesn't break with READ_DISSIMILARITIES
-  std::string datastr; if( keywords.exists("USE_OUTPUT_DATA_FROM") ) parse("USE_OUTPUT_DATA_FROM",datastr);
-  if( keywords.exists("USE_OUTPUT_DATA_FROM") && 
-      datastr.length()==0 && 
-      !keywords.exists("REUSE_INPUT_DATA_FROM") ) error("input analysis action was not specified use USE_OUTPUT_DATA_FROM");
-  if( datastr.length()>0 ){
-      my_input_data=plumed.getActionSet().selectWithLabel<AnalysisBase*>( datastr );
-      ReadAnalysisFrames* checkt = dynamic_cast<ReadAnalysisFrames*>( my_input_data );
-      if( checkt ) error("READ_ANALYSIS_FRAMES should only be used in input to the FRAMES keyword"); 
-      log.printf("  performing analysis on output from %s \n",datastr.c_str() );
-      if( !my_input_data ) error("could not find analysis action named " + datastr );
-      freq=my_input_data->freq; use_all_data=my_input_data->use_all_data;
-      if( !use_all_data ) setStride( freq );
+  if( keywords.exists("USE_OUTPUT_DATA_FROM") ){
+      std::string datastr; parse("USE_OUTPUT_DATA_FROM",datastr);
+      if( keywords.style("USE_OUTPUT_DATA_FROM","atoms") && datastr.length()==0 ) error("input analysis action was not specified use USE_OUTPUT_DATA_FROM");
+      if( datastr.length()>0 ){
+          my_input_data=plumed.getActionSet().selectWithLabel<AnalysisBase*>( datastr );
+          log.printf("  performing analysis on output from %s \n",datastr.c_str() );
+          if( !my_input_data ) error("could not find analysis action named " + datastr );
+          addDependency( my_input_data );
+      }
   }
 }
 
+std::vector<std::string> AnalysisBase::getArgumentNames(){
+  std::vector<Value*> arg_p( getArgumentList() ); 
+  std::vector<std::string> argn( arg_p.size() );
+  for(unsigned i=0;i<arg_p.size();++i){
+     plumed_assert( i<argn.size() && i<arg_p.size() );
+     argn[i]=arg_p[i]->getName();
+  }
+  return argn;
+}
+
 void AnalysisBase::update(){
-  // Do nothing if we are just analysing at the end of the calculation
-  if( use_all_data ) return ;
-  // Check that we are on step
-  plumed_dbg_assert( getStep()%freq==0 );
+  if( getStep()==0 || ( getStride()>0 && !onStep() ) ) return;
   // And do the analysis
-  if( getStep()>0 ) performAnalysis();
+  performAnalysis();
 }
 
 void AnalysisBase::runFinalJobs(){
-  // Nothing to do if we are not analysing all the data in the trajectory
-  if( !use_all_data ) return;
-  // Erm ... user has done something weird
-  // if( getNumberOfDataPoints()==0 ) error("no data is available for analysis");
-  // And do the analysis
-  if( use_all_data ) performAnalysis();
+  if( getStride()>0 ) return;
+  performAnalysis();
 }
 
 }

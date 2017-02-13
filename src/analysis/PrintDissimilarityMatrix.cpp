@@ -53,6 +53,7 @@ void PrintDissimilarityMatrix::registerKeywords( Keywords& keys ){
   AnalysisBase::registerKeywords( keys );
   keys.add("compulsory","FILE","name of file on which to output the data");
   keys.add("optional","FMT","the format to use for the output of numbers");
+  keys.add("compulsory","STRIDE","0","the frequency with which to perform the required analysis and to output the data.  The default value of 0 tells plumed to use all the data");
 }
 
 PrintDissimilarityMatrix::PrintDissimilarityMatrix( const ActionOptions& ao ):

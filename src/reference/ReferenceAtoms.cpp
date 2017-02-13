@@ -42,46 +42,6 @@ void ReferenceAtoms::readAtomsFromPDB( const PDB& pdb, const bool allowblocks  )
   }
 }
 
-void ReferenceAtoms::printAtoms( const double& lunits, SetupMolInfo* mymoldat, OFile& ofile ) const {
-  if( !mymoldat ){
-      for(unsigned i=0;i<reference_atoms.size();++i){
-          ofile.printf("ATOM  %4d  X    RES  %4u  %8.3f%8.3f%8.3f%6.2f%6.2f\n",
-            indices[i].serial(), i, 
-            lunits*reference_atoms[i][0], lunits*reference_atoms[i][1], lunits*reference_atoms[i][2],
-            align[i], displace[i] );
-      }
-  } else {
-      for(unsigned i=0;i<reference_atoms.size();++i){
-          ofile.printf("ATOM  %5d %-4s %3s  %4u    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
-            indices[i].serial(), mymoldat->getAtomName(indices[i]).c_str(), 
-            mymoldat->getResidueName(indices[i]).c_str(), mymoldat->getResidueNumber(indices[i]),
-            lunits*reference_atoms[i][0], lunits*reference_atoms[i][1], lunits*reference_atoms[i][2],
-            align[i], displace[i] );
-      }
-  }
-}
-
-bool ReferenceAtoms::parseAtomList( const std::string& key, std::vector<unsigned>& numbers ){
-  plumed_assert( numbers.size()==0 );
-
-  std::vector<std::string> strings; 
-  if( !parseVector(key,strings,true) ) return false;
-  Tools::interpretRanges(strings); 
-
-  numbers.resize( strings.size() ); 
-  for(unsigned i=0;i<strings.size();++i){
-      AtomNumber atom;
-      if( !Tools::convert(strings[i],atom ) ) error("could not convert " + strings[i] + " into atom number");
-
-      bool found=false;
-      for(unsigned j=0;j<indices.size();++j){
-          if( atom==indices[j] ){ found=true; numbers[i]=j; break; }
-      }
-      if(!found) error("atom labelled " + strings[i] + " is not present in pdb input file");
-  }
-  return true;
-}
-
 void ReferenceAtoms::getAtomRequests( std::vector<AtomNumber>& numbers, bool disable_checks ){
   singleDomainRequests(numbers,disable_checks);
 }

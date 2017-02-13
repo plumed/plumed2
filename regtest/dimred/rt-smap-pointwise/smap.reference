@@ -1,4 +1,4 @@
-#! FIELDS smapp.1 smapp.2 weight
+#! FIELDS smapp.coord-1 smapp.coord-2 weight
    5.596    0.266    1.000 
   -5.756    0.310    1.000 
   -3.017   -2.297    1.000 

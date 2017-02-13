@@ -30,7 +30,7 @@ with \ref UPDATE_IF, allow you to identify the frames in your trajectory that sa
 some particular criteria and output information on those frames only.
 
 Another useful command is the \ref COMMITTOR command.  This command can only be used when running
-an molecular dynamics trajectory - it cannot be used when analysing a trajectory using \ref driver.
+a molecular dynamics trajectory - it cannot be used when analysing a trajectory using \ref driver.
 As detailed in the documentation for \ref COMMITTOR this command tells PLUMED (and the underlying 
 MD code) to stop the calculation one some criteria is satisfied.
 
@@ -117,10 +117,23 @@ The first of these two distance commands calculates the analytical derivtives of
 while the second calculates these derivatives numerically.  Obviously, if your CV is implemented
 correctly these two sets of quantities should be nearly identical.
 
+\section storing Storing data for analysis
+
+All the analysis methods described in previous sections accumulate averages or output diagnostic information on the fly.
+That is to say these methods calculate something given the instantaneous positions of the atoms or the instantaenous 
+values of a set of collective variables.  Many methods (e.g. dimensionality reduction and clustering) will not work like 
+this, however, as information from multiple trajectory frames is required at the point when the analysis is performed.  In other
+words the output from these types of analysis cannot be accumulated one frame at time.  When using these methods you must therefore
+store trajectory frames for later analysis.  You can do this storing by using the following action:
+
+<table align=center frame=void width=95%% cellpadding=5%%>
+<tr> <td width=5%> \subpage COLLECT_FRAMES </td> <td> Collect and store trajectory frames for later analysis with one of the methods detailed below. </td> </tr>
+</table>  
+
 \section dissimilaritym Calculating dissimilarity matrices
 
-One of the simplest things that we can do with a trajectory is that we can calculate the dissimilarity between 
-every pair of frames within it.  When using the \ref dimred "dimensionality reduction" algorithms described in 
+One of the simplest things that we can do if we have stored a set of trajectory frames using \ref COLLECT_FRAMES is we can calculate the dissimilarity between 
+every pair of frames we have stored.  When using the \ref dimred "dimensionality reduction" algorithms described in 
 the sections that follow the first step is to calculate this matrix.  Consequently, within PLUMED the following 
 command will collect the trajectory data as your simulation progressed and calculate the dissimilarities: 
 
@@ -142,13 +155,9 @@ external file
 
 <table align=center frame=void width=95%% cellpadding=5%%>
 <tr> <td width=5%> \subpage READ_DISSIMILARITY_MATRIX </td> <td> Read a matrix of dissimilarities between a trajectory of atomic configurations from a file. </td> </tr>
-<tr> <td width=5%> \subpage READ_ANALYSIS_FRAMES </td> <td> Store the frames in trajectory to use in tandem with a dissimilarity matrix read using \ref READ_DISSIMILARITY_MATRIX </td> </tr>
 </table>
  
-N.B. You can only use the two commands above when you are doing post-processing.  Furthermore, as with the grids described previously the 
-STRIDE keyword tells PLUMED how frequently to collect data from the trajectory.  The RUN keyword then tells PLUMED how frequently to calculate the matrix
-of dissimilarities.  As described above if RUN is not present and you are analysing trajectories using \ref driver all the data in 
-the trajectory (with the exception of the first frame) will be analysed.  
+N.B. You can only use the two commands above when you are doing post-processing.  
 
 \section landmarks Landmark Selection
 
@@ -162,8 +171,10 @@ that are available in PLUMED are as follows
 In general most of these landmark selection algorithms must be used in tandem with a \ref dissimilaritym "dissimilarity matrix" object as as follows:
 
 \verbatim
-ss1: EUCLIDEAN_DISSIMILARITIES STRIDE=1 USE_ALL_DATA ARG=d1
+data: COLLECT_FRAMES ARG=d1 STRIDE=1
+ss1: EUCLIDEAN_DISSIMILARITIES USE_OUTPUT_DATA_FROM=data 
 ll2: LANDMARK_SELECT_FPS USE_OUTPUT_DATA_FROM=ss1 NLANDMARKS=300
+OUTPUT_COLVAR_FILE USE_OUTPUT_DATA_FROM=ll2 FILE=mylandmarks
 \endverbatim
 
 When landmark selection is performed in this way a weight is ascribed to each of the landmark configurations.  This weight is
@@ -197,7 +208,8 @@ the following <a href="https://www.youtube.com/watch?v=ofC2qz0_9_A&feature=youtu
 Within PLUMED running an input to run a dimensionality reduction algorithm can be as simple as:
 
 \verbatim
-ss1: EUCLIDEAN_DISSIMILARITIES STRIDE=1 USE_ALL_DATA ARG=d1
+data: COLLECT_FRAMES STRIDE=1 ARG=d1
+ss1: EUCLIDEAN_DISSIMILARITIES USE_OUTPUT_DATA_FROM=data 
 mds: CLASSICAL_MDS USE_OUTPUT_DATA_FROM=ss1 NLOW_DIM=2
 \endverbatim
 
@@ -205,7 +217,8 @@ Where we have to use the \ref EUCLIDEAN_DISSIMILARITIES action here in order to 
 We can even throw some landmark selection into this procedure and perform
 
 \verbatim
-ss1: EUCLIDEAN_DISSIMILARITIES STRIDE=1 USE_ALL_DATA ARG=d1
+data: COLLECT_FRAMES STRIDE=1 ARG=d1
+ss1: EUCLIDEAN_DISSIMILARITIES USE_OUTPUT_DATA_FROM=data
 ll2: LANDMARK_SELECT_FPS USE_OUTPUT_DATA_FROM=ss1 NLANDMARKS=300
 mds: CLASSICAL_MDS USE_OUTPUT_DATA_FROM=ll2 NLOW_DIM=2
 osample: PROJECT_ALL_ANALYSIS_DATA USE_OUTPUT_DATA_FROM=ss1 PROJECTION=smap
@@ -227,6 +240,10 @@ The following methods are available for printing the result output by the variou
 <tr> <td width=5%> \subpage OUTPUT_ANALYSIS_DATA_TO_COLVAR </td> <td> Output the results from an analysis using the PLUMED colvar file format. </td> </tr>
 <tr> <td width=5%> \subpage OUTPUT_ANALYSIS_DATA_TO_PDB </td> <td> Output the results from an analysis using the PDB file format.</td> </tr>
 </table>
+
+Using the above commands to output the data from any form of analysis is important as <b> the STRIDE with which you output the data to a COLVAR or PDB file
+controls how frequently the analysis is performed on the collected data </b>.  If you specified no stride on the output lines then PLUMED assumes
+you want to perform analysis on the entire trajectory.
 
 If you use the above commands to output data from one of the \ref landmarks algorithms then only the second will give you information on the 
 atomic positions in your landmark configurations and their associated weights.  The first of these commands will give the values of the colvars

@@ -45,11 +45,11 @@ public:
   static void registerKeywords( Keywords& keys );
   DimensionalityReductionBase( const ActionOptions& );
 /// Get the ith data point (this returns the projection)
-  virtual void getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const ;
-/// Get a reference configuration (this returns the projection)
-  virtual ReferenceConfiguration* getReferenceConfiguration( const unsigned& idata, const bool& calcdist ); 
+  virtual void getProjection( const unsigned& idata, std::vector<double>& point, double& weight );
 /// Actually perform the analysis
-  void performAnalysis();
+  virtual void performAnalysis();
+/// Overwrite getArguments so we get arguments from underlying class
+  std::vector<Value*> getArgumentList();
 /// Calculate the projections of points
   virtual void calculateProjections( const Matrix<double>& , Matrix<double>& )=0;
 /// Set one of the elements in the target vector.  This target vector is used

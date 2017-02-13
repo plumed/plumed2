@@ -71,13 +71,10 @@ public:
 
 class ReferenceConfiguration {
 friend class SingleDomainRMSD;
-friend double property_distance( ReferenceConfiguration* ref1, ReferenceConfiguration* ref2, const bool& squared );
 friend double distance( const Pbc& pbc, const std::vector<Value*> & vals, ReferenceConfiguration*, ReferenceConfiguration*, const bool& squared );
 private:
 /// The name of this particular config
   std::string name;
-/// A weight assigned to this particular frame
-  double weight;
 /// A vector containing all the remarks from the pdb input
   std::vector<std::string> line;
 /// These are used to do fake things when we copy frames
@@ -87,9 +84,6 @@ private:
   std::vector<Vector> fake_refatoms;
   std::vector<double> fake_refargs;
   std::vector<double> fake_metric;
-/// Property values are basically the projections of points
-  std::vector<std::string> property_names;
-  std::vector<double> property_values;
 protected:
 /// Crash with an error
   void error(const std::string& msg);
@@ -106,34 +100,16 @@ public:
   virtual void getAtomRequests( std::vector<AtomNumber>&, bool disable_checks=false ){}
 /// Retrieve the arguments that are required for this guy
   virtual void getArgumentRequests( std::vector<std::string>&, bool disable_checks=false ){}
-/// Set the reference configuration using a PDB 
-  virtual void set( const PDB& );
 /// Do all local business for setting the configuration 
   virtual void read( const PDB& )=0;
-/// Set the weight for this frame
-  void setWeight( const double& ww );
-/// Return the weight for this frame
-  double getWeight() const ;
 /// Calculate the distance from the reference configuration
   double calculate( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, ReferenceValuePack& myder, const bool& squared=false ) const ;
 /// Calculate the distance from the reference configuration
   virtual double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& args, 
                        ReferenceValuePack& myder, const bool& squared ) const=0;
 /// Parse something from the pdb remarks
-  template<class T>
-  bool parse( const std::string&key, T&t, bool ignore_missing=false );
-/// Parse vector from the pdb remarks
-  template<class T>
-  bool parseVector( const std::string&key, std::vector<T>&t, bool ignore_missing=false );
-/// Parse a flag
-  void parseFlag(const std::string&key,bool&t);
-/// Check that all the remarks in the pdb have been read in
-  void checkRead();
 /// Copy derivatives from one frame to this frame
   void copyDerivatives( const ReferenceConfiguration* );
-/// Print a pdb file containing the reference configuration
-  void print( const double& lunits, OFile& ofile, const double& time, const double& weight, const double& old_norm );
-  void print( const double& lunits, SetupMolInfo* mymoldat, OFile& ofile, const std::string& fmt );
 /// Get one of the referene arguments
   virtual double getReferenceArgument( const unsigned& i ) const { plumed_error(); return 0.0; }
 /// These are overwritten in ReferenceArguments and ReferenceAtoms but are required here 
@@ -154,45 +130,9 @@ public:
                                       const std::vector<double>& arg, ReferenceValuePack& mypack ) const ;
 /// Stuff to setup pca
   virtual void setupPCAStorage( ReferenceValuePack& mypack ){ plumed_error(); }
-/// This clears the set of properties that have been attached to the file
-  void clearAllProperties();
-/// Attach a property to this reference configuration
-  void attachProperty( const std::string& name, const double& val );
-/// Get the number of properties that are stored in this object
-  unsigned getNumberOfProperties() const ;
-/// Get the inum th property value
-  double getPropertyValue( const unsigned& inum ) const ;
-/// Get the property with name myname
-  double getPropertyValue( const std::string& myname ) const ;
-/// Get the name of the inum th property value
-  std::string getPropertyName( const unsigned& inum ) const ;
 /// Move the reference configuration by an ammount specified using a Direction
   void displaceReferenceConfiguration( const double& weight, Direction& dir );
 };
-
-inline
-void ReferenceConfiguration::setWeight( const double& ww ){
-  weight=ww;
-}
-
-inline
-double ReferenceConfiguration::getWeight() const {
-  return weight;
-}
-
-template<class T>
-bool ReferenceConfiguration::parse(const std::string&key, T&t, bool ignore_missing ){
-  bool found=Tools::parse(line,key,t);
-  if(!ignore_missing && !found) error(key + " is missing"); 
-  return found;
-}
-
-template<class T>
-bool ReferenceConfiguration::parseVector(const std::string&key,std::vector<T>&t, bool ignore_missing){
-  bool found=Tools::parseVector(line,key,t);
-  if(!ignore_missing && !found)  error(key + " is missing");
-  return found;
-}
 
 inline
 const std::vector<Vector>& ReferenceConfiguration::getReferencePositions() const { 
@@ -227,21 +167,6 @@ unsigned ReferenceConfiguration::getNumberOfReferencePositions() const {
 inline
 unsigned ReferenceConfiguration::getNumberOfReferenceArguments() const {
   return 0;
-}
-
-inline
-unsigned ReferenceConfiguration::getNumberOfProperties() const {
-  return property_values.size();
-}
-
-inline
-double ReferenceConfiguration::getPropertyValue( const unsigned& inum ) const {
-  plumed_dbg_assert( inum<property_values.size() ); return property_values[inum];
-}
-
-inline
-std::string ReferenceConfiguration::getPropertyName( const unsigned& inum ) const {
-  plumed_dbg_assert( inum<property_names.size() ); return property_names[inum];
 }
 
 }
