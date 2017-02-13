@@ -557,7 +557,7 @@ atoms(plumed.getAtoms())
         Tools::convert(i,msg);
         double read_sm;
         restart_sfile.scanField("sigma_mean_"+msg,read_sm);
-        sigma_mean2_[i]=dummy*dummy;
+        sigma_mean2_[i]=read_sm*read_sm;
       }
       for(unsigned i=0;i<sigma_.size();++i) {
         std::string msg;
