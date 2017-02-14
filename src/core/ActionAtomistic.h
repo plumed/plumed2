@@ -81,7 +81,12 @@ public:
 /// Can be used to make a loop on modifyPosition or getPosition(AtomNumber)
   unsigned getTotAtoms()const;
 /// Get modifiable force of i-th atom (access by absolute AtomNumber).
-/// Should be used by action that need to modify the stored atomic forces
+/// \warning  Should be used by action that need to modify the stored atomic forces.
+///           This should be used with great care since the plumed core does
+///           not usually keep all these forces up to date. In particular,
+///           if an action require this, one should during constructor
+///           call allowToAccessGlobalForces().
+///           Notice that for efficiency reason plumed does not check if this is done!
   Vector & modifyGlobalForce(AtomNumber);
 /// Get modifiable virial
 /// Should be used by action that need to modify the stored virial
@@ -139,6 +144,8 @@ public:
   void doNotForce(){donotforce=true;}
 /// Make atoms whole, assuming they are in the proper order
   void makeWhole();
+/// Allow calls to modifyGlobalForce()
+  void allowToAccessGlobalForces(){atoms.zeroallforces=true;}
 public:
 
 // virtual functions:
