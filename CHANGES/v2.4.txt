@@ -9,4 +9,10 @@ Changes from version 2.3 which are relevant for users:
   - \ref PBMETAD : adaptive gaussians
   - \ref PBMETAD : default names for GRID and FILE (usefull with many collective variables) 
   - \ref IMPLICIT : EEF1-SB implicit solvent solvation energy
+
+Changes from version 2.3 which are relevant for developers:
+  - A few fixes has been made to improve exception safety. Although we still cannot declare
+    PLUMED totally exception safe (there are still many non-safe pointers around),
+    this made it possible to add a regtest that actually tests erroneous cmd strings
+    and erroneous inputs.
 */
