@@ -133,6 +133,7 @@ Version 2.3.1
 -------------
 See branch \branch{v2.3} on git repository.
 
+- Fix to FIT_TO_TEMPLATE as in 2.2.5. Notice that in 2.3.0 also the case with TYPE=OPTIMAL was affected. This is fixed now.
 - small change in \ref CS2BACKBONE to symmetrise the ring current contribution with respect to ring rotations (also faster)
 - fixed `plumed-config` that was not working.
 - log file points to the `config.txt` files to allow users to check which features were available in that compiled version.
