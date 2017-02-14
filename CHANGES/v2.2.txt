@@ -189,6 +189,7 @@ See branch \branch{v2.2} on git repository.
 For users:
 - Fixed a problem with large step numbers in driver (see \issue{209}).
 - Fixed a problem leading to crashes when using switching functions without cutoff with some compiler (see \issue{210}).
+- Fixed a bug when using \ref FIT_TO_TEMPLATE and domain decomposition (see \issue{214}).
 - Root dir is logged to allow easier debugging of problems.
 
 */
