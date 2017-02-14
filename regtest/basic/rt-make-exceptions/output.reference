@@ -1,0 +1,15 @@
+E pause
+E setRealPrecision
+E d:DISTANCE ATOMS=1,2,3
+E d:DISTANCE ATOMS=1,2
+E d: DIST ANCE ATOMS=1,2
+E d: ANGLE ATOMS=1,2,3,4,5 
+E d: COORDINATION GROUPA=1 GROUPB=2 R_0=0.5 NN=1.5
+E METAD ARG=d PACE=1 SIGMA=1 HEIGHT=0 FILE=H1 RESTART=WHAT
+E random cmd
+E cmd setStep NULL
+E setMasses called in wrong place
+E cmd setStep NULL
+E setMasses called in wrong place
+E cmd setStep NULL
+E setMasses called in wrong place
