@@ -7,6 +7,29 @@
 
 using namespace PLMD;
 
+void test_line(std::ostream & ofs,Plumed & p,const std::string & arg){
+  std::string cmd="readInputLine";
+  ofs<<cmd<<" "<<arg<<std::endl;
+  try{
+    p.cmd(cmd.c_str(),arg.c_str());
+    ofs<<"+++ !!!! uncatched !!!!"<<std::endl;
+  } catch(Exception&e) {
+    ofs<<"+++ catched"<<std::endl;
+  }
+}
+
+void test_this(std::ostream & ofs,Plumed & p,const std::string & cmd,const void*arg){
+  ofs<<cmd;
+  if(!arg) ofs<<" NULL";
+  ofs<<std::endl;
+  try{
+    p.cmd(cmd.c_str(),arg);
+    ofs<<"+++ !!!! uncatched !!!!"<<std::endl;
+  } catch(Exception&e) {
+    ofs<<"+++ catched"<<std::endl;
+  }
+}
+
 int main(){
 
   std::ofstream ofs("output");
@@ -14,16 +37,20 @@ int main(){
   {
 // test a mistake in timer
     Stopwatch sw;
-    try{ sw.pause();
-    } catch(Exception& e) { ofs<<"E pause\n"; }
+    ofs<<"pause"<<std::endl;
+    try{
+      sw.pause();
+      ofs<<"+++ !!!! uncatched !!!!"<<std::endl;
+    } catch(Exception& e) {
+      ofs<<"+++ catched"<<std::endl;
+    }
   }
 
   Plumed plumed;
 
 // first try to wrongly set real precision
   unsigned i=127;
-  try{ plumed.cmd("setRealPrecision",&i);
-  } catch(Exception&e){ ofs<<"E setRealPrecision"<<std::endl;}
+  test_this(ofs,plumed,"setRealPrecision",&i);
 
   int natoms=10;
 
@@ -42,38 +69,38 @@ int main(){
 // Each of them will raise an exception
 // Notice that name "d" will not be reserved and it will be possible
 // to use it later
-  try{ plumed.cmd("readInputLine","d: DISTANCE ATOMS=1,2,3");
-  } catch(Exception& e) {   ofs<<"E d:DISTANCE ATOMS=1,2,3"<<std::endl; }
-  try{ plumed.cmd("readInputLine","d:DISTANCE ATOMS=1,2");
-  } catch(Exception& e) {   ofs<<"E d:DISTANCE ATOMS=1,2"<<std::endl; }
-  try{ plumed.cmd("readInputLine","d: DIST ANCE ATOMS=1,2");
-  } catch(Exception& e) {   ofs<<"E d: DIST ANCE ATOMS=1,2"<<std::endl; }
-  try{ plumed.cmd("readInputLine","d: ANGLE ATOMS=1,2,3,4,5");
-  } catch(Exception& e) {   ofs<<"E d: ANGLE ATOMS=1,2,3,4,5 "<<std::endl; }
-  try{ plumed.cmd("readInputLine","d: COORDINATION GROUPA=1 GROUPB=2 R_0=0.5 NN=1.5");
-  } catch(Exception& e) {   ofs<<"E d: COORDINATION GROUPA=1 GROUPB=2 R_0=0.5 NN=1.5"<<std::endl; }
+  test_line(ofs,plumed,"d: DISTANCE ATOMS=1,2,3");
+  test_line(ofs,plumed,"d:DISTANCE ATOMS=1,2");
+  test_line(ofs,plumed,"d: DIST ANCE ATOMS=1,2");
+  test_line(ofs,plumed,"d: DISTANCE ATOMS=1,2 COMPONENTS SCALED_COMPONENTS");
+  test_line(ofs,plumed,"d: GYRATION ATOMS=");
+  test_line(ofs,plumed,"d: GYRATION ATOMS=1-4 TYPE=WHAT");
+  test_line(ofs,plumed,"d: POSITION ATOM=1,2");
+  test_line(ofs,plumed,"d: PUCKERING ATOMS=1-4");
+  test_line(ofs,plumed,"d: ANGLE ATOMS=1,2,3,4,5");
+  test_line(ofs,plumed,"d: COORDINATION GROUPA=1 GROUPB=2 R_0=0.5 NN=1.5");
 
 // these should not fail
   plumed.cmd("readInputLine","d: DISTANCE ATOMS=1,2");
   plumed.cmd("readInputLine","d1: DISTANCE ATOMS={1 2}"); // check if braces are parsed correctly
   plumed.cmd("readInputLine","RESTRAINT ARG=d AT=0 KAPPA=1");
 
-// Check stupid option to RESTART
-  try{ plumed.cmd("readInputLine","METAD ARG=d PACE=1 SIGMA=1 HEIGHT=0 FILE=H1 RESTART=WHAT");
-  } catch(Exception& e) {   ofs<<"E METAD ARG=d PACE=1 SIGMA=1 HEIGHT=0 FILE=H1 RESTART=WHAT"<<std::endl; }
+  test_line(ofs,plumed,"METAD ARG=d PACE=1 SIGMA=1 HEIGHT=0 FILE=H1 RESTART=WHAT");
+  test_line(ofs,plumed,"METAD ARG=d PACE=1 SIGMA=1 TAU=5");
+  test_line(ofs,plumed,"COMBINE ARG=d,d1 COEFFICIENTS=3");
+  test_line(ofs,plumed,"COMBINE ARG=d,d1 COEFFICIENTS=3,3 PARAMETERS=1");
+  test_line(ofs,plumed,"COMBINE ARG=d,d1 COEFFICIENTS=3,3 PARAMETERS=1,2 POWERS=4");
 
 // these should not fail
   plumed.cmd("readInputLine","m1: METAD ARG=d PACE=1 SIGMA=5 HEIGHT=1 FILE=H1 FMT=%9.5f");
   plumed.cmd("readInputLine","m2: METAD ARG=d PACE=2 SIGMA=5 HEIGHT=1 FILE=H2 FMT=%9.5f");
   plumed.cmd("readInputLine","PRINT ARG=d,d1,m1.bias FILE=COLVAR FMT=%9.5f");
 
-  try{ plumed.cmd("something random here",NULL);
-  } catch(Exception& e) { ofs<<"E random cmd"<<std::endl;}
+  test_this(ofs,plumed,"something random here",NULL);
   for(int step=0;step<3;step++){
 
 // this should fail
-    try{ plumed.cmd("setStep",NULL);
-    } catch(Exception& e) { ofs<<"E cmd setStep NULL"<<std::endl;}
+    test_this(ofs,plumed,"setStep",NULL);
 
     plumed.cmd("setStep",&step);
     plumed.cmd("setPositions",&positions[0]);
@@ -86,8 +113,7 @@ int main(){
     plumed.cmd("calc");
 
 // this should fail
-    try{ plumed.cmd("setMasses",&masses[0]);
-    } catch(Exception& e) { ofs<<"E setMasses called in wrong place"<<std::endl;}
+    test_this(ofs,plumed,"setMasses",&masses[0]);
   }
 
   return 0;
