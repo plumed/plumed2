@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -29,7 +29,7 @@ class DotProductDistance : public ArgumentOnlyDistance {
 public:
   explicit DotProductDistance( const ReferenceConfigurationOptions& ro );
   void read( const PDB& );
-  double calc( const std::vector<Value*>& vals, const std::vector<double>& arg, const bool& squared );
+  double calculateArgumentDistance( const std::vector<Value*> & vals, const std::vector<double>& arg, ReferenceValuePack& myder, const bool& squared ) const ;
 };
 
 PLUMED_REGISTER_METRIC(DotProductDistance,"DOTPRODUCT")
@@ -44,9 +44,11 @@ void DotProductDistance::read( const PDB& pdb ){
   readArgumentsFromPDB( pdb );
 }
 
-double DotProductDistance::calc( const std::vector<Value*>& vals, const std::vector<double>& arg, const bool& squared ){
+double DotProductDistance::calculateArgumentDistance( const std::vector<Value*> & vals, const std::vector<double>& arg, 
+                                                      ReferenceValuePack& myder, const bool& squared ) const {
   double dot=0.0; 
   for (unsigned long i=0; i<vals.size(); ++i) dot+=getReferenceArgument(i)*arg[i];
+  for (unsigned long i=0; i<vals.size(); ++i) myder.setArgumentDerivatives( i, -getReferenceArgument(i)/dot );
   return -log(dot);
 }
 

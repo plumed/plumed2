@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -34,7 +34,7 @@ using namespace std;
 namespace PLMD{
 
 void ActionWithArguments::registerKeywords(Keywords& keys){
-  keys.reserve("compulsory","ARG","the input for this action is the scalar output from one or more other actions. The particular scalars that you will use "
+  keys.reserve("numbered","ARG","the input for this action is the scalar output from one or more other actions. The particular scalars that you will use "
                                   "are referenced using the label of the action. If the label appears on its own then it is assumed that the Action calculates "
                                   "a single scalar value.  The value of this scalar is thus used as the input to this new action.  If * or *.* appears the "
                                   "scalars calculated by all the proceding actions in the input file are taken.  Some actions have multi-component outputs and "
@@ -47,17 +47,28 @@ void ActionWithArguments::registerKeywords(Keywords& keys){
 }
 
 void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Value*>&arg){
-  vector<string> c; arg.clear(); parseVector(key,c); interpretArgumentList(c,arg);
+  vector<string> c; arg.clear(); parseVector(key,c); 
+  if( c.size()==0 && (keywords.style(key,"compulsory") || keywords.style(key,"hidden")) ){
+    std::string def; if( keywords.getDefaultValue(key,def) ) c.push_back( def );
+  }
+  interpretArgumentList(c,arg);
+}
+
+bool ActionWithArguments::parseArgumentList(const std::string&key,int i,std::vector<Value*>&arg){
+  vector<string> c; 
+  arg.clear(); 
+  if(parseNumberedVector(key,i,c)) {
+    interpretArgumentList(c,arg);
+    return true;
+  } else return false;
 }
 
 void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& c, std::vector<Value*>&arg){
-  
   for(unsigned i=0;i<c.size();i++){
       // is a regex? then just interpret it. The signal is () 
       std::size_t found1 = c[i].find("(");
-      std::size_t found2 ;
       if(found1!=std::string::npos){
-        found2=c[i].find(")",found1+1,1); // find it again
+        std::size_t found2=c[i].find(")",found1+1,1); // find it again
 	if(found2!=std::string::npos){
 		// start regex parsing
 #ifdef __PLUMED_HAS_CREGEX 
@@ -84,10 +95,8 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
            	std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
                 if( all.empty() ) error("your input file is not telling plumed to calculate anything");
 	        for(unsigned j=0;j<all.size();j++){
-				std::string thisargument=all[j]->getLabel();	
 				std::vector<std::string> ss=all[j]->getComponentsVector();	
 				for(unsigned  k=0;k<ss.size();++k){
-					thisargument=ss[k];	
 					unsigned ll=strlen(ss[k].c_str())+1;
 					char*str;
 					str=new char [ll];
@@ -146,6 +155,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
       	           str+=plumed.getActionSet().getLabelList()+")";
       	  	 error("cannot find action named " + a + str);
       	     }
+             if( action->getNumberOfComponents()==0 ) error("found " + a +".* indicating use all components calculated by action with label " + a + " but this action has no components");
       	     for(int k=0;k<action->getNumberOfComponents();++k) arg.push_back(action->copyOutput(k));
       	  } else if ( a=="*" ){
       	     // Take components from all actions with a specific name
@@ -235,7 +245,7 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
   Action(ao),
   lockRequestArguments(false)
 {
-  if( keywords.exists("ARG") ){
+  if( keywords.exists("ARG") && !keywords.exists("DATA") ){
      vector<Value*> arg;
      parseArgumentList("ARG",arg);
 
@@ -270,7 +280,7 @@ void ActionWithArguments::calculateNumericalDerivatives( ActionWithValue* a ){
   a->clearDerivatives();
   for(int j=0;j<nval;j++){
     Value* v=a->copyOutput(j);
-    if( v->getNumberOfDerivatives()>0 ) for(int i=0;i<npar;i++) v->addDerivative(i,(value[i*nval+j]-a->getOutputQuantity(j))/sqrt(epsilon));
+    if( v->hasDerivatives() ) for(int i=0;i<npar;i++) v->addDerivative(i,(value[i*nval+j]-a->getOutputQuantity(j))/sqrt(epsilon));
   }
 }
 

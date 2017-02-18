@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014,2015 The plumed team
+   Copyright (c) 2014-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -27,6 +27,7 @@ MultiValue::MultiValue( const unsigned& nvals, const unsigned& nder ):
 values(nvals),
 nderivatives(nder),
 derivatives(nvals*nder),
+tmpval(0),
 tmpder(nder),
 atLeastOneSet(false)
 {
@@ -56,7 +57,7 @@ void MultiValue::clear( const unsigned& ival ){
 }
 
 void MultiValue::clearTemporyDerivatives(){
-  unsigned ndert=hasDerivatives.getNumberActive(); 
+  unsigned ndert=hasDerivatives.getNumberActive(); tmpval=0.;
   for(unsigned i=0;i<ndert;++i) tmpder[ hasDerivatives[i] ]=0.;
 }
 
@@ -98,14 +99,14 @@ void MultiValue::copyDerivatives( MultiValue& outvals ){
   }
 }
 
-void MultiValue::quotientRule( const unsigned& nder, const double& denom, const unsigned& oder ){
+void MultiValue::quotientRule( const unsigned& nder, const unsigned& oder ){
   plumed_dbg_assert( nder<values.size() && oder<values.size() );
   if( !hasDerivatives.updateComplete() ) hasDerivatives.updateActiveMembers();
 
   unsigned ndert=hasDerivatives.getNumberActive(); double wpref;
   unsigned obase=oder*nderivatives, nbase=nder*nderivatives;
 
-  if( fabs(denom)>epsilon ){ wpref=1.0/denom; } 
+  if( fabs(tmpval)>epsilon ){ wpref=1.0/tmpval; } 
   else{ wpref=1.0; }
 
   double pref = values[nder]*wpref*wpref;

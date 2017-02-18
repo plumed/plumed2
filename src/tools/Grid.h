@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -170,9 +170,9 @@ public:
  virtual double getValueAndDerivatives(const std::vector<unsigned> & indices, std::vector<double>& der) const;
  virtual double getValueAndDerivatives(const std::vector<double> & x, std::vector<double>& der) const;
 /// Get the difference from the contour
- double getDifferenceFromContour(const std::vector<double> & x, std::vector<double>& der); 
+ double getDifferenceFromContour(const std::vector<double> & x, std::vector<double>& der) const ; 
 /// Find a set of points on a contour in the function
- void findSetOfPointsOnContour(const double& target, unsigned& npoints, std::vector<std::vector<double> >& points );
+ void findSetOfPointsOnContour(const double& target, const std::vector<bool>& nosearch, unsigned& npoints, std::vector<std::vector<double> >& points );
 
 /// set grid value 
  virtual void setValue(index_t index, double value);

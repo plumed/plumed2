@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -208,7 +208,6 @@ void FuncPathMSD::calculate(){
  // log.printf("NOW CALCULATE! \n");
   double s_path=0.;
   double partition=0.;
-  double tmp;
   if(neighpair.empty()){ // at first step, resize it
        neighpair.resize(allArguments.size());  
        for(unsigned i=0;i<allArguments.size();i++)neighpair[i].first=allArguments[i]; 
@@ -229,7 +228,7 @@ void FuncPathMSD::calculate(){
   int n=0;
   for(pairiter it=neighpair.begin();it!=neighpair.end();++it){ 
     double expval=(*it).second;
-    tmp=lambda*expval*(s_path-(indexmap[(*it).first]))/partition;
+    double tmp=lambda*expval*(s_path-(indexmap[(*it).first]))/partition;
     setDerivative(val_s_path,n,tmp);
     setDerivative(val_z_path,n,expval/partition);
     n++;

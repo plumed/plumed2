@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014,2015 The plumed team
+   Copyright (c) 2014-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -66,8 +66,7 @@ VectorMultiColvar(ao)
   if( natoms!=3 && natoms!=4 ) error("number of atoms in molecule specification is wrong.  Should be three or four.");
 
   if( all_atoms.size()==0 ) error("No atoms were specified");
-  setVectorDimensionality( 3, natoms );
-  ActionAtomistic::requestAtoms( all_atoms );
+  setVectorDimensionality( 3 ); setupMultiColvarBase( all_atoms );
 }
 
 void MoleculePlane::calculateVector( multicolvar::AtomValuePack& myatoms ) const { 

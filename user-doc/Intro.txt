@@ -10,10 +10,7 @@ new methods, more straightforward to add it to MD codes and hopefully simpler to
 This is the user manual -  if you want to modify PLUMED or to understand how it works internally, have a look at the 
 <a href="../../developer-doc/html/index.html"> developer manual </a>.
 
-\htmlonly
-An experimental PDF copy of this manual can be found
-<a href="../manual.pdf"> here </a>.
-\endhtmlonly
+@PDFMANUAL@
 
 To understand the difference between PLUMED 1 and PLUMED 2, and to
 follow the development of PLUMED 2, you can look at the detailed \ref Changelog.
@@ -27,7 +24,7 @@ To install PLUMED 2, see this page: \ref Installation
 
 @VERSION@
 
-Since version 2.1 we provide an experimental PDF manual.
+Since version 2.1 we optionally provide an experimental PDF manual.
 The PDF version is still not complete and has some known issue (e.g. some
 links are not working properly and images are not correctly included),
 and the html documentation should be considered as the official one.
@@ -67,6 +64,8 @@ As far as we know, the following MD codes can be used with PLUMED 2 out of the b
   [here](http://davidebr.github.io/espresso/).
 - [PINY-MD](http://github.com/TuckermanGroup/PINY), in its plumed branch.
 - [IPHIGENIE](http://sourceforge.net/projects/iphigenie/).
+- [AceMD](http://www.multiscalelab.org/acemd/).
+- [OpenMM](http://openmm.org), using the [openmmp-plumed plugin](http://github.com/peastman/openmm-plumed).
 
 Please refer to the documentation of the MD code to know how to use it with the latest PLUMED release.
 If you maintain another MD code that is PLUMED-ready let us know and we will add it to this list.
@@ -82,7 +81,25 @@ or enhanced sampling calculations.
 \page Changelog Change Log
 
 Here you can find a history of changes across different PLUMED versions.
-We mostly add new features without breaking exising ones.
+The future releases are expected to follow more or less the pace
+of the old release. This means:
+- Approximately once per year, after summer, a new release (2.X). These releases
+  typically group together all the features that were contributed during the
+  year.
+- Approximately every three month, we announce a patch (e.g. 2.2.X).
+  This typically contains bug fixes, and could occasionally contain a new feature.
+
+A few months before each new release we provide a beta release.
+We typically maintain release branches until the fifth patch release (2.X.5),
+which should come out approximately 15 month after the original release (2.X).
+After that, branches are not supported anymore.
+
+Notice that occasionally we publish patches on the mailing list.
+These patches are always included in the following release, but we encourage
+users that want to be up to date to follow the mailing list.
+
+Below you can find change logs for all the published releases.
+We mostly add new features without breaking existing ones.
 However, some of the changes lead to incompatible behavior.
 In the Change Log we try to give as much visibility as possible to these changes
 to avoid surprises.

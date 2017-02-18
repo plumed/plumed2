@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -104,8 +104,6 @@ void ABMD::registerKeywords(Keywords& keys){
   keys.add("optional","MIN","Array of starting values for the bias (set rho_m(t), otherwise it is set using the current value of ARG)");
   keys.add("optional","NOISE","Array of white noise intensities (add a temperature to the ABMD)");
   keys.add("optional","SEED","Array of seeds for the white noise (add a temperature to the ABMD)");
-  componentsAreNotOptional(keys);
-  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
   keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
   keys.addOutputComponent("_min","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
                                  " These quantities will be named with the arguments of the bias followed by "
@@ -147,7 +145,6 @@ random(getNumberOfArguments())
      if(min[i]!=-1.0) getPntrToComponent(str_min)->set(min[i]);
   }
   for(unsigned i=0;i<getNumberOfArguments();i++) {random[i].setSeed(-seed[i]);}
-  addComponent("bias"); componentIsNotPeriodic("bias");
   addComponent("force2"); componentIsNotPeriodic("force2");
 }
 
@@ -179,10 +176,9 @@ void ABMD::calculate(){
       ene += 0.5*k*(cv2-min[i])*(cv2-min[i]);
       totf2+=f*f;
     }
-    std::string str_min=getPntrToArgument(i)->getName()+"_min";
-    getPntrToComponent(str_min)->set(min[i]);
+    getPntrToComponent(i+1)->set(min[i]);
   }
-  getPntrToComponent("bias")->set(ene);
+  setBias(ene);
   getPntrToComponent("force2")->set(totf2);
 }
 

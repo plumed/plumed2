@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -79,7 +79,7 @@ keyword. Thus, everytime it is modified, all the headers are repeated in the out
 - most methods return a reference to the OFile itself, to allow chaining many calls on the same line
 (this is similar to << operator in std::ostream)
 
-\section Using correctly OFile in PLUMED
+\section using-correctly-ofile Using correctly OFile in PLUMED
 
 When a OFile object is used in PLUMED it can be convenient to link() it
 to the Action object where it is defined, or to the PlumedMain object.
@@ -90,7 +90,11 @@ the enforceRestart() method before opening a file.
 
 To have all files managed consistently, it is important to use OFile in the proper way.
 This should allow multi-replica plumed, restart and backups to work in
-the expected way.
+the expected way. For this reason all the operations in OFile and IFile 
+are synchronizing all the processors of the group, so call to OFile functions
+should always be performed by all processes; for this reason is also not usefull
+to use Log for debugging because only master threads will actually write.
+For debugging is better to use the standard stderr.
 
 \verbatim
 int main(){
@@ -183,6 +187,8 @@ public virtual FileBase{
   bool checkRestart()const;
 /// True if restart behavior should be forced
   bool enforceRestart_;
+/// True if backup behavior (i.e. non restart) should be forced
+  bool enforceBackup_;
 public:
 /// Constructor
   OFile();
@@ -251,9 +257,11 @@ this method can be used to clean the field list.
   OFile&rewind();
 /// Flush a file
   virtual FileBase&flush();
-/// Enforce restart, also if the attached plume object is not restarting.
+/// Enforce restart, also if the attached plumed object is not restarting.
 /// Useful for tests
   OFile&enforceRestart();
+/// Enforce backup, even if the attached plumed object is restarting.
+  OFile&enforceBackup();
 };
 
 /// Write using << syntax

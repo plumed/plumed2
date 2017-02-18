@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -28,7 +28,7 @@
 namespace PLMD {
 namespace analysis {
 
-//+PLUMEDOC ANALYSIS COMMITTOR 
+//+PLUMEDOC PRINTANALYSIS COMMITTOR 
 /*
 Does a committor analysis.
 
@@ -123,7 +123,7 @@ fmt("%f")
 
 
   for(unsigned b=0;b<nbasins;b++) {
-    log.printf("  BASIN %i definition:\n", b+1);
+    log.printf("  BASIN %u definition:\n", b+1);
     for(unsigned i=0;i<getNumberOfArguments();++i){
       if(lowerlimits[b][i]>upperlimits[b][i]) error("COMMITTOR: UPPER bounds must always be greater than LOWER bounds");
       log.printf(" %f - %f\n", lowerlimits[b][i], upperlimits[b][i]);

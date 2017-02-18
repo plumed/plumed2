@@ -3,13 +3,6 @@
 set -e
 set -x
 
-sudo apt-get install -y texlive            
-sudo apt-get install -y texlive-fonts-extra
-sudo apt-get install -y latex-xcolor       
-sudo apt-get install -y texlive-extra-utils
-sudo apt-get install -y texlive-font-utils 
-sudo apt-get install -y texlive-full       
-
 git clone https://github.com/doxygen/doxygen.git
 
 cd doxygen
@@ -24,8 +17,11 @@ fi
 
 git checkout $version
 
-./configure --prefix="$HOME/opt"
-make
+mkdir build
+cd build
+cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="$HOME/opt" ../
+make -j 4
 make install
+
 cd ../
 

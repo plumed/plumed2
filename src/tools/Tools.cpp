@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -330,6 +330,10 @@ double Tools::bessel0( const double& val ){
   double ax=fabs(val), y=3.75/ax, bx=std::exp(ax)/sqrt(ax);
   ax=0.39894228+y*(0.01328592+y*(0.00225319+y*(-0.00157565+y*(0.00916281+y*(-0.02057706+y*(0.02635537+y*(-0.01647633+y*0.00392377)))))));
   return ax*bx;
+}
+
+bool Tools::startWith(const std::string & full,const std::string &start){
+  return (full.substr(0,start.length())==start);
 }
 
 

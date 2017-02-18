@@ -92,27 +92,35 @@ PLUMED_MULTICOLVAR_INIT(ao)
 {
   // Read in the atoms
   usespecies=true; weightHasDerivatives=false;
-  int natoms=2; std::vector<AtomNumber> all_atoms;
-  std::vector<unsigned> sizes(1);
-  std::vector<std::string> sitenames(1); sitenames[0]="SITES";
-  readSpeciesKeyword("HYDROGENS",sitenames,sizes,natoms,all_atoms);
-  block1upper=sizes[0]+1; block2lower=0;
-  if( all_atoms.size()==0 ){
-      sizes.resize(2); sitenames.resize(2); 
-      sitenames[0]="DONORS"; sitenames[1]="ACCEPTORS";
-      readSpeciesKeyword("HYDROGENS",sitenames,sizes,natoms,all_atoms);
-      block1upper=block2lower=sizes[0]+1; 
-  } 
-  if( all_atoms.size()==0 ) error("no atoms read in use either HYDROGENS+SITES or HYDROGENS+ACCEPTORS+DONORS");
+  // Read in hydrogen atom indicees
+  std::vector<AtomNumber> all_atoms; parseMultiColvarAtomList("HYDROGENS",-1,all_atoms);
+  if( atom_lab.size()==0 ) error("no hydrogens specified in input file");
+  // Now create a task list - one task per hydrogen
+  unsigned nH = atom_lab.size(); for(unsigned i=0;i<nH;++i) addTaskToList(i); 
+  // Read in other atoms in hydrogen bond
+  ablocks.resize(1); parseMultiColvarAtomList("SITES",-1,all_atoms); 
+  if( atom_lab.size()>nH ){
+      block1upper=atom_lab.size() - nH + 1; block2lower=0; ablocks[0].resize( atom_lab.size() - nH ); 
+      for(unsigned i=nH;i<atom_lab.size();++i) ablocks[0][i-nH]=i; 
+  } else {
+      parseMultiColvarAtomList("DONORS",-1,all_atoms);
+      block1upper=block2lower=atom_lab.size() - nH + 1;
+      for(unsigned i=nH;i<atom_lab.size();++i) ablocks[0].push_back(i);
+      parseMultiColvarAtomList("ACCEPTORS",-1,all_atoms);
+      if( atom_lab.size()>(block1upper+nH-1) || (block1upper-1)>0 ) error("no acceptor donor pairs in input specified therefore no hydrogen bonds");
+      for(unsigned i=nH+block2lower-1;i<atom_lab.size();++i) ablocks[0].push_back(i);
+  }  
+  setupMultiColvarBase( all_atoms );
 
   double reg; parse("REGULARISE",reg);
-  if( getNumberOfInputAtomTypes()==1 ){  
+  unsigned nnode_t=mybasemulticolvars.size(); if( nnode_t==0 ) nnode_t=1;
+  if( nnode_t==1 ){  
       std::string errormsg, desc; parse("CLUSTERS",desc);
       hbpamm_obj.resize(1,1);
       hbpamm_obj(0,0).setup(desc, reg, this, errormsg );
       if( errormsg.length()>0 ) error( errormsg );
   } else {
-      unsigned nr=getNumberOfInputAtomTypes(), nc=getNumberOfInputAtomTypes();
+      unsigned nr=nnode_t, nc=nnode_t;
       hbpamm_obj.resize( nr, nc );
       for(unsigned i=0;i<nr;++i){
           // Retrieve the base number  
@@ -151,7 +159,7 @@ PLUMED_MULTICOLVAR_INIT(ao)
   rcut2 = sfmax*sfmax;
 
   // Setup the multicolvar base
-  setupMultiColvarBase( all_atoms, true );
+  setupMultiColvarBase( all_atoms );
   // And setup the ActionWithVessel
   checkRead();
 }
@@ -165,8 +173,8 @@ double HBPammHydrogens::compute( const unsigned& tindex, multicolvar::AtomValueP
       for(unsigned j=1;j<myatoms.getNumberOfAtoms();++j){
           if( i==j || j<block2lower ) continue ;
           // Get the base colvar numbers
-          unsigned dno = getBaseColvarNumber( myatoms.getIndex(i) );
-          unsigned ano = getBaseColvarNumber( myatoms.getIndex(j) );
+          unsigned dno = atom_lab[myatoms.getIndex(i)].first; 
+          unsigned ano = atom_lab[myatoms.getIndex(j)].first; 
           Vector d_da=getSeparation( myatoms.getPosition(i), myatoms.getPosition(j) );
           if ( (md_da=d_da[0]*d_da[0])<rcut2 && 
                (md_da+=d_da[1]*d_da[1])<rcut2 &&

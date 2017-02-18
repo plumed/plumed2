@@ -1,0 +1,131 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+# $Id: Portfile 123374 2014-08-08 21:53:07Z mojca@macports.org $
+
+PortSystem          1.0
+
+name                plumed
+PortGroup           mpi 1.0
+PortGroup           linear_algebra 1.0
+PortGroup           debug 1.0
+
+version             @_VERSION_@
+revision            @_REVISION_@
+categories          science
+license             LGPL-3
+maintainers         gmail.com:giovanni.bussi
+description         PLUMED is a plugin for molecular dynamics
+long_description    PLUMED is a plugin for molecular dynamics that can be used \
+                    in combination with popular molecular dynamics codes to perform biased simulations. \
+                    Additionally, it can be used as a standalone tool to analyze trajectories.
+
+platforms           darwin
+
+homepage            http://www.plumed.org/
+
+@_FETCH_@
+
+# This is required so that patch made with "git format-patch" work correctly
+# patch.pre_args -p1
+# In case patches from github should be included to fix behavior on macports one should
+# - put patch files (as obtained with git format-patch) in files/ directory
+# - list their name here:
+
+# Disable additional features.
+# they are then re-enabled when selecting proper variants
+# this is important for features that require an additional package to be
+# sure that even if the user has that package already installed plumed is
+# not going to use it.
+configure.args-append \
+               --disable-matheval \
+               --disable-xdrfile \
+               --disable-molfile-plugins \
+               --disable-zlib \
+               --disable-mpi \
+               --disable-gsl
+
+# Hardcode path for libplumedKernel.dylib.
+# This allows to patch MD codes using the --runtime option but using as
+# default kernel the installed one. In this way, MacPorts users
+# can just use patched MD codes with the installed plumed or replace it
+# by setting PLUMED_KERNEL at runtime
+configure.cppflags-append "-D__PLUMED_DEFAULT_KERNEL=${prefix}/lib/libplumedKernel.dylib"
+
+compilers.choose    cc cxx
+mpi.setup
+
+if {[mpi_variant_isset]} {
+  configure.args-replace --disable-mpi --enable-mpi
+}
+
+variant matheval description {Enable libmatheval} {
+  configure.args-replace --disable-matheval --enable-matheval
+  depends_lib-append port:libmatheval
+}
+
+variant xdrfile description {Enable xdrfile} {
+  configure.args-replace --disable-xdrfile --enable-xdrfile
+  depends_lib-append port:xdrfile
+}
+
+variant zlib description {Enable zlib} {
+  configure.args-replace --disable-zlib --enable-zlib
+  depends_lib-append port:zlib
+}
+
+variant gsl description {Enable gsl} {
+  configure.args-replace --disable-gsl --enable-gsl
+  depends_lib-append port:gsl
+}
+
+variant molfile description {Enable molfile - includes some BSD code} {
+  license ${license} BSD
+  configure.args-replace --disable-molfile-plugins --enable-molfile-plugins
+}
+
+variant doc description {Also compile documentation} {
+  depends_build-append port:doxygen
+  depends_build-append port:graphviz
+  build.target all_plus_docs
+}
+
+# this is a tcl variable contains a concatenated list of modules
+# to be activated
+
+set plumed_modules reset
+
+variant crystallization description {Enable crystallization module} {
+  set plumed_modules ${plumed_modules}+crystallization
+}
+
+variant manyrestraints description {Enable manyrestraints module} {
+  set plumed_modules ${plumed_modules}+manyrestraints
+}
+
+variant adjmat description {Enable adjmat module} {
+  set plumed_modules ${plumed_modules}+adjmat
+}
+
+#### I leave this out momentarily since it has problems
+# variant imd description {Enable imd module - includes some proprietary code} {
+#   license ${license} Restrictive
+#   set plumed_modules ${plumed_modules}+imd
+# }
+ 
+pre-configure {
+  # commands should be included in a pre-configure block to access tcl variables
+  configure.args-append --enable-modules=${plumed_modules}
+  configure.ldflags-append ${linalglib}
+}
+
+# Default variants include no optional modules.
+# Additionally, the link libraries that are very useful (e.g. matheval of xdrfile)
+# and quick to compile
+default_variants +matheval +xdrfile +zlib +molfile
+
+# This is required since PLUMED installation does not do it explicitly.
+# It might be removed when this will be incorporated upstream
+post-destroot {
+    system "install_name_tool -id ${prefix}/lib/libplumed.dylib ${destroot}${prefix}/lib/libplumed.dylib"
+    system "install_name_tool -id ${prefix}/lib/libplumedKernel.dylib ${destroot}${prefix}/lib/libplumedKernel.dylib"
+}
+

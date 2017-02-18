@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -76,6 +76,8 @@ public:
   virtual void MD2double(const void*,double&)const=0;
 /// Convert a double to a pointer to an MD-real
   virtual void double2MD(const double&,void*)const=0;
+
+  virtual Vector getMDforces(const unsigned index)const=0;
 /// Retrieve box as a plumed Tensor
   virtual void getBox(Tensor &)const=0;
 /// Retrieve selected positions.

@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -27,7 +27,7 @@
 #include <string>
 #include <vector>
 #include <set>
-#include <map>
+#include <stack>
 
 
 // !!!!!!!!!!!!!!!!!!!!!!    DANGER   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
@@ -133,12 +133,19 @@ private:
 /// Flag for restart
   bool restart;
 
+/// Flag for checkpointig
+  bool doCheckPoint;
+
   std::set<FileBase*> files;
   typedef std::set<FileBase*>::iterator files_iterator;
 
 /// Stuff to make plumed stop the MD code cleanly
   int* stopFlag;
   bool stopNow;
+
+/// Stack for update flags.
+/// Store information used in class \ref UpdateIf
+  std::stack<bool> updateFlags;
 
 public:
 /// Flag to switch off virial calculation (for debug and MD codes with no barostat)
@@ -149,9 +156,6 @@ public:
 
 /// Add a citation, returning a string containing the reference number, something like "[10]"
   std::string cite(const std::string&);
-
-/// word list command
-  std::map<std::string, int> word_map;
 
 /// Get number of threads that can be used by openmp
   unsigned getNumThreads()const;
@@ -192,6 +196,13 @@ public:
   void readInputWords(const std::vector<std::string> &  str);
 
 /**
+  Read an input string.
+  \param str name of the string
+  At variance with readInputWords(), this is splitting the string into words
+*/
+  void readInputLine(const std::string & str);
+
+/**
   Initialize the object.
   Should be called once.
 */
@@ -216,9 +227,15 @@ public:
   void shareData();
 /**
   Perform the calculation.
-  Shortcut for waitData() + justCalculate() + justApply()
+  Shortcut for waitData() + justCalculate() + justApply().
+  Equivalently: waitData() + justCalculate() + backwardPropagate() + update().
 */
   void performCalc();
+/**
+  Perform the calculation without update()
+  Shortcut for: waitData() + justCalculate() + backwardPropagate()
+*/
+  void performCalcNoUpdate();
 /**
   Complete PLUMED calculation.
   Shortcut for prepareCalc() + performCalc()
@@ -235,10 +252,20 @@ public:
 */
   void justCalculate();
 /**
+  Backward propagate and update.
+  Shortcut for backwardPropagate() + update()
+  I leave it here for backward compatibility
+*/
+  void justApply();
+/**
   Perform the backward loop on active actions.
   Needed to apply the forces back.
 */
-  void justApply();
+  void backwardPropagate();
+/**
+  Call the update() method.
+*/
+  void update();
 /**
   If there are calculations that need to be done at the very end of the calculations this
   makes sures they are done
@@ -280,6 +307,8 @@ public:
   bool getRestart()const;
 /// Set restart flag
   void setRestart(bool f){restart=f;}
+/// Check if checkpointing 
+  bool getCPT()const;
 /// Set exchangeStep flag
   void setExchangeStep(bool f);
 /// Get exchangeStep flag
@@ -295,6 +324,13 @@ public:
 
 /// Access to exchange patterns
   ExchangePatterns& getExchangePatterns(){return exchangePatterns;}
+
+/// Push a state to update flags
+  void updateFlagsPush(bool);
+/// Pop a state from update flags
+  void updateFlagsPop();
+/// Get top of update flags
+  bool updateFlagsTop();
 };
 
 /////
@@ -326,6 +362,11 @@ bool PlumedMain::getRestart()const{
 }
 
 inline
+bool PlumedMain::getCPT()const{
+  return doCheckPoint;
+}
+
+inline
 void PlumedMain::setExchangeStep(bool s){
   exchangeStep=s;
 }
@@ -338,6 +379,21 @@ bool PlumedMain::getExchangeStep()const{
 inline
 void PlumedMain::resetActive(bool active){
   this->active=active;
+}
+
+inline
+void PlumedMain::updateFlagsPush(bool on){
+  updateFlags.push(on);
+}
+
+inline
+void PlumedMain::updateFlagsPop(){
+  updateFlags.pop();
+}
+
+inline
+bool PlumedMain::updateFlagsTop(){
+  return updateFlags.top();
 }
 
 }

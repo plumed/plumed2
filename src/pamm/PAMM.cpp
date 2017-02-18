@@ -148,6 +148,7 @@ void PAMM::registerKeywords( Keywords& keys ){
                                  "MEAN commands appear on the input line can be referenece elsewhere in the input file by using the name of the quantity followed " 
                                  "followed by a numerical identifier e.g. <em>label</em>.lessthan-1, <em>label</em>.lessthan-2 etc.  Alternatively, you can "
                                  "customize the labels of the quantities by using the LABEL keyword in the description of the keyword.");
+  keys.remove("ALL_INPUT_SAME_TYPE");
 }
 
 PAMM::PAMM(const ActionOptions& ao):
@@ -174,9 +175,8 @@ MultiColvarFunction(ao)
    std::string errorstr, filename; parse("CLUSTERS",filename); 
    mypamm.setup( filename, regulariser, valnames, pbc, min, max, errorstr );
    if( errorstr.length()>0 ) error( errorstr );
-
    // This builds the lists
-   buildSets( false );
+   buildSets();
 }
 
 unsigned PAMM::getNumberOfQuantities() const {
@@ -188,7 +188,7 @@ void PAMM::calculateWeight( multicolvar::AtomValuePack& myatoms ){
    // Weight of point is average of weights of input colvars?
    std::vector<double> tval(2); double ww=0;
    for(unsigned i=0;i<nvars;++i){
-       getVectorForTask( myatoms.getIndex(i), false, tval ); ww+=tval[0];
+       getInputData( i, false, myatoms, tval ); ww+=tval[0];
    }
    myatoms.setValue( 0, ww / static_cast<double>( nvars ) );
 
@@ -196,10 +196,10 @@ void PAMM::calculateWeight( multicolvar::AtomValuePack& myatoms ){
       double pref = 1.0 / static_cast<double>( nvars );
       for(unsigned ivar=0;ivar<nvars;++ivar){
           // Get the values of derivatives
-          MultiValue& myder=getVectorDerivatives( myatoms.getIndex(ivar), false );
+          MultiValue& myder=getInputDerivatives( ivar, false, myatoms );
           for(unsigned j=0;j<myder.getNumberActive();++j){
               unsigned jder=myder.getActiveIndex(j);
-              myatoms.addDerivative( 0, jder, pref*myder.getDerivative( 1, jder ) );
+              myatoms.addDerivative( 0, jder, pref*myder.getDerivative( 0, jder ) );
           }
       }
    }
@@ -212,7 +212,7 @@ double PAMM::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatom
    std::vector<double> tval(2), invals( nvars ), vals( mypamm.getNumberOfKernels() );
 
    for(unsigned i=0;i<nvars;++i){
-       getVectorForTask( myatoms.getIndex(i), false, tval ); invals[i]=tval[1];
+       getInputData( i, false, myatoms, tval ); invals[i]=tval[1];
    }
    mypamm.evaluate( invals, vals, tderiv );
 
@@ -224,11 +224,11 @@ double PAMM::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatom
        std::vector<double> mypref( 1 + vals.size() );
        for(unsigned ivar=0;ivar<nvars;++ivar){
            // Get the values of the derivatives
-           MultiValue& myder = getVectorDerivatives( myatoms.getIndex(ivar), false );
+           MultiValue& myder = getInputDerivatives( ivar, false, myatoms );
            // And calculate the derivatives
            for(unsigned i=0;i<vals.size();++i) mypref[1+i] = tderiv[i][ivar];    
            // This is basically doing the chain rule to get the final derivatives
-           superChainRule( 1, 1, 1+vals.size(), myatoms.getIndex(ivar), mypref, myder, myatoms );
+           splitInputDerivatives( 1, 1, 1+vals.size(), ivar, mypref, myder, myatoms );
            // And clear the derivatives
            myder.clearAll();
        }

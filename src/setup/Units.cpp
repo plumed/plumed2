@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -73,6 +73,8 @@ void Units::registerKeywords( Keywords& keys ){
   keys.add("optional","LENGTH","the units of lengths.  Either specify a conversion factor from the default, nm, or A (for angstroms) or um");
   keys.add("optional","ENERGY","the units of energy.  Either specify a conversion factor from the default, kj/mol, or use j/mol or kcal/mol");
   keys.add("optional","TIME","the units of time.  Either specify a conversion factor from the default, ps, or use ns or fs");
+  keys.add("optional","MASS","the units of masses.  Specify a conversion factor from the default, amu");
+  keys.add("optional","CHARGE","the units of charges.  Specify a conversion factor from the default, e");
   keys.addFlag("NATURAL",false,"use natural units");
 }
 
@@ -101,6 +103,18 @@ ActionSetup(ao)
   if(s.length()>0) u.setTime(s);
   if(u.getTimeString().length()>0) log.printf("  time: %s\n",u.getTimeString().c_str());
   else                             log.printf("  time: %f ps\n",u.getTime());
+
+  s="";
+  parse("CHARGE",s);
+  if(s.length()>0) u.setCharge(s);
+  if(u.getChargeString().length()>0) log.printf("  time: %s\n",u.getChargeString().c_str());
+  else                               log.printf("  time: %f e\n",u.getCharge());
+
+  s="";
+  parse("MASS",s);
+  if(s.length()>0) u.setMass(s);
+  if(u.getMassString().length()>0) log.printf("  time: %s\n",u.getMassString().c_str());
+  else                             log.printf("  time: %f amu\n",u.getMass());
 
   bool natural=false;
   parseFlag("NATURAL",natural);

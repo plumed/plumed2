@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -123,7 +123,9 @@ PLUMED_MULTICOLVAR_INIT(ao)
   } else plumed_error();
 
   // Read in the atoms
-  int natoms=2; readAtoms( natoms );
+  std::vector<AtomNumber> all_atoms;
+  readTwoGroups( "GROUP", "GROUPA", "GROUPB", all_atoms );
+  int natoms=2; readAtoms( natoms, all_atoms );
   // And check everything has been read in correctly
   checkRead();
 }

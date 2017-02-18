@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -41,7 +41,7 @@ The following is an input for a calculation with an external potential that is
 defined in the file bias.dat and that acts on the distance between atoms 3 and 5.
 \verbatim
 DISTANCE ATOMS=3,5 LABEL=d1
-EXTERNAL ARG=d1 FILENAME=bias.dat LABEL=external 
+EXTERNAL ARG=d1 FILE=bias.dat LABEL=external 
 \endverbatim
 (See also \ref DISTANCE \ref PRINT).
 
@@ -64,7 +64,7 @@ potential acting on two torsional angles:
 \verbatim
 TORSION ATOMS=4,5,6,7 LABEL=t1
 TORSION ATOMS=6,7,8,9 LABEL=t2
-EXTERNAL ARG=t1,t2 FILENAME=bias.dat LABEL=ext
+EXTERNAL ARG=t1,t2 FILE=bias.dat LABEL=ext
 \endverbatim
 
 The header in the file bias.dat for this calculation would read:
@@ -113,8 +113,6 @@ void External::registerKeywords(Keywords& keys){
   keys.add("compulsory","FILE","the name of the file containing the external potential.");
   keys.addFlag("NOSPLINE",false,"specifies that no spline interpolation is to be used when calculating the energy and forces due to the external potential");
   keys.addFlag("SPARSE",false,"specifies that the external potential uses a sparse grid");
-  componentsAreNotOptional(keys);
-  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
 }
 
 External::~External(){
@@ -140,8 +138,6 @@ BiasGrid_(NULL)
   if(spline){log.printf("  External potential uses spline interpolation\n");}
   if(sparsegrid){log.printf("  External potential uses sparse grid\n");}
   
-  addComponent("bias"); componentIsNotPeriodic("bias");
-
 // read grid
   IFile gridfile; gridfile.open(filename);
   std::string funcl=getLabel() + ".bias";  
@@ -162,12 +158,11 @@ void External::calculate()
 
   double ene=BiasGrid_->getValueAndDerivatives(cv,der);
 
-  getPntrToComponent("bias")->set(ene);
+  setBias(ene);
 
-// set Forces 
   for(unsigned i=0;i<ncv;++i){
-   const double f=-der[i];
-   setOutputForce(i,f);
+    const double f=-der[i];
+    setOutputForce(i,f);
   }
 }
 

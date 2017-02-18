@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014,2015 The plumed team
+   Copyright (c) 2015,2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -25,24 +25,28 @@ namespace PLMD {
 namespace adjmat {
 
 void ClusterAnalysisBase::registerKeywords( Keywords& keys ){
-  MultiColvarFunction::registerKeywords( keys );
-  keys.remove("DATA");
+  MultiColvarBase::registerKeywords( keys );
   keys.add("compulsory","CLUSTERS","the label of the action that does the clustering");
 }
 
 ClusterAnalysisBase::ClusterAnalysisBase(const ActionOptions& ao):
 Action(ao),
-MultiColvarFunction(ao),
+MultiColvarBase(ao),
+myfvals(0,0),
+myfatoms( myfvals, this ),
 myclusters(NULL)
 {
   // This makes these colvars behave appropriately with dump and analysis
-  usespecies=true;
+  matsums=usespecies=true; std::vector<AtomNumber> fake_atoms;
   // Find what action we are taking the clusters from
-  std::vector<std::string> matname(1); parse("CLUSTERS",matname[0]);
-  bool found_cluster=interpretInputMultiColvars(matname,0.0);
-  if(!found_cluster) error("unable to interpret input clusters " + matname[0] );
-  myclusters = dynamic_cast<ClusteringBase*>( mybasemulticolvars[0] );
+  if( !parseMultiColvarAtomList("CLUSTERS",-1,fake_atoms ) ) error("unable to interpret input CLUSTERS" );
+  if( mybasemulticolvars.size()!=1 ) error("should be exactly one multicolvar input");
+  atom_lab.resize(0); myclusters = dynamic_cast<ClusteringBase*>( mybasemulticolvars[0] );
   if( !myclusters ) error("input label is not that of a DFS object");
+  // Setup the atom pack
+  myfatoms.setNumberOfAtoms( myclusters->getNumberOfNodes() );
+  myfvals.getIndices().resize( myclusters->getNumberOfNodes() );
+  for(unsigned i=0;i<myclusters->getNumberOfNodes();++i) myfatoms.setAtomIndex( i, i );
 }
 
 void ClusterAnalysisBase::turnOnDerivatives(){ 
@@ -52,6 +56,10 @@ void ClusterAnalysisBase::turnOnDerivatives(){
      if( getPntrToVessel(i)->getName()=="VMEAN" ) error("VMEAN of cluster is not differentiable");  
   }
   MultiColvarBase::turnOnDerivatives();
+}
+
+unsigned ClusterAnalysisBase::getNumberOfQuantities() const {
+  return myclusters->getNumberOfQuantities();
 }
 
 unsigned ClusterAnalysisBase::getNumberOfNodes() const {
@@ -75,15 +83,23 @@ bool ClusterAnalysisBase::nodeIsActive( const unsigned& ind ) const {
 }
 
 void ClusterAnalysisBase::getPropertiesOfNode( const unsigned& ind, std::vector<double>& vals ) const {
-  myclusters->getVectorForTask( ind, false, vals );
+  myclusters->getInputData( ind, false, myfatoms, vals );
 }
 
 void ClusterAnalysisBase::getNodePropertyDerivatives( const unsigned& ind, MultiValue& myvals ) const {
-  myclusters->getVectorDerivatives( ind, false, myvals );
+  myvals=myclusters->getInputDerivatives( ind, false, myfatoms );
 }
 
-Vector ClusterAnalysisBase::getPosition( const unsigned& iatom ) const {
-  return myclusters->getPosition( iatom );
+Vector ClusterAnalysisBase::getPositionOfAtomForLinkCells( const unsigned& iatom ) const {
+  return myclusters->getPositionOfAtomForLinkCells( iatom );
+}
+
+double ClusterAnalysisBase::getCutoffForConnection() const {
+  return myclusters->getCutoffForConnection();
+}
+
+bool ClusterAnalysisBase::areConnected( const unsigned& ind1, const unsigned& ind2 ) const {
+  return myclusters->areConnected( ind1, ind2 );
 }
 
 }

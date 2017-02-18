@@ -1,4 +1,4 @@
-SUBDIRS := basic $(shell ./scripts/find_modules.sh)
+SUBDIRS := basic metainference crystallization manyrestraints adjmat pamm
 SUBDIRSCLEAN := $(addsuffix .clean,$(SUBDIRS))
 SUBDIRSVALGRIND := $(addsuffix .valgrind,$(SUBDIRS))
 

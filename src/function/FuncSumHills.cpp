@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -294,7 +294,16 @@ historep(NULL)
     if(uppI_<lowI_) error("The Upper limit must be greater than the Lower limit!");
     doInt=true;
   }
-  if(doInt) log << "  Upper and Lower limits boundaries for the bias are activated at " << lowI_ << " - " << uppI_<<"\n";
+  if(doInt) {
+    log << "  Upper and Lower limits boundaries for the bias are activated at " << lowI_ << " - " << uppI_<<"\n";
+    log << "  Using the same values as boundaries for the grid if not other value was defined (default: 200 bins)\n";
+    std::ostringstream strsmin, strsmax;
+    strsmin << lowI_;
+    strsmax << uppI_;
+    if(gmin.size()==0) gmin.push_back(strsmin.str());
+    if(gmax.size()==0) gmax.push_back(strsmax.str());
+    if(gbin.size()==0) gbin.push_back(200);
+  }
  
 
   // hills file: 

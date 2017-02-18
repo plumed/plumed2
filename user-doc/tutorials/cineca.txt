@@ -527,7 +527,7 @@ the free-energy difference between basins) to assess the convergence of this met
 \subsection cineca-biasing-re Restraints
 
 \hidden{Biased sampling theory}
-\subsubsection munster-biased-sampling-theory Biased sampling theory 
+\subsubsection cineca-biased-sampling-theory Biased sampling theory 
 
 A system at temperature \f$ T\f$ samples 
 conformations from the canonical ensemble:
@@ -603,7 +603,7 @@ than frames that has been explored with a less disfavoring bias potential.
 \endhidden
 
 \hidden{Umbrella sampling theory}
-\subsubsection munster-umbrella-sampling-theory Umbrella sampling theory
+\subsubsection cineca-umbrella-sampling-theory Umbrella sampling theory
 
 Often in interesting cases the free-energy landscape has several local minima. If these
 minima have free-energy differences that are on the order of a few times \f$k_BT\f$
@@ -701,7 +701,7 @@ to easily implement many forms of Hamiltonian replica exchange.
 \subsection cineca-multi-wham Using multiple restraints with replica exchange
 
 \hidden{Weighted histogram analysis method theory}
-\subsubsection munster-wham-theory Weighted histogram analysis method theory 
+\subsubsection cineca-wham-theory Weighted histogram analysis method theory 
 
 Let's now consider multiple simulations performed with restraints located in different positions.
 In particular, we will consider the \f$i\f$-th bias potential as \f$V_i\f$.

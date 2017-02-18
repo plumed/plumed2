@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -36,70 +36,21 @@ private:
 /// A tempory vector that is used for retrieving vectors
   std::vector<double> tvals;
 protected:
-/// This sets up the atom list
-  void setupAtomLists( const bool& all_same_type );
 /// Get the derivatives for the central atom with index ind
   CatomPack getCentralAtomPackFromInput( const unsigned& ind ) const ;
-///
-  void getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient0 ) const ;
-///
-  MultiValue& getVectorDerivatives( const unsigned& ind, const bool& normed ) const ;
-///
-  void mergeVectorDerivatives( const unsigned& ival, const unsigned& start, const unsigned& end,
-                               const unsigned& jatom, const std::vector<double>& der, 
-                               MultiValue& myder, AtomValuePack& myatoms ) const ;
-///
-  void superChainRule( const unsigned& ival, const unsigned& start, const unsigned& end,
-                                          const unsigned& jatom, const std::vector<double>& der,
-                                          MultiValue& myder, AtomValuePack& myatoms ) const ;
 /// Build sets by taking one multicolvar from each base
-  void buildSets( const bool& all_same_type );
-/// Build colvars for atoms as if they were symmetry functions
-  void buildSymmetryFunctionLists();
-/// Build a colvar for each pair of atoms
-  void buildAtomListWithPairs( const bool& allow_intra_group );
-/// Get the icolv th base multicolvar 
-  MultiColvarBase* getBaseMultiColvar( const unsigned& icolv ) const ;
-/// Get the total number of tasks that this calculation is based on
-  unsigned getFullNumberOfBaseTasks() const ;
-/// Get the number of base multicolvars 
-  unsigned getNumberOfBaseMultiColvars() const ;
+  void buildSets();
 public:
   explicit MultiColvarFunction(const ActionOptions&);
   static void registerKeywords( Keywords& keys );
-  bool threadSafe() const { return false; }
 };
 
 inline
-unsigned MultiColvarFunction::getFullNumberOfBaseTasks() const {
-  return colvar_label.size(); 
-}
-
-
-inline
-unsigned MultiColvarFunction::getNumberOfBaseMultiColvars() const {
-  return mybasemulticolvars.size(); 
-}
-
-inline
-MultiColvarBase* MultiColvarFunction::getBaseMultiColvar( const unsigned& icolv ) const {
-  plumed_dbg_assert( icolv<mybasemulticolvars.size() );
-  return mybasemulticolvars[icolv]; 
-} 
-
-inline
 CatomPack MultiColvarFunction::getCentralAtomPackFromInput( const unsigned& ind ) const {
-  plumed_dbg_assert( ind<colvar_label.size() ); unsigned mmc=colvar_label[ind];
+  plumed_dbg_assert( atom_lab[ind].first>0 ); unsigned mmc=atom_lab[ind].first-1;
   unsigned basen=0;
   for(unsigned i=0;i<mmc;++i) basen+=mybasemulticolvars[i]->getNumberOfAtoms();
-  return mybasemulticolvars[mmc]->getCentralAtomPack( basen, convertToLocalIndex(ind,mmc) );
-}
-
-inline
-void MultiColvarFunction::getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient ) const {
-  plumed_dbg_assert( ind<colvar_label.size() ); unsigned mmc=colvar_label[ind];
-  plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(ind,mmc) ) );
-  mybasedata[mmc]->retrieveValue( convertToLocalIndex(ind,mmc), normed, orient );
+  return mybasemulticolvars[mmc]->getCentralAtomPack( basen, atom_lab[ind].second );
 }
 
 }

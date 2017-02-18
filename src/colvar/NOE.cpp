@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014,2015 The plumed team
+   Copyright (c) 2014-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -22,6 +22,7 @@
 #include "Colvar.h"
 #include "ActionRegister.h"
 #include "tools/NeighborList.h"
+#include "tools/OpenMP.h"
 
 #include <string>
 #include <cmath>
@@ -33,19 +34,15 @@ namespace colvar {
 
 //+PLUMEDOC COLVAR NOE 
 /*
-Calculates the deviation of current distances from experimental NOE derived distances.
+Calculates simple noe intensities as 1/r^6, also averaging over multiple equivalent atoms.
 
-NOE distances are calculated between couple of atoms, averaging over equivalent couples, and compared with a set of reference distances. 
-Distances can also be averaged over multiple replicas to perform replica-averaged simulations.
-Each NOE is defined by two groups containing the same number of atoms and by a reference distance, distances
-are calculated in pairs.
+NOE distances are calculated between couple of atoms, averaging over equivalent couples.
+Each NOE is defined by two groups containing the same number of atoms, distances are
+calculated in pairs and saved as components.
 
 \f[
-NOE() = \sum_i^{noes}((\frac{1}{N_{eq}}\sum_j^{N_{eq}} (\frac{1}{r_j^6}))^{\frac{-1}{6}} - d_i^{exp})^2 
+NOE() = (\frac{1}{N_{eq}}\sum_j^{N_{eq}} (\frac{1}{r_j^6}))^{\frac{-1}{6}} 
 \f]
-
-Reference distances can also be considered as upper limits only, in this case the sum is over a half
-parabola. 
 
 \par Examples
 In the following examples three noes are defined, the first is calculated based on the distances
@@ -54,13 +51,13 @@ of atom 1-2 and 3-2; the second is defined by the distance 5-7 and the third by 
 
 \verbatim
 NOE ...
-GROUPA1=1,3 GROUPB1=2,2 NOEDIST1=0.5
-GROUPA2=5 GROUPB2=7 NOEDIST2=0.4
-GROUPA3=4,4,8,8 GROUPB3=15,16,15,16 NOEDIST3=0.3
+GROUPA1=1,3 GROUPB1=2,2 
+GROUPA2=5 GROUPB2=7
+GROUPA3=4,4,8,8 GROUPB3=15,16,15,16
 LABEL=noes
 ... NOE
 
-PRINT ARG=noes FILE=colvar
+PRINT ARG=noes.* FILE=colvar
 \endverbatim
 (See also \ref PRINT) 
 
@@ -70,14 +67,8 @@ PRINT ARG=noes FILE=colvar
 class NOE : public Colvar {   
 private:
   bool             pbc;
-  vector<double>   noedist;
-  vector<unsigned> nga, ngb;
+  vector<unsigned> nga;
   NeighborList     *nl;
-  unsigned         ens_dim;
-  unsigned         pperiod;
-  bool             isupper;
-  bool             ensemble;
-  bool             serial;
 public:
   static void registerKeywords( Keywords& keys );
   explicit NOE(const ActionOptions&);
@@ -89,6 +80,8 @@ PLUMED_REGISTER_ACTION(NOE,"NOE")
 
 void NOE::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords( keys );
+  componentsAreNotOptional(keys);
+  useCustomisableComponents(keys);
   keys.add("numbered","GROUPA","the atoms involved in each of the contacts you wish to calculate. "
                    "Keywords like GROUPA1, GROUPA2, GROUPA3,... should be listed and one contact will be "
                    "calculated for each ATOM keyword you specify.");
@@ -97,24 +90,16 @@ void NOE::registerKeywords( Keywords& keys ){
                    "calculated for each ATOM keyword you specify.");
   keys.reset_style("GROUPA","atoms");
   keys.reset_style("GROUPB","atoms");
-  keys.add("numbered","NOEDIST","A compulsory reference distance for a given NOE"
-                                "You can either specify a global reference value using NOEDIST or one "
-                                "reference value for each contact.");
-  keys.addFlag("UPPER_LIMITS",false,"Set to TRUE if you want to consider the reference distances as upper limits.");
-  keys.add("compulsory","WRITE_NOE","0","Write the back-calculated chemical shifts every # steps.");
-  keys.addFlag("ENSEMBLE",false,"Set to TRUE if you want to average over multiple replicas.");
-  keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
+  keys.addFlag("ADDEXP",false,"Set to TRUE if you want to have fixed components with the experimental reference values.");  
+  keys.add("numbered","NOEDIST","Add an experimental value for each NOE.");
+  keys.addOutputComponent("noe","default","the # NOE");
+  keys.addOutputComponent("exp","ADDEXP","the # NOE experimental distance");
 }
 
 NOE::NOE(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
-pbc(true),
-isupper(false),
-ensemble(false),
-serial(false)
+pbc(true)
 {
-  parseFlag("SERIAL",serial);
-
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;  
@@ -128,6 +113,7 @@ serial(false)
      nga.push_back(t.size());
      t.resize(0); 
   }
+  vector<unsigned> ngb;
   for(int i=1;;++i ){
      parseAtomList("GROUPB", i, t );
      if( t.empty() ) break;
@@ -140,53 +126,50 @@ serial(false)
   // Create neighbour lists
   nl= new NeighborList(ga_lista,gb_lista,true,pbc,getPbc());
 
-  // Read in reference values
-  noedist.resize( nga.size() ); 
-  unsigned ntarget=0;
-  for(unsigned i=0;i<nga.size();++i){
-     if( !parseNumbered( "NOEDIST", i+1, noedist[i] ) ) break;
-     ntarget++; 
+  bool addexp=false;
+  parseFlag("ADDEXP",addexp);
+
+  vector<double> noedist;
+  if(addexp) {
+    noedist.resize( nga.size() ); 
+    unsigned ntarget=0;
+
+    for(unsigned i=0;i<nga.size();++i){
+       if( !parseNumbered( "NOEDIST", i+1, noedist[i] ) ) break;
+       ntarget++; 
+    }
+    if( ntarget!=nga.size() ) error("found wrong number of NOEDIST values");
   }
-  if( ntarget==0 ){
-      parse("NOEDIST",noedist[0]);
-      for(unsigned i=1;i<nga.size();++i) noedist[i]=noedist[0];
-  } else if( ntarget!=nga.size() ) error("found wrong number of NOEDIST values");
-
-  parseFlag("UPPER_LIMITS",isupper);
-
-  unsigned w_period=0;
-  parse("WRITE_NOE", w_period);
-  pperiod=w_period;
-
-  ensemble=false;
-  parseFlag("ENSEMBLE",ensemble);
-  if(ensemble){
-    if(comm.Get_rank()==0) {
-      if(multi_sim_comm.Get_size()<2) error("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
-      ens_dim=multi_sim_comm.Get_size();
-    } else ens_dim=0;
-    comm.Sum(&ens_dim, 1);
-  } else ens_dim=1;
 
   // Ouput details of all contacts
   unsigned index=0; 
   for(unsigned i=0;i<nga.size();++i){
-    log.printf("  The %uth NOE is calculated using %u equivalent couples of atoms and compared with a %f reference distance\n", i, nga[i], noedist[i]);
+    log.printf("  The %uth NOE is calculated using %u equivalent couples of atoms\n", i, nga[i]);
     for(unsigned j=0;j<nga[i];j++) {
       log.printf("    couple %u is %d %d.\n", j, ga_lista[index].serial(), gb_lista[index].serial() );
       index++;
     }
   }
 
-  if(isupper)  log.printf("  NOEs reference distances are considered as upper limits only\n");
-  if(!serial)  log.printf("  The NOEs are calculated in parallel\n");
-  else         log.printf("  The NOEs are calculated in serial\n");
-  if(ensemble) log.printf("  ENSEMBLE averaging over %u replicas\n", ens_dim);
   if(pbc)      log.printf("  using periodic boundary conditions\n");
   else         log.printf("  without periodic boundary conditions\n");
 
-  addValueWithDerivatives(); 
-  setNotPeriodic(); 
+  for(unsigned i=0;i<nga.size();i++) {
+    string num; Tools::convert(i,num);
+    addComponentWithDerivatives("noe_"+num);
+    componentIsNotPeriodic("noe_"+num);
+  }
+
+  if(addexp) {
+    for(unsigned i=0;i<nga.size();i++) {
+      string num; Tools::convert(i,num);
+      addComponent("exp_"+num);
+      componentIsNotPeriodic("exp_"+num);
+      Value* comp=getPntrToComponent("exp_"+num);
+      comp->set(noedist[i]);
+    }
+  }
+
   requestAtoms(nl->getFullAtomList());
   checkRead();
 }
@@ -195,126 +178,42 @@ NOE::~NOE(){
   delete nl;
 } 
 
-void NOE::calculate(){ 
-  Tensor virial;
-  double score=0.;
-  std::vector<Vector> deriv(getNumberOfAtoms());
-  unsigned sga = nga.size();
-  vector<double> noe(sga);
-  vector<double> dnoe(sga);
- 
-  // internal parallelisation
-  unsigned stride=comm.Get_size();
-  unsigned rank=comm.Get_rank();
-  if(serial){
-    stride=1;
-    rank=0;
-  }
- 
-  for(unsigned i=0;i<sga;i++) { noe[i]=0.; dnoe[i]=0.;}
+void NOE::calculate()
+{
+  const unsigned ngasz=nga.size();
 
-  unsigned index=0; for(unsigned k=0;k<rank;k++) index += nga[k];
-
-  for(unsigned i=rank;i<sga;i+=stride) { //cycle over the number of noe 
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
+  for(unsigned i=0;i<ngasz;i++) {
+    Tensor dervir;
+    double noe=0;
+    unsigned index=0;
+    for(unsigned k=0; k<i; k++) index+=nga[k]; 
+    const double c_aver=1./static_cast<double>(nga[i]);
+    Value* val=getPntrToComponent(i);
+    // cycle over equivalent atoms 
     for(unsigned j=0;j<nga[i];j++) {
+      const unsigned i0=nl->getClosePair(index+j).first;
+      const unsigned i1=nl->getClosePair(index+j).second;
+
       Vector distance;
-      double aver=1./((double)nga[i]);
-      unsigned i0=nl->getClosePair(index).first;
-      unsigned i1=nl->getClosePair(index).second;
-      if(pbc){
-        distance=pbcDistance(getPosition(i0),getPosition(i1));
-      } else {
-        distance=delta(getPosition(i0),getPosition(i1));
-      }
-      double d=distance.modulo();
-      double r2=d*d;
-      double r3=r2*d;
-      double r6=r3*r3;
-      double r8=r6*r2;
-      double tmpir6=aver/r6;
-      double tmpir8=aver/r8;
-      noe[i] += tmpir6;
-      deriv[i0] = -tmpir8*distance;
-      deriv[i1] = +tmpir8*distance;
-      index++;
+      if(pbc) distance=pbcDistance(getPosition(i0),getPosition(i1));
+      else    distance=delta(getPosition(i0),getPosition(i1));
+
+      const double ir2=1./distance.modulo2();
+      const double ir6=ir2*ir2*ir2;
+      const double ir8=6*ir6*ir2;
+      const double tmpir6=c_aver*ir6;
+      const double tmpir8=c_aver*ir8;
+
+      noe += tmpir6;
+      Vector deriv = tmpir8*distance;
+      dervir += Tensor(distance,deriv);
+      setAtomsDerivatives(val, i0,  deriv);
+      setAtomsDerivatives(val, i1, -deriv);
     }
-    for(unsigned k=i+1;k<i+stride;k++) index += nga[k];
-    if(!ensemble) {
-      double diff = pow(noe[i],(-1./6.)) - noedist[i];
-      bool doscore = (isupper&&diff>0.) || (!isupper); 
-      if(doscore) {
-        score += diff*diff;
-        dnoe[i] = 2.*diff/pow(noe[i],(7./6.));
-      }
-    }
+    val->set(noe);
+    setBoxDerivatives(val, dervir);
   }
-
-  bool printout=false;
-  if(pperiod>0) printout = (!(getStep()%pperiod));
-  if(printout) {
-    // share the calculated noe
-    if(!serial) comm.Sum(&noe[0],noe.size());
-    // print only if master
-    if(comm.Get_rank()==0) {
-      char tmp1[21]; sprintf(tmp1, "%ld", getStep()); 
-      string csfile = string("noe")+"-"+getLabel()+"-"+tmp1+string(".dat");
-      FILE *outfile = fopen(csfile.c_str(), "w");
-      fprintf(outfile, "#index calc exp\n");
-      for(unsigned i=0;i<sga;i++) { 
-        fprintf(outfile," %4u %10.6f %10.6f\n", i, pow(noe[i],(-1./6.)), noedist[i]);
-      }
-      fclose(outfile);
-    }
-  }
-
-  // Ensemble averaging
-  double fact=1.0;
-  if(ensemble) {
-    fact = 1./((double) ens_dim);
-    // share the calculated noe unless they have been already shared by printout
-    if(!serial&&!printout) comm.Sum(&noe[0],noe.size());
-    // I am the master of my replica
-    if(comm.Get_rank()==0) {
-      // among replicas
-      multi_sim_comm.Sum(&noe[0], sga );
-      for(unsigned i=0;i<sga;i++) noe[i] *= fact; 
-    } else for(unsigned i=0;i<sga;i++) noe[i] = 0.;
-    // inside each replica
-    comm.Sum(&noe[0], sga );
-    for(unsigned i=rank;i<sga;i+=stride) {
-      double diff = pow(noe[i],(-1./6.)) - noedist[i];
-      bool doscore = (isupper&&diff>0.) || (!isupper); 
-      if(doscore) {
-        score += diff*diff;
-        dnoe[i] = 2.*diff/pow(noe[i],(7./6.));
-      }
-    }
-  }
-
-  index=0; for(unsigned k=0;k<rank;k++) index += nga[k];
-
-  for(unsigned i=rank;i<sga;i+=stride) { //cycle over the number of groups
-    for(unsigned j=0;j<nga[i];j++) {
-      unsigned i0=nl->getClosePair(index).first;
-      unsigned i1=nl->getClosePair(index).second;
-      deriv[i0] = fact*dnoe[i]*deriv[i0];
-      deriv[i1] = fact*dnoe[i]*deriv[i1];
-      virial=virial+(-1.*Tensor(getPosition(i0),deriv[i0]));
-      virial=virial+(-1.*Tensor(getPosition(i1),deriv[i1]));
-      index++;
-    }
-    for(unsigned k=i+1;k<i+stride;k++) index += nga[k];
-  }
-
-  if(!serial){
-    comm.Sum(score);
-    comm.Sum(&deriv[0][0],3*deriv.size());
-    comm.Sum(virial);
-  }
-
-  for(unsigned i=0;i<deriv.size();++i) setAtomsDerivatives(i,deriv[i]);
-  setValue           (score);
-  setBoxDerivatives  (virial);
 }
 
 }

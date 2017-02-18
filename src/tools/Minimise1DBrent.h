@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2015,2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -45,7 +45,7 @@ private:
 /// Use to prevent any possible division by zero
   const double TINY;
 /// Maximum number of interactions in line minimiser
-  const int ITMAX;
+  const unsigned ITMAX;
 /// The value of the golden ratio
   const double CGOLD;
 /// A small number that protects against trying to achieve fractional 
@@ -78,10 +78,10 @@ TINY(1.0E-20),
 ITMAX(100),
 CGOLD(0.3819660),
 ZEPS(epsilon*1.0E-3),
-myclass_func(pf),
 ax(0),bx(0),cx(0),
 fa(0),fb(0),fc(0),
-fmin(0)
+fmin(0),
+myclass_func(pf)
 {
 }
 

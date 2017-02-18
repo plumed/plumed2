@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -32,9 +32,11 @@ namespace colvar{
 
 //+PLUMEDOC COLVAR CONSTANT
 /*
-Return a constant quantity.
+Return one or more constant quantities
+with or without derivatives.
 
-Useful in combination with functions.
+Useful in combination with functions that
+takes in input constants or parameters.
 
 \par Examples
 
@@ -43,10 +45,9 @@ between atoms 1 and 2. If this distance is between 1.0 and 2.0, it is
 printed. If it is lower than 1.0 (larger than 2.0), 1.0 (2.0) is printed
 
 \verbatim
-one: CONSTANT VALUE=1.0
-two: CONSTANT VALUE=2.0
+cn: CONSTANT VALUES=1.0,2.0
 dis: DISTANCE ATOMS=1,2
-sss: SORT ARG=one,dis,two
+sss: SORT ARG=cn.v_0,dis,cn.v_1
 PRINT ARG=sss.2
 \endverbatim
 (See also \ref DISTANCE, \ref SORT, and \ref PRINT).
@@ -54,45 +55,65 @@ PRINT ARG=sss.2
 */
 //+ENDPLUMEDOC
 
+using namespace std;
 
 class Constant : public Colvar {
-  double value;
+  vector<double> values;
 public:
   explicit Constant(const ActionOptions&);
-// active methods:
   virtual void calculate();
   static void registerKeywords( Keywords& keys );
 };
 
-
-using namespace std;
-
-
 PLUMED_REGISTER_ACTION(Constant,"CONSTANT")
 
 Constant::Constant(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao),
-value(0.0)
+PLUMED_COLVAR_INIT(ao)
 {
-  parse("VALUE",value);
-  addValueWithDerivatives();
-  setNotPeriodic();
+  bool noderiv=false;
+  parseFlag("NODERIV",noderiv);
+  parseVector("VALUES",values);
+  checkRead();
+  if(values.size()==1) {
+    if(!noderiv) addValueWithDerivatives();
+    else addValue();
+    setNotPeriodic();
+    setValue(values[0]);
+  } else if(values.size()>1) {
+    for(unsigned i=0;i<values.size();i++) {
+      std::string num; Tools::convert(i,num);
+      if(!noderiv) addComponentWithDerivatives("v_"+num);
+      else addComponent("v_"+num);
+      componentIsNotPeriodic("v_"+num);
+      Value* comp=getPntrToComponent("v_"+num);
+      comp->set(values[i]);
+    }
+  }
 // fake request to avoid errors:
   std::vector<AtomNumber> atoms;
   requestAtoms(atoms);
 }
 
 void Constant::registerKeywords( Keywords& keys ){
-  Action::registerKeywords( keys );
-  ActionAtomistic::registerKeywords( keys );
-  ActionWithValue::registerKeywords( keys );
+  Colvar::registerKeywords( keys );
+  componentsAreNotOptional(keys);
+  useCustomisableComponents(keys);
   keys.remove("NUMERICAL_DERIVATIVES"); 
-  keys.add("compulsory","VALUE","The value of the constant");
+  keys.add("compulsory","VALUES","The values of the constants");
+  keys.addFlag("NODERIV",false,"Set to TRUE if you want values without derivatives.");  
+  keys.addOutputComponent("v","default","the # value"); 
 }
 
 // calculator
 void Constant::calculate(){
-  setValue(value);
+  if(values.size()==1) { 
+    setValue(values[0]);
+    return;
+  }
+  for(unsigned i=0;i<values.size();i++) {
+    Value* comp=getPntrToComponent(i);
+    comp->set(values[i]);
+  }
 }
 
 }

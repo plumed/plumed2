@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -173,7 +173,7 @@ void Keywords::reset_style( const std::string & k, const std::string & style ){
 }
 
 void Keywords::add( const std::string & t, const std::string & k, const std::string & d ){
-  plumed_assert( !exists(k) && t!="flag" && !reserved(k) && t!="vessel" );  
+  plumed_massert( !exists(k) && t!="flag" && !reserved(k) && t!="vessel" , "keyword " + k + " has already been registered");  
   std::string fd;
   if( t=="numbered" ){
      fd=d + " You can use multiple instances of this keyword i.e. " + k +"1, " + k + "2, " + k + "3...";
@@ -211,15 +211,21 @@ void Keywords::addFlag( const std::string & k, const bool def, const std::string
 } 
 
 void Keywords::remove( const std::string & k ){
-  bool found=false; unsigned j=0;
+  bool found=false; unsigned j=0, n=0;
 
   while(true){
     for(j=0;j<keys.size();j++) if(keys[j]==k)break;
+    for(n=0;n<reserved_keys.size();n++) if(reserved_keys[n]==k)break;
     if(j<keys.size()){
       keys.erase(keys.begin()+j);
       found=true;
+    } else if(n<reserved_keys.size()){
+      reserved_keys.erase(reserved_keys.begin()+n);
+      found=true;
     } else break;
   }
+  // Delete documentation, type and so on from the description
+  types.erase(k); documentation.erase(k); allowmultiple.erase(k); booldefs.erase(k); numdefs.erase(k);
   plumed_massert(found,"You are trying to forbid " + k + " a keyword that isn't there"); // You have tried to forbid a keyword that isn't there
 }
 
@@ -298,6 +304,19 @@ void Keywords::print_template(const std::string& actionname, bool include_option
      }
   }
   printf("\n");
+}
+
+void Keywords::print_vim() const {
+  for(unsigned i=0;i<keys.size();++i){
+     if( (types.find(keys[i])->second).isFlag() ){
+         printf( ",flag:%s", keys[i].c_str() );
+     } else {
+         if( allowmultiple.find(keys[i])->second ) printf(",numbered:%s",keys[i].c_str() );
+         else printf(",option:%s",keys[i].c_str() );
+     }  
+  }
+  fprintf(stdout,"\n");
+  print(stdout);
 }
 
 void Keywords::print_html() const {

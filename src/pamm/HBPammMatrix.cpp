@@ -50,7 +50,7 @@ public:
 /// Constructor
   explicit HBPammMatrix(const ActionOptions&);
 /// Setup the connector -- i.e. read in the clusters file
-  void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::string& desc );
+  void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc );
 ///
   double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
 ///
@@ -90,50 +90,14 @@ HBPammMatrix::HBPammMatrix(const ActionOptions& ao):
 Action(ao),
 AdjacencyMatrixBase(ao)
 {
-  bool donors_eq_accept=false;
-  std::vector<unsigned> dims(3); std::vector<AtomNumber> all_atoms, atoms; 
-  bool check=parseAtomList("DONORS",-1,atoms); 
-  if( check ){
-      if( atoms.size()>0 ){
-          plumed_assert( colvar_label.size()==0 );
-          dims[0]=atoms.size(); ndonor_types=0;
-      } else {
-          dims[0]=colvar_label.size();
-          ndonor_types=getNumberOfInputAtomTypes();
-      }
-      for(unsigned i=0;i<atoms.size();++i) all_atoms.push_back( atoms[i] );
-      parseAtomList("ACCEPTORS",-1,atoms);
-      for(unsigned i=0;i<atoms.size();++i) all_atoms.push_back( atoms[i] );
-      if( atoms.size()>0 ){
-          plumed_assert( colvar_label.size()==0 ); dims[1]=atoms.size();
-          if( ndonor_types==0 ) myhb_objs.resize( 1, 1 );
-          else myhb_objs.resize( ndonor_types, 1 );
-      } else {
-          dims[1]=colvar_label.size()-dims[0];
-          myhb_objs.resize( ndonor_types, getNumberOfInputAtomTypes()-ndonor_types );
-      } 
-  } else {
-      parseAtomList("SITES",-1,atoms); ndonor_types=0;
-      myhb_objs.resize( getNumberOfInputAtomTypes(), getNumberOfInputAtomTypes() );
-      if( atoms.size()>0 ){
-         plumed_assert( colvar_label.size()==0 ); dims[0]=dims[1]=atoms.size();
-      } else {
-         dims[0]=dims[1]=colvar_label.size();
-      }
-      for(unsigned i=0;i<atoms.size();++i) all_atoms.push_back( atoms[i] );
-      donors_eq_accept=true;
-  }
-
-  parseAtomList("HYDROGENS",-1,atoms); dims[2]=atoms.size();
-  if( atoms.size()==0 ) error("no hydrogen atoms were specified");
-  log.printf("  involving hydrogen atoms : ");
-  for(unsigned i=0;i<atoms.size();++i){ all_atoms.push_back( atoms[i] );  log.printf("%d ",atoms[i].serial() ); }
-  log.printf("\n");
-
+  readMaxThreeSpeciesMatrix("SITES", "DONORS", "ACCEPTORS", "HYDROGENS", false ); 
+  // Retrieve dimensions of hbonding matrix and resize
+  unsigned nrows, ncols; retrieveTypeDimensions( nrows, ncols, ndonor_types );
+  myhb_objs.resize( nrows, ncols );
   // Read in the regularisation parameter
   parse("REGULARISE",regulariser);
   // Read in the switching functions
-  parseConnectionDescriptions("CLUSTERS",ndonor_types);
+  parseConnectionDescriptions("CLUSTERS",false,ndonor_types);
 
   // Find cutoff for link cells   
   double sfmax=0;
@@ -144,18 +108,16 @@ AdjacencyMatrixBase(ao)
       }
   }
   setLinkCellCutoff( sfmax );
-  // And request the atoms involved in the colvar, setup the task list and so on
-  requestAtoms( all_atoms, false, donors_eq_accept, dims );
 }
 
-void HBPammMatrix::setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::string& desc ){
-  log.printf("  reading definition of hydrogen bond between between type %u and %u from file %s \n",i,j,desc.c_str() );
-  std::string errors; 
+void HBPammMatrix::setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ){
+  log.printf("  reading definition of hydrogen bond between between type %u and %u from file %s \n",i,j,desc[0].c_str() );
+  plumed_assert( desc.size()==1 ); std::string errors; 
   if( i==j ){
-      myhb_objs( i, j ).setup( desc, regulariser, this, errors );
+      myhb_objs( i, j ).setup( desc[0], regulariser, this, errors );
   } else {
-      myhb_objs( i, j ).setup( desc, regulariser, this, errors );
-      myhb_objs( j, i ).setup( desc, regulariser, this, errors ); 
+      myhb_objs( i, j ).setup( desc[0], regulariser, this, errors );
+      myhb_objs( j, i ).setup( desc[0], regulariser, this, errors ); 
   } 
   if( errors.length()>0 ) error( errors );
 }

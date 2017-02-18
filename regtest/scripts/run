@@ -31,6 +31,9 @@ test -f config || {
 
 mpiprocs=0
 
+plumed_needs=
+plumed_modules=
+
 source ./config
 
 for file in $extra_files
@@ -62,7 +65,7 @@ cd -
 if ((mpiprocs>0)); then
 mpi="${PLUMED_MPIRUN:-mpirun} -np $mpiprocs"
 
-if ! plumed --has-mpi
+if ! plumed config -q has mpi
 then
   echo "NOT_APPLIABLE (MPI NOT INSTALLED)"
   exit 0;
@@ -83,9 +86,19 @@ fi
 for need in $plumed_needs
 do
   echo "Checking for $need"
-  if ! $plumed --has-$need
+  if ! $plumed config -q has $need
   then
-    echo "NOT_APPLIABLE ($need NOT INSTALLED)"
+    echo "NOT_APPLIABLE ($need NOT ENABLED)"
+    exit 0;
+  fi
+done
+
+for module in $plumed_modules
+do
+  echo "Checking for $module"
+  if ! $plumed config -q module $module
+  then
+    echo "NOT_APPLIABLE ($need MODULE NOT INSTALLED)"
     exit 0;
   fi
 done
@@ -115,6 +128,10 @@ case "$type" in
   make exe 1>out 2> err
   $mpi $valgrind ./exe $arg >> out 2>> err
  ;;
+(plumed)
+  echo "Run plumed"
+  $mpi $valgrind $plumed $arg > out 2> err
+  ;;
 (*) echo "unknown test type" ; exit 1 ;;
 esac
 
@@ -134,11 +151,18 @@ for file in *.reference ; do
     ../../../scripts/fixzeroes.sh "$file"
     cp "$new" "$new.zfix"
     ../../../scripts/fixzeroes.sh "$new.zfix"
-    out="$(diff "$file" "$new.zfix")"
+    DIFFOPT=""
+# this is to enforce ASCII check
+# I add this option since sometime on travis some of the diff files are not shown
+# (files are thought to be binary for some reason)
+# In this way, at least PLUMED native files (with fields) will be assumed to be
+# ASCII and diff will be shown in the log
+    test "$(cat "$file" | head -c 10)" = "#! FIELDS " && DIFFOPT="-a"
+    out="$(diff $DIFFOPT "$file" "$new.zfix")"
     test -n "$out" && {
       echo FAILURE
       echo "Diff for ${file%.reference}:"
-      diff "${file}" "$new.zfix"
+      echo "$out"
     }
   else
     echo FAILURE

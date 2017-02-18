@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -86,10 +86,15 @@ Action* ActionRegister::create(const ActionOptions&ao){
   return action;
 }
 
-bool ActionRegister::printManual( const std::string& action ){
+bool ActionRegister::printManual( const std::string& action, const bool& vimout ){
   if ( check(action) ){
      Keywords keys; mk[action](keys); 
-     keys.print_html(); keys.destroyData();
+     if( vimout ){
+        printf("%s",action.c_str()); keys.print_vim(); printf("\n");
+     } else { 
+        keys.print_html(); 
+     }
+     keys.destroyData();
      return true;
   } else {
      return false;

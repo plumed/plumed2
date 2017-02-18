@@ -1,4 +1,5 @@
 mpiprocs=2
 type=driver
+plumed_modules=adjmat
 # this is to test a different name
 arg="--plumed plumed.dat --ixyz traj.xyz --length-units A --box 28.66,28.66,28.66"

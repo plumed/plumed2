@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -76,7 +76,10 @@ void Density::registerKeywords( Keywords& keys ){
 Density::Density(const ActionOptions&ao):
 PLUMED_MULTICOLVAR_INIT(ao)
 {
-  int nat=1; readAtoms( nat ); 
+  std::vector<AtomNumber> all_atoms; bool read = parseMultiColvarAtomList("SPECIES", -1, all_atoms);
+  ablocks.resize(1); ablocks[0].resize( atom_lab.size() ); 
+  for(unsigned i=0;i<atom_lab.size();++i){ addTaskToList(i); ablocks[0][i]=i; }
+  setupMultiColvarBase( all_atoms );
   // And check everything has been read in correctly
   checkRead(); 
 }

@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014,2015 The plumed team
+   Copyright (c) 2014-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -54,6 +54,8 @@ public:
 /// Don't actually clear the derivatives when this is called from plumed main.  
 /// They are calculated inside another action and clearing them would be bad  
   void clearDerivatives(){}
+/// Check nothing impossible being done with derivatives
+  virtual void turnOnDerivatives();
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives(); 
 /// Get the size of the atoms with derivatives array
@@ -71,11 +73,13 @@ public:
   Vector retrieveCentralAtomPos();
 /// Get the index of the central atom
   AtomNumber getAbsoluteIndexOfCentralAtom( const unsigned& i ) const ;
+/// Get indicecs involved in this colvar
+  const std::vector<AtomNumber> & getAbsoluteIndexes()const ;
 /// We need our own calculate numerical derivatives here
   void calculateNumericalDerivatives( ActionWithValue* a=NULL );
   void apply(){};
 /// Is this atom currently being copied 
-  bool isCurrentlyActive( const unsigned& , const unsigned& );
+  bool isCurrentlyActive( const unsigned& );
 /// This should not be called
   Vector calculateCentralAtomPosition(){ plumed_error(); }
   double compute( const unsigned& tindex, AtomValuePack& myvals ) const { plumed_error(); }
@@ -85,6 +89,11 @@ public:
   Vector getCentralAtomPos( const unsigned& curr );
   CatomPack getCentralAtomPack( const unsigned& basn, const unsigned& curr );
 };
+
+inline
+const std::vector<AtomNumber> & BridgedMultiColvarFunction::getAbsoluteIndexes() const {
+  return mycolv->getAbsoluteIndexes();
+}
 
 inline
 MultiColvarBase* BridgedMultiColvarFunction::getPntrToMultiColvar() const {
@@ -97,8 +106,8 @@ unsigned BridgedMultiColvarFunction::getNumberOfDerivatives(){
 }
 
 inline
-bool BridgedMultiColvarFunction::isCurrentlyActive( const unsigned& bno, const unsigned& code ){
-  return mycolv->isCurrentlyActive( bno, code );
+bool BridgedMultiColvarFunction::isCurrentlyActive( const unsigned& code ){
+  return mycolv->isCurrentlyActive( code );
 }
 
 inline

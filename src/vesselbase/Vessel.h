@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -146,7 +146,7 @@ public:
 /// This is replaced in bridges so we can transform the derivatives
   virtual MultiValue& transformDerivatives( const unsigned& current, MultiValue& myvals, MultiValue& bvals );
 /// Calculate the part of the vessel that is done in the loop
-  virtual bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const = 0;
+  virtual void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const = 0;
 /// Complete the calculation once the loop is finished
   virtual void finish( const std::vector<double>& )=0;
 /// Reset the size of the buffers

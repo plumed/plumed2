@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -23,11 +23,11 @@
 #include "ActionAtomistic.h"
 #include "MDAtoms.h"
 #include "PlumedMain.h"
-#include "tools/OpenMP.h"
 #include "tools/Pbc.h"
 #include <algorithm>
 #include <iostream>
 #include <string>
+#include <cmath>
 
 using namespace std;
 
@@ -166,9 +166,7 @@ void Atoms::share(const std::set<AtomNumber>& unique){
   plumed_assert( positionsHaveBeenSet==3 && massesHaveBeenSet );
   virial.zero();
   if(int(gatindex.size())==natoms){
-// not sure this parallelization helps
-#pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(forces))
-    for(unsigned i=0;i<natoms;i++) forces[i].zero();
+    for(int i=0;i<natoms;i++) forces[i].zero();
   } else {
     for(unsigned i=0;i<gatindex.size();i++) forces[gatindex[i]].zero();
   }
@@ -191,6 +189,8 @@ void Atoms::share(const std::set<AtomNumber>& unique){
   int ndata=3;
   if(!massAndChargeOK){
     ndata=5;
+    masses.assign(masses.size(),NAN);
+    charges.assign(charges.size(),NAN);
     mdatoms->getCharges(gatindex,charges);
     mdatoms->getMasses(gatindex,masses);
   }
@@ -498,6 +498,11 @@ double Atoms::getMDKBoltzmann()const{
   else return kBoltzmann/MDUnits.getEnergy();
 }
 
+void Atoms::getLocalMasses(std::vector<double>& localMasses){ 
+  localMasses.resize(gatindex.size()); 
+  for(unsigned i=0; i<gatindex.size(); i++) localMasses[i] = masses[gatindex[i]]; 
+}
+
 void Atoms::getLocalPositions(std::vector<Vector>& localPositions){
   localPositions.resize(gatindex.size());
   mdatoms->getLocalPositions(localPositions);
@@ -505,9 +510,14 @@ void Atoms::getLocalPositions(std::vector<Vector>& localPositions){
 
 void Atoms::getLocalForces(std::vector<Vector>& localForces){
   localForces.resize(gatindex.size());
-// not sure this parallelization helps
-#pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(localForces))
-  for(int i=0; i<gatindex.size(); i++) localForces[i] = forces[gatindex[i]];
+  for(unsigned i=0; i<gatindex.size(); i++) localForces[i] = forces[gatindex[i]];
+}
+
+void Atoms::getLocalMDForces(std::vector<Vector>& localForces){
+  localForces.resize(gatindex.size());
+  for(unsigned i=0; i<gatindex.size(); i++) {
+    localForces[i] = mdatoms->getMDforces(i);
+  }
 }
 
 }

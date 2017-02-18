@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -91,7 +91,8 @@ Torsions::Torsions(const ActionOptions&ao):
 PLUMED_MULTICOLVAR_INIT(ao)
 {
   // Read in the atoms
-  int natoms=4; readAtoms( natoms );
+  int natoms=4; std::vector<AtomNumber> all_atoms; 
+  readAtoms( natoms, all_atoms );
   std::vector<bool> catom_ind(4, false); 
   catom_ind[1]=catom_ind[2]=true;
   setAtomsForCentralAtom( catom_ind );

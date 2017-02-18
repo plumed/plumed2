@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014,2015 The plumed team
+   Copyright (c) 2014-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -43,6 +43,8 @@ public:
   explicit ClusteringBase(const ActionOptions&);
 /// This checks whether derivatives can be computed given the base multicolvar
   void turnOnDerivatives();
+/// Are these two atoms connected
+  bool areConnected( const unsigned& iatom, const unsigned& jatom ) const ;
 /// Do the calculation
   void calculate();
 /// Do the clustering 
@@ -53,6 +55,8 @@ public:
   virtual void retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const ;
 /// Do nothing for apply here
   void apply(){}
+/// Get the cutoff 
+  virtual double getCutoffForConnection() const ;
 };
 
 inline
