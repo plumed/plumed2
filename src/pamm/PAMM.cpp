@@ -188,7 +188,7 @@ void PAMM::calculateWeight( multicolvar::AtomValuePack& myatoms ){
    // Weight of point is average of weights of input colvars?
    std::vector<double> tval(2); double ww=0;
    for(unsigned i=0;i<nvars;++i){
-       getVectorForTask( myatoms.getIndex(i), false, tval ); ww+=tval[i];
+       getVectorForTask( myatoms.getIndex(i), false, tval ); ww+=tval[0];
    }
    myatoms.setValue( 0, ww / static_cast<double>( nvars ) );
 
