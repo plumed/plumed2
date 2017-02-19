@@ -749,6 +749,37 @@ void MultiColvarBase::mergeInputDerivatives( const unsigned& ival, const unsigne
   }
 }
 
+void MultiColvarBase::splitInputDerivatives( const unsigned& ival, const unsigned& start, const unsigned& end,
+                                             const unsigned& jatom, const std::vector<double>& der,
+                                             MultiValue& myder, AtomValuePack& myatoms ) const {
+  MultiValue& myvals=myatoms.getUnderlyingMultiValue();
+  plumed_dbg_assert( ival<myder.getNumberOfValues() );
+  plumed_dbg_assert( start<myvals.getNumberOfValues() && end<=myvals.getNumberOfValues() );
+  plumed_dbg_assert( der.size()==myatoms.getUnderlyingMultiValue().getNumberOfValues() && jatom<myatoms.getNumberOfAtoms() );
+  // Convert input atom to local index
+  unsigned katom = myatoms.getIndex( jatom ); plumed_dbg_assert( katom<atom_lab.size() ); plumed_dbg_assert( atom_lab[katom].first>0 );
+  // Find base colvar
+  unsigned mmc=atom_lab[katom].first - 1; plumed_dbg_assert( mybasemulticolvars[mmc]->taskIsCurrentlyActive( atom_lab[katom].second ) );
+  // Get start of indices for this atom
+  unsigned basen=0; for(unsigned i=0;i<mmc;++i) basen+=mybasemulticolvars[i]->getNumberOfDerivatives() - 9;
+  plumed_dbg_assert( basen%3==0 ); // Check the number of atoms is consistent with input derivatives
+  unsigned virbas = myvals.getNumberOfDerivatives()-9;
+  for(unsigned j=0;j<myder.getNumberActive();++j){
+     unsigned jder=myder.getActiveIndex(j);
+     if( jder<mybasemulticolvars[mmc]->getNumberOfDerivatives()-9 ){
+         unsigned kder=basen+jder; plumed_assert( kder<myvals.getNumberOfDerivatives() );
+         for(unsigned icomp=start;icomp<end;++icomp){
+             myvals.addDerivative( icomp, kder, der[icomp]*myder.getDerivative( ival, jder ) );
+         }
+     } else {
+         unsigned kder=virbas + (jder - mybasemulticolvars[mmc]->getNumberOfDerivatives() + 9);
+         for(unsigned icomp=start;icomp<end;++icomp){
+             myvals.addDerivative( icomp, kder, der[icomp]*myder.getDerivative( ival, jder ) );
+         } 
+     }     
+  }
+}    
+
 void MultiColvarBase::addComDerivatives( const int& ival, const unsigned& iatom, const Vector& der, multicolvar::AtomValuePack& myatoms ) const {
   plumed_dbg_assert( ival<static_cast<int>(myatoms.getUnderlyingMultiValue().getNumberOfValues()) && iatom<myatoms.getNumberOfAtoms() );
   // Convert input atom to local index
