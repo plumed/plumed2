@@ -47,6 +47,7 @@ void DRMSD::readBounds( const PDB& pdb ){
   double tmp; nopbc=pdb.hasFlag("NOPBC"); 
   if( pdb.getArgumentValue("LOWER_CUTOFF",tmp) ) lower=tmp;
   if( pdb.getArgumentValue("UPPER_CUTOFF",tmp) ) upper=tmp;
+  bounds_were_set=true;
 }
 
 void DRMSD::read( const PDB& pdb ){
