@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016 The plumed team
+   Copyright (c) 2016,2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -112,7 +112,7 @@ void ERMSD::registerKeywords(Keywords& keys){
 
   keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
   keys.add("compulsory","CUTOFF","2.4","only pairs of atoms closer than CUTOFF are considered in the calculation.");
-  keys.add("atoms","ATOMS","the list of atoms (use @lcs-nn)");
+  keys.add("atoms","ATOMS","the list of atoms (use lcs)");
   keys.add("optional","PAIRS","List of pairs considered. All pairs are considered if this value is not specified.");
 
 }

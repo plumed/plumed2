@@ -364,11 +364,10 @@ historep(NULL)
         }
 
         if(integratehills) {
-        	FilesHandler *hillsHandler;
-        	hillsHandler=new FilesHandler(hillsFiles,parallelread,*this, log);
+        	FilesHandler hillsHandler(hillsFiles,parallelread,*this, log);
 		vector<double> vmin,vmax;
         	vector<unsigned> vbin;  
-        	hillsHandler->getMinMaxBin(tmphillsvalues,comm,vmin,vmax,vbin);
+        	hillsHandler.getMinMaxBin(tmphillsvalues,comm,vmin,vmax,vbin);
 		log<<"  found boundaries from hillsfile: \n";
 		gmin.resize(vmin.size());
 		gmax.resize(vmax.size());
@@ -382,15 +381,13 @@ historep(NULL)
 		 	Tools::convert(vmax[i],gmax[i]);
 			log<<"  variable "<< getPntrToArgument(i)->getName()<<" min: "<<gmin[i]<<" max: "<<gmax[i]<<" nbin: "<<gbin[i]<<"\n";
 		}
-                delete hillsHandler;
         } 
 	// if at this stage bins are not there then do it with histo
 	if(gmin.size()==0){
-    	   	FilesHandler *histoHandler;
-	        histoHandler=new FilesHandler(histoFiles,parallelread,*this, log);
+    	   	FilesHandler histoHandler(histoFiles,parallelread,*this, log);
 		vector<double> vmin,vmax;
         	vector<unsigned> vbin;  
-        	histoHandler->getMinMaxBin(tmphistovalues,comm,vmin,vmax,vbin,histoSigma);
+        	histoHandler.getMinMaxBin(tmphistovalues,comm,vmin,vmax,vbin,histoSigma);
 		log<<"  found boundaries from histofile: \n";
 		gmin.resize(vmin.size());
 		gmax.resize(vmax.size());
@@ -404,7 +401,6 @@ historep(NULL)
 		 	Tools::convert(vmax[i],gmax[i]);
 			log<<"  variable "<< proj[i] <<" min: "<<gmin[i]<<" max: "<<gmax[i]<<" nbin: "<<gbin[i]<<"\n";
 		}
-                delete histoHandler;
         }
 	log<<"  done!\n"; 
 	log<<"   \n"; 
@@ -529,9 +525,9 @@ historep(NULL)
 		if(integratehills){
 
     	      		log<<"  Bias: Projecting on subgrid... \n";
-              		BiasWeight *Bw=new BiasWeight(beta); 
+              		BiasWeight Bw(beta); 
              		Grid biasGrid=*(biasrep->getGridPtr());
-   	      		Grid smallGrid=biasGrid.project(proj,Bw);
+   	      		Grid smallGrid=biasGrid.project(proj,&Bw);
               		OFile gridfile; gridfile.link(*this);
 	      		std::ostringstream ostr;ostr<<nfiles;
               		string myout; 
@@ -543,7 +539,6 @@ historep(NULL)
    	      		smallGrid.writeToFile(gridfile);
               		gridfile.close();
                         if(!ibias)integratehills=false;// once you get to the final bunch just give up 
-                        delete Bw;
 		}
                 // this should be removed
 		if(integratehisto){
@@ -616,8 +611,6 @@ historep(NULL)
 
 	nfiles++;
     }
-    if(hillsHandler) delete hillsHandler;
-    if(histoHandler) delete histoHandler;
 
     return;
   } 

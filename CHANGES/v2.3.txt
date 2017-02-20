@@ -2,7 +2,7 @@
 
 @page CHANGES-2-3 Version 2.3
 
-Version 2.3 (Jun 30, 2016)
+Version 2.3 (Dec 12, 2016)
 ----------------------------
 
 Version
@@ -43,6 +43,7 @@ Changes from version 2.2 which are relevant for users:
   - \ref CS2BACKBONE, \ref NOE, \ref RDC, removed the keyword ENSEMBLE: now ensemble averages can only be calculated using \ref ENSEMBLE
   - \ref RDC, syntax changes
   - It is not possible anymore to select modules using `modulename.on` and `modulename.off` files. Use `./configure --enable-modules` instead.
+  - Removed IMD modules. In case someone is interested in restoring it, please contact the PLUMED developers.
 - New actions:
   - \ref FIXEDATOM
   - \ref HBOND_MATRIX
@@ -72,14 +73,18 @@ Changes from version 2.2 which are relevant for users:
   - \ref LOCALENSEMBLE
   - \ref FRET
   - \ref RESET_CELL
+  - \ref JCOUPLING
+  - \ref ERMSD
 - New features in MD patches (require repatch):
   - Patch for amber 14 now passes charges with appropriate units (fixes \issue{165}). Notice that
     the patch is still backward compatible with older PLUMED version, but the charges will only be passed
     when using PLUMED 2.3 or later.
   - Patch for GROMACS 5.1 incorporates Hamiltonian replica exchange, see \ref hrex
   - Gromacs 2016, 5.1.x, 5.0.x, flush the plumed output files upon checkpointing
-  - Added patch for Gromacs 2016
+  - Added patch for Gromacs 2016.1
+  - gromacs 5.1.x patch updated to 5.1.4
   - Removed the patch for Gromacs 4.6.x 
+  - LAMMPS patch updated to support multiple walkers and report plumed bias to LAMMPS (thanks to Pablo Piaggi).
 - New features for existing actions:
   - The SPECIES and SPECIESA keyword in MultiColvars can now take a multicolvar as input.  This allows one
     to calculate quantities such as the Q4 parameters for those atoms that have a coordination number greater
@@ -91,16 +96,25 @@ Changes from version 2.2 which are relevant for users:
   - \ref driver now allows --trajectory-stride to be set to zero when reading with --ixtc/--itrr. In this case, step number is read from the trajectory file.
   - \ref METAD and \ref PBMETAD can now be restarted from a GRID 
   - Added keywords TARGET and DAMPFACTOR in \ref METAD
+  - When using \ref METAD with file-based multple walkers and parallel jobs (i.e. mpirun) extra suffix is not added (thanks to Marco De La Pierre).
   - \ref ENSEMBLE added keywords for weighted averages, and calculation of higher momenta
   - \ref MOLINFO now allows single atoms to be picked by name.
   - \ref FIT_TO_TEMPLATE now supports optimal alignment.
   - \ref CONSTANT added the possibility of storing more values as components with or without derivatives
+  - \ref PUCKERING now supports 6 membered rings.
+  - Extended checkpoint infrastracture, now \ref METAD and \ref PBMETAD will write GRIDS also on checkpoint step (only the GROMACS patch
+    is currently using the checkpointing interface)
 - Other features:
   - Added a plumed-config command line tool. Can be used to inspect configuration also when cross compiling.
   - Added a `--mpi` option to `plumed`, symmetric to `--no-mpi`. Currently, it has no effect (MPI is initialized by default when available).
   - PLUMED now generate a VIM syntax file, see \ref VimSyntax
   - The backward cycle is now parallelised in MPI/OpenMP in case many collective variables are used.
+  - GSL library is now searched by default during `./configure`.
+  - Tutorials have been (partially) updated to reflect some of the changes in the syntax
+  - Parser now reports errors when passing numbers that cannot be parsed instead of silently replacing their default value. See \issue{104}.
   - More and more documentation
+- Bug fixes:
+- Fixed a bug in \ref PBMETAD that was preventing the writing of GRIDS if a hill was not added in that same step 
 
 For developers:
 - IMPORTANT: BIAS can now be BIASED as well, this changes can lead to some incompatibility: now the "bias" component is always defined automatically
@@ -109,30 +123,24 @@ For developers:
 - Added new strings for plumed cmd: setMDMassUnits, setMDChargeUnits, readInputLine, performCalcNoUpdate, update and doCheckPoint.
 - Easier to add actions with multiple arguments
 - New functions to access local quantities in domain decomposition
-
-Fixes in beta
--------------
-
-Fixes since 2.3b. Relevant things could be merged in the changelog above when we release 2.3.0
-
-- Fixed critical pragma in openmp of Colvar. This could have lead to wrong virial accumulation.
-- Extended checkpoint infrastracture, now \ref METAD and \ref PBMETAD will write GRIDS also on checkpoint step (only the GROMACS patch
-  is currently using the checkpointing interface)
-- Fixed a bug in \ref PBMETAD that was preventing the writing of GRIDS if a hill was not added in that same step 
-- GSL library is now searched by default during `./configure`.
-- Removed IMD modules. In case someone is interested in restoring it, please contact the PLUMED developers.
-- (for developers) Active modules to enable regtests are chosen using `plumed config`.
-- New CV: \ref JCOUPLING
-- New CV: \ref ERMSD
-- \ref PUCKERING now supports 6 membered rings.
-- Tutorials have been (partially) updated to reflect some of the changes in the syntax
-- gromacs 5.1.x patch updated to 5.1.4
-- gromacs 2016.x patch updated to 2016.1
-- LAMMPS patch updated to support multiple walkers and report plumed bias to LAMMPS (thanks to Pablo Piaggi).
-- When using \ref METAD with file-based multple walkers and parallel jobs (i.e. mpirun) extra suffix is not added (thanks to Marco De La Pierre).
-- Parser now reports errors when passing numbers that cannot be parsed instead of silently replacing their default value. See \issue{104}.
-- (for developers) A script is available to check if source code complies plumed standard. Notice that this script is run together with cppcheck on travis-ci.
-- (for developers) Cppcheck on travis-ci has been updated to 1.75. Several small issues triggering errors on 1.75 were fixed (e.g. structures passed by value
+- Active modules to enable regtests are chosen using `plumed config`.
+- A script is available to check if source code complies plumed standard. Notice that this script is run together with cppcheck on travis-ci.
+- Cppcheck on travis-ci has been updated to 1.75. Several small issues triggering errors on 1.75 were fixed (e.g. structures passed by value
    are now passed by const ref) and false positives marked as such.
-- (for developers) Added coverage scan.
+- Added coverage scan.
+
+Version 2.3.1
+-------------
+See branch \branch{v2.3} on git repository.
+
+- Fix to FIT_TO_TEMPLATE as in 2.2.5. Notice that in 2.3.0 also the case with TYPE=OPTIMAL was affected. This is fixed now.
+- small change in \ref CS2BACKBONE to symmetrise the ring current contribution with respect to ring rotations (also faster)
+- fixed `plumed-config` that was not working.
+- log file points to the `config.txt` files to allow users to check which features were available in that compiled version.
+- `make clean` in root dir now also cleans `vim` subdirectory.
+
+For developers:
+- Cppcheck on travis-ci has been updated to 1.77.
+- Doxygen on travis-ci has been updated to 1.8.13
+
 */

@@ -1,0 +1,29 @@
+MOLINFO STRUCTURE=helix.pdb
+
+DUMPATOMS ATOMS=1-132 FILE=before.gro
+
+# length of first lattice vector
+cell: CELL
+aaaa: MATHEVAL ARG=cell.ax,cell.ay,cell.az FUNC=0.001*(x*x+y*y+z*z) PERIODIC=NO
+
+# rmsd with align!=displace
+rmsd: RMSD REFERENCE=align.pdb TYPE=OPTIMAL
+
+FIT_TO_TEMPLATE REFERENCE=align.pdb TYPE=OPTIMAL
+
+# length of first lattice vector
+cell2: CELL
+aaaa2: MATHEVAL ARG=cell.ax,cell.ay,cell.az FUNC=0.001*(x*x+y*y+z*z) PERIODIC=NO
+
+# rmsd with align!=displace
+p8: POSITION ATOM=8
+rmsd2: MATHEVAL ARG=p8.x,p8.y,p8.z FUNC=sqrt((x-0.2)^2+(y-0.3)^2+(z-0.4)^2) PERIODIC=NO
+
+PRINT ARG=aaaa,aaaa2,rmsd,rmsd2 FILE=ddd
+
+# here either rmsd or rmsd2 should give the same result:
+RESTRAINT ARG=rmsd2 AT=0 SLOPE=1
+# here either aaaa or aaaa2 should give the same result:
+RESTRAINT ARG=aaaa2 AT=0 SLOPE=1
+
+DUMPATOMS ATOMS=1-132 FILE=after.gro
