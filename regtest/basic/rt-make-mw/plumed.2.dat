@@ -1,0 +1,9 @@
+
+d: POSITION ATOM=1
+
+METAD ARG=d.x,d.y,d.z PACE=2 SIGMA=1000,1000,1000 HEIGHT=1 WALKERS_N=3 WALKERS_ID=2 WALKERS_RSTRIDE=3
+
+# HILLs files cannot be checked since they have a column with time
+# thus we check a file with bias
+PRINT ARG=*.bias FMT=%10.4f FILE=COLVAR.2
+
