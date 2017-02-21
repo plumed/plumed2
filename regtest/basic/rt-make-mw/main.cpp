@@ -1,7 +1,6 @@
 #include "plumed/wrapper/Plumed.h"
 #include <vector>
 #include <sstream>
-#include <unistd.h>
 
 using namespace PLMD;
 
@@ -50,7 +49,6 @@ int main(){
 // half steps for each walker
   for(unsigned iw=0;iw<nwalkers;iw++) for(unsigned is=0;is<nsteps/2;is++) go(p[iw],natoms,iw,is);
 
-sleep(1);
 // other half steps for each walker
   for(unsigned iw=0;iw<nwalkers;iw++) for(unsigned is=nsteps/2;is<nsteps;is++) go(p[iw],natoms,iw,is);
 
