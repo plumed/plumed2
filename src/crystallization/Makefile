@@ -1,4 +1,4 @@
-USE=core tools vesselbase analysis multicolvar
+USE=core tools vesselbase multicolvar
 
 # generic makefile
 include ../maketools/make.module
