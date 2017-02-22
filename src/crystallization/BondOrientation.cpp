@@ -23,7 +23,7 @@
 #include "core/ActionRegister.h"
 #include "VectorMultiColvar.h"
 
-//+PLUMEDOC MCOLVAR MOLECULES
+//+PLUMEDOC MCOLVAR BOND_DIRECTIONS
 /*
 Calculate the vectors connecting atoms that are within cutoff defined using a switching function.
 
@@ -46,7 +46,7 @@ public:
   void calculateVector( multicolvar::AtomValuePack& myatoms ) const ;
 };
 
-PLUMED_REGISTER_ACTION(BondOrientation,"BOND_DIRECTION")
+PLUMED_REGISTER_ACTION(BondOrientation,"BOND_DIRECTIONS")
 
 void BondOrientation::registerKeywords( Keywords& keys ){
   VectorMultiColvar::registerKeywords( keys );
