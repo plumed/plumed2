@@ -23,7 +23,7 @@
 #define __PLUMED_tools_Stopwatch_h
 
 #include <string>
-#include <map>
+#include <unordered_map>
 #include <iosfwd>
 
 namespace PLMD{
@@ -126,7 +126,7 @@ class Stopwatch{
     void stop();
     void pause();
   };
-  std::map<std::string,Watch> watches;
+  std::unordered_map<std::string,Watch> watches;
   std::ostream& log(std::ostream&)const;
 public:
 /// Start timer named "name"
