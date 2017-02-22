@@ -23,6 +23,15 @@
 #include "core/ActionRegister.h"
 #include "VectorMultiColvar.h"
 
+//+PLUMEDOC MCOLVAR MOLECULES
+/*
+Calculate the vectors connecting atoms that are within cutoff defined using a switching function.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace crystallization {
 
