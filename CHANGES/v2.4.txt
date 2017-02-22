@@ -5,6 +5,12 @@
 This page contains changes that will end up in 2.4
 
 Changes from version 2.3 which are relevant for users:
+- Changes leading to incompatible behavior:
+  - A c++11 compliant compiler is required (see \issue{212}). This should mean:
+    - gcc 4.8
+    - clang 3.3
+    - intel 15
+- Other changes:
   - \ref PBMETAD : multiple walkers using files (thanks to Marco De La Pierre).
   - \ref PBMETAD : adaptive gaussians
   - \ref PBMETAD : default names for GRID and FILE (usefull with many collective variables) 
@@ -15,4 +21,5 @@ Changes from version 2.3 which are relevant for developers:
     PLUMED totally exception safe (there are still many non-safe pointers around),
     this made it possible to add a regtest that actually tests erroneous cmd strings
     and erroneous inputs.
+  - Due to the required c++11 support, travis-ci test on Ubuntu Precise has been removed.
 */
