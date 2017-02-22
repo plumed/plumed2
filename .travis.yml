@@ -30,11 +30,6 @@ matrix:
     dist: trusty
     sudo: required
     env: PLUMED_CC=gcc   PLUMED_CXX=g++     PLUMED_CXXFLAGS=-O3 LAPACK=yes
-# then I try serial compiler on UBUNTU precise
-  - os: linux
-    dist: precise
-    sudo: required
-    env: PLUMED_CC=gcc   PLUMED_CXX=g++
 # test using external blas with internal lapack
   - os: linux
     dist: trusty
