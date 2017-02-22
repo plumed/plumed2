@@ -147,9 +147,9 @@ void CenterOfMultiColvar::calculate(){
   for(unsigned i=0;i<mystash->getNumberOfStoredValues();++i){
       // Retrieve value and derivatives
       mystash->retrieveSequentialValue( i, false, cvals );
-      mystash->retrieveDerivatives( mycolv->getActiveTask(i), false, tvals );
+      mystash->retrieveDerivatives( mycolv->getPositionInFullTaskList(i), false, tvals );
       // Convert position into fractionals
-      Vector fpos = pbc.realToScaled( mycolv->getCentralAtomPos( mycolv->getActiveTask(i) ) );
+      Vector fpos = pbc.realToScaled( mycolv->getCentralAtomPos( mycolv->getPositionInFullTaskList(i) ) );
       // Now accumulate Berry phase averages
       for(unsigned j=0;j<3;++j){ 
           stmp[j] = sin( 2*pi*fpos[j] ); ctmp[j] = cos( 2*pi*fpos[j] ); 
@@ -170,7 +170,7 @@ void CenterOfMultiColvar::calculate(){
           }
       }
       // Get the central atom pack 
-      CatomPack mypack( mycolv->getCentralAtomPack( 0, mycolv->getActiveTask(i) ) );
+      CatomPack mypack( mycolv->getCentralAtomPack( 0, mycolv->getPositionInFullTaskList(i) ) );
       for(unsigned j=0;j<mypack.getNumberOfAtomsWithDerivatives();++j){
           unsigned jder=3*mypack.getIndex(j);
           // Derivatives of sine
