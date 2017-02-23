@@ -41,7 +41,7 @@ Each NOE is defined by two groups containing the same number of atoms, distances
 calculated in pairs, transformed in 1/r^6, summed and saved as components.
 
 \f[
-NOE() = (\frac{1}{N_{eq}}\sum_j^{N_{eq}} (\frac{1}{r_j^6}))^{\frac{-1}{6}} 
+NOE() = (\frac{1}{N_{eq}}\sum_j^{N_{eq}} (\frac{1}{r_j^6})) 
 \f]
 
 Intensities can then in principle ensemble averaged using \ref ENSEMBLE and used to
