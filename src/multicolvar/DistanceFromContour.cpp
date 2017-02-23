@@ -264,36 +264,31 @@ void DistanceFromContour::calculate(){
   // This deals with periodic boundary conditions - if we are inside the membrane the sum of the absolute 
   // distances from the contours should add up to the spacing.  When this is not the case we must be outside
   // the contour
-  if( predir==-1 && (fabs(root1[dir])+fabs(root2[dir]))>(spacing+pbc_param) ) predir=1; 
+  // if( predir==-1 && (fabs(root1[dir])+fabs(root2[dir]))>(spacing+pbc_param) ) predir=1; 
   // Set the final value to root that is closest to the "origin" = position of atom
   if( fabs(root1[dir])<fabs(root2[dir]) ){ 
       getPntrToComponent("dist1")->set( predir*fabs(root1[dir]) ); 
       getPntrToComponent("dist2")->set( fabs(root2[dir]) );
-      getPntrToComponent("qdist")->set( predir*fabs(root1[dir])*fabs(root2[dir]) );
   } else { 
       getPntrToComponent("dist1")->set( predir*fabs(root2[dir]) );  
       getPntrToComponent("dist2")->set( fabs(root1[dir]) );
-      getPntrToComponent("qdist")->set( predir*fabs(root2[dir])*fabs(root1[dir]) );
   }
+  getPntrToComponent("qdist")->set( root2[dir]*root1[dir] );
 
   // Now calculate the derivatives
   if( !doNotCalculateDerivatives() ){
       Value* ival=myvalue_vessel->getFinalValue(); ival->clearDerivatives(); 
       std::vector<double> root1v(3); for(unsigned i=0;i<3;++i) root1v[i]=root1[i];
       derivTime=true; std::vector<double> der(3); getDifferenceFromContour( root1v, der ); double prefactor;
-      if( mybasemulticolvars[0]->isDensity() ){
-          if( fabs(root1[dir])<fabs(root2[dir]) ) prefactor = predir*fabs(root1[dir]) / myderiv_vessel->getOutputValue(); 
-          else prefactor = fabs(root2[dir]);
-      } else plumed_error();
+      if( mybasemulticolvars[0]->isDensity() ) prefactor = root2[dir] / myderiv_vessel->getOutputValue();
+      else plumed_error();
       Value* val=getPntrToComponent("qdist"); 
       for(unsigned i=0;i<val->getNumberOfDerivatives();++i) val->setDerivative( i, -prefactor*ival->getDerivative(i) );
       ival->clearDerivatives(); 
       std::vector<double> root2v(3); for(unsigned i=0;i<3;++i) root2v[i]=root2[i];
       getDifferenceFromContour( root2v, der );
-      if( mybasemulticolvars[0]->isDensity() ){
-          if( fabs(root1[dir])<fabs(root2[dir]) ) prefactor = fabs(root2[dir]) / myderiv_vessel->getOutputValue();
-          else prefactor = predir*fabs(root2[dir]) / myderiv_vessel->getOutputValue(); 
-      } else plumed_error();
+      if( mybasemulticolvars[0]->isDensity() ) prefactor = root1[dir] / myderiv_vessel->getOutputValue();
+      else plumed_error();  
       for(unsigned i=0;i<val->getNumberOfDerivatives();++i) val->addDerivative( i, -prefactor*ival->getDerivative(i) );
   }
 }
