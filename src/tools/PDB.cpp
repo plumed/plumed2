@@ -388,7 +388,7 @@ void PDB::print( const double& lunits, SetupMolInfo* mymoldat, OFile& ofile, con
      plumed_assert( psign!=std::string::npos );
      descr2="%s=%-" + fmt.substr(psign+1) + " ";
   }
-  for(std::map<std::string,double>::iterator it=arg_data.begin(); it!=arg_data.end();it++) ofile.printf( descr2.c_str(),it->first.c_str(), it->second ); 
+  for(std::map<std::string,double>::iterator it=arg_data.begin(); it!=arg_data.end();++it) ofile.printf( descr2.c_str(),it->first.c_str(), it->second ); 
   if( argnames.size()>0 ) ofile.printf("\n");
   if( !mymoldat ){
       for(unsigned i=0;i<positions.size();++i){

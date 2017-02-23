@@ -50,7 +50,8 @@ void ReadAnalysisFrames::registerKeywords( Keywords& keys ){
 ReadAnalysisFrames::ReadAnalysisFrames( const ActionOptions& ao ):
 Action(ao),
 AnalysisBase(ao),
-clearonnextstep(false)
+clearonnextstep(false),
+weights_calculated(false)
 {
   parse("CLEAR",clearstride);
   if( clearstride!=0 ) log.printf("  clearing stored data every %d steps\n");

@@ -81,7 +81,7 @@ ActionWithVessel(ao)
      // Check for required properties
      if( !ispath ){
          double prop;
-         for(std::map<std::string,std::vector<double> >::iterator it=property.begin(); it!=property.end();it++){
+         for(std::map<std::string,std::vector<double> >::iterator it=property.begin(); it!=property.end();++it){
              if( !mypdb.getArgumentValue( it->first, prop ) ) error("pdb input does not have contain property named " + it->first ); 
              it->second.push_back(prop);
          }

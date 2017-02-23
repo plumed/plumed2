@@ -106,7 +106,7 @@ SketchMapBase(ao)
      // Break if we are done
      if( !do_read ) break ;
      // Check for required properties
-     for(std::map<std::string,std::vector<double> >::iterator it=property.begin(); it!=property.end();it++){
+     for(std::map<std::string,std::vector<double> >::iterator it=property.begin(); it!=property.end();++it){
          if( !inpdb.getArgumentValue( it->first, prop ) ) error("pdb input does not have contain property named " + it->first );
          it->second.push_back(prop);
      } 
@@ -131,7 +131,7 @@ SketchMapBase(ao)
   requestAtoms( atoms ); std::vector<Value*> req_args; std::vector<std::string> fargs;
   for(unsigned i=0;i<args.size();++i){ 
       bool found=false;
-      for(std::map<std::string,std::vector<double> >::iterator it=property.begin(); it!=property.end();it++){
+      for(std::map<std::string,std::vector<double> >::iterator it=property.begin(); it!=property.end();++it){
           if( args[i]==it->first ){ found=true; break; }
       }
       if( !found ){ fargs.push_back( args[i] ); }
@@ -144,7 +144,7 @@ SketchMapBase(ao)
 
 void SketchMapRead::minimise( Matrix<double>& projections ){
   unsigned j=0; 
-  for(std::map<std::string,std::vector<double> >::iterator it=property.begin(); it!=property.end();it++){
+  for(std::map<std::string,std::vector<double> >::iterator it=property.begin(); it!=property.end();++it){
       for(unsigned i=0;i<myframes.size();++i) projections(i,j) = it->second[i];
       j++;
   }
