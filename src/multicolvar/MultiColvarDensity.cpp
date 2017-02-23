@@ -287,7 +287,7 @@ void MultiColvarDensity::prepareForAveraging(){
 
 void MultiColvarDensity::compute( const unsigned& current, MultiValue& myvals ) const {
   std::vector<double> cvals( mycolv->getNumberOfQuantities() ); stash->retrieveSequentialValue( current, false, cvals );
-  Vector fpos, apos = pbcDistance( origin, mycolv->getCentralAtomPos( mycolv->getActiveTask(current) ) );
+  Vector fpos, apos = pbcDistance( origin, mycolv->getCentralAtomPos( mycolv->getPositionInFullTaskList(current) ) );
   if( fractional ){ fpos = getPbc().realToScaled( apos ); } else { fpos=apos; }
 
   myvals.setValue( 0, cweight*cvals[0] ); for(unsigned j=0;j<directions.size();++j) myvals.setValue( 1+j, fpos[ directions[j] ] );

@@ -79,7 +79,6 @@ void VectorSum::calculate( const unsigned& current, MultiValue& myvals, std::vec
 
   double weight=myvals.get(0); 
   plumed_dbg_assert( weight>=getTolerance() );
-  buffer[bufstart] += weight;
   for(unsigned i=0;i<ncomp;++i) buffer[bufstart + i*(1+nder)] += weight*myvals.get(2+i);
   if( !getAction()->derivativesAreRequired() ) return;
 
@@ -105,7 +104,7 @@ void VectorSum::finish( const std::vector<double>& buffer ){
 
   Value* fval=getFinalValue();
   for(unsigned icomp=0;icomp<ncomp;++icomp){
-      double tmp = buffer[icomp*(1+nder)];    
+      double tmp = buffer[bufstart + icomp*(1+nder)];    
       unsigned bstart = bufstart + icomp*(nder+1) + 1;
       for(unsigned jder=0;jder<nder;++jder) fval->addDerivative( jder, tw*tmp*buffer[bstart + jder] );
   }
