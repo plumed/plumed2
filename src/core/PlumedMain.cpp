@@ -547,7 +547,8 @@ void PlumedMain::readInputWords(const std::vector<std::string> & words){
       log<<"I cannot understand line:";
       for(unsigned i=0;i<interpreted.size();++i) log<<" "<<interpreted[i];
       log<<"\n";
-      exit(1);
+      log.flush();
+      plumed_merror("I cannot understand line " + interpreted[0] + " " + interpreted[1]);
     };
     action->checkRead();
     actionSet.push_back(action);

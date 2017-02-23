@@ -112,11 +112,6 @@ void HistogramOnGrid::calculate( const unsigned& current, MultiValue& myvals, st
      unsigned num_neigh; std::vector<unsigned> neighbors; 
      std::vector<double> der( dimension ); 
      KernelFunctions* kernel=getKernelAndNeighbors( point, num_neigh, neighbors );
-     // If no kernel normalize the vector so von misses distribution is calculated correctly
-     if( !kernel ){ 
-        double norm=0; for(unsigned j=0;j<dimension;++j) norm += point[j]*point[j];
-        norm=sqrt( norm ); for(unsigned j=0;j<dimension;++j) point[j] = point[j] / norm;
-     }
 
      if( !kernel && getType()=="flat" ){
          plumed_dbg_assert( num_neigh==1 );
@@ -131,8 +126,8 @@ void HistogramOnGrid::calculate( const unsigned& current, MultiValue& myvals, st
              unsigned ineigh=neighbors[i];
              if( inactive( ineigh ) ) continue ;
              getGridPointCoordinates( ineigh, xx );
-             for(unsigned j=0;j<dimension;++j) vv[j]->set(xx[j]);
              if( kernel ){
+                  for(unsigned j=0;j<dimension;++j) vv[j]->set(xx[j]);
                   newval = kernel->evaluate( vv, der, true ); 
              } else {
                   // Evalulate dot product
@@ -149,14 +144,15 @@ void HistogramOnGrid::calculate( const unsigned& current, MultiValue& myvals, st
              } 
          }
          if( wasForced() ){
+             // Minus sign for kernel here as we are taking derivative with respect to position of center of 
+             // kernel NOT derivative wrt to grid point
+             double pref = 1; if( kernel ) pref = -1;
              unsigned nder = getAction()->getNumberOfDerivatives();
              unsigned gridbuf = getNumberOfBufferPoints()*getNumberOfQuantities(); 
              for(unsigned j=0;j<dimension;++j){
                  for(unsigned k=0;k<myvals.getNumberActive();++k){
-                     // Minus sign here as we are taking derivative with respect to position of center of kernel NOT derivative wrt to
-                     // grid point
                      unsigned kder=myvals.getActiveIndex(k); 
-                     buffer[ bufstart + gridbuf + kder ] -= intforce[j]*myvals.getDerivative( j+1, kder ); 
+                     buffer[ bufstart + gridbuf + kder ] += pref*intforce[j]*myvals.getDerivative( j+1, kder ); 
                  }
              }
              // Accumulate the sum of all the weights

@@ -278,17 +278,19 @@ void DumpAtoms::update(){
   } else if(type=="xtc" || type=="trr"){
     matrix box;
     const Tensor & t(getPbc().getBox());
-    rvec* pos=new rvec [getNumberOfAtoms()];
-    for(int i=0;i<3;i++) for(int j=0;j<3;j++) box[i][j]=lenunit*t(i,j);
-    for(int i=0;i<getNumberOfAtoms();i++) for(int j=0;j<3;j++) pos[i][j]=lenunit*getPosition(i)(j);
     int natoms=getNumberOfAtoms();
     int step=getStep();
     float time=getTime()/plumed.getAtoms().getUnits().getTime();
     float precision=Tools::fastpow(10.0,iprecision);
+    for(int i=0;i<3;i++) for(int j=0;j<3;j++) box[i][j]=lenunit*t(i,j);
+    rvec* pos=new rvec [natoms];
+// Notice that code below cannot throw any exception.
+// Thus, this pointer is excepton safe
+    for(int i=0;i<natoms;i++) for(int j=0;j<3;j++) pos[i][j]=lenunit*getPosition(i)(j);
     if(type=="xtc"){
-      write_xtc(xd,natoms,step,time,box,pos,precision);
+      write_xtc(xd,natoms,step,time,box,&pos[0],precision);
     } else if(type=="trr"){
-      write_trr(xd,natoms,step,time,0.0,box,pos,NULL,NULL);
+      write_trr(xd,natoms,step,time,0.0,box,&pos[0],NULL,NULL);
     }
     delete [] pos;
 #endif

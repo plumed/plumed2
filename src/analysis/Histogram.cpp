@@ -162,7 +162,7 @@ DUMPGRID GRID=hh FILE=histo STRIDE=100000
 class Histogram : public gridtools::ActionWithGrid { 
 private:
   double ww;
-  bool in_apply;
+  bool in_apply, mvectors;
   KernelFunctions* kernel;
   std::vector<double> forcesToApply, finalForces;
   std::vector<vesselbase::ActionWithVessel*> myvessels;
@@ -190,6 +190,7 @@ PLUMED_REGISTER_ACTION(Histogram,"HISTOGRAM")
 void Histogram::registerKeywords( Keywords& keys ){
   gridtools::ActionWithGrid::registerKeywords( keys ); keys.use("ARG");
   keys.add("optional","DATA","input data from action with vessel and compute histogram");
+  keys.add("optional","VECTORS","input three dimsnional vectors for computing histogram");
   keys.add("compulsory","GRID_MIN","the lower bounds for the grid");
   keys.add("compulsory","GRID_MAX","the upper bounds for the grid");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
@@ -202,58 +203,70 @@ Action(ao),
 ActionWithGrid(ao),
 ww(0.0),
 in_apply(false),
+mvectors(false),
 kernel(NULL),
 my_analysis_object(NULL)
 {
   // Read in arguments 
-  std::vector<std::string> mlab; parseVector("DATA",mlab);
-  if( mlab.size()>0 ){
-     for(unsigned i=0;i<mlab.size();++i){
-         ActionWithVessel* myv = plumed.getActionSet().selectWithLabel<ActionWithVessel*>( mlab[i] );
-         if( !myv ) error("action labelled " + mlab[i] + " does not exist or is not an ActionWithVessel");
-         myvessels.push_back( myv ); stashes.push_back( myv->buildDataStashes( NULL ) );
-         // log.printf("  for all base quantities calculated by %s \n",myvessel->getLabel().c_str() );
-         // Add the dependency
-         addDependency( myv );
-     }
-     unsigned nvals = myvessels[0]->getFullNumberOfTasks();
-     for(unsigned i=1;i<mlab.size();++i){
-         if( nvals!=myvessels[i]->getFullNumberOfTasks() ) error("mismatched number of quantities calculated by actions input to histogram");
-     }
-     log.printf("  for all base quantities calculated by %s ", myvessels[0]->getLabel().c_str() );
-     for(unsigned i=1;i<mlab.size();++i) log.printf(", %s \n", myvessels[i]->getLabel().c_str() );
-     log.printf("\n");
+  std::string vlab; parse("VECTORS",vlab);
+  if( vlab.length()>0 ){
+     ActionWithVessel* myv = plumed.getActionSet().selectWithLabel<ActionWithVessel*>( vlab );
+     if( !myv ) error("action labelled " + vlab + " does not exist or is not an ActionWithVessel");
+     myvessels.push_back( myv ); stashes.push_back( myv->buildDataStashes( NULL ) );
+     addDependency( myv ); mvectors=true;
+     if( myv->getNumberOfQuantities()!=5 ) error("can only compute histograms for three dimensional vectors");
+     log.printf("  for vector quantities calculated by %s \n", vlab.c_str() );
   } else {
-     std::vector<Value*> arg; parseArgumentList("ARG",arg);
-     if(!arg.empty()){
-        log.printf("  with arguments");
-        my_analysis_object=dynamic_cast<AnalysisBase*>( arg[0]->getPntrToAction() );
-        for(unsigned i=0;i<arg.size();i++){
-           if( my_analysis_object && (arg[0]->getPntrToAction())->getLabel()!=(arg[i]->getPntrToAction())->getLabel() ){
-               error("all arguments should be from one single analysis object");
-           }
-           log.printf(" %s",arg[i]->getName().c_str());
+     std::vector<std::string> mlab; parseVector("DATA",mlab);
+     if( mlab.size()>0 ){
+        for(unsigned i=0;i<mlab.size();++i){
+            ActionWithVessel* myv = plumed.getActionSet().selectWithLabel<ActionWithVessel*>( mlab[i] );
+            if( !myv ) error("action labelled " + mlab[i] + " does not exist or is not an ActionWithVessel");
+            myvessels.push_back( myv ); stashes.push_back( myv->buildDataStashes( NULL ) );
+            // log.printf("  for all base quantities calculated by %s \n",myvessel->getLabel().c_str() );
+            // Add the dependency
+            addDependency( myv );
         }
-        if( my_analysis_object ){
-            if( getStride()!=1 ) error("stride should not have been set when calculating histogram from analysis data");
-            setStride(0); addDependency( my_analysis_object );
-        } 
+        unsigned nvals = myvessels[0]->getFullNumberOfTasks();
+        for(unsigned i=1;i<mlab.size();++i){
+            if( nvals!=myvessels[i]->getFullNumberOfTasks() ) error("mismatched number of quantities calculated by actions input to histogram");
+        }
+        log.printf("  for all base quantities calculated by %s ", myvessels[0]->getLabel().c_str() );
+        for(unsigned i=1;i<mlab.size();++i) log.printf(", %s \n", myvessels[i]->getLabel().c_str() );
         log.printf("\n");
-        // Retrieve the bias acting and make sure we request this also
-        std::vector<Value*> bias( ActionWithArguments::getArguments() );
-        if( my_analysis_object && bias.size()>0 ) error("reweighting is not consistent with constructing histograms from analysis objects");
-        for(unsigned i=0;i<bias.size();++i) arg.push_back( bias[i] ); 
-        requestArguments(arg);
+     } else {
+        std::vector<Value*> arg; parseArgumentList("ARG",arg);
+        if(!arg.empty()){
+           log.printf("  with arguments");
+           my_analysis_object=dynamic_cast<AnalysisBase*>( arg[0]->getPntrToAction() );
+           for(unsigned i=0;i<arg.size();i++){
+               if( my_analysis_object && (arg[0]->getPntrToAction())->getLabel()!=(arg[i]->getPntrToAction())->getLabel() ){
+                   error("all arguments should be from one single analysis object");
+               }
+               log.printf(" %s",arg[i]->getName().c_str());
+           }
+           if( my_analysis_object ){
+               if( getStride()!=1 ) error("stride should not have been set when calculating histogram from analysis data");
+               setStride(0); addDependency( my_analysis_object );
+           }
+           log.printf("\n");
+           // Retrieve the bias acting and make sure we request this also
+           std::vector<Value*> bias( ActionWithArguments::getArguments() );
+           if( my_analysis_object && bias.size()>0 ) error("reweighting is not consistent with constructing histograms from analysis objects");
+           for(unsigned i=0;i<bias.size();++i) arg.push_back( bias[i] ); 
+           requestArguments(arg);
+        }
      }
   } 
 
   // Read stuff for grid
   unsigned narg = getNumberOfArguments();
   if( myvessels.size()>0 ) narg=myvessels.size();
-
   // Input of name and labels
   std::string vstring="COMPONENTS=" + getLabel();
-  if( myvessels.size()>0 ){
+  if( mvectors ){
+     vstring += " COORDINATES=x,y,z PBC=F,F,F";
+  } else if( myvessels.size()>0 ){
      vstring += " COORDINATES=" + myvessels[0]->getLabel();
      for(unsigned i=1;i<myvessels.size();++i) vstring +="," + myvessels[i]->getLabel();
      // Input for PBC
@@ -277,6 +290,7 @@ my_analysis_object(NULL)
   // And create the grid
   createGrid( "histogram", vstring ); 
   if( mygrid->getType()=="flat" ){
+      if( mvectors ) error("computing histogram for three dimensional vectors but grid is not of fibonacci type - use CONCENTRATION");
       std::vector<std::string> gmin( narg ), gmax( narg );
       parseVector("GRID_MIN",gmin); parseVector("GRID_MAX",gmax);
       std::vector<unsigned> nbin; parseVector("GRID_BIN",nbin);
@@ -304,7 +318,7 @@ my_analysis_object(NULL)
      myhist->addOneKernelEachTimeOnly();
      setAveragingAction( mygrid, myhist->noDiscreteKernels() ); 
   }
-  checkRead(); 
+  checkRead();
 }
 
 void Histogram::turnOnDerivatives(){
@@ -335,8 +349,9 @@ unsigned Histogram::getNumberOfDerivatives(){
 }
 
 unsigned Histogram::getNumberOfQuantities() const {
-  if( myvessels.size()>0 ) return myvessels.size()+2;
+  if( mvectors ) return myvessels[0]->getNumberOfQuantities();
   else if( my_analysis_object ) return getNumberOfArguments()+2;
+  else if( myvessels.size()>0 ) return myvessels.size()+2;
   return 2;
 }
 
@@ -398,7 +413,21 @@ void Histogram::finishAveraging(){
 }
 
 void Histogram::compute( const unsigned& current, MultiValue& myvals ) const {  
-  if( myvessels.size()>0 ){
+  if( mvectors ){
+      std::vector<double> cvals( myvessels[0]->getNumberOfQuantities() );
+      stashes[0]->retrieveSequentialValue( current, true, cvals ); 
+      for(unsigned i=2;i<myvessels[0]->getNumberOfQuantities();++i) myvals.setValue( i-1, cvals[i] ); 
+      myvals.setValue( 0, cvals[0] ); myvals.setValue( myvessels[0]->getNumberOfQuantities() - 1, ww );   
+      if( in_apply ){
+          MultiValue tmpval( myvessels[0]->getNumberOfQuantities(), myvessels[0]->getNumberOfDerivatives() );
+          stashes[0]->retrieveDerivatives( stashes[0]->getTrueIndex(current), true, tmpval );
+          for(unsigned j=0;j<tmpval.getNumberActive();++j){
+              unsigned jder=tmpval.getActiveIndex(j); myvals.addDerivative( 0, jder, tmpval.getDerivative(0, jder) );
+              for(unsigned i=2;i<myvessels[0]->getNumberOfQuantities();++i) myvals.addDerivative( i-1, jder, tmpval.getDerivative(i, jder) );
+          }
+          myvals.updateDynamicList(); 
+      }
+  } else if( myvessels.size()>0 ){
       std::vector<double> cvals( myvessels[0]->getNumberOfQuantities() );
       stashes[0]->retrieveSequentialValue( current, false, cvals );
       unsigned derbase; double totweight=cvals[0], tnorm = cvals[0]; myvals.setValue( 1, cvals[1] ); 
@@ -452,6 +481,7 @@ void Histogram::compute( const unsigned& current, MultiValue& myvals ) const {
           // Evaluate the histogram at the relevant grid point and set the values 
           double vvh = kernel->evaluate( vv, der ,true); myvals.setValue( 1, vvh );
       } else {
+          plumed_merror("normalisation of vectors does not work with arguments and spherical grids");
           // Evalulate dot product
           double dot=0; for(unsigned j=0;j<getNumberOfArguments();++j){ dot+=val[j]*getArgument(j); der[j]=val[j]; }
           // Von misses distribution for concentration parameter
