@@ -3,6 +3,8 @@
 set -e
 set -x
 
+cd "$(mktemp -d)"
+
 git clone https://github.com/doxygen/doxygen.git
 
 cd doxygen
