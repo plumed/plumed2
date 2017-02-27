@@ -31,7 +31,6 @@
 #include "tools/Random.h"
 #include <cmath>
 #include <ctime>
-#include <iostream>
 
 using namespace std;
 
@@ -381,7 +380,7 @@ void Rescale::calculate()
         if(comm.Get_size()>1)  comm.Sum(&all_args[i], 1);
      }
   }
-  
+
   // now separate terms that should be rescaled
   vector<double> args;
   if(getNumberOfArguments()-nores_>0) args.resize(getNumberOfArguments()-nores_);
@@ -390,7 +389,7 @@ void Rescale::calculate()
   vector<double> bargs;
   if(nores_>0) bargs.resize(nores_);
   for(unsigned i=0; i<bargs.size(); ++i) bargs[i] = all_args[i+args.size()];
-     
+  
   // calculate energy and forces, only on rescaled terms
   double ene = 0.0;
   for(unsigned i=0; i<args.size(); ++i){
@@ -400,7 +399,10 @@ void Rescale::calculate()
     // add force
     setOutputForce(i, -fact);
   }
-  
+
+  // set to zero on the others
+  for(unsigned i=0; i<bargs.size(); ++i) setOutputForce(i+args.size(), 0.0);
+ 
   // set value of the bias
   setBias(ene);
   // set value of the wt-bias
