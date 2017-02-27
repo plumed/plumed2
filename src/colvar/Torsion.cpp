@@ -107,7 +107,7 @@ do_cosine(false)
   checkRead();
 
   if(atoms.size()==4){
-    if(!(v1.empty()) && (v2.empty()) && (axis.empty()))
+    if(!(v1.empty() && v2.empty() && axis.empty()))
       error("ATOMS keyword is not compatible with VECTOR1, VECTOR2 and AXIS keywords");
     log.printf("  between atoms %d %d %d %d\n",atoms[0].serial(),atoms[1].serial(),atoms[2].serial(),atoms[3].serial());
     atoms.resize(6);
