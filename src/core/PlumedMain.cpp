@@ -776,11 +776,10 @@ void PlumedMain::load(const std::string& ss){
      s=base+"."+config::getSoExt();
      void *p=dlloader.load(s);
      if(!p){
+       const std::string error_msg="I cannot load library " + ss + " " + dlloader.error();
        log<<"ERROR\n";
-       log<<"I cannot load library "<<ss<<"\n";
-       log<<dlloader.error();
-       log<<"\n";
-       this->exit(1);
+       log<<error_msg<<"\n";
+       plumed_merror(error_msg);
      }
      log<<"Loading shared library "<<s.c_str()<<"\n";
      log<<"Here is the new list of available actions\n";
