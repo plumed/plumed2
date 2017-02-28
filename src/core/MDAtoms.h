@@ -100,7 +100,6 @@ public:
   virtual void updateForces(const std::vector<int>&index,const std::vector<Vector>&f)=0;
 /// Rescale all the forces, including the virial.
 /// It is applied to all atoms with local index going from 0 to index.size()-1
-/// \attention the virial is not scaled indeed... is it a bug??
   virtual void rescaleForces(const std::vector<int>&index,double factor)=0;
 };
 
