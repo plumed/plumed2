@@ -213,8 +213,8 @@ void GridVessel::getSplineNeighbors( const unsigned& mybox, unsigned& nneighbors
   if( mysneigh.size()!=nneigh ) mysneigh.resize(nneigh);
 
   unsigned inind; nneighbors = 0;
-  static std::vector<unsigned> tmp_indices( dimension );
-  static std::vector<unsigned> my_indices( dimension );
+  std::vector<unsigned> tmp_indices( dimension );
+  std::vector<unsigned> my_indices( dimension );
   getIndices( mybox, my_indices );
   for(unsigned i=0;i<nneigh;++i){
      unsigned tmp=i; inind=0;
