@@ -44,8 +44,8 @@ const std::unordered_map<std::string, int> & GREXWordMap() {
 
 GREX::GREX(PlumedMain&p):
   initialized(false),
-  intracomm(*new Communicator),
-  intercomm(*new Communicator),
+  intracomm_fwd(new Communicator),
+  intercomm_fwd(new Communicator),
   plumedMain(p),
   atoms(p.getAtoms()),
   partner(-1), // = unset
@@ -59,8 +59,7 @@ GREX::GREX(PlumedMain&p):
 }
 
 GREX::~GREX() {
-  delete &intercomm;
-  delete &intracomm;
+// empty destructor to delete unique_ptr
 }
 
 #define CHECK_INIT(ini,word) plumed_massert(ini,"cmd(\"" + word +"\") should be only used after GREX initialization")

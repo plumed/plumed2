@@ -29,12 +29,10 @@ namespace PLMD {
 ExchangePatterns::ExchangePatterns():
   PatternFlag(NONE),
   NumberOfReplicas(1),
-  random(*new Random)
+  random_fwd(new Random)
 {}
 
-ExchangePatterns::~ExchangePatterns()
-{
-  delete &random;
+ExchangePatterns::~ExchangePatterns() {
 }
 
 void ExchangePatterns::setNofR(const int nrepl) {

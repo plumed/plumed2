@@ -26,6 +26,7 @@
 #include "tools/Tensor.h"
 #include "Atoms.h"
 #include "tools/Pbc.h"
+#include "tools/ForwardDecl.h"
 #include <vector>
 #include <set>
 
@@ -47,7 +48,8 @@ class ActionAtomistic :
   std::set<AtomNumber>  unique_local;
   std::vector<Vector>   positions;       // positions of the needed atoms
   double                energy;
-  Pbc&                  pbc;
+  ForwardDecl<Pbc>      pbc_fwd;
+  Pbc&                  pbc=*pbc_fwd;
   Tensor                virial;
   std::vector<double>   masses;
   bool                  chargesWereSet;

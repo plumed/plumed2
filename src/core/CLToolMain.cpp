@@ -41,12 +41,12 @@ CLToolMain::CLToolMain():
   argc(0),
   in(stdin),
   out(stdout),
-  comm(*new Communicator)
+  comm_fwd(new Communicator)
 {
 }
 
 CLToolMain::~CLToolMain() {
-  delete &comm;
+// empty destructor to delete unique_ptr
 }
 
 #define CHECK_NULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"CLTool " + word + "\")");

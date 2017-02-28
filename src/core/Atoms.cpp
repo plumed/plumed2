@@ -41,7 +41,7 @@ class PlumedMain;
 
 Atoms::Atoms(PlumedMain&plumed):
   natoms(0),
-  pbc(*new Pbc),
+  pbc_fwd(new Pbc),
   energy(0.0),
   dataCanBeSet(false),
   collectEnergy(false),
@@ -71,7 +71,6 @@ Atoms::~Atoms() {
   if(actions.size()>0) {
     std::cerr<<"WARNING: there is some inconsistency in action added to atoms, as some of them were not properly destroyed. This might indicate an internal bug!!\n";
   }
-  delete &pbc;
 }
 
 void Atoms::startStep() {

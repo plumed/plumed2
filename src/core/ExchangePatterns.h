@@ -22,13 +22,16 @@
 #ifndef __PLUMED_core_ExchangePatterns_h
 #define __PLUMED_core_ExchangePatterns_h
 
+#include "tools/ForwardDecl.h"
+
 namespace PLMD {
 class Random;
 
 class ExchangePatterns {
   int    PatternFlag;
   int    NumberOfReplicas;
-  Random& random;
+  ForwardDecl<Random> random_fwd;
+  Random& random=*random_fwd;
 public:
   ExchangePatterns();
   ~ExchangePatterns();

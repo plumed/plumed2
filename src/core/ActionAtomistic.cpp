@@ -40,12 +40,11 @@ namespace PLMD {
 ActionAtomistic::~ActionAtomistic() {
 // forget the pending request
   atoms.remove(this);
-  delete(&pbc);
 }
 
 ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
   Action(ao),
-  pbc(*new(Pbc)),
+  pbc_fwd(new(Pbc)),
   lockRequestAtoms(false),
   donotretrieve(false),
   donotforce(false),

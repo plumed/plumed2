@@ -499,6 +499,63 @@ unique_ptr in advance, you should insert it with the following syntax
   objs.emplace_back(std::move(to_insert));
 \endverbatim
 
+\subsection cxx11features-forward
+
+Notice that also forward declarations discussed above are a bit simpler
+to implement using C++11 syntax. This can be done using a std::unique_ptr
+or, even better, using the class ForwardDecl, which is similar to
+a std::unique_ptr but only implements the necessary method in order to be
+less error prone.
+
+
+\verbatim
+/////////////////////////////////////////////
+// This is file B-good.h
+#include "tools/ForwardDecl.h"
+
+namespace PLMD{
+
+// this command just instructs the compiler that A is a class:
+class A;
+// no inclusion of A.h is required!
+
+class B{
+  ForwardDecl<A> content_fwd;
+  A& content1=*content1_fwd;
+  ForwardDecl<A> content_fwd;
+  A& content2=*content2_fwd;
+public:
+  B();
+  ~B();
+};
+
+}
+
+/////////////////////////////////////////////
+// Using B-good.h enforces to add something in B-good.cpp
+
+#include "A.h"
+#include "B-good.h"
+
+using namespace PLMD;
+
+B::B():
+  content1_fwd(*new A),
+  content2_fwd(*new A (argument))
+{
+}
+
+B::~B(){
+// empty destructor
+}
+
+\endverbatim
+
+Notice that it is necessary to add a destructor, even though it is empty.
+The reason is that if the compiler tries to construct an inline destructor for this class
+it will not be able to create it (the class is not completely defined in `B.h`.
+However, the advantage is that objects are deallocated in the correct order as if they were
+normal members of class B, that is the inverse of the initialization order.
 
 \section conc Conclusion
 

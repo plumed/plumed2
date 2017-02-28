@@ -62,21 +62,21 @@ const std::unordered_map<std::string, int> & plumedMainWordMap() {
 }
 
 PlumedMain::PlumedMain():
-  comm(*new Communicator),
-  multi_sim_comm(*new Communicator),
-  dlloader(*new DLLoader),
-  stopwatch(*new Stopwatch),
+  comm_fwd(new Communicator),
+  multi_sim_comm_fwd(new Communicator),
+  dlloader_fwd(new DLLoader),
+  stopwatch_fwd(new Stopwatch),
   initialized(false),
-  log(*new Log),
-  citations(*new Citations),
+  log_fwd(new Log),
+  citations_fwd(new Citations),
   step(0),
   active(false),
   endPlumed(false),
-  atoms(*new Atoms(*this)),
-  actionSet(*new ActionSet(*this)),
+  atoms_fwd(new Atoms(*this)),
+  actionSet_fwd(new ActionSet(*this)),
   bias(0.0),
   work(0.0),
-  exchangePatterns(*new(ExchangePatterns)),
+  exchangePatterns_fwd(new(ExchangePatterns)),
   exchangeStep(false),
   restart(false),
   doCheckPoint(false),
@@ -95,15 +95,6 @@ PlumedMain::~PlumedMain() {
   stopwatch.start();
   stopwatch.stop();
   if(initialized) log<<stopwatch;
-  delete &exchangePatterns;
-  delete &actionSet;
-  delete &citations;
-  delete &atoms;
-  delete &log;
-  delete &stopwatch;
-  delete &dlloader;
-  delete &comm;
-  delete &multi_sim_comm;
 }
 
 /////////////////////////////////////////////////////////////

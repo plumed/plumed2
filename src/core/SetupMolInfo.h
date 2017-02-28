@@ -25,6 +25,7 @@
 #include "ActionSetup.h"
 #include "ActionAtomistic.h"
 #include "tools/Exception.h"
+#include "tools/ForwardDecl.h"
 
 namespace PLMD {
 
@@ -34,8 +35,9 @@ class SetupMolInfo :
   public ActionSetup,
   public ActionAtomistic {
 private:
+  ForwardDecl<PDB> pdb_fwd;
 /// A pdb file containing the topology
-  PDB& pdb;
+  PDB& pdb=*pdb_fwd;
 /// The type of molecule in the pdb
   std::string mytype;
 /// The backbone that was read in from the pdb file
