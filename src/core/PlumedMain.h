@@ -28,6 +28,7 @@
 #include <vector>
 #include <set>
 #include <stack>
+#include <memory>
 
 
 // !!!!!!!!!!!!!!!!!!!!!!    DANGER   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
@@ -81,9 +82,9 @@ public:
 private:
   DLLoader& dlloader;
 
-  WithCmd* cltool;
+  std::unique_ptr<WithCmd> cltool;
   Stopwatch& stopwatch;
-  WithCmd* grex;
+  std::unique_ptr<WithCmd> grex;
 /// Flag to avoid double initialization
   bool  initialized;
 /// Name of MD engine

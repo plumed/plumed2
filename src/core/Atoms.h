@@ -31,6 +31,7 @@
 #include <set>
 #include <map>
 #include <string>
+#include <memory>
 
 namespace PLMD {
 
@@ -80,7 +81,7 @@ class Atoms
 
   std::vector<int> fullList;
 
-  MDAtomsBase* mdatoms;
+  std::unique_ptr<MDAtomsBase> mdatoms;
 
   PlumedMain & plumed;
 

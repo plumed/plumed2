@@ -65,9 +65,7 @@ PlumedMain::PlumedMain():
   comm(*new Communicator),
   multi_sim_comm(*new Communicator),
   dlloader(*new DLLoader),
-  cltool(NULL),
   stopwatch(*new Stopwatch),
-  grex(NULL),
   initialized(false),
   log(*new Log),
   citations(*new Citations),
@@ -102,9 +100,7 @@ PlumedMain::~PlumedMain() {
   delete &citations;
   delete &atoms;
   delete &log;
-  if(grex)  delete grex;
   delete &stopwatch;
-  if(cltool) delete cltool;
   delete &dlloader;
   delete &comm;
   delete &multi_sim_comm;
@@ -439,7 +435,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       *(static_cast<int*>(val))=(actionRegister().check(words[1]) ? 1:0);
       break;
     case cmd_GREX:
-      if(!grex) grex=new GREX(*this);
+      if(!grex) grex.reset(new GREX(*this));
       plumed_massert(grex,"error allocating grex");
       {
         std::string kk=words[1];
@@ -449,7 +445,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       break;
     case cmd_CLTool:
       CHECK_NOTINIT(initialized,word);
-      if(!cltool) cltool=new CLToolMain;
+      if(!cltool) cltool.reset(new CLToolMain);
       {
         std::string kk=words[1];
         for(unsigned i=2; i<words.size(); i++) kk+=" "+words[i];
