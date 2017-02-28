@@ -43,6 +43,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <set>
+#include <unordered_map>
 
 using namespace std;
 
@@ -50,8 +51,8 @@ using namespace std;
 
 namespace PLMD{
 
-std::map<std::string, int> & plumedMainWordMap(){
-  static std::map<std::string, int> word_map;
+const std::unordered_map<std::string, int> & plumedMainWordMap(){
+  static std::unordered_map<std::string, int> word_map;
   static bool init=false;
   if(!init){
 #include "PlumedMainMap.inc"
@@ -127,7 +128,7 @@ void PlumedMain::cmd(const std::string & word,void*val){
   } else {
     int iword=-1;
     double d;
-    std::map<std::string, int>::const_iterator it=plumedMainWordMap().find(words[0]);
+    auto it=plumedMainWordMap().find(words[0]);
     if(it!=plumedMainWordMap().end()) iword=it->second;
     switch(iword) {
       case cmd_setBox:

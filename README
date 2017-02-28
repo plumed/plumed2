@@ -23,7 +23,7 @@ http://www.plumed.org/documentation
 
 Needed software:
 * GNU make
-* c/c++ compiler
+* c/c++ compiler (c++11 support is required as of version 2.4).
 * a modern version of the "patch"
 * support for POSIX library dirent.h
 * xxd (present in most unix distributions)
