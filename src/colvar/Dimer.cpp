@@ -1,4 +1,25 @@
-// LEGAL CRAP HERE
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+   Copyright (c) 2011-2017 The plumed team
+   (see the PEOPLE file at the root of the distribution for a list of names)
+
+   See http://www.plumed.org for more information.
+
+   This file is part of plumed, version 2.
+
+   plumed is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   plumed is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
 
 #include "Colvar.h"
 #include "ActionRegister.h"
@@ -15,8 +36,95 @@ namespace colvar{
 
 //+PLUMEDOC COLVAR DIMER
 /*
-WRITE DOCUMENTATION + INPUT EXAMPLE HERE
-I DONT WANT TO DIE SO I'LL WRITE IT BEFORE PUSHING
+This CV computes the Dimer interaction energy for a collection of Dimers.
+ 
+Each Dimer represents an atom, as described in the Dimer paper, 
+JCTC 13, 425 (2017). A system of N atoms is thus represented with N Dimers, each 
+Dimer being composed of two beads and eventually a virtual site representing its center of mass.
+ 
+A typical configuration for a dimerized system has the following ordering of atoms:
+
+1    TAG1 X Y Z          N atoms representing the first bead of each Dimer
+
+2    TAG2 X Y Z
+
+...
+
+N    TAGN X Y Z          N atoms representing the second bead of each Dimer
+
+N+1  TAG1 X Y Z
+
+N+2  TAG2 X Y Z
+
+...
+
+2N   TAGN X Y Z          Optional: N atoms representing the center of mass of each Dimer
+
+2N+1 TAG1 X Y Z
+
+2N+2 TAG2 X Y Z
+
+...
+
+3N   TAGN X Y Z          The configuration might go on with un-dimerized atoms (like a solvent)
+
+3N+1  
+ 
+3N+2  
+               
+...
+
+
+The Dimer interaction energy is defined between atoms x and N+x, for x=1,...,N and is 
+characterized by two parameters Q and DSIGMA. These are passed as mandatory arguments along with 
+the temperature of the system. 
+
+\par Examples
+
+This line tells Plumed to compute the Dimer interaction energy for every dimer in the system.
+
+\verbatim
+dim: DIMER TEMP=300 Q=0.5 ALLATOMS DSIGMA=0.002
+\endverbatim
+
+If the simulation doesn't use virtual sites for the dimers centers of mass, 
+Plumed has to know in order to determine correctly the total number of dimers from 
+the total number of atoms:
+\verbatim
+dim: DIMER TEMP=300 Q=0.5 ALLATOMS DSIGMA=0.002 NOVSITES
+\endverbatim
+
+The NOVSITES flag is not required if one provides the atom serial of each Dimer. This is 
+defined as the atom serial of the first bead of the dimer and is thus a number between 1 and N. 
+Along with the ATOMS list also the number N of lines describing the first beads has to be given.
+For example, the Dimer interaction energy of dimers 1,5,7 is: 
+\verbatim
+dim: DIMER TEMP=300 Q=0.5 NATOMS=N ATOMS=1,5,7 DSIGMA=0.002
+\endverbatim
+
+In a Replica Exchange simulation the keyword DSIGMA can be used in two ways: 
+if a plumed.n.dat file is provided for each replica, then DSIGMA is passed as a single value, 
+like in the previous examples, and each replica will read its own DSIGMA value. If 
+a unique plumed.dat is given, DSIGMA has to be a list containing a value for each replica. 
+For 4 replicas:
+\verbatim
+dim: DIMER TEMP=300 Q=0.5 NATOMS=N ATOMS=1,5,7 DSIGMA=0.002,0.002,0.004,0.01
+\endverbatim
+
+
+\par Usage of the CV
+
+The dimer interaction is not coded in the driver program and has to be inserted 
+in the hamiltonian of the system as a linear RESTRAINT (see \ref RESTRAINT):
+\verbatim
+dim: DIMER TEMP=300 Q=0.5 ALLATOMS DSIGMA=0.002
+RESTRAINT ARG=dim AT=0 KAPPA=0 SLOPE=1 LABEL=dimforces
+\endverbatim
+
+In a replica exchange, Metadynamics (see \ref METAD) can be used on the Dimer CV to reduce 
+the number of replicas. Just keep in mind that METAD SIGMA values should be tuned 
+in the standard way for each replica according to the value of DSIGMA. 
+
 */
 //+ENDPLUMEDOC
 
@@ -28,10 +136,10 @@ class Dimer : public Colvar {
 	protected:
 		bool trimer,useall;
 		int myrank, nranks, natoms;
-	private:
-		void consistencyCheck();
 		double qexp,temperature,beta,dsigma;
 		vector<double> dsigmas;
+	private:
+		void consistencyCheck();
 		vector<int> usedatoms;
 };
 
@@ -45,10 +153,10 @@ void Dimer::registerKeywords( Keywords& keys){
 	keys.add("compulsory","DSIGMA","The interaction strength of the dimer bond.");
 	keys.add("compulsory", "Q", "The exponent of the dimer potential.");
 	keys.add("compulsory", "TEMP", "The temperature (in Kelvin) of the simulation.");
-	keys.add("compulsory", "ATOMS", "The list of atoms being considered by this CV. Used if ALLATOMS flag is missing");
-	keys.add("compulsory","NATOMS","The number of dimerized atoms. Used with ATOMS list");
+	keys.add("atoms", "ATOMS", "The list of atoms being considered by this CV. Used if ALLATOMS flag is missing");
+	keys.add("atoms","NATOMS","The number of dimerized atoms. Used in combination with ATOMS list");
 	keys.addFlag("ALLATOMS", false, "Use EVERY atom of the system. Overrides ATOMS keyword.");
-	keys.addFlag("VSITES", false, "If present the configuration is with virtual sites at the centroids.");
+	keys.addFlag("NOVSITES", false, "If present the configuration is without virtual sites at the centroids.");
 	
 }
 
@@ -58,17 +166,18 @@ Dimer::Dimer(const ActionOptions& ao):
 	PLUMED_COLVAR_INIT(ao)
 {
 	
-	log<<" Bibliography here...";
+	log<<" Please cite J. Chem. Theory Comput. 13, 425(2017)";
 	parseVector("DSIGMA",dsigmas);
 	parse("Q",qexp);
-	
 	parse("TEMP",temperature);
 	
 	
 	vector<AtomNumber> atoms;   
 	parseFlag("ALLATOMS",useall);
-	trimer=false;
-	parseFlag("VSITES",trimer);
+	trimer=true;
+	bool notrim;
+	parseFlag("NOVSITES",notrim);
+	trimer=!notrim;
 	
 	nranks=multi_sim_comm.Get_size();
 	myrank=multi_sim_comm.Get_rank();
@@ -95,13 +204,15 @@ Dimer::Dimer(const ActionOptions& ao):
 			atoms.push_back(ati);
 		}
 	}
-	else  // comment on this  
+	else  // serials for the first beads of each dimer are given 
 	{
 		parseVector("ATOMS",usedatoms);
 		double ntm;
 		parse("NATOMS",ntm);
 		natoms=ntm;
-		unsigned int isz = usedatoms.size();
+		
+		int isz = usedatoms.size();
+		
 		for(unsigned int i=0;i<isz;i++)
 		{
 			AtomNumber ati;
@@ -169,14 +280,7 @@ void Dimer::calculate()
 	for(unsigned int i=0;i<derivatives.size();i++)
 		setAtomsDerivatives(i,derivatives[i]);
 	
-	// Don't use variable box dimensions:
-	// length of the dimer in pbc is ill posed if both replicas are doing 
-	// different NPT simulations and I don't see any easy way of syncing them.
-	// Well... if  we manage to make a dimer in a single replica probably we 
-	// will also have this.
-	Tensor virial; 
-	plumed_dbg_assert( !mypack.virialWasSet() );
-  	setBoxDerivativesNoPbc();
+	setBoxDerivativesNoPbc();
 	setValue(cv_val);
 	
 }
@@ -190,7 +294,7 @@ These are checked here and PLUMED error handlers are (eventually) called.
 void Dimer::consistencyCheck()
 {
 	if(useall==false && natoms==0)
-		error("With ATOMS also NATOMS is required to specify the number of dimerized atoms.");
+		error("Either NATOMS or ATOMS are required to specify the number of dimerized atoms.");
 		
 	if(qexp<0.5 || qexp>1)
 		warning("Dimer CV is meant to be used with q-exponents between 0.5 and 1. We are not responsible for any black hole. :-)");
@@ -199,7 +303,8 @@ void Dimer::consistencyCheck()
 	if(temperature<0)
 		error("Please, use a positive value for the temperature...");
 	
-	// if dsigmas has only one element means that you are using different plumed.x.dat files
+	// if dsigmas has only one element means that either 
+	// you are using different plumed.x.dat files or a plumed.dat with a single replica
 	if(dsigmas.size()!=nranks && dsigmas.size()!=1) 
 		error("Mismatch between provided sigmas and number of replicas");
 
