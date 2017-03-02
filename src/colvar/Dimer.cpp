@@ -124,7 +124,6 @@ RESTRAINT ARG=dim AT=0 KAPPA=0 SLOPE=1 LABEL=dimforces
 In a replica exchange, Metadynamics (see \ref METAD) can be used on the Dimer CV to reduce 
 the number of replicas. Just keep in mind that METAD SIGMA values should be tuned 
 in the standard way for each replica according to the value of DSIGMA. 
-
 */
 //+ENDPLUMEDOC
 
