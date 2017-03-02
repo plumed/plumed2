@@ -101,7 +101,7 @@ It is useful to think carefully about how you can reuse other parts of the code 
 how PLMD::OptimalRMSD and PLMD::SimpleRMSD make extensive use of the PLMD::RMSD class.  Similarly notice how the PLMD::OptimalRMSD,
 PLMD::SimpleRMSD and PLMD::DRMSD classes are reused in PLMD::MultiDomainRMSD.
 
-\section docs Adding documentation for your measure
+\section AddingAMeasureDocs Adding documentation for your measure
 
 To test whether you have implemented you new measure correctly you should implement a small Action that calculates the
 distance between the instantaneous positions of the atoms and some read in reference configuration.  The methods

@@ -103,6 +103,7 @@ endif
 install-html:
 	if test -d ../../user-doc/html ; then mkdir -p "$(DESTDIR)$(htmldir)" && cd ../../ && tar cf - user-doc/html | tar xf - -C "$(DESTDIR)$(htmldir)/" ; fi
 	if test -d ../../developer-doc/html ; then mkdir -p "$(DESTDIR)$(htmldir)" && cd ../../ && tar cf - developer-doc/html | tar xf - -C "$(DESTDIR)$(htmldir)/" ; fi
+	if test -d ../../developer-doc/coverage ; then mkdir -p "$(DESTDIR)$(htmldir)" && cd ../../ && tar cf - developer-doc/coverage | tar xf - -C "$(DESTDIR)$(htmldir)/" ; fi
 	if test -f ../../user-doc/manual.pdf ; then mkdir -p "$(DESTDIR)$(htmldir)/user-doc" && cp ../../user-doc/manual.pdf "$(DESTDIR)$(htmldir)/user-doc/" ; fi
 
 install:
@@ -178,7 +179,7 @@ endif
 # patch file for cross compiling
 	cp install/plumed-patch "$(DESTDIR)$(bindir)/$(program_name)-patch"
 # config file for cross compiling
-	cp install/plumed-patch "$(DESTDIR)$(bindir)/$(program_name)-config"
+	cp install/plumed-config "$(DESTDIR)$(bindir)/$(program_name)-config"
 # copy include files for cmake and make
 # we leave it in src/lib/ for backward compatibility
 	cp install/Plumed.cmake* "$(DESTDIR)$(libdir)/$(program_name)/src/lib/"

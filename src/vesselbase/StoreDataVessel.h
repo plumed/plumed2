@@ -87,6 +87,8 @@ public:
   virtual unsigned getNumberOfStoredValues() const ;
 /// Get the index to store a particular index inside
   unsigned getStoreIndex( const unsigned& ) const ;
+/// Get the true index of a quantity from the index it is stored in
+  unsigned getTrueIndex( const unsigned& ) const ;
 /// Recalculate one of the base quantities
   void recalculateStoredQuantity( const unsigned& myelm, MultiValue& myvals );
 /// Set a hard cutoff on the weight of an element
@@ -178,6 +180,11 @@ unsigned StoreDataVessel::getStoreIndex( const unsigned& ind ) const {
       else if( getAction()->indexOfTaskInFullList[m]>ind ) r=m-1;
   }
   plumed_merror("requested task is not active");
+}
+
+inline
+unsigned StoreDataVessel::getTrueIndex( const unsigned& ind ) const {
+  return getAction()->indexOfTaskInFullList[ind];
 }
 
 inline

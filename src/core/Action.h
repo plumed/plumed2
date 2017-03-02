@@ -313,8 +313,10 @@ void Action::parse(const std::string&key,T&t){
   plumed_massert(keywords.exists(key),"keyword " + key + " has not been registered");
 
   // Now try to read the keyword
-  bool found; std::string def; 
-  found=Tools::parse(line,key,t);
+  std::string def; 
+  bool present=Tools::findKeyword(line,key);
+  bool found=Tools::parse(line,key,t);
+  if(present && !found) error("keyword " + key +" could not be read correctly");
   
   // If it isn't read and it is compulsory see if a default value was specified 
   if ( !found && (keywords.style(key,"compulsory") || keywords.style(key,"hidden")) ){
@@ -354,8 +356,10 @@ void Action::parseVector(const std::string&key,std::vector<T>&t){
   if(size==0) skipcheck=true;
 
   // Now try to read the keyword
-  bool found; std::string def; T val;
-  found=Tools::parseVector(line,key,t);
+  std::string def; T val;
+  bool present=Tools::findKeyword(line,key);
+  bool found=Tools::parseVector(line,key,t);
+  if(present && !found) error("keyword " + key +" could not be read correctly");
 
   // Check vectors size is correct (not if this is atoms or ARG)
   if( !keywords.style(key,"atoms") && found ){
@@ -389,7 +393,10 @@ bool Action::parseNumberedVector(const std::string&key, const int no, std::vecto
   unsigned size=t.size(); bool skipcheck=false;
   if(size==0) skipcheck=true;
   std::string num; Tools::convert(no,num);
+  bool present=Tools::findKeyword(line,key);
   bool found=Tools::parseVector(line,key+num,t);
+  if(present && !found) error("keyword " + key +" could not be read correctly");
+
   if(  keywords.style(key,"compulsory") ){
     if (!skipcheck && found && t.size()!=size ) error("vector read in for keyword " + key + num + " has the wrong size");  
   } else if ( !found ){

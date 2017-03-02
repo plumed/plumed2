@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2016 The plumed team
+   Copyright (c) 2014-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -37,7 +37,7 @@ MEAN for \ref MFILTER_MORE one is thus calculating:
 \mu = \frac{ \sum_i [1 - \sigma(s_i) ] s_i }{\sum_i [1 - \sigma(s_i)] }
 \f]
 
-where $\sigma$ is the \ref switchingfunction.  In this action by contrast the colvar is being transformed by the \ref switchingfunction.  
+where \f$\sigma\f$ is the \ref switchingfunction.  In this action by contrast the colvar is being transformed by the \ref switchingfunction.  
 If one thus calculates a MEAN for this action one computes:
 
 \f[
@@ -91,7 +91,7 @@ w_i = 1 - \sigma(s_i)
 \f]
 
 If one calculates a function of the set of multicolvars
-these weights are included in the calculation.  As such if one calculates the MEAN, $f\mu\f$ of a filtered 
+these weights are included in the calculation.  As such if one calculates the MEAN, \f$\mu\f$ of a filtered 
 multicolvar what is computed is the following:
 
 \f[

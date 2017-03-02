@@ -76,15 +76,18 @@ void CLToolMain::cmd(const std::string& word,void*val){
   } else if(word=="run"){
        CHECK_NULL(val,word);
        argc=argv.size();
-       char**v=new char* [argc];
+       int n=0; for(int i=0;i<argc;++i) n+=argv[i].length()+1;
+       std::vector<char> args(n);
+       std::vector<char*> v(argc);
+       char* ptr=&args[0];
        for(int i=0;i<argc;++i){
-         v[i]=new char [argv[i].length()+1];
-         for(unsigned c=0;c<argv[i].length();++c) v[i][c]=argv[i][c];
-         v[i][argv[i].length()]=0;
+         v[i]=ptr;
+         for(unsigned c=0;c<argv[i].length();++c){
+           *ptr=argv[i][c]; ptr++;
+         }
+         *ptr=0; ptr++;
        }
-       int ret=run(argc,v,in,out,comm);
-       for(int i=0;i<argc;++i) delete [] v[i];
-       delete [] v;
+       int ret=run(argc,&v[0],in,out,comm);
        *static_cast<int*>(val)=ret;
   } else {
     plumed_merror("cannot interpret cmd(\"CLTool " + word + "\"). check plumed developers manual to see the available commands.");

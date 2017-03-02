@@ -183,6 +183,7 @@ void plumed_finalize(plumed p){
   assert(h);
   assert(h->finalize);
   (*(h->finalize))(p.p);
+  p.p=NULL;
 }
 
 int plumed_installed(void){

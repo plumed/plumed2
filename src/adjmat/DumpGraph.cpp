@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015,2016 The plumed team
+   Copyright (c) 2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -29,6 +29,16 @@
 
 namespace PLMD {
 namespace adjmat {
+
+//+PLUMEDOC CONCOMP DUMPGRAPH
+/*
+Write out the connnectivity of the nodes in the graph in dot format.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 
 class DumpGraph : public ActionPilot {
 private:

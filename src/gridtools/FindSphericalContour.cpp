@@ -37,13 +37,12 @@ namespace gridtools {
 
 class FindSphericalContour : public ContourFindingBase {
 private:
-  int rnd;
   unsigned nbins;
-  double offset, increment;
   double min, max;
 public:
   static void registerKeywords( Keywords& keys );
   explicit FindSphericalContour(const ActionOptions&ao);
+  unsigned getNumberOfQuantities() const { return 2; }
   void compute( const unsigned& current, MultiValue& myvals ) const ;
 };
 
@@ -55,7 +54,6 @@ void FindSphericalContour::registerKeywords( Keywords& keys ){
   keys.add("compulsory","INNER_RADIUS","the minimum radius on which to look for the contour");
   keys.add("compulsory","OUTER_RADIUS","the outer radius on which to look for the contour");
   keys.add("compulsory","NBINS","1","the number of discrete sections in which to divide the distance between the inner and outer radius when searching for a contour");
-  keys.remove("CLEAR");
 }
 
 FindSphericalContour::FindSphericalContour(const ActionOptions&ao):
@@ -70,9 +68,9 @@ ContourFindingBase(ao)
   log.printf("  expecting to find dividing surface at radii between %f and %f \n",min,max);
   log.printf("  looking for contour in windows of length %f \n", (max-min)/nbins);
   // Set this here so the same set of grid points are used on every turn
-  Random random; rnd = std::floor( npoints*random.RandU01() );
-  offset = 2 / static_cast<double>( npoints );
-  increment = pi*( 3 - sqrt(5) );
+  std::string vstring = "TYPE=fibonacci COMPONENTS=" + getLabel() + " COORDINATES=x,y,z PBC=F,F,F";
+  createGrid( "grid", vstring ); mygrid->setNoDerivatives();
+  setAveragingAction( mygrid, true ); mygrid->setupFibonacciGrid( npoints );
 
   checkRead();
   // Create a task list
@@ -85,19 +83,9 @@ ContourFindingBase(ao)
 void FindSphericalContour::compute( const unsigned& current, MultiValue& myvals ) const {
   // Generate contour point on inner sphere
   std::vector<double> contour_point(3), direction(3), der(3), tmp(3);
-  contour_point[1] = ((current*offset) - 1) + (offset/2);
-  double r = sqrt( 1 - pow(contour_point[1],2) );
-  double phi = ((current + rnd)%getFullNumberOfTasks())*increment;
-  contour_point[0] = r*cos(phi);
-  contour_point[2] = r*sin(phi);
-
-  // normalize direction vector 
-  double norm=0;
-  for(unsigned j=0;j<3;++j) norm+=contour_point[j]*contour_point[j];
-  norm = sqrt( norm );
-  for(unsigned j=0;j<3;++j) direction[j] = contour_point[j] / norm;
- 
-  // Now set up direction as vector from inner sphere to outer sphere
+  // Retrieve this contour point from grid
+  mygrid->getGridPointCoordinates( current, direction );
+  // Now setup contour point on inner sphere
   for(unsigned j=0;j<3;++j){
      contour_point[j] = min*direction[j];
      direction[j] = (max-min)*direction[j] / static_cast<double>(nbins);
@@ -109,8 +97,8 @@ void FindSphericalContour::compute( const unsigned& current, MultiValue& myvals 
      double val2 = getDifferenceFromContour( tmp, der ); 
      if( val1*val2<0 ){
          findContour( direction, contour_point );
-         for(unsigned j=0;j<3;++j) myvals.setValue( 1+j, contour_point[j] );
-         found=true; break;
+         double norm=0; for(unsigned j=0;j<3;++j) norm += contour_point[j]*contour_point[j];
+         myvals.setValue( 1, sqrt(norm) ); found=true; break;
      }   
      for(unsigned j=0;j<3;++j) contour_point[j] = tmp[j]; 
   } 

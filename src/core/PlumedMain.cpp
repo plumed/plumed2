@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -20,30 +20,30 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "PlumedMain.h"
-#include "tools/Tools.h"
-#include "tools/OpenMP.h"
-#include <cstring>
-#include "ActionPilot.h"
-#include "ActionWithValue.h"
 #include "ActionAtomistic.h"
+#include "ActionPilot.h"
+#include "ActionRegister.h"
+#include "ActionSet.h"
+#include "ActionWithValue.h"
 #include "ActionWithVirtualAtom.h"
 #include "Atoms.h"
-#include <set>
-#include "config/Config.h"
-#include <cstdlib>
-#include "ActionRegister.h"
-#include "GREX.h"
-#include "tools/Exception.h"
-#include "Atoms.h"
-#include "ActionSet.h"
-#include "tools/Log.h"
-#include "tools/DLLoader.h"
-#include "tools/Communicator.h"
 #include "CLToolMain.h"
-#include "tools/Stopwatch.h"
-#include "tools/Citations.h"
 #include "ExchangePatterns.h"
+#include "GREX.h"
+#include "config/Config.h"
+#include "tools/Citations.h"
+#include "tools/Communicator.h"
+#include "tools/DLLoader.h"
+#include "tools/Exception.h"
 #include "tools/IFile.h"
+#include "tools/Log.h"
+#include "tools/OpenMP.h"
+#include "tools/Tools.h"
+#include "tools/Stopwatch.h"
+#include <cstdlib>
+#include <cstring>
+#include <set>
+#include <unordered_map>
 
 using namespace std;
 
@@ -51,8 +51,8 @@ using namespace std;
 
 namespace PLMD{
 
-std::map<std::string, int> & plumedMainWordMap(){
-  static std::map<std::string, int> word_map;
+const std::unordered_map<std::string, int> & plumedMainWordMap(){
+  static std::unordered_map<std::string, int> word_map;
   static bool init=false;
   if(!init){
 #include "PlumedMainMap.inc"
@@ -128,7 +128,7 @@ void PlumedMain::cmd(const std::string & word,void*val){
   } else {
     int iword=-1;
     double d;
-    std::map<std::string, int>::const_iterator it=plumedMainWordMap().find(words[0]);
+    auto it=plumedMainWordMap().find(words[0]);
     if(it!=plumedMainWordMap().end()) iword=it->second;
     switch(iword) {
       case cmd_setBox:
@@ -476,6 +476,8 @@ void PlumedMain::init(){
   log<<cite("Tribello, Bonomi, Branduardi, Camilloni, and Bussi, Comput. Phys. Commun. 185, 604 (2014)");
   log<<"\n";
   log<<"For further information see the PLUMED web page at http://www.plumed.org\n";
+  log<<"Root: "<<config::getPlumedRoot()<<"\n";
+  log<<"For installed feature, see "<<config::getPlumedRoot() + "/src/config/config.txt\n";
   log.printf("Molecular dynamics engine: %s\n",MDEngine.c_str());
   log.printf("Precision of reals: %d\n",atoms.getRealPrecision());
   log.printf("Running over %d %s\n",comm.Get_size(),(comm.Get_size()>1?"nodes":"node"));
@@ -546,7 +548,8 @@ void PlumedMain::readInputWords(const std::vector<std::string> & words){
       log<<"I cannot understand line:";
       for(unsigned i=0;i<interpreted.size();++i) log<<" "<<interpreted[i];
       log<<"\n";
-      exit(1);
+      log.flush();
+      plumed_merror("I cannot understand line " + interpreted[0] + " " + interpreted[1]);
     };
     action->checkRead();
     actionSet.push_back(action);
@@ -652,23 +655,23 @@ void PlumedMain::justCalculate(){
   int iaction=0;
 // calculate the active actions in order (assuming *backward* dependence)
   for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();++p){
-    std::string actionNumberLabel;
-    if(detailedTimers){
-      Tools::convert(iaction,actionNumberLabel);
-      actionNumberLabel="4A "+actionNumberLabel+" "+(*p)->getLabel();
-      stopwatch.start(actionNumberLabel);
-    }
-    ActionWithValue*av=dynamic_cast<ActionWithValue*>(*p);
-    ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(*p);
-    {
-      if(av) av->clearInputForces();
-      if(av) av->clearDerivatives();
-    }
-    {
-      if(aa) aa->clearOutputForces();
-      if(aa) if(aa->isActive()) aa->retrieveAtoms();
-    }
     if((*p)->isActive()){
+      std::string actionNumberLabel;
+      if(detailedTimers){
+        Tools::convert(iaction,actionNumberLabel);
+        actionNumberLabel="4A "+actionNumberLabel+" "+(*p)->getLabel();
+        stopwatch.start(actionNumberLabel);
+      }
+      ActionWithValue*av=dynamic_cast<ActionWithValue*>(*p);
+      ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(*p);
+      {
+        if(av) av->clearInputForces();
+        if(av) av->clearDerivatives();
+      }
+      {
+        if(aa) aa->clearOutputForces();
+        if(aa) if(aa->isActive()) aa->retrieveAtoms();
+      }
       if((*p)->checkNumericalDerivatives()) (*p)->calculateNumericalDerivatives();
       else (*p)->calculate();
       // This retrieves components called bias 
@@ -677,9 +680,8 @@ void PlumedMain::justCalculate(){
       if(av)av->setGradientsIfNeeded();	
       ActionWithVirtualAtom*avv=dynamic_cast<ActionWithVirtualAtom*>(*p);
       if(avv)avv->setGradientsIfNeeded();	
+      if(detailedTimers) stopwatch.stop(actionNumberLabel);
     }
-
-    if(detailedTimers) stopwatch.stop(actionNumberLabel);
     iaction++;
   }
   stopwatch.stop("4 Calculating (forward loop)");
@@ -774,11 +776,10 @@ void PlumedMain::load(const std::string& ss){
      s=base+"."+config::getSoExt();
      void *p=dlloader.load(s);
      if(!p){
+       const std::string error_msg="I cannot load library " + ss + " " + dlloader.error();
        log<<"ERROR\n";
-       log<<"I cannot load library "<<ss<<"\n";
-       log<<dlloader.error();
-       log<<"\n";
-       this->exit(1);
+       log<<error_msg<<"\n";
+       plumed_merror(error_msg);
      }
      log<<"Loading shared library "<<s.c_str()<<"\n";
      log<<"Here is the new list of available actions\n";

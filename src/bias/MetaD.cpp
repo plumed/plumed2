@@ -228,7 +228,8 @@ METAD ...
 where  WALKERS_N is the total number of walkers, WALKERS_ID is the   
 id of the present walker (starting from 0 ) and the WALKERS_DIR is the directory  
 where all the walkers are located. WALKERS_RSTRIDE is the number of step between 
-one update and the other. 
+one update and the other. Since version 2.2.5, hills files are automatically
+flushed every WALKERS_RSTRIDE steps.
 
 \par
 The c(t) reweighting factor can be calculated on the fly using the equations
@@ -875,6 +876,7 @@ last_step_warn_grid(0)
       if(r>0) gridfilename_="/dev/null";
       gridfile_.enforceSuffix("");
     }
+    if(mw_n_>1) gridfile_.enforceSuffix("");
     gridfile_.open(gridfilename_);
   }
 
@@ -1360,6 +1362,12 @@ void MetaD::update(){
       // print on HILLS file
       writeGaussian(newhill,hillsOfile_);
     }
+  }
+
+// this should be outside of the if block in case
+// mw_rstride_ is not a multiple of stride_
+  if(mw_n_>1 && getStep()%mw_rstride_==0){
+    hillsOfile_.flush();
   }
 
   double vbias1=getBiasAndDerivatives(cv);

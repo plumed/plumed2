@@ -103,7 +103,7 @@ void VectorMean::finish( const std::vector<double>& buffer ){
 
   Value* fval=getFinalValue(); double tw = 1.0 / sqrt(sum);
   for(unsigned icomp=0;icomp<ncomp;++icomp){
-      double tmp = buffer[(icomp+1)*(1+nder)] / ww; 
+      double tmp = buffer[bufstart + (icomp+1)*(1+nder)] / ww; 
       unsigned bstart = bufstart + (1+icomp)*(nder+1) + 1;
       for(unsigned jder=0;jder<nder;++jder) fval->addDerivative( jder, (tw*tmp/ww)*( buffer[bstart + jder] - tmp*buffer[bufstart + 1 + jder] ) );
   }

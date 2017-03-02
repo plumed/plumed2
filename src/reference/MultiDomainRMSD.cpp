@@ -50,6 +50,7 @@ void MultiDomainRMSD::read( const PDB& pdb ){
    double lower=0.0, upper=std::numeric_limits<double>::max( );
    parse("LOWER_CUTOFF",lower,true); 
    parse("UPPER_CUTOFF",upper,true);
+   bool nopbc=false; parseFlag("NOPBC",nopbc);
 
    for(unsigned i=1;i<=nblocks;++i){
        Tools::convert(i,num);
@@ -57,6 +58,7 @@ void MultiDomainRMSD::read( const PDB& pdb ){
           parse("TYPE"+num, ftype );
           parse("LOWER_CUTOFF"+num,lower,true); 
           parse("UPPER_CUTOFF"+num,upper,true); 
+          nopbc=false; parseFlag("NOPBC"+num,nopbc);
        }
        domains.push_back( metricRegister().create<SingleDomainRMSD>( ftype ) );
        positions.resize( blocks[i] - blocks[i-1] );
@@ -69,7 +71,7 @@ void MultiDomainRMSD::read( const PDB& pdb ){
            displace[n]=pdb.getBeta()[j];
            n++;
        }
-       domains[i-1]->setBoundsOnDistances( true, lower, upper );  // Currently no option for nopbc
+       domains[i-1]->setBoundsOnDistances( !nopbc, lower, upper );  
        domains[i-1]->setReferenceAtoms( positions, align, displace );
        domains[i-1]->setupRMSDObject();       
 

@@ -44,7 +44,7 @@ Atoms::Atoms(PlumedMain&plumed):
   pbc(*new Pbc),
   energy(0.0),
   dataCanBeSet(false),
-  collectEnergy(0.0),
+  collectEnergy(false),
   energyHasBeenSet(false),
   positionsHaveBeenSet(0),
   massesHaveBeenSet(false),
@@ -58,6 +58,7 @@ Atoms::Atoms(PlumedMain&plumed):
   naturalUnits(false),
   timestep(0.0),
   forceOnEnergy(0.0),
+  zeroallforces(false),
   kbT(0.0),
   asyncSent(false),
   atomsNeeded(false),
@@ -165,7 +166,7 @@ void Atoms::shareAll(){
 void Atoms::share(const std::set<AtomNumber>& unique){
   plumed_assert( positionsHaveBeenSet==3 && massesHaveBeenSet );
   virial.zero();
-  if(int(gatindex.size())==natoms){
+  if(zeroallforces || int(gatindex.size())==natoms){
     for(int i=0;i<natoms;i++) forces[i].zero();
   } else {
     for(unsigned i=0;i<gatindex.size();i++) forces[gatindex[i]].zero();
@@ -336,6 +337,11 @@ void Atoms::setAtomsNlocal(int n){
   gatindex.resize(n);
   if(dd){
     dd.g2l.resize(natoms,-1);
+// Since these vectors are sent with MPI by using e.g.
+// &dd.positionsToBeSent[0]
+// we make sure they are non-zero-sized so as to
+// avoid errors when doing boundary check
+    if(n==0) n++;
     dd.positionsToBeSent.resize(n*5,0.0);
     dd.positionsToBeReceived.resize(natoms*5,0.0);
     dd.indexToBeSent.resize(n,0);
@@ -375,8 +381,9 @@ void Atoms::setAtomsContiguous(int start){
 }
 
 void Atoms::setRealPrecision(int p){
+  MDAtomsBase *x=MDAtomsBase::create(p);
   delete mdatoms;
-  mdatoms=MDAtomsBase::create(p);
+  mdatoms=x;
 }
 
 int Atoms::getRealPrecision()const{

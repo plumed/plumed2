@@ -36,18 +36,19 @@ Because each base quantity can be assigned to a particular point in space we can
 distribution of base quantities in a particular part of the box by using:
 
 \f[
-\overline{s}_{\tau} = \frac{ \sum_i f(s_i) w(x_i,y_i,z_i) }{ \sum_i w(x_i,y_i,z_i) }  
+\overline{s}_{\tau} = \frac{ \sum_i f(s_i) \sigma(r) }{ \sum_i \sigma(r) }  
 \f]  
 
 where the sum is over the collective variables, \f$s_i\f$, each of which can be thought to be at \f$ (x_i,y_i,z_i)\f$.
-The function \f$ w(x_i,y_i,z_i) \f$ measures whether or not the system is in the subregion of interest. It
-is equal to:
-
+The function \f$\sigma\f$ is a \ref switchingfunction that acts on the distance between the point at which the 
+collective is located \f$(x_i,y_i,z_i)\f$ and the position of the atom that was specified using the ORIGIN keyword.
+In other words:
 \f[
-w(x_i,y_i,z_i) =  
-\f]
+r = sqrt{ ( x_i - x_0)^2 + ( y_i - y_0)^2 + ( z_i - z_0)^2}
+\f] 
+In short this function, \f$\sigma(r_{xy})\f$, measures whether or not the CV is within a sphere that is 
+centered on the position of the atom specified using the keyword ORIGIN.
 
-where \f$\sigma\f$ is a \ref switchingfunction.
 The function \f$(s_i)\f$ can be any of the usual LESS_THAN, MORE_THAN, WITHIN etc that are used in all other multicolvars.
 
 When INCYLINDER is used with the \ref DENSITY action the number of atoms in the specified region is calculated  

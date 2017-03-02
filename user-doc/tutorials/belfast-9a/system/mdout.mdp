@@ -1,8 +1,8 @@
 ;
 ;	File 'mdout.mdp' was generated
 ;	By user: carlo (501)
-;	On host: Carlos-MacBook-Pro.local
-;	At date: Thu May 29 23:17:49 2014
+;	On host: Carlos-MBP.fritz.box
+;	At date: Sun Oct 16 17:33:14 2016
 ;
 
 ; VARIOUS PREPROCESSING OPTIONS
@@ -59,16 +59,17 @@ nstlog                   = 10000
 nstcalcenergy            = -1
 nstenergy                = 1000
 ; Output frequency and precision for .xtc file
-nstxtcout                = 10
-xtc-precision            = 1000
-; This selects the subset of atoms for the .xtc file. You can
-; select multiple groups. By default all atoms will be written.
-xtc-grps                 = protein
+nstxout-compressed       = 10
+compressed-x-precision   = 1000
+; This selects the subset of atoms for the compressed
+; trajectory file. You can select multiple groups. By
+; default, all atoms will be written.
+compressed-x-grps        = protein
 ; Selection of energy groups
 energygrps               = 
 
 ; NEIGHBORSEARCHING PARAMETERS
-; cut-off scheme (group: using charge groups, Verlet: particle based cut-offs)
+; cut-off scheme (Verlet: particle based cut-offs, group: using charge groups)
 cutoff-scheme            = Verlet
 ; nblist update frequency
 nstlist                  = 10
@@ -77,9 +78,9 @@ ns_type                  = grid
 ; Periodic boundary conditions: xyz, no, xy
 pbc                      = xyz
 periodic_molecules       = no
-; Allowed energy drift due to the Verlet buffer in kJ/mol/ps per atom,
+; Allowed energy error due to the Verlet buffer in kJ/mol/ps per atom,
 ; a value of -1 means: use rlist
-verlet-buffer-drift      = 0.0001
+verlet-buffer-tolerance  = 0.0001
 ; nblist cut-off        
 rlist                    = 0.9
 ; long-range cut-off for switched potentials
@@ -116,9 +117,10 @@ fourier_nz               = 0
 ; EWALD/PME/PPPM parameters
 pme_order                = 4
 ewald_rtol               = 1e-05
+ewald-rtol-lj            = 0.001
+lj-pme-comb-rule         = Geometric
 ewald_geometry           = 3d
 epsilon_surface          = 0
-optimize_fft             = yes
 
 ; IMPLICIT SOLVENT ALGORITHM
 implicit_solvent         = No
@@ -221,7 +223,7 @@ Shake-SOR                = no
 ; Relative tolerance of shake
 shake-tol                = 0.0001
 ; Highest order in the expansion of the constraint coupling matrix
-lincs-order              = 4
+lincs-order              = 6
 ; Number of iterations in the final step of LINCS. 1 is fine for
 ; normal simulations, but use 2 to conserve energy in NVE runs.
 ; For energy minimization with constraints it should be 4 to 8.
@@ -252,6 +254,9 @@ pull                     = no
 ; ENFORCED ROTATION    
 ; Enforced rotation: No or Yes
 rotation                 = no
+
+; Group to display and/or manipulate in interactive MD session
+IMD-group                = 
 
 ; NMR refinement stuff 
 ; Distance restraints type: No, Simple or Ensemble
@@ -321,11 +326,18 @@ sim-temp-high            = 300
 ; Format is number of terms (int) and for all terms an amplitude (real)
 ; and a phase angle (real)
 E-x                      = 
+; Time dependent (pulsed) electric field. Format is omega, time for pulse
+; peak, and sigma (width) for pulse. Sigma = 0 removes pulse, leaving
+; the field to be a cosine function.
 E-xt                     = 
 E-y                      = 
 E-yt                     = 
 E-z                      = 
 E-zt                     = 
+
+; Ion/water position swapping for computational electrophysiology setups
+; Swap positions along direction: no, X, Y, Z
+swapcoords               = no
 
 ; AdResS parameters    
 adress                   = no
