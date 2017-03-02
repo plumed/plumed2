@@ -184,6 +184,10 @@ rmsd(NULL)
   addValue(); setNotPeriodic();
 
   doNotRetrieve();
+
+  // this is required so as to allow modifyGlobalForce() to return correct
+  // also for forces that are not owned (and thus not zeored) by all processors.
+  allowToAccessGlobalForces();
 }
 
 

@@ -204,8 +204,7 @@ double GridVessel::getCellVolume() const {
       double myvol=1.0; for(unsigned i=0;i<dimension;++i) myvol *= dx[i];
       return myvol;
   } else {
-      plumed_merror("cell volume for surface grid not worked out yet"); 
-      return 0.0; 
+      return 4*pi / static_cast<double>( getNumberOfPoints() ); 
   }
 }
 

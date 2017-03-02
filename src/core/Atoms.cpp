@@ -58,6 +58,7 @@ Atoms::Atoms(PlumedMain&plumed):
   naturalUnits(false),
   timestep(0.0),
   forceOnEnergy(0.0),
+  zeroallforces(false),
   kbT(0.0),
   asyncSent(false),
   atomsNeeded(false),
@@ -165,7 +166,7 @@ void Atoms::shareAll(){
 void Atoms::share(const std::set<AtomNumber>& unique){
   plumed_assert( positionsHaveBeenSet==3 && massesHaveBeenSet );
   virial.zero();
-  if(int(gatindex.size())==natoms){
+  if(zeroallforces || int(gatindex.size())==natoms){
     for(int i=0;i<natoms;i++) forces[i].zero();
   } else {
     for(unsigned i=0;i<gatindex.size();i++) forces[gatindex[i]].zero();
@@ -380,8 +381,9 @@ void Atoms::setAtomsContiguous(int start){
 }
 
 void Atoms::setRealPrecision(int p){
+  MDAtomsBase *x=MDAtomsBase::create(p);
   delete mdatoms;
-  mdatoms=MDAtomsBase::create(p);
+  mdatoms=x;
 }
 
 int Atoms::getRealPrecision()const{

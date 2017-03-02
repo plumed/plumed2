@@ -1,0 +1,3 @@
+type=make
+plumed_needs="dlopen"
+plumed_needs="exceptions"

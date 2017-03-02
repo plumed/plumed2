@@ -255,6 +255,7 @@ if test $basic_warnings == true
 then
   PLUMED_CHECK_CXXFLAG([-Wall])
   PLUMED_CHECK_CXXFLAG([-pedantic])
+  PLUMED_CHECK_CXXFLAG([-std=c++11])
 fi
 
 if test $debug == true
@@ -284,13 +285,17 @@ then
   PLUMED_CHECK_CXXFLAG([-Wold-style-cast])
 fi
 
-PLUMED_CHECK_CXXFLAG([-std=c++11])
-
-AC_MSG_CHECKING([whether $CXX supports explicit])
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM([ class A{explicit A(){}};])],
+AC_MSG_CHECKING([whether $CXX declares c++11 support])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
+#if __cplusplus <= 199711L
+this_compiler_does_not_support_cxx11
+#endif
+])],
   [AC_MSG_RESULT([yes])],
   [AC_MSG_RESULT([no]) ;
-   AC_DEFINE([explicit],[])])
+   AC_MSG_ERROR([C++11 support is required])])
+
+
 
 AC_SUBST(disable_dependency_tracking)
 
