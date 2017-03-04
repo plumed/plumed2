@@ -43,6 +43,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <set>
+#include <unordered_map>
 
 using namespace std;
 
@@ -50,8 +51,8 @@ using namespace std;
 
 namespace PLMD{
 
-std::map<std::string, int> & plumedMainWordMap(){
-  static std::map<std::string, int> word_map;
+const std::unordered_map<std::string, int> & plumedMainWordMap(){
+  static std::unordered_map<std::string, int> word_map;
   static bool init=false;
   if(!init){
 #include "PlumedMainMap.inc"
@@ -127,7 +128,7 @@ void PlumedMain::cmd(const std::string & word,void*val){
   } else {
     int iword=-1;
     double d;
-    std::map<std::string, int>::const_iterator it=plumedMainWordMap().find(words[0]);
+    auto it=plumedMainWordMap().find(words[0]);
     if(it!=plumedMainWordMap().end()) iword=it->second;
     switch(iword) {
       case cmd_setBox:
@@ -548,7 +549,7 @@ void PlumedMain::readInputWords(const std::vector<std::string> & words){
       for(unsigned i=0;i<interpreted.size();++i) log<<" "<<interpreted[i];
       log<<"\n";
       log.flush();
-      plumed_error();
+      plumed_merror("I cannot understand line " + interpreted[0] + " " + interpreted[1]);
     };
     action->checkRead();
     actionSet.push_back(action);
@@ -775,11 +776,10 @@ void PlumedMain::load(const std::string& ss){
      s=base+"."+config::getSoExt();
      void *p=dlloader.load(s);
      if(!p){
+       const std::string error_msg="I cannot load library " + ss + " " + dlloader.error();
        log<<"ERROR\n";
-       log<<"I cannot load library "<<ss<<"\n";
-       log<<dlloader.error();
-       log<<"\n";
-       this->exit(1);
+       log<<error_msg<<"\n";
+       plumed_merror(error_msg);
      }
      log<<"Loading shared library "<<s.c_str()<<"\n";
      log<<"Here is the new list of available actions\n";

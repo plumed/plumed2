@@ -4443,9 +4443,9 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 
   save_CXXFLAGS="$CXXFLAGS"
-  CXXFLAGS="$CXXFLAGS -ansi"
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -ansi" >&5
-$as_echo_n "checking whether $CXX accepts -ansi... " >&6; }
+  CXXFLAGS="$CXXFLAGS -std=c++11"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -std=c++11" >&5
+$as_echo_n "checking whether $CXX accepts -std=c++11... " >&6; }
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -5056,11 +5056,15 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX supports explicit" >&5
-$as_echo_n "checking whether $CXX supports explicit... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX declares c++11 support" >&5
+$as_echo_n "checking whether $CXX declares c++11 support... " >&6; }
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
- class A{explicit A(){}};
+
+#if __cplusplus <= 199711L
+this_compiler_does_not_support_cxx11
+#endif
+
 int
 main ()
 {
@@ -5075,10 +5079,11 @@ $as_echo "yes" >&6; }
 else
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; } ;
-   $as_echo "#define explicit /**/" >>confdefs.h
-
+   as_fn_error $? "C++11 support is required" "$LINENO" 5
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
 
 
 

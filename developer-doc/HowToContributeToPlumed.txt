@@ -151,7 +151,8 @@ libraries so as to make compilation straightforward for users who are using/not 
 on how to add complilation options on this page: \ref UsingExternalLibs.  N.B. you should only need to modify the configure
 scripts if you are using modules.  Flags for activating your module at configure time will be generated automatically.
 - We ask you not to include C++ features that are too new and not supported by the vast majority of compilers.
-As of PLUMED v2.3, we are not using any C++11 feature. This might change in the future as compilers are improved.
+Until PLUMED v2.3, we were not using any C++11 feature. Since PLUMED v2.4, a C++11-compliant compiler is explicitly
+requested and so you can use C++11 features.
 
 \subsection ctesting Writing regression tests 
 
