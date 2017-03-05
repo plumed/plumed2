@@ -72,8 +72,8 @@ public:
 template <class T>
 std::vector<T> ActionSet::select()const{
   std::vector<T> ret;
-  for(const_iterator p=begin();p!=end();++p){
-    T t=dynamic_cast<T>(*p);
+  for(const auto & p : (*this)){
+    T t=dynamic_cast<T>(p);
     if(t) ret.push_back(t);
   };
   return ret;
@@ -81,8 +81,8 @@ std::vector<T> ActionSet::select()const{
 
 template <class T>
 T ActionSet::selectWithLabel(const std::string&s)const{
-  for(const_iterator p=begin();p!=end();++p){
-    T t=dynamic_cast<T>(*p);
+  for(const auto & p : (*this)){
+    T t=dynamic_cast<T>(p);
     if(t && dynamic_cast<Action*>(t)->getLabel()==s) return t;
   };
   return NULL;
@@ -91,9 +91,9 @@ T ActionSet::selectWithLabel(const std::string&s)const{
 template <class T>
 std::vector<Action*> ActionSet::selectNot()const{
   std::vector<Action*> ret;
-  for(const_iterator p=begin();p!=end();++p){
-    T t=dynamic_cast<T>(*p);
-    if(!t) ret.push_back(*p);
+  for(const auto & p : (*this)){
+    T t=dynamic_cast<T>(p);
+    if(!t) ret.push_back(p);
   };
   return ret;
 }

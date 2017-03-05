@@ -51,16 +51,8 @@ class ActionRegister{
   typedef void(*keywords_pointer)(Keywords&);
 /// Map action to a function which creates the related object
   std::map<std::string,creator_pointer> m;
-/// Iterator over the map
-  typedef std::map<std::string,creator_pointer>::iterator mIterator;
-/// Iterator over the map
-  typedef std::map<std::string,creator_pointer>::const_iterator const_mIterator;
 /// Map action to a function which documents the related object
   std::map<std::string,keywords_pointer> mk;
-/// Iterator over the map
-  typedef std::map<std::string,Keywords>::iterator mIteratork;
-/// Iterator over the map
-  typedef std::map<std::string,Keywords>::const_iterator const_mIteratork;
 /// Set of disabled actions (which were registered more than once)
   std::set<std::string> disabled;
 public:

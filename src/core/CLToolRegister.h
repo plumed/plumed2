@@ -46,10 +46,6 @@ class CLToolRegister{
   std::map<std::string,creator_pointer> m;
 /// Map cltool name to the keywords for this function
   std::map<std::string,Keywords> mk;
-/// Iterator over the map
-  typedef std::map<std::string,creator_pointer>::iterator mIterator;
-/// Iterator over the map
-  typedef std::map<std::string,creator_pointer>::const_iterator const_mIterator;
 /// Set of disabled cltools (which were registered more than once)
   std::set<std::string> disabled;
 public:
