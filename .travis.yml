@@ -112,8 +112,8 @@ install:
 #  - if test -n "$PLUMED_MACPORTS" ; then wget https://distfiles.macports.org/MacPorts/MacPorts-2.3.4.tar.bz2 && tar xvfj MacPorts-2.3.4.tar.bz2 ; fi
 #  - if test -n "$PLUMED_MACPORTS" ; then cd MacPorts-2.3.4 && ./configure && sudo make install && cd - && sudo rm -fr MacPorts-2.3.4 ; fi
 # install macports from binary (faster):
-  - if test -n "$PLUMED_MACPORTS" ; then wget https://distfiles.macports.org/MacPorts/MacPorts-2.3.4-10.11-ElCapitan.pkg ; fi
-  - if test -n "$PLUMED_MACPORTS" ; then sudo installer -pkg MacPorts-2.3.4-10.11-ElCapitan.pkg -target / ; fi
+  - if test -n "$PLUMED_MACPORTS" ; then wget https://distfiles.macports.org/MacPorts/MacPorts-2.4.1-10.11-ElCapitan.pkg ; fi
+  - if test -n "$PLUMED_MACPORTS" ; then sudo installer -pkg MacPorts-2.4.1-10.11-ElCapitan.pkg -target / ; fi
   - if test -n "$PLUMED_MACPORTS" ; then export PATH=/opt/local/bin:$PATH ; fi
   - if test -n "$PLUMED_MACPORTS" ; then sudo port -v selfupdate ; fi
   - if test -n "$PLUMED_MACPORTS" ; then make macports ; fi
