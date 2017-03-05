@@ -66,22 +66,19 @@ const std::vector<AtomNumber> & PDB::getAtomNumbers()const{
 }
 
 std::string PDB::getAtomName(AtomNumber a)const{
-  std::map<AtomNumber,unsigned>::const_iterator p;
-  p=number2index.find(a);
+  const auto p=number2index.find(a);
   if(p==number2index.end()) return "";
   else return atomsymb[p->second];
 }
 
 unsigned PDB::getResidueNumber(AtomNumber a)const{
-  std::map<AtomNumber,unsigned>::const_iterator p;
-  p=number2index.find(a);
+  const auto p=number2index.find(a);
   if(p==number2index.end()) return 0;
   else return residue[p->second];
 }
 
 std::string PDB::getResidueName(AtomNumber a) const{
-  std::map<AtomNumber,unsigned>::const_iterator p;
-  p=number2index.find(a);
+  const auto p=number2index.find(a);
   if(p==number2index.end()) return "";
   else return residuenames[p->second];
 }
@@ -297,8 +294,7 @@ Log& operator<<(Log& ostr, const PDB&  pdb){
 }
 
 Vector PDB::getPosition(AtomNumber a)const{
-     std::map<AtomNumber,unsigned>::const_iterator p;
-     p=number2index.find(a);
+     const auto p=number2index.find(a);
      if(p==number2index.end()) plumed_merror("atom not available");
      else return positions[p->second];
 }
