@@ -108,15 +108,15 @@ void Debug::apply(){
   if(logActivity){
     const ActionSet&actionSet(plumed.getActionSet());
     int a=0;
-    for(ActionSet::const_iterator p=actionSet.begin();p!=actionSet.end();++p){
-      if(dynamic_cast<Debug*>(*p))continue;
-      if((*p)->isActive()) a++;
+    for(const auto & p : actionSet){
+      if(dynamic_cast<Debug*>(p))continue;
+      if(p->isActive()) a++;
     };
     if(a>0){
       ofile.printf("activity at step %i: ",getStep());
-      for(ActionSet::const_iterator p=actionSet.begin();p!=actionSet.end();++p){
-        if(dynamic_cast<Debug*>(*p))continue;
-        if((*p)->isActive()) ofile.printf("+");
+      for(const auto & p : actionSet){
+        if(dynamic_cast<Debug*>(p))continue;
+        if(p->isActive()) ofile.printf("+");
         else                 ofile.printf("-");
       };
       ofile.printf("\n");

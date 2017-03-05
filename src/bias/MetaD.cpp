@@ -903,7 +903,7 @@ last_step_warn_grid(0)
 
   bool concurrent=false;
   const ActionSet&actionSet(plumed.getActionSet());
-  for(ActionSet::const_iterator p=actionSet.begin();p!=actionSet.end();++p) if(dynamic_cast<MetaD*>(*p)){ concurrent=true; break; }
+  for(const auto & p : actionSet) if(dynamic_cast<MetaD*>(p)){ concurrent=true; break; }
   if(concurrent) log<<"  You are using concurrent metadynamics\n";
 
   log<<"  Bibliography "<<plumed.cite("Laio and Parrinello, PNAS 99, 12562 (2002)");
