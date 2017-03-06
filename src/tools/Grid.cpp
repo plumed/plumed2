@@ -731,7 +731,7 @@ void Grid::findSetOfPointsOnContour(const double& target, const std::vector<bool
 double SparseGrid::getValue(index_t index)const{
  plumed_assert(index<maxsize_);
  double value=0.0;
- iterator it=map_.find(index);
+ const auto it=map_.find(index);
  if(it!=map_.end()) value=it->second;
  return value;
 }
@@ -741,9 +741,9 @@ double SparseGrid::getValueAndDerivatives
  plumed_assert(index<maxsize_ && usederiv_ && der.size()==dimension_);
  double value=0.0;
  for(unsigned int i=0;i<dimension_;++i) der[i]=0.0;
- iterator it=map_.find(index);
+ const auto it=map_.find(index);
  if(it!=map_.end()) value=it->second;
- iterator_der itder=der_.find(index);
+ const auto itder=der_.find(index);
  if(itder!=der_.end()) der=itder->second;
  return value;
 }
@@ -779,8 +779,8 @@ void SparseGrid::writeToFile(OFile& ofile){
  double f;
  writeHeader(ofile);
  ofile.fmtField(" "+fmt_);
- for(iterator it=map_.begin();it!=map_.end();++it){
-   index_t i=(*it).first;
+ for(const auto & it : map_){
+   index_t i=it.first;
    xx=getPoint(i);
    if(usederiv_){f=getValueAndDerivatives(i,der);} 
    else{f=getValue(i);}

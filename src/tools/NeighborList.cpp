@@ -128,8 +128,7 @@ vector<AtomNumber>& NeighborList::getReducedAtomList() {
   AtomNumber index0=fullatomlist_[neighbors_[i].first];
   AtomNumber index1=fullatomlist_[neighbors_[i].second];
 // I exploit the fact that requestlist_ is an ordered vector
-  vector<AtomNumber>::iterator p;
-  p = std::find(requestlist_.begin(), requestlist_.end(), index0); plumed_assert(p!=requestlist_.end()); newindex0=p-requestlist_.begin();
+  auto p = std::find(requestlist_.begin(), requestlist_.end(), index0); plumed_assert(p!=requestlist_.end()); newindex0=p-requestlist_.begin();
   p = std::find(requestlist_.begin(), requestlist_.end(), index1); plumed_assert(p!=requestlist_.end()); newindex1=p-requestlist_.begin();
   neighbors_[i]=pair<unsigned,unsigned>(newindex0,newindex1);
  }

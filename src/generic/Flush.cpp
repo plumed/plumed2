@@ -72,8 +72,8 @@ public:
     plumed.fflush();
     log.flush();
     const ActionSet & actionSet(plumed.getActionSet());
-    for(ActionSet::const_iterator p=actionSet.begin();p!=actionSet.end();++p)
-    (*p)->fflush();
+    for(const auto & p : actionSet)
+    p->fflush();
   }
 };
 

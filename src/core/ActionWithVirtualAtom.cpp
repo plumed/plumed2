@@ -67,8 +67,8 @@ void ActionWithVirtualAtom::setGradients(){
     // this case if the atom is a virtual one 	 
     if(atoms.isVirtualAtom(an)){
       const ActionWithVirtualAtom* a=atoms.getVirtualAtomsAction(an);
-      for(std::map<AtomNumber,Tensor>::const_iterator p=a->gradients.begin();p!=a->gradients.end();++p){
-        gradients[(*p).first]+=matmul(derivatives[i],(*p).second);
+      for(const auto & p : a->gradients){
+        gradients[p.first]+=matmul(derivatives[i],p.second);
       }
     // this case if the atom is a normal one 	 
     } else {

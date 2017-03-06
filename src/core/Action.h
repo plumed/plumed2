@@ -161,7 +161,6 @@ public:
 
 ///
   std::set<FILE*> files;
-  typedef std::set<FILE*>::iterator files_iterator;
 
 public:
 /// Standard constructor from ActionOptions

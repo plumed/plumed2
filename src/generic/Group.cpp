@@ -177,7 +177,7 @@ Group::Group(const ActionOptions&ao):
     std::vector<AtomNumber> notfound;
     log<<"  removing these atoms from the list:";
     for(unsigned i=0;i<remove.size();i++){
-      std::vector<AtomNumber>::iterator it = find(atoms.begin(),atoms.end(),remove[i]);
+      const auto it = find(atoms.begin(),atoms.end(),remove[i]);
       if(it!=atoms.end()){
         log<<" "<<(*it).serial();
         atoms.erase(it);

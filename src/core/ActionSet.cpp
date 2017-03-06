@@ -42,16 +42,16 @@ void ActionSet::clearDelete(){
 
 std::string ActionSet::getLabelList() const{
   std::string outlist;
-  for(const_iterator p=begin();p!=end();++p){
-    outlist+=dynamic_cast<Action*>(*p)->getLabel()+" ";
+  for(const auto & p : (*this)){
+    outlist+=dynamic_cast<Action*>(p)->getLabel()+" ";
   };
   return  outlist;
 }
 
 std::vector<std::string> ActionSet::getLabelVector() const{
   std::vector<std::string> outlist;
-  for(const_iterator p=begin();p!=end();++p){
-    outlist.push_back(dynamic_cast<Action*>(*p)->getLabel());
+  for(const auto & p : (*this)){
+    outlist.push_back(dynamic_cast<Action*>(p)->getLabel());
   };
   return  outlist;
 }

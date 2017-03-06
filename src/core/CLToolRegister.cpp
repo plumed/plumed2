@@ -32,7 +32,7 @@ namespace PLMD{
 CLToolRegister::~CLToolRegister(){
   if(m.size()>0){
     string names="";
-    for(mIterator p=m.begin();p!=m.end();++p)names+=p->first+" ";
+    for(const auto & p : m) names+=p.first+" ";
     std::cerr<<"WARNING: CLTools "+ names +" has not been properly unregistered. This might lead to memory leak!!\n";
   }
 }
@@ -43,7 +43,7 @@ CLToolRegister& cltoolRegister(){
 }
 
 void CLToolRegister::remove(creator_pointer f){
-  for(mIterator p=m.begin();p!=m.end();++p){
+  for(auto p=m.begin();p!=m.end();++p){
     if((*p).second==f){
       m.erase(p); break;
     }
@@ -103,8 +103,7 @@ bool CLToolRegister::printManual( const std::string& cltool ){
 
 vector<string> CLToolRegister::list()const{
   vector<string> s;
-  for(const_mIterator it=m.begin();it!=m.end();++it)
-    s.push_back((*it).first);
+  for(const auto & it : m) s.push_back(it.first);
   sort(s.begin(),s.end());
   return s;
 }

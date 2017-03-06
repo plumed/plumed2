@@ -79,16 +79,16 @@ double DRMSD::calc( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceVal
   Vector distance; 
   myder.clear(); 
   double drmsd=0.; 
-  for(std::map< std::pair <unsigned,unsigned> , double>::const_iterator it=targets.begin();it!=targets.end();++it){
+  for(const auto & it : targets){
       
-      const unsigned i=getAtomIndex( it->first.first );
-      const unsigned j=getAtomIndex( it->first.second );
+      const unsigned i=getAtomIndex( it.first.first );
+      const unsigned j=getAtomIndex( it.first.second );
 
       if(nopbc) distance=delta( pos[i] , pos[j] ); 
       else      distance=pbc.distance( pos[i] , pos[j] );
 
       const double len = distance.modulo();
-      const double diff = len - it->second;
+      const double diff = len - it.second;
       const double der = diff / len; 
 
       drmsd += diff * diff;
