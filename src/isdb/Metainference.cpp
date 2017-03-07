@@ -19,9 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-/* 
- The metainference update method was developed by Thomas Loehr
-*/
+
 #include "bias/Bias.h"
 #include "bias/ActionRegister.h"
 #include "core/PlumedMain.h"
@@ -32,7 +30,7 @@
 #include "tools/Random.h"
 #include <cmath>
 #include <ctime>
-
+#include <numeric>
 using namespace std;
 
 namespace PLMD{
@@ -163,11 +161,6 @@ class Metainference : public bias::Bias
 
   // sigma_mean rescue params
   double sigma_mean_correction_;
-  double sm_mod_;
-  double sm_mod_min_;
-  double sm_mod_max_;
-  double Dsm_mod_;
-  double max_force_;
 
   // temperature in kbt
   double   kbt_;
@@ -191,8 +184,6 @@ class Metainference : public bias::Bias
   vector<Value*> valueSigma;
   vector<Value*> valueSigmaMean;
   vector<Value*> valueFtilde;
-  Value*   valueSMmod;
-  Value*   valueMaxForceMD;
 
   // restart
   unsigned write_stride_;
@@ -201,22 +192,22 @@ class Metainference : public bias::Bias
   // others
   bool     firstTime;
   bool     master;
-  bool     do_reweight;
+  bool     do_reweight_;
   unsigned do_optsigmamean_;
   unsigned nrep_;
   unsigned replica_;
   unsigned narg;
   
-  // update sigma_mean
-  bool           do_updatesigmamean_;
-  unsigned       update_stride_;
-  vector<double> sigma_mean_modifier_;
-  unsigned       sigma_mean_modifier_count_;
-  string         selector_;
-  unsigned       iselect_old_;
-
-  // we need this for the forces
-  Atoms& atoms;
+  // selector
+  string selector_;
+  
+  // optimize sigma mean
+  vector< vector < vector <double> > > sigma_mean2_last_;
+  unsigned optsigmamean_stride_;
+  
+  // average weights
+  unsigned                   average_weights_stride_;
+  vector< vector <double> >  average_weights_;
 
   double getEnergyMIGEN(const vector<double> &mean, const vector<double> &ftilde, const vector<double> &sigma, 
                         const double scale, const double offset, const double modifier);
@@ -254,14 +245,16 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.add("optional","PARAMETERS","reference values for the experimental data");
   keys.add("compulsory","NOISETYPE","functional form of the noise (GAUSS,MGAUSS,OUTLIERS,MOUTLIERS)");
   keys.add("compulsory","LIKELIHOOD","GAUSS","the likelihood for the GENERIC metainference model, at present GAUSS or LOGN");
+  keys.add("compulsory","DFTILDE","0.1","fraction of sigma_mean used to evolve ftilde");
   keys.addFlag("REWEIGHT",false,"simple REWEIGHT using the latest ARG as energy"); 
+  keys.add("optional","AVERAGEWEIGHTS", "Stride for calculation of averaged weights");
   keys.addFlag("SCALEDATA",false,"Set to TRUE if you want to sample a scaling factor common to all values and replicas");  
-  keys.addFlag("ADDOFFSET",false,"Set to TRUE if you want to sample an offset common to all values and replicas");  
   keys.add("compulsory","SCALE0","initial value of the scaling factor");
   keys.add("compulsory","SCALE_PRIOR","FLAT","either FLAT or GAUSSIAN");
   keys.add("optional","SCALE_MIN","minimum value of the scaling factor");
   keys.add("optional","SCALE_MAX","maximum value of the scaling factor");
   keys.add("optional","DSCALE","maximum MC move of the scaling factor");
+  keys.addFlag("ADDOFFSET",false,"Set to TRUE if you want to sample an offset common to all values and replicas");  
   keys.add("compulsory","OFFSET0","initial value of the offset");
   keys.add("compulsory","OFFSET_PRIOR","FLAT","either FLAT or GAUSSIAN");
   keys.add("optional","OFFSET_MIN","minimum value of the offset");
@@ -271,13 +264,9 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.add("compulsory","SIGMA_MIN","minimum value of the uncertainty parameter");
   keys.add("compulsory","SIGMA_MAX","maximum value of the uncertainty parameter");
   keys.add("optional","DSIGMA","maximum MC move of the uncertainty parameter");
-  keys.add("compulsory","DFTILDE","0.1","fraction of sigma_mean used to evolve ftilde");
-  keys.add("compulsory","OPTSIGMAMEAN","NONE","Set to NONE/SEM/FULL to manually set sigma mean, or to estimate it on the fly and use the safety check on forces");  
+  keys.add("compulsory","OPTSIGMAMEAN","NONE","Set to NONE/SEM to manually set sigma mean, or to estimate it on the fly");  
+  keys.add("optional","OPTSIGMAMEAN_STRIDE", "Stride for calculation of optimal sigma mean");
   keys.add("optional","SIGMA_MEAN0","starting value for the uncertainty in the mean estimate");
-  keys.add("optional","SIGMA_MEAN_MOD0","starting value for sm modifier");
-  keys.add("optional","SIGMA_MEAN_MOD_MIN","starting value for sm modifier");
-  keys.add("optional","SIGMA_MEAN_MOD_MAX","starting value for sm modifier");
-  keys.add("optional","DSIGMA_MEAN_MOD","step value for sm modifier");
   keys.add("optional","SIGMA_MEAN_CORRECTION","sigma_mean correction modifier");
   keys.add("optional","MAX_FORCE","maximum allowable force");
   keys.add("optional","TEMP","the system temperature - this is only needed if code doesnt' pass the temperature to plumed");
@@ -286,7 +275,6 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.add("optional","MC_CHUNKSIZE","MC chunksize");
   keys.add("optional","STATUS_FILE","write a file with all the data usefull for restart/continuation of Metainference");
   keys.add("compulsory","WRITE_STRIDE","write the status to a file every N steps, this can be used for restart/continuation");
-  keys.add("optional","UPDATESIGMAMEAN","update sigma_mean to correct for unequal weights");
   keys.add("optional","SELECTOR","name of selector");
   keys.add("optional","NSELECT","range of values for selector [0, N-1]");
   keys.use("RESTART");
@@ -300,25 +288,24 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.addOutputComponent("scale",        "SCALEDATA",    "scale parameter");
   keys.addOutputComponent("offset",       "ADDOFFSET",    "offset parameter");
   keys.addOutputComponent("ftilde",       "GENERIC",      "ensemble average estimator");
-  keys.addOutputComponent("maxForceMD",   "OPTSIGMAMEAN", "max force on atoms");
-  keys.addOutputComponent("smMod",        "OPTSIGMAMEAN", "modifier for all sigma mean");
 }
 
 Metainference::Metainference(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao), 
 doscale_(false),
+scale_(1.),
 scale_mu_(0),
 scale_min_(1),
 scale_max_(-1),
 Dscale_(-1),
 dooffset_(false),
+offset_(0.),
 offset_mu_(0),
 offset_min_(1),
 offset_max_(-1),
 Doffset_(-1),
 Dftilde_(0.1),
 sigma_mean_correction_(1.),
-sm_mod_(1.),
 random(3),
 MCsteps_(1), 
 MCstride_(1), 
@@ -329,13 +316,10 @@ MCtrial_(0),
 MCchunksize_(0),
 write_stride_(0),
 firstTime(true),
-do_reweight(false),
+do_reweight_(false),
 do_optsigmamean_(0),
-do_updatesigmamean_(false),
-update_stride_(0),
-sigma_mean_modifier_count_(0),
-iselect_old_(0),
-atoms(plumed.getAtoms())
+optsigmamean_stride_(0),
+average_weights_stride_(1)
 {
   // set up replica stuff 
   master = (comm.Get_rank()==0);
@@ -349,11 +333,22 @@ atoms(plumed.getAtoms())
   comm.Sum(&nrep_,1);
   comm.Sum(&replica_,1);
 
+  unsigned nsel = 1;
+  parse("SELECTOR", selector_);
+  parse("NSELECT", nsel);
+  // do checks
+  if(selector_.length()>0 && nsel<=1) error("With SELECTOR active, NSELECT must be greater than 1");
+  if(selector_.length()==0 && nsel>1) error("With NSELECT greater than 1, you must specify SELECTOR");
+ 
   // reweight implies a different number of arguments (the latest one must always be the bias) 
-  parseFlag("REWEIGHT", do_reweight);
-  if(do_reweight&&nrep_==0) error("REWEIGHT can only be used in parallel with 2 or more replicas"); 
+  parseFlag("REWEIGHT", do_reweight_);
+  if(do_reweight_&&nrep_==0) error("REWEIGHT can only be used in parallel with 2 or more replicas"); 
   narg = getNumberOfArguments();
-  if(do_reweight) narg--;
+  if(do_reweight_) narg--;
+
+  parse("AVERAGEWEIGHTS", average_weights_stride_);
+  if(average_weights_stride_>0&&do_reweight_==0) error("AVERAGEWEIGHTS must be used in combination with REWEIGHT");
+  average_weights_.resize(nsel, vector<double> (nrep_, 1./static_cast<double>(nrep_)));
 
   parseVector("PARAMETERS",parameters);
   if(parameters.size()!=static_cast<unsigned>(narg)&&!parameters.empty())
@@ -396,27 +391,52 @@ atoms(plumed.getAtoms())
   string status_file_name_;
   parse("STATUS_FILE",status_file_name_);
   if(status_file_name_=="") status_file_name_ = "MISTATUS"+getLabel();
+  else                      status_file_name_ = status_file_name_+getLabel();
 
   string stringa_optsigma;
   parse("OPTSIGMAMEAN", stringa_optsigma);
   if(stringa_optsigma=="NONE")      do_optsigmamean_=0;
   else if(stringa_optsigma=="SEM")  do_optsigmamean_=1;
-  else if(stringa_optsigma=="FULL") do_optsigmamean_=2;
-  
-  parse("UPDATESIGMAMEAN", update_stride_);
-  if(update_stride_>0){
-     do_updatesigmamean_ = true;
-     parse("SELECTOR", selector_);
-     unsigned nsel = 1;
-     parse("NSELECT", nsel);
-     if(selector_.length()>0 && nsel<=1) error("With SELECTOR active, NSELECT must be greater than 1");
-     // initialize modifier 
-     for(unsigned i=0; i<nsel; ++i) sigma_mean_modifier_.push_back(1.0);
+  parse("OPTSIGMAMEAN_STRIDE", optsigmamean_stride_);
+  if(optsigmamean_stride_>0&&do_optsigmamean_==0) error("OPTSIGMAMEAN_STRIDE must be used in combination with OPTSIGMAMEAN=SEM");
+
+  // resize vector for sigma_mean history
+  sigma_mean2_last_.resize(nsel);
+  for(unsigned i=0; i<nsel; i++) sigma_mean2_last_[i].resize(narg);
+
+  vector<double> read_sigma_mean_;
+  parseVector("SIGMA_MEAN0",read_sigma_mean_);
+  if(!do_optsigmamean_ && read_sigma_mean_.size()==0 && !getRestart()) 
+    error("If you don't use OPTSIGMAMEAN and you are not RESTARTING then you MUST SET SIGMA_MEAN0");
+
+  if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
+    if(read_sigma_mean_.size()==narg) {
+      sigma_mean2_.resize(narg);
+      for(unsigned i=0;i<narg;i++) sigma_mean2_[i]=read_sigma_mean_[i]*read_sigma_mean_[i];
+    } else if(read_sigma_mean_.size()==1) {
+      sigma_mean2_.resize(narg,read_sigma_mean_[0]*read_sigma_mean_[0]);
+    } else if(read_sigma_mean_.size()==0) {
+      sigma_mean2_.resize(narg,0.);
+    } else {
+      error("SIGMA_MEAN0 can accept either one single value or as many values as the arguments (with NOISETYPE=MGAUSS|MOUTLIERS)");
+    }
+    // set the initial value for the history
+    for(unsigned i=0; i<nsel; i++) for(unsigned j=0; j<narg; j++) sigma_mean2_last_[i][j].push_back(sigma_mean2_[j]);
+  } else {
+    if(read_sigma_mean_.size()==1) {
+      sigma_mean2_.resize(1, read_sigma_mean_[0]*read_sigma_mean_[0]);
+    } else if(read_sigma_mean_.size()==0) {
+      sigma_mean2_.resize(1, 0.);
+    } else {
+      error("If you want to use more than one SIGMA_MEAN0 you should use NOISETYPE=MGAUSS|MOUTLIERS");
+    }
+    // set the initial value for the history
+    for(unsigned i=0; i<nsel; i++) for(unsigned j=0; j<narg; j++) sigma_mean2_last_[i][j].push_back(sigma_mean2_[0]);
   }
 
-  if(do_updatesigmamean_ && do_optsigmamean_>0)
-   error("Cannot update and optimize sigma_mean at the same time");
 
+  parse("SIGMA_MEAN_CORRECTION", sigma_mean_correction_);
+  
   parseFlag("SCALEDATA", doscale_);
   if(doscale_) {
     string stringa_noise;
@@ -434,8 +454,6 @@ atoms(plumed.getAtoms())
       parse("SCALE_MAX",scale_max_);
       if(scale_max_<scale_min_) error("SCALE_MAX and SCALE_MIN must be set when using SCALE_PRIOR=FLAT");
     }
-  } else {
-    scale_=1.0;
   }
 
   parseFlag("ADDOFFSET", dooffset_);
@@ -456,8 +474,6 @@ atoms(plumed.getAtoms())
       if(Doffset_<0) Doffset_ = 0.05*(offset_max_ - offset_min_);
       if(offset_max_<offset_min_) error("OFFSET_MAX and OFFSET_MIN must be set when using OFFSET_PRIOR=FLAT");
     }
-  } else {
-    offset_=0.;
   }
 
   vector<double> readsigma;
@@ -498,50 +514,6 @@ atoms(plumed.getAtoms())
   if(temp>0.0) kbt_=plumed.getAtoms().getKBoltzmann()*temp;
   else kbt_=plumed.getAtoms().getKbT();
 
-  // while sigma_mean_ has the same size of sigma
-  vector<double> read_sigma_mean_;
-  parseVector("SIGMA_MEAN0",read_sigma_mean_);
-  if(!do_optsigmamean_ && read_sigma_mean_.size()==0 && !getRestart()) 
-    error("If you don't use OPTSIGMAMEAN and you are not RESTARTING then you MUST SET SIGMA_MEAN0");
-
-  if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
-    if(read_sigma_mean_.size()==narg) {
-      sigma_mean2_.resize(narg);
-      for(unsigned i=0;i<narg;i++) sigma_mean2_[i]=read_sigma_mean_[i]*read_sigma_mean_[i];
-    } else if(read_sigma_mean_.size()==1) {
-      sigma_mean2_.resize(narg,read_sigma_mean_[0]*read_sigma_mean_[0]);
-    } else if(read_sigma_mean_.size()==0) {
-      sigma_mean2_.resize(narg,0.000001);
-    } else {
-      error("SIGMA_MEAN0 can accept either one single value or as many values as the arguments (with NOISETYPE=MGAUSS|MOUTLIERS)");
-    }
-  } else {
-    if(read_sigma_mean_.size()==1) {
-      sigma_mean2_.resize(1, read_sigma_mean_[0]*read_sigma_mean_[0]);
-    } else if(read_sigma_mean_.size()==0) {
-      sigma_mean2_.resize(1, 0.000001);
-    } else {
-      error("If you want to use more than one SIGMA_MEAN0 you should use NOISETYPE=MGAUSS|MOUTLIERS");
-    }
-  } 
-
-  parse("SIGMA_MEAN_CORRECTION", sigma_mean_correction_);
-
-  // sigma mean optimisation
-  if(do_optsigmamean_==2) {
-    max_force_=3000.;
-    parse("MAX_FORCE", max_force_);
-    max_force_ *= max_force_;
-    sm_mod_=1.0;
-    parse("SIGMA_MEAN_MOD0", sm_mod_);
-    sm_mod_min_=1.0;
-    parse("SIGMA_MEAN_MOD_MIN", sm_mod_min_);
-    sm_mod_max_=sqrt(10.);
-    parse("SIGMA_MEAN_MOD_MAX", sm_mod_max_);
-    Dsm_mod_=0.01;
-    parse("DSIGMA_MEAN_MOD", Dsm_mod_);
-  }
-
   checkRead();
 
   IFile restart_sfile;
@@ -559,6 +531,12 @@ atoms(plumed.getAtoms())
         restart_sfile.scanField("sigma_mean_"+msg,read_sm);
         sigma_mean2_[i]=read_sm*read_sm;
       }
+      if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
+        for(unsigned i=0; i<nsel; i++) for(unsigned j=0; j<narg; j++) sigma_mean2_last_[i][j][0]=sigma_mean2_[j];
+      } else {
+        for(unsigned i=0; i<nsel; i++) for(unsigned j=0; j<narg; j++) sigma_mean2_last_[i][j][0]=sigma_mean2_[0];
+      }
+
       for(unsigned i=0;i<sigma_.size();++i) {
         std::string msg;
         Tools::convert(i,msg);
@@ -571,24 +549,14 @@ atoms(plumed.getAtoms())
           restart_sfile.scanField("ftilde_"+msg,ftilde_[i]);
         }
       }
-      if(doscale_)  restart_sfile.scanField("scale0_",scale_);
-      if(dooffset_) restart_sfile.scanField("offset0_",offset_);
-      if(do_optsigmamean_==2) {
-        restart_sfile.scanField("sigma_mean_mod0",sm_mod_);
-      }
+      restart_sfile.scanField("scale0_",scale_);
+      restart_sfile.scanField("offset0_",offset_);
+      double tmp_w;
+      restart_sfile.scanField("weight",tmp_w);
+      for(unsigned i=0; i<nsel; i++) average_weights_[i][replica_] = tmp_w;
     }
     restart_sfile.scanField();
     restart_sfile.close();
-    /* adjust, if needed and wanted, sigma_max  */
-    for(unsigned i=0;i<sigma_mean2_.size();++i) {
-      double s_v = sqrt(sigma_mean2_[i]*static_cast<double>(nrep_));
-      if(do_optsigmamean_>0) {
-        if(sigma_max_[i] < s_v) {
-          Dsigma_[i] *= s_v/sigma_max_[i]; 
-          sigma_max_[i] = s_v;
-        }
-      }
-    }
   }
 
   switch(noise_type_) {
@@ -651,7 +619,7 @@ atoms(plumed.getAtoms())
   for(unsigned i=0;i<sigma_mean2_.size();++i) log.printf(" %f", sqrt(sigma_mean2_[i]));
   log.printf("\n");
 
-  if(do_reweight) {
+  if(do_reweight_) {
     addComponent("MetaDf");
     componentIsNotPeriodic("MetaDf");
     addComponent("weight");
@@ -685,21 +653,6 @@ atoms(plumed.getAtoms())
   addComponent("acceptSigma");
   componentIsNotPeriodic("acceptSigma");
   valueAccept=getPntrToComponent("acceptSigma");
-
-  if(do_optsigmamean_==2) {
-    addComponent("maxForceMD");
-    componentIsNotPeriodic("maxForceMD");
-    valueMaxForceMD=getPntrToComponent("maxForceMD");
-    addComponent("smMod");
-    componentIsNotPeriodic("smMod");
-    valueSMmod=getPntrToComponent("smMod");
-  }
-  
-  if(do_updatesigmamean_){
-    addComponent("smMod");
-    componentIsNotPeriodic("smMod");
-    valueSMmod=getPntrToComponent("smMod");
-  }
 
   if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
     for(unsigned i=0;i<sigma_mean2_.size();++i){
@@ -750,7 +703,7 @@ atoms(plumed.getAtoms())
   }
 
   log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");
-  if(do_reweight) log<<plumed.cite("Bonomi, Camilloni, Vendruscolo, Sci. Rep. 6, 31232 (2016)");
+  if(do_reweight_) log<<plumed.cite("Bonomi, Camilloni, Vendruscolo, Sci. Rep. 6, 31232 (2016)");
   log<<"\n";
 }
 
@@ -780,8 +733,8 @@ double Metainference::getEnergySP(const vector<double> &mean, const vector<doubl
   }
   // add one single Jeffrey's prior and one normalisation per data point
   ene += 0.5*std::log(sss) + static_cast<double>(narg)*0.5*std::log(0.5*M_PI*M_PI/ss2);
-  if(doscale_)  ene += std::log(sss);
-  if(dooffset_) ene += std::log(sss);
+  if(doscale_)  ene += 0.5*std::log(sss);
+  if(dooffset_) ene += 0.5*std::log(sss);
   return kbt_ * ene;
 }
 
@@ -1187,7 +1140,7 @@ double Metainference::getEnergyForceSP(const vector<double> &mean, const vector<
     w_tmp += kbt_*f[i]*dmean_b[i];
   }
 
-  if(do_reweight) {
+  if(do_reweight_) {
     setOutputForce(narg, w_tmp);
     getPntrToComponent("MetaDf")->set(-w_tmp);
   }
@@ -1233,7 +1186,7 @@ double Metainference::getEnergyForceSPE(const vector<double> &mean, const vector
     w_tmp += kbt_ * dmean_b[i] *f[i];
   }
 
-  if(do_reweight) {
+  if(do_reweight_) {
     setOutputForce(narg, w_tmp);
     getPntrToComponent("MetaDf")->set(-w_tmp);
   }
@@ -1268,7 +1221,7 @@ double Metainference::getEnergyForceGJ(const vector<double> &mean, const vector<
     }
   }
 
-  if(do_reweight) {
+  if(do_reweight_) {
     setOutputForce(narg, -w_tmp);
     getPntrToComponent("MetaDf")->set(w_tmp);
   }
@@ -1303,7 +1256,7 @@ double Metainference::getEnergyForceGJE(const vector<double> &mean, const vector
     }
   }
 
-  if(do_reweight) {
+  if(do_reweight_) {
     setOutputForce(narg, -w_tmp);
     getPntrToComponent("MetaDf")->set(w_tmp);
   }
@@ -1344,7 +1297,7 @@ double Metainference::getEnergyForceMIGEN(const vector<double> &mean, const vect
     }
   }
 
-  if(do_reweight) {
+  if(do_reweight_) {
     setOutputForce(narg, -dene_b);
     getPntrToComponent("MetaDf")->set(dene_b);
   }
@@ -1354,33 +1307,49 @@ double Metainference::getEnergyForceMIGEN(const vector<double> &mean, const vect
 
 void Metainference::calculate()
 {
-  const double dnrep = static_cast<double>(nrep_);
-  double norm        = 0.0;
-  double fact        = 0.0;
-  double ave_fact    = 1.0/dnrep;
-  double var_fact    = 0.0;
-  vector<double> bias(nrep_,0);
+  unsigned iselect = 0;
+  // set the value of selector for  REM-like stuff
+  if(selector_.length()>0) iselect = static_cast<unsigned>(plumed.passMap[selector_]);
 
-  if(do_reweight){
-    // calculate the weights either from BIAS 
+  const double dnrep    = static_cast<double>(nrep_);
+  const double ave_fact = 1.0/dnrep;
+  double       norm     = 0.0;
+  double       fact     = 0.0;
+  double       var_fact = 0.0;
+
+  // calculate the weights either from BIAS 
+  if(do_reweight_){
+    vector<double> bias(nrep_,0);
     if(master){
       bias[replica_] = getArgument(narg); 
       if(nrep_>1) multi_sim_comm.Sum(&bias[0], nrep_);  
     }
     comm.Sum(&bias[0], nrep_);
+
     const double maxbias = *(std::max_element(bias.begin(), bias.end()));
     for(unsigned i=0; i<nrep_; ++i){
       bias[i] = exp((bias[i]-maxbias)/kbt_); 
       norm   += bias[i];
     }
-    fact = bias[replica_]/norm;
-    getPntrToComponent("weight")->set(fact);
+
+    // accumulate weights
+    const double decay = 1./static_cast<double> (average_weights_stride_);
+    for(unsigned i=0;i<nrep_;++i) {
+      const double delta=bias[i]/norm-average_weights_[iselect][i];
+      average_weights_[iselect][i]+=decay*delta;
+      if(firstTime) average_weights_[iselect][i] = bias[i]/norm;
+    }
+    // set average back into bias and set norm to one
+    for(unsigned i=0;i<nrep_;++i) bias[i] = average_weights_[iselect][i];
+    // set local weight, norm and weight variance
+    fact = bias[replica_];
+    norm = 1.0;
     for(unsigned i=0;i<nrep_;++i) var_fact += (bias[i]/norm-ave_fact)*(bias[i]/norm-ave_fact);
+    getPntrToComponent("weight")->set(fact);
   } else {
     // or arithmetic ones
-    for(unsigned i=0;i<nrep_;++i) bias[i] = 1.0;
-    norm = dnrep; 
-    fact = 1.0/norm; 
+    norm = dnrep;
+    fact = 1.0/norm;
   }
 
   // calculate the mean 
@@ -1395,16 +1364,14 @@ void Metainference::calculate()
   }
   comm.Sum(&mean[0], narg);
   // set the derivative of the mean with respect to the bias
-  for(unsigned i=0;i<narg;++i) dmean_b[i] = fact/kbt_*(getArgument(i)-mean[i]);
-
-  if(firstTime) {ftilde_ = mean; firstTime = false;}
+  for(unsigned i=0;i<narg;++i) dmean_b[i] = fact/kbt_*(getArgument(i)-mean[i])/static_cast<double>(average_weights_stride_);
 
   if(do_optsigmamean_>0) {
     /* this is the current estimate of sigma mean for each argument
        there is one of this per argument in any case  because it is
        the maximum among these to be used in case of GAUSS/OUTLIER */
     vector<double> sigma_mean2_now(narg,0);
-    if(do_reweight) {
+    if(do_reweight_) {
       if(master) {
         for(unsigned i=0;i<narg;++i) { 
           double tmp1 = (fact*getArgument(i)-ave_fact*mean[i])*(fact*getArgument(i)-ave_fact*mean[i]); 
@@ -1426,68 +1393,48 @@ void Metainference::calculate()
       comm.Sum(&sigma_mean2_now[0], narg);
       for(unsigned i=0;i<narg;++i) sigma_mean2_now[i] /= dnrep;
     }
-
+    
+    // add sigma_mean2 to history
+    if(optsigmamean_stride_>0) {
+      for(unsigned i=0;i<narg;++i) sigma_mean2_last_[iselect][i].push_back(sigma_mean2_now[i]);
+    } else {
+      for(unsigned i=0;i<narg;++i) if(sigma_mean2_now[i] > sigma_mean2_last_[iselect][i][0]) sigma_mean2_last_[iselect][i][0] = sigma_mean2_now[i];
+    } 
+ 
     if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
       for(unsigned i=0;i<narg;++i) {
-        /* if this is larger than the old one we update it */ 
-        if(sigma_mean2_now[i]>sigma_mean2_[i]) {
-          sigma_mean2_[i] = sigma_mean2_now[i];
-          /* the standard error of the mean */
-          valueSigmaMean[i]->set(sqrt(sigma_mean2_[i]));
-          /* this is the variance */
-          const double s_v = sqrt(sigma_mean2_[i]*dnrep);
-          /* if sigma_max is less than the variance we increase it and increase Dsigma accordingly */
-          if(sigma_max_[i] < s_v) {
-            Dsigma_[i] *= s_v/sigma_max_[i]; 
-            sigma_max_[i] = s_v;
-          }
-          if(noise_type_==GENERIC) {
-            sigma_min_[i] = sqrt(sigma_mean2_[i]);
-            if(sigma_[i] < sigma_min_[i]) sigma_[i] = sigma_min_[i];
-          }
+        /* set to the maximum in history vector */
+        sigma_mean2_[i] = *max_element(sigma_mean2_last_[iselect][i].begin(), sigma_mean2_last_[iselect][i].end());
+        /* the standard error of the mean */
+        valueSigmaMean[i]->set(sqrt(sigma_mean2_[i]));
+        if(noise_type_==GENERIC) {
+          sigma_min_[i] = sqrt(sigma_mean2_[i]);
+          if(sigma_[i] < sigma_min_[i]) sigma_[i] = sigma_min_[i];
         }
       }
     } else if(noise_type_==GAUSS||noise_type_==OUTLIERS) {
-      const double max_now = *max_element(sigma_mean2_now.begin(), sigma_mean2_now.end());
-      if(max_now>sigma_mean2_[0]) {
-        sigma_mean2_[0] = max_now; 
-        valueSigmaMean[0]->set(sqrt(sigma_mean2_[0]));
-        /* this is the variance */
-        const double s_v = sqrt(sigma_mean2_[0]*dnrep);
-        /* if sigma_max is less than the variance we increase it and increase Dsigma accordingly */
-        if(sigma_max_[0] < s_v) {
-          Dsigma_[0] *= s_v/sigma_max_[0]; 
-          sigma_max_[0] = s_v;
-        }
-      }
+      // find maximum for each data point
+      vector <double> max_values;
+      for(unsigned i=0;i<narg;++i) max_values.push_back(*max_element(sigma_mean2_last_[iselect][i].begin(), sigma_mean2_last_[iselect][i].end()));
+      // find maximum across data points
+      const double max_now = *max_element(max_values.begin(), max_values.end());
+      // set new value
+      sigma_mean2_[0] = max_now; 
+      valueSigmaMean[0]->set(sqrt(sigma_mean2_[0]));
     }
+    
+    // remove first entry of the history vector
+    if(sigma_mean2_last_[iselect][0].size()==optsigmamean_stride_&&optsigmamean_stride_>0) 
+      for(unsigned i=0;i<narg;++i) sigma_mean2_last_[iselect][i].erase(sigma_mean2_last_[iselect][i].begin());
+
+  // endif sigma optimization
   }
 
   // rescale sigma_mean by a user supplied constant 
   double sigma_mean_modifier = sigma_mean_correction_;
-  /* fix sigma_mean_ for the effect of large forces */
-  if(do_optsigmamean_==2) sigma_mean_modifier *= sm_mod_;
 
-  /* In case of sigma_mean update */
-  if(do_updatesigmamean_){
-     unsigned iselect = 0;
-     // if doing REM-like stuff, each quantity is stored and calculated separately
-     if(selector_.length()>0) iselect = static_cast<unsigned>(plumed.passMap[selector_]);
-     // update modifier when reaching the update stride or switching selector
-     if(sigma_mean_modifier_count_%update_stride_==0 || iselect!=iselect_old_){
-        // find maximum weight across replicas
-        double maxweight = (*(std::max_element(bias.begin(), bias.end())))/norm;
-        // update modifier
-        sigma_mean_modifier_[iselect] = sqrt(maxweight*dnrep);
-     }
-     // set value of modifier 
-     valueSMmod->set(sigma_mean_modifier_[iselect]);
-     sigma_mean_modifier = sigma_mean_modifier_[iselect];
-     // increment counter
-     sigma_mean_modifier_count_ += 1;
-     // store old value of iselect
-     iselect_old_ = iselect;
-  }
+  // this is only for generic metainference
+  if(firstTime) {ftilde_ = mean; firstTime = false;}
   
   /* MONTE CARLO */
   const long int step = getStep();
@@ -1519,6 +1466,8 @@ void Metainference::calculate()
 
 void Metainference::writeStatus()
 {
+  unsigned iselect = 0;
+
   sfile_.rewind();
   sfile_.printField("time",getTimeStep()*getStep());
   for(unsigned i=0;i<sigma_mean2_.size();++i) {
@@ -1538,86 +1487,16 @@ void Metainference::writeStatus()
       sfile_.printField("ftilde_"+msg,ftilde_[i]);
     }
   }
-  if(doscale_) {
-    sfile_.printField("scale0_",scale_);
-  }
-  if(dooffset_) {
-    sfile_.printField("offset0_",offset_);
-  }
-  if(do_optsigmamean_==2) {
-    sfile_.printField("sigma_mean_mod0",sm_mod_);
-  }
+  sfile_.printField("scale0_",scale_);
+  sfile_.printField("offset0_",offset_);
+  sfile_.printField("weight_",average_weights_[iselect][replica_]);
   sfile_.printField();
   sfile_.flush();
 }
 
 void Metainference::update() {
-  if(do_optsigmamean_==2) {
-    const double EPS = 0.1;
-    // Get max force of whole system
-    vector<Vector> md_forces;
-    vector<Vector> plumed_forces;
-    vector<double> masses;
-
-    atoms.getLocalMDForces(md_forces);
-    atoms.getLocalForces(plumed_forces);
-    atoms.getLocalMasses(masses);
-
-    vector<double> allforces_md;
-    allforces_md.reserve(md_forces.size());
-
-    for(unsigned i = 0; i < plumed_forces.size(); ++i) {
-      const double pf2 = plumed_forces[i].modulo2();
-      // we are only interested in forces plumed has an effect on
-      if(pf2 > EPS && masses[i] > EPS ) {
-        const double invm2 = 1./(masses[i]*masses[i]);
-        allforces_md.push_back(md_forces[i].modulo2()*invm2);
-      }
-    }
-
-    vector<double> fmax_tmp_md(comm.Get_size(),0);
-    vector<double> nfmax_md(nrep_, 0);
-
-    /* each local thread should look for the maximum force and number of violations */
-    if(allforces_md.size()>0) {
-      fmax_tmp_md[comm.Get_rank()] = *max_element(allforces_md.begin(), allforces_md.end());
-      for(unsigned i = 0; i < allforces_md.size(); ++i) {
-        if(allforces_md[i] > max_force_) {
-          nfmax_md[replica_] += allforces_md[i]/max_force_;
-        }
-      }
-    }
-    // the largest forces are shared among the local threads but not over the replicas 
-    comm.Sum(fmax_tmp_md);
-    // these are the largest forces for a specific replica
-    const double fmax_md = *max_element(fmax_tmp_md.begin(), fmax_tmp_md.end());
-
-    // the number of violations is summed up over the local thread and over the replicas 
-    comm.Sum(nfmax_md);
-    if(master && nrep_ > 1) multi_sim_comm.Sum(nfmax_md);
-    comm.Bcast(&nfmax_md[0], nrep_, 0);
-    
-    const double nnfmax_md = (*max_element(nfmax_md.begin(), nfmax_md.end()))*nrep_;
-
-    if( nnfmax_md == 0) {
-      sm_mod_ -= Dsm_mod_ * 0.01 * std::log(sm_mod_/sm_mod_min_);
-      if(sm_mod_<sm_mod_min_) sm_mod_=sm_mod_min_;
-    } else {
-      const double sm_mod_new = sm_mod_ + Dsm_mod_ * std::log(nnfmax_md+1.);
-      if(sm_mod_new > sm_mod_max_) {
-        sm_mod_ = sm_mod_max_;
-      } else {
-        sm_mod_ = sm_mod_new;
-      }
-    }
-
-    valueSMmod->set(sm_mod_);
-    valueMaxForceMD->set(sqrt(fmax_md));
-  }
-
   // write status file
-  const long int step = getStep();
-  if(write_stride_>0&& (step%write_stride_==0 || getCPT()) ) writeStatus();
+  if(write_stride_>0&& (getStep()%write_stride_==0 || getCPT()) ) writeStatus();
 }
 
 }
