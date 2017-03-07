@@ -390,6 +390,47 @@ this does not work is when inline methods are used because of template expressio
 This trick is extensively used in plumed so as to avoid too many indirect dependencies
 among .h files.
 
+\section cxx11features C++11 Features
+
+Since PLUMED 2.4 we systematically use C++11 features. Some of the most important ones are discussed here.
+
+\subsection cxx11features-auto Using auto
+
+Auto allows to implicitly declare the type of a variable.
+This is particularly handy when using iterators from STL containers.
+For instance, you can replace the following:
+\verbatim
+   map<string,vector<AtomNumber> >::const_iterator m=atoms.groups.find(strings[i]);
+\endverbatim
+with:
+\verbatim
+   const auto m=atoms.groups.find(strings[i]);
+\endverbatim
+Notice that the syntax is significantly simpler, especially if you do not
+remember which exact type of map is the variable `groups`.
+
+Iterators are often used in loops. Thus, you can now replace
+\verbatim
+  for(std::map<AtomNumber,Tensor>::const_iterator p=gradients.begin();p!=gradients.end();++p){
+    a+=(*p).second;
+  }
+\endverbatim
+with
+\verbatim
+  for(auto p=gradients.begin();p!=gradients.end();++p){
+    a+=(*p).second;
+  }
+\endverbatim
+However, in cases where you do not need to explicitly use `p` as an iterator, you might find
+even more convenient to use range-based loops:
+\verbatim
+  for(const auto & p : gradients){
+    a+=p.second;
+  }
+\endverbatim
+Notice that now `p` is a constant reference, so it is not anymore necessary to use the `*` operator.
+
+
 \section conc Conclusion
 
 The above is meant to give you some feel as to how plumed works.  If there is stuff you do not

@@ -119,9 +119,9 @@ void Value::setGradients(){
       AtomNumber an=aa->getAbsoluteIndex(j);
       if(atoms.isVirtualAtom(an)){
         const ActionWithVirtualAtom* a=atoms.getVirtualAtomsAction(an);
-        for(std::map<AtomNumber,Tensor>::const_iterator p=a->getGradients().begin();p!=a->getGradients().end();++p){
+        for(const auto & p : a->getGradients()){
 // controllare l'ordine del matmul:
-          gradients[(*p).first]+=matmul(Vector(derivatives[3*j],derivatives[3*j+1],derivatives[3*j+2]),(*p).second);
+          gradients[p.first]+=matmul(Vector(derivatives[3*j],derivatives[3*j+1],derivatives[3*j+2]),p.second);
         }
       } else {
         for(unsigned i=0;i<3;i++) gradients[an][i]+=derivatives[3*j+i];
@@ -130,9 +130,9 @@ void Value::setGradients(){
   } else if(aw){
     std::vector<Value*> values=aw->getArguments();
     for(unsigned j=0;j<derivatives.size();j++){
-      for(std::map<AtomNumber,Vector>::const_iterator p=values[j]->gradients.begin();p!=values[j]->gradients.end();++p){
-        AtomNumber iatom=(*p).first;
-        gradients[iatom]+=(*p).second*derivatives[j];
+      for(const auto & p : values[j]->gradients){
+        AtomNumber iatom=p.first;
+        gradients[iatom]+=p.second*derivatives[j];
       }
     }
   } else plumed_error();
@@ -142,11 +142,11 @@ double Value::projection(const Value& v1,const Value&v2){
   double proj=0.0;
   const std::map<AtomNumber,Vector> & grad1(v1.gradients);
   const std::map<AtomNumber,Vector> & grad2(v2.gradients);
-  for(std::map<AtomNumber,Vector>::const_iterator p1=grad1.begin();p1!=grad1.end();++p1){
-    AtomNumber a=(*p1).first;
-    std::map<AtomNumber,Vector>::const_iterator p2=grad2.find(a);
+  for(const auto & p1 : grad1){
+    AtomNumber a=p1.first;
+    const auto p2=grad2.find(a);
     if(p2!=grad2.end()){
-      proj+=dotProduct((*p1).second,(*p2).second);
+      proj+=dotProduct(p1.second,(*p2).second);
     }
   }
   return proj;

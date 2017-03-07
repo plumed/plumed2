@@ -162,14 +162,13 @@ void PathMSDBase::calculate(){
   // clean vector
   for(unsigned i=0;i< derivs_z.size();i++){derivs_z[i].zero();}
 
-  typedef  vector< class ImagePath  >::iterator imgiter;
-  for(imgiter it=imgVec.begin();it!=imgVec.end();++it){ 
-    (*it).similarity=exp(-lambda*((*it).distance));
+  for(auto & it : imgVec){
+    it.similarity=exp(-lambda*(it.distance));
     //log<<"DISTANCE "<<(*it).distance<<"\n";
     for(unsigned i=0;i<s_path.size();i++){
-   	 s_path[i]+=((*it).property[i])*(*it).similarity;
+   	 s_path[i]+=(it.property[i])*it.similarity;
     }
-    partition+=(*it).similarity;
+    partition+=it.similarity;
   }
   for(unsigned i=0;i<s_path.size();i++){ s_path[i]/=partition;  val_s_path[i]->set(s_path[i]) ;}
   val_z_path->set(-(1./lambda)*std::log(partition));
@@ -177,11 +176,11 @@ void PathMSDBase::calculate(){
     // clean up
     for(unsigned i=0;i< derivs_s.size();i++){derivs_s[i].zero();}
     // do the derivative 
-    for(imgiter it=imgVec.begin();it!=imgVec.end();++it){ 
-       double expval=(*it).similarity;
-       tmp=lambda*expval*(s_path[j]-(*it).property[j])/partition;
-       for(unsigned i=0;i< derivs_s.size();i++){ derivs_s[i]+=tmp*(*it).distder[i] ;} 
-       if(j==0){for(unsigned i=0;i< derivs_z.size();i++){ derivs_z[i]+=(*it).distder[i]*expval/partition;}} 
+    for(const auto & it : imgVec){
+       double expval=it.similarity;
+       tmp=lambda*expval*(s_path[j]-it.property[j])/partition;
+       for(unsigned i=0;i< derivs_s.size();i++){ derivs_s[i]+=tmp*it.distder[i] ;} 
+       if(j==0){for(unsigned i=0;i< derivs_z.size();i++){ derivs_z[i]+=it.distder[i]*expval/partition;}} 
     }
     for(unsigned i=0;i< derivs_s.size();i++){
           setAtomsDerivatives (val_s_path[j],i,derivs_s[i]); 

@@ -74,7 +74,7 @@ void GREX::cmd(const string&key,void*val){
     // do nothing
   } else {
     int iword=-1;
-    auto it=GREXWordMap().find(words[0]);
+    const auto it=GREXWordMap().find(words[0]);
     if(it!=GREXWordMap().end()) iword=it->second;
     switch(iword){
     case cmd_initialized:

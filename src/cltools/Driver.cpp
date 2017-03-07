@@ -171,8 +171,7 @@ static vector<molfile_plugin_t *> plugins;
 static map <string, unsigned> pluginmap;
 static int register_cb(void *v, vmdplugin_t *p){
   //const char *key = p->name;
-  std::pair<std::map<string,unsigned>::iterator,bool> ret; 
-  ret = pluginmap.insert ( std::pair<string,unsigned>(string(p->name),plugins.size()) );
+  const auto ret = pluginmap.insert ( std::pair<string,unsigned>(string(p->name),plugins.size()) );
   if (ret.second==false) { 
 	//cerr<<"MOLFILE: found duplicate plugin for "<<key<<" : not inserted "<<endl; 
   }else{
