@@ -247,7 +247,7 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.add("compulsory","LIKELIHOOD","GAUSS","the likelihood for the GENERIC metainference model, at present GAUSS or LOGN");
   keys.add("compulsory","DFTILDE","0.1","fraction of sigma_mean used to evolve ftilde");
   keys.addFlag("REWEIGHT",false,"simple REWEIGHT using the latest ARG as energy"); 
-  keys.add("optional","AVERAGEWEIGHTS", "Stride for calculation of averaged weights");
+  keys.add("optional","AVERAGING", "Stride for calculation of averaged weights and sigma_mean");
   keys.addFlag("SCALEDATA",false,"Set to TRUE if you want to sample a scaling factor common to all values and replicas");  
   keys.add("compulsory","SCALE0","initial value of the scaling factor");
   keys.add("compulsory","SCALE_PRIOR","FLAT","either FLAT or GAUSSIAN");
@@ -265,7 +265,6 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.add("compulsory","SIGMA_MAX","maximum value of the uncertainty parameter");
   keys.add("optional","DSIGMA","maximum MC move of the uncertainty parameter");
   keys.add("compulsory","OPTSIGMAMEAN","NONE","Set to NONE/SEM to manually set sigma mean, or to estimate it on the fly");  
-  keys.add("optional","OPTSIGMAMEAN_STRIDE", "Stride for calculation of optimal sigma mean");
   keys.add("optional","SIGMA_MEAN0","starting value for the uncertainty in the mean estimate");
   keys.add("optional","SIGMA_MEAN_CORRECTION","sigma_mean correction modifier");
   keys.add("optional","MAX_FORCE","maximum allowable force");
@@ -343,12 +342,16 @@ average_weights_stride_(1)
   // reweight implies a different number of arguments (the latest one must always be the bias) 
   parseFlag("REWEIGHT", do_reweight_);
   if(do_reweight_&&nrep_==0) error("REWEIGHT can only be used in parallel with 2 or more replicas"); 
+  average_weights_.resize(nsel, vector<double> (nrep_, 1./static_cast<double>(nrep_)));
   narg = getNumberOfArguments();
   if(do_reweight_) narg--;
 
-  parse("AVERAGEWEIGHTS", average_weights_stride_);
-  if(average_weights_stride_>0&&do_reweight_==0) error("AVERAGEWEIGHTS must be used in combination with REWEIGHT");
-  average_weights_.resize(nsel, vector<double> (nrep_, 1./static_cast<double>(nrep_)));
+  unsigned averaging=0;
+  parse("AVERAGING", averaging);
+  if(averaging>0) {
+    average_weights_stride_ = averaging;
+    optsigmamean_stride_    = averaging;
+  }
 
   parseVector("PARAMETERS",parameters);
   if(parameters.size()!=static_cast<unsigned>(narg)&&!parameters.empty())
@@ -397,8 +400,6 @@ average_weights_stride_(1)
   parse("OPTSIGMAMEAN", stringa_optsigma);
   if(stringa_optsigma=="NONE")      do_optsigmamean_=0;
   else if(stringa_optsigma=="SEM")  do_optsigmamean_=1;
-  parse("OPTSIGMAMEAN_STRIDE", optsigmamean_stride_);
-  if(optsigmamean_stride_>0&&do_optsigmamean_==0) error("OPTSIGMAMEAN_STRIDE must be used in combination with OPTSIGMAMEAN=SEM");
 
   // resize vector for sigma_mean history
   sigma_mean2_last_.resize(nsel);
