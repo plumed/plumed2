@@ -5075,13 +5075,24 @@ main ()
 _ACEOF
 if ac_fn_cxx_try_compile "$LINENO"; then :
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
+$as_echo "yes" >&6; };
+  support_cxx11=true
 else
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; } ;
-   as_fn_error $? "C++11 support is required" "$LINENO" 5
+  support_cxx11=false
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+if test "$support_cxx11" = false
+then
+   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: C++11 support is required as of PLUMED 2.4" >&5
+$as_echo "$as_me: WARNING: C++11 support is required as of PLUMED 2.4" >&2;}
+   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: your compiler appears not to support C++11" >&5
+$as_echo "$as_me: WARNING: your compiler appears not to support C++11" >&2;}
+   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: please change compiler of make sure that everything works correctly" >&5
+$as_echo "$as_me: WARNING: please change compiler of make sure that everything works correctly" >&2;}
+fi
 
 
 
