@@ -190,7 +190,8 @@ class Metainference : public bias::Bias
   OFile    sfile_;
 
   // others
-  bool     firstTime;
+  bool         firstTime;
+  vector<bool> firstTimeW;
   bool     master;
   bool     do_reweight_;
   unsigned do_optsigmamean_;
@@ -338,11 +339,16 @@ average_weights_stride_(1)
   // do checks
   if(selector_.length()>0 && nsel<=1) error("With SELECTOR active, NSELECT must be greater than 1");
   if(selector_.length()==0 && nsel>1) error("With NSELECT greater than 1, you must specify SELECTOR");
+
+  // initialise firstTimeW
+  firstTimeW.resize(nsel, true);
+
  
   // reweight implies a different number of arguments (the latest one must always be the bias) 
   parseFlag("REWEIGHT", do_reweight_);
-  if(do_reweight_&&nrep_==0) error("REWEIGHT can only be used in parallel with 2 or more replicas"); 
-  average_weights_.resize(nsel, vector<double> (nrep_, 1./static_cast<double>(nrep_)));
+  if(do_reweight_&&nrep_<2) error("REWEIGHT can only be used in parallel with 2 or more replicas"); 
+  if(!getRestart()) average_weights_.resize(nsel, vector<double> (nrep_, 1./static_cast<double>(nrep_)));
+  else average_weights_.resize(nsel, vector<double> (nrep_, 0.)); 
   narg = getNumberOfArguments();
   if(do_reweight_) narg--;
 
@@ -521,21 +527,22 @@ average_weights_stride_(1)
   restart_sfile.link(*this);
   if(getRestart()&&restart_sfile.FileExist(status_file_name_)) {
     firstTime = false;
+    for(unsigned i=0;i<nsel;i++) firstTimeW[i] = false;
     restart_sfile.open(status_file_name_);
     log.printf("  Restarting from %s\n", status_file_name_.c_str());
     double dummy;
     if(restart_sfile.scanField("time",dummy)){
       for(unsigned i=0;i<sigma_mean2_.size();++i) {
-        std::string msg;
-        Tools::convert(i,msg);
-        double read_sm;
-        restart_sfile.scanField("sigma_mean_"+msg,read_sm);
-        sigma_mean2_[i]=read_sm*read_sm;
-      }
-      if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
-        for(unsigned i=0; i<nsel; i++) for(unsigned j=0; j<narg; j++) sigma_mean2_last_[i][j][0]=sigma_mean2_[j];
-      } else {
-        for(unsigned i=0; i<nsel; i++) for(unsigned j=0; j<narg; j++) sigma_mean2_last_[i][j][0]=sigma_mean2_[0];
+        std::string msg_i;
+        Tools::convert(i,msg_i);
+        for(unsigned j=0;j<nsel;j++) {
+          std::string msg_j;
+          Tools::convert(j,msg_j);
+          std::string msg = msg_i+"_"+msg_j;
+          double read_sm;
+          restart_sfile.scanField("sigma_mean_"+msg,read_sm);
+          sigma_mean2_last_[j][i][0] = read_sm*read_sm;
+        }
       }
 
       for(unsigned i=0;i<sigma_.size();++i) {
@@ -552,9 +559,16 @@ average_weights_stride_(1)
       }
       restart_sfile.scanField("scale0_",scale_);
       restart_sfile.scanField("offset0_",offset_);
-      double tmp_w;
-      restart_sfile.scanField("weight",tmp_w);
-      for(unsigned i=0; i<nsel; i++) average_weights_[i][replica_] = tmp_w;
+      for(unsigned i=0;i<nsel;i++) {
+        std::string msg;
+        Tools::convert(i,msg);
+        double tmp_w;
+        restart_sfile.scanField("weight_"+msg,tmp_w);
+        if(master) average_weights_[i][replica_] = tmp_w;
+      }
+      // share weights
+      if(master&&nrep_>1) multi_sim_comm.Sum(&average_weights_[0][0], nrep_*nsel);
+      comm.Sum(&average_weights_[0][0], nrep_*nsel);
     }
     restart_sfile.scanField();
     restart_sfile.close();
@@ -692,7 +706,7 @@ average_weights_stride_(1)
   if(doscale_||dooffset_) {
     // in this case we want the same seed everywhere
     iseed = time(NULL);
-    if(master) multi_sim_comm.Bcast(iseed,0);
+    if(master&&nrep_>1) multi_sim_comm.Bcast(iseed,0);
     comm.Bcast(iseed,0);
     random[1].setSeed(-iseed);
   }
@@ -1335,11 +1349,18 @@ void Metainference::calculate()
 
     // accumulate weights
     const double decay = 1./static_cast<double> (average_weights_stride_);
-    for(unsigned i=0;i<nrep_;++i) {
-      const double delta=bias[i]/norm-average_weights_[iselect][i];
-      average_weights_[iselect][i]+=decay*delta;
-      if(firstTime) average_weights_[iselect][i] = bias[i]/norm;
+    if(!firstTimeW[iselect]) {
+      for(unsigned i=0;i<nrep_;++i) {
+        const double delta=bias[i]/norm-average_weights_[iselect][i];
+        average_weights_[iselect][i]+=decay*delta;
+      }
+    } else {
+      firstTimeW[iselect] = false;
+      for(unsigned i=0;i<nrep_;++i) {
+        average_weights_[iselect][i] = bias[i]/norm;
+      }
     }
+
     // set average back into bias and set norm to one
     for(unsigned i=0;i<nrep_;++i) bias[i] = average_weights_[iselect][i];
     // set local weight, norm and weight variance
@@ -1368,6 +1389,9 @@ void Metainference::calculate()
   for(unsigned i=0;i<narg;++i) dmean_b[i] = fact/kbt_*(getArgument(i)-mean[i])/static_cast<double>(average_weights_stride_);
 
   if(do_optsigmamean_>0) {
+    // remove first entry of the history vector
+    if(sigma_mean2_last_[iselect][0].size()==optsigmamean_stride_&&optsigmamean_stride_>0) 
+      for(unsigned i=0;i<narg;++i) sigma_mean2_last_[iselect][i].erase(sigma_mean2_last_[iselect][i].begin());
     /* this is the current estimate of sigma mean for each argument
        there is one of this per argument in any case  because it is
        the maximum among these to be used in case of GAUSS/OUTLIER */
@@ -1423,41 +1447,43 @@ void Metainference::calculate()
       sigma_mean2_[0] = max_now; 
       valueSigmaMean[0]->set(sqrt(sigma_mean2_[0]));
     }
-    
-    // remove first entry of the history vector
-    if(sigma_mean2_last_[iselect][0].size()==optsigmamean_stride_&&optsigmamean_stride_>0) 
-      for(unsigned i=0;i<narg;++i) sigma_mean2_last_[iselect][i].erase(sigma_mean2_last_[iselect][i].begin());
-
   // endif sigma optimization
+  } else {
+    if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
+      for(unsigned i=0;i<narg;++i) {
+        sigma_mean2_[i] = sigma_mean2_last_[iselect][i][0];
+        valueSigmaMean[i]->set(sqrt(sigma_mean2_[i]));
+      }
+    } else if(noise_type_==GAUSS||noise_type_==OUTLIERS) {
+      sigma_mean2_[0] = sigma_mean2_last_[iselect][0][0];
+      valueSigmaMean[0]->set(sqrt(sigma_mean2_[0]));
+    }
   }
-
-  // rescale sigma_mean by a user supplied constant 
-  double sigma_mean_modifier = sigma_mean_correction_;
 
   // this is only for generic metainference
   if(firstTime) {ftilde_ = mean; firstTime = false;}
   
   /* MONTE CARLO */
   const long int step = getStep();
-  if(step%MCstride_==0&&!getExchangeStep()) doMonteCarlo(mean, sigma_mean_modifier);
+  if(step%MCstride_==0&&!getExchangeStep()) doMonteCarlo(mean, sigma_mean_correction_);
 
   // calculate bias and forces
   double ene = 0; 
   switch(noise_type_) {
     case GAUSS:
-      ene = getEnergyForceGJ(mean, dmean_x, dmean_b, sigma_mean_modifier);
+      ene = getEnergyForceGJ(mean, dmean_x, dmean_b, sigma_mean_correction_);
       break;
     case MGAUSS:
-      ene = getEnergyForceGJE(mean, dmean_x, dmean_b, sigma_mean_modifier);
+      ene = getEnergyForceGJE(mean, dmean_x, dmean_b, sigma_mean_correction_);
       break;
     case OUTLIERS:
-      ene = getEnergyForceSP(mean, dmean_x, dmean_b, sigma_mean_modifier);
+      ene = getEnergyForceSP(mean, dmean_x, dmean_b, sigma_mean_correction_);
       break;
     case MOUTLIERS:
-      ene = getEnergyForceSPE(mean, dmean_x, dmean_b, sigma_mean_modifier);
+      ene = getEnergyForceSPE(mean, dmean_x, dmean_b, sigma_mean_correction_);
       break;
     case GENERIC:
-      ene = getEnergyForceMIGEN(mean, dmean_x, dmean_b, sigma_mean_modifier);
+      ene = getEnergyForceMIGEN(mean, dmean_x, dmean_b, sigma_mean_correction_);
       break;
   }
 
@@ -1467,14 +1493,16 @@ void Metainference::calculate()
 
 void Metainference::writeStatus()
 {
-  unsigned iselect = 0;
-
   sfile_.rewind();
   sfile_.printField("time",getTimeStep()*getStep());
   for(unsigned i=0;i<sigma_mean2_.size();++i) {
-    std::string msg;
-    Tools::convert(i,msg);
-    sfile_.printField("sigma_mean_"+msg,sqrt(sigma_mean2_[i]));
+    std::string msg_i,msg_j;
+    Tools::convert(i,msg_i);
+    for(unsigned j=0;j<sigma_mean2_last_.size();j++) {
+      Tools::convert(j,msg_j);
+      std::string msg = msg_i+"_"+msg_j;
+      sfile_.printField("sigma_mean_"+msg,sqrt(*max_element(sigma_mean2_last_[j][i].begin(), sigma_mean2_last_[j][i].end())));
+    }
   }
   for(unsigned i=0;i<sigma_.size();++i) {
     std::string msg;
@@ -1490,7 +1518,11 @@ void Metainference::writeStatus()
   }
   sfile_.printField("scale0_",scale_);
   sfile_.printField("offset0_",offset_);
-  sfile_.printField("weight_",average_weights_[iselect][replica_]);
+  for(unsigned i=0;i<average_weights_.size();i++) {
+    std::string msg_i;
+    Tools::convert(i,msg_i);
+    sfile_.printField("weight_"+msg_i,average_weights_[i][replica_]);
+  }
   sfile_.printField();
   sfile_.flush();
 }
