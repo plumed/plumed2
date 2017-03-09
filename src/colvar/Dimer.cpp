@@ -23,6 +23,8 @@
 
 #include "Colvar.h"
 #include "ActionRegister.h"
+#include "core/PlumedMain.h"
+
 #include <string>
 #include <cmath>
 #include <cassert>
@@ -165,7 +167,7 @@ Dimer::Dimer(const ActionOptions& ao):
 	PLUMED_COLVAR_INIT(ao)
 {
 	
-	log<<" Please cite J. Chem. Theory Comput. 13, 425(2017)";
+	log<<" Bibliography "<<plumed.cite("M Nava, F. Palazzesi, C. Perego and M. Parrinello, J. Chem. Theory Comput. 13, 425(2017)")<<"\n";
 	parseVector("DSIGMA",dsigmas);
 	parse("Q",qexp);
 	parse("TEMP",temperature);
@@ -245,6 +247,7 @@ Dimer::Dimer(const ActionOptions& ao):
 void Dimer::calculate()
 {
 	double cv_val=0;
+	Tensor virial;
 	vector<Vector> derivatives;
 	vector<Vector> my_pos=getPositions();
 	int atms = my_pos.size();
@@ -272,6 +275,13 @@ void Dimer::calculate()
 		}
 		derivatives.push_back(der_val);
 		der_b2.push_back(mder_val);
+		
+		// virial part: each dimer contributes -x_{ij}*ds/dx_{ij}  (s is the CV)
+		double dfunc = fac1qm1/(beta*dsigquad);
+		Vector dd(dfunc*dist);
+  		Tensor vv(dd,dist);
+		virial -= vv;
+		
 	}
 	
 	derivatives.insert(derivatives.end(), der_b2.begin(), der_b2.end());
@@ -279,8 +289,8 @@ void Dimer::calculate()
 	for(unsigned int i=0;i<derivatives.size();i++)
 		setAtomsDerivatives(i,derivatives[i]);
 	
-	setBoxDerivativesNoPbc();
 	setValue(cv_val);
+	setBoxDerivatives(virial);
 	
 }
 
