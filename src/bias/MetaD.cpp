@@ -433,7 +433,7 @@ void MetaD::registerKeywords(Keywords& keys){
   keys.add("optional","INTERVAL","monodimensional lower and upper limits, outside the limits the system will not feel the biasing force.");
   keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
-  keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with other WALKERS_* options");
+  keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with WALKERS_* options other than WALKERS_DIR");
   keys.addFlag("ACCELERATION",false,"Set to TRUE if you want to compute the metadynamics acceleration factor.");  
   keys.use("RESTART");
   keys.use("UPDATE_FROM");
@@ -466,7 +466,7 @@ stride_(0), welltemp_(false),
 dp_(NULL), adaptive_(FlexibleBin::none),
 flexbin(NULL),
 // Multiple walkers initialization
-mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1),
+mw_n_(1), mw_dir_(""), mw_id_(0), mw_rstride_(1),
 walkers_mpi(false), mpi_nw_(0),
 acceleration(false), acc(0.0),
 // Interval initialization
@@ -711,10 +711,11 @@ last_step_warn_grid(0)
     log.printf("  %d multiple walkers active\n",mw_n_);
     log.printf("  walker id %d\n",mw_id_);
     log.printf("  reading stride %d\n",mw_rstride_);
-    log.printf("  directory with hills files %s\n",mw_dir_.c_str());
+    if(mw_dir_!="")log.printf("  directory with hills files %s\n",mw_dir_.c_str());
   } else {
     if(walkers_mpi) {
       log.printf("  Multiple walkers active using MPI communnication\n"); 
+      if(mw_dir_!="")log.printf("  directory with hills files %s\n",mw_dir_.c_str());
       if(comm.Get_rank()==0){
         // Only root of group can communicate with other walkers
         mpi_nw_=multi_sim_comm.Get_size();
@@ -821,11 +822,22 @@ last_step_warn_grid(0)
   // open all files at the beginning and read Gaussians if restarting
   for(int i=0;i<mw_n_;++i){
     string fname;
-    if(mw_n_>1) {
-      stringstream out; out << i;
-      fname = mw_dir_+"/"+hillsfname+"."+out.str();
+    if(mw_dir_!="") {
+      if(mw_n_>1) {
+        stringstream out; out << i;
+        fname = mw_dir_+"/"+hillsfname+"."+out.str();
+      } else if(walkers_mpi) {
+        fname = mw_dir_+"/"+hillsfname;
+      } else {
+        fname = hillsfname;
+      }
     } else {
-      fname = hillsfname;
+      if(mw_n_>1) {
+        stringstream out; out << i;
+        fname = hillsfname+"."+out.str();
+      } else {
+        fname = hillsfname;
+      }
     }
     IFile *ifile = new IFile();
     ifile->link(*this);
