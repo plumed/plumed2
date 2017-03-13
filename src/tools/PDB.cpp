@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "PDB.h"
 #include "Tools.h"
+#include "Log.h"
 #include <cstdio>
 #include <iostream>
 
