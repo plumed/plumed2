@@ -24,4 +24,5 @@ Changes from version 2.3 which are relevant for developers:
     this made it possible to add a regtest that actually tests erroneous cmd strings
     and erroneous inputs.
   - Due to the required c++11 support, travis-ci test on Ubuntu Precise has been removed.
+  - `gettimeofdate` and `gettime` have been replaced with portable `chrono` classes introduced in c++11.
 */
