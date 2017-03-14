@@ -138,6 +138,7 @@ See branch \branch{v2.3} on git repository.
 - fixed `plumed-config` that was not working.
 - log file points to the `config.txt` files to allow users to check which features were available in that compiled version.
 - `make clean` in root dir now also cleans `vim` subdirectory.
+- Updated gromacs patch to version 2016.3 
 
 For developers:
 - Cppcheck on travis-ci has been updated to 1.77.
