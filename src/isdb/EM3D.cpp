@@ -547,9 +547,8 @@ void EM3D::get_cutoff_ov()
 double EM3D::get_overlap(const Vector &m_m, const Vector &d_m, double &fact_md,
                             const VectorGeneric<6> &inv_cov_md, Vector &ov_der)
 {
-  // calculate vector difference m_m-d_m
   Vector md;
-  // check pbc 
+  // calculate vector difference m_m-d_m with/without pbc
   if(pbc_) md = pbcDistance(d_m, m_m);
   else     md = delta(d_m, m_m);
   // calculate product of transpose of md and inv_cov_md
@@ -570,9 +569,8 @@ double EM3D::get_overlap(const Vector &m_m, const Vector &d_m, double &fact_md,
                             const VectorGeneric<6> &inv_cov_md)
                         
 {
-  // calculate vector difference m_m-d_m
   Vector md;
-  // check pbc
+  // calculate vector difference m_m-d_m with/without pbc 
   if(pbc_) md = pbcDistance(d_m, m_m);
   else     md = delta(d_m, m_m);
   // calculate product of transpose of md and inv_cov_md
@@ -724,6 +722,8 @@ void EM3D::calculate(){
      atom_der_[i]   = Vector(0,0,0);
      atom_der_b_[i] = Vector(0,0,0);
   }
+  // virial
+  Tensor virial, virialb;
 
   // get derivatives of bias with respect to atoms
   for(unsigned i=rank_;i<nl_.size();i=i+size_) {
@@ -734,36 +734,46 @@ void EM3D::calculate(){
      double der = - kbt_/err_f_[id]*sqrt2_pi_*exp(-0.5*(ovmd_[id]-ovdd_[id])*(ovmd_[id]-ovdd_[id])/sigma_mean_[id]/sigma_mean_[id])/sigma_mean_[id];
      // second part
      der += kbt_ / (ovmd_[id]-ovdd_[id]);
-     // chain rule
-     if(GMM_d_beta_[id] == 1) atom_der_b_[im] += der * ovmd_der_[i];
-     else                     atom_der_[im]   += der * ovmd_der_[i];
+     // chain rule 
+     Vector tot_der = der * ovmd_der_[i];
+     // atom's position in GMM cell 
+     Vector pos;
+     if(pbc_) pos = pbcDistance(GMM_d_m_[id], getPosition(im)) + GMM_d_m_[id];
+     else     pos = getPosition(im);
+     // add derivative and virial 
+     if(GMM_d_beta_[id] == 1) {
+      atom_der_b_[im] += tot_der;
+      virialb         += Tensor(pos, -tot_der);
+     } else {
+      atom_der_[im] += tot_der;
+      virial        += Tensor(pos, -tot_der);
+     }
   }
-    
+
   // if parallel, communicate stuff
   if(!serial_){
     comm.Sum(&atom_der_[0][0],   3*atom_der_.size());
     comm.Sum(&atom_der_b_[0][0], 3*atom_der_b_.size());
+    comm.Sum(virial);
+    comm.Sum(virialb);
   }
   
-  // set derivatives and virial calculation
-  Tensor virial, virialb;
+  // set derivatives 
   for(unsigned i=0;i<atom_der_.size();++i) {
      setAtomsDerivatives(getPntrToComponent("score"),  i, atom_der_[i]);
      setAtomsDerivatives(getPntrToComponent("scoreb"), i, atom_der_b_[i]);
-     virial  += Tensor(getPosition(i), -atom_der_[i]);
-     virialb += Tensor(getPosition(i), -atom_der_b_[i]);
   }
+
+  // and set virial
+  setBoxDerivatives(getPntrToComponent("score"),  virial);
+  setBoxDerivatives(getPntrToComponent("scoreb"), virialb);
 
   // set value of the score
   getPntrToComponent("score")->set(ene);
   // set value of the beta score
   getPntrToComponent("scoreb")->set(ene_b);
 
-  // set virial derivatives 
-  setBoxDerivatives(getPntrToComponent("score"),  virial);
-  setBoxDerivatives(getPntrToComponent("scoreb"), virialb); 
- 
-  } else {
+ } else {
   
    // ANALYSIS MODE   
    // prepare stuff for the first time
