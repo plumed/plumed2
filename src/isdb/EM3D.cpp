@@ -102,6 +102,8 @@ private:
  OFile Devfile_;
  double nframe_;
 
+ // pbc
+ bool pbc_;
  
  // calculate model GMM weights and covariances - these are constants
  void get_GMM_m(vector<AtomNumber> &atoms);
@@ -164,9 +166,13 @@ inv_sqrt2_(0.707106781186548),
 sqrt2_pi_(0.797884560802865),
 nl_cutoff_(-1.0), nl_stride_(0),
 first_time_(true), no_aver_(false), serial_(false),
-analysis_(false), nframe_(0.0)
+analysis_(false), nframe_(0.0), pbc_(true)
 {
-  
+ 
+  bool nopbc=!pbc_;
+  parseFlag("NOPBC",nopbc);
+  pbc_=!nopbc;
+ 
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   
@@ -542,22 +548,20 @@ double EM3D::get_overlap(const Vector &m_m, const Vector &d_m, double &fact_md,
                             const VectorGeneric<6> &inv_cov_md, Vector &ov_der)
 {
   // calculate vector difference m_m-d_m
-  double md_x = m_m[0] - d_m[0];
-  double md_y = m_m[1] - d_m[1];
-  double md_z = m_m[2] - d_m[2];
+  Vector md;
+  // check pbc 
+  if(pbc_) md = pbcDistance(d_m, m_m);
+  else     md = delta(d_m, m_m);
   // calculate product of transpose of md and inv_cov_md
-  double p_x = md_x*inv_cov_md[0]+md_y*inv_cov_md[1]+md_z*inv_cov_md[2];
-  double p_y = md_x*inv_cov_md[1]+md_y*inv_cov_md[3]+md_z*inv_cov_md[4];
-  double p_z = md_x*inv_cov_md[2]+md_y*inv_cov_md[4]+md_z*inv_cov_md[5];
+  double p_x = md[0]*inv_cov_md[0]+md[1]*inv_cov_md[1]+md[2]*inv_cov_md[2];
+  double p_y = md[0]*inv_cov_md[1]+md[1]*inv_cov_md[3]+md[2]*inv_cov_md[4];
+  double p_z = md[0]*inv_cov_md[2]+md[1]*inv_cov_md[4]+md[2]*inv_cov_md[5];
   // calculate product of prod and md
-  double ov = md_x*p_x+md_y*p_y+md_z*p_z; 
+  double ov = md[0]*p_x+md[1]*p_y+md[2]*p_z;
   // final calculation
   ov = fact_md * exp(-0.5*ov);
   // derivatives
-  double x = md_x*inv_cov_md[0] + md_y*inv_cov_md[1] + md_z*inv_cov_md[2];
-  double y = md_x*inv_cov_md[1] + md_y*inv_cov_md[3] + md_z*inv_cov_md[4];
-  double z = md_x*inv_cov_md[2] + md_y*inv_cov_md[4] + md_z*inv_cov_md[5];
-  ov_der = ov * Vector(x, y, z); 
+  ov_der = ov * Vector(p_x, p_y, p_z);
   return ov;
 }
 
@@ -567,15 +571,16 @@ double EM3D::get_overlap(const Vector &m_m, const Vector &d_m, double &fact_md,
                         
 {
   // calculate vector difference m_m-d_m
-  double md_x = m_m[0] - d_m[0];
-  double md_y = m_m[1] - d_m[1];
-  double md_z = m_m[2] - d_m[2];
+  Vector md;
+  // check pbc
+  if(pbc_) md = pbcDistance(d_m, m_m);
+  else     md = delta(d_m, m_m);
   // calculate product of transpose of md and inv_cov_md
-  double p_x = md_x*inv_cov_md[0]+md_y*inv_cov_md[1]+md_z*inv_cov_md[2];
-  double p_y = md_x*inv_cov_md[1]+md_y*inv_cov_md[3]+md_z*inv_cov_md[4];
-  double p_z = md_x*inv_cov_md[2]+md_y*inv_cov_md[4]+md_z*inv_cov_md[5];
+  double p_x = md[0]*inv_cov_md[0]+md[1]*inv_cov_md[1]+md[2]*inv_cov_md[2];
+  double p_y = md[0]*inv_cov_md[1]+md[1]*inv_cov_md[3]+md[2]*inv_cov_md[4];
+  double p_z = md[0]*inv_cov_md[2]+md[1]*inv_cov_md[4]+md[2]*inv_cov_md[5];
   // calculate product of prod and md
-  double ov = md_x*p_x+md_y*p_y+md_z*p_z; 
+  double ov = md[0]*p_x+md[1]*p_y+md[2]*p_z;
   // final calculation
   if( ov > ov_cut_ ){ 
     ov = 0.0;
