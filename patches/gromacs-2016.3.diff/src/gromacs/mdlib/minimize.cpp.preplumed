@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -82,13 +82,6 @@
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/trajectory_writing.h"
-/* PLUMED */
-#include "../../../Plumed.h"
-extern int    plumedswitch;
-extern plumed plumedmain;
-extern void(*plumedcmd)(plumed,const char*,const void*);
-/* END PLUMED */
-
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -420,13 +413,14 @@ void init_em(FILE *fplog, const char *title,
         }
 
         atoms2md(top_global, ir, 0, NULL, top_global->natoms, mdatoms);
-        update_mdatoms(mdatoms, state_global->lambda[efptFEP]);
 
         if (vsite)
         {
             set_vsite_top(vsite, *top, mdatoms, cr);
         }
     }
+
+    update_mdatoms(mdatoms, state_global->lambda[efptMASS]);
 
     if (constr)
     {
@@ -477,43 +471,6 @@ void init_em(FILE *fplog, const char *title,
 
     clear_rvec(mu_tot);
     calc_shifts(ems->s.box, fr->shift_vec);
-
-    /* PLUMED */
-    if(plumedswitch){
-      if(cr->ms && cr->ms->nsim>1) {
-        if(MASTER(cr)) (*plumedcmd) (plumedmain,"GREX setMPIIntercomm",&cr->ms->mpi_comm_masters);
-        if(PAR(cr)){
-          if(DOMAINDECOMP(cr)) {
-            (*plumedcmd) (plumedmain,"GREX setMPIIntracomm",&cr->dd->mpi_comm_all);
-          }else{
-            (*plumedcmd) (plumedmain,"GREX setMPIIntracomm",&cr->mpi_comm_mysim);
-          }
-        }
-        (*plumedcmd) (plumedmain,"GREX init",NULL);
-      }
-      if(PAR(cr)){
-        if(DOMAINDECOMP(cr)) {
-          (*plumedcmd) (plumedmain,"setMPIComm",&cr->dd->mpi_comm_all);
-        }else{
-          (*plumedcmd) (plumedmain,"setMPIComm",&cr->mpi_comm_mysim);
-        }
-      }
-      (*plumedcmd) (plumedmain,"setNatoms",&top_global->natoms);
-      (*plumedcmd) (plumedmain,"setMDEngine","gromacs");
-      (*plumedcmd) (plumedmain,"setLog",fplog);
-      real real_delta_t;
-      real_delta_t=ir->delta_t;
-      (*plumedcmd) (plumedmain,"setTimestep",&real_delta_t);
-      (*plumedcmd) (plumedmain,"init",NULL);
-
-      if(PAR(cr)){
-        if(DOMAINDECOMP(cr)) {
-          (*plumedcmd) (plumedmain,"setAtomsNlocal",&cr->dd->nat_home);
-          (*plumedcmd) (plumedmain,"setAtomsGatindex",cr->dd->gatindex);
-        }
-      }
-    }
-    /* END PLUMED */
 }
 
 //! Finalize the minimization
@@ -835,23 +792,6 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
     /* do_force always puts the charge groups in the box and shifts again
      * We do not unshift, so molecules are always whole in congrad.c
      */
-    /* PLUMED */
-    int plumedNeedsEnergy=0;
-    matrix plumed_vir;
-    if(plumedswitch){
-      long int lstep=count; (*plumedcmd)(plumedmain,"setStepLong",&lstep);
-      (*plumedcmd) (plumedmain,"setPositions",&ems->s.x[0][0]);
-      (*plumedcmd) (plumedmain,"setMasses",&mdatoms->massT[0]);
-      (*plumedcmd) (plumedmain,"setCharges",&mdatoms->chargeA[0]);
-      (*plumedcmd) (plumedmain,"setBox",&ems->s.box[0][0]);
-      (*plumedcmd) (plumedmain,"prepareCalc",NULL);
-      (*plumedcmd) (plumedmain,"setForces",&ems->f[0][0]);
-      (*plumedcmd) (plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
-      clear_mat(plumed_vir);
-      (*plumedcmd) (plumedmain,"setVirial",&plumed_vir[0][0]);
-    }
-    /* END PLUMED */
-
     do_force(fplog, cr, inputrec,
              count, nrnb, wcycle, top, &top_global->groups,
              ems->s.box, ems->s.x, &ems->s.hist,
@@ -860,19 +800,6 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
              GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES |
              GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY |
              (bNS ? GMX_FORCE_NS : 0));
-    /* PLUMED */
-    if(plumedswitch){
-      if(plumedNeedsEnergy) {
-        msmul(force_vir,2.0,plumed_vir);
-        (*plumedcmd) (plumedmain,"setEnergy",&enerd->term[F_EPOT]);
-        (*plumedcmd) (plumedmain,"performCalc",NULL);
-        msmul(plumed_vir,0.5,force_vir);
-      } else {
-        msmul(plumed_vir,0.5,plumed_vir);
-        m_add(force_vir,plumed_vir,force_vir);
-      }
-    }
-    /* END PLUMED */
 
     /* Clear the unused shake virial and pressure */
     clear_mat(shake_vir);

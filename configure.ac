@@ -291,9 +291,17 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
 this_compiler_does_not_support_cxx11
 #endif
 ])],
-  [AC_MSG_RESULT([yes])],
+  [AC_MSG_RESULT([yes])];
+  support_cxx11=true,
   [AC_MSG_RESULT([no]) ;
-   AC_MSG_ERROR([C++11 support is required])])
+  support_cxx11=false])
+
+if test "$support_cxx11" = false
+then
+   AC_MSG_WARN([C++11 support is required as of PLUMED 2.4])
+   AC_MSG_WARN([Your compiler appears not to support C++11])
+   AC_MSG_WARN([Please change compiler or make sure that everything works correctly])
+fi
 
 
 

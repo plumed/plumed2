@@ -44,6 +44,23 @@ If you are using a Mac, notice that we are providing tentative port files to ins
 PLUMED with MacPorts. Follow the instructions at [this link](http://github.com/plumed/ports)
 and report feedbacks on the mailing list.
 
+\section SupportedCompilers Supported compilers
+
+As of PLUMED 2.4, we require a compiler that supports C++11. The following compilers
+(or later versions) should be sufficient:
+
+- gcc 4.8.1
+- clang 3.3
+- intel 15
+
+Notice that the `./configure` script verifies that your compiler supports C++11.
+Some compilers do not declare full support, but implement anyway a number of C++11 features
+sufficient to compile PLUMED (this is the case for instance of intel 15 compiler).
+In case you see a warning about C++11 support during `./configure`
+please make sure that PLUMED compiles correctly and, if possible, execute the regtests
+(using `make regtest`). Notice that we regularily test a number of compilers on travis-ci,
+and at least those compilers are guaranteed to be able to compile PLUMED correctly.
+
 \section ConfiguringPlumed Configuring PLUMED
 
 The `./configure` command 
@@ -64,7 +81,7 @@ Useful command line options for ./configure can be found by typing
 > ./configure --help
 \endverbatim
 PLUMED is made up of modules. Some of them are on by default, some others aren't.
-Since version 2.2, the activation of modules can be made during configuration using the `--enable-modules`
+Since version 2.3, the activation of modules should be made during configuration using the `--enable-modules`
 option (see \ref mymodules).
 
 Notice that some functionalities of PLUMED depend on external

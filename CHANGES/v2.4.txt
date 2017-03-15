@@ -10,6 +10,8 @@ Changes from version 2.3 which are relevant for users:
     - gcc 4.8
     - clang 3.3
     - intel 15
+- New collective variables:
+  -  \ref DIMER (thanks to Marco Nava).
 - Other changes:
   - \ref PBMETAD : multiple walkers using files (thanks to Marco De La Pierre).
   - \ref PBMETAD : adaptive gaussians
