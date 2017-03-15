@@ -646,7 +646,6 @@ void EM3D::prepare()
 // overlap calculator
 void EM3D::calculate_overlap(){
 
-  //makeWhole();
   if(first_time_ || getExchangeStep() || getStep()%nl_stride_==0){
      update_neighbor_list();
      first_time_=false;
@@ -721,8 +720,10 @@ void EM3D::calculate(){
   ene_b /= escale;
    
   // clear temporary vector
-  for(unsigned i=0; i<atom_der_.size(); ++i)   atom_der_[i]   = Vector(0,0,0);
-  for(unsigned i=0; i<atom_der_b_.size(); ++i) atom_der_b_[i] = Vector(0,0,0);
+  for(unsigned i=0; i<atom_der_.size(); ++i){ 
+     atom_der_[i]   = Vector(0,0,0);
+     atom_der_b_[i] = Vector(0,0,0);
+  }
 
   // get derivatives of bias with respect to atoms
   for(unsigned i=rank_;i<nl_.size();i=i+size_) {
@@ -744,15 +745,24 @@ void EM3D::calculate(){
     comm.Sum(&atom_der_b_[0][0], 3*atom_der_b_.size());
   }
   
-  // set derivatives
-  for(unsigned i=0;i<atom_der_.size();++i)   setAtomsDerivatives(getPntrToComponent("score"), i,  atom_der_[i]);
-  for(unsigned i=0;i<atom_der_b_.size();++i) setAtomsDerivatives(getPntrToComponent("scoreb"), i, atom_der_b_[i]);
+  // set derivatives and virial calculation
+  Tensor virial, virialb;
+  for(unsigned i=0;i<atom_der_.size();++i) {
+     setAtomsDerivatives(getPntrToComponent("score"),  i, atom_der_[i]);
+     setAtomsDerivatives(getPntrToComponent("scoreb"), i, atom_der_b_[i]);
+     virial  += Tensor(getPosition(i), -atom_der_[i]);
+     virialb += Tensor(getPosition(i), -atom_der_b_[i]);
+  }
 
   // set value of the score
   getPntrToComponent("score")->set(ene);
   // set value of the beta score
   getPntrToComponent("scoreb")->set(ene_b);
-  
+
+  // set virial derivatives 
+  setBoxDerivatives(getPntrToComponent("score"),  virial);
+  setBoxDerivatives(getPntrToComponent("scoreb"), virialb); 
+ 
   } else {
   
    // ANALYSIS MODE   
