@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,6 +62,7 @@
 #include "gromacs/imd/imd.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/functions.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
@@ -119,6 +120,12 @@
 #include "deform.h"
 #include "membed.h"
 #include "repl_ex.h"
+
+/* PLUMED */
+#include "../../../Plumed.h"
+extern int    plumedswitch;
+extern plumed plumedmain;
+/* END PLUMED */
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
@@ -284,6 +291,12 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
     /* Interactive MD */
     gmx_bool          bIMDstep = FALSE;
+
+    /* PLUMED */
+    int plumedNeedsEnergy=0;
+    int plumedWantsToStop=0;
+    matrix plumed_vir;
+    /* END PLUMED */
 
 #ifdef GMX_FAHCORE
     /* Temporary addition for FAHCORE checkpointing */
@@ -675,6 +688,52 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         fprintf(fplog, "\n");
     }
 
+    /* PLUMED */
+    if(plumedswitch){
+      /* detect plumed API version */
+      int pversion=0;
+      plumed_cmd(plumedmain,"getApiVersion",&pversion);
+      /* setting kbT is only implemented with api>1) */
+      real kbT=ir->opts.ref_t[0]*BOLTZ;
+      if(pversion>1) plumed_cmd(plumedmain,"setKbT",&kbT);
+      if(pversion>2){
+        int res=1;
+        if( (Flags & MD_STARTFROMCPT) ) plumed_cmd(plumedmain,"setRestart",&res);
+      }
+
+      if(cr->ms && cr->ms->nsim>1) {
+        if(MASTER(cr)) plumed_cmd(plumedmain,"GREX setMPIIntercomm",&cr->ms->mpi_comm_masters);
+        if(PAR(cr)){
+          if(DOMAINDECOMP(cr)) {
+            plumed_cmd(plumedmain,"GREX setMPIIntracomm",&cr->dd->mpi_comm_all);
+          }else{
+            plumed_cmd(plumedmain,"GREX setMPIIntracomm",&cr->mpi_comm_mysim);
+          }
+        }
+        plumed_cmd(plumedmain,"GREX init",NULL);
+      }
+      if(PAR(cr)){
+        if(DOMAINDECOMP(cr)) {
+          plumed_cmd(plumedmain,"setMPIComm",&cr->dd->mpi_comm_all);
+        }
+      }
+      plumed_cmd(plumedmain,"setNatoms",&top_global->natoms);
+      plumed_cmd(plumedmain,"setMDEngine","gromacs");
+      plumed_cmd(plumedmain,"setLog",fplog);
+      real real_delta_t;
+      real_delta_t=ir->delta_t;
+      plumed_cmd(plumedmain,"setTimestep",&real_delta_t);
+      plumed_cmd(plumedmain,"init",NULL);
+
+      if(PAR(cr)){
+        if(DOMAINDECOMP(cr)) {
+          plumed_cmd(plumedmain,"setAtomsNlocal",&cr->dd->nat_home);
+          plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->gatindex);
+        }
+      }
+    }
+    /* END PLUMED */
+
     walltime_accounting_start(walltime_accounting);
     wallcycle_start(wcycle, ewcRUN);
     print_start(fplog, cr, walltime_accounting, "mdrun");
@@ -984,6 +1043,13 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                     do_verbose && !bPMETunePrinting);
                 shouldCheckNumberOfBondedInteractions = true;
                 update_realloc(upd, state->nalloc);
+
+                /* PLUMED */
+                if(plumedswitch){
+                  plumed_cmd(plumedmain,"setAtomsNlocal",&cr->dd->nat_home);
+                  plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->gatindex);
+                }
+                /* END PLUMED */
             }
         }
 
@@ -1089,12 +1155,49 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              * This is parallellized as well, and does communication too.
              * Check comments in sim_util.c
              */
+
+            /* PLUMED */
+            plumedNeedsEnergy=0;
+            if(plumedswitch){
+              int pversion=0;
+              plumed_cmd(plumedmain,"getApiVersion",&pversion);
+              long int lstep=step; plumed_cmd(plumedmain,"setStepLong",&lstep);
+              plumed_cmd(plumedmain,"setPositions",&state->x[0][0]);
+              plumed_cmd(plumedmain,"setMasses",&mdatoms->massT[0]);
+              plumed_cmd(plumedmain,"setCharges",&mdatoms->chargeA[0]);
+              plumed_cmd(plumedmain,"setBox",&state->box[0][0]);
+              plumed_cmd(plumedmain,"prepareCalc",NULL);
+              plumed_cmd(plumedmain,"setStopFlag",&plumedWantsToStop);
+              int checkp=0; if(bCPT) checkp=1;
+              if(pversion>3) plumed_cmd(plumedmain,"doCheckPoint",&checkp);
+              plumed_cmd(plumedmain,"setForces",&f[0][0]);
+              plumed_cmd(plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
+              clear_mat(plumed_vir);
+              plumed_cmd(plumedmain,"setVirial",&plumed_vir[0][0]);
+            }
+            /* END PLUMED */
             do_force(fplog, cr, ir, step, nrnb, wcycle, top, groups,
                      state->box, state->x, &state->hist,
                      f, force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,
                      fr, vsite, mu_tot, t, mdoutf_get_fp_field(outf), ed, bBornRadii,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags);
+            /* PLUMED */
+            if(plumedswitch){
+              if(plumedNeedsEnergy){
+                msmul(force_vir,2.0,plumed_vir);
+                plumed_cmd(plumedmain,"setEnergy",&enerd->term[F_EPOT]);
+                plumed_cmd(plumedmain,"performCalc",NULL);
+                msmul(plumed_vir,0.5,force_vir);
+              } else {
+                msmul(plumed_vir,0.5,plumed_vir);
+                m_add(force_vir,plumed_vir,force_vir);
+              }
+              if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
+                 do_per_step(step,repl_ex_nst)) plumed_cmd(plumedmain,"GREX savePositions",NULL);
+              if(plumedWantsToStop) ir->nsteps=step_rel+1;
+            }
+            /* END PLUMED */
         }
 
         if (EI_VV(ir->eI) && !startingFromCheckpoint && !bRerunMD)
@@ -1193,8 +1296,15 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     m_add(force_vir, shake_vir, total_vir);     /* we need the un-dispersion corrected total vir here */
                     trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ2);
 
-                    copy_mat(shake_vir, state->svir_prev);
-                    copy_mat(force_vir, state->fvir_prev);
+                    /* TODO This is only needed when we're about to write
+                     * a checkpoint, because we use it after the restart
+                     * (in a kludge?). But what should we be doing if
+                     * startingFromCheckpoint or bInitStep are true? */
+                    if (inputrecNptTrotter(ir) || inputrecNphTrotter(ir))
+                    {
+                        copy_mat(shake_vir, state->svir_prev);
+                        copy_mat(force_vir, state->fvir_prev);
+                    }
                     if (inputrecNvtTrotter(ir) && ir->eI == eiVV)
                     {
                         /* update temperature and kinetic energy now that step is over - this is the v(t+dt) point */
@@ -1272,7 +1382,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         bIMDstep = do_IMD(ir->bIMD, step, cr, bNS, state->box, state->x, ir, t, wcycle);
 
         /* kludge -- virial is lost with restart for MTTK NPT control. Must reload (saved earlier). */
-        if (startingFromCheckpoint && bTrotter)
+        if (startingFromCheckpoint && (inputrecNptTrotter(ir) || inputrecNphTrotter(ir)))
         {
             copy_mat(state->svir_prev, shake_vir);
             copy_mat(state->fvir_prev, force_vir);
@@ -1839,6 +1949,12 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     IMD_finalize(ir->bIMD, ir->imd);
 
     walltime_accounting_set_nsteps_done(walltime_accounting, step_rel);
+    if (step_rel >= wcycle_get_reset_counters(wcycle) &&
+        signals[eglsRESETCOUNTERS].set == 0 &&
+        !bResetCountersHalfMaxH)
+    {
+        walltime_accounting_set_valid_finish(walltime_accounting);
+    }
 
     return 0;
 }
