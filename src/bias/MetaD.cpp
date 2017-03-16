@@ -782,7 +782,7 @@ last_step_warn_grid(0)
   if(concurrent) log<<"  You are using concurrent metadynamics\n";
 
   int rect=0;
-  if(comm.Get_rank()==0 && multi_sim_comm.Get_size()>1){
+  if(comm.Get_rank()==0){
     std::vector<double> all_biasf(multi_sim_comm.Get_size(),0.0);
     multi_sim_comm.Allgather(biasf_,all_biasf);
     for(unsigned i=0;i<all_biasf.size();i++) if(all_biasf[i]!=all_biasf[0]){ rect=1; break;}
