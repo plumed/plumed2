@@ -918,6 +918,15 @@ last_step_warn_grid(0)
   for(const auto & p : actionSet) if(dynamic_cast<MetaD*>(p)){ concurrent=true; break; }
   if(concurrent) log<<"  You are using concurrent metadynamics\n";
 
+  int rect=0;
+  if(comm.Get_rank()==0){
+    std::vector<double> all_biasf(multi_sim_comm.Get_size(),0.0);
+    multi_sim_comm.Allgather(biasf_,all_biasf);
+    for(unsigned i=0;i<all_biasf.size();i++) if(all_biasf[i]!=all_biasf[0]){ rect=1; break;}
+  }
+  comm.Bcast(rect,0);
+  if(rect==1) log<<"  You are using replica exchange with collective-variable tempering\n";
+
   log<<"  Bibliography "<<plumed.cite("Laio and Parrinello, PNAS 99, 12562 (2002)");
   if(welltemp_) log<<plumed.cite(
     "Barducci, Bussi, and Parrinello, Phys. Rev. Lett. 100, 020603 (2008)");
@@ -931,7 +940,7 @@ last_step_warn_grid(0)
      "Pratyush and Parrinello, Phys. Rev. Lett. 111, 230602 (2013)");
   if(rewf_grid_.size()>0) log<<plumed.cite(
      "Pratyush and Parrinello, J. Phys. Chem. B, 119, 736 (2015)");
-  if(concurrent) log<<plumed.cite(
+  if(concurrent || rect) log<<plumed.cite(
      "Gil-Ley and Bussi, J. Chem. Theory Comput. 11, 1077 (2015)");
   if(targetfilename_.length()>0){
     log<<plumed.cite("White, Dama, and Voth, J. Chem. Theory Comput. 11, 2451 (2015)");
