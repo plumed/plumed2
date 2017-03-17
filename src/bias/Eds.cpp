@@ -46,51 +46,50 @@ target observable values for a set of CVs.
 
 The addition to the potential is of the form 
 \f[
-  \sum_i {\alpha}_i*x_i
+  \sum_i \frac{\alpha}_i}{s_i}*x_i
 \f]
 
-where for CV \f$x_i\f$, a coupling \f${\alpha}_i\f$ is determined adaptively 
-or set by the user to match a target value for \f$x_i\f$.
+where for CV \f$x_i\f$, a coupling \f${\alpha}_i\f$ is determined
+adaptively or set by the user to match a target value for
+\f$x_i\f$. \f$s_i$\f is a scale parameter, which by default is set to
+the target value. It may also be set separately. 
 
 \warning
-Currently, the target observable value should not be zero if using the adaptive scheme. If this is needed, 
-\ref COMBINE can be used to shift the observable by a constant amount, and then a non-zero target can be used.
+If the target observable value is set to zero while using the adaptive scheme this will cause a divide-by-zero error
 
 \par Examples
 
 The following input for a harmonic oscillator of two beads will adaptively find a linear bias to change the mean and variance to the target values. The PRINT line shows how to access the value of the coupling constants. 
 
 \verbatim 
-d1: DISTANCE ATOMS=1,2
-#set center of new distribution here
-dc: COMBINE ARG=d1,d1 POWERS=0,1 PERIODIC=NO COEFFICIENTS=-2.0,1.0
-# this is the squared deviation from the target value of the mean
-dc2: COMBINE ARG=dc POWERS=2 PERIODIC=NO
+dist: DISTANCE ATOMS=1,2
+# this is the squared of the distance
+dist2: COMBINE ARG=dist POWERS=2 PERIODIC=NO
 
-#bias mean and variance, use the raw distance so target mean is not zero
-eds: EDS ARG=d1,dc2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 
-PRINT ARG=d1,dc2,eds.d1_coupling,eds.dc2_coupling,eds.bias,eds.force2 FILE=colvars.dat STRIDE=100
+#bias mean and variance
+eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 
+PRINT ARG=dist,dist2,eds.dist_coupling,eds.dist2_coupling,eds.bias,eds.force2 FILE=colvars.dat STRIDE=100
 \endverbatim
 
 Rather than trying to find the coupling constants adaptively, can ramp up to a constant value.
 \verbatim
 #ramp couplings from 0,0 to -1,1 over 50000 steps
-eds: EDS ARG=d1,dc2 CENTER=2.0,1.0 FIXED=-1,1 RAMP PERIOD=50000 TEMP=1.0
+eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 FIXED=-1,1 RAMP PERIOD=50000 TEMP=1.0
 
 #same as above, except starting at -0.5,0.5 rather than default of 0,0
-eds: EDS ARG=d1,dc2 CENTER=2.0,1.0 FIXED=-1,1 INIT=-0.5,0.5 RAMP PERIOD=50000 TEMP=1.0
+eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 FIXED=-1,1 INIT=-0.5,0.5 RAMP PERIOD=50000 TEMP=1.0
 \endverbatim
 
 A restart file can be added to dump information needed to restart/continue simulation using these parameters every STRIDE.
 \verbatim 
 #add the option to write to a restart file
-eds: EDS ARG=d1,dc2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 ORESTARTFILE=restart.dat
+eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 ORESTARTFILE=restart.dat
 
 #add the option to read in a previous restart file
-eds: EDS ARG=d1,dc2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IRESTARTFILE=restart.dat EDSRESTART
+eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IRESTARTFILE=restart.dat EDSRESTART
 
 #add the option to read in a previous restart file and freeze the bias at the final level from the previous simulation
-eds: EDS ARG=d1,dc2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IRESTARTFILE=restart.dat EDSRESTART FREEZE
+eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IRESTARTFILE=restart.dat EDSRESTART FREEZE
 \endverbatim
 
 
@@ -98,8 +97,8 @@ eds: EDS ARG=d1,dc2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IRESTARTFILE=restart.da
 //+ENDPLUMEDOC
 
 class EDS : public Bias{
-//compulsory keywords
   std::vector<double> center;
+  std::vector<double> scale;
   std::vector<double> current_coupling;
   std::vector<double> set_coupling;
   std::vector<double> target_coupling;
@@ -149,6 +148,7 @@ void EDS::registerKeywords(Keywords& keys){
    Bias::registerKeywords(keys);
    keys.use("ARG");
    keys.add("compulsory","CENTER","The desired centers (equilibrium values) which will be sought during the adaptive linear biasing.");
+   keys.add("optional","SCALE","A divisor to set the units of the bias. If not set, this will be the experimental value by default (as is done in White and Voth 2014).");
    keys.add("compulsory","PERIOD","Steps over which to adjust bias");
 
    keys.add("compulsory","RANGE","3.0","The largest magnitude of the force constant which one expects (in kBT) for each CV based");
@@ -218,6 +218,7 @@ valueForce2(NULL)
   }
     
   parseVector("CENTER",center);
+  parseVector("SCALE", scale);
   parseVector("RANGE",max_coupling_range);
   parseVector("FIXED",target_coupling);
   parseVector("INIT",set_coupling);
@@ -230,7 +231,8 @@ valueForce2(NULL)
   parseFlag("EDSRESTART",restart);
   parse("IRESTARTFILE",_irestartfilename);
   parse("ORESTARTFILE",_orestartfilename);
-  checkRead();
+  checkRead();  
+
   if(restart){
       log.printf("  reading all simulation information from file: %s\n",_irestartfilename.c_str());
       read_irestart();
@@ -245,12 +247,26 @@ valueForce2(NULL)
     
       log.printf("  with centers");
       for(unsigned i=0;i<center.size();i++){
-          if(center[i]==0) error("Cannot set any target values to zero due to the formulation of the algorithm. See doc for Eds bias");
           log.printf(" %f",center[i]);
       }
-      log.printf("\n");
-    
-      log.printf("  with initial ranges / rates:\n");
+
+      log.printf("\n and scaling of");
+      if(scale.size() > 0  && scale.size() < getNumberOfArguments()) {
+	error("the number of SCALE values be the same as number of CVs");
+      } else if(scale.size() == 0) {
+
+	log.printf("(default) ");
+
+	scale.resize(center.size());
+	for(unsigned int i = 0; i < scale.size(); i++) {
+          if(center[i]==0) 
+	    error("SCALE parameter has been set to CENTER value of 0 (as is default). This will divide by 0, so giving up. See doc for EDS bias");
+	  scale[i] = center[i];
+          log.printf(" %f",center[i]);
+	}
+      }
+      
+      log.printf("\n  with initial ranges / rates:\n");
       for(unsigned i=0;i<max_coupling_range.size();i++) {
           //this is just an empirical guess. Bigger range, bigger grads. Less frequent updates, bigger changes
           max_coupling_range[i]*=kbt;
@@ -347,28 +363,19 @@ void EDS::read_irestart(){
     }
 
     double time;
-    std::string center_name;
-    std::string init_name;
-    std::string target_name;
-    std::string coupling_name;
-    std::string maxrange_name;
-    std::string maxgrad_name;
+    std::string cv_name;
+
     while(irestartfile_.scanField("time",time)){
 
         for(unsigned i=0;i<getNumberOfArguments();++i) {
-            center_name = getPntrToArgument(i)->getName()+"_center";
-            init_name = getPntrToArgument(i)->getName()+"_init";
-            target_name = getPntrToArgument(i)->getName()+"_target";
-            coupling_name = getPntrToArgument(i)->getName()+"_coupling";
-            maxrange_name = getPntrToArgument(i)->getName()+"_maxrange";
-            maxgrad_name = getPntrToArgument(i)->getName()+"_maxgrad";
-    
-            irestartfile_.scanField(center_name,center[i]);
-            irestartfile_.scanField(init_name,set_coupling[i]);
-            irestartfile_.scanField(target_name,target_coupling[i]);
-            irestartfile_.scanField(coupling_name,current_coupling[i]);
-            irestartfile_.scanField(maxrange_name,max_coupling_range[i]);
-            irestartfile_.scanField(maxgrad_name,max_coupling_grad[i]);
+   	    cv_name = getPntrToArgument(i)->getName();
+            irestartfile_.scanField(cv_name + +"_center",center[i]);
+            irestartfile_.scanField(cv_name + +"_scale",scale[i]);
+            irestartfile_.scanField(cv_name + "_init", set_coupling[i]);
+            irestartfile_.scanField(cv_name + "_target",target_coupling[i]);
+            irestartfile_.scanField(cv_name + "_coupling",current_coupling[i]);
+            irestartfile_.scanField(cv_name + "_maxrange",max_coupling_range[i]);
+            irestartfile_.scanField(cv_name + "_maxgrad",max_coupling_grad[i]);
        }
 
        irestartfile_.scanField();
@@ -376,12 +383,14 @@ void EDS::read_irestart(){
 
    log.printf("  with centers");
    for(unsigned i=0;i<center.size();i++) {
-       if(center[i]==0) error("Cannot set any target values to zero due to the formulation of the algorithm. See doc for Eds bias");
        log.printf(" %f",center[i]);
    }
-   log.printf("\n");
+   log.printf("\n and scaling of ");
+   for(unsigned i=0;i<scale.size();i++) {
+       log.printf(" %f",scale[i]);
+   }
 
-   log.printf("  with initial ranges / rates:\n");
+   log.printf("\n  with initial ranges / rates:\n");
    for(unsigned i=0;i<max_coupling_range.size();i++) {
       log.printf("    %f / %f\n",max_coupling_range[i],max_coupling_grad[i]);
    }
@@ -417,28 +426,19 @@ void EDS::setup_orestart(){
 }
 
 void EDS::write_orestart(){
-    std::string center_name;
-    std::string init_name;
-    std::string target_name;
-    std::string coupling_name;
-    std::string maxrange_name;
-    std::string maxgrad_name;
+    std::string cv_name;
     orestartfile_.printField("time",getTimeStep()*getStep());
 
     for(unsigned i=0;i<getNumberOfArguments();++i) {
-        center_name = getPntrToArgument(i)->getName()+"_center";
-        init_name = getPntrToArgument(i)->getName()+"_init";
-        target_name = getPntrToArgument(i)->getName()+"_target";
-        coupling_name = getPntrToArgument(i)->getName()+"_coupling";
-        maxrange_name = getPntrToArgument(i)->getName()+"_maxrange";
-        maxgrad_name = getPntrToArgument(i)->getName()+"_maxgrad";
+        cv_name = getPntrToArgument(i)->getName();
 
-        orestartfile_.printField(center_name,center[i]);
-        orestartfile_.printField(init_name,set_coupling[i]);
-        orestartfile_.printField(target_name,target_coupling[i]);
-        orestartfile_.printField(coupling_name,current_coupling[i]);
-        orestartfile_.printField(maxrange_name,max_coupling_range[i]);
-        orestartfile_.printField(maxgrad_name,max_coupling_grad[i]);
+        orestartfile_.printField(cv_name + "_center",center[i]);
+        orestartfile_.printField(cv_name + "_scale",center[i]);
+        orestartfile_.printField(cv_name + "_init",set_coupling[i]);
+        orestartfile_.printField(cv_name + "_target",target_coupling[i]);
+        orestartfile_.printField(cv_name + "_coupling",current_coupling[i]);
+        orestartfile_.printField(cv_name + "_maxrange",max_coupling_range[i]);
+        orestartfile_.printField(cv_name + "_maxgrad",max_coupling_grad[i]);
     }
     orestartfile_.printField();
 }
@@ -524,7 +524,8 @@ void EDS::calculate(){
     double tmp;
     for(unsigned i=0;i<ncvs;++i){
        //calulcate step size
-       tmp = 2. * (means[i]/center[i] - 1) * ssds[i] / (update_calls - 1);
+       //uses scale here, which by default is center
+       tmp = 2. * (means[i]/scale[i] - 1) * ssds[i] / (update_calls - 1);
        step_size = tmp / kbt;
 
        //check if the step_size exceeds maximum possible gradient
