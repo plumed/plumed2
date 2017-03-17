@@ -148,13 +148,13 @@ void EDS::registerKeywords(Keywords& keys){
    Bias::registerKeywords(keys);
    keys.use("ARG");
    keys.add("compulsory","CENTER","The desired centers (equilibrium values) which will be sought during the adaptive linear biasing.");
-   keys.add("optional","SCALE","A divisor to set the units of the bias. If not set, this will be the experimental value by default (as is done in White and Voth 2014).");
    keys.add("compulsory","PERIOD","Steps over which to adjust bias");
 
    keys.add("compulsory","RANGE","3.0","The largest magnitude of the force constant which one expects (in kBT) for each CV based");
    keys.add("compulsory","SEED","0","Seed for random order of changing bias");
    keys.add("compulsory","INIT","0","Starting value for coupling coefficients");
    keys.add("compulsory","FIXED","0","Fixed target values for bias factors (not adaptive)");
+   keys.add("optional","BIAS_SCALE","A divisor to set the units of the bias. If not set, this will be the experimental value by default (as is done in White and Voth 2014).");
    keys.add("optional","TEMP","The system temperature. If not provided will be taken from MD code (if available)");
 
    keys.add("optional","ORESTARTFILE","Output file for all information needed to continue EDS simulation");
@@ -218,7 +218,7 @@ valueForce2(NULL)
   }
     
   parseVector("CENTER",center);
-  parseVector("SCALE", scale);
+  parseVector("BIAS_SCALE", scale);
   parseVector("RANGE",max_coupling_range);
   parseVector("FIXED",target_coupling);
   parseVector("INIT",set_coupling);
@@ -252,7 +252,7 @@ valueForce2(NULL)
 
       log.printf("\n and scaling of");
       if(scale.size() > 0  && scale.size() < getNumberOfArguments()) {
-	error("the number of SCALE values be the same as number of CVs");
+	error("the number of BIAS_SCALE values be the same as number of CVs");
       } else if(scale.size() == 0) {
 
 	log.printf("(default) ");
@@ -260,7 +260,7 @@ valueForce2(NULL)
 	scale.resize(center.size());
 	for(unsigned int i = 0; i < scale.size(); i++) {
           if(center[i]==0) 
-	    error("SCALE parameter has been set to CENTER value of 0 (as is default). This will divide by 0, so giving up. See doc for EDS bias");
+	    error("BIAS_SCALE parameter has been set to CENTER value of 0 (as is default). This will divide by 0, so giving up. See doc for EDS bias");
 	  scale[i] = center[i];
           log.printf(" %f",center[i]);
 	}
