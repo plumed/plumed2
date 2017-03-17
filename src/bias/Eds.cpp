@@ -127,7 +127,6 @@ class EDS : public Bias{
   double coupling_range_increase_factor;
   int b_hard_coupling_range;
   Random rand;
-  Value* valueBias;
   Value* valueForce2;
 
 public:
@@ -164,7 +163,7 @@ void EDS::registerKeywords(Keywords& keys){
    keys.addFlag("FREEZE",false,"Fix bias at current level (only used for restarting). Can also set PERIOD=0 if not using EDSRESTART.");
    keys.addFlag("EDSRESTART",false,"Get settings from IRESTARTFILE");
 
-   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
+   //keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
    keys.addOutputComponent("force2","default","squared value of force from the bias");
    keys.addOutputComponent("_coupling","default","For each named CV biased, there will be a corresponding output CV_coupling storing the current linear bias prefactor.");
 }
@@ -197,14 +196,9 @@ b_write_restart(false),
 seed(0),
 update_calls(0),
 avg_coupling_count(1),
-valueBias(NULL),
 valueForce2(NULL)
 {
   double temp=-1.0;
-
-  addComponent("bias");
-  componentIsNotPeriodic("bias");
-  valueBias=getPntrToComponent("bias");
 
   addComponent("force2");
   componentIsNotPeriodic("force2");
@@ -245,12 +239,12 @@ valueForce2(NULL)
       log.printf("  with kBT = %f\n",kbt);
       log.printf("  Updating every %i steps\n",update_period);
     
-      log.printf("  with centers");
+      log.printf("  with centers:");
       for(unsigned i=0;i<center.size();i++){
           log.printf(" %f",center[i]);
       }
 
-      log.printf("\n and scaling of");
+      log.printf("\n  and scaling:");
       if(scale.size() > 0  && scale.size() < getNumberOfArguments()) {
 	error("the number of BIAS_SCALE values be the same as number of CVs");
       } else if(scale.size() == 0) {
@@ -262,9 +256,11 @@ valueForce2(NULL)
           if(center[i]==0) 
 	    error("BIAS_SCALE parameter has been set to CENTER value of 0 (as is default). This will divide by 0, so giving up. See doc for EDS bias");
 	  scale[i] = center[i];
-          log.printf(" %f",center[i]);
 	}
       }
+
+      for(unsigned int i = 0; i < scale.size(); i++) 
+	log.printf(" %f",center[i]);
       
       log.printf("\n  with initial ranges / rates:\n");
       for(unsigned i=0;i<max_coupling_range.size();i++) {
@@ -381,11 +377,11 @@ void EDS::read_irestart(){
        irestartfile_.scanField();
    }
 
-   log.printf("  with centers");
+   log.printf("  with centers:");
    for(unsigned i=0;i<center.size();i++) {
        log.printf(" %f",center[i]);
    }
-   log.printf("\n and scaling of ");
+   log.printf("\n  and scaling:");
    for(unsigned i=0;i<scale.size();i++) {
        log.printf(" %f",scale[i]);
    }
@@ -457,7 +453,7 @@ void EDS::calculate(){
     setOutputForce(i,f);
     totf2+=f*f;
   };
-  valueBias->set(ene);
+  setBias(ene);
   valueForce2->set(totf2);
   
   //adjust parameters according to EDS recipe
