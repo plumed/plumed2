@@ -196,10 +196,6 @@ ssds_(getNumberOfArguments(),0.0),
 out_coupling_(getNumberOfArguments(),NULL),
 in_restart_name_(""),
 out_restart_name_(""),
-update_period_(0),
-avg_coupling_count_(1),
-kbt_(0.0),
-c_range_increase_f_(1.25),
 b_adaptive_(true),
 b_freeze_(false),
 b_equil_(true),
@@ -208,7 +204,11 @@ b_restart_(false),
 b_write_restart_(false),
 b_hard_c_range_(false),
 seed_(0),
+update_period_(0),
+avg_coupling_count_(1),
 update_calls_(0),
+kbt_(0.0),
+c_range_increase_f_(1.25),
 value_force2_(NULL)
 {
   double temp=-1.0;
@@ -380,7 +380,7 @@ void EDS::readInRestart_(const bool b_mean){
   }
   
   double time;
-  double avg_bias = std::vector<double>(center_.size());
+  std::vector<double> avg_bias = std::vector<double>(center_.size());
   unsigned int N = 0;
   std::string cv_name;
   
