@@ -19,7 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "MultiColvarFunction.h"
+#include "MultiColvarBase.h"
+#include "AtomValuePack.h"
 #include "core/ActionRegister.h"
 #include "tools/SwitchingFunction.h"
 
@@ -80,7 +81,7 @@ PRINT ARG=la.* FILE=colvar
 namespace PLMD {
 namespace multicolvar {
 
-class LocalAverage : public MultiColvarFunction {
+class LocalAverage : public MultiColvarBase {
 private:
 /// Cutoff
   double rcut2;
@@ -100,7 +101,7 @@ public:
 PLUMED_REGISTER_ACTION(LocalAverage,"LOCAL_AVERAGE")
 
 void LocalAverage::registerKeywords( Keywords& keys ){
-  MultiColvarFunction::registerKeywords( keys );
+  MultiColvarBase::registerKeywords( keys );
   keys.add("compulsory","NN","6","The n parameter of the switching function ");
   keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
@@ -111,7 +112,7 @@ void LocalAverage::registerKeywords( Keywords& keys ){
   // Use actionWithDistributionKeywords
   keys.use("SPECIES"); keys.use("SPECIESA"); keys.use("SPECIESB");
   keys.remove("LOWMEM"); keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("LESS_THAN");
-  keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS"); keys.remove("DATA");
+  keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS"); 
   keys.addFlag("LOWMEM",false,"lower the memory requirements");
   if( keys.reserved("VMEAN") ) keys.use("VMEAN");
   if( keys.reserved("VSUM") ) keys.use("VSUM");
@@ -119,7 +120,7 @@ void LocalAverage::registerKeywords( Keywords& keys ){
 
 LocalAverage::LocalAverage(const ActionOptions& ao):
 Action(ao),
-MultiColvarFunction(ao)
+MultiColvarBase(ao)
 {
   if( getNumberOfBaseMultiColvars()>1 ) error("local average with more than one base colvar makes no sense");
   // Read in the switching function
@@ -144,7 +145,7 @@ unsigned LocalAverage::getNumberOfQuantities() const {
 }
 
 double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
-  double d2, sw, dfunc; CatomPack atom0, atom1; MultiValue& myvals = myatoms.getUnderlyingMultiValue();
+  double d2, sw, dfunc; MultiValue& myvals = myatoms.getUnderlyingMultiValue();
   std::vector<double> values( getBaseMultiColvar(0)->getNumberOfQuantities() ); 
 
   getInputData( 0, false, myatoms, values );
@@ -156,7 +157,6 @@ double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) c
   }
 
   if( !doNotCalculateDerivatives() ){
-      atom0=getCentralAtomPackFromInput( myatoms.getIndex(0) );
       MultiValue& myder=getInputDerivatives( 0, false, myatoms );
       if( values.size()>2 ){
           for(unsigned j=0;j<myder.getNumberActive();++j){
@@ -198,7 +198,6 @@ double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) c
          if( !doNotCalculateDerivatives() ){
              Tensor vir(distance,distance);
              MultiValue& myder=getInputDerivatives( i, false, myatoms );
-             atom1=getCentralAtomPackFromInput( myatoms.getIndex(i) );
              if( values.size()>2 ){
                  for(unsigned j=0;j<myder.getNumberActive();++j){
                      unsigned jder=myder.getActiveIndex(j);
@@ -208,8 +207,8 @@ double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) c
                      } 
                  }
                  for(unsigned k=2;k<values.size();++k){
-                     myatoms.addComDerivatives( k, (-dfunc)*values[0]*values[k]*distance, atom0 );
-                     myatoms.addComDerivatives( k, (+dfunc)*values[0]*values[k]*distance, atom1 );
+                     addAtomDerivatives( k, 0, (-dfunc)*values[0]*values[k]*distance, myatoms ); 
+                     addAtomDerivatives( k, i, (+dfunc)*values[0]*values[k]*distance, myatoms );
                      myatoms.addBoxDerivatives( k, (-dfunc)*values[0]*values[k]*vir );
                  }
              } else {
@@ -218,13 +217,13 @@ double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) c
                      myatoms.addDerivative( 1, jder, sw*values[0]*myder.getDerivative(1,jder) ); 
                      myatoms.addDerivative( 1, jder, sw*values[1]*myder.getDerivative(0,jder) );
                  }
-                 myatoms.addComDerivatives( 1, (-dfunc)*values[0]*values[1]*distance, atom0 );
-                 myatoms.addComDerivatives( 1, (+dfunc)*values[0]*values[1]*distance, atom1 );
+                 addAtomDerivatives( 1, 0, (-dfunc)*values[0]*values[1]*distance, myatoms ); 
+                 addAtomDerivatives( 1, i, (+dfunc)*values[0]*values[1]*distance, myatoms );
                  myatoms.addBoxDerivatives( 1, (-dfunc)*values[0]*values[1]*vir );
              }
              // And the bit we use to average the vector
-             myatoms.addComDerivatives( -1, (-dfunc)*values[0]*distance, atom0 );
-             myatoms.addComDerivatives( -1, (+dfunc)*values[0]*distance, atom1 );
+             addAtomDerivatives( -1, 0, (-dfunc)*values[0]*distance, myatoms );
+             addAtomDerivatives( -1, i, (+dfunc)*values[0]*distance, myatoms ); 
              for(unsigned j=0;j<myder.getNumberActive();++j){
                  unsigned jder=myder.getActiveIndex(j); myvals.addTemporyDerivative( jder, sw*myder.getDerivative(0, jder) );
              }

@@ -19,7 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "MultiColvar.h"
+#include "MultiColvarBase.h"
+#include "AtomValuePack.h"
 #include "tools/Torsion.h"
 #include "core/ActionRegister.h"
 
@@ -80,7 +81,7 @@ Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle o
 */
 //+ENDPLUMEDOC
 
-class DihedralCorrelation : public MultiColvar {
+class DihedralCorrelation : public MultiColvarBase {
 private:
 public:
   static void registerKeywords( Keywords& keys );
@@ -92,16 +93,23 @@ public:
 PLUMED_REGISTER_ACTION(DihedralCorrelation,"DIHCOR")
 
 void DihedralCorrelation::registerKeywords( Keywords& keys ){
-  MultiColvar::registerKeywords( keys );
-  keys.use("ATOMS");
+  MultiColvarBase::registerKeywords( keys );
+  keys.add("numbered","ATOMS","the atoms involved in each of the dihedral correlation values you wish to calculate. "
+                               "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one dihedral correlation will be "
+                               "calculated for each ATOM keyword you specify (all ATOM keywords should "
+                               "specify the indices of 8 atoms).  The eventual number of quantities calculated by this "
+                               "action will depend on what functions of the distribution you choose to calculate.");
+  keys.reset_style("ATOMS","atoms");
 }
 
 DihedralCorrelation::DihedralCorrelation(const ActionOptions&ao):
-PLUMED_MULTICOLVAR_INIT(ao)
+Action(ao),
+MultiColvarBase(ao)
 {
   // Read in the atoms
-  int natoms=8; std::vector<AtomNumber> all_atoms;
-  readAtoms( natoms, all_atoms );
+  std::vector<AtomNumber> all_atoms;
+  readAtomsLikeKeyword( "ATOMS", 8, all_atoms );
+  setupMultiColvarBase( all_atoms );
   // Stuff for central atoms
   std::vector<bool> catom_ind(8, false); 
   catom_ind[1]=catom_ind[2]=catom_ind[5]=catom_ind[6]=true;

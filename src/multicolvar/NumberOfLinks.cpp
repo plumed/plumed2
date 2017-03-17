@@ -19,7 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "MultiColvarFunction.h"
+#include "MultiColvarBase.h"
+#include "AtomValuePack.h"
 #include "core/ActionRegister.h"
 #include "tools/SwitchingFunction.h"
 
@@ -65,7 +66,7 @@ PRINT ARG=dd FILE=colvar
 namespace PLMD {
 namespace multicolvar {
 
-class NumberOfLinks : public MultiColvarFunction {
+class NumberOfLinks : public MultiColvarBase {
 private:
 /// The values of the quantities in the dot products
   std::vector<double> orient0, orient1; 
@@ -85,7 +86,7 @@ public:
 PLUMED_REGISTER_ACTION(NumberOfLinks,"NLINKS")
 
 void NumberOfLinks::registerKeywords( Keywords& keys ){
-  MultiColvarFunction::registerKeywords( keys );
+  MultiColvarBase::registerKeywords( keys );
   keys.add("atoms","GROUP","");
   keys.add("atoms-1","GROUPA","");
   keys.add("atoms-1","GROUPB","");
@@ -97,13 +98,13 @@ void NumberOfLinks::registerKeywords( Keywords& keys ){
                                "The following provides information on the \\ref switchingfunction that are available. "
                                "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   // Use actionWithDistributionKeywords
-  keys.remove("LOWMEM"); keys.remove("DATA");
+  keys.remove("LOWMEM"); 
   keys.addFlag("LOWMEM",false,"lower the memory requirements");
 }
 
 NumberOfLinks::NumberOfLinks(const ActionOptions& ao):
 Action(ao),
-MultiColvarFunction(ao)
+MultiColvarBase(ao)
 {
   // The weight of this does have derivatives
   weightHasDerivatives=true;

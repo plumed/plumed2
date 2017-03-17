@@ -23,12 +23,13 @@
 #define __PLUMED_crystallization_VectorMultiColvar_h
 
 #include "tools/Matrix.h"
-#include "multicolvar/MultiColvar.h"
+#include "multicolvar/MultiColvarBase.h"
+#include "multicolvar/AtomValuePack.h"
 
 namespace PLMD {
 namespace crystallization {
 
-class VectorMultiColvar : public multicolvar::MultiColvar {
+class VectorMultiColvar : public multicolvar::MultiColvarBase {
 friend class OrientationSphere;
 friend class VolumeGradientBase;
 private:
@@ -50,9 +51,9 @@ public:
 /// The norm of a vector is not periodic
   virtual bool isPeriodic(){ return false; }
 /// Calculate the multicolvar
-  double doCalculation( const unsigned& taskIndex, multicolvar::AtomValuePack& myatoms ) const ;
+//  double doCalculation( const unsigned& taskIndex, multicolvar::AtomValuePack& myatoms ) const ;
 /// This shouldn't do anything
-  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const { plumed_error(); }
+  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
 /// Calculate the vector
   virtual void calculateVector( multicolvar::AtomValuePack& myatoms ) const=0;
 /// Get the number of components in the vector

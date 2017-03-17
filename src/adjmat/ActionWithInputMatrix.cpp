@@ -30,14 +30,14 @@ namespace PLMD {
 namespace adjmat {
 
 void ActionWithInputMatrix::registerKeywords( Keywords& keys ){
-  MultiColvarFunction::registerKeywords( keys ); keys.remove("DATA");
+  MultiColvarBase::registerKeywords( keys ); 
   keys.add("compulsory","MATRIX","the action that calcualtes the adjacency matrix vessel we would like to analyse"); 
 }
 
 
 ActionWithInputMatrix::ActionWithInputMatrix(const ActionOptions& ao):
 Action(ao),
-MultiColvarFunction(ao),
+MultiColvarBase(ao),
 mymatrix(NULL)
 {
   matsums=true; 

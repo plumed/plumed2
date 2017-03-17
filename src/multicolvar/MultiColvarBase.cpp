@@ -28,8 +28,6 @@
 #include "core/ActionSet.h"
 #include "tools/Pbc.h"
 #include "AtomValuePack.h"
-#include "CatomPack.h"
-#include "CatomPack.h"
 #include <vector>
 #include <string>
 
@@ -94,6 +92,37 @@ nblock(0)
      usepbc=!nopbc;
   } 
   if( keywords.exists("SPECIESA") ){ matsums=usespecies=true; }
+}
+
+void MultiColvarBase::readAtomsLikeKeyword( const std::string & key, const int& natoms, std::vector<AtomNumber>& all_atoms ){
+  plumed_assert( !usespecies );
+  if( all_atoms.size()>0 ) return;
+
+  std::vector<AtomNumber> t;
+  for(int i=1;;++i ){
+     parseAtomList(key, i, t );
+     if( t.empty() ) break;
+
+     log.printf("  Colvar %d is calculated from atoms : ", i);
+     for(unsigned j=0;j<t.size();++j) log.printf("%d ",t[j].serial() );
+     log.printf("\n");
+
+     if( i==1 && natoms<0 ){ ablocks.resize(t.size()); }
+     else if( i==1 ) ablocks.resize(natoms);
+     if( t.size()!=ablocks.size() ){
+        std::string ss; Tools::convert(i,ss);
+        error(key + ss + " keyword has the wrong number of atoms");
+     }
+     for(unsigned j=0;j<ablocks.size();++j){
+        ablocks[j].push_back( ablocks.size()*(i-1)+j ); all_atoms.push_back( t[j] );
+        atom_lab.push_back( std::pair<unsigned,unsigned>( 0, ablocks.size()*(i-1)+j ) );
+     }
+     t.resize(0);
+  }
+  if( all_atoms.size()>0 ){
+     nblock=0;
+     for(unsigned i=0;i<ablocks[0].size();++i) addTaskToList( i );
+  }
 }
 
 bool MultiColvarBase::parseMultiColvarAtomList(const std::string& key, const int& num, std::vector<AtomNumber>& t){
@@ -310,6 +339,34 @@ void MultiColvarBase::readThreeGroups( const std::string& key1, const std::strin
   }
 }
 
+void MultiColvarBase::buildSets(){
+  std::vector<AtomNumber> fake_atoms;
+  if( !parseMultiColvarAtomList("DATA",-1,fake_atoms) ) error("missing DATA keyword");
+  if( fake_atoms.size()>0 ) error("no atoms should appear in the specification for this object.  Input should be other multicolvars");
+
+  nblock = mybasemulticolvars[0]->getFullNumberOfTasks();
+  for(unsigned i=0;i<mybasemulticolvars.size();++i){
+     if( mybasemulticolvars[i]->getFullNumberOfTasks()!=nblock ){
+          error("mismatch between numbers of tasks in various base multicolvars");
+     }
+  }
+  ablocks.resize( mybasemulticolvars.size() ); usespecies=false;
+  for(unsigned i=0;i<mybasemulticolvars.size();++i){
+      ablocks[i].resize( nblock );
+      for(unsigned j=0;j<nblock;++j) ablocks[i][j]=i*nblock+j;
+  }
+  for(unsigned i=0;i<nblock;++i){
+      if( mybasemulticolvars.size()<4 ){
+          unsigned cvcode=0, tmpc=1;
+          for(unsigned j=0;j<ablocks.size();++j){ cvcode += i*tmpc; tmpc *= nblock; }
+          addTaskToList( cvcode );
+      } else {
+          addTaskToList( i );
+      }
+  }
+  mybasedata[0]->resizeTemporyMultiValues( mybasemulticolvars.size() ); setupMultiColvarBase( fake_atoms );
+}
+
 void MultiColvarBase::addTaskToList( const unsigned& taskCode ){
   plumed_assert( getNumberOfVessels()==0 );
   ActionWithVessel::addTaskToList( taskCode );
@@ -388,7 +445,11 @@ void MultiColvarBase::setupMultiColvarBase( const std::vector<AtomNumber>& atoms
          }  
      }
   }
-  if( mybasemulticolvars.size()>0 ){ for(unsigned i=0;i<mybasedata.size();++i) mybasedata[i]->resizeTemporyMultiValues(2); }
+  if( mybasemulticolvars.size()>0 ){ 
+      for(unsigned i=0;i<mybasedata.size();++i){
+          mybasedata[i]->resizeTemporyMultiValues(2); mybasemulticolvars[i]->my_tmp_capacks.resize(2);
+      }
+  }
 
   // Copy lists of atoms involved from base multicolvars 
   std::vector<AtomNumber> tmp_atoms;
@@ -786,10 +847,12 @@ void MultiColvarBase::addComDerivatives( const int& ival, const unsigned& iatom,
   unsigned katom = myatoms.getIndex( iatom ); plumed_dbg_assert( atom_lab[katom].first>0 );
   // Find base colvar
   unsigned mmc = atom_lab[katom].first - 1; plumed_dbg_assert( mybasemulticolvars[mmc]->taskIsCurrentlyActive( atom_lab[katom].second ) );
+  if( usespecies && iatom==0 ){ myatoms.addComDerivatives( ival, der, mybasemulticolvars[mmc]->my_tmp_capacks[0] ); return; }
+
   // Get start of indices for this atom
   unsigned basen=0; for(unsigned i=0;i<mmc;++i) basen+=(mybasemulticolvars[i]->getNumberOfDerivatives() - 9) / 3;
-  multicolvar::CatomPack atom0=mybasemulticolvars[mmc]->getCentralAtomPack( basen, atom_lab[katom].second );
-  myatoms.addComDerivatives( ival, der, atom0 );
+  mybasemulticolvars[mmc]->getCentralAtomPack( basen, atom_lab[katom].second, mybasemulticolvars[mmc]->my_tmp_capacks[1] );
+  myatoms.addComDerivatives( ival, der, mybasemulticolvars[mmc]->my_tmp_capacks[1] );
 }
 
 void MultiColvarBase::getInputData( const unsigned& ind, const bool& normed, 
@@ -919,24 +982,24 @@ void MultiColvarBase::performTask( const unsigned& task_index, const unsigned& c
          myder.clearAll();
       }
   }
+  // Retrieve derivative stuff for central atom
+  if( !doNotCalculateDerivatives() ){
+      if( usespecies && mybasemulticolvars.size()>0 && atom_lab[myatoms.getIndex(0)].first>0 ){
+          unsigned mmc = atom_lab[0].first - 1;
+          MultiValue& myder=mybasedata[mmc]->getTemporyMultiValue(0);
+          if( myder.getNumberOfValues()!=mybasemulticolvars[mmc]->getNumberOfQuantities() ||
+              myder.getNumberOfDerivatives()!=mybasemulticolvars[mmc]->getNumberOfDerivatives() ){
+                  myder.resize( mybasemulticolvars[mmc]->getNumberOfQuantities(), mybasemulticolvars[mmc]->getNumberOfDerivatives() );
+          }
+          mybasedata[mmc]->retrieveDerivatives( atom_lab[myatoms.getIndex(0)].second, false, myder );
+          unsigned basen=0; for(unsigned i=0;i<mmc;++i) basen+=mybasemulticolvars[i]->getNumberOfDerivatives() - 9;
+          mybasemulticolvars[mmc]->getCentralAtomPack( basen, atom_lab[myatoms.getIndex(0)].second,  mybasemulticolvars[mmc]->my_tmp_capacks[0] );
+      }
+  }
   // Compute everything
-  double vv=doCalculation( task_index, myatoms ); 
+  double vv=compute( task_index, myatoms ); updateActiveAtoms( myatoms );
   myatoms.setValue( 1, vv );
   return;
-}
-
-double MultiColvarBase::doCalculation( const unsigned& taskIndex, AtomValuePack& myatoms ) const {
-  if( usespecies && mybasemulticolvars.size()>0 && atom_lab[myatoms.getIndex(0)].first>0 ){  
-      unsigned mmc = atom_lab[0].first - 1; 
-      MultiValue& myder=mybasedata[mmc]->getTemporyMultiValue(0);
-      if( myder.getNumberOfValues()!=mybasemulticolvars[mmc]->getNumberOfQuantities() ||
-          myder.getNumberOfDerivatives()!=mybasemulticolvars[mmc]->getNumberOfDerivatives() ){
-              myder.resize( mybasemulticolvars[mmc]->getNumberOfQuantities(), mybasemulticolvars[mmc]->getNumberOfDerivatives() );
-      }
-      mybasedata[mmc]->retrieveDerivatives( atom_lab[myatoms.getIndex(0)].second, false, myder );  
-  }
-  double val=compute( taskIndex, myatoms ); updateActiveAtoms( myatoms );
-  return val;
 }
 
 void MultiColvarBase::updateActiveAtoms( AtomValuePack& myatoms ) const {
@@ -966,16 +1029,16 @@ Vector MultiColvarBase::getCentralAtomPos( const unsigned& taskIndex ){
   }
 }
 
-CatomPack MultiColvarBase::getCentralAtomPack( const unsigned& basn, const unsigned& taskIndex ){
+void MultiColvarBase::getCentralAtomPack( const unsigned& basn, const unsigned& taskIndex, CatomPack& mypack ){
   unsigned curr=getTaskCode( taskIndex );
 
-  CatomPack mypack;
   if(usespecies){
-     mypack.resize(1);
+     if( mypack.getNumberOfAtomsWithDerivatives()!=1 ) mypack.resize(1);
      mypack.setIndex( 0, basn + curr );
      mypack.setDerivative( 0, Tensor::identity() );
   } else if( nblock>0 ){
-     mypack.resize(ncentral); unsigned k=0;
+     if( mypack.getNumberOfAtomsWithDerivatives()!=ncentral ) mypack.resize(ncentral); 
+     unsigned k=0;
      std::vector<unsigned> atoms( ablocks.size() ); decodeIndexToAtoms( curr, atoms );
      for(unsigned i=0;i<ablocks.size();++i){
          if( use_for_central_atom[i] ){
@@ -985,7 +1048,8 @@ CatomPack MultiColvarBase::getCentralAtomPack( const unsigned& basn, const unsig
          }
      }
   } else {
-     mypack.resize(ncentral); unsigned k=0;
+     if( mypack.getNumberOfAtomsWithDerivatives()!=ncentral ) mypack.resize(ncentral); 
+     unsigned k=0;
      for(unsigned i=0;i<ablocks.size();++i){
          if( use_for_central_atom[i] ){
              mypack.setIndex( k, basn + ablocks[i][curr] );
@@ -994,7 +1058,6 @@ CatomPack MultiColvarBase::getCentralAtomPack( const unsigned& basn, const unsig
          }
      }
   }
-  return mypack;
 } 
 
 Vector MultiColvarBase::getSeparation( const Vector& vec1, const Vector& vec2 ) const {

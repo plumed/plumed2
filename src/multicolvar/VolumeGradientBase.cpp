@@ -65,7 +65,7 @@ void VolumeGradientBase::setNumberInVolume( const unsigned& ivol, const unsigned
   if( !mcolv->weightHasDerivatives ){
       outvals.setValue(ivol, weight ); 
       if( derivativesAreRequired() ){
-         CatomPack catom( mcolv->getCentralAtomPack( 0, curr ) );
+         CatomPack catom; mcolv->getCentralAtomPack( 0, curr, catom );
          for(unsigned i=0;i<catom.getNumberOfAtomsWithDerivatives();++i){
              unsigned jatom=3*catom.getIndex(i);
              outvals.addDerivative( ivol, jatom+0, catom.getDerivative(i,0,wdf) );
@@ -86,7 +86,7 @@ void VolumeGradientBase::setNumberInVolume( const unsigned& ivol, const unsigned
       double ww=outvals.get(0); outvals.setValue(ivol,ww*weight);
       if( derivativesAreRequired() ){
          plumed_merror("This needs testing");
-         CatomPack catom( mcolv->getCentralAtomPack( 0, curr ) );
+         CatomPack catom; mcolv->getCentralAtomPack( 0, curr, catom );
          for(unsigned i=0;i<catom.getNumberOfAtomsWithDerivatives();++i){
              unsigned jatom=3*catom.getIndex(i);
              outvals.addDerivative( ivol, jatom+0, weight*outvals.getDerivative(ivol,jatom+0) + ww*catom.getDerivative(i,0,wdf) );
@@ -106,7 +106,7 @@ void VolumeGradientBase::setNumberInVolume( const unsigned& ivol, const unsigned
       double ww=outvals.get(0); outvals.setValue(ivol,ww*weight);
       if( derivativesAreRequired() ){
          plumed_merror("This needs testing");
-         CatomPack catom( mcolv->getCentralAtomPack( 0, curr ) ); 
+         CatomPack catom; mcolv->getCentralAtomPack( 0, curr, catom ); 
          for(unsigned i=0;i<catom.getNumberOfAtomsWithDerivatives();++i){
              unsigned jatom=3*catom.getIndex(i);
              outvals.addDerivative( ivol, jatom+0, ww*catom.getDerivative(i,0,wdf) );

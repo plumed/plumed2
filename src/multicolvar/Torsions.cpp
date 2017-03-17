@@ -19,7 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "MultiColvar.h"
+#include "MultiColvarBase.h"
+#include "AtomValuePack.h"
 #include "tools/Torsion.h"
 #include "core/ActionRegister.h"
 
@@ -71,7 +72,7 @@ Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle o
 */
 //+ENDPLUMEDOC
 
-class Torsions : public MultiColvar {
+class Torsions : public MultiColvarBase {
 public:
   static void registerKeywords( Keywords& keys );
   explicit Torsions(const ActionOptions&);
@@ -83,16 +84,24 @@ public:
 PLUMED_REGISTER_ACTION(Torsions,"TORSIONS")
 
 void Torsions::registerKeywords( Keywords& keys ){
-  MultiColvar::registerKeywords( keys );
-  keys.use("ATOMS"); keys.use("BETWEEN"); keys.use("HISTOGRAM");
+  MultiColvarBase::registerKeywords( keys );
+  keys.reserve("numbered","ATOMS","the atoms involved in each of the torsion angles you wish to calculate. "
+                             "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one torsion will be "
+                             "calculated for each ATOM keyword you specify (all ATOM keywords should "
+                             "provide the indices of four atoms).  The eventual number of quantities calculated by this "
+                             "action will depend on what functions of the distribution you choose to calculate.");
+  keys.reset_style("ATOMS","atoms");
+  keys.use("BETWEEN"); keys.use("HISTOGRAM");
 }
 
 Torsions::Torsions(const ActionOptions&ao):
-PLUMED_MULTICOLVAR_INIT(ao)
+Action(ao),
+MultiColvarBase(ao)
 {
   // Read in the atoms
   int natoms=4; std::vector<AtomNumber> all_atoms; 
-  readAtoms( natoms, all_atoms );
+  readAtomsLikeKeyword( "ATOMS", natoms, all_atoms );
+  setupMultiColvarBase( all_atoms );
   std::vector<bool> catom_ind(4, false); 
   catom_ind[1]=catom_ind[2]=true;
   setAtomsForCentralAtom( catom_ind );

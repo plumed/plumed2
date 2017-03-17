@@ -28,7 +28,7 @@ namespace PLMD{
 namespace crystallization {
 
 void OrientationSphere::registerKeywords( Keywords& keys ){
-  multicolvar::MultiColvarFunction::registerKeywords( keys );
+  multicolvar::MultiColvarBase::registerKeywords( keys );
   keys.add("compulsory","NN","6","The n parameter of the switching function ");
   keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
@@ -40,12 +40,12 @@ void OrientationSphere::registerKeywords( Keywords& keys ){
   keys.use("SPECIES"); keys.use("SPECIESA"); keys.use("SPECIESB"); 
   keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("LESS_THAN"); 
   keys.use("MIN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
-  keys.use("LOWEST"); keys.use("HIGHEST"); keys.remove("DATA");
+  keys.use("LOWEST"); keys.use("HIGHEST"); 
 }
 
 OrientationSphere::OrientationSphere(const ActionOptions&ao):
 Action(ao),
-MultiColvarFunction(ao)
+MultiColvarBase(ao)
 {
   if( getNumberOfBaseMultiColvars()>1 ) warning("not sure if orientation sphere works with more than one base multicolvar - check numerical derivatives");
   // Read in the switching function
@@ -73,9 +73,7 @@ double OrientationSphere::compute( const unsigned& tindex, multicolvar::AtomValu
    std::vector<double> this_der( ncomponents ), catom_der( ncomponents ); 
 
    getInputData( 0, true, myatoms, catom_orient ); 
-   multicolvar::CatomPack atom0; 
    MultiValue& myder0=getInputDerivatives( 0, true, myatoms ); 
-   if( !doNotCalculateDerivatives() ) atom0=getCentralAtomPackFromInput( myatoms.getIndex(0) );
 
    for(unsigned i=1;i<myatoms.getNumberOfAtoms();++i){
       Vector& distance=myatoms.getPosition(i);  
@@ -94,12 +92,12 @@ double OrientationSphere::compute( const unsigned& tindex, multicolvar::AtomValu
              MultiValue& myder1=getInputDerivatives( i, true, myatoms );
              mergeInputDerivatives( 1, 2, this_orient.size(), 0, catom_der, myder0, myatoms );
              mergeInputDerivatives( 1, 2, catom_der.size(), i, this_der, myder1, myatoms );
-             myatoms.addComDerivatives( 1, f_dot*(-dfunc)*distance - sw*ddistance, atom0 );
+             addAtomDerivatives( 1, 0, f_dot*(-dfunc)*distance - sw*ddistance, myatoms );
              addAtomDerivatives( 1, i, f_dot*(dfunc)*distance + sw*ddistance, myatoms );
              myatoms.addBoxDerivatives( 1, (-dfunc)*f_dot*Tensor(distance,distance) - sw*extProduct(distance,ddistance) );
              myder1.clearAll();
               
-             myatoms.addComDerivatives( -1, (-dfunc)*distance, atom0 );
+             addAtomDerivatives( -1, 0, (-dfunc)*distance, myatoms );
              addAtomDerivatives( -1, i, (dfunc)*distance, myatoms );
              myatoms.addTemporyBoxDerivatives( (-dfunc)*Tensor(distance,distance) );
 
