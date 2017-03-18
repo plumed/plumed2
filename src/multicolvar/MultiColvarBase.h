@@ -28,13 +28,13 @@
 #include "tools/LinkCells.h"
 #include "vesselbase/StoreDataVessel.h"
 #include "vesselbase/ActionWithVessel.h"
+#include "CatomPack.h"
 #include <vector>
 
 namespace PLMD {
 namespace multicolvar {
 
 class AtomValuePack;
-class CatomPack;
 class BridgedMultiColvarFunction;
 class ActionVolume;
 
@@ -66,6 +66,8 @@ private:
   unsigned ncentral;
 /// Bool vector telling us which atoms are required to calculate central atom position
   std::vector<bool> use_for_central_atom;
+/// Vector of tempory holders for central atom values
+  std::vector<CatomPack> my_tmp_capacks;
 /// 1/number of atoms involved in central atoms
   double numberForCentralAtom;
 /// Ensures that setup is only performed once per loop
@@ -134,6 +136,8 @@ protected:
   void decodeIndexToAtoms( const unsigned& taskCode, std::vector<unsigned>& atoms ) const ;
 /// Read in some atoms
   bool parseMultiColvarAtomList(const std::string& key, const int& num, std::vector<AtomNumber>& t);
+/// Read in ATOMS keyword
+  void readAtomsLikeKeyword( const std::string & key, const int& natoms, std::vector<AtomNumber>& all_atoms );
 /// Read in two groups of atoms and setup multicolvars to calculate
   void readTwoGroups( const std::string& key0, const std::string& key1, const std::string& key2, std::vector<AtomNumber>& all_atoms );
 /// Read in three groups of atoms
@@ -142,6 +146,8 @@ protected:
 /// Read in three groups of atoms and construct CVs involving at least one
   void readThreeGroups( const std::string& key1, const std::string& key2, const std::string& key3,
                         const bool& allow2, const bool& no_third_dim_accum, std::vector<AtomNumber>& all_atoms );
+/// Build sets by taking one multicolvar from each base
+  void buildSets();
 public:
   explicit MultiColvarBase(const ActionOptions&);
   ~MultiColvarBase(){}
@@ -170,8 +176,6 @@ public:
   virtual Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const ;
 /// Returns the position where we should assume the center is for link cell calculations
   virtual Vector getLinkCellPosition( const std::vector<unsigned>& atoms ) const ;
-/// And a virtual function which actually computes the colvar
-  virtual double doCalculation( const unsigned& tindex, AtomValuePack& myatoms ) const ;  
 /// Get the absolute index of the central atom
   virtual AtomNumber getAbsoluteIndexOfCentralAtom( const unsigned& i ) const ;
 /// This is replaced once we have a function to calculate the cv
@@ -183,7 +187,7 @@ public:
 /// Checks if an task is being performed at the present time
   virtual bool isCurrentlyActive( const unsigned& code );
 ///
-  virtual CatomPack getCentralAtomPack( const unsigned& basn, const unsigned& curr );
+  virtual void getCentralAtomPack( const unsigned& basn, const unsigned& curr, CatomPack& mypack);
 /// Get the index where the central atom is stored
   virtual Vector getCentralAtomPos( const unsigned& curr );
 /// You can use this to screen contributions that are very small so we can avoid expensive (and pointless) calculations

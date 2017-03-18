@@ -19,7 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "multicolvar/MultiColvarFunction.h"
+#include "multicolvar/MultiColvarBase.h"
+#include "multicolvar/AtomValuePack.h"
 #include "core/ActionRegister.h"
 #include "tools/SwitchingFunction.h"
 #include "tools/Torsion.h" 
@@ -50,7 +51,7 @@ the torsional angle between an orientation vector for molecule \f$i\f$ and molec
 namespace PLMD {
 namespace crystallization {
 
-class InterMolecularTorsions : public multicolvar::MultiColvarFunction {
+class InterMolecularTorsions : public multicolvar::MultiColvarBase {
 private:
 /// The switching function that tells us if atoms are close enough together
   SwitchingFunction switchingFunction;
@@ -69,7 +70,7 @@ public:
 PLUMED_REGISTER_ACTION(InterMolecularTorsions,"INTERMOLECULARTORSIONS")
 
 void InterMolecularTorsions::registerKeywords( Keywords& keys ){
-  MultiColvarFunction::registerKeywords( keys );
+  MultiColvarBase::registerKeywords( keys );
   keys.add("atoms","MOLS","The molecules you would like to calculate the torsional angles between. This should be the label/s of \\ref MOLECULES or \\ref PLANES actions");
   keys.add("atoms-1","MOLSA","In this version of the input the torsional angles between all pairs of atoms including one atom from MOLA one atom from MOLB will be computed. " 
                              "This should be the label/s of \\ref MOLECULES or \\ref PLANES actions");
@@ -83,13 +84,13 @@ void InterMolecularTorsions::registerKeywords( Keywords& keys ){
                                "The following provides information on the \\ref switchingfunction that are available. "
                                "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   // Use actionWithDistributionKeywords
-  keys.remove("LOWMEM"); keys.remove("DATA"); 
+  keys.remove("LOWMEM"); 
   keys.addFlag("LOWMEM",false,"lower the memory requirements");
 }
 
 InterMolecularTorsions::InterMolecularTorsions(const ActionOptions& ao):
 Action(ao),
-MultiColvarFunction(ao)
+MultiColvarBase(ao)
 {
   for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i){
       if( getBaseMultiColvar(i)->getNumberOfQuantities()!=5 ) error("input multicolvar does not calculate molecular orientations");

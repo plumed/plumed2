@@ -170,7 +170,7 @@ void CenterOfMultiColvar::calculate(){
           }
       }
       // Get the central atom pack 
-      CatomPack mypack( mycolv->getCentralAtomPack( 0, mycolv->getPositionInFullTaskList(i) ) );
+      CatomPack mypack; mycolv->getCentralAtomPack( 0, mycolv->getPositionInFullTaskList(i), mypack );
       for(unsigned j=0;j<mypack.getNumberOfAtomsWithDerivatives();++j){
           unsigned jder=3*mypack.getIndex(j);
           // Derivatives of sine

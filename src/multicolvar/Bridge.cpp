@@ -19,7 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "MultiColvar.h"
+#include "MultiColvarBase.h"
+#include "AtomValuePack.h"
 #include "tools/SwitchingFunction.h"
 #include "core/ActionRegister.h"
 
@@ -58,7 +59,7 @@ PRINT ARG=a1.mean FILE=colvar
 */
 //+ENDPLUMEDOC
 
-class Bridge : public MultiColvar {
+class Bridge : public MultiColvarBase {
 private:
   Vector dij, dik;
   SwitchingFunction sf1;
@@ -74,8 +75,7 @@ public:
 PLUMED_REGISTER_ACTION(Bridge,"BRIDGE")
 
 void Bridge::registerKeywords( Keywords& keys ){
-  MultiColvar::registerKeywords( keys );
-  keys.use("ATOMS"); 
+  MultiColvarBase::registerKeywords( keys );
   keys.add("atoms-2","BRIDGING_ATOMS","The list of atoms that can form the bridge between the two interesting parts "
                                       "of the structure.");
   keys.add("atoms-2","GROUPA","The list of atoms that are in the first interesting part of the structure"); 
@@ -88,7 +88,8 @@ void Bridge::registerKeywords( Keywords& keys ){
 }
 
 Bridge::Bridge(const ActionOptions&ao):
-PLUMED_MULTICOLVAR_INIT(ao)
+Action(ao),
+MultiColvarBase(ao)
 {
   // Read in the atoms
   std::vector<AtomNumber> all_atoms;

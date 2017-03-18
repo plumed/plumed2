@@ -19,7 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "MultiColvar.h"
+#include "MultiColvarBase.h"
+#include "AtomValuePack.h"
 #include "core/ActionRegister.h"
 
 #include <string>
@@ -82,7 +83,7 @@ rather than the xy component.
 //+ENDPLUMEDOC
 
 
-class XYDistances : public MultiColvar {
+class XYDistances : public MultiColvarBase {
 private:
   unsigned myc1, myc2;
 public:
@@ -99,11 +100,16 @@ PLUMED_REGISTER_ACTION(XYDistances,"XZDISTANCES")
 PLUMED_REGISTER_ACTION(XYDistances,"YZDISTANCES")
 
 void XYDistances::registerKeywords( Keywords& keys ){
-  MultiColvar::registerKeywords( keys );
-  keys.use("ATOMS"); keys.use("MAX"); keys.use("ALT_MIN"); 
-  keys.use("MEAN"); keys.use("MIN"); keys.use("LESS_THAN");
-  keys.use("LOWEST"); keys.use("HIGHEST"); 
+  MultiColvarBase::registerKeywords( keys );
+  keys.use("MAX"); keys.use("ALT_MIN"); 
+  keys.use("MEAN"); keys.use("MIN"); keys.use("LESS_THAN"); keys.use("LOWEST"); keys.use("HIGHEST"); 
   keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
+  keys.add("numbered","ATOMS","the atoms involved in each of the distances you wish to calculate. "
+                               "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one distance will be "
+                               "calculated for each ATOM keyword you specify (all ATOM keywords should "
+                               "specify the incides of two atoms).  The eventual number of quantities calculated by this "
+                               "action will depend on what functions of the distribution you choose to calculate.");
+  keys.reset_style("ATOMS","atoms");
   keys.add("atoms-1","GROUP","Calculate the distance between each distinct pair of atoms in the group");
   keys.add("atoms-2","GROUPA","Calculate the distances between all the atoms in GROUPA and all "
                               "the atoms in GROUPB. This must be used in conjuction with GROUPB.");
@@ -112,7 +118,8 @@ void XYDistances::registerKeywords( Keywords& keys ){
 }
 
 XYDistances::XYDistances(const ActionOptions&ao):
-PLUMED_MULTICOLVAR_INIT(ao)
+Action(ao),
+MultiColvarBase(ao)
 {
   if( getName().find("XY")!=std::string::npos){
       myc1=0; myc2=1;
@@ -125,7 +132,8 @@ PLUMED_MULTICOLVAR_INIT(ao)
   // Read in the atoms
   std::vector<AtomNumber> all_atoms;
   readTwoGroups( "GROUP", "GROUPA", "GROUPB", all_atoms );
-  int natoms=2; readAtoms( natoms, all_atoms );
+  if( atom_lab.size()==0 ) readAtomsLikeKeyword( "ATOMS", 2, all_atoms );
+  setupMultiColvarBase( all_atoms );
   // And check everything has been read in correctly
   checkRead();
 }

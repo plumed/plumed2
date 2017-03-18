@@ -19,7 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "MultiColvar.h"
+#include "MultiColvarBase.h"
+#include "AtomValuePack.h"
 #include "core/ActionRegister.h"
 
 #include <string>
@@ -49,7 +50,7 @@ PRINT ARG=d1.* FILE=colvar1 FMT=%8.4f
 //+ENDPLUMEDOC
 
 
-class Density : public MultiColvar {
+class Density : public MultiColvarBase {
 public:
   static void registerKeywords( Keywords& keys );
   explicit Density(const ActionOptions&);
@@ -69,12 +70,13 @@ public:
 PLUMED_REGISTER_ACTION(Density,"DENSITY")
 
 void Density::registerKeywords( Keywords& keys ){
-  MultiColvar::registerKeywords( keys );
+  MultiColvarBase::registerKeywords( keys );
   keys.use("SPECIES"); 
 }
 
 Density::Density(const ActionOptions&ao):
-PLUMED_MULTICOLVAR_INIT(ao)
+Action(ao),
+MultiColvarBase(ao)
 {
   std::vector<AtomNumber> all_atoms; parseMultiColvarAtomList("SPECIES", -1, all_atoms);
   ablocks.resize(1); ablocks[0].resize( atom_lab.size() ); 
