@@ -247,6 +247,9 @@ value_force2_(NULL)
     readInRestart_(b_mean);
   }
   else{
+
+    if(!in_restart_name_.compare(""))
+      log.printf("  WARNING: You passed an input restart but didn't specify to use it. Probably not what you meant...\n");
     
     if(temp>=0.0) kbt_=plumed.getAtoms().getKBoltzmann()*temp;
     else kbt_ = plumed.getAtoms().getKbT();
@@ -490,8 +493,13 @@ void EDS::calculate(){
   
   //adjust parameters according to EDS recipe
   update_calls_++;
-  
-  if(b_write_restart_ && update_calls_%abs(update_period_)==0){
+
+  //check if we're ramping or doing normal updates and then restart if needed. The ramping check
+  //is complicated because we could be frozen, finished ramping or not ramping.
+  //The + 2 is so we have an extra line showing that the bias isn't changing (for my sanity and yours)
+  if( b_write_restart_ &&
+      ( (update_period_ < 0 && !b_freeze_ && update_calls_ <= fabs(update_period_) + 2) ||
+	(update_period_ > 0 && update_calls_ % update_period_ == 0 ) ) ) {
     writeOutRestart_();
   }
   
@@ -503,7 +511,7 @@ void EDS::calculate(){
   for(unsigned i=0;i<ncvs;++i){
     //are we ramping to a constant value and not done equilibrating
     if(update_period_ < 0){
-      if(update_calls_ < fabs(update_period_) && !b_freeze_){
+      if(update_calls_ <= fabs(update_period_) && !b_freeze_){
 	current_coupling_[i] += (target_coupling_[i]-set_coupling_[i])/fabs(update_period_);
       }
       //make sure we don't reset update calls
