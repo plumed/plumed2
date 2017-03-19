@@ -175,7 +175,6 @@ void EDS::registerKeywords(Keywords& keys){
    keys.addFlag("RAMP",false,"Slowly increase bias constant to a fixed value");
    keys.addFlag("FREEZE",false,"Fix bias at current level (only used for restarting). Can also set PERIOD=0 if not using EDSRESTART.");
    keys.addFlag("MEAN",false,"Instead of using final bias level from restart, use average");
-   keys.addFlag("EDSRESTART",false,"Get settings from IN_RESTART");
 
    keys.addOutputComponent("force2","default","squared value of force from the bias");
    keys.addOutputComponent("_coupling","default","For each named CV biased, there will be a corresponding output CV_coupling storing the current linear bias prefactor.");
@@ -236,20 +235,18 @@ value_force2_(NULL)
   parse("OUT_RESTART",out_restart_name_);
   parseFlag("RAMP",b_ramp_);
   parseFlag("FREEZE",b_freeze_);
-  parseFlag("EDSRESTART",b_restart_);
   parseFlag("MEAN",b_mean);
   parse("IN_RESTART",in_restart_name_);
   parse("OUT_RESTART",out_restart_name_);
   checkRead();  
 
-  if(b_restart_){
-    log.printf("  reading all simulation information from file: %s\n",in_restart_name_.c_str());
+  if(in_restart_name_ != ""){
+    b_restart_ = true;
+    log.printf("  reading simulation information from file: %s\n",in_restart_name_.c_str());
     readInRestart_(b_mean);
   }
   else{
 
-    if(!in_restart_name_.compare(""))
-      log.printf("  WARNING: You passed an input restart but didn't specify to use it. Probably not what you meant...\n");
     
     if(temp>=0.0) kbt_=plumed.getAtoms().getKBoltzmann()*temp;
     else kbt_ = plumed.getAtoms().getKbT();
