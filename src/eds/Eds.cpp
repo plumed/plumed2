@@ -129,9 +129,9 @@ private:
   bool b_write_restart_;
   bool b_hard_c_range_;
   int seed_;
-  int update_calls_;
-  int avg_coupling_count_;
   int update_period_;
+  int avg_coupling_count_;
+  int update_calls_;
   double kbt_;
   double c_range_increase_f_;
   Random rand_;
