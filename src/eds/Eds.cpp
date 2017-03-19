@@ -240,6 +240,24 @@ value_force2_(NULL)
   parse("OUT_RESTART",out_restart_name_);
   checkRead();  
 
+  log.printf("Setting scaling:");
+  if(scale_.size() > 0  && scale_.size() < getNumberOfArguments()) {
+    error("the number of BIAS_SCALE values be the same as number of CVs");
+  } else if(scale_.size() == 0) {
+    log.printf(" (default) ");
+    
+    scale_.resize(center_.size());
+    for(unsigned int i = 0; i < scale_.size(); i++) {
+      if(center_[i]==0) 
+        error("BIAS_SCALE parameter has been set to CENTER value of 0 (as is default). This will divide by 0, so giving up. See doc for EDS bias");
+      scale_[i] = center_[i];
+    }
+  } else {
+    for(unsigned int i = 0; i < scale_.size(); i++)
+      log.printf(" %f",scale_[i]);
+  }
+  log.printf("\n");
+
   if(in_restart_name_ != ""){
     b_restart_ = true;
     log.printf("  reading simulation information from file: %s\n",in_restart_name_.c_str());
@@ -263,21 +281,6 @@ value_force2_(NULL)
     log.printf("  with centers:");
     for(unsigned i=0;i<center_.size();i++){
       log.printf(" %f",center_[i]);
-    }
-    
-    log.printf("\n  and scaling:");
-    if(scale_.size() > 0  && scale_.size() < getNumberOfArguments()) {
-      error("the number of BIAS_SCALE values be the same as number of CVs");
-    } else if(scale_.size() == 0) {
-
-      log.printf("(default) ");
-      
-      scale_.resize(center_.size());
-      for(unsigned int i = 0; i < scale_.size(); i++) {
-	if(center_[i]==0) 
-	  error("BIAS_SCALE parameter has been set to CENTER value of 0 (as is default). This will divide by 0, so giving up. See doc for EDS bias");
-	scale_[i] = center_[i];
-      }
     }
     
     for(unsigned int i = 0; i < scale_.size(); i++) 
