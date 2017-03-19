@@ -183,6 +183,7 @@ void EDS::registerKeywords(Keywords& keys){
 EDS::EDS(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao),
 center_(getNumberOfArguments(),1.0),
+scale_(getNumberOfArguments(),0.0),
 current_coupling_(getNumberOfArguments(),0.0),
 set_coupling_(getNumberOfArguments(),0.0),
 target_coupling_(getNumberOfArguments(),0.0),
@@ -267,7 +268,7 @@ value_force2_(NULL)
     
     log.printf("\n  and scaling:");
     if(scale_.size() > 0  && scale_.size() < getNumberOfArguments()) {
-      error("the number of BIAS_SCALE values be the same as number of CVs");
+      error("the number of BIAS_SCALE values must be the same as number of CVs");
     } else if(scale_.size() == 0) {
 
       log.printf("(default) ");
@@ -343,7 +344,6 @@ value_force2_(NULL)
 void EDS::readInRestart_(const bool b_mean){
   int adaptive_i;
   
-  
   in_restart_.open(in_restart_name_);
   
   //some sample code to get the field names:
@@ -378,12 +378,12 @@ void EDS::readInRestart_(const bool b_mean){
     log.printf("  setting random seed = %i",seed_);
     rand_.setSeed(seed_);
   }
-  
+
   double time;
   std::vector<double> avg_bias = std::vector<double>(center_.size());
   unsigned int N = 0;
   std::string cv_name;
-  
+
   while(in_restart_.scanField("time",time)){
     
     for(unsigned i=0;i<getNumberOfArguments();++i) {
