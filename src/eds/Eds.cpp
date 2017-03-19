@@ -240,7 +240,7 @@ value_force2_(NULL)
   parse("OUT_RESTART",out_restart_name_);
   checkRead();  
 
-  log.printf("Setting scaling:");
+  log.printf("  setting scaling:");
   if(scale_.size() > 0  && scale_.size() < getNumberOfArguments()) {
     error("the number of BIAS_SCALE values be the same as number of CVs");
   } else if(scale_.size() == 0) {
@@ -392,7 +392,6 @@ void EDS::readInRestart_(const bool b_mean){
     for(unsigned i=0;i<getNumberOfArguments();++i) {
       cv_name = getPntrToArgument(i)->getName();
       in_restart_.scanField(cv_name + +"_center",center_[i]);
-      in_restart_.scanField(cv_name + +"_scale", scale_[i]);
       in_restart_.scanField(cv_name + "_init", set_coupling_[i]);
       in_restart_.scanField(cv_name + "_target",target_coupling_[i]);
       in_restart_.scanField(cv_name + "_coupling",current_coupling_[i]);
@@ -452,7 +451,7 @@ void EDS::setupOutRestart_(){
   out_restart_.addConstantField("update_period").printField("update_period",update_period_);
   out_restart_.addConstantField("seed").printField("seed",seed_);
   out_restart_.addConstantField("kbt").printField("kbt",kbt_);
-  
+
   writeOutRestart_();
 }
   
@@ -464,7 +463,6 @@ void EDS::writeOutRestart_(){
     cv_name = getPntrToArgument(i)->getName();
     
     out_restart_.printField(cv_name + "_center",center_[i]);
-    out_restart_.printField(cv_name + "_scale",scale_[i]);
     out_restart_.printField(cv_name + "_init",set_coupling_[i]);
     out_restart_.printField(cv_name + "_target",target_coupling_[i]);
     out_restart_.printField(cv_name + "_coupling",current_coupling_[i]);
