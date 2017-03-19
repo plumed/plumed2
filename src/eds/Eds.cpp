@@ -46,16 +46,16 @@ target observable values for a set of CVs.
 
 The addition to the potential is of the form 
 \f[
-  \sum_i \frac{\alpha}_i}{s_i}*x_i
+  \sum_i \frac{\alpha_i}{s_i} x_i
 \f]
 
 where for CV \f$x_i\f$, a coupling \f${\alpha}_i\f$ is determined
 adaptively or set by the user to match a target value for
-\f$x_i\f$. \f$s_i$\f is a scale parameter, which by default is set to
+\f$x_i\f$. \f$s_i\f$ is a scale parameter, which by default is set to
 the target value. It may also be set separately. 
 
 \warning
-If the target observable value is set to zero while using the adaptive scheme this will cause a divide-by-zero error
+It is not possible to set the target value of the observable to zero with the default value of \f$s_i\f$ as this will cause a divide-by-zero error. Instead, set \f$s_i=1\f$ or modify the CV so the desired target value is no longer zero.
 
 \par Examples
 
@@ -175,7 +175,7 @@ void EDS::registerKeywords(Keywords& keys){
    keys.addFlag("RAMP",false,"Slowly increase bias constant to a fixed value");
    keys.addFlag("FREEZE",false,"Fix bias at current level (only used for restarting). Can also set PERIOD=0 if not using EDSRESTART.");
    keys.addFlag("MEAN",false,"Instead of using final bias level from restart, use average");
-   keys.addFlag("EDSRESTART",false,"Get settings from EDS_INPUT");
+   keys.addFlag("EDSRESTART",false,"Get settings from IN_RESTART");
 
    keys.addOutputComponent("force2","default","squared value of force from the bias");
    keys.addOutputComponent("_coupling","default","For each named CV biased, there will be a corresponding output CV_coupling storing the current linear bias prefactor.");
