@@ -169,12 +169,18 @@ void EDS::registerKeywords(Keywords& keys){
    keys.add("optional","BIAS_SCALE","A divisor to set the units of the bias. If not set, this will be the experimental value by default (as is done in White and Voth 2014).");
    keys.add("optional","TEMP","The system temperature. If not provided will be taken from MD code (if available)");
 
-   keys.add("optional","OUT_RESTART","Output file for all information needed to continue EDS simulation");
-   keys.add("optional","IN_RESTART","Read this file to continue an EDS simulation (if same as above, will be overwritten)");
+   keys.add("optional","OUT_RESTART","Output file for all information needed to continue EDS simulation. "
+	    "If you have the RESTART directive set (global or for EDS), this file will be appended to. "
+	    "Note that the header will be printed again if appending.");
+   keys.add("optional","IN_RESTART","Read this file to continue an EDS simulation. "
+	    "If same as OUT_RESTART and you have not set the RESTART directive, the file will be backed-up and overwritten with new output. "
+	    "If you do have the RESTART flag set and it is the same name as OUT_RESTART, this file will be appended.");
 
    keys.addFlag("RAMP",false,"Slowly increase bias constant to a fixed value");
    keys.addFlag("FREEZE",false,"Fix bias at current level (only used for restarting). Can also set PERIOD=0 if not using EDSRESTART.");
    keys.addFlag("MEAN",false,"Instead of using final bias level from restart, use average");
+
+   keys.use("RESTART");
 
    keys.addOutputComponent("force2","default","squared value of force from the bias");
    keys.addOutputComponent("_coupling","default","For each named CV biased, there will be a corresponding output CV_coupling storing the current linear bias prefactor.");
@@ -444,12 +450,12 @@ void EDS::setupOutRestart_(){
   out_restart_.link(*this);
   out_restart_.open(out_restart_name_);
   out_restart_.setHeavyFlush();
-  
+
   out_restart_.addConstantField("adaptive").printField("adaptive",b_adaptive_);
   out_restart_.addConstantField("update_period").printField("update_period",update_period_);
   out_restart_.addConstantField("seed").printField("seed",seed_);
   out_restart_.addConstantField("kbt").printField("kbt",kbt_);
-  
+
   writeOutRestart_();
 }
   
