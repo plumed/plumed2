@@ -1,17 +1,15 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015,2016 The plumed team
-   (see the PEOPLE file at the root of the distribution for a list of names)
+   Copyright (c) 2017 of Glen Hocky and Andrew White
 
-   See http://www.plumed.org for more information.
+   This file is part of the eds module, contributed code to plumed
+   version 2.
 
-   This file is part of plumed, version 2.
-
-   plumed is free software: you can redistribute it and/or modify
+   The eds module is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
-   plumed is distributed in the hope that it will be useful,
+   The eds module is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU Lesser General Public License for more details.
@@ -85,17 +83,17 @@ A restart file can be added to dump information needed to restart/continue simul
 #add the option to write to a restart file
 eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 OUT_RESTART=restart.dat
 
-#add the option to read in a previous restart file
-eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.dat EDSRESTART
+#add the option to read in a previous restart file. Adding RESTART flag makes output append 
+eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.dat RESTART=yes
 
 #add the option to read in a previous restart file and freeze the bias at the final level from the previous simulation
-eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.dat EDSRESTART FREEZE
+eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.dat FREEZE
 
 #add the option to read in a previous restart file and freeze the bias at the mean from the previous simulation
-eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.dat EDSRESTART FREEZE MEAN
+eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.dat FREEZE MEAN
 
 #add the option to read in a previous restart file and continue the bias, but use the mean from the previous run as the starting point
-eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.dat EDSRESTART MEAN
+eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.dat MEAN
 \endverbatim
 
 
@@ -177,7 +175,7 @@ void EDS::registerKeywords(Keywords& keys){
 	    "If you do have the RESTART flag set and it is the same name as OUT_RESTART, this file will be appended.");
 
    keys.addFlag("RAMP",false,"Slowly increase bias constant to a fixed value");
-   keys.addFlag("FREEZE",false,"Fix bias at current level (only used for restarting). Can also set PERIOD=0 if not using EDSRESTART.");
+   keys.addFlag("FREEZE",false,"Fix bias at current level (only used for restarting). Can also set PERIOD=0 if not using RESTART.");
    keys.addFlag("MEAN",false,"Instead of using final bias level from restart, use average");
 
    keys.use("RESTART");
@@ -189,6 +187,7 @@ void EDS::registerKeywords(Keywords& keys){
 EDS::EDS(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao),
 center_(getNumberOfArguments(),1.0),
+scale_(getNumberOfArguments(),0.0),
 current_coupling_(getNumberOfArguments(),0.0),
 set_coupling_(getNumberOfArguments(),0.0),
 target_coupling_(getNumberOfArguments(),0.0),
@@ -352,7 +351,6 @@ value_force2_(NULL)
 void EDS::readInRestart_(const bool b_mean){
   int adaptive_i;
   
-  
   in_restart_.open(in_restart_name_);
   
   //some sample code to get the field names:
@@ -387,12 +385,12 @@ void EDS::readInRestart_(const bool b_mean){
     log.printf("  setting random seed = %i",seed_);
     rand_.setSeed(seed_);
   }
-  
+
   double time;
   std::vector<double> avg_bias = std::vector<double>(center_.size());
   unsigned int N = 0;
   std::string cv_name;
-  
+
   while(in_restart_.scanField("time",time)){
     
     for(unsigned i=0;i<getNumberOfArguments();++i) {
