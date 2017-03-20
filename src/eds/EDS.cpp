@@ -62,7 +62,7 @@ It is not possible to set the target value of the observable to zero with the de
 \par Examples
 
 The following input for a harmonic oscillator of two beads will adaptively find a linear bias to change the mean and variance to the target values. The PRINT line shows how to access the value of the coupling constants. 
-n
+
 \verbatim 
 dist: DISTANCE ATOMS=1,2
 # this is the squared of the distance
