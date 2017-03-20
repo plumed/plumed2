@@ -310,7 +310,7 @@ value_force2_(NULL)
     for(unsigned i=0;i<getNumberOfArguments();++i) if(target_coupling_[i]!=0.0) b_adaptive_=false;
     
     if(!b_adaptive_){
-      if(b_ramp_>0) {
+      if(b_ramp_) {
 	log.printf("  ramping up coupling constants over %i steps\n",update_period_);
       }
       
@@ -339,7 +339,12 @@ value_force2_(NULL)
   
   if(b_freeze_){
     b_adaptive_=false;
-    log.printf("  freezing bias at current level\n");
+    update_period_ = 0;
+      if (b_mean) {
+          log.printf("  freezing bias at the average level from the restart file\n");
+      } else{
+        log.printf("  freezing bias at current level\n");
+      }
   }
   
   if(out_restart_name_.length()>0) {
@@ -380,7 +385,7 @@ void EDS::readInRestart_(const bool b_mean){
     in_restart_.scanField("adaptive",adaptive_i);
   }else{ error("No field 'adaptive' in restart file"); }
   b_adaptive_ = bool(adaptive_i);
-  
+
   if(in_restart_.FieldExist("seed")){
     in_restart_.scanField("seed",seed_);
   }else{ error("No field 'seed' in restart file"); }
@@ -406,8 +411,8 @@ void EDS::readInRestart_(const bool b_mean){
       in_restart_.scanField(cv_name + "_maxgrad",max_coupling_grad_[i]);
 
       avg_bias[i] += current_coupling_[i];
-      N++;
     }
+    N++;
     
     in_restart_.scanField();
   }
@@ -434,6 +439,7 @@ void EDS::readInRestart_(const bool b_mean){
   if(b_mean) {
     log.printf("Loaded in averages for coupling constants...\n");
     for(unsigned i=0;i<current_coupling_.size();i++) current_coupling_[i] = avg_bias[i] / N;
+    for(unsigned i=0;i<current_coupling_.size();i++) set_coupling_[i] = avg_bias[i] / N;
   }
   
   log.printf("  with current coupling constants:\n    ");
