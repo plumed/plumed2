@@ -1,12 +1,9 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015,2016 The plumed team
-   (see the PEOPLE file at the root of the distribution for a list of names)
+   Copyright (c) 2017 of Glen Hocky and Andrew White
 
-   See http://www.plumed.org for more information.
+   This file is part of the contributed eds module
 
-   This file is part of plumed, version 2.
-
-   plumed is free software: you can redistribute it and/or modify
+   The eds module is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
