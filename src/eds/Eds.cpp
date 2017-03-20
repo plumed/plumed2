@@ -39,7 +39,8 @@ Add a linear bias on a set of observables.
 
 This force is the same as the linear part of the bias in \ref RESTRAINT, 
 but this bias has the ability to compute prefactors
-adaptively using the scheme of White and Voth (JCTC 2014) in order to match 
+adaptively using the scheme of White and Voth 
+\cite white2014efficient in order to match 
 target observable values for a set of CVs.
 
 The addition to the potential is of the form 
