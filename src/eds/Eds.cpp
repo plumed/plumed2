@@ -176,7 +176,7 @@ void EDS::registerKeywords(Keywords& keys){
 
    keys.addFlag("RAMP",false,"Slowly increase bias constant to a fixed value");
    keys.addFlag("FREEZE",false,"Fix bias at current level (only used for restarting). Can also set PERIOD=0 if not using RESTART.");
-   keys.addFlag("MEAN",false,"Instead of using final bias level from restart, use average");
+   keys.addFlag("MEAN",false,"Instead of using final bias level from restart, use average. Can only be used in conjunction with FREEZE");
 
    keys.use("RESTART");
 
@@ -261,6 +261,10 @@ value_force2_(NULL)
       log.printf(" %f",scale_[i]);
   }
   log.printf("\n");
+
+  if (b_mean == true and b_freeze_ == false) {
+        error("EDS keyworkd MEAN can only be used along with keyword FREEZE");
+  }
 
   if(in_restart_name_ != ""){
     b_restart_ = true;
