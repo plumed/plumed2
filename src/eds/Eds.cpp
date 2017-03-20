@@ -242,7 +242,6 @@ value_force2_(NULL)
   parseFlag("FREEZE",b_freeze_);
   parseFlag("MEAN",b_mean);
   parse("IN_RESTART",in_restart_name_);
-  parse("OUT_RESTART",out_restart_name_);
   checkRead();  
 
   log.printf("  setting scaling:");
