@@ -532,16 +532,25 @@ average_weights_stride_(1)
     log.printf("  Restarting from %s\n", status_file_name_.c_str());
     double dummy;
     if(restart_sfile.scanField("time",dummy)){
-      for(unsigned i=0;i<sigma_mean2_.size();++i) {
+      // nsel
+      for(unsigned i=0;i<sigma_mean2_last_.size();i++) {
         std::string msg_i;
         Tools::convert(i,msg_i);
-        for(unsigned j=0;j<nsel;j++) {
-          std::string msg_j;
-          Tools::convert(j,msg_j);
-          std::string msg = msg_i+"_"+msg_j;
+        // narg
+        if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
+          for(unsigned j=0;j<narg;++j) {
+            std::string msg_j;
+            Tools::convert(j,msg_j);
+            std::string msg = msg_i+"_"+msg_j;
+            double read_sm;
+            restart_sfile.scanField("sigma_mean_"+msg,read_sm);
+            sigma_mean2_last_[i][j][0] = read_sm*read_sm;
+          }
+        }
+        if(noise_type_==GAUSS||noise_type_==OUTLIERS) {
           double read_sm;
-          restart_sfile.scanField("sigma_mean_"+msg,read_sm);
-          sigma_mean2_last_[j][i][0] = read_sm*read_sm;
+          restart_sfile.scanField("sigma_mean_0_"+msg_i,read_sm);
+          for(unsigned j=0;j<narg;j++) sigma_mean2_last_[i][j][0] = read_sm*read_sm;
         }
       }
 
@@ -559,16 +568,19 @@ average_weights_stride_(1)
       }
       restart_sfile.scanField("scale0_",scale_);
       restart_sfile.scanField("offset0_",offset_);
+    
       for(unsigned i=0;i<nsel;i++) {
         std::string msg;
         Tools::convert(i,msg);
         double tmp_w;
         restart_sfile.scanField("weight_"+msg,tmp_w);
-        if(master) average_weights_[i][replica_] = tmp_w;
+        if(master){
+           average_weights_[i][replica_] = tmp_w;
+           if(nrep_>1) multi_sim_comm.Sum(&average_weights_[i][0], nrep_);
+        }
+        comm.Sum(&average_weights_[i][0], nrep_);
       }
-      // share weights
-      if(master&&nrep_>1) multi_sim_comm.Sum(&average_weights_[0][0], nrep_*nsel);
-      comm.Sum(&average_weights_[0][0], nrep_*nsel);
+     
     }
     restart_sfile.scanField();
     restart_sfile.close();
@@ -1495,13 +1507,26 @@ void Metainference::writeStatus()
 {
   sfile_.rewind();
   sfile_.printField("time",getTimeStep()*getStep());
-  for(unsigned i=0;i<sigma_mean2_.size();++i) {
+  //nsel
+  for(unsigned i=0;i<sigma_mean2_last_.size();i++) {
     std::string msg_i,msg_j;
     Tools::convert(i,msg_i);
-    for(unsigned j=0;j<sigma_mean2_last_.size();j++) {
+    vector <double> max_values;
+    //narg
+    for(unsigned j=0;j<narg;++j) {
       Tools::convert(j,msg_j);
       std::string msg = msg_i+"_"+msg_j;
-      sfile_.printField("sigma_mean_"+msg,sqrt(*max_element(sigma_mean2_last_[j][i].begin(), sigma_mean2_last_[j][i].end())));
+      if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
+        sfile_.printField("sigma_mean_"+msg,sqrt(*max_element(sigma_mean2_last_[i][j].begin(), sigma_mean2_last_[i][j].end())));
+      } else {
+        // find maximum for each data point
+        max_values.push_back(*max_element(sigma_mean2_last_[i][j].begin(), sigma_mean2_last_[i][j].end()));
+      }
+    }
+    if(noise_type_==GAUSS||noise_type_==OUTLIERS) {
+      // find maximum across data points
+      const double max_now = sqrt(*max_element(max_values.begin(), max_values.end()));
+      sfile_.printField("sigma_mean_0_"+msg_i,max_now);
     }
   }
   for(unsigned i=0;i<sigma_.size();++i) {
