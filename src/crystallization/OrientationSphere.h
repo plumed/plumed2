@@ -22,13 +22,14 @@
 #ifndef __PLUMED_crystallization_OrientationSphere_h
 #define __PLUMED_crystallization_OrientationSphere_h
 
-#include "multicolvar/MultiColvarFunction.h"
+#include "multicolvar/MultiColvarBase.h"
+#include "multicolvar/AtomValuePack.h"
 #include "tools/SwitchingFunction.h"
 
 namespace PLMD {
 namespace crystallization {
 
-class OrientationSphere : public multicolvar::MultiColvarFunction {
+class OrientationSphere : public multicolvar::MultiColvarBase {
 private:
   double rcut2;
   SwitchingFunction switchingFunction;

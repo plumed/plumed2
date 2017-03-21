@@ -19,7 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "MultiColvar.h"
+#include "MultiColvarBase.h"
+#include "AtomValuePack.h"
 #include "tools/SwitchingFunction.h"
 #include "core/ActionRegister.h"
 #include "vesselbase/LessThan.h"
@@ -43,7 +44,7 @@ Calculate distances in the plane perpendicular to an axis
 */
 //+ENDPLUMEDOC
 
-class InPlaneDistances : public MultiColvar {
+class InPlaneDistances : public MultiColvarBase {
 public:
   static void registerKeywords( Keywords& keys );
   explicit InPlaneDistances(const ActionOptions&);
@@ -55,7 +56,7 @@ public:
 PLUMED_REGISTER_ACTION(InPlaneDistances,"INPLANEDISTANCES")
 
 void InPlaneDistances::registerKeywords( Keywords& keys ){
-  MultiColvar::registerKeywords( keys );
+  MultiColvarBase::registerKeywords( keys );
   keys.use("ALT_MIN"); keys.use("LOWEST"); keys.use("HIGHEST");
   keys.use("MEAN"); keys.use("MIN"); keys.use("MAX"); keys.use("LESS_THAN"); 
   keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
@@ -65,7 +66,8 @@ void InPlaneDistances::registerKeywords( Keywords& keys ){
 }
 
 InPlaneDistances::InPlaneDistances(const ActionOptions&ao):
-PLUMED_MULTICOLVAR_INIT(ao)
+Action(ao),
+MultiColvarBase(ao)
 {
   // Read in the atoms
   std::vector<AtomNumber> all_atoms;

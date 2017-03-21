@@ -19,7 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "MultiColvarFunction.h"
+#include "MultiColvarBase.h"
+#include "AtomValuePack.h"
 #include "core/ActionRegister.h"
 
 #include <string>
@@ -37,7 +38,7 @@ Calculate linear combinations of multiple multicolvars
 namespace PLMD {
 namespace multicolvar {
 
-class MultiColvarCombine : public MultiColvarFunction {
+class MultiColvarCombine : public MultiColvarBase {
 private:
   std::vector<double> coeff;
 public:
@@ -52,16 +53,18 @@ public:
 PLUMED_REGISTER_ACTION(MultiColvarCombine,"MCOLV_COMBINE")
 
 void MultiColvarCombine::registerKeywords( Keywords& keys ){
-  MultiColvarFunction::registerKeywords( keys );
+  MultiColvarBase::registerKeywords( keys );
+  keys.add("compulsory","DATA","the multicolvars you are calculating linear combinations for");
   keys.add("compulsory","COEFFICIENTS","1.0","the coeficients to use for the various multicolvars");
-  keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("SUM"); keys.use("LESS_THAN"); keys.use("HISTOGRAM"); keys.use("HISTOGRAM");
+  keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("SUM"); keys.use("LESS_THAN"); keys.use("HISTOGRAM"); keys.use("HISTOGRAM"); 
   keys.use("MIN"); keys.use("MAX"); keys.use("LOWEST"); keys.use("HIGHEST"); keys.use("ALT_MIN"); keys.use("BETWEEN"); keys.use("MOMENTS");
 }
 
 MultiColvarCombine::MultiColvarCombine(const ActionOptions& ao):
 Action(ao),
-MultiColvarFunction(ao)
+MultiColvarBase(ao)
 {
+  buildSets();
   for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i){
       if( mybasemulticolvars[i]->weightWithDerivatives() ) error("cannot combine multicolvars with weights");
   }
@@ -69,7 +72,7 @@ MultiColvarFunction(ao)
   parseVector("COEFFICIENTS",coeff);
   log.printf("  coefficients of multicolvars %f", coeff[0] );
   for(unsigned i=1;i<coeff.size();++i) log.printf(", %f", coeff[i] );
-  log.printf("\n"); buildSets();
+  log.printf("\n"); 
 }
 
 double MultiColvarCombine::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {

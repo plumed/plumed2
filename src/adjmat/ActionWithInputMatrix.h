@@ -25,14 +25,13 @@
 #include "core/ActionWithValue.h"
 #include "core/ActionAtomistic.h"
 #include "multicolvar/MultiColvarBase.h"
-#include "multicolvar/MultiColvarFunction.h"
 
 namespace PLMD {
 namespace adjmat {
 
 class AdjacencyMatrixVessel;
 
-class ActionWithInputMatrix : public multicolvar::MultiColvarFunction {
+class ActionWithInputMatrix : public multicolvar::MultiColvarBase {
 protected:
 /// The vessel that holds the adjacency matrix
   AdjacencyMatrixVessel* mymatrix;

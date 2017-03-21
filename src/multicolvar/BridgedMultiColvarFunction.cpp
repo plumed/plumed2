@@ -115,8 +115,8 @@ void BridgedMultiColvarFunction::deactivate_task( const unsigned& taskno ){
   plumed_merror("This should never be called");
 }
 
-CatomPack BridgedMultiColvarFunction::getCentralAtomPack( const unsigned& basn, const unsigned& curr ){
-  return mycolv->getCentralAtomPack( basn, curr );
+void BridgedMultiColvarFunction::getCentralAtomPack( const unsigned& basn, const unsigned& curr, CatomPack& mypack ){
+  return mycolv->getCentralAtomPack( basn, curr, mypack );
 }
 
 }

@@ -61,9 +61,9 @@ MoleculePlane::MoleculePlane( const ActionOptions& ao ):
 Action(ao),
 VectorMultiColvar(ao)
 {
-  int natoms=-1; std::vector<AtomNumber> all_atoms;
-  readAtomsLikeKeyword("MOL",natoms,all_atoms); 
-  if( natoms!=3 && natoms!=4 ) error("number of atoms in molecule specification is wrong.  Should be three or four.");
+  std::vector<AtomNumber> all_atoms;
+  readAtomsLikeKeyword("MOL",-1,all_atoms); 
+  if( ablocks.size()!=3 && ablocks.size()!=4 ) error("number of atoms in molecule specification is wrong.  Should be three or four.");
 
   if( all_atoms.size()==0 ) error("No atoms were specified");
   setVectorDimensionality( 3 ); setupMultiColvarBase( all_atoms );
