@@ -972,8 +972,6 @@ void CS2Backbone::calculate()
               const Vector d = delta(ringInfo[i].position, getPosition(ipos));
     	      const double dL2 = d.modulo2();
     	      double dL  = sqrt(dL2);
-              unsigned cont_r = 0;
-              if(dL<0.25) {dL=0.25; cont_r=1;} 
     	      const double idL3 = 1./(dL2*dL);
 
     	      const double dn    = dotProduct(d,n);
@@ -986,7 +984,6 @@ void CS2Backbone::calculate()
               const double cc   = rc[ringInfo[i].rtype];
 
               cs += cc*u*idL3;
-              if(cont_r) continue;
              
               const double fUU    = -6*dn*inL2; 
     	      const double fUQ    = fUU/dL;
@@ -997,7 +994,8 @@ void CS2Backbone::calculate()
     	      ff[0] += fact*(gradUQ - gradVQ);
     	
     	      const double fU       = fUU/nL;
-    	      const double OneOverN = 1./((double) ringInfo[i].numAtoms);
+    	      double OneOverN = 1./6.;
+              if(ringInfo[i].numAtoms==5) OneOverN=1./3.; 
               const Vector factor2  = OneOverN*n;
     	      const Vector factor4  = (OneOverN/dL_nL)*d;
 
@@ -1014,7 +1012,7 @@ void CS2Backbone::calculate()
     	          ff.push_back(fact*(gradU - gradV));
                   list.push_back(ringInfo[i].atom[at]);
                 }
-              } else {
+              }  else {
                 for(unsigned at=0;at<3;at++) {
                   const Vector ab = crossProduct(d,ringInfo[i].g[at]);
                   const Vector c  = crossProduct(n,ringInfo[i].g[at]);
@@ -1026,7 +1024,7 @@ void CS2Backbone::calculate()
                 list.push_back(ringInfo[i].atom[0]);
                 list.push_back(ringInfo[i].atom[2]);
                 list.push_back(ringInfo[i].atom[3]);
-              }
+              } 
             }
           }
           //END OF RINGS
@@ -1178,7 +1176,7 @@ void CS2Backbone::compute_ring_parameters(){
       ringInfo[i].n2 = crossProduct(delta(a[3],a[1]), delta(a[3],a[5]));
       // ring plane normal vector is average of n1 and n2
       ringInfo[i].normVect = 0.5*(ringInfo[i].n1 + ringInfo[i].n2);
-    } else {
+    }  else {
       ringInfo[i].g[0] = delta(getPosition(ringInfo[i].atom[3]),getPosition(ringInfo[i].atom[2]));
       ringInfo[i].g[1] = delta(getPosition(ringInfo[i].atom[0]),getPosition(ringInfo[i].atom[3]));
       ringInfo[i].g[2] = delta(getPosition(ringInfo[i].atom[2]),getPosition(ringInfo[i].atom[0]));
@@ -1187,7 +1185,7 @@ void CS2Backbone::compute_ring_parameters(){
         a[j] = getPosition(ringInfo[i].atom[j]);
       }
       // ring center
-      Vector midP = (a[0]+a[2]+a[3])/(double) size;
+      Vector midP = (a[0]+a[2]+a[3])/3.;
       ringInfo[i].position = midP;
       // compute normal vector to plane containing first three atoms in array
       ringInfo[i].n1 = crossProduct(delta(a[0],a[3]), delta(a[0],a[2]));
@@ -1198,7 +1196,7 @@ void CS2Backbone::compute_ring_parameters(){
     // calculate squared length and length of normal vector
     ringInfo[i].lengthN2 = 1./ringInfo[i].normVect.modulo2(); 
     ringInfo[i].lengthNV = 1./sqrt(ringInfo[i].lengthN2);
-  }
+  } 
 }
 
 void CS2Backbone::compute_dihedrals(){
