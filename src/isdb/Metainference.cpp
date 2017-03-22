@@ -247,6 +247,7 @@ void Metainference::registerKeywords(Keywords& keys){
   keys.add("compulsory","NOISETYPE","functional form of the noise (GAUSS,MGAUSS,OUTLIERS,MOUTLIERS)");
   keys.add("compulsory","LIKELIHOOD","GAUSS","the likelihood for the GENERIC metainference model, at present GAUSS or LOGN");
   keys.add("compulsory","DFTILDE","0.1","fraction of sigma_mean used to evolve ftilde");
+  keys.addFlag("NOENSEMBLE",false,"don't perform any replica-averaging"); 
   keys.addFlag("REWEIGHT",false,"simple REWEIGHT using the latest ARG as energy"); 
   keys.add("optional","AVERAGING", "Stride for calculation of averaged weights and sigma_mean");
   keys.addFlag("SCALEDATA",false,"Set to TRUE if you want to sample a scaling factor common to all values and replicas");  
@@ -321,11 +322,15 @@ do_optsigmamean_(0),
 optsigmamean_stride_(0),
 average_weights_stride_(1)
 {
+  bool noensemble = false;
+  parseFlag("NOENSEMBLE", noensemble);
+
   // set up replica stuff 
   master = (comm.Get_rank()==0);
   if(master) {
     nrep_    = multi_sim_comm.Get_size();
     replica_ = multi_sim_comm.Get_rank();
+    if(noensemble) nrep_ = 1;
   } else {
     nrep_    = 0;
     replica_ = 0;
