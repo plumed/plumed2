@@ -145,6 +145,7 @@ private:
   int update_calls_;
   double kbt_;
   double c_range_increase_f_;
+  double multi_prop_;
   Random rand_;
   Value* value_force2_;
 
@@ -182,8 +183,12 @@ public:
     keys.add("compulsory","SEED","0","Seed for random order of changing bias");
     keys.add("compulsory","INIT","0","Starting value for coupling coefficients");
     keys.add("compulsory","FIXED","0","Fixed target values for bias factors (not adaptive)");
-    keys.add("optional","BIAS_SCALE","A divisor to set the units of the bias. If not set, this will be the experimental value by default (as is done in White and Voth 2014).");
+    keys.add("optional","BIAS_SCALE","A divisor to set the units of the bias. "
+	     "If not set, this will be the experimental value by default (as is done in White and Voth 2014).");
     keys.add("optional","TEMP","The system temperature. If not provided will be taken from MD code (if available)");
+    keys.add("optional","MULTI_PROP","What proportion of dimensions to update at each step. "
+	     "Must be in interval [1,0), where 1 indicates all and any other indicates a stochastic update. "
+	     "If not set, default is 1 / N, where N is the number of CVs. ");
 
     keys.add("optional","OUT_RESTART","Output file for all information needed to continue EDS simulation. "
 	     "If you have the RESTART directive set (global or for EDS), this file will be appended to. "
@@ -200,7 +205,7 @@ public:
     keys.use("RESTART");
 
     keys.addOutputComponent("force2","default","squared value of force from the bias");
-    keys.addOutputComponent("_coupling","default","For each named CV biased, there will be a corresponding output CV_coupling storing the current linear bias prefactor.");
+    keys.addOutputComponent("_coupling","default", "For each named CV biased, there will be a corresponding output CV_coupling storing the current linear bias prefactor.");
   }
 
   EDS::EDS(const ActionOptions&ao):
@@ -234,6 +239,7 @@ public:
     update_calls_(0),
     kbt_(0.0),
     c_range_increase_f_(1.25),
+    multi_prop_(-1.0),
     value_force2_(NULL)
   {
     double temp=-1.0;
@@ -241,10 +247,10 @@ public:
 
     addComponent("force2");
     componentIsNotPeriodic("force2");
-    value_force2_=getPntrToComponent("force2");
+    value_force2_ = getPntrToComponent("force2");
 
     for(unsigned int i = 0;i<ncvs_;i++){
-      std::string comp=getPntrToArgument(i)->getName()+"_coupling";
+      std::string comp = getPntrToArgument(i)->getName() + "_coupling";
       addComponent(comp);
       componentIsNotPeriodic(comp);
       out_coupling_[i]=getPntrToComponent(comp);
@@ -258,6 +264,7 @@ public:
     parse("PERIOD",update_period_);
     parse("TEMP",temp);
     parse("SEED",seed_);
+    parse("MULTI_PROP",multi_prop_);
     parse("OUT_RESTART",out_restart_name_);
     parseFlag("RAMP",b_ramp_);
     parseFlag("FREEZE",b_freeze_);
@@ -309,11 +316,13 @@ public:
 
       //in driver, this results in kbt of 0
       if(kbt_ == 0){
-	error("  Unable to determine valid kBT. Probably because you are runnning from driver.\n  Consider setting temperature manually.");
+	error("  Unable to determine valid kBT. "
+	      "Could be because you are runnning from driver or MD didn't give temperature.\n"
+	      "Consider setting temperature manually with the TEMP keyword.");
 	kbt_ = 1;
       }
 
-      log.printf("  with kBT = %f\n",kbt_);
+      log.printf("  kBT = %f\n",kbt_);
       log.printf("  Updating every %i steps\n",update_period_);
 
       log.printf("  with centers:");
@@ -375,6 +384,15 @@ public:
       } else{
         log.printf("  freezing bias at current level\n");
       }
+    }
+
+    if(multi_prop_ == -1.0) {
+      log.printf("  Will update each dimension stochastically with probability 1 / number of CVs\n");
+      multi_prop_ = 1.0 / ncvs_;
+    } else if(multi_prop_ > 0 && multi_prop_ <= 1.0) {
+      log.printf("  Will update each dimension stochastically with probability %f\n", multi_prop_);
+    } else{
+      error("  MULTI_PROP must be between 0 and 1\n");
     }
 
     if(out_restart_name_.length()>0) {
@@ -686,7 +704,7 @@ public:
       reset_statistics();
 
       //multidimesional stochastic step
-      if(ncvs_ == 1 || (rand_.RandU01() < (1. / ncvs_) ) ) {
+      if(ncvs_ == 1 || (rand_.RandU01() < (multi_prop_) ) ) {
 	coupling_accum_[i] += step_size_[i] * step_size_[i];
 
 	//equation 5 in White and Voth, JCTC 2014
