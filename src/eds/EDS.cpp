@@ -19,10 +19,13 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "bias/Bias.h"
 #include "core/ActionRegister.h"
-#include "tools/Random.h"
-#include "tools/File.h"
-#include "core/PlumedMain.h"
 #include "core/Atoms.h"
+#include "core/PlumedMain.h"
+#include "tools/File.h"
+#include "tools/Matrix.h"
+#include "tools/Random.h"
+
+
 
 #include <iostream>
 
@@ -106,7 +109,10 @@ eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.
 
 class EDS : public Bias{
 
+
 private:
+  /*We will get this and store it once, since on-the-fly changing number of CVs will be fatal*/
+  const unsigned int ncvs_;
   std::vector<double> center_;
   std::vector<double> scale_;
   std::vector<double> current_coupling_;
@@ -118,7 +124,9 @@ private:
   std::vector<double> coupling_accum_;
   std::vector<double> means_;
   std::vector<double> ssds_;
+  std::vector<double> step_size_;
   std::vector<Value*> out_coupling_;
+  Matrix<double> covar_;
   std::string in_restart_name_;
   std::string out_restart_name_;
   OFile out_restart_;
@@ -127,6 +135,7 @@ private:
   bool b_freeze_;
   bool b_equil_;
   bool b_ramp_;
+  bool b_covar_;
   bool b_restart_;
   bool b_write_restart_;
   bool b_hard_c_range_;
@@ -146,6 +155,9 @@ private:
   /*write output restart*/
   void writeOutRestart();
   void update_statistics();
+  void calc_covar_step_size();
+  void calc_ssd_step_size();
+  void reset_statistics();
   void update_bias();
   void apply_bias();    
 
@@ -181,6 +193,7 @@ public:
 	     "If you do have the RESTART flag set and it is the same name as OUT_RESTART, this file will be appended.");
 
     keys.addFlag("RAMP",false,"Slowly increase bias constant to a fixed value");
+    keys.addFlag("COVAR",false,"Utilize the covariance matrix when updating the bias. Default Off, but may be enabled due to other options");
     keys.addFlag("FREEZE",false,"Fix bias at current level (only used for restarting). Can also set PERIOD=0 if not using RESTART.");
     keys.addFlag("MEAN",false,"Instead of using final bias level from restart, use average. Can only be used in conjunction with FREEZE");
 
@@ -192,24 +205,26 @@ public:
 
   EDS::EDS(const ActionOptions&ao):
     PLUMED_BIAS_INIT(ao),
-    center_(getNumberOfArguments(),1.0),
-    scale_(getNumberOfArguments(),0.0),
-    current_coupling_(getNumberOfArguments(),0.0),
-    set_coupling_(getNumberOfArguments(),0.0),
-    target_coupling_(getNumberOfArguments(),0.0),
-    max_coupling_range_(getNumberOfArguments(),3.0),
-    max_coupling_grad_(getNumberOfArguments(),0.0),
-    coupling_rate_(getNumberOfArguments(),1.0),
-    coupling_accum_(getNumberOfArguments(),1.0),
-    means_(getNumberOfArguments(),0.0),
-    ssds_(getNumberOfArguments(),0.0),
-    out_coupling_(getNumberOfArguments(),NULL),
+    ncvs_(getNumberOfArguments()),
+    center_(ncvs_,1.0),
+    scale_(ncvs_,0.0),
+    current_coupling_(ncvs_,0.0),
+    set_coupling_(ncvs_,0.0),
+    target_coupling_(ncvs_,0.0),
+    max_coupling_range_(ncvs_,3.0),
+    max_coupling_grad_(ncvs_,0.0),
+    coupling_rate_(ncvs_,1.0),
+    coupling_accum_(ncvs_,1.0),
+    means_(ncvs_,0.0),
+    step_size_(ncvs_,0.0),
+    out_coupling_(ncvs_,NULL),
     in_restart_name_(""),
     out_restart_name_(""),
     b_adaptive_(true),
     b_freeze_(false),
     b_equil_(true),
     b_ramp_(false),
+    b_covar_(false),
     b_restart_(false),
     b_write_restart_(false),
     b_hard_c_range_(false),
@@ -228,7 +243,7 @@ public:
     componentIsNotPeriodic("force2");
     value_force2_=getPntrToComponent("force2");
 
-    for(unsigned i=0;i<getNumberOfArguments();i++){
+    for(unsigned int i = 0;i<ncvs_;i++){
       std::string comp=getPntrToArgument(i)->getName()+"_coupling";
       addComponent(comp);
       componentIsNotPeriodic(comp);
@@ -247,11 +262,12 @@ public:
     parseFlag("RAMP",b_ramp_);
     parseFlag("FREEZE",b_freeze_);
     parseFlag("MEAN",b_mean);
+    parseFlag("COVAR",b_covar_);
     parse("IN_RESTART",in_restart_name_);
     checkRead();
 
     log.printf("  setting scaling:");
-    if(scale_.size() > 0  && scale_.size() < getNumberOfArguments()) {
+    if(scale_.size() > 0  && scale_.size() < ncvs_) {
       error("the number of BIAS_SCALE values be the same as number of CVs");
     } else if(scale_.size() == 0) {
       log.printf(" (default) ");
@@ -268,6 +284,16 @@ public:
     }
     log.printf("\n");
 
+
+    if(b_covar_) {
+      log.printf("  EDS will utilize covariance matrix for update steps\n");
+      covar_.resize(ncvs_, ncvs_);
+    } else {
+      log.printf("  EDS will utilize variance for update steps\n");
+      ssds_.resize(ncvs_);
+    }
+
+
     if (b_mean == true and b_freeze_ == false) {
       error("EDS keyworkd MEAN can only be used along with keyword FREEZE");
     }
@@ -276,9 +302,7 @@ public:
       b_restart_ = true;
       log.printf("  reading simulation information from file: %s\n",in_restart_name_.c_str());
       readInRestart(b_mean);
-    }
-    else{
-
+    } else{
 
       if(temp>=0.0) kbt_=plumed.getAtoms().getKBoltzmann()*temp;
       else kbt_ = plumed.getAtoms().getKbT();
@@ -293,7 +317,7 @@ public:
       log.printf("  Updating every %i steps\n",update_period_);
 
       log.printf("  with centers:");
-      for(unsigned i=0;i<center_.size();i++){
+      for(unsigned int i = 0;i<center_.size();i++){
 	log.printf(" %f",center_[i]);
       }
 
@@ -301,7 +325,7 @@ public:
 	log.printf(" %f",center_[i]);
 
       log.printf("\n  with initial ranges / rates:\n");
-      for(unsigned i=0;i<max_coupling_range_.size();i++) {
+      for(unsigned int i = 0;i<max_coupling_range_.size();i++) {
 	//this is just an empirical guess. Bigger range, bigger grads. Less frequent updates, bigger changes
 	max_coupling_range_[i]*=kbt_;
 	max_coupling_grad_[i] = max_coupling_range_[i]*update_period_/100.;
@@ -313,7 +337,7 @@ public:
 	rand_.setSeed(seed_);
       }
 
-      for(unsigned i=0;i<getNumberOfArguments();++i) if(target_coupling_[i]!=0.0) b_adaptive_=false;
+      for(unsigned int i = 0;i<ncvs_;++i) if(target_coupling_[i]!=0.0) b_adaptive_=false;
 
       if(!b_adaptive_){
 	if(b_ramp_) {
@@ -321,19 +345,19 @@ public:
 	}
 
 	log.printf("  with starting coupling constants");
-	for(unsigned i=0;i<set_coupling_.size();i++) log.printf(" %f",set_coupling_[i]);
+	for(unsigned int i = 0;i<set_coupling_.size();i++) log.printf(" %f",set_coupling_[i]);
 	log.printf("\n");
 	log.printf("  and final coupling constants");
-	for(unsigned i=0;i<target_coupling_.size();i++) log.printf(" %f",target_coupling_[i]);
+	for(unsigned int i = 0;i<target_coupling_.size();i++) log.printf(" %f",target_coupling_[i]);
 	log.printf("\n");
       }
-
+      
       //now do setup
       if(b_ramp_){
 	update_period_*=-1;
       }
 
-      for(unsigned i=0;i<set_coupling_.size();i++) current_coupling_[i] = set_coupling_[i];
+      for(unsigned int i = 0;i<set_coupling_.size();i++) current_coupling_[i] = set_coupling_[i];
 
       // if b_adaptive_, then first half will be used for equilibrating and second half for statistics
       if(update_period_>0){
@@ -372,7 +396,7 @@ public:
       std::vector<std::string> fields;
       in_restart_.scanFieldList(fields);
       log.printf("field");
-      for(unsigned i=0;i<fields.size();i++) log.printf(" %s",fields[i].c_str());
+      for(unsigned int i = 0;i<fields.size();i++) log.printf(" %s",fields[i].c_str());
       log.printf("\n");
     */
 
@@ -407,10 +431,10 @@ public:
 
     while(in_restart_.scanField("time",time)){
 
-      for(unsigned i=0;i<getNumberOfArguments();++i) {
+      for(unsigned int i = 0;i<ncvs_;++i) {
 	cv_name = getPntrToArgument(i)->getName();
 	in_restart_.scanField(cv_name + +"_center",center_[i]);
-	in_restart_.scanField(cv_name + "_init", set_coupling_[i]);
+	in_restart_.scanField(cv_name + "_set", set_coupling_[i]);
 	in_restart_.scanField(cv_name + "_target",target_coupling_[i]);
 	in_restart_.scanField(cv_name + "_coupling",current_coupling_[i]);
 	in_restart_.scanField(cv_name + "_maxrange",max_coupling_range_[i]);
@@ -425,16 +449,16 @@ public:
 
 
     log.printf("  with centers:");
-    for(unsigned i=0;i<center_.size();i++) {
+    for(unsigned int i = 0;i<center_.size();i++) {
       log.printf(" %f",center_[i]);
     }
     log.printf("\n  and scaling:");
-    for(unsigned i=0;i<scale_.size();i++) {
+    for(unsigned int i = 0;i<scale_.size();i++) {
       log.printf(" %f",scale_[i]);
     }
 
     log.printf("\n  with initial ranges / rates:\n");
-    for(unsigned i=0;i<max_coupling_range_.size();i++) {
+    for(unsigned int i = 0;i<max_coupling_range_.size();i++) {
       log.printf("    %f / %f\n",max_coupling_range_[i],max_coupling_grad_[i]);
     }
 
@@ -444,18 +468,18 @@ public:
 
     if(b_mean) {
       log.printf("Loaded in averages for coupling constants...\n");
-      for(unsigned i=0;i<current_coupling_.size();i++) current_coupling_[i] = avg_bias[i] / N;
-      for(unsigned i=0;i<current_coupling_.size();i++) set_coupling_[i] = avg_bias[i] / N;
+      for(unsigned int i = 0;i<current_coupling_.size();i++) current_coupling_[i] = avg_bias[i] / N;
+      for(unsigned int i = 0;i<current_coupling_.size();i++) set_coupling_[i] = avg_bias[i] / N;
     }
 
     log.printf("  with current coupling constants:\n    ");
-    for(unsigned i=0;i<current_coupling_.size();i++) log.printf(" %f",current_coupling_[i]);
+    for(unsigned int i = 0;i<current_coupling_.size();i++) log.printf(" %f",current_coupling_[i]);
     log.printf("\n");
     log.printf("  with initial coupling constants:\n    ");
-    for(unsigned i=0;i<set_coupling_.size();i++) log.printf(" %f",set_coupling_[i]);
+    for(unsigned int i = 0;i<set_coupling_.size();i++) log.printf(" %f",set_coupling_[i]);
     log.printf("\n");
     log.printf("  and final coupling constants:\n    ");
-    for(unsigned i=0;i<target_coupling_.size();i++) log.printf(" %f",target_coupling_[i]);
+    for(unsigned int i = 0;i<target_coupling_.size();i++) log.printf(" %f",target_coupling_[i]);
     log.printf("\n");
 
     in_restart_.close();
@@ -478,11 +502,11 @@ public:
     std::string cv_name;
     out_restart_.printField("time",getTimeStep()*getStep());
 
-    for(unsigned i=0;i<getNumberOfArguments();++i) {
+    for(unsigned int i = 0;i<ncvs_;++i) {
       cv_name = getPntrToArgument(i)->getName();
 
       out_restart_.printField(cv_name + "_center",center_[i]);
-      out_restart_.printField(cv_name + "_init",set_coupling_[i]);
+      out_restart_.printField(cv_name + "_set",set_coupling_[i]);
       out_restart_.printField(cv_name + "_target",target_coupling_[i]);
       out_restart_.printField(cv_name + "_coupling",current_coupling_[i]);
       out_restart_.printField(cv_name + "_maxrange",max_coupling_range_[i]);
@@ -494,7 +518,8 @@ public:
 
 
   void EDS::calculate(){
-    unsigned int ncvs = getNumberOfArguments();
+
+    apply_bias();
 
     //adjust parameters according to EDS recipe
     update_calls_++;
@@ -516,7 +541,7 @@ public:
     //are we ramping to a constant value and not done equilibrating?
     if(update_period_ < 0){
       if(update_calls_ <= fabs(update_period_) && !b_freeze_){
-	for(unsigned i = 0;i < ncvs; ++i)
+	for(unsigned int i = 0;i < ncvs_; ++i)
 	  current_coupling_[i] += (target_coupling_[i]-set_coupling_[i])/fabs(update_period_);
       }
       //make sure we don't reset update calls
@@ -530,7 +555,7 @@ public:
     } else {
       // equilibrating
       //check if we've reached the setpoint
-      for(unsigned i = 0;i < ncvs; ++i) {
+      for(unsigned int i = 0;i < ncvs_; ++i) {
 	if(coupling_rate_[i] == 0 || pow(current_coupling_[i] - set_coupling_[i],2) < pow(coupling_rate_[i],2)) {
 	  b_finished_equil_flag &= 1;
 	}
@@ -543,7 +568,7 @@ public:
 
     //Update max coupling range if not hard
     if(!b_hard_c_range_) {
-      for(unsigned i = 0;i < ncvs; ++i) {
+      for(unsigned int i = 0;i < ncvs_; ++i) {
 	if(fabs(current_coupling_[i])>max_coupling_range_[i]) {
 	  max_coupling_range_[i]*=c_range_increase_f_;
 	  max_coupling_grad_[i]*=c_range_increase_f_;
@@ -566,7 +591,7 @@ public:
     } //close update if
 
     //pass couplings out so they are accessible
-    for(unsigned i=0;i<ncvs;++i){
+    for(unsigned int i = 0;i<ncvs_;++i){
       out_coupling_[i]->set(current_coupling_[i]);
     }
   }
@@ -576,7 +601,7 @@ public:
     double ene = 0;
     double totf2 = 0;
 
-    for(unsigned i = 0; i < getNumberOfArguments(); ++i) {
+    for(unsigned int i = 0; i < ncvs_; ++i) {
       const double cv = difference(i, center_[i], getArgument(i));
       const double m = current_coupling_[i];
       const double f = -m;
@@ -591,41 +616,82 @@ public:
   }
 
   void EDS::update_statistics()  {
-    double delta;
+    double s;
+    std::vector<double> deltas(ncvs_);
     //Welford, West, and Hanso online variance method
-    for(unsigned int i = 0; i < getNumberOfArguments(); ++i)  {
-      delta = difference(i,means_[i],getArgument(i));
-      means_[i] += delta/update_calls_;
-      ssds_[i] += delta*difference(i,means_[i],getArgument(i));
+    for(unsigned int i = 0; i < ncvs_; ++i)  {
+      deltas[i] = difference(i,means_[i],getArgument(i));
+      means_[i] += deltas[i]/update_calls_;
+      if(!b_covar_)
+	ssds_[i] += deltas[i]*difference(i,means_[i],getArgument(i));
+    }
+    if(b_covar_) {
+      for(unsigned int i = 0; i < ncvs_; ++i) {
+	for(unsigned int j = i; j < ncvs_; ++j) {
+	  s = (update_calls_ - 1) * deltas[i] * deltas[j] / update_calls_ / update_calls_ - covar_(i,j) / update_calls_;
+	  covar_(i,j) += s;
+	  //do this so we don't double count
+	  covar_(j,i) = covar_(i,j);
+	}
+      }
     }
   }
 
+  void EDS::reset_statistics() {
+    for(unsigned int i = 0; i < ncvs_; ++i)  {
+      means_[i] = 0;
+      if(!b_covar_)
+	ssds_[i] = 0;
+    }
+    if(b_covar_)
+      for(unsigned int i = 0; i < ncvs_; ++i) 
+	for(unsigned int j = 0; j < ncvs_; ++j) 
+	  covar_(i,j) = 0;
+  }
+
+  void EDS::calc_covar_step_size() {
+    //calulcate step size
+    //uses scale here, which by default is center
+    double tmp;
+    for(unsigned int i = 0; i< ncvs_; ++i){
+      tmp = 0;
+      for(unsigned int j = 0; j < ncvs_; ++j)
+	  tmp += (means_[i] - center_[i]) * covar_(i,j);
+      step_size_[i] = 2 * tmp / kbt_ / scale_[i] * update_calls_ / (update_calls_ - 1);
+    }
+
+  }
+
+  void EDS::calc_ssd_step_size() {
+    double tmp;
+    for(unsigned int i = 0; i< ncvs_; ++i){
+      tmp = 2. * (means_[i] - center_[i]) * ssds_[i] / (update_calls_ - 1);
+      step_size_[i] = tmp / kbt_/scale_[i];
+    }
+  }
 
   void EDS::update_bias()
   {
-    double step_size = 0;
-    double tmp;
-    unsigned int const ncvs = getNumberOfArguments();    
-    for(unsigned i = 0; i< ncvs; ++i){
-      //calulcate step size
-      //uses scale here, which by default is center
-      tmp = 2. * (means_[i]/scale_[i] - 1) * ssds_[i] / (update_calls_ - 1);
-      step_size = tmp / kbt_;
+    if(b_covar_)
+      calc_covar_step_size();
+    else
+      calc_ssd_step_size();
+	
+    for(unsigned int i = 0; i< ncvs_; ++i){
 
       //check if the step_size exceeds maximum possible gradient
-      step_size = copysign(fmin(fabs(step_size), max_coupling_grad_[i]), step_size);
+      step_size_[i] = copysign(fmin(fabs(step_size_[i]), max_coupling_grad_[i]), step_size_[i]);
 
       //reset means/vars
-      means_[i] = 0;
-      ssds_[i] = 0;
+      reset_statistics();
 
       //multidimesional stochastic step
-      if(ncvs == 1 || (rand_.RandU01() < (1. / ncvs) ) ) {
-	coupling_accum_[i] += step_size * step_size;
+      if(ncvs_ == 1 || (rand_.RandU01() < (1. / ncvs_) ) ) {
+	coupling_accum_[i] += step_size_[i] * step_size_[i];
 
 	//equation 5 in White and Voth, JCTC 2014
 	//no negative sign because it's in step_size
-	set_coupling_[i] += max_coupling_range_[i]/sqrt(coupling_accum_[i])*step_size;
+	set_coupling_[i] += max_coupling_range_[i]/sqrt(coupling_accum_[i])*step_size_[i];
 	coupling_rate_[i] = (set_coupling_[i]-current_coupling_[i])/update_period_;
 
       } else {
