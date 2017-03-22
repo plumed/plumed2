@@ -1,4 +1,4 @@
-#! FIELDS time d1_center d1_init d1_target d1_coupling d1_maxrange d1_maxgrad
+#! FIELDS time d1_center d1_set d1_target d1_coupling d1_maxrange d1_maxgrad
 #! SET adaptive  0
 #! SET update_period  -2
 #! SET seed  0
