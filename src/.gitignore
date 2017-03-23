@@ -19,6 +19,7 @@
 !/header.sh
 !/release.sh
 !/imd
+!/isdb
 !/lapack
 !/lib
 !/main
