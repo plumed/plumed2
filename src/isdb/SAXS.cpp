@@ -51,21 +51,39 @@ Structure factors can be either assigned using a polynomial expansion to any ord
 automatically assigned to atoms using the ATOMISTIC flag reading a PDB file, a correction for the water density is automatically added;
 automatically assigned to Martini pseudoatoms usign the MARTINI flag.
 The calculated intensities can be scaled using the SCEXP keywords. This is applied by rescaling the structure factors.
-Experimental reference intensities can be added using the ADDEXPINT and EXPINT flag and keywords.
+Experimental reference intensities can be added using the ADDEXPVALUES and EXPINT flag and keywords.
 
 \par Examples
+in the following example the saxs intensities for a martini model are calculated. structure factors
+are obtained from the pdb file indicated in the MOLINFO.
 
 \verbatim
+MOLINFO STRUCTURE=template.pdb
+
 SAXS ...
 LABEL=saxs
-SCEXP=0.0001
-ATOMS=1-1000
-ATOMISTIC
-QVALUE1=0.01
-QVALUE2=0.02
-QVALUE3=0.03
-QVALUE4=0.04
+ATOMS=1-355
+ADDEXPVALUES
+SCEXP=3920000
+MARTINI
+QVALUE1=0.02 EXPINT1=1.0902
+QVALUE2=0.05 EXPINT2=0.790632
+QVALUE3=0.08 EXPINT3=0.453808
+QVALUE4=0.11 EXPINT4=0.254737
+QVALUE5=0.14 EXPINT5=0.154928
+QVALUE6=0.17 EXPINT6=0.0921503
+QVALUE7=0.2 EXPINT7=0.052633
+QVALUE8=0.23 EXPINT8=0.0276557
+QVALUE9=0.26 EXPINT9=0.0122775
+QVALUE10=0.29 EXPINT10=0.00880634
+QVALUE11=0.32 EXPINT11=0.0137301
+QVALUE12=0.35 EXPINT12=0.0180036
+QVALUE13=0.38 EXPINT13=0.0193374
+QVALUE14=0.41 EXPINT14=0.0210131
+QVALUE15=0.44 EXPINT15=0.0220506
 ... SAXS
+
+PRINT ARG=(saxs\.q_.*),(saxs\.exp_.*) FILE=colvar STRIDE=1
 
 \endverbatim
 
