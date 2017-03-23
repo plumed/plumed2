@@ -99,7 +99,7 @@ private:
   vector<vector<double> >  FF_value;
 
   void getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long double> > &parameter);
-  void calculateASF(const vector<AtomNumber> &atoms, vector<vector<long double> > &FF_tmp, double rho);
+  void calculateASF(const vector<AtomNumber> &atoms, vector<vector<long double> > &FF_tmp, const double rho);
 
 public:
   static void registerKeywords( Keywords& keys );
@@ -760,7 +760,7 @@ void SAXS::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long
   }
 }
 
-void SAXS::calculateASF(const vector<AtomNumber> &atoms, vector<vector<long double> > &FF_tmp, double rho)
+void SAXS::calculateASF(const vector<AtomNumber> &atoms, vector<vector<long double> > &FF_tmp, const double rho)
 {
    enum { H, C, N, O, P, S, NTT };
    map<string, unsigned> AA_map;
