@@ -281,8 +281,8 @@ void SAXS::calculate(){
         const double m_distances = c_distances.modulo();
         const double qdist       = q_list[k]*m_distances;
         const double FFF = FF*FF_value[k][j];
-        double tsq = FFF*sin(qdist)/qdist;
-        double tcq = FFF*cos(qdist);
+        const double tsq = FFF*sin(qdist)/qdist;
+        const double tcq = FFF*cos(qdist);
         const double tmp = (tcq-tsq)/(m_distances*m_distances);
         const Vector dd  = c_distances*tmp;
         dsum         += dd;
