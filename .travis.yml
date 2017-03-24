@@ -55,7 +55,7 @@ matrix:
 # osx serial macports debug variant
   - os: osx
     osx_image: xcode7.3
-    env: PLUMED_MACPORTS="plumed +crystallization +manyrestraints +adjmat"
+    env: PLUMED_MACPORTS="plumed +allmodules"
 # I don't put any mpi variant with macports since it takes too long to compile
 ## This command can be used to allow failures:
 ##  allow_failures:
