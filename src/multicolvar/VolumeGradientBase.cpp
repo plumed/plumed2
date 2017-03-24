@@ -19,6 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
 #include "VolumeGradientBase.h"
 #include "CatomPack.h"
 
@@ -37,6 +39,15 @@ BridgedMultiColvarFunction(ao)
 
 void VolumeGradientBase::requestAtoms( const std::vector<AtomNumber>& atoms ){
   ActionAtomistic::requestAtoms(atoms); bridgeVariable=3*atoms.size();
+  std::map<std::string,bool> checklabs; Dependencies dd( getDependencies() );
+  for(Dependencies::iterator p=dd.begin();p!=dd.end();++p) checklabs.insert(std::pair<std::string,bool>((*p)->getLabel(),false)); 
+  for(ActionSet::const_iterator p=plumed.getActionSet().begin();p!=plumed.getActionSet().end();++p){
+      if( (*p)->getLabel()==getPntrToMultiColvar()->getLabel() ) break;
+      if( checklabs.count((*p)->getLabel()) ) checklabs[(*p)->getLabel()]=true;
+  }
+  for(std::map<std::string,bool>::iterator p=checklabs.begin();p!=checklabs.end();++p){
+     if( !p->second ) error("the input for the virtual atoms used in the input for this action must appear in the input file before the input multicolvar");
+  }
   addDependency( getPntrToMultiColvar() ); 
   tmpforces.resize( 3*atoms.size()+9 );
 }
