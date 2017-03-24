@@ -25,6 +25,8 @@
 
 #include <cstdio>
 #include <iostream>
+#include <vector>
+#include <algorithm>
 
 /*
 Different clocks can be used
@@ -147,9 +149,13 @@ std::ostream& Stopwatch::log(std::ostream&os)const{
   buffer[0]=0;
   for(unsigned i=0;i<40;i++) os<<" ";
   os<<"      Cycles        Total      Average      Minumum      Maximum\n";
-  for(map<string,Watch>::const_iterator it=watches.begin();it!=watches.end();++it){
-    const Watch&t((*it).second);
-    std::string name((*it).first);
+
+  std::vector<std::string> names;
+  for(const auto & it : watches) names.push_back(it.first);
+  std::sort(names.begin(),names.end());
+
+  for(const auto & name : names){
+    const Watch&t(watches.find(name)->second);
     os<<name;
     for(unsigned i=name.length();i<40;i++) os<<" ";
     std::sprintf(buffer,"%12u %12.6f %12.6f %12.6f %12.6f\n", t.cycles, double(t.total), double(t.total/t.cycles), double(t.min),double(t.max));

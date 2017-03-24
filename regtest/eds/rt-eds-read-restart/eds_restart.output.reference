@@ -1,0 +1,6 @@
+#! FIELDS time d1_center d1_set d1_target d1_coupling d1_maxrange d1_maxgrad
+#! SET adaptive  0
+#! SET update_period  0
+#! SET seed  0
+#! SET kbt              2.49433863
+                      0                      1    -0.3691917906066873                      0    -0.3691917906066873      7.483015889999999           0.1496603178

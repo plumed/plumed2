@@ -221,9 +221,7 @@ class SparseGrid : public Grid
 {
 
  std::map<index_t,double> map_;
- typedef std::map<index_t,double>::const_iterator iterator;
  std::map< index_t,std::vector<double> > der_;
- typedef std::map<index_t,std::vector<double> >::const_iterator iterator_der;
  
  protected:
  void clear(); 

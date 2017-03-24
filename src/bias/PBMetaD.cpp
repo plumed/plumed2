@@ -310,7 +310,7 @@ void PBMetaD::registerKeywords(Keywords& keys){
   keys.add("optional","ADAPTIVE","use a geometric (=GEOM) or diffusion (=DIFF) based hills width scheme. Sigma is one number that has distance units or timestep dimensions");
   keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
-  keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with other WALKERS_* options");
+  keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with WALKERS_* options other than WALKERS_DIR");
   keys.use("RESTART");
   keys.use("UPDATE_FROM");
   keys.use("UPDATE_UNTIL");
@@ -339,7 +339,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
 PLUMED_BIAS_INIT(ao),
 grid_(false), height0_(std::numeric_limits<double>::max()),
 biasf_(1.0), kbt_(0.0), stride_(0), wgridstride_(0), welltemp_(false),
-mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1),
+mw_n_(1), mw_dir_(""), mw_id_(0), mw_rstride_(1),
 walkers_mpi(false), mpi_nw_(0),
 adaptive_(FlexibleBin::none),
 isFirstStep(true)
@@ -555,10 +555,11 @@ isFirstStep(true)
     log.printf("  %d multiple walkers active\n",mw_n_);
     log.printf("  walker id %d\n",mw_id_);
     log.printf("  reading stride %d\n",mw_rstride_);
-    log.printf("  directory with hills files %s\n",mw_dir_.c_str());
+    if(mw_dir_!="")log.printf("  directory with hills files %s\n",mw_dir_.c_str());
   } else {
     if(walkers_mpi) {
       log.printf("  Multiple walkers active using MPI communnication\n"); 
+      if(mw_dir_!="")log.printf("  directory with hills files %s\n",mw_dir_.c_str());
       if(comm.Get_rank()==0){
         // Only root of group can communicate with other walkers
         mpi_nw_ = multi_sim_comm.Get_size();
@@ -668,11 +669,22 @@ isFirstStep(true)
     for(unsigned i=0;i<hillsfname.size();++i){
       unsigned k=j*hillsfname.size()+i;
       string fname;
-      if(mw_n_>1) {
-        stringstream out; out << j;
-        fname = mw_dir_+"/"+hillsfname[i]+"."+out.str();
+      if(mw_dir_!="") {
+        if(mw_n_>1) {
+          stringstream out; out << j;
+          fname = mw_dir_+"/"+hillsfname[i]+"."+out.str();
+        } else if(walkers_mpi) {
+          fname = mw_dir_+"/"+hillsfname[i];
+        } else {
+          fname = hillsfname[i];
+        }
       } else {
-        fname = hillsfname[i];
+        if(mw_n_>1) {
+          stringstream out; out << j;
+          fname = hillsfname[i]+"."+out.str();
+        } else {
+          fname = hillsfname[i];
+        }
       }
       IFile *ifile = new IFile();
       ifile->link(*this);

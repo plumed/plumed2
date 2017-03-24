@@ -87,9 +87,9 @@ public:
   void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
   void applyBridgeForces( const std::vector<double>& bb );
   Vector getCentralAtomPos( const unsigned& curr );
-  CatomPack getCentralAtomPack( const unsigned& basn, const unsigned& curr );
   void normalizeVector( std::vector<double>& vals ) const ;
   void normalizeVectorDerivatives( MultiValue& myvals ) const ;
+  void getCentralAtomPack( const unsigned& basn, const unsigned& curr, CatomPack& mypack );
 };
 
 inline

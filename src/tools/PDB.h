@@ -26,11 +26,12 @@
 #include "Vector.h"
 #include <vector>
 #include <string>
-#include "Log.h"
 #include <map>
 
 
 namespace PLMD{
+
+class Log;
 
 /// Minimalistic pdb parser.
 /// Contain positions, atomic indexes, occupancy and beta.

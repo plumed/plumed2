@@ -75,16 +75,16 @@ MoleculeOrientation::MoleculeOrientation( const ActionOptions& ao ):
 Action(ao),
 VectorMultiColvar(ao)
 {
-  int natoms=-1; std::vector<AtomNumber> all_atoms;
-  readAtomsLikeKeyword("MOL",natoms,all_atoms); 
-  nvectors = std::floor( natoms / 2 );
-  if( natoms%2!=0 && 2*nvectors+1!=natoms ) error("number of atoms in molecule specification is wrong.  Should be two or three.");
+  std::vector<AtomNumber> all_atoms;
+  readAtomsLikeKeyword("MOL",-1,all_atoms); 
+  nvectors = std::floor( ablocks.size() / 2 );
+  if( ablocks.size()%2!=0 && 2*nvectors+1!=ablocks.size() ) error("number of atoms in molecule specification is wrong.  Should be two or three.");
 
   if( all_atoms.size()==0 ) error("No atoms were specified");
   setVectorDimensionality( 3*nvectors ); setupMultiColvarBase( all_atoms );
 
-  if( natoms==2*nvectors+1  ){
-    std::vector<bool> catom_ind(natoms, false); catom_ind[natoms-1]=true;
+  if( ablocks.size()==2*nvectors+1  ){
+    std::vector<bool> catom_ind(ablocks.size(), false); catom_ind[ablocks.size()-1]=true;
     setAtomsForCentralAtom( catom_ind );
   } 
 }

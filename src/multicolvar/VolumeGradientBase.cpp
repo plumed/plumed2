@@ -39,14 +39,14 @@ BridgedMultiColvarFunction(ao)
 
 void VolumeGradientBase::requestAtoms( const std::vector<AtomNumber>& atoms ){
   ActionAtomistic::requestAtoms(atoms); bridgeVariable=3*atoms.size();
-  std::map<std::string,bool> checklabs; Dependencies dd( getDependencies() );
-  for(Dependencies::iterator p=dd.begin();p!=dd.end();++p) checklabs.insert(std::pair<std::string,bool>((*p)->getLabel(),false)); 
-  for(ActionSet::const_iterator p=plumed.getActionSet().begin();p!=plumed.getActionSet().end();++p){
-      if( (*p)->getLabel()==getPntrToMultiColvar()->getLabel() ) break;
-      if( checklabs.count((*p)->getLabel()) ) checklabs[(*p)->getLabel()]=true;
+  std::map<std::string,bool> checklabs; 
+  for(const auto & p : getDependencies() ) checklabs.insert(std::pair<std::string,bool>(p->getLabel(),false)); 
+  for(const auto & p : plumed.getActionSet() ){
+      if( p->getLabel()==getPntrToMultiColvar()->getLabel() ) break;
+      if( checklabs.count(p->getLabel()) ) checklabs[p->getLabel()]=true;
   }
-  for(std::map<std::string,bool>::iterator p=checklabs.begin();p!=checklabs.end();++p){
-     if( !p->second ) error("the input for the virtual atoms used in the input for this action must appear in the input file before the input multicolvar");
+  for(const auto & p : checklabs ){
+     if( !p.second ) error("the input for the virtual atoms used in the input for this action must appear in the input file before the input multicolvar");
   }
   addDependency( getPntrToMultiColvar() ); 
   tmpforces.resize( 3*atoms.size()+9 );
@@ -76,7 +76,7 @@ void VolumeGradientBase::setNumberInVolume( const unsigned& ivol, const unsigned
   if( !mcolv->weightHasDerivatives ){
       outvals.setValue(ivol, weight ); 
       if( derivativesAreRequired() ){
-         CatomPack catom( mcolv->getCentralAtomPack( 0, curr ) );
+         CatomPack catom; mcolv->getCentralAtomPack( 0, curr, catom );
          for(unsigned i=0;i<catom.getNumberOfAtomsWithDerivatives();++i){
              unsigned jatom=3*catom.getIndex(i);
              outvals.addDerivative( ivol, jatom+0, catom.getDerivative(i,0,wdf) );
@@ -97,7 +97,7 @@ void VolumeGradientBase::setNumberInVolume( const unsigned& ivol, const unsigned
       double ww=outvals.get(0); outvals.setValue(ivol,ww*weight);
       if( derivativesAreRequired() ){
          plumed_merror("This needs testing");
-         CatomPack catom( mcolv->getCentralAtomPack( 0, curr ) );
+         CatomPack catom; mcolv->getCentralAtomPack( 0, curr, catom );
          for(unsigned i=0;i<catom.getNumberOfAtomsWithDerivatives();++i){
              unsigned jatom=3*catom.getIndex(i);
              outvals.addDerivative( ivol, jatom+0, weight*outvals.getDerivative(ivol,jatom+0) + ww*catom.getDerivative(i,0,wdf) );
@@ -117,7 +117,7 @@ void VolumeGradientBase::setNumberInVolume( const unsigned& ivol, const unsigned
       double ww=outvals.get(0); outvals.setValue(ivol,ww*weight);
       if( derivativesAreRequired() ){
          plumed_merror("This needs testing");
-         CatomPack catom( mcolv->getCentralAtomPack( 0, curr ) ); 
+         CatomPack catom; mcolv->getCentralAtomPack( 0, curr, catom ); 
          for(unsigned i=0;i<catom.getNumberOfAtomsWithDerivatives();++i){
              unsigned jatom=3*catom.getIndex(i);
              outvals.addDerivative( ivol, jatom+0, ww*catom.getDerivative(i,0,wdf) );

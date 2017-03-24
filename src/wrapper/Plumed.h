@@ -58,6 +58,8 @@
   In the C and FORTRAN interfaces, all the routines are named plumed_*, to
   avoid potential name clashes. Notice that the entire plumed library
   is implemented in C++, and it is hidden inside the PLMD namespace.
+  If the used C++ compiler supports C++11, PLMD::Plumed object defines move semantics
+  so as to be usable in STL containers. That is, you can declare a std::vector<PLMD::Plumed>.
 
   Handlers to the plumed object can be converted among different representations,
   to allow inter-operability among languages. In C, there are tools to convert
@@ -433,6 +435,25 @@ private:
 */
   Plumed&operator=(const Plumed&);
 public:
+/*
+  PLUMED 2.4 requires a C++11 compiler.
+  Anyway, since Plumed.h file might be redistributed with other codes
+  and it should be possible to combine it with earlier PLUMED versions,
+  we here explicitly check if C+11 is available before enabling move semantics.
+  This could still create problems if a compiler 'cheats', setting  __cplusplus > 199711L
+  but not supporting move semantics. Hopefully will not happen!
+*/
+#if __cplusplus > 199711L
+/** Move constructor.
+  Only if move semantics is enabled.
+  It allows storing PLMD::Plumed objects in STL containers.
+*/
+  Plumed(Plumed&&);
+/** Move assignment.
+  Only if move semantics is enabled.
+*/
+  Plumed& operator=(Plumed&&);
+#endif
 /**
    Retrieve the C plumed structure for this object
 */
@@ -487,6 +508,21 @@ Plumed::Plumed(plumed p):
   main(p),
   reference(true)
 {}
+
+#if __cplusplus > 199711L
+inline
+Plumed::Plumed(Plumed&& p):
+  main(p.main),
+  reference(p.reference)
+{}
+
+inline
+Plumed& Plumed::operator=(Plumed&& p){
+  main=p.main;
+  reference=p.reference;
+  return *this;
+}
+#endif
 
 inline
 Plumed::operator plumed()const{

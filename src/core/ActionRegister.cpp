@@ -32,7 +32,7 @@ namespace PLMD{
 ActionRegister::~ActionRegister(){
   if(m.size()>0){
     string names="";
-    for(mIterator p=m.begin();p!=m.end();++p)names+=p->first+" ";
+    for(const auto & p : m) names+=p.first+" ";
     std::cerr<<"WARNING: Directive "+ names +" has not been properly unregistered. This might lead to memory leak!!\n";
   }
 }
@@ -43,7 +43,7 @@ ActionRegister& actionRegister(){
 }
 
 void ActionRegister::remove(creator_pointer f){
-  for(mIterator p=m.begin();p!=m.end();++p){
+  for(auto p=m.begin();p!=m.end();++p){
     if((*p).second==f){
       m.erase(p); break;
     }
@@ -113,8 +113,7 @@ bool ActionRegister::printTemplate( const std::string& action, bool include_opti
 
 std::ostream & operator<<(std::ostream &log,const ActionRegister&ar){
   vector<string> s;
-  for(ActionRegister::const_mIterator it=ar.m.begin();it!=ar.m.end();++it)
-    s.push_back((*it).first);
+  for(const auto & it : ar.m) s.push_back(it.first);
   sort(s.begin(),s.end());
   for(unsigned i=0;i<s.size();i++) log<<"  "<<s[i]<<"\n";
   if(!ar.disabled.empty()){
