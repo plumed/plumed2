@@ -133,9 +133,7 @@ script:
   - if test "$PLUMED_CXX" ; then make install prefix="$HOME/opt" ; fi
 
 # build using macports
-# this is required for some misterious reason:
-  - if test -n "$PLUMED_MACPORTS" ; then sudo port install flex +universal ; fi
-  - if test -n "$PLUMED_MACPORTS" ; then sudo port install $PLUMED_MACPORTS ; fi
+  - if test -n "$PLUMED_MACPORTS" ; then sudo port -N install $PLUMED_MACPORTS ; fi
 
 # TEST:
   - if test "$VALGRIND" == yes ; then OPT=valgrind ; else OPT="" ; fi

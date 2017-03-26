@@ -59,6 +59,8 @@ if {[mpi_variant_isset]} {
 
 variant matheval description {Enable libmatheval} {
   configure.args-replace --disable-matheval --enable-matheval
+# this is needed due to a problem with libmatheval:
+  depends_lib-append port:flex
   depends_lib-append port:libmatheval
 }
 
