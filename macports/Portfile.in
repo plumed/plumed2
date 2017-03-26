@@ -7,6 +7,7 @@ name                plumed
 PortGroup           mpi 1.0
 PortGroup           linear_algebra 1.0
 PortGroup           debug 1.0
+PortGroup           cxx11 1.1
 
 version             @_VERSION_@
 revision            @_REVISION_@
