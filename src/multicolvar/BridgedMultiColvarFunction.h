@@ -87,6 +87,8 @@ public:
   void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
   void applyBridgeForces( const std::vector<double>& bb );
   Vector getCentralAtomPos( const unsigned& curr );
+  void normalizeVector( std::vector<double>& vals ) const ;
+  void normalizeVectorDerivatives( MultiValue& myvals ) const ;
   void getCentralAtomPack( const unsigned& basn, const unsigned& curr, CatomPack& mypack );
 };
 
@@ -128,6 +130,16 @@ Vector BridgedMultiColvarFunction::getCentralAtomPos( const unsigned& curr ){
 inline
 AtomNumber BridgedMultiColvarFunction::getAbsoluteIndexOfCentralAtom(const unsigned& i) const {
   return mycolv->getAbsoluteIndexOfCentralAtom(i); 
+}
+
+inline
+void BridgedMultiColvarFunction::normalizeVector( std::vector<double>& vals ) const {
+  mycolv->normalizeVector( vals );
+}
+
+inline
+void BridgedMultiColvarFunction::normalizeVectorDerivatives( MultiValue& myvals ) const {
+  mycolv->normalizeVectorDerivatives( myvals );
 }
 
 }

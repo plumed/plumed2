@@ -20,6 +20,8 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "VolumeGradientBase.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
 #include "CatomPack.h"
 
 namespace PLMD {
@@ -37,6 +39,15 @@ BridgedMultiColvarFunction(ao)
 
 void VolumeGradientBase::requestAtoms( const std::vector<AtomNumber>& atoms ){
   ActionAtomistic::requestAtoms(atoms); bridgeVariable=3*atoms.size();
+  std::map<std::string,bool> checklabs; 
+  for(const auto & p : getDependencies() ) checklabs.insert(std::pair<std::string,bool>(p->getLabel(),false)); 
+  for(const auto & p : plumed.getActionSet() ){
+      if( p->getLabel()==getPntrToMultiColvar()->getLabel() ) break;
+      if( checklabs.count(p->getLabel()) ) checklabs[p->getLabel()]=true;
+  }
+  for(const auto & p : checklabs ){
+     if( !p.second ) error("the input for the virtual atoms used in the input for this action must appear in the input file before the input multicolvar");
+  }
   addDependency( getPntrToMultiColvar() ); 
   tmpforces.resize( 3*atoms.size()+9 );
 }
