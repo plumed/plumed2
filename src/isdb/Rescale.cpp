@@ -53,8 +53,9 @@ class Rescale : public bias::Bias
   vector<double> expo_;
   vector<unsigned> shared_;
   unsigned nores_;
-  // print bias
+  // bias
   unsigned int   Biasstride_;
+  unsigned int   Biaspace_;
   string         Biasfilename_;
   bool           first_bias_;
   OFile          Biasfile_;
@@ -104,6 +105,7 @@ void Rescale::registerKeywords(Keywords& keys){
   keys.add("optional","NOT_RESCALED", "these last N arguments will not be rescaled");
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_STRIDE","MC stride");
+  keys.add("optional","PACE", "Pace for adding bias, in MC stride unit");
   componentsAreNotOptional(keys);
   keys.addOutputComponent("igamma",  "default","gamma parameter");
   keys.addOutputComponent("accgamma","default","MC acceptance for gamma");
@@ -112,7 +114,7 @@ void Rescale::registerKeywords(Keywords& keys){
 
 Rescale::Rescale(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao), 
-nores_(0), first_bias_(true),
+nores_(0), Biaspace_(1), first_bias_(true),
 MCsteps_(1), MCstride_(1), MCfirst_(-1), MCaccgamma_(0)
 {
   // set up replica stuff 
@@ -185,6 +187,10 @@ MCsteps_(1), MCstride_(1), MCfirst_(-1), MCaccgamma_(0)
   parse("MC_STRIDE",MCstride_);
   // adjust for multiple-time steps
   MCstride_ *= getStride();
+  // read bias deposition pace
+  parse("PACE", Biaspace_);
+  // multiply by MCstride
+  Biaspace_ *= MCstride_;
 
   // get temperature
   double temp=0.0;
@@ -331,10 +337,6 @@ void Rescale::doMonteCarlo(unsigned igamma, double oldE,
 
  // set the value of gamma into passMap
  plumed.passMap[selector_]=static_cast<double>(igamma); 
- 
- // add well-tempered like bias
- double kbDT = kbt_ * ( biasf_ - 1.0 );
- bias_[igamma] += w0_ * exp(-bias_[igamma] / kbDT);
 }
 
 void Rescale::print_bias(long int step)
@@ -419,11 +421,21 @@ void Rescale::calculate()
   double accgamma = static_cast<double>(MCaccgamma_) / static_cast<double>(MCsteps_) / MCtrials;
   getPntrToComponent("accgamma")->set(accgamma);
 
+  // do MC at the right time step
+  if(step%MCstride_==0&&!getExchangeStep()) doMonteCarlo(igamma, ene, args, bargs);
+  
+  // add well-tempered like bias
+  if(step%Biaspace_==0){
+     // get updated igamma
+     unsigned igamma = static_cast<unsigned>(plumed.passMap[selector_]);
+     // add "Gaussian"
+     double kbDT = kbt_ * ( biasf_ - 1.0 );
+     bias_[igamma] += w0_ * exp(-bias_[igamma] / kbDT);
+  }
+  
   // print bias
   if(step%Biasstride_==0) print_bias(step);
 
-  // do MC at the right time step
-  if(step%MCstride_==0&&!getExchangeStep()) doMonteCarlo(igamma, ene, args, bargs);
 }
 
 
