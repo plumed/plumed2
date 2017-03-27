@@ -101,7 +101,7 @@ class Stopwatch{
 /// Class Stopwatch contains a collection of them
   class Watch{
   public:
-    std::chrono::time_point<std::chrono::system_clock> lastStart;
+    std::chrono::time_point<std::chrono::high_resolution_clock> lastStart;
     long long int total = 0;
     long long int lap = 0;
     long long int max = 0;
