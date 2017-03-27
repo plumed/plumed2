@@ -228,7 +228,12 @@ double TopologyMatrix::compute( const unsigned& tindex, multicolvar::AtomValuePa
   // Calculate whether or not atoms 1 and 2 are within cutoff (can use delta here as pbc are done in atom setup)
   Vector d1 = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) ); double d1_len = d1.modulo();
   d1 = d1 / d1_len;  // Convert vector into director
-  for(unsigned i=2;i<myatoms.getNumberOfAtoms();++i) calculateForThreeAtoms( i, d1, d1_len, bead, myatoms );
+  AtomNumber a1 = myatoms.getAbsoluteIndex( 0 ); 
+  AtomNumber a2 = myatoms.getAbsoluteIndex( 1 ); 
+  for(unsigned i=2;i<myatoms.getNumberOfAtoms();++i){
+      AtomNumber a3 = myatoms.getAbsoluteIndex( i ); 
+      if( a3!=a1 && a3!=a2 ) calculateForThreeAtoms( i, d1, d1_len, bead, myatoms );
+  }
   // std::vector<double> binvals( 1+maxbins ); for(unsigned i=1;i<maxbins;++i) binvals[i]=myatoms.getValue(i);
   // unsigned ii; double fdf;
   //std::cout<<"HELLO DENSITY "<<myatoms.getIndex(0)<<" "<<myatoms.getIndex(1)<<" "<<transformStoredValues( binvals, ii, fdf )<<std::endl;
