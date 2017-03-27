@@ -10,6 +10,11 @@ Changes from version 2.3 which are relevant for users:
     - gcc 4.8
     - clang 3.3
     - intel 15
+    Since the number of c++11 features that we use is limited, older compilers might work as well.
+- New modules:
+  - A new EDS module have been included, contributed by Glen Hocky and Andrew White.
+    This module implements the following methods:
+    - \ref EDS
 - New collective variables:
   -  \ref DIMER (thanks to Marco Nava).
 - Other changes:
