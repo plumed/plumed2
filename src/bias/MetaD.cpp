@@ -307,6 +307,27 @@ The header in the file dist.dat for this calculation would read:
 #! SET periodic_d1 false
 \endverbatim
 
+Notice that BIASFACTOR can also be chosen as equal to 1. In this case one will perform
+unbiased sampling. Instead of using HEIGHT, one should provide the TAU parameter.
+\verbatim
+d: DISTANCE ATOMS=3,5
+METAD ARG=d SIGMA=0.1 TAU=4.0 TEMP=300 PACE=100 BIASFACTOR=1.0
+\endverbatim
+The HILLS file obtained will still work with `plumed sum_hills` so as to plot a free-energy.
+The case where this makes sense is probably that of RECT simulations.
+
+Regarding RECT simulations, you can also use the RECT keyword so as to avoid using multiple input files.
+For instance, a single input file will be
+\verbatim
+d: DISTANCE ATOMS=3,5
+METAD ARG=d SIGMA=0.1 TAU=4.0 TEMP=300 PACE=100 RECT=1.0,1.5,2.0,3.0
+\endverbatim
+The number of elements in the RECT array should be equal to the number of replicas.
+
+
+
+
+
 */
 //+ENDPLUMEDOC
 
@@ -461,7 +482,7 @@ PLUMED_BIAS_INIT(ao),
 // Grid stuff initialization
 BiasGrid_(NULL), wgridstride_(0), grid_(false),
 // Metadynamics basic parameters
-height0_(std::numeric_limits<double>::max()), biasf_(1.0), dampfactor_(0.0), TargetGrid_(NULL),
+height0_(std::numeric_limits<double>::max()), biasf_(-1.0), dampfactor_(0.0), TargetGrid_(NULL),
 kbt_(0.0),
 stride_(0), welltemp_(false),
 // Other stuff
@@ -549,13 +570,13 @@ last_step_warn_grid(0)
   } else {
     parse("BIASFACTOR",biasf_);
   }
-  if( biasf_<1.0 ) error("well tempered bias factor is nonsensical");
+  if( biasf_<1.0  && biasf_!=-1.0) error("well tempered bias factor is nonsensical");
   parse("DAMPFACTOR",dampfactor_);
   double temp=0.0;
   parse("TEMP",temp);
   if(temp>0.0) kbt_=plumed.getAtoms().getKBoltzmann()*temp;
   else kbt_=plumed.getAtoms().getKbT();
-  if(biasf_>1.0){
+  if(biasf_>=1.0){
     if(kbt_==0.0) error("Unless the MD engine passes the temperature to plumed, with well-tempered metad you must specify it using TEMP");
     welltemp_=true;
   }
@@ -573,7 +594,10 @@ last_step_warn_grid(0)
     else if(dampfactor_>0.0) tau=(kbt_*dampfactor_)/height0_*getTimeStep()*stride_;
   } else {
     if(height0_!=std::numeric_limits<double>::max()) error("At most one between HEIGHT and TAU should be specified");
-    if(welltemp_) height0_=(kbt_*(biasf_-1.0))/tau*getTimeStep()*stride_;
+    if(welltemp_){
+      if(biasf_!=1.0) height0_=(kbt_*(biasf_-1.0))/tau*getTimeStep()*stride_;
+      else           height0_=kbt_/tau*getTimeStep()*stride_; // special case for gamma=1
+    }
     else if(dampfactor_>0.0) height0_=(kbt_*dampfactor_)/tau*getTimeStep()*stride_;
     else error("TAU only makes sense in well-tempered or damped metadynamics");
   }
@@ -966,7 +990,8 @@ void MetaD::readGaussians(IFile *ifile)
  
   while(scanOneHill(ifile,tmpvalues,center,sigma,height,multivariate)){;
     nhills++;
-    if(welltemp_){height*=(biasf_-1.0)/biasf_;}
+// note that for gamma=1 we store directly -F
+    if(welltemp_ && biasf_>1.0){height*=(biasf_-1.0)/biasf_;}
     addGaussian(Gaussian(center,sigma,height,multivariate));
   }     
   log.printf("      %d Gaussians read\n",nhills);
@@ -984,7 +1009,8 @@ bool MetaD::readChunkOfGaussians(IFile *ifile, unsigned n)
   for(unsigned j=0;j<getNumberOfArguments();++j) tmpvalues.push_back( Value( this, getPntrToArgument(j)->getName(), false ) ); 
  
   while(scanOneHill(ifile,tmpvalues,center,sigma,height,multivariate)){;
-    if(welltemp_) height*=(biasf_-1.0)/biasf_; 
+// note that for gamma=1 we store directly -F
+    if(welltemp_ && biasf_>1.0) height*=(biasf_-1.0)/biasf_; 
     addGaussian(Gaussian(center,sigma,height,multivariate));
     if(nhills==n){
       log.printf("      %u Gaussians read\n",nhills);
@@ -1039,7 +1065,8 @@ void MetaD::writeGaussian(const Gaussian& hill, OFile&file)
       file.printField("sigma_"+getPntrToArgument(i)->getName(),hill.sigma[i]);
   }
   double height=hill.height;
-  if(welltemp_) height*=biasf_/(biasf_-1.0); 
+// note that for gamma=1 we store directly -F
+  if(welltemp_ && biasf_>1.0) height*=biasf_/(biasf_-1.0); 
   file.printField("height",height).printField("biasf",biasf_);
   if(mw_n_>1) file.printField("clock",int(std::time(0)));
   file.printField();
@@ -1273,7 +1300,12 @@ double MetaD::getHeight(const vector<double>& cv)
   double height=height0_;
   if(welltemp_){
     double vbias = getBiasAndDerivatives(cv);
-    height = height0_*exp(-vbias/(kbt_*(biasf_-1.0)));
+    if(biasf_>1.0){
+      height = height0_*exp(-vbias/(kbt_*(biasf_-1.0)));
+    } else {
+// notice that if gamma=1 we store directly -F
+      height = height0_*exp(-vbias/kbt_);
+    }
   } 
   if(dampfactor_>0.0){
     plumed_assert(BiasGrid_);
@@ -1300,7 +1332,13 @@ void MetaD::calculate()
     cv[i]=getArgument(i);
     der[i]=0.;
   }
-  const double ene = getBiasAndDerivatives(cv,der);
+  double ene = getBiasAndDerivatives(cv,der);
+// special case for gamma=1.0
+  if(biasf_==1.0){
+    ene=0.0;
+    for(unsigned i=0;i<getNumberOfArguments();++i) {der[i]=0.0;}
+  }
+
   setBias(ene);
   if( rewf_grid_.size()>0 ) getPntrToComponent("rbias")->set(ene - reweight_factor);
   // calculate the acceleration factor
@@ -1361,7 +1399,8 @@ void MetaD::update(){
         // Communicate (only root)
         multi_sim_comm.Allgather(cv,all_cv);
         multi_sim_comm.Allgather(thissigma,all_sigma);
-        multi_sim_comm.Allgather(height*(biasf_!=1.0?biasf_/(biasf_-1.0):1.0),all_height);
+// notice that if gamma=1 we store directly -F so this scaling is not necessary:
+        multi_sim_comm.Allgather(height*(biasf_>1.0?biasf_/(biasf_-1.0):1.0),all_height);
         multi_sim_comm.Allgather(int(multivariate),all_multivariate);
       }
       // Share info with group members
@@ -1375,7 +1414,8 @@ void MetaD::update(){
         std::vector<double> sigma_now(thissigma.size());
         for(unsigned j=0;j<cv.size();j++) cv_now[j]=all_cv[i*cv.size()+j];
         for(unsigned j=0;j<thissigma.size();j++) sigma_now[j]=all_sigma[i*thissigma.size()+j];
-        Gaussian newhill=Gaussian(cv_now,sigma_now,all_height[i]*(biasf_!=1.0?(biasf_-1.0)/biasf_:1.0),all_multivariate[i]);
+// notice that if gamma=1 we store directly -F so this scaling is not necessary:
+        Gaussian newhill=Gaussian(cv_now,sigma_now,all_height[i]*(biasf_>1.0?(biasf_-1.0)/biasf_:1.0),all_multivariate[i]);
         addGaussian(newhill);
         writeGaussian(newhill,hillsOfile_);
       }
@@ -1541,6 +1581,12 @@ bool MetaD::scanOneHill(IFile *ifile,  vector<Value> &tmpvalues, vector<double> 
 void MetaD::computeReweightingFactor()
 {
   if( !welltemp_ ) error("cannot compute the c(t) reweighting factors for non well-tempered metadynamics");
+
+  if(biasf_==1.0){
+// in this case we have no bias, so reweight factor is 1.0
+      getPntrToComponent("rct")->set(1.0);
+      return;
+  }
 
   // Recover the minimum values for the grid
   unsigned ncv=getNumberOfArguments();
