@@ -352,6 +352,7 @@ private:
   int mw_rstride_;
   bool walkers_mpi;
   unsigned mpi_nw_;
+  unsigned mpi_mw_;
   bool acceleration;
   double acc;
   vector<IFile*> ifiles;
@@ -405,6 +406,7 @@ void MetaD::registerKeywords(Keywords& keys){
   keys.add("optional","HEIGHT","the heights of the Gaussian hills. Compulsory unless TAU and either BIASFACTOR or DAMPFACTOR are given");
   keys.add("optional","FMT","specify format for HILLS files (useful for decrease the number of digits in regtests)");
   keys.add("optional","BIASFACTOR","use well tempered metadynamics and use this biasfactor.  Please note you must also specify temp");
+  keys.add("optional","RECT","list of bias factors for all the replicas");
   keys.add("optional","DAMPFACTOR","damp hills with exp(-max(V)/(kbT*DAMPFACTOR)");
   keys.add("optional","TARGET","target to a predefined distribution");
   keys.add("optional","TEMP","the system temperature - this is only needed if you are doing well-tempered metadynamics");
@@ -467,7 +469,7 @@ dp_(NULL), adaptive_(FlexibleBin::none),
 flexbin(NULL),
 // Multiple walkers initialization
 mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1),
-walkers_mpi(false), mpi_nw_(0),
+walkers_mpi(false), mpi_nw_(0), mpi_mw_(0),
 acceleration(false), acc(0.0),
 // Interval initialization
 uppI_(-1), lowI_(-1), doInt_(false),
@@ -536,7 +538,17 @@ last_step_warn_grid(0)
   if(stride_<=0 ) error("frequency for hill addition is nonsensical");
   string hillsfname="HILLS";
   parse("FILE",hillsfname);
-  parse("BIASFACTOR",biasf_);
+  std::vector<double> rect_biasf_;
+  parseVector("RECT",rect_biasf_);
+  if(rect_biasf_.size()>0){
+    int r=0;
+    if(comm.Get_rank()==0) r=multi_sim_comm.Get_rank();
+    comm.Bcast(r,0);
+    biasf_=rect_biasf_[r];
+    log<<"  You are using RECT\n";
+  } else {
+    parse("BIASFACTOR",biasf_);
+  }
   if( biasf_<1.0 ) error("well tempered bias factor is nonsensical");
   parse("DAMPFACTOR",dampfactor_);
   double temp=0.0;
@@ -718,10 +730,12 @@ last_step_warn_grid(0)
       if(comm.Get_rank()==0){
         // Only root of group can communicate with other walkers
         mpi_nw_=multi_sim_comm.Get_size();
+        mpi_mw_=multi_sim_comm.Get_rank();
       }
       // Communicate to the other members of the same group
       // info abount number of walkers and walker index
       comm.Bcast(mpi_nw_,0);
+      comm.Bcast(mpi_mw_,0);
     }
   }
 
@@ -905,6 +919,13 @@ last_step_warn_grid(0)
   const ActionSet&actionSet(plumed.getActionSet());
   for(ActionSet::const_iterator p=actionSet.begin();p!=actionSet.end();++p) if(dynamic_cast<MetaD*>(*p)){ concurrent=true; break; }
   if(concurrent) log<<"  You are using concurrent metadynamics\n";
+  if(rect_biasf_.size()>0){
+    if(walkers_mpi){
+      log<<"  You are using RECT in its 'altruistic' implementation\n";
+    }{
+      log<<"  You are using RECT\n";
+    }
+  }
 
   log<<"  Bibliography "<<plumed.cite("Laio and Parrinello, PNAS 99, 12562 (2002)");
   if(welltemp_) log<<plumed.cite(
@@ -919,8 +940,10 @@ last_step_warn_grid(0)
      "Pratyush and Parrinello, Phys. Rev. Lett. 111, 230602 (2013)");
   if(rewf_grid_.size()>0) log<<plumed.cite(
      "Pratyush and Parrinello, J. Phys. Chem. B, 119, 736 (2015)");
-  if(concurrent) log<<plumed.cite(
+  if(concurrent || rect_biasf_.size()>0) log<<plumed.cite(
      "Gil-Ley and Bussi, J. Chem. Theory Comput. 11, 1077 (2015)");
+  if(rect_biasf_.size()>0 && walkers_mpi) log<<plumed.cite(
+     "Hosek, Toulcova, Bortolato, and Spiwok, J. Phys. Chem. B 120, 2209 (2016)");
   if(targetfilename_.length()>0){
     log<<plumed.cite("White, Dama, and Voth, J. Chem. Theory Comput. 11, 2451 (2015)");
     log<<plumed.cite("Marinelli and Faraldo-Gómez,  Biophys. J. 108, 2779 (2015)");
@@ -1338,7 +1361,7 @@ void MetaD::update(){
         // Communicate (only root)
         multi_sim_comm.Allgather(cv,all_cv);
         multi_sim_comm.Allgather(thissigma,all_sigma);
-        multi_sim_comm.Allgather(height,all_height);
+        multi_sim_comm.Allgather(height*(biasf_!=1.0?biasf_/(biasf_-1.0):1.0),all_height);
         multi_sim_comm.Allgather(int(multivariate),all_multivariate);
       }
       // Share info with group members
@@ -1352,7 +1375,7 @@ void MetaD::update(){
         std::vector<double> sigma_now(thissigma.size());
         for(unsigned j=0;j<cv.size();j++) cv_now[j]=all_cv[i*cv.size()+j];
         for(unsigned j=0;j<thissigma.size();j++) sigma_now[j]=all_sigma[i*thissigma.size()+j];
-        Gaussian newhill=Gaussian(cv_now,sigma_now,all_height[i],all_multivariate[i]);
+        Gaussian newhill=Gaussian(cv_now,sigma_now,all_height[i]*(biasf_!=1.0?(biasf_-1.0)/biasf_:1.0),all_multivariate[i]);
         addGaussian(newhill);
         writeGaussian(newhill,hillsOfile_);
       }
