@@ -173,6 +173,7 @@ private:
   explicit Action(const Action&a);
 /// Assignment operator is disabled (private and unimplemented)
   Action& operator=(const Action&a);
+  int replica_index;
 public:
 /// Check if Action was properly read.
 /// This checks if Action::line is empty. It must be called after
@@ -315,7 +316,7 @@ void Action::parse(const std::string&key,T&t){
   // Now try to read the keyword
   std::string def; 
   bool present=Tools::findKeyword(line,key);
-  bool found=Tools::parse(line,key,t);
+  bool found=Tools::parse(line,key,t,replica_index);
   if(present && !found) error("keyword " + key +" could not be read correctly");
   
   // If it isn't read and it is compulsory see if a default value was specified 
@@ -339,7 +340,7 @@ bool Action::parseNumbered(const std::string&key, const int no, T&t){
 
   // Now try to read the keyword
   std::string num; Tools::convert(no,num);
-  return Tools::parse(line,key+num,t);
+  return Tools::parse(line,key+num,t,replica_index);
 }
 
 template<class T>
@@ -358,7 +359,7 @@ void Action::parseVector(const std::string&key,std::vector<T>&t){
   // Now try to read the keyword
   std::string def; T val;
   bool present=Tools::findKeyword(line,key);
-  bool found=Tools::parseVector(line,key,t);
+  bool found=Tools::parseVector(line,key,t,replica_index);
   if(present && !found) error("keyword " + key +" could not be read correctly");
 
   // Check vectors size is correct (not if this is atoms or ARG)
@@ -394,7 +395,7 @@ bool Action::parseNumberedVector(const std::string&key, const int no, std::vecto
   if(size==0) skipcheck=true;
   std::string num; Tools::convert(no,num);
   bool present=Tools::findKeyword(line,key);
-  bool found=Tools::parseVector(line,key+num,t);
+  bool found=Tools::parseVector(line,key+num,t,replica_index);
   if(present && !found) error("keyword " + key +" could not be read correctly");
 
   if(  keywords.style(key,"compulsory") ){
