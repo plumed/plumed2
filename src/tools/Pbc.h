@@ -63,8 +63,6 @@ class Pbc{
 /// a distance vector.
   void buildShifts(std::vector<Vector> shifts[2][2][2])const;
 public:
-/// Perform some check. Useful for debugging.
-  static void test();
 /// Constructor
   Pbc();
 /// Compute modulo of (v2-v1), using or not pbc depending on bool pbc.
