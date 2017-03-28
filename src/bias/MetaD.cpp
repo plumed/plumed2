@@ -373,7 +373,6 @@ private:
   double getHeight(const vector<double>&);
   double getBiasAndDerivatives(const vector<double>&,double* der=NULL);
   double evaluateGaussian(const vector<double>&, const Gaussian&,double* der=NULL);
-  void   finiteDifferenceGaussian(const vector<double>&, const Gaussian&);
   double getGaussianNormalization( const Gaussian& );
   vector<unsigned> getGaussianSupport(const Gaussian&);
   bool   scanOneHill(IFile *ifile,  vector<Value> &v, vector<double> &center, vector<double>  &sigma, double &height, bool &multivariate);
@@ -1141,8 +1140,6 @@ double MetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
     unsigned rank=comm.Get_rank();
     for(unsigned i=rank;i<hills_.size();i+=stride){
       bias+=evaluateGaussian(cv,hills_[i],der);
-      //finite difference test 
-      //finiteDifferenceGaussian(cv,hills_[i]);
     }
     comm.Sum(bias);
     if(der) comm.Sum(der,getNumberOfArguments());
@@ -1431,33 +1428,6 @@ void MetaD::update(){
     }
   } 
   if(getStep()%(stride_*rewf_ustride_)==0 && nowAddAHill && rewf_grid_.size()>0 ) computeReweightingFactor();
-}
-
-void MetaD::finiteDifferenceGaussian(const vector<double>& cv, const Gaussian& hill)
-{
-  log<<"--------- finiteDifferenceGaussian: size "<<cv.size() <<"------------\n";
-  // for each cv
-  // first get the bias and the derivative
-  vector<double> oldder(cv.size()); 
-  vector<double> der(cv.size()); 
-  vector<double> mycv(cv.size()); 
-  mycv=cv; 
-  double step=1.e-6;
-  Random random; 
-  // just displace a tiny bit
-  for(unsigned i=0;i<cv.size();i++) log<<"CV "<<i<<" V "<<mycv[i]<<"\n";
-  for(unsigned i=0;i<cv.size();i++) mycv[i]+=1.e-2*2*(random.RandU01()-0.5);
-  for(unsigned i=0;i<cv.size();i++) log<<"NENEWWCV "<<i<<" V "<<mycv[i]<<"\n";
-  double oldbias=evaluateGaussian(mycv,hill,&oldder[0]);
-  for(unsigned i=0;i<mycv.size();i++){
-    double delta=step*2*(random.RandU01()-0.5);
-    mycv[i]+=delta;
-    double newbias=evaluateGaussian(mycv,hill,&der[0]);		
-    log<<"CV "<<i;
-    log<<" ANAL "<<oldder[i]<<" NUM "<<(newbias-oldbias)/delta<<" DIFF "<<(oldder[i]-(newbias-oldbias)/delta)<<"\n";
-    mycv[i]-=delta;
-  }
-  log<<"--------- END finiteDifferenceGaussian ------------\n";
 }
 
 /// takes a pointer to the file and a template string with values v and gives back the next center, sigma and height 
