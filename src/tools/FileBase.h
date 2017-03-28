@@ -110,8 +110,6 @@ public:
   void        close();
 /// Virtual destructor (allows inheritance)
   virtual ~FileBase();
-/// Runs a small testcase
-  static void test();
 /// Check for error/eof.
   operator bool () const;
 /// Set heavyFlush flag
