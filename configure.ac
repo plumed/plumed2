@@ -178,8 +178,6 @@ PLUMED_CONFIG_ENABLE([molfile_plugins],[molfile-plugins],[use molfile_plugins],[
 PLUMED_CONFIG_ENABLE([external_molfile_plugins],[external-molfile-plugins],[search for external molfile_plugins],[yes])
 PLUMED_CONFIG_ENABLE([matheval],[matheval],[search for matheval],[yes])
 PLUMED_CONFIG_ENABLE([zlib],[zlib],[search for zlib],[yes])
-PLUMED_CONFIG_ENABLE([clock_gettime],[clock-gettime],[search for gettime],[yes])
-PLUMED_CONFIG_ENABLE([gettimeofday],[gettimeofday],[search for gettimeofday],[yes])
 PLUMED_CONFIG_ENABLE([readdir_r],[readdir-r],[search for readdir_r (threadsafe)],[yes])
 PLUMED_CONFIG_ENABLE([cregex],[cregex],[search for C regular expression],[yes])
 PLUMED_CONFIG_ENABLE([dlopen],[dlopen],[search for dlopen],[yes])
@@ -469,12 +467,6 @@ AC_OPENMP
 
 if test $matheval == true ; then
   PLUMED_CHECK_PACKAGE([matheval.h],[evaluator_create],[__PLUMED_HAS_MATHEVAL],[matheval])
-fi
-if test $clock_gettime == true ; then
-  PLUMED_CHECK_PACKAGE([time.h],[clock_gettime],[__PLUMED_HAS_CLOCK_GETTIME],[rt])
-fi
-if test $gettimeofday == true ; then
-  PLUMED_CHECK_PACKAGE([sys/time.h], [gettimeofday], [__PLUMED_HAS_GETTIMEOFDAY])
 fi
 if test $readdir_r == true ; then
   PLUMED_CHECK_PACKAGE([dirent.h],[readdir_r],[__PLUMED_HAS_READDIR_R])

@@ -22,7 +22,7 @@ fi
 rm -fr tmp
 mkdir tmp
 cd tmp
-cp -f ../* .
+cp -f ../* . 2>/dev/null
 
 test -f config || {
   echo "FAILURE: config not found"
@@ -109,19 +109,15 @@ case "$type" in
     echo "FAILURE: in file not present"
     exit 1
   }
-  echo "Run simplemd"
   $mpi $valgrind $plumed simplemd < in > out 2> err
   ;;
 (driver)
-  echo "Run driver"
   $mpi $valgrind $plumed driver $arg > out 2> err
   ;;
 (sum_hills)
-  echo "Run driver"
   $mpi $valgrind $plumed sum_hills $arg > out 2> err
  ;;
 (make)
-  echo "Run Make"
   $plumed info --configuration > Makefile.conf
   $plumed --is-installed || ln -s $($plumed info --root)/src plumed
   cat <($plumed info --configuration) "$($plumed info --root)/src/lib/Plumed.inc.static" ../../../scripts/exe.make > Makefile 
@@ -129,7 +125,6 @@ case "$type" in
   $mpi $valgrind ./exe $arg >> out 2>> err
  ;;
 (plumed)
-  echo "Run plumed"
   $mpi $valgrind $plumed $arg > out 2> err
   ;;
 (*) echo "unknown test type" ; exit 1 ;;
@@ -139,7 +134,6 @@ if type -t plumed_regtest_after 1>/dev/null ; then
   plumed_regtest_after
 fi
 
-echo "Done. Here is the error file:"
 cat err
 
 

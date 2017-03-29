@@ -10,6 +10,11 @@ Changes from version 2.3 which are relevant for users:
     - gcc 4.8
     - clang 3.3
     - intel 15
+    Since the number of c++11 features that we use is limited, older compilers might work as well.
+- New modules:
+  - A new EDS module have been included, contributed by Glen Hocky and Andrew White.
+    This module implements the following methods:
+    - \ref EDS
 - New collective variables:
   -  \ref DIMER (thanks to Marco Nava).
 - Other changes:
@@ -17,6 +22,7 @@ Changes from version 2.3 which are relevant for users:
   - \ref PBMETAD : adaptive gaussians
   - \ref PBMETAD : default names for GRID and FILE (usefull with many collective variables) 
   - \ref IMPLICIT : EEF1-SB implicit solvent solvation energy
+  - Internal molfile implementation has been updated to VMD 1.9.3.
 
 Changes from version 2.3 which are relevant for developers:
   - A few fixes has been made to improve exception safety. Although we still cannot declare
@@ -24,4 +30,5 @@ Changes from version 2.3 which are relevant for developers:
     this made it possible to add a regtest that actually tests erroneous cmd strings
     and erroneous inputs.
   - Due to the required c++11 support, travis-ci test on Ubuntu Precise has been removed.
+  - `gettimeofdate` and `gettime` have been replaced with portable `chrono` classes introduced in c++11.
 */
