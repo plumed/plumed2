@@ -355,28 +355,27 @@ void RDC::calculate()
       for(unsigned r=0;r<N;r+=2)
       {
         const unsigned index=r/2;
-        Vector       distance;
-        if(pbc)      distance = pbcDistance(getPosition(r),getPosition(r+1));
-        else         distance = delta(getPosition(r),getPosition(r+1));
-        const double d    = distance.modulo();
-        const double ind  = 1./d;
-        const double id3  = ind*ind*ind; 
-        const double dmax = id3*max;
-        const double cos_theta = distance[2]*ind;
+        Vector  distance;
+        if(pbc) distance   = pbcDistance(getPosition(r),getPosition(r+1));
+        else    distance   = delta(getPosition(r),getPosition(r+1));
+        const double d2    = distance.modulo2();
+        const double ind   = 1./sqrt(d2);
+        const double ind2  = 1./d2;
+        const double ind3  = ind2*ind; 
+        const double x2    = distance[0]*distance[0]*ind2;
+        const double y2    = distance[1]*distance[1]*ind2;
+        const double z2    = distance[2]*distance[2]*ind2;
+        const double dmax  = ind3*max;
+        const double ddmax = dmax*ind2;
 
-        const double rdc = 0.5*dmax*(3.*cos_theta*cos_theta-1.);
+        const double rdc   = 0.5*dmax*(3.*z2-1.);
+        const double prod_xy = (x2+y2-4.*z2);
+        const double prod_z =  (3.*x2 + 3.*y2 - 2.*z2);
 
-        const double id7  = id3*id3*ind;
-        const double id9  = id7*ind*ind;
-        const double x2=distance[0]*distance[0];
-        const double y2=distance[1]*distance[1];
-        const double z2=distance[2]*distance[2];
-        const double prod = -max*id7*(1.5*x2 +1.5*y2 -6.*z2);
-
-        Vector dRDC;
-        dRDC[0] = prod*distance[0];
-        dRDC[1] = prod*distance[1];
-        dRDC[2] = -max*id9*distance[2]*(4.5*x2*x2 + 4.5*y2*y2 + 1.5*y2*z2 - 3.*z2*z2 + x2*(9.*y2 + 1.5*z2));
+        Vector dRDC = -1.5*ddmax*distance;
+        dRDC[0] *= prod_xy;
+        dRDC[1] *= prod_xy;
+        dRDC[2] *= prod_z;
 
         Value* val=getPntrToComponent(index);
         val->set(rdc);
