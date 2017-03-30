@@ -182,7 +182,7 @@ For users:
 For developers:
 - Macports portile is now tested on travis at every plumed push.
 
-Version 2.2.5
+Version 2.2.5 (coming soon)
 -------------
 See branch \branch{v2.2} on git repository.
 
