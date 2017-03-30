@@ -307,6 +307,27 @@ The header in the file dist.dat for this calculation would read:
 #! SET periodic_d1 false
 \endverbatim
 
+Notice that BIASFACTOR can also be chosen as equal to 1. In this case one will perform
+unbiased sampling. Instead of using HEIGHT, one should provide the TAU parameter.
+\verbatim
+d: DISTANCE ATOMS=3,5
+METAD ARG=d SIGMA=0.1 TAU=4.0 TEMP=300 PACE=100 BIASFACTOR=1.0
+\endverbatim
+The HILLS file obtained will still work with `plumed sum_hills` so as to plot a free-energy.
+The case where this makes sense is probably that of RECT simulations.
+
+Regarding RECT simulations, you can also use the RECT keyword so as to avoid using multiple input files.
+For instance, a single input file will be
+\verbatim
+d: DISTANCE ATOMS=3,5
+METAD ARG=d SIGMA=0.1 TAU=4.0 TEMP=300 PACE=100 RECT=1.0,1.5,2.0,3.0
+\endverbatim
+The number of elements in the RECT array should be equal to the number of replicas.
+
+
+
+
+
 */
 //+ENDPLUMEDOC
 
@@ -352,6 +373,7 @@ private:
   int mw_rstride_;
   bool walkers_mpi;
   unsigned mpi_nw_;
+  unsigned mpi_mw_;
   bool acceleration;
   double acc;
   vector<IFile*> ifiles;
@@ -404,6 +426,7 @@ void MetaD::registerKeywords(Keywords& keys){
   keys.add("optional","HEIGHT","the heights of the Gaussian hills. Compulsory unless TAU and either BIASFACTOR or DAMPFACTOR are given");
   keys.add("optional","FMT","specify format for HILLS files (useful for decrease the number of digits in regtests)");
   keys.add("optional","BIASFACTOR","use well tempered metadynamics and use this biasfactor.  Please note you must also specify temp");
+  keys.add("optional","RECT","list of bias factors for all the replicas");
   keys.add("optional","DAMPFACTOR","damp hills with exp(-max(V)/(kbT*DAMPFACTOR)");
   keys.add("optional","TARGET","target to a predefined distribution");
   keys.add("optional","TEMP","the system temperature - this is only needed if you are doing well-tempered metadynamics");
@@ -458,7 +481,7 @@ PLUMED_BIAS_INIT(ao),
 // Grid stuff initialization
 BiasGrid_(NULL), wgridstride_(0), grid_(false),
 // Metadynamics basic parameters
-height0_(std::numeric_limits<double>::max()), biasf_(1.0), dampfactor_(0.0), TargetGrid_(NULL),
+height0_(std::numeric_limits<double>::max()), biasf_(-1.0), dampfactor_(0.0), TargetGrid_(NULL),
 kbt_(0.0),
 stride_(0), welltemp_(false),
 // Other stuff
@@ -466,7 +489,7 @@ dp_(NULL), adaptive_(FlexibleBin::none),
 flexbin(NULL),
 // Multiple walkers initialization
 mw_n_(1), mw_dir_(""), mw_id_(0), mw_rstride_(1),
-walkers_mpi(false), mpi_nw_(0),
+walkers_mpi(false), mpi_nw_(0), mpi_mw_(0),
 acceleration(false), acc(0.0),
 // Interval initialization
 uppI_(-1), lowI_(-1), doInt_(false),
@@ -535,14 +558,24 @@ last_step_warn_grid(0)
   if(stride_<=0 ) error("frequency for hill addition is nonsensical");
   string hillsfname="HILLS";
   parse("FILE",hillsfname);
-  parse("BIASFACTOR",biasf_);
-  if( biasf_<1.0 ) error("well tempered bias factor is nonsensical");
+  std::vector<double> rect_biasf_;
+  parseVector("RECT",rect_biasf_);
+  if(rect_biasf_.size()>0){
+    int r=0;
+    if(comm.Get_rank()==0) r=multi_sim_comm.Get_rank();
+    comm.Bcast(r,0);
+    biasf_=rect_biasf_[r];
+    log<<"  You are using RECT\n";
+  } else {
+    parse("BIASFACTOR",biasf_);
+  }
+  if( biasf_<1.0  && biasf_!=-1.0) error("well tempered bias factor is nonsensical");
   parse("DAMPFACTOR",dampfactor_);
   double temp=0.0;
   parse("TEMP",temp);
   if(temp>0.0) kbt_=plumed.getAtoms().getKBoltzmann()*temp;
   else kbt_=plumed.getAtoms().getKbT();
-  if(biasf_>1.0){
+  if(biasf_>=1.0){
     if(kbt_==0.0) error("Unless the MD engine passes the temperature to plumed, with well-tempered metad you must specify it using TEMP");
     welltemp_=true;
   }
@@ -560,7 +593,10 @@ last_step_warn_grid(0)
     else if(dampfactor_>0.0) tau=(kbt_*dampfactor_)/height0_*getTimeStep()*stride_;
   } else {
     if(height0_!=std::numeric_limits<double>::max()) error("At most one between HEIGHT and TAU should be specified");
-    if(welltemp_) height0_=(kbt_*(biasf_-1.0))/tau*getTimeStep()*stride_;
+    if(welltemp_){
+      if(biasf_!=1.0) height0_=(kbt_*(biasf_-1.0))/tau*getTimeStep()*stride_;
+      else           height0_=kbt_/tau*getTimeStep()*stride_; // special case for gamma=1
+    }
     else if(dampfactor_>0.0) height0_=(kbt_*dampfactor_)/tau*getTimeStep()*stride_;
     else error("TAU only makes sense in well-tempered or damped metadynamics");
   }
@@ -718,10 +754,12 @@ last_step_warn_grid(0)
       if(comm.Get_rank()==0){
         // Only root of group can communicate with other walkers
         mpi_nw_=multi_sim_comm.Get_size();
+        mpi_mw_=multi_sim_comm.Get_rank();
       }
       // Communicate to the other members of the same group
       // info abount number of walkers and walker index
       comm.Bcast(mpi_nw_,0);
+      comm.Bcast(mpi_mw_,0);
     }
   }
 
@@ -916,6 +954,13 @@ last_step_warn_grid(0)
   const ActionSet&actionSet(plumed.getActionSet());
   for(const auto & p : actionSet) if(dynamic_cast<MetaD*>(p)){ concurrent=true; break; }
   if(concurrent) log<<"  You are using concurrent metadynamics\n";
+  if(rect_biasf_.size()>0){
+    if(walkers_mpi){
+      log<<"  You are using RECT in its 'altruistic' implementation\n";
+    }{
+      log<<"  You are using RECT\n";
+    }
+  }
 
   log<<"  Bibliography "<<plumed.cite("Laio and Parrinello, PNAS 99, 12562 (2002)");
   if(welltemp_) log<<plumed.cite(
@@ -930,8 +975,10 @@ last_step_warn_grid(0)
      "Pratyush and Parrinello, Phys. Rev. Lett. 111, 230602 (2013)");
   if(rewf_grid_.size()>0) log<<plumed.cite(
      "Pratyush and Parrinello, J. Phys. Chem. B, 119, 736 (2015)");
-  if(concurrent) log<<plumed.cite(
+  if(concurrent || rect_biasf_.size()>0) log<<plumed.cite(
      "Gil-Ley and Bussi, J. Chem. Theory Comput. 11, 1077 (2015)");
+  if(rect_biasf_.size()>0 && walkers_mpi) log<<plumed.cite(
+     "Hosek, Toulcova, Bortolato, and Spiwok, J. Phys. Chem. B 120, 2209 (2016)");
   if(targetfilename_.length()>0){
     log<<plumed.cite("White, Dama, and Voth, J. Chem. Theory Comput. 11, 2451 (2015)");
     log<<plumed.cite("Marinelli and Faraldo-Gómez,  Biophys. J. 108, 2779 (2015)");
@@ -954,7 +1001,8 @@ void MetaD::readGaussians(IFile *ifile)
  
   while(scanOneHill(ifile,tmpvalues,center,sigma,height,multivariate)){;
     nhills++;
-    if(welltemp_){height*=(biasf_-1.0)/biasf_;}
+// note that for gamma=1 we store directly -F
+    if(welltemp_ && biasf_>1.0){height*=(biasf_-1.0)/biasf_;}
     addGaussian(Gaussian(center,sigma,height,multivariate));
   }     
   log.printf("      %d Gaussians read\n",nhills);
@@ -972,7 +1020,8 @@ bool MetaD::readChunkOfGaussians(IFile *ifile, unsigned n)
   for(unsigned j=0;j<getNumberOfArguments();++j) tmpvalues.push_back( Value( this, getPntrToArgument(j)->getName(), false ) ); 
  
   while(scanOneHill(ifile,tmpvalues,center,sigma,height,multivariate)){;
-    if(welltemp_) height*=(biasf_-1.0)/biasf_; 
+// note that for gamma=1 we store directly -F
+    if(welltemp_ && biasf_>1.0) height*=(biasf_-1.0)/biasf_; 
     addGaussian(Gaussian(center,sigma,height,multivariate));
     if(nhills==n){
       log.printf("      %u Gaussians read\n",nhills);
@@ -1027,7 +1076,8 @@ void MetaD::writeGaussian(const Gaussian& hill, OFile&file)
       file.printField("sigma_"+getPntrToArgument(i)->getName(),hill.sigma[i]);
   }
   double height=hill.height;
-  if(welltemp_) height*=biasf_/(biasf_-1.0); 
+// note that for gamma=1 we store directly -F
+  if(welltemp_ && biasf_>1.0) height*=biasf_/(biasf_-1.0); 
   file.printField("height",height).printField("biasf",biasf_);
   if(mw_n_>1) file.printField("clock",int(std::time(0)));
   file.printField();
@@ -1259,7 +1309,12 @@ double MetaD::getHeight(const vector<double>& cv)
   double height=height0_;
   if(welltemp_){
     double vbias = getBiasAndDerivatives(cv);
-    height = height0_*exp(-vbias/(kbt_*(biasf_-1.0)));
+    if(biasf_>1.0){
+      height = height0_*exp(-vbias/(kbt_*(biasf_-1.0)));
+    } else {
+// notice that if gamma=1 we store directly -F
+      height = height0_*exp(-vbias/kbt_);
+    }
   } 
   if(dampfactor_>0.0){
     plumed_assert(BiasGrid_);
@@ -1286,7 +1341,13 @@ void MetaD::calculate()
     cv[i]=getArgument(i);
     der[i]=0.;
   }
-  const double ene = getBiasAndDerivatives(cv,der);
+  double ene = getBiasAndDerivatives(cv,der);
+// special case for gamma=1.0
+  if(biasf_==1.0){
+    ene=0.0;
+    for(unsigned i=0;i<getNumberOfArguments();++i) {der[i]=0.0;}
+  }
+
   setBias(ene);
   if( rewf_grid_.size()>0 ) getPntrToComponent("rbias")->set(ene - reweight_factor);
   // calculate the acceleration factor
@@ -1347,7 +1408,8 @@ void MetaD::update(){
         // Communicate (only root)
         multi_sim_comm.Allgather(cv,all_cv);
         multi_sim_comm.Allgather(thissigma,all_sigma);
-        multi_sim_comm.Allgather(height,all_height);
+// notice that if gamma=1 we store directly -F so this scaling is not necessary:
+        multi_sim_comm.Allgather(height*(biasf_>1.0?biasf_/(biasf_-1.0):1.0),all_height);
         multi_sim_comm.Allgather(int(multivariate),all_multivariate);
       }
       // Share info with group members
@@ -1361,7 +1423,8 @@ void MetaD::update(){
         std::vector<double> sigma_now(thissigma.size());
         for(unsigned j=0;j<cv.size();j++) cv_now[j]=all_cv[i*cv.size()+j];
         for(unsigned j=0;j<thissigma.size();j++) sigma_now[j]=all_sigma[i*thissigma.size()+j];
-        Gaussian newhill=Gaussian(cv_now,sigma_now,all_height[i],all_multivariate[i]);
+// notice that if gamma=1 we store directly -F so this scaling is not necessary:
+        Gaussian newhill=Gaussian(cv_now,sigma_now,all_height[i]*(biasf_>1.0?(biasf_-1.0)/biasf_:1.0),all_multivariate[i]);
         addGaussian(newhill);
         writeGaussian(newhill,hillsOfile_);
       }
@@ -1500,6 +1563,12 @@ bool MetaD::scanOneHill(IFile *ifile,  vector<Value> &tmpvalues, vector<double> 
 void MetaD::computeReweightingFactor()
 {
   if( !welltemp_ ) error("cannot compute the c(t) reweighting factors for non well-tempered metadynamics");
+
+  if(biasf_==1.0){
+// in this case we have no bias, so reweight factor is 1.0
+      getPntrToComponent("rct")->set(1.0);
+      return;
+  }
 
   // Recover the minimum values for the grid
   unsigned ncv=getNumberOfArguments();

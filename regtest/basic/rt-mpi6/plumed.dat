@@ -9,3 +9,7 @@ multi_a:  METAD ARG=c,d ADAPTIVE=GEOM SIGMA=0.1 HEIGHT=0.1 PACE=2 FMT=%14.6f WAL
 
 PRINT ARG=single.bias,multi.bias,single_a.bias,multi_a.bias FILE=colvar
 
+rect:  METAD ARG=c,d SIGMA=0.1,0.2 TAU=0.1 PACE=2 FMT=%14.6f WALKERS_MPI FILE=HILLS_rect RECT=1.001,1.1,4 TEMP=300
+
+PRINT ARG=rect.bias FILE=rect.bias
+
