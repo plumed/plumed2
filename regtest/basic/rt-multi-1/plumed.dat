@@ -7,6 +7,11 @@ f: COMBINE ARG=d,p1.x,p2.y COEFFICIENTS=@multi:{{1,2,3} {0,0,0} {2,4,6}} PERIODI
 
 PRINT ARG=f FILE=colvar
 
+# equivalent syntax:
+#g: COMBINE ARG=d,p1.x,p2.y COEFFICIENTS=@multi:{{1,2,3} {1,0,3} {1,4,3}} PERIODIC=NO
+g: COMBINE ARG=d,p1.x,p2.y COEFFICIENTS={1 @multi:{2 0 4} 3} PERIODIC=NO
+PRINT ARG=g FILE=colvarg
+
 # different arguments in different replicas
 PRINT ARG=@multi:{d,p1.x,p2.x} FILE=multi
 

@@ -154,7 +154,15 @@ bool Tools::parseVector(std::vector<std::string>&line,const std::string&key,std:
   std::vector<std::string> words=getWords(s,"\t\n ,");
   for(unsigned i=0;i<words.size();++i){
     T v;
-    if(!convert(words[i],v))return false;
+    std::string s=words[i];
+    const std::string multi("@multi:");
+    if(rep>=0 && startWith(s,multi)){
+      s=s.substr(multi.length(),s.length());
+      std::vector<std::string> words=getWords(s,"\t\n ,");
+      plumed_assert(rep<words.size());
+      s=words[rep];
+    }
+    if(!convert(s,v))return false;
     val.push_back(v);
   }
   return true;
