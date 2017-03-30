@@ -3,18 +3,18 @@ p1: POSITION ATOM=1
 p2: POSITION ATOM=2
 
 # different coefficients in different replicas
-f: COMBINE ARG=d,p1.x,p2.y COEFFICIENTS=@multi:{{1,2,3} {0,0,0} {2,4,6}} PERIODIC=NO
+f: COMBINE ARG=d,p1.x,p2.y COEFFICIENTS=@replicas:{{1,2,3} {0,0,0} {2,4,6}} PERIODIC=NO
 
 PRINT ARG=f FILE=colvar
 
 # equivalent syntax:
-#g: COMBINE ARG=d,p1.x,p2.y COEFFICIENTS=@multi:{{1,2,3} {1,0,3} {1,4,3}} PERIODIC=NO
-g: COMBINE ARG=d,p1.x,p2.y COEFFICIENTS={1 @multi:{2 0 4} 3} PERIODIC=NO
+#g: COMBINE ARG=d,p1.x,p2.y COEFFICIENTS=@replicas:{{1,2,3} {1,0,3} {1,4,3}} PERIODIC=NO
+g: COMBINE ARG=d,p1.x,p2.y COEFFICIENTS={1 @replicas:{2 0 4} 3} PERIODIC=NO
 PRINT ARG=g FILE=colvarg
 
 # different arguments in different replicas
-PRINT ARG=@multi:{d,p1.x,p2.x} FILE=multi
+PRINT ARG=@replicas:{d,p1.x,p2.x} FILE=multi
 
 # typical umbrella sampling stuff
-RESTRAINT ARG=d AT=@multi:{1,2,3} KAPPA=100
+RESTRAINT ARG=d AT=@replicas:{1,2,3} KAPPA=100
 

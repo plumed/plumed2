@@ -155,7 +155,7 @@ bool Tools::parseVector(std::vector<std::string>&line,const std::string&key,std:
   for(unsigned i=0;i<words.size();++i){
     T v;
     std::string s=words[i];
-    const std::string multi("@multi:");
+    const std::string multi("@replicas:");
     if(rep>=0 && startWith(s,multi)){
       s=s.substr(multi.length(),s.length());
       std::vector<std::string> words=getWords(s,"\t\n ,");
