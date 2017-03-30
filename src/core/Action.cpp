@@ -71,6 +71,11 @@ Action::Action(const ActionOptions&ao):
   line.erase(line.begin());
   log.printf("Action %s\n",name.c_str());
 
+  if(comm.Get_rank()==0){
+    replica_index=multi_sim_comm.Get_rank();
+  }
+  comm.Bcast(replica_index,0);
+
   if ( keywords.exists("LABEL") ){ parse("LABEL",label); }
 
   if(label.length()==0){

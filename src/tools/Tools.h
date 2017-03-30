@@ -101,13 +101,13 @@ public:
 /// line.push_back("aa=xx");
 /// getKey(line,"aa",s);
 /// will set s="xx"
-  static bool getKey(std::vector<std::string>& line,const std::string & key,std::string & s);
+  static bool getKey(std::vector<std::string>& line,const std::string & key,std::string & s,int rep=-1);
 /// Find a keyword on the input line, eventually deleting it, and saving its value to val
   template <class T>
-  static bool parse(std::vector<std::string>&line,const std::string&key,T&val);
+  static bool parse(std::vector<std::string>&line,const std::string&key,T&val,int rep=-1);
 /// Find a keyword on the input line, eventually deleting it, and saving its value to a vector
   template <class T>
-  static bool parseVector(std::vector<std::string>&line,const std::string&key,std::vector<T>&val);
+  static bool parseVector(std::vector<std::string>&line,const std::string&key,std::vector<T>&val,int rep=-1);
 /// Find a keyword without arguments on the input line
   static bool parseFlag(std::vector<std::string>&line,const std::string&key,bool&val);
 /// Find a keyword on the input line, just reporting if it exists or not
@@ -138,17 +138,17 @@ public:
 };
 
 template <class T>
-bool Tools::parse(std::vector<std::string>&line,const std::string&key,T&val){
+bool Tools::parse(std::vector<std::string>&line,const std::string&key,T&val,int rep){
   std::string s;
-  if(!getKey(line,key+"=",s)) return false;
+  if(!getKey(line,key+"=",s,rep)) return false;
   if(s.length()>0 && !convert(s,val))return false;
   return true;
 }
 
 template <class T>
-bool Tools::parseVector(std::vector<std::string>&line,const std::string&key,std::vector<T>&val){
+bool Tools::parseVector(std::vector<std::string>&line,const std::string&key,std::vector<T>&val,int rep){
   std::string s;
-  if(!getKey(line,key+"=",s)) return false;
+  if(!getKey(line,key+"=",s,rep)) return false;
 //  if(s.length()==0) return true;
   val.clear();
   std::vector<std::string> words=getWords(s,"\t\n ,");

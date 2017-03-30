@@ -1,0 +1,15 @@
+d: DISTANCE ATOMS=1,2
+p1: POSITION ATOM=1
+p2: POSITION ATOM=2
+
+# different coefficients in different replicas
+f: COMBINE ARG=d,p1.x,p2.y COEFFICIENTS=@multi:{{1,2,3} {0,0,0} {2,4,6}} PERIODIC=NO
+
+PRINT ARG=f FILE=colvar
+
+# different arguments in different replicas
+PRINT ARG=@multi:{d,p1.x,p2.x} FILE=multi
+
+# typical umbrella sampling stuff
+RESTRAINT ARG=d AT=@multi:{1,2,3} KAPPA=100
+
