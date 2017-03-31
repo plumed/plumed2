@@ -129,7 +129,7 @@ For developers:
    are now passed by const ref) and false positives marked as such.
 - Added coverage scan.
 
-Version 2.3.1 (coming soon)
+Version 2.3.1 (Mar 31, 2017)
 -------------
 See branch \branch{v2.3} on git repository.
 
