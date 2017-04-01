@@ -109,8 +109,8 @@ void HistogramOnGrid::calculate( const unsigned& current, MultiValue& myvals, st
      for(unsigned i=0;i<dimension;++i) point[i]=myvals.get( 1+i );
 
      // Get the kernel
-     unsigned num_neigh; std::vector<unsigned> neighbors; 
-     std::vector<double> der( dimension ); 
+     unsigned num_neigh; std::vector<unsigned> neighbors(1); 
+     std::vector<double> der( 0 ); 
      KernelFunctions* kernel=getKernelAndNeighbors( point, num_neigh, neighbors );
 
      if( !kernel && getType()=="flat" ){

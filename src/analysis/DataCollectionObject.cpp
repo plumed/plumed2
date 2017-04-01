@@ -25,8 +25,8 @@
 namespace PLMD {
 namespace analysis {
 
-void DataCollectionObject::setAtomNumbersAndArgumentNames( const std::vector<AtomNumber>& ind, const std::vector<std::string>& arg_names ){
-  indices.resize( ind.size() ); positions.resize( indices.size() );
+void DataCollectionObject::setAtomNumbersAndArgumentNames( const std::string& action_label, const std::vector<AtomNumber>& ind, const std::vector<std::string>& arg_names ){
+  myaction=action_label; indices.resize( ind.size() ); positions.resize( indices.size() ); 
   for(unsigned i=0;i<ind.size();++i) indices[i]=ind[i];
   for(unsigned i=0;i<arg_names.size();++i) args.insert( std::pair<std::string,double>( arg_names[i], 0.0 ) );
 }

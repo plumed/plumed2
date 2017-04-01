@@ -23,6 +23,7 @@
 #define __PLUMED_analysis_ReadAnalysisFrames_h
 
 #include "AnalysisBase.h"
+#include "bias/ReweightWham.h"
 
 namespace PLMD {
 namespace analysis {
@@ -38,6 +39,8 @@ private:
   std::vector<AtomNumber> atom_numbers;
 /// The biases we are using in reweighting and the args we store them separately
   std::vector<Value*> weight_vals;
+/// The object that calculates weights using WHAM
+  bias::ReweightWham* wham_pointer;
 /// The weights of all the data points
   bool weights_calculated;
   std::vector<double> logweights, weights;

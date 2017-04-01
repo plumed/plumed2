@@ -36,6 +36,8 @@ namespace analysis {
 class DataCollectionObject {
 friend class ReadAnalysisFrames;
 private:
+/// The label of the action in which the data is stored
+  std::string myaction;
 /// The list of atom numbers that are stored in the object
   std::vector<AtomNumber> indices;
 /// The list of atomic positions
@@ -44,7 +46,7 @@ private:
   std::map<std::string,double> args;
 public:
 /// Set the names and atom numbers
-  void setAtomNumbersAndArgumentNames( const std::vector<AtomNumber>& ind, const std::vector<std::string>& arg_names );
+  void setAtomNumbersAndArgumentNames( const std::string& action_label, const std::vector<AtomNumber>& ind, const std::vector<std::string>& arg_names );
 /// Set the positions of all the atoms
   void setAtomPositions( const std::vector<Vector>& pos );
 /// Set the value of one of the arguments
@@ -64,6 +66,8 @@ Vector DataCollectionObject::getAtomPosition( const AtomNumber& ind ) const {
 
 inline
 double DataCollectionObject::getArgumentValue( const std::string& name ) const {
+  std::size_t dot=name.find_first_of('.'); std::string a=name.substr(0,dot);
+  if( a==myaction ) return args.find( name.substr(dot+1) )->second;
   return args.find(name)->second;
 }
 

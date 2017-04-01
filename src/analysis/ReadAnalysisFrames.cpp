@@ -79,7 +79,12 @@ weights_calculated(false)
   }
   if( wwstr.size()>0 ) log.printf("\n");
   else log.printf("  weights are all equal to one\n");
+  wham_pointer = dynamic_cast<bias::ReweightWham*>( weight_vals[0]->getPntrToAction() );
+  if( wham_pointer && weight_vals.size()!=1 ) error("can only extract weights from one wham object");
   requestArguments( arg );
+
+  // Now add fake components to the underlying ActionWithValue for the arguments
+  for(unsigned i=0;i<argument_names.size();++i){ addComponent( argument_names[i] ); componentIsNotPeriodic( argument_names[i] ); }
 }
 
 std::vector<Value*> ReadAnalysisFrames::getArgumentList(){
@@ -102,13 +107,18 @@ void ReadAnalysisFrames::calculateWeights(){
   if( weight_vals.empty() ){
       for(unsigned i=0;i<logweights.size();++i) weights[i]=1.0;
   } else {
-      // Find the maximum weight
-      double maxweight=logweights[0];
-      for(unsigned i=1;i<getNumberOfDataPoints();++i){
-         if(logweights[i]>maxweight) maxweight=logweights[i];
+      if( wham_pointer ){
+          wham_pointer->calculateWeights( logweights.size() );
+          for(unsigned i=0;i<logweights.size();++i) weights[i]=wham_pointer->getWeight(i);
+      } else {
+          // Find the maximum weight
+          double maxweight=logweights[0];
+          for(unsigned i=1;i<getNumberOfDataPoints();++i){
+             if(logweights[i]>maxweight) maxweight=logweights[i];
+          }
+          // Calculate weights (no memory) -- business here with maxweight is to prevent overflows
+          for(unsigned i=0;i<logweights.size();++i) weights[i]=exp( logweights[i]-maxweight );
       }
-      // Calculate weights (no memory) -- business here with maxweight is to prevent overflows
-      for(unsigned i=0;i<logweights.size();++i) weights[i]=exp( logweights[i]-maxweight );
   }
 }
 
@@ -118,8 +128,9 @@ void ReadAnalysisFrames::update(){
   if( clearonnextstep ){ 
       my_data_stash.clear(); my_data_stash.resize(0); 
       logweights.clear(); logweights.resize(0);    
+      if( wham_pointer ) wham_pointer->clearData();
       clearonnextstep=false;
-  }
+ }
 
   // Get the weight and store it in the weights array
   double ww=0; for(unsigned i=0;i<weight_vals.size();++i) ww+=weight_vals[i]->get();
@@ -127,7 +138,7 @@ void ReadAnalysisFrames::update(){
 
   // Now create the data collection object and push it back to be stored
   unsigned index = my_data_stash.size(); my_data_stash.push_back( DataCollectionObject() );
-  my_data_stash[index].setAtomNumbersAndArgumentNames( atom_numbers, argument_names ); 
+  my_data_stash[index].setAtomNumbersAndArgumentNames( getLabel(), atom_numbers, argument_names ); 
   my_data_stash[index].setAtomPositions( getPositions() ); 
   for(unsigned i=0;i<argument_names.size();++i) my_data_stash[index].setArgument( argument_names[i], getArgument(i) );
 

@@ -47,9 +47,10 @@ void ActionWithArguments::registerKeywords(Keywords& keys){
 }
 
 void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Value*>&arg){
-  vector<string> c; arg.clear(); parseVector(key,c); 
+  std::string def; vector<string> c; arg.clear(); parseVector(key,c); 
   if( c.size()==0 && (keywords.style(key,"compulsory") || keywords.style(key,"hidden")) ){
-    std::string def; if( keywords.getDefaultValue(key,def) ) c.push_back( def );
+    if( keywords.getDefaultValue(key,def) ) c.push_back( def );
+    else return;
   }
   interpretArgumentList(c,arg);
 }

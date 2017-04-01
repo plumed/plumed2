@@ -1,0 +1,2 @@
+type=driver
+arg="--mf_xtc alltraj.xtc" 

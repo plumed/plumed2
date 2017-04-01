@@ -28,6 +28,7 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "AnalysisBase.h"
+#include "ReadAnalysisFrames.h"
 
 namespace PLMD{
 namespace analysis{
@@ -162,6 +163,7 @@ DUMPGRID GRID=hh FILE=histo STRIDE=100000
 class Histogram : public gridtools::ActionWithGrid { 
 private:
   double ww;
+  bool activated;
   bool in_apply, mvectors;
   KernelFunctions* kernel;
   std::vector<double> forcesToApply, finalForces;
@@ -202,6 +204,7 @@ Histogram::Histogram(const ActionOptions&ao):
 Action(ao),
 ActionWithGrid(ao),
 ww(0.0),
+activated(false),
 in_apply(false),
 mvectors(false),
 kernel(NULL),
@@ -357,7 +360,10 @@ unsigned Histogram::getNumberOfQuantities() const {
 
 bool Histogram::onStep() const {
   if( !my_analysis_object ) return ActionPilot::onStep();
-  return true;
+  ReadAnalysisFrames* myfram = dynamic_cast<ReadAnalysisFrames*>( my_analysis_object );
+  if( myfram && activated ) return true;
+  else if( myfram ) return ActionPilot::onStep(); 
+  return my_analysis_object->onStep();
 }
 
 void Histogram::prepareForAveraging(){
@@ -522,7 +528,7 @@ void Histogram::apply(){
 }
 
 void Histogram::runFinalJobs(){
-  if( my_analysis_object && getStride()==0 ) update();
+  if( my_analysis_object && getStride()==0 ){ activated=true; update(); }
 }
 
 }
