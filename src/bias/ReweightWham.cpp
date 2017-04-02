@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "core/ActionRegister.h"
 #include "ReweightWham.h"
+#include "core/ActionRegister.h"
 
 //+PLUMEDOC REWEIGHTING REWEIGHT_WHAM
 /*
@@ -43,7 +43,8 @@ void ReweightWham::registerKeywords(Keywords& keys ){
 
 ReweightWham::ReweightWham(const ActionOptions&ao):
 Action(ao),
-ReweightBase(ao)
+ReweightBase(ao),
+weightsCalculated(false)
 {
    std::vector<Value*> targ, fagr; 
    unsigned nbias = 0; wlists.push_back( 0 );
@@ -64,6 +65,7 @@ ReweightBase(ao)
 
 double ReweightWham::getLogWeight(){
    if( getStep()==0 ) return 1.0;  // This is here as first step is ignored in all analyses
+   weightsCalculated=false;
    for(unsigned i=0;i<wlists.size()-1;++i){
       double total_bias=0;
       for(unsigned j=wlists[i];j<wlists[i+1];++j) total_bias+=getArgument(j);
@@ -111,7 +113,7 @@ void ReweightWham::calculateWeights( const unsigned& nframes ){
        for(unsigned k=0;k<Z.size();++k){
            Z[k] /= norm; double d = std::log( Z[k] / oldZ[k] ); change += d*d;
        }
-       if( change<thresh ) return; 
+       if( change<thresh ){ weightsCalculated=true; return; }
    }
    error("Too many iterations in WHAM" );
 } 

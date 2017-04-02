@@ -31,6 +31,7 @@ class ReweightWham : public ReweightBase {
 private:
   double thresh;
   unsigned maxiter;
+  bool weightsCalculated;
   std::vector<unsigned> wlists;
   std::vector<double> stored_biases;
   std::vector<double> final_weights;
@@ -45,7 +46,7 @@ public:
 
 inline
 double ReweightWham::getWeight( const unsigned& iweight ) const {
-  plumed_dbg_assert( calculatedWeights && iweight<final_weights.size() );
+  plumed_dbg_assert( weightsCalculated && iweight<final_weights.size() );
   return final_weights[iweight];
 }
 
