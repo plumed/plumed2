@@ -27,8 +27,6 @@
 #include "multicolvar/MultiColvarBase.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
-#include "AnalysisBase.h"
-#include "ReadAnalysisFrames.h"
 
 namespace PLMD{
 namespace analysis{
@@ -163,13 +161,11 @@ DUMPGRID GRID=hh FILE=histo STRIDE=100000
 class Histogram : public gridtools::ActionWithGrid { 
 private:
   double ww;
-  bool activated;
   bool in_apply, mvectors;
   KernelFunctions* kernel;
   std::vector<double> forcesToApply, finalForces;
   std::vector<vesselbase::ActionWithVessel*> myvessels;
   std::vector<vesselbase::StoreDataVessel*> stashes;
-  AnalysisBase* my_analysis_object;
   gridtools::HistogramOnGrid* myhist; 
 public:
   static void registerKeywords( Keywords& keys );
@@ -180,11 +176,9 @@ public:
   void finishAveraging();
   bool isPeriodic(){ return false; }
   unsigned getNumberOfDerivatives(); 
-  bool onStep() const ;
   void turnOnDerivatives();
   void compute( const unsigned& , MultiValue& ) const ;
   void apply();
-  void runFinalJobs();
 };
 
 PLUMED_REGISTER_ACTION(Histogram,"HISTOGRAM")
@@ -204,63 +198,43 @@ Histogram::Histogram(const ActionOptions&ao):
 Action(ao),
 ActionWithGrid(ao),
 ww(0.0),
-activated(false),
 in_apply(false),
 mvectors(false),
-kernel(NULL),
-my_analysis_object(NULL)
+kernel(NULL)
 {
   // Read in arguments 
-  std::string vlab; parse("VECTORS",vlab);
-  if( vlab.length()>0 ){
-     ActionWithVessel* myv = plumed.getActionSet().selectWithLabel<ActionWithVessel*>( vlab );
-     if( !myv ) error("action labelled " + vlab + " does not exist or is not an ActionWithVessel");
-     myvessels.push_back( myv ); stashes.push_back( myv->buildDataStashes( NULL ) );
-     addDependency( myv ); mvectors=true;
-     if( myv->getNumberOfQuantities()!=5 ) error("can only compute histograms for three dimensional vectors");
-     log.printf("  for vector quantities calculated by %s \n", vlab.c_str() );
-  } else {
-     std::vector<std::string> mlab; parseVector("DATA",mlab);
-     if( mlab.size()>0 ){
-        for(unsigned i=0;i<mlab.size();++i){
-            ActionWithVessel* myv = plumed.getActionSet().selectWithLabel<ActionWithVessel*>( mlab[i] );
-            if( !myv ) error("action labelled " + mlab[i] + " does not exist or is not an ActionWithVessel");
-            myvessels.push_back( myv ); stashes.push_back( myv->buildDataStashes( NULL ) );
-            // log.printf("  for all base quantities calculated by %s \n",myvessel->getLabel().c_str() );
-            // Add the dependency
-            addDependency( myv );
-        }
-        unsigned nvals = myvessels[0]->getFullNumberOfTasks();
-        for(unsigned i=1;i<mlab.size();++i){
-            if( nvals!=myvessels[i]->getFullNumberOfTasks() ) error("mismatched number of quantities calculated by actions input to histogram");
-        }
-        log.printf("  for all base quantities calculated by %s ", myvessels[0]->getLabel().c_str() );
-        for(unsigned i=1;i<mlab.size();++i) log.printf(", %s \n", myvessels[i]->getLabel().c_str() );
-        log.printf("\n");
-     } else {
-        std::vector<Value*> arg; parseArgumentList("ARG",arg);
-        if(!arg.empty()){
-           log.printf("  with arguments");
-           my_analysis_object=dynamic_cast<AnalysisBase*>( arg[0]->getPntrToAction() );
-           for(unsigned i=0;i<arg.size();i++){
-               if( my_analysis_object && (arg[0]->getPntrToAction())->getLabel()!=(arg[i]->getPntrToAction())->getLabel() ){
-                   error("all arguments should be from one single analysis object");
-               }
-               log.printf(" %s",arg[i]->getName().c_str());
-           }
-           if( my_analysis_object ){
-               if( getStride()!=1 ) error("stride should not have been set when calculating histogram from analysis data");
-               setStride(0); addDependency( my_analysis_object );
-           }
-           log.printf("\n");
-           // Retrieve the bias acting and make sure we request this also
-           std::vector<Value*> bias( ActionWithArguments::getArguments() );
-           if( my_analysis_object && bias.size()>0 ) error("reweighting is not consistent with constructing histograms from analysis objects");
-           for(unsigned i=0;i<bias.size();++i) arg.push_back( bias[i] ); 
-           requestArguments(arg);
-        }
-     }
-  } 
+  if( getNumberOfArguments()==0 ){
+      std::string vlab; parse("VECTORS",vlab);
+      if( vlab.length()>0 ){
+         ActionWithVessel* myv = plumed.getActionSet().selectWithLabel<ActionWithVessel*>( vlab );
+         if( !myv ) error("action labelled " + vlab + " does not exist or is not an ActionWithVessel");
+         myvessels.push_back( myv ); stashes.push_back( myv->buildDataStashes( NULL ) );
+         addDependency( myv ); mvectors=true;
+         if( myv->getNumberOfQuantities()!=5 ) error("can only compute histograms for three dimensional vectors");
+         log.printf("  for vector quantities calculated by %s \n", vlab.c_str() );
+      } else {
+         std::vector<std::string> mlab; parseVector("DATA",mlab);
+         if( mlab.size()>0 ){
+            for(unsigned i=0;i<mlab.size();++i){
+                ActionWithVessel* myv = plumed.getActionSet().selectWithLabel<ActionWithVessel*>( mlab[i] );
+                if( !myv ) error("action labelled " + mlab[i] + " does not exist or is not an ActionWithVessel");
+                myvessels.push_back( myv ); stashes.push_back( myv->buildDataStashes( NULL ) );
+                // log.printf("  for all base quantities calculated by %s \n",myvessel->getLabel().c_str() );
+                // Add the dependency
+                addDependency( myv );
+            }
+            unsigned nvals = myvessels[0]->getFullNumberOfTasks();
+            for(unsigned i=1;i<mlab.size();++i){
+                if( nvals!=myvessels[i]->getFullNumberOfTasks() ) error("mismatched number of quantities calculated by actions input to histogram");
+            }
+            log.printf("  for all base quantities calculated by %s ", myvessels[0]->getLabel().c_str() );
+            for(unsigned i=1;i<mlab.size();++i) log.printf(", %s \n", myvessels[i]->getLabel().c_str() );
+            log.printf("\n");
+         } else {
+            error("input data is missing use ARG/VECTORS/DATA");
+         }
+      } 
+  }
 
   // Read stuff for grid
   unsigned narg = getNumberOfArguments();
@@ -313,8 +287,8 @@ my_analysis_object(NULL)
      // Create a task list
      for(unsigned i=0;i<myvessels[0]->getFullNumberOfTasks();++i) addTaskToList(i);
      setAveragingAction( mygrid, true );
-  } else if( my_analysis_object ){
-     setAveragingAction( mygrid, true );  
+  } else if( storeThenAverage() ){
+     setAveragingAction( mygrid, true );
   } else {
      // Create a task list
      for(unsigned i=0;i<mygrid->getNumberOfPoints();++i) addTaskToList(i);
@@ -353,17 +327,8 @@ unsigned Histogram::getNumberOfDerivatives(){
 
 unsigned Histogram::getNumberOfQuantities() const {
   if( mvectors ) return myvessels[0]->getNumberOfQuantities();
-  else if( my_analysis_object ) return getNumberOfArguments()+2;
   else if( myvessels.size()>0 ) return myvessels.size()+2;
-  return 2;
-}
-
-bool Histogram::onStep() const {
-  if( !my_analysis_object ) return ActionPilot::onStep();
-  ReadAnalysisFrames* myfram = dynamic_cast<ReadAnalysisFrames*>( my_analysis_object );
-  if( myfram && activated ) return true;
-  else if( myfram ) return ActionPilot::onStep(); 
-  return my_analysis_object->onStep();
+  return ActionWithAveraging::getNumberOfQuantities();
 }
 
 void Histogram::prepareForAveraging(){
@@ -384,16 +349,7 @@ void Histogram::prepareForAveraging(){
       // Sort out normalization of histogram
       if( !noNormalization() ) ww = cweight / norm;
       else ww = cweight;
-  } else if( my_analysis_object ){
-      for(unsigned i=getFullNumberOfTasks();i<my_analysis_object->getNumberOfDataPoints();++i) addTaskToList(i); 
-      deactivateAllTasks(); double norm=0;
-      for(unsigned i=0;i<my_analysis_object->getNumberOfDataPoints();++i){
-          taskFlags[i]=1; norm += my_analysis_object->getWeight(i);
-      }
-      lockContributors();
-      if( !noNormalization() ) ww = cweight / norm;
-      else ww = cweight;
-  } else {
+  } else if( !storeThenAverage() ) {
       // Now fetch the kernel and the active points
       std::vector<double> point( getNumberOfArguments() );  
       for(unsigned i=0;i<point.size();++i) point[i]=getArgument(i);
@@ -472,10 +428,6 @@ void Histogram::compute( const unsigned& current, MultiValue& myvals ) const {
       }
       myvals.setValue( 0, tnorm ); myvals.setValue( 1+myvessels.size(), ww ); 
       if( in_apply ) myvals.updateDynamicList();
-  } else if( my_analysis_object ){
-      DataCollectionObject& mystore=my_analysis_object->getStoredData( current, false );
-      for(unsigned i=0;i<getNumberOfArguments();++i) myvals.setValue( 1+i, mystore.getArgumentValue( ActionWithArguments::getArguments()[i]->getName() ) );
-      myvals.setValue( 0, my_analysis_object->getWeight(current) ); myvals.setValue( 1+getNumberOfArguments(), ww );
   } else {
       plumed_assert( !in_apply );
       std::vector<Value*> vv( myhist->getVectorOfValues() );
@@ -525,10 +477,6 @@ void Histogram::apply(){
   setForcesOnAtoms( finalForces );
   // Reset everything for next regular loop
   in_apply=false; 
-}
-
-void Histogram::runFinalJobs(){
-  if( my_analysis_object && getStride()==0 ){ activated=true; update(); }
 }
 
 }

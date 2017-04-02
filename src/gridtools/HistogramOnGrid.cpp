@@ -107,20 +107,18 @@ void HistogramOnGrid::calculate( const unsigned& current, MultiValue& myvals, st
      plumed_dbg_assert( myvals.getNumberOfValues()==dimension+2 );
      std::vector<double> point( dimension ); double weight=myvals.get(0)*myvals.get( 1+dimension );
      for(unsigned i=0;i<dimension;++i) point[i]=myvals.get( 1+i );
-
      // Get the kernel
      unsigned num_neigh; std::vector<unsigned> neighbors(1); 
-     std::vector<double> der( 0 ); 
+     std::vector<double> der( dimension ); 
      KernelFunctions* kernel=getKernelAndNeighbors( point, num_neigh, neighbors );
 
      if( !kernel && getType()=="flat" ){
-         plumed_dbg_assert( num_neigh==1 );
+         plumed_dbg_assert( num_neigh==1 ); der.resize(0);
          accumulate( neighbors[0], weight, 1.0, der, buffer );
      } else {
          double totwforce=0.0;
          std::vector<double> intforce( 2*dimension, 0.0 ); 
          std::vector<Value*> vv( getVectorOfValues() ); 
-
          double newval; std::vector<double> xx( dimension );
          for(unsigned i=0;i<num_neigh;++i){
              unsigned ineigh=neighbors[i];

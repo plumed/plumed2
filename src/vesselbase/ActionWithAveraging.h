@@ -27,6 +27,8 @@
 #include "core/ActionAtomistic.h"
 #include "core/ActionWithValue.h"
 #include "core/ActionWithArguments.h"
+#include "tools/MultiValue.h"
+#include "analysis/AnalysisBase.h"
 #include "ActionWithVessel.h"
 #include "AveragingVessel.h"
 
@@ -56,7 +58,9 @@ private:
 /// The weights we are going to use for reweighting
   std::vector<Value*> weights;
 /// Are we accumulated the unormalized quantity
-  bool unormalised;
+  bool unormalised, activated;
+/// An object in which analysis data has been stored
+  analysis::AnalysisBase* my_analysis_object;
 protected:
 /// This ensures runAllTasks is used
   bool useRunAllTasks;
@@ -68,6 +72,8 @@ protected:
   void setAveragingAction( AveragingVessel* av_vessel, const bool& usetasks );
 /// Check if we are using the normalization condition when calculating this quantity
   bool noNormalization() const ;
+/// Are we storing data then averaging
+  bool storeThenAverage() const ;
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithAveraging( const ActionOptions& );
@@ -75,6 +81,7 @@ public:
   void unlockRequests();
   void calculateNumericalDerivatives(PLMD::ActionWithValue*);
   virtual unsigned getNumberOfDerivatives(){ return 0; }
+  virtual unsigned getNumberOfQuantities() const ;
   unsigned getNumberOfArguments() const ;
 /// Overwrite ActionWithArguments getArguments() so that we don't return the bias
   std::vector<Value*> getArguments();  
@@ -85,8 +92,16 @@ public:
   virtual void prepareForAveraging(){}
 /// This does the averaging operation
   virtual void performOperations( const bool& from_update );
+/// Does the calculation
+  virtual void performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const ;
+///
+  virtual void runTask( const unsigned& current, MultiValue& myvals ) const { plumed_error(); }
+///
+  virtual void accumulateAverage( MultiValue& myvals ) const {}
 /// This is done once the averaging is finished
   virtual void finishAveraging(){}
+/// 
+  void runFinalJobs();
 };
 
 inline
@@ -104,6 +119,12 @@ std::vector<Value*> ActionWithAveraging::getArguments(){
 inline
 bool ActionWithAveraging::noNormalization() const {
   return unormalised;
+}
+
+inline
+bool ActionWithAveraging::storeThenAverage() const {
+  if( my_analysis_object ) return true;
+  return false;
 }
 
 }

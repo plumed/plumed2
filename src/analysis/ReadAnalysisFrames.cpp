@@ -51,6 +51,7 @@ ReadAnalysisFrames::ReadAnalysisFrames( const ActionOptions& ao ):
 Action(ao),
 AnalysisBase(ao),
 clearonnextstep(false),
+wham_pointer(NULL),
 weights_calculated(false)
 {
   parse("CLEAR",clearstride);
@@ -77,10 +78,11 @@ weights_calculated(false)
       arg.push_back( val->copyOutput(val->getLabel()) );
       log.printf("%s ",wwstr[i].c_str() );
   }
-  if( wwstr.size()>0 ) log.printf("\n");
-  else log.printf("  weights are all equal to one\n");
-  wham_pointer = dynamic_cast<bias::ReweightWham*>( weight_vals[0]->getPntrToAction() );
-  if( wham_pointer && weight_vals.size()!=1 ) error("can only extract weights from one wham object");
+  if( wwstr.size()>0 ){
+     log.printf("\n");
+     wham_pointer = dynamic_cast<bias::ReweightWham*>( weight_vals[0]->getPntrToAction() );
+     if( wham_pointer && weight_vals.size()!=1 ) error("can only extract weights from one wham object"); 
+  } else log.printf("  weights are all equal to one\n");
   requestArguments( arg );
 
   // Now add fake components to the underlying ActionWithValue for the arguments
@@ -130,7 +132,7 @@ void ReadAnalysisFrames::update(){
       logweights.clear(); logweights.resize(0);    
       if( wham_pointer ) wham_pointer->clearData();
       clearonnextstep=false;
- }
+  }
 
   // Get the weight and store it in the weights array
   double ww=0; for(unsigned i=0;i<weight_vals.size();++i) ww+=weight_vals[i]->get();

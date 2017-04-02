@@ -36,11 +36,9 @@ namespace bias {
 PLUMED_REGISTER_ACTION(ReweightWham,"REWEIGHT_WHAM")
 
 void ReweightWham::registerKeywords(Keywords& keys ){
-  ReweightBase::registerKeywords( keys ); keys.remove("ARG");
-  keys.add("numbered","ARG","the biases that must be taken into account when reweighting"); 
+  ReweightBase::registerKeywords( keys ); keys.use("ARG");
   keys.add("compulsory","MAXITER","1000","maximum number of iterations for WHAM algorithm");
   keys.add("compulsory","WHAMTOL","1e-10","threshold for convergence of WHAM algorithm");
-  keys.reset_style("ARG","compulsory"); keys.add("hidden","DATA","sneaky trick to remove error for reading numbered args");
 }
 
 ReweightWham::ReweightWham(const ActionOptions&ao):

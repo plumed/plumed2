@@ -239,7 +239,7 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
   Action(ao),
   lockRequestArguments(false)
 {
-  if( keywords.exists("ARG") && !keywords.exists("DATA") ){
+  if( keywords.exists("ARG") ){    
      vector<Value*> arg;
      parseArgumentList("ARG",arg);
 

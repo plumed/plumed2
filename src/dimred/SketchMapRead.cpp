@@ -115,7 +115,7 @@ SketchMapBase(ao)
      if( !inpdb.getArgumentValue( "WEIGHT", ww ) ) error("could not find weights in input pdb");
      weights.push_back( ww ); wnorm += ww; nfram++;
      // And create a data collection object 
-     analysis::DataCollectionObject new_data; new_data.setAtomNumbersAndArgumentNames( inpdb.getAtomNumbers(), inpdb.getArgumentNames() );
+     analysis::DataCollectionObject new_data; new_data.setAtomNumbersAndArgumentNames( getLabel(), inpdb.getAtomNumbers(), inpdb.getArgumentNames() );
      new_data.setAtomPositions( inpdb.getPositions() );
      for(unsigned i=0;i<inpdb.getArgumentNames().size();++i){
          std::string aname = inpdb.getArgumentNames()[i];

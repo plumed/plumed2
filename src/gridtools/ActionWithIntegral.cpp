@@ -36,7 +36,7 @@ ActionWithInputGrid(ao)
 {
   plumed_assert( ingrid->getNumberOfComponents()==1 ); 
   // Retrieve the volume of the grid (for integration)
-  volume = ingrid->getCellVolume();
+  volume = ingrid->getCellVolume(); setAveragingAction( NULL, true );
   // Create something that is going to calculate the sum of all the values 
   // at the various grid points - this is going to be the integral
   std::string fake_input; addVessel( "SUM", fake_input, -1 ); readVesselKeywords();
