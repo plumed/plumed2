@@ -31,6 +31,20 @@ namespace PLMD{
 
 RMSD::RMSD() : alignmentMethod(SIMPLE),reference_center_is_calculated(false),reference_center_is_removed(false),positions_center_is_calculated(false),positions_center_is_removed(false) {}
 
+RMSD::RMSD(const RMSD& cp){
+	alignmentMethod = cp.alignmentMethod;
+	reference = cp.reference;
+	align = cp.align;
+	displace = cp.displace;
+	reference_center = cp.reference_center;
+	reference_center_is_calculated = cp.reference_center_is_calculated;
+	reference_center_is_removed = cp.reference_center_is_removed;
+	positions_center = cp.positions_center;
+	positions_center_is_calculated = cp.positions_center_is_calculated;
+	positions_center_is_removed = cp.positions_center_is_removed;
+}
+
+RMSD::~RMSD(){}
 ///
 /// general method to set all the rmsd property at once by using a pdb where occupancy column sets the weights for the atoms involved in the 
 /// alignment and beta sets the weight that are used for calculating the displacement. 
@@ -67,10 +81,12 @@ void RMSD::setType(const string & mytype){
 
 void RMSD::clear(){
   reference.clear();
+  reference_center.zero();
   reference_center_is_calculated=false;
   reference_center_is_removed=false;
   align.clear();
   displace.clear();
+  positions_center.zero();
   positions_center_is_calculated=false;
   positions_center_is_removed=false;
 }
