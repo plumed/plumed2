@@ -40,7 +40,7 @@ namespace PLMD{
 namespace molfile{
 /***************************************************************************
  *cr
- *cr            (C) Copyright 1995-2009 The Board of Trustees of the
+ *cr            (C) Copyright 1995-2016 The Board of Trustees of the
  *cr                        University of Illinois
  *cr                         All Rights Reserved
  *cr
@@ -51,7 +51,7 @@ namespace molfile{
  *
  *      $RCSfile: largefiles.h,v $
  *      $Author: johns $       $Locker:  $             $State: Exp $
- *      $Revision: 1.3 $       $Date: 2009/04/29 15:45:31 $
+ *      $Revision: 1.4 $       $Date: 2016/11/28 05:01:54 $
  *
  ***************************************************************************
  * DESCRIPTION:

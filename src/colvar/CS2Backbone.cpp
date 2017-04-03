@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -61,7 +61,7 @@ shift as in \cite Camilloni:2012je \cite Camilloni:2013hs (see \ref STATS and
 \ref ENSEMBLE).
 
 CamShift calculation is relatively heavy because it often uses a large number of atoms, in order
-to make it faster it is currently parallelised with \ref OpenMP.
+to make it faster it is currently parallelised with \ref Openmp.
 
 As a general rule, when using \ref CS2BACKBONE or other experimental restraints it is better to 
 increase the accuracy of the constraint algorithm due to the increased strain on the bonded structure. 
@@ -114,7 +114,7 @@ Additional material and examples can be also found in the tutorial \ref belfast-
 \par Examples
 
 In this first example the chemical shifts are used to calculate a scoring function to be used
-in NMR driven Metadynamics \cite Granata:2013dk:
+in NMR driven Metadynamics \cite Granata:2013dk :
 
 \verbatim
 whole: GROUP ATOMS=2612-2514:-1,961-1:-1,2466-962:-1,2513-2467:-1
@@ -445,6 +445,7 @@ class CS2Backbone : public Colvar {
     Vector position;   // center of ring coordinates
     Vector normVect;   // ring plane normal vector
     Vector n1, n2;     // two atom plane normal vectors used to compute ring plane normal
+    Vector g[6];       // vector of the vectors used to calculate n1,n2
     double lengthN2;   // square of length of normVect
     double lengthNV;   // length of normVect
   };
@@ -1000,29 +1001,29 @@ void CS2Backbone::calculate()
 
               const Vector gradV    = -OneOverN*gradVQ;
 
-    	      // update forces on ring atoms
-    	      const unsigned limit = ringInfo[i].numAtoms - 3; // 2 for a 5-membered ring, 3 for a 6-membered ring
-    	      for(unsigned at=0; at<ringInfo[i].numAtoms; at++) {
-    	        Vector g;
-                // atoms 0,1 (5 member) or 0,1,2 (6 member)
-    	        if (at < limit) g = delta(getPosition(ringInfo[i].atom[(at+2)%3]),getPosition(ringInfo[i].atom[(at+1)%3]));
-                // atoms 3,4 (5 member) or 3,4,5 (6 member)
-    	        else if (at >= ringInfo[i].numAtoms - limit) {
-                  g = delta(getPosition(ringInfo[i].atom[((at+2-limit) % 3) + limit]), getPosition(ringInfo[i].atom[((at+1-limit) % 3) + limit])); 
-                // atom 2 (5-membered rings)
-    	        } else g = delta(getPosition(ringInfo[i].atom[4]) , getPosition(ringInfo[i].atom[3])) + 
-                           delta(getPosition(ringInfo[i].atom[1]) , getPosition(ringInfo[i].atom[0]));
-
-                const Vector ab = crossProduct(d,g);
-                const Vector c  = crossProduct(n,g);
-    	    
-    	        const Vector factor3 = 0.5*dL_nL*c;
-                const Vector factor1 = 0.5*ab;
-                const Vector gradU   = fU*( dLnL*(factor1 - factor2) -dn*(factor3 - factor4) );
-
-    	    
-    	        ff.push_back(fact*(gradU - gradV));
-                list.push_back(ringInfo[i].atom[at]);
+              if(ringInfo[i].numAtoms==6) {
+    	        // update forces on ring atoms
+                for(unsigned at=0;at<6;at++) {
+                  const Vector ab = crossProduct(d,ringInfo[i].g[at]);
+                  const Vector c  = crossProduct(n,ringInfo[i].g[at]);
+    	          const Vector factor3 = 0.5*dL_nL*c;
+                  const Vector factor1 = 0.5*ab;
+                  const Vector gradU   = fU*( dLnL*(factor1 - factor2) -dn*(factor3 - factor4) );
+    	          ff.push_back(fact*(gradU - gradV));
+                  list.push_back(ringInfo[i].atom[at]);
+                }
+              } else {
+                for(unsigned at=0;at<3;at++) {
+                  const Vector ab = crossProduct(d,ringInfo[i].g[at]);
+                  const Vector c  = crossProduct(n,ringInfo[i].g[at]);
+    	          const Vector factor3 = dL_nL*c;
+                  const Vector factor1 = ab;
+                  const Vector gradU   = fU*( dLnL*(factor1 - factor2) -dn*(factor3 - factor4) );
+    	          ff.push_back(fact*(gradU - gradV));
+                }
+                list.push_back(ringInfo[i].atom[0]);
+                list.push_back(ringInfo[i].atom[2]);
+                list.push_back(ringInfo[i].atom[3]);
               }
             }
           }
@@ -1151,24 +1152,47 @@ void CS2Backbone::update_neighb(){
 void CS2Backbone::compute_ring_parameters(){
   for(unsigned i=0;i<ringInfo.size();i++){
     const unsigned size = ringInfo[i].numAtoms;
-    vector<Vector> a;
-    a.resize(size);
-    a[0] = getPosition(ringInfo[i].atom[0]);
-    // ring center
-    Vector midP = a[0];
-    for(unsigned j=1; j<size; j++) {
-      a[j] = getPosition(ringInfo[i].atom[j]);
-      midP += a[j];
+    if(size==6) {
+      ringInfo[i].g[0] = delta(getPosition(ringInfo[i].atom[4]),getPosition(ringInfo[i].atom[2]));
+      ringInfo[i].g[1] = delta(getPosition(ringInfo[i].atom[5]),getPosition(ringInfo[i].atom[3]));
+      ringInfo[i].g[2] = delta(getPosition(ringInfo[i].atom[0]),getPosition(ringInfo[i].atom[4]));
+      ringInfo[i].g[3] = delta(getPosition(ringInfo[i].atom[1]),getPosition(ringInfo[i].atom[5]));
+      ringInfo[i].g[4] = delta(getPosition(ringInfo[i].atom[2]),getPosition(ringInfo[i].atom[0]));
+      ringInfo[i].g[5] = delta(getPosition(ringInfo[i].atom[3]),getPosition(ringInfo[i].atom[1]));
+      vector<Vector> a(size);
+      a[0] = getPosition(ringInfo[i].atom[0]);
+      // ring center
+      Vector midP = a[0];
+      for(unsigned j=1; j<size; j++) {
+        a[j] = getPosition(ringInfo[i].atom[j]);
+        midP += a[j];
+      }
+      midP /= (double) size;
+      ringInfo[i].position = midP;
+      // compute normal vector to plane containing first three atoms in array
+      ringInfo[i].n1 = crossProduct(delta(a[0],a[4]), delta(a[0],a[2]));
+      // compute normal vector to plane containing last three atoms in array
+      // NB: third atom of five-membered ring used for both computations above
+      ringInfo[i].n2 = crossProduct(delta(a[3],a[1]), delta(a[3],a[5]));
+      // ring plane normal vector is average of n1 and n2
+      ringInfo[i].normVect = 0.5*(ringInfo[i].n1 + ringInfo[i].n2);
+    } else {
+      ringInfo[i].g[0] = delta(getPosition(ringInfo[i].atom[3]),getPosition(ringInfo[i].atom[2]));
+      ringInfo[i].g[1] = delta(getPosition(ringInfo[i].atom[0]),getPosition(ringInfo[i].atom[3]));
+      ringInfo[i].g[2] = delta(getPosition(ringInfo[i].atom[2]),getPosition(ringInfo[i].atom[0]));
+      vector<Vector> a(size);
+      for(unsigned j=0; j<size; j++) {
+        a[j] = getPosition(ringInfo[i].atom[j]);
+      }
+      // ring center
+      Vector midP = (a[0]+a[2]+a[3])/(double) size;
+      ringInfo[i].position = midP;
+      // compute normal vector to plane containing first three atoms in array
+      ringInfo[i].n1 = crossProduct(delta(a[0],a[3]), delta(a[0],a[2]));
+      // ring plane normal vector is average of n1 and n2
+      ringInfo[i].normVect = ringInfo[i].n1;
+
     }
-    midP /= (double) size;
-    ringInfo[i].position = midP;
-    // compute normal vector to plane containing first three atoms in array
-    ringInfo[i].n1 = crossProduct(delta(a[1],a[0]), delta(a[1], a[2]));
-    // compute normal vector to plane containing last three atoms in array
-    // NB: third atom of five-membered ring used for both computations above
-    ringInfo[i].n2 = crossProduct(delta(a[size-2], a[size-3]), delta(a[size-2], a[size-1]));
-    // ring plane normal vector is average of n1 and n2
-    ringInfo[i].normVect = 0.5*(ringInfo[i].n1 + ringInfo[i].n2);
     // calculate squared length and length of normal vector
     ringInfo[i].lengthN2 = 1./ringInfo[i].normVect.modulo2(); 
     ringInfo[i].lengthNV = 1./sqrt(ringInfo[i].lengthN2);
@@ -1564,7 +1588,9 @@ void CS2Backbone::init_rings(const PDB &pdb){
         ri2.rtype = RingInfo::R_TRP2;
         ringInfo.push_back(ri2);
 
-      } else { //HIS case
+      } else if((frg=="HIS")||(frg=="HIP")||(frg=="HID")||
+                (frg=="HIE")||(frg=="HSD")||(frg=="HSE")||
+                (frg=="HSP")) {//HIS case
         RingInfo ri;
         for(unsigned a=0;a<frg_atoms.size();a++){
           unsigned atm = frg_atoms[a].index()-atom_offset+old_size;
@@ -1578,6 +1604,8 @@ void CS2Backbone::init_rings(const PDB &pdb){
         ri.numAtoms = 5;
         ri.rtype = RingInfo::R_HIS;
         ringInfo.push_back(ri);
+      } else {
+        plumed_merror("Unkwown Ring Fragment");
       }
     }
     old_size += aend.index()+1; 
@@ -1598,7 +1626,6 @@ CS2Backbone::aa_t CS2Backbone::frag2enum(const string &aa) {
   else if (aa == "GLU") type = GLU;
   else if (aa == "GLH") type = GLU;
   else if (aa == "GLY") type = GLY;
-  else if (aa == "GME") type = GLY;
   else if (aa == "HIS") type = HIS;
   else if (aa == "HSE") type = HIS;
   else if (aa == "HIE") type = HIS;
@@ -1607,7 +1634,6 @@ CS2Backbone::aa_t CS2Backbone::frag2enum(const string &aa) {
   else if (aa == "HSD") type = HIS;
   else if (aa == "HID") type = HIS;
   else if (aa == "ILE") type = ILE;
-  else if (aa == "IME") type = ILE;
   else if (aa == "LEU") type = LEU;
   else if (aa == "LYS") type = LYS;
   else if (aa == "MET") type = MET;
@@ -1721,7 +1747,7 @@ vector<string> CS2Backbone::side_chain_atoms(const string &s){
     sc.push_back( "HG2" );
     sc.push_back( "HG3" );
     return sc;
-  } else if(s=="GLY"||s=="GME"){
+  } else if(s=="GLY"){
     sc.push_back( "HA2" );
     return sc;
   } else if(s=="HIS"||s=="HSE"||s=="HIE"||s=="HSD"||s=="HID"||s=="HIP"||s=="HSP"){
@@ -1739,7 +1765,7 @@ vector<string> CS2Backbone::side_chain_atoms(const string &s){
     sc.push_back( "HE1" );
     sc.push_back( "HE2" );
     return sc;
-  } else if(s=="ILE"||s=="IME"){
+  } else if(s=="ILE"){
     sc.push_back( "CB" );
     sc.push_back( "CG1" );
     sc.push_back( "CG2" );

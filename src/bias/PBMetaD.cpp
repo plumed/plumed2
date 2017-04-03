@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015,2016 The plumed team
+   Copyright (c) 2015-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -286,15 +286,15 @@ void PBMetaD::registerKeywords(Keywords& keys){
   keys.use("ARG");
   keys.add("compulsory","SIGMA","the widths of the Gaussian hills");
   keys.add("compulsory","PACE","the frequency for hill addition, one for all biases");
-  keys.add("optional","FILE","files in which the lists of added hills are stored");
+  keys.add("optional","FILE","files in which the lists of added hills are stored, default names are assigned using arguments if FILE is not found");
   keys.add("optional","HEIGHT","the height of the Gaussian hills, one for all biases. Compulsory unless TAU, TEMP and BIASFACTOR are given");
   keys.add("optional","FMT","specify format for HILLS files (useful for decrease the number of digits in regtests)");
   keys.add("optional","BIASFACTOR","use well tempered metadynamics with this biasfactor, one for all biases.  Please note you must also specify temp");
   keys.add("optional","TEMP","the system temperature - this is only needed if you are doing well-tempered metadynamics");
   keys.add("optional","TAU","in well tempered metadynamics, sets height to (kb*DeltaT*pace*timestep)/tau");
   keys.add("optional","GRID_RFILES", "read grid for the bias");
-  keys.add("optional","GRID_WFILES", "dump grid for the bias");
   keys.add("optional","GRID_WSTRIDE", "frequency for dumping the grid");
+  keys.add("optional","GRID_WFILES", "dump grid for the bias, default names are used if GRID_WSTRIDE is used without GRID_WFILES.");
   keys.add("optional","GRID_MIN","the lower bounds for the grid");
   keys.add("optional","GRID_MAX","the upper bounds for the grid");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
@@ -310,7 +310,7 @@ void PBMetaD::registerKeywords(Keywords& keys){
   keys.add("optional","ADAPTIVE","use a geometric (=GEOM) or diffusion (=DIFF) based hills width scheme. Sigma is one number that has distance units or timestep dimensions");
   keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
-  keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with other WALKERS_* options");
+  keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with WALKERS_* options other than WALKERS_DIR");
   keys.use("RESTART");
   keys.use("UPDATE_FROM");
   keys.use("UPDATE_UNTIL");
@@ -339,7 +339,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
 PLUMED_BIAS_INIT(ao),
 grid_(false), height0_(std::numeric_limits<double>::max()),
 biasf_(1.0), kbt_(0.0), stride_(0), wgridstride_(0), welltemp_(false),
-mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1),
+mw_n_(1), mw_dir_(""), mw_id_(0), mw_rstride_(1),
 walkers_mpi(false), mpi_nw_(0),
 adaptive_(FlexibleBin::none),
 isFirstStep(true)
@@ -449,12 +449,15 @@ isFirstStep(true)
   parseFlag("WALKERS_MPI",walkers_mpi);
 
   // Grid file
+  parse("GRID_WSTRIDE",wgridstride_);
   vector<string> gridfilenames_;
   parseVector("GRID_WFILES",gridfilenames_);
-  parse("GRID_WSTRIDE",wgridstride_);
   if (wgridstride_ == 0 && gridfilenames_.size() > 0) {
     error("frequency with which to output grid not specified use GRID_WSTRIDE");
   }
+  if(gridfilenames_.size()==0 && wgridstride_ > 0) {
+    for(unsigned i=0;i<getNumberOfArguments();i++) gridfilenames_.push_back("GRID."+getPntrToArgument(i)->getName());
+  } 
   if(gridfilenames_.size() > 0 && hillsfname.size() > 0 && gridfilenames_.size() != hillsfname.size()) 
     error("number of GRID_WFILES arguments does not match number of HILLS files");
 
@@ -552,10 +555,11 @@ isFirstStep(true)
     log.printf("  %d multiple walkers active\n",mw_n_);
     log.printf("  walker id %d\n",mw_id_);
     log.printf("  reading stride %d\n",mw_rstride_);
-    log.printf("  directory with hills files %s\n",mw_dir_.c_str());
+    if(mw_dir_!="")log.printf("  directory with hills files %s\n",mw_dir_.c_str());
   } else {
     if(walkers_mpi) {
       log.printf("  Multiple walkers active using MPI communnication\n"); 
+      if(mw_dir_!="")log.printf("  directory with hills files %s\n",mw_dir_.c_str());
       if(comm.Get_rank()==0){
         // Only root of group can communicate with other walkers
         mpi_nw_ = multi_sim_comm.Get_size();
@@ -665,11 +669,22 @@ isFirstStep(true)
     for(unsigned i=0;i<hillsfname.size();++i){
       unsigned k=j*hillsfname.size()+i;
       string fname;
-      if(mw_n_>1) {
-        stringstream out; out << j;
-        fname = mw_dir_+"/"+hillsfname[i]+"."+out.str();
+      if(mw_dir_!="") {
+        if(mw_n_>1) {
+          stringstream out; out << j;
+          fname = mw_dir_+"/"+hillsfname[i]+"."+out.str();
+        } else if(walkers_mpi) {
+          fname = mw_dir_+"/"+hillsfname[i];
+        } else {
+          fname = hillsfname[i];
+        }
       } else {
-        fname = hillsfname[i];
+        if(mw_n_>1) {
+          stringstream out; out << j;
+          fname = hillsfname[i]+"."+out.str();
+        } else {
+          fname = hillsfname[i];
+        }
       }
       IFile *ifile = new IFile();
       ifile->link(*this);

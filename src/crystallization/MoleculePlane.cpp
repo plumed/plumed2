@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2016 The plumed team
+   Copyright (c) 2014-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -61,9 +61,9 @@ MoleculePlane::MoleculePlane( const ActionOptions& ao ):
 Action(ao),
 VectorMultiColvar(ao)
 {
-  int natoms=-1; std::vector<AtomNumber> all_atoms;
-  readAtomsLikeKeyword("MOL",natoms,all_atoms); 
-  if( natoms!=3 && natoms!=4 ) error("number of atoms in molecule specification is wrong.  Should be three or four.");
+  std::vector<AtomNumber> all_atoms;
+  readAtomsLikeKeyword("MOL",-1,all_atoms); 
+  if( ablocks.size()!=3 && ablocks.size()!=4 ) error("number of atoms in molecule specification is wrong.  Should be three or four.");
 
   if( all_atoms.size()==0 ) error("No atoms were specified");
   setVectorDimensionality( 3 ); setupMultiColvarBase( all_atoms );

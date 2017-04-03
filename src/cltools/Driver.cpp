@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -77,6 +77,8 @@ plumed driver-float --plumed plumed.dat --ixyz trajectory.xyz
 See also examples in \ref driver
 
 */
+//+ENDPLUMEDOC
+//
 
 
 //+PLUMEDOC TOOLS driver
@@ -169,8 +171,7 @@ static vector<molfile_plugin_t *> plugins;
 static map <string, unsigned> pluginmap;
 static int register_cb(void *v, vmdplugin_t *p){
   //const char *key = p->name;
-  std::pair<std::map<string,unsigned>::iterator,bool> ret; 
-  ret = pluginmap.insert ( std::pair<string,unsigned>(string(p->name),plugins.size()) );
+  const auto ret = pluginmap.insert ( std::pair<string,unsigned>(string(p->name),plugins.size()) );
   if (ret.second==false) { 
 	//cerr<<"MOLFILE: found duplicate plugin for "<<key<<" : not inserted "<<endl; 
   }else{
@@ -187,7 +188,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Driver(const CLToolOptions& co );
   int main(FILE* in,FILE*out,Communicator& pc);
-  void evaluateNumericalDerivatives( const int& step, Plumed& p, const std::vector<real>& coordinates,
+  void evaluateNumericalDerivatives( const long int& step, Plumed& p, const std::vector<real>& coordinates,
                                      const std::vector<real>& masses, const std::vector<real>& charges,
                                      std::vector<real>& cell, const double& base, std::vector<real>& numder );
   string description()const;
@@ -453,7 +454,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
   int rr=sizeof(real);
   p.cmd("setRealPrecision",&rr);
   int checknatoms=-1;
-  int step=0;
+  long int step=0;
   if(Communicator::initialized()){
     if(multi){
       if(intracomm.Get_rank()==0) p.cmd("GREX setMPIIntercomm",&intercomm.Get_comm());
@@ -809,7 +810,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 
      }
 
-     p.cmd("setStep",&step);
+     p.cmd("setStepLong",&step);
      p.cmd("setStopFlag",&plumedStopCondition);
 
        if(debug_dd){
@@ -832,7 +833,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
        p.cmd("setBox",&cell[0]);
        p.cmd("setVirial",&virial[0]);
    }else{
-    p.cmd("setStep",&step);
+    p.cmd("setStepLong",&step);
     p.cmd("setStopFlag",&plumedStopCondition);
    }
    p.cmd("calc");
@@ -931,7 +932,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 }
 
 template<typename real>
-void Driver<real>::evaluateNumericalDerivatives( const int& step, Plumed& p, const std::vector<real>& coordinates,
+void Driver<real>::evaluateNumericalDerivatives( const long int& step, Plumed& p, const std::vector<real>& coordinates,
                                                  const std::vector<real>& masses, const std::vector<real>& charges,
                                                  std::vector<real>& cell, const double& base, std::vector<real>& numder ){
 
@@ -945,7 +946,7 @@ void Driver<real>::evaluateNumericalDerivatives( const int& step, Plumed& p, con
   for(int i=0;i<natoms;++i){
      for(unsigned j=0;j<3;++j){
          pos[i][j]=pos[i][j]+delta;
-         p.cmd("setStep",&step);
+         p.cmd("setStepLong",&step);
          p.cmd("setPositions",&pos[0][0]);
          p.cmd("setForces",&fake_forces[0]);
          p.cmd("setMasses",&masses[0]);
@@ -969,7 +970,7 @@ void Driver<real>::evaluateNumericalDerivatives( const int& step, Plumed& p, con
      for(int j=0;j<natoms;++j) pos[j]=pbc.realToScaled( pos[j] );
      cell[3*i+k]=box(i,k)=box(i,k)+delta; pbc.setBox(box); 
      for(int j=0;j<natoms;j++) pos[j]=pbc.scaledToReal( pos[j] );
-     p.cmd("setStep",&step);
+     p.cmd("setStepLong",&step);
      p.cmd("setPositions",&pos[0][0]);
      p.cmd("setForces",&fake_forces[0]);
      p.cmd("setMasses",&masses[0]);

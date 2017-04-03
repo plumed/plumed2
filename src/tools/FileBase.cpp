@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -20,8 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "FileBase.h"
-// this is required to compile test
-#include "File.h"
 #include "Exception.h"
 #include "core/Action.h"
 #include "core/PlumedMain.h"
@@ -40,33 +38,6 @@
 #endif
 
 namespace PLMD{
-
-void FileBase::test(){
-  PLMD::OFile pof;
-  pof.open("ciao");
-  pof.printf("%s\n","test1");
-  pof.setLinePrefix("plumed: ");
-  pof.printf("%s\n","test2");
-  pof.setLinePrefix("");
-  pof.addConstantField("x2").printField("x2",67.0);
-  pof.printField("x1",10.0).printField("x3",20.12345678901234567890).printField();
-  pof.printField("x1",10.0).printField("x3",-1e70*20.12345678901234567890).printField();
-  pof.printField("x3",10.0).printField("x2",777.0).printField("x1",-1e70*20.12345678901234567890).printField();
-  pof.printField("x3",67.0).printField("x1",18.0).printField();
-  pof.close();
-
-  PLMD::IFile pif;
-  std::string s;
-  pif.open("ciao");
-  pif.getline(s); std::printf("%s\n",s.c_str());
-  pif.getline(s); std::printf("%s\n",s.c_str());
-  
-  int x1,x2,x3;
-  while(pif.scanField("x1",x1).scanField("x3",x2).scanField("x2",x3).scanField()){
-    std::cout<<"CHECK "<<x1<<" "<<x2<<" "<<x3<<"\n";
-  }
-  pif.close();
-}
 
 FileBase& FileBase::link(FILE*fp){
   plumed_massert(!this->fp,"cannot link an already open file");

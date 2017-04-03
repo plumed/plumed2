@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -58,6 +58,7 @@ Atoms::Atoms(PlumedMain&plumed):
   naturalUnits(false),
   timestep(0.0),
   forceOnEnergy(0.0),
+  zeroallforces(false),
   kbT(0.0),
   asyncSent(false),
   atomsNeeded(false),
@@ -165,7 +166,7 @@ void Atoms::shareAll(){
 void Atoms::share(const std::set<AtomNumber>& unique){
   plumed_assert( positionsHaveBeenSet==3 && massesHaveBeenSet );
   virial.zero();
-  if(int(gatindex.size())==natoms){
+  if(zeroallforces || int(gatindex.size())==natoms){
     for(int i=0;i<natoms;i++) forces[i].zero();
   } else {
     for(unsigned i=0;i<gatindex.size();i++) forces[gatindex[i]].zero();
@@ -201,15 +202,15 @@ void Atoms::share(const std::set<AtomNumber>& unique){
       for(unsigned i=0;i<dd.mpi_request_index.size();i++)     dd.mpi_request_index[i].wait();
     }
     int count=0;
-    for(std::set<AtomNumber>::const_iterator p=unique.begin();p!=unique.end();++p){
-      if(dd.g2l[p->index()]>=0){
-        dd.indexToBeSent[count]=p->index();
-        dd.positionsToBeSent[ndata*count+0]=positions[p->index()][0];
-        dd.positionsToBeSent[ndata*count+1]=positions[p->index()][1];
-        dd.positionsToBeSent[ndata*count+2]=positions[p->index()][2];
+    for(const auto & p : unique){
+      if(dd.g2l[p.index()]>=0){
+        dd.indexToBeSent[count]=p.index();
+        dd.positionsToBeSent[ndata*count+0]=positions[p.index()][0];
+        dd.positionsToBeSent[ndata*count+1]=positions[p.index()][1];
+        dd.positionsToBeSent[ndata*count+2]=positions[p.index()][2];
         if(!massAndChargeOK){
-          dd.positionsToBeSent[ndata*count+3]=masses[p->index()];
-          dd.positionsToBeSent[ndata*count+4]=charges[p->index()];
+          dd.positionsToBeSent[ndata*count+3]=masses[p.index()];
+          dd.positionsToBeSent[ndata*count+4]=charges[p.index()];
         }
         count++;
       }
@@ -320,7 +321,7 @@ void Atoms::add(const ActionAtomistic*a){
 }
 
 void Atoms::remove(const ActionAtomistic*a){
-  vector<const ActionAtomistic*>::iterator f=find(actions.begin(),actions.end(),a);
+  auto f=find(actions.begin(),actions.end(),a);
   plumed_massert(f!=actions.end(),"cannot remove an action registered to atoms");
   actions.erase(f);
 }
@@ -380,8 +381,9 @@ void Atoms::setAtomsContiguous(int start){
 }
 
 void Atoms::setRealPrecision(int p){
+  MDAtomsBase *x=MDAtomsBase::create(p);
   delete mdatoms;
-  mdatoms=MDAtomsBase::create(p);
+  mdatoms=x;
 }
 
 int Atoms::getRealPrecision()const{

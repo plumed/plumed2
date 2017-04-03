@@ -6,8 +6,11 @@
 This tutorial is concerned with the collective variables that we use to study order/disorder
 transitions such as the transition between the solid and liquid phase.  In this tutorial
 we will look at the transition from solid to liquid as this is easier to study using simulation.
-The CVs we will intorduce can, and have, been used to study the transition from liquid to solid.
+The CVs we will introduce can, and have, been used to study the transition from liquid to solid.
 More information can be found in the further reading section.
+
+<b> You will need to ensure that you have compiled PLUMED with the crystalisation module enabled in order to complete this tutorial. </b>
+To learn how to activate this module consult the information in the manual about the \ref mymodules.
 
 \subsection belfast-10-lo Learning Outcomes
 
@@ -62,15 +65,17 @@ At what temperatures did the simulations melt?  What then is the melting point o
 
 \subsection belfast-10-cvs Coordination Numbers
 
-At the end of the previous section you were able to make very sophisticated judegements about whether or not the arrangment of atoms
+At the end of the previous section you were able to make very sophisticated judgements about whether or not the arrangment of atoms
 in your system was solid-like or liquid-like by simply looking at the configuration.  The aim in the rest of this tutorial is to 
 see if we can derive collective variables that are able to make an equally sophisticated judgement.  For our first attempt lets use
-a CV which we have encoutered elsewhere, the \ref COORDINATIONNUMBER.
+a CV which we have encountered elsewhere, the \ref COORDINATIONNUMBER.  Rerun the calculations from the previous section but at variance
+with the previous section use the plumed input file below instead of a empty file.  This input will ensure that the average 
+\ref COORDINATIONNUMBER of the atoms in your system is computed and printed.
 
-Create a plumed input file that calculates the average \ref COORDINATIONNUMBER of the atoms in your system and outputs it to a file
-every 100 steps.  You will need to use the \ref COORDINATIONNUMBER and \ref PRINT actions.  The switching function that tells plumed
-whether or not two atoms are bonded should be of type RATIONAL and should have its \f$d_0\f$ parameter equal to 1.3 its \f$r_0\f$ 
-parameter equal to 0.2 and its \f$n\f$ and \f$m\f$ parameters set equal to 6 and 12 repsectively.
+\verbatim
+cc: COORDINATIONNUMBER SPECIES=1-108 SWITCH={RATIONAL D_0=1.3 R_0=0.2 D_MAX=3.0} MEAN
+PRINT ARG=cc.* FILE=colvar STRIDE=100
+\endverbatim
 
 Rerun the simpled simulations described at the end of the previous section.  Is the average coordination number good at 
 differentiaing between solid and liquid configurations?  Given your knowledge of physics/chemistry is this result surprising?
@@ -88,11 +93,16 @@ different the system is liquid-like. The Steinhardt parameters \ref Q3, \ref Q4 
 coordination spheres of atoms in precisely this way. The way in which these coordinates are able to do this is explained in the 
 <a href="https://www.youtube.com/watch?v=ou0uKgK35lE"> video </a>.
 
-Repeat the calculations from the end of the previous section but edit the plumed.dat file so that the average \ref Q6 parameter is calculated
-and printed as well as the average \ref COORDINATIONNUMBER.  In the Steinhardt parameter implementation in plumed the set of atoms in the
-coordination sphere of a particular atom are defined using a continuous switching function.  For this calculation you should use a RATIONAL 
-switching funciton with parameters \f$d_0\f$ equal to 1.3, \f$r_0\f$ equal to 0.2 and \f$n\f$ and \f$m\f$ set equal to 6 and 12 repsectively.
-Is the average Q6 parameter able to differentiate between the solid and liquid states?
+Repeat the calculations from the end of the previous section but using the plumed.dat file below.  
+
+\verbatim
+cc: COORDINATIONNUMBER SPECIES=1-108 SWITCH={RATIONAL D_0=1.3 R_0=0.2 D_MAX=3.0} MEAN
+q6: Q6 SPECIES=1-108 SWITCH={RATIONAL D_0=1.3 R_0=0.2 D_MAX=3.0} MEAN
+PRINT ARG=cc.*,q6.* FILE=colvar STRIDE=100
+\endverbatim
+
+This will output the average \ref Q6 parameter and the average \ref COORDINATIONNUMBER.  In the Steinhardt parameter implementation in plumed the set of atoms in the
+coordination sphere of a particular atom are defined using a continuous switching function.  Is the average Q6 parameter able to differentiate between the solid and liquid states?
 
 \subsection belfast-10-lvsg Local versus Global
 
@@ -107,12 +117,16 @@ as just another atom in the solid/liquid phase?
 With these questions in mind our aim is to look at the distribution of values for the Q6 parameters of atoms in our system of Lennard-Jones have.  If Q6 is able
 to unambigously tell us whether or not an atom is in a solid-like pose or a liquid-like pose then there should be no overlap in the distributions obtained for the 
 solid and liquid phases.  If there is overlap, however, then we cannot use these coordinates for the applications described in the previous paragraph.
-To calculate these distributions you will need to run two simulations - one at 0.2 \f$\frac{k_B T}{\epsilon}\f$ and one at 1.2 \f$\frac{k_Bt}{\epsilon}\f$.
-For these simulation you will need plumed.dat files that calculate and output the distribution of Steinhardt parameters. In writing the plumed input for these 
-calcualtions you will need to use the \ref PRINT command and the \ref Q6 command. In your Q6 instructions you will need to use the HISTOGRAM keyword - my 
-recommendation would be to calculate a histogram consisting of 20 bins over a range starting at 0.0 and finishing at 1.0.  Set the SMEAR parameter equal to 0.1.
-Do the distributions of Q6 parameters for the solid and liquid phase overlap?  N.B.  You can load the output from these simulations using GISMO and the all cvs
-button from the bar at the bottom.
+To calculate these distributions you will need to run two simulations - one at 0.2 \f$\frac{k_B T}{\epsilon}\f$ and one at 1.2 \f$\frac{k_Bt}{\epsilon}\f$ 
+using now the following PLUMED input file:
+
+\verbatim
+q6: Q6 SPECIES=1-108 SWITCH={RATIONAL D_0=1.3 R_0=0.2 D_MAX=3.0} 
+hh: HISTOGRAM DATA=q6 GRID_MIN=0 GRID_MAX=1.0 GRID_BIN=100 BANDWIDTH=0.05 STRIDE=100
+DUMPGRID GRID=hh FILE=histo STRIDE=50000
+\endverbatim
+
+Do the distributions of Q6 parameters in the solid and liquid phase overlap?  
 
 \subsection belfast-10-links Local Steinhardt parameters 
 
@@ -121,15 +135,21 @@ surprising - as you go from solid to liquid the distribution of the geometries o
 atoms in the coordination spheres in a much wider variety of different poses.  Importantly, however, the fact that an atom is in a liquid does not preclude
 it from having a very-ordered, solid-like coordination environment. As such in the liquid state we will find the occasional atom with a high value
 for the Q6 parameter.  Consequently, an ordred coordination environment does not always differentiate solid-like atoms from liquid-like atoms.  The major
-difference is the liquid the ordered atoms will always be isolated.  That is to say in the liquid atoms with an ordered coordination will always be surrounded 
+difference is in the liquid the ordered atoms will always be isolated.  That is to say in the liquid atoms with an ordered coordination will always be surrounded 
 by atoms with a disordered coordination sphere. By contrast in the solid each ordered atom will be surrounded by further ordered atoms.  This observation 
 forms the basis of the local Steinhardt parameters and the locally averaged Steinhardt parameters that are explained in this 
 <a href="https://www.youtube.com/watch?v=JBtIs5qYIPE&feature=youtu.be"> video </a>. 
 
-Lets use plumed to calculate the distribution of \ref LOCAL_Q6 parameters in the solid and liquid phases.  Repeat the calculations from the previous section but now
-use the HISTOGRAM keyword to calculate the distribution of \ref LOCAL_Q6 parameters.  For the switching function in the \ref LOCAL_Q6 parameter instruction use a
-RATIONAL function with  \f$d_0\f$ equal to 1.3, \f$r_0\f$ equal to 0.2 and \f$n\f$ and \f$m\f$ set equal to 6 and 12 repsectively.  For the HISTOGRAM use 20 bins
-starting at 0.0 and finishing at 1.0.  Se the SMEAR paraemter equal to 0.1.  Do the distributions of \ref LOCAL_Q6 parameter for the solid and liquid phases overlap? 
+Lets use plumed to calculate the distribution of \ref LOCAL_Q6 parameters in the solid and liquid phases.  We can do this using the input file shown below:
+
+\verbatim
+q6: Q6 SPECIES=1-108 SWITCH={RATIONAL D_0=1.3 R_0=0.2 D_MAX=3.0} 
+lq6: LOCAL_Q6 SPECIES=q6 SWITCH={RATIONAL D_0=1.3 R_0=0.2 D_MAX=3.0}
+hh: HISTOGRAM DATA=lq6 GRID_MIN=0 GRID_MAX=1.5 GRID_BIN=150 BANDWIDTH=0.05 STRIDE=10
+DUMPGRID GRID=hh FILE=histo STRIDE=50000
+\endverbatim  
+
+Do the distributions of \ref LOCAL_Q6 parameter for the solid and liquid phases overlap? 
 
 Lectner and Dellago have designed an alternative to the \ref LOCAL_Q6 parameter that is based on taking the \ref LOCAL_AVERAGE of the Q6 parameter arround a central atom. This
 quantity can be calcualted using plumed. If you have time try to use the manual to work out how.
@@ -141,6 +161,7 @@ There is a substantial literature on simulation of nucleation. Some papers are l
 - F. Trudu, D. Donadio and M. Parrinello <a href="http://journals.aps.org/prl/abstract/10.1103/PhysRevLett.97.105701"> Freezing of a Lennard-Jones Fluid: From Nucleation to Spinodal Regime </a>, Phys. Rev. Lett. 97 105701 (2006)
 - D. Quigley and P. M. Rodger <a href="http://dx.doi.org/10.1080/08927020802647280"> A metadynamics-based approach to sampling crystallization events </a>, Mol. Simul. 2009
 - W. Lechner and C. Dellago <a href="http://scitation.aip.org/content/aip/journal/jcp/129/11/10.1063/1.2977970"> Accurate determination of crystal structures based on averaged local bond order parameters </a> J. Chem. Phys 129 114707 (2008)
+- B. Cheng, G. A. Tribello and M. Ceriotti <a href="http://journals.aps.org/prb/abstract/10.1103/PhysRevB.92.180102">Solid-liquid interfacial free energy out of equilibrium </a>
 */
 
 link: @subpage belfast-10

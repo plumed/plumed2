@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -107,7 +107,7 @@ do_cosine(false)
   checkRead();
 
   if(atoms.size()==4){
-    if(!(v1.empty()) && (v2.empty()) && (axis.empty()))
+    if(!(v1.empty() && v2.empty() && axis.empty()))
       error("ATOMS keyword is not compatible with VECTOR1, VECTOR2 and AXIS keywords");
     log.printf("  between atoms %d %d %d %d\n",atoms[0].serial(),atoms[1].serial(),atoms[2].serial(),atoms[3].serial());
     atoms.resize(6);

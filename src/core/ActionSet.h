@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -72,8 +72,8 @@ public:
 template <class T>
 std::vector<T> ActionSet::select()const{
   std::vector<T> ret;
-  for(const_iterator p=begin();p!=end();++p){
-    T t=dynamic_cast<T>(*p);
+  for(const auto & p : (*this)){
+    T t=dynamic_cast<T>(p);
     if(t) ret.push_back(t);
   };
   return ret;
@@ -81,8 +81,8 @@ std::vector<T> ActionSet::select()const{
 
 template <class T>
 T ActionSet::selectWithLabel(const std::string&s)const{
-  for(const_iterator p=begin();p!=end();++p){
-    T t=dynamic_cast<T>(*p);
+  for(const auto & p : (*this)){
+    T t=dynamic_cast<T>(p);
     if(t && dynamic_cast<Action*>(t)->getLabel()==s) return t;
   };
   return NULL;
@@ -91,9 +91,9 @@ T ActionSet::selectWithLabel(const std::string&s)const{
 template <class T>
 std::vector<Action*> ActionSet::selectNot()const{
   std::vector<Action*> ret;
-  for(const_iterator p=begin();p!=end();++p){
-    T t=dynamic_cast<T>(*p);
-    if(!t) ret.push_back(*p);
+  for(const auto & p : (*this)){
+    T t=dynamic_cast<T>(p);
+    if(!t) ret.push_back(p);
   };
   return ret;
 }

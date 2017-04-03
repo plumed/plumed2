@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -67,8 +67,8 @@ void ActionWithVirtualAtom::setGradients(){
     // this case if the atom is a virtual one 	 
     if(atoms.isVirtualAtom(an)){
       const ActionWithVirtualAtom* a=atoms.getVirtualAtomsAction(an);
-      for(std::map<AtomNumber,Tensor>::const_iterator p=a->gradients.begin();p!=a->gradients.end();++p){
-        gradients[(*p).first]+=matmul(derivatives[i],(*p).second);
+      for(const auto & p : a->gradients){
+        gradients[p.first]+=matmul(derivatives[i],p.second);
       }
     // this case if the atom is a normal one 	 
     } else {

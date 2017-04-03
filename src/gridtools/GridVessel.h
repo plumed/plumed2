@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015,2016 The plumed team
+   Copyright (c) 2015-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -204,8 +204,7 @@ double GridVessel::getCellVolume() const {
       double myvol=1.0; for(unsigned i=0;i<dimension;++i) myvol *= dx[i];
       return myvol;
   } else {
-      plumed_merror("cell volume for surface grid not worked out yet"); 
-      return 0.0; 
+      return 4*pi / static_cast<double>( getNumberOfPoints() ); 
   }
 }
 

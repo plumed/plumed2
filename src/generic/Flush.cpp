@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -72,8 +72,8 @@ public:
     plumed.fflush();
     log.flush();
     const ActionSet & actionSet(plumed.getActionSet());
-    for(ActionSet::const_iterator p=actionSet.begin();p!=actionSet.end();++p)
-    (*p)->fflush();
+    for(const auto & p : actionSet)
+    p->fflush();
   }
 };
 

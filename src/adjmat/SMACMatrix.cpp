@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016 The plumed team
+   Copyright (c) 2016,2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -46,7 +46,7 @@ are with a certain distance of each other and when the molecules are aligned in 
 
 In the following example an adjacency matrix is constructed in which the \f$(i,j)\f$ element is equal to one if 
 molecules \f$i\f$ and \f$j\f$ are within 6 angstroms of each other and if the torsional angle between the orientations 
-of these molecules is close to 0 or \pi.  The various connected components of this matrix are determined using the 
+of these molecules is close to 0 or \f$\pi\f$.  The various connected components of this matrix are determined using the 
 \ref DFSCLUSTERING algorithm and then the size of the largest cluster of connectes molecules is output to a colvar file
 
 \verbatim

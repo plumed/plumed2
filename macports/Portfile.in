@@ -1,5 +1,4 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 123374 2014-08-08 21:53:07Z mojca@macports.org $
 
 PortSystem          1.0
 
@@ -7,6 +6,7 @@ name                plumed
 PortGroup           mpi 1.0
 PortGroup           linear_algebra 1.0
 PortGroup           debug 1.0
+PortGroup           cxx11 1.1
 
 version             @_VERSION_@
 revision            @_REVISION_@
@@ -59,6 +59,8 @@ if {[mpi_variant_isset]} {
 
 variant matheval description {Enable libmatheval} {
   configure.args-replace --disable-matheval --enable-matheval
+# this is needed due to a problem with libmatheval:
+  depends_lib-append port:flex
   depends_lib-append port:libmatheval
 }
 
@@ -93,24 +95,9 @@ variant doc description {Also compile documentation} {
 
 set plumed_modules reset
 
-variant crystallization description {Enable crystallization module} {
-  set plumed_modules ${plumed_modules}+crystallization
-}
+# this will automatically create variants for each optional module
+@_MODULES_@ plumed_modules
 
-variant manyrestraints description {Enable manyrestraints module} {
-  set plumed_modules ${plumed_modules}+manyrestraints
-}
-
-variant adjmat description {Enable adjmat module} {
-  set plumed_modules ${plumed_modules}+adjmat
-}
-
-#### I leave this out momentarily since it has problems
-# variant imd description {Enable imd module - includes some proprietary code} {
-#   license ${license} Restrictive
-#   set plumed_modules ${plumed_modules}+imd
-# }
- 
 pre-configure {
   # commands should be included in a pre-configure block to access tcl variables
   configure.args-append --enable-modules=${plumed_modules}

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -221,9 +221,7 @@ class SparseGrid : public Grid
 {
 
  std::map<index_t,double> map_;
- typedef std::map<index_t,double>::const_iterator iterator;
  std::map< index_t,std::vector<double> > der_;
- typedef std::map<index_t,std::vector<double> >::const_iterator iterator_der;
  
  protected:
  void clear(); 

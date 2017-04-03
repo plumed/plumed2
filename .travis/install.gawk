@@ -3,12 +3,25 @@
 set -e
 set -x
 
-echo "installing latest gawk"
-wget http://git.savannah.gnu.org/cgit/gawk.git/snapshot/gawk-4.1.4.tar.gz
-tar xzf gawk-4.1.4.tar.gz
-cd gawk-4.1.4
+cd "$(mktemp -d)"
+
+version=4.1.4
+
+if [ -n "$1" ] ; then
+  version=$1
+fi
+
+echo "installing gawk $version"
+
+wget http://git.savannah.gnu.org/cgit/gawk.git/snapshot/gawk-$version.tar.gz
+
+tar xzf gawk-$version.tar.gz
+
+cd gawk-$version
+
 ./configure --prefix="$HOME/opt"
+
 make -j 4
+
 make install
-cd ../
 

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -169,7 +169,7 @@ void Tools::removeDuplicates(std::vector<T>& vec)
 
 inline
 bool Tools::parseFlag(std::vector<std::string>&line,const std::string&key,bool&val){
-  for(std::vector<std::string>::iterator p=line.begin();p!=line.end();++p){
+  for(auto p=line.begin();p!=line.end();++p){
     if(key==*p){
       val=true;
       line.erase(p);
