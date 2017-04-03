@@ -67,13 +67,32 @@ class PathMSDBase : public Colvar {
   std::vector<Vector> derivs_s;
   std::vector<Vector> derivs_z;
   std::vector <ImagePath> imgVec; // this can be used for doing neighlist   
+
+  //variables used for descreasing the computational complexity using close structure from previous steps, n is the number of atoms, i is the number of reference structures
+  double epsilonClose;
+  int debugClose;
+  int logClose;
+  RMSD rmsdPosClose;
+  bool firstPosClose;
+  bool computeRefClose;
+  long natoms;  //number of relevant atoms
+  Tensor *rotationRefClose; //Tensor[i]
+  Tensor rotationPosClose;
+  Tensor *drotationPosCloseDrr01; //Tensor[3][3];
+  std::vector<unsigned> savedIndices;
+
 protected:
   std::vector<PDB> pdbv;
   std::vector<std::string> labels;
   std::vector< std::vector<double> > indexvec; // use double to allow isomaps
   unsigned nframes;
+  //methods for close structure involvement
+  void saveImgVecIndices();
+  void recomputeRefClose();
+
 public:
   explicit PathMSDBase(const ActionOptions&);
+  ~PathMSDBase();
 // active methods:
   virtual void calculate();
 //  virtual void prepare();
