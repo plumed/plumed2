@@ -119,7 +119,7 @@ class Atoms
     std::vector<double> positionsToBeReceived;
     std::vector<int>    indexToBeSent;
     std::vector<int>    indexToBeReceived;
-    operator bool(){return on;}
+    operator bool() const{return on;}
     DomainDecomposition():
       on(false), async(false)
       {}
