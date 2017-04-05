@@ -53,7 +53,7 @@ Return a string containing a sequence of environment variables.
 
 The returned string has the form:
 \verbatim
-PLUMED_ROOT=/path PLUMED_HTMLDIR=/path ... etc
+env PLUMED_ROOT=/path env PLUMED_HTMLDIR=/path ... etc
 \endverbatim
 This string is used internally in PLUMED to run scripts located in plumedroot/script.
 For instance, the `patch` script can be run executing the following command:
