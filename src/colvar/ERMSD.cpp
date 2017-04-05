@@ -100,7 +100,7 @@ class ERMSD : public Colvar {
      bool pbc;
 
 public:
-  ERMSD(const ActionOptions&);
+  explicit ERMSD(const ActionOptions&);
   virtual void calculate();
   static void registerKeywords(Keywords& keys);
 };

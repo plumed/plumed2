@@ -2,11 +2,6 @@
 
 # This script generates a Portfile in science/plumed
 # Currently the portfile is aimed at testing the currect git hash
-# TODO:
-# - Analyze configure.ac to generate the list of variants
-# - Allow for a proper release port.
-#   This would require a portfile that is based on a tag (e.g. v2.3.0),
-#   optionally including patches, that can be then uploaded to macports
 
 prefix=
 if git describe --exact-match --tags HEAD 2>/dev/null 1>/dev/null
@@ -31,6 +26,11 @@ fi
 
 mkdir -p science/plumed
 
+modules=$(
+  grep default-off ../src/*/module.type | sed "s|.*/src/||" | sed "s|/.*||" | awk '{printf("%s ",$1)}'
+)
+
+
 cat Portfile.in |
 sed "
   s/@_VERSION_@/$version/
@@ -42,6 +42,23 @@ sed "
 # notice that if instead of hashtag we want to put a version, then it should be
 # git.branch          v${version}
     print "git.branch          '$prefix'${version}"
+  } else print
+}' | awk -v modules="$modules" '{
+  if($1=="@_MODULES_@"){
+    var=$2
+    split(modules,list);
+    for(mod in list){
+      print "variant mod_"list[mod]" description {Enable "list[mod]" module} {"
+      print "  set "var" ${"var"}+"list[mod]
+      print "}"
+      print ""
+    }
+    print "variant allmodules description {Enable all optional modules} {"
+    for(mod in list){
+      print "  set "var" ${"var"}+"list[mod]
+    }
+    print "}"
+    print ""
   } else print
 }'  > science/plumed/Portfile
 
