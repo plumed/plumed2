@@ -197,6 +197,7 @@ bool Tools::getline(FILE* fp,string & line){
     if(ss>0) if(buffer[ss-1]=='\n') break;
   };
   if(line.length()>0) if(*(line.end()-1)=='\n') line.erase(line.end()-1);
+  if(line.length()>0) if(*(line.end()-1)=='\r') line.erase(line.end()-1);
   return ret;
 }
 
