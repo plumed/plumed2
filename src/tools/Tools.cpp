@@ -210,7 +210,7 @@ void Tools::trimComments(string & s){
   s=s.substr(0,n);
 }
 
-bool Tools::getKey(vector<string>& line,const string & key,string & s){
+bool Tools::getKey(vector<string>& line,const string & key,string & s,int rep){
   s.clear();
   for(auto p=line.begin();p!=line.end();++p){
     if((*p).length()==0) continue;
@@ -220,6 +220,13 @@ bool Tools::getKey(vector<string>& line,const string & key,string & s){
       string tmp=(*p).substr(key.length(),(*p).length());
       line.erase(p);
       s=tmp;
+      const std::string multi("@replicas:");
+      if(rep>=0 && startWith(s,multi)){
+        s=s.substr(multi.length(),s.length());
+        std::vector<std::string> words=getWords(s,"\t\n ,");
+        plumed_assert(rep<words.size());
+        s=words[rep];
+      }
       return true;
     }
   };
