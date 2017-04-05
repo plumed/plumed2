@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,6 +25,7 @@
 #include <string>
 #include <unordered_map>
 #include <iosfwd>
+#include <chrono>
 
 namespace PLMD{
 
@@ -96,32 +97,17 @@ int main(){
 */
 
 class Stopwatch{
-/// Class to hold the value of absolute time
-  class Time{
-  public:
-    unsigned long sec;
-/// I store nanosecond so as to allow high resolution clocks
-/// (even if likely time will be measured in microseconds)
-    unsigned      nsec;
-    Time();
-    Time operator-(const Time&)const;
-    const Time & operator+=(const Time&);
-    operator double()const;
-    static Time get();
-    void reset();
-  };
 /// Class to store a single stopwatch.
 /// Class Stopwatch contains a collection of them
   class Watch{
   public:
-    Watch();
-    Time total;
-    Time lastStart;
-    Time lap;
-    Time max;
-    Time min;
-    unsigned cycles;
-    unsigned running;
+    std::chrono::time_point<std::chrono::high_resolution_clock> lastStart;
+    long long int total = 0;
+    long long int lap = 0;
+    long long int max = 0;
+    long long int min = 0;
+    unsigned cycles = 0;
+    unsigned running = 0;
     void start();
     void stop();
     void pause();

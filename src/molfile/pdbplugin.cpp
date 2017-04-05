@@ -37,7 +37,7 @@ OTHER DEALINGS WITH THE SOFTWARE.
 #if defined(__PLUMED_HAS_MOLFILE_PLUGINS) && ! defined(__PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS)
 /***************************************************************************
  *cr
- *cr            (C) Copyright 1995-2009 The Board of Trustees of the
+ *cr            (C) Copyright 1995-2016 The Board of Trustees of the
  *cr                        University of Illinois
  *cr                         All Rights Reserved
  *cr
@@ -48,7 +48,7 @@ OTHER DEALINGS WITH THE SOFTWARE.
  *
  *      $RCSfile: pdbplugin.c,v $
  *      $Author: johns $       $Locker:  $             $State: Exp $
- *      $Revision: 1.72 $       $Date: 2009/04/29 15:45:32 $
+ *      $Revision: 1.73 $       $Date: 2016/11/28 05:01:54 $
  *
  ***************************************************************************/
 
@@ -68,7 +68,6 @@ OTHER DEALINGS WITH THE SOFTWARE.
 
 namespace PLMD{
 namespace molfile{
-
 
 /*
  * API functions start here
