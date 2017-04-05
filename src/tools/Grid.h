@@ -209,7 +209,7 @@ public:
  Grid project( const std::vector<std::string> & proj , WeightBase *ptr2obj  ); 
  void projectOnLowDimension(double &val , std::vector<int> &varHigh, WeightBase* ptr2obj ); 
 /// set output format
- void setOutputFmt(std::string ss){fmt_=ss;}
+ void setOutputFmt(const std::string & ss){fmt_=ss;}
 /// Integrate the function calculated on the grid
  double integrate( std::vector<unsigned>& npoints );
 ///
