@@ -137,6 +137,7 @@ Version 2.3.1 (Mar 31, 2017)
 - fixed `plumed-config` that was not working.
 - log file points to the `config.txt` files to allow users to check which features were available in that compiled version.
 - `make clean` in root dir now also cleans `vim` subdirectory.
+- Resolved problem with nan in SMAC with SPECIESA and SPECIESB involving molecules that are the same
 - Updated gromacs patch to version 2016.3 
 
 For developers:
