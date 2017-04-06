@@ -4,14 +4,14 @@
 
 I write here some notes related to how plumed is installed.
 
-As a first notice, plumed package is mostly designed to make available these tools:
+As a first notice, plumed package is mostly designed to make these tools available:
 - a `plumed` executable, that can be used to launch command line tools.
 - a `libplumed.so` library, that can be linked to an externally supplied MD code.
 
 These are the main entry points to plumed, but they require several other resources to be
 properly located so as to work. Moreover, plumed is designed to be usable both
 when "just compiled" (so as to allow for fast development) and when properly installed.
-This result in the non trivial problem of knowing where the required resources are located.
+This results in the non trivial problem of knowing where the required resources are located.
 
 Additionally, we provide shell-only alternatives to command line tools. E.g.,
 to use `plumed patch` in a cross compiled environment, one can call `plumed-patch` which
@@ -23,56 +23,61 @@ As a result, plumed routines and scripts can be entered in three ways:
 - entering the shared library from another code (typically an MD code).
 
 This is achieved in the following way:
-- `plumed-*` scripts set appropriate environment variables pointing at the correct paths when they are launched.
+- `plumed-*` scripts contains hardcoded environment variables pointing at the correct paths when they are launched.
 - `plumed` executable and `libplumed.so` have access to methods (in the config namespace)
   to access to the paths and locate resources.
 
-As an example, the $PLUMED_ROOT variable is defined to tell to the plumed scripts where to find
-most of the plumed-related files. Similarly, from C++ you can use \ref config::getPlumedRoot() to get
+\warning
+Since paths are hardcoded, plumed executable and library are de facto not relocatable.
+It is however possible to use them after relocation provided that some environment
+variables are set as discussed below.
+
+As an example, the `PLUMED_ROOT` variable is defined to tell to the plumed scripts where to find
+most of the plumed-related files. Similarly, from C++ you can use \ref config::getPlumedRoot() to retrieve
 the same path.
 
 When a plumed command line tool implemented as script is invoked by the plumed executable,
 thus transfering the control from C++ to
 an external script, the environment should be consistently set. This is done in method \ref config::getEnvCommand()
-which builds a string in the form "env PLUMED_ROOT=/path env PLUMED_INCLUDEDIR=/path " etc.
+which builds a string in the form `env PLUMED_ROOT=/path env PLUMED_INCLUDEDIR=/path ` etc.
 In this ways, the scripts are run in an environment with the correct settings.
 
 The following paths need to be set for plumed to work properly. Here they are listed
-together with the name of the corresponding environment variable (that can be used in plumed
+together with the name of the corresponding environment variables (that can be used in plumed
 scripts) and the method that can be used to retrieve them from C++ code.
-- Root of plumed: PLUMED_ROOT \ref config::getPlumedRoot()
-- Path to include files: PLUMED_INCLUDEDIR \ref config::getPlumedIncludedir()
-- Path to html files: PLUMED_HTMLDIR \ref config::getPlumedHtmldir()
-- Name of plumed program: PLUMED_PROGRAM_NAME \ref config::getPlumedProgramName()
+- Root of plumed: `$PLUMED_ROOT` \ref config::getPlumedRoot()
+- Path to include files: `$PLUMED_INCLUDEDIR` \ref config::getPlumedIncludedir()
+- Path to html files: `$PLUMED_HTMLDIR` \ref config::getPlumedHtmldir()
+- Name of plumed program: `$PLUMED_PROGRAM_NAME` \ref config::getPlumedProgramName()
 
-When using plumed from its build directory (without installing) these paths will be set to the
+When using plumed from its build directory (without installing it) these paths will be set to the
 value reported below:
-- Root of plumed: /build/directory
-- Path to include files: /build/directory/include (this works thanks to a symlink of /build/directory/src to /build/directory/include/plumed)
-- Path to html files: /build/directory
-- Name of plumed program: plumed
+- `PLUMED_ROOT=/build/directory`
+- `PLUMED_INCLUDEDIR=$PLUMED_ROOT/include` (this works thanks to a symlink of `/build/directory/src` to `/build/directory/include/plumed`)
+- `PLUMED_HTMLDIR=$PLUMED_ROOT`
+- `PLUMED_PROGRAM_NAME=plumed`
 
 These paths are hardcoded in `plumed` executable and in `plumed-*` scripts when they are compiled.
-Notice that it is possible to set the PLUMED_ROOT variable before calling plumed overriding the hard code values.
+Notice that it is possible to set the `PLUMED_ROOT` variable before calling plumed overriding the hard code values.
 E.g., you can compile plumed in directory `/build/directory1`, move it to `/build/directory2`, and launch it
 with `PLUMED_ROOT=/build/directory2 /build/directory2/src/lib/plumed`. Notice however that although plumed will find all the
-required resources in this way, it won't be possible to perform some task such as patching MD code.
+required resources in this way, it might not be possible to perform some task such as patching MD code. Also notice that
+since the structure of the build directory is fixed the `PLUMED_ROOT` variable is sufficient to reconstruct the other paths.
 
-When using plumed after installed, these paths will be set to the
-value reported below:
-- Root of plumed: /usr/local/lib/plumed
-- Path to include files: /usr/local/include
-- Path to html files: /usr/local/share/doc/plumed
-- Name of plumed program: plumed
+When using plumed after it has been installed, these paths will be set to the value reported below:
+- `PLUMED_ROOT=/usr/local/lib/plumed`
+- `PLUMED_INCLUDEDIR=/usr/local/include`
+- `PLUMED_HTMLDIR=/usr/local/share/doc/plumed`
+- `PLUMED_PROGRAM_NAME=plumed`
 
 These paths are hardcoded in `plumed` executable and in `plumed-*` scripts when they are installed.
 Notice that these value can be customized at configure step using standard arguments to ./configure.
 When using an installed copy of plumed one can override the hard code values by setting the variables
-PLUMED_ROOT PLUMED_INCLUDEDIR PLUMED_HTMLDIR and PLUMED_PROGRAM_NAME before launching plumed.
+`PLUMED_ROOT`, `PLUMED_INCLUDEDIR` ,`PLUMED_HTMLDIR`, and `PLUMED_PROGRAM_NAME` before launching plumed.
 
 Notice that to enforce a consistent behavior of scripts and plumed executable the same logic needed to
-be implemented twice. One implementation is found in the src/config/Config.inc.in file, another implementation
-is prependend to the installed scripts by the src/config/Makefile.
+be implemented twice. One implementation is found in the `src/config/Config.inc.in` file, another implementation
+is prependend to the installed scripts by the `src/lib/Makefile`.
 
 Also consider that environment is inherited by subprocesses. That means that if you want to
 launch another plumed version from a plumed script (crazy idea, perhaps nobody will ever do it)
@@ -86,8 +91,8 @@ I here describe what's the content of the most important files installed by plum
 `/usr/local/bin/plumed`: this is a static executable that can be used to launch plumed.
 It is typically used to launch a command line tool (e.g. `plumed sum_hills`).
 Notice that some command line tools are actually implemented as bash scripts (e.g. `plumed patch`).
-Those scripts are located in $PLUMED_ROOT/scripts/ with an extra `.sh`  suffix. E.g.
-the `plumed patch` will set properly the environment then call `$PLUMED_ROOT/scripts/patch.sh`.
+Those scripts are located in `$PLUMED_ROOT/scripts/` with an extra `.sh`  suffix. E.g.
+the `plumed patch` command will set properly the environment then call `$PLUMED_ROOT/scripts/patch.sh`.
 
 `/usr/local/lib/libplumed.so`: this is a library containing all the plumed routines.
 Notice that `/usr/local/bin/plumed` described above is equal to the combination of
