@@ -152,5 +152,7 @@ See branch \branch{v2.3} on git repository.
 - Resolved problem with nan in SMAC with SPECIESA and SPECIESB involving molecules that are the same.
 - PDB reader is now able to read files with dos newlines (see \issue{223}).
 
+For developers:
+- plumedcheck validation has been made stricter. All the checks are now described in the developer manual.
 
 */
