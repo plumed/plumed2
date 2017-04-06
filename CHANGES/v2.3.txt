@@ -150,6 +150,7 @@ See branch \branch{v2.3} on git repository.
 
 - New flag `--disable-libsearch` for `configure`, allowing an easier control of linked libraries when installing PLUMED
   with a package manager such as MacPorts.
+- PDB reader is now able to read files with dos newlines (see \issue{223}).
 
 
 */
