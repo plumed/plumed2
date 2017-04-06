@@ -1,6 +1,19 @@
 #! /bin/bash
 # vim: ft=awk
 
+# DOC: \page Plumedcheck Validating syntax with plumedcheck
+# DOC: 
+# DOC: Here is a list of coding rules that are enforced by the plumedcheck script.
+# DOC: These rules are necessary to be sure that the codebase is consistent.
+# DOC: Code not satisfying these rules will make the automatic test on travis-ci fail.
+# DOC: In the following we provide a list of errors that are detected automatically,
+# DOC: together with a short explanation of the reason we consider these as errors.
+# DOC: The names used are the same ones reported by plumedcheck.
+# DOC: The `plumedcheck` script can be used as is, but the simplest way to obtain a report
+# DOC: is to go to the `buildroot/src` directory and type `make plumedcheck`.
+# DOC: In case you think you have a valid reason for a code not passing the check
+# DOC: to be merged, please contact the developers.
+
 TEMP=$(mktemp)
 
 cat > $TEMP << \EOF
