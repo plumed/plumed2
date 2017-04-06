@@ -448,6 +448,10 @@ class CS2Backbone : public Colvar {
     Vector g[6];       // vector of the vectors used to calculate n1,n2
     double lengthN2;   // square of length of normVect
     double lengthNV;   // length of normVect
+    RingInfo():
+      rtype(0),numAtoms(0),
+      lengthN2(NAN),lengthNV(NAN)
+    {for(unsigned i=0;i<6;i++) atom[i]=0;}
   };
 
   enum aa_t {ALA, ARG, ASN, ASP, CYS, GLN, GLU, GLY, HIS, ILE, LEU, LYS, MET, PHE, PRO, SER, THR, TRP, TYR, VAL, UNK};
