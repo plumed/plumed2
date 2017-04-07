@@ -13,7 +13,7 @@ ifeq ($(make_doc),yes)
 endif
 
 clean:
-	rm -fr automatic html latex *~ links-to-user-manual.txt coverage coverage.info
+	rm -fr automatic html latex *~ links-to-user-manual.txt plumedcheck.txt coverage coverage.info
 
 coverage:
 	lcov -c -d ../src/ --output-file coverage.info
