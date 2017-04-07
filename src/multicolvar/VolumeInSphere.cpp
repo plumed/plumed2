@@ -54,6 +54,15 @@ When INCYLINDER is used with the \ref DENSITY action the number of atoms in the 
 
 \par Examples
 
+The input below can be use to calculate the average coordination numbers for those atoms that are within a sphere 
+of radius 1.5 nm that is centered on the position of atom 101.
+
+\verbatim
+c1: COORDINATIONNUMBER SPECIES=1-100 SWITCH={RATIONAL R_0=0.1}  
+d2: INSPHERE ATOM=101 DATA=d1 RADIUS={TANH R_0=1.5} SIGMA=0.1 LOWER=-0.1 UPPER=0.1 MEAN
+PRINT ARG=d2.* FILE=colvar
+\endverbatim
+
 */
 //+ENDPLUMEDOC
 
