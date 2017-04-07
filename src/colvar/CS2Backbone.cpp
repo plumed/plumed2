@@ -999,7 +999,8 @@ void CS2Backbone::calculate()
     	      ff[0] += fact*(gradUQ - gradVQ);
     	
     	      const double fU       = fUU/nL;
-    	      const double OneOverN = 1./((double) ringInfo[i].numAtoms);
+    	      double OneOverN = 1./6.;
+              if(ringInfo[i].numAtoms==5) OneOverN=1./3.; 
               const Vector factor2  = OneOverN*n;
     	      const Vector factor4  = (OneOverN/dL_nL)*d;
 
@@ -1189,7 +1190,7 @@ void CS2Backbone::compute_ring_parameters(){
         a[j] = getPosition(ringInfo[i].atom[j]);
       }
       // ring center
-      Vector midP = (a[0]+a[2]+a[3])/(double) size;
+      Vector midP = (a[0]+a[2]+a[3])/3.;
       ringInfo[i].position = midP;
       // compute normal vector to plane containing first three atoms in array
       ringInfo[i].n1 = crossProduct(delta(a[0],a[3]), delta(a[0],a[2]));
