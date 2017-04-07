@@ -43,7 +43,33 @@ Here the sums run over all pairs of molecules. \f$\sigma(r_{ij})\f$ is a \ref sw
 action on the distance between the centers of molecules \f$i\f$ and \f$j\f$.  \f$\theta_{ij}\f$ is then
 the torsional angle between an orientation vector for molecule \f$i\f$ and molecule \f$j\f$.
 
+This command can be used to calculate the intermolecular torsional angles between the orientations of nearby molecules.  The orientation of a 
+molecule can be calculated by using either the \ref MOLECULES or the \ref PLANES commands.  These two commands calculate the orientation of a 
+bond in the molecule or the orientation of a plane containing three of the molecule's atoms.  Furthermore, when we use these commands we think of 
+molecules as objects that lie at a point in space and that have an orientation.   This command calculates the torsional angles between the orientations
+of these objects.  We can then calculates functions of a large number of these torsional angles that measures things such as the number of torsional 
+angles that are within a particular range.  Because it is often useful to only consider the torsional angles between objects that are within a certain 
+distance of each other we can, when calculating these sums, perform a weighted sum and use a \ref switchingfunction to ensure that we focus on molecules
+that are close together.   
+
 \par Examples
+
+The example input below is necessarily but gives you an idea of what can be achieved using this action.
+The orientations and positions of four molecules are defined using the \ref MOLECULES action as the position of the 
+centeres of mass of the two atoms specified and the direction of the vector connecting the two atoms that were specified.
+The torsional angles between the molecules are then calculated by the \ref INTERMOLECULARTORSIONS command labelled tt_p.
+We then compute a \ref HISTOGRAM that shows the distribution that these torsional angles take in the structure.  The weight
+a given torsional angle contributes to this \ref HISTOGRAM is determined using a \ref switchingfunction that acts on the distance
+between the two molecules.  As such the torsional angles between molecules that are close together contribute a high weight to the 
+histogram while the torsional angles between molecules that are far apart does not contribute to the histogram.  The histogram is 
+averaged over the whole trajectory and output once all the trajectory frames have been read.
+
+\verbatim
+m1: MOLECULES MOL1=1,2 MOL2=3,4 MOL3=5,6 MOL4=7,8
+tt_p: INTERMOLECULARTORSIONS MOLS=m1 SWITCH={RATIONAL R_0=0.25 D_0=2.0 D_MAX=3.0} 
+htt_p: HISTOGRAM DATA=tt_p GRID_MIN=-pi GRID_MAX=pi BANDWIDTH=0.1 GRID_BIN=200 STRIDE=1 
+DUMPGRID GRID=htt_p FILE=myhist.out 
+\endverbatim
 
 */
 //+ENDPLUMEDOC
