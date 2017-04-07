@@ -40,6 +40,14 @@ This file provides a template for if you want to introduce a new CV.
 
 <!---You should put an example of how to use your CV here--->
 
+\verbatim
+# This should be a sample input. 
+t: TEMPLATE ATOMS=1,2
+PRINT ARG=t STRIDE=100 FILE=COLVAR
+\endverbatim
+<!---You should reference here the other actions used in this example--->
+(see also \ref PRINT)
+
 */
 //+ENDPLUMEDOC
    
