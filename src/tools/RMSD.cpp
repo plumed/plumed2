@@ -97,7 +97,9 @@ void RMSD::setReference(const vector<Vector> & reference){
   plumed_massert(displace.empty(),"you should first clear() an RMSD object, then set a new reference");
   align.resize(n,1.0/n);
   displace.resize(n,1.0/n);
+#pragma ivdep
   for(unsigned i=0;i<n;i++) reference_center+=this->reference[i]*align[i];
+#pragma ivdep
   for(unsigned i=0;i<n;i++) this->reference[i]-=reference_center;
   reference_center_is_calculated=true;
   reference_center_is_removed=true;
@@ -114,8 +116,10 @@ void RMSD::setAlign(const vector<double> & align, bool normalize_weights, bool r
   this->align=align;
   if(normalize_weights){
   	double w=0.0;
+#pragma ivdep
   	for(unsigned i=0;i<n;i++) w+=this->align[i];
   	double inv=1.0/w;
+#pragma ivdep
   	for(unsigned i=0;i<n;i++) this->align[i]*=inv;
   }
   // recalculate the center anyway
@@ -145,8 +149,10 @@ void RMSD::setDisplace(const vector<double> & displace, bool normalize_weights){
   plumed_massert(this->displace.size()==displace.size(),"mismatch in dimension of align/displace arrays");
   this->displace=displace;
   double w=0.0;
+#pragma ivdep
   for(unsigned i=0;i<n;i++) w+=this->displace[i];
   double inv=1.0/w;
+#pragma ivdep
   if(normalize_weights){for(unsigned i=0;i<n;i++) this->displace[i]*=inv;}
 }
 std::vector<double> RMSD::getDisplace(){
@@ -965,6 +971,7 @@ void RMSDCoreData::doCoreCalc(bool safe,bool alEqDis, bool only_rotation){
   Vector cp; cp.zero(); if(!cpositions_is_removed)cp=cpositions;
   Vector cr; cr.zero(); if(!creference_is_removed)cr=creference;
 // second expensive loop: compute second moments wrt centers
+#pragma ivdep
   for(unsigned iat=0;iat<n;iat++){
     double w=align[iat];
     rr00+=dotProduct(positions[iat]-cp,positions[iat]-cp)*w;
@@ -1075,6 +1082,7 @@ void RMSDCoreData::doCoreCalc(bool safe,bool alEqDis, bool only_rotation){
 
   // calculate rotation matrix derivatives and components distances needed for components only when align!=displacement
   if(!alEqDis)ddist_drotation.zero();
+#pragma ivdep
   for(unsigned iat=0;iat<n;iat++){
     // components differences: this is useful externally
     d[iat]=positions[iat]-cp - matmul(rotation,reference[iat]-cr);	
@@ -1105,17 +1113,20 @@ double RMSDCoreData::getDistance( bool squared){
   else
       dist=eigenvals[0]+rr00+rr11;
   const unsigned n=static_cast<unsigned int>(reference.size());
+  double localDist = 0;
+#pragma simd reduction(+:localDist)
   for(unsigned iat=0;iat<n;iat++){
   	if(alEqDis){
-  	    if(safe) dist+=align[iat]*modulo2(d[iat]);
+	    if(safe) localDist+=align[iat]*modulo2(d[iat]);
   	} else {
-  	    dist+=displace[iat]*modulo2(d[iat]);
+	    localDist+=displace[iat]*modulo2(d[iat]);
   	}
   }
   if(!squared){
-  	dist=sqrt(dist);
+	dist=sqrt(localDist);
 	distanceIsMSD=false;
   }else{
+	dist=localDist;
 	distanceIsMSD=true;
   }
   hasDistance=true;
@@ -1136,10 +1147,13 @@ void RMSDCoreData::doCoreCalcWithCloseStructure(bool safe,bool alEqDis, Tensor &
 
     Tensor rotation = matmul(rotationPosClose, rotationRefClose);
 
+#pragma simd
     for (unsigned iat=0; iat<natoms; iat++){
         d[iat] = positions[iat] - cp - matmul(rotation, reference[iat]-cr);
+    }
+    if (!alEqDis){
+        for (unsigned iat=0; iat<natoms; iat++) {
         //dist = \sum w_i(x_i - cpos - R_xy * R_ay * a_i)
-        if (!alEqDis){
             ddist_drxy += -2*displace[iat]*extProduct(matmul(d[iat], rotationRefClose), reference[iat]-cr);
         }
     }
@@ -1166,6 +1180,7 @@ std::vector<Vector> RMSDCoreData::getDDistanceDPositions(){
   if(!isInitialized)plumed_merror("getDPositionsDerivatives needs to initialize the coreData first!");
   Vector csum;
   Vector tmp1,tmp2;
+#pragma ivdep
   for(unsigned iat=0;iat<n;iat++){
     if(alEqDis){
 // there is no need for derivatives of rotation and shift here as it is by construction zero
@@ -1184,6 +1199,7 @@ std::vector<Vector> RMSDCoreData::getDDistanceDPositions(){
     }
   }
 
+#pragma ivdep
   if(!alEqDis)  for(unsigned iat=0;iat<n;iat++){derivatives[iat]= prefactor*(derivatives[iat]+(ddist_dcpositions-csum)*align[iat]); } 
 
   return derivatives;
@@ -1206,6 +1222,7 @@ std::vector<Vector>  RMSDCoreData::getDDistanceDReference(){
   Tensor t_ddist_drr01=ddist_drr01.transpose();	
   
 // third expensive loop: derivatives
+#pragma simd
   for(unsigned iat=0;iat<n;iat++){
     if(alEqDis){
 // there is no need for derivatives of rotation and shift here as it is by construction zero
@@ -1225,6 +1242,7 @@ std::vector<Vector>  RMSDCoreData::getDDistanceDReference(){
     }
   }
 
+#pragma ivdep
   if(!alEqDis)  for(unsigned iat=0;iat<n;iat++){derivatives[iat]= prefactor*(derivatives[iat]+(ddist_dcreference-csum)*align[iat]);} 
 
   return derivatives;
