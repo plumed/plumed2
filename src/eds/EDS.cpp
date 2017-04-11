@@ -111,6 +111,7 @@ private:
   /*We will get this and store it once, since on-the-fly changing number of CVs will be fatal*/
   const unsigned int ncvs_;
   std::vector<double> center_;
+  std::vector<Value*> center_values_;
   std::vector<double> scale_;
   std::vector<double> current_coupling_;
   std::vector<double> set_coupling_;
@@ -126,8 +127,10 @@ private:
   Matrix<double> covar_;
   std::string in_restart_name_;
   std::string out_restart_name_;
+  std::string fmt_;
   OFile out_restart_;
   IFile in_restart_;
+  bool b_c_values_;
   bool b_adaptive_;
   bool b_freeze_;
   bool b_equil_;
@@ -173,7 +176,10 @@ public:
   void EDS::registerKeywords(Keywords& keys){
     Bias::registerKeywords(keys);
     keys.use("ARG");
-    keys.add("compulsory","CENTER","The desired centers (equilibrium values) which will be sought during the adaptive linear biasing.");
+    keys.add("optional","CENTER","The desired centers (equilibrium values) which will be sought during the adaptive linear biasing. This is for fixed values");
+    keys.add("optional","CENTER_ARG","The desired centers (equilibrium values) which will be sought during the adaptive linear biasing. "
+	     "CENTER_ARG is for calculated centers, e.g. from a CV or analysis. ");
+
     keys.add("compulsory","PERIOD","Steps over which to adjust bias");
 
     keys.add("compulsory","RANGE","3.0","The largest magnitude of the force constant which one expects (in kBT) for each CV based");
@@ -186,7 +192,7 @@ public:
     keys.add("optional","MULTI_PROP","What proportion of dimensions to update at each step. "
 	     "Must be in interval [1,0), where 1 indicates all and any other indicates a stochastic update. "
 	     "If not set, default is 1 / N, where N is the number of CVs. ");
-
+    keys.add("optional","RESTART_FMT","the format that should be used to output real numbers in EDS restarts");
     keys.add("optional","OUT_RESTART","Output file for all information needed to continue EDS simulation. "
 	     "If you have the RESTART directive set (global or for EDS), this file will be appended to. "
 	     "Note that the header will be printed again if appending.");
@@ -208,7 +214,6 @@ public:
   EDS::EDS(const ActionOptions&ao):
     PLUMED_BIAS_INIT(ao),
     ncvs_(getNumberOfArguments()),
-    center_(ncvs_,1.0),
     scale_(ncvs_,0.0),
     current_coupling_(ncvs_,0.0),
     set_coupling_(ncvs_,0.0),
@@ -222,6 +227,7 @@ public:
     out_coupling_(ncvs_,NULL),
     in_restart_name_(""),
     out_restart_name_(""),
+    fmt_("%f"),
     b_adaptive_(true),
     b_freeze_(false),
     b_equil_(true),
@@ -254,6 +260,7 @@ public:
     }
 
     parseVector("CENTER",center_);
+    parseArgumentList("CENTER_ARG",center_values_);
     parseVector("BIAS_SCALE", scale_);
     parseVector("RANGE",max_coupling_range_);
     parseVector("FIXED",target_coupling_);
@@ -262,6 +269,8 @@ public:
     parse("TEMP",temp);
     parse("SEED",seed_);
     parse("MULTI_PROP",multi_prop_);
+    parse("RESTART_FMT", fmt_);
+    fmt_ = " " + fmt_;//add space since parse strips them
     parse("OUT_RESTART",out_restart_name_);
     parseFlag("RAMP",b_ramp_);
     parseFlag("FREEZE",b_freeze_);
@@ -270,13 +279,44 @@ public:
     parse("IN_RESTART",in_restart_name_);
     checkRead();
 
+    /*
+     * Things that are different when usnig changing centers:
+     * 1. Scale
+     * 2. The log file
+     * 3. Reading Restarts
+     */
+
+    if(center_.size() == 0) {
+      if(center_values_.size() == 0)
+	error("Must set either CENTER or CENTER_ARG");
+      else if(center_values_.size() != ncvs_)
+	error("CENTER_ARG must contain the same number of variables as ARG");
+      b_c_values_ = true;      
+      center_.resize(ncvs_);
+      log.printf("  EDS will use possibly varying centers\n");
+    } else {
+      if(center_.size() != ncvs_)
+	error("Must have same number of CENTER arguments as ARG arguments");
+      else if(center_values_.size() != 0)
+	error("You can only set CENTER or CENTER_ARG. Not both");
+      b_c_values_ = false;
+      log.printf("  EDS will use fixed centers\n");
+    }
+      
+
+
     log.printf("  setting scaling:");
     if(scale_.size() > 0  && scale_.size() < ncvs_) {
       error("the number of BIAS_SCALE values be the same as number of CVs");
-    } else if(scale_.size() == 0) {
+    } else if(scale_.size() == 0 && b_c_values_) {
+      log.printf(" Setting SCALE to be 1 for all CVs\n");
+      scale_.resize(ncvs_);
+      for(unsigned int i = 0; i < ncvs_; ++i)
+	scale_[i] = 1;
+    } else if(scale_.size() == 0 && !b_c_values_) {
       log.printf(" (default) ");
 
-      scale_.resize(center_.size());
+      scale_.resize(ncvs_);
       for(unsigned int i = 0; i < scale_.size(); i++) {
 	if(center_[i]==0)
 	  error("BIAS_SCALE parameter has been set to CENTER value of 0 (as is default). This will divide by 0, so giving up. See doc for EDS bias");
@@ -322,13 +362,19 @@ public:
       log.printf("  kBT = %f\n",kbt_);
       log.printf("  Updating every %i steps\n",update_period_);
 
-      log.printf("  with centers:");
-      for(unsigned int i = 0;i<center_.size();i++){
-	log.printf(" %f",center_[i]);
+      if(!b_c_values_) {
+	log.printf("  with centers:");
+	for(unsigned int i = 0;i< ncvs_;i++){
+	  log.printf(" %f ",center_[i]);
+	}
+      } else {
+	log.printf("  with actions centers:");
+	for(unsigned int i = 0;i< ncvs_;i++){
+	  log.printf(" %s ",center_values_[i]->getName().c_str());
+	  //add dependency on these actions
+	  addDependency(center_values_[i]->getPntrToAction());
+	}
       }
-
-      for(unsigned int i = 0; i < scale_.size(); i++)
-	log.printf(" %f",center_[i]);
 
       log.printf("\n  with initial ranges / rates:\n");
       for(unsigned int i = 0;i<max_coupling_range_.size();i++) {
@@ -393,7 +439,7 @@ public:
     }
 
     if(out_restart_name_.length()>0) {
-      log.printf("  writing restart information every %i steps to file: %s\n",abs(update_period_),out_restart_name_.c_str());
+      log.printf("  writing restart information every %i steps to file %s with format %s\n",abs(update_period_),out_restart_name_.c_str(), fmt_.c_str());
       b_write_restart_ = true;
       setupOutRestart();
     }
@@ -448,7 +494,7 @@ public:
 
       for(unsigned int i = 0;i<ncvs_;++i) {
 	cv_name = getPntrToArgument(i)->getName();
-	in_restart_.scanField(cv_name + +"_center",center_[i]);
+	in_restart_.scanField(cv_name + "_center", set_coupling_[i]);
 	in_restart_.scanField(cv_name + "_set", set_coupling_[i]);
 	in_restart_.scanField(cv_name + "_target",target_coupling_[i]);
 	in_restart_.scanField(cv_name + "_coupling",current_coupling_[i]);
@@ -502,6 +548,7 @@ public:
 
   void EDS::setupOutRestart(){
     out_restart_.link(*this);
+    out_restart_.fmtField(fmt_);
     out_restart_.open(out_restart_name_);
     out_restart_.setHeavyFlush();
 
@@ -510,7 +557,6 @@ public:
     out_restart_.addConstantField("seed").printField("seed",seed_);
     out_restart_.addConstantField("kbt").printField("kbt",kbt_);
 
-    writeOutRestart();
   }
 
   void EDS::writeOutRestart() {
@@ -519,7 +565,6 @@ public:
 
     for(unsigned int i = 0;i<ncvs_;++i) {
       cv_name = getPntrToArgument(i)->getName();
-
       out_restart_.printField(cv_name + "_center",center_[i]);
       out_restart_.printField(cv_name + "_set",set_coupling_[i]);
       out_restart_.printField(cv_name + "_target",target_coupling_[i]);
@@ -533,6 +578,11 @@ public:
 
 
   void EDS::calculate(){
+    
+    //get center values from action if necessary
+    if(b_c_values_)
+      for(unsigned int i = 0; i < ncvs_; ++i)
+	center_[i] = center_values_[i]->get();      
 
     apply_bias();
 
@@ -542,10 +592,11 @@ public:
     //check if we're ramping or doing normal updates and then restart if needed. The ramping check
     //is complicated because we could be frozen, finished ramping or not ramping.
     //The + 2 is so we have an extra line showing that the bias isn't changing (for my sanity and yours)
-    if( b_write_restart_ &&
+    if( b_write_restart_){ 
+      if(getStep() == 0 || 
 	( (update_period_ < 0 && !b_freeze_ && update_calls_ <= fabs(update_period_) + 2) ||
-	  (update_period_ > 0 && update_calls_ % update_period_ == 0 ) ) ) {
-      writeOutRestart();
+	  (update_period_ > 0 && update_calls_ % update_period_ == 0 ) ) ) 
+	writeOutRestart();
     }
 
     int b_finished_equil_flag = 1;
@@ -613,13 +664,12 @@ public:
 
   void EDS::apply_bias() {
     //Compute linear force as in "restraint"
-    double ene = 0;
-    double totf2 = 0;
+    double ene = 0, totf2 = 0, cv, m , f;
 
     for(unsigned int i = 0; i < ncvs_; ++i) {
-      const double cv = difference(i, center_[i], getArgument(i));
-      const double m = current_coupling_[i];
-      const double f = -m;
+      cv = difference(i, center_[i], getArgument(i));
+      m = current_coupling_[i];
+      f = -m;
       ene += m*cv;
       setOutputForce(i,f);
       totf2 += f*f;
@@ -671,7 +721,7 @@ public:
     for(unsigned int i = 0; i< ncvs_; ++i){
       tmp = 0;
       for(unsigned int j = 0; j < ncvs_; ++j)
-	  tmp += (means_[i] - center_[i]) * covar_(i,j);
+	tmp += difference(i, means_[i], center_[i]) * covar_(i,j);
       step_size_[i] = 2 * tmp / kbt_ / scale_[i] * update_calls_ / (update_calls_ - 1);
     }
 
@@ -680,7 +730,7 @@ public:
   void EDS::calc_ssd_step_size() {
     double tmp;
     for(unsigned int i = 0; i< ncvs_; ++i){
-      tmp = 2. * (means_[i] - center_[i]) * ssds_[i] / (update_calls_ - 1);
+      tmp = 2. * difference(i, means_[i], center_[i]) * ssds_[i] / (update_calls_ - 1);
       step_size_[i] = tmp / kbt_/scale_[i];
     }
   }
