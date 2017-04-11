@@ -127,6 +127,7 @@ private:
   Matrix<double> covar_;
   std::string in_restart_name_;
   std::string out_restart_name_;
+  std::string fmt_;
   OFile out_restart_;
   IFile in_restart_;
   bool b_c_values_;
@@ -191,7 +192,7 @@ public:
     keys.add("optional","MULTI_PROP","What proportion of dimensions to update at each step. "
 	     "Must be in interval [1,0), where 1 indicates all and any other indicates a stochastic update. "
 	     "If not set, default is 1 / N, where N is the number of CVs. ");
-
+    keys.add("optional","RESTART_FMT","the format that should be used to output real numbers in EDS restarts");
     keys.add("optional","OUT_RESTART","Output file for all information needed to continue EDS simulation. "
 	     "If you have the RESTART directive set (global or for EDS), this file will be appended to. "
 	     "Note that the header will be printed again if appending.");
@@ -226,6 +227,7 @@ public:
     out_coupling_(ncvs_,NULL),
     in_restart_name_(""),
     out_restart_name_(""),
+    fmt_("%f"),
     b_adaptive_(true),
     b_freeze_(false),
     b_equil_(true),
@@ -267,6 +269,8 @@ public:
     parse("TEMP",temp);
     parse("SEED",seed_);
     parse("MULTI_PROP",multi_prop_);
+    parse("RESTART_FMT", fmt_);
+    fmt_ = " " + fmt_;//add space since parse strips them
     parse("OUT_RESTART",out_restart_name_);
     parseFlag("RAMP",b_ramp_);
     parseFlag("FREEZE",b_freeze_);
@@ -276,7 +280,7 @@ public:
     checkRead();
 
     /*
-     * Things that are different when usnig chaning centers:
+     * Things that are different when usnig changing centers:
      * 1. Scale
      * 2. The log file
      * 3. Reading Restarts
@@ -435,7 +439,7 @@ public:
     }
 
     if(out_restart_name_.length()>0) {
-      log.printf("  writing restart information every %i steps to file: %s\n",abs(update_period_),out_restart_name_.c_str());
+      log.printf("  writing restart information every %i steps to file %s with format %s\n",abs(update_period_),out_restart_name_.c_str(), fmt_.c_str());
       b_write_restart_ = true;
       setupOutRestart();
     }
@@ -544,6 +548,7 @@ public:
 
   void EDS::setupOutRestart(){
     out_restart_.link(*this);
+    out_restart_.fmtField(fmt_);
     out_restart_.open(out_restart_name_);
     out_restart_.setHeavyFlush();
 
