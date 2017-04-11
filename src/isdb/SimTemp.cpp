@@ -126,6 +126,7 @@ MCsteps_(1), MCstride_(1), MCfirst_(-1), MCaccgamma_(0)
     nrep_    = 0;
     replica_ = 0;
   }
+  // local communication
   comm.Sum(&nrep_,1);
   comm.Sum(&replica_,1);
 
@@ -301,9 +302,10 @@ void SimTemp::doMonteCarlo(unsigned ig, double oldE,
       double fact = 1.0/gamma_[new_ig] - 1.0;
       newE += args[j] * fact;
     }
-    // calculate contributions from non-rescaled terms + weights
+    // add contributions from ST weights
     double oldB = -w_[ig];
     double newB = -w_[new_ig];
+    // and, in case, from non-rescaled terms (i.e., metadynamics bias...)
     if(bargs.size()>0){
        oldB += bargs[ig];
        newB += bargs[new_ig];
@@ -485,14 +487,17 @@ void SimTemp::calculate()
 
   // time to change replica to perform ST?
   if(step >= init_){
+   // recover updated gamma selector
    ig = static_cast<unsigned>(plumed.passMap[selector_]);
+   // reaching top of the ladder, when going up
    if(ig==w_.size()-1 && st_up_==1) st_up_ = 0;
+   // reaching bottom of the ladder, when going down
    if(ig==0 && st_up_==0){
-     // change replica index
+     // increment replica index
      st_rep_ += 1;
-     // if getting to the end of the chain, restart
+     // if getting to the end of the chain of replicas, restart
      if(st_rep_==nrep_) st_rep_ = 0;
-     // reset flag
+     // reset up/down flag
      st_up_ = 1;
    }
   }
