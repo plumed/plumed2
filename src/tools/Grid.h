@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -209,7 +209,7 @@ public:
  Grid project( const std::vector<std::string> & proj , WeightBase *ptr2obj  ); 
  void projectOnLowDimension(double &val , std::vector<int> &varHigh, WeightBase* ptr2obj ); 
 /// set output format
- void setOutputFmt(std::string ss){fmt_=ss;}
+ void setOutputFmt(const std::string & ss){fmt_=ss;}
 /// Integrate the function calculated on the grid
  double integrate( std::vector<unsigned>& npoints );
 ///

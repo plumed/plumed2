@@ -256,7 +256,7 @@ mypack(0,0,myvals)
   }
   fclose(fp);
 
-  if( nfram<2 ) error("no eigenvectors were specified");
+  if( nfram<=2 ) error("no eigenvectors were specified");
   log.printf("  found %u eigenvectors in file %s \n",nfram-1,reference.c_str() );
 
   // Finish the setup of the mapping object

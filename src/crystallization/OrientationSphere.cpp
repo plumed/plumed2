@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "OrientationSphere.h"
+#include "core/PlumedMain.h"
 #include "VectorMultiColvar.h"
 
 using namespace std;
@@ -60,6 +61,7 @@ MultiColvarBase(ao)
      switchingFunction.set(nn,mm,r_0,d_0);
   }
   log.printf("  degree of overlap in orientation between central molecule and those within %s\n",( switchingFunction.description() ).c_str() );
+  log<<"  Bibliography "<<plumed.cite("Tribello, Giberti, Sosso, Salvalaglio and Parrinello, J. Chem. Theory Comput. 13, 1317 (2017)")<<"\n";
   // Set the link cell cutoff
   rcut2 = switchingFunction.get_dmax()*switchingFunction.get_dmax();
   setLinkCellCutoff( switchingFunction.get_dmax() );

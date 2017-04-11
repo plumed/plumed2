@@ -38,7 +38,7 @@ OTHER DEALINGS WITH THE SOFTWARE.
 #define __PLUMED_molfile_readpdb_h
 /***************************************************************************
  *cr
- *cr            (C) Copyright 1995-2009 The Board of Trustees of the
+ *cr            (C) Copyright 1995-2016 The Board of Trustees of the
  *cr                        University of Illinois
  *cr                         All Rights Reserved
  *cr
@@ -49,7 +49,7 @@ OTHER DEALINGS WITH THE SOFTWARE.
  *
  *      $RCSfile: readpdb.h,v $
  *      $Author: johns $       $Locker:  $             $State: Exp $
- *      $Revision: 1.42 $       $Date: 2009/04/29 15:45:33 $
+ *      $Revision: 1.43 $       $Date: 2016/11/28 05:01:54 $
  *
  ***************************************************************************/
 

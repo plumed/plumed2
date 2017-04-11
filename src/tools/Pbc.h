@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -63,8 +63,6 @@ class Pbc{
 /// a distance vector.
   void buildShifts(std::vector<Vector> shifts[2][2][2])const;
 public:
-/// Perform some check. Useful for debugging.
-  static void test();
 /// Constructor
   Pbc();
 /// Compute modulo of (v2-v1), using or not pbc depending on bool pbc.

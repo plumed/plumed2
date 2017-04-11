@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -40,7 +40,7 @@ values such as the minimum, the number less than a certain quantity and so on.
 \par Examples
 
 The following input tells plumed to calculate the projection of the length of the vector connecting atom 3 
-to atom 5 and that is projected in the xy-plane and the projection of the length of the vector 
+to atom 5 projected in the xy-plane and the projection of the length of the vector 
 the vector connecting atom 1 to atom 2 in the xy-plane.  The minimum of these two quantities is then 
 printed 
 \verbatim
@@ -60,9 +60,15 @@ values such as the minimum, the number less than a certain quantity and so on.
 
 \par Examples
 
-See documentation for \ref XYDISTANCES for examples of how to use this command.
-You just need to substitute XZDISTANCES for XYDISTANCES to investigate the xz component
-rather than the xy component.
+The following input tells plumed to calculate the projection of the length of the vector connecting atom 3 
+to atom 5 projected in the xz-plane and the projection of the length of the vector 
+the vector connecting atom 1 to atom 2 in the xz-plane.  The minimum of these two quantities is then 
+printed 
+\verbatim
+XZDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
+PRINT ARG=d1.min
+\endverbatim
+(See also \ref PRINT).
 
 */
 //+ENDPLUMEDOC
@@ -75,9 +81,15 @@ values such as the minimum, the number less than a certain quantity and so on.
 
 \par Examples
 
-See documentation for \ref XYDISTANCES for examples of how to use this command.
-You just need to substitute YZDISTANCES for XYDISTANCES to investigate the yz component
-rather than the xy component.
+The following input tells plumed to calculate the projection of the length of the vector connecting atom 3 
+to atom 5 in the yz-plane and the projection of the length of the vector 
+the vector connecting atom 1 to atom 2 in the yz-plane.  The minimum of these two quantities is then 
+printed 
+\verbatim
+YZDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
+PRINT ARG=d1.min
+\endverbatim
+(See also \ref PRINT).
 
 */
 //+ENDPLUMEDOC

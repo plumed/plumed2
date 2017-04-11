@@ -1,5 +1,4 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 123374 2014-08-08 21:53:07Z mojca@macports.org $
 
 PortSystem          1.0
 
@@ -37,12 +36,9 @@ homepage            http://www.plumed.org/
 # sure that even if the user has that package already installed plumed is
 # not going to use it.
 configure.args-append \
-               --disable-matheval \
-               --disable-xdrfile \
+               --disable-libsearch \
                --disable-molfile-plugins \
-               --disable-zlib \
-               --disable-mpi \
-               --disable-gsl
+               --disable-mpi 
 
 # Hardcode path for libplumedKernel.dylib.
 # This allows to patch MD codes using the --runtime option but using as
@@ -59,22 +55,22 @@ if {[mpi_variant_isset]} {
 }
 
 variant matheval description {Enable libmatheval} {
-  configure.args-replace --disable-matheval --enable-matheval
+  configure.ldflags-append -lmatheval
   depends_lib-append port:libmatheval
 }
 
 variant xdrfile description {Enable xdrfile} {
-  configure.args-replace --disable-xdrfile --enable-xdrfile
+  configure.ldflags-append -lxdrfile
   depends_lib-append port:xdrfile
 }
 
 variant zlib description {Enable zlib} {
-  configure.args-replace --disable-zlib --enable-zlib
+  configure.ldflags-append -lz
   depends_lib-append port:zlib
 }
 
 variant gsl description {Enable gsl} {
-  configure.args-replace --disable-gsl --enable-gsl
+  configure.ldflags-append -lgsl
   depends_lib-append port:gsl
 }
 

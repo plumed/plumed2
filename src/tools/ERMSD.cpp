@@ -104,7 +104,6 @@ namespace PLMD{
           std::vector<Vector> centers;
           centers.resize(nresidues);
           
-          unsigned at_idx = 0;
           unsigned idx_deri = 0;
 
           Tensor da_dxa = (2./3.)*Tensor::identity();
@@ -123,7 +122,7 @@ namespace PLMD{
           for(unsigned res_idx=0;res_idx<natoms/3;res_idx++){
                
                
-               at_idx = 3*res_idx;
+               const unsigned at_idx = 3*res_idx;
                //center
                for (unsigned j=0;j<3;j++){
                     centers[res_idx] += w*positions[at_idx+j];
