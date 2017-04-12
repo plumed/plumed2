@@ -244,6 +244,7 @@ void SimTemp::read_status()
      st_rep_ = static_cast<unsigned>(st_rep);
      ifile->scanField("st_up", st_up);
      st_up_ = static_cast<unsigned>(st_up);
+     ifile->scanField("ig", plumed.passMap[selector_]);
      // new line
      ifile->scanField();
     }
@@ -363,6 +364,7 @@ void SimTemp::print_status(long int step)
  statusfile_.printField("st_rep", st_rep);
  double st_up = static_cast<double>(st_up_);
  statusfile_.printField("st_up", st_up);
+ statusfile_.printField("ig", plumed.passMap[selector_]);
  statusfile_.printField();
 }
 
