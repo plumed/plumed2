@@ -26,6 +26,7 @@
 #include "tools/BiasRepresentation.h"
 #include "tools/File.h"
 #include "tools/Tools.h"
+#include "tools/Stopwatch.h"
 #include <iostream>
 
 using namespace std;
@@ -507,6 +508,10 @@ historep(NULL)
     if(integratehills)	hillsHandler=new FilesHandler(hillsFiles,parallelread,*this, log);
     if(integratehisto)	histoHandler=new FilesHandler(histoFiles,parallelread,*this, log);
 
+    Stopwatch sw;
+
+    sw.start("0 Summing hills");
+
     // read a number of hills and put in the bias representation
     int nfiles=0;
     bool ibias=integratehills; bool ihisto=integratehisto;
@@ -618,6 +623,10 @@ historep(NULL)
     }
     if(hillsHandler) delete hillsHandler;
     if(histoHandler) delete histoHandler;
+
+    sw.stop("0 Summing hills");
+
+    log<<sw;
 
     return;
   } 
