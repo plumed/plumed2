@@ -154,6 +154,7 @@ See branch \branch{v2.3} on git repository.
 - fix a bug in \ref CS2BACKBONE (v2.3.1) related to ring currents of HIS and TRP
 - Fixed bug in if condition in \ref PCAVARS so that you can run with only one eigenvector defined in input 
 - Fixed bug in \ref HBONDS that used to apear when you used DONORNS and ACCEPTORS with same numbers of atoms 
+- Fixed bug in \ref DISTANCES that appears when using BETWEEN and link cells.
 
 For developers:
 - plumedcheck validation has been made stricter. All the checks are now described in the developer manual.
