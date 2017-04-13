@@ -781,7 +781,7 @@ void EM3D::calculate(){
      Devfile_.link(*this);
      Devfile_.open("ovmd_deviations.dat");
      Devfile_.setHeavyFlush();
-     Devfile_.fmtField("%9.6f");
+     Devfile_.fmtField("%12.6f");
      ovmd_ave_.resize(GMM_d_w_.size());
      for(unsigned i=0; i<ovmd_ave_.size(); ++i) ovmd_ave_[i] = 0.0;
    }
