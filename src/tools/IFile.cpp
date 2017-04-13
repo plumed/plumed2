@@ -28,6 +28,7 @@
 #include "Tools.h"
 #include <cstdarg>
 #include <cstring>
+#include <cmath>
 
 #include <iostream>
 #include <string>
@@ -162,7 +163,8 @@ IFile& IFile::scanField(const std::string&name,int &x){
 }
 
 IFile& IFile::scanField(Value* val){
-  double ff; scanField(  val->getName(), ff );
+  double ff=NAN; // this is to be sure a NAN value is replaced upon failure
+  scanField(  val->getName(), ff );
   val->set( ff );
   if( FieldExist("min_" + val->getName() ) ){ 
       std::string min, max;
