@@ -24,7 +24,7 @@ matrix:
   - os: linux
     dist: trusty
     sudo: required
-    env: CPPCHECK=yes CPPCHECK_VERSION=1.77
+    env: CPPCHECK=yes CPPCHECK_VERSION=1.78
 # then check with different optimization flags
   - os: linux
     dist: trusty
