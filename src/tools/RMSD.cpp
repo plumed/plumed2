@@ -1127,17 +1127,20 @@ double RMSDCoreData::getDistance( bool squared){
   else
       dist=eigenvals[0]+rr00+rr11;
   const unsigned n=static_cast<unsigned int>(reference.size());
+  double localDist = 0;
+#pragma simd reduction(+:localDist)
   for(unsigned iat=0;iat<n;iat++){
   	if(alEqDis){
-  	    if(safe) dist+=align[iat]*modulo2(d[iat]);
+	    if(safe) localDist+=align[iat]*modulo2(d[iat]);
   	} else {
-  	    dist+=displace[iat]*modulo2(d[iat]);
+	    localDist+=displace[iat]*modulo2(d[iat]);
   	}
   }
   if(!squared){
-  	dist=sqrt(dist);
+	dist=sqrt(localDist);
 	distanceIsMSD=false;
   }else{
+	dist=localDist;
 	distanceIsMSD=true;
   }
   hasDistance=true;
@@ -1158,10 +1161,13 @@ void RMSDCoreData::doCoreCalcWithCloseStructure(bool safe,bool alEqDis, Tensor &
 
     Tensor rotation = matmul(rotationPosClose, rotationRefClose);
 
+#pragma simd
     for (unsigned iat=0; iat<natoms; iat++){
         d[iat] = positions[iat] - cp - matmul(rotation, reference[iat]-cr);
+    }
+    if (!alEqDis){
+        for (unsigned iat=0; iat<natoms; iat++) {
         //dist = \sum w_i(x_i - cpos - R_xy * R_ay * a_i)
-        if (!alEqDis){
             ddist_drxy += -2*displace[iat]*extProduct(matmul(d[iat], rotationRefClose), reference[iat]-cr);
         }
     }
