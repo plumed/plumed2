@@ -448,6 +448,10 @@ class CS2Backbone : public Colvar {
     Vector g[6];       // vector of the vectors used to calculate n1,n2
     double lengthN2;   // square of length of normVect
     double lengthNV;   // length of normVect
+    RingInfo():
+      rtype(0),numAtoms(0),
+      lengthN2(NAN),lengthNV(NAN)
+    {for(unsigned i=0;i<6;i++) atom[i]=0;}
   };
 
   enum aa_t {ALA, ARG, ASN, ASP, CYS, GLN, GLU, GLY, HIS, ILE, LEU, LYS, MET, PHE, PRO, SER, THR, TRP, TYR, VAL, UNK};
@@ -995,7 +999,8 @@ void CS2Backbone::calculate()
     	      ff[0] += fact*(gradUQ - gradVQ);
     	
     	      const double fU       = fUU/nL;
-    	      const double OneOverN = 1./((double) ringInfo[i].numAtoms);
+    	      double OneOverN = 1./6.;
+              if(ringInfo[i].numAtoms==5) OneOverN=1./3.; 
               const Vector factor2  = OneOverN*n;
     	      const Vector factor4  = (OneOverN/dL_nL)*d;
 
@@ -1185,7 +1190,7 @@ void CS2Backbone::compute_ring_parameters(){
         a[j] = getPosition(ringInfo[i].atom[j]);
       }
       // ring center
-      Vector midP = (a[0]+a[2]+a[3])/(double) size;
+      Vector midP = (a[0]+a[2]+a[3])/3.;
       ringInfo[i].position = midP;
       // compute normal vector to plane containing first three atoms in array
       ringInfo[i].n1 = crossProduct(delta(a[0],a[3]), delta(a[0],a[2]));

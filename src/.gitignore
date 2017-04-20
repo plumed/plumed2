@@ -12,6 +12,7 @@
 !/config
 !/core
 !/crystallization
+!/eds
 !/function
 !/generic
 !/gridtools
@@ -33,6 +34,7 @@
 !/vatom
 !/vesselbase
 !/wrapper
+
 
 # And just ignore these files
 *.xxd

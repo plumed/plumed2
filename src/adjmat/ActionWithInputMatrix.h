@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015,2016 The plumed team
+   Copyright (c) 2015-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,14 +25,13 @@
 #include "core/ActionWithValue.h"
 #include "core/ActionAtomistic.h"
 #include "multicolvar/MultiColvarBase.h"
-#include "multicolvar/MultiColvarFunction.h"
 
 namespace PLMD {
 namespace adjmat {
 
 class AdjacencyMatrixVessel;
 
-class ActionWithInputMatrix : public multicolvar::MultiColvarFunction {
+class ActionWithInputMatrix : public multicolvar::MultiColvarBase {
 protected:
 /// The vessel that holds the adjacency matrix
   AdjacencyMatrixVessel* mymatrix;

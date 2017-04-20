@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -70,6 +70,11 @@ Action::Action(const ActionOptions&ao):
 {
   line.erase(line.begin());
   log.printf("Action %s\n",name.c_str());
+
+  if(comm.Get_rank()==0){
+    replica_index=multi_sim_comm.Get_rank();
+  }
+  comm.Bcast(replica_index,0);
 
   if ( keywords.exists("LABEL") ){ parse("LABEL",label); }
 

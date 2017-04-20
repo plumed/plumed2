@@ -36,6 +36,29 @@ awk '
   printf("%s",".html\"> "$2" </a>\n");
 }' >  links-to-user-manual.txt
 
+cat ../src/maketools/plumedcheck | grep "# DOC:" |
+{
+cat << \EOF
+// This document is formatted for Doxygen
+/**
+
+EOF
+
+awk '
+{
+  sub("# DOC:","");
+  if($0~"^ *:..*: *"){
+     print ""
+     gsub(":","_");
+     print 
+     print ""
+  } else print $0
+  
+}END{
+  printf("%s\n","*/");
+}'
+} > plumedcheck.txt
+
 
 # Create a directory to put all the files in
 #rm -rf automatic

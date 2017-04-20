@@ -169,6 +169,17 @@ In this example, the linker will directly try to link `/opt/local/lib/libmymathe
 This rule is true for all the libraries, so that you will always be able to link
 a specific version of a library by specifying it using the LIBS variable.
 
+Since version 2.3.2, the search for the library functions passing to the linker a flag with the standard library name (in the matheval example,
+it would be `-lmatheval`) can be skipped by using the option `--disable-libsearch`.
+Notice that in this manner only libraries that are explicitly passed using the `LIBS` option will be linked. For instance
+\verbatim
+> ./configure --disable-libsearch LIBS=-lmatheval
+\endverbatim
+will make sure that only matheval is linked and, for instance, blas and lapack libraries are not.
+This might be useful when installing PLUMED within package managers such as MacPorts to
+make sure that only desired libraries are linked and thus to avoid to introduce spurious
+dependencies. The only exception to this rule is `-ldl`, which is anyway a system library on Linux.
+
 \warning On Linux you might have problems using the LDFLAGS option. In particular,
 if makefile complaints that it cannot link the file 'src/lib/plumed-shared',
 try to set correctly

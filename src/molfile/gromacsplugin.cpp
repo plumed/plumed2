@@ -37,7 +37,7 @@ OTHER DEALINGS WITH THE SOFTWARE.
 #if defined(__PLUMED_HAS_MOLFILE_PLUGINS) && ! defined(__PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS)
 /***************************************************************************
  *cr
- *cr            (C) Copyright 1995-2009 The Board of Trustees of the
+ *cr            (C) Copyright 1995-2016 The Board of Trustees of the
  *cr                        University of Illinois
  *cr                         All Rights Reserved
  *cr
@@ -48,7 +48,7 @@ OTHER DEALINGS WITH THE SOFTWARE.
  *
  *      $RCSfile: gromacsplugin.C,v $
  *      $Author: johns $       $Locker:  $             $State: Exp $
- *      $Revision: 1.49 $       $Date: 2014/05/19 19:36:39 $
+ *      $Revision: 1.52 $       $Date: 2016/11/28 05:01:54 $
  *
  ***************************************************************************/
 
@@ -130,9 +130,11 @@ static void *open_gro_read(const char *filename, const char *,
     }
     *natoms = mdh.natoms;
     gmx = new gmxdata;
+    memset(gmx,0,sizeof(gmxdata));
     gmx->mf = mf;
     gmx->natoms = mdh.natoms;
     gmx->meta = new molfile_metadata_t;
+    memset(gmx->meta,0,sizeof(molfile_metadata_t));
     strncpy(gmx->meta->title, mdh.title, 80);
     gmx->timeval = mdh.timeval;
     return gmx;
@@ -204,6 +206,7 @@ static int read_gro_timestep(void *v, int natoms, molfile_timestep_t *ts) {
 static void close_gro_read(void *v) {
   gmxdata *gmx = (gmxdata *)v;
   mdio_close(gmx->mf);
+  delete gmx->meta;
   delete gmx;
 }
 
@@ -221,10 +224,12 @@ static void *open_gro_write(const char *filename, const char *filetype,
         return NULL;
     }
     gmx = new gmxdata;
+    memset(gmx,0,sizeof(gmxdata));
     gmx->mf = mf;
     gmx->natoms = natoms;
     gmx->step   = 0;
     gmx->meta = new molfile_metadata_t;
+    memset(gmx->meta,0,sizeof(molfile_metadata_t));
     gmx->meta->title[0] = '\0';
 
     return gmx;
@@ -289,8 +294,8 @@ static void close_gro_write(void *v) {
   gmxdata *gmx = (gmxdata *)v;
   mdio_close(gmx->mf);
   free(gmx->atomlist);
-  free(gmx->meta);
-  free(gmx);
+  delete gmx->meta;
+  delete gmx;
 }
 
 
@@ -338,6 +343,7 @@ static void *open_g96_read(const char *filename, const char *,
         *natoms = g96_countatoms(mf);
 
         gmxdata *gmx = new gmxdata;
+        memset(gmx,0,sizeof(gmxdata));
         gmx->mf = mf;
         gmx->natoms = *natoms; 
         return gmx;
@@ -494,6 +500,7 @@ static void *open_trr_read(const char *filename, const char *filetype,
     }
     *natoms = mdh.natoms;
     gmx = new gmxdata;
+    memset(gmx,0,sizeof(gmxdata));
     gmx->mf = mf;
     gmx->natoms = mdh.natoms;
     return gmx;
@@ -564,6 +571,7 @@ static void *open_trr_write(const char *filename, const char *filetype,
         return NULL;
     }
     gmx = new gmxdata;
+    memset(gmx,0,sizeof(gmxdata));
     gmx->mf = mf;
     gmx->natoms = natoms;
     // set some parameters for the output stream:
@@ -651,133 +659,105 @@ static void close_trr_write(void *v) {
 }
 
 #define GROMACS_PLUGIN_MAJOR_VERSION 1
-#define GROMACS_PLUGIN_MINOR_VERSION 0 
+#define GROMACS_PLUGIN_MINOR_VERSION 2 
 
 //
 // plugin registration stuff below
 //
-static molfile_plugin_t gro_plugin = {
-  vmdplugin_ABIVERSION,                                // ABI version
-  MOLFILE_PLUGIN_TYPE,                                 // type of plugin
-  "gro",                                               // short name of plugin
-  "Gromacs GRO",                                       // pretty name of plugin
-  "David Norris, Justin Gullingsrud, Magnus Lundborg", // authors
-  GROMACS_PLUGIN_MAJOR_VERSION,                        // major version
-  GROMACS_PLUGIN_MINOR_VERSION,                        // minor version
-  VMDPLUGIN_THREADUNSAFE,                              // is not reentrant
-  "gro",                                               // filename extension
-  open_gro_read,
-  read_gro_structure,
-  0,
-  read_gro_timestep,
-  close_gro_read,
-  open_gro_write,                                      // open_write
-  write_gro_structure,                                 // write_structure
-  write_gro_timestep,                                  // write_timestep
-  close_gro_write,                                     // close_write
-  0,                                                   // read_volumetric_metadata
-  0,                                                   // read_volumetric_data
-  0,                                                   // read_rawgraphics
-  read_gro_molecule_metadata                           // read_molecule_metadata
-};
 
-static molfile_plugin_t g96_plugin = {
-  vmdplugin_ABIVERSION,               // ABI version
-  MOLFILE_PLUGIN_TYPE,                // type of plugin
-  "g96",                              // short name of plugin
-  "Gromacs g96",                      // pretty name of plugin
-  "David Norris, Justin Gullingsrud", // authors
-  GROMACS_PLUGIN_MAJOR_VERSION,       // major version
-  GROMACS_PLUGIN_MINOR_VERSION,       // minor version
-  VMDPLUGIN_THREADUNSAFE,             // is not reentrant
-  "g96",                              // filename extension
-  open_g96_read,
-  read_g96_structure,
-  0,
-  read_g96_timestep,
-  close_g96_read,
-  0,                                  // open_write
-  0,                                  // write_structure
-  0,                                  // write_timestep
-  0,                                  // close_write
-  0,                                  // read_volumetric_metadata
-  0,                                  // read_volumetric_data
-  0                                   // read_rawgraphics
-};
+static molfile_plugin_t gro_plugin;
+static molfile_plugin_t g96_plugin;
+static molfile_plugin_t trr_plugin;
+static molfile_plugin_t xtc_plugin;
+static molfile_plugin_t trj_plugin;
 
-static molfile_plugin_t trr_plugin = {
-  vmdplugin_ABIVERSION,               // ABI version
-  MOLFILE_PLUGIN_TYPE,                // type of plugin
-  "trr",                              // short name of plugin
-  "Gromacs TRR Trajectory",           // pretty name of plugin
-  "David Norris, Justin Gullingsrud, Axel Kohlmeyer", // authors
-  GROMACS_PLUGIN_MAJOR_VERSION,       // major version
-  GROMACS_PLUGIN_MINOR_VERSION,       // minor version
-  VMDPLUGIN_THREADUNSAFE,             // is not reentrant
-  "trr",                              // filename extension
-  open_trr_read,
-  0,
-  0,
-  read_trr_timestep,
-  close_trr_read,
-  open_trr_write,
-  0,                            // write_structure
-  write_trr_timestep,
-  close_trr_write,
-  0,                            // read_volumetric_metadata
-  0,                            // read_volumetric_data
-  0                             // read_rawgraphics
-};
-
-static molfile_plugin_t xtc_plugin = {
-  vmdplugin_ABIVERSION,                // ABI version
-  MOLFILE_PLUGIN_TYPE,                 // type of plugin
-  "xtc",                               // short name of plugin
-  "Gromacs XTC Compressed Trajectory", // pretty name of plugin
-  "David Norris, Justin Gullingsrud",  // authors
-  GROMACS_PLUGIN_MAJOR_VERSION,        // major version
-  GROMACS_PLUGIN_MINOR_VERSION,        // minor version
-  VMDPLUGIN_THREADUNSAFE,              // is not reentrant
-  "xtc",                               // filename extension
-  open_trr_read,
-  0,
-  0,
-  read_trr_timestep,
-  close_trr_read,
-  0,                                  // open_write
-  0,                                  // write_structure
-  0,                                  // write_timestep
-  0,                                  // close_write
-  0,                                  // read_volumetric_metadata
-  0,                                  // read_volumetric_data
-  0                                   // read_rawgraphics
-};
-
-static molfile_plugin_t trj_plugin = {
-  vmdplugin_ABIVERSION,                // ABI version
-  MOLFILE_PLUGIN_TYPE,                 // type of plugin
-  "trj",                               // short name of plugin
-  "Gromacs TRJ Trajectory", // pretty name of plugin
-  "David Norris, Justin Gullingsrud",  // authors
-  GROMACS_PLUGIN_MAJOR_VERSION,        // major version
-  GROMACS_PLUGIN_MINOR_VERSION,        // minor version
-  VMDPLUGIN_THREADUNSAFE,              // is not reentrant
-  "trj",                               // filename extension
-  open_trr_read,
-  0,
-  0,
-  read_trr_timestep,
-  close_trr_read,
-  0,                                  // open_write
-  0,                                  // write_structure
-  0,                                  // write_timestep
-  0,                                  // close_write
-  0,                                  // read_volumetric_metadata
-  0,                                  // read_volumetric_data
-  0                                   // read_rawgraphics
-};
 
 VMDPLUGIN_API int VMDPLUGIN_init() {
+  // GRO plugin init
+  memset(&gro_plugin, 0, sizeof(molfile_plugin_t));
+  gro_plugin.abiversion = vmdplugin_ABIVERSION;
+  gro_plugin.type = MOLFILE_PLUGIN_TYPE;
+  gro_plugin.name = "gro";
+  gro_plugin.prettyname = "Gromacs GRO";
+  gro_plugin.author = "David Norris, Justin Gullingsrud, Magnus Lundborg";
+  gro_plugin.majorv = GROMACS_PLUGIN_MAJOR_VERSION;
+  gro_plugin.minorv = GROMACS_PLUGIN_MINOR_VERSION;
+  gro_plugin.is_reentrant = VMDPLUGIN_THREADUNSAFE;
+  gro_plugin.filename_extension = "gro";
+  gro_plugin.open_file_read = open_gro_read;
+  gro_plugin.read_structure = read_gro_structure;
+  gro_plugin.read_next_timestep = read_gro_timestep;
+  gro_plugin.close_file_read = close_gro_read;
+  gro_plugin.open_file_write = open_gro_write;
+  gro_plugin.write_structure = write_gro_structure;
+  gro_plugin.write_timestep = write_gro_timestep;
+  gro_plugin.close_file_write = close_gro_write;
+  gro_plugin.read_molecule_metadata = read_gro_molecule_metadata;
+
+  // G96 plugin init
+  memset(&g96_plugin, 0, sizeof(molfile_plugin_t));
+  g96_plugin.abiversion = vmdplugin_ABIVERSION;
+  g96_plugin.type = MOLFILE_PLUGIN_TYPE;
+  g96_plugin.name = "g96";
+  g96_plugin.prettyname = "Gromacs g96";
+  g96_plugin.author = "David Norris, Justin Gullingsrud";
+  g96_plugin.majorv = GROMACS_PLUGIN_MAJOR_VERSION;
+  g96_plugin.minorv = GROMACS_PLUGIN_MINOR_VERSION;
+  g96_plugin.is_reentrant = VMDPLUGIN_THREADUNSAFE;
+  g96_plugin.filename_extension = "g96";
+  g96_plugin.open_file_read = open_g96_read;
+  g96_plugin.read_structure = read_g96_structure;
+  g96_plugin.read_next_timestep = read_g96_timestep;
+  g96_plugin.close_file_read = close_g96_read;
+
+  // TRR plugin
+  memset(&trr_plugin, 0, sizeof(molfile_plugin_t));
+  trr_plugin.abiversion = vmdplugin_ABIVERSION;
+  trr_plugin.type = MOLFILE_PLUGIN_TYPE;
+  trr_plugin.name = "trr";
+  trr_plugin.prettyname = "Gromacs TRR Trajectory";
+  trr_plugin.author = "David Norris, Justin Gullingsrud, Axel Kohlmeyer";
+  trr_plugin.majorv = GROMACS_PLUGIN_MAJOR_VERSION;
+  trr_plugin.minorv = GROMACS_PLUGIN_MINOR_VERSION;
+  trr_plugin.is_reentrant = VMDPLUGIN_THREADUNSAFE;
+  trr_plugin.filename_extension = "trr";
+  trr_plugin.open_file_read = open_trr_read;
+  trr_plugin.read_next_timestep = read_trr_timestep;
+  trr_plugin.close_file_read = close_trr_read;
+  trr_plugin.open_file_write = open_trr_write;
+  trr_plugin.write_timestep = write_trr_timestep;
+  trr_plugin.close_file_write = close_trr_write;
+
+  // XTC plugin 
+  memset(&xtc_plugin, 0, sizeof(molfile_plugin_t));
+  xtc_plugin.abiversion = vmdplugin_ABIVERSION;
+  xtc_plugin.type = MOLFILE_PLUGIN_TYPE;
+  xtc_plugin.name = "xtc";
+  xtc_plugin.prettyname = "Gromacs XTC Compressed Trajectory";
+  xtc_plugin.author = "David Norris, Justin Gullingsrud";
+  xtc_plugin.majorv = GROMACS_PLUGIN_MAJOR_VERSION;
+  xtc_plugin.minorv = GROMACS_PLUGIN_MINOR_VERSION;
+  xtc_plugin.is_reentrant = VMDPLUGIN_THREADUNSAFE;
+  xtc_plugin.filename_extension = "xtc";
+  xtc_plugin.open_file_read = open_trr_read;
+  xtc_plugin.read_next_timestep = read_trr_timestep;
+  xtc_plugin.close_file_read = close_trr_read;
+
+  // TRJ plugin
+  memset(&trj_plugin, 0, sizeof(molfile_plugin_t));
+  trj_plugin.abiversion = vmdplugin_ABIVERSION;
+  trj_plugin.type = MOLFILE_PLUGIN_TYPE;
+  trj_plugin.name = "trj";
+  trj_plugin.prettyname = "Gromacs TRJ Trajectory";
+  trj_plugin.author = "David Norris, Justin Gullingsrud";
+  trj_plugin.majorv = GROMACS_PLUGIN_MAJOR_VERSION;
+  trj_plugin.minorv = GROMACS_PLUGIN_MINOR_VERSION;
+  trj_plugin.is_reentrant = VMDPLUGIN_THREADUNSAFE;
+  trj_plugin.filename_extension = "trj";
+  trj_plugin.open_file_read = open_trr_read;
+  trj_plugin.read_next_timestep = read_trr_timestep;
+  trj_plugin.close_file_read = close_trr_read;
+
   return 0;
 }
 

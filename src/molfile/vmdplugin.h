@@ -51,7 +51,7 @@ namespace molfile{
  *
  *      $RCSfile: vmdplugin.h,v $
  *      $Author: johns $       $Locker:  $             $State: Exp $
- *      $Revision: 1.32 $       $Date: 2009/02/24 05:12:35 $
+ *      $Revision: 1.33 $       $Date: 2015/10/29 05:10:54 $
  *
  ***************************************************************************/
 
@@ -186,7 +186,7 @@ typedef struct {
 /**
  * Use this macro to initialize the abiversion member of each plugin
  */
-#define vmdplugin_ABIVERSION  16
+#define vmdplugin_ABIVERSION  17
 
 /*@{*/
 /** Use this macro to indicate a plugin's thread-safety at registration time */
