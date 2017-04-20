@@ -2,8 +2,9 @@
 
 DIRS=$1
 
-# remove trailing "/"
-DIRS=${DIRS%%/*}
+# keep only dirname
+DIRS=${DIRS##*/}
+echo "$DIRS"
 
 test -z "$DIRS" && DIRS=*
 
