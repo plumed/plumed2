@@ -217,6 +217,9 @@ public:
   double integrate( std::vector<unsigned>& npoints );
 ///
   void mpiSumValuesAndDerivatives( Communicator& comm );
+/// Find the maximum over paths of the minimum value of the gridded function along the paths
+/// for all paths of neighboring grid lattice points from a source point to a sink point.
+  virtual double findMaximalPathMinimum(const std::vector<double> &source, const std::vector<double> &sink);
 };
 
 

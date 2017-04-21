@@ -968,4 +968,153 @@ void Grid::mpiSumValuesAndDerivatives( Communicator& comm ) {
   comm.Sum( grid_ ); for(unsigned i=0; i<der_.size(); ++i) comm.Sum( der_[i] );
 }
 
+
+bool indexed_lt(pair<Grid::index_t, double> const &x, pair<Grid::index_t, double> const   &y) {
+  return x.second < y.second;
+}
+
+double Grid::findMaximalPathMinimum(const std::vector<double> &source, const std::vector<double> &sink) {
+  plumed_dbg_assert(source.size() == dimension_);
+  plumed_dbg_assert(sink.size() == dimension_);
+  // Start and end indices
+  index_t source_idx = getIndex(source);
+  index_t sink_idx = getIndex(sink);
+  // Path cost
+  double maximal_minimum = 0;
+  // In one dimension, path searching is very easy--either go one way if it's not periodic,
+  // or go both ways if it is periodic. There's no reason to pay the cost of Dijkstra.
+  if (dimension_ == 1) {
+    // Do a search from the grid source to grid sink that does not
+    // cross the grid boundary.
+    double curr_min_bias = getValue(source_idx);
+    // Either search from a high source to a low sink.
+    if (source_idx > sink_idx) {
+      for (index_t i = source_idx; i >= sink_idx; i--) {
+        if (curr_min_bias == 0.0) {
+          break;
+        }
+        curr_min_bias = fmin(curr_min_bias, getValue(i));
+      }
+      // Or search from a low source to a high sink.
+    } else if (source_idx < sink_idx) {
+      for (index_t i = source_idx; i <= sink_idx; i++) {
+        if (curr_min_bias == 0.0) {
+          break;
+        }
+        curr_min_bias = fmin(curr_min_bias, getValue(i));
+      }
+    }
+    maximal_minimum = curr_min_bias;
+    // If the grid is periodic, also do the search that crosses
+    // the grid boundary.
+    if (pbc_[0]) {
+      double curr_min_bias = getValue(source_idx);
+      // Either go from a high source to the upper boundary and
+      // then from the bottom boundary to the sink
+      if (source_idx > sink_idx) {
+        for (index_t i = source_idx; i < maxsize_; i++) {
+          if (curr_min_bias == 0.0) {
+            break;
+          }
+          curr_min_bias = fmin(curr_min_bias, getValue(i));
+        }
+        for (index_t i = 0; i <= sink_idx; i++) {
+          if (curr_min_bias == 0.0) {
+            break;
+          }
+          curr_min_bias = fmin(curr_min_bias, getValue(i));
+        }
+        // Or go from a low source to the bottom boundary and
+        // then from the high boundary to the sink
+      } else if (source_idx < sink_idx) {
+        for (index_t i = source_idx; i > 0; i--) {
+          if (curr_min_bias == 0.0) {
+            break;
+          }
+          curr_min_bias = fmin(curr_min_bias, getValue(i));
+        }
+        curr_min_bias = fmin(curr_min_bias, getValue(0));
+        for (index_t i = maxsize_ - 1; i <= sink_idx; i--) {
+          if (curr_min_bias == 0.0) {
+            break;
+          }
+          curr_min_bias = fmin(curr_min_bias, getValue(i));
+        }
+      }
+      // If the boundary crossing paths was more biased, it's
+      // minimal bias replaces the non-boundary-crossing path's
+      // minimum.
+      maximal_minimum = fmax(maximal_minimum, curr_min_bias);
+    }
+    // The one dimensional path search is complete.
+    return maximal_minimum;
+    // In two or more dimensions, path searching isn't trivial and we really
+    // do need to use a path search algorithm. Dijkstra is the simplest decent
+    // one. Using it we've never found the path search to be performance
+    // limiting in any solvated biomolecule test system, but faster options are
+    // easy to imagine if they become necessary. NB-In this case, we're actually
+    // using a greedy variant of Dijkstra's algorithm where the first possible
+    // path to a point always controls the path cost to that point. The structure
+    // of the cost function in this case guarantees that the calculated costs will
+    // be correct using this variant even though fine details of the paths may not
+    // match a normal Dijkstra search.
+  } else if (dimension_ > 1) {
+    // Prepare calculation temporaries for Dijkstra's algorithm.
+    // Minimal path costs from source to a given grid point
+    vector<double> mins_from_source = vector<double>(maxsize_, -1.0);
+    // Heap for tracking available steps, steps are recorded as std::pairs of
+    // an index and a value.
+    vector< pair<index_t, double> > next_steps;
+    pair<index_t, double> curr_indexed_val;
+    make_heap(next_steps.begin(), next_steps.end(), indexed_lt);
+    // The search begins at the source index.
+    next_steps.push_back(pair<index_t, double>(source_idx, getValue(source_idx)));
+    push_heap(next_steps.begin(), next_steps.end(), indexed_lt);
+    // At first no points have been examined and the optimal path has not been found.
+    index_t n_examined = 0;
+    bool path_not_found = true;
+    // Until a path is found,
+    while (path_not_found) {
+      // Examine the grid point currently most accessible from
+      // the set of all previously explored grid points by popping
+      // it from the top of the heap.
+      pop_heap(next_steps.begin(), next_steps.end(), indexed_lt);
+      curr_indexed_val = next_steps.back();
+      next_steps.pop_back();
+      n_examined++;
+      // Check if this point is the sink point, and if so
+      // finish the loop.
+      if (curr_indexed_val.first == sink_idx) {
+        path_not_found = false;
+        maximal_minimum = curr_indexed_val.second;
+        break;
+        // Check if this point has reached the worst possible
+        // value, and if so stop looking for paths.
+      } else if (curr_indexed_val.second == 0.0) {
+        maximal_minimum = 0.0;
+        break;
+      }
+      // If the search is not over, add this grid point's neighbors to the
+      // possible next points to search for the sink.
+      vector<index_t> neighs = getNearestNeighbors(curr_indexed_val.first);
+      for (unsigned k = 0; k < neighs.size(); k++) {
+        index_t i = neighs[k];
+        // If the neighbor has not already been added to the list of possible next steps,
+        if (mins_from_source[i] == -1.0) {
+          // Set the cost to reach it via a path through the current point being examined.
+          mins_from_source[i] = fmin(curr_indexed_val.second, getValue(i));
+          // Add the neighboring point to the heap of potential next steps.
+          next_steps.push_back(pair<index_t, double>(i, mins_from_source[i]));
+          push_heap(next_steps.begin(), next_steps.end(), indexed_lt);
+        }
+      }
+      // Move on to the next best looking step along any of the paths
+      // growing from the source.
+    }
+    // The multidimensional path search is now complete.
+    return maximal_minimum;
+  }
+  return 0.0;
+}
+
 }
