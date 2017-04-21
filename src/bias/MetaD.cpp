@@ -376,6 +376,8 @@ private:
   unsigned mpi_mw_;
   bool acceleration;
   double acc;
+  bool calc_max_bias_;
+  double max_bias_;
   vector<IFile*> ifiles;
   vector<string> ifilesnames;
   double uppI_;
@@ -419,6 +421,7 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("rct","REWEIGHTING_NGRID","the reweighting factor \\f$c(t)\\f$.");
   keys.addOutputComponent("work","default","accumulator for work");
   keys.addOutputComponent("acc","ACCELERATION","the metadynamics acceleration factor");
+  keys.addOutputComponent("maxbias", "CALC_MAX_BIAS", "the maximum of the metadynamics V(s, t)");
   keys.use("ARG");
   keys.add("compulsory","SIGMA","the widths of the Gaussian hills");
   keys.add("compulsory","PACE","the frequency for hill addition");
@@ -457,6 +460,7 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with WALKERS_* options other than WALKERS_DIR");
   keys.addFlag("ACCELERATION",false,"Set to TRUE if you want to compute the metadynamics acceleration factor.");
+  keys.addFlag("CALC_MAX_BIAS", false, "Set to TRUE if you want to compute the maximum of the metadynamics V(s, t)");
   keys.use("RESTART");
   keys.use("UPDATE_FROM");
   keys.use("UPDATE_UNTIL");
@@ -491,6 +495,7 @@ MetaD::MetaD(const ActionOptions& ao):
   mw_n_(1), mw_dir_(""), mw_id_(0), mw_rstride_(1),
   walkers_mpi(false), mpi_nw_(0), mpi_mw_(0),
   acceleration(false), acc(0.0),
+  calc_max_bias_(false), max_bias_(0.0),
 // Interval initialization
   uppI_(-1), lowI_(-1), doInt_(false),
   isFirstStep(true),
@@ -558,6 +563,12 @@ MetaD::MetaD(const ActionOptions& ao):
   if(stride_<=0 ) error("frequency for hill addition is nonsensical");
   string hillsfname="HILLS";
   parse("FILE",hillsfname);
+
+  // Manually set to calculate special bias quantities
+  // throughout the course of simulation. (These are chosen due to
+  // relevance for tempering and event-driven logic as well.)
+  parseFlag("CALC_MAX_BIAS", calc_max_bias_);
+
   std::vector<double> rect_biasf_;
   parseVector("RECT",rect_biasf_);
   if(rect_biasf_.size()>0) {
@@ -776,6 +787,12 @@ MetaD::MetaD(const ActionOptions& ao):
     log.printf("  calculation on the fly of the acceleration factor");
     addComponent("acc"); componentIsNotPeriodic("acc");
   }
+  if (calc_max_bias_) {
+    if (!grid_) error("Calculating the maximum bias on the fly works only with a grid");
+    log.printf("  calculation on the fly of the maximum bias max(V(s,t)) \n");
+    addComponent("maxbias");
+    componentIsNotPeriodic("maxbias");
+  }
 
   // for performance
   dp_ = new double[getNumberOfArguments()];
@@ -914,6 +931,11 @@ MetaD::MetaD(const ActionOptions& ao):
 
   // Calculate the Tiwary-Parrinello reweighting factor if we are restarting from previous hills
   if(getRestart() && rewf_grid_.size()>0 ) computeReweightingFactor();
+  // Calculate all special bias quantities desired if restarting with nonzero bias.
+  if(getRestart() && calc_max_bias_) {
+    max_bias_ = BiasGrid_->getMaxValue();
+    getPntrToComponent("maxbias")->set(max_bias_);
+  }
 
   // open grid file for writing
   if(wgridstride_>0) {
@@ -1492,7 +1514,13 @@ void MetaD::update() {
       }
     }
   }
+  // Recalculate special bias quantities whenever the bias has been changed by the update.
+  bool bias_has_changed = (nowAddAHill || (mw_n_ > 1 && getStep() % mw_rstride_ == 0));
   if(getStep()%(stride_*rewf_ustride_)==0 && nowAddAHill && rewf_grid_.size()>0 ) computeReweightingFactor();
+  if (calc_max_bias_ && bias_has_changed) {
+    max_bias_ = BiasGrid_->getMaxValue();
+    getPntrToComponent("maxbias")->set(max_bias_);
+  }
 }
 
 /// takes a pointer to the file and a template string with values v and gives back the next center, sigma and height
