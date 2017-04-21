@@ -201,6 +201,11 @@ void GridVessel::setGridElement( const unsigned& ipoint, const unsigned& jelemen
   setDataElement( nper*ipoint + jelement, value );
 }
 
+void GridVessel::addToGridElement( const unsigned& ipoint, const unsigned& jelement, const double& value ){
+  plumed_dbg_assert( bounds_set && ipoint<npoints && jelement<nper );
+  addDataElement( nper*ipoint + jelement, value );
+} 
+
 void GridVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
   plumed_dbg_assert( myvals.getNumberOfValues()==(nper+1) );
   for(unsigned i=0;i<nper;++i) buffer[bufstart + nper*current + i] += myvals.get(i+1);

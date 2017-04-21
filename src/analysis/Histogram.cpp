@@ -298,7 +298,7 @@ void Histogram::prepareForAveraging(){
           lockContributors();
       } else {
           // This is used when we are not doing kernel density evaluation
-          mygrid->setGridElement( neighbors[0], 0, mygrid->getGridElement( neighbors[0], 0 ) + cweight ); 
+          mygrid->addToGridElement( neighbors[0], 0, cweight );
       }  
   }
 }

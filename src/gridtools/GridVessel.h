@@ -89,10 +89,10 @@ public:
  void getIndices( const unsigned& index, std::vector<unsigned>& indices ) const ;
 /// Get the indices of a particular point
  void getIndices( const std::vector<double>& point, std::vector<unsigned>& indices ) const ;
-
 /// Operations on one of the elements of grid point i
  void setGridElement( const unsigned&, const unsigned&, const double& );
-
+/// Add data to an element of the grid
+ void addToGridElement( const unsigned& ipoint, const unsigned& jelement, const double& value );
 /// Operations on one of the elements of grid point specified by vector
  double getGridElement( const std::vector<unsigned>&, const unsigned& ) const ;
  void setGridElement( const std::vector<unsigned>&, const unsigned&, const double& );
