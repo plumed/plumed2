@@ -324,6 +324,28 @@ vector<Grid::index_t> Grid::getSplineNeighbors(const vector<unsigned> & indices)
   return neighbors;
 }
 
+vector<Grid::index_t> Grid::getNearestNeighbors(const index_t index) const {
+  vector<index_t> nearest_neighs = vector<index_t>();
+  for (unsigned i = 0; i < dimension_; i++) {
+    vector<unsigned> neighsneeded = vector<unsigned>(dimension_, 0);
+    neighsneeded[i] = 1;
+    vector<index_t> singledim_nearest_neighs = getNeighbors(index, neighsneeded);
+    for (unsigned j = 0; j < singledim_nearest_neighs.size(); j++) {
+      index_t neigh = singledim_nearest_neighs[j];
+      if (neigh != index) {
+        nearest_neighs.push_back(neigh);
+      }
+    }
+  }
+  return nearest_neighs;
+}
+
+vector<Grid::index_t> Grid::getNearestNeighbors(const vector<unsigned> &indices) const {
+  plumed_dbg_assert(indices.size() == dimension_);
+  return getNearestNeighbors(getIndex(indices));
+}
+
+
 void Grid::addKernel( const KernelFunctions& kernel ) {
   plumed_dbg_assert( kernel.ndim()==dimension_ );
   std::vector<unsigned> nneighb=kernel.getSupport( dx_ );
