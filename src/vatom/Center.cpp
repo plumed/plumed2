@@ -108,20 +108,29 @@ Center::Center(const ActionOptions&ao):
   parseFlag("MASS",weight_mass);
   parseFlag("NOPBC",nopbc);
   checkRead();
-  log.printf("  of atoms");
-  for(unsigned i=0; i<atoms.size(); ++i) log.printf(" %d",atoms[i].serial());
+  log.printf("  of atoms:");
+  for(unsigned i=0; i<atoms.size(); ++i) {
+     if(i%25==0) log<<"\n";
+     log.printf(" %d",atoms[i].serial());
+  }
+  log<<"\n";
   if(weight_mass) {
     log<<"  mass weighted\n";
     if(weights.size()!=0) error("WEIGHTS and MASS keywords should not be used simultaneously");
   } else {
     if( weights.size()==0) {
+      log<<" using the geometric center\n";
       weights.resize( atoms.size() );
       for(unsigned i=0; i<atoms.size(); i++) weights[i] = 1.;
+    } else {
+      log<<" with weights:";
+      if( weights.size()!=atoms.size() ) error("number of elements in weight vector does not match the number of atoms");
+      for(unsigned i=0; i<weights.size(); ++i) {
+        if(i%25==0) log<<"\n";
+        log.printf(" %f",weights[i]);
+      }
+      log.printf("\n");
     }
-    log<<" with weights";
-    if( weights.size()!=atoms.size() ) error("number of elements in weight vector does not match the number of atoms");
-    for(unsigned i=0; i<weights.size(); ++i) log.printf(" %f",weights[i]);
-    log.printf("\n");
   }
   if(!nopbc) {
     log<<"  PBC will be ignored\n";

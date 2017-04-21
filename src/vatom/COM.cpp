@@ -94,7 +94,10 @@ COM::COM(const ActionOptions&ao):
   parseFlag("NOPBC",nopbc);
   checkRead();
   log.printf("  of atoms");
-  for(unsigned i=0; i<atoms.size(); ++i) log.printf(" %d",atoms[i].serial());
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    if(i%25==0) log<<"\n";
+    log.printf(" %d",atoms[i].serial());
+  }
   log.printf("\n");
   if(!nopbc) {
     log<<"  PBC will be ignored\n";
