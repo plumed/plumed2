@@ -104,22 +104,16 @@ install:
 # I do it only when LD_LIBRARY_PATH is non blank, since otherwise clang gives problems
   - if test -n "$LD_LIBRARY_PATH" ; then PLUMED_LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH" ; fi
 # macports related stuff
-  - if test -n "$PLUMED_MACPORTS" ; then export COLUMNS=80 ; fi
-# install macports from source:
-#  - if test -n "$PLUMED_MACPORTS" ; then wget https://distfiles.macports.org/MacPorts/MacPorts-2.3.4.tar.bz2 && tar xvfj MacPorts-2.3.4.tar.bz2 ; fi
-#  - if test -n "$PLUMED_MACPORTS" ; then cd MacPorts-2.3.4 && ./configure && sudo make install && cd - && sudo rm -fr MacPorts-2.3.4 ; fi
-# install macports from binary (faster):
-  - if test -n "$PLUMED_MACPORTS" ; then OSX_VERSION="$(sw_vers -productVersion | sed 's/\.[^\.]*$//')" ; fi
-  - MACPORTS_PKG=MacPorts-2.4.1-10.11-ElCapitan.pkg
-  - if test "$OSX_VERSION" == 10.12 ; then MACPORTS_PKG=MacPorts-2.4.1-10.12-Sierra.pkg ; fi
-  - echo "$MACPORTS_PKG"
-  - if test -n "$PLUMED_MACPORTS" ; then wget https://distfiles.macports.org/MacPorts/$MACPORTS_PKG ; fi
-  - if test -n "$PLUMED_MACPORTS" ; then sudo installer -pkg $MACPORTS_PKG -target / ; fi
-  - if test -n "$PLUMED_MACPORTS" ; then export PATH=/opt/local/bin:$PATH ; fi
-  - if test -n "$PLUMED_MACPORTS" ; then sudo port -N -v selfupdate ; fi
-  - if test -n "$PLUMED_MACPORTS" ; then make macports ; fi
-  - if test -n "$PLUMED_MACPORTS" ; then ./.travis/config.macports.sh ; fi
-
+# configure macports
+  - if test -n "$PLUMED_MACPORTS" ; then
+      export COLUMNS=80 ;
+      wget https://raw.githubusercontent.com/GiovanniBussi/macports-ci/master/macports-ci ;
+      chmod +x ./macports-ci ;
+      ./macports-ci install ;
+      PATH="/opt/local/bin:$PATH" ;
+      make macports ;
+      ./macports-ci localports macports ;
+    fi
 script:
 # make sure all modules are enabled
   - CONFIG_FLAGS="$CONFIG_FLAGS --enable-modules=all"
