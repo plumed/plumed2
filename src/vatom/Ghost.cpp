@@ -40,9 +40,9 @@ an atom list through the the label for the GHOST action that creates it.
 The following input instructs plumed to print the distance between the
 ghost atom and the center of mass for atoms 15,20:
 \verbatim
-GHOST ATOMS=1,5,10 COORDINATES=10.0,10.0,10.0 LABEL=c1
-COM ATOMS=15,20       LABEL=c2
-DISTANCE ATOMS=c1,c2  LABEL=d1
+c1: GHOST ATOMS=1,5,10 COORDINATES=10.0,10.0,10.0
+c2: COM ATOMS=15,20
+d1: DISTANCE ATOMS=c1,c2
 PRINT ARG=d1
 \endverbatim
 (See also \ref DISTANCE and \ref PRINT).
