@@ -36,8 +36,8 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit GridPrintingBase(const ActionOptions&ao);
-  void calculate(){}
-  void apply(){}
+  void calculate() {}
+  void apply() {}
   void update();
   void runFinalJobs();
   virtual void printGrid( OFile& ofile ) const=0;

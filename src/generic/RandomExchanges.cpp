@@ -27,8 +27,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace generic{
+namespace PLMD {
+namespace generic {
 
 //+PLUMEDOC GENERIC RANDOM_EXCHANGES
 /*
@@ -78,19 +78,19 @@ class RandomExchanges:
 public:
   static void registerKeywords( Keywords& keys );
   explicit RandomExchanges(const ActionOptions&ao);
-  void calculate(){}
-  void apply(){}
+  void calculate() {}
+  void apply() {}
 };
 
 PLUMED_REGISTER_ACTION(RandomExchanges,"RANDOM_EXCHANGES")
 
-void RandomExchanges::registerKeywords( Keywords& keys ){
+void RandomExchanges::registerKeywords( Keywords& keys ) {
   Action::registerKeywords(keys);
   keys.add("optional","SEED","seed for random exchanges");
 }
 
 RandomExchanges::RandomExchanges(const ActionOptions&ao):
-Action(ao)
+  Action(ao)
 {
   plumed.getExchangePatterns().setFlag(ExchangePatterns::RANDOM);
 // I convert the seed to -seed because I think it is more general to use a positive seed in input

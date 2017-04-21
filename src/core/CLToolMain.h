@@ -27,7 +27,7 @@
 #include "WithCmd.h"
 
 
-namespace PLMD{
+namespace PLMD {
 
 class Communicator;
 
@@ -37,7 +37,7 @@ Class providing cmd() access to command line tools.
 This class provides an interface using the "cmd()" syntax to all the
 command-line tools.
 It is only accessed via the cmd() function, which can
-be used to set the arguments, communicators and IO descriptors and 
+be used to set the arguments, communicators and IO descriptors and
 to run the tool.
 It can run all the tools registered via the PLUMED_REGISTER_CLTOOL macro,
 or the scripts which are located in PLUMED_ROOT/scripts.
@@ -75,7 +75,7 @@ See the file \ref main.cpp for a similar example.
 
 */
 class CLToolMain:
-public WithCmd
+  public WithCmd
 {
 /// arguments for command-line mode:
   int argc;
@@ -88,9 +88,9 @@ public WithCmd
 public:
   CLToolMain();
   ~CLToolMain();
-/**
-Send messages to the CLToolMain.
-*/
+  /**
+  Send messages to the CLToolMain.
+  */
   void cmd(const std::string& key,void*val=NULL);
 };
 

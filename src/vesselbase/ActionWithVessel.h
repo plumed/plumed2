@@ -29,11 +29,11 @@
 #include "tools/MultiValue.h"
 #include <vector>
 
-namespace PLMD{
+namespace PLMD {
 class Value;
 class Stopwatch;
 
-namespace vesselbase{
+namespace vesselbase {
 
 class Vessel;
 class BridgeVessel;
@@ -46,13 +46,13 @@ times.  This is used in PLMD::MultiColvar.
 */
 
 class ActionWithVessel : public virtual Action {
-friend class Vessel;
-friend class ShortcutVessel;
-friend class FunctionVessel;
-friend class StoreDataVessel;
-friend class BridgeVessel;
-friend class ActionWithInputVessel;
-friend class OrderingVessel;
+  friend class Vessel;
+  friend class ShortcutVessel;
+  friend class FunctionVessel;
+  friend class StoreDataVessel;
+  friend class BridgeVessel;
+  friend class ActionWithInputVessel;
+  friend class OrderingVessel;
 private:
 /// Do all calculations in serial
   bool serial;
@@ -64,7 +64,7 @@ private:
   bool actionIsBridged;
 /// The maximum number of derivatives we can use before we need to invoke lowmem
   unsigned maxderivatives;
-/// The tolerance on the accumulators 
+/// The tolerance on the accumulators
   double tolerance;
 /// Tolerance for quantities being put in neighbor lists
   double nl_tolerance;
@@ -120,7 +120,7 @@ protected:
   void runAllTasks();
 /// Resize all the functions when the number of derivatives change
   void resizeFunctions();
-/// This loops over all the vessels calculating them and also 
+/// This loops over all the vessels calculating them and also
 /// sets all the element derivatives equal to zero
   void calculateAllVessels( const unsigned& taskCode, MultiValue& myvals, MultiValue& bvals, std::vector<double>& buffer, std::vector<unsigned>& der_list );
 /// Retrieve the forces from all the vessels (used in apply)
@@ -156,14 +156,14 @@ public:
   virtual bool isPeriodic()=0;
 /// What are the domains of the base quantities
   virtual void retrieveDomain( std::string& min, std::string& max);
-/// Get the number of derivatives for final calculated quantity 
+/// Get the number of derivatives for final calculated quantity
   virtual unsigned getNumberOfDerivatives()=0;
 /// Get the number of quantities that are calculated during each task
   virtual unsigned getNumberOfQuantities() const ;
 /// Get the number of vessels
   unsigned getNumberOfVessels() const;
 /// Get a pointer to the ith vessel
-   Vessel* getPntrToVessel( const unsigned& i );
+  Vessel* getPntrToVessel( const unsigned& i );
 /// Do any jobs that are required before the task list is undertaken
   virtual void doJobsRequiredBeforeTaskList();
 /// Get the full size of the taskList dynamic list
@@ -175,13 +175,13 @@ public:
 /// Get the ith of the currently active tasks
   unsigned getActiveTask( const unsigned& ii ) const ;
 /// Calculate one of the functions in the distribution
-  virtual void performTask( const unsigned& , const unsigned& , MultiValue& ) const=0;
+  virtual void performTask( const unsigned&, const unsigned&, MultiValue& ) const=0;
 /// Do the task if we have a bridge
   virtual void transformBridgedDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals ) const;
 /// Ensure that data required in other vessels is stored
   StoreDataVessel* buildDataStashes( ActionWithVessel* actionThatUses );
 /// Apply forces from bridge vessel - this is rarely used - currently only in ActionVolume
-  virtual void applyBridgeForces( const std::vector<double>& bb ){ plumed_error(); }
+  virtual void applyBridgeForces( const std::vector<double>& bb ) { plumed_error(); }
 /// These are overwritten in MultiColvarFunction
 //  virtual void activateIndexes( const unsigned&, const unsigned&, const std::vector<unsigned>& ){}
 /// Return a particular named vessel
@@ -216,7 +216,7 @@ unsigned ActionWithVessel::getNumberOfQuantities() const {
 }
 
 inline
-Vessel* ActionWithVessel::getPntrToVessel( const unsigned& i ){
+Vessel* ActionWithVessel::getPntrToVessel( const unsigned& i ) {
   plumed_dbg_assert( i<functions.size() );
   return functions[i];
 }
@@ -260,7 +260,7 @@ bool ActionWithVessel::usingLowMem() const {
 }
 
 inline
-void ActionWithVessel::setLowMemOption(const bool& l){
+void ActionWithVessel::setLowMemOption(const bool& l) {
   lowmem=l;
 }
 
@@ -278,12 +278,12 @@ inline
 unsigned ActionWithVessel::getPositionInCurrentTaskList( const unsigned& myind ) const {
   if( nactive_tasks==fullTaskList.size() ) return myind;
 
-  for(unsigned i=0;i<nactive_tasks;++i){
-      if( myind==indexOfTaskInFullList[i] ) return i;
+  for(unsigned i=0; i<nactive_tasks; ++i) {
+    if( myind==indexOfTaskInFullList[i] ) return i;
   }
   plumed_merror("requested task is not active");
 }
 
-} 
+}
 }
 #endif

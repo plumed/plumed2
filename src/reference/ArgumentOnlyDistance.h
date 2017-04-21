@@ -35,8 +35,8 @@ class ArgumentOnlyDistance : public ReferenceArguments {
 public:
   explicit ArgumentOnlyDistance( const ReferenceConfigurationOptions& ro );
   void read( const PDB& pdb );
-  bool pcaIsEnabledForThisReference(){ return true; }
-  void setupPCAStorage( ReferenceValuePack& mypack ){ mypack.switchOnPCAOption(); }
+  bool pcaIsEnabledForThisReference() { return true; }
+  void setupPCAStorage( ReferenceValuePack& mypack ) { mypack.switchOnPCAOption(); }
   double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, ReferenceValuePack& myder, const bool& squared ) const ;
   double calculate( const std::vector<Value*>& vals, ReferenceValuePack& myder, const bool& squared ) const ;
 };

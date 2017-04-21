@@ -26,8 +26,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace setup{
+namespace PLMD {
+namespace setup {
 
 //+PLUMEDOC GENERIC LOAD
 /*
@@ -88,7 +88,7 @@ PRINT ARG=d,d2 FILE=compare-them
 
 This will allow to make quick tests while developing your own
 variables. Of course, after your implementation is ready you might
-want to add it to the PLUMED source tree and recompile 
+want to add it to the PLUMED source tree and recompile
 the whole PLUMED.
 
 
@@ -105,14 +105,14 @@ public:
 
 PLUMED_REGISTER_ACTION(Load,"LOAD")
 
-void Load::registerKeywords( Keywords& keys ){
+void Load::registerKeywords( Keywords& keys ) {
   ActionSetup::registerKeywords(keys);
   keys.add("compulsory","FILE","file to be loaded");
 }
 
 Load::Load(const ActionOptions&ao):
-Action(ao),
-ActionSetup(ao)
+  Action(ao),
+  ActionSetup(ao)
 {
   std::string f;
   parse("FILE",f);

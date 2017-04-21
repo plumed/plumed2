@@ -27,8 +27,8 @@
 #include <string>
 #include <cmath>
 
-namespace PLMD{
-namespace colvar{
+namespace PLMD {
+namespace colvar {
 
 //+PLUMEDOC COLVAR CONSTANT
 /*
@@ -76,16 +76,16 @@ public:
 PLUMED_REGISTER_ACTION(Constant,"CONSTANT")
 
 Constant::Constant(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao)
+  PLUMED_COLVAR_INIT(ao)
 {
   bool noderiv=false;
   parseFlag("NODERIV",noderiv);
   parseVector("VALUES",values);
-  if(values.size()==0){
+  if(values.size()==0) {
     double v;
     parse("VALUE",v);
 // this checks if v is different from NAN
-    if(v*2!=v || v==0.0){
+    if(v*2!=v || v==0.0) {
       values.resize(1);
       values[0]=v;
     }
@@ -98,7 +98,7 @@ PLUMED_COLVAR_INIT(ao)
     setNotPeriodic();
     setValue(values[0]);
   } else if(values.size()>1) {
-    for(unsigned i=0;i<values.size();i++) {
+    for(unsigned i=0; i<values.size(); i++) {
       std::string num; Tools::convert(i,num);
       if(!noderiv) addComponentWithDerivatives("v_"+num);
       else addComponent("v_"+num);
@@ -112,24 +112,24 @@ PLUMED_COLVAR_INIT(ao)
   requestAtoms(atoms);
 }
 
-void Constant::registerKeywords( Keywords& keys ){
+void Constant::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   componentsAreNotOptional(keys);
   useCustomisableComponents(keys);
-  keys.remove("NUMERICAL_DERIVATIVES"); 
+  keys.remove("NUMERICAL_DERIVATIVES");
   keys.add("compulsory","VALUES","NAN","The values of the constants");
   keys.add("compulsory","VALUE","NAN","The value of the constant");
-  keys.addFlag("NODERIV",false,"Set to TRUE if you want values without derivatives.");  
-  keys.addOutputComponent("v","default","the # value"); 
+  keys.addFlag("NODERIV",false,"Set to TRUE if you want values without derivatives.");
+  keys.addOutputComponent("v","default","the # value");
 }
 
 // calculator
-void Constant::calculate(){
-  if(values.size()==1) { 
+void Constant::calculate() {
+  if(values.size()==1) {
     setValue(values[0]);
     return;
   }
-  for(unsigned i=0;i<values.size();i++) {
+  for(unsigned i=0; i<values.size(); i++) {
     Value* comp=getPntrToComponent(i);
     comp->set(values[i]);
   }

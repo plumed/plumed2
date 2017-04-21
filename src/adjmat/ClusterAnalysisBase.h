@@ -48,7 +48,7 @@ public:
   unsigned getNumberOfQuantities() const ;
   bool isPeriodic();
   void turnOnDerivatives();
-  void setupActiveTaskSet( std::vector<unsigned>& active_tasks, const std::string& input_label ){}
+  void setupActiveTaskSet( std::vector<unsigned>& active_tasks, const std::string& input_label ) {}
   Vector getPositionOfAtomForLinkCells( const unsigned& ) const ;
   double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const { plumed_error(); }
 };

@@ -28,13 +28,13 @@
 #include <map>
 #include "LandmarkSelectionBase.h"
 
-namespace PLMD{
+namespace PLMD {
 
 class PDB;
 
-namespace analysis{
+namespace analysis {
 
-class LandmarkRegister{
+class LandmarkRegister {
 private:
 /// Pointer to a function which, given the type for a ReferenceConfiguration, creates it
   typedef LandmarkSelectionBase*(*creator_pointer)(const LandmarkSelectionOptions&);

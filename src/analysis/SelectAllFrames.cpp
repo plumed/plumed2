@@ -34,13 +34,13 @@ public:
 PLUMED_REGISTER_LANDMARKS(CopyAllFrames,"ALL")
 
 CopyAllFrames::CopyAllFrames( const LandmarkSelectionOptions& lo ):
-LandmarkSelectionBase(lo)
+  LandmarkSelectionBase(lo)
 {
 }
 
-void CopyAllFrames::select( MultiReferenceBase* myframes ){
+void CopyAllFrames::select( MultiReferenceBase* myframes ) {
   nlandmarks = action->getNumberOfDataPoints();
-  for(unsigned i=0;i<getNumberOfFrames();++i) selectFrame( i, myframes );
+  for(unsigned i=0; i<getNumberOfFrames(); ++i) selectFrame( i, myframes );
 }
 
 }

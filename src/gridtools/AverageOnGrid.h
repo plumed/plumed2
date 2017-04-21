@@ -35,7 +35,7 @@ public:
   void accumulateForce( const unsigned& ipoint, const double& weight, const std::vector<double>& der, std::vector<double>& intforce ) const { plumed_error(); }
   double getGridElement( const unsigned& ipoint, const unsigned& jelement ) const ;
   unsigned getNumberOfComponents() const ;
-  void getFinalForces( const std::vector<double>& buffer, std::vector<double>& finalForces ){ plumed_error(); }
+  void getFinalForces( const std::vector<double>& buffer, std::vector<double>& finalForces ) { plumed_error(); }
 };
 
 inline

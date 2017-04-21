@@ -28,7 +28,7 @@
 #include "tools/Tensor.h"
 #include "Atoms.h"
 
-namespace PLMD{
+namespace PLMD {
 
 /**
 \ingroup INHERIT
@@ -85,32 +85,32 @@ public:
 };
 
 inline
-AtomNumber ActionWithVirtualAtom::getIndex()const{
+AtomNumber ActionWithVirtualAtom::getIndex()const {
   return index;
 }
 
 inline
-void ActionWithVirtualAtom::setPosition(const Vector & pos){
+void ActionWithVirtualAtom::setPosition(const Vector & pos) {
   atoms.positions[index.index()]=pos;
 }
 
 inline
-void ActionWithVirtualAtom::setMass(double m){
+void ActionWithVirtualAtom::setMass(double m) {
   atoms.masses[index.index()]=m;
 }
 
 inline
-void ActionWithVirtualAtom::setCharge(double c){
+void ActionWithVirtualAtom::setCharge(double c) {
   atoms.charges[index.index()]=c;
 }
 
 inline
-void ActionWithVirtualAtom::setAtomsDerivatives(const std::vector<Tensor> &d){
+void ActionWithVirtualAtom::setAtomsDerivatives(const std::vector<Tensor> &d) {
   derivatives=d;
 }
 
 inline
-const std::map<AtomNumber,Tensor> & ActionWithVirtualAtom::getGradients()const{
+const std::map<AtomNumber,Tensor> & ActionWithVirtualAtom::getGradients()const {
   return gradients;
 }
 

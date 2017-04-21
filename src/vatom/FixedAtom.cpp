@@ -26,8 +26,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace vatom{
+namespace PLMD {
+namespace vatom {
 
 //+PLUMEDOC VATOM FIXEDATOM
 /*
@@ -89,7 +89,7 @@ public:
 
 PLUMED_REGISTER_ACTION(FixedAtom,"FIXEDATOM")
 
-void FixedAtom::registerKeywords(Keywords& keys){
+void FixedAtom::registerKeywords(Keywords& keys) {
   ActionWithVirtualAtom::registerKeywords(keys);
   keys.add("compulsory","AT","coordinates of the virtual atom");
   keys.add("compulsory","SET_MASS","1","mass of the virtual atom");
@@ -123,9 +123,9 @@ FixedAtom::FixedAtom(const ActionOptions&ao):
   if(scaled_components) log<<"  position is in scaled components\n";
 }
 
-void FixedAtom::calculate(){
+void FixedAtom::calculate() {
   vector<Tensor> deriv(getNumberOfAtoms());
-  if(scaled_components){
+  if(scaled_components) {
     setPosition(getPbc().scaledToReal(coord));
   } else {
     setPosition(coord);

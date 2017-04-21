@@ -27,13 +27,13 @@
 namespace PLMD {
 
 class FakeFrame :
-public PLMD::ReferenceConfiguration
+  public PLMD::ReferenceConfiguration
 {
 public:
   explicit FakeFrame( const ReferenceConfigurationOptions& ro ) : ReferenceConfiguration(ro) {}
-  void read( const PDB& ){ plumed_merror("should not be called"); }
-  double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, ReferenceValuePack& myder, const bool& squared ) const { 
-     plumed_merror("should not be called"); return 1.0; 
+  void read( const PDB& ) { plumed_merror("should not be called"); }
+  double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, ReferenceValuePack& myder, const bool& squared ) const {
+    plumed_merror("should not be called"); return 1.0;
   }
 };
 

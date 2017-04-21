@@ -29,19 +29,19 @@
 #include "core/Value.h"
 
 namespace PLMD {
-namespace vesselbase{
+namespace vesselbase {
 
 class ShortcutVessel : public Vessel {
 protected:
-  void addVessel( const std::string& name, const std::string& intput );  
+  void addVessel( const std::string& name, const std::string& intput );
 public:
   static void registerKeywords( Keywords& keys );
   explicit ShortcutVessel( const VesselOptions& );
-  std::string description(){ return ""; }
-  void resize(){ plumed_error(); }
+  std::string description() { return ""; }
+  void resize() { plumed_error(); }
   void calculate( const unsigned& taskCode, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const { plumed_error(); }
-  void finish( const std::vector<double>& buffer ){ plumed_error(); }
-  bool applyForce( std::vector<double>& forces ){ plumed_error(); }
+  void finish( const std::vector<double>& buffer ) { plumed_error(); }
+  bool applyForce( std::vector<double>& forces ) { plumed_error(); }
 };
 
 }

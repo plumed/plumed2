@@ -43,9 +43,9 @@ public:
 /// Get the contour value
   double getDifferenceFromContour( const std::vector<double>& x, std::vector<double>& der ) const ;
 /// Overwrite not needed stuff
-  unsigned getNumberOfDerivatives(){ return 0; }
+  unsigned getNumberOfDerivatives() { return 0; }
 /// This is not periodic
-  bool isPeriodic(){ return false; }
+  bool isPeriodic() { return false; }
 };
 
 inline

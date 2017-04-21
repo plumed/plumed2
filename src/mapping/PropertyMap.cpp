@@ -24,7 +24,7 @@
 
 //+PLUMEDOC COLVAR GPROPERTYMAP
 /*
-Property maps but with a more flexible framework for the distance metric being used. 
+Property maps but with a more flexible framework for the distance metric being used.
 
 This colvar calculates a property map using the formalism developed by Spiwork \cite Spiwok:2011ce.
 In essence if you have the value of some property, \f$X_i\f$, that it takes at a set of high-dimensional
@@ -37,22 +37,22 @@ X=\frac{\sum_i X_i*\exp(-\lambda D_i(x))}{\sum_i  \exp(-\lambda D_i(x))}
 
 Within PLUMED there are multiple ways to define the distance from a high-dimensional configuration, \f$D_i\f$.  You could calculate
 the RMSD distance or you could calculate the ammount by which a set of collective variables change.  As such this implementation
-of the propertymap allows one to use all the different distance metric that are discussed in \ref dists. This is as opposed to 
+of the propertymap allows one to use all the different distance metric that are discussed in \ref dists. This is as opposed to
 the alternative implementation \ref PROPERTYMAP which is a bit faster but which only allows one to use the RMSD distance.
 
 \par Examples
 
-The input shown below can be used to calculate the interpolated values of two properties called X and Y based on the values 
-that these properties take at a set of reference configurations and using the formula above.  For this input the distances 
-between the reference configurations and the instantaneous configurations are calculated using the OPTIMAL metric that is 
+The input shown below can be used to calculate the interpolated values of two properties called X and Y based on the values
+that these properties take at a set of reference configurations and using the formula above.  For this input the distances
+between the reference configurations and the instantaneous configurations are calculated using the OPTIMAL metric that is
 discussed at length in the manual pages on \ref RMSD.
 
 \verbatim
 p2: GPROPERTYMAP REFERENCE=allv.pdb PROPERTY=X,Y LAMBDA=69087
-PRINT ARG=p2.X,p2.Y,p2.zpath STRIDE=1 FILE=colvar 
+PRINT ARG=p2.X,p2.Y,p2.zpath STRIDE=1 FILE=colvar
 \endverbatim
 
-The additional input file for this calculation, which contains the reference frames and the values of X and Y at these reference 
+The additional input file for this calculation, which contains the reference frames and the values of X and Y at these reference
 points has the following format.
 
 \verbatim
@@ -93,7 +93,7 @@ END
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace mapping{
+namespace mapping {
 
 class PropertyMap : public PathBase {
 public:
@@ -103,24 +103,24 @@ public:
 
 PLUMED_REGISTER_ACTION(PropertyMap,"GPROPERTYMAP")
 
-void PropertyMap::registerKeywords( Keywords& keys ){
+void PropertyMap::registerKeywords( Keywords& keys ) {
   PathBase::registerKeywords( keys );
   ActionWithValue::useCustomisableComponents( keys );
   keys.addFlag("NOMAPPING",false,"do not calculate the position on the manifold");
 }
 
 PropertyMap::PropertyMap(const ActionOptions& ao):
-Action(ao),
-PathBase(ao)
+  Action(ao),
+  PathBase(ao)
 {
   bool nos; parseFlag("NOMAPPING",nos);
 
   std::string empty;
-  if(!nos){
-     for(unsigned i=0;i<getNumberOfProperties();++i){
-        empty="LABEL="+getPropertyName(i);
-        addVessel( "SPATH", empty, 0 );    
-     }
+  if(!nos) {
+    for(unsigned i=0; i<getNumberOfProperties(); ++i) {
+      empty="LABEL="+getPropertyName(i);
+      addVessel( "SPATH", empty, 0 );
+    }
   }
   readVesselKeywords();
   checkRead();

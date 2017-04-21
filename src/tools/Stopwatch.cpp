@@ -30,52 +30,52 @@
 
 using namespace std;
 
-namespace PLMD{
+namespace PLMD {
 
 // this is needed for friend operators
-std::ostream& operator<<(std::ostream&os,const Stopwatch&sw){
+std::ostream& operator<<(std::ostream&os,const Stopwatch&sw) {
   return sw.log(os);
 }
 
-void Stopwatch::Watch::start(){
+void Stopwatch::Watch::start() {
   running++;
   lastStart=std::chrono::high_resolution_clock::now();
 }
 
-void Stopwatch::Watch::stop(){
+void Stopwatch::Watch::stop() {
   pause();
   cycles++;
   total+=lap;
   if(lap>max)max=lap;
   if(min>lap || cycles==1)min=lap;
   lap=0;
-} 
+}
 
-void Stopwatch::Watch::pause(){
+void Stopwatch::Watch::pause() {
   plumed_assert(running>0);
   running--;
   if(running!=0) return;
   auto t=std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-lastStart);
   lap+=t.count();
-} 
+}
 
-void Stopwatch::start(const std::string & name){
+void Stopwatch::start(const std::string & name) {
   watches[name].start();
 }
 
-void Stopwatch::stop(const std::string & name){
+void Stopwatch::stop(const std::string & name) {
   watches[name].stop();
 }
 
-void Stopwatch::pause(const std::string & name){
+void Stopwatch::pause(const std::string & name) {
   watches[name].pause();
 }
 
 
-std::ostream& Stopwatch::log(std::ostream&os)const{
+std::ostream& Stopwatch::log(std::ostream&os)const {
   char buffer[1000];
   buffer[0]=0;
-  for(unsigned i=0;i<40;i++) os<<" ";
+  for(unsigned i=0; i<40; i++) os<<" ";
   os<<"      Cycles        Total      Average      Minumum      Maximum\n";
 
   std::vector<std::string> names;
@@ -84,10 +84,10 @@ std::ostream& Stopwatch::log(std::ostream&os)const{
 
   const double frac=1.0/1000000000.0;
 
-  for(const auto & name : names){
+  for(const auto & name : names) {
     const Watch&t(watches.find(name)->second);
     os<<name;
-    for(unsigned i=name.length();i<40;i++) os<<" ";
+    for(unsigned i=name.length(); i<40; i++) os<<" ";
     std::sprintf(buffer,"%12u %12.6f %12.6f %12.6f %12.6f\n", t.cycles, frac*t.total, frac*t.total/t.cycles, frac*t.min,frac*t.max);
     os<<buffer;
   }
