@@ -29,10 +29,10 @@ namespace PLMD {
 namespace adjmat {
 
 class AdjacencyMatrixBase : public multicolvar::MultiColvarBase {
-friend class AdjacencyMatrixVessel;
-friend class ActionWithInputMatrix;
-friend class MatrixColumnSums;
-friend class MatrixRowSums;
+  friend class AdjacencyMatrixVessel;
+  friend class ActionWithInputMatrix;
+  friend class MatrixColumnSums;
+  friend class MatrixRowSums;
 private:
 /// Used for read in of multiple connection descriptors
   unsigned connect_id;
@@ -73,39 +73,39 @@ public:
 /// Create the connection object
   virtual void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ) = 0;
 /// None of these things are allowed
-  bool isPeriodic(){ return false; }
-  Vector getCentralAtom(){ plumed_merror("cannot find central atoms for adjacency matrix actions"); Vector dum; return dum; }
+  bool isPeriodic() { return false; }
+  Vector getCentralAtom() { plumed_merror("cannot find central atoms for adjacency matrix actions"); Vector dum; return dum; }
 /// Transforms the stored values in whatever way is required
   virtual double transformStoredValues( const std::vector<double>& myvals, unsigned& vout, double& df ) const ;
 /// Used to check for connections between atoms
   virtual bool checkForConnection( const std::vector<double>& myvals ) const;
 /// Get the atom number
-  AtomNumber getAbsoluteIndexOfCentralAtom( const unsigned& i ) const ; 
+  AtomNumber getAbsoluteIndexOfCentralAtom( const unsigned& i ) const ;
 };
 
 inline
-AdjacencyMatrixVessel* AdjacencyMatrixBase::getAdjacencyVessel(){
+AdjacencyMatrixVessel* AdjacencyMatrixBase::getAdjacencyVessel() {
   return mat;
 }
 
 inline
 unsigned AdjacencyMatrixBase::getBaseColvarNumber( const unsigned& inum ) const {
-  if( atom_lab[inum].first>0 ) return atom_lab[inum].first-1; 
+  if( atom_lab[inum].first>0 ) return atom_lab[inum].first-1;
   return 0;
 }
 
 inline
 AtomNumber AdjacencyMatrixBase::getAbsoluteIndexOfCentralAtom( const unsigned& iatom ) const {
-  if( atom_lab[iatom].first>0 ){
-      unsigned mmc=atom_lab[ iatom ].first - 1;
-      return mybasemulticolvars[mmc]->getAbsoluteIndexOfCentralAtom( atom_lab[iatom].second );
+  if( atom_lab[iatom].first>0 ) {
+    unsigned mmc=atom_lab[ iatom ].first - 1;
+    return mybasemulticolvars[mmc]->getAbsoluteIndexOfCentralAtom( atom_lab[iatom].second );
   }
   return ActionAtomistic::getAbsoluteIndex( atom_lab[iatom].second );
 }
 
 inline
 double AdjacencyMatrixBase::transformStoredValues( const std::vector<double>& myvals, unsigned& vout, double& df  ) const {
-  plumed_dbg_assert( myvals.size()==2 ); vout=1; df=1; return myvals[1]; 
+  plumed_dbg_assert( myvals.size()==2 ); vout=1; df=1; return myvals[1];
 }
 
 inline

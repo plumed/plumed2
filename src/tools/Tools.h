@@ -31,7 +31,7 @@
 #include <algorithm>
 #include <sstream>
 
-namespace PLMD{
+namespace PLMD {
 
 class IFile;
 
@@ -49,7 +49,7 @@ const double pi(3.14159265358979323846264338327950288419716939937510582097494459
 
 /// \ingroup TOOLBOX
 /// Empty class which just contains several (static) tools
-class Tools{
+class Tools {
 /// class to convert a string to a generic type T
   template<class T>
   static bool convertToAny(const std::string & str,T &t);
@@ -114,7 +114,7 @@ public:
   static bool findKeyword(const std::vector<std::string>&line,const std::string&key);
 /// Interpret atom ranges
   static void interpretRanges(std::vector<std::string>&);
-/// Remove duplicates from a vector of type T 
+/// Remove duplicates from a vector of type T
   template <typename T>
   static void removeDuplicates(std::vector<T>& vec);
 /// interpret ":" syntax for labels
@@ -127,7 +127,7 @@ public:
 /// E.g.: extension("pippo.xyz")="xyz".
 /// It only returns extensions with a length between 1 and 4
 /// E.g.: extension("pippo.12345")="" whereas extenion("pippo.1234")="1234";
-/// It is also smart enough to detect "/", so that 
+/// It is also smart enough to detect "/", so that
 /// extension("pippo/.t")="" whereas extension("pippo/a.t")="t"
   static std::string extension(const std::string&);
 /// Fast int power
@@ -138,7 +138,7 @@ public:
 };
 
 template <class T>
-bool Tools::parse(std::vector<std::string>&line,const std::string&key,T&val){
+bool Tools::parse(std::vector<std::string>&line,const std::string&key,T&val) {
   std::string s;
   if(!getKey(line,key+"=",s)) return false;
   if(s.length()>0 && !convert(s,val))return false;
@@ -146,13 +146,13 @@ bool Tools::parse(std::vector<std::string>&line,const std::string&key,T&val){
 }
 
 template <class T>
-bool Tools::parseVector(std::vector<std::string>&line,const std::string&key,std::vector<T>&val){
+bool Tools::parseVector(std::vector<std::string>&line,const std::string&key,std::vector<T>&val) {
   std::string s;
   if(!getKey(line,key+"=",s)) return false;
 //  if(s.length()==0) return true;
   val.clear();
   std::vector<std::string> words=getWords(s,"\t\n ,");
-  for(unsigned i=0;i<words.size();++i){
+  for(unsigned i=0; i<words.size(); ++i) {
     T v;
     if(!convert(words[i],v))return false;
     val.push_back(v);
@@ -163,14 +163,14 @@ bool Tools::parseVector(std::vector<std::string>&line,const std::string&key,std:
 template<typename T>
 void Tools::removeDuplicates(std::vector<T>& vec)
 {
-   std::sort(vec.begin(), vec.end());
-   vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
+  std::sort(vec.begin(), vec.end());
+  vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
 }
 
 inline
-bool Tools::parseFlag(std::vector<std::string>&line,const std::string&key,bool&val){
-  for(std::vector<std::string>::iterator p=line.begin();p!=line.end();++p){
-    if(key==*p){
+bool Tools::parseFlag(std::vector<std::string>&line,const std::string&key,bool&val) {
+  for(std::vector<std::string>::iterator p=line.begin(); p!=line.end(); ++p) {
+    if(key==*p) {
       val=true;
       line.erase(p);
       return true;
@@ -181,7 +181,7 @@ bool Tools::parseFlag(std::vector<std::string>&line,const std::string&key,bool&v
 
 /// beware: this brings any number into a pbc that ranges from -0.5 to 0.5
 inline
-double Tools::pbc(double x){
+double Tools::pbc(double x) {
 #ifdef __PLUMED_PBC_WHILE
   while (x>0.5) x-=1.0;
   while (x<-0.5) x+=1.0;
@@ -199,29 +199,29 @@ double Tools::pbc(double x){
 }
 
 template<typename T>
-void Tools::convert(T i,std::string & str){
-        std::ostringstream ostr;
-        ostr<<i;
-        str=ostr.str();
+void Tools::convert(T i,std::string & str) {
+  std::ostringstream ostr;
+  ostr<<i;
+  str=ostr.str();
 }
 
 inline
 double Tools::fastpow(double base, int exp)
 {
-    if(exp<0){
-      exp=-exp;
-      base=1.0/base;
-    }
-    double result = 1.0;
-    while (exp)
-    {
-        if (exp & 1)
-            result *= base;
-        exp >>= 1;
-        base *= base;
-    }
+  if(exp<0) {
+    exp=-exp;
+    base=1.0/base;
+  }
+  double result = 1.0;
+  while (exp)
+  {
+    if (exp & 1)
+      result *= base;
+    exp >>= 1;
+    base *= base;
+  }
 
-    return result;
+  return result;
 }
 
 }

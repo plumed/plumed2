@@ -26,7 +26,7 @@
 #include "Exception.h"
 #include "DynamicList.h"
 
-namespace PLMD{
+namespace PLMD {
 
 class MultiValue {
 private:
@@ -48,14 +48,14 @@ private:
   std::vector<unsigned> indices, sort_indices;
   std::vector<Vector> tmp_atoms;
 public:
-  MultiValue( const unsigned& , const unsigned& );
-  void resize( const unsigned& , const unsigned& );
+  MultiValue( const unsigned&, const unsigned& );
+  void resize( const unsigned&, const unsigned& );
 ///
   std::vector<unsigned>& getIndices();
   std::vector<unsigned>& getSortIndices();
   std::vector<Vector>& getAtomVector();
 /// Get the number of values in the stash
-  unsigned getNumberOfValues() const ; 
+  unsigned getNumberOfValues() const ;
 /// Get the number of derivatives in the stash
   unsigned getNumberOfDerivatives() const ;
 /// Set value numbered
@@ -63,7 +63,7 @@ public:
 /// Add value numbered
   void addValue( const unsigned&,  const double& );
 /// Add derivative
-  void addDerivative( const unsigned& , const unsigned& , const double& );
+  void addDerivative( const unsigned&, const unsigned&, const double& );
 /// Add to the tempory value
   void addTemporyValue( const double& val );
 /// Add tempory derivatives - this is used for calculating quotients
@@ -75,7 +75,7 @@ public:
 /// Return a derivative value
   double getDerivative( const unsigned&, const unsigned& ) const ;
 /// Get one of the tempory derivatives
-  double getTemporyDerivative( const unsigned& jder ) const ; 
+  double getTemporyDerivative( const unsigned& jder ) const ;
 /// Clear all values
   void clearAll();
 /// Clear the tempory derivatives
@@ -96,7 +96,7 @@ public:
 ///
   unsigned getActiveIndex( const unsigned& ) const ;
 /// Transfer derivatives to buffer
-  void chainRule( const unsigned& , const unsigned& , const unsigned&, const unsigned& , const double& , const unsigned& , std::vector<double>& buffer );
+  void chainRule( const unsigned&, const unsigned&, const unsigned&, const unsigned&, const double&, const unsigned&, std::vector<double>& buffer );
 ///
   void copyValues( MultiValue& ) const ;
 ///
@@ -122,37 +122,37 @@ double MultiValue::get( const unsigned& ival ) const {
 }
 
 inline
-void MultiValue::setValue( const unsigned& ival,  const double& val){
+void MultiValue::setValue( const unsigned& ival,  const double& val) {
   plumed_dbg_assert( ival<=values.size() );
   values[ival]=val;
 }
 
 inline
-void MultiValue::addValue( const unsigned& ival,  const double& val){
+void MultiValue::addValue( const unsigned& ival,  const double& val) {
   plumed_dbg_assert( ival<=values.size() );
   values[ival]+=val;
 }
 
 inline
-void MultiValue::addDerivative( const unsigned& ival, const unsigned& jder, const double& der){
+void MultiValue::addDerivative( const unsigned& ival, const unsigned& jder, const double& der) {
   plumed_dbg_assert( ival<=values.size() && jder<nderivatives ); atLeastOneSet=true;
   hasDerivatives.activate(jder); derivatives[nderivatives*ival+jder] += der;
 }
 
 inline
-void MultiValue::addTemporyValue( const double& val ){
+void MultiValue::addTemporyValue( const double& val ) {
   tmpval += val;
 }
 
 inline
-void MultiValue::addTemporyDerivative( const unsigned& jder, const double& der ){
+void MultiValue::addTemporyDerivative( const unsigned& jder, const double& der ) {
   plumed_dbg_assert( jder<nderivatives ); atLeastOneSet=true;
   hasDerivatives.activate(jder); tmpder[jder] += der;
 }
 
 
 inline
-void MultiValue::setDerivative( const unsigned& ival, const unsigned& jder, const double& der){
+void MultiValue::setDerivative( const unsigned& ival, const unsigned& jder, const double& der) {
   plumed_dbg_assert( ival<=values.size() && jder<nderivatives ); atLeastOneSet=true;
   hasDerivatives.activate(jder); derivatives[nderivatives*ival+jder]=der;
 }
@@ -171,32 +171,32 @@ double MultiValue::getTemporyDerivative( const unsigned& jder ) const {
 }
 
 inline
-bool MultiValue::updateComplete(){
+bool MultiValue::updateComplete() {
   return hasDerivatives.updateComplete();
 }
 
 inline
-void MultiValue::emptyActiveMembers(){
+void MultiValue::emptyActiveMembers() {
   hasDerivatives.emptyActiveMembers();
 }
 
 inline
-void MultiValue::putIndexInActiveArray( const unsigned& ind ){
+void MultiValue::putIndexInActiveArray( const unsigned& ind ) {
   hasDerivatives.putIndexInActiveArray( ind );
 }
 
 inline
-void MultiValue::updateIndex( const unsigned& ind ){
+void MultiValue::updateIndex( const unsigned& ind ) {
   if( hasDerivatives.isActive(ind) ) hasDerivatives.putIndexInActiveArray( ind );
 }
 
 inline
-void MultiValue::sortActiveList(){
+void MultiValue::sortActiveList() {
   hasDerivatives.sortActiveList();
 }
 
 inline
-void MultiValue::completeUpdate(){
+void MultiValue::completeUpdate() {
   hasDerivatives.completeUpdate();
 }
 
@@ -212,22 +212,22 @@ unsigned MultiValue::getActiveIndex( const unsigned& ind ) const {
 }
 
 inline
-void MultiValue::updateDynamicList(){
+void MultiValue::updateDynamicList() {
   if( atLeastOneSet ) hasDerivatives.updateActiveMembers();
 }
 
 inline
-std::vector<unsigned>& MultiValue::getIndices(){
+std::vector<unsigned>& MultiValue::getIndices() {
   return indices;
 }
 
 inline
-std::vector<unsigned>& MultiValue::getSortIndices(){
+std::vector<unsigned>& MultiValue::getSortIndices() {
   return sort_indices;
 }
 
 inline
-std::vector<Vector>& MultiValue::getAtomVector(){
+std::vector<Vector>& MultiValue::getAtomVector() {
   return tmp_atoms;
 }
 

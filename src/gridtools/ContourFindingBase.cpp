@@ -27,7 +27,7 @@
 namespace PLMD {
 namespace gridtools {
 
-void ContourFindingBase::registerKeywords( Keywords& keys ){
+void ContourFindingBase::registerKeywords( Keywords& keys ) {
   ActionWithInputGrid::registerKeywords( keys );
   keys.add("compulsory","CONTOUR","the value we would like to draw the contour at in the space");
   keys.add("compulsory","FILE","file on which to output coordinates");
@@ -37,60 +37,60 @@ void ContourFindingBase::registerKeywords( Keywords& keys ){
 }
 
 ContourFindingBase::ContourFindingBase(const ActionOptions&ao):
-Action(ao),
-ActionWithInputGrid(ao),
-mymin(this),
-mydata(NULL)
+  Action(ao),
+  ActionWithInputGrid(ao),
+  mymin(this),
+  mydata(NULL)
 {
   if( ingrid->noDerivatives() ) error("cannot find contours if input grid has no derivatives");
-  parse("CONTOUR",contour); 
+  parse("CONTOUR",contour);
   log.printf("  calculating dividing surface along which function equals %f \n", contour);
 
-  if( keywords.exists("FILE") ){
-      std::string file; parse("FILE",file);
-      if(file.length()==0 && keywords.style("FILE","compulsory") ) error("name out output file was not specified");
-      else if( file.length()>0 ){
-         std::string type=Tools::extension(file);
-         log<<"  file name "<<file<<"\n";
-         if(type!="xyz") error("can only print xyz file type with contour finding");
+  if( keywords.exists("FILE") ) {
+    std::string file; parse("FILE",file);
+    if(file.length()==0 && keywords.style("FILE","compulsory") ) error("name out output file was not specified");
+    else if( file.length()>0 ) {
+      std::string type=Tools::extension(file);
+      log<<"  file name "<<file<<"\n";
+      if(type!="xyz") error("can only print xyz file type with contour finding");
 
-         fmt_xyz="%f";
-         std::string precision; parse("PRECISION",precision);
-         if(precision.length()>0){
-           int p; Tools::convert(precision,p);
-           log<<"  with precision "<<p<<"\n";
-           std::string a,b;
-           Tools::convert(p+5,a);
-           Tools::convert(p,b);
-           fmt_xyz="%"+a+"."+b+"f";
-         }
-
-         std::string unitname; parse("UNITS",unitname);
-         if(unitname!="PLUMED"){
-           Units myunit; myunit.setLength(unitname);
-           lenunit=plumed.getAtoms().getUnits().getLength()/myunit.getLength();
-         }
-         else lenunit=1.0; 
-
-         of.link(*this); of.open(file); 
-
-         // Now create a store data vessel to hold the points
-         mydata=buildDataStashes( NULL );
+      fmt_xyz="%f";
+      std::string precision; parse("PRECISION",precision);
+      if(precision.length()>0) {
+        int p; Tools::convert(precision,p);
+        log<<"  with precision "<<p<<"\n";
+        std::string a,b;
+        Tools::convert(p+5,a);
+        Tools::convert(p,b);
+        fmt_xyz="%"+a+"."+b+"f";
       }
+
+      std::string unitname; parse("UNITS",unitname);
+      if(unitname!="PLUMED") {
+        Units myunit; myunit.setLength(unitname);
+        lenunit=plumed.getAtoms().getUnits().getLength()/myunit.getLength();
+      }
+      else lenunit=1.0;
+
+      of.link(*this); of.open(file);
+
+      // Now create a store data vessel to hold the points
+      mydata=buildDataStashes( NULL );
+    }
   }
 }
 
-void ContourFindingBase::finishAveraging(){
+void ContourFindingBase::finishAveraging() {
   // And this looks after the output
-  if( mydata ){
-      std::vector<double> point( 1 + ingrid->getDimension() );
-      of.printf("%u\n",mydata->getNumberOfStoredValues());  
-      of.printf("Points found on isocontour\n");
-      for(unsigned i=0;i<mydata->getNumberOfStoredValues();++i){
-          mydata->retrieveSequentialValue( i, false, point ); of.printf("X");
-          for(unsigned j=0;j<ingrid->getDimension();++j) of.printf( (" " + fmt_xyz).c_str(), lenunit*point[1+j] );
-          of.printf("\n");
-      }   
+  if( mydata ) {
+    std::vector<double> point( 1 + ingrid->getDimension() );
+    of.printf("%u\n",mydata->getNumberOfStoredValues());
+    of.printf("Points found on isocontour\n");
+    for(unsigned i=0; i<mydata->getNumberOfStoredValues(); ++i) {
+      mydata->retrieveSequentialValue( i, false, point ); of.printf("X");
+      for(unsigned j=0; j<ingrid->getDimension(); ++j) of.printf( (" " + fmt_xyz).c_str(), lenunit*point[1+j] );
+      of.printf("\n");
+    }
   }
 }
 

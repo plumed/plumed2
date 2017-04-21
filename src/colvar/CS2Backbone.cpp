@@ -25,10 +25,10 @@
 #define cutOnDist     0.32   	// cut off distance for non-bonded pairwise forces
 #define cutOffNB2     cutOffNB*cutOffNB // squared buffer distance for neighbour-lists 
 #define cutOffDist2   cutOffDist*cutOffDist
-#define cutOnDist2    cutOnDist*cutOnDist 
+#define cutOnDist2    cutOnDist*cutOnDist
 #define invswitch     1.0/((cutOffDist2-cutOnDist2)*(cutOffDist2-cutOnDist2)*(cutOffDist2-cutOnDist2))
-#define cutOffDist4   cutOffDist2*cutOffDist2 
-#define cutMixed      cutOffDist2*cutOffDist2*cutOffDist2 -3.*cutOffDist2*cutOffDist2*cutOnDist2 
+#define cutOffDist4   cutOffDist2*cutOffDist2
+#define cutMixed      cutOffDist2*cutOffDist2*cutOffDist2 -3.*cutOffDist2*cutOffDist2*cutOnDist2
 
 #include <string>
 #include <fstream>
@@ -46,11 +46,11 @@
 using namespace std;
 
 namespace PLMD {
-namespace colvar{
+namespace colvar {
 
-//+PLUMEDOC COLVAR CS2BACKBONE 
+//+PLUMEDOC COLVAR CS2BACKBONE
 /*
-This collective variable calculates the backbone chemical shifts for a protein. 
+This collective variable calculates the backbone chemical shifts for a protein.
 
 The functional form is that of CamShift \cite Kohlhoff:2009us. The chemical shifts
 of the selected nuclei/residues are saved as components. Reference experimental values
@@ -63,18 +63,18 @@ shift as in \cite Camilloni:2012je \cite Camilloni:2013hs (see \ref STATS and
 CamShift calculation is relatively heavy because it often uses a large number of atoms, in order
 to make it faster it is currently parallelised with \ref Openmp.
 
-As a general rule, when using \ref CS2BACKBONE or other experimental restraints it is better to 
-increase the accuracy of the constraint algorithm due to the increased strain on the bonded structure. 
+As a general rule, when using \ref CS2BACKBONE or other experimental restraints it is better to
+increase the accuracy of the constraint algorithm due to the increased strain on the bonded structure.
 In the case of GROMACS it is safer to use lincs-iter=2 and lincs-order=6.
 
 In general the system for which chemical shifts are calculated must be completly included in
-ATOMS and a TEMPLATE pdb file for the same atoms should be provided as well in the folder DATA. 
-The atoms are made automatically whole unless NOPBC is used, in particular if the system is made of 
+ATOMS and a TEMPLATE pdb file for the same atoms should be provided as well in the folder DATA.
+The atoms are made automatically whole unless NOPBC is used, in particular if the system is made of
 by multiple chains it is usually better to use NOPBC and make the molecule whole \ref WHOLEMOLECULES
 selecting an appropriate order.
- 
+
 In addition to a pdb file one needs to provide a list of chemical shifts to be calculated using one
-file per nucleus type (CAshifts.dat, CBshifts.dat, Cshifts.dat, Hshifts.dat, HAshifts.dat, Nshifts.dat), 
+file per nucleus type (CAshifts.dat, CBshifts.dat, Cshifts.dat, Hshifts.dat, HAshifts.dat, Nshifts.dat),
 all the six files should always be present. A chemical shift for a nucleus is calculated if a value
 greater than 0 is provided. For practical purposes the value can correspond to the experimental value.
 Residues numbers should go from 1 to N irrespectively of the numbers used in the pdb file. The first and
@@ -97,19 +97,19 @@ CAshifts.dat:
 The default behaviour is to store the values for the active nuclei in components (ca_#, cb_#,
 co_#, ha_#, hn_#, nh_# and expca_#, expcb_#, expco_#, expha_#, exphn_#, exp_nh#) with NOEXP it is possible
 to only store the backcalculated values.
- 
-A pdb file is needed to the generate a simple topology of the protein. For histidines in protonation 
-states different from D the HIE/HSE HIP/HSP name should be used. GLH and ASH can be used for the alternative 
+
+A pdb file is needed to the generate a simple topology of the protein. For histidines in protonation
+states different from D the HIE/HSE HIP/HSP name should be used. GLH and ASH can be used for the alternative
 protonation of GLU and ASP. Non-standard amino acids and other molecules are not yet supported, but in principle
-they can be named UNK. If multiple chains are present the chain identifier must be in the standard PDB format, 
-together with the TER keyword at the end of each chain. 
+they can be named UNK. If multiple chains are present the chain identifier must be in the standard PDB format,
+together with the TER keyword at the end of each chain.
 
 One more standard file is also needed in the folder DATA: camshift.db. This file includes all the CamShift parameters
-and can be found in regtest/basic/rt45/data/ . 
+and can be found in regtest/basic/rt45/data/ .
 
-All the above files must be in a single folder that must be specified with the keyword DATA. 
+All the above files must be in a single folder that must be specified with the keyword DATA.
 
-Additional material and examples can be also found in the tutorial \ref belfast-9 
+Additional material and examples can be also found in the tutorial \ref belfast-9
 
 \par Examples
 
@@ -119,15 +119,15 @@ in NMR driven Metadynamics \cite Granata:2013dk :
 \verbatim
 whole: GROUP ATOMS=2612-2514:-1,961-1:-1,2466-962:-1,2513-2467:-1
 WHOLEMOLECULES ENTITY0=whole
-cs: CS2BACKBONE ATOMS=1-2612 NRES=176 DATA=../data/ TEMPLATE=template.pdb CAMSHIFT NOPBC 
+cs: CS2BACKBONE ATOMS=1-2612 NRES=176 DATA=../data/ TEMPLATE=template.pdb CAMSHIFT NOPBC
 metad: METAD ARG=cs HEIGHT=0.5 SIGMA=0.1 PACE=200 BIASFACTOR=10
-PRINT ARG=cs,metad.bias FILE=COLVAR STRIDE=100 
+PRINT ARG=cs,metad.bias FILE=COLVAR STRIDE=100
 \endverbatim
 
-In this second example the chemical shifts are used as replica-averaged restrained as in \cite Camilloni:2012je \cite Camilloni:2013hs. 
- 
+In this second example the chemical shifts are used as replica-averaged restrained as in \cite Camilloni:2012je \cite Camilloni:2013hs.
+
 \verbatim
-cs: CS2BACKBONE ATOMS=1-174 DATA=data/ NRES=13 
+cs: CS2BACKBONE ATOMS=1-174 DATA=data/ NRES=13
 encs: ENSEMBLE ARG=(cs\.hn_.*),(cs\.nh_.*)
 stcs: STATS ARG=encs.* SQDEVSUM PARARG=(cs\.exphn_.*),(cs\.expnh_.*)
 RESTRAINT ARG=stcs.sqdevsum AT=0 KAPPA=0 SLOPE=24
@@ -166,13 +166,13 @@ class CS2BackboneDB {
 
 public:
 
-  inline unsigned kind(const string &s){
+  inline unsigned kind(const string &s) {
     if(s=="GLY") return GLY;
-    else if(s=="PRO") return PRO;      
+    else if(s=="PRO") return PRO;
     return STD;
   }
 
-  inline unsigned atom_kind(const string &s){
+  inline unsigned atom_kind(const string &s) {
     if(s=="HA")return HA_ATOM;
     else if(s=="H") return H_ATOM;
     else if(s=="N") return N_ATOM;
@@ -188,17 +188,17 @@ public:
   inline double * CONSTAACURR(const unsigned a_kind, const unsigned at_kind) {return c_aa[a_kind][at_kind];}
   inline double * CONSTAANEXT(const unsigned a_kind, const unsigned at_kind) {return c_aa_succ[a_kind][at_kind];}
   inline double * CONSTAAPREV(const unsigned a_kind, const unsigned at_kind) {return c_aa_prev[a_kind][at_kind];}
-  inline double * CONST_BB2_PREV(const unsigned a_kind, const unsigned at_kind){return co_bb[a_kind][at_kind];}
-  inline double * CONST_BB2_CURR(const unsigned a_kind, const unsigned at_kind){return co_bb[a_kind][at_kind]+5;}
-  inline double * CONST_BB2_NEXT(const unsigned a_kind, const unsigned at_kind){return co_bb[a_kind][at_kind]+11;}
-  inline double * CONST_SC2(const unsigned a_kind, const unsigned at_kind, unsigned res_type){ return co_sc_[a_kind][at_kind][res_type];}
-  inline double * CONST_XD(const unsigned a_kind, const unsigned at_kind){ return co_xd[a_kind][at_kind];}
-  inline double * CO_SPHERE(const unsigned a_kind, const unsigned at_kind, unsigned exp_type){ return co_sphere[a_kind][at_kind][exp_type];}
-  inline double * CO_RING(const unsigned a_kind, const unsigned at_kind){ return co_ring[a_kind][at_kind];}
-  inline double * CO_DA(const unsigned a_kind, const unsigned at_kind){ return co_da[a_kind][at_kind];}
-  inline double * PARS_DA(const unsigned a_kind, const unsigned at_kind, const unsigned ang_kind){ return pars_da[a_kind][at_kind][ang_kind];}
+  inline double * CONST_BB2_PREV(const unsigned a_kind, const unsigned at_kind) {return co_bb[a_kind][at_kind];}
+  inline double * CONST_BB2_CURR(const unsigned a_kind, const unsigned at_kind) {return co_bb[a_kind][at_kind]+5;}
+  inline double * CONST_BB2_NEXT(const unsigned a_kind, const unsigned at_kind) {return co_bb[a_kind][at_kind]+11;}
+  inline double * CONST_SC2(const unsigned a_kind, const unsigned at_kind, unsigned res_type) { return co_sc_[a_kind][at_kind][res_type];}
+  inline double * CONST_XD(const unsigned a_kind, const unsigned at_kind) { return co_xd[a_kind][at_kind];}
+  inline double * CO_SPHERE(const unsigned a_kind, const unsigned at_kind, unsigned exp_type) { return co_sphere[a_kind][at_kind][exp_type];}
+  inline double * CO_RING(const unsigned a_kind, const unsigned at_kind) { return co_ring[a_kind][at_kind];}
+  inline double * CO_DA(const unsigned a_kind, const unsigned at_kind) { return co_da[a_kind][at_kind];}
+  inline double * PARS_DA(const unsigned a_kind, const unsigned at_kind, const unsigned ang_kind) { return pars_da[a_kind][at_kind][ang_kind];}
 
-  void parse(const string &file, const double dscale){
+  void parse(const string &file, const double dscale) {
     ifstream in;
     in.open(file.c_str());
     if(!in) plumed_merror("Unable to open CS2Backbone DB file " +file);
@@ -207,24 +207,24 @@ public:
     unsigned c_atom = 0;
     unsigned nline = 0;
 
-    for(unsigned i=0;i<3;i++) for(unsigned j=0;j<6;j++) {
-      for(unsigned k=0;k<20;k++) {
-        c_aa[i][j][k]=0.;
-        c_aa_prev[i][j][k]=0.;
-        c_aa_succ[i][j][k]=0.;
-        for(unsigned m=0;m<20;m++) co_sc_[i][j][k][m]=0.;
+    for(unsigned i=0; i<3; i++) for(unsigned j=0; j<6; j++) {
+        for(unsigned k=0; k<20; k++) {
+          c_aa[i][j][k]=0.;
+          c_aa_prev[i][j][k]=0.;
+          c_aa_succ[i][j][k]=0.;
+          for(unsigned m=0; m<20; m++) co_sc_[i][j][k][m]=0.;
+        }
+        for(unsigned k=0; k<16; k++) {co_bb[i][j][k]=0.; }
+        for(unsigned k=0; k<8; k++) { co_sphere[i][j][0][k]=0.; co_sphere[i][j][1][k]=0.; }
+        for(unsigned k=0; k<3; k++) {
+          co_da[i][j][k]=0.;
+          for(unsigned l=0; l<5; l++) pars_da[i][j][k][l]=0.;
+        }
+        for(unsigned k=0; k<5; k++) co_ring[i][j][k]=0.;
+        for(unsigned k=0; k<numXtraDists; k++) co_xd[i][j][k]=0.;
       }
-      for(unsigned k=0;k<16;k++) {co_bb[i][j][k]=0.; }
-      for(unsigned k=0;k<8;k++) { co_sphere[i][j][0][k]=0.; co_sphere[i][j][1][k]=0.; }
-      for(unsigned k=0;k<3;k++) {
-        co_da[i][j][k]=0.;
-        for(unsigned l=0;l<5;l++) pars_da[i][j][k][l]=0.;
-      }
-      for(unsigned k=0;k<5;k++) co_ring[i][j][k]=0.;
-      for(unsigned k=0;k<numXtraDists;k++) co_xd[i][j][k]=0.;
-    }
 
-    while(!in.eof()){
+    while(!in.eof()) {
       string line;
       getline(in,line);
       ++nline;
@@ -232,127 +232,129 @@ public:
       vector<string> tok;
       vector<string> tmp;
       tok = split(line,' ');
-      for(unsigned q=0;q<tok.size();q++)
+      for(unsigned q=0; q<tok.size(); q++)
         if(tok[q].size()) tmp.push_back(tok[q]);
       tok = tmp;
       if(tok.size()==0) continue;
-      if(tok[0]=="PAR"){
+      if(tok[0]=="PAR") {
         c_kind = kind(tok[2]);
         c_atom = atom_kind(tok[1]);
         continue;
       }
-      else if(tok[0]=="WEIGHT"){
+      else if(tok[0]=="WEIGHT") {
         continue;
       }
-      else if(tok[0]=="FLATBTM"){
+      else if(tok[0]=="FLATBTM") {
         continue;
       }
-      else if (tok[0] == "SCALEHARM"){
+      else if (tok[0] == "SCALEHARM") {
         continue;
       }
-      else if (tok[0] == "TANHAMPLI"){
+      else if (tok[0] == "TANHAMPLI") {
         continue;
       }
-      else if (tok[0] == "ENDHARMON"){
+      else if (tok[0] == "ENDHARMON") {
         continue;
       }
-      else if (tok[0] == "MAXRCDEVI"){
+      else if (tok[0] == "MAXRCDEVI") {
         continue;
       }
-      else if (tok[0] == "RANDCOIL"){
+      else if (tok[0] == "RANDCOIL") {
         continue;
       }
-      else if (tok[0] == "CONST"){
+      else if (tok[0] == "CONST") {
         continue;
       }
-      else if (tok[0] == "CONSTAA"){
+      else if (tok[0] == "CONSTAA") {
         assign(c_aa[c_kind][c_atom],tok,1);
         continue;
       }
-      else if (tok[0] == "CONSTAA-1"){
+      else if (tok[0] == "CONSTAA-1") {
         assign(c_aa_prev[c_kind][c_atom],tok,1);
         continue;
       }
-      else if (tok[0] == "CONSTAA+1"){
+      else if (tok[0] == "CONSTAA+1") {
         assign(c_aa_succ[c_kind][c_atom],tok,1);
         continue;
       }
-      else if (tok[0] == "COBB1"){
+      else if (tok[0] == "COBB1") {
         continue;
       }
-      else if (tok[0] == "COBB2"){
+      else if (tok[0] == "COBB2") {
         //angstrom to nm
         assign(co_bb[c_kind][c_atom],tok,dscale);
         continue;
       }
-      else if (tok[0] == "SPHERE1"){
+      else if (tok[0] == "SPHERE1") {
         // angstrom^-3 to nm^-3
         assign(co_sphere[c_kind][c_atom][0],tok,1./(dscale*dscale*dscale));
         continue;
       }
-      else if (tok[0] == "SPHERE2"){
+      else if (tok[0] == "SPHERE2") {
         //angstrom to nm
         assign(co_sphere[c_kind][c_atom][1],tok,dscale);
         continue;
       }
-      else if (tok[0] == "DIHEDRALS"){
+      else if (tok[0] == "DIHEDRALS") {
         assign(co_da[c_kind][c_atom],tok,1);
         continue;
       }
-      else if (tok[0] == "RINGS"){
+      else if (tok[0] == "RINGS") {
         // angstrom^-3 to nm^-3
         assign(co_ring[c_kind][c_atom],tok,1./(dscale*dscale*dscale));
-        for(unsigned i=1;i<tok.size();i++)
+        for(unsigned i=1; i<tok.size(); i++)
           co_ring[c_kind][c_atom][i-1] *= 1000;
         continue;
       }
-      else if (tok[0] == "HBONDS"){
+      else if (tok[0] == "HBONDS") {
         continue;
       }
-      else if (tok[0] == "XTRADISTS"){
+      else if (tok[0] == "XTRADISTS") {
         //angstrom to nm
         assign(co_xd[c_kind][c_atom],tok,dscale);
         continue;
       }
-      else if(tok[0]=="DIHEDPHI"){
+      else if(tok[0]=="DIHEDPHI") {
         assign(pars_da[c_kind][c_atom][0],tok,1);
         continue;
       }
-      else if(tok[0]=="DIHEDPSI"){
+      else if(tok[0]=="DIHEDPSI") {
         assign(pars_da[c_kind][c_atom][1],tok,1);
         continue;
       }
-      else if(tok[0]=="DIHEDCHI1"){
+      else if(tok[0]=="DIHEDCHI1") {
         assign(pars_da[c_kind][c_atom][2],tok,1);
         continue;
       }
 
       bool ok = false;
-      string scIdent1 [] = {"COSCALA1", "COSCARG1", "COSCASN1", "COSCASP1", "COSCCYS1", "COSCGLN1", "COSCGLU1", 
-                            "COSCGLY1", "COSCHIS1", "COSCILE1", "COSCLEU1", "COSCLYS1", "COSCMET1", "COSCPHE1", 
-                            "COSCPRO1", "COSCSER1", "COSCTHR1", "COSCTRP1", "COSCTYR1", "COSCVAL1"};
+      string scIdent1 [] = {"COSCALA1", "COSCARG1", "COSCASN1", "COSCASP1", "COSCCYS1", "COSCGLN1", "COSCGLU1",
+                            "COSCGLY1", "COSCHIS1", "COSCILE1", "COSCLEU1", "COSCLYS1", "COSCMET1", "COSCPHE1",
+                            "COSCPRO1", "COSCSER1", "COSCTHR1", "COSCTRP1", "COSCTYR1", "COSCVAL1"
+                           };
 
-      for(unsigned scC = 0; scC < 20; scC++){
-        if(tok[0]==scIdent1[scC]){
-          ok = true; 
+      for(unsigned scC = 0; scC < 20; scC++) {
+        if(tok[0]==scIdent1[scC]) {
+          ok = true;
           break;
         }
       }
       if(ok) continue;
 
-      string scIdent2 [] = {"COSCALA2", "COSCARG2", "COSCASN2", "COSCASP2", "COSCCYS2", "COSCGLN2", "COSCGLU2", 
-                            "COSCGLY2", "COSCHIS2", "COSCILE2", "COSCLEU2", "COSCLYS2", "COSCMET2", "COSCPHE2", 
-                            "COSCPRO2", "COSCSER2", "COSCTHR2", "COSCTRP2", "COSCTYR2", "COSCVAL2"};
+      string scIdent2 [] = {"COSCALA2", "COSCARG2", "COSCASN2", "COSCASP2", "COSCCYS2", "COSCGLN2", "COSCGLU2",
+                            "COSCGLY2", "COSCHIS2", "COSCILE2", "COSCLEU2", "COSCLYS2", "COSCMET2", "COSCPHE2",
+                            "COSCPRO2", "COSCSER2", "COSCTHR2", "COSCTRP2", "COSCTYR2", "COSCVAL2"
+                           };
 
-      for(unsigned scC = 0; scC < 20; scC++){
-        if(tok[0]==scIdent2[scC]){
+      for(unsigned scC = 0; scC < 20; scC++) {
+        if(tok[0]==scIdent2[scC]) {
           //angstrom to nm
           assign(co_sc_[c_kind][c_atom][scC],tok,dscale);
           ok = true; break;
         }
       }
       if(ok) continue;
-      
+
       if(tok.size()) {
         string str_err = "CS2Backbone DB WARNING: unrecognized token: " + tok[0];
         plumed_merror(str_err);
@@ -377,9 +379,9 @@ private:
     split(s, delim, elems);
     return elems;
   }
-  
-  void assign(double * f, const vector<string> & v, const double scale){
-    for(unsigned i=1;i<v.size();i++)
+
+  void assign(double * f, const vector<string> & v, const double scale) {
+    for(unsigned i=1; i<v.size(); i++)
       f[i-1] = scale*(atof(v[i].c_str()));
   }
 };
@@ -410,34 +412,34 @@ class CS2Backbone : public Colvar {
     double t_chi1;
     vector<Vector> dd0, dd10, dd21, dd2;
 
-    Fragment() { 
+    Fragment() {
       comp.resize(6);
       exp_cs.resize(6,0);
       res_type_prev = res_type_curr = res_type_next = 0;
       res_kind = 0;
       fd = 0;
-      res_name = ""; 
+      res_name = "";
       pos.resize(6,-1);
       prev.reserve(5);
       curr.reserve(6);
       next.reserve(5);
       side_chain.reserve(20);
-      xd1.reserve(27); 
-      xd2.reserve(27); 
+      xd1.reserve(27);
+      xd2.reserve(27);
       box_nb.reserve(250);
       phi.reserve(4);
       psi.reserve(4);
       chi1.reserve(4);
       t_phi = t_psi = t_chi1 = 0;
-      dd0.resize(3); 
-      dd10.resize(3); 
-      dd21.resize(3); 
-      dd2.resize(3); 
+      dd0.resize(3);
+      dd10.resize(3);
+      dd21.resize(3);
+      dd2.resize(3);
     }
 
   };
 
-  struct RingInfo{
+  struct RingInfo {
     enum {R_PHE, R_TYR, R_TRP1, R_TRP2, R_HIS};
     unsigned rtype;    // one out of five different types
     unsigned atom[6];  // up to six member per ring
@@ -451,7 +453,7 @@ class CS2Backbone : public Colvar {
     RingInfo():
       rtype(0),numAtoms(0),
       lengthN2(NAN),lengthNV(NAN)
-    {for(unsigned i=0;i<6;i++) atom[i]=0;}
+    {for(unsigned i=0; i<6; i++) atom[i]=0;}
   };
 
   enum aa_t {ALA, ARG, ASN, ASP, CYS, GLN, GLU, GLY, HIS, ILE, LEU, LYS, MET, PHE, PRO, SER, THR, TRP, TYR, VAL, UNK};
@@ -496,7 +498,7 @@ public:
 
 PLUMED_REGISTER_ACTION(CS2Backbone,"CS2BACKBONE")
 
-void CS2Backbone::registerKeywords( Keywords& keys ){
+void CS2Backbone::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   componentsAreNotOptional(keys);
   useCustomisableComponents(keys);
@@ -505,26 +507,26 @@ void CS2Backbone::registerKeywords( Keywords& keys ){
   keys.add("compulsory","TEMPLATE","template.pdb","A PDB file of the protein system to initialise ALMOST.");
   keys.add("compulsory","NEIGH_FREQ","20","Period in step for neighbour list update.");
   keys.add("compulsory","NRES","Number of residues, corresponding to the number of chemical shifts.");
-  keys.addFlag("CAMSHIFT",false,"Set to TRUE if you to calculate a single CamShift score."); 
-  keys.addFlag("NOEXP",false,"Set to TRUE if you don't want to have fixed components with the experimetnal values.");  
-  keys.addOutputComponent("ha","default","the calculated Ha hydrogen chemical shifts"); 
-  keys.addOutputComponent("hn","default","the calculated H hydrogen chemical shifts"); 
-  keys.addOutputComponent("nh","default","the calculated N nitrogen chemical shifts"); 
-  keys.addOutputComponent("ca","default","the calculated Ca carbon chemical shifts"); 
-  keys.addOutputComponent("cb","default","the calculated Cb carbon chemical shifts"); 
-  keys.addOutputComponent("co","default","the calculated C' carbon chemical shifts"); 
-  keys.addOutputComponent("expha","default","the experimental Ha hydrogen chemical shifts"); 
-  keys.addOutputComponent("exphn","default","the experimental H hydrogen chemical shifts"); 
-  keys.addOutputComponent("expnh","default","the experimental N nitrogen chemical shifts"); 
-  keys.addOutputComponent("expca","default","the experimental Ca carbon chemical shifts"); 
-  keys.addOutputComponent("expcb","default","the experimental Cb carbon chemical shifts"); 
-  keys.addOutputComponent("expco","default","the experimental C' carbon chemical shifts"); 
+  keys.addFlag("CAMSHIFT",false,"Set to TRUE if you to calculate a single CamShift score.");
+  keys.addFlag("NOEXP",false,"Set to TRUE if you don't want to have fixed components with the experimetnal values.");
+  keys.addOutputComponent("ha","default","the calculated Ha hydrogen chemical shifts");
+  keys.addOutputComponent("hn","default","the calculated H hydrogen chemical shifts");
+  keys.addOutputComponent("nh","default","the calculated N nitrogen chemical shifts");
+  keys.addOutputComponent("ca","default","the calculated Ca carbon chemical shifts");
+  keys.addOutputComponent("cb","default","the calculated Cb carbon chemical shifts");
+  keys.addOutputComponent("co","default","the calculated C' carbon chemical shifts");
+  keys.addOutputComponent("expha","default","the experimental Ha hydrogen chemical shifts");
+  keys.addOutputComponent("exphn","default","the experimental H hydrogen chemical shifts");
+  keys.addOutputComponent("expnh","default","the experimental N nitrogen chemical shifts");
+  keys.addOutputComponent("expca","default","the experimental Ca carbon chemical shifts");
+  keys.addOutputComponent("expcb","default","the experimental Cb carbon chemical shifts");
+  keys.addOutputComponent("expco","default","the experimental C' carbon chemical shifts");
 }
 
 CS2Backbone::CS2Backbone(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao),
-camshift(false),
-pbc(true)
+  PLUMED_COLVAR_INIT(ao),
+  camshift(false),
+  pbc(true)
 {
   string stringadb;
   string stringapdb;
@@ -561,7 +563,7 @@ pbc(true)
   }
 
   log.printf("  Initialization of the predictor ...\n"); log.flush();
-  db.parse(stringadb,scale); 
+  db.parse(stringadb,scale);
   PDB pdb;
   if( !pdb.read(stringapdb,plumed.getAtoms().usingNaturalUnits(),1./scale) ) error("missing input file " + stringapdb);
   init_backbone(pdb);
@@ -595,18 +597,18 @@ pbc(true)
   /* this is a workaround for those chemical shifts that can result in too large forces */
   remove_problematic("GLN", "CB");
   remove_problematic("ILE", "CB");
-  remove_problematic("PRO", "N");  
+  remove_problematic("PRO", "N");
   remove_problematic("PRO", "H");
   remove_problematic("PRO", "CB");
   remove_problematic("GLY", "HA");
   remove_problematic("GLY", "CB");
   /* this is a workaround for those chemical shifts that are not parameterized */
   remove_problematic("HIE", "HA"); remove_problematic("HIP", "HA"); remove_problematic("HSP", "HA");
-  remove_problematic("HIE", "H");  remove_problematic("HIP", "H");  remove_problematic("HSP", "H"); 
-  remove_problematic("HIE", "N");  remove_problematic("HIP", "N");  remove_problematic("HSP", "N"); 
+  remove_problematic("HIE", "H");  remove_problematic("HIP", "H");  remove_problematic("HSP", "H");
+  remove_problematic("HIE", "N");  remove_problematic("HIP", "N");  remove_problematic("HSP", "N");
   remove_problematic("HIE", "CA"); remove_problematic("HIP", "CA"); remove_problematic("HSP", "CA");
   remove_problematic("HIE", "CB"); remove_problematic("HIP", "CB"); remove_problematic("HSP", "CB");
-  remove_problematic("HIE", "C");  remove_problematic("HIP", "C");  remove_problematic("HSP", "C"); 
+  remove_problematic("HIE", "C");  remove_problematic("HIP", "C");  remove_problematic("HSP", "C");
   remove_problematic("GLH", "HA"); remove_problematic("ASH", "HA"); remove_problematic("HSE", "HA");
   remove_problematic("GLH", "H");  remove_problematic("ASH", "H");  remove_problematic("HSE", "H");
   remove_problematic("GLH", "N");  remove_problematic("ASH", "N");  remove_problematic("HSE", "N");
@@ -646,11 +648,11 @@ pbc(true)
   unsigned index=0;
   if(camshift) noexp = true;
   if(!camshift) {
-    for(unsigned i=0;i<atom.size();i++) {
-      for(unsigned a=0;a<atom[i].size();a++) {
+    for(unsigned i=0; i<atom.size(); i++) {
+      for(unsigned a=0; a<atom[i].size(); a++) {
         unsigned res=index+a;
         std::string num; Tools::convert(res,num);
-        for(unsigned at_kind=0;at_kind<6;at_kind++){
+        for(unsigned at_kind=0; at_kind<6; at_kind++) {
           if(atom[i][a].exp_cs[at_kind]!=0) {
             addComponentWithDerivatives(str_cs[at_kind]+num);
             componentIsNotPeriodic(str_cs[at_kind]+num);
@@ -663,20 +665,20 @@ pbc(true)
   } else {
     addValueWithDerivatives();
     setNotPeriodic();
-    for(unsigned i=0;i<atom.size();i++) {
+    for(unsigned i=0; i<atom.size(); i++) {
       index += atom[i].size();
     }
   }
 
   if(!noexp) {
-    index = 0; 
-    for(unsigned i=0;i<atom.size();i++) {
-      for(unsigned a=0;a<atom[i].size();a++) {
+    index = 0;
+    for(unsigned i=0; i<atom.size(); i++) {
+      for(unsigned a=0; a<atom[i].size(); a++) {
         unsigned res=index+a;
         std::string num; Tools::convert(res,num);
-        for(unsigned at_kind=0;at_kind<6;at_kind++){
+        for(unsigned at_kind=0; at_kind<6; at_kind++) {
           if(atom[i][a].exp_cs[at_kind]!=0) {
-            addComponent("exp"+str_cs[at_kind]+num); 
+            addComponent("exp"+str_cs[at_kind]+num);
             componentIsNotPeriodic("exp"+str_cs[at_kind]+num);
             Value* comp=getPntrToComponent("exp"+str_cs[at_kind]+num);
             comp->set(atom[i][a].exp_cs[at_kind]);
@@ -689,7 +691,7 @@ pbc(true)
 
   /* temporary check, the idea is that I can remove NRES completely */
   if(index!=numResidues) error("NRES and the number of residues in the PDB do not match!");
- 
+
   requestAtoms(atoms);
 }
 
@@ -703,8 +705,8 @@ void CS2Backbone::remove_problematic(const string &res, const string &nucl) {
   else if(nucl=="C") n=5;
   else return;
 
-  for(unsigned i=0;i<atom.size();i++){
-    for(unsigned a=0;a<atom[i].size();a++){
+  for(unsigned i=0; i<atom.size(); i++) {
+    for(unsigned a=0; a<atom[i].size(); a++) {
       if(atom[i][a].res_name.c_str()==res) {
         atom[i][a].exp_cs[n] = 0;
       }
@@ -712,7 +714,7 @@ void CS2Backbone::remove_problematic(const string &res, const string &nucl) {
   }
 }
 
-void CS2Backbone::read_cs(const string &file, const string &nucl){
+void CS2Backbone::read_cs(const string &file, const string &nucl) {
   ifstream in;
   in.open(file.c_str());
   if(!in) error("CS2Backbone: Unable to open " + file);
@@ -729,10 +731,10 @@ void CS2Backbone::read_cs(const string &file, const string &nucl){
 
   int oldseg = -1;
   int oldp = -1;
-  while(iter!=end){
+  while(iter!=end) {
     string tok;
     tok = *iter; ++iter;
-    if(tok[0]=='#'){ ++iter; continue;}
+    if(tok[0]=='#') { ++iter; continue;}
     unsigned p = atoi(tok.c_str());
     p = p - 1;
     const unsigned seg = frag_segment(p);
@@ -765,7 +767,7 @@ void CS2Backbone::calculate()
   double score = 0.;
 
   vector<double> camshift_sigma2(6);
-  camshift_sigma2[0] = 0.08; // HA 
+  camshift_sigma2[0] = 0.08; // HA
   camshift_sigma2[1] = 0.30; // HN
   camshift_sigma2[2] = 9.00; // NH
   camshift_sigma2[3] = 1.30; // CA
@@ -777,13 +779,13 @@ void CS2Backbone::calculate()
 
   // CYCLE OVER MULTIPLE CHAINS
   #pragma omp parallel num_threads(OpenMP::getNumThreads())
-  for(unsigned s=0;s<chainsize;s++){
+  for(unsigned s=0; s<chainsize; s++) {
     const unsigned psize = atom[s].size();
     vector<Vector> omp_deriv;
     if(camshift) omp_deriv.resize(getNumberOfAtoms(), Vector(0,0,0));
     #pragma omp for reduction(+:score)
     // SKIP FIRST AND LAST RESIDUE OF EACH CHAIN
-    for(unsigned a=1;a<psize-1;a++){
+    for(unsigned a=1; a<psize-1; a++) {
 
       const Fragment *myfrag = &atom[s][a];
       const unsigned aa_kind = myfrag->res_kind;
@@ -796,7 +798,7 @@ void CS2Backbone::calculate()
       const unsigned xdsize=myfrag->xd1.size();
       vector<Vector> ext_distances(xdsize);
       vector<double> ext_d(xdsize);
-      for(unsigned q=0;q<xdsize;q++){
+      for(unsigned q=0; q<xdsize; q++) {
         if(myfrag->xd1[q]==-1||myfrag->xd2[q]==-1) continue;
         const Vector distance = delta(getPosition(myfrag->xd1[q]),getPosition(myfrag->xd2[q]));
         ext_d[q] = distance.modulo();
@@ -804,30 +806,30 @@ void CS2Backbone::calculate()
       }
 
       // CYCLE OVER THE SIX BACKBONE CHEMICAL SHIFTS
-      for(unsigned at_kind=0;at_kind<6;at_kind++){
-        if(atom[s][a].exp_cs[at_kind]!=0){
+      for(unsigned at_kind=0; at_kind<6; at_kind++) {
+        if(atom[s][a].exp_cs[at_kind]!=0) {
           // Common constant and AATYPE
           const double * CONSTAACURR = db.CONSTAACURR(aa_kind,at_kind);
           const double * CONSTAANEXT = db.CONSTAANEXT(aa_kind,at_kind);
           const double * CONSTAAPREV = db.CONSTAAPREV(aa_kind,at_kind);
 
-          double cs = CONSTAACURR[res_type_curr] + 
-                      CONSTAANEXT[res_type_next] + 
+          double cs = CONSTAACURR[res_type_curr] +
+                      CONSTAANEXT[res_type_next] +
                       CONSTAAPREV[res_type_prev];
-          // this is the atom for which we are calculating the chemical shift 
+          // this is the atom for which we are calculating the chemical shift
           const unsigned ipos = myfrag->pos[at_kind];
 
           vector<unsigned> list;
           list.reserve(needed_atoms);
           list.push_back(ipos);
           vector<Vector> ff;
-          ff.reserve(needed_atoms); 
+          ff.reserve(needed_atoms);
           ff.push_back(Vector(0,0,0));
 
           //PREV
           const double * CONST_BB2_PREV = db.CONST_BB2_PREV(aa_kind,at_kind);
           const unsigned presize = myfrag->prev.size();
-          for(unsigned q=0;q<presize;q++){
+          for(unsigned q=0; q<presize; q++) {
             const double cb2pq = CONST_BB2_PREV[q];
             if(cb2pq==0.) continue;
             const unsigned jpos = myfrag->prev[q];
@@ -845,7 +847,7 @@ void CS2Backbone::calculate()
           //CURR
           const double * CONST_BB2_CURR = db.CONST_BB2_CURR(aa_kind,at_kind);
           const unsigned cursize = myfrag->curr.size();
-          for(unsigned q=0;q<cursize;q++){
+          for(unsigned q=0; q<cursize; q++) {
             const double cb2cq = CONST_BB2_CURR[q];
             if(cb2cq==0.) continue;
             const unsigned jpos = myfrag->curr[q];
@@ -864,8 +866,8 @@ void CS2Backbone::calculate()
           //NEXT
           const double * CONST_BB2_NEXT = db.CONST_BB2_NEXT(aa_kind,at_kind);
           const unsigned nexsize = myfrag->next.size();
-          for(unsigned q=0;q<nexsize;q++){
-            const double cb2nq = CONST_BB2_NEXT[q]; 
+          for(unsigned q=0; q<nexsize; q++) {
+            const double cb2nq = CONST_BB2_NEXT[q];
             if(cb2nq==0.) continue;
             const unsigned jpos = myfrag->next[q];
             list.push_back(jpos);
@@ -882,8 +884,8 @@ void CS2Backbone::calculate()
           //SIDE CHAIN
           const double * CONST_SC2 = db.CONST_SC2(aa_kind,at_kind,res_type_curr);
           const unsigned sidsize = myfrag->side_chain.size();
-          for(unsigned q=0;q<sidsize;q++){
-            const double cs2q = CONST_SC2[q]; 
+          for(unsigned q=0; q<sidsize; q++) {
+            const double cs2q = CONST_SC2[q];
             if(cs2q==0.) continue;
             const unsigned jpos = myfrag->side_chain[q];
             if(ipos==jpos) continue;
@@ -897,10 +899,10 @@ void CS2Backbone::calculate()
             ff[0] += der;
             ff.push_back(-der);
           }
-        
+
           //EXTRA DIST
           const double * CONST_XD  = db.CONST_XD(aa_kind,at_kind);
-          for(unsigned q=0;q<xdsize;q++){
+          for(unsigned q=0; q<xdsize; q++) {
             const double cxdq = CONST_XD[q];
             if(cxdq==0.) continue;
             if(myfrag->xd1[q]==-1||myfrag->xd2[q]==-1) continue;
@@ -911,7 +913,7 @@ void CS2Backbone::calculate()
             ff.push_back( der);
             ff.push_back(-der);
           }
-           
+
           //NON BOND
           {
             const double * CONST_CO_SPHERE3 = db.CO_SPHERE(aa_kind,at_kind,0);
@@ -921,22 +923,22 @@ void CS2Backbone::calculate()
               const unsigned jpos = myfrag->box_nb[bat];
               const Vector distance = delta(getPosition(jpos),getPosition(ipos));
               const double d2 = distance.modulo2();
-            
+
               if(d2<cutOffDist2) {
                 double factor1  = sqrt(d2);
                 double dfactor1 = 1./factor1;
-    	        double factor3  = dfactor1*dfactor1*dfactor1;
+                double factor3  = dfactor1*dfactor1*dfactor1;
                 double dfactor3 = -3.*factor3*dfactor1*dfactor1;
 
                 if(d2>cutOnDist2) {
                   const double af = cutOffDist2 - d2;
                   const double bf = cutOffDist2 - 3.*cutOnDist2 + 2.*d2;
-                  const double cf = invswitch*af; 
+                  const double cf = invswitch*af;
                   const double df = cf*af*bf;
-		  factor1 *= df;
+                  factor1 *= df;
                   factor3 *= df;
 
-    	          const double d4  = d2*d2;
+                  const double d4  = d2*d2;
                   const double af1 = 15.*cutOnDist2*d2;
                   const double bf1 = -14.*d4;
                   const double cf1 = -3.*cutOffDist2*cutOnDist2 + cutOffDist2*d2;
@@ -950,14 +952,14 @@ void CS2Backbone::calculate()
                   dfactor3 *= invswitch*(cutMixed+df3);
                 }
 
-    	        const unsigned t = type[jpos];
+                const unsigned t = type[jpos];
                 cs += factor1*CONST_CO_SPHERE[t] + factor3*CONST_CO_SPHERE3[t] ;
-    	        const double fact = dfactor1*CONST_CO_SPHERE[t]+dfactor3*CONST_CO_SPHERE3[t];
+                const double fact = dfactor1*CONST_CO_SPHERE[t]+dfactor3*CONST_CO_SPHERE3[t];
                 const Vector der  = fact*distance;
 
                 list.push_back(jpos);
                 ff[0] += der;
-    	        ff.push_back(-der);
+                ff.push_back(-der);
               }
             }
           }
@@ -967,64 +969,64 @@ void CS2Backbone::calculate()
           {
             const double *rc = db.CO_RING(aa_kind,at_kind);
             const unsigned rsize = ringInfo.size();
-            for(unsigned i=0; i<rsize; i++){
-    	      // compute angle from ring middle point to current atom position
-    	      // get distance vector from query atom to ring center and normal vector to ring plane
-    	      const Vector n   = ringInfo[i].normVect;
-    	      const double nL  = ringInfo[i].lengthNV;
-    	      const double inL2 = ringInfo[i].lengthN2;
+            for(unsigned i=0; i<rsize; i++) {
+              // compute angle from ring middle point to current atom position
+              // get distance vector from query atom to ring center and normal vector to ring plane
+              const Vector n   = ringInfo[i].normVect;
+              const double nL  = ringInfo[i].lengthNV;
+              const double inL2 = ringInfo[i].lengthN2;
 
               const Vector d = delta(ringInfo[i].position, getPosition(ipos));
-    	      const double dL2 = d.modulo2();
-    	      const double dL  = sqrt(dL2);
-    	      const double idL3 = 1./(dL2*dL);
+              const double dL2 = d.modulo2();
+              const double dL  = sqrt(dL2);
+              const double idL3 = 1./(dL2*dL);
 
-    	      const double dn    = dotProduct(d,n);
-    	      const double dn2   = dn*dn;
-    	      const double dLnL  = dL*nL;
+              const double dn    = dotProduct(d,n);
+              const double dn2   = dn*dn;
+              const double dLnL  = dL*nL;
               const double dL_nL = dL/nL;
 
-    	      const double ang2 = dn2*inL2/dL2;
-    	      const double u    = 1.-3.*ang2;
+              const double ang2 = dn2*inL2/dL2;
+              const double u    = 1.-3.*ang2;
               const double cc   = rc[ringInfo[i].rtype];
 
               cs += cc*u*idL3;
-             
-              const double fUU    = -6*dn*inL2; 
-    	      const double fUQ    = fUU/dL;
+
+              const double fUU    = -6*dn*inL2;
+              const double fUQ    = fUU/dL;
               const Vector gradUQ = fUQ*(dL2*n - dn*d);
               const Vector gradVQ = (3*dL*u)*d;
-    	
-      	      const double fact   = cc*idL3*idL3;
-    	      ff[0] += fact*(gradUQ - gradVQ);
-    	
-    	      const double fU       = fUU/nL;
-    	      double OneOverN = 1./6.;
-              if(ringInfo[i].numAtoms==5) OneOverN=1./3.; 
+
+              const double fact   = cc*idL3*idL3;
+              ff[0] += fact*(gradUQ - gradVQ);
+
+              const double fU       = fUU/nL;
+              double OneOverN = 1./6.;
+              if(ringInfo[i].numAtoms==5) OneOverN=1./3.;
               const Vector factor2  = OneOverN*n;
-    	      const Vector factor4  = (OneOverN/dL_nL)*d;
+              const Vector factor4  = (OneOverN/dL_nL)*d;
 
               const Vector gradV    = -OneOverN*gradVQ;
 
               if(ringInfo[i].numAtoms==6) {
-    	        // update forces on ring atoms
-                for(unsigned at=0;at<6;at++) {
+                // update forces on ring atoms
+                for(unsigned at=0; at<6; at++) {
                   const Vector ab = crossProduct(d,ringInfo[i].g[at]);
                   const Vector c  = crossProduct(n,ringInfo[i].g[at]);
-    	          const Vector factor3 = 0.5*dL_nL*c;
+                  const Vector factor3 = 0.5*dL_nL*c;
                   const Vector factor1 = 0.5*ab;
                   const Vector gradU   = fU*( dLnL*(factor1 - factor2) -dn*(factor3 - factor4) );
-    	          ff.push_back(fact*(gradU - gradV));
+                  ff.push_back(fact*(gradU - gradV));
                   list.push_back(ringInfo[i].atom[at]);
                 }
               } else {
-                for(unsigned at=0;at<3;at++) {
+                for(unsigned at=0; at<3; at++) {
                   const Vector ab = crossProduct(d,ringInfo[i].g[at]);
                   const Vector c  = crossProduct(n,ringInfo[i].g[at]);
-    	          const Vector factor3 = dL_nL*c;
+                  const Vector factor3 = dL_nL*c;
                   const Vector factor1 = ab;
                   const Vector gradU   = fU*( dLnL*(factor1 - factor2) -dn*(factor3 - factor4) );
-    	          ff.push_back(fact*(gradU - gradV));
+                  ff.push_back(fact*(gradU - gradV));
                 }
                 list.push_back(ringInfo[i].atom[0]);
                 list.push_back(ringInfo[i].atom[2]);
@@ -1037,11 +1039,11 @@ void CS2Backbone::calculate()
           //DIHEDRAL ANGLES
           {
             const double *CO_DA = db.CO_DA(aa_kind,at_kind);
-            if(myfrag->phi.size()==4){
-      	      const double *PARS_DA = db.PARS_DA(aa_kind,at_kind,0);
+            if(myfrag->phi.size()==4) {
+              const double *PARS_DA = db.PARS_DA(aa_kind,at_kind,0);
               const double val1 = 3.*myfrag->t_phi+PARS_DA[3];
               const double val2 = myfrag->t_phi+PARS_DA[4];
-    	      cs += CO_DA[0]*(PARS_DA[0]*cos(val1)+PARS_DA[1]*cos(val2)+PARS_DA[2]);
+              cs += CO_DA[0]*(PARS_DA[0]*cos(val1)+PARS_DA[1]*cos(val2)+PARS_DA[2]);
               const double fact = -CO_DA[0]*(+3.*PARS_DA[0]*sin(val1)+PARS_DA[1]*sin(val2));
 
               ff.push_back(fact*myfrag->dd0[0]);
@@ -1054,11 +1056,11 @@ void CS2Backbone::calculate()
               list.push_back(myfrag->phi[3]);
             }
 
-            if(myfrag->psi.size()==4){
-    	      const double *PARS_DA = db.PARS_DA(aa_kind,at_kind,1);
+            if(myfrag->psi.size()==4) {
+              const double *PARS_DA = db.PARS_DA(aa_kind,at_kind,1);
               const double val1 = 3.*myfrag->t_psi+PARS_DA[3];
               const double val2 = myfrag->t_psi+PARS_DA[4];
-    	      cs += CO_DA[1]*(PARS_DA[0]*cos(val1)+PARS_DA[1]*cos(val2)+PARS_DA[2]);
+              cs += CO_DA[1]*(PARS_DA[0]*cos(val1)+PARS_DA[1]*cos(val2)+PARS_DA[2]);
               const double fact = -CO_DA[1]*(+3.*PARS_DA[0]*sin(val1)+PARS_DA[1]*sin(val2));
 
               ff.push_back(fact*myfrag->dd0[1]);
@@ -1072,11 +1074,11 @@ void CS2Backbone::calculate()
             }
 
             //Chi
-            if(myfrag->chi1.size()==4){
-    	      const double *PARS_DA = db.PARS_DA(aa_kind,at_kind,2);
+            if(myfrag->chi1.size()==4) {
+              const double *PARS_DA = db.PARS_DA(aa_kind,at_kind,2);
               const double val1 = 3.*myfrag->t_chi1+PARS_DA[3];
               const double val2 = myfrag->t_chi1+PARS_DA[4];
-    	      cs += CO_DA[2]*(PARS_DA[0]*cos(val1)+PARS_DA[1]*cos(val2)+PARS_DA[2]);
+              cs += CO_DA[2]*(PARS_DA[0]*cos(val1)+PARS_DA[1]*cos(val2)+PARS_DA[2]);
               const double fact = -CO_DA[2]*(+3.*PARS_DA[0]*sin(val1)+PARS_DA[1]*sin(val2));
 
               ff.push_back(fact*myfrag->dd0[2]);
@@ -1093,13 +1095,13 @@ void CS2Backbone::calculate()
 
           Value * comp;
           double fact = 1.0;
-          if(!camshift) { 
+          if(!camshift) {
             comp = atom[s][a].comp[at_kind];
             comp->set(cs);
             Tensor virial;
-            for(unsigned i=0;i<list.size();i++) {
-                setAtomsDerivatives(comp,list[i],fact*ff[i]);
-                virial-=Tensor(getPosition(list[i]),fact*ff[i]);
+            for(unsigned i=0; i<list.size(); i++) {
+              setAtomsDerivatives(comp,list[i],fact*ff[i]);
+              virial-=Tensor(getPosition(list[i]),fact*ff[i]);
             }
             setBoxDerivatives(comp,virial);
           } else {
@@ -1107,13 +1109,13 @@ void CS2Backbone::calculate()
             comp = getPntrToValue();
             score += (cs - atom[s][a].exp_cs[at_kind])*(cs - atom[s][a].exp_cs[at_kind])/camshift_sigma2[at_kind];
             fact = 2.0*(cs - atom[s][a].exp_cs[at_kind])/camshift_sigma2[at_kind];
-            for(unsigned i=0;i<list.size();i++) omp_deriv[list[i]] += fact*ff[i];
+            for(unsigned i=0; i<list.size(); i++) omp_deriv[list[i]] += fact*ff[i];
           }
-        } 
+        }
       }
     }
     #pragma omp critical
-    if(camshift) for(int i=0;i<getPositions().size();i++) setAtomsDerivatives(i,omp_deriv[i]);
+    if(camshift) for(int i=0; i<getPositions().size(); i++) setAtomsDerivatives(i,omp_deriv[i]);
   }
 
   // in the case of camshift we calculate the virial at the end
@@ -1126,12 +1128,12 @@ void CS2Backbone::calculate()
   if(box_count == box_nupdate) box_count = 0;
 }
 
-void CS2Backbone::update_neighb(){
+void CS2Backbone::update_neighb() {
   const unsigned chainsize = atom.size();
-  for(unsigned s=0;s<chainsize;s++){
+  for(unsigned s=0; s<chainsize; s++) {
     const unsigned psize = atom[s].size();
     #pragma omp parallel for num_threads(OpenMP::getNumThreads())
-    for(unsigned a=1;a<psize-1;a++){
+    for(unsigned a=1; a<psize-1; a++) {
       const unsigned boxsize = getNumberOfAtoms();
       atom[s][a].box_nb.clear();
       atom[s][a].box_nb.reserve(300);
@@ -1139,14 +1141,14 @@ void CS2Backbone::update_neighb(){
       for(unsigned bat=0; bat<boxsize; bat++) {
         const unsigned res_dist = abs(static_cast<int>(res_curr-res_num[bat]));
         if(res_dist<2) continue;
-        for(unsigned at_kind=0;at_kind<6; at_kind++) {
+        for(unsigned at_kind=0; at_kind<6; at_kind++) {
           if(atom[s][a].exp_cs[at_kind]==0.) continue;
-          const unsigned ipos = atom[s][a].pos[at_kind]; 
+          const unsigned ipos = atom[s][a].pos[at_kind];
           const Vector distance = delta(getPosition(bat),getPosition(ipos));
           const double d2=distance.modulo2();
-          if(d2<cutOffNB2) { 
-            atom[s][a].box_nb.push_back(bat); 
-            break; 
+          if(d2<cutOffNB2) {
+            atom[s][a].box_nb.push_back(bat);
+            break;
           }
         }
       }
@@ -1154,8 +1156,8 @@ void CS2Backbone::update_neighb(){
   }
 }
 
-void CS2Backbone::compute_ring_parameters(){
-  for(unsigned i=0;i<ringInfo.size();i++){
+void CS2Backbone::compute_ring_parameters() {
+  for(unsigned i=0; i<ringInfo.size(); i++) {
     const unsigned size = ringInfo[i].numAtoms;
     if(size==6) {
       ringInfo[i].g[0] = delta(getPosition(ringInfo[i].atom[4]),getPosition(ringInfo[i].atom[2]));
@@ -1199,19 +1201,19 @@ void CS2Backbone::compute_ring_parameters(){
 
     }
     // calculate squared length and length of normal vector
-    ringInfo[i].lengthN2 = 1./ringInfo[i].normVect.modulo2(); 
+    ringInfo[i].lengthN2 = 1./ringInfo[i].normVect.modulo2();
     ringInfo[i].lengthNV = 1./sqrt(ringInfo[i].lengthN2);
   }
 }
 
-void CS2Backbone::compute_dihedrals(){
+void CS2Backbone::compute_dihedrals() {
   const unsigned chainsize = atom.size();
-  for(unsigned s=0;s<chainsize;s++){
+  for(unsigned s=0; s<chainsize; s++) {
     const unsigned psize = atom[s].size();
-    #pragma omp parallel for num_threads(OpenMP::getNumThreads())  
-    for(unsigned a=1;a<psize-1;a++){
+    #pragma omp parallel for num_threads(OpenMP::getNumThreads())
+    for(unsigned a=1; a<psize-1; a++) {
       const Fragment *myfrag = &atom[s][a];
-      if(myfrag->phi.size()==4){
+      if(myfrag->phi.size()==4) {
         const Vector d0 = delta(getPosition(myfrag->phi[1]), getPosition(myfrag->phi[0]));
         const Vector d1 = delta(getPosition(myfrag->phi[2]), getPosition(myfrag->phi[1]));
         const Vector d2 = delta(getPosition(myfrag->phi[3]), getPosition(myfrag->phi[2]));
@@ -1223,7 +1225,7 @@ void CS2Backbone::compute_dihedrals(){
         atom[s][a].dd21[0] = dd2-dd1;
         atom[s][a].dd2[0]  = dd2;
       }
-      if(myfrag->psi.size()==4){
+      if(myfrag->psi.size()==4) {
         const Vector d0 = delta(getPosition(myfrag->psi[1]), getPosition(myfrag->psi[0]));
         const Vector d1 = delta(getPosition(myfrag->psi[2]), getPosition(myfrag->psi[1]));
         const Vector d2 = delta(getPosition(myfrag->psi[3]), getPosition(myfrag->psi[2]));
@@ -1235,7 +1237,7 @@ void CS2Backbone::compute_dihedrals(){
         atom[s][a].dd21[1] = dd2-dd1;
         atom[s][a].dd2[1]  = dd2;
       }
-      if(myfrag->chi1.size()==4){
+      if(myfrag->chi1.size()==4) {
         const Vector d0 = delta(getPosition(myfrag->chi1[1]), getPosition(myfrag->chi1[0]));
         const Vector d1 = delta(getPosition(myfrag->chi1[2]), getPosition(myfrag->chi1[1]));
         const Vector d2 = delta(getPosition(myfrag->chi1[3]), getPosition(myfrag->chi1[2]));
@@ -1251,14 +1253,14 @@ void CS2Backbone::compute_dihedrals(){
   }
 }
 
-void CS2Backbone::init_backbone(const PDB &pdb){
+void CS2Backbone::init_backbone(const PDB &pdb) {
   // number of chains
   vector<string> chains;
   pdb.getChainNames( chains );
   seg_last.resize(chains.size());
   unsigned old_size=0;
 
-  for(unsigned i=0;i<chains.size();i++){
+  for(unsigned i=0; i<chains.size(); i++) {
     unsigned start, end;
     string errmsg;
     pdb.getResidueRange( chains[i], start, end, errmsg );
@@ -1288,7 +1290,7 @@ void CS2Backbone::init_backbone(const PDB &pdb){
 
     vector<AtomNumber> allatoms = pdb.getAtomsInChain(chains[i]);
     // cycle over all the atoms in the chain
-    for(unsigned a=0;a<allatoms.size();a++){
+    for(unsigned a=0; a<allatoms.size(); a++) {
       unsigned atm_index=a+old_size;
       unsigned f = pdb.getResidueNumber(allatoms[a]);
       unsigned f_idx = f-res_offset;
@@ -1308,8 +1310,8 @@ void CS2Backbone::init_backbone(const PDB &pdb){
 
     // vector of residues for a given chain
     vector<Fragment> atm_;
-    // cycle over all residues in the chain 
-    for(unsigned a=start;a<=end;a++){
+    // cycle over all residues in the chain
+    for(unsigned a=start; a<=end; a++) {
       unsigned f_idx = a - res_offset;
       Fragment at;
       at.pos[0] = HA_[f_idx];
@@ -1319,17 +1321,17 @@ void CS2Backbone::init_backbone(const PDB &pdb){
       at.pos[4] = CB_[f_idx];
       at.pos[5] =  C_[f_idx];
       at.res_type_prev = at.res_type_curr = at.res_type_next = 0;
-      at.res_name = pdb.getResidueName(a, chains[i]); 
+      at.res_name = pdb.getResidueName(a, chains[i]);
       at.res_kind = db.kind(at.res_name);
       at.fd = a;
       //REGISTER PREV CURR NEXT
       {
-        if(a>start){
+        if(a>start) {
           at.prev.push_back( N_[f_idx-1]);
           at.prev.push_back(CA_[f_idx-1]);
           at.prev.push_back(HA_[f_idx-1]);
           at.prev.push_back( C_[f_idx-1]);
-          at.prev.push_back( O_[f_idx-1]);	
+          at.prev.push_back( O_[f_idx-1]);
           at.res_type_prev = frag2enum(pdb.getResidueName(a-1, chains[i]));
         }
 
@@ -1338,10 +1340,10 @@ void CS2Backbone::init_backbone(const PDB &pdb){
         at.curr.push_back(CA_[f_idx]);
         at.curr.push_back(HA_[f_idx]);
         at.curr.push_back( C_[f_idx]);
-        at.curr.push_back( O_[f_idx]);		
+        at.curr.push_back( O_[f_idx]);
         at.res_type_curr = frag2enum(pdb.getResidueName(a, chains[i]));
 
-        if(a<end){
+        if(a<end) {
           at.next.push_back (N_[f_idx+1]);
           at.next.push_back (H_[f_idx+1]);
           at.next.push_back(CA_[f_idx+1]);
@@ -1351,21 +1353,21 @@ void CS2Backbone::init_backbone(const PDB &pdb){
         }
 
         //PHI | PSI | CH1
-        if(a>start){
+        if(a>start) {
           at.phi.push_back( C_[f_idx-1]);
           at.phi.push_back( N_[f_idx]);
           at.phi.push_back(CA_[f_idx]);
           at.phi.push_back( C_[f_idx]);
         }
-        
-        if(a<end){
+
+        if(a<end) {
           at.psi.push_back( N_[f_idx]);
           at.psi.push_back(CA_[f_idx]);
           at.psi.push_back( C_[f_idx]);
-          at.psi.push_back( N_[f_idx+1]);	
+          at.psi.push_back( N_[f_idx+1]);
         }
 
-        if(CX_[f_idx]!=-1&&CB_[f_idx]!=-1){
+        if(CX_[f_idx]!=-1&&CB_[f_idx]!=-1) {
           at.chi1.push_back( N_[f_idx]);
           at.chi1.push_back(CA_[f_idx]);
           at.chi1.push_back(CB_[f_idx]);
@@ -1378,69 +1380,72 @@ void CS2Backbone::init_backbone(const PDB &pdb){
   }
 }
 
-void CS2Backbone::init_sidechain(const PDB &pdb){
-  vector<string> chains; 
+void CS2Backbone::init_sidechain(const PDB &pdb) {
+  vector<string> chains;
   pdb.getChainNames( chains );
   unsigned old_size=0;
   // cycle over chains
-  for(unsigned s=0; s<atom.size(); s++){
-    AtomNumber astart, aend; 
+  for(unsigned s=0; s<atom.size(); s++) {
+    AtomNumber astart, aend;
     string errmsg;
     pdb.getAtomRange( chains[s], astart, aend, errmsg );
     unsigned atom_offset = astart.index();
-    // cycle over residues  
-    for(unsigned a=0; a<atom[s].size(); a++){
+    // cycle over residues
+    for(unsigned a=0; a<atom[s].size(); a++) {
       if(atom[s][a].res_name=="UNK") continue;
       vector<AtomNumber> atm = pdb.getAtomsInResidue(atom[s][a].fd, chains[s]);
       vector<string> sc_atm = side_chain_atoms(atom[s][a].res_name);
 
-      for(unsigned sc=0;sc<sc_atm.size();sc++){
-        for(unsigned aa=0;aa<atm.size();aa++){
-          if(pdb.getAtomName(atm[aa])==sc_atm[sc]){
-    	    atom[s][a].side_chain.push_back(atm[aa].index()-atom_offset+old_size);
+      for(unsigned sc=0; sc<sc_atm.size(); sc++) {
+        for(unsigned aa=0; aa<atm.size(); aa++) {
+          if(pdb.getAtomName(atm[aa])==sc_atm[sc]) {
+            atom[s][a].side_chain.push_back(atm[aa].index()-atom_offset+old_size);
           }
         }
       }
 
     }
-    old_size += aend.index()+1; 
+    old_size += aend.index()+1;
   }
 }
 
-void CS2Backbone::init_xdist(const PDB &pdb){
-  const string atomsP1[] = {"H", "H", "H", "C", "C", "C", 
-                            "O", "O", "O", "N", "N", "N", 
-                            "O", "O", "O", "N", "N", "N", 
-                            "CG", "CG", "CG", "CG", "CG", 
-                            "CG", "CG", "CA"};
+void CS2Backbone::init_xdist(const PDB &pdb) {
+  const string atomsP1[] = {"H", "H", "H", "C", "C", "C",
+                            "O", "O", "O", "N", "N", "N",
+                            "O", "O", "O", "N", "N", "N",
+                            "CG", "CG", "CG", "CG", "CG",
+                            "CG", "CG", "CA"
+                           };
 
-  const int resOffsetP1 [] = {0, 0, 0, -1, -1, -1, 
-                              0, 0, 0, 1, 1, 1, 
-                              -1, -1, -1, 0, 0, 0, 
-                              0, 0, 0, 0, 0, -1, 1, -1};
+  const int resOffsetP1 [] = {0, 0, 0, -1, -1, -1,
+                              0, 0, 0, 1, 1, 1,
+                              -1, -1, -1, 0, 0, 0,
+                              0, 0, 0, 0, 0, -1, 1, -1
+                             };
 
-  const string atomsP2[] = {"HA", "C", "CB", "HA", "C", "CB", 
-                            "HA", "N", "CB", "HA", "N", "CB", 
-                            "HA", "N", "CB", "HA", "N", "CB", 
-                            "HA", "N", "C", "C", "N", "CA", "CA", "CA"};
+  const string atomsP2[] = {"HA", "C", "CB", "HA", "C", "CB",
+                            "HA", "N", "CB", "HA", "N", "CB",
+                            "HA", "N", "CB", "HA", "N", "CB",
+                            "HA", "N", "C", "C", "N", "CA", "CA", "CA"
+                           };
 
   const int resOffsetP2 [] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, 0, 0, 0, -1, 1, 0, 0, 1};
 
-  vector<string> chains; 
+  vector<string> chains;
   pdb.getChainNames( chains );
   unsigned old_size=0;
-  for(unsigned s=0; s<atom.size(); s++){
-    AtomNumber astart, aend; 
+  for(unsigned s=0; s<atom.size(); s++) {
+    AtomNumber astart, aend;
     string errmsg;
     pdb.getAtomRange( chains[s], astart, aend, errmsg );
     unsigned atom_offset = astart.index();
 
-    for(unsigned a=1; a<atom[s].size()-1; a++){
+    for(unsigned a=1; a<atom[s].size()-1; a++) {
       vector<AtomNumber> atm_curr = pdb.getAtomsInResidue(atom[s][a].fd,chains[s]);
       vector<AtomNumber> atm_prev = pdb.getAtomsInResidue(atom[s][a].fd-1,chains[s]);
       vector<AtomNumber> atm_next = pdb.getAtomsInResidue(atom[s][a].fd+1,chains[s]);
 
-      for(unsigned q=0;q<db.get_numXtraDists()-1; q++){
+      for(unsigned q=0; q<db.get_numXtraDists()-1; q++) {
         vector<AtomNumber>::iterator at1, at1_end;
         vector<AtomNumber>::iterator at2, at2_end;
 
@@ -1449,37 +1454,37 @@ void CS2Backbone::init_xdist(const PDB &pdb){
         bool init_p2=false;
         AtomNumber p2;
 
-        if(resOffsetP1[q]== 0){ at1 = atm_curr.begin(); at1_end = atm_curr.end();}
-        if(resOffsetP1[q]==-1){ at1 = atm_prev.begin(); at1_end = atm_prev.end();}
-        if(resOffsetP1[q]==+1){ at1 = atm_next.begin(); at1_end = atm_next.end();}
-        while(at1!=at1_end){
+        if(resOffsetP1[q]== 0) { at1 = atm_curr.begin(); at1_end = atm_curr.end();}
+        if(resOffsetP1[q]==-1) { at1 = atm_prev.begin(); at1_end = atm_prev.end();}
+        if(resOffsetP1[q]==+1) { at1 = atm_next.begin(); at1_end = atm_next.end();}
+        while(at1!=at1_end) {
           AtomNumber aa = *at1;
           ++at1;
           string name = pdb.getAtomName(aa);
 
           xdist_name_map(name);
 
-          if(name==atomsP1[q]){
-    	    p1 = aa;
+          if(name==atomsP1[q]) {
+            p1 = aa;
             init_p1=true;
-    	    break;
+            break;
           }
         }
 
-        if(resOffsetP2[q]== 0){ at2 = atm_curr.begin(); at2_end = atm_curr.end();}
-        if(resOffsetP2[q]==-1){ at2 = atm_prev.begin(); at2_end = atm_prev.end();}
-        if(resOffsetP2[q]==+1){ at2 = atm_next.begin(); at2_end = atm_next.end();}
-        while(at2!=at2_end){
+        if(resOffsetP2[q]== 0) { at2 = atm_curr.begin(); at2_end = atm_curr.end();}
+        if(resOffsetP2[q]==-1) { at2 = atm_prev.begin(); at2_end = atm_prev.end();}
+        if(resOffsetP2[q]==+1) { at2 = atm_next.begin(); at2_end = atm_next.end();}
+        while(at2!=at2_end) {
           AtomNumber aa = *at2;
           ++at2;
           string name = pdb.getAtomName(aa);
 
           xdist_name_map(name);
 
-          if(name==atomsP2[q]){
-    	    p2 = aa;
+          if(name==atomsP2[q]) {
+            p2 = aa;
             init_p2=true;
-     	    break;
+            break;
           }
         }
         int add1 = -1;
@@ -1490,13 +1495,13 @@ void CS2Backbone::init_xdist(const PDB &pdb){
         atom[s][a].xd2.push_back(add2);
       }
     }
-    old_size += aend.index()+1; 
+    old_size += aend.index()+1;
   }
 }
 
-void CS2Backbone::init_types(const PDB &pdb){
+void CS2Backbone::init_types(const PDB &pdb) {
   vector<AtomNumber> aa = pdb.getAtomNumbers();
-  for(unsigned i=0;i<aa.size();i++){
+  for(unsigned i=0; i<aa.size(); i++) {
     unsigned frag = pdb.getResidueNumber(aa[i]);
     string fragName = pdb.getResidueName(aa[i]);
     string atom_name = pdb.getAtomName(aa[i]);
@@ -1504,14 +1509,14 @@ void CS2Backbone::init_types(const PDB &pdb){
     if(isdigit(atom_name[0])) atom_type = atom_name[1];
     res_num.push_back(frag);
     unsigned t = 0;
-    if (!isSP2(fragName, atom_name)){
+    if (!isSP2(fragName, atom_name)) {
       if (atom_type == 'C') t = D_C;
       else if (atom_type == 'O') t = D_O;
       else if (atom_type == 'H') t = D_H;
       else if (atom_type == 'N') t = D_N;
       else if (atom_type == 'S') t = D_S;
       else plumed_merror("CS2Backbone:init_type: unknown atom type!\n");
-    }else{
+    } else {
       if (atom_type == 'C') t = D_C2;
       else if (atom_type == 'O') t = D_O2;
       else if (atom_type == 'N') t = D_N2;
@@ -1521,24 +1526,24 @@ void CS2Backbone::init_types(const PDB &pdb){
   }
 }
 
-void CS2Backbone::init_rings(const PDB &pdb){
+void CS2Backbone::init_rings(const PDB &pdb) {
 
   const string pheTyr_n[] = {"CG","CD1","CE1","CZ","CE2","CD2"};
   const string trp1_n[]   = {"CD2","CE2","CZ2","CH2","CZ3","CE3"};
   const string trp2_n[]   = {"CG","CD1","NE1","CE2","CD2"};
   const string his_n[]    = {"CG","ND1","CD2","CE1","NE2"};
 
-  vector<string> chains; 
+  vector<string> chains;
   pdb.getChainNames( chains );
   vector<AtomNumber> allatoms = pdb.getAtomNumbers();
   unsigned old_size=0;
 
-  for(unsigned s=0; s<atom.size(); s++){
-    AtomNumber astart, aend; 
+  for(unsigned s=0; s<atom.size(); s++) {
+    AtomNumber astart, aend;
     string errmsg;
     pdb.getAtomRange( chains[s], astart, aend, errmsg );
     unsigned atom_offset = astart.index();
-    for(unsigned r=0; r<atom[s].size(); r++){
+    for(unsigned r=0; r<atom[s].size(); r++) {
       string frg = pdb.getResidueName(atom[s][r].fd);
       if(!((frg=="PHE")||(frg=="TYR")||(frg=="TRP")||
            (frg=="HIS")||(frg=="HIP")||(frg=="HID")||
@@ -1547,14 +1552,14 @@ void CS2Backbone::init_rings(const PDB &pdb){
 
       vector<AtomNumber> frg_atoms = pdb.getAtomsInResidue(atom[s][r].fd,chains[s]);
 
-      if(frg=="PHE"||frg=="TYR"){
+      if(frg=="PHE"||frg=="TYR") {
         RingInfo ri;
-        for(unsigned a=0;a<frg_atoms.size();a++){
+        for(unsigned a=0; a<frg_atoms.size(); a++) {
           unsigned atm = frg_atoms[a].index()-atom_offset+old_size;
-          for(unsigned aa=0;aa<6;aa++){
-            if(pdb.getAtomName(frg_atoms[a])==pheTyr_n[aa]){
-    	      ri.atom[aa] = atm;
-    	      break;
+          for(unsigned aa=0; aa<6; aa++) {
+            if(pdb.getAtomName(frg_atoms[a])==pheTyr_n[aa]) {
+              ri.atom[aa] = atm;
+              break;
             }
           }
         }
@@ -1563,13 +1568,13 @@ void CS2Backbone::init_rings(const PDB &pdb){
         if(frg=="TYR") ri.rtype = RingInfo::R_TYR;
         ringInfo.push_back(ri);
 
-      } else if(frg=="TRP"){
+      } else if(frg=="TRP") {
         //First ring
         RingInfo ri;
-        for(unsigned a=0;a<frg_atoms.size();a++){
+        for(unsigned a=0; a<frg_atoms.size(); a++) {
           unsigned atm = frg_atoms[a].index()-atom_offset+old_size;
-          for(unsigned aa=0;aa<6;aa++){
-            if(pdb.getAtomName(frg_atoms[a])==trp1_n[aa]){
+          for(unsigned aa=0; aa<6; aa++) {
+            if(pdb.getAtomName(frg_atoms[a])==trp1_n[aa]) {
               ri.atom[aa] = atm;
               break;
             }
@@ -1580,10 +1585,10 @@ void CS2Backbone::init_rings(const PDB &pdb){
         ringInfo.push_back(ri);
         //Second Ring
         RingInfo ri2;
-        for(unsigned a=0;a<frg_atoms.size();a++){
+        for(unsigned a=0; a<frg_atoms.size(); a++) {
           unsigned atm = frg_atoms[a].index()-atom_offset+old_size;
-          for(unsigned aa=0;aa<5;aa++){
-            if(pdb.getAtomName(frg_atoms[a])==trp2_n[aa]){
+          for(unsigned aa=0; aa<5; aa++) {
+            if(pdb.getAtomName(frg_atoms[a])==trp2_n[aa]) {
               ri2.atom[aa] = atm;
               break;
             }
@@ -1597,12 +1602,12 @@ void CS2Backbone::init_rings(const PDB &pdb){
                 (frg=="HIE")||(frg=="HSD")||(frg=="HSE")||
                 (frg=="HSP")) {//HIS case
         RingInfo ri;
-        for(unsigned a=0;a<frg_atoms.size();a++){
+        for(unsigned a=0; a<frg_atoms.size(); a++) {
           unsigned atm = frg_atoms[a].index()-atom_offset+old_size;
-          for(unsigned aa=0;aa<5;aa++){
-            if(pdb.getAtomName(frg_atoms[a])==his_n[aa]){
-    	      ri.atom[aa] = atm;
-    	      break;
+          for(unsigned aa=0; aa<5; aa++) {
+            if(pdb.getAtomName(frg_atoms[a])==his_n[aa]) {
+              ri.atom[aa] = atm;
+              break;
             }
           }
         }
@@ -1613,7 +1618,7 @@ void CS2Backbone::init_rings(const PDB &pdb){
         plumed_merror("Unkwown Ring Fragment");
       }
     }
-    old_size += aend.index()+1; 
+    old_size += aend.index()+1;
   }
 }
 
@@ -1654,16 +1659,16 @@ CS2Backbone::aa_t CS2Backbone::frag2enum(const string &aa) {
   return type;
 }
 
-vector<string> CS2Backbone::side_chain_atoms(const string &s){
+vector<string> CS2Backbone::side_chain_atoms(const string &s) {
   vector<string> sc;
 
-  if(s=="ALA"){
+  if(s=="ALA") {
     sc.push_back( "CB" );
     sc.push_back( "HB1" );
     sc.push_back( "HB2" );
     sc.push_back( "HB3" );
     return sc;
-  } else if(s=="ARG"){
+  } else if(s=="ARG") {
     sc.push_back( "CB" );
     sc.push_back( "CG" );
     sc.push_back( "CD" );
@@ -1691,7 +1696,7 @@ vector<string> CS2Backbone::side_chain_atoms(const string &s){
     sc.push_back( "1HH2" );
     sc.push_back( "2HH2" );
     return sc;
-  } else if(s=="ASN"){
+  } else if(s=="ASN") {
     sc.push_back( "CB" );
     sc.push_back( "CG" );
     sc.push_back( "OD1" );
@@ -1704,7 +1709,7 @@ vector<string> CS2Backbone::side_chain_atoms(const string &s){
     sc.push_back( "1HD2" );
     sc.push_back( "2HD2" );
     return sc;
-  } else if(s=="ASP"||s=="ASH"){
+  } else if(s=="ASP"||s=="ASH") {
     sc.push_back( "CB" );
     sc.push_back( "CG" );
     sc.push_back( "OD1" );
@@ -1713,7 +1718,7 @@ vector<string> CS2Backbone::side_chain_atoms(const string &s){
     sc.push_back( "HB2" );
     sc.push_back( "HB3" );
     return sc;
-  } else if(s=="CYS"||s=="CYM"){
+  } else if(s=="CYS"||s=="CYM") {
     sc.push_back( "CB" );
     sc.push_back( "SG" );
     sc.push_back( "HB1" );
@@ -1722,7 +1727,7 @@ vector<string> CS2Backbone::side_chain_atoms(const string &s){
     sc.push_back( "HG1" );
     sc.push_back( "HG" );
     return sc;
-  } else if(s=="GLN"){
+  } else if(s=="GLN") {
     sc.push_back( "CB" );
     sc.push_back( "CG" );
     sc.push_back( "CD" );
@@ -1739,7 +1744,7 @@ vector<string> CS2Backbone::side_chain_atoms(const string &s){
     sc.push_back( "1HE2" );
     sc.push_back( "2HE2" );
     return sc;
-  } else if(s=="GLU"||s=="GLH"){
+  } else if(s=="GLU"||s=="GLH") {
     sc.push_back( "CB" );
     sc.push_back( "CG" );
     sc.push_back( "CD" );
@@ -1752,10 +1757,10 @@ vector<string> CS2Backbone::side_chain_atoms(const string &s){
     sc.push_back( "HG2" );
     sc.push_back( "HG3" );
     return sc;
-  } else if(s=="GLY"){
+  } else if(s=="GLY") {
     sc.push_back( "HA2" );
     return sc;
-  } else if(s=="HIS"||s=="HSE"||s=="HIE"||s=="HSD"||s=="HID"||s=="HIP"||s=="HSP"){
+  } else if(s=="HIS"||s=="HSE"||s=="HIE"||s=="HSD"||s=="HID"||s=="HIP"||s=="HSP") {
     sc.push_back( "CB" );
     sc.push_back( "CG" );
     sc.push_back( "ND1" );
@@ -1770,7 +1775,7 @@ vector<string> CS2Backbone::side_chain_atoms(const string &s){
     sc.push_back( "HE1" );
     sc.push_back( "HE2" );
     return sc;
-  } else if(s=="ILE"){
+  } else if(s=="ILE") {
     sc.push_back( "CB" );
     sc.push_back( "CG1" );
     sc.push_back( "CG2" );
@@ -1790,7 +1795,7 @@ vector<string> CS2Backbone::side_chain_atoms(const string &s){
     sc.push_back( "HD2" );
     sc.push_back( "HD3" );
     return sc;
-  } else if(s=="LEU"){
+  } else if(s=="LEU") {
     sc.push_back( "CB" );
     sc.push_back( "CG" );
     sc.push_back( "CD1" );
@@ -1812,7 +1817,7 @@ vector<string> CS2Backbone::side_chain_atoms(const string &s){
     sc.push_back( "2HD2" );
     sc.push_back( "3HD2" );
     return sc;
-  } else if(s=="LYS"){
+  } else if(s=="LYS") {
     sc.push_back( "CB" );
     sc.push_back( "CG" );
     sc.push_back( "CD" );
@@ -1834,7 +1839,7 @@ vector<string> CS2Backbone::side_chain_atoms(const string &s){
     sc.push_back( "HZ2" );
     sc.push_back( "HZ3" );
     return sc;
-  } else if(s=="MET"){
+  } else if(s=="MET") {
     sc.push_back( "CB" );
     sc.push_back( "CG" );
     sc.push_back( "SD" );
@@ -1849,7 +1854,7 @@ vector<string> CS2Backbone::side_chain_atoms(const string &s){
     sc.push_back( "HE2" );
     sc.push_back( "HE3" );
     return sc;
-  } else if(s=="PHE"){
+  } else if(s=="PHE") {
     sc.push_back( "CB" );
     sc.push_back( "CG" );
     sc.push_back( "CD1" );
@@ -1868,7 +1873,7 @@ vector<string> CS2Backbone::side_chain_atoms(const string &s){
     sc.push_back( "HE3" );
     sc.push_back( "HZ" );
     return sc;
-  } else if(s=="PRO"){
+  } else if(s=="PRO") {
     sc.push_back( "CB" );
     sc.push_back( "CG" );
     sc.push_back( "CD" );
@@ -1882,7 +1887,7 @@ vector<string> CS2Backbone::side_chain_atoms(const string &s){
     sc.push_back( "HD2" );
     sc.push_back( "HD3" );
     return sc;
-  } else if(s=="SER"){
+  } else if(s=="SER") {
     sc.push_back( "CB" );
     sc.push_back( "OG" );
     sc.push_back( "HB1" );
@@ -1891,7 +1896,7 @@ vector<string> CS2Backbone::side_chain_atoms(const string &s){
     sc.push_back( "HG1" );
     sc.push_back( "HG" );
     return sc;
-  } else if(s=="THR"){
+  } else if(s=="THR") {
     sc.push_back( "CB" );
     sc.push_back( "OG1" );
     sc.push_back( "CG2" );
@@ -1904,7 +1909,7 @@ vector<string> CS2Backbone::side_chain_atoms(const string &s){
     sc.push_back( "2HG2" );
     sc.push_back( "3HG2" );
     return sc;
-  } else if(s=="TRP"){
+  } else if(s=="TRP") {
     sc.push_back( "CB" );
     sc.push_back( "CG" );
     sc.push_back( "CD1" );
@@ -1925,7 +1930,7 @@ vector<string> CS2Backbone::side_chain_atoms(const string &s){
     sc.push_back( "HZ3" );
     sc.push_back( "HH2" );
     return sc;
-  } else if(s=="TYR"){
+  } else if(s=="TYR") {
     sc.push_back( "CB" );
     sc.push_back( "CG" );
     sc.push_back( "CD1" );
@@ -1945,7 +1950,7 @@ vector<string> CS2Backbone::side_chain_atoms(const string &s){
     sc.push_back( "HE3" );
     sc.push_back( "HH" );
     return sc;
-  } else if(s=="VAL"){
+  } else if(s=="VAL") {
     sc.push_back( "CB" );
     sc.push_back( "CG1" );
     sc.push_back( "CG2" );
@@ -2023,7 +2028,7 @@ bool CS2Backbone::isSP2(const string & resType, const string & atomName) {
     else if (atomName == "CE1") sp2 = true;
     else if (atomName == "CE2") sp2 = true;
     else if (atomName == "CZ")  sp2 = true;
-    
+
   } else if (resType == "ASN") {
 
     if      (atomName == "CG")  sp2 = true;
@@ -2039,7 +2044,7 @@ bool CS2Backbone::isSP2(const string & resType, const string & atomName) {
   return sp2;
 }
 
-bool CS2Backbone::is_chi1_cx(const string & frg, const string & atm){
+bool CS2Backbone::is_chi1_cx(const string & frg, const string & atm) {
   if(atm=="CG")                                        return true;
   if((frg == "CYS")&&(atm =="SG"))                     return true;
   if(((frg == "ILE")||(frg == "VAL"))&&(atm == "CG1")) return true;
@@ -2049,52 +2054,52 @@ bool CS2Backbone::is_chi1_cx(const string & frg, const string & atm){
   return false;
 }
 
-unsigned CS2Backbone::frag_segment(const unsigned p){
+unsigned CS2Backbone::frag_segment(const unsigned p) {
   unsigned s = 0;
-  for(unsigned i=0;i<seg_last.size()-1;i++){
+  for(unsigned i=0; i<seg_last.size()-1; i++) {
     if(p>seg_last[i]) s  = i+1;
     else break;
   }
   return s;
 }
 
-unsigned CS2Backbone::frag_relitive_index(const unsigned p, const unsigned s){
+unsigned CS2Backbone::frag_relitive_index(const unsigned p, const unsigned s) {
   if(s==0) return p;
   return p-seg_last[s-1];
 }
 
-void CS2Backbone::debug_report(){
+void CS2Backbone::debug_report() {
   printf("\t CS2Backbone Initialization report: \n");
   printf("\t -------------------------------\n");
   printf("\t Number of segments: %u\n", static_cast<unsigned>(atom.size()));
   printf("\t Segments size:      ");
-  for(unsigned i=0;i<atom.size();i++) printf("%u ", static_cast<unsigned>(atom[i].size())); printf("\n");
+  for(unsigned i=0; i<atom.size(); i++) printf("%u ", static_cast<unsigned>(atom[i].size())); printf("\n");
   printf("\t%8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s \n",
-          "Seg","N","AA","Prev","Curr","Next","SC","XD1","XD2","Phi","Psi","Chi1");
-  for(unsigned i=0;i<atom.size();i++){
-    for(unsigned j=0;j<atom[i].size();j++){
+         "Seg","N","AA","Prev","Curr","Next","SC","XD1","XD2","Phi","Psi","Chi1");
+  for(unsigned i=0; i<atom.size(); i++) {
+    for(unsigned j=0; j<atom[i].size(); j++) {
       printf("\t%8u %8u %8s %8u %8u %8u %8u %8u %8u %8u %8u %8u \n",
-    	  i+1, j+1,
-    	  atom[i][j].res_name.c_str(),
-    	  (unsigned)atom[i][j].prev.size(),
-    	  (unsigned)atom[i][j].curr.size(),
-    	  (unsigned)atom[i][j].next.size(),
-    	  (unsigned)atom[i][j].side_chain.size(),
-    	  (unsigned)atom[i][j].xd1.size(),
-    	  (unsigned)atom[i][j].xd2.size(),
-    	  (unsigned)atom[i][j].phi.size(),
-    	  (unsigned)atom[i][j].psi.size(),
-    	  (unsigned)atom[i][j].chi1.size());
+             i+1, j+1,
+             atom[i][j].res_name.c_str(),
+             (unsigned)atom[i][j].prev.size(),
+             (unsigned)atom[i][j].curr.size(),
+             (unsigned)atom[i][j].next.size(),
+             (unsigned)atom[i][j].side_chain.size(),
+             (unsigned)atom[i][j].xd1.size(),
+             (unsigned)atom[i][j].xd2.size(),
+             (unsigned)atom[i][j].phi.size(),
+             (unsigned)atom[i][j].psi.size(),
+             (unsigned)atom[i][j].chi1.size());
 
-      for(unsigned k=0;k<atom[i][j].prev.size();k++) printf("%8i ", atom[i][j].prev[k]); printf("\n");
-      for(unsigned k=0;k<atom[i][j].curr.size();k++) printf("%8i ", atom[i][j].curr[k]); printf("\n");
-      for(unsigned k=0;k<atom[i][j].next.size();k++) printf("%8i ", atom[i][j].next[k]); printf("\n");
-      for(unsigned k=0;k<atom[i][j].side_chain.size();k++) printf("%8i ", atom[i][j].side_chain[k]); printf("\n");
-      for(unsigned k=0;k<atom[i][j].xd1.size();k++) printf("%8i ", atom[i][j].xd1[k]); printf("\n");
-      for(unsigned k=0;k<atom[i][j].xd2.size();k++) printf("%8i ", atom[i][j].xd2[k]); printf("\n");
-      for(unsigned k=0;k<atom[i][j].phi.size();k++) printf("%8i ", atom[i][j].phi[k]); printf("\n");
-      for(unsigned k=0;k<atom[i][j].psi.size();k++) printf("%8i ", atom[i][j].psi[k]); printf("\n");
-      for(unsigned k=0;k<atom[i][j].chi1.size();k++) printf("%8i ", atom[i][j].chi1[k]); printf("\n");
+      for(unsigned k=0; k<atom[i][j].prev.size(); k++) printf("%8i ", atom[i][j].prev[k]); printf("\n");
+      for(unsigned k=0; k<atom[i][j].curr.size(); k++) printf("%8i ", atom[i][j].curr[k]); printf("\n");
+      for(unsigned k=0; k<atom[i][j].next.size(); k++) printf("%8i ", atom[i][j].next[k]); printf("\n");
+      for(unsigned k=0; k<atom[i][j].side_chain.size(); k++) printf("%8i ", atom[i][j].side_chain[k]); printf("\n");
+      for(unsigned k=0; k<atom[i][j].xd1.size(); k++) printf("%8i ", atom[i][j].xd1[k]); printf("\n");
+      for(unsigned k=0; k<atom[i][j].xd2.size(); k++) printf("%8i ", atom[i][j].xd2[k]); printf("\n");
+      for(unsigned k=0; k<atom[i][j].phi.size(); k++) printf("%8i ", atom[i][j].phi[k]); printf("\n");
+      for(unsigned k=0; k<atom[i][j].psi.size(); k++) printf("%8i ", atom[i][j].psi[k]); printf("\n");
+      for(unsigned k=0; k<atom[i][j].chi1.size(); k++) printf("%8i ", atom[i][j].chi1[k]); printf("\n");
 
     }
   }
@@ -2103,16 +2108,16 @@ void CS2Backbone::debug_report(){
   printf("\t ------ \n");
   printf("\t Number of rings: %u\n", static_cast<unsigned>(ringInfo.size()));
   printf("\t%8s %8s %8s %8s\n", "Num","Type","RType","N.atoms");
-  for(unsigned i=0;i<ringInfo.size();i++){
+  for(unsigned i=0; i<ringInfo.size(); i++) {
     printf("\t%8u %8u %8u \n",i+1,ringInfo[i].rtype,ringInfo[i].numAtoms);
-    for(unsigned j=0;j<ringInfo[i].numAtoms;j++) printf("%8u ", ringInfo[i].atom[j]); printf("\n");
-  } 
+    for(unsigned j=0; j<ringInfo[i].numAtoms; j++) printf("%8u ", ringInfo[i].atom[j]); printf("\n");
+  }
 }
 
-void CS2Backbone::xdist_name_map(string & name){
+void CS2Backbone::xdist_name_map(string & name) {
   if((name == "OT1")||(name == "OC1")) name = "O";
   else if ((name == "HN") || (name == "HT1") || (name == "H1")) name = "H";
-  else if ((name == "CG1")|| (name == "OG")|| 
+  else if ((name == "CG1")|| (name == "OG")||
            (name == "SG") || (name == "OG1")) name = "CG";
   else if ((name == "HA1"))                   name = "HA";
 }

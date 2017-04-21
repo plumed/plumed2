@@ -28,8 +28,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace colvar{
+namespace PLMD {
+namespace colvar {
 
 //+PLUMEDOC COLVAR FRET
 /*
@@ -48,7 +48,7 @@ boundary conditions. This behavior can be changed with the NOPBC flag.
 
 \par Examples
 
-The following input tells plumed to print the FRET efficiencies 
+The following input tells plumed to print the FRET efficiencies
 calculated as a function of the distance between atoms 3 and 5 and
 the distance between atoms 2 and 4.
 \verbatim
@@ -73,7 +73,7 @@ to be sure that if the distance is larger than half the simulation
 box the distance is compute properly. Also notice that, since many MD
 codes break molecules across cell boundary, it might be necessary to
 use the \ref WHOLEMOLECULES keyword (also notice that it should be
-_before_ FRET). 
+_before_ FRET).
 Just be sure that the ordered list provide to WHOLEMOLECULES has the following
 properties:
 - Consecutive atoms should be closer than half-cell throughout the entire simulation.
@@ -81,7 +81,7 @@ properties:
 
 */
 //+ENDPLUMEDOC
-   
+
 class FretEfficiency : public Colvar {
   bool pbc;
   double R0_;
@@ -95,21 +95,21 @@ public:
 
 PLUMED_REGISTER_ACTION(FretEfficiency,"FRET")
 
-void FretEfficiency::registerKeywords( Keywords& keys ){
+void FretEfficiency::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   keys.add("atoms","ATOMS","the pair of atom that we are calculating the distance between");
   keys.add("compulsory","R0","The value of the Forster radius.");
 }
 
 FretEfficiency::FretEfficiency(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao),
-pbc(true)
+  PLUMED_COLVAR_INIT(ao),
+  pbc(true)
 {
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   if(atoms.size()!=2)
     error("Number of specified atoms should be 2");
-  parse("R0",R0_);  
+  parse("R0",R0_);
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
@@ -129,14 +129,14 @@ pbc(true)
 
 
 // calculator
-void FretEfficiency::calculate(){
+void FretEfficiency::calculate() {
 
   if(pbc) makeWhole();
 
   Vector distance=delta(getPosition(0),getPosition(1));
   const double dist_mod=distance.modulo();
   const double inv_dist_mod=1.0/dist_mod;
-  
+
   const double ratiosix=pow(dist_mod/R0_,6);
   const double fret_eff = 1.0/(1.0+ratiosix);
 

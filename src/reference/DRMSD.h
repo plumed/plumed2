@@ -35,12 +35,12 @@ private:
 protected:
   bool bounds_were_set;
   double lower, upper;
-  std::map< std::pair <unsigned,unsigned> , double> targets;
+  std::map< std::pair <unsigned,unsigned>, double> targets;
 /// Read in NOPBC, LOWER_CUTOFF and UPPER_CUTOFF
   void readBounds();
 public:
   explicit DRMSD( const ReferenceConfigurationOptions& ro );
-/// This sets upper and lower bounds on distances to be used in DRMSD 
+/// This sets upper and lower bounds on distances to be used in DRMSD
   void setBoundsOnDistances( bool dopbc, double lbound=0.0, double ubound=std::numeric_limits<double>::max( ) );
 /// Check that similar comparisons are being performed - perhaps this is needed ask Davide? GAT
 //  void check( ReferenceConfiguration* , ReferenceConfiguration* );

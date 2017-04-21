@@ -25,7 +25,7 @@
 #include <string>
 #include <stdexcept>
 
-namespace PLMD{
+namespace PLMD {
 
 /**
 \ingroup TOOLBOX
@@ -45,7 +45,7 @@ or better add an error message to that
   if(something_bad) throw Exception("describe the error here);
 \endverbatim
 
-Even better, you can use the predefined macros 
+Even better, you can use the predefined macros
 plumed_error(), plumed_assert(), plumed_merror() and plumed_massert(),
 which add information about the exact location of the error in the file (filename, line
 and, for g++, function name). Macros ending in "error" unconditionally throw
@@ -108,9 +108,9 @@ public:
 /// With message plus file, line and function (meant to be used through a preprocessor macro)
   Exception(const std::string&,const std::string&,unsigned,const std::string&);
 /// Returns the error message
-  virtual const char* what() const throw(){return msg.c_str();}
+  virtual const char* what() const throw() {return msg.c_str();}
 /// Destructor should be defined and should not throw other exceptions
-  virtual ~Exception() throw(){}
+  virtual ~Exception() throw() {}
 };
 
 // With GNU compiler, we can use __PRETTY_FUNCTION__ to get the function name
@@ -132,7 +132,7 @@ public:
 #define plumed_massert(test,msg) if(!(test)) throw PLMD::Exception("assertion failed " #test ", " msg,__FILE__,__LINE__,__PRETTY_FUNCTION__)
 
 #ifdef NDEBUG
-#define plumed_dbg_assert(test) 
+#define plumed_dbg_assert(test)
 #define plumed_dbg_massert(test,msg)
 #else
 /// \relates PLMD::Exception

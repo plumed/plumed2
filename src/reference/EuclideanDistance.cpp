@@ -27,15 +27,15 @@ namespace PLMD {
 class EuclideanDistance : public ArgumentOnlyDistance {
 public:
   explicit EuclideanDistance( const ReferenceConfigurationOptions& ro );
-  bool pcaIsEnabledForThisReference(){ return true; }
-  void setupPCAStorage( ReferenceValuePack& mypack ){ mypack.switchOnPCAOption(); }
+  bool pcaIsEnabledForThisReference() { return true; }
+  void setupPCAStorage( ReferenceValuePack& mypack ) { mypack.switchOnPCAOption(); }
 };
 
 PLUMED_REGISTER_METRIC(EuclideanDistance,"EUCLIDEAN")
 
 EuclideanDistance::EuclideanDistance( const ReferenceConfigurationOptions& ro ):
-ReferenceConfiguration(ro),
-ArgumentOnlyDistance(ro)
+  ReferenceConfiguration(ro),
+  ArgumentOnlyDistance(ro)
 {
 }
 

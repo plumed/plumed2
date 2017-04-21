@@ -26,41 +26,41 @@
 namespace PLMD {
 namespace gridtools {
 
-void ActionWithGrid::registerKeywords( Keywords& keys ){
+void ActionWithGrid::registerKeywords( Keywords& keys ) {
   vesselbase::ActionWithAveraging::registerKeywords( keys );
   keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
   keys.add("compulsory","KERNEL","gaussian","the kernel function you are using.  More details on  the kernels available "
-                                            "in plumed plumed can be found in \\ref kernelfunctions.");
+           "in plumed plumed can be found in \\ref kernelfunctions.");
 }
 
 ActionWithGrid::ActionWithGrid( const ActionOptions& ao):
-Action(ao),
-ActionWithAveraging(ao),
-mygrid(NULL)
+  Action(ao),
+  ActionWithAveraging(ao),
+  mygrid(NULL)
 {
 }
 
-void ActionWithGrid::createGrid( const std::string& type, const std::string& inputstr ){
+void ActionWithGrid::createGrid( const std::string& type, const std::string& inputstr ) {
   // Start creating the input for the grid
-  std::string vstring = inputstr; 
-  if( keywords.exists("KERNEL") ){
-      std::string kstring; parse("KERNEL",kstring);
-      if( kstring=="DISCRETE" ) vstring += " KERNEL=" + kstring;
-      else vstring += " KERNEL=" + kstring + " " + getKeyword("BANDWIDTH");
+  std::string vstring = inputstr;
+  if( keywords.exists("KERNEL") ) {
+    std::string kstring; parse("KERNEL",kstring);
+    if( kstring=="DISCRETE" ) vstring += " KERNEL=" + kstring;
+    else vstring += " KERNEL=" + kstring + " " + getKeyword("BANDWIDTH");
   }
 
   vesselbase::VesselOptions da("mygrid","",-1,vstring,this);
   Keywords keys; gridtools::AverageOnGrid::registerKeywords( keys );
   vesselbase::VesselOptions dar( da, keys );
-  if( type=="histogram" ){
-     mygrid = new HistogramOnGrid(dar); 
-  } else if( type=="average" ){
-     mygrid = new AverageOnGrid(dar); 
-  } else if( type=="grid" ){
-     mygrid = new GridVessel(dar); 
+  if( type=="histogram" ) {
+    mygrid = new HistogramOnGrid(dar);
+  } else if( type=="average" ) {
+    mygrid = new AverageOnGrid(dar);
+  } else if( type=="grid" ) {
+    mygrid = new GridVessel(dar);
   } else {
-     plumed_merror("no way to create grid of type " + type );
-  } 
+    plumed_merror("no way to create grid of type " + type );
+  }
 }
 
 void ActionWithGrid::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {

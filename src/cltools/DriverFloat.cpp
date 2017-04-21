@@ -23,7 +23,7 @@
 #include "Driver.cpp"
 
 namespace PLMD {
-namespace cltools{
+namespace cltools {
 
 // We instantiate here the template version of Driver so as
 // to accelerate parallel compilation.
@@ -32,7 +32,7 @@ typedef Driver<float> DriverFloat;
 
 /// Specialized version
 template<>
-string Driver<float>::description()const{ return "analyze trajectories with plumed (single precision version)"; }
+string Driver<float>::description()const { return "analyze trajectories with plumed (single precision version)"; }
 
 
 PLUMED_REGISTER_CLTOOL(DriverFloat,"driver-float")

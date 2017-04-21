@@ -51,8 +51,8 @@ public:
 ///
   bool pcaIsEnabledForThisReference();
 //  Vector getAtomicDisplacement( const unsigned& iatom );
-  double projectAtomicDisplacementOnVector( const unsigned& iv, const Matrix<Vector>& vecs, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const ; 
-  void setupPCAStorage( ReferenceValuePack& mypack ); 
+  double projectAtomicDisplacementOnVector( const unsigned& iv, const Matrix<Vector>& vecs, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const ;
+  void setupPCAStorage( ReferenceValuePack& mypack );
 };
 
 }

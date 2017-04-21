@@ -31,14 +31,14 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace multicolvar{
+namespace PLMD {
+namespace multicolvar {
 
 //+PLUMEDOC MCOLVAR INPLANEDISTANCES
 /*
 Calculate distances in the plane perpendicular to an axis
 
-Each quantity calculated in this CV uses the positions of two atoms, this indices of which are specified using the VECTORSTART and VECTOREND keywords, to specify the 
+Each quantity calculated in this CV uses the positions of two atoms, this indices of which are specified using the VECTORSTART and VECTOREND keywords, to specify the
 orientation of a vector, \f$\mathbf{n}\f$.  The perpendicular distance between this vector and the position of some third atom is then computed using:
 \f[
  x_j = |\mathbf{r}_{j}| \sin (\theta_j)
@@ -49,8 +49,8 @@ Keywords such as MORE_THAN and LESS_THAN can then be used to calculate the numbe
 
 \par Examples
 
-The following input can be used to calculate the number of atoms that have indices greater than 3 and less than 101 that 
-are within a cylinder with a radius of 0.3 nm that has its long axis aligned with the vector connecting atoms 1 and 2. 
+The following input can be used to calculate the number of atoms that have indices greater than 3 and less than 101 that
+are within a cylinder with a radius of 0.3 nm that has its long axis aligned with the vector connecting atoms 1 and 2.
 
 \verbatim
 d1: INPLANEDISTANCES VECTORSTART=1 VECTOREND=2 GROUP=3-100 LESS_THAN={RATIONAL D_0=0.2 R_0=0.1}
@@ -66,16 +66,16 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit InPlaneDistances(const ActionOptions&);
 // active methods:
-  virtual double compute(const unsigned& tindex, AtomValuePack& myatoms ) const ; 
-  bool isPeriodic(){ return false; }
+  virtual double compute(const unsigned& tindex, AtomValuePack& myatoms ) const ;
+  bool isPeriodic() { return false; }
 };
 
 PLUMED_REGISTER_ACTION(InPlaneDistances,"INPLANEDISTANCES")
 
-void InPlaneDistances::registerKeywords( Keywords& keys ){
+void InPlaneDistances::registerKeywords( Keywords& keys ) {
   MultiColvar::registerKeywords( keys );
   keys.use("ALT_MIN"); keys.use("LOWEST"); keys.use("HIGHEST");
-  keys.use("MEAN"); keys.use("MIN"); keys.use("MAX"); keys.use("LESS_THAN"); 
+  keys.use("MEAN"); keys.use("MIN"); keys.use("MAX"); keys.use("LESS_THAN");
   keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
   keys.add("atoms","VECTORSTART","The first atom position that is used to define the normal to the plane of interest");
   keys.add("atoms","VECTOREND","The second atom position that is used to defin the normal to the plane of interest");
@@ -83,7 +83,7 @@ void InPlaneDistances::registerKeywords( Keywords& keys ){
 }
 
 InPlaneDistances::InPlaneDistances(const ActionOptions&ao):
-PLUMED_MULTICOLVAR_INIT(ao)
+  PLUMED_MULTICOLVAR_INIT(ao)
 {
   // Read in the atoms
   std::vector<AtomNumber> all_atoms;
@@ -97,32 +97,32 @@ PLUMED_MULTICOLVAR_INIT(ao)
   // And check everything has been read in correctly
   checkRead();
 
- // Now check if we can use link cells
+// Now check if we can use link cells
   bool use_link=false; double rcut;
-  if( getNumberOfVessels()>0 ){
-     vesselbase::LessThan* lt=dynamic_cast<vesselbase::LessThan*>( getPntrToVessel(0) );
-     if( lt ){
-         use_link=true; rcut=lt->getCutoff();
-     } else {
-         vesselbase::Between* bt=dynamic_cast<vesselbase::Between*>( getPntrToVessel(0) );
-         if( bt ) use_link=true; rcut=bt->getCutoff();
-     }
-     if( use_link ){
-         for(unsigned i=1;i<getNumberOfVessels();++i){
-            vesselbase::LessThan* lt2=dynamic_cast<vesselbase::LessThan*>( getPntrToVessel(i) );
-            vesselbase::Between* bt=dynamic_cast<vesselbase::Between*>( getPntrToVessel(i) );
-            if( lt2 ){
-                double tcut=lt2->getCutoff();
-                if( tcut>rcut ) rcut=tcut;
-            } else if( bt ){
-                double tcut=bt->getCutoff();
-                if( tcut>rcut ) rcut=tcut;
-            } else {
-               use_link=false;
-            }
-         }
-     }
-     if( use_link ) setLinkCellCutoff( rcut );
+  if( getNumberOfVessels()>0 ) {
+    vesselbase::LessThan* lt=dynamic_cast<vesselbase::LessThan*>( getPntrToVessel(0) );
+    if( lt ) {
+      use_link=true; rcut=lt->getCutoff();
+    } else {
+      vesselbase::Between* bt=dynamic_cast<vesselbase::Between*>( getPntrToVessel(0) );
+      if( bt ) use_link=true; rcut=bt->getCutoff();
+    }
+    if( use_link ) {
+      for(unsigned i=1; i<getNumberOfVessels(); ++i) {
+        vesselbase::LessThan* lt2=dynamic_cast<vesselbase::LessThan*>( getPntrToVessel(i) );
+        vesselbase::Between* bt=dynamic_cast<vesselbase::Between*>( getPntrToVessel(i) );
+        if( lt2 ) {
+          double tcut=lt2->getCutoff();
+          if( tcut>rcut ) rcut=tcut;
+        } else if( bt ) {
+          double tcut=bt->getCutoff();
+          if( tcut>rcut ) rcut=tcut;
+        } else {
+          use_link=false;
+        }
+      }
+    }
+    if( use_link ) setLinkCellCutoff( rcut );
   }
 }
 
@@ -130,7 +130,7 @@ double InPlaneDistances::compute( const unsigned& tindex, AtomValuePack& myatoms
   Vector normal=getSeparation( myatoms.getPosition(1), myatoms.getPosition(2) );
   Vector dir=getSeparation( myatoms.getPosition(1), myatoms.getPosition(0) );
   PLMD::Angle a; Vector ddij, ddik; double angle=a.compute(normal,dir,ddij,ddik);
-  double sangle=sin(angle), cangle=cos(angle); 
+  double sangle=sin(angle), cangle=cos(angle);
   double dd=dir.modulo(), invdd=1.0/dd, val=dd*sangle;
 
   addAtomDerivatives( 1, 0, dd*cangle*ddik + sangle*invdd*dir, myatoms );

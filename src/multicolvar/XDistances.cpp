@@ -27,20 +27,20 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace multicolvar{
+namespace PLMD {
+namespace multicolvar {
 
 //+PLUMEDOC MCOLVAR XDISTANCES
 /*
-Calculate the x components of the vectors connecting one or many pairs of atoms.  
+Calculate the x components of the vectors connecting one or many pairs of atoms.
 You can then calculate functions of the distribution of
-values such as the minimum, the number less than a certain quantity and so on. 
+values such as the minimum, the number less than a certain quantity and so on.
 
 \par Examples
 
-The following input tells plumed to calculate the x-component of the vector connecting atom 3 to atom 5 and 
-the x-component of the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then 
-printed 
+The following input tells plumed to calculate the x-component of the vector connecting atom 3 to atom 5 and
+the x-component of the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then
+printed
 \verbatim
 XDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
 PRINT ARG=d1.min
@@ -48,8 +48,8 @@ PRINT ARG=d1.min
 (See also \ref PRINT).
 
 
-The following input tells plumed to calculate the x-component of the vector connecting atom 3 to atom 5 and 
-the x-component of the vector connecting atom 1 to atom 2.  The number of values that are 
+The following input tells plumed to calculate the x-component of the vector connecting atom 3 to atom 5 and
+the x-component of the vector connecting atom 1 to atom 2.  The number of values that are
 less than 0.1nm is then printed to a file.
 \verbatim
 XDISTANCES ATOMS1=3,5 ATOMS2=1,2 LABEL=d1 LESS_THAN={RATIONAL R_0=0.1}
@@ -57,8 +57,8 @@ PRINT ARG=d1.lt0.1
 \endverbatim
 (See also \ref PRINT \ref switchingfunction).
 
-The following input tells plumed to calculate the x-components of all the distinct vectors that can be created 
-between atoms 1, 2 and 3 (i.e. the vectors between atoms 1 and 2, atoms 1 and 3 and atoms 2 and 3).  
+The following input tells plumed to calculate the x-components of all the distinct vectors that can be created
+between atoms 1, 2 and 3 (i.e. the vectors between atoms 1 and 2, atoms 1 and 3 and atoms 2 and 3).
 The average of these quantities is then calculated.
 \verbatim
 XDISTANCES GROUP=1-3 AVERAGE LABEL=d1
@@ -67,11 +67,11 @@ PRINT ARG=d1.average
 (See also \ref PRINT)
 
 The following input tells plumed to calculate all the vectors connecting the the atoms in GROUPA to the atoms in GROUPB.
-In other words the vector between atoms 1 and 2 and the vector between atoms 1 and 3.  The number of values 
+In other words the vector between atoms 1 and 2 and the vector between atoms 1 and 3.  The number of values
 more than 0.1 is then printed to a file.
 \verbatim
 XDISTANCES GROUPA=1 GROUPB=2,3 MORE_THAN={RATIONAL R_0=0.1}
-PRINT ARG=d1.gt0.1 
+PRINT ARG=d1.gt0.1
 \endverbatim
 (See also \ref PRINT \ref switchingfunction)
 */
@@ -79,15 +79,15 @@ PRINT ARG=d1.gt0.1
 
 //+PLUMEDOC MCOLVAR YDISTANCES
 /*
-Calculate the y components of the vectors connecting one or many pairs of atoms.  
+Calculate the y components of the vectors connecting one or many pairs of atoms.
 You can then calculate functions of the distribution of
 values such as the minimum, the number less than a certain quantity and so on.
 
 \par Examples
 
-The following input tells plumed to calculate the y-component of the vector connecting atom 3 to atom 5 and 
-the y-component of the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then 
-printed 
+The following input tells plumed to calculate the y-component of the vector connecting atom 3 to atom 5 and
+the y-component of the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then
+printed
 \verbatim
 YDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
 PRINT ARG=d1.min
@@ -95,8 +95,8 @@ PRINT ARG=d1.min
 (See also \ref PRINT).
 
 
-The following input tells plumed to calculate the y-component of the vector connecting atom 3 to atom 5 and 
-the y-component of the vector connecting atom 1 to atom 2.  The number of values that are 
+The following input tells plumed to calculate the y-component of the vector connecting atom 3 to atom 5 and
+the y-component of the vector connecting atom 1 to atom 2.  The number of values that are
 less than 0.1nm is then printed to a file.
 \verbatim
 YDISTANCES ATOMS1=3,5 ATOMS2=1,2 LABEL=d1 LESS_THAN={RATIONAL R_0=0.1}
@@ -104,8 +104,8 @@ PRINT ARG=d1.lt0.1
 \endverbatim
 (See also \ref PRINT \ref switchingfunction).
 
-The following input tells plumed to calculate the y-components of all the distinct vectors that can be created 
-between atoms 1, 2 and 3 (i.e. the vectors between atoms 1 and 2, atoms 1 and 3 and atoms 2 and 3).  
+The following input tells plumed to calculate the y-components of all the distinct vectors that can be created
+between atoms 1, 2 and 3 (i.e. the vectors between atoms 1 and 2, atoms 1 and 3 and atoms 2 and 3).
 The average of these quantities is then calculated.
 \verbatim
 YDISTANCES GROUP=1-3 AVERAGE LABEL=d1
@@ -114,11 +114,11 @@ PRINT ARG=d1.average
 (See also \ref PRINT)
 
 The following input tells plumed to calculate all the vectors connecting the the atoms in GROUPA to the atoms in GROUPB.
-In other words the vector between atoms 1 and 2 and the vector between atoms 1 and 3.  The number of values 
+In other words the vector between atoms 1 and 2 and the vector between atoms 1 and 3.  The number of values
 more than 0.1 is then printed to a file.
 \verbatim
 YDISTANCES GROUPA=1 GROUPB=2,3 MORE_THAN={RATIONAL R_0=0.1}
-PRINT ARG=d1.gt0.1 
+PRINT ARG=d1.gt0.1
 \endverbatim
 (See also \ref PRINT \ref switchingfunction)
 
@@ -127,15 +127,15 @@ PRINT ARG=d1.gt0.1
 
 //+PLUMEDOC MCOLVAR ZDISTANCES
 /*
-Calculate the z components of the vectors connecting one or many pairs of atoms.  
+Calculate the z components of the vectors connecting one or many pairs of atoms.
 You can then calculate functions of the distribution of
 values such as the minimum, the number less than a certain quantity and so on.
 
 \par Examples
 
-The following input tells plumed to calculate the z-component of the vector connecting atom 3 to atom 5 and 
-the z-component of the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then 
-printed 
+The following input tells plumed to calculate the z-component of the vector connecting atom 3 to atom 5 and
+the z-component of the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then
+printed
 \verbatim
 ZDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
 PRINT ARG=d1.min
@@ -143,8 +143,8 @@ PRINT ARG=d1.min
 (See also \ref PRINT).
 
 
-The following input tells plumed to calculate the z-component of the vector connecting atom 3 to atom 5 and 
-the z-component of the vector connecting atom 1 to atom 2.  The number of values that are 
+The following input tells plumed to calculate the z-component of the vector connecting atom 3 to atom 5 and
+the z-component of the vector connecting atom 1 to atom 2.  The number of values that are
 less than 0.1nm is then printed to a file.
 \verbatim
 ZDISTANCES ATOMS1=3,5 ATOMS2=1,2 LABEL=d1 LESS_THAN={RATIONAL R_0=0.1}
@@ -152,8 +152,8 @@ PRINT ARG=d1.lt0.1
 \endverbatim
 (See also \ref PRINT \ref switchingfunction).
 
-The following input tells plumed to calculate the z-components of all the distinct vectors that can be created 
-between atoms 1, 2 and 3 (i.e. the vectors between atoms 1 and 2, atoms 1 and 3 and atoms 2 and 3).  
+The following input tells plumed to calculate the z-components of all the distinct vectors that can be created
+between atoms 1, 2 and 3 (i.e. the vectors between atoms 1 and 2, atoms 1 and 3 and atoms 2 and 3).
 The average of these quantities is then calculated.
 \verbatim
 ZDISTANCES GROUP=1-3 AVERAGE LABEL=d1
@@ -162,11 +162,11 @@ PRINT ARG=d1.average
 (See also \ref PRINT)
 
 The following input tells plumed to calculate all the vectors connecting the the atoms in GROUPA to the atoms in GROUPB.
-In other words the vector between atoms 1 and 2 and the vector between atoms 1 and 3.  The number of values 
+In other words the vector between atoms 1 and 2 and the vector between atoms 1 and 3.  The number of values
 more than 0.1 is then printed to a file.
 \verbatim
 ZDISTANCES GROUPA=1 GROUPB=2,3 MORE_THAN={RATIONAL R_0=0.1}
-PRINT ARG=d1.gt0.1 
+PRINT ARG=d1.gt0.1
 \endverbatim
 (See also \ref PRINT \ref switchingfunction)
 
@@ -183,28 +183,28 @@ public:
 // active methods:
   virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
 /// Returns the number of coordinates of the field
-  bool isPeriodic(){ return false; }
+  bool isPeriodic() { return false; }
 };
 
 PLUMED_REGISTER_ACTION(XDistances,"XDISTANCES")
 PLUMED_REGISTER_ACTION(XDistances,"YDISTANCES")
 PLUMED_REGISTER_ACTION(XDistances,"ZDISTANCES")
 
-void XDistances::registerKeywords( Keywords& keys ){
+void XDistances::registerKeywords( Keywords& keys ) {
   MultiColvar::registerKeywords( keys );
-  keys.use("ATOMS");  keys.use("MAX"); keys.use("ALT_MIN"); 
+  keys.use("ATOMS");  keys.use("MAX"); keys.use("ALT_MIN");
   keys.use("MEAN"); keys.use("MIN"); keys.use("LESS_THAN");
-  keys.use("LOWEST"); keys.use("HIGHEST"); 
+  keys.use("LOWEST"); keys.use("HIGHEST");
   keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
   keys.add("atoms-1","GROUP","Calculate the distance between each distinct pair of atoms in the group");
   keys.add("atoms-2","GROUPA","Calculate the distances between all the atoms in GROUPA and all "
-                              "the atoms in GROUPB. This must be used in conjuction with GROUPB.");
+           "the atoms in GROUPB. This must be used in conjuction with GROUPB.");
   keys.add("atoms-2","GROUPB","Calculate the distances between all the atoms in GROUPA and all the atoms "
-                              "in GROUPB. This must be used in conjuction with GROUPA.");
+           "in GROUPB. This must be used in conjuction with GROUPA.");
 }
 
 XDistances::XDistances(const ActionOptions&ao):
-PLUMED_MULTICOLVAR_INIT(ao)
+  PLUMED_MULTICOLVAR_INIT(ao)
 {
   if( getName().find("X")!=std::string::npos) myc=0;
   else if( getName().find("Y")!=std::string::npos) myc=1;
@@ -220,16 +220,16 @@ PLUMED_MULTICOLVAR_INIT(ao)
 }
 
 double XDistances::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
-   Vector distance; 
-   distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
-   const double value=distance[myc];
+  Vector distance;
+  distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
+  const double value=distance[myc];
 
-   Vector myvec; myvec.zero(); 
-   // And finish the calculation
-   myvec[myc]=+1; addAtomDerivatives( 1, 1, myvec, myatoms );
-   myvec[myc]=-1; addAtomDerivatives( 1, 0, myvec, myatoms );
-   myatoms.addBoxDerivatives( 1, Tensor(distance,myvec) );
-   return value;
+  Vector myvec; myvec.zero();
+  // And finish the calculation
+  myvec[myc]=+1; addAtomDerivatives( 1, 1, myvec, myatoms );
+  myvec[myc]=-1; addAtomDerivatives( 1, 0, myvec, myatoms );
+  myatoms.addBoxDerivatives( 1, Tensor(distance,myvec) );
+  return value;
 }
 
 }

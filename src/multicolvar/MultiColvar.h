@@ -46,7 +46,7 @@ protected:
   void readAtomsLikeKeyword( const std::string & key, int& natoms, std::vector<AtomNumber>& all_atoms );
 public:
   explicit MultiColvar(const ActionOptions&);
-  ~MultiColvar(){}
+  ~MultiColvar() {}
   static void registerKeywords( Keywords& keys );
 };
 

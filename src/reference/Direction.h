@@ -28,8 +28,8 @@
 namespace PLMD {
 
 class Direction :
-public ReferenceAtoms,
-public ReferenceArguments
+  public ReferenceAtoms,
+  public ReferenceArguments
 {
 public:
   explicit Direction( const ReferenceConfigurationOptions& ro );
@@ -37,7 +37,7 @@ public:
   double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& args,
                ReferenceValuePack& myder, const bool& squared ) const ;
   void setDirection( const std::vector<Vector>& conf, const std::vector<double>& args );
-  void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in ){ plumed_error(); }
+  void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in ) { plumed_error(); }
 };
 
 }

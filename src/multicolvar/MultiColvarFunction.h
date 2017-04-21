@@ -49,7 +49,7 @@ inline
 CatomPack MultiColvarFunction::getCentralAtomPackFromInput( const unsigned& ind ) const {
   plumed_dbg_assert( atom_lab[ind].first>0 ); unsigned mmc=atom_lab[ind].first-1;
   unsigned basen=0;
-  for(unsigned i=0;i<mmc;++i) basen+=mybasemulticolvars[i]->getNumberOfAtoms();
+  for(unsigned i=0; i<mmc; ++i) basen+=mybasemulticolvars[i]->getNumberOfAtoms();
   return mybasemulticolvars[mmc]->getCentralAtomPack( basen, atom_lab[ind].second );
 }
 

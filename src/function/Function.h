@@ -26,12 +26,12 @@
 #include "core/ActionWithArguments.h"
 #include "tools/Communicator.h"
 
-namespace PLMD{
-namespace function{
+namespace PLMD {
+namespace function {
 
 /**
 \ingroup INHERIT
-This is the abstract base class to use for implementing new CV function, within it there is 
+This is the abstract base class to use for implementing new CV function, within it there is
 \ref AddingAFunction "information" as to how to go about implementing a new function.
 */
 
@@ -43,27 +43,27 @@ protected:
   void setDerivative(int,double);
   void setDerivative(Value*,int,double);
   void addValueWithDerivatives();
-  void addComponentWithDerivatives( const std::string& name ); 
+  void addComponentWithDerivatives( const std::string& name );
 public:
   explicit Function(const ActionOptions&);
-  virtual ~Function(){}
+  virtual ~Function() {}
   void apply();
   static void registerKeywords(Keywords&);
   unsigned getNumberOfDerivatives();
 };
 
 inline
-void Function::setDerivative(Value*v,int i,double d){
+void Function::setDerivative(Value*v,int i,double d) {
   v->addDerivative(i,d);
 }
 
 inline
-void Function::setDerivative(int i,double d){
+void Function::setDerivative(int i,double d) {
   setDerivative(getPntrToValue(),i,d);
 }
 
 inline
-unsigned Function::getNumberOfDerivatives(){
+unsigned Function::getNumberOfDerivatives() {
   return getNumberOfArguments();
 }
 

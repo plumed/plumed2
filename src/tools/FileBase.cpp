@@ -39,9 +39,9 @@
 #include <zlib.h>
 #endif
 
-namespace PLMD{
+namespace PLMD {
 
-void FileBase::test(){
+void FileBase::test() {
   PLMD::OFile pof;
   pof.open("ciao");
   pof.printf("%s\n","test1");
@@ -60,68 +60,68 @@ void FileBase::test(){
   pif.open("ciao");
   pif.getline(s); std::printf("%s\n",s.c_str());
   pif.getline(s); std::printf("%s\n",s.c_str());
-  
+
   int x1,x2,x3;
-  while(pif.scanField("x1",x1).scanField("x3",x2).scanField("x2",x3).scanField()){
+  while(pif.scanField("x1",x1).scanField("x3",x2).scanField("x2",x3).scanField()) {
     std::cout<<"CHECK "<<x1<<" "<<x2<<" "<<x3<<"\n";
   }
   pif.close();
 }
 
-FileBase& FileBase::link(FILE*fp){
+FileBase& FileBase::link(FILE*fp) {
   plumed_massert(!this->fp,"cannot link an already open file");
   this->fp=fp;
   cloned=true;
   return *this;
 }
 
-FileBase& FileBase::flush(){
+FileBase& FileBase::flush() {
   if(fp) fflush(fp);
   return *this;
 }
 
-FileBase& FileBase::link(Communicator&comm){
+FileBase& FileBase::link(Communicator&comm) {
   plumed_massert(!fp,"cannot link an already open file");
   this->comm=&comm;
   return *this;
 }
 
-FileBase& FileBase::link(PlumedMain&plumed){
+FileBase& FileBase::link(PlumedMain&plumed) {
   plumed_massert(!fp,"cannot link an already open file");
   this->plumed=&plumed;
   link(plumed.comm);
   return *this;
 }
 
-FileBase& FileBase::link(Action&action){
+FileBase& FileBase::link(Action&action) {
   plumed_massert(!fp,"cannot link an already open file");
   this->action=&action;
   link(action.plumed);
   return *this;
 }
 
-bool FileBase::FileExist(const std::string& path){
+bool FileBase::FileExist(const std::string& path) {
   bool do_exist=false;
   this->path=appendSuffix(path,getSuffix());
   mode="r";
   FILE *ff=std::fopen(const_cast<char*>(this->path.c_str()),"r");
-  if(!ff){
+  if(!ff) {
     this->path=path;
     ff=std::fopen(const_cast<char*>(this->path.c_str()),"r");
     mode="r";
   }
   if(ff) {do_exist=true; fclose(ff);}
   if(comm) comm->Barrier();
-  return do_exist; 
+  return do_exist;
 }
 
-bool FileBase::isOpen(){
+bool FileBase::isOpen() {
   bool isopen=false;
   if(fp) isopen=true;
-  return isopen; 
+  return isopen;
 }
 
-void        FileBase::close(){
+void        FileBase::close() {
   plumed_assert(!cloned);
   eof=false;
   err=false;
@@ -156,11 +156,11 @@ FileBase::~FileBase()
 #endif
 }
 
-FileBase::operator bool()const{
+FileBase::operator bool()const {
   return !eof;
 }
 
-std::string FileBase::appendSuffix(const std::string&path,const std::string&suffix){
+std::string FileBase::appendSuffix(const std::string&path,const std::string&suffix) {
   if(path=="/dev/null") return path; // do not append a suffix to /dev/null
   std::string ret=path;
   std::string ext=Tools::extension(path);
@@ -173,7 +173,7 @@ std::string FileBase::appendSuffix(const std::string&path,const std::string&suff
 // Removing this line, any extension recognized by Tools::extension() would be considered
 //  if(ext!="gz" && ext!="xtc" && ext!="trr") ext="";
 
-  if(ext.length()>0){
+  if(ext.length()>0) {
     int l=path.length()-(ext.length()+1);
     plumed_assert(l>=0);
     ret=ret.substr(0,l);
@@ -183,13 +183,13 @@ std::string FileBase::appendSuffix(const std::string&path,const std::string&suff
   return ret;
 }
 
-FileBase& FileBase::enforceSuffix(const std::string&suffix){
+FileBase& FileBase::enforceSuffix(const std::string&suffix) {
   enforcedSuffix_=true;
   enforcedSuffix=suffix;
   return *this;
 }
 
-std::string FileBase::getSuffix()const{
+std::string FileBase::getSuffix()const {
   if(enforcedSuffix_) return enforcedSuffix;
   if(plumed) return plumed->getSuffix();
   return "";

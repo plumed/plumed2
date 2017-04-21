@@ -26,39 +26,39 @@
 
 //+PLUMEDOC VOLUMES INSPHERE
 /*
-This quantity can be used to calculate functions of the distribution of collective 
+This quantity can be used to calculate functions of the distribution of collective
 variables for the atoms that lie in a particular, user-specified part of of the cell.
 
-Each of the base quantities calculated by a multicolvar can can be assigned to a particular point in three 
+Each of the base quantities calculated by a multicolvar can can be assigned to a particular point in three
 dimensional space. For example, if we have the coordination numbers for all the atoms in the
-system each coordination number can be assumed to lie on the position of the central atom. 
+system each coordination number can be assumed to lie on the position of the central atom.
 Because each base quantity can be assigned to a particular point in space we can calculate functions of the
 distribution of base quantities in a particular part of the box by using:
 
 \f[
-\overline{s}_{\tau} = \frac{ \sum_i f(s_i) w(x_i,y_i,z_i) }{ \sum_i w(x_i,y_i,z_i) }  
-\f]  
+\overline{s}_{\tau} = \frac{ \sum_i f(s_i) w(x_i,y_i,z_i) }{ \sum_i w(x_i,y_i,z_i) }
+\f]
 
 where the sum is over the collective variables, \f$s_i\f$, each of which can be thought to be at \f$ (x_i,y_i,z_i)\f$.
 The function \f$ w(x_i,y_i,z_i) \f$ measures whether or not the system is in the subregion of interest. It
 is equal to:
 
 \f[
-w(x_i,y_i,z_i) =  
+w(x_i,y_i,z_i) =
 \f]
 
 where \f$\sigma\f$ is a \ref switchingfunction.
 The function \f$(s_i)\f$ can be any of the usual LESS_THAN, MORE_THAN, WITHIN etc that are used in all other multicolvars.
 
-When INCYLINDER is used with the \ref DENSITY action the number of atoms in the specified region is calculated  
+When INCYLINDER is used with the \ref DENSITY action the number of atoms in the specified region is calculated
 
 \par Examples
 
-The input below can be use to calculate the average coordination numbers for those atoms that are within a sphere 
+The input below can be use to calculate the average coordination numbers for those atoms that are within a sphere
 of radius 1.5 nm that is centered on the position of atom 101.
 
 \verbatim
-c1: COORDINATIONNUMBER SPECIES=1-100 SWITCH={RATIONAL R_0=0.1}  
+c1: COORDINATIONNUMBER SPECIES=1-100 SWITCH={RATIONAL R_0=0.1}
 d2: INSPHERE ATOM=101 DATA=d1 RADIUS={TANH R_0=1.5} SIGMA=0.1 LOWER=-0.1 UPPER=0.1 MEAN
 PRINT ARG=d2.* FILE=colvar
 \endverbatim
@@ -78,11 +78,11 @@ public:
   explicit VolumeInSphere(const ActionOptions& ao);
   void setupRegions();
   double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const ;
-}; 
+};
 
 PLUMED_REGISTER_ACTION(VolumeInSphere,"INSPHERE")
 
-void VolumeInSphere::registerKeywords( Keywords& keys ){
+void VolumeInSphere::registerKeywords( Keywords& keys ) {
   ActionVolume::registerKeywords( keys );
   keys.add("atoms","ATOM","the atom whose vicinity we are interested in examining");
   keys.add("compulsory","RADIUS","the switching function that tells us the extent of the sphereical region of interest");
@@ -90,10 +90,10 @@ void VolumeInSphere::registerKeywords( Keywords& keys ){
 }
 
 VolumeInSphere::VolumeInSphere(const ActionOptions& ao):
-Action(ao),
-ActionVolume(ao)
+  Action(ao),
+  ActionVolume(ao)
 {
-  std::vector<AtomNumber> atom; 
+  std::vector<AtomNumber> atom;
   parseAtomList("ATOM",atom);
   if( atom.size()!=1 ) error("should only be one atom specified");
   log.printf("  center of sphere is at position of atom : %d\n",atom[0].serial() );
@@ -104,15 +104,15 @@ ActionVolume(ao)
   if( errors.length()!=0 ) error("problem reading RADIUS keyword : " + errors );
   log.printf("  radius of sphere is given by %s \n", ( switchingFunction.description() ).c_str() );
 
-  checkRead(); requestAtoms(atom); 
+  checkRead(); requestAtoms(atom);
 }
 
-void VolumeInSphere::setupRegions(){ }
+void VolumeInSphere::setupRegions() { }
 
 double VolumeInSphere::calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const {
   // Calculate position of atom wrt to origin
   Vector fpos=pbcDistance( getPosition(0), cpos );
-  double dfunc, value = switchingFunction.calculateSqr( fpos.modulo2(), dfunc );    
+  double dfunc, value = switchingFunction.calculateSqr( fpos.modulo2(), dfunc );
   derivatives.zero(); derivatives = dfunc*fpos; refders[0] = -derivatives;
   // Add a virial contribution
   vir -= Tensor(fpos,derivatives);

@@ -26,7 +26,7 @@
 #include <map>
 #include <iosfwd>
 
-namespace PLMD{
+namespace PLMD {
 
 /**
 \ingroup TOOLBOX
@@ -95,9 +95,9 @@ int main(){
 
 */
 
-class Stopwatch{
+class Stopwatch {
 /// Class to hold the value of absolute time
-  class Time{
+  class Time {
   public:
     unsigned long sec;
 /// I store nanosecond so as to allow high resolution clocks
@@ -112,7 +112,7 @@ class Stopwatch{
   };
 /// Class to store a single stopwatch.
 /// Class Stopwatch contains a collection of them
-  class Watch{
+  class Watch {
   public:
     Watch();
     Time total;
@@ -143,17 +143,17 @@ public:
 };
 
 inline
-void Stopwatch::start(){
+void Stopwatch::start() {
   start("");
 }
 
 inline
-void Stopwatch::stop(){
+void Stopwatch::stop() {
   stop("");
 }
 
 inline
-void Stopwatch::pause(){
+void Stopwatch::pause() {
   pause("");
 }
 

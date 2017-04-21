@@ -24,8 +24,8 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 
-namespace PLMD{
-namespace generic{
+namespace PLMD {
+namespace generic {
 
 using namespace std;
 
@@ -36,7 +36,7 @@ Notice that all files are flushed anyway every 10000 steps.
 
 This
 is useful for preventing data loss that would otherwise arrise as a consequence of the code
-storing data for printing in the buffers. Notice that wherever it is written in the 
+storing data for printing in the buffers. Notice that wherever it is written in the
 plumed input file, it will flush all the open files.
 
 \par Examples
@@ -66,20 +66,20 @@ public:
     checkRead();
   }
   static void registerKeywords( Keywords& keys );
-  void calculate(){}
-  void apply(){}
-  void update(){
+  void calculate() {}
+  void apply() {}
+  void update() {
     plumed.fflush();
     log.flush();
     const ActionSet & actionSet(plumed.getActionSet());
-    for(ActionSet::const_iterator p=actionSet.begin();p!=actionSet.end();++p)
-    (*p)->fflush();
+    for(ActionSet::const_iterator p=actionSet.begin(); p!=actionSet.end(); ++p)
+      (*p)->fflush();
   }
 };
 
 PLUMED_REGISTER_ACTION(Flush,"FLUSH")
 
-void Flush::registerKeywords( Keywords& keys ){
+void Flush::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
   keys.add("compulsory","STRIDE","the frequency with which all the open files should be flushed");

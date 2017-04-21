@@ -26,8 +26,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace function{
+namespace PLMD {
+namespace function {
 
 //+PLUMEDOC FUNCTION COMBINE
 /*
@@ -92,7 +92,7 @@ public:
 
 PLUMED_REGISTER_ACTION(Combine,"COMBINE")
 
-void Combine::registerKeywords(Keywords& keys){
+void Combine::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
   keys.use("ARG"); keys.use("PERIODIC");
   keys.add("compulsory","COEFFICIENTS","1.0","the coefficients of the arguments in your function");
@@ -102,12 +102,12 @@ void Combine::registerKeywords(Keywords& keys){
 }
 
 Combine::Combine(const ActionOptions&ao):
-Action(ao),
-Function(ao),
-normalize(false),
-coefficients(getNumberOfArguments(),1.0),
-parameters(getNumberOfArguments(),0.0),
-powers(getNumberOfArguments(),1.0)
+  Action(ao),
+  Function(ao),
+  normalize(false),
+  coefficients(getNumberOfArguments(),1.0),
+  parameters(getNumberOfArguments(),0.0),
+  powers(getNumberOfArguments(),1.0)
 {
   parseVector("COEFFICIENTS",coefficients);
   if(coefficients.size()!=static_cast<unsigned>(getNumberOfArguments()))
@@ -123,29 +123,29 @@ powers(getNumberOfArguments(),1.0)
 
   parseFlag("NORMALIZE",normalize);
 
-  if(normalize){
+  if(normalize) {
     double n=0.0;
-    for(unsigned i=0;i<coefficients.size();i++) n+=coefficients[i];
-    for(unsigned i=0;i<coefficients.size();i++) coefficients[i]*=(1.0/n);
+    for(unsigned i=0; i<coefficients.size(); i++) n+=coefficients[i];
+    for(unsigned i=0; i<coefficients.size(); i++) coefficients[i]*=(1.0/n);
   }
- 
-  addValueWithDerivatives(); 
+
+  addValueWithDerivatives();
   checkRead();
 
   log.printf("  with coefficients:");
-  for(unsigned i=0;i<coefficients.size();i++) log.printf(" %f",coefficients[i]);
+  for(unsigned i=0; i<coefficients.size(); i++) log.printf(" %f",coefficients[i]);
   log.printf("\n");
   log.printf("  with parameters:");
-  for(unsigned i=0;i<parameters.size();i++) log.printf(" %f",parameters[i]);
+  for(unsigned i=0; i<parameters.size(); i++) log.printf(" %f",parameters[i]);
   log.printf("\n");
   log.printf("  and powers:");
-  for(unsigned i=0;i<powers.size();i++) log.printf(" %f",powers[i]);
+  for(unsigned i=0; i<powers.size(); i++) log.printf(" %f",powers[i]);
   log.printf("\n");
 }
 
-void Combine::calculate(){
+void Combine::calculate() {
   double combine=0.0;
-  for(unsigned i=0;i<coefficients.size();++i){
+  for(unsigned i=0; i<coefficients.size(); ++i) {
     double cv = (getArgument(i)-parameters[i]);
     combine+=coefficients[i]*pow(cv,powers[i]);
     setDerivative(i,coefficients[i]*powers[i]*pow(cv,powers[i]-1.0));
