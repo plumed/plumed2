@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-/* 
+/*
 
 */
 #include "function/Function.h"
@@ -29,8 +29,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace isdb{
+namespace PLMD {
+namespace isdb {
 
 //+PLUMEDOC FUNCTION SELECT
 /*
@@ -40,7 +40,7 @@ namespace isdb{
 
 class Select : public function::Function
 {
- string selector_;
+  string selector_;
 
 public:
   explicit Select(const ActionOptions&);
@@ -50,32 +50,32 @@ public:
 
 PLUMED_REGISTER_ACTION(Select,"SELECT")
 
-void Select::registerKeywords(Keywords& keys){
+void Select::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","SELECTOR","name of the variable used to select");
 }
 
 Select::Select(const ActionOptions&ao):
-Action(ao), Function(ao)
+  Action(ao), Function(ao)
 {
-  // name of selector 
+  // name of selector
   parse("SELECTOR", selector_);
 
   addValueWithDerivatives(); setNotPeriodic();
   checkRead();
 
-  log.printf("  select based on %s\n",selector_.c_str()); 
+  log.printf("  select based on %s\n",selector_.c_str());
 }
 
 void Select::calculate()
 {
-  unsigned iselect = static_cast<unsigned>(plumed.passMap[selector_]); 
+  unsigned iselect = static_cast<unsigned>(plumed.passMap[selector_]);
 
   // check if iselect is smaller than the number of arguments
   if(iselect>=getNumberOfArguments()) error("the value of the SELECTOR is greater than the number of arguments!");
-  
-  // put all the derivatives to zero 
+
+  // put all the derivatives to zero
   for(unsigned i=0; i<getNumberOfArguments(); ++i) setDerivative(i, 0.0);
 
   // set value and derivative for selected argument

@@ -30,12 +30,12 @@
 #include "GREXEnum.inc"
 
 using namespace std;
-namespace PLMD{
+namespace PLMD {
 
-const std::unordered_map<std::string, int> & GREXWordMap(){
+const std::unordered_map<std::string, int> & GREXWordMap() {
   static std::unordered_map<std::string, int> word_map;
   static bool init=false;
-  if(!init){
+  if(!init) {
 #include "GREXMap.inc"
   }
   init=true;
@@ -58,7 +58,7 @@ GREX::GREX(PlumedMain&p):
   p.setSuffix(".NA");
 }
 
-GREX::~GREX(){
+GREX::~GREX() {
   delete &intercomm;
   delete &intracomm;
 }
@@ -67,16 +67,16 @@ GREX::~GREX(){
 #define CHECK_NOTINIT(ini,word) plumed_massert(!(ini),"cmd(\"" + word +"\") should be only used before GREX initialization")
 #define CHECK_NOTNULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"GREX " + word + "\")");
 
-void GREX::cmd(const string&key,void*val){
+void GREX::cmd(const string&key,void*val) {
   std::vector<std::string> words=Tools::getWords(key);
   unsigned nw=words.size();
-  if(nw==0){
+  if(nw==0) {
     // do nothing
   } else {
     int iword=-1;
     const auto it=GREXWordMap().find(words[0]);
     if(it!=GREXWordMap().end()) iword=it->second;
-    switch(iword){
+    switch(iword) {
     case cmd_initialized:
       CHECK_NOTNULL(val,key);
       *static_cast<int*>(val)=initialized;
@@ -173,7 +173,7 @@ void GREX::cmd(const string&key,void*val){
       CHECK_NOTNULL(val,key);
       plumed_assert(nw==2);
       plumed_massert(allDeltaBias.size()==static_cast<unsigned>(intercomm.Get_size()),
-        "to retrieve bias with cmd(\"GREX getDeltaBias\"), first share it with cmd(\"GREX shareAllDeltaBias\")");
+                     "to retrieve bias with cmd(\"GREX getDeltaBias\"), first share it with cmd(\"GREX shareAllDeltaBias\")");
       {
         unsigned rep;
         Tools::convert(words[1],rep);
@@ -189,7 +189,7 @@ void GREX::cmd(const string&key,void*val){
   }
 }
 
-void GREX::savePositions(){
+void GREX::savePositions() {
   plumedMain.prepareDependencies();
   plumedMain.resetActive(true);
   atoms.shareAll();
@@ -199,12 +199,12 @@ void GREX::savePositions(){
   buffer=o.str();
 }
 
-void GREX::calculate(){
+void GREX::calculate() {
 //fprintf(stderr,"CALCULATE %d %d\n",intercomm.Get_rank(),partner);
   unsigned nn=buffer.size();
   vector<char> rbuf(nn);
   localDeltaBias=-plumedMain.getBias();
-  if(intracomm.Get_rank()==0){
+  if(intracomm.Get_rank()==0) {
     Communicator::Request req=intercomm.Isend(buffer,partner,1066);
     intercomm.Recv(rbuf,partner,1066);
     req.wait();
@@ -218,7 +218,7 @@ void GREX::calculate(){
   plumedMain.setExchangeStep(false);
   localDeltaBias+=plumedMain.getBias();
   localDeltaBias+=localUSwap-localUNow;
-  if(intracomm.Get_rank()==0){
+  if(intracomm.Get_rank()==0) {
     Communicator::Request req=intercomm.Isend(localDeltaBias,partner,1067);
     intercomm.Recv(foreignDeltaBias,partner,1067);
     req.wait();

@@ -34,7 +34,7 @@ namespace analysis {
 
 /**
 \ingroup INHERIT
-This is the abstract base class to use for implementing new methods for analyzing the trajectory, within it there 
+This is the abstract base class to use for implementing new methods for analyzing the trajectory, within it there
 is information as to how to go about implementing a new analysis method.
 
 */
@@ -82,7 +82,7 @@ private:
 /// Get the metric if we are using malonobius distance and flexible hill
   std::vector<double> getMetric() const ;
 protected:
-/// List of argument names 
+/// List of argument names
   std::vector<std::string> argument_names;
 /// This is used to read in output file names for analysis methods.  When
 /// this method is used and the calculation is not restarted old analysis
@@ -98,10 +98,10 @@ protected:
   double getWeight( const unsigned& idata ) const ;
 /// Retrieve the ith point
   void getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const ;
-/// Returns true if argument i is periodic together with the domain 
+/// Returns true if argument i is periodic together with the domain
   bool getPeriodicityInformation(const unsigned& i, std::string& dmin, std::string& dmax);
 /// Are we analyzing each data block separately (if we are not this also returns the old normalization )
-  bool usingMemory() const; 
+  bool usingMemory() const;
 /// Return the format to use for numbers in output files
   std::string getOutputFormat() const ;
 /// Finalize the weights without using the log sums
@@ -110,14 +110,14 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Analysis(const ActionOptions&);
   ~Analysis();
-  void calculate(){}
-  void apply(){}
+  void calculate() {}
+  void apply() {}
   void accumulate();
   void performOperations( const bool& from_update );
   virtual void performAnalysis()=0;
   void runFinalJobs();
   void runAnalysis();
-  bool isPeriodic(){ plumed_error(); return false; }
+  bool isPeriodic() { plumed_error(); return false; }
   /// Convert the stored log weights to proper weights
   virtual void finalizeWeights( const bool& ignore_weights );
 };
@@ -129,20 +129,20 @@ std::string Analysis::getMetricName() const {
 
 inline
 unsigned Analysis::getNumberOfDataPoints() const {
-  if( !reusing_data ){
-     plumed_dbg_assert( data.size()==logweights.size() );
-     return data.size();
+  if( !reusing_data ) {
+    plumed_dbg_assert( data.size()==logweights.size() );
+    return data.size();
   } else {
-     return mydatastash->getNumberOfDataPoints();
+    return mydatastash->getNumberOfDataPoints();
   }
 }
 
 inline
 bool Analysis::usingMemory() const {
-  if( !reusing_data ){
-      return !nomemory;
+  if( !reusing_data ) {
+    return !nomemory;
   } else {
-      return mydatastash->usingMemory();
+    return mydatastash->usingMemory();
   }
 }
 

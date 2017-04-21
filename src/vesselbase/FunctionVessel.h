@@ -29,13 +29,13 @@
 #include "core/Value.h"
 
 namespace PLMD {
-namespace vesselbase{
+namespace vesselbase {
 
 /**
 \ingroup TOOLBOX
 Objects that inherit from FunctionVessel can be used (in tandem with PLMD::vesselbase::ActionWithVessel) to calculate
 functions of the form \f$\prod_k H_k[ \sum_j \prod_i g_i(x) ]\f$.  They should take in a series of values
-and return one single value.   
+and return one single value.
 */
 
 class FunctionVessel : public ValueVessel {

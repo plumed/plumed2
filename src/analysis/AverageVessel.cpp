@@ -24,30 +24,30 @@
 namespace PLMD {
 namespace analysis {
 
-void AverageVessel::registerKeywords( Keywords& keys ){
+void AverageVessel::registerKeywords( Keywords& keys ) {
   vesselbase::AveragingVessel::registerKeywords( keys );
   keys.add("optional","PERIODIC","is the quantity being averaged periodic and what is its domain");
 }
 
 AverageVessel::AverageVessel( const vesselbase::VesselOptions& da):
-AveragingVessel(da)
+  AveragingVessel(da)
 {
   parseVector("PERIODIC",domain);
   plumed_assert( domain.size()==2 || domain.size()==0 );
 }
 
-void AverageVessel::resize(){
-  resizeBuffer(0); 
+void AverageVessel::resize() {
+  resizeBuffer(0);
   if( domain.size()==2 ) setDataSize(2);
   else setDataSize(1);
 }
 
-void AverageVessel::accumulate( const double& weight, const double& val ){
-  if( domain.size()==2 ){
-     // Average with Berry Phase 
-     double tval = 2*pi*( val - domain[0] ) / ( domain[1] - domain[0] );
-     addDataElement( 0, weight*sin(tval) ); addDataElement( 1, weight*cos(tval) ); 
-  } else addDataElement( 0, weight*val );  
+void AverageVessel::accumulate( const double& weight, const double& val ) {
+  if( domain.size()==2 ) {
+    // Average with Berry Phase
+    double tval = 2*pi*( val - domain[0] ) / ( domain[1] - domain[0] );
+    addDataElement( 0, weight*sin(tval) ); addDataElement( 1, weight*cos(tval) );
+  } else addDataElement( 0, weight*val );
 }
 
 double AverageVessel::getAverage() const {

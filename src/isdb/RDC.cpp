@@ -34,16 +34,16 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace isdb{
+namespace PLMD {
+namespace isdb {
 
-//+PLUMEDOC COLVAR RDC 
+//+PLUMEDOC COLVAR RDC
 /*
-Calculates the (Residual) Dipolar Coupling between two atoms. 
+Calculates the (Residual) Dipolar Coupling between two atoms.
 
-The RDC between two atomic nuclei depends on the \f$\theta\f$ angle between 
-the inter-nuclear vector and the external magnetic field. In isotropic media RDCs average to zero because of the rotational 
-averaging, but when the rotational symmetry is broken, either through the introduction of an alignment medium or for molecules 
+The RDC between two atomic nuclei depends on the \f$\theta\f$ angle between
+the inter-nuclear vector and the external magnetic field. In isotropic media RDCs average to zero because of the rotational
+averaging, but when the rotational symmetry is broken, either through the introduction of an alignment medium or for molecules
 with highly anisotropic paramagnetic susceptibility, RDCs become measurable.
 
 \f[
@@ -56,8 +56,8 @@ where
 D_{max}=-\mu_0\gamma_1\gamma_2h/(8\pi^3r^3)
 \f]
 
-that is the maximal value of the dipolar coupling for the two nuclear spins with gyromagnetic ratio \f$\gamma\f$. 
-\f$\mu\f$ is the magnetic constant and h is the Planck constant. 
+that is the maximal value of the dipolar coupling for the two nuclear spins with gyromagnetic ratio \f$\gamma\f$.
+\f$\mu\f$ is the magnetic constant and h is the Planck constant.
 
 Common Gyromagnetic Ratios (C.G.S)
 - H(1) 26.7513
@@ -68,8 +68,8 @@ Common Gyromagnetic Ratios (C.G.S)
 - CN -18.2385
 - CC 45.2404
 
-This collective variable calculates the Residual Dipolar Coupling for a set of couple of atoms using the above definition. 
-From the calculated RDCs and a set of experimental values it calculates either their correlation or the squared quality factor 
+This collective variable calculates the Residual Dipolar Coupling for a set of couple of atoms using the above definition.
+From the calculated RDCs and a set of experimental values it calculates either their correlation or the squared quality factor
 
 \f[
 Q^2=\frac{\sum_i(D_i-D^{exp}_i)^2}{\sum_i(D^{exp}_i)^2}
@@ -77,7 +77,7 @@ Q^2=\frac{\sum_i(D_i-D^{exp}_i)^2}{\sum_i(D^{exp}_i)^2}
 
 RDCs report only on the fraction of molecules that is aligned, this means that comparing the RDCs from a single structure in
 a MD simulation to the experimental values is not particularly meaningfull, from this point of view it is better to compare
-their correlation. The fraction of aligned molecules can be obtained by maximising the correlation between the calculated and 
+their correlation. The fraction of aligned molecules can be obtained by maximising the correlation between the calculated and
 the experimental RDCs. This fraction can be used as a scaling factor in the calculation of the RDCs in order to compare their
 values. The averaging of the RDCs calculated with the above definition from a standard MD should result to 0 because of
 the rotational diffusion, but this variable can be used to break the rotational symmetry.
@@ -93,12 +93,12 @@ Additional material and examples can be also found in the tutorial \ref belfast-
 In the following example five N-H RDCs are defined and their correlation with
 respect to a set of experimental data is calculated and restrained. In addition,
 and only for analysis purposes, the same RDCs are calculated using a Single Value
-Decomposition algorithm. 
+Decomposition algorithm.
 
 \verbatim
 RDC ...
 GYROM=-72.5388
-SCALE=1.0 
+SCALE=1.0
 ATOMS1=20,21
 ATOMS2=37,38
 ATOMS3=56,57
@@ -114,7 +114,7 @@ rdce: RESTRAINT ARG=nh.corr KAPPA=0. SLOPE=-25000.0 AT=1.
 RDC ...
 GYROM=-72.5388
 SCALE=1.0
-SVD 
+SVD
 ATOMS1=20,21 COUPLING1=8.17
 ATOMS2=37,38 COUPLING2=-8.271
 ATOMS3=56,57 COUPLING3=-10.489
@@ -126,17 +126,17 @@ LABEL=svd
 PRINT ARG=nh.corr,rdce.bias FILE=colvar
 PRINT ARG=svd.* FILE=svd
 \endverbatim
-(See also \ref PRINT, \ref RESTRAINT) 
+(See also \ref PRINT, \ref RESTRAINT)
 
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC COLVAR PCS 
+//+PLUMEDOC COLVAR PCS
 /*
-Calculates the Pseudocontact shift of a nucleus determined by a metal ion. 
+Calculates the Pseudocontact shift of a nucleus determined by a metal ion.
 
 The PCS of an atomic nucleus depends on the \f$\theta\f$ angle between the vector from the spin-label to the nucleus
- and the external magnetic field and the module of the vector itself. 
+ and the external magnetic field and the module of the vector itself.
 
 \f[
 D=D_{max}0.5(3\cos^2(\theta)-1)
@@ -148,8 +148,8 @@ where
 D_{max}=-\mu_0\gamma_1\gamma_2h/(8\pi^3r^3)
 \f]
 
-that is the maximal value of the dipolar coupling for the two nuclear spins with gyromagnetic ratio \f$\gamma\f$. 
-\f$\mu\f$ is the magnetic constant and h is the Planck constant. 
+that is the maximal value of the dipolar coupling for the two nuclear spins with gyromagnetic ratio \f$\gamma\f$.
+\f$\mu\f$ is the magnetic constant and h is the Planck constant.
 
 PCSs can also be calculated using a Single Value Decomposition approach, in this case the code rely on the
 a set of function from the GNU Scientific Library (GSL). (With SVD forces are not currently implemented).
@@ -162,12 +162,12 @@ Additional material and examples can be also found in the tutorial \ref belfast-
 In the following example five N-H RDCs are defined and their correlation with
 respect to a set of experimental data is calculated and restrained. In addition,
 and only for analysis purposes, the same RDCs are calculated using a Single Value
-Decomposition algorithm. 
+Decomposition algorithm.
 
 \verbatim
 RDC ...
 GYROM=-72.5388
-SCALE=1.0 
+SCALE=1.0
 ATOMS1=20,21
 ATOMS2=37,38
 ATOMS3=56,57
@@ -183,7 +183,7 @@ rdce: RESTRAINT ARG=nh.corr KAPPA=0. SLOPE=-25000.0 AT=1.
 RDC ...
 GYROM=-72.5388
 SCALE=1.0
-SVD 
+SVD
 ATOMS1=20,21 COUPLING1=8.17
 ATOMS2=37,38 COUPLING2=-8.271
 ATOMS3=56,57 COUPLING3=-10.489
@@ -195,7 +195,7 @@ LABEL=svd
 PRINT ARG=nh.corr,rdce.bias FILE=colvar
 PRINT ARG=svd.* FILE=svd
 \endverbatim
-(See also \ref PRINT, \ref RESTRAINT) 
+(See also \ref PRINT, \ref RESTRAINT)
 
 */
 //+ENDPLUMEDOC
@@ -217,62 +217,62 @@ public:
 PLUMED_REGISTER_ACTION(RDC,"RDC")
 PLUMED_REGISTER_ACTION(RDC,"PCS")
 
-void RDC::registerKeywords( Keywords& keys ){
+void RDC::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   componentsAreNotOptional(keys);
   useCustomisableComponents(keys);
   keys.add("numbered","ATOMS","the couple of atoms involved in each of the bonds for which you wish to calculate the RDC. "
-                             "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one dipolar coupling will be "
-                             "calculated for each ATOMS keyword you specify.");
+           "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one dipolar coupling will be "
+           "calculated for each ATOMS keyword you specify.");
   keys.reset_style("ATOMS","atoms");
   keys.add("compulsory","GYROM","1.","Add the product of the gyromagnetic constants for the bond. ");
   keys.add("compulsory","SCALE","1.","Add the scaling factor to take into account concentration and other effects. ");
-  keys.addFlag("SVD",false,"Set to TRUE if you want to backcalculate using Single Value Decomposition (need GSL at compilation time)."); 
-  keys.addFlag("ADDCOUPLINGS",false,"Set to TRUE if you want to have fixed components with the experimetnal values.");  
+  keys.addFlag("SVD",false,"Set to TRUE if you want to backcalculate using Single Value Decomposition (need GSL at compilation time).");
+  keys.addFlag("ADDCOUPLINGS",false,"Set to TRUE if you want to have fixed components with the experimetnal values.");
   keys.add("numbered","COUPLING","Add an experimental value for each coupling (needed by SVD and usefull for \ref STATS).");
   keys.addOutputComponent("rdc","default","the calculated # RDC");
   keys.addOutputComponent("exp","SVD/ADDCOUPLINGS","the experimental # RDC");
 }
 
 RDC::RDC(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao),
-Const(1.),
-mu_s(1.),
-scale(1.),
-pbc(true)
+  PLUMED_COLVAR_INIT(ao),
+  Const(1.),
+  mu_s(1.),
+  scale(1.),
+  pbc(true)
 {
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
-  pbc=!nopbc; 
- 
+  pbc=!nopbc;
+
   const double RDCConst = 0.3356806;
   const double PCSConst = 1.0;
   bool rdc = true;
 
-  if( getName().find("RDC")!=std::string::npos){ Const *= RDCConst; rdc=true;}
-  else if( getName().find("PCS")!=std::string::npos){ Const *= PCSConst; rdc=false;}
+  if( getName().find("RDC")!=std::string::npos) { Const *= RDCConst; rdc=true;}
+  else if( getName().find("PCS")!=std::string::npos) { Const *= PCSConst; rdc=false;}
 
   // Read in the atoms
   vector<AtomNumber> t, atoms;
-  for(int i=1;;++i ){
-     parseAtomList("ATOMS", i, t );
-     if( t.empty() ) break;
-     if( t.size()!=2 ){
-         std::string ss; Tools::convert(i,ss);
-         error("ATOMS" + ss + " keyword has the wrong number of atoms");
-     }
-     atoms.push_back(t[0]);
-     atoms.push_back(t[1]);
-     t.resize(0); 
+  for(int i=1;; ++i ) {
+    parseAtomList("ATOMS", i, t );
+    if( t.empty() ) break;
+    if( t.size()!=2 ) {
+      std::string ss; Tools::convert(i,ss);
+      error("ATOMS" + ss + " keyword has the wrong number of atoms");
+    }
+    atoms.push_back(t[0]);
+    atoms.push_back(t[1]);
+    t.resize(0);
   }
 
   const unsigned ndata = atoms.size()/2;
- 
+
   // Read in GYROMAGNETIC constants
   parse("GYROM", mu_s);
   if(mu_s==0.) error("GYROM cannot be 0");
 
-  // Read in SCALING factors 
+  // Read in SCALING factors
   parse("SCALE", scale);
   if(scale==0.) error("SCALE cannot be 0");
 
@@ -286,19 +286,19 @@ pbc(true)
   parseFlag("ADDCOUPLINGS",addcoupling);
 
   if(svd||addcoupling) {
-    coupl.resize( ndata ); 
+    coupl.resize( ndata );
     unsigned ntarget=0;
-    for(unsigned i=0;i<ndata;++i){
-       if( !parseNumbered( "COUPLING", i+1, coupl[i] ) ) break;
-       ntarget++; 
+    for(unsigned i=0; i<ndata; ++i) {
+      if( !parseNumbered( "COUPLING", i+1, coupl[i] ) ) break;
+      ntarget++;
     }
     if( ntarget!=ndata ) error("found wrong number of COUPLING values");
   }
 
-  // Ouput details of all contacts 
+  // Ouput details of all contacts
   log.printf("  Gyromagnetic moment is %f. Scaling factor is %f.",mu_s,scale);
-  for(unsigned i=0;i<ndata;++i){
-    log.printf("  The %uth Bond Dipolar Coupling is calculated from atoms : %d %d.", i+1, atoms[2*i].serial(), atoms[2*i+1].serial()); 
+  for(unsigned i=0; i<ndata; ++i) {
+    log.printf("  The %uth Bond Dipolar Coupling is calculated from atoms : %d %d.", i+1, atoms[2*i].serial(), atoms[2*i+1].serial());
     if(svd||addcoupling) log.printf(" Experimental coupling is %f.", coupl[i]);
     log.printf("\n");
   }
@@ -309,7 +309,7 @@ pbc(true)
 
   checkRead();
 
-  for(unsigned i=0;i<ndata;i++) {
+  for(unsigned i=0; i<ndata; i++) {
     std::string num; Tools::convert(i,num);
     if(!svd) {
       addComponentWithDerivatives("rdc_"+num);
@@ -321,7 +321,7 @@ pbc(true)
   }
 
   if(svd||addcoupling) {
-    for(unsigned i=0;i<ndata;i++) {
+    for(unsigned i=0; i<ndata; i++) {
       std::string num; Tools::convert(i,num);
       addComponent("exp_"+num);
       componentIsNotPeriodic("exp_"+num);
@@ -352,7 +352,7 @@ void RDC::calculate()
     #pragma omp parallel num_threads(nt)
     {
       #pragma omp for
-      for(unsigned r=0;r<N;r+=2)
+      for(unsigned r=0; r<N; r+=2)
       {
         const unsigned index=r/2;
         Vector  distance;
@@ -361,7 +361,7 @@ void RDC::calculate()
         const double d2    = distance.modulo2();
         const double ind   = 1./sqrt(d2);
         const double ind2  = 1./d2;
-        const double ind3  = ind2*ind; 
+        const double ind3  = ind2*ind;
         const double x2    = distance[0]*distance[0]*ind2;
         const double y2    = distance[1]*distance[1]*ind2;
         const double z2    = distance[2]*distance[2]*ind2;
@@ -380,8 +380,8 @@ void RDC::calculate()
         Value* val=getPntrToComponent(index);
         val->set(rdc);
         setBoxDerivatives(val, Tensor(distance,dRDC));
-        setAtomsDerivatives(val, r  ,  dRDC);
-        setAtomsDerivatives(val, r+1, -dRDC); 
+        setAtomsDerivatives(val, r,  dRDC);
+        setAtomsDerivatives(val, r+1, -dRDC);
       }
     }
   } else {
@@ -408,7 +408,7 @@ void RDC::calculate()
       double d    = distance.modulo();
       double d2   = d*d;
       double d3   = d2*d;
-      double id3  = 1./d3; 
+      double id3  = 1./d3;
       double max  = -Const*mu_s*scale;
       dmax[index] = id3*max;
       double mu_x = distance[0]/d;
@@ -425,7 +425,7 @@ void RDC::calculate()
     gsl_matrix_memcpy(A,coef_mat);
     gsl_linalg_SV_decomp(A, V, Stmp, work);
     gsl_linalg_SV_solve(A, V, Stmp, rdc_vec, S);
-    /* tensor */ 
+    /* tensor */
     Value* tensor;
     tensor=getPntrToComponent("Sxx");
     double Sxx = gsl_vector_get(S,0);

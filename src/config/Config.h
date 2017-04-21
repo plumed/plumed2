@@ -24,8 +24,8 @@
 
 #include <string>
 
-namespace PLMD{
-namespace config{
+namespace PLMD {
+namespace config {
 
 /// Return the extension of shared libraries on this system.
 /// It is either "so" or "dylib". In case shared libraries are disabled, it returns an empty string.

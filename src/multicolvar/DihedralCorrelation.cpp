@@ -29,8 +29,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace multicolvar{
+namespace PLMD {
+namespace multicolvar {
 
 //+PLUMEDOC COLVAR DIHCOR
 /*
@@ -87,39 +87,39 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit DihedralCorrelation(const ActionOptions&);
   virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
-  bool isPeriodic(){ return false; }
+  bool isPeriodic() { return false; }
 };
 
 PLUMED_REGISTER_ACTION(DihedralCorrelation,"DIHCOR")
 
-void DihedralCorrelation::registerKeywords( Keywords& keys ){
+void DihedralCorrelation::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );
   keys.add("numbered","ATOMS","the atoms involved in each of the dihedral correlation values you wish to calculate. "
-                               "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one dihedral correlation will be "
-                               "calculated for each ATOM keyword you specify (all ATOM keywords should "
-                               "specify the indices of 8 atoms).  The eventual number of quantities calculated by this "
-                               "action will depend on what functions of the distribution you choose to calculate.");
+           "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one dihedral correlation will be "
+           "calculated for each ATOM keyword you specify (all ATOM keywords should "
+           "specify the indices of 8 atoms).  The eventual number of quantities calculated by this "
+           "action will depend on what functions of the distribution you choose to calculate.");
   keys.reset_style("ATOMS","atoms");
 }
 
 DihedralCorrelation::DihedralCorrelation(const ActionOptions&ao):
-Action(ao),
-MultiColvarBase(ao)
+  Action(ao),
+  MultiColvarBase(ao)
 {
   // Read in the atoms
   std::vector<AtomNumber> all_atoms;
   readAtomsLikeKeyword( "ATOMS", 8, all_atoms );
   setupMultiColvarBase( all_atoms );
   // Stuff for central atoms
-  std::vector<bool> catom_ind(8, false); 
+  std::vector<bool> catom_ind(8, false);
   catom_ind[1]=catom_ind[2]=catom_ind[5]=catom_ind[6]=true;
   setAtomsForCentralAtom( catom_ind );
 
   // And setup the ActionWithVessel
-  if( getNumberOfVessels()==0 ){
-     std::string fake_input;
-     addVessel( "SUM", fake_input, -1 );  // -1 here means that this value will be named getLabel()
-     readVesselKeywords();  // This makes sure resizing is done
+  if( getNumberOfVessels()==0 ) {
+    std::string fake_input;
+    addVessel( "SUM", fake_input, -1 );  // -1 here means that this value will be named getLabel()
+    readVesselKeywords();  // This makes sure resizing is done
   }
 
   // And check everything has been read in correctly
@@ -148,9 +148,9 @@ double DihedralCorrelation::compute( const unsigned& tindex, AtomValuePack& myat
   const double value = 0.5*(1.+cos(diff));
   // Derivatives wrt phi1
   const double dval = 0.5*sin(diff);
-  dd10 *= dval; 
-  dd11 *= dval; 
-  dd12 *= dval; 
+  dd10 *= dval;
+  dd11 *= dval;
+  dd12 *= dval;
   // And add
   addAtomDerivatives(1, 0, dd10, myatoms );
   addAtomDerivatives(1, 1, dd11-dd10, myatoms );

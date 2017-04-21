@@ -32,8 +32,8 @@ public:
 PLUMED_REGISTER_METRIC(NormalizedEuclideanDistance,"NORM-EUCLIDEAN")
 
 NormalizedEuclideanDistance::NormalizedEuclideanDistance( const ReferenceConfigurationOptions& ro ):
-ReferenceConfiguration(ro),
-ArgumentOnlyDistance(ro)
+  ReferenceConfiguration(ro),
+  ArgumentOnlyDistance(ro)
 {
   hasweights=true;
 }

@@ -24,7 +24,7 @@
 
 #include "Vector.h"
 
-namespace PLMD{
+namespace PLMD {
 
 /// \ingroup TOOLBOX
 /// Class to compute torsional angles.
@@ -36,7 +36,7 @@ namespace PLMD{
 /// I know it is a bit misleading. If we really do not need to store "options"
 /// inside the Torsion class, we can remove it later and write compute as
 /// a static function.
-class Torsion{
+class Torsion {
 // still empty, but may accomodate some options in the future
 public:
 /// Compute the angle between the projections of v1 and v3 on the plane orthogonal

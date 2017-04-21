@@ -26,10 +26,10 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace isdb{
+namespace PLMD {
+namespace isdb {
 
-//+PLUMEDOC GENERIC SELECTOR 
+//+PLUMEDOC GENERIC SELECTOR
 /*
 
 */
@@ -41,20 +41,20 @@ class Selector:
 public:
   static void registerKeywords( Keywords& keys );
   explicit Selector(const ActionOptions&ao);
-  void calculate(){}
-  void apply(){}
+  void calculate() {}
+  void apply() {}
 };
 
 PLUMED_REGISTER_ACTION(Selector,"SELECTOR")
 
-void Selector::registerKeywords( Keywords& keys ){
+void Selector::registerKeywords( Keywords& keys ) {
   Action::registerKeywords(keys);
   keys.add("compulsory","NAME","name of the SELECTOR");
   keys.add("compulsory","VALUE","set (initial) value of the SELECTOR");
 }
 
 Selector::Selector(const ActionOptions&ao):
-Action(ao)
+  Action(ao)
 {
   string name;
   parse("NAME", name);

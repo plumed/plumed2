@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-/* 
+/*
 
 */
 #include "bias/Bias.h"
@@ -34,8 +34,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace isdb{
+namespace PLMD {
+namespace isdb {
 
 //+PLUMEDOC BIAS RESCALE
 /*
@@ -79,7 +79,7 @@ class Rescale : public bias::Bias
   // read and print bias
   void read_bias();
   void print_bias(long int step);
-  
+
 public:
   explicit Rescale(const ActionOptions&);
   ~Rescale();
@@ -90,7 +90,7 @@ public:
 
 PLUMED_REGISTER_ACTION(Rescale,"RESCALE")
 
-void Rescale::registerKeywords(Keywords& keys){
+void Rescale::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","TEMP","temperature");
@@ -113,11 +113,11 @@ void Rescale::registerKeywords(Keywords& keys){
 }
 
 Rescale::Rescale(const ActionOptions&ao):
-PLUMED_BIAS_INIT(ao), 
-nores_(0), Biaspace_(1), first_bias_(true),
-MCsteps_(1), MCstride_(1), MCfirst_(-1), MCaccgamma_(0)
+  PLUMED_BIAS_INIT(ao),
+  nores_(0), Biaspace_(1), first_bias_(true),
+  MCsteps_(1), MCstride_(1), MCfirst_(-1), MCaccgamma_(0)
 {
-  // set up replica stuff 
+  // set up replica stuff
   if(comm.Get_rank()==0) {
     nrep_    = multi_sim_comm.Get_size();
     replica_ = multi_sim_comm.Get_rank();
@@ -131,19 +131,19 @@ MCsteps_(1), MCstride_(1), MCfirst_(-1), MCaccgamma_(0)
   // wt-parameters
   parse("W0", w0_);
   parse("BIASFACTOR", biasf_);
-  
+
   // selector name
   parse("SELECTOR", selector_);
-  
+
   // number of bins for gamma ladder
   unsigned nbin;
   parse("NBIN", nbin);
-  
+
   // number of bias
   parse("NOT_RESCALED", nores_);
   if(nores_>0 && nores_!=nbin) error("The number of non rescaled arguments must be equal to either 0 or the number of bins");
 
-  // maximum value of rescale 
+  // maximum value of rescale
   vector<double> max_rescale;
   parseVector("MAX_RESCALE", max_rescale);
   // check dimension of max_rescale
@@ -154,9 +154,9 @@ MCsteps_(1), MCstride_(1), MCfirst_(-1), MCaccgamma_(0)
   double igamma_max = static_cast<double>(nbin);
   for(unsigned i=0; i<max_rescale.size(); ++i)
     expo_.push_back(std::log(max_rescale[i])/std::log(igamma_max));
-  
+
   // allocate gamma grid and set bias to zero
-  for(unsigned i=0; i<nbin; ++i){
+  for(unsigned i=0; i<nbin; ++i) {
     // bias grid
     bias_.push_back(0.0);
     // gamma ladder
@@ -166,7 +166,7 @@ MCsteps_(1), MCstride_(1), MCfirst_(-1), MCaccgamma_(0)
   // print bias to file
   parse("BSTRIDE", Biasstride_);
   parse("BFILE",   Biasfilename_);
-  
+
   // create vectors of shared arguments
   // by default they are all shared
   for(unsigned i=0; i<getNumberOfArguments(); ++i) shared_.push_back(1);
@@ -174,14 +174,14 @@ MCsteps_(1), MCstride_(1), MCfirst_(-1), MCaccgamma_(0)
   vector<unsigned> not_shared;
   parseVector("NOT_SHARED", not_shared);
   // and change the non-shared
-  for(unsigned i=0; i<not_shared.size(); ++i){
-     if((not_shared[i]-1)>=(getNumberOfArguments()-nores_) && nrep_>1)
+  for(unsigned i=0; i<not_shared.size(); ++i) {
+    if((not_shared[i]-1)>=(getNumberOfArguments()-nores_) && nrep_>1)
       error("NOT_RESCALED args must always be shared when using multiple replicas");
-     if((not_shared[i]-1)>=getNumberOfArguments())
-      error("NOT_SHARED args should be lower than total number of arguments"); 
-     shared_[not_shared[i]-1] = 0;
+    if((not_shared[i]-1)>=getNumberOfArguments())
+      error("NOT_SHARED args should be lower than total number of arguments");
+    shared_[not_shared[i]-1] = 0;
   }
-  
+
   // monte carlo stuff
   parse("MC_STEPS",MCsteps_);
   parse("MC_STRIDE",MCstride_);
@@ -218,10 +218,10 @@ MCsteps_(1), MCstride_(1), MCfirst_(-1), MCaccgamma_(0)
   addComponent("igamma");   componentIsNotPeriodic("igamma");
   addComponent("accgamma"); componentIsNotPeriodic("accgamma");
   addComponent("wtbias");   componentIsNotPeriodic("wtbias");
-  
+
   // initialize random seed
   srand (time(NULL));
-  
+
   // read bias if restarting
   if(getRestart()) read_bias();
 }
@@ -233,61 +233,61 @@ Rescale::~Rescale()
 
 void Rescale::read_bias()
 {
- double MDtime;
- // open file
- IFile *ifile = new IFile();
- ifile->link(*this);
- if(ifile->FileExist(Biasfilename_)){
+  double MDtime;
+// open file
+  IFile *ifile = new IFile();
+  ifile->link(*this);
+  if(ifile->FileExist(Biasfilename_)) {
     ifile->open(Biasfilename_);
     // read all the lines, store last value of bias
-    while(ifile->scanField("MD_time",MDtime)){
-     for(unsigned i=0; i<bias_.size(); ++i){
-      // convert i to string
-      stringstream ss;
-      ss << i;
-      // label
-      string label = "b" + ss.str();
-      // read entry
-      ifile->scanField(label, bias_[i]);
-     }
-     // new line
-     ifile->scanField();
+    while(ifile->scanField("MD_time",MDtime)) {
+      for(unsigned i=0; i<bias_.size(); ++i) {
+        // convert i to string
+        stringstream ss;
+        ss << i;
+        // label
+        string label = "b" + ss.str();
+        // read entry
+        ifile->scanField(label, bias_[i]);
+      }
+      // new line
+      ifile->scanField();
     }
     ifile->close();
- } else {
-    error("Cannot find bias file "+Biasfilename_+"\n"); 
- }
- delete ifile;
+  } else {
+    error("Cannot find bias file "+Biasfilename_+"\n");
+  }
+  delete ifile;
 }
 
 unsigned Rescale::proposeMove(unsigned x, unsigned xmin, unsigned xmax)
 {
- int xmin_i = static_cast<int>(xmin);
- int xmax_i = static_cast<int>(xmax);
- int dx;
- int r = rand() % 2;
- if( r % 2 == 0 ) dx = +1;
- else             dx = -1;
- // new index, integer
- int x_new = static_cast<int>(x) + dx;
- // check boundaries
- if(x_new >= xmax_i) x_new = xmax_i-1;
- if(x_new <  xmin_i) x_new = xmin_i;
- return static_cast<unsigned>(x_new);
+  int xmin_i = static_cast<int>(xmin);
+  int xmax_i = static_cast<int>(xmax);
+  int dx;
+  int r = rand() % 2;
+  if( r % 2 == 0 ) dx = +1;
+  else             dx = -1;
+// new index, integer
+  int x_new = static_cast<int>(x) + dx;
+// check boundaries
+  if(x_new >= xmax_i) x_new = xmax_i-1;
+  if(x_new <  xmin_i) x_new = xmin_i;
+  return static_cast<unsigned>(x_new);
 }
 
 bool Rescale::doAccept(double oldE, double newE)
 {
   bool accept = false;
-  // calculate delta energy 
+  // calculate delta energy
   double delta = ( newE - oldE ) / kbt_;
   // if delta is negative always accept move
-  if( delta < 0.0 ){ 
-   accept = true;
-  }else{
-   // otherwise extract random number   
-   double s = static_cast<double>(rand()) / RAND_MAX;
-   if( s < exp(-delta) ) { accept = true; }
+  if( delta < 0.0 ) {
+    accept = true;
+  } else {
+    // otherwise extract random number
+    double s = static_cast<double>(rand()) / RAND_MAX;
+    if( s < exp(-delta) ) { accept = true; }
   }
   return accept;
 }
@@ -295,94 +295,94 @@ bool Rescale::doAccept(double oldE, double newE)
 void Rescale::doMonteCarlo(unsigned igamma, double oldE,
                            vector<double> args, vector<double> bargs)
 {
- bool accept;
- double oldB, newB;
- 
- // cycle on MC steps 
- for(unsigned i=0;i<MCsteps_;++i){
-  // propose move in igamma
-  unsigned new_igamma = proposeMove(igamma, 0, gamma_.size());
-  // calculate new energy
-  double newE = 0.0;
-  for(unsigned j=0; j<args.size(); ++j){
-    // calculate energy term
-    double fact = 1.0/pow(gamma_[new_igamma], expo_[j]) - 1.0;
-    newE += args[j] * fact;
-  }
-  // calculate contributions from non-rescaled terms
-  if(bargs.size()>0){
-     oldB = bias_[igamma]+bargs[igamma];
-     newB = bias_[new_igamma]+bargs[new_igamma];
-  } else {
-     oldB = bias_[igamma];
-     newB = bias_[new_igamma];
-  }
-  // accept or reject
-  accept = doAccept(oldE+oldB, newE+newB);
-  if(accept){
-   igamma = new_igamma;
-   oldE = newE;
-   MCaccgamma_++;
-  }
- }
- // send values of gamma to all replicas
- if(comm.Get_rank()==0){
-   if(multi_sim_comm.Get_rank()!=0) igamma = 0;
-   multi_sim_comm.Sum(&igamma, 1); 
- } else {
-   igamma = 0;
- }
- // local communication
- comm.Sum(&igamma, 1);
+  bool accept;
+  double oldB, newB;
 
- // set the value of gamma into passMap
- plumed.passMap[selector_]=static_cast<double>(igamma); 
+// cycle on MC steps
+  for(unsigned i=0; i<MCsteps_; ++i) {
+    // propose move in igamma
+    unsigned new_igamma = proposeMove(igamma, 0, gamma_.size());
+    // calculate new energy
+    double newE = 0.0;
+    for(unsigned j=0; j<args.size(); ++j) {
+      // calculate energy term
+      double fact = 1.0/pow(gamma_[new_igamma], expo_[j]) - 1.0;
+      newE += args[j] * fact;
+    }
+    // calculate contributions from non-rescaled terms
+    if(bargs.size()>0) {
+      oldB = bias_[igamma]+bargs[igamma];
+      newB = bias_[new_igamma]+bargs[new_igamma];
+    } else {
+      oldB = bias_[igamma];
+      newB = bias_[new_igamma];
+    }
+    // accept or reject
+    accept = doAccept(oldE+oldB, newE+newB);
+    if(accept) {
+      igamma = new_igamma;
+      oldE = newE;
+      MCaccgamma_++;
+    }
+  }
+// send values of gamma to all replicas
+  if(comm.Get_rank()==0) {
+    if(multi_sim_comm.Get_rank()!=0) igamma = 0;
+    multi_sim_comm.Sum(&igamma, 1);
+  } else {
+    igamma = 0;
+  }
+// local communication
+  comm.Sum(&igamma, 1);
+
+// set the value of gamma into passMap
+  plumed.passMap[selector_]=static_cast<double>(igamma);
 }
 
 void Rescale::print_bias(long int step)
 {
- // if first time open the file
- if(first_bias_){
-  first_bias_ = false;
-  Biasfile_.link(*this);
-  Biasfile_.open(Biasfilename_);
-  Biasfile_.setHeavyFlush();
-  Biasfile_.fmtField("%30.5f");
- }
+// if first time open the file
+  if(first_bias_) {
+    first_bias_ = false;
+    Biasfile_.link(*this);
+    Biasfile_.open(Biasfilename_);
+    Biasfile_.setHeavyFlush();
+    Biasfile_.fmtField("%30.5f");
+  }
 
- // write fields
- double MDtime = static_cast<double>(step)*getTimeStep();
- Biasfile_.printField("MD_time", MDtime);
- for(unsigned i=0; i<bias_.size(); ++i){
-   // convert i to string
-   stringstream ss;
-   ss << i;
-   // label
-   string label = "b" + ss.str();
-   // print entry
-   Biasfile_.printField(label, bias_[i]);
- }
- Biasfile_.printField();
+// write fields
+  double MDtime = static_cast<double>(step)*getTimeStep();
+  Biasfile_.printField("MD_time", MDtime);
+  for(unsigned i=0; i<bias_.size(); ++i) {
+    // convert i to string
+    stringstream ss;
+    ss << i;
+    // label
+    string label = "b" + ss.str();
+    // print entry
+    Biasfile_.printField(label, bias_[i]);
+  }
+  Biasfile_.printField();
 }
 
 void Rescale::calculate()
 {
   // get the current value of the selector
   unsigned igamma = static_cast<unsigned>(plumed.passMap[selector_]);
- 
+
   // collect data from other replicas
   vector<double> all_args(getNumberOfArguments(), 0.0);
   // first calculate arguments
-  for(unsigned i=0; i<all_args.size(); ++i){
-     double arg = getArgument(i);
-     // sum shared arguments across replicas
-     if(shared_[i]==1){
-        if(comm.Get_rank()==0) multi_sim_comm.Sum(arg);
-        else                   arg = 0.0;
-        if(comm.Get_size()>1)  comm.Sum(arg);
-     }
-     // put into all_args
-     all_args[i] = arg;
+  for(unsigned i=0; i<all_args.size(); ++i) {
+    double arg = getArgument(i);
+    // sum shared arguments across replicas
+    if(shared_[i]==1) {
+      if(comm.Get_rank()==0) multi_sim_comm.Sum(arg);
+      else                   arg = 0.0;
+      if(comm.Get_size()>1)  comm.Sum(arg);
+    }
+    // put into all_args
+    all_args[i] = arg;
   }
 
   // now separate terms that should be rescaled
@@ -393,10 +393,10 @@ void Rescale::calculate()
   vector<double> bargs;
   if(nores_>0) bargs.resize(nores_);
   for(unsigned i=0; i<bargs.size(); ++i) bargs[i] = all_args[i+args.size()];
-  
+
   // calculate energy and forces, only on rescaled terms
   double ene = 0.0;
-  for(unsigned i=0; i<args.size(); ++i){
+  for(unsigned i=0; i<args.size(); ++i) {
     // calculate energy term
     double fact = 1.0/pow(gamma_[igamma], expo_[i]) - 1.0;
     ene += args[i] * fact;
@@ -406,12 +406,12 @@ void Rescale::calculate()
 
   // set to zero on the others
   for(unsigned i=0; i<bargs.size(); ++i) setOutputForce(i+args.size(), 0.0);
- 
+
   // set value of the bias
   setBias(ene);
   // set value of the wt-bias
   getPntrToComponent("wtbias")->set(bias_[igamma]);
-  // set values of gamma 
+  // set values of gamma
   getPntrToComponent("igamma")->set(igamma);
   // get time step
   long int step = getStep();
@@ -423,16 +423,16 @@ void Rescale::calculate()
 
   // do MC at the right time step
   if(step%MCstride_==0&&!getExchangeStep()) doMonteCarlo(igamma, ene, args, bargs);
-  
+
   // add well-tempered like bias
-  if(step%Biaspace_==0){
-     // get updated igamma
-     unsigned igamma = static_cast<unsigned>(plumed.passMap[selector_]);
-     // add "Gaussian"
-     double kbDT = kbt_ * ( biasf_ - 1.0 );
-     bias_[igamma] += w0_ * exp(-bias_[igamma] / kbDT);
+  if(step%Biaspace_==0) {
+    // get updated igamma
+    unsigned igamma = static_cast<unsigned>(plumed.passMap[selector_]);
+    // add "Gaussian"
+    double kbDT = kbt_ * ( biasf_ - 1.0 );
+    bias_[igamma] += w0_ * exp(-bias_[igamma] / kbDT);
   }
-  
+
   // print bias
   if(step%Biasstride_==0) print_bias(step);
 

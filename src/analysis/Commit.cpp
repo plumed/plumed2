@@ -28,52 +28,52 @@
 namespace PLMD {
 namespace analysis {
 
-//+PLUMEDOC PRINTANALYSIS COMMITTOR 
+//+PLUMEDOC PRINTANALYSIS COMMITTOR
 /*
 Does a committor analysis.
 
 \par Examples
 The following input monitors two torsional angles during a simulation,
-defines two basins (A and B) as a function of the two torsions and 
+defines two basins (A and B) as a function of the two torsions and
 stops the simulation when it falls in one of the two. In the log
-file will be shown the latest values for the CVs and the basin reached.  
+file will be shown the latest values for the CVs and the basin reached.
 \verbatim
 TORSION ATOMS=1,2,3,4 LABEL=r1
 TORSION ATOMS=2,3,4,5 LABEL=r2
 COMMITTOR ...
-  ARG=r1,r2 
+  ARG=r1,r2
   STRIDE=10
-  BASIN_LL1=0.15,0.20 
-  BASIN_UL1=0.25,0.40 
-  BASIN_LL2=-0.15,-0.20 
-  BASIN_UL2=-0.25,-0.40 
-... COMMITTOR 
+  BASIN_LL1=0.15,0.20
+  BASIN_UL1=0.25,0.40
+  BASIN_LL2=-0.15,-0.20
+  BASIN_UL2=-0.25,-0.40
+... COMMITTOR
 \endverbatim
 
 */
 //+ENDPLUMEDOC
 
-class Committor : 
-public ActionPilot,
-public ActionWithArguments
+class Committor :
+  public ActionPilot,
+  public ActionWithArguments
 {
 private:
   std::string file;
   OFile ofile;
   std::string fmt;
-  std::vector< std::vector<double> > lowerlimits; 
+  std::vector< std::vector<double> > lowerlimits;
   std::vector< std::vector<double> > upperlimits;
   unsigned nbasins;
 public:
   static void registerKeywords( Keywords& keys );
   explicit Committor(const ActionOptions&ao);
   void calculate();
-  void apply(){}
+  void apply() {}
 };
 
 PLUMED_REGISTER_ACTION(Committor,"COMMITTOR")
 
-void Committor::registerKeywords( Keywords& keys ){
+void Committor::registerKeywords( Keywords& keys ) {
   Action::registerKeywords(keys);
   ActionPilot::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
@@ -87,14 +87,14 @@ void Committor::registerKeywords( Keywords& keys ){
 }
 
 Committor::Committor(const ActionOptions&ao):
-Action(ao),
-ActionPilot(ao),
-ActionWithArguments(ao),
-fmt("%f")
+  Action(ao),
+  ActionPilot(ao),
+  ActionWithArguments(ao),
+  fmt("%f")
 {
   ofile.link(*this);
   parse("FILE",file);
-  if(file.length()>0){
+  if(file.length()>0) {
     ofile.open(file);
     log.printf("  on file %s\n",file.c_str());
   } else {
@@ -105,53 +105,53 @@ fmt("%f")
   fmt=" "+fmt;
   log.printf("  with format %s\n",fmt.c_str());
 
-  for(unsigned i=0;i<getNumberOfArguments();++i) ofile.setupPrintValue( getPntrToArgument(i) );
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) ofile.setupPrintValue( getPntrToArgument(i) );
 
-  for(unsigned b=1;;++b ){
+  for(unsigned b=1;; ++b ) {
 
-     std::vector<double> tmpl, tmpu;
-     parseNumberedVector("BASIN_LL", b, tmpl );
-     parseNumberedVector("BASIN_UL", b, tmpu );
-     if( tmpl.empty() && tmpu.empty() ) break;
-     if( tmpl.size()!=getNumberOfArguments()) error("Wrong number of values for BASIN_LL: they should be equal to the number of arguments");
-     if( tmpu.size()!=getNumberOfArguments()) error("Wrong number of values for BASIN_UL: they should be equal to the number of arguments");
-     lowerlimits.push_back(tmpl);
-     upperlimits.push_back(tmpu);
-     nbasins=b;
+    std::vector<double> tmpl, tmpu;
+    parseNumberedVector("BASIN_LL", b, tmpl );
+    parseNumberedVector("BASIN_UL", b, tmpu );
+    if( tmpl.empty() && tmpu.empty() ) break;
+    if( tmpl.size()!=getNumberOfArguments()) error("Wrong number of values for BASIN_LL: they should be equal to the number of arguments");
+    if( tmpu.size()!=getNumberOfArguments()) error("Wrong number of values for BASIN_UL: they should be equal to the number of arguments");
+    lowerlimits.push_back(tmpl);
+    upperlimits.push_back(tmpu);
+    nbasins=b;
   }
   checkRead();
 
 
-  for(unsigned b=0;b<nbasins;b++) {
+  for(unsigned b=0; b<nbasins; b++) {
     log.printf("  BASIN %u definition:\n", b+1);
-    for(unsigned i=0;i<getNumberOfArguments();++i){
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
       if(lowerlimits[b][i]>upperlimits[b][i]) error("COMMITTOR: UPPER bounds must always be greater than LOWER bounds");
       log.printf(" %f - %f\n", lowerlimits[b][i], upperlimits[b][i]);
     }
   }
 }
 
-void Committor::calculate(){
+void Committor::calculate() {
   std::vector<unsigned> inbasin;
   inbasin.assign (nbasins,1);
 
-  for(unsigned b=0;b<nbasins;++b){
-    for(unsigned i=0;i<getNumberOfArguments();++i){
-       if(getArgument(i)>lowerlimits[b][i]&&getArgument(i)<upperlimits[b][i]) inbasin[b]*=1; else inbasin[b]*=0;
+  for(unsigned b=0; b<nbasins; ++b) {
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      if(getArgument(i)>lowerlimits[b][i]&&getArgument(i)<upperlimits[b][i]) inbasin[b]*=1; else inbasin[b]*=0;
     }
   }
 
-  for(unsigned b=0;b<nbasins;++b){
+  for(unsigned b=0; b<nbasins; ++b) {
     if(inbasin[b]==1) {
       ofile.fmtField(" %f");
       ofile.printField("time",getTime());
-      for(unsigned i=0;i<getNumberOfArguments();i++){
+      for(unsigned i=0; i<getNumberOfArguments(); i++) {
         ofile.fmtField(fmt);
         ofile.printField( getPntrToArgument(i), getArgument(i) );
       }
       ofile.printField();
       std::string num; Tools::convert( b+1, num );
-      std::string str = "COMMITED TO BASIN " + num;  
+      std::string str = "COMMITED TO BASIN " + num;
       ofile.addConstantField(str);
       ofile.printField();
       ofile.flush();

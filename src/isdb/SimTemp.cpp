@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-/* 
+/*
 
 */
 #include "bias/Bias.h"
@@ -34,10 +34,10 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace isdb{
+namespace PLMD {
+namespace isdb {
 
-//+PLUMEDOC BIAS SIMTEMP 
+//+PLUMEDOC BIAS SIMTEMP
 /*
 
 */
@@ -52,7 +52,7 @@ class SimTemp : public bias::Bias
   vector<double> count_;
   vector<unsigned> ensemble_;
   unsigned nores_;
-  // status 
+  // status
   unsigned int init_;
   unsigned int statusstride_;
   string       statusfilename_;
@@ -77,10 +77,10 @@ class SimTemp : public bias::Bias
   void doMonteCarlo(unsigned ig, double oldE, vector<double> args, vector<double> bargs);
   unsigned proposeMove(unsigned x, unsigned xmin, unsigned xmax);
   bool doAccept(double oldE, double newE);
-  // read and print status 
+  // read and print status
   void read_status();
   void print_status(long int step);
-  
+
 public:
   explicit SimTemp(const ActionOptions&);
   ~SimTemp();
@@ -91,7 +91,7 @@ public:
 
 PLUMED_REGISTER_ACTION(SimTemp,"SIMTEMP")
 
-void SimTemp::registerKeywords(Keywords& keys){
+void SimTemp::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
   componentsAreNotOptional(keys);
   useCustomisableComponents(keys);
@@ -114,11 +114,11 @@ void SimTemp::registerKeywords(Keywords& keys){
 }
 
 SimTemp::SimTemp(const ActionOptions&ao):
-PLUMED_BIAS_INIT(ao), 
-nores_(0), init_(0), first_status_(true),
-MCsteps_(1), MCstride_(1), MCfirst_(-1), MCaccgamma_(0)
+  PLUMED_BIAS_INIT(ao),
+  nores_(0), init_(0), first_status_(true),
+  MCsteps_(1), MCstride_(1), MCfirst_(-1), MCaccgamma_(0)
 {
-  // set up replica stuff 
+  // set up replica stuff
   if(comm.Get_rank()==0) {
     nrep_    = multi_sim_comm.Get_size();
     replica_ = multi_sim_comm.Get_rank();
@@ -132,25 +132,25 @@ MCsteps_(1), MCstride_(1), MCfirst_(-1), MCaccgamma_(0)
 
   // selector name
   parse("SELECTOR", selector_);
-  
+
   // number of bins for gamma ladder
   unsigned nbin;
   parse("NBIN", nbin);
- 
+
   // initialize averages
   parse("INIT", init_);
   init_ *= nbin;
- 
-  // number of terms not to be rescaled 
+
+  // number of terms not to be rescaled
   parse("NOT_RESCALED", nores_);
   if(nores_>0 && nores_!=nbin) error("The number of non rescaled arguments must be equal to either 0 or the number of bins");
 
-  // maximum value of rescale 
+  // maximum value of rescale
   double max_rescale;
   parse("MAX_RESCALE", max_rescale);
 
   // allocate gamma grid and set weights/ave energy to zero
-  for(unsigned i=0; i<nbin; ++i){
+  for(unsigned i=0; i<nbin; ++i) {
     // weights
     w_.push_back(0.0);
     // average energy
@@ -168,15 +168,15 @@ MCsteps_(1), MCstride_(1), MCfirst_(-1), MCaccgamma_(0)
   // print status to file
   parse("STATUS_STRIDE", statusstride_);
   parse("STATUS_FILE",   statusfilename_);
-  
+
   // list of ensemble bias to always rescale
   vector<unsigned> ens;
-  parseVector("ENSEMBLE", ens); 
+  parseVector("ENSEMBLE", ens);
   // initialize ensemble to zero
   for(unsigned i=0; i<getNumberOfArguments(); ++i) ensemble_.push_back(0);
   // set ensemble bias to one
   for(unsigned i=0; i<ens.size(); ++i) ensemble_[ens[i]-1] = 1;
- 
+
   // monte carlo stuff
   parse("MC_STEPS",MCsteps_);
   parse("MC_STRIDE",MCstride_);
@@ -209,10 +209,10 @@ MCsteps_(1), MCstride_(1), MCfirst_(-1), MCaccgamma_(0)
   addComponent("ig");       componentIsNotPeriodic("ig");
   addComponent("accgamma"); componentIsNotPeriodic("accgamma");
   addComponent("strep");    componentIsNotPeriodic("strep");
- 
+
   // initialize random seed
   srand (time(NULL));
-  
+
   // read status file if restarting
   if(getRestart()) read_status();
 }
@@ -224,65 +224,65 @@ SimTemp::~SimTemp()
 
 void SimTemp::read_status()
 {
- double MDtime, st_rep, st_up;
- // open file
- IFile *ifile = new IFile();
- ifile->link(*this);
- if(ifile->FileExist(statusfilename_)){
+  double MDtime, st_rep, st_up;
+// open file
+  IFile *ifile = new IFile();
+  ifile->link(*this);
+  if(ifile->FileExist(statusfilename_)) {
     ifile->open(statusfilename_);
-    // read all the lines, store last value of weights 
-    while(ifile->scanField("MD_time",MDtime)){
-     for(unsigned i=0; i<w_.size(); ++i){
-      // convert i to string
-      std::string num; Tools::convert(i,num); 
-      // read entries
-      ifile->scanField("ave"+num, ave_ene_[i]);
-      ifile->scanField("n"+num, count_[i]);
-      ifile->scanField("w"+num, w_[i]);
-     }
-     ifile->scanField("st_rep", st_rep);
-     st_rep_ = static_cast<unsigned>(st_rep);
-     ifile->scanField("st_up", st_up);
-     st_up_ = static_cast<unsigned>(st_up);
-     ifile->scanField("ig", plumed.passMap[selector_]);
-     // new line
-     ifile->scanField();
+    // read all the lines, store last value of weights
+    while(ifile->scanField("MD_time",MDtime)) {
+      for(unsigned i=0; i<w_.size(); ++i) {
+        // convert i to string
+        std::string num; Tools::convert(i,num);
+        // read entries
+        ifile->scanField("ave"+num, ave_ene_[i]);
+        ifile->scanField("n"+num, count_[i]);
+        ifile->scanField("w"+num, w_[i]);
+      }
+      ifile->scanField("st_rep", st_rep);
+      st_rep_ = static_cast<unsigned>(st_rep);
+      ifile->scanField("st_up", st_up);
+      st_up_ = static_cast<unsigned>(st_up);
+      ifile->scanField("ig", plumed.passMap[selector_]);
+      // new line
+      ifile->scanField();
     }
     ifile->close();
- } else {
-    error("Cannot find status file "+statusfilename_+"\n"); 
- }
- delete ifile;
+  } else {
+    error("Cannot find status file "+statusfilename_+"\n");
+  }
+  delete ifile;
 }
 
 unsigned SimTemp::proposeMove(unsigned x, unsigned xmin, unsigned xmax)
 {
- int xmin_i = static_cast<int>(xmin);
- int xmax_i = static_cast<int>(xmax);
- int dx;
- int r = rand() % 2;
- if( r == 0 ) dx = +1;
- else         dx = -1;
- // new index, integer
- int x_new = static_cast<int>(x) + dx;
- // check boundaries
- if(x_new >= xmax_i) x_new = xmax_i-1;
- if(x_new <  xmin_i) x_new = xmin_i;
- return static_cast<unsigned>(x_new);
+  int xmin_i = static_cast<int>(xmin);
+  int xmax_i = static_cast<int>(xmax);
+  int dx;
+  int r = rand() % 2;
+  if( r == 0 ) dx = +1;
+  else         dx = -1;
+// new index, integer
+  int x_new = static_cast<int>(x) + dx;
+// check boundaries
+  if(x_new >= xmax_i) x_new = xmax_i-1;
+  if(x_new <  xmin_i) x_new = xmin_i;
+  return static_cast<unsigned>(x_new);
 }
 
 bool SimTemp::doAccept(double oldE, double newE)
 {
   bool accept = false;
-  // calculate delta energy 
+  // calculate delta energy
   double delta = ( newE - oldE ) / kbt_;
   // if delta is negative always accept move
-  if( delta < 0.0 ){ 
-   accept = true;
-  }else{
-   // otherwise extract random number   
-   double s = static_cast<double>(rand()) / RAND_MAX;
-   if( s < exp(-delta) ) { accept = true; }
+  if( delta < 0.0 ) {
+    accept = true;
+  } else {
+    // otherwise extract random number
+    double s = static_cast<double>(rand()) / RAND_MAX;
+    if( s < exp(-delta) ) { accept = true; }
   }
   return accept;
 }
@@ -290,82 +290,82 @@ bool SimTemp::doAccept(double oldE, double newE)
 void SimTemp::doMonteCarlo(unsigned ig, double oldE,
                            vector<double> args, vector<double> bargs)
 {
- // only the active replica changes igamma
- if(replica_ == st_rep_){
-   // cycle on MC steps 
-   for(unsigned i=0;i<MCsteps_;++i){
-    // propose move in ig
-    unsigned new_ig = proposeMove(ig, 0, gamma_.size());
-    // calculate new energy
-    double newE = 0.0;
-    for(unsigned j=0; j<args.size(); ++j){
-      // calculate energy term
-      double fact = 1.0/gamma_[new_ig] - 1.0;
-      newE += args[j] * fact;
+// only the active replica changes igamma
+  if(replica_ == st_rep_) {
+    // cycle on MC steps
+    for(unsigned i=0; i<MCsteps_; ++i) {
+      // propose move in ig
+      unsigned new_ig = proposeMove(ig, 0, gamma_.size());
+      // calculate new energy
+      double newE = 0.0;
+      for(unsigned j=0; j<args.size(); ++j) {
+        // calculate energy term
+        double fact = 1.0/gamma_[new_ig] - 1.0;
+        newE += args[j] * fact;
+      }
+      // add contributions from ST weights
+      double oldB = -w_[ig];
+      double newB = -w_[new_ig];
+      // and, in case, from non-rescaled terms (i.e., metadynamics bias...)
+      if(bargs.size()>0) {
+        oldB += bargs[ig];
+        newB += bargs[new_ig];
+      }
+      // accept or reject
+      bool accept = doAccept(oldE+oldB, newE+newB);
+      if(accept) {
+        ig = new_ig;
+        oldE = newE;
+        MCaccgamma_++;
+      }
     }
-    // add contributions from ST weights
-    double oldB = -w_[ig];
-    double newB = -w_[new_ig];
-    // and, in case, from non-rescaled terms (i.e., metadynamics bias...)
-    if(bargs.size()>0){
-       oldB += bargs[ig];
-       newB += bargs[new_ig];
-    }
-    // accept or reject
-    bool accept = doAccept(oldE+oldB, newE+newB);
-    if(accept){
-     ig = new_ig;
-     oldE = newE;
-     MCaccgamma_++;
-    }
-   }
- }
- // if not active replica, or not master node of each replica
- if(replica_ != st_rep_ || comm.Get_rank()!=0){
+  }
+// if not active replica, or not master node of each replica
+  if(replica_ != st_rep_ || comm.Get_rank()!=0) {
     ig = 0;
     MCaccgamma_ = 0;
- } 
- // send values of gamma/acceptance to all replicas
- if(comm.Get_rank()==0){
-   multi_sim_comm.Sum(&ig, 1); 
-   multi_sim_comm.Sum(&MCaccgamma_, 1);
- }
- // local communication
- comm.Sum(&ig, 1);
- comm.Sum(&MCaccgamma_, 1);
+  }
+// send values of gamma/acceptance to all replicas
+  if(comm.Get_rank()==0) {
+    multi_sim_comm.Sum(&ig, 1);
+    multi_sim_comm.Sum(&MCaccgamma_, 1);
+  }
+// local communication
+  comm.Sum(&ig, 1);
+  comm.Sum(&MCaccgamma_, 1);
 
- // set the value of gamma into passMap
- plumed.passMap[selector_]=static_cast<double>(ig); 
+// set the value of gamma into passMap
+  plumed.passMap[selector_]=static_cast<double>(ig);
 }
 
 void SimTemp::print_status(long int step)
 {
- // if first time open the file
- if(first_status_){
-  first_status_ = false;
-  statusfile_.link(*this);
-  statusfile_.open(statusfilename_);
-  statusfile_.setHeavyFlush();
-  statusfile_.fmtField("%30.5f");
- }
+// if first time open the file
+  if(first_status_) {
+    first_status_ = false;
+    statusfile_.link(*this);
+    statusfile_.open(statusfilename_);
+    statusfile_.setHeavyFlush();
+    statusfile_.fmtField("%30.5f");
+  }
 
- // write fields
- double MDtime = static_cast<double>(step)*getTimeStep();
- statusfile_.printField("MD_time", MDtime);
- for(unsigned i=0; i<w_.size(); ++i){
-   // convert i to string
-   std::string num; Tools::convert(i,num); 
-   // print entry
-   statusfile_.printField("ave"+num, ave_ene_[i]);
-   statusfile_.printField("n"+num, count_[i]);
-   statusfile_.printField("w"+num, w_[i]);
- }
- double st_rep = static_cast<double>(st_rep_);
- statusfile_.printField("st_rep", st_rep);
- double st_up = static_cast<double>(st_up_);
- statusfile_.printField("st_up", st_up);
- statusfile_.printField("ig", plumed.passMap[selector_]);
- statusfile_.printField();
+// write fields
+  double MDtime = static_cast<double>(step)*getTimeStep();
+  statusfile_.printField("MD_time", MDtime);
+  for(unsigned i=0; i<w_.size(); ++i) {
+    // convert i to string
+    std::string num; Tools::convert(i,num);
+    // print entry
+    statusfile_.printField("ave"+num, ave_ene_[i]);
+    statusfile_.printField("n"+num, count_[i]);
+    statusfile_.printField("w"+num, w_[i]);
+  }
+  double st_rep = static_cast<double>(st_rep_);
+  statusfile_.printField("st_rep", st_rep);
+  double st_up = static_cast<double>(st_up_);
+  statusfile_.printField("st_up", st_up);
+  statusfile_.printField("ig", plumed.passMap[selector_]);
+  statusfile_.printField();
 }
 
 void SimTemp::calculate()
@@ -377,7 +377,7 @@ void SimTemp::calculate()
   unsigned ig = static_cast<unsigned>(plumed.passMap[selector_]);
 
   // if in the initialization process
-  if(step < init_){
+  if(step < init_) {
     // calculate segment
     double seg = static_cast<double>(step) / static_cast<double>(init_) * static_cast<double>(w_.size());
     // get index
@@ -385,16 +385,16 @@ void SimTemp::calculate()
     // reset selector
     plumed.passMap[selector_] = static_cast<double>(ig);
     // replica 0 is doing the initialization
-    st_rep_ = 0; 
+    st_rep_ = 0;
     st_up_ = 1;
   }
 
   // after initialization reset ig to zero
-  if(step == init_){
+  if(step == init_) {
     ig = 0;
     plumed.passMap[selector_] = static_cast<double>(ig);
   }
- 
+
   // now separate terms that should be rescaled
   vector<double> args;
   if(getNumberOfArguments()-nores_>0) args.resize(getNumberOfArguments()-nores_);
@@ -403,10 +403,10 @@ void SimTemp::calculate()
   vector<double> bargs;
   if(nores_>0) bargs.resize(nores_);
   for(unsigned i=0; i<bargs.size(); ++i) bargs[i] = getArgument(i+args.size());
-  
+
   // calculate energy and forces, only on rescaled terms and active replica
   double ene = 0.0;
-  for(unsigned i=0; i<args.size(); ++i){
+  for(unsigned i=0; i<args.size(); ++i) {
     // active replica or ensemble bias
     if(replica_ == st_rep_ || ensemble_[i]==1) {
       // calculate energy term
@@ -423,30 +423,30 @@ void SimTemp::calculate()
   for(unsigned i=0; i<bargs.size(); ++i) setOutputForce(i+args.size(), 0.0);
 
   // if active replica...
-  if(replica_ == st_rep_){
-     // calculate sum of rescaled terms
-     double sum_ene = 0.0;
-     for(unsigned i=0; i<args.size(); ++i) sum_ene += args[i];
-     // update average
-     if(count_[ig]>0) ave_ene_[ig] = count_[ig] / ( count_[ig] + 1.0 ) * ( ave_ene_[ig] + sum_ene / count_[ig] );
-     else             ave_ene_[ig] = sum_ene;
-     // and increase counter
-     count_[ig] += 1.0;
-     // update ST weights  
-     if(ig>0){
+  if(replica_ == st_rep_) {
+    // calculate sum of rescaled terms
+    double sum_ene = 0.0;
+    for(unsigned i=0; i<args.size(); ++i) sum_ene += args[i];
+    // update average
+    if(count_[ig]>0) ave_ene_[ig] = count_[ig] / ( count_[ig] + 1.0 ) * ( ave_ene_[ig] + sum_ene / count_[ig] );
+    else             ave_ene_[ig] = sum_ene;
+    // and increase counter
+    count_[ig] += 1.0;
+    // update ST weights
+    if(ig>0) {
       w_[ig] = w_[ig-1] + (1.0/gamma_[ig]-1.0/gamma_[ig-1]) * ( ave_ene_[ig] + ave_ene_[ig-1] ) / 2.0;
-     }
-     if(ig<gamma_.size()-1){
+    }
+    if(ig<gamma_.size()-1) {
       w_[ig+1] = w_[ig] + (1.0/gamma_[ig+1]-1.0/gamma_[ig]) * ( ave_ene_[ig+1] + ave_ene_[ig] ) / 2.0;
-     }
+    }
   }
   // put to zero if not active replica, or not master node of each replica
-  if(replica_ != st_rep_ || comm.Get_rank()!=0){
-     for(unsigned i=0; i<w_.size(); ++i){
-        w_[i] = 0.0;
-        ave_ene_[i] = 0.0;
-        count_[i] = 0.0;
-     }
+  if(replica_ != st_rep_ || comm.Get_rank()!=0) {
+    for(unsigned i=0; i<w_.size(); ++i) {
+      w_[i] = 0.0;
+      ave_ene_[i] = 0.0;
+      count_[i] = 0.0;
+    }
   }
   // communicate stuff to non-active replicas
   if(comm.Get_rank()==0) {
@@ -457,14 +457,14 @@ void SimTemp::calculate()
   // and local sharing
   comm.Sum(&w_[0], w_.size());
   comm.Sum(&ave_ene_[0], ave_ene_.size());
-  comm.Sum(&count_[0], count_.size()); 
-   
+  comm.Sum(&count_[0], count_.size());
+
   // set value of the bias
   setBias(ene);
-  // set values of gamma 
+  // set values of gamma
   getPntrToComponent("ig")->set(ig);
   // set values of weights
-  for(unsigned i=0; i<w_.size(); ++i){
+  for(unsigned i=0; i<w_.size(); ++i) {
     // convert i to string
     std::string num; Tools::convert(i,num);
     // set
@@ -474,7 +474,7 @@ void SimTemp::calculate()
   getPntrToComponent("strep")->set(st_rep_);
 
   // after initialization process
-  if(step >= init_){
+  if(step >= init_) {
     // do MC at the right time step
     if(step%MCstride_==0&&!getExchangeStep()) doMonteCarlo(ig, ene, args, bargs);
     // calculate gamma acceptance
@@ -484,24 +484,24 @@ void SimTemp::calculate()
     getPntrToComponent("accgamma")->set(accgamma);
   }
 
-  // print status 
+  // print status
   if(step%statusstride_==0) print_status(step);
 
   // time to change replica to perform ST?
-  if(step >= init_){
-   // recover updated gamma selector
-   ig = static_cast<unsigned>(plumed.passMap[selector_]);
-   // reaching top of the ladder, when going up
-   if(ig==w_.size()-1 && st_up_==1) st_up_ = 0;
-   // reaching bottom of the ladder, when going down
-   if(ig==0 && st_up_==0){
-     // increment replica index
-     st_rep_ += 1;
-     // if getting to the end of the chain of replicas, restart
-     if(st_rep_==nrep_) st_rep_ = 0;
-     // reset up/down flag
-     st_up_ = 1;
-   }
+  if(step >= init_) {
+    // recover updated gamma selector
+    ig = static_cast<unsigned>(plumed.passMap[selector_]);
+    // reaching top of the ladder, when going up
+    if(ig==w_.size()-1 && st_up_==1) st_up_ = 0;
+    // reaching bottom of the ladder, when going down
+    if(ig==0 && st_up_==0) {
+      // increment replica index
+      st_rep_ += 1;
+      // if getting to the end of the chain of replicas, restart
+      if(st_rep_==nrep_) st_rep_ = 0;
+      // reset up/down flag
+      st_up_ = 1;
+    }
   }
 }
 

@@ -29,13 +29,13 @@
 #include <iosfwd>
 #include "tools/Keywords.h"
 
-namespace PLMD{
+namespace PLMD {
 
 class CLTool;
 class CLToolOptions;
 
 /// Same as ActionRegister, but for CLTools
-class CLToolRegister{
+class CLToolRegister {
 /// Write on a stream the list of registered directives
   friend std::ostream &operator<<(std::ostream &,const CLToolRegister&);
 /// Pointer to a function which, given the options, create an CLTool
@@ -64,7 +64,7 @@ public:
 /// Returns a list of the allowed CLTools
   std::vector<std::string> list()const;
 /// Print out the instructions for using the tool in html ready for input into the manual
-  bool printManual(const std::string& cltool); 
+  bool printManual(const std::string& cltool);
 };
 
 /// Function returning a reference to the CLToolRegister.

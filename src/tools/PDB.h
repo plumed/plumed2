@@ -29,14 +29,14 @@
 #include <map>
 
 
-namespace PLMD{
+namespace PLMD {
 
 class Log;
 
 /// Minimalistic pdb parser.
 /// Contain positions, atomic indexes, occupancy and beta.
 /// We should also add other info (e.g. residue name etc).
-class PDB{
+class PDB {
   std::vector<unsigned> block_ends;
   std::vector<std::string> atomsymb, chain;
   std::vector<unsigned> residue;
@@ -59,11 +59,11 @@ public:
 /// Access to the beta array
   const std::vector<double>     & getBeta()const;
 /// This is used to set the keyword ARG - this is so we
-/// we can use a1.* in the input for reference configurations 
+/// we can use a1.* in the input for reference configurations
   void setArgKeyword( const std::string& new_args );
 /// Add information to the remark
   void addRemark( const std::vector<std::string>& v1 );
-/// Access to the lines of REMARK 
+/// Access to the lines of REMARK
   const std::vector<std::string>     & getRemark()const;
 /// Access to the indexes
   const std::vector<AtomNumber> & getAtomNumbers()const;
@@ -73,11 +73,11 @@ public:
   void getChainNames( std::vector<std::string>& chains ) const;
 /// Get the residues in each of the chains
   void getResidueRange( const std::string& chainname, unsigned& res_start, unsigned& res_end, std::string& errmsg ) const;
-/// Get the atoms in each of the chains 
+/// Get the atoms in each of the chains
   void getAtomRange( const std::string& chainname, AtomNumber& a_start, AtomNumber& a_end, std::string& errmsg ) const;
 /// Get the chain ID that a particular residue is a part of
   std::string getChainID(const unsigned& resnumber) const;
-///use the log to dump information  
+///use the log to dump information
   friend Log& operator<<(Log& ostr, const PDB& pdb);
 /// return the name of a specific atom
   std::string getAtomName(AtomNumber a) const;
@@ -99,9 +99,9 @@ public:
 /// Return the atom named aname from residue number resnum and chain.
 /// Chain=="*" matches any chain and makes it equivalent to getNamedAtomFromResidue.
   AtomNumber getNamedAtomFromResidueAndChain( const std::string& aname, const unsigned& resnum, const std::string& chain ) const;
-/// Access to the atoms of a residue 
+/// Access to the atoms of a residue
   std::vector<AtomNumber> getAtomsInResidue(const unsigned& resnum,const std::string& chainid)const;
-/// Access to the atoms of a chain 
+/// Access to the atoms of a chain
   std::vector<AtomNumber> getAtomsInChain(const std::string& chainid)const;
 /// Get the extents of the blocks containing the atoms
   const std::vector<unsigned> & getAtomBlockEnds() const ;

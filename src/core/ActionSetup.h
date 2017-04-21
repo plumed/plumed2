@@ -24,7 +24,7 @@
 
 #include "Action.h"
 
-namespace PLMD{
+namespace PLMD {
 
 /**
 \ingroup MULTIINHERIT
@@ -36,11 +36,11 @@ public:
 /// Constructor
   explicit ActionSetup(const ActionOptions&ao);
 /// Creator of keywords
-  static void registerKeywords( Keywords& keys ); 
+  static void registerKeywords( Keywords& keys );
 /// Do nothing.
-  void calculate(){}
+  void calculate() {}
 /// Do nothing.
-  void apply(){}
+  void apply() {}
 };
 
 }

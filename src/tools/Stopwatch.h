@@ -27,7 +27,7 @@
 #include <iosfwd>
 #include <chrono>
 
-namespace PLMD{
+namespace PLMD {
 
 /**
 \ingroup TOOLBOX
@@ -96,10 +96,10 @@ int main(){
 
 */
 
-class Stopwatch{
+class Stopwatch {
 /// Class to store a single stopwatch.
 /// Class Stopwatch contains a collection of them
-  class Watch{
+  class Watch {
   public:
     std::chrono::time_point<std::chrono::high_resolution_clock> lastStart;
     long long int total = 0;
@@ -129,17 +129,17 @@ public:
 };
 
 inline
-void Stopwatch::start(){
+void Stopwatch::start() {
   start("");
 }
 
 inline
-void Stopwatch::stop(){
+void Stopwatch::stop() {
   stop("");
 }
 
 inline
-void Stopwatch::pause(){
+void Stopwatch::pause() {
   pause("");
 }
 

@@ -32,8 +32,8 @@ public:
 PLUMED_REGISTER_METRIC(MahalanobisDistance,"MAHALANOBIS")
 
 MahalanobisDistance::MahalanobisDistance( const ReferenceConfigurationOptions& ro ):
-ReferenceConfiguration(ro),
-ArgumentOnlyDistance(ro)
+  ReferenceConfiguration(ro),
+  ArgumentOnlyDistance(ro)
 {
   hasmetric=true;
 }

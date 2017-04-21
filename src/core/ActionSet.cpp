@@ -22,35 +22,35 @@
 #include "ActionSet.h"
 
 using namespace std;
-namespace PLMD{
+namespace PLMD {
 
 ActionSet::ActionSet(PlumedMain&p):
-plumed(p){
+  plumed(p) {
   (void) plumed; // to suppress warning about "unused plumed"
 }
 
 ActionSet::~ActionSet()
 {
-  for(int i=size()-1;i>=0;i--) delete (*this)[i];
+  for(int i=size()-1; i>=0; i--) delete (*this)[i];
 }
 
-void ActionSet::clearDelete(){
-  for(int i=size()-1;i>=0;i--) delete (*this)[i];
+void ActionSet::clearDelete() {
+  for(int i=size()-1; i>=0; i--) delete (*this)[i];
   clear();
 }
 
 
-std::string ActionSet::getLabelList() const{
+std::string ActionSet::getLabelList() const {
   std::string outlist;
-  for(const auto & p : (*this)){
+  for(const auto & p : (*this)) {
     outlist+=dynamic_cast<Action*>(p)->getLabel()+" ";
   };
   return  outlist;
 }
 
-std::vector<std::string> ActionSet::getLabelVector() const{
+std::vector<std::string> ActionSet::getLabelVector() const {
   std::vector<std::string> outlist;
-  for(const auto & p : (*this)){
+  for(const auto & p : (*this)) {
     outlist.push_back(dynamic_cast<Action*>(p)->getLabel());
   };
   return  outlist;

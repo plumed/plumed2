@@ -24,11 +24,11 @@
 #include "Colvar.h"
 #include "tools/NeighborList.h"
 
-namespace PLMD{
+namespace PLMD {
 
 class NeighborList;
 
-namespace colvar{
+namespace colvar {
 
 class CoordinationBase : public Colvar {
   bool pbc;
@@ -36,7 +36,7 @@ class CoordinationBase : public Colvar {
   NeighborList *nl;
   bool invalidateList;
   bool firsttime;
-  
+
 public:
   explicit CoordinationBase(const ActionOptions&);
   ~CoordinationBase();

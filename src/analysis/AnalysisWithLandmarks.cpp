@@ -25,7 +25,7 @@
 
 //+PLUMEDOC INTERNAL landmarkselection
 /*
-This is currently a filler page.  
+This is currently a filler page.
 
 Just use LANDMARKS=ALL.  More complex versions will appear in later versions.
 
@@ -35,37 +35,37 @@ Just use LANDMARKS=ALL.  More complex versions will appear in later versions.
 namespace PLMD {
 namespace analysis {
 
-void AnalysisWithLandmarks::registerKeywords( Keywords& keys ){
+void AnalysisWithLandmarks::registerKeywords( Keywords& keys ) {
   Analysis::registerKeywords( keys );
   keys.add("compulsory","LANDMARKS","ALL","only use a subset of the data that was collected. "
-                                          "For more information on the landmark selection algorithms that are available in "
-                                          "plumed see \\ref landmarkselection.");
+           "For more information on the landmark selection algorithms that are available in "
+           "plumed see \\ref landmarkselection.");
 }
 
 AnalysisWithLandmarks::AnalysisWithLandmarks( const ActionOptions& ao):
-Action(ao),
-Analysis(ao),
-data_to_analyze(NULL)
+  Action(ao),
+  Analysis(ao),
+  data_to_analyze(NULL)
 {
-   std::string linput; parse("LANDMARKS",linput);
-   std::vector<std::string> words=Tools::getWords(linput); 
-   landmarkSelector=landmarkRegister().create( LandmarkSelectionOptions(words,this) );
-   log.printf("  %s\n", landmarkSelector->description().c_str() );
+  std::string linput; parse("LANDMARKS",linput);
+  std::vector<std::string> words=Tools::getWords(linput);
+  landmarkSelector=landmarkRegister().create( LandmarkSelectionOptions(words,this) );
+  log.printf("  %s\n", landmarkSelector->description().c_str() );
 }
 
-AnalysisWithLandmarks::~AnalysisWithLandmarks(){
-   delete landmarkSelector;
+AnalysisWithLandmarks::~AnalysisWithLandmarks() {
+  delete landmarkSelector;
 }
 
-void AnalysisWithLandmarks::setDataToAnalyze( MultiReferenceBase* mydata ){
-   data_to_analyze=mydata;
+void AnalysisWithLandmarks::setDataToAnalyze( MultiReferenceBase* mydata ) {
+  data_to_analyze=mydata;
 }
 
 unsigned AnalysisWithLandmarks::getNumberOfLandmarks() const {
   return landmarkSelector->getNumberOfLandmarks();
 }
 
-void AnalysisWithLandmarks::performAnalysis(){
+void AnalysisWithLandmarks::performAnalysis() {
   plumed_assert( data_to_analyze );
   landmarkSelector->selectLandmarks( data_to_analyze );
   analyzeLandmarks();
