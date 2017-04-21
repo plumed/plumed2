@@ -22,9 +22,9 @@ done
 
 if [ $do_plumedcheck == true ] ; then
   if [ $do_local == true ] ; then
-    ../maketools/plumedcheck *.{h,cpp} ../../configure.ac
+    ../maketools/plumedcheck *.{h,cpp} ../../configure.ac --astyle=../../astyle/astyle --astyle-options=../../.astyle.options
   else
-    maketools/plumedcheck --global-check */*.{h,cpp} ../configure.ac
+    maketools/plumedcheck --global-check */*.{h,cpp} ../configure.ac --astyle=../astyle/astyle --astyle-options=../.astyle.options
   fi
 fi
 
