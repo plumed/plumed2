@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_workspace_file>
+	<Workspace title="Clang (GCC) AStyle All">
+		<Project filename="Clang AStyle.cbp" />
+		<Project filename="Clang AStyle So.cbp" />
+		<Project filename="Clang AStyle Java.cbp" />
+		<Project filename="Clang AStyle A.cbp" />
+	</Workspace>
+</CodeBlocks_workspace_file>
