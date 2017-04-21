@@ -1,5 +1,5 @@
 
-.PHONY: all clean lib install uninstall install-html
+.PHONY: all clean lib install uninstall install-html astyle
 
 # by default we compile the lib directory, which in turn requests all the needeed modules
 all: lib
@@ -48,5 +48,9 @@ help:
 	@echo "  codecheck: check source (requires cppcheck  and gawk installed)"
 	@echo "  cppcheck: check source (requires cppcheck and gawk installed)"
 	@echo "  plumedcheck: check source (requires gawk installed)"
+
+astyle:
+	$(MAKE) -C ../astyle
+	./astyle.sh
 
 

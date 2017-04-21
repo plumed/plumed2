@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="Clang AStyle" />
+		<Option pch_mode="2" />
+		<Option compiler="clang" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/astyled" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="clang" />
+				<Option parameters='&apos;&quot;$HOME/Projects/AStyleDev/test-c/*.cpp&quot;&apos; &apos;&quot;$HOME/Projects/AStyleDev/test-c/*.h&quot;&apos;  -vR' />
+				<Option projectLinkerOptionsRelation="0" />
+				<Option projectIncludeDirsRelation="0" />
+				<Option projectResourceIncludeDirsRelation="0" />
+				<Option projectLibDirsRelation="0" />
+				<Compiler>
+					<Add option="-Weverything" />
+					<Add option="-Wall" />
+					<Add option="-std=c++11" />
+					<Add option="-g" />
+					<Add option="-Wextra" />
+					<Add option="-fno-rtti" />
+					<Add option="-fno-exceptions" />
+					<Add option="-Wno-c++98-compat" />
+					<Add option="-Wno-disabled-macro-expansion" />
+					<Add option="-Wno-exit-time-destructors" />
+					<Add option="-Wno-format-nonliteral" />
+					<Add option="-Wno-global-constructors" />
+					<Add option="-Wno-missing-noreturn" />
+					<Add option="-Wno-missing-variable-declarations" />
+					<Add option="-Wno-old-style-cast" />
+					<Add option="-Wno-padded" />
+					<Add option="-Wno-shorten-64-to-32" />
+					<Add option="-Wno-sign-conversion" />
+					<Add option="-Wno-weak-vtables" />
+				</Compiler>
+				<MakeCommands>
+					<Build command="" />
+					<CompileFile command="" />
+					<Clean command="" />
+					<DistClean command="" />
+					<AskRebuildNeeded command="" />
+					<SilentBuild command=" &gt; $(CMD_NULL)" />
+				</MakeCommands>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/astyle" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="clang" />
+				<Option parameters='&apos;&quot;/home/jimp/Projects/AStyleDev/test-c/*.cpp&quot;&apos;  -v  --exclude=exclude.cpp ' />
+				<Compiler>
+					<Add option="-O3" />
+					<Add option="-Weverything" />
+					<Add option="-Wall" />
+					<Add option="-std=c++11" />
+					<Add option="-Wextra" />
+					<Add option="-fno-rtti" />
+					<Add option="-fno-exceptions" />
+					<Add option="-Wno-c++98-compat" />
+					<Add option="-Wno-disabled-macro-expansion" />
+					<Add option="-Wno-exit-time-destructors" />
+					<Add option="-Wno-format-nonliteral" />
+					<Add option="-Wno-global-constructors" />
+					<Add option="-Wno-missing-noreturn" />
+					<Add option="-Wno-missing-variable-declarations" />
+					<Add option="-Wno-old-style-cast" />
+					<Add option="-Wno-padded" />
+					<Add option="-Wno-shorten-64-to-32" />
+					<Add option="-Wno-sign-conversion" />
+					<Add option="-Wno-weak-vtables" />
+					<Add option="-DNDEBUG" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Unit filename="../../src/ASBeautifier.cpp" />
+		<Unit filename="../../src/ASEnhancer.cpp" />
+		<Unit filename="../../src/ASFormatter.cpp" />
+		<Unit filename="../../src/ASLocalizer.cpp" />
+		<Unit filename="../../src/ASLocalizer.h" />
+		<Unit filename="../../src/ASResource.cpp" />
+		<Unit filename="../../src/astyle.h" />
+		<Unit filename="../../src/astyle_main.cpp" />
+		<Unit filename="../../src/astyle_main.h" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+			<envvars />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
