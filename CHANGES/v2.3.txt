@@ -162,5 +162,7 @@ See branch \branch{v2.3} on git repository.
 
 For developers:
 - plumedcheck validation has been made stricter. All the checks are now described in the developer manual.
+- IMPORTANT: we started to enforce code formatting using astyle. Check the developer documentation to learn how to
+  take care of not-yet-formatted branches.
 
 */

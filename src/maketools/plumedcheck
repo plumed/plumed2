@@ -66,6 +66,7 @@ BEGIN{
   newargv[0]=ARGV[0]
   pre=""
   opt_global_check=0
+  astyle="astyle"
   for(i=1;i<ARGC;i++){
     opt=pre ARGV[i]
     pre=""
@@ -75,6 +76,14 @@ BEGIN{
         usage(); break;
       case "--global-check":
         opt_global_check=1; break;
+      case /--astyle=.*/:
+        sub("^--astyle=","",opt);
+        astyle=opt;
+      case /--astyle-options=.*/:
+        sub("^--astyle-options=","",opt);
+        astyle_options=opt;
+        break;
+        break;
       case /-.*/:
         print "Unknown option " opt; exit(1)
       default:
@@ -129,6 +138,9 @@ BEGIN{
   core_modules["core"]=1
   core_modules["tools"]=1
   core_modules["reference"]=1
+
+# create tmp dir for future usage
+  "mktemp -d" | getline tmpdir
 }
 
 # for each input file
@@ -181,6 +193,14 @@ BEGINFILE{
 
 # checks that are done only on some modules will be skipped if the module name is not known
   if((filetype=="source" || filetype=="header") && !module) information("missing_module_name","module name is not know, some check will be skipped");
+
+  if(filetype=="source" || filetype=="header"){
+    tempfile = tmpdir "/astyle"
+    system(astyle " --options=" astyle_options " < " FILENAME " > " tempfile)
+    s=system("diff -q " FILENAME " " tempfile ">/dev/null 2>/dev/null")
+    if(s!=0) error("astyle","astyle not satisfied")
+    system("rm " tempfile)
+  }
 
 }
 
@@ -526,6 +546,9 @@ END{
       error("unused_has","has " has " at " plumed_definehas[has] " is not used")
     }
   }
+
+# remove temporary directory
+  system("rmdir " tmpdir);
 }
 
 EOF
