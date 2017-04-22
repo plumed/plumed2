@@ -80,6 +80,9 @@ For DNA or RNA residues, the following groups are available:
 @v3-#
 @v4-#
 
+# quadruplet corresponding to the chi torsional angle
+@chi-#
+
 # backbone, sugar, and base heavy atoms
 @back-#
 @sugar-#
