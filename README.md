@@ -110,8 +110,17 @@ To report problems found on `master` branch, use the `plumed2-git@googlegroups.c
 This is also the correct place for discussions about new features etc.
 When reporting please provide the git hash (you can obtain it with `git rev-parse HEAD`).
 
+In addition, the repository contains a number of other branches related to specific features.
+Please contact the developers that are committing on those branches before basing your work
+there, since they might contain temporary work and might be rebased laster.
+
+For instance, branch `testdoc` is setup so as to push a test copy of the manual
+and is often force pushed.
+
 Status
 ------
+
+Below you find the status on Travis-CI for the release branches.
 
 | Branch   |      Status   | Supported |
 |:--------:|:-------------:|:--------:|
