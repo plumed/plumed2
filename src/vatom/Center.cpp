@@ -110,8 +110,8 @@ Center::Center(const ActionOptions&ao):
   checkRead();
   log.printf("  of atoms:");
   for(unsigned i=0; i<atoms.size(); ++i) {
-     if(i%25==0) log<<"\n";
-     log.printf(" %d",atoms[i].serial());
+    if(i%25==0) log<<"\n";
+    log.printf(" %d",atoms[i].serial());
   }
   log<<"\n";
   if(weight_mass) {
