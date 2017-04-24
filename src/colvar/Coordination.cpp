@@ -74,13 +74,20 @@ c: COORDINATION GROUPA=1 GROUPB=1 R_0=0.3
 PRINT ARG=c STRIDE=10
 \endplumedfile
 
+Here's an example that shows what happens when providing COORDINATION with
+a single group:
 \plumedfile
-c1: COORDINATION GROUPA=1-10 GROUPB=1-10 R_0=0.3
-x: COORDINATION GROUPA=1-10 R_0=0.3
+# define some huge group:
+group: GROUP ATOMS=1-1000
+# Here's coordination of a group against itself:
+c1: COORDINATION GROUPA=group GROUPB=group R_0=0.3
+# Here's coordination within a single group:
+x: COORDINATION GROUPA=group R_0=0.3
+# This is just multiplying times 2 the variable x:
 c2: COMBINE ARG=x COEFFICIENTS=2
+
 # the two variables c1 and c2 should be identical, but the calculation of c2 is twice faster
-# since it runs on half of the pairs. Notice that to get the same result you
-# should double it
+# since it runs on half of the pairs.
 PRINT ARG=c1,c2 STRIDE=10
 \endplumedfile
 

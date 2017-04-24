@@ -74,6 +74,16 @@ PRINT ARG=d1 FILE=out1 RESTART=NO
 PRINT ARG=d2 FILE=out2
 \endplumedfile
 
+In the following case, file out will backed up even if the MD code thinks that we
+are restarting. Notice that not all the MD code send to PLUMED information about restarts.
+If you are not sure, always put `RESTART` when you are restarting and nothing when you aren't
+\plumedfile
+RESTART NO
+d1: DISTANCE ATOMS=1,2
+PRINT ARG=d1 FILE=out1
+\endplumedfile
+
+
 
 
 

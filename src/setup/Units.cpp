@@ -44,14 +44,35 @@ the units. For example, trajectories written in .gro format (with \ref DUMPATOMS
 are going to be always in nm.
 
 \par Examples
+
+
 \plumedfile
 # this is using nm - kj/mol - fs
-UNITS LENGTH=nm TIME=fs
+UNITS LENGTH=A TIME=fs
+
+# compute distance between atoms 1 and 4
+d: DISTANCE ATOMS=1,4
+
+# print time and distance on a COLVAR file
+PRINT ARG=d FILE=COLVAR
+
+# dump atoms 1 to 100 on a 'out.gro' file
+DUMPATOMS FILE=out.gro STRIDE=10 ATOMS=1-100
+
+# dump atoms 1 to 100 on a 'out.xyz' file
+DUMPATOMS FILE=out.xyz STRIDE=10 ATOMS=1-100
 \endplumedfile
-If a number, x, is found, the new unit is equal to x (default units)
+
+In the `COLVAR` file, time and distance will appear in fs and A respectively, *irrespectively* of which units
+you are using the the host MD code. The coordinates in the `out.gro` file will be expressed in nm,
+since `gro` files are by convention written in nm. The coordinates in the `out.xyz` file
+will be written in Angstrom *since we used the UNITS command setting Angstrom units*.
+Indeed, within PLUMED xyz files are using internal PLUMED units and not necessarily Angstrom!
+
+If a number, x, is found instead of a string, the new unit is equal to x times the default units.
+Using the following command as first line of the previous example would have lead to an identical result:
 \plumedfile
-# this is using nm - kj/mol - fs
-UNITS LENGTH=nm TIME=0.001
+UNITS LENGTH=0.1 TIME=0.001
 \endplumedfile
 
 */
