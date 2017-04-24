@@ -102,7 +102,7 @@ void SSRestraint::registerKeywords(Keywords& keys) {
   keys.add("optional","MC_STRIDE","MC stride");
   componentsAreNotOptional(keys);
   useCustomisableComponents(keys);
-  keys.addOutputComponent("phi","default","phi parameters");
+  keys.addOutputComponent("phi",   "default","phi parameter");
   keys.addOutputComponent("accphi","default","MC acceptance phi");
 }
 
@@ -249,14 +249,12 @@ double SSRestraint::getEnergy(map <string, double> phi,
   for(unsigned i=rank_; i<ss_pred_.size(); i=i+nrep_) {
     // get ss type
     string ss = ss_pred_[i];
-    // and normalization
-    double norm = pHl[i] + pEl[i] + pCl[i];
     // retrieve p(d|s) coefficients
     double a = coeff[make_pair(ss,"H")];
     double b = coeff[make_pair(ss,"E")];
     double c = coeff[make_pair(ss,"C")];
     // calculate likelihood
-    double like = ( a * pHl[i] + b * pEl[i] + c * pCl[i] ) / norm;
+    double like = ( a * pHl[i] + b * pEl[i] + c * pCl[i] );
     // add to energy
     ene += -kbt_ * std::log(like);
   }
@@ -378,10 +376,10 @@ void SSRestraint::calculate()
     double pH = 0.25*(1.0+cos(phid-phi_ref_["H"]))*(1.0+cos(psid-psi_ref_["H"]));
     double pE = 0.25*(1.0+cos(phid-phi_ref_["E"]))*(1.0+cos(psid-psi_ref_["E"]));
     double pC = (1.0 - pH) * (1.0 - pE);
-    // store in lists
-    pHl[i] = pH; pEl[i] = pE; pCl[i] = pC;
     // and normalization
     double norm = pH + pE + pC;
+    // store in lists (with normalization)
+    pHl[i] = pH/norm; pEl[i] = pE/norm; pCl[i] = pC/norm;
     // retrieve p(d|s) coefficients
     double a = coeff[make_pair(ss,"H")];
     double b = coeff[make_pair(ss,"E")];
@@ -393,9 +391,9 @@ void SSRestraint::calculate()
     // calculate partial derivatives
     double dene_dlike = -kbt_ / like;
     //
-    double dlike_dpH = ( a * norm - ( a * pH + b * pE + c * pC ) ) / norm / norm;
-    double dlike_dpE = ( b * norm - ( a * pH + b * pE + c * pC ) ) / norm / norm;
-    double dlike_dpC = ( c * norm - ( a * pH + b * pE + c * pC ) ) / norm / norm;
+    double dlike_dpH = ( a  - ( a * pHl[i] + b * pEl[i] + c * pCl[i] ) ) / norm;
+    double dlike_dpE = ( b  - ( a * pHl[i] + b * pEl[i] + c * pCl[i] ) ) / norm;
+    double dlike_dpC = ( c  - ( a * pHl[i] + b * pEl[i] + c * pCl[i] ) ) / norm;
     //
     double dpH_dphid   = -0.25 * sin(phid-phi_ref_["H"]) * (1.0+cos(psid-psi_ref_["H"]));
     double dpH_dpsid   = -0.25 * (1.0+cos(phid-phi_ref_["H"])) * sin(psid-psi_ref_["H"]);
