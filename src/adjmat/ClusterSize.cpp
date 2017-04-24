@@ -39,7 +39,7 @@ The following input uses PLUMED to calculate a adjacency matrix that connects a 
 than 2.0 and if they are within 6.0 nm of each other.  Depth first search clustering is used to find the connected components in this matrix and then
 the number of atoms in the largest cluster is found.  This quantity is then output to a file called colvar
 
-\verbatim
+\plumedfile
 # Calculate coordination numbers
 c1: COORDINATIONNUMBER SPECIES=1-512 SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0}
 # Select coordination numbers that are more than 2.0
@@ -51,7 +51,7 @@ dfs: DFSCLUSTERING MATRIX=mat
 clust1: CLUSTER_PROPERTIES CLUSTERS=dfs CLUSTER=1
 nat: CLUSTER_NATOMS CLUSTERS=dfs CLUSTER=1
 PRINT ARG=nat FILE=COLVAR
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

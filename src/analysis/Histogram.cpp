@@ -84,7 +84,7 @@ Additional material and examples can be also found in the tutorial \ref belfast-
 
 The following input monitors two torsional angles during a simulation
 and outputs a continuos histogram as a function of them at the end of the simulation.
-\verbatim
+\plumedfile
 TORSION ATOMS=1,2,3,4 LABEL=r1
 TORSION ATOMS=2,3,4,5 LABEL=r2
 HISTOGRAM ...
@@ -97,11 +97,11 @@ HISTOGRAM ...
 ... HISTOGRAM
 
 DUMPGRID GRID=hh FILE=histo
-\endverbatim
+\endplumedfile
 
 The following input monitors two torsional angles during a simulation
 and outputs a discrete histogram as a function of them at the end of the simulation.
-\verbatim
+\plumedfile
 TORSION ATOMS=1,2,3,4 LABEL=r1
 TORSION ATOMS=2,3,4,5 LABEL=r2
 HISTOGRAM ...
@@ -115,11 +115,11 @@ HISTOGRAM ...
 ... HISTOGRAM
 
 DUMPGRID GRID=hh FILE=histo
-\endverbatim
+\endplumedfile
 
 The following input monitors two torsional angles during a simulation
 and outputs the histogram accumulated thus far every 100000 steps.
-\verbatim
+\plumedfile
 TORSION ATOMS=1,2,3,4 LABEL=r1
 TORSION ATOMS=2,3,4,5 LABEL=r2
 HISTOGRAM ...
@@ -132,14 +132,14 @@ HISTOGRAM ...
 ... HISTOGRAM
 
 DUMPGRID GRID=hh FILE=histo STRIDE=100000
-\endverbatim
+\endplumedfile
 
 The following input monitors two torsional angles during a simulation
 and outputs a separate histogram for each 100000 steps worth of trajectory.
 Notice how the CLEAR keyword is used here and how it is not used in the
 previous example.
 
-\verbatim
+\plumedfile
 TORSION ATOMS=1,2,3,4 LABEL=r1
 TORSION ATOMS=2,3,4,5 LABEL=r2
 HISTOGRAM ...
@@ -153,7 +153,7 @@ HISTOGRAM ...
 ... HISTOGRAM
 
 DUMPGRID GRID=hh FILE=histo STRIDE=100000
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

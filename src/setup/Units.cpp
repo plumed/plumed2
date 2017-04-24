@@ -44,16 +44,15 @@ the units. For example, trajectories written in .gro format (with \ref DUMPATOMS
 are going to be always in nm.
 
 \par Examples
-\verbatim
+\plumedfile
 # this is using nm - kj/mol - fs
 UNITS LENGTH=nm TIME=fs
-\endverbatim
+\endplumedfile
 If a number, x, is found, the new unit is equal to x (default units)
-\verbatim
+\plumedfile
 # this is using nm - kj/mol - fs
 UNITS LENGTH=nm TIME=0.001
-\endverbatim
-
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

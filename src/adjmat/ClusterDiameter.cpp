@@ -40,7 +40,7 @@ than 2.0 and if they are within 6.0 nm of each other.  Depth first search cluste
 between every pair of atoms that are within the largest of the clusters found is then calculated and the largest of these distances is output to a file named
 colvar.
 
-\verbatim
+\plumedfile
 # Calculate coordination numbers
 c1: COORDINATIONNUMBER SPECIES=1-512 SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0}
 # Select coordination numbers that are more than 2.0
@@ -52,7 +52,7 @@ dfs: DFSCLUSTERING MATRIX=mat
 clust1: CLUSTER_PROPERTIES CLUSTERS=dfs CLUSTER=1
 dia: CLUSTER_DIAMETER CLUSTERS=dfs CLUSTER=1
 PRINT ARG=dia FILE=colvar
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

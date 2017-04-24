@@ -354,6 +354,12 @@ BEGINFILE{
     if(in_plumed_doc && (in_plumed_doc in provide_examples) && match($0,"^ *\\\\verbatim *$")){
       provide_verbatim[in_plumed_doc]=1
     }
+# check if, besides the \par Examples text, there is a plumedfile command
+# now it is considered equivalent to a verbatim
+# later on we might make plumedfile compulsory instead of verbatim
+    if(in_plumed_doc && (in_plumed_doc in provide_examples) && match($0,"^ *\\\\plumedfile *$")){
+      provide_verbatim[in_plumed_doc]=1
+    }
 #print match($0,"^ *\\\\verbatim *$"),"X" $0 "X"
 
 # take note of actions or cltools that provide examples

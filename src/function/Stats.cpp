@@ -41,13 +41,13 @@ from other actions using PARARG (for example using experimental values from coll
 The following input tells plumed to print the distance between three couple of atoms
 and compare them with three reference distances.
 
-\verbatim
+\plumedfile
 d1: DISTANCE ATOMS=10,50
 d2: DISTANCE ATOMS=1,100
 d3: DISTANCE ATOMS=45,75
 st: STATS ARG=d1,d2,d3 PARAMETERS=1.5,4.0,2.0
 PRINT ARG=d1,d2,d3,st.*
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

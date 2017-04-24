@@ -65,7 +65,7 @@ the \ref INCLUDE command so as to store long group definitions in a separate fil
 
 This command create a group of atoms containing atoms 1,4,7,11 and 14 (labeled 'o'), and another containing
 atoms 2,3,5,6,8,9,12,13 (labeled 'h'):
-\verbatim
+\plumedfile
 o: GROUP ATOMS=1,4,7,11,14
 h: GROUP ATOMS=2,3,5,6,8,9,12,13
 # compute the coordination among the two groups
@@ -75,45 +75,41 @@ c: COORDINATION GROUPA=o GROUPB=h R_0=0.3
 
 # print the coordination on file 'colvar'
 PRINT ARG=c FILE=colvar
-\endverbatim
-(see also \ref COORDINATION and \ref PRINT)
+\endplumedfile
 
 Groups can be conveniently stored in a separate file.
 E.g. one could create a file named 'groups.dat' which reads
-\verbatim
+\plumedfile
 o: GROUP ATOMS=1,4,7,11,14
 h: GROUP ATOMS=2,3,5,6,8,9,12,13
-\endverbatim
+\endplumedfile
 and then include it in the main 'plumed.dat' file
-\verbatim
+\plumedfile
 INCLUDE FILE=groups.dat
 # compute the coordination among the two groups
 c: COORDINATION GROUPA=o GROUPB=h R_0=0.3
 # print the coordination on file 'colvar'
 PRINT ARG=c FILE=colvar
-\endverbatim
-(see also \ref INCLUDE, \ref COORDINATION, and \ref PRINT).
+\endplumedfile
 The groups.dat file could be very long and include lists of thousand atoms without cluttering the main plumed.dat file.
 
 A GROMACS index file can also be imported
-\verbatim
+\plumedfile
 # import group named 'protein' from file index.ndx
 pro: GROUP NDX_FILE=index.ndx NDX_GROUP=protein
 # dump all the atoms of the protein on a trajectory file
 DUMPATOMS ATOMS=pro FILE=traj.gro
-\endverbatim
-(see also \ref DUMPATOMS)
+\endplumedfile
 
 A list can be edited with REMOVE
-\verbatim
+\plumedfile
 # take one atom every three
 ox: GROUP ATOMS=1-90:3
 # take the remaining atoms
 hy: GROUP ATOMS=1-90 REMOVE=ox
 DUMPATOMS ATOMS=ox FILE=ox.gro
 DUMPATOMS ATOMS=hy FILE=hy.gro
-\endverbatim
-(see also \ref DUMPATOMS)
+\endplumedfile
 
 
 */

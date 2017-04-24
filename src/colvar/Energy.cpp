@@ -48,11 +48,10 @@ using GROMACS with lambda replica exchange of with plumed-hrex branch.
 
 \par Examples
 The following input instructs plumed to print the energy of the system
-\verbatim
+\plumedfile
 ene: ENERGY
 PRINT ARG=ene
-\endverbatim
-(See also \ref PRINT).
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

@@ -76,10 +76,10 @@ frame are removed from these displacements.  The matrix \f$A\f$ and the referenc
 configuration \f$R^{ref}\f$ are specified in the pdb input file reference.pdb and the
 value of all projections (and the residual) are output to a file called colvar2.
 
-\verbatim
+\plumedfile
 PCAVARS REFERENCE=reference.pdb TYPE=OPTIMAL LABEL=pca2
 PRINT ARG=pca2.* FILE=colvar2
-\endverbatim
+\endplumedfile
 
 The reference configurations can be specified using a pdb file.  The first configuration that you provide is the reference configuration,
 which is refered to in the above as \f$X^{ref}\f$ subsequent configurations give the directions of row vectors that are contained in

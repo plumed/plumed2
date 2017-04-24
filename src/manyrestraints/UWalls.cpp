@@ -48,11 +48,11 @@ and the center of mass of the cluster.  These distances are then passed to the U
 a \ref UPPER_WALLS restraint on each of them and thereby prevents each of them from moving very far from the centre
 of mass of the cluster.
 
-\verbatim
+\plumedfile
 COM ATOMS=1-20 LABEL=c1
 DISTANCES GROUPA=c1 GROUPB=1-20 LABEL=d1
 UWALLS DATA=d1 AT=2.5 KAPPA=0.2 LABEL=sr
-\endverbatim
+\endplumedfile
 
 
 */

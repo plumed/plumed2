@@ -41,10 +41,10 @@ Calculate the torsional angle around the x axis from the positive y direction.
 
 The following input tells plumed to calculate the angle around the x direction between the positive y-axis and the vector connecting atom 3 to atom 5 and
 the angle around the x direction between the positive y axis and the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then output
-\verbatim
+\plumedfile
 XYTORSIONS ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
 PRINT ARG=d1.min
-\endverbatim
+\endplumedfile
 (See also \ref PRINT).
 */
 //+ENDPLUMEDOC
@@ -57,10 +57,10 @@ Calculate the torsional angle around the x axis from the positive z direction.
 
 The following input tells plumed to calculate the angle around the x direction between the positive z-axis and the vector connecting atom 3 to atom 5 and
 the angle around the x direction between the positive z direction and the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then output
-\verbatim
+\plumedfile
 XZTORSIONS ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
 PRINT ARG=d1.min
-\endverbatim
+\endplumedfile
 (See also \ref PRINT).
 */
 //+ENDPLUMEDOC
@@ -73,10 +73,10 @@ Calculate the torsional angle around the y axis from the positive x direction.
 
 The following input tells plumed to calculate the angle around the y direction between the positive x-direction and the vector connecting atom 3 to atom 5 and
 the angle around the y direction between the positive x axis and the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then output
-\verbatim
+\plumedfile
 YXTORSIONS ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
 PRINT ARG=d1.min
-\endverbatim
+\endplumedfile
 (See also \ref PRINT).
 */
 //+ENDPLUMEDOC
@@ -89,10 +89,10 @@ Calculate the torsional angle around the y axis from the positive z direction.
 
 The following input tells plumed to calculate the angle around the y direction between the positive z-direction and the vector connecting atom 3 to atom 5 and
 the angle around the y direction between the positive z direction and the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then output
-\verbatim
+\plumedfile
 YZTORSIONS ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
 PRINT ARG=d1.min
-\endverbatim
+\endplumedfile
 (See also \ref PRINT).
 */
 //+ENDPLUMEDOC
@@ -105,10 +105,10 @@ Calculate the torsional angle around the z axis from the positive x direction.
 
 The following input tells plumed to calculate the angle around the z direction between the positive x-direction and the vector connecting atom 3 to atom 5 and
 the angle around the z direction between the positive x-direction and the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then output
-\verbatim
+\plumedfile
 ZXTORSIONS ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
 PRINT ARG=d1.min
-\endverbatim
+\endplumedfile
 (See also \ref PRINT).
 */
 //+ENDPLUMEDOC
@@ -121,10 +121,10 @@ Calculate the torsional angle around the z axis from the positive y direction.
 
 The following input tells plumed to calculate the angle around the z direction between the positive y-axis and the vector connecting atom 3 to atom 5 and
 the angle around the z direction between the positive y axis and the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then output
-\verbatim
+\plumedfile
 ZYTORSIONS ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
 PRINT ARG=d1.min
-\endverbatim
+\endplumedfile
 (See also \ref PRINT).
 */
 //+ENDPLUMEDOC

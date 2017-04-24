@@ -55,10 +55,10 @@ As you want to calculate the position of the droplets you thus recognise that th
 numbers should have a high weight in the weighted average you are using to calculate the position of the droplet.
 You can thus calculate the position of the droplet using an input like the one shown below:
 
-\verbatim
+\plumedfile
 c1: COORDINATIONNUMBER SPECIES=1-512 SWITCH={EXP D_0=4.0 R_0=0.5}
 cc: CENTER_OF_MULTICOLVAR DATA=c1
-\endverbatim
+\endplumedfile
 
 The first line here calclates the coordination numbers of all the atoms in the system.  The virtual atom then uses the values
 of the coordination numbers calculated by the action labelled c1 when it calculates the Berry Phase average described above.
@@ -66,11 +66,11 @@ of the coordination numbers calculated by the action labelled c1 when it calcula
 
 The above input is fine we can, however, refine this somewhat by making use of a multicolvar transform action as shown below:
 
-\verbatim
+\plumedfile
 c1: COORDINATIONNUMBER SPECIES=1-512 SWITCH={EXP D_0=4.0 R_0=0.5}
 cf: MTRANSFORM_MORE DATA=c1 SWITCH={RATIONAL D_0=2.0 R_0=0.1} LOWMEM
 cc: CENTER_OF_MULTICOLVAR DATA=cf
-\endverbatim
+\endplumedfile
 
 This input once again calculates the coordination numbers of all the atoms in the system.  The middle line then transforms these
 coordinations numbers to numbers between 0 and 1.  Essentially any atom with a coordination number larger than 2.0 is given a weight

@@ -99,17 +99,17 @@ The following tells plumed to calculate the RMSD distance between
 the positions of the atoms in the reference file and their instantaneous
 position.  The Kearseley algorithm for each of the domains.
 
-\verbatim
+\plumedfile
 MULTI-RMSD REFERENCE=file.pdb TYPE=MULTI-OPTIMAL
-\endverbatim
+\endplumedfile
 
 The following tells plumed to calculate the RMSD distance btween the positions of
 the atoms in the domains of reference the reference structure and their instantaneous
 positions.  Here distances are calculated using the \ref DRMSD measure.
 
-\verbatim
+\plumedfile
 MULTI-RMSD REFERENCE=file.pdb TYPE=MULTI-DRMSD
-\endverbatim
+\endplumedfile
 
 in this case it is possible to use the following DRMSD options in the pdb file using the REMARK syntax:
 \verbatim

@@ -67,7 +67,7 @@ This command tells plumed to calculate the angle between the vector connecting a
 the vector connecting atom 2 to atom 3 and to print it on file COLVAR1. At the same time,
 the angle between vector connecting atom 1 to atom 2 and the vector connecting atom 3 to atom 4 is printed
 on file COLVAR2.
-\verbatim
+\plumedfile
 
 a: ANGLE ATOMS=1,2,3
 # equivalently one could state:
@@ -77,8 +77,7 @@ b: ANGLE ATOMS=1,2,3,4
 
 PRINT ARG=a FILE=COLVAR1
 PRINT ARG=b FILE=COLVAR2
-\endverbatim
-(see also \ref PRINT)
+\endplumedfile
 
 
 */

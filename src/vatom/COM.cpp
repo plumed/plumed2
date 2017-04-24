@@ -54,13 +54,12 @@ periodic image.
 
 The following input instructs plumed to print the distance between the
 center of mass for atoms 1,2,3,4,5,6,7 and that for atoms 15,20:
-\verbatim
+\plumedfile
 c1: COM ATOMS=1-7
 c2: COM ATOMS=15,20
 d1: DISTANCE ATOMS=c1,c2
 PRINT ARG=d1
-\endverbatim
-(See also \ref DISTANCE and \ref PRINT).
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

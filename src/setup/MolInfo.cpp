@@ -111,23 +111,21 @@ interpret terminal residue 1.
 In the following example the MOLINFO command is used to provide the information on which atoms
 are in the backbone of a protein to the ALPHARMSD CV.
 
-\verbatim
+\plumedfile
 MOLINFO STRUCTURE=reference.pdb
 ALPHARMSD RESIDUES=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} LABEL=a
-\endverbatim
-(see also \ref ALPHARMSD)
+\endplumedfile
 
 The following example prints the distance corresponding to the hydrogen bonds
 in a GC Watson-Crick pair.
 
-\verbatim
+\plumedfile
 MOLINFO STRUCTURE=reference.pdb
 hb1: DISTANCE ATOMS=@N2-1,@O2-14
 hb2: DISTANCE ATOMS=@N1-1,@N3-14
 hb3: DISTANCE ATOMS=@O6-1,@N4-14
 PRINT ARG=hb1,hb2,hb3
-\endverbatim
-(see also \ref DISTANCE).
+\endplumedfile
 
 
 */

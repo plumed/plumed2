@@ -70,15 +70,14 @@ Notice that gro/xtc/trr files can only contain coordinates in nm.
 The following input instructs plumed to print out the positions of atoms
 1-10 together with the position of the center of mass of atoms 11-20 every
 10 steps to a file called file.xyz.
-\verbatim
+\plumedfile
 COM ATOMS=11-20 LABEL=c1
 DUMPATOMS STRIDE=10 FILE=file.xyz ATOMS=1-10,c1
-\endverbatim
-(see also \ref COM)
+\endplumedfile
 
 The following input is very similar but dumps a .gro (gromacs) file,
 which also contains atom and residue names.
-\verbatim
+\plumedfile
 # this is required to have proper atom names:
 MOLINFO STRUCTURE=reference.pdb
 # if omitted, atoms will have "X" name...
@@ -87,8 +86,7 @@ COM ATOMS=11-20 LABEL=c1
 DUMPATOMS STRIDE=10 FILE=file.gro ATOMS=1-10,c1
 # notice that last atom is a virtual one and will not have
 # a correct name in the resulting gro file
-\endverbatim
-(see also \ref COM and \ref MOLINFO)
+\endplumedfile
 
 
 */

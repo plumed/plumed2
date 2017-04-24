@@ -39,10 +39,10 @@ The following input tells plumed to calculate the distances between two of the a
 This is done for the same set of atoms four different molecules and the average separation is then
 calculated.
 
-\verbatim
+\plumedfile
 MOLECULES MOL1=1,2 MOL2=3,4 MOL3=5,6 MOL4=7,8 MEAN LABEL=mm
 PRINT ARG=mm.mean FILE=colvar
-\endverbatim
+\endplumedfile
 
 
 */

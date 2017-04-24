@@ -73,21 +73,21 @@ In the example below the path is defined using RMSD distance from frames.
 The reference frames in the path are defined in the pdb file.  In this frame
 each configuration in the path is separated by a line containing just the word END.
 
-\verbatim
+\plumedfile
 p1: PATH REFERENCE=file.pdb TYPE=OPTIMAL LAMBDA=500.0
 PRINT ARG=p1.sss,p1.zzz STRIDE=1 FILE=colvar FMT=%8.4f
-\endverbatim
+\endplumedfile
 
 In the example below the path is defined using the values of two torsional angles (t1 and t2).
 In addition, the \f$s\f$ and \f$z\f$ are calculated using the geometric expressions described
 above rather than the alegebraic expressions that are used by default.
 
-\verbatim
+\plumedfile
 t1: TORSION ATOMS=5,7,9,15
 t2: TORSION ATOMS=7,9,15,17
 pp: PATH TYPE=EUCLIDEAN REFERENCE=epath.pdb GPATH NOSPATH NOZPATH
 PRINT ARG=pp.* FILE=colvar
-\endverbatim
+\endplumedfile
 
 Notice that the LAMBDA parameter is not required here as we are not calculating \f$s\f$ and \f$s\f$
 using the algebraic formulae defined earlier.  The positions of the frames in the path are defined
@@ -109,19 +109,19 @@ The following input instructs PLUMED to calculate the values of the path collect
 path are defined in the file all.pdb and all distances are measured using the OPTIMAL metric that is discussed in the manual
 page on \ref RMSD.
 
-\verbatim
+\plumedfile
 p2: PATH REFERENCE=all.pdb LAMBDA=69087
 PRINT ARG=p2.spath,p2.zpath STRIDE=1 FILE=colvar
-\endverbatim
+\endplumedfile
 
 If you wish to use collective variable values in the definition of your path you would use an input file with something like this:
 
-\verbatim
+\plumedfile
 d1: DISTANCE ATOMS=1,2
 d2: DISTANCE ATOMS=3,4a
 p2: PATH REFERENCE=mypath.pdb LAMBDA=2 TYPE=EUCLIDEAN
 PRINT ARG=p2.spath,p2.zpath STRIDE=1 FILE=colvar
-\endverbatim
+\endplumedfile
 
 The corresponding pdb file containing the  definitions of the frames in the path would then look like this:
 

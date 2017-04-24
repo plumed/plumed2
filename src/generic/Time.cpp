@@ -35,11 +35,10 @@ retrieve the time of the simulation to be used elsewere
 
 \par Examples
 
-\verbatim
+\plumedfile
 TIME            LABEL=t1
 PRINT ARG=t1
-\endverbatim
-(See also \ref PRINT).
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

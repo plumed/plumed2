@@ -39,13 +39,12 @@ an atom list through the the label for the GHOST action that creates it.
 \par Examples
 The following input instructs plumed to print the distance between the
 ghost atom and the center of mass for atoms 15,20:
-\verbatim
+\plumedfile
 c1: GHOST ATOMS=1,5,10 COORDINATES=10.0,10.0,10.0
 c2: COM ATOMS=15,20
 d1: DISTANCE ATOMS=c1,c2
 PRINT ARG=d1
-\endverbatim
-(See also \ref DISTANCE and \ref PRINT).
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
