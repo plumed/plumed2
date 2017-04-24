@@ -43,7 +43,7 @@ void SetupMolInfo::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","STRUCTURE","a file in pdb format containing a reference structure. "
            "This is used to defines the atoms in the various residues, chains, etc . "
            "For more details on the PDB file format visit http://www.wwpdb.org/docs.html");
-  keys.add("compulsory","MOLTYPE","protein","what kind of molecule is contained in the pdb file");
+  keys.add("compulsory","MOLTYPE","protein","what kind of molecule is contained in the pdb file - usually not needed since protein/RNA/DNA are compatible");
   keys.add("atoms","CHAIN","(for masochists ( mostly Davide Branduardi ) ) The atoms involved in each of the chains of interest in the structure.");
 }
 
