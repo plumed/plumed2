@@ -1,15 +1,57 @@
+Branches and releases
+---------------------
+
+Several branches and tags are stored on the git repository.
+
+Branches named `v2.X` correspond to release branches.
+
+Master branch may contain non tested features and is not expected to be used by non-developers.
+It typically contains features that will be available on the next release.
+
+Tags named `v2.XbY` correspond to beta releases, use it with care.
+Tags named `v2.X.Y` correspond to official releases, use the latest available.
+
+In addition, the repository contains a number of other branches related to specific features.
+Please contact the developers that are committing on those branches before basing your work
+there, since they might contain temporary work and might be rebased later.
+For instance, branch `testdoc` is setup so as to push a test copy of the manual
+and is often force pushed.
+
+To report problems found on beta or official releases, use the normal
+[plumed-users@googlegroups.com](mailto:plumed-users@googlegroups.com)
+mailing list. Please state exactly which version you are using.
+To report problems found on `master` branch, use the
+[plumed2-git@googlegroups.com](plumed2-git@googlegroups.com) mailing list.
+This is also the correct place for discussions about new features etc.
+When reporting please provide the git hash (you can obtain it with `git rev-parse HEAD`).
+
+Status
+------
+
+Below you find the status on [Travis-CI](http://travis-ci.org/plumed/plumed2) for the release branches.
+
+| Branch   |      Status   | First stable release | Still supported |
+|:--------:|:-------------:|:--------:|:------:|
+| master   | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=master)](https://travis-ci.org/plumed/plumed2) | v2.4 is expected late 2017 | / |
+| v2.3     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.3)](https://travis-ci.org/plumed/plumed2) | Dec 12, 2016 | yes |
+| v2.2     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.2)](https://travis-ci.org/plumed/plumed2)  | Oct 13, 2015 |no |
+| v2.1     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.1)](https://travis-ci.org/plumed/plumed2) | Sep 9, 2014 | no |
+| v2.0     | Not available | Sep 27, 2013 | no |
 
 Content
 -------
 
-    CHANGES/         : change log
+Here's a description of the content of each file and directory in the root PLUMED directory.
+
+    CHANGES          : change log
     COPYING.LESSER   : license
     Makefile         : makefile
     Makefile.conf.in : template configuration makefile
     PEOPLE           : list of authors
     README           : this file
     VERSION          : version file
-    configurations/  : template configuration files
+    astyle           : a local version of astyle, used to format code
+    configurations   : template configuration files
     configure        : configuration script
     configure.ac     : configuration script (autoconf)
     developer-doc    : developer documentation
@@ -20,30 +62,27 @@ Content
     regtest          : regression tests, including reference results
     scripts          : shell tools
     src              : source code
-    sourceme.sh      : template configuration script
+    sourceme.sh.in   : template configuration script
     test             : examples
     user-doc         : user documentation
     vim              : directory where vim syntax is generated
 
-Install
--------
-
-Extensive installation instructions are in the user documentation.
-Links to precompiled versions of the documentation can be found [here](http://www.plumed.org/documentation).
+Required software
+-----------------
 
 Required software:
 
-* GNU make
+* GNU make.
 * C/c++ compiler (c++11 support is required as of version 2.4).
-* A modern version of the `patch` command line tool
-* Support for POSIX library `dirent.h`
-* `xxd` (present in most unix distributions)
+* A modern version of the `patch` command line tool.
+* Support for POSIX library `dirent.h`.
+* `xxd` (present in most UNIX distributions).
 
 Suggested software (libraries are checked by `./configure` and enabled if available):
 
-* Optimized blas and lapack libraries. Can be replaced by an internal version if not available.
 * MPI library to run parallel simulations. It should be the same library used by your MD code.
-* [VMD molfile plugins](http://www.ks.uiuc.edu/Research/vmd/plugins) to read arbitrary file formats. Can be replaced by an internal version supporting a few formats if not available.
+* Optimized blas and lapack libraries. They are automatically replaced by an internal version if not available.
+* [VMD molfile plugins](http://www.ks.uiuc.edu/Research/vmd/plugins) to read arbitrary file formats. They are automatically replaced by an internal version supporting a few formats if not available.
 * [Matheval library](http://www.gnu.org/software/libmatheval) to use algebraic collective variables.
 * [Zlib library](http://zlib.net/) to use compressed data files.
 * [Xdrfile library](http://www.gromacs.org/Developer_Zone/Programming_Guide/XTC_Library) to have read/write access to gromacs
@@ -56,6 +95,7 @@ Suggested software (libraries are checked by `./configure` and enabled if availa
 Quick compilation instructions
 ------------------------------
 
+Extensive installation instructions are in the [user documentation](http://www.plumed.org/documentation).
 Configure for your system
 
     ./configure --prefix=$HOME/opt
@@ -74,12 +114,14 @@ The `plumed` executable should be now in your execution path
 
     plumed help
     
-Compile the manuals (pre-compiled manual is available online):
+Compile the manuals.
 
     make doc
 
 User documentation can be found at `user-doc/html/index.html`.
 Developer documentation can be found at `developer-doc/html/index.html`.
+[Pre-compiled documentation](http://www.plumed.org/documentation) is available online, so this is only required
+if you are working with a modified version of the code!
 
 Install PLUMED in `$HOME/opt` (directory should be set during `./configure`):
 
@@ -87,47 +129,4 @@ Install PLUMED in `$HOME/opt` (directory should be set during `./configure`):
     make install
     
 A sample modulefile with environment variable will be placed in
-`$HOME/opt/lib/plumed/src/lib/modulefile`. Path to the installed documentation can be found with command `plumed info --user-doc`.
-
-
-Branches and releases
----------------------
-
-Several branches and tags are stored on the git repository.
-
-Branches named `v2.X` correspond to release branches.
-
-Master branch may contain non tested features and is not expected to be used by non-developers.
-It typically contains features that will be available on the next release.
-
-Tags named `v2.XbY` correspond to beta releases, use it with care.
-Tags named `v2.X.Y` correspond to official releases, use the latest available.
-
-To report problems found on beta or official releases, use the normal `plumed-users@googlegroups.com`
-mailing list. Just state exactly which version you are using.
-
-To report problems found on `master` branch, use the `plumed2-git@googlegroups.com` mailing list.
-This is also the correct place for discussions about new features etc.
-When reporting please provide the git hash (you can obtain it with `git rev-parse HEAD`).
-
-In addition, the repository contains a number of other branches related to specific features.
-Please contact the developers that are committing on those branches before basing your work
-there, since they might contain temporary work and might be rebased laster.
-
-For instance, branch `testdoc` is setup so as to push a test copy of the manual
-and is often force pushed.
-
-Status
-------
-
-Below you find the status on Travis-CI for the release branches.
-
-| Branch   |      Status   | Supported |
-|:--------:|:-------------:|:--------:|
-| master   | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=master)](https://travis-ci.org/plumed/plumed2) | yes |
-| v2.3     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.3)](https://travis-ci.org/plumed/plumed2) | yes |
-| v2.2     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.3)](https://travis-ci.org/plumed/plumed2) | no |
-| v2.1     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.2)](https://travis-ci.org/plumed/plumed2) | no |
-| v2.0     | Not available | no |
-
-
+`$HOME/opt/lib/plumed/src/lib/modulefile`. If you compiled your own documentation, paths to the installed documentation can be found with command `plumed info --user-doc`.
