@@ -75,7 +75,7 @@ class SSRestraint : public bias::Bias
   double getEnergy(map <string, double> phi, const vector<double> &pHl, const vector<double> &pEl, const vector<double> &pCl);
   double proposeMove(double x, double xmin, double xmax, double dxmax);
   bool   doAccept(double oldE, double newE);
-  map< pair<string,string>, double > get_p_coefficients(map <string, double> phi);
+  map<string, double> get_p_coefficients(map <string, double> phi);
 
 public:
   SSRestraint(const ActionOptions&);
@@ -123,6 +123,7 @@ SSRestraint::SSRestraint(const ActionOptions&ao):
   vector<Value*> arg;
   for(unsigned i=0; i<phi_arg.size(); ++i) arg.push_back(phi_arg[i]);
   for(unsigned i=0; i<psi_arg.size(); ++i) arg.push_back(psi_arg[i]);
+
   // read initial values of the phi parameters
   for(unsigned i=0; i<phi_label_.size(); ++i) parse("PHI_"+phi_label_[i]+"0", phi_[phi_label_[i]]);
 
@@ -217,7 +218,6 @@ double SSRestraint::getPrior(double p, double pmean, double psig)
   // calculate prior
   double eps = ( p - pmean ) / psig;
   double prior = 0.5 * eps * eps + std::log(norm);
-
   return kbt_ * prior;
 }
 
@@ -227,9 +227,9 @@ double SSRestraint::getPriors(map <string, double> ps,
 {
   double ene = 0.0;
   // cycle on map
-  for(map <string, double>::iterator it=ps.begin(); it!=ps.end(); ++it) {
+  for(unsigned i=0; i<phi_label_.size(); ++i) {
     // map key string
-    string s = it->first;
+    string s = phi_label_[i];
     // add contribution
     ene += getPrior(ps[s], pms[s], pss[s]);
   }
@@ -241,18 +241,18 @@ double SSRestraint::getEnergy(map <string, double> phi,
                               const vector<double> &pHl, const vector<double> &pEl, const vector<double> &pCl)
 {
   // get p(d|s) coefficients
-  map< pair<string,string>, double > coeff = get_p_coefficients(phi);
+  map<string, double> coeff = get_p_coefficients(phi);
 
   // calculate energy
   double ene = 0.0;
-  // cycle on positive arguments
+  // cycle on arguments
   for(unsigned i=rank_; i<ss_pred_.size(); i=i+nrep_) {
     // get ss type
     string ss = ss_pred_[i];
     // retrieve p(d|s) coefficients
-    double a = coeff[make_pair(ss,"H")];
-    double b = coeff[make_pair(ss,"E")];
-    double c = coeff[make_pair(ss,"C")];
+    double a = coeff[ss+"H"];
+    double b = coeff[ss+"E"];
+    double c = coeff[ss+"C"];
     // calculate likelihood
     double like = ( a * pHl[i] + b * pEl[i] + c * pCl[i] );
     // add to energy
@@ -299,18 +299,18 @@ void SSRestraint::doMonteCarlo(double oldE, long int step,
 {
 // cycle on MC steps
   for(unsigned i=0; i<MCsteps_; ++i) {
-    // cycle on phi
+    // cycle on phi parameters
     for(unsigned j=0; j<phi_label_.size(); ++j) {
       // new map phi_
-      map <string, double> phi_new = phi_;
-      // propose move for phi
+      map <string, double> phi_new(phi_);
+      // propose move for j-th phi
       phi_new[phi_label_[j]] = proposeMove(phi_[phi_label_[j]], 0.0, 1.0, Dphi_);
       // calculate new energy
       double newE = getEnergy(phi_new, pHl, pEl, pCl);
       // accept or reject
       bool accept = doAccept(oldE, newE);
       if(accept) {
-        phi_ = phi_new;
+        phi_[phi_label_[j]] = phi_new[phi_label_[j]] ;
         MCaccphi_[phi_label_[j]]++;
         oldE = newE;
       }
@@ -328,24 +328,24 @@ void SSRestraint::doMonteCarlo(double oldE, long int step,
   }
 }
 
-map< pair<string,string>, double > SSRestraint::get_p_coefficients(map <string, double> phi)
+map<string, double> SSRestraint::get_p_coefficients(map <string, double> phi)
 {
-  map< pair<string,string>, double >  coeff;
   // normalization factors
   double norm_H = phi["HH"]*n_["H"]+(1.0-phi["EC"]-phi["EE"])*n_["E"]+phi["CH"]*n_["C"];
   double norm_E = phi["HE"]*n_["H"]+phi["EE"]*n_["E"]+(1.0-phi["CH"]-phi["CC"])*n_["C"];
   double norm_C = (1.0-phi["HH"]-phi["HE"])*n_["H"]+phi["EC"]*n_["E"]+phi["CC"]*n_["C"];
 
   // 3x3 coefficient matrix
-  coeff[make_pair("H","H")] = phi["HH"] * n_["H"] / norm_H;
-  coeff[make_pair("H","E")] = phi["HE"] * n_["H"] / norm_E;
-  coeff[make_pair("H","C")] = (1.0 - phi["HH"] - phi["HE"]) * n_["H"] / norm_C;
-  coeff[make_pair("E","H")] = (1.0 - phi["EE"] - phi["EC"]) * n_["E"] / norm_H;
-  coeff[make_pair("E","E")] = phi["EE"] * n_["E"] / norm_E;
-  coeff[make_pair("E","C")] = phi["EC"] * n_["E"] / norm_C;
-  coeff[make_pair("C","H")] = phi["CH"] * n_["C"] / norm_H;
-  coeff[make_pair("C","E")] = (1.0 - phi["CH"] - phi["CC"]) * n_["C"] / norm_E;
-  coeff[make_pair("C","C")] = phi["CC"] * n_["C"] / norm_C;
+  map<string, double>  coeff;
+  coeff["HH"] = phi["HH"] * n_["H"] / norm_H;
+  coeff["HE"] = phi["HE"] * n_["H"] / norm_E;
+  coeff["HC"] = (1.0 - phi["HH"] - phi["HE"]) * n_["H"] / norm_C;
+  coeff["EH"] = (1.0 - phi["EE"] - phi["EC"]) * n_["E"] / norm_H;
+  coeff["EE"] = phi["EE"] * n_["E"] / norm_E;
+  coeff["EC"] = phi["EC"] * n_["E"] / norm_C;
+  coeff["CH"] = phi["CH"] * n_["C"] / norm_H;
+  coeff["CE"] = (1.0 - phi["CH"] - phi["CC"]) * n_["C"] / norm_E;
+  coeff["CC"] = phi["CC"] * n_["C"] / norm_C;
 
   return coeff;
 }
@@ -361,7 +361,7 @@ void SSRestraint::calculate()
   vector<double> pCl(ss_pred_.size(), 0.0);
 
   // get p(d|s) coefficients
-  map< pair<string,string>, double > coeff = get_p_coefficients(phi_);
+  map<string, double> coeff = get_p_coefficients(phi_);
 
   // calculate energy
   double ene = 0.0;
@@ -381,11 +381,11 @@ void SSRestraint::calculate()
     // store in lists (with normalization)
     pHl[i] = pH/norm; pEl[i] = pE/norm; pCl[i] = pC/norm;
     // retrieve p(d|s) coefficients
-    double a = coeff[make_pair(ss,"H")];
-    double b = coeff[make_pair(ss,"E")];
-    double c = coeff[make_pair(ss,"C")];
+    double a = coeff[ss+"H"];
+    double b = coeff[ss+"E"];
+    double c = coeff[ss+"C"];
     // calculate likelihood
-    double like = ( a * pH + b * pE + c * pC ) / norm;
+    double like = a * pHl[i] + b * pEl[i] + c * pCl[i];
     // add to energy
     ene += -kbt_ * std::log(like);
     // calculate partial derivatives
