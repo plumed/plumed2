@@ -117,6 +117,11 @@ SSRestraint::SSRestraint(const ActionOptions&ao):
   // read initial values of the phi parameters
   for(unsigned i=0; i<phi_label_.size(); ++i) parse("PHI_"+phi_label_[i]+"0", phi_[phi_label_[i]]);
 
+  // check consistency
+  if((phi_["HH"]+phi_["HE"])>1.0) error("PHI_HH0+PHI_HE0 should be lower than 1");
+  if((phi_["EE"]+phi_["EC"])>1.0) error("PHI_EE0+PHI_EC0 should be lower than 1");
+  if((phi_["CC"]+phi_["CH"])>1.0) error("PHI_CC0+PHI_CH0 should be lower than 1");
+
   // read maximum displecement
   parse("DPHI_R", Dphi_r_);
   parse("DPHI_T", Dphi_t_);
