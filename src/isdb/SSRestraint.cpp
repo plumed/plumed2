@@ -282,30 +282,30 @@ double SSRestraint::proposeMove(double x, double xmin, double xmax, double dxmax
   double x_new = x + dx;
   // check boundaries
   if(x_new > xmax) {
-     double delta = floor((x_new - xmax)/(xmax-xmin));
-     double dx = x_new - xmax - delta * (xmax-xmin);
-     x_new = xmax - dx;
+    double delta = floor((x_new - xmax)/(xmax-xmin));
+    double dx = x_new - xmax - delta * (xmax-xmin);
+    x_new = xmax - dx;
   }
   if(x_new < xmin) {
-     double delta = floor((xmin - x_new)/(xmax-xmin));
-     double dx = xmin - x_new - delta * (xmax-xmin);
-     x_new = xmin + dx;
+    double delta = floor((xmin - x_new)/(xmax-xmin));
+    double dx = xmin - x_new - delta * (xmax-xmin);
+    x_new = xmin + dx;
   }
   return x_new;
 }
 
 void SSRestraint::proposeMoveCouple(double &x1, double &x2, double dx)
 {
-  if(rand()%2==0){
-   // propose move in x1
-   x1 = proposeMove(x1, 0.0, 1.0, dx);
-   // propose move in x2
-   x2 = proposeMove(x2, 0.0, 1.0-x1, dx);
+  if(rand()%2==0) {
+    // propose move in x1
+    x1 = proposeMove(x1, 0.0, 1.0, dx);
+    // propose move in x2
+    x2 = proposeMove(x2, 0.0, 1.0-x1, dx);
   } else {
-   // propose move in x2
-   x2 = proposeMove(x2, 0.0, 1.0, dx);
-   // propose move in x1
-   x1 = proposeMove(x1, 0.0, 1.0-x2, dx);
+    // propose move in x2
+    x2 = proposeMove(x2, 0.0, 1.0, dx);
+    // propose move in x1
+    x1 = proposeMove(x1, 0.0, 1.0-x2, dx);
   }
 }
 
