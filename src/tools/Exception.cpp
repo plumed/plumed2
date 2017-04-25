@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Exception.h"
 
-#if defined(__PLUMED_HAS_EXECINFO) 
+#if defined(__PLUMED_HAS_EXECINFO)
 #include <execinfo.h>
 #endif
 
@@ -29,12 +29,12 @@
 #include <cstdlib>
 
 using namespace std;
-namespace PLMD{
+namespace PLMD {
 
-std::string Exception::format(const std::string&msg,const std::string&file,unsigned line,const std::string&function){
+std::string Exception::format(const std::string&msg,const std::string&file,unsigned line,const std::string&function) {
   std::string message;
   message="\n+++ Internal PLUMED error";
-  if(file.length()>0){
+  if(file.length()>0) {
     char cline[1000];
     sprintf(cline,"%u",line);
     message += "\n+++ file "+file+", line "+cline;
@@ -63,7 +63,7 @@ Exception::Exception(const std::string&msg,const std::string&file,unsigned line,
   abortIfExceptionsAreDisabled();
 }
 
-void Exception::abortIfExceptionsAreDisabled(){
+void Exception::abortIfExceptionsAreDisabled() {
 #if ! defined(__PLUMED_HAS_EXCEPTIONS)
 
 #ifdef __PLUMED_HAS_EXECINFO
@@ -72,7 +72,7 @@ void Exception::abortIfExceptionsAreDisabled(){
   int i, frames = backtrace(callstack, 128);
   char** strs = backtrace_symbols(callstack, frames);
   for (i = 0; i < frames; ++i) {
-     fprintf(stderr,"%s\n", strs[i]);
+    fprintf(stderr,"%s\n", strs[i]);
   }
   fprintf(stderr,"******** END STACK DUMP ********\n");
   free(strs);

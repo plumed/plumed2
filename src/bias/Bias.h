@@ -28,12 +28,12 @@
 
 #define PLUMED_BIAS_INIT(ao) Action(ao),Bias(ao)
 
-namespace PLMD{
-namespace bias{
+namespace PLMD {
+namespace bias {
 
 /**
 \ingroup INHERIT
-This is the abstract base class to use for implementing new simulation biases, within it there is 
+This is the abstract base class to use for implementing new simulation biases, within it there is
 information as to how to go about implementing a new bias.
 */
 
@@ -59,18 +59,18 @@ public:
 };
 
 inline
-void Bias::setOutputForce(int i,double f){
+void Bias::setOutputForce(int i,double f) {
   outputForces[i]=f;
   valueBias->addDerivative(i,-f);
 }
 
 inline
-void Bias::setBias(double bias){
- valueBias->set(bias); 
+void Bias::setBias(double bias) {
+  valueBias->set(bias);
 }
 
 inline
-unsigned Bias::getNumberOfDerivatives(){
+unsigned Bias::getNumberOfDerivatives() {
   return getNumberOfArguments();
 }
 

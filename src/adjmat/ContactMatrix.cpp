@@ -25,12 +25,12 @@
 #include "tools/SwitchingFunction.h"
 #include "tools/Matrix.h"
 
-//+PLUMEDOC MATRIX CONTACT_MATRIX 
+//+PLUMEDOC MATRIX CONTACT_MATRIX
 /*
 Adjacency matrix in which two atoms are adjacent if they are within a certain cutoff.
 
-As discussed in the section of the manual on \ref contactmatrix a useful tool for developing complex collective variables is the notion of the 
-so called adjacency matrix.  An adjacency matrix is an \f$N \times N\f$ matrix in which the \f$i\f$th, \f$j\f$th element tells you whether 
+As discussed in the section of the manual on \ref contactmatrix a useful tool for developing complex collective variables is the notion of the
+so called adjacency matrix.  An adjacency matrix is an \f$N \times N\f$ matrix in which the \f$i\f$th, \f$j\f$th element tells you whether
 or not the \f$i\f$th and \f$j\f$th atoms/molecules from a set of \f$N\f$ atoms/molecules are adjacent or not.  These matrices can then be further
 analysed using a number of other algorithms as is detailed in \cite tribello-clustering.
 
@@ -82,24 +82,24 @@ public:
 
 PLUMED_REGISTER_ACTION(ContactMatrix,"CONTACT_MATRIX")
 
-void ContactMatrix::registerKeywords( Keywords& keys ){
+void ContactMatrix::registerKeywords( Keywords& keys ) {
   AdjacencyMatrixBase::registerKeywords( keys );
   keys.add("atoms","ATOMS","The list of atoms for which you would like to calculate the contact matrix.  The atoms involved must be specified "
-                           "as a list of labels of \\ref mcolv or labels of a \\ref multicolvarfunction actions.  If you would just like to use "
-                           "the atomic positions you can use a \\ref DENSITY command to specify a group of atoms.  Specifying your atomic positions using labels of "
-                           "other \\ref mcolv or \\ref multicolvarfunction commands is useful, however, as you can then exploit a much wider "
-                           "variety of functions of the contact matrix as described in \\ref contactmatrix");
+           "as a list of labels of \\ref mcolv or labels of a \\ref multicolvarfunction actions.  If you would just like to use "
+           "the atomic positions you can use a \\ref DENSITY command to specify a group of atoms.  Specifying your atomic positions using labels of "
+           "other \\ref mcolv or \\ref multicolvarfunction commands is useful, however, as you can then exploit a much wider "
+           "variety of functions of the contact matrix as described in \\ref contactmatrix");
   keys.add("numbered","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
-                               "The following provides information on the \\ref switchingfunction that are available. "
-                               "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
+           "The following provides information on the \\ref switchingfunction that are available. "
+           "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
 // I added these keywords so I can test the results I get for column and row sums against output from COORDINATIONNUMBERS
 /// These  should never be used in production as I think they will be much slower than COORDINATIONNUMBERS
   keys.add("hidden","ATOMSA",""); keys.add("hidden","ATOMSB","");
 }
 
 ContactMatrix::ContactMatrix( const ActionOptions& ao ):
-Action(ao),
-AdjacencyMatrixBase(ao)
+  Action(ao),
+  AdjacencyMatrixBase(ao)
 {
   // Read in the atoms and setup the matrix
   readMaxTwoSpeciesMatrix( "ATOMS", "ATOMSA", "ATOMSB", true );
@@ -110,17 +110,17 @@ AdjacencyMatrixBase(ao)
 
   // Find the largest sf cutoff
   double sfmax=switchingFunction(0,0).get_dmax();
-  for(unsigned i=0;i<switchingFunction.nrows();++i){
-      for(unsigned j=0;j<switchingFunction.ncols();++j){
-          double tsf=switchingFunction(i,j).get_dmax();
-          if( tsf>sfmax ) sfmax=tsf;
-      }
+  for(unsigned i=0; i<switchingFunction.nrows(); ++i) {
+    for(unsigned j=0; j<switchingFunction.ncols(); ++j) {
+      double tsf=switchingFunction(i,j).get_dmax();
+      if( tsf>sfmax ) sfmax=tsf;
+    }
   }
   // And set the link cell cutoff
   setLinkCellCutoff( sfmax );
 }
 
-void ContactMatrix::setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ){
+void ContactMatrix::setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ) {
   plumed_assert( id==0 && desc.size()==1 ); std::string errors; switchingFunction(j,i).set(desc[0],errors);
   if( errors.length()!=0 ) error("problem reading switching function description " + errors);
   if( j!=i) switchingFunction(i,j).set(desc[0],errors);
@@ -137,12 +137,12 @@ double ContactMatrix::compute( const unsigned& tindex, multicolvar::AtomValuePac
   Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
   double dfunc, sw = switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) - ncol_t ).calculate( distance.modulo(), dfunc );
 
-  if( !doNotCalculateDerivatives() ){
-      Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
-      double dfunc, sw = switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) - ncol_t ).calculate( distance.modulo(), dfunc );
-      addAtomDerivatives( 1, 0, (-dfunc)*distance, myatoms );
-      addAtomDerivatives( 1, 1, (+dfunc)*distance, myatoms ); 
-      myatoms.addBoxDerivatives( 1, (-dfunc)*Tensor(distance,distance) ); 
+  if( !doNotCalculateDerivatives() ) {
+    Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
+    double dfunc, sw = switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) - ncol_t ).calculate( distance.modulo(), dfunc );
+    addAtomDerivatives( 1, 0, (-dfunc)*distance, myatoms );
+    addAtomDerivatives( 1, 1, (+dfunc)*distance, myatoms );
+    myatoms.addBoxDerivatives( 1, (-dfunc)*Tensor(distance,distance) );
   }
   return sw;
 }

@@ -22,8 +22,8 @@
 #include "core/ActionRegister.h"
 #include "core/SetupMolInfo.h"
 
-namespace PLMD{
-namespace setup{
+namespace PLMD {
+namespace setup {
 
 //+PLUMEDOC TOPOLOGY MOLINFO
 /*
@@ -34,7 +34,7 @@ or as a set of lists of atoms that describe the various chains in your system. I
 is used plumed the MOLINFO command will endeavor to recognize the various chains and residues that
 make up the molecules in your system using the chainIDs and resnumbers from the pdb file. You can
 then use this information in later commands to specify atom lists in terms residues.  For example
-using this command you can find the backbone atoms in your structure automatically. 
+using this command you can find the backbone atoms in your structure automatically.
 
 \warning
 Please be aware that the pdb parser in plumed is far from perfect. You should thus check the log file
@@ -96,10 +96,10 @@ with the same name. This means that it is also possible to pick single atoms usi
 \warning If a residue-chain is repeated twice in the reference pdb only the first entry will be selected.
 
 \bug At the moment the HA1 atoms in a GLY residues are treated as if they are the CB atoms. This may or
-may not be true - GLY is problematic for secondary structure residues as it is achiral. 
+may not be true - GLY is problematic for secondary structure residues as it is achiral.
 
-\bug If you use WHOLEMOLECULES RESIDUES=1-10 for a 18 amino acid protein 
-( 18 amino acids + 2 terminal groups = 20 residues ) the code will fail as it will not be able to 
+\bug If you use WHOLEMOLECULES RESIDUES=1-10 for a 18 amino acid protein
+( 18 amino acids + 2 terminal groups = 20 residues ) the code will fail as it will not be able to
 interpret terminal residue 1.
 
 \par Examples
@@ -109,7 +109,7 @@ are in the backbone of a protein to the ALPHARMSD CV.
 
 \verbatim
 MOLINFO STRUCTURE=reference.pdb
-ALPHARMSD RESIDUES=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} LABEL=a 
+ALPHARMSD RESIDUES=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} LABEL=a
 \endverbatim
 (see also \ref ALPHARMSD)
 

@@ -62,7 +62,7 @@ public:
   T selectWithLabel(const std::string&s)const;
 /// get the labels in the list of actions in form of a string (useful to debug)
   std::string getLabelList() const;
-/// get the labels in the form of a vector of strings  
+/// get the labels in the form of a vector of strings
   std::vector<std::string> getLabelVector() const;
 };
 
@@ -70,9 +70,9 @@ public:
 // INLINE IMPLEMENTATIONS:
 
 template <class T>
-std::vector<T> ActionSet::select()const{
+std::vector<T> ActionSet::select()const {
   std::vector<T> ret;
-  for(const auto & p : (*this)){
+  for(const auto & p : (*this)) {
     T t=dynamic_cast<T>(p);
     if(t) ret.push_back(t);
   };
@@ -80,8 +80,8 @@ std::vector<T> ActionSet::select()const{
 }
 
 template <class T>
-T ActionSet::selectWithLabel(const std::string&s)const{
-  for(const auto & p : (*this)){
+T ActionSet::selectWithLabel(const std::string&s)const {
+  for(const auto & p : (*this)) {
     T t=dynamic_cast<T>(p);
     if(t && dynamic_cast<Action*>(t)->getLabel()==s) return t;
   };
@@ -89,9 +89,9 @@ T ActionSet::selectWithLabel(const std::string&s)const{
 }
 
 template <class T>
-std::vector<Action*> ActionSet::selectNot()const{
+std::vector<Action*> ActionSet::selectNot()const {
   std::vector<Action*> ret;
-  for(const auto & p : (*this)){
+  for(const auto & p : (*this)) {
     T t=dynamic_cast<T>(p);
     if(!t) ret.push_back(p);
   };

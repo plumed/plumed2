@@ -27,8 +27,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace setup{
+namespace PLMD {
+namespace setup {
 
 //+PLUMEDOC GENERIC RESTART
 /*
@@ -93,20 +93,20 @@ public:
 
 PLUMED_REGISTER_ACTION(Restart,"RESTART")
 
-void Restart::registerKeywords( Keywords& keys ){
+void Restart::registerKeywords( Keywords& keys ) {
   ActionSetup::registerKeywords(keys);
   keys.addFlag("NO",false,"switch off restart - can be used to override the behavior of the MD engine");
 }
 
 Restart::Restart(const ActionOptions&ao):
-Action(ao),
-ActionSetup(ao)
+  Action(ao),
+  ActionSetup(ao)
 {
   bool no=false;
   parseFlag("NO",no);
   bool md=plumed.getRestart();
   log<<"  MD code "<<(md?"did":"didn't")<<" require restart\n";
-  if(no){
+  if(no) {
     if(md) log<<"  Switching off restart\n";
     plumed.setRestart(false);
     log<<"  Not restarting simulation: files will be backed up\n";

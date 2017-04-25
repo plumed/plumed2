@@ -27,7 +27,7 @@
 #include <vector>
 #include <cstddef>
 
-namespace PLMD{
+namespace PLMD {
 
 /*
 Tool to deal with periodic boundary conditions.
@@ -35,7 +35,7 @@ Tool to deal with periodic boundary conditions.
 This class is useful to apply periodic boundary conditions on interatomic
 distances. It stores privately information about reduced lattice vectors
 */
-class Pbc{
+class Pbc {
 /// Type of box
   enum {unset,orthorombic,generic} type;
 /// Box
@@ -98,12 +98,12 @@ public:
 };
 
 inline
-Vector Pbc::distance(const Vector& v1,const Vector& v2)const{
+Vector Pbc::distance(const Vector& v1,const Vector& v2)const {
   return distance(v1,v2,NULL);
 }
 
 inline
-bool Pbc::isSet()const{
+bool Pbc::isSet()const {
   return type!=unset;
 }
 

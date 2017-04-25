@@ -28,7 +28,7 @@ namespace PLMD {
 namespace crystallization {
 
 class Gradient : public multicolvar::VolumeGradientBase {
-friend class GradientVessel;
+  friend class GradientVessel;
 private:
 /// The value of sigma
   double sigma;
@@ -52,7 +52,7 @@ public:
 inline
 unsigned Gradient::getNumberOfQuantities() const {
   return nquantities;
-} 
+}
 
 }
 }

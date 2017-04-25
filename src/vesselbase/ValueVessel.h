@@ -30,10 +30,10 @@
 #include "core/Value.h"
 
 namespace PLMD {
-namespace vesselbase{
+namespace vesselbase {
 
 class ValueVessel : public Vessel {
-private: 
+private:
   bool no_output_value;
   Value* final_value;
 protected:
@@ -44,7 +44,7 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit ValueVessel( const VesselOptions& da );
-  ~ValueVessel(); 
+  ~ValueVessel();
   std::string description();
   virtual std::string value_descriptor()=0;
   bool applyForce( std::vector<double>& forces );
@@ -63,7 +63,7 @@ double ValueVessel::getOutputValue() const {
 }
 
 inline
-void ValueVessel::setOutputValue( const double& val ){
+void ValueVessel::setOutputValue( const double& val ) {
   final_value->set( val );
 }
 

@@ -32,9 +32,9 @@ namespace PLMD {
 namespace mapping {
 
 class TrigonometricPathVessel : public vesselbase::StoreDataVessel {
-friend class AdaptivePath;
+  friend class AdaptivePath;
 private:
-  Value* sp; 
+  Value* sp;
   Value* zp;
   Mapping* mymap;
   double dx;

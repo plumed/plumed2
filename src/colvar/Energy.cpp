@@ -27,8 +27,8 @@
 #include <string>
 #include <cmath>
 
-namespace PLMD{
-namespace colvar{
+namespace PLMD {
+namespace colvar {
 
 //+PLUMEDOC COLVAR ENERGY
 /*
@@ -42,7 +42,7 @@ metadynamics applied to ENERGY can be used to decrease the
 number of required replicas.
 
 \bug Acceptance for replica exchange when \ref ENERGY is biased
-is computed correctly only of all the replicas has the same 
+is computed correctly only of all the replicas has the same
 potential energy function. This is for instance not true when
 using GROMACS with lambda replica exchange of with plumed-hrex branch.
 
@@ -76,7 +76,7 @@ using namespace std;
 PLUMED_REGISTER_ACTION(Energy,"ENERGY")
 
 Energy::Energy(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao)
+  PLUMED_COLVAR_INIT(ao)
 {
 //  if(checkNumericalDerivatives())
 //    error("Cannot use NUMERICAL_DERIVATIVES with ENERGY");
@@ -89,23 +89,23 @@ PLUMED_COLVAR_INIT(ao)
   log<<"\n";
 }
 
-void Energy::registerKeywords( Keywords& keys ){
+void Energy::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
-  keys.remove("NUMERICAL_DERIVATIVES"); 
+  keys.remove("NUMERICAL_DERIVATIVES");
 }
 
-unsigned Energy::getNumberOfDerivatives(){
+unsigned Energy::getNumberOfDerivatives() {
   return 1;
 }
 
-void Energy::prepare(){
+void Energy::prepare() {
   plumed.getAtoms().setCollectEnergy(true);
 }
 
 // calculator
-void Energy::calculate(){
+void Energy::calculate() {
   setValue( getEnergy() );
   getPntrToComponent(0)->addDerivative(0,1.0);
 }

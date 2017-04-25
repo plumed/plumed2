@@ -23,31 +23,31 @@
 #include "Vessel.h"
 #include <iostream>
 
-namespace PLMD{
-namespace vesselbase{
+namespace PLMD {
+namespace vesselbase {
 
-VesselRegister::~VesselRegister(){
-  if(m.size()>0){
+VesselRegister::~VesselRegister() {
+  if(m.size()>0) {
     std::string names="";
     for(const auto & p : m) names+=p.first+" ";
     std::cerr<<"WARNING: Vessel "+ names +" has not been properly unregistered. This might lead to memory leak!!\n";
   }
 }
 
-VesselRegister& vesselRegister(){
+VesselRegister& vesselRegister() {
   static VesselRegister ans;
   return ans;
 }
 
-void VesselRegister::remove(creator_pointer f){
-  for(auto p=m.begin();p!=m.end();++p){
-    if((*p).second==f){
+void VesselRegister::remove(creator_pointer f) {
+  for(auto p=m.begin(); p!=m.end(); ++p) {
+    if((*p).second==f) {
       m.erase(p); break;
     }
   }
 }
 
-void VesselRegister::add(std::string keyword,creator_pointer f,keyword_pointer k,keyword_pointer ik){
+void VesselRegister::add(std::string keyword,creator_pointer f,keyword_pointer k,keyword_pointer ik) {
   plumed_massert(m.count(keyword)==0,"keyword has already been registered");
   m.insert(std::pair<std::string,creator_pointer>(keyword,f));
   k( keywords );   // Store the keywords for all the things
@@ -57,24 +57,24 @@ void VesselRegister::add(std::string keyword,creator_pointer f,keyword_pointer k
   mk.insert(std::pair<std::string,keyword_pointer>(keyword,ik));
 }
 
-bool VesselRegister::check(std::string key){
+bool VesselRegister::check(std::string key) {
   if( m.count(key)>0 ) return true;
   return false;
 }
 
-Vessel* VesselRegister::create(std::string keyword, const VesselOptions&da){
+Vessel* VesselRegister::create(std::string keyword, const VesselOptions&da) {
   Vessel* df;
-  if(check(keyword)){
-      Keywords keys; mk[keyword](keys);
-      VesselOptions nda( da,keys );
-      df=m[keyword](nda);
-      keys.destroyData();
+  if(check(keyword)) {
+    Keywords keys; mk[keyword](keys);
+    VesselOptions nda( da,keys );
+    df=m[keyword](nda);
+    keys.destroyData();
   }
   else df=NULL;
   return df;
 }
 
-Keywords VesselRegister::getKeywords(){
+Keywords VesselRegister::getKeywords() {
   return keywords;
 }
 
