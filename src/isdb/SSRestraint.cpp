@@ -25,7 +25,7 @@
 #include "core/Atoms.h"
 #include <math.h>
 #include <string.h>
-
+#include <iostream>
 
 using namespace std;
 
@@ -44,7 +44,8 @@ class SSRestraint : public bias::Bias
 {
   // phi parameters
   map <string, double> phi_;
-  double Dphi_;
+  double Dphi_r_;
+  double Dphi_t_;
   // number of predictions for each secondary structure type
   map <string, double> n_;
   // phi prior parameters
@@ -73,7 +74,9 @@ class SSRestraint : public bias::Bias
   double getPriors(map <string, double> ps, map <string, double> pms, map <string, double> pss);
   void   doMonteCarlo(double oldE, long int step, const vector<double> &pHl, const vector<double> &pEl, const vector<double> &pCl);
   double getEnergy(map <string, double> phi, const vector<double> &pHl, const vector<double> &pEl, const vector<double> &pCl);
-  double proposeMove(double x, double xmin, double xmax, double dxmax);
+  double proposeMoveRadius(double x, double xmin, double xmax, double dxmax);
+  double proposeMoveTheta(double x, double dxmax);
+  void   proposeMoveCouple(double &x1, double &x2, double dr, double dt);
   bool   doAccept(double oldE, double newE);
   map<string, double> get_p_coefficients(map <string, double> phi);
 
@@ -95,8 +98,9 @@ void SSRestraint::registerKeywords(Keywords& keys) {
   keys.add("compulsory","PHI_EC0","initial value of the phi_EC parameter");
   keys.add("compulsory","PHI_CC0","initial value of the phi_CC parameter");
   keys.add("compulsory","PHI_CH0","initial value of the phi_CH parameter");
-  keys.add("compulsory","DPHI","maximum MC move of the phi parameters");
-  keys.add("compulsory","SS","secondary structure prediction");
+  keys.add("compulsory","DPHI_R","maximum MC move of the phi parameters");
+  keys.add("compulsory","DPHI_T","maximum MC move of the phi parameters");
+  keys.add("compulsory","PSIPRED","secondary structure prediction");
   keys.add("optional","TEMP","temperature in energy units");
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_STRIDE","MC stride");
@@ -110,28 +114,18 @@ SSRestraint::SSRestraint(const ActionOptions&ao):
   PLUMED_BIAS_INIT(ao),
   MCsteps_(1), MCstride_(1), MCfirst_(-1)
 {
-  // parse phi dihedrals
-  vector<Value*> phi_arg;
-  parseArgumentList("ARG",1,phi_arg);
-  // parse psi dihedrals
-  vector<Value*> psi_arg;
-  parseArgumentList("ARG",2,psi_arg);
-  // check length
-  if(phi_arg.size()!=psi_arg.size()) error("The number of arguments in ARG1 and ARG2 should be the same");
-
-  // merge lists into global list
-  vector<Value*> arg;
-  for(unsigned i=0; i<phi_arg.size(); ++i) arg.push_back(phi_arg[i]);
-  for(unsigned i=0; i<psi_arg.size(); ++i) arg.push_back(psi_arg[i]);
-
   // read initial values of the phi parameters
   for(unsigned i=0; i<phi_label_.size(); ++i) parse("PHI_"+phi_label_[i]+"0", phi_[phi_label_[i]]);
 
+  // read maximum displecement
+  parse("DPHI_R", Dphi_r_);
+  parse("DPHI_T", Dphi_t_);
+
   // secondary structure prediction
   string ss;
-  parse("SS", ss);
+  parse("PSIPRED", ss);
   // check length
-  if(ss.size()!= phi_arg.size()) error("Length of prediction should be equal to the number of arguments in ARG1/ARG2");
+  if(ss.size()!= getNumberOfArguments()/2) error("Length of prediction should be equal to half the number of arguments in ARG");
   // split ss string into vector of strings - ss_pred_
   for(unsigned i=0; i<ss.size(); ++i) {std::string s(1, ss[i]); ss_pred_.push_back(s);}
 
@@ -147,9 +141,6 @@ SSRestraint::SSRestraint(const ActionOptions&ao):
 
   checkRead();
 
-  // ask for arguments
-  requestArguments(arg);
-
   // prepare stuff
   setup_restraint();
 
@@ -158,7 +149,8 @@ SSRestraint::SSRestraint(const ActionOptions&ao):
 
   for(unsigned i=0; i<phi_label_.size(); ++i)
     log.printf("  initial value of phi_%s parameter %f\n", phi_label_[i].c_str(), phi_[phi_label_[i]]);
-  log.printf("  maximum MC move of the phi parameters %f\n", Dphi_);
+  log.printf("  maximum MC move of the phi parameters %f\n", Dphi_r_);
+  log.printf("  maximum MC move of the phi parameters %f\n", Dphi_t_);
   log.printf("  secondary structure prediction %s\n", ss.c_str());
   log.printf("  temperature of the system in energy unit %f\n",kbt_);
   log.printf("  number of MC steps %d\n",MCsteps_);
@@ -196,12 +188,12 @@ void SSRestraint::setup_restraint()
   for(unsigned i=0; i<ss_pred_.size(); ++i) n_[ss_pred_[i]] += 1.0;
 
   // set prior parameters - mean and sigma of truncated normal
-  phi_mean_["HH"] = 0.  ; phi_sig_["HH"] = 0.   ;
-  phi_mean_["HE"] = 0.  ; phi_sig_["HE"] = 0.   ;
-  phi_mean_["EE"] = 0.  ; phi_sig_["EE"] = 0.   ;
-  phi_mean_["EC"] = 0.  ; phi_sig_["EC"] = 0.   ;
-  phi_mean_["CC"] = 0.  ; phi_sig_["CC"] = 0.   ;
-  phi_mean_["CH"] = 0.  ; phi_sig_["CH"] = 0.   ;
+  phi_mean_["HH"] = 1.0;   phi_sig_["HH"] = 0.080;
+  phi_mean_["HE"] = 0.0;   phi_sig_["HE"] = 0.021;
+  phi_mean_["EE"] = 1.0;   phi_sig_["EE"] = 0.116;
+  phi_mean_["EC"] = 0.011; phi_sig_["EC"] = 0.099;
+  phi_mean_["CC"] = 0.772; phi_sig_["CC"] = 0.079;
+  phi_mean_["CH"] = 0.047; phi_sig_["CH"] = 0.080;
 
   // reset acceptances
   for(unsigned i=0; i<phi_label_.size(); ++i) MCaccphi_[phi_label_[i]] = 0;
@@ -268,17 +260,6 @@ double SSRestraint::getEnergy(map <string, double> phi,
   return ene;
 }
 
-double SSRestraint::proposeMove(double x, double xmin, double xmax, double dxmax)
-{
-  double r = static_cast<double>(rand()) / RAND_MAX;
-  double dx = -dxmax + r * 2.0 * dxmax;
-  double x_new = x + dx;
-// check boundaries
-  if(x_new > xmax) {x_new = 2.0 * xmax - x_new;}
-  if(x_new < xmin) {x_new = 2.0 * xmin - x_new;}
-  return x_new;
-}
-
 bool SSRestraint::doAccept(double oldE, double newE) {
   bool accept = false;
   // calculate delta energy
@@ -294,29 +275,73 @@ bool SSRestraint::doAccept(double oldE, double newE) {
   return accept;
 }
 
+double SSRestraint::proposeMoveRadius(double x, double xmin, double xmax, double dxmax)
+{
+  double r = static_cast<double>(rand()) / RAND_MAX;
+  double dx = -dxmax + r * 2.0 * dxmax;
+  double x_new = x + dx;
+  // check boundaries
+  if(x_new > xmax) {x_new = 2.0 * xmax - x_new;}
+  if(x_new < xmin) {x_new = 2.0 * xmin - x_new;}
+  return x_new;
+}
+
+double SSRestraint::proposeMoveTheta(double x, double dxmax)
+{
+  const double pi=3.141592653589793238462643383279502884197169399375105820974944592307;
+  double r = static_cast<double>(rand()) / RAND_MAX;
+  double dx = -dxmax + r * 2.0 * dxmax;
+  double x_new = x + dx;
+  // apply periodic boundaries
+  if(x_new >= pi) x_new -= 2.0*pi;
+  if(x_new < -pi) x_new += 2.0*pi;
+  return x_new;
+}
+
+void SSRestraint::proposeMoveCouple(double &x1, double &x2, double dr, double dt)
+{
+  // calculate radius
+  double radius = sqrt(x1+x2);
+  // calculate angle
+  double theta = atan(sqrt(x2/x1));
+  // propose move in radius
+  double new_radius = proposeMoveRadius(radius, 0.0, 1.0, dr);
+  // propose move in theta
+  double new_theta = proposeMoveTheta(theta, dt);
+  // re-calculate new x1 and x2
+  x1 = new_radius * cos(new_theta) * new_radius * cos(new_theta);
+  x2 = new_radius * sin(new_theta) * new_radius * sin(new_theta);
+}
+
 void SSRestraint::doMonteCarlo(double oldE, long int step,
                                const vector<double> &pHl, const vector<double> &pEl, const vector<double> &pCl)
 {
-// cycle on MC steps
+  // phi are moved in pairs to ensure that sum is lower or equal to one
+  vector< pair< string, string > > pairs;
+  pairs.push_back(make_pair("HH","HE"));
+  pairs.push_back(make_pair("EE","EC"));
+  pairs.push_back(make_pair("CC","CH"));
+  // cycle on MC steps
   for(unsigned i=0; i<MCsteps_; ++i) {
-    // cycle on phi parameters
-    for(unsigned j=0; j<phi_label_.size(); ++j) {
+    // cycle on pairs
+    for(unsigned j=0; j<pairs.size(); ++j) {
       // new map phi_
       map <string, double> phi_new(phi_);
-      // propose move for j-th phi
-      phi_new[phi_label_[j]] = proposeMove(phi_[phi_label_[j]], 0.0, 1.0, Dphi_);
+      // change phi_HH and phi_HE
+      proposeMoveCouple(phi_new[pairs[j].first], phi_new[pairs[j].second], Dphi_r_, Dphi_t_);
       // calculate new energy
       double newE = getEnergy(phi_new, pHl, pEl, pCl);
       // accept or reject
       bool accept = doAccept(oldE, newE);
       if(accept) {
-        phi_[phi_label_[j]] = phi_new[phi_label_[j]] ;
-        MCaccphi_[phi_label_[j]]++;
+        phi_[pairs[j].first]  = phi_new[pairs[j].first];
+        phi_[pairs[j].second] = phi_new[pairs[j].second];
+        MCaccphi_[pairs[j].first]++;
+        MCaccphi_[pairs[j].second]++;
         oldE = newE;
       }
     }
   }
-
 // this is needed when restarting simulations
   if(MCfirst_==-1) MCfirst_=step;
 // calculate number of trials
@@ -370,8 +395,6 @@ void SSRestraint::calculate()
     // get dihedrals
     double phid = getArgument(i);
     double psid = getArgument(i+ss_pred_.size());
-    // get ss type
-    string ss = ss_pred_[i];
     // calculate forward models
     double pH = 0.25*(1.0+cos(phid-phi_ref_["H"]))*(1.0+cos(psid-psi_ref_["H"]));
     double pE = 0.25*(1.0+cos(phid-phi_ref_["E"]))*(1.0+cos(psid-psi_ref_["E"]));
@@ -380,6 +403,8 @@ void SSRestraint::calculate()
     double norm = pH + pE + pC;
     // store in lists (with normalization)
     pHl[i] = pH/norm; pEl[i] = pE/norm; pCl[i] = pC/norm;
+    // get ss type
+    string ss = ss_pred_[i];
     // retrieve p(d|s) coefficients
     double a = coeff[ss+"H"];
     double b = coeff[ss+"E"];
@@ -431,7 +456,6 @@ void SSRestraint::calculate()
   long int step = getStep();
   // do MC stuff at the right time step
   if(step%MCstride_==0&&!getExchangeStep()) doMonteCarlo(ene, step, pHl, pEl, pCl);
-
 }
 
 
