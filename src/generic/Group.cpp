@@ -56,6 +56,7 @@ The flow is the following:
 - If UNIQUE is present the resuling list is sorted and duplicate elements are removed.
 
 Notice that this command just creates a shortcut, and does not imply any real calculation.
+So, having a huge group defined does not slow down your calculation in any way.
 It is just convenient to better organize input files. Might be used in combination with
 the \ref INCLUDE command so as to store long group definitions in a separate file.
 
@@ -175,11 +176,14 @@ Group::Group(const ActionOptions&ao):
   parseAtomList("REMOVE",remove);
   if(remove.size()>0) {
     std::vector<AtomNumber> notfound;
+    unsigned k=0;
     log<<"  removing these atoms from the list:";
     for(unsigned i=0; i<remove.size(); i++) {
       const auto it = find(atoms.begin(),atoms.end(),remove[i]);
       if(it!=atoms.end()) {
+        if(k%25==0) log<<"\n";
         log<<" "<<(*it).serial();
+        k++;
         atoms.erase(it);
       } else notfound.push_back(remove[i]);
     }
@@ -205,8 +209,11 @@ Group::Group(const ActionOptions&ao):
   }
 
   this->atoms.insertGroup(getLabel(),atoms);
-  log.printf("  list of atoms ");
-  for(unsigned i=0; i<atoms.size(); i++) log<<" "<<atoms[i].serial();
+  log.printf("  list of atoms:");
+  for(unsigned i=0; i<atoms.size(); i++) {
+    if(i%25==0) log<<"\n";
+    log<<" "<<atoms[i].serial();
+  }
   log.printf("\n");
 }
 

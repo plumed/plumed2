@@ -44,12 +44,13 @@ If you are using gromacs, the safest way is to use reference pdb file
 generated with `gmx editconf -f topol.tpr -o reference.pdb`.
 
 
-Using MOLINFO with a protein's pdb extend the possibility of atoms selection using the @ special
+Using MOLINFO with a protein's or nucleic acid's pdb extends the possibility of atoms selection using the @ special
 symbol.
 
 Providing `MOLTYPE=protein`, `MOLTYPE=rna`, or `MOLTYPE=dna` will instruct plumed to look
-for known residues from these three types of molecule (so that any of these three choice
-can be safely used in a RNA/protein complex).
+for known residues from these three types of molecule. In other words, this is available for
+historical reasons and to allow future extensions where alternative lists will be provided.
+As of now, you can just ignore this keyoword.
 
 For protein residues, the following groups are available:
 
@@ -79,6 +80,9 @@ For DNA or RNA residues, the following groups are available:
 @v2-#
 @v3-#
 @v4-#
+
+# quadruplet corresponding to the chi torsional angle
+@chi-#
 
 # backbone, sugar, and base heavy atoms
 @back-#

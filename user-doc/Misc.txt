@@ -281,12 +281,13 @@ With these settings, in the first example (`DU<CTRL+X><CTRL+O`) VIM will only co
 
 As you can imagine,
 if you use autocompletion after you have typed the word `DISTANCE` followed by a space you will see
-a menu listing `LABEL=`, `COMPONENTS`, etc. Basically, all the keywords that are possibly used withint a `DISTANCE` line
-will be shown.
+a menu listing `LABEL=`, `COMPONENTS`, etc. Basically, all the keywords that are possibly used within a `DISTANCE` line
+will be shown. This is very useful if you do not remember the exact name of the keywords associated with
+a given action.
 
 \par Quick help
 
-You can also retrieve quick explanation of the input options for a specific collective variable.
+You can also retrieve quick explanation of the input options for a specific action.
 Try to do the following. Enable plumed syntax:
 \verbatim
 :set ft=plumed
@@ -328,7 +329,7 @@ To simplify this, when PLUMED syntax for VIM is configured properly VIM should b
 Notice that the syntax file for the output files (`plumedf.vim`) is not the same one that is used for the PLUMED
 input file (`plumed.vim`).
 
-To make output files more readable, vi will show `FIELDS` and `SET` words in a different color,
+To make output files more readable, vim will show `FIELDS` and `SET` words in a different color,
 and data columns with alternating colors (e.g. dark/light/dark/light).
 The colors in the columns are consistent with those shown in the FIELD line.
 In the example above, 1, 2, and 3 will be of the same color as A, B, and C respectively.
