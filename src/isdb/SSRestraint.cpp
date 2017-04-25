@@ -44,8 +44,7 @@ class SSRestraint : public bias::Bias
 {
   // phi parameters
   map <string, double> phi_;
-  double Dphi_r_;
-  double Dphi_t_;
+  double Dphi_;
   // number of predictions for each secondary structure type
   map <string, double> n_;
   // phi prior parameters
@@ -74,9 +73,8 @@ class SSRestraint : public bias::Bias
   double getPriors(map <string, double> ps, map <string, double> pms, map <string, double> pss);
   void   doMonteCarlo(double oldE, long int step, const vector<double> &pHl, const vector<double> &pEl, const vector<double> &pCl);
   double getEnergy(map <string, double> phi, const vector<double> &pHl, const vector<double> &pEl, const vector<double> &pCl);
-  double proposeMoveRadius(double x, double xmin, double xmax, double dxmax);
-  double proposeMoveTheta(double x, double dxmax);
-  void   proposeMoveCouple(double &x1, double &x2, double dr, double dt);
+  double proposeMove(double x, double xmin, double xmax, double dxmax);
+  void   proposeMoveCouple(double &x1, double &x2, double dx);
   bool   doAccept(double oldE, double newE);
   map<string, double> get_p_coefficients(map <string, double> phi);
 
@@ -98,8 +96,7 @@ void SSRestraint::registerKeywords(Keywords& keys) {
   keys.add("compulsory","PHI_EC0","initial value of the phi_EC parameter");
   keys.add("compulsory","PHI_CC0","initial value of the phi_CC parameter");
   keys.add("compulsory","PHI_CH0","initial value of the phi_CH parameter");
-  keys.add("compulsory","DPHI_R","maximum MC move of the phi parameters");
-  keys.add("compulsory","DPHI_T","maximum MC move of the phi parameters");
+  keys.add("compulsory","DPHI","maximum MC move of the phi parameters");
   keys.add("compulsory","PSIPRED","secondary structure prediction");
   keys.add("optional","TEMP","temperature in energy units");
   keys.add("optional","MC_STEPS","number of MC steps");
@@ -123,8 +120,7 @@ SSRestraint::SSRestraint(const ActionOptions&ao):
   if((phi_["CC"]+phi_["CH"])>1.0) error("PHI_CC0+PHI_CH0 should be lower than 1");
 
   // read maximum displecement
-  parse("DPHI_R", Dphi_r_);
-  parse("DPHI_T", Dphi_t_);
+  parse("DPHI", Dphi_);
 
   // secondary structure prediction
   string ss;
@@ -154,8 +150,7 @@ SSRestraint::SSRestraint(const ActionOptions&ao):
 
   for(unsigned i=0; i<phi_label_.size(); ++i)
     log.printf("  initial value of phi_%s parameter %f\n", phi_label_[i].c_str(), phi_[phi_label_[i]]);
-  log.printf("  maximum MC move of the phi parameters %f\n", Dphi_r_);
-  log.printf("  maximum MC move of the phi parameters %f\n", Dphi_t_);
+  log.printf("  maximum MC move of the phi parameters %f\n", Dphi_);
   log.printf("  secondary structure prediction %s\n", ss.c_str());
   log.printf("  temperature of the system in energy unit %f\n",kbt_);
   log.printf("  number of MC steps %d\n",MCsteps_);
@@ -280,42 +275,38 @@ bool SSRestraint::doAccept(double oldE, double newE) {
   return accept;
 }
 
-double SSRestraint::proposeMoveRadius(double x, double xmin, double xmax, double dxmax)
+double SSRestraint::proposeMove(double x, double xmin, double xmax, double dxmax)
 {
   double r = static_cast<double>(rand()) / RAND_MAX;
   double dx = -dxmax + r * 2.0 * dxmax;
   double x_new = x + dx;
   // check boundaries
-  if(x_new > xmax) {x_new = 2.0 * xmax - x_new;}
-  if(x_new < xmin) {x_new = 2.0 * xmin - x_new;}
+  if(x_new > xmax) {
+     double delta = floor((x_new - xmax)/(xmax-xmin));
+     double dx = x_new - xmax - delta * (xmax-xmin);
+     x_new = xmax - dx;
+  }
+  if(x_new < xmin) {
+     double delta = floor((xmin - x_new)/(xmax-xmin));
+     double dx = xmin - x_new - delta * (xmax-xmin);
+     x_new = xmin + dx;
+  }
   return x_new;
 }
 
-double SSRestraint::proposeMoveTheta(double x, double dxmax)
+void SSRestraint::proposeMoveCouple(double &x1, double &x2, double dx)
 {
-  const double pi=3.141592653589793238462643383279502884197169399375105820974944592307;
-  double r = static_cast<double>(rand()) / RAND_MAX;
-  double dx = -dxmax + r * 2.0 * dxmax;
-  double x_new = x + dx;
-  // apply periodic boundaries
-  if(x_new >= pi) x_new -= 2.0*pi;
-  if(x_new < -pi) x_new += 2.0*pi;
-  return x_new;
-}
-
-void SSRestraint::proposeMoveCouple(double &x1, double &x2, double dr, double dt)
-{
-  // calculate radius
-  double radius = sqrt(x1+x2);
-  // calculate angle
-  double theta = atan(sqrt(x2/x1));
-  // propose move in radius
-  double new_radius = proposeMoveRadius(radius, 0.0, 1.0, dr);
-  // propose move in theta
-  double new_theta = proposeMoveTheta(theta, dt);
-  // re-calculate new x1 and x2
-  x1 = new_radius * cos(new_theta) * new_radius * cos(new_theta);
-  x2 = new_radius * sin(new_theta) * new_radius * sin(new_theta);
+  if(rand()%2==0){
+   // propose move in x1
+   x1 = proposeMove(x1, 0.0, 1.0, dx);
+   // propose move in x2
+   x2 = proposeMove(x2, 0.0, 1.0-x1, dx);
+  } else {
+   // propose move in x2
+   x2 = proposeMove(x2, 0.0, 1.0, dx);
+   // propose move in x1
+   x1 = proposeMove(x1, 0.0, 1.0-x2, dx);
+  }
 }
 
 void SSRestraint::doMonteCarlo(double oldE, long int step,
@@ -333,7 +324,7 @@ void SSRestraint::doMonteCarlo(double oldE, long int step,
       // new map phi_
       map <string, double> phi_new(phi_);
       // change phi_HH and phi_HE
-      proposeMoveCouple(phi_new[pairs[j].first], phi_new[pairs[j].second], Dphi_r_, Dphi_t_);
+      proposeMoveCouple(phi_new[pairs[j].first], phi_new[pairs[j].second], Dphi_);
       // calculate new energy
       double newE = getEnergy(phi_new, pHl, pEl, pCl);
       // accept or reject
