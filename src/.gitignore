@@ -16,8 +16,6 @@
 !/function
 !/generic
 !/gridtools
-!/header.sh
-!/release.sh
 !/imd
 !/lapack
 !/lib
@@ -34,6 +32,9 @@
 !/vatom
 !/vesselbase
 !/wrapper
+!/header.sh
+!/release.sh
+!/astyle.sh
 
 
 # And just ignore these files
