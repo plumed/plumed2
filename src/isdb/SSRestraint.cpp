@@ -319,21 +319,24 @@ void SSRestraint::doMonteCarlo(double oldE, long int step,
   pairs.push_back(make_pair("CC","CH"));
   // cycle on MC steps
   for(unsigned i=0; i<MCsteps_; ++i) {
-    // cycle on pairs
+    // cycle on phi couples
     for(unsigned j=0; j<pairs.size(); ++j) {
-      // new map phi_
+      // new map phi_ - copying old one
       map <string, double> phi_new(phi_);
-      // change phi_HH and phi_HE
+      // change phi couple
       proposeMoveCouple(phi_new[pairs[j].first], phi_new[pairs[j].second], Dphi_);
       // calculate new energy
       double newE = getEnergy(phi_new, pHl, pEl, pCl);
       // accept or reject
       bool accept = doAccept(oldE, newE);
       if(accept) {
+        // update value of phi for the couple
         phi_[pairs[j].first]  = phi_new[pairs[j].first];
         phi_[pairs[j].second] = phi_new[pairs[j].second];
+        // increment acceptance
         MCaccphi_[pairs[j].first]++;
         MCaccphi_[pairs[j].second]++;
+        // update energy
         oldE = newE;
       }
     }
