@@ -372,6 +372,15 @@ void Implicit::setupConstants(const vector<AtomNumber> &atoms, vector<vector<dou
 map<string, map<string, string> > Implicit::setupTypeMap()  {
   map<string, map<string, string> > typemap;
   typemap = {
+    { "ACE", {
+        {"CH3", "CT3"},
+        {"HH31","HA3"},
+        {"HH32","HA3"},
+        {"HH33","HA3"},
+        {"C",   "C"  },
+        {"O",   "O"  }
+      }
+    },
     { "ALA", {
         {"N",   "NH1"},
         {"HN",  "H"  },
@@ -709,6 +718,15 @@ map<string, map<string, string> > Implicit::setupTypeMap()  {
         {"HE3", "HA3"},
         {"C",   "C"  },
         {"O",   "O"  }
+      }
+    },
+    { "NMA", {
+        {"N",   "NH1"},
+        {"HN",  "H"  },
+        {"CH3", "CT3"},
+        {"HH31","HA3"},
+        {"HH32","HA3"},
+        {"HH33","HA3"},
       }
     },
     { "PHE", {
