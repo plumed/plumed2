@@ -150,18 +150,18 @@ The following input is for PBMetaD calculation using as
 collective variables the distance between atoms 3 and 5
 and the distance between atoms 2 and 4. The value of the CVs and
 the PBMetaD bias potential are written to the COLVAR file every 100 steps.
-\verbatim
+\plumedfile
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
 PBMETAD ARG=d1,d2 SIGMA=0.2,0.2 HEIGHT=0.3 PACE=500 LABEL=pb FILE=HILLS_d1,HILLS_d2
 PRINT ARG=d1,d2,pb.bias STRIDE=100 FILE=COLVAR
-\endverbatim
+\endplumedfile
 (See also \ref DISTANCE and \ref PRINT).
 
 \par
 If you use well-tempered metadynamics, you should specify a single biasfactor and initial
 Gaussian height.
-\verbatim
+\plumedfile
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
 PBMETAD ...
@@ -170,11 +170,11 @@ PACE=500 BIASFACTOR=8 LABEL=pb
 FILE=HILLS_d1,HILLS_d2
 ... PBMETAD
 PRINT ARG=d1,d2,pb.bias STRIDE=100 FILE=COLVAR
-\endverbatim
+\endplumedfile
 
 \par
 The following input enables the MPI version of multiple-walkers.
-\verbatim
+\plumedfile
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
 PBMETAD ...
@@ -184,7 +184,7 @@ FILE=HILLS_d1,HILLS_d2
 WALKERS_MPI
 ... PBMETAD
 PRINT ARG=d1,d2,pb.bias STRIDE=100 FILE=COLVAR
-\endverbatim
+\endplumedfile
 
 \par
 The disk version of multiple-walkers can be
@@ -192,7 +192,7 @@ enabled by setting the number of walker used, the id of the
 current walker which interprets the input file, the directory where the
 hills containing files resides, and the frequency to read the other walkers.
 Here is an example
-\verbatim
+\plumedfile
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
 PBMETAD ...
@@ -205,7 +205,7 @@ WALKERS_DIR=../
 WALKERS_RSTRIDE=100
 ... PBMETAD
 PRINT ARG=d1,d2,pb.bias STRIDE=100 FILE=COLVAR
-\endverbatim
+\endplumedfile
 where  WALKERS_N is the total number of walkers, WALKERS_ID is the
 id of the present walker (starting from 0 ) and the WALKERS_DIR is the directory
 where all the walkers are located. WALKERS_RSTRIDE is the number of step between

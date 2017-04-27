@@ -48,16 +48,16 @@ s = \frac{ 1 - \left(\frac{r-d_0}{r_0}\right)^n } { 1 - \left(\frac{r-d_0}{r_0}\
 
 The following input tells plumed to calculate the coordination numbers of atoms 1-100 with themselves.
 The minimum coordination number is then calculated.
-\verbatim
+\plumedfile
 COORDINATIONNUMBER SPECIES=1-100 R_0=1.0 MIN={BETA=0.1}
-\endverbatim
+\endplumedfile
 
 The following input tells plumed to calculate how many atoms from 1-100 are within 3.0 of each of the atoms
 from 101-110.  In the first 101 is the central atom, in the second 102 is the central atom and so on.  The
 number of coordination numbers more than 6 is then computed.
-\verbatim
+\plumedfile
 COORDINATIONNUMBER SPECIESA=101-110 SPECIESB=1-100 R_0=3.0 MORE_THAN={RATIONAL R_0=6.0 NN=6 MM=12 D_0=0}
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

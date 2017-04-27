@@ -40,13 +40,12 @@ to different files.  You can control the buffering of output using the \subpage 
 The following input instructs plumed to print the distance between atoms 3 and 5 on a file
 called COLVAR every 10 steps, and the distance and total energy on a file called COLVAR_ALL
 every 1000 steps.
-\verbatim
+\plumedfile
 DISTANCE ATOMS=2,5 LABEL=distance
 ENERGY             LABEL=energy
 PRINT ARG=distance          STRIDE=10   FILE=COLVAR
 PRINT ARG=distance,energy   STRIDE=1000 FILE=COLVAR_ALL
-\endverbatim
-(See also \ref DISTANCE and \ref ENERGY).
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

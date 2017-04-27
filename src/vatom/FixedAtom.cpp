@@ -51,24 +51,22 @@ then it is safe to add further fixed atoms without breaking translational invari
 
 The following input instructs plumed to compute the angle between
 distance of atoms 15 and 20 and the z axis and keeping it close to zero.
-\verbatim
+\plumedfile
 a: FIXEDATOM AT=0,0,0
 b: FIXEDATOM AT=0,0,1
 an: ANGLE ATOMS=a,b,15,20
 RESTRAINT ARG=an AT=0.0 KAPPA=100.0
-\endverbatim
-(See also \ref ANGLE and \ref RESTRAINT).
+\endplumedfile
 
 The following input instructs plumed to align a protein on a template
 and then compute the distance of one of its atom from the point
 (10,20,30).
-\verbatim
+\plumedfile
 FIT_TO_TEMPLATE STRIDE=1 REFERENCE=ref.pdb TYPE=SIMPLE
 a: FIXEDATOM AT=10,20,30
 d: DISTANCE ARG=a,20
 PRINT ARG=d FILE=colvar
-\endverbatim
-(See also \ref FIT_TO_TEMPLATE and \ref DISTANCE).
+\endplumedfile
 
 
 */

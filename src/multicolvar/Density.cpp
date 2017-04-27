@@ -40,11 +40,11 @@ the number of atoms in half the box.
 
 The following example calculates the number of atoms in one half of the simulation box.
 
-\verbatim
+\plumedfile
 DENSITY SPECIES=1-100 LABEL=d
 AROUND ARG=d XLOWER=0.0 XUPPER=0.5 LABEL=d1
 PRINT ARG=d1.* FILE=colvar1 FMT=%8.4f
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

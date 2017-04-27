@@ -42,10 +42,10 @@ in input ("sss" component) and the distance from them ("zzz" component).
 Here below is a case where you have defined three frames and you want to
 calculate the progress along the path and the distance from it in p1
 
-\verbatim
+\plumedfile
 p1: PATHMSD REFERENCE=file.pdb  LAMBDA=500.0 NEIGH_STRIDE=4 NEIGH_SIZE=8
 PRINT ARG=p1.sss,p1.zzz STRIDE=1 FILE=colvar FMT=%8.4f
-\endverbatim
+\endplumedfile
 
 note that NEIGH_STRIDE=4 NEIGH_SIZE=8 control the neighborlist parameter (optional but
 recommended for performance) and states that the neighbor list will be calculated every 4

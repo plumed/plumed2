@@ -25,18 +25,16 @@ is enclosed in curly braces (e.g. ATOMS={1 2 3 4}).  Please note that you can sp
 The most important of these keywords is the label keyword as it is only by using these labels that we can pass data 
 from one action to another.  As an example if you do:
 
-\verbatim
+\plumedfile
 DISTANCE ATOMS=1,2
-\endverbatim
-(see \ref DISTANCE)
+\endplumedfile
 
 Then PLUMED will do nothing other than read in your input file.  In contrast if you do:
 
-\verbatim
+\plumedfile
 DISTANCE ATOMS=1,2 LABEL=d1
 PRINT ARG=d1 FILE=colvar STRIDE=10
-\endverbatim
-(see \ref PRINT)
+\endplumedfile
 
 then PLUMED will print out the value of the distance between atoms 1 and 2 every 10 steps to the file colvar as you have told
 PLUMED to take the value calculated by the action d1 and to print it. You can use any character string to label your actions
@@ -46,10 +44,10 @@ code-generated groups of atoms and to give labels to any Actions for which the u
 Notice that if a word followed by a column is added at the beginning of the line (e.g. pippo:), PLUMED automatically
 removes it and adds an equivalent label (LABEL=pippo).
 Thus, a completely equivalent result can be obtained with the following shortcut:
-\verbatim
+\plumedfile
 d1: DISTANCE ATOMS=1,2
 PRINT ARG=d1 FILE=colvar STRIDE=10
-\endverbatim
+\endplumedfile
 
 Also notice that all the actions can be labeled, and that many actions besides normal collective variables can define
 one or more value, which can be then referred using the corresponding label.

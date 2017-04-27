@@ -81,7 +81,7 @@ by exploiting the functionality within \ref CENTER_OF_MULTICOLVAR.  We can then 
 cluster and the values of the coordination numbers of these atoms.  The final line in the input then finds the a set of points on the dividing surface that separates
 teh droplet from the surrounding gas.  The value of the phase field on this isocontour is equal to 0.75.
 
-\verbatim
+\plumedfile
 # Calculate coordination numbers
 c1: COORDINATIONNUMBER SPECIES=1-512 SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0}
 # Select coordination numbers that are more than 2.0
@@ -98,7 +98,7 @@ cent: CENTER_OF_MULTICOLVAR DATA=trans1
 dens: MULTICOLVARDENS DATA=trans1 ORIGIN=cent DIR=xyz NBINS=30,30,30 BANDWIDTH=2.0,2.0,2.0
 # Find the isocontour around the nucleus
 FIND_SPHERICAL_CONTOUR GRID=dens CONTOUR=0.85 INNER_RADIUS=10.0 OUTER_RADIUS=40.0 FILE=mysurface.xyz UNITS=A PRECISION=4 NPOINTS=100
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

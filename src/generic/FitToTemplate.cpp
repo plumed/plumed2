@@ -48,8 +48,9 @@ namespace generic {
 This action is used to align a molecule to a template.
 
 This can be used to move the coordinates stored in plumed
-so as to be aligned with a provided template in pdb format. Pdb should contain
-also weights for alignment (see the format of pdb files used e.g. for \ref RMSD).
+so as to be aligned with a provided template in PDB format. Pdb should contain
+also weights for alignment (see the format of PDB files used e.g. for \ref RMSD).
+Make sure your PDB file is correclty formatted as explained \ref pdbreader "in this page".
 Weights for displacement are ignored, since no displacement is computed here.
 Notice that all atoms (not only those in the template) are aligned.
 To see what effect try
@@ -78,13 +79,12 @@ this action is performed at every MD step.
 \par Examples
 
 Align the atomic position to a template then print them
-\verbatim
+\plumedfile
 # to see the effect, one could dump the atoms before alignment
 DUMPATOMS FILE=dump-before.xyz ATOMS=1-20
 FIT_TO_TEMPLATE STRIDE=1 REFERENCE=ref.pdb TYPE=SIMPLE
 DUMPATOMS FILE=dump-after.xyz ATOMS=1-20
-\endverbatim
-(see also \ref DUMPATOMS)
+\endplumedfile
 
 
 
