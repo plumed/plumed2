@@ -52,9 +52,13 @@ class SSRestraint : public bias::Bias
   map <string, double> phi_sig_;
   // and labels
   const vector<string> phi_label_ = {"HH","HE","EE","EC","CC","CH"};
-  // reference dihedrals
-  map <string, double> phi_ref_;
-  map <string, double> psi_ref_;
+  // fmod parameters
+  map <string, double> phi_m_;
+  map <string, double> psi_m_;
+  map <string, double> phi_s_;
+  map <string, double> psi_s_;
+  map <string, double> fmod_a_;
+  map <string, double> fmod_b_;
   // secondary structure prediction
   vector<string> ss_pred_;
   // temperature in kbt
@@ -178,10 +182,19 @@ SSRestraint::SSRestraint(const ActionOptions&ao):
 // setup the restraint
 void SSRestraint::setup_restraint()
 {
-  // set up reference dihedrals
-  // ALPHA-HELIX            BETA SHEETS
-  phi_ref_["H"] = -1.05;    phi_ref_["E"] = -2.36;
-  psi_ref_["H"] = -0.79;    psi_ref_["E"] =  2.36;
+  // set up parameters for the forward models
+  // ALPHA-HELIX          BETA SHEETS
+  phi_m_["H"] = -1.12;    phi_m_["E"] = -2.33;
+  psi_m_["H"] = -0.84;    psi_m_["E"] =  2.26;
+  phi_s_["H"] =  0.56;    phi_s_["E"] =  0.68;
+  psi_s_["H"] =  0.56;    psi_s_["E"] =  0.58;
+  // auxiliary variables, two for each type
+  const vector<string> label = {"H","E"};
+  for(unsigned i=0; i<label.size(); ++i) {
+    string l = label[i];
+    fmod_a_[l]= exp(-1.0/phi_s_[l]/phi_s_[l]-1.0/psi_s_[l]/psi_s_[l]);
+    fmod_b_[l]= exp(+1.0/phi_s_[l]/phi_s_[l]+1.0/psi_s_[l]/psi_s_[l]) - fmod_a_[l];
+  }
 
   // total number of predictions for each secondary structure type
   n_["H"] = 0.0; n_["E"] = 0.0; n_["C"] = 0.0;
@@ -394,9 +407,12 @@ void SSRestraint::calculate()
     // get dihedrals
     double phid = getArgument(i);
     double psid = getArgument(i+ss_pred_.size());
+    // calculate auxiliary forward model stuff
+    double tmpH = exp(cos(phid-phi_m_["H"])/phi_s_["H"]/phi_s_["H"]+cos(psid-psi_m_["H"])/psi_s_["H"]/psi_s_["H"]);
+    double tmpE = exp(cos(phid-phi_m_["E"])/phi_s_["E"]/phi_s_["E"]+cos(psid-psi_m_["E"])/psi_s_["E"]/psi_s_["E"]);
     // calculate forward models
-    double pH = 0.25*(1.0+cos(phid-phi_ref_["H"]))*(1.0+cos(psid-psi_ref_["H"]));
-    double pE = 0.25*(1.0+cos(phid-phi_ref_["E"]))*(1.0+cos(psid-psi_ref_["E"]));
+    double pH = (tmpH - fmod_a_["H"]) / fmod_b_["H"];
+    double pE = (tmpE - fmod_a_["E"]) / fmod_b_["E"];
     double pC = (1.0 - pH) * (1.0 - pE);
     // and normalization
     double norm = pH + pE + pC;
@@ -419,10 +435,10 @@ void SSRestraint::calculate()
     double dlike_dpE = ( b  - ( a * pHl[i] + b * pEl[i] + c * pCl[i] ) ) / norm;
     double dlike_dpC = ( c  - ( a * pHl[i] + b * pEl[i] + c * pCl[i] ) ) / norm;
     //
-    double dpH_dphid   = -0.25 * sin(phid-phi_ref_["H"]) * (1.0+cos(psid-psi_ref_["H"]));
-    double dpH_dpsid   = -0.25 * (1.0+cos(phid-phi_ref_["H"])) * sin(psid-psi_ref_["H"]);
-    double dpE_dphid   = -0.25 * sin(phid-phi_ref_["E"]) * (1.0+cos(psid-psi_ref_["E"]));
-    double dpE_dpsid   = -0.25 * (1.0+cos(phid-phi_ref_["E"])) * sin(psid-psi_ref_["E"]);
+    double dpH_dphid   = -tmpH * sin(phid-phi_m_["H"]) / phi_s_["H"] / phi_s_["H"] / fmod_b_["H"];
+    double dpH_dpsid   = -tmpH * sin(psid-psi_m_["H"]) / psi_s_["H"] / psi_s_["H"] / fmod_b_["H"];
+    double dpE_dphid   = -tmpE * sin(phid-phi_m_["E"]) / phi_s_["E"] / phi_s_["E"] / fmod_b_["E"];
+    double dpE_dpsid   = -tmpE * sin(psid-psi_m_["E"]) / psi_s_["E"] / psi_s_["E"] / fmod_b_["E"];
     double dpC_dphid   = -dpH_dphid * (1.0 - pE) - (1.0 - pH) * dpE_dphid;
     double dpC_dpsid   = -dpH_dpsid * (1.0 - pE) - (1.0 - pH) * dpE_dpsid;
     // apply chain rule
