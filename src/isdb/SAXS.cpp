@@ -57,7 +57,7 @@ Experimental reference intensities can be added using the ADDEXPVALUES and EXPIN
 in the following example the saxs intensities for a martini model are calculated. structure factors
 are obtained from the pdb file indicated in the MOLINFO.
 
-\verbatim
+\plumedfile
 MOLINFO STRUCTURE=template.pdb
 
 SAXS ...
@@ -85,7 +85,7 @@ QVALUE15=0.44 EXPINT15=0.0220506
 
 PRINT ARG=(saxs\.q_.*),(saxs\.exp_.*) FILE=colvar STRIDE=1
 
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
