@@ -92,6 +92,30 @@ However notice that many extra atoms with zero weight might slow down the calcul
 removing lines is better than setting their weights to zero.
 In addition, weights for alignment need not to be equivalent to weights for displacement.
 
+\par Systems with more than 100k atoms
+
+Notice that it very likely does not make any sense to compute the \ref RMSD or any other structural
+deviation __using__ so many atoms. However, if the protein for which you want to compute \ref RMSD
+has atoms with large serial numbers (e.g. because it is located __after__ solvent in the sorted list of atoms)
+you might end up with troubles with the limitations of the PDB format. Indeed, since there are 5
+columns available for atom serial number, this number cannot be larger than 99999.
+In addition, providing \ref MOLINFO with names associated to atoms with a serial larger than 99999 would be impossible.
+
+Since PLUMED 2.4 we allow [hybrid 36](http://cci.lbl.gov/hybrid_36/) format to be used to specify atom numbers.
+This format is not particularly widespread, but has the nice feature that it provides a one-to-one mapping
+between numbers up to approximately 80 millions and strings with 5 characters, plus it is backward compatible
+for numbers smaller than 100000. This is not true for notations like the hex notation exported by VMD.
+Using the hybrid 36 format, the ATOM records for atom ranging from 99997 to 100002 would read like these:
+\verbatim
+ATOM  99997  Ar      X   1      45.349  38.631  15.116  1.00  1.00
+ATOM  99998  Ar      X   1      46.189  38.631  15.956  1.00  1.00
+ATOM  99999  Ar      X   1      46.189  39.471  15.116  1.00  1.00
+ATOM  A0000  Ar      X   1      45.349  39.471  15.956  1.00  1.00
+ATOM  A0000  Ar      X   1      45.349  38.631  16.796  1.00  1.00
+ATOM  A0001  Ar      X   1      46.189  38.631  17.636  1.00  1.00
+\endverbatim
+There are tools that can be found to translate from integers to strings and back using hybrid 36 format
+(a simple python script can be found [here](https://sourceforge.net/p/cctbx/code/HEAD/tree/trunk/iotbx/pdb/hybrid_36.py)).
 
 */
 //+ENDPLUMEDOC
