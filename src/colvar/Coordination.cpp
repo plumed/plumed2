@@ -62,28 +62,34 @@ so that they actually count as "zero".
 \par Examples
 
 The following example instructs plumed to calculate the total coordination number of the atoms in group 1-10 with the atoms in group 20-100.  For atoms 1-10 coordination numbers are calculated that count the number of atoms from the second group that are within 0.3 nm of the central atom.  A neighbour list is used to make this calculation faster, this neighbour list is updated every 100 steps.
-\verbatim
+\plumedfile
 COORDINATION GROUPA=1-10 GROUPB=20-100 R_0=0.3 NLIST NL_CUTOFF=0.5 NL_STRIDE=100
-\endverbatim
+\endplumedfile
 
 The following is a dummy example which should compute the value 0 because the self interaction
 of atom 1 is skipped. Notice that in plumed 2.0 "self interactions" were not skipped, and the
 same calculation should return 1.
-\verbatim
+\plumedfile
 c: COORDINATION GROUPA=1 GROUPB=1 R_0=0.3
 PRINT ARG=c STRIDE=10
-\endverbatim
+\endplumedfile
 
-\verbatim
-c1: COORDINATION GROUPA=1-10 GROUPB=1-10 R_0=0.3
-x: COORDINATION GROUPA=1-10 R_0=0.3
+Here's an example that shows what happens when providing COORDINATION with
+a single group:
+\plumedfile
+# define some huge group:
+group: GROUP ATOMS=1-1000
+# Here's coordination of a group against itself:
+c1: COORDINATION GROUPA=group GROUPB=group R_0=0.3
+# Here's coordination within a single group:
+x: COORDINATION GROUPA=group R_0=0.3
+# This is just multiplying times 2 the variable x:
 c2: COMBINE ARG=x COEFFICIENTS=2
+
 # the two variables c1 and c2 should be identical, but the calculation of c2 is twice faster
-# since it runs on half of the pairs. Notice that to get the same result you
-# should double it
+# since it runs on half of the pairs.
 PRINT ARG=c1,c2 STRIDE=10
-\endverbatim
-See also \ref PRINT and \ref COMBINE
+\endplumedfile
 
 
 

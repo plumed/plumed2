@@ -51,31 +51,38 @@ and \ref PBMETAD and on some analysis action.
 \par Examples
 
 Using the following input:
-\verbatim
+\plumedfile
 d: DISTANCE ATOMS=1,2
 PRINT ARG=d FILE=out
-\endverbatim
-(See also \ref DISTANCE and \ref PRINT).
+\endplumedfile
 a new 'out' file will be created. If an old one is on the way, it will be automatically backed up.
 
 On the other hand, using the following input:
-\verbatim
+\plumedfile
 RESTART
 d: DISTANCE ATOMS=1,2
 PRINT ARG=d FILE=out
-\endverbatim
+\endplumedfile
 the file 'out' will be appended.
-(See also \ref DISTANCE and \ref PRINT).
 
 In the following case, file out1 will be backed up and file out2 will be concatenated
-\verbatim
+\plumedfile
 RESTART
 d1: DISTANCE ATOMS=1,2
 d2: DISTANCE ATOMS=1,2
 PRINT ARG=d1 FILE=out1 RESTART=NO
 PRINT ARG=d2 FILE=out2
-\endverbatim
-(See also \ref DISTANCE and \ref PRINT).
+\endplumedfile
+
+In the following case, file out will backed up even if the MD code thinks that we
+are restarting. Notice that not all the MD code send to PLUMED information about restarts.
+If you are not sure, always put `RESTART` when you are restarting and nothing when you aren't
+\plumedfile
+RESTART NO
+d1: DISTANCE ATOMS=1,2
+PRINT ARG=d1 FILE=out1
+\endplumedfile
+
 
 
 

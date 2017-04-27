@@ -94,19 +94,19 @@ This is in fact the only point of difference between these two actions.
 The following commands tell plumed to calculate the number of atom inside a tetrahedral cavity.  The extent of the tetrahedral
 cavity is calculated from the positions of atoms 1, 4, 5, and 11,  The final value will be labeled cav.
 
-\verbatim
+\plumedfile
 d1: DENSITY SPECIES=20-500
 TETRAHEDRALPORE DATA=d1 ATOMS=1,4,5,11 SIGMA=0.1 LABEL=cav
-\endverbatim
+\endplumedfile
 
 The following command tells plumed to calculate the coordination numbers (with other water molecules) for the water
 molecules in the tetrahedral cavity described above.  The average coordination number and the number of coordination
 numbers more than 4 is then calculated.  The values of these two quantities are given the labels cav.mean and cav.morethan
 
-\verbatim
+\plumedfile
 d1: COORDINATIONNUMBER SPECIES=20-500
 CAVITY DATA=d1 ATOMS=1,4,5,11 SIGMA=0.1 MEAN MORE_THAN={RATIONAL R_0=4} LABEL=cav
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

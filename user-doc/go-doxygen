@@ -36,7 +36,8 @@ awk -v version="$version" '{
     print "      <li><a href=\"tutorials.html\"><span>Tutorials</span></a></li>"
     print "      <li><a href=\"glossary.html\"><span>Index&#160;of&#160;Actions</span></a></li>"
   } else print
-}' $file > $file.tmp
+}' $file |
+awk -f plumed-syntax.awk > $file.tmp
 mv $file.tmp $file
 done
 # end of DOXYGEN <=1.8.10
@@ -50,7 +51,6 @@ var menudata={children:[
 {text:'Index of Actions',url:'glossary.html'}]}
 EOF
 # end of DOXYGEN >=1.8.12
-
 
 cat html/doxygen.css plumed.css > html/doxygen.css.tmp
 mv html/doxygen.css.tmp html/doxygen.css

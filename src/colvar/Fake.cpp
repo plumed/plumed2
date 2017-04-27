@@ -39,10 +39,9 @@ and just support input and period definition
 
 \par Examples
 
-\verbatim
+\plumedfile
 FAKE ATOMS=1 PERIODIC=-3.14,3.14   LABEL=d2
-\endverbatim
-(See also \ref PRINT).
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

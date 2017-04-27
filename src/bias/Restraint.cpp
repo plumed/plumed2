@@ -49,13 +49,12 @@ Additional material and examples can be also found in the tutorial \ref belfast-
 The following input tells plumed to restrain the distance between atoms 3 and 5
 and the distance between atoms 2 and 4, at different equilibrium
 values, and to print the energy of the restraint
-\verbatim
+\plumedfile
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
 RESTRAINT ARG=d1,d2 AT=1.0,1.5 KAPPA=150.0,150.0 LABEL=restraint
 PRINT ARG=restraint.bias
-\endverbatim
-(See also \ref DISTANCE and \ref PRINT).
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

@@ -58,7 +58,7 @@ where \f$\Delta G^\mathrm{free}_i\f$ is the solvation free energy of the isolate
 The output from this collective variable, the free energy of solvation, can be used with the \ref BIASVALUE keyword to provide implicit solvation to a system. All parameters are designed to be used with a modified CHARMM36 force field. It takes only non-hydrogen atoms as input, these can be conveniently specified using the \ref GROUP action with the NDX_GROUP parameter. To speed up the calculation, IMPLICIT internally uses a neighbourlist with a cutoff dependent on the type of atom (maximum of 1.95 nm). This cutoff can be extended further by using the NL_BUFFER keyword.
 
 \par Examples
-\verbatim
+\plumedfile
 MOLINFO MOLTYPE=protein STRUCTURE=peptide.pdb
 WHOLEMOLECULES ENTITY0=1-111
 
@@ -72,8 +72,7 @@ solv: IMPLICIT ATOMS=protein-h NL_STRIDE=10 NL_BUFFER=0.2
 bias: BIASVALUE ARG=solv
 
 PRINT ARG=solv FILE=SOLV
-\endverbatim
-(see also \ref PRINT, \ref GROUP, \ref MOLINFO, \ref WHOLEMOLECULES)
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

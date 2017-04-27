@@ -65,15 +65,15 @@ the positions of the atoms in the reference file and their instantaneous
 position. Only pairs of atoms whose distance in the reference structure is within
 0.1 and 0.8 nm are considered.
 
-\verbatim
+\plumedfile
 DRMSD REFERENCE=file.pdb LOWER_CUTOFF=0.1 UPPER_CUTOFF=0.8
-\endverbatim
+\endplumedfile
 
 The following tells plumed to calculate a DRMSD value for a pair of molecules.
 
-\verbatim
+\plumedfile
 DRMSD REFERENCE=file.pdb LOWER_CUTOFF=0.1 UPPER_CUTOFF=0.8 TYPE=INTER-DRMSD
-\endverbatim
+\endplumedfile
 
 In the input reference file (file.pdb) the atoms in each of the two molecules are separated by a TER
 command as shown below.

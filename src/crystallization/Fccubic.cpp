@@ -63,10 +63,10 @@ so on.  Notice also that you can rotate the reference frame if you are using a n
 The following input calculates the FCCUBIC parameter for the 64 atoms in the system
 and then calculates and prints the average value for this quantity.
 
-\verbatim
+\plumedfile
 FCCUBIC SPECIES=1-64 SWITCH={RATIONAL D_0=3.0 R_0=1.5} MEAN LABEL=d
 PRINT ARG=d.* FILE=colv
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

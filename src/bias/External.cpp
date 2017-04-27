@@ -39,11 +39,10 @@ Calculate a restraint that is defined on a grid that is read during start up
 \par Examples
 The following is an input for a calculation with an external potential that is
 defined in the file bias.dat and that acts on the distance between atoms 3 and 5.
-\verbatim
+\plumedfile
 DISTANCE ATOMS=3,5 LABEL=d1
 EXTERNAL ARG=d1 FILE=bias.dat LABEL=external
-\endverbatim
-(See also \ref DISTANCE \ref PRINT).
+\endplumedfile
 
 The header in the file bias.dat should read:
 \verbatim
@@ -61,11 +60,11 @@ with NOSPLINE you do not need to provide derivative information.
 You can also include grids that are a function of more than one collective
 variable.  For instance the following would be the input for an external
 potential acting on two torsional angles:
-\verbatim
+\plumedfile
 TORSION ATOMS=4,5,6,7 LABEL=t1
 TORSION ATOMS=6,7,8,9 LABEL=t2
 EXTERNAL ARG=t1,t2 FILE=bias.dat LABEL=ext
-\endverbatim
+\endplumedfile
 
 The header in the file bias.dat for this calculation would read:
 \verbatim

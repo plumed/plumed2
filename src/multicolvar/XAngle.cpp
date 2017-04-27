@@ -41,10 +41,10 @@ Calculate the angles between the vector connecting two atoms and the x axis.
 
 The following input tells plumed to calculate the angles between the x-axis and the vector connecting atom 3 to atom 5 and between the x-axis
 and the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then
-\verbatim
+\plumedfile
 XANLGES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
 PRINT ARG=d1.min
-\endverbatim
+\endplumedfile
 (See also \ref PRINT).
 */
 //+ENDPLUMEDOC
@@ -57,10 +57,10 @@ Calculate the angles between the vector connecting two atoms and the y axis.
 
 The following input tells plumed to calculate the angles between the y-axis and the vector connecting atom 3 to atom 5 and between the y-axis
 and the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then
-\verbatim
+\plumedfile
 YANLGES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
 PRINT ARG=d1.min
-\endverbatim
+\endplumedfile
 (See also \ref PRINT).
 */
 //+ENDPLUMEDOC
@@ -73,10 +73,10 @@ Calculate the angles between the vector connecting two atoms and the z axis.
 
 The following input tells plumed to calculate the angles between the z-axis and the vector connecting atom 3 to atom 5 and between the z-axis
 and the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then
-\verbatim
+\plumedfile
 ZANLGES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
 PRINT ARG=d1.min
-\endverbatim
+\endplumedfile
 (See also \ref PRINT).
 */
 //+ENDPLUMEDOC

@@ -37,11 +37,13 @@ then use this information in later commands to specify atom lists in terms resid
 using this command you can find the backbone atoms in your structure automatically.
 
 \warning
-Please be aware that the pdb parser in plumed is far from perfect. You should thus check the log file
+Please be aware that the PDB parser in plumed is far from perfect. You should thus check the log file
 and examine what plumed is actually doing whenenver you use the MOLINFO action.
 Also make sure that the atoms are listed in the pdb with the correct order.
 If you are using gromacs, the safest way is to use reference pdb file
 generated with `gmx editconf -f topol.tpr -o reference.pdb`.
+
+More information of the PDB parser implemented in PLUMED can be found \ref pdbreader "at this page".
 
 
 Using MOLINFO with a protein's or nucleic acid's pdb extends the possibility of atoms selection using the @ special
@@ -111,23 +113,21 @@ interpret terminal residue 1.
 In the following example the MOLINFO command is used to provide the information on which atoms
 are in the backbone of a protein to the ALPHARMSD CV.
 
-\verbatim
+\plumedfile
 MOLINFO STRUCTURE=reference.pdb
 ALPHARMSD RESIDUES=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} LABEL=a
-\endverbatim
-(see also \ref ALPHARMSD)
+\endplumedfile
 
 The following example prints the distance corresponding to the hydrogen bonds
 in a GC Watson-Crick pair.
 
-\verbatim
+\plumedfile
 MOLINFO STRUCTURE=reference.pdb
 hb1: DISTANCE ATOMS=@N2-1,@O2-14
 hb2: DISTANCE ATOMS=@N1-1,@N3-14
 hb3: DISTANCE ATOMS=@O6-1,@N4-14
 PRINT ARG=hb1,hb2,hb3
-\endverbatim
-(see also \ref DISTANCE).
+\endplumedfile
 
 
 */

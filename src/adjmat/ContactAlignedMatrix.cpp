@@ -57,12 +57,12 @@ is greater than 0.5.  The sum of the rows of this matrix are then computed.  The
 many of the molecules that are within the first coordination sphere of molecule \f$i\f$ have an orientation that is similar to that of
 molecule \f$i\f$.  We thus calculate the number of these "coordination numbers" that are greater than 1.0 and output this quantity to a file.
 
-\verbatim
+\plumedfile
 m1: MOLECULES MOL1=1,2 MOL2=3,4 MOL3=5,6 MOL4=7,8
 mat: ALIGNED_MATRIX ATOMS=m1 SWITCH={RATIONAL R_0=0.1} ORIENTATION_SWITCH={RATIONAL R_0=0.1 D_MAX=0.5}
 rr: ROWSUMS MATRIX=mat MORE_THAN={RATIONAL D_0=1.0 R_0=0.1}
 PRINT ARG=rr.* FILE=colvar
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

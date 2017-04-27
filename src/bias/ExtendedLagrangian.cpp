@@ -88,28 +88,26 @@ and many shorter runs.
 
 The following input tells plumed to perform a metadynamics
 with an extended Lagrangian on two torsional angles.
-\verbatim
+\plumedfile
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
 ex: EXTENDED_LAGRANGIAN ARG=phi,psi KAPPA=20,20.0 TAU=0.1,0.1
 METAD ARG=ex.phi_fict,ex.psi_fict PACE=100 SIGMA=0.35,0.35 HEIGHT=0.1
 # monitor the two variables
 PRINT STRIDE=10 ARG=phi,psi,ex.phi_fict,ex.psi_fict FILE=COLVAR
-\endverbatim
-(See also \ref TORSION, \ref METAD, and \ref PRINT).
+\endplumedfile
 
 The following input tells plumed to perform a TAMD (or dAFED)
 calculation on two torsional angles, keeping the two variables
 at a fictitious temperature of 3000K with a Langevin thermostat
 with friction 10
-\verbatim
+\plumedfile
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
 ex: EXTENDED_LAGRANGIAN ARG=phi,psi KAPPA=20,20.0 TAU=0.1,0.1 FRICTION=10,10 TEMP=3000
 # monitor the two variables
 PRINT STRIDE=10 ARG=phi,psi,ex.phi_fict,ex.psi_fict FILE=COLVAR
-\endverbatim
-(See also \ref TORSION and \ref PRINT)
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

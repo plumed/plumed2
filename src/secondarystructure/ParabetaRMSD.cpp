@@ -70,11 +70,10 @@ anthing other than TYPE=DRMSD.  For more details as to how to do this see \ref W
 The following input calculates the number of six residue segments of
 protein that are in an parallel beta sheet configuration.
 
-\verbatim
+\plumedfile
 MOLINFO STRUCTURE=helix.pdb
 PARABETARMSD RESIDUES=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} LABEL=a
-\endverbatim
-(see also \ref MOLINFO)
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

@@ -51,10 +51,10 @@ The following example instructs plumed to calculate the number of water molecule
 that are bridging betweeen atoms 1-10 and atoms 11-20 and to print the value
 to a file
 
-\verbatim
+\plumedfile
 BRIDGE BRIDGING_ATOMS=100-200 GROUPA=1-10 GROUPB=11-20 LABEL=w1
 PRINT ARG=a1.mean FILE=colvar
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

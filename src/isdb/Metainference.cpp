@@ -70,7 +70,7 @@ them and comparing them with a set of experimental values. RDCs are compared wit
 the experimental data but for a multiplication factor SCALE that is also sampled by
 MC on-the-fly
 
-\verbatim
+\plumedfile
 RDC ...
 LABEL=rdc
 SCALE=0.0001
@@ -92,13 +92,13 @@ LABEL=spe
 ... METAINFERENCE
 
 PRINT ARG=spe.bias FILE=BIAS STRIDE=1
-\endverbatim
+\endplumedfile
 
 in the following example instead of using one uncertainty parameter per data point we use
 a single uncertainty value in a long-tailed gaussian to take into account for outliers, furthermore
 the data are weighted for the bias applied to other variables of the system.
 
-\verbatim
+\plumedfile
 cv1: TORSION ATOMS=1,2,3,4
 cv2: TORSION ATOMS=2,3,4,5
 mm: METAD ARG=cv1,cv2 HEIGHT=0.5 SIGMA=0.3,0.3 PACE=200 BIASFACTOR=8 WALKERS_MPI
@@ -113,7 +113,7 @@ SIGMA0=0.01 SIGMA_MIN=0.00001 SIGMA_MAX=3 DSIGMA=0.01
 SIGMA_MEAN=0.001
 LABEL=spe
 ... METAINFERENCE
-\endverbatim
+\endplumedfile
 
 (See also \ref RDC, \ref PBMETAD).
 

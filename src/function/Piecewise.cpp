@@ -55,15 +55,14 @@ in a vector of values. Each value will be named as the name of the original
 argument with suffix _pfunc.
 
 \par Examples
-\verbatim
+\plumedfile
 dist1: DISTANCE ATOMS=1,10
 dist2: DISTANCE ATOMS=2,11
 
 pw: PIECEWISE POINT0=1,10 POINT1=1,PI POINT2=3,10 ARG=dist1
 ppww: PIECEWISE POINT0=1,10 POINT1=1,PI POINT2=3,10 ARG=dist1,dist2
 PRINT ARG=pw,ppww.dist1_pfunc,ppww.dist2_pfunc
-\endverbatim
-(See also \ref PRINT and \ref DISTANCE).
+\endplumedfile
 
 
 */

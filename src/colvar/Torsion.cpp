@@ -43,23 +43,23 @@ orthogonal to an axis.
 
 This input tells plumed to print the torsional angle between atoms 1, 2, 3 and 4
 on file COLVAR.
-\verbatim
+\plumedfile
 t: TORSION ATOMS=1,2,3,4
 # this is an alternative, equivalent, definition:
 # t: TORSION VECTOR1=2,1 AXIS=2,3 VECTOR2=3,4
 PRINT ARG=t FILE=COLVAR
-\endverbatim
+\endplumedfile
 
 If you are working with a protein you can specify the special named torsion angles \f$\phi\f$, \f$\psi\f$, \f$\omega\f$ and \f$\chi_1\f$
 by using TORSION in combination with the \ref MOLINFO command.  This can be done by using the following
 syntax.
 
-\verbatim
+\plumedfile
 MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
 t1: TORSION ATOMS=@phi-3
 t2: TORSION ATOMS=@psi-4
 PRINT ARG=t1,t2 FILE=colvar STRIDE=10
-\endverbatim
+\endplumedfile
 
 Here, \@phi-3 tells plumed that you would like to calculate the \f$\phi\f$ angle in the third residue of the protein.
 Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle of the 4th residue of the protein.

@@ -29,6 +29,7 @@ Changes from version 2.3 which are relevant for users:
   - \ref METAD : BIASFACTOR=1 is allowed and performs unbiased sampling. HILLS file can be used
     to recover free energy also in this case.
   - Internal molfile implementation has been updated to VMD 1.9.3.
+  - Examples in the documentation now have syntax highlighting and links to the documentation of used actions.
 
 Changes from version 2.3 which are relevant for developers:
   - A few fixes has been made to improve exception safety. Although we still cannot declare

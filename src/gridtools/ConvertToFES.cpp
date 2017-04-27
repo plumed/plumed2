@@ -46,12 +46,12 @@ and the HISTOGRAM action.  All the data within this trajectory is used in the co
 HISTOGRAM.  Finally, once all the data has been read in, the histogram is converted to a free energy
 using the formula above and the free energy is output to a file called fes.dat
 
-\verbatim
+\plumedfile
 x: DISTANCE ATOMS=1,2
 hA1: HISTOGRAM ARG=x GRID_MIN=0.0 GRID_MAX=3.0 GRID_BIN=100 BANDWIDTH=0.1
 ff: CONVERT_TO_FES GRID=hA1 TEMP=300
 DUMPGRID GRID=ff FILE=fes.dat
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
