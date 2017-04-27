@@ -103,6 +103,10 @@ do
   fi
 done
 
+if type -t plumed_regtest_before 1>/dev/null ; then
+  plumed_regtest_before
+fi
+
 case "$type" in
 (simplemd)
   test -f in || {

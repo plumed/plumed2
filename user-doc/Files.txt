@@ -45,6 +45,10 @@ If you provide a file for each replica (e.g. plumed.0.dat, plumed.1.dat, etc) yo
 setup plumed differently on each replica. 
 On the other hand, using a single plumed.dat will make all the replicas read the same file.
 
+\warning This rule is true for almost all the files read by PLUMED. Current exceptions
+  are PDB files, where the replica suffix is not added, and trajectories read by \ref driver,
+  for which the replica suffix is always added.
+
 Notice that when PLUMED adds the replica suffix, it recognizes the file extension and add the suffix _before_ the
 extension. Before PLUMED 2.2, the only recognized suffix was ".gz". Since 2.2, any suffix with length
 less or equal to five letters is recognized.
@@ -58,5 +62,6 @@ METAD ARG=d FILE=test.HILLS SIGMA=0.1 HEIGHT=0.1
 PLUMED will write files named COLVAR.0.gz, COLVAR.1.gz, test.0.HILLS, test.1.HILLS, etc
 etc. This is useful since the preserved extension makes it easy
 to process the files later.
+
 
 */
