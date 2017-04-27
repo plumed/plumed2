@@ -49,46 +49,44 @@ better to use SCALED_COMPONENTS.
 
 The following input tells plumed to print the distance between atoms 3 and 5,
 the distance between atoms 2 and 4 and the x component of the distance between atoms 2 and 4.
-\verbatim
+\plumedfile
 d1:  DISTANCE ATOMS=3,5
 d2:  DISTANCE ATOMS=2,4
 d2c: DISTANCE ATOMS=2,4 COMPONENTS
 PRINT ARG=d1,d2,d2c.x
-\endverbatim
-(See also \ref PRINT).
+\endplumedfile
 
 The following input computes the end-to-end distance for a polymer
 of 100 atoms and keeps it at a value around 5.
-\verbatim
+\plumedfile
 WHOLEMOLECULES ENTITY0=1-100
 e2e: DISTANCE ATOMS=1,100 NOPBC
 RESTRAINT ARG=e2e KAPPA=1 AT=5
-\endverbatim
-(See also \ref WHOLEMOLECULES and \ref RESTRAINT).
+\endplumedfile
 
 Notice that NOPBC is used
 to be sure that if the end-to-end distance is larger than half the simulation
 box the distance is compute properly. Also notice that, since many MD
 codes break molecules across cell boundary, it might be necessary to
 use the \ref WHOLEMOLECULES keyword (also notice that it should be
-_before_ distance). The list of atoms provided to WHOLEMOLECULES
+_before_ distance). The list of atoms provided to \ref WHOLEMOLECULES
 here contains all the atoms between 1 and 100. Strictly speaking, this
 is not necessary. If you know for sure that atoms with difference in
 the index say equal to 10 are _not_ going to be farther than half cell
 you can e.g. use
-\verbatim
+\plumedfile
 WHOLEMOLECULES ENTITY0=1,10,20,30,40,50,60,70,80,90,100
 e2e: DISTANCE ATOMS=1,100 NOPBC
 RESTRAINT ARG=e2e KAPPA=1 AT=5
-\endverbatim
-Just be sure that the ordered list provide to WHOLEMOLECULES has the following
+\endplumedfile
+Just be sure that the ordered list provide to \ref WHOLEMOLECULES has the following
 properties:
 - Consecutive atoms should be closer than half-cell throughout the entire simulation.
 - Atoms required later for the distance (e.g. 1 and 100) should be included in the list
 
 The following example shows how to take into account periodicity e.g.
 in z-component of a distance
-\verbatim
+\plumedfile
 # this is a center of mass of a large group
 c: COM ATOMS=1-100
 # this is the distance between atom 101 and the group
@@ -99,8 +97,7 @@ d: DISTANCE ATOMS=c,101 COMPONENTS
 dz: COMBINE ARG=d.z PERIODIC=-10,10
 # metadynamics on dd
 METAD ARG=dz SIGMA=0.1 HEIGHT=0.1 PACE=200
-\endverbatim
-(see also \ref COM, \ref COMBINE, and \ref METAD)
+\endplumedfile
 
 Using SCALED_COMPONENTS this problem should not arise because they are always periodic
 with domain (-0.5,+0.5).

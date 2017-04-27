@@ -44,7 +44,7 @@ algorithm on the corresponding graph. The number of componets in this graph that
 As discussed in \cite tribello-clustering this input was used to analyse the formation of a polycrystal of GeTe from amorphous
 GeTe.
 
-\verbatim
+\plumedfile
 q6: Q6 SPECIES=1-32768 SWITCH={GAUSSIAN D_0=5.29 R_0=0.01 D_MAX=5.3} LOWMEM
 lq6: LOCAL_Q6 SPECIES=q6 SWITCH={GAUSSIAN D_0=5.29 R_0=0.01 D_MAX=5.3} LOWMEM
 flq6: MFILTER_MORE DATA=lq6 SWITCH={GAUSSIAN D_0=0.19 R_0=0.01 D_MAX=0.2}
@@ -54,7 +54,7 @@ mat: CONTACT_MATRIX ATOMS=fcc SWITCH={GAUSSIAN D_0=3.59 R_0=0.01 D_MAX=3.6}
 dfs: DFSCLUSTERING MATRIX=mat
 nclust: CLUSTER_DISTRIBUTION CLUSTERS=dfs TRANSFORM={GAUSSIAN D_0=5.99 R_0=0.01 D_MAX=6.0} MORE_THAN={GAUSSIAN D_0=26.99 R_0=0.01 D_MAX=27}
 PRINT ARG=nclust.* FILE=colvar
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

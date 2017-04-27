@@ -65,7 +65,7 @@ the indices of three atoms for each of the MOL keywords below we are telling PLU
 numbers to determine the orientation of the molecule that will ultimately be used when calculating the \f$\theta_{ij}\f$
 terms in the formula above.  The atom with the third index meanwhile is used when we calculate \f$r_{ij}\f$.
 
-\verbatim
+\plumedfile
 MOLECULES ...
 MOL1=9,10,9
 MOL2=89,90,89
@@ -86,13 +86,13 @@ SMAC ...
 ... SMAC
 
 PRINT ARG=s2.* FILE=colvar
-\endverbatim
+\endplumedfile
 
 This second example works in a way that is very similar to the previous command.  Now, however,
 the orientation of the molecules is determined by finding the plane that contains the positions
 of three atoms.
 
-\verbatim
+\plumedfile
 PLANES ...
 MOL1=9,10,11
 MOL2=89,90,91
@@ -114,7 +114,7 @@ SMAC ...
 ... SMAC
 
 PRINT ARG=s2.* FILE=colvar
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

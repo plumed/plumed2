@@ -45,17 +45,17 @@ The following example calculates switching functions based on the distances betw
 1 and 2, 3 and 4 and 4 and 5. The values of these three switching functions are then output
 to a file named colvar.
 
-\verbatim
+\plumedfile
 CONTACTMAP ATOMS1=1,2 ATOMS2=3,4 ATOMS3=4,5 ATOMS4=5,6 SWITCH={RATIONAL R_0=1.5} LABEL=f1
 PRINT ARG=f1.* FILE=colvar
-\endverbatim
+\endplumedfile
 
 The following example calculates the difference of the current contact map with respect
 to a reference provided. In this case REFERENCE is the fraction of contact that is formed
 (i.e. the distance between two atoms transformed with the SWITH), while R_0 is the contact
 distance. WEIGHT gives the relative weight of each contact to the final distance measure.
 
-\verbatim
+\plumedfile
 CONTACTMAP ...
 ATOMS1=1,2 REFERENCE1=0.1 WEIGHT1=0.5
 ATOMS2=3,4 REFERENCE2=0.5 WEIGHT2=1.0
@@ -67,7 +67,7 @@ CMDIST
 ... CONTACTMAP
 
 PRINT ARG=cmap FILE=colvar
-\endverbatim
+\endplumedfile
 
 The next example calculates calculates fraction of native contacts (Q)
 for Trp-cage mini-protein. R_0 is the distance at which the switch function is guaranteed to
@@ -80,7 +80,7 @@ WEIGHT is the 1/(number of contacts) giving equal weight to each contact.
 
 When using native contact Q switch function, please cite \cite best2013
 
-\verbatim
+\plumedfile
 # Full example available in regtest/basic/rt72/
 
 CONTACTMAP ...
@@ -97,9 +97,8 @@ SUM
 ... CONTACTMAP
 
 PRINT ARG=cmap FILE=colvar
-\endverbatim
-
-(See also \ref PRINT and \ref switchingfunction)
+\endplumedfile
+(See also \ref switchingfunction)
 
 */
 //+ENDPLUMEDOC

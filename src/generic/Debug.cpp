@@ -37,12 +37,12 @@ Can be used while debugging or optimizing plumed.
 
 \par Examples
 
-\verbatim
+\plumedfile
 # print detailed (action-by-action) timers at the end of simulation
 DEBUG DETAILED_TIMERS
 # dump every two steps which are the atoms required from the MD code
 DEBUG logRequestedAtoms STRIDE=2
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

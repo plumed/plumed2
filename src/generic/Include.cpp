@@ -38,25 +38,25 @@ Useful to split very large plumed.dat files.
 \par Examples
 
 This input
-\verbatim
+\plumedfile
 c1: COM ATOMS=1-100
 c2: COM ATOMS=101-202
 d: DISTANCE ARG=c1,c2
 PRINT ARG=d
-\endverbatim
+\endplumedfile
 
 can be replaced with
-\verbatim
+\plumedfile
 INCLUDE FILE=pippo.dat
 d: DISTANCE ARG=c1,c2
 PRINT ARG=d
-\endverbatim
+\endplumedfile
 
 where the content of file pippo.dat is
-\verbatim
+\plumedfile
 c1: COM ATOMS=1-100
 c2: COM ATOMS=101-202
-\endverbatim
+\endplumedfile
 
 (see also \ref COM, \ref DISTANCE, and \ref PRINT).
 

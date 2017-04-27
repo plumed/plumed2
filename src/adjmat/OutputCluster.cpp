@@ -47,13 +47,13 @@ that satisfy this criteria.  The DFS algorithm is then used to find the connecte
 in this matrix and the indices of the atoms in the largest connected component are then output
 to a file.
 
-\verbatim
+\plumedfile
 c1: COORDINATIONNUMBER SPECIES=1-1996 SWITCH={CUBIC D_0=0.34 D_MAX=0.38}
 cf: MFILTER_LESS DATA=c1 SWITCH={CUBIC D_0=13 D_MAX=13.5}
 mat: CONTACT_MATRIX ATOMS=cf SWITCH={CUBIC D_0=0.34 D_MAX=0.38}
 dfs: DFSCLUSTERING MATRIX=mat
 OUTPUT_CLUSTER CLUSTERS=dfs CLUSTER=1 FILE=dfs.dat
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

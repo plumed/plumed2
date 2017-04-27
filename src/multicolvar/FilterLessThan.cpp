@@ -51,22 +51,22 @@ In other words, you are calculating the mean for the transformed colvar.
 The following input gives an example of how a MTRANSFORM_LESS action can be used to duplicate
 functionality that is elsehwere in PLUMED.
 
-\verbatim
+\plumedfile
 DISTANCES ...
  GROUPA=1-10 GROUPB=11-20
  LABEL=d1
 ... DISTANCES
 MTRANSFORM_LESS DATA=d1 SWITCH={GAUSSIAN D_0=1.5 R_0=0.00001}
-\endverbatim
+\endplumedfile
 
 In this case you can achieve the same result by using:
 
-\verbatim
+\plumedfile
 DISTANCES ...
  GROUPA=1-10 GROUPB=11-20
  LESS_THAN={GAUSSIAN D_0=1.5 R_0=0.00001}
 ... DISTANCES
-\endverbatim
+\endplumedfile
 (see \ref DISTANCES)
 
 The advantage of MTRANSFORM_LESS comes, however, if you want to use transformed colvars as input
@@ -99,10 +99,10 @@ One is thus calculating the mean for those colvars that are less than the target
 
 The example shown below calculates the mean for those distances that less than 1.5 nm in length
 
-\verbatim
+\plumedfile
 DISTANCES GROUPA=1 GROUPB=2-50 MEAN LABEL=d1
 MFILTER_LESS DATA=d1 SWITCH={GAUSSIAN D_0=1.5 R_0=0.00001} MEAN LABEL=d4
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

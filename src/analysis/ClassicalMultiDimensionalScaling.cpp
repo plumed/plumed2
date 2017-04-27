@@ -55,7 +55,7 @@ can be found in the tutorial \ref belfast-3 and in the following <a href="https:
 The following command instructs plumed to construct a classical multidimensional scaling projection of a trajectory.
 The RMSD distance between atoms 1-256 have moved is used to measure the distances in the high-dimensional space.
 
-\verbatim
+\plumedfile
 CLASSICAL_MDS ...
   ATOMS=1-256
   METRIC=OPTIMAL-FAST
@@ -63,7 +63,7 @@ CLASSICAL_MDS ...
   NLOW_DIM=2
   OUTPUT_FILE=rmsd-embed
 ... CLASSICAL_MDS
-\endverbatim
+\endplumedfile
 
 The following section is for people who are interested in how this method works in detail. A solid understanding of this material is
 not necessary to use MDS.

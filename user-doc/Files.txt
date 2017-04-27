@@ -34,11 +34,10 @@ since your disk might fill up quickly with this setting.
 When running with multiple replicas (e.g., with GROMACS, -multi option) PLUMED adds the replica index as a suffix to
 all the files. The following command
 will thus print files named COLVAR.0, COLVAR.1, etc for the different replicas.
-\verbatim
+\plumedfile
 d: DISTANCE ATOMS=1,2
 PRINT ARG=d FILE=COLVAR
-\endverbatim
-(see also \ref DISTANCE and \ref PRINT).
+\endplumedfile
 
 When reading a file, PLUMED will try to add the suffix. If the file is not found, it will fall back to
 the name without suffix. The most important case is the reading of the plumed input file.
@@ -51,12 +50,11 @@ extension. Before PLUMED 2.2, the only recognized suffix was ".gz". Since 2.2, a
 less or equal to five letters is recognized.
 
 This means that using in a multireplica context an input such as
-\verbatim
+\plumedfile
 d: DISTANCE ATOMS=1,2
 PRINT ARG=d FILE=COLVAR.gz
 METAD ARG=d FILE=test.HILLS SIGMA=0.1 HEIGHT=0.1
-\endverbatim
-(see \ref DISTANCE, \ref PRINT, and \ref METAD)
+\endplumedfile
 PLUMED will write files named COLVAR.0.gz, COLVAR.1.gz, test.0.HILLS, test.1.HILLS, etc
 etc. This is useful since the preserved extension makes it easy
 to process the files later.

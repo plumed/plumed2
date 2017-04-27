@@ -39,22 +39,22 @@ The input below calculates the gradient of the density of atoms in the manner
 described in \cite fede-grad in order to detect whether or not atoms are distributed
 uniformly along the x-axis of the simulation cell.
 
-\verbatim
+\plumedfile
 d1: DENSITY SPECIES=1-50
 s1: GRADIENT ORIGIN=1 DATA=d1 DIR=x NBINS=4 SIGMA=1.0
 PRINT ARG=s1 FILE=colvar
-\endverbatim
+\endplumedfile
 
 The input below calculates the coordination numbers of the 50 atoms in the simulation cell.
 The gradient of this quantity is then evaluated in the manner described using the equation above
 to detect whether the average values of the coordination number are uniformly distributed along the
 x-axis of the simulation cell.
 
-\verbatim
+\plumedfile
 d2: COORDINATIONNUMBER SPECIES=1-50 SWITCH={RATIONAL R_0=2.0} MORE_THAN={EXP R_0=4.0}
 s2: GRADIENT ORIGIN=1 DATA=d2 DIR=x NBINS=4 SIGMA=1.0
 PRINT ARG=s2 FILE=colvar
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

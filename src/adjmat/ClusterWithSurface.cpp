@@ -44,7 +44,7 @@ number of atoms with indices that are between 1 and 1996 and that are either in 
 atoms within the the second largest cluster are then counted and this number of atoms is output to a file called size.  In addition the indices of the atoms
 that were counted are output to a file called dfs2.dat.
 
-\verbatim
+\plumedfile
 c1: COORDINATIONNUMBER SPECIES=1-1996 SWITCH={CUBIC D_0=0.34 D_MAX=0.38}
 cf: MFILTER_LESS DATA=c1 SWITCH={CUBIC D_0=13 D_MAX=13.5}
 mat: CONTACT_MATRIX ATOMS=cf SWITCH={CUBIC D_0=0.34 D_MAX=0.38}
@@ -53,7 +53,7 @@ clust2a: CLUSTER_WITHSURFACE CLUSTERS=dfs RCUT_SURF=0.3
 size2a: CLUSTER_NATOMS CLUSTERS=clust2a CLUSTER=2
 PRINT ARG=size2a FILE=size FMT=%8.4f
 OUTPUT_CLUSTER CLUSTERS=clust2a CLUSTER=2 FILE=dfs2.dat
-\endverbatim
+\endplumedfile
 
 
 */

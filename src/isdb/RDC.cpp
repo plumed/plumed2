@@ -164,7 +164,7 @@ respect to a set of experimental data is calculated and restrained. In addition,
 and only for analysis purposes, the same RDCs are calculated using a Single Value
 Decomposition algorithm.
 
-\verbatim
+\plumedfile
 RDC ...
 GYROM=-72.5388
 SCALE=1.0
@@ -194,8 +194,7 @@ LABEL=svd
 
 PRINT ARG=nh.corr,rdce.bias FILE=colvar
 PRINT ARG=svd.* FILE=svd
-\endverbatim
-(See also \ref PRINT, \ref RESTRAINT)
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

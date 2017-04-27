@@ -75,11 +75,10 @@ periodic image.
 
 The following input tells plumed to print the radius of gyration of the
 chain containing atoms 10 to 20.
-\verbatim
+\plumedfile
 GYRATION TYPE=RADIUS ATOMS=10-20 LABEL=rg
 PRINT ARG=rg STRIDE=1 FILE=colvar
-\endverbatim
-(See also \ref PRINT)
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

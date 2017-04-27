@@ -36,11 +36,10 @@ Calculate the volume of the simulation box.
 
 \par Examples
 The following input tells plumed to print the volume of the system
-\verbatim
-VOLUME LABEL=vol
+\plumedfile
+vol: VOLUME
 PRINT ARG=vol
-\endverbatim
-(See also \ref PRINT).
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

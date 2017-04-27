@@ -60,28 +60,28 @@ the \f$q_{4}\f$ vectors on adjacent atoms.  More information on these variables 
 The following command calculates the average Q4 parameter for the 64 atoms in a box of Lennard Jones and prints this
 quantity to a file called colvar:
 
-\verbatim
+\plumedfile
 Q4 SPECIES=1-64 D_0=1.3 R_0=0.2 MEAN LABEL=q4
 PRINT ARG=q4.mean FILE=colvar
-\endverbatim
+\endplumedfile
 
 The following command calculates the histogram of Q4 parameters for the 64 atoms in a box of Lennard Jones and prints these
 quantities to a file called colvar:
 
-\verbatim
+\plumedfile
 Q4 SPECIES=1-64 D_0=1.3 R_0=0.2 HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=1.0 NBINS=20 SMEAR=0.1} LABEL=q4
 PRINT ARG=q4.* FILE=colvar
-\endverbatim
+\endplumedfile
 
 The following command could be used to measure the Q4 paramters that describe the arrangement of chlorine ions around the
 sodium atoms in NaCl.  The imagined system here is composed of 64 NaCl formula units and the atoms are arranged in the input
 with the 64 Na\f$^+\f$ ions followed by the 64 Cl\f$-\f$ ions.  Once again the average Q4 paramter is calculated and output to a
 file called colvar
 
-\verbatim
+\plumedfile
 Q4 SPECIESA=1-64 SPECIESB=65-128 D_0=1.3 R_0=0.2 MEAN LABEL=q4
 PRINT ARG=q4.mean FILE=colvar
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
@@ -136,30 +136,30 @@ adjacent atoms is correlated.
 The following command calculates the average value of the LOCAL_Q4 parameter for the 64 Lennard Jones atoms in the system under study and prints this
 quantity to a file called colvar.
 
-\verbatim
+\plumedfile
 Q4 SPECIES=1-64 D_0=1.3 R_0=0.2 LABEL=q4
 LOCAL_Q4 ARG=q4 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN LABEL=lq4
 PRINT ARG=lq4.mean FILE=colvar
-\endverbatim
+\endplumedfile
 
 The following input calculates the distribution of LOCAL_Q4 parameters at any given time and outputs this information to a file.
 
-\verbatim
+\plumedfile
 Q4 SPECIES=1-64 D_0=1.3 R_0=0.2 LABEL=q4
 LOCAL_Q4 ARG=q4 SWITCH={RATIONAL D_0=1.3 R_0=0.2} HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=1.0 NBINS=20 SMEAR=0.1} LABEL=lq4
 PRINT ARG=lq4.* FILE=colvar
-\endverbatim
+\endplumedfile
 
 The following calculates the LOCAL_Q4 parameters for atoms 1-5 only. For each of these atoms comparisons of the geometry of the coordination sphere
 are done with those of all the other atoms in the system.  The final quantity is the average and is outputted to a file
 
-\verbatim
+\plumedfile
 Q4 SPECIESA=1-5 SPECIESB=1-64 D_0=1.3 R_0=0.2 LABEL=q4a
 Q4 SPECIESA=6-64 SPECIESB=1-64 D_0=1.3 R_0=0.2 LABEL=q4b
 
 LOCAL_Q4 ARG=q4a,q4b SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN LOWMEM LABEL=w4
 PRINT ARG=w4.* FILE=colvar
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

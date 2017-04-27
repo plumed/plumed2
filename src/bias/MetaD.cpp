@@ -163,35 +163,35 @@ The following input is for a standard metadynamics calculation using as
 collective variables the distance between atoms 3 and 5
 and the distance between atoms 2 and 4. The value of the CVs and
 the metadynamics bias potential are written to the COLVAR file every 100 steps.
-\verbatim
+\plumedfile
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
 METAD ARG=d1,d2 SIGMA=0.2,0.2 HEIGHT=0.3 PACE=500 LABEL=restraint
 PRINT ARG=d1,d2,restraint.bias STRIDE=100  FILE=COLVAR
-\endverbatim
+\endplumedfile
 (See also \ref DISTANCE \ref PRINT).
 
 \par
 If you use adaptive Gaussians, with diffusion scheme where you use
 a Gaussian that should cover the space of 20 timesteps in collective variables.
 Note that in this case the histogram correction is needed when summing up hills.
-\verbatim
+\plumedfile
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
 METAD ARG=d1,d2 SIGMA=20 HEIGHT=0.3 PACE=500 LABEL=restraint ADAPTIVE=DIFF
 PRINT ARG=d1,d2,restraint.bias STRIDE=100  FILE=COLVAR
-\endverbatim
+\endplumedfile
 
 \par
 If you use adaptive Gaussians, with geometrical scheme where you use
 a Gaussian that should cover the space of 0.05 nm in Cartesian space.
 Note that in this case the histogram correction is needed when summing up hills.
-\verbatim
+\plumedfile
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
 METAD ARG=d1,d2 SIGMA=0.05 HEIGHT=0.3 PACE=500 LABEL=restraint ADAPTIVE=GEOM
 PRINT ARG=d1,d2,restraint.bias STRIDE=100  FILE=COLVAR
-\endverbatim
+\endplumedfile
 
 \par
 When using adaptive Gaussians you might want to limit how the hills width can change.
@@ -199,7 +199,7 @@ You can use SIGMA_MIN and SIGMA_MAX keywords.
 The sigmas should specified in terms of CV so you should use the CV units.
 Note that if you use a negative number, this means that the limit is not set.
 Note also that in this case the histogram correction is needed when summing up hills.
-\verbatim
+\plumedfile
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
 METAD ...
@@ -207,7 +207,7 @@ METAD ...
   SIGMA_MIN=0.2,0.1 SIGMA_MAX=0.5,1.0
 ... METAD
 PRINT ARG=d1,d2,restraint.bias STRIDE=100  FILE=COLVAR
-\endverbatim
+\endplumedfile
 
 \par
 Multiple walkers can be also use as in  \cite multiplewalkers
@@ -215,7 +215,7 @@ These are enabled by setting the number of walker used, the id of the
 current walker which interprets the input file, the directory where the
 hills containing files resides, and the frequency to read the other walkers.
 Here is an example
-\verbatim
+\plumedfile
 DISTANCE ATOMS=3,5 LABEL=d1
 METAD ...
    ARG=d1 SIGMA=0.05 HEIGHT=0.3 PACE=500 LABEL=restraint
@@ -224,7 +224,7 @@ METAD ...
    WALKERS_DIR=../
    WALKERS_RSTRIDE=100
 ... METAD
-\endverbatim
+\endplumedfile
 where  WALKERS_N is the total number of walkers, WALKERS_ID is the
 id of the present walker (starting from 0 ) and the WALKERS_DIR is the directory
 where all the walkers are located. WALKERS_RSTRIDE is the number of step between
@@ -237,7 +237,7 @@ presented in \cite Tiwary_jp504920s as described above.
 This is enabled by using the keyword REWEIGHTING_NGRID where the grid used for
 the calculation is set. The number of grid points given in REWEIGHTING_NGRID
 should be equal or larger than the number of grid points given in GRID_BIN.
-\verbatim
+\plumedfile
 METAD ...
  LABEL=metad
  ARG=phi,psi SIGMA=0.20,0.20 HEIGHT=1.20 BIASFACTOR=5 TEMP=300.0 PACE=500
@@ -245,7 +245,7 @@ METAD ...
  REWEIGHTING_NGRID=150,150
  REWEIGHTING_NHILLS=20
 ... METAD
-\endverbatim
+\endplumedfile
 Here we have asked that the calculation is performed every 20 hills by using
 REWEIGHTING_NHILLS keyword. If this keyword is not given the calculation will
 by default be performed every 50 hills. The c(t) reweighting factor will be given
@@ -285,7 +285,7 @@ Alternatively, if you use a BIASFACTOR yout simulation will converge to a free
 energy that is a linear combination of the target free energy and of the intrinsic free energy
 determined by the original force field.
 
-\verbatim
+\plumedfile
 DISTANCE ATOMS=3,5 LABEL=d1
 METAD ...
  LABEL=t1
@@ -295,7 +295,7 @@ METAD ...
 ... METAD
 
 PRINT ARG=d1,t1.bias STRIDE=100 FILE=COLVAR
-\endverbatim
+\endplumedfile
 
 The header in the file dist.dat for this calculation would read:
 
@@ -309,19 +309,19 @@ The header in the file dist.dat for this calculation would read:
 
 Notice that BIASFACTOR can also be chosen as equal to 1. In this case one will perform
 unbiased sampling. Instead of using HEIGHT, one should provide the TAU parameter.
-\verbatim
+\plumedfile
 d: DISTANCE ATOMS=3,5
 METAD ARG=d SIGMA=0.1 TAU=4.0 TEMP=300 PACE=100 BIASFACTOR=1.0
-\endverbatim
+\endplumedfile
 The HILLS file obtained will still work with `plumed sum_hills` so as to plot a free-energy.
 The case where this makes sense is probably that of RECT simulations.
 
 Regarding RECT simulations, you can also use the RECT keyword so as to avoid using multiple input files.
 For instance, a single input file will be
-\verbatim
+\plumedfile
 d: DISTANCE ATOMS=3,5
 METAD ARG=d SIGMA=0.1 TAU=4.0 TEMP=300 PACE=100 RECT=1.0,1.5,2.0,3.0
-\endverbatim
+\endplumedfile
 The number of elements in the RECT array should be equal to the number of replicas.
 
 

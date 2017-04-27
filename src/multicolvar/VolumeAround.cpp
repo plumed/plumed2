@@ -55,11 +55,11 @@ When AROUND is used with the \ref DENSITY action the number of atoms in the spec
 
 The following commands tell plumed to calculate the average coordination number for the atoms
 that have x (in fractional coordinates) within 2.0 nm of the com of mass c1. The final value will be labeled s.mean.
-\verbatim
+\plumedfile
 COM ATOMS=1-100 LABEL=c1
 COORDINATIONNUMBER SPECIES=1-100 R_0=1.0 LABEL=c
 AROUND DATA=c ORIGIN=c1 XLOWER=-2.0 XUPPER=2.0 SIGMA=0.1 MEAN LABEL=s
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

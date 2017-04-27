@@ -52,23 +52,23 @@ is periodic.
 The following input tells plumed to print the distance between atoms 3 and 5
 its square (as computed from the x,y,z components) and the distance
 again as computed from the square root of the square.
-\verbatim
+\plumedfile
 DISTANCE LABEL=dist      ATOMS=3,5 COMPONENTS
 COMBINE  LABEL=distance2 ARG=dist.x,dist.y,dist.z POWERS=2,2,2 PERIODIC=NO
 COMBINE  LABEL=distance  ARG=distance2 POWERS=0.5 PERIODIC=NO
 PRINT ARG=distance,distance2
-\endverbatim
+\endplumedfile
 (See also \ref PRINT and \ref DISTANCE).
 
 The following input tells plumed to add a restraint on the
 cube of a dihedral angle. Notice that since the angle has a
 periodic domain
 -pi,pi its cube has a domain -pi**3,pi**3.
-\verbatim
+\plumedfile
 t: TORSION ATOMS=1,3,5,7
 c: COMBINE ARG=t POWERS=3 PERIODIC=-31.0062766802998,31.0062766802998
 RESTRAINT ARG=c KAPPA=10 AT=0
-\endverbatim
+\endplumedfile
 
 
 

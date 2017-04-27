@@ -66,13 +66,13 @@ on the number of hydrogen bonds each of the water molecules donates and accepts.
 five columns of data.  The first four of these columns are a label for the atom and the x, y and z position of the oxygen.  The last column is then
 the number of accepted/donated hydrogen bonds.
 
-\verbatim
+\plumedfile
 mat: HBOND_MATRIX ATOMS=1-192:3 HYDROGENS=2-192:3,3-192:3 SWITCH={RATIONAL R_0=3.20} HSWITCH={RATIONAL R_0=2.30} ASWITCH={RATIONAL R_0=0.167pi} SUM
 rsums: ROWSUMS MATRIX=mat MEAN
 csums: COLUMNSUMS MATRIX=mat MEAN
 DUMPMULTICOLVAR DATA=rsums FILE=donors.xyz
 DUMPMULTICOLVAR DATA=csums FILE=acceptors.x
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

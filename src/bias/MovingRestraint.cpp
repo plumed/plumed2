@@ -53,7 +53,7 @@ Additional material and examples can be also found in the tutorial \ref belfast-
 The following input is dragging the distance between atoms 2 and 4
 from 1 to 2 in the first 1000 steps, then back in the next 1000 steps.
 In the following 500 steps the restraint is progressively switched off.
-\verbatim
+\plumedfile
 DISTANCE ATOMS=2,4 LABEL=d
 MOVINGRESTRAINT ...
   ARG=d
@@ -62,12 +62,12 @@ MOVINGRESTRAINT ...
   STEP2=2000 AT2=1.0
   STEP3=2500         KAPPA3=0.0
 ... MOVINGRESTRAINT
-\endverbatim
+\endplumedfile
 The following input is progressively building restraints
 distances between atoms 1 and 5 and between atoms 2 and 4
 in the first 1000 steps. Afterwards, the restraint is kept
 static.
-\verbatim
+\plumedfile
 DISTANCE ATOMS=1,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
 MOVINGRESTRAINT ...
@@ -75,10 +75,10 @@ MOVINGRESTRAINT ...
   STEP0=0    AT0=1.0,1.5 KAPPA0=0.0,0.0
   STEP1=1000 AT1=1.0,1.5 KAPPA1=1.0,1.0
 ... MOVINGRESTRAINT
-\endverbatim
+\endplumedfile
 The following input is progressively bringing atoms 1 and 2
 close to each other with an upper wall
-\verbatim
+\plumedfile
 DISTANCE ATOMS=1,2 LABEL=d1
 MOVINGRESTRAINT ...
   ARG=d1
@@ -86,7 +86,7 @@ MOVINGRESTRAINT ...
   STEP0=0    AT0=1.0 KAPPA0=10.0
   STEP1=1000 AT1=0.0
 ... MOVINGRESTRAINT
-\endverbatim
+\endplumedfile
 
 By default the Action is issuing some values which are
 the work on each degree of freedom, the center of the harmonic potential,

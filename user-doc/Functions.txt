@@ -23,7 +23,7 @@ is the smallest value and `B` is the largest value. In case the answer is that t
 values at the discontinuity are not always the same, then you cannot construct a variable that
 can be biased with PLUMED. Consider the following examples:
 
-\verbatim
+\plumedfile
 t: TORSION ATOMS=1,2,3,4
 # When atoms are moved, t could jump suddenly from -pi to +pi
 
@@ -39,7 +39,7 @@ d: DISTANCE ATOMS=1,10 COMPONENTS
 # make a new variable equal to d.z but with the correct periodicity
 dz: COMBINE ARG=d.z PERIODIC=-10,10
 # here we assumed the system is in a orthorhombic box with z side = 20
-\endverbatim
+\endplumedfile
 
 @FUNCTION@
 
