@@ -471,13 +471,6 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   p.cmd("setPlumedDat",plumedFile.c_str());
   p.cmd("setLog",out);
 
-  if(multi) {
-    string n;
-    Tools::convert(intercomm.Get_rank(),n);
-    trajectoryFile=FileBase::appendSuffix(trajectoryFile,"."+n);
-  }
-
-
   int natoms;
 
   FILE* fp=NULL; FILE* fp_forces=NULL; OFile fp_dforces;
@@ -488,6 +481,13 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     if (trajectoryFile=="-")
       fp=in;
     else {
+      if(multi) {
+        string n;
+        Tools::convert(intercomm.Get_rank(),n);
+        std::string testfile=FileBase::appendSuffix(trajectoryFile,"."+n);
+        FILE* tmp_fp=fopen(testfile.c_str(),"r");
+        if(tmp_fp) { fclose(tmp_fp); trajectoryFile=testfile.c_str();}
+      }
       if(use_molfile==true) {
 #ifdef __PLUMED_HAS_MOLFILE_PLUGINS
         h_in = api->open_file_read(trajectoryFile.c_str(), trajectory_fmt.c_str(), &natoms);
