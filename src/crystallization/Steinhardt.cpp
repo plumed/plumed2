@@ -103,8 +103,8 @@ void Steinhardt::calculateVector( multicolvar::AtomValuePack& myatoms ) const {
         // Calculate Legendre Polynomial
         poly_ass=deriv_poly( m, distance[2]/dlen, dpoly_ass );
         // Calculate power of complex number
-        if(std::abs(com1)>epsilon) powered=pow(com1,m-1); 
-        else powered = std::complex<double>(0.,0.); 
+        if(std::abs(com1)>epsilon) powered=pow(com1,m-1);
+        else powered = std::complex<double>(0.,0.);
         // Real and imaginary parts of z
         real_z = real(com1*powered); imag_z = imag(com1*powered );
 
