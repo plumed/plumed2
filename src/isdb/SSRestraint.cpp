@@ -45,13 +45,11 @@ class SSRestraint : public bias::Bias
   // phi parameters
   map <string, double> phi_;
   double Dphi_;
-  // number of predictions for each secondary structure type
-  map <string, double> n_;
   // phi prior parameters
   map <string, double> phi_mean_;
   map <string, double> phi_sig_;
   // and labels
-  const vector<string> phi_label_ = {"HH","HE","EE","EC","CC","CH"};
+  const vector<string> phi_label_ = {"HH","HE","HC","EH","EE","EC"};
   // fmod parameters
   map <string, double> phi_m_;
   map <string, double> psi_m_;
@@ -96,10 +94,10 @@ void SSRestraint::registerKeywords(Keywords& keys) {
   keys.use("ARG");
   keys.add("compulsory","PHI_HH0","initial value of the phi_HH parameter");
   keys.add("compulsory","PHI_HE0","initial value of the phi_HE parameter");
+  keys.add("compulsory","PHI_HC0","initial value of the phi_HC parameter");
+  keys.add("compulsory","PHI_EH0","initial value of the phi_EH parameter");
   keys.add("compulsory","PHI_EE0","initial value of the phi_EE parameter");
   keys.add("compulsory","PHI_EC0","initial value of the phi_EC parameter");
-  keys.add("compulsory","PHI_CC0","initial value of the phi_CC parameter");
-  keys.add("compulsory","PHI_CH0","initial value of the phi_CH parameter");
   keys.add("compulsory","DPHI","maximum MC move of the phi parameters");
   keys.add("compulsory","PSIPRED","secondary structure prediction");
   keys.add("optional","TEMP","temperature in energy units");
@@ -119,9 +117,9 @@ SSRestraint::SSRestraint(const ActionOptions&ao):
   for(unsigned i=0; i<phi_label_.size(); ++i) parse("PHI_"+phi_label_[i]+"0", phi_[phi_label_[i]]);
 
   // check consistency
-  if((phi_["HH"]+phi_["HE"])>1.0) error("PHI_HH0+PHI_HE0 should be lower than 1");
-  if((phi_["EE"]+phi_["EC"])>1.0) error("PHI_EE0+PHI_EC0 should be lower than 1");
-  if((phi_["CC"]+phi_["CH"])>1.0) error("PHI_CC0+PHI_CH0 should be lower than 1");
+  if((phi_["HH"]+phi_["EH"])>1.0) error("PHI_HH0+PHI_EH0 should be lower than 1");
+  if((phi_["HE"]+phi_["EE"])>1.0) error("PHI_HE0+PHI_EE0 should be lower than 1");
+  if((phi_["HC"]+phi_["EC"])>1.0) error("PHI_HC0+PHI_EC0 should be lower than 1");
 
   // read maximum displecement
   parse("DPHI", Dphi_);
@@ -196,33 +194,34 @@ void SSRestraint::setup_restraint()
     fmod_b_[l]= exp(+1.0/phi_s_[l]/phi_s_[l]+1.0/psi_s_[l]/psi_s_[l]) - fmod_a_[l];
   }
 
-  // total number of predictions for each secondary structure type
-  n_["H"] = 0.0; n_["E"] = 0.0; n_["C"] = 0.0;
-  for(unsigned i=0; i<ss_pred_.size(); ++i) n_[ss_pred_[i]] += 1.0;
-
-  // set prior parameters - mean and sigma of truncated normal
-  phi_mean_["HH"] = 1.0;   phi_sig_["HH"] = 0.080;
-  phi_mean_["HE"] = 0.0;   phi_sig_["HE"] = 0.021;
-  phi_mean_["EE"] = 1.0;   phi_sig_["EE"] = 0.116;
-  phi_mean_["EC"] = 0.011; phi_sig_["EC"] = 0.099;
-  phi_mean_["CC"] = 0.772; phi_sig_["CC"] = 0.079;
-  phi_mean_["CH"] = 0.047; phi_sig_["CH"] = 0.080;
+  // set prior parameters - mean and sigma prefactor
+  // 1) estimate of proportion from benchmark
+  phi_mean_["HH"] = 0.859981409;
+  phi_mean_["HE"] = 0.019667669;
+  phi_mean_["HC"] = 0.073509029;
+  phi_mean_["EH"] = 0.007829839;
+  phi_mean_["EE"] = 0.742872412;
+  phi_mean_["EC"] = 0.062146985;
+  // 2) prefactor for sigma calculation
+  phi_sig_["HH"] = 1268353.0;
+  phi_sig_["HE"] = 759724.0;
+  phi_sig_["HC"] = 1220027.0;
+  phi_sig_["EH"] = 1268353.0;
+  phi_sig_["EE"] = 759724.0;
+  phi_sig_["EC"] = 1220027.0;
 
   // reset acceptances
   for(unsigned i=0; i<phi_label_.size(); ++i) MCaccphi_[phi_label_[i]] = 0;
 }
 
-// get truncated Gaussian prior for a single phi
+// get Gaussian prior for a single phi
 double SSRestraint::getPrior(double p, double pmean, double psig)
 {
-  double sqrt2 = sqrt(2.0);
-  // calculate normalization
-  double phi_B = 0.5 * ( 1.0 + erf ( (1.0 - pmean) / psig / sqrt2 ) );
-  double phi_A = 0.5 * ( 1.0 - erf ( pmean / psig / sqrt2 ) );
-  double norm = psig * ( phi_B - phi_A );
-  // calculate prior
-  double eps = ( p - pmean ) / psig;
-  double prior = 0.5 * eps * eps + std::log(norm);
+  // calculate sigma
+  double s = sqrt(p*(1.0-p)/psig);
+  // calculate prior - excluding 2pi which is constant
+  double prior = 0.5 * ( p - pmean ) * ( p - pmean ) / s / s + std::log(s);
+
   return kbt_ * prior;
 }
 
@@ -240,6 +239,23 @@ double SSRestraint::getPriors(map <string, double> ps,
   }
   return ene;
 }
+
+map<string, double> SSRestraint::get_p_coefficients(map <string, double> phi)
+{
+
+  // 3x3 coefficient matrix
+  map<string, double>  coeff;
+  // these are directly sampled
+  coeff["HH"] = phi["HH"]; coeff["HE"] = phi["HE"]; coeff["HC"] = phi["HC"];
+  coeff["EH"] = phi["EH"]; coeff["EE"] = phi["EE"]; coeff["EC"] = phi["EC"];
+  // these are from normalization
+  coeff["CH"] = 1.0 - phi["HH"] - phi["EH"];
+  coeff["CE"] = 1.0 - phi["HE"] - phi["EE"];
+  coeff["CC"] = 1.0 - phi["HC"] - phi["EC"];
+
+  return coeff;
+}
+
 
 // used to update Bayesian nuisance phi parameters
 double SSRestraint::getEnergy(map <string, double> phi,
@@ -327,9 +343,9 @@ void SSRestraint::doMonteCarlo(double oldE, long int step,
 {
   // phi are moved in pairs to ensure that sum is lower or equal to one
   vector< pair< string, string > > pairs;
-  pairs.push_back(make_pair("HH","HE"));
-  pairs.push_back(make_pair("EE","EC"));
-  pairs.push_back(make_pair("CC","CH"));
+  pairs.push_back(make_pair("HH","EH"));
+  pairs.push_back(make_pair("HE","EE"));
+  pairs.push_back(make_pair("HC","EC"));
   // cycle on MC steps
   for(unsigned i=0; i<MCsteps_; ++i) {
     // cycle on phi couples
@@ -363,28 +379,6 @@ void SSRestraint::doMonteCarlo(double oldE, long int step,
     double accphi = static_cast<double>(MCaccphi_[phi_label_[i]]) / static_cast<double>(MCsteps_) / MCtrials;
     getPntrToComponent("accphi_"+phi_label_[i])->set(accphi);
   }
-}
-
-map<string, double> SSRestraint::get_p_coefficients(map <string, double> phi)
-{
-  // normalization factors
-  double norm_H = phi["HH"]*n_["H"]+(1.0-phi["EC"]-phi["EE"])*n_["E"]+phi["CH"]*n_["C"];
-  double norm_E = phi["HE"]*n_["H"]+phi["EE"]*n_["E"]+(1.0-phi["CH"]-phi["CC"])*n_["C"];
-  double norm_C = (1.0-phi["HH"]-phi["HE"])*n_["H"]+phi["EC"]*n_["E"]+phi["CC"]*n_["C"];
-
-  // 3x3 coefficient matrix
-  map<string, double>  coeff;
-  coeff["HH"] = phi["HH"] * n_["H"] / norm_H;
-  coeff["HE"] = phi["HE"] * n_["H"] / norm_E;
-  coeff["HC"] = (1.0 - phi["HH"] - phi["HE"]) * n_["H"] / norm_C;
-  coeff["EH"] = (1.0 - phi["EE"] - phi["EC"]) * n_["E"] / norm_H;
-  coeff["EE"] = phi["EE"] * n_["E"] / norm_E;
-  coeff["EC"] = phi["EC"] * n_["E"] / norm_C;
-  coeff["CH"] = phi["CH"] * n_["C"] / norm_H;
-  coeff["CE"] = (1.0 - phi["CH"] - phi["CC"]) * n_["C"] / norm_E;
-  coeff["CC"] = phi["CC"] * n_["C"] / norm_C;
-
-  return coeff;
 }
 
 void SSRestraint::calculate()
