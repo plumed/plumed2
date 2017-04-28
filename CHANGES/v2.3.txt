@@ -159,6 +159,7 @@ See branch \branch{v2.3} on git repository.
 - Fixed bug in \ref DISTANCES that appears when using BETWEEN and link cells.
 - Prevented users from causing segfaults by storing derivatives without LOWMEM flag.  In these caess PLUMED crashes with meaningful errors.
 - Fixed bug in \ref HISTOGRAM that causes nans when using KERNEL=DISCRETE option
+- Fixed a bug in the parser related to braces, see \issue{229}
 
 For developers:
 - plumedcheck validation has been made stricter. All the checks are now described in the developer manual.
