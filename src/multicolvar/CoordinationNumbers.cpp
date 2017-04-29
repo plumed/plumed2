@@ -44,6 +44,14 @@ To make the calculation of coordination numbers differentiable the following fun
 s = \frac{ 1 - \left(\frac{r-d_0}{r_0}\right)^n } { 1 - \left(\frac{r-d_0}{r_0}\right)^m }
 \f]
 
+If R_POWER is set, this will use the product of pairwise distance
+raised to the R_POWER with the coordination number function defined
+above. This was used in White and Voth \cite white2014efficient as a
+way of indirectly biasing radial distribution functions. Note that in
+that reference this function is referred to as moments of coordination
+number, but here we call them powers to distinguish from the existing
+MOMENTS keyword of Multicolvars.
+
 \par Examples
 
 The following input tells plumed to calculate the coordination numbers of atoms 1-100 with themselves.
@@ -66,7 +74,8 @@ COORDINATIONNUMBER SPECIESA=101-110 SPECIESB=1-100 R_0=3.0 MORE_THAN={RATIONAL R
 class CoordinationNumbers : public MultiColvarBase {
 private:
 //  double nl_cut;
-  double rcut2;
+  double rcut2, rcut;
+  int r_power;
   SwitchingFunction switchingFunction;
 public:
   static void registerKeywords( Keywords& keys );
@@ -86,6 +95,8 @@ void CoordinationNumbers::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
+  keys.add("optional","R_CUT","The pairwise distance below which pairs contribute to the coordination number.");
+  keys.add("optional","R_POWER","Multiply the coordination number function by a power of r, as done in White and Voth (see note above, default: no)"); 
   keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
            "The following provides information on the \\ref switchingfunction that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
@@ -97,8 +108,11 @@ void CoordinationNumbers::registerKeywords( Keywords& keys ) {
 
 CoordinationNumbers::CoordinationNumbers(const ActionOptions&ao):
   Action(ao),
-  MultiColvarBase(ao)
+  MultiColvarBase(ao),
+  r_power(0)
 {
+
+  bool rcut_set = false;
   // Read in the switching function
   std::string sw, errors; parse("SWITCH",sw);
   if(sw.length()>0) {
@@ -110,11 +124,33 @@ CoordinationNumbers::CoordinationNumbers(const ActionOptions&ao):
     parse("R_0",r_0); parse("D_0",d_0);
     if( r_0<0.0 ) error("you must set a value for R_0");
     switchingFunction.set(nn,mm,r_0,d_0);
+    
   }
   log.printf("  coordination of central atom and those within %s\n",( switchingFunction.description() ).c_str() );
+
+  //get cutoff of switching function
+  rcut = 0;
+  parse("R_CUT", rcut);
+  if(rcut == 0)
+    rcut = switchingFunction.get_dmax();
+  else
+    rcut_set = true;
+
+  //parse power
+  parse("R_POWER", r_power);
+  if(r_power > 0) {
+    log.printf("  Multiplying switching function by r^%d\n", r_power);
+
+    if(!rcut_set) {
+      //0.00001 is the magic nuumber given in sw source code
+      log.printf("  You will have a discontinuous jump of %f to 0 at R_CUT. Consider setting R_CUT if this is large\n", 0.00001 * pow(rcut, r_power));
+    }
+  }
+
+  log.printf("  Using R_CUT of %f\n", rcut);
   // Set the link cell cutoff
-  setLinkCellCutoff( switchingFunction.get_dmax() );
-  rcut2 = switchingFunction.get_dmax()*switchingFunction.get_dmax();
+  setLinkCellCutoff( rcut );
+  rcut2 = rcut * rcut;
 
   // And setup the ActionWithVessel
   std::vector<AtomNumber> all_atoms; setupMultiColvarBase( all_atoms ); checkRead();
@@ -122,15 +158,19 @@ CoordinationNumbers::CoordinationNumbers(const ActionOptions&ao):
 
 double CoordinationNumbers::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
   // Calculate the coordination number
-  double dfunc, d2, sw;
+  double dfunc, d2, sw, d, raised;
   for(unsigned i=1; i<myatoms.getNumberOfAtoms(); ++i) {
     Vector& distance=myatoms.getPosition(i);
     if ( (d2=distance[0]*distance[0])<rcut2 &&
          (d2+=distance[1]*distance[1])<rcut2 &&
          (d2+=distance[2]*distance[2])<rcut2) {
-
+      
+      d = sqrt(d2); raised = pow( d, r_power - 1 ); 
       sw = switchingFunction.calculateSqr( d2, dfunc );
-      accumulateSymmetryFunction( 1, i, sw, (dfunc)*distance, (-dfunc)*Tensor(distance,distance), myatoms );
+      accumulateSymmetryFunction( 1, i, sw * raised * d, 
+				  (dfunc * d * raised + sw * r_power) * distance, 
+				  (-dfunc * d * raised - sw * r_power) * Tensor(distance, distance), 
+				  myatoms );  
     }
   }
 
