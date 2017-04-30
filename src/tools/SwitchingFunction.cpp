@@ -313,6 +313,11 @@ std::string SwitchingFunction::description() const {
   return ostr.str();
 }
 
+  void SwitchingFunction::set_dmax(double d){ 
+    dmax = d;
+    dmax_2 = d * d;
+  }
+
 double SwitchingFunction::do_rational(double rdist,double&dfunc,int nn,int mm)const {
   double result;
   if(2*nn==mm) {

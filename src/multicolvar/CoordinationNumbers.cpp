@@ -67,6 +67,15 @@ number of coordination numbers more than 6 is then computed.
 COORDINATIONNUMBER SPECIESA=101-110 SPECIESB=1-100 R_0=3.0 MORE_THAN={RATIONAL R_0=6.0 NN=6 MM=12 D_0=0}
 \endplumedfile
 
+The following input tells plumed to calculate the mean coordination number of all atoms with themselves 
+and its powers. An explicit cutoff is set for each of 8.
+\plumedfile
+cn0: COORDINATIONNUMBER SPECIES=1-10 SWITCH={RATIONAL R_0=1.0 D_MAX=8} MEAN
+cn1: COORDINATIONNUMBER SPECIES=1-10 SWITCH={RATIONAL R_0=1.0 D_MAX=8} R_POWER=1 MEAN
+cn2: COORDINATIONNUMBER SPECIES=1-10 SWITCH={RATIONAL R_0=1.0 D_MAX=8} R_POWER=2 MEAN
+PRINT ARG=cn0.mean,cn1.mean,cn2.mean STRIDE=1 FILE=cn_out
+\endplumedfile
+
 */
 //+ENDPLUMEDOC
 
@@ -95,8 +104,8 @@ void CoordinationNumbers::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
-  keys.add("optional","R_CUT","The pairwise distance below which pairs contribute to the coordination number.");
-  keys.add("optional","R_POWER","Multiply the coordination number function by a power of r, as done in White and Voth (see note above, default: no)"); 
+  keys.add("optional","R_POWER","Multiply the coordination number function by a power of r, "
+	   "as done in White and Voth (see note above, default: no)"); 
   keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
            "The following provides information on the \\ref switchingfunction that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
@@ -112,7 +121,6 @@ CoordinationNumbers::CoordinationNumbers(const ActionOptions&ao):
   r_power(0)
 {
 
-  bool rcut_set = false;
   // Read in the switching function
   std::string sw, errors; parse("SWITCH",sw);
   if(sw.length()>0) {
@@ -129,25 +137,47 @@ CoordinationNumbers::CoordinationNumbers(const ActionOptions&ao):
   log.printf("  coordination of central atom and those within %s\n",( switchingFunction.description() ).c_str() );
 
   //get cutoff of switching function
-  rcut = 0;
-  parse("R_CUT", rcut);
-  if(rcut == 0)
-    rcut = switchingFunction.get_dmax();
-  else
-    rcut_set = true;
+  double rcut = switchingFunction.get_dmax();
+
+  //we extend when switching function is not specified
+  bool switch_extend = sw.length() == 0;
+
 
   //parse power
   parse("R_POWER", r_power);
   if(r_power > 0) {
     log.printf("  Multiplying switching function by r^%d\n", r_power);
 
-    if(!rcut_set) {
-      //0.00001 is the magic nuumber given in sw source code
-      log.printf("  You will have a discontinuous jump of %f to 0 at R_CUT. Consider setting R_CUT if this is large\n", 0.00001 * pow(rcut, r_power));
+    double offset = switchingFunction.calculate(rcut, rcut2) * pow(rcut, r_power);
+    if(switch_extend) {
+      //try to reduce jump, but only extend by ~25%.
+      unsigned int max_try = 25;
+      unsigned int i = 0;
+      double interval;
+      log.printf("  Extending your cutoff from %f", rcut);
+      for(; i < max_try; i++) {
+	//extend it so we can test beyond dmax
+	interval = rcut / 100;
+	switchingFunction.set_dmax(rcut + interval);
+	//check value at cutoff (rcut2 is placeholder)
+	//0.00001 is the magic nuumber given in sw source code
+	offset = switchingFunction.calculate(rcut, rcut2) * pow(rcut, r_power);
+	if(offset < 0.000001)
+	  break;
+	rcut += interval;
+      }
+      switchingFunction.set_dmax(rcut);
+      log.printf("  to %f.\n", rcut);
+      
+      if(i == max_try)
+	log.printf("  *WARNING*: You will have a discontinuous jump of %f to 0 at the cutoff of your switching function. "
+		   "Consider setting D_MAX or reducing R_POWER if this is large\n", offset);
+    }else {
+	log.printf("  You will have a discontinuous jump of %f to 0 at the cutoff of your switching function. "
+		   "Consider setting D_MAX or reducing R_POWER if this is large\n", offset);
     }
   }
 
-  log.printf("  Using R_CUT of %f\n", rcut);
   // Set the link cell cutoff
   setLinkCellCutoff( rcut );
   rcut2 = rcut * rcut;

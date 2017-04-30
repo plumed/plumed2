@@ -87,6 +87,9 @@ public:
 /// Parse the string in definition and possibly returns errors
 /// in the errormsg string
   void set(const std::string& definition, std::string& errormsg);
+  //override dmax
+  void set_dmax(double dmax);
+
 /// Returns a string with a description of the switching function
   std::string description() const ;
 /// Compute the switching function.
