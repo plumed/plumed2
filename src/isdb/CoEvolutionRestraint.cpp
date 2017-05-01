@@ -103,10 +103,10 @@ void CoEvolutionRestraint::registerKeywords(Keywords& keys) {
   keys.add("optional","MC_STRIDE","MC stride");
   componentsAreNotOptional(keys);
   useCustomisableComponents(keys);
-  keys.addOutputComponent("alpha_p",   "default","alpha positive parameter");
-  keys.addOutputComponent("alpha_n",   "default","alpha negative parameter");
-  keys.addOutputComponent("accalpha_p","default","MC acceptance alpha positive");
-  keys.addOutputComponent("accalpha_n","default","MC acceptance alpha negative");
+  keys.addOutputComponent("alphap",   "default","alpha positive parameter");
+  keys.addOutputComponent("alphan",   "default","alpha negative parameter");
+  keys.addOutputComponent("accalphap","default","MC acceptance alpha positive");
+  keys.addOutputComponent("accalphan","default","MC acceptance alpha negative");
 }
 
 CoEvolutionRestraint::CoEvolutionRestraint(const ActionOptions&ao):
@@ -169,10 +169,10 @@ CoEvolutionRestraint::CoEvolutionRestraint(const ActionOptions&ao):
   log.printf("  number of MC steps %d\n",MCsteps_);
   log.printf("  do MC every %d steps\n", MCstride_);
 
-  addComponent("alpha_p");    componentIsNotPeriodic("alpha_p");
-  addComponent("accalpha_p"); componentIsNotPeriodic("accalpha_p");
-  addComponent("alpha_n");    componentIsNotPeriodic("alpha_n");
-  addComponent("accalpha_n"); componentIsNotPeriodic("accalpha_n");
+  addComponent("alphap");    componentIsNotPeriodic("alphap");
+  addComponent("accalphap"); componentIsNotPeriodic("accalphap");
+  addComponent("alphan");    componentIsNotPeriodic("alphan");
+  addComponent("accalphan"); componentIsNotPeriodic("accalphan");
 
   // initialize parallel stuff
   rank_ = comm.Get_rank();
@@ -291,10 +291,10 @@ void CoEvolutionRestraint::doMonteCarlo(double oldE, const vector<double> &fmod,
   double MCtrials = std::floor(static_cast<double>(step-MCfirst_) / static_cast<double>(MCstride_))+1.0;
 // alpha_p acceptance
   double accalpha_p = static_cast<double>(MCaccalpha_p_) / static_cast<double>(MCsteps_) / MCtrials;
-  getPntrToComponent("accalpha_p")->set(accalpha_p);
+  getPntrToComponent("accalphap")->set(accalpha_p);
   // alpha_n acceptance
   double accalpha_n = static_cast<double>(MCaccalpha_n_) / static_cast<double>(MCsteps_) / MCtrials;
-  getPntrToComponent("accalpha_n")->set(accalpha_n);
+  getPntrToComponent("accalphan")->set(accalpha_n);
 }
 
 void CoEvolutionRestraint::calculate()
@@ -363,9 +363,9 @@ void CoEvolutionRestraint::calculate()
   // set value of the bias
   setBias(ene);
   // set values of alpha_p
-  getPntrToComponent("alpha_p")->set(alpha_p_);
+  getPntrToComponent("alphap")->set(alpha_p_);
   // set values of alpha_n
-  getPntrToComponent("alpha_n")->set(alpha_n_);
+  getPntrToComponent("alphan")->set(alpha_n_);
 
   // get time step
   long int step = getStep();
