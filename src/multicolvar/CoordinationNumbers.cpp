@@ -83,7 +83,7 @@ PRINT ARG=cn0.mean,cn1.mean,cn2.mean STRIDE=1 FILE=cn_out
 class CoordinationNumbers : public MultiColvarBase {
 private:
 //  double nl_cut;
-  double rcut2, rcut;
+  double rcut2;
   int r_power;
   SwitchingFunction switchingFunction;
 public:
@@ -139,43 +139,13 @@ CoordinationNumbers::CoordinationNumbers(const ActionOptions&ao):
   //get cutoff of switching function
   double rcut = switchingFunction.get_dmax();
 
-  //we extend when switching function is not specified
-  bool switch_extend = sw.length() == 0;
-
-
   //parse power
   parse("R_POWER", r_power);
   if(r_power > 0) {
     log.printf("  Multiplying switching function by r^%d\n", r_power);
-
-    double offset = switchingFunction.calculate(rcut, rcut2) * pow(rcut, r_power);
-    if(switch_extend) {
-      //try to reduce jump, but only extend by ~25%.
-      unsigned int max_try = 25;
-      unsigned int i = 0;
-      double interval;
-      log.printf("  Extending your cutoff from %f", rcut);
-      for(; i < max_try; i++) {
-	//extend it so we can test beyond dmax
-	interval = rcut / 100;
-	switchingFunction.set_dmax(rcut + interval);
-	//check value at cutoff (rcut2 is placeholder)
-	//0.00001 is the magic nuumber given in sw source code
-	offset = switchingFunction.calculate(rcut, rcut2) * pow(rcut, r_power);
-	if(offset < 0.000001)
-	  break;
-	rcut += interval;
-      }
-      switchingFunction.set_dmax(rcut);
-      log.printf("  to %f.\n", rcut);
-      
-      if(i == max_try)
-	log.printf("  *WARNING*: You will have a discontinuous jump of %f to 0 at the cutoff of your switching function. "
+    double offset = switchingFunction.calculate(rcut*0.9999, rcut2) * pow(rcut*0.9999, r_power);
+    log.printf("  You will have a discontinuous jump of %f to 0 near the cutoff of your switching function. "
 		   "Consider setting D_MAX or reducing R_POWER if this is large\n", offset);
-    }else {
-	log.printf("  You will have a discontinuous jump of %f to 0 at the cutoff of your switching function. "
-		   "Consider setting D_MAX or reducing R_POWER if this is large\n", offset);
-    }
   }
 
   // Set the link cell cutoff
