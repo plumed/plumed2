@@ -68,7 +68,6 @@ class CoEvolutionRestraint : public bias::Bias
   unsigned rank_;
   unsigned nrep_;
 
-  void   setup_restraint();
   double getPrior(double a, double amean, double asig);
   void   doMonteCarlo(double oldE, const vector<double> &fmod, long int step);
   double getEnergy(double alpha_p, double alpha_n, const vector<double> &fmod);
@@ -90,6 +89,13 @@ void CoEvolutionRestraint::registerKeywords(Keywords& keys) {
   keys.add("compulsory","ALPHA_P0","initial value of the alpha positive parameter");
   keys.add("compulsory","ALPHA_N0","initial value of the alpha negative parameter");
   keys.add("compulsory","DALPHA","maximum MC move of the alpha parameter");
+  keys.add("compulsory","R0","forward model parameter R0");
+  keys.add("compulsory","P0","forward model parameter P0");
+  keys.add("compulsory","GAMMA","forward model parameter gamma");
+  keys.add("compulsory","ALPHA_P_MEAN","alpha_p prior mean");
+  keys.add("compulsory","ALPHA_P_SIG","alpha_p prior sigma constant");
+  keys.add("compulsory","ALPHA_N_MEAN","alpha_n prior mean");
+  keys.add("compulsory","ALPHA_N_SIG","alpha_n prior sigma constant");
   keys.add("compulsory","NPOS","number of positives");
   keys.add("compulsory","NNEG","number of negatives");
   keys.add("optional","TEMP","temperature in energy units");
@@ -112,6 +118,18 @@ CoEvolutionRestraint::CoEvolutionRestraint(const ActionOptions&ao):
   parse("ALPHA_P0", alpha_p_);
   parse("ALPHA_N0", alpha_n_);
   parse("DALPHA",   Dalpha_);
+
+  // forward model parameters
+  parse("R0", R0_);
+  parse("P0", P0_);
+  parse("GAMMA", gamma_);
+
+  // prior parameters
+  parse("ALPHA_P_MEAN", alpha_p_mean_);
+  parse("ALPHA_P_SIG",  alpha_p_sig_);
+  parse("ALPHA_N_MEAN", alpha_n_mean_);
+  parse("ALPHA_N_SIG",  alpha_n_sig_);
+
   // number of positives and negatives
   parse("NPOS", npos_);
   if(npos_<=0) error("NPOS should be strictly positive");
@@ -132,15 +150,19 @@ CoEvolutionRestraint::CoEvolutionRestraint(const ActionOptions&ao):
   // check number of arguments
   if(getNumberOfArguments()!=(npos_+nneg_)) error("The number of arguments should be equal to NPOS + NNEG");
 
-  // prepare stuff
-  setup_restraint();
-
   // adjust for multiple-time steps
   MCstride_ *= getStride();
 
   log.printf("  initial value of alpha_p %f\n",alpha_p_);
   log.printf("  initial value of alpha_n %f\n",alpha_n_);
   log.printf("  maximum MC move of the alpha parameter %f\n",Dalpha_);
+  log.printf("  forward model parameter R0 %f\n",R0_);
+  log.printf("  forward model parameter P0 %f\n",P0_);
+  log.printf("  forward model parameter gamma %f\n",gamma_);
+  log.printf("  alpha_p prior mean %f\n",alpha_p_mean_);
+  log.printf("  alpha_p prior sigma constant %f\n",alpha_p_sig_);
+  log.printf("  alpha_n prior mean %f\n",alpha_n_mean_);
+  log.printf("  alpha_n prior sigma constant %f\n",alpha_n_sig_);
   log.printf("  number of positive data points %d\n",npos_);
   log.printf("  number of negative data points %d\n",nneg_);
   log.printf("  temperature of the system in energy unit %f\n",kbt_);
@@ -164,20 +186,6 @@ CoEvolutionRestraint::CoEvolutionRestraint(const ActionOptions&ao):
   // initialize random generator
   srand (iseed);
 
-}
-
-// setup the restraint
-void CoEvolutionRestraint::setup_restraint()
-{
-  // set up parameters for the forward models
-  R0_ = 0.0;
-  P0_ = 0.0;
-  gamma_ = 0.0;
-  // alpha prior parameters
-  alpha_p_mean_ = 0.0;
-  alpha_p_sig_ = 0.0;
-  alpha_n_mean_ = 0.0;
-  alpha_n_sig_ = 0.0;
 }
 
 // calculate Gaussian prior for a single alpha
