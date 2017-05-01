@@ -132,9 +132,9 @@ CoEvolutionRestraint::CoEvolutionRestraint(const ActionOptions&ao):
 
   // number of positives and negatives
   parse("NPOS", npos_);
-  if(npos_<=0) error("NPOS should be strictly positive");
+  if(npos_<0) error("NPOS should be positive");
   parse("NNEG", nneg_);
-  if(nneg_<=0) error("NNEG should be strictly positive");
+  if(nneg_<0) error("NNEG should be positive");
   // temperature
   double temp=0.0;
   parse("TEMP",temp);
