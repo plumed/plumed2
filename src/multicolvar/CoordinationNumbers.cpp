@@ -67,7 +67,7 @@ number of coordination numbers more than 6 is then computed.
 COORDINATIONNUMBER SPECIESA=101-110 SPECIESB=1-100 R_0=3.0 MORE_THAN={RATIONAL R_0=6.0 NN=6 MM=12 D_0=0}
 \endplumedfile
 
-The following input tells plumed to calculate the mean coordination number of all atoms with themselves 
+The following input tells plumed to calculate the mean coordination number of all atoms with themselves
 and its powers. An explicit cutoff is set for each of 8.
 \plumedfile
 cn0: COORDINATIONNUMBER SPECIES=1-10 SWITCH={RATIONAL R_0=1.0 D_MAX=8} MEAN
@@ -105,7 +105,7 @@ void CoordinationNumbers::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
   keys.add("optional","R_POWER","Multiply the coordination number function by a power of r, "
-	   "as done in White and Voth (see note above, default: no)"); 
+           "as done in White and Voth (see note above, default: no)");
   keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
            "The following provides information on the \\ref switchingfunction that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
@@ -132,7 +132,7 @@ CoordinationNumbers::CoordinationNumbers(const ActionOptions&ao):
     parse("R_0",r_0); parse("D_0",d_0);
     if( r_0<0.0 ) error("you must set a value for R_0");
     switchingFunction.set(nn,mm,r_0,d_0);
-    
+
   }
   log.printf("  coordination of central atom and those within %s\n",( switchingFunction.description() ).c_str() );
 
@@ -145,7 +145,7 @@ CoordinationNumbers::CoordinationNumbers(const ActionOptions&ao):
     log.printf("  Multiplying switching function by r^%d\n", r_power);
     double offset = switchingFunction.calculate(rcut*0.9999, rcut2) * pow(rcut*0.9999, r_power);
     log.printf("  You will have a discontinuous jump of %f to 0 near the cutoff of your switching function. "
-		   "Consider setting D_MAX or reducing R_POWER if this is large\n", offset);
+               "Consider setting D_MAX or reducing R_POWER if this is large\n", offset);
   }
 
   // Set the link cell cutoff
@@ -164,13 +164,13 @@ double CoordinationNumbers::compute( const unsigned& tindex, AtomValuePack& myat
     if ( (d2=distance[0]*distance[0])<rcut2 &&
          (d2+=distance[1]*distance[1])<rcut2 &&
          (d2+=distance[2]*distance[2])<rcut2) {
-      
-      d = sqrt(d2); raised = pow( d, r_power - 1 ); 
+
+      d = sqrt(d2); raised = pow( d, r_power - 1 );
       sw = switchingFunction.calculateSqr( d2, dfunc );
-      accumulateSymmetryFunction( 1, i, sw * raised * d, 
-				  (dfunc * d * raised + sw * r_power) * distance, 
-				  (-dfunc * d * raised - sw * r_power) * Tensor(distance, distance), 
-				  myatoms );  
+      accumulateSymmetryFunction( 1, i, sw * raised * d,
+                                  (dfunc * d * raised + sw * r_power) * distance,
+                                  (-dfunc * d * raised - sw * r_power) * Tensor(distance, distance),
+                                  myatoms );
     }
   }
 
