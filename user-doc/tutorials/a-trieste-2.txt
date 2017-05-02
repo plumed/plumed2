@@ -87,18 +87,18 @@ As discussed in the introduction we are going to be using model data in this exe
 using PLUMED.  The following short python script will generate 10000 (pseudo) random variables between 0 and 1 from a uniform disribution in a format that 
 PLUMED can understand:
 
-\verbatim
+\code{.py}
 import random
 
 print("#! FIELDS time rand")
 for i in range(0,10001):
         print(i, random.uniform(0,1) )
-\endverbatim
+\endcode
 
 Copy the contents of the box above to a plain text file called generate_data.py, save the file and then execute the script within it by running:
 
 \verbatim
-python generate_data.py > mydata
+> python generate_data.py > mydata
 \endverbatim
 
 This will generate a file called mydata that contains 10001 uniform random variables.  PLUMED will ignore the first number in the colvar file as it assumes
@@ -106,7 +106,7 @@ this is the initial configuration you provided for the trajectory.  The sample m
 using gnuplot and the command:
 
 \verbatim
-p 'mydata' u 1:2 w p
+gnuplot> p 'mydata' u 1:2 w p
 \endverbatim 
 
 The probability distribution that we generated these random variables is considerably simpler than the probability distribution that we would typically
@@ -124,18 +124,18 @@ These are:
 Lets now try estimating these quantieis by calculating \f$\frac{S_n}{n}\f$ from the points we generated and exploting the central limit theorem.
 We can do this calculation by writing a PLUMED input file that reads:
 
-\verbatim
+\plumedfile
 data: READ FILE=mydata VALUES=rand
 d2: MATHEVAL ARG=data VAR=a FUNC=a*a PERIODIC=NO
 av: AVERAGE ARG=data STRIDE=1
 av2: AVERAGE ARG=d2 STRIDE=1
 PRINT ARG=av,av2 STRIDE=10000 FILE=colvar
-\endverbatim
+\endplumedfile
 
 If you copy this input to a file called plumed.dat you can then run the calculation by executing:
 
 \verbatim
-plumed driver --noatoms
+> plumed driver --noatoms
 \endverbatim
 
 When the calculation is finished you should have a file called colvar that contains the estimate of the ensemble averages \f$\langle X \rangle\f$ and \f$\langle X^2 \rangle\f$.
@@ -162,22 +162,22 @@ for our random variable.  The theory behind what we do here is explained in this
 To do such a calculation with PLUMED on the random variables we generated from the uniform distribution in the previous section we would use an input like the one 
 below:
 
-\verbatim
+\plumedfile
 data: READ FILE=mydata VALUES=rand
 hh: HISTOGRAM ARG=data STRIDE=1 GRID_MIN=0 GRID_MAX=1.0 GRID_BIN=20 KERNEL=DISCRETE
 DUMPGRID GRID=hh FILE=myhist.dat
-\endverbatim 
+\endplumedfile
 
 Once again you can run this calculation by using the command:
 
 \verbatim
-plumed driver --noatoms
+> plumed driver --noatoms
 \endverbatim
 
 Once this calculation is completed you can then plot the output using gnuplot and the command:
 
 \verbatim
-p 'myhist.dat' u 1:2 w l
+gnuplot> p 'myhist.dat' u 1:2 w l
 \endverbatim
 
 In the previous section we compared the estimates we got for the ensemble average with the exact analytical values, which we could determine
@@ -213,16 +213,16 @@ various parts of the trajectory are all consistent.
 
 We can perform a block averaging on the data we generated at the start of the first exercise above by using PLUMED and the input file below:
 
-\verbatim
+\plumedfile
 data: READ FILE=mydata VALUES=rand
 av: AVERAGE ARG=data STRIDE=1 CLEAR=1000
 PRINT ARG=av STRIDE=1000 FILE=colvar
-\endverbatim
+\endplumedfile
 
 Once again this calculation can be executed by running the command:
 
 \verbatim
-plumed driver --noatoms
+> plumed driver --noatoms
 \endverbatim
 
 The key differences between this input and the ones that we have seen previously is the CLEAR keyword on the line AVERAGE.  The intruction CLEAR=1000 tells PLUMED
@@ -232,7 +232,7 @@ on step 1000 and the accumulated data is immediately cleared after printing so t
 that were output from the calculation above by using gnuplot and the following command:
 
 \verbatim
-p 'colvar' u 1:2:3 w e
+gnuplot> p 'colvar' u 1:2:3 w e
 \endverbatim
 
 If you try this now you should see that all the average values that were calculated are relatively consistent but that there are differences between them.  <b> Try to 
@@ -242,11 +242,11 @@ you exptracted using PLUMED lie within this range?  Is this behavior inline with
 We can also perform block averaging when we estimate histograms using PLUMED.  The following input will calculate these block averaged histograms for the data we 
 generated at the start of this exercise using PLUMED.
 
-\verbatim
+\plumedfile
 data: READ FILE=mydata VALUES=rand
 hh: HISTOGRAM ARG=data STRIDE=1 GRID_MIN=0 GRID_MAX=1.0 GRID_BIN=20 KERNEL=DISCRETE CLEAR=1000
 DUMPGRID GRID=hh FILE=myhist.dat STRIDE=1000
-\endverbatim
+\endplumedfile
 
 Notice that the input here has the same structure as the input for the \ref AVERAGE.  Once again we have a CLEAR=1000 keyword that tells PLUMED that the data that has been 
 accumulated for calculating the histogram should be deleted every 1000 steps.  In addition, we can set a STRIDE for \ref DUMPGRID and thus output the histogram from each of 
@@ -267,7 +267,7 @@ output files.  In particular, the input above should give you 10 output files wh
 We can plot all of these histograms using gnuplot and the command:
 
 \verbatim
-p 'analysis.0.myhist.dat' u 1:2:3 w e, 'analysis.1.myhist.dat' u 1:2:3 w e, 'analysis.2.myhist.dat' u 1:2:3 w e, 'analysis.3.myhist.dat' u 1:2:3 w e, 'analysis.4.myhist.dat' u 1:2:3 w e, 'analysis.5.myhist.dat' u 1:2:3 w e, 'analysis.6.myhist.dat' u 1:2:3 w e, 'analysis.7.myhist.dat' u 1:2:3 w e, 'analysis.8.myhist.dat' u 1:2:3 w e, 'myhist.dat' u 1:2:3 w e
+gnuplot> p 'analysis.0.myhist.dat' u 1:2:3 w e, 'analysis.1.myhist.dat' u 1:2:3 w e, 'analysis.2.myhist.dat' u 1:2:3 w e, 'analysis.3.myhist.dat' u 1:2:3 w e, 'analysis.4.myhist.dat' u 1:2:3 w e, 'analysis.5.myhist.dat' u 1:2:3 w e, 'analysis.6.myhist.dat' u 1:2:3 w e, 'analysis.7.myhist.dat' u 1:2:3 w e, 'analysis.8.myhist.dat' u 1:2:3 w e, 'myhist.dat' u 1:2:3 w e
 \endverbatim
 
 Performing a comparison between the results from each of these blocks of data is more involved than the analysis we performed when comparing the ensemble averages as we have
@@ -299,7 +299,7 @@ they don't fall in a range between 0 and 1 they are discarded:
 P(x) = \frac{1}{\sqrt{2\pi}\sigma} \exp\left(-\frac{(x-\mu)^2}{2\sigma^2}\right)
 \f]
 
-\verbatim
+\code{.py}
 import random
 
 n = 0
@@ -310,12 +310,12 @@ while True :
         	print(n, x )
  		n = n + 1
 	if n==10001 : break 
-\endverbatim
+\endcode
 
 Copy the script above to a file called gen-normal.py and then execute the python script within it using the command:
 
 \verbatim
-python gen-normal.py > mynormal
+> python gen-normal.py > mynormal
 \endverbatim
 
 <b> 
@@ -361,37 +361,37 @@ uniform distribution.  The trick here is calculate the following weighted mean r
 where here the sums run over all the random variables, the \f$Y_i\f$s, that we sampled from the Gaussian distribution.  If you used the script above the \f$V(Y_i)\f$
 values were output for you so you can calculate this estimate of the ensemble average for the unbiased distribution in this case using the following PLUMED input.
 
-\verbatim
+\plumedfile
 UNITS NATURAL  # This ensures that Boltzmann's constant is one
 data: READ FILE=mynormal VALUES=rand
 mm: RESTRAINT ARG=data AT=0.6 KAPPA=33.333
 rw: REWEIGHT_BIAS TEMP=1
 av: AVERAGE ARG=data STRIDE=1 LOGWEIGHTS=rw
 PRINT ARG=av STRIDE=10000 FILE=colvar
-\endverbatim   
+\endplumedfile
 
 Try to run this calculation now using:
 
 \verbatim
-plumed driver --noatoms 
+> plumed driver --noatoms 
 \endverbatim
 
 and see how close you get to the ensemble average for the uniform distribution.  Once you have done this try the following input, which allows you to compute the 
 reweighted histogram.
 
-\verbatim
+\plumedfile
 UNITS NATURAL # This ensures that Boltzmann's constant is one
 data: READ FILE=mynormal VALUES=rand
 mm: RESTRAINT ARG=data AT=0.6 KAPPA=33.333
 rw: REWEIGHT_BIAS TEMP=1
 hh: HISTOGRAM ARG=data STRIDE=1 GRID_MIN=0 GRID_MAX=1.0 GRID_BIN=20 KERNEL=DISCRETE LOGWEIGHTS=rw
 DUMPGRID GRID=hh FILE=myhist.dat 
-\endverbatim 
+\endplumedfile
 
 Plot the histogram that you obtain from this calculation using the command:
 
 \verbatim
-p 'myhist.dat' w l 
+gnuplot> p 'myhist.dat' w l 
 \endverbatim
 
 <b>  
@@ -410,7 +410,7 @@ from one edge of CV space to the other during a single timestep.  In other words
 will be similar to the value obtained from the \f$i\f$th trajectory frame.  This problem can be resolved, however, and to show how we will thus use the following python 
 script to generate some correlated model data:
 
-\verbatim
+\code{.py}
 import random
 
 prev = 0.;
@@ -419,12 +419,12 @@ for i in range(0,10001):
 	new = 0.95*prev + 2*random.uniform(0,1) - 1
 	print( i, new/2. + 0.5 )
 	prev = new
-\endverbatim  
+\endcode
 
 Copy the python script above to a filled called correlated-data.py and then execute the script using the command:
 
 \verbatim
-python correlated-data.py > mycorr
+> python correlated-data.py > mycorr
 \endverbatim
 
 The autocorrelation function, \f$R(\tau)\f$ provides a simple method for determining whether or not there are correlations between the random variables, \f$X\f$,
@@ -451,7 +451,7 @@ We account for the correlations in the data when we do our analysis by performin
 the analysis with PLUMED and explain the results that we get at each stage of the process.  We wil begin by analysing the data we generated by sampling from the uniform 
 distribution using the following PLUMED input:
 
-\verbatim
+\plumedfile
 data: READ FILE=mydata VALUES=rand
 av5: AVERAGE ARG=data STRIDE=1 CLEAR=5
 PRINT ARG=av5 FILE=colvar5 STRIDE=5
@@ -481,17 +481,17 @@ av65: AVERAGE ARG=data STRIDE=1 CLEAR=65
 PRINT ARG=av65 FILE=colvar65 STRIDE=65
 av70: AVERAGE ARG=data STRIDE=1 CLEAR=70
 PRINT ARG=av70 FILE=colvar70 STRIDE=70
-\endverbatim
+\endplumedfile
 
 Copy the input above to a file called plumed.dat and run the calculation using the command:
 
 \verbatim
-plumed driver --noatoms
+> plumed driver --noatoms
 \endverbatim
 
 This calculation should output 14 colvar files, which should then be further analysed using the following python script:
 
-\verbatim
+\code{.py}
 import numpy as np
 import math
 
@@ -513,18 +513,18 @@ for i in range(1,15):
         # root of the sample variance divided by the number of data points that this estimate was 
         # calcualted from.  This last term is a measure of the eror bar
         print( fmult, mean, math.sqrt( sample_variance / len(sq) ) )
-\endverbatim
+\endcode
 
 Copy this script to a file called block-average-script.py and then execute the contents using the command:
 
 \verbatim
-python block-average-script.py > myaverages.dat
+> python block-average-script.py > myaverages.dat
 \endverbatim
 
 This will output a single file called myaverages.dat that can be plotted using gnuplot and the command:
 
 \verbatim
-p 'myaverages.dat' u 1:2:3 w e, 'myaverages.dat' w l
+gnuplot> p 'myaverages.dat' u 1:2:3 w e, 'myaverages.dat' w l
 \endverbatim
 
 The final result should be a graph like that shown in the left panel of the figure below.  The figure on the right shows what you should obtain when you repeat the same 
@@ -550,7 +550,7 @@ Instead we are going to reweight using the ideas from \ref trieste-2-biases and 
 
 The first step in doing all this is, as always, to generate some data.  The python script below will generate this data:
 
-\verbatim
+\code{.py}
 import math
 import random
 
@@ -576,12 +576,12 @@ for i in range(0,100010):
         elif( random.uniform(0,1)<math.exp(-new_eng)/math.exp(-eng) ) :
                 x, eng = newx, new_eng
         if( i%10==0 ) : print( i/10, x )
-\endverbatim
+\endcode
 
 Copy this script to a filled called do-monte-carlo.py and execute the contents of the script using the command:
 
 \verbatim
-python do-monte-carlo.py > mcdata
+> python do-monte-carlo.py > mcdata
 \endverbatim
 
 This will run a short Monte Carlo simulation that generates (time-correlated) random data from a (roughly) Gaussian distribution by attempting 
@@ -594,27 +594,27 @@ the adjacent data points in the time series and that we have to do block averagi
 
 We can use the following PLUMED input to calculate block averages for the unbiased histogram from the data we generated:
 
-\verbatim
+\plumedfile
 UNITS NATURAL # This ensures that Boltzmann's constant is one
 data: READ FILE=mcdata VALUES=rand
 mm: READ FILE=mcdata VALUES=cv.*
 rw: REWEIGHT_BIAS TEMP=1
 hh: HISTOGRAM ARG=data STRIDE=1 GRID_MIN=0 GRID_MAX=1.0 GRID_BIN=20 KERNEL=DISCRETE LOGWEIGHTS=rw CLEAR=500
 DUMPGRID GRID=hh FILE=myhist.dat STRIDE=500
-\endverbatim
+\endplumedfile
 
 Notice that this input instructs PLUMED to calculate block averages for the histogram from each set of 500 consecutive frames in the trajectory.  
 I have worked out that this is an appropriate length of time to average over by performing the analysis described in \ref triete-2-correlation.  
 We will come back to how precisely I did this momentarily, however.  For the time being though you can execute this input using:
 
 \verbatim
-plumed driver --noatoms
+> plumed driver --noatoms
 \endverbatim  
 
 Executing this command will generate a number of files containing histograms.  The following python script will merge all this data and calculate 
 the final histogram together with the appropriate error bars.
 
-\verbatim
+\code{.py}
 import math
 import glob
 import numpy as np
@@ -683,18 +683,18 @@ for i in range(0,len(griddata[:,0])) :
         for j in range(0,grid_dimension) : print( griddata[i,j], end=" " )
         for j in range(0,nquantities) : print( average[j,i], errors[j,i], end=" " )
         print()
-\endverbatim
+\endcode
 
 Copy this script to a file called merge-histograms.py and then run its contents by executing the command:
 
 \verbatim
-python merge-histograms.py > final-histogram.dat
+> python merge-histograms.py > final-histogram.dat
 \endverbatim
 
 This will output the final average histogram together with some error bars.  You can plot this function using gnuplot by executing the command:
 
 \verbatim
-p 'final-histogram.dat' u 1:2:3 w e, '' u 1:2 w l
+gnuplot> p 'final-histogram.dat' u 1:2:3 w e, '' u 1:2 w l
 \endverbatim
 
 <b>
