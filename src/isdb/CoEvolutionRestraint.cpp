@@ -301,7 +301,6 @@ void  CoEvolutionRestraint::setup_restraint(double R0, double gamma, string res_
     {
       // split line into strings separated by a space
       stringstream ss(line);
-      string buf; // Have a buffer string
       // read residue pair
       ss >> res0; ss >> res1;
       // find entry in DREF_
@@ -491,7 +490,7 @@ void CoEvolutionRestraint::calculate()
   // apply forces
   for(unsigned i=0; i<force.size(); ++i) setOutputForce(i, force[i]);
 
-// add prior on alpha_p
+  // add prior on alpha_p
   ene += getPrior(alpha_p_, alpha_p_mean_, alpha_p_sig_);
   // add prior on alpha_n
   ene += getPrior(alpha_n_, alpha_n_mean_, alpha_n_sig_);
