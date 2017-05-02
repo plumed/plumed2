@@ -45,7 +45,7 @@ namespace isdb {
 class CoEvolutionRestraint : public bias::Bias
 {
   // slope
-  bool slope_;
+  double slope_;
   // alpha parameters
   double alpha_p_;
   double alpha_n_;
@@ -106,7 +106,7 @@ void CoEvolutionRestraint::registerKeywords(Keywords& keys) {
   keys.add("compulsory","NPOS","number of positives");
   keys.add("compulsory","NNEG","number of negatives");
   keys.add("compulsory","RES_FILE","file with residue ids for each argument");
-  keys.addFlag("SLOPE",false,"add logarithmic slope");
+  keys.add("optional","SLOPE","add logarithmic slope");
   keys.add("optional","TEMP","temperature in energy units");
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_STRIDE","MC stride");
@@ -119,12 +119,12 @@ void CoEvolutionRestraint::registerKeywords(Keywords& keys) {
 }
 
 CoEvolutionRestraint::CoEvolutionRestraint(const ActionOptions&ao):
-  PLUMED_BIAS_INIT(ao), slope_(false),
+  PLUMED_BIAS_INIT(ao), slope_(0.0),
   MCsteps_(1), MCstride_(1), MCaccalpha_p_(0),
   MCaccalpha_n_(0), MCfirst_(-1)
 {
   // additional slope
-  parseFlag("SLOPE", slope_);
+  parse("SLOPE", slope_);
 
   // alpha stuff
   parse("ALPHA_P0", alpha_p_);
@@ -454,18 +454,13 @@ void CoEvolutionRestraint::calculate()
     // calculate data likelihood
     double like = alpha_p_ * p + alpha_n_ * ( 1.0 - p );
     // add to energy
-    ene += -kbt_ * std::log(like);
+    ene += -kbt_ * std::log(like) + kbt_ * slope_ * std::log(dist);
     // calculate force
     double dene_dlike = -kbt_ / like;
     double dlike_dp   = alpha_p_ - alpha_n_;
     double dp_ddist   = -P0_ / (1.0+tmp) / (1.0+tmp) * tmp / gamma_[i];
     // apply chain rule
-    force[i] = -dene_dlike * dlike_dp * dp_ddist;
-    // add slope
-    if(slope_) {
-      ene += kbt_ * std::log(dist);
-      force[i] += -kbt_ / dist;
-    }
+    force[i] = -dene_dlike * dlike_dp * dp_ddist - kbt_ * slope_ / dist;
   }
   // cycle on negative arguments
   for(unsigned i=rank_; i<nneg_; i=i+nrep_) {
@@ -479,18 +474,13 @@ void CoEvolutionRestraint::calculate()
     // calculate data likelihood
     double like = ( 1.0 - alpha_p_ ) * p + ( 1.0 - alpha_n_ ) * ( 1.0 - p );
     // add to energy
-    ene += -kbt_ * std::log(like);
+    ene += -kbt_ * std::log(like) + kbt_ * slope_ * std::log(dist);
     // calculate force
     double dene_dlike = -kbt_ / like;
     double dlike_dp   = - alpha_p_ + alpha_n_;
     double dp_ddist   = -P0_ / (1.0+tmp) / (1.0+tmp) * tmp / gamma_[i+npos_];
     // apply chain rule
-    force[i+npos_]  = -dene_dlike * dlike_dp * dp_ddist;
-    // add slope
-    if(slope_) {
-      ene += kbt_ * std::log(dist);
-      force[i+npos_] += -kbt_ / dist;
-    }
+    force[i+npos_]  = -dene_dlike * dlike_dp * dp_ddist - kbt_ * slope_ / dist;
   }
 
   // sum energy, fmod, and derivatives
