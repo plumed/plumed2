@@ -77,7 +77,11 @@ This observation is important as it ensures that the probability that \f$\frac{S
 distribution, \f$\langle Y\rangle\f$, increases as we increase the value of \f$n\f$.  The central limit theorem therefore allows us to get an estimate 
 for the ensemble average for a particular quantity \f$Y\f$ by taking repeated samples of \f$Y\f$ from our distribution.  These samples can be taken by, for example, 
 performing a molecular dynamics simulation.  Furthermore, and as we will see in the exercises that follow, we can also get an estimate of how much we might expect the 
-system to fluctuate about this average.
+system to fluctuate about this average.  Incidentally, if you are confused at this stage you might want to work through these two videos and exercises in order to get a 
+better understanding of the central limit theorem, confidence limits and error bars:
+
+- Error bars exercise: http://gtribello.github.io/mathNET/error_bar_video.html 
+- Confidence limits exercise: http://gtribello.github.io/mathNET/central-limit-theorem-video.html
 
 \section trieste-2-instructions Instructions
 
@@ -534,7 +538,7 @@ analysis on the correlated data that we generated using the python script in thi
 \image html trieste-2-block-averages.png "The ensemble average and an estimate of the associated error bars calculated for different lengths of block average.  The left panel shows the output obtained when the uncorrelated samples taken from uniform distribution are analysed in this way.  The right panel shows the output obtained when the correlated samples that are generated using the python script in this section are analysed."
 
 <b>
-The output that you obtain from these two calculations is explained in the video at:
+The output that you obtain from these two calculations is explained in the video at: http://gtribello.github.io/mathNET/block_averaging_video.html
 Before wathcing this explanation though take some time to note down the differences between the two graphs above.  Try to look through the scripts 
 above and to understand what is being done in the PLUMED inputs and the python scripts above so as to work out what the data in these two figures 
 are telling you.  
