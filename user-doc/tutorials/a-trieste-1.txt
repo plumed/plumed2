@@ -27,6 +27,9 @@ The \tarball{trieste-1} for this project contains the following files:
 - traj-whole.xtc: A trajectory for the same system in GROMACS xtc format. To make the exercise easier, RNA duplex has been made whole already.
 - traj-broken.xtc: The same trajectory as it was originally produced by GROMACS. Here the RNA duplex is broken and should be fixed.
 
+This tutorial has been tested on a pre-release version of version 2.4. However, it should not take advantage
+of 2.4-only features, thus should also work with version 2.3.
+
 \section trieste-1-intro Introduction
 
 This tutorial asks you to compute a variety of different collective variables using PLUMED for a particular trajectory and to compare the files and graphs that you obtain with the correct ones that are shown online.  Compared to some of the other tutorials that are available here this tutorial contains considerably less guidance so in doing this tutorial you will have to
@@ -134,7 +137,7 @@ To analyze the trajectory provided here, you should:
 - Run the command `plumed driver --mf_xtc traj.xtc --plumed plumed.dat`.
 
 Here `traj.xtc` is the trajectory that you want to analyze. Notice that \ref driver
-can read multpliple file formats using embedded molfile plugins from VMD (that's where the `mf` letters come from).
+can read multiple file formats using embedded molfile plugins from VMD (that's where the `mf` letters come from).
 
 Notice that you can also visualize trajectories with VMD directly. Trajectory `traj.xtc` can be visualized with
 the command `vmd ref.pdb traj-whole.xtc`.
@@ -166,6 +169,8 @@ Whenever you see an highlighted \highlight{FILL} string, this is a string that y
 \plumedfile
 # First load information about the molecule.
 MOLINFO __FILL__
+# Notice that this is special kind of "action" ("setup action")
+# that is only used during setup. It will not be re-executed at each step.
 
 # Define some group that will make the rest of the input more readable
 # Here are the atoms belonging to RNA.
@@ -220,7 +225,7 @@ The command above will create a file `COLVAR` like this one:
 \endverbatim
 Notice that the first line informs you about the content of each column and
 the second and third lines tell you that variable `c` (the \f$\chi\f$ torsion) is
-defined between \f$-pi\f$ and \f$+pi\f$.
+defined between \f$-\pi\f$ and \f$+\pi\f$.
 
 __In case you obtain different numbers, check your input, you might have made some mistake!__
 
@@ -273,10 +278,12 @@ Notice for many functions you should say to PLUMED if the function is periodic.
 See \ref Function for a detailed explanation of how to choose this keyword.
 
 You might think that it is easier to combine the variables after you have written them
-already, using e.g. and awk or python script. That's fine if you are analyzing a trajectory.
+already, using, e.g., an awk or python script. That's fine if you are analyzing a trajectory.
 However, as we will learn later, computing variables within PLUMED you will be able to
 add bias potentials on those combinations, influencing their dynamics. Actually, you could implement
 any arbitrarily complex collective variable using just \ref DISTANCE and \ref MATHEVAL!
+Anyway, if the CV combinations that you are willing to use can be computed easily with some
+external program, do it and compare the results with the output of the PLUMED driver.
 
 \subsection trieste-1-ex-1b Exercize 1b: Combining collective variables
 
@@ -286,7 +293,7 @@ As an optional exercize, create a file with the following quantities:
 
 Notice that the serial numbers of the phosphorous atoms can be easily extracted using the following command
 \verbatim
-grep ATOM ref.pdb | grep " P " | awk '{print $2}'
+> grep ATOM ref.pdb | grep " P " | awk '{print $2}'
 \endverbatim
 
 Here's a template input file to be completed by you.
@@ -311,10 +318,10 @@ s: SORT __FILL__
 
 # Print the required variables
 PRINT FILE=COLVAR __FILL__
-
 \endplumedfile
 
 Notice that using the collective variable \ref DISTANCES you might be able to do the same with a significantly simpler input file!
+If you have time, also try that and compare the result.
 
 The resulting `COLVAR` file should look like this one:
 
@@ -356,7 +363,8 @@ could require the molecules to be whole (an example of such variables is \ref RM
 You might think that there are alternative programs that can be used to reconstruct PBCs correctly
 in your trajectory *before* analyzing it. However, you should keep in mind that if you need to
 compute CVs on the fly to add a bias potential on those (as we will to in the next tutorials) you will
-have to learn how to reconstruct PBCs within PLUMED.
+have to learn how to reconstruct PBCs within PLUMED. If you know alternative tools that can reconstruct PBCs,
+it is a good idea to also use them and compare the result with PLUMED.
 
 
 \subsection trieste-1-ex-2 Exercise 2: Solving PBC issues and dump atomic coordinates
@@ -546,6 +554,24 @@ force your molecule to a specific orientation.
 
 \endhidden
 
+\subsection trieste-1-conclusions Conclusions
+
+In summary, in this tutorial you should have learned how to use PLUMED to:
+- Manipulate atomic coordinates.
+- Compute collective variables.
+
+All of this was done by just reading an already available trajectory.
+Notice that there are many alternative tools that could have been used to do the same exercize.
+Indeed, if you are familiar with other tools, it might be a good idea to also try them and compare the results.
+The special things of working with PLUMED are the following:
+- PLUMED implements a vast library of useful collective variables.
+  Browse the manual and search for ideas that are suitable for your system.
+- PLUMED has a simple and intuitive syntax to combine collective variables ending up in descriptors capable to
+  characterize complex conformational changes.
+- And finally, the most special thing: any collective variable that can be computed within PLUMED can also
+  be biased while you are running your MD simulation! You will learn more later about this topic.
+
+The last point is probably the main reason why PLUMED exists and what distinguishes it from other available software.
 
 */
 
