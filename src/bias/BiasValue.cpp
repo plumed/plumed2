@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -26,10 +26,10 @@
 using namespace std;
 
 
-namespace PLMD{
-namespace bias{
+namespace PLMD {
+namespace bias {
 
-//+PLUMEDOC BIAS BIASVALUE 
+//+PLUMEDOC BIAS BIASVALUE
 /*
 Takes the value of one variable and use it as a bias
 
@@ -40,7 +40,7 @@ to some collective variable then using the value of this function directly as a 
 \par Examples
 
 The following input tells plumed to use the value of the distance between atoms 3 and 5
-and the value of the distance between atoms 2 and 4 as biases. 
+and the value of the distance between atoms 2 and 4 as biases.
 It then tells plumed to print the energy of the restraint
 \verbatim
 DISTANCE ATOMS=3,5 LABEL=d1
@@ -50,13 +50,13 @@ PRINT ARG=d1,d2,b.d1,b.d2
 \endverbatim
 (See also \ref DISTANCE and \ref PRINT).
 
-Another thing one can do is asking one system to follow  
+Another thing one can do is asking one system to follow
 a circle in sin/cos according a  time dependence
 
 \verbatim
 t: TIME
 # this just print cos and sin of time
-cos: MATHEVAL ARG=t VAR=t FUNC=cos(t) PERIODIC=NO 
+cos: MATHEVAL ARG=t VAR=t FUNC=cos(t) PERIODIC=NO
 sin: MATHEVAL ARG=t VAR=t FUNC=sin(t) PERIODIC=NO
 c1: COM ATOMS=1,2
 c2: COM ATOMS=3,4
@@ -65,11 +65,11 @@ PRINT ARG=t,cos,sin,d.x,d.y,d.z STRIDE=1 FILE=colvar FMT=%8.4f
 # this calculates sine and cosine of a projected component of distance
 mycos:  MATHEVAL ARG=d.x,d.y  VAR=x,y   FUNC=x/sqrt(x*x+y*y) PERIODIC=NO
 mysin:  MATHEVAL ARG=d.x,d.y  VAR=x,y   FUNC=y/sqrt(x*x+y*y) PERIODIC=NO
-# this creates a moving spring so that the system follows a circle-like dynamics 
+# this creates a moving spring so that the system follows a circle-like dynamics
 # but it is not a bias, it is a simple value now
 vv1:  MATHEVAL ARG=mycos,mysin,cos,sin VAR=mc,ms,c,s  FUNC=100*((mc-c)^2+(ms-s)^2) PERIODIC=NO
-# this takes the value calculated with matheval and uses as a bias 
-cc: BIASVALUE ARG=vv1 
+# this takes the value calculated with matheval and uses as a bias
+cc: BIASVALUE ARG=vv1
 # some printout
 PRINT ARG=t,cos,sin,d.x,d.y,d.z,mycos,mysin,cc.bias.vv1 STRIDE=1 FILE=colvar FMT=%8.4f
 \endverbatim
@@ -79,51 +79,45 @@ PRINT ARG=t,cos,sin,d.x,d.y,d.z,mycos,mysin,cc.bias.vv1 STRIDE=1 FILE=colvar FMT
 */
 //+ENDPLUMEDOC
 
-class BiasValue : public Bias{
+class BiasValue : public Bias {
 public:
-  BiasValue(const ActionOptions&);
+  explicit BiasValue(const ActionOptions&);
   void calculate();
   static void registerKeywords(Keywords& keys);
 };
 
 PLUMED_REGISTER_ACTION(BiasValue,"BIASVALUE")
 
-void BiasValue::registerKeywords(Keywords& keys){
+void BiasValue::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
   keys.use("ARG");
-  componentsAreNotOptional(keys);
   // Should be _bias below
   keys.addOutputComponent("_bias","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
-                                            "these quantities will named with  the arguments of the bias followed by "
-                                            "the character string _bias. These quantities tell the user how much the bias is "
-                                            "due to each of the colvars.");
-  keys.addOutputComponent("bias","default","total bias");
+                          "these quantities will named with  the arguments of the bias followed by "
+                          "the character string _bias. These quantities tell the user how much the bias is "
+                          "due to each of the colvars.");
 }
 
 BiasValue::BiasValue(const ActionOptions&ao):
-PLUMED_BIAS_INIT(ao)
+  PLUMED_BIAS_INIT(ao)
 {
   checkRead();
-  // add one bias for each argument  
- // addComponent("bias");
-  for(unsigned i=0;i<getNumberOfArguments();++i){ 
-	//log<<getPntrToArgument(i)->getName()<<"\n";
-        string ss=getPntrToArgument(i)->getName()+"_bias";
-	addComponent(ss); componentIsNotPeriodic(ss);
+  // add one bias for each argument
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    string ss=getPntrToArgument(i)->getName()+"_bias";
+    addComponent(ss); componentIsNotPeriodic(ss);
   }
-  addComponent("bias"); componentIsNotPeriodic("bias");
 }
 
-void BiasValue::calculate(){
+void BiasValue::calculate() {
   double bias=0.0;
-for(unsigned i=0;i< getNumberOfArguments() ;++i){
-  double val; val=getArgument(i); 
-//  log<<"BIAS "<<val<<"\n";
-  getPntrToComponent(i)->set(val);
-  setOutputForce(i,-1.);
-  bias+=val;
-}
-  getPntrToComponent(getNumberOfArguments())->set(bias);
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    double val; val=getArgument(i);
+    getPntrToComponent(i+1)->set(val);
+    setOutputForce(i,-1.);
+    bias+=val;
+  }
+  setBias(bias);
 }
 
 }

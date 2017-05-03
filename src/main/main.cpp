@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -22,7 +22,7 @@
 #include "wrapper/Plumed.h"
 #include <cstring>
 
-#ifdef __PLUMED_MPI
+#ifdef __PLUMED_HAS_MPI
 #include <mpi.h>
 #endif
 
@@ -32,13 +32,14 @@ using namespace std;
   This main uses only the interface published in
   Plumed.h. The object file generated from this .cpp
   is the only part of the plumed library that should
-  not be linked with external MD codes, so as 
+  not be linked with external MD codes, so as
   to avoid linker error.
 */
-int main(int argc,char**argv){
-#ifdef __PLUMED_MPI
+int main(int argc,char**argv) {
+#ifdef __PLUMED_HAS_MPI
   bool nompi=false;
   if(argc>1 && !strcmp(argv[1],"--no-mpi")) nompi=true;
+  if(argc>1 && !strcmp(argv[1],"--mpi"))    nompi=false;
   if(!nompi) MPI_Init(&argc,&argv);
 #endif
   int ret=0;
@@ -46,8 +47,8 @@ int main(int argc,char**argv){
   PLMD::Plumed* p=new PLMD::Plumed;
   p->cmd("CLTool setArgc",&argc);
   p->cmd("CLTool setArgv",argv);
-#ifdef __PLUMED_MPI
-  if(!nompi){
+#ifdef __PLUMED_HAS_MPI
+  if(!nompi) {
     MPI_Comm comm;
     MPI_Comm_dup(MPI_COMM_WORLD,&comm);
     p->cmd("CLTool setMPIComm",&comm);
@@ -56,7 +57,7 @@ int main(int argc,char**argv){
   p->cmd("CLTool run",&ret);
   delete p;
 
-#ifdef __PLUMED_MPI
+#ifdef __PLUMED_HAS_MPI
   if(!nompi) MPI_Finalize();
 #endif
   return ret;

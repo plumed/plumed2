@@ -17,5 +17,5 @@ directive=$1
 classname=$2
 
 sed "s/TEMPLATE/$directive/g
-     s/Template/$classname/g" $PLUMED_ROOT/src/colvar/Template.cpp > ${classname}.cpp
+     s/Template/$classname/g" "$PLUMED_ROOT"/src/colvar/Template.cpp > ${classname}.cpp
 

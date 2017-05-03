@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2015 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -28,7 +28,7 @@
 #include "tools/Tensor.h"
 #include "Atoms.h"
 
-namespace PLMD{
+namespace PLMD {
 
 /**
 \ingroup INHERIT
@@ -78,39 +78,39 @@ public:
   const std::map<AtomNumber,Tensor> & getGradients()const;
 /// Return the atom id of the corresponding virtual atom
   AtomNumber getIndex()const;
-  ActionWithVirtualAtom(const ActionOptions&ao);
+  explicit ActionWithVirtualAtom(const ActionOptions&ao);
   ~ActionWithVirtualAtom();
   static void registerKeywords(Keywords& keys);
   void setGradientsIfNeeded();
 };
 
 inline
-AtomNumber ActionWithVirtualAtom::getIndex()const{
+AtomNumber ActionWithVirtualAtom::getIndex()const {
   return index;
 }
 
 inline
-void ActionWithVirtualAtom::setPosition(const Vector & pos){
+void ActionWithVirtualAtom::setPosition(const Vector & pos) {
   atoms.positions[index.index()]=pos;
 }
 
 inline
-void ActionWithVirtualAtom::setMass(double m){
+void ActionWithVirtualAtom::setMass(double m) {
   atoms.masses[index.index()]=m;
 }
 
 inline
-void ActionWithVirtualAtom::setCharge(double c){
+void ActionWithVirtualAtom::setCharge(double c) {
   atoms.charges[index.index()]=c;
 }
 
 inline
-void ActionWithVirtualAtom::setAtomsDerivatives(const std::vector<Tensor> &d){
+void ActionWithVirtualAtom::setAtomsDerivatives(const std::vector<Tensor> &d) {
   derivatives=d;
 }
 
 inline
-const std::map<AtomNumber,Tensor> & ActionWithVirtualAtom::getGradients()const{
+const std::map<AtomNumber,Tensor> & ActionWithVirtualAtom::getGradients()const {
   return gradients;
 }
 

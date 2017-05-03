@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -29,29 +29,26 @@ namespace PLMD {
 namespace crystallization {
 
 class VectorMultiColvar : public multicolvar::MultiColvar {
-friend class OrientationSphere;
-friend class VolumeGradientBase;
+  friend class OrientationSphere;
+  friend class VolumeGradientBase;
 private:
 /// Are we storing the director of the vector of the vector
   bool store_director;
-/// Used to make sure central atom position is only calculated
-/// once when using orientation sphere
-  bool firstcall;
 /// How many components does the vector have
   unsigned ncomponents;
 /// These are tempory vectors that are used to store values and directors
   std::vector<double> vv1, vv2;
 protected:
 /// Set the dimensionality of the vector
-  void setVectorDimensionality( const unsigned&, const int& );
+  void setVectorDimensionality( const unsigned& );
 /// Used in vector average to add forces from vector the the forces from here
   void addForcesOnAtoms( const std::vector<double>& inforces );
 public:
   static void registerKeywords( Keywords& keys );
-  VectorMultiColvar(const ActionOptions&);
-  ~VectorMultiColvar(){}
+  explicit VectorMultiColvar(const ActionOptions&);
+  ~VectorMultiColvar() {}
 /// The norm of a vector is not periodic
-  virtual bool isPeriodic(){ return false; }
+  virtual bool isPeriodic() { return false; }
 /// Calculate the multicolvar
   double doCalculation( const unsigned& taskIndex, multicolvar::AtomValuePack& myatoms ) const ;
 /// This shouldn't do anything
@@ -61,20 +58,23 @@ public:
 /// Get the number of components in the vector
   unsigned getNumberOfComponentsInVector() const ;
 /// Get the number of quantities we are calculating per step
-  unsigned getNumberOfQuantities();
+  unsigned getNumberOfQuantities() const ;
 /// Can we differentiate the orientation - yes we can the multicolvar is a vector
   bool hasDifferentiableOrientation() const { return true; }
 ///  This makes sure we are not calculating the director when we do LocalAverage
   virtual void doNotCalculateDirector();
+/// This does normalizeing of vectors for storeDataVessel
+  virtual void normalizeVector( std::vector<double>& vals ) const ;
+  virtual void normalizeVectorDerivatives( MultiValue& myvals ) const ;
 };
 
 inline
 unsigned VectorMultiColvar::getNumberOfComponentsInVector() const {
-  return ncomponents; 
+  return ncomponents;
 }
 
 inline
-unsigned VectorMultiColvar::getNumberOfQuantities(){
+unsigned VectorMultiColvar::getNumberOfQuantities() const {
   return 2 + ncomponents;
 }
 

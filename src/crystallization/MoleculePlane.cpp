@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2014-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -40,87 +40,92 @@ class MoleculePlane : public VectorMultiColvar {
 private:
 public:
   static void registerKeywords( Keywords& keys );
-  MoleculePlane( const ActionOptions& ao );
+  explicit MoleculePlane( const ActionOptions& ao );
+  AtomNumber getAbsoluteIndexOfCentralAtom( const unsigned& iatom ) const ;
   void calculateVector( multicolvar::AtomValuePack& myatoms ) const ;
 };
 
 PLUMED_REGISTER_ACTION(MoleculePlane,"PLANES")
 
-void MoleculePlane::registerKeywords( Keywords& keys ){
+void MoleculePlane::registerKeywords( Keywords& keys ) {
   VectorMultiColvar::registerKeywords( keys ); keys.use("VMEAN");
   keys.add("numbered","MOL","The numerical indices of the atoms in the molecule. If three atoms are specified the orientation "
-                            "of the molecule is taken as the normal to the plane containing the vector connecting the first and "
-                            "second atoms and the vector connecting the second and third atoms.  If four atoms are specified the "
-                            "orientation of the molecule is taken as the normal to the plane containing the vector connecting the "
-                            "first and second atoms and the vector connecting the third and fourth atoms. The molecule is always "
-                            "assumed to lie at the geometric centre for the three/four atoms.");
+           "of the molecule is taken as the normal to the plane containing the vector connecting the first and "
+           "second atoms and the vector connecting the second and third atoms.  If four atoms are specified the "
+           "orientation of the molecule is taken as the normal to the plane containing the vector connecting the "
+           "first and second atoms and the vector connecting the third and fourth atoms. The molecule is always "
+           "assumed to lie at the geometric centre for the three/four atoms.");
   keys.reset_style("MOL","atoms");
 }
 
 MoleculePlane::MoleculePlane( const ActionOptions& ao ):
-Action(ao),
-VectorMultiColvar(ao)
+  Action(ao),
+  VectorMultiColvar(ao)
 {
   int natoms=-1; std::vector<AtomNumber> all_atoms;
-  readAtomsLikeKeyword("MOL",natoms,all_atoms); 
+  readAtomsLikeKeyword("MOL",natoms,all_atoms);
   if( natoms!=3 && natoms!=4 ) error("number of atoms in molecule specification is wrong.  Should be three or four.");
 
   if( all_atoms.size()==0 ) error("No atoms were specified");
-  ActionAtomistic::requestAtoms( all_atoms );
-
-  setVectorDimensionality( 3, natoms );
+  setVectorDimensionality( 3 ); setupMultiColvarBase( all_atoms );
 }
 
-void MoleculePlane::calculateVector( multicolvar::AtomValuePack& myatoms ) const { 
-  Vector d1, d2, cp; 
-  if( myatoms.getNumberOfAtoms()==3 ){
-     d1=getSeparation( myatoms.getPosition(1), myatoms.getPosition(0) );
-     d2=getSeparation( myatoms.getPosition(1), myatoms.getPosition(2) ); 
+AtomNumber MoleculePlane::getAbsoluteIndexOfCentralAtom( const unsigned& iatom ) const {
+  plumed_dbg_assert( iatom<atom_lab.size() );
+  plumed_assert( atom_lab[iatom].first==0 );
+  return ActionAtomistic::getAbsoluteIndex( ablocks[0][atom_lab[iatom].second] );
+}
+
+void MoleculePlane::calculateVector( multicolvar::AtomValuePack& myatoms ) const {
+  Vector d1, d2, cp;
+  if( myatoms.getNumberOfAtoms()==3 ) {
+    d1=getSeparation( myatoms.getPosition(1), myatoms.getPosition(0) );
+    d2=getSeparation( myatoms.getPosition(1), myatoms.getPosition(2) );
   } else {
-     d1=getSeparation( myatoms.getPosition(1), myatoms.getPosition(0) );
-     d2=getSeparation( myatoms.getPosition(2), myatoms.getPosition(3) );
+    d1=getSeparation( myatoms.getPosition(1), myatoms.getPosition(0) );
+    d2=getSeparation( myatoms.getPosition(2), myatoms.getPosition(3) );
   }
   cp = crossProduct( d1, d2 );
 
-  myatoms.addAtomsDerivatives( 2, 0, crossProduct( Vector(-1.0,0,0), d2 ) );
-  if( myatoms.getNumberOfAtoms()==3 ){
-     myatoms.addAtomsDerivatives( 2, 1, crossProduct( Vector(+1.0,0,0), d2 ) + crossProduct( Vector(-1.0,0,0), d1 ) );
-     myatoms.addAtomsDerivatives( 2, 2, crossProduct( Vector(+1.0,0,0), d1 ) );
+  addAtomDerivatives( 2, 0, crossProduct( Vector(-1.0,0,0), d2 ), myatoms );
+  if( myatoms.getNumberOfAtoms()==3 ) {
+    addAtomDerivatives( 2, 1, crossProduct( Vector(+1.0,0,0), d2 ) + crossProduct( Vector(-1.0,0,0), d1 ), myatoms );
+    addAtomDerivatives( 2, 2, crossProduct( Vector(+1.0,0,0), d1 ), myatoms );
   } else {
-     myatoms.addAtomsDerivatives( 2, 1, crossProduct( Vector(+1.0,0,0), d2 ) ); 
-     myatoms.addAtomsDerivatives( 2, 2, crossProduct( Vector(-1.0,0,0), d1 ) );
-     myatoms.addAtomsDerivatives( 2, 3, crossProduct( Vector(+1.0,0,0), d1 ) );
+    addAtomDerivatives( 2, 1, crossProduct( Vector(+1.0,0,0), d2 ), myatoms );
+    addAtomDerivatives( 2, 2, crossProduct( Vector(-1.0,0,0), d1 ), myatoms );
+    addAtomDerivatives( 2, 3, crossProduct( Vector(+1.0,0,0), d1 ), myatoms );
   }
   myatoms.addBoxDerivatives( 2, Tensor(d1,crossProduct(Vector(+1.0,0,0), d2)) + Tensor( d2, crossProduct(Vector(-1.0,0,0), d1)) );
   myatoms.addValue( 2, cp[0] );
 
-  myatoms.addAtomsDerivatives( 3, 0, crossProduct( Vector(0,-1.0,0), d2 ) );
-  if( myatoms.getNumberOfAtoms()==3 ){
-     myatoms.addAtomsDerivatives( 3, 1, crossProduct( Vector(0,+1.0,0), d2 ) + crossProduct( Vector(0,-1.0,0), d1 ) );
-     myatoms.addAtomsDerivatives( 3, 2, crossProduct( Vector(0,+1.0,0), d1 ) );
+  addAtomDerivatives( 3, 0, crossProduct( Vector(0,-1.0,0), d2 ), myatoms );
+  if( myatoms.getNumberOfAtoms()==3 ) {
+    addAtomDerivatives( 3, 1, crossProduct( Vector(0,+1.0,0), d2 ) + crossProduct( Vector(0,-1.0,0), d1 ), myatoms );
+    addAtomDerivatives( 3, 2, crossProduct( Vector(0,+1.0,0), d1 ), myatoms );
   } else {
-     myatoms.addAtomsDerivatives( 3, 1, crossProduct( Vector(0,+1.0,0), d2 ) ); 
-     myatoms.addAtomsDerivatives( 3, 2, crossProduct( Vector(0,-1.0,0), d1 ) );
-     myatoms.addAtomsDerivatives( 3, 3, crossProduct( Vector(0,+1.0,0), d1 ) );
+    addAtomDerivatives( 3, 1, crossProduct( Vector(0,+1.0,0), d2 ), myatoms );
+    addAtomDerivatives( 3, 2, crossProduct( Vector(0,-1.0,0), d1 ), myatoms );
+    addAtomDerivatives( 3, 3, crossProduct( Vector(0,+1.0,0), d1 ), myatoms );
   }
   myatoms.addBoxDerivatives( 3, Tensor(d1,crossProduct(Vector(0,+1.0,0), d2)) + Tensor( d2, crossProduct(Vector(0,-1.0,0), d1)) );
   myatoms.addValue( 3, cp[1] );
 
-  myatoms.addAtomsDerivatives( 4, 0, crossProduct( Vector(0,0,-1.0), d2 ) );
-  if( myatoms.getNumberOfAtoms()==3 ){
-     myatoms.addAtomsDerivatives( 4, 1, crossProduct( Vector(0,0,+1.0), d2 ) + crossProduct( Vector(0,0,-1.0), d1 ) );
-     myatoms.addAtomsDerivatives( 4, 2, crossProduct( Vector(0,0,+1.0), d1 ) );
+  addAtomDerivatives( 4, 0, crossProduct( Vector(0,0,-1.0), d2 ), myatoms );
+  if( myatoms.getNumberOfAtoms()==3 ) {
+    addAtomDerivatives( 4, 1, crossProduct( Vector(0,0,+1.0), d2 ) + crossProduct( Vector(0,0,-1.0), d1 ), myatoms );
+    addAtomDerivatives( 4, 2, crossProduct( Vector(0,0,+1.0), d1 ), myatoms);
   } else {
-     myatoms.addAtomsDerivatives( 4, 1, crossProduct( Vector(0,0,-1.0), d2 ) ); 
-     myatoms.addAtomsDerivatives( 4, 2, crossProduct( Vector(0,0,-1.0), d1 ) );
-     myatoms.addAtomsDerivatives( 4, 3, crossProduct( Vector(0,0,+1.0), d1 ) );
+    addAtomDerivatives( 4, 1, crossProduct( Vector(0,0,-1.0), d2 ), myatoms);
+    addAtomDerivatives( 4, 2, crossProduct( Vector(0,0,-1.0), d1 ), myatoms);
+    addAtomDerivatives( 4, 3, crossProduct( Vector(0,0,+1.0), d1 ), myatoms);
   }
   myatoms.addBoxDerivatives( 4, Tensor(d1,crossProduct(Vector(0,0,+1.0), d2)) + Tensor( d2, crossProduct(Vector(0,0,-1.0), d1)) );
   myatoms.addValue( 4, cp[2] );
 }
 
 // Vector MoleculePlane::getCentralAtom(){
-//   Vector com; com.zero(); 
+//   Vector com; com.zero();
 //   if( getNAtoms()==3 ){
 //       com+=(1.0/3.0)*getPosition(0);
 //       com+=(1.0/3.0)*getPosition(1);

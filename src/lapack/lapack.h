@@ -92,7 +92,7 @@ Erik Lindahl, 2008-10-07.
 
 
 #include "simple.h"
-#if defined(__PLUMED_INTERNAL_LAPACK) || defined (__PLUMED_INTERNAL_BLAS)
+#if ! defined(__PLUMED_HAS_EXTERNAL_LAPACK)
 #include "def_internal.h"
 namespace PLMD{
 namespace lapack{
@@ -894,7 +894,7 @@ void
 
 
 }
-#if defined(__PLUMED_INTERNAL_LAPACK) || defined (__PLUMED_INTERNAL_BLAS)
+#if ! defined(__PLUMED_HAS_EXTERNAL_LAPACK)
 }
 #endif
 

@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -29,10 +29,10 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace multicolvar{
+namespace PLMD {
+namespace multicolvar {
 
-//+PLUMEDOC MCOLVAR ANGLES 
+//+PLUMEDOC MCOLVAR ANGLES
 /*
 Calculate functions of the distribution of angles .
 
@@ -40,7 +40,7 @@ You can use this command to calculate functions such as:
 
 \f[
  f(x) = \sum_{ijk} g( \theta_{ijk} )
-\f] 
+\f]
 
 Alternatively you can use this command to calculate functions such as:
 
@@ -49,7 +49,7 @@ f(x) = \sum_{ijk} s(r_{ij})s(r_{jk}) g(\theta_{ijk})
 \f]
 
 where \f$s(r)\f$ is a \ref switchingfunction.  This second form means that you can
-use this to calculate functions of the angles in the first coordination sphere of 
+use this to calculate functions of the angles in the first coordination sphere of
 an atom / molecule \cite lj-recon.
 
 \par Examples
@@ -59,18 +59,18 @@ print it to a file
 
 \verbatim
 ANGLES ATOMS1=1,2,3 ATOMS2=4,5,6 MEAN LABEL=a1
-PRINT ARG=a1.mean FILE=colvar 
+PRINT ARG=a1.mean FILE=colvar
 \endverbatim
 
 The following example tells plumed to calculate all angles involving
 at least one atom from GROUPA and two atoms from GROUPB in which the distances
 are less than 1.0. The number of angles between \f$\frac{\pi}{4}\f$ and
-\f$\frac{3\pi}{4}\f$ is then output  
+\f$\frac{3\pi}{4}\f$ is then output
 
 \verbatim
 ANGLES GROUPA=1-10 GROUPB=11-100 BETWEEN={GAUSSIAN LOWER=0.25pi UPPER=0.75pi} SWITCH={GAUSSIAN R_0=1.0} LABEL=a1
 PRINT ARG=a1.between FILE=colvar
-\endverbatim 
+\endverbatim
 
 This final example instructs plumed to calculate all the angles in the first coordination
 spheres of the atoms. A discretized-normalized histogram of the distribution is then output
@@ -91,74 +91,76 @@ private:
   SwitchingFunction sf2;
 public:
   static void registerKeywords( Keywords& keys );
-  Angles(const ActionOptions&);
+  explicit Angles(const ActionOptions&);
 /// Updates neighbor list
   virtual double compute( const unsigned& tindex, AtomValuePack& ) const ;
 /// Returns the number of coordinates of the field
-  void calculateWeight( AtomValuePack& ) const ;
-  bool isPeriodic(){ return false; }
+  double calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& ) const ;
+  bool isPeriodic() { return false; }
 };
 
 PLUMED_REGISTER_ACTION(Angles,"ANGLES")
 
-void Angles::registerKeywords( Keywords& keys ){
+void Angles::registerKeywords( Keywords& keys ) {
   MultiColvar::registerKeywords( keys );
-  keys.use("ATOMS"); keys.use("MEAN"); keys.use("LESS_THAN"); 
+  keys.use("ATOMS"); keys.use("MEAN"); keys.use("LESS_THAN");
   keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MORE_THAN");
   // Could also add Region here in theory
   keys.add("atoms-1","GROUP","Calculate angles for each distinct set of three atoms in the group");
   keys.add("atoms-2","GROUPA","A group of central atoms about which angles should be calculated");
   keys.add("atoms-2","GROUPB","When used in conjuction with GROUPA this keyword instructs plumed "
-                              "to calculate all distinct angles involving one atom from GROUPA "
-                              "and two atoms from GROUPB. The atom from GROUPA is the central atom.");
-  keys.add("atoms-3","GROUPC","This must be used in conjuction with GROUPA and GROUPB.  All angles " 
-                              "involving one atom from GROUPA, one atom from GROUPB and one atom from "
-                              "GROUPC are calculated. The GROUPA atoms are assumed to be the central "
-                              "atoms");
+           "to calculate all distinct angles involving one atom from GROUPA "
+           "and two atoms from GROUPB. The atom from GROUPA is the central atom.");
+  keys.add("atoms-3","GROUPC","This must be used in conjuction with GROUPA and GROUPB.  All angles "
+           "involving one atom from GROUPA, one atom from GROUPB and one atom from "
+           "GROUPC are calculated. The GROUPA atoms are assumed to be the central "
+           "atoms");
   keys.add("optional","SWITCH","A switching function that ensures that only angles between atoms that "
-                               "are within a certain fixed cutoff are calculated. The following provides "
-                               "information on the \\ref switchingfunction that are available.");
+           "are within a certain fixed cutoff are calculated. The following provides "
+           "information on the \\ref switchingfunction that are available.");
   keys.add("optional","SWITCHA","A switching function on the distance between the atoms in group A and the atoms in "
-                                "group B");
+           "group B");
   keys.add("optional","SWITCHB","A switching function on the distance between the atoms in group A and the atoms in "
-                                "group B");
+           "group B");
 }
 
 Angles::Angles(const ActionOptions&ao):
-PLUMED_MULTICOLVAR_INIT(ao),
-use_sf(false)
+  PLUMED_MULTICOLVAR_INIT(ao),
+  use_sf(false)
 {
   std::string sfinput,errors; parse("SWITCH",sfinput);
-  if( sfinput.length()>0 ){
+  if( sfinput.length()>0 ) {
+    use_sf=true;
+    weightHasDerivatives=true;
+    sf1.set(sfinput,errors);
+    if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
+    sf2.set(sfinput,errors);
+    if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
+    log.printf("  only calculating angles for atoms separated by less than %s\n", sf1.description().c_str() );
+  } else {
+    parse("SWITCHA",sfinput);
+    if(sfinput.length()>0) {
       use_sf=true;
       weightHasDerivatives=true;
       sf1.set(sfinput,errors);
-      if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors ); 
+      if( errors.length()!=0 ) error("problem reading SWITCHA keyword : " + errors );
+      sfinput.clear(); parse("SWITCHB",sfinput);
+      if(sfinput.length()==0) error("found SWITCHA keyword without SWITCHB");
       sf2.set(sfinput,errors);
-      if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors ); 
-      log.printf("  only calculating angles for atoms separated by less than %s\n", sf1.description().c_str() );
-  } else {
-      parse("SWITCHA",sfinput); 
-      if(sfinput.length()>0){
-         use_sf=true;
-         weightHasDerivatives=true;
-         sf1.set(sfinput,errors);
-         if( errors.length()!=0 ) error("problem reading SWITCHA keyword : " + errors ); 
-         sfinput.clear(); parse("SWITCHB",sfinput);
-         if(sfinput.length()==0) error("found SWITCHA keyword without SWITCHB");
-         sf2.set(sfinput,errors); 
-         if( errors.length()!=0 ) error("problem reading SWITCHB keyword : " + errors );
-         log.printf("  only calculating angles when the distance between GROUPA and GROUPB atoms is less than %s\n", sf1.description().c_str() );
-         log.printf("  only calculating angles when the distance between GROUPA and GROUPC atoms is less than %s\n", sf2.description().c_str() );
-      }
+      if( errors.length()!=0 ) error("problem reading SWITCHB keyword : " + errors );
+      log.printf("  only calculating angles when the distance between GROUPA and GROUPB atoms is less than %s\n", sf1.description().c_str() );
+      log.printf("  only calculating angles when the distance between GROUPA and GROUPC atoms is less than %s\n", sf2.description().c_str() );
+    }
   }
   // Read in the atoms
-  int natoms=3; readAtoms( natoms );
-  // Set cutoff for link cells 
-  if( use_sf ){ 
-    setLinkCellCutoff( sf1.get_dmax() ); 
-    rcut2_1=sf1.get_dmax()*sf1.get_dmax(); 
-    rcut2_2=sf2.get_dmax()*sf2.get_dmax(); 
+  std::vector<AtomNumber> all_atoms;
+  readGroupKeywords( "GROUP", "GROUPA", "GROUPB", "GROUPC", false, true, all_atoms );
+  int natoms=3; readAtoms( natoms, all_atoms );
+  // Set cutoff for link cells
+  if( use_sf ) {
+    setLinkCellCutoff( sf1.get_dmax() );
+    rcut2_1=sf1.get_dmax()*sf1.get_dmax();
+    rcut2_2=sf2.get_dmax()*sf2.get_dmax();
   }
 
   // And check everything has been read in correctly
@@ -168,40 +170,40 @@ use_sf(false)
   setAtomsForCentralAtom( catom_ind );
 }
 
-void Angles::calculateWeight( AtomValuePack& myatoms ) const {
-  if(!use_sf){ myatoms.setValue( 0, 1.0 ); return; }
+double Angles::calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& myatoms ) const {
+  if(!use_sf) return 1.0;
   Vector dij=getSeparation( myatoms.getPosition(0), myatoms.getPosition(2) );
   Vector dik=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
 
   double w1, w2, dw1, dw2, wtot;
-  double ldij = dij.modulo2(), ldik = dik.modulo2(); 
+  double ldij = dij.modulo2(), ldik = dik.modulo2();
 
-  if( use_sf ){
-     if( ldij>rcut2_1 || ldik>rcut2_2 ){ myatoms.setValue(0,0.0); return; }
+  if( use_sf ) {
+    if( ldij>rcut2_1 || ldik>rcut2_2 ) return 0.0;
   }
 
   w1=sf1.calculateSqr( ldij, dw1 );
   w2=sf2.calculateSqr( ldik, dw2 );
-  wtot=w1*w2; dw1*=w2; dw2*=w1; 
+  wtot=w1*w2; dw1*=weight*w2; dw2*=weight*w1;
 
-  myatoms.setValue( 0, wtot );
-  myatoms.addAtomsDerivatives( 0, 1, dw2*dik );
-  myatoms.addAtomsDerivatives( 0, 0, -dw1*dij - dw2*dik ); 
-  myatoms.addAtomsDerivatives( 0, 2, dw1*dij );
+  addAtomDerivatives( 0, 1, dw2*dik, myatoms );
+  addAtomDerivatives( 0, 0, -dw1*dij - dw2*dik, myatoms );
+  addAtomDerivatives( 0, 2, dw1*dij, myatoms );
   myatoms.addBoxDerivatives( 0, (-dw1)*Tensor(dij,dij) + (-dw2)*Tensor(dik,dik) );
+  return wtot;
 }
 
 double Angles::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
   Vector dij=getSeparation( myatoms.getPosition(0), myatoms.getPosition(2) );
   Vector dik=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
 
-  Vector ddij,ddik; PLMD::Angle a; 
+  Vector ddij,ddik; PLMD::Angle a;
   double angle=a.compute(dij,dik,ddij,ddik);
 
   // And finish the calculation
-  myatoms.addAtomsDerivatives( 1, 1, ddik );
-  myatoms.addAtomsDerivatives( 1, 0, - ddik - ddij );
-  myatoms.addAtomsDerivatives( 1, 2, ddij );
+  addAtomDerivatives( 1, 1, ddik, myatoms );
+  addAtomDerivatives( 1, 0, - ddik - ddij, myatoms );
+  addAtomDerivatives( 1, 2, ddij, myatoms );
   myatoms.addBoxDerivatives( 1, -(Tensor(dij,ddij)+Tensor(dik,ddik)) );
 
   return angle;

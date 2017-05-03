@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -30,21 +30,26 @@
 #include "core/Value.h"
 
 namespace PLMD {
-namespace vesselbase{
+namespace vesselbase {
 
 class ValueVessel : public Vessel {
-private: 
+private:
+  bool no_output_value;
   Value* final_value;
 protected:
-  Value* getFinalValue() const ;
+/// The component that is being averaged/accumulated whatever
+  unsigned mycomp;
 /// Set the final value
   void setOutputValue( const double& val );
 public:
   static void registerKeywords( Keywords& keys );
-  ValueVessel( const VesselOptions& da );
+  explicit ValueVessel( const VesselOptions& da );
+  ~ValueVessel();
   std::string description();
   virtual std::string value_descriptor()=0;
   bool applyForce( std::vector<double>& forces );
+  double getOutputValue() const ;
+  Value* getFinalValue() const ;
 };
 
 inline
@@ -53,7 +58,12 @@ Value* ValueVessel::getFinalValue() const {
 }
 
 inline
-void ValueVessel::setOutputValue( const double& val ){
+double ValueVessel::getOutputValue() const {
+  return final_value->get();
+}
+
+inline
+void ValueVessel::setOutputValue( const double& val ) {
   final_value->set( val );
 }
 

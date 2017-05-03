@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014,2015 The plumed team
+   Copyright (c) 2014-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -29,8 +29,8 @@ namespace PLMD {
 namespace multicolvar {
 
 class BridgedMultiColvarFunction : public MultiColvarBase {
-friend class MultiColvarBase;  
-friend class MultiColvarFunction; 
+  friend class MultiColvarBase;
+  friend class MultiColvarFunction;
 private:
 /// This is used for storing positions properly
   Vector tmp_p;
@@ -48,37 +48,42 @@ protected:
   void setAtomActive( const unsigned& n );
 public:
   static void registerKeywords( Keywords& keys );
-  BridgedMultiColvarFunction(const ActionOptions&);
+  explicit BridgedMultiColvarFunction(const ActionOptions&);
 /// Get a pointer to the base multicolvar
   MultiColvarBase* getPntrToMultiColvar() const ;
-/// Don't actually clear the derivatives when this is called from plumed main.  
-/// They are calculated inside another action and clearing them would be bad  
-  void clearDerivatives(){}
+/// Don't actually clear the derivatives when this is called from plumed main.
+/// They are calculated inside another action and clearing them would be bad
+  void clearDerivatives() {}
+/// Check nothing impossible being done with derivatives
+  virtual void turnOnDerivatives();
 /// Get the number of derivatives for this action
-  unsigned getNumberOfDerivatives(); 
+  unsigned getNumberOfDerivatives();
 /// Get the size of the atoms with derivatives array
   unsigned getSizeOfAtomsWithDerivatives();
 /// Is the output quantity periodic
   bool isPeriodic();
-/// Routines that have to be defined so as not to have problems with virtual methods 
+/// Routines that have to be defined so as not to have problems with virtual methods
   void deactivate_task( const unsigned& taskno );
-  void calculate(){}
+  void calculate() {}
 /// This does the task
   void transformBridgedDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals ) const ;
-  void performTask( const unsigned& , const unsigned& , MultiValue& ) const ;
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const ;
   virtual void completeTask( const unsigned& curr, MultiValue& invals, MultiValue& outvals ) const=0;
 /// Get the central atom position
   Vector retrieveCentralAtomPos();
+/// Get the index of the central atom
+  AtomNumber getAbsoluteIndexOfCentralAtom( const unsigned& i ) const ;
+/// Get indicecs involved in this colvar
+  const std::vector<AtomNumber> & getAbsoluteIndexes()const ;
 /// We need our own calculate numerical derivatives here
   void calculateNumericalDerivatives( ActionWithValue* a=NULL );
-  void apply(){};
-/// Is this atom currently being copied 
-  bool isCurrentlyActive( const unsigned& , const unsigned& );
+  void apply() {};
+/// Is this atom currently being copied
+  bool isCurrentlyActive( const unsigned& );
 /// This should not be called
-  Vector calculateCentralAtomPosition(){ plumed_error(); }
+  Vector calculateCentralAtomPosition() { plumed_error(); }
   double compute( const unsigned& tindex, AtomValuePack& myvals ) const { plumed_error(); }
   Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const ;
-  void updateActiveAtoms( AtomValuePack& myatoms ) const { plumed_error(); }
   void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
   void applyBridgeForces( const std::vector<double>& bb );
   Vector getCentralAtomPos( const unsigned& curr );
@@ -86,33 +91,43 @@ public:
 };
 
 inline
+const std::vector<AtomNumber> & BridgedMultiColvarFunction::getAbsoluteIndexes() const {
+  return mycolv->getAbsoluteIndexes();
+}
+
+inline
 MultiColvarBase* BridgedMultiColvarFunction::getPntrToMultiColvar() const {
   return mycolv;
 }
 
 inline
-unsigned BridgedMultiColvarFunction::getNumberOfDerivatives(){
+unsigned BridgedMultiColvarFunction::getNumberOfDerivatives() {
   return mycolv->getNumberOfDerivatives() + 3*getNumberOfAtoms();
 }
 
 inline
-bool BridgedMultiColvarFunction::isCurrentlyActive( const unsigned& bno, const unsigned& code ){
-  return mycolv->isCurrentlyActive( bno, code );
+bool BridgedMultiColvarFunction::isCurrentlyActive( const unsigned& code ) {
+  return mycolv->isCurrentlyActive( code );
 }
 
 inline
-unsigned BridgedMultiColvarFunction::getSizeOfAtomsWithDerivatives(){
+unsigned BridgedMultiColvarFunction::getSizeOfAtomsWithDerivatives() {
   return mycolv->getNumberOfAtoms();
 }
 
-inline 
-Vector BridgedMultiColvarFunction::getPositionOfAtomForLinkCells( const unsigned& iatom ) const { 
+inline
+Vector BridgedMultiColvarFunction::getPositionOfAtomForLinkCells( const unsigned& iatom ) const {
   return mycolv->getPositionOfAtomForLinkCells(iatom);
 }
 
 inline
-Vector BridgedMultiColvarFunction::getCentralAtomPos( const unsigned& curr ){
+Vector BridgedMultiColvarFunction::getCentralAtomPos( const unsigned& curr ) {
   return mycolv->getCentralAtomPos( curr );
+}
+
+inline
+AtomNumber BridgedMultiColvarFunction::getAbsoluteIndexOfCentralAtom(const unsigned& i) const {
+  return mycolv->getAbsoluteIndexOfCentralAtom(i);
 }
 
 }

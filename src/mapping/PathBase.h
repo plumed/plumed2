@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -25,17 +25,17 @@
 #include "Mapping.h"
 
 namespace PLMD {
-namespace mapping{
+namespace mapping {
 
 class PathBase : public Mapping {
 private:
   double lambda;
 public:
   static void registerKeywords( Keywords& keys );
-  PathBase(const ActionOptions&);
+  explicit PathBase(const ActionOptions&);
   double getLambda();
   void calculate();
-  void performTask( const unsigned& , const unsigned& , MultiValue& ) const ;
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const ;
   double transformHD( const double& dist, double& df ) const ;
 };
 

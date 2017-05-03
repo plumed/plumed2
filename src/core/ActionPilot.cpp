@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -22,26 +22,32 @@
 #include "ActionPilot.h"
 
 using namespace std;
-namespace PLMD{
+namespace PLMD {
 
-void ActionPilot::registerKeywords(Keywords& keys){
+void ActionPilot::registerKeywords(Keywords& keys) {
 }
 
 ActionPilot::ActionPilot(const ActionOptions&ao):
-Action(ao),
-stride(1)
+  Action(ao),
+  stride(1)
 {
-  parse("STRIDE",stride);
-  log.printf("  with stride %d\n",stride);
+  if( keywords.exists("STRIDE") ) {
+    parse("STRIDE",stride);
+    if( !keywords.style("STRIDE","hidden") ) log.printf("  with stride %d\n",stride);
+  } else {
+    stride=0;
+  }
 }
 
-bool ActionPilot::onStep()const{
-  return getStep()%stride==0;
+bool ActionPilot::onStep()const {
+  if( stride>0 ) return getStep()%stride==0;
+  return false;
 }
 
-int ActionPilot::getStride()const{
+int ActionPilot::getStride()const {
   return stride;
 }
+
 }
 
 

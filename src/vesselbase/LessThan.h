@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -27,15 +27,15 @@
 #include "ActionWithVessel.h"
 
 namespace PLMD {
-namespace vesselbase{
+namespace vesselbase {
 
 class LessThan : public FunctionVessel {
 private:
   SwitchingFunction sf;
 public:
   static void registerKeywords( Keywords& keys );
-  static void reserveKeyword( Keywords& keys ); 
-  LessThan( const VesselOptions& da );
+  static void reserveKeyword( Keywords& keys );
+  explicit LessThan( const VesselOptions& da );
   std::string value_descriptor();
   double calcTransform( const double& val, double& dv ) const ;
   double getCutoff();

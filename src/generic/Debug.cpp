@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -26,7 +26,7 @@
 
 using namespace std;
 
-namespace PLMD{
+namespace PLMD {
 namespace generic {
 
 //+PLUMEDOC GENERIC DEBUG
@@ -49,21 +49,22 @@ DEBUG logRequestedAtoms STRIDE=2
 class Debug:
   public ActionPilot
 {
+  OFile ofile;
   bool logActivity;
   bool logRequestedAtoms;
   bool novirial;
   bool detailedTimers;
 public:
-  Debug(const ActionOptions&ao);
-/// Register all the relevant keywords for the action  
+  explicit Debug(const ActionOptions&ao);
+/// Register all the relevant keywords for the action
   static void registerKeywords( Keywords& keys );
-  void calculate(){}
+  void calculate() {}
   void apply();
 };
 
 PLUMED_REGISTER_ACTION(Debug,"DEBUG")
 
-void Debug::registerKeywords( Keywords& keys ){
+void Debug::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionPilot::registerKeywords(keys);
   keys.add("compulsory","STRIDE","1","the frequency with which this action is to be performed");
@@ -71,14 +72,15 @@ void Debug::registerKeywords( Keywords& keys ){
   keys.addFlag("logRequestedAtoms",false,"write in the log which atoms have been requested at a given time");
   keys.addFlag("NOVIRIAL",false,"switch off the virial contribution for the entirity of the simulation");
   keys.addFlag("DETAILED_TIMERS",false,"switch on detailed timers");
+  keys.add("optional","FILE","the name of the file on which to output these quantities");
 }
 
 Debug::Debug(const ActionOptions&ao):
-Action(ao),
-ActionPilot(ao),
-logActivity(false),
-logRequestedAtoms(false),
-novirial(false){
+  Action(ao),
+  ActionPilot(ao),
+  logActivity(false),
+  logRequestedAtoms(false),
+  novirial(false) {
   parseFlag("logActivity",logActivity);
   if(logActivity) log.printf("  logging activity\n");
   parseFlag("logRequestedAtoms",logRequestedAtoms);
@@ -89,35 +91,45 @@ novirial(false){
   parseFlag("DETAILED_TIMERS",detailedTimers);
   if(detailedTimers) log.printf("  Detailed timing on\n");
   plumed.detailedTimers=true;
+  ofile.link(*this);
+  std::string file;
+  parse("FILE",file);
+  if(file.length()>0) {
+    ofile.open(file);
+    log.printf("  on file %s\n",file.c_str());
+  } else {
+    log.printf("  on plumed log file\n");
+    ofile.link(log);
+  }
   checkRead();
 }
 
-void Debug::apply(){
-  if(logActivity){
+void Debug::apply() {
+  if(logActivity) {
     const ActionSet&actionSet(plumed.getActionSet());
     int a=0;
-    for(ActionSet::const_iterator p=actionSet.begin();p!=actionSet.end();++p){
+    for(ActionSet::const_iterator p=actionSet.begin(); p!=actionSet.end(); ++p) {
       if(dynamic_cast<Debug*>(*p))continue;
       if((*p)->isActive()) a++;
     };
-    if(a>0){
-      log.printf("activity at step %i: ",getStep());
-      for(ActionSet::const_iterator p=actionSet.begin();p!=actionSet.end();++p){
+    if(a>0) {
+      ofile.printf("activity at step %i: ",getStep());
+      for(ActionSet::const_iterator p=actionSet.begin(); p!=actionSet.end(); ++p) {
         if(dynamic_cast<Debug*>(*p))continue;
-        if((*p)->isActive()) log.printf("+");
-        else                 log.printf("-");
+        if((*p)->isActive()) ofile.printf("+");
+        else                 ofile.printf("-");
       };
-      log.printf("\n");
+      ofile.printf("\n");
     };
   };
-  if(logRequestedAtoms){
-    log.printf("requested atoms at step %i: ",getStep());
+  if(logRequestedAtoms) {
+    ofile.printf("requested atoms at step %i: ",getStep());
     int* l;
     int n;
     plumed.cmd("createFullList",&n);
     plumed.cmd("getFullList",&l);
-    for(int i=0;i<n;i++) log.printf(" %d",l[i]);
-    log.printf("\n");
+    for(int i=0; i<n; i++) ofile.printf(" %d",l[i]);
+    ofile.printf("\n");
     plumed.cmd("clearFullList");
   }
 

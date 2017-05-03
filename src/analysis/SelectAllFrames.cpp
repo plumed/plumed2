@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -27,20 +27,20 @@ namespace analysis {
 
 class CopyAllFrames : public LandmarkSelectionBase {
 public:
-  CopyAllFrames( const LandmarkSelectionOptions& lo );
+  explicit CopyAllFrames( const LandmarkSelectionOptions& lo );
   void select( MultiReferenceBase* );
 };
 
 PLUMED_REGISTER_LANDMARKS(CopyAllFrames,"ALL")
 
 CopyAllFrames::CopyAllFrames( const LandmarkSelectionOptions& lo ):
-LandmarkSelectionBase(lo)
+  LandmarkSelectionBase(lo)
 {
 }
 
-void CopyAllFrames::select( MultiReferenceBase* myframes ){
+void CopyAllFrames::select( MultiReferenceBase* myframes ) {
   nlandmarks = action->getNumberOfDataPoints();
-  for(unsigned i=0;i<getNumberOfFrames();++i) selectFrame( i, myframes );
+  for(unsigned i=0; i<getNumberOfFrames(); ++i) selectFrame( i, myframes );
 }
 
 }

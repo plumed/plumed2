@@ -5,7 +5,6 @@ COPYING.LESSER  : license
 Makefile        : makefile
 PEOPLE          : list of authors
 README          : this file
-README.git      : quick reference for git
 configurations/ : template configuration files
 configure       : configuration script
 developer-doc   : developer documentation
@@ -20,7 +19,7 @@ INSTALL
 
 Extensive installation instructions are in the user documentation.
 Links to precompiled versions of the documentation can be found here:
-http://www.plumed-code.org/documentation
+http://www.plumed.org/documentation
 
 Needed software:
 * GNU make

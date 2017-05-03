@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -34,7 +34,7 @@ namespace vesselbase {
 /**
 \ingroup TOOLBOX
 This class allows you to calculate the vessel in one ActionWithVessel.  The user thinks
-it is created in a different Action however.  At the moment this is used for region 
+it is created in a different Action however.  At the moment this is used for region
 */
 
 class BridgeVessel : public Vessel {
@@ -45,7 +45,7 @@ private:
   ActionWithVessel* myOutputAction;
   ActionWithValue* myOutputValues;
 public:
-  BridgeVessel( const VesselOptions& );
+  explicit BridgeVessel( const VesselOptions& );
 /// Does this have derivatives
   bool hasDerivatives();
 /// Resize the quantities in the vessel
@@ -54,26 +54,28 @@ public:
   ActionWithVessel* getOutputAction();
 /// Setup the action we are outputting to
   void setOutputAction( ActionWithVessel* myOutputAction );
-/// Apply some force 
+/// Apply some force
   bool applyForce( std::vector<double>& forces );
 /// Should not be called
   std::string description();
 /// Jobs to do before the task list starts
   void prepare();
-/// Set the start of the buffer 
+/// Set the start of the buffer
   void setBufferStart( unsigned& start );
 /// This transforms the derivatives using the output value
   MultiValue& transformDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals );
 /// Actually do the calculation
-  bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const ;
+  void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const ;
 /// Finish the calculation
   void finish( const std::vector<double>& buffer );
 /// Calculate numerical derivatives
   void completeNumericalDerivatives();
+/// Set the task flags in the bridged class the same as in the original class
+  void copyTaskFlags();
 };
 
 inline
-ActionWithVessel* BridgeVessel::getOutputAction(){
+ActionWithVessel* BridgeVessel::getOutputAction() {
   return myOutputAction;
 }
 

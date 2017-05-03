@@ -1,4 +1,0 @@
-mpiprocs=2
-type=driver
-# this is to test a different name
-arg="--plumed plumed.dat --ixyz traj.xyz --length-units A --box 28.66,28.66,28.66"

@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -22,35 +22,35 @@
 #include "ActionSet.h"
 
 using namespace std;
-namespace PLMD{
+namespace PLMD {
 
 ActionSet::ActionSet(PlumedMain&p):
-plumed(p){
+  plumed(p) {
   (void) plumed; // to suppress warning about "unused plumed"
 }
 
 ActionSet::~ActionSet()
 {
-  for(int i=size()-1;i>=0;i--) delete (*this)[i];
+  for(int i=size()-1; i>=0; i--) delete (*this)[i];
 }
 
-void ActionSet::clearDelete(){
-  for(int i=size()-1;i>=0;i--) delete (*this)[i];
+void ActionSet::clearDelete() {
+  for(int i=size()-1; i>=0; i--) delete (*this)[i];
   clear();
 }
 
 
-std::string ActionSet::getLabelList() const{
+std::string ActionSet::getLabelList() const {
   std::string outlist;
-  for(const_iterator p=begin();p!=end();++p){
+  for(const_iterator p=begin(); p!=end(); ++p) {
     outlist+=dynamic_cast<Action*>(*p)->getLabel()+" ";
   };
   return  outlist;
 }
 
-std::vector<std::string> ActionSet::getLabelVector() const{
+std::vector<std::string> ActionSet::getLabelVector() const {
   std::vector<std::string> outlist;
-  for(const_iterator p=begin();p!=end();++p){
+  for(const_iterator p=begin(); p!=end(); ++p) {
     outlist.push_back(dynamic_cast<Action*>(*p)->getLabel());
   };
   return  outlist;

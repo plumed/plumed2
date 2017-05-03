@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -51,7 +51,7 @@ public:
 /// Creates an MDAtomsTyped<T> object such that sizeof(T)==n
   static MDAtomsBase* create(unsigned n);
 /// Virtual destructor, just to allow inheritance.
-  virtual ~MDAtomsBase(){}
+  virtual ~MDAtomsBase() {}
 /// Get the size of MD-real
   virtual unsigned getRealPrecision()const=0;
 /// Set a pointer to the mass array in the MD code
@@ -76,6 +76,8 @@ public:
   virtual void MD2double(const void*,double&)const=0;
 /// Convert a double to a pointer to an MD-real
   virtual void double2MD(const double&,void*)const=0;
+
+  virtual Vector getMDforces(const unsigned index)const=0;
 /// Retrieve box as a plumed Tensor
   virtual void getBox(Tensor &)const=0;
 /// Retrieve selected positions.
@@ -98,7 +100,6 @@ public:
   virtual void updateForces(const std::vector<int>&index,const std::vector<Vector>&f)=0;
 /// Rescale all the forces, including the virial.
 /// It is applied to all atoms with local index going from 0 to index.size()-1
-/// \attention the virial is not scaled indeed... is it a bug??
   virtual void rescaleForces(const std::vector<int>&index,double factor)=0;
 };
 

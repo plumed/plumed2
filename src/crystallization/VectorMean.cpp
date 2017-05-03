@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2014-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -29,79 +29,83 @@ namespace PLMD {
 namespace crystallization {
 
 class VectorMean : public vesselbase::FunctionVessel {
+private:
+  unsigned nder;
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
-  VectorMean( const vesselbase::VesselOptions& da );
+  explicit VectorMean( const vesselbase::VesselOptions& da );
   std::string value_descriptor();
   void resize();
-  bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
+  void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
   void finish( const std::vector<double>& buffer );
 };
 
 PLUMED_REGISTER_VESSEL(VectorMean,"VMEAN")
 
-void VectorMean::registerKeywords( Keywords& keys ){
+void VectorMean::registerKeywords( Keywords& keys ) {
   vesselbase::FunctionVessel::registerKeywords(keys);
 }
 
-void VectorMean::reserveKeyword( Keywords& keys ){
-  keys.reserveFlag("VMEAN",false,"calculate the norm of the mean vector.",true);
+void VectorMean::reserveKeyword( Keywords& keys ) {
+  keys.reserve("vessel","VMEAN","calculate the norm of the mean vector.");
   keys.addOutputComponent("vmean","VMEAN","the norm of the mean vector. The output component can be refererred to elsewhere in the input "
-                                          "file by using the label.vmean");
+                          "file by using the label.vmean");
 }
 
 VectorMean::VectorMean( const vesselbase::VesselOptions& da ) :
-FunctionVessel(da)
+  FunctionVessel(da),
+  nder(0)
 {
 }
 
-std::string VectorMean::value_descriptor(){
+std::string VectorMean::value_descriptor() {
   return "the norm of the mean vector";
 }
 
-void VectorMean::resize(){
+void VectorMean::resize() {
   unsigned ncomp=getAction()->getNumberOfQuantities() - 2;
 
-  if( getAction()->derivativesAreRequired() ){
-     unsigned nder=getAction()->getNumberOfDerivatives();
-     resizeBuffer( (1+nder)*(ncomp+1) ); getFinalValue()->resizeDerivatives( nder );
+  if( getAction()->derivativesAreRequired() ) {
+    nder=getAction()->getNumberOfDerivatives();
+    resizeBuffer( (1+nder)*(ncomp+1) ); getFinalValue()->resizeDerivatives( nder );
   } else {
-     resizeBuffer(ncomp+1);
+    nder=0; resizeBuffer(ncomp+1);
   }
 }
 
-bool VectorMean::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
-  unsigned ncomp=getAction()->getNumberOfQuantities()-2, nder=getAction()->getNumberOfDerivatives();
-
-  double weight=myvals.get(0); plumed_dbg_assert( weight>=getTolerance() ); 
-  buffer[bufstart] += weight;
-  if( diffweight ) myvals.chainRule( 0, 0, 1, 0, 1.0, bufstart, buffer ); 
-  for(unsigned i=0;i<ncomp;++i){
-      double colvar=myvals.get(2+i); 
-      buffer[bufstart + (1+i)*(1+nder)] += weight*colvar;  
-      myvals.chainRule( 2+i, 1+i, 1, 0, weight, bufstart, buffer );
-      if( diffweight ) myvals.chainRule( 0, 1+i, 1, 0, colvar, bufstart, buffer );
-  }
-  return true;
-}
-
-void VectorMean::finish( const std::vector<double>& buffer ){
+void VectorMean::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
   unsigned ncomp=getAction()->getNumberOfQuantities()-2;
-  double sum=0, ww=buffer[bufstart]; 
-  unsigned nder=getAction()->getNumberOfDerivatives();
-  for(unsigned i=0;i<ncomp;++i){ 
-     double tmp = buffer[bufstart+(nder+1)*(i+1)] / ww;
-     sum+=tmp*tmp; 
-  }
-  double tw = 1.0 / sqrt(sum); setOutputValue( sqrt(sum) ); 
+
+  double weight=myvals.get(0); plumed_dbg_assert( weight>=getTolerance() );
+  buffer[bufstart] += weight;
+  for(unsigned i=0; i<ncomp; ++i) buffer[bufstart + (1+i)*(1+nder)] += weight*myvals.get(2+i);
   if( !getAction()->derivativesAreRequired() ) return;
 
-  Value* fval=getFinalValue();
-  for(unsigned icomp=0;icomp<ncomp;++icomp){
-      double tmp = buffer[(icomp+1)*(1+nder)] / ww; 
-      unsigned bstart = bufstart + (1+icomp)*(nder+1) + 1;
-      for(unsigned jder=0;jder<nder;++jder) fval->addDerivative( jder, (tw*tmp/ww)*( buffer[bstart + jder] - tmp*buffer[bufstart + 1 + jder] ) );
+  if( diffweight ) myvals.chainRule( 0, 0, 1, 0, 1.0, bufstart, buffer );
+  for(unsigned i=0; i<ncomp; ++i) {
+    double colvar=myvals.get(2+i);
+    myvals.chainRule( 2+i, 1+i, 1, 0, weight, bufstart, buffer );
+    if( diffweight ) myvals.chainRule( 0, 1+i, 1, 0, colvar, bufstart, buffer );
+  }
+  return;
+}
+
+void VectorMean::finish( const std::vector<double>& buffer ) {
+  unsigned ncomp=getAction()->getNumberOfQuantities()-2;
+  double sum=0, ww=buffer[bufstart];
+  for(unsigned i=0; i<ncomp; ++i) {
+    double tmp = buffer[bufstart+(nder+1)*(i+1)] / ww;
+    sum+=tmp*tmp;
+  }
+  setOutputValue( sqrt(sum) );
+  if( !getAction()->derivativesAreRequired() ) return;
+
+  Value* fval=getFinalValue(); double tw = 1.0 / sqrt(sum);
+  for(unsigned icomp=0; icomp<ncomp; ++icomp) {
+    double tmp = buffer[(icomp+1)*(1+nder)] / ww;
+    unsigned bstart = bufstart + (1+icomp)*(nder+1) + 1;
+    for(unsigned jder=0; jder<nder; ++jder) fval->addDerivative( jder, (tw*tmp/ww)*( buffer[bstart + jder] - tmp*buffer[bufstart + 1 + jder] ) );
   }
 }
 

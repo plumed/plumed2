@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -30,9 +30,9 @@ namespace PLMD {
 
 class PDB;
 
-class SetupMolInfo : 
-public ActionSetup,  
-public ActionAtomistic {
+class SetupMolInfo :
+  public ActionSetup,
+  public ActionAtomistic {
 private:
 /// A pdb file containing the topology
   PDB& pdb;
@@ -43,7 +43,7 @@ private:
 public:
   ~SetupMolInfo();
   static void registerKeywords( Keywords& keys );
-  SetupMolInfo(const ActionOptions&ao);
+  explicit SetupMolInfo(const ActionOptions&ao);
   void getBackbone( std::vector<std::string>& resstrings, const std::string& fortype, std::vector< std::vector<AtomNumber> >& backbone );
   std::string getAtomName(AtomNumber a)const;
   unsigned getResidueNumber(AtomNumber a)const;

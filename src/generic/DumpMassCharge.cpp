@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015 The plumed team
+   Copyright (c) 2015,2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -30,15 +30,19 @@ using namespace std;
 
 namespace PLMD
 {
-namespace generic{
+namespace generic {
 
-//+PLUMEDOC ANALYSIS DUMPMASSCHARGE
+//+PLUMEDOC PRINTANALYSIS DUMPMASSCHARGE
 /*
 Dump masses and charges on a selected file.
 
 This command dumps a file containing charges and masses.
 It does so only once in the simulation (at first step).
 File can be recycled in the \ref driver tool.
+
+Notice that masses and charges are only written once at the beginning
+of the simulation. In case no atom list is provided, charges and
+masses for all atoms are written.
 
 \par Examples
 
@@ -55,11 +59,33 @@ DUMPMASSCHARGE FILE=mcfile
 (see also \ref COM and \ref PRINT)
 
 In this way, you will be able to use the same masses while processing
-a trajectory from the \ref driver . To do so, you need to 
+a trajectory from the \ref driver . To do so, you need to
 add the --mc flag on the driver command line, e.g.
 \verbatim
 plumed driver --mc mcfile --plumed plumed.dat --ixyz traj.xyz
 \endverbatim
+
+With the following input you can dump only the charges for a specific
+group.
+\verbatim
+solute_ions: GROUP ATOMS=1-121,200-2012
+DUMPATOMS FILE=traj.gro ATOMS=solute_ions STRIDE=100
+DUMPMASSCHARGE FILE=mcfile ATOMS=solute_ions
+\endverbatim
+Notice however that if you want to process the charges
+with the driver (e.g. reading traj.gro) you have to fix atom
+numbers first, e.g. with the script
+\verbatim
+awk 'BEGIN{c=0}{
+  if(match($0,"#")) print ; else {print c,$2,$3; c++}
+}' < mc > newmc
+}'
+\endverbatim
+then
+\verbatim
+plumed driver --mc newmc --plumed plumed.dat --ixyz traj.gro
+\endverbatim
+
 
 */
 //+ENDPLUMEDOC
@@ -71,17 +97,17 @@ class DumpMassCharge:
   string file;
   bool first;
 public:
-  DumpMassCharge(const ActionOptions&);
+  explicit DumpMassCharge(const ActionOptions&);
   ~DumpMassCharge();
   static void registerKeywords( Keywords& keys );
-  void calculate(){}
-  void apply(){}
+  void calculate() {}
+  void apply() {}
   void update();
 };
 
 PLUMED_REGISTER_ACTION(DumpMassCharge,"DUMPMASSCHARGE")
 
-void DumpMassCharge::registerKeywords( Keywords& keys ){
+void DumpMassCharge::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
@@ -102,8 +128,8 @@ DumpMassCharge::DumpMassCharge(const ActionOptions&ao):
 
   parseAtomList("ATOMS",atoms);
 
-  if(atoms.size()==0){
-    for(unsigned i=0;i<plumed.getAtoms().getNatoms();i++){
+  if(atoms.size()==0) {
+    for(unsigned i=0; i<plumed.getAtoms().getNatoms(); i++) {
       atoms.push_back(AtomNumber::index(i));
     }
   }
@@ -111,20 +137,20 @@ DumpMassCharge::DumpMassCharge(const ActionOptions&ao):
   checkRead();
 
   log.printf("  printing the following atoms:" );
-  for(unsigned i=0;i<atoms.size();++i) log.printf(" %d",atoms[i].serial() );
+  for(unsigned i=0; i<atoms.size(); ++i) log.printf(" %d",atoms[i].serial() );
   log.printf("\n");
   requestAtoms(atoms);
 }
 
-void DumpMassCharge::update(){
+void DumpMassCharge::update() {
   if(!first) return;
   first=false;
 
   OFile of;
   of.link(*this);
   of.open(file);
-  
-  for(int i=0;i<getNumberOfAtoms();i++){
+
+  for(int i=0; i<getNumberOfAtoms(); i++) {
     int ii=getAbsoluteIndex(i).index();
     of.printField("index",ii);
     of.printField("mass",getMass(i));
@@ -133,9 +159,9 @@ void DumpMassCharge::update(){
   }
 }
 
-DumpMassCharge::~DumpMassCharge(){
+DumpMassCharge::~DumpMassCharge() {
 }
-  
+
 
 }
 }

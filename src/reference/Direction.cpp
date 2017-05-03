@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -19,44 +19,39 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#include "Direction.h"
 #include "MetricRegister.h"
-#include "ReferenceAtoms.h"
-#include "ReferenceArguments.h"
 
 namespace PLMD {
-
-class Direction :
-public ReferenceAtoms,
-public ReferenceArguments
-{
-public:
-  Direction( const ReferenceConfigurationOptions& ro );
-  void read( const PDB& );
-  double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& args, 
-               ReferenceValuePack& myder, const bool& squared ) const ;
-  void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in ){ plumed_error(); }
-};
 
 PLUMED_REGISTER_METRIC(Direction,"DIRECTION")
 
 Direction::Direction( const ReferenceConfigurationOptions& ro ):
-ReferenceConfiguration(ro),
-ReferenceAtoms(ro),
-ReferenceArguments(ro)
+  ReferenceConfiguration(ro),
+  ReferenceAtoms(ro),
+  ReferenceArguments(ro)
 {
 }
 
-void Direction::read( const PDB& pdb ){
+void Direction::read( const PDB& pdb ) {
   readAtomsFromPDB( pdb );
   readArgumentsFromPDB( pdb );
 }
 
-double Direction::calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& args, 
+void Direction::setDirection( const std::vector<Vector>& conf, const std::vector<double>& args ) {
+  std::vector<double> sigma( args.size(), 1.0 ); setReferenceArguments( args, sigma );
+
+  reference_atoms.resize( conf.size() ); align.resize( conf.size() );
+  displace.resize( conf.size() ); atom_der_index.resize( conf.size() );
+  for(unsigned i=0; i<conf.size(); ++i) { align[i]=1.0; displace[i]=1.0; atom_der_index[i]=i; reference_atoms[i]=conf[i]; }
+}
+
+double Direction::calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& args,
                         ReferenceValuePack& myder, const bool& squared ) const {
   plumed_assert( squared );
-  for(unsigned i=0;i<getNumberOfReferenceArguments();++i) myder.addArgumentDerivatives( i, -2.*getReferenceArgument(i) );
-  for(unsigned i=0;i<getNumberOfAtoms();++i) myder.getAtomsDisplacementVector()[i]=getReferencePosition(i);
-  
+  for(unsigned i=0; i<getNumberOfReferenceArguments(); ++i) myder.addArgumentDerivatives( i, -2.*getReferenceArgument(i) );
+  for(unsigned i=0; i<getNumberOfAtoms(); ++i) myder.getAtomsDisplacementVector()[i]=getReferencePosition(i);
+
   return 0.0;
 }
 

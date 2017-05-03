@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -30,31 +30,31 @@ class Mean : public FunctionVessel {
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
-  Mean( const vesselbase::VesselOptions& da );
+  explicit Mean( const vesselbase::VesselOptions& da );
   std::string value_descriptor();
   double calcTransform( const double& val, double& dv ) const ;
 };
 
 PLUMED_REGISTER_VESSEL(Mean,"MEAN")
 
-void Mean::registerKeywords( Keywords& keys ){
+void Mean::registerKeywords( Keywords& keys ) {
   FunctionVessel::registerKeywords(keys);
 }
 
-void Mean::reserveKeyword( Keywords& keys ){
-  keys.reserveFlag("MEAN",false,"take the mean of these variables.",true);
+void Mean::reserveKeyword( Keywords& keys ) {
+  keys.reserve("vessel","MEAN","take the mean of these variables.");
   keys.addOutputComponent("mean","MEAN","the mean value. The output component can be refererred to elsewhere in the input "
-                                        "file by using the label.mean");
+                          "file by using the label.mean");
 }
 
 Mean::Mean( const vesselbase::VesselOptions& da ) :
-FunctionVessel(da)
+  FunctionVessel(da)
 {
   if( getAction()->isPeriodic() ) error("MEAN cannot be used with periodic variables");
   norm=true;   // Makes sure we calculate the average
 }
 
-std::string Mean::value_descriptor(){
+std::string Mean::value_descriptor() {
   return "the mean value";
 }
 

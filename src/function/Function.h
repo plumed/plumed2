@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -24,13 +24,14 @@
 
 #include "core/ActionWithValue.h"
 #include "core/ActionWithArguments.h"
+#include "tools/Communicator.h"
 
-namespace PLMD{
-namespace function{
+namespace PLMD {
+namespace function {
 
 /**
 \ingroup INHERIT
-This is the abstract base class to use for implementing new CV function, within it there is 
+This is the abstract base class to use for implementing new CV function, within it there is
 \ref AddingAFunction "information" as to how to go about implementing a new function.
 */
 
@@ -42,27 +43,27 @@ protected:
   void setDerivative(int,double);
   void setDerivative(Value*,int,double);
   void addValueWithDerivatives();
-  void addComponentWithDerivatives( const std::string& name ); 
+  void addComponentWithDerivatives( const std::string& name );
 public:
-  Function(const ActionOptions&);
-  virtual ~Function(){}
+  explicit Function(const ActionOptions&);
+  virtual ~Function() {}
   void apply();
   static void registerKeywords(Keywords&);
   unsigned getNumberOfDerivatives();
 };
 
 inline
-void Function::setDerivative(Value*v,int i,double d){
+void Function::setDerivative(Value*v,int i,double d) {
   v->addDerivative(i,d);
 }
 
 inline
-void Function::setDerivative(int i,double d){
+void Function::setDerivative(int i,double d) {
   setDerivative(getPntrToValue(),i,d);
 }
 
 inline
-unsigned Function::getNumberOfDerivatives(){
+unsigned Function::getNumberOfDerivatives() {
   return getNumberOfArguments();
 }
 

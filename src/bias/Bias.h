@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -28,12 +28,12 @@
 
 #define PLUMED_BIAS_INIT(ao) Action(ao),Bias(ao)
 
-namespace PLMD{
-namespace bias{
+namespace PLMD {
+namespace bias {
 
 /**
 \ingroup INHERIT
-This is the abstract base class to use for implementing new simulation biases, within it there is 
+This is the abstract base class to use for implementing new simulation biases, within it there is
 information as to how to go about implementing a new bias.
 */
 
@@ -42,30 +42,35 @@ class Bias :
   public ActionWithValue,
   public ActionWithArguments
 {
+/// the vector of the forces
   std::vector<double> outputForces;
+/// the pointer to the bias component
+  Value *valueBias;
 protected:
-  void resetOutputForces();
-  void setOutputForce(int i,double g);
+/// set the force from the bias on argument i, this automatically set the partial derivative of the bias with respect to i to -f
+  void setOutputForce(int i,double f);
+/// set the value of the bias
+  void setBias(double bias);
 public:
   static void registerKeywords(Keywords&);
-  Bias(const ActionOptions&ao);
+  explicit Bias(const ActionOptions&ao);
   void apply();
   unsigned getNumberOfDerivatives();
-  void turnOnDerivatives();
 };
 
 inline
-void Bias::setOutputForce(int i,double f){
+void Bias::setOutputForce(int i,double f) {
   outputForces[i]=f;
+  valueBias->addDerivative(i,-f);
 }
 
 inline
-void Bias::resetOutputForces(){
-  for(unsigned i=0;i<outputForces.size();++i) outputForces[i]=0.0;
+void Bias::setBias(double bias) {
+  valueBias->set(bias);
 }
 
 inline
-unsigned Bias::getNumberOfDerivatives(){
+unsigned Bias::getNumberOfDerivatives() {
   return getNumberOfArguments();
 }
 

@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -33,12 +33,12 @@ namespace analysis {
 class LandmarkSelectionBase;
 
 class AnalysisWithLandmarks : public Analysis {
-friend class LandmarkSelectionBase;
-friend class CopyAllFrames;
+  friend class LandmarkSelectionBase;
+  friend class CopyAllFrames;
 private:
 /// This object selects landmarks from the data
   LandmarkSelectionBase* landmarkSelector;
-/// A pointer to the data we are analyzing             
+/// A pointer to the data we are analyzing
   MultiReferenceBase* data_to_analyze;
 protected:
 /// Set the data that needs to be analyzed
@@ -47,13 +47,13 @@ protected:
   unsigned getNumberOfLandmarks() const ;
 public:
   static void registerKeywords( Keywords& keys );
-  AnalysisWithLandmarks( const ActionOptions& );
+  explicit AnalysisWithLandmarks( const ActionOptions& );
   ~AnalysisWithLandmarks();
 /// Do the analysis
   void performAnalysis();
   virtual void analyzeLandmarks()=0;
 /// This does nothing
-  void performTask( const unsigned& , const unsigned& , MultiValue& ) const ;
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const ;
 };
 
 }

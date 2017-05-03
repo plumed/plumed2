@@ -1,5 +1,6 @@
 /compile_options.sh
-/Config.cpp
-/ConfigInstall.cpp
 /install*
 /version.h
+/config.txt
+/Config.inc
+/ConfigInstall.inc

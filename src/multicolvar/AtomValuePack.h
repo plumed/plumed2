@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014,2015 The plumed team
+   Copyright (c) 2014-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -34,6 +34,8 @@ namespace multicolvar {
 class CatomPack;
 
 class AtomValuePack {
+  friend class MultiColvarBase;
+  friend class LocalAverage;
 private:
 /// Copy of the values that we are adding to
   MultiValue& myvals;
@@ -47,16 +49,24 @@ private:
   std::vector<unsigned>& sort_vector;
 /// This holds atom positions
   std::vector<Vector>& myatoms;
+///
+  void addDerivative( const unsigned&, const unsigned&, const double& );
+///
+  void addAtomsDerivatives( const unsigned&, const unsigned&, const Vector& );
+///
+  void addTemporyAtomsDerivatives( const unsigned& jder, const Vector& der );
 public:
   AtomValuePack( MultiValue& vals, MultiColvarBase const * mcolv );
 /// Set the number of atoms
   void setNumberOfAtoms( const unsigned& );
 /// Set the index for one of the atoms
-  void setIndex( const unsigned& , const unsigned& );
+  void setIndex( const unsigned&, const unsigned& );
+///
+  void setAtomIndex( const unsigned& j, const unsigned& ind );
 ///
   void setAtom( const unsigned& j, const unsigned& ind );
 ///
-  unsigned setupAtomsFromLinkCells( const unsigned& cind, const Vector& cpos, const LinkCells& linkcells );
+  unsigned setupAtomsFromLinkCells( const std::vector<unsigned>& cind, const Vector& cpos, const LinkCells& linkcells );
 ///
   unsigned getIndex( const unsigned& j ) const ;
 ///
@@ -66,29 +76,27 @@ public:
 /// Get the position of the ith atom
   Vector& getPosition( const unsigned& );
 ///
-  void setValue( const unsigned& , const double& );
+  void setValue( const unsigned&, const double& );
 ///
   void addValue( const unsigned& ival, const double& vv );
 ///
   double getValue( const unsigned& ) const ;
 ///
-  void addDerivative( const unsigned& , const unsigned& , const double& );
+  void addBoxDerivatives( const unsigned&, const Tensor& );
 ///
-  void addAtomsDerivatives( const unsigned& , const unsigned& , const Vector& );
-///
-  void addBoxDerivatives( const unsigned& , const Tensor& );
+  void addTemporyBoxDerivatives( const Tensor& vir );
 ///
   void updateUsingIndices();
 ///
   void updateDynamicList();
 ///
-  void addComDerivatives( const unsigned& , const Vector& , CatomPack& );
+  void addComDerivatives( const int&, const Vector&, CatomPack& );
 ///
   MultiValue& getUnderlyingMultiValue();
 };
 
 inline
-void AtomValuePack::setNumberOfAtoms( const unsigned& nat ){
+void AtomValuePack::setNumberOfAtoms( const unsigned& nat ) {
   natoms=nat;
 }
 
@@ -103,14 +111,18 @@ unsigned AtomValuePack::getNumberOfDerivatives() const {
 }
 
 inline
-void AtomValuePack::setIndex( const unsigned& j, const unsigned& ind ){
-  plumed_dbg_assert( j<natoms ); indices[j]=ind; 
+void AtomValuePack::setIndex( const unsigned& j, const unsigned& ind ) {
+  plumed_dbg_assert( j<natoms ); indices[j]=ind;
 }
 
 inline
-void AtomValuePack::setAtom( const unsigned& j, const unsigned& ind ){
+void AtomValuePack::setAtomIndex( const unsigned& j, const unsigned& ind ) {
   plumed_dbg_assert( j<natoms ); indices[j]=ind;
-  myatoms[j]=mycolv->getPositionOfAtomForLinkCells( ind );
+}
+
+inline
+void AtomValuePack::setAtom( const unsigned& j, const unsigned& ind ) {
+  setAtomIndex( j, ind ); myatoms[j]=mycolv->getPositionOfAtomForLinkCells( ind );
 }
 
 inline
@@ -119,18 +131,18 @@ unsigned AtomValuePack::getIndex( const unsigned& j ) const {
 }
 
 inline
-Vector& AtomValuePack::getPosition( const unsigned& iatom ){
+Vector& AtomValuePack::getPosition( const unsigned& iatom ) {
   plumed_dbg_assert( iatom<natoms );
-  return myatoms[iatom]; 
+  return myatoms[iatom];
 }
 
 inline
-void AtomValuePack::setValue( const unsigned& ival, const double& vv ){
+void AtomValuePack::setValue( const unsigned& ival, const double& vv ) {
   myvals.setValue( ival, vv );
 }
 
 inline
-void AtomValuePack::addValue( const unsigned& ival, const double& vv ){
+void AtomValuePack::addValue( const unsigned& ival, const double& vv ) {
   myvals.addValue( ival, vv );
 }
 
@@ -140,12 +152,12 @@ double AtomValuePack::getValue( const unsigned& ival ) const {
 }
 
 inline
-void AtomValuePack::addDerivative( const unsigned& ival, const unsigned& jder, const double& der ){
-  myvals.addDerivative( ival, jder, der ); 
+void AtomValuePack::addDerivative( const unsigned& ival, const unsigned& jder, const double& der ) {
+  myvals.addDerivative( ival, jder, der );
 }
 
 inline
-void AtomValuePack::addAtomsDerivatives( const unsigned& ival, const unsigned& jder, const Vector& der ){
+void AtomValuePack::addAtomsDerivatives( const unsigned& ival, const unsigned& jder, const Vector& der ) {
   plumed_dbg_assert( jder<natoms );
   myvals.addDerivative( ival, 3*indices[jder] + 0, der[0] );
   myvals.addDerivative( ival, 3*indices[jder] + 1, der[1] );
@@ -153,21 +165,35 @@ void AtomValuePack::addAtomsDerivatives( const unsigned& ival, const unsigned& j
 }
 
 inline
-void AtomValuePack::addBoxDerivatives( const unsigned& ival , const Tensor& vir ){
-  unsigned nvir=3*mycolv->getNumberOfAtoms();
-  for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) myvals.addDerivative( ival, nvir + 3*i+j, vir(i,j) );
+void AtomValuePack::addTemporyAtomsDerivatives( const unsigned& jder, const Vector& der ) {
+  plumed_dbg_assert( jder<natoms );
+  myvals.addTemporyDerivative( 3*indices[jder] + 0, der[0] );
+  myvals.addTemporyDerivative( 3*indices[jder] + 1, der[1] );
+  myvals.addTemporyDerivative( 3*indices[jder] + 2, der[2] );
 }
 
 inline
-void AtomValuePack::updateDynamicList(){
+void AtomValuePack::addTemporyBoxDerivatives( const Tensor& vir ) {
+  unsigned nvir=3*mycolv->getNumberOfAtoms();
+  for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) myvals.addTemporyDerivative( nvir + 3*i+j, vir(i,j) );
+}
+
+inline
+void AtomValuePack::addBoxDerivatives( const unsigned& ival, const Tensor& vir ) {
+  unsigned nvir=3*mycolv->getNumberOfAtoms();
+  for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) myvals.addDerivative( ival, nvir + 3*i+j, vir(i,j) );
+}
+
+inline
+void AtomValuePack::updateDynamicList() {
   if( myvals.updateComplete() ) return;
   myvals.updateDynamicList();
 }
 
 inline
-MultiValue& AtomValuePack::getUnderlyingMultiValue(){
+MultiValue& AtomValuePack::getUnderlyingMultiValue() {
   return myvals;
-} 
+}
 
 }
 }

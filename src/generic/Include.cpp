@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -26,8 +26,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace generic{
+namespace PLMD {
+namespace generic {
 
 //+PLUMEDOC GENERIC INCLUDE
 /*
@@ -68,20 +68,20 @@ class Include :
 {
 public:
   static void registerKeywords( Keywords& keys );
-  Include(const ActionOptions&ao);
-  void calculate(){}
-  void apply(){}
+  explicit Include(const ActionOptions&ao);
+  void calculate() {}
+  void apply() {}
 };
 
 PLUMED_REGISTER_ACTION(Include,"INCLUDE")
 
-void Include::registerKeywords( Keywords& keys ){
+void Include::registerKeywords( Keywords& keys ) {
   Action::registerKeywords(keys);
   keys.add("compulsory","FILE","file to be included");
 }
 
 Include::Include(const ActionOptions&ao):
-Action(ao)
+  Action(ao)
 {
   std::string f;
   parse("FILE",f);

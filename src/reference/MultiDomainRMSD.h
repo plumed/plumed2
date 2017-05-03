@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -39,7 +39,7 @@ private:
 /// Each of the domains we are calculating the distance from
   std::vector<SingleDomainRMSD*> domains;
 public:
-  MultiDomainRMSD( const ReferenceConfigurationOptions& ro );
+  explicit MultiDomainRMSD( const ReferenceConfigurationOptions& ro );
   ~MultiDomainRMSD();
 /// Read in the input from a pdb
   void read( const PDB& );
@@ -51,8 +51,8 @@ public:
 ///
   bool pcaIsEnabledForThisReference();
 //  Vector getAtomicDisplacement( const unsigned& iatom );
-  double projectAtomicDisplacementOnVector( const unsigned& iv, const Matrix<Vector>& vecs, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const ; 
-  void setupPCAStorage( ReferenceValuePack& mypack ); 
+  double projectAtomicDisplacementOnVector( const unsigned& iv, const Matrix<Vector>& vecs, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const ;
+  void setupPCAStorage( ReferenceValuePack& mypack );
 };
 
 }

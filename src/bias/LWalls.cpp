@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -26,16 +26,16 @@
 using namespace std;
 
 
-namespace PLMD{
-namespace bias{
+namespace PLMD {
+namespace bias {
 
 //+PLUMEDOC BIAS LOWER_WALLS
 /*
 Defines a wall for the value of one or more collective variables,
- which limits the region of the phase space accessible during the simulation. 
+ which limits the region of the phase space accessible during the simulation.
 
-The restraining potential starts acting on the system when the value of the CV is greater 
-(in the case of UPPER_WALLS) or lower (in the case of LOWER_WALLS) than a certain limit \f$a_i\f$ (AT) 
+The restraining potential starts acting on the system when the value of the CV is greater
+(in the case of UPPER_WALLS) or lower (in the case of LOWER_WALLS) than a certain limit \f$a_i\f$ (AT)
 minus an offset \f$o_i\f$ (OFFSET).
 The expression for the bias due to the wall is given by:
 
@@ -43,15 +43,15 @@ The expression for the bias due to the wall is given by:
   \sum_i {k_i}((x_i-a_i+o_i)/s_i)^e_i
 \f$
 
-\f$k_i\f$ (KAPPA) is an energy constant in internal unit of the code, \f$s_i\f$ (EPS) a rescaling factor and 
+\f$k_i\f$ (KAPPA) is an energy constant in internal unit of the code, \f$s_i\f$ (EPS) a rescaling factor and
 \f$e_i\f$ (EXP) the exponent determining the power law. By default: EXP = 2, EPS = 1.0, OFFSET = 0.
 
 
 \par Examples
-The following input tells plumed to add both a lower and an upper walls on the distance 
+The following input tells plumed to add both a lower and an upper walls on the distance
 between atoms 3 and 5 and the distance between atoms 2 and 4. The lower and upper limits
-are defined at different values. The strength of the walls is the same for the four cases. 
-It also tells plumed to print the energy of the walls. 
+are defined at different values. The strength of the walls is the same for the four cases.
+It also tells plumed to print the energy of the walls.
 \verbatim
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
@@ -64,21 +64,21 @@ PRINT ARG=uwall.bias,lwall.bias
 */
 //+ENDPLUMEDOC
 
-class LWalls : public Bias{
+class LWalls : public Bias {
   std::vector<double> at;
   std::vector<double> kappa;
   std::vector<double> exp;
   std::vector<double> eps;
   std::vector<double> offset;
 public:
-  LWalls(const ActionOptions&);
+  explicit LWalls(const ActionOptions&);
   void calculate();
   static void registerKeywords(Keywords& keys);
 };
 
 PLUMED_REGISTER_ACTION(LWalls,"LOWER_WALLS")
 
-void LWalls::registerKeywords(Keywords& keys){
+void LWalls::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","AT","the positions of the wall. The a_i in the expression for a wall.");
@@ -86,18 +86,16 @@ void LWalls::registerKeywords(Keywords& keys){
   keys.add("compulsory","OFFSET","0.0","the offset for the start of the wall.  The o_i in the expression for a wall.");
   keys.add("compulsory","EXP","2.0","the powers for the walls.  The e_i in the expression for a wall.");
   keys.add("compulsory","EPS","1.0","the values for s_i in the expression for a wall");
-  componentsAreNotOptional(keys);
-  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
   keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
 }
 
 LWalls::LWalls(const ActionOptions&ao):
-PLUMED_BIAS_INIT(ao),
-at(getNumberOfArguments(),0),
-kappa(getNumberOfArguments(),0.0),
-exp(getNumberOfArguments(),2.0),
-eps(getNumberOfArguments(),1.0),
-offset(getNumberOfArguments(),0.0)
+  PLUMED_BIAS_INIT(ao),
+  at(getNumberOfArguments(),0),
+  kappa(getNumberOfArguments(),0.0),
+  exp(getNumberOfArguments(),2.0),
+  eps(getNumberOfArguments(),1.0),
+  offset(getNumberOfArguments(),0.0)
 {
   // Note sizes of these vectors are automatically checked by parseVector :-)
   parseVector("OFFSET",offset);
@@ -108,29 +106,28 @@ offset(getNumberOfArguments(),0.0)
   checkRead();
 
   log.printf("  at");
-  for(unsigned i=0;i<at.size();i++) log.printf(" %f",at[i]);
+  for(unsigned i=0; i<at.size(); i++) log.printf(" %f",at[i]);
   log.printf("\n");
   log.printf("  with an offset");
-  for(unsigned i=0;i<offset.size();i++) log.printf(" %f",offset[i]);
+  for(unsigned i=0; i<offset.size(); i++) log.printf(" %f",offset[i]);
   log.printf("\n");
   log.printf("  with force constant");
-  for(unsigned i=0;i<kappa.size();i++) log.printf(" %f",kappa[i]);
+  for(unsigned i=0; i<kappa.size(); i++) log.printf(" %f",kappa[i]);
   log.printf("\n");
   log.printf("  and exponent");
-  for(unsigned i=0;i<exp.size();i++) log.printf(" %f",exp[i]);
+  for(unsigned i=0; i<exp.size(); i++) log.printf(" %f",exp[i]);
   log.printf("\n");
   log.printf("  rescaled");
-  for(unsigned i=0;i<eps.size();i++) log.printf(" %f",eps[i]);
+  for(unsigned i=0; i<eps.size(); i++) log.printf(" %f",eps[i]);
   log.printf("\n");
 
-  addComponent("bias"); componentIsNotPeriodic("bias");
   addComponent("force2"); componentIsNotPeriodic("force2");
 }
 
-void LWalls::calculate(){
+void LWalls::calculate() {
   double ene = 0.0;
   double totf2 = 0.0;
-  for(unsigned i=0;i<getNumberOfArguments();++i){
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     const double cv=difference(i,at[i],getArgument(i));
     const double k=kappa[i];
     const double exponent=exp[i];
@@ -141,13 +138,13 @@ void LWalls::calculate(){
     if( lscale < 0.) {
       double power = pow( lscale, exponent );
       f = -( k / epsilon ) * exponent * power / lscale;
-      ene += k * power; 
+      ene += k * power;
       totf2 += f * f;
     }
     setOutputForce(i,f);
   }
-  getPntrToComponent("bias")->set(ene); 
-  getPntrToComponent("force2")->set(totf2);  
+  setBias(ene);
+  getPntrToComponent("force2")->set(totf2);
 }
 
 }

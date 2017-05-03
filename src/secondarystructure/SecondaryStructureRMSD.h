@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -35,7 +35,7 @@ namespace secondarystructure {
 
 /// Base action for calculating things like AlphRMSD, AntibetaRMSD, etc
 
-class SecondaryStructureRMSD : 
+class SecondaryStructureRMSD :
   public ActionAtomistic,
   public ActionWithValue,
   public vesselbase::ActionWithVessel
@@ -49,12 +49,9 @@ private:
   std::vector< std::vector<unsigned> > colvar_atoms;
 /// The list of reference configurations
   std::vector<SingleDomainRMSD*> references;
-/// Everything for controlling the updating of neighbor lists
-  int updateFreq;
-  bool firsttime;
 /// Variables for strands cutoff
   bool align_strands;
-  double s_cutoff;
+  double s_cutoff2;
   unsigned align_atom_1, align_atom_2;
   bool verbose_output;
 /// Tempory variables for getting positions of atoms and applying forces
@@ -72,33 +69,31 @@ protected:
   void setAtomsFromStrands( const unsigned& atom1, const unsigned& atom2 );
 public:
   static void registerKeywords( Keywords& keys );
-  SecondaryStructureRMSD(const ActionOptions&);
+  explicit SecondaryStructureRMSD(const ActionOptions&);
   virtual ~SecondaryStructureRMSD();
   unsigned getNumberOfFunctionsInAction();
   unsigned getNumberOfDerivatives();
-  unsigned getNumberOfQuantities();
+  unsigned getNumberOfQuantities() const ;
   void turnOnDerivatives();
-  void prepare();
-  void finishTaskListUpdate();
   void calculate();
-  void performTask( const unsigned& , const unsigned& , MultiValue& ) const ; 
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const ;
   void apply();
-  bool isPeriodic(){ return false; }
+  bool isPeriodic() { return false; }
 };
 
 inline
-unsigned SecondaryStructureRMSD::getNumberOfQuantities(){
+unsigned SecondaryStructureRMSD::getNumberOfQuantities() const {
   return 1 + references.size();
 }
 
 
 inline
-unsigned SecondaryStructureRMSD::getNumberOfFunctionsInAction(){
+unsigned SecondaryStructureRMSD::getNumberOfFunctionsInAction() {
   return colvar_atoms.size();
 }
 
 inline
-unsigned SecondaryStructureRMSD::getNumberOfDerivatives(){
+unsigned SecondaryStructureRMSD::getNumberOfDerivatives() {
   return 3*getNumberOfAtoms()+9;
 }
 

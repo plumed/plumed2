@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -28,33 +28,35 @@
 
 #include "Exception.h"
 
-namespace PLMD{
+namespace PLMD {
 
 class Log;
 
 /// This class holds the keywords and their documentation
-class Keywords{
+class Keywords {
 /// This class lets me pass keyword types easily
-  class KeyType{
+  class KeyType {
   public:
-    enum {hidden,compulsory,flag,optional,atoms} style;
-    KeyType( const std::string& type );
+    enum {hidden,compulsory,flag,optional,atoms,vessel} style;
+    explicit KeyType( const std::string& type );
     void setStyle( const std::string& type );
     bool isCompulsory() const { return (style==compulsory); }
     bool isFlag() const { return (style==flag); }
     bool isOptional() const { return (style==optional); }
     bool isAtomList() const { return (style==atoms); }
+    bool isVessel() const { return (style==vessel); }
     std::string toString() const {
       if(style==compulsory) return "compulsory";
       else if(style==optional) return "optional";
       else if(style==atoms) return "atoms";
       else if(style==flag) return "flag";
       else if(style==hidden) return "hidden";
+      else if(style==vessel) return "vessel";
       else plumed_assert(0);
       return "";
     }
   };
-friend class Action;
+  friend class Action;
 private:
 /// Is this an action or driver (this bool affects what style==atoms does in print)
   bool isaction;
@@ -69,7 +71,7 @@ private:
 /// The documentation for the keywords
   std::map<std::string,std::string> documentation;
 /// The default values for the flags (are they on or of)
-  std::map<std::string,bool> booldefs; 
+  std::map<std::string,bool> booldefs;
 /// The default values (if there are default values) for compulsory keywords
   std::map<std::string,std::string> numdefs;
 /// The tags for atoms - we use this so the manual can differentiate between different ways of specifying atoms
@@ -92,12 +94,12 @@ public:
 /// Constructor
   Keywords() : isaction(true) {}
 ///
-  void isDriver(){ isaction=false; }
+  void isDriver() { isaction=false; }
 /// find out whether flag key is on or off by default.
   bool getLogicalDefault( std::string key, bool& def ) const ;
 /// Get the value of the default for the keyword named key
   bool getDefaultValue( std::string key, std::string& def ) const ;
-/// Return the number of defined keywords 
+/// Return the number of defined keywords
   unsigned size() const;
 /// Check if numbered keywords are allowed for this action
   bool numbered( const std::string & k ) const ;
@@ -107,10 +109,10 @@ public:
   void print( Log& log ) const ;
 /// Print the documentation to a file (use by PLUMED::CLTool::readCommandLineArgs)
   void print( FILE* out ) const ;
-/// Reserve a keyword 
-  void reserve( const std::string & t, const std::string & k, const std::string & d, const bool isvessel=false );
+/// Reserve a keyword
+  void reserve( const std::string & t, const std::string & k, const std::string & d );
 /// Reserve a flag
-  void reserveFlag( const std::string & k, const bool def, const std::string & d, const bool isvessel=false );
+  void reserveFlag( const std::string & k, const bool def, const std::string & d );
 /// Use one of the reserved keywords
   void use( const std::string  & k );
 /// Get the ith keyword
@@ -131,6 +133,8 @@ public:
   bool style( const std::string & k, const std::string & t ) const ;
 /// Print an html version of the documentation
   void print_html() const ;
+/// Print keywords in form readable by vim
+  void print_vim() const ;
 /// Print the template version for the documenation
   void print_template( const std::string& actionname, bool include_optional) const ;
 /// Change the style of a keyword
@@ -139,9 +143,9 @@ public:
   void add( const Keywords& keys );
 /// Copy the keywords data
   void copyData( std::vector<std::string>& kk, std::vector<std::string>& rk, std::map<std::string,KeyType>& tt, std::map<std::string,bool>& am,
-                         std::map<std::string,std::string>& docs, std::map<std::string,bool>& bools, std::map<std::string,std::string>& nums,
-                         std::map<std::string,std::string>& atags, std::vector<std::string>& cnam, std::map<std::string,std::string>& ck,
-                         std::map<std::string,std::string>& cd ) const ;
+                 std::map<std::string,std::string>& docs, std::map<std::string,bool>& bools, std::map<std::string,std::string>& nums,
+                 std::map<std::string,std::string>& atags, std::vector<std::string>& cnam, std::map<std::string,std::string>& ck,
+                 std::map<std::string,std::string>& cd ) const ;
 /// Clear everything from the keywords object
   void destroyData();
 /// Set the text that introduces how the components for this action are introduced

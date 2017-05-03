@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -24,7 +24,7 @@
 
 #include <string>
 
-namespace PLMD{
+namespace PLMD {
 
 /**
 \ingroup TOOLBOX
@@ -38,7 +38,7 @@ one can also use strings such as kcal/mol.
 
 
 */
-class Units{
+class Units {
 /// Units for energy, expressed in kj/mol (e.g. 4.184 means kcal/mol)
   double energy;
   std::string energyString;
@@ -48,6 +48,12 @@ class Units{
 /// Units for time, expressed in ps (e.g. 0.001 means fs)
   double time;
   std::string timeString;
+/// Units for charges, expressed in proton charge (e.g. 1./18.2223 are sqrt(kcal/mol*A), as used in Amber)
+  double charge;
+  std::string chargeString;
+/// Units for masses, expressed in amu
+  double mass;
+  std::string massString;
 public:
 /// Constructor, setting default values (1.0)
   Units();
@@ -63,6 +69,10 @@ public:
 /// Also understands the following strings:
 /// nm, A, um.
   void setLength(const std::string &);
+/// Set charge units from string.
+  void setCharge(const std::string &);
+/// Set mass units from string.
+  void setMass(const std::string &);
 /// Set energy units from double.
 /// Should be specified in units of kj/mol (e.g. 4.184 means kcal/mol)
   void setEnergy(double);
@@ -72,49 +82,84 @@ public:
 /// Set lenght units from double.
 /// Should be specified in units of nm (e.g. 0.1 means A)
   void setLength(double);
+/// Set charge units from double.
+/// Should be specified in units of proton charge.
+  void setCharge(double);
+/// Set mass units from double.
+/// Should be specified in units of amu.
+  void setMass(double);
 /// Get energy units as double.
   const double & getEnergy()const;
 /// Get length units as double.
   const double & getLength()const;
 /// Get time units as double.
   const double & getTime()const;
+/// Get charge units as double.
+  const double & getCharge()const;
+/// Get mass units as double.
+  const double & getMass()const;
 /// Get energy units as string.
   const std::string & getEnergyString()const;
 /// Get length units as string.
   const std::string & getLengthString()const;
 /// Get time units as string.
   const std::string & getTimeString()const;
+/// Get charge units as string.
+  const std::string & getChargeString()const;
+/// Get mass units as string.
+  const std::string & getMassString()const;
 };
 
 inline
-const double & Units::getEnergy()const{
+const double & Units::getEnergy()const {
   return energy;
 }
 
 inline
-const double & Units::getLength()const{
+const double & Units::getLength()const {
   return length;
 }
 
 inline
-const double & Units::getTime()const{
+const double & Units::getTime()const {
   return time;
 }
 
 inline
-const std::string & Units::getEnergyString()const{
+const double & Units::getCharge()const {
+  return charge;
+}
+
+inline
+const double & Units::getMass()const {
+  return mass;
+}
+
+inline
+const std::string & Units::getEnergyString()const {
   return energyString;
 }
 
 inline
-const std::string & Units::getLengthString()const{
+const std::string & Units::getLengthString()const {
   return lengthString;
 }
 
 inline
-const std::string & Units::getTimeString()const{
+const std::string & Units::getTimeString()const {
   return timeString;
 }
+
+inline
+const std::string & Units::getChargeString()const {
+  return chargeString;
+}
+
+inline
+const std::string & Units::getMassString()const {
+  return massString;
+}
+
 
 
 }

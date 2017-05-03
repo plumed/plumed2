@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -23,38 +23,38 @@
 #include "VesselRegister.h"
 
 namespace PLMD {
-namespace vesselbase{
+namespace vesselbase {
 
 class Lowest : public OrderingVessel {
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
-  Lowest( const VesselOptions& da );
+  explicit Lowest( const VesselOptions& da );
   std::string value_descriptor();
-  bool compare( const double& , const double& );
+  bool compare( const double&, const double& );
 };
 
 PLUMED_REGISTER_VESSEL(Lowest,"LOWEST")
 
-void Lowest::registerKeywords( Keywords& keys ){
+void Lowest::registerKeywords( Keywords& keys ) {
   OrderingVessel::registerKeywords( keys );
 }
 
-void Lowest::reserveKeyword( Keywords& keys ){
-  keys.reserveFlag("LOWEST",false,"calculate the lowest of these variables.",true);
+void Lowest::reserveKeyword( Keywords& keys ) {
+  keys.reserve("vessel","LOWEST","this flag allows you to recover the lowest of these variables.");
   keys.addOutputComponent("lowest","LOWEST","the lowest of the quantitities calculated by this action");
 }
 
 Lowest::Lowest( const VesselOptions& da ) :
-OrderingVessel(da)
+  OrderingVessel(da)
 {
 }
 
-std::string Lowest::value_descriptor(){
+std::string Lowest::value_descriptor() {
   return "the lowest of the individual colvar values";
 }
 
-bool Lowest::compare( const double& val1, const double& val2 ){
+bool Lowest::compare( const double& val1, const double& val2 ) {
   return val1<val2;
 }
 

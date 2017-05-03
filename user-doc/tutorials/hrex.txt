@@ -1,0 +1,170 @@
+/**
+\page hrex Using Hamiltonian replica exchange with GROMACS
+
+When patching GROMACS with PLUMED, it is also possible to perform 
+Hamiltonian replica exchange with different topologies.
+Although this feature is provided together with PLUMED, it is actually
+a new feature for GROMACS itself that can be enabled using the `-hrex`
+flag of `mdrun`.
+This implementation is very close to the one used to produce the data in this paper
+\cite bussi2013mp. In case you find it useful, please cite this paper.
+
+\warning This feature is currently used by several groups and should be
+robust enough. However, be sure that you understand its limitations and
+to perform all the tests discussed in this page before using it in production.
+
+In this short tutorial you will learn how to do two things:
+- Generate scaled topologies with `plumed partial_tempering`. This is actually not directly related to
+  the `-hrex` flag.
+- Run GROMACS with replica exchange and multiple topologies.
+
+\section multipletopologies Generate scaled topologies
+
+Plumed comes with a `partial_tempering` command line tool that can be used to generate
+scaled topologies. Notice that you might want to generate these topologies
+by yourself. This step is totally independent from the use of the `-hrex` flag.
+
+The `partial_tempering` tool can be invoked as follows:
+\verbatim
+  plumed partial_tempering scale < processed.top
+\endverbatim
+
+where scale is the Hamiltonian scaling factor and
+processed.top is a post-processed topology file (i.e. produced with grompp -pp)
+where each "hot" atom has a "_" appended to the atom type, e.g. change this
+\verbatim
+     1         HC     1    ACE   HH31      1     0.1123      1.008   ; qtot 0.1123
+\endverbatim
+to this:
+\verbatim
+     1         HC_    1    ACE   HH31      1     0.1123      1.008   ; qtot 0.1123
+\endverbatim
+
+Notice that the section that should be edited is the [atoms] section for all the
+molecules that you wish to affect (typically only for the solute, but you may also
+want to change solvent parameters).
+If you select all the atoms of the solute, you will be able to prepare topologies
+such as those needed in a REST2 simulation
+\cite wang2011replica.
+
+Also remember to first produce the processed.top file with grompp -pp. Editing a normal
+topol.top file will not work, because it does not contain all the parameters.
+The processed.top file should not have any "#include" statement.
+
+\verbatim
+# produce a processed topology
+grompp -pp
+# choose the "hot" atoms
+vi processed.top
+# generate the actual topology
+plumed partial_tempering $scale < processed.top > topol$i.top
+\endverbatim
+
+Warnings:
+- It's not very robust and there might be force-field dependent issues!
+- It certainly does not work with charmm cmap
+
+Suggested tests:
+1. Compare partial_tempering with scale=1.0 to non-scaled force field. E.g.
+\verbatim
+grompp -o topol-unscaled.tpr
+grompp -pp
+vi processed.top # choose the "hot" atoms appending "_". You can choose whatever.
+plumed partial_tempering 1.0 < processed.top > topol-scaled.top # scale with factor 1
+grompp -p topol-scaled.top -o topol-scaled.tpr
+# Then do a rerun on a trajectory
+mdrun -s topol-unscaled.tpr -rerun rerun.trr
+mdrun -s topol-scaled.tpr -rerun rerun.trr
+# and compare the resuling energy files. they should be identical
+\endverbatim
+2. Compare partial_tempering with scale=0.5 to non-scaled force field.
+Repeat the same procedure but using "plumed partial_tempering 0.5".
+Choose all the atoms in all the relevant [atoms] sections (e.g. solute, solvent and ions).
+In the two resulting energy files you should see:
+long range electrostatics, LJ, and dihedral energy is *half* in the scaled case
+all other terms (bonds/bends) are identical.
+
+\section hrexpatch Run GROMACS
+
+If GROMACS has been patched with PLUMED it should accept the -hrex option
+in mdrun. Please double check this (mdrun -h should list this possibility).
+Notice that not all the versions of GROMACS allow this feature.
+First of all prepare separate topologies for each replicas using `plumed partial_tempering`
+tool as shown above (or using some other tool). Then run a normal replica exchange with gromacs adding the flag "-hrex" on the command line.
+
+A complete run script could be adapted from the following
+\verbatim
+# five replicas
+nrep=5
+# "effective" temperature range
+tmin=300
+tmax=1000
+
+# build geometric progression
+list=$(
+awk -v n=$nrep \
+    -v tmin=$tmin \
+    -v tmax=$tmax \
+  'BEGIN{for(i=0;i<n;i++){
+    t=tmin*exp(i*log(tmax/tmin)/(n-1));
+    printf(t); if(i<n-1)printf(",");
+  }
+}'
+)
+
+# clean directory
+rm -fr \#*
+rm -fr topol*
+
+for((i=0;i<nrep;i++))
+do
+
+# choose lambda as T[0]/T[i]
+# remember that high temperature is equivalent to low lambda
+  lambda=$(echo $list | awk 'BEGIN{FS=",";}{print $1/$'$((i+1))';}')
+# process topology
+# (if you are curious, try "diff topol0.top topol1.top" to see the changes)
+  plumed partial_tempering $lambda < processed.top > topol$i.top
+# prepare tpr file
+# -maxwarn is often needed because box could be charged
+  grompp_mpi_d  -maxwarn 1 -o topol$i.tpr -f grompp$i.mdp -p topol$i.top
+done
+mpirun -np $nrep gmx_mpi mdrun_d -v -plumed plumed.dat -multi $nrep -replex 100 -nsteps 15000000 -hrex
+\endverbatim
+
+Notice that total cell could be charged. This happens whenever the scaled portion of the system
+is not neutral. There should be no problem in this. When used with pbc, GROMACS
+will add a compensating background.
+
+Suggested check:
+- Try with several identical force fields (hardcode the same lambda for all replicas in the
+  script above) and different seed/starting point. Acceptance should be 1.0
+
+Notice that when you run with GPUs acceptance could be different from 1.0.
+The reason is that to compute the acceptance GROMACS is sending the coordinates to the neighboring
+replicas which then recompute energy. If all the tpr files are identical, one would expect
+energy to be identically to the originally computed one. However, calculations
+made with GPUs are typically not reproducible to machine precision. For a large system, even
+an error in the total energy for the last significant digit could be on the order of a kJ.
+This results in practice in a lower acceptance. The error induced on the final ensemble is
+expected to be very small.
+
+
+Warnings:
+- Topologies should have the same number of atoms, same masses and same constraint topology.
+  Some of these differences (e.g. masses) are not explicitly checked and might lead to
+  unnoticed errors in the final results.
+- Choose neighbor list update (nstlist) that divides replex. Notice that running with GPUs
+  GROMACS is going to change nstlist automatically, be sure that it still divides replex.
+- Option -hrex requires also option -plumed. If you do not care about plumed, just provide an empty
+  plumed.dat file.
+- It should work correctly if replicas have different force-field, temperature, lambda, pressure,
+  in any combination. However, not all these combinations have been tried in practice, so
+  please first test the code on a system for which you know the result.
+
+
+*/
+
+link: @subpage hrex
+
+description: This tutorial explains how to use Hamiltonian replica exchange in GROMACS

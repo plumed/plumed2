@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -26,7 +26,7 @@
 #include "Tensor.h"
 #include <vector>
 
-namespace PLMD{
+namespace PLMD {
 
 class Log;
 
@@ -220,7 +220,7 @@ public:
   std::vector<double> dmatdp1;
 
   /// constructor: need the two structure, the alignment vector and  the log reference
-  Kearsley(  const std::vector<Vector> &p0, const std::vector<Vector> &p1,  const std::vector<double> &align , Log* &log);
+  Kearsley(  const std::vector<Vector> &p0, const std::vector<Vector> &p1,  const std::vector<double> &align, Log* &log);
   /// switch the assignment of the structure p0 (e.g. at each md step)
   void assignP0(const std::vector<Vector> & p0);
   /// derivatives: derivative of the error respect p1

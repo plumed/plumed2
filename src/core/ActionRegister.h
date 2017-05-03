@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -28,7 +28,7 @@
 #include <iosfwd>
 #include "tools/Keywords.h"
 
-namespace PLMD{
+namespace PLMD {
 
 class Action;
 class ActionOptions;
@@ -42,7 +42,7 @@ class ActionOptions;
 /// If the same directive is used for different classes, it is automatically disabled
 /// to avoid random results.
 ///
-class ActionRegister{
+class ActionRegister {
 /// Write on a stream the list of registered directives
   friend std::ostream &operator<<(std::ostream &,const ActionRegister&);
 /// Pointer to a function which, given the options, create an Action
@@ -74,9 +74,9 @@ public:
 /// Create an Action of the type indicated in the options
 /// \param ao object containing information for initialization, such as the full input line, a pointer to PlumedMain, etc
   Action* create(const ActionOptions&ao);
-/// Print out the keywords for an action in html ready for input into the manual
-  bool printManual(const std::string& action); 
-/// Print out a template command for an action 
+/// Print out the keywords for an action in html/vim ready for input into the manual
+  bool printManual(const std::string& action, const bool& vimout);
+/// Print out a template command for an action
   bool printTemplate(const std::string& action, bool include_optional);
   void remove(creator_pointer);
   ~ActionRegister();

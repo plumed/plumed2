@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -27,8 +27,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace setup{
+namespace PLMD {
+namespace setup {
 
 //+PLUMEDOC GENERIC RESTART
 /*
@@ -46,7 +46,7 @@ and disable restart for that single action.
 
 \attention
 This directive can have also other side effects, e.g. on \ref METAD
-and on some analysis action.
+and \ref PBMETAD and on some analysis action.
 
 \par Examples
 
@@ -88,25 +88,25 @@ class Restart :
 {
 public:
   static void registerKeywords( Keywords& keys );
-  Restart(const ActionOptions&ao);
+  explicit Restart(const ActionOptions&ao);
 };
 
 PLUMED_REGISTER_ACTION(Restart,"RESTART")
 
-void Restart::registerKeywords( Keywords& keys ){
+void Restart::registerKeywords( Keywords& keys ) {
   ActionSetup::registerKeywords(keys);
   keys.addFlag("NO",false,"switch off restart - can be used to override the behavior of the MD engine");
 }
 
 Restart::Restart(const ActionOptions&ao):
-Action(ao),
-ActionSetup(ao)
+  Action(ao),
+  ActionSetup(ao)
 {
   bool no=false;
   parseFlag("NO",no);
   bool md=plumed.getRestart();
   log<<"  MD code "<<(md?"did":"didn't")<<" require restart\n";
-  if(no){
+  if(no) {
     if(md) log<<"  Switching off restart\n";
     plumed.setRestart(false);
     log<<"  Not restarting simulation: files will be backed up\n";

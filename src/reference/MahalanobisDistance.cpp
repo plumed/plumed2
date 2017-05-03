@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -26,14 +26,14 @@ namespace PLMD {
 
 class MahalanobisDistance : public ArgumentOnlyDistance {
 public:
-  MahalanobisDistance( const ReferenceConfigurationOptions& ro );
+  explicit MahalanobisDistance( const ReferenceConfigurationOptions& ro );
 };
 
 PLUMED_REGISTER_METRIC(MahalanobisDistance,"MAHALANOBIS")
 
 MahalanobisDistance::MahalanobisDistance( const ReferenceConfigurationOptions& ro ):
-ReferenceConfiguration(ro),
-ArgumentOnlyDistance(ro)
+  ReferenceConfiguration(ro),
+  ArgumentOnlyDistance(ro)
 {
   hasmetric=true;
 }

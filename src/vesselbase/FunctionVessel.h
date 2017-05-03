@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -29,13 +29,13 @@
 #include "core/Value.h"
 
 namespace PLMD {
-namespace vesselbase{
+namespace vesselbase {
 
 /**
 \ingroup TOOLBOX
 Objects that inherit from FunctionVessel can be used (in tandem with PLMD::vesselbase::ActionWithVessel) to calculate
 functions of the form \f$\prod_k H_k[ \sum_j \prod_i g_i(x) ]\f$.  They should take in a series of values
-and return one single value.   
+and return one single value.
 */
 
 class FunctionVessel : public ValueVessel {
@@ -48,11 +48,11 @@ protected:
   bool usetol;
 public:
   static void registerKeywords( Keywords& keys );
-  FunctionVessel( const VesselOptions& );
+  explicit FunctionVessel( const VesselOptions& );
 /// This does the resizing of the buffer
   virtual void resize();
 /// Do the calcualtion
-  virtual bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
+  virtual void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
 /// Do any transformations of the value that are required
   virtual double calcTransform( const double& val, double& df ) const ;
 /// Finish the calculation of the quantity

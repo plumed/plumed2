@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -27,8 +27,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace colvar{
+namespace PLMD {
+namespace colvar {
 
 //+PLUMEDOC COLVAR VOLUME
 /*
@@ -49,7 +49,7 @@ PRINT ARG=vol
 class Volume : public Colvar {
 
 public:
-  Volume(const ActionOptions&);
+  explicit Volume(const ActionOptions&);
 // active methods:
   virtual void calculate();
 /// Register all the keywords for this action
@@ -59,7 +59,7 @@ public:
 PLUMED_REGISTER_ACTION(Volume,"VOLUME")
 
 Volume::Volume(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao)
+  PLUMED_COLVAR_INIT(ao)
 {
   std::vector<AtomNumber> atoms;
   checkRead();
@@ -68,7 +68,7 @@ PLUMED_COLVAR_INIT(ao)
   requestAtoms(atoms);
 }
 
-void Volume::registerKeywords( Keywords& keys ){
+void Volume::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
@@ -76,7 +76,7 @@ void Volume::registerKeywords( Keywords& keys ){
 
 
 // calculator
-void Volume::calculate(){
+void Volume::calculate() {
 
   double v=getBox().determinant();
   setBoxDerivatives(-v*Tensor::identity());

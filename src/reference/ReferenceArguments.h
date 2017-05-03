@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -29,16 +29,16 @@ namespace PLMD {
 
 /// \ingroup TOOLBOX
 /// In many applications (e.g. paths, fields, property maps) it is necessary to calculate
-/// the distance between two configurations.  These distances can be calculated in a variety of 
+/// the distance between two configurations.  These distances can be calculated in a variety of
 /// different ways.  For instance, one can assert that the distance between the two configuration
 /// is the distance one would have to move all the atoms to transform configuration 1 into configuration
 /// 2. Alternatively, one could calculate the values of a large set of collective coordinates in the two
-/// configurations and then calculate the Euclidean distances between these two points in the resulting 
-/// high-dimensional vector space.  Lastly, one can combine these two forms of distance calculation to calculate 
+/// configurations and then calculate the Euclidean distances between these two points in the resulting
+/// high-dimensional vector space.  Lastly, one can combine these two forms of distance calculation to calculate
 /// a hybrid distance.  Plumed allows one to use all these forms of distance calculations and also to implement
 /// new forms of distance.  You should inherit from this class if your distance involves reference colvar values.
-/// This class and \ref PLMD::ReferenceAtoms mirror the functionalities in \ref PLMD::ActionWithArguments and 
-/// \ref PLMD::ActionAtomistic respectively but for distances.  
+/// This class and \ref PLMD::ReferenceAtoms mirror the functionalities in \ref PLMD::ActionWithArguments and
+/// \ref PLMD::ActionAtomistic respectively but for distances.
 
 class ReferenceArguments :
   virtual public ReferenceConfiguration
@@ -54,24 +54,21 @@ private:
 /// The names of the arguments
   std::vector<std::string> arg_names;
 /// The indices for setting derivatives
-  std::vector<unsigned> der_index;
+  std::vector<unsigned> arg_der_index;
 protected:
 /// Are we reading weights from input
   bool hasweights;
-/// Are we calculating a Malanobius distance 
+/// Are we calculating a Malanobius distance
   bool hasmetric;
 /// Read in the atoms from the pdb file
   void readArgumentsFromPDB( const PDB& pdb );
 /// Set the values of the colvars based on their current instantanous values (used in Analysis)
   void setReferenceArguments();
-/// Calculate the euclidean/malanobius distance the atoms have moved from the reference
-/// configuration in CV space
-  double calculateArgumentDistance( const std::vector<Value*> & vals, const std::vector<double>& arg, ReferenceValuePack& myder, const bool& squared ) const ;
 public:
-  ReferenceArguments( const ReferenceConfigurationOptions& ro );
+  explicit ReferenceArguments( const ReferenceConfigurationOptions& ro );
 /// Get the number of reference arguments
   unsigned getNumberOfReferenceArguments() const ;
-/// Get the arguments required 
+/// Get the arguments required
   void getArgumentRequests( std::vector<std::string>&, bool disable_checks=false );
 /// Set the names of the arguments
   void setArgumentNames( const std::vector<std::string>& arg_vals );
@@ -86,6 +83,9 @@ public:
   const std::vector<double>& getReferenceMetric();
 /// Return names
   const std::vector<std::string>& getArgumentNames();
+/// Calculate the euclidean/malanobius distance the atoms have moved from the reference
+/// configuration in CV space
+  virtual double calculateArgumentDistance( const std::vector<Value*> & vals, const std::vector<double>& arg, ReferenceValuePack& myder, const bool& squared ) const ;
 };
 
 inline
@@ -95,12 +95,12 @@ double ReferenceArguments::getReferenceArgument( const unsigned& i ) const {
 }
 
 inline
-const std::vector<double>& ReferenceArguments::getReferenceArguments(){
+const std::vector<double>& ReferenceArguments::getReferenceArguments() {
   return reference_args;
 }
 
 inline
-const std::vector<std::string>& ReferenceArguments::getArgumentNames(){
+const std::vector<std::string>& ReferenceArguments::getArgumentNames() {
   return arg_names;
 }
 

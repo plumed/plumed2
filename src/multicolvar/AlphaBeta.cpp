@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -28,17 +28,17 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace multicolvar{
+namespace PLMD {
+namespace multicolvar {
 
-//+PLUMEDOC COLVAR ALPHABETA 
+//+PLUMEDOC COLVAR ALPHABETA
 /*
 Measures a distance including pbc between the instantaneous values of a set of torsional angles and set of reference values.
 
 This colvar calculates the following quantity.
 
 \f[
-s = \frac{1}{2} \sum_i \left[ 1 + \cos( \phi_i - \phi_i^{\textrm{Ref}} ) \right]   
+s = \frac{1}{2} \sum_i \left[ 1 + \cos( \phi_i - \phi_i^{\textrm{Ref}} ) \right]
 \f]
 
 where the \f$\phi_i\f$ values are the instantaneous values for the \ref TORSION angles of interest.
@@ -50,8 +50,8 @@ The following provides an example of the input for an alpha beta similarity.
 
 \verbatim
 ALPHABETA ...
-ATOMS1=168,170,172,188 REFERENCE1=3.14 
-ATOMS2=170,172,188,190 REFERENCE2=3.14 
+ATOMS1=168,170,172,188 REFERENCE1=3.14
+ATOMS2=170,172,188,190 REFERENCE2=3.14
 ATOMS3=188,190,192,230 REFERENCE3=3.14
 LABEL=ab
 ... ALPHABETA
@@ -62,16 +62,16 @@ Because all the reference values are the same we can calculate the same quantity
 
 \verbatim
 ALPHABETA ...
-ATOMS1=168,170,172,188 REFERENCE=3.14 
-ATOMS2=170,172,188,190 
-ATOMS3=188,190,192,230 
+ATOMS1=168,170,172,188 REFERENCE=3.14
+ATOMS2=170,172,188,190
+ATOMS3=188,190,192,230
 LABEL=ab
 ... ALPHABETA
 PRINT ARG=ab FILE=colvar STRIDE=10
 \endverbatim
 
 Writing out the atoms involved in all the torsions in this way can be rather tedious. Thankfully if you are working with protein you
-can avoid this by using the \ref MOLINFO command.  PLUMED uses the pdb file that you provide to this command to learn 
+can avoid this by using the \ref MOLINFO command.  PLUMED uses the pdb file that you provide to this command to learn
 about the topology of the protein molecule.  This means that you can specify torsion angles using the following syntax:
 
 \verbatim
@@ -81,11 +81,11 @@ ATOMS1=@phi-3 REFERENCE=3.14
 ATOMS2=@psi-3
 ATOMS3=@phi-4
 LABEL=ab
-... ALPHABETA 
+... ALPHABETA
 PRINT ARG=ab FILE=colvar STRIDE=10
 \endverbatim
 
-Here, \@phi-3 tells plumed that you would like to calculate the \f$\phi\f$ angle in the third residue of the protein.  
+Here, \@phi-3 tells plumed that you would like to calculate the \f$\phi\f$ angle in the third residue of the protein.
 Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle of the 4th residue of the protein.
 
 
@@ -97,51 +97,52 @@ private:
   std::vector<double> target;
 public:
   static void registerKeywords( Keywords& keys );
-  AlphaBeta(const ActionOptions&);
+  explicit AlphaBeta(const ActionOptions&);
   virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
-  bool isPeriodic(){ return false; }
+  bool isPeriodic() { return false; }
 };
 
 PLUMED_REGISTER_ACTION(AlphaBeta,"ALPHABETA")
 
-void AlphaBeta::registerKeywords( Keywords& keys ){
+void AlphaBeta::registerKeywords( Keywords& keys ) {
   MultiColvar::registerKeywords( keys );
   keys.use("ATOMS");
-  keys.add("numbered","REFERENCE","the reference values for each of the torsional angles.  If you use a single REFERENCE value the " 
-                                  "same reference value is used for all torsions");
+  keys.add("numbered","REFERENCE","the reference values for each of the torsional angles.  If you use a single REFERENCE value the "
+           "same reference value is used for all torsions");
   keys.reset_style("REFERENCE","compulsory");
 }
 
 AlphaBeta::AlphaBeta(const ActionOptions&ao):
-PLUMED_MULTICOLVAR_INIT(ao)
+  PLUMED_MULTICOLVAR_INIT(ao)
 {
   // Read in the atoms
-  int natoms=4; readAtoms( natoms );
+  int natoms=4; std::vector<AtomNumber> all_atoms;
+  readAtoms( natoms, all_atoms );
   // Resize target
   target.resize( getFullNumberOfTasks() );
   // Setup central atom indices
-  std::vector<bool> catom_ind(4, false); 
+  std::vector<bool> catom_ind(4, false);
   catom_ind[1]=catom_ind[2]=true;
   setAtomsForCentralAtom( catom_ind );
 
   // Read in reference values
   unsigned ntarget=0;
-  for(unsigned i=0;i<target.size();++i){
-     if( !parseNumbered( "REFERENCE", i+1, target[i] ) ) break;
-     ntarget++; 
+  for(unsigned i=0; i<target.size(); ++i) {
+    if( !parseNumbered( "REFERENCE", i+1, target[i] ) ) break;
+    ntarget++;
   }
-  if( ntarget==0 ){
-      parse("REFERENCE",target[0]);
-      for(unsigned i=1;i<target.size();++i) target[i]=target[0];
-  } else if( ntarget!=target.size() ){
-      error("found wrong number of REFERENCE values");
+  if( ntarget==0 ) {
+    parse("REFERENCE",target[0]);
+    for(unsigned i=1; i<target.size(); ++i) target[i]=target[0];
+  } else if( ntarget!=target.size() ) {
+    error("found wrong number of REFERENCE values");
   }
 
   // And setup the ActionWithVessel
-  if( getNumberOfVessels()==0 ){
-     std::string fake_input;
-     addVessel( "SUM", fake_input, -1 );  // -1 here means that this value will be named getLabel()
-     readVesselKeywords();  // This makes sure resizing is done
+  if( getNumberOfVessels()==0 ) {
+    std::string fake_input;
+    addVessel( "SUM", fake_input, -1 );  // -1 here means that this value will be named getLabel()
+    readVesselKeywords();  // This makes sure resizing is done
   }
 
   // And check everything has been read in correctly
@@ -149,30 +150,28 @@ PLUMED_MULTICOLVAR_INIT(ao)
 }
 
 double AlphaBeta::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
-  Vector d0,d1,d2;
-  d0=getSeparation(myatoms.getPosition(1),myatoms.getPosition(0));
-  d1=getSeparation(myatoms.getPosition(2),myatoms.getPosition(1));
-  d2=getSeparation(myatoms.getPosition(3),myatoms.getPosition(2));
+  const Vector d0=getSeparation(myatoms.getPosition(1),myatoms.getPosition(0));
+  const Vector d1=getSeparation(myatoms.getPosition(2),myatoms.getPosition(1));
+  const Vector d2=getSeparation(myatoms.getPosition(3),myatoms.getPosition(2));
 
   Vector dd0,dd1,dd2;
   PLMD::Torsion t;
-  double value  = t.compute(d0,d1,d2,dd0,dd1,dd2);
-  double svalue = -0.5*sin(value-target[tindex]);
-  double cvalue = 1.+cos(value-target[tindex]);
+  const double value  = t.compute(d0,d1,d2,dd0,dd1,dd2);
+  const double svalue = -0.5*sin(value-target[tindex]);
+  const double cvalue = 1.+cos(value-target[tindex]);
 
   dd0 *= svalue;
   dd1 *= svalue;
   dd2 *= svalue;
-  value = 0.5*cvalue;
 
-  myatoms.addAtomsDerivatives(1, 0,dd0);
-  myatoms.addAtomsDerivatives(1, 1,dd1-dd0);
-  myatoms.addAtomsDerivatives(1, 2,dd2-dd1);
-  myatoms.addAtomsDerivatives(1, 3,-dd2);
+  addAtomDerivatives(1, 0, dd0, myatoms);
+  addAtomDerivatives(1, 1, dd1-dd0, myatoms);
+  addAtomDerivatives(1, 2, dd2-dd1, myatoms);
+  addAtomDerivatives(1, 3, -dd2, myatoms);
 
   myatoms.addBoxDerivatives(1, -(extProduct(d0,dd0)+extProduct(d1,dd1)+extProduct(d2,dd2)));
 
-  return value;
+  return 0.5*cvalue;
 }
 
 }

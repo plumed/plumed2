@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -59,13 +59,13 @@ unsigned CInterpolation::getNumberOfSplinePoints() const {
 inline
 void CInterpolation::getSplinePoint( const unsigned nn, std::vector<double>& pp ) const {
   plumed_dbg_assert( nn<splinepoints.nrows() && pp.size()==np.size() );
-  for(unsigned i=0;i<np.size();++i) pp[i]=splinepoints(nn,i); 
+  for(unsigned i=0; i<np.size(); ++i) pp[i]=splinepoints(nn,i);
 }
 
 inline
 double CInterpolation::getPointSpacing( const unsigned dir, const unsigned k ) const {
   unsigned i=k*stride[dir];
-  return splinepoints(i+stride[dir], dir) - splinepoints(i, dir); 
+  return splinepoints(i+stride[dir], dir) - splinepoints(i, dir);
 }
 
 inline

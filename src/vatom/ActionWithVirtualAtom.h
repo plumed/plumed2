@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -22,11 +22,11 @@
 #ifndef __PLUMED_vatom_ActionWithVirtualAtom_h
 #define __PLUMED_vatom_ActionWithVirtualAtom_h
 #include "core/ActionWithVirtualAtom.h"
-namespace PLMD{
-namespace vatom{
+namespace PLMD {
+namespace vatom {
 // core/ActionWithVirtualAtom.h is left in core as it might be used in other classes
 // With this trick, PLMD::ActionWithVirtualAtom is visible as PLMD::vatom::ActionWithVirtualAtom
-  using PLMD::ActionWithVirtualAtom;
+using PLMD::ActionWithVirtualAtom;
 }
 }
 #endif

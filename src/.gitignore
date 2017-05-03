@@ -3,6 +3,7 @@
 # Only track modules that are part of the plumed core
 !/Makefile
 !/README
+!/adjmat
 !/analysis
 !/bias
 !/blas
@@ -13,8 +14,7 @@
 !/crystallization
 !/function
 !/generic
-!/header.sh
-!/release.sh
+!/gridtools
 !/imd
 !/lapack
 !/lib
@@ -31,6 +31,9 @@
 !/vatom
 !/vesselbase
 !/wrapper
+!/header.sh
+!/release.sh
+!/astyle.sh
 
 # And just ignore these files
 *.xxd

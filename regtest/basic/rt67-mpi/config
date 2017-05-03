@@ -1,0 +1,4 @@
+mpiprocs=4
+type=driver
+# this is to test a different name
+arg="--plumed plumed.dat --trajectory-stride 500 --timestep 0.002 --igro traj.gro"

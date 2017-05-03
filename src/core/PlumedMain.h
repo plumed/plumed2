@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -27,7 +27,7 @@
 #include <string>
 #include <vector>
 #include <set>
-#include <map>
+#include <stack>
 
 
 // !!!!!!!!!!!!!!!!!!!!!!    DANGER   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
@@ -133,12 +133,19 @@ private:
 /// Flag for restart
   bool restart;
 
+/// Flag for checkpointig
+  bool doCheckPoint;
+
   std::set<FileBase*> files;
   typedef std::set<FileBase*>::iterator files_iterator;
 
 /// Stuff to make plumed stop the MD code cleanly
   int* stopFlag;
   bool stopNow;
+
+/// Stack for update flags.
+/// Store information used in class \ref generic::UpdateIf
+  std::stack<bool> updateFlags;
 
 public:
 /// Flag to switch off virial calculation (for debug and MD codes with no barostat)
@@ -149,9 +156,6 @@ public:
 
 /// Add a citation, returning a string containing the reference number, something like "[10]"
   std::string cite(const std::string&);
-
-/// word list command
-  std::map<std::string, int> word_map;
 
 /// Get number of threads that can be used by openmp
   unsigned getNumThreads()const;
@@ -168,81 +172,104 @@ public:
   PlumedMain();
 // this is to access to WithCmd versions of cmd (allowing overloading of a virtual method)
   using WithCmd::cmd;
-/**
- cmd method, accessible with standard Plumed.h interface.
- \param key The name of the command to be executed.
- \param val The argument of the command to be executed.
- It is called as plumed_cmd() or as PLMD::Plumed::cmd()
- It is the interpreter for plumed commands. It basically contains the definition of the plumed interface.
- If you want to add a new functionality to the interface between plumed
- and an MD engine, this is the right place
- Notice that this interface should always keep retro-compatibility
-*/
+  /**
+   cmd method, accessible with standard Plumed.h interface.
+   \param key The name of the command to be executed.
+   \param val The argument of the command to be executed.
+   It is called as plumed_cmd() or as PLMD::Plumed::cmd()
+   It is the interpreter for plumed commands. It basically contains the definition of the plumed interface.
+   If you want to add a new functionality to the interface between plumed
+   and an MD engine, this is the right place
+   Notice that this interface should always keep retro-compatibility
+  */
   void cmd(const std::string&key,void*val=NULL);
   ~PlumedMain();
-/**
-  Read an input file.
-  \param str name of the file
-*/
+  /**
+    Read an input file.
+    \param str name of the file
+  */
   void readInputFile(std::string str);
-/**
-  Read an input string.
-  \param str name of the string
-*/
+  /**
+    Read an input string.
+    \param str name of the string
+  */
   void readInputWords(const std::vector<std::string> &  str);
 
-/**
-  Initialize the object.
-  Should be called once.
-*/
+  /**
+    Read an input string.
+    \param str name of the string
+    At variance with readInputWords(), this is splitting the string into words
+  */
+  void readInputLine(const std::string & str);
+
+  /**
+    Initialize the object.
+    Should be called once.
+  */
   void init();
-/**
-  Prepare the calculation.
-  Here it is checked which are the active Actions and communication of the relevant atoms is initiated.
-  Shortcut for prepareDependencies() + shareData()
-*/
+  /**
+    Prepare the calculation.
+    Here it is checked which are the active Actions and communication of the relevant atoms is initiated.
+    Shortcut for prepareDependencies() + shareData()
+  */
   void prepareCalc();
-/**
-  Prepare the list of active Actions and needed atoms.
-  Scan the Actions to see which are active and which are not, so as to prepare a list of
-  the atoms needed at this step.
-*/
+  /**
+    Prepare the list of active Actions and needed atoms.
+    Scan the Actions to see which are active and which are not, so as to prepare a list of
+    the atoms needed at this step.
+  */
   void prepareDependencies();
-/**
-  Share the needed atoms.
-  In asynchronous implementations, this method sends the required atoms to all the plumed processes,
-  without waiting for the communication to complete.
-*/
+  /**
+    Share the needed atoms.
+    In asynchronous implementations, this method sends the required atoms to all the plumed processes,
+    without waiting for the communication to complete.
+  */
   void shareData();
-/**
-  Perform the calculation.
-  Shortcut for waitData() + justCalculate() + justApply()
-*/
+  /**
+    Perform the calculation.
+    Shortcut for waitData() + justCalculate() + justApply().
+    Equivalently: waitData() + justCalculate() + backwardPropagate() + update().
+  */
   void performCalc();
-/**
-  Complete PLUMED calculation.
-  Shortcut for prepareCalc() + performCalc()
-*/
+  /**
+    Perform the calculation without update()
+    Shortcut for: waitData() + justCalculate() + backwardPropagate()
+  */
+  void performCalcNoUpdate();
+  /**
+    Complete PLUMED calculation.
+    Shortcut for prepareCalc() + performCalc()
+  */
   void calc();
-/**
-  Scatters the needed atoms.
-  In asynchronous implementations, this method waits for the communications started in shareData()
-  to be completed. Otherwise, just send around needed atoms.
-*/
+  /**
+    Scatters the needed atoms.
+    In asynchronous implementations, this method waits for the communications started in shareData()
+    to be completed. Otherwise, just send around needed atoms.
+  */
   void waitData();
-/**
-  Perform the forward loop on active actions.
-*/
+  /**
+    Perform the forward loop on active actions.
+  */
   void justCalculate();
-/**
-  Perform the backward loop on active actions.
-  Needed to apply the forces back.
-*/
+  /**
+    Backward propagate and update.
+    Shortcut for backwardPropagate() + update()
+    I leave it here for backward compatibility
+  */
   void justApply();
-/**
-  If there are calculations that need to be done at the very end of the calculations this
-  makes sures they are done
-*/
+  /**
+    Perform the backward loop on active actions.
+    Needed to apply the forces back.
+  */
+  void backwardPropagate();
+  /**
+    Call the update() method.
+  */
+  void update();
+  /**
+    If there are calculations that need to be done at the very end of the calculations this
+    makes sures they are done
+  */
   void runJobsAtEndOfCalculation();
 /// Reference to atoms object
   Atoms& getAtoms();
@@ -251,7 +278,7 @@ public:
 /// Referenge to the log stream
   Log & getLog();
 /// Return the number of the step
-  long int getStep()const{return step;}
+  long int getStep()const {return step;}
 /// Stop the run
   void exit(int c=0);
 /// Load a shared library
@@ -279,7 +306,9 @@ public:
 /// Check if restarting
   bool getRestart()const;
 /// Set restart flag
-  void setRestart(bool f){restart=f;}
+  void setRestart(bool f) {restart=f;}
+/// Check if checkpointing
+  bool getCPT()const;
 /// Set exchangeStep flag
   void setExchangeStep(bool f);
 /// Get exchangeStep flag
@@ -294,50 +323,77 @@ public:
   void resetActive(bool active);
 
 /// Access to exchange patterns
-  ExchangePatterns& getExchangePatterns(){return exchangePatterns;}
+  ExchangePatterns& getExchangePatterns() {return exchangePatterns;}
+
+/// Push a state to update flags
+  void updateFlagsPush(bool);
+/// Pop a state from update flags
+  void updateFlagsPop();
+/// Get top of update flags
+  bool updateFlagsTop();
 };
 
 /////
 // FAST INLINE METHODS:
 
 inline
-const ActionSet & PlumedMain::getActionSet()const{
+const ActionSet & PlumedMain::getActionSet()const {
   return actionSet;
 }
 
 inline
-Atoms& PlumedMain::getAtoms(){
+Atoms& PlumedMain::getAtoms() {
   return atoms;
 }
 
 inline
-const std::string & PlumedMain::getSuffix()const{
+const std::string & PlumedMain::getSuffix()const {
   return suffix;
 }
 
 inline
-void PlumedMain::setSuffix(const std::string&s){
+void PlumedMain::setSuffix(const std::string&s) {
   suffix=s;
 }
 
 inline
-bool PlumedMain::getRestart()const{
+bool PlumedMain::getRestart()const {
   return restart;
 }
 
 inline
-void PlumedMain::setExchangeStep(bool s){
+bool PlumedMain::getCPT()const {
+  return doCheckPoint;
+}
+
+inline
+void PlumedMain::setExchangeStep(bool s) {
   exchangeStep=s;
 }
 
 inline
-bool PlumedMain::getExchangeStep()const{
+bool PlumedMain::getExchangeStep()const {
   return exchangeStep;
 }
 
 inline
-void PlumedMain::resetActive(bool active){
+void PlumedMain::resetActive(bool active) {
   this->active=active;
+}
+
+inline
+void PlumedMain::updateFlagsPush(bool on) {
+  updateFlags.push(on);
+}
+
+inline
+void PlumedMain::updateFlagsPop() {
+  updateFlags.pop();
+}
+
+inline
+bool PlumedMain::updateFlagsTop() {
+  return updateFlags.top();
 }
 
 }

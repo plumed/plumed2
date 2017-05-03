@@ -15,15 +15,7 @@ All the other directories are "modules". Modules are of three type:
 Notice that these .on and .off files are not to be distributed/included in git,
 as they reflect local wishes!
 
-As a quick trick to enable all modules, including those which are off by default
-make mod-heavy
-
-On the other hand, to disable all modules which are not compulsory:
-make mod-light
-Notice that this will result in a library which cannot do anything, but can be useful
-to quickly compile tool library
-
-To reset modules, removing all .on and .off files:
-make mod-reset
+Users can control the addition of these files by using the --enable-modules option
+of configure.
 
 The type of the module can be set by adding a file module.type (see e.g. core/module.type)

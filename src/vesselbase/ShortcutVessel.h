@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -29,19 +29,19 @@
 #include "core/Value.h"
 
 namespace PLMD {
-namespace vesselbase{
+namespace vesselbase {
 
 class ShortcutVessel : public Vessel {
 protected:
-  void addVessel( const std::string& name, const std::string& intput );  
+  void addVessel( const std::string& name, const std::string& intput );
 public:
   static void registerKeywords( Keywords& keys );
-  ShortcutVessel( const VesselOptions& );
-  std::string description(){ return ""; }
-  void resize(){ plumed_error(); }
-  bool calculate( const unsigned& taskCode, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const { plumed_error(); }
-  void finish( const std::vector<double>& buffer ){ plumed_error(); }
-  bool applyForce( std::vector<double>& forces ){ plumed_error(); }
+  explicit ShortcutVessel( const VesselOptions& );
+  std::string description() { return ""; }
+  void resize() { plumed_error(); }
+  void calculate( const unsigned& taskCode, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const { plumed_error(); }
+  void finish( const std::vector<double>& buffer ) { plumed_error(); }
+  bool applyForce( std::vector<double>& forces ) { plumed_error(); }
 };
 
 }

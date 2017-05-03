@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -30,15 +30,69 @@
 using namespace std;
 
 namespace PLMD {
-namespace function{
+namespace function {
 
 //+PLUMEDOC DCOLVAR TARGET
 /*
-This function measures the pythagorean distance from a particular structure measured in the space defined by some 
+This function measures the pythagorean distance from a particular structure measured in the space defined by some
 set of collective variables.
+
+This collective variable can be used to calculate something akin to:
+
+\f[
+d(X,X') = \vert X - X' \vert
+\f]
+
+where \f$ X \f$ is the instaneous values for a set of collective variables for the system and
+\f$ X' \f$ is the values that these self-same set of collective variables take in some reference structure provided as input.
+If we call our set of collective variables \f$\{s_i\}f\$ then this CV computes:
+
+\f[
+d = \sqrt{ \sum_{i=1}^N (s_i - s_i^{(ref)})^2 }
+\f]
+
+where \f$s_i^{(ref)}\f$ are the values of the CVs in the reference structure and \f$N\f$ is the number of input CVs.
+
+We can also calculate normalized euclidean differences using this action and the METRIC=NORM-EUCLIDEAN flag.  In other words,
+we can compute:
+
+\f[
+d = \sqrt{ \sum_{i=1}^N \sigma_i (s_i - s_i^{(ref)})^2 }
+\f]
+
+where \f$\sigma_i\f$ is a vector of weights.  Lastly, by using the METRIC=MAHALONOBIS we can compute mahalonobis distances using:
+
+\f[
+d = \left( \mathbf{s} - \mathbf{s}^{(ref)} \right)^T \mathbf{\Sigma} \left( \mathbf{s} - \mathbf{s}^{(ref)} \right)
+\f]
+
+where \f$\mathbf{s}\f$ is a column vector containing the values of all the CVs and \f$\mathbf{s}^{(ref)}\f$ is a column vector
+containg the values of the CVs in the reference configuration.  \f$\mathbf{\Sigma}\f$ is then an \f$N \times N\f$ matrix that is
+specified in the input.
 
 \par Examples
 
+The following input calculates the distance between a reference configuration and the instaneous position of the system in the trajectory.
+The position of the reference configuration is specified by providing the values of the distance between atoms 1 and 2 and atoms 3 and 4.
+
+\verbatim
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+t1: TARGET REFERENCE=myref.pdb TYPE=EUCLIDEAN
+PRINT ARG=t1 FILE=colvar
+\endverbatim
+
+The contents of the file containing the reference structure (myref.pdb) is shown below.  As you can see you must provide information on the
+labels of the CVs that are being used to define the position of the reference configuration in this file together with the values that these
+quantities take in the reference configuration.
+
+\verbatim
+DESCRIPTION: a reference point.
+REMARK WEIGHT=1.0
+REMARK ARG=d1,d2
+REMARK d1=1.0 d2=1.0
+END
+\endverbatim
 
 */
 //+ENDPLUMEDOC
@@ -49,7 +103,7 @@ private:
   ReferenceValuePack mypack;
   PLMD::ArgumentOnlyDistance* target;
 public:
-  Target(const ActionOptions&);
+  explicit Target(const ActionOptions&);
   ~Target();
   virtual void calculate();
   static void registerKeywords(Keywords& keys );
@@ -57,28 +111,28 @@ public:
 
 PLUMED_REGISTER_ACTION(Target,"TARGET")
 
-void Target::registerKeywords(Keywords& keys){
-  Function::registerKeywords(keys); 
+void Target::registerKeywords(Keywords& keys) {
+  Function::registerKeywords(keys);
   keys.add("compulsory","TYPE","EUCLIDEAN","the manner in which the distance should be calculated");
   keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure. In the PDB file the atomic "
-                                    "coordinates and box lengths should be in Angstroms unless you are working with natural units. "
-                                    "If you are working with natural units then the coordinates should be in your natural length unit. "
-                                    "The charges and masses of the atoms (if required) should be inserted in the beta and occupancy "
-                                    "columns respectively. For more details on the PDB file format visit http://www.wwpdb.org/docs.html"); 
+           "coordinates and box lengths should be in Angstroms unless you are working with natural units. "
+           "If you are working with natural units then the coordinates should be in your natural length unit. "
+           "The charges and masses of the atoms (if required) should be inserted in the beta and occupancy "
+           "columns respectively. For more details on the PDB file format visit http://www.wwpdb.org/docs.html");
 }
 
 Target::Target(const ActionOptions&ao):
-Action(ao),
-Function(ao),
-myvals(1,0),
-mypack(0,0,myvals)
+  Action(ao),
+  Function(ao),
+  myvals(1,0),
+  mypack(0,0,myvals)
 {
   std::string type; parse("TYPE",type);
-  std::string reference; parse("REFERENCE",reference); 
-  checkRead(); PDB pdb; 
+  std::string reference; parse("REFERENCE",reference);
+  checkRead(); PDB pdb;
   if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength()) )
-      error("missing input file " + reference);
-  
+    error("missing input file " + reference);
+
   // Use the base ActionWithArguments to expand things like a1.*
   expandArgKeywordInPDB( pdb );
 
@@ -101,14 +155,14 @@ mypack(0,0,myvals)
   // Create the value
   addValueWithDerivatives(); setNotPeriodic();
 }
- 
-Target::~Target(){
+
+Target::~Target() {
   delete target;
 }
 
-void Target::calculate(){
+void Target::calculate() {
   mypack.clear(); double r=target->calculate( getArguments(), mypack, false ); setValue(r);
-  for(unsigned i=0;i<getNumberOfArguments();i++) setDerivative( i, mypack.getArgumentDerivative(i) );
+  for(unsigned i=0; i<getNumberOfArguments(); i++) setDerivative( i, mypack.getArgumentDerivative(i) );
 }
 
 }

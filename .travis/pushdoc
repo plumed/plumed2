@@ -15,6 +15,7 @@ cp -R $root/user-doc/{html,manual.pdf} user-doc/
 test -d $root/user-doc/regtests && cp -R $root/user-doc/regtests user-doc/ || true
 mkdir developer-doc
 cp -R $root/developer-doc/html developer-doc/
+test -d $root/developer-doc/coverage && cp -R $root/developer-doc/coverage developer-doc || true
 
 # This file should be here, it is needed otherwise
 # files beginning with _ are skipped
@@ -45,14 +46,18 @@ cat > README.md << EOF
 Precompiled manual for PLUMED ${TRAVIS_BRANCH}
 -----------------------------
 
-This repository hosts a precompiled manual
-for PLUMED ${TRAVIS_BRANCH}, git revision $hash, $(date).
-This manual has been compiled on [travis](http://travis-ci.org/plumed/plumed2).
-To browse the manual you should go
-[here](http://plumed.github.io/doc-${TRAVIS_BRANCH}).
+This repository hosts a precompiled manual for [PLUMED](http://www.plumed.org) ${TRAVIS_BRANCH},
+git revision [$hash](https://github.com/plumed/plumed2/commit/$hash).
+
+This manual has been compiled on [travis](http://travis-ci.org/plumed/plumed2) on $(date).
+
+To browse the manual you should go [here](http://plumed.github.io/doc-${TRAVIS_BRANCH}).
+
+You can also download a full copy of the manual for offline access
+at [this link](http://github.com/plumed/doc-${TRAVIS_BRANCH}/archive/gh-pages.zip).
 
 EOF
 git add --all .
 git commit -m "Update to plumed/plumed2@$hash"
-# -q is not to show the GIT_TOKEN on Travis log
-git push -q -f doc gh-pages
+# -q and 2> is not to show the GIT_TOKEN on Travis log
+git push -q -f doc gh-pages 2> /dev/null 

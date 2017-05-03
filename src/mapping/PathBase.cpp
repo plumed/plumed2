@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -23,34 +23,38 @@
 #include "tools/SwitchingFunction.h"
 
 namespace PLMD {
-namespace mapping{
+namespace mapping {
 
-void PathBase::registerKeywords( Keywords& keys ){
-  Mapping::registerKeywords( keys ); 
+void PathBase::registerKeywords( Keywords& keys ) {
+  Mapping::registerKeywords( keys );
   keys.add("compulsory","LAMBDA","the value of the lambda parameter for paths");
   keys.addFlag("NOZPATH",false,"do not calculate the zpath position");
 }
 
 PathBase::PathBase(const ActionOptions& ao):
-Action(ao),
-Mapping(ao)
+  Action(ao),
+  Mapping(ao)
 {
   weightHasDerivatives=true;
   bool noz; parseFlag("NOZPATH",noz);
   parse("LAMBDA",lambda);
 
   // Create the list of tasks
-  for(unsigned i=0;i<getNumberOfReferencePoints();++i) addTaskToList( i );
+  for(unsigned i=0; i<getNumberOfReferencePoints(); ++i) addTaskToList( i );
+  // And activate them all
+  deactivateAllTasks();
+  for(unsigned i=0; i<getFullNumberOfTasks(); ++i) taskFlags[i]=1;
+  lockContributors();
 
   std::string empty="LABEL=zpath";
   if(!noz) addVessel("ZPATH",empty,0);
 }
 
-double PathBase::getLambda(){
+double PathBase::getLambda() {
   return lambda;
 }
 
-void PathBase::calculate(){
+void PathBase::calculate() {
   // Loop over all frames is now performed by ActionWithVessel
   runAllTasks();
 }
@@ -68,7 +72,7 @@ void PathBase::performTask( const unsigned& task_index, const unsigned& current,
 
 double PathBase::transformHD( const double& dist, double& df ) const {
   double val = exp( -dist*lambda );
-  df = -lambda*val; 
+  df = -lambda*val;
   return val;
 }
 

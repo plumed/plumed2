@@ -1,10 +1,10 @@
 prot: GROUP ATOMS=1-862
-WHOLEMOLECULES ENTITY0=prot
+cs: CS2BACKBONE ATOMS=prot DATA=data NRES=56
+enscs: ENSEMBLE ARG=(cs\.hn_.*),(cs\.nh_.*),(cs\.ca_.*),(cs\.cb_.*),(cs\.co_.*),(cs\.ha_.*)
+stcs: STATS ARG=enscs.* SQDEVSUM PARARG=(cs\.exphn_.*),(cs\.expnh_.*),(cs\.expca_.*),(cs\.expcb_.*),(cs\.expco_.*),(cs\.expha_.*)
+res: RESTRAINT ARG=stcs.sqdevsum AT=0. KAPPA=0. SLOPE=12
 
-cs: CS2BACKBONE ATOMS=prot DATA=data FF=a03_gromacs.mdb NRES=56 FLAT=0.0 WRITE_CS=500 ENSEMBLE
-
-cse: RESTRAINT ARG=cs AT=0. KAPPA=0. SLOPE=24
-
-PRINT ARG=cs FILE=COLVAR STRIDE=10
+PRINT ARG=(cs\.hn_.*),(cs\.nh_.*),(cs\.ca_.*),(cs\.cb_.*),(cs\.co_.*),(cs\.ha_.*) FILE=CS STRIDE=1000
+PRINT ARG=res.bias FILE=COLVAR STRIDE=10
 
 ENDPLUMED

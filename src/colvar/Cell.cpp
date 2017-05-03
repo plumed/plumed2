@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -27,8 +27,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace colvar{
+namespace PLMD {
+namespace colvar {
 
 //+PLUMEDOC COLVAR CELL
 /*
@@ -53,7 +53,7 @@ class Cell : public Colvar {
   Value* components[3][3];
 
 public:
-  Cell(const ActionOptions&);
+  explicit Cell(const ActionOptions&);
 // active methods:
   virtual void calculate();
 /// Register all the keywords for this action
@@ -63,7 +63,7 @@ public:
 PLUMED_REGISTER_ACTION(Cell,"CELL")
 
 Cell::Cell(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao)
+  PLUMED_COLVAR_INIT(ao)
 {
   std::vector<AtomNumber> atoms;
   checkRead();
@@ -80,7 +80,7 @@ PLUMED_COLVAR_INIT(ao)
   requestAtoms(atoms);
 }
 
-void Cell::registerKeywords( Keywords& keys ){
+void Cell::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
@@ -98,13 +98,13 @@ void Cell::registerKeywords( Keywords& keys ){
 
 
 // calculator
-void Cell::calculate(){
+void Cell::calculate() {
 
-  for(int i=0;i<3;i++) for(int j=0;j<3;j++) components[i][j]->set(getBox()[i][j]);
-  for(int l=0;l<3;l++) for(int m=0;m<3;m++){
-    Tensor der; for(int i=0;i<3;i++) der[i][m]=getBox()[l][i];
-    setBoxDerivatives(components[l][m],-der);
-  }
+  for(int i=0; i<3; i++) for(int j=0; j<3; j++) components[i][j]->set(getBox()[i][j]);
+  for(int l=0; l<3; l++) for(int m=0; m<3; m++) {
+      Tensor der; for(int i=0; i<3; i++) der[i][m]=getBox()[l][i];
+      setBoxDerivatives(components[l][m],-der);
+    }
 }
 
 }

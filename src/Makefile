@@ -1,5 +1,5 @@
 
-.PHONY: all clean lib install uninstall
+.PHONY: all clean lib install uninstall install-html astyle
 
 # by default we compile the lib directory, which in turn requests all the needeed modules
 all: lib
@@ -9,6 +9,9 @@ lib:
 
 install:
 	$(MAKE) -C lib install
+
+install-html:
+	$(MAKE) -C lib install-html
 
 uninstall:
 	$(MAKE) -C lib uninstall
@@ -20,32 +23,34 @@ SUBDIRSCLEAN :=$(addsuffix .clean,$(SUBDIRS))
 
 # this is cleaning all subdirectories
 clean: $(SUBDIRSCLEAN)
-	rm -f cppcheck.log cppcheck.fatal
+	rm -f codecheck.log codecheck.fatal
 
 $(SUBDIRSCLEAN): %.clean:
 	$(MAKE) -C $* clean
 
 .PHONY: cppcheck
 cppcheck:
-	maketools/cppcheck
+	maketools/codecheck --cppcheck
 
-.PHONY: mod-light mod-heavy mod-reset
-mod-light:
-	maketools/mod.sh light
-mod-heavy:
-	maketools/mod.sh heavy
-mod-reset:
-	maketools/mod.sh reset
-	
+.PHONY: plumedcheck
+plumedcheck:
+	maketools/codecheck --plumedcheck
+
+.PHONY: codecheck
+codecheck:
+	maketools/codecheck
 
 .PHONY: help
 help:
 	@echo "Available targets are"
 	@echo "  all: compile everything (default)"
 	@echo "  clean: clean everything"
-	@echo "  cppcheck: check source (requires cppcheck installed)"
-	@echo "  mod-light: disable all optional modules"
-	@echo "  mod-heavy: enable all optional modules"
-	@echo "  mod-reset: reset optional modules to their default"
+	@echo "  codecheck: check source (requires cppcheck  and gawk installed)"
+	@echo "  cppcheck: check source (requires cppcheck and gawk installed)"
+	@echo "  plumedcheck: check source (requires gawk installed)"
+
+astyle:
+	$(MAKE) -C ../astyle
+	./astyle.sh
 
 

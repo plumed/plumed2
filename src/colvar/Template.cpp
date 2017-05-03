@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -27,8 +27,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace colvar{
+namespace PLMD {
+namespace colvar {
 
 //+PLUMEDOC COLVAR TEMPLATE
 /*
@@ -40,14 +40,22 @@ This file provides a template for if you want to introduce a new CV.
 
 <!---You should put an example of how to use your CV here--->
 
+\verbatim
+# This should be a sample input.
+t: TEMPLATE ATOMS=1,2
+PRINT ARG=t STRIDE=100 FILE=COLVAR
+\endverbatim
+<!---You should reference here the other actions used in this example--->
+(see also \ref PRINT)
+
 */
 //+ENDPLUMEDOC
-   
+
 class Template : public Colvar {
   bool pbc;
 
 public:
-  Template(const ActionOptions&);
+  explicit Template(const ActionOptions&);
 // active methods:
   virtual void calculate();
   static void registerKeywords(Keywords& keys);
@@ -55,18 +63,18 @@ public:
 
 PLUMED_REGISTER_ACTION(Template,"TEMPLATE")
 
-void Template::registerKeywords(Keywords& keys){
+void Template::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);
   keys.addFlag("TEMPLATE_DEFAULT_OFF_FLAG",false,"flags that are by default not performed should be specified like this");
   keys.addFlag("TEMPLATE_DEFAULT_ON_FLAG",true,"flags that are by default performed should be specified like this");
   keys.add("compulsory","TEMPLATE_COMPULSORY","all compulsory keywords should be added like this with a description here");
   keys.add("optional","TEMPLATE_OPTIONAL","all optional keywords that have input should be added like a description here");
-  keys.add("atoms","TEMPLATE_INPUT","the keyword with which you specify what atoms to use should be added like this");
+  keys.add("atoms","ATOMS","the keyword with which you specify what atoms to use should be added like this");
 }
 
 Template::Template(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao),
-pbc(true)
+  PLUMED_COLVAR_INIT(ao),
+  pbc(true)
 {
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
@@ -88,10 +96,10 @@ pbc(true)
 
 
 // calculator
-void Template::calculate(){
+void Template::calculate() {
 
   Vector distance;
-  if(pbc){
+  if(pbc) {
     distance=pbcDistance(getPosition(0),getPosition(1));
   } else {
     distance=delta(getPosition(0),getPosition(1));

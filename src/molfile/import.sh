@@ -26,8 +26,8 @@ function mycp_wrap {
 	i=$1
 	f=$2 
 	t=$3
-	echo "Copying $f into $t (wrapping into #ifdef $i) ..."
-	(echo "#ifdef $i";
+	echo "Copying $f into $t (wrapping into #ifndef $i) ..."
+	(echo "#ifndef $i";
          cat $f;
 	 echo "#endif";) > $t
 }
@@ -40,7 +40,7 @@ function mycp_wrap {
 #		    usually .../plugins/include
 
 PD="$1"
-IFDEF=__PLUMED_INTERNAL_MOLFILE_PLUGINS
+IFNDEF=__PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS
 
 # List of files to import from molfile_plugin/src
 for i in endianswap.h fastio.h Gromacs.h largefiles.h periodic_table.h readpdb.h; do
@@ -55,9 +55,9 @@ done
 mycp $PD/molfile_plugin/LICENSE COPYRIGHT
 
 # List of "known-good" plugins. Some renaming is necessary
-mycp_wrap $IFDEF $PD/molfile_plugin/src/dcdplugin.c dcdplugin.cpp
-mycp_wrap $IFDEF $PD/molfile_plugin/src/gromacsplugin.C gromacsplugin.cpp
-mycp_wrap $IFDEF $PD/molfile_plugin/src/pdbplugin.c pdbplugin.cpp
+mycp_wrap $IFNDEF $PD/molfile_plugin/src/dcdplugin.c dcdplugin.cpp
+mycp_wrap $IFNDEF $PD/molfile_plugin/src/gromacsplugin.C gromacsplugin.cpp
+mycp_wrap $IFNDEF $PD/molfile_plugin/src/pdbplugin.c pdbplugin.cpp
 
 
 # Generate static header

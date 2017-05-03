@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2015 The plumed team
+   Copyright (c) 2012-2016 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -30,18 +30,18 @@
 #include "core/Value.h"
 
 namespace PLMD {
-namespace vesselbase{
+namespace vesselbase {
 
 class OrderingVessel : public ValueVessel {
 private:
   StoreDataVessel* mydata;
 public:
   static void registerKeywords( Keywords& keys );
-  OrderingVessel( const VesselOptions& da );
+  explicit OrderingVessel( const VesselOptions& da );
   void resize();
-  bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const { return true; }
+  void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {}
   void finish( const std::vector<double>& buffer );
-  virtual bool compare( const double& , const double& )=0;
+  virtual bool compare( const double&, const double& )=0;
 };
 
 }
