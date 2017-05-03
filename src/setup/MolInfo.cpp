@@ -37,19 +37,22 @@ then use this information in later commands to specify atom lists in terms resid
 using this command you can find the backbone atoms in your structure automatically.
 
 \warning
-Please be aware that the pdb parser in plumed is far from perfect. You should thus check the log file
+Please be aware that the PDB parser in plumed is far from perfect. You should thus check the log file
 and examine what plumed is actually doing whenenver you use the MOLINFO action.
 Also make sure that the atoms are listed in the pdb with the correct order.
 If you are using gromacs, the safest way is to use reference pdb file
 generated with `gmx editconf -f topol.tpr -o reference.pdb`.
 
+More information of the PDB parser implemented in PLUMED can be found \ref pdbreader "at this page".
 
-Using MOLINFO with a protein's pdb extend the possibility of atoms selection using the @ special
+
+Using MOLINFO with a protein's or nucleic acid's pdb extends the possibility of atoms selection using the @ special
 symbol.
 
 Providing `MOLTYPE=protein`, `MOLTYPE=rna`, or `MOLTYPE=dna` will instruct plumed to look
-for known residues from these three types of molecule (so that any of these three choice
-can be safely used in a RNA/protein complex).
+for known residues from these three types of molecule. In other words, this is available for
+historical reasons and to allow future extensions where alternative lists will be provided.
+As of now, you can just ignore this keyoword.
 
 For protein residues, the following groups are available:
 
@@ -79,6 +82,9 @@ For DNA or RNA residues, the following groups are available:
 @v2-#
 @v3-#
 @v4-#
+
+# quadruplet corresponding to the chi torsional angle
+@chi-#
 
 # backbone, sugar, and base heavy atoms
 @back-#

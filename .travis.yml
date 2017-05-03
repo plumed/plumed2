@@ -90,6 +90,8 @@ install:
   - if test "$CPPCHECK" == yes ; then  ./.travis/install.cppcheck $CPPCHECK_VERSION ; fi
 # for plumedcheck I need latest gawk
   - if test "$CPPCHECK" == yes ; then  ./.travis/install.gawk 4.1.4 ; fi
+# for plumedcheck I need astyle
+  - if test "$CPPCHECK" == yes ; then make -j 4 -C astyle ; fi
 # installation of these packages takes a lot of time
 # we do it only when needed
   - if test "$PLUMED_CXX" == "mpic++" -a "$TRAVIS_OS_NAME" == "linux" ; then sudo apt-get install -y libopenmpi-dev openmpi-bin ; fi

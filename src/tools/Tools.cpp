@@ -133,6 +133,7 @@ vector<string> Tools::getWords(const string & line,const char* separators,int * 
     if(parenthesisLevel==0) for(unsigned j=0; j<sep.length(); j++) if(line[i]==sep[j]) found=true;
 // If at parenthesis level zero (outer)
     if(!(parenthesisLevel==0 && (found||onParenthesis))) word.push_back(line[i]);
+    if(onParenthesis) word.push_back(' ');
     if(line[i]==openpar) parenthesisLevel++;
     if(found && word.length()>0) {
       if(!parlevel) plumed_massert(parenthesisLevel==0,"Unmatching parenthesis in '" + line + "'");
@@ -160,22 +161,23 @@ bool Tools::getParsedLine(IFile& ifile,vector<string> & words) {
     trim(line);
     if(line.length()==0) continue;
     vector<string> w=getWords(line,NULL,&parlevel);
-    if(w.empty()) continue;
-    if(inside && *(w.begin())=="...") {
-      inside=false;
-      if(w.size()==2) plumed_massert(w[1]==words[0],"second word in terminating \"...\" lines, if present, should be equal to first word of directive");
-      plumed_massert(w.size()<=2,"terminating \"...\" lines cannot consist of more than two words");
-      w.clear();
-    } else if(*(w.end()-1)=="...") {
-      inside=true;
-      w.erase(w.end()-1);
-    };
-    int i0=0;
-    if(mergenext && words.size()>0 && w.size()>0) {
-      words[words.size()-1]+=" "+w[0];
-      i0=1;
+    if(!w.empty()) {
+      if(inside && *(w.begin())=="...") {
+        inside=false;
+        if(w.size()==2) plumed_massert(w[1]==words[0],"second word in terminating \"...\" lines, if present, should be equal to first word of directive");
+        plumed_massert(w.size()<=2,"terminating \"...\" lines cannot consist of more than two words");
+        w.clear();
+      } else if(*(w.end()-1)=="...") {
+        inside=true;
+        w.erase(w.end()-1);
+      };
+      int i0=0;
+      if(mergenext && words.size()>0 && w.size()>0) {
+        words[words.size()-1]+=" "+w[0];
+        i0=1;
+      }
+      for(unsigned i=i0; i<w.size(); ++i) words.push_back(w[i]);
     }
-    for(unsigned i=i0; i<w.size(); ++i) words.push_back(w[i]);
     mergenext=(parlevel>0);
     if(!inside)break;
   }
