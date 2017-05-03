@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -27,7 +27,7 @@ namespace PLMD {
 MetricRegister::~MetricRegister() {
   if(m.size()>0) {
     std::string names="";
-    for(std::map<std::string,creator_pointer>::iterator p=m.begin(); p!=m.end(); ++p) names+=p->first+" ";
+    for(const auto & p : m) names+=p.first+" ";
     std::cerr<<"WARNING: ReferenceConfiguration "+ names +" has not been properly unregistered. This might lead to memory leak!!\n";
   }
 }
@@ -38,7 +38,7 @@ MetricRegister& metricRegister() {
 }
 
 void MetricRegister::remove(creator_pointer f) {
-  for(std::map<std::string,creator_pointer>::iterator p=m.begin(); p!=m.end(); ++p) {
+  for(auto p=m.begin(); p!=m.end(); ++p) {
     if((*p).second==f) {
       m.erase(p); break;
     }

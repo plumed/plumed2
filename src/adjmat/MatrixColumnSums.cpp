@@ -43,21 +43,21 @@ tells you whether atoms \f$i\f$ and \f$j\f$ are within 1.0 nm of each other.  Th
 and the average value is computed.  As such the following input provides an alternative method for calculating the coordination numbers
 of atoms 1 to 10.
 
-\verbatim
+\plumedfile
 mat: CONTACT_MATRIX ATOMS=1-10 SWITCH={RATIONAL R_0=1.0}
 rsums: COLUMNSUMS MATRIX=mat MEAN
 PRINT ARG=rsums.* FILE=colvar
-\endverbatim
+\endplumedfile
 
 The following input demonstrates another way that an average coordination number can be computed.  This input calculates the number of atoms
 with indices between 1 and 5 that are within the first coordination spheres of each of the atoms within indices between 6 and 15.  The average
 coordination number is then calculated from these fifteen coordination numbers and this quantity is output to a file.
 
-\verbatim
+\plumedfile
 mat2: CONTACT_MATRIX ATOMSA=1-5 ATOMSB=6-15 SWITCH={RATIONAL R_0=1.0}
 rsums: COLUMNSUMS MATRIX=mat2 MEAN
 PRINT ARG=rsums.* FILE=colvar
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
@@ -112,7 +112,7 @@ double MatrixColumnSums::compute( const unsigned& tinded, multicolvar::AtomValue
     MultiValue& myvout=myatoms.getUnderlyingMultiValue();
     for(unsigned i=0; i<nrows; ++i) {
       if( mymatrix->isSymmetric() && tinded==i ) continue ;
-      addConnectionDerivatives( i, tinded, tvals, myvals, myvout );
+      addConnectionDerivatives( i, tinded, myvals, myvout );
     }
   }
   return sum;

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -261,9 +261,9 @@ void BiasRepresentation::getMinMaxBin(vector<double> &vmin, vector<double> &vmax
 }
 void BiasRepresentation::clear() {
   // clear the hills
-  for(vector<KernelFunctions*>::const_iterator it = hills.begin(); it != hills.end(); ++it)
+  for(const auto & it : hills)
   {
-    delete *it;
+    delete it;
   }
   hills.clear();
   // clear the grid

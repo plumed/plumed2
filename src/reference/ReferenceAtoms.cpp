@@ -117,4 +117,9 @@ void ReferenceAtoms::singleDomainRequests( std::vector<AtomNumber>& numbers, boo
   }
 }
 
+void ReferenceAtoms::displaceReferenceAtoms( const double& weight, const std::vector<Vector>& dir ) {
+  plumed_dbg_assert( dir.size()==reference_atoms.size() );
+  for(unsigned i=0; i<dir.size(); ++i) reference_atoms[i] += weight*dir[i];
+}
+
 }

@@ -47,10 +47,10 @@ that these properties take at a set of reference configurations and using the fo
 between the reference configurations and the instantaneous configurations are calculated using the OPTIMAL metric that is
 discussed at length in the manual pages on \ref RMSD.
 
-\verbatim
+\plumedfile
 p2: GPROPERTYMAP REFERENCE=allv.pdb PROPERTY=X,Y LAMBDA=69087
 PRINT ARG=p2.X,p2.Y,p2.zpath STRIDE=1 FILE=colvar
-\endverbatim
+\endplumedfile
 
 The additional input file for this calculation, which contains the reference frames and the values of X and Y at these reference
 points has the following format.

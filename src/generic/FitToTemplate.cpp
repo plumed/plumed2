@@ -79,13 +79,12 @@ this action is performed at every MD step.
 \par Examples
 
 Align the atomic position to a template then print them
-\verbatim
+\plumedfile
 # to see the effect, one could dump the atoms before alignment
 DUMPATOMS FILE=dump-before.xyz ATOMS=1-20
 FIT_TO_TEMPLATE STRIDE=1 REFERENCE=ref.pdb TYPE=SIMPLE
 DUMPATOMS FILE=dump-after.xyz ATOMS=1-20
-\endverbatim
-(see also \ref DUMPATOMS)
+\endplumedfile
 
 
 

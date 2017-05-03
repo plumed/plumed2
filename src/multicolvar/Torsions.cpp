@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,7 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "MultiColvar.h"
+#include "MultiColvarBase.h"
+#include "AtomValuePack.h"
 #include "tools/Torsion.h"
 #include "core/ActionRegister.h"
 
@@ -39,7 +40,7 @@ Calculate whether or not a set of torsional angles are within a particular range
 
 The following provides an example of the input for the torsions command
 
-\verbatim
+\plumedfile
 TORSIONS ...
 ATOMS1=168,170,172,188
 ATOMS2=170,172,188,190
@@ -47,13 +48,13 @@ ATOMS3=188,190,192,230
 LABEL=ab
 ... TORSIONS
 PRINT ARG=ab.* FILE=colvar STRIDE=10
-\endverbatim
+\endplumedfile
 
 Writing out the atoms involved in all the torsions in this way can be rather tedious. Thankfully if you are working with protein you
 can avoid this by using the \ref MOLINFO command.  PLUMED uses the pdb file that you provide to this command to learn
 about the topology of the protein molecule.  This means that you can specify torsion angles using the following syntax:
 
-\verbatim
+\plumedfile
 MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
 TORSIONS ...
 ATOMS1=@phi-3
@@ -62,7 +63,7 @@ ATOMS3=@phi-4
 LABEL=ab
 ... TORSIONS
 PRINT ARG=ab FILE=colvar STRIDE=10
-\endverbatim
+\endplumedfile
 
 Here, \@phi-3 tells plumed that you would like to calculate the \f$\phi\f$ angle in the third residue of the protein.
 Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle of the 4th residue of the protein.
@@ -71,7 +72,7 @@ Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle o
 */
 //+ENDPLUMEDOC
 
-class Torsions : public MultiColvar {
+class Torsions : public MultiColvarBase {
 public:
   static void registerKeywords( Keywords& keys );
   explicit Torsions(const ActionOptions&);
@@ -83,16 +84,24 @@ public:
 PLUMED_REGISTER_ACTION(Torsions,"TORSIONS")
 
 void Torsions::registerKeywords( Keywords& keys ) {
-  MultiColvar::registerKeywords( keys );
-  keys.use("ATOMS"); keys.use("BETWEEN"); keys.use("HISTOGRAM");
+  MultiColvarBase::registerKeywords( keys );
+  keys.reserve("numbered","ATOMS","the atoms involved in each of the torsion angles you wish to calculate. "
+               "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one torsion will be "
+               "calculated for each ATOM keyword you specify (all ATOM keywords should "
+               "provide the indices of four atoms).  The eventual number of quantities calculated by this "
+               "action will depend on what functions of the distribution you choose to calculate.");
+  keys.reset_style("ATOMS","atoms");
+  keys.use("BETWEEN"); keys.use("HISTOGRAM");
 }
 
 Torsions::Torsions(const ActionOptions&ao):
-  PLUMED_MULTICOLVAR_INIT(ao)
+  Action(ao),
+  MultiColvarBase(ao)
 {
   // Read in the atoms
   int natoms=4; std::vector<AtomNumber> all_atoms;
-  readAtoms( natoms, all_atoms );
+  readAtomsLikeKeyword( "ATOMS", natoms, all_atoms );
+  setupMultiColvarBase( all_atoms );
   std::vector<bool> catom_ind(4, false);
   catom_ind[1]=catom_ind[2]=true;
   setAtomsForCentralAtom( catom_ind );

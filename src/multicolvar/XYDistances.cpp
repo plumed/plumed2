@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,7 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "MultiColvar.h"
+#include "MultiColvarBase.h"
+#include "AtomValuePack.h"
 #include "core/ActionRegister.h"
 
 #include <string>
@@ -42,10 +43,10 @@ The following input tells plumed to calculate the projection of the length of th
 to atom 5 projected in the xy-plane and the projection of the length of the vector
 the vector connecting atom 1 to atom 2 in the xy-plane.  The minimum of these two quantities is then
 printed
-\verbatim
+\plumedfile
 XYDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
 PRINT ARG=d1.min
-\endverbatim
+\endplumedfile
 (See also \ref PRINT).
 
 */
@@ -63,10 +64,10 @@ The following input tells plumed to calculate the projection of the length of th
 to atom 5 projected in the xz-plane and the projection of the length of the vector
 the vector connecting atom 1 to atom 2 in the xz-plane.  The minimum of these two quantities is then
 printed
-\verbatim
+\plumedfile
 XZDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
 PRINT ARG=d1.min
-\endverbatim
+\endplumedfile
 (See also \ref PRINT).
 
 */
@@ -84,17 +85,17 @@ The following input tells plumed to calculate the projection of the length of th
 to atom 5 in the yz-plane and the projection of the length of the vector
 the vector connecting atom 1 to atom 2 in the yz-plane.  The minimum of these two quantities is then
 printed
-\verbatim
+\plumedfile
 YZDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
 PRINT ARG=d1.min
-\endverbatim
+\endplumedfile
 (See also \ref PRINT).
 
 */
 //+ENDPLUMEDOC
 
 
-class XYDistances : public MultiColvar {
+class XYDistances : public MultiColvarBase {
 private:
   unsigned myc1, myc2;
 public:
@@ -111,11 +112,16 @@ PLUMED_REGISTER_ACTION(XYDistances,"XZDISTANCES")
 PLUMED_REGISTER_ACTION(XYDistances,"YZDISTANCES")
 
 void XYDistances::registerKeywords( Keywords& keys ) {
-  MultiColvar::registerKeywords( keys );
-  keys.use("ATOMS"); keys.use("MAX"); keys.use("ALT_MIN");
-  keys.use("MEAN"); keys.use("MIN"); keys.use("LESS_THAN");
-  keys.use("LOWEST"); keys.use("HIGHEST");
+  MultiColvarBase::registerKeywords( keys );
+  keys.use("MAX"); keys.use("ALT_MIN");
+  keys.use("MEAN"); keys.use("MIN"); keys.use("LESS_THAN"); keys.use("LOWEST"); keys.use("HIGHEST");
   keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
+  keys.add("numbered","ATOMS","the atoms involved in each of the distances you wish to calculate. "
+           "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one distance will be "
+           "calculated for each ATOM keyword you specify (all ATOM keywords should "
+           "specify the incides of two atoms).  The eventual number of quantities calculated by this "
+           "action will depend on what functions of the distribution you choose to calculate.");
+  keys.reset_style("ATOMS","atoms");
   keys.add("atoms-1","GROUP","Calculate the distance between each distinct pair of atoms in the group");
   keys.add("atoms-2","GROUPA","Calculate the distances between all the atoms in GROUPA and all "
            "the atoms in GROUPB. This must be used in conjuction with GROUPB.");
@@ -124,7 +130,8 @@ void XYDistances::registerKeywords( Keywords& keys ) {
 }
 
 XYDistances::XYDistances(const ActionOptions&ao):
-  PLUMED_MULTICOLVAR_INIT(ao)
+  Action(ao),
+  MultiColvarBase(ao)
 {
   if( getName().find("XY")!=std::string::npos) {
     myc1=0; myc2=1;
@@ -137,7 +144,8 @@ XYDistances::XYDistances(const ActionOptions&ao):
   // Read in the atoms
   std::vector<AtomNumber> all_atoms;
   readTwoGroups( "GROUP", "GROUPA", "GROUPB", all_atoms );
-  int natoms=2; readAtoms( natoms, all_atoms );
+  if( atom_lab.size()==0 ) readAtomsLikeKeyword( "ATOMS", 2, all_atoms );
+  setupMultiColvarBase( all_atoms );
   // And check everything has been read in correctly
   checkRead();
 }

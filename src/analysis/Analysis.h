@@ -110,6 +110,8 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Analysis(const ActionOptions&);
   ~Analysis();
+  void calculate() {}
+  void apply() {}
   void accumulate();
   void performOperations( const bool& from_update );
   virtual void performAnalysis()=0;

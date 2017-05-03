@@ -713,8 +713,6 @@ enable_molfile_plugins
 enable_external_molfile_plugins
 enable_matheval
 enable_zlib
-enable_clock_gettime
-enable_gettimeofday
 enable_readdir_r
 enable_cregex
 enable_dlopen
@@ -1382,8 +1380,6 @@ Optional Features:
                           yes
   --enable-matheval       enable search for matheval, default: yes
   --enable-zlib           enable search for zlib, default: yes
-  --enable-clock-gettime  enable search for gettime, default: yes
-  --enable-gettimeofday   enable search for gettimeofday, default: yes
   --enable-readdir-r      enable search for readdir_r (threadsafe), default:
                           yes
   --enable-cregex         enable search for C regular expression, default: yes
@@ -2753,42 +2749,6 @@ else
   case "yes" in
              (yes) zlib=true ;;
              (no)  zlib=false ;;
-  esac
-
-fi
-
-
-
-clock_gettime=
-# Check whether --enable-clock-gettime was given.
-if test "${enable_clock_gettime+set}" = set; then :
-  enableval=$enable_clock_gettime; case "${enableval}" in
-             (yes) clock_gettime=true ;;
-             (no)  clock_gettime=false ;;
-             (*)   as_fn_error $? "wrong argument to --enable-clock-gettime" "$LINENO" 5 ;;
-  esac
-else
-  case "yes" in
-             (yes) clock_gettime=true ;;
-             (no)  clock_gettime=false ;;
-  esac
-
-fi
-
-
-
-gettimeofday=
-# Check whether --enable-gettimeofday was given.
-if test "${enable_gettimeofday+set}" = set; then :
-  enableval=$enable_gettimeofday; case "${enableval}" in
-             (yes) gettimeofday=true ;;
-             (no)  gettimeofday=false ;;
-             (*)   as_fn_error $? "wrong argument to --enable-gettimeofday" "$LINENO" 5 ;;
-  esac
-else
-  case "yes" in
-             (yes) gettimeofday=true ;;
-             (no)  gettimeofday=false ;;
   esac
 
 fi
@@ -4468,9 +4428,9 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 
   save_CXXFLAGS="$CXXFLAGS"
-  CXXFLAGS="$CXXFLAGS -ansi"
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -ansi" >&5
-$as_echo_n "checking whether $CXX accepts -ansi... " >&6; }
+  CXXFLAGS="$CXXFLAGS -std=c++11"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -std=c++11" >&5
+$as_echo_n "checking whether $CXX accepts -std=c++11... " >&6; }
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -5081,11 +5041,15 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX supports explicit" >&5
-$as_echo_n "checking whether $CXX supports explicit... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX declares c++11 support" >&5
+$as_echo_n "checking whether $CXX declares c++11 support... " >&6; }
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
- class A{explicit A(){}};
+
+#if __cplusplus <= 199711L
+this_compiler_does_not_support_cxx11
+#endif
+
 int
 main ()
 {
@@ -5096,14 +5060,26 @@ main ()
 _ACEOF
 if ac_fn_cxx_try_compile "$LINENO"; then :
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
+$as_echo "yes" >&6; };
+  support_cxx11=true
 else
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; } ;
-   $as_echo "#define explicit /**/" >>confdefs.h
-
+  support_cxx11=false
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+if test "$support_cxx11" = false
+then
+   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: C++11 support is required as of PLUMED 2.4" >&5
+$as_echo "$as_me: WARNING: C++11 support is required as of PLUMED 2.4" >&2;}
+   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Your compiler appears not to support C++11" >&5
+$as_echo "$as_me: WARNING: Your compiler appears not to support C++11" >&2;}
+   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Please change compiler or make sure that everything works correctly" >&5
+$as_echo "$as_me: WARNING: Please change compiler or make sure that everything works correctly" >&2;}
+fi
+
+
 
 
 
@@ -6072,100 +6048,6 @@ fi
     else
        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_MATHEVAL" >&5
 $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_MATHEVAL" >&2;}
-    fi
-
-fi
-if test $clock_gettime == true ; then
-
-    found=ko
-    ac_fn_cxx_check_header_mongrel "$LINENO" "time.h" "ac_cv_header_time_h" "$ac_includes_default"
-if test "x$ac_cv_header_time_h" = xyes; then :
-
-      ac_fn_cxx_check_func "$LINENO" "clock_gettime" "ac_cv_func_clock_gettime"
-if test "x$ac_cv_func_clock_gettime" = xyes; then :
-  found=ok
-else
-
-          if test "${libsearch}" == true ; then
-           { $as_echo "$as_me:${as_lineno-$LINENO}: checking for clock_gettime in -lrt" >&5
-$as_echo_n "checking for clock_gettime in -lrt... " >&6; }
-if ${ac_cv_lib_rt_clock_gettime+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lrt  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char clock_gettime ();
-int
-main ()
-{
-return clock_gettime ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_rt_clock_gettime=yes
-else
-  ac_cv_lib_rt_clock_gettime=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_rt_clock_gettime" >&5
-$as_echo "$ac_cv_lib_rt_clock_gettime" >&6; }
-if test "x$ac_cv_lib_rt_clock_gettime" = xyes; then :
-  LIBS="-lrt $LIBS" && found=ok
-fi
-
-          fi
-
-
-fi
-
-
-fi
-
-
-    if test $found == ok ; then
-      $as_echo "#define __PLUMED_HAS_CLOCK_GETTIME 1" >>confdefs.h
-
-    else
-       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_CLOCK_GETTIME" >&5
-$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_CLOCK_GETTIME" >&2;}
-    fi
-
-fi
-if test $gettimeofday == true ; then
-
-    found=ko
-    ac_fn_cxx_check_header_mongrel "$LINENO" "sys/time.h" "ac_cv_header_sys_time_h" "$ac_includes_default"
-if test "x$ac_cv_header_sys_time_h" = xyes; then :
-
-      ac_fn_cxx_check_func "$LINENO" "gettimeofday" "ac_cv_func_gettimeofday"
-if test "x$ac_cv_func_gettimeofday" = xyes; then :
-  found=ok
-fi
-
-
-fi
-
-
-    if test $found == ok ; then
-      $as_echo "#define __PLUMED_HAS_GETTIMEOFDAY 1" >>confdefs.h
-
-    else
-       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_GETTIMEOFDAY" >&5
-$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_GETTIMEOFDAY" >&2;}
     fi
 
 fi

@@ -45,11 +45,11 @@ As an example the following set of commands instructs PLUMED to calculate the di
 atoms 1 and 2 for every 5th frame in the trajectory and to accumulate a histogram from this data
 which will be output every 100 steps (i.e. when 20 distances have been added to the histogram).
 
-\verbatim
+\plumedfile
 x: DISTANCE ATOMS=1,2
 h: HISTOGRAM ARG=x GRID_MIN=0.0 GRID_MAX=3.0 GRID_BIN=100 BANDWIDTH=0.1 STRIDE=5
 DUMPGRID GRID=h FILE=histo STRIDE=100 
-\endverbatim
+\endplumedfile
 
 It is important to note when using commands such as the above the first frame in the trajectory is assumed 
 to be the initial configuration that was input to the MD code. It is thus ignored.  Furthermore, if you are 
@@ -57,11 +57,11 @@ running with driver and you would like to analyse the whole trajectory (without 
 and then print the result you simply call \ref DUMPGRID (or any of the commands above) without a STRIDE 
 keyword as shown in the example below. 
 
-\verbatim
+\plumedfile
 x: DISTANCE ATOMS=1,2
 h: HISTOGRAM ARG=x GRID_MIN=0.0 GRID_MAX=3.0 GRID_BIN=100 BANDWIDTH=0.1 STRIDE=5
 DUMPGRID GRID=h FILE=histo 
-\endverbatim
+\endplumedfile
 
 Please note that even with this calculation the first frame in the trajectory is ignored when computing the 
 histogram.

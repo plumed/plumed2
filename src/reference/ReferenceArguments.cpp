@@ -43,9 +43,10 @@ void ReferenceArguments::readArgumentsFromPDB( const PDB& pdb ) {
 
   if( hasweights ) {
     plumed_massert( !hasmetric, "should not have weights if we are using metric");
-    weights.resize( arg_names.size() );
+    weights.resize( arg_names.size() ); sqrtweight.resize( arg_names.size() );
     for(unsigned i=0; i<reference_args.size(); ++i) {
       parse( "sigma_" + arg_names[i], weights[i] );
+      sqrtweight[i] = sqrt( weights[i] );
     }
   } else if( hasmetric ) {
     plumed_massert( !hasweights, "should not have weights if we are using metric");
@@ -57,8 +58,8 @@ void ReferenceArguments::readArgumentsFromPDB( const PDB& pdb ) {
       }
     }
   } else {
-    weights.resize( arg_names.size() );
-    for(unsigned i=0; i<weights.size(); ++i) weights[i]=1.0;
+    weights.resize( arg_names.size() ); sqrtweight.resize( arg_names.size() );
+    for(unsigned i=0; i<weights.size(); ++i) sqrtweight[i]=weights[i]=1.0;
   }
 }
 
@@ -74,8 +75,7 @@ void ReferenceArguments::setArgumentNames( const std::vector<std::string>& arg_v
 }
 
 void ReferenceArguments::setReferenceArguments( const std::vector<double>& arg_vals, const std::vector<double>& sigma ) {
-  plumed_dbg_assert( reference_args.size()==arg_vals.size() );
-  for(unsigned i=0; i<arg_vals.size(); ++i) reference_args[i]=arg_vals[i];
+  moveReferenceArguments( arg_vals );
 
   if( hasmetric ) {
     unsigned k=0;
@@ -89,6 +89,11 @@ void ReferenceArguments::setReferenceArguments( const std::vector<double>& arg_v
     plumed_assert( reference_args.size()==sigma.size() );
     for(unsigned i=0; i<reference_args.size(); ++i) weights[i]=sigma[i];
   }
+}
+
+void ReferenceArguments::moveReferenceArguments( const std::vector<double>& arg_vals ) {
+  plumed_dbg_assert( reference_args.size()==arg_vals.size() );
+  for(unsigned i=0; i<arg_vals.size(); ++i) reference_args[i]=arg_vals[i];
 }
 
 void ReferenceArguments::getArgumentRequests( std::vector<std::string>& argout, bool disable_checks ) {
@@ -192,4 +197,34 @@ double ReferenceArguments::calculateArgumentDistance( const std::vector<Value*> 
   }
   return r;
 }
+
+void ReferenceArguments::extractArgumentDisplacement( const std::vector<Value*>& vals, const std::vector<double>& arg, std::vector<double>& dirout ) const {
+  if( hasmetric ) {
+    plumed_error();
+  } else {
+    for(unsigned j=0; j<reference_args.size(); ++j) {
+      unsigned jk=arg_der_index[j]; dirout[jk]=sqrtweight[j]*vals[jk]->difference( reference_args[j], arg[jk] );
+    }
+  }
+}
+
+double ReferenceArguments::projectArgDisplacementOnVector( const std::vector<double>& eigv, const std::vector<Value*>& vals, const std::vector<double>& arg, ReferenceValuePack& mypack ) const {
+  if( hasmetric ) {
+    plumed_error();
+  } else {
+    double proj=0;
+    for(unsigned j=0; j<reference_args.size(); ++j) {
+      unsigned jk=arg_der_index[j];
+      proj += eigv[j]*sqrtweight[j]*vals[jk]->difference( reference_args[j], arg[jk] );
+      mypack.setArgumentDerivatives( jk, eigv[j]*sqrtweight[j] );
+    }
+    return proj;
+  }
+}
+
+void ReferenceArguments::displaceReferenceArguments( const double& weight, const std::vector<double>& displace ) {
+  plumed_dbg_assert( displace.size()==getNumberOfReferenceArguments() );
+  for(unsigned i=0; i<displace.size(); ++i) reference_args[i] += weight*displace[i];
+}
+
 }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -41,7 +41,7 @@ plumed input file, it will flush all the open files.
 
 \par Examples
 A command like this in the input will instruct plumed to flush all the output files every 100 steps
-\verbatim
+\plumedfile
 d1: DISTANCE ATOMS=1,10
 PRINT ARG=d1 STRIDE=5 FILE=colvar1
 
@@ -50,7 +50,7 @@ FLUSH STRIDE=100
 d2: DISTANCE ATOMS=2,11
 # also this print is flushed every 100 steps:
 PRINT ARG=d2 STRIDE=10 FILE=colvar2
-\endverbatim
+\endplumedfile
 (see also \ref DISTANCE and \ref PRINT).
 */
 //+ENDPLUMEDOC
@@ -72,8 +72,8 @@ public:
     plumed.fflush();
     log.flush();
     const ActionSet & actionSet(plumed.getActionSet());
-    for(ActionSet::const_iterator p=actionSet.begin(); p!=actionSet.end(); ++p)
-      (*p)->fflush();
+    for(const auto & p : actionSet)
+      p->fflush();
   }
 };
 

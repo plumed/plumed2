@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015,2016 The plumed team
+   Copyright (c) 2015-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,7 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "MultiColvar.h"
+#include "MultiColvarBase.h"
+#include "AtomValuePack.h"
 #include "tools/SwitchingFunction.h"
 #include "core/ActionRegister.h"
 #include "vesselbase/LessThan.h"
@@ -52,16 +53,16 @@ Keywords such as MORE_THAN and LESS_THAN can then be used to calculate the numbe
 The following input can be used to calculate the number of atoms that have indices greater than 3 and less than 101 that
 are within a cylinder with a radius of 0.3 nm that has its long axis aligned with the vector connecting atoms 1 and 2.
 
-\verbatim
+\plumedfile
 d1: INPLANEDISTANCES VECTORSTART=1 VECTOREND=2 GROUP=3-100 LESS_THAN={RATIONAL D_0=0.2 R_0=0.1}
 PRINT ARG=d1.lessthan FILE=colvar
-\endverbatim
+\endplumedfile
 
 
 */
 //+ENDPLUMEDOC
 
-class InPlaneDistances : public MultiColvar {
+class InPlaneDistances : public MultiColvarBase {
 public:
   static void registerKeywords( Keywords& keys );
   explicit InPlaneDistances(const ActionOptions&);
@@ -73,7 +74,7 @@ public:
 PLUMED_REGISTER_ACTION(InPlaneDistances,"INPLANEDISTANCES")
 
 void InPlaneDistances::registerKeywords( Keywords& keys ) {
-  MultiColvar::registerKeywords( keys );
+  MultiColvarBase::registerKeywords( keys );
   keys.use("ALT_MIN"); keys.use("LOWEST"); keys.use("HIGHEST");
   keys.use("MEAN"); keys.use("MIN"); keys.use("MAX"); keys.use("LESS_THAN");
   keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
@@ -83,7 +84,8 @@ void InPlaneDistances::registerKeywords( Keywords& keys ) {
 }
 
 InPlaneDistances::InPlaneDistances(const ActionOptions&ao):
-  PLUMED_MULTICOLVAR_INIT(ao)
+  Action(ao),
+  MultiColvarBase(ao)
 {
   // Read in the atoms
   std::vector<AtomNumber> all_atoms;

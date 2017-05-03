@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,6 +24,7 @@
 #include "gridtools/ActionWithGrid.h"
 #include "vesselbase/ActionWithVessel.h"
 #include "vesselbase/StoreDataVessel.h"
+#include "multicolvar/MultiColvarBase.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 
@@ -83,7 +84,7 @@ Additional material and examples can be also found in the tutorial \ref belfast-
 
 The following input monitors two torsional angles during a simulation
 and outputs a continuos histogram as a function of them at the end of the simulation.
-\verbatim
+\plumedfile
 TORSION ATOMS=1,2,3,4 LABEL=r1
 TORSION ATOMS=2,3,4,5 LABEL=r2
 HISTOGRAM ...
@@ -96,11 +97,11 @@ HISTOGRAM ...
 ... HISTOGRAM
 
 DUMPGRID GRID=hh FILE=histo
-\endverbatim
+\endplumedfile
 
 The following input monitors two torsional angles during a simulation
 and outputs a discrete histogram as a function of them at the end of the simulation.
-\verbatim
+\plumedfile
 TORSION ATOMS=1,2,3,4 LABEL=r1
 TORSION ATOMS=2,3,4,5 LABEL=r2
 HISTOGRAM ...
@@ -114,11 +115,11 @@ HISTOGRAM ...
 ... HISTOGRAM
 
 DUMPGRID GRID=hh FILE=histo
-\endverbatim
+\endplumedfile
 
 The following input monitors two torsional angles during a simulation
 and outputs the histogram accumulated thus far every 100000 steps.
-\verbatim
+\plumedfile
 TORSION ATOMS=1,2,3,4 LABEL=r1
 TORSION ATOMS=2,3,4,5 LABEL=r2
 HISTOGRAM ...
@@ -131,14 +132,14 @@ HISTOGRAM ...
 ... HISTOGRAM
 
 DUMPGRID GRID=hh FILE=histo STRIDE=100000
-\endverbatim
+\endplumedfile
 
 The following input monitors two torsional angles during a simulation
 and outputs a separate histogram for each 100000 steps worth of trajectory.
 Notice how the CLEAR keyword is used here and how it is not used in the
 previous example.
 
-\verbatim
+\plumedfile
 TORSION ATOMS=1,2,3,4 LABEL=r1
 TORSION ATOMS=2,3,4,5 LABEL=r2
 HISTOGRAM ...
@@ -152,7 +153,7 @@ HISTOGRAM ...
 ... HISTOGRAM
 
 DUMPGRID GRID=hh FILE=histo STRIDE=100000
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
@@ -160,9 +161,11 @@ DUMPGRID GRID=hh FILE=histo STRIDE=100000
 class Histogram : public gridtools::ActionWithGrid {
 private:
   double ww;
+  bool in_apply, mvectors;
   KernelFunctions* kernel;
-  vesselbase::ActionWithVessel* myvessel;
-  vesselbase::StoreDataVessel* stash;
+  std::vector<double> forcesToApply, finalForces;
+  std::vector<vesselbase::ActionWithVessel*> myvessels;
+  std::vector<vesselbase::StoreDataVessel*> stashes;
   gridtools::HistogramOnGrid* myhist;
 public:
   static void registerKeywords( Keywords& keys );
@@ -173,7 +176,9 @@ public:
   void finishAveraging();
   bool isPeriodic() { return false; }
   unsigned getNumberOfDerivatives();
+  void turnOnDerivatives();
   void compute( const unsigned&, MultiValue& ) const ;
+  void apply();
 };
 
 PLUMED_REGISTER_ACTION(Histogram,"HISTOGRAM")
@@ -181,6 +186,7 @@ PLUMED_REGISTER_ACTION(Histogram,"HISTOGRAM")
 void Histogram::registerKeywords( Keywords& keys ) {
   gridtools::ActionWithGrid::registerKeywords( keys ); keys.use("ARG");
   keys.add("optional","DATA","input data from action with vessel and compute histogram");
+  keys.add("optional","VECTORS","input three dimsnional vectors for computing histogram");
   keys.add("compulsory","GRID_MIN","the lower bounds for the grid");
   keys.add("compulsory","GRID_MAX","the upper bounds for the grid");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
@@ -192,50 +198,68 @@ Histogram::Histogram(const ActionOptions&ao):
   Action(ao),
   ActionWithGrid(ao),
   ww(0.0),
-  kernel(NULL),
-  myvessel(NULL),
-  stash(NULL)
+  in_apply(false),
+  mvectors(false),
+  kernel(NULL)
 {
   // Read in arguments
-  std::string mlab; parse("DATA",mlab);
-  if( mlab.length()>0 ) {
-    myvessel = plumed.getActionSet().selectWithLabel<ActionWithVessel*>(mlab);
-    if(!myvessel) error("action labelled " + mlab + " does not exist or is not an ActionWithVessel");
-    stash = myvessel->buildDataStashes( NULL );
-    log.printf("  for all base quantities calculated by %s \n",myvessel->getLabel().c_str() );
-    // Add the dependency
-    addDependency( myvessel );
+  std::string vlab; parse("VECTORS",vlab);
+  if( vlab.length()>0 ) {
+    ActionWithVessel* myv = plumed.getActionSet().selectWithLabel<ActionWithVessel*>( vlab );
+    if( !myv ) error("action labelled " + vlab + " does not exist or is not an ActionWithVessel");
+    myvessels.push_back( myv ); stashes.push_back( myv->buildDataStashes( NULL ) );
+    addDependency( myv ); mvectors=true;
+    if( myv->getNumberOfQuantities()!=5 ) error("can only compute histograms for three dimensional vectors");
+    log.printf("  for vector quantities calculated by %s \n", vlab.c_str() );
   } else {
-    std::vector<Value*> arg; parseArgumentList("ARG",arg);
-    if(!arg.empty()) {
-      log.printf("  with arguments");
-      for(unsigned i=0; i<arg.size(); i++) log.printf(" %s",arg[i]->getName().c_str());
+    std::vector<std::string> mlab; parseVector("DATA",mlab);
+    if( mlab.size()>0 ) {
+      for(unsigned i=0; i<mlab.size(); ++i) {
+        ActionWithVessel* myv = plumed.getActionSet().selectWithLabel<ActionWithVessel*>( mlab[i] );
+        if( !myv ) error("action labelled " + mlab[i] + " does not exist or is not an ActionWithVessel");
+        myvessels.push_back( myv ); stashes.push_back( myv->buildDataStashes( NULL ) );
+        // log.printf("  for all base quantities calculated by %s \n",myvessel->getLabel().c_str() );
+        // Add the dependency
+        addDependency( myv );
+      }
+      unsigned nvals = myvessels[0]->getFullNumberOfTasks();
+      for(unsigned i=1; i<mlab.size(); ++i) {
+        if( nvals!=myvessels[i]->getFullNumberOfTasks() ) error("mismatched number of quantities calculated by actions input to histogram");
+      }
+      log.printf("  for all base quantities calculated by %s ", myvessels[0]->getLabel().c_str() );
+      for(unsigned i=1; i<mlab.size(); ++i) log.printf(", %s \n", myvessels[i]->getLabel().c_str() );
       log.printf("\n");
-      // Retrieve the bias acting and make sure we request this also
-      std::vector<Value*> bias( ActionWithArguments::getArguments() );
-      for(unsigned i=0; i<bias.size(); ++i) arg.push_back( bias[i] );
-      requestArguments(arg);
+    } else {
+      std::vector<Value*> arg; parseArgumentList("ARG",arg);
+      if(!arg.empty()) {
+        log.printf("  with arguments");
+        for(unsigned i=0; i<arg.size(); i++) log.printf(" %s",arg[i]->getName().c_str());
+        log.printf("\n");
+        // Retrieve the bias acting and make sure we request this also
+        std::vector<Value*> bias( ActionWithArguments::getArguments() );
+        for(unsigned i=0; i<bias.size(); ++i) arg.push_back( bias[i] );
+        requestArguments(arg);
+      }
     }
   }
 
   // Read stuff for grid
   unsigned narg = getNumberOfArguments();
-  if( myvessel ) narg=1;
-  std::vector<std::string> gmin( narg ), gmax( narg );
-  parseVector("GRID_MIN",gmin); parseVector("GRID_MAX",gmax);
-  std::vector<unsigned> nbin; parseVector("GRID_BIN",nbin);
-  std::vector<double> gspacing; parseVector("GRID_SPACING",gspacing);
-  if( nbin.size()!=narg && gspacing.size()!=narg ) {
-    error("GRID_BIN or GRID_SPACING must be set");
-  }
-
+  if( myvessels.size()>0 ) narg=myvessels.size();
   // Input of name and labels
   std::string vstring="COMPONENTS=" + getLabel();
-  if( myvessel ) {
-    vstring += " COORDINATES=" + myvessel->getLabel();
+  if( mvectors ) {
+    vstring += " COORDINATES=x,y,z PBC=F,F,F";
+  } else if( myvessels.size()>0 ) {
+    vstring += " COORDINATES=" + myvessels[0]->getLabel();
+    for(unsigned i=1; i<myvessels.size(); ++i) vstring +="," + myvessels[i]->getLabel();
     // Input for PBC
-    if( myvessel->isPeriodic() ) vstring+=" PBC=T";
+    if( myvessels[0]->isPeriodic() ) vstring+=" PBC=T";
     else vstring+=" PBC=F";
+    for(unsigned i=1; i<myvessels.size(); ++i) {
+      if( myvessels[i]->isPeriodic() ) vstring+=",T";
+      else vstring+=",F";
+    }
   } else {
     vstring += " COORDINATES=" + getPntrToArgument(0)->getName();
     for(unsigned i=1; i<getNumberOfArguments(); ++i) vstring += "," + getPntrToArgument(i)->getName();
@@ -249,12 +273,26 @@ Histogram::Histogram(const ActionOptions&ao):
   }
   // And create the grid
   createGrid( "histogram", vstring );
-  mygrid->setBounds( gmin, gmax, nbin, gspacing );
+  if( mygrid->getType()=="flat" ) {
+    if( mvectors ) error("computing histogram for three dimensional vectors but grid is not of fibonacci type - use CONCENTRATION");
+    std::vector<std::string> gmin( narg ), gmax( narg );
+    parseVector("GRID_MIN",gmin); parseVector("GRID_MAX",gmax);
+    std::vector<unsigned> nbin; parseVector("GRID_BIN",nbin);
+    std::vector<double> gspacing; parseVector("GRID_SPACING",gspacing);
+    if( nbin.size()!=narg && gspacing.size()!=narg ) {
+      error("GRID_BIN or GRID_SPACING must be set");
+    }
+    mygrid->setBounds( gmin, gmax, nbin, gspacing );
+  } else {
+    std::vector<unsigned> nbin; parseVector("GRID_BIN",nbin);
+    if( nbin.size()!=1 ) error("should only be one index for number of bins with spherical grid");
+    if( mygrid->getType()=="fibonacci" ) mygrid->setupFibonacciGrid( nbin[0] );
+  }
   myhist = dynamic_cast<gridtools::HistogramOnGrid*>( mygrid );
   plumed_assert( myhist );
-  if( myvessel ) {
+  if( myvessels.size()>0 ) {
     // Create a task list
-    for(unsigned i=0; i<myvessel->getFullNumberOfTasks(); ++i) addTaskToList(i);
+    for(unsigned i=0; i<myvessels[0]->getFullNumberOfTasks(); ++i) addTaskToList(i);
     setAveragingAction( mygrid, true );
   } else {
     // Create a task list
@@ -265,25 +303,57 @@ Histogram::Histogram(const ActionOptions&ao):
   checkRead();
 }
 
+void Histogram::turnOnDerivatives() {
+  ActionWithGrid::turnOnDerivatives();
+  std::vector<AtomNumber> all_atoms, tmp_atoms;
+  for(unsigned i=0; i<myvessels.size(); ++i) {
+    multicolvar::MultiColvarBase* mbase=dynamic_cast<multicolvar::MultiColvarBase*>( myvessels[i] );
+    if( !mbase ) error("do not know how to get histogram derivatives for actions of type " + myvessels[i]->getName() );
+    tmp_atoms = mbase->getAbsoluteIndexes();
+    for(unsigned j=0; j<tmp_atoms.size(); ++j) all_atoms.push_back( tmp_atoms[j] );
+  }
+  ActionAtomistic::requestAtoms( all_atoms );
+  finalForces.resize( 3*all_atoms.size() + 9 );
+  forcesToApply.resize( 3*all_atoms.size() + 9*myvessels.size() );
+  // And make sure we still have the dependencies which are cleared by requestAtoms
+  for(unsigned i=0; i<myvessels.size(); ++i) addDependency( myvessels[i] );
+  // And resize the histogram so that we have a place to store the forces
+  in_apply=true; mygrid->resize(); in_apply=false;
+}
+
 unsigned Histogram::getNumberOfDerivatives() {
-  if( myvessel) return 1;
+  if( in_apply ) {
+    unsigned nder=0;
+    for(unsigned i=0; i<myvessels.size(); ++i) nder += myvessels[i]->getNumberOfDerivatives();
+    return nder;
+  }
   return getNumberOfArguments();
 }
 
 unsigned Histogram::getNumberOfQuantities() const {
-  if( myvessel ) return 3;
+  if( mvectors ) return myvessels[0]->getNumberOfQuantities();
+  else if( myvessels.size()>0 ) return myvessels.size()+2;
   return 2;
 }
 
 void Histogram::prepareForAveraging() {
-  if( myvessel ) {
+  if( myvessels.size()>0 ) {
     deactivateAllTasks(); double norm=0;
-    std::vector<double> cvals( myvessel->getNumberOfQuantities() );
-    for(unsigned i=0; i<stash->getNumberOfStoredValues(); ++i) {
-      taskFlags[i]=1; stash->retrieveSequentialValue(i, false, cvals );
-      norm += cvals[0];
+    for(unsigned i=0; i<stashes[0]->getNumberOfStoredValues(); ++i) {
+      std::vector<double> cvals( myvessels[0]->getNumberOfQuantities() );
+      stashes[0]->retrieveSequentialValue( i, false, cvals );
+      unsigned itask=myvessels[0]->getActiveTask(i); double tnorm = cvals[0];
+      for(unsigned j=1; j<myvessels.size(); ++j) {
+        if( myvessels[j]->getActiveTask(i)!=itask ) error("mismatched task identities in histogram suggests histogram is meaningless");
+        if( cvals.size()!=myvessels[j]->getNumberOfQuantities() ) cvals.resize( myvessels[j]->getNumberOfQuantities() );
+        stashes[j]->retrieveSequentialValue( i, false, cvals ); tnorm *= cvals[0];
+      }
+      norm += tnorm; taskFlags[i]=1;
     }
-    lockContributors(); ww = cweight / norm;
+    lockContributors();
+    // Sort out normalization of histogram
+    if( !noNormalization() ) ww = cweight / norm;
+    else ww = cweight;
   } else {
     // Now fetch the kernel and the active points
     std::vector<double> point( getNumberOfArguments() );
@@ -303,28 +373,115 @@ void Histogram::prepareForAveraging() {
   }
 }
 
-void Histogram::performOperations( const bool& from_update ) { if( !myvessel ) plumed_dbg_assert( !myhist->noDiscreteKernels() ); }
+void Histogram::performOperations( const bool& from_update ) { if( myvessels.size()==0 ) plumed_dbg_assert( !myhist->noDiscreteKernels() ); }
 
 void Histogram::finishAveraging() {
-  if( !myvessel ) delete kernel;
+  if( myvessels.size()==0 ) delete kernel;
 }
 
 void Histogram::compute( const unsigned& current, MultiValue& myvals ) const {
-  if( myvessel ) {
-    std::vector<double> cvals( myvessel->getNumberOfQuantities() );
-    stash->retrieveSequentialValue( current, false, cvals );
-    myvals.setValue( 0, cvals[0] ); myvals.setValue( 1, cvals[1] ); myvals.setValue( 2, ww );
+  if( mvectors ) {
+    std::vector<double> cvals( myvessels[0]->getNumberOfQuantities() );
+    stashes[0]->retrieveSequentialValue( current, true, cvals );
+    for(unsigned i=2; i<myvessels[0]->getNumberOfQuantities(); ++i) myvals.setValue( i-1, cvals[i] );
+    myvals.setValue( 0, cvals[0] ); myvals.setValue( myvessels[0]->getNumberOfQuantities() - 1, ww );
+    if( in_apply ) {
+      MultiValue tmpval( myvessels[0]->getNumberOfQuantities(), myvessels[0]->getNumberOfDerivatives() );
+      stashes[0]->retrieveDerivatives( stashes[0]->getTrueIndex(current), true, tmpval );
+      for(unsigned j=0; j<tmpval.getNumberActive(); ++j) {
+        unsigned jder=tmpval.getActiveIndex(j); myvals.addDerivative( 0, jder, tmpval.getDerivative(0, jder) );
+        for(unsigned i=2; i<myvessels[0]->getNumberOfQuantities(); ++i) myvals.addDerivative( i-1, jder, tmpval.getDerivative(i, jder) );
+      }
+      myvals.updateDynamicList();
+    }
+  } else if( myvessels.size()>0 ) {
+    std::vector<double> cvals( myvessels[0]->getNumberOfQuantities() );
+    stashes[0]->retrieveSequentialValue( current, false, cvals );
+    unsigned derbase; double totweight=cvals[0], tnorm = cvals[0]; myvals.setValue( 1, cvals[1] );
+    // Get the derivatives as well if we are in apply
+    if( in_apply ) {
+      // This bit gets the total weight
+      double weight0 = cvals[0];  // Store the current weight
+      for(unsigned j=1; j<myvessels.size(); ++j) {
+        stashes[j]->retrieveSequentialValue( current, false, cvals ); totweight *= cvals[0];
+      }
+      // And this bit the derivatives
+      MultiValue tmpval( myvessels[0]->getNumberOfQuantities(), myvessels[0]->getNumberOfDerivatives() );
+      stashes[0]->retrieveDerivatives( stashes[0]->getTrueIndex(current), false, tmpval );
+      for(unsigned j=0; j<tmpval.getNumberActive(); ++j) {
+        unsigned jder=tmpval.getActiveIndex(j);
+        myvals.addDerivative( 1, jder, tmpval.getDerivative(1,jder) );
+        myvals.addDerivative( 0, jder, (totweight/weight0)*tmpval.getDerivative(0,jder) );
+      }
+      derbase = myvessels[0]->getNumberOfDerivatives();
+    }
+    for(unsigned i=1; i<myvessels.size(); ++i) {
+      if( cvals.size()!=myvessels[i]->getNumberOfQuantities() ) cvals.resize( myvessels[i]->getNumberOfQuantities() );
+      stashes[i]->retrieveSequentialValue( current, false, cvals );
+      tnorm *= cvals[0]; myvals.setValue( 1+i, cvals[1] );
+      // Get the derivatives as well if we are in apply
+      if( in_apply ) {
+        MultiValue tmpval( myvessels[i]->getNumberOfQuantities(), myvessels[i]->getNumberOfDerivatives() );
+        stashes[i]->retrieveDerivatives( stashes[i]->getTrueIndex(current), false, tmpval );
+        for(unsigned j=0; j<tmpval.getNumberActive(); ++j) {
+          unsigned jder=tmpval.getActiveIndex(j);
+          myvals.addDerivative( 1+i, derbase+jder, tmpval.getDerivative(1,jder) );
+          myvals.addDerivative( 0, derbase+jder, (totweight/cvals[0])*tmpval.getDerivative(0,jder) );
+        }
+        derbase += myvessels[i]->getNumberOfDerivatives();
+      }
+    }
+    myvals.setValue( 0, tnorm ); myvals.setValue( 1+myvessels.size(), ww );
+    if( in_apply ) myvals.updateDynamicList();
   } else {
+    plumed_assert( !in_apply );
     std::vector<Value*> vv( myhist->getVectorOfValues() );
     std::vector<double> val( getNumberOfArguments() ), der( getNumberOfArguments() );
     // Retrieve the location of the grid point at which we are evaluating the kernel
     mygrid->getGridPointCoordinates( current, val );
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) vv[i]->set( val[i] );
-    // Evaluate the histogram at the relevant grid point and set the values
-    double vvh = kernel->evaluate( vv, der,true); myvals.setValue( 1, vvh );
+    if( kernel ) {
+      for(unsigned i=0; i<getNumberOfArguments(); ++i) vv[i]->set( val[i] );
+      // Evaluate the histogram at the relevant grid point and set the values
+      double vvh = kernel->evaluate( vv, der,true); myvals.setValue( 1, vvh );
+    } else {
+      plumed_merror("normalisation of vectors does not work with arguments and spherical grids");
+      // Evalulate dot product
+      double dot=0; for(unsigned j=0; j<getNumberOfArguments(); ++j) { dot+=val[j]*getArgument(j); der[j]=val[j]; }
+      // Von misses distribution for concentration parameter
+      double newval = (myhist->von_misses_norm)*exp( (myhist->von_misses_concentration)*dot ); myvals.setValue( 1, newval );
+      // And final derivatives
+      for(unsigned j=0; j<getNumberOfArguments(); ++j) der[j] *= (myhist->von_misses_concentration)*newval;
+    }
     // Set the derivatives and delete the vector of values
     for(unsigned i=0; i<getNumberOfArguments(); ++i) { myvals.setDerivative( 1, i, der[i] ); delete vv[i]; }
   }
+}
+
+void Histogram::apply() {
+  if( !myhist->wasForced() ) return ;
+  in_apply=true;
+  // Run the loop to calculate the forces
+  runAllTasks(); finishAveraging();
+  // We now need to retrieve the buffer and set the forces on the atoms
+  myhist->applyForce( forcesToApply );
+  // Now make the forces make sense for the virial
+  unsigned fbase=0, tbase=0, vbase = getNumberOfDerivatives() - myvessels.size()*9;
+  for(unsigned i=vbase; i<vbase+9; ++i) finalForces[i]=0.0;
+  for(unsigned i=0; i<myvessels.size(); ++i) {
+    for(unsigned j=0; j<myvessels[i]->getNumberOfDerivatives()-9; ++j) {
+      finalForces[fbase + j] = forcesToApply[tbase + j];
+    }
+    unsigned k=0;
+    for(unsigned j=myvessels[i]->getNumberOfDerivatives()-9; j<myvessels[i]->getNumberOfDerivatives(); ++j) {
+      finalForces[vbase + k] += forcesToApply[tbase + j]; k++;
+    }
+    fbase += myvessels[i]->getNumberOfDerivatives() - 9;
+    tbase += myvessels[i]->getNumberOfDerivatives();
+  }
+  // And set the final forces on the atoms
+  setForcesOnAtoms( finalForces );
+  // Reset everything for next regular loop
+  in_apply=false;
 }
 
 }

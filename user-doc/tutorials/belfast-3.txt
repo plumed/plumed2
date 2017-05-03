@@ -31,21 +31,50 @@ The <a href="tutorial-resources/belfast-3.tar.gz" download="belfast-3.tar.gz"> t
 \subsection belfast-3-vis-traj Visualising the trajectory
 
 The aim of this tutorial is to understand the data contained in the trajectory called trajectory-short.pdb.  This file contains some
-frames from a simulation from a 16 residue protein.  As a start point then let load this trajectory with vmd and have a look
+frames from a simulation of a 16 residue protein.  As a start point then lets load this trajectory with vmd and have a look
 at it.  Type the following command into the command line:
 
 \verbatim
 vmd trajectory-short.pdb
 \endverbatim
 
-Look at it with the various representations that vmd offers.  If you at are at the plumed tutorial try typing the letter m 
-on the keyboard - we have made the new cartoon representation will update automatically for each frame of the trajectory - cool huh!  
+Look at it with the various representations that vmd offers.  If you add the instructions below to your .vmdrc file you can make 
+the new cartoon representation update automatically for each frame of the trajectory by pressing the m key - cool huh!
+
+\verbatim
+proc structure_trace {name index op} {
+      vmd_calculate_structure $index
+}
+
+user add key m {
+  puts "Automatic update of secondary structure, and alignment to first frame"
+  trace variable vmd_frame w structure_trace
+  rmsdtt
+  rmsdtt::doAlign
+  destroy $::rmsdtt::w
+  clear_reps top
+  mol color Structure
+  mol selection backbone
+  mol representation NewCartoon
+  mol addrep top
+}
+\endverbatim
+  
 What are your impressions about this trajectory based on looking at it with VMD?  How many basins in the free energy landscape
 is this trajectory sampling from?  What can we tell from looking at this trajectory that we could perhaps put in a paper?
 
 If your answers to the questions at the end of the above paragraph are I don't know that is good.  We can tell very little
-by just looking at a trajectory.  In fact the whole point of today has been to find ways of analyzing trajectories precisely
+by just looking at a trajectory.  In fact the whole point of the tutorials I referenced at the start of this one was to find ways of analyzing trajectories precisely
 so that we are not put in this position of staring at trajetories mystified!
+
+\subsection belfast-3-gismo Installing GISMO
+
+You can download and install the GISMO plugin by following the instructions on the page below:
+
+http://epfl-cosmo.github.io/sketchmap/index.html?page=code
+
+(you don't need to compile the sketch-map code)  Once it is installed you should have an option to open it when you open vmd.  The option 
+to open GISMO can be found under Extensions>Analysis>GISMO.
 
 \subsection belfast-3-cvs Finding collective variables
 
@@ -59,7 +88,7 @@ and construct a plumed input to calculate them and print them to a file.  You wi
 in order to do this.  Once you have created your plumed input use driver to calculate the torsional angles using the following command:
 
 \verbatim
-plumed driver --plumed plumed.dat --ixyz trajectory.xyz
+plumed driver --plumed plumed.dat --ixyz trajectory-short.xyz
 \endverbatim 
 
 If you have done this correctly you should have an output file containing your torsional angles.  We can use vmd+GISMO to visualise
@@ -82,15 +111,15 @@ with a different pair of ramachandran angles?
 
 \subsection belfast-3-dim-red Dimensionality reduction
 
-What we have done for most of today is seek out a function that takes as input the position of all the atoms in the system - a \f$3N\f$
+What we have done in most of the other exercises here is seek out a function that takes as input the position of all the atoms in the system - a \f$3N\f$
 dimensional vector, where \f$N\f$ is the number of atoms.  This function then outputs a single number - the value of the collective variable -
 that tells us where in a low dimensional space we should project that configuration.  Problems can arise because this collective-variable function 
-is many-to-one.  As you have hopefully seen in the previous exercise markedly different confifgurations of the protein can actually have quite
+is many-to-one.  As you have hopefully seen in the previous exercise markedly different configurations of the protein can actually have quite
 similar values of a particular ramachandran angle.
 
 We are going to spend the rest of this session introducing an alternative approach to this bussiness of finding collective variables.  In this alternative
-approach we are going to stop trying to seek out a function that can take any configuration of the atoms (any \f$3N\f$-dimensional vector) and find it's
-low dimensional proejection on the collective variable axis.  Instead we are going to take a set of configurations of the atoms (a set of \f$3N\f$-dimensional
+approach we are going to stop trying to seek out a function that can take any configuration of the atoms (any \f$3N\f$-dimensional vector) and find its
+low dimensional projection on the collective variable axis.  Instead we are going to take a set of configurations of the atoms (a set of \f$3N\f$-dimensional
 vectors of atom positions) and try to find a sensible set of projections for these configurations.  We already touched on this idea earlier when we looked at
 paths.  Our assumption, when we introduced this idea, was that we could find an ordered set of high-dimensional configurations that represented the 
 transtion pathway the system takes as it crossed a barrier and changed between two particularly interesting configurations. Lets say we have a path defined by 
@@ -98,7 +127,7 @@ four reference configurations - this implies that to travel between the configur
 configuration 1, then configuration 2, then configuration 3 and then configuration 4. This ordering means that the numbers 1 through 4 constitute sensible
 projections of these high-dimensional configurations.  The numbers 1 through 4 all lie on a single cartesian axis - a low-dimensional space.
 
-The problem when it comes to applying this idea to the data that we have in the trajectory-short trajectory is that we have no information on the ``order" of
+The problem when it comes to applying this idea to the data that we have in the trajectory-short trajectory is that we have no information on the "order" of
 these points. We have not been told that this trajectory represents the transition between two interesting points in phase space  and thus we cannot apply the
 logic of paths.  Hence, to seek out a low dimensional representation we are going to try and find a representation of this data we are going to seek out 
 <a href="http://en.wikipedia.org/wiki/Isometry"> an isometry </a> between the space containing the \f$3N\f$-dimensional vectors of atom positions 
@@ -110,7 +139,6 @@ Let's now generate our isometric embedding.  You will need to create a plumed in
 CLASSICAL_MDS ...
   ATOMS=1-256
   METRIC=OPTIMAL-FAST
-  USE_ALL_DATA
   NLOW_DIM=2
   OUTPUT_FILE=rmsd-embed
 ... CLASSICAL_MDS
@@ -146,7 +174,7 @@ Some suggestions to try in order of increasing difficulty: DRMSD, how much the f
 There is a growing community of people using these ideas to analyse trajectory data. Some start points for investigating their work in more detail
 are:
 
-- http://sketchmap.berlios.de
+- http://epfl-cosmo.github.io/sketchmap/index.html?page=main
 - http://www.annualreviews.org/doi/abs/10.1146/annurev-physchem-040412-110006
 
 

@@ -42,13 +42,13 @@ a graph.  This dfs action then finds the largest connected component in this gra
 numbers for the atoms in this largest connected component are then computed and this quantity is output to a colvar
 file.  The way this input can be used is described in detail in \cite tribello-clustering.
 
-\verbatim
+\plumedfile
 lq: COORDINATIONNUMBER SPECIES=1-100 SWITCH={CUBIC D_0=0.45  D_MAX=0.55} LOWMEM
 cm: CONTACT_MATRIX ATOMS=lq  SWITCH={CUBIC D_0=0.45  D_MAX=0.55}
 dfs: DFSCLUSTERING MATRIX=cm
 clust1: CLUSTER_PROPERTIES CLUSTERS=dfs CLUSTER=1 SUM
 PRINT ARG=clust1.* FILE=colvar
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

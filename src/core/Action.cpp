@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -71,6 +71,11 @@ Action::Action(const ActionOptions&ao):
   line.erase(line.begin());
   log.printf("Action %s\n",name.c_str());
 
+  if(comm.Get_rank()==0) {
+    replica_index=multi_sim_comm.Get_rank();
+  }
+  comm.Bcast(replica_index,0);
+
   if ( keywords.exists("LABEL") ) { parse("LABEL",label); }
 
   if(label.length()==0) {
@@ -115,8 +120,8 @@ int Action::fclose(FILE*fp) {
 }
 
 void Action::fflush() {
-  for(files_iterator p=files.begin(); p!=files.end(); ++p) {
-    std::fflush((*p));
+  for(const auto & p : files) {
+    std::fflush(p);
   }
 }
 
@@ -171,14 +176,14 @@ void Action::activate() {
     prepare();
     this->lockRequests();
   } else return;
-  for(Dependencies::iterator p=after.begin(); p!=after.end(); ++p) (*p)->activate();
+  for(const auto & p : after) p->activate();
   active=true;
 }
 
 void Action::setOption(const std::string &s) {
 // This overloads the action and activate some options
   options.insert(s);
-  for(Dependencies::iterator p=after.begin(); p!=after.end(); ++p) (*p)->setOption(s);
+  for(const auto & p : after) p->setOption(s);
 }
 
 void Action::clearOptions() {
@@ -240,11 +245,11 @@ void Action::warning( const std::string & msg ) {
 
 void Action::calculateFromPDB( const PDB& pdb ) {
   activate();
-  for(Dependencies::iterator p=after.begin(); p!=after.end(); ++p) {
-    ActionWithValue*av=dynamic_cast<ActionWithValue*>(*p);
+  for(const auto & p : after) {
+    ActionWithValue*av=dynamic_cast<ActionWithValue*>(p);
     if(av) { av->clearInputForces(); av->clearDerivatives(); }
-    (*p)->readAtomsFromPDB( pdb );
-    (*p)->calculate();
+    p->readAtomsFromPDB( pdb );
+    p->calculate();
   }
   readAtomsFromPDB( pdb );
   calculate();

@@ -258,8 +258,8 @@ execute 'highlight link plumedKeywords' . action_ . ' Statement'
 endfor
 
 " comments and strings last, with highest priority
-syntax region  plumedString start=/\v\{/  end=/\v\}/ contained contains=plumedString fold
-syntax region  plumedStringOneline start=/\v\{/  end=/\v\}/ oneline contained contains=plumedStringOneline fold
+syntax region  plumedString start=/\v\{/  end=/\v\}/ contained contains=ALL fold
+syntax region  plumedStringOneline start=/\v\{/  end=/\v\}/ oneline contained contains=ALL fold
 highlight link plumedString String
 highlight link plumedStringOneline String
 syntax match   plumedStringInKeyword /\v(<[^ #]+\=)@<=[^ #]+/ contained

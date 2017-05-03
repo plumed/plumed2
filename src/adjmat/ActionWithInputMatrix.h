@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015,2016 The plumed team
+   Copyright (c) 2015-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,14 +25,13 @@
 #include "core/ActionWithValue.h"
 #include "core/ActionAtomistic.h"
 #include "multicolvar/MultiColvarBase.h"
-#include "multicolvar/MultiColvarFunction.h"
 
 namespace PLMD {
 namespace adjmat {
 
 class AdjacencyMatrixVessel;
 
-class ActionWithInputMatrix : public multicolvar::MultiColvarFunction {
+class ActionWithInputMatrix : public multicolvar::MultiColvarBase {
 protected:
 /// The vessel that holds the adjacency matrix
   AdjacencyMatrixVessel* mymatrix;
@@ -52,7 +51,7 @@ public:
 /// Get the vector for task ind
   virtual void getInputData( const unsigned& ind, const bool& normed, const multicolvar::AtomValuePack& myatoms, std::vector<double>& orient0 ) const ;
 /// Add the derivatives on a connection
-  void addConnectionDerivatives( const unsigned& i, const unsigned& j, std::vector<double>& vals, MultiValue& myvals, MultiValue& myvout ) const ;
+  void addConnectionDerivatives( const unsigned& i, const unsigned& j, MultiValue& myvals, MultiValue& myvout ) const ;
 /// Get vector derivatives
   virtual MultiValue& getInputDerivatives( const unsigned& ind, const bool& normed, const multicolvar::AtomValuePack& myatoms ) const ;
   virtual unsigned getNumberOfDerivatives();

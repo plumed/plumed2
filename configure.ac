@@ -187,8 +187,6 @@ PLUMED_CONFIG_ENABLE([molfile_plugins],[molfile-plugins],[use molfile_plugins],[
 PLUMED_CONFIG_ENABLE([external_molfile_plugins],[external-molfile-plugins],[search for external molfile_plugins],[yes])
 PLUMED_CONFIG_ENABLE([matheval],[matheval],[search for matheval],[yes])
 PLUMED_CONFIG_ENABLE([zlib],[zlib],[search for zlib],[yes])
-PLUMED_CONFIG_ENABLE([clock_gettime],[clock-gettime],[search for gettime],[yes])
-PLUMED_CONFIG_ENABLE([gettimeofday],[gettimeofday],[search for gettimeofday],[yes])
 PLUMED_CONFIG_ENABLE([readdir_r],[readdir-r],[search for readdir_r (threadsafe)],[yes])
 PLUMED_CONFIG_ENABLE([cregex],[cregex],[search for C regular expression],[yes])
 PLUMED_CONFIG_ENABLE([dlopen],[dlopen],[search for dlopen],[yes])
@@ -262,7 +260,7 @@ if test $basic_warnings == true
 then
   PLUMED_CHECK_CXXFLAG([-Wall])
   PLUMED_CHECK_CXXFLAG([-pedantic])
-  PLUMED_CHECK_CXXFLAG([-ansi])
+  PLUMED_CHECK_CXXFLAG([-std=c++11])
 fi
 
 if test $debug == true
@@ -292,11 +290,25 @@ then
   PLUMED_CHECK_CXXFLAG([-Wold-style-cast])
 fi
 
-AC_MSG_CHECKING([whether $CXX supports explicit])
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM([ class A{explicit A(){}};])],
-  [AC_MSG_RESULT([yes])],
+AC_MSG_CHECKING([whether $CXX declares c++11 support])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
+#if __cplusplus <= 199711L
+this_compiler_does_not_support_cxx11
+#endif
+])],
+  [AC_MSG_RESULT([yes])];
+  support_cxx11=true,
   [AC_MSG_RESULT([no]) ;
-   AC_DEFINE([explicit],[])])
+  support_cxx11=false])
+
+if test "$support_cxx11" = false
+then
+   AC_MSG_WARN([C++11 support is required as of PLUMED 2.4])
+   AC_MSG_WARN([Your compiler appears not to support C++11])
+   AC_MSG_WARN([Please change compiler or make sure that everything works correctly])
+fi
+
+
 
 AC_SUBST(disable_dependency_tracking)
 
@@ -469,12 +481,6 @@ AC_OPENMP
 
 if test $matheval == true ; then
   PLUMED_CHECK_PACKAGE([matheval.h],[evaluator_create],[__PLUMED_HAS_MATHEVAL],[matheval])
-fi
-if test $clock_gettime == true ; then
-  PLUMED_CHECK_PACKAGE([time.h],[clock_gettime],[__PLUMED_HAS_CLOCK_GETTIME],[rt])
-fi
-if test $gettimeofday == true ; then
-  PLUMED_CHECK_PACKAGE([sys/time.h], [gettimeofday], [__PLUMED_HAS_GETTIMEOFDAY])
 fi
 if test $readdir_r == true ; then
   PLUMED_CHECK_PACKAGE([dirent.h],[readdir_r],[__PLUMED_HAS_READDIR_R])

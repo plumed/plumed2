@@ -36,14 +36,13 @@ Calculate the components of the simulation cell
 
 \par Examples
 The following input tells plumed to print the squared modulo of each of the three lattice vectors
-\verbatim
+\plumedfile
 cell: CELL
 aaa:    COMBINE ARG=cell.ax,cell.ay,cell.az POWERS=2,2,2 PERIODIC=NO
 bbb:    COMBINE ARG=cell.bx,cell.by,cell.bz POWERS=2,2,2 PERIODIC=NO
 ccc:    COMBINE ARG=cell.cx,cell.cy,cell.cz POWERS=2,2,2 PERIODIC=NO
 PRINT ARG=aaa,bbb,ccc
-\endverbatim
-(See also \ref COMBINE and \ref PRINT).
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

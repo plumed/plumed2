@@ -26,6 +26,7 @@
 #include "reference/MetricRegister.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
+#include "reference/Direction.h"
 #include "tools/Pbc.h"
 
 //+PLUMEDOC COLVAR PCAVARS
@@ -75,10 +76,10 @@ frame are removed from these displacements.  The matrix \f$A\f$ and the referenc
 configuration \f$R^{ref}\f$ are specified in the pdb input file reference.pdb and the
 value of all projections (and the residual) are output to a file called colvar2.
 
-\verbatim
+\plumedfile
 PCAVARS REFERENCE=reference.pdb TYPE=OPTIMAL LABEL=pca2
 PRINT ARG=pca2.* FILE=colvar2
-\endverbatim
+\endplumedfile
 
 The reference configurations can be specified using a pdb file.  The first configuration that you provide is the reference configuration,
 which is refered to in the above as \f$X^{ref}\f$ subsequent configurations give the directions of row vectors that are contained in
@@ -176,10 +177,8 @@ private:
   ReferenceValuePack mypack;
 /// The position of the reference configuration (the one we align to)
   ReferenceConfiguration* myref;
-/// The eigenvectors for the atomic displacements
-  Matrix<Vector> atom_eigv;
-/// The eigenvectors for the displacements in argument space
-  Matrix<double> arg_eigv;
+/// The eigenvectors we are interested in
+  std::vector<Direction> directions;
 /// Stuff for applying forces
   std::vector<double> forces, forcesToApply;
 public:
@@ -242,7 +241,8 @@ PCAVars::PCAVars(const ActionOptions& ao):
     if(do_read) {
       if( nfram==0 ) {
         myref = metricRegister().create<ReferenceConfiguration>( mtype, mypdb );
-        if( myref->isDirection() ) error("first frame should be reference configuration - not direction of vector");
+        Direction* tdir = dynamic_cast<Direction*>( myref );
+        if( tdir ) error("first frame should be reference configuration - not direction of vector");
         if( !myref->pcaIsEnabledForThisReference() ) error("can't do PCA with reference type " + mtype );
         std::vector<std::string> remarks( mypdb.getRemark() ); std::string rtype;
         bool found=Tools::parse( remarks, "TYPE", rtype );
@@ -285,28 +285,15 @@ PCAVars::PCAVars(const ActionOptions& ao):
   checkRead();
 
   // Resize the matrices that will hold our eivenvectors
-  if( getNumberOfAtoms()>0 ) atom_eigv.resize( nfram-1, getNumberOfAtoms() );
-  if( getNumberOfArguments()>0 ) arg_eigv.resize( nfram-1, getNumberOfArguments() );
+  for(unsigned i=1; i<nfram; ++i) {
+    directions.push_back( Direction(ReferenceConfigurationOptions("DIRECTION")));
+    directions[i-1].setNamesAndAtomNumbers( atoms, args );
+  }
 
   // Create fake periodic boundary condition (these would only be used for DRMSD which is not allowed)
-  Pbc fake_pbc;
   // Now calculate the eigenvectors
   for(unsigned i=1; i<nfram; ++i) {
-    // Calculate distance from reference configuration
-    double dist=myframes.getFrame(i)->calc( myref->getReferencePositions(), fake_pbc, getArguments(), myref->getReferenceArguments(), mypack, true );
-
-    // Calculate the length of the vector for normalization
-    double tmp, norm=0.0;
-    for(unsigned j=0; j<getNumberOfAtoms(); ++j) {
-      for(unsigned k=0; k<3; ++k) { tmp = mypack.getAtomsDisplacementVector()[j][k]; norm+=tmp*tmp; }
-    }
-    for(unsigned j=0; j<getNumberOfArguments(); ++j) { tmp = 0.5*mypack.getArgumentDerivative(j); norm+=tmp*tmp; }
-
-    // Normalize the eigevector
-    if(nflag) { norm = 1.0 / sqrt(norm); } else { norm = 1.0; }
-    for(unsigned j=0; j<getNumberOfAtoms(); ++j) atom_eigv(i-1,j) = norm*mypack.getAtomsDisplacementVector()[j];
-    for(unsigned j=0; j<getNumberOfArguments(); ++j) arg_eigv(i-1,j) = -0.5*norm*mypack.getArgumentDerivative(j);
-
+    myframes.getFrame(i)->extractDisplacementVector( myref->getReferencePositions(), getArguments(), myref->getReferenceArguments(), false, nflag, directions[i-1] );
     // Create a component to store the output
     std::string num; Tools::convert( i, num );
     addComponentWithDerivatives("eig-"+num); componentIsNotPeriodic("eig-"+num);
@@ -360,17 +347,19 @@ void PCAVars::calculate() {
     Vector ader=mypack.getAtomDerivative( j );
     for(unsigned k=0; k<3; ++k) resid->addDerivative( nargs +3*j+k, ader[k] );
   }
+  // Retrieve the values of all arguments
+  std::vector<double> args( getNumberOfArguments() ); for(unsigned i=0; i<getNumberOfArguments(); ++i) args[i]=getArgument(i);
 
   // Now calculate projections on pca vectors
   Vector adif, ader; Tensor fvir, tvir;
   for(unsigned i=0; i<getNumberOfComponents()-1; ++i) { // One less component as we also have residual
-    double proj=0; tvir.zero(); Value* eid=getPntrToComponent(i);
-    for(unsigned j=0; j<getNumberOfArguments(); ++j) {
-      proj+=arg_eigv(i,j)*0.5*mypack.getArgumentDerivative(j);
-      eid->addDerivative( j, arg_eigv(i,j) );
-    }
+    double proj=myref->projectDisplacementOnVector( directions[i], getPositions(), getArguments(), args, mypack );
+
+    // And now accumulate derivatives
+    Value* eid=getPntrToComponent(i);
+    for(unsigned j=0; j<getNumberOfArguments(); ++j) eid->addDerivative( j, mypack.getArgumentDerivative(j) );
     if( getNumberOfAtoms()>0 ) {
-      proj += myref->projectAtomicDisplacementOnVector( i, atom_eigv, getPositions(), mypack );
+      tvir.zero();
       for(unsigned j=0; j<getNumberOfAtoms(); ++j) {
         Vector myader=mypack.getAtomDerivative(j);
         for(unsigned k=0; k<3; ++k) {
@@ -385,7 +374,8 @@ void PCAVars::calculate() {
     }
     dist -= proj*proj; // Subtract square from total squared distance to get residual squared
     // Derivatives of residual
-    for(unsigned j=0; j<getNumberOfArguments(); ++j) resid->addDerivative( j, -2*proj*arg_eigv(i,j) );
+    for(unsigned j=0; j<getNumberOfArguments(); ++j) resid->addDerivative( j, -2*proj*eid->getDerivative(j) );
+    // for(unsigned j=0;j<getNumberOfArguments();++j) resid->addDerivative( j, -2*proj*arg_eigv(i,j) );
     // And set final value
     getPntrToComponent(i)->set( proj );
   }

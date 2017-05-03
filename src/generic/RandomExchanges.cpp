@@ -44,25 +44,25 @@ metadynamics simulation using a different angle in each replica.
 Exchanges will be randomly tried between replicas 0-1, 0-2 and 1-2
 
 Here is plumed.0.dat
-\verbatim
+\plumedfile
 RANDOM_EXCHANGES
 t: TORSION ATOMS=1,2,3,4
 METAD ARG=t HEIGHT=0.1 PACE=100 SIGMA=0.3
-\endverbatim
+\endplumedfile
 
 Here is plumed.1.dat
-\verbatim
+\plumedfile
 RANDOM_EXCHANGES
 t: TORSION ATOMS=2,3,4,5
 METAD ARG=t HEIGHT=0.1 PACE=100 SIGMA=0.3
-\endverbatim
+\endplumedfile
 
 Here is plumed.2.dat
-\verbatim
+\plumedfile
 RANDOM_EXCHANGES
 t: TORSION ATOMS=3,4,5,6
 METAD ARG=t HEIGHT=0.1 PACE=100 SIGMA=0.3
-\endverbatim
+\endplumedfile
 
 \warning Multi replica simulations are presently only working with gromacs.
 

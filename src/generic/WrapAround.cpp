@@ -69,20 +69,19 @@ consider the possibility of using the STRIDE keyword here (with great care).
 This command instructs plumed to move all the ions to their periodic image that is as close as possible to
 the rna group.
 
-\verbatim
+\plumedfile
 rna: GROUP ATOMS=1-100
 ions: GROUP ATOMS=101-110
 # first make the rna molecule whole
 WHOLEMOLECULES ENTITY0=rna
 WRAPAROUND ATOMS=ions AROUND=rna
 DUMPATOMS FILE=dump.xyz ATOMS=rna,ions
-\endverbatim
-(see also \ref WHOLEMOLECULES, \ref GROUP and \ref DUMPATOMS)
+\endplumedfile
 
 In case you want to do it during a simulation and you only care about wrapping the ions in
 the `dump.xyz` file, you can use the following:
 
-\verbatim
+\plumedfile
 # add some restraint that do not require molecules to be whole:
 a: TORSION ATOMS=1,2,10,11
 RESTRAINT ARG=a AT=0.0 KAPPA=5
@@ -98,15 +97,14 @@ ions: GROUP ATOMS=101-110
 WHOLEMOLECULES ENTITY0=rna STRIDE=100
 WRAPAROUND ATOMS=ions AROUND=rna STRIDE=100
 DUMPATOMS FILE=dump.xyz ATOMS=rna,ions STRIDE=100
-\endverbatim
-(see also \ref TORSION, \ref GROUP, \ref WHOLEMOLECULES and \ref DUMPATOMS)
+\endplumedfile
 
 Notice that if the biased variable requires a molecule to be whole, you might have to put
 just the \ref WHOLEMOLECULES command before computing that variable and leave the default STRIDE=1.
 
 This command instructs plumed to center all atoms around the center of mass of a solute molecule.
 
-\verbatim
+\plumedfile
 solute: GROUP ATOMS=1-100
 all: GROUP ATOMS=1-1000
 # center of the solute:
@@ -116,8 +114,7 @@ com: COM ATOMS=solute
 # notice that we wrap around a single atom. this should be fast
 WRAPAROUND ATOMS=all AROUND=com
 DUMPATOMS FILE=dump.xyz ATOMS=all
-\endverbatim
-(see also \ref GROUP \ref COM \ref DUMPATOMS)
+\endplumedfile
 
 Notice that whereas \ref WHOLEMOLECULES is designed to make molecules whole,
 \ref WRAPAROUND can easily break molecules. In the last example,
@@ -136,7 +133,7 @@ in the following examples all the water oxygens will be brought
 close to the solute, and all the hydrogens will be kept close
 to their related oxygen.
 
-\verbatim
+\plumedfile
 solute: GROUP ATOMS=1-100
 water: GROUP ATOMS=101-1000
 com: COM ATOMS=solute
@@ -145,8 +142,7 @@ WRAPAROUND ATOMS=solute AROUND=com
 # notice that we wrap around a single atom. this should be fast
 WRAPAROUND ATOMS=water AROUND=com GROUPBY=3
 DUMPATOMS FILE=dump.xyz ATOMS=solute,water
-\endverbatim
-(see also \ref GROUP \ref COM \ref DUMPATOMS)
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

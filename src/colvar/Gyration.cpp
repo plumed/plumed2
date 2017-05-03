@@ -75,11 +75,10 @@ periodic image.
 
 The following input tells plumed to print the radius of gyration of the
 chain containing atoms 10 to 20.
-\verbatim
+\plumedfile
 GYRATION TYPE=RADIUS ATOMS=10-20 LABEL=rg
 PRINT ARG=rg STRIDE=1 FILE=colvar
-\endverbatim
-(See also \ref PRINT)
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
@@ -149,10 +148,13 @@ Gyration::Gyration(const ActionOptions&ao):
   if(rg_type>TRACE) log<<"  Bibliography "<<plumed.cite("Jirí Vymetal and Jirí Vondrasek, J. Phys. Chem. A 115, 11455 (2011)"); log<<"\n";
 
   log.printf("  atoms involved : ");
-  for(unsigned i=0; i<atoms.size(); ++i) log.printf("%d ",atoms[i].serial());
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    if(i%25==0) log<<"\n";
+    log.printf("%d ",atoms[i].serial());
+  }
   log.printf("\n");
 
-  if(!nopbc) {
+  if(nopbc) {
     log<<"  PBC will be ignored\n";
   } else {
     log<<"  broken molecules will be rebuilt assuming atoms are in the proper order\n";

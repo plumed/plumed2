@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,7 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "MultiColvar.h"
+#include "MultiColvarBase.h"
+#include "AtomValuePack.h"
 #include "tools/Torsion.h"
 #include "core/ActionRegister.h"
 
@@ -47,14 +48,14 @@ where the \f$\phi_i\f$ and \f$\psi\f$ values and the instantaneous values for th
 
 The following provides an example input for the dihcor action
 
-\verbatim
+\plumedfile
 DIHCOR ...
   ATOMS1=1,2,3,4,5,6,7,8
   ATOMS2=5,6,7,8,9,10,11,12
   LABEL=dih
 ... DIHCOR
 PRINT ARG=dih FILE=colvar STRIDE=10
-\endverbatim
+\endplumedfile
 
 In the above input we are calculating the correation between the torsion angle involving atoms 1, 2, 3 and 4 and the torsion angle
 involving atoms 5, 6, 7 and 8.	This is then added to the correlation betwene the torsion angle involving atoms 5, 6, 7 and 8 and the
@@ -64,7 +65,7 @@ Writing out the atoms involved in all the torsions in this way can be rather ted
 can avoid this by using the \ref MOLINFO command.  PLUMED uses the pdb file that you provide to this command to learn
 about the topology of the protein molecule.  This means that you can specify torsion angles using the following syntax:
 
-\verbatim
+\plumedfile
 MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
 DIHCOR ...
 ATOMS1=@phi-3,@psi-3
@@ -72,7 +73,7 @@ ATOMS2=@psi-3,@phi-4
 ATOMS4=@phi-4,@psi-4
 ... DIHCOR
 PRINT ARG=dih FILE=colvar STRIDE=10
-\endverbatim
+\endplumedfile
 
 Here, \@phi-3 tells plumed that you would like to calculate the \f$\phi\f$ angle in the third residue of the protein.
 Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle of the 4th residue of the protein.
@@ -80,7 +81,7 @@ Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle o
 */
 //+ENDPLUMEDOC
 
-class DihedralCorrelation : public MultiColvar {
+class DihedralCorrelation : public MultiColvarBase {
 private:
 public:
   static void registerKeywords( Keywords& keys );
@@ -92,16 +93,23 @@ public:
 PLUMED_REGISTER_ACTION(DihedralCorrelation,"DIHCOR")
 
 void DihedralCorrelation::registerKeywords( Keywords& keys ) {
-  MultiColvar::registerKeywords( keys );
-  keys.use("ATOMS");
+  MultiColvarBase::registerKeywords( keys );
+  keys.add("numbered","ATOMS","the atoms involved in each of the dihedral correlation values you wish to calculate. "
+           "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one dihedral correlation will be "
+           "calculated for each ATOM keyword you specify (all ATOM keywords should "
+           "specify the indices of 8 atoms).  The eventual number of quantities calculated by this "
+           "action will depend on what functions of the distribution you choose to calculate.");
+  keys.reset_style("ATOMS","atoms");
 }
 
 DihedralCorrelation::DihedralCorrelation(const ActionOptions&ao):
-  PLUMED_MULTICOLVAR_INIT(ao)
+  Action(ao),
+  MultiColvarBase(ao)
 {
   // Read in the atoms
-  int natoms=8; std::vector<AtomNumber> all_atoms;
-  readAtoms( natoms, all_atoms );
+  std::vector<AtomNumber> all_atoms;
+  readAtomsLikeKeyword( "ATOMS", 8, all_atoms );
+  setupMultiColvarBase( all_atoms );
   // Stuff for central atoms
   std::vector<bool> catom_ind(8, false);
   catom_ind[1]=catom_ind[2]=catom_ind[5]=catom_ind[6]=true;

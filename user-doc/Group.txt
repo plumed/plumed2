@@ -56,12 +56,12 @@ See http://en.wikipedia.org/wiki/Ramachandran_plot
 The following example shows how to use \ref MOLINFO with \ref TORSION to calculate the torsion angles phi and psi for the first and fourth residue
 of the protein:
 
-\verbatim
+\plumedfile
 MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
 t1: TORSION ATOMS=@phi-3
 t2: TORSION ATOMS=@psi-4
 PRINT ARG=t1,t2 FILE=colvar STRIDE=10
-\endverbatim
+\endplumedfile
 
 \subsection pbc Broken Molecules and PBC 
 
@@ -76,11 +76,11 @@ using the ALIGN_ATOMS keyword.  In PLUMED 2 the same effect can be achieved usin
 
 The following input computes the end-to-end distance for a polymer of 100 atoms and keeps it at a value around 5.
 
-\verbatim
+\plumedfile
 WHOLEMOLECULES ENTITY0=1-100
 e2e: DISTANCE ATOMS=1,100 NOPBC
 RESTRAINT ARG=e2e KAPPA=1 AT=5
-\endverbatim
+\endplumedfile
 
 Notice that NOPBC is used to be sure in \ref DISTANCE that if the end-to-end distance is larger than half the simulation box the distance 
 is compute properly. Also notice that, since many MD codes break molecules across cell boundary, it might be necessary to use the 
@@ -90,12 +90,12 @@ Notice that most expressions are invariant with respect to a change in the order
 but some of them depend on that order. E.g., with \ref WHOLEMOLECULES it could be useful to
 specify atom lists in a reversed order.
 
-\verbatim
+\plumedfile
 # to see the effect, one could dump the atoms as they were before molecule reconstruction:
 # DUMPATOMS FILE=dump-broken.xyz ATOMS=1-20
 WHOLEMOLECULES STRIDE=1 ENTITY0=1-20
 DUMPATOMS FILE=dump.xyz ATOMS=1-20
-\endverbatim
+\endplumedfile
 
 Notice that there are other ways to manipulate the coordinates stored within PLUMED:
 - Using the \subpage FIT_TO_TEMPLATE they can be aligned to a template structure.
@@ -116,10 +116,10 @@ To specify to a colvar that you want to use the position of a virtual atom to ca
 in your system you simply use the label for your virtual atom in place of the usual numerical index.  Virtual
 atoms and normal atoms can be mixed together in the input to colvars as shown below:
 
-\verbatim
+\plumedfile
 COM ATOMS=1,10 LABEL=com1
 DISTANCE ATOMS=11,com1
-\endverbatim 
+\endplumedfile
 
 If you don't want to calculate CVs from the virtual atom.  That is to say you just want to monitor the position of a virtual atom 
 (or any set of atoms) over the course of your trajectory you can do this using \ref DUMPATOMS.

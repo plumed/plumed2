@@ -1,0 +1,3 @@
+#! FIELDS time d sigma_d height biasf
+#! SET multivariate false
+  0.00000 10.39230  5.00000  1.00000 -1.00000

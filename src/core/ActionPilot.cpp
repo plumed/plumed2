@@ -48,6 +48,10 @@ int ActionPilot::getStride()const {
   return stride;
 }
 
+void ActionPilot::setStride( const int& n ) {
+  stride=n;
+}
+
 }
 
 

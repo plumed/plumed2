@@ -766,6 +766,8 @@ INPUT                  = ./Intro.txt \
                          ./AddingAMeasure.txt \
                          ./AddingAMultColvar.txt \
                          ./InstallationLayout.txt \
+                         ./AddingRegressionTests.txt \
+                         ./HowToContributeToPlumed.txt \
                          ./intro-git.txt \
                          ./plumedcheck.txt \
                          ./CodeFormatting.txt

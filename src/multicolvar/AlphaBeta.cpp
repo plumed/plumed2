@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,7 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "MultiColvar.h"
+#include "MultiColvarBase.h"
+#include "AtomValuePack.h"
 #include "tools/Torsion.h"
 #include "core/ActionRegister.h"
 
@@ -48,7 +49,7 @@ The \f$\phi_i^{\textrm{Ref}}\f$ values are the user-specified reference values f
 
 The following provides an example of the input for an alpha beta similarity.
 
-\verbatim
+\plumedfile
 ALPHABETA ...
 ATOMS1=168,170,172,188 REFERENCE1=3.14
 ATOMS2=170,172,188,190 REFERENCE2=3.14
@@ -56,11 +57,11 @@ ATOMS3=188,190,192,230 REFERENCE3=3.14
 LABEL=ab
 ... ALPHABETA
 PRINT ARG=ab FILE=colvar STRIDE=10
-\endverbatim
+\endplumedfile
 
 Because all the reference values are the same we can calculate the same quantity using
 
-\verbatim
+\plumedfile
 ALPHABETA ...
 ATOMS1=168,170,172,188 REFERENCE=3.14
 ATOMS2=170,172,188,190
@@ -68,13 +69,13 @@ ATOMS3=188,190,192,230
 LABEL=ab
 ... ALPHABETA
 PRINT ARG=ab FILE=colvar STRIDE=10
-\endverbatim
+\endplumedfile
 
 Writing out the atoms involved in all the torsions in this way can be rather tedious. Thankfully if you are working with protein you
 can avoid this by using the \ref MOLINFO command.  PLUMED uses the pdb file that you provide to this command to learn
 about the topology of the protein molecule.  This means that you can specify torsion angles using the following syntax:
 
-\verbatim
+\plumedfile
 MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
 ALPHABETA ...
 ATOMS1=@phi-3 REFERENCE=3.14
@@ -83,7 +84,7 @@ ATOMS3=@phi-4
 LABEL=ab
 ... ALPHABETA
 PRINT ARG=ab FILE=colvar STRIDE=10
-\endverbatim
+\endplumedfile
 
 Here, \@phi-3 tells plumed that you would like to calculate the \f$\phi\f$ angle in the third residue of the protein.
 Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle of the 4th residue of the protein.
@@ -92,7 +93,7 @@ Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle o
 */
 //+ENDPLUMEDOC
 
-class AlphaBeta : public MultiColvar {
+class AlphaBeta : public MultiColvarBase {
 private:
   std::vector<double> target;
 public:
@@ -105,19 +106,26 @@ public:
 PLUMED_REGISTER_ACTION(AlphaBeta,"ALPHABETA")
 
 void AlphaBeta::registerKeywords( Keywords& keys ) {
-  MultiColvar::registerKeywords( keys );
-  keys.use("ATOMS");
+  MultiColvarBase::registerKeywords( keys );
+  keys.add("numbered","ATOMS","the atoms involved in each of the alpha-beta variables you wish to calculate. "
+           "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one alpha-beta values will be "
+           "calculated for each ATOM keyword you specify (all ATOM keywords should "
+           "specify the indices of four atoms).  The eventual number of quantities calculated by this "
+           "action will depend on what functions of the distribution you choose to calculate.");
+  keys.reset_style("ATOMS","atoms");
   keys.add("numbered","REFERENCE","the reference values for each of the torsional angles.  If you use a single REFERENCE value the "
            "same reference value is used for all torsions");
   keys.reset_style("REFERENCE","compulsory");
 }
 
 AlphaBeta::AlphaBeta(const ActionOptions&ao):
-  PLUMED_MULTICOLVAR_INIT(ao)
+  Action(ao),
+  MultiColvarBase(ao)
 {
   // Read in the atoms
-  int natoms=4; std::vector<AtomNumber> all_atoms;
-  readAtoms( natoms, all_atoms );
+  std::vector<AtomNumber> all_atoms;
+  readAtomsLikeKeyword( "ATOMS", 4, all_atoms );
+  setupMultiColvarBase( all_atoms );
   // Resize target
   target.resize( getFullNumberOfTasks() );
   // Setup central atom indices

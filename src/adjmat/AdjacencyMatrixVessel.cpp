@@ -94,8 +94,8 @@ void AdjacencyMatrixVessel::retrieveMatrix( DynamicList<unsigned>& myactive_elem
     myactive_elements.activate(i);
     unsigned j, k; getMatrixIndices( function->getPositionInFullTaskList(i), k, j );
 
-    if( symmetric ) mymatrix(k,j)=mymatrix(j,k)=vals[0]*function->transformStoredValues( vals, vin, df );
-    else mymatrix(k,j)=vals[0]*function->transformStoredValues( vals, vin, df );
+    if( symmetric ) mymatrix(k,j)=mymatrix(j,k)=vals[0]*vals[1];
+    else mymatrix(k,j)=vals[0]*vals[1];
   }
   myactive_elements.updateActiveMembers();
 }
@@ -110,7 +110,7 @@ void AdjacencyMatrixVessel::retrieveAdjacencyLists( std::vector<unsigned>& nneig
   for(unsigned i=0; i<getNumberOfStoredValues(); ++i) {
     // Check if atoms are connected
     retrieveSequentialValue( i, false, myvals );
-    if( myvals[0]<epsilon || !function->checkForConnection( myvals ) ) continue ;
+    if( myvals[0]<epsilon || myvals[1]<epsilon ) continue ;
 
     unsigned j, k; getMatrixIndices( function->getPositionInFullTaskList(i), k, j );
 
@@ -130,7 +130,7 @@ void AdjacencyMatrixVessel::retrieveEdgeList( unsigned& nedge, std::vector<std::
   for(unsigned i=0; i<getNumberOfStoredValues(); ++i) {
     // Check if atoms are connected
     retrieveSequentialValue( i, false, myvals );
-    if( myvals[0]<epsilon || !function->checkForConnection( myvals ) ) continue ;
+    if( myvals[0]<epsilon || myvals[1]<epsilon ) continue ;
 
     getMatrixIndices( function->getPositionInFullTaskList(i), edge_list[nedge].first, edge_list[nedge].second );
     nedge++;
@@ -143,25 +143,7 @@ bool AdjacencyMatrixVessel::nodesAreConnected( const unsigned& iatom, const unsi
 
   std::vector<double> myvals( getNumberOfComponents() );
   retrieveValueWithIndex( ind, false, myvals );
-  return ( myvals[0]>epsilon && function->checkForConnection( myvals ) );
-}
-
-void AdjacencyMatrixVessel::retrieveDerivatives( const unsigned& myelem, const bool& normed, MultiValue& myvals ) {
-  StoreDataVessel::retrieveDerivatives( myelem, normed, myvals );
-  if( !function->weightHasDerivatives ) return ;
-
-  unsigned vi; std::vector<double> vals( getNumberOfComponents() ); retrieveValueWithIndex( myelem, normed, vals );
-  double df, max=function->transformStoredValues( vals, vi, df );
-
-  double pref = max/(vals[0]*vals[0]);
-  for(unsigned i=0; i<myvals.getNumberActive(); ++i) {
-    unsigned jder=myvals.getActiveIndex(i);
-    myvals.setDerivative( 1, jder, df*myvals.getDerivative(vi, jder)/vals[0] - pref*myvals.getDerivative(0, jder) );
-  }
-}
-
-void AdjacencyMatrixVessel::recalculateStoredQuantity( const unsigned& myelem, MultiValue& myvals ) {
-  function->recalculateMatrixElement( myelem, myvals );
+  return ( myvals[0]>epsilon && myvals[1]>epsilon );
 }
 
 double AdjacencyMatrixVessel::getCutoffForConnection() const {

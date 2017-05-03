@@ -98,10 +98,9 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
           std::vector<std::string> ss=all[j]->getComponentsVector();
           for(unsigned  k=0; k<ss.size(); ++k) {
             unsigned ll=strlen(ss[k].c_str())+1;
-            char*str;
-            str=new char [ll];
-            strcpy(str,ss[k].c_str());
-            char *ppstr=str;
+            std::vector<char> str(ll);
+            strcpy(&str[0],ss[k].c_str());
+            const char *ppstr=&str[0];
             if(!regexec(preg, ppstr, preg->re_nsub, pmatch, 0)) {
               log.printf("  Something matched with \"%s\" : ",ss[k].c_str());
               do {
@@ -123,7 +122,6 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
                 ppstr += pmatch[0].rm_eo;	/* Restart from last match */
               } while(!regexec(preg,ppstr,preg->re_nsub,pmatch,0));
             }
-            delete [] str;
           }
         };
         regfree(preg);

@@ -134,9 +134,9 @@ The following tells plumed to calculate the RMSD distance between
 the positions of the atoms in the reference file and their instantaneous
 position.  The Kearseley algorithm is used so this is done optimally.
 
-\verbatim
+\plumedfile
 RMSD REFERENCE=file.pdb TYPE=OPTIMAL
-\endverbatim
+\endplumedfile
 
 ...
 

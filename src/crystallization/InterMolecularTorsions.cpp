@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,7 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "multicolvar/MultiColvarFunction.h"
+#include "multicolvar/MultiColvarBase.h"
+#include "multicolvar/AtomValuePack.h"
 #include "core/ActionRegister.h"
 #include "tools/SwitchingFunction.h"
 #include "tools/Torsion.h"
@@ -29,7 +30,18 @@
 
 //+PLUMEDOC MCOLVARF INTERMOLECULARTORSIONS
 /*
-Calculate torsions between axis of adjacent molecules
+Calculate torsions between vectors on adjacent molecules
+
+This variable can be used to calculate the average torsional angles between vectors.  In other words,
+it can be used to compute quantities like this:
+
+\f[
+s = \frac{ \sum_{i \ne j} \sigma(r_{ij}) \theta_{ij} }{ \sum_{i \ne j} \sigma(r_{ij}) }
+\f]
+
+Here the sums run over all pairs of molecules. \f$\sigma(r_{ij})\f$ is a \ref switchingfunction that
+action on the distance between the centers of molecules \f$i\f$ and \f$j\f$.  \f$\theta_{ij}\f$ is then
+the torsional angle between an orientation vector for molecule \f$i\f$ and molecule \f$j\f$.
 
 This command can be used to calculate the intermolecular torsional angles between the orientations of nearby molecules.  The orientation of a
 molecule can be calculated by using either the \ref MOLECULES or the \ref PLANES commands.  These two commands calculate the orientation of a
@@ -52,12 +64,12 @@ between the two molecules.  As such the torsional angles between molecules that 
 histogram while the torsional angles between molecules that are far apart does not contribute to the histogram.  The histogram is
 averaged over the whole trajectory and output once all the trajectory frames have been read.
 
-\verbatim
+\plumedfile
 m1: MOLECULES MOL1=1,2 MOL2=3,4 MOL3=5,6 MOL4=7,8
 tt_p: INTERMOLECULARTORSIONS MOLS=m1 SWITCH={RATIONAL R_0=0.25 D_0=2.0 D_MAX=3.0}
 htt_p: HISTOGRAM DATA=tt_p GRID_MIN=-pi GRID_MAX=pi BANDWIDTH=0.1 GRID_BIN=200 STRIDE=1
 DUMPGRID GRID=htt_p FILE=myhist.out
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
@@ -65,7 +77,7 @@ DUMPGRID GRID=htt_p FILE=myhist.out
 namespace PLMD {
 namespace crystallization {
 
-class InterMolecularTorsions : public multicolvar::MultiColvarFunction {
+class InterMolecularTorsions : public multicolvar::MultiColvarBase {
 private:
 /// The switching function that tells us if atoms are close enough together
   SwitchingFunction switchingFunction;
@@ -84,7 +96,7 @@ public:
 PLUMED_REGISTER_ACTION(InterMolecularTorsions,"INTERMOLECULARTORSIONS")
 
 void InterMolecularTorsions::registerKeywords( Keywords& keys ) {
-  MultiColvarFunction::registerKeywords( keys );
+  MultiColvarBase::registerKeywords( keys );
   keys.add("atoms","MOLS","The molecules you would like to calculate the torsional angles between. This should be the label/s of \\ref MOLECULES or \\ref PLANES actions");
   keys.add("atoms-1","MOLSA","In this version of the input the torsional angles between all pairs of atoms including one atom from MOLA one atom from MOLB will be computed. "
            "This should be the label/s of \\ref MOLECULES or \\ref PLANES actions");
@@ -98,13 +110,13 @@ void InterMolecularTorsions::registerKeywords( Keywords& keys ) {
            "The following provides information on the \\ref switchingfunction that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   // Use actionWithDistributionKeywords
-  keys.remove("LOWMEM"); keys.remove("DATA");
+  keys.remove("LOWMEM");
   keys.addFlag("LOWMEM",false,"lower the memory requirements");
 }
 
 InterMolecularTorsions::InterMolecularTorsions(const ActionOptions& ao):
   Action(ao),
-  MultiColvarFunction(ao)
+  MultiColvarBase(ao)
 {
   for(unsigned i=0; i<getNumberOfBaseMultiColvars(); ++i) {
     if( getBaseMultiColvar(i)->getNumberOfQuantities()!=5 ) error("input multicolvar does not calculate molecular orientations");

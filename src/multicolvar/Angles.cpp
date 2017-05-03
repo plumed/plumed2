@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,7 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "MultiColvar.h"
+#include "MultiColvarBase.h"
+#include "AtomValuePack.h"
 #include "tools/Angle.h"
 #include "tools/SwitchingFunction.h"
 #include "core/ActionRegister.h"
@@ -57,33 +58,33 @@ an atom / molecule \cite lj-recon.
 The following example instructs plumed to find the average of two angles and to
 print it to a file
 
-\verbatim
+\plumedfile
 ANGLES ATOMS1=1,2,3 ATOMS2=4,5,6 MEAN LABEL=a1
 PRINT ARG=a1.mean FILE=colvar
-\endverbatim
+\endplumedfile
 
 The following example tells plumed to calculate all angles involving
 at least one atom from GROUPA and two atoms from GROUPB in which the distances
 are less than 1.0. The number of angles between \f$\frac{\pi}{4}\f$ and
 \f$\frac{3\pi}{4}\f$ is then output
 
-\verbatim
+\plumedfile
 ANGLES GROUPA=1-10 GROUPB=11-100 BETWEEN={GAUSSIAN LOWER=0.25pi UPPER=0.75pi} SWITCH={GAUSSIAN R_0=1.0} LABEL=a1
 PRINT ARG=a1.between FILE=colvar
-\endverbatim
+\endplumedfile
 
 This final example instructs plumed to calculate all the angles in the first coordination
 spheres of the atoms. A discretized-normalized histogram of the distribution is then output
 
-\verbatim
+\plumedfile
 ANGLES GROUP=1-38 HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=pi NBINS=20} SWITCH={GAUSSIAN R_0=1.0} LABEL=a1
 PRINT ARG=a1.* FILE=colvar
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
 
-class Angles : public MultiColvar {
+class Angles : public MultiColvarBase {
 private:
   bool use_sf;
   double rcut2_1, rcut2_2;
@@ -102,10 +103,16 @@ public:
 PLUMED_REGISTER_ACTION(Angles,"ANGLES")
 
 void Angles::registerKeywords( Keywords& keys ) {
-  MultiColvar::registerKeywords( keys );
-  keys.use("ATOMS"); keys.use("MEAN"); keys.use("LESS_THAN");
+  MultiColvarBase::registerKeywords( keys );
+  keys.use("MEAN"); keys.use("LESS_THAN");
   keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MORE_THAN");
   // Could also add Region here in theory
+  keys.add("numbered","ATOMS","the atoms involved in each of the angles you wish to calculate. "
+           "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one angle will be "
+           "calculated for each ATOM keyword you specify (all ATOM keywords should "
+           "provide the indices of three atoms).  The eventual number of quantities calculated by this "
+           "action will depend on what functions of the distribution you choose to calculate.");
+  keys.reset_style("ATOMS","atoms");
   keys.add("atoms-1","GROUP","Calculate angles for each distinct set of three atoms in the group");
   keys.add("atoms-2","GROUPA","A group of central atoms about which angles should be calculated");
   keys.add("atoms-2","GROUPB","When used in conjuction with GROUPA this keyword instructs plumed "
@@ -125,7 +132,8 @@ void Angles::registerKeywords( Keywords& keys ) {
 }
 
 Angles::Angles(const ActionOptions&ao):
-  PLUMED_MULTICOLVAR_INIT(ao),
+  Action(ao),
+  MultiColvarBase(ao),
   use_sf(false)
 {
   std::string sfinput,errors; parse("SWITCH",sfinput);
@@ -155,7 +163,8 @@ Angles::Angles(const ActionOptions&ao):
   // Read in the atoms
   std::vector<AtomNumber> all_atoms;
   readGroupKeywords( "GROUP", "GROUPA", "GROUPB", "GROUPC", false, true, all_atoms );
-  int natoms=3; readAtoms( natoms, all_atoms );
+  if( atom_lab.size()==0 ) readAtomsLikeKeyword( "ATOMS", 3, all_atoms );
+  setupMultiColvarBase( all_atoms );
   // Set cutoff for link cells
   if( use_sf ) {
     setLinkCellCutoff( sf1.get_dmax() );

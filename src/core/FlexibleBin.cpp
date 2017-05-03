@@ -60,6 +60,38 @@ FlexibleBin::FlexibleBin(int type, ActionWithArguments *paction,  double const &
   }
 
 }
+
+/// Constructure for 1D FB for PBMETAD
+FlexibleBin::FlexibleBin(int type, ActionWithArguments *paction, unsigned iarg,
+                         double const &d, vector<double> &smin, vector<double> &smax):
+  type(type),paction(paction),sigma(d),sigmamin(smin),sigmamax(smax)
+{
+  // initialize the averages and the variance matrices
+  if(type==diffusion) {
+    vector<double> average(1);
+    vector<double> variance(1);
+  }
+  paction->log<<"  Limits for sigmas using adaptive hills:  \n";
+  paction->log<<"   CV  "<<paction->getPntrToArgument(iarg)->getName()<<":\n";
+  if(sigmamin[0]>0.) {
+    limitmin.push_back(true);
+    paction->log<<"       Min "<<sigmamin[0];
+    sigmamin[0]*=sigmamin[0];
+  } else {
+    limitmin.push_back(false);
+    paction->log<<"       Min No ";
+  }
+  if(sigmamax[0]>0.) {
+    limitmax.push_back(true);
+    paction->log<<"       Max "<<sigmamax[0];
+    sigmamax[0]*=sigmamax[0];
+  } else {
+    limitmax.push_back(false);
+    paction->log<<"       Max No ";
+  }
+  paction->log<<" \n";
+}
+
 /// Update the flexible bin
 /// in case of diffusion based: update at every step
 /// in case of gradient based: update only when you add the hill
@@ -143,6 +175,61 @@ vector<double> FlexibleBin::getMatrix() const {
   return variance;
 }
 
+/// Update the flexible bin for PBMetaD like FlexBin
+/// in case of diffusion based: update at every step
+/// in case of gradient based: update only when you add the hill
+void FlexibleBin::update(bool nowAddAHill, unsigned iarg) {
+  // this is done all the times from scratch. It is not an accumulator
+  vector<double> cv;
+  vector<double> delta;
+  // if you use this below then the decay is in time units
+  // to be consistent with the rest of the program: everything is better to be in timesteps
+  double decay=1./sigma;
+  // here update the flexible bin according to the needs
+  switch (type) {
+  // This should be called every time
+  case diffusion:
+    //
+    // THE AVERAGE VALUE
+    //
+    delta.resize(1);
+    cv.push_back(paction->getArgument(iarg));
+    if(average.size()==0) { // initial time: just set the initial vector
+      average.resize(1);
+      average[0]=cv[0];
+    } else { // accumulate
+      delta[0]=paction->difference(iarg,average[0],cv[0]);
+      average[0]+=decay*delta[0];
+      average[0]=paction->bringBackInPbc(iarg,average[0]); // equation 8 of "Metadynamics with adaptive Gaussians"
+    }
+    //
+    // THE VARIANCE
+    //
+    if(variance.size()==0) {
+      variance.resize(1,0.); // nonredundant members dimension=ncv*(ncv+1)/2;
+    } else {
+      variance[0]+=decay*(delta[0]*delta[0]-variance[0]);
+    }
+    break;
+  case geometry:
+    //
+    //this calculates in variance the \nabla CV_i \dot \nabla CV_j
+    //
+    variance.resize(1);
+    // now the signal for retrieving the gradients should be already given by checkNeedsGradients.
+    // here just do the projections
+    // note that the call  checkNeedsGradients() in BiasMetaD takes care of switching on the call to gradients
+    if (nowAddAHill) { // geometry is sync with hill deposition
+      // eq 12 of "Metadynamics with adaptive Gaussians"
+      variance[0]=sigma*sigma*(paction->getProjection(iarg,iarg));
+    }
+    break;
+  default:
+    cerr<< "This flexible bin is not recognized  "<<endl;
+    exit(1)	;
+  }
+}
+
 ///
 /// Calculate the matrix of  (dcv_i/dx)*(dcv_j/dx)^-1
 /// that is needed for the metrics in metadynamics
@@ -161,8 +248,6 @@ vector<double> FlexibleBin::getInverseMatrix() const {
       k++;
     }
   }
-//	paction->log<<"MATRIX\n";
-//	matrixOut(paction->log,matrix);
 #define NEWFLEX
 #ifdef NEWFLEX
   // diagonalize to impose boundaries (only if boundaries are set)
@@ -171,16 +256,6 @@ vector<double> FlexibleBin::getInverseMatrix() const {
 
   //eigenvecs: first is eigenvec number, second is eigenvec component
   if(diagMat( matrix, eigenvals, eigenvecs )!=0) {plumed_merror("diagonalization in FlexibleBin failed! This matrix is weird\n");};
-
-//	paction->log<<"EIGENVECS \n";
-//	matrixOut(paction->log,eigenvecs);
-
-  //for (i=0;i<ncv;i++){//loop on the dimension
-  //	for (j=0;j<ncv;j++){//loop on the dimension
-  //	eigenvecs[i][j]=0.;
-  //	if(i==j)eigenvecs[i][j]=1.;
-  //	}
-  //}
 
   for (i=0; i<ncv; i++) { //loop on the dimension
     if( limitmax[i] ) {
@@ -206,9 +281,7 @@ vector<double> FlexibleBin::getInverseMatrix() const {
       if(fmax<pow(sigmamin[i],2) ) {
         eigenvals[imax]=sqrt(pow(sigmamin[i]/(eigenvecs[imax][i]),2))*copysign(1.,eigenvals[imax]);
       }
-
     }
-
   }
 
   // normalize eigenvecs
@@ -244,8 +317,35 @@ vector<double> FlexibleBin::getInverseMatrix() const {
       k++;
     }
   }
-  //paction->log<<"------------ END GET INVERSE MATRIX ---------------\n";
 #endif
+  return uppervec;
+}
+
+///
+/// Calculate the matrix of  (dcv_i/dx)*(dcv_j/dx)^-1
+/// that is needed for the metrics in metadynamics
+/// for PBMetaD like FlexBin
+///
+vector<double> FlexibleBin::getInverseMatrix(unsigned iarg) const {
+  // diagonalize to impose boundaries (only if boundaries are set)
+  vector<double> eigenvals(1, variance[0]);
+  if( limitmax[0] ) {
+    if(eigenvals[0]>sigmamax[0]) {
+      eigenvals[0]=sigmamax[0];
+    }
+  }
+  // find the largest one:  if it is smaller than min  then rescale
+  if( limitmin[0] ) {
+    double fmax=-1.e10;
+    double fact=eigenvals[0];
+    if(fact>fmax) {
+      fmax=fact;
+    }
+    if(fmax<sigmamin[0]) {
+      eigenvals[0]=sigmamin[0];
+    }
+  }
+  vector<double> uppervec(1,1./eigenvals[0]);
 
   return uppervec;
 }

@@ -57,9 +57,9 @@ Note that beta and occupancy values in the pdb are neglected and all the weights
 
 \par Examples
 
-\verbatim
+\plumedfile
 PCARMSD AVERAGE=file.pdb EIGENVECTORS=eigenvectors.pdb
-\endverbatim
+\endplumedfile
 
 The input is taken so to be compatible with the output you get from g_covar utility of gromacs (suitably adapted to have a pdb input format).
 

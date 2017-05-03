@@ -62,7 +62,7 @@ public:
 /// Functions for dealing with normalisation constant
   void setNorm( const double& snorm );
   double getNorm() const ;
-  bool applyForce(  std::vector<double>& forces ) { return false; }
+  virtual bool applyForce(  std::vector<double>& forces ) { return false; }
 };
 
 inline

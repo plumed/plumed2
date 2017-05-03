@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015,2016 The plumed team
+   Copyright (c) 2015-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -60,11 +60,11 @@ namespace colvar {
  \par Examples
 
  This input tells plumed to print the puckering phase angle of the 3rd nucleotide of a RNA molecule on file COLVAR.
- \verbatim
+ \plumedfile
  MOLINFO STRUCTURE=rna.pdb MOLTYPE=rna
  PUCKERING ATOMS=@sugar-3 LABEL=puck
  PRINT ARG=puck.phs FILE=COLVAR
- \endverbatim
+ \endplumedfile
 
 */
 //+ENDPLUMEDOC
@@ -143,7 +143,6 @@ void Puckering::calculate() {
 void Puckering::calculate5m() {
 
   Vector d0,d1,d2,d3,d4,d5;
-  makeWhole();
 
   d0=delta(getPosition(2),getPosition(1));
   d1=delta(getPosition(3),getPosition(2));
@@ -151,12 +150,6 @@ void Puckering::calculate5m() {
   d3=delta(getPosition(4),getPosition(3));
   d4=delta(getPosition(0),getPosition(4));
   d5=delta(getPosition(1),getPosition(0));
-
-  Vector r[5];
-  r[0]=getPosition(0);
-  for(unsigned i=1; i<5; i++) {
-    r[i]=r[i-1]+pbcDistance(getPosition(i-1),getPosition(i));
-  }
 
   Vector dd0,dd1,dd2,dd3,dd4,dd5;
 
@@ -237,10 +230,7 @@ void Puckering::calculate5m() {
 void Puckering::calculate6m() {
 
   vector<Vector> r(6);
-  r[0]=getPosition(0);
-  for(unsigned i=1; i<6; i++) {
-    r[i]=r[i-1]+pbcDistance(getPosition(i-1),getPosition(i));
-  }
+  for(unsigned i=0; i<6; i++) r[i]=getPosition(i);
 
   vector<Vector> R(6);
   Vector center;

@@ -118,6 +118,8 @@ protected:
   double getTolerance() const ;
 /// Return the value of the neighbor list tolerance
   double getNLTolerance() const ;
+/// Return the size of the buffer
+  unsigned getSizeOfBuffer() const ;
 /// Set the size of the data buffer
   void resizeBuffer( const unsigned& n );
 public:
@@ -235,6 +237,11 @@ double Vessel::getNLTolerance() const {
 inline
 ActionWithVessel* Vessel::getAction() const {
   return action;
+}
+
+inline
+unsigned Vessel::getSizeOfBuffer() const {
+  return bufsize;
 }
 
 }

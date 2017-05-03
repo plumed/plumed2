@@ -63,9 +63,9 @@ of the first 22 atoms.  The TYPE=OPTIMAL instruction ensures that translational 
 The first two principal components will be output to a file called pca-comp.pdb.  Trajectory frames will be collected on every step and the PCA calculation
 will be performed at the end of the simulation.
 
-\verbatim
+\plumedfile
 PCA METRIC=OPTIMAL ATOMS=1-22 STRIDE=1 USE_ALL_DATA NLOW_DIM=2 OFILE=pca-comp.pdb
-\endverbatim
+\endplumedfile
 
 The following input instructs PLUMED to perform a principal component analysis in which the covariance matrix is calculated from chnages in the six distances
 seen in the previous lines.  Notice that here the TYPE=EUCLIDEAN keyword is used to indicate that no alighment has to be done when calculating the various
@@ -75,7 +75,7 @@ PCA analysis will be performed twice.  The REWEIGHT_BIAS keyword in this input t
 when calculating averages and covariances a reweighting should be performed based and each frames' weight in these calculations should be determined based on
 the current value of the instantaneous bias (see \ref REWEIGHT_BIAS).
 
-\verbatim
+\plumedfile
 d1: DISTANCE ATOMS=1,2
 d2: DISTANCE ATOMS=1,3
 d3: DISTANCE ATOMS=1,4
@@ -84,7 +84,7 @@ d5: DISTANCE ATOMS=2,4
 d6: DISTANCE ATOMS=3,4
 
 PCA ARG=d1,d2,d3,d4,d5,d6 METRIC=EUCLIDEAN STRIDE=5 RUN=1000 NLOW_DIM=2 REWEIGHT_BIAS OFILE=pca-comp.pdb
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

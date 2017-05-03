@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "PointWiseMapping.h"
+#include "Direction.h"
 #include "FakeFrame.h"
 
 namespace PLMD {
@@ -36,7 +37,8 @@ void PointWiseMapping::setPropertyNames( const std::vector<std::string>& prop, c
 }
 
 void PointWiseMapping::readRestOfFrame() {
-  if( getFrame( getNumberOfReferenceFrames() - 1 )->isDirection() ) plumed_merror("cannot use directions in mapping");
+  Direction* tdir = dynamic_cast<Direction*>( getFrame( getNumberOfReferenceFrames() - 1 ) );
+  if( tdir ) plumed_merror("cannot use directions in mapping");
   plumed_dbg_assert( property.size()>0 );
 
   std::vector<double> labelvals;

@@ -1,0 +1,4 @@
+t1: TORSION ATOMS=2,4,6,9
+t2: TORSION ATOMS=4,6,9,11
+pca: PCAVARS REFERENCE=pca-reference.pdb TYPE=OPTIMAL
+PRINT ARG=t1,t2,pca.* FILE=colvar

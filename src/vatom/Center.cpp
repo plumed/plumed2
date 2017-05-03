@@ -54,7 +54,7 @@ periodic image.
 
 \par Examples
 
-\verbatim
+\plumedfile
 # a point which is on the line connecting atoms 1 and 10, so that its distance
 # from 10 is twice its distance from 1:
 c1: CENTER ATOMS=1,1,10
@@ -67,8 +67,7 @@ c2: CENTER ATOMS=2,3,4,5 MASS
 d1: DISTANCE ATOMS=c1,c2
 
 PRINT ARG=d1
-\endverbatim
-(See also \ref DISTANCE, \ref COM and \ref PRINT).
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
@@ -108,20 +107,29 @@ Center::Center(const ActionOptions&ao):
   parseFlag("MASS",weight_mass);
   parseFlag("NOPBC",nopbc);
   checkRead();
-  log.printf("  of atoms");
-  for(unsigned i=0; i<atoms.size(); ++i) log.printf(" %d",atoms[i].serial());
+  log.printf("  of atoms:");
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    if(i%25==0) log<<"\n";
+    log.printf(" %d",atoms[i].serial());
+  }
+  log<<"\n";
   if(weight_mass) {
     log<<"  mass weighted\n";
     if(weights.size()!=0) error("WEIGHTS and MASS keywords should not be used simultaneously");
   } else {
     if( weights.size()==0) {
+      log<<" using the geometric center\n";
       weights.resize( atoms.size() );
       for(unsigned i=0; i<atoms.size(); i++) weights[i] = 1.;
+    } else {
+      log<<" with weights:";
+      if( weights.size()!=atoms.size() ) error("number of elements in weight vector does not match the number of atoms");
+      for(unsigned i=0; i<weights.size(); ++i) {
+        if(i%25==0) log<<"\n";
+        log.printf(" %f",weights[i]);
+      }
+      log.printf("\n");
     }
-    log<<" with weights";
-    if( weights.size()!=atoms.size() ) error("number of elements in weight vector does not match the number of atoms");
-    for(unsigned i=0; i<weights.size(); ++i) log.printf(" %f",weights[i]);
-    log.printf("\n");
   }
   if(!nopbc) {
     log<<"  PBC will be ignored\n";

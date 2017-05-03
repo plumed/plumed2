@@ -34,7 +34,7 @@ if [ $do_cppcheck == true ] ; then
   else
     files="$(echo */*.{h,cpp})"
   fi
-  cppcheck --std=c++03 --std=posix 4 -j 4 --platform=unix64 \
+  cppcheck --std=c++11 --std=posix 4 -j 4 --platform=unix64 \
   --template='[{file}:{line}] ({severity}) :{id}: {message}' --enable=all --inline-suppr --force \
   $files
 fi

@@ -34,7 +34,7 @@ private:
 //  double nl_cut;
   double rcut2;
   double rotationmatrix[3][3];
-
+  bool unormalized;
   SwitchingFunction switchingFunction;
 public:
   static void registerKeywords( Keywords& keys );

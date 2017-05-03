@@ -70,15 +70,23 @@ Notice that gro/xtc/trr files can only contain coordinates in nm.
 The following input instructs plumed to print out the positions of atoms
 1-10 together with the position of the center of mass of atoms 11-20 every
 10 steps to a file called file.xyz.
-\verbatim
+\plumedfile
 COM ATOMS=11-20 LABEL=c1
 DUMPATOMS STRIDE=10 FILE=file.xyz ATOMS=1-10,c1
-\endverbatim
-(see also \ref COM)
+\endplumedfile
+Notice that the coordinates in the xyz file will be expressed in nm, since these
+are the defaults units in PLUMED. If you want the xyz file to be expressed in A, you should use the
+following input
+\plumedfile
+COM ATOMS=11-20 LABEL=c1
+DUMPATOMS STRIDE=10 FILE=file.xyz ATOMS=1-10,c1 UNITS=A
+\endplumedfile
+As an alternative, you might want to set all the lentght used by PLUMED to Angstrom using the \ref UNITS
+action. However, this latter choice will affect all your input and output.
 
 The following input is very similar but dumps a .gro (gromacs) file,
 which also contains atom and residue names.
-\verbatim
+\plumedfile
 # this is required to have proper atom names:
 MOLINFO STRUCTURE=reference.pdb
 # if omitted, atoms will have "X" name...
@@ -87,8 +95,25 @@ COM ATOMS=11-20 LABEL=c1
 DUMPATOMS STRIDE=10 FILE=file.gro ATOMS=1-10,c1
 # notice that last atom is a virtual one and will not have
 # a correct name in the resulting gro file
-\endverbatim
-(see also \ref COM and \ref MOLINFO)
+\endplumedfile
+
+The `file.gro` will contain coordinates expressed in nm, since this is the convention for gro files.
+
+In case you have compiled PLUMED with `xdrfile` library, you might even write xtc or trr files as follows
+\plumedfile
+COM ATOMS=11-20 LABEL=c1
+DUMPATOMS STRIDE=10 FILE=file.xtc ATOMS=1-10,c1
+\endplumedfile
+Notice that xtc files are significantly smaller than gro and xyz files.
+
+Finally, consider that gro and xtc file store coordinates with limited precision set by the
+`PRECISION` keyword. Default value is 3, which means "3 digits after dot" in nm (1/1000 of a nm).
+The following will write a larger xtc file with high resolution coordinates:
+\plumedfile
+COM ATOMS=11-20 LABEL=c1
+DUMPATOMS STRIDE=10 FILE=file.xtc ATOMS=1-10,c1 PRECISION=7
+\endplumedfile
+
 
 
 */
@@ -278,17 +303,19 @@ void DumpAtoms::update() {
   } else if(type=="xtc" || type=="trr") {
     matrix box;
     const Tensor & t(getPbc().getBox());
-    rvec* pos=new rvec [getNumberOfAtoms()];
-    for(int i=0; i<3; i++) for(int j=0; j<3; j++) box[i][j]=lenunit*t(i,j);
-    for(int i=0; i<getNumberOfAtoms(); i++) for(int j=0; j<3; j++) pos[i][j]=lenunit*getPosition(i)(j);
     int natoms=getNumberOfAtoms();
     int step=getStep();
     float time=getTime()/plumed.getAtoms().getUnits().getTime();
     float precision=Tools::fastpow(10.0,iprecision);
+    for(int i=0; i<3; i++) for(int j=0; j<3; j++) box[i][j]=lenunit*t(i,j);
+    rvec* pos=new rvec [natoms];
+// Notice that code below cannot throw any exception.
+// Thus, this pointer is excepton safe
+    for(int i=0; i<natoms; i++) for(int j=0; j<3; j++) pos[i][j]=lenunit*getPosition(i)(j);
     if(type=="xtc") {
-      write_xtc(xd,natoms,step,time,box,pos,precision);
+      write_xtc(xd,natoms,step,time,box,&pos[0],precision);
     } else if(type=="trr") {
-      write_trr(xd,natoms,step,time,0.0,box,pos,NULL,NULL);
+      write_trr(xd,natoms,step,time,0.0,box,&pos[0],NULL,NULL);
     }
     delete [] pos;
 #endif

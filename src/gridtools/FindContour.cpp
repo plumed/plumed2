@@ -20,7 +20,10 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
+#include "vesselbase/StoreDataVessel.h"
 #include "ContourFindingBase.h"
+#include "core/PlumedMain.h"
+#include "core/Atoms.h"
 
 //+PLUMEDOC GRIDANALYSIS FIND_CONTOUR
 /*
@@ -64,7 +67,7 @@ solidness at each point in the simulation cell.  The Willard-Chandler dividing s
 at which the value of this phase field is equal to 0.5.  This set of points is output to file called mycontour.dat.  A new contour
 is found on every single step for each frame that is read in.
 
-\verbatim
+\plumedfile
 UNITS NATURAL
 FCCUBIC ...
   SPECIES=1-96000 SWITCH={CUBIC D_0=1.2 D_MAX=1.5}
@@ -81,7 +84,7 @@ MULTICOLVARDENS ...
 ... MULTICOLVARDENS
 
 FIND_CONTOUR GRID=dens CONTOUR=0.5 FILE=mycontour.dat
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
@@ -93,12 +96,19 @@ class FindContour : public ContourFindingBase {
 private:
   bool firsttime;
   unsigned gbuffer;
+/// Stuff for output
+  OFile of;
+  double lenunit;
+  std::string fmt_xyz;
+/// The data is stored in a grid
+  vesselbase::StoreDataVessel* mydata;
 public:
   static void registerKeywords( Keywords& keys );
   explicit FindContour(const ActionOptions&ao);
   bool checkAllActive() const { return gbuffer==0; }
   void prepareForAveraging();
   bool isPeriodic() { return false; }
+  unsigned getNumberOfQuantities() const { return 1 + ingrid->getDimension(); }
   void compute( const unsigned& current, MultiValue& myvals ) const ;
   void finishAveraging();
 };
@@ -109,6 +119,9 @@ void FindContour::registerKeywords( Keywords& keys ) {
   ContourFindingBase::registerKeywords( keys );
 // We want a better way of doing this bit
   keys.add("compulsory","BUFFER","0","number of buffer grid points around location where grid was found on last step.  If this is zero the full grid is calculated on each step");
+  keys.add("compulsory","FILE","file on which to output coordinates");
+  keys.add("compulsory","UNITS","PLUMED","the units in which to print out the coordinates. PLUMED means internal PLUMED units");
+  keys.add("optional", "PRECISION","The number of digits in trajectory file");
 }
 
 FindContour::FindContour(const ActionOptions&ao):
@@ -119,7 +132,31 @@ FindContour::FindContour(const ActionOptions&ao):
 
   parse("BUFFER",gbuffer);
   if( gbuffer>0 ) log.printf("  after first step a subset of only %u grid points around where the countour was found will be checked\n",gbuffer);
-  checkRead();
+
+  std::string file; parse("FILE",file);
+  if( file.length()==0 ) error("name out output file was not specified");
+  std::string type=Tools::extension(file);
+  log<<"  file name "<<file<<"\n";
+  if(type!="xyz") error("can only print xyz file type with contour finding");
+
+  fmt_xyz="%f";
+  std::string precision; parse("PRECISION",precision);
+  if(precision.length()>0) {
+    int p; Tools::convert(precision,p);
+    log<<"  with precision "<<p<<"\n";
+    std::string a,b;
+    Tools::convert(p+5,a);
+    Tools::convert(p,b);
+    fmt_xyz="%"+a+"."+b+"f";
+  }
+  std::string unitname; parse("UNITS",unitname);
+  if(unitname!="PLUMED") {
+    Units myunit; myunit.setLength(unitname);
+    lenunit=plumed.getAtoms().getUnits().getLength()/myunit.getLength();
+  }
+  else lenunit=1.0;
+  of.link(*this); of.open(file);
+  checkRead(); mydata=buildDataStashes( NULL );
 }
 
 void FindContour::prepareForAveraging() {
@@ -182,7 +219,6 @@ void FindContour::compute( const unsigned& current, MultiValue& myvals ) const {
 }
 
 void FindContour::finishAveraging() {
-  ContourFindingBase::finishAveraging();
   // And update the list of active grid points
   if( gbuffer>0 ) {
     std::vector<unsigned> neighbours; unsigned num_neighbours;
@@ -199,6 +235,14 @@ void FindContour::finishAveraging() {
       for(unsigned n=0; n<num_neighbours; ++n) active[ neighbours[n] ]=true;
     }
     ingrid->activateThesePoints( active );
+  }
+  std::vector<double> point( 1 + ingrid->getDimension() );
+  of.printf("%u\n",mydata->getNumberOfStoredValues());
+  of.printf("Points found on isocontour\n");
+  for(unsigned i=0; i<mydata->getNumberOfStoredValues(); ++i) {
+    mydata->retrieveSequentialValue( i, false, point ); of.printf("X");
+    for(unsigned j=0; j<ingrid->getDimension(); ++j) of.printf( (" " + fmt_xyz).c_str(), lenunit*point[1+j] );
+    of.printf("\n");
   }
 }
 

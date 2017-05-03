@@ -27,7 +27,7 @@ namespace mapping {
 
 void PathBase::registerKeywords( Keywords& keys ) {
   Mapping::registerKeywords( keys );
-  keys.add("compulsory","LAMBDA","the value of the lambda parameter for paths");
+  keys.add("compulsory","LAMBDA","0","the value of the lambda parameter for paths");
   keys.addFlag("NOZPATH",false,"do not calculate the zpath position");
 }
 
@@ -47,7 +47,10 @@ PathBase::PathBase(const ActionOptions& ao):
   lockContributors();
 
   std::string empty="LABEL=zpath";
-  if(!noz) addVessel("ZPATH",empty,0);
+  if(!noz) {
+    if( lambda==0 ) error("you must set LAMDBA value in order to calculate ZPATH coordinate.  Use LAMBDA/NOZPATH keyword");
+    addVessel("ZPATH",empty,0);
+  }
 }
 
 double PathBase::getLambda() {
@@ -71,6 +74,7 @@ void PathBase::performTask( const unsigned& task_index, const unsigned& current,
 }
 
 double PathBase::transformHD( const double& dist, double& df ) const {
+  if( lambda==0 ) { df=1; return dist; }
   double val = exp( -dist*lambda );
   df = -lambda*val;
   return val;

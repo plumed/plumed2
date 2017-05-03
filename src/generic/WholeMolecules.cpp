@@ -74,30 +74,27 @@ to skip some atoms, provided consecute chosen atoms are close enough.
 This command instructs plumed to reconstruct the molecule containing atoms 1-20
 at every step of the calculation and dump them on a file.
 
-\verbatim
+\plumedfile
 # to see the effect, one could dump the atoms as they were before molecule reconstruction:
 # DUMPATOMS FILE=dump-broken.xyz ATOMS=1-20
 WHOLEMOLECULES ENTITY0=1-20
 DUMPATOMS FILE=dump.xyz ATOMS=1-20
-\endverbatim
-(see also \ref DUMPATOMS)
+\endplumedfile
 
 This command instructs plumed to reconstruct two molecules containing atoms 1-20 and 30-40
 
-\verbatim
+\plumedfile
 WHOLEMOLECULES ENTITY0=1-20 ENTITY1=30-40
 DUMPATOMS FILE=dump.xyz ATOMS=1-20,30-40
-\endverbatim
-(see also \ref DUMPATOMS)
+\endplumedfile
 
 This command instructs plumed to reconstruct the chain of backbone atoms in a
 protein
 
-\verbatim
+\plumedfile
 MOLINFO STRUCTURE=helix.pdb
 WHOLEMOLECULES RESIDUES=all MOLTYPE=protein
-\endverbatim
-(See also \ref MOLINFO)
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

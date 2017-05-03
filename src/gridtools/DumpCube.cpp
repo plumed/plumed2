@@ -46,14 +46,14 @@ between atoms 1 and 2, the distance between atom 1 and 3 and the angle between t
 all the kernels have been added the resulting histogram is output to a file called histoA1.cube.  This file has the
 Gaussian cube file format.  The histogram can thus be visualized using tools such as VMD.
 
-\verbatim
+\plumedfile
 x1: DISTANCE ATOMS=1,2
 x2: DISTANCE ATOMS=1,3
 x3: ANGLE ATOMS=1,2,3
 
 hA1: HISTOGRAM ARG=x1,x2,x3 GRID_MIN=0.0,0.0,0.0 GRID_MAX=3.0,3.0,3.0 GRID_BIN=10,10,10 BANDWIDTH=1.0,1.0,1.0
 DUMPCUBE GRID=hA1 FILE=histoA1.cube
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
@@ -82,6 +82,7 @@ DumpCube::DumpCube(const ActionOptions&ao):
   GridPrintingBase(ao)
 {
   fmt = fmt + " ";
+  if( ingrid->getType()!="flat" ) error("cannot dump grid of type " + ingrid->getType() + " using DUMPCUBE");
   if( ingrid->getDimension()!=3 ) error("cannot print cube file if grid does not contain three dimensional data");
 
   if( ingrid->getNumberOfComponents()==1 ) {

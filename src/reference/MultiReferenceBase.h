@@ -65,6 +65,8 @@ public:
                                         const std::vector<Value*>& arg, ReferenceValuePack& myder, const bool& squared ) const ;
 /// Return the ith reference frame
   ReferenceConfiguration* getFrame( const unsigned& iframe );
+/// Return a reference to all the reference frames
+  std::vector<ReferenceConfiguration*>& getReferenceConfigurations();
 /// Copy a reference configuration into the multi reference object
   void copyFrame( ReferenceConfiguration* frameToCopy );
 /// Set the weight of the ith frame
@@ -101,6 +103,11 @@ inline
 ReferenceConfiguration* MultiReferenceBase::getFrame( const unsigned& iframe ) {
   plumed_dbg_assert( iframe<frames.size() );
   return frames[iframe];
+}
+
+inline
+std::vector<ReferenceConfiguration*>& MultiReferenceBase::getReferenceConfigurations() {
+  return frames;
 }
 
 }

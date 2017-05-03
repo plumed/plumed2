@@ -3,8 +3,12 @@
 
 \page AddingAColvar How to add a new collective variable
 
-To implement a CV one you need to create a single cpp file called <i>ColvarName</i>.cpp in the directory src/colvar. 
-If you use the following template for this file then the manual and the calls to the CV will be looked after automatically.
+To implement a CV you need to create a single cpp file called <i>ColvarName</i>.cpp in the directory src/colvar. 
+In addition, if you would like us to incorporate your CV in the release version of PLUMED you will need to write at least
+one regression test for your CV.  Details on how to write regression tests are provided here: \ref regtests
+
+If you use the following template for your new <i>ColvarName</i>.cpp file then the manual and the calls to the CV will 
+be looked after automatically.
 
 \verbatim
 #include "Colvar.h"

@@ -12,6 +12,7 @@
 !/config
 !/core
 !/crystallization
+!/eds
 !/function
 !/generic
 !/gridtools
@@ -34,6 +35,7 @@
 !/header.sh
 !/release.sh
 !/astyle.sh
+
 
 # And just ignore these files
 *.xxd

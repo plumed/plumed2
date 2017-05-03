@@ -51,11 +51,11 @@ and output this to a file called COLVAR.  In this example it is assumed that no 
 on the system and that the weights, \f$w(t')\f$ in the formulae above can thus all be set equal
 to one.
 
-\verbatim
+\plumedfile
 d1: DISTANCE ATOMS=1,2
 d1a: AVERAGE ARG=d1
 PRINT ARG=d1a FILE=colvar STRIDE=100
-\endverbatim
+\endplumedfile
 
 The following example calculates the ensemble average for the torsional angle involving atoms 1, 2, 3 and 4.
 At variance with the previous example this quantity is periodic so the second formula in the above introduction
@@ -65,23 +65,23 @@ forgotten and the process of averaging is begun again.  The quantities output in
 block averages taken over the first 100 frames of the trajectory, the block average over the second 100 frames
 of trajectory and so on.
 
-\verbatim
+\plumedfile
 t1: TORSION ATOMS=1,2,3,4
 t1a: AVERAGE ARG=t1 CLEAR=100
 PRINT ARG=t1a FILE=colvar STRIDE=100
-\endverbatim
+\endplumedfile
 
 This third example incorporates a bias.  Notice that the effect the bias has on the ensemble average is removed by taking
 advantage of the \ref REWEIGHT_BIAS method.  The final ensemble averages output to the file are thus block ensemble averages for the
 unbiased canononical ensemble at a temperature of 300 K.
 
-\verbatim
+\plumedfile
 t1: TORSION ATOMS=1,2,3,4
 RESTRAINT ARG=t1 AT=pi KAPPA=100.
 ww: REWEIGHT_BIAS TEMP=300
 t1a: AVERAGE ARG=t1 LOGWEIGHTS=ww CLEAR=100
 PRINT ARG=t1a FILE=colvar STRIDE=100
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
@@ -95,6 +95,8 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit Average( const ActionOptions& );
+  void calculate() {}
+  void apply() {}
   void performOperations( const bool& from_update );
   void finishAveraging();
   bool isPeriodic() { return false; }

@@ -105,12 +105,12 @@ a factor equal to STRIDE.
 This technique can allow your simulation to run faster if you need
 the apply a bias potential on some very expensive collective variable.
 Consider the following input:
-\verbatim
+\plumedfile
 c1: COM ATOMS=1-1000
 c2: COM ATOMS=1001-2000
 d:  DISTANCE ATOMS=c1,c2
 METAD ARG=d HEIGHT=1 SIGMA=0.1 BIASFACTOR=5 PACE=500
-\endverbatim
+\endplumedfile
 This performs a \ref METAD simulation biasing the distance between two
 centers of mass. Since computing these centers requires a lot of atoms
 to be imported from the MD engine, it could slow down significantly the
@@ -118,12 +118,12 @@ simulation. Notice that whereas the bias is changed every PACE=500 steps,
 it is applied every STRIDE step, where STRIDE=1 by default.
 The following input could lead to a significantly faster simulation at the price
 of a negligible systematic error
-\verbatim
+\plumedfile
 c1: COM ATOMS=1-1000
 c2: COM ATOMS=1001-2000
 d:  DISTANCE ATOMS=c1,c2
 METAD ARG=d HEIGHT=1 SIGMA=0.1 BIASFACTOR=5 PACE=500 STRIDE=2
-\endverbatim
+\endplumedfile
 Similarly, the STRIDE keyword can be used with other biases (e.g. \ref RESTRAINT).
 
 The technique is discussed in details here \cite Ferrarotti2015.
@@ -133,9 +133,9 @@ See also \subpage EFFECTIVE_ENERGY_DRIFT.
 
 Whenever you have a multicolvar action such as:
 
-\verbatim
+\plumedfile
 COORDINATIONNUMBER SPECIES=1-100 SWITCH={RATIONAL R_0=1. D_MAX=3.0} MORE_THAN={RATIONAL R_0=6.0 NN=6 MM=12 D_0=0}
-\endverbatim
+\endplumedfile
 
 You will get a collosal speedup by specifying the D_MAX keyword in all switching functions that act on distances.
 D_MAX tells PLUMED that the switching function is strictly zero if the distance is greater than this value.  As a result

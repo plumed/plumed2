@@ -30,14 +30,8 @@ namespace gridtools {
 
 class ContourFindingBase : public ActionWithInputGrid {
 private:
-/// Stuff for output
-  OFile of;
-  double lenunit;
-  std::string fmt_xyz;
 /// This is the object that does the root finding
   RootFindingBase<ContourFindingBase> mymin;
-/// The data is stored in a grid
-  vesselbase::StoreDataVessel* mydata;
 protected:
 /// Where you would like to find the contour
   double contour;
@@ -52,10 +46,6 @@ public:
   unsigned getNumberOfDerivatives() { return 0; }
 /// This is not periodic
   bool isPeriodic() { return false; }
-/// Number of quantities is the number of points in each point on the grid
-  virtual unsigned getNumberOfQuantities() const { return 1 + ingrid->getDimension(); }
-/// This does output if needs be
-  void finishAveraging();
 };
 
 inline

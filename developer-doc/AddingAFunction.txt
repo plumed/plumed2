@@ -3,9 +3,14 @@
 
 \page AddingAFunction How to add a new function
 
-Many collective variables are a function of a number of some set of simpler collective variables. These sorts of collective variables should be implemented should be implemented in plumed as functions so as not to duplicate code.
+Many collective variables are a function of a number of some set of simpler collective variables. 
+These sorts of collective variables should be implemented should be implemented in plumed as functions so as not to duplicate code.
 
-Much like a CVs one can implement a function by creating a single cpp file called FunctionNAME.cpp.  If one uses the following template for this file then the manual and the calls to the CV will be looked after automatically.
+Much like CVs you can implement a function by creating a single cpp file called FunctionNAME.cpp.  
+If you would like us to incorporate your CV in the release version of PLUMED you will need to write at least
+one regression test for your function.  Details on how to write regression tests are provided here: \ref regtests
+
+If you use the following template for your new FunctionNAME.cpp file then the manual and the calls to the CV will be looked after automatically.
 
 \verbatim
 #include "ActionRegister.h"
