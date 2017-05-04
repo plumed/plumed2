@@ -117,6 +117,7 @@ public:
   unsigned getNumberOfPoints() const;
 /// Get the coordinates for a point in the grid
   void getGridPointCoordinates( const unsigned&, std::vector<double>& ) const ;
+  void getGridPointCoordinates( const unsigned&, std::vector<unsigned>&, std::vector<double>& ) const ;
 /// Get the dimensionality of the function
   unsigned getDimension() const ;
 /// Get the number of components in the vector stored on each grid point

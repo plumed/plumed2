@@ -191,9 +191,13 @@ void GridVessel::getIndices( const unsigned& index, std::vector<unsigned>& indic
 }
 
 void GridVessel::getGridPointCoordinates( const unsigned& ipoint, std::vector<double>& x ) const {
-  plumed_dbg_assert( bounds_set && x.size()==dimension && ipoint<npoints );
+  std::vector<unsigned> tindices( dimension ); getGridPointCoordinates( ipoint, tindices, x );
+}
+
+void GridVessel::getGridPointCoordinates( const unsigned& ipoint, std::vector<unsigned>& tindices, std::vector<double>& x ) const {
+  plumed_dbg_assert( bounds_set && x.size()==dimension && tindices.size()==dimension && ipoint<npoints );
   if( gtype==flat ) {
-    std::vector<unsigned> tindices( dimension ); getIndices( ipoint, tindices );
+    getIndices( ipoint, tindices );
     for(unsigned i=0; i<dimension; ++i) x[i] = min[i] + dx[i]*tindices[i];
   } else if( gtype==fibonacci ) {
     x[1] = ((ipoint*fib_offset) - 1) + (fib_offset/2);

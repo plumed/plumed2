@@ -121,11 +121,11 @@ void HistogramOnGrid::calculate( const unsigned& current, MultiValue& myvals, st
       std::vector<double> intforce( 2*dimension, 0.0 );
       std::vector<Value*> vv( getVectorOfValues() );
 
-      double newval; std::vector<double> xx( dimension );
+      double newval; std::vector<unsigned> tindices( dimension ); std::vector<double> xx( dimension );
       for(unsigned i=0; i<num_neigh; ++i) {
         unsigned ineigh=neighbors[i];
         if( inactive( ineigh ) ) continue ;
-        getGridPointCoordinates( ineigh, xx );
+        getGridPointCoordinates( ineigh, tindices, xx );
         if( kernel ) {
           for(unsigned j=0; j<dimension; ++j) vv[j]->set(xx[j]);
           newval = kernel->evaluate( vv, der, true );
