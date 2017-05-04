@@ -104,10 +104,10 @@ void CoordinationNumbers::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
   keys.add("optional","R_POWER","Multiply the coordination number function by a power of r, "
-	   "as done in White and Voth (see note above, default: no)");
+           "as done in White and Voth (see note above, default: no)");
   keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
-	   "The following provides information on the \\ref switchingfunction that are available. "
-	   "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
+           "The following provides information on the \\ref switchingfunction that are available. "
+           "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   // Use actionWithDistributionKeywords
   keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("LESS_THAN"); keys.use("MAX");
   keys.use("MIN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
@@ -144,7 +144,7 @@ CoordinationNumbers::CoordinationNumbers(const ActionOptions&ao):
     log.printf("  Multiplying switching function by r^%d\n", r_power);
     double offset = switchingFunction.calculate(rcut*0.9999, rcut2) * pow(rcut*0.9999, r_power);
     log.printf("  You will have a discontinuous jump of %f to 0 near the cutoff of your switching function. "
-	       "Consider setting D_MAX or reducing R_POWER if this is large\n", offset);
+               "Consider setting D_MAX or reducing R_POWER if this is large\n", offset);
   }
 
   // Set the link cell cutoff
@@ -161,18 +161,18 @@ double CoordinationNumbers::compute( const unsigned& tindex, AtomValuePack& myat
   for(unsigned i=1; i<myatoms.getNumberOfAtoms(); ++i) {
     Vector& distance=myatoms.getPosition(i);
     if ( (d2=distance[0]*distance[0])<rcut2 &&
-	 (d2+=distance[1]*distance[1])<rcut2 &&
-	 (d2+=distance[2]*distance[2])<rcut2) {
+         (d2+=distance[1]*distance[1])<rcut2 &&
+         (d2+=distance[2]*distance[2])<rcut2) {
 
       sw = switchingFunction.calculateSqr( d2, dfunc );
       if(r_power > 0) {
-	d = sqrt(d2); raised = pow( d, r_power - 1 );
-	accumulateSymmetryFunction( 1, i, sw * raised * d,
-				  (dfunc * d * raised + sw * r_power) * distance,
-				  (-dfunc * d * raised - sw * r_power) * Tensor(distance, distance),
-				  myatoms );
+        d = sqrt(d2); raised = pow( d, r_power - 1 );
+        accumulateSymmetryFunction( 1, i, sw * raised * d,
+                                    (dfunc * d * raised + sw * r_power) * distance,
+                                    (-dfunc * d * raised - sw * r_power) * Tensor(distance, distance),
+                                    myatoms );
       } else {
-	accumulateSymmetryFunction( 1, i, sw, (dfunc)*distance, (-dfunc)*Tensor(distance,distance), myatoms );
+        accumulateSymmetryFunction( 1, i, sw, (dfunc)*distance, (-dfunc)*Tensor(distance,distance), myatoms );
       }
     }
   }
