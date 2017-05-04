@@ -123,11 +123,11 @@ file `plumed.dat`. For instance consider the command:
 plumed driver --plumed plumed.dat --ixyz trajectory.xyz --length-units A
 \endverbatim
 where `plumed.dat` is
-\verbatim
+\plumedfile
 # no explicit UNITS action here
 d: DISTANCE ATOMS=1,2
 PRINT ARG=d FILE=colvar
-\endverbatim
+\endplumedfile
 In this case, the driver reads the `xyz` file assuming it to contain coordinates in Angstrom units.
 However, the resulting `colvar` file contains a distance expressed in nm.
 
