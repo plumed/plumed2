@@ -271,6 +271,23 @@ in the configuration file.
   -DF77_NO_UNDERSCORE to CPPFLAGS
   Notice that "./configure" should automatically try this solution.
 
+\subsection installation-vmdplugins VMD trajectory plugins
+
+If you configure PLUMED with VMD's plugins you will be able to read
+many more trajectory formats. To this aim,
+you need to download the SOURCE of VMD, which contains
+a plugins directory. Adapt build.sh and compile it. At
+the end, you should get the molfile plugins compiled as a static
+library `libmolfile_plugin.a`. Locate said file and `libmolfile_plugin.h`,
+and customize the configure command with something along
+the lines of:
+
+\verbatim
+./configure LDFLAGS="-ltcl8.5 -L/mypathtomolfilelibrary/ -L/mypathtotcl" CPPFLAGS="-I/mypathtolibmolfile_plugin.h/"
+\endverbatim
+
+and rebuild.
+
 \section CompilingPlumed Compiling PLUMED
 
 Once configured, PLUMED can be compiled using the following command:
@@ -455,12 +472,12 @@ There are different options available when patching. You can check all of them u
 > plumed patch --help
 \endverbatim
 Particularly interesting options include:
-- --static (default) just link PLUMED as a collection of object files. This is only suggested if for external reasons you
+- --static just link PLUMED as a collection of object files. This is only suggested if for external reasons you
   absolutely need a static executable. Notice that with this setting it is often more complicated to configure
   properly the MD code, since all the libraries that PLUMED depends on should be properly specified. The `./configure` script
   does its best in this sense, but sometime it cannot solve the problem. Additionally, this patching mode has been reported
   not to work properly on OSX.
-- --shared allows you to link PLUMED as a shared library. As a result when PLUMED is updated, there will be no need to recompile the MD code.
+- --shared (default) allows you to link PLUMED as a shared library. As a result when PLUMED is updated, there will be no need to recompile the MD code.
   This is way better than --static since the libraries that PLUMED depends on should be automatically linked.
   Notice that if you later remove the directory where PLUMED is installed also the MD code will not run anymore.
 - --runtime allows you to choose the location of the PLUMED library at runtime by setting the variable PLUMED_KERNEL.
