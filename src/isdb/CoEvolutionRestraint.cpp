@@ -446,8 +446,8 @@ void CoEvolutionRestraint::calculate()
     // get distance
     double dist = getArgument(i);
     // calculate forward model
-    double tmp = exp(-(dist-R0_[i])/gamma_[i]);
-    double p = P0_ * ( 1.0 - 1.0 / (1.0+tmp) );
+    double p = P0_;
+    if(dist >= R0_[i]) p = P0_ * exp(-0.5*(dist-R0_[i])*(dist-R0_[i])/gamma_[i]/gamma_[i]);
     // store forward model
     fmod[i] = p;
     // calculate data likelihood
@@ -455,19 +455,23 @@ void CoEvolutionRestraint::calculate()
     // add to energy
     ene += -kbt_ * std::log(like) + kbt_ * slope_ * std::log(dist);
     // calculate force
-    double dene_dlike = -kbt_ / like;
-    double dlike_dp   = alpha_p_ - alpha_n_;
-    double dp_ddist   = -P0_ / (1.0+tmp) / (1.0+tmp) * tmp / gamma_[i];
-    // apply chain rule
-    force[i] = -dene_dlike * dlike_dp * dp_ddist - kbt_ * slope_ / dist;
+    force[i] = - kbt_ * slope_ / dist;
+    // second contribution
+    if(dist >= R0_[i]) {
+      double dene_dlike = -kbt_ / like;
+      double dlike_dp   = alpha_p_ - alpha_n_;
+      double dp_ddist   = -p * (dist-R0_[i]) / gamma_[i] / gamma_[i];
+      // apply chain rule
+      force[i] += -dene_dlike * dlike_dp * dp_ddist;
+    }
   }
   // cycle on negative arguments
   for(unsigned i=rank_; i<nneg_; i=i+nrep_) {
     // get distance
     double dist = getArgument(i+npos_);
     // calculate forward model
-    double tmp = exp(-(dist-R0_[i+npos_])/gamma_[i+npos_]);
-    double p = P0_ * ( 1.0 - 1.0 / (1.0+tmp) );
+    double p = P0_;
+    if(dist >= R0_[i+npos_]) p = P0_ * exp(-0.5*(dist-R0_[i+npos_])*(dist-R0_[i+npos_])/gamma_[i+npos_]/gamma_[i+npos_]);
     // store forward model
     fmod[i+npos_] = p;
     // calculate data likelihood
@@ -475,11 +479,15 @@ void CoEvolutionRestraint::calculate()
     // add to energy
     ene += -kbt_ * std::log(like) + kbt_ * slope_ * std::log(dist);
     // calculate force
-    double dene_dlike = -kbt_ / like;
-    double dlike_dp   = - alpha_p_ + alpha_n_;
-    double dp_ddist   = -P0_ / (1.0+tmp) / (1.0+tmp) * tmp / gamma_[i+npos_];
-    // apply chain rule
-    force[i+npos_]  = -dene_dlike * dlike_dp * dp_ddist - kbt_ * slope_ / dist;
+    force[i+npos_] = - kbt_ * slope_ / dist;
+    // second contribution
+    if(dist >= R0_[i+npos_]) {
+      double dene_dlike = -kbt_ / like;
+      double dlike_dp   = -alpha_p_ + alpha_n_;
+      double dp_ddist   = -p * (dist-R0_[i+npos_]) / gamma_[i+npos_] / gamma_[i+npos_];
+      // apply chain rule
+      force[i+npos_] += -dene_dlike * dlike_dp * dp_ddist;
+    }
   }
 
   // sum energy, fmod, and derivatives
@@ -490,7 +498,7 @@ void CoEvolutionRestraint::calculate()
   // apply forces
   for(unsigned i=0; i<force.size(); ++i) setOutputForce(i, force[i]);
 
-  // add prior on alpha_p
+// add prior on alpha_p
   ene += getPrior(alpha_p_, alpha_p_mean_, alpha_p_sig_);
   // add prior on alpha_n
   ene += getPrior(alpha_n_, alpha_n_mean_, alpha_n_sig_);
