@@ -52,6 +52,10 @@ HistogramOnGrid::HistogramOnGrid( const vesselbase::VesselOptions& da ):
   }
 }
 
+double HistogramOnGrid::getFibonacciCutoff() const {
+  return std::log( epsilon / von_misses_norm ) / von_misses_concentration;
+}
+
 bool HistogramOnGrid::noDiscreteKernels() const {
   return !discrete;
 }
@@ -79,10 +83,11 @@ KernelFunctions* HistogramOnGrid::getKernelAndNeighbors( std::vector<double>& po
     KernelFunctions* kernel = new KernelFunctions( point, bandwidths, kerneltype, false, 1.0, true );
     getNeighbors( kernel->getCenter(), nneigh, num_neigh, neighbors );
     return kernel;
+  } else if( getType()=="fibonacci" ) {
+    getNeighbors( point, nneigh, num_neigh, neighbors );
+    return NULL;
   } else {
-    num_neigh = getNumberOfPoints();
-    if( neighbors.size()!=getNumberOfPoints() ) neighbors.resize( getNumberOfPoints() );
-    for(unsigned i=0; i<getNumberOfPoints(); ++i) neighbors[i]=i;
+    plumed_error();
   }
   return NULL;
 }
