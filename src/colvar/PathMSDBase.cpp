@@ -157,6 +157,7 @@ void PathMSDBase::calculate(){
   std::vector<Vector> tmp_derivs;
 // this array is a merge of all tmp_derivs, so as to allow a single comm.Sum below
   std::vector<Vector> tmp_derivs2(imgVec.size()*nat);
+  Tensor* tmp_rotationRefClose = new Tensor[nframes];
 
   if (epsilonClose > 0){
       //compute rmsd between positions and close structure, save rotation matrix, drotation_drr01, drotation_dpos
@@ -185,7 +186,7 @@ void PathMSDBase::calculate(){
       //set the type of alignment that determines the function used for RMSD calculation
       if (computeRefClose){
           for(unsigned i=rank;i<imgVec.size();i+=stride){
-              tmp_distances[i] = msdv[imgVec[i].index].calc_Rot(getPositions(), tmp_derivs, rotationRefClose[imgVec[i].index], true);
+              tmp_distances[i] = msdv[imgVec[i].index].calc_Rot(getPositions(), tmp_derivs, tmp_rotationRefClose[imgVec[i].index], true);
               plumed_assert(tmp_derivs.size()==nat);
 #pragma simd
               for(unsigned j=0;j<nat;j++) tmp_derivs2[i*nat+j]=tmp_derivs[j];
@@ -223,8 +224,13 @@ void PathMSDBase::calculate(){
 // reduce over all processors
   comm.Sum(tmp_distances);
   comm.Sum(tmp_derivs2);
-  if (epsilonClose > 0 && computeRefClose)
-      comm.Sum(rotationRefClose, nframes);
+  if (epsilonClose > 0 && computeRefClose) {
+      comm.Sum(tmp_rotationRefClose, nframes);
+      for (unsigned i=0; i<nframes;i++) {
+	      rotationRefClose[i] = tmp_rotationRefClose[i];
+      }
+  }
+  delete [] tmp_rotationRefClose;
 // assign imgVec[i].distance and imgVec[i].distder
   for(unsigned i=0;i<imgVec.size();i++){
     imgVec[i].distance=tmp_distances[i];
