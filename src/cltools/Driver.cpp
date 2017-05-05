@@ -143,7 +143,7 @@ files are referred to the original timestep and any files output resemble those 
 had we run the calculation we are running with driver when the MD simulation was running.
 
 PLUMED can read natively xyz files (in PLUMED units) and gro files (in nm). In addition,
-PLUMED includes by default support for a 
+PLUMED includes by default support for a
 subset of the trajectory file formats supported by VMD, e.g. xtc and dcd:
 
 \verbatim
