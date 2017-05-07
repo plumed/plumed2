@@ -360,9 +360,10 @@ std::vector<unsigned> GridVessel::getNbin() const {
 
 void GridVessel::getNeighbors( const std::vector<double>& pp, const std::vector<unsigned>& nneigh,
                                unsigned& num_neighbors, std::vector<unsigned>& neighbors ) const {
-  plumed_dbg_assert( bounds_set && nneigh.size()==dimension );
+  plumed_dbg_assert( bounds_set );
 
   if( gtype == flat ) {
+    plumed_dbg_assert( nneigh.size()==dimension );
     std::vector<unsigned> indices( dimension );
     for(unsigned i=0; i<dimension; ++i) indices[i] = std::floor( (pp[i]-min[i])/dx[i] );
     getNeighbors( indices, nneigh, num_neighbors, neighbors );
