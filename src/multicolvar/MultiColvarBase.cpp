@@ -376,13 +376,13 @@ void MultiColvarBase::setupMultiColvarBase( const std::vector<AtomNumber>& atoms
         bool found=false; unsigned inum;
         for(unsigned j=0; j<nat1; ++j) {
           if( atom_lab[nat1+i].first>0 && atom_lab[j].first>0 ) {
-            if( atom_lab[nat1+i].first==atom_lab[j].first && 
+            if( atom_lab[nat1+i].first==atom_lab[j].first &&
                 mybasemulticolvars[atom_lab[nat1+i].first-1]->getAbsoluteIndexOfCentralAtom(atom_lab[nat1+i].second)==
                 mybasemulticolvars[atom_lab[j].first-1]->getAbsoluteIndexOfCentralAtom(atom_lab[j].second) ) { found=true; inum=j; break; }
-          } else if( atom_lab[nat1+i].first>0 ){
+          } else if( atom_lab[nat1+i].first>0 ) {
             if( mybasemulticolvars[atom_lab[nat1+i].first-1]->getAbsoluteIndexOfCentralAtom(atom_lab[nat1+i].second)==
-                all_atoms[atom_lab[j].second] ){ found=true; inum=nat1 + i; break; }
-          } else if( atom_lab[j].first>0 ){
+                all_atoms[atom_lab[j].second] ) { found=true; inum=nat1 + i; break; }
+          } else if( atom_lab[j].first>0 ) {
             if( all_atoms[atom_lab[nat1+i].second]==
                 mybasemulticolvars[atom_lab[j].first-1]->getAbsoluteIndexOfCentralAtom(atom_lab[j].second) ) { found=true; inum=nat1+i; break; }
           } else if( all_atoms[atom_lab[nat1+i].second]==all_atoms[atom_lab[j].second] ) { found=true; inum=j; break; }

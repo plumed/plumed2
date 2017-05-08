@@ -184,7 +184,7 @@ double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) c
     if ( (d2=distance[0]*distance[0])<rcut2 &&
          (d2+=distance[1]*distance[1])<rcut2 &&
          (d2+=distance[2]*distance[2])<rcut2 &&
-          d2>epsilon) {
+         d2>epsilon) {
 
       sw = switchingFunction.calculateSqr( d2, dfunc );
 
