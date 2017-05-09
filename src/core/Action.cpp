@@ -265,6 +265,11 @@ bool Action::checkUpdate()const {
   else return false;
 }
 
+bool Action::getCPT()const {
+  return plumed.getCPT();
+}
+
+
 
 }
 
