@@ -29,6 +29,8 @@
 #include <matheval.h>
 #endif
 
+#define PI 3.14159265358979323846
+
 using namespace std;
 namespace PLMD {
 
@@ -110,7 +112,17 @@ s(r) = 1 - \tanh\left( \frac{ r - d_0 }{ r_0 } \right)
 </td> <td>
 {TANH R_0=\f$r_0\f$ D_0=\f$d_0\f$}
 </td> <td> </td>
-</tr> <tr>
+</tr> <tr> 
+<td> COSINUS </td> <td>
+\f$
+s(r) &= 1  & if r<=d0
+s(r) &= 0.5 \left( \cos ( \frac{ r - d_0 }{ r_0 } * PI ) + 1 \right) & if d0<r<=d0+r0
+s(r) &= 0  & if r> d0+r0
+\f$
+</td> <td>
+{COSINUS R_0=\f$r_0\f$ D_0=\f$d_0\f$}
+</td> <td> </td>
+</tr> <tr> 
 <td> MATHEVAL </td> <td>
 \f$
 s(r) = FUNC
@@ -236,6 +248,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   else if(name=="GAUSSIAN") type=gaussian;
   else if(name=="CUBIC") type=cubic;
   else if(name=="TANH") type=tanh;
+  else if(name=="COSINUS") type=cosinus;
 #ifdef __PLUMED_HAS_MATHEVAL
   else if(name=="MATHEVAL") {
     type=matheval;
@@ -288,6 +301,8 @@ std::string SwitchingFunction::description() const {
     ostr<<"cubic";
   } else if(type==tanh) {
     ostr<<"tanh";
+  } else if(type==cosinus) {
+     ostr<<"cosinus";
 #ifdef __PLUMED_HAS_MATHEVAL
   } else if(type==matheval) {
     ostr<<"matheval";
@@ -396,6 +411,21 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
       double tmp1=std::tanh(rdist);
       result = 1.0 - tmp1;
       dfunc=-(1-tmp1*tmp1);
+    } else if(type==cosinus) {
+      if(rdist<=0.0){
+// rdist = (r-r1)/(r2-r1) ; rdist<=0.0 if r <=r1
+        result=1.;
+        dfunc=0.0;
+      }else if(rdist<=1.0){
+// rdist = (r-r1)/(r2-r1) ; 0.0<=rdist<=1.0 if r1 <= r <=r2; (r2-r1)/(r2-r1)=1
+        double tmpcos = cos ( rdist * PI );
+        double tmpsin = sin ( rdist * PI );
+        result = 0.5 * (tmpcos + 1.0);
+        dfunc=-0.5 * PI * tmpsin * invr0;
+      }else {
+        result=0.;
+        dfunc=0.0;
+      }
 #ifdef __PLUMED_HAS_MATHEVAL
     } else if(type==matheval) {
       result=evaluator_evaluate_x(evaluator,rdist);
