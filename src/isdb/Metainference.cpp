@@ -269,7 +269,6 @@ void Metainference::registerKeywords(Keywords& keys) {
   keys.add("compulsory","OPTSIGMAMEAN","NONE","Set to NONE/SEM to manually set sigma mean, or to estimate it on the fly");
   keys.add("optional","SIGMA_MEAN0","starting value for the uncertainty in the mean estimate");
   keys.add("optional","SIGMA_MEAN_CORRECTION","sigma_mean correction modifier");
-  keys.add("optional","MAX_FORCE","maximum allowable force");
   keys.add("optional","TEMP","the system temperature - this is only needed if code doesnt' pass the temperature to plumed");
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_STRIDE","MC stride");
