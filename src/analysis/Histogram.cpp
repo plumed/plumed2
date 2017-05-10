@@ -311,6 +311,8 @@ void Histogram::turnOnDerivatives() {
     if( !mbase ) error("do not know how to get histogram derivatives for actions of type " + myvessels[i]->getName() );
     tmp_atoms = mbase->getAbsoluteIndexes();
     for(unsigned j=0; j<tmp_atoms.size(); ++j) all_atoms.push_back( tmp_atoms[j] );
+    // Make a tempory multi value so we can avoid vector resizing
+    stashes[i]->resizeTemporyMultiValues( 1 );
   }
   ActionAtomistic::requestAtoms( all_atoms );
   finalForces.resize( 3*all_atoms.size() + 9 );
@@ -386,7 +388,10 @@ void Histogram::compute( const unsigned& current, MultiValue& myvals ) const {
     for(unsigned i=2; i<myvessels[0]->getNumberOfQuantities(); ++i) myvals.setValue( i-1, cvals[i] );
     myvals.setValue( 0, cvals[0] ); myvals.setValue( myvessels[0]->getNumberOfQuantities() - 1, ww );
     if( in_apply ) {
-      MultiValue tmpval( myvessels[0]->getNumberOfQuantities(), myvessels[0]->getNumberOfDerivatives() );
+      MultiValue& tmpval = stashes[0]->getTemporyMultiValue(0);
+      if( tmpval.getNumberOfValues()!=myvessels[0]->getNumberOfQuantities() ||
+          tmpval.getNumberOfDerivatives()!=myvessels[0]->getNumberOfDerivatives() )
+        tmpval.resize( myvessels[0]->getNumberOfQuantities(), myvessels[0]->getNumberOfDerivatives() );
       stashes[0]->retrieveDerivatives( stashes[0]->getTrueIndex(current), true, tmpval );
       for(unsigned j=0; j<tmpval.getNumberActive(); ++j) {
         unsigned jder=tmpval.getActiveIndex(j); myvals.addDerivative( 0, jder, tmpval.getDerivative(0, jder) );
@@ -406,7 +411,10 @@ void Histogram::compute( const unsigned& current, MultiValue& myvals ) const {
         stashes[j]->retrieveSequentialValue( current, false, cvals ); totweight *= cvals[0];
       }
       // And this bit the derivatives
-      MultiValue tmpval( myvessels[0]->getNumberOfQuantities(), myvessels[0]->getNumberOfDerivatives() );
+      MultiValue& tmpval = stashes[0]->getTemporyMultiValue(0);
+      if( tmpval.getNumberOfValues()!=myvessels[0]->getNumberOfQuantities() ||
+          tmpval.getNumberOfDerivatives()!=myvessels[0]->getNumberOfDerivatives() )
+        tmpval.resize( myvessels[0]->getNumberOfQuantities(), myvessels[0]->getNumberOfDerivatives() );
       stashes[0]->retrieveDerivatives( stashes[0]->getTrueIndex(current), false, tmpval );
       for(unsigned j=0; j<tmpval.getNumberActive(); ++j) {
         unsigned jder=tmpval.getActiveIndex(j);
@@ -421,7 +429,10 @@ void Histogram::compute( const unsigned& current, MultiValue& myvals ) const {
       tnorm *= cvals[0]; myvals.setValue( 1+i, cvals[1] );
       // Get the derivatives as well if we are in apply
       if( in_apply ) {
-        MultiValue tmpval( myvessels[i]->getNumberOfQuantities(), myvessels[i]->getNumberOfDerivatives() );
+        MultiValue& tmpval = stashes[0]->getTemporyMultiValue(0);
+        if( tmpval.getNumberOfValues()!=myvessels[0]->getNumberOfQuantities() ||
+            tmpval.getNumberOfDerivatives()!=myvessels[0]->getNumberOfDerivatives() )
+          tmpval.resize( myvessels[0]->getNumberOfQuantities(), myvessels[0]->getNumberOfDerivatives() );
         stashes[i]->retrieveDerivatives( stashes[i]->getTrueIndex(current), false, tmpval );
         for(unsigned j=0; j<tmpval.getNumberActive(); ++j) {
           unsigned jder=tmpval.getActiveIndex(j);

@@ -56,6 +56,7 @@ public:
   void addOneKernelEachTimeOnly() { addOneKernelAtATime=true; }
   virtual void getFinalForces( const std::vector<double>& buffer, std::vector<double>& finalForces );
   bool noDiscreteKernels() const ;
+  double getFibonacciCutoff() const ;
 };
 
 inline
