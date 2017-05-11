@@ -41,6 +41,11 @@ matrix:
     dist: trusty
     sudo: required
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes CONFIG_FLAGS="--disable-external-lapack"
+# test using docker image.
+# currently it means ubuntu 17, with gcc6
+  - sudo: required
+    services: docker
+    env: PLUMED_DOCKER=yes
 # osx serial
   - os: osx
     osx_image: xcode7.3
@@ -169,9 +174,17 @@ script:
       ./macports-ci ccache --save ;
     fi
 
+# build docker container
+  - if test "$PLUMED_DOCKER" = yes ; then make -C docker ; fi
+
 # TEST:
   - if test "$VALGRIND" == yes ; then OPT=valgrind ; else OPT="" ; fi
   - if test "$PLUMED_CXX" || test -n "$PLUMED_MACPORTS" ; then make -C regtest $OPT ; fi
+
+# test with gcc6
+  - if test "$PLUMED_DOCKER" = yes ; then docker run -v "$PWD/regtest":/home/plumed/regtest -it plumed /bin/bash -c "make -C regtest" ; fi
+# currently, gcc6 fails for numerical reasons. Once this is fixed we can add the "make -C regtest checkfail" command below
+
   - if test "$MAKEDOC" == yes ; then make -C regtest copytodoc ; fi
   - if test "$MAKEDOC" == yes ; then make -C developer-doc coverage ; fi
   - if test "$MAKEDOC" == yes ; then make doc >/dev/null ; fi
