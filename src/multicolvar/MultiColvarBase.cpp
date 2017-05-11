@@ -643,14 +643,14 @@ bool MultiColvarBase::setupCurrentAtomList( const unsigned& taskCode, AtomValueP
      myatoms.setNumberOfAtoms( 1 ); myatoms.setAtom( 0, taskCode ); return true; 
   } else if( usespecies ){
      std::vector<unsigned> task_atoms(1); task_atoms[0]=taskCode;
-     unsigned natomsper=myatoms.setupAtomsFromLinkCells( task_atoms, getLinkCellPosition(task_atoms), linkcells );
+     unsigned natomsper=myatoms.setupAtomsFromLinkCells( task_atoms, getPositionOfAtomForLinkCells( taskCode ), linkcells );
      return natomsper>1;
   } else if( matsums ){
      myatoms.setNumberOfAtoms( getNumberOfAtoms() );
      for(unsigned i=0;i<getNumberOfAtoms();++i) myatoms.setAtom( i, i ); 
   } else if( allthirdblockintasks ){ 
      plumed_dbg_assert( ablocks.size()==3 ); std::vector<unsigned> atoms(2); decodeIndexToAtoms( taskCode, atoms );
-     myatoms.setupAtomsFromLinkCells( atoms, getLinkCellPosition(atoms), threecells );
+     myatoms.setupAtomsFromLinkCells( atoms, getPositionOfAtomForLinkCells( atoms[0] ), threecells );
   } else if( nblock>0 ){
      std::vector<unsigned> atoms( ablocks.size() );
      decodeIndexToAtoms( taskCode, atoms ); myatoms.setNumberOfAtoms( ablocks.size() );
@@ -660,11 +660,6 @@ bool MultiColvarBase::setupCurrentAtomList( const unsigned& taskCode, AtomValueP
      for(unsigned i=0;i<ablocks.size();++i) myatoms.setAtom( i, ablocks[i][taskCode] ); 
   } 
   return true;
-}
-
-void MultiColvarBase::buildListOfLinkCells( const std::vector<unsigned>& cind, const LinkCells& linkc,
-                                            unsigned& ncells_required, std::vector<unsigned>& cells_required ) const {
-  linkc.addRequiredCells( linkc.findMyCell( getPositionOfAtomForLinkCells(cind[0]) ), ncells_required, cells_required );
 }
 
 void MultiColvarBase::setupActiveTaskSet( std::vector<unsigned>& active_tasks, const std::string& input_label ){

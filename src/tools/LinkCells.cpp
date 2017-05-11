@@ -102,69 +102,6 @@ void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vecto
   }
 }
 
-bool LinkCells::checkLineBox( const double& dist1, const double& dist2, const Vector& fpos1, const Vector& fdir, 
-                              const Vector& plow, const Vector& phigh, const unsigned& axis ) const {
-  if( dist1*dist2>=0.0 || dist1==dist2 ) return false;
-  Vector hit = fpos1 + fdir * ( -dist1/(dist2-dist1) );
-  if( axis==0 && hit[2]>plow[2] && hit[2]<phigh[2] && hit[1]>plow[1] && hit[1]<phigh[1] ) return true;
-  if( axis==1 && hit[2]>plow[2] && hit[2]<phigh[2] && hit[0]>plow[0] && hit[0]<phigh[0] ) return true;
-  if( axis==2 && hit[0]>plow[0] && hit[0]<phigh[0] && hit[1]>plow[1] && hit[1]<phigh[1] ) return true;
-  return false;
-}
-
-void LinkCells::getCellsThatLinePassesThrough( const Vector& pos1, const Vector& pos2, unsigned& ncells_required, 
-                                               std::vector<unsigned>& cells_required ) const {
-  // Retrieve the cell indices of the extrema for the line segment
-  std::vector<double> delx(3); std::vector<int> celln(3); std::vector<unsigned> celli(3); 
-  for(unsigned i=0;i<3;++i) delx[i] =  1.0 / static_cast<double>(ncells[i]);
-
-  // Get the vector connecting the two points
-  Vector dir = mypbc.distance( pos1, pos2 );  
-  // Get the indices of link cell containing the first point
-  std::vector<int> cd(3), c2(3); std::vector<unsigned> c1 = findMyCell( pos1 );
-  // Now find the position of the second point in nearest cell
-  Vector wpos2 = pos1 + dir; Vector fpos2 = mypbc.realToScaled( wpos2 );
-  // And the link cell the second point is in
-  for(unsigned j=0;j<3;++j){ 
-    c2[j] = std::floor( ( fpos2[j] + 0.5 ) * ncells[j] ); 
-    cd[j] = (c2[j]<static_cast<int>(c1[j]))? -1 : +1; 
-    c2[j] += cd[j];
-  }
-  // Now loop over relevant cells 
-  Vector plow, phigh, cplow, cphigh; 
-  for(celln[0]=c1[0];celln[0]!=c2[0];celln[0]+=cd[0]){
-      plow[0] = -0.5 + celln[0] * delx[0]; phigh[0] = plow[0] + delx[0];
-      for(celln[1]=c1[1];celln[1]!=c2[1];celln[1]+=cd[1]){ 
-          plow[1] = -0.5 + celln[1] * delx[1]; phigh[1] = plow[1] + delx[1];
-          for(celln[2]=c1[2];celln[2]!=c2[2];celln[2]+=cd[2]){  
-             plow[2] = -0.5 + celln[2] * delx[2]; phigh[2] = plow[2] + delx[2];
-             cplow = mypbc.scaledToReal( plow ); cphigh = mypbc.scaledToReal( phigh );
-             for(unsigned j=0;j<3;++j){
-                 celli[j] = (celln[j]<0)? (ncells[j]+celln[j])%ncells[j] : celln[j]%ncells[j];
-                 plumed_assert( celli[j]>=0 && celli[j]<ncells[j] );
-             }
-             addRequiredCells( celli, ncells_required, cells_required );
-             // if( pos1[0]>cplow[0] && pos1[0]<cphigh[0] && 
-             //     pos1[1]>cplow[1] && pos1[1]<cphigh[1] && 
-             //     pos1[2]>cplow[2] && pos1[2]<cphigh[2] ){
-             //        for(unsigned j=0;j<3;++j) celli[j] = (celln[j]<0)? (ncells[j]+celln[j])%ncells[j] : celln[j]%ncells[j]; 
-             //        addRequiredCells( celli, ncells_required, cells_required ); 
-             //        continue;
-             // }
-             // if( checkLineBox( pos1[0] - cplow[0], wpos2[0] - cplow[0], pos1, dir, cplow, cphigh, 0 ) ||
-             //     checkLineBox( pos1[1] - cplow[1], wpos2[1] - cplow[1], pos1, dir, cplow, cphigh, 1 ) ||
-             //     checkLineBox( pos1[2] - cplow[2], wpos2[2] - cplow[2], pos1, dir, cplow, cphigh, 2 ) ||
-             //     checkLineBox( pos1[0] - cphigh[0], wpos2[0] - cphigh[0], pos1, dir, cplow, cphigh, 0 ) ||
-             //     checkLineBox( pos1[1] - cphigh[1], wpos2[1] - cphigh[1], pos1, dir, cplow, cphigh, 1 ) || 
-             //     checkLineBox( pos1[2] - cphigh[2], wpos2[2] - cphigh[2], pos1, dir, cplow, cphigh, 2 ) ){
-             //        for(unsigned j=0;j<3;++j) celli[j] = (celln[j]<0)? (ncells[j]+celln[j])%ncells[j] : celln[j]%ncells[j];
-             //        addRequiredCells( celli, ncells_required, cells_required );
-             // }
-          }
-      }
-  }
-}
-
 #define LINKC_MIN(n) ((n<2)? 0 : -1)
 #define LINKC_MAX(n) ((n<3)? 1 : 2)
 #define LINKC_PBC(n,num) ((n<0)? num-1 : n%num )

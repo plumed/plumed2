@@ -32,8 +32,6 @@ Adjacency matrix in which two atoms are adjacent if they are connected topologic
 
 \par Examples
 
-\bug Link cells not working
-\bug Virial contribution not calculated correctly
 
 */
 //+ENDPLUMEDOC
@@ -68,8 +66,6 @@ public:
   unsigned getNumberOfQuantities() const ;
 /// Create the ith, ith switching function
   void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc );
-/// Get the position that we should use as the center of our link cells
-  Vector getLinkCellPosition( const std::vector<unsigned>& atoms ) const ;
 /// This actually calculates the value of the contact function
   double calculateWeight( const unsigned& taskCode, const double& weight, multicolvar::AtomValuePack& myatoms ) const ;
 /// This does nothing
@@ -77,9 +73,6 @@ public:
 /// Calculate the contribution from one of the atoms in the third element of the pack
   void calculateForThreeAtoms( const unsigned& iat, const Vector& d1, const double& d1_len, 
                                HistogramBead& bead, multicolvar::AtomValuePack& myatoms ) const ; 
-///
-  void buildListOfLinkCells( const std::vector<unsigned>& cind, const LinkCells& linkc,
-                             unsigned& ncells_required, std::vector<unsigned>& cells_required ) const ;
 };
 
 PLUMED_REGISTER_ACTION(TopologyMatrix,"TOPOLOGY_MATRIX")
@@ -151,8 +144,8 @@ maxbins(0)
   beadrad = bead.getCutoff(); 
 
   // Set the link cell cutoff
-  log.printf("  setting cutoffs %f %f \n", sfmax, rfmax );
-  setLinkCellCutoff( sfmax, std::numeric_limits<double>::max() );  // rfmax ); // std::numeric_limits<double>::max() );
+  log.printf("  setting cutoff %f \n", sfmax );
+  setLinkCellCutoff( sfmax, std::numeric_limits<double>::max() );  
 
   double maxsize=0;
   for(unsigned i=0;i<getNumberOfNodeTypes();++i){
@@ -193,25 +186,6 @@ void TopologyMatrix::setupConnector( const unsigned& id, const unsigned& i, cons
      if( i!=j ) binw_mat(i,j)=binw_mat(j,i);
      log.printf("  cylinder for %u th and %u th multicolvar groups is split into bins of length %f \n",i,j,binw_mat(i,j) );    
   }
-}
-
-void TopologyMatrix::buildListOfLinkCells( const std::vector<unsigned>& cind, const LinkCells& linkc,
-                                           unsigned& ncells_required, std::vector<unsigned>& cells_required ) const {
-  // Shift ends of cylinder from positions of atoms to generate line of interest
-  Vector distance=getSeparation( getPositionOfAtomForLinkCells( cind[0] ), getPositionOfAtomForLinkCells( cind[1] ) );
-  double len = distance.modulo(); distance /= len; 
-  std::vector<Vector> p(2); p[0] = getPositionOfAtomForLinkCells( cind[0] ) - beadrad*distance; 
-  double binw = binw_mat( getBaseColvarNumber( cind[0] ), getBaseColvarNumber( cind[1] ) );
-  double lcylinder = (std::floor( len / binw ) + 1)*binw; 
-  p[1] = p[0] + (lcylinder + 2*beadrad)*distance; pbcApply( p, 2 );  
-  // And get the appropriate atoms
-  unsigned ncells=0; ncells_required = 0;
-  linkc.getCellsThatLinePassesThrough( p[0], p[1], ncells_required, cells_required );
-}
-
-Vector TopologyMatrix::getLinkCellPosition( const std::vector<unsigned>& atoms ) const {
-  Vector myatom = getPositionOfAtomForLinkCells( atoms[0] );
-  return myatom + 0.5*pbcDistance( getPositionOfAtomForLinkCells( atoms[1] ), myatom );
 }
 
 double TopologyMatrix::calculateWeight( const unsigned& taskCode, const double& weight, multicolvar::AtomValuePack& myatoms ) const {
