@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "multicolvar/MultiColvar.h"
+#include "multicolvar/MultiColvarBase.h"
 #include "HBPammObject.h"
 #include "tools/NeighborList.h"
 #include "core/ActionRegister.h"
@@ -43,7 +43,7 @@ Number of HBPAMM hydrogen bonds formed by each hydrogen atom in the system
 //+ENDPLUMEDOC
 
 
-class HBPammHydrogens : public multicolvar::MultiColvar {
+class HBPammHydrogens : public multicolvar::MultiColvarBase {
 private:
   double rcut2;
   unsigned block1upper,block2lower;
@@ -60,7 +60,7 @@ public:
 PLUMED_REGISTER_ACTION(HBPammHydrogens,"HBPAMM_SH")
 
 void HBPammHydrogens::registerKeywords( Keywords& keys ){
-  multicolvar::MultiColvar::registerKeywords( keys );
+  multicolvar::MultiColvarBase::registerKeywords( keys );
   keys.add("atoms-1","HYDROGENS","The list of hydrogen atoms that can form part of a hydrogen bond.  The atoms must be specified using a comma separated list.");
   keys.add("atoms-1","SITES","The list of atoms which can be part of a hydrogen bond.  When this command is used the set of atoms that can donate a "
                              "hydrogen bond is assumed to be the same as the set of atoms that can form hydrogen bonds.  The atoms involved must be specified"
@@ -88,7 +88,8 @@ void HBPammHydrogens::registerKeywords( Keywords& keys ){
 }
 
 HBPammHydrogens::HBPammHydrogens(const ActionOptions&ao):
-PLUMED_MULTICOLVAR_INIT(ao)
+Action(ao),
+MultiColvarBase(ao)
 {
   // Read in the atoms
   usespecies=true; weightHasDerivatives=false;

@@ -26,7 +26,7 @@ namespace PLMD {
 namespace crystallization {
 
 void VectorMultiColvar::registerKeywords( Keywords& keys ){
-  MultiColvar::registerKeywords( keys );
+  MultiColvarBase::registerKeywords( keys );
   keys.setComponentsIntroduction("When the label of this action is used as the input for a second you are not referring to a scalar quantity as you are in "
                                  "regular collective variables.  The label is used to reference the full set of vectors calculated by "
                                  "the action.  This is usual when using \\ref multicolvarfunction. Generally when doing this the previously calculated "

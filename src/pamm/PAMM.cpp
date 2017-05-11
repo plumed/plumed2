@@ -22,7 +22,8 @@
 #include "core/ActionRegister.h"
 #include "tools/KernelFunctions.h"
 #include "tools/IFile.h"
-#include "multicolvar/MultiColvarFunction.h"
+#include "multicolvar/MultiColvarBase.h"
+#include "multicolvar/AtomValuePack.h"
 #include "PammObject.h"
 
 //+PLUMEDOC MCOLVARF PAMM
@@ -107,7 +108,7 @@ and compute these PAMM variables and we can transform the PAMM variables themsel
 namespace PLMD {
 namespace pamm {
 
-class PAMM : public multicolvar::MultiColvarFunction {
+class PAMM : public multicolvar::MultiColvarBase {
 private:
   PammObject mypamm;
 public:
@@ -128,7 +129,8 @@ public:
 PLUMED_REGISTER_ACTION(PAMM,"PAMM")
 
 void PAMM::registerKeywords( Keywords& keys ){
-  MultiColvarFunction::registerKeywords( keys ); 
+  MultiColvarBase::registerKeywords( keys ); 
+  keys.add("compulsory","DATA","the multicolvars from which the pamm coordinates are calculated");
   keys.add("compulsory","CLUSTERS","the name of the file that contains the definitions of all the clusters");
   keys.add("compulsory","REGULARISE","0.001","don't allow the denominator to be smaller then this value");
   keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("SUM"); keys.use("LESS_THAN"); keys.use("HISTOGRAM"); keys.use("HISTOGRAM");
@@ -153,8 +155,10 @@ void PAMM::registerKeywords( Keywords& keys ){
 
 PAMM::PAMM(const ActionOptions& ao):
 Action(ao),
-MultiColvarFunction(ao)
+MultiColvarBase(ao)
 {
+   // This builds the lists
+   buildSets();
    // Check for reasonable input
    for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i){
      if( getBaseMultiColvar(i)->getNumberOfQuantities()!=2 ) error("cannot use PAMM with " + getBaseMultiColvar(i)->getName() );
@@ -175,8 +179,6 @@ MultiColvarFunction(ao)
    std::string errorstr, filename; parse("CLUSTERS",filename); 
    mypamm.setup( filename, regulariser, valnames, pbc, min, max, errorstr );
    if( errorstr.length()>0 ) error( errorstr );
-   // This builds the lists
-   buildSets();
 }
 
 unsigned PAMM::getNumberOfQuantities() const {
