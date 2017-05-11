@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,9 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "multicolvar/MultiColvarFunction.h"
-#include "multicolvar/BridgedMultiColvarFunction.h"
 #include "VectorMultiColvar.h"
+#include "multicolvar/BridgedMultiColvarFunction.h"
 
 namespace PLMD {
 namespace crystallization {
@@ -48,21 +47,22 @@ void VectorMultiColvar::registerKeywords( Keywords& keys ){
 }
 
 VectorMultiColvar::VectorMultiColvar(const ActionOptions& ao):
-PLUMED_MULTICOLVAR_INIT(ao),
+Action(ao),
+MultiColvarBase(ao),
 store_director(true)
 {
   setLowMemOption(true);
 }
 
 void VectorMultiColvar::setVectorDimensionality( const unsigned& ncomp ){
-  ncomponents = ncomp;  
+  ncomponents = ncomp; resizeFunctions(); // This resize needs to be here to ensure buffers are set to correct size in base
 }
 
 void VectorMultiColvar::doNotCalculateDirector(){
   store_director=false;    // Need a sanity check in here  so that you don't use the same instance of Q4 to calcualte vectors and directors 
 }
 
-double VectorMultiColvar::doCalculation( const unsigned& taskIndex, multicolvar::AtomValuePack& myatoms ) const {
+double VectorMultiColvar::compute( const unsigned& taskIndex, multicolvar::AtomValuePack& myatoms ) const {
   // Now calculate the vector
   calculateVector( myatoms );
   // Sort out the active derivatives

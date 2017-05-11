@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -161,7 +161,6 @@ public:
 
 ///
   std::set<FILE*> files;
-  typedef std::set<FILE*>::iterator files_iterator;
 
 public:
 /// Standard constructor from ActionOptions
@@ -173,6 +172,7 @@ private:
   explicit Action(const Action&a);
 /// Assignment operator is disabled (private and unimplemented)
   Action& operator=(const Action&a);
+  int replica_index;
 public:
 /// Check if Action was properly read.
 /// This checks if Action::line is empty. It must be called after
@@ -313,8 +313,10 @@ void Action::parse(const std::string&key,T&t){
   plumed_massert(keywords.exists(key),"keyword " + key + " has not been registered");
 
   // Now try to read the keyword
-  bool found; std::string def; 
-  found=Tools::parse(line,key,t);
+  std::string def; 
+  bool present=Tools::findKeyword(line,key);
+  bool found=Tools::parse(line,key,t,replica_index);
+  if(present && !found) error("keyword " + key +" could not be read correctly");
   
   // If it isn't read and it is compulsory see if a default value was specified 
   if ( !found && (keywords.style(key,"compulsory") || keywords.style(key,"hidden")) ){
@@ -337,7 +339,7 @@ bool Action::parseNumbered(const std::string&key, const int no, T&t){
 
   // Now try to read the keyword
   std::string num; Tools::convert(no,num);
-  return Tools::parse(line,key+num,t);
+  return Tools::parse(line,key+num,t,replica_index);
 }
 
 template<class T>
@@ -354,8 +356,10 @@ void Action::parseVector(const std::string&key,std::vector<T>&t){
   if(size==0) skipcheck=true;
 
   // Now try to read the keyword
-  bool found; std::string def; T val;
-  found=Tools::parseVector(line,key,t);
+  std::string def; T val;
+  bool present=Tools::findKeyword(line,key);
+  bool found=Tools::parseVector(line,key,t,replica_index);
+  if(present && !found) error("keyword " + key +" could not be read correctly");
 
   // Check vectors size is correct (not if this is atoms or ARG)
   if( !keywords.style(key,"atoms") && found ){
@@ -389,7 +393,10 @@ bool Action::parseNumberedVector(const std::string&key, const int no, std::vecto
   unsigned size=t.size(); bool skipcheck=false;
   if(size==0) skipcheck=true;
   std::string num; Tools::convert(no,num);
-  bool found=Tools::parseVector(line,key+num,t);
+  bool present=Tools::findKeyword(line,key);
+  bool found=Tools::parseVector(line,key+num,t,replica_index);
+  if(present && !found) error("keyword " + key +" could not be read correctly");
+
   if(  keywords.style(key,"compulsory") ){
     if (!skipcheck && found && t.size()!=size ) error("vector read in for keyword " + key + num + " has the wrong size");  
   } else if ( !found ){

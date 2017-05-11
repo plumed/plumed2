@@ -47,7 +47,98 @@ the RMSD distance or you could calculate the ammount by which a set of collectiv
 of the path cv allows one to use all the difference distance metrics that are discussed in \ref dists. This is as opposed to 
 the alternative implementation of path (\ref PATHMSD) which is a bit faster but which only allows one to use the RMSD distance.
 
+The \f$s\f$ and \f$z\f$ variables are calculated using the above formulas by default.  However, there is an alternative method
+of calculating these collective variables, which is detailed in \cite bernd-path.  This alternative method uses the tools of
+geometry (as opposed to algebra, which is used in the equations above).  In this alternative formula the progress along the path
+\f$s\f$ is calculated using:
+
+\f[
+s = i_2 + \textrm{sign}(i_2-i_1) \frac{ \sqrt{( \mathbf{v}_1\cdot\mathbf{v}_2 )^2 - |\mathbf{v}_3|^2(|\mathbf{v}_1|^2 - |\mathbf{v}_2|^2) } }{2|\mathbf{v}_3|^2} - \frac{\mathbf{v}_1\cdot\mathbf{v}_3 - |\mathbf{v}_3|^2}{2|\mathbf{v}_3|^2}
+\f] 
+
+where \f$\mathbf{v}_1\f$ and \f$\mathbf{v}_3\f$ are the vectors connecting the current position to the closest and second closest node of the path, 
+respectfully and \f$i_1\f$ and \f$i_2\f$ are the projections of the closest and second closest frames of the path. \f$\mathbf{v}_2\f$, meanwhile, is the 
+vector connecting the closest frame to the second closest frame.  The distance from the path, \f$z\f$ is calculated using:
+
+\f[
+z = \sqrt{ \left[ |\mathbf{v}_1|^2 - |\mathbf{v}_2| \left( \frac{ \sqrt{( \mathbf{v}_1\cdot\mathbf{v}_2 )^2 - |\mathbf{v}_3|^2(|\mathbf{v}_1|^2 - |\mathbf{v}_2|^2) } }{2|\mathbf{v}_3|^2} - \frac{\mathbf{v}_1\cdot\mathbf{v}_3 - |\mathbf{v}_3|^2}{2|\mathbf{v}_3|^2} \right) \right]^2 }  
+\f]
+
+The symbols here are as they were for \f$s\f$.  If you would like to use these equations to calculate \f$s\f$ and \f$z\f$ then you should use the GPATH flag.
+The values of \f$s\f$ and \f$z\f$ can then be referenced using the gspath and gzpath labels.
+
 \par Examples
+
+In the example below the path is defined using RMSD distance from frames.
+The reference frames in the path are defined in the pdb file.  In this frame
+each configuration in the path is separated by a line containing just the word END.  
+
+\verbatim       
+p1: PATH REFERENCE=file.pdb TYPE=OPTIMAL LAMBDA=500.0 
+PRINT ARG=p1.sss,p1.zzz STRIDE=1 FILE=colvar FMT=%8.4f
+\endverbatim
+
+In the example below the path is defined using the values of two torsional angles (t1 and t2).
+In addition, the \f$s\f$ and \f$z\f$ are calculated using the geometric expressions described 
+above rather than the alegebraic expressions that are used by default.
+
+\verbatim
+t1: TORSION ATOMS=5,7,9,15
+t2: TORSION ATOMS=7,9,15,17
+pp: PATH TYPE=EUCLIDEAN REFERENCE=epath.pdb GPATH NOSPATH NOZPATH
+PRINT ARG=pp.* FILE=colvar 
+\endverbatim
+
+Notice that the LAMBDA parameter is not required here as we are not calculating \f$s\f$ and \f$s\f$
+using the algebraic formulae defined earlier.  The positions of the frames in the path are defined 
+in the file epath.pdb.  An extract from this file looks as shown below.
+
+\verbatim
+REMARK ARG=t1,t2 t1=-4.25053  t2=3.88053
+END
+REMARK ARG=t1,t2 t1=-4.11     t2=3.75
+END
+REMARK ARG=t1,t2 t1=-3.96947  t2=3.61947
+END
+\endverbatim
+
+The remarks in this pdb file tell PLUMED the labels that are being used to define the position in the 
+high dimensional space and the values that these arguments have at each point on the path.
+
+The following input instructs PLUMED to calculate the values of the path collective variables.  The frames that make up this 
+path are defined in the file all.pdb and all distances are measured using the OPTIMAL metric that is discussed in the manual 
+page on \ref RMSD. 
+
+\verbatim
+p2: PATH REFERENCE=all.pdb LAMBDA=69087
+PRINT ARG=p2.spath,p2.zpath STRIDE=1 FILE=colvar 
+\endverbatim
+
+If you wish to use collective variable values in the definition of your path you would use an input file with something like this:
+
+\verbatim
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4a
+p2: PATH REFERENCE=mypath.pdb LAMBDA=2 TYPE=EUCLIDEAN
+PRINT ARG=p2.spath,p2.zpath STRIDE=1 FILE=colvar 
+\endverbatim
+
+The corresponding pdb file containing the  definitions of the frames in the path would then look like this:
+
+\verbatim
+DESCRIPTION: a defintiion of a PATH
+REMARK TYPE=EUCLIDEAN 
+REMARK ARG=d1,d2 
+REMARK d1=1.0 d2=1.0
+END
+REMARK TYPE=EUCLIDEAN
+REMARK ARG=d1,d2 
+REMARK d1=2.0 d2=2.0
+END
+\endverbatim
+
+For each frame in the path you must specify the arguments that should be used to calculate the distance between the instantaneous configuration
+of the system and the reference configurations together with the values that these arguments take in each of the reference configurations.
 
 */
 //+ENDPLUMEDOC
@@ -66,7 +157,7 @@ PLUMED_REGISTER_ACTION(Path,"PATH")
 void Path::registerKeywords( Keywords& keys ){
   PathBase::registerKeywords( keys ); keys.remove("PROPERTY");
   keys.addFlag("NOSPATH",false,"do not calculate the spath position");
-  keys.remove("LOWMEM");
+  keys.remove("LOWMEM"); keys.use("GPATH");
 }
 
 Path::Path(const ActionOptions& ao):
@@ -81,6 +172,7 @@ PathBase(ao)
      if( getPropertyIndex("spath")!=0 || getNumberOfProperties()>1 ){
         error("paths only work when there is a single property called sss being calculated"); 
      }
+     if( getLambda()==0 ) error("you must set LAMBDA parameter in order to calculate spath position.  Use LAMBDA/NOSPATH keyword");
      empty="LABEL=spath"; 
      addVessel("SPATH",empty,0);    
   }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015,2016 The plumed team
+   Copyright (c) 2015-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -36,23 +36,34 @@ Because each base quantity can be assigned to a particular point in space we can
 distribution of base quantities in a particular part of the box by using:
 
 \f[
-\overline{s}_{\tau} = \frac{ \sum_i f(s_i) w(x_i,y_i,z_i) }{ \sum_i w(x_i,y_i,z_i) }  
+\overline{s}_{\tau} = \frac{ \sum_i f(s_i) \sigma(r_{xy}) }{ \sum_i \sigma(r_{xy}) }  
 \f]  
 
 where the sum is over the collective variables, \f$s_i\f$, each of which can be thought to be at \f$ (x_i,y_i,z_i)\f$.
-The function \f$ w(x_i,y_i,z_i) \f$ measures whether or not the system is in the subregion of interest. It
-is equal to:
-
+The function \f$\sigma\f$ is a \ref switchingfunction that acts on the distance between the point at which the 
+collective is located \f$(x_i,y_i,z_i)\f$ and the position of the atom that was specified using the ORIGIN keyword 
+projected in the xy plane if DIRECTION=z is used.  In other words:
 \f[
-w(x_i,y_i,z_i) =  
+r_{xy} = sqrt{ ( x_i - x_0)^2 + ( y_i - y_0)^2 }
 \f]
+In short this function, \f$\sigma(r_{xy})\f$, measures whether or not the CV is within a cylinder that 
+runs along the axis specified using the DIRECTION keyword and that is centered on the position of the atom specified using
+ORIGIN.
 
-where \f$\sigma\f$ is a \ref switchingfunction.
 The function \f$(s_i)\f$ can be any of the usual LESS_THAN, MORE_THAN, WITHIN etc that are used in all other multicolvars.
 
 When INCYLINDER is used with the \ref DENSITY action the number of atoms in the specified region is calculated  
 
 \par Examples
+
+The input below can be use to calculate the average coordination numbers for those atoms that are within a cylindrical tube
+of radius 1.5 nm that is centered on the position of atom 101 and that has its long axis parallel to the z-axis.
+
+\verbatim
+c1: COORDINATIONNUMBER SPECIES=1-100 SWITCH={RATIONAL R_0=0.1}  
+d2: INCYLINDER ATOM=101 DATA=d1 DIRECTION=Z RADIUS={TANH R_0=1.5} SIGMA=0.1 LOWER=-0.1 UPPER=0.1 MEAN
+PRINT ARG=d2.* FILE=colvar
+\endverbatim
 
 */
 //+ENDPLUMEDOC

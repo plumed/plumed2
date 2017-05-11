@@ -1,0 +1,2 @@
+type=make
+plumed_needs="dlopen exceptions"

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2016 The plumed team
+   Copyright (c) 2014-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -184,6 +184,10 @@ rmsd(NULL)
   addValue(); setNotPeriodic();
 
   doNotRetrieve();
+
+  // this is required so as to allow modifyGlobalForce() to return correct
+  // also for forces that are not owned (and thus not zeored) by all processors.
+  allowToAccessGlobalForces();
 }
 
 

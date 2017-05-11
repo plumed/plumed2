@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -228,7 +228,8 @@ METAD ...
 where  WALKERS_N is the total number of walkers, WALKERS_ID is the   
 id of the present walker (starting from 0 ) and the WALKERS_DIR is the directory  
 where all the walkers are located. WALKERS_RSTRIDE is the number of step between 
-one update and the other. 
+one update and the other. Since version 2.2.5, hills files are automatically
+flushed every WALKERS_RSTRIDE steps.
 
 \par
 The c(t) reweighting factor can be calculated on the fly using the equations
@@ -306,6 +307,27 @@ The header in the file dist.dat for this calculation would read:
 #! SET periodic_d1 false
 \endverbatim
 
+Notice that BIASFACTOR can also be chosen as equal to 1. In this case one will perform
+unbiased sampling. Instead of using HEIGHT, one should provide the TAU parameter.
+\verbatim
+d: DISTANCE ATOMS=3,5
+METAD ARG=d SIGMA=0.1 TAU=4.0 TEMP=300 PACE=100 BIASFACTOR=1.0
+\endverbatim
+The HILLS file obtained will still work with `plumed sum_hills` so as to plot a free-energy.
+The case where this makes sense is probably that of RECT simulations.
+
+Regarding RECT simulations, you can also use the RECT keyword so as to avoid using multiple input files.
+For instance, a single input file will be
+\verbatim
+d: DISTANCE ATOMS=3,5
+METAD ARG=d SIGMA=0.1 TAU=4.0 TEMP=300 PACE=100 RECT=1.0,1.5,2.0,3.0
+\endverbatim
+The number of elements in the RECT array should be equal to the number of replicas.
+
+
+
+
+
 */
 //+ENDPLUMEDOC
 
@@ -351,6 +373,7 @@ private:
   int mw_rstride_;
   bool walkers_mpi;
   unsigned mpi_nw_;
+  unsigned mpi_mw_;
   bool acceleration;
   double acc;
   vector<IFile*> ifiles;
@@ -372,7 +395,6 @@ private:
   double getHeight(const vector<double>&);
   double getBiasAndDerivatives(const vector<double>&,double* der=NULL);
   double evaluateGaussian(const vector<double>&, const Gaussian&,double* der=NULL);
-  void   finiteDifferenceGaussian(const vector<double>&, const Gaussian&);
   double getGaussianNormalization( const Gaussian& );
   vector<unsigned> getGaussianSupport(const Gaussian&);
   bool   scanOneHill(IFile *ifile,  vector<Value> &v, vector<double> &center, vector<double>  &sigma, double &height, bool &multivariate);
@@ -404,6 +426,7 @@ void MetaD::registerKeywords(Keywords& keys){
   keys.add("optional","HEIGHT","the heights of the Gaussian hills. Compulsory unless TAU and either BIASFACTOR or DAMPFACTOR are given");
   keys.add("optional","FMT","specify format for HILLS files (useful for decrease the number of digits in regtests)");
   keys.add("optional","BIASFACTOR","use well tempered metadynamics and use this biasfactor.  Please note you must also specify temp");
+  keys.add("optional","RECT","list of bias factors for all the replicas");
   keys.add("optional","DAMPFACTOR","damp hills with exp(-max(V)/(kbT*DAMPFACTOR)");
   keys.add("optional","TARGET","target to a predefined distribution");
   keys.add("optional","TEMP","the system temperature - this is only needed if you are doing well-tempered metadynamics");
@@ -432,7 +455,7 @@ void MetaD::registerKeywords(Keywords& keys){
   keys.add("optional","INTERVAL","monodimensional lower and upper limits, outside the limits the system will not feel the biasing force.");
   keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
-  keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with other WALKERS_* options");
+  keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with WALKERS_* options other than WALKERS_DIR");
   keys.addFlag("ACCELERATION",false,"Set to TRUE if you want to compute the metadynamics acceleration factor.");  
   keys.use("RESTART");
   keys.use("UPDATE_FROM");
@@ -458,15 +481,15 @@ PLUMED_BIAS_INIT(ao),
 // Grid stuff initialization
 BiasGrid_(NULL), wgridstride_(0), grid_(false),
 // Metadynamics basic parameters
-height0_(std::numeric_limits<double>::max()), biasf_(1.0), dampfactor_(0.0), TargetGrid_(NULL),
+height0_(std::numeric_limits<double>::max()), biasf_(-1.0), dampfactor_(0.0), TargetGrid_(NULL),
 kbt_(0.0),
 stride_(0), welltemp_(false),
 // Other stuff
 dp_(NULL), adaptive_(FlexibleBin::none),
 flexbin(NULL),
 // Multiple walkers initialization
-mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1),
-walkers_mpi(false), mpi_nw_(0),
+mw_n_(1), mw_dir_(""), mw_id_(0), mw_rstride_(1),
+walkers_mpi(false), mpi_nw_(0), mpi_mw_(0),
 acceleration(false), acc(0.0),
 // Interval initialization
 uppI_(-1), lowI_(-1), doInt_(false),
@@ -491,11 +514,11 @@ last_step_warn_grid(0)
   } else {
     error("I do not know this type of adaptive scheme");	
   }
-  // parse the sigma
-  parseVector("SIGMA",sigma0_);
 
   parse("FMT",fmt);
 
+  // parse the sigma
+  parseVector("SIGMA",sigma0_);
   if(adaptive_==FlexibleBin::none){
     // if you use normal sigma you need one sigma per argument 
     if( sigma0_.size()!=getNumberOfArguments() ) error("number of arguments does not match number of SIGMA parameters");
@@ -512,16 +535,16 @@ last_step_warn_grid(0)
     } 
     // here evtl parse the sigma min and max values
     parseVector("SIGMA_MIN",sigma0min_);
-    if(sigma0min_.size()>0 && sigma0min_.size()<getNumberOfArguments()) {
-      error("the number of SIGMA_MIN values be at least the number of the arguments");
+    if(sigma0min_.size()>0 && sigma0min_.size()!=getNumberOfArguments()) {
+      error("the number of SIGMA_MIN values be the same of the number of the arguments");
     } else if(sigma0min_.size()==0) { 
       sigma0min_.resize(getNumberOfArguments());
       for(unsigned i=0;i<getNumberOfArguments();i++){sigma0min_[i]=-1.;}	
     }
  
     parseVector("SIGMA_MAX",sigma0max_);
-    if(sigma0max_.size()>0 && sigma0max_.size()<getNumberOfArguments()) {
-      error("the number of SIGMA_MAX values be at least the number of the arguments"); 
+    if(sigma0max_.size()>0 && sigma0max_.size()!=getNumberOfArguments()) {
+      error("the number of SIGMA_MAX values be the same of the number of the arguments"); 
     } else if(sigma0max_.size()==0) { 
       sigma0max_.resize(getNumberOfArguments());
       for(unsigned i=0;i<getNumberOfArguments();i++){sigma0max_[i]=-1.;}	
@@ -535,14 +558,24 @@ last_step_warn_grid(0)
   if(stride_<=0 ) error("frequency for hill addition is nonsensical");
   string hillsfname="HILLS";
   parse("FILE",hillsfname);
-  parse("BIASFACTOR",biasf_);
-  if( biasf_<1.0 ) error("well tempered bias factor is nonsensical");
+  std::vector<double> rect_biasf_;
+  parseVector("RECT",rect_biasf_);
+  if(rect_biasf_.size()>0){
+    int r=0;
+    if(comm.Get_rank()==0) r=multi_sim_comm.Get_rank();
+    comm.Bcast(r,0);
+    biasf_=rect_biasf_[r];
+    log<<"  You are using RECT\n";
+  } else {
+    parse("BIASFACTOR",biasf_);
+  }
+  if( biasf_<1.0  && biasf_!=-1.0) error("well tempered bias factor is nonsensical");
   parse("DAMPFACTOR",dampfactor_);
   double temp=0.0;
   parse("TEMP",temp);
   if(temp>0.0) kbt_=plumed.getAtoms().getKBoltzmann()*temp;
   else kbt_=plumed.getAtoms().getKbT();
-  if(biasf_>1.0){
+  if(biasf_>=1.0){
     if(kbt_==0.0) error("Unless the MD engine passes the temperature to plumed, with well-tempered metad you must specify it using TEMP");
     welltemp_=true;
   }
@@ -560,7 +593,10 @@ last_step_warn_grid(0)
     else if(dampfactor_>0.0) tau=(kbt_*dampfactor_)/height0_*getTimeStep()*stride_;
   } else {
     if(height0_!=std::numeric_limits<double>::max()) error("At most one between HEIGHT and TAU should be specified");
-    if(welltemp_) height0_=(kbt_*(biasf_-1.0))/tau*getTimeStep()*stride_;
+    if(welltemp_){
+      if(biasf_!=1.0) height0_=(kbt_*(biasf_-1.0))/tau*getTimeStep()*stride_;
+      else           height0_=kbt_/tau*getTimeStep()*stride_; // special case for gamma=1
+    }
     else if(dampfactor_>0.0) height0_=(kbt_*dampfactor_)/tau*getTimeStep()*stride_;
     else error("TAU only makes sense in well-tempered or damped metadynamics");
   }
@@ -590,12 +626,10 @@ last_step_warn_grid(0)
         for(unsigned i=0;i<gspacing.size();i++) gspacing[i]=0.2*sigma0_[i];
       } else {
         // with adaptive hills and grid a sigma min must be specified
-        if(sigma0min_.size()==0) error("When using Adaptive Gaussians on a grid SIGMA_MIN must be specified");
+        for(unsigned i=0;i<sigma0min_.size();i++) if(sigma0min_[i]<=0) error("When using Adaptive Gaussians on a grid SIGMA_MIN must be specified");
         log<<"  Binsize not specified, 1/5 of sigma_min will be be used\n";
-        plumed_assert(sigma0_.size()==getNumberOfArguments());
         gspacing.resize(getNumberOfArguments());
         for(unsigned i=0;i<gspacing.size();i++) gspacing[i]=0.2*sigma0min_[i];
-        //error("At least one among GRID_BIN and GRID_SPACING should be used");
       }
     } else if(gspacing.size()!=0 && gbin.size()==0){
       log<<"  The number of bins will be estimated from GRID_SPACING\n";
@@ -712,17 +746,20 @@ last_step_warn_grid(0)
     log.printf("  %d multiple walkers active\n",mw_n_);
     log.printf("  walker id %d\n",mw_id_);
     log.printf("  reading stride %d\n",mw_rstride_);
-    log.printf("  directory with hills files %s\n",mw_dir_.c_str());
+    if(mw_dir_!="")log.printf("  directory with hills files %s\n",mw_dir_.c_str());
   } else {
     if(walkers_mpi) {
       log.printf("  Multiple walkers active using MPI communnication\n"); 
+      if(mw_dir_!="")log.printf("  directory with hills files %s\n",mw_dir_.c_str());
       if(comm.Get_rank()==0){
         // Only root of group can communicate with other walkers
         mpi_nw_=multi_sim_comm.Get_size();
+        mpi_mw_=multi_sim_comm.Get_rank();
       }
       // Communicate to the other members of the same group
       // info abount number of walkers and walker index
       comm.Bcast(mpi_nw_,0);
+      comm.Bcast(mpi_mw_,0);
     }
   }
 
@@ -745,25 +782,27 @@ last_step_warn_grid(0)
 
   // initializing and checking grid
   if(grid_){
-    // check for adaptive and sigma_min
-    if(sigma0min_.size()==0&&adaptive_!=FlexibleBin::none) error("When using Adaptive Gaussians on a grid SIGMA_MIN must be specified");
-    // check for mesh and sigma size
-    for(unsigned i=0;i<getNumberOfArguments();i++) {
-      double a,b;
-      Tools::convert(gmin[i],a);
-      Tools::convert(gmax[i],b);
-      double mesh=(b-a)/((double)gbin[i]);
-      if(mesh>0.5*sigma0_[i]) log<<"  WARNING: Using a METAD with a Grid Spacing larger than half of the Gaussians width can produce artifacts\n";
-    }
-    std::string funcl=getLabel() + ".bias";
-    if(!sparsegrid){BiasGrid_=new Grid(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
-    else{BiasGrid_=new SparseGrid(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
-    std::vector<std::string> actualmin=BiasGrid_->getMin();
-    std::vector<std::string> actualmax=BiasGrid_->getMax();
-    for(unsigned i=0;i<getNumberOfArguments();i++){
-      if(gmin[i]!=actualmin[i]) log<<"  WARNING: GRID_MIN["<<i<<"] has been adjusted to "<<actualmin[i]<<" to fit periodicity\n";
-      if(gmax[i]!=actualmax[i]) log<<"  WARNING: GRID_MAX["<<i<<"] has been adjusted to "<<actualmax[i]<<" to fit periodicity\n";
-    }
+   // check for mesh and sigma size
+   for(unsigned i=0;i<getNumberOfArguments();i++) {
+     double a,b;
+     Tools::convert(gmin[i],a);
+     Tools::convert(gmax[i],b);
+     double mesh=(b-a)/((double)gbin[i]);
+     if(adaptive_==FlexibleBin::none) {
+       if(mesh>0.5*sigma0_[i]) log<<"  WARNING: Using a METAD with a Grid Spacing larger than half of the Gaussians width can produce artifacts\n";
+     } else {
+       if(mesh>0.5*sigma0min_[i]||sigma0min_[i]<0.) log<<"  WARNING: to use a METAD with a GRID and ADAPTIVE you need to set a Grid Spacing larger than half of the Gaussians \n";
+     }
+   }
+   std::string funcl=getLabel() + ".bias";
+   if(!sparsegrid){BiasGrid_=new Grid(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
+   else{BiasGrid_=new SparseGrid(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
+   std::vector<std::string> actualmin=BiasGrid_->getMin();
+   std::vector<std::string> actualmax=BiasGrid_->getMax();
+   for(unsigned i=0;i<getNumberOfArguments();i++){
+     if(gmin[i]!=actualmin[i]) log<<"  WARNING: GRID_MIN["<<i<<"] has been adjusted to "<<actualmin[i]<<" to fit periodicity\n";
+     if(gmax[i]!=actualmax[i]) log<<"  WARNING: GRID_MAX["<<i<<"] has been adjusted to "<<actualmax[i]<<" to fit periodicity\n";
+   }
   }
 
   // restart from external grid
@@ -820,11 +859,22 @@ last_step_warn_grid(0)
   // open all files at the beginning and read Gaussians if restarting
   for(int i=0;i<mw_n_;++i){
     string fname;
-    if(mw_n_>1) {
-      stringstream out; out << i;
-      fname = mw_dir_+"/"+hillsfname+"."+out.str();
+    if(mw_dir_!="") {
+      if(mw_n_>1) {
+        stringstream out; out << i;
+        fname = mw_dir_+"/"+hillsfname+"."+out.str();
+      } else if(walkers_mpi) {
+        fname = mw_dir_+"/"+hillsfname;
+      } else {
+        fname = hillsfname;
+      }
     } else {
-      fname = hillsfname;
+      if(mw_n_>1) {
+        stringstream out; out << i;
+        fname = hillsfname+"."+out.str();
+      } else {
+        fname = hillsfname;
+      }
     }
     IFile *ifile = new IFile();
     ifile->link(*this);
@@ -875,6 +925,7 @@ last_step_warn_grid(0)
       if(r>0) gridfilename_="/dev/null";
       gridfile_.enforceSuffix("");
     }
+    if(mw_n_>1) gridfile_.enforceSuffix("");
     gridfile_.open(gridfilename_);
   }
 
@@ -887,6 +938,7 @@ last_step_warn_grid(0)
     if(r>0) ifilesnames[mw_id_]="/dev/null";
     hillsOfile_.enforceSuffix("");
   }
+  if(mw_n_>1) hillsOfile_.enforceSuffix("");
   hillsOfile_.open(ifilesnames[mw_id_]);
   if(fmt.length()>0) hillsOfile_.fmtField(fmt);
   hillsOfile_.addConstantField("multivariate");
@@ -901,8 +953,15 @@ last_step_warn_grid(0)
 
   bool concurrent=false;
   const ActionSet&actionSet(plumed.getActionSet());
-  for(ActionSet::const_iterator p=actionSet.begin();p!=actionSet.end();++p) if(dynamic_cast<MetaD*>(*p)){ concurrent=true; break; }
+  for(const auto & p : actionSet) if(dynamic_cast<MetaD*>(p)){ concurrent=true; break; }
   if(concurrent) log<<"  You are using concurrent metadynamics\n";
+  if(rect_biasf_.size()>0){
+    if(walkers_mpi){
+      log<<"  You are using RECT in its 'altruistic' implementation\n";
+    }{
+      log<<"  You are using RECT\n";
+    }
+  }
 
   log<<"  Bibliography "<<plumed.cite("Laio and Parrinello, PNAS 99, 12562 (2002)");
   if(welltemp_) log<<plumed.cite(
@@ -917,8 +976,10 @@ last_step_warn_grid(0)
      "Pratyush and Parrinello, Phys. Rev. Lett. 111, 230602 (2013)");
   if(rewf_grid_.size()>0) log<<plumed.cite(
      "Pratyush and Parrinello, J. Phys. Chem. B, 119, 736 (2015)");
-  if(concurrent) log<<plumed.cite(
+  if(concurrent || rect_biasf_.size()>0) log<<plumed.cite(
      "Gil-Ley and Bussi, J. Chem. Theory Comput. 11, 1077 (2015)");
+  if(rect_biasf_.size()>0 && walkers_mpi) log<<plumed.cite(
+     "Hosek, Toulcova, Bortolato, and Spiwok, J. Phys. Chem. B 120, 2209 (2016)");
   if(targetfilename_.length()>0){
     log<<plumed.cite("White, Dama, and Voth, J. Chem. Theory Comput. 11, 2451 (2015)");
     log<<plumed.cite("Marinelli and Faraldo-Gómez,  Biophys. J. 108, 2779 (2015)");
@@ -941,7 +1002,8 @@ void MetaD::readGaussians(IFile *ifile)
  
   while(scanOneHill(ifile,tmpvalues,center,sigma,height,multivariate)){;
     nhills++;
-    if(welltemp_){height*=(biasf_-1.0)/biasf_;}
+// note that for gamma=1 we store directly -F
+    if(welltemp_ && biasf_>1.0){height*=(biasf_-1.0)/biasf_;}
     addGaussian(Gaussian(center,sigma,height,multivariate));
   }     
   log.printf("      %d Gaussians read\n",nhills);
@@ -959,7 +1021,8 @@ bool MetaD::readChunkOfGaussians(IFile *ifile, unsigned n)
   for(unsigned j=0;j<getNumberOfArguments();++j) tmpvalues.push_back( Value( this, getPntrToArgument(j)->getName(), false ) ); 
  
   while(scanOneHill(ifile,tmpvalues,center,sigma,height,multivariate)){;
-    if(welltemp_) height*=(biasf_-1.0)/biasf_; 
+// note that for gamma=1 we store directly -F
+    if(welltemp_ && biasf_>1.0) height*=(biasf_-1.0)/biasf_; 
     addGaussian(Gaussian(center,sigma,height,multivariate));
     if(nhills==n){
       log.printf("      %u Gaussians read\n",nhills);
@@ -1015,7 +1078,8 @@ void MetaD::writeGaussian(const Gaussian& hill, OFile&file)
       file.printField("sigma_"+getPntrToArgument(i)->getName(),hill.sigma[i]);
   }
   double height=hill.height;
-  if(welltemp_) height*=biasf_/(biasf_-1.0); 
+// note that for gamma=1 we store directly -F
+  if(welltemp_ && biasf_>1.0) height*=biasf_/(biasf_-1.0); 
   file.printField("height",height).printField("biasf",biasf_);
   if(mw_n_>1) file.printField("clock",int(std::time(0)));
   file.printField();
@@ -1062,20 +1126,11 @@ void MetaD::addGaussian(const Gaussian& hill)
 vector<unsigned> MetaD::getGaussianSupport(const Gaussian& hill)
 {
   vector<unsigned> nneigh;
-  if(doInt_){
-    double cutoff=sqrt(2.0*DP2CUTOFF)*hill.sigma[0];
-    if(hill.center[0]+cutoff > uppI_ || hill.center[0]-cutoff < lowI_) { 
-      // in this case, we updated the entire grid to avoid problems
-      return BiasGrid_->getNbin();
-    } else {
-      nneigh.push_back( static_cast<unsigned>(ceil(cutoff/BiasGrid_->getDx()[0])) );
-      return nneigh;
-    }
-  }
- 
+  vector<double> cutoff; 
+  unsigned ncv=getNumberOfArguments();
+
   // traditional or flexible hill? 
   if(hill.multivariate){
-    unsigned ncv=getNumberOfArguments();
     unsigned k=0;
     Matrix<double> mymatrix(ncv,ncv);
     for(unsigned i=0;i<ncv;i++){
@@ -1097,15 +1152,28 @@ vector<unsigned> MetaD::getGaussianSupport(const Gaussian& hill)
       if(myautoval[i]>maxautoval){maxautoval=myautoval[i];ind_maxautoval=i;}
     }  
     for(unsigned i=0;i<ncv;i++){
-      const double cutoff=sqrt(2.0*DP2CUTOFF)*abs(sqrt(maxautoval)*myautovec(i,ind_maxautoval));
-      nneigh.push_back( static_cast<unsigned>(ceil(cutoff/BiasGrid_->getDx()[i])) );
+      cutoff.push_back(sqrt(2.0*DP2CUTOFF)*abs(sqrt(maxautoval)*myautovec(i,ind_maxautoval)));
     }
   } else {
-    for(unsigned i=0;i<getNumberOfArguments();++i){
-      const double cutoff=sqrt(2.0*DP2CUTOFF)*hill.sigma[i];
-      nneigh.push_back( static_cast<unsigned>(ceil(cutoff/BiasGrid_->getDx()[i])) );
+    for(unsigned i=0;i<ncv;++i){
+      cutoff.push_back(sqrt(2.0*DP2CUTOFF)*hill.sigma[i]);
     }
   }
+
+  if(doInt_){
+    if(hill.center[0]+cutoff[0] > uppI_ || hill.center[0]-cutoff[0] < lowI_) { 
+      // in this case, we updated the entire grid to avoid problems
+      return BiasGrid_->getNbin();
+    } else {
+      nneigh.push_back( static_cast<unsigned>(ceil(cutoff[0]/BiasGrid_->getDx()[0])) );
+      return nneigh;
+    }
+  } else {
+    for(unsigned i=0;i<ncv;i++){
+      nneigh.push_back( static_cast<unsigned>(ceil(cutoff[i]/BiasGrid_->getDx()[i])) );
+    }
+  }
+ 
   return nneigh;
 }
 
@@ -1124,8 +1192,6 @@ double MetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
     unsigned rank=comm.Get_rank();
     for(unsigned i=rank;i<hills_.size();i+=stride){
       bias+=evaluateGaussian(cv,hills_[i],der);
-      //finite difference test 
-      //finiteDifferenceGaussian(cv,hills_[i]);
     }
     comm.Sum(bias);
     if(der) comm.Sum(der,getNumberOfArguments());
@@ -1211,7 +1277,6 @@ double MetaD::evaluateGaussian(const vector<double>& cv, const Gaussian& hill, d
       if(der){
         for(unsigned i=0;i<cv.size();++i){
           double tmp=0.0;
-          k=i;
           for(unsigned j=0;j<cv.size();++j){
             tmp += dp_[j]*mymatrix(i,j)*bias;
           }
@@ -1246,7 +1311,12 @@ double MetaD::getHeight(const vector<double>& cv)
   double height=height0_;
   if(welltemp_){
     double vbias = getBiasAndDerivatives(cv);
-    height = height0_*exp(-vbias/(kbt_*(biasf_-1.0)));
+    if(biasf_>1.0){
+      height = height0_*exp(-vbias/(kbt_*(biasf_-1.0)));
+    } else {
+// notice that if gamma=1 we store directly -F
+      height = height0_*exp(-vbias/kbt_);
+    }
   } 
   if(dampfactor_>0.0){
     plumed_assert(BiasGrid_);
@@ -1273,7 +1343,13 @@ void MetaD::calculate()
     cv[i]=getArgument(i);
     der[i]=0.;
   }
-  const double ene = getBiasAndDerivatives(cv,der);
+  double ene = getBiasAndDerivatives(cv,der);
+// special case for gamma=1.0
+  if(biasf_==1.0){
+    ene=0.0;
+    for(unsigned i=0;i<getNumberOfArguments();++i) {der[i]=0.0;}
+  }
+
   setBias(ene);
   if( rewf_grid_.size()>0 ) getPntrToComponent("rbias")->set(ene - reweight_factor);
   // calculate the acceleration factor
@@ -1334,7 +1410,8 @@ void MetaD::update(){
         // Communicate (only root)
         multi_sim_comm.Allgather(cv,all_cv);
         multi_sim_comm.Allgather(thissigma,all_sigma);
-        multi_sim_comm.Allgather(height,all_height);
+// notice that if gamma=1 we store directly -F so this scaling is not necessary:
+        multi_sim_comm.Allgather(height*(biasf_>1.0?biasf_/(biasf_-1.0):1.0),all_height);
         multi_sim_comm.Allgather(int(multivariate),all_multivariate);
       }
       // Share info with group members
@@ -1348,7 +1425,8 @@ void MetaD::update(){
         std::vector<double> sigma_now(thissigma.size());
         for(unsigned j=0;j<cv.size();j++) cv_now[j]=all_cv[i*cv.size()+j];
         for(unsigned j=0;j<thissigma.size();j++) sigma_now[j]=all_sigma[i*thissigma.size()+j];
-        Gaussian newhill=Gaussian(cv_now,sigma_now,all_height[i],all_multivariate[i]);
+// notice that if gamma=1 we store directly -F so this scaling is not necessary:
+        Gaussian newhill=Gaussian(cv_now,sigma_now,all_height[i]*(biasf_>1.0?(biasf_-1.0)/biasf_:1.0),all_multivariate[i]);
         addGaussian(newhill);
         writeGaussian(newhill,hillsOfile_);
       }
@@ -1358,6 +1436,12 @@ void MetaD::update(){
       // print on HILLS file
       writeGaussian(newhill,hillsOfile_);
     }
+  }
+
+// this should be outside of the if block in case
+// mw_rstride_ is not a multiple of stride_
+  if(mw_n_>1 && getStep()%mw_rstride_==0){
+    hillsOfile_.flush();
   }
 
   double vbias1=getBiasAndDerivatives(cv);
@@ -1409,33 +1493,6 @@ void MetaD::update(){
     }
   } 
   if(getStep()%(stride_*rewf_ustride_)==0 && nowAddAHill && rewf_grid_.size()>0 ) computeReweightingFactor();
-}
-
-void MetaD::finiteDifferenceGaussian(const vector<double>& cv, const Gaussian& hill)
-{
-  log<<"--------- finiteDifferenceGaussian: size "<<cv.size() <<"------------\n";
-  // for each cv
-  // first get the bias and the derivative
-  vector<double> oldder(cv.size()); 
-  vector<double> der(cv.size()); 
-  vector<double> mycv(cv.size()); 
-  mycv=cv; 
-  double step=1.e-6;
-  Random random; 
-  // just displace a tiny bit
-  for(unsigned i=0;i<cv.size();i++) log<<"CV "<<i<<" V "<<mycv[i]<<"\n";
-  for(unsigned i=0;i<cv.size();i++) mycv[i]+=1.e-2*2*(random.RandU01()-0.5);
-  for(unsigned i=0;i<cv.size();i++) log<<"NENEWWCV "<<i<<" V "<<mycv[i]<<"\n";
-  double oldbias=evaluateGaussian(mycv,hill,&oldder[0]);
-  for(unsigned i=0;i<mycv.size();i++){
-    double delta=step*2*(random.RandU01()-0.5);
-    mycv[i]+=delta;
-    double newbias=evaluateGaussian(mycv,hill,&der[0]);		
-    log<<"CV "<<i;
-    log<<" ANAL "<<oldder[i]<<" NUM "<<(newbias-oldbias)/delta<<" DIFF "<<(oldder[i]-(newbias-oldbias)/delta)<<"\n";
-    mycv[i]-=delta;
-  }
-  log<<"--------- END finiteDifferenceGaussian ------------\n";
 }
 
 /// takes a pointer to the file and a template string with values v and gives back the next center, sigma and height 
@@ -1508,6 +1565,12 @@ bool MetaD::scanOneHill(IFile *ifile,  vector<Value> &tmpvalues, vector<double> 
 void MetaD::computeReweightingFactor()
 {
   if( !welltemp_ ) error("cannot compute the c(t) reweighting factors for non well-tempered metadynamics");
+
+  if(biasf_==1.0){
+// in this case we have no bias, so reweight factor is 1.0
+      getPntrToComponent("rct")->set(1.0);
+      return;
+  }
 
   // Recover the minimum values for the grid
   unsigned ncv=getNumberOfArguments();

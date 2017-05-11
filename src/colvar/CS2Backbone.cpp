@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-#define cutOffNB      0.65	// buffer distance for neighbour-lists 
+#define cutOffNB      0.70	// buffer distance for neighbour-lists 
 #define cutOffDist    0.50  	// cut off distance for non-bonded pairwise forces
 #define cutOnDist     0.32   	// cut off distance for non-bonded pairwise forces
 #define cutOffNB2     cutOffNB*cutOffNB // squared buffer distance for neighbour-lists 
@@ -55,12 +55,17 @@ This collective variable calculates the backbone chemical shifts for a protein.
 The functional form is that of CamShift \cite Kohlhoff:2009us. The chemical shifts
 of the selected nuclei/residues are saved as components. Reference experimental values
 can also be stored as components. The two components can then be used to calculate
-either a scoring function as in \cite Robustelli:2010dn \cite Granata:2013dk or to calculate
-ensemble averages as in \cite Camilloni:2012je \cite Camilloni:2013hs (see \ref STATS and
+either a scoring function as in \cite Robustelli:2010dn \cite Granata:2013dk, using
+the keyword CAMSHIFT or to calculate ensemble averages chemical shift per chemical
+shift as in \cite Camilloni:2012je \cite Camilloni:2013hs (see \ref STATS and
 \ref ENSEMBLE).
 
 CamShift calculation is relatively heavy because it often uses a large number of atoms, in order
-to make it faster it is currently parallelised with \ref OpenMP.
+to make it faster it is currently parallelised with \ref Openmp.
+
+As a general rule, when using \ref CS2BACKBONE or other experimental restraints it is better to 
+increase the accuracy of the constraint algorithm due to the increased strain on the bonded structure. 
+In the case of GROMACS it is safer to use lincs-iter=2 and lincs-order=6.
 
 In general the system for which chemical shifts are calculated must be completly included in
 ATOMS and a TEMPLATE pdb file for the same atoms should be provided as well in the folder DATA. 
@@ -109,16 +114,14 @@ Additional material and examples can be also found in the tutorial \ref belfast-
 \par Examples
 
 In this first example the chemical shifts are used to calculate a scoring function to be used
-in NMR driven Metadynamics \cite Granata:2013dk:
+in NMR driven Metadynamics \cite Granata:2013dk :
 
 \verbatim
 whole: GROUP ATOMS=2612-2514:-1,961-1:-1,2466-962:-1,2513-2467:-1
 WHOLEMOLECULES ENTITY0=whole
-cs: CS2BACKBONE ATOMS=1-2612 NRES=176 DATA=../data/ TEMPLATE=template.pdb NEIGH_FREQ=10
-score: STATS ARG=(cs\.hn_.*),(cs\.nh_.*),(cs\.ca_.*),(cs\.cb_.*),(cs\.co_.*),(cs\.ha_.*) PARARG=(cs\.exphn_.*),(cs\.expnh_.*),(cs\.expca_.*),(cs\.expcb.*),(cs\.expco_.*),(cs\.expha_.*) SQDEVSUM  
-metad: METAD ARG=score.sqdevsum ...
-PRINT ARG=(cs\.hn_.*),(cs\.nh_.*),(cs\.ca_.*),(cs\.cb_.*),(cs\.co_.*),(cs\.ha_.*) FILE=CS.dat STRIDE=100 
-PRINT ARG=score FILE=COLVAR STRIDE=100 
+cs: CS2BACKBONE ATOMS=1-2612 NRES=176 DATA=../data/ TEMPLATE=template.pdb CAMSHIFT NOPBC 
+metad: METAD ARG=cs HEIGHT=0.5 SIGMA=0.1 PACE=200 BIASFACTOR=10
+PRINT ARG=cs,metad.bias FILE=COLVAR STRIDE=100 
 \endverbatim
 
 In this second example the chemical shifts are used as replica-averaged restrained as in \cite Camilloni:2012je \cite Camilloni:2013hs. 
@@ -355,6 +358,7 @@ public:
         plumed_merror(str_err);
       }
     }
+    in.close();
   }
 
 private:
@@ -382,8 +386,8 @@ private:
 
 class CS2Backbone : public Colvar {
   struct Fragment {
-    vector<bool> csdoit;
-    bool doit;
+    vector<Value*> comp;
+    vector<double> exp_cs;
     unsigned res_type_prev;
     unsigned res_type_curr;
     unsigned res_type_next;
@@ -405,6 +409,32 @@ class CS2Backbone : public Colvar {
     double t_psi;
     double t_chi1;
     vector<Vector> dd0, dd10, dd21, dd2;
+
+    Fragment() { 
+      comp.resize(6);
+      exp_cs.resize(6,0);
+      res_type_prev = res_type_curr = res_type_next = 0;
+      res_kind = 0;
+      fd = 0;
+      res_name = ""; 
+      pos.resize(6,-1);
+      prev.reserve(5);
+      curr.reserve(6);
+      next.reserve(5);
+      side_chain.reserve(20);
+      xd1.reserve(27); 
+      xd2.reserve(27); 
+      box_nb.reserve(250);
+      phi.reserve(4);
+      psi.reserve(4);
+      chi1.reserve(4);
+      t_phi = t_psi = t_chi1 = 0;
+      dd0.resize(3); 
+      dd10.resize(3); 
+      dd21.resize(3); 
+      dd2.resize(3); 
+    }
+
   };
 
   struct RingInfo{
@@ -415,27 +445,31 @@ class CS2Backbone : public Colvar {
     Vector position;   // center of ring coordinates
     Vector normVect;   // ring plane normal vector
     Vector n1, n2;     // two atom plane normal vectors used to compute ring plane normal
+    Vector g[6];       // vector of the vectors used to calculate n1,n2
     double lengthN2;   // square of length of normVect
     double lengthNV;   // length of normVect
+    RingInfo():
+      rtype(0),numAtoms(0),
+      lengthN2(NAN),lengthNV(NAN)
+    {for(unsigned i=0;i<6;i++) atom[i]=0;}
   };
 
   enum aa_t {ALA, ARG, ASN, ASP, CYS, GLN, GLU, GLY, HIS, ILE, LEU, LYS, MET, PHE, PRO, SER, THR, TRP, TYR, VAL, UNK};
   enum atom_t {D_C, D_H, D_N, D_O, D_S, D_C2, D_N2, D_O2};
 
   CS2BackboneDB    db;
+  vector<vector<Fragment> > atom;
+  vector<RingInfo> ringInfo;
   vector<unsigned> seg_last;
   vector<unsigned> type;
   vector<unsigned> res_num;
-  vector<RingInfo> ringInfo;
   unsigned         box_nupdate;
   unsigned         box_count;
-  vector<vector<Fragment> > atom;
-  unsigned         numResidues;
-  vector<vector<unsigned> > c_sh;
+  bool             camshift;
   bool             pbc;
 
   void remove_problematic(const string &res, const string &nucl);
-  void read_cs(const string &file, const string &k, vector<vector<double> > &exp_cs);
+  void read_cs(const string &file, const string &k);
   void update_neighb();
   void compute_ring_parameters();
   void compute_dihedrals();
@@ -469,8 +503,9 @@ void CS2Backbone::registerKeywords( Keywords& keys ){
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
   keys.add("compulsory","DATA","data/","The folder with the experimental chemical shifts.");
   keys.add("compulsory","TEMPLATE","template.pdb","A PDB file of the protein system to initialise ALMOST.");
-  keys.add("compulsory","NEIGH_FREQ","25","Period in step for neighbour list update.");
+  keys.add("compulsory","NEIGH_FREQ","20","Period in step for neighbour list update.");
   keys.add("compulsory","NRES","Number of residues, corresponding to the number of chemical shifts.");
+  keys.addFlag("CAMSHIFT",false,"Set to TRUE if you to calculate a single CamShift score."); 
   keys.addFlag("NOEXP",false,"Set to TRUE if you don't want to have fixed components with the experimetnal values.");  
   keys.addOutputComponent("ha","default","the calculated Ha hydrogen chemical shifts"); 
   keys.addOutputComponent("hn","default","the calculated H hydrogen chemical shifts"); 
@@ -487,10 +522,14 @@ void CS2Backbone::registerKeywords( Keywords& keys ){
 }
 
 CS2Backbone::CS2Backbone(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao)
+PLUMED_COLVAR_INIT(ao),
+camshift(false),
+pbc(true)
 {
   string stringadb;
   string stringapdb;
+
+  parseFlag("CAMSHIFT",camshift);
 
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
@@ -506,9 +545,10 @@ PLUMED_COLVAR_INIT(ao)
   parse("TEMPLATE",stringa_template);
 
   box_count=0;
-  box_nupdate=25;
+  box_nupdate=20;
   parse("NEIGH_FREQ", box_nupdate);
 
+  unsigned numResidues;
   parse("NRES", numResidues);
 
   stringadb  = stringa_data + string("/camshift.db");
@@ -532,26 +572,25 @@ PLUMED_COLVAR_INIT(ao)
 #ifndef NDEBUG
   debug_report();
 #endif
-  vector<vector<double> > exp_cs(numResidues,vector<double>(6));
   log.printf("  Reading experimental data ...\n"); log.flush();
   stringadb = stringa_data + string("/CAshifts.dat");
   log.printf("  Initializing CA shifts %s\n", stringadb.c_str()); log.flush();
-  read_cs(stringadb, "CA", exp_cs);
+  read_cs(stringadb, "CA");
   stringadb = stringa_data + string("/CBshifts.dat");
   log.printf("  Initializing CB shifts %s\n", stringadb.c_str()); log.flush();
-  read_cs(stringadb, "CB", exp_cs);
+  read_cs(stringadb, "CB");
   stringadb = stringa_data + string("/Cshifts.dat");
   log.printf("  Initializing C' shifts %s\n", stringadb.c_str()); log.flush();
-  read_cs(stringadb, "C", exp_cs);
+  read_cs(stringadb, "C");
   stringadb = stringa_data + string("/HAshifts.dat");
   log.printf("  Initializing HA shifts %s\n", stringadb.c_str()); log.flush();
-  read_cs(stringadb, "HA", exp_cs);
+  read_cs(stringadb, "HA");
   stringadb = stringa_data + string("/Hshifts.dat");
   log.printf("  Initializing H shifts %s\n", stringadb.c_str()); log.flush();
-  read_cs(stringadb, "H", exp_cs);
+  read_cs(stringadb, "H");
   stringadb = stringa_data + string("/Nshifts.dat");
   log.printf("  Initializing N shifts %s\n", stringadb.c_str()); log.flush();
-  read_cs(stringadb, "N", exp_cs);
+  read_cs(stringadb, "N");
 
   /* this is a workaround for those chemical shifts that can result in too large forces */
   remove_problematic("GLN", "CB");
@@ -600,33 +639,52 @@ PLUMED_COLVAR_INIT(ao)
 
   log<<"  Bibliography "
      <<plumed.cite("Kohlhoff K, Robustelli P, Cavalli A, Salvatella A, Vendruscolo M, J. Am. Chem. Soc. 131, 13894 (2009)")
-     <<plumed.cite("Camilloni C, Robustelli P, De Simone A, Cavalli A, Vendruscolo M, J. Am. Chem. Soc. 134, 3968 (2012)") <<"\n";
+     <<plumed.cite("Camilloni C, Robustelli P, De Simone A, Cavalli A, Vendruscolo M, J. Am. Chem. Soc. 134, 3968 (2012)")
+     <<plumed.cite("Granata D, Camilloni C, Vendruscolo M, Laio A, Proc. Natl. Acad. Sci. USA 110, 6817 (2013)")<<"\n";
 
-  c_sh.resize(numResidues, vector<unsigned>(6));
   const string str_cs[] = {"ha_","hn_","nh_","ca_","cb_","co_"};
-  unsigned k=0;
   unsigned index=0;
-  for(unsigned i=0;i<atom.size();i++) {
-    for(unsigned a=0;a<atom[i].size();a++) {
-      unsigned res=index+a;
-      std::string num; Tools::convert(res,num);
-      for(unsigned at_kind=0;at_kind<6;at_kind++){
-        if(atom[i][a].csdoit[at_kind]) {
-          addComponentWithDerivatives(str_cs[at_kind]+num);
-          componentIsNotPeriodic(str_cs[at_kind]+num);
-          c_sh[res][at_kind]=k;
-          k++; 
-          if(!noexp) { 
-            addComponent("exp"+str_cs[at_kind]+num); 
-            componentIsNotPeriodic("exp"+str_cs[at_kind]+num);
-            Value* comp=getPntrToComponent("exp"+str_cs[at_kind]+num);
-            comp->set(exp_cs[res][at_kind]);
-            k++;
+  if(camshift) noexp = true;
+  if(!camshift) {
+    for(unsigned i=0;i<atom.size();i++) {
+      for(unsigned a=0;a<atom[i].size();a++) {
+        unsigned res=index+a;
+        std::string num; Tools::convert(res,num);
+        for(unsigned at_kind=0;at_kind<6;at_kind++){
+          if(atom[i][a].exp_cs[at_kind]!=0) {
+            addComponentWithDerivatives(str_cs[at_kind]+num);
+            componentIsNotPeriodic(str_cs[at_kind]+num);
+            atom[i][a].comp[at_kind] = getPntrToComponent(str_cs[at_kind]+num);
           }
         }
       }
+      index += atom[i].size();
     }
-    index += atom[i].size();
+  } else {
+    addValueWithDerivatives();
+    setNotPeriodic();
+    for(unsigned i=0;i<atom.size();i++) {
+      index += atom[i].size();
+    }
+  }
+
+  if(!noexp) {
+    index = 0; 
+    for(unsigned i=0;i<atom.size();i++) {
+      for(unsigned a=0;a<atom[i].size();a++) {
+        unsigned res=index+a;
+        std::string num; Tools::convert(res,num);
+        for(unsigned at_kind=0;at_kind<6;at_kind++){
+          if(atom[i][a].exp_cs[at_kind]!=0) {
+            addComponent("exp"+str_cs[at_kind]+num); 
+            componentIsNotPeriodic("exp"+str_cs[at_kind]+num);
+            Value* comp=getPntrToComponent("exp"+str_cs[at_kind]+num);
+            comp->set(atom[i][a].exp_cs[at_kind]);
+          }
+        }
+      }
+      index += atom[i].size();
+    }
   }
 
   /* temporary check, the idea is that I can remove NRES completely */
@@ -648,15 +706,13 @@ void CS2Backbone::remove_problematic(const string &res, const string &nucl) {
   for(unsigned i=0;i<atom.size();i++){
     for(unsigned a=0;a<atom[i].size();a++){
       if(atom[i][a].res_name.c_str()==res) {
-        atom[i][a].csdoit[n] = false;
-        atom[i][a].doit = false; 
-        for(unsigned at_kind=0;at_kind<6;at_kind++) if(atom[i][a].csdoit[at_kind]) {atom[i][a].doit = true; break;} 
+        atom[i][a].exp_cs[n] = 0;
       }
     }
   }
 }
 
-void CS2Backbone::read_cs(const string &file, const string &nucl, vector<vector<double> > &exp_cs){
+void CS2Backbone::read_cs(const string &file, const string &nucl){
   ifstream in;
   in.open(file.c_str());
   if(!in) error("CS2Backbone: Unable to open " + file);
@@ -671,48 +727,63 @@ void CS2Backbone::read_cs(const string &file, const string &nucl, vector<vector<
   else if(nucl=="C") n=5;
   else return;
 
+  int oldseg = -1;
+  int oldp = -1;
   while(iter!=end){
     string tok;
     tok = *iter; ++iter;
     if(tok[0]=='#'){ ++iter; continue;}
     unsigned p = atoi(tok.c_str());
     p = p - 1;
-    unsigned res = p;
     const unsigned seg = frag_segment(p);
     p = frag_relitive_index(p,seg);
+    if(oldp==-1) oldp=p;
+    if(oldseg==-1) oldseg=seg;
+    if(p<oldp&&seg==oldseg) {
+      string errmsg = "Error while reading " + file + "! The same residue number has been used twice!";
+      error(errmsg);
+    }
     tok = *iter; ++iter;
     double cs = atof(tok.c_str());
     if(atom[seg][p].pos[n]<=0) cs=0;
-    exp_cs[res][n] = cs; 
-    if(cs!=0) {
-      atom[seg][p].csdoit[n]=true; 
-      atom[seg][p].doit=true;
-    }
+    else atom[seg][p].exp_cs[n] = cs;
+    oldseg = seg;
+    oldp = p;
   }
+  in.close();
 }
 
 void CS2Backbone::calculate()
 {
   if(pbc) makeWhole();
-
   if(getExchangeStep()) box_count=0;
-
   if(box_count==0) update_neighb();
 
   compute_ring_parameters();
-
   compute_dihedrals();
 
-  unsigned index=0;
+  double score = 0.;
+
+  vector<double> camshift_sigma2(6);
+  camshift_sigma2[0] = 0.08; // HA 
+  camshift_sigma2[1] = 0.30; // HN
+  camshift_sigma2[2] = 9.00; // NH
+  camshift_sigma2[3] = 1.30; // CA
+  camshift_sigma2[4] = 1.56; // CB
+  camshift_sigma2[5] = 1.70; // CO
+
   const unsigned chainsize = atom.size();
   const unsigned atleastned = 72+ringInfo.size()*6;
+
   // CYCLE OVER MULTIPLE CHAINS
+  #pragma omp parallel num_threads(OpenMP::getNumThreads())
   for(unsigned s=0;s<chainsize;s++){
     const unsigned psize = atom[s].size();
-    #pragma omp parallel for num_threads(OpenMP::getNumThreads())  
+    vector<Vector> omp_deriv;
+    if(camshift) omp_deriv.resize(getNumberOfAtoms(), Vector(0,0,0));
+    #pragma omp for reduction(+:score)
     // SKIP FIRST AND LAST RESIDUE OF EACH CHAIN
     for(unsigned a=1;a<psize-1;a++){
-      if(!atom[s][a].doit) continue;
 
       const Fragment *myfrag = &atom[s][a];
       const unsigned aa_kind = myfrag->res_kind;
@@ -734,7 +805,7 @@ void CS2Backbone::calculate()
 
       // CYCLE OVER THE SIX BACKBONE CHEMICAL SHIFTS
       for(unsigned at_kind=0;at_kind<6;at_kind++){
-        if(myfrag->csdoit[at_kind]){
+        if(atom[s][a].exp_cs[at_kind]!=0){
           // Common constant and AATYPE
           const double * CONSTAACURR = db.CONSTAACURR(aa_kind,at_kind);
           const double * CONSTAANEXT = db.CONSTAANEXT(aa_kind,at_kind);
@@ -928,35 +999,36 @@ void CS2Backbone::calculate()
     	      ff[0] += fact*(gradUQ - gradVQ);
     	
     	      const double fU       = fUU/nL;
-    	      const double OneOverN = 1./((double) ringInfo[i].numAtoms);
+    	      double OneOverN = 1./6.;
+              if(ringInfo[i].numAtoms==5) OneOverN=1./3.; 
               const Vector factor2  = OneOverN*n;
     	      const Vector factor4  = (OneOverN/dL_nL)*d;
 
               const Vector gradV    = -OneOverN*gradVQ;
 
-    	      // update forces on ring atoms
-    	      const unsigned limit = ringInfo[i].numAtoms - 3; // 2 for a 5-membered ring, 3 for a 6-membered ring
-    	      for(unsigned at=0; at<ringInfo[i].numAtoms; at++) {
-    	        Vector g;
-                // atoms 0,1 (5 member) or 0,1,2 (6 member)
-    	        if (at < limit) g = delta(getPosition(ringInfo[i].atom[(at+2)%3]),getPosition(ringInfo[i].atom[(at+1)%3]));
-                // atoms 3,4 (5 member) or 3,4,5 (6 member)
-    	        else if (at >= ringInfo[i].numAtoms - limit) {
-                  g = delta(getPosition(ringInfo[i].atom[((at+2-limit) % 3) + limit]), getPosition(ringInfo[i].atom[((at+1-limit) % 3) + limit])); 
-                // atom 2 (5-membered rings)
-    	        } else g = delta(getPosition(ringInfo[i].atom[4]) , getPosition(ringInfo[i].atom[3])) + 
-                           delta(getPosition(ringInfo[i].atom[1]) , getPosition(ringInfo[i].atom[2]));
-
-                const Vector ab = crossProduct(d,g);
-                const Vector c  = crossProduct(n,g);
-    	    
-    	        const Vector factor3 = 0.5*dL_nL*c;
-                const Vector factor1 = 0.5*ab;
-                const Vector gradU   = fU*( dLnL*(factor1 - factor2) -dn*(factor3 - factor4) );
-
-    	    
-    	        ff.push_back(fact*(gradU - gradV));
-                list.push_back(ringInfo[i].atom[at]);
+              if(ringInfo[i].numAtoms==6) {
+    	        // update forces on ring atoms
+                for(unsigned at=0;at<6;at++) {
+                  const Vector ab = crossProduct(d,ringInfo[i].g[at]);
+                  const Vector c  = crossProduct(n,ringInfo[i].g[at]);
+    	          const Vector factor3 = 0.5*dL_nL*c;
+                  const Vector factor1 = 0.5*ab;
+                  const Vector gradU   = fU*( dLnL*(factor1 - factor2) -dn*(factor3 - factor4) );
+    	          ff.push_back(fact*(gradU - gradV));
+                  list.push_back(ringInfo[i].atom[at]);
+                }
+              } else {
+                for(unsigned at=0;at<3;at++) {
+                  const Vector ab = crossProduct(d,ringInfo[i].g[at]);
+                  const Vector c  = crossProduct(n,ringInfo[i].g[at]);
+    	          const Vector factor3 = dL_nL*c;
+                  const Vector factor1 = ab;
+                  const Vector gradU   = fU*( dLnL*(factor1 - factor2) -dn*(factor3 - factor4) );
+    	          ff.push_back(fact*(gradU - gradV));
+                }
+                list.push_back(ringInfo[i].atom[0]);
+                list.push_back(ringInfo[i].atom[2]);
+                list.push_back(ringInfo[i].atom[3]);
               }
             }
           }
@@ -1019,19 +1091,35 @@ void CS2Backbone::calculate()
           }
           //END OF DIHE
 
-          Value* comp=getPntrToComponent(c_sh[index+a][at_kind]);
-          comp->set(cs);
-          Tensor virial;
-          const unsigned listsize = list.size();
-          for(unsigned i=0;i<listsize;i++) {
-            setAtomsDerivatives(comp,list[i],ff[i]);
-            virial+=Tensor(getPosition(list[i]),ff[i]);
+          Value * comp;
+          double fact = 1.0;
+          if(!camshift) { 
+            comp = atom[s][a].comp[at_kind];
+            comp->set(cs);
+            Tensor virial;
+            for(unsigned i=0;i<list.size();i++) {
+                setAtomsDerivatives(comp,list[i],fact*ff[i]);
+                virial-=Tensor(getPosition(list[i]),fact*ff[i]);
+            }
+            setBoxDerivatives(comp,virial);
+          } else {
+            // but I would also divide for the weights derived with metainference
+            comp = getPntrToValue();
+            score += (cs - atom[s][a].exp_cs[at_kind])*(cs - atom[s][a].exp_cs[at_kind])/camshift_sigma2[at_kind];
+            fact = 2.0*(cs - atom[s][a].exp_cs[at_kind])/camshift_sigma2[at_kind];
+            for(unsigned i=0;i<list.size();i++) omp_deriv[list[i]] += fact*ff[i];
           }
-          setBoxDerivatives(comp,-virial);
         } 
       }
     }
-    index += psize;
+    #pragma omp critical
+    if(camshift) for(int i=0;i<getPositions().size();i++) setAtomsDerivatives(i,omp_deriv[i]);
+  }
+
+  // in the case of camshift we calculate the virial at the end
+  if(camshift) {
+    setBoxDerivativesNoPbc();
+    setValue(score);
   }
 
   ++box_count;
@@ -1042,18 +1130,17 @@ void CS2Backbone::update_neighb(){
   const unsigned chainsize = atom.size();
   for(unsigned s=0;s<chainsize;s++){
     const unsigned psize = atom[s].size();
-    #pragma omp parallel for num_threads(OpenMP::getNumThreads())  
+    #pragma omp parallel for num_threads(OpenMP::getNumThreads())
     for(unsigned a=1;a<psize-1;a++){
-      if(!atom[s][a].doit) continue;
       const unsigned boxsize = getNumberOfAtoms();
       atom[s][a].box_nb.clear();
-      atom[s][a].box_nb.reserve(3*numResidues);
+      atom[s][a].box_nb.reserve(300);
       const unsigned res_curr = res_num[atom[s][a].pos[0]];
       for(unsigned bat=0; bat<boxsize; bat++) {
         const unsigned res_dist = abs(static_cast<int>(res_curr-res_num[bat]));
         if(res_dist<2) continue;
         for(unsigned at_kind=0;at_kind<6; at_kind++) {
-          if(!atom[s][a].csdoit[at_kind]) continue;
+          if(atom[s][a].exp_cs[at_kind]==0.) continue;
           const unsigned ipos = atom[s][a].pos[at_kind]; 
           const Vector distance = delta(getPosition(bat),getPosition(ipos));
           const double d2=distance.modulo2();
@@ -1070,24 +1157,47 @@ void CS2Backbone::update_neighb(){
 void CS2Backbone::compute_ring_parameters(){
   for(unsigned i=0;i<ringInfo.size();i++){
     const unsigned size = ringInfo[i].numAtoms;
-    vector<Vector> a;
-    a.resize(size);
-    a[0] = getPosition(ringInfo[i].atom[0]);
-    // ring center
-    Vector midP = a[0];
-    for(unsigned j=1; j<size; j++) {
-      a[j] = getPosition(ringInfo[i].atom[j]);
-      midP += a[j];
+    if(size==6) {
+      ringInfo[i].g[0] = delta(getPosition(ringInfo[i].atom[4]),getPosition(ringInfo[i].atom[2]));
+      ringInfo[i].g[1] = delta(getPosition(ringInfo[i].atom[5]),getPosition(ringInfo[i].atom[3]));
+      ringInfo[i].g[2] = delta(getPosition(ringInfo[i].atom[0]),getPosition(ringInfo[i].atom[4]));
+      ringInfo[i].g[3] = delta(getPosition(ringInfo[i].atom[1]),getPosition(ringInfo[i].atom[5]));
+      ringInfo[i].g[4] = delta(getPosition(ringInfo[i].atom[2]),getPosition(ringInfo[i].atom[0]));
+      ringInfo[i].g[5] = delta(getPosition(ringInfo[i].atom[3]),getPosition(ringInfo[i].atom[1]));
+      vector<Vector> a(size);
+      a[0] = getPosition(ringInfo[i].atom[0]);
+      // ring center
+      Vector midP = a[0];
+      for(unsigned j=1; j<size; j++) {
+        a[j] = getPosition(ringInfo[i].atom[j]);
+        midP += a[j];
+      }
+      midP /= (double) size;
+      ringInfo[i].position = midP;
+      // compute normal vector to plane containing first three atoms in array
+      ringInfo[i].n1 = crossProduct(delta(a[0],a[4]), delta(a[0],a[2]));
+      // compute normal vector to plane containing last three atoms in array
+      // NB: third atom of five-membered ring used for both computations above
+      ringInfo[i].n2 = crossProduct(delta(a[3],a[1]), delta(a[3],a[5]));
+      // ring plane normal vector is average of n1 and n2
+      ringInfo[i].normVect = 0.5*(ringInfo[i].n1 + ringInfo[i].n2);
+    } else {
+      ringInfo[i].g[0] = delta(getPosition(ringInfo[i].atom[3]),getPosition(ringInfo[i].atom[2]));
+      ringInfo[i].g[1] = delta(getPosition(ringInfo[i].atom[0]),getPosition(ringInfo[i].atom[3]));
+      ringInfo[i].g[2] = delta(getPosition(ringInfo[i].atom[2]),getPosition(ringInfo[i].atom[0]));
+      vector<Vector> a(size);
+      for(unsigned j=0; j<size; j++) {
+        a[j] = getPosition(ringInfo[i].atom[j]);
+      }
+      // ring center
+      Vector midP = (a[0]+a[2]+a[3])/3.;
+      ringInfo[i].position = midP;
+      // compute normal vector to plane containing first three atoms in array
+      ringInfo[i].n1 = crossProduct(delta(a[0],a[3]), delta(a[0],a[2]));
+      // ring plane normal vector is average of n1 and n2
+      ringInfo[i].normVect = ringInfo[i].n1;
+
     }
-    midP /= (double) size;
-    ringInfo[i].position = midP;
-    // compute normal vector to plane containing first three atoms in array
-    ringInfo[i].n1 = crossProduct(delta(a[1],a[0]), delta(a[1], a[2]));
-    // compute normal vector to plane containing last three atoms in array
-    // NB: third atom of five-membered ring used for both computations above
-    ringInfo[i].n2 = crossProduct(delta(a[size-2], a[size-3]), delta(a[size-2], a[size-1]));
-    // ring plane normal vector is average of n1 and n2
-    ringInfo[i].normVect = 0.5*(ringInfo[i].n1 + ringInfo[i].n2);
     // calculate squared length and length of normal vector
     ringInfo[i].lengthN2 = 1./ringInfo[i].normVect.modulo2(); 
     ringInfo[i].lengthNV = 1./sqrt(ringInfo[i].lengthN2);
@@ -1100,7 +1210,6 @@ void CS2Backbone::compute_dihedrals(){
     const unsigned psize = atom[s].size();
     #pragma omp parallel for num_threads(OpenMP::getNumThreads())  
     for(unsigned a=1;a<psize-1;a++){
-      if(!atom[s][a].doit) continue;
       const Fragment *myfrag = &atom[s][a];
       if(myfrag->phi.size()==4){
         const Vector d0 = delta(getPosition(myfrag->phi[1]), getPosition(myfrag->phi[0]));
@@ -1168,25 +1277,14 @@ void CS2Backbone::init_backbone(const PDB &pdb){
     vector<int> C_;
     vector<int> O_;
     vector<int> CX_;
-    N_.resize (resrange);
-    H_.resize (resrange);
-    CA_.resize(resrange);
-    CB_.resize(resrange);
-    HA_.resize(resrange);
-    C_.resize (resrange);
-    O_.resize (resrange);
-    CX_.resize(resrange);
-
-    for(unsigned a=0;a<resrange;a++){
-      N_[a]  = -1;
-      H_[a]  = -1;
-      CA_[a] = -1;
-      CB_[a] = -1;
-      HA_[a] = -1;
-      C_[a]  = -1;
-      O_[a]  = -1;
-      CX_[a] = -1;
-    }
+    N_.resize (resrange,-1);
+    H_.resize (resrange,-1);
+    CA_.resize(resrange,-1);
+    CB_.resize(resrange,-1);
+    HA_.resize(resrange,-1);
+    C_.resize (resrange,-1);
+    O_.resize (resrange,-1);
+    CX_.resize(resrange,-1);
 
     vector<AtomNumber> allatoms = pdb.getAtomsInChain(chains[i]);
     // cycle over all the atoms in the chain
@@ -1214,17 +1312,12 @@ void CS2Backbone::init_backbone(const PDB &pdb){
     for(unsigned a=start;a<=end;a++){
       unsigned f_idx = a - res_offset;
       Fragment at;
-      at.pos.resize(6); 
-      at.csdoit.resize(6,false);
-      at.doit = false; 
-      {
-        at.pos[0] = HA_[f_idx];
-        at.pos[1] =  H_[f_idx];
-        at.pos[2] =  N_[f_idx];
-        at.pos[3] = CA_[f_idx];
-        at.pos[4] = CB_[f_idx];
-        at.pos[5] =  C_[f_idx];
-      }
+      at.pos[0] = HA_[f_idx];
+      at.pos[1] =  H_[f_idx];
+      at.pos[2] =  N_[f_idx];
+      at.pos[3] = CA_[f_idx];
+      at.pos[4] = CB_[f_idx];
+      at.pos[5] =  C_[f_idx];
       at.res_type_prev = at.res_type_curr = at.res_type_next = 0;
       at.res_name = pdb.getResidueName(a, chains[i]); 
       at.res_kind = db.kind(at.res_name);
@@ -1278,10 +1371,6 @@ void CS2Backbone::init_backbone(const PDB &pdb){
           at.chi1.push_back(CB_[f_idx]);
           at.chi1.push_back(CX_[f_idx]);
         }
-        at.dd0.resize(3);
-        at.dd10.resize(3);
-        at.dd21.resize(3);
-        at.dd2.resize(3);
       }
       atm_.push_back(at);
     }
@@ -1421,12 +1510,12 @@ void CS2Backbone::init_types(const PDB &pdb){
       else if (atom_type == 'H') t = D_H;
       else if (atom_type == 'N') t = D_N;
       else if (atom_type == 'S') t = D_S;
-      else plumed_merror("Camshift:init_type: unknown atom type!\n");
+      else plumed_merror("CS2Backbone:init_type: unknown atom type!\n");
     }else{
       if (atom_type == 'C') t = D_C2;
       else if (atom_type == 'O') t = D_O2;
       else if (atom_type == 'N') t = D_N2;
-      else plumed_merror("Camshift:init_type: unknown atom type!\n");
+      else plumed_merror("CS2Backbone:init_type: unknown atom type!\n");
     }
     type.push_back(t);
   }
@@ -1504,7 +1593,9 @@ void CS2Backbone::init_rings(const PDB &pdb){
         ri2.rtype = RingInfo::R_TRP2;
         ringInfo.push_back(ri2);
 
-      } else { //HIS case
+      } else if((frg=="HIS")||(frg=="HIP")||(frg=="HID")||
+                (frg=="HIE")||(frg=="HSD")||(frg=="HSE")||
+                (frg=="HSP")) {//HIS case
         RingInfo ri;
         for(unsigned a=0;a<frg_atoms.size();a++){
           unsigned atm = frg_atoms[a].index()-atom_offset+old_size;
@@ -1518,6 +1609,8 @@ void CS2Backbone::init_rings(const PDB &pdb){
         ri.numAtoms = 5;
         ri.rtype = RingInfo::R_HIS;
         ringInfo.push_back(ri);
+      } else {
+        plumed_merror("Unkwown Ring Fragment");
       }
     }
     old_size += aend.index()+1; 
@@ -1538,7 +1631,6 @@ CS2Backbone::aa_t CS2Backbone::frag2enum(const string &aa) {
   else if (aa == "GLU") type = GLU;
   else if (aa == "GLH") type = GLU;
   else if (aa == "GLY") type = GLY;
-  else if (aa == "GME") type = GLY;
   else if (aa == "HIS") type = HIS;
   else if (aa == "HSE") type = HIS;
   else if (aa == "HIE") type = HIS;
@@ -1547,7 +1639,6 @@ CS2Backbone::aa_t CS2Backbone::frag2enum(const string &aa) {
   else if (aa == "HSD") type = HIS;
   else if (aa == "HID") type = HIS;
   else if (aa == "ILE") type = ILE;
-  else if (aa == "IME") type = ILE;
   else if (aa == "LEU") type = LEU;
   else if (aa == "LYS") type = LYS;
   else if (aa == "MET") type = MET;
@@ -1661,7 +1752,7 @@ vector<string> CS2Backbone::side_chain_atoms(const string &s){
     sc.push_back( "HG2" );
     sc.push_back( "HG3" );
     return sc;
-  } else if(s=="GLY"||s=="GME"){
+  } else if(s=="GLY"){
     sc.push_back( "HA2" );
     return sc;
   } else if(s=="HIS"||s=="HSE"||s=="HIE"||s=="HSD"||s=="HID"||s=="HIP"||s=="HSP"){
@@ -1679,7 +1770,7 @@ vector<string> CS2Backbone::side_chain_atoms(const string &s){
     sc.push_back( "HE1" );
     sc.push_back( "HE2" );
     return sc;
-  } else if(s=="ILE"||s=="IME"){
+  } else if(s=="ILE"){
     sc.push_back( "CB" );
     sc.push_back( "CG1" );
     sc.push_back( "CG2" );

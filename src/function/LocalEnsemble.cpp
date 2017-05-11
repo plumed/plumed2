@@ -30,23 +30,45 @@ namespace function{
 
 //+PLUMEDOC FUNCTION LOCALENSEMBLE
 /*
-Calculates the replica averaging of a collective variable over multiple replicas.
+Calculates the average over multiple arguments.
 
-Each collective variable is averaged separately and stored in a component labelled <em>label</em>.cvlabel.  
-
-Note that in case of variables such as \ref CS2BACKBONE, \ref CH3SHIFTS, \ref NOE and \ref RDC it is possible
-to perform the replica-averaging inside the variable, in fact in those cases are the single experimental
-values that averaged before calculating the collective variable.
+If more than one collective variable is given for each argument then they
+are averaged separately. The average is stored in a component labelled <em>label</em>.cvlabel.  
 
 \par Examples
-The following input tells plumed to calculate the distance between atoms 3 and 5
-and the average it over the available replicas.
+The following input tells plumed to calculate the chemical shifts for four
+different proteins in the same simulation box then average them, calcualated
+the sum of the squared deviation with respect to the experiemntal values and
+applies a linear restraint.
 \verbatim
-dist: DISTANCE ATOMS=3,5 
-ens: ENSEMBLE ARG=dist
-PRINT ARG=dist,ens.dist
+MOLINFO STRUCTURE=data/template.pdb
+
+chaina: GROUP ATOMS=1-1640
+chainb: GROUP ATOMS=1641-3280
+chainc: GROUP ATOMS=3281-4920
+chaind: GROUP ATOMS=4921-6560
+
+WHOLEMOLECULES ENTITY0=chaina ENTITY1=chainb ENTITY2=chainc ENTITY3=chaind
+
+csa: CS2BACKBONE ATOMS=chaina NRES=100 DATA=data/ TEMPLATE=chaina.pdb NOPBC
+csb: CS2BACKBONE ATOMS=chainb NRES=100 DATA=data/ TEMPLATE=chainb.pdb NOPBC
+csc: CS2BACKBONE ATOMS=chainc NRES=100 DATA=data/ TEMPLATE=chainc.pdb NOPBC
+csd: CS2BACKBONE ATOMS=chaind NRES=100 DATA=data/ TEMPLATE=chaind.pdb NOPBC
+
+ensca: LOCALENSEMBLE NUM=4 ARG1=(csa\.ca_.*) ARG2=(csb\.ca_.*) ARG3=(csc\.ca_.*) ARG4=(csd\.ca_.*)
+enscb: LOCALENSEMBLE NUM=4 ARG1=(csa\.cb_.*) ARG2=(csb\.cb_.*) ARG3=(csc\.cb_.*) ARG4=(csd\.cb_.*)
+ensco: LOCALENSEMBLE NUM=4 ARG1=(csa\.co_.*) ARG2=(csb\.co_.*) ARG3=(csc\.co_.*) ARG4=(csd\.co_.*)
+enshn: LOCALENSEMBLE NUM=4 ARG1=(csa\.hn_.*) ARG2=(csb\.hn_.*) ARG3=(csc\.hn_.*) ARG4=(csd\.hn_.*)
+ensnh: LOCALENSEMBLE NUM=4 ARG1=(csa\.nh_.*) ARG2=(csb\.nh_.*) ARG3=(csc\.nh_.*) ARG4=(csd\.nh_.*)
+
+stca: STATS ARG=(ensca\.csa\.ca_.*) PARARG=(csa\.expca_.*) SQDEVSUM
+stcb: STATS ARG=(enscb\.csa\.cb_.*) PARARG=(csa\.expcb_.*) SQDEVSUM
+stco: STATS ARG=(ensco\.csa\.co_.*) PARARG=(csa\.expco_.*) SQDEVSUM
+sthn: STATS ARG=(enshn\.csa\.hn_.*) PARARG=(csa\.exphn_.*) SQDEVSUM
+stnh: STATS ARG=(ensnh\.csa\.nh_.*) PARARG=(csa\.expnh_.*) SQDEVSUM
+
+res: RESTRAINT ARG=stca.*,stcb.*,stco.*,sthn.*,stnh.* AT=0.,0.,0.,0.,0. KAPPA=0.,0.,0.,0.,0 SLOPE=16.,16.,12.,24.,0.5
 \endverbatim
-(See also \ref PRINT and \ref DISTANCE).
 
 */
 //+ENDPLUMEDOC

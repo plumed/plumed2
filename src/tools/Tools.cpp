@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,59 +19,48 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include <iostream>
 #include "Tools.h"
 #include "AtomNumber.h"
 #include "Exception.h"
 #include "IFile.h"
 #include <cstring>
 #include <dirent.h>
+#include <iostream>
 
 using namespace std;
 namespace PLMD{
 
-bool Tools::convert(const string & str,int & t){
+template<class T>
+bool Tools::convertToAny(const string & str,T & t){
         istringstream istr(str.c_str());
-        bool ok=istr>>t;
+        bool ok=static_cast<bool>(istr>>t);
         if(!ok) return false;
         string remaining;
         istr>>remaining;
         return remaining.length()==0;
+}
+
+bool Tools::convert(const string & str,int & t){
+        return convertToAny(str,t);
 }
 
 bool Tools::convert(const string & str,long int & t){
-        istringstream istr(str.c_str());
-        bool ok=istr>>t;
-        if(!ok) return false;
-        string remaining;
-        istr>>remaining;
-        return remaining.length()==0;
+        return convertToAny(str,t);
 }
 
 bool Tools::convert(const string & str,unsigned & t){
-        istringstream istr(str.c_str());
-        bool ok=istr>>t;
-        if(!ok) return false;
-        string remaining;
-        istr>>remaining;
-        return remaining.length()==0;
+        return convertToAny(str,t);
 }
 
 bool Tools::convert(const string & str,AtomNumber &a){
-  int i;
+  unsigned i;
   bool r=convert(str,i);
   if(r) a.setSerial(i);
   return r;
 }
 
-bool Tools::convert(const string & str,float & t){
-  double tt;
-  bool r=convert(str,tt);
-  t=double(tt);
-  return r;
-}
-
-bool Tools::convert(const string & str,double & t){
+template<class T>
+bool Tools::convertToReal(const string & str,T & t){
         if(str=="PI" || str=="+PI" || str=="+pi" || str=="pi"){
           t=pi; return true;
         } else if(str=="-PI" || str=="-pi"){
@@ -80,7 +69,7 @@ bool Tools::convert(const string & str,double & t){
            std::size_t pi_start=str.find_first_of("PI");
            if(str.substr(pi_start)!="PI") return false;
            istringstream nstr(str.substr(0,pi_start)); 
-           double ff=0.0; bool ok=nstr>>ff;
+           T ff=0.0; bool ok=static_cast<bool>(nstr>>ff);
            if(!ok) return false; 
            t=ff*pi;
            std::string remains; nstr>>remains;
@@ -89,20 +78,29 @@ bool Tools::convert(const string & str,double & t){
            std::size_t pi_start=str.find_first_of("pi");
            if(str.substr(pi_start)!="pi") return false;
            istringstream nstr(str.substr(0,pi_start));
-           double ff=0.0; bool ok=nstr>>ff;
+           T ff=0.0; bool ok=static_cast<bool>(nstr>>ff);
            if(!ok) return false;
            t=ff*pi;
            std::string remains; nstr>>remains;
            return remains.length()==0;
+        } else if(str=="NAN"){
+           t=NAN;
+           return true;
         }
-        istringstream istr(str.c_str());
-        bool ok=istr>>t;
-        if(!ok) return false;
-        string remaining;
-        istr>>remaining;
-        return remaining.length()==0;
+        return convertToAny(str,t);
 }
 
+bool Tools::convert(const string & str,float & t){
+           return convertToReal(str,t);
+}
+
+bool Tools::convert(const string & str,double & t){
+           return convertToReal(str,t);
+}
+
+bool Tools::convert(const string & str,long double & t){
+           return convertToReal(str,t);
+}
 
 bool Tools::convert(const string & str,string & t){
         t=str;
@@ -199,6 +197,7 @@ bool Tools::getline(FILE* fp,string & line){
     if(ss>0) if(buffer[ss-1]=='\n') break;
   };
   if(line.length()>0) if(*(line.end()-1)=='\n') line.erase(line.end()-1);
+  if(line.length()>0) if(*(line.end()-1)=='\r') line.erase(line.end()-1);
   return ret;
 }
 
@@ -212,9 +211,9 @@ void Tools::trimComments(string & s){
   s=s.substr(0,n);
 }
 
-bool Tools::getKey(vector<string>& line,const string & key,string & s){
+bool Tools::getKey(vector<string>& line,const string & key,string & s,int rep){
   s.clear();
-  for(vector<string>::iterator p=line.begin();p!=line.end();++p){
+  for(auto p=line.begin();p!=line.end();++p){
     if((*p).length()==0) continue;
     string x=(*p).substr(0,key.length());
     if(x==key){
@@ -222,6 +221,13 @@ bool Tools::getKey(vector<string>& line,const string & key,string & s){
       string tmp=(*p).substr(key.length(),(*p).length());
       line.erase(p);
       s=tmp;
+      const std::string multi("@replicas:");
+      if(rep>=0 && startWith(s,multi)){
+        s=s.substr(multi.length(),s.length());
+        std::vector<std::string> words=getWords(s,"\t\n ,");
+        plumed_assert(rep<words.size());
+        s=words[rep];
+      }
       return true;
     }
   };
@@ -230,31 +236,31 @@ bool Tools::getKey(vector<string>& line,const string & key,string & s){
 
 void Tools::interpretRanges(std::vector<std::string>&s){
   vector<string> news;
-  for(vector<string>::iterator p=s.begin();p!=s.end();++p){
-    news.push_back(*p);
-    size_t dash=p->find("-");
+  for(const auto & p :s){
+    news.push_back(p);
+    size_t dash=p.find("-");
     if(dash==string::npos) continue;
     int first;
-    if(!Tools::convert(p->substr(0,dash),first)) continue;
+    if(!Tools::convert(p.substr(0,dash),first)) continue;
     int stride=1;
     int second;
-    size_t colon=p->substr(dash+1).find(":");
+    size_t colon=p.substr(dash+1).find(":");
     if(colon!=string::npos){
-      if(!Tools::convert(p->substr(dash+1).substr(0,colon),second) ||
-         !Tools::convert(p->substr(dash+1).substr(colon+1),stride)) continue;
+      if(!Tools::convert(p.substr(dash+1).substr(0,colon),second) ||
+         !Tools::convert(p.substr(dash+1).substr(colon+1),stride)) continue;
     } else {
-      if(!Tools::convert(p->substr(dash+1),second)) continue;
+      if(!Tools::convert(p.substr(dash+1),second)) continue;
     }
     news.resize(news.size()-1);
     if(first<=second){
-      plumed_massert(stride>0,"interpreting ranges "+ *p + ", stride should be positive");
+      plumed_massert(stride>0,"interpreting ranges "+ p + ", stride should be positive");
       for(int i=first;i<=second;i+=stride){
         string ss;
         convert(i,ss);
         news.push_back(ss);
       }
     } else {
-      plumed_massert(stride<0,"interpreting ranges "+ *p + ", stride should be positive");
+      plumed_massert(stride<0,"interpreting ranges "+ p + ", stride should be positive");
       for(int i=first;i>=second;i+=stride){
         string ss;
         convert(i,ss);
@@ -292,7 +298,7 @@ vector<string> Tools::ls(const string&d){
 // (portability) Non reentrant function 'readdir' called. For threadsafe applications it is recommended to use the reentrant replacement function 'readdir_r'.
 // since we use it only if readdir_r is not available, I suppress the warning
 // GB
-// cppcheck-suppress nonreentrantFunctionsreaddir
+// cppcheck-suppress readdirCalled
       res=readdir(dir);
 #endif
       if(!res) break;
@@ -335,6 +341,15 @@ double Tools::bessel0( const double& val ){
 bool Tools::startWith(const std::string & full,const std::string &start){
   return (full.substr(0,start.length())==start);
 }
+
+bool Tools::findKeyword(const std::vector<std::string>&line,const std::string&key){
+  const std::string search(key+"=");
+  for(const auto & p : line){
+    if(startWith(p,search)) return true;
+  }
+  return false;
+}
+
 
 
 }

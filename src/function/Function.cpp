@@ -72,7 +72,7 @@ void Function::apply()
 
   unsigned stride=1;
   unsigned rank=0;
-  if(ncp>cgs) {
+  if(ncp>4*cgs) {
     stride=comm.Get_size();
     rank=comm.Get_rank();
   }
@@ -93,7 +93,7 @@ void Function::apply()
     for(unsigned j=0;j<noa;j++) f[j]+=omp_f[j]; 
   }
 
-  if(noa>0&&ncp>cgs) { comm.Sum(&f[0],noa); comm.Sum(at_least_one_forced); }
+  if(noa>0&&ncp>4*cgs) { comm.Sum(&f[0],noa); comm.Sum(at_least_one_forced); }
 
   if(at_least_one_forced>0) for(unsigned i=0;i<noa;++i) getPntrToArgument(i)->addForce(f[i]);
 }

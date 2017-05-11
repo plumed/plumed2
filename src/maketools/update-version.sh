@@ -1,6 +1,8 @@
 #! /bin/bash
 
 {
+echo "#ifndef __PLUMED_config_version_h"
+echo "#define __PLUMED_config_version_h"
 echo "#define PLUMED_VERSION_SHORT \"$(
   if test -f ../../VERSION ; then
     grep -v "#" ../../VERSION | sed  's/^\([0-9][0-9]*\.[0-9][0-9]*\).*/\1/'
@@ -25,6 +27,8 @@ echo "#define PLUMED_VERSION_GIT \"$(
     echo "Unknown"
   fi
 )\""
+
+echo "#endif"
 
 } > $1~
 

@@ -27,7 +27,33 @@
 /*
 Output a three dimensional grid using the Gaussian cube file format.
 
+Suppose you have calculated the value of a function on a three dimensional grid.
+This function might be a \ref HISTOGRAM or it might be a free energy energy surface 
+that was calculated from this histogram by using \ref CONVERT_TO_FES.  Alternatively,
+your function might be a phase-field that was calculated using \ref MULTICOLVARDENS.
+Whatever the function is, however, you obviously cannot show it using a typical contour
+plotting program such as gnuplot as you have three input variables.  
+
+Tools like VMD have nice features for plotting these types of three dimensional functions
+but typically you are required to use a Gaussian cube file format to input the data.  This 
+action thus allows you to output a function evaluated on a grid to a Gaussian cube file format.
+
 \par Examples
+
+The input below can be used to postprocess a trajectory.  A histogram as a function of the distance
+between atoms 1 and 2, the distance between atom 1 and 3 and the angle between the vector connecting atoms 1 and
+2 and 1 and 3 is computed using kernel density estimation.  Once all the data contained in the trajectory has been read in and 
+all the kernels have been added the resulting histogram is output to a file called histoA1.cube.  This file has the 
+Gaussian cube file format.  The histogram can thus be visualized using tools such as VMD.
+
+\verbatim
+x1: DISTANCE ATOMS=1,2
+x2: DISTANCE ATOMS=1,3
+x3: ANGLE ATOMS=1,2,3
+
+hA1: HISTOGRAM ARG=x1,x2,x3 GRID_MIN=0.0,0.0,0.0 GRID_MAX=3.0,3.0,3.0 GRID_BIN=10,10,10 BANDWIDTH=1.0,1.0,1.0
+DUMPCUBE GRID=hA1 FILE=histoA1.cube 
+\endverbatim
 
 */
 //+ENDPLUMEDOC
@@ -56,6 +82,7 @@ Action(ao),
 GridPrintingBase(ao)
 {
   fmt = fmt + " ";
+  if( ingrid->getType()!="flat" ) error("cannot dump grid of type " + ingrid->getType() + " using DUMPCUBE");
   if( ingrid->getDimension()!=3 ) error("cannot print cube file if grid does not contain three dimensional data");
 
   if( ingrid->getNumberOfComponents()==1 ){

@@ -10,7 +10,7 @@ implemented in PLUMED - there values can be monitored using \ref PRINT, \ref Fun
 or they can be analyzed or biased using the \ref Analysis and \ref Bias "Biasing" methods implemented in PLUMED.
 Before doing any of these things however we first have to tell PLUMED how to calculate them.
 
-The simplest collective variables that are implemented in PLUMED 2 take in a
+The simplest collective variables that are implemented in PLUMED take in a
 set of atomic positions and output one or multiple scalar CV values.  Information on these variables is given on the page entitled 
 \ref Colvar while information as to how sets of atoms can be selected
 can be found in the pages on \ref Group.  Please be aware that PLUMED contains implementations of many other collective variables 
@@ -34,7 +34,7 @@ implement all these collective variables without implementing having an unmanigi
 
 \page Colvar CV Documentation
 
-The following list contains descriptions of a number of the colvars that are currently implemented in PLUMED 2.
+The following list contains descriptions of a number of the colvars that are currently implemented in PLUMED.
 
 @COLVAR@
 
@@ -142,11 +142,18 @@ atomic positions.  This weight varies between zero and one and it is this weight
 and volume methods described in the lists above.  
 
 In addition to these volume and filtering methods it is also possible to calculate the local average of a quantities in the manner 
-described in \cite dellago-q6-average using the \ref LOCAL_AVERAGE method.  Furthermore, in many cases \ref Q6, \ref MOLECULES and 
+described in \cite dellago-q6 using the \ref LOCAL_AVERAGE method.  Furthermore, in many cases \ref Q6, \ref MOLECULES and 
 \ref PLANES the symmetry function being evaluated is a vector.  You can thus construct a variety of novel collective variables by
 taking dot products of vectors on adjacent atoms as described below: 
 
 @MCOLVARF@ 
+
+The final set of functions that you can apply on multicolvars are functions that transform all the colvars calculated using a 
+multicolvar using a function.  This can be useful if you are calculating some complicated derived quantity of some simpler 
+quantity.  It is also useful if you are calculating a Willard Chandler surface or a histogram.  The actions that you can use to 
+perform these transforms are:
+
+@MTRANSFORMS@
 
 \section multicolvarbias MultiColvar bias
 

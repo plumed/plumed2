@@ -37,8 +37,6 @@ nspace(0)
   ActionWithValue* myval=dynamic_cast<ActionWithValue*>( getAction() );
   if( !myval ) hasderiv=false;
   else hasderiv=!myval->doNotCalculateDerivatives();
-
-  vecsize=getAction()->getNumberOfQuantities();
 }
 
 void StoreDataVessel::addActionThatUses( ActionWithVessel* actionThatUses ){
@@ -46,12 +44,16 @@ void StoreDataVessel::addActionThatUses( ActionWithVessel* actionThatUses ){
 }
 
 void StoreDataVessel::resize(){
+  vecsize=getAction()->getNumberOfQuantities();
   plumed_dbg_assert( vecsize>0 );
 
   if( getAction()->lowmem || !getAction()->derivativesAreRequired() ){
      nspace = 1;
      active_der.resize( max_lowmem_stash * ( 1 + getAction()->getNumberOfDerivatives() ) );
   } else {
+     if( getAction()->getNumberOfDerivatives()>getAction()->maxderivatives ){
+          error("not enough memory to store derivatives for action " + getAction()->getLabel() + " use LOWMEM option");
+     }
      nspace = 1 + getAction()->maxderivatives;
      active_der.resize( getNumberOfStoredValues() * ( 1 + getAction()->maxderivatives ) );
   }
@@ -60,6 +62,7 @@ void StoreDataVessel::resize(){
 }
 
 void StoreDataVessel::storeValues( const unsigned& myelem, MultiValue& myvals, std::vector<double>& buffer ) const {
+  plumed_dbg_assert( vecsize>0 );
   unsigned jelem = getAction()->getPositionInCurrentTaskList( myelem ); plumed_dbg_assert( jelem<getNumberOfStoredValues() );
   unsigned ibuf = bufstart + jelem * vecsize * nspace; 
   for(unsigned icomp=0;icomp<vecsize;++icomp){
@@ -68,7 +71,7 @@ void StoreDataVessel::storeValues( const unsigned& myelem, MultiValue& myvals, s
 }
 
 void StoreDataVessel::storeDerivatives( const unsigned& myelem, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
-  plumed_dbg_assert( getAction()->derivativesAreRequired() && myelem<getAction()->getFullNumberOfTasks() );
+  plumed_dbg_assert( vecsize>0 && getAction()->derivativesAreRequired() && myelem<getAction()->getFullNumberOfTasks() );
   unsigned jelem = getAction()->getPositionInCurrentTaskList( myelem );
 
   if( getAction()->getFullNumberOfTasks()==getNumberOfStoredValues() ){
@@ -112,6 +115,7 @@ void StoreDataVessel::retrieveValueWithIndex( const unsigned& myelem, const bool
 }
 
 double StoreDataVessel::retrieveWeightWithIndex( const unsigned& myelem ) const {
+  plumed_dbg_assert( vecsize>0 );
   unsigned jelem = getStoreIndex( myelem ); unsigned ibuf = jelem * vecsize * nspace; return local_buffer[ibuf];
 }
 

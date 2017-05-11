@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,17 +25,18 @@
 #include "tools/Tools.h"
 #include "tools/Communicator.h"
 #include <sstream>
+#include <unordered_map>
 
-#include "GREXEnum.tmp"
+#include "GREXEnum.inc"
 
 using namespace std;
 namespace PLMD{
 
-std::map<std::string, int> & GREXWordMap(){
-  static std::map<std::string, int> word_map;
+const std::unordered_map<std::string, int> & GREXWordMap(){
+  static std::unordered_map<std::string, int> word_map;
   static bool init=false;
   if(!init){
-#include "GREXMap.tmp"
+#include "GREXMap.inc"
   }
   init=true;
   return word_map;
@@ -73,7 +74,7 @@ void GREX::cmd(const string&key,void*val){
     // do nothing
   } else {
     int iword=-1;
-    std::map<std::string, int>::const_iterator it=GREXWordMap().find(words[0]);
+    const auto it=GREXWordMap().find(words[0]);
     if(it!=GREXWordMap().end()) iword=it->second;
     switch(iword){
     case cmd_initialized:

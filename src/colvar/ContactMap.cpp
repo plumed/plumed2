@@ -46,7 +46,7 @@ The following example calculates switching functions based on the distances betw
 to a file named colvar.
 
 \verbatim
-CONTACTMAP ATOMS1=1,2 ATOMS2=3,4 ATOMS3=4,5 ATOMS4=5,6 SWITCH=(RATIONAL R_0=1.5) LABEL=f1
+CONTACTMAP ATOMS1=1,2 ATOMS2=3,4 ATOMS3=4,5 ATOMS4=5,6 SWITCH={RATIONAL R_0=1.5} LABEL=f1
 PRINT ARG=f1.* FILE=colvar
 \endverbatim
 
@@ -61,7 +61,7 @@ ATOMS1=1,2 REFERENCE1=0.1 WEIGHT1=0.5
 ATOMS2=3,4 REFERENCE2=0.5 WEIGHT2=1.0 
 ATOMS3=4,5 REFERENCE3=0.25 WEIGHT3=1.0 
 ATOMS4=5,6 REFERENCE4=0.0 WEIGHT4=0.5 
-SWITCH=(RATIONAL R_0=1.5) 
+SWITCH={RATIONAL R_0=1.5} 
 LABEL=cmap
 CMDIST
 ... CONTACTMAP
@@ -199,10 +199,10 @@ docmdist(false)
      std::string num; Tools::convert(nswitch+1, num);
      error("missing SWITCH" + num + " keyword");
   }
+
   // Read in reference values 
   nswitch=0;
-  reference.resize( ga_lista.size() );
-  for(unsigned i=0;i<ga_lista.size();++i) reference[i]=0.;
+  reference.resize(ga_lista.size(), 0.);
   for(unsigned i=0;i<ga_lista.size();++i){
       if( !parseNumbered( "REFERENCE", i+1, reference[i] ) ) break;
       nswitch++; 
@@ -211,14 +211,14 @@ docmdist(false)
      parse("REFERENCE",reference[0]);
      for(unsigned i=1;i<ga_lista.size();++i){
        reference[i]=reference[0];
+       nswitch++; 
      }
-     nswitch = ga_lista.size();
   }
-  if ( nswitch != ga_lista.size() ) error("missing REFERENCE keyword");
+  if(nswitch == 0 && docmdist) error("with CMDIST one must use REFERENCE to setup the reference contact map");
+
   // Read in weight values 
   nswitch=0;
-  weight.resize( ga_lista.size() );
-  for(unsigned i=0;i<ga_lista.size();++i) weight[i]=1.;
+  weight.resize(ga_lista.size(), 1.0);
   for(unsigned i=0;i<ga_lista.size();++i){
       if( !parseNumbered( "WEIGHT", i+1, weight[i] ) ) break;
       nswitch++; 
@@ -230,7 +230,6 @@ docmdist(false)
      }
      nswitch = ga_lista.size();
   }
-  if ( nswitch != ga_lista.size() ) error("missing WEIGHT keyword");
 
   // Ouput details of all contacts 
   for(unsigned i=0;i<sfs.size();++i){

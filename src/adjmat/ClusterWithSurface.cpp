@@ -26,10 +26,34 @@
 
 //+PLUMEDOC MATRIXF CLUSTER_WITHSURFACE 
 /*
-Find the various connected components in an adjacency matrix and then output average
-properties of the atoms in those connected components.
+Take a connected component that was found using a clustering algorithm and create a new cluster that contains those atoms that are in the cluster together with those atoms that are within a certain cutoff of the cluster.
+
+As discussed in the section of the manual on \ref contactmatrix a useful tool for developing complex collective variables is the notion of the 
+so called adjacency matrix.  An adjacency matrix is an \f$N \times N\f$ matrix in which the \f$i\f$th, \f$j\f$th element tells you whether 
+or not the \f$i\f$th and \f$j\f$th atoms/molecules from a set of \f$N\f$ atoms/molecules are adjacent or not.  When analysing these matrix
+we can treat them as a graph and find connected components using some clustering algorithm.  This action is used in tandem with this form of analysis
+and takes one of the connected components that was found during this analysis and creates a new cluster that includes all the atoms within the 
+connected component that was found together that were within a certain cutoff distance of the atoms in the connected component.  This form of analysis
+has been used sucessfully in the forward flux sampling simulations described in this paper \cite gab-ice-kaolinite
 
 \par Examples
+
+The following input uses PLUMED to calculate a adjacency matrix that connects a pair of atoms if they both have a coordination number that is less  
+than 13.5 and if they are within 0.38 nm of each other.  Depth first search clustering is used to find the connected components in this matrix.  The
+number of atoms with indices that are between 1 and 1996 and that are either in the second largest cluster or that are within within 0.3 nm of one of the 
+atoms within the the second largest cluster are then counted and this number of atoms is output to a file called size.  In addition the indices of the atoms 
+that were counted are output to a file called dfs2.dat.
+
+\verbatim
+c1: COORDINATIONNUMBER SPECIES=1-1996 SWITCH={CUBIC D_0=0.34 D_MAX=0.38}
+cf: MFILTER_LESS DATA=c1 SWITCH={CUBIC D_0=13 D_MAX=13.5}
+mat: CONTACT_MATRIX ATOMS=cf SWITCH={CUBIC D_0=0.34 D_MAX=0.38}
+dfs: DFSCLUSTERING MATRIX=mat
+clust2a: CLUSTER_WITHSURFACE CLUSTERS=dfs RCUT_SURF=0.3
+size2a: CLUSTER_NATOMS CLUSTERS=clust2a CLUSTER=2
+PRINT ARG=size2a FILE=size FMT=%8.4f
+OUTPUT_CLUSTER CLUSTERS=clust2a CLUSTER=2 FILE=dfs2.dat
+\endverbatim
 
 
 */

@@ -4,12 +4,12 @@ endif
 
 
 SRCDIRS := src test
-SUBDIRS := $(SRCDIRS) user-doc developer-doc regtest macports
+SUBDIRS := $(SRCDIRS) user-doc developer-doc regtest macports vim astyle
 
 SUBDIRSCLEAN:=$(addsuffix .clean,$(SUBDIRS))
 
      
-.PHONY: all lib clean $(SRCDIRS) doc docclean check cppcheck distclean all_plus_docs macports
+.PHONY: all lib clean $(SRCDIRS) doc docclean check cppcheck distclean all_plus_docs macports codecheck plumedcheck astyle
 
 # if machine dependent configuration has been found:
 ifdef GCCDEP
@@ -91,6 +91,12 @@ docclean:
 cppcheck:
 	$(MAKE) -C src cppcheck
 
+codecheck:
+	$(MAKE) -C src codecheck
+
+plumedcheck:
+	$(MAKE) -C src plumedcheck
+
 macports:
 	$(MAKE) -C macports
 
@@ -105,5 +111,8 @@ stamp-h: sourceme.sh.in Makefile.conf.in config.status
 config.status: configure
 	./config.status --recheck
 
+astyle:
+	$(MAKE) -C astyle
+	$(MAKE) -C src astyle
 
 

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Vessel.h"
 #include "VesselRegister.h"
+#include "Vessel.h"
 #include <iostream>
 
 namespace PLMD{
@@ -29,7 +29,7 @@ namespace vesselbase{
 VesselRegister::~VesselRegister(){
   if(m.size()>0){
     std::string names="";
-    for(std::map<std::string,creator_pointer>::iterator p=m.begin();p!=m.end();++p) names+=p->first+" ";
+    for(const auto & p : m) names+=p.first+" ";
     std::cerr<<"WARNING: Vessel "+ names +" has not been properly unregistered. This might lead to memory leak!!\n";
   }
 }
@@ -40,7 +40,7 @@ VesselRegister& vesselRegister(){
 }
 
 void VesselRegister::remove(creator_pointer f){
-  for(std::map<std::string,creator_pointer>::iterator p=m.begin();p!=m.end();++p){
+  for(auto p=m.begin();p!=m.end();++p){
     if((*p).second==f){
       m.erase(p); break;
     }

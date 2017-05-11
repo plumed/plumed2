@@ -90,7 +90,7 @@ namely:
 
 Gromacs md can be run using on the command line:
 \verbatim
-> mdrun_mpi -s topolA.tpr -nsteps 10000
+> gmx_mpi mdrun -s topolA.tpr -nsteps 10000
 \endverbatim
 The nsteps flags can be used to change the number of timesteps and topolA.tpr is the name of the tpr file.
 While running, gromacs will produce an md.log file, with log information, and a traj.xtc file, with a binary trajectory.
@@ -101,7 +101,7 @@ The trajectory can be visualized with VMD using a command such as
 
 To run a simulation with gromacs+plumed you just need to add a -plumed flag
 \verbatim
-> mdrun_mpi -s topolA.tpr -nsteps 10000 -plumed plumed.dat
+> gmx_mpi mdrun -s topolA.tpr -nsteps 10000 -plumed plumed.dat
 \endverbatim
 Here plumed.dat is the name of the plumed input file. Notice that PLUMED will write
 information in the md.log that could be useful to verify if the simulation has been set up properly.
@@ -490,7 +490,7 @@ Once the PLUMED input file is prepared, one has to run Gromacs with the option t
 read the input file:
 
 \verbatim
-mdrun_mpi -s ../TOPO/topolA.tpr -plumed plumed.dat -nsteps 5000000
+gmx_mpi mdrun -s ../TOPO/topolA.tpr -plumed plumed.dat -nsteps 5000000
 \endverbatim
 
 During the metadynamics simulation, PLUMED will create two files, named COLVAR and HILLS.
@@ -656,7 +656,7 @@ Once the PLUMED input file is prepared, one has to run Gromacs with the option t
 read the input file:
 
 \verbatim
-mdrun_mpi -s ../TOPO/topolA.tpr -plumed plumed.dat -nsteps 5000000
+gmx_mpi mdrun -s ../TOPO/topolA.tpr -plumed plumed.dat -nsteps 5000000
 \endverbatim
 
 As we did in the previous exercise, we can use COLVAR to visualize the behavior of the CV during the simulation.
@@ -861,7 +861,7 @@ several simultaneous simulations. This can be done with gromacs using the
 multi replica framework. That is, if you have 4 tpr files named topol0.tpr,
 topol1.tpr, topol2.tpr, topol3.tpr you can run 4 simultaneous simulations.
 \verbatim
-> mpirun -np 4 mdrun_mpi -s topol.tpr -plumed plumed.dat -multi 4 -nsteps 500000
+> mpirun -np 4 gmx_mpi mdrun -s topol.tpr -plumed plumed.dat -multi 4 -nsteps 500000
 \endverbatim
 Each of the 4 replicas will open a different topol file, and GROMACS will
 take care of adding the replica number before the .tpr suffix.
@@ -983,7 +983,7 @@ fi
 done
 
 # run REM
-mpirun -np $nrep mdrun_mpi -plumed plumed.dat -s topol.tpr -multi $nrep -replex 1000 -nsteps 500000
+mpirun -np $nrep gmx_mpi mdrun -plumed plumed.dat -s topol.tpr -multi $nrep -replex 1000 -nsteps 500000
 \endverbatim
 
 To be able to combine data from all the simulations, it is necessary to have an overlap between 

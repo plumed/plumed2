@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2016 The plumed team
+   Copyright (c) 2014-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,12 +23,86 @@
 #include "tools/SwitchingFunction.h"
 #include "MultiColvarFilter.h"
 
+//+PLUMEDOC MTRANSFORMS MTRANSFORM_LESS
+/*
+This action can be useed to transform the colvar values calculated by a multicolvar using a \ref switchingfunction
+
+In this action each colvar, \f$s_i\f$, calculated by multicolvar is transformed by a \ref switchingfunction function that 
+is equal to one if the colvar is less than a certain target value and which is equal to zero otherwise.  
+It is important to understand the distinction between what is done here and what is done by \ref MFILTER_LESS.  
+In \ref MFILTER_LESS a weight, \f$w_i\f$ for the colvar is calculated using the \ref switchingfunction.  If one calculates the
+MEAN for \ref MFILTER_LESS one is thus calculating:
+
+\f[
+\mu = \frac{ \sum_i \sigma(s_i) s_i }{\sum_i \simga(s_i) }
+\f]
+
+where \f$\sigma\f$ is the \ref switchingfunction.  In this action by contrast the colvar is being transformed by 
+the \ref switchingfunction.  If one thus calculates a MEAN for thia action one computes:
+
+\f[
+\mu = \frac{ \sum_{i=1}^N \simga(s_i) }{ N } 
+\f]
+
+In other words, you are calculating the mean for the transformed colvar. 
+
+\par Examples
+
+The following input gives an example of how a MTRANSFORM_LESS action can be used to duplicate 
+functionality that is elsehwere in PLUMED. 
+
+\verbatim
+DISTANCES ...
+ GROUPA=1-10 GROUPB=11-20
+ LABEL=d1
+... DISTANCES
+MTRANSFORM_LESS DATA=d1 SWITCH={GAUSSIAN D_0=1.5 R_0=0.00001}
+\endverbatim
+
+In this case you can achieve the same result by using:
+
+\verbatim
+DISTANCES ...
+ GROUPA=1-10 GROUPB=11-20 
+ LESS_THAN={GAUSSIAN D_0=1.5 R_0=0.00001}
+... DISTANCES
+\endverbatim
+(see \ref DISTANCES)
+
+The advantage of MTRANSFORM_LESS comes, however, if you want to use transformed colvars as input
+for \ref MULTICOLVARDENS 
+
+*/
+//+ENDPLUMEDOC
+
 //+PLUMEDOC MFILTERS MFILTER_LESS
 /*
 This action can be used to filter the distribution of colvar values in a multicolvar 
 so that one can compute the mean and so on for only those multicolvars less than a tolerance.
 
+This action can be used to create a dynamic group of atom based on the value of a multicolvar.
+In this action a multicolvar is within the dynamic group if its value is less than a target.
+In practise a weight, \f$w_i\f$ is ascribed to each colvar, \f$s_i\f$ calculated by a multicolvar
+and this weight measures the degree to which a colvar is a member of the group.  This weight is a number 
+between 0 and 1 that is calculated using a \ref switchingfunction , \f$\sigma\f$. 
+If one calculates a function of the set of multicolvars
+these weights are included in the calculation.  As such if one calculates the MEAN, \f$\mu\f$ of a filtered 
+multicolvar what is computed is the following:
+
+\f[
+\mu = \frac{ \sum_i w_i s_i }{ \sum_i w_i}
+\f]
+
+One is thus calculating the mean for those colvars that are less than the target.
+
 \par Examples
+
+The example shown below calculates the mean for those distances that less than 1.5 nm in length
+
+\verbatim
+DISTANCES GROUPA=1 GROUPB=2-50 MEAN LABEL=d1
+MFILTER_LESS DATA=d1 SWITCH={GAUSSIAN D_0=1.5 R_0=0.00001} MEAN LABEL=d4
+\endverbatim
 
 */
 //+ENDPLUMEDOC

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -99,7 +99,7 @@ public:
  /// clear grid
  virtual void clear();
  /// this constructor here is Value-aware  
- Grid(const std::string& funcl, std::vector<Value*> args, const std::vector<std::string> & gmin, 
+ Grid(const std::string& funcl, const std::vector<Value*> & args, const std::vector<std::string> & gmin, 
       const std::vector<std::string> & gmax, const std::vector<unsigned> & nbin, bool dospline, 
       bool usederiv, bool doclear=true);
  /// this constructor here is not Value-aware  
@@ -150,9 +150,9 @@ public:
  void writeHeader(OFile& file);
 
 /// read grid from file
- static Grid* create(const std::string&,std::vector<Value*>,IFile&,bool,bool,bool);
+ static Grid* create(const std::string&,const std::vector<Value*>&,IFile&,bool,bool,bool);
 /// read grid from file and check boundaries are what is expected from input
- static Grid* create(const std::string&, std::vector<Value*>, IFile&,
+ static Grid* create(const std::string&,const std::vector<Value*>&, IFile&,
                      const std::vector<std::string>&,const std::vector<std::string>&,
                      const std::vector<unsigned>&,bool,bool,bool); 
 /// get grid size
@@ -209,7 +209,7 @@ public:
  Grid project( const std::vector<std::string> & proj , WeightBase *ptr2obj  ); 
  void projectOnLowDimension(double &val , std::vector<int> &varHigh, WeightBase* ptr2obj ); 
 /// set output format
- void setOutputFmt(std::string ss){fmt_=ss;}
+ void setOutputFmt(const std::string & ss){fmt_=ss;}
 /// Integrate the function calculated on the grid
  double integrate( std::vector<unsigned>& npoints );
 ///
@@ -221,15 +221,13 @@ class SparseGrid : public Grid
 {
 
  std::map<index_t,double> map_;
- typedef std::map<index_t,double>::const_iterator iterator;
  std::map< index_t,std::vector<double> > der_;
- typedef std::map<index_t,std::vector<double> >::const_iterator iterator_der;
  
  protected:
  void clear(); 
  
  public:
- SparseGrid(const std::string& funcl, std::vector<Value*> args, const std::vector<std::string> & gmin, 
+ SparseGrid(const std::string& funcl, const std::vector<Value*> & args, const std::vector<std::string> & gmin, 
             const std::vector<std::string> & gmax, 
             const std::vector<unsigned> & nbin, bool dospline, bool usederiv):
             Grid(funcl,args,gmin,gmax,nbin,dospline,usederiv,false){}

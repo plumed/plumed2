@@ -24,8 +24,8 @@
 #include "core/CLTool.h"
 namespace PLMD{
 namespace cltools{
-// Ideally core/Colvar.h should be moved to this directory and Colvar should stay in namespace PLMD::colvar
-// With this trick, PLMD::CLToolMain is visible as PLMD::cltools::CLToolMain
+// Ideally core/CLTool.h should be moved to this directory and CLTool should stay in namespace PLMD::cltools
+// With this trick, PLMD::CLTool is visible as PLMD::cltools::CLTool
   using PLMD::CLTool;
 }
 }

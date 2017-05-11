@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016 The plumed team
+   Copyright (c) 2016,2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -73,7 +73,7 @@ elements of the covariance matrix from the input vectors.  In this calculation t
 Trajectory frames will be collected every five steps and the PCA calculation is performed every 1000 steps.  Consequently, if you run a 2000 step simulation the 
 PCA analysis will be performed twice.  The REWEIGHT_BIAS keyword in this input tells PLUMED that rather that ascribing a weight of one to each of the frames
 when calculating averages and covariances a reweighting should be performed based and each frames' weight in these calculations should be determined based on 
-the current value of the instantaneous bias (see \ref reweighting).  
+the current value of the instantaneous bias (see \ref REWEIGHT_BIAS).  
 
 \verbatim
 d1: DISTANCE ATOMS=1,2

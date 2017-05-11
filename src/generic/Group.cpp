@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -177,7 +177,7 @@ Group::Group(const ActionOptions&ao):
     std::vector<AtomNumber> notfound;
     log<<"  removing these atoms from the list:";
     for(unsigned i=0;i<remove.size();i++){
-      std::vector<AtomNumber>::iterator it = find(atoms.begin(),atoms.end(),remove[i]);
+      const auto it = find(atoms.begin(),atoms.end(),remove[i]);
       if(it!=atoms.end()){
         log<<" "<<(*it).serial();
         atoms.erase(it);

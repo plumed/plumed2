@@ -135,7 +135,7 @@ Once the PLUMED input file is prepared, one has to run Gromacs with the option t
 read the input file:
 
 \verbatim
-mdrun_mpi -plumed
+gmx_mpi mdrun -plumed
 \endverbatim
 
 During the metadynamics simulation, PLUMED will create two files, named COLVAR and HILLS.

@@ -91,7 +91,7 @@ that can be modified and used to generate a new .tpr file.
 
 GROMACS can be run (interactively) using the following command:
 \verbatim
-> mdrun_mpi -s ../SETUP/topolA.tpr -nsteps 10000 -x traj.xtc
+> gmx_mpi mdrun -s ../SETUP/topolA.tpr -nsteps 10000 -x traj.xtc
 \endverbatim
 The nsteps flags can be used to change the number of timesteps and topolA.tpr is the name of the tpr file.
 While running, GROMACS will produce a md.log file, with log information, and a traj.xtc file, with a binary trajectory.
@@ -102,7 +102,7 @@ The trajectory can be visualized with VMD using:
 
 To activate PLUMED during a GROMACS MD simulation, you need to add the -plumed flag
 \verbatim
-> mdrun_mpi -s ../SETUP/topolA.tpr -nsteps 10000 -plumed plumed.dat -x traj.xtc
+> gmx_mpi mdrun -s ../SETUP/topolA.tpr -nsteps 10000 -plumed plumed.dat -x traj.xtc
 \endverbatim
 Here plumed.dat is the name of the PLUMED input file. Notice that PLUMED will write
 information in the md.log that could be useful to verify if the simulation has been set up properly.
@@ -345,7 +345,7 @@ Once the PLUMED input file is prepared, one has to run GROMACS with the option t
 read the input file:
 
 \verbatim
-mdrun_mpi -s ../SETUP/topolA.tpr -plumed plumed.dat -nsteps 5000000 -x traj.xtc
+gmx_mpi mdrun -s ../SETUP/topolA.tpr -plumed plumed.dat -nsteps 5000000 -x traj.xtc
 \endverbatim
 
 During the metadynamics simulation, PLUMED will create two files, named COLVAR and HILLS.
@@ -679,7 +679,7 @@ several simultaneous simulations. This can be done with GROMACS using the
 multi replica framework. That is, if you have 4 tpr files named topol0.tpr,
 topol1.tpr, topol2.tpr, topol3.tpr you can run 4 simultaneous simulations.
 \verbatim
-> mpirun -np 4 mdrun_mpi -s topol.tpr -plumed plumed.dat -multi 4 -nsteps 500000
+> mpirun -np 4 gmx_mpi mdrun -s topol.tpr -plumed plumed.dat -multi 4 -nsteps 500000
 \endverbatim
 Each of the 4 replicas will open a different topol file, and GROMACS will
 take care of adding the replica number before the .tpr suffix.
@@ -805,7 +805,7 @@ done
 And then run GROMACS with the following command: 
 
 \verbatim
-mpirun -np 32 mdrun_mpi -plumed plumed.dat -s topol.tpr -multi 32 -replex 1000 -nsteps 500000 -x traj.xtc
+mpirun -np 32 gmx_mpi mdrun -plumed plumed.dat -s topol.tpr -multi 32 -replex 1000 -nsteps 500000 -x traj.xtc
 \endverbatim
 
 To be able to combine data from all the simulations, it is necessary to have an overlap between 

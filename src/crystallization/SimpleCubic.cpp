@@ -35,6 +35,22 @@ namespace crystallization{
 Calculate whether or not the coordination spheres of atoms are arranged as they would be in a simple
 cubic structure.
 
+We can measure how similar the environment around atom \f$i\f$ is to a simple cubic structure is by evaluating
+the following quantity:
+
+\f[
+s_i = \frac{ \sum_{i \ne j} \sigma(r_{ij}) \left[ \frac{ x_{ij}^4 + y_{ij}^4 + z_{ij}^4 }{r_{ij}^4} \right] }{ \sum_{i \ne j} \sigma(r_{ij}) }
+\f]
+
+In this expression \f$x_{ij}\f$, \f$y_{ij}\f$ and \f$z_{ij}\f$ are the \f$x\f$, \f$y\f$ and \f$z\f$ components of the vector connecting atom \f$i\f$ to 
+atom \f$j\f$ and \f$r_{ij}\f$ is the magnitude of this vector.  \f$\sigma(r_{ij})\f$ is a \ref switchingfunction that acts on the distance between atom \f$i\f$ and atom \f$j\f$ and its inclusion in the numerator and the denominator of the above expression as well as the fact that we are summing
+over all of the other atoms in the system ensures that we are calculating an average
+of the function of \f$x_{ij}\f$, \f$y_{ij}\f$ and \f$z_{ij}\f$ for the atoms in the first coordination sphere around atom \f$i\f$.
+This quantity is once again a multicolvar so you can compute it for multiple atoms using a single PLUMED action and then compute
+the average value for the atoms in your system, the number of atoms that have an \f$s_i\f$ value that is more that some target and 
+so on.  Notice also that you can rotate the reference frame if you are using a non-standard unit cell.
+
+
 \par Examples
 
 The following input tells plumed to calculate the simple cubic parameter for the atoms 1-100 with themselves.

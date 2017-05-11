@@ -1,0 +1,2 @@
+type=plumed
+arg="pathtools --path epath.pdb --metric EUCLIDEAN --out epath-out.pdb --arg-fmt %8.4f" 

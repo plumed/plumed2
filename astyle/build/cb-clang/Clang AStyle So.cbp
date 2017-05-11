@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="Clang AStyle So" />
+		<Option pch_mode="2" />
+		<Option compiler="clang" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/libastyled.so.$(SOLIBVER)" prefix_auto="0" extension_auto="0" />
+				<Option object_output="objSo/Debug/" />
+				<Option type="3" />
+				<Option compiler="clang" />
+				<Compiler>
+					<Add option="-Weverything" />
+					<Add option="-Wall" />
+					<Add option="-std=c++11" />
+					<Add option="-g" />
+					<Add option="-Wextra" />
+					<Add option="-fno-rtti" />
+					<Add option="-fno-exceptions" />
+					<Add option="-fPIC" />
+					<Add option="-Wno-c++98-compat" />
+					<Add option="-Wno-exit-time-destructors" />
+					<Add option="-Wno-global-constructors" />
+					<Add option="-Wno-missing-variable-declarations" />
+					<Add option="-Wno-old-style-cast" />
+					<Add option="-Wno-padded" />
+					<Add option="-Wno-shorten-64-to-32" />
+					<Add option="-Wno-sign-conversion" />
+					<Add option="-Wno-weak-vtables" />
+					<Add option="-DASTYLE_LIB" />
+				</Compiler>
+				<Linker>
+					<Add option="-Wl,-soname,libastyled.so.$(MAJORVER)" />
+				</Linker>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/libastyle.so.$(SOLIBVER)" prefix_auto="0" extension_auto="0" />
+				<Option object_output="objSo/Release/" />
+				<Option type="3" />
+				<Option compiler="clang" />
+				<Compiler>
+					<Add option="-O3" />
+					<Add option="-Weverything" />
+					<Add option="-Wall" />
+					<Add option="-std=c++11" />
+					<Add option="-Wextra" />
+					<Add option="-fno-rtti" />
+					<Add option="-fno-exceptions" />
+					<Add option="-fPIC" />
+					<Add option="-Wno-c++98-compat" />
+					<Add option="-Wno-exit-time-destructors" />
+					<Add option="-Wno-global-constructors" />
+					<Add option="-Wno-missing-variable-declarations" />
+					<Add option="-Wno-old-style-cast" />
+					<Add option="-Wno-padded" />
+					<Add option="-Wno-shorten-64-to-32" />
+					<Add option="-Wno-sign-conversion" />
+					<Add option="-Wno-weak-vtables" />
+					<Add option="-DASTYLE_LIB" />
+					<Add option="-DDNDEBUG" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add option="-Wl,-soname,libastyle.so.$(MAJORVER)" />
+				</Linker>
+			</Target>
+			<Environment>
+				<Variable name="MAJORVER" value="3" />
+				<Variable name="MINORVER" value="0" />
+				<Variable name="PATCHVER" value="0" />
+				<Variable name="SOLIBVER" value="$(MAJORVER).$(MINORVER).$(PATCHVER)" />
+			</Environment>
+		</Build>
+		<Unit filename="../../src/ASBeautifier.cpp" />
+		<Unit filename="../../src/ASEnhancer.cpp" />
+		<Unit filename="../../src/ASFormatter.cpp" />
+		<Unit filename="../../src/ASResource.cpp" />
+		<Unit filename="../../src/astyle.h" />
+		<Unit filename="../../src/astyle_main.cpp" />
+		<Unit filename="../../src/astyle_main.h" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+			<envvars />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

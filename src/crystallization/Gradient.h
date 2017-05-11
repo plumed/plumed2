@@ -25,7 +25,7 @@
 #include "multicolvar/VolumeGradientBase.h"
 
 namespace PLMD {
-namespace crystallisation {
+namespace crystallization {
 
 class Gradient : public multicolvar::VolumeGradientBase {
 friend class GradientVessel;

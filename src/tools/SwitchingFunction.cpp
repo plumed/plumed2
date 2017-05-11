@@ -178,9 +178,14 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   shift=0.0;
   init=true;
 
-  Tools::parse(data,"D_0",d0);
-  Tools::parse(data,"D_MAX",dmax);
-  dmax_2=dmax*dmax;
+  bool present;
+
+  present=Tools::findKeyword(data,"D_0");
+  if(present && !Tools::parse(data,"D_0",d0)) errormsg="could not parse D_0";
+
+  present=Tools::findKeyword(data,"D_MAX");
+  if(present && !Tools::parse(data,"D_MAX",dmax)) errormsg="could not parse D_MAX";
+  if(dmax<std::sqrt(std::numeric_limits<double>::max())) dmax_2=dmax*dmax;
   bool dostretch=false;
   Tools::parseFlag(data,"STRETCH",dostretch); // this is ignored now
   dostretch=true;
@@ -201,13 +206,17 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     type=rational;
     nn=6;
     mm=0;
-    Tools::parse(data,"NN",nn);
-    Tools::parse(data,"MM",mm);
+    present=Tools::findKeyword(data,"NN");
+    if(present && !Tools::parse(data,"NN",nn)) errormsg="could not parse NN";
+    present=Tools::findKeyword(data,"MM");
+    if(present && !Tools::parse(data,"MM",mm)) errormsg="could not parse MM";
     if(mm==0) mm=2*nn;
   } else if(name=="SMAP"){
     type=smap;
-    Tools::parse(data,"A",a);
-    Tools::parse(data,"B",b);
+    present=Tools::findKeyword(data,"A");
+    if(present && !Tools::parse(data,"A",a)) errormsg="could not parse A";
+    present=Tools::findKeyword(data,"B");
+    if(present && !Tools::parse(data,"B",b)) errormsg="could not parse B";
     c=pow(2., static_cast<double>(a)/static_cast<double>(b) ) - 1; 
     d = -static_cast<double>(b) / static_cast<double>(a);
   } 
@@ -215,8 +224,10 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     type=nativeq; 
     beta = 50.0;  // nm-1
     lambda = 1.8; // unitless
-    Tools::parse(data, "BETA", beta);
-    Tools::parse(data, "LAMBDA", lambda);
+    present=Tools::findKeyword(data,"BETA");
+    if(present && !Tools::parse(data, "BETA", beta)) errormsg="could not parse BETA";
+    present=Tools::findKeyword(data,"LAMBDA");
+    if(present && !Tools::parse(data, "LAMBDA", lambda)) errormsg="could not parse LAMBDA";
     bool found_ref=Tools::parse(data,"REF",ref); // nm
     if(!found_ref) errormsg="REF (reference disatance) is required for native Q";
 
@@ -455,6 +466,36 @@ SwitchingFunction::SwitchingFunction(const SwitchingFunction&sf):
   if(sf.evaluator_deriv) evaluator_deriv=evaluator_create(evaluator_get_string(sf.evaluator_deriv));
 #endif
 }
+
+SwitchingFunction & SwitchingFunction::operator=(const SwitchingFunction& sf){
+  if(&sf==this) return *this;
+  init=sf.init;
+  type=sf.type;
+  invr0=sf.invr0;
+  d0=sf.d0;
+  dmax=sf.dmax;
+  nn=sf.nn;
+  mm=sf.mm;
+  a=sf.a;
+  b=sf.b;
+  c=sf.c;
+  d=sf.d;
+  lambda=sf.lambda;
+  beta=sf.beta;
+  ref=sf.ref;
+  invr0_2=sf.invr0_2;
+  dmax_2=sf.dmax_2;
+  stretch=sf.stretch;
+  shift=sf.shift;
+  evaluator=NULL;
+  evaluator_deriv=NULL;
+#ifdef __PLUMED_HAS_MATHEVAL
+  if(sf.evaluator) evaluator=evaluator_create(evaluator_get_string(sf.evaluator));
+  if(sf.evaluator_deriv) evaluator_deriv=evaluator_create(evaluator_get_string(sf.evaluator_deriv));
+#endif
+  return *this;
+}
+
 
 void SwitchingFunction::set(int nn,int mm,double r0,double d0){
   init=true;

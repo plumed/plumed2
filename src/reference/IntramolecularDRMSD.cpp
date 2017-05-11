@@ -29,7 +29,7 @@ private:
   unsigned nblocks;
   std::vector<unsigned> blocks;
 public:
-  IntramolecularDRMSD( const ReferenceConfigurationOptions& ro );
+  explicit IntramolecularDRMSD( const ReferenceConfigurationOptions& ro );
   void read( const PDB& pdb );
   void setup_targets(); 
 };

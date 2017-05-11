@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -50,6 +50,13 @@ const double pi(3.14159265358979323846264338327950288419716939937510582097494459
 /// \ingroup TOOLBOX
 /// Empty class which just contains several (static) tools
 class Tools{
+/// class to convert a string to a generic type T
+  template<class T>
+  static bool convertToAny(const std::string & str,T &t);
+/// class to convert a string to a real type T.
+/// T should be either float, double, or long double
+  template<class T>
+  static bool convertToReal(const std::string & str,T &t);
 public:
 /// Split the line in words using separators.
 /// It also take into account parenthesis. Outer parenthesis found are removed from
@@ -65,6 +72,8 @@ public:
   static bool getParsedLine(IFile&ifile,std::vector<std::string> & line);
 /// Convert a string to a double, reading it
   static bool convert(const std::string & str,double & t);
+/// Convert a string to a long double, reading it
+  static bool convert(const std::string & str,long double & t);
 /// Convert a string to a float, reading it
   static bool convert(const std::string & str,float & t);
 /// Convert a string to a int, reading it
@@ -92,15 +101,17 @@ public:
 /// line.push_back("aa=xx");
 /// getKey(line,"aa",s);
 /// will set s="xx"
-  static bool getKey(std::vector<std::string>& line,const std::string & key,std::string & s);
+  static bool getKey(std::vector<std::string>& line,const std::string & key,std::string & s,int rep=-1);
 /// Find a keyword on the input line, eventually deleting it, and saving its value to val
   template <class T>
-  static bool parse(std::vector<std::string>&line,const std::string&key,T&val);
+  static bool parse(std::vector<std::string>&line,const std::string&key,T&val,int rep=-1);
 /// Find a keyword on the input line, eventually deleting it, and saving its value to a vector
   template <class T>
-  static bool parseVector(std::vector<std::string>&line,const std::string&key,std::vector<T>&val);
+  static bool parseVector(std::vector<std::string>&line,const std::string&key,std::vector<T>&val,int rep=-1);
 /// Find a keyword without arguments on the input line
   static bool parseFlag(std::vector<std::string>&line,const std::string&key,bool&val);
+/// Find a keyword on the input line, just reporting if it exists or not
+  static bool findKeyword(const std::vector<std::string>&line,const std::string&key);
 /// Interpret atom ranges
   static void interpretRanges(std::vector<std::string>&);
 /// Remove duplicates from a vector of type T 
@@ -129,23 +140,31 @@ public:
 };
 
 template <class T>
-bool Tools::parse(std::vector<std::string>&line,const std::string&key,T&val){
+bool Tools::parse(std::vector<std::string>&line,const std::string&key,T&val,int rep){
   std::string s;
-  if(!getKey(line,key+"=",s)) return false;
+  if(!getKey(line,key+"=",s,rep)) return false;
   if(s.length()>0 && !convert(s,val))return false;
   return true;
 }
 
 template <class T>
-bool Tools::parseVector(std::vector<std::string>&line,const std::string&key,std::vector<T>&val){
+bool Tools::parseVector(std::vector<std::string>&line,const std::string&key,std::vector<T>&val,int rep){
   std::string s;
-  if(!getKey(line,key+"=",s)) return false;
+  if(!getKey(line,key+"=",s,rep)) return false;
 //  if(s.length()==0) return true;
   val.clear();
   std::vector<std::string> words=getWords(s,"\t\n ,");
   for(unsigned i=0;i<words.size();++i){
     T v;
-    if(!convert(words[i],v))return false;
+    std::string s=words[i];
+    const std::string multi("@replicas:");
+    if(rep>=0 && startWith(s,multi)){
+      s=s.substr(multi.length(),s.length());
+      std::vector<std::string> words=getWords(s,"\t\n ,");
+      plumed_assert(rep<words.size());
+      s=words[rep];
+    }
+    if(!convert(s,v))return false;
     val.push_back(v);
   }
   return true;
@@ -160,7 +179,7 @@ void Tools::removeDuplicates(std::vector<T>& vec)
 
 inline
 bool Tools::parseFlag(std::vector<std::string>&line,const std::string&key,bool&val){
-  for(std::vector<std::string>::iterator p=line.begin();p!=line.end();++p){
+  for(auto p=line.begin();p!=line.end();++p){
     if(key==*p){
       val=true;
       line.erase(p);

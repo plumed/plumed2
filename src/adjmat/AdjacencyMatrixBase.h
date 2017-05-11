@@ -75,10 +75,6 @@ public:
 /// None of these things are allowed
   bool isPeriodic(){ return false; }
   Vector getCentralAtom(){ plumed_merror("cannot find central atoms for adjacency matrix actions"); Vector dum; return dum; }
-/// Transforms the stored values in whatever way is required
-  virtual double transformStoredValues( const std::vector<double>& myvals, unsigned& vout, double& df ) const ;
-/// Used to check for connections between atoms
-  virtual bool checkForConnection( const std::vector<double>& myvals ) const;
 /// Get the atom number
   AtomNumber getAbsoluteIndexOfCentralAtom( const unsigned& i ) const ; 
 };
@@ -101,16 +97,6 @@ AtomNumber AdjacencyMatrixBase::getAbsoluteIndexOfCentralAtom( const unsigned& i
       return mybasemulticolvars[mmc]->getAbsoluteIndexOfCentralAtom( atom_lab[iatom].second );
   }
   return ActionAtomistic::getAbsoluteIndex( atom_lab[iatom].second );
-}
-
-inline
-double AdjacencyMatrixBase::transformStoredValues( const std::vector<double>& myvals, unsigned& vout, double& df  ) const {
-  plumed_dbg_assert( myvals.size()==2 ); vout=1; df=1; return myvals[1]; 
-}
-
-inline
-bool AdjacencyMatrixBase::checkForConnection( const std::vector<double>& myvals ) const {
-  return (myvals[0]*myvals[1]>epsilon);
 }
 
 }

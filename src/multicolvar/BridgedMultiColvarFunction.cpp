@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,10 +19,10 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#include "BridgedMultiColvarFunction.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "CatomPack.h"
-#include "BridgedMultiColvarFunction.h"
 
 namespace PLMD {
 namespace multicolvar {
@@ -76,7 +76,12 @@ void BridgedMultiColvarFunction::transformBridgedDerivatives( const unsigned& cu
 }
 
 void BridgedMultiColvarFunction::performTask( const unsigned& taskIndex, const unsigned& current, MultiValue& myvals ) const {
-  MultiValue invals( mycolv->getNumberOfQuantities(), mycolv->getNumberOfDerivatives() );
+  // This allows us to speed up the code as we don't need to reallocate memory on every call of perform task
+  MultiValue& invals=myBridgeVessel->getTemporyMultiValue();
+  if( invals.getNumberOfValues()!=mycolv->getNumberOfQuantities() ||
+      invals.getNumberOfDerivatives()!=mycolv->getNumberOfDerivatives() ){
+        invals.resize( mycolv->getNumberOfQuantities(), mycolv->getNumberOfDerivatives() );
+  }
   invals.clearAll(); mycolv->performTask( taskIndex, current, invals );
   transformBridgedDerivatives( taskIndex, invals, myvals ); 
 }
@@ -110,8 +115,8 @@ void BridgedMultiColvarFunction::deactivate_task( const unsigned& taskno ){
   plumed_merror("This should never be called");
 }
 
-CatomPack BridgedMultiColvarFunction::getCentralAtomPack( const unsigned& basn, const unsigned& curr ){
-  return mycolv->getCentralAtomPack( basn, curr );
+void BridgedMultiColvarFunction::getCentralAtomPack( const unsigned& basn, const unsigned& curr, CatomPack& mypack ){
+  return mycolv->getCentralAtomPack( basn, curr, mypack );
 }
 
 }

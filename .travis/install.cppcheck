@@ -3,6 +3,7 @@
 set -e
 set -x
 
+cd "$(mktemp -d)"
 
 git clone https://github.com/danmar/cppcheck.git
 cd cppcheck
@@ -15,12 +16,9 @@ else
   version=$(git tag | tail -n 1)
 fi
 
-
 git checkout $version
 make -j 4 install CFGDIR="$HOME/opt/share/cppcheck/" CXXFLAGS="-O2 -march=native -mtune=native -Wunreachable-code" PREFIX="$HOME/opt"
 cd ../
 
 cppcheck --version
-
-
 

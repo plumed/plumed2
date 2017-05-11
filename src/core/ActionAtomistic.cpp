@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -34,7 +34,8 @@
 #include "tools/PDB.h"
 
 using namespace std;
-using namespace PLMD;
+
+namespace PLMD {
 
 ActionAtomistic::~ActionAtomistic(){
 // forget the pending request
@@ -187,7 +188,7 @@ void ActionAtomistic::interpretAtomList( std::vector<std::string>& strings, std:
 // here we check if the atom name is the name of a group
    if(!ok){
      if(atoms.groups.count(strings[i])){
-       map<string,vector<AtomNumber> >::const_iterator m=atoms.groups.find(strings[i]);
+       const auto m=atoms.groups.find(strings[i]);
        t.insert(t.end(),m->second.begin(),m->second.end());
        ok=true;
      }
@@ -195,8 +196,8 @@ void ActionAtomistic::interpretAtomList( std::vector<std::string>& strings, std:
 // here we check if the atom name is the name of an added virtual atom
    if(!ok){
      const ActionSet&actionSet(plumed.getActionSet());
-     for(ActionSet::const_iterator a=actionSet.begin();a!=actionSet.end();++a){
-       ActionWithVirtualAtom* c=dynamic_cast<ActionWithVirtualAtom*>(*a);
+     for(const auto & a : actionSet){
+       ActionWithVirtualAtom* c=dynamic_cast<ActionWithVirtualAtom*>(a);
        if(c) if(c->getLabel()==strings[i]){
          ok=true;
          t.push_back(c->getIndex());
@@ -239,8 +240,8 @@ void ActionAtomistic::setForcesOnAtoms( const std::vector<double>& forcesToApply
   virial(1,2)=forcesToApply[ind]; ind++;
   virial(2,0)=forcesToApply[ind]; ind++;
   virial(2,1)=forcesToApply[ind]; ind++;
-  virial(2,2)=forcesToApply[ind]; ind++;
-  plumed_dbg_assert( ind==forcesToApply.size() );
+  virial(2,2)=forcesToApply[ind];
+  plumed_dbg_assert( ind+1==forcesToApply.size());
 }
 
 void ActionAtomistic::applyForces(){
@@ -279,4 +280,6 @@ void ActionAtomistic::makeWhole(){
     Vector & second (positions[j+1]);
     second=first+pbcDistance(first,second);
   }
+}
+
 }

@@ -19,8 +19,9 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include <complex>
 #include "Steinhardt.h"
+#include "core/PlumedMain.h"
+#include <complex>
 
 namespace PLMD {
 namespace crystallization {
@@ -57,6 +58,7 @@ tmom(0)
      switchingFunction.set(nn,mm,r_0,d_0);
   }
   log.printf("  Steinhardt parameter of central atom and those within %s\n",( switchingFunction.description() ).c_str() );
+  log<<"  Bibliography "<<plumed.cite("Tribello, Giberti, Sosso, Salvalaglio and Parrinello, J. Chem. Theory Comput. 13, 1317 (2017)")<<"\n";
   // Set the link cell cutoff
   setLinkCellCutoff( switchingFunction.get_dmax() );
   rcut = switchingFunction.get_dmax(); rcut2 = rcut*rcut;

@@ -36,7 +36,8 @@ public:
   void setupPCAStorage( ReferenceValuePack& mypack ){
      mypack.switchOnPCAOption(); mypack.getAtomsDisplacementVector().resize( getNumberOfAtoms() );
   }
-  double projectAtomicDisplacementOnVector( const unsigned& iv, const Matrix<Vector>& vecs, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const ;  
+  void extractAtomicDisplacement( const std::vector<Vector>& pos, const bool& anflag, std::vector<Vector>& direction ) const ;
+  double projectAtomicDisplacementOnVector( const std::vector<Vector>& vecs, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const ;  
 };
 
 PLUMED_REGISTER_METRIC(SimpleRMSD,"SIMPLE")
@@ -59,18 +60,25 @@ double SimpleRMSD::calc( const std::vector<Vector>& pos, ReferenceValuePack& myd
   return d;
 }
 
-double SimpleRMSD::projectAtomicDisplacementOnVector( const unsigned& iv, const Matrix<Vector>& vecs, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const { 
+void SimpleRMSD::extractAtomicDisplacement( const std::vector<Vector>& pos, const bool& anflag, std::vector<Vector>& direction ) const {
+  std::vector<Vector> tder( getNumberOfAtoms() );
+  double d=myrmsd.simpleAlignment( getAlign(), getDisplace(), pos, getReferencePositions(), tder, direction, true );
+  double scale=1.0; if( anflag ) scale = 1.0 / static_cast<double>( pos.size() );
+  for(unsigned i=0;i<pos.size();++i) direction[i] = scale*direction[i];
+}
+
+double SimpleRMSD::projectAtomicDisplacementOnVector( const std::vector<Vector>& vecs, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const { 
   plumed_dbg_assert( mypack.calcUsingPCAOption() ); Vector comder; comder.zero();
   for(unsigned j=0;j<pos.size();++j){
-      for(unsigned k=0;k<3;++k) comder[k] += getAlign()[j]*vecs(iv,j)[k];
+      for(unsigned k=0;k<3;++k) comder[k] += getAlign()[j]*vecs[j][k];
   }
 
   double proj=0; mypack.clear();
   for(unsigned j=0;j<pos.size();++j){
       for(unsigned k=0;k<3;++k){
-          proj += vecs(iv,j)[k]*mypack.getAtomsDisplacementVector()[j][k];
+          proj += vecs[j][k]*mypack.getAtomsDisplacementVector()[j][k];
       }
-      mypack.setAtomDerivatives( j, vecs(iv,j) - comder );
+      mypack.setAtomDerivatives( j, vecs[j] - comder );
   }
   if( !mypack.updateComplete() ) mypack.updateDynamicLists();
   return proj;

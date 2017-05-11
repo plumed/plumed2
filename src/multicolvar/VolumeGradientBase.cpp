@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -20,6 +20,8 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "VolumeGradientBase.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
 #include "CatomPack.h"
 
 namespace PLMD {
@@ -37,6 +39,15 @@ BridgedMultiColvarFunction(ao)
 
 void VolumeGradientBase::requestAtoms( const std::vector<AtomNumber>& atoms ){
   ActionAtomistic::requestAtoms(atoms); bridgeVariable=3*atoms.size();
+  std::map<std::string,bool> checklabs; 
+  for(const auto & p : getDependencies() ) checklabs.insert(std::pair<std::string,bool>(p->getLabel(),false)); 
+  for(const auto & p : plumed.getActionSet() ){
+      if( p->getLabel()==getPntrToMultiColvar()->getLabel() ) break;
+      if( checklabs.count(p->getLabel()) ) checklabs[p->getLabel()]=true;
+  }
+  for(const auto & p : checklabs ){
+     if( !p.second ) error("the input for the virtual atoms used in the input for this action must appear in the input file before the input multicolvar");
+  }
   addDependency( getPntrToMultiColvar() ); 
   tmpforces.resize( 3*atoms.size()+9 );
 }
@@ -65,7 +76,7 @@ void VolumeGradientBase::setNumberInVolume( const unsigned& ivol, const unsigned
   if( !mcolv->weightHasDerivatives ){
       outvals.setValue(ivol, weight ); 
       if( derivativesAreRequired() ){
-         CatomPack catom( mcolv->getCentralAtomPack( 0, curr ) );
+         CatomPack catom; mcolv->getCentralAtomPack( 0, curr, catom );
          for(unsigned i=0;i<catom.getNumberOfAtomsWithDerivatives();++i){
              unsigned jatom=3*catom.getIndex(i);
              outvals.addDerivative( ivol, jatom+0, catom.getDerivative(i,0,wdf) );
@@ -86,7 +97,7 @@ void VolumeGradientBase::setNumberInVolume( const unsigned& ivol, const unsigned
       double ww=outvals.get(0); outvals.setValue(ivol,ww*weight);
       if( derivativesAreRequired() ){
          plumed_merror("This needs testing");
-         CatomPack catom( mcolv->getCentralAtomPack( 0, curr ) );
+         CatomPack catom; mcolv->getCentralAtomPack( 0, curr, catom );
          for(unsigned i=0;i<catom.getNumberOfAtomsWithDerivatives();++i){
              unsigned jatom=3*catom.getIndex(i);
              outvals.addDerivative( ivol, jatom+0, weight*outvals.getDerivative(ivol,jatom+0) + ww*catom.getDerivative(i,0,wdf) );
@@ -106,7 +117,7 @@ void VolumeGradientBase::setNumberInVolume( const unsigned& ivol, const unsigned
       double ww=outvals.get(0); outvals.setValue(ivol,ww*weight);
       if( derivativesAreRequired() ){
          plumed_merror("This needs testing");
-         CatomPack catom( mcolv->getCentralAtomPack( 0, curr ) ); 
+         CatomPack catom; mcolv->getCentralAtomPack( 0, curr, catom ); 
          for(unsigned i=0;i<catom.getNumberOfAtomsWithDerivatives();++i){
              unsigned jatom=3*catom.getIndex(i);
              outvals.addDerivative( ivol, jatom+0, ww*catom.getDerivative(i,0,wdf) );

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -124,10 +124,9 @@ vector<int> increasingOrder( vector<double> &v){
    }
    // now sort according the second value
    sort(order.begin(), order.end(), ordering());
-   typedef vector< pair<unsigned , myiter> >::const_iterator pairiter;
    vector<int> vv(v.size());n=0;
-   for ( pairiter it = order.begin(); it != order.end(); ++it ){
-       vv[n]=(*it).first;n++; 
+   for (const auto & it : order){
+       vv[n]=it.first;n++; 
    }
    return vv;
 }
@@ -173,10 +172,11 @@ neigh_stride(-1.)
   checkRead();
   log.printf("  lambda is %f\n",lambda);
   // list the action involved and check the type 
-  for(unsigned i=0;i<getNumberOfArguments();i++){
+  std::string myname=getPntrToArgument(0)->getPntrToAction()->getName();
+  if(myname!="RMSD"&&myname!="CONTACTMAP"&&myname!="DISTANCE") error("One or more of your arguments is not of RMSD/CONTACTMAP/DISTANCE type!!!");
+  for(unsigned i=1;i<getNumberOfArguments();i++){
        // for each value get the name and the label of the corresponding action
-       std::string myname=getPntrToArgument(i)->getPntrToAction()->getName(); 
-       if(myname!="RMSD"&&myname!="CONTACTMAP")plumed_merror("This argument is not of RMSD type!!!");
+       if( getPntrToArgument(i)->getPntrToAction()->getName()!=myname ) error("mismatch between the types of arguments");
   }   
   log.printf("  Consistency check completed! Your path cvs look good!\n"); 
   // do some neighbor printout
@@ -198,8 +198,8 @@ neigh_stride(-1.)
   // now backup the arguments 
   for(unsigned i=0;i<getNumberOfArguments();i++)allArguments.push_back(getPntrToArgument(i)); 
   double i=1.;
-  for(std::vector<Value*>:: const_iterator it=allArguments.begin();it!=allArguments.end()  ;++it){
-		indexmap[(*it)]=i;i+=1.;
+  for(const auto & it : allArguments){
+		indexmap[it]=i;i+=1.;
   }
   
 }
@@ -216,19 +216,18 @@ void FuncPathMSD::calculate(){
   Value* val_s_path=getPntrToComponent("s");
   Value* val_z_path=getPntrToComponent("z");
 
-  typedef  vector< pair< Value *,double> >::iterator pairiter;
-  for(pairiter it=neighpair.begin();it!=neighpair.end();++it){ 
-    (*it).second=exp(-lambda*((*it).first->get()));
-    s_path+=(indexmap[(*it).first])*(*it).second;
-    partition+=(*it).second;
+  for(auto & it : neighpair){
+    it.second=exp(-lambda*(it.first->get()));
+    s_path+=(indexmap[it.first])*it.second;
+    partition+=it.second;
   }
   s_path/=partition;
   val_s_path->set(s_path);
   val_z_path->set(-(1./lambda)*std::log(partition));
   int n=0;
-  for(pairiter it=neighpair.begin();it!=neighpair.end();++it){ 
-    double expval=(*it).second;
-    double tmp=lambda*expval*(s_path-(indexmap[(*it).first]))/partition;
+  for(const auto & it : neighpair){
+    double expval=it.second;
+    double tmp=lambda*expval*(s_path-(indexmap[it.first]))/partition;
     setDerivative(val_s_path,n,tmp);
     setDerivative(val_z_path,n,expval/partition);
     n++;
@@ -270,13 +269,12 @@ void FuncPathMSD::prepare(){
      		 for(unsigned i=0;i<allArguments.size();i++)neighpair[i].first=allArguments[i]; 
             }
   }
- typedef  vector< pair<Value*,double> >::iterator pairiter;
  vector<Value*> argstocall; 
  //log.printf("PREPARING \n");
  argstocall.clear(); 
  if(!neighpair.empty()){
-    for(pairiter it=neighpair.begin();it!=neighpair.end();++it){
-       argstocall.push_back( (*it).first );
+    for(const auto & it : neighpair){
+       argstocall.push_back( it.first );
   //     log.printf("CALLING %p %f ",(*it).first ,indexmap[(*it).first] ); 
     }
  }else{

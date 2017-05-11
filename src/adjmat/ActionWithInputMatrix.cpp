@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015,2016 The plumed team
+   Copyright (c) 2015-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -30,14 +30,14 @@ namespace PLMD {
 namespace adjmat {
 
 void ActionWithInputMatrix::registerKeywords( Keywords& keys ){
-  MultiColvarFunction::registerKeywords( keys ); keys.remove("DATA");
+  MultiColvarBase::registerKeywords( keys ); 
   keys.add("compulsory","MATRIX","the action that calcualtes the adjacency matrix vessel we would like to analyse"); 
 }
 
 
 ActionWithInputMatrix::ActionWithInputMatrix(const ActionOptions& ao):
 Action(ao),
-MultiColvarFunction(ao),
+MultiColvarBase(ao),
 mymatrix(NULL)
 {
   matsums=true; 
@@ -78,10 +78,11 @@ AtomNumber ActionWithInputMatrix::getAbsoluteIndexOfCentralAtom(const unsigned& 
 
 double ActionWithInputMatrix::retrieveConnectionValue( const unsigned& i, const unsigned& j, std::vector<double>& vals ) const {
   if( !mymatrix->matrixElementIsActive( i, j ) ) return 0;
-  unsigned vi, myelem = mymatrix->getStoreIndexFromMatrixIndices( i, j );
+  unsigned myelem = mymatrix->getStoreIndexFromMatrixIndices( i, j );
  
-  mymatrix->retrieveValueWithIndex( myelem, false, vals ); double df;
-  return (mymatrix->function)->transformStoredValues( vals, vi, df );
+  unsigned vi; double df;
+  mymatrix->retrieveValueWithIndex( myelem, false, vals ); 
+  return vals[0]*vals[1];       // (mymatrix->function)->transformStoredValues( vals, vi, df );
 }
 
 void ActionWithInputMatrix::getInputData( const unsigned& ind, const bool& normed, const multicolvar::AtomValuePack& myatoms, std::vector<double>& orient0 ) const {
@@ -96,16 +97,14 @@ void ActionWithInputMatrix::getInputData( const unsigned& ind, const bool& norme
   (mymatrix->function)->getInputData( ind, normed, myatoms, orient0 );
 }
 
-void ActionWithInputMatrix::addConnectionDerivatives( const unsigned& i, const unsigned& j, std::vector<double>& vals, MultiValue& myvals, MultiValue& myvout ) const {
+void ActionWithInputMatrix::addConnectionDerivatives( const unsigned& i, const unsigned& j, MultiValue& myvals, MultiValue& myvout ) const {
   if( !mymatrix->matrixElementIsActive( i, j ) ) return;
-  unsigned vi, myelem = mymatrix->getStoreIndexFromMatrixIndices( i, j );
-
-  mymatrix->retrieveValueWithIndex( myelem, false, vals );
-  double df, val = (mymatrix->function)->transformStoredValues( vals, vi, df );
+  unsigned myelem = mymatrix->getStoreIndexFromMatrixIndices( i, j );
+  // Get derivatives and add
   mymatrix->retrieveDerivatives( myelem, false, myvals );
   for(unsigned jd=0;jd<myvals.getNumberActive();++jd){
       unsigned ider=myvals.getActiveIndex(jd);
-      myvout.addDerivative( 1, ider, df*myvals.getDerivative( vi, ider ) );
+      myvout.addDerivative( 1, ider, myvals.getDerivative( 1, ider ) );
   }
 }
 
@@ -116,11 +115,10 @@ MultiValue& ActionWithInputMatrix::getInputDerivatives( const unsigned& ind, con
          myder.resize( 2, (mymatrix->function)->getNumberOfDerivatives() );
      }
      myder.clearAll();
-     std::vector<double> tvals( mymatrix->getNumberOfComponents() ); 
-     MultiValue myvals( 2, (mymatrix->function)->getNumberOfDerivatives() ); 
+     MultiValue myvals( (mymatrix->function)->getNumberOfQuantities(), (mymatrix->function)->getNumberOfDerivatives() ); 
      for(unsigned i=0;i<mymatrix->getNumberOfColumns();++i){
          if( mymatrix->undirectedGraph() && ind==i ) continue;
-         addConnectionDerivatives( ind, i, tvals, myvals, myder );
+         addConnectionDerivatives( ind, i, myvals, myder );
      }
      myder.updateDynamicList(); return myder;
   } 

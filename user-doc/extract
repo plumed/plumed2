@@ -36,7 +36,18 @@ if test "$make_pdfdoc" = yes ; then
 cat > automatic/pdfmanual.tmp << \EOF
 \htmlonly
 An experimental PDF copy of this manual can be found
-<a href="../manual.pdf"> here </a>.
+<a href="../manual.pdf"> here</a>, but the html documentation should 
+be considered as the official one.
+The PDF version has some known issue (e.g. some
+links are not working properly and images are not correctly included).
+The goal of the PDF manual is to allow people to download a full copy on the documentation for offline
+access and to perform easily full-text searches.
+Notice that the manual is updated very frequently (sometime more than once per week),
+so keep your local version of the PDF manual up to date. 
+Since the PDF manual is 200+ pages and is continuously updated,
+<b>
+please do not print it!
+</b>
 \endhtmlonly
 EOF
 else
@@ -89,7 +100,7 @@ awk 'BEGIN{gfile="automatic/GLOSSARY.list"; dfile="automatic/DICTIONARY.list"; }
      if(inside==3){ printf "%s", $0 > dfile; }
   }
   if($1=="//+PLUMEDOC"){
-    if( $2=="TOPOLOGY" || $2=="COLVAR" || $2=="MCOLVAR" || $2=="DCOLVAR"|| $2=="MFILTERS" || $2=="VOLUMES" || $2=="MCOLVARF" || $2=="MCOLVARB" || $2=="MATRIX" || $2=="MATRIXF" || $2=="CONCOMP" || $2=="FUNCTION" || $2=="GRIDCALC" || $2=="REWEIGHTING"|| $2=="PRINTANALYSIS" || $2=="DIMRED" || $2=="GRIDANALYSIS" || $2=="BIAS" || $2=="GENERIC" || $2=="VATOM" || $2=="TOOLS" ){
+    if( $2=="TOPOLOGY" || $2=="COLVAR" || $2=="MCOLVAR" || $2=="DCOLVAR"|| $2=="MFILTERS" || $2=="MTRANSFORMS" || $2=="VOLUMES" || $2=="MCOLVARF" || $2=="MCOLVARB" || $2=="MATRIX" || $2=="MATRIXF" || $2=="CONCOMP" || $2=="FUNCTION" || $2=="GRIDCALC" || $2=="REWEIGHTING"|| $2=="PRINTANALYSIS" || $2=="DIMRED" || $2=="GRIDANALYSIS" || $2=="BIAS" || $2=="GENERIC" || $2=="VATOM" || $2=="TOOLS" ){
       if(lfile!="") close(lfile)
       lfile="automatic/"$2".list"
       
@@ -234,7 +245,7 @@ done
 sed -ie 's/<b> --/<b> \\c \\-\\-/g' automatic/*.txt
 rm automatic/*.txte
 
-for file in COLVAR MCOLVAR MFILTERS VOLUMES DCOLVAR MCOLVARF MCOLVARB MATRIX MATRIXF CONCOMP REWEIGHTING PRINTANALYSIS BIAS GLOSSARY \
+for file in COLVAR MCOLVAR MFILTERS MTRANSFORMS VOLUMES DCOLVAR MCOLVARF MCOLVARB MATRIX MATRIXF CONCOMP REWEIGHTING PRINTANALYSIS BIAS GLOSSARY \
             DICTIONARY TUTORIALS WEBSITES FUNCTION TOPOLOGY VATOM GRIDCALC GRIDANALYSIS DIMRED \
             TOOLS
 do
@@ -266,6 +277,7 @@ cat $file.txt |
     /^ *@MCOLVAR@ *$/r    automatic/MCOLVAR.list
     /^ *@DCOLVAR@ *$/r    automatic/DCOLVAR.list
     /^ *@MFILTERS@ *$/r   automatic/MFILTERS.list
+    /^ *@MTRANSFORMS@ *$/r   automatic/MTRANSFORMS.list
     /^ *@VOLUMES@ *$/r    automatic/VOLUMES.list
     /^ *@MCOLVARF@ *$/r   automatic/MCOLVARF.list
     /^ *@MCOLVARB@ *$/r   automatic/MCOLVARB.list

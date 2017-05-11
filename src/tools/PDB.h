@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,11 +26,12 @@
 #include "Vector.h"
 #include <vector>
 #include <string>
-#include "Log.h"
 #include <map>
 
 
 namespace PLMD{
+
+class Log;
 
 /// Minimalistic pdb parser.
 /// Contain positions, atomic indexes, occupancy and beta.
@@ -108,6 +109,8 @@ public:
   unsigned getNumberOfAtomBlocks() const ;
 /// Set the position array
   void setPositions(const std::vector<Vector> &v);
+/// Access to the position array
+  Vector getPosition(AtomNumber a)const;
 };
 
 }

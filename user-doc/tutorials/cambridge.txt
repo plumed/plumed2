@@ -19,8 +19,6 @@ and to wander around in the manual to discover the many available features
 and to do the other, more complete, tutorials. Here 
 we are going to present only a very narrow selection of methods.
 
-We here use PLUMED 2.1, simulations are made using GROMACS 4.6.7. However, these examples could be easily converted to other MD software.
-
 Users are expected to write PLUMED input files based on the instructions below.
 
 \section cambridge-toymodel Alanine dipeptide: our toy model
@@ -107,8 +105,6 @@ efficiently in the time scale of the simulation.
 Additional information can be found in the several review papers on metadynamics 
 \cite gerv-laio09review \cite WCMS:WCMS31 \cite WCMS:WCMS1103.
 
-
-
 \subsection cambridge-exercise-1-1  Setup, run, and analyse a well-tempered metadynamics simulation
 
 In this exercise, we will run a well-tempered metadynamics simulation on alanine dipeptide in vacuum, 
@@ -128,7 +124,7 @@ psi: TORSION ATOMS=7,9,15,17
 # Well-tempered metadynamics is activated,
 # and the biasfactor is set to 6.0
 #
-metad: METAD ARG=phi,psi PACE=500 HEIGHT=1.2 SIGMA=0.35,0.35 FILE=HILLS BIASFACTOR=6.0 TEMP=300.0
+metad: METAD ARG=phi,psi PACE=500 HEIGHT=1.2 SIGMA=0.35,0.35 FILE=HILLS BIASFACTOR=6.0
 
 # monitor the two variables and the metadynamics bias potential
 PRINT STRIDE=10 ARG=phi,psi,metad.bias FILE=COLVAR
@@ -150,7 +146,7 @@ Once the PLUMED input file is prepared, one has to run Gromacs with the option t
 read the input file:
 
 \verbatim
-mdrun_mpi -plumed
+gmx_mpi mdrun -plumed
 \endverbatim
 
 During the metadynamics simulation, PLUMED will create two files, named COLVAR and HILLS.
@@ -359,7 +355,7 @@ The, in this case, two replicas start from the same GROMACS topology file replic
 Finally, GROMACS is launched as a parallel run on 4 cores, with one replica per core, with the command 
 
 \verbatim
-mpirun -np 4 mdrun_mpi -s topol -plumed plumed -multi 4 -replex 10000 >& log &
+mpirun -np 4 gmx_mpi mdrun -s topol -plumed plumed -multi 4 -replex 10000 >& log &
 \endverbatim
 
 where -replex 10000 indicates that every 10000 molecular-dynamics steps exchanges are attempted
@@ -524,7 +520,7 @@ d1: DISTANCE ATOMS=5,33
 # this is the averaging of the distance among the replicas
 ed1: ENSEMBLE ARG=d1
 # this is the restraint applied on the averaged distance to match the experimental one
-RESTRAINT ARG=ed1.d1 KAPPA=200000 AT=0.656214
+RESTRAINT ARG=ed1.d1 KAPPA=100000 AT=0.656214
 \endverbatim
 (see \ref DISTANCE, \ref ENSEMBLE, and \ref RESTRAINT).
 

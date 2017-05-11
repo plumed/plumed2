@@ -39,7 +39,7 @@ through these classes and attempt to understand the code contained within them. 
 provides a rather prescriptive description as to how to implement a new multicolvar.  I hope this helps but I am keenly
 aware that any description is bound to be incomplete so if you have questions please do email the user list to ask.
 
-\section docs Creating documentation  
+\section AddingAMultColvarDocs Creating documentation  
 
 The first thing you will have to change is the documentation.  As discussed on the \ref usingDoxygen page
 of this manual the documentation is created using Doxygen.  You are implementing a cv so your PLMEDOC line
@@ -260,4 +260,10 @@ that belongs to the PLMD::multicolvar::AtomValuePack class that is passed to the
 PLMD::multicolvar::MultiColvarBase::getSeparation.  Once you have calculated the derivatives of your \f$f\f$ function you can store these within the 
 PLMD::multicolvar::AtomValuePack by using the methods PLMD::multicolvar::AtomValuePack::addAtomsDerivatives and PLMD::multicolvar::AtomValuePack::addBoxDerivatives.
  
+\section mregtests Writing regression tests
+
+Once you have written all the above function you will need to write regression tests for your new feature if you would like
+us to incorporate it in the release version of PLUMED.  Details on how to write regression tests are provided here: \ref regtests  
+
+
 */

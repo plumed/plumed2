@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,13 +19,13 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include <vector>
-#include <algorithm>
+#include "NeighborList.h"
 #include "Vector.h"
 #include "Pbc.h"
 #include "AtomNumber.h"
 #include "Tools.h"
-#include "NeighborList.h"
+#include <vector>
+#include <algorithm>
 
 namespace PLMD{
 using namespace std;
@@ -128,8 +128,7 @@ vector<AtomNumber>& NeighborList::getReducedAtomList() {
   AtomNumber index0=fullatomlist_[neighbors_[i].first];
   AtomNumber index1=fullatomlist_[neighbors_[i].second];
 // I exploit the fact that requestlist_ is an ordered vector
-  vector<AtomNumber>::iterator p;
-  p = std::find(requestlist_.begin(), requestlist_.end(), index0); plumed_assert(p!=requestlist_.end()); newindex0=p-requestlist_.begin();
+  auto p = std::find(requestlist_.begin(), requestlist_.end(), index0); plumed_assert(p!=requestlist_.end()); newindex0=p-requestlist_.begin();
   p = std::find(requestlist_.begin(), requestlist_.end(), index1); plumed_assert(p!=requestlist_.end()); newindex1=p-requestlist_.begin();
   neighbors_[i]=pair<unsigned,unsigned>(newindex0,newindex1);
  }

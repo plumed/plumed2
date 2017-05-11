@@ -35,12 +35,12 @@ RMSD::RMSD() : alignmentMethod(SIMPLE),reference_center_is_calculated(false),ref
 /// general method to set all the rmsd property at once by using a pdb where occupancy column sets the weights for the atoms involved in the 
 /// alignment and beta sets the weight that are used for calculating the displacement. 
 ///
-void RMSD::set(const PDB&pdb, string mytype, bool remove_center, bool normalize_weights ){
+void RMSD::set(const PDB&pdb, const string & mytype, bool remove_center, bool normalize_weights ){
 
  	set(pdb.getOccupancy(),pdb.getBeta(),pdb.getPositions(),mytype,remove_center,normalize_weights);
 
 }
-void RMSD::set(const std::vector<double> & align, const std::vector<double> & displace, const std::vector<Vector> & reference , string mytype, bool remove_center, bool normalize_weights ){
+void RMSD::set(const std::vector<double> & align, const std::vector<double> & displace, const std::vector<Vector> & reference , const string & mytype, bool remove_center, bool normalize_weights ){
 
         setReference(reference); // this by default remove the com and assumes uniform weights
         setAlign(align, normalize_weights, remove_center); // this recalculates the com with weights. If remove_center=false then it restore the center back
@@ -49,7 +49,7 @@ void RMSD::set(const std::vector<double> & align, const std::vector<double> & di
 
 }
 
-void RMSD::setType(string mytype){
+void RMSD::setType(const string & mytype){
 
 	alignmentMethod=SIMPLE; // initialize with the simplest case: no rotation
 	if (mytype=="SIMPLE"){

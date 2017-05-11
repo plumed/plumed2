@@ -68,6 +68,6 @@ rm libmolfile_plugin.h
 
 # Add copyright notice at top
 echo "Adding COPYRIGHT headers"
-(cd ..; ./header.sh > /dev/null)
+(cd ..; ./header.sh molfile > /dev/null)
 
 

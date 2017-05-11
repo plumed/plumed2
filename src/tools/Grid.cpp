@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,12 +19,6 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include <vector>
-#include <cmath>
-#include <iostream>
-#include <sstream>
-#include <cstdio>
-#include <cfloat>
 
 #include "Grid.h"
 #include "Tools.h"
@@ -35,15 +29,22 @@
 #include "RootFindingBase.h"
 #include "Communicator.h"
 
+#include <vector>
+#include <cmath>
+#include <iostream>
+#include <sstream>
+#include <cstdio>
+#include <cfloat>
+
 using namespace std;
 namespace PLMD{
 
-Grid::Grid(const std::string& funcl, std::vector<Value*> args, const vector<std::string> & gmin, 
+Grid::Grid(const std::string& funcl, const std::vector<Value*> & args, const vector<std::string> & gmin, 
            const vector<std::string> & gmax, const vector<unsigned> & nbin, bool dospline, bool usederiv, bool doclear){
 // various checks
- plumed_massert(args.size()==gmin.size(),"grid dimensions in input do not match number of arguments");
- plumed_massert(args.size()==nbin.size(),"grid dimensions in input do not match number of arguments");
- plumed_massert(args.size()==gmax.size(),"grid dimensions in input do not match number of arguments");
+ plumed_massert(args.size()==gmin.size(),"grid min dimensions in input do not match number of arguments");
+ plumed_massert(args.size()==nbin.size(),"number of bins on input do not match number of arguments");
+ plumed_massert(args.size()==gmax.size(),"grid max dimensions in input do not match number of arguments");
  unsigned dim=gmax.size(); 
  std::vector<std::string> names; 
  std::vector<bool> isperiodic; 
@@ -590,7 +591,7 @@ void Grid::writeCubeFile(OFile& ofile, const double& lunit){
   }
 }
 
-Grid* Grid::create(const std::string& funcl, std::vector<Value*> args, IFile& ifile, 
+Grid* Grid::create(const std::string& funcl, const std::vector<Value*> & args, IFile& ifile, 
                    const vector<std::string> & gmin,const vector<std::string> & gmax, 
                    const vector<unsigned> & nbin,bool dosparse, bool dospline, bool doder){
   Grid* grid=Grid::create(funcl,args,ifile,dosparse,dospline,doder);
@@ -608,7 +609,7 @@ Grid* Grid::create(const std::string& funcl, std::vector<Value*> args, IFile& if
   return grid;
 }
 
-Grid* Grid::create(const std::string& funcl, std::vector<Value*> args, IFile& ifile, bool dosparse, bool dospline, bool doder)
+Grid* Grid::create(const std::string& funcl, const std::vector<Value*> & args, IFile& ifile, bool dosparse, bool dospline, bool doder)
 {
  Grid* grid=NULL;
  unsigned nvar=args.size(); bool hasder=false; std::string pstring;
@@ -730,7 +731,7 @@ void Grid::findSetOfPointsOnContour(const double& target, const std::vector<bool
 double SparseGrid::getValue(index_t index)const{
  plumed_assert(index<maxsize_);
  double value=0.0;
- iterator it=map_.find(index);
+ const auto it=map_.find(index);
  if(it!=map_.end()) value=it->second;
  return value;
 }
@@ -740,9 +741,9 @@ double SparseGrid::getValueAndDerivatives
  plumed_assert(index<maxsize_ && usederiv_ && der.size()==dimension_);
  double value=0.0;
  for(unsigned int i=0;i<dimension_;++i) der[i]=0.0;
- iterator it=map_.find(index);
+ const auto it=map_.find(index);
  if(it!=map_.end()) value=it->second;
- iterator_der itder=der_.find(index);
+ const auto itder=der_.find(index);
  if(itder!=der_.end()) der=itder->second;
  return value;
 }
@@ -778,8 +779,8 @@ void SparseGrid::writeToFile(OFile& ofile){
  double f;
  writeHeader(ofile);
  ofile.fmtField(" "+fmt_);
- for(iterator it=map_.begin();it!=map_.end();++it){
-   index_t i=(*it).first;
+ for(const auto & it : map_){
+   index_t i=it.first;
    xx=getPoint(i);
    if(usederiv_){f=getValueAndDerivatives(i,der);} 
    else{f=getValue(i);}
