@@ -49,7 +49,7 @@ molecules \f$i\f$ and \f$j\f$ are within 6 angstroms of each other and if the to
 of these molecules is close to 0 or \f$\pi\f$.  The various connected components of this matrix are determined using the
 \ref DFSCLUSTERING algorithm and then the size of the largest cluster of connectes molecules is output to a colvar file
 
-\verbatim
+\plumedfile
 UNITS LENGTH=A
 
 MOLECULES ...
@@ -70,7 +70,7 @@ SMAC_MATRIX ...
 dfs1: DFSCLUSTERING MATRIX=smacm
 cc2: CLUSTER_NATOMS CLUSTERS=dfs1 CLUSTER=1
 PRINT ARG=smac.*,cc1.*,cc2 FILE=colvar
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -54,20 +54,20 @@ when atom \f$j\f$ is in the first coordination sphere of atom \f$i\f$ and is zer
 The following command calculates the average value of the tetrahedrality parameter for a set of 64 atoms all of the same type
 and outputs this quantity to a file called colvar.
 
-\verbatim
+\plumedfile
 tt: TETRAHEDRAL SPECIES=1-64 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN
 PRINT ARG=tt.mean FILE=colvar
-\endverbatim
+\endplumedfile
 
 The following command calculates the number of tetrahedrality parameters that are greater than 0.8 in a set of 10 atoms.
 In this calculation it is assumed that there are two atom types A and B and that the first coordination sphere of the
 10 atoms of type A contains atoms of type B.  The formula above is thus calculated for ten different A atoms and within
 it the sum over \f$j\f$ runs over 40 atoms of type B that could be in the first coordination sphere.
 
-\verbatim
+\plumedfile
 tt: TETRAHEDRAL SPECIESA=1-10 SPECIESB=11-40 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MORE_THAN={RATIONAL R_0=0.8}
 PRINT ARG=tt.* FILE=colvar
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -56,12 +56,11 @@ Notice that if there are common atoms between GROUPA and GROUPB their interactio
 
 
 \par Examples
-\verbatim
+\plumedfile
 # this is printing the electrostatic interaction between two groups of atoms
 dh: DHENERGY GROUPA=1-10 GROUPB=11-20 EPSILON=80.0 I=0.1 TEMP=300.0
 PRINT ARG=dh
-\endverbatim
-(see also \ref PRINT)
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

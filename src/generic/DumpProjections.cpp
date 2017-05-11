@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -39,12 +39,12 @@ Dump the derivatives with respect to the input parameters for one or more object
 Compute the distance between two groups and write on a file the
 derivatives of this distance with respect to all the atoms of the two groups
 
-\verbatim
+\plumedfile
 x1: CENTER ATOMS=1-10
 x2: CENTER ATOMS=11-20
 d: DISTANCE ATOMS=x1,x2
 DUMPPROJECTIONS ARG=d FILE=proj STRIDE=20
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

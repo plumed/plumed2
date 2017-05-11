@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -55,15 +55,15 @@ so on.  Notice also that you can rotate the reference frame if you are using a n
 
 The following input tells plumed to calculate the simple cubic parameter for the atoms 1-100 with themselves.
 The mean value is then calculated.
-\verbatim
+\plumedfile
 SIMPLECUBIC SPECIES=1-100 R_0=1.0 MEAN
-\endverbatim
+\endplumedfile
 
 The following input tells plumed to look at the ways atoms 1-100 are within 3.0 are arranged about atoms
 from 101-110.  The number of simple cubic parameters that are greater than 0.8 is then output
-\verbatim
+\plumedfile
 SIMPLECUBIC SPECIESA=101-110 SPECIESB=1-100 R_0=3.0 MORE_THAN={RATIONAL R_0=0.8 NN=6 MM=12 D_0=0}
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

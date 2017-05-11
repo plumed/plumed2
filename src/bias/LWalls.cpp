@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -52,13 +52,13 @@ The following input tells plumed to add both a lower and an upper walls on the d
 between atoms 3 and 5 and the distance between atoms 2 and 4. The lower and upper limits
 are defined at different values. The strength of the walls is the same for the four cases.
 It also tells plumed to print the energy of the walls.
-\verbatim
+\plumedfile
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
 UPPER_WALLS ARG=d1,d2 AT=1.0,1.5 KAPPA=150.0,150.0 EXP=2,2 EPS=1,1 OFFSET=0,0 LABEL=uwall
 LOWER_WALLS ARG=d1,d2 AT=0.0,1.0 KAPPA=150.0,150.0 EXP=2,2 EPS=1,1 OFFSET=0,0 LABEL=lwall
 PRINT ARG=uwall.bias,lwall.bias
-\endverbatim
+\endplumedfile
 (See also \ref DISTANCE and \ref PRINT).
 
 */

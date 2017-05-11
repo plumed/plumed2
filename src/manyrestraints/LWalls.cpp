@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -45,10 +45,10 @@ The following set of commands can be used to stop any of the 800 atoms in group 
 in the z direction from atom 34137.  This is done by adding a lower wall on the z-distance between all the atoms in
 group A and the position of 34137.
 
-\verbatim
+\plumedfile
 l: ZDISTANCES GROUPA=1-800 GROUPB=34137 NOPBC
 LWALLS DATA=l AT=2.46465 KAPPA=150.0 EXP=2 EPS=1 OFFSET=0 LABEL=lwall
-\endverbatim
+\endplumedfile
 
 
 */

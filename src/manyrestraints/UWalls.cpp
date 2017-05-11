@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -48,11 +48,11 @@ and the center of mass of the cluster.  These distances are then passed to the U
 a \ref UPPER_WALLS restraint on each of them and thereby prevents each of them from moving very far from the centre
 of mass of the cluster.
 
-\verbatim
+\plumedfile
 COM ATOMS=1-20 LABEL=c1
 DISTANCES GROUPA=c1 GROUPB=1-20 LABEL=d1
 UWALLS DATA=d1 AT=2.5 KAPPA=0.2 LABEL=sr
-\endverbatim
+\endplumedfile
 
 
 */

@@ -40,7 +40,7 @@ Calculate whether or not a set of torsional angles are within a particular range
 
 The following provides an example of the input for the torsions command
 
-\verbatim
+\plumedfile
 TORSIONS ...
 ATOMS1=168,170,172,188
 ATOMS2=170,172,188,190
@@ -48,13 +48,13 @@ ATOMS3=188,190,192,230
 LABEL=ab
 ... TORSIONS
 PRINT ARG=ab.* FILE=colvar STRIDE=10
-\endverbatim
+\endplumedfile
 
 Writing out the atoms involved in all the torsions in this way can be rather tedious. Thankfully if you are working with protein you
 can avoid this by using the \ref MOLINFO command.  PLUMED uses the pdb file that you provide to this command to learn
 about the topology of the protein molecule.  This means that you can specify torsion angles using the following syntax:
 
-\verbatim
+\plumedfile
 MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
 TORSIONS ...
 ATOMS1=@phi-3
@@ -63,7 +63,7 @@ ATOMS3=@phi-4
 LABEL=ab
 ... TORSIONS
 PRINT ARG=ab FILE=colvar STRIDE=10
-\endverbatim
+\endplumedfile
 
 Here, \@phi-3 tells plumed that you would like to calculate the \f$\phi\f$ angle in the third residue of the protein.
 Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle of the 4th residue of the protein.

@@ -60,11 +60,11 @@ namespace colvar {
  \par Examples
 
  This input tells plumed to print the puckering phase angle of the 3rd nucleotide of a RNA molecule on file COLVAR.
- \verbatim
+ \plumedfile
  MOLINFO STRUCTURE=rna.pdb MOLTYPE=rna
  PUCKERING ATOMS=@sugar-3 LABEL=puck
  PRINT ARG=puck.phs FILE=COLVAR
- \endverbatim
+ \endplumedfile
 
 */
 //+ENDPLUMEDOC

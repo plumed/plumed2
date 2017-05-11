@@ -48,8 +48,9 @@ namespace generic {
 This action is used to align a molecule to a template.
 
 This can be used to move the coordinates stored in plumed
-so as to be aligned with a provided template in pdb format. Pdb should contain
-also weights for alignment (see the format of pdb files used e.g. for \ref RMSD).
+so as to be aligned with a provided template in PDB format. Pdb should contain
+also weights for alignment (see the format of PDB files used e.g. for \ref RMSD).
+Make sure your PDB file is correclty formatted as explained \ref pdbreader "in this page".
 Weights for displacement are ignored, since no displacement is computed here.
 Notice that all atoms (not only those in the template) are aligned.
 To see what effect try
@@ -62,6 +63,7 @@ change the result. Examples are:
 - \ref DISTANCE CV with COMPONENTS. Since the alignment could involve a rotation (with TYPE=OPTIMAL) the actual components could be different
   from the original ones.
 - \ref CELL components for a similar reason.
+- \ref DISTANCE from a \ref FIXEDATOM, provided the fixed atom is introduced _after_ the \ref FIT_TO_TEMPLATE action.
 
 \attention
 The implementation of TYPE=OPTIMAL is available but should be considered in testing phase. Please report any
@@ -77,16 +79,65 @@ this action is performed at every MD step.
 
 \par Examples
 
-Align the atomic position to a template then print them
-\verbatim
-# to see the effect, one could dump the atoms before alignment
+Align the atomic position to a template then print them.
+The following example is only translating the system so as
+to align the center of mass of a molecule to the one in the reference
+structure `ref.pdb`:
+\plumedfile
+# dump coordinates before fitting, to see the difference:
 DUMPATOMS FILE=dump-before.xyz ATOMS=1-20
+
+# fit coordinates to ref.pdb template
+# this is a "TYPE=SIMPLE" fit, so that only translations are used.
 FIT_TO_TEMPLATE STRIDE=1 REFERENCE=ref.pdb TYPE=SIMPLE
+
+# dump coordinates after fitting, to see the difference:
 DUMPATOMS FILE=dump-after.xyz ATOMS=1-20
-\endverbatim
-(see also \ref DUMPATOMS)
+\endplumedfile
 
+The following example instead performs a rototranslational fit.
+\plumedfile
+# dump coordinates before fitting, to see the difference:
+DUMPATOMS FILE=dump-before.xyz ATOMS=1-20
 
+# fit coordinates to ref.pdb template
+# this is a "TYPE=OPTIMAL" fit, so that rototranslations are used.
+FIT_TO_TEMPLATE STRIDE=1 REFERENCE=ref.pdb TYPE=OPTIMAL
+
+# dump coordinates after fitting, to see the difference:
+DUMPATOMS FILE=dump-after.xyz ATOMS=1-20
+\endplumedfile
+
+In the following example you see two completely equivalent way
+to restrain an atom close to a position that is defined in the reference
+frame of an aligned molecule. It could be for instance the center of mass
+of a ligand with respect to a protein
+\plumedfile
+# center of the ligand:
+ce: CENTER ATOMS=100-110
+
+FIT_TO_TEMPLATE REFERENCE=protein.pdb TYPE=OPTIMAL
+
+# place a fixed atom in the protein reference coordinates:
+fix: FIXEDATOM AT=1.0,1.1,1.0
+
+# take the distance between the fixed atom and the center of the ligand
+d: DISTANCE ATOMS=ce,fix
+
+# apply a restraint
+RESTRAINT ARG=d AT=0.0 KAPPA=100.0
+\endplumedfile
+
+Notice that you could have obtained an (almost) identical result adding a fictitious
+atom to `ref.pdb` with the serial number corresponding to the `ce` atom (there is no automatic way
+to get it, but in this example it should be the number of atoms of the system plus one),
+and properly setting the weights for alignment and displacement in \ref RMSD.
+There are two differences to be expected:
+(ab) \ref FIT_TO_TEMPLATE might be slower since it has to rototranslate all the available atoms and
+(b) variables employing PBCs (such as \ref DISTANCE without `NOPBC`, as in the example above)
+  are allowed after \ref FIT_TO_TEMPLATE, whereas \ref RMSD expects PBCs to be already solved.
+The latter means that before the \ref RMSD statement one should use \ref WRAPAROUND or \ref WHOLEMOLECULES to properly place
+the ligand.
 
 
 */

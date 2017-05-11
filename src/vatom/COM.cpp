@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -54,13 +54,12 @@ periodic image.
 
 The following input instructs plumed to print the distance between the
 center of mass for atoms 1,2,3,4,5,6,7 and that for atoms 15,20:
-\verbatim
-COM ATOMS=1-7         LABEL=c1
-COM ATOMS=15,20       LABEL=c2
-DISTANCE ATOMS=c1,c2  LABEL=d1
+\plumedfile
+c1: COM ATOMS=1-7
+c2: COM ATOMS=15,20
+d1: DISTANCE ATOMS=c1,c2
 PRINT ARG=d1
-\endverbatim
-(See also \ref DISTANCE and \ref PRINT).
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
@@ -94,7 +93,10 @@ COM::COM(const ActionOptions&ao):
   parseFlag("NOPBC",nopbc);
   checkRead();
   log.printf("  of atoms");
-  for(unsigned i=0; i<atoms.size(); ++i) log.printf(" %d",atoms[i].serial());
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    if(i%25==0) log<<"\n";
+    log.printf(" %d",atoms[i].serial());
+  }
   log.printf("\n");
   if(!nopbc) {
     log<<"  PBC will be ignored\n";
