@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2016 The plumed team
+   Copyright (c) 2014-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -94,7 +94,7 @@ respect to a set of experimental data is calculated and restrained. In addition,
 and only for analysis purposes, the same RDCs are calculated using a Single Value
 Decomposition algorithm.
 
-\verbatim
+\plumedfile
 RDC ...
 GYROM=-72.5388
 SCALE=1.0
@@ -124,8 +124,7 @@ LABEL=svd
 
 PRINT ARG=nh.corr,rdce.bias FILE=colvar
 PRINT ARG=svd.* FILE=svd
-\endverbatim
-(See also \ref PRINT, \ref RESTRAINT)
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

@@ -58,10 +58,10 @@ In this example atoms 2-100 are assumed to be concentraed along some part of the
 an interface between a liquid/solid and the vapour.  The quantity dc measures the distance between the
 surface at which the density of 2-100 atoms is equal to 0.2 and the position of the test particle atom 1.
 
-\verbatim
+\plumedfile
 dens: DENSITY SPECIES=2-100
 dc: DISTANCE_FROM_CONTOUR DATA=dens ATOM=1 BANDWIDTH=0.5,0.5,0.5 DIR=z CONTOUR=0.2
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

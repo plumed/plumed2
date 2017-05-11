@@ -37,7 +37,7 @@ it can be used to compute quantities like this:
 
 \f[
 s = \frac{ \sum_{i \ne j} \sigma(r_{ij}) \theta_{ij} }{ \sum_{i \ne j} \sigma(r_{ij}) }
-f\]
+\f]
 
 Here the sums run over all pairs of molecules. \f$\sigma(r_{ij})\f$ is a \ref switchingfunction that
 action on the distance between the centers of molecules \f$i\f$ and \f$j\f$.  \f$\theta_{ij}\f$ is then
@@ -64,12 +64,12 @@ between the two molecules.  As such the torsional angles between molecules that 
 histogram while the torsional angles between molecules that are far apart does not contribute to the histogram.  The histogram is
 averaged over the whole trajectory and output once all the trajectory frames have been read.
 
-\verbatim
+\plumedfile
 m1: MOLECULES MOL1=1,2 MOL2=3,4 MOL3=5,6 MOL4=7,8
 tt_p: INTERMOLECULARTORSIONS MOLS=m1 SWITCH={RATIONAL R_0=0.25 D_0=2.0 D_MAX=3.0}
 htt_p: HISTOGRAM DATA=tt_p GRID_MIN=-pi GRID_MAX=pi BANDWIDTH=0.1 GRID_BIN=200 STRIDE=1
 DUMPGRID GRID=htt_p FILE=myhist.out
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

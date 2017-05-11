@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -43,15 +43,14 @@ labelled <em>label</em>.1, the second lowest will be labelled <em>label</em>.2 a
 \par Examples
 The following input tells plumed to print the distance of the closest and of
 the farthest atoms to atom 1, chosen among atoms from 2 to 5
-\verbatim
+\plumedfile
 d12:  DISTANCE ATOMS=1,2
 d13:  DISTANCE ATOMS=1,3
 d14:  DISTANCE ATOMS=1,4
 d15:  DISTANCE ATOMS=1,5
 sort: SORT ARG=d12,d13,d14,d15
 PRINT ARG=sort.1,sort.4
-\endverbatim
-(See also \ref PRINT and \ref DISTANCE).
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

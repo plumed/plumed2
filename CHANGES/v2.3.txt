@@ -155,12 +155,17 @@ See branch \branch{v2.3} on git repository.
 - Fixed bug in if condition in \ref PCAVARS so that you can run with only one eigenvector defined in input 
 - Fixed bug with timers in \ref sum_hills \issue{194}.
 - Fixed bug when using \ref MOVINGRESTRAINT with periodic variables such as \ref TORSION \issue{225}.
-- Fixed bug in \ref HBONDS that used to apear when you used DONORNS and ACCEPTORS with same numbers of atoms 
+- Fixed bug in \ref HBOND_MATRIX that used to apear when you used DONORS and ACCEPTORS with same numbers of atoms 
 - Fixed bug in \ref DISTANCES that appears when using BETWEEN and link cells.
 - Prevented users from causing segfaults by storing derivatives without LOWMEM flag.  In these caess PLUMED crashes with meaningful errors.
 - Fixed bug in \ref HISTOGRAM that causes nans when using KERNEL=DISCRETE option
+- Fixed a bug in the parser related to braces, see \issue{229}
+- Fixed a bug that appeared when using \ref Q3, \ref Q4 and \ref Q6 with LOWEST or HIGHEST flag
+- Fixed a bug that appears when you use \ref MFILTER_LESS as input to \ref COORDINATIONNUMBER with SPECIESA and SPECIESB flags
 
 For developers:
 - plumedcheck validation has been made stricter. All the checks are now described in the developer manual.
+- IMPORTANT: we started to enforce code formatting using astyle. Check the developer documentation to learn how to
+  take care of not-yet-formatted branches.
 
 */

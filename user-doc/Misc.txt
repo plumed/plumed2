@@ -19,12 +19,12 @@ particular simulation you might find it useful to put comments in your input fil
 comments can be added using a # sign.  On any given line everything after the # sign is ignored so 
 erm... yes add lines of comments or trailing comments to your hearts content as shown below (using Shakespeare is optional):
 
-\verbatim
+\plumedfile
 # This is the distance between two atoms:
 DISTANCE ATOM=1,2 LABEL=d1
 UPPER_WALLS ARG=d1 AT=3.0 KAPPA=3.0 LABEL=Snout # In this same interlude it doth befall.
 # That I, one Snout by name, present a wall.
-\endverbatim
+\endplumedfile
 (see \ref DISTANCE and \ref UPPER_WALLS)
 
 An alternative to including comments in this way is to use line starting ENDPLUMED.  Everything in the PLUMED input after this
@@ -37,14 +37,14 @@ We at PLUMED are aware of this fact and thus have provided a way of doing line c
 easier - aren't we kind?  Well no not really, we have to use this code too.  Anyway, you can do continuations by using the "..." syntax
 as this makes this: 
 
-\verbatim
+\plumedfile
 DISTANCES ATOMS1=1,300 ATOMS2=1,400 ATOMS3=1,500 LABEL=dist
-\endverbatim
+\endplumedfile
 (see \ref DISTANCES)
 
 equivalent to this:
 
-\verbatim
+\plumedfile
 DISTANCES ...
   LABEL=dist
 # we can also insert comments here
@@ -54,11 +54,11 @@ DISTANCES ...
 #empty lines are also allowed
 
 ... DISTANCES
-\endverbatim
+\endplumedfile
 
 Notice that the closing `...` is followed by the word `DISTANCES`. This is optional, but might be
 useful to find more easily which is the matching start of the statement. The following is equally correct
-\verbatim
+\plumedfile
 DISTANCES ...
   LABEL=dist
 # we can also insert comments here
@@ -68,12 +68,12 @@ DISTANCES ...
 #empty lines are also allowed
 
 ...
-\endverbatim
+\endplumedfile
 
 Notice that PLUMED makes a check that the word following the closing `...` is actually identical to
 the first word in the line with the first `...`. If not, it will throw an error.
 Also notice that you might put more than one word in the first line. E.g.
-\verbatim
+\plumedfile
 DISTANCES LABEL=dist ...
 # we can also insert comments here
   ATOMS1=1,300
@@ -81,9 +81,9 @@ DISTANCES LABEL=dist ...
   ATOMS2=1,400 ATOMS3=1,500
 #empty lines are also allowed
 ...
-\endverbatim
+\endplumedfile
 or, equivalently,
-\verbatim
+\plumedfile
 dist: DISTANCES ...
 # we can also insert comments here
   ATOMS1=1,300
@@ -91,7 +91,7 @@ dist: DISTANCES ...
   ATOMS2=1,400 ATOMS3=1,500
 #empty lines are also allowed
 ...  
-\endverbatim
+\endplumedfile
 
 
 \page VimSyntax Using VIM syntax file
@@ -171,11 +171,11 @@ Add to your `.vimrc` file the following commands
 :set modelines=5
 \endverbatim
 Then, at the beginning of your PLUMED input file, put the following comment:
-\verbatim
+\plumedfile
 # vim:ft=plumed
 d: DISTANCE ATOMS=1,2
 RESTRAINT ARG=d AT=0.0 KAPPA=1.0
-\endverbatim
+\endplumedfile
 Now, every time you open this file, you will see it highlighted.
 
 \par Syntax highlighting
@@ -220,27 +220,27 @@ Folded lines can be expanded with `zo` and folded with `zc`. Look at VIM documen
 learn more.
 In case you want to use this feature, we suggest you to put both label
 and action type on the first line of multi-line statements. E.g.
-\verbatim
+\plumedfile
 m: METAD ...
   ARG=d
   HEIGHT=1.0
   SIGMA=0.5
   PACE=100
 ...
-\endverbatim
+\endplumedfile
 will be folded to
 \verbatim
 +--  6 lines: m: METAD ...------------------------------------------------------
 \endverbatim
 and
-\verbatim
+\plumedfile
 METAD LABEL=m ...
   ARG=d
   HEIGHT=1.0
   SIGMA=0.5
   PACE=100
 ...
-\endverbatim
+\endplumedfile
 will be folded to
 \verbatim
 +--  6 lines: METAD LABEL=m ...-------------------------------------------------
@@ -281,20 +281,21 @@ With these settings, in the first example (`DU<CTRL+X><CTRL+O`) VIM will only co
 
 As you can imagine,
 if you use autocompletion after you have typed the word `DISTANCE` followed by a space you will see
-a menu listing `LABEL=`, `COMPONENTS`, etc. Basically, all the keywords that are possibly used withint a `DISTANCE` line
-will be shown.
+a menu listing `LABEL=`, `COMPONENTS`, etc. Basically, all the keywords that are possibly used within a `DISTANCE` line
+will be shown. This is very useful if you do not remember the exact name of the keywords associated with
+a given action.
 
 \par Quick help
 
-You can also retrieve quick explanation of the input options for a specific collective variable.
+You can also retrieve quick explanation of the input options for a specific action.
 Try to do the following. Enable plumed syntax:
 \verbatim
 :set ft=plumed
 \endverbatim
 Then add the following line
-\verbatim
+\plumedfile
 DISTANCE
-\endverbatim
+\endplumedfile
 Now, in normal mode, go with the cursor on the `DISTANCE` line and type
 \verbatim
 :PHelp
@@ -328,7 +329,7 @@ To simplify this, when PLUMED syntax for VIM is configured properly VIM should b
 Notice that the syntax file for the output files (`plumedf.vim`) is not the same one that is used for the PLUMED
 input file (`plumed.vim`).
 
-To make output files more readable, vi will show `FIELDS` and `SET` words in a different color,
+To make output files more readable, vim will show `FIELDS` and `SET` words in a different color,
 and data columns with alternating colors (e.g. dark/light/dark/light).
 The colors in the columns are consistent with those shown in the FIELD line.
 In the example above, 1, 2, and 3 will be of the same color as A, B, and C respectively.
@@ -364,38 +365,37 @@ vimrc file.
 
 If, for some reason, you want to spread your PLUMED input over a number of files you can use \subpage INCLUDE as shown below:
 
-\verbatim
+\plumedfile
 INCLUDE FILE=filename
-\endverbatim
+\endplumedfile
 
 So, for example, a single "plumed.dat" file:
 
-\verbatim
+\plumedfile
 DISTANCE ATOMS=0,1 LABEL=dist
 RESTRAINT ARG=dist
-\endverbatim
-(see \ref DISTANCE and \ref RESTRAINT)
+\endplumedfile
 
 could be split up into two files as shown below:
  
-\verbatim
+\plumedfile
 DISTANCE ATOMS=0,1 LABEL=dist
 INCLUDE FILE=toBeIncluded.dat
-\endverbatim
+\endplumedfile
 plus a "toBeIncluded.dat" file
-\verbatim
+\plumedfile
 RESTRAINT ARG=dist
-\endverbatim
+\endplumedfile
 
 However, when you do this it is important to recognise that \ref INCLUDE is a real directive that is only resolved
 after all the \ref comments have been stripped and the \ref ContinuationLines have been unrolled.  This means it
 is not possible to do things like:
 
-\verbatim
+\plumedfile
 # this is wrong:
 DISTANCE INCLUDE FILE=options.dat
 RESTRAINT ARG=dist
-\endverbatim
+\endplumedfile
 
 \page load Loading shared libraries
 
@@ -404,9 +404,9 @@ PLUMED libraries.  Alternatively, if you want to keep your code independent from
 so you can release it independely - we won't be offended), then you can create your own dynamic library.  To use this 
 in conjuction with PLUMED you can then load it at runtime by using the \subpage LOAD keyword as shown below:
 
-\verbatim
+\plumedfile
 LOAD FILE=library.so
-\endverbatim
+\endplumedfile
  
 N.B.  If your system uses a different suffix for dynamic libraries (e.g. macs use .dylib) then PLUMED will try to 
 automatically adjust the suffix accordingly.

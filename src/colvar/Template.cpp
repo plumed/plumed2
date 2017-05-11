@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -40,11 +40,11 @@ This file provides a template for if you want to introduce a new CV.
 
 <!---You should put an example of how to use your CV here--->
 
-\verbatim
+\plumedfile
 # This should be a sample input.
 t: TEMPLATE ATOMS=1,2
 PRINT ARG=t STRIDE=100 FILE=COLVAR
-\endverbatim
+\endplumedfile
 <!---You should reference here the other actions used in this example--->
 (see also \ref PRINT)
 

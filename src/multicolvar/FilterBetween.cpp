@@ -59,22 +59,22 @@ In other words, you are calculating the mean for the transformed colvar.
 The following input gives an example of how a MTRANSFORM_BETWEEN action can be used to duplicate
 functionality that is elsehwere in PLUMED.
 
-\verbatim
+\plumedfile
 DISTANCES ...
  GROUPA=1-10 GROUPB=11-20
  LABEL=d1
 ... DISTANCES
 MTRANSFORM_BETWEEN DATA=d1 LOWER=1.0 UPPER=2.0 SMEAR=0.5
-\endverbatim
+\endplumedfile
 
 In this case you can achieve the same result by using:
 
-\verbatim
+\plumedfile
 DISTANCES ...
  GROUPA=1-10 GROUPB=11-20
  BETWEEN={GAUSSIAN LOWER=1.0 UPPER=2.0}
 ... DISTANCES
-\endverbatim
+\endplumedfile
 (see \ref DISTANCES)
 
 The advantage of MTRANSFORM_BETWEEN comes, however, if you want to use transformed colvars as input
@@ -112,10 +112,10 @@ One is thus calculating the mean for those colvars that are within the range of 
 
 The example shown below calculates the mean for those distances that are between 0 and 3 nm in length
 
-\verbatim
+\plumedfile
 DISTANCES GROUPA=1 GROUPB=2-50 MEAN LABEL=d1
 MFILTER_BETWEEN DATA=d1 LOWER=0 UPPER=3.0 SMEAR=0.0001 MEAN LABEL=d4
-\endverbatim
+\endplumedfile
 
 More complicated things can be done by using the label of a filter as input to a new multicolvar as shown
 in the example below.  Here the coordination numbers of all atoms are computed.  The atoms with a coordination
@@ -123,11 +123,11 @@ number between 4 and 6 are then identified using the filter.  This reduced list 
 to a second coordination number calculation.  This second coordination number thus measures the number of atoms
 4-6 coordinated atoms each of the 4-6 coordination atoms is bound to.
 
-\verbatim
+\plumedfile
 c1: COORDINATIONNUMBER SPECIES=1-150 SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0}
 cf: MFILTER_BETWEEN DATA=c1 LOWER=4 UPPER=6 SMEAR=0.5 LOWMEM
 c2: COORDINATIONNUMBER SPECIES=cf SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0} MORE_THAN={RATIONAL D_0=2.0 R_0=0.1}
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

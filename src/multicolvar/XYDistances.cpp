@@ -43,10 +43,10 @@ The following input tells plumed to calculate the projection of the length of th
 to atom 5 projected in the xy-plane and the projection of the length of the vector
 the vector connecting atom 1 to atom 2 in the xy-plane.  The minimum of these two quantities is then
 printed
-\verbatim
+\plumedfile
 XYDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
 PRINT ARG=d1.min
-\endverbatim
+\endplumedfile
 (See also \ref PRINT).
 
 */
@@ -64,10 +64,10 @@ The following input tells plumed to calculate the projection of the length of th
 to atom 5 projected in the xz-plane and the projection of the length of the vector
 the vector connecting atom 1 to atom 2 in the xz-plane.  The minimum of these two quantities is then
 printed
-\verbatim
+\plumedfile
 XZDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
 PRINT ARG=d1.min
-\endverbatim
+\endplumedfile
 (See also \ref PRINT).
 
 */
@@ -85,10 +85,10 @@ The following input tells plumed to calculate the projection of the length of th
 to atom 5 in the yz-plane and the projection of the length of the vector
 the vector connecting atom 1 to atom 2 in the yz-plane.  The minimum of these two quantities is then
 printed
-\verbatim
+\plumedfile
 YZDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
 PRINT ARG=d1.min
-\endverbatim
+\endplumedfile
 (See also \ref PRINT).
 
 */

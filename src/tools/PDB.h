@@ -32,6 +32,7 @@
 namespace PLMD {
 
 class SetupMolInfo;
+class OFile;
 class Log;
 
 /// Minimalistic pdb parser.

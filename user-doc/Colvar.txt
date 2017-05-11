@@ -58,6 +58,8 @@ with the ammount the collective variables change.  A full list of the ways dista
 
 These options for calculating distances are re-used in a number of places in the code.  For instance they are used in some of the 
 analysis algorithms that are implemented in PLUMED and in \ref PATH collective variables. 
+Notice that most of these actions read the reference configuration from a PDB file. Be sure
+you understand how to format properly a PDB file to use used in PLUMED (see \ref pdbreader).
 
 \page mcolv MultiColvar 
 
@@ -92,9 +94,9 @@ Oftentimes the simplest way to specify the atoms involved is to use multiple ins
 i.e. ATOMS1, ATOMS2, ATOMS3,...  Separate instances of the quantity specified by NAME are then calculated for 
 each of the sets of atoms.  For example if the command issued contains the following:
 
-\verbatim
+\plumedfile
 DISTANCES ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6
-\endverbatim
+\endplumedfile
 
 The distances between atoms 1 and 2, atoms 3 and 4, and atoms 5 and 6 are calculated. Obviously, generating 
 this sort of input is rather tedious so short cuts are also available many of the collective variables. 
@@ -163,11 +165,11 @@ prevent the cluster subliming.  Alternatively, you may wish to insist that a par
 coordination number greater than 2.  You can add these sorts of restraints by employing the following biases, which all act 
 on the set of collective variable values calculated by a multicolvar.  So for example the following set of commands:
 
-\verbatim
+\plumedfile
 COM ATOMS=1-20 LABEL=c1
 DISTANCES GROUPA=c1 GROUPB=1-20 LABEL=d1
 UWALLS DATA=d1 AT=2.5 KAPPA=0.2 LABEL=sr
-\endverbatim
+\endplumedfile
 
 creates the aforementioned set of restraints on the distances between the 20 atoms in a cluster and the center of mass of the cluster.
 

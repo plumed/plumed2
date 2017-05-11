@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -69,11 +69,10 @@ anthing other than TYPE=DRMSD.  For more details as to how to do this see \ref W
 The following input calculates the number of six residue segments of
 protein that are in an antiparallel beta sheet configuration.
 
-\verbatim
+\plumedfile
 MOLINFO STRUCTURE=helix.pdb
 ANTIBETARMSD RESIDUES=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} LABEL=a
-\endverbatim
-(see also \ref MOLINFO)
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

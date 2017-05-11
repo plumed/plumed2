@@ -28,7 +28,13 @@ Changes from version 2.3 which are relevant for users:
   - \ref IMPLICIT : EEF1-SB implicit solvent solvation energy
   - \ref METAD : BIASFACTOR=1 is allowed and performs unbiased sampling. HILLS file can be used
     to recover free energy also in this case.
+  - PDB files with more than 100k atoms can now be read using [hybrid 36](http://cci.lbl.gov/hybrid_36/) format,
+    see \issue{226}.
+  - Trajectories read in \ref driver also support the usual replica convention, that is if
+    trajectory with replica suffix is not found the driver will look for a trajectory without the replica suffix.
   - Internal molfile implementation has been updated to VMD 1.9.3.
+  - Examples in the documentation now have syntax highlighting and links to the documentation of used actions.
+  - \ref COORDINATIONNUMBER : Added option to have pairwise distance moments of coordination number in the multicolvar module
 
 Changes from version 2.3 which are relevant for developers:
   - A few fixes has been made to improve exception safety. Although we still cannot declare

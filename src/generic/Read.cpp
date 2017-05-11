@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -52,11 +52,11 @@ This input reads in data from a file called input_colvar.data that was generated
 in a calculation that involved PLUMED.  The first command reads in the data from the
 column headed phi1 while the second reads in the data from the column headed phi2.
 
-\verbatim
+\plumedfile
 rphi1:       READ FILE=input_colvar.data  VALUES=phi1
 rphi2:       READ FILE=input_colvar.data  VALUES=phi2
 PRINT ARG=rphi1,rphi2 STRIDE=500  FILE=output_colvar.data
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

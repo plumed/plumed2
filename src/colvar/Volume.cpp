@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -36,11 +36,10 @@ Calculate the volume of the simulation box.
 
 \par Examples
 The following input tells plumed to print the volume of the system
-\verbatim
-VOLUME LABEL=vol
+\plumedfile
+vol: VOLUME
 PRINT ARG=vol
-\endverbatim
-(See also \ref PRINT).
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

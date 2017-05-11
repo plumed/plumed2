@@ -51,22 +51,22 @@ In other words, you are calculating the mean for the transformed colvar.
 The following input gives an example of how a MTRANSFORM_MORE action can be used to duplicate
 functionality that is elsehwere in PLUMED.
 
-\verbatim
+\plumedfile
 DISTANCES ...
  GROUPA=1-10 GROUPB=11-20
  LABEL=d1
 ... DISTANCES
 MTRANSFORM_MORE DATA=d1 SWITCH={GAUSSIAN D_0=1.5 R_0=0.00001}
-\endverbatim
+\endplumedfile
 
 In this case you can achieve the same result by using:
 
-\verbatim
+\plumedfile
 DISTANCES ...
  GROUPA=1-10 GROUPB=11-20
  MORE_THAN={GAUSSIAN D_0=1.5 R_0=0.00001}
 ... DISTANCES
-\endverbatim
+\endplumedfile
 (see \ref DISTANCES)
 
 The advantage of MTRANSFORM_MORE comes, however, if you want to use transformed colvars as input
@@ -104,10 +104,10 @@ One is thus calculating the mean for those colvars that are greater than the tar
 
 The example shown below calculates the mean for those distances that greater than 1.5 nm in length
 
-\verbatim
+\plumedfile
 DISTANCES GROUPA=1 GROUPB=2-50 MEAN LABEL=d1
 MFILTER_MORE DATA=d1 SWITCH={GAUSSIAN D_0=1.5 R_0=0.00001} MEAN LABEL=d4
-\endverbatim
+\endplumedfile
 
 More complicated things can be done by using the label of a filter as input to a new multicolvar as shown
 in the example below.  Here the coordination numbers of all atoms are computed.  The atoms with a coordination
@@ -115,11 +115,11 @@ number greater than 2 are then identified using the filter.  This reduced list o
 to a second coordination number calculation.  This second coordination number thus measures the number of
 two-coordinated atoms that each of the two-coordinated atoms is bound to.
 
-\verbatim
+\plumedfile
 1: COORDINATIONNUMBER SPECIES=1-150 SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0}
 cf: MFILTER_MORE DATA=c1 SWITCH={RATIONAL D_0=2.0 R_0=0.1} LOWMEM
 c2: COORDINATIONNUMBER SPECIES=cf SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0} MORE_THAN={RATIONAL D_0=2.0 R_0=0.1}
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
