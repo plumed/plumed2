@@ -105,6 +105,41 @@ END
 The remarks in this pdb file tell PLUMED the labels that are being used to define the position in the 
 high dimensional space and the values that these arguments have at each point on the path.
 
+The following input instructs PLUMED to calculate the values of the path collective variables.  The frames that make up this 
+path are defined in the file all.pdb and all distances are measured using the OPTIMAL metric that is discussed in the manual 
+page on \ref RMSD. 
+
+\verbatim
+p2: PATH REFERENCE=all.pdb LAMBDA=69087
+PRINT ARG=p2.spath,p2.zpath STRIDE=1 FILE=colvar 
+\endverbatim
+
+If you wish to use collective variable values in the definition of your path you would use an input file with something like this:
+
+\verbatim
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4a
+p2: PATH REFERENCE=mypath.pdb LAMBDA=2 TYPE=EUCLIDEAN
+PRINT ARG=p2.spath,p2.zpath STRIDE=1 FILE=colvar 
+\endverbatim
+
+The corresponding pdb file containing the  definitions of the frames in the path would then look like this:
+
+\verbatim
+DESCRIPTION: a defintiion of a PATH
+REMARK TYPE=EUCLIDEAN 
+REMARK ARG=d1,d2 
+REMARK d1=1.0 d2=1.0
+END
+REMARK TYPE=EUCLIDEAN
+REMARK ARG=d1,d2 
+REMARK d1=2.0 d2=2.0
+END
+\endverbatim
+
+For each frame in the path you must specify the arguments that should be used to calculate the distance between the instantaneous configuration
+of the system and the reference configurations together with the values that these arguments take in each of the reference configurations.
+
 */
 //+ENDPLUMEDOC
 

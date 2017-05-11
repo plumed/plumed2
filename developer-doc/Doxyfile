@@ -768,7 +768,9 @@ INPUT                  = ./Intro.txt \
                          ./InstallationLayout.txt \
                          ./AddingRegressionTests.txt \
                          ./HowToContributeToPlumed.txt \
-                         ./intro-git.txt
+                         ./intro-git.txt \
+                         ./plumedcheck.txt \
+                         ./CodeFormatting.txt
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses

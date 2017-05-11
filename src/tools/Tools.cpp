@@ -197,6 +197,7 @@ bool Tools::getline(FILE* fp,string & line){
     if(ss>0) if(buffer[ss-1]=='\n') break;
   };
   if(line.length()>0) if(*(line.end()-1)=='\n') line.erase(line.end()-1);
+  if(line.length()>0) if(*(line.end()-1)=='\r') line.erase(line.end()-1);
   return ret;
 }
 
@@ -210,7 +211,7 @@ void Tools::trimComments(string & s){
   s=s.substr(0,n);
 }
 
-bool Tools::getKey(vector<string>& line,const string & key,string & s){
+bool Tools::getKey(vector<string>& line,const string & key,string & s,int rep){
   s.clear();
   for(auto p=line.begin();p!=line.end();++p){
     if((*p).length()==0) continue;
@@ -220,6 +221,13 @@ bool Tools::getKey(vector<string>& line,const string & key,string & s){
       string tmp=(*p).substr(key.length(),(*p).length());
       line.erase(p);
       s=tmp;
+      const std::string multi("@replicas:");
+      if(rep>=0 && startWith(s,multi)){
+        s=s.substr(multi.length(),s.length());
+        std::vector<std::string> words=getWords(s,"\t\n ,");
+        plumed_assert(rep<words.size());
+        s=words[rep];
+      }
       return true;
     }
   };

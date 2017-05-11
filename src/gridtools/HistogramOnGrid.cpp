@@ -114,7 +114,7 @@ void HistogramOnGrid::calculate( const unsigned& current, MultiValue& myvals, st
      KernelFunctions* kernel=getKernelAndNeighbors( point, num_neigh, neighbors );
 
      if( !kernel && getType()=="flat" ){
-         plumed_dbg_assert( num_neigh==1 );
+         plumed_dbg_assert( num_neigh==1 ); der.resize(0);
          accumulate( neighbors[0], weight, 1.0, der, buffer );
      } else {
          double totwforce=0.0;

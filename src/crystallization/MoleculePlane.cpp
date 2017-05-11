@@ -41,6 +41,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit MoleculePlane( const ActionOptions& ao );
+  AtomNumber getAbsoluteIndexOfCentralAtom( const unsigned& iatom ) const ;
   void calculateVector( multicolvar::AtomValuePack& myatoms ) const ;
 };
 
@@ -67,6 +68,12 @@ VectorMultiColvar(ao)
 
   if( all_atoms.size()==0 ) error("No atoms were specified");
   setVectorDimensionality( 3 ); setupMultiColvarBase( all_atoms );
+}
+
+AtomNumber MoleculePlane::getAbsoluteIndexOfCentralAtom( const unsigned& iatom ) const {
+  plumed_dbg_assert( iatom<atom_lab.size() );
+  plumed_assert( atom_lab[iatom].first==0 );
+  return ActionAtomistic::getAbsoluteIndex( ablocks[0][atom_lab[iatom].second] );
 }
 
 void MoleculePlane::calculateVector( multicolvar::AtomValuePack& myatoms ) const { 

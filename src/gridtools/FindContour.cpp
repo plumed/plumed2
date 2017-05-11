@@ -29,7 +29,62 @@
 /*
 Find an isocontour in a smooth function.
 
+As discussed in the part of the manual on \ref Analysis PLUMED contains a number of tools that allow you to calculate 
+a function on a grid.  The function on this grid might be a \ref HISTOGRAM as a function of a few collective variables 
+or it might be a phase field that has been calcualted using \ref MULTICOLVARDENS.  If this function has one or two input
+arguments it is relatively straightforward to plot the function.  If by contrast the data has a three or more dimensions
+it can be difficult to visualize.  
+
+This action provides one tool for visualizing these functions.  It can be used to search for a set of points on a contour 
+where the function takes a particular values.  In other words, for the function \f$f(x,y)\f$ this action would find a set 
+of points \f$\{x_c,y_c\}\f$ that have:
+
+\f[
+f(x_c,y_c) - c = 0
+\f]
+
+where \f$c\f$ is some constant value that is specified by the user.  The points on this contour are detected using a variant
+on the marching squares or marching cubes algorithm, which you can find information on here:
+
+https://en.wikipedia.org/wiki/Marching_squares
+https://en.wikipedia.org/wiki/Marching_cubes
+
+As such, and unlike \ref FIND_CONTOUR_SURFACE or \ref FIND_SPHERICAL_CONTOUR, the function input to this action can have any dimension.
+Furthermore, the topology of the contour will be determined by the algorithm and does not need to be specified by the user.
+
 \par Examples
+
+The input below allows you to calculate something akin to a Willard-Chandler dividing surface \cite wcsurface.
+The simulation cell in this case contains a solid phase and a liquid phase.  The Willard-Chandler surface is the 
+surface that separates the parts of the box containing the solid from the parts containing the liquid.  To compute the position
+of this surface  the \ref FCCUBIC symmetry function is calculated for each of the atoms in the system from on the geometry of the
+atoms in the first coordination sphere of each of the atoms.  These quantities are then transformed using a switching function.
+This procedure generates a single number for each atom in the system and this quantity has a value of one for atoms that are in 
+parts of the box that resemble the solid structure and zero for atoms that are in parts of the box that resemble the liquid.
+The position of a virtual atom is then computed using \ref CENTER_OF_MULTICOLVAR and a phase field model is constructed using
+\ref MULTICOLVARDENS.  These procedure ensures that we have a continuous function that gives a measure of the average degree of 
+solidness at each point in the simulation cell.  The Willard-Chandler dividing surface is calculated by finding a a set of points
+at which the value of this phase field is equal to 0.5.  This set of points is output to file called mycontour.dat.  A new contour
+is found on every single step for each frame that is read in.
+
+\verbatim
+UNITS NATURAL
+FCCUBIC ...
+  SPECIES=1-96000 SWITCH={CUBIC D_0=1.2 D_MAX=1.5} 
+  ALPHA=27 PHI=0.0 THETA=-1.5708 PSI=-2.35619 LABEL=fcc
+... FCCUBIC
+
+tfcc: MTRANSFORM_MORE DATA=fcc SWITCH={SMAP R_0=0.5 A=8 B=8}
+center: CENTER_OF_MULTICOLVAR DATA=tfcc
+
+MULTICOLVARDENS ... 
+  DATA=tfcc ORIGIN=center DIR=xyz LABEL=dens 
+  NBINS=80,80,80 BANDWIDTH=1.0,1.0,1.0 STRIDE=25
+  LABEL=dens STRIDE=1 CLEAR=1
+... MULTICOLVARDENS
+
+FIND_CONTOUR GRID=dens CONTOUR=0.5 FILE=mycontour.dat 
+\endverbatim
 
 */
 //+ENDPLUMEDOC

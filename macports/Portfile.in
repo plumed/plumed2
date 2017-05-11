@@ -11,8 +11,12 @@ PortGroup           cxx11 1.1
 version             @_VERSION_@
 revision            @_REVISION_@
 categories          science
-license             LGPL-3
-maintainers         gmail.com:giovanni.bussi
+
+# Most of the PLUMED code is L-GPL3. However, PLUMED containts
+# molfile plugins from VMD that are released with a BSD-like license
+# http://www.ks.uiuc.edu/Research/vmd/plugins/molfile/
+license             LGPL-3 BSD
+maintainers         gmail.com:giovanni.bussi openmaintainer
 description         PLUMED is a plugin for molecular dynamics
 long_description    PLUMED is a plugin for molecular dynamics that can be used \
                     in combination with popular molecular dynamics codes to perform biased simulations. \
@@ -31,17 +35,16 @@ homepage            http://www.plumed.org/
 # - list their name here:
 
 # Disable additional features.
-# they are then re-enabled when selecting proper variants
+# They are then re-enabled when selecting proper variants
 # this is important for features that require an additional package to be
 # sure that even if the user has that package already installed plumed is
 # not going to use it.
+# Also avoid searching for doxygen.
 configure.args-append \
-               --disable-matheval \
-               --disable-xdrfile \
-               --disable-molfile-plugins \
-               --disable-zlib \
-               --disable-mpi \
-               --disable-gsl
+               --disable-doc \
+               --disable-libsearch \
+               --disable-mpi 
+
 
 # Hardcode path for libplumedKernel.dylib.
 # This allows to patch MD codes using the --runtime option but using as
@@ -57,57 +60,19 @@ if {[mpi_variant_isset]} {
   configure.args-replace --disable-mpi --enable-mpi
 }
 
-variant matheval description {Enable libmatheval} {
-  configure.args-replace --disable-matheval --enable-matheval
-# this is needed due to a problem with libmatheval:
-  depends_lib-append port:flex
-  depends_lib-append port:libmatheval
+# libraries
+configure.ldflags-append -lmatheval -lxdrfile -lz -lgsl
+depends_lib-append port:libmatheval port:xdrfile port:zlib port:gsl
+
+# This variant enables optional modules in PLUMED.
+variant allmodules description {Enable all optional modules} {
+  configure.args-append --enable-modules=all
 }
-
-variant xdrfile description {Enable xdrfile} {
-  configure.args-replace --disable-xdrfile --enable-xdrfile
-  depends_lib-append port:xdrfile
-}
-
-variant zlib description {Enable zlib} {
-  configure.args-replace --disable-zlib --enable-zlib
-  depends_lib-append port:zlib
-}
-
-variant gsl description {Enable gsl} {
-  configure.args-replace --disable-gsl --enable-gsl
-  depends_lib-append port:gsl
-}
-
-variant molfile description {Enable molfile - includes some BSD code} {
-  license ${license} BSD
-  configure.args-replace --disable-molfile-plugins --enable-molfile-plugins
-}
-
-variant doc description {Also compile documentation} {
-  depends_build-append port:doxygen
-  depends_build-append port:graphviz
-  build.target all_plus_docs
-}
-
-# this is a tcl variable contains a concatenated list of modules
-# to be activated
-
-set plumed_modules reset
-
-# this will automatically create variants for each optional module
-@_MODULES_@ plumed_modules
 
 pre-configure {
   # commands should be included in a pre-configure block to access tcl variables
-  configure.args-append --enable-modules=${plumed_modules}
   configure.ldflags-append ${linalglib}
 }
-
-# Default variants include no optional modules.
-# Additionally, the link libraries that are very useful (e.g. matheval of xdrfile)
-# and quick to compile
-default_variants +matheval +xdrfile +zlib +molfile
 
 # This is required since PLUMED installation does not do it explicitly.
 # It might be removed when this will be incorporated upstream
