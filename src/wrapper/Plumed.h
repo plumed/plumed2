@@ -112,7 +112,7 @@
 
   To check if plumed library is available (this is useful for runtime linking), use
 \verbatim
-  (C)        plumed_installed 
+  (C)        plumed_installed
   (C++)      PLMD::Plumed::installed
   (FORTRAN)  PLUMED_F_INSTALLED
 \endverbatim
@@ -168,7 +168,7 @@
 */
 
 #ifdef __cplusplus
- extern "C" {
+extern "C" {
 #endif
 
 /* Generic function pointer */
@@ -201,10 +201,10 @@ typedef struct {
   not to change across plumed versions. See \ref ReferencePlumedH.
 */
 typedef struct {
-/**
-  \private
-  \brief Void pointer holding the real PlumedMain structure
-*/
+  /**
+    \private
+    \brief Void pointer holding the real PlumedMain structure
+  */
   void*p;
 } plumed;
 
@@ -328,7 +328,7 @@ void c_routine(char handler[32]){
 plumed plumed_f2c(const char* c);
 
 #ifdef __cplusplus
- }
+}
 #endif
 
 #ifdef __cplusplus
@@ -345,149 +345,149 @@ namespace PLMD {
   This class provides a C++ interface to PLUMED.
 */
 
-class Plumed{
-/**
-  C structure.
-*/
+class Plumed {
+  /**
+    C structure.
+  */
   plumed main;
-/**
-   keeps track if the object was created from scratch using 
-   the defaults destructor (reference=false) or if it was imported
-   from C or FORTRAN (reference=true). In the latter case, the
-   plumed_finalize() method is not called when destructing the object,
-   since it is expected to be finalized in the C/FORTRAN code
-*/
+  /**
+     keeps track if the object was created from scratch using
+     the defaults destructor (reference=false) or if it was imported
+     from C or FORTRAN (reference=true). In the latter case, the
+     plumed_finalize() method is not called when destructing the object,
+     since it is expected to be finalized in the C/FORTRAN code
+  */
   bool reference;
 public:
-/**
-   Check if plumed is installed (for runtime binding)
-   \return true if plumed is installed, false otherwise
-   \note Equivalent to plumed_installed() but returns a bool
-*/
+  /**
+     Check if plumed is installed (for runtime binding)
+     \return true if plumed is installed, false otherwise
+     \note Equivalent to plumed_installed() but returns a bool
+  */
   static bool installed();
-/**
-   Check if global-plumed has been initialized
-   \return true if global plumed object (see global()) is initialized (i.e. if gcreate() has been
-           called), false otherwise.
-   \note Equivalent to plumed_ginitialized() but returns a bool
-*/
+  /**
+     Check if global-plumed has been initialized
+     \return true if global plumed object (see global()) is initialized (i.e. if gcreate() has been
+             called), false otherwise.
+     \note Equivalent to plumed_ginitialized() but returns a bool
+  */
   static bool ginitialized();
-/**
-   Initialize global-plumed.
-   \note Equivalent to plumed_gcreate()
-*/
+  /**
+     Initialize global-plumed.
+     \note Equivalent to plumed_gcreate()
+  */
   static void gcreate();
-/**
-   Send a command to global-plumed
-    \param key The name of the command to be executed
-    \param val The argument. It is declared as const to allow calls like gcmd("A","B"),
-               but for some choice of key it can change the content
-   \note Equivalent to plumed_gcmd()
-*/
+  /**
+     Send a command to global-plumed
+      \param key The name of the command to be executed
+      \param val The argument. It is declared as const to allow calls like gcmd("A","B"),
+                 but for some choice of key it can change the content
+     \note Equivalent to plumed_gcmd()
+  */
   static void gcmd(const char* key,const void* val);
-/**
-   Finalize global-plumed
-*/
+  /**
+     Finalize global-plumed
+  */
   static void gfinalize();
-/**
-   Returns the Plumed global object
-   \return The Plumed global object
-*/
+  /**
+     Returns the Plumed global object
+     \return The Plumed global object
+  */
   static Plumed global();
-/**
-   Constructor.
-  \note Performs the same task a plumed_create()
-*/
+  /**
+     Constructor.
+    \note Performs the same task a plumed_create()
+  */
   Plumed();
-/**
-   Clone a Plumed object from a FORTRAN char* handler
-   \param c The FORTRAN handler (a char[32]).
+  /**
+     Clone a Plumed object from a FORTRAN char* handler
+     \param c The FORTRAN handler (a char[32]).
 
- \attention The Plumed object created in this manner
-            will not finalize the corresponding plumed structure.
-            It is expected that the FORTRAN code calls plumed_c_finalize for it
-*/
+   \attention The Plumed object created in this manner
+              will not finalize the corresponding plumed structure.
+              It is expected that the FORTRAN code calls plumed_c_finalize for it
+  */
 // to have maximum portability of this file I do not use the explicit keyword here
 // I thus add a suppress command for cppcheck
 // cppcheck-suppress noExplicitConstructor
   Plumed(const char*c);
-/**
-   Clone a Plumed object from a C plumed structure
-   \param p The C plumed structure.
+  /**
+     Clone a Plumed object from a C plumed structure
+     \param p The C plumed structure.
 
- \attention The Plumed object created in this manner
-            will not finalize the corresponding plumed structure.
-            It is expected that the C code calls plumed_finalize for it
-*/ 
+   \attention The Plumed object created in this manner
+              will not finalize the corresponding plumed structure.
+              It is expected that the C code calls plumed_finalize for it
+  */
 // to have maximum portability of this file I do not use the explicit keyword here
 // I thus add a suppress command for cppcheck
 // cppcheck-suppress noExplicitConstructor
   Plumed(plumed p);
 private:
-/** Copy constructor is disabled (private and unimplemented)
-  The problem here is that after copying it will not be clear who is
-  going to finalize the corresponding plumed structure.
-*/
+  /** Copy constructor is disabled (private and unimplemented)
+    The problem here is that after copying it will not be clear who is
+    going to finalize the corresponding plumed structure.
+  */
   Plumed(const Plumed&);
-/** Assignment operator is disabled (private and unimplemented)
-  The problem here is that after copying it will not be clear who is
-  going to finalize the corresponding plumed structure.
-*/
+  /** Assignment operator is disabled (private and unimplemented)
+    The problem here is that after copying it will not be clear who is
+    going to finalize the corresponding plumed structure.
+  */
   Plumed&operator=(const Plumed&);
 public:
-/*
-  PLUMED 2.4 requires a C++11 compiler.
-  Anyway, since Plumed.h file might be redistributed with other codes
-  and it should be possible to combine it with earlier PLUMED versions,
-  we here explicitly check if C+11 is available before enabling move semantics.
-  This could still create problems if a compiler 'cheats', setting  __cplusplus > 199711L
-  but not supporting move semantics. Hopefully will not happen!
-*/
+  /*
+    PLUMED 2.4 requires a C++11 compiler.
+    Anyway, since Plumed.h file might be redistributed with other codes
+    and it should be possible to combine it with earlier PLUMED versions,
+    we here explicitly check if C+11 is available before enabling move semantics.
+    This could still create problems if a compiler 'cheats', setting  __cplusplus > 199711L
+    but not supporting move semantics. Hopefully will not happen!
+  */
 #if __cplusplus > 199711L
-/** Move constructor.
-  Only if move semantics is enabled.
-  It allows storing PLMD::Plumed objects in STL containers.
-*/
+  /** Move constructor.
+    Only if move semantics is enabled.
+    It allows storing PLMD::Plumed objects in STL containers.
+  */
   Plumed(Plumed&&);
-/** Move assignment.
-  Only if move semantics is enabled.
-*/
+  /** Move assignment.
+    Only if move semantics is enabled.
+  */
   Plumed& operator=(Plumed&&);
 #endif
-/**
-   Retrieve the C plumed structure for this object
-*/
+  /**
+     Retrieve the C plumed structure for this object
+  */
   operator plumed()const;
-/**
-   Retrieve a FORTRAN handler for this object
-    \param c The FORTRAN handler (a char[32]).
-*/
+  /**
+     Retrieve a FORTRAN handler for this object
+      \param c The FORTRAN handler (a char[32]).
+  */
   void toFortran(char*c)const;
-/**
-   Send a command to this plumed object
-    \param key The name of the command to be executed
-    \param val The argument. It is declared as const to allow calls like p.cmd("A","B"),
-               but for some choice of key it can change the content
-    \note Equivalent to plumed_cmd()
-*/
+  /**
+     Send a command to this plumed object
+      \param key The name of the command to be executed
+      \param val The argument. It is declared as const to allow calls like p.cmd("A","B"),
+                 but for some choice of key it can change the content
+      \note Equivalent to plumed_cmd()
+  */
   void cmd(const char*key,const void*val=NULL);
-/**
-   Destructor
+  /**
+     Destructor
 
-   Destructor is virtual so as to allow correct inheritance from Plumed object.
-   To avoid linking problems with g++, I specify "inline" also here (in principle
-   it should be enough to specify it down in the definition of the function, but
-   for some reason that I do not understand g++ does not inline it properly in that
-   case and complains when Plumed.h is included but Plumed.o is not linked. Anyway, the
-   way it is done here seems to work properly).
-*/
+     Destructor is virtual so as to allow correct inheritance from Plumed object.
+     To avoid linking problems with g++, I specify "inline" also here (in principle
+     it should be enough to specify it down in the definition of the function, but
+     for some reason that I do not understand g++ does not inline it properly in that
+     case and complains when Plumed.h is included but Plumed.o is not linked. Anyway, the
+     way it is done here seems to work properly).
+  */
   inline virtual ~Plumed();
 };
 
 /* All methods are inlined so as to avoid the compilation of an extra c++ file */
 
 inline
-bool Plumed::installed(){
+bool Plumed::installed() {
   return plumed_installed();
 }
 
@@ -517,7 +517,7 @@ Plumed::Plumed(Plumed&& p):
 {}
 
 inline
-Plumed& Plumed::operator=(Plumed&& p){
+Plumed& Plumed::operator=(Plumed&& p) {
   main=p.main;
   reference=p.reference;
   return *this;
@@ -525,47 +525,47 @@ Plumed& Plumed::operator=(Plumed&& p){
 #endif
 
 inline
-Plumed::operator plumed()const{
+Plumed::operator plumed()const {
   return main;
 }
 
 inline
-void Plumed::toFortran(char*c)const{
+void Plumed::toFortran(char*c)const {
   plumed_c2f(main,c);
 }
 
 inline
-void Plumed::cmd(const char*key,const void*val){
+void Plumed::cmd(const char*key,const void*val) {
   plumed_cmd(main,key,val);
 }
 
 inline
-Plumed::~Plumed(){
+Plumed::~Plumed() {
   if(!reference)plumed_finalize(main);
 }
 
 inline
-bool Plumed::ginitialized(){
+bool Plumed::ginitialized() {
   return plumed_ginitialized();
 }
 
 inline
-void Plumed::gcreate(){
+void Plumed::gcreate() {
   plumed_gcreate();
 }
 
 inline
-void Plumed::gcmd(const char* key,const void* val){
+void Plumed::gcmd(const char* key,const void* val) {
   plumed_gcmd(key,val);
 }
 
 inline
-void Plumed::gfinalize(){
+void Plumed::gfinalize() {
   plumed_gfinalize();
 }
 
 inline
-Plumed Plumed::global(){
+Plumed Plumed::global() {
   return plumed_global();
 }
 

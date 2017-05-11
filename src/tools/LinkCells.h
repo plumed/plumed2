@@ -26,7 +26,7 @@
 #include "Vector.h"
 #include "Pbc.h"
 
-namespace PLMD{
+namespace PLMD {
 
 class Communicator;
 
@@ -72,7 +72,7 @@ public:
 /// Find the cell index in which this position is contained
   unsigned findCell( const Vector& pos ) const ;
 /// Find the cell in which this position is contained
-  std::vector<unsigned> findMyCell( const Vector& pos ) const ;   
+  std::vector<unsigned> findMyCell( const Vector& pos ) const ;
 /// Get the list of cells we need to surround the a particular cell
   void addRequiredCells( const std::vector<unsigned>& celn, unsigned& ncells_required,
                          std::vector<unsigned>& cells_required ) const ;
@@ -81,7 +81,7 @@ public:
                              const std::vector<unsigned>& cells_required,
                              unsigned& natomsper, std::vector<unsigned>& atoms ) const ;
 /// Retrieve the atoms we need to consider
-  void retrieveNeighboringAtoms( const Vector& pos, std::vector<unsigned>& cell_list, unsigned& natomsper, std::vector<unsigned>& atoms ) const ; 
+  void retrieveNeighboringAtoms( const Vector& pos, std::vector<unsigned>& cell_list, unsigned& natomsper, std::vector<unsigned>& atoms ) const ;
 };
 
 inline

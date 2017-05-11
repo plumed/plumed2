@@ -37,7 +37,7 @@
 using namespace std;
 
 namespace PLMD {
-namespace generic{
+namespace generic {
 
 //+PLUMEDOC GENERIC WRAPAROUND
 /*
@@ -89,7 +89,7 @@ RESTRAINT ARG=a AT=0.0 KAPPA=5
 
 
 # then do the things that are required for dumping the trajectory
-# notice that they are all done every 100 steps, so as not to 
+# notice that they are all done every 100 steps, so as not to
 # unnecessarily overload the calculation
 
 rna: GROUP ATOMS=1-100
@@ -163,12 +163,12 @@ public:
   explicit WrapAround(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
   void calculate();
-  void apply(){}
+  void apply() {}
 };
 
 PLUMED_REGISTER_ACTION(WrapAround,"WRAPAROUND")
 
-void WrapAround::registerKeywords( Keywords& keys ){
+void WrapAround::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
@@ -179,25 +179,25 @@ void WrapAround::registerKeywords( Keywords& keys ){
 }
 
 WrapAround::WrapAround(const ActionOptions&ao):
-Action(ao),
-ActionPilot(ao),
-ActionAtomistic(ao),
-groupby(1)
+  Action(ao),
+  ActionPilot(ao),
+  ActionAtomistic(ao),
+  groupby(1)
 {
   parseAtomList("ATOMS",atoms);
   parseAtomList("AROUND",reference);
   parse("GROUPBY",groupby);
 
   log.printf("  atoms in reference :");
-  for(unsigned j=0;j<reference.size();++j) log.printf(" %d",reference[j].serial() );
+  for(unsigned j=0; j<reference.size(); ++j) log.printf(" %d",reference[j].serial() );
   log.printf("\n");
   log.printf("  atoms to be wrapped :");
-  for(unsigned j=0;j<atoms.size();++j) log.printf(" %d",atoms[j].serial() );
+  for(unsigned j=0; j<atoms.size(); ++j) log.printf(" %d",atoms[j].serial() );
   log.printf("\n");
   if(groupby>1) log<<"  atoms will be grouped by "<<groupby<<"\n";
 
   if(atoms.size()%groupby!=0) error("number of atoms should be a multiple of groupby option");
-  
+
   checkRead();
 
   if(groupby<=1) Tools::removeDuplicates(atoms);
@@ -211,16 +211,16 @@ groupby(1)
   doNotForce();
 }
 
-void WrapAround::calculate(){
-  for(unsigned i=0;i<atoms.size();i+=groupby){
+void WrapAround::calculate() {
+  for(unsigned i=0; i<atoms.size(); i+=groupby) {
     Vector & first (modifyPosition(atoms[i]));
     double mindist2=std::numeric_limits<double>::max();
     int closest=-1;
-    for(unsigned j=0;j<reference.size();++j){
+    for(unsigned j=0; j<reference.size(); ++j) {
       Vector & second (modifyPosition(reference[j]));
       Vector distance=pbcDistance(first,second);
       double distance2=modulo2(distance);
-      if(distance2<mindist2){
+      if(distance2<mindist2) {
         mindist2=distance2;
         closest=j;
       }
@@ -230,7 +230,7 @@ void WrapAround::calculate(){
 // place first atom of the group
     first=second+pbcDistance(second,first);
 // then place other atoms close to the first of the group
-    for(unsigned j=1;j<groupby;j++){
+    for(unsigned j=1; j<groupby; j++) {
       Vector & second (modifyPosition(atoms[i+j]));
       second=first+pbcDistance(first,second);
     }

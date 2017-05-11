@@ -28,8 +28,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace colvar{
+namespace PLMD {
+namespace colvar {
 
 //+PLUMEDOC COLVAR DISTANCE
 /*
@@ -110,7 +110,7 @@ with domain (-0.5,+0.5).
 
 */
 //+ENDPLUMEDOC
-   
+
 class Distance : public Colvar {
   bool components;
   bool scaled_components;
@@ -125,11 +125,11 @@ public:
 
 PLUMED_REGISTER_ACTION(Distance,"DISTANCE")
 
-void Distance::registerKeywords( Keywords& keys ){
+void Distance::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   keys.add("atoms","ATOMS","the pair of atom that we are calculating the distance between");
-  keys.addFlag("COMPONENTS",false,"calculate the x, y and z components of the distance separately and store them as label.x, label.y and label.z");  
-  keys.addFlag("SCALED_COMPONENTS",false,"calculate the a, b and c scaled components of the distance separately and store them as label.a, label.b and label.c");  
+  keys.addFlag("COMPONENTS",false,"calculate the x, y and z components of the distance separately and store them as label.x, label.y and label.z");
+  keys.addFlag("SCALED_COMPONENTS",false,"calculate the a, b and c scaled components of the distance separately and store them as label.a, label.b and label.c");
   keys.addOutputComponent("x","COMPONENTS","the x-component of the vector connecting the two atoms");
   keys.addOutputComponent("y","COMPONENTS","the y-component of the vector connecting the two atoms");
   keys.addOutputComponent("z","COMPONENTS","the z-component of the vector connecting the two atoms");
@@ -139,10 +139,10 @@ void Distance::registerKeywords( Keywords& keys ){
 }
 
 Distance::Distance(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao),
-components(false),
-scaled_components(false),
-pbc(true)
+  PLUMED_COLVAR_INIT(ao),
+  components(false),
+  scaled_components(false),
+  pbc(true)
 {
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
@@ -161,12 +161,12 @@ pbc(true)
 
   if(components && scaled_components) error("COMPONENTS and SCALED_COMPONENTS are not compatible");
 
-  if(components){
+  if(components) {
     addComponentWithDerivatives("x"); componentIsNotPeriodic("x");
     addComponentWithDerivatives("y"); componentIsNotPeriodic("y");
     addComponentWithDerivatives("z"); componentIsNotPeriodic("z");
     log<<"  WARNING: components will not have the proper periodicity - see manual\n";
-  } else if(scaled_components){
+  } else if(scaled_components) {
     addComponentWithDerivatives("a"); componentIsPeriodic("a","-0.5","+0.5");
     addComponentWithDerivatives("b"); componentIsPeriodic("b","-0.5","+0.5");
     addComponentWithDerivatives("c"); componentIsPeriodic("c","-0.5","+0.5");
@@ -180,7 +180,7 @@ pbc(true)
 
 
 // calculator
-void Distance::calculate(){
+void Distance::calculate() {
 
   if(pbc) makeWhole();
 
@@ -188,7 +188,7 @@ void Distance::calculate(){
   const double value=distance.modulo();
   const double invvalue=1.0/value;
 
-  if(components){
+  if(components) {
     Value* valuex=getPntrToComponent("x");
     Value* valuey=getPntrToComponent("y");
     Value* valuez=getPntrToComponent("z");
@@ -207,7 +207,7 @@ void Distance::calculate(){
     setAtomsDerivatives (valuez,1,Vector(0,0,+1));
     setBoxDerivativesNoPbc(valuez);
     valuez->set(distance[2]);
-  } else if(scaled_components){
+  } else if(scaled_components) {
     Value* valuea=getPntrToComponent("a");
     Value* valueb=getPntrToComponent("b");
     Value* valuec=getPntrToComponent("c");

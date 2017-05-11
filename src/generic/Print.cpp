@@ -25,19 +25,19 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace generic{
+namespace PLMD {
+namespace generic {
 
 //+PLUMEDOC PRINTANALYSIS PRINT
 /*
 Print quantities to a file.
 
 This directive can be used multiple times
-in the input so you can print files with different strides or print different quantities 
+in the input so you can print files with different strides or print different quantities
 to different files.  You can control the buffering of output using the \subpage FLUSH keyword.
 
 \par Examples
-The following input instructs plumed to print the distance between atoms 3 and 5 on a file 
+The following input instructs plumed to print the distance between atoms 3 and 5 on a file
 called COLVAR every 10 steps, and the distance and total energy on a file called COLVAR_ALL
 every 1000 steps.
 \verbatim
@@ -52,8 +52,8 @@ PRINT ARG=distance,energy   STRIDE=1000 FILE=COLVAR_ALL
 //+ENDPLUMEDOC
 
 class Print :
-public ActionPilot,
-public ActionWithArguments
+  public ActionPilot,
+  public ActionWithArguments
 {
   string file;
   OFile ofile;
@@ -69,18 +69,18 @@ public ActionWithArguments
   vector<Value*> rotateArguments;
 /////////////////////////////////////////
 public:
-  void calculate(){}
+  void calculate() {}
   void prepare();
   explicit Print(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
-  void apply(){}
+  void apply() {}
   void update();
   ~Print();
 };
 
 PLUMED_REGISTER_ACTION(Print,"PRINT")
 
-void Print::registerKeywords(Keywords& keys){
+void Print::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys);
   ActionPilot::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
@@ -95,15 +95,15 @@ void Print::registerKeywords(Keywords& keys){
 }
 
 Print::Print(const ActionOptions&ao):
-Action(ao),
-ActionPilot(ao),
-ActionWithArguments(ao),
-fmt("%f"),
-rotate(0)
+  Action(ao),
+  ActionPilot(ao),
+  ActionWithArguments(ao),
+  fmt("%f"),
+  rotate(0)
 {
   ofile.link(*this);
   parse("FILE",file);
-  if(file.length()>0){
+  if(file.length()>0) {
     ofile.open(file);
     log.printf("  on file %s\n",file.c_str());
   } else {
@@ -113,15 +113,15 @@ rotate(0)
   parse("FMT",fmt);
   fmt=" "+fmt;
   log.printf("  with format %s\n",fmt.c_str());
-  for(unsigned i=0;i<getNumberOfArguments();++i) ofile.setupPrintValue( getPntrToArgument(i) );
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) ofile.setupPrintValue( getPntrToArgument(i) );
 /////////////////////////////////////////
 // these are crazy things just for debug:
 // they allow to change regularly the
 // printed argument
   parse("_ROTATE",rotate);
-  if(rotate>0){
+  if(rotate>0) {
     rotateCountdown=rotate;
-    for(unsigned i=0;i<getNumberOfArguments();++i) rotateArguments.push_back( getPntrToArgument(i) );
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) rotateArguments.push_back( getPntrToArgument(i) );
     vector<Value*> a(1,rotateArguments[0]);
     requestArguments(vector<Value*>(1,rotateArguments[0]));
     rotateLast=0;
@@ -130,14 +130,14 @@ rotate(0)
   checkRead();
 }
 
-void Print::prepare(){
+void Print::prepare() {
 /////////////////////////////////////////
 // these are crazy things just for debug:
 // they allow to change regularly the
 // printed argument
-  if(rotate>0){
+  if(rotate>0) {
     rotateCountdown--;
-    if(rotateCountdown==0){
+    if(rotateCountdown==0) {
       rotateCountdown=rotate;
       rotateLast++;
       rotateLast%=rotateArguments.size();
@@ -147,18 +147,18 @@ void Print::prepare(){
 /////////////////////////////////////////
 }
 
-void Print::update(){
-      ofile.fmtField(" %f");
-      ofile.printField("time",getTime());
-      for(unsigned i=0;i<getNumberOfArguments();i++){
-        ofile.fmtField(fmt);
-        ofile.printField( getPntrToArgument(i), getArgument(i) );
-        //ofile.printField(getPntrToArgument(i)->getName(),getArgument(i));
-      }
-      ofile.printField();
+void Print::update() {
+  ofile.fmtField(" %f");
+  ofile.printField("time",getTime());
+  for(unsigned i=0; i<getNumberOfArguments(); i++) {
+    ofile.fmtField(fmt);
+    ofile.printField( getPntrToArgument(i), getArgument(i) );
+    //ofile.printField(getPntrToArgument(i)->getName(),getArgument(i));
+  }
+  ofile.printField();
 }
 
-Print::~Print(){
+Print::~Print() {
 }
 
 }

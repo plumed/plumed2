@@ -29,13 +29,13 @@
 #include "tools/Exception.h"
 #include "tools/Keywords.h"
 
-namespace PLMD{
-namespace vesselbase{
+namespace PLMD {
+namespace vesselbase {
 
 class Vessel;
 class VesselOptions;
 
-class VesselRegister{
+class VesselRegister {
 private:
 /// Pointer to a function which, given the keyword for a distribution function, creates it
   typedef Vessel*(*creator_pointer)(const VesselOptions&);

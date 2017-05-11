@@ -40,13 +40,13 @@ namespace PLMD
 {
 namespace multicolvar {
 
-//+PLUMEDOC PRINTANALYSIS DUMPMULTICOLVAR 
+//+PLUMEDOC PRINTANALYSIS DUMPMULTICOLVAR
 /*
 Dump atom positions and multicolvar on a file.
 
 \par Examples
-In this examples we calculate the distances between the  atoms of the first and the second 
-group and we write them in the file MULTICOLVAR.xyz. For each couple it writes the 
+In this examples we calculate the distances between the  atoms of the first and the second
+group and we write them in the file MULTICOLVAR.xyz. For each couple it writes the
 coordinates of their geometric center and their distance.
 
 \verbatim
@@ -69,21 +69,21 @@ class DumpMultiColvar:
 {
   OFile of;
   double lenunit;
-  MultiColvarBase* mycolv; 
+  MultiColvarBase* mycolv;
   std::string fmt_xyz;
 public:
   explicit DumpMultiColvar(const ActionOptions&);
   ~DumpMultiColvar();
   static void registerKeywords( Keywords& keys );
-  void calculate(){}
-  void calculateNumericalDerivatives( ActionWithValue* vv ){ plumed_error(); }
-  void apply(){}
+  void calculate() {}
+  void calculateNumericalDerivatives( ActionWithValue* vv ) { plumed_error(); }
+  void apply() {}
   void update();
 };
 
 PLUMED_REGISTER_ACTION(DumpMultiColvar,"DUMPMULTICOLVAR")
 
-void DumpMultiColvar::registerKeywords( Keywords& keys ){
+void DumpMultiColvar::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
@@ -103,7 +103,7 @@ DumpMultiColvar::DumpMultiColvar(const ActionOptions&ao):
 {
   readArgument("store");
   mycolv = dynamic_cast<MultiColvarBase*>( getDependencies()[0] );
-  plumed_assert( getDependencies().size()==1 ); 
+  plumed_assert( getDependencies().size()==1 );
   if(!mycolv) error("action labeled " + mycolv->getLabel() + " is not a multicolvar");
   log.printf("  printing colvars calculated by action %s \n",mycolv->getLabel().c_str() );
 
@@ -121,7 +121,7 @@ DumpMultiColvar::DumpMultiColvar(const ActionOptions&ao):
   fmt_xyz="%f";
 
   string precision; parse("PRECISION",precision);
-  if(precision.length()>0){
+  if(precision.length()>0) {
     int p; Tools::convert(precision,p);
     log<<"  with precision "<<p<<"\n";
     string a,b;
@@ -131,10 +131,10 @@ DumpMultiColvar::DumpMultiColvar(const ActionOptions&ao):
   }
 
   std::string unitname; parse("UNITS",unitname);
-  if(unitname!="PLUMED"){
+  if(unitname!="PLUMED") {
     Units myunit; myunit.setLength(unitname);
     lenunit=plumed.getAtoms().getUnits().getLength()/myunit.getLength();
-  } 
+  }
   else lenunit=1.0;
 
   checkRead();
@@ -144,22 +144,22 @@ DumpMultiColvar::DumpMultiColvar(const ActionOptions&ao):
   requestAtoms(atom); addDependency( mycolv );
 }
 
-void DumpMultiColvar::update(){
+void DumpMultiColvar::update() {
   of.printf("%u\n",mycolv->getCurrentNumberOfActiveTasks());
   const Tensor & t(mycolv->getPbc().getBox());
-  if(mycolv->getPbc().isOrthorombic()){
+  if(mycolv->getPbc().isOrthorombic()) {
     of.printf((" "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+"\n").c_str(),lenunit*t(0,0),lenunit*t(1,1),lenunit*t(2,2));
-  }else{
+  } else {
     of.printf((" "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+"\n").c_str(),
-                 lenunit*t(0,0),lenunit*t(0,1),lenunit*t(0,2),
-                 lenunit*t(1,0),lenunit*t(1,1),lenunit*t(1,2),
-                 lenunit*t(2,0),lenunit*t(2,1),lenunit*t(2,2)
-           );
+              lenunit*t(0,0),lenunit*t(0,1),lenunit*t(0,2),
+              lenunit*t(1,0),lenunit*t(1,1),lenunit*t(1,2),
+              lenunit*t(2,0),lenunit*t(2,1),lenunit*t(2,2)
+             );
   }
   vesselbase::StoreDataVessel* stash=dynamic_cast<vesselbase::StoreDataVessel*>( getPntrToArgument() );
   plumed_dbg_assert( stash );
   std::vector<double> cvals( mycolv->getNumberOfQuantities() );
-  for(unsigned i=0;i<mycolv->getCurrentNumberOfActiveTasks();++i){
+  for(unsigned i=0; i<mycolv->getCurrentNumberOfActiveTasks(); ++i) {
     const char* defname="X";
     const char* name=defname;
 
@@ -167,18 +167,18 @@ void DumpMultiColvar::update(){
     if( getNumberOfAtoms()>0 ) apos=pbcDistance( getPosition(0), apos );
     of.printf(("%s "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz).c_str(),name,lenunit*apos[0],lenunit*apos[1],lenunit*apos[2]);
     stash->retrieveSequentialValue( i, true, cvals );
-    if( mycolv->weightWithDerivatives() ){
-       for(unsigned j=0;j<cvals.size();++j) of.printf((" "+fmt_xyz).c_str(),cvals[j]);
+    if( mycolv->weightWithDerivatives() ) {
+      for(unsigned j=0; j<cvals.size(); ++j) of.printf((" "+fmt_xyz).c_str(),cvals[j]);
     } else {
-       for(unsigned j=1;j<cvals.size();++j) of.printf((" "+fmt_xyz).c_str(),cvals[j]);
-    }  
+      for(unsigned j=1; j<cvals.size(); ++j) of.printf((" "+fmt_xyz).c_str(),cvals[j]);
+    }
     of.printf("\n");
   }
 }
 
-DumpMultiColvar::~DumpMultiColvar(){
+DumpMultiColvar::~DumpMultiColvar() {
 }
-  
+
 
 }
 }

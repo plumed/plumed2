@@ -26,7 +26,7 @@
 #include <string>
 #include <iosfwd>
 
-namespace PLMD{
+namespace PLMD {
 
 /**
 \ingroup TOOLBOX
@@ -51,7 +51,7 @@ int main(int argc,char**argv){
 \endverbatim
 */
 
-class Citations{
+class Citations {
   std::vector<std::string> items;
 public:
 /// Add a citation.
