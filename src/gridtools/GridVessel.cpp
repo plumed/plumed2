@@ -289,7 +289,7 @@ void GridVessel::getFibonacciCoordinates( const unsigned& ipoint, std::vector<do
 }
 
 void GridVessel::getSplineNeighbors( const unsigned& mybox, unsigned& nneighbors, std::vector<unsigned>& mysneigh ) const {
-  plumed_dbg_assert( gtype==flat ); unsigned nneigh=unsigned(pow(2.0,int(dimension))); 
+  plumed_dbg_assert( gtype==flat ); unsigned nneigh=unsigned(pow(2.0,int(dimension)));
   if( mysneigh.size()!=nneigh ) mysneigh.resize(nneigh);
 
   unsigned inind; nneighbors = 0;
