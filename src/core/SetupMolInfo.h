@@ -30,9 +30,9 @@ namespace PLMD {
 
 class PDB;
 
-class SetupMolInfo : 
-public ActionSetup,  
-public ActionAtomistic {
+class SetupMolInfo :
+  public ActionSetup,
+  public ActionAtomistic {
 private:
 /// A pdb file containing the topology
   PDB& pdb;

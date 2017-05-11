@@ -26,7 +26,7 @@
 #include <string>
 #include <vector>
 
-namespace PLMD{
+namespace PLMD {
 
 class PlumedMain;
 class Atoms;

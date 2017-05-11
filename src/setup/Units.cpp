@@ -27,14 +27,14 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace setup{
+namespace PLMD {
+namespace setup {
 
 //+PLUMEDOC GENERIC UNITS
 /*
 This command sets the internal units for the code.  A new unit can be set by either
 specifying how to convert from the plumed default unit into that new unit or by using
-the shortcuts described below.  This directive MUST appear at the BEGINNING of the 
+the shortcuts described below.  This directive MUST appear at the BEGINNING of the
 plumed.dat file.  The same units must be used througout the plumed.dat file.
 
 Notice that all input/output will then be made using the specified units.
@@ -68,7 +68,7 @@ public:
 
 PLUMED_REGISTER_ACTION(Units,"UNITS")
 
-void Units::registerKeywords( Keywords& keys ){
+void Units::registerKeywords( Keywords& keys ) {
   ActionSetup::registerKeywords(keys);
   keys.add("optional","LENGTH","the units of lengths.  Either specify a conversion factor from the default, nm, or A (for angstroms) or um");
   keys.add("optional","ENERGY","the units of energy.  Either specify a conversion factor from the default, kj/mol, or use j/mol or kcal/mol");
@@ -79,8 +79,8 @@ void Units::registerKeywords( Keywords& keys ){
 }
 
 Units::Units(const ActionOptions&ao):
-Action(ao),
-ActionSetup(ao)
+  Action(ao),
+  ActionSetup(ao)
 {
   PLMD::Units u;
 
@@ -123,7 +123,7 @@ ActionSetup(ao)
   checkRead();
 
   plumed.getAtoms().setUnits(u);
-  if(natural){
+  if(natural) {
     log.printf("  using natural units\n");
   } else {
     log.printf("  using physical units\n");

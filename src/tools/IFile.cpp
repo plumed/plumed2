@@ -36,12 +36,12 @@
 #include <zlib.h>
 #endif
 
-namespace PLMD{
+namespace PLMD {
 
-size_t IFile::llread(char*ptr,size_t s){
+size_t IFile::llread(char*ptr,size_t s) {
   plumed_assert(fp);
   size_t r;
-  if(gzfp){
+  if(gzfp) {
 #ifdef __PLUMED_HAS_ZLIB
     int rr=gzread(gzFile(gzfp),ptr,s);
     if(rr==0)   eof=true;
@@ -58,22 +58,22 @@ size_t IFile::llread(char*ptr,size_t s){
   return r;
 }
 
-IFile& IFile::advanceField(){
+IFile& IFile::advanceField() {
   plumed_assert(!inMiddleOfField);
   std::string line;
   bool done=false;
-  while(!done){
+  while(!done) {
     getline(line);
-    if(!*this){return *this;}
+    if(!*this) {return *this;}
     std::vector<std::string> words=Tools::getWords(line);
-    if(words.size()>=2 && words[0]=="#!" && words[1]=="FIELDS"){
+    if(words.size()>=2 && words[0]=="#!" && words[1]=="FIELDS") {
       fields.clear();
-      for(unsigned i=2;i<words.size();i++){
+      for(unsigned i=2; i<words.size(); i++) {
         Field field;
         field.name=words[i];
         fields.push_back(field);
       }
-    } else if(words.size()==4 && words[0]=="#!" && words[1]=="SET"){
+    } else if(words.size()==4 && words[0]=="#!" && words[1]=="SET") {
       Field field;
       field.name=words[2];
       field.value=words[3];
@@ -81,20 +81,20 @@ IFile& IFile::advanceField(){
       fields.push_back(field);
     } else {
       unsigned nf=0;
-      for(unsigned i=0;i<fields.size();i++) if(!fields[i].constant) nf++;
+      for(unsigned i=0; i<fields.size(); i++) if(!fields[i].constant) nf++;
       Tools::trimComments(line);
       words=Tools::getWords(line);
-      if( words.size()==nf ){
-          unsigned j=0;
-          for(unsigned i=0;i<fields.size();i++){
-            if(fields[i].constant) continue;
-            fields[i].value=words[j];
-            fields[i].read=false;
-            j++;
-          }
-          done=true;
+      if( words.size()==nf ) {
+        unsigned j=0;
+        for(unsigned i=0; i<fields.size(); i++) {
+          if(fields[i].constant) continue;
+          fields[i].value=words[j];
+          fields[i].read=false;
+          j++;
+        }
+        done=true;
       } else if( !words.empty() ) {
-          plumed_merror(getPath() + " mismatch between number of fields in file and expected number");
+        plumed_merror(getPath() + " mismatch between number of fields in file and expected number");
       }
     }
   }
@@ -102,7 +102,7 @@ IFile& IFile::advanceField(){
   return *this;
 }
 
-IFile& IFile::open(const std::string&path){
+IFile& IFile::open(const std::string&path) {
   plumed_massert(!cloned,"file "+path+" appears to be cloned");
   eof=false;
   err=false;
@@ -111,7 +111,7 @@ IFile& IFile::open(const std::string&path){
   bool do_exist=FileExist(path);
   plumed_massert(do_exist,"file " + path + " cannot be found");
   fp=std::fopen(const_cast<char*>(this->path.c_str()),"r");
-  if(Tools::extension(this->path)=="gz"){
+  if(Tools::extension(this->path)=="gz") {
 #ifdef __PLUMED_HAS_ZLIB
     gzfp=(void*)gzopen(const_cast<char*>(this->path.c_str()),"r");
 #else
@@ -122,24 +122,24 @@ IFile& IFile::open(const std::string&path){
   return *this;
 }
 
-IFile& IFile::scanFieldList(std::vector<std::string>&s){
+IFile& IFile::scanFieldList(std::vector<std::string>&s) {
   if(!inMiddleOfField) advanceField();
   if(!*this) return *this;
   s.clear();
-  for(unsigned i=0;i<fields.size();i++)
+  for(unsigned i=0; i<fields.size(); i++)
     s.push_back(fields[i].name);
   return *this;
 }
 
-bool IFile::FieldExist(const std::string& s){
-     std::vector<std::string> slist;
-     scanFieldList(slist);
-     int mycount = (int) std::count(slist.begin(), slist.end(), s);
-     if(mycount>0) return true;
-     else return false;
+bool IFile::FieldExist(const std::string& s) {
+  std::vector<std::string> slist;
+  scanFieldList(slist);
+  int mycount = (int) std::count(slist.begin(), slist.end(), s);
+  if(mycount>0) return true;
+  else return false;
 }
 
-IFile& IFile::scanField(const std::string&name,std::string&str){
+IFile& IFile::scanField(const std::string&name,std::string&str) {
   if(!inMiddleOfField) advanceField();
   if(!*this) return *this;
   unsigned i=findField(name);
@@ -148,40 +148,40 @@ IFile& IFile::scanField(const std::string&name,std::string&str){
   return *this;
 }
 
-IFile& IFile::scanField(const std::string&name,double &x){
+IFile& IFile::scanField(const std::string&name,double &x) {
   std::string str;
   scanField(name,str);
   if(*this) Tools::convert(str,x);
   return *this;
 }
 
-IFile& IFile::scanField(const std::string&name,int &x){
+IFile& IFile::scanField(const std::string&name,int &x) {
   std::string str;
   scanField(name,str);
   if(*this) Tools::convert(str,x);
   return *this;
 }
 
-IFile& IFile::scanField(Value* val){
+IFile& IFile::scanField(Value* val) {
   double ff=NAN; // this is to be sure a NAN value is replaced upon failure
   scanField(  val->getName(), ff );
   val->set( ff );
-  if( FieldExist("min_" + val->getName() ) ){ 
-      std::string min, max;
-      scanField("min_" + val->getName(), min );
-      scanField("max_" + val->getName(), max );
-      val->setDomain( min, max ); 
+  if( FieldExist("min_" + val->getName() ) ) {
+    std::string min, max;
+    scanField("min_" + val->getName(), min );
+    scanField("max_" + val->getName(), max );
+    val->setDomain( min, max );
   } else {
-      val->setNotPeriodic();
+    val->setNotPeriodic();
   }
   return *this;
 }
 
-IFile& IFile::scanField(){
-  if(!ignoreFields){
-     for(unsigned i=0;i<fields.size();i++){
-       plumed_massert(fields[i].read,"field "+fields[i].name+" was not read: all the fields need to be read otherwise you could miss important infos" );
-     }
+IFile& IFile::scanField() {
+  if(!ignoreFields) {
+    for(unsigned i=0; i<fields.size(); i++) {
+      plumed_massert(fields[i].read,"field "+fields[i].name+" was not read: all the fields need to be read otherwise you could miss important infos" );
+    }
   }
   inMiddleOfField=false;
   return *this;
@@ -194,25 +194,25 @@ IFile::IFile():
 {
 }
 
-IFile::~IFile(){
+IFile::~IFile() {
   if(inMiddleOfField) std::cerr<<"WARNING: IFile closed in the middle of reading. seems strange!\n";
 }
 
-IFile& IFile::getline(std::string &str){
+IFile& IFile::getline(std::string &str) {
   char tmp=0;
   str="";
   fpos_t pos;
   fgetpos(fp,&pos);
-  while(llread(&tmp,1)==1 && tmp && tmp!='\n' && tmp!='\r' && !eof && !err){
+  while(llread(&tmp,1)==1 && tmp && tmp!='\n' && tmp!='\r' && !eof && !err) {
     str+=tmp;
   }
-  if(tmp=='\r'){
+  if(tmp=='\r') {
     llread(&tmp,1);
     plumed_massert(tmp=='\n',"plumed only accepts \\n (unix) or \\r\\n (dos) new lines");
   }
- if(eof && noEOL){
-   if(str.length()>0) eof=false;
- } else if(eof || err || tmp!='\n'){
+  if(eof && noEOL) {
+    if(str.length()>0) eof=false;
+  } else if(eof || err || tmp!='\n') {
     eof = true;
     str="";
     if(!err) fsetpos(fp,&pos);
@@ -227,28 +227,28 @@ IFile& IFile::getline(std::string &str){
   return *this;
 }
 
-unsigned IFile::findField(const std::string&name)const{
+unsigned IFile::findField(const std::string&name)const {
   unsigned i;
-  for(i=0;i<fields.size();i++) if(fields[i].name==name) break;
+  for(i=0; i<fields.size(); i++) if(fields[i].name==name) break;
   if(i>=fields.size()) plumed_merror(name);
   return i;
 }
 
-void IFile::reset(bool reset){
- eof = reset;
- err = reset;
- if(!reset && fp) clearerr(fp);
+void IFile::reset(bool reset) {
+  eof = reset;
+  err = reset;
+  if(!reset && fp) clearerr(fp);
 #ifdef __PLUMED_HAS_ZLIB
- if(!reset && gzfp) gzclearerr(gzFile(gzfp));
+  if(!reset && gzfp) gzclearerr(gzFile(gzfp));
 #endif
- return;
-} 
+  return;
+}
 
-void IFile::allowIgnoredFields(){
+void IFile::allowIgnoredFields() {
   ignoreFields=true;
 }
 
-void IFile::allowNoEOL(){
+void IFile::allowNoEOL() {
   noEOL=true;
 }
 

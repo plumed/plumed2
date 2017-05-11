@@ -24,7 +24,7 @@
 #include "core/ActionRegister.h"
 
 #include <string>
-#include <cmath> 
+#include <cmath>
 
 //+PLUMEDOC MCOLVARF MCOLV_PRODUCT
 /*
@@ -46,41 +46,41 @@ public:
 /// Actually do the calculation
   double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
 /// Is the variable periodic
-  bool isPeriodic(){ return false; }
+  bool isPeriodic() { return false; }
 };
 
 PLUMED_REGISTER_ACTION(MultiColvarProduct,"MCOLV_PRODUCT")
 
-void MultiColvarProduct::registerKeywords( Keywords& keys ){
+void MultiColvarProduct::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );
   keys.add("compulsory","DATA","the multicolvars you are calculating the product of");
-  keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("SUM"); keys.use("LESS_THAN"); keys.use("HISTOGRAM"); keys.use("HISTOGRAM"); 
+  keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("SUM"); keys.use("LESS_THAN"); keys.use("HISTOGRAM"); keys.use("HISTOGRAM");
   keys.use("MIN"); keys.use("MAX"); keys.use("LOWEST"); keys.use("HIGHEST"); keys.use("ALT_MIN"); keys.use("BETWEEN"); keys.use("MOMENTS");
 }
 
 MultiColvarProduct::MultiColvarProduct(const ActionOptions& ao):
-Action(ao),
-MultiColvarBase(ao)
+  Action(ao),
+  MultiColvarBase(ao)
 {
   buildSets();
-  for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i){
-      if( mybasemulticolvars[i]->weightWithDerivatives() ) error("cannot take product of multicolvars with weights");
+  for(unsigned i=0; i<getNumberOfBaseMultiColvars(); ++i) {
+    if( mybasemulticolvars[i]->weightWithDerivatives() ) error("cannot take product of multicolvars with weights");
   }
 }
 
 double MultiColvarProduct::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
-  double dot=1; std::vector<double> tval(2); 
-  for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i){ 
-      getInputData( i, false, myatoms, tval );
-      dot *= tval[1];
+  double dot=1; std::vector<double> tval(2);
+  for(unsigned i=0; i<getNumberOfBaseMultiColvars(); ++i) {
+    getInputData( i, false, myatoms, tval );
+    dot *= tval[1];
   }
-  if( !doNotCalculateDerivatives() ){ 
-      MultiValue& myvals = myatoms.getUnderlyingMultiValue(); std::vector<double> cc(2);
-      for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i){ 
-          getInputData( i, false, myatoms, cc ); cc[1] = dot / cc[1];
-          MultiValue& myder=getInputDerivatives( i, false, myatoms ); 
-          splitInputDerivatives( 1, 1, 2, i, cc, myder, myatoms ); 
-      }
+  if( !doNotCalculateDerivatives() ) {
+    MultiValue& myvals = myatoms.getUnderlyingMultiValue(); std::vector<double> cc(2);
+    for(unsigned i=0; i<getNumberOfBaseMultiColvars(); ++i) {
+      getInputData( i, false, myatoms, cc ); cc[1] = dot / cc[1];
+      MultiValue& myder=getInputDerivatives( i, false, myatoms );
+      splitInputDerivatives( 1, 1, 2, i, cc, myder, myatoms );
+    }
   }
   return dot;
 }

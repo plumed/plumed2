@@ -26,80 +26,80 @@ namespace PLMD {
 namespace pamm {
 
 PammObject::PammObject():
-regulariser(0.001)
+  regulariser(0.001)
 {
 }
 
 PammObject::PammObject( const PammObject& in ):
-regulariser(in.regulariser),
-pbc(in.pbc),
-min(in.min),
-max(in.max)
+  regulariser(in.regulariser),
+  pbc(in.pbc),
+  min(in.min),
+  max(in.max)
 {
-  for(unsigned i=0;i<in.kernels.size();++i) kernels.push_back( new KernelFunctions( in.kernels[i] ) );
+  for(unsigned i=0; i<in.kernels.size(); ++i) kernels.push_back( new KernelFunctions( in.kernels[i] ) );
 }
 
-PammObject::~PammObject(){
-  for(unsigned i=0;i<kernels.size();++i) delete kernels[i];
+PammObject::~PammObject() {
+  for(unsigned i=0; i<kernels.size(); ++i) delete kernels[i];
 }
 
-void PammObject::setup( const std::string& filename, const double& reg, const std::vector<std::string>& valnames, 
-                        const std::vector<bool>& pbcin, const std::vector<std::string>& imin, const std::vector<std::string>& imax, 
-                        std::string& errorstr ){
-  IFile ifile; regulariser=reg; 
-  if( !ifile.FileExist(filename) ){
-     errorstr = "could not find file named " + filename;
-     return;
+void PammObject::setup( const std::string& filename, const double& reg, const std::vector<std::string>& valnames,
+                        const std::vector<bool>& pbcin, const std::vector<std::string>& imin, const std::vector<std::string>& imax,
+                        std::string& errorstr ) {
+  IFile ifile; regulariser=reg;
+  if( !ifile.FileExist(filename) ) {
+    errorstr = "could not find file named " + filename;
+    return;
   }
 
-  std::vector<Value*> pos; 
-  pbc.resize( valnames.size() ); 
+  std::vector<Value*> pos;
+  pbc.resize( valnames.size() );
   min.resize( valnames.size() );
   max.resize( valnames.size() );
-  for(unsigned i=0;i<valnames.size();++i){
+  for(unsigned i=0; i<valnames.size(); ++i) {
     pbc[i]=pbcin[i]; min[i]=imin[i]; max[i]=imax[i];
-    pos.push_back( new Value() ); 
+    pos.push_back( new Value() );
     if( !pbc[i] ) pos[i]->setNotPeriodic();
     else pos[i]->setDomain( min[i], max[i] );
   }
-  
+
   ifile.open(filename); ifile.allowIgnoredFields(); kernels.resize(0);
-  for(unsigned k=0;;++k){
-      KernelFunctions* kk = KernelFunctions::read( &ifile, false, valnames );
-      if( !kk ) break ;
-      kk->normalize( pos );
-      kernels.push_back( kk );
-      ifile.scanField();
+  for(unsigned k=0;; ++k) {
+    KernelFunctions* kk = KernelFunctions::read( &ifile, false, valnames );
+    if( !kk ) break ;
+    kk->normalize( pos );
+    kernels.push_back( kk );
+    ifile.scanField();
   }
   ifile.close();
-  for(unsigned i=0;i<valnames.size();++i) delete pos[i];
+  for(unsigned i=0; i<valnames.size(); ++i) delete pos[i];
 }
 
 void PammObject::evaluate( const std::vector<double>& invar, std::vector<double>& outvals, std::vector<std::vector<double> >& der ) const {
-   std::vector<Value*> pos;
-   for(unsigned i=0;i<pbc.size();++i){
-      pos.push_back( new Value() ); 
-      if( !pbc[i] ) pos[i]->setNotPeriodic();
-      else pos[i]->setDomain( min[i], max[i] );
-      // And set the value 
-      pos[i]->set( invar[i] );
-   }
+  std::vector<Value*> pos;
+  for(unsigned i=0; i<pbc.size(); ++i) {
+    pos.push_back( new Value() );
+    if( !pbc[i] ) pos[i]->setNotPeriodic();
+    else pos[i]->setDomain( min[i], max[i] );
+    // And set the value
+    pos[i]->set( invar[i] );
+  }
 
-   // Evaluate the set of kernels 
-   double denom=regulariser;
-   std::vector<double> dderiv( der[0].size(), 0 );
-   for(unsigned i=0;i<kernels.size();++i){
-       outvals[i]=kernels[i]->evaluate( pos, der[i] );
-       denom+=outvals[i];
-       for(unsigned j=0;j<der[i].size();++j) dderiv[j] += der[i][j];
-   }
-   // Evaluate the set of derivatives
-   for(unsigned i=0;i<kernels.size();++i){
-       outvals[i]/=denom; 
-       for(unsigned j=0;j<der[i].size();++j) der[i][j]=der[i][j]/denom - outvals[i]*dderiv[j]/denom;
-   }
+  // Evaluate the set of kernels
+  double denom=regulariser;
+  std::vector<double> dderiv( der[0].size(), 0 );
+  for(unsigned i=0; i<kernels.size(); ++i) {
+    outvals[i]=kernels[i]->evaluate( pos, der[i] );
+    denom+=outvals[i];
+    for(unsigned j=0; j<der[i].size(); ++j) dderiv[j] += der[i][j];
+  }
+  // Evaluate the set of derivatives
+  for(unsigned i=0; i<kernels.size(); ++i) {
+    outvals[i]/=denom;
+    for(unsigned j=0; j<der[i].size(); ++j) der[i][j]=der[i][j]/denom - outvals[i]*dderiv[j]/denom;
+  }
 
-   for(unsigned i=0;i<pbc.size();++i) delete pos[i];
+  for(unsigned i=0; i<pbc.size(); ++i) delete pos[i];
 }
 
 

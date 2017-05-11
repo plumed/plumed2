@@ -55,7 +55,7 @@ private:
 /// Reparameterize the frames of the path between istart and iend and make the spacing equal to target
   void reparameterizePart( const int& istart, const int& iend, const double& target, const double& TOL );
 public:
-  PathReparameterization( const Pbc& ipbc, const std::vector<Value*>& iargs, std::vector<ReferenceConfiguration*>& pp ); 
+  PathReparameterization( const Pbc& ipbc, const std::vector<Value*>& iargs, std::vector<ReferenceConfiguration*>& pp );
 /// Reparameterize the frames of the path between istart and iend so as to make the spacing constant
   void reparameterize( const int& istart, const int& iend, const double& TOL );
 };

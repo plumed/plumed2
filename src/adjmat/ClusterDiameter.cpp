@@ -26,11 +26,11 @@
 /*
 Print out the diameter of one of the connected components
 
-As discussed in the section of the manual on \ref contactmatrix a useful tool for developing complex collective variables is the notion of the 
-so called adjacency matrix.  An adjacency matrix is an \f$N \times N\f$ matrix in which the \f$i\f$th, \f$j\f$th element tells you whether 
+As discussed in the section of the manual on \ref contactmatrix a useful tool for developing complex collective variables is the notion of the
+so called adjacency matrix.  An adjacency matrix is an \f$N \times N\f$ matrix in which the \f$i\f$th, \f$j\f$th element tells you whether
 or not the \f$i\f$th and \f$j\f$th atoms/molecules from a set of \f$N\f$ atoms/molecules are adjacent or not.  When analysing these matrix
 we can treat them as a graph and find connected components using some clustering algorithm.  This action is used in tandem with this form of analysis
-to output the largest of the distances between the paris of atoms that are connected together in a particular connected component.  It is important to 
+to output the largest of the distances between the paris of atoms that are connected together in a particular connected component.  It is important to
 note that the quantity that is output by this action is not differentiable.  As such it cannot be used as a collective variable in a biased simulation.
 
 \par Examples
@@ -79,51 +79,51 @@ public:
 
 PLUMED_REGISTER_ACTION(ClusterDiameter,"CLUSTER_DIAMETER")
 
-void ClusterDiameter::registerKeywords( Keywords& keys ){
+void ClusterDiameter::registerKeywords( Keywords& keys ) {
   ClusterAnalysisBase::registerKeywords( keys );
   keys.add("compulsory","CLUSTER","1","which cluster would you like to look at 1 is the largest cluster, 2 is the second largest, 3 is the the third largest and so on.");
 }
 
 ClusterDiameter::ClusterDiameter(const ActionOptions&ao):
-Action(ao),
-ClusterAnalysisBase(ao)
+  Action(ao),
+  ClusterAnalysisBase(ao)
 {
-   // Find out which cluster we want
-   parse("CLUSTER",clustr);
+  // Find out which cluster we want
+  parse("CLUSTER",clustr);
 
-   if( clustr<1 ) error("cannot look for a cluster larger than the largest cluster");
-   if( clustr>getNumberOfNodes() ) error("cluster selected is invalid - too few atoms in system");
+  if( clustr<1 ) error("cannot look for a cluster larger than the largest cluster");
+  if( clustr>getNumberOfNodes() ) error("cluster selected is invalid - too few atoms in system");
 
-   // Create the task list
-   for(unsigned  i=0;i<getNumberOfNodes();++i){
-       for(unsigned j=0;j<getNumberOfNodes();++j) addTaskToList( i*getNumberOfNodes() + j );
-   }
-   // Now create a higest vessel
-   addVessel("HIGHEST", "", -1); std::vector<AtomNumber> fake_atoms; setupMultiColvarBase( fake_atoms ); 
+  // Create the task list
+  for(unsigned  i=0; i<getNumberOfNodes(); ++i) {
+    for(unsigned j=0; j<getNumberOfNodes(); ++j) addTaskToList( i*getNumberOfNodes() + j );
+  }
+  // Now create a higest vessel
+  addVessel("HIGHEST", "", -1); std::vector<AtomNumber> fake_atoms; setupMultiColvarBase( fake_atoms );
 }
 
-void ClusterDiameter::turnOnDerivatives(){
-   error("cannot calculate derivatives of cluster radius.  This quantity is not differentiable");
+void ClusterDiameter::turnOnDerivatives() {
+  error("cannot calculate derivatives of cluster radius.  This quantity is not differentiable");
 }
 
-void ClusterDiameter::calculate(){
-   // Retrieve the atoms in the largest cluster
-   std::vector<unsigned> myatoms; retrieveAtomsInCluster( clustr, myatoms );
-   // Activate the relevant tasks
-   deactivateAllTasks(); 
-   for(unsigned i=1;i<myatoms.size();++i){
-       for(unsigned j=0;j<i;++j) taskFlags[ myatoms[i]*getNumberOfNodes() + myatoms[j] ] = 1;  
-   }
-   lockContributors();
-   // Now do the calculation 
-   runAllTasks();
+void ClusterDiameter::calculate() {
+  // Retrieve the atoms in the largest cluster
+  std::vector<unsigned> myatoms; retrieveAtomsInCluster( clustr, myatoms );
+  // Activate the relevant tasks
+  deactivateAllTasks();
+  for(unsigned i=1; i<myatoms.size(); ++i) {
+    for(unsigned j=0; j<i; ++j) taskFlags[ myatoms[i]*getNumberOfNodes() + myatoms[j] ] = 1;
+  }
+  lockContributors();
+  // Now do the calculation
+  runAllTasks();
 }
 
-void ClusterDiameter::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const { 
+void ClusterDiameter::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
   unsigned iatom=std::floor(current/getNumberOfNodes()), jatom = current - iatom*getNumberOfNodes();
   Vector distance=getSeparation( getPosition(iatom), getPosition(jatom) );
   double dd = distance.modulo();
-  myvals.setValue( 0, 1.0 ); myvals.setValue( 1, dd ); 
+  myvals.setValue( 0, 1.0 ); myvals.setValue( 1, dd );
 }
 
 }

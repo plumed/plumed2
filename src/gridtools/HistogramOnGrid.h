@@ -53,7 +53,7 @@ public:
   unsigned getNumberOfBufferPoints() const ;
   KernelFunctions* getKernelAndNeighbors( std::vector<double>& point, unsigned& num_neigh, std::vector<unsigned>& neighbors ) const;
   std::vector<Value*> getVectorOfValues() const ;
-  void addOneKernelEachTimeOnly(){ addOneKernelAtATime=true; }
+  void addOneKernelEachTimeOnly() { addOneKernelAtATime=true; }
   virtual void getFinalForces( const std::vector<double>& buffer, std::vector<double>& finalForces );
   bool noDiscreteKernels() const ;
 };

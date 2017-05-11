@@ -43,12 +43,12 @@ public:
 // Explicit definitions for constructor, copy constructor and destructor
   PammObject();
   PammObject( const PammObject& );
-  ~PammObject();  
+  ~PammObject();
 /// Setup the Pamm object
-  void setup( const std::string& filename, const double& reg, const std::vector<std::string>& valnames, 
+  void setup( const std::string& filename, const double& reg, const std::vector<std::string>& valnames,
               const std::vector<bool>& pbcin, const std::vector<std::string>& imin, const std::vector<std::string>& imax,
               std::string& errorstr );
-/// 
+///
   void evaluate( const std::vector<double>& invar, std::vector<double>& outvals, std::vector<std::vector<double> >& der ) const ;
 ///
   unsigned getNumberOfKernels() const ;

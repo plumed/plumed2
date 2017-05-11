@@ -32,7 +32,7 @@ namespace pamm {
 class HBPammObject {
 private:
 /// The Pamm object underlying this HBPamm calculation
-  PammObject mypamm; 
+  PammObject mypamm;
 /// Pointer to base class in multicolvar
   multicolvar::MultiColvarBase* mymulti;
 public:
@@ -41,7 +41,7 @@ public:
 /// Get the cutoff to use throughout
   double get_cutoff() const ;
 /// Evaluate the HBPamm Object
-  double evaluate( const unsigned& dno, const unsigned& ano, const unsigned& hno, 
+  double evaluate( const unsigned& dno, const unsigned& ano, const unsigned& hno,
                    const Vector& d_da, const double& md_da, multicolvar::AtomValuePack& myatoms ) const ;
 };
 

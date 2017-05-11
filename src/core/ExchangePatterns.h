@@ -25,10 +25,10 @@
 namespace PLMD {
 class Random;
 
-  class ExchangePatterns {
-    int    PatternFlag;
-    int    NumberOfReplicas;
-    Random& random;
+class ExchangePatterns {
+  int    PatternFlag;
+  int    NumberOfReplicas;
+  Random& random;
 public:
   ExchangePatterns();
   ~ExchangePatterns();

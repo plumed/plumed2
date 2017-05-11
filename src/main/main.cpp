@@ -32,10 +32,10 @@ using namespace std;
   This main uses only the interface published in
   Plumed.h. The object file generated from this .cpp
   is the only part of the plumed library that should
-  not be linked with external MD codes, so as 
+  not be linked with external MD codes, so as
   to avoid linker error.
 */
-int main(int argc,char**argv){
+int main(int argc,char**argv) {
 #ifdef __PLUMED_HAS_MPI
   bool nompi=false;
   if(argc>1 && !strcmp(argv[1],"--no-mpi")) nompi=true;
@@ -48,7 +48,7 @@ int main(int argc,char**argv){
   p->cmd("CLTool setArgc",&argc);
   p->cmd("CLTool setArgv",argv);
 #ifdef __PLUMED_HAS_MPI
-  if(!nompi){
+  if(!nompi) {
     MPI_Comm comm;
     MPI_Comm_dup(MPI_COMM_WORLD,&comm);
     p->cmd("CLTool setMPIComm",&comm);

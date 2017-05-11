@@ -55,13 +55,13 @@ public:
   unsigned ndim() const;
 /// Get the cutoff for a kernel
   double getCutoff( const double& width ) const ;
-/// Get the position of the center 
+/// Get the position of the center
   std::vector<double> getCenter() const;
 /// Get the support
-  std::vector<unsigned> getSupport( const std::vector<double>& dx ) const; 
+  std::vector<unsigned> getSupport( const std::vector<double>& dx ) const;
 /// get it in continuous form
-  std::vector<double> getContinuousSupport( ) const; 
-/// Evaluate the kernel function with constant intervals 
+  std::vector<double> getContinuousSupport( ) const;
+/// Evaluate the kernel function with constant intervals
   double evaluate( const std::vector<Value*>& pos, std::vector<double>& derivatives, bool usederiv=true, bool doInt=false, double lowI_=-1, double uppI_=-1 ) const;
 /// Read a kernel function from a file
   static KernelFunctions* read( IFile* ifile, const bool& cholesky, const std::vector<std::string>& valnames );
@@ -69,11 +69,11 @@ public:
 
 inline
 Matrix<double> KernelFunctions::getMatrix() const {
-  unsigned k=0, ncv=ndim(); Matrix<double> mymatrix(ncv,ncv); 
-  for(unsigned i=0;i<ncv;i++){
-    for(unsigned j=i;j<ncv;j++){
-        mymatrix(i,j)=mymatrix(j,i)=width[k]; // recompose the full inverse matrix
-        k++;
+  unsigned k=0, ncv=ndim(); Matrix<double> mymatrix(ncv,ncv);
+  for(unsigned i=0; i<ncv; i++) {
+    for(unsigned j=i; j<ncv; j++) {
+      mymatrix(i,j)=mymatrix(j,i)=width[k]; // recompose the full inverse matrix
+      k++;
     }
   }
   return mymatrix;

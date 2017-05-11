@@ -26,8 +26,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace generic{
+namespace PLMD {
+namespace generic {
 
 //+PLUMEDOC PRINTANALYSIS UPDATE_IF
 /*
@@ -76,8 +76,8 @@ UPDATE_IF ARG=coord END
 //+ENDPLUMEDOC
 
 class UpdateIf:
-public ActionPilot,
-public ActionWithArguments
+  public ActionPilot,
+  public ActionWithArguments
 {
   std::vector<double> lower;
   std::vector<double> upper;
@@ -89,13 +89,13 @@ public:
   void beforeUpdate();
   explicit UpdateIf(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
-  void apply(){}
+  void apply() {}
   ~UpdateIf();
 };
 
 PLUMED_REGISTER_ACTION(UpdateIf,"UPDATE_IF")
 
-void UpdateIf::registerKeywords(Keywords& keys){
+void UpdateIf::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys);
   ActionPilot::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
@@ -107,11 +107,11 @@ void UpdateIf::registerKeywords(Keywords& keys){
 }
 
 UpdateIf::UpdateIf(const ActionOptions&ao):
-Action(ao),
-ActionPilot(ao),
-ActionWithArguments(ao),
-on(false),
-end(false)
+  Action(ao),
+  ActionPilot(ao),
+  ActionWithArguments(ao),
+  on(false),
+  end(false)
 {
   parseFlag("END",end);
   parseVector("LESS_THAN",upper);
@@ -122,24 +122,24 @@ end(false)
   if(lower.size()==0) lower.assign(getNumberOfArguments(),-std::numeric_limits<double>::max());
   if(upper.size()!=getNumberOfArguments()) error("LESS_THAN should have the same size as ARG");
   if(lower.size()!=getNumberOfArguments()) error("MORE_THAN should have the same size as ARG");
-  for(unsigned i=0;i<getNumberOfArguments();++i){
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     log<<"  boundaries for argument "<<i<<"    "<<lower[i]<<" "<<upper[i]<<"\n";
   }
   checkRead();
 }
 
-void UpdateIf::prepare(){
+void UpdateIf::prepare() {
   on=false;
 }
 
-void UpdateIf::calculate(){
+void UpdateIf::calculate() {
   on=true;
-  for(unsigned i=0;i<getNumberOfArguments();++i){
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     if(getArgument(i)>=upper[i] || getArgument(i)<=lower[i]) on=false;
   }
 }
 
-void UpdateIf::beforeUpdate(){
+void UpdateIf::beforeUpdate() {
   if(end) plumed.updateFlagsPop();
   else {
     if(on) plumed.updateFlagsPush(plumed.updateFlagsTop());
@@ -148,7 +148,7 @@ void UpdateIf::beforeUpdate(){
 }
 
 
-UpdateIf::~UpdateIf(){
+UpdateIf::~UpdateIf() {
 }
 
 }

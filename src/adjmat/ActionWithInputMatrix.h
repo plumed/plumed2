@@ -57,7 +57,7 @@ public:
   virtual unsigned getNumberOfDerivatives();
 ///  Get the number of rows/cols in the adjacency matrix vessel
   virtual unsigned getNumberOfNodes() const ;
-  bool isPeriodic(){ return false; }
+  bool isPeriodic() { return false; }
   virtual unsigned getNumberOfQuantities() const ;
 ///
   virtual AtomNumber getAbsoluteIndexOfCentralAtom(const unsigned& i) const ;
