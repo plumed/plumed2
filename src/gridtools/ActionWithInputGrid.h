@@ -29,7 +29,7 @@ namespace PLMD {
 namespace gridtools {
 
 class ActionWithInputGrid : public ActionWithGrid {
-friend class DumpGrid;
+  friend class DumpGrid;
 private:
   unsigned mycomp;
 protected:
@@ -43,12 +43,12 @@ public:
   virtual void clearAverage();
   virtual void prepareForAveraging();
   virtual bool checkAllActive() const { return true; }
-  virtual void apply(){};
+  virtual void apply() {};
 };
 
 inline
 double ActionWithInputGrid::getFunctionValue( const unsigned& ipoint ) const {
-  unsigned dim=ingrid->getDimension(); if( ingrid->noderiv ) dim=0; 
+  unsigned dim=ingrid->getDimension(); if( ingrid->noderiv ) dim=0;
   return ingrid->getGridElement( ipoint, mycomp*(1+dim) );
 }
 
@@ -60,7 +60,7 @@ double ActionWithInputGrid::getFunctionValue( const std::vector<unsigned>& ip ) 
 inline
 double ActionWithInputGrid::getFunctionValueAndDerivatives( const std::vector<double>& x, std::vector<double>& der ) const {
   return ingrid->getValueAndDerivatives( x, mycomp, der );
-} 
+}
 
 }
 }

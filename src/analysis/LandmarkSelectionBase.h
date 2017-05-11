@@ -28,7 +28,7 @@ namespace PLMD {
 namespace analysis {
 
 class LandmarkSelectionBase : public AnalysisBase {
-friend class ReselectLandmarks;
+  friend class ReselectLandmarks;
 private:
 /// The number of landmarks we are selecting
   unsigned nlandmarks;
@@ -44,7 +44,7 @@ protected:
 /// Do a voronoi analysis
   void voronoiAnalysis( const std::vector<unsigned>& myindices, std::vector<double>& lweights, std::vector<unsigned>& assignments ) const ;
 public:
-  static void registerKeywords( Keywords& keys );  
+  static void registerKeywords( Keywords& keys );
   LandmarkSelectionBase( const ActionOptions& ao );
 /// Return the number of data points
   unsigned getNumberOfDataPoints() const ;
@@ -60,7 +60,7 @@ public:
 /// Get the squared dissimilarity between two reference configurations
   double getDissimilarity( const unsigned& i, const unsigned& j );
 /// This does nothing - it just ensures the final class is not abstract
-  void performTask( const unsigned& , const unsigned& , MultiValue& ) const { plumed_error(); }
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const { plumed_error(); }
 };
 
 inline
@@ -74,17 +74,17 @@ unsigned LandmarkSelectionBase::getDataPointIndexInBase( const unsigned& idata )
 }
 
 inline
-double LandmarkSelectionBase::getWeight( const unsigned& idata ){
+double LandmarkSelectionBase::getWeight( const unsigned& idata ) {
   return lweights[idata];
 }
 
 inline
-DataCollectionObject& LandmarkSelectionBase::getStoredData( const unsigned& idat, const bool& calcdist ){
+DataCollectionObject& LandmarkSelectionBase::getStoredData( const unsigned& idat, const bool& calcdist ) {
   return AnalysisBase::getStoredData( landmark_indices[idat], calcdist );
 }
 
 inline
-double LandmarkSelectionBase::getDissimilarity( const unsigned& i, const unsigned& j ){
+double LandmarkSelectionBase::getDissimilarity( const unsigned& i, const unsigned& j ) {
   return AnalysisBase::getDissimilarity( landmark_indices[i], landmark_indices[j] );
 }
 

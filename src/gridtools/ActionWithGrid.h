@@ -43,7 +43,7 @@ protected:
   void createGrid( const std::string& type, const std::string& inputstr );
 public:
   static void registerKeywords( Keywords& keys );
-  explicit ActionWithGrid( const ActionOptions& ); 
+  explicit ActionWithGrid( const ActionOptions& );
   virtual void turnOnDerivatives();
   void calculate();
   void runTask( const unsigned& current, MultiValue& myvals ) const ;

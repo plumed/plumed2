@@ -22,11 +22,11 @@
 #ifndef __PLUMED_vatom_ActionWithVirtualAtom_h
 #define __PLUMED_vatom_ActionWithVirtualAtom_h
 #include "core/ActionWithVirtualAtom.h"
-namespace PLMD{
-namespace vatom{
+namespace PLMD {
+namespace vatom {
 // core/ActionWithVirtualAtom.h is left in core as it might be used in other classes
 // With this trick, PLMD::ActionWithVirtualAtom is visible as PLMD::vatom::ActionWithVirtualAtom
-  using PLMD::ActionWithVirtualAtom;
+using PLMD::ActionWithVirtualAtom;
 }
 }
 #endif

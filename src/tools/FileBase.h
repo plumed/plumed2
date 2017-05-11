@@ -24,7 +24,7 @@
 
 #include <string>
 
-namespace PLMD{
+namespace PLMD {
 
 class Communicator;
 class PlumedMain;
@@ -36,7 +36,7 @@ Base class for dealing with files.
 This class just provides things which are common among OFile and IFile
 */
 
-class FileBase{
+class FileBase {
 /// Copy constructor is disabled (private and unimplemented)
   explicit FileBase(const FileBase&);
 /// Assignment operator is disabled (private and unimplemented)
@@ -44,13 +44,13 @@ class FileBase{
 protected:
 /// Internal tool.
 /// Base for IFile::Field and OFile::Field
-  class FieldBase{
+  class FieldBase {
 // everything is public to simplify usage
   public:
     std::string name;
     std::string value;
     bool constant;
-    FieldBase(): constant(false){}
+    FieldBase(): constant(false) {}
   };
 
 /// file pointer
@@ -113,7 +113,7 @@ public:
 /// Check for error/eof.
   operator bool () const;
 /// Set heavyFlush flag
-  void setHeavyFlush(){ heavyFlush=true;}
+  void setHeavyFlush() { heavyFlush=true;}
 /// Opens the file
   virtual FileBase& open(const std::string&name)=0;
 /// Check if the file exists
@@ -129,12 +129,12 @@ public:
 };
 
 inline
-std::string FileBase::getPath()const{
+std::string FileBase::getPath()const {
   return path;
 }
 
 inline
-std::string FileBase::getMode()const{
+std::string FileBase::getMode()const {
   return mode;
 }
 

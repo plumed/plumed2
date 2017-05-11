@@ -27,8 +27,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace colvar{
+namespace PLMD {
+namespace colvar {
 
 //+PLUMEDOC COLVAR TEMPLATE
 /*
@@ -41,7 +41,7 @@ This file provides a template for if you want to introduce a new CV.
 <!---You should put an example of how to use your CV here--->
 
 \verbatim
-# This should be a sample input. 
+# This should be a sample input.
 t: TEMPLATE ATOMS=1,2
 PRINT ARG=t STRIDE=100 FILE=COLVAR
 \endverbatim
@@ -50,7 +50,7 @@ PRINT ARG=t STRIDE=100 FILE=COLVAR
 
 */
 //+ENDPLUMEDOC
-   
+
 class Template : public Colvar {
   bool pbc;
 
@@ -63,7 +63,7 @@ public:
 
 PLUMED_REGISTER_ACTION(Template,"TEMPLATE")
 
-void Template::registerKeywords(Keywords& keys){
+void Template::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);
   keys.addFlag("TEMPLATE_DEFAULT_OFF_FLAG",false,"flags that are by default not performed should be specified like this");
   keys.addFlag("TEMPLATE_DEFAULT_ON_FLAG",true,"flags that are by default performed should be specified like this");
@@ -73,8 +73,8 @@ void Template::registerKeywords(Keywords& keys){
 }
 
 Template::Template(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao),
-pbc(true)
+  PLUMED_COLVAR_INIT(ao),
+  pbc(true)
 {
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
@@ -96,10 +96,10 @@ pbc(true)
 
 
 // calculator
-void Template::calculate(){
+void Template::calculate() {
 
   Vector distance;
-  if(pbc){
+  if(pbc) {
     distance=pbcDistance(getPosition(0),getPosition(1));
   } else {
     distance=delta(getPosition(0),getPosition(1));

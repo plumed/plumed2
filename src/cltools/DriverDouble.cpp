@@ -23,7 +23,7 @@
 #include "Driver.cpp"
 
 namespace PLMD {
-namespace cltools{
+namespace cltools {
 
 // We instantiate here the template version of Driver so as
 // to accelerate parallel compilation.

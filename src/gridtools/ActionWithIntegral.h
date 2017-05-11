@@ -40,7 +40,7 @@ public:
   unsigned getNumberOfDerivatives();
   void turnOnDerivatives();
 /// Unless I am mistaken an integral should never be a periodic function
-  bool isPeriodic(){ return false; }
+  bool isPeriodic() { return false; }
   void apply();
 };
 
@@ -50,7 +50,7 @@ double ActionWithIntegral::getVolume() const {
 }
 
 inline
-unsigned ActionWithIntegral::getNumberOfDerivatives(){
+unsigned ActionWithIntegral::getNumberOfDerivatives() {
   return ingrid->getNumberOfPoints();
 }
 

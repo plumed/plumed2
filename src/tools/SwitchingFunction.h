@@ -37,7 +37,7 @@ class Keywords;
 /// the second all (calculateSqr()) allows to skip the calculation
 /// of a square root in some case, thus potentially increasing
 /// performances.
-class SwitchingFunction{
+class SwitchingFunction {
 /// This is to check that switching function has been initialized
   bool init;
 /// Type of function
@@ -81,7 +81,7 @@ public:
   SwitchingFunction & operator=(const SwitchingFunction&);
 /// Set a "rational" switching function.
 /// Notice that a d_max is set automatically to a value such that
-/// f(d_max)=0.00001. 
+/// f(d_max)=0.00001.
   void set(int nn,int mm,double r_0,double d_0);
 /// Set an arbitrary switching function.
 /// Parse the string in definition and possibly returns errors
@@ -104,7 +104,7 @@ public:
   double get_d0() const;
 /// Returns r0
   double get_r0() const;
-/// Return dmax 
+/// Return dmax
   double get_dmax() const;
 /// Return dmax squared
   double get_dmax2() const;

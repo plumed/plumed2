@@ -32,9 +32,9 @@ namespace analysis {
 /*
 This can be used to output the data that has been stored in an Analysis object.
 
-The most useful application of this method is to output all projections of all the 
+The most useful application of this method is to output all projections of all the
 points that were stored in an analysis object that performs some form of dimensionality
-reduction.  If you use the USE_DIMRED_DATA_FROM option below projections of all the 
+reduction.  If you use the USE_DIMRED_DATA_FROM option below projections of all the
 stored points will be output to a file.  The positions of these projections will be calculated
 using that dimensionality reduction algorithms out-of-sample extension algorithm.
 
@@ -51,52 +51,52 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   OutputColvarFile( const ActionOptions& );
-  void performTask( const unsigned& , const unsigned& , MultiValue& ) const { plumed_error(); }
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const { plumed_error(); }
   void performAnalysis();
 };
 
 PLUMED_REGISTER_ACTION(OutputColvarFile,"OUTPUT_ANALYSIS_DATA_TO_COLVAR")
 
-void OutputColvarFile::registerKeywords( Keywords& keys ){
+void OutputColvarFile::registerKeywords( Keywords& keys ) {
   AnalysisBase::registerKeywords( keys ); keys.use("ARG");
   keys.add("compulsory","FILE","the name of the file to output to");
   keys.add("compulsory","STRIDE","0","the frequency with which to perform the required analysis and to output the data.  The default value of 0 tells plumed to use all the data");
   keys.add("optional","FMT","the format to output the data using");
-} 
+}
 
 OutputColvarFile::OutputColvarFile( const ActionOptions& ao ):
-Action(ao),
-AnalysisBase(ao),
-fmt("%f")
+  Action(ao),
+  AnalysisBase(ao),
+  fmt("%f")
 {
   parse("FILE",filename); parse("FMT",fmt);
-  if( !getRestart() ){ OFile ofile; ofile.link(*this); ofile.setBackupString("analysis"); ofile.backupAllFiles(filename); }
+  if( !getRestart() ) { OFile ofile; ofile.link(*this); ofile.setBackupString("analysis"); ofile.backupAllFiles(filename); }
   log.printf("  printing data to file named %s \n",filename.c_str() );
-  if( getArguments().size()==0 ){
-     std::vector<std::string> tmp_vals( my_input_data->getArgumentNames() );
-     req_vals.resize( tmp_vals.size() ); for(unsigned i=0;i<tmp_vals.size();++i) req_vals[i]=tmp_vals[i];
+  if( getArguments().size()==0 ) {
+    std::vector<std::string> tmp_vals( my_input_data->getArgumentNames() );
+    req_vals.resize( tmp_vals.size() ); for(unsigned i=0; i<tmp_vals.size(); ++i) req_vals[i]=tmp_vals[i];
   } else {
-     req_vals.resize( getArguments().size() ); for(unsigned i=0;i<req_vals.size();++i) req_vals[i]=getPntrToArgument(i)->getName();
+    req_vals.resize( getArguments().size() ); for(unsigned i=0; i<req_vals.size(); ++i) req_vals[i]=getPntrToArgument(i)->getName();
   }
   plumed_assert( req_vals.size()>0 );
   log.printf("  outputting %s", req_vals[0].c_str() );
-  for(unsigned i=1;i<req_vals.size();++i) log.printf(",", req_vals[i].c_str() );
+  for(unsigned i=1; i<req_vals.size(); ++i) log.printf(",", req_vals[i].c_str() );
   log.printf("\n");
 }
 
-void OutputColvarFile::performAnalysis(){
+void OutputColvarFile::performAnalysis() {
   // Output the embedding as long lists of data
-  OFile gfile; gfile.link(*this); 
+  OFile gfile; gfile.link(*this);
   gfile.setBackupString("analysis");
   gfile.fmtField(fmt+" ");
   gfile.open( filename.c_str() );
 
   // Print embedding coordinates
-  for(unsigned i=0;i<getNumberOfDataPoints();++i){
-      DataCollectionObject& mydata=getStoredData(i, false);
-      for(unsigned j=0;j<req_vals.size();++j) gfile.printField( req_vals[j], mydata.getArgumentValue(req_vals[j]) );
-      gfile.printField( "weight", getWeight(i) ); gfile.printField();
-  }  
+  for(unsigned i=0; i<getNumberOfDataPoints(); ++i) {
+    DataCollectionObject& mydata=getStoredData(i, false);
+    for(unsigned j=0; j<req_vals.size(); ++j) gfile.printField( req_vals[j], mydata.getArgumentValue(req_vals[j]) );
+    gfile.printField( "weight", getWeight(i) ); gfile.printField();
+  }
   gfile.close();
 }
 

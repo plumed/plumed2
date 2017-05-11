@@ -30,7 +30,7 @@
 #include "tools/IFile.h"
 
 //+PLUMEDOC ANALYSIS READ_DISSIMILARITY_MATRIX
-/* 
+/*
 Read a matrix of dissimilarities between a trajectory of atomic configurations from a file.
 
 \par Examples
@@ -57,8 +57,8 @@ public:
   DataCollectionObject& getStoredData( const unsigned& idata, const bool& calcdist );
 /// Tell everyone we have dissimilarities
   bool dissimilaritiesWereSet() const { return true; }
-/// Get the dissimilarity between two data points 
-  double getDissimilarity( const unsigned& , const unsigned& );
+/// Get the dissimilarity between two data points
+  double getDissimilarity( const unsigned&, const unsigned& );
 /// Get the weight from the input file
   double getWeight( const unsigned& idata );
 /// Just tell plumed to stop
@@ -66,24 +66,24 @@ public:
 /// Read in the dissimilarity matrix
   void runFinalJobs();
 /// This does nothing
-  void performAnalysis(){};
+  void performAnalysis() {};
 /// Overwrite virtual function in base class
-  void performTask( const unsigned& , const unsigned& , MultiValue& ) const { plumed_error(); }
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const { plumed_error(); }
 };
 
 PLUMED_REGISTER_ACTION(ReadDissimilarityMatrix,"READ_DISSIMILARITY_MATRIX")
 
-void ReadDissimilarityMatrix::registerKeywords( Keywords& keys ){
-  AnalysisBase::registerKeywords( keys ); 
+void ReadDissimilarityMatrix::registerKeywords( Keywords& keys ) {
+  AnalysisBase::registerKeywords( keys );
   keys.add("compulsory","FILE","an input file containing the matrix of dissimilarities");
   keys.add("optional","WFILE","input file containing weights of points");
   keys.reset_style("USE_OUTPUT_DATA_FROM","optional");
 }
 
 ReadDissimilarityMatrix::ReadDissimilarityMatrix( const ActionOptions& ao ):
-Action(ao),
-AnalysisBase(ao),
-nnodes(1)
+  Action(ao),
+  AnalysisBase(ao),
+  nnodes(1)
 {
   setStride(1); // Set the stride equal to one to ensure we don't get stuck in an infinite loop
   std::vector<ActionSetup*> setupActions=plumed.getActionSet().select<ActionSetup*>();
@@ -98,60 +98,60 @@ nnodes(1)
   else log.printf("  setting weights of all nodes equal to one\n");
 }
 
-void ReadDissimilarityMatrix::update(){ if(!my_input_data) plumed.stop(); }
+void ReadDissimilarityMatrix::update() { if(!my_input_data) plumed.stop(); }
 
-void ReadDissimilarityMatrix::runFinalJobs(){
-  IFile mfile; mfile.open(fname); 
+void ReadDissimilarityMatrix::runFinalJobs() {
+  IFile mfile; mfile.open(fname);
   // Read in first line
   std::vector<std::string> words; nnodes=0;
-  while( nnodes==0 ){
-     Tools::getParsedLine( mfile, words );
-     nnodes=words.size(); 
+  while( nnodes==0 ) {
+    Tools::getParsedLine( mfile, words );
+    nnodes=words.size();
   }
 
   std::vector<double> tmpdis( nnodes );
-  for(unsigned j=0;j<nnodes;++j) Tools::convert( words[j], tmpdis[j] );
+  for(unsigned j=0; j<nnodes; ++j) Tools::convert( words[j], tmpdis[j] );
   dissimilarities.push_back( tmpdis );
 
-  while( Tools::getParsedLine( mfile, words ) ){
-     if( words.size()!=nnodes ) error("bad formatting in matrix file");
-     for(unsigned j=0;j<nnodes;++j) Tools::convert( words[j], tmpdis[j] ); 
-     dissimilarities.push_back( tmpdis );
+  while( Tools::getParsedLine( mfile, words ) ) {
+    if( words.size()!=nnodes ) error("bad formatting in matrix file");
+    for(unsigned j=0; j<nnodes; ++j) Tools::convert( words[j], tmpdis[j] );
+    dissimilarities.push_back( tmpdis );
   }
   mfile.close();
-  if( my_input_data && dissimilarities.size()!=getNumberOfDataPoints() ){
-     error("mismatch between number of data points in trajectory and the dimensions of the dissimilarity matrix");
+  if( my_input_data && dissimilarities.size()!=getNumberOfDataPoints() ) {
+    error("mismatch between number of data points in trajectory and the dimensions of the dissimilarity matrix");
   }
 
   weights.resize( dissimilarities.size() );
-  if( wfile.length()>0 ){
-     IFile wfilef; wfilef.open(wfile); 
-     for(unsigned i=0;i<weights.size();++i){ 
-       Tools::getParsedLine( wfilef, words ); Tools::convert( words[0], weights[i] );
-     }
-     wfilef.close();
+  if( wfile.length()>0 ) {
+    IFile wfilef; wfilef.open(wfile);
+    for(unsigned i=0; i<weights.size(); ++i) {
+      Tools::getParsedLine( wfilef, words ); Tools::convert( words[0], weights[i] );
+    }
+    wfilef.close();
   } else {
-     weights.assign(weights.size(),1.0);
+    weights.assign(weights.size(),1.0);
   }
 }
 
-unsigned ReadDissimilarityMatrix::getNumberOfDataPoints() const { 
+unsigned ReadDissimilarityMatrix::getNumberOfDataPoints() const {
   if( my_input_data ) return AnalysisBase::getNumberOfDataPoints();
   return dissimilarities.size();
 }
 
-double ReadDissimilarityMatrix::getDissimilarity( const unsigned& iframe, const unsigned& jframe ){
+double ReadDissimilarityMatrix::getDissimilarity( const unsigned& iframe, const unsigned& jframe ) {
   return dissimilarities[iframe][jframe]*dissimilarities[iframe][jframe];
 }
 
-DataCollectionObject& ReadDissimilarityMatrix::getStoredData( const unsigned& idata, const bool& calcdist ){
+DataCollectionObject& ReadDissimilarityMatrix::getStoredData( const unsigned& idata, const bool& calcdist ) {
   plumed_massert( !calcdist, "cannot calc dist as this data was read in from input");
   if( my_input_data ) return AnalysisBase::getStoredData( idata, calcdist );
   return fake_data;
 }
 
-double ReadDissimilarityMatrix::getWeight( const unsigned& idata ){
-  plumed_assert( idata<dissimilarities.size() ); return weights[idata]; 
+double ReadDissimilarityMatrix::getWeight( const unsigned& idata ) {
+  plumed_assert( idata<dissimilarities.size() ); return weights[idata];
 }
 
 }

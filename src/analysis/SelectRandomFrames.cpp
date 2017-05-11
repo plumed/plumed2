@@ -24,7 +24,7 @@
 #include "tools/Random.h"
 
 //+PLUMEDOC LANDMARKS LANDMARK_SELECT_RANDOM
-/* 
+/*
 Select a random set of landmarks from a large set of configurations.
 
 \par Examples
@@ -36,7 +36,7 @@ namespace PLMD {
 namespace analysis {
 
 class SelectRandomFrames : public LandmarkSelectionBase {
-private: 
+private:
   unsigned seed;
 public:
   static void registerKeywords( Keywords& keys );
@@ -46,19 +46,19 @@ public:
 
 PLUMED_REGISTER_ACTION(SelectRandomFrames,"LANDMARK_SELECT_RANDOM")
 
-void SelectRandomFrames::registerKeywords( Keywords& keys ){
+void SelectRandomFrames::registerKeywords( Keywords& keys ) {
   LandmarkSelectionBase::registerKeywords(keys);
   keys.add("compulsory","SEED","1234","a random number seed");
 }
 
 SelectRandomFrames::SelectRandomFrames( const ActionOptions& ao ):
-Action(ao),
-LandmarkSelectionBase(ao)
+  Action(ao),
+  LandmarkSelectionBase(ao)
 {
   parse("SEED",seed);
 }
 
-void SelectRandomFrames::selectLandmarks(){
+void SelectRandomFrames::selectLandmarks() {
   Random r; r.setSeed(-seed);
   unsigned nframe=my_input_data->getNumberOfDataPoints();
   unsigned nland=getNumberOfDataPoints();
@@ -66,13 +66,13 @@ void SelectRandomFrames::selectLandmarks(){
   std::vector<bool> selected( nframe, false );
 
   unsigned fcount=0;
-  while (fcount<nland){
+  while (fcount<nland) {
     unsigned iframe = std::floor( r.U01()*nframe );
-    if (!selected[iframe]){
+    if (!selected[iframe]) {
       selected[iframe]=true;
       selectFrame( iframe );
       ++fcount;
-    } 
+    }
   }
 }
 

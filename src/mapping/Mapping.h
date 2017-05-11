@@ -41,9 +41,9 @@ class Mapping :
   public ActionWithArguments,
   public ActionWithValue,
   public vesselbase::ActionWithVessel
-  {
-friend class PropertyMap;
-friend class TrigonometricPathVessel;
+{
+  friend class PropertyMap;
+  friend class TrigonometricPathVessel;
 private:
 //  The derivative wrt to the distance from the frame
   std::vector<double> dfframes;
@@ -80,10 +80,10 @@ public:
   void lockRequests();
   void unlockRequests();
 /// Distance from a point is never periodic
-  bool isPeriodic(){ return false; }
+  bool isPeriodic() { return false; }
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
-/// Get the value of lambda for paths and property maps 
+/// Get the value of lambda for paths and property maps
   virtual double getLambda();
 /// This does the transformation of the distance by whatever function is required
   virtual double transformHD( const double& dist, double& df ) const=0;
@@ -93,47 +93,47 @@ public:
   std::string getArgumentName( unsigned& iarg );
 /// Get the value of the ith property for the current frame
   double getPropertyValue( const unsigned& current, const std::string& name ) const ;
-/// Apply the forces 
+/// Apply the forces
   void apply();
 };
 
 inline
 unsigned Mapping::getNumberOfReferencePoints() const {
-  return myframes.size(); 
+  return myframes.size();
 }
 
 inline
-unsigned Mapping::getNumberOfDerivatives(){
+unsigned Mapping::getNumberOfDerivatives() {
   unsigned nat=getNumberOfAtoms();
   if(nat>0) return 3*nat + 9 + getNumberOfArguments();
   return getNumberOfArguments();
 }
 
 inline
-void Mapping::lockRequests(){
+void Mapping::lockRequests() {
   ActionWithArguments::lockRequests();
   ActionAtomistic::lockRequests();
 }
 
 inline
-void Mapping::unlockRequests(){
+void Mapping::unlockRequests() {
   ActionWithArguments::unlockRequests();
   ActionAtomistic::unlockRequests();
 }
 
 inline
 double Mapping::getPropertyValue( const unsigned& cur, const std::string& name ) const {
-  return property.find(name)->second[cur]; 
+  return property.find(name)->second[cur];
 }
 
 inline
 double Mapping::getWeight( const unsigned& current ) const {
-  return weights[current]; 
+  return weights[current];
 }
 
 inline
-std::vector<ReferenceConfiguration*>& Mapping::getAllReferenceConfigurations(){
-  return myframes; 
+std::vector<ReferenceConfiguration*>& Mapping::getAllReferenceConfigurations() {
+  return myframes;
 }
 
 inline

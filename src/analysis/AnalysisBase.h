@@ -37,7 +37,7 @@ namespace analysis {
 
 /**
 \ingroup INHERIT
-This is the abstract base class to use for implementing new methods for analyzing the trajectory. You can find 
+This is the abstract base class to use for implementing new methods for analyzing the trajectory. You can find
 \ref AddingAnAnalysis "information" on how to use it to implement new analysis methods here.
 
 */
@@ -48,9 +48,9 @@ class AnalysisBase :
   public ActionAtomistic,
   public ActionWithArguments,
   public vesselbase::ActionWithVessel
-  {
-friend class ReselectLandmarks;
-friend class ReadDissimilarityMatrix; 
+{
+  friend class ReselectLandmarks;
+  friend class ReadDissimilarityMatrix;
 protected:
 /// The Analysis action that we are reusing data from
   AnalysisBase* my_input_data;
@@ -63,7 +63,7 @@ public:
 /// Return the number of data points
   virtual unsigned getNumberOfDataPoints() const ;
 /// Return the index of the data point in the base class
-  virtual unsigned getDataPointIndexInBase( const unsigned& idata ) const ; 
+  virtual unsigned getDataPointIndexInBase( const unsigned& idata ) const ;
 /// Return the weight of the ith point
   virtual double getWeight( const unsigned& idata );
 /// Get the name of the metric that is being used
@@ -72,7 +72,7 @@ public:
   virtual bool usingMemory() const ;
 /// Return the normalisation constant for the calculation
   virtual double getNormalization() const ;
-/// Ensures that dissimilarities were set somewhere 
+/// Ensures that dissimilarities were set somewhere
   virtual bool dissimilaritiesWereSet() const ;
 /// Get the information on how dissimilarities were calculated for output PDB
   virtual std::string getDissimilarityInstruction() const ;
@@ -89,27 +89,27 @@ public:
 /// This actually performs the analysis
   virtual void performAnalysis()=0;
 /// These overwrite things from inherited classes (this is a bit of a fudge)
-  bool isPeriodic(){ plumed_error(); return false; }
-  unsigned getNumberOfDerivatives(){ plumed_error(); return 0; }
-  void calculateNumericalDerivatives( ActionWithValue* a=NULL ){ plumed_error(); }
+  bool isPeriodic() { plumed_error(); return false; }
+  unsigned getNumberOfDerivatives() { plumed_error(); return 0; }
+  void calculateNumericalDerivatives( ActionWithValue* a=NULL ) { plumed_error(); }
 /// Calculate and apply do nothing all analysis is done during update step
-  void calculate(){}
-  void apply(){}
+  void calculate() {}
+  void apply() {}
 /// This will call the analysis to be performed
   virtual void update();
-/// This calls the analysis to be performed in the final step of the calculation 
+/// This calls the analysis to be performed in the final step of the calculation
 /// i.e. when use_all_data is true
   virtual void runFinalJobs();
 };
 
 inline
-void AnalysisBase::lockRequests(){
+void AnalysisBase::lockRequests() {
   ActionAtomistic::lockRequests();
   ActionWithArguments::lockRequests();
 }
 
 inline
-void AnalysisBase::unlockRequests(){
+void AnalysisBase::unlockRequests() {
   ActionAtomistic::unlockRequests();
   ActionWithArguments::unlockRequests();
 }
@@ -130,7 +130,7 @@ std::string AnalysisBase::getMetricName() const {
 }
 
 inline
-double AnalysisBase::getWeight( const unsigned& idata ){
+double AnalysisBase::getWeight( const unsigned& idata ) {
   return my_input_data->getWeight( idata );
 }
 
@@ -150,17 +150,17 @@ bool AnalysisBase::dissimilaritiesWereSet() const {
 }
 
 inline
-double AnalysisBase::getDissimilarity( const unsigned& i, const unsigned& j ){
+double AnalysisBase::getDissimilarity( const unsigned& i, const unsigned& j ) {
   return my_input_data->getDissimilarity( i, j );
 }
 
 inline
-std::vector<Value*> AnalysisBase::getArgumentList(){
+std::vector<Value*> AnalysisBase::getArgumentList() {
   return my_input_data->getArgumentList();
 }
 
 inline
-DataCollectionObject& AnalysisBase::getStoredData( const unsigned& idata, const bool& calcdist ){
+DataCollectionObject& AnalysisBase::getStoredData( const unsigned& idata, const bool& calcdist ) {
   return my_input_data->getStoredData( idata, calcdist );
 }
 

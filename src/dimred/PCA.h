@@ -31,7 +31,7 @@ namespace PLMD {
 namespace dimred {
 
 class PCA : public DimensionalityReductionBase {
-friend class OutputPCAProjection;
+  friend class OutputPCAProjection;
 private:
 /// The way we are measuring distances
   std::string mtype;
@@ -48,9 +48,9 @@ public:
   void performAnalysis();
   void getProjection( const unsigned& idata, std::vector<double>& point, double& weight );
   void getProjection( analysis::DataCollectionObject& myidata, std::vector<double>& point );
-  void calculateProjections( const Matrix<double>& , Matrix<double>& ){ plumed_error(); }
-  void setTargetDistance( const unsigned& , const double& ){ plumed_error(); }
-  double calculateStress( const std::vector<double>& pp, std::vector<double>& der ){ plumed_error(); }
+  void calculateProjections( const Matrix<double>&, Matrix<double>& ) { plumed_error(); }
+  void setTargetDistance( const unsigned&, const double& ) { plumed_error(); }
+  double calculateStress( const std::vector<double>& pp, std::vector<double>& der ) { plumed_error(); }
 };
 
 }

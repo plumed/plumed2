@@ -30,18 +30,18 @@ namespace dimred {
 
 class SketchMapBase : public DimensionalityReductionBase {
 private:
-/// To save us retyping switching functions many times the code will reuse the 
+/// To save us retyping switching functions many times the code will reuse the
 /// ones from previous sketch-map objects
   bool reuse_hd, reuse_ld;
 /// Was previous action in chain a sketch-map action
   SketchMapBase* smapbase;
-/// Switching functions for low and high dimensional space 
+/// Switching functions for low and high dimensional space
   SwitchingFunction lowdf, highdf;
-/// This is used within calculate stress to hold the target distances and the 
+/// This is used within calculate stress to hold the target distances and the
 /// target values for the high dimensional switching function
   std::vector<double> dtargets, ftargets, pweights;
 /// Stress normalization (sum_ij w_i w_j)
-  double normw; 
+  double normw;
 protected:
 /// This holds the target distances and target transformed distances
   Matrix<double> distances, transformed;
@@ -51,7 +51,7 @@ public:
   static void registerKeywords( Keywords& keys );
   SketchMapBase( const ActionOptions& );
 /// This starts the process of calculating the projections
-  void calculateProjections( const Matrix<double>& , Matrix<double>& );
+  void calculateProjections( const Matrix<double>&, Matrix<double>& );
 /// This finishes the process of calculating the prjections
   virtual void minimise( Matrix<double>& )=0;
 /// Apply the low dimensional switching function to the value val
@@ -62,7 +62,7 @@ public:
 /// This target vector is used when we use calculateStress when finding the projections of individual points.
 /// For example this function is used in PLMD::dimred::ProjectOutOfSample
   void setTargetDistance( const unsigned& idata, const double& dist );
-/// Calculate the pointwise stress on one point when it is located at p.  
+/// Calculate the pointwise stress on one point when it is located at p.
 /// This function makes use of the distance data in dtargets and ftargets
 /// It is used in PLMD::dimred::ProjectOutOfSample and in pointwise optimisation
   double calculateStress( const std::vector<double>& p, std::vector<double>& d );
@@ -84,7 +84,7 @@ double SketchMapBase::transformHighDimensionalDistance( const double& val, doubl
 }
 
 inline
-void SketchMapBase::setTargetDistance( const unsigned& idata, const double& dist ){
+void SketchMapBase::setTargetDistance( const unsigned& idata, const double& dist ) {
   double df; dtargets[idata]=dist; ftargets[idata]=transformHighDimensionalDistance( dist, df );
 }
 

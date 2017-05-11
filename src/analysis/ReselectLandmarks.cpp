@@ -26,7 +26,7 @@
 #include "tools/Random.h"
 
 //+PLUMEDOC LANDMARKS RESELECT_LANDMARKS
-/* 
+/*
 This allows us to use one measure in landmark selection and a different measure in dimensionality reduction
 
 \par Examples
@@ -48,26 +48,26 @@ public:
 
 PLUMED_REGISTER_ACTION(ReselectLandmarks,"RESELECT_LANDMARKS")
 
-void ReselectLandmarks::registerKeywords( Keywords& keys ){
+void ReselectLandmarks::registerKeywords( Keywords& keys ) {
   LandmarkSelectionBase::registerKeywords(keys);
   keys.remove("NLANDMARKS");
   keys.add("compulsory","LANDMARKS","the action that selects the landmarks that you want to reselect using this action");
 }
 
 ReselectLandmarks::ReselectLandmarks( const ActionOptions& ao ):
-Action(ao),
-LandmarkSelectionBase(ao)
+  Action(ao),
+  LandmarkSelectionBase(ao)
 {
   std::string datastr; parse("LANDMARKS",datastr);
   mylandmarks = plumed.getActionSet().selectWithLabel<LandmarkSelectionBase*>( datastr );
   if( !mylandmarks ) error("input to LANDMARKS is not a landmark selection action");
   nlandmarks = mylandmarks->nlandmarks;
 
-  if( (mylandmarks->my_input_data)->getNumberOfDataPoints()!=my_input_data->getNumberOfDataPoints() ) error("mismatch between ammount of landmark class and base class"); 
+  if( (mylandmarks->my_input_data)->getNumberOfDataPoints()!=my_input_data->getNumberOfDataPoints() ) error("mismatch between ammount of landmark class and base class");
 }
 
-void ReselectLandmarks::selectLandmarks(){
-  for(unsigned i=0;i<mylandmarks->getNumberOfDataPoints();++i) selectFrame( mylandmarks->getDataPointIndexInBase(i) );
+void ReselectLandmarks::selectLandmarks() {
+  for(unsigned i=0; i<mylandmarks->getNumberOfDataPoints(); ++i) selectFrame( mylandmarks->getDataPointIndexInBase(i) );
 }
 
 }

@@ -24,7 +24,7 @@
 #include "core/ActionRegister.h"
 
 //+PLUMEDOC ANALYSIS PRINT_DISSIMILARITY_MATRIX
-/* 
+/*
 Print the matrix of dissimilarities between a trajectory of atomic configurations.
 
 \par Examples
@@ -44,12 +44,12 @@ public:
   static void registerKeywords( Keywords& keys );
   PrintDissimilarityMatrix( const ActionOptions& ao );
   void performAnalysis();
-  void performTask( const unsigned& , const unsigned& , MultiValue& ) const { plumed_error(); }
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const { plumed_error(); }
 };
 
 PLUMED_REGISTER_ACTION(PrintDissimilarityMatrix,"PRINT_DISSIMILARITY_MATRIX")
 
-void PrintDissimilarityMatrix::registerKeywords( Keywords& keys ){
+void PrintDissimilarityMatrix::registerKeywords( Keywords& keys ) {
   AnalysisBase::registerKeywords( keys );
   keys.add("compulsory","FILE","name of file on which to output the data");
   keys.add("optional","FMT","the format to use for the output of numbers");
@@ -57,24 +57,24 @@ void PrintDissimilarityMatrix::registerKeywords( Keywords& keys ){
 }
 
 PrintDissimilarityMatrix::PrintDissimilarityMatrix( const ActionOptions& ao ):
-Action(ao),
-AnalysisBase(ao),
-fmt("%f")
+  Action(ao),
+  AnalysisBase(ao),
+  fmt("%f")
 {
   if( !dissimilaritiesWereSet() ) error("dissimilarities have not been set in base classes");
 
   parse("FILE",fname); parse("FMT",fmt);
-  if( !getRestart() ){ OFile ofile; ofile.link(*this); ofile.setBackupString("analysis"); ofile.backupAllFiles(fname); }
+  if( !getRestart() ) { OFile ofile; ofile.link(*this); ofile.setBackupString("analysis"); ofile.backupAllFiles(fname); }
   log.printf("  printing to file named %s with formt %s \n",fname.c_str(), fmt.c_str() );
 }
 
-void PrintDissimilarityMatrix::performAnalysis(){
+void PrintDissimilarityMatrix::performAnalysis() {
   std::string ofmt=" "+fmt;
-  OFile ofile; ofile.setBackupString("analysis"); ofile.open(fname); 
-  for(unsigned i=0;i<getNumberOfDataPoints();++i){
-      for(unsigned j=0;j<getNumberOfDataPoints();++j) ofile.printf(ofmt.c_str(), sqrt( my_input_data->getDissimilarity( i,j ) ) );
-      ofile.printf("\n");
-  }   
+  OFile ofile; ofile.setBackupString("analysis"); ofile.open(fname);
+  for(unsigned i=0; i<getNumberOfDataPoints(); ++i) {
+    for(unsigned j=0; j<getNumberOfDataPoints(); ++j) ofile.printf(ofmt.c_str(), sqrt( my_input_data->getDissimilarity( i,j ) ) );
+    ofile.printf("\n");
+  }
   ofile.close();
 }
 

@@ -37,8 +37,8 @@ namespace vesselbase {
 
 /**
 \ingroup INHERIT
-This abstract base class should be used if you are writing some method that calculates an "average" from a set of 
-trajectory frames.  Notice that we use the word average very broadly here and state that even dimensionality 
+This abstract base class should be used if you are writing some method that calculates an "average" from a set of
+trajectory frames.  Notice that we use the word average very broadly here and state that even dimensionality
 reduction algorithms calculate an "average."  In other words, what we mean by average is that the method is going
 to take in data from each trajectory frame and only calculate the final quantity once a certain amount of data has
 been collected.
@@ -51,7 +51,7 @@ class ActionWithAveraging :
   public ActionWithValue,
   public ActionWithVessel
 {
-friend class AveragingVessel;
+  friend class AveragingVessel;
 private:
 /// The vessel which is used to compute averages
   AveragingVessel* myaverage;
@@ -80,16 +80,16 @@ public:
   void lockRequests();
   void unlockRequests();
   void calculateNumericalDerivatives(PLMD::ActionWithValue*);
-  virtual unsigned getNumberOfDerivatives(){ return 0; }
+  virtual unsigned getNumberOfDerivatives() { return 0; }
   virtual unsigned getNumberOfQuantities() const ;
   unsigned getNumberOfArguments() const ;
 /// Overwrite ActionWithArguments getArguments() so that we don't return the bias
-  std::vector<Value*> getArguments();  
+  std::vector<Value*> getArguments();
   void update();
 /// This does the clearing of the action
   virtual void clearAverage();
 /// This is done before the averaging comences
-  virtual void prepareForAveraging(){}
+  virtual void prepareForAveraging() {}
 /// This does the averaging operation
   virtual void performOperations( const bool& from_update );
 /// Does the calculation
@@ -99,8 +99,8 @@ public:
 ///
   virtual void accumulateAverage( MultiValue& myvals ) const {}
 /// This is done once the averaging is finished
-  virtual void finishAveraging(){}
-/// 
+  virtual void finishAveraging() {}
+///
   void runFinalJobs();
 };
 
@@ -110,9 +110,9 @@ unsigned ActionWithAveraging::getNumberOfArguments() const {
 }
 
 inline
-std::vector<Value*> ActionWithAveraging::getArguments(){
+std::vector<Value*> ActionWithAveraging::getArguments() {
   std::vector<Value*> arg_vals( ActionWithArguments::getArguments() );
-  for(unsigned i=0;i<weights.size();++i) arg_vals.erase(arg_vals.end()-1);
+  for(unsigned i=0; i<weights.size(); ++i) arg_vals.erase(arg_vals.end()-1);
   return arg_vals;
 }
 

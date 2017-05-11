@@ -29,7 +29,7 @@
 #include <map>
 
 
-namespace PLMD{
+namespace PLMD {
 
 class SetupMolInfo;
 class Log;
@@ -37,7 +37,7 @@ class Log;
 /// Minimalistic pdb parser.
 /// Contain positions, atomic indexes, occupancy and beta.
 /// We should also add other info (e.g. residue name etc).
-class PDB{
+class PDB {
   std::vector<unsigned> block_ends;
   std::vector<std::string> atomsymb, chain;
   std::vector<unsigned> residue;
@@ -74,11 +74,11 @@ public:
   void getChainNames( std::vector<std::string>& chains ) const;
 /// Get the residues in each of the chains
   void getResidueRange( const std::string& chainname, unsigned& res_start, unsigned& res_end, std::string& errmsg ) const;
-/// Get the atoms in each of the chains 
+/// Get the atoms in each of the chains
   void getAtomRange( const std::string& chainname, AtomNumber& a_start, AtomNumber& a_end, std::string& errmsg ) const;
 /// Get the chain ID that a particular residue is a part of
   std::string getChainID(const unsigned& resnumber) const;
-///use the log to dump information  
+///use the log to dump information
   friend Log& operator<<(Log& ostr, const PDB& pdb);
 /// return the name of a specific atom
   std::string getAtomName(AtomNumber a) const;
@@ -110,13 +110,13 @@ public:
   void setAtomPositions( const std::vector<Vector>& pos );
 /// Set the argument names that you would like to use
   void setArgumentNames( const std::vector<std::string>& argument_names );
-/// This is used in PLMD::analysis::AnalysisWithDataCollection to set the argument values 
+/// This is used in PLMD::analysis::AnalysisWithDataCollection to set the argument values
   void setArgumentValue( const std::string& argname, const double& val );
 /// Get the value of one of the arguments in the PDB file
   bool getArgumentValue( const std::string& name, double& value ) const ;
-/// Access to the atoms of a residue 
+/// Access to the atoms of a residue
   std::vector<AtomNumber> getAtomsInResidue(const unsigned& resnum,const std::string& chainid)const;
-/// Access to the atoms of a chain 
+/// Access to the atoms of a chain
   std::vector<AtomNumber> getAtomsInChain(const std::string& chainid)const;
 /// Get the extents of the blocks containing the atoms
   const std::vector<unsigned> & getAtomBlockEnds() const ;

@@ -23,7 +23,7 @@
 #include "core/ActionRegister.h"
 
 //+PLUMEDOC LANDMARKS LANDMARK_SELECT_STRIDE
-/* 
+/*
 Select every \f$k\f$th landmark from the trajectory.
 
 \par Examples
@@ -43,19 +43,19 @@ public:
 
 PLUMED_REGISTER_ACTION(SelectWithStride,"LANDMARK_SELECT_STRIDE")
 
-void SelectWithStride::registerKeywords( Keywords& keys ){
+void SelectWithStride::registerKeywords( Keywords& keys ) {
   LandmarkSelectionBase::registerKeywords( keys );
 }
 
 SelectWithStride::SelectWithStride( const ActionOptions& ao ):
-Action(ao),
-LandmarkSelectionBase(ao)
+  Action(ao),
+  LandmarkSelectionBase(ao)
 {
 }
 
-void SelectWithStride::selectLandmarks(){
+void SelectWithStride::selectLandmarks() {
   unsigned stride = std::floor( my_input_data->getNumberOfDataPoints() / getNumberOfDataPoints() ), max=stride*getNumberOfDataPoints();
-  for(unsigned i=0;i<max;i+=stride) selectFrame( i ); 
+  for(unsigned i=0; i<max; i+=stride) selectFrame( i );
 }
 
 }

@@ -49,13 +49,13 @@ private:
 /// Calculate the weights of the various points from the logweights
   void calculateWeights();
 public:
-  static void registerKeywords( Keywords& keys );  
+  static void registerKeywords( Keywords& keys );
   explicit ReadAnalysisFrames( const ActionOptions& ao );
   void update();
 /// This does nothing
-  void performAnalysis(){}
+  void performAnalysis() {}
 /// This does nothing - it just ensures the final class is not abstract
-  void performTask( const unsigned& , const unsigned& , MultiValue& ) const { plumed_error(); }
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const { plumed_error(); }
 /// Get the number of data points
   unsigned getNumberOfDataPoints() const ;
 /// Get the index of the data point
@@ -64,7 +64,7 @@ public:
   std::vector<Value*> getArgumentList();
 /// Have dissimilarities between thses objects been calculated
   bool dissimilaritiesWereSet() const ;
-/// How are dissimilarities calcualted is not known 
+/// How are dissimilarities calcualted is not known
   std::string getDissimilarityInstruction() const ;
 /// Get the weight of one of the objects
   double getWeight( const unsigned& idat );
@@ -90,13 +90,13 @@ bool ReadAnalysisFrames::dissimilaritiesWereSet() const {
 }
 
 inline
-double ReadAnalysisFrames::getWeight( const unsigned& idat ){
-  if( !weights_calculated ) calculateWeights(); 
+double ReadAnalysisFrames::getWeight( const unsigned& idat ) {
+  if( !weights_calculated ) calculateWeights();
   return weights[idat];
-}        
+}
 
 inline
-DataCollectionObject & ReadAnalysisFrames::getStoredData( const unsigned& idata, const bool& calcdist ){
+DataCollectionObject & ReadAnalysisFrames::getStoredData( const unsigned& idata, const bool& calcdist ) {
   plumed_dbg_assert( idata<my_data_stash.size() );
   return my_data_stash[idata];
 }
