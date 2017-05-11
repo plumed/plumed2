@@ -43,6 +43,18 @@ that computes ensemble averages.  For example this action can be used in tandem 
 
 \par Examples
 
+The following input can be used to postprocess a molecular dynamics trajectory calculated at a temperature of 500 K.
+The \ref HISTOGRAM as a function of the distance between atoms 1 and 2 that would have been obtained if the simulation 
+had been run at the lower temperature of 300 K is estimated using the data from the higher temperature trajectory and output
+to a file.
+
+\verbatim
+x: DISTANCE ATOMS=1,2 
+aa: REWEIGHT_TEMP TEMP=500 REWEIGHT_TEMP=300
+hB: HISTOGRAM ARG=x GRID_MIN=0.0 GRID_MAX=3.0 GRID_BIN=100 BANDWIDTH=0.1 LOGWEIGHTS=aa
+DUMPGRID GRID=hB FILE=histoB 
+\endverbatim
+
 */
 //+ENDPLUMEDOC
 

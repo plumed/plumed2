@@ -114,7 +114,15 @@ actions="$(
 for a in $actions
 do
 
-../src/lib/plumed --no-mpi manual --action $a --vim 2>/dev/null | head -n 1
+../src/lib/plumed --no-mpi manual --action $a --vim 2>/dev/null | awk -v a=$a 'BEGIN{
+  help="help/" a ".txt"
+  print "****************************************" > help
+  print "Short helpfile for action " a > help
+  print "****************************************" > help
+}{
+  if(NR==1){ print}
+  else print > help
+}'
 
 done
 )"
@@ -154,15 +162,6 @@ EOF
 for a in $actions ; do
 action_name="${a%%,*}" 
 action_name_=$(echo $action_name | sed s/-/_/g)
-
-
-
-{
-echo "****************************************"
-echo "Short helpfile for action $action_name"
-echo "****************************************"
-../src/lib/plumed --no-mpi manual --action $action_name --vim 2>/dev/null | awk '{if(NR>1) print}'
-} > help/$action_name.txt
 
 dictionary='{"word":"LABEL=","menu":"(label)"}'
 
@@ -259,8 +258,8 @@ execute 'highlight link plumedKeywords' . action_ . ' Statement'
 endfor
 
 " comments and strings last, with highest priority
-syntax region  plumedString start=/\v\{/  end=/\v\}/ contained contains=plumedString fold
-syntax region  plumedStringOneline start=/\v\{/  end=/\v\}/ oneline contained contains=plumedStringOneline fold
+syntax region  plumedString start=/\v\{/  end=/\v\}/ contained contains=ALL fold
+syntax region  plumedStringOneline start=/\v\{/  end=/\v\}/ oneline contained contains=ALL fold
 highlight link plumedString String
 highlight link plumedStringOneline String
 syntax match   plumedStringInKeyword /\v(<[^ #]+\=)@<=[^ #]+/ contained

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -197,6 +197,7 @@ bool Tools::getline(FILE* fp,string & line){
     if(ss>0) if(buffer[ss-1]=='\n') break;
   };
   if(line.length()>0) if(*(line.end()-1)=='\n') line.erase(line.end()-1);
+  if(line.length()>0) if(*(line.end()-1)=='\r') line.erase(line.end()-1);
   return ret;
 }
 
@@ -210,9 +211,9 @@ void Tools::trimComments(string & s){
   s=s.substr(0,n);
 }
 
-bool Tools::getKey(vector<string>& line,const string & key,string & s){
+bool Tools::getKey(vector<string>& line,const string & key,string & s,int rep){
   s.clear();
-  for(vector<string>::iterator p=line.begin();p!=line.end();++p){
+  for(auto p=line.begin();p!=line.end();++p){
     if((*p).length()==0) continue;
     string x=(*p).substr(0,key.length());
     if(x==key){
@@ -220,6 +221,13 @@ bool Tools::getKey(vector<string>& line,const string & key,string & s){
       string tmp=(*p).substr(key.length(),(*p).length());
       line.erase(p);
       s=tmp;
+      const std::string multi("@replicas:");
+      if(rep>=0 && startWith(s,multi)){
+        s=s.substr(multi.length(),s.length());
+        std::vector<std::string> words=getWords(s,"\t\n ,");
+        plumed_assert(rep<words.size());
+        s=words[rep];
+      }
       return true;
     }
   };
@@ -228,31 +236,31 @@ bool Tools::getKey(vector<string>& line,const string & key,string & s){
 
 void Tools::interpretRanges(std::vector<std::string>&s){
   vector<string> news;
-  for(vector<string>::iterator p=s.begin();p!=s.end();++p){
-    news.push_back(*p);
-    size_t dash=p->find("-");
+  for(const auto & p :s){
+    news.push_back(p);
+    size_t dash=p.find("-");
     if(dash==string::npos) continue;
     int first;
-    if(!Tools::convert(p->substr(0,dash),first)) continue;
+    if(!Tools::convert(p.substr(0,dash),first)) continue;
     int stride=1;
     int second;
-    size_t colon=p->substr(dash+1).find(":");
+    size_t colon=p.substr(dash+1).find(":");
     if(colon!=string::npos){
-      if(!Tools::convert(p->substr(dash+1).substr(0,colon),second) ||
-         !Tools::convert(p->substr(dash+1).substr(colon+1),stride)) continue;
+      if(!Tools::convert(p.substr(dash+1).substr(0,colon),second) ||
+         !Tools::convert(p.substr(dash+1).substr(colon+1),stride)) continue;
     } else {
-      if(!Tools::convert(p->substr(dash+1),second)) continue;
+      if(!Tools::convert(p.substr(dash+1),second)) continue;
     }
     news.resize(news.size()-1);
     if(first<=second){
-      plumed_massert(stride>0,"interpreting ranges "+ *p + ", stride should be positive");
+      plumed_massert(stride>0,"interpreting ranges "+ p + ", stride should be positive");
       for(int i=first;i<=second;i+=stride){
         string ss;
         convert(i,ss);
         news.push_back(ss);
       }
     } else {
-      plumed_massert(stride<0,"interpreting ranges "+ *p + ", stride should be positive");
+      plumed_massert(stride<0,"interpreting ranges "+ p + ", stride should be positive");
       for(int i=first;i>=second;i+=stride){
         string ss;
         convert(i,ss);
@@ -326,8 +334,8 @@ bool Tools::startWith(const std::string & full,const std::string &start){
 
 bool Tools::findKeyword(const std::vector<std::string>&line,const std::string&key){
   const std::string search(key+"=");
-  for(vector<string>::const_iterator p=line.begin();p!=line.end();++p){
-    if(startWith(*p,search)) return true;
+  for(const auto & p : line){
+    if(startWith(p,search)) return true;
   }
   return false;
 }

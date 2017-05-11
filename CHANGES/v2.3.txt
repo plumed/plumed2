@@ -129,18 +129,38 @@ For developers:
    are now passed by const ref) and false positives marked as such.
 - Added coverage scan.
 
-Version 2.3.1
+Version 2.3.1 (Mar 31, 2017)
 -------------
-See branch \branch{v2.3} on git repository.
 
 - Fix to FIT_TO_TEMPLATE as in 2.2.5. Notice that in 2.3.0 also the case with TYPE=OPTIMAL was affected. This is fixed now.
 - small change in \ref CS2BACKBONE to symmetrise the ring current contribution with respect to ring rotations (also faster)
 - fixed `plumed-config` that was not working.
 - log file points to the `config.txt` files to allow users to check which features were available in that compiled version.
 - `make clean` in root dir now also cleans `vim` subdirectory.
+- Updated gromacs patch to version 2016.3 
 
 For developers:
 - Cppcheck on travis-ci has been updated to 1.77.
 - Doxygen on travis-ci has been updated to 1.8.13
+
+Version 2.3.2
+-------------
+See branch \branch{v2.3} on git repository.
+
+- New flag `--disable-libsearch` for `configure`, allowing an easier control of linked libraries when installing PLUMED
+  with a package manager such as MacPorts.
+- Resolved problem with nan in \ref SMAC with SPECIESA and SPECIESB involving molecules that are the same
+- PDB reader is now able to read files with dos newlines (see \issue{223}).
+- Fixed bug in \ref CS2BACKBONE (v2.3.1) related to ring currents of HIS and TRP
+- Fixed bug in if condition in \ref PCAVARS so that you can run with only one eigenvector defined in input 
+- Fixed bug with timers in \ref sum_hills \issue{194}.
+- Fixed bug when using \ref MOVINGRESTRAINT with periodic variables such as \ref TORSION \issue{225}.
+- Fixed bug in \ref HBONDS that used to apear when you used DONORNS and ACCEPTORS with same numbers of atoms 
+- Fixed bug in \ref DISTANCES that appears when using BETWEEN and link cells.
+- Prevented users from causing segfaults by storing derivatives without LOWMEM flag.  In these caess PLUMED crashes with meaningful errors.
+- Fixed bug in \ref HISTOGRAM that causes nans when using KERNEL=DISCRETE option
+
+For developers:
+- plumedcheck validation has been made stricter. All the checks are now described in the developer manual.
 
 */

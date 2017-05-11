@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "PDB.h"
 #include "Tools.h"
+#include "Log.h"
 #include <cstdio>
 #include <iostream>
 #include "core/SetupMolInfo.h"
@@ -138,22 +139,19 @@ const std::vector<AtomNumber> & PDB::getAtomNumbers()const{
 }
 
 std::string PDB::getAtomName(AtomNumber a)const{
-  std::map<AtomNumber,unsigned>::const_iterator p;
-  p=number2index.find(a);
+  const auto p=number2index.find(a);
   if(p==number2index.end()) return "";
   else return atomsymb[p->second];
 }
 
 unsigned PDB::getResidueNumber(AtomNumber a)const{
-  std::map<AtomNumber,unsigned>::const_iterator p;
-  p=number2index.find(a);
+  const auto p=number2index.find(a);
   if(p==number2index.end()) return 0;
   else return residue[p->second];
 }
 
 std::string PDB::getResidueName(AtomNumber a) const{
-  std::map<AtomNumber,unsigned>::const_iterator p;
-  p=number2index.find(a);
+  const auto p=number2index.find(a);
   if(p==number2index.end()) return "";
   else return residuenames[p->second];
 }
@@ -359,8 +357,7 @@ Log& operator<<(Log& ostr, const PDB&  pdb){
 }
 
 Vector PDB::getPosition(AtomNumber a)const{
-     std::map<AtomNumber,unsigned>::const_iterator p;
-     p=number2index.find(a);
+     const auto p=number2index.find(a);
      if(p==number2index.end()) plumed_merror("atom not available");
      else return positions[p->second];
 }

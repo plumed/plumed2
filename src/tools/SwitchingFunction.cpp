@@ -467,6 +467,36 @@ SwitchingFunction::SwitchingFunction(const SwitchingFunction&sf):
 #endif
 }
 
+SwitchingFunction & SwitchingFunction::operator=(const SwitchingFunction& sf){
+  if(&sf==this) return *this;
+  init=sf.init;
+  type=sf.type;
+  invr0=sf.invr0;
+  d0=sf.d0;
+  dmax=sf.dmax;
+  nn=sf.nn;
+  mm=sf.mm;
+  a=sf.a;
+  b=sf.b;
+  c=sf.c;
+  d=sf.d;
+  lambda=sf.lambda;
+  beta=sf.beta;
+  ref=sf.ref;
+  invr0_2=sf.invr0_2;
+  dmax_2=sf.dmax_2;
+  stretch=sf.stretch;
+  shift=sf.shift;
+  evaluator=NULL;
+  evaluator_deriv=NULL;
+#ifdef __PLUMED_HAS_MATHEVAL
+  if(sf.evaluator) evaluator=evaluator_create(evaluator_get_string(sf.evaluator));
+  if(sf.evaluator_deriv) evaluator_deriv=evaluator_create(evaluator_get_string(sf.evaluator_deriv));
+#endif
+  return *this;
+}
+
+
 void SwitchingFunction::set(int nn,int mm,double r0,double d0){
   init=true;
   type=rational;

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016 The plumed team
+   Copyright (c) 2016,2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -170,7 +170,7 @@ void CenterOfMultiColvar::calculate(){
           }
       }
       // Get the central atom pack 
-      CatomPack mypack( mycolv->getCentralAtomPack( 0, mycolv->getPositionInFullTaskList(i) ) );
+      CatomPack mypack; mycolv->getCentralAtomPack( 0, mycolv->getPositionInFullTaskList(i), mypack );
       for(unsigned j=0;j<mypack.getNumberOfAtomsWithDerivatives();++j){
           unsigned jder=3*mypack.getIndex(j);
           // Derivatives of sine

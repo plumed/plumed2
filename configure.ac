@@ -88,7 +88,11 @@ AC_DEFUN([PLUMED_CHECK_PACKAGE], [
     found=ko
     AC_CHECK_HEADER( [$1],[
       AC_CHECK_FUNC(   [$2], [found=ok],
-        m4_ifnblank([$4],[AC_CHECK_LIB(    [$4], [$2], [LIBS="-l$4 $LIBS" && found=ok]) ])
+        m4_ifnblank([$4],[
+          if test "${libsearch}" == true ; then
+           AC_CHECK_LIB(    [$4], [$2], [LIBS="-l$4 $LIBS" && found=ok])
+          fi
+        ])
       )
     ])
     if test $found == ok ; then
@@ -159,6 +163,12 @@ AC_ARG_ENABLE([modules],
 
 
 # set enable flags for ./configure
+
+# This can be disabled when configuring within a package manager
+# such as macports to make sure that only libraries explicitly
+# listed in LDFLAGS are linked
+PLUMED_CONFIG_ENABLE([libsearch],[libsearch],[search for libraries],[yes])
+
 PLUMED_CONFIG_ENABLE([doc],[doc],[documentation],[yes])
 PLUMED_CONFIG_ENABLE([pdfdoc],[pdfdoc],[pdf version of the manual],[no])
 PLUMED_CONFIG_ENABLE([debug],[debug],[debugging],[no])
@@ -177,8 +187,6 @@ PLUMED_CONFIG_ENABLE([molfile_plugins],[molfile-plugins],[use molfile_plugins],[
 PLUMED_CONFIG_ENABLE([external_molfile_plugins],[external-molfile-plugins],[search for external molfile_plugins],[yes])
 PLUMED_CONFIG_ENABLE([matheval],[matheval],[search for matheval],[yes])
 PLUMED_CONFIG_ENABLE([zlib],[zlib],[search for zlib],[yes])
-PLUMED_CONFIG_ENABLE([clock_gettime],[clock-gettime],[search for gettime],[yes])
-PLUMED_CONFIG_ENABLE([gettimeofday],[gettimeofday],[search for gettimeofday],[yes])
 PLUMED_CONFIG_ENABLE([readdir_r],[readdir-r],[search for readdir_r (threadsafe)],[yes])
 PLUMED_CONFIG_ENABLE([cregex],[cregex],[search for C regular expression],[yes])
 PLUMED_CONFIG_ENABLE([dlopen],[dlopen],[search for dlopen],[yes])
@@ -288,9 +296,17 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
 this_compiler_does_not_support_cxx11
 #endif
 ])],
-  [AC_MSG_RESULT([yes])],
+  [AC_MSG_RESULT([yes])];
+  support_cxx11=true,
   [AC_MSG_RESULT([no]) ;
-   AC_MSG_ERROR([C++11 support is required])])
+  support_cxx11=false])
+
+if test "$support_cxx11" = false
+then
+   AC_MSG_WARN([C++11 support is required as of PLUMED 2.4])
+   AC_MSG_WARN([Your compiler appears not to support C++11])
+   AC_MSG_WARN([Please change compiler or make sure that everything works correctly])
+fi
 
 
 
@@ -350,9 +366,12 @@ fi
 if test "$external_blas" == true ; then
 AC_CHECK_FUNC(  [dgemv], [blas_found=nounderscore], [
 AC_CHECK_FUNC(  [dgemv_],[blas_found=underscore],   [
-AC_CHECK_LIB(   [blas],[dgemv],  [LIBS="-lblas $LIBS"] [blas_found=nounderscore], [
-AC_CHECK_LIB(   [blas],[dgemv_], [LIBS="-lblas $LIBS"] [blas_found=underscore]
-) ]) ]) ])
+if test "${libsearch}" == true ; then
+  AC_CHECK_LIB(   [blas],[dgemv],  [LIBS="-lblas $LIBS"] [blas_found=nounderscore], [
+  AC_CHECK_LIB(   [blas],[dgemv_], [LIBS="-lblas $LIBS"] [blas_found=underscore]
+) ])
+fi
+]) ])
 fi
 
 # if not found, then use internal lapack and blas
@@ -376,8 +395,9 @@ case "$blas_found" in
 (nounderscore) search_for=dsyevr ;;
 esac
 AC_CHECK_FUNC( [$search_for], [lapack_found=$blas_found], [
-AC_CHECK_LIB(  [lapack],[$search_for], [LIBS="-llapack $LIBS"] [lapack_found=yes]
-)
+if test "${libsearch}" == true ; then
+  AC_CHECK_LIB(  [lapack],[$search_for], [LIBS="-llapack $LIBS"] [lapack_found=yes])
+fi
 ])
 fi
 
@@ -424,7 +444,10 @@ AC_DEFINE([__PLUMED_HAS_MOLFILE_PLUGINS])
 found=ko
 if test "$external_molfile_plugins" == true ; then
 	AC_CHECK_LIB([molfile_plugin],[molfile_dcdplugin_init],
-        	[ AC_CHECK_HEADER([libmolfile_plugin.h], [LIBS="-lmolfile_plugin $LIBS"] [found=ok] ) ])
+           if test "${libsearch}" == true ; then
+        	[ AC_CHECK_HEADER([libmolfile_plugin.h], [LIBS="-lmolfile_plugin $LIBS"] [found=ok] ) ]
+           fi
+)
 fi
 if test $found == ko ; then
 	AC_MSG_WARN([using internal molfile_plugins, which only support dcd/xtc/trr/trj/crd files])
@@ -459,12 +482,6 @@ AC_OPENMP
 if test $matheval == true ; then
   PLUMED_CHECK_PACKAGE([matheval.h],[evaluator_create],[__PLUMED_HAS_MATHEVAL],[matheval])
 fi
-if test $clock_gettime == true ; then
-  PLUMED_CHECK_PACKAGE([time.h],[clock_gettime],[__PLUMED_HAS_CLOCK_GETTIME],[rt])
-fi
-if test $gettimeofday == true ; then
-  PLUMED_CHECK_PACKAGE([sys/time.h], [gettimeofday], [__PLUMED_HAS_GETTIMEOFDAY])
-fi
 if test $readdir_r == true ; then
   PLUMED_CHECK_PACKAGE([dirent.h],[readdir_r],[__PLUMED_HAS_READDIR_R])
 fi
@@ -486,14 +503,18 @@ save_LIBS="$LIBS"
 if test $gsl == true ; then
   found=ko
   AC_CHECK_FUNC(  [cblas_dgemv], [found=ok], [
-  AC_CHECK_LIB(   [gslcblas],[cblas_dgemv], [LIBS="-lgslcblas $LIBS"] [found=ok]
-  ) ])
+  if test "${libsearch}" == true ; then
+    AC_CHECK_LIB(   [gslcblas],[cblas_dgemv], [LIBS="-lgslcblas $LIBS"] [found=ok])
+  fi
+  ])
   if test $found == ok ; then
     found=ko
     AC_CHECK_HEADER(  [gsl/gsl_vector.h], [
       AC_CHECK_FUNC(  [gsl_vector_alloc], [found=ok], [
-      AC_CHECK_LIB(   [gsl],[gsl_vector_alloc], [LIBS="-lgsl $LIBS"] [found=ok]
-      ) ])
+      if test "${libsearch}" == true ; then
+        AC_CHECK_LIB(   [gsl],[gsl_vector_alloc], [LIBS="-lgsl $LIBS"] [found=ok])
+      fi
+    ])
     ])
   fi
   if test $found == ok ; then
@@ -766,7 +787,12 @@ EOF
     $CXX $CXXFLAGS -c conftest.cpp 
 # start search:
     found=
-    for testlib in "" -lstdc++ -lc++ -lmpi_cxx ; do
+    if test "${libsearch}" == true ; then
+      testlibs="-lstdc++ -lc++ -lmpi_cxx"
+    else
+      testlibs=""
+    fi
+    for testlib in "" $testlibs ; do
       comment=
       test -n "$testlib" && comment=" with library $testlib"
       AC_MSG_CHECKING([whether $name can link a C++ object$comment])

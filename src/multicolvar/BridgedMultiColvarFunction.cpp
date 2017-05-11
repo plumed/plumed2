@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -115,8 +115,8 @@ void BridgedMultiColvarFunction::deactivate_task( const unsigned& taskno ){
   plumed_merror("This should never be called");
 }
 
-CatomPack BridgedMultiColvarFunction::getCentralAtomPack( const unsigned& basn, const unsigned& curr ){
-  return mycolv->getCentralAtomPack( basn, curr );
+void BridgedMultiColvarFunction::getCentralAtomPack( const unsigned& basn, const unsigned& curr, CatomPack& mypack ){
+  return mycolv->getCentralAtomPack( basn, curr, mypack );
 }
 
 }

@@ -1,0 +1,3 @@
+mpiprocs=6
+type=driver
+arg="--plumed plumed.dat --ixyz traj.xyz --multi 3 --debug-forces ff"

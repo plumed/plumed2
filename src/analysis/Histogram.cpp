@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -363,7 +363,7 @@ void Histogram::prepareForAveraging(){
           lockContributors();
       } else {
           // This is used when we are not doing kernel density evaluation
-          mygrid->setGridElement( neighbors[0], 0, mygrid->getGridElement( neighbors[0], 0 ) + cweight ); 
+          mygrid->addToGridElement( neighbors[0], 0, cweight );
       }  
   }
 }

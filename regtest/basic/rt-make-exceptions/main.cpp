@@ -78,15 +78,34 @@ int main(){
   test_line(ofs,plumed,"d: POSITION ATOM=1,2");
   test_line(ofs,plumed,"d: PUCKERING ATOMS=1-4");
   test_line(ofs,plumed,"d: ANGLE ATOMS=1,2,3,4,5");
+  test_line(ofs,plumed,"d: TORSION ATOMS=1,2,3,4,5");
+  test_line(ofs,plumed,"d: TORSION ATOMS=1,2,3,4 VECTOR1=1,2 VECTOR2=2,3 AXIS=3,4");
   test_line(ofs,plumed,"d: COORDINATION GROUPA=1 GROUPB=2 R_0=0.5 NN=1.5");
+  test_line(ofs,plumed,"d: COORDINATION GROUPA=1 GROUPB=2 R_0=0.5 NN=1.5");
+  test_line(ofs,plumed,"d: CENTER ATOMS=2,3,4,5 WEIGHTS=1,2,3");
+  test_line(ofs,plumed,"d: CENTER ATOMS=2,3,4,5 MASS WEIGHTS=1,2,3,4");
+  test_line(ofs,plumed,"LOAD FILE=nonexist.cpp");
+  test_line(ofs,plumed,"d: COORDINATION GROUPA=1 GROUPB=2 SWITCH={WRONGNAME R_0=1.0}");
+  test_line(ofs,plumed,"d: RMSD REFERENCE=missing.pdb");
+  test_line(ofs,plumed,"d: RMSD REFERENCE=test-too-many-atoms.pdb");
+  test_line(ofs,plumed,"d: DRMSD REFERENCE=missing.pdb LOWER_CUTOFF=0.0 UPPER_CUTOFF=15.0");
 
 // these should not fail
   plumed.cmd("readInputLine","d: DISTANCE ATOMS=1,2");
   plumed.cmd("readInputLine","d1: DISTANCE ATOMS={1 2}"); // check if braces are parsed correctly
+  plumed.cmd("readInputLine","t: TORSION ATOMS=1,2,3,4");
   plumed.cmd("readInputLine","RESTRAINT ARG=d AT=0 KAPPA=1");
 
+  test_line(ofs,plumed,"EXTERNAL ARG=d FILE=potential LABEL=ext");
   test_line(ofs,plumed,"METAD ARG=d PACE=1 SIGMA=1 HEIGHT=0 FILE=H1 RESTART=WHAT");
   test_line(ofs,plumed,"METAD ARG=d PACE=1 SIGMA=1 TAU=5");
+  test_line(ofs,plumed,"METAD ARG=d ADAPTIVE=UNKNOWN PACE=1 SIGMA=1 HEIGHT=5");
+  test_line(ofs,plumed,"METAD ARG=d,d1 ADAPTIVE=GEOM PACE=1 SIGMA=1,2 HEIGHT=5");
+  test_line(ofs,plumed,"METAD ARG=d,d1 ADAPTIVE=DIFF PACE=1.5 SIGMA=1 HEIGHT=5");
+  test_line(ofs,plumed,"METAD ARG=d,d1 ADAPTIVE=GEOM PACE=1 SIGMA=1 HEIGHT=5 SIGMA_MIN=3");
+  test_line(ofs,plumed,"METAD ARG=d,d1 ADAPTIVE=GEOM PACE=1 SIGMA=1 HEIGHT=5 SIGMA_MAX=4");
+  test_line(ofs,plumed,"PIECEWISE ARG=t POINT0=1.2,10 POINT1=1.3,0 POINT2=1.4,5");
+  test_line(ofs,plumed,"SORT ARG=t,d");
   test_line(ofs,plumed,"COMBINE ARG=d,d1 COEFFICIENTS=3");
   test_line(ofs,plumed,"COMBINE ARG=d,d1 COEFFICIENTS=3,3 PARAMETERS=1");
   test_line(ofs,plumed,"COMBINE ARG=d,d1 COEFFICIENTS=3,3 PARAMETERS=1,2 POWERS=4");

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015,2016 The plumed team
+   Copyright (c) 2015-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -30,14 +30,14 @@ namespace PLMD {
 namespace adjmat {
 
 void ActionWithInputMatrix::registerKeywords( Keywords& keys ){
-  MultiColvarFunction::registerKeywords( keys ); keys.remove("DATA");
+  MultiColvarBase::registerKeywords( keys ); 
   keys.add("compulsory","MATRIX","the action that calcualtes the adjacency matrix vessel we would like to analyse"); 
 }
 
 
 ActionWithInputMatrix::ActionWithInputMatrix(const ActionOptions& ao):
 Action(ao),
-MultiColvarFunction(ao),
+MultiColvarBase(ao),
 mymatrix(NULL)
 {
   matsums=true; 

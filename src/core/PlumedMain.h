@@ -137,7 +137,6 @@ private:
   bool doCheckPoint;
 
   std::set<FileBase*> files;
-  typedef std::set<FileBase*>::iterator files_iterator;
 
 /// Stuff to make plumed stop the MD code cleanly
   int* stopFlag;

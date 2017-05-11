@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -74,7 +74,7 @@ void GREX::cmd(const string&key,void*val){
     // do nothing
   } else {
     int iword=-1;
-    auto it=GREXWordMap().find(words[0]);
+    const auto it=GREXWordMap().find(words[0]);
     if(it!=GREXWordMap().end()) iword=it->second;
     switch(iword){
     case cmd_initialized:

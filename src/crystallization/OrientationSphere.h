@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,13 +22,14 @@
 #ifndef __PLUMED_crystallization_OrientationSphere_h
 #define __PLUMED_crystallization_OrientationSphere_h
 
-#include "multicolvar/MultiColvarFunction.h"
+#include "multicolvar/MultiColvarBase.h"
+#include "multicolvar/AtomValuePack.h"
 #include "tools/SwitchingFunction.h"
 
 namespace PLMD {
 namespace crystallization {
 
-class OrientationSphere : public multicolvar::MultiColvarFunction {
+class OrientationSphere : public multicolvar::MultiColvarBase {
 private:
   double rcut2;
   SwitchingFunction switchingFunction;

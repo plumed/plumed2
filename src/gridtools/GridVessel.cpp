@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015,2016 The plumed team
+   Copyright (c) 2015-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -164,6 +164,7 @@ void GridVessel::getIndices( const std::vector<double>& point, std::vector<unsig
   for(unsigned i=0;i<dimension;++i){
       indices[i]=std::floor( (point[i] - min[i])/dx[i] );
       if( pbc[i] ) indices[i]=indices[i]%nbin[i];
+      else if( indices[i]>nbin[i] ) plumed_merror("point is outside grid range");
   }
 }
 
@@ -246,6 +247,11 @@ void GridVessel::setValueAndDerivatives( const unsigned& ipoint, const unsigned&
   plumed_dbg_assert( !noderiv && jelement<getNumberOfComponents() && der.size()==nbin.size() );
   setGridElement( ipoint, jelement, value ); for(unsigned i=0;i<der.size();++i) setGridElement( ipoint, jelement+1+i, der[i] ); 
 }
+
+void GridVessel::addToGridElement( const unsigned& ipoint, const unsigned& jelement, const double& value ){
+  plumed_dbg_assert( bounds_set && ipoint<npoints && jelement<nper );
+  addDataElement( nper*ipoint + jelement, value );
+} 
 
 void GridVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
   plumed_dbg_assert( myvals.getNumberOfValues()==(nper+1) );
