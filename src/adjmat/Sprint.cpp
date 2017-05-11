@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -46,17 +46,17 @@ This example input calculates the 7 SPRINT coordinates for a 7 atom cluster of L
 atoms and prints their values to a file.  In this input the SPRINT coordinates are calculated
 in the manner described in ?? so two atoms are adjacent if they are within a cutoff:
 
-\verbatim
+\plumedfile
 DENSITY SPECIES=1-7 LABEL=d1
 CONTACT_MATRIX ATOMS=d1 SWITCH={RATIONAL R_0=0.1} LABEL=mat
 SPRINT MATRIX=mat LABEL=ss
 PRINT ARG=ss.* FILE=colvar
-\endverbatim
+\endplumedfile
 
 This example input calculates the 14 SPRINT coordinates foa a molecule composed of 7 hydrogen and
 7 carbon atoms.  Once again two atoms are adjacent if they are within a cutoff:
 
-\verbatim
+\plumedfile
 DENSITY SPECIES=1-7 LABEL=c
 DENSITY SPECIES=8-14 LABEL=h
 
@@ -71,7 +71,7 @@ CONTACT_MATRIX ...
 SPRINT MATRIX=mat LABEL=ss
 
 PRINT ARG=ss.* FILE=colvar
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

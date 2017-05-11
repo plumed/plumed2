@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2016 The plumed team
+   Copyright (c) 2014-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -86,19 +86,19 @@ described above and the resulting projections determine the \f$u'\f$, \f$v'\f$ a
 The following commands tell plumed to calculate the number of atoms in an ion chanel in a protein.
 The extent of the chanel is calculated from the positions of atoms 1, 4, 5 and 11. The final value will be labeled cav.
 
-\verbatim
+\plumedfile
 d1: DENSITY SPECIES=20-500
 CAVITY DATA=d1 ATOMS=1,4,5,11 SIGMA=0.1 LABEL=cav
-\endverbatim
+\endplumedfile
 
 The following command tells plumed to calculate the coordination numbers (with other water molecules) for the water
 molecules in the protein channel described above.  The average coordination number and the number of coordination
 numbers more than 4 is then calculated.  The values of these two quantities are given the labels cav.mean and cav.morethan
 
-\verbatim
+\plumedfile
 d1: COORDINATIONNUMBER SPECIES=20-500
 CAVITY DATA=d1 ATOMS=1,4,5,11 SIGMA=0.1 MEAN MORE_THAN={RATIONAL R_0=4} LABEL=cav
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

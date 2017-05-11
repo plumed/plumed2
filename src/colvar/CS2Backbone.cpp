@@ -116,17 +116,17 @@ Additional material and examples can be also found in the tutorial \ref belfast-
 In this first example the chemical shifts are used to calculate a scoring function to be used
 in NMR driven Metadynamics \cite Granata:2013dk :
 
-\verbatim
+\plumedfile
 whole: GROUP ATOMS=2612-2514:-1,961-1:-1,2466-962:-1,2513-2467:-1
 WHOLEMOLECULES ENTITY0=whole
 cs: CS2BACKBONE ATOMS=1-2612 NRES=176 DATA=../data/ TEMPLATE=template.pdb CAMSHIFT NOPBC
 metad: METAD ARG=cs HEIGHT=0.5 SIGMA=0.1 PACE=200 BIASFACTOR=10
 PRINT ARG=cs,metad.bias FILE=COLVAR STRIDE=100
-\endverbatim
+\endplumedfile
 
 In this second example the chemical shifts are used as replica-averaged restrained as in \cite Camilloni:2012je \cite Camilloni:2013hs.
 
-\verbatim
+\plumedfile
 cs: CS2BACKBONE ATOMS=1-174 DATA=data/ NRES=13
 encs: ENSEMBLE ARG=(cs\.hn_.*),(cs\.nh_.*)
 stcs: STATS ARG=encs.* SQDEVSUM PARARG=(cs\.exphn_.*),(cs\.expnh_.*)
@@ -134,7 +134,7 @@ RESTRAINT ARG=stcs.sqdevsum AT=0 KAPPA=0 SLOPE=24
 
 PRINT ARG=(cs\.hn_.*),(cs\.nh_.*) FILE=RESTRAINT STRIDE=100
 
-\endverbatim
+\endplumedfile
 
 (See also \ref WHOLEMOLECULES, \ref STATS, \ref METAD, \ref RESTRAINT and \ref PRINT)
 

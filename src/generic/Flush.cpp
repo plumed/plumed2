@@ -41,7 +41,7 @@ plumed input file, it will flush all the open files.
 
 \par Examples
 A command like this in the input will instruct plumed to flush all the output files every 100 steps
-\verbatim
+\plumedfile
 d1: DISTANCE ATOMS=1,10
 PRINT ARG=d1 STRIDE=5 FILE=colvar1
 
@@ -50,7 +50,7 @@ FLUSH STRIDE=100
 d2: DISTANCE ATOMS=2,11
 # also this print is flushed every 100 steps:
 PRINT ARG=d2 STRIDE=10 FILE=colvar2
-\endverbatim
+\endplumedfile
 (see also \ref DISTANCE and \ref PRINT).
 */
 //+ENDPLUMEDOC

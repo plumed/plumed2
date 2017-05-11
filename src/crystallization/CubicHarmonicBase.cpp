@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -106,7 +106,8 @@ double CubicHarmonicBase::compute( const unsigned& tindex, multicolvar::AtomValu
 
     if ( (d2=distance[0]*distance[0])<rcut2 &&
          (d2+=distance[1]*distance[1])<rcut2 &&
-         (d2+=distance[2]*distance[2])<rcut2) {
+         (d2+=distance[2]*distance[2])<rcut2 &&
+         d2>epsilon ) {
 
       double sw = switchingFunction.calculateSqr( d2, dfunc );
 

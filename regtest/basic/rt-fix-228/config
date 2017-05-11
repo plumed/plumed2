@@ -1,0 +1,4 @@
+mpiprocs=2
+type=driver
+# this is to test a different name
+arg="--plumed plumed.dat --ixyz traj.xyz --multi 2"

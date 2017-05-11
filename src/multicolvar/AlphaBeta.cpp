@@ -49,7 +49,7 @@ The \f$\phi_i^{\textrm{Ref}}\f$ values are the user-specified reference values f
 
 The following provides an example of the input for an alpha beta similarity.
 
-\verbatim
+\plumedfile
 ALPHABETA ...
 ATOMS1=168,170,172,188 REFERENCE1=3.14
 ATOMS2=170,172,188,190 REFERENCE2=3.14
@@ -57,11 +57,11 @@ ATOMS3=188,190,192,230 REFERENCE3=3.14
 LABEL=ab
 ... ALPHABETA
 PRINT ARG=ab FILE=colvar STRIDE=10
-\endverbatim
+\endplumedfile
 
 Because all the reference values are the same we can calculate the same quantity using
 
-\verbatim
+\plumedfile
 ALPHABETA ...
 ATOMS1=168,170,172,188 REFERENCE=3.14
 ATOMS2=170,172,188,190
@@ -69,13 +69,13 @@ ATOMS3=188,190,192,230
 LABEL=ab
 ... ALPHABETA
 PRINT ARG=ab FILE=colvar STRIDE=10
-\endverbatim
+\endplumedfile
 
 Writing out the atoms involved in all the torsions in this way can be rather tedious. Thankfully if you are working with protein you
 can avoid this by using the \ref MOLINFO command.  PLUMED uses the pdb file that you provide to this command to learn
 about the topology of the protein molecule.  This means that you can specify torsion angles using the following syntax:
 
-\verbatim
+\plumedfile
 MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
 ALPHABETA ...
 ATOMS1=@phi-3 REFERENCE=3.14
@@ -84,7 +84,7 @@ ATOMS3=@phi-4
 LABEL=ab
 ... ALPHABETA
 PRINT ARG=ab FILE=colvar STRIDE=10
-\endverbatim
+\endplumedfile
 
 Here, \@phi-3 tells plumed that you would like to calculate the \f$\phi\f$ angle in the third residue of the protein.
 Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle of the 4th residue of the protein.

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -37,7 +37,7 @@ The following input monitors two torsional angles during a simulation,
 defines two basins (A and B) as a function of the two torsions and
 stops the simulation when it falls in one of the two. In the log
 file will be shown the latest values for the CVs and the basin reached.
-\verbatim
+\plumedfile
 TORSION ATOMS=1,2,3,4 LABEL=r1
 TORSION ATOMS=2,3,4,5 LABEL=r2
 COMMITTOR ...
@@ -48,7 +48,7 @@ COMMITTOR ...
   BASIN_LL2=-0.15,-0.20
   BASIN_UL2=-0.25,-0.40
 ... COMMITTOR
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

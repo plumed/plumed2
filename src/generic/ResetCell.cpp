@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015,2016 The plumed team
+   Copyright (c) 2015-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -71,14 +71,13 @@ this action is performed at every MD step.
 \par Examples
 
 Reset cell to be triangular after a rototranslational fit
-\verbatim
+\plumedfile
 DUMPATOMS FILE=dump-original.xyz ATOMS=1-20
 FIT_TO_TEMPLATE STRIDE=1 REFERENCE=ref.pdb TYPE=OPTIMAL
 DUMPATOMS FILE=dump-fit.xyz ATOMS=1-20
 RESET_CELL TYPE=TRIANGULAR
 DUMPATOMS FILE=dump-reset.xyz ATOMS=1-20
-\endverbatim
-(see also \ref DUMPATOMS)
+\endplumedfile
 
 
 */

@@ -59,21 +59,21 @@ and so on.  You can also probe the value of these averaged variables in regions 
 This example input calculates the coordination numbers for all the atoms in the system.  These coordination numbers are then averaged over
 spherical regions.  The number of averaged coordination numbers that are greater than 4 is then output to a file.
 
-\verbatim
+\plumedfile
 COORDINATIONNUMBER SPECIES=1-64 D_0=1.3 R_0=0.2 LABEL=d1
 LOCAL_AVERAGE ARG=d1 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MORE_THAN={RATIONAL R_0=4} LABEL=la
 PRINT ARG=la.* FILE=colvar
-\endverbatim
+\endplumedfile
 
 This example input calculates the \f$q_4\f$ (see \ref Q4) vectors for each of the atoms in the system.  These vectors are then averaged
 component by component over a spherical region.  The average value for this quantity is then outputeed to a file.  This calculates the
 quantities that were used in the paper by Lechner and Dellago \cite dellago-q6
 
-\verbatim
+\plumedfile
 Q4 SPECIES=1-64 SWITCH={RATIONAL D_0=1.3 R_0=0.2} LABEL=q4
 LOCAL_AVERAGE ARG=q4 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN LABEL=la
 PRINT ARG=la.* FILE=colvar
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
@@ -183,7 +183,8 @@ double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) c
     Vector& distance=myatoms.getPosition(i);  // getSeparation( myatoms.getPosition(0), myatoms.getPosition(i) );
     if ( (d2=distance[0]*distance[0])<rcut2 &&
          (d2+=distance[1]*distance[1])<rcut2 &&
-         (d2+=distance[2]*distance[2])<rcut2) {
+         (d2+=distance[2]*distance[2])<rcut2 &&
+         d2>epsilon) {
 
       sw = switchingFunction.calculateSqr( d2, dfunc );
 

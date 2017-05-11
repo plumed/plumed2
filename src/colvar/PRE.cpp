@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015,2016 The plumed team
+   Copyright (c) 2015-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -47,7 +47,7 @@ In the following example five PRE intensities are calculated using the distance 
 oxigen of the spin label and the backbone hydrogens. Omega is the NMR frequency, RTWO the
 R2 for the hydrogens, INEPT of 8 ms for the experiment and a TAUC of 1.21 ns
 
-\verbatim
+\plumedfile
 PRE ...
 LABEL=HN_pre
 INEPT=8
@@ -63,7 +63,7 @@ GROUPA5=451 RTWO5=0.0086341843
 
 PRINT ARG=HN_pre.* FILE=PRE.dat STRIDE=1
 
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

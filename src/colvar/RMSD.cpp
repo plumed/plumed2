@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -105,6 +105,7 @@ you really know what you are doing however as the results can be rather strange.
 In PDB files the atomic coordinates and box lengths should be in Angstroms unless
 you are working with natural units.  If you are working with natural units then the coordinates
 should be in your natural length unit.  For more details on the PDB file format visit http://www.wwpdb.org/docs.html.
+Make sure your PDB file is correclty formatted as explained \ref pdbreader "in this page".
 
 A different method is used to calculate the RMSD distance when you use TYPE=OPTIMAL on the input line.  In this case  the root mean square
 deviation is calculated after the positions of geometric centers in the reference and instantaneous configurations are aligned AND after
@@ -133,9 +134,9 @@ The following tells plumed to calculate the RMSD distance between
 the positions of the atoms in the reference file and their instantaneous
 position.  The Kearseley algorithm is used so this is done optimally.
 
-\verbatim
+\plumedfile
 RMSD REFERENCE=file.pdb TYPE=OPTIMAL
-\endverbatim
+\endplumedfile
 
 ...
 
