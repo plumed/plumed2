@@ -44,7 +44,7 @@ public:
   PammObject();
   PammObject( const PammObject& );
   ~PammObject();
-  PammObject operator=(const PammObject& po){ plumed_error(); return PammObject(); }
+  PammObject operator=(const PammObject& po){ plumed_error(); regulariser=po.regulariser; return PammObject(); }
 /// Setup the Pamm object
   void setup( const std::string& filename, const double& reg, const std::vector<std::string>& valnames,
               const std::vector<bool>& pbcin, const std::vector<std::string>& imin, const std::vector<std::string>& imax,
