@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithValue.h"
+#include "ActionWithArguments.h"
 #include "tools/Exception.h"
 #include "tools/OpenMP.h"
 
@@ -230,6 +231,22 @@ Value* ActionWithValue::getPntrToComponent( const std::string& name ) {
 Value* ActionWithValue::getPntrToComponent( int n ) {
   plumed_dbg_massert(n<values.size(),"you have requested a pointer that is out of bounds");
   return values[n].get();
+}
+
+void ActionWithValue::interpretDataLabel( const std::string& mystr, ActionWithArguments* myuser, std::vector<Value*>& args ){
+  if( mystr=="" ){
+      // Retrieve value with name of action
+      if( values[0]->name!=getLabel() ) myuser->error("action " + getLabel() + " does not have a value");
+      args.push_back( values[0] );
+  } else if( mystr==getLabel() + ".*" ){
+      // Retrieve all Values 
+      for(int k=0;k<getNumberOfComponents();++k ) args.push_back( values[k] ); 
+  } else {
+      // Action has one Value with same name as action
+      if ( mystr==getLabel() && values[0]->name==getLabel() ) args.push_back( values[0] );
+      // Retrieve Value that is requested using instruction such as action.label
+      else if( mystr.find(".")!=std::string::npos && exists( mystr ) ) args.push_back( copyOutput( mystr ) );
+  }
 }
 
 }

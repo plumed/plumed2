@@ -63,6 +63,8 @@ of the PLMD::Action.  Perhaps unsurprisingly, when you manipulate the <b> compon
 PLMD::Action you should use <b> the routines with the word component in the name. </b>
 */
 
+class ActionWithArguments;
+
 class ActionWithValue :
   public virtual Action
 {
@@ -168,6 +170,8 @@ public:
   virtual unsigned getNumberOfDerivatives()=0;
 /// Activate the calculation of derivatives
   virtual void turnOnDerivatives();
+/// Interpret the data label and get arguments 
+  void interpretDataLabel( const std::string& mystr, ActionWithArguments* myuser, std::vector<Value*>& args );
 };
 
 inline

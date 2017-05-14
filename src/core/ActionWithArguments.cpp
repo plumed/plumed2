@@ -113,8 +113,8 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
                   // this is the match: try to see if it is a valid action
                   std::string putativeVal(submatch);
                   if( all[j]->exists(putativeVal) ) {
-                    arg.push_back(all[j]->copyOutput(putativeVal));
-                    log.printf("  Action %s added! \n",putativeVal.c_str());
+                     all[j]->interpretDataLabel( putativeVal, this, arg );
+                     log.printf("  Action %s added! \n",putativeVal.c_str());
                   }
                   free(submatch);
                 };
@@ -137,56 +137,37 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
       string a=c[i].substr(0,dot);
       string name=c[i].substr(dot+1);
       if(c[i].find(".")!=string::npos) {   // if it contains a dot:
-        if(a=="*" && name=="*") {
+        if(a=="*") {
           // Take all values from all actions
           std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
           if( all.empty() ) error("your input file is not telling plumed to calculate anything");
-          for(unsigned j=0; j<all.size(); j++) {
-            for(int k=0; k<all[j]->getNumberOfComponents(); ++k) arg.push_back(all[j]->copyOutput(k));
-          }
-        } else if ( name=="*") {
+          unsigned carg = arg.size();
+          for(unsigned j=0; j<all.size(); j++) all[j]->interpretDataLabel( all[j]->getLabel() + "." + name, this, arg );
+          if( arg.size()==carg ) error("found no actions with a component called " + name );
+        } else {   
           // Take all the values from an action with a specific name
           ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(a);
-          if(!action) {
-            std::string str=" (hint! the actions in this ActionSet are: ";
-            str+=plumed.getActionSet().getLabelList()+")";
-            error("cannot find action named " + a + str);
-          }
-          if( action->getNumberOfComponents()==0 ) error("found " + a +".* indicating use all components calculated by action with label " + a + " but this action has no components");
-          for(int k=0; k<action->getNumberOfComponents(); ++k) arg.push_back(action->copyOutput(k));
-        } else if ( a=="*" ) {
-          // Take components from all actions with a specific name
-          std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
-          if( all.empty() ) error("your input file is not telling plumed to calculate anything");
-          unsigned nval=0;
-          for(unsigned j=0; j<all.size(); j++) {
-            std::string flab; flab=all[j]->getLabel() + "." + name;
-            if( all[j]->exists(flab) ) { arg.push_back(all[j]->copyOutput(flab)); nval++; }
-          }
-          if(nval==0) error("found no actions with a component called " + name );
-        } else {
-          // Take values with a specific name
-          ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(a);
-          if(!action) {
+          if( !action ){ 
             std::string str=" (hint! the actions in this ActionSet are: ";
             str+=plumed.getActionSet().getLabelList()+")";
             error("cannot find action named " + a +str);
           }
-          if( !(action->exists(c[i])) ) {
-            std::string str=" (hint! the components in this actions are: ";
-            str+=action->getComponentsList()+")";
-            error("action " + a + " has no component named " + name + str);
-          } ;
-          arg.push_back(action->copyOutput(c[i]));
+          unsigned carg = arg.size(); action->interpretDataLabel( c[i], this, arg );
+          if( arg.size()==carg && name=="*" ) error("found " + a +".* indicating use all components calculated by action with label " + a + " but this action has no components");
+          if( arg.size()==carg ) {
+             std::string str=" (hint! the components in this actions are: ";
+             str+=action->getComponentsList()+")";
+             error("action " + a + " has no component named " + name + str);
+          }
         }
       } else {    // if it doesn't contain a dot
         if(c[i]=="*") {
           // Take all values from all actions
           std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
           if( all.empty() ) error("your input file is not telling plumed to calculate anything");
-          for(unsigned j=0; j<all.size(); j++) {
-            for(int k=0; k<all[j]->getNumberOfComponents(); ++k) arg.push_back(all[j]->copyOutput(k));
-          }
+          unsigned carg = arg.size();
+          for(unsigned j=0; j<all.size(); j++) all[j]->interpretDataLabel( all[j]->getLabel() + ".*", this, arg );
+          if( arg.size()==carg ) error("found no actions with a component called " + name ); 
         } else {
           ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(c[i]);
           if(!action) {
@@ -194,12 +175,12 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
             str+=plumed.getActionSet().getLabelList()+")";
             error("cannot find action named " + c[i] + str );
           }
-          if( !(action->exists(c[i])) ) {
-            std::string str=" (hint! the components in this actions are: ";
-            str+=action->getComponentsList()+")";
-            error("action " + c[i] + " has no component named " + c[i] +str);
+          unsigned carg=arg.size(); action->interpretDataLabel( "", this, arg );
+          if( arg.size()!=carg+1 ){
+             std::string str=" (hint! the components in this actions are: ";
+             str+=action->getComponentsList()+")";
+             error("action " + c[i] + " has no component named " + c[i] +str);
           };
-          arg.push_back(action->copyOutput(c[i]));
         }
       }
     }
