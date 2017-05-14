@@ -30,8 +30,29 @@
 This quantity can be used to calculate functions of the distribution of collective
 variables for the atoms that lie in a region where the density of a certain type of atom is high.
 
+This collective variable can be used to determine whether colvars are within region where the density 
+of a particular atom is high.  This is achieved by calculating the following function at the point where
+the atom is located \f$(x,y,z)\f$:
+
+\f[
+w_j = 1 - \sigma\left[ \sum_{i=1}^N K\left( \frac{x-x_i}{\sigma_x},\frac{y-y_i}{\sigma_y},\frac{z-z_i}{\sigma_z} \right) \right]
+\f]
+
+Here \f$\sigma\f$ is a \ref switchingfunction and \f$K\f$ is a \ref kernelfunctions.  The sum runs over the atoms
+specified using the ATOMS keyword and a \f$w_j\f$ value is calculated for each of the central atoms of the input
+multicolvar.
 
 \par Examples
+
+The input below calculates a density field from the positions of atoms 1-14400.  The number of the atoms
+that are specified in the DENSITY action that are within a region where the density field is greater than
+2.0 is then calculated. 
+
+\verbatim
+d1: DENSITY SPECIES=14401-74134:3 LOWMEM
+fi: INENVELOPE DATA=d1 ATOMS=1-14400 CONTOUR={RATIONAL D_0=2.0 R_0=1.0} BANDWIDTH=0.1,0.1,0.1 LOWMEM
+PRINT ARG=fi,rr.* FILE=colvar
+\endverbatim
 
 */
 //+ENDPLUMEDOC

@@ -21,6 +21,8 @@ Changes from version 2.3 which are relevant for users:
     - \ref EDS
 - New collective variables:
   -  \ref DIMER (thanks to Marco Nava).
+- New actions:
+  - \ref INENVELOPE
 - Other changes:
   - \ref PBMETAD : multiple walkers using files (thanks to Marco De La Pierre).
   - \ref PBMETAD : adaptive gaussians
