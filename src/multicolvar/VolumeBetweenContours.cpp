@@ -30,7 +30,7 @@
 This quantity can be used to calculate functions of the distribution of collective
 variables for the atoms that lie in a region where the density of a certain type of atom is high.
 
-This collective variable can be used to determine whether colvars are within region where the density 
+This collective variable can be used to determine whether colvars are within region where the density
 of a particular atom is high.  This is achieved by calculating the following function at the point where
 the atom is located \f$(x,y,z)\f$:
 
@@ -46,7 +46,7 @@ multicolvar.
 
 The input below calculates a density field from the positions of atoms 1-14400.  The number of the atoms
 that are specified in the DENSITY action that are within a region where the density field is greater than
-2.0 is then calculated. 
+2.0 is then calculated.
 
 \verbatim
 d1: DENSITY SPECIES=14401-74134:3 LOWMEM
@@ -137,9 +137,9 @@ double VolumeInEnvelope::calculateNumberInside( const Vector& cpos, Vector& deri
     }
     vir -= Tensor( tder, dist );
   }
-  double deriv, fval = sfunc.calculate( value, deriv ); 
+  double deriv, fval = sfunc.calculate( value, deriv );
   derivatives *= -deriv*value; vir *= -deriv*value;
-  for(unsigned i=1;i<natoms;++i) refders[ indices[i] ] *= -deriv*value; 
+  for(unsigned i=1; i<natoms; ++i) refders[ indices[i] ] *= -deriv*value;
   return 1.0 - fval;
 }
 

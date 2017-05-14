@@ -169,7 +169,7 @@ void HistogramOnGrid::calculate( const unsigned& current, MultiValue& myvals, st
           buffer[ bufstart + gridbuf + nder + 1 + kder ] += myvals.getDerivative( 0, kder );
         }
       }
-      if( kernel ) delete kernel; 
+      if( kernel ) delete kernel;
       for(unsigned i=0; i<dimension; ++i) delete vv[i];
     }
   }
