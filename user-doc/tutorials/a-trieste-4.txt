@@ -128,7 +128,7 @@ phi: TORSION ATOMS=__FILL__
 psi: TORSION ATOMS=__FILL__
 
 # Activate well-tempered metadynamics in phi
-metad: __FILL__ ARG=phi...
+metad: __FILL__ ARG=phi ...
 # Deposit a Gaussian every 500 time steps, with initial height equal
 # to 1.2 kJoule/mol, biasfactor equal to 10.0
 PACE=500 HEIGHT=1.2 BIASFACTOR=10.0
@@ -141,6 +141,22 @@ FILE=HILLS GRID_MIN=-pi GRID_MAX=pi
 # Print the collective variables and the value of the bias potential on COLVAR file
 PRINT ARG=phi,psi,__FILL__ FILE=COLVAR STRIDE=10
 \endplumedfile
+
+The syntax for the command \ref METAD is simple.
+The directive is followed by a keyword ARG followed by the labels of the CVs
+on which the metadynamics potential will act.
+The keyword PACE determines the stride of Gaussian deposition in number of time steps,
+while the keyword HEIGHT specifies the height of the Gaussian in kJoule/mol. For each CVs, one has
+to specify the width of the Gaussian by using the keyword SIGMA. Gaussian will be written
+to the file indicated by the keyword FILE.
+
+In this example, the bias potential will be stored on a grid, whose boundaries are specified by the keywords GRID_MIN and GRID_MAX.
+Notice that you can provide either the number of bins for every collective variable (GRID_BIN) or
+the desired grid spacing (GRID_SPACING). In case you provide both PLUMED will use
+the most conservative choice (highest number of bins) for each dimension.
+In case you do not provide any information about bin size (neither GRID_BIN nor GRID_SPACING)
+and if Gaussian width is fixed, PLUMED will use 1/5 of the Gaussian width as grid spacing.
+This default choice should be reasonable for most applications.
 
 Once your `plumed.dat` file is complete, you can run a XX-ns long metadynamics simulations with the following command
 \verbatim
@@ -157,7 +173,7 @@ gnuplot> p "COLVAR" u 1:2
 \endverbatim
 
 \anchor trieste-4-phi-fig
-\image html munster-metad-phi.png "Time evolution of the CV phi during the first 2 ns of a metadynamics simulation of alanine dipeptide in vacuum."
+\image html munster-metad-phi.png "Time evolution of the metadynamics CV during the first 2 ns of a metadynamics simulation of alanine dipeptide in vacuum."
 
 By inspecting Figure \ref trieste-4-phi-fig, we can see that the system is initialized in one of the two metastable
 states of alanine dipeptide. After a while (t=0.1 ns), the system is pushed
@@ -169,17 +185,14 @@ The HILLS file contains a list of the Gaussians deposited along the simulation.
 If we give a look at the header of this file, we can find relevant information about its content:
 
 \verbatim
-#! FIELDS time phi psi sigma_phi sigma_psi height biasf
+#! FIELDS time phi sigma_phi height biasf
 #! SET multivariate false
 #! SET min_phi -pi
 #! SET max_phi pi
-#! SET min_psi -pi
-#! SET max_psi pi
 \endverbatim 
 
 The line starting with FIELDS tells us what is displayed in the various columns of the HILLS file:
-the time of the simulation, the value of phi and psi, the width of the Gaussian in phi and psi,
-the height of the Gaussian, and  the biasfactor.
+the simulation time, the instantaneous value of \f$ \phi \f$, the Gaussian width and height, and the biasfactor. 
 We can use the HILLS file to visualize the decrease of the Gaussian height during the simulation,
 according to the well-tempered recipe:
 
@@ -191,19 +204,17 @@ of the Gaussian height is higher than the initial height specified in the input 
 In fact, this column reports the height of the Gaussian rescaled by the pre-factor that
 in well-tempered metadynamics relates the bias potential to the free energy.
 
-
-
 One can estimate the free energy as a function of the metadynamics CVs directly from the metadynamics
 bias potential. In order to do so, the utility \ref sum_hills should be used to sum the Gaussians
 deposited during the simulation and stored in the HILLS file.  
-To calculate the free energy as a function of phi, it is sufficient to use the following command line:
+To calculate the free energy as a function of \f$ \phi \f$, it is sufficient to use the following command line:
 
 \verbatim
 plumed sum_hills --hills HILLS
 \endverbatim
 
 The command above generates a file called fes.dat in which the free-energy surface as function
-of phi is calculated on a regular grid. One can modify the default name for the free energy file,
+of \f$ \phi \f$ is calculated on a regular grid. One can modify the default name for the free energy file,
 as well as the boundaries and bin size of the grid, by using the following options of \ref sum_hills :
 
 \verbatim
@@ -236,8 +247,8 @@ The resulting plot should look like the following:
 \image html munster-metad-phifest.png "Estimates of the free energy as a function of the dihedral phi calculated every 100 Gaussians deposited."
 
 These two qualitative observations:
-- the system is diffusing efficiently in the collective variable space 
-- the estimated free energy does not change significantly as a function of time 
+- the system is diffusing efficiently in the collective variable space (Figure \ref trieste-4-phi-fig) 
+- the estimated free energy does not change significantly as a function of time (Figure \ref trieste-4-metad-phifest-fig) 
 
 suggest that the simulation is converged. 
 
@@ -245,8 +256,8 @@ suggest that the simulation is converged.
 of your metadynamics simulation!
 
 \note The two observations above are necessary, but qualitative conditions for convergence.
-A quantitative analysis of convergence can be obtained by proper error analisys of the
-recontructed free energy, as explained in the last exercise
+A quantitative analysis of convergence can be obtained by proper error analysis of the
+recontructed free energy, as explained in the last exercize
 
 \section trieste-4-ex-2 Exercize 2: playing with collective variables
 
