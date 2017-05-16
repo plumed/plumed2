@@ -12,10 +12,10 @@ of the collective variables used, and estimating the associated error.
 Once this tutorial is completed students will be able to:
 
 - Write the PLUMED input file to perform metadynamics simulations 
-- Calculate free energies from a metadynamics run
-- Assert the choice of the collective variable
-- Evaluate the convergence of metadynamics simulations
-- Compute the error associated to the reconstructed free energies 
+- Calculate the free energy from a metadynamics run
+- Compute the error associated to the reconstructed free energy
+- Evaluate the convergence of a metadynamics simulation
+- Assert the choice of the collective variables
 
 \section trieste-4-resources Resources
 
