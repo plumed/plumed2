@@ -1,0 +1,67 @@
+/**
+\page trieste-3 Trieste tutorial: using restraints. 
+
+\section trieste-3-aims Aims
+
+The aim of this tutorial is to introduce the users to the use of constant biases in PLUMED. 
+
+\section trieste-3-objectives Objectives
+
+- Apply a restraint on a simulations over one or more collective variables 
+- Understand the effect of a restraint on the acquired statistics
+- Perform a simple unbiasing of a restrained simulation
+- Add an external potential in the form of an analytical or numerical function
+
+\section trieste-3-resources Resources
+
+The \tarball{trieste-3} for this tutorial contains the following files:
+- wdimer.pdb: a PDB file for two molecules of water in vacuo
+- wdimer.tpr: a GROMACS run file to perform MD of two water molecules
+- diala.pdb: a PDB file for alanine dipeptide in vacuo
+- diala.tpr: a GROMACS run file to perform MD of alanine dipeptide
+- do_block_fes.py: a python script to perform error analysis
+
+This tutorial has been tested on a pre-release version of version 2.4. However, it should not take advantage
+of 2.4-only features, thus should also work with version 2.3.
+
+\section trieste-3-intro Introduction
+
+PLUMED can calculate conformational properties of a system a posteriori as well as on-the-fly. This information can be use to manipulate a simulation on-the-fly. This means adding energy terms in addition to those of the original Hamiltonian. This additional energy terms are usually refered as \ref Bias.
+In the following we will see how to apply a constant bias potential with PLUMED.
+
+\hidden{Summary of theory}
+\endhidden
+
+We will make use of two toy models: the first is a water dimer, i.e. two molecules of water in vacuo, that we will use to compare the effect of a constant bias on the equilibrium properties of the system that in this case can be readily computed. The second toy model is alanine dipeptide in vacuo. This system is more challanging to characterise with a standard MD simulation and we will see how we can use an interative approach to to build a constant bias that will help in flattening the underlying free energy surface and thus sped up the sampling.
+
+\section trieste-3-ex-1 Exercize 1:
+
+Obtain a converged histogram with error estimate for the dimer as a function of a collective variable
+
+\section trieste-3-ex-2 Exercize 2:
+
+Apply a linear restraint on the same collective variable 
+
+- Exercise 3
+Apply a quadratic restraint on the same collective variable 
+
+- Exercise 4
+Apply an upper wall on the distance 
+
+- Exercise 5
+Apply a linear restraint on a different collective variable
+
+- Exercise 6
+Evaluate the free energy and use it as an external restraint
+
+- Exercise 7
+Run Alanine dipeptide 
+
+- Exercise 8
+Run Alanine dipeptide adding a gaussian potential centered at psi=-1
+
+- Exercise 9
+Run Alanine dipeptide adding a gaussian potential centered at psi=-1 and at psi=??
+
+
+  
