@@ -100,7 +100,7 @@ In a new folder we can run this new simulation this time biasing and analysing t
 The histogram should look different.
 
 The effect of a constant bias is that of systematically changing the probability of each conformation by a factor
-\f$ \exp(+V_{bias}/k_{B}T} \f$. This means that it is easely possible to recover the unbias distribution at least in the regions of the conformational space that have been througly sampled. In practice the statistical weight of each frame is not 1 anymore but is given by the exponential of the bias.
+\f$ \exp(+V_{bias}/k_{B}T) \f$. This means that it is easely possible to recover the unbias distribution at least in the regions of the conformational space that have been througly sampled. In practice the statistical weight of each frame is not 1 anymore but is given by the exponential of the bias.
 
 In order to recover the unbiased distribution we can post process the simulation using plumed driver to recalculate the bias felt by each frame and store this information to analyse any property. Furthermore plumed can also automatically use the bias to reweight the accumulated histogram.
 
