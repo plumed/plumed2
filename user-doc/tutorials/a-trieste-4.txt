@@ -22,7 +22,7 @@ Once this tutorial is completed students will be able to:
 The \tarball{trieste-4} for this project contains the following files:
 - diala.pdb: a PDB file for alanine dipeptide in vacuo
 - topol.tpr: a GROMACS run file to perform MD of alanine dipeptide
-- XXXX.py: a python script to perform error analysis
+- do_block_fes.py: a python script to perform error analysis
 
 This tutorial has been tested on a pre-release version of version 2.4. However, it should not take advantage
 of 2.4-only features, thus should also work with version 2.3.
@@ -143,7 +143,7 @@ SIGMA=__FILL__
 FILE=HILLS GRID_MIN=-pi GRID_MAX=pi
 ...
 
-# Print the collective variables and the value of the bias potential on COLVAR file
+# Print both collective variables and the value of the bias potential on COLVAR file
 PRINT ARG=__FILL__ FILE=COLVAR STRIDE=10
 \endplumedfile
 
@@ -297,8 +297,101 @@ equilibrate before the free energy along \f$ \psi \f$ can converge.
 Try to repeat the analysis done in the previous exercize, i.e.  calculate the estimate of the free energy as a function of time,
 first step to assess the convergence of this metadynamics simulation.
 
-\section trieste-4-ex-3 Exercize 3: quantifying the error in free-energy reconstructions
- 
+\section trieste-4-ex-3 Exercize 3: estimating the error in free-energies with block-analysis
+
+In this exercise, we will calculate the error associated to the free-energy reconstructed
+by a well-tempered metadynamics simulation. The free energy and the errors will be calculated
+using the block-analysis technique explained in a previous lesson (\ref trieste-2). 
+The procedure can be used to estimate the error in the free-energy as a function of the
+collective variable(s) used in the metadynamics simulation, or for any other function of
+the coordinates of the system.
+
+First, we will calculate the "unbiasing" weights associated to each conformation sampled
+during the metadynamics run. In order to calculate these weights, we can use either of these
+two approaches:
+
+1) Weights are calculated by considering the time-dependence of the metadynamics bias
+   potential \cite Tiwary_jp504920s; 
+
+2) Weights are calculated using the metadynamics bias potential obtained at the end of the
+   simulation and assuming a constant bias during the entire course of the simulation \cite Branduardi:2012dl.
+
+In this exercise we will use the umbrella-sampling-like reweighting approach (Method 2).
+
+To calculate the weights, we need to use the PLUMED \ref driver utility and read the HILLS
+file along with the GROMACS trajectory file produced during the metadynamics simulation.
+Let's consider the metadynamics simulation carried out in Exercize 1.
+We need to prepare the `plumed.dat` input file to use in combination with \ref driver.
+Here you can find a sample `plumed.dat` file that you can use as a template.
+Whenever you see an highlighted \highlight{FILL} string, this is a string that you should replace.
+
+\plumedfile
+# Read old Gaussians deposited on HILLS file
+RESTART
+# Compute the backbone dihedral angle phi, defined by atoms C-N-CA-C
+phi: TORSION ATOMS=__FILL__
+# Compute the backbone dihedral angle psi, defined by atoms N-CA-C-N
+psi: TORSION ATOMS=__FILL__
+
+# Activate well-tempered metadynamics in phi
+metad: __FILL__ ARG=__FILL__ ...
+# Set the deposition stride to a large number 
+PACE=10000000 HEIGHT=1.2 BIASFACTOR=10.0
+# Gaussian width (sigma) should be chosen based on CV fluctuation in unbiased run
+SIGMA=__FILL__
+# Gaussians will be read from file and stored on grid
+FILE=HILLS GRID_MIN=-pi GRID_MAX=pi
+...
+
+# Print both collective variables and the value of the bias potential on COLVAR file
+PRINT ARG=__FILL__ FILE=COLVAR STRIDE=1
+\endplumedfile
+
+Once your `plumed.dat` file is complete, you can use the \ref driver utility to back-calculated the quantites
+needed for the error calculation 
+\verbatim
+plumed driver --plumed plumed.dat --mf_xtc traj_comp.xtc
+\endverbatim
+
+The COLVAR file produced by \ref driver should look like this:
+
+\verbatim
+#! FIELDS time phi psi metad.bias
+#! SET min_phi -pi
+#! SET max_phi pi
+#! SET min_psi -pi
+#! SET max_psi pi
+ 0.000000 0.907347 -0.144312 103.117323
+ 1.000000 0.814296 -0.445819 100.974351
+ 2.000000 1.118951 -0.909782 104.329630
+ 3.000000 1.040781 -0.991788 104.559590
+ 4.000000 1.218571 -1.020024 102.744053
+\endverbatim
+
+Please check your `plumed.dat` file if your output looks different!
+Once the final bias has been evaluated on the entire metadynamics simulations, we can
+easily calculate the "unbiasing weights" using the umbrella-sampling-like approach:
+
+\verbatim
+# find maximum value of bias
+bmax=`awk 'BEGIN{max=0.}{if($1!="#!" && $4>max)max=$4}END{print max}' COLVAR`
+
+# print phi value and weights
+awk '{if($1!="#!") print $2,exp(($4-bmax)/kbt)}' kbt=2.494339 bmax=$bmax COLVAR > phi.weight
+\endverbatim
+
+If you inspect the `phi.weight` file, you will see that each line contains the value of the
+dihedral \f$ \phi \f$ along with the corresponding weight:
+
+\verbatim
+0.907347 0.0400579
+0.814296 0.0169656
+1.118951 0.0651276
+1.040781 0.0714174
+1.218571 0.0344903
+1.090823 0.0700568
+1.130800 0.0622998
+\endverbatim  
 
 \section trieste-4-conclusions Conclusions
 
