@@ -269,9 +269,76 @@ How do the biased and unbiased histograms look like? In the following we will ap
 
 \section trieste-3-ex-6 Exercize 6: Preliminary run with Alanine dipeptide
 
+\plumedfile
+MOLINFO STRUCTURE=aladip.pdb
+phi: TORSION ATOMS=@phi-2
+hh: HISTOGRAM ARG=phi STRIDE=1 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.05
+ff: CONVERT_TO_FES GRID=hh TEMP=298
+DUMPGRID GRID=ff FILE=ff.dat
+PRINT ARG=phi FILE=phi.dat STRIDE=10
+\endplumedfile
+
 \section trieste-3-ex-7 Exercize 7: First biased run with Alanine dipeptide
 
+\plumedfile
+MOLINFO STRUCTURE=aladip.pdb
+
+phi: TORSION ATOMS=@phi-2
+
+MATHEVAL ...
+ARG=phi 
+LABEL=doubleg
+FUNC=exp(-3.6333*cos(x-0.518435))+exp(-3.65316*cos(x-1.85385))
+PERIODIC=NO
+... MATHEVAL
+
+b: BIASVALUE ARG=doubleg
+PRINT ARG=phi,b.bias FILE=phi.dat STRIDE=10
+\endplumedfile
+
 \section trieste-3-ex-8 Exercize 8: Second biased run with Alanine dipeptide
+
+\plumedfile
+MOLINFO STRUCTURE=aladip.pdb
+
+phi: TORSION ATOMS=@phi-2
+
+
+MATHEVAL ...
+ARG=phi 
+LABEL=doubleg
+FUNC=exp(-3.6333*cos(x-0.518435))+exp(-3.65316*cos(x-1.85385))+exp(-3.65316*cos(x+2.))
+PERIODIC=NO
+... MATHEVAL
+
+b: BIASVALUE ARG=doubleg
+#as: REWEIGHT_BIAS TEMP=300
+#hh: HISTOGRAM ARG=phi STRIDE=1 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.05 LOGWEIGHTS=as
+#ff: CONVERT_TO_FES GRID=hh TEMP=298
+#DUMPGRID GRID=ff FILE=ff.dat
+
+PRINT ARG=phi FILE=phi.dat STRIDE=10
+\endplumedfile
+\plumedfile
+MOLINFO STRUCTURE=aladip.pdb
+
+phi: TORSION ATOMS=@phi-2
+
+MATHEVAL ...
+ARG=phi 
+LABEL=doubleg
+FUNC=exp(-3.6333*cos(x-0.518435))+exp(-3.65316*cos(x-1.85385))+exp(-3.65316*cos(x+2.))
+PERIODIC=NO
+... MATHEVAL
+
+b: BIASVALUE ARG=doubleg
+as: REWEIGHT_BIAS TEMP=300
+hh: HISTOGRAM ARG=phi STRIDE=1 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.05 LOGWEIGHTS=as
+ff: CONVERT_TO_FES GRID=hh TEMP=298
+DUMPGRID GRID=ff FILE=ff.dat
+
+PRINT ARG=phi FILE=phi.dat STRIDE=10
+\endplumedfile
 
 */
 
