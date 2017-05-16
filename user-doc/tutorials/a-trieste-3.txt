@@ -188,4 +188,12 @@ Run Alanine dipeptide adding a gaussian potential centered at psi=-1
 Run Alanine dipeptide adding a gaussian potential centered at psi=-1 and at psi=??
 
 
+*/
+
+link: @subpage trieste-3
+
+description: This tutorial explains how to use PLUMED to run simple restrained simulations and account for the bias in the analysis
+additional-files: trieste-3
+
+
   
