@@ -432,8 +432,11 @@ of the block that exceeds the correlation between data points (Fig. \ref trieste
 \anchor trieste-4-block-phi
 \image html trieste-4-block-phi.png "Block analysis of a metadynamics simulation using phi as CV"
 
-To finish this exercize, calculate the error associated to the free energy as a function of
-the collective variable \f$ \psi \f$ computed in Exercize 2 and compare with the error along \f$ \phi \f$. 
+To complete this exercize, you should do the following:
+- calculate the error associated to the free energy as a function of the collective variable \f$ \psi \f$ from Exercize 1
+- calculate the error associated to the free energy as a function of the collective variable \f$ \psi \f$ from Exercize 2
+- compare the different behaviors in Exercize 1 and 2
+
 What can we learn from this analysis about the convergence of the two metadynamics simulations
 and the quality of the collective variables chosen?
 
