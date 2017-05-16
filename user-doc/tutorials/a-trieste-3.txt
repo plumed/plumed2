@@ -1,5 +1,5 @@
 /**
-\page trieste-3 Trieste tutorial: using restraints. 
+\page trieste-3 Trieste tutorial: Using restraints. 
 
 \section trieste-3-aims Aims
 
@@ -19,15 +19,13 @@ The \tarball{trieste-3} for this tutorial contains the following files:
 - wdimer.tpr: a GROMACS run file to perform MD of two water molecules
 - diala.pdb: a PDB file for alanine dipeptide in vacuo
 - diala.tpr: a GROMACS run file to perform MD of alanine dipeptide
-- do_block_fes.py: a python script to perform error analysis
 
 This tutorial has been tested on a pre-release version of version 2.4. However, it should not take advantage
 of 2.4-only features, thus should also work with version 2.3.
 
 \section trieste-3-intro Introduction
 
-PLUMED can calculate conformational properties of a system a posteriori as well as on-the-fly. This information can be use to manipulate a simulation on-the-fly. This means adding energy terms in addition to those of the original Hamiltonian. This additional energy terms are usually refered as \ref Bias.
-In the following we will see how to apply a constant bias potential with PLUMED.
+PLUMED can calculate conformational properties of a system a posteriori as well as on-the-fly. This information can be use to manipulate a simulation on-the-fly. This means adding energy terms in addition to those of the original Hamiltonian. This additional energy terms are usually refered as \ref Bias. In the following we will see how to apply a constant bias potential with PLUMED. It is preferable to run each exercise in a separate folder.
 
 \hidden{Summary of theory}
 \endhidden
@@ -174,26 +172,111 @@ __FILL__
 __FILL__
 \endplumedfile
 
+Run it.
+
+\verbatim
+> gmx mdrun -s dimer.tpr -plumed plumed.dat 
+\endverbatim
+
 If we have not sampled a region througly enough it is not possible to estimate the histogram in that region even using reweighting (reweighting is not magic!).
 
 \section trieste-3-ex-5 Exercize 5: Evaluate the free energy and use it as an external restraint
 
-- Exercise 7
-Run Alanine dipeptide 
+The main issue in sampling rare events is that importance sampling algorithms spend more time in low energy regions and if two low energy regions are separated by a high energy one is unlikely for the sampling algorithm to cross the high energy region and reach the other low energy one. From this point of view an algorithm based on random sampling will work better in crossing the barrier. A particularly efficient sampling can be obtained if one would know the underlying free energy and thus use that to bias the sampling and make the sampling probability uniform in the regions of relavent interest.
+In this exercise we will make use of the free-energy estimate along the distance collective variable to bias the sampling of the same collective variable in the dimer simulation. To do so we will make use of a table potential applied using the \ref Bias \ref EXTERNAL. We first need to get a smooth estimate of the free-energy from our fist reference simulations, we will do this by accumulating a histogram with kernel functions, that is continuos function centered at the value of the accumulated point and added accumulated on the discrete represattion of the histogram, see <a href="https://en.wikipedia.org/wiki/Kernel_density_estimation"> Kernel density estimation </a>.
 
-- Exercise 8
-Run Alanine dipeptide adding a gaussian potential centered at psi=-1
+\plumedfile
+#calculate the distance
+d: DISTANCE ATOMS=1,4
+#accumulate the histogram using a gaussian kernel with 0.05 nm width
+hh2: HISTOGRAM ARG=d STRIDE=1 GRID_MIN=0 GRID_MAX=4.0 GRID_BIN=400 BANDWIDTH=0.05
+#convert to a free energy
+ff: CONVERT_TO_FES GRID=__FILL__ TEMP=__FILL__
+#dump the free energy
+DUMPGRID GRID=__FILL__ FILE=__FILL__
+\endplumedfile
 
-- Exercise 9
-Run Alanine dipeptide adding a gaussian potential centered at psi=-1 and at psi=??
+by running plumed driver on the reference trajectory we obtain a free energy estimate.
 
+\verbatim
+> plumed driver --mf_xtc traj_comp.xtc --plumed plumed.dat  
+\endverbatim
+
+The resulting file for the free energy should be edited in order to:
+- Invert the sign of the free-energy and of its derivative
+- Remove some unused flag and regions with infinite potential at the boundaries 
+
+The file looks like:
+
+\verbatim
+#! FIELDS d ff dff_d
+#! SET min_d 0
+#! SET max_d 4.0
+#! SET nbins_d  400
+#! SET periodic_d false
+0.060000 -34.9754 185.606
+0.070000 -26.0117 184.362
+0.080000 -20.8195 181.39
+0.090000 -17.5773 176.718
+\endverbatim
+
+where the first column is the grid spacing, the second the free energy and the third the derivative of the free energy. You can edit
+the file as you want, for example using the following bash lines: 
+
+\verbatim
+grep \# ff.dat | grep -v normalisation > external.dat
+grep -v \# ff.dat | awk '{print $1, -$2, -$3}' | grep -v inf >> external.dat 
+\endverbatim
+
+Furthermore edit the first line of external.dat from
+
+\verbatim
+#! FIELDS d ff dff_d
+\endverbatim
+
+to 
+
+\verbatim
+#! FIELDS d ff.bias der_d
+\endverbatim
+
+Now we have an external potential that is the opposite of the free energy and we can use it in a new folder to bias a simulation:
+
+\plumedfile
+d: DISTANCE ATOMS=1,4
+ext: EXTERNAL ARG=d FILE=__FILL__ LABEL=ff
+# accumulate the biased histogram
+__FILL__
+#dumpit
+__FILL__
+# calcualte the weights from the constant bias
+__FILL__
+#accumulate the unbiased histogram
+__FILL__
+#dumpit
+__FILL__
+#print distance and bias
+__FILL__
+\endplumedfile
+
+Run it.
+
+\verbatim
+> gmx mdrun -s dimer.tpr -plumed plumed.dat 
+\endverbatim
+
+How do the biased and unbiased histograms look like? In the following we will apply this concept to sample the conformational space of a more complex system.
+
+\section trieste-3-ex-6 Exercize 6: Preliminary run with Alanine dipeptide
+
+\section trieste-3-ex-7 Exercize 7: First biased run with Alanine dipeptide
+
+\section trieste-3-ex-8 Exercize 8: Second biased run with Alanine dipeptide
 
 */
 
 link: @subpage trieste-3
 
 description: This tutorial explains how to use PLUMED to run simple restrained simulations and account for the bias in the analysis
+
 additional-files: trieste-3
-
-
-  
