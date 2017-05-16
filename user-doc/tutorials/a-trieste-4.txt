@@ -393,12 +393,58 @@ dihedral \f$ \phi \f$ along with the corresponding weight:
 1.130800 0.0622998
 \endverbatim  
 
+At this point we can apply the block-analysis technique we have learned in the
+\ref trieste-2 tutorial to calculate for different block sizes the average free-energy
+and the error. For your convenience, you can use the `do_block_fes_norm.py` python
+script to read the `phi.weight` file and produce the desired output.
+We use a bash loop to use block sizes ranging from 1 to 1000:
+
+\verbatim
+for i in `seq 1 10 1000`; do python3 do_block_fes.py phi.weight 1 -3.141593 3.018393 51 2.494339 $i; done
+\endverbatim 
+
+For each value of block length `N`, you will obtain a separate `fes.N.dat` file, containing the value
+of the \f$ \phi \f$ variable on a grid, the average free-energy, and the associated error (in Kjoule/mol):
+
+\verbatim
+   -3.141593       23.184653     0.080659
+   -3.018393       17.264462     0.055181
+   -2.895194       13.360259     0.047751
+   -2.771994       10.772696     0.043548
+   -2.648794        9.403544     0.042022
+\endverbatim
+
+Finally, we can calculate the average error along the free-energy profile as a function of the block length:
+
+\verbatim
+for i in `seq 1 10 1000`; do ave=`awk '{tot+=$3}END{print tot/NR}' fes.$i.dat`; echo $i $ave; done > err.blocks
+\endverbatim
+ 
+and visualize it using `gnuplot`:
+
+\verbatim
+gnuplot> p "err.blocks" u 1:2 w lp
+\endverbatim
+
+As expected, the error increases with the block length until it reaches a plateau in correspondence of a dimension
+of the block that exceeds the correlation between data points (Fig. \ref trieste-4-block-phi).
+
+\anchor trieste-4-block-phi
+\image html trieste-4-block-phi.png "Block analysis of a metadynamics simulation using phi as CV"
+
+To finish this exercize, calculate the error associated to the free energy as a function of
+the collective variable \f$ \psi \f$ computed in Exercize 2 and compare with the error along \f$ \phi \f$. 
+What can we learn from this analysis about the convergence of the two metadynamics simulations
+and the quality of the collective variables chosen?
+
 \section trieste-4-conclusions Conclusions
 
 In summary, in this tutorial you should have learned how to use PLUMED to:
-- Manipulate atomic coordinates.
-- Compute collective variables.
-
+- Setup and run a metadynamics calculation.
+- Compute free energies from the metadynamics bias potential using the \ref sum_hills utility.
+- Calculate the error in the reconstructed free energy using block analysis. 
+- Discriminate between good and bad collective variables.
+- Evaluate the convergence of a metadynamics simulation.
 
 */
 
