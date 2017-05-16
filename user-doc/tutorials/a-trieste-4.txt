@@ -395,7 +395,7 @@ dihedral \f$ \phi \f$ along with the corresponding weight:
 
 At this point we can apply the block-analysis technique we have learned in the
 \ref trieste-2 tutorial to calculate for different block sizes the average free-energy
-and the error. For your convenience, you can use the `do_block_fes_norm.py` python
+and the error. For your convenience, you can use the `do_block_fes.py` python
 script to read the `phi.weight` file and produce the desired output.
 We use a bash loop to use block sizes ranging from 1 to 1000:
 
@@ -417,7 +417,7 @@ of the \f$ \phi \f$ variable on a grid, the average free-energy, and the associa
 Finally, we can calculate the average error along the free-energy profile as a function of the block length:
 
 \verbatim
-for i in `seq 1 10 1000`; do ave=`awk '{tot+=$3}END{print tot/NR}' fes.$i.dat`; echo $i $ave; done > err.blocks
+for i in `seq 1 10 1000`; do a=`awk '{tot+=$3}END{print tot/NR}' fes.$i.dat`; echo $i $a; done > err.blocks
 \endverbatim
  
 and visualize it using `gnuplot`:
