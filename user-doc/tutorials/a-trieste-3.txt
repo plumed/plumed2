@@ -382,8 +382,8 @@ hhpsi: HISTOGRAM ARG=psi STRIDE=1 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDT
 ffphi: CONVERT_TO_FES GRID=hhphi TEMP=298
 ffpsi: CONVERT_TO_FES GRID=hhpsi TEMP=298
 
-DUMPGRID GRID=ff FILE=ffphi.dat
-DUMPGRID GRID=ff FILE=ffpsi.dat
+DUMPGRID GRID=ffphi FILE=ffphi.dat
+DUMPGRID GRID=ffpsi FILE=ffpsi.dat
 
 PRINT ARG=phi,psi FILE=colvar.dat STRIDE=10
 \endplumedfile
