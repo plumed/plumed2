@@ -269,14 +269,42 @@ How do the biased and unbiased histograms look like? In the following we will ap
 
 \section trieste-3-ex-6 Exercize 6: Preliminary run with Alanine dipeptide
 
+Alanine dipeptide is characterised by multiple minima separated by relatively high free energy barriers. Here we will explore the conformational space of
+alanine dipeptide using a standard MD simulation, then instead of using the free energy as an external potential we will try to fit the potential using
+gnuplot and add a bias using an analytical function of a collective variable with \ref MATHEVAL and \ref BIASVALUE .
+
+
+As a first test lets run an MD and generate on-the-fly the free energy as a function of the phi and psi collective variables separately.
+
 \plumedfile
 MOLINFO STRUCTURE=aladip.pdb
 phi: TORSION ATOMS=@phi-2
-hh: HISTOGRAM ARG=phi STRIDE=1 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.05
-ff: CONVERT_TO_FES GRID=hh TEMP=298
-DUMPGRID GRID=ff FILE=ff.dat
-PRINT ARG=phi FILE=phi.dat STRIDE=10
+psi: TORSION ATOMS=@psi-2
+hhphi: HISTOGRAM ARG=phi STRIDE=1 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.05
+hhpsi: HISTOGRAM ARG=psi STRIDE=1 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.05
+ffphi: CONVERT_TO_FES GRID=hhphi TEMP=298
+ffpsi: CONVERT_TO_FES GRID=hhpsi TEMP=298
+DUMPGRID GRID=ffphi FILE=ffphi.dat
+DUMPGRID GRID=ffpsi FILE=ffpsi.dat
+PRINT ARG=phi,psi FILE=colvar.dat STRIDE=10
 \endplumedfile
+
+from the colvar file it is clear that we can quickly explore two minima but that the region for positive phi is not accessible. Instead of using the opposite
+of the free energy as a table potential here we introduce the function \ref MATHEVAL that allows definining complex analytical functions of collective variables,
+and the bias \ref BIASVALUE that allows using any continuos function of the positions as a bias.
+
+So first we need to fit the opposite of the free energy as a function of phi in the region explored with a periodic function, becasue of the gaussian like look
+of the minima we can fit it using <a href="https://en.wikipedia.org/wiki/Von_Mises_distribution"> the von Mises distribution</a>. In gnuplot
+
+\verbatim
+>gnuplot
+gnuplot>plot 'ffphi.dat' u 1:(-$2+31) w l
+gnuplot>f(x)=exp(k1*cos(x-a1))+exp(k2*cos(x-a2))
+gnuplot>fit [-3.:-0.6] f(x) 'ffphi.dat' u 1:(-$2+31) via k1,a1,k2,a2
+gnuplot>rep f(x)
+\endverbatim
+
+The function and the resulting parameters can be used to run a new biased simulation:
 
 \section trieste-3-ex-7 Exercize 7: First biased run with Alanine dipeptide
 
@@ -284,17 +312,29 @@ PRINT ARG=phi FILE=phi.dat STRIDE=10
 MOLINFO STRUCTURE=aladip.pdb
 
 phi: TORSION ATOMS=@phi-2
+__FILL__
 
 MATHEVAL ...
 ARG=phi 
 LABEL=doubleg
-FUNC=exp(-3.6333*cos(x-0.518435))+exp(-3.65316*cos(x-1.85385))
+FUNC=exp(__FILL)+__FILL__
 PERIODIC=NO
 ... MATHEVAL
 
-b: BIASVALUE ARG=doubleg
-PRINT ARG=phi,b.bias FILE=phi.dat STRIDE=10
+b: BIASVALUE ARG=__FILL__
+PRINT __FILL__ 
 \endplumedfile
+
+It is now possible to run a second simulation and observe the new behavior. The system quickly explores a new minimum. While a quantitative estimate of the free energy difference of the old and new regions
+is out of the scope of the current exercise what we can do is to add a new von Mises function centered in the new minimum with a comparable height, in this way we can hope to facilitate a back and forth
+transition along the phi collective variable.
+
+\verbatim
+>gnuplot
+gnuplot> ...
+\endverbatim
+
+We can now run a third simulation where both regions are biased.
 
 \section trieste-3-ex-8 Exercize 8: Second biased run with Alanine dipeptide
 
@@ -302,27 +342,31 @@ PRINT ARG=phi,b.bias FILE=phi.dat STRIDE=10
 MOLINFO STRUCTURE=aladip.pdb
 
 phi: TORSION ATOMS=@phi-2
+psi: TORSION ATOMS=@psi-2
 
 
 MATHEVAL ...
 ARG=phi 
-LABEL=doubleg
-FUNC=exp(-3.6333*cos(x-0.518435))+exp(-3.65316*cos(x-1.85385))+exp(-3.65316*cos(x+2.))
+LABEL=tripleg
+FUNC=exp(k1*cos(x-a1))+exp(k2*cos(x-a2))+exp(k3*cos(x+a3))
 PERIODIC=NO
 ... MATHEVAL
 
-b: BIASVALUE ARG=doubleg
-#as: REWEIGHT_BIAS TEMP=300
-#hh: HISTOGRAM ARG=phi STRIDE=1 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.05 LOGWEIGHTS=as
-#ff: CONVERT_TO_FES GRID=hh TEMP=298
-#DUMPGRID GRID=ff FILE=ff.dat
+b: BIASVALUE ARG=tripleg
 
-PRINT ARG=phi FILE=phi.dat STRIDE=10
+__FILL__
+
+ENDPLUMED
 \endplumedfile
+
+With this third simulation it should be possible to visit both regions as a function on the phi torsion. Now it is possible to reweight the sampling
+and obtain a better free energy estimate along phi.
+
 \plumedfile
 MOLINFO STRUCTURE=aladip.pdb
 
 phi: TORSION ATOMS=@phi-2
+psi: TORSION ATOMS=@psi-2
 
 MATHEVAL ...
 ARG=phi 
@@ -331,14 +375,21 @@ FUNC=exp(-3.6333*cos(x-0.518435))+exp(-3.65316*cos(x-1.85385))+exp(-3.65316*cos(
 PERIODIC=NO
 ... MATHEVAL
 
-b: BIASVALUE ARG=doubleg
-as: REWEIGHT_BIAS TEMP=300
-hh: HISTOGRAM ARG=phi STRIDE=1 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.05 LOGWEIGHTS=as
-ff: CONVERT_TO_FES GRID=hh TEMP=298
-DUMPGRID GRID=ff FILE=ff.dat
+b: BIASVALUE ARG=tripleg
+as: REWEIGHT_BIAS TEMP=298
+hhphi: HISTOGRAM ARG=phi STRIDE=1 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.05 LOGWEIGHTS=as
+hhpsi: HISTOGRAM ARG=psi STRIDE=1 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.05 LOGWEIGHTS=as
+ffphi: CONVERT_TO_FES GRID=hhphi TEMP=298
+ffpsi: CONVERT_TO_FES GRID=hhpsi TEMP=298
 
-PRINT ARG=phi FILE=phi.dat STRIDE=10
+DUMPGRID GRID=ff FILE=ffphi.dat
+DUMPGRID GRID=ff FILE=ffpsi.dat
+
+PRINT ARG=phi,psi FILE=colvar.dat STRIDE=10
 \endplumedfile
+
+If you have time you can extend this in two-dimensions using at the same time the phi and psi collective variables.
+
 
 */
 
