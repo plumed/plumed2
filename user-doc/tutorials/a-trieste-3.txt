@@ -370,8 +370,8 @@ psi: TORSION ATOMS=@psi-2
 
 MATHEVAL ...
 ARG=phi 
-LABEL=doubleg
-FUNC=exp(-3.6333*cos(x-0.518435))+exp(-3.65316*cos(x-1.85385))+exp(-3.65316*cos(x+2.))
+LABEL=tripleg
+FUNC=__FILL__
 PERIODIC=NO
 ... MATHEVAL
 
