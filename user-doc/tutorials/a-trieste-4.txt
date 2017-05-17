@@ -440,6 +440,12 @@ To complete this exercize, you should do the following:
 What can we learn from this analysis about the convergence of the two metadynamics simulations
 and the quality of the collective variables chosen?
 
+At this time, the most important question of this lecture becomes:
+
+- Could we distinguish the different behavior (in terms of convergence) of the simulations in Exercize 1 and 2
+simply by looking at the time series of the Gaussian height?
+
+
 \section trieste-4-conclusions Conclusions
 
 In summary, in this tutorial you should have learned how to use PLUMED to:
