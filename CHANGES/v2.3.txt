@@ -168,6 +168,8 @@ See branch \branch{v2.3} on git repository.
   This does not affect normal \ref TORSION, but would affect \ref PUCKERING component phi
   with 6-membered rings. In addition, it would affect any variable that is created by the user with a periodicity
   domain not symmetric around zero. See \issue{235} (thanks to Summer Snow for reporting this bug).
+- Fixed numerical issue leading to simulations stuck (LatticeReduction problem) with intel compiler and
+  large simulation cells.
 
 For developers:
 - plumedcheck validation has been made stricter. All the checks are now described in the developer manual.
