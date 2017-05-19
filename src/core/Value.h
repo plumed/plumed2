@@ -292,7 +292,7 @@ double Value::difference(double d1,double d2)const {
 
 inline
 double Value::bringBackInPbc(double d1)const {
-  return difference(min+max_minus_min/2., d1);
+  return min+max_minus_min/2.+difference(min+max_minus_min/2., d1);
 }
 
 inline

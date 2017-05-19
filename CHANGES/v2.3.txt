@@ -163,6 +163,13 @@ See branch \branch{v2.3} on git repository.
 - Fixed a bug that appeared when using \ref Q3, \ref Q4 and \ref Q6 with LOWEST or HIGHEST flag
 - Fixed a bug that appears when you use \ref MFILTER_LESS as input to \ref COORDINATIONNUMBER with SPECIESA and SPECIESB flags
 - Fixed a bug that was making flushing when gromacs checkpoints not functional (thanks to Summer Snow).
+- Fixed a bug affecting \ref EXTENDED_LAGRANGIAN and \ref METAD with ADAPT=DIFF when using an argument
+  with periodicity (min,max) such that min is different from -max.
+  This does not affect normal \ref TORSION, but would affect \ref PUCKERING component phi
+  with 6-membered rings. In addition, it would affect any variable that is created by the user with a periodicity
+  domain not symmetric around zero. See \issue{235} (thanks to Summer Snow for reporting this bug).
+- Fixed numerical issue leading to simulations stuck (LatticeReduction problem) with intel compiler and
+  large simulation cells.
 
 For developers:
 - plumedcheck validation has been made stricter. All the checks are now described in the developer manual.
