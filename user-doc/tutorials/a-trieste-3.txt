@@ -51,6 +51,7 @@ Here you can find a sample `plumed.dat` file that you can use as a template.
 Whenever you see an highlighted \highlight{FILL} string, this is a string that you should replace.
 
 \plumedfile
+# vim:ft=plumed
 #compute the distance between the two oxygens
 d: DISTANCE __FILL__
 #accumulate block histograms
@@ -76,6 +77,7 @@ Now we will try to apply a linear restraint on the relative distance and compare
 The new sampling will reflect the effect of the bias.
 
 \plumedfile
+# vim:ft=plumed
 #compute the distance between the two oxygens
 d: DISTANCE __FILL__
 #accumulate block histograms
@@ -105,6 +107,7 @@ The effect of a constant bias is that of systematically changing the probability
 In order to recover the unbiased distribution we can post process the simulation using plumed driver to recalculate the bias felt by each frame and store this information to analyse any property. Furthermore plumed can also automatically use the bias to reweight the accumulated histogram.
 
 \plumedfile
+# vim:ft=plumed
 d: DISTANCE __FILL__ 
 
 lr: RESTRAINT __FILL__ 
@@ -130,6 +133,7 @@ Now the resulting histogram should be comparable to the reference one.
 Do you expect a different behaviour? This time we can write the plumed input file in such a way to compare directly the biased and unbiased histograms.
 
 \plumedfile
+# vim:ft=plumed
 #calculate the distance
 d: DISTANCE ATOMS=1,4
 #apply the quadratic restraint centered at a distance of 0.5 nm
@@ -156,6 +160,7 @@ In the above cases we have always applied weak biases. Sometimes biases are usef
 What happen to the histogram when we use walls? 
 
 \plumedfile
+# vim:ft=plumed
 d: DISTANCE ATOMS=1,4
 uw: UPPER_WALLS ARG=d KAPPA=1000 AT=2.5
 # accumulate the biased histogram
@@ -186,6 +191,7 @@ The main issue in sampling rare events is that importance sampling algorithms sp
 In this exercise we will make use of the free-energy estimate along the distance collective variable to bias the sampling of the same collective variable in the dimer simulation. To do so we will make use of a table potential applied using the \ref Bias \ref EXTERNAL. We first need to get a smooth estimate of the free-energy from our fist reference simulations, we will do this by accumulating a histogram with kernel functions, that is continuos function centered at the value of the accumulated point and added accumulated on the discrete represattion of the histogram, see <a href="https://en.wikipedia.org/wiki/Kernel_density_estimation"> Kernel density estimation </a>.
 
 \plumedfile
+# vim:ft=plumed
 #calculate the distance
 d: DISTANCE ATOMS=1,4
 #accumulate the histogram using a gaussian kernel with 0.05 nm width
@@ -243,6 +249,7 @@ to
 Now we have an external potential that is the opposite of the free energy and we can use it in a new folder to bias a simulation:
 
 \plumedfile
+# vim:ft=plumed
 d: DISTANCE ATOMS=1,4
 ext: EXTERNAL ARG=d FILE=__FILL__ LABEL=ff
 # accumulate the biased histogram
@@ -277,6 +284,7 @@ gnuplot and add a bias using an analytical function of a collective variable wit
 As a first test lets run an MD and generate on-the-fly the free energy as a function of the phi and psi collective variables separately.
 
 \plumedfile
+# vim:ft=plumed
 MOLINFO STRUCTURE=aladip.pdb
 phi: TORSION ATOMS=@phi-2
 psi: TORSION ATOMS=@psi-2
@@ -309,6 +317,7 @@ The function and the resulting parameters can be used to run a new biased simula
 \section trieste-3-ex-7 Exercize 7: First biased run with Alanine dipeptide
 
 \plumedfile
+# vim:ft=plumed
 MOLINFO STRUCTURE=aladip.pdb
 
 phi: TORSION ATOMS=@phi-2
@@ -339,6 +348,7 @@ We can now run a third simulation where both regions are biased.
 \section trieste-3-ex-8 Exercize 8: Second biased run with Alanine dipeptide
 
 \plumedfile
+# vim:ft=plumed
 MOLINFO STRUCTURE=aladip.pdb
 
 phi: TORSION ATOMS=@phi-2
@@ -363,6 +373,7 @@ With this third simulation it should be possible to visit both regions as a func
 and obtain a better free energy estimate along phi.
 
 \plumedfile
+# vim:ft=plumed
 MOLINFO STRUCTURE=aladip.pdb
 
 phi: TORSION ATOMS=@phi-2
