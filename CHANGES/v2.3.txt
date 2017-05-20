@@ -175,5 +175,9 @@ For developers:
 - plumedcheck validation has been made stricter. All the checks are now described in the developer manual.
 - IMPORTANT: we started to enforce code formatting using astyle. Check the developer documentation to learn how to
   take care of not-yet-formatted branches.
+- Added `--disable-static-patch` to `./configure` to disable tests related to static patching. It can be used
+  when static patching is not needed to make sure a wrong c++ library is not linked by mistake.
+- Using `install_name_tool` to fix the name of the installed library on OSX. Allows linking the PLUMED
+  shared library without explicitly setting `DYLD_LIBRARY_PATH`.
 
 */
