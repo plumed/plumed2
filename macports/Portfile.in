@@ -42,6 +42,7 @@ homepage            http://www.plumed.org/
 configure.args-append \
                --disable-doc \
                --disable-libsearch \
+               --disable-static-patch \
                --disable-mpi 
 
 
