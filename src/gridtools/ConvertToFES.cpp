@@ -81,7 +81,7 @@ void ConvertToFES::registerKeywords( Keywords& keys ) {
   ActionWithInputGrid::registerKeywords( keys );
   keys.add("optional","TEMP","the temperature at which you are operating");
   keys.remove("STRIDE"); keys.remove("KERNEL"); keys.remove("BANDWIDTH");
-  keys.remove("LOGWEIGHTS"); keys.remove("CLEAR"); keys.remove("UNORMALIZED");
+  keys.remove("LOGWEIGHTS"); keys.remove("CLEAR"); keys.remove("NORMALIZATION");
 }
 
 ConvertToFES::ConvertToFES(const ActionOptions&ao):

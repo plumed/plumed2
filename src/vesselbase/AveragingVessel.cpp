@@ -34,7 +34,7 @@ AveragingVessel::AveragingVessel( const vesselbase::VesselOptions& vo ):
   wascleared(true)
 {
   ActionWithAveraging* myav = dynamic_cast<ActionWithAveraging*>( getAction() );
-  plumed_assert( myav ); unormalised = myav->unormalised;
+  plumed_assert( myav ); unormalised = myav->noNormalization();
 }
 
 void AveragingVessel::finish( const std::vector<double>& buffer ) {

@@ -56,7 +56,7 @@ private:
 /// The weights we are going to use for reweighting
   std::vector<Value*> weights;
 /// Are we accumulated the unormalized quantity
-  bool unormalised;
+  enum {t,f,ndata} normalization;
 protected:
 /// This ensures runAllTasks is used
   bool useRunAllTasks;
@@ -103,7 +103,7 @@ std::vector<Value*> ActionWithAveraging::getArguments() {
 
 inline
 bool ActionWithAveraging::noNormalization() const {
-  return unormalised;
+  return normalization==f;
 }
 
 }

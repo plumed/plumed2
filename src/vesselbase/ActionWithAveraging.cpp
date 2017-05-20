@@ -33,7 +33,8 @@ void ActionWithAveraging::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","CLEAR","0","the frequency with which to clear all the accumulated data.  The default value "
            "of 0 implies that all the data will be used and that the grid will never be cleared");
   keys.add("optional","LOGWEIGHTS","list of actions that calculates log weights that should be used to weight configurations when calculating averages");
-  keys.addFlag("UNORMALIZED",false,"output the unaveraged quantity/quantities."); keys.remove("NUMERICAL_DERIVATIVES");
+  keys.add("compulsory","NORMALIZATION","true","This controls how the data is normalized it can be set equal to true, false or ndata.  The differences between these options are explained in the manual page for \\ref HISTOGRAM");
+  keys.remove("NUMERICAL_DERIVATIVES");
 }
 
 ActionWithAveraging::ActionWithAveraging( const ActionOptions& ao ):
@@ -70,7 +71,13 @@ ActionWithAveraging::ActionWithAveraging( const ActionOptions& ao ):
     else log.printf("  weights are all equal to one\n");
     requestArguments( arg );
   }
-  if( keywords.exists("UNORMALIZED") ) parseFlag("UNORMALIZED",unormalised);
+  if( keywords.exists("NORMALIZATION") ){
+      std::string normstr; parse("NORMALIZATION",normstr);
+      if( normstr=="true" ) normalization=t;
+      else if( normstr=="false" ) normalization=f;
+      else if( normstr=="ndata" ) normalization=ndata;
+      else error("invalid instruction for NORMALIZATION flag should be true, false, or ndata");
+  }
 }
 
 void ActionWithAveraging::setAveragingAction( AveragingVessel* av_vessel, const bool& usetasks ) {
@@ -112,7 +119,8 @@ void ActionWithAveraging::update() {
   // This the averaging if it is not done using task list
   else performOperations( true );
   // Update the norm
-  if( myaverage ) myaverage->setNorm( cweight + myaverage->getNorm() );
+  double normt = cweight; if( normalization==ndata ) normt = 1;
+  if( myaverage ) myaverage->setNorm( normt + myaverage->getNorm() );
   // Finish the averaging
   finishAveraging();
   // By resetting here we are ensuring that the grid will be cleared at the start of the next step
