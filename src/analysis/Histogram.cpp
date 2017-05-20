@@ -83,30 +83,30 @@ Additional material and examples can be also found in the tutorials \ref belfast
 \par A note on block averaging and errors
 
 Some particularly important
-issues related to the convergence of histograms and the estimation of error bars around the ensemble averages you calculate are covered in \ref trieste-2.  
+issues related to the convergence of histograms and the estimation of error bars around the ensemble averages you calculate are covered in \ref trieste-2.
 The technique for estimating error bars that is known as block averaging is introduced in this tutorial.  The essence of this technique is that
-the trajectory is split into a set of blocks and separate ensemble averages are calculated from each separate block of data.  If \f$\{A_i\}\f$ is 
+the trajectory is split into a set of blocks and separate ensemble averages are calculated from each separate block of data.  If \f$\{A_i\}\f$ is
 the set of \f$N\f$ block averages that are obtained from this technique then the final error bar is calculated as:
 
 \f[
 \textrm{error} = \sqrt{ \frac{1}{N} \frac{1}{N-1} \sum_{i=1}^N (A_i^2 - \langle A \rangle )^2 } \qquad \textrm{where} \qquad \langle A \rangle = \frac{1}{N} \sum_{i=1}^N A_i
-\f] 
+\f]
 
-If the simulation is biased and reweighting is performed then life is a little more complex as each of the block averages should be calculated as a 
+If the simulation is biased and reweighting is performed then life is a little more complex as each of the block averages should be calculated as a
 weighted average.  Furthermore, the weights should be taken into account when the final ensemble and error bars are calculated.  As such the error should be:
 
 \f[
 \textrm{error} = \sqrt{ \frac{1}{N} \frac{\sum_{i=1}^N W_i }{\sum_{i=1}^N W_i - \sum_{i=1}^N W_i^2 / \sum_{i=1}^N W_i} \sum_{i=1}^N W_i (A_i^2 - \langle A \rangle )^2 }
 \f]
 
-where \f$W_i\f$ is the sum of all the weights for the \f$i\f$th block of data.  
+where \f$W_i\f$ is the sum of all the weights for the \f$i\f$th block of data.
 
 If we wish to caclulate a normalized histogram we must calculate ensemble averages from our biased simulation using:
 \f[
  \langle H(x) \rangle = \frac{\sum_{t=1}^M w_t K( x - x_t,\sigma) }{\sum_{t=1}^M w_t}
 \f]
 where the sums runs over the trajectory, \f$w_t\f$ is the weight of the \f$t\f$th trajectory frame, \f$x_t\f$ is the value of the cv for the \f$t\f$th
-trajectory frame and \f$K\f$ is a kernel function centered on \f$x_t\f$ with bandwidth \f$\sigma\f$.  The quantity that is evaluated is the value of the 
+trajectory frame and \f$K\f$ is a kernel function centered on \f$x_t\f$ with bandwidth \f$\sigma\f$.  The quantity that is evaluated is the value of the
 normalized histogram at point \f$x\f$.  The following ensemble average will be calculated if you use the NORMALIZATION=true option in HISTOGRAM.
 If the ensemble average is calculated in this way we must calculate the associated error bars from our block averages using the second of the expressions
 above.
@@ -115,7 +115,7 @@ A number of works have shown that when biased simulations are performed it is of
 \f[
 \langle H(x) \rangle = \frac{1}{M} \sum_{t=1}^M w_t K( x - x_t,\sigma)
 \f]
-instead of the expression above.  As such this is what is done by default in HISTOGRAM or if the NORMALIZATION=ndata option is used.  
+instead of the expression above.  As such this is what is done by default in HISTOGRAM or if the NORMALIZATION=ndata option is used.
 When the histogram is calculated in this second way the first of the two formula above can be used when calculating error bars from
 block averages.
 

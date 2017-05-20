@@ -71,12 +71,12 @@ ActionWithAveraging::ActionWithAveraging( const ActionOptions& ao ):
     else log.printf("  weights are all equal to one\n");
     requestArguments( arg );
   }
-  if( keywords.exists("NORMALIZATION") ){
-      std::string normstr; parse("NORMALIZATION",normstr);
-      if( normstr=="true" ) normalization=t;
-      else if( normstr=="false" ) normalization=f;
-      else if( normstr=="ndata" ) normalization=ndata;
-      else error("invalid instruction for NORMALIZATION flag should be true, false, or ndata");
+  if( keywords.exists("NORMALIZATION") ) {
+    std::string normstr; parse("NORMALIZATION",normstr);
+    if( normstr=="true" ) normalization=t;
+    else if( normstr=="false" ) normalization=f;
+    else if( normstr=="ndata" ) normalization=ndata;
+    else error("invalid instruction for NORMALIZATION flag should be true, false, or ndata");
   }
 }
 
