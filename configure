@@ -6622,7 +6622,7 @@ $as_echo "$as_me: Dynamic library extension is 'dylib'" >&6;}
     { $as_echo "$as_me:${as_lineno-$LINENO}: LDSO needs special flags" >&5
 $as_echo "$as_me: LDSO needs special flags" >&6;}
     SOEXT=dylib
-    LDSO="$LDSO -undefined suppress -flat_namespace -dynamiclib"
+    LDSO="$LDSO -undefined suppress -flat_namespace -dynamiclib -Wl,-headerpad_max_install_names"
   ;;
   (Linux)
     { $as_echo "$as_me:${as_lineno-$LINENO}: *** Special settings for dynamic libraries on Linux ***" >&5
