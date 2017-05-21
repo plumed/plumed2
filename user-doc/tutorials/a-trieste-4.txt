@@ -15,7 +15,7 @@ Once this tutorial is completed students will be able to:
 - Calculate the free energy from a metadynamics run
 - Compute the error associated to the reconstructed free energy
 - Evaluate the convergence of a metadynamics simulation
-- Assert the choice of the collective variables
+- Assess the choice of the collective variables
 
 \section trieste-4-resources Resources
 
@@ -376,7 +376,7 @@ easily calculate the "unbiasing weights" using the umbrella-sampling-like approa
 # find maximum value of bias
 bmax=`awk 'BEGIN{max=0.}{if($1!="#!" && $4>max)max=$4}END{print max}' COLVAR`
 
-# print phi value and weights
+# print phi values and weights
 awk '{if($1!="#!") print $2,exp(($4-bmax)/kbt)}' kbt=2.494339 bmax=$bmax COLVAR > phi.weight
 \endverbatim
 
