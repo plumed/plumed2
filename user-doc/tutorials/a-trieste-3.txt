@@ -37,7 +37,7 @@ conformations from the canonical ensemble:
 \f].
 Here \f$ q \f$ are the microscopic coordinates and \f$ k_B \f$ is the Boltzmann constant.
 Since \f$ q \f$ is a highly dimensional vector, it is often convenient to analyze it
-in terms of a few collective variables (see \ref belfast-1 , \ref belfast-2 , and \ref belfast-3 ).
+in terms of a few collective variables (see \ref trieste-1 ).
 The probability distribution for a CV \f$ s\f$ is 
 \f[
   P(s)\propto \int dq  e^{-\frac{U(q)}{k_BT}} \delta(s-s(q))
