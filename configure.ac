@@ -569,7 +569,7 @@ if test "$shared" == true ; then
     AC_MSG_NOTICE([Dynamic library extension is 'dylib'])
     AC_MSG_NOTICE([LDSO needs special flags])
     SOEXT=dylib
-    LDSO="$LDSO -undefined suppress -flat_namespace -dynamiclib"
+    LDSO="$LDSO -undefined suppress -flat_namespace -dynamiclib -Wl,-headerpad_max_install_names"
   ;;
   (Linux)
     AC_MSG_NOTICE([*** Special settings for dynamic libraries on Linux ***])
