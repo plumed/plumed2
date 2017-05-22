@@ -104,6 +104,32 @@ For the calculation of ensemble averages of experimental CVs, we suggest to use:
 
 2) the FRET intensity between termini (\ref FRET)  
 
+\section trieste-6-ex-3 Exercize 3: Protein G folding simulations
+GB1 is a small protein domain with a simple beta-alpha-beta fold. It is a well studied protein that folds on the millisecond time scale.
+Here we use a structure based potential and well-tempered metadynamics to study the free energy of folding and unfolding.
+In the TARBALL of this exercise we provide the files needed to run the simulation, the user should write the plumed input file needed
+to bias the sampling.
+
+\anchor trieste-6-pgb
+\image html trieste-6-gb.png "The crystal structure of the protein G B1 domain"
+
+The users are expected to:
+- calculate the free energy difference between the folded and unfolded state of this protein
+- evaluate convergence and error calculation on metadynamics
+- evaluate the robustness of the former by reweighting the free resulting free energy as function of different CVs
+
+The users are free to choose his/her favorite CVs and they are encouraged to use the
+on-line manual to create their own PLUMED input file.
+However, we encourage all the users to experiment at least with the following CVs to characterize
+the free-energy landscape of gb1:
+
+- \ref RMSD with respect to the folded state
+- \ref GYRATION
+- \ref ALPHABETA and \ref DIHCOR
+
+select two of them for the \ref METAD simulation. Once you are satisfied by the convergence of your simulation you can use one of the  reweighting algorithm proposed
+to evalute the free energy difference between folded and unfolded state as a function of multiple collective variables.  
+
 
 \section trieste-6-conclusions Conclusions
 
