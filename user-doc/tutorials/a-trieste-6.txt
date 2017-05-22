@@ -31,13 +31,13 @@ of 2.4-only features, thus should also work with version 2.3.
 
 In this tutorial we propose exercizes on the following biological systems:
 - the BRCA1-associated RING domain protein 1 (BARD1 complex) 
-- the cmyc peptide in presence of urea at low concentration (cmyc-UREA)
-- xxxx
+- the cmyc peptide in presence of urea at low concentration (cmyc-urea)
+- the protein G B1 domain  
 
 \section trieste-6-ex-1 Exercize 1: analysis of the BARD1 complex simulation 
 
 The BARD1 complex is a heterodimer composed by two domains of 112 and 117 residues each. 
-The sytem is represented at coarse-grained level using the MARTINI force field.
+The system is represented at coarse-grained level using the MARTINI force field.
 
 \anchor trieste-6-bard1
 \image html trieste-6-bard1.png "The BARD1 heterodimer"
