@@ -21,7 +21,7 @@ The reference trajectories and input files for the exercizes proposed in this tu
 can be downloaded from `github` using the following command:
 
 \verbatim
-wget
+wget https://github.com/plumed/trieste2017/raw/master/tutorial/data/tutorial_6.tgz
 \endverbatim
 
 This tutorial has been tested on a pre-release version of version 2.4. However, it should not take advantage
