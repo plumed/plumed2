@@ -106,6 +106,8 @@ than frames that has been explored with a less disfavoring bias potential.
 
 We will make use of two toy models: the first is a water dimer, i.e. two molecules of water in vacuo, that we will use to compare the effect of a constant bias on the equilibrium properties of the system that in this case can be readily computed. The second toy model is alanine dipeptide in vacuo. This system is more challanging to characterise with a standard MD simulation and we will see how we can use an interative approach to to build a constant bias that will help in flattening the underlying free energy surface and thus sped up the sampling.
 
+\note Create a folder for each exercise and use subfolders if you want to run the same simulation with multiple choices for the parameters
+
 \section trieste-3-ex-1 Exercize 1: converged histogram of the water dimer relative distance
 
 \image html trieste-3-wdimer.png "A water dimer"
