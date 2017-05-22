@@ -22,14 +22,14 @@ Changes from version 2.3 which are relevant for users:
     This module implements the following methods:
     - \ref EDS
 - New collective variables:
-  -  \ref DIMER (thanks to Marco Nava).
+  - \ref DIMER (thanks to Marco Nava).
+  - \ref IMPLICIT : EEF1-SB implicit solvent solvation energy
 - New actions:
   - \ref INENVELOPE
 - Other changes:
   - \ref PBMETAD : multiple walkers using files (thanks to Marco De La Pierre).
   - \ref PBMETAD : adaptive gaussians
   - \ref PBMETAD : default names for GRID and FILE (usefull with many collective variables) 
-  - \ref IMPLICIT : EEF1-SB implicit solvent solvation energy
   - \ref METAD : BIASFACTOR=1 is allowed and performs unbiased sampling. HILLS file can be used
     to recover free energy also in this case.
   - PDB files with more than 100k atoms can now be read using [hybrid 36](http://cci.lbl.gov/hybrid_36/) format,
