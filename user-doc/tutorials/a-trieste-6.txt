@@ -84,8 +84,8 @@ using `VMD`.
 The users are expected to:
 - calculate the fraction of bound and unbound molecules of urea by defining suitable CVs to measure
   the position of urea relative to cmyc.
-- find the cmyc aminoacids that binds urea the most and the least.
-- calculate the ensemble average of different experimental CVs.
+- find the cmyc aminoacids that bind urea the most and the least.
+- calculate the ensemble averages of different experimental CVs.
 
 \warning Be careful that the original trajectory might be broken by PBC!
 
@@ -114,21 +114,22 @@ to bias the sampling.
 \image html trieste-6-gb.png "The crystal structure of the protein G B1 domain"
 
 The users are expected to:
+- setup and perform a well-tempered metadynamics simulation
 - calculate the free energy difference between the folded and unfolded state of this protein
-- evaluate convergence and error calculation on metadynamics
-- evaluate the robustness of the former by reweighting the free resulting free energy as function of different CVs
+- evaluate convergence and error calculation of the metadynamics simulation
+- evaluate the robustness of the former by reweighting the resulting free energy as function of different CVs
 
 The users are free to choose his/her favorite CVs and they are encouraged to use the
 on-line manual to create their own PLUMED input file.
 However, we encourage all the users to experiment at least with the following CVs to characterize
-the free-energy landscape of gb1:
+the free-energy landscape of GB1:
 
 - \ref RMSD with respect to the folded state
 - \ref GYRATION
 - \ref ALPHABETA and \ref DIHCOR
 
-select two of them for the \ref METAD simulation. Once you are satisfied by the convergence of your simulation you can use one of the  reweighting algorithm proposed
-to evalute the free energy difference between folded and unfolded state as a function of multiple collective variables.  
+The users should select two of them for the \ref METAD simulation. Once you are satisfied by the convergence of your simulation, you can use one of the reweighting algorithms proposed
+to evaluate the free-energy difference between folded and unfolded state as a function of multiple collective variables.  
 
 
 \section trieste-6-conclusions Conclusions
@@ -136,7 +137,7 @@ to evalute the free energy difference between folded and unfolded state as a fun
 In summary, in this tutorial you should have learned how to use PLUMED to:
 - Analyze trajectories of realistic biological systems using complex CVs 
 - Extract conformations that correspond to local free-energy minima 
-- Apply block analysis techniques to estimate error in free-energy profiles
+- Apply block analysis to estimate error in the reconstructed free-energy profiles
 - Calculate ensemble averages of experimental CVs 
 - Reweight well-tempered metadynamics simulations 
 
