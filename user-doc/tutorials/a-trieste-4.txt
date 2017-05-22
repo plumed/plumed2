@@ -133,9 +133,10 @@ psi: TORSION ATOMS=__FILL__
 
 # Activate well-tempered metadynamics in phi
 metad: __FILL__ ARG=__FILL__ ...
-# Deposit a Gaussian every 500 time steps, with initial height equal
-# to 1.2 kJoule/mol, biasfactor equal to 10.0
-PACE=500 HEIGHT=1.2 BIASFACTOR=10.0
+# Deposit a Gaussian every 500 time steps, with initial height equal to 1.2 kJoule/mol
+PACE=500 HEIGHT=1.2 
+# the bias factor should be wisely chosen
+BIASFACTOR=__FILL__
 # Gaussian width (sigma) should be chosen based on CV fluctuation in unbiased run
 SIGMA=__FILL__
 # Gaussians will be written to file and also stored on grid
@@ -335,7 +336,7 @@ psi: TORSION ATOMS=__FILL__
 # Activate well-tempered metadynamics in phi
 metad: __FILL__ ARG=__FILL__ ...
 # Set the deposition stride to a large number 
-PACE=10000000 HEIGHT=1.2 BIASFACTOR=10.0
+PACE=10000000 HEIGHT=1.2 BIASFACTOR=__FILL__
 # Gaussian width (sigma) should be chosen based on CV fluctuation in unbiased run
 SIGMA=__FILL__
 # Gaussians will be read from file and stored on grid
