@@ -34,7 +34,7 @@ In this tutorial we propose exercizes on the following biological systems:
 - the cmyc peptide in presence of urea at low concentration (cmyc-UREA)
 - xxxx
 
-\section trieste-6-ex-1 Exercize 1: analyzing trajectory of the BARD1 complex 
+\section trieste-6-ex-1 Exercize 1: analysis of the BARD1 complex simulation 
 
 The BARD1 complex is a heterodimer composed by two domains of 112 and 117 residues each. 
 The sytem is represented at coarse-grained level using the MARTINI force field.
@@ -45,6 +45,9 @@ The sytem is represented at coarse-grained level using the MARTINI force field.
 In the TARBALL of this exercize, we provide a long MD simulation of the BARD1 complex in which
 the two domains explore multiple different conformations.
 
+\note We encourage the users to get familiar with the system by visualizing the MD trajectory
+using `VMD`.
+
 The users are expected to:
 - calculate the values of different CVs on the trajectory
 - estimate the free energies as a function of the CVs tested (mono- and multi-dimensional)
@@ -52,17 +55,18 @@ The users are expected to:
 - calculate the error in the associated free energy using the block analysis technique
 - evaluate the convergence of the original trajectory
 
-The user is free to choose his/her favorite CVs.
-However, we encourage all the users to experiments at least with the following CVs. 
+The users are free to choose his/her favorite CVs and they are encouraged to use the
+on-line manual to create their own PLUMED input file.
+However, we encourage all the users to experiment at least with the following CVs: 
 
-1) RMSD from the native state
+1) \ref RMSD and/or \ref DRMSD from the native state (provided in `bard1_native.pdb`)
 
-
-2) Distance from the native contact map
-
+2) Number of inter-chains contacts (specific, i.e. native, or all) 
+This can be achieved with either \ref COORDINATION or \ref CONTACTMAP. 
 
 3) A CV describing the relative orientation of the two chains.
-
+This can be achieved, for example, by defining suitable virtual atoms with the \ref CENTER
+keyword and the \ref TORSION CV.
 
 \section trieste-6-conclusions Conclusions
 
