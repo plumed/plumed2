@@ -297,7 +297,7 @@ equilibrate before the free energy along \f$ \psi \f$ can converge.
 Try to repeat the analysis done in the previous exercize, i.e.  calculate the estimate of the free energy as a function of time,
 first step to assess the convergence of this metadynamics simulation.
 
-\section trieste-4-ex-3 Exercize 3: estimating the error in free-energies with block-analysis
+\section trieste-4-ex-3 Exercize 3: estimating the error in free-energies using block-analysis
 
 In this exercise, we will calculate the error associated to the free-energy reconstructed
 by a well-tempered metadynamics simulation. The free energy and the errors will be calculated
