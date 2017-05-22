@@ -68,6 +68,43 @@ This can be achieved with either \ref COORDINATION or \ref CONTACTMAP.
 This can be achieved, for example, by defining suitable virtual atoms with the \ref CENTER
 keyword and the \ref TORSION CV.
 
+\section trieste-6-ex-2 Exercize 2: analysis of the cmyc-urea simulation
+
+Cmyc is a small disordered peptide made of 11 aminoacid. In solution, cmyc adopts
+a variety of different, but equally populated conformations. 
+In the TARBALL of this exercize, we provide a long MD simulation of cmyc in presence
+of a single molecule of urea. 
+
+\anchor trieste-6-cmycurea
+\image html trieste-6-cmycurea.png "The cmyc peptide in presence of one urea molecule"
+
+\note We encourage the users to get familiar with the system by visualizing the MD trajectory
+using `VMD`.
+
+The users are expected to:
+- calculate the fraction of bound and unbound molecules of urea by defining suitable CVs to measure
+  the position of urea relative to cmyc.
+- find the cmyc aminoacids that binds urea the most and the least.
+- calculate the ensemble average of different experimental CVs.
+
+\warning Be careful that the original trajectory might be broken by PBC!
+
+The users are free to choose his/her favorite CVs and they are encouraged to use the
+on-line manual to create their own PLUMED input file.
+However, we encourage all the users to experiment at least with the following CVs to characterize
+the conformational landscape of cmyc:
+
+1) the radius of gyration of cmyc (\ref GYRATION) 
+
+2) the content of alpha (\ref ALPHARMSD) and beta (\ref ANTIBETARMSD) secondary structure
+
+For the calculation of ensemble averages of experimental CVs, we suggest to use:
+
+1) 3J scalar couplings (\ref JCOUPLING)
+
+2) the FRET intensity between termini (\ref FRET)  
+
+
 \section trieste-6-conclusions Conclusions
 
 In summary, in this tutorial you should have learned how to use PLUMED to:
