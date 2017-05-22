@@ -116,8 +116,6 @@ First of all let's start to learn something about the water dimer system by runn
 In this way we have a 25ns long trajectory that we can use to have a first look at the behavior of the system.
 Is the sampling of the relative distance between the two water molecules converged?
 
-\subsection trieste-3-ex-1a Exercize 1a:  
-
 Use plumed driver to analyse the trajectory and evaluate the quality of the sampling.
 
 Here you can find a sample `plumed.dat` file that you can use as a template.
