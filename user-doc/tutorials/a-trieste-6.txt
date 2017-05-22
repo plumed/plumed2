@@ -134,11 +134,11 @@ to evalute the free energy difference between folded and unfolded state as a fun
 \section trieste-6-conclusions Conclusions
 
 In summary, in this tutorial you should have learned how to use PLUMED to:
-- Setup and run a metadynamics calculation.
-- Compute free energies from the metadynamics bias potential using the \ref sum_hills utility.
-- Calculate the error in the reconstructed free energy using block analysis. 
-- Discriminate between good and bad collective variables.
-- Evaluate the convergence of a metadynamics simulation.
+- Analyze trajectories of realistic biological systems using complex CVs 
+- Extract conformations that correspond to local free-energy minima 
+- Apply block analysis techniques to estimate error in free-energy profiles
+- Calculate ensemble averages of experimental CVs 
+- Reweight well-tempered metadynamics simulations 
 
 */
 
