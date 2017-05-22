@@ -127,17 +127,18 @@ Whenever you see an highlighted \highlight{FILL} string, this is a string that y
 \plumedfile
 # vim:ft=plumed
 #compute the distance between the two oxygens
-d: DISTANCE __FILL__
+d: DISTANCE ATOMS=1,4
 #accumulate block histograms
-hh: HISTOGRAM ARG=d KERNEL=DISCRETE __FILL__
+hh: HISTOGRAM ARG=d STRIDE=10 GRID_MIN=0 GRID_MAX=4.0 GRID_BIN=200 KERNEL=DISCRETE CLEAR=10000
 #and dump them
-DUMPGRID __FILL__
+DUMPGRID GRID=hh FILE=myhist.dat STRIDE=10000
 # Print the collective variable.
-PRINT __FILL__ 
+PRINT ARG=d STRIDE=10 FILE=distance.dat 
 \endplumedfile
 
 \verbatim
 > plumed driver --mf_xtc traj_comp.xtc --plumed plumed.dat  
+> python3 do_block_histo.py > final-histo-10000.dat
 \endverbatim
 
 If there is something you don't remember about this procedure go back and check in \ref trieste-2 .
