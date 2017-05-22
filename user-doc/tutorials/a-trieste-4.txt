@@ -10,7 +10,6 @@ of the collective variables used, and estimating the associated error.
 \section trieste-4-objectives Objectives
 
 Once this tutorial is completed students will be able to:
-
 - Write the PLUMED input file to perform metadynamics simulations 
 - Calculate the free energy from a metadynamics run
 - Compute the error associated to the reconstructed free energy

@@ -1,0 +1,82 @@
+/**
+\page trieste-6 Trieste tutorial: Real-life applications with complex CVs 
+
+\section trieste-6-aims Aims
+
+The aim of this tutorial is to train users to 
+learn the syntax of complex collective variables and use them to analyze 
+MD trajectories of realistic biological systems and bias them with metadynamics. 
+
+\section trieste-6-objectives Objectives
+
+Once this tutorial is completed students will be able to:
+- Write the PLUMED input file to use complex CVs for analysis 
+- Analyze trajectories and calculate the free energy of complex biological systems  
+- Perform error analysis and evaluate convergence in realistic situations
+- Setup, run, and analyze metadynamics simulations of a complex system 
+
+\section trieste-6-resources Resources
+
+The reference trajectories and input files for the exercizes proposed in this tutorial 
+can be downloaded from `github` using the following command:
+
+\verbatim
+wget
+\endverbatim
+
+This tutorial has been tested on a pre-release version of version 2.4. However, it should not take advantage
+of 2.4-only features, thus should also work with version 2.3.
+ 
+\section trieste-6-intro Introduction
+
+In this tutorial we propose exercizes on the following biological systems:
+- the BRCA1-associated RING domain protein 1 (BARD1 complex) 
+- the cmyc peptide in presence of urea at low concentration (cmyc-UREA)
+- xxxx
+
+\section trieste-6-ex-1 Exercize 1: analyzing trajectory of the BARD1 complex 
+
+The BARD1 complex is a heterodimer composed by two domains of 112 and 117 residues each. 
+The sytem is represented at coarse-grained level using the MARTINI force field.
+
+\anchor trieste-6-bard1
+\image html trieste-6-bard1.png "The BARD1 heterodimer"
+
+In the TARBALL of this exercize, we provide a long MD simulation of the BARD1 complex in which
+the two domains explore multiple different conformations.
+
+The users are expected to:
+- calculate the values of different CVs on the trajectory
+- estimate the free energies as a function of the CVs tested (mono- and multi-dimensional)
+- extracting from the trajectories the configurations corresponding to relevant free-energy minima
+- calculate the error in the associated free energy using the block analysis technique
+- evaluate the convergence of the original trajectory
+
+The user is free to choose his/her favorite CVs.
+However, we encourage all the users to experiments at least with the following CVs. 
+
+1) RMSD from the native state
+
+
+2) Distance from the native contact map
+
+
+3) A CV describing the relative orientation of the two chains.
+
+
+\section trieste-6-conclusions Conclusions
+
+In summary, in this tutorial you should have learned how to use PLUMED to:
+- Setup and run a metadynamics calculation.
+- Compute free energies from the metadynamics bias potential using the \ref sum_hills utility.
+- Calculate the error in the reconstructed free energy using block analysis. 
+- Discriminate between good and bad collective variables.
+- Evaluate the convergence of a metadynamics simulation.
+
+*/
+
+link: @subpage trieste-6
+
+description: This tutorial explains how to use PLUMED to run metadynamics simulations 
+
+additional-files: trieste-6
