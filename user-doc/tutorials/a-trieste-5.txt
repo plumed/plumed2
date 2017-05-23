@@ -9,14 +9,20 @@ the replicas feel different biasing potentials.
 
 \section trieste-5-lo Objectives
 
-Once this tutorial is completed students will:
+Once this tutorial is completed students will be able to:
 
-- \highlight{TODO}
+- Write plumed input files suitable for multi-replica simulations.
+- Run replica exchange simulations with gromacs and plumed using different bias potentials in each replica.
+- Analyze replica exchange simulations using WHAM so as to obtain the weight of each snapshot.
 
 \section trieste-5-resources Resources
 
 The \tarball{trieste-5} for this project contains the following files:
-- \highlight{TODO}
+- `topol0.tpr`, `topol1.tpr`, `topol2.tpr`, and `topol3.tpr`, gromacs input files
+  for analine dipeptide. Notice that two of them (0 and 2) are initialized in one free-energy
+  well and two of them (1 and 3) in the other free-energy well.
+- A directory SCRIPT that contains a `wham.py` script to perform WHAM. Notice that this required python 3 (does not work with python 2).
+- A directory SETUP with the gromacs input file that can be used to generate new tpr files.
 
 This tutorial has been tested on a pre-release version of version 2.4. In particular, it takes
 advantage of a special syntax for setting up multi-replica simulations that is only available
@@ -40,7 +46,7 @@ Notice that this tutorial was tested using a pre-release
 version of PLUMED 2.4. In particular, we will use a special syntax
 for multi-replica input that is only available starting with PLUMED 2.4.
 
-\section trieste-5-replicas Running multi replica simulations
+\section trieste-5-replicas Multi replica input files
 
 Imagine that you are in a directory with these files
 \verbatim
@@ -136,7 +142,7 @@ METAD ...
 #  METAD ARG=t HEIGHT=1.0 PACE=100 SIGMA=0.3 GRID_MIN=-pi GRID_MAX=+pi
 \endplumedfile
 
-This would be a typical setup for a bias exchange \highlight{REF} simulation.
+This would be a typical setup for a bias exchange simulation.
 Notice that even though variables `d` and `t` are both read in both replicas,
 `d` is only computed on replica 0 (and `t` is only computed on replica 1).
 This is because variables that are defined but not used are never actually calculated by PLUMED.
@@ -189,7 +195,7 @@ In short, whenever there are keywords that should vary across replicas, you shou
 As mentioned above, you can always use the old syntax with separate input file, and this is recommended when the
 number of keywords that are different is large.
 
-\section trieste-5-ex-1 Running multi-replica simulations
+\section trieste-5-ex-1 Exercize 1: Running multi-replica simulations
 
 Write a plumed file that allows you to run a multi-replica simulation of alanine dipeptide
 where the following four replicas are simulated:
@@ -248,12 +254,12 @@ to the same potential, so all the exchanges will be accepted. You can verify thi
 > grep "Repl ex" md0.log
 \endverbatim
 
-\comment
+\note
 The setup above is very close to the one used in bias exchange simulations.
 However, in bias exchange simulations usually one would use at most one neutral (non-biased) replica.
-In addition, the \ref RANDOM_EXCHANGE command is often used.
+In addition, the \ref RANDOM_EXCHANGES command is often used.
 
-\section trieste-5-ex-2 Analyzing a multiple-restraint simulation
+\section trieste-5-ex-2 Exercize 2: Analyzing a multiple-restraint simulation
 
 In the following we will analyze the result of the simulation above.
 To this aim we will have to use the WHAM method. The WHAM procedure described here is
@@ -348,7 +354,7 @@ two free-energy wells that correspond roughly to positive and negative \f$\phi\f
 \endverbatim
 This will tell you the unbiased population of the two minima.
 
-\section trieste-5-ex-3 A problematic example
+\section trieste-5-ex-3 Exercize 3: What if a variable is missing?
 
 Repeat the exercize above (that is: running replica exchange MD simulation and analyze the result)
 but using only three replicas:
@@ -356,6 +362,17 @@ but using only three replicas:
 - one biased replica along psi
 
 Compute as before the relative population of the two minima. Which is the result? What can you learn from this example?
+
+\section trieste-5-conclusion
+
+In summary, in this tutorial you should have learned how to use PLUMED to:
+- Run multi replica simulations.
+- Analyze them using WHAM.
+
+Notice that the setup used is similar to the ones typically used in bias exchange simulations
+but can be easily adapted to any case where multiple replicas should be combined that feel different
+bias potentials. Moreover, the problematic example discussed shows that one should be careful and
+check if real transitions are observed during a replica exchange simulation.
 
 */
 
