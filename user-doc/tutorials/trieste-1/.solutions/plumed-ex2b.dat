@@ -1,0 +1,18 @@
+# vim:ft=plumed
+
+# First load information about the molecule.
+MOLINFO STRUCTURE=ref.pdb
+
+# Define here the groups that you need
+rna: GROUP ATOMS=1-258
+mg:  GROUP ATOMS=6580
+wat: GROUP ATOMS=259-6579
+
+# Make RNA whole
+WHOLEMOLECULES ENTITY0=rna
+
+# Now make water whole as if it was a single molecule
+WHOLEMOLECULES ENTITY0=wat
+
+# And dump the resulting trajectory
+DUMPATOMS ATOMS=rna,wat,mg FILE=wrong.gro
