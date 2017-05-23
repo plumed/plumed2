@@ -237,12 +237,16 @@ Now check the resources provided with this tutorial.
 There are 4 `tpr` files available (`topol0.tpr`, `topol1.tpr`, `topol2.tpr`, and `topol3.tpr`).
 You can run a replica exchange simulation with gromacs using the following command
 \verbatim
-> mpirun -np 4 gmx_mpi mdrun -plumed plumed.dat -nsteps 1000000 -replex 120
+> mpirun -np 4 gmx_mpi mdrun -plumed plumed.dat -nsteps 1000000 -replex 120 --multi 4
 \endverbatim
 Notice that coordinates swaps will be attempted between different replicas every 120 steps.
 When computing the acceptance, gromacs will take into account that different replicas might
 be subject to different bias potential. In this example, replicas 0 and 1 are actually subject
-to the same potential, so all the exchanges will be accepted.
+to the same potential, so all the exchanges will be accepted. You can verify this using the command
+
+\verbatim
+> grep "Repl ex" md0.log
+\endverbatim
 
 \comment
 The setup above is very close to the one used in bias exchange simulations.
@@ -268,14 +272,12 @@ Notice that also here it would be possible to use \cite Tiwary_jp504920s instead
 
 \plumedfile
 # this will be file plumed_reweight.dat
-# Remember how you did a reweighting for a single metadynamics simulation
-# First put the restart keyword:
-RESTART
 # include here exactly the same file you used to run the simulation
 # however, you should make some change to METAD:
 # - replace PACE with a huge number
 # - add TEMP=300 to set the temperature of the simulation
 # (normally this is inherited from the MD code, but driver has no idea about it)
+# - add RESTART=YES to trigger restart
 __FILL__
 __FILL__
 __FILL__
@@ -313,14 +315,12 @@ of lines corresponding to the whole concatenated trajectory.
 
 Have a look at `ALLBIAS`. It should look more or less like this
 \verbatim
-0.000000  0.000000  75.636305  75.786147
-0.000000  0.000000  75.143215  75.127876
-0.000000  0.000000  66.071472  65.546944
-0.000000  0.000000  69.774019  69.260869
-0.000000  0.000000  64.679610  64.169994
-0.000000  0.000000  66.843788  66.312660
-0.000000  0.000000  68.703617  68.170744
-0.000000  0.000000  75.142493  75.174527
+0.000000  0.000000  75.453800  68.172206  
+0.000000  0.000000  74.973726  68.143015  
+0.000000  0.000000  66.948910  56.295899  
+0.000000  0.000000  70.383309  60.164381  
+0.000000  0.000000  65.595489  61.754951  
+0.000000  0.000000  67.689166  60.869430  
 \endverbatim
 The first two columns correspond to the bias felt in replicas 0 and 1, that are unbiased, and thus should be zero.
 In the other replicas on the other hand we will have large potentials accumulated by metadynamics.
@@ -332,28 +332,30 @@ number of replicas (that is the number of columns) and value of kbT (2.5 in kj/m
 
 \verbatim
 # use the python script to compute weights
-> python SCRIPTS/wham.py ALLBIAS 4 2.5
+> python3 SCRIPTS/wham.py ALLBIAS 4 2.5
 \endverbatim
 
 This will generate a file named `weights.dat` that contains the weights for each of the frame.
+You can check that they are normalized using the command `awk '{a+=$1}END{print a}' weights.dat`.
+Now have a look at the weights. Remember that we are concatenating trajectories. Can you understand
+why weights in the first half are systematically different from weights in the second half?
 
-\highlight{TODO: show and interpret weights}
+Now we have the weight for each frame. We would like to compute the relative stability of the
+two free-energy wells that correspond roughly to positive and negative \f$\phi\f$.
+\verbatim
+# 
+> paste <(grep -v \# COLVAR_CONCAT.0) weights.dat | awk '{if($2>0)wb+=$NF; else wa+=$NF}END{print wa,wb}'
+\endverbatim
+This will tell you the unbiased population of the two minima.
 
-\highlight{TODO: compute free-energy difference}
+\section trieste-5-ex-3 A problematic example
 
-\highlight{TODO: repeat using only the two unbiased replicas and show that free-energy difference is wrong}
+Repeat the exercize above (that is: running replica exchange MD simulation and analyze the result)
+but using only three replicas:
+- two unbiased replicas.
+- one biased replica along psi
 
-\hidden{Analyze a solute tempering-METAD simulation}
-
-\highlight{TODO: prepare input files for hrex simulation}
-
-\endhidden
-
-\section trieste-5-ex-3 Computing statistical error
-
-\highlight{TODO: show how to use block analysis. Also discuss the problems with demuxing trajectories.}
-
-*/
+Compute as before the relative population of the two minima. Which is the result? What can you learn from this example?
 
 link: @subpage trieste-5
 
