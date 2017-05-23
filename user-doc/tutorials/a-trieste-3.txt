@@ -328,7 +328,7 @@ Now we have an external potential that is the opposite of the free energy and we
 \plumedfile
 # vim:ft=plumed
 d: DISTANCE ATOMS=1,4
-ext: EXTERNAL ARG=d FILE=__FILL__ LABEL=ff
+EXTERNAL ARG=d FILE=__FILL__ LABEL=ff
 # accumulate the biased histogram
 __FILL__
 #dumpit
