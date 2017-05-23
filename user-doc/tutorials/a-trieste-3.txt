@@ -226,7 +226,7 @@ hhu: HISTOGRAM ARG=d STRIDE=1 GRID_MIN=0 GRID_MAX=4.0 GRID_BIN=200 KERNEL=DISCRE
 #dumpit
 DUMPGRID GRID=hhu FILE=myhistu.dat STRIDE=100000
 #print distance and bias
-PRINT ARG=d FILE=distance,lr.bias STRIDE=50
+PRINT ARG=d,lr.bias FILE=distance.dat STRIDE=50
 \endplumedfile
 
 The comparison of the two histograms with the former will show the effect of the weak quadratic bias on the simulation.
