@@ -93,6 +93,8 @@ public:
   unsigned getNumberOfQuantities() const ;
 /// Actually do the calculation
   double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
+/// We overwrite this in order to have dumpmulticolvar working for local average
+  void normalizeVector( std::vector<double>& vals ) const {}
 /// Is the variable periodic
   bool isPeriodic() { return false; }
 };
