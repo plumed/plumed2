@@ -357,8 +357,10 @@ but using only three replicas:
 
 Compute as before the relative population of the two minima. Which is the result? What can you learn from this example?
 
+*/
+
 link: @subpage trieste-5
 
-description: This tutorial explains how to use PLUMED to analyze trajectories
+description: 
 
-additional-files: a-trieste-5
+additional-files: trieste-5
