@@ -170,6 +170,7 @@ See branch \branch{v2.3} on git repository.
   domain not symmetric around zero. See \issue{235} (thanks to Summer Snow for reporting this bug).
 - Fixed numerical issue leading to simulations stuck (LatticeReduction problem) with intel compiler and
   large simulation cells.
+- Fixed a bug affecting \ref LOCAL_AVERAGE and outputting all multicolvars calculated by \ref Q6 with \ref DUMPMULTICOLVAR
 
 For developers:
 - plumedcheck validation has been made stricter. All the checks are now described in the developer manual.
