@@ -150,7 +150,7 @@ cmyc: GROUP ATOMS=5,6,7,9,11,14,15,17,19,22,24,26,27,28,30,32,34,38,41,45,46,47,
 urea: GROUP ATOMS=192,193,194,197
 
 # minimum distance cmyc-urea 
-mindist: DISTANCES GROUPA=cmyc GROUPB=urea MIN={BETA=500.}
+mindist: DISTANCES GROUPA=cmyc GROUPB=urea MIN={BETA=50.}
 \endplumedfile
 
 For estimating the cmyc aminoacid that bind the most and the least urea, we leave the users the choice of the best
