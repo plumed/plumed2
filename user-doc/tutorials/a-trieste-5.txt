@@ -119,7 +119,7 @@ the 3 replicas will see the very same input except for the `AT` keyword, that se
 Replica 0 will see a restraint centered at 1.0, replica 1 centered at 1.1, and replica 2 centered at 1.2.
 
 The `@replicas:` keyword is not special for \ref RESTRAINT or for the `AT` keyword. Any keyword in PLUMED can accept that syntax.
-For instance, the following single input file can be used to setup a bias exchange metadynamics simulations:
+For instance, the following single input file can be used to setup a bias exchange metadynamics \cite piana simulations:
 \plumedfile
 # Compute distance between atoms 1 and 2
 d: DISTANCE ATOMS=1,2
@@ -349,10 +349,24 @@ why weights in the first half are systematically different from weights in the s
 Now we have the weight for each frame. We would like to compute the relative stability of the
 two free-energy wells that correspond roughly to positive and negative \f$\phi\f$.
 \verbatim
-# 
 > paste <(grep -v \# COLVAR_CONCAT.0) weights.dat | awk '{if($2>0)wb+=$NF; else wa+=$NF}END{print wa,wb}'
 \endverbatim
 This will tell you the unbiased population of the two minima.
+
+\note
+This approach can be used to reweight any replica exchange simulation, irrespectively of how
+different were the employed bias potentials. This includes bias-exchange metadynamics \cite piana
+when using well-tempered metadynamics \cite Barducci:2008.
+Notice that for non-well-tempered bias exchange  metadynamics one can use a very similar approach based on binning
+that is described in \cite marinelli-trpc09.
+In addition, the approach illustrated here can be used direcly in
+bias-exchange metadynamics simulations with additional restraints which are different
+in different replicas (as in \cite cunha2017unraveling) as well as other flavors
+of biased replica exchange simulations (e.g. \cite curuksu2009enhanced \cite gil2015enhanced).
+With some modification to take into account the force field energy it can be used to analyze 
+parallel tempering simulations \cite sugi-okam99cpl
+and simulated tempering simulations \cite wang2011replica (notice that they 
+can be implemented with PLUMED + GROMACS using \cite bussi2013mp).
 
 \section trieste-5-ex-3 Exercize 3: What if a variable is missing?
 
@@ -363,7 +377,33 @@ but using only three replicas:
 
 Compute as before the relative population of the two minima. Which is the result? What can you learn from this example?
 
-\section trieste-5-conclusion
+Also plot the colvar files and look at them with attention. How many transitions between the two free-energy wells can you observe?
+Remember that replica exchange involves coordinate swaps that do not correspond to the real system dynamics. It is very useful to look at
+"demuxed" trajectories.
+
+\section trieste-5-ex-4 Exercize 4: "demuxing" your trajectories
+
+Use the following commands
+
+\verbatim
+> demux.pl md0.log
+\endverbatim
+
+This will produce two files: `replica_index.xvg` and `replica_temp.xvg`. The former allows to convert your trajectories to
+continuous ones with the following commands
+
+\verbatim
+> demux.pl md0.log
+> gmx_mpi  trjcat -f traj_comp?.xtc -demux replica_index.xvg
+\endverbatim
+
+You will now find new trajectories `0_trajout.xtc`, `1_trajout.xtc`, `2_trajout.xtc`, and `3_trajout.xtc`.
+These files can be in turn analyzed with `plumed driver`. Try to recompute collective variables on the trajectories
+obtained in \ref trieste-5-ex-1 and with those obtained in \ref trieste-5-ex-3. Can you spot out the difference between
+the two cases?
+
+
+\section trieste-5-conclusion Conclusions
 
 In summary, in this tutorial you should have learned how to use PLUMED to:
 - Run multi replica simulations.
@@ -371,13 +411,14 @@ In summary, in this tutorial you should have learned how to use PLUMED to:
 
 Notice that the setup used is similar to the ones typically used in bias exchange simulations
 but can be easily adapted to any case where multiple replicas should be combined that feel different
-bias potentials. Moreover, the problematic example discussed shows that one should be careful and
+bias potentials.
+Moreover, the problematic example discussed shows that one should be careful and
 check if real transitions are observed during a replica exchange simulation.
 
 */
 
 link: @subpage trieste-5
 
-description: 
+description: This tutorial explains how to use PLUMED to run and analyze multi-replica simulations
 
 additional-files: trieste-5
