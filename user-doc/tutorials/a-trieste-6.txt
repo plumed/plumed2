@@ -194,7 +194,7 @@ the free-energy landscape of GB1:
 The users should select two of them for the \ref METAD simulation. Once you are satisfied by the convergence of your simulation, you can use one of the reweighting algorithms proposed
 to evaluate the free-energy difference between folded and unfolded state as a function of multiple collective variables. 
 
-\plumedinputfile
+\plumedfile
 #this allows you to use short-cut for dihedral angles
 MOLINFO STRUCTURE=GB1_native.pdb
 
