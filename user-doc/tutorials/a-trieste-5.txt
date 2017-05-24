@@ -298,7 +298,7 @@ PRINT ARG=phi,psi FILE=COLVAR_CONCAT
 # As a good practice, remember that there might be multiple bias
 # potential applied (e.g. METAD and a RESTRAINT).
 # to be sure that you include all of them, just combine them:
-bias: COMBINE ARG=*.bias
+bias: COMBINE ARG=*.bias PERIODIC=NO
 # here omit STRIDE, so that you will print the bias
 # for all the frames in your concatenated trajectory
 PRINT FILE=COLVAR_WHAM ARG=bias
@@ -373,7 +373,7 @@ can be implemented with PLUMED + GROMACS using \cite bussi2013mp).
 Repeat the exercize above (that is: running replica exchange MD simulation and analyze the result)
 but using only three replicas:
 - two unbiased replicas.
-- one biased replica along psi
+- one biased replica along psi.
 
 Compute as before the relative population of the two minima. Which is the result? What can you learn from this example?
 
