@@ -49,6 +49,8 @@ private:
   std::vector<unsigned>& sort_vector;
 /// This holds atom positions
   std::vector<Vector>& myatoms;
+/// This is stuff for link cells
+  std::vector<unsigned> cells_required;
 ///
   void addDerivative( const unsigned&, const unsigned&, const double& );
 ///
@@ -75,6 +77,8 @@ public:
   unsigned getNumberOfDerivatives() const ;
 /// Get the position of the ith atom
   Vector& getPosition( const unsigned& );
+/// Get the absolute index of the ith atom in the list
+  AtomNumber getAbsoluteIndex( const unsigned& j ) const ;
 ///
   void setValue( const unsigned&, const double& );
 ///
@@ -128,6 +132,16 @@ void AtomValuePack::setAtom( const unsigned& j, const unsigned& ind ) {
 inline
 unsigned AtomValuePack::getIndex( const unsigned& j ) const {
   plumed_dbg_assert( j<natoms ); return indices[j];
+}
+
+inline
+AtomNumber AtomValuePack::getAbsoluteIndex( const unsigned& j ) const {
+  plumed_dbg_assert( j<natoms ); unsigned jatom=indices[j];
+  if( mycolv->atom_lab[jatom].first>0 ) {
+    unsigned mmc=mycolv->atom_lab[jatom].first - 1;
+    return (mycolv->mybasemulticolvars[mmc])->getAbsoluteIndexOfCentralAtom( mycolv->atom_lab[jatom].second );
+  }
+  return mycolv->getAbsoluteIndex( mycolv->atom_lab[jatom].second );
 }
 
 inline

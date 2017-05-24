@@ -42,8 +42,13 @@ AtomValuePack::AtomValuePack( MultiValue& vals, MultiColvarBase const * mcolv ):
 }
 
 unsigned AtomValuePack::setupAtomsFromLinkCells( const std::vector<unsigned>& cind, const Vector& cpos, const LinkCells& linkcells ) {
+  if( cells_required.size()!=linkcells.getNumberOfCells() ) cells_required.resize( linkcells.getNumberOfCells() );
+  // Build the list of cells that we need
+  unsigned ncells_required=0; linkcells.addRequiredCells( linkcells.findMyCell( cpos ), ncells_required, cells_required );
+  // Now build the list of atoms we need
   natoms=cind.size(); for(unsigned i=0; i<natoms; ++i) indices[i]=cind[i];
-  linkcells.retrieveNeighboringAtoms( cpos, natoms, indices );
+  linkcells.retrieveAtomsInCells( ncells_required, cells_required, natoms, indices );
+//  linkcells.retrieveNeighboringAtoms( cpos, natoms, indices );
   for(unsigned i=0; i<natoms; ++i) myatoms[i]=mycolv->getPositionOfAtomForLinkCells( indices[i] ) - cpos;
   if( mycolv->usesPbc() ) mycolv->applyPbc( myatoms, natoms );
   return natoms;

@@ -327,7 +327,7 @@ template <typename T> int Invert( const Matrix<T>& A, Matrix<double>& inverse ) 
     if( inverse.cl!=A.cl || inverse.rw!=A.rw ) { inverse.resize(A.rw,A.cl); }
     k=0; for(unsigned i=0; i<A.rw; ++i) for(unsigned j=0; j<A.cl; ++j) inverse(j,i)=da[k++];
 
-    delete[] work; delete[] ipiv;
+    delete [] da; delete[] work; delete[] ipiv;
   }
 
   return 0;

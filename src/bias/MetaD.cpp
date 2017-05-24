@@ -376,6 +376,7 @@ private:
   unsigned mpi_mw_;
   bool acceleration;
   double acc;
+  double acc_restart_mean_;
   vector<IFile*> ifiles;
   vector<string> ifilesnames;
   double uppI_;
@@ -457,6 +458,7 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with WALKERS_* options other than WALKERS_DIR");
   keys.addFlag("ACCELERATION",false,"Set to TRUE if you want to compute the metadynamics acceleration factor.");
+  keys.add("optional","ACCELERATION_RFILE","a data file from which the acceleration should be read at the initial step of the simulation");
   keys.use("RESTART");
   keys.use("UPDATE_FROM");
   keys.use("UPDATE_UNTIL");
@@ -490,7 +492,7 @@ MetaD::MetaD(const ActionOptions& ao):
 // Multiple walkers initialization
   mw_n_(1), mw_dir_(""), mw_id_(0), mw_rstride_(1),
   walkers_mpi(false), mpi_nw_(0), mpi_mw_(0),
-  acceleration(false), acc(0.0),
+  acceleration(false), acc(0.0), acc_restart_mean_(0.0),
 // Interval initialization
   uppI_(-1), lowI_(-1), doInt_(false),
   isFirstStep(true),
@@ -710,6 +712,11 @@ MetaD::MetaD(const ActionOptions& ao):
 
   acceleration=false;
   parseFlag("ACCELERATION",acceleration);
+  // Check for a restart acceleration if acceleration is active.
+  string acc_rfilename;
+  if (acceleration) {
+    parse("ACCELERATION_RFILE", acc_rfilename);
+  }
 
   checkRead();
 
@@ -772,9 +779,43 @@ MetaD::MetaD(const ActionOptions& ao):
   addComponent("work"); componentIsNotPeriodic("work");
 
   if(acceleration) {
-    if(!welltemp_) error("The calculation of the acceleration works only if Well-Tempered Metadynamics is on");
+    if (kbt_ == 0.0) {
+      error("The calculation of the acceleration works only if simulation temperature has been defined");
+    }
     log.printf("  calculation on the fly of the acceleration factor");
     addComponent("acc"); componentIsNotPeriodic("acc");
+    // Set the initial value of the the acceleration.
+    // If this is not a restart, set to 1.0.
+    if (acc_rfilename.length() == 0) {
+      getPntrToComponent("acc")->set(1.0);
+      // Otherwise, read and set the restart value.
+    } else {
+      // Restart of acceleration does not make sense if the restart timestep is zero.
+      //if (getStep() == 0) {
+      //  error("Restarting calculation of acceleration factors works only if simulation timestep is restarted correctly");
+      //}
+      // Open the ACCELERATION_RFILE.
+      IFile acc_rfile;
+      acc_rfile.link(*this);
+      if(acc_rfile.FileExist(acc_rfilename)) {
+        acc_rfile.open(acc_rfilename);
+      } else {
+        error("The ACCELERATION_RFILE file you want to read: " + acc_rfilename + ", cannot be found!");
+      }
+      // Read the file to find the restart acceleration.
+      double acc_rmean;
+      double acc_rtime;
+      std::string acclabel = getLabel() + ".acc";
+      acc_rfile.allowIgnoredFields();
+      while(acc_rfile.scanField("time", acc_rtime)) {
+        acc_rfile.scanField(acclabel, acc_rmean);
+        acc_rfile.scanField();
+      }
+      acc_rfile.close();
+      acc_restart_mean_ = acc_rmean;
+      // Set component based on the read values.
+      getPntrToComponent("acc")->set(acc_rmean);
+    }
   }
 
   // for performance
@@ -1354,10 +1395,13 @@ void MetaD::calculate()
   if( rewf_grid_.size()>0 ) getPntrToComponent("rbias")->set(ene - reweight_factor);
   // calculate the acceleration factor
   if(acceleration&&!isFirstStep) {
-    acc += exp(ene/(kbt_));
+    acc += static_cast<double>(getStride()) * exp(ene/(kbt_));
     const double mean_acc = acc/((double) getStep());
     getPntrToComponent("acc")->set(mean_acc);
+  } else if (acceleration && isFirstStep && acc_restart_mean_ > 0.0) {
+    acc = acc_restart_mean_ * static_cast<double>(getStep());
   }
+
   getPntrToComponent("work")->set(work_);
   // set Forces
   for(unsigned i=0; i<ncv; ++i) {

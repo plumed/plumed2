@@ -70,6 +70,10 @@ molecular dynamics, or a posteriori, using PLUMED as a post-processing tool. In 
 one should create an input file with a specific PLUMED syntax. A sample input file is below:
 
 \plumedfile
+# this is optional and tell to VIM that this is a PLUMED file
+# vim: ft=plumed
+# see comments just below this input file
+
 # Compute distance between atoms 1 and 10.
 # Atoms are ordered as in the trajectory files and their numbering starts from 1.
 # The distance is called "d" for future reference.
@@ -217,11 +221,11 @@ The command above will create a file `COLVAR` like this one:
 #! FIELDS time r c co ch d
 #! SET min_c -pi
 #! SET max_c pi
- 0.000000 0.788694 -2.963150 207.795793 502.029431 0.595611
- 1.000000 0.804101 -2.717302 208.021688 499.770382 0.951945
- 2.000000 0.788769 -2.939333 208.347867 500.555764 1.014850
- 3.000000 0.790232 -2.940726 211.274315 514.748191 1.249502
- 4.000000 0.796395 3.050949 212.352810 507.888856 2.270682
+ 0.000000 0.788694 -2.963150 207.795793 502.027244 0.595611
+ 1.000000 0.804101 -2.717302 208.021688 499.792595 0.951945
+ 2.000000 0.788769 -2.939333 208.347867 500.552127 1.014850
+ 3.000000 0.790232 -2.940726 211.274315 514.749124 1.249502
+ 4.000000 0.796395 3.050949 212.352810 507.892198 2.270682
 \endverbatim
 Notice that the first line informs you about the content of each column and
 the second and third lines tell you that variable `c` (the \f$\chi\f$ torsion) is
@@ -309,6 +313,7 @@ d1: DISTANCE ATOMS=mg,33
 d2: DISTANCE __FILL__
 __FILL__
 d6: DISTANCE __FILL__
+# You can use serial numbers, but you might also use MOLINFO strings
 
 # Compute the sum of these distances
 c: COMBINE __FILL__
@@ -316,7 +321,7 @@ c: COMBINE __FILL__
 # Compute the distance between Mg and the closest phosphorous atom
 s: SORT __FILL__
 
-# Print the required variables
+# Print the requested variables
 PRINT FILE=COLVAR __FILL__
 \endplumedfile
 
@@ -375,8 +380,8 @@ Analyze the provided trajectory `traj-broken.xtc` and use the \ref DUMPATOMS act
   Notice that you should provide to \ref FIT_TO_TEMPLATE a pdb file with only the atoms that you wish to align.
   Use the `ref.pdb` file as a starting point and remove the lines non containing RNA atoms.
   More details on PDB files in PLUMED can be found \ref pdbreader "here".
-- The whole RNA duplex and Mg ion, but only including the snapshots where Mg is at a distance equal to at most 3 A from phosphorous atom
-  of residue 2. Search for the serial number of the proper phosphorous atom in the PDB file and use the \ref UPDATE_IF action
+- The whole RNA duplex and Mg ion, but only including the snapshots where Mg is at a distance equal to at most 4 A from phosphorous atom
+  of residue 8. Search for the serial number of the proper phosphorous atom in the PDB file and use the \ref UPDATE_IF action
   to select the frames.
 - The whole RNA duplex plus water molecules and mg ion wrapped around the center of the duplex. Compute first the center of the duplex with \ref CENTER then
   wrap the molecules with \ref WRAPAROUND. Make sure that individual water molecules are not broken after the move!
@@ -408,20 +413,20 @@ FIT_TO_TEMPLATE REFERENCE=__FILL__ TYPE=OPTIMAL
 # Dump the aligned RNA on a separate file
 DUMPATOMS ATOMS=rna FILE=rna-aligned.gro
 
-# Compute the distance between the Mg and the Phosphorous from residue 2
+# Compute the distance between the Mg and the Phosphorous from residue 8
 d: DISTANCE ATOMS=mg,__FILL__ ## put the serial number of the correct phosphorous here
 
 # here we only dump frames conditioned to the value of d
 UPDATE_IF ARG=d __FILL__
 DUMPATOMS ATOMS=rna,mg FILE=rna-select.gro
-UPDATE_IF ARG=d # this command is required to close the UPDATE_IF above
+UPDATE_IF ARG=d __FILL__ # this command is required to close the UPDATE_IF above
 
 # compute the center of the RNA molecule
 center: CENTER ATOMS=rna
 
 # Wrap atoms correctly
 WRAPAROUND ATOMS=mg AROUND=__FILL__
-WRAPAROUND ATOMS=water AROUND=center __FILL__ # anything missing here?
+WRAPAROUND ATOMS=wat AROUND=center __FILL__ # anything missing here?
 
 # Dump the last trajectory
 DUMPATOMS ATOMS=rna,wat,mg FILE=rna-wrap.gro
@@ -538,11 +543,11 @@ You should obtains files like the ones reported below.
 `CELL_AFTER` should be
 \verbatim
 #! FIELDS time cell_after.ax cell_after.ay cell_after.az cell_after.bx cell_after.by cell_after.bz cell_after.cx cell_after.cy cell_after.cz
- 0.000000 4.532612 -0.054817 0.083377 0.053329 4.532675 0.080890 2.233341 2.182443 3.286902
- 1.000000 -0.648906 -2.868906 -3.450047 2.674989 2.551396 -2.624755 3.560387 -1.863791 -2.098695
- 2.000000 -3.817881 -1.642277 -1.811420 2.010018 -4.020529 -0.591352 -1.888348 -3.751409 1.707531
- 3.000000 2.239255 1.142120 -3.773040 0.048153 -4.346863 -1.287241 -1.643585 -1.181143 -4.056861
- 4.000000 2.081897 3.894322 1.026881 -2.781014 2.226201 -2.804375 -2.409439 3.525462 1.523258
+ 0.000000 4.533710 -0.000059 -0.000008 0.000059 4.533710 -0.000172 2.266895 2.266952 3.205730
+ 1.000000 -0.396226 4.289476 -1.413481 -1.244340 1.260309 4.173460 2.249665 3.307132 2.134590
+ 2.000000 -3.016552 1.123968 -3.192434 -1.055123 -4.375593 -0.543533 -4.309790 -1.356178 0.375612
+ 3.000000 -4.083873 1.923282 -0.421306 0.339577 -0.267554 -4.513051 -3.243502 -2.069026 -2.398628
+ 4.000000 -4.020722 2.094622 -0.029688 -1.060483 -1.979827 3.938298 -1.263169 2.532008 3.542306
 \endverbatim
 
 As you can see, the generating vectors of the periodic lattice *before* fitting are constant.

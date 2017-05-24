@@ -695,6 +695,7 @@ ac_user_opts='
 enable_option_checking
 enable_modules
 enable_libsearch
+enable_static_patch
 enable_doc
 enable_pdfdoc
 enable_debug
@@ -1357,6 +1358,7 @@ Optional Features:
   --enable-modules        all/none/reset or : separated list such as
                           +crystallization:-bias default: reset
   --enable-libsearch      enable search for libraries, default: yes
+  --enable-static-patch   enable allow statically linking plumed, default: yes
   --enable-doc            enable documentation, default: yes
   --enable-pdfdoc         enable pdf version of the manual, default: no
   --enable-debug          enable debugging, default: no
@@ -2496,6 +2498,28 @@ else
   case "yes" in
              (yes) libsearch=true ;;
              (no)  libsearch=false ;;
+  esac
+
+fi
+
+
+
+# This can be disabled to avoid the extra tests for static patching.
+# In the future, when this is disabled, we could disable the "--static" flag
+# of "plumed patch"
+
+static_patch=
+# Check whether --enable-static-patch was given.
+if test "${enable_static_patch+set}" = set; then :
+  enableval=$enable_static_patch; case "${enableval}" in
+             (yes) static_patch=true ;;
+             (no)  static_patch=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-static-patch" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) static_patch=true ;;
+             (no)  static_patch=false ;;
   esac
 
 fi
@@ -6672,7 +6696,7 @@ $as_echo "$as_me: Dynamic library extension is 'dylib'" >&6;}
     { $as_echo "$as_me:${as_lineno-$LINENO}: LDSO needs special flags" >&5
 $as_echo "$as_me: LDSO needs special flags" >&6;}
     SOEXT=dylib
-    LDSO="$LDSO -undefined suppress -flat_namespace -dynamiclib"
+    LDSO="$LDSO -undefined suppress -flat_namespace -dynamiclib -Wl,-headerpad_max_install_names"
   ;;
   (Linux)
     { $as_echo "$as_me:${as_lineno-$LINENO}: *** Special settings for dynamic libraries on Linux ***" >&5
@@ -7039,6 +7063,8 @@ $as_echo "no" >&6; }
   fi
 fi
 
+if test "${static_patch}" == true ; then
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: I will now check if C++ objects can be linked by C/Fortran compilers" >&5
 $as_echo "$as_me: I will now check if C++ objects can be linked by C/Fortran compilers" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: This is relevant if you want to use plumed patch --static on a non-C++ code" >&5
@@ -7113,6 +7139,11 @@ $as_echo "$as_me: $compiler compiler not configured" >&6;}
   fi
   rm -f conftest.* conftest-main.*
 done
+
+else
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Static patching is disabled, thus tests required for static patching will be skipped" >&5
+$as_echo "$as_me: Static patching is disabled, thus tests required for static patching will be skipped" >&6;}
+fi
 
 if test "$prefix" == NONE
 then

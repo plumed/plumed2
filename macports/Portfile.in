@@ -43,6 +43,7 @@ homepage            http://www.plumed.org/
 configure.args-append \
                --disable-doc \
                --disable-libsearch \
+               --disable-static-patch \
                --disable-mpi 
 
 
@@ -72,12 +73,5 @@ variant allmodules description {Enable all optional modules} {
 pre-configure {
   # commands should be included in a pre-configure block to access tcl variables
   configure.ldflags-append ${linalglib}
-}
-
-# This is required since PLUMED installation does not do it explicitly.
-# It might be removed when this will be incorporated upstream
-post-destroot {
-    system "install_name_tool -id ${prefix}/lib/libplumed.dylib ${destroot}${prefix}/lib/libplumed.dylib"
-    system "install_name_tool -id ${prefix}/lib/libplumedKernel.dylib ${destroot}${prefix}/lib/libplumedKernel.dylib"
 }
 
