@@ -34,6 +34,8 @@ In this tutorial we propose exercizes on the following biological systems:
 - the cmyc peptide in presence of urea at low concentration (cmyc-urea)
 - the protein G B1 domain  
 
+The exercise are of increasing difficulties, inputs are partially provided for the first and second cases while for the last one the user is expected to be autonomous.
+
 \section trieste-6-ex-1 Exercize 1: analysis of the BARD1 complex simulation 
 
 The BARD1 complex is a heterodimer composed by two domains of 112 and 117 residues each. 
@@ -175,8 +177,8 @@ to bias the sampling.
 
 The users are expected to:
 - setup and perform a well-tempered metadynamics simulation
-- calculate the free energy difference between the folded and unfolded state of this protein
 - evaluate convergence and error calculation of the metadynamics simulation
+- calculate the free energy difference between the folded and unfolded state of this protein
 - evaluate the robustness of the former by reweighting the resulting free energy as function of different CVs
 
 The users are free to choose his/her favorite CVs and they are encouraged to use the
@@ -186,11 +188,24 @@ the free-energy landscape of GB1:
 
 - \ref RMSD with respect to the folded state
 - \ref GYRATION
-- \ref ALPHABETA and \ref DIHCOR
+- \ref ALPHABETA 
+- \ref DIHCOR
 
 The users should select two of them for the \ref METAD simulation. Once you are satisfied by the convergence of your simulation, you can use one of the reweighting algorithms proposed
-to evaluate the free-energy difference between folded and unfolded state as a function of multiple collective variables.  
+to evaluate the free-energy difference between folded and unfolded state as a function of multiple collective variables. 
 
+\plumedinputfile
+#this allows you to use short-cut for dihedral angles
+MOLINFO STRUCTURE=GB1_native.pdb
+
+#add here the collective variables you want to bias
+
+#add here the METAD bias, remember that you need to set: one SIGMA per CV, one single HEIGHT, one BIASFACTOR and one PACE. 
+#Using GRIDS can increase the performances, so set a as many GRID_MIN and GRID_MAX as the number of CVs with reasonable ranges 
+#(i.e an RMSD will range between 0 and 3, while ALPHABETA and DIHCOR will range between 0 and N of dihedrals). 
+
+#add here the printing
+\endplumedfile
 
 \section trieste-6-conclusions Conclusions
 
