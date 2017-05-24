@@ -243,7 +243,7 @@ Now check the resources provided with this tutorial.
 There are 4 `tpr` files available (`topol0.tpr`, `topol1.tpr`, `topol2.tpr`, and `topol3.tpr`).
 You can run a replica exchange simulation with gromacs using the following command
 \verbatim
-> mpirun -np 4 gmx_mpi mdrun -plumed plumed.dat -nsteps 1000000 -replex 120 --multi 4
+> mpirun -np 4 gmx_mpi mdrun -plumed plumed.dat -nsteps 1000000 -replex 120 -multi 4
 \endverbatim
 Notice that coordinates swaps will be attempted between different replicas every 120 steps.
 When computing the acceptance, gromacs will take into account that different replicas might
