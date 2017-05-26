@@ -159,7 +159,7 @@ void Committor::calculate() {
   for(unsigned b=0; b<nbasins; ++b) {
     if(inbasin[b]==1) {
       if(basin!=(b+1)) {
-        basin = b+1; 
+        basin = b+1;
         ofile.fmtField(" %f");
         ofile.printField("time",getTime());
         for(unsigned i=0; i<getNumberOfArguments(); i++) {
