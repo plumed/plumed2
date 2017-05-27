@@ -226,6 +226,8 @@ class Metainference : public bias::Bias
   double getEnergyForceSPE(const vector<double> &mean, const vector<double> &dmean_x, const vector<double> &dmean_b, const double modifier);
   double getEnergyForceGJ(const vector<double> &mean, const vector<double> &dmean_x, const vector<double> &dmean_b, const double modifier);
   double getEnergyForceGJE(const vector<double> &mean, const vector<double> &dmean_x, const vector<double> &dmean_b, const double modifier);
+  void get_weights(const unsigned iselect, const double dnrep, const double ave_fact, double &fact, double &var_fact); 
+  vector<double> get_sigma_mean(const unsigned iselect, const double dnrep, const double ave_fact, const double fact, const double var_fact, const vector<double> mean);
   void   writeStatus();
 
 public:
@@ -1336,17 +1338,9 @@ double Metainference::getEnergyForceMIGEN(const vector<double> &mean, const vect
   return kbt_*ene;
 }
 
-void Metainference::calculate()
+void Metainference::get_weights(const unsigned iselect, const double dnrep, const double ave_fact, double &fact, double &var_fact) 
 {
-  unsigned iselect = 0;
-  // set the value of selector for  REM-like stuff
-  if(selector_.length()>0) iselect = static_cast<unsigned>(plumed.passMap[selector_]);
-
-  const double dnrep    = static_cast<double>(nrep_);
-  const double ave_fact = 1.0/dnrep;
-  double       norm     = 0.0;
-  double       fact     = 0.0;
-  double       var_fact = 0.0;
+  double norm = 0.0;
 
   // calculate the weights either from BIAS
   if(do_reweight_) {
@@ -1389,20 +1383,11 @@ void Metainference::calculate()
     norm = dnrep;
     fact = 1.0/norm;
   }
+}
 
-  // calculate the mean
-  vector<double> mean(narg,0);
-  // this is the derivative of the mean with respect to the argument
-  vector<double> dmean_x(narg,fact);
-  // this is the derivative of the mean with respect to the bias
-  vector<double> dmean_b(narg,0);
-  if(master) {
-    for(unsigned i=0; i<narg; ++i) mean[i] = fact*getArgument(i);
-    if(nrep_>1) multi_sim_comm.Sum(&mean[0], narg);
-  }
-  comm.Sum(&mean[0], narg);
-  // set the derivative of the mean with respect to the bias
-  for(unsigned i=0; i<narg; ++i) dmean_b[i] = fact/kbt_*(getArgument(i)-mean[i])/static_cast<double>(average_weights_stride_);
+vector<double> Metainference::get_sigma_mean(const unsigned iselect, const double dnrep, const double ave_fact, const double fact, const double var_fact, const vector<double> mean)
+{
+  vector<double> sigma_mean2_tmp(sigma_mean2_.size(), 0.);
 
   if(do_optsigmamean_>0) {
     // remove first entry of the history vector
@@ -1445,11 +1430,11 @@ void Metainference::calculate()
     if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
       for(unsigned i=0; i<narg; ++i) {
         /* set to the maximum in history vector */
-        sigma_mean2_[i] = *max_element(sigma_mean2_last_[iselect][i].begin(), sigma_mean2_last_[iselect][i].end());
+        sigma_mean2_tmp[i] = *max_element(sigma_mean2_last_[iselect][i].begin(), sigma_mean2_last_[iselect][i].end());
         /* the standard error of the mean */
-        valueSigmaMean[i]->set(sqrt(sigma_mean2_[i]));
+        valueSigmaMean[i]->set(sqrt(sigma_mean2_tmp[i]));
         if(noise_type_==GENERIC) {
-          sigma_min_[i] = sqrt(sigma_mean2_[i]);
+          sigma_min_[i] = sqrt(sigma_mean2_tmp[i]);
           if(sigma_[i] < sigma_min_[i]) sigma_[i] = sigma_min_[i];
         }
       }
@@ -1460,21 +1445,53 @@ void Metainference::calculate()
       // find maximum across data points
       const double max_now = *max_element(max_values.begin(), max_values.end());
       // set new value
-      sigma_mean2_[0] = max_now;
-      valueSigmaMean[0]->set(sqrt(sigma_mean2_[0]));
+      sigma_mean2_tmp[0] = max_now;
+      valueSigmaMean[0]->set(sqrt(sigma_mean2_tmp[0]));
     }
     // endif sigma optimization
   } else {
     if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
       for(unsigned i=0; i<narg; ++i) {
-        sigma_mean2_[i] = sigma_mean2_last_[iselect][i][0];
-        valueSigmaMean[i]->set(sqrt(sigma_mean2_[i]));
+        sigma_mean2_tmp[i] = sigma_mean2_last_[iselect][i][0];
+        valueSigmaMean[i]->set(sqrt(sigma_mean2_tmp[i]));
       }
     } else if(noise_type_==GAUSS||noise_type_==OUTLIERS) {
-      sigma_mean2_[0] = sigma_mean2_last_[iselect][0][0];
-      valueSigmaMean[0]->set(sqrt(sigma_mean2_[0]));
+      sigma_mean2_tmp[0] = sigma_mean2_last_[iselect][0][0];
+      valueSigmaMean[0]->set(sqrt(sigma_mean2_tmp[0]));
     }
   }
+
+  return sigma_mean2_tmp;
+}
+
+void Metainference::calculate()
+{
+  unsigned iselect = 0;
+  // set the value of selector for  REM-like stuff
+  if(selector_.length()>0) iselect = static_cast<unsigned>(plumed.passMap[selector_]);
+
+  const double dnrep    = static_cast<double>(nrep_);
+  const double ave_fact = 1.0/dnrep;
+  double       fact     = 0.0;
+  double       var_fact = 0.0;
+
+  get_weights(iselect, dnrep, ave_fact, fact, var_fact);
+
+  // calculate the mean
+  vector<double> mean(narg,0);
+  // this is the derivative of the mean with respect to the argument
+  vector<double> dmean_x(narg,fact);
+  // this is the derivative of the mean with respect to the bias
+  vector<double> dmean_b(narg,0);
+  if(master) {
+    for(unsigned i=0; i<narg; ++i) mean[i] = fact*getArgument(i);
+    if(nrep_>1) multi_sim_comm.Sum(&mean[0], narg);
+  }
+  comm.Sum(&mean[0], narg);
+  // set the derivative of the mean with respect to the bias
+  for(unsigned i=0; i<narg; ++i) dmean_b[i] = fact/kbt_*(getArgument(i)-mean[i])/static_cast<double>(average_weights_stride_);
+
+  sigma_mean2_ = get_sigma_mean(iselect, dnrep, ave_fact, fact, var_fact, mean);
 
   // this is only for generic metainference
   if(firstTime) {ftilde_ = mean; firstTime = false;}
