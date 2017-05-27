@@ -169,7 +169,6 @@ void Print::update() {
   for(unsigned i=0; i<getNumberOfArguments(); i++) {
     ofile.fmtField(fmt);
     ofile.printField( getPntrToArgument(i), getArgument(i) );
-    //ofile.printField(getPntrToArgument(i)->getName(),getArgument(i));
   }
   ofile.printField();
 }

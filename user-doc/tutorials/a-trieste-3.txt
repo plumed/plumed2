@@ -152,19 +152,22 @@ Notice the peak at 0.9 nm, this is the effect of using cut-off for the calculati
 \section trieste-3-ex-2 Exercize 2: Apply a linear restraint on the same collective variable 
 Now we will try to apply a linear restraint on the relative distance and compare the resulting distribution.
 The new sampling will reflect the effect of the bias.
+Be carefull about the statistics: in the simulation of exercise 1 you were postprocessing a trajectory of 125000 frames accumulating one frame every ten in an histogram and clearing
+the histogram after 10000 steps. As a result you had 12 blocks in the form of 11 analysis.* files and a final block named myhist.dat. In the following try to accumulate on the fly
+the same amount of statistics. Look into the .mdp file to see how often frames are written in a trajectory. If you write too many analysis.* files (i.e. 100 files plumed will fail
+with an error).
 
 \plumedfile
 # vim:ft=plumed
 #compute the distance between the two oxygens
 d: DISTANCE __FILL__
 #accumulate block histograms
-hh: HISTOGRAM ARG=d KERNEL=DISCRETE __FILL__
+hh: HISTOGRAM ARG=d KERNEL=DISCRETE STRIDE=500 CLEAR=500000 GRID_MIN=0 GRID_MAX=4.0 GRID_BIN=200
 #and dump them
 DUMPGRID __FILL__
 
 #apply a linear restraint
 lr: RESTRAINT ARG=d KAPPA=0 AT=0 SLOPE=2.5
-
 
 # Print the collective variable and the bias.
 PRINT __FILL__ 
@@ -191,16 +194,29 @@ lr: RESTRAINT __FILL__
 as: REWEIGHT_BIAS TEMP=298
 
 HISTOGRAM ...
-  __FILL__
   LOGWEIGHTS=as
+  ARG=d 
+  STRIDE=10 
+  GRID_MIN=0 GRID_MAX=4.0 GRID_BIN=200 
+  KERNEL=DISCRETE
+  CLEAR=10000
 ... HISTOGRAM
 
 DUMPGRID __FILL__
 PRINT ARG=*.* FILE=COLVAR STRIDE=1
 \endplumedfile
 
+Be carefull again about the difference in the way statistics is accumulated on-the-fly or for post processising. This is not critical for the result but is important in order to have comparable histograms, that is histograms with comparable noise. Remember to give different names to the new histogram otherwise the one obtained before will be overwritten.
+
 \verbatim
 > plumed driver --mf_xtc traj_comp.xtc --plumed plumed.dat  
+\endverbatim
+
+\note To run block analysis of both sets of histograms you need to edit the python script because the file name is hardcoded.
+
+\verbatim
+> python3 do_block_histo.py > histo-biased.dat 
+> python3 do_block_histo.py > histo-reweighted.dat 
 \endverbatim
 
 Now the resulting histogram should be comparable to the reference one.
@@ -216,20 +232,27 @@ d: DISTANCE ATOMS=1,4
 #apply the quadratic restraint centered at a distance of 0.5 nm
 lr: RESTRAINT ARG=d KAPPA=10 AT=0.5 
 #accumulate the biased histogram
-hh: HISTOGRAM ARG=d STRIDE=1 GRID_MIN=0 GRID_MAX=4.0 GRID_BIN=200 KERNEL=DISCRETE CLEAR=100000
+hh: HISTOGRAM ARG=d STRIDE=500 GRID_MIN=0 GRID_MAX=4.0 GRID_BIN=200 KERNEL=DISCRETE CLEAR=500000
 #dumpit
-DUMPGRID GRID=hh FILE=myhist.dat STRIDE=100000
+DUMPGRID GRID=hh FILE=myhist.dat STRIDE=500000
 #calculate the weights from the constant bias
 as: REWEIGHT_BIAS TEMP=298
 #accumulate the unbiased histogram
-hhu: HISTOGRAM ARG=d STRIDE=1 GRID_MIN=0 GRID_MAX=4.0 GRID_BIN=200 KERNEL=DISCRETE CLEAR=100000 LOGWEIGHTS=as
+hhu: HISTOGRAM ARG=d STRIDE=500 GRID_MIN=0 GRID_MAX=4.0 GRID_BIN=200 KERNEL=DISCRETE CLEAR=500000 LOGWEIGHTS=as
 #dumpit
-DUMPGRID GRID=hhu FILE=myhistu.dat STRIDE=100000
+DUMPGRID GRID=hhu FILE=myhistu.dat STRIDE=500000
 #print distance and bias
 PRINT ARG=d,lr.bias FILE=distance.dat STRIDE=50
 \endplumedfile
 
 The comparison of the two histograms with the former will show the effect of the weak quadratic bias on the simulation.
+
+\note To run block analysis of both sets of histograms you need to edit the python script because the file name is hardcoded.
+
+\verbatim
+> python3 do_block_histo.py > histo-biased.dat 
+> python3 do_block_histo.py > histo-reweighted.dat 
+\endverbatim
 
 \section trieste-3-ex-4 Exercize 4: Apply an upper wall on the distance.
 In the above cases we have always applied weak biases. Sometimes biases are usefull to prevent the system in reaching some region of the conformational space. In this case instead of using \ref RESTRAINT , we can make use of lower or upper restraints, e.g. \ref LOWER_WALLS and \ref UPPER_WALLS.
@@ -272,7 +295,7 @@ In this exercise we will make use of the free-energy estimate along the distance
 #calculate the distance
 d: DISTANCE ATOMS=1,4
 #accumulate the histogram using a gaussian kernel with 0.05 nm width
-hh2: HISTOGRAM ARG=d STRIDE=1 GRID_MIN=0 GRID_MAX=4.0 GRID_BIN=400 BANDWIDTH=0.05
+hh2: HISTOGRAM ARG=d STRIDE=10 GRID_MIN=0 GRID_MAX=4.0 GRID_BIN=400 BANDWIDTH=0.05
 #convert to a free energy
 ff: CONVERT_TO_FES GRID=__FILL__ TEMP=__FILL__
 #dump the free energy
@@ -365,8 +388,8 @@ As a first test lets run an MD and generate on-the-fly the free energy as a func
 MOLINFO STRUCTURE=aladip.pdb
 phi: TORSION ATOMS=@phi-2
 psi: TORSION ATOMS=@psi-2
-hhphi: HISTOGRAM ARG=phi STRIDE=1 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.05
-hhpsi: HISTOGRAM ARG=psi STRIDE=1 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.05
+hhphi: HISTOGRAM ARG=phi STRIDE=10 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.05
+hhpsi: HISTOGRAM ARG=psi STRIDE=10 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.05
 ffphi: CONVERT_TO_FES GRID=hhphi TEMP=298
 ffpsi: CONVERT_TO_FES GRID=hhpsi TEMP=298
 DUMPGRID GRID=ffphi FILE=ffphi.dat
@@ -465,8 +488,8 @@ PERIODIC=NO
 
 b: BIASVALUE ARG=tripleg
 as: REWEIGHT_BIAS TEMP=298
-hhphi: HISTOGRAM ARG=phi STRIDE=1 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.05 LOGWEIGHTS=as
-hhpsi: HISTOGRAM ARG=psi STRIDE=1 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.05 LOGWEIGHTS=as
+hhphi: HISTOGRAM ARG=phi STRIDE=10 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.05 LOGWEIGHTS=as
+hhpsi: HISTOGRAM ARG=psi STRIDE=10 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.05 LOGWEIGHTS=as
 ffphi: CONVERT_TO_FES GRID=hhphi TEMP=298
 ffpsi: CONVERT_TO_FES GRID=hhpsi TEMP=298
 
