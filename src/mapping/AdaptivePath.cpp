@@ -24,6 +24,7 @@
 #include "PathReparameterization.h"
 #include "reference/Direction.h"
 #include "core/ActionRegister.h"
+#include "core/PlumedMain.h"
 
 //+PLUMEDOC COLVAR ADAPTIVE_PATH
 /*
@@ -165,6 +166,7 @@ AdaptivePath::AdaptivePath(const ActionOptions& ao):
     if( wstride<update_str ) error("makes no sense to write out path more frequently than update stride");
     log.printf("  writing path out every %u steps to file named %s with format %s \n",wstride,wfilename.c_str(),ofmt.c_str());
   }
+  log<<"  Bibliography "<<plumed.cite("Diaz Leines and Ensing, Phys. Rev. Lett. 109, 020601 (2012)")<<"\n";
 }
 
 void AdaptivePath::calculate() {
