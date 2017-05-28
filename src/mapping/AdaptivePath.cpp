@@ -27,7 +27,7 @@
 
 //+PLUMEDOC COLVAR ADAPTIVE_PATH
 /*
-Adaptive path cvs. 
+Adaptive path cvs.
 
 \par Examples
 
@@ -35,7 +35,7 @@ Adaptive path cvs.
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace mapping{
+namespace mapping {
 
 class AdaptivePath : public Mapping {
 private:
@@ -52,7 +52,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit AdaptivePath(const ActionOptions&);
   void calculate();
-  void performTask( const unsigned& , const unsigned& , MultiValue& ) const ;
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const ;
   double getLambda() { return 0.0; }
   double transformHD( const double& dist, double& df ) const ;
   void update();
@@ -60,8 +60,8 @@ public:
 
 PLUMED_REGISTER_ACTION(AdaptivePath,"ADAPTIVE_PATH")
 
-void AdaptivePath::registerKeywords( Keywords& keys ){
-  Mapping::registerKeywords( keys ); keys.remove("PROPERTY"); 
+void AdaptivePath::registerKeywords( Keywords& keys ) {
+  Mapping::registerKeywords( keys ); keys.remove("PROPERTY");
   keys.add("compulsory","FIXED","the positions in the list of input frames of the two path nodes whose positions remain fixed during the path optimization");
   keys.add("compulsory","HALFLIFE","-1","the number of MD steps after which a previously measured path distance weighs only 50% in the average. This option may increase convergence by allowing to \"forget\" the memory of a bad initial guess path. The default is to set this to infinity");
   keys.add("compulsory","UPDATE","the frequency with which the path should be updated");
@@ -72,18 +72,18 @@ void AdaptivePath::registerKeywords( Keywords& keys ){
 }
 
 AdaptivePath::AdaptivePath(const ActionOptions& ao):
-Action(ao),
-Mapping(ao),
-fixedn(2),
-displacement(ReferenceConfigurationOptions("DIRECTION")),
-displacement2(ReferenceConfigurationOptions("DIRECTION"))
+  Action(ao),
+  Mapping(ao),
+  fixedn(2),
+  displacement(ReferenceConfigurationOptions("DIRECTION")),
+  displacement2(ReferenceConfigurationOptions("DIRECTION"))
 {
   setLowMemOption( true ); parseVector("FIXED",fixedn);
   if( fixedn[0]<1 || fixedn[1]>getNumberOfReferencePoints() ) error("fixed nodes must be in range from 0 to number of nodes");
   if( fixedn[0]>=fixedn[1] ) error("invalid selection for fixed nodes first index provided must be smaller than second index");
   log.printf("  fixing position of frames numbered %u and %u \n",fixedn[0],fixedn[1]);
-  fixedn[0]--; fixedn[1]--;   // Set fixed notes with c++ indexing starting from zero 
-  parse("UPDATE",update_str); if( update_str<1 ) error("update frequency for path should be greater than or equal to one"); 
+  fixedn[0]--; fixedn[1]--;   // Set fixed notes with c++ indexing starting from zero
+  parse("UPDATE",update_str); if( update_str<1 ) error("update frequency for path should be greater than or equal to one");
   log.printf("  updating path every %u MD steps \n",update_str);
 
   double halflife; parse("HALFLIFE",halflife);
@@ -93,23 +93,23 @@ displacement2(ReferenceConfigurationOptions("DIRECTION"))
 
   // Create the list of tasks (and reset projections of frames)
   std::vector<std::string> argument_names( getNumberOfArguments() );
-  for(unsigned i=0;i<getNumberOfArguments();++i) argument_names[i] = getPntrToArgument(i)->getName();
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) argument_names[i] = getPntrToArgument(i)->getName();
   displacement.setNamesAndAtomNumbers( getAbsoluteIndexes(), argument_names );
   displacement2.setNamesAndAtomNumbers( getAbsoluteIndexes(), argument_names );
-  for(int i=0;i<getNumberOfReferencePoints();++i){
-      addTaskToList( i ); pdisplacements.push_back( Direction(ReferenceConfigurationOptions("DIRECTION")) ); 
-      setPropertyValue( i, 0, static_cast<double>( i - static_cast<int>(fixedn[0]) ) / static_cast<double>( fixedn[1] - fixedn[0] ) );
-      pdisplacements[i].setNamesAndAtomNumbers( getAbsoluteIndexes(), argument_names ); wsum.push_back( 0.0 );
+  for(int i=0; i<getNumberOfReferencePoints(); ++i) {
+    addTaskToList( i ); pdisplacements.push_back( Direction(ReferenceConfigurationOptions("DIRECTION")) );
+    setPropertyValue( i, 0, static_cast<double>( i - static_cast<int>(fixedn[0]) ) / static_cast<double>( fixedn[1] - fixedn[0] ) );
+    pdisplacements[i].setNamesAndAtomNumbers( getAbsoluteIndexes(), argument_names ); wsum.push_back( 0.0 );
   }
-  plumed_assert( getPropertyValue( fixedn[0], 0 )==0.0 && getPropertyValue( fixedn[1], 0 )==1.0 ); 
+  plumed_assert( getPropertyValue( fixedn[0], 0 )==0.0 && getPropertyValue( fixedn[1], 0 )==1.0 );
   // And activate them all
   deactivateAllTasks();
-  for(unsigned i=0;i<getFullNumberOfTasks();++i) taskFlags[i]=1;
+  for(unsigned i=0; i<getFullNumberOfTasks(); ++i) taskFlags[i]=1;
   lockContributors();
 
-  // Setup the vessel to hold the trig path 
-  std::string input; addVessel("GPATH", input, -1 ); 
-  readVesselKeywords(); 
+  // Setup the vessel to hold the trig path
+  std::string input; addVessel("GPATH", input, -1 );
+  readVesselKeywords();
   // Check that there is only one vessel - the one holding the trig path
   plumed_dbg_assert( getNumberOfVessels()==1 );
   // Retrieve the path vessel
@@ -117,16 +117,16 @@ displacement2(ReferenceConfigurationOptions("DIRECTION"))
   plumed_assert( mypathv );
 
   // Information for write out
-  std::string wfilename; parse("WFILE",wfilename); 
-  if( wfilename.length()>0 ){
-      wstride=0; parse("WSTRIDE",wstride); parse("FMT",ofmt);
-      pathfile.link(*this); pathfile.open( wfilename ); pathfile.setHeavyFlush();
-      if( wstride<update_str ) error("makes no sense to write out path more frequently than update stride");
-      log.printf("  writing path out every %u steps to file named %s with format %s \n",wstride,wfilename.c_str(),ofmt.c_str());
+  std::string wfilename; parse("WFILE",wfilename);
+  if( wfilename.length()>0 ) {
+    wstride=0; parse("WSTRIDE",wstride); parse("FMT",ofmt);
+    pathfile.link(*this); pathfile.open( wfilename ); pathfile.setHeavyFlush();
+    if( wstride<update_str ) error("makes no sense to write out path more frequently than update stride");
+    log.printf("  writing path out every %u steps to file named %s with format %s \n",wstride,wfilename.c_str(),ofmt.c_str());
   }
 }
 
-void AdaptivePath::calculate(){
+void AdaptivePath::calculate() {
   runAllTasks();
 }
 
@@ -145,13 +145,13 @@ double AdaptivePath::transformHD( const double& dist, double& df ) const {
   df=1.0; return dist;
 }
 
-void AdaptivePath::update(){
+void AdaptivePath::update() {
   double weight2 = -1.*mypathv->dx;
   double weight1 = 1.0 + mypathv->dx;
-  if( weight1>1.0 ){ 
-      weight1=1.0; weight2=0.0;
-  } else if( weight2>1.0 ){
-      weight1=0.0; weight2=1.0;
+  if( weight1>1.0 ) {
+    weight1=1.0; weight2=0.0;
+  } else if( weight2>1.0 ) {
+    weight1=0.0; weight2=1.0;
   }
   // Add projections to dispalcement accumulators
   ReferenceConfiguration* myref = getReferenceConfiguration( mypathv->iclose1 );
@@ -167,25 +167,25 @@ void AdaptivePath::update(){
   wsum[mypathv->iclose2] += weight2;
 
   // This does the update of the path if it is time to
-  if( (getStep()>0) && (getStep()%update_str==0) ){ 
-      wsum[fixedn[0]]=wsum[fixedn[1]]=0.; 
-      for(unsigned inode=0;inode<getNumberOfReferencePoints();++inode){
-          if( wsum[inode]>0 ){
-              // First displace the node by the weighted direction
-              getReferenceConfiguration( inode )->displaceReferenceConfiguration( 1./wsum[inode], pdisplacements[inode] );
-              // Reset the displacement  
-              pdisplacements[inode].zeroDirection();
-          }
+  if( (getStep()>0) && (getStep()%update_str==0) ) {
+    wsum[fixedn[0]]=wsum[fixedn[1]]=0.;
+    for(unsigned inode=0; inode<getNumberOfReferencePoints(); ++inode) {
+      if( wsum[inode]>0 ) {
+        // First displace the node by the weighted direction
+        getReferenceConfiguration( inode )->displaceReferenceConfiguration( 1./wsum[inode], pdisplacements[inode] );
+        // Reset the displacement
+        pdisplacements[inode].zeroDirection();
       }
-      // Now ensure all the nodes of the path are equally spaced
-      PathReparameterization myspacings( getPbc(), getArguments(), getAllReferenceConfigurations() );
-      myspacings.reparameterize( fixedn[0], fixedn[1], tolerance );
+    }
+    // Now ensure all the nodes of the path are equally spaced
+    PathReparameterization myspacings( getPbc(), getArguments(), getAllReferenceConfigurations() );
+    myspacings.reparameterize( fixedn[0], fixedn[1], tolerance );
   }
-  if( (getStep()>0) && (getStep()%wstride==0) ){
-       pathfile.printf("# PATH AT STEP %d TIME %f \n", getStep(), getTime() );
-       std::vector<ReferenceConfiguration*>& myconfs=getAllReferenceConfigurations();
-       for(unsigned i=0;i<myconfs.size();++i) myconfs[i]->print( pathfile, ofmt, atoms.getUnits().getLength()/0.1 );
-       pathfile.flush();
+  if( (getStep()>0) && (getStep()%wstride==0) ) {
+    pathfile.printf("# PATH AT STEP %d TIME %f \n", getStep(), getTime() );
+    std::vector<ReferenceConfiguration*>& myconfs=getAllReferenceConfigurations();
+    for(unsigned i=0; i<myconfs.size(); ++i) myconfs[i]->print( pathfile, ofmt, atoms.getUnits().getLength()/0.1 );
+    pathfile.flush();
   }
 }
 
