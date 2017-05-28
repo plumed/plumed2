@@ -52,8 +52,8 @@ To learn more about how the path is adapted we strongly recommend reading this p
 
 \par Examples
 
-The input below provides an example of how the adaptive path works in practise. The path is updated every 50 steps of 
-MD based on the data accumulated during the preceding 50 time steps.   
+The input below provides an example of how the adaptive path works in practise. The path is updated every 50 steps of
+MD based on the data accumulated during the preceding 50 time steps.
 
 \plumedfile
 d1: DISTANCE ATOMS=1,2 COMPONENTS
