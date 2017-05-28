@@ -34,6 +34,8 @@ In this tutorial we propose exercizes on the following biological systems:
 - the cmyc peptide in presence of urea at low concentration (cmyc-urea)
 - the protein G B1 domain  
 
+The exercise are of increasing difficulties, inputs are partially provided for the first and second cases while for the last one the user is expected to be autonomous.
+
 \section trieste-6-ex-1 Exercize 1: analysis of the BARD1 complex simulation 
 
 The BARD1 complex is a heterodimer composed by two domains of 112 and 117 residues each. 
@@ -85,7 +87,7 @@ chainA: GROUP ATOMS=1,3,5,7,9,10,12,15,17,19,21,23,25,27,29,31,33,34,36,38,41,43
 # backbone beads index for chain B
 chainB: GROUP ATOMS=226,228,230,232,234,235,238,239,240,245,246,250,252,255,256,257,259,261,264,266,268,271,273,275,278,280,282,285,287,289,291,293,295,298,300,302,304,306,308,309,310,312,314,318,320,324,326,328,330,332,334,336,338,340,342,343,345,346,348,350,352,354,358,360,362,363,368,370,372,374,376,379,381,383,386,388,390,392,394,396,398,400,402,404,406,409,411,414,416,418,420,424,426,428,430,432,434
 
-coord: COORDINATION GROUPA=chainA GROUPB=chainB NOPBC D_0=1.0
+coord: COORDINATION GROUPA=chainA GROUPB=chainB NOPBC R_0=1.0
 \endplumedfile
 
 3) A CV describing the relative orientation of the two chains.
@@ -122,6 +124,7 @@ of a single molecule of urea.
 using `VMD`.
 
 The users are expected to:
+- characterize the conformational ensemble of cmyc by calculating free-energies as a function of different CVs.
 - calculate the fraction of bound and unbound molecules of urea by defining suitable CVs to measure
   the position of urea relative to cmyc.
 - find the cmyc aminoacids that bind urea the most and the least.
@@ -138,11 +141,30 @@ the conformational landscape of cmyc:
 
 2) the content of alpha (\ref ALPHARMSD) and beta (\ref ANTIBETARMSD) secondary structure
 
+The fraction of bound and unbound molecules of urea can be computed after evaluating the minimum distance
+among all the distances between heavy atoms of cmyc and urea, as follows:
+
+\plumedfile
+# cmyc heavy atoms 
+cmyc: GROUP ATOMS=5,6,7,9,11,14,15,17,19,22,24,26,27,28,30,32,34,38,41,45,46,47,49,51,54,56,60,64,65,66,68,70,73,75,76,77,79,81,83,87,91,92,93,95,97,100,103,104,105,108,109,110,112,114,118,119,120,122,124,127,130,131,132,133,134,135,137,139,142,145,146,147,148,149,150,152,154,157,160,161,162,165,166,167,169,171,174,177,180,183,187,188
+
+# urea heavy atoms
+urea: GROUP ATOMS=192,193,194,197
+
+# minimum distance cmyc-urea 
+mindist: DISTANCES GROUPA=cmyc GROUPB=urea MIN={BETA=50.}
+\endplumedfile
+
+For estimating the cmyc aminoacid that bind the most and the least urea, we leave the users the choice of the best
+strategy. 
+
 For the calculation of ensemble averages of experimental CVs, we suggest to use:
 
 1) 3J scalar couplings (\ref JCOUPLING)
 
 2) the FRET intensity between termini (\ref FRET)  
+
+and we encourage the users to look at the examples provided in the manual for the exact syntax.
 
 \section trieste-6-ex-3 Exercize 3: Protein G folding simulations
 GB1 is a small protein domain with a simple beta-alpha-beta fold. It is a well studied protein that folds on the millisecond time scale.
@@ -155,8 +177,8 @@ to bias the sampling.
 
 The users are expected to:
 - setup and perform a well-tempered metadynamics simulation
-- calculate the free energy difference between the folded and unfolded state of this protein
 - evaluate convergence and error calculation of the metadynamics simulation
+- calculate the free energy difference between the folded and unfolded state of this protein
 - evaluate the robustness of the former by reweighting the resulting free energy as function of different CVs
 
 The users are free to choose his/her favorite CVs and they are encouraged to use the
@@ -166,11 +188,24 @@ the free-energy landscape of GB1:
 
 - \ref RMSD with respect to the folded state
 - \ref GYRATION
-- \ref ALPHABETA and \ref DIHCOR
+- \ref ALPHABETA 
+- \ref DIHCOR
 
 The users should select two of them for the \ref METAD simulation. Once you are satisfied by the convergence of your simulation, you can use one of the reweighting algorithms proposed
-to evaluate the free-energy difference between folded and unfolded state as a function of multiple collective variables.  
+to evaluate the free-energy difference between folded and unfolded state as a function of multiple collective variables. 
 
+\plumedfile
+#this allows you to use short-cut for dihedral angles
+MOLINFO STRUCTURE=GB1_native.pdb
+
+#add here the collective variables you want to bias
+
+#add here the METAD bias, remember that you need to set: one SIGMA per CV, one single HEIGHT, one BIASFACTOR and one PACE. 
+#Using GRIDS can increase the performances, so set a as many GRID_MIN and GRID_MAX as the number of CVs with reasonable ranges 
+#(i.e an RMSD will range between 0 and 3, while ALPHABETA and DIHCOR will range between 0 and N of dihedrals). 
+
+#add here the printing
+\endplumedfile
 
 \section trieste-6-conclusions Conclusions
 
@@ -186,5 +221,3 @@ In summary, in this tutorial you should have learned how to use PLUMED to:
 link: @subpage trieste-6
 
 description: This tutorial explains how to use PLUMED to run metadynamics simulations 
-
-additional-files: trieste-6

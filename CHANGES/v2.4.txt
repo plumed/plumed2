@@ -14,9 +14,9 @@ Changes from version 2.3 which are relevant for users:
 - The meaning of BIASFACTOR=1 in \ref METAD has been modified and can now be used to indicate unbiased
   simulations. Non-well-tempered metadynamics is BIASFACTOR=-1, which is the new default value.
   Notice that this has an implication on the biasfactor written in the HILLS file when doing
+  non-well-tempered metadynamics.
 - \ref HISTOGRAM : When using weights default is now to output histogram divided by number of frames from which data was taken.  In addition the 
   UNORMALIZED flag has been replaced with the keyword NORMALIZATION, which can be set equal to true, false or ndata.
-  non-well-tempered metadynamics.
 - New modules:
   - A new EDS module have been included, contributed by Glen Hocky and Andrew White.
     This module implements the following methods:
@@ -27,6 +27,7 @@ Changes from version 2.3 which are relevant for users:
 - New actions:
   - \ref INENVELOPE
 - Other changes:
+  - \ref COMMITTOR : new flag to use committor to keep track of the visited basins without stopping the simulation
   - \ref PBMETAD : multiple walkers using files (thanks to Marco De La Pierre).
   - \ref PBMETAD : adaptive gaussians
   - \ref PBMETAD : default names for GRID and FILE (usefull with many collective variables) 
