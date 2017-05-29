@@ -157,7 +157,7 @@ See branch \branch{v2.3} on git repository.
 - Fixed bug when using \ref MOVINGRESTRAINT with periodic variables such as \ref TORSION \issue{225}.
 - Fixed bug in \ref HBOND_MATRIX that used to apear when you used DONORS and ACCEPTORS with same numbers of atoms 
 - Fixed bug in \ref DISTANCES that appears when using BETWEEN and link cells.
-- Prevented users from causing segfaults by storing derivatives without LOWMEM flag.  In these caess PLUMED crashes with meaningful errors.
+- Prevented users from causing segfaults by storing derivatives without LOWMEM flag.  In these cases PLUMED crashes with meaningful errors.
 - Fixed bug in \ref HISTOGRAM that causes nans when using KERNEL=DISCRETE option
 - Fixed a bug in the parser related to braces, see \issue{229}
 - Fixed a bug that appeared when using \ref Q3, \ref Q4 and \ref Q6 with LOWEST or HIGHEST flag
@@ -171,14 +171,17 @@ See branch \branch{v2.3} on git repository.
 - Fixed numerical issue leading to simulations stuck (LatticeReduction problem) with intel compiler and
   large simulation cells.
 - Fixed a bug affecting \ref LOCAL_AVERAGE and outputting all multicolvars calculated by \ref Q6 with \ref DUMPMULTICOLVAR
+- `plumed info --user-doc` and `plumed info --developer-doc` now fall back to online manual when local doc is not installed,
+  see \issue{240}.
 
 For developers:
-- plumedcheck validation has been made stricter. All the checks are now described in the developer manual.
 - IMPORTANT: we started to enforce code formatting using astyle. Check the developer documentation to learn how to
   take care of not-yet-formatted branches.
+- plumedcheck validation has been made stricter. All the checks are now described in the developer manual.
 - Added `--disable-static-patch` to `./configure` to disable tests related to static patching. It can be used
   when static patching is not needed to make sure a wrong c++ library is not linked by mistake.
 - Using `install_name_tool` to fix the name of the installed library on OSX. Allows linking the PLUMED
   shared library without explicitly setting `DYLD_LIBRARY_PATH`.
+- On travis-ci, using ccache to speedup builds.
 
 */
