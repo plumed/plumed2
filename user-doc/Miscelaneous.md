@@ -25,7 +25,7 @@ UPPER_WALLS ARG=d1 AT=3.0 KAPPA=3.0 LABEL=Snout # In this same interlude it doth
 \endplumedfile
 (see \ref DISTANCE and \ref UPPER_WALLS)
 
-An alternative to including comments in this way is to use line starting ENDPLUMED.  Everything in the PLUMED input after this
+An alternative to including comments in this way is to use the command \subpage ENDPLUMED.  Everything in the PLUMED input after this
 keyword will be ignored.
 
 \page ContinuationLines Continuation lines
