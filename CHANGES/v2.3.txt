@@ -143,7 +143,7 @@ For developers:
 - Cppcheck on travis-ci has been updated to 1.77.
 - Doxygen on travis-ci has been updated to 1.8.13
 
-Version 2.3.2
+Version 2.3.2 (coming soon)
 -------------
 See branch \branch{v2.3} on git repository.
 
@@ -183,5 +183,6 @@ For developers:
 - Using `install_name_tool` to fix the name of the installed library on OSX. Allows linking the PLUMED
   shared library without explicitly setting `DYLD_LIBRARY_PATH`.
 - On travis-ci, using ccache to speedup builds.
+- Cppcheck on travis-ci has been updated to 1.79.
 
 */
