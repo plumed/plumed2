@@ -183,5 +183,6 @@ For developers:
 - Using `install_name_tool` to fix the name of the installed library on OSX. Allows linking the PLUMED
   shared library without explicitly setting `DYLD_LIBRARY_PATH`.
 - On travis-ci, using ccache to speedup builds.
+- Cppcheck on travis-ci has been updated to 1.79.
 
 */
