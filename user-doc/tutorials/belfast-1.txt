@@ -119,7 +119,7 @@ PRINT ARG=e2edist,comdist STRIDE=1 FILE=COLVAR
 ENDPLUMED
 \endverbatim
 
-NOTE: an action (i.e. CENTER or DISTANCE here) can be either label using LABEL as we did before or as label: ACTION as we have just done here.
+NOTE: an action (i.e. CENTER or DISTANCE here) can be either labeled using LABEL as we did before or as label: ACTION as we have just done here.
 
 With the above input this is what happen inside PLUMED with a STRIDE=1:
 
@@ -129,7 +129,7 @@ With the above input this is what happen inside PLUMED with a STRIDE=1:
 4. calculates the distance between the two atoms 'first' and 'last' and saves it in 'comdist';
 5. print the content of 'e2edist' and 'comdist' in the file COLVAR
 
-In the above input we have used to different ways of writing the atoms used in \ref CENTER calculation:
+In the above input we have used two different ways of writing the atoms used in \ref CENTER calculation:
 
 1. ATOMS=1,2,3,4,5,6 is the explicit list of the atoms we need
 2. ATOMS=251-256 is the range of atoms needed

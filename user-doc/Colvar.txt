@@ -159,7 +159,7 @@ perform these transforms are:
 
 \section multicolvarbias MultiColvar bias
 
-There may be occasitions when you want add restraints on many collective variables. For instance if you are studying a cluster
+There may be occasions when you want add restraints on many collective variables. For instance if you are studying a cluster
 you might want to add a wall on the distances between each of the atoms and the center of mass of the cluster in order to
 prevent the cluster subliming.  Alternatively, you may wish to insist that a particular set of atoms in your system all have a 
 coordination number greater than 2.  You can add these sorts of restraints by employing the following biases, which all act 
