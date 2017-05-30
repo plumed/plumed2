@@ -153,10 +153,6 @@ void PathMSDBase::calculate(){
   plumed_assert(nframes>0);
   plumed_assert(imgVec.size()>0);
 
-  std::vector<double> tmp_distances(imgVec.size(),0.0);
-  std::vector<Vector> tmp_derivs;
-// this array is a merge of all tmp_derivs, so as to allow a single comm.Sum below
-  std::vector<Vector> tmp_derivs2(imgVec.size()*nat);
   Tensor* tmp_rotationRefClose = new Tensor[nframes];
 
   if (epsilonClose > 0){
@@ -170,7 +166,14 @@ void PathMSDBase::calculate(){
           rmsdPosClose.clear();
           rmsdPosClose.setReference(getPositions());
           //as this is a new close structure, we need to save the rotation matrices fitted to the reference structures
+	  // and we need to accurately recalculate for all reference structures
           computeRefClose = true;
+          imgVec.resize(nframes);
+#pragma simd
+          for(unsigned i=0;i<nframes;i++){
+              imgVec[i].property=indexvec[i];
+              imgVec[i].index=i;
+          }
           firstPosClose = false;
       }
       else{
@@ -180,6 +183,11 @@ void PathMSDBase::calculate(){
           computeRefClose = false;
       }
   }
+
+  std::vector<double> tmp_distances(imgVec.size(),0.0);
+  std::vector<Vector> tmp_derivs;
+  // this array is a merge of all tmp_derivs, so as to allow a single comm.Sum below
+  std::vector<Vector> tmp_derivs2(imgVec.size()*nat);
 
 // if imgVec.size() is less than nframes, it means that only some msd will be calculated
   if (epsilonClose > 0){
@@ -292,10 +300,6 @@ void PathMSDBase::calculate(){
 	//if( int(getStep())%int(neigh_stride/getTimeStep())==0 ){
 	// enforce consistency: the stride is in time steps
 	if( int(getStep())%int(neigh_stride)==0 ){
-
-        // if using close structure, save current indices for neighbours
-        if (epsilonClose > 0)
-            saveImgVecIndices();
 		// next round do it all:empty the vector	
 		imgVec.clear();
         }
@@ -313,23 +317,12 @@ void PathMSDBase::calculate(){
   //log.printf("CALCULATION DONE! \n");
 }
 
-void PathMSDBase::saveImgVecIndices(){
-    for(unsigned i = 0; i < nframes; i++){
-        savedIndices[i] = 0;
-    }
-    for (unsigned i = 0 ; i< imgVec.size(); i++){
-        savedIndices[imgVec[i].index] = 1;
-    }
-}
-
 void PathMSDBase::recomputeRefClose(){
     for (unsigned i = 0; i < imgVec.size(); i++){
-        if (savedIndices[imgVec[i].index] == 0){
-            RMSD r;
-            vector<Vector> ders;
-            r.set(msdv[imgVec[i].index].getAlign(), msdv[imgVec[i].index].getDisplace(), msdv[imgVec[i].index].getReference(), "OPTIMAL", false);
-            r.calc_Rot(rmsdPosClose.getReference(), ders, rotationRefClose[imgVec[i].index], true);
-        }
+        RMSD r;
+        vector<Vector> ders;
+        r.set(msdv[imgVec[i].index].getAlign(), msdv[imgVec[i].index].getDisplace(), msdv[imgVec[i].index].getReference(), "OPTIMAL", false);
+        r.calc_Rot(rmsdPosClose.getReference(), ders, rotationRefClose[imgVec[i].index], true);
     }
 }
 

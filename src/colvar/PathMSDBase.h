@@ -87,7 +87,6 @@ protected:
   std::vector< std::vector<double> > indexvec; // use double to allow isomaps
   unsigned nframes;
   //methods for close structure involvement
-  void saveImgVecIndices();
   void recomputeRefClose();
 
 public:
