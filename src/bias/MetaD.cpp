@@ -395,7 +395,7 @@ private:
   double max_bias_;
   bool calc_transition_bias_;
   double transition_bias_;
-  vector<vector<double> > transitionwells_; 
+  vector<vector<double> > transitionwells_;
   vector<IFile*> ifiles;
   vector<string> ifilesnames;
   double uppI_;
