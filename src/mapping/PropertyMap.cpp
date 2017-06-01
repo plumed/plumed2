@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,7 +26,7 @@
 /*
 Property maps but with a more flexible framework for the distance metric being used.
 
-This colvar calculates a property map using the formalism developed by Spiwork \cite Spiwok:2011ce.
+This colvar calculates a property map using the formalism developed by Spiwok \cite Spiwok:2011ce.
 In essence if you have the value of some property, \f$X_i\f$, that it takes at a set of high-dimensional
 positions then you calculate the value of the property at some arbitrary point in the high-dimensional space
 using:
@@ -47,10 +47,10 @@ that these properties take at a set of reference configurations and using the fo
 between the reference configurations and the instantaneous configurations are calculated using the OPTIMAL metric that is
 discussed at length in the manual pages on \ref RMSD.
 
-\verbatim
+\plumedfile
 p2: GPROPERTYMAP REFERENCE=allv.pdb PROPERTY=X,Y LAMBDA=69087
 PRINT ARG=p2.X,p2.Y,p2.zpath STRIDE=1 FILE=colvar
-\endverbatim
+\endplumedfile
 
 The additional input file for this calculation, which contains the reference frames and the values of X and Y at these reference
 points has the following format.

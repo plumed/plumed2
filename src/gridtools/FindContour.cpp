@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015,2016 The plumed team
+   Copyright (c) 2015-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -67,7 +67,7 @@ solidness at each point in the simulation cell.  The Willard-Chandler dividing s
 at which the value of this phase field is equal to 0.5.  This set of points is output to file called mycontour.dat.  A new contour
 is found on every single step for each frame that is read in.
 
-\verbatim
+\plumedfile
 UNITS NATURAL
 FCCUBIC ...
   SPECIES=1-96000 SWITCH={CUBIC D_0=1.2 D_MAX=1.5}
@@ -84,7 +84,7 @@ MULTICOLVARDENS ...
 ... MULTICOLVARDENS
 
 FIND_CONTOUR GRID=dens CONTOUR=0.5 FILE=mycontour.dat
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

@@ -53,10 +53,10 @@ Keywords such as MORE_THAN and LESS_THAN can then be used to calculate the numbe
 The following input can be used to calculate the number of atoms that have indices greater than 3 and less than 101 that
 are within a cylinder with a radius of 0.3 nm that has its long axis aligned with the vector connecting atoms 1 and 2.
 
-\verbatim
+\plumedfile
 d1: INPLANEDISTANCES VECTORSTART=1 VECTOREND=2 GROUP=3-100 LESS_THAN={RATIONAL D_0=0.2 R_0=0.1}
 PRINT ARG=d1.lessthan FILE=colvar
-\endverbatim
+\endplumedfile
 
 
 */

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016 The plumed team
+   Copyright (c) 2016,2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -62,7 +62,7 @@ In the following example we calculate the Ha-N J-coupling from a set of atoms in
 dihedral \f$\psi\f$ angles in the peptide backbone. We also add the experimental datapoints and compute
 the correlation and other measures and finally print the results.
 
-\verbatim
+\plumedfile
 
 MOLINFO MOLTYPE=protein STRUCTURE=peptide.pdb
 WHOLEMOLECULES ENTITY0=1-111
@@ -81,11 +81,7 @@ JCOUPLING ...
 jhanst: STATS ARG=(jhan\.j_.*) PARARG=(jhan\.exp_.*)
 
 PRINT ARG=jhanst.*,jhan.* FILE=COLVAR STRIDE=100
-
-ENDPLUMED
-
-\endverbatim
-(See also \ref PRINT, \ref STATS)
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

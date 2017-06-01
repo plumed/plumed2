@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -37,11 +37,10 @@ Calculate the dipole moment for a group of atoms.
 \par Examples
 The following tells plumed to calculate the dipole of the group of atoms containing
 the atoms from 1-10 and print it every 5 steps
-\verbatim
+\plumedfile
 d: DIPOLE GROUP=1-10
 PRINT FILE=output STRIDE=5 ARG=5
-\endverbatim
-(see also \ref PRINT)
+\endplumedfile
 
 \attention
 If the total charge Q of the group in non zero, then a charge Q/N will be subtracted to every atom,

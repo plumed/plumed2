@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -54,7 +54,7 @@ periodic image.
 
 \par Examples
 
-\verbatim
+\plumedfile
 # a point which is on the line connecting atoms 1 and 10, so that its distance
 # from 10 is twice its distance from 1:
 c1: CENTER ATOMS=1,1,10
@@ -67,8 +67,7 @@ c2: CENTER ATOMS=2,3,4,5 MASS
 d1: DISTANCE ATOMS=c1,c2
 
 PRINT ARG=d1
-\endverbatim
-(See also \ref DISTANCE, \ref COM and \ref PRINT).
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

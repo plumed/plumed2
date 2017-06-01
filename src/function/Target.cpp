@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -75,12 +75,12 @@ specified in the input.
 The following input calculates the distance between a reference configuration and the instaneous position of the system in the trajectory.
 The position of the reference configuration is specified by providing the values of the distance between atoms 1 and 2 and atoms 3 and 4.
 
-\verbatim
+\plumedfile
 d1: DISTANCE ATOMS=1,2
 d2: DISTANCE ATOMS=3,4
 t1: TARGET REFERENCE=myref.pdb TYPE=EUCLIDEAN
 PRINT ARG=t1 FILE=colvar
-\endverbatim
+\endplumedfile
 
 The contents of the file containing the reference structure (myref.pdb) is shown below.  As you can see you must provide information on the
 labels of the CVs that are being used to define the position of the reference configuration in this file together with the values that these

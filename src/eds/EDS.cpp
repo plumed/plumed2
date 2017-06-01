@@ -63,7 +63,7 @@ It is not possible to set the target value of the observable to zero with the de
 
 The following input for a harmonic oscillator of two beads will adaptively find a linear bias to change the mean and variance to the target values. The PRINT line shows how to access the value of the coupling constants.
 
-\verbatim
+\plumedfile
 dist: DISTANCE ATOMS=1,2
 # this is the squared of the distance
 dist2: COMBINE ARG=dist POWERS=2 PERIODIC=NO
@@ -71,19 +71,19 @@ dist2: COMBINE ARG=dist POWERS=2 PERIODIC=NO
 #bias mean and variance
 eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0
 PRINT ARG=dist,dist2,eds.dist_coupling,eds.dist2_coupling,eds.bias,eds.force2 FILE=colvars.dat STRIDE=100
-\endverbatim
+\endplumedfile
 
 Rather than trying to find the coupling constants adaptively, can ramp up to a constant value.
-\verbatim
+\plumedfile
 #ramp couplings from 0,0 to -1,1 over 50000 steps
 eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 FIXED=-1,1 RAMP PERIOD=50000 TEMP=1.0
 
 #same as above, except starting at -0.5,0.5 rather than default of 0,0
 eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 FIXED=-1,1 INIT=-0.5,0.5 RAMP PERIOD=50000 TEMP=1.0
-\endverbatim
+\endplumedfile
 
 A restart file can be added to dump information needed to restart/continue simulation using these parameters every STRIDE.
-\verbatim
+\plumedfile
 #add the option to write to a restart file
 eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 OUT_RESTART=restart.dat
 
@@ -98,7 +98,7 @@ eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.
 
 #add the option to read in a previous restart file and continue the bias, but use the mean from the previous run as the starting point
 eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.dat MEAN
-\endverbatim
+\endplumedfile
 
 
 */

@@ -169,6 +169,11 @@ AC_ARG_ENABLE([modules],
 # listed in LDFLAGS are linked
 PLUMED_CONFIG_ENABLE([libsearch],[libsearch],[search for libraries],[yes])
 
+# This can be disabled to avoid the extra tests for static patching.
+# In the future, when this is disabled, we could disable the "--static" flag
+# of "plumed patch"
+PLUMED_CONFIG_ENABLE([static_patch],[static-patch],[allow statically linking plumed],[yes])
+
 PLUMED_CONFIG_ENABLE([doc],[doc],[documentation],[yes])
 PLUMED_CONFIG_ENABLE([pdfdoc],[pdfdoc],[pdf version of the manual],[no])
 PLUMED_CONFIG_ENABLE([debug],[debug],[debugging],[no])
@@ -570,7 +575,7 @@ if test "$shared" == true ; then
     AC_MSG_NOTICE([Dynamic library extension is 'dylib'])
     AC_MSG_NOTICE([LDSO needs special flags])
     SOEXT=dylib
-    LDSO="$LDSO -undefined suppress -flat_namespace -dynamiclib"
+    LDSO="$LDSO -undefined suppress -flat_namespace -dynamiclib -Wl,-headerpad_max_install_names"
   ;;
   (Linux)
     AC_MSG_NOTICE([*** Special settings for dynamic libraries on Linux ***])
@@ -750,6 +755,8 @@ EOF
   fi
 fi
 
+if test "${static_patch}" == true ; then
+
 AC_MSG_NOTICE([I will now check if C++ objects can be linked by C/Fortran compilers])
 AC_MSG_NOTICE([This is relevant if you want to use plumed patch --static on a non-C++ code])
 
@@ -816,6 +823,10 @@ EOF
   fi
   rm -f conftest.* conftest-main.*
 done
+
+else
+AC_MSG_NOTICE([Static patching is disabled, thus tests required for static patching will be skipped])
+fi
 
 if test "$prefix" == NONE
 then

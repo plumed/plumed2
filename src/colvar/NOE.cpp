@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2016 The plumed team
+   Copyright (c) 2014-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -52,7 +52,7 @@ In the following examples three noes are defined, the first is calculated based 
 of atom 1-2 and 3-2; the second is defined by the distance 5-7 and the third by the distances
 4-15,4-16,8-15,8-16.
 
-\verbatim
+\plumedfile
 NOE ...
 GROUPA1=1,3 GROUPB1=2,2
 GROUPA2=5 GROUPB2=7
@@ -61,8 +61,7 @@ LABEL=noes
 ... NOE
 
 PRINT ARG=noes.* FILE=colvar
-\endverbatim
-(See also \ref PRINT)
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

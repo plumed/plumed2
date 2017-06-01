@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015,2016 The plumed team
+   Copyright (c) 2015-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -58,7 +58,7 @@ them and comparing them with a set of experimental values. RDCs are compared wit
 the experimental data but for a multiplication factor SCALE that is also sampled by
 MC on-the-fly
 
-\verbatim
+\plumedfile
 RDC ...
 LABEL=rdc
 SCALE=0.0001
@@ -83,12 +83,12 @@ LABEL=spe
 ... METAINFERENCE
 
 PRINT ARG=spe.bias FILE=BIAS STRIDE=1
-\endverbatim
+\endplumedfile
 
 in the following example instead of using one uncertainty parameter per data point we use
 a single uncertainty value in a long-tailed gaussian to take into account for outliers.
 
-\verbatim
+\plumedfile
 METAINFERENCE ...
 ARG=ardc.*
 NOISETYPE=OUTLIERS
@@ -99,9 +99,7 @@ SIGMA_MEAN=0.001
 TEMP=300
 LABEL=spe
 ... METAINFERENCE
-\endverbatim
-
-(See also \ref RDC and \ref ENSEMBLE).
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
