@@ -1369,7 +1369,7 @@ Optional Features:
   --enable-shared         enable shared libs, default: yes
   --enable-dependency-tracking
                           enable dependency tracking, default: yes
-  --enable-cxx-exceptions enable c++ exceptions, default: no
+  --enable-cxx-exceptions enable c++ exceptions, default: yes
   --enable-ld-r           enable group object files, default: yes
   --enable-mpi            enable search for mpi, default: yes
   --enable-external-lapack
@@ -2626,7 +2626,7 @@ if test "${enable_cxx_exceptions+set}" = set; then :
              (*)   as_fn_error $? "wrong argument to --enable-cxx-exceptions" "$LINENO" 5 ;;
   esac
 else
-  case "no" in
+  case "yes" in
              (yes) cxx_exceptions=true ;;
              (no)  cxx_exceptions=false ;;
   esac
