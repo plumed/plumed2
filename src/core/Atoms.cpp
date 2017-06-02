@@ -177,7 +177,6 @@ void Atoms::share(const std::set<AtomNumber>& unique) {
   } else {
     uniq_index.assign(gatindex.begin(),gatindex.end());
   }
-  printf("un siz %u\n", uniq_index.size());
   virial.zero();
   if(zeroallforces || int(gatindex.size())==natoms) {
     for(int i=0; i<natoms; i++) forces[i].zero();
