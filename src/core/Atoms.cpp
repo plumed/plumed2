@@ -138,7 +138,6 @@ void Atoms::setForces(void*p,int i) {
 }
 
 void Atoms::share() {
-  //std::set<AtomNumber> unique;
   unique.clear();
 // At first step I scatter all the atoms so as to store their mass and charge
 // Notice that this works with the assumption that charges and masses are
@@ -153,6 +152,11 @@ void Atoms::share() {
         for(auto pp=actions[i]->getUnique().begin(); pp!=actions[i]->getUnique().end(); ++pp) {
           if(dd.g2l[pp->index()]>=0) unique.insert(*pp);
         }
+      } else {
+        // all unique atoms
+        for(auto pp=actions[i]->getUnique().begin(); pp!=actions[i]->getUnique().end(); ++pp) {
+          unique.insert(*pp);
+        }
       }
       if(!actions[i]->getUnique().empty()) atomsNeeded=true;
     }
@@ -160,10 +164,12 @@ void Atoms::share() {
 }
 
 void Atoms::shareAll() {
-  //std::set<AtomNumber> unique;
-  if(dd && shuffledAtoms>0)
-    // keep in unique only those atoms that are local
-    for(int i=0; i<natoms; i++) if(dd.g2l[i]>=0) unique.insert(AtomNumber::index(i));
+  // keep in unique only those atoms that are local
+  if(dd && shuffledAtoms>0) {
+     for(int i=0; i<natoms; i++) if(dd.g2l[i]>=0) unique.insert(AtomNumber::index(i));
+  } else {
+     for(int i=0; i<natoms; i++) unique.insert(AtomNumber::index(i));
+  }
   atomsNeeded=true;
   share(unique);
 }
@@ -175,13 +181,13 @@ void Atoms::share(const std::set<AtomNumber>& unique) {
   if(dd && shuffledAtoms>0) {
     for(const auto & p : unique) uniq_index.push_back(dd.g2l[p.index()]);
   } else {
-    uniq_index.assign(gatindex.begin(),gatindex.end());
+    for(const auto & p : unique) uniq_index.push_back(p.index());
   }
+
   virial.zero();
-  if(zeroallforces || int(gatindex.size())==natoms) {
+  if(zeroallforces) {
     for(int i=0; i<natoms; i++) forces[i].zero();
   } else {
-    //for(unsigned i=0; i<gatindex.size(); i++) forces[gatindex[i]].zero();
     for(const auto & p : unique) forces[p.index()].zero();
   }
   for(unsigned i=getNatoms(); i<positions.size(); i++) forces[i].zero(); // virtual atoms
@@ -191,15 +197,8 @@ void Atoms::share(const std::set<AtomNumber>& unique) {
   if(!atomsNeeded) return;
 
   atomsNeeded=false;
+  mdatoms->getPositions(unique,uniq_index,positions);
 
-  if(int(gatindex.size())==natoms && shuffledAtoms==0) {
-// faster version, which retrieves all atoms
-    mdatoms->getPositions(0,natoms,positions);
-  } else {
-// version that picks only atoms that are available on this proc
-    //mdatoms->getPositions(gatindex,positions);
-    mdatoms->getPositions(unique,uniq_index,positions);
-  }
 // how many double per atom should be scattered:
   int ndata=3;
   if(!massAndChargeOK) {
@@ -309,9 +308,10 @@ void Atoms::updateForces() {
   if(forceOnEnergy*forceOnEnergy>epsilon) {
     double alpha=1.0-forceOnEnergy;
     mdatoms->rescaleForces(gatindex,alpha);
+    mdatoms->updateForces(gatindex,forces);
+  } else {
+    mdatoms->updateForces(unique,uniq_index,forces);
   }
-  if(dd && shuffledAtoms>0) mdatoms->updateForces(unique,uniq_index,forces);
-  else mdatoms->updateForces(gatindex,forces);
   if( !plumed.novirial && dd.Get_rank()==0 ) {
     plumed_assert( virialHasBeenSet );
     mdatoms->updateVirial(virial);
