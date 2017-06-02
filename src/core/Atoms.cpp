@@ -166,9 +166,9 @@ void Atoms::share() {
 void Atoms::shareAll() {
   // keep in unique only those atoms that are local
   if(dd && shuffledAtoms>0) {
-     for(int i=0; i<natoms; i++) if(dd.g2l[i]>=0) unique.insert(AtomNumber::index(i));
+    for(int i=0; i<natoms; i++) if(dd.g2l[i]>=0) unique.insert(AtomNumber::index(i));
   } else {
-     for(int i=0; i<natoms; i++) unique.insert(AtomNumber::index(i));
+    for(int i=0; i<natoms; i++) unique.insert(AtomNumber::index(i));
   }
   atomsNeeded=true;
   share(unique);
