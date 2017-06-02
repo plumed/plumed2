@@ -138,7 +138,8 @@ void Atoms::setForces(void*p,int i) {
 }
 
 void Atoms::share() {
-  std::set<AtomNumber> unique;
+  //std::set<AtomNumber> unique;
+  unique.clear();
 // At first step I scatter all the atoms so as to store their mass and charge
 // Notice that this works with the assumption that charges and masses are
 // not changing during the simulation!
@@ -148,7 +149,10 @@ void Atoms::share() {
   }
   for(unsigned i=0; i<actions.size(); i++) if(actions[i]->isActive()) {
       if(dd && shuffledAtoms>0) {
-        unique.insert(actions[i]->getUnique().begin(),actions[i]->getUnique().end());
+        // keep in unique only those atoms that are local
+        for(auto pp=actions[i]->getUnique().begin(); pp!=actions[i]->getUnique().end(); ++pp) {
+          if(dd.g2l[pp->index()]>=0) unique.insert(*pp);
+        }
       }
       if(!actions[i]->getUnique().empty()) atomsNeeded=true;
     }
@@ -156,20 +160,30 @@ void Atoms::share() {
 }
 
 void Atoms::shareAll() {
-  std::set<AtomNumber> unique;
+  //std::set<AtomNumber> unique;
   if(dd && shuffledAtoms>0)
-    for(int i=0; i<natoms; i++) unique.insert(AtomNumber::index(i));
+    // keep in unique only those atoms that are local
+    for(int i=0; i<natoms; i++) if(dd.g2l[i]>=0) unique.insert(AtomNumber::index(i));
   atomsNeeded=true;
   share(unique);
 }
 
 void Atoms::share(const std::set<AtomNumber>& unique) {
   plumed_assert( positionsHaveBeenSet==3 && massesHaveBeenSet );
+
+  uniq_index.clear();
+  if(dd && shuffledAtoms>0) {
+    for(const auto & p : unique) uniq_index.push_back(dd.g2l[p.index()]);
+  } else {
+    uniq_index.assign(gatindex.begin(),gatindex.end());
+  }
+  printf("un siz %u\n", uniq_index.size());
   virial.zero();
   if(zeroallforces || int(gatindex.size())==natoms) {
     for(int i=0; i<natoms; i++) forces[i].zero();
   } else {
-    for(unsigned i=0; i<gatindex.size(); i++) forces[gatindex[i]].zero();
+    //for(unsigned i=0; i<gatindex.size(); i++) forces[gatindex[i]].zero();
+    for(const auto & p : unique) forces[p.index()].zero();
   }
   for(unsigned i=getNatoms(); i<positions.size(); i++) forces[i].zero(); // virtual atoms
   forceOnEnergy=0.0;
@@ -184,7 +198,8 @@ void Atoms::share(const std::set<AtomNumber>& unique) {
     mdatoms->getPositions(0,natoms,positions);
   } else {
 // version that picks only atoms that are available on this proc
-    mdatoms->getPositions(gatindex,positions);
+    //mdatoms->getPositions(gatindex,positions);
+    mdatoms->getPositions(unique,uniq_index,positions);
   }
 // how many double per atom should be scattered:
   int ndata=3;
@@ -203,17 +218,15 @@ void Atoms::share(const std::set<AtomNumber>& unique) {
     }
     int count=0;
     for(const auto & p : unique) {
-      if(dd.g2l[p.index()]>=0) {
-        dd.indexToBeSent[count]=p.index();
-        dd.positionsToBeSent[ndata*count+0]=positions[p.index()][0];
-        dd.positionsToBeSent[ndata*count+1]=positions[p.index()][1];
-        dd.positionsToBeSent[ndata*count+2]=positions[p.index()][2];
-        if(!massAndChargeOK) {
-          dd.positionsToBeSent[ndata*count+3]=masses[p.index()];
-          dd.positionsToBeSent[ndata*count+4]=charges[p.index()];
-        }
-        count++;
+      dd.indexToBeSent[count]=p.index();
+      dd.positionsToBeSent[ndata*count+0]=positions[p.index()][0];
+      dd.positionsToBeSent[ndata*count+1]=positions[p.index()][1];
+      dd.positionsToBeSent[ndata*count+2]=positions[p.index()][2];
+      if(!massAndChargeOK) {
+        dd.positionsToBeSent[ndata*count+3]=masses[p.index()];
+        dd.positionsToBeSent[ndata*count+4]=charges[p.index()];
       }
+      count++;
     }
     if(dd.async) {
       asyncSent=true;
@@ -298,7 +311,8 @@ void Atoms::updateForces() {
     double alpha=1.0-forceOnEnergy;
     mdatoms->rescaleForces(gatindex,alpha);
   }
-  mdatoms->updateForces(gatindex,forces);
+  if(dd && shuffledAtoms>0) mdatoms->updateForces(unique,uniq_index,forces);
+  else mdatoms->updateForces(gatindex,forces);
   if( !plumed.novirial && dd.Get_rank()==0 ) {
     plumed_assert( virialHasBeenSet );
     mdatoms->updateVirial(virial);
