@@ -50,8 +50,8 @@ public:
   double calculate( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceValuePack& myder, const bool& squared ) const ;
 ///
   bool pcaIsEnabledForThisReference();
-  void extractAtomicDisplacement( const std::vector<Vector>& pos, const bool& anflag, std::vector<Vector>& direction ) const ;
-  double projectAtomicDisplacementOnVector( const std::vector<Vector>& vecs, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const ;
+  void extractAtomicDisplacement( const std::vector<Vector>& pos, std::vector<Vector>& direction ) const ;
+  double projectAtomicDisplacementOnVector( const bool& normalized, const std::vector<Vector>& vecs, ReferenceValuePack& mypack ) const ;
   void setupPCAStorage( ReferenceValuePack& mypack );
 };
 
