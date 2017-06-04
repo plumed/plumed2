@@ -60,7 +60,7 @@ void SecondaryStructureRMSD::registerKeywords( Keywords& keys ) {
   keys.use("LESS_THAN"); keys.use("MIN"); keys.use("ALT_MIN"); keys.use("LOWEST"); keys.use("HIGHEST");
   keys.setComponentsIntroduction("By default this Action calculates the number of structural units that are within a certain "
                                  "distance of a idealised secondary structure element. This quantity can then be referenced "
-                                 "elsewhere in the input by using the label of the action. However, thes Action can also be used to "
+                                 "elsewhere in the input by using the label of the action. However, this Action can also be used to "
                                  "calculate the following quantities by using the keywords as described below.  The quantities then "
                                  "calculated can be referened using the label of the action followed by a dot and then the name "
                                  "from the table below.  Please note that you can use the LESS_THAN keyword more than once.  The resulting "

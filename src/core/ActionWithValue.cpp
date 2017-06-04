@@ -29,7 +29,7 @@ namespace PLMD {
 void ActionWithValue::registerKeywords(Keywords& keys) {
   keys.setComponentsIntroduction("By default the value of the calculated quantity can be referenced elsewhere in the "
                                  "input file by using the label of the action.  Alternatively this Action can be used "
-                                 "to be used to calculate the following quantities by employing the keywords listed "
+                                 "to calculate the following quantities by employing the keywords listed "
                                  "below.  These quanties can be referenced elsewhere in the input by using this Action's "
                                  "label followed by a dot and the name of the quantity required from the list below.");
   keys.addFlag("NUMERICAL_DERIVATIVES", false, "calculate the derivatives for these quantities numerically");
