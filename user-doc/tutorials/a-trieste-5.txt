@@ -254,6 +254,39 @@ to the same potential, so all the exchanges will be accepted. You can verify thi
 > grep "Repl ex" md0.log
 \endverbatim
 
+It is interesting to see what happens at different stages of the simulation. At the beginning
+of the trajectory you should see something like this
+\verbatim
+> grep "Repl ex" md0.log | head
+Repl ex  0 x  1    2 x  3
+Repl ex  0    1 x  2    3
+Repl ex  0 x  1    2 x  3
+Repl ex  0    1 x  2    3
+Repl ex  0 x  1    2 x  3
+Repl ex  0    1    2    3
+Repl ex  0 x  1    2 x  3
+Repl ex  0    1 x  2    3
+Repl ex  0 x  1    2 x  3
+Repl ex  0    1 x  2    3
+\endverbatim
+Notice that all the exchanges between replicas 0 and 1 are accepted and also almost all the exchanges between replicas 1, 2, and 3.
+At a later stage you will more likely find something like this
+\verbatim
+> grep "Repl ex" md0.log | tail
+Repl ex  0    1 x  2    3
+Repl ex  0 x  1    2    3
+Repl ex  0    1 x  2    3
+Repl ex  0 x  1    2    3
+Repl ex  0    1 x  2    3
+Repl ex  0 x  1    2 x  3
+Repl ex  0    1 x  2    3
+Repl ex  0 x  1    2 x  3
+Repl ex  0    1    2    3
+Repl ex  0 x  1    2    3
+\endverbatim
+Notice that all the exchanges between replicas 0 and 1 are still accepted. This is because the potential energy felt by replicas 0 and
+1 are identical. However, exchanges between replicas 1, 2, and 3 are sometime rejected.
+
 \note
 The setup above is very close to the one used in bias exchange simulations.
 However, in bias exchange simulations usually one would use at most one neutral (non-biased) replica.
@@ -270,6 +303,9 @@ that includes all the conformations that you produced during your simulations.
 \verbatim
 > gmx_mpi trjcat -f traj_comp*.xtc -cat -o fulltraj.xtc
 \endverbatim
+
+Notice that a new trajectory file `fulltraj.xtc` will be in your working directory now, 
+approximately four times bigger than the individual files `traj_comp*.xtc`.
 
 Now we will process that directory computing the bias potentials associated with
 the replicas that we simulated. Similarly to what we did in \ref trieste-4,
@@ -342,16 +378,45 @@ number of replicas (that is the number of columns) and value of kbT (2.5 in kj/m
 \endverbatim
 
 This will generate a file named `weights.dat` that contains the weights for each of the frame.
+The initial values reported in the file should be similar to these ones:
+\verbatim
+> head weights.dat
+ 3.688530731178e-05
+3.899877363004e-05
+7.861996862568e-07
+3.663355487180e-06
+1.647251040152e-06
+2.689614526429e-06
+3.254124396415e-06
+1.511057459698e-05
+2.342149322226e-05
+5.032261109943e-06
+\endverbatim
+Weights are very small since we have a long trajectory with many frames.
 You can check that they are normalized using the command `awk '{a+=$1}END{print a}' weights.dat`.
-Now have a look at the weights. Remember that we are concatenating trajectories. Can you understand
+
+Now have a look at the weights. Remember that we are concatenating trajectories.
+
+\image html trieste-5-weights.png "Weights obtained from WHAM, in logarithmic scale"
+
+Can you understand
 why weights in the first half are systematically different from weights in the second half?
+The first part correspond to the unbiased trajectories. All the snapshots sampled here are
+reasonably correct. However, in the second part we have heavily biased snapshots, which
+also sample transition states. Those points are assigned a low weight by WHAM
+so that they would be discarded in the calculation of any unbiased average.
 
 Now we have the weight for each frame. We would like to compute the relative stability of the
 two free-energy wells that correspond roughly to positive and negative \f$\phi\f$.
 \verbatim
 > paste <(grep -v \# COLVAR_CONCAT.0) weights.dat | awk '{if($2>0)wb+=$NF; else wa+=$NF}END{print wa,wb}'
 \endverbatim
-This will tell you the unbiased population of the two minima.
+This will tell you the unbiased population of the two minima. You should expect
+values close to these ones
+\verbatim
+0.978318 0.0216822
+\endverbatim
+that tells you that the first minimum has a population of roughly 98%.
 
 \note
 This approach can be used to reweight any replica exchange simulation, irrespectively of how

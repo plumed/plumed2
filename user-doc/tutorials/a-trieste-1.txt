@@ -30,6 +30,9 @@ The \tarball{trieste-1} for this project contains the following files:
 This tutorial has been tested on a pre-release version of version 2.4. However, it should not take advantage
 of 2.4-only features, thus should also work with version 2.3.
 
+Also notice that in the `.solutions` directory of the tarball you will find correct input files.
+Please only look at these files after you have tried to solve the problems yourself.
+
 \section trieste-1-intro Introduction
 
 This tutorial asks you to compute a variety of different collective variables using PLUMED for a particular trajectory and to compare the files and graphs that you obtain with the correct ones that are shown online.  Compared to some of the other tutorials that are available here this tutorial contains considerably less guidance so in doing this tutorial you will have to
