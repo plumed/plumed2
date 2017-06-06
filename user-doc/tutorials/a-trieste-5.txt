@@ -29,6 +29,9 @@ advantage of a special syntax for setting up multi-replica simulations that is o
 since version 2.4. Exercizes could be done also with version 2.3 but using a different syntax
 with respect to the one suggested.
 
+Also notice that in the `.solutions` directory of the tarball you will find correct input files.
+Please only look at these files after you have tried to solve the problems yourself.
+
 \section trieste-5-introduction Introduction
 
 So far we always used PLUMED to run one simulation at a time. However, PLUMED can also
@@ -414,9 +417,9 @@ two free-energy wells that correspond roughly to positive and negative \f$\phi\f
 This will tell you the unbiased population of the two minima. You should expect
 values close to these ones
 \verbatim
-0.978318 0.0216822
+0.968885 0.0311148
 \endverbatim
-that tells you that the first minimum has a population of roughly 98%.
+that tells you that the first minimum has a population of roughly 97%.
 
 \note
 This approach can be used to reweight any replica exchange simulation, irrespectively of how
@@ -440,9 +443,33 @@ but using only three replicas:
 - two unbiased replicas.
 - one biased replica along psi.
 
-Compute as before the relative population of the two minima. Which is the result? What can you learn from this example?
+Create a file `plumed3.dat` aimed at this. If you are not able you can find a working one in the `solutions` directory.
+Then use the following commands similarly to before:
+\verbatim
+> mpirun -np 3 gmx_mpi mdrun -plumed plumed3.dat -nsteps 1000000 -replex 120 -multi 3
+> gmx_mpi trjcat -f traj_comp{0,1,2}.xtc -cat -o fulltraj.xtc
+> mpirun -np 3 plumed driver --mf_xtc fulltraj.xtc --plumed plumed3_reweight.dat --multi 3
+> paste COLVAR_WHAM.{0,1,2} | grep -v \# | awk '{for(i=1;i<=NF/2;i++) printf($(i*2)"  ");printf("\n");}' > ALLBIAS
+> python3 SCRIPTS/wham.py ALLBIAS 3 2.5
+\endverbatim
 
-Also plot the colvar files and look at them with attention. How many transitions between the two free-energy wells can you observe?
+Compute as before the relative population of the two minima.
+\verbatim
+> paste <(grep -v \# COLVAR_CONCAT.0) weights.dat | awk '{if($2>0)wb+=$NF; else wa+=$NF}END{print wa,wb}'
+\endverbatim
+Which is the result? What can you learn from this example?
+
+If you did things correclty, here you should find a population close to 2/3 for the first minimum and 1/3 for the second one.
+Notice that this population just reflects the way we initialized the simulations (2 of them in one minimum and 1 in the other minimum)
+and does not take into account which is the relative stability of the two minima according to the real potential energy function.
+In other words, we are just obtaining the relative population that we used to initialize the simulation.
+
+Also plot the colvar files and look at them with attention. An excerpt is shown below.
+
+\image html trieste-5-colvars.png "Time series of phi from the simulations with a missing variable (exercise 3). Notice that there are appaernt transitions, but they are
+always due to accepted exchanges between replicas."
+
+How many transitions between the two free-energy wells can you observe?
 Remember that replica exchange involves coordinate swaps that do not correspond to the real system dynamics. It is very useful to look at
 "demuxed" trajectories.
 
@@ -464,9 +491,17 @@ continuous ones with the following commands
 
 You will now find new trajectories `0_trajout.xtc`, `1_trajout.xtc`, `2_trajout.xtc`, and `3_trajout.xtc`.
 These files can be in turn analyzed with `plumed driver`. Try to recompute collective variables on the trajectories
-obtained in \ref trieste-5-ex-1 and with those obtained in \ref trieste-5-ex-3. Can you spot out the difference between
-the two cases?
+obtained in \ref trieste-5-ex-1 and with those obtained in \ref trieste-5-ex-3. 
 
+\image html trieste-5-demux-good.png "Time series of phi obtained from the demuxed trajectories from exercise 2"
+\image html trieste-5-demux-bad.png "Time series of phi obtained from the demuxed trajectories from exercise 3"
+
+As you can see, the trajectories from \ref trieste-5-ex-1 show a number of transitions. On the other hand, the trajectories from \ref trieste-5-ex-3
+are stuck.
+
+As a general rule, notice that there is no way to estimate correctly the relative population
+of two metastable states if there is not a continuous "demuxed" trajectory joining them,
+possibly exhibiting multiple transitions.
 
 \section trieste-5-conclusion Conclusions
 
