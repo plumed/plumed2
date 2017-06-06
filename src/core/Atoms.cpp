@@ -331,7 +331,7 @@ void Atoms::DomainDecomposition::enable(Communicator& c) {
   on=true;
   Set_comm(c.Get_comm());
   async=Get_size()<10;
-  if(std::getenv("PLUMED_ASYNC_SHARE")){
+  if(std::getenv("PLUMED_ASYNC_SHARE")) {
     std::string s(std::getenv("PLUMED_ASYNC_SHARE"));
     if(s=="yes") async=true;
     else if(s=="no") async=false;
