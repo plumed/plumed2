@@ -26,42 +26,42 @@
 #include "MultiColvarBase.h"
 
 namespace PLMD {
-namespace multicolvar { 
+namespace multicolvar {
 
-void MultiColvarFunction::registerKeywords( Keywords& keys ){
+void MultiColvarFunction::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );
   keys.add("compulsory","DATA","the labels of the action that calculates the multicolvars we are interested in");
   keys.remove("NUMERICAL_DERIVATIVES");
 }
 
 MultiColvarFunction::MultiColvarFunction(const ActionOptions& ao):
-Action(ao),
-MultiColvarBase(ao)
+  Action(ao),
+  MultiColvarBase(ao)
 {
   // Read in the arguments
-  if( keywords.exists("DATA") ){ 
-      std::vector<AtomNumber> fake_atoms; 
-      if( !parseMultiColvarAtomList("DATA",-1,fake_atoms) ) error("missing DATA keyword");
-      if( fake_atoms.size()>0 ) error("no atoms should appear in the specification for this object.  Input should be other multicolvars");
+  if( keywords.exists("DATA") ) {
+    std::vector<AtomNumber> fake_atoms;
+    if( !parseMultiColvarAtomList("DATA",-1,fake_atoms) ) error("missing DATA keyword");
+    if( fake_atoms.size()>0 ) error("no atoms should appear in the specification for this object.  Input should be other multicolvars");
   }
 }
 
-void MultiColvarFunction::buildSets(){
+void MultiColvarFunction::buildSets() {
   nblock = mybasemulticolvars[0]->getFullNumberOfTasks();
-  for(unsigned i=0;i<mybasemulticolvars.size();++i){
-     if( mybasemulticolvars[i]->getFullNumberOfTasks()!=nblock ){
-          error("mismatch between numbers of tasks in various base multicolvars");
-     }
+  for(unsigned i=0; i<mybasemulticolvars.size(); ++i) {
+    if( mybasemulticolvars[i]->getFullNumberOfTasks()!=nblock ) {
+      error("mismatch between numbers of tasks in various base multicolvars");
+    }
   }
   nblock=0; ablocks.resize( mybasemulticolvars.size() );
   usespecies=false; // current_atoms.resize( mybasemulticolvars.size() );
-  for(unsigned i=0;i<mybasemulticolvars.size();++i){
-      ablocks[i].resize( nblock ); 
-      for(unsigned j=0;j<nblock;++j) ablocks[i][j]=i*nblock+j;  
+  for(unsigned i=0; i<mybasemulticolvars.size(); ++i) {
+    ablocks[i].resize( nblock );
+    for(unsigned j=0; j<nblock; ++j) ablocks[i][j]=i*nblock+j;
   }
-  for(unsigned i=0;i<nblock;++i) addTaskToList( i );
-  std::vector<AtomNumber> fake_atoms; setupMultiColvarBase( fake_atoms ); 
-  // mybasedata[0]->resizeTemporyMultiValues( mybasemulticolvars.size() ); 
+  for(unsigned i=0; i<nblock; ++i) addTaskToList( i );
+  std::vector<AtomNumber> fake_atoms; setupMultiColvarBase( fake_atoms );
+  // mybasedata[0]->resizeTemporyMultiValues( mybasemulticolvars.size() );
 }
 
 }

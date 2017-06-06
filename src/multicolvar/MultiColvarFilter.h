@@ -30,7 +30,7 @@ namespace multicolvar {
 
 /**
 \ingroup INHERIT
-This is the abstract base class to use for implementing a new way of filtering collective variable values 
+This is the abstract base class to use for implementing a new way of filtering collective variable values
 to see whether or not they are within a certain range
 */
 

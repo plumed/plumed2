@@ -30,7 +30,7 @@ using namespace std;
 
 namespace PLMD
 {
-namespace generic{
+namespace generic {
 
 //+PLUMEDOC PRINTANALYSIS DUMPMASSCHARGE
 /*
@@ -59,7 +59,7 @@ DUMPMASSCHARGE FILE=mcfile
 (see also \ref COM and \ref PRINT)
 
 In this way, you will be able to use the same masses while processing
-a trajectory from the \ref driver . To do so, you need to 
+a trajectory from the \ref driver . To do so, you need to
 add the --mc flag on the driver command line, e.g.
 \verbatim
 plumed driver --mc mcfile --plumed plumed.dat --ixyz traj.xyz
@@ -100,14 +100,14 @@ public:
   explicit DumpMassCharge(const ActionOptions&);
   ~DumpMassCharge();
   static void registerKeywords( Keywords& keys );
-  void calculate(){}
-  void apply(){}
+  void calculate() {}
+  void apply() {}
   void update();
 };
 
 PLUMED_REGISTER_ACTION(DumpMassCharge,"DUMPMASSCHARGE")
 
-void DumpMassCharge::registerKeywords( Keywords& keys ){
+void DumpMassCharge::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
@@ -128,8 +128,8 @@ DumpMassCharge::DumpMassCharge(const ActionOptions&ao):
 
   parseAtomList("ATOMS",atoms);
 
-  if(atoms.size()==0){
-    for(unsigned i=0;i<plumed.getAtoms().getNatoms();i++){
+  if(atoms.size()==0) {
+    for(unsigned i=0; i<plumed.getAtoms().getNatoms(); i++) {
       atoms.push_back(AtomNumber::index(i));
     }
   }
@@ -137,20 +137,20 @@ DumpMassCharge::DumpMassCharge(const ActionOptions&ao):
   checkRead();
 
   log.printf("  printing the following atoms:" );
-  for(unsigned i=0;i<atoms.size();++i) log.printf(" %d",atoms[i].serial() );
+  for(unsigned i=0; i<atoms.size(); ++i) log.printf(" %d",atoms[i].serial() );
   log.printf("\n");
   requestAtoms(atoms);
 }
 
-void DumpMassCharge::update(){
+void DumpMassCharge::update() {
   if(!first) return;
   first=false;
 
   OFile of;
   of.link(*this);
   of.open(file);
-  
-  for(int i=0;i<getNumberOfAtoms();i++){
+
+  for(int i=0; i<getNumberOfAtoms(); i++) {
     int ii=getAbsoluteIndex(i).index();
     of.printField("index",ii);
     of.printField("mass",getMass(i));
@@ -159,9 +159,9 @@ void DumpMassCharge::update(){
   }
 }
 
-DumpMassCharge::~DumpMassCharge(){
+DumpMassCharge::~DumpMassCharge() {
 }
-  
+
 
 }
 }

@@ -38,7 +38,7 @@ class PDB;
 /// Action used to create objects that access the positions of the atoms from the MD code
 class ActionAtomistic :
   virtual public Action
-  {
+{
 
   std::vector<AtomNumber> indexes;         // the set of needed atoms
   std::set<AtomNumber>  unique;
@@ -111,7 +111,7 @@ public:
 /// Get a reference to force on energy
   double & modifyForceOnEnergy();
 /// Get number of available atoms
-  unsigned getNumberOfAtoms()const{return indexes.size();}
+  unsigned getNumberOfAtoms()const {return indexes.size();}
 /// Compute the pbc distance between two positions
   Vector pbcDistance(const Vector&,const Vector&)const;
 /// Applies  PBCs to a seriens of positions or distances
@@ -126,7 +126,7 @@ public:
   void parseAtomList(const std::string&key,const int num, std::vector<AtomNumber> &t);
 /// Convert a set of read in strings into an atom list (this is used in parseAtomList)
   void interpretAtomList( std::vector<std::string>& strings, std::vector<AtomNumber> &t);
-/// Change the box shape 
+/// Change the box shape
   void changeBox( const Tensor& newbox );
 /// Get reference to Pbc
   const Pbc & getPbc() const;
@@ -137,15 +137,15 @@ public:
 /// not going to be retrieved. Can be used for optimization. Notice that
 /// calling getPosition(int) in an Action where DoNotRetrieve() was called might
 /// lead to undefined behavior.
-  void doNotRetrieve(){donotretrieve=true;}
+  void doNotRetrieve() {donotretrieve=true;}
 /// Skip atom forces - use with care.
 /// If this function is called during initialization, then forces are
 /// not going to be propagated. Can be used for optimization.
-  void doNotForce(){donotforce=true;}
+  void doNotForce() {donotforce=true;}
 /// Make atoms whole, assuming they are in the proper order
   void makeWhole();
 /// Allow calls to modifyGlobalForce()
-  void allowToAccessGlobalForces(){atoms.zeroallforces=true;}
+  void allowToAccessGlobalForces() {atoms.zeroallforces=true;}
 public:
 
 // virtual functions:
@@ -157,10 +157,10 @@ public:
 
   void clearOutputForces();
 
-/// N.B. only pass an ActionWithValue to this routine if you know exactly what you 
+/// N.B. only pass an ActionWithValue to this routine if you know exactly what you
 /// are doing.  The default will be correct for the vast majority of cases
   virtual void   calculateNumericalDerivatives( ActionWithValue* a=NULL );
-/// Numerical derivative routine to use when using Actions that inherit from BOTH 
+/// Numerical derivative routine to use when using Actions that inherit from BOTH
 /// ActionWithArguments and ActionAtomistic
   void calculateAtomicNumericalDerivatives( ActionWithValue* a, const unsigned& startnum );
 
@@ -169,38 +169,38 @@ public:
   void lockRequests();
   void unlockRequests();
   const std::set<AtomNumber> & getUnique()const;
-/// Read in an input file containing atom positions and calculate the action for the atomic 
+/// Read in an input file containing atom positions and calculate the action for the atomic
 /// configuration therin
   void readAtomsFromPDB( const PDB& pdb );
 };
 
 inline
-const Vector & ActionAtomistic::getPosition(int i)const{
+const Vector & ActionAtomistic::getPosition(int i)const {
   return positions[i];
 }
 
 inline
-const Vector & ActionAtomistic::getPosition(AtomNumber i)const{
+const Vector & ActionAtomistic::getPosition(AtomNumber i)const {
   return atoms.positions[i.index()];
 }
 
 inline
-Vector & ActionAtomistic::modifyPosition(AtomNumber i){
+Vector & ActionAtomistic::modifyPosition(AtomNumber i) {
   return atoms.positions[i.index()];
 }
 
 inline
-Vector & ActionAtomistic::modifyGlobalForce(AtomNumber i){
+Vector & ActionAtomistic::modifyGlobalForce(AtomNumber i) {
   return atoms.forces[i.index()];
 }
 
 inline
-Tensor & ActionAtomistic::modifyGlobalVirial(){
+Tensor & ActionAtomistic::modifyGlobalVirial() {
   return atoms.virial;
 }
 
 inline
-double ActionAtomistic::getMass(int i)const{
+double ActionAtomistic::getMass(int i)const {
   return masses[i];
 }
 
@@ -211,72 +211,72 @@ double ActionAtomistic::getCharge(int i) const {
 }
 
 inline
-const std::vector<AtomNumber> & ActionAtomistic::getAbsoluteIndexes()const{
+const std::vector<AtomNumber> & ActionAtomistic::getAbsoluteIndexes()const {
   return indexes;
 }
 
 inline
-AtomNumber ActionAtomistic::getAbsoluteIndex(int i)const{
+AtomNumber ActionAtomistic::getAbsoluteIndex(int i)const {
   return indexes[i];
 }
 
 inline
-const std::vector<Vector> & ActionAtomistic::getPositions()const{
+const std::vector<Vector> & ActionAtomistic::getPositions()const {
   return positions;
 }
 
 inline
-const double & ActionAtomistic::getEnergy()const{
+const double & ActionAtomistic::getEnergy()const {
   return energy;
 }
 
 inline
-const Tensor & ActionAtomistic::getBox()const{
+const Tensor & ActionAtomistic::getBox()const {
   return pbc.getBox();
 }
 
 inline
-std::vector<Vector> & ActionAtomistic::modifyForces(){
+std::vector<Vector> & ActionAtomistic::modifyForces() {
   return forces;
 }
 
 inline
-Tensor & ActionAtomistic::modifyVirial(){
+Tensor & ActionAtomistic::modifyVirial() {
   return virial;
 }
 
 inline
-double & ActionAtomistic::modifyForceOnEnergy(){
+double & ActionAtomistic::modifyForceOnEnergy() {
   return forceOnEnergy;
 }
 
 inline
-const Pbc & ActionAtomistic::getPbc() const{
- return pbc;
+const Pbc & ActionAtomistic::getPbc() const {
+  return pbc;
 }
 
 inline
-void ActionAtomistic::lockRequests(){
+void ActionAtomistic::lockRequests() {
   lockRequestAtoms=true;
 }
 
 inline
-void ActionAtomistic::unlockRequests(){
+void ActionAtomistic::unlockRequests() {
   lockRequestAtoms=false;
 }
 
 inline
-const std::set<AtomNumber> & ActionAtomistic::getUnique()const{
+const std::set<AtomNumber> & ActionAtomistic::getUnique()const {
   return unique;
 }
 
 inline
-unsigned ActionAtomistic::getTotAtoms()const{
+unsigned ActionAtomistic::getTotAtoms()const {
   return atoms.positions.size();
 }
 
 inline
-Pbc & ActionAtomistic::modifyGlobalPbc(){
+Pbc & ActionAtomistic::modifyGlobalPbc() {
   return atoms.pbc;
 }
 

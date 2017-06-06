@@ -43,18 +43,18 @@
 using namespace std;
 
 
-namespace PLMD{
-namespace bias{
+namespace PLMD {
+namespace bias {
 
 //+PLUMEDOC BIAS MAXENT
 /*
-Adds a linear biasing potential on one or more variables satisfing maximum entropy principle.  .  
+Adds a linear biasing potential on one or more variables satisfing maximum entropy principle.  .
 
 \warning
     Notice that syntax is still under revision and might change
 \endwarning
 
-The resulting biasing potential is given by: 
+The resulting biasing potential is given by:
 \f[
   V_{BIAS}(\boldsymbol{x},t)=K_{B}T\sum_{i=1}^{\#arguments}f_{i}(\boldsymbol{x},t)\lambda_{i}(t)
 \f]
@@ -69,8 +69,8 @@ Variable \f$ \xi_{i}(\lambda) \f$ is related to the choosen prior to model exper
 \f[
 \xi_{i}(\lambda)=-\lambda_{i}\sigma^{2}
 \f]
-where \f$ \sigma \f$ is the typical expected error on the observable \f$ f_i\f$. 
-For a LAPLACE prior: 
+where \f$ \sigma \f$ is the typical expected error on the observable \f$ f_i\f$.
+For a LAPLACE prior:
 \f[
 \xi_{i}(\lambda)=-\frac{\lambda_{i}\sigma^{2}}{1-\frac{\lambda^{2}\sigma^{2}}{2}}
 
@@ -88,18 +88,18 @@ Morover plumed will compute the average of each lagrangian multiplier from TSTAR
 DISTANCE ATOMS=7,15 LABEL=d1
 DISTANCE ATOMS=2,19 LABEL=d2
 MAXENT ...
-ARG=d1,d2 
-TYPE=EQUAL 
-AT=0.2,0.5 
-KAPPA=35000.0,35000.0 
-TAU=0.02,0.02 
+ARG=d1,d2
+TYPE=EQUAL
+AT=0.2,0.5
+KAPPA=35000.0,35000.0
+TAU=0.02,0.02
 PACE=200
 TSTART=100
 TEND=500
 LABEL=restraint
 PRINT ARG=restraint.bias
 \endverbatim
-Lagrangian multipliers will be printed on a file called 
+Lagrangian multipliers will be printed on a file called
 The following input tells plumed to restrain the distance between atoms 7 and 15
 to be greater than 0.2 and to print the energy of the restraint
 \verbatim
@@ -113,7 +113,7 @@ PRINT ARG=restraint.bias
 */
 //+ENDPLUMEDOC
 
-class MaxEnt : public Bias{
+class MaxEnt : public Bias {
   std::vector<double> at;
   std::vector<double> kappa;
   std::vector<double> lambda;
@@ -159,7 +159,7 @@ public:
   ~MaxEnt();
   void calculate();
   void update();
-  void update_lambda(); 
+  void update_lambda();
   static void registerKeywords(Keywords& keys);
   void ReadLagrangians(IFile &ifile);
   void WriteLagrangians(vector<double> &lagmult,OFile &file);
@@ -169,19 +169,19 @@ public:
 };
 PLUMED_REGISTER_ACTION(MaxEnt,"MAXENT")
 
-void MaxEnt::registerKeywords(Keywords& keys){
+void MaxEnt::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
   componentsAreNotOptional(keys);
   keys.use("ARG");
   keys.add("compulsory","KAPPA","0.0","specifies the initial value for the learning rate");
   keys.add("compulsory","TAU","Specify the dumping time for the learning rate.");
   keys.add("compulsory","TYPE","specify the type of the restraint. "
-       "EQAUL to restrain the variable at a given equilibrium value"
-       "INEQUAL< to restrain the variable to be smaller than a given value"
-       "INEQUAL> to restrain the variable to be greater than a given value");
+           "EQAUL to restrain the variable at a given equilibrium value"
+           "INEQUAL< to restrain the variable to be smaller than a given value"
+           "INEQUAL> to restrain the variable to be greater than a given value");
   keys.add("optional","ERROR_TYPE","specify the prior on the error to use."
-       "GAUSSIAN: use a Gaussian prior"
-     "LAPLACE: use a Laplace prior");
+           "GAUSSIAN: use a Gaussian prior"
+           "LAPLACE: use a Laplace prior");
   keys.add("optional","TSTART","time in ps from where to start averaging the Lagrangian multiplier. By default no average is computed, hence lambda is updated every PACE steps");
   keys.add("optional","TEND","time in ps where to stop to compute the average of Lagrangian multiplier. From this time until the end of the simulation Lagrangian multipliers are kept fix to the average computed between TSTART and TEND;");
   keys.add("optional","ALFA","default=1.0; To be used with LAPLACE KEYWORD, allows to choose a prior function proportional to a Gaussian times an exponential function. ALFA=1 correspond to the LAPLACE prior.");
@@ -199,36 +199,36 @@ void MaxEnt::registerKeywords(Keywords& keys){
   keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
   keys.addOutputComponent("work","default","the instantaneous value of the work done by the biasing force");
   keys.addOutputComponent("_work","default","the instantaneous value of the work done by the biasing force for each argument. "
-                                           "These quantities will named with the arguments of the bias followed by "
-                                           "the character string _work.");
+                          "These quantities will named with the arguments of the bias followed by "
+                          "the character string _work.");
   keys.addOutputComponent("_error","default","Instantaneous values of the discrepancy between the observable and the restraint center");
   keys.addOutputComponent("_coupling","default","Instantaneous values of Lagrangian multipliers. They are also written by default in a separate output file.");
   keys.use("RESTART");
 }
-MaxEnt::~MaxEnt(){
+MaxEnt::~MaxEnt() {
   lagmultOfile_.close();
 }
 MaxEnt::MaxEnt(const ActionOptions&ao):
-PLUMED_BIAS_INIT(ao),
-at(getNumberOfArguments()),
-kappa(getNumberOfArguments(),0.0),
-lambda(getNumberOfArguments(),0.0),
-avgx(getNumberOfArguments(),0.0),
-oldlambda(getNumberOfArguments(),0.0),
-tau(getNumberOfArguments(),getTimeStep()),
-avglambda(getNumberOfArguments(),0.0),
-avglambda_restart(getNumberOfArguments(),0.0),
-expected_eps(getNumberOfArguments(),0.0),
-sigma(0.0),
-pace_(100),
-stride_(100),
-alfa(1.0),
-avg_counter(0.0),
-isFirstStep(true),
-reweight(false),
-no_broadcast(false),
-printFirstStep(true),
-done_average(getNumberOfArguments(),false)
+  PLUMED_BIAS_INIT(ao),
+  at(getNumberOfArguments()),
+  kappa(getNumberOfArguments(),0.0),
+  lambda(getNumberOfArguments(),0.0),
+  avgx(getNumberOfArguments(),0.0),
+  oldlambda(getNumberOfArguments(),0.0),
+  tau(getNumberOfArguments(),getTimeStep()),
+  avglambda(getNumberOfArguments(),0.0),
+  avglambda_restart(getNumberOfArguments(),0.0),
+  expected_eps(getNumberOfArguments(),0.0),
+  sigma(0.0),
+  pace_(100),
+  stride_(100),
+  alfa(1.0),
+  avg_counter(0.0),
+  isFirstStep(true),
+  reweight(false),
+  no_broadcast(false),
+  printFirstStep(true),
+  done_average(getNumberOfArguments(),false)
 {
   if(comm.Get_rank()==0) nrep=multi_sim_comm.Get_size();
   if(comm.Get_rank()==0) myrep=multi_sim_comm.Get_rank();
@@ -240,12 +240,12 @@ done_average(getNumberOfArguments(),false)
   //  if(irep!=myrep)
   //    apply_weights[irep]=0.0;}
   //}
-  avgstep=1.0;   
+  avgstep=1.0;
   tstart=-1.0;
   tend=-1.0;
   totalWork=0.0;
   learn_replica=0;
-  
+
   parse("LEARN_REPLICA",learn_replica);
   parseVector("APPLY_WEIGHTS",apply_weights);
   if(apply_weights.size()==0) apply_weights.resize(nrep,1.0);
@@ -270,23 +270,23 @@ done_average(getNumberOfArguments(),false)
   stride_=pace_;  //if no STRIDE is passed, then Lagrangian multipliers willbe printed at each update
   parse("PRINT_STRIDE",stride_);
   if(stride_<=0 ) error("frequency for Lagrangian multipliers printing (STRIDE) is nonsensical");
-  simtemp=0.; 
+  simtemp=0.;
   parse("TEMP",simtemp);
-    if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
-    else simtemp=plumed.getAtoms().getKbT();
+  if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
+  else simtemp=plumed.getAtoms().getKbT();
   parseFlag("REWEIGHT",reweight);
   if(simtemp<=0 && reweight) error("Set the temperature (TEMP) if you want to do reweighting.");
-  
+
   checkRead();
-  
+
   log.printf("  at");
-  for(unsigned i=0;i<at.size();i++) log.printf(" %f",at[i]);
+  for(unsigned i=0; i<at.size(); i++) log.printf(" %f",at[i]);
   log.printf("\n");
   log.printf("  with initial learning rate for optimization of");
-  for(unsigned i=0;i<kappa.size();i++) log.printf(" %f",kappa[i]);
+  for(unsigned i=0; i<kappa.size(); i++) log.printf(" %f",kappa[i]);
   log.printf("\n");
   log.printf("Dumping times for the learning rates are (ps): ");
-  for(unsigned i=0;i<tau.size();i++) log.printf(" %f",tau[i]);
+  for(unsigned i=0; i<tau.size(); i++) log.printf(" %f",tau[i]);
   log.printf("\n");
   log.printf("Lagrangian multipliers are updated every %ld steps (PACE)\n",pace_);
   log.printf("Lagrangian multipliers output file %s\n",lagmultfname.c_str());
@@ -294,7 +294,7 @@ done_average(getNumberOfArguments(),false)
   if(fmt.length()>0)
     log.printf("The format for real number in Lagrangian multipliers file is %s\n",fmt.c_str());
   if(tstart >-1.0 && tend>-1.0)
-  	log.printf("Lagrangian multipliers are averaged from %lf ps to %lf ps\n",tstart,tend);
+    log.printf("Lagrangian multipliers are averaged from %lf ps to %lf ps\n",tstart,tend);
   if(no_broadcast)
     log.printf("Using NO_BROADCAST options. Lagrangian multipliers will not be comunicated to other replicas.\n");
   //for(int irep=0;irep<nrep;irep++){
@@ -307,32 +307,32 @@ done_average(getNumberOfArguments(),false)
   valueWork=getPntrToComponent("work");
 
   std::string comp;
-  for(unsigned i=0;i< getNumberOfArguments() ;i++){
+  for(unsigned i=0; i< getNumberOfArguments() ; i++) {
     comp=getPntrToArgument(i)->getName()+"_coupling";
     addComponent(comp); componentIsNotPeriodic(comp);
     comp=getPntrToArgument(i)->getName()+"_work";
     addComponent(comp); componentIsNotPeriodic(comp);
-    work.push_back(0.); // initialize the work value 
+    work.push_back(0.); // initialize the work value
     comp=getPntrToArgument(i)->getName()+"_error";
     addComponent(comp); componentIsNotPeriodic(comp);
   }
-string fname;
-fname=lagmultfname;
-ifile.link(*this);
-if(ifile.FileExist(fname)){
-  ifile.open(fname);
-  if(getRestart()){
-    log.printf("  Restarting from: %s\n",fname.c_str());
-		ReadLagrangians(ifile);             
-		printFirstStep=false;
+  string fname;
+  fname=lagmultfname;
+  ifile.link(*this);
+  if(ifile.FileExist(fname)) {
+    ifile.open(fname);
+    if(getRestart()) {
+      log.printf("  Restarting from: %s\n",fname.c_str());
+      ReadLagrangians(ifile);
+      printFirstStep=false;
     }
-	ifile.reset(false);
-	ifile.close();
-}
+    ifile.reset(false);
+    ifile.close();
+  }
 
-lagmultOfile_.link(*this);
-lagmultOfile_.open(fname);
-if(fmt.length()>0) {fmt=" "+fmt;lagmultOfile_.fmtField(fmt);}
+  lagmultOfile_.link(*this);
+  lagmultOfile_.open(fname);
+  if(fmt.length()>0) {fmt=" "+fmt; lagmultOfile_.fmtField(fmt);}
 }
 ////MEMBER FUNCTIONS
 void MaxEnt::ReadLagrangians(IFile &ifile)
@@ -341,89 +341,89 @@ void MaxEnt::ReadLagrangians(IFile &ifile)
   double deltat=getTimeStep();
   double last_checkpoint=getTime();
   double dummy;
-  while(ifile.scanField("time",dummy)){
-      for(unsigned j=0;j<getNumberOfArguments();++j){
-        ifile.scanField(getPntrToArgument(j)->getName()+"_coupling",lambda[j]);
-        if(dummy>=tstart && dummy <=tend)
-          avglambda[j]+=lambda[j];
-        if(dummy>=tend){
-          avglambda[j]=lambda[j];
-          done_average[j]=true;
-          }
-      }
+  while(ifile.scanField("time",dummy)) {
+    for(unsigned j=0; j<getNumberOfArguments(); ++j) {
+      ifile.scanField(getPntrToArgument(j)->getName()+"_coupling",lambda[j]);
       if(dummy>=tstart && dummy <=tend)
-        avg_counter++;
-      ifile.scanField();
+        avglambda[j]+=lambda[j];
+      if(dummy>=tend) {
+        avglambda[j]=lambda[j];
+        done_average[j]=true;
+      }
+    }
+    if(dummy>=tstart && dummy <=tend)
+      avg_counter++;
+    ifile.scanField();
   }
 }
-void MaxEnt::WriteLagrangians(vector<double> &lagmult,OFile &file){
-  if(printFirstStep){
+void MaxEnt::WriteLagrangians(vector<double> &lagmult,OFile &file) {
+  if(printFirstStep) {
     unsigned ncv=getNumberOfArguments();
     file.printField("time",getTimeStep()*getStep());
-    for(unsigned i=0;i<ncv;++i)
+    for(unsigned i=0; i<ncv; ++i)
       file.printField(getPntrToArgument(i)->getName()+"_coupling",lagmult[i]);
     file.printField();
-  }else{
-  if(!isFirstStep){
-    unsigned ncv=getNumberOfArguments();
-    file.printField("time",getTimeStep()*getStep());
-    for(unsigned i=0;i<ncv;++i)
-      file.printField(getPntrToArgument(i)->getName()+"_coupling",lagmult[i]);
-    file.printField(); 
+  } else {
+    if(!isFirstStep) {
+      unsigned ncv=getNumberOfArguments();
+      file.printField("time",getTimeStep()*getStep());
+      for(unsigned i=0; i<ncv; ++i)
+        file.printField(getPntrToArgument(i)->getName()+"_coupling",lagmult[i]);
+      file.printField();
     }
   }
 }
-double MaxEnt::compute_error(string &err_type,double &l){
+double MaxEnt::compute_error(string &err_type,double &l) {
   double sigma2=pow(sigma,2.0);
   double l2=convert_lambda(type,l);
   double return_error=0;
   if(err_type=="GAUSSIAN" && sigma!=0.0)
     return_error=-l2*sigma2;
-  else{
-    if(err_type=="LAPLACE" && sigma!=0){
-      return_error=-l2*sigma2/(1.0-l2*l2*sigma2/(alfa+1));		
+  else {
+    if(err_type=="LAPLACE" && sigma!=0) {
+      return_error=-l2*sigma2/(1.0-l2*l2*sigma2/(alfa+1));
     }
   }
-return return_error;
+  return return_error;
 }
-double MaxEnt::convert_lambda(string &type,double lold){
+double MaxEnt::convert_lambda(string &type,double lold) {
   double return_lambda=0;
   if(type=="EQUAL")
     return_lambda=lold;
-  else{
-    if(type=="INEQUAL>"){
+  else {
+    if(type=="INEQUAL>") {
       if(lold>0.0)
         return_lambda=0.0;
       else
         return_lambda=lold;
-      }
-    else{
-      if(type=="INEQUAL<"){
+    }
+    else {
+      if(type=="INEQUAL<") {
         if(lold<0.0)
           return_lambda=0.0;
         else
           return_lambda=lold;
-        }
       }
+    }
   }
-return return_lambda;
+  return return_lambda;
 }
-void MaxEnt::check_lambda_boundaries(string &err_type,double &l){
-  if(err_type=="LAPLACE" && sigma !=0 ){
+void MaxEnt::check_lambda_boundaries(string &err_type,double &l) {
+  if(err_type=="LAPLACE" && sigma !=0 ) {
     double l2=convert_lambda(err_type,l);
-    if(l2 <-(sqrt(alfa+1)/sigma-0.01)){
+    if(l2 <-(sqrt(alfa+1)/sigma-0.01)) {
       l=-(sqrt(alfa+1)/sigma-0.01);
       log.printf("Lambda exceeded the allowed range\n");
-      }
-    if(l2>(sqrt(alfa+1)/sigma-0.01)){
+    }
+    if(l2>(sqrt(alfa+1)/sigma-0.01)) {
       l=sqrt(alfa+1)/sigma-0.01;
       log.printf("Lambda exceeded the allowed range\n");
-      }
+    }
   }
 }
 
-void MaxEnt::update_lambda(){
-  
+void MaxEnt::update_lambda() {
+
   double totalWork_=0.0;
   const double time=getTime();
   const double deltat=getTimeStep();
@@ -435,48 +435,48 @@ void MaxEnt::update_lambda(){
     BetaReweightBias=plumed.getBias()/KbT;
   else
     BetaReweightBias=0.0;
-    
-  for(unsigned i=0;i<getNumberOfArguments();++i){
+
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     double sigma2=pow(sigma,2.0);
     const double k=kappa[i];
     cv=(getArgument(i)+compute_error(error_type,lambda[i])-at[i]);
     if(reweight)
-      learning_rate=1.0*k/(1+step/tau[i]); 
-    else  
-      learning_rate=1.0*k/(1+time/tau[i]); 
+      learning_rate=1.0*k/(1+step/tau[i]);
+    else
+      learning_rate=1.0*k/(1+time/tau[i]);
     lambda[i]+=learning_rate*cv*exp(-BetaReweightBias); //update Lagrangian multipliers and reweight them if REWEIGHT is set
     check_lambda_boundaries(error_type,lambda[i]);      //check that Lagrangians multipliers not exceed the aloowed range
-  	if(time>=tstart && time <=tend && !done_average[i]){
-		  avglambda[i]+=convert_lambda(type,lambda[i]); //compute the average of Lagrangian multipliers over the required time window
-      }
-	  if(time>=tend && tend >=0){ //setting tend<0 will disable this feature
-	    if(!done_average[i]){
+    if(time>=tstart && time <=tend && !done_average[i]) {
+      avglambda[i]+=convert_lambda(type,lambda[i]); //compute the average of Lagrangian multipliers over the required time window
+    }
+    if(time>=tend && tend >=0) { //setting tend<0 will disable this feature
+      if(!done_average[i]) {
         avglambda[i]=avglambda[i]/avg_counter;
         done_average[i]=true;
         lambda[i]=avglambda[i];
-        }
+      }
       else
         lambda[i]=avglambda[i]; //keep Lagrangian multipliers fixed to the previously computed average.
     }
-	  work[i]+=(convert_lambda(type,lambda[i])-oldlambda[i])*getArgument(i); //compute the work performed in updating lambda
+    work[i]+=(convert_lambda(type,lambda[i])-oldlambda[i])*getArgument(i); //compute the work performed in updating lambda
     totalWork_+=work[i];
-	  totalWork=totalWork_;
+    totalWork=totalWork_;
     oldlambda[i]=convert_lambda(type,lambda[i]);
   };
   if(time>=tstart && time <=tend)
     avg_counter++;
 }
 
-void MaxEnt::calculate(){
+void MaxEnt::calculate() {
   double totf2=0.0;
   double ene=0.0;
   double KbT=simtemp;
-  for(unsigned i=0;i<getNumberOfArguments();++i){
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     getPntrToComponent(getPntrToArgument(i)->getName()+"_error")->set(expected_eps[i]);
     getPntrToComponent(getPntrToArgument(i)->getName()+"_work")->set(work[i]);
-    valueWork->set(totalWork);  
+    valueWork->set(totalWork);
     getPntrToComponent(getPntrToArgument(i)->getName()+"_coupling")->set(lambda[i]);
-    const double f=-KbT*convert_lambda(type,lambda[i])*apply_weights[myrep]; 
+    const double f=-KbT*convert_lambda(type,lambda[i])*apply_weights[myrep];
     totf2+=f*f;
     ene+=KbT*convert_lambda(type,lambda[i])*getArgument(i)*apply_weights[myrep];
     setOutputForce(i,f);
@@ -485,18 +485,19 @@ void MaxEnt::calculate(){
   valueForce2->set(totf2);
 }
 
-void MaxEnt::update(){
-  
+void MaxEnt::update() {
+
   if(getStep()%stride_ == 0)
-    WriteLagrangians(lambda,lagmultOfile_); 
-  if(getStep()%pace_ == 0){
+    WriteLagrangians(lambda,lagmultOfile_);
+  if(getStep()%pace_ == 0) {
     update_lambda();
-  if(!no_broadcast){
-    if(comm.Get_rank()==0) //Comunicate Lagrangian multipliers from reference replica to higher ones
-      multi_sim_comm.Bcast(lambda,learn_replica);}
-    comm.Bcast(lambda,0); 
+    if(!no_broadcast) {
+      if(comm.Get_rank()==0) //Comunicate Lagrangian multipliers from reference replica to higher ones
+        multi_sim_comm.Bcast(lambda,learn_replica);
+    }
+    comm.Bcast(lambda,0);
   }
-isFirstStep=false; 
+  isFirstStep=false;
 }
 
 }

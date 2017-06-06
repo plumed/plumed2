@@ -44,18 +44,18 @@ clock_gettime (#define __PLUMED_HAS_CLOCK_GETTIME)
 
 using namespace std;
 
-namespace PLMD{
+namespace PLMD {
 
 // this is needed for friend operators
-std::ostream& operator<<(std::ostream&os,const Stopwatch&sw){
+std::ostream& operator<<(std::ostream&os,const Stopwatch&sw) {
   return sw.log(os);
 }
 
-Stopwatch::Time::operator double()const{
+Stopwatch::Time::operator double()const {
   return sec+0.000000001*nsec;
 }
 
-Stopwatch::Time Stopwatch::Time::get(){
+Stopwatch::Time Stopwatch::Time::get() {
   Time t;
 #ifdef __PLUMED_HAS_CLOCK_GETTIME
   timespec ts;
@@ -74,7 +74,7 @@ Stopwatch::Time Stopwatch::Time::get(){
   return t;
 }
 
-void Stopwatch::Time::reset(){
+void Stopwatch::Time::reset() {
   sec=0;
   nsec=0;
 }
@@ -82,9 +82,9 @@ void Stopwatch::Time::reset(){
 Stopwatch::Time::Time():
   sec(0),nsec(0) { }
 
-Stopwatch::Time Stopwatch::Time::operator-(const Time&t2)const{
+Stopwatch::Time Stopwatch::Time::operator-(const Time&t2)const {
   Time t(*this);
-  if(t.nsec<t2.nsec){
+  if(t.nsec<t2.nsec) {
     t.sec--;
     t.nsec+=1000000000;
   }
@@ -94,10 +94,10 @@ Stopwatch::Time Stopwatch::Time::operator-(const Time&t2)const{
   return t;
 }
 
-const Stopwatch::Time & Stopwatch::Time::operator+=(const Time&t2){
+const Stopwatch::Time & Stopwatch::Time::operator+=(const Time&t2) {
   Time &t(*this);
   t.nsec+=t2.nsec;
-  if(t.nsec>1000000000){
+  if(t.nsec>1000000000) {
     t.nsec-=1000000000;
     t.sec++;
   }
@@ -108,50 +108,50 @@ const Stopwatch::Time & Stopwatch::Time::operator+=(const Time&t2){
 Stopwatch::Watch::Watch():
   cycles(0),running(0) { }
 
-void Stopwatch::Watch::start(){
+void Stopwatch::Watch::start() {
   running++;
   lastStart=Time::get();
 }
 
-void Stopwatch::Watch::stop(){
+void Stopwatch::Watch::stop() {
   pause();
   cycles++;
   total+=lap;
   if(lap>max)max=lap;
   if(min>lap || cycles==1)min=lap;
   lap.reset();
-} 
+}
 
-void Stopwatch::Watch::pause(){
+void Stopwatch::Watch::pause() {
   plumed_assert(running>0);
   running--;
   if(running!=0) return;
   lap+=Time::get()-lastStart;
-} 
+}
 
-void Stopwatch::start(const std::string & name){
+void Stopwatch::start(const std::string & name) {
   watches[name].start();
 }
 
-void Stopwatch::stop(const std::string & name){
+void Stopwatch::stop(const std::string & name) {
   watches[name].stop();
 }
 
-void Stopwatch::pause(const std::string & name){
+void Stopwatch::pause(const std::string & name) {
   watches[name].pause();
 }
 
 
-std::ostream& Stopwatch::log(std::ostream&os)const{
+std::ostream& Stopwatch::log(std::ostream&os)const {
   char buffer[1000];
   buffer[0]=0;
-  for(unsigned i=0;i<40;i++) os<<" ";
+  for(unsigned i=0; i<40; i++) os<<" ";
   os<<"      Cycles        Total      Average      Minumum      Maximum\n";
-  for(map<string,Watch>::const_iterator it=watches.begin();it!=watches.end();++it){
+  for(map<string,Watch>::const_iterator it=watches.begin(); it!=watches.end(); ++it) {
     const Watch&t((*it).second);
     std::string name((*it).first);
     os<<name;
-    for(unsigned i=name.length();i<40;i++) os<<" ";
+    for(unsigned i=name.length(); i<40; i++) os<<" ";
     std::sprintf(buffer,"%12u %12.6f %12.6f %12.6f %12.6f\n", t.cycles, double(t.total), double(t.total/t.cycles), double(t.min),double(t.max));
     os<<buffer;
   }

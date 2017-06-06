@@ -27,8 +27,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace colvar{
+namespace PLMD {
+namespace colvar {
 
 //+PLUMEDOC COLVAR COORDINATION
 /*
@@ -51,7 +51,7 @@ but it can be changed using the optional SWITCH option.
 To make your calculation faster you can use a neighbor list, which makes it that only a
 relevant subset of the pairwise distance are calculated at every step.
 
-If GROUPB is empty, it will sum the \f$\frac{N(N-1)}{2}\f$ pairs in GROUPA. This avoids computing 
+If GROUPB is empty, it will sum the \f$\frac{N(N-1)}{2}\f$ pairs in GROUPA. This avoids computing
 twice permuted indexes (e.g. pair (i,j) and (j,i)) thus running at twice the speed.
 
 Notice that if there are common atoms between GROUPA and GROUPB the switching function should be
@@ -63,7 +63,7 @@ so that they actually count as "zero".
 
 The following example instructs plumed to calculate the total coordination number of the atoms in group 1-10 with the atoms in group 20-100.  For atoms 1-10 coordination numbers are calculated that count the number of atoms from the second group that are within 0.3 nm of the central atom.  A neighbour list is used to make this calculation faster, this neighbour list is updated every 100 steps.
 \verbatim
-COORDINATION GROUPA=1-10 GROUPB=20-100 R_0=0.3 NLIST NL_CUTOFF=0.5 NL_STRIDE=100 
+COORDINATION GROUPA=1-10 GROUPB=20-100 R_0=0.3 NLIST NL_CUTOFF=0.5 NL_STRIDE=100
 \endverbatim
 
 The following is a dummy example which should compute the value 0 because the self interaction
@@ -89,8 +89,8 @@ See also \ref PRINT and \ref COMBINE
 
 */
 //+ENDPLUMEDOC
-   
-class Coordination : public CoordinationBase{
+
+class Coordination : public CoordinationBase {
   SwitchingFunction switchingFunction;
 
 public:
@@ -102,25 +102,25 @@ public:
 
 PLUMED_REGISTER_ACTION(Coordination,"COORDINATION")
 
-void Coordination::registerKeywords( Keywords& keys ){
+void Coordination::registerKeywords( Keywords& keys ) {
   CoordinationBase::registerKeywords(keys);
   keys.add("compulsory","NN","6","The n parameter of the switching function ");
   keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
   keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
-                               "The following provides information on the \\ref switchingfunction that are available. " 
-                               "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords."); 
+           "The following provides information on the \\ref switchingfunction that are available. "
+           "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
 }
 
 Coordination::Coordination(const ActionOptions&ao):
-Action(ao),
-CoordinationBase(ao)
+  Action(ao),
+  CoordinationBase(ao)
 {
 
   string sw,errors;
   parse("SWITCH",sw);
-  if(sw.length()>0){
+  if(sw.length()>0) {
     switchingFunction.set(sw,errors);
     if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
   } else {
@@ -135,13 +135,13 @@ CoordinationBase(ao)
     parse("MM",mm);
     switchingFunction.set(nn,mm,r0,d0);
   }
-  
+
   checkRead();
 
   log<<"  contacts are counted with cutoff "<<switchingFunction.description()<<"\n";
 }
 
-double Coordination::pairing(double distance,double&dfunc,unsigned i,unsigned j)const{
+double Coordination::pairing(double distance,double&dfunc,unsigned i,unsigned j)const {
   (void) i; // avoid warnings
   (void) j; // avoid warnings
   return switchingFunction.calculateSqr(distance,dfunc);

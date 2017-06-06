@@ -41,7 +41,7 @@ using namespace std;
 
 namespace PLMD
 {
-namespace generic{
+namespace generic {
 
 //+PLUMEDOC PRINTANALYSIS DUMPATOMS
 /*
@@ -115,14 +115,14 @@ public:
   explicit DumpAtoms(const ActionOptions&);
   ~DumpAtoms();
   static void registerKeywords( Keywords& keys );
-  void calculate(){}
-  void apply(){}
+  void calculate() {}
+  void apply() {}
   void update();
 };
 
 PLUMED_REGISTER_ACTION(DumpAtoms,"DUMPATOMS")
 
-void DumpAtoms::registerKeywords( Keywords& keys ){
+void DumpAtoms::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
@@ -151,13 +151,13 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
   string file;
   parse("FILE",file);
   if(file.length()==0) error("name out output file was not specified");
-    type=Tools::extension(file);
-    log<<"  file name "<<file<<"\n";
+  type=Tools::extension(file);
+  log<<"  file name "<<file<<"\n";
   if(type=="gro" || type=="xyz"
 #ifdef __PLUMED_HAS_XDRFILE
-     || type=="xtc" || type=="trr"
+      || type=="xtc" || type=="trr"
 #endif
-  ){
+    ) {
     log<<"  file extension indicates a "<<type<<" file\n";
   } else {
     log<<"  file extension not detected, assuming xyz\n";
@@ -165,12 +165,12 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
   }
   string ntype;
   parse("TYPE",ntype);
-  if(ntype.length()>0){
+  if(ntype.length()>0) {
     if(ntype!="xyz" && ntype!="gro"
 #ifdef __PLUMED_HAS_XDRFILE
-     && ntype!="xtc" && ntype!="trr"
+        && ntype!="xtc" && ntype!="trr"
 #endif
-    ) error("TYPE cannot be understood");
+      ) error("TYPE cannot be understood");
     log<<"  file type enforced to be "<<ntype<<"\n";
     type=ntype;
   }
@@ -181,7 +181,7 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
 
   string precision;
   parse("PRECISION",precision);
-  if(precision.length()>0){
+  if(precision.length()>0) {
     Tools::convert(precision,iprecision);
     log<<"  with precision "<<iprecision<<"\n";
     string a,b;
@@ -195,13 +195,13 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
   parseAtomList("ATOMS",atoms);
 
   std::string unitname; parse("UNITS",unitname);
-  if(unitname!="PLUMED"){
+  if(unitname!="PLUMED") {
     Units myunit; myunit.setLength(unitname);
     if(myunit.getLength()!=1.0 && type=="gro") error("gro files should be in nm");
     if(myunit.getLength()!=1.0 && type=="xtc") error("xtc files should be in nm");
     if(myunit.getLength()!=1.0 && type=="trr") error("trr files should be in nm");
     lenunit=plumed.getAtoms().getUnits().getLength()/myunit.getLength();
-  } else if(type=="gro" || type=="xtc" || type=="trr") lenunit=plumed.getAtoms().getUnits().getLength(); 
+  } else if(type=="gro" || type=="xtc" || type=="trr") lenunit=plumed.getAtoms().getUnits().getLength();
   else lenunit=1.0;
 
   checkRead();
@@ -211,54 +211,54 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
   log<<"  Writing on file "<<path<<"\n";
 #ifdef __PLUMED_HAS_XDRFILE
   std::string mode=of.getMode();
-  if(type=="xtc"){
+  if(type=="xtc") {
     of.close();
     xd=xdrfile_open(path.c_str(),mode.c_str());
-  } else if(type=="trr"){
+  } else if(type=="trr") {
     of.close();
     xd=xdrfile_open(path.c_str(),mode.c_str());
   }
 #endif
   log.printf("  printing the following atoms in %s :", unitname.c_str() );
-  for(unsigned i=0;i<atoms.size();++i) log.printf(" %d",atoms[i].serial() );
+  for(unsigned i=0; i<atoms.size(); ++i) log.printf(" %d",atoms[i].serial() );
   log.printf("\n");
   requestAtoms(atoms);
   std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
-  if( moldat.size()==1 ){
+  if( moldat.size()==1 ) {
     log<<"  MOLINFO DATA found, using proper atom names\n";
     names.resize(atoms.size());
-    for(unsigned i=0;i<atoms.size();i++) names[i]=moldat[0]->getAtomName(atoms[i]);
+    for(unsigned i=0; i<atoms.size(); i++) names[i]=moldat[0]->getAtomName(atoms[i]);
     residueNumbers.resize(atoms.size());
-    for(unsigned i=0;i<residueNumbers.size();++i) residueNumbers[i]=moldat[0]->getResidueNumber(atoms[i]);
+    for(unsigned i=0; i<residueNumbers.size(); ++i) residueNumbers[i]=moldat[0]->getResidueNumber(atoms[i]);
     residueNames.resize(atoms.size());
-    for(unsigned i=0;i<residueNames.size();++i) residueNames[i]=moldat[0]->getResidueName(atoms[i]);
+    for(unsigned i=0; i<residueNames.size(); ++i) residueNames[i]=moldat[0]->getResidueName(atoms[i]);
   }
 }
 
-void DumpAtoms::update(){
-  if(type=="xyz"){
+void DumpAtoms::update() {
+  if(type=="xyz") {
     of.printf("%d\n",getNumberOfAtoms());
     const Tensor & t(getPbc().getBox());
-    if(getPbc().isOrthorombic()){
+    if(getPbc().isOrthorombic()) {
       of.printf((" "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+"\n").c_str(),lenunit*t(0,0),lenunit*t(1,1),lenunit*t(2,2));
-    }else{
+    } else {
       of.printf((" "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+"\n").c_str(),
-                   lenunit*t(0,0),lenunit*t(0,1),lenunit*t(0,2),
-                   lenunit*t(1,0),lenunit*t(1,1),lenunit*t(1,2),
-                   lenunit*t(2,0),lenunit*t(2,1),lenunit*t(2,2)
-             );
+                lenunit*t(0,0),lenunit*t(0,1),lenunit*t(0,2),
+                lenunit*t(1,0),lenunit*t(1,1),lenunit*t(1,2),
+                lenunit*t(2,0),lenunit*t(2,1),lenunit*t(2,2)
+               );
     }
-    for(unsigned i=0;i<getNumberOfAtoms();++i){
+    for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
       const char* defname="X";
       const char* name=defname;
       if(names.size()>0) if(names[i].length()>0) name=names[i].c_str();
       of.printf(("%s "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+"\n").c_str(),name,lenunit*getPosition(i)(0),lenunit*getPosition(i)(1),lenunit*getPosition(i)(2));
     }
-  } else if(type=="gro"){
+  } else if(type=="gro") {
     const Tensor & t(getPbc().getBox());
     of.printf("Made with PLUMED t=%f\n",getTime()/plumed.getAtoms().getUnits().getTime());
     of.printf("%d\n",getNumberOfAtoms());
-    for(unsigned i=0;i<getNumberOfAtoms();++i){
+    for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
       const char* defname="X";
       const char* name=defname;
       unsigned residueNumber=0;
@@ -267,27 +267,27 @@ void DumpAtoms::update(){
       std::string resname="";
       if(residueNames.size()>0) resname=residueNames[i];
       of.printf(("%5u%-5s%5s%5d"+fmt_gro_pos+fmt_gro_pos+fmt_gro_pos+"\n").c_str(),
-         residueNumber%100000,resname.c_str(),name,getAbsoluteIndex(i).serial()%100000,
-         lenunit*getPosition(i)(0),lenunit*getPosition(i)(1),lenunit*getPosition(i)(2));
+                residueNumber%100000,resname.c_str(),name,getAbsoluteIndex(i).serial()%100000,
+                lenunit*getPosition(i)(0),lenunit*getPosition(i)(1),lenunit*getPosition(i)(2));
     }
     of.printf((fmt_gro_box+" "+fmt_gro_box+" "+fmt_gro_box+" "+fmt_gro_box+" "+fmt_gro_box+" "+fmt_gro_box+" "+fmt_gro_box+" "+fmt_gro_box+" "+fmt_gro_box+"\n").c_str(),
-           lenunit*t(0,0),lenunit*t(1,1),lenunit*t(2,2),
-           lenunit*t(0,1),lenunit*t(0,2),lenunit*t(1,0),
-           lenunit*t(1,2),lenunit*t(2,0),lenunit*t(2,1));
+              lenunit*t(0,0),lenunit*t(1,1),lenunit*t(2,2),
+              lenunit*t(0,1),lenunit*t(0,2),lenunit*t(1,0),
+              lenunit*t(1,2),lenunit*t(2,0),lenunit*t(2,1));
 #if defined(__PLUMED_HAS_XDRFILE)
-  } else if(type=="xtc" || type=="trr"){
+  } else if(type=="xtc" || type=="trr") {
     matrix box;
     const Tensor & t(getPbc().getBox());
     rvec* pos=new rvec [getNumberOfAtoms()];
-    for(int i=0;i<3;i++) for(int j=0;j<3;j++) box[i][j]=lenunit*t(i,j);
-    for(int i=0;i<getNumberOfAtoms();i++) for(int j=0;j<3;j++) pos[i][j]=lenunit*getPosition(i)(j);
+    for(int i=0; i<3; i++) for(int j=0; j<3; j++) box[i][j]=lenunit*t(i,j);
+    for(int i=0; i<getNumberOfAtoms(); i++) for(int j=0; j<3; j++) pos[i][j]=lenunit*getPosition(i)(j);
     int natoms=getNumberOfAtoms();
     int step=getStep();
     float time=getTime()/plumed.getAtoms().getUnits().getTime();
     float precision=Tools::fastpow(10.0,iprecision);
-    if(type=="xtc"){
+    if(type=="xtc") {
       write_xtc(xd,natoms,step,time,box,pos,precision);
-    } else if(type=="trr"){
+    } else if(type=="trr") {
       write_trr(xd,natoms,step,time,0.0,box,pos,NULL,NULL);
     }
     delete [] pos;
@@ -295,7 +295,7 @@ void DumpAtoms::update(){
   } else plumed_merror("unknown file type "+type);
 }
 
-DumpAtoms::~DumpAtoms(){
+DumpAtoms::~DumpAtoms() {
 #ifdef __PLUMED_HAS_XDRFILE
   if(type=="xtc") {
     xdrfile_close(xd);
@@ -304,7 +304,7 @@ DumpAtoms::~DumpAtoms(){
   }
 #endif
 }
-  
+
 
 }
 }

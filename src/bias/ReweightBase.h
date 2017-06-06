@@ -28,9 +28,9 @@
 namespace PLMD {
 namespace bias {
 
-class ReweightBase : 
-public ActionWithValue,
-public ActionWithArguments
+class ReweightBase :
+  public ActionWithValue,
+  public ActionWithArguments
 {
 protected:
 /// The temperature at which you are running the simulation
@@ -38,11 +38,11 @@ protected:
 public:
   static void registerKeywords(Keywords&);
   explicit ReweightBase(const ActionOptions&ao);
-  unsigned getNumberOfDerivatives(){ return 0; }
+  unsigned getNumberOfDerivatives() { return 0; }
   void calculate();
   virtual double getLogWeight() const = 0;
-  void apply(){}
-}; 
+  void apply() {}
+};
 
 }
 }

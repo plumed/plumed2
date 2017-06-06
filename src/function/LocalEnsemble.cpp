@@ -25,15 +25,15 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace function{
+namespace PLMD {
+namespace function {
 
 //+PLUMEDOC FUNCTION LOCALENSEMBLE
 /*
 Calculates the average over multiple arguments.
 
 If more than one collective variable is given for each argument then they
-are averaged separately. The average is stored in a component labelled <em>label</em>.cvlabel.  
+are averaged separately. The average is stored in a component labelled <em>label</em>.cvlabel.
 
 \par Examples
 The following input tells plumed to calculate the chemical shifts for four
@@ -88,7 +88,7 @@ public:
 
 PLUMED_REGISTER_ACTION(LocalEnsemble,"LOCALENSEMBLE")
 
-void LocalEnsemble::registerKeywords(Keywords& keys){
+void LocalEnsemble::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","NUM","the number of local replicas");
@@ -96,24 +96,24 @@ void LocalEnsemble::registerKeywords(Keywords& keys){
 }
 
 LocalEnsemble::LocalEnsemble(const ActionOptions&ao):
-Action(ao),
-Function(ao),
-ens_dim(0)
+  Action(ao),
+  Function(ao),
+  ens_dim(0)
 {
   parse("NUM",ens_dim);
   if(ens_dim==0) error("NUM should be greater or equal to 1");
 
   vector<Value*> arg;
   int oldsize=-1;
-  for(unsigned i=1;i<=ens_dim;++i ){
+  for(unsigned i=1; i<=ens_dim; ++i ) {
     vector<Value*> larg;
     if(!parseArgumentList("ARG",i,larg)) break;
-    for(unsigned j=0;j<larg.size();j++) arg.push_back(larg[j]);
+    for(unsigned j=0; j<larg.size(); j++) arg.push_back(larg[j]);
     if(oldsize!=-1&&oldsize!=larg.size()) error("In LOCALENSEMBLE you should have the same number of arguments for each ARG keyword");
     oldsize = larg.size();
-    if(!larg.empty()){
+    if(!larg.empty()) {
       log.printf("  with arguments %u: ", i);
-      for(unsigned j=0;j<larg.size();j++) log.printf(" %s",larg[j]->getName().c_str());
+      for(unsigned j=0; j<larg.size(); j++) log.printf(" %s",larg[j]->getName().c_str());
       log.printf("\n");
     }
   }
@@ -121,9 +121,9 @@ ens_dim(0)
   narg = arg.size()/ens_dim;
 
   // these are the averages
-  for(unsigned i=0;i<narg;i++) {
+  for(unsigned i=0; i<narg; i++) {
     std::string s=getPntrToArgument(i)->getName();
-    addComponentWithDerivatives(s); 
+    addComponentWithDerivatives(s);
     getPntrToComponent(i)->setNotPeriodic();
   }
 
@@ -132,18 +132,18 @@ ens_dim(0)
 
 void LocalEnsemble::calculate()
 {
-  const double fact = 1.0/static_cast<double>(ens_dim); 
+  const double fact = 1.0/static_cast<double>(ens_dim);
   #pragma omp parallel for num_threads(OpenMP::getNumThreads())
-  for(unsigned i=0;i<narg;++i){
+  for(unsigned i=0; i<narg; ++i) {
     double mean = 0.;
     Value* v=getPntrToComponent(i);
-    for(unsigned j=0;j<ens_dim;++j) {
+    for(unsigned j=0; j<ens_dim; ++j) {
       const unsigned index = j*narg+i;
       setDerivative(v, index, fact);
       mean += fact*getArgument(index);
     }
     v->set(mean);
-  } 
+  }
 }
 
 }

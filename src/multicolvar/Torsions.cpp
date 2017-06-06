@@ -28,8 +28,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace multicolvar{
+namespace PLMD {
+namespace multicolvar {
 
 //+PLUMEDOC MCOLVAR TORSIONS
 /*
@@ -43,14 +43,14 @@ The following provides an example of the input for the torsions command
 TORSIONS ...
 ATOMS1=168,170,172,188
 ATOMS2=170,172,188,190
-ATOMS3=188,190,192,230 
+ATOMS3=188,190,192,230
 LABEL=ab
 ... TORSIONS
 PRINT ARG=ab.* FILE=colvar STRIDE=10
 \endverbatim
 
 Writing out the atoms involved in all the torsions in this way can be rather tedious. Thankfully if you are working with protein you
-can avoid this by using the \ref MOLINFO command.  PLUMED uses the pdb file that you provide to this command to learn 
+can avoid this by using the \ref MOLINFO command.  PLUMED uses the pdb file that you provide to this command to learn
 about the topology of the protein molecule.  This means that you can specify torsion angles using the following syntax:
 
 \verbatim
@@ -60,11 +60,11 @@ ATOMS1=@phi-3
 ATOMS2=@psi-3
 ATOMS3=@phi-4
 LABEL=ab
-... TORSIONS 
+... TORSIONS
 PRINT ARG=ab FILE=colvar STRIDE=10
 \endverbatim
 
-Here, \@phi-3 tells plumed that you would like to calculate the \f$\phi\f$ angle in the third residue of the protein.  
+Here, \@phi-3 tells plumed that you would like to calculate the \f$\phi\f$ angle in the third residue of the protein.
 Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle of the 4th residue of the protein.
 
 
@@ -76,28 +76,28 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Torsions(const ActionOptions&);
   virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
-  bool isPeriodic(){ return true; }
-  void retrieveDomain( std::string& min, std::string& max ){ min="-pi"; max="pi"; }
+  bool isPeriodic() { return true; }
+  void retrieveDomain( std::string& min, std::string& max ) { min="-pi"; max="pi"; }
 };
 
 PLUMED_REGISTER_ACTION(Torsions,"TORSIONS")
 
-void Torsions::registerKeywords( Keywords& keys ){
+void Torsions::registerKeywords( Keywords& keys ) {
   MultiColvar::registerKeywords( keys );
   keys.use("ATOMS"); keys.use("BETWEEN"); keys.use("HISTOGRAM");
 }
 
 Torsions::Torsions(const ActionOptions&ao):
-PLUMED_MULTICOLVAR_INIT(ao)
+  PLUMED_MULTICOLVAR_INIT(ao)
 {
   // Read in the atoms
-  int natoms=4; std::vector<AtomNumber> all_atoms; 
+  int natoms=4; std::vector<AtomNumber> all_atoms;
   readAtoms( natoms, all_atoms );
-  std::vector<bool> catom_ind(4, false); 
+  std::vector<bool> catom_ind(4, false);
   catom_ind[1]=catom_ind[2]=true;
   setAtomsForCentralAtom( catom_ind );
   // Read in the vessels
-  readVesselKeywords();  
+  readVesselKeywords();
   // And check everything has been read in correctly
   checkRead();
 }

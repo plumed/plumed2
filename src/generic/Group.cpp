@@ -31,19 +31,19 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace generic{
+namespace PLMD {
+namespace generic {
 
 //+PLUMEDOC GENERIC GROUP
 /*
 Define a group of atoms so that a particular list of atoms can be referenced with a single label
-in definitions of CVs or virtual atoms. 
+in definitions of CVs or virtual atoms.
 
 Atoms can be listed as comma separated numbers (i.e. 1,2,3,10,45,7,9,..) , simple positive ranges
 (i.e. 20-40), ranges with a stride either positive or negative (i.e. 20-40:2 or 80-50:-2) or as
-combinations of all the former methods (1,2,4,5,10-20,21-40:2,80-50:-2). 
+combinations of all the former methods (1,2,4,5,10-20,21-40:2,80-50:-2).
 
-Moreover, lists can be imported from ndx files (GROMACS format). Use NDX_FILE to set the name of 
+Moreover, lists can be imported from ndx files (GROMACS format). Use NDX_FILE to set the name of
 the index file and NDX_GROUP to set the name of the group to be imported (default is first one).
 
 It is also possible to remove atoms from a list and or sort them using keywords REMOVE, SORT, and UNIQUE.
@@ -126,8 +126,8 @@ public:
   explicit Group(const ActionOptions&ao);
   ~Group();
   static void registerKeywords( Keywords& keys );
-  void calculate(){}
-  void apply(){}
+  void calculate() {}
+  void apply() {}
 };
 
 PLUMED_REGISTER_ACTION(Group,"GROUP")
@@ -144,25 +144,25 @@ Group::Group(const ActionOptions&ao):
   if(ndxfile.length()>0 && atoms.size()>0) error("either use explicit atom list or import from index file");
   if(ndxfile.length()==0 && ndxgroup.size()>0) error("NDX_GROUP can be only used is NDX_FILE is also used");
 
-  if(ndxfile.length()>0){
+  if(ndxfile.length()>0) {
     if(ndxgroup.size()>0) log<<"  importing group '"+ndxgroup+"'";
     else                  log<<"  importing first group";
     log<<" from index file "<<ndxfile<<"\n";
-    
+
     IFile ifile;
     ifile.open(ndxfile);
     std::string line;
     std::string groupname;
     bool firstgroup=true;
     bool groupfound=false;
-    while(ifile.getline(line)){
+    while(ifile.getline(line)) {
       std::vector<std::string> words=Tools::getWords(line);
-      if(words.size()>=3 && words[0]=="[" && words[2]=="]"){
+      if(words.size()>=3 && words[0]=="[" && words[2]=="]") {
         if(groupname.length()>0) firstgroup=false;
         groupname=words[1];
         if(groupname==ndxgroup || ndxgroup.length()==0) groupfound=true;
-      } else if(groupname==ndxgroup || (firstgroup && ndxgroup.length()==0)){
-        for(unsigned i=0;i<words.size();i++){
+      } else if(groupname==ndxgroup || (firstgroup && ndxgroup.length()==0)) {
+        for(unsigned i=0; i<words.size(); i++) {
           AtomNumber at; Tools::convert(words[i],at);
           atoms.push_back(at);
         }
@@ -173,44 +173,44 @@ Group::Group(const ActionOptions&ao):
 
   std::vector<AtomNumber> remove;
   parseAtomList("REMOVE",remove);
-  if(remove.size()>0){
+  if(remove.size()>0) {
     std::vector<AtomNumber> notfound;
     log<<"  removing these atoms from the list:";
-    for(unsigned i=0;i<remove.size();i++){
+    for(unsigned i=0; i<remove.size(); i++) {
       std::vector<AtomNumber>::iterator it = find(atoms.begin(),atoms.end(),remove[i]);
-      if(it!=atoms.end()){
+      if(it!=atoms.end()) {
         log<<" "<<(*it).serial();
         atoms.erase(it);
       } else notfound.push_back(remove[i]);
     }
     log<<"\n";
-    if(notfound.size()>0){
+    if(notfound.size()>0) {
       log<<"  the following atoms were not found:";
-      for(unsigned i=0;i<notfound.size();i++) log<<" "<<notfound[i].serial();
+      for(unsigned i=0; i<notfound.size(); i++) log<<" "<<notfound[i].serial();
       log<<"\n";
     }
   }
 
   bool sortme=false;
   parseFlag("SORT",sortme);
-  if(sortme){
+  if(sortme) {
     log<<"  atoms are sorted\n";
     sort(atoms.begin(),atoms.end());
   }
   bool unique=false;
   parseFlag("UNIQUE",unique);
-  if(unique){
+  if(unique) {
     log<<"  sorting atoms and removing duplicates\n";
     Tools::removeDuplicates(atoms);
   }
 
   this->atoms.insertGroup(getLabel(),atoms);
   log.printf("  list of atoms ");
-  for(unsigned i=0;i<atoms.size();i++) log<<" "<<atoms[i].serial();
+  for(unsigned i=0; i<atoms.size(); i++) log<<" "<<atoms[i].serial();
   log.printf("\n");
 }
 
-void Group::registerKeywords( Keywords& keys ){
+void Group::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
   keys.add("atoms", "ATOMS", "the numerical indexes for the set of atoms in the group");
@@ -221,7 +221,7 @@ void Group::registerKeywords( Keywords& keys ){
   keys.add("optional", "NDX_GROUP", "the name of the group to be imported (gromacs syntax) - first group found is used by default");
 }
 
-Group::~Group(){
+Group::~Group() {
   atoms.removeGroup(getLabel());
 }
 

@@ -29,7 +29,7 @@ namespace crystallization {
 /*
 Calculate the vectors connecting a pair of atoms in order to represent the orientation of a molecule.
 
-At its simplest this command can be used to calculate the average length of an internal vector in a 
+At its simplest this command can be used to calculate the average length of an internal vector in a
 collection of different molecules.  When used in conjunction with MutiColvarFunctions in can be used
 to do a variety of more complex tasks.
 
@@ -63,31 +63,31 @@ public:
 
 PLUMED_REGISTER_ACTION(MoleculeOrientation,"MOLECULES")
 
-void MoleculeOrientation::registerKeywords( Keywords& keys ){
+void MoleculeOrientation::registerKeywords( Keywords& keys ) {
   VectorMultiColvar::registerKeywords( keys ); keys.use("VMEAN");
-  keys.add("numbered","MOL","The numerical indices of the atoms in the molecule. The orientation of the molecule is equal to " 
-                            "the vector connecting the first two atoms specified.  If a third atom is specified its position "
-                            "is used to specify where the molecule is.  If a third atom is not present the molecule is assumed "
-                            "to be at the center of the vector connecting the first two atoms.");
-  keys.reset_style("MOL","atoms"); 
+  keys.add("numbered","MOL","The numerical indices of the atoms in the molecule. The orientation of the molecule is equal to "
+           "the vector connecting the first two atoms specified.  If a third atom is specified its position "
+           "is used to specify where the molecule is.  If a third atom is not present the molecule is assumed "
+           "to be at the center of the vector connecting the first two atoms.");
+  keys.reset_style("MOL","atoms");
 }
 
 MoleculeOrientation::MoleculeOrientation( const ActionOptions& ao ):
-Action(ao),
-VectorMultiColvar(ao)
+  Action(ao),
+  VectorMultiColvar(ao)
 {
   int natoms=-1; std::vector<AtomNumber> all_atoms;
-  readAtomsLikeKeyword("MOL",natoms,all_atoms); 
+  readAtomsLikeKeyword("MOL",natoms,all_atoms);
   nvectors = std::floor( natoms / 2 );
   if( natoms%2!=0 && 2*nvectors+1!=natoms ) error("number of atoms in molecule specification is wrong.  Should be two or three.");
 
   if( all_atoms.size()==0 ) error("No atoms were specified");
   setVectorDimensionality( 3*nvectors ); setupMultiColvarBase( all_atoms );
 
-  if( natoms==2*nvectors+1  ){
+  if( natoms==2*nvectors+1  ) {
     std::vector<bool> catom_ind(natoms, false); catom_ind[natoms-1]=true;
     setAtomsForCentralAtom( catom_ind );
-  } 
+  }
 }
 
 AtomNumber MoleculeOrientation::getAbsoluteIndexOfCentralAtom( const unsigned& iatom ) const {
@@ -97,55 +97,55 @@ AtomNumber MoleculeOrientation::getAbsoluteIndexOfCentralAtom( const unsigned& i
 }
 
 void MoleculeOrientation::calculateVector( multicolvar::AtomValuePack& myatoms ) const {
-  for(unsigned i=0;i<nvectors;++i){
-      Vector distance; distance=getSeparation( myatoms.getPosition(2*i+0), myatoms.getPosition(2*i+1) );
+  for(unsigned i=0; i<nvectors; ++i) {
+    Vector distance; distance=getSeparation( myatoms.getPosition(2*i+0), myatoms.getPosition(2*i+1) );
 
-      addAtomDerivatives( 2+3*i+0, 2*i+0, Vector(-1.0,0,0), myatoms );
-      addAtomDerivatives( 2+3*i+0, 2*i+1, Vector(+1.0,0,0), myatoms );
-      myatoms.addBoxDerivatives( 2+3*i+0, Tensor(distance,Vector(-1.0,0,0)) ); 
-      myatoms.addValue( 2+3*i+0, distance[0] );
+    addAtomDerivatives( 2+3*i+0, 2*i+0, Vector(-1.0,0,0), myatoms );
+    addAtomDerivatives( 2+3*i+0, 2*i+1, Vector(+1.0,0,0), myatoms );
+    myatoms.addBoxDerivatives( 2+3*i+0, Tensor(distance,Vector(-1.0,0,0)) );
+    myatoms.addValue( 2+3*i+0, distance[0] );
 
-      addAtomDerivatives( 2+3*i+1, 2*i+0, Vector(0,-1.0,0), myatoms );
-      addAtomDerivatives( 2+3*i+1, 2*i+1, Vector(0,+1.0,0), myatoms );
-      myatoms.addBoxDerivatives( 2+3*i+1, Tensor(distance,Vector(0,-1.0,0)) ); 
-      myatoms.addValue( 2+3*i+1, distance[1] ); 
+    addAtomDerivatives( 2+3*i+1, 2*i+0, Vector(0,-1.0,0), myatoms );
+    addAtomDerivatives( 2+3*i+1, 2*i+1, Vector(0,+1.0,0), myatoms );
+    myatoms.addBoxDerivatives( 2+3*i+1, Tensor(distance,Vector(0,-1.0,0)) );
+    myatoms.addValue( 2+3*i+1, distance[1] );
 
-      addAtomDerivatives( 2+3*i+2, 2*i+0, Vector(0,0,-1.0), myatoms );
-      addAtomDerivatives( 2+3*i+2, 2*i+1, Vector(0,0,+1.0), myatoms );
-      myatoms.addBoxDerivatives( 2+3*i+2, Tensor(distance,Vector(0,0,-1.0)) ); 
-      myatoms.addValue( 2+3*i+2, distance[2] );
-  } 
+    addAtomDerivatives( 2+3*i+2, 2*i+0, Vector(0,0,-1.0), myatoms );
+    addAtomDerivatives( 2+3*i+2, 2*i+1, Vector(0,0,+1.0), myatoms );
+    myatoms.addBoxDerivatives( 2+3*i+2, Tensor(distance,Vector(0,0,-1.0)) );
+    myatoms.addValue( 2+3*i+2, distance[2] );
+  }
 }
 
-void MoleculeOrientation::normalizeVector( std::vector<double>& vals ) const { 
-  for(unsigned i=0;i<nvectors;++i){
-      double norm=0;
-      for(unsigned j=0;j<3;++j) norm += vals[2+3*i+j]*vals[2+3*i+j];
-      norm = sqrt(norm);
-     
-      double inorm = 1.0; if( norm>epsilon ) inorm = 1.0 / norm;
-      for(unsigned j=0;j<3;++j) vals[2+3*i+j] = inorm*vals[2+3*i+j];
+void MoleculeOrientation::normalizeVector( std::vector<double>& vals ) const {
+  for(unsigned i=0; i<nvectors; ++i) {
+    double norm=0;
+    for(unsigned j=0; j<3; ++j) norm += vals[2+3*i+j]*vals[2+3*i+j];
+    norm = sqrt(norm);
+
+    double inorm = 1.0; if( norm>epsilon ) inorm = 1.0 / norm;
+    for(unsigned j=0; j<3; ++j) vals[2+3*i+j] = inorm*vals[2+3*i+j];
   }
 }
 
 void MoleculeOrientation::normalizeVectorDerivatives( MultiValue& myvals ) const {
   std::vector<double> weight( nvectors ), wdf( nvectors );
-  for(unsigned ivec=0;ivec<nvectors;++ivec){
-      double v=0; for(unsigned jcomp=0;jcomp<3;++jcomp) v += myvals.get( 2+3*ivec+jcomp )*myvals.get( 2+3*ivec+jcomp );
-      v=sqrt(v); weight[ivec]=1.0; wdf[ivec]=1.0; 
-      if( v>epsilon ){ weight[ivec] = 1.0 / v; wdf[ivec] = 1.0 / ( v*v*v ); }
+  for(unsigned ivec=0; ivec<nvectors; ++ivec) {
+    double v=0; for(unsigned jcomp=0; jcomp<3; ++jcomp) v += myvals.get( 2+3*ivec+jcomp )*myvals.get( 2+3*ivec+jcomp );
+    v=sqrt(v); weight[ivec]=1.0; wdf[ivec]=1.0;
+    if( v>epsilon ) { weight[ivec] = 1.0 / v; wdf[ivec] = 1.0 / ( v*v*v ); }
   }
 
-  for(unsigned j=0;j<myvals.getNumberActive();++j){
-      unsigned jder=myvals.getActiveIndex(j);
-      for(unsigned ivec=0;ivec<nvectors;++ivec){
-          double comp2=0.0; for(unsigned jcomp=0;jcomp<3;++jcomp) comp2 += myvals.get(2+3*ivec+jcomp)*myvals.getDerivative( 2+3*ivec+jcomp, jder );
-          for(unsigned jcomp=0;jcomp<3;++jcomp){
-              myvals.setDerivative( 2+3*ivec+jcomp, jder, weight[ivec]*myvals.getDerivative( 2+3*ivec+jcomp, jder ) - wdf[ivec]*comp2*myvals.get(2+3*ivec+jcomp) );
-          }
+  for(unsigned j=0; j<myvals.getNumberActive(); ++j) {
+    unsigned jder=myvals.getActiveIndex(j);
+    for(unsigned ivec=0; ivec<nvectors; ++ivec) {
+      double comp2=0.0; for(unsigned jcomp=0; jcomp<3; ++jcomp) comp2 += myvals.get(2+3*ivec+jcomp)*myvals.getDerivative( 2+3*ivec+jcomp, jder );
+      for(unsigned jcomp=0; jcomp<3; ++jcomp) {
+        myvals.setDerivative( 2+3*ivec+jcomp, jder, weight[ivec]*myvals.getDerivative( 2+3*ivec+jcomp, jder ) - wdf[ivec]*comp2*myvals.get(2+3*ivec+jcomp) );
       }
-  }   
-}   
+    }
+  }
+}
 
 }
 }

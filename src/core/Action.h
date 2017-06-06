@@ -29,16 +29,16 @@
 #include "tools/Tools.h"
 #include "tools/Log.h"
 
-namespace PLMD{
+namespace PLMD {
 
 class PDB;
 class PlumedMain;
 class Communicator;
 
 /// This class is used to bring the relevant information to the Action constructor.
-/// Only Action and ActionRegister class can access to its content, which is 
+/// Only Action and ActionRegister class can access to its content, which is
 /// kept private to other classes, and may change in the future.
-class ActionOptions{
+class ActionOptions {
   friend class Action;
   friend class ActionRegister;
 /// Reference to main PlumedMain object
@@ -88,12 +88,12 @@ public:
 private:
 /// Actions on which this Action depends.
   Dependencies after;
- 
+
 /// Switch to activate Action on this step.
   bool active;
 
-/// Option that you might have enabled 
-  std::set<std::string> options; 
+/// Option that you might have enabled
+  std::set<std::string> options;
 
   bool restart;
 
@@ -114,7 +114,7 @@ public:
   void clearDependencies();
 
 /// Return the present timestep
-  long int getStep()const; 
+  long int getStep()const;
 
 /// Return the present time
   double getTime()const;
@@ -125,7 +125,7 @@ public:
 /// Return true if we are doing a restart
   bool getRestart()const;
 
-/// Return true if we are doing at a checkpoint step 
+/// Return true if we are doing at a checkpoint step
   bool getCPT()const;
 
 /// Just read one of the keywords and return the whole thing as a string
@@ -151,8 +151,8 @@ public:
   void parseFlag(const std::string&key,bool&t);
 
 /// Crash calculation and print documentation
-  void error( const std::string & msg ) const; 
-  
+  void error( const std::string & msg ) const;
+
 /// Issue a warning
   void warning( const std::string & msg );
 
@@ -190,11 +190,11 @@ public:
 /// By default (if not overridden) does nothing.
   virtual void prepare();
 
-/// Register all the relevant keywords for the action  
+/// Register all the relevant keywords for the action
   static void registerKeywords( Keywords& keys );
 
-  virtual void lockRequests(){}
-  virtual void unlockRequests(){}
+  virtual void lockRequests() {}
+  virtual void unlockRequests() {}
 
 /// Calculate an Action.
 /// This method is called one or more times per step.
@@ -213,17 +213,17 @@ public:
 /// of the fact that update() is active or not.
 /// In other words, this is *always* called, even when action
 /// is not active.
-  virtual void beforeUpdate(){}
+  virtual void beforeUpdate() {}
 
 /// Update.
 /// This method is called one time per step.
 /// The set of all Actions is updated in forward order.
-  virtual void update(){}
+  virtual void update() {}
 
 /// RunFinalJobs
 /// This method is called once at the very end of the calculation.
 /// The set of all Actions in run for the final time in forward order.
-  virtual void runFinalJobs(){}
+  virtual void runFinalJobs() {}
 
 /// Tell to the Action to flush open files
   void fflush();
@@ -254,16 +254,16 @@ public:
   bool isOptionOn(const std::string &s)const;
 
 /// Return dependencies
-  const Dependencies & getDependencies()const{return after;}
+  const Dependencies & getDependencies()const {return after;}
 
 /// Check if numerical derivatives should be performed
-  virtual bool checkNumericalDerivatives()const{return false;}
+  virtual bool checkNumericalDerivatives()const {return false;}
 
 /// Check if the action needs gradient
-  virtual bool checkNeedsGradients()const{return false;}
+  virtual bool checkNeedsGradients()const {return false;}
 
 /// Perform calculation using numerical derivatives
-/// N.B. only pass an ActionWithValue to this routine if you know exactly what you 
+/// N.B. only pass an ActionWithValue to this routine if you know exactly what you
 /// are doing.
   virtual void calculateNumericalDerivatives( ActionWithValue* a=NULL );
 
@@ -278,10 +278,10 @@ public:
 /// Calculate the action given a pdb file as input.  This is used to initialize
 /// things like distance from a point in CV map space given a pdb as an input file
   void calculateFromPDB( const PDB&  );
-/// This is overwritten in ActionAtomistic so that we can read 
-/// the atoms from the pdb input file rather than taking them from the 
+/// This is overwritten in ActionAtomistic so that we can read
+/// the atoms from the pdb input file rather than taking them from the
 /// MD code
-  virtual void readAtomsFromPDB( const PDB&  ){}
+  virtual void readAtomsFromPDB( const PDB&  ) {}
 /// Check if we are on an exchange step
   bool getExchangeStep()const;
 
@@ -293,17 +293,17 @@ public:
 // FAST INLINE METHODS
 
 inline
-const std::string & Action::getLabel()const{
+const std::string & Action::getLabel()const {
   return label;
 }
 
 inline
-const std::string & Action::getName()const{
+const std::string & Action::getName()const {
   return name;
 }
 
 template<class T>
-void Action::parse(const std::string&key,T&t){
+void Action::parse(const std::string&key,T&t) {
 //  if(!Tools::parse(line,key,t)){
 //    log.printf("ERROR parsing keyword %s\n",key.c_str());
 //    log.printf("%s\n",getDocumentation().c_str());
@@ -313,26 +313,26 @@ void Action::parse(const std::string&key,T&t){
   plumed_massert(keywords.exists(key),"keyword " + key + " has not been registered");
 
   // Now try to read the keyword
-  std::string def; 
+  std::string def;
   bool present=Tools::findKeyword(line,key);
   bool found=Tools::parse(line,key,t);
   if(present && !found) error("keyword " + key +" could not be read correctly");
-  
-  // If it isn't read and it is compulsory see if a default value was specified 
-  if ( !found && (keywords.style(key,"compulsory") || keywords.style(key,"hidden")) ){
-       if( keywords.getDefaultValue(key,def) ){
-          if( def.length()==0 || !Tools::convert(def,t) ){
-             log.printf("ERROR in action %s with label %s : keyword %s has weird default value",name.c_str(),label.c_str(),key.c_str() );
-             this->exit(1);
-          }           
-       } else if( keywords.style(key,"compulsory") ){
-          error("keyword " + key + " is compulsory for this action");
-       }
-  }   
+
+  // If it isn't read and it is compulsory see if a default value was specified
+  if ( !found && (keywords.style(key,"compulsory") || keywords.style(key,"hidden")) ) {
+    if( keywords.getDefaultValue(key,def) ) {
+      if( def.length()==0 || !Tools::convert(def,t) ) {
+        log.printf("ERROR in action %s with label %s : keyword %s has weird default value",name.c_str(),label.c_str(),key.c_str() );
+        this->exit(1);
+      }
+    } else if( keywords.style(key,"compulsory") ) {
+      error("keyword " + key + " is compulsory for this action");
+    }
+  }
 }
 
 template<class T>
-bool Action::parseNumbered(const std::string&key, const int no, T&t){
+bool Action::parseNumbered(const std::string&key, const int no, T&t) {
   // Check keyword has been registered
   plumed_massert(keywords.exists(key),"keyword " + key + " has not been registered");
   if( !keywords.numbered(key) ) error("numbered keywords are not allowed for " + key );
@@ -343,7 +343,7 @@ bool Action::parseNumbered(const std::string&key, const int no, T&t){
 }
 
 template<class T>
-void Action::parseVector(const std::string&key,std::vector<T>&t){
+void Action::parseVector(const std::string&key,std::vector<T>&t) {
 //  if(!Tools::parseVector(line,key,t)){
 //    log.printf("ERROR parsing keyword %s\n",key.c_str());
 //    log.printf("%s\n",getDocumentation().c_str());
@@ -362,31 +362,31 @@ void Action::parseVector(const std::string&key,std::vector<T>&t){
   if(present && !found) error("keyword " + key +" could not be read correctly");
 
   // Check vectors size is correct (not if this is atoms or ARG)
-  if( !keywords.style(key,"atoms") && found ){
+  if( !keywords.style(key,"atoms") && found ) {
 //     bool skipcheck=false;
 //     if( keywords.style(key,"compulsory") ){ keywords.getDefaultValue(key,def); skipcheck=(def=="nosize"); }
-     if( !skipcheck && t.size()!=size ) error("vector read in for keyword " + key + " has the wrong size");
+    if( !skipcheck && t.size()!=size ) error("vector read in for keyword " + key + " has the wrong size");
   }
 
-  // If it isn't read and it is compulsory see if a default value was specified 
-  if ( !found && (keywords.style(key,"compulsory") || keywords.style(key,"hidden")) ){
-       if( keywords.getDefaultValue(key,def) ){
-          if( def.length()==0 || !Tools::convert(def,val) ){
-             log.printf("ERROR in action %s with label %s : keyword %s has weird default value",name.c_str(),label.c_str(),key.c_str() );
-             this->exit(1);
-          } else {
-             for(unsigned i=0;i<t.size();++i) t[i]=val;
-          }          
-       } else if( keywords.style(key,"compulsory") ){
-          error("keyword " + key + " is compulsory for this action");
-       }
-  } else if ( !found ){
-       t.resize(0);
-  } 
+  // If it isn't read and it is compulsory see if a default value was specified
+  if ( !found && (keywords.style(key,"compulsory") || keywords.style(key,"hidden")) ) {
+    if( keywords.getDefaultValue(key,def) ) {
+      if( def.length()==0 || !Tools::convert(def,val) ) {
+        log.printf("ERROR in action %s with label %s : keyword %s has weird default value",name.c_str(),label.c_str(),key.c_str() );
+        this->exit(1);
+      } else {
+        for(unsigned i=0; i<t.size(); ++i) t[i]=val;
+      }
+    } else if( keywords.style(key,"compulsory") ) {
+      error("keyword " + key + " is compulsory for this action");
+    }
+  } else if ( !found ) {
+    t.resize(0);
+  }
 }
 
 template<class T>
-bool Action::parseNumberedVector(const std::string&key, const int no, std::vector<T>&t){
+bool Action::parseNumberedVector(const std::string&key, const int no, std::vector<T>&t) {
   plumed_massert(keywords.exists(key),"keyword " + key + " has not been registered");
   if( !keywords.numbered(key) ) error("numbered keywords are not allowed for " + key );
 
@@ -397,37 +397,37 @@ bool Action::parseNumberedVector(const std::string&key, const int no, std::vecto
   bool found=Tools::parseVector(line,key+num,t);
   if(present && !found) error("keyword " + key +" could not be read correctly");
 
-  if(  keywords.style(key,"compulsory") ){
-    if (!skipcheck && found && t.size()!=size ) error("vector read in for keyword " + key + num + " has the wrong size");  
-  } else if ( !found ){
+  if(  keywords.style(key,"compulsory") ) {
+    if (!skipcheck && found && t.size()!=size ) error("vector read in for keyword " + key + num + " has the wrong size");
+  } else if ( !found ) {
     t.resize(0);
   }
   return found;
 }
 
 inline
-void Action::deactivate(){
+void Action::deactivate() {
   options.clear();
   active=false;
 }
 
 inline
-bool Action::isActive()const{
+bool Action::isActive()const {
   return active;
 }
 
 inline
-bool Action::isOptionOn(const std::string &s)const{
+bool Action::isOptionOn(const std::string &s)const {
   return options.count(s);
 }
 
 inline
-bool Action::getRestart()const{
+bool Action::getRestart()const {
   return restart;
 }
 
 inline
-bool Action::getCPT()const{
+bool Action::getCPT()const {
   return doCheckPoint;
 }
 

@@ -24,7 +24,7 @@
 
 #include "OFile.h"
 
-namespace PLMD{
+namespace PLMD {
 
 /// Class containing the log stream.
 ///

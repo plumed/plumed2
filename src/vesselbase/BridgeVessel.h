@@ -34,7 +34,7 @@ namespace vesselbase {
 /**
 \ingroup TOOLBOX
 This class allows you to calculate the vessel in one ActionWithVessel.  The user thinks
-it is created in a different Action however.  At the moment this is used for region 
+it is created in a different Action however.  At the moment this is used for region
 */
 
 class BridgeVessel : public Vessel {
@@ -54,13 +54,13 @@ public:
   ActionWithVessel* getOutputAction();
 /// Setup the action we are outputting to
   void setOutputAction( ActionWithVessel* myOutputAction );
-/// Apply some force 
+/// Apply some force
   bool applyForce( std::vector<double>& forces );
 /// Should not be called
   std::string description();
 /// Jobs to do before the task list starts
   void prepare();
-/// Set the start of the buffer 
+/// Set the start of the buffer
   void setBufferStart( unsigned& start );
 /// This transforms the derivatives using the output value
   MultiValue& transformDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals );
@@ -75,7 +75,7 @@ public:
 };
 
 inline
-ActionWithVessel* BridgeVessel::getOutputAction(){
+ActionWithVessel* BridgeVessel::getOutputAction() {
   return myOutputAction;
 }
 

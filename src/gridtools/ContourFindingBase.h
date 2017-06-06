@@ -30,7 +30,7 @@ namespace gridtools {
 
 class ContourFindingBase : public ActionWithInputGrid {
 private:
-/// Stuff for output 
+/// Stuff for output
   OFile of;
   double lenunit;
   std::string fmt_xyz;
@@ -49,9 +49,9 @@ public:
 /// Get the contour value
   double getDifferenceFromContour( const std::vector<double>& x, std::vector<double>& der ) const ;
 /// Overwrite not needed stuff
-  unsigned getNumberOfDerivatives(){ return 0; }
+  unsigned getNumberOfDerivatives() { return 0; }
 /// This is not periodic
-  bool isPeriodic(){ return false; }
+  bool isPeriodic() { return false; }
 /// Number of quantities is the number of points in each point on the grid
   virtual unsigned getNumberOfQuantities() const { return 1 + ingrid->getDimension(); }
 /// This does output if needs be

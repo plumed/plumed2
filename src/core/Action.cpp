@@ -28,25 +28,25 @@
 #include "ActionSet.h"
 #include <iostream>
 
-namespace PLMD{
+namespace PLMD {
 
 Keywords ActionOptions::emptyKeys;
 
 ActionOptions::ActionOptions(PlumedMain&p,const std::vector<std::string>&l):
-plumed(p),
-line(l),
-keys(emptyKeys)
+  plumed(p),
+  line(l),
+  keys(emptyKeys)
 {
 }
 
 ActionOptions::ActionOptions(const ActionOptions&ao,const Keywords&keys):
-plumed(ao.plumed),
-line(ao.line),
-keys(keys)
+  plumed(ao.plumed),
+  line(ao.line),
+  keys(keys)
 {
 }
 
-void Action::registerKeywords( Keywords& keys ){
+void Action::registerKeywords( Keywords& keys ) {
   plumed_assert( keys.size()==0 );
   keys.add( "hidden", "LABEL", "a label for the action so that its output can be referenced in the input to other actions.  Actions with scalar output are referenced using their label only.  Actions with vector output must have a separate label for every component.  Individual componets are then refered to using label.component" );
   keys.reserve("optional","UPDATE_FROM","Only update this action from this time");
@@ -71,9 +71,9 @@ Action::Action(const ActionOptions&ao):
   line.erase(line.begin());
   log.printf("Action %s\n",name.c_str());
 
-  if ( keywords.exists("LABEL") ){ parse("LABEL",label); }
+  if ( keywords.exists("LABEL") ) { parse("LABEL",label); }
 
-  if(label.length()==0){
+  if(label.length()==0) {
     std::string s; Tools::convert(plumed.getActionSet().size(),s);
     label="@"+s;
   }
@@ -83,7 +83,7 @@ Action::Action(const ActionOptions&ao):
   if(update_from!=std::numeric_limits<double>::max()) log.printf("  only update from time %f\n",update_from);
   if ( keywords.exists("UPDATE_UNTIL") ) parse("UPDATE_UNTIL",update_until);
   if(update_until!=std::numeric_limits<double>::max()) log.printf("  only update until time %f\n",update_until);
-  if ( keywords.exists("RESTART") ){
+  if ( keywords.exists("RESTART") ) {
     std::string srestart="AUTO";
     parse("RESTART",srestart);
     if(srestart=="YES") restart=true;
@@ -93,15 +93,15 @@ Action::Action(const ActionOptions&ao):
   }
 }
 
-Action::~Action(){
-  if(files.size()!=0){
+Action::~Action() {
+  if(files.size()!=0) {
     std::cerr<<"WARNING: some files open in action "+getLabel()+" where not properly closed. This could lead to data loss!!\n";
   }
 }
 
-FILE* Action::fopen(const char *path, const char *mode){
+FILE* Action::fopen(const char *path, const char *mode) {
   bool write(false);
-  for(const char*p=mode;*p;p++) if(*p=='w' || *p=='a' || *p=='+') write=true;
+  for(const char*p=mode; *p; p++) if(*p=='w' || *p=='a' || *p=='+') write=true;
   FILE* fp;
   if(write && comm.Get_rank()!=0) fp=plumed.fopen("/dev/null",mode);
   else      fp=plumed.fopen(path,mode);
@@ -109,123 +109,123 @@ FILE* Action::fopen(const char *path, const char *mode){
   return fp;
 }
 
-int Action::fclose(FILE*fp){
+int Action::fclose(FILE*fp) {
   files.erase(fp);
   return plumed.fclose(fp);
 }
 
-void Action::fflush(){
-  for(files_iterator p=files.begin();p!=files.end();++p){
+void Action::fflush() {
+  for(files_iterator p=files.begin(); p!=files.end(); ++p) {
     std::fflush((*p));
   }
 }
 
-std::string Action::getKeyword(const std::string& key){
-  // Check keyword has been registered 
+std::string Action::getKeyword(const std::string& key) {
+  // Check keyword has been registered
   plumed_massert(keywords.exists(key), "keyword " + key + " has not been registered");
 
   std::string outkey;
   if( Tools::getKey(line,key,outkey ) ) return key + outkey;
 
-  if( keywords.style(key,"compulsory") ){
-      if( keywords.getDefaultValue(key,outkey) ){
-          if( outkey.length()==0 ) error("keyword " + key + " has weird default value");
-          return key + "=" +  outkey; 
-      } else {
-          error("keyword " + key + " is compulsory for this action");
-      }
-  }  
+  if( keywords.style(key,"compulsory") ) {
+    if( keywords.getDefaultValue(key,outkey) ) {
+      if( outkey.length()==0 ) error("keyword " + key + " has weird default value");
+      return key + "=" +  outkey;
+    } else {
+      error("keyword " + key + " is compulsory for this action");
+    }
+  }
   return "";
 }
 
-void Action::parseFlag(const std::string&key,bool & t){
+void Action::parseFlag(const std::string&key,bool & t) {
   // Check keyword has been registered
   plumed_massert(keywords.exists(key), "keyword " + key + " has not been registered");
   // Check keyword is a flag
-  if(!keywords.style(key,"nohtml")){
-     plumed_massert( keywords.style(key,"vessel") || keywords.style(key,"flag") || keywords.style(key,"hidden"), "keyword " + key + " is not a flag");
+  if(!keywords.style(key,"nohtml")) {
+    plumed_massert( keywords.style(key,"vessel") || keywords.style(key,"flag") || keywords.style(key,"hidden"), "keyword " + key + " is not a flag");
   }
 
   // Read in the flag otherwise get the default value from the keywords object
-  if(!Tools::parseFlag(line,key,t)){
-     if( keywords.style(key,"nohtml") || keywords.style(key,"vessel") ){ 
-        t=false; 
-     } else if ( !keywords.getLogicalDefault(key,t) ){
-        log.printf("ERROR in action %s with label %s : flag %s has no default",name.c_str(),label.c_str(),key.c_str() );
-        plumed_error();
-     } 
+  if(!Tools::parseFlag(line,key,t)) {
+    if( keywords.style(key,"nohtml") || keywords.style(key,"vessel") ) {
+      t=false;
+    } else if ( !keywords.getLogicalDefault(key,t) ) {
+      log.printf("ERROR in action %s with label %s : flag %s has no default",name.c_str(),label.c_str(),key.c_str() );
+      plumed_error();
+    }
   }
 }
 
-void Action::addDependency(Action*action){
+void Action::addDependency(Action*action) {
   after.push_back(action);
 }
 
-void Action::activate(){
+void Action::activate() {
 // preparation step is called only the first time an Action is activated.
 // since it could change its dependences (e.g. in an ActionAtomistic which is
 // accessing to a virtual atom), this is done just before dependencies are
 // activated
-  if(!active){
+  if(!active) {
     this->unlockRequests();
     prepare();
     this->lockRequests();
   } else return;
-  for(Dependencies::iterator p=after.begin();p!=after.end();++p) (*p)->activate();
+  for(Dependencies::iterator p=after.begin(); p!=after.end(); ++p) (*p)->activate();
   active=true;
 }
 
-void Action::setOption(const std::string &s){
-// This overloads the action and activate some options  
+void Action::setOption(const std::string &s) {
+// This overloads the action and activate some options
   options.insert(s);
-  for(Dependencies::iterator p=after.begin();p!=after.end();++p) (*p)->setOption(s);
+  for(Dependencies::iterator p=after.begin(); p!=after.end(); ++p) (*p)->setOption(s);
 }
 
-void Action::clearOptions(){
-// This overloads the action and activate some options  
+void Action::clearOptions() {
+// This overloads the action and activate some options
   options.clear();
 }
 
 
-void Action::clearDependencies(){
+void Action::clearDependencies() {
   after.clear();
 }
 
-std::string Action::getDocumentation()const{
+std::string Action::getDocumentation()const {
   return std::string("UNDOCUMENTED ACTION");
 }
 
-void Action::checkRead(){
-  if(!line.empty()){
+void Action::checkRead() {
+  if(!line.empty()) {
     std::string msg="cannot understand the following words from the input line : ";
-    for(unsigned i=0;i<line.size();i++) msg = msg + line[i] + ", ";
+    for(unsigned i=0; i<line.size(); i++) msg = msg + line[i] + ", ";
     error(msg);
   }
 }
 
-long int Action::getStep()const{
+long int Action::getStep()const {
   return plumed.getStep();
 }
 
-double Action::getTime()const{
+double Action::getTime()const {
   return plumed.getAtoms().getTimeStep()*getStep();
 }
 
-double Action::getTimeStep()const{
+double Action::getTimeStep()const {
   return plumed.getAtoms().getTimeStep();
 }
 
 
 
-void Action::exit(int c){
+void Action::exit(int c) {
   plumed.exit(c);
 }
 
-void Action::calculateNumericalDerivatives( ActionWithValue* a ){
+void Action::calculateNumericalDerivatives( ActionWithValue* a ) {
   plumed_merror("if you get here it means that you are trying to use numerical derivatives for a class that does not implement them");
 }
 
-void Action::prepare(){
+void Action::prepare() {
   return;
 }
 
@@ -234,32 +234,32 @@ void Action::error( const std::string & msg ) const {
   plumed_merror("ERROR in input to action " + name + " with label " + label + " : " + msg );
 }
 
-void Action::warning( const std::string & msg ){
-  log.printf("WARNING for action %s with label %s : %s \n", name.c_str(), label.c_str(), msg.c_str() ); 
+void Action::warning( const std::string & msg ) {
+  log.printf("WARNING for action %s with label %s : %s \n", name.c_str(), label.c_str(), msg.c_str() );
 }
 
-void Action::calculateFromPDB( const PDB& pdb ){
+void Action::calculateFromPDB( const PDB& pdb ) {
   activate();
-  for(Dependencies::iterator p=after.begin();p!=after.end();++p){
-     ActionWithValue*av=dynamic_cast<ActionWithValue*>(*p);
-     if(av){ av->clearInputForces(); av->clearDerivatives(); }
-     (*p)->readAtomsFromPDB( pdb ); 
-     (*p)->calculate();
+  for(Dependencies::iterator p=after.begin(); p!=after.end(); ++p) {
+    ActionWithValue*av=dynamic_cast<ActionWithValue*>(*p);
+    if(av) { av->clearInputForces(); av->clearDerivatives(); }
+    (*p)->readAtomsFromPDB( pdb );
+    (*p)->calculate();
   }
   readAtomsFromPDB( pdb );
   calculate();
 }
 
-bool Action::getExchangeStep()const{
+bool Action::getExchangeStep()const {
   return plumed.getExchangeStep();
 }
 
-std::string Action::cite(const std::string&s){
+std::string Action::cite(const std::string&s) {
   return plumed.cite(s);
 }
 
 /// Check if action should be updated.
-bool Action::checkUpdate()const{
+bool Action::checkUpdate()const {
   double t=getTime();
   if(t<update_until && (update_from==std::numeric_limits<double>::max() || t>=update_from)) return true;
   else return false;

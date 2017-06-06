@@ -28,8 +28,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace multicolvar{
+namespace PLMD {
+namespace multicolvar {
 
 //+PLUMEDOC COLVAR DIHCOR
 /*
@@ -86,32 +86,32 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit DihedralCorrelation(const ActionOptions&);
   virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
-  bool isPeriodic(){ return false; }
+  bool isPeriodic() { return false; }
 };
 
 PLUMED_REGISTER_ACTION(DihedralCorrelation,"DIHCOR")
 
-void DihedralCorrelation::registerKeywords( Keywords& keys ){
+void DihedralCorrelation::registerKeywords( Keywords& keys ) {
   MultiColvar::registerKeywords( keys );
   keys.use("ATOMS");
 }
 
 DihedralCorrelation::DihedralCorrelation(const ActionOptions&ao):
-PLUMED_MULTICOLVAR_INIT(ao)
+  PLUMED_MULTICOLVAR_INIT(ao)
 {
   // Read in the atoms
   int natoms=8; std::vector<AtomNumber> all_atoms;
   readAtoms( natoms, all_atoms );
   // Stuff for central atoms
-  std::vector<bool> catom_ind(8, false); 
+  std::vector<bool> catom_ind(8, false);
   catom_ind[1]=catom_ind[2]=catom_ind[5]=catom_ind[6]=true;
   setAtomsForCentralAtom( catom_ind );
 
   // And setup the ActionWithVessel
-  if( getNumberOfVessels()==0 ){
-     std::string fake_input;
-     addVessel( "SUM", fake_input, -1 );  // -1 here means that this value will be named getLabel()
-     readVesselKeywords();  // This makes sure resizing is done
+  if( getNumberOfVessels()==0 ) {
+    std::string fake_input;
+    addVessel( "SUM", fake_input, -1 );  // -1 here means that this value will be named getLabel()
+    readVesselKeywords();  // This makes sure resizing is done
   }
 
   // And check everything has been read in correctly
@@ -140,9 +140,9 @@ double DihedralCorrelation::compute( const unsigned& tindex, AtomValuePack& myat
   const double value = 0.5*(1.+cos(diff));
   // Derivatives wrt phi1
   const double dval = 0.5*sin(diff);
-  dd10 *= dval; 
-  dd11 *= dval; 
-  dd12 *= dval; 
+  dd10 *= dval;
+  dd11 *= dval;
+  dd12 *= dval;
   // And add
   addAtomDerivatives(1, 0, dd10, myatoms );
   addAtomDerivatives(1, 1, dd11-dd10, myatoms );

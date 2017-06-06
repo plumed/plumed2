@@ -27,31 +27,31 @@ namespace PLMD {
 PLUMED_REGISTER_METRIC(Direction,"DIRECTION")
 
 Direction::Direction( const ReferenceConfigurationOptions& ro ):
-ReferenceConfiguration(ro),
-ReferenceAtoms(ro),
-ReferenceArguments(ro)
+  ReferenceConfiguration(ro),
+  ReferenceAtoms(ro),
+  ReferenceArguments(ro)
 {
 }
 
-void Direction::read( const PDB& pdb ){
+void Direction::read( const PDB& pdb ) {
   readAtomsFromPDB( pdb );
   readArgumentsFromPDB( pdb );
 }
 
-void Direction::setDirection( const std::vector<Vector>& conf, const std::vector<double>& args ){
+void Direction::setDirection( const std::vector<Vector>& conf, const std::vector<double>& args ) {
   std::vector<double> sigma( args.size(), 1.0 ); setReferenceArguments( args, sigma );
 
   reference_atoms.resize( conf.size() ); align.resize( conf.size() );
   displace.resize( conf.size() ); atom_der_index.resize( conf.size() );
-  for(unsigned i=0;i<conf.size();++i){ align[i]=1.0; displace[i]=1.0; atom_der_index[i]=i; reference_atoms[i]=conf[i]; }
+  for(unsigned i=0; i<conf.size(); ++i) { align[i]=1.0; displace[i]=1.0; atom_der_index[i]=i; reference_atoms[i]=conf[i]; }
 }
 
-double Direction::calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& args, 
+double Direction::calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& args,
                         ReferenceValuePack& myder, const bool& squared ) const {
   plumed_assert( squared );
-  for(unsigned i=0;i<getNumberOfReferenceArguments();++i) myder.addArgumentDerivatives( i, -2.*getReferenceArgument(i) );
-  for(unsigned i=0;i<getNumberOfAtoms();++i) myder.getAtomsDisplacementVector()[i]=getReferencePosition(i);
-  
+  for(unsigned i=0; i<getNumberOfReferenceArguments(); ++i) myder.addArgumentDerivatives( i, -2.*getReferenceArgument(i) );
+  for(unsigned i=0; i<getNumberOfAtoms(); ++i) myder.getAtomsDisplacementVector()[i]=getReferencePosition(i);
+
   return 0.0;
 }
 
