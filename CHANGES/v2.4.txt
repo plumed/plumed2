@@ -51,4 +51,6 @@ Changes from version 2.3 which are relevant for developers:
     and erroneous inputs.
   - Due to the required c++11 support, travis-ci test on Ubuntu Precise has been removed.
   - `gettimeofdate` and `gettime` have been replaced with portable `chrono` classes introduced in c++11.
+  - C++ exceptions are enabled by default.
+  - Stack trace is not written upon error anymore, unless environment variable `PLUMED_STACK_TRACE` is set at runtime.
 */

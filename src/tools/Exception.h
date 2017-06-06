@@ -95,7 +95,12 @@ is slower (GB)
 */
 class Exception : public std::exception
 {
+/// Stack trace at exception
+  std::string stackString;
+/// Reported message
   std::string msg;
+/// Create stack trace
+  static std::string trace();
 /// Common tool, invoked by all the constructor to build the message string
   static std::string format(const std::string&,const std::string&,unsigned,const std::string&);
 /// Method which aborts in case exceptions are disabled
@@ -107,8 +112,12 @@ public:
   explicit Exception(const std::string&);
 /// With message plus file, line and function (meant to be used through a preprocessor macro)
   Exception(const std::string&,const std::string&,unsigned,const std::string&);
-/// Returns the error message
+/// Returns the error message.
+/// In case the environment variable PLUMED_STACK_TRACE is defined, the error
+/// message will contain the stack trace as well.
   virtual const char* what() const throw() {return msg.c_str();}
+/// Returns the stack trace
+  virtual const char* stack() const throw() {return stackString.c_str();}
 /// Destructor should be defined and should not throw other exceptions
   virtual ~Exception() throw() {}
 };
