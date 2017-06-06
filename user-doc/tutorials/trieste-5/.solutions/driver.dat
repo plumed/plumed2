@@ -1,0 +1,9 @@
+# load the pdb to better select torsions later
+MOLINFO STRUCTURE=reference.pdb
+# Compute the backbone dihedral angle phi, defined by atoms C-N-CA-C
+phi: TORSION ATOMS=@phi-2
+# Compute the backbone dihedral angle psi, defined by atoms N-CA-C-N
+psi: TORSION ATOMS=@psi-2
+
+# Just compute the collective variables 
+PRINT ARG=phi,psi FILE=COLVAR_DEMUX

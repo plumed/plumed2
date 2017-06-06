@@ -147,8 +147,6 @@ Version 2.3.2 (coming soon)
 -------------
 See branch \branch{v2.3} on git repository.
 
-- New flag `--disable-libsearch` for `configure`, allowing an easier control of linked libraries when installing PLUMED
-  with a package manager such as MacPorts.
 - Resolved problem with nan in \ref SMAC with SPECIESA and SPECIESB involving molecules that are the same
 - PDB reader is now able to read files with dos newlines (see \issue{223}).
 - Fixed bug in \ref CS2BACKBONE (v2.3.1) related to ring currents of HIS and TRP
@@ -178,11 +176,15 @@ For developers:
 - IMPORTANT: we started to enforce code formatting using astyle. Check the developer documentation to learn how to
   take care of not-yet-formatted branches.
 - plumedcheck validation has been made stricter. All the checks are now described in the developer manual.
+- New flag `--disable-libsearch` for `configure`, allowing an easier control of linked libraries when installing PLUMED
+  with a package manager such as MacPorts.
 - Added `--disable-static-patch` to `./configure` to disable tests related to static patching. It can be used
   when static patching is not needed to make sure a wrong c++ library is not linked by mistake.
 - Using `install_name_tool` to fix the name of the installed library on OSX. Allows linking the PLUMED
   shared library without explicitly setting `DYLD_LIBRARY_PATH`.
+- Added environment variable `PLUMED_ASYNC_SHARE` to enforce synchronous/asynchronous atom sharing (mostly for debug purpose).
 - On travis-ci, using ccache to speedup builds.
+- On travis-ci, added a regtest using Docker with gcc6 and MPI.
 - Cppcheck on travis-ci has been updated to 1.79.
 
 */
