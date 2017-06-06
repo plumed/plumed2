@@ -38,7 +38,7 @@ at it.  Type the following command into the command line:
 vmd trajectory-short.pdb
 \endverbatim
 
-Look at it with the various representations that vmd offers.  If you at are at the plumed tutorial try typing the letter m 
+Look at it with the various representations that vmd offers.  If you are at the plumed tutorial try typing the letter m 
 on the keyboard - we have made the new cartoon representation will update automatically for each frame of the trajectory - cool huh!  
 What are your impressions about this trajectory based on looking at it with VMD?  How many basins in the free energy landscape
 is this trajectory sampling from?  What can we tell from looking at this trajectory that we could perhaps put in a paper?

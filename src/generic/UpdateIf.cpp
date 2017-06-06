@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015,2016 The plumed team
+   Copyright (c) 2015-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -66,7 +66,10 @@ the solute.
 solute: GROUP ATOMS=1-124
 coord: COORDINATION GROUPA=solute GROUPB=500 R_0=0.5
 
-UPDATE_IF ARG=coord LESS_THAN=0.5
+# A coordination number higher than 0.5 indicate that there is at least one
+# atom of group `solute` at less than 5 A from atom number 500
+
+UPDATE_IF ARG=coord MORE_THAN=0.5
 DUMPATOMS ATOMS=solute,500 FILE=output.xyz
 UPDATE_IF ARG=coord END
 \endverbatim

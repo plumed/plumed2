@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -81,7 +81,9 @@ void Steinhardt::calculateVector( multicolvar::AtomValuePack& myatoms ) const {
     Vector& distance=myatoms.getPosition(i);  // getSeparation( myatoms.getPosition(0), myatoms.getPosition(i) );
     if ( (d2=distance[0]*distance[0])<rcut2 &&
          (d2+=distance[1]*distance[1])<rcut2 &&
-         (d2+=distance[2]*distance[2])<rcut2) {
+         (d2+=distance[2]*distance[2])<rcut2 &&
+         d2>epsilon ) {
+
       dlen = sqrt(d2);
       sw = switchingFunction.calculate( dlen, dfunc );
       accumulateSymmetryFunction( -1, i, sw, (+dfunc)*distance, (-dfunc)*Tensor( distance,distance ), myatoms );

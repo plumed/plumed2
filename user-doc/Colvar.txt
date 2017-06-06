@@ -58,6 +58,8 @@ with the ammount the collective variables change.  A full list of the ways dista
 
 These options for calculating distances are re-used in a number of places in the code.  For instance they are used in some of the 
 analysis algorithms that are implemented in PLUMED and in \ref PATH collective variables. 
+Notice that most of these actions read the reference configuration from a PDB file. Be sure
+you understand how to format properly a PDB file to use used in PLUMED (see \ref pdbreader).
 
 \page mcolv MultiColvar 
 
@@ -157,7 +159,7 @@ perform these transforms are:
 
 \section multicolvarbias MultiColvar bias
 
-There may be occasitions when you want add restraints on many collective variables. For instance if you are studying a cluster
+There may be occasions when you want add restraints on many collective variables. For instance if you are studying a cluster
 you might want to add a wall on the distances between each of the atoms and the center of mass of the cluster in order to
 prevent the cluster subliming.  Alternatively, you may wish to insist that a particular set of atoms in your system all have a 
 coordination number greater than 2.  You can add these sorts of restraints by employing the following biases, which all act 

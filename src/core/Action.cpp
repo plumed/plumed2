@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -264,6 +264,11 @@ bool Action::checkUpdate()const {
   if(t<update_until && (update_from==std::numeric_limits<double>::max() || t>=update_from)) return true;
   else return false;
 }
+
+bool Action::getCPT()const {
+  return plumed.getCPT();
+}
+
 
 
 }

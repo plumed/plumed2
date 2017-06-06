@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -45,7 +45,7 @@ d(X,X') = \vert X - X' \vert
 
 where \f$ X \f$ is the instaneous values for a set of collective variables for the system and
 \f$ X' \f$ is the values that these self-same set of collective variables take in some reference structure provided as input.
-If we call our set of collective variables \f$\{s_i\}f\$ then this CV computes:
+If we call our set of collective variables \f$\{s_i\}\f$ then this CV computes:
 
 \f[
 d = \sqrt{ \sum_{i=1}^N (s_i - s_i^{(ref)})^2 }

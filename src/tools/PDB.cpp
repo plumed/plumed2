@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,6 +25,76 @@
 #include <iostream>
 
 using namespace std;
+
+//+PLUMEDOC INTERNAL pdbreader
+/*
+
+PLUMED use PDB formats in several places, including
+- To read molecular structure (\ref MOLINFO).
+- To read reference conformations (\ref RMSD, but also many other methods in \ref dists, \ref FIT_TO_TEMPLATE, etc).
+
+The implemented PDB reader expects a file formatted correctly according to the
+[PDB standard](http://www.wwpdb.org/documentation/file-format-content/format33/v3.3.html).
+In particular, the following columns are read from ATOM records
+\verbatim
+columns | content
+1-6     | record name (ATOM or HETATM)
+7-11    | serial number of the atom (starting from 1)
+13-16   | atom name
+18-20   | residue name
+22      | chain id
+23-26   | residue number
+31-38   | x coordinate
+39-46   | y coordinate
+47-54   | z coordinate
+55-60   | occupancy
+61-66   | beta factor
+\endverbatim
+PLUMED parser is slightly more permissive than the official PDB format
+in the fact that the format of real numbers is not fixed. In other words,
+any parsable real number is ok and the dot can be placed anywhere. However,
+__columns are interpret strictly__. A sample PDB should look like the following
+\verbatim
+ATOM      2  CH3 ACE     1      12.932 -14.718  -6.016  1.00  1.00
+ATOM      5  C   ACE     1      21.312  -9.928  -5.946  1.00  1.00
+ATOM      9  CA  ALA     2      19.462 -11.088  -8.986  1.00  1.00
+\endverbatim
+
+Notice that serial numbers need not to be consecutive. In the three-line example above,
+only the coordinates of three atoms are provided. This is perfectly legal and indicates PLUMED
+that information about these atoms only is available. This could be both for structural
+information in \ref MOLINFO, where the other atoms would have no name assigned, and for
+reference structures used in \ref RMSD, where only the provided atoms would be used to compute RMSD.
+
+\par Occupancy and beta factors
+
+PLUMED reads also occupancy and beta factors that however are given a very special meaning.
+In cases where the PDB structure is used as a reference for an alignment (that's the case
+for instance in \ref RMSD and in \ref FIT_TO_TEMPLATE), the occupancy column is used
+to provide the weight of each atom in the alignment. In cases where, perhaps after alignment,
+the displacement between running coordinates and the provided PDB is computed, the beta factors
+are used as weight for the displacement.
+Since setting the weights to zero is the same as __not__ including an atom in the alignement or
+displacement calculation, the two following reference files would be equivalent when used in an \ref RMSD
+calculation. First file:
+\verbatim
+ATOM      2  CH3 ACE     1      12.932 -14.718  -6.016  1.00  1.00
+ATOM      5  C   ACE     1      21.312  -9.928  -5.946  1.00  1.00
+ATOM      9  CA  ALA     2      19.462 -11.088  -8.986  0.00  0.00
+\endverbatim
+Second file:
+\verbatim
+ATOM      2  CH3 ACE     1      12.932 -14.718  -6.016  1.00  1.00
+ATOM      5  C   ACE     1      21.312  -9.928  -5.946  1.00  1.00
+\endverbatim
+However notice that many extra atoms with zero weight might slow down the calculation, so
+removing lines is better than setting their weights to zero.
+In addition, weights for alignment need not to be equivalent to weights for displacement.
+
+
+*/
+//+ENDPLUMEDOC
+
 
 namespace PLMD {
 

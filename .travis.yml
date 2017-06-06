@@ -1,4 +1,5 @@
 language: cpp
+cache: ccache
 matrix:
   include:
 # list of configurations to be attempted:
@@ -24,7 +25,7 @@ matrix:
   - os: linux
     dist: trusty
     sudo: required
-    env: CPPCHECK=yes CPPCHECK_VERSION=1.78
+    env: CPPCHECK=yes CPPCHECK_VERSION=1.79
 # then check with different optimization flags
   - os: linux
     dist: trusty
@@ -44,22 +45,39 @@ matrix:
   - os: osx
     osx_image: xcode7.3
     env: PLUMED_CC=clang PLUMED_CXX=clang++ PLUMED_CXXFLAGS=-O3
+# this should not be required. I add it since it looks like with OSX it does not work otherwise
+    cache:
+      directories:
+      - $HOME/.ccache
 # osx parallel
   - os: osx
     osx_image: xcode7.3
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3
+# this should not be required. I add it since it looks like with OSX it does not work otherwise
+    cache:
+      directories:
+      - $HOME/.ccache
 # osx serial macports
   - os: osx
     osx_image: xcode7.3
     env: PLUMED_MACPORTS="plumed"
+    cache:
+      directories:
+      - $HOME/.macports-ci-ccache
 # osx serial macports debug variant
   - os: osx
     osx_image: xcode7.3
     env: PLUMED_MACPORTS="plumed +allmodules"
+    cache:
+      directories:
+      - $HOME/.macports-ci-ccache
 # osx serial macports debug variant
   - os: osx
     osx_image: xcode8.2
     env: PLUMED_MACPORTS="plumed +allmodules"
+    cache:
+      directories:
+      - $HOME/.macports-ci-ccache
 # I don't put any mpi variant with macports since it takes too long to compile
 ## This command can be used to allow failures:
 ##  allow_failures:
@@ -80,7 +98,10 @@ install:
   - ./.travis/check.log makedoc  || ./.travis/check.log makedocs || MAKEDOC=no
   - ./.travis/check.log valgrind || VALGRIND=no
 # update packages
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]] && test -z "$PLUMED_MACPORTS" ; then brew update > /dev/null ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]] && test -z "$PLUMED_MACPORTS" ; then
+      brew update > /dev/null ;
+      brew install ccache ;
+    fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update -qq ; fi
 # install some package - these are fast, we install them anyway
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libmatheval-dev libfftw3-dev gsl-bin libgsl0-dev ; fi
@@ -90,6 +111,8 @@ install:
   - if test "$CPPCHECK" == yes ; then  ./.travis/install.cppcheck $CPPCHECK_VERSION ; fi
 # for plumedcheck I need latest gawk
   - if test "$CPPCHECK" == yes ; then  ./.travis/install.gawk 4.1.4 ; fi
+# for plumedcheck I need astyle
+  - if test "$CPPCHECK" == yes ; then make -j 4 -C astyle ; fi
 # installation of these packages takes a lot of time
 # we do it only when needed
   - if test "$PLUMED_CXX" == "mpic++" -a "$TRAVIS_OS_NAME" == "linux" ; then sudo apt-get install -y libopenmpi-dev openmpi-bin ; fi
@@ -118,6 +141,7 @@ install:
       PATH="/opt/local/bin:$PATH" ;
       make macports ;
       ./macports-ci localports macports ;
+      ./macports-ci ccache ;
     fi
 script:
 # make sure all modules are enabled
@@ -131,14 +155,19 @@ script:
 
 # BUILD:
 # this is done only if PLUMED_CXX is defined
-# we have to pass the full path since on travis machines sudo does not have compilers in the path
-  - if test "$PLUMED_CXX" ; then ./configure CXX=$(which $PLUMED_CXX) CC=$(which $PLUMED_CC) CXXFLAGS="$PLUMED_CXXFLAGS" LDFLAGS="$PLUMED_LDFLAGS" CPPFLAGS="$PLUMED_CPPFLAGS" $CONFIG_FLAGS ; fi
-  - if test "$PLUMED_CXX" ; then make -j 4 ; fi
-# we install plumed so that it is in the path
-  - if test "$PLUMED_CXX" ; then make install prefix="$HOME/opt" ; fi
+  - if test "$PLUMED_CXX" ; then
+      ccache -s ;
+      ./configure CXX="ccache $(which $PLUMED_CXX)" CC=$(which $PLUMED_CC) CXXFLAGS="$PLUMED_CXXFLAGS" LDFLAGS="$PLUMED_LDFLAGS" CPPFLAGS="$PLUMED_CPPFLAGS" $CONFIG_FLAGS ;
+      make -j 4 ;
+      make install prefix="$HOME/opt" ;
+      ccache -s ;
+    fi
 
 # build using macports
-  - if test -n "$PLUMED_MACPORTS" ; then sudo port -N install $PLUMED_MACPORTS ; fi
+  - if test -n "$PLUMED_MACPORTS" ; then
+      sudo port -N install $PLUMED_MACPORTS ;
+      ./macports-ci ccache --save ;
+    fi
 
 # TEST:
   - if test "$VALGRIND" == yes ; then OPT=valgrind ; else OPT="" ; fi

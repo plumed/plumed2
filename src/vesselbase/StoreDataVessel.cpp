@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -37,8 +37,6 @@ StoreDataVessel::StoreDataVessel( const VesselOptions& da ):
   ActionWithValue* myval=dynamic_cast<ActionWithValue*>( getAction() );
   if( !myval ) hasderiv=false;
   else hasderiv=!myval->doNotCalculateDerivatives();
-
-  vecsize=getAction()->getNumberOfQuantities();
 }
 
 void StoreDataVessel::addActionThatUses( ActionWithVessel* actionThatUses ) {
@@ -46,8 +44,6 @@ void StoreDataVessel::addActionThatUses( ActionWithVessel* actionThatUses ) {
 }
 
 void StoreDataVessel::resize() {
-  plumed_dbg_assert( vecsize>0 );
-
   if( getAction()->lowmem || !getAction()->derivativesAreRequired() ) {
     nspace = 1;
     active_der.resize( max_lowmem_stash * ( 1 + getAction()->getNumberOfDerivatives() ) );
@@ -58,6 +54,7 @@ void StoreDataVessel::resize() {
     nspace = 1 + getAction()->maxderivatives;
     active_der.resize( getNumberOfStoredValues() * ( 1 + getAction()->maxderivatives ) );
   }
+  vecsize=getAction()->getNumberOfQuantities();
   resizeBuffer( getNumberOfStoredValues()*vecsize*nspace );
   local_buffer.resize( getNumberOfStoredValues()*vecsize*nspace );
 }
@@ -102,14 +99,14 @@ void StoreDataVessel::storeDerivatives( const unsigned& myelem, MultiValue& myva
 }
 
 void StoreDataVessel::retrieveSequentialValue( const unsigned& jelem, const bool& normed, std::vector<double>& values ) const {
-  plumed_assert( values.size()==vecsize );
+  plumed_dbg_assert( values.size()==vecsize );
   unsigned ibuf = jelem * vecsize * nspace;
   for(unsigned i=0; i<vecsize; ++i) { values[i]=local_buffer[ibuf]; ibuf+=nspace; }
   if( normed && values.size()>2 ) getAction()->normalizeVector( values );
 }
 
 void StoreDataVessel::retrieveValueWithIndex( const unsigned& myelem, const bool& normed, std::vector<double>& values ) const {
-  plumed_assert( values.size()==vecsize );
+  plumed_dbg_assert( values.size()==vecsize );
   unsigned jelem = getStoreIndex( myelem );
   retrieveSequentialValue( jelem, normed, values );
 }

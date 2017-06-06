@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,7 +26,7 @@
 /*
 Property maps but with a more flexible framework for the distance metric being used.
 
-This colvar calculates a property map using the formalism developed by Spiwork \cite Spiwok:2011ce.
+This colvar calculates a property map using the formalism developed by Spiwok \cite Spiwok:2011ce.
 In essence if you have the value of some property, \f$X_i\f$, that it takes at a set of high-dimensional
 positions then you calculate the value of the property at some arbitrary point in the high-dimensional space
 using:
