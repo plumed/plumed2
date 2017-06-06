@@ -235,7 +235,7 @@ void PBMetaD::registerKeywords(Keywords& keys){
   keys.use("ARG");
   keys.add("compulsory","SIGMA","the widths of the Gaussian hills");
   keys.add("compulsory","PACE","the frequency for hill addition, one for all biases");
-  keys.add("compulsory","FILE","files in which the lists of added hills are stored");
+  keys.add("optional","FILE","files in which the lists of added hills are stored");
   keys.add("optional","HEIGHT","the height of the Gaussian hills, one for all biases. Compulsory unless TAU, TEMP and BIASFACTOR are given");
   keys.add("optional","FMT","specify format for HILLS files (useful for decrease the number of digits in regtests)");
   keys.add("optional","BIASFACTOR","use well tempered metadynamics with this biasfactor, one for all biases.  Please note you must also specify temp");
@@ -292,7 +292,12 @@ multiple_w(false), isFirstStep(true)
   
   vector<string> hillsfname;
   parseVector("FILE",hillsfname);
-  if( hillsfname.size()!=getNumberOfArguments() ) error("number of FILE arguments does not match number of HILLS files");
+  if(hillsfname.size()==0) {
+    for(unsigned i=0;i<getNumberOfArguments();i++) hillsfname.push_back("HILLS."+getPntrToArgument(i)->getName());
+  } 
+  if( hillsfname.size()!=getNumberOfArguments() ) {
+    error("number of FILE arguments does not match number of HILLS files");
+  }
 
   parse("BIASFACTOR",biasf_);
   if( biasf_<1.0 ) error("well tempered bias factor is nonsensical");

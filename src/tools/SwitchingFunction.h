@@ -77,6 +77,8 @@ public:
   ~SwitchingFunction();
 /// Copy constructor
   SwitchingFunction(const SwitchingFunction&);
+/// Assignment operator
+  SwitchingFunction & operator=(const SwitchingFunction&);
 /// Set a "rational" switching function.
 /// Notice that a d_max is set automatically to a value such that
 /// f(d_max)=0.00001. 

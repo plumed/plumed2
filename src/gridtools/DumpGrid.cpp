@@ -30,7 +30,113 @@ namespace gridtools {
 /*
 Output the function on the grid to a file with the PLUMED grid format.
 
+PLUMED provides a number of actions that calculate the values of functions on grids.
+For instance, whenver you calculate a free energy as a function of a collective variable using
+\ref HISTOGRAM and \ref CONVERT_TO_FES you will generally want to output the value of the free energy at a number of points on a 
+discrete grid that covers the CV space uniformly.  Alternatively you may want to calculate
+what value some symmetry function takes at different points inside your simulation cell using \ref MULTICOLVARDENS.  
+
+This action allows you to output these functions calculated on a grid using a format that can be read in using gnuplot 
+and other such plotting programs.  The file output using this action will have a header that contains some essential 
+information about the function plotted and that looks something like this:
+
+\verbatim
+#! FIELDS x y hA1 dhA1_x dhA1_x
+#! SET normalisation    2.0000
+#! SET min_x 0.0
+#! SET max_x 3.0
+#! SET nbins_x  100
+#! SET periodic_x false
+#! SET min_y 0.0
+#! SET max_y 3.0
+#! SET nbins_y  100
+#! SET periodic_y false
+\endverbatim      
+
+The header shown here tells us that we have grid showing the values that a function with two arguments x and y 
+takes at various points in our cell.  The lines beheath the first line then tell us a little bit about these two 
+input arguments.  
+
+The remaining lines of the file give us information on the positions of our grid points and the value the function and 
+its partial derivatives with respect to x and y.  If the header is as above a list of values of the function that have 
+x=0 and 100 values of y between 0.0 and 3.0 will be provided.  This block of data will be followed with a blank line.
+There will then be a second block of values which will all have been evaluated the same value of x and all possible values
+for y.  This block is then followed by a blank line again and this pattern continues until all points of the grid have been covered.  
+
 \par Examples
+
+The following input monitors two torsional angles during a simulation
+and outputs a continuos histogram as a function of them at the end of the simulation.
+\verbatim
+TORSION ATOMS=1,2,3,4 LABEL=r1
+TORSION ATOMS=2,3,4,5 LABEL=r2
+HISTOGRAM ...
+  ARG=r1,r2 
+  GRID_MIN=-3.14,-3.14 
+  GRID_MAX=3.14,3.14 
+  GRID_BIN=200,200
+  BANDWIDTH=0.05,0.05 
+  LABEL=hh
+... HISTOGRAM
+
+DUMPGRID GRID=hh FILE=histo
+\endverbatim
+
+The following input monitors two torsional angles during a simulation
+and outputs a discrete histogram as a function of them at the end of the simulation.
+\verbatim
+TORSION ATOMS=1,2,3,4 LABEL=r1
+TORSION ATOMS=2,3,4,5 LABEL=r2
+HISTOGRAM ...
+  ARG=r1,r2 
+  USE_ALL_DATA
+  KERNEL=DISCRETE
+  GRID_MIN=-3.14,-3.14 
+  GRID_MAX=3.14,3.14 
+  GRID_BIN=200,200
+  LABEL=hh
+... HISTOGRAM
+
+DUMPGRID GRID=hh FILE=histo
+\endverbatim
+
+The following input monitors two torsional angles during a simulation
+and outputs the histogram accumulated thus far every 100000 steps.
+\verbatim
+TORSION ATOMS=1,2,3,4 LABEL=r1
+TORSION ATOMS=2,3,4,5 LABEL=r2
+HISTOGRAM ...
+  ARG=r1,r2 
+  GRID_MIN=-3.14,-3.14  
+  GRID_MAX=3.14,3.14 
+  GRID_BIN=200,200
+  BANDWIDTH=0.05,0.05 
+  LABEL=hh
+... HISTOGRAM
+
+DUMPGRID GRID=hh FILE=histo STRIDE=100000
+\endverbatim
+
+The following input monitors two torsional angles during a simulation
+and outputs a separate histogram for each 100000 steps worth of trajectory.
+Notice how the CLEAR keyword is used here and how it is not used in the 
+previous example.
+
+\verbatim
+TORSION ATOMS=1,2,3,4 LABEL=r1
+TORSION ATOMS=2,3,4,5 LABEL=r2
+HISTOGRAM ...
+  ARG=r1,r2 CLEAR=100000 
+  GRID_MIN=-3.14,-3.14  
+  GRID_MAX=3.14,3.14 
+  GRID_BIN=200,200
+  BANDWIDTH=0.05,0.05 
+  GRID_WFILE=histo
+  LABEL=hh
+... HISTOGRAM
+
+DUMPGRID GRID=hh FILE=histo STRIDE=100000
+\endverbatim
 
 */
 //+ENDPLUMEDOC

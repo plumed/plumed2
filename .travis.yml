@@ -24,7 +24,7 @@ matrix:
   - os: linux
     dist: trusty
     sudo: required
-    env: CPPCHECK=yes CPPCHECK_VERSION=1.75
+    env: CPPCHECK=yes CPPCHECK_VERSION=1.78
 # then check with different optimization flags
   - os: linux
     dist: trusty
@@ -55,7 +55,11 @@ matrix:
 # osx serial macports debug variant
   - os: osx
     osx_image: xcode7.3
-    env: PLUMED_MACPORTS="plumed +crystallization +manyrestraints +adjmat"
+    env: PLUMED_MACPORTS="plumed +allmodules"
+# osx serial macports debug variant
+  - os: osx
+    osx_image: xcode8.2
+    env: PLUMED_MACPORTS="plumed +allmodules"
 # I don't put any mpi variant with macports since it takes too long to compile
 ## This command can be used to allow failures:
 ##  allow_failures:
@@ -85,7 +89,7 @@ install:
 # I use 1.71 since 1.72 seems to report a lot of false positive
   - if test "$CPPCHECK" == yes ; then  ./.travis/install.cppcheck $CPPCHECK_VERSION ; fi
 # for plumedcheck I need latest gawk
-  - if test "$CPPCHECK" == yes ; then  ./.travis/install.gawk ; fi
+  - if test "$CPPCHECK" == yes ; then  ./.travis/install.gawk 4.1.4 ; fi
 # installation of these packages takes a lot of time
 # we do it only when needed
   - if test "$PLUMED_CXX" == "mpic++" -a "$TRAVIS_OS_NAME" == "linux" ; then sudo apt-get install -y libopenmpi-dev openmpi-bin ; fi
@@ -98,32 +102,32 @@ install:
 # then replace doxygen with the desided version
 # I use 1.8.10 instead of 1.8.11 since it looks like 1.8.11 have troubles with
 # non case sensitive files (it writes capitalized filenames)
-  - if test "$MAKEDOC" == yes ; then ./.travis/install.doxygen Release_1_8_12 ; fi
+  - if test "$MAKEDOC" == yes ; then ./.travis/install.doxygen Release_1_8_13 ; fi
   - if test "$VALGRIND" == yes ; then sudo apt-get install -y valgrind           ; fi
   - if test "$LAPACK" == yes ; then sudo apt-get -y install libatlas-base-dev      ; fi
 # moreover, we hardcode path to dynamic library, required for xdrfile to link properly
 # I do it only when LD_LIBRARY_PATH is non blank, since otherwise clang gives problems
   - if test -n "$LD_LIBRARY_PATH" ; then PLUMED_LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH" ; fi
 # macports related stuff
-  - if test -n "$PLUMED_MACPORTS" ; then export COLUMNS=80 ; fi
-# install macports from source:
-#  - if test -n "$PLUMED_MACPORTS" ; then wget https://distfiles.macports.org/MacPorts/MacPorts-2.3.4.tar.bz2 && tar xvfj MacPorts-2.3.4.tar.bz2 ; fi
-#  - if test -n "$PLUMED_MACPORTS" ; then cd MacPorts-2.3.4 && ./configure && sudo make install && cd - && sudo rm -fr MacPorts-2.3.4 ; fi
-# install macports from binary (faster):
-  - if test -n "$PLUMED_MACPORTS" ; then wget https://distfiles.macports.org/MacPorts/MacPorts-2.3.4-10.11-ElCapitan.pkg ; fi
-  - if test -n "$PLUMED_MACPORTS" ; then sudo installer -pkg MacPorts-2.3.4-10.11-ElCapitan.pkg -target / ; fi
-  - if test -n "$PLUMED_MACPORTS" ; then export PATH=/opt/local/bin:$PATH ; fi
-  - if test -n "$PLUMED_MACPORTS" ; then sudo port -v selfupdate ; fi
-  - if test -n "$PLUMED_MACPORTS" ; then make macports ; fi
-  - if test -n "$PLUMED_MACPORTS" ; then ./.travis/config.macports.sh ; fi
-
+# configure macports
+  - if test -n "$PLUMED_MACPORTS" ; then
+      export COLUMNS=80 ;
+      wget https://raw.githubusercontent.com/GiovanniBussi/macports-ci/master/macports-ci ;
+      chmod +x ./macports-ci ;
+      ./macports-ci install ;
+      PATH="/opt/local/bin:$PATH" ;
+      make macports ;
+      ./macports-ci localports macports ;
+    fi
 script:
-# we enable crystallization and manyrestraints modules
-  - CONFIG_FLAGS="$CONFIG_FLAGS --enable-modules=crystallization:manyrestraints:adjmat"
+# make sure all modules are enabled
+  - CONFIG_FLAGS="$CONFIG_FLAGS --enable-modules=all"
 # we enable fftw, which is off by default
   - CONFIG_FLAGS="$CONFIG_FLAGS --enable-fftw"
   - if test "$MAKEDOC" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-pdfdoc" ; fi
   - if test "$MAKEDOC" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-gcov" ; fi
+# when running lcov plumed should be compiled with -O0
+  - if test "$MAKEDOC" == yes ; then PLUMED_CXXFLAGS=-O0 ; fi
 
 # BUILD:
 # this is done only if PLUMED_CXX is defined
@@ -134,9 +138,7 @@ script:
   - if test "$PLUMED_CXX" ; then make install prefix="$HOME/opt" ; fi
 
 # build using macports
-# this is required for some misterious reason:
-  - if test -n "$PLUMED_MACPORTS" ; then sudo port install flex +universal ; fi
-  - if test -n "$PLUMED_MACPORTS" ; then sudo port install $PLUMED_MACPORTS ; fi
+  - if test -n "$PLUMED_MACPORTS" ; then sudo port -N install $PLUMED_MACPORTS ; fi
 
 # TEST:
   - if test "$VALGRIND" == yes ; then OPT=valgrind ; else OPT="" ; fi

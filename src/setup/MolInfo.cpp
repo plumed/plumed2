@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -91,7 +91,7 @@ should not be used on 5' end residue.
 
 If the chosen group name does not match any of the default ones, the parser looks for a single atom
 with the same name. This means that it is also possible to pick single atoms using the syntax
-`@atom-residue~.
+`@atom-residue`.
 
 \warning If a residue-chain is repeated twice in the reference pdb only the first entry will be selected.
 

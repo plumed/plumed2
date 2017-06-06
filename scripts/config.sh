@@ -24,6 +24,9 @@ Check if plumed as module colvar active
 > plumed config module colvar
 "
 
+# notice that the relative path of config.txt is also
+# hardcoded in a comment written in the log from src/core/PlumedMain.cpp
+# if you change it here, also change it there!
 configfile="$(cat "$PLUMED_ROOT"/src/config/config.txt)"
 
 quiet=no

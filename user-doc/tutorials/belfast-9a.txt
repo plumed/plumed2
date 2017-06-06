@@ -15,7 +15,7 @@ Once this tutorial is completed students will:
 \section belfast-9-res Resources
 
 The <a href="tutorial-resources/belfast-9a.tar.gz" download="belfast-9a.tar.gz"> tarball </a> for this project contains the following:
-- system: the files use to generate the topol?.tpr files of the first and second example
+- system: the files use to generate the topol?.tpr files of the first and second example (the setup is for simulations in vacuum)
 - first: an example on the use of chemical shifts as a collective variable
 - second: an example on the use of chemical shifts as replica-averaged restraints
 - third: an example on the use of RDCs (calculated with the theta-method) as replica-averaged restraints 
@@ -30,7 +30,12 @@ that represent a state and measure the current deviation from the set. In plumed
 experimental observables: Chemical Shifts (only for proteins) \ref CS2BACKBONE, \ref NOE distances, \ref JCOUPLING, \ref PRE intensities, 
 and Residual Dipolar couplings/pseudocontact shifts \ref RDC. 
 
-In the following we will write the \ref CS2BACKBONE collective variable that has been used in Granata et al. (2013).
+In the following we will write the \ref CS2BACKBONE collective variable similar to the one used in Granata et al. (2013) (while the collective
+variable is still proportional to the square sum of the deviation of the calculated and experimental chemical shifts divided by a typical
+error, the exact definition is not the same. The sum is not done anymore with a flat bottom difference and the error used are not the one
+published, so the exact result of the scoring function can be different).
+
+As a general rule, when using \ref CS2BACKBONE or other experimental restraints it is better to increase the accuracy of the constraint algorithm due to the increased strain on the bonded structure. In the case of GROMACS it is safer to use lincs-iter=2 and lincs-order=6. 
 
 \verbatim
 prot: GROUP ATOMS=1-862
@@ -41,7 +46,7 @@ ENDPLUMED
 \endverbatim 
 
 In this case the chemical shifts are those measured for the native state of the protein and can be used, together with other CVs and Bias-Exchange
-Metadynanics, to guide the system back and forth from the native structure. The experimental chemical shifts are in six files inside the "data/"
+Metadynamics, to guide the system back and forth from the native structure. The experimental chemical shifts are in six files inside the "data/"
 folder (see first example in the resources tarball), one file for each nucleus. A 0 chemical shift is used where a chemical shift doesn't exist
 (i.e. CB of GLY) or where it has not been assigned. Additionally the data folder contains:
 

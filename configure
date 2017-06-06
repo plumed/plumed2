@@ -694,6 +694,7 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_modules
+enable_libsearch
 enable_doc
 enable_pdfdoc
 enable_debug
@@ -1357,6 +1358,7 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-modules        all/none/reset or : separated list such as
                           +crystallization:-bias default: reset
+  --enable-libsearch      enable search for libraries, default: yes
   --enable-doc            enable documentation, default: yes
   --enable-pdfdoc         enable pdf version of the manual, default: no
   --enable-debug          enable debugging, default: no
@@ -2409,6 +2411,29 @@ fi
 
 
 # set enable flags for ./configure
+
+# This can be disabled when configuring within a package manager
+# such as macports to make sure that only libraries explicitly
+# listed in LDFLAGS are linked
+
+libsearch=
+# Check whether --enable-libsearch was given.
+if test "${enable_libsearch+set}" = set; then :
+  enableval=$enable_libsearch; case "${enableval}" in
+             (yes) libsearch=true ;;
+             (no)  libsearch=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-libsearch" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) libsearch=true ;;
+             (no)  libsearch=false ;;
+  esac
+
+fi
+
+
+
 
 doc=
 # Check whether --enable-doc was given.
@@ -5558,7 +5583,8 @@ if test "x$ac_cv_func_dgemv_" = xyes; then :
   blas_found=underscore
 else
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for dgemv in -lblas" >&5
+if test "${libsearch}" == true ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for dgemv in -lblas" >&5
 $as_echo_n "checking for dgemv in -lblas... " >&6; }
 if ${ac_cv_lib_blas_dgemv+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -5598,7 +5624,7 @@ if test "x$ac_cv_lib_blas_dgemv" = xyes; then :
   LIBS="-lblas $LIBS" blas_found=nounderscore
 else
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for dgemv_ in -lblas" >&5
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for dgemv_ in -lblas" >&5
 $as_echo_n "checking for dgemv_ in -lblas... " >&6; }
 if ${ac_cv_lib_blas_dgemv_+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -5647,6 +5673,8 @@ fi
 
 fi
 
+fi
+
 # if not found, then use internal lapack and blas
 if test -z "$blas_found" ; then
 { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using internal lapack and blas, could be inefficient" >&5
@@ -5675,7 +5703,8 @@ if eval test \"x\$"$as_ac_var"\" = x"yes"; then :
   lapack_found=$blas_found
 else
 
-as_ac_Lib=`$as_echo "ac_cv_lib_lapack_$search_for" | $as_tr_sh`
+if test "${libsearch}" == true ; then
+  as_ac_Lib=`$as_echo "ac_cv_lib_lapack_$search_for" | $as_tr_sh`
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $search_for in -llapack" >&5
 $as_echo_n "checking for $search_for in -llapack... " >&6; }
 if eval \${$as_ac_Lib+:} false; then :
@@ -5715,9 +5744,9 @@ eval ac_res=\$$as_ac_Lib
 $as_echo "$ac_res" >&6; }
 if eval test \"x\$"$as_ac_Lib"\" = x"yes"; then :
   LIBS="-llapack $LIBS" lapack_found=yes
-
 fi
 
+fi
 
 fi
 
@@ -5807,11 +5836,14 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_molfile_plugin_molfile_dcdplugin_init" >&5
 $as_echo "$ac_cv_lib_molfile_plugin_molfile_dcdplugin_init" >&6; }
 if test "x$ac_cv_lib_molfile_plugin_molfile_dcdplugin_init" = xyes; then :
-   ac_fn_cxx_check_header_mongrel "$LINENO" "libmolfile_plugin.h" "ac_cv_header_libmolfile_plugin_h" "$ac_includes_default"
+  if test "${libsearch}" == true ; then
+        	 ac_fn_cxx_check_header_mongrel "$LINENO" "libmolfile_plugin.h" "ac_cv_header_libmolfile_plugin_h" "$ac_includes_default"
 if test "x$ac_cv_header_libmolfile_plugin_h" = xyes; then :
   LIBS="-lmolfile_plugin $LIBS" found=ok
 fi
 
+
+           fi
 
 fi
 
@@ -5983,7 +6015,9 @@ if test "x$ac_cv_header_matheval_h" = xyes; then :
 if test "x$ac_cv_func_evaluator_create" = xyes; then :
   found=ok
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for evaluator_create in -lmatheval" >&5
+
+          if test "${libsearch}" == true ; then
+           { $as_echo "$as_me:${as_lineno-$LINENO}: checking for evaluator_create in -lmatheval" >&5
 $as_echo_n "checking for evaluator_create in -lmatheval... " >&6; }
 if ${ac_cv_lib_matheval_evaluator_create+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -6023,6 +6057,8 @@ if test "x$ac_cv_lib_matheval_evaluator_create" = xyes; then :
   LIBS="-lmatheval $LIBS" && found=ok
 fi
 
+          fi
+
 
 fi
 
@@ -6049,7 +6085,9 @@ if test "x$ac_cv_header_time_h" = xyes; then :
 if test "x$ac_cv_func_clock_gettime" = xyes; then :
   found=ok
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for clock_gettime in -lrt" >&5
+
+          if test "${libsearch}" == true ; then
+           { $as_echo "$as_me:${as_lineno-$LINENO}: checking for clock_gettime in -lrt" >&5
 $as_echo_n "checking for clock_gettime in -lrt... " >&6; }
 if ${ac_cv_lib_rt_clock_gettime+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -6088,6 +6126,8 @@ $as_echo "$ac_cv_lib_rt_clock_gettime" >&6; }
 if test "x$ac_cv_lib_rt_clock_gettime" = xyes; then :
   LIBS="-lrt $LIBS" && found=ok
 fi
+
+          fi
 
 
 fi
@@ -6235,7 +6275,9 @@ if test "x$ac_cv_header_zlib_h" = xyes; then :
 if test "x$ac_cv_func_gzopen" = xyes; then :
   found=ok
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for gzopen in -lz" >&5
+
+          if test "${libsearch}" == true ; then
+           { $as_echo "$as_me:${as_lineno-$LINENO}: checking for gzopen in -lz" >&5
 $as_echo_n "checking for gzopen in -lz... " >&6; }
 if ${ac_cv_lib_z_gzopen+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -6275,6 +6317,8 @@ if test "x$ac_cv_lib_z_gzopen" = xyes; then :
   LIBS="-lz $LIBS" && found=ok
 fi
 
+          fi
+
 
 fi
 
@@ -6301,7 +6345,8 @@ if test "x$ac_cv_func_cblas_dgemv" = xyes; then :
   found=ok
 else
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for cblas_dgemv in -lgslcblas" >&5
+  if test "${libsearch}" == true ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for cblas_dgemv in -lgslcblas" >&5
 $as_echo_n "checking for cblas_dgemv in -lgslcblas... " >&6; }
 if ${ac_cv_lib_gslcblas_cblas_dgemv+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -6339,8 +6384,9 @@ fi
 $as_echo "$ac_cv_lib_gslcblas_cblas_dgemv" >&6; }
 if test "x$ac_cv_lib_gslcblas_cblas_dgemv" = xyes; then :
   LIBS="-lgslcblas $LIBS" found=ok
-
 fi
+
+  fi
 
 fi
 
@@ -6354,7 +6400,8 @@ if test "x$ac_cv_func_gsl_vector_alloc" = xyes; then :
   found=ok
 else
 
-      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for gsl_vector_alloc in -lgsl" >&5
+      if test "${libsearch}" == true ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for gsl_vector_alloc in -lgsl" >&5
 $as_echo_n "checking for gsl_vector_alloc in -lgsl... " >&6; }
 if ${ac_cv_lib_gsl_gsl_vector_alloc+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -6392,8 +6439,9 @@ fi
 $as_echo "$ac_cv_lib_gsl_gsl_vector_alloc" >&6; }
 if test "x$ac_cv_lib_gsl_gsl_vector_alloc" = xyes; then :
   LIBS="-lgsl $LIBS" found=ok
-
 fi
+
+      fi
 
 fi
 
@@ -6422,7 +6470,9 @@ if test "x$ac_cv_header_xdrfile_xdrfile_xtc_h" = xyes; then :
 if test "x$ac_cv_func_write_xtc" = xyes; then :
   found=ok
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for write_xtc in -lxdrfile" >&5
+
+          if test "${libsearch}" == true ; then
+           { $as_echo "$as_me:${as_lineno-$LINENO}: checking for write_xtc in -lxdrfile" >&5
 $as_echo_n "checking for write_xtc in -lxdrfile... " >&6; }
 if ${ac_cv_lib_xdrfile_write_xtc+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -6462,6 +6512,8 @@ if test "x$ac_cv_lib_xdrfile_write_xtc" = xyes; then :
   LIBS="-lxdrfile $LIBS" && found=ok
 fi
 
+          fi
+
 
 fi
 
@@ -6488,7 +6540,9 @@ if test "x$ac_cv_header_boost_graph_graph_utility_hpp" = xyes; then :
 if test "x$ac_cv_func_exit" = xyes; then :
   found=ok
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for exit in -lboost_graph" >&5
+
+          if test "${libsearch}" == true ; then
+           { $as_echo "$as_me:${as_lineno-$LINENO}: checking for exit in -lboost_graph" >&5
 $as_echo_n "checking for exit in -lboost_graph... " >&6; }
 if ${ac_cv_lib_boost_graph_exit+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -6528,6 +6582,8 @@ if test "x$ac_cv_lib_boost_graph_exit" = xyes; then :
   LIBS="-lboost_graph $LIBS" && found=ok
 fi
 
+          fi
+
 
 fi
 
@@ -6554,7 +6610,9 @@ if test "x$ac_cv_header_fftw3_h" = xyes; then :
 if test "x$ac_cv_func_fftw_execute" = xyes; then :
   found=ok
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for fftw_execute in -lfftw3" >&5
+
+          if test "${libsearch}" == true ; then
+           { $as_echo "$as_me:${as_lineno-$LINENO}: checking for fftw_execute in -lfftw3" >&5
 $as_echo_n "checking for fftw_execute in -lfftw3... " >&6; }
 if ${ac_cv_lib_fftw3_fftw_execute+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -6593,6 +6651,8 @@ $as_echo "$ac_cv_lib_fftw3_fftw_execute" >&6; }
 if test "x$ac_cv_lib_fftw3_fftw_execute" = xyes; then :
   LIBS="-lfftw3 $LIBS" && found=ok
 fi
+
+          fi
 
 
 fi
@@ -7062,7 +7122,12 @@ EOF
     $CXX $CXXFLAGS -c conftest.cpp
 # start search:
     found=
-    for testlib in "" -lstdc++ -lc++ -lmpi_cxx ; do
+    if test "${libsearch}" == true ; then
+      testlibs="-lstdc++ -lc++ -lmpi_cxx"
+    else
+      testlibs=""
+    fi
+    for testlib in "" $testlibs ; do
       comment=
       test -n "$testlib" && comment=" with library $testlib"
       { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $name can link a C++ object$comment" >&5

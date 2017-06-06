@@ -37,8 +37,62 @@ namespace function{
 This function measures the pythagorean distance from a particular structure measured in the space defined by some 
 set of collective variables.
 
+This collective variable can be used to calculate something akin to:
+
+\f[
+d(X,X') = \vert X - X' \vert
+\f]
+
+where \f$ X \f$ is the instaneous values for a set of collective variables for the system and   
+\f$ X' \f$ is the values that these self-same set of collective variables take in some reference structure provided as input.
+If we call our set of collective variables \f$\{s_i\}f\$ then this CV computes:
+
+\f[
+d = \sqrt{ \sum_{i=1}^N (s_i - s_i^{(ref)})^2 }
+\f]
+
+where \f$s_i^{(ref)}\f$ are the values of the CVs in the reference structure and \f$N\f$ is the number of input CVs.
+
+We can also calculate normalized euclidean differences using this action and the METRIC=NORM-EUCLIDEAN flag.  In other words,
+we can compute:
+
+\f[
+d = \sqrt{ \sum_{i=1}^N \sigma_i (s_i - s_i^{(ref)})^2 }
+\f]
+
+where \f$\sigma_i\f$ is a vector of weights.  Lastly, by using the METRIC=MAHALONOBIS we can compute mahalonobis distances using:
+
+\f[
+d = \left( \mathbf{s} - \mathbf{s}^{(ref)} \right)^T \mathbf{\Sigma} \left( \mathbf{s} - \mathbf{s}^{(ref)} \right)
+\f]
+
+where \f$\mathbf{s}\f$ is a column vector containing the values of all the CVs and \f$\mathbf{s}^{(ref)}\f$ is a column vector
+containg the values of the CVs in the reference configuration.  \f$\mathbf{\Sigma}\f$ is then an \f$N \times N\f$ matrix that is 
+specified in the input.
+
 \par Examples
 
+The following input calculates the distance between a reference configuration and the instaneous position of the system in the trajectory.
+The position of the reference configuration is specified by providing the values of the distance between atoms 1 and 2 and atoms 3 and 4.
+
+\verbatim
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+t1: TARGET REFERENCE=myref.pdb TYPE=EUCLIDEAN
+PRINT ARG=t1 FILE=colvar
+\endverbatim
+
+The contents of the file containing the reference structure (myref.pdb) is shown below.  As you can see you must provide information on the 
+labels of the CVs that are being used to define the position of the reference configuration in this file together with the values that these 
+quantities take in the reference configuration.
+
+\verbatim
+DESCRIPTION: a reference point.
+REMARK WEIGHT=1.0 
+REMARK ARG=d1,d2 
+REMARK d1=1.0 d2=1.0
+END
+\endverbatim
 
 */
 //+ENDPLUMEDOC

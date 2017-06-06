@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -44,7 +44,7 @@ Atoms::Atoms(PlumedMain&plumed):
   pbc(*new Pbc),
   energy(0.0),
   dataCanBeSet(false),
-  collectEnergy(0.0),
+  collectEnergy(false),
   energyHasBeenSet(false),
   positionsHaveBeenSet(0),
   massesHaveBeenSet(false),
@@ -58,6 +58,7 @@ Atoms::Atoms(PlumedMain&plumed):
   naturalUnits(false),
   timestep(0.0),
   forceOnEnergy(0.0),
+  zeroallforces(false),
   kbT(0.0),
   asyncSent(false),
   atomsNeeded(false),
@@ -165,7 +166,7 @@ void Atoms::shareAll(){
 void Atoms::share(const std::set<AtomNumber>& unique){
   plumed_assert( positionsHaveBeenSet==3 && massesHaveBeenSet );
   virial.zero();
-  if(int(gatindex.size())==natoms){
+  if(zeroallforces || int(gatindex.size())==natoms){
     for(int i=0;i<natoms;i++) forces[i].zero();
   } else {
     for(unsigned i=0;i<gatindex.size();i++) forces[gatindex[i]].zero();

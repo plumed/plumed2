@@ -28,7 +28,30 @@
 /*
 Convert a histogram, \f$H(x)\f$, to a free energy surface using \f$F(x) = -k_B T \ln H(x)\f$.
 
+This action allows you to take a free energy surface that was calculated using the \ref HISTOGRAM
+action and to convert it to a free energy surface.  This transformation performed by doing:
+
+\f[
+F(x) = -k_B T \ln H(x)\f$
+\f]
+
+The free energy calculated on a grid is output by this action and can be printed using \ref DUMPGRID
+
 \par Examples
+
+This is a typical example showing how CONVERT_TO_FES might be used when postprocessing a trajectory.
+The input below calculates the free energy as a function of the distance between atom 1 and atom 2.
+This is done by accumulating a histogram as a function of this distance using kernel density estimation
+and the HISTOGRAM action.  All the data within this trajectory is used in the construction of this 
+HISTOGRAM.  Finally, once all the data has been read in, the histogram is converted to a free energy 
+using the formula above and the free energy is output to a file called fes.dat
+
+\verbatim
+x: DISTANCE ATOMS=1,2
+hA1: HISTOGRAM ARG=x GRID_MIN=0.0 GRID_MAX=3.0 GRID_BIN=100 BANDWIDTH=0.1 
+ff: CONVERT_TO_FES GRID=hA1 TEMP=300
+DUMPGRID GRID=ff FILE=fes.dat
+\endverbatim
 
 */
 //+ENDPLUMEDOC

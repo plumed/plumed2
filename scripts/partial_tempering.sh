@@ -56,6 +56,9 @@ EOF
 fi
 
 awk -v scale=$1 '
+BEGIN{
+  combrule=1;
+}
 function recname()
 {
      if($1=="[" && $3=="]") return $2;
@@ -90,6 +93,8 @@ function warning(msg)
   }
 # set name of current block
   if(recname() ) rec=recname();
+# set defaults for nb interactions
+  if(rec=="defaults" && NF==5) combrule=$2;
 # if we are in atomtypes section, check which fields are present
 # use same heuristics as in src/kernel/toppush.c
   if(rec=="atomtypes" && NF>=4){
@@ -102,11 +107,13 @@ function warning(msg)
       epsilonfield=8;
     }
     else if((length($5)==1 && $5~"[a-zA-Z]")){
-      if(substr($1,0,1) ~"[a-zA-Z]"){
+      if(substr($2,0,1) ~"[a-zA-Z]"){
+        bondtypefield=2;
+        epsilonfield=7;
+      } else {
         bondtypefield=1;
         epsilonfield=7;
       }
-      else error("in atomtypes");
     } else error("in atomtypes");
     if(epsilonfield!=NF) error("in atomtypes");
 # NOTE: OPLS uses bond types, thus we have to save the bondtype
@@ -231,15 +238,21 @@ function warning(msg)
    } else error("dihedrals should have at least 5 fields");
 # ATOMTYPES
   } else if(rec=="atomtypes" && NF>=4){
+    scale2=1.0; # scaling for second to last column
+    if(combrule==1) scale2=scale;
     for(i=1;i<NF;i++)printf($i" "); print $NF,comments;
     printf($1""suffix" "bondtype[$1]" ");
-      for(i=3;i<NF;i++)printf($i" "); print scale*$NF," ; scaled";
+    from=3;
+    if(NF==6) from=2; # GROMOS does not store bondtype by default, so we should add one column
+    for(i=from;i<NF-1;i++)printf($i" "); print scale2*$(NF-1),scale*$NF," ; scaled";
 # ATOMTYPES (PAIRS)
-  } else if(rec=="nonbond_params" && NF>=5){
+  } else if((rec=="pairtypes" || rec=="nonbond_params") && NF>=5){
+    scale2=1.0; # scaling for second to last column
+    if(combrule==1) scale2=scale;
     print $1,$2,$3,$4,$5,comments
-    print $1""suffix,$2,$3,$4,sqrt(scale)*$5," ; scaled";
-    print $1,$2""suffix,$3,$4,sqrt(scale)*$5," ; scaled";
-    print $1""suffix,$2""suffix,$3,$4,scale*$5," ; scaled";
+    print $1""suffix,$2,$3,sqrt(scale2)*$4,sqrt(scale)*$5," ; scaled";
+    print $1,$2""suffix,$3,sqrt(scale2)*$4,sqrt(scale)*$5," ; scaled";
+    print $1""suffix,$2""suffix,$3,scale2*$4,scale*$5," ; scaled";
 # ATOMS
   } else if(rec=="atoms" && NF>=7){
      if($2~".*"suffix"$"){

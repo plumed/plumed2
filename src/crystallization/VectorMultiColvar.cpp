@@ -38,7 +38,7 @@ store_director(true)
 }
 
 void VectorMultiColvar::setVectorDimensionality( const unsigned& ncomp ){
-  ncomponents = ncomp;  
+  ncomponents = ncomp; resizeFunctions(); // This resize needs to be here to ensure buffers are set to correct size in base
 }
 
 void VectorMultiColvar::doNotCalculateDirector(){
