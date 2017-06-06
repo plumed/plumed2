@@ -184,6 +184,7 @@ For developers:
   shared library without explicitly setting `DYLD_LIBRARY_PATH`.
 - Added environment variable `PLUMED_ASYNC_SHARE` to enforce synchronous/asynchronous atom sharing (mostly for debug purpose).
 - On travis-ci, using ccache to speedup builds.
+- On travis-ci, added a regtest using Docker with gcc6 and MPI.
 - Cppcheck on travis-ci has been updated to 1.79.
 
 */
