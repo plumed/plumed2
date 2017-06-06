@@ -151,7 +151,7 @@ the command `vmd ref.pdb traj-whole.xtc`.
 
 In the following we will make practice with computing and printing collective variables.
 
-\subsection trieste-1-ex-1 Exercize 1: Computing and printing collective variables
+\subsection trieste-1-ex-1 Exercise 1: Computing and printing collective variables
 
 Analyze the `traj-whole.xtc` trajectory and produce a colvar file with the following collective variables.
 
@@ -249,7 +249,7 @@ of your input file.
 \hidden{Combining collective variables}
 
 
-In this first exercize we only computed simple functions of the atomic coordinates.
+In this first exercise we only computed simple functions of the atomic coordinates.
 PLUMED is very flexible and allows you to also combine these functions to create more complicated
 variables. These variables can be useful when you want to describe a complex conformational change.
 PLUMED implements a number of functions that can be used to this aim that are described in the
@@ -292,9 +292,9 @@ any arbitrarily complex collective variable using just \ref DISTANCE and \ref MA
 Anyway, if the CV combinations that you are willing to use can be computed easily with some
 external program, do it and compare the results with the output of the PLUMED driver.
 
-\subsection trieste-1-ex-1b Exercize 1b: Combining collective variables
+\subsection trieste-1-ex-1b Exercise 1b: Combining collective variables
 
-As an optional exercize, create a file with the following quantities:
+As an optional exercise, create a file with the following quantities:
 - The sum of the distances between Mg and each of the phosphorous atoms.
 - The distance between Mg and the closest phosphorous atom.
 
@@ -356,7 +356,7 @@ be used in the following cases:
 The last point is perhaps the most surpising one. Some of the PLUMED actions can indeed move the stored atoms to
 positions better suitable for the calculation of collective variables.
 
-The previous exercize was done on a trajectory where the RNA was already whole. For the next exercize you will use the
+The previous exercise was done on a trajectory where the RNA was already whole. For the next exercise you will use the
 `traj-broken.xtc` file instead, which is a real trajectory produced by GROMACS. Open it with VMD to understand
 what we mean with broken
 \verbatim
@@ -463,7 +463,7 @@ In case the two molecules can separate from each other this would be rather prob
 
 We will now see what happens when using \ref WHOLEMOLECULES on multiple molecules *incorrectly*.
 
-\subsection trieste-1-ex-2b Exercize 2b: Mistakes with WHOLEMOLECULES
+\subsection trieste-1-ex-2b Exercise 2b: Mistakes with WHOLEMOLECULES
 
 Prepare a PLUMED input file that makes all the water molecules whole. Use the following template
 \plumedfile
@@ -495,13 +495,13 @@ that the system is doing what you expect.
 
 \hidden{Mastering FIT_TO_TEMPLATE}
 
-In an exercize above we used \ref FIT_TO_TEMPLATE. This action uses as a reference a PDB file
+In an exercise above we used \ref FIT_TO_TEMPLATE. This action uses as a reference a PDB file
 which typically contains a subset of atoms (those that are fitted). However,
 when you apply \ref FIT_TO_TEMPLATE with `TYPE=OPTIMAL`, the whole system
 is translated and rotated.
 The whole system here means all atoms plus the vectors defining the periodic box.
 
-\subsection trieste-1-ex-2c Exercize 2c: Mastering FIT_TO_TEMPLATE
+\subsection trieste-1-ex-2c Exercise 2c: Mastering FIT_TO_TEMPLATE
 
 Check how the periodic box rotates when using \ref FIT_TO_TEMPLATE.
 Use the following template
@@ -569,7 +569,7 @@ In summary, in this tutorial you should have learned how to use PLUMED to:
 - Compute collective variables.
 
 All of this was done by just reading an already available trajectory.
-Notice that there are many alternative tools that could have been used to do the same exercize.
+Notice that there are many alternative tools that could have been used to do the same exercise.
 Indeed, if you are familiar with other tools, it might be a good idea to also try them and compare the results.
 The special things of working with PLUMED are the following:
 - PLUMED implements a vast library of useful collective variables.

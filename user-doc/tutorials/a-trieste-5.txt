@@ -26,7 +26,7 @@ The \tarball{trieste-5} for this project contains the following files:
 
 This tutorial has been tested on a pre-release version of version 2.4. In particular, it takes
 advantage of a special syntax for setting up multi-replica simulations that is only available
-since version 2.4. Exercizes could be done also with version 2.3 but using a different syntax
+since version 2.4. Exercise could be done also with version 2.3 but using a different syntax
 with respect to the one suggested.
 
 Also notice that in the `.solutions` directory of the tarball you will find correct input files.
@@ -198,7 +198,7 @@ In short, whenever there are keywords that should vary across replicas, you shou
 As mentioned above, you can always use the old syntax with separate input file, and this is recommended when the
 number of keywords that are different is large.
 
-\section trieste-5-ex-1 Exercize 1: Running multi-replica simulations
+\section trieste-5-ex-1 Exercise 1: Running multi-replica simulations
 
 Write a plumed file that allows you to run a multi-replica simulation of alanine dipeptide
 where the following four replicas are simulated:
@@ -295,7 +295,7 @@ The setup above is very close to the one used in bias exchange simulations.
 However, in bias exchange simulations usually one would use at most one neutral (non-biased) replica.
 In addition, the \ref RANDOM_EXCHANGES command is often used.
 
-\section trieste-5-ex-2 Exercize 2: Analyzing a multiple-restraint simulation
+\section trieste-5-ex-2 Exercise 2: Analyzing a multiple-restraint simulation
 
 In the following we will analyze the result of the simulation above.
 To this aim we will have to use the WHAM method. The WHAM procedure described here is
@@ -436,9 +436,9 @@ parallel tempering simulations \cite sugi-okam99cpl
 and simulated tempering simulations \cite wang2011replica (notice that they 
 can be implemented with PLUMED + GROMACS using \cite bussi2013mp).
 
-\section trieste-5-ex-3 Exercize 3: What if a variable is missing?
+\section trieste-5-ex-3 Exercise 3: What if a variable is missing?
 
-Repeat the exercize above (that is: running replica exchange MD simulation and analyze the result)
+Repeat the exercise above (that is: running replica exchange MD simulation and analyze the result)
 but using only three replicas:
 - two unbiased replicas.
 - one biased replica along psi.
@@ -473,7 +473,7 @@ How many transitions between the two free-energy wells can you observe?
 Remember that replica exchange involves coordinate swaps that do not correspond to the real system dynamics. It is very useful to look at
 "demuxed" trajectories.
 
-\section trieste-5-ex-4 Exercize 4: "demuxing" your trajectories
+\section trieste-5-ex-4 Exercise 4: "demuxing" your trajectories
 
 Use the following commands
 

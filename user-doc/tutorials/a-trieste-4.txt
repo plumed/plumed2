@@ -26,7 +26,7 @@ The \tarball{trieste-4} for this project contains the following files:
 This tutorial has been tested on a pre-release version of version 2.4. However, it should not take advantage
 of 2.4-only features, thus should also work with version 2.3.
 
-\note We suggest to run the three exercizes in three separate directories. For Exercize 3, you will need the output of the first two exercizes, so don't delete it!
+\note We suggest to run the three exercises in three separate directories. For Exercise 3, you will need the output of the first two exercizes, so don't delete it!
  
 \section trieste-4-intro Introduction
 
@@ -115,9 +115,9 @@ It is conventional use to characterize the two states in terms of Ramachandran d
 \image html belfast-2-transition.png "Two metastable states of alanine dipeptide are characterized by their Ramachandran dihedral angles."
 
 
-\section trieste-4-ex-1 Exercize 1: my first metadynamics calculation
+\section trieste-4-ex-1 Exercise 1: my first metadynamics calculation
 
-\subsection trieste-4-ex-1a Exercize 1a: setup and run 
+\subsection trieste-4-ex-1a Exercise 1a: setup and run 
 
 In this excercise we will setup and perform a well-tempered metadynamics run using the backbone dihedral \f$ \phi \f$
 as collective variable. During the calculation, we will also monitor the behavior of the other backbone dihedral \f$ \psi \f$.
@@ -209,7 +209,7 @@ of the Gaussian height is higher than the initial height specified in the input 
 In fact, this column reports the height of the Gaussian rescaled by the pre-factor that
 in well-tempered metadynamics relates the bias potential to the free energy.
 
-\subsection trieste-4-ex-1b Exercize 1b: estimating the free energy 
+\subsection trieste-4-ex-1b Exercise 1b: estimating the free energy 
 
 One can estimate the free energy as a function of the metadynamics CVs directly from the metadynamics
 bias potential. In order to do so, the utility \ref sum_hills should be used to sum the Gaussians
@@ -264,20 +264,20 @@ of your metadynamics simulation!
 
 \note The two observations above are necessary, but qualitative conditions for convergence.
 A quantitative assessment of convergence can be obtained by performing an error analysis of the
-reconstructed free-energy profile, as explained in the last exercize
+reconstructed free-energy profile, as explained in the last exercise
 
-\section trieste-4-ex-2 Exercize 2: playing with collective variables
+\section trieste-4-ex-2 Exercise 2: playing with collective variables
 
-In this exercize, we will run a well-tempered metadynamics simulation on alanine dipeptide in vacuum, this time
+In this exercise, we will run a well-tempered metadynamics simulation on alanine dipeptide in vacuum, this time
 using as CV the backbone dihedral \f$ \psi \f$. 
-Please complete the template `plumed.dat` file used in the previous exercize to run this calculation.
+Please complete the template `plumed.dat` file used in the previous exercise to run this calculation.
 
 Once your `plumed.dat` file is complete, you can run a 10-ns long metadynamics simulations with the following command
 \verbatim
 > gmx mdrun -s topol.tpr -nsteps 5000000 -plumed plumed.dat
 \endverbatim
 
-As we did in the previous exercize, we can use COLVAR to visualize the behavior of the CV during the simulation.
+As we did in the previous exercise, we can use COLVAR to visualize the behavior of the CV during the simulation.
 Here we will plot at the same time the evolution of the metadynamics CV \f$ \psi \f$ and of the other dihedral \f$ \phi \f$.
 
 \verbatim
@@ -287,17 +287,17 @@ gnuplot> p "COLVAR" u 1:2, "" u 1:3
 \anchor trieste-4-metad-psi-phi-fig
 \image html munster-metad-psi-phi.png "Time evolution of the dihedrals phi and psi during a 10-ns long metadynamics simulation using psi as CV."
 
-By inspecting Figure \ref trieste-4-metad-psi-phi-fig, we notice that something different happened compared to the previous exercize.
+By inspecting Figure \ref trieste-4-metad-psi-phi-fig, we notice that something different happened compared to the previous exercise.
 At first the behavior of \f$ \psi \f$ looks diffusive in the entire CV space. However, around t=1 ns, \f$ \psi \f$ 
 seems trapped in a region of the CV space in which it was previously diffusing without problems. 
 The reason is that the non-biased CV \f$ \phi \f$ after a while has jumped into a different local minima.
 Since \f$ \phi \f$ is not directly biased, one has to wait for this (slow) degree of freedom to 
 equilibrate before the free energy along \f$ \psi \f$ can converge.
 
-Try to repeat the analysis done in the previous exercize, i.e.  calculate the estimate of the free energy as a function of time,
+Try to repeat the analysis done in the previous exercise, i.e.  calculate the estimate of the free energy as a function of time,
 first step to assess the convergence of this metadynamics simulation.
 
-\section trieste-4-ex-3 Exercize 3: estimating the error in free-energies using block-analysis
+\section trieste-4-ex-3 Exercise 3: estimating the error in free-energies using block-analysis
 
 In this exercise, we will calculate the error associated to the free-energy reconstructed
 by a well-tempered metadynamics simulation. The free energy and the errors will be calculated
@@ -320,7 +320,7 @@ In this exercise we will use the umbrella-sampling-like reweighting approach (Me
 
 To calculate the weights, we need to use the PLUMED \ref driver utility and read the HILLS
 file along with the GROMACS trajectory file produced during the metadynamics simulation.
-Let's consider the metadynamics simulation carried out in Exercize 1.
+Let's consider the metadynamics simulation carried out in Exercise 1.
 We need to prepare the `plumed.dat` input file to use in combination with \ref driver.
 Here you can find a sample `plumed.dat` file that you can use as a template.
 Whenever you see an highlighted \highlight{FILL} string, this is a string that you should replace.
@@ -432,17 +432,17 @@ of the block that exceeds the correlation between data points (Fig. \ref trieste
 \anchor trieste-4-block-phi
 \image html trieste-4-block-phi.png "Block analysis of a metadynamics simulation using phi as CV"
 
-To complete this exercize, you should do the following:
-- calculate the error associated to the free energy as a function of the collective variable \f$ \psi \f$ from Exercize 1
-- calculate the error associated to the free energy as a function of the collective variable \f$ \psi \f$ from Exercize 2
-- compare the different behaviors in Exercize 1 and 2
+To complete this exercise, you should do the following:
+- calculate the error associated to the free energy as a function of the collective variable \f$ \psi \f$ from Exercise 1
+- calculate the error associated to the free energy as a function of the collective variable \f$ \psi \f$ from Exercise 2
+- compare the different behaviors in Exercise 1 and 2
 
 What can we learn from this analysis about the convergence of the two metadynamics simulations
 and the quality of the collective variables chosen?
 
 At this time, the most important question of this lecture becomes:
 
-- Could we distinguish the different behavior (in terms of convergence) of the simulations in Exercize 1 and 2
+- Could we distinguish the different behavior (in terms of convergence) of the simulations in Exercise 1 and 2
 simply by looking at the time series of the Gaussian height?
 
 

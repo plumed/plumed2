@@ -17,7 +17,7 @@ Once this tutorial is completed students will be able to:
 
 \section trieste-6-resources Resources
 
-The reference trajectories and input files for the exercizes proposed in this tutorial 
+The reference trajectories and input files for the exercises proposed in this tutorial 
 can be downloaded from `github` using the following command:
 
 \verbatim
@@ -29,14 +29,14 @@ of 2.4-only features, thus should also work with version 2.3.
  
 \section trieste-6-intro Introduction
 
-In this tutorial we propose exercizes on the following biological systems:
+In this tutorial we propose exercises on the following biological systems:
 - the BRCA1-associated RING domain protein 1 (BARD1 complex) 
 - the cmyc peptide in presence of urea at low concentration (cmyc-urea)
 - the protein G B1 domain  
 
 The exercise are of increasing difficulties, inputs are partially provided for the first and second cases while for the last one the user is expected to be autonomous.
 
-\section trieste-6-ex-1 Exercize 1: analysis of the BARD1 complex simulation 
+\section trieste-6-ex-1 Exercise 1: analysis of the BARD1 complex simulation 
 
 The BARD1 complex is a heterodimer composed by two domains of 112 and 117 residues each. 
 The system is represented at coarse-grained level using the MARTINI force field.
@@ -44,7 +44,7 @@ The system is represented at coarse-grained level using the MARTINI force field.
 \anchor trieste-6-bard1
 \image html trieste-6-bard1.png "The BARD1 heterodimer"
 
-In the TARBALL of this exercize, we provide a long MD simulation of the BARD1 complex in which
+In the TARBALL of this exercise, we provide a long MD simulation of the BARD1 complex in which
 the two domains explore multiple different conformations.
 
 \note We encourage the users to get familiar with the system by visualizing the MD trajectory
@@ -110,11 +110,11 @@ chainB_2: CENTER ATOMS=__FILL__
 dih: TORSION ATOMS=__FILL__
 \endplumedfile
 
-\section trieste-6-ex-2 Exercize 2: analysis of the cmyc-urea simulation
+\section trieste-6-ex-2 Exercise 2: analysis of the cmyc-urea simulation
 
 Cmyc is a small disordered peptide made of 11 aminoacid. In solution, cmyc adopts
 a variety of different, but equally populated conformations. 
-In the TARBALL of this exercize, we provide a long MD simulation of cmyc in presence
+In the TARBALL of this exercise, we provide a long MD simulation of cmyc in presence
 of a single molecule of urea. 
 
 \anchor trieste-6-cmycurea
@@ -166,7 +166,7 @@ For the calculation of ensemble averages of experimental CVs, we suggest to use:
 
 and we encourage the users to look at the examples provided in the manual for the exact syntax.
 
-\section trieste-6-ex-3 Exercize 3: Protein G folding simulations
+\section trieste-6-ex-3 Exercise 3: Protein G folding simulations
 GB1 is a small protein domain with a simple beta-alpha-beta fold. It is a well studied protein that folds on the millisecond time scale.
 Here we use a structure based potential and well-tempered metadynamics to study the free energy of folding and unfolding.
 In the TARBALL of this exercise we provide the files needed to run the simulation, the user should write the plumed input file needed
