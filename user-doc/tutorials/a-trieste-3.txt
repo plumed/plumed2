@@ -108,7 +108,7 @@ We will make use of two toy models: the first is a water dimer, i.e. two molecul
 
 \note Create a folder for each exercise and use subfolders if you want to run the same simulation with multiple choices for the parameters
 
-\section trieste-3-ex-1 Exercize 1: converged histogram of the water dimer relative distance
+\section trieste-3-ex-1 Exercise 1: converged histogram of the water dimer relative distance
 
 \image html trieste-3-wdimer.png "A water dimer"
 
@@ -149,7 +149,7 @@ The result should be comparable with the following:
 \image html trieste-3-histo-dimer.png "A histogram of the relative distance (in nm) with errors"
 Notice the peak at 0.9 nm, this is the effect of using cut-off for the calculation of the interactions in the simulation (check the run-dimer.mdp file for the properties of the run)
 
-\section trieste-3-ex-2 Exercize 2: Apply a linear restraint on the same collective variable 
+\section trieste-3-ex-2 Exercise 2: Apply a linear restraint on the same collective variable 
 Now we will try to apply a linear restraint on the relative distance and compare the resulting distribution.
 The new sampling will reflect the effect of the bias.
 Be carefull about the statistics: in the simulation of exercise 1 you were postprocessing a trajectory of 125000 frames accumulating one frame every ten in an histogram and clearing
@@ -221,7 +221,7 @@ Be carefull again about the difference in the way statistics is accumulated on-t
 
 Now the resulting histogram should be comparable to the reference one.
 
-\section trieste-3-ex-3 Exercize 3: Apply a quadratic restraint on the same collective variable 
+\section trieste-3-ex-3 Exercise 3: Apply a quadratic restraint on the same collective variable 
 
 Do you expect a different behaviour? This time we can write the plumed input file in such a way to compare directly the biased and unbiased histograms.
 
@@ -254,7 +254,7 @@ The comparison of the two histograms with the former will show the effect of the
 > python3 do_block_histo.py > histo-reweighted.dat 
 \endverbatim
 
-\section trieste-3-ex-4 Exercize 4: Apply an upper wall on the distance.
+\section trieste-3-ex-4 Exercise 4: Apply an upper wall on the distance.
 In the above cases we have always applied weak biases. Sometimes biases are usefull to prevent the system in reaching some region of the conformational space. In this case instead of using \ref RESTRAINT , we can make use of lower or upper restraints, e.g. \ref LOWER_WALLS and \ref UPPER_WALLS.
 
 What happen to the histogram when we use walls? 
@@ -285,7 +285,7 @@ Run it.
 
 If we have not sampled a region througly enough it is not possible to estimate the histogram in that region even using reweighting (reweighting is not magic!).
 
-\section trieste-3-ex-5 Exercize 5: Evaluate the free energy and use it as an external restraint
+\section trieste-3-ex-5 Exercise 5: Evaluate the free energy and use it as an external restraint
 
 The main issue in sampling rare events is that importance sampling algorithms spend more time in low energy regions and if two low energy regions are separated by a high energy one is unlikely for the sampling algorithm to cross the high energy region and reach the other low energy one. From this point of view an algorithm based on random sampling will work better in crossing the barrier. A particularly efficient sampling can be obtained if one would know the underlying free energy and thus use that to bias the sampling and make the sampling probability uniform in the regions of relavent interest.
 In this exercise we will make use of the free-energy estimate along the distance collective variable to bias the sampling of the same collective variable in the dimer simulation. To do so we will make use of a table potential applied using the \ref Bias \ref EXTERNAL. We first need to get a smooth estimate of the free-energy from our fist reference simulations, we will do this by accumulating a histogram with kernel functions, that is continuos function centered at the value of the accumulated point and added accumulated on the discrete represattion of the histogram, see <a href="https://en.wikipedia.org/wiki/Kernel_density_estimation"> Kernel density estimation </a>.
@@ -374,7 +374,7 @@ Run it.
 
 How do the biased and unbiased histograms look like? In the following we will apply this concept to sample the conformational space of a more complex system.
 
-\section trieste-3-ex-6 Exercize 6: Preliminary run with Alanine dipeptide
+\section trieste-3-ex-6 Exercise 6: Preliminary run with Alanine dipeptide
 
 Alanine dipeptide is characterised by multiple minima separated by relatively high free energy barriers. Here we will explore the conformational space of
 alanine dipeptide using a standard MD simulation, then instead of using the free energy as an external potential we will try to fit the potential using
@@ -414,7 +414,7 @@ gnuplot>rep f(x)
 
 The function and the resulting parameters can be used to run a new biased simulation:
 
-\section trieste-3-ex-7 Exercize 7: First biased run with Alanine dipeptide
+\section trieste-3-ex-7 Exercise 7: First biased run with Alanine dipeptide
 
 \plumedfile
 # vim:ft=plumed
@@ -445,7 +445,7 @@ gnuplot> ...
 
 We can now run a third simulation where both regions are biased.
 
-\section trieste-3-ex-8 Exercize 8: Second biased run with Alanine dipeptide
+\section trieste-3-ex-8 Exercise 8: Second biased run with Alanine dipeptide
 
 \plumedfile
 # vim:ft=plumed

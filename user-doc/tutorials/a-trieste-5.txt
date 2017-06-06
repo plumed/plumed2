@@ -26,8 +26,11 @@ The \tarball{trieste-5} for this project contains the following files:
 
 This tutorial has been tested on a pre-release version of version 2.4. In particular, it takes
 advantage of a special syntax for setting up multi-replica simulations that is only available
-since version 2.4. Exercizes could be done also with version 2.3 but using a different syntax
+since version 2.4. Exercise could be done also with version 2.3 but using a different syntax
 with respect to the one suggested.
+
+Also notice that in the `.solutions` directory of the tarball you will find correct input files.
+Please only look at these files after you have tried to solve the problems yourself.
 
 \section trieste-5-introduction Introduction
 
@@ -195,7 +198,7 @@ In short, whenever there are keywords that should vary across replicas, you shou
 As mentioned above, you can always use the old syntax with separate input file, and this is recommended when the
 number of keywords that are different is large.
 
-\section trieste-5-ex-1 Exercize 1: Running multi-replica simulations
+\section trieste-5-ex-1 Exercise 1: Running multi-replica simulations
 
 Write a plumed file that allows you to run a multi-replica simulation of alanine dipeptide
 where the following four replicas are simulated:
@@ -254,12 +257,45 @@ to the same potential, so all the exchanges will be accepted. You can verify thi
 > grep "Repl ex" md0.log
 \endverbatim
 
+It is interesting to see what happens at different stages of the simulation. At the beginning
+of the trajectory you should see something like this
+\verbatim
+> grep "Repl ex" md0.log | head
+Repl ex  0 x  1    2 x  3
+Repl ex  0    1 x  2    3
+Repl ex  0 x  1    2 x  3
+Repl ex  0    1 x  2    3
+Repl ex  0 x  1    2 x  3
+Repl ex  0    1    2    3
+Repl ex  0 x  1    2 x  3
+Repl ex  0    1 x  2    3
+Repl ex  0 x  1    2 x  3
+Repl ex  0    1 x  2    3
+\endverbatim
+Notice that all the exchanges between replicas 0 and 1 are accepted and also almost all the exchanges between replicas 1, 2, and 3.
+At a later stage you will more likely find something like this
+\verbatim
+> grep "Repl ex" md0.log | tail
+Repl ex  0    1 x  2    3
+Repl ex  0 x  1    2    3
+Repl ex  0    1 x  2    3
+Repl ex  0 x  1    2    3
+Repl ex  0    1 x  2    3
+Repl ex  0 x  1    2 x  3
+Repl ex  0    1 x  2    3
+Repl ex  0 x  1    2 x  3
+Repl ex  0    1    2    3
+Repl ex  0 x  1    2    3
+\endverbatim
+Notice that all the exchanges between replicas 0 and 1 are still accepted. This is because the potential energy felt by replicas 0 and
+1 are identical. However, exchanges between replicas 1, 2, and 3 are sometime rejected.
+
 \note
 The setup above is very close to the one used in bias exchange simulations.
 However, in bias exchange simulations usually one would use at most one neutral (non-biased) replica.
 In addition, the \ref RANDOM_EXCHANGES command is often used.
 
-\section trieste-5-ex-2 Exercize 2: Analyzing a multiple-restraint simulation
+\section trieste-5-ex-2 Exercise 2: Analyzing a multiple-restraint simulation
 
 In the following we will analyze the result of the simulation above.
 To this aim we will have to use the WHAM method. The WHAM procedure described here is
@@ -270,6 +306,9 @@ that includes all the conformations that you produced during your simulations.
 \verbatim
 > gmx_mpi trjcat -f traj_comp*.xtc -cat -o fulltraj.xtc
 \endverbatim
+
+Notice that a new trajectory file `fulltraj.xtc` will be in your working directory now, 
+approximately four times bigger than the individual files `traj_comp*.xtc`.
 
 Now we will process that directory computing the bias potentials associated with
 the replicas that we simulated. Similarly to what we did in \ref trieste-4,
@@ -342,16 +381,45 @@ number of replicas (that is the number of columns) and value of kbT (2.5 in kj/m
 \endverbatim
 
 This will generate a file named `weights.dat` that contains the weights for each of the frame.
+The initial values reported in the file should be similar to these ones:
+\verbatim
+> head weights.dat
+ 3.688530731178e-05
+3.899877363004e-05
+7.861996862568e-07
+3.663355487180e-06
+1.647251040152e-06
+2.689614526429e-06
+3.254124396415e-06
+1.511057459698e-05
+2.342149322226e-05
+5.032261109943e-06
+\endverbatim
+Weights are very small since we have a long trajectory with many frames.
 You can check that they are normalized using the command `awk '{a+=$1}END{print a}' weights.dat`.
-Now have a look at the weights. Remember that we are concatenating trajectories. Can you understand
+
+Now have a look at the weights. Remember that we are concatenating trajectories.
+
+\image html trieste-5-weights.png "Weights obtained from WHAM, in logarithmic scale"
+
+Can you understand
 why weights in the first half are systematically different from weights in the second half?
+The first part correspond to the unbiased trajectories. All the snapshots sampled here are
+reasonably correct. However, in the second part we have heavily biased snapshots, which
+also sample transition states. Those points are assigned a low weight by WHAM
+so that they would be discarded in the calculation of any unbiased average.
 
 Now we have the weight for each frame. We would like to compute the relative stability of the
 two free-energy wells that correspond roughly to positive and negative \f$\phi\f$.
 \verbatim
 > paste <(grep -v \# COLVAR_CONCAT.0) weights.dat | awk '{if($2>0)wb+=$NF; else wa+=$NF}END{print wa,wb}'
 \endverbatim
-This will tell you the unbiased population of the two minima.
+This will tell you the unbiased population of the two minima. You should expect
+values close to these ones
+\verbatim
+0.968885 0.0311148
+\endverbatim
+that tells you that the first minimum has a population of roughly 97%.
 
 \note
 This approach can be used to reweight any replica exchange simulation, irrespectively of how
@@ -368,20 +436,44 @@ parallel tempering simulations \cite sugi-okam99cpl
 and simulated tempering simulations \cite wang2011replica (notice that they 
 can be implemented with PLUMED + GROMACS using \cite bussi2013mp).
 
-\section trieste-5-ex-3 Exercize 3: What if a variable is missing?
+\section trieste-5-ex-3 Exercise 3: What if a variable is missing?
 
-Repeat the exercize above (that is: running replica exchange MD simulation and analyze the result)
+Repeat the exercise above (that is: running replica exchange MD simulation and analyze the result)
 but using only three replicas:
 - two unbiased replicas.
 - one biased replica along psi.
 
-Compute as before the relative population of the two minima. Which is the result? What can you learn from this example?
+Create a file `plumed3.dat` aimed at this. If you are not able you can find a working one in the `solutions` directory.
+Then use the following commands similarly to before:
+\verbatim
+> mpirun -np 3 gmx_mpi mdrun -plumed plumed3.dat -nsteps 1000000 -replex 120 -multi 3
+> gmx_mpi trjcat -f traj_comp{0,1,2}.xtc -cat -o fulltraj.xtc
+> mpirun -np 3 plumed driver --mf_xtc fulltraj.xtc --plumed plumed3_reweight.dat --multi 3
+> paste COLVAR_WHAM.{0,1,2} | grep -v \# | awk '{for(i=1;i<=NF/2;i++) printf($(i*2)"  ");printf("\n");}' > ALLBIAS
+> python3 SCRIPTS/wham.py ALLBIAS 3 2.5
+\endverbatim
 
-Also plot the colvar files and look at them with attention. How many transitions between the two free-energy wells can you observe?
+Compute as before the relative population of the two minima.
+\verbatim
+> paste <(grep -v \# COLVAR_CONCAT.0) weights.dat | awk '{if($2>0)wb+=$NF; else wa+=$NF}END{print wa,wb}'
+\endverbatim
+Which is the result? What can you learn from this example?
+
+If you did things correclty, here you should find a population close to 2/3 for the first minimum and 1/3 for the second one.
+Notice that this population just reflects the way we initialized the simulations (2 of them in one minimum and 1 in the other minimum)
+and does not take into account which is the relative stability of the two minima according to the real potential energy function.
+In other words, we are just obtaining the relative population that we used to initialize the simulation.
+
+Also plot the colvar files and look at them with attention. An excerpt is shown below.
+
+\image html trieste-5-colvars.png "Time series of phi from the simulations with a missing variable (exercise 3). Notice that there are appaernt transitions, but they are
+always due to accepted exchanges between replicas."
+
+How many transitions between the two free-energy wells can you observe?
 Remember that replica exchange involves coordinate swaps that do not correspond to the real system dynamics. It is very useful to look at
 "demuxed" trajectories.
 
-\section trieste-5-ex-4 Exercize 4: "demuxing" your trajectories
+\section trieste-5-ex-4 Exercise 4: "demuxing" your trajectories
 
 Use the following commands
 
@@ -399,9 +491,17 @@ continuous ones with the following commands
 
 You will now find new trajectories `0_trajout.xtc`, `1_trajout.xtc`, `2_trajout.xtc`, and `3_trajout.xtc`.
 These files can be in turn analyzed with `plumed driver`. Try to recompute collective variables on the trajectories
-obtained in \ref trieste-5-ex-1 and with those obtained in \ref trieste-5-ex-3. Can you spot out the difference between
-the two cases?
+obtained in \ref trieste-5-ex-1 and with those obtained in \ref trieste-5-ex-3. 
 
+\image html trieste-5-demux-good.png "Time series of phi obtained from the demuxed trajectories from exercise 2"
+\image html trieste-5-demux-bad.png "Time series of phi obtained from the demuxed trajectories from exercise 3"
+
+As you can see, the trajectories from \ref trieste-5-ex-1 show a number of transitions. On the other hand, the trajectories from \ref trieste-5-ex-3
+are stuck.
+
+As a general rule, notice that there is no way to estimate correctly the relative population
+of two metastable states if there is not a continuous "demuxed" trajectory joining them,
+possibly exhibiting multiple transitions.
 
 \section trieste-5-conclusion Conclusions
 

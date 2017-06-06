@@ -198,8 +198,8 @@ void AdaptivePath::update() {
   }
   // Add projections to dispalcement accumulators
   ReferenceConfiguration* myref = getReferenceConfiguration( mypathv->iclose1 );
-  myref->extractDisplacementVector( getPositions(), getArguments(), mypathv->cargs, false, false, displacement );
-  getReferenceConfiguration( mypathv->iclose2 )->extractDisplacementVector( myref->getReferencePositions(), getArguments(), myref->getReferenceArguments(), false, false, displacement2 );
+  myref->extractDisplacementVector( getPositions(), getArguments(), mypathv->cargs, false, displacement );
+  getReferenceConfiguration( mypathv->iclose2 )->extractDisplacementVector( myref->getReferencePositions(), getArguments(), myref->getReferenceArguments(), false, displacement2 );
   displacement.addDirection( -mypathv->dx, displacement2 );
   pdisplacements[mypathv->iclose1].addDirection( weight1, displacement );
   pdisplacements[mypathv->iclose2].addDirection( weight2, displacement );
