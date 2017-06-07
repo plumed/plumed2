@@ -1,0 +1,4 @@
+mpiprocs=6
+type=driver
+plumed_needs="matheval"
+arg="--plumed plumed.dat --mf_xtc traj.xtc --dump-forces forces --dump-forces-fmt=%8.4f --debug-dd"
