@@ -54,4 +54,6 @@ Changes from version 2.3 which are relevant for developers:
   - `gettimeofdate` and `gettime` have been replaced with portable `chrono` classes introduced in c++11.
   - C++ exceptions are enabled by default.
   - Stack trace is not written upon error anymore, unless environment variable `PLUMED_STACK_TRACE` is set at runtime.
+  - Fixed a potential bug using single precision internal blas on a mac (notice that currently plumed only uses
+    double precision, so it is harmless).
 */
