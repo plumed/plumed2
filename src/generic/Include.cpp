@@ -41,14 +41,14 @@ This input
 \verbatim
 c1: COM ATOMS=1-100
 c2: COM ATOMS=101-202
-d: DISTANCE ARG=c1,c2
+d: DISTANCE ATOMS=c1,c2
 PRINT ARG=d
 \endverbatim
 
 can be replaced with
 \verbatim
 INCLUDE FILE=pippo.dat
-d: DISTANCE ARG=c1,c2
+d: DISTANCE ATOMS=c1,c2
 PRINT ARG=d
 \endverbatim
 

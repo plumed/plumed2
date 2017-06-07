@@ -55,8 +55,8 @@ PLUMED has been linked to it
 The following input tells plumed to perform a metadynamics
 using as a CV the difference between two distances.
 \verbatim
-dAB: DISTANCE ARG=10,12
-dAC: DISTANCE ARG=10,15
+dAB: DISTANCE ATOMS=10,12
+dAC: DISTANCE ATOMS=10,15
 diff: MATHEVAL ARG=dAB,dAC FUNC=y-x PERIODIC=NO
 # notice: the previous line could be replaced with the following
 # diff: COMBINE ARG=dAB,dAC COEFFICIENTS=-1,1

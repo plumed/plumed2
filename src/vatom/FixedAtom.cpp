@@ -65,7 +65,7 @@ and then compute the distance of one of its atom from the point
 \verbatim
 FIT_TO_TEMPLATE STRIDE=1 REFERENCE=ref.pdb TYPE=SIMPLE
 a: FIXEDATOM AT=10,20,30
-d: DISTANCE ARG=a,20
+d: DISTANCE ATOMS=a,20
 PRINT ARG=d FILE=colvar
 \endverbatim
 (See also \ref FIT_TO_TEMPLATE and \ref DISTANCE).
