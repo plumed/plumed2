@@ -46,7 +46,7 @@ fi
 echo "*** Only use this script if you want to release a new PLUMED version. ***"
 echo "*** Follow instructions below, and use Control-C to exit. ***"
 
-ls src README 1>/dev/null 2>/dev/null ||  {
+ls src README.md 1>/dev/null 2>/dev/null ||  {
   echo "Launch from root directory"
   exit 1
 }
