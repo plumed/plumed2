@@ -86,6 +86,10 @@ plumedcheck:
 codecheck:
 	../maketools/codecheck --local
 
+.PHONY: astyle
+astyle:
+	cd ../ ; ./astyle.sh $(CURDIR)
+
 
 
 # generic makefile rules

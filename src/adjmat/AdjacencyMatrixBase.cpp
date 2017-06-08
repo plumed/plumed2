@@ -149,8 +149,15 @@ void AdjacencyMatrixBase::retrieveTypeDimensions( unsigned& nrows, unsigned& nco
 void AdjacencyMatrixBase::finishMatrixSetup( const bool& symmetric, const std::vector<AtomNumber>& all_atoms ){
   std::string param;
   if( symmetric && ablocks[0].size()==ablocks[1].size() ) param="SYMMETRIC";
-  if( !symmetric && ablocks[0].size()==ablocks[1].size() ) param="HBONDS";
-
+  if( !symmetric ){
+      bool usehbonds=( ablocks[0].size()==ablocks[1].size() );
+      if( usehbonds ){
+          for(unsigned i=0;i<ablocks[0].size();++i){
+              if( ablocks[0][i]!=ablocks[1][i] ){ usehbonds = false; break; } 
+          } 
+          if( usehbonds ) param="HBONDS";       
+      } 
+  }
 
   vesselbase::VesselOptions da("","",0,param,this);
   Keywords keys; AdjacencyMatrixVessel::registerKeywords( keys );

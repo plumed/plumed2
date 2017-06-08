@@ -51,6 +51,9 @@ void StoreDataVessel::resize(){
      nspace = 1;
      active_der.resize( max_lowmem_stash * ( 1 + getAction()->getNumberOfDerivatives() ) );
   } else {
+     if( getAction()->getNumberOfDerivatives()>getAction()->maxderivatives ){
+          error("not enough memory to store derivatives for action " + getAction()->getLabel() + " use LOWMEM option");
+     }
      nspace = 1 + getAction()->maxderivatives;
      active_der.resize( getNumberOfStoredValues() * ( 1 + getAction()->maxderivatives ) );
   }
