@@ -24,7 +24,7 @@
 #include "core/ActionRegister.h"
 
 #include <string>
-#include <cmath> 
+#include <cmath>
 
 //+PLUMEDOC MCOLVARF MCOLV_COMBINE
 /*
@@ -47,46 +47,46 @@ public:
 /// Actually do the calculation
   double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
 /// Is the variable periodic
-  bool isPeriodic(){ return false; }
+  bool isPeriodic() { return false; }
 };
 
 PLUMED_REGISTER_ACTION(MultiColvarCombine,"MCOLV_COMBINE")
 
-void MultiColvarCombine::registerKeywords( Keywords& keys ){
+void MultiColvarCombine::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );
   keys.add("compulsory","DATA","the multicolvars you are calculating linear combinations for");
   keys.add("compulsory","COEFFICIENTS","1.0","the coeficients to use for the various multicolvars");
-  keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("SUM"); keys.use("LESS_THAN"); keys.use("HISTOGRAM"); keys.use("HISTOGRAM"); 
+  keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("SUM"); keys.use("LESS_THAN"); keys.use("HISTOGRAM"); keys.use("HISTOGRAM");
   keys.use("MIN"); keys.use("MAX"); keys.use("LOWEST"); keys.use("HIGHEST"); keys.use("ALT_MIN"); keys.use("BETWEEN"); keys.use("MOMENTS");
 }
 
 MultiColvarCombine::MultiColvarCombine(const ActionOptions& ao):
-Action(ao),
-MultiColvarBase(ao)
+  Action(ao),
+  MultiColvarBase(ao)
 {
   buildSets();
-  for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i){
-      if( mybasemulticolvars[i]->weightWithDerivatives() ) error("cannot combine multicolvars with weights");
+  for(unsigned i=0; i<getNumberOfBaseMultiColvars(); ++i) {
+    if( mybasemulticolvars[i]->weightWithDerivatives() ) error("cannot combine multicolvars with weights");
   }
   coeff.resize( getNumberOfBaseMultiColvars() );
   parseVector("COEFFICIENTS",coeff);
   log.printf("  coefficients of multicolvars %f", coeff[0] );
-  for(unsigned i=1;i<coeff.size();++i) log.printf(", %f", coeff[i] );
-  log.printf("\n"); 
+  for(unsigned i=1; i<coeff.size(); ++i) log.printf(", %f", coeff[i] );
+  log.printf("\n");
 }
 
 double MultiColvarCombine::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
-  double dot=0; std::vector<double> tval(2); 
-  for(unsigned i=0;i<coeff.size();++i){ 
-      getInputData( i, false, myatoms, tval );
-      dot += coeff[i]*tval[1];
+  double dot=0; std::vector<double> tval(2);
+  for(unsigned i=0; i<coeff.size(); ++i) {
+    getInputData( i, false, myatoms, tval );
+    dot += coeff[i]*tval[1];
   }
-  if( !doNotCalculateDerivatives() ){ 
-      MultiValue& myvals = myatoms.getUnderlyingMultiValue(); std::vector<double> cc(2);
-      for(unsigned i=0;i<coeff.size();++i){ 
-          cc[1]=coeff[i]; MultiValue& myder=getInputDerivatives( i, false, myatoms ); 
-          splitInputDerivatives( 1, 1, 2, i, cc, myder, myatoms ); 
-      }
+  if( !doNotCalculateDerivatives() ) {
+    MultiValue& myvals = myatoms.getUnderlyingMultiValue(); std::vector<double> cc(2);
+    for(unsigned i=0; i<coeff.size(); ++i) {
+      cc[1]=coeff[i]; MultiValue& myder=getInputDerivatives( i, false, myatoms );
+      splitInputDerivatives( 1, 1, 2, i, cc, myder, myatoms );
+    }
   }
   return dot;
 }

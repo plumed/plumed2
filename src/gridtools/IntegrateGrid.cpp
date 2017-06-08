@@ -43,13 +43,13 @@ public:
 
 PLUMED_REGISTER_ACTION(IntegrateGrid,"INTEGRATE_GRID")
 
-void IntegrateGrid::registerKeywords( Keywords& keys ){
+void IntegrateGrid::registerKeywords( Keywords& keys ) {
   ActionWithIntegral::registerKeywords( keys );
 }
 
 IntegrateGrid::IntegrateGrid(const ActionOptions&ao):
-Action(ao),
-ActionWithIntegral(ao)
+  Action(ao),
+  ActionWithIntegral(ao)
 {
 }
 

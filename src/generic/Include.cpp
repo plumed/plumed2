@@ -26,8 +26,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace generic{
+namespace PLMD {
+namespace generic {
 
 //+PLUMEDOC GENERIC INCLUDE
 /*
@@ -69,19 +69,19 @@ class Include :
 public:
   static void registerKeywords( Keywords& keys );
   explicit Include(const ActionOptions&ao);
-  void calculate(){}
-  void apply(){}
+  void calculate() {}
+  void apply() {}
 };
 
 PLUMED_REGISTER_ACTION(Include,"INCLUDE")
 
-void Include::registerKeywords( Keywords& keys ){
+void Include::registerKeywords( Keywords& keys ) {
   Action::registerKeywords(keys);
   keys.add("compulsory","FILE","file to be included");
 }
 
 Include::Include(const ActionOptions&ao):
-Action(ao)
+  Action(ao)
 {
   std::string f;
   parse("FILE",f);

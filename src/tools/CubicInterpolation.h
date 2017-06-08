@@ -59,13 +59,13 @@ unsigned CInterpolation::getNumberOfSplinePoints() const {
 inline
 void CInterpolation::getSplinePoint( const unsigned nn, std::vector<double>& pp ) const {
   plumed_dbg_assert( nn<splinepoints.nrows() && pp.size()==np.size() );
-  for(unsigned i=0;i<np.size();++i) pp[i]=splinepoints(nn,i); 
+  for(unsigned i=0; i<np.size(); ++i) pp[i]=splinepoints(nn,i);
 }
 
 inline
 double CInterpolation::getPointSpacing( const unsigned dir, const unsigned k ) const {
   unsigned i=k*stride[dir];
-  return splinepoints(i+stride[dir], dir) - splinepoints(i, dir); 
+  return splinepoints(i+stride[dir], dir) - splinepoints(i, dir);
 }
 
 inline

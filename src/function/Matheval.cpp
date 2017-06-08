@@ -28,8 +28,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace function{
+namespace PLMD {
+namespace function {
 
 
 //+PLUMEDOC FUNCTION MATHEVAL
@@ -186,7 +186,7 @@ public:
 #ifdef __PLUMED_HAS_MATHEVAL
 PLUMED_REGISTER_ACTION(Matheval,"MATHEVAL")
 
-void Matheval::registerKeywords(Keywords& keys){
+void Matheval::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
   keys.use("ARG"); keys.use("PERIODIC");
   keys.add("compulsory","FUNC","the function you wish to evaluate");
@@ -194,14 +194,14 @@ void Matheval::registerKeywords(Keywords& keys){
 }
 
 Matheval::Matheval(const ActionOptions&ao):
-Action(ao),
-Function(ao),
-evaluator_deriv(getNumberOfArguments()),
-values(getNumberOfArguments()),
-names(getNumberOfArguments())
+  Action(ao),
+  Function(ao),
+  evaluator_deriv(getNumberOfArguments()),
+  values(getNumberOfArguments()),
+  names(getNumberOfArguments())
 {
   parseVector("VAR",var);
-  if(var.size()==0){
+  if(var.size()==0) {
     var.resize(getNumberOfArguments());
     if(getNumberOfArguments()>3)
       error("Using more than 3 arguments you should explicitly write their names with VAR");
@@ -212,7 +212,7 @@ names(getNumberOfArguments())
   if(var.size()!=getNumberOfArguments())
     error("Size of VAR array should be the same as number of arguments");
   parse("FUNC",func);
-  addValueWithDerivatives(); 
+  addValueWithDerivatives();
   checkRead();
 
   evaluator=evaluator_create(const_cast<char*>(func.c_str()));
@@ -222,46 +222,46 @@ names(getNumberOfArguments())
   char **check_names;
   int    check_count;
   evaluator_get_variables(evaluator,&check_names,&check_count);
-  if(check_count!=int(getNumberOfArguments())){
+  if(check_count!=int(getNumberOfArguments())) {
     string sc;
     Tools::convert(check_count,sc);
     error("Your function string contains "+sc+" arguments. This should be equal to the number of ARGs");
   }
-  for(unsigned i=0;i<getNumberOfArguments();i++){
+  for(unsigned i=0; i<getNumberOfArguments(); i++) {
     bool found=false;
-    for(unsigned j=0;j<getNumberOfArguments();j++){
+    for(unsigned j=0; j<getNumberOfArguments(); j++) {
       if(var[i]==check_names[j])found=true;
     }
     if(!found)
       error("Variable "+var[i]+" cannot be found in your function string");
   }
 
-  for(unsigned i=0;i<getNumberOfArguments();i++)
+  for(unsigned i=0; i<getNumberOfArguments(); i++)
     evaluator_deriv[i]=evaluator_derivative(evaluator,const_cast<char*>(var[i].c_str()));
 
 
   log.printf("  with function : %s\n",func.c_str());
   log.printf("  with variables :");
-  for(unsigned i=0;i<var.size();i++) log.printf(" %s",var[i].c_str());
+  for(unsigned i=0; i<var.size(); i++) log.printf(" %s",var[i].c_str());
   log.printf("\n");
   log.printf("  function as parsed by matheval: %s\n", evaluator_get_string(evaluator));
   log.printf("  derivatives as computed by matheval:\n");
-  for(unsigned i=0;i<var.size();i++) log.printf("    %s\n",evaluator_get_string(evaluator_deriv[i]));
+  for(unsigned i=0; i<var.size(); i++) log.printf("    %s\n",evaluator_get_string(evaluator_deriv[i]));
 }
 
-void Matheval::calculate(){
-  for(unsigned i=0;i<getNumberOfArguments();i++) values[i]=getArgument(i);
-  for(unsigned i=0;i<getNumberOfArguments();i++) names[i]=const_cast<char*>(var[i].c_str());
+void Matheval::calculate() {
+  for(unsigned i=0; i<getNumberOfArguments(); i++) values[i]=getArgument(i);
+  for(unsigned i=0; i<getNumberOfArguments(); i++) names[i]=const_cast<char*>(var[i].c_str());
   setValue(evaluator_evaluate(evaluator,names.size(),&names[0],&values[0]));
 
-  for(unsigned i=0;i<getNumberOfArguments();i++){
+  for(unsigned i=0; i<getNumberOfArguments(); i++) {
     setDerivative(i,evaluator_evaluate(evaluator_deriv[i],names.size(),&names[0],&values[0]));
   }
 }
 
-Matheval::~Matheval(){
+Matheval::~Matheval() {
   evaluator_destroy(evaluator);
-  for(unsigned i=0;i<evaluator_deriv.size();i++)evaluator_destroy(evaluator_deriv[i]);
+  for(unsigned i=0; i<evaluator_deriv.size(); i++)evaluator_destroy(evaluator_deriv[i]);
 }
 
 #endif
