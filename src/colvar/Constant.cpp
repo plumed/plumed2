@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -44,21 +44,20 @@ The following input instructs plumed to compute the distance
 between atoms 1 and 2. If this distance is between 1.0 and 2.0, it is
 printed. If it is lower than 1.0 (larger than 2.0), 1.0 (2.0) is printed
 
-\verbatim
+\plumedfile
 cn: CONSTANT VALUES=1.0,2.0
 dis: DISTANCE ATOMS=1,2
 sss: SORT ARG=cn.v_0,dis,cn.v_1
 PRINT ARG=sss.2
-\endverbatim
-(See also \ref DISTANCE, \ref SORT, and \ref PRINT).
+\endplumedfile
 
 In case you want to pass a single value you can use VALUE:
-\verbatim
+\plumedfile
 cn: CONSTANT VALUE=1.0
 dis: DISTANCE ATOMS=1
 sss: SORT ARG=cn,dis
 PRINT ARG=sss.1
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

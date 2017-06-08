@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -292,7 +292,7 @@ double Value::difference(double d1,double d2)const {
 
 inline
 double Value::bringBackInPbc(double d1)const {
-  return difference(min+max_minus_min/2., d1);
+  return min+max_minus_min/2.+difference(min+max_minus_min/2., d1);
 }
 
 inline

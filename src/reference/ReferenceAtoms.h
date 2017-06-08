@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -70,10 +70,6 @@ protected:
   void setAtomIndices( const std::vector<AtomNumber>& atomnumbers );
 /// Read a list of atoms from the pdb input file
   bool parseAtomList( const std::string&, std::vector<unsigned>& );
-/// Get the vector of alignment weights
-  const std::vector<double> & getAlign() const ;
-/// Get the vector of displacement weights
-  const std::vector<double> & getDisplace() const ;
 /// Get the position of the ith atom
   Vector getReferencePosition( const unsigned& iatom ) const ;
 /// Add derivatives to iatom th atom in list
@@ -107,13 +103,17 @@ public:
 /// Displace the positions of the reference atoms a bit
   void displaceReferenceAtoms( const double& weight, const std::vector<Vector>& dir );
 /// Extract a displacement from a position in space
-  virtual void extractAtomicDisplacement( const std::vector<Vector>& pos, const bool & anflag, std::vector<Vector>& direction ) const {
+  virtual void extractAtomicDisplacement( const std::vector<Vector>& pos, std::vector<Vector>& direction ) const {
     plumed_error();
   }
 /// Project the displacement on a vector
-  virtual double projectAtomicDisplacementOnVector( const std::vector<Vector>& eigv, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const {
+  virtual double projectAtomicDisplacementOnVector( const bool& normalized, const std::vector<Vector>& eigv, ReferenceValuePack& mypack ) const {
     plumed_error(); return 1;
   }
+/// Get the vector of alignment weights
+  const std::vector<double> & getAlign() const ;
+/// Get the vector of displacement weights
+  const std::vector<double> & getDisplace() const ;
 };
 
 inline

@@ -6,7 +6,7 @@
 Consider the two overlain protein structures that are shown in the figure below.  
 Can you see the difference between these two structures?  Can you think of a collective variable that could be used to study the substantial change in structure?
 
-\anchor belfast-2-cdk-fig
+\anchor lugano-2-cdk-fig
 \image html belfast-2-cdk.png "CDK2 conformational change, PDB code 2C5X and 2C5Y."
 
 Your answers to the questions posed above are hopefully: yes I can see the difference between the two structures - the upper loop is radically different in the two 
@@ -51,14 +51,14 @@ The <a href="tutorial-resources/lugano-2.tar.gz" download="lugano-2.tar.gz"> tar
 In this tutorial we are going to be considering a conformational transition of alanine dipeptide.  In particular we are going to be considering the transition
 between the two conformers of this molecule shown below:
 
-\anchor belfast-2-transition-fig
+\anchor lugano-2-transition-fig
 \image html belfast-2-transition.png  "Two metastable states of alanine dipeptide are characterized by their Ramachandran dihedral angles."
 
 Alanine dipeptide is a rather well-studied biomolecule (in fact it is an overstudied molecule!).  It is well known that you can 
 understand the interconversion of the two conformers shown above by looking at the free energy surface as a function of the \f$\phi\f$ and \f$\psi\f$ 
 ramachandran angles as shown below:
 
-\anchor belfast-2-rama-fig
+\anchor lugano-2-rama-fig
 \image html belfast-2-rama.png  "The Free energy landscape of alanine dipeptide in Ramachandran angles in the CHARMM27 force field."
  
 In this tutorial we are not going to use these coordinates to study alanine dipeptide.  Instead we are going to see if we can find a single collective 
@@ -66,9 +66,9 @@ variable that can distinguish between these two states.
 
 \subsection lugano-2-pca1 PCA coordinates
 
-Consider the free energy surface shown in figure \ref belfast-2-rama-fig.  It is clear that either the \f$\phi\f$ (\f$x\f$-axis) or the 
+Consider the free energy surface shown in figure \ref lugano-2-rama-fig.  It is clear that either the \f$\phi\f$ (\f$x\f$-axis) or the 
 \f$\psi\f$ (\f$y\f$-axis) angle of the molecule can be used to distinguish between the two configurations shown in 
-figure \ref belfast-2-transition-fig.  Having said that, however, given the shape of landscape and the associated thermal fluctuations we would 
+figure \ref lugano-2-transition-fig.  Having said that, however, given the shape of landscape and the associated thermal fluctuations we would 
 expect to see in the values of these angles during a typical simulation, it seems likely that \f$\phi\f$ will do a better job
 at distinguishing between the two configurations.   \f$\psi\f$ would most likely be a bad coordinate as when the molecule is in the C7eq 
 configuration the \f$\psi\f$ angle can fluctuate to any value with only a very small energetic cost.  If we only had information on how the \f$\psi\f$
@@ -176,10 +176,10 @@ s = \sum_{i=1}^{3N} (x^{(2)}_i - x^{(1)}_i ) (x^{(3)}_i - x^{(1)}_i )
 \f]
 in a manner of speaking.  The point is that we would not want to calculate exactly this quantity because the vectors of displacements that
 are calculated in this way includes both rotational and translational motion.  This is a problem as the majority of the change
-in moving from the C7ax configuration shown in figure \ref belfast-2-transition-fig to the C7eq configuration shown in figure 
-\ref belfast-2-transition-fig comes from the translation of all the atoms.  To put this another way if I had, in figure \ref belfast-2-transition-fig,
+in moving from the C7ax configuration shown in figure \ref lugano-2-transition-fig to the C7eq configuration shown in figure 
+\ref lugano-2-transition-fig comes from the translation of all the atoms.  To put this another way if I had, in figure \ref lugano-2-transition-fig,
 shown two images of the C7ax configuration side by side the displacement in the positions of the atoms in those two structures would be
-similar to the displacement of the atoms in \ref belfast-2-transition-fig as as the majority of the displacement in the vector of atomic positions 
+similar to the displacement of the atoms in \ref lugano-2-transition-fig as as the majority of the displacement in the vector of atomic positions 
 comes about because I have translated all the atoms in the molecule
 rightwards by a fixed amount.  I can, however, remove these translational displacements from consideration when calculating these vectors.  In addition,
 I can also remove any displacements due rotation in the frame of reference of the molecule.  If you are interested in how this is done in practise you can 
@@ -272,7 +272,7 @@ on it.  In the next section we are thus going to see how we can resolve this pro
 
 Consider the black path that connects the C7ax and C7eq states in the free energy shown below:
 
-\anchor belfast-2-good-bad-path-fig
+\anchor lugano-2-good-bad-path-fig
 \image html belfast-2-good-bad-path.png "Examples of good and bad paths:  the black path follows the minimum free energy path connecting the two metastable states, while the red path connects the two states directly via a linear path that passes through high energy"
 
 This black pathways appears to be the "perfect" coordinate for modelling this conformational transition as it passes along the lowest 
@@ -331,7 +331,7 @@ In this expression \f$\vert X-X_i \vert\f$ is the distance between the instaneou
 will thus be the one that corresponds to the point that is closest to where the system currently lies.  In other words, \f$S(X)\f$, measures the position 
 on a (curvilinear) path that connects two states of interest as shown in red in the figure below:
 
-\anchor belfast-2-ab-sz-fig
+\anchor lugano-2-ab-sz-fig
 \image html belfast-2-ab-sz.png "The S variable can be thought as the length of the red segment, while the Z variable is the length of the green one." 
 
 \subsection lugano-2-pathz The Z(X) collective variable
@@ -368,7 +368,7 @@ on the y-axis:
 Z(X)=-\frac{1}{\lambda}\log (\sum_{i=1}^{N} \ \exp^{-\lambda \vert X-X_i \vert })
 \f]
 
-What this quantity measures is shown in green in the figure \ref belfast-2-ab-sz-fig.  Essentially it measures the distance between the instantaneous configuration 
+What this quantity measures is shown in green in the figure \ref lugano-2-ab-sz-fig.  Essentially it measures the distance between the instantaneous configuration 
 the system finds itself in and the path that is marked out using the waymarkers.  If you plot the data using script_path.gplt what you thus see is that the 
 system never moves very far from the path that is defined using the \ref PATH command.  In short the system follows this path from the transition state back to 
 either the C7eq or C7ax configuration.
@@ -405,25 +405,25 @@ this that we will focus on in this section.  The first thing that you will need 
 distances between way markers.  That is to say you will have to calculate the distance \f$\vert X_j - X_i \vert\f$ between each pair of frames.
 The values of the distance in this matrix for a good \ref PATH are shown in the figure below:
 
-\anchor belfast-2-good-matrix-fig
+\anchor lugano-2-good-matrix-fig
 \image html belfast-2-good-matrix.png "A good distance matrix for path variables has the gullwing shape shape shown here." 
 
 For contrast the values of the distances in this matrix for a bad \ref PATH are shown in the figure below:
 
-\anchor belfast-2-bad-matrix-fig
+\anchor lugano-2-bad-matrix-fig
 \image html belfast-2-bad-matrix.png "A bad distance matrix for path variables is rather irregular."
 
 If the distance matrix looks like the second of the two figures shown above this is indicates that the frames in the \ref PATH that have been chosen 
 are not particularly effective.  Lets suppose that we have a \ref PATH with four way markers upon it.  In order for the \f$S(x)\f$ CV that was defined 
 earlier to work well frame number 3 must be further from frame number 1 than frame number 2.  Similarly frame number 4 must be still further
-from frame number 1 than frame number 3.  This is what the gullwing shape in \ref belfast-2-good-matrix-fig is telling us.  The order of the frames in the 
+from frame number 1 than frame number 3.  This is what the gullwing shape in \ref lugano-2-good-matrix-fig is telling us.  The order of the frames in the 
 rows and columns of the matrix is the same as the order that they are run through in the sums in the equation for \f$S(X)\f$.  The shape of the surface 
 in this figure shows that the distance between frames \f$i\f$ and \f$j\f$ increases monotonically as the magnitude of the difference between \f$i\f$ and 
 \f$j\f$ is increased, which is what is required.
 
 A second important requirement of a good \ref PATH is shown in the figure below:  
 
-\anchor belfast-2-good-vs-bad-fig
+\anchor lugano-2-good-vs-bad-fig
 \image html belfast-2-good-vs-bad.png "Comparison between the distances between neighbouring frames on the PATH.  A good PATH will have a set of frames that are all approximately equally spaced along it."
 
 A good \ref PATH has an approximately equal spacing between the neighbouring frames along it.  In other words, the distance between frame 1 and frame 2 

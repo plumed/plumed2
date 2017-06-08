@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -54,14 +54,14 @@ PLUMED has been linked to it
 
 The following input tells plumed to perform a metadynamics
 using as a CV the difference between two distances.
-\verbatim
-dAB: DISTANCE ARG=10,12
-dAC: DISTANCE ARG=10,15
+\plumedfile
+dAB: DISTANCE ATOMS=10,12
+dAC: DISTANCE ATOMS=10,15
 diff: MATHEVAL ARG=dAB,dAC FUNC=y-x PERIODIC=NO
 # notice: the previous line could be replaced with the following
 # diff: COMBINE ARG=dAB,dAC COEFFICIENTS=-1,1
 METAD ARG=diff WIDTH=0.1 HEIGHT=0.5 BIASFACTOR=10 PACE=100
-\endverbatim
+\endplumedfile
 (see also \ref DISTANCE, \ref COMBINE, and \ref METAD).
 Notice that forces applied to diff will be correctly propagated
 to atoms 10, 12, and 15.
@@ -75,7 +75,7 @@ The following input tells plumed to print the angle between vectors
 identified by atoms 1,2 and atoms 2,3
 its square (as computed from the x,y,z components) and the distance
 again as computed from the square root of the square.
-\verbatim
+\plumedfile
 DISTANCE LABEL=d1 ATOMS=1,2 COMPONENTS
 DISTANCE LABEL=d2 ATOMS=2,3 COMPONENTS
 MATHEVAL ...
@@ -86,7 +86,7 @@ MATHEVAL ...
   PERIODIC=NO
 ... MATHEVAL
 PRINT ARG=theta
-\endverbatim
+\endplumedfile
 (See also \ref PRINT and \ref DISTANCE).
 
 Notice that the matheval library implements a large number of functions (trigonometric, exp, log, etc).
@@ -96,13 +96,13 @@ a straightforward implementation of if clauses.
 
 For example, imagine that you want to implement a restraint that only acts when a
 distance is larger than 0.5. You can do it with
-\verbatim
+\plumedfile
 d: DISTANCE ATOMS=10,15
 m: MATHEVAL ARG=d FUNC=0.5*step(0.5-x)+x*step(x-0.5) PERIODIC=NO
 # check the function you are applying:
 PRINT ARG=d,n FILE=checkme
 RESTRAINT ARG=d AT=0.5 KAPPA=10.0
-\endverbatim
+\endplumedfile
 (see also \ref DISTANCE, \ref PRINT, and \ref RESTRAINT)
 
 The meaning of the function `0.5*step(0.5-x)+x*step(x-0.5)` is:
@@ -133,7 +133,7 @@ MATHEVAL can be used in combination with \ref DISTANCE to implement variants of 
 DISTANCE keyword that were present in PLUMED 1.3 and that allowed to compute
 the distance of a point from a line defined by two other points, or the progression
 along that line.
-\verbatim
+\plumedfile
 # take center of atoms 1 to 10 as reference point 1
 p1: CENTER ATOMS=1-10
 # take center of atoms 11 to 20 as reference point 2
@@ -156,7 +156,7 @@ fromaxis: MATHEVAL ARG=d13,d23,d12,onaxis VAR=x,y,z,o FUNC=(0.5*(y^2+x^2)-o^2-0.
 
 PRINT ARG=onaxis,fromaxis
 
-\endverbatim
+\endplumedfile
 
 Notice that these equations have been used to combine \ref RMSD
 from different snapshots of a protein so as to define

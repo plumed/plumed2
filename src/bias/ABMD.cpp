@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -70,13 +70,12 @@ an additional white noise acting on the minimum position of the bias.
 The following input sets up two biases, one on the distance between atoms 3 and 5
 and another on the distance between atoms 2 and 4. The two target values are defined
 using TO and the two strength using KAPPA. The total energy of the bias is printed.
-\verbatim
+\plumedfile
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
 ABMD ARG=d1,d2 TO=1.0,1.5 KAPPA=5.0,5.0 LABEL=abmd
 PRINT ARG=abmd.bias,abmd.d1_min,abmd.d2_min
-\endverbatim
-(See also \ref DISTANCE and \ref PRINT).
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

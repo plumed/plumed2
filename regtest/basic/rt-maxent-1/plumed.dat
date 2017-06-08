@@ -1,0 +1,54 @@
+MOLINFO STRUCTURE=ref.pdb MOLTYPE=rna
+
+g1: TORSION ATOMS=@gamma-1
+c1: TORSION ATOMS=@chi-1
+puck1: PUCKERING ATOMS=@sugar-1
+
+#J coupling
+n1: TORSION ATOMS=10,9,27,28
+n2: TORSION ATOMS=28,27,25,26
+n3: TORSION ATOMS=26,25,6,7
+x:  TORSION ATOMS=29,25,9,28
+#h4'-h5'
+n4: TORSION ATOMS=7,6,3,4
+#h4'-h5''
+n5: TORSION ATOMS=7,6,3,5
+chi: TORSION ATOMS=8,9,11,24
+chi1: TORSION ATOMS=10,9,11,12
+
+j1: MATHEVAL ARG=n1 FUNC=9.67*cos(x)*cos(x)-2.03*cos(x) PERIODIC=NO
+j2: MATHEVAL ARG=n2 FUNC=9.67*cos(x)*cos(x)-2.03*cos(x) PERIODIC=NO
+j3: MATHEVAL ARG=n3 FUNC=9.67*cos(x)*cos(x)-2.03*cos(x) PERIODIC=NO
+
+#jh4'-h5'
+j4: MATHEVAL ARG=n4 FUNC=8.313*cos(x)*cos(x)-0.99*cos(x)+1.373+0.27*cos(x)*sin(x) PERIODIC=NO
+
+#jh4'-h5''
+j5: MATHEVAL ARG=n5 FUNC=8.313*cos(x)*cos(x)-0.99*cos(x)+1.373-4.752*cos(x)*sin(x) PERIODIC=NO
+
+#jc4-jh'
+j6: MATHEVAL ARG=c1 FUNC=3.6*cos(x-(pi/180.0)*68.6)*cos(x-(pi/180.0)*68.6)+1.8*cos(x-(pi/180.0)*68.6)+0.4 PERIODIC=NO
+
+#jc8-h1'
+j7: MATHEVAL ARG=chi1 FUNC=4.2*cos(x+(pi/180.0)*(60.0-68.9))*cos(x+(pi/180.0)*(60.0-68.9))-0.5*cos(x+(pi/180.0)*(60.0-68.9))+0.3 PERIODIC=NO
+
+
+MAXENT ...
+LABEL=res
+ARG=j1,j2,j3,j4,j5,j6,j7 
+KAPPA=0.001,0.001,0.001,0.001,0.001,0.001,0.001 
+TAU=3.0,3.0,3.0,3.0,3.0,3.0,3.0 
+ERROR_TYPE=LAPLACE
+SIGMA=0.5
+TSTART=50
+TEND=100
+TYPE=EQUAL AT=6.0,5.0,3.4,3.0,3.4,3.6,3.9
+PACE=10
+FMT=%f
+TEMP=300
+... MAXENT
+
+PRINT ...
+ARG=j1,j2,j3,j4,j5,j6,j7 
+STRIDE=10 FILE=colvar
+... PRINT

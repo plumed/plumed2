@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -43,7 +43,7 @@ restraint will have an effect on the region of phase space that will be sampled 
 run using this variable.  Consequently, when the histogram as a function of the distance, \f$x\f$, is accumulated,
 we use reweighting into order to discount the effect of the bias from our final histogram.
 
-\verbatim
+\plumedfile
 x: DISTANCE ATOMS=1,2
 RESTRAINT ARG=x SLOPE=1.0 AT=0.0
 as: REWEIGHT_BIAS TEMP=300
@@ -54,12 +54,12 @@ HISTOGRAM ...
   GRID_MAX=3.0
   GRID_BIN=100
   BANDWIDTH=0.1
-  LOGWEIGHTS=bias
+  LOGWEIGHTS=as
   LABEL=hB
 ... HISTOGRAM
 
 DUMPGRID GRID=hB FILE=histoB STRIDE=1 FMT=%8.4f
-\endverbatim
+\endplumedfile
 
 
 */

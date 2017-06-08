@@ -49,17 +49,17 @@ It is a function of MSD that are obtained by the joint use of MSD variable and S
 Here below is a case where you have defined three frames and you want to
 calculate the progress alng the path and the distance from it in p1
 
-\verbatim
+\plumedfile
 t1: RMSD REFERENCE=frame_1.dat TYPE=OPTIMAL SQUARED
 t2: RMSD REFERENCE=frame_21.dat TYPE=OPTIMAL SQUARED
 t3: RMSD REFERENCE=frame_42.dat TYPE=OPTIMAL SQUARED
 p1: FUNCPATHMSD ARG=t1,t2,t3 LAMBDA=500.0
 PRINT ARG=t1,t2,t3,p1.s,p1.z STRIDE=1 FILE=colvar FMT=%8.4f
-\endverbatim
+\endplumedfile
 
 In this second example is shown how to define a PATH in the \ref CONTACTMAP space:
 
-\verbatim
+\plumedfile
 CONTACTMAP ...
 ATOMS1=1,2 REFERENCE1=0.1
 ATOMS2=3,4 REFERENCE2=0.5
@@ -92,7 +92,7 @@ CMDIST
 
 p1: FUNCPATHMSD ARG=c1,c2,c3 LAMBDA=500.0
 PRINT ARG=c1,c2,c3,p1.s,p1.z STRIDE=1 FILE=colvar FMT=%8.4f
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

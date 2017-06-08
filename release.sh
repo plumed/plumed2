@@ -46,7 +46,7 @@ fi
 echo "*** Only use this script if you want to release a new PLUMED version. ***"
 echo "*** Follow instructions below, and use Control-C to exit. ***"
 
-ls src README 1>/dev/null 2>/dev/null ||  {
+ls src README.md 1>/dev/null 2>/dev/null ||  {
   echo "Launch from root directory"
   exit 1
 }
@@ -169,20 +169,43 @@ else
   git archive -o plumed-$version.tgz --prefix plumed-$version/ v$version
   echo
   echo "Done!"
-  echo
-  echo "Please upload the file plumed-$version.tgz on the download directory"
-  echo "Remember to notify the mailing list"
+  echo "Now creating partial tar files"
+  rm -fr plumed-$version
+  tar xzf plumed-$version.tgz
+  tar czf plumed-doc-$version.tgz plumed-$version/*-doc
+  tar czf plumed-test-$version.tgz plumed-$version/regtest
+  rm -fr plumed-$version/*-doc
+  rm -fr plumed-$version/regtest
+  tar czf plumed-src-$version.tgz plumed-$version
+  rm -fr plumed-$version
   cd macports
   plumed_repository=https://github.com/plumed/plumed2.git make
   cd ../
+  echo "**** NOW DO THE FOLLOWING THINGS  ****"
   echo
+  echo "1. Upload the file plumed-$version.tgz on the download directory"
+  echo
+  echo "2. Make a new github release and upload these files:"
+  echo "plumed-$version.tgz"
+  echo "plumed-doc-$version.tgz"
+  echo "plumed-test-$version.tgz"
+  echo "plumed-src-$version.tgz"
+  echo
+  echo "3. Update Portfile"
   echo "In directory macports/science/plumed you can find a Portfile for this release"
   echo "Please inspect it manually and add it to the ports repository"
+  echo "Here are the corresponding checksums"
+  echo -n "checksums "
+# this list can be extended in case we want to compute checksums for multiple
+# files. so far it only does plumed-src
+  for file in plumed-src
+  do
+    echo " \\"
+    echo "  $file-\${version}.tgz \\"
+    echo "          sha256 $(openssl dgst -sha256 $file-$version.tgz |awk '{print $NF}') \\"
+    echo "          rmd160 $(openssl dgst -rmd160 $file-$version.tgz |awk '{print $NF}')"
+  done
+  echo
+  echo "4. Notify the mailing list"
 fi
-
-
-
-
-
-
 

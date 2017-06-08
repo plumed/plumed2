@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2016 The plumed team
+   Copyright (c) 2014-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -54,14 +54,12 @@ This can be done e.g. using \ref FIT_TO_TEMPLATE.
 
 \par Examples
 
-\verbatim
+\plumedfile
 # align to a template
 FIT_TO_TEMPLATE REFERENCE=ref.pdb
 p: POSITION ATOM=3
 PRINT ARG=p.x,p.y,p.z
-\endverbatim
-(see also \ref FIT_TO_TEMPLATE)
-
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

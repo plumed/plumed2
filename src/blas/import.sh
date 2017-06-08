@@ -16,6 +16,9 @@ sed 's|"types/simple.h"|"simple.h"|' "$GRO"/include/gmx_blas.h |
            a++;
            if(a==1){
              print "#include \"simple.h\""
+             print "#ifndef __PLUMED_BLAS_RETURNS_FLOAT"
+             print "#define __PLUMED_BLAS_RETURNS_FLOAT float"
+             print "#endif"
              print "#if ! defined (__PLUMED_HAS_EXTERNAL_BLAS)"
              print "#include \"def_internal.h\""
              print "namespace PLMD{"
@@ -36,7 +39,10 @@ sed 's|"types/simple.h"|"simple.h"|' "$GRO"/include/gmx_blas.h |
              print "#endif"
            }
          }
-         if(!inside) print
+         if(!inside){
+           if(NF==1 && $1=="float") print "__PLUMED_BLAS_RETURNS_FLOAT"
+           else print
+         }
          if(inside && $1=="#endif") inside=0;
        }' > blas.h
 

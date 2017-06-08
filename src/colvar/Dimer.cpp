@@ -85,43 +85,43 @@ the temperature of the system.
 
 This line tells Plumed to compute the Dimer interaction energy for every dimer in the system.
 
-\verbatim
+\plumedfile
 dim: DIMER TEMP=300 Q=0.5 ALLATOMS DSIGMA=0.002
-\endverbatim
+\endplumedfile
 
 If the simulation doesn't use virtual sites for the dimers centers of mass,
 Plumed has to know in order to determine correctly the total number of dimers from
 the total number of atoms:
-\verbatim
+\plumedfile
 dim: DIMER TEMP=300 Q=0.5 ALLATOMS DSIGMA=0.002 NOVSITES
-\endverbatim
+\endplumedfile
 
 The NOVSITES flag is not required if one provides the atom serial of each Dimer. This is
 defined as the atom serial of the first bead of the dimer and is thus a number between 1 and N.
 Along with the ATOMS list also the number N of lines describing the first beads has to be given.
 For example, the Dimer interaction energy of dimers 1,5,7 is:
-\verbatim
+\plumedfile
 dim: DIMER TEMP=300 Q=0.5 NATOMS=N ATOMS=1,5,7 DSIGMA=0.002
-\endverbatim
+\endplumedfile
 
 In a Replica Exchange simulation the keyword DSIGMA can be used in two ways:
 if a plumed.n.dat file is provided for each replica, then DSIGMA is passed as a single value,
 like in the previous examples, and each replica will read its own DSIGMA value. If
 a unique plumed.dat is given, DSIGMA has to be a list containing a value for each replica.
 For 4 replicas:
-\verbatim
+\plumedfile
 dim: DIMER TEMP=300 Q=0.5 NATOMS=N ATOMS=1,5,7 DSIGMA=0.002,0.002,0.004,0.01
-\endverbatim
+\endplumedfile
 
 
 \par Usage of the CV
 
 The dimer interaction is not coded in the driver program and has to be inserted
 in the hamiltonian of the system as a linear RESTRAINT (see \ref RESTRAINT):
-\verbatim
+\plumedfile
 dim: DIMER TEMP=300 Q=0.5 ALLATOMS DSIGMA=0.002
 RESTRAINT ARG=dim AT=0 KAPPA=0 SLOPE=1 LABEL=dimforces
-\endverbatim
+\endplumedfile
 
 In a replica exchange, Metadynamics (see \ref METAD) can be used on the Dimer CV to reduce
 the number of replicas. Just keep in mind that METAD SIGMA values should be tuned

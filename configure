@@ -695,6 +695,7 @@ ac_user_opts='
 enable_option_checking
 enable_modules
 enable_libsearch
+enable_static_patch
 enable_doc
 enable_pdfdoc
 enable_debug
@@ -1357,6 +1358,7 @@ Optional Features:
   --enable-modules        all/none/reset or : separated list such as
                           +crystallization:-bias default: reset
   --enable-libsearch      enable search for libraries, default: yes
+  --enable-static-patch   enable allow statically linking plumed, default: yes
   --enable-doc            enable documentation, default: yes
   --enable-pdfdoc         enable pdf version of the manual, default: no
   --enable-debug          enable debugging, default: no
@@ -1367,7 +1369,7 @@ Optional Features:
   --enable-shared         enable shared libs, default: yes
   --enable-dependency-tracking
                           enable dependency tracking, default: yes
-  --enable-cxx-exceptions enable c++ exceptions, default: no
+  --enable-cxx-exceptions enable c++ exceptions, default: yes
   --enable-ld-r           enable group object files, default: yes
   --enable-mpi            enable search for mpi, default: yes
   --enable-external-lapack
@@ -2430,6 +2432,28 @@ fi
 
 
 
+# This can be disabled to avoid the extra tests for static patching.
+# In the future, when this is disabled, we could disable the "--static" flag
+# of "plumed patch"
+
+static_patch=
+# Check whether --enable-static-patch was given.
+if test "${enable_static_patch+set}" = set; then :
+  enableval=$enable_static_patch; case "${enableval}" in
+             (yes) static_patch=true ;;
+             (no)  static_patch=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-static-patch" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) static_patch=true ;;
+             (no)  static_patch=false ;;
+  esac
+
+fi
+
+
+
 
 doc=
 # Check whether --enable-doc was given.
@@ -2602,7 +2626,7 @@ if test "${enable_cxx_exceptions+set}" = set; then :
              (*)   as_fn_error $? "wrong argument to --enable-cxx-exceptions" "$LINENO" 5 ;;
   esac
 else
-  case "no" in
+  case "yes" in
              (yes) cxx_exceptions=true ;;
              (no)  cxx_exceptions=false ;;
   esac
@@ -5750,6 +5774,127 @@ then
 
 fi
 
+if test -n "$blas_found" ; then
+
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether sdot returns float" >&5
+$as_echo_n "checking whether sdot returns float... " >&6; }
+if test "$cross_compiling" = yes; then :
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: not checked (cross compiling)" >&5
+$as_echo "not checked (cross compiling)" >&6; }
+
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#if ! defined(F77_NO_UNDERSCORE)
+#define sdot sdot_
+#endif
+extern "C"{
+float sdot(int *n, float *dx, int *incx, float *dy, int *incy);
+}
+
+int main(){
+  int size=5;
+// notice that [] is required to cheat autoconf
+  float af[5],bf[5];
+  for(unsigned i=0;i<size;i++){
+    af[i]=size;
+    bf[i]=size-i;
+  }
+  int inca=1;
+  int incb=1;
+  float f=sdot(&size,af,&inca,bf,&incb)-75;
+  if(f*f<1e-10) return 0;
+  else return 1;
+}
+
+_ACEOF
+if ac_fn_cxx_try_run "$LINENO"; then :
+   sdot_returns_float=yes ; { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+   sdot_returns_float=no ;  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+
+
+if test "$sdot_returns_float" == no ;
+then
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether sdot returns double" >&5
+$as_echo_n "checking whether sdot returns double... " >&6; }
+if test "$cross_compiling" = yes; then :
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: not checked (cross compiling)" >&5
+$as_echo "not checked (cross compiling)" >&6; }
+
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#if ! defined(F77_NO_UNDERSCORE)
+#define sdot sdot_
+#endif
+extern "C"{
+double sdot(int *n, float *dx, int *incx, float *dy, int *incy);
+}
+
+int main(){
+  int size=5;
+// notice that [] is required to cheat autoconf
+  float af[5],bf[5];
+  for(unsigned i=0;i<size;i++){
+    af[i]=size;
+    bf[i]=size-i;
+  }
+  int inca=1;
+  int incb=1;
+  double f=sdot(&size,af,&inca,bf,&incb)-75;
+  if(f*f<1e-10) return 0;
+  else return 1;
+}
+
+_ACEOF
+if ac_fn_cxx_try_run "$LINENO"; then :
+   sdot_returns_double=yes ; { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+   sdot_returns_double=no ;  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+
+
+fi
+
+if test "$sdot_returns_double" = yes ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: Setting workaround for blas float functions returning double" >&5
+$as_echo "$as_me: Setting workaround for blas float functions returning double" >&6;}
+  $as_echo "#define __PLUMED_BLAS_RETURNS_FLOAT double" >>confdefs.h
+
+  if test -n "$lapack_found" ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: Setting workaround for lapack float functions returning double" >&5
+$as_echo "$as_me: Setting workaround for lapack float functions returning double" >&6;}
+    $as_echo "#define __PLUMED_LAPACK_RETURNS_FLOAT double" >>confdefs.h
+
+  fi
+else if test "$sdot_returns_float" = no && test "$sdot_returns_double" = no ;
+then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: There is a problem with your blas implementation" >&5
+$as_echo "$as_me: WARNING: There is a problem with your blas implementation" >&2;}
+fi
+
+fi
+
+fi
+
 #### End of compulsory libraries ####
 
 #### Optional libraries ####
@@ -6598,7 +6743,7 @@ $as_echo "$as_me: Dynamic library extension is 'dylib'" >&6;}
     { $as_echo "$as_me:${as_lineno-$LINENO}: LDSO needs special flags" >&5
 $as_echo "$as_me: LDSO needs special flags" >&6;}
     SOEXT=dylib
-    LDSO="$LDSO -undefined suppress -flat_namespace -dynamiclib"
+    LDSO="$LDSO -undefined suppress -flat_namespace -dynamiclib -Wl,-headerpad_max_install_names"
   ;;
   (Linux)
     { $as_echo "$as_me:${as_lineno-$LINENO}: *** Special settings for dynamic libraries on Linux ***" >&5
@@ -6965,6 +7110,8 @@ $as_echo "no" >&6; }
   fi
 fi
 
+if test "${static_patch}" == true ; then
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: I will now check if C++ objects can be linked by C/Fortran compilers" >&5
 $as_echo "$as_me: I will now check if C++ objects can be linked by C/Fortran compilers" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: This is relevant if you want to use plumed patch --static on a non-C++ code" >&5
@@ -7039,6 +7186,11 @@ $as_echo "$as_me: $compiler compiler not configured" >&6;}
   fi
   rm -f conftest.* conftest-main.*
 done
+
+else
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Static patching is disabled, thus tests required for static patching will be skipped" >&5
+$as_echo "$as_me: Static patching is disabled, thus tests required for static patching will be skipped" >&6;}
+fi
 
 if test "$prefix" == NONE
 then
