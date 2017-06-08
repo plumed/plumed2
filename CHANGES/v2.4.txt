@@ -35,6 +35,7 @@ Changes from version 2.3 which are relevant for users:
   - \ref PBMETAD : default names for GRID and FILE (usefull with many collective variables) 
   - \ref METAD : BIASFACTOR=1 is allowed and performs unbiased sampling. HILLS file can be used
     to recover free energy also in this case.
+  - \ref METAD : added options to perform Transition Tempered Metadynamics (thanks to James Dama)
   - PDB files with more than 100k atoms can now be read using [hybrid 36](http://cci.lbl.gov/hybrid_36/) format,
     see \issue{226}.
   - Trajectories read in \ref driver also support the usual replica convention, that is if
@@ -53,4 +54,6 @@ Changes from version 2.3 which are relevant for developers:
   - `gettimeofdate` and `gettime` have been replaced with portable `chrono` classes introduced in c++11.
   - C++ exceptions are enabled by default.
   - Stack trace is not written upon error anymore, unless environment variable `PLUMED_STACK_TRACE` is set at runtime.
+  - Fixed a potential bug using single precision internal blas on a mac (notice that currently plumed only uses
+    double precision, so it is harmless).
 */

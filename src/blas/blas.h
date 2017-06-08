@@ -92,6 +92,9 @@ Erik Lindahl, 2008-10-07.
  */
 
 #include "simple.h"
+#ifndef __PLUMED_BLAS_RETURNS_FLOAT
+#define __PLUMED_BLAS_RETURNS_FLOAT float
+#endif
 #if ! defined (__PLUMED_HAS_EXTERNAL_BLAS)
 #include "def_internal.h"
 namespace PLMD{
@@ -177,7 +180,7 @@ int
 
 
 /* Single precision versions */
-float
+__PLUMED_BLAS_RETURNS_FLOAT
     PLUMED_BLAS_F77_FUNC(sasum, SASUM) (int *n, float *dx, int *incx);
 
 void
@@ -186,7 +189,7 @@ void
 void
     PLUMED_BLAS_F77_FUNC(scopy, SCOPY) (int *n, float *dx, int *incx, float *dy, int *incy);
 
-float
+__PLUMED_BLAS_RETURNS_FLOAT
     PLUMED_BLAS_F77_FUNC(sdot, SDOT) (int *n, float *dx, int *incx, float *dy, int *incy);
 
 void
@@ -202,7 +205,7 @@ void
     PLUMED_BLAS_F77_FUNC(sger, SGER) (int *m, int *n, float *alpha, float *x, int *incx,
                           float *y, int *incy, float *a, int *lda);
 
-float
+__PLUMED_BLAS_RETURNS_FLOAT
     PLUMED_BLAS_F77_FUNC(snrm2, SNRM2) (int  *n, float *x, int *incx);
 
 void

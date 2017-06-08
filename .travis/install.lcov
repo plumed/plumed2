@@ -1,0 +1,23 @@
+#! /bin/bash
+
+set -e
+set -x
+
+cd "$(mktemp -d)"
+
+git clone https://github.com/linux-test-project/lcov.git
+
+cd lcov
+
+if [ -n "$1" ] ; then
+  echo "installing lcov $version"
+  version=$1
+else
+  echo "installing latest lcov"
+  version=$(git tag | tail -n 1)
+fi
+
+git checkout $version
+
+make install PREFIX="$HOME/opt"
+
