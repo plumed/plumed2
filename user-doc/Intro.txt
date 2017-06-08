@@ -34,7 +34,7 @@ As far as we know, the following MD codes can be used with PLUMED out of the box
   [here](http://davidebr.github.io/espresso/).
 - [PINY-MD](http://github.com/TuckermanGroup/PINY), in its plumed branch.
 - [IPHIGENIE](http://sourceforge.net/projects/iphigenie/).
-- [AceMD](http://www.multiscalelab.org/acemd/).
+- [AceMD](http://www.multiscalelab.org/acemd/), see [this link](https://github.com/tonigi/ACEMD-PLUMED).
 - [OpenMM](http://openmm.org), using the [openmmp-plumed plugin](http://github.com/peastman/openmm-plumed).
 - [DL_POLY4](http://www.scd.stfc.ac.uk//research/app/ccg/software/DL_POLY/44516.aspx).
 
