@@ -185,6 +185,7 @@ For developers:
 - Added environment variable `PLUMED_ASYNC_SHARE` to enforce synchronous/asynchronous atom sharing (mostly for debug purpose).
 - On travis-ci, using ccache to speedup builds.
 - On travis-ci, added a regtest using Docker with gcc6 and MPI.
+- On travis-ci, docs for unofficial or unsupported branches are set not to be indexed by search engines (see \issue{239})
 - Cppcheck on travis-ci has been updated to 1.79.
 
 */

@@ -53,7 +53,7 @@ to analyze a conformational change or a chemical reaction. This can be done eith
 molecular dynamics, or a posteriori, using PLUMED as a post-processing tool. In both cases
 one should create an input file with a specific PLUMED syntax. A sample input file is below:
 
-\verbatim
+\plumedfile
 # compute distance between atoms 1 and 10
 d: DISTANCE ATOMS=1,10
 # create a virtual atom in the center between atoms 20 and 30
@@ -64,8 +64,7 @@ phi: TORSION ATOMS=1,10,20,center
 d2: MATHEVAL ARG=phi FUNC=cos(x) PERIODIC=NO
 # print both of them every 10 step
 PRINT ARG=d,phi,d2 STRIDE=10
-\endverbatim
-(see \ref DISTANCE, \ref CENTER, \ref TORSION, \ref MATHEVAL, and \ref PRINT)
+\endplumedfile
 
 PLUMED works using kJ/nm/ps as energy/length/time units. This can be personalized using \ref UNITS.
 Notice that variables should be given a name (in the example above, `d`, `phi`, and `d2`), which is
@@ -111,12 +110,11 @@ information in the md.log that could be useful to verify if the simulation has b
 In this exercise, we will run a plain molecular dynamics simulation and monitor the \f$\Phi\f$ and \f$\Psi\f$ dihedral angles
 on the fly.
 Using the following PLUMED input file you can monitor \f$\Phi\f$ and \f$\Psi\f$ angles during the MD simulation
-\verbatim
+\plumedfile
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
 PRINT ARG=phi,psi STRIDE=100 FILE=colvar
-\endverbatim
-(see \ref TORSION and \ref PRINT)
+\endplumedfile
 
 Notice that PLUMED is going to compute the collective variables only when necessary, that is, in this case, every 100 steps.
 This is not very relevant for simple variables such as torsional angles, but provides a significant speedup
@@ -166,12 +164,11 @@ to have an idea of the possible options. See \ref driver for the full documentat
 
 Here we will use the driver the compute \f$\Phi\f$ and \f$\Psi\f$ on the already generated trajectory. Let's assume
 the trajectory is named `traj.xtc`. You should prepare an PLUMED input file named `analysis.dat` as:
-\verbatim
+\plumedfile
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
 PRINT ARG=phi,psi FILE=analysis
-\endverbatim
-(see \ref TORSION and \ref PRINT)
+\endplumedfile
 Notice that typically when using the driver we do not provide a STRIDE keyword to PRINT. This implies "print at every step" which,
 analyzing a trajectory, means "print for all the available snapshots". Then, you can use the following
 command:
@@ -192,7 +189,7 @@ You might want to analyze a different collective variable, such as the gyration 
 The gyration radius tells how extended is the molecules in space.
 You can do it with the following plumed input file
 
-\verbatim
+\plumedfile
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
 
@@ -203,8 +200,7 @@ gyr: GYRATION ATOMS=heavy
 # gyr: GYRATION ATOMS=1,5,6,7,9,11,15,16,17,19
 
 PRINT ARG=phi,psi,gyr FILE=analyze
-\endverbatim
-(see \ref TORSION, \ref GYRATION, \ref GROUP, and \ref PRINT)
+\endplumedfile
 
 Now try to compute the time series of the gyration radius.
 
@@ -228,7 +224,7 @@ What this command is doing is making a loop over all the atoms (in the order the
 of each of them in the periodic image which is as close as possible to the coordinates of the preceeding atom.
 In most cases it is sufficient to list all atoms of a molecule in order. Look in the \ref WHOLEMOLECULES page
 to get more information. Here this will be enough:
-\verbatim
+\plumedfile
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
 
@@ -239,8 +235,7 @@ heavy: GROUP ATOMS=1,5,6,7,9,11,15,16,17,19
 gyr: GYRATION ATOMS=heavy
 
 PRINT ARG=phi,psi,gyr FILE=analyze
-\endverbatim
-(see \ref TORSION, \ref WHOLEMOLECULES, \ref GROUP, \ref GYRATION, and \ref PRINT)
+\endplumedfile
 
 This is a very important issue that should be kept in mind when using PLUMED.
 Notice that starting with version 2.2 PLUMED will make molecules used in
@@ -253,13 +248,12 @@ collective variables (as we are doing with \ref PRINT) but also
 the atomic positions. This is a very good way to understand what \ref WHOLEMOLECULES 
 is actually doing. Try the following input
 
-\verbatim
+\plumedfile
 MOLINFO STRUCTURE=../TOPO/reference.pdb
 DUMPATOMS FILE=test1.gro ATOMS=1-22
 WHOLEMOLECULES ENTITY0=1-22
 DUMPATOMS FILE=test2.gro ATOMS=1-22
-\endverbatim
-(see \ref MOLINFO, \ref DUMPATOMS, and \ref WHOLEMOLECULES).
+\endplumedfile
 
 \ref DUMPATOMS writes on a gro file the coordinates of the alanine dipeptide atoms. Here PLUMED will produce
 two files, one with coordinates *before* the application of \ref WHOLEMOLECULES, and one with coordinates
@@ -280,7 +274,7 @@ to manipulate MD trajectories.
 
 PLUMED also allows you to make some analyis on the collective variables
 you are calculating. For example, you can compute a histogram with an input like this one
-\verbatim
+\plumedfile
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
 heavy: GROUP ATOMS=1,5,6,7,9,11,15,16,17,19
@@ -295,8 +289,7 @@ HISTOGRAM ...
   GRID_BIN=50
   GRID_WFILE=histogram
 ... HISTOGRAM
-\endverbatim
-(see \ref TORSION, \ref WHOLEMOLECULES, \ref GROUP, \ref GYRATION, \ref PRINT, and \ref HISTOGRAM)
+\endplumedfile
 
 An histogram with 50 bins will be performed on the gyration radius. Try to compute the histogram for
 the \f$\Phi\f$ and \f$\Psi\f$ angles.
@@ -402,12 +395,11 @@ Gaussian deposited in the already visited states.
 \subsubsection munster-exercise-1 Exercise 1
 
 Now run a metadynamics simulation with the following input
-\verbatim
+\plumedfile
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
 METAD ARG=phi,psi HEIGHT=1.0 BIASFACTOR=10 SIGMA=0.35,0.35 PACE=100 GRID_MIN=-pi,-pi GRID_MAX=pi,pi
-\endverbatim
-(see \ref TORSION and \ref METAD)
+\endplumedfile
 Thus, a single METAD line will contain all the metadynamics related options, such
 as Gaussian height (`HEIGHT`, here in kJ/mol), stride (`PACE`, here in number of time steps),
 bias factor (`BIASFACTOR`, here indicates that we are going to effectively boost
@@ -441,7 +433,7 @@ HILLS file. This is automatically triggered by the \ref RESTART keyword.
 In this exercise, we will run a well-tempered metadynamics simulation on alanine dipeptide in vacuum, using as CV the
 backbone dihedral angle phi. In order to run this simulation we need to prepare the PLUMED input file (plumed.dat) as follows.
 
-\verbatim
+\plumedfile
 # set up two variables for Phi and Psi dihedral angles 
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
@@ -467,8 +459,7 @@ GRID_SPACING=0.1
 # monitor the two variables and the metadynamics bias potential
 PRINT STRIDE=10 ARG=phi,psi,metad.bias FILE=COLVAR
 
-\endverbatim
-(see \ref TORSION, \ref METAD, and \ref PRINT).
+\endplumedfile
 
 The syntax for the command \ref METAD is simple. 
 The directive is followed by a keyword ARG followed by the labels of the CVs
@@ -490,7 +481,7 @@ Once the PLUMED input file is prepared, one has to run Gromacs with the option t
 read the input file:
 
 \verbatim
-gmx_mpi mdrun -s ../TOPO/topolA.tpr -plumed plumed.dat -nsteps 5000000
+> gmx_mpi mdrun -s ../TOPO/topolA.tpr -plumed plumed.dat -nsteps 5000000
 \endverbatim
 
 During the metadynamics simulation, PLUMED will create two files, named COLVAR and HILLS.
@@ -541,7 +532,7 @@ deposited during the simulation and stored in the HILLS file.
 To calculate the free energy as a function of phi, it is sufficient to use the following command line:
 
 \verbatim
-plumed sum_hills --hills HILLS
+> plumed sum_hills --hills HILLS
 \endverbatim
 
 The command above generates a file called fes.dat in which the free-energy surface as function
@@ -568,7 +559,7 @@ the option --mintozero can be used to align the profiles by setting the global m
 If we use the following command line:
 
 \verbatim
-plumed sum_hills --hills HILLS --stride 100 --mintozero
+> plumed sum_hills --hills HILLS --stride 100 --mintozero
 \endverbatim
 
 one free energy is calculated every 100 Gaussians deposited, and the global minimum is set to zero in all profiles.
@@ -623,7 +614,7 @@ This analysis, along with the observation of the diffusive behavior in the CVs s
 In this exercise, we will run a well-tempered metadynamics simulation on alanine dipeptide in vacuum, using as CV the
 backbone dihedral angle psi. In order to run this simulation we need to prepare the PLUMED input file (plumed.dat) as follows.
 
-\verbatim
+\plumedfile
 # set up two variables for Phi and Psi dihedral angles 
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
@@ -649,14 +640,13 @@ GRID_SPACING=0.1
 # monitor the two variables and the metadynamics bias potential
 PRINT STRIDE=10 ARG=phi,psi,metad.bias FILE=COLVAR
 
-\endverbatim
-(see \ref TORSION, \ref METAD, and \ref PRINT).
+\endplumedfile
 
 Once the PLUMED input file is prepared, one has to run Gromacs with the option to activate PLUMED and
 read the input file:
 
 \verbatim
-gmx_mpi mdrun -s ../TOPO/topolA.tpr -plumed plumed.dat -nsteps 5000000
+> gmx_mpi mdrun -s ../TOPO/topolA.tpr -plumed plumed.dat -nsteps 5000000
 \endverbatim
 
 As we did in the previous exercise, we can use COLVAR to visualize the behavior of the CV during the simulation.
@@ -798,13 +788,12 @@ If you want to just bring a collective variables to a specific value, you
 can use a simple restraint.
 Let's imagine that we want to force the \f$\Phi\f$ angle to visit a region close to
 \f$\Phi=\pi/2\f$. We can do it adding a restraint in \f$\Phi\f$, with the following input
-\verbatim
+\plumedfile
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
 res: RESTRAINT ARG=phi AT=0.5pi KAPPA=5
 PRINT ARG=phi,psi,res.bias
-\endverbatim
-(see \ref TORSION, \ref RESTRAINT, and \ref PRINT).
+\endplumedfile
 
 Notice that here we are printing a quantity named `res.bias`. We do this because \ref RESTRAINT does not define a single
 value (that here would be theoretically named `res`) but a structure with several components. All
@@ -822,7 +811,7 @@ that a too large kappa could make the MD integrator unstable.
 
 A restraint can also be modified as a function of time. For example, if you want to
 bring the system from one minimum to the other, you can use a moving restraint on \f$\Phi\f$:
-\verbatim
+\plumedfile
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
 # notice that a long line can be splitted with this syntax
@@ -835,8 +824,7 @@ MOVINGRESTRAINT ...
   STEP1=10000 AT0=0.5pi 
 ...
 PRINT ARG=phi,psi,res.work,res.phi_cntr FILE=colvar
-\endverbatim
-(see \ref TORSION, \ref MOVINGRESTRAINT, and \ref PRINT).
+\endplumedfile
 
 Notice that here we are plotting a few new components, namely `work` and `phi_cntr`.
 The former gives the work performed in pulling the restraint, and the latter the position of the restraint.
@@ -998,7 +986,7 @@ can be mixed and it is not necessary to keep track of which restraint was used t
 every single frame. Let's get the concatenated trajectory
 
 \verbatim
-trjcat_mpi -cat -f traj*.xtc -o alltraj.xtc
+> trjcat_mpi -cat -f traj*.xtc -o alltraj.xtc
 \endverbatim
 
 Now we should compute the value of each of the bias potentials on the entire (concatenated) trajectory.
@@ -1034,7 +1022,7 @@ Next step is to compute the weights self-consistently solving the WHAM equations
 the python script "wham.py" contained in the SCRIPTS directory. To use this code:
 
 \verbatim
-../SCRIPTS/wham.sh ALLCOLVAR.*
+> ../SCRIPTS/wham.sh ALLCOLVAR.*
 \endverbatim 
 
 This script will produce several files. Let's visualize "phi_fes.dat", which contains the free energy as a function of phi, and compare this with the result previously obtained with metadynamics.
@@ -1059,8 +1047,8 @@ The first thing we need to do is to demux the replica-exchange trajectories and 
 across the different restraint potentials. In order to do so, we can use the following script:
 
 \verbatim
-demux.pl md0.log
-trjcat_mpi -f traj*.xtc  -demux replica_index.xvg
+> demux.pl md0.log
+> trjcat_mpi -f traj*.xtc  -demux replica_index.xvg
 \endverbatim
  
 This commands will generate 32 continous trajectories, named XX_trajout.xtc. We will use the driver to calculate the value of the CVs
