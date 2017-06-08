@@ -595,8 +595,6 @@ void PlumedMain::prepareDependencies() {
 // First switch off all actions
   for(const auto & p : actionSet) {
     p->deactivate();
-    //I think this is already done inside deactivate
-    //(*p)->clearOptions();
   }
 
 // for optimization, an "active" flag remains false if no action at all is active

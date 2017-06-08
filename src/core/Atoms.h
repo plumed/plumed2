@@ -47,6 +47,7 @@ class Atoms
   friend class ActionAtomistic;
   friend class ActionWithVirtualAtom;
   int natoms;
+  bool atoms_updated;
   std::set<AtomNumber> unique;
   std::vector<unsigned> uniq_index;
   std::vector<Vector> positions;

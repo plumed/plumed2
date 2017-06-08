@@ -71,6 +71,8 @@ void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a) {
   int n=atoms.positions.size();
   clearDependencies();
   unique.clear();
+// this tells plumed to update the list of unique atoms  
+  atoms.atoms_updated=true;
   for(unsigned i=0; i<indexes.size(); i++) {
     if(indexes[i].index()>=n) error("atom out of range");
     if(atoms.isVirtualAtom(indexes[i])) addDependency(atoms.getVirtualAtomsAction(indexes[i]));

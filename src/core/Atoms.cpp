@@ -41,6 +41,7 @@ class PlumedMain;
 
 Atoms::Atoms(PlumedMain&plumed):
   natoms(0),
+  atoms_updated(false),
   pbc(*new Pbc),
   energy(0.0),
   dataCanBeSet(false),
@@ -138,15 +139,18 @@ void Atoms::setForces(void*p,int i) {
 }
 
 void Atoms::share() {
-  unique.clear();
 // At first step I scatter all the atoms so as to store their mass and charge
 // Notice that this works with the assumption that charges and masses are
 // not changing during the simulation!
   if(!massAndChargeOK && shareMassAndChargeOnlyAtFirstStep) {
+    unique.clear();
     shareAll();
     return;
   }
+
+  if(atoms_updated) unique.clear();
   for(unsigned i=0; i<actions.size(); i++) if(actions[i]->isActive()) {
+    if(atoms_updated) {
       if(dd && shuffledAtoms>0) {
         // keep in unique only those atoms that are local
         for(auto pp=actions[i]->getUnique().begin(); pp!=actions[i]->getUnique().end(); ++pp) {
@@ -158,12 +162,14 @@ void Atoms::share() {
           unique.insert(*pp);
         }
       }
-      if(!actions[i]->getUnique().empty()) atomsNeeded=true;
     }
+    if(!actions[i]->getUnique().empty()) atomsNeeded=true;
+  }
   share(unique);
 }
 
 void Atoms::shareAll() {
+  atoms_updated = true;
   // keep in unique only those atoms that are local
   if(dd && shuffledAtoms>0) {
     for(int i=0; i<natoms; i++) if(dd.g2l[i]>=0) unique.insert(AtomNumber::index(i));
@@ -177,11 +183,14 @@ void Atoms::shareAll() {
 void Atoms::share(const std::set<AtomNumber>& unique) {
   plumed_assert( positionsHaveBeenSet==3 && massesHaveBeenSet );
 
-  uniq_index.clear();
-  if(dd && shuffledAtoms>0) {
-    for(const auto & p : unique) uniq_index.push_back(dd.g2l[p.index()]);
-  } else {
-    for(const auto & p : unique) uniq_index.push_back(p.index());
+  if(atoms_updated) {
+    uniq_index.clear();
+    if(dd && shuffledAtoms>0) {
+      for(const auto & p : unique) uniq_index.push_back(dd.g2l[p.index()]);
+    } else {
+      for(const auto & p : unique) uniq_index.push_back(p.index());
+    }
+    atoms_updated = false;
   }
 
   virial.zero();
@@ -320,6 +329,7 @@ void Atoms::updateForces() {
 
 void Atoms::setNatoms(int n) {
   natoms=n;
+  atoms_updated=true;
   positions.resize(n);
   forces.resize(n);
   masses.resize(n);
@@ -389,6 +399,7 @@ void Atoms::setAtomsGatindex(int*g,bool fortran) {
     dd.Sum(shuffledAtoms);
     for(unsigned i=0; i<gatindex.size(); i++) dd.g2l[gatindex[i]]=i;
   }
+  atoms_updated = true;
 }
 
 void Atoms::setAtomsContiguous(int start) {
@@ -397,6 +408,7 @@ void Atoms::setAtomsContiguous(int start) {
   for(unsigned i=0; i<dd.g2l.size(); i++) dd.g2l[i]=-1;
   if(dd) for(unsigned i=0; i<gatindex.size(); i++) dd.g2l[gatindex[i]]=i;
   if(gatindex.size()<natoms) shuffledAtoms=1;
+  atoms_updated = true;
 }
 
 void Atoms::setRealPrecision(int p) {
