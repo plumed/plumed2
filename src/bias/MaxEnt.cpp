@@ -52,7 +52,6 @@ Adds a linear biasing potential on one or more variables satisfing maximum entro
 
 \warning
     Notice that syntax is still under revision and might change
-\endwarning
 
 The resulting biasing potential is given by:
 \f[
