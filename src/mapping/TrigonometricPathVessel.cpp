@@ -136,20 +136,26 @@ void TrigonometricPathVessel::finish( const std::vector<double>& buffer ) {
     v2v2=(mymap->getReferenceConfiguration( iclose2 ))->calc( conf2->getReferencePositions(), mymap->getPbc(), mymap->getArguments(),
          conf2->getReferenceArguments(), mypack2, true );
     (mymap->getReferenceConfiguration( iclose2 ))->extractDisplacementVector( conf2->getReferencePositions(), mymap->getArguments(),
-        conf2->getReferenceArguments(), true, false, projdir );
+        conf2->getReferenceArguments(), false, projdir );
   } else {
     ReferenceConfiguration* conf2=mymap->getReferenceConfiguration( iclose3 );
     v2v2=(mymap->getReferenceConfiguration( iclose1 ))->calc( conf2->getReferencePositions(), mymap->getPbc(), mymap->getArguments(),
          conf2->getReferenceArguments(), mypack2, true );
     (mymap->getReferenceConfiguration( iclose1 ))->extractDisplacementVector( conf2->getReferencePositions(), mymap->getArguments(),
-        conf2->getReferenceArguments(), true, false, projdir );
+        conf2->getReferenceArguments(), false, projdir );
   }
 
   // Stash derivatives of v1v1
   for(unsigned i=0; i<mymap->getNumberOfArguments(); ++i) mypack1_stashd_args[i]=mypack1.getArgumentDerivative(i);
-  for(unsigned i=0; i<mymap->getNumberOfAtoms(); ++i) mypack1_stashd_atoms[i]=mypack1.getAtomDerivative(i);
+  if( mymap->getNumberOfAtoms()>0 ) {
+    ReferenceAtoms* at = dynamic_cast<ReferenceAtoms*>( mymap->getReferenceConfiguration( iclose1 ) );
+    const std::vector<double> & displace( at->getDisplace() );
+    for(unsigned i=0; i<mymap->getNumberOfAtoms(); ++i) {
+      mypack1_stashd_atoms[i]=mypack1.getAtomDerivative(i); mypack1.getAtomsDisplacementVector()[i] /= displace[i];
+    }
+  }
   // Calculate the dot product of v1 with v2
-  double v1v2 = (mymap->getReferenceConfiguration(iclose1))->projectDisplacementOnVector( projdir, mymap->getPositions(), mymap->getArguments(), cargs, mypack1 );
+  double v1v2 = (mymap->getReferenceConfiguration(iclose1))->projectDisplacementOnVector( projdir, mymap->getArguments(), cargs, mypack1 );
 
   // This computes s value
   double spacing = mymap->getPropertyValue( iclose1, 0 ) - mymap->getPropertyValue( iclose2, 0 );
@@ -181,9 +187,9 @@ void TrigonometricPathVessel::finish( const std::vector<double>& buffer ) {
               conf2->getReferenceArguments(), mypack2, true );
   // Extract vector connecting frames
   (mymap->getReferenceConfiguration( iclose2 ))->extractDisplacementVector( conf2->getReferencePositions(), mymap->getArguments(),
-      conf2->getReferenceArguments(), true, false, projdir );
+      conf2->getReferenceArguments(), false, projdir );
   // Calculate projection of vector on line connnecting frames
-  double proj = (mymap->getReferenceConfiguration(iclose1))->projectDisplacementOnVector( projdir, mymap->getPositions(), mymap->getArguments(), cargs, mypack1 );
+  double proj = (mymap->getReferenceConfiguration(iclose1))->projectDisplacementOnVector( projdir, mymap->getArguments(), cargs, mypack1 );
   double path_z = v1v1 + dx*dx*v4v4 - 2*dx*proj;
 
   // Derivatives for z path

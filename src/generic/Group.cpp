@@ -48,12 +48,13 @@ the index file and `NDX_GROUP` to set the name of the group to be imported (defa
 
 It is also possible to remove atoms from a list and or sort them using keywords `REMOVE`, `SORT`, and `UNIQUE`.
 The flow is the following:
-- If `ATOMS` is present take the ordered list of atoms from the `ATOMS` keyword.
-- If `NDX_FILE` is present append the list from the the gromacs group.
-- If `REMOVE` is present remove the first occurence of each of these atoms from the list.
+- If `ATOMS` is present, then take the ordered list of atoms from the `ATOMS` keyword as a starting list.
+- If `NDX_FILE` is present, then append to it the list obtained from the gromacs group.
+- If `REMOVE` is present, then remove the first occurence of each of these atoms from the list.
   If one tries to remove an atom that was not listed plumed adds a notice in the output.
-- If `SORT` is present resulting list is sorted.
-- If `UNIQUE` is present the resuling list is sorted and duplicate elements are removed.
+  An atom that is present twice in the original list might be removed twice.
+- If `SORT` is present, then the resulting list is sorted by increasing serial number.
+- If `UNIQUE` is present, then the resuling list is sorted by increasing serial number _and_ duplicate elements are removed.
 
 Notice that this command just creates a shortcut, and does not imply any real calculation.
 So, having a huge group defined does not slow down your calculation in any way.

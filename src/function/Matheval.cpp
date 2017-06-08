@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -55,8 +55,8 @@ PLUMED has been linked to it
 The following input tells plumed to perform a metadynamics
 using as a CV the difference between two distances.
 \plumedfile
-dAB: DISTANCE ARG=10,12
-dAC: DISTANCE ARG=10,15
+dAB: DISTANCE ATOMS=10,12
+dAC: DISTANCE ATOMS=10,15
 diff: MATHEVAL ARG=dAB,dAC FUNC=y-x PERIODIC=NO
 # notice: the previous line could be replaced with the following
 # diff: COMBINE ARG=dAB,dAC COEFFICIENTS=-1,1

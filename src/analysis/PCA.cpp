@@ -150,7 +150,11 @@ void PCA::performAnalysis() {
   ReferenceValuePack mypack( getNumberOfArguments(), getNumberOfAtoms(), myval );
   for(unsigned i=0; i<getNumberOfAtoms(); ++i) mypack.setAtomIndex( i, i );
   // Setup some PCA storage
-  data[0]->setupPCAStorage ( mypack );
+  data[0]->setupPCAStorage ( mypack ); std::vector<double> displace( getNumberOfAtoms() );
+  if( getNumberOfAtoms()>0 ) {
+    ReferenceAtoms* at = dynamic_cast<ReferenceAtoms*>( data[0] );
+    displace = at->getDisplace();
+  }
 
   // Create some arrays to store the average position
   std::vector<double> sarg( getNumberOfArguments(), 0 );
@@ -164,7 +168,7 @@ void PCA::performAnalysis() {
     // Accumulate average displacement of arguments (Here PBC could do fucked up things - really needs Berry Phase ) GAT
     for(unsigned j=0; j<getNumberOfArguments(); ++j) sarg[j] += 0.5*getWeight(i)*mypack.getArgumentDerivative(j);
     // Accumulate average displacement of position
-    for(unsigned j=0; j<getNumberOfAtoms(); ++j) spos[j] += getWeight(i)*mypack.getAtomsDisplacementVector()[j];
+    for(unsigned j=0; j<getNumberOfAtoms(); ++j) spos[j] += getWeight(i)*mypack.getAtomsDisplacementVector()[j] / displace[j];
     norm += getWeight(i);
   }
   // Now normalise the displacements to get the average and add these to the first frame
@@ -191,10 +195,10 @@ void PCA::performAnalysis() {
     }
     for(unsigned jat=0; jat<getNumberOfAtoms(); ++jat) {
       for(unsigned jc=0; jc<3; ++jc) {
-        double jdisplace = mypack.getAtomsDisplacementVector()[jat][jc] + data[0]->getReferencePositions()[jat][jc] - spos[jat][jc];
+        double jdisplace = mypack.getAtomsDisplacementVector()[jat][jc] / displace[jat] + data[0]->getReferencePositions()[jat][jc] - spos[jat][jc];
         for(unsigned kat=0; kat<getNumberOfAtoms(); ++kat) {
           for(unsigned kc=0; kc<3; ++kc) {
-            double kdisplace = mypack.getAtomsDisplacementVector()[kat][kc] + data[0]->getReferencePositions()[kat][kc] - spos[kat][kc];
+            double kdisplace = mypack.getAtomsDisplacementVector()[kat][kc] / displace[kat] + data[0]->getReferencePositions()[kat][kc] - spos[kat][kc];
             covar( narg+3*jat + jc, narg+3*kat + kc ) += getWeight(i)*jdisplace*kdisplace;
           }
         }

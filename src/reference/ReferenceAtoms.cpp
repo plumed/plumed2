@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -119,7 +119,7 @@ void ReferenceAtoms::singleDomainRequests( std::vector<AtomNumber>& numbers, boo
 
 void ReferenceAtoms::displaceReferenceAtoms( const double& weight, const std::vector<Vector>& dir ) {
   plumed_dbg_assert( dir.size()==reference_atoms.size() );
-  for(unsigned i=0; i<dir.size(); ++i) reference_atoms[i] += weight*dir[i];
+  for(unsigned i=0; i<dir.size(); ++i) reference_atoms[i] += weight*dir.size()*dir[i];
 }
 
 }

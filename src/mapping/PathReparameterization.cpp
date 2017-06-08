@@ -109,7 +109,7 @@ void PathReparameterization::reparameterizePart( const int& istart, const int& i
       // Copy the reference configuration from the configuration to a tempory direction
       newpath[i].setDirection( mypath[k]->getReferencePositions(), mypath[k]->getReferenceArguments() );
       // Get the displacement of the path
-      mypath[k]->extractDisplacementVector( mypath[k+incr]->getReferencePositions(), args, mypath[k+incr]->getReferenceArguments(), false, false, mydir );
+      mypath[k]->extractDisplacementVector( mypath[k+incr]->getReferencePositions(), args, mypath[k+incr]->getReferenceArguments(), false, mydir );
       // Set our direction equal to the displacement
       // mydir.setDirection( mypack );
       // Shift the reference configuration by this ammount

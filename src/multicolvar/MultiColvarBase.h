@@ -174,8 +174,6 @@ public:
   virtual void updateActiveAtoms( AtomValuePack& myatoms ) const ;
 /// This gets the position of an atom for the link cell setup
   virtual Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const ;
-/// Returns the position where we should assume the center is for link cell calculations
-  virtual Vector getLinkCellPosition( const std::vector<unsigned>& atoms ) const ;
 /// Get the absolute index of the central atom
   virtual AtomNumber getAbsoluteIndexOfCentralAtom( const unsigned& i ) const ;
 /// This is replaced once we have a function to calculate the cv
@@ -240,11 +238,6 @@ Vector MultiColvarBase::getPositionOfAtomForLinkCells( const unsigned& iatom ) c
     return mybasemulticolvars[mmc]->getCentralAtomPos( atom_lab[iatom].second );
   }
   return ActionAtomistic::getPosition( atom_lab[iatom].second );
-}
-
-inline
-Vector MultiColvarBase::getLinkCellPosition( const std::vector<unsigned>& atoms ) const {
-  return getPositionOfAtomForLinkCells( atoms[0] );
 }
 
 inline

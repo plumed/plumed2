@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2016 The plumed team
+   Copyright (c) 2014-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -209,7 +209,6 @@ void PCAVars::registerKeywords( Keywords& keys ) {
                           "reference point.");
   keys.add("compulsory","REFERENCE","a pdb file containing the reference configuration and configurations that define the directions for each eigenvector");
   keys.add("compulsory","TYPE","OPTIMAL","The method we are using for alignment to the reference structure");
-  keys.addFlag("NORMALIZE",false,"calculate the length of the eigenvector input and divide the components by it so as to have a normalised vector");
 }
 
 PCAVars::PCAVars(const ActionOptions& ao):
@@ -256,7 +255,7 @@ PCAVars::PCAVars(const ActionOptions& ao):
   }
   fclose(fp);
 
-  if( nfram<=2 ) error("no eigenvectors were specified");
+  if( nfram<=1 ) error("no eigenvectors were specified");
   log.printf("  found %u eigenvectors in file %s \n",nfram-1,reference.c_str() );
 
   // Finish the setup of the mapping object
@@ -281,7 +280,6 @@ PCAVars::PCAVars(const ActionOptions& ao):
     if( getPntrToArgument(i)->isPeriodic() ) error("cannot use periodic variables in pca projections");
   }
   // Work out if the user wants to normalise the input vector
-  bool nflag; parseFlag("NORMALIZE",nflag);
   checkRead();
 
   // Resize the matrices that will hold our eivenvectors
@@ -293,7 +291,7 @@ PCAVars::PCAVars(const ActionOptions& ao):
   // Create fake periodic boundary condition (these would only be used for DRMSD which is not allowed)
   // Now calculate the eigenvectors
   for(unsigned i=1; i<nfram; ++i) {
-    myframes.getFrame(i)->extractDisplacementVector( myref->getReferencePositions(), getArguments(), myref->getReferenceArguments(), false, nflag, directions[i-1] );
+    myframes.getFrame(i)->extractDisplacementVector( myref->getReferencePositions(), getArguments(), myref->getReferenceArguments(), true, directions[i-1] );
     // Create a component to store the output
     std::string num; Tools::convert( i, num );
     addComponentWithDerivatives("eig-"+num); componentIsNotPeriodic("eig-"+num);
@@ -353,8 +351,7 @@ void PCAVars::calculate() {
   // Now calculate projections on pca vectors
   Vector adif, ader; Tensor fvir, tvir;
   for(unsigned i=0; i<getNumberOfComponents()-1; ++i) { // One less component as we also have residual
-    double proj=myref->projectDisplacementOnVector( directions[i], getPositions(), getArguments(), args, mypack );
-
+    double proj=myref->projectDisplacementOnVector( directions[i], getArguments(), args, mypack );
     // And now accumulate derivatives
     Value* eid=getPntrToComponent(i);
     for(unsigned j=0; j<getNumberOfArguments(); ++j) eid->addDerivative( j, mypack.getArgumentDerivative(j) );

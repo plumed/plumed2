@@ -143,12 +143,10 @@ For developers:
 - Cppcheck on travis-ci has been updated to 1.77.
 - Doxygen on travis-ci has been updated to 1.8.13
 
-Version 2.3.2
+Version 2.3.2 (coming soon)
 -------------
 See branch \branch{v2.3} on git repository.
 
-- New flag `--disable-libsearch` for `configure`, allowing an easier control of linked libraries when installing PLUMED
-  with a package manager such as MacPorts.
 - Resolved problem with nan in \ref SMAC with SPECIESA and SPECIESB involving molecules that are the same
 - PDB reader is now able to read files with dos newlines (see \issue{223}).
 - Fixed bug in \ref CS2BACKBONE (v2.3.1) related to ring currents of HIS and TRP
@@ -157,13 +155,37 @@ See branch \branch{v2.3} on git repository.
 - Fixed bug when using \ref MOVINGRESTRAINT with periodic variables such as \ref TORSION \issue{225}.
 - Fixed bug in \ref HBOND_MATRIX that used to apear when you used DONORS and ACCEPTORS with same numbers of atoms 
 - Fixed bug in \ref DISTANCES that appears when using BETWEEN and link cells.
-- Prevented users from causing segfaults by storing derivatives without LOWMEM flag.  In these caess PLUMED crashes with meaningful errors.
+- Prevented users from causing segfaults by storing derivatives without LOWMEM flag.  In these cases PLUMED crashes with meaningful errors.
 - Fixed bug in \ref HISTOGRAM that causes nans when using KERNEL=DISCRETE option
 - Fixed a bug in the parser related to braces, see \issue{229}
+- Fixed a bug that appeared when using \ref Q3, \ref Q4 and \ref Q6 with LOWEST or HIGHEST flag
+- Fixed a bug that appears when you use \ref MFILTER_LESS as input to \ref COORDINATIONNUMBER with SPECIESA and SPECIESB flags
+- Fixed a bug that was making flushing when gromacs checkpoints not functional (thanks to Summer Snow).
+- Fixed a bug affecting \ref EXTENDED_LAGRANGIAN and \ref METAD with ADAPT=DIFF when using an argument
+  with periodicity (min,max) such that min is different from -max.
+  This does not affect normal \ref TORSION, but would affect \ref PUCKERING component phi
+  with 6-membered rings. In addition, it would affect any variable that is created by the user with a periodicity
+  domain not symmetric around zero. See \issue{235} (thanks to Summer Snow for reporting this bug).
+- Fixed numerical issue leading to simulations stuck (LatticeReduction problem) with intel compiler and
+  large simulation cells.
+- Fixed a bug affecting \ref LOCAL_AVERAGE and outputting all multicolvars calculated by \ref Q6 with \ref DUMPMULTICOLVAR
+- `plumed info --user-doc` and `plumed info --developer-doc` now fall back to online manual when local doc is not installed,
+  see \issue{240}.
 
 For developers:
-- plumedcheck validation has been made stricter. All the checks are now described in the developer manual.
 - IMPORTANT: we started to enforce code formatting using astyle. Check the developer documentation to learn how to
   take care of not-yet-formatted branches.
+- plumedcheck validation has been made stricter. All the checks are now described in the developer manual.
+- New flag `--disable-libsearch` for `configure`, allowing an easier control of linked libraries when installing PLUMED
+  with a package manager such as MacPorts.
+- Added `--disable-static-patch` to `./configure` to disable tests related to static patching. It can be used
+  when static patching is not needed to make sure a wrong c++ library is not linked by mistake.
+- Using `install_name_tool` to fix the name of the installed library on OSX. Allows linking the PLUMED
+  shared library without explicitly setting `DYLD_LIBRARY_PATH`.
+- Added environment variable `PLUMED_ASYNC_SHARE` to enforce synchronous/asynchronous atom sharing (mostly for debug purpose).
+- On travis-ci, using ccache to speedup builds.
+- On travis-ci, added a regtest using Docker with gcc6 and MPI.
+- On travis-ci, docs for unofficial or unsupported branches are set not to be indexed by search engines (see \issue{239})
+- Cppcheck on travis-ci has been updated to 1.79.
 
 */

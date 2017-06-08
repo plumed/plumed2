@@ -94,6 +94,8 @@ public:
   unsigned getNumberOfQuantities() const ;
 /// Actually do the calculation
   double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
+/// We overwrite this in order to have dumpmulticolvar working for local average
+  void normalizeVector( std::vector<double>& vals ) const {}
 /// Is the variable periodic
   bool isPeriodic() { return false; }
 };
@@ -183,7 +185,8 @@ double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) c
     Vector& distance=myatoms.getPosition(i);  // getSeparation( myatoms.getPosition(0), myatoms.getPosition(i) );
     if ( (d2=distance[0]*distance[0])<rcut2 &&
          (d2+=distance[1]*distance[1])<rcut2 &&
-         (d2+=distance[2]*distance[2])<rcut2) {
+         (d2+=distance[2]*distance[2])<rcut2 &&
+         d2>epsilon) {
 
       sw = switchingFunction.calculateSqr( d2, dfunc );
 

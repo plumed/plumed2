@@ -105,6 +105,7 @@ void BridgedMultiColvarFunction::applyBridgeForces( const std::vector<double>& b
   for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
     f[i][0]+=bb[3*i+0]; f[i][1]+=bb[3*i+1]; f[i][2]+=bb[3*i+2];
   }
+  applyForces();
 }
 
 bool BridgedMultiColvarFunction::isPeriodic() {
