@@ -1,8 +1,17 @@
 /**
 
-@page CHANGES-UNRELEASED Unreleased changes
+@page CHANGES-2-4 Version 2.4
 
-This page contains changes that will end up in 2.4
+Version 2.4 (coming soon)
+----------------------------
+
+Version
+2.4 contains several improvements with respect to 2.3. Users currently working with 2.3
+should have a look at the section "Changes leading to incompatible behavior" below and
+might need tiny adjustments in their input files.
+Notice that version 2.4 includes already all the fixes in branch 2.3 up to 2.3.2 indicated in \ref CHANGES-2-3 .
+
+\warning Notice that this list is not complete yet
 
 Changes from version 2.3 which are relevant for users:
 - Changes leading to incompatible behavior:

@@ -227,7 +227,7 @@ bool Tools::getKey(vector<string>& line,const string & key,string & s,int rep) {
       if(rep>=0 && startWith(s,multi)) {
         s=s.substr(multi.length(),s.length());
         std::vector<std::string> words=getWords(s,"\t\n ,");
-        plumed_assert(rep<words.size());
+        plumed_massert(rep<words.size(),"Number of fields in " + s + " not consistent with number of replicas");
         s=words[rep];
       }
       return true;
