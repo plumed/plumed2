@@ -47,7 +47,6 @@ class Atoms
   friend class ActionAtomistic;
   friend class ActionWithVirtualAtom;
   int natoms;
-  bool atoms_updated;
   std::set<AtomNumber> unique;
   std::vector<unsigned> uniq_index;
   std::vector<Vector> positions;
@@ -101,7 +100,7 @@ class Atoms
 
   double kbT;
 
-  std::vector<const ActionAtomistic*> actions;
+  std::vector<ActionAtomistic*> actions;
   std::vector<int>    gatindex;
 
   bool asyncSent;
@@ -194,8 +193,8 @@ public:
   void getFullList(int**);
   void clearFullList();
 
-  void add(const ActionAtomistic*);
-  void remove(const ActionAtomistic*);
+  void add(ActionAtomistic*);
+  void remove(ActionAtomistic*);
 
   double getEnergy()const {plumed_assert(collectEnergy && energyHasBeenSet); return energy;}
 
