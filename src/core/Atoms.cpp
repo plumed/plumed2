@@ -146,11 +146,15 @@ void Atoms::share() {
   }
 
   unique.clear();
-  for(unsigned i=0; i<actions.size(); i++) if(actions[i]->isActive()) {
-      // unique are the local atoms
-      unique.insert(actions[i]->getUniqueLocal().begin(),actions[i]->getUniqueLocal().end());
-      if(!actions[i]->getUnique().empty()) atomsNeeded=true;
+  for(unsigned i=0; i<actions.size(); i++) {
+    if(actions[i]->isActive()) {
+      if(!actions[i]->getUnique().empty()) {
+        atomsNeeded=true;
+        // unique are the local atoms
+        unique.insert(actions[i]->getUniqueLocal().begin(),actions[i]->getUniqueLocal().end());
+      }
     }
+  }
 
   share(unique);
 }
@@ -170,13 +174,6 @@ void Atoms::shareAll() {
 void Atoms::share(const std::set<AtomNumber>& unique) {
   plumed_assert( positionsHaveBeenSet==3 && massesHaveBeenSet );
 
-  uniq_index.clear();
-  if(dd && shuffledAtoms>0) {
-    for(const auto & p : unique) uniq_index.push_back(dd.g2l[p.index()]);
-  } else {
-    for(const auto & p : unique) uniq_index.push_back(p.index());
-  }
-
   virial.zero();
   if(zeroallforces) {
     for(int i=0; i<natoms; i++) forces[i].zero();
@@ -188,8 +185,16 @@ void Atoms::share(const std::set<AtomNumber>& unique) {
   mdatoms->getBox(box);
 
   if(!atomsNeeded) return;
-
   atomsNeeded=false;
+
+  uniq_index.clear();
+  uniq_index.reserve(unique.size());
+  if(dd && shuffledAtoms>0) {
+    for(const auto & p : unique) uniq_index.push_back(dd.g2l[p.index()]);
+  } else {
+    for(const auto & p : unique) uniq_index.push_back(p.index());
+  }
+
   mdatoms->getPositions(unique,uniq_index,positions);
 
 // how many double per atom should be scattered:
