@@ -437,14 +437,16 @@ void ActionWithValue::rerunTask( const unsigned& task_index, const unsigned& cur
 void ActionWithValue::gatherAccumulators( const unsigned& taskCode, const MultiValue& myvals, std::vector<double>& buffer ) const {
   for(unsigned i=0;i<values.size();++i){
       unsigned sind = values[i]->streampos, bufstart = values[i]->bufstart; 
-      if( values[i]->storedata ){
-           unsigned vindex = bufstart + taskCode*(1+values[i]->getNumberOfDerivatives()); buffer[vindex] += myvals.get(sind);
+      if( values[i]->getRank()==0 ){
+           buffer[bufstart] += myvals.get(sind);
            if( values[i]->hasDerivatives() ){
-               for(unsigned k=0;k<myvals.getNumberActive();++k){ 
-                   unsigned kindex = myvals.getActiveIndex(k); buffer[vindex + 1 + kindex] += myvals.getDerivative(sind,kindex);
-               } 
+               for(unsigned k=0;k<myvals.getNumberActive();++k){
+                   unsigned kindex = myvals.getActiveIndex(k); buffer[bufstart + 1 + kindex] += myvals.getDerivative(sind,kindex);
+               }
            }
-      }  
+      } else if( values[i]->storedata ){
+           unsigned vindex = bufstart + taskCode*(1+values[i]->getNumberOfDerivatives()); buffer[vindex] += myvals.get(sind);
+      } 
   }
   for(const auto & p : actions_to_do_after ){
      if( p->isActive() ) p->gatherAccumulators( taskCode, myvals, buffer );
@@ -456,7 +458,7 @@ void ActionWithValue::finishComputations( const std::vector<double>& buffer ){
       unsigned bufstart = values[i]->bufstart; 
       if( values[i]->reset ) values[i]->data.assign( values[i]->data.size(), 0 );
       if( values[i]->storedata ){
-          for(unsigned j=0;j<values[i]->getSize();++j) values[i]->add( j, buffer[bufstart+j] );
+          for(unsigned j=0;j<values[i]->getSize();++j) values[i]->add( j, buffer[bufstart+j] ); 
       }
       if( !doNotCalculateDerivatives() && values[i]->getRank()==0 ){ 
           for(unsigned j=0;j<values[i]->getNumberOfDerivatives();++j) values[i]->setDerivative( j, buffer[bufstart+1+j] );

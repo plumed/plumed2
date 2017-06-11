@@ -96,13 +96,6 @@ LocalEnsemble::LocalEnsemble(const ActionOptions&ao):
   Action(ao),
   Function(ao)
 {
-  // these are the averages
-  // for(unsigned i=0; i<arg_ends.size()-1; i++) {
-  //   std::string s=getPntrToArgument(i)->getName();
-  //   addComponentWithDerivatives(s);
-  //   getPntrToComponent(i)->setNotPeriodic();
-  // }
-
   addValueWithDerivatives();
   log.printf("  averaging over %u replicas.\n", arg_ends[1]-arg_ends[0]);
 }

@@ -45,15 +45,25 @@ Function::Function(const ActionOptions&ao):
 void Function::addValueWithDerivatives() {
   plumed_massert( getNumberOfArguments()!=0, "for functions you must requestArguments before adding values");
 
+  std::vector<std::string> period; 
+  if( keywords.exists("PERIODIC") ){
+     parseVector("PERIODIC",period);
+     if( period.size()==1 && period[0]!="NO") error("input to PERIODIC keyword does not make sense");
+     else if( period.size()!=2 ) error("input to PERIODIC keyword does not make sense"); 
+  } else { period.resize(1); period[0]="NO"; }
+
   std::vector<unsigned> shape(0);
-  if( arg_ends[1]-arg_ends[0]==1 ){ shape.resize(0); ActionWithValue::addValueWithDerivatives( shape ); }
-  else { shape.resize(1); shape[0]=getFullNumberOfTasks(); ActionWithValue::addValue( shape );} 
-        
-  if( keywords.exists("PERIODIC") ) {
-      std::vector<std::string> period; parseVector("PERIODIC",period);
-      if(period.size()==1 && period[0]=="NO") setNotPeriodic();
+  if( arg_ends[1]-arg_ends[0]==1 ){ 
+      shape.resize(0); ActionWithValue::addValueWithDerivatives( shape ); 
+      if(period.size()==1 && period[0]=="NO") setNotPeriodic(); 
       else if(period.size()==2) setPeriodic(period[0],period[1]);
-      else error("missing PERIODIC keyword");
+  } else {
+      std::string num; shape.resize(0);
+      for(unsigned i=0;i<arg_ends.size()-1;++i){
+          Tools::convert(i+1,num); ActionWithValue::addComponentWithDerivatives( "arg_" + num, shape );
+          if(period.size()==1 && period[0]=="NO") componentIsNotPeriodic( "arg_" + num ); 
+          else if(period.size()==2) componentIsPeriodic("arg_" + num, period[0], period[1]);
+      } 
   }
 }
 
@@ -61,9 +71,14 @@ void Function::addComponentWithDerivatives( const std::string& name ) {
   plumed_massert( getNumberOfArguments()!=0, "for functions you must requestArguments before adding values");
 
   std::vector<unsigned> shape(0);
-  if( arg_ends[1]-arg_ends[0]==1 ){ shape.resize(0); }
-  else { shape.resize(1); shape[0]=getFullNumberOfTasks(); } 
-  ActionWithValue::addComponentWithDerivatives(name,shape);
+  if( arg_ends[1]-arg_ends[0]==1 ){ 
+      shape.resize(0); ActionWithValue::addComponentWithDerivatives(name,shape); 
+  } else { 
+      std::string num; shape.resize(0); 
+      for(unsigned i=0;i<arg_ends.size()-1;++i){ 
+          Tools::convert(i+1,num); ActionWithValue::addComponentWithDerivatives( name + "_arg_" + num, shape ); 
+      } 
+  }
 }
 
 void Function::calculate(){

@@ -100,7 +100,7 @@ void Function::addDerivative( const unsigned& ival, const unsigned& jder, const 
 
   if( done_over_stream ){ plumed_error(); return; }
   if( getPntrToArgument(0)->getRank()>0 ){ plumed_error(); return; }
-  myvals.addDerivative( getPntrToOutput(ival)->getPositionInStream(), arg_ends[myvals.getTaskIndex()] + jder, der ); 
+  myvals.addDerivative( getPntrToOutput(ival)->getPositionInStream(), arg_ends[jder] + myvals.getTaskIndex(), der ); 
 }
 
 }
