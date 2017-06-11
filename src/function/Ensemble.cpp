@@ -65,7 +65,7 @@ class Ensemble :
   double   power;
 public:
   explicit Ensemble(const ActionOptions&);
-  void     calculate();
+  void     calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const ;
   static void registerKeywords(Keywords& keys);
 };
 
@@ -152,7 +152,7 @@ Ensemble::Ensemble(const ActionOptions&ao):
   if(do_powers)                log.printf("  calculating the %lf power of the mean (and moment)\n", power);
 }
 
-void Ensemble::calculate() {
+void Ensemble::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
   double norm = 0.0;
   double fact = 0.0;
 
@@ -161,7 +161,7 @@ void Ensemble::calculate() {
     vector<double> bias;
     bias.resize(ens_dim);
     if(master) {
-      bias[my_repl] = getArgument(narg);
+      bias[my_repl] = args[narg];
       if(ens_dim>1) multi_sim_comm.Sum(&bias[0], ens_dim);
     }
     comm.Sum(&bias[0], ens_dim);
@@ -183,7 +183,7 @@ void Ensemble::calculate() {
   vector<double> dmean(narg,fact);
   // calculate the mean
   if(master) {
-    for(unsigned i=0; i<narg; ++i) mean[i] = fact*getArgument(i);
+    for(unsigned i=0; i<narg; ++i) mean[i] = fact*args[i];
     if(ens_dim>1) multi_sim_comm.Sum(&mean[0], narg);
   }
   comm.Sum(&mean[0], narg);
@@ -197,14 +197,14 @@ void Ensemble::calculate() {
     if(!do_central) {
       if(master) {
         for(unsigned i=0; i<narg; ++i) {
-          const double tmp = fact*pow(getArgument(i),moment-1);
-          v_moment[i]      = tmp*getArgument(i);
+          const double tmp = fact*pow(args[i],moment-1);
+          v_moment[i]      = tmp*args[i];
           dv_moment[i]     = moment*tmp;
         }
         if(ens_dim>1) multi_sim_comm.Sum(&v_moment[0], narg);
       } else {
         for(unsigned i=0; i<narg; ++i) {
-          const double tmp = fact*pow(getArgument(i),moment-1);
+          const double tmp = fact*pow(args[i],moment-1);
           dv_moment[i]     = moment*tmp;
         }
       }
@@ -212,14 +212,14 @@ void Ensemble::calculate() {
     } else {
       if(master) {
         for(unsigned i=0; i<narg; ++i) {
-          const double tmp = pow(getArgument(i)-mean[i],moment-1);
-          v_moment[i]      = fact*tmp*(getArgument(i)-mean[i]);
+          const double tmp = pow(args[i]-mean[i],moment-1);
+          v_moment[i]      = fact*tmp*(args[i]-mean[i]);
           dv_moment[i]     = moment*tmp*(fact-fact/norm);
         }
         if(ens_dim>1) multi_sim_comm.Sum(&v_moment[0], narg);
       } else {
         for(unsigned i=0; i<narg; ++i) {
-          const double tmp = pow(getArgument(i)-mean[i],moment-1);
+          const double tmp = pow(args[i]-mean[i],moment-1);
           dv_moment[i]     = moment*tmp*(fact-fact/norm);
         }
       }
@@ -244,21 +244,19 @@ void Ensemble::calculate() {
   // set components
   for(unsigned i=0; i<narg; ++i) {
     // set mean
-    Value* v=getPntrToComponent(i);
-    v->set(mean[i]);
-    setDerivative(v, i, dmean[i]);
+    setValue( i, mean[i], myvals );
+    addDerivative( i, i, dmean[i], myvals );
     if(do_reweight) {
-      const double w_tmp = fact_kbt*(getArgument(i) - mean[i]);
-      setDerivative(v, narg, w_tmp);
+      const double w_tmp = fact_kbt*(args[i] - mean[i]);
+      addDerivative( i, narg, w_tmp, myvals );
     }
     if(do_moments) {
       // set moments
-      Value* u=getPntrToComponent(i+narg);
-      u->set(v_moment[i]);
-      setDerivative(u, i, dv_moment[i]);
+      setValue( i+narg, v_moment[i], myvals );
+      addDerivative(i+narg, i, dv_moment[i], myvals );
       if(do_reweight) {
-        const double w_tmp = fact_kbt*(pow(getArgument(i),moment) - v_moment[i]);
-        setDerivative(u, narg, w_tmp);
+        const double w_tmp = fact_kbt*(pow(args[i],moment) - v_moment[i]);
+        addDerivative(i+narg, narg, w_tmp, myvals);
       }
     }
   }

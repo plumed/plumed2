@@ -25,10 +25,12 @@
 #include "Action.h"
 #include "Value.h"
 #include "tools/Exception.h"
+#include "tools/MultiValue.h"
 #include <vector>
 #include <memory>
 
 namespace PLMD {
+class Stopwatch;
 
 /**
 \ingroup MULTIINHERIT
@@ -75,16 +77,41 @@ private:
   bool noderiv;
 /// Are we using numerical derivatives to differentiate
   bool numericalDerivatives;
+/// Are we running calculations in serial
+  bool serial;
+/// Are we using timers
+  bool timers;
+/// The stopwatch that times the different parts of the calculation
+  ForwardDecl<Stopwatch> stopwatch_fwd;
+  Stopwatch& stopwatch=*stopwatch_fwd;
+/// The current number of active tasks
+  unsigned nactive_tasks;
+/// The indices of the tasks in the full list of tasks
+  std::vector<unsigned> indexOfTaskInFullList;
+/// The list of currently active tasks
+  std::vector<unsigned> partialTaskList;
+/// Ths full list of tasks we have to perform
+  std::vector<unsigned> fullTaskList;
+/// This list is used to update the active tasks in the list
+  std::vector<unsigned> taskFlags;
+/// The buffer that we use (we keep a copy here to avoid resizing)
+  std::vector<double> buffer;
+/// Actions that must be done after this one
+  std::vector<ActionWithValue*> actions_to_do_after;
 /// Return the index for the component named name
   int getComponent( const std::string& name ) const;
+///  Run the task
+  void runTask( const unsigned& index, const unsigned& taskno, MultiValue& myvals ) const ;
+  void gatherAccumulators( const unsigned& index, const MultiValue& myvals, std::vector<double>& buf ) const ;
+  void finishComputations( const std::vector<double>& buf );
 public:
 
 // -------- The action has one value only  ---------------- //
 
 /// Add a value with the name label
-  void addValue();
+  void addValue( const std::vector<unsigned>& shape=std::vector<unsigned>() );
 /// Add a value with the name label that has derivatives
-  void addValueWithDerivatives();
+  void addValueWithDerivatives( const std::vector<unsigned>& shape=std::vector<unsigned>() );
 /// Set your default value to have no periodicity
   void setNotPeriodic();
 /// Set the value to be periodic with a particular domain
@@ -94,19 +121,30 @@ protected:
   Value* getPntrToValue();
 /// Set the default value (the one without name)
   void setValue(const double& d);
-
 // -------- The action has multiple components ---------- //
 
+/// Is this thread safe
+  bool threadSafe() const { return true; }
+///
+  unsigned getTaskCode( const unsigned& ii ) const ;
+/// Run all the tasks in the list  
+  void runAllTasks();  
+/// Run all calculations in serial
+  bool runInSerial() const ;
 public:
 /// Add a value with a name like label.name
-  void addComponent( const std::string& name );
+  void addComponent( const std::string& name, const std::vector<unsigned>& shape=std::vector<unsigned>() );
 /// Add a value with a name like label.name that has derivatives
-  void addComponentWithDerivatives( const std::string& name );
+  void addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape=std::vector<unsigned>() );
 /// Set your value component to have no periodicity
   void componentIsNotPeriodic( const std::string& name );
 /// Set the value to be periodic with a particular domain
   void componentIsPeriodic( const std::string& name, const std::string& min, const std::string& max );
+///
+  void addTaskToList( const unsigned& taskCode );
 protected:
+/// Get a pointer to the output value
+  Value* getPntrToOutput( const unsigned& ind ) const ;
 /// Return a pointer to the component by index
   Value* getPntrToComponent(int i);
 /// Return a pointer to the value by name
@@ -172,6 +210,20 @@ public:
   virtual void turnOnDerivatives();
 /// Interpret the data label and get arguments 
   void interpretDataLabel( const std::string& mystr, ActionWithArguments* myuser, std::vector<Value*>& args );
+///
+  unsigned getNumberOfStreamedQuantities( unsigned& nquants ) const ;
+///
+  void getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize );
+///
+  unsigned getFullNumberOfTasks() const ;
+/// Reperform one of the tasks
+  void rerunTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const ;
+///
+  virtual void activateTasks( std::vector<unsigned>& tflags ) const { plumed_error(); }
+///
+  virtual void selectActiveTasks( std::vector<unsigned>& tflags );
+///
+  virtual void performTask( const unsigned& current, MultiValue& myvals ) const { plumed_error(); }
 };
 
 inline
@@ -184,7 +236,7 @@ inline
 double ActionWithValue::getOutputQuantity( const std::string& name ) const {
   std::string thename; thename=getLabel() + "." + name;
   for(unsigned i=0; i<values.size(); ++i) {
-    if( values[i]->name==thename ) return values[i]->value;
+    if( values[i]->name==thename ) return values[i]->data[0];
   }
   return 0.0;
 }
@@ -215,6 +267,22 @@ bool ActionWithValue::checkNumericalDerivatives() const {
 inline
 bool ActionWithValue::doNotCalculateDerivatives() const {
   return noderiv;
+}
+
+inline
+unsigned ActionWithValue::getFullNumberOfTasks() const {
+  return fullTaskList.size();
+}
+
+inline
+unsigned ActionWithValue::getTaskCode( const unsigned& ii ) const {
+  plumed_dbg_assert( ii<fullTaskList.size() );
+  return fullTaskList[ii];
+}
+
+inline
+bool ActionWithValue::runInSerial() const {
+  return serial;
 }
 
 

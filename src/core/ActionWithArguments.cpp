@@ -142,7 +142,9 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
           std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
           if( all.empty() ) error("your input file is not telling plumed to calculate anything");
           unsigned carg = arg.size();
-          for(unsigned j=0; j<all.size(); j++) all[j]->interpretDataLabel( all[j]->getLabel() + "." + name, this, arg );
+          for(unsigned j=0; j<all.size(); j++){
+              if( name=="*" || all[j]->exists(all[j]->getLabel() + "." + name) ) all[j]->interpretDataLabel( all[j]->getLabel() + "." + name, this, arg );
+          }
           if( arg.size()==carg ) error("found no actions with a component called " + name );
         } else {   
           // Take all the values from an action with a specific name
@@ -221,19 +223,57 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg) {
 
 ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
   Action(ao),
-  lockRequestArguments(false)
+  lockRequestArguments(false),
+  done_over_stream(false)
 {
   if( keywords.exists("ARG") && !keywords.exists("DATA") ) {
     vector<Value*> arg;
     parseArgumentList("ARG",arg);
 
     if(!arg.empty()) {
-      log.printf("  with arguments");
-      for(unsigned i=0; i<arg.size(); i++) log.printf(" %s",arg[i]->getName().c_str());
+      log.printf("  with arguments"); arg_ends.push_back(0);
+      for(unsigned i=0; i<arg.size(); i++){ log.printf(" %s",arg[i]->getName().c_str()); arg_ends.push_back(1+i); }
       log.printf("\n");
+    } else {
+      unsigned narg=0; arg_ends.push_back(0);
+      for(unsigned i=1;;++i){
+         vector<Value*> argn; parseArgumentList("ARG",i,argn);
+         if( argn.size()==0 ) break;
+         unsigned nargt=0; log.printf("  %dth set of arguments",i);
+         for(unsigned j=0;j<argn.size();++j){
+             log.printf(" %s",argn[j]->getName().c_str());
+             arg.push_back( argn[j] ); nargt += argn[j]->getNumberOfValues();
+         }
+         arg_ends.push_back( arg.size() ); log.printf("\n"); 
+         if( i==1 ) narg = nargt;
+         else if( narg!=nargt ) error("mismatch between number of arguments specified for different numbered ARG values");
+      }
     }
+    std::vector<std::string> vnames; 
+    for(unsigned j=0;j<arg.size();++j){ 
+       if( arg[j]->getRank()>0 ){
+           bool found=false;
+           for(unsigned k=0;k<vnames.size();++k){
+               if( vnames[k]==(arg[j]->getPntrToAction())->getLabel() ){ found=true; break; }
+           }
+           if( !found ) vnames.push_back( (arg[j]->getPntrToAction())->getLabel() );
+       }
+    }
+    if( vnames.size()>1 ){
+        for(unsigned i=0;i<arg.size();++i){ if( arg[i]->getRank()>0 ) arg[i]->buildDataStore(); }
+    } else if( vnames.size()==1 ) done_over_stream=true;
     requestArguments(arg);
   }
+}
+
+void ActionWithArguments::createTasksFromArguments(){
+  ActionWithValue* av = dynamic_cast<ActionWithValue*>(this); plumed_assert( av );
+  unsigned ntasks=0; for(unsigned j=arg_ends[0];j<arg_ends[1];++j) ntasks += getPntrToArgument(j)->getNumberOfValues();
+  for(unsigned i=1;i<arg_ends.size()-1;++i){
+      unsigned nt = 0; for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) nt += getPntrToArgument(j)->getNumberOfValues();
+      plumed_assert( nt==ntasks );
+  } 
+  for(unsigned i=0;i<ntasks;++i) av->addTaskToList( i );
 }
 
 void ActionWithArguments::calculateNumericalDerivatives( ActionWithValue* a ) {
@@ -241,6 +281,7 @@ void ActionWithArguments::calculateNumericalDerivatives( ActionWithValue* a ) {
     a=dynamic_cast<ActionWithValue*>(this);
     plumed_massert(a,"cannot compute numerical derivatives for an action without values");
   }
+  for(unsigned i=0;i<arguments.size();++i) plumed_massert(arguments[i]->getRank()==0,"cannot use numerical derivatives if input is data stream");
 
   const int nval=a->getNumberOfComponents();
   const int npar=arguments.size();
@@ -265,6 +306,7 @@ void ActionWithArguments::calculateNumericalDerivatives( ActionWithValue* a ) {
 double ActionWithArguments::getProjection(unsigned i,unsigned j)const {
   plumed_massert(i<arguments.size()," making projections with an index which  is too large");
   plumed_massert(j<arguments.size()," making projections with an index which  is too large");
+  plumed_massert(arguments[i]->getRank()==0 && arguments[j]->getRank()==0,"cannot calculate projection for data stream input"); 
   const Value* v1=arguments[i];
   const Value* v2=arguments[j];
   return Value::projection(*v1,*v2);
@@ -272,6 +314,26 @@ double ActionWithArguments::getProjection(unsigned i,unsigned j)const {
 
 void ActionWithArguments::addForcesOnArguments( const std::vector<double>& forces ) {
   for(unsigned i=0; i<arguments.size(); ++i) arguments[i]->addForce( forces[i] );
+}
+
+void ActionWithArguments::retrieveArguments( const MultiValue& myvals, std::vector<double>& args ) const {
+  if( done_over_stream ){
+      for(unsigned i=0;i<args.size();++i) args[i]=myvals.get( arguments[i]->streampos );
+      return;
+  }
+  if( arguments[0]->getRank()>0 ){
+      for(unsigned i=0;i<arg_ends.size()-1;++i){
+          unsigned nt=0, nn=0; 
+          for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j){
+              nt += arguments[j]->getNumberOfValues();
+              if( myvals.getTaskIndex()<nt ) break;
+              nn += arguments[j]->getNumberOfValues();
+          }
+          args[i]=arguments[i]->getValueForTask( myvals.getTaskIndex() - nn );
+      }
+  } else {
+      for(unsigned i=0;i<arg_ends.size()-1;++i) args[i]=arguments[arg_ends[i] + myvals.getTaskIndex()]->get(); 
+  }
 }
 
 }

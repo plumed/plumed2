@@ -62,7 +62,7 @@ class Sort :
 {
 public:
   explicit Sort(const ActionOptions&);
-  void calculate();
+  void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const ;
   static void registerKeywords(Keywords& keys);
 };
 
@@ -84,26 +84,25 @@ Sort::Sort(const ActionOptions&ao):
     Tools::convert(i+1,s);
     if(getPntrToArgument(i)->isPeriodic())
       error("Cannot sort periodic values (check argument "+s+")");
-    addComponentWithDerivatives(s);
+    addComponentWithDerivatives(s+"th");
     getPntrToComponent(i)->setNotPeriodic();
   }
   checkRead();
 
 }
 
-void Sort::calculate() {
+void Sort::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
   vector<pair<double,int> > vals(getNumberOfArguments());
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    vals[i].first=getArgument(i);
+    vals[i].first=args[i];
 // In this manner I remember from which argument the component depends:
     vals[i].second=i;
   }
 // STL sort sorts based on first element (value) then second (index)
   sort(vals.begin(),vals.end());
   for(int i=0; i<getNumberOfComponents(); ++i) {
-    Value* v=getPntrToComponent(i);
-    v->set(vals[i].first);
-    setDerivative(v,vals[i].second,1.0);
+    setValue( i, vals[i].first, myvals );
+    addDerivative( i, vals[i].second, 1.0, myvals );
   }
 }
 

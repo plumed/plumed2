@@ -72,6 +72,7 @@ public:
 
 inline
 void Colvar::setAtomsDerivatives(Value*v,int i,const Vector&d) {
+  if( doNotCalculateDerivatives() ) return;
   v->addDerivative(3*i+0,d[0]);
   v->addDerivative(3*i+1,d[1]);
   v->addDerivative(3*i+2,d[2]);
@@ -80,6 +81,7 @@ void Colvar::setAtomsDerivatives(Value*v,int i,const Vector&d) {
 
 inline
 void Colvar::setBoxDerivatives(Value* v,const Tensor&d) {
+  if( doNotCalculateDerivatives() ) return;
   unsigned nat=getNumberOfAtoms();
   v->addDerivative(3*nat+0,d(0,0));
   v->addDerivative(3*nat+1,d(0,1));

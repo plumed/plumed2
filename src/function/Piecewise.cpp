@@ -76,7 +76,7 @@ class Piecewise :
   std::vector<std::pair<double,double> > points;
 public:
   explicit Piecewise(const ActionOptions&);
-  void calculate();
+  void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const ;
   static void registerKeywords(Keywords& keys);
 };
 
@@ -127,12 +127,11 @@ Piecewise::Piecewise(const ActionOptions&ao):
   log.printf("\n");
 }
 
-void Piecewise::calculate() {
+void Piecewise::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
   for(unsigned i=0; i<getNumberOfArguments(); i++) {
-    double val=getArgument(i);
     unsigned p=0;
     for(; p<points.size(); p++) {
-      if(val<points[p].first) break;
+      if(args[i]<points[p].first) break;
     }
     double f,d;
     if(p==0) {
@@ -143,17 +142,11 @@ void Piecewise::calculate() {
       d=0.0;
     } else {
       double m=(points[p].second-points[p-1].second) / (points[p].first-points[p-1].first);
-      f=m*(val-points[p-1].first)+points[p-1].second;
+      f=m*(args[i]-points[p-1].first)+points[p-1].second;
       d=m;
     }
-    if(getNumberOfArguments()==1) {
-      setValue(f);
-      setDerivative(i,d);
-    } else {
-      Value* v=getPntrToComponent(i);
-      v->set(f);
-      v->addDerivative(i,d);
-    }
+    setValue( i, f, myvals );
+    addDerivative( i, i, d, myvals );
   }
 }
 

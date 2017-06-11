@@ -192,6 +192,7 @@ PLUMED_REGISTER_ACTION(FitToTemplate,"FIT_TO_TEMPLATE")
 void FitToTemplate::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
+  ActionWithValue::registerKeywords( keys );
   keys.add("compulsory","STRIDE","1","the frequency with which molecules are reassembled.  Unless you are completely certain about what you are doing leave this set equal to 1!");
   keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
   keys.add("compulsory","TYPE","SIMPLE","the manner in which RMSD alignment is performed.  Should be OPTIMAL or SIMPLE.");

@@ -39,31 +39,68 @@ class Function:
   public ActionWithArguments
 {
 protected:
-  void setDerivative(int,double);
-  void setDerivative(Value*,int,double);
+//  void setDerivative(int,double);
+//  void setDerivative(Value*,int,double);
   void addValueWithDerivatives();
   void addComponentWithDerivatives( const std::string& name );
+  void setValue( const unsigned& ival, const double& val, MultiValue& myvals ) const ;
+  void addDerivative( const unsigned& ival, const unsigned& jder, const double& der, MultiValue& myvals ) const ;
 public:
+  static void registerKeywords(Keywords&);
   explicit Function(const ActionOptions&);
   virtual ~Function() {}
+  void calculate();
+  void activateTasks( std::vector<unsigned>& tflags ) const ;
+  void performTask( const unsigned& current, MultiValue& myvals ) const ;
+  virtual void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const = 0;
   void apply();
-  static void registerKeywords(Keywords&);
   unsigned getNumberOfDerivatives();
+//  unsigned getNumberOfArguments() const ;
 };
 
-inline
-void Function::setDerivative(Value*v,int i,double d) {
-  v->addDerivative(i,d);
-}
+// inline
+// unsigned Function::getNumberOfArguments() const {
+//   return arg_ends.size() - 1;
+// }
 
-inline
-void Function::setDerivative(int i,double d) {
-  setDerivative(getPntrToValue(),i,d);
-}
+// inline
+// void Function::setDerivative(Value*v,int i,double d) {
+//   v->addDerivative(i,d);
+// }
+// 
+// inline
+// void Function::setDerivative(int i,double d) {
+//   setDerivative(getPntrToValue(),i,d);
+// }
 
 inline
 unsigned Function::getNumberOfDerivatives() {
-  return getNumberOfArguments();
+ //if( getFullNumberOfTasks()>0 || done_over_stream ){
+ //    unsigned nder = 0; std::vector<Value*> tvals;
+ //    for(unsigned i=0;i<ActionWithArguments::getNumberOfArguments();++i){
+ //        bool found=false; std::string mylabstr = (getPntrToArgument(i)->getPntrToAction())->getLabel();
+ //        for(unsigned j=0;j<tvals.size();++j){
+ //           if( mylabstr==(tvals[j]->getPntrToAction())->getLabel() ){ found=true; break; }
+ //        }
+ //        if( !found ) nder += getPntrToArgument(i)->getNumberOfDerivatives();
+ //    }
+ //    return nder;
+ // }
+  return ActionWithArguments::getNumberOfArguments();
+}
+
+inline
+void Function::setValue( const unsigned& ival, const double& val, MultiValue& myvals ) const {
+  myvals.setValue( getPntrToOutput(ival)->getPositionInStream(), val ); 
+}
+
+inline
+void Function::addDerivative( const unsigned& ival, const unsigned& jder, const double& der, MultiValue& myvals ) const {
+  if( doNotCalculateDerivatives() ) return ;
+
+  if( done_over_stream ){ plumed_error(); return; }
+  if( getPntrToArgument(0)->getRank()>0 ){ plumed_error(); return; }
+  myvals.addDerivative( getPntrToOutput(ival)->getPositionInStream(), arg_ends[myvals.getTaskIndex()] + jder, der ); 
 }
 
 }

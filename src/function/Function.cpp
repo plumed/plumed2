@@ -39,32 +39,77 @@ Function::Function(const ActionOptions&ao):
   ActionWithValue(ao),
   ActionWithArguments(ao)
 {
+  createTasksFromArguments();
 }
 
 void Function::addValueWithDerivatives() {
   plumed_massert( getNumberOfArguments()!=0, "for functions you must requestArguments before adding values");
-  ActionWithValue::addValueWithDerivatives();
-  getPntrToValue()->resizeDerivatives(getNumberOfArguments());
 
+  std::vector<unsigned> shape(0);
+  if( arg_ends[1]-arg_ends[0]==1 ){ shape.resize(0); ActionWithValue::addValueWithDerivatives( shape ); }
+  else { shape.resize(1); shape[0]=getFullNumberOfTasks(); ActionWithValue::addValue( shape );} 
+        
   if( keywords.exists("PERIODIC") ) {
-    std::vector<std::string> period;
-    parseVector("PERIODIC",period);
-    if(period.size()==1 && period[0]=="NO") {
-      setNotPeriodic();
-    } else if(period.size()==2) {
-      setPeriodic(period[0],period[1]);
-    } else error("missing PERIODIC keyword");
+      std::vector<std::string> period; parseVector("PERIODIC",period);
+      if(period.size()==1 && period[0]=="NO") setNotPeriodic();
+      else if(period.size()==2) setPeriodic(period[0],period[1]);
+      else error("missing PERIODIC keyword");
   }
 }
 
 void Function::addComponentWithDerivatives( const std::string& name ) {
   plumed_massert( getNumberOfArguments()!=0, "for functions you must requestArguments before adding values");
-  ActionWithValue::addComponentWithDerivatives(name);
-  getPntrToComponent(name)->resizeDerivatives(getNumberOfArguments());
+
+  std::vector<unsigned> shape(0);
+  if( arg_ends[1]-arg_ends[0]==1 ){ shape.resize(0); }
+  else { shape.resize(1); shape[0]=getFullNumberOfTasks(); } 
+  ActionWithValue::addComponentWithDerivatives(name,shape);
 }
+
+void Function::calculate(){
+  // Everything is done elsewhere
+  if( done_over_stream ) return;
+  // Set all values equal to zero prior to computing
+  // for(unsigned i=0;i<getNumberOfComponents();++i) getPntrToComponent(i)->set(0);
+  // This is done if we are calculating a function of multiple cvs
+  plumed_dbg_assert( getFullNumberOfTasks()>0 ); runAllTasks(); 
+}
+
+void Function::activateTasks( std::vector<unsigned>& tflags ) const {
+  tflags.assign(tflags.size(),1);
+}
+
+void Function::performTask( const unsigned& current, MultiValue& myvals ) const {
+  // Get the values of all the arguments
+  std::vector<double> args( arg_ends.size()-1 ); retrieveArguments( myvals, args );
+  // Calculate whatever we are calculating
+  calculateFunction( args, myvals ); 
+  // And update the dynamic list
+  if( !doNotCalculateDerivatives() ) myvals.updateDynamicList();
+}
+
+// void Function::accumulate( const unsigned& taskCode, const MultiValue& myvals, std::vector<double>& buffer ) const {
+//   for(unsigned i=0;i<getNumberOfComponents();++i){
+//       Value* val=getPntrToOutput(i); if( val->isDataStream() ) continue ;
+//       unsigned sind = val->getPositionInStream(), bufstart = val->getBufferPosition(); buffer[bufstart] += myvals.get(sind);
+//       for(unsigned k=0;k<myvals.getNumberActive();++k){ 
+//           unsigned kindex = myvals.getActiveIndex(k); buffer[bufstart + 1 + kindex] += myvals.getDerivative(sind,kindex); 
+//       }
+//   }
+// }
+
+// void Function::finish( const std::vector<double>& buffer ){
+//   for(unsigned i=0;i<getNumberOfComponents();++i){
+//       Value* val=getPntrToComponent(i); if( val->isDataStream() ) continue ;
+//       unsigned bufstart = getPntrToComponent(i)->getBufferPosition(); val->set( buffer[bufstart] );
+//       for(unsigned j=0;j<val->getNumberOfDerivatives();++j) val->setDerivative( j, buffer[bufstart+1+j] ); 
+//   }
+// }
 
 void Function::apply()
 {
+  // Everything is done elsewhere
+  if( done_over_stream ) return;
   const unsigned noa=getNumberOfArguments();
   const unsigned ncp=getNumberOfComponents();
   const unsigned cgs=comm.Get_size();

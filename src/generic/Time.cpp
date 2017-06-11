@@ -65,7 +65,7 @@ Time::Time(const ActionOptions&ao):
 {
   addValueWithDerivatives(); setNotPeriodic();
   // resize derivative by hand to a nonzero value
-  getPntrToValue()->resizeDerivatives(1);
+  //getPntrToValue()->resizeDerivatives(1);
 }
 
 void Time::calculate() {

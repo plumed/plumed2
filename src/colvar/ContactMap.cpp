@@ -110,7 +110,7 @@ PRINT ARG=cmap FILE=colvar
 
 class ContactMap : public Colvar {
 private:
-  bool pbc, serial, docomp, dosum, docmdist;
+  bool pbc, docomp, dosum, docmdist;
   std::unique_ptr<NeighborList> nl;
   std::vector<SwitchingFunction> sfs;
   vector<double> reference, weight;
@@ -143,19 +143,16 @@ void ContactMap::registerKeywords( Keywords& keys ) {
   keys.reset_style("SWITCH","compulsory");
   keys.addFlag("SUM",false,"calculate the sum of all the contacts in the input");
   keys.addFlag("CMDIST",false,"calculate the distance with respect to the provided reference contant map");
-  keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   keys.addOutputComponent("contact","default","By not using SUM or CMDIST each contact will be stored in a component");
 }
 
 ContactMap::ContactMap(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true),
-  serial(false),
   docomp(true),
   dosum(false),
   docmdist(false)
 {
-  parseFlag("SERIAL",serial);
   parseFlag("SUM",dosum);
   parseFlag("CMDIST",docmdist);
   if(docmdist==true&&dosum==true) error("You cannot use SUM and CMDIST together");
@@ -252,7 +249,6 @@ ContactMap::ContactMap(const ActionOptions&ao):
   if(dosum || docmdist) {
     docomp=false;
   } else {
-    serial=true;
     docomp=true;
   }
 
@@ -269,7 +265,7 @@ void ContactMap::calculate() {
 
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
-  if(serial) {
+  if( runInSerial() ) {
     // when using components the parallelisation do not work
     stride=1;
     rank=0;
@@ -316,7 +312,7 @@ void ContactMap::calculate() {
     }
   }
 
-  if(!serial) {
+  if( !runInSerial() ) {
     comm.Sum(&ncoord,1);
     if(!deriv.empty()) comm.Sum(&deriv[0][0],3*deriv.size());
     comm.Sum(&virial[0][0],9);

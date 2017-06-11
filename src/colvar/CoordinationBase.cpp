@@ -33,7 +33,6 @@ namespace colvar {
 
 void CoordinationBase::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords(keys);
-  keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   keys.addFlag("PAIR",false,"Pair only 1st element of the 1st group with 1st element in the second, etc");
   keys.addFlag("NLIST",false,"Use a neighbour list to speed up the calculation");
   keys.add("optional","NL_CUTOFF","The cutoff for the neighbour list");
@@ -45,12 +44,10 @@ void CoordinationBase::registerKeywords( Keywords& keys ) {
 CoordinationBase::CoordinationBase(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true),
-  serial(false),
   invalidateList(true),
   firsttime(true)
 {
 
-  parseFlag("SERIAL",serial);
 
   vector<AtomNumber> ga_lista,gb_lista;
   parseAtomList("GROUPA",ga_lista);
@@ -142,7 +139,7 @@ void CoordinationBase::calculate()
 
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
-  if(serial) {
+  if( runInSerial() ) {
     stride=1;
     rank=0;
   } else {
@@ -200,7 +197,7 @@ void CoordinationBase::calculate()
     }
   }
 
-  if(!serial) {
+  if( !runInSerial() ) {
     comm.Sum(ncoord);
     if(!deriv.empty()) comm.Sum(&deriv[0][0],3*deriv.size());
     comm.Sum(virial);

@@ -187,7 +187,8 @@ class Matheval :
   vector<char*> names;
 public:
   explicit Matheval(const ActionOptions&);
-  void calculate();
+  ~Matheval();
+  void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const; 
   static void registerKeywords(Keywords& keys);
 };
 
@@ -266,29 +267,29 @@ Matheval::Matheval(const ActionOptions&ao):
     lepton::ParsedExpression pe=lepton::Parser::parse(func).differentiate(var[i]).optimize(leptonConstants);
     log<<"    "<<pe<<"\n";
     expression_deriv[i]=pe.createCompiledExpression();
-  }
+  } 
 }
 
-void Matheval::calculate() {
+void Matheval::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
   for(unsigned i=0; i<getNumberOfArguments(); i++) {
     try {
-      expression.getVariableReference(var[i])=getArgument(i);
+      expression.getVariableReference(var[i])=args[i];
     } catch(PLMD::lepton::Exception& exc) {
 // this is necessary since in some cases lepton things a variable is not present even though it is present
 // e.g. func=0*x
     }
   }
-  setValue(expression.evaluate());
+  setValue(0, expression.evaluate(), myvals );
   for(unsigned i=0; i<getNumberOfArguments(); i++) {
     for(unsigned j=0; j<getNumberOfArguments(); j++) {
       try {
-        expression_deriv[i].getVariableReference(var[j])=getArgument(j);
+        expression_deriv[i].getVariableReference(var[j])=args[j];
       } catch(PLMD::lepton::Exception& exc) {
 // this is necessary since in some cases lepton things a variable is not present even though it is present
 // e.g. func=0*x
       }
     }
-    setDerivative(i,expression_deriv[i].evaluate());
+    addDerivative(0, i, expression_deriv[i].evaluate(), myvals);
   }
 }
 

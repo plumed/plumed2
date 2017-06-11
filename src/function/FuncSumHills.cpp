@@ -198,7 +198,8 @@ class FuncSumHills :
   std::unique_ptr<BiasRepresentation> historep;
 public:
   explicit FuncSumHills(const ActionOptions&);
-  void calculate(); // this probably is not needed
+  ~FuncSumHills();
+  void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const ; // this probably is not needed
   bool checkFilesAreExisting(const vector<string> & hills );
   static void registerKeywords(Keywords& keys);
 };
@@ -626,7 +627,7 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
 
 }
 
-void FuncSumHills::calculate() {
+void FuncSumHills::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
   // this should be connected only with a grid representation to metadynamics
   // at regular time just dump it
   plumed_merror("You should have never got here: this stuff is not yet implemented!");

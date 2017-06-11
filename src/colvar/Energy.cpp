@@ -82,7 +82,7 @@ Energy::Energy(const ActionOptions&ao):
 //    error("Cannot use NUMERICAL_DERIVATIVES with ENERGY");
   isEnergy=true;
   addValueWithDerivatives(); setNotPeriodic();
-  getPntrToValue()->resizeDerivatives(1);
+  //getPntrToValue()->resizeDerivatives(1);
   log<<"  Bibliography ";
   log<<plumed.cite("Bartels and Karplus, J. Phys. Chem. B 102, 865 (1998)");
   log<<plumed.cite("Bonomi and Parrinello, J. Comp. Chem. 30, 1615 (2009)");

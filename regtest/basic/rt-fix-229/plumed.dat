@@ -55,6 +55,6 @@ average: COMBINE ARG=(c.*) NORMALIZE PERIODIC=NO
 # s.1 is smallest c
 s: SORT ARG=(c.*)
 # s.1 and average are only equal if all c.* are identical
-diff: COMBINE ARG=s.1,average COEFFICIENTS=1,-1 PERIODIC=NO
+diff: COMBINE ARG=s.1th,average COEFFICIENTS=1,-1 PERIODIC=NO
 PRINT ARG=average,diff FILE=COLVAR
 

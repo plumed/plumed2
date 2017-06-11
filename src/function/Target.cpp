@@ -105,7 +105,7 @@ private:
   std::unique_ptr<PLMD::ArgumentOnlyDistance> target;
 public:
   explicit Target(const ActionOptions&);
-  virtual void calculate();
+  virtual void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const ;
   static void registerKeywords(Keywords& keys );
 };
 
@@ -156,9 +156,11 @@ Target::Target(const ActionOptions&ao):
   addValueWithDerivatives(); setNotPeriodic();
 }
 
-void Target::calculate() {
-  mypack.clear(); double r=target->calculate( getArguments(), mypack, false ); setValue(r);
-  for(unsigned i=0; i<getNumberOfArguments(); i++) setDerivative( i, mypack.getArgumentDerivative(i) );
+void Target::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
+  // mypack.clear(); 
+  // double r=target->calculate( args, mypack, false ); 
+  double r=0; setValue(0,r,myvals);
+  for(unsigned i=0; i<getNumberOfArguments(); i++) addDerivative( 0, i, mypack.getArgumentDerivative(i), myvals );
 }
 
 }

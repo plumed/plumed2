@@ -25,6 +25,7 @@
 #include "ActionWithArguments.h"
 #include "ActionWithVirtualAtom.h"
 #include "tools/Exception.h"
+#include "tools/OFile.h"
 #include "Atoms.h"
 #include "PlumedMain.h"
 
@@ -33,32 +34,42 @@ namespace PLMD {
 Value::Value():
   action(NULL),
   value_set(false),
-  value(0.0),
+  reset(true),
   inputForce(0.0),
   hasForce(false),
   hasDeriv(true),
+  shape(std::vector<unsigned>()),
+  storedata(true),
+  bufstart(0),
+  streampos(0),
   periodicity(unset),
   min(0.0),
   max(0.0),
   max_minus_min(0.0),
   inv_max_minus_min(0.0)
 {
+  data.resize(1);
 }
 
-Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv):
+Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,const std::vector<unsigned>&ss):
   action(av),
   value_set(false),
-  value(0.0),
+  reset(true),
   inputForce(0.0),
   hasForce(false),
   name(name),
   hasDeriv(withderiv),
+  shape(ss),
+  storedata(shape.size()==0),
+  bufstart(0),
+  streampos(0),
   periodicity(unset),
   min(0.0),
   max(0.0),
   max_minus_min(0.0),
   inv_max_minus_min(0.0)
 {
+  data.resize(getSize());
 }
 
 void Value::setupPeriodicity() {
@@ -72,6 +83,36 @@ void Value::setupPeriodicity() {
   }
 }
 
+void Value::buildDataStore(){
+  storedata=true;
+}
+
+void Value::interpretDataRequest( const std::string& uselab, const std::string& values ){
+  if( userdata.count(uselab) ){
+      if( values=="*" || values=="" ){ return; }
+      if( userdata[uselab][0]<0 ) plumed_merror("cannot mix use of specific items from value and all items in a single action");
+  } else {
+      userdata.insert( std::pair<std::string,std::vector<int> >(uselab,std::vector<int>()) );
+      if( values=="*" ){ userdata[uselab].push_back(-1); return; }
+      else if( values=="" ){ userdata[uselab].push_back(-2); return; }
+  }
+  // Retrieve the indices of the point from the string requesting the index
+  std::vector<unsigned> indices( shape.size() ); std::string indstr=values;
+  for(unsigned i=0;i<shape.size()-1;++i){
+      std::size_t dot = indstr.find_first_of(".");
+      Tools::convert( indstr.substr(0,dot), indices[i] );
+      indices[i] -= 1; indstr=indstr.substr(dot+1);
+  }
+  Tools::convert( indstr, indices[indices.size()-1] );
+  userdata[uselab].push_back( getIndex(indices) );
+}
+
+// void Value::addStreamIndex( const int& newi ){
+//   plumed_dbg_assert( shape.size()>0 );
+//   if( indices_in_stream.size()>0 ) plumed_assert( indices_in_stream[0]!=-1 );
+//   indices_in_stream.push_back( newi );
+// }
+
 bool Value::isPeriodic()const {
   plumed_massert(periodicity!=unset,"periodicity should be set");
   return periodicity==periodic;
@@ -79,14 +120,19 @@ bool Value::isPeriodic()const {
 
 bool Value::applyForce(std::vector<double>& forces ) const {
   if( !hasForce ) return false;
-  plumed_dbg_massert( derivatives.size()==forces.size()," forces array has wrong size" );
-  const unsigned N=derivatives.size();
-  for(unsigned i=0; i<N; ++i) forces[i]=inputForce*derivatives[i];
+  plumed_dbg_massert( shape.size()==0 && (data.size()-1)==forces.size()," forces array has wrong size" );
+  const unsigned N=forces.size();
+  for(unsigned i=0; i<N; ++i) forces[i]=inputForce*data[i+1];
   return true;
 }
 
 void Value::setNotPeriodic() {
   min=0; max=0; periodicity=notperiodic;
+}
+
+bool Value::hasDerivatives() const {
+  if( shape.size()==0 && action->doNotCalculateDerivatives() ) return false;
+  return hasDeriv;
 }
 
 void Value::setDomain(const std::string& pmin,const std::string& pmax) {
@@ -112,6 +158,7 @@ void Value::getDomain(double&minout,double&maxout) const {
 void Value::setGradients() {
   // Can't do gradients if we don't have derivatives
   if( !hasDeriv ) return;
+  plumed_assert( shape.size()==0 );
   gradients.clear();
   ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(action);
   ActionWithArguments*aw=dynamic_cast<ActionWithArguments*>(action);
@@ -123,18 +170,18 @@ void Value::setGradients() {
         const ActionWithVirtualAtom* a=atoms.getVirtualAtomsAction(an);
         for(const auto & p : a->getGradients()) {
 // controllare l'ordine del matmul:
-          gradients[p.first]+=matmul(Vector(derivatives[3*j],derivatives[3*j+1],derivatives[3*j+2]),p.second);
+          gradients[p.first]+=matmul(Vector(data[1+3*j],data[1+3*j+1],data[1+3*j+2]),p.second);
         }
       } else {
-        for(unsigned i=0; i<3; i++) gradients[an][i]+=derivatives[3*j+i];
+        for(unsigned i=0; i<3; i++) gradients[an][i]+=data[1+3*j+i];
       }
     }
   } else if(aw) {
     std::vector<Value*> values=aw->getArguments();
-    for(unsigned j=0; j<derivatives.size(); j++) {
+    for(unsigned j=0; j<data.size()-1; j++) {
       for(const auto & p : values[j]->gradients) {
         AtomNumber iatom=p.first;
-        gradients[iatom]+=p.second*derivatives[j];
+        gradients[iatom]+=p.second*data[1+j];
       }
     }
   } else plumed_error();
@@ -159,26 +206,65 @@ ActionWithValue* Value::getPntrToAction() {
   return action;
 }
 
-void copy( const Value& val1, Value& val2 ) {
-  unsigned nder=val1.getNumberOfDerivatives();
-  if( nder!=val2.getNumberOfDerivatives() ) { val2.resizeDerivatives( nder ); }
-  val2.clearDerivatives();
-  for(unsigned i=0; i<val1.getNumberOfDerivatives(); ++i) val2.addDerivative( i, val1.getDerivative(i) );
-  val2.set( val1.get() );
+void Value::activateTasks( std::vector<unsigned>& taskFlags ) const {
+  //plumed_dbg_assert( indices_in_stream.size()>0 );
+  //if( indices_in_stream[0]==-1 ){
+  //    for(unsigned i=0;i<taskFlags.size();++i) taskFlags[i]=1;
+  //}
+  //for(unsigned i=0;i<indices_in_stream.size();++i) taskFlags[ indices_in_stream[i] ] = 1;
 }
 
-void copy( const Value& val1, Value* val2 ) {
-  unsigned nder=val1.getNumberOfDerivatives();
-  if( nder!=val2->getNumberOfDerivatives() ) { val2->resizeDerivatives( nder ); }
-  val2->clearDerivatives();
-  for(unsigned i=0; i<val1.getNumberOfDerivatives(); ++i) val2->addDerivative( i, val1.getDerivative(i) );
-  val2->set( val1.get() );
+unsigned Value::getSize() const {
+  unsigned size=1; for(unsigned i=0;i<shape.size();++i) size *= shape[i];
+  if( shape.size()>0 && hasDeriv ) return size*( 1 + action->getNumberOfDerivatives() );
+  return size;
 }
 
-void add( const Value& val1, Value* val2 ) {
-  plumed_assert( val1.getNumberOfDerivatives()==val2->getNumberOfDerivatives() );
-  for(unsigned i=0; i<val1.getNumberOfDerivatives(); ++i) val2->addDerivative( i, val1.getDerivative(i) );
-  val2->set( val1.get() + val2->get() );
+unsigned Value::getNumberOfValues() const {
+  if( shape.size()>0 ) return action->getFullNumberOfTasks();
+  return 1;
 }
+
+void Value::print( const std::string& uselab, OFile& ofile ) const {
+  plumed_dbg_assert( userdata.count(uselab) );
+  if( shape.size()==0 ){
+      if( isPeriodic() ){ ofile.printField( "min_" + name, str_min ); ofile.printField("max_" + name, str_max ); } 
+      ofile.printField( name, data[0] ); 
+  } else if( userdata.find(uselab)->second[0]<-1 ){ 
+      plumed_error(); // Not done this yet
+  } else if( userdata.find(uselab)->second[0]<0 ){
+      if( isPeriodic() ){ ofile.printField( "min_" + name, str_min ); ofile.printField("max_" + name, str_max ); }
+      std::vector<unsigned> indices( shape.size() ); 
+      for(unsigned i=0;i<action->getFullNumberOfTasks();++i){
+          convertIndexToindices( i, indices ); std::string num, fname = name; 
+          for(unsigned i=0;i<shape.size();++i){ Tools::convert( indices[i]+1, num ); fname += "." + num; }
+          ofile.printField( fname, get(i) ); 
+      }
+  } else {
+      if( isPeriodic() ){ ofile.printField( "min_" + name, str_min ); ofile.printField("max_" + name, str_max ); }
+      std::vector<unsigned> indices( shape.size() ); 
+      for(unsigned i=0;i<userdata.find(uselab)->second.size();++i){ 
+         convertIndexToindices( userdata.find(uselab)->second[i], indices ); std::string num, fname = name;
+         for(unsigned i=0;i<shape.size();++i){ Tools::convert( indices[i]+1, num ); fname += "." + num; }
+         ofile.printField( fname, get( userdata.find(uselab)->second[i] ) );
+      }
+  }
+}
+
+//void Value::setPositionInStream( const unsigned& istream ){
+//  streampos = istream; 
+//}
+
+unsigned Value::getPositionInStream() const {
+  return streampos; 
+}
+
+// void Value::setBufferPosition( const unsigned& ibuf ){
+//   bufstart = ibuf;
+// }
+
+// unsigned Value::getBufferPosition() const {
+//   return bufstart;
+// }
 
 }

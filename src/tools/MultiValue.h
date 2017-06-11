@@ -30,6 +30,8 @@ namespace PLMD {
 
 class MultiValue {
 private:
+/// The index of the task we are currently performing
+  unsigned task_index;
 /// Used to ensure rapid accumulation of derivatives
   DynamicList<unsigned> hasDerivatives;
 /// Values of quantities
@@ -50,6 +52,10 @@ private:
 public:
   MultiValue( const unsigned&, const unsigned& );
   void resize( const unsigned&, const unsigned& );
+/// Set the task index prior to the loop
+  void setTaskIndex( const unsigned& tindex );
+/// Get the task index
+  unsigned getTaskIndex() const ;
 ///
   std::vector<unsigned>& getIndices();
   std::vector<unsigned>& getSortIndices();
@@ -234,6 +240,16 @@ std::vector<Vector>& MultiValue::getAtomVector() {
 inline
 bool MultiValue::isActive( const unsigned& ind ) const {
   return hasDerivatives.isActive( ind );
+}
+
+inline
+void MultiValue::setTaskIndex( const unsigned& tindex ) {
+  task_index = tindex;
+}
+
+inline
+unsigned MultiValue::getTaskIndex() const {
+  return task_index;
 }
 
 }

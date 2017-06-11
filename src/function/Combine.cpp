@@ -86,7 +86,7 @@ class Combine :
   std::vector<double> powers;
 public:
   explicit Combine(const ActionOptions&);
-  void calculate();
+  void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const ;
   static void registerKeywords(Keywords& keys);
 };
 
@@ -144,14 +144,14 @@ Combine::Combine(const ActionOptions&ao):
   log.printf("\n");
 }
 
-void Combine::calculate() {
+void Combine::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
   double combine=0.0;
   for(unsigned i=0; i<coefficients.size(); ++i) {
-    double cv = (getArgument(i)-parameters[i]);
+    double cv = difference(i,parameters[i],args[i]);   
     combine+=coefficients[i]*pow(cv,powers[i]);
-    setDerivative(i,coefficients[i]*powers[i]*pow(cv,powers[i]-1.0));
+    addDerivative(0, i, coefficients[i]*powers[i]*pow(cv,powers[i]-1.0), myvals );
   };
-  setValue(combine);
+  setValue( 0, combine, myvals );
 }
 
 }

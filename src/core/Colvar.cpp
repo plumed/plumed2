@@ -47,7 +47,7 @@ void Colvar::requestAtoms(const vector<AtomNumber> & a) {
 // Tell actionAtomistic what atoms we are getting
   ActionAtomistic::requestAtoms(a);
 // Resize the derivatives of all atoms
-  for(int i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->resizeDerivatives(3*a.size()+9);
+//  for(int i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->resizeDerivatives(3*a.size()+9);
 }
 
 void Colvar::apply() {
@@ -111,6 +111,7 @@ void Colvar::apply() {
 }
 
 void Colvar::setBoxDerivativesNoPbc(Value* v) {
+  if( doNotCalculateDerivatives() ) return;
   Tensor virial;
   unsigned nat=getNumberOfAtoms();
   for(unsigned i=0; i<nat; i++) virial-=Tensor(getPosition(i),

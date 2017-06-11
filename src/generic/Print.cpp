@@ -129,7 +129,13 @@ Print::Print(const ActionOptions&ao):
   parse("FMT",fmt);
   fmt=" "+fmt;
   log.printf("  with format %s\n",fmt.c_str());
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) ofile.setupPrintValue( getPntrToArgument(i) );
+  for(unsigned i=0; i<getNumberOfArguments(); ++i){  // ofile.setupPrintValue( getPntrToArgument(i) );
+      getPntrToArgument(i)->buildDataStore();
+      if( getPntrToArgument(i)->isPeriodic() ){ 
+          ofile.addConstantField("min_" + getPntrToArgument(i)->getName() );
+          ofile.addConstantField("max_" + getPntrToArgument(i)->getName() );
+      }
+  }
 /////////////////////////////////////////
 // these are crazy things just for debug:
 // they allow to change regularly the
@@ -164,13 +170,16 @@ void Print::prepare() {
 }
 
 void Print::update() {
-  ofile.fmtField(" %f");
-  ofile.printField("time",getTime());
-  for(unsigned i=0; i<getNumberOfArguments(); i++) {
-    ofile.fmtField(fmt);
-    ofile.printField( getPntrToArgument(i), getArgument(i) );
+  if( getNumberOfArguments()>1 || getPntrToArgument(0)->printAllValues( getLabel() ) || getPntrToArgument(0)->getRank()==0 ){
+      ofile.fmtField(" %f");
+      ofile.printField("time",getTime());
+      for(unsigned i=0; i<getNumberOfArguments(); i++) {
+         ofile.fmtField(fmt); getPntrToArgument(i)->print( getLabel(), ofile );
+      }
+      ofile.printField();
+  } else {
+      ofile.fmtField(" %f"); getPntrToArgument(0)->print( getLabel(), ofile ); 
   }
-  ofile.printField();
 }
 
 Print::~Print() {

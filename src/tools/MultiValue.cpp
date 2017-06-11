@@ -24,6 +24,7 @@
 namespace PLMD {
 
 MultiValue::MultiValue( const unsigned& nvals, const unsigned& nder ):
+  task_index(0),
   values(nvals),
   nderivatives(nder),
   derivatives(nvals*nder),

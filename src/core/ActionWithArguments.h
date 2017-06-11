@@ -24,6 +24,7 @@
 
 #include "Action.h"
 #include "Value.h"
+#include "tools/MultiValue.h"
 #include <vector>
 
 namespace PLMD {
@@ -45,8 +46,12 @@ class ActionWithArguments:
   std::vector<Value*> arguments;
   bool lockRequestArguments;
 protected:
+  bool done_over_stream;
+  std::vector<unsigned> arg_ends;
 /// This changes the arg keyword in the pdb file
   void expandArgKeywordInPDB( PDB& pdb );
+/// Create a list of tasks from the argument streams
+  void createTasksFromArguments();
 public:
 /// Get the scalar product between the gradients of two variables
   double getProjection(unsigned i,unsigned j)const;
@@ -55,7 +60,7 @@ public:
 /// Returns the value of an argument
   double getArgument( const unsigned n ) const;
 /// Return a pointer to specific argument
-  Value* getPntrToArgument( const unsigned n );
+  Value* getPntrToArgument( const unsigned n ) const ;
 /// Returns the number of arguments
   virtual unsigned getNumberOfArguments() const ;
 /// Takes the difference taking into account pbc for arg i
@@ -83,11 +88,13 @@ public:
   const std::vector<Value*>    & getArguments() const ;
 /// Convert a list of argument names into a list of pointers to the values
   void interpretArgumentList(const std::vector<std::string>& c, std::vector<Value*>&arg);
+/// Retrieve the argument values
+  void retrieveArguments( const MultiValue& myvals, std::vector<double>& args ) const ;
 };
 
 
 inline
-Value* ActionWithArguments::getPntrToArgument( const unsigned n ) {
+Value* ActionWithArguments::getPntrToArgument( const unsigned n ) const {
   return arguments[n];
 }
 
