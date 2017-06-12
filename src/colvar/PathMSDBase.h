@@ -86,8 +86,6 @@ protected:
   std::vector<std::string> labels;
   std::vector< std::vector<double> > indexvec; // use double to allow isomaps
   unsigned nframes;
-  //methods for close structure involvement
-  void recomputeRefClose();
 
 public:
   explicit PathMSDBase(const ActionOptions&);

@@ -309,21 +309,9 @@ void PathMSDBase::calculate(){
             sort(imgVec.begin(), imgVec.end(), imgOrderByDist()); 
             //resize
             imgVec.resize(neigh_size);
-            //if using close structure, compare with previous neigh list and recompute matrices with respect to current close structure
-            if (epsilonClose > 0)
-                recomputeRefClose();
         } 
   }
   //log.printf("CALCULATION DONE! \n");
-}
-
-void PathMSDBase::recomputeRefClose(){
-    for (unsigned i = 0; i < imgVec.size(); i++){
-        RMSD r;
-        vector<Vector> ders;
-        r.set(msdv[imgVec[i].index].getAlign(), msdv[imgVec[i].index].getDisplace(), msdv[imgVec[i].index].getReference(), "OPTIMAL", false);
-        r.calc_Rot(rmsdPosClose.getReference(), ders, rotationRefClose[imgVec[i].index], true);
-    }
 }
 
 }
