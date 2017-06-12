@@ -143,7 +143,7 @@ For developers:
 - Cppcheck on travis-ci has been updated to 1.77.
 - Doxygen on travis-ci has been updated to 1.8.13
 
-Version 2.3.2 (coming soon)
+Version 2.3.2 (Jun 12, 2017)
 -------------
 See branch \branch{v2.3} on git repository.
 
