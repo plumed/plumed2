@@ -55,7 +55,8 @@ void SimpleRMSD::read( const PDB& pdb ) {
 double SimpleRMSD::calc( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const {
   if( myder.getAtomsDisplacementVector().size()!=pos.size() ) myder.getAtomsDisplacementVector().resize( pos.size() );
   double d=myrmsd.simpleAlignment( getAlign(), getDisplace(), pos, getReferencePositions(), myder.getAtomVector(), myder.getAtomsDisplacementVector(), squared );
-  myder.clear(); for(unsigned i=0; i<pos.size(); ++i) myder.setAtomDerivatives( i, myder.getAtomVector()[i] );
+  // myder.clear(); 
+  for(unsigned i=0; i<pos.size(); ++i) myder.setAtomDerivatives( i, myder.getAtomVector()[i] );
   if( !myder.updateComplete() ) myder.updateDynamicLists();
   return d;
 }
@@ -72,7 +73,7 @@ double SimpleRMSD::projectAtomicDisplacementOnVector( const bool& normalized, co
     for(unsigned k=0; k<3; ++k) comder[k] += getAlign()[j]*vecs[j][k];
   }
 
-  double proj=0; mypack.clear();
+  double proj=0; //mypack.clear();
   for(unsigned j=0; j<vecs.size(); ++j) {
     for(unsigned k=0; k<3; ++k) {
       proj += vecs[j][k]*mypack.getAtomsDisplacementVector()[j][k];

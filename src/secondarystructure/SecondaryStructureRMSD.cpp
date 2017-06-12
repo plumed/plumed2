@@ -24,7 +24,6 @@
 #include "core/ActionSet.h"
 #include "core/SetupMolInfo.h"
 #include "core/Atoms.h"
-#include "vesselbase/Vessel.h"
 #include "reference/MetricRegister.h"
 #include "reference/SingleDomainRMSD.h"
 
@@ -54,26 +53,12 @@ void SecondaryStructureRMSD::registerKeywords( Keywords& keys ) {
                "This keyword speeds up the calculation enormously when you are using the LESS_THAN option. "
                "However, if you are using some other option, then this cannot be used");
   keys.addFlag("VERBOSE",false,"write a more detailed output");
-  keys.add("hidden","NL_STRIDE","the frequency with which the neighbor list should be updated. Between neighbour list update steps all quantities "
-           "that contributed less than TOL at the previous neighbor list update step are ignored.");
-  ActionWithVessel::registerKeywords( keys );
-  keys.use("LESS_THAN"); keys.use("MIN"); keys.use("ALT_MIN"); keys.use("LOWEST"); keys.use("HIGHEST");
-  keys.setComponentsIntroduction("By default this Action calculates the number of structural units that are within a certain "
-                                 "distance of a idealised secondary structure element. This quantity can then be referenced "
-                                 "elsewhere in the input by using the label of the action. However, this Action can also be used to "
-                                 "calculate the following quantities by using the keywords as described below.  The quantities then "
-                                 "calculated can be referened using the label of the action followed by a dot and then the name "
-                                 "from the table below.  Please note that you can use the LESS_THAN keyword more than once.  The resulting "
-                                 "components will be labelled <em>label</em>.lessthan-1, <em>label</em>.lessthan-2 and so on unless you "
-                                 "exploit the fact that these labels are customizable. In particular, by using the LABEL keyword in the "
-                                 "description of you LESS_THAN function you can set name of the component that you are calculating");
 }
 
 SecondaryStructureRMSD::SecondaryStructureRMSD(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao),
   ActionWithValue(ao),
-  ActionWithVessel(ao),
   align_strands(false),
   s_cutoff2(0),
   align_atom_1(0),
@@ -95,11 +80,6 @@ SecondaryStructureRMSD::SecondaryStructureRMSD(const ActionOptions&ao):
 
 SecondaryStructureRMSD::~SecondaryStructureRMSD() {
 // destructor needed to delete forward declarated objects
-}
-
-void SecondaryStructureRMSD::turnOnDerivatives() {
-  ActionWithValue::turnOnDerivatives();
-  needsDerivatives();
 }
 
 void SecondaryStructureRMSD::setAtomsFromStrands( const unsigned& atom1, const unsigned& atom2 ) {
@@ -156,52 +136,54 @@ void SecondaryStructureRMSD::setSecondaryStructure( std::vector<Vector>& structu
     structure[i][0]*=units; structure[i][1]*=units; structure[i][2]*=units;
   }
 
-  if( references.size()==0 ) {
-    readVesselKeywords();
-    if( getNumberOfVessels()==0 ) {
-      double r0; parse("R_0",r0); double d0; parse("D_0",d0);
-      int nn; parse("NN",nn); int mm; parse("MM",mm);
-      std::ostringstream ostr;
-      ostr<<"RATIONAL R_0="<<r0<<" D_0="<<d0<<" NN="<<nn<<" MM="<<mm;
-      std::string input=ostr.str(); addVessel( "LESS_THAN", input, -1 ); // -1 here means that this value will be named getLabel()
-      readVesselKeywords();  // This makes sure resizing is done
-    }
-  }
-
   // Set the reference structure
   references.emplace_back( metricRegister().create<SingleDomainRMSD>( alignType ) );
   unsigned nn=references.size()-1;
   std::vector<double> align( structure.size(), 1.0 ), displace( structure.size(), 1.0 );
   references[nn]->setBoundsOnDistances( true, bondlength );   // We always use pbc
   references[nn]->setReferenceAtoms( structure, align, displace );
-//  references[nn]->setNumberOfAtoms( structure.size() );
+}
 
-  // And prepare the task list
-  deactivateAllTasks();
-  for(unsigned i=0; i<getFullNumberOfTasks(); ++i) taskFlags[i]=1;
-  lockContributors();
+void SecondaryStructureRMSD::setupValues(){
+  plumed_assert( references.size()>0 );
+  std::vector<unsigned> shape(1); shape[0]=getFullNumberOfTasks();
+  if( references.size()==1 ){ addValue( shape ); setNotPeriodic(); }
+  else {
+      std::string num;
+      for(unsigned i=0;i<references.size();++i){ 
+         Tools::convert( i+1, num ); addComponent( "struct-" + num, shape ); 
+         componentIsNotPeriodic( "struct-" + num );
+      }
+  }
+}
+
+void SecondaryStructureRMSD::buildCurrentTaskList( std::vector<unsigned>& tflags ) const {
+  if( s_cutoff2>0 ) {
+      for(unsigned i=0;i<tflags.size();++i){
+          Vector distance=pbcDistance( ActionAtomistic::getPosition( getAtomIndex(i,align_atom_1) ), 
+                                       ActionAtomistic::getPosition( getAtomIndex(i,align_atom_2) ) );
+          if( distance.modulo2()<s_cutoff2 ) tflags[i]=1;
+      }
+  } else {
+      tflags.assign(tflags.size(),1);
+  }
 }
 
 void SecondaryStructureRMSD::calculate() {
   runAllTasks();
 }
 
-void SecondaryStructureRMSD::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
+void SecondaryStructureRMSD::performTask( const unsigned& current, MultiValue& myvals ) const {
+  // Resize the derivatives if need be
+  unsigned nderi = 3*getNumberOfAtoms()+9;
+  if( myvals.getNumberOfDerivatives()!=nderi ) myvals.resize( myvals.getNumberOfValues(), nderi );
   // Retrieve the positions
   std::vector<Vector> pos( references[0]->getNumberOfAtoms() );
   const unsigned n=pos.size();
   for(unsigned i=0; i<n; ++i) pos[i]=ActionAtomistic::getPosition( getAtomIndex(current,i) );
 
-  // This does strands cutoff
-  Vector distance=pbcDistance( pos[align_atom_1],pos[align_atom_2] );
-  if( s_cutoff2>0 ) {
-    if( distance.modulo2()>s_cutoff2 ) {
-      myvals.setValue( 0, 0.0 );
-      return;
-    }
-  }
-
   // This aligns the two strands if this is required
+  Vector distance=pbcDistance( pos[align_atom_1],pos[align_atom_2] );
   if( alignType!="DRMSD" && align_strands ) {
     Vector origin_old, origin_new; origin_old=pos[align_atom_2];
     origin_new=pos[align_atom_1]+distance;
@@ -210,38 +192,27 @@ void SecondaryStructureRMSD::performTask( const unsigned& task_index, const unsi
     }
   }
   // Create a holder for the derivatives
-  ReferenceValuePack mypack( 0, pos.size(), myvals ); mypack.setValIndex( 1 );
+  ReferenceValuePack mypack( 0, pos.size(), myvals ); // mypack.setValIndex( 0 );
   for(unsigned i=0; i<n; ++i) mypack.setAtomIndex( i, getAtomIndex(current,i) );
 
   // And now calculate the RMSD
-  const Pbc& pbc=getPbc();
-  unsigned closest=0;
-  double r = references[0]->calculate( pos, pbc, mypack, false );
-  const unsigned rs = references.size();
-  for(unsigned i=1; i<rs; ++i) {
-    mypack.setValIndex( i+1 );
+  const Pbc& pbc=getPbc(); const unsigned rs = references.size();
+  for(unsigned i=0; i<rs; ++i) {
+    mypack.setValIndex( i );
     double nr=references[i]->calculate( pos, pbc, mypack, false );
-    if( nr<r ) { closest=i; r=nr; }
-  }
+    myvals.setValue( i, nr );
 
-  // Transfer everything to the value
-  myvals.setValue( 0, 1.0 ); myvals.setValue( 1, r );
-  if( closest>0 ) mypack.moveDerivatives( closest+1, 1 );
-
-  if( !mypack.virialWasSet() ) {
-    Tensor vir;
-    const unsigned cacs = colvar_atoms[current].size();
-    for(unsigned i=0; i<cacs; ++i) {
-      vir+=(-1.0*Tensor( pos[i], mypack.getAtomDerivative(i) ));
+    if( !doNotCalculateDerivatives() && !mypack.virialWasSet() ) {
+      Tensor vir; const unsigned cacs = colvar_atoms[current].size();
+      for(unsigned i=0; i<cacs; ++i)  vir+=(-1.0*Tensor( pos[i], mypack.getAtomDerivative(i) )); 
+      mypack.addBoxDerivatives( vir );
     }
-    mypack.setValIndex(1); mypack.addBoxDerivatives( vir );
   }
-
   return;
 }
 
 void SecondaryStructureRMSD::apply() {
-  if( getForcesFromVessels( forcesToApply ) ) setForcesOnAtoms( forcesToApply );
+//   if( getForcesFromVessels( forcesToApply ) ) setForcesOnAtoms( forcesToApply );
 }
 
 }

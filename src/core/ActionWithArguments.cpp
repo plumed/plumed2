@@ -155,7 +155,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
             error("cannot find action named " + a +str);
           }
           unsigned carg = arg.size(); action->interpretDataLabel( c[i], this, arg );
-          if( arg.size()==carg && name=="*" ) error("found " + a +".* indicating use all components calculated by action with label " + a + " but this action has no components");
+          // if( arg.size()==carg && name=="*" ) error("found " + a +".* indicating use all components calculated by action with label " + a + " but this action has no components");
           if( arg.size()==carg ) {
              std::string str=" (hint! the components in this actions are: ";
              str+=action->getComponentsList()+")";
@@ -254,9 +254,9 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
        if( arg[j]->getRank()>0 ){
            bool found=false;
            for(unsigned k=0;k<vnames.size();++k){
-               if( vnames[k]==(arg[j]->getPntrToAction())->getLabel() ){ found=true; break; }
+               if( vnames[k]==(arg[j]->getPntrToAction())->getLabelOfActionThatCalculates() ){ found=true; break; }
            }
-           if( !found ) vnames.push_back( (arg[j]->getPntrToAction())->getLabel() );
+           if( !found ) vnames.push_back( (arg[j]->getPntrToAction())->getLabelOfActionThatCalculates() );
        }
     }
     if( vnames.size()>1 ){

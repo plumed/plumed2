@@ -161,6 +161,8 @@ public:
 ///
   unsigned getRank() const ;
 ///
+  const std::vector<unsigned>& getShape() const ; 
+///
   unsigned getSize() const ;
 ///
   unsigned getPositionInStream() const ;

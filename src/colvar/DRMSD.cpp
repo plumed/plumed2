@@ -169,7 +169,7 @@ DRMSD::DRMSD(const ActionOptions&ao):
 void DRMSD::calculate() {
 
   double drmsd; Tensor virial; mypack.clear();
-  drmsd=drmsd_->calculate(getPositions(), getPbc(), mypack, false);
+  mypack.clear(); drmsd=drmsd_->calculate(getPositions(), getPbc(), mypack, false);
 
   setValue(drmsd);
   for(unsigned i=0; i<getNumberOfAtoms(); ++i) { if( myvals.isActive(3*i) ) setAtomsDerivatives( i, mypack.getAtomDerivative(i) ); }

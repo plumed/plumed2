@@ -151,6 +151,7 @@ AlphaRMSD::AlphaRMSD(const ActionOptions&ao):
   reference[29] = Vector(-1.916, -0.296, -5.673 ); // O
   // Store the secondary structure ( last number makes sure we convert to internal units nm )
   setSecondaryStructure( reference, 0.17/atoms.getUnits().getLength(), 0.1/atoms.getUnits().getLength() );
+  setupValues();
 }
 
 }

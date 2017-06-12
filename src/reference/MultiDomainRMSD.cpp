@@ -89,7 +89,7 @@ void MultiDomainRMSD::setReferenceAtoms( const std::vector<Vector>& conf, const 
 
 double MultiDomainRMSD::calculate( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceValuePack& myder, const bool& squared ) const {
   double totd=0.; Tensor tvirial; std::vector<Vector> mypos; MultiValue tvals( 1, 3*pos.size()+9 );
-  ReferenceValuePack tder( 0, getNumberOfAtoms(), tvals ); myder.clear();
+  ReferenceValuePack tder( 0, getNumberOfAtoms(), tvals ); //myder.clear();
 
   for(unsigned i=0; i<domains.size(); ++i) {
     // Must extract appropriate positions here
@@ -98,7 +98,7 @@ double MultiDomainRMSD::calculate( const std::vector<Vector>& pos, const Pbc& pb
     unsigned n=0; for(unsigned j=blocks[i]; j<blocks[i+1]; ++j) { tder.setAtomIndex(n,j); mypos[n]=pos[j]; n++; }
     for(unsigned k=n; k<getNumberOfAtoms(); ++k) tder.setAtomIndex(k,3*pos.size()+10);
     // This actually does the calculation
-    totd += weights[i]*domains[i]->calculate( mypos, pbc, tder, true );
+    tder.clear(); totd += weights[i]*domains[i]->calculate( mypos, pbc, tder, true );
     // Now merge the derivative
     myder.copyScaledDerivatives( 0, weights[i], tvals );
     // If PCA copy PCA stuff

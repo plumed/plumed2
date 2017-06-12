@@ -203,6 +203,7 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
 
   // Store the secondary structure ( last number makes sure we convert to internal units nm )
   setSecondaryStructure( reference, 0.17/atoms.getUnits().getLength(), 0.1/atoms.getUnits().getLength() );
+  setupValues();
 }
 
 }

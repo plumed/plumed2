@@ -78,6 +78,21 @@ ActionWithValue::~ActionWithValue() {
   }
 }
 
+const std::string & ActionWithValue::getLabelOfActionThatCalculates() const {
+  const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
+  if( aa ){
+      if( !aa->done_over_stream ) return getLabel(); 
+  }
+  return getLabel();
+}
+
+void ActionWithValue::addActionToChain( ActionWithValue* act ){
+  for(const auto & p : actions_to_do_after ){ 
+      if( act->getLabel()==p->getLabel() ) return;
+  }
+  actions_to_do_after.push_back( act );
+}
+
 void ActionWithValue::clearInputForces() {
   for(unsigned i=0; i<values.size(); i++) values[i]->clearInputForce();
 }
@@ -259,46 +274,26 @@ void ActionWithValue::interpretDataLabel( const std::string& mystr, ActionWithAr
       // Retrieve value with name of action
       if( values[0]->name!=getLabel() ) myuser->error("action " + getLabel() + " does not have a value");
       args.push_back( values[0] ); values[0]->interpretDataRequest( myuser->getLabel(), "" ); 
-  } else if( mystr==getLabel() + ".*" ){
+  } else if( mystr==getLabel() + ".*" && nstr==0 ){
       // Retrieve all Values 
       for(int k=0;k<getNumberOfComponents();++k ){
-          args.push_back( values[k] ); values[k]->interpretDataRequest( myuser->getLabel(), "*" );
+          args.push_back( values[k] ); values[k]->interpretDataRequest( myuser->getLabel(), "*" ); 
       }
   } else if( mystr.find(".")!=std::string::npos && exists( mystr ) ) {
       // Retrieve value with specific name
-      args.push_back( copyOutput( mystr ) ); copyOutput( mystr )->interpretDataRequest( myuser->getLabel(), "" );
-//  } else if( mystr==getLabel() + ".*" ){
-//      // Retrieve all values from depedent actions that are calculated inline this command in input
-//      for(const auto & p : actions_to_do_after ){
-//           for(int k=0;k<getNumberOfComponents();++k ) args.push_back( p->copyOutput(k) ); 
-//      }
-//  } else if( nstr==0 ) {
-//      // Action has one Value with same name as action
-//      if ( mystr==getLabel() && values[0]->name==getLabel() ) args.push_back( values[0] );
-//      // Retrieve Value that is requested using instruction such as action.label
-//      else if( mystr.find(".")!=std::string::npos && exists( mystr ) ) args.push_back( copyOutput( mystr ) );
+      args.push_back( copyOutput( mystr ) ); copyOutput( mystr )->interpretDataRequest( myuser->getLabel(), "" ); 
   } else {
       std::size_t dot1 = mystr.find_first_of('.'); std::string thelab = mystr.substr(0,dot1); 
       plumed_assert( thelab==getLabel() ); std::string rest = mystr.substr(dot1+1); 
       if( rest.find_first_of('.')==std::string::npos ){
          plumed_assert( values.size()==1 ); plumed_assert( values[0]->getRank()>0 && values[0]->getName()==getLabel() );
-         args.push_back( values[0] ); values[0]->interpretDataRequest( myuser->getLabel(), rest );
+         args.push_back( values[0] ); values[0]->interpretDataRequest( myuser->getLabel(), rest ); 
       } else {
          std::size_t dot2 = rest.find_first_of('.'); std::string thecomp = rest.substr(0,dot2);
          if( !exists( thelab + "." + thecomp ) ) myuser->error("could not find component with label " + thelab + "." + thecomp );
-         args.push_back( copyOutput( thelab + "." + thecomp ) ); getPntrToComponent( thecomp )->interpretDataRequest( myuser->getLabel(), rest.substr(dot2+1) );
+         args.push_back( copyOutput( thelab + "." + thecomp ) ); 
+         getPntrToComponent( thecomp )->interpretDataRequest( myuser->getLabel(), rest.substr(dot2+1) );
       }
-//      std::size_t dot1 = mystr.find_first_of('.'); plumed_assert( mystr.substr(0,dot1)==getLabel() ); 
-//      std::size_t dot2 = mystr.find_last_of('.'); std::string labn = mystr.substr(0,dot2); 
-//      unsigned labno=0; bool found=false; 
-//      for(unsigned i=0;i<values.size();++i){
-//          if( values[i]->getName()==labn ){ found=true; labno=i; }
-//      }
-//      if( !found ) myuser->error("could not find data stream named " + mystr);
-//      if( mystr.substr(dot2+1)=="*" ){ values[labno]->addStreamIndex(-1); }
-//      else {
-//        int nn; Tools::convert( mystr.substr(dot2+1), nn ); values[labno]->addStreamIndex(nn);
-//      }
   }
 }
 
@@ -308,11 +303,11 @@ void ActionWithValue::addTaskToList( const unsigned& taskCode ) {
 }
 
 void ActionWithValue::selectActiveTasks( std::vector<unsigned>& tflags ){
-  activateTasks( tflags );
+  buildCurrentTaskList( tflags );
   for(const auto & p : actions_to_do_after ) p->selectActiveTasks( tflags );
-  for(unsigned i=0;i<values.size();++i){
-      if( values[i]->getRank()>0 ) values[i]->activateTasks( tflags );
-  }
+//  for(unsigned i=0;i<values.size();++i){
+//      if( values[i]->getRank()>0 ) values[i]->activateTasks( tflags );
+//  }
 }
 
 void ActionWithValue::runAllTasks() {
@@ -417,7 +412,7 @@ void ActionWithValue::getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& 
 }
 
 void ActionWithValue::runTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
-  myvals.setTaskIndex(task_index); performTask( current, myvals );
+  myvals.setTaskIndex(task_index); performTask( current, myvals ); 
   for(const auto & p : actions_to_do_after ){
      if( p->isActive() ) p->runTask( task_index, current, myvals );
   }

@@ -211,7 +211,7 @@ RMSD::RMSD(const ActionOptions&ao):
 // calculator
 void RMSD::calculate() {
   if(!nopbc) makeWhole();
-  double r=rmsd->calculate( getPositions(), mypack, squared );
+  mypack.clear(); double r=rmsd->calculate( getPositions(), mypack, squared );
 
   setValue(r);
   for(unsigned i=0; i<getNumberOfAtoms(); i++) setAtomsDerivatives( i, mypack.getAtomDerivative(i) );

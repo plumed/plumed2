@@ -73,7 +73,8 @@ double OptimalRMSD::calc( const std::vector<Vector>& pos, ReferenceValuePack& my
     if( getAlign()==getDisplace() ) d=myrmsd.optimalAlignment<true,true>(getAlign(),getDisplace(),pos,getReferencePositions(),myder.getAtomVector(),squared);
     else d=myrmsd.optimalAlignment<true,false>(getAlign(),getDisplace(),pos,getReferencePositions(),myder.getAtomVector(),squared);
   }
-  myder.clear(); for(unsigned i=0; i<pos.size(); ++i) myder.setAtomDerivatives( i, myder.getAtomVector()[i] );
+  // myder.clear(); 
+  for(unsigned i=0; i<pos.size(); ++i) myder.setAtomDerivatives( i, myder.getAtomVector()[i] );
   if( !myder.updateComplete() ) myder.updateDynamicLists();
   return d;
 }
@@ -88,7 +89,7 @@ void OptimalRMSD::extractAtomicDisplacement( const std::vector<Vector>& pos, std
 double OptimalRMSD::projectAtomicDisplacementOnVector( const bool& normalized, const std::vector<Vector>& vecs, ReferenceValuePack& mypack ) const {
   plumed_dbg_assert( mypack.calcUsingPCAOption() );
 
-  double proj=0.0; mypack.clear();
+  double proj=0.0; //mypack.clear();
   for(unsigned i=0; i<vecs.size(); ++i) {
     proj += dotProduct( mypack.getAtomsDisplacementVector()[i], vecs[i] );
   }

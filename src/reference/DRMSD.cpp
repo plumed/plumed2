@@ -77,7 +77,7 @@ double DRMSD::calc( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceVal
   plumed_dbg_assert(!targets.empty());
 
   Vector distance;
-  myder.clear();
+  // myder.clear();
   double drmsd=0.;
   for(const auto & it : targets) {
 

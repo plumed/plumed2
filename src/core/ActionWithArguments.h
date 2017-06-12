@@ -40,9 +40,9 @@ This is used in PLMD::Function and PLMD::Bias
  when you use parseArgumentList.
 */
 
-class ActionWithArguments:
-  public virtual Action
-{
+class ActionWithArguments : public virtual Action {
+friend class ActionWithValue;
+private:
   std::vector<Value*> arguments;
   bool lockRequestArguments;
 protected:

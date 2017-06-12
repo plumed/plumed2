@@ -101,6 +101,9 @@ void ParabetaRMSD::registerKeywords( Keywords& keys ) {
            "only sheet-like configurations involving two chains are counted, while if STYLE=intra "
            "only sheet-like configurations involving a single chain are counted");
   keys.use("STRANDS_CUTOFF");
+  keys.addOutputComponent("struct","default","there are two structure for a parallel beta sheet in the PDB database.  As such two numbers are calculated "
+                                             "for each segment of secondary structure.  These two numbers give a measure of dissimilarity between the "
+                                             "instantaneous structure of the segment and the two reference structures in the PDB database.");
 }
 
 ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
@@ -237,6 +240,7 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
   reference[29]=Vector( 0.486,  4.430, -0.415); // O
   // Store the secondary structure ( last number makes sure we convert to internal units nm )
   setSecondaryStructure( reference, 0.17/atoms.getUnits().getLength(), 0.1/atoms.getUnits().getLength() );
+  setupValues();
 }
 
 }

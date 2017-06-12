@@ -259,6 +259,10 @@ unsigned Value::getPositionInStream() const {
   return streampos; 
 }
 
+const std::vector<unsigned>& Value::getShape() const {
+  return shape;
+}
+
 // void Value::setBufferPosition( const unsigned& ibuf ){
 //   bufstart = ibuf;
 // }

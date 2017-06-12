@@ -70,6 +70,7 @@ class ActionWithArguments;
 class ActionWithValue :
   public virtual Action
 {
+friend class ActionWithArguments;
 private:
 /// An array containing the values for this action
   std::vector<std::unique_ptr<Value>> values;
@@ -132,6 +133,8 @@ protected:
 /// Run all calculations in serial
   bool runInSerial() const ;
 public:
+/// Get the labe of the action that does the calculation
+  const std::string & getLabelOfActionThatCalculates() const ;
 /// Add a value with a name like label.name
   void addComponent( const std::string& name, const std::vector<unsigned>& shape=std::vector<unsigned>() );
 /// Add a value with a name like label.name that has derivatives
@@ -219,11 +222,13 @@ public:
 /// Reperform one of the tasks
   void rerunTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const ;
 ///
-  virtual void activateTasks( std::vector<unsigned>& tflags ) const { plumed_error(); }
+  virtual void buildCurrentTaskList( std::vector<unsigned>& tflags ) const { plumed_error(); }
 ///
   virtual void selectActiveTasks( std::vector<unsigned>& tflags );
 ///
   virtual void performTask( const unsigned& current, MultiValue& myvals ) const { plumed_error(); }
+///
+  void addActionToChain( ActionWithValue* act );
 };
 
 inline

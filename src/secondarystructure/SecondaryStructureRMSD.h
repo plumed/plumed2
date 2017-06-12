@@ -24,7 +24,6 @@
 
 #include "core/ActionAtomistic.h"
 #include "core/ActionWithValue.h"
-#include "vesselbase/ActionWithVessel.h"
 #include <vector>
 
 namespace PLMD {
@@ -37,8 +36,7 @@ namespace secondarystructure {
 
 class SecondaryStructureRMSD :
   public ActionAtomistic,
-  public ActionWithValue,
-  public vesselbase::ActionWithVessel
+  public ActionWithValue
 {
 private:
 /// The type of rmsd we are calculating
@@ -67,25 +65,20 @@ protected:
   void setSecondaryStructure( std::vector<Vector>& structure, double bondlength, double units );
 /// Setup a pair of atoms to use for strands cutoff
   void setAtomsFromStrands( const unsigned& atom1, const unsigned& atom2 );
+/// Finish by setting up the values that will hold what is calculated by this action
+  void setupValues();
 public:
   static void registerKeywords( Keywords& keys );
   explicit SecondaryStructureRMSD(const ActionOptions&);
   virtual ~SecondaryStructureRMSD();
   unsigned getNumberOfFunctionsInAction();
   unsigned getNumberOfDerivatives();
-  unsigned getNumberOfQuantities() const ;
-  void turnOnDerivatives();
+  void buildCurrentTaskList( std::vector<unsigned>& tflags ) const ;
   void calculate();
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const ;
+  void performTask( const unsigned&, MultiValue& ) const ;
   void apply();
   bool isPeriodic() { return false; }
 };
-
-inline
-unsigned SecondaryStructureRMSD::getNumberOfQuantities() const {
-  return 1 + references.size();
-}
-
 
 inline
 unsigned SecondaryStructureRMSD::getNumberOfFunctionsInAction() {
