@@ -1,6 +1,4 @@
-/**
-
-@page glossary Index of Actions 
+\page glossary Index of Actions 
 
 The following page contains an alphabetically ordered list of all the Actions and command line tools 
 that are available in PLUMED 2. For lists of Actions classified in accordance with the 
@@ -14,4 +12,3 @@ particular tasks that are being performed see:
 
 @GLOSSARY@
 
-*/

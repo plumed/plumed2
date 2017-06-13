@@ -1,5 +1,3 @@
-/**
-
 \page Installation Installation
 
 In this page you can learn how to
@@ -600,9 +598,4 @@ Here you can find instructions that are specific for patching each of the suppor
 Notice that MD codes with native PLUMED support are not listed here.
 
 @CODES@
-
-
-
- 
-*/
 

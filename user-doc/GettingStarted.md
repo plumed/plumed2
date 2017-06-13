@@ -1,5 +1,4 @@
-/**
-\page Syntax Getting started 
+\page Syntax Getting Started 
 
 To run PLUMED you need to provide one input file.  In this file you specify what it
 is that PLUMED should do during the course of the run.  Typically this will involve calculating 
@@ -73,6 +72,4 @@ By default the PLUMED inputs and outputs quantities in the following units:
 
 Unlike PLUMED 1 the units used are independent of the MD engine you are using.  If you want to change these units you can do this using the 
 \subpage UNITS keyword. 
-
-*/
 

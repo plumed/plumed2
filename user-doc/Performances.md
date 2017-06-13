@@ -1,5 +1,3 @@
-/**
-
 \page Performances Performances 
 
 In this page we collect hints on how to use the features available in PLUMED to speed
@@ -218,5 +216,3 @@ or just use somenthing else)
 
 To have an accurate timing of your input you can use the \ref DEBUG DETAILED_TIMERS.
   
-
-*/

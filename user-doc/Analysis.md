@@ -1,5 +1,3 @@
-/**
-
 \page Analysis Analysis
 
 PLUMED can be used to analyse trajectories either on the fly during an MD run or via
@@ -89,6 +87,4 @@ As with the grids described previously the STRIDE keyword tells PLUMED how frequ
 the trajectory.  The RUN keyword then tells PLUMED how frequently to do the dimensionality reduction.  As
 described above if RUN is not present and you are analysing trajectories using \ref driver all the data in 
 the traejctory (with the expection of the first frame) will be analysed. 
-
-*/
 

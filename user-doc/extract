@@ -262,16 +262,20 @@ done
 sed -ie 's/<b> --/<b> \\c \\-\\-/g' automatic/*.txt
 rm automatic/*.txte
 
-rm -f *PP.txt
-for f in *.txt
+rm -f *PP.txt *PP.md
+for f in *.txt *.md
 do
 
-file=${f%.txt}
+test -f $f || continue
+
+extension=${f##*.}
+
+file=${f%.$extension}
 
 # first replace with the content of the files
 # then grep out the special strings
 
-cat $file.txt |
+cat $f |
   sed "
     /^ *@COLVAR@ *$/r     automatic/COLVAR.list
     /^ *@MCOLVAR@ *$/r    automatic/MCOLVAR.list
@@ -304,5 +308,5 @@ cat $file.txt |
     /^ *@VERSION@ *$/r    automatic/version.tmp
     /^ *@CHANGES@ *$/r    automatic/changes.tmp
     /^ *@PDFMANUAL@ *$/r  automatic/pdfmanual.tmp
-" | grep -Ev '^ *@[A-Z]*@ *$' > ${file}PP.txt
+" | grep -Ev '^ *@[A-Z]*@ *$' > ${file}PP.$extension
 done

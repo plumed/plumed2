@@ -1,5 +1,3 @@
-/**
-
 \page Miscelaneous Miscelaneous
 
 - \subpage comments
@@ -437,6 +435,3 @@ chosen replicas. This is useful e.g. for bias exchange metadynamics \cite piana.
 </TR>
 </TABLE>
 
-
-
-*/

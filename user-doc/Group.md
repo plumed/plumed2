@@ -1,5 +1,3 @@
-/**
-
 \page Group Groups and Virtual Atoms 
 
 \section atomSpecs Specifying Atoms
@@ -123,7 +121,4 @@ DISTANCE ATOMS=11,com1
 
 If you don't want to calculate CVs from the virtual atom.  That is to say you just want to monitor the position of a virtual atom 
 (or any set of atoms) over the course of your trajectory you can do this using \ref DUMPATOMS.
-
-
-*/
 

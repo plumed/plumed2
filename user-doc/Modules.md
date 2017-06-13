@@ -1,6 +1,4 @@
-/**
-
-@page mymodules List of modules
+\page mymodules List of modules
 
 The functionality in PLUMED 2 is divided into a small number of modules.  Some
 users may only wish to use a subset of the functionality available within the 
@@ -54,4 +52,3 @@ Until PLUMED 2.2, it was also possible to switch on or off modules by adding fil
 in the plumed2/src directory. Since PLUMED 2.3 this is discouraged, since any choice made
 in this manner will be overwritten next time `./configure` is used.
 
-*/

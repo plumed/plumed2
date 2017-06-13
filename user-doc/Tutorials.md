@@ -1,6 +1,4 @@
-/**
-
-@page tutorials Tutorials 
+\page tutorials Tutorials 
 
 The following pages describe how to perform a variety of tasks using PLUMED
 
@@ -10,4 +8,3 @@ In addition, the following websites contain resources that might be helpful
 
 @WEBSITES@
 
-*/
