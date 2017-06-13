@@ -184,6 +184,7 @@ PLUMED_CONFIG_ENABLE([fussy],[fussy],[fussy warnings],[no])
 PLUMED_CONFIG_ENABLE([debug_glibcxx],[debug-glibcxx],[enable boundary check],[no])
 PLUMED_CONFIG_ENABLE([shared],[shared],[shared libs],[yes])
 PLUMED_CONFIG_ENABLE([dependency_tracking],[dependency-tracking],[dependency tracking],[yes])
+PLUMED_CONFIG_ENABLE([rpath],[rpath],[store rpath],[no])
 PLUMED_CONFIG_ENABLE([cxx_exceptions],[cxx-exceptions],[c++ exceptions],[yes])
 PLUMED_CONFIG_ENABLE([ld_r],[ld-r],[group object files],[yes])
 PLUMED_CONFIG_ENABLE([mpi],[mpi],[search for mpi],[yes])
@@ -641,6 +642,10 @@ if test "$shared" == true ; then
     AC_MSG_NOTICE([LDSO needs special flags])
     SOEXT=dylib
     LDSO="$LDSO -undefined suppress -flat_namespace -dynamiclib -Wl,-headerpad_max_install_names"
+    if test "$rpath" = true ; then
+      AC_MSG_NOTICE([Switching off rpath on OSX])
+      rpath=false
+    fi
   ;;
   (Linux)
     AC_MSG_NOTICE([*** Special settings for dynamic libraries on Linux ***])
@@ -672,6 +677,22 @@ then
     AC_MSG_RESULT([no])
     AC_MSG_WARN([dynamic library will be disabled])
     SOEXT=
+  fi
+  if test -n "$SOEXT" && test "$rpath" = true ; then
+    rm -f conftest.$SOEXT
+    readelf=""
+    AC_CHECK_PROG([readelf],[readelf],[found])
+    if test "$readelf" == found ; then
+      test_LDSO="$LDSO -Wl,-R -Wl,/some/random/dir/"
+      $test_LDSO $LDFLAGS conftest.o -o conftest.$SOEXT 1>/dev/null 2>/dev/null
+      if readelf -d conftest.$SOEXT | grep RPATH | grep -q /some/random/dir ; then
+        LDSO="$LDSO -Wl,-R -Wl,\"$LIBRARY_PATH\""
+      else
+        AC_MSG_WARN([-R option seems not working, disabling rpath])
+      fi
+    else
+      AC_MSG_WARN([readelf not available, no way to set rpath])
+    fi 
   fi
   rm -f conftest.*
 fi
