@@ -76,6 +76,7 @@ class EffectiveEnergyDrift:
   public ActionPilot {
   OFile output;
   long int printStride;
+  string fmt;
 
   double eed;
 
@@ -130,6 +131,7 @@ void EffectiveEnergyDrift::registerKeywords( Keywords& keys ) {
   keys.add("compulsory", "FILE", "file on which to output the effective energy drift.");
   keys.add("compulsory", "PRINT_STRIDE", "frequency to which output the effective energy drift on FILE");
   keys.addFlag("ENSEMBLE",false,"Set to TRUE if you want to average over multiple replicas.");
+  keys.add("optional","FMT","the format that should be used to output real numbers");
   keys.use("RESTART");
   keys.use("UPDATE_FROM");
   keys.use("UPDATE_UNTIL");
@@ -138,6 +140,7 @@ void EffectiveEnergyDrift::registerKeywords( Keywords& keys ) {
 EffectiveEnergyDrift::EffectiveEnergyDrift(const ActionOptions&ao):
   Action(ao),
   ActionPilot(ao),
+  fmt("%f"),
   eed(0.0),
   atoms(plumed.getAtoms()),
   nProc(plumed.comm.Get_size()),
@@ -157,6 +160,12 @@ EffectiveEnergyDrift::EffectiveEnergyDrift(const ActionOptions&ao):
 
   //parse PRINT_STRIDE
   parse("PRINT_STRIDE",printStride);
+
+
+  //parse FMT
+  parse("FMT",fmt);
+  fmt=" "+fmt;
+  log.printf("  with format %s\n",fmt.c_str());
 
   //parse ENSEMBLE
   ensemble=false;
@@ -309,8 +318,9 @@ void EffectiveEnergyDrift::update() {
       else effective=0.;
       plumed.comm.Sum(&effective,1);
     }
-
+    output.fmtField(" %f");
     output.printField("time",getTime());
+    output.fmtField(fmt);
     output.printField("effective-energy",effective);
     output.printField();
   }

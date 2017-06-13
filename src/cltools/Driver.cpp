@@ -236,6 +236,7 @@ void Driver<real>::registerKeywords( Keywords& keys ) {
   keys.add("optional","--mc","provides a file with masses and charges as produced with DUMPMASSCHARGE");
   keys.add("optional","--box","comma-separated box dimensions (3 for orthorombic, 9 for generic)");
   keys.add("optional","--natoms","provides number of atoms - only used if file format does not contain number of atoms");
+  keys.add("optional","--initial-step","provides a number for the initial step, default is 0");
   keys.add("optional","--debug-forces","output a file containing the forces due to the bias evaluated using numerical derivatives "
            "and using the analytical derivatives implemented in plumed");
   keys.add("hidden","--debug-float","turns on the single precision version (to check float interface)");
@@ -457,7 +458,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 
   }
 
-  if( debug_dd && debug_pd ) error("cannot use debug-dd and debug-pd at the same time");
+
+  if(debug_dd && debug_pd) error("cannot use debug-dd and debug-pd at the same time");
   if(debug_pd || debug_dd) {
     if( !Communicator::initialized() ) error("needs mpi for debug-pd");
   }
@@ -467,6 +469,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   p.cmd("setRealPrecision",&rr);
   int checknatoms=-1;
   long int step=0;
+  parse("--initial-step",step);
+
   if(Communicator::initialized()) {
     if(multi) {
       if(intracomm.Get_rank()==0) p.cmd("GREX setMPIIntercomm",&intercomm.Get_comm());
