@@ -24,4 +24,4 @@ endif
 endif
 
 clean:
-	rm -fr html latex automatic *~ *PP.txt errors manual.pdf regtests
+	rm -fr html latex automatic *~ *PP.txt *PP.md errors manual.pdf regtests

@@ -1,5 +1,3 @@
-/**
-
 \page Regex Regular Expressions
 
 When you use need to pass many arguments to a PLUMED action, being them
@@ -81,6 +79,4 @@ Regular expressions are way more flexible than wildcards!
 You can check the log to see whether or not your regular expression is picking the set of components you desire.
 
 For more information on regular expressions visit http://www.regular-expressions.info/reference.html.
-
-*/
 

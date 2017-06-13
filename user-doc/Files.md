@@ -1,5 +1,3 @@
-/**
-
 \page Files Files
 
 We tried to design PLUMED in such a manner that input/output is done consistently
@@ -62,5 +60,3 @@ PLUMED will write files named COLVAR.0.gz, COLVAR.1.gz, test.0.HILLS, test.1.HIL
 etc. This is useful since the preserved extension makes it easy
 to process the files later.
 
-
-*/

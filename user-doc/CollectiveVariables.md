@@ -1,6 +1,4 @@
-/**
-
-\page colvarintro Collective variables
+\page colvarintro Collective Variables
 
 Chemical systems contain an enormous number atoms, which, in most cases makes it simply impossible for
 us to understand anything by monitoring the atom postions directly.  Consquentially,
@@ -202,6 +200,4 @@ these connected components into a scalar number or to output this information to
 with a set of connected components are listed below:
 
 @CONCOMP@
-
-*/
 

@@ -1,4 +1,3 @@
-/**
 \page Function Functions
 
 When performing biased dynamics or analysing a trajectory you may wish to analyse/bias the value of
@@ -42,6 +41,4 @@ dz: COMBINE ARG=d.z PERIODIC=-10,10
 \endplumedfile
 
 @FUNCTION@
-
-*/
 
