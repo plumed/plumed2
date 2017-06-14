@@ -47,6 +47,7 @@ potential energy function. This is for instance not true when
 using GROMACS with lambda replica exchange of with plumed-hrex branch.
 
 \par Examples
+
 The following input instructs plumed to print the energy of the system
 \plumedfile
 ene: ENERGY

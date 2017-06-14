@@ -38,6 +38,7 @@ from other actions using PARARG (for example using experimental values from coll
 \ref CS2BACKBONE, \ref RDC, \ref NOE, \ref PRE).
 
 \par Examples
+
 The following input tells plumed to print the distance between three couple of atoms
 and compare them with three reference distances.
 
