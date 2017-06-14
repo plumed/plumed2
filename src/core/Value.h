@@ -171,8 +171,6 @@ public:
 ///
   void convertIndexToindices(const std::size_t& index, std::vector<unsigned>& indices ) const ;
 ///
-  bool printAllValues( const std::string& alabel ) const ;
-///
   void print( const std::string& alabel, OFile& ofile ) const ;
 };
 

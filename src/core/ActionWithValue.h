@@ -145,6 +145,8 @@ public:
   void componentIsPeriodic( const std::string& name, const std::string& min, const std::string& max );
 ///
   void addTaskToList( const unsigned& taskCode );
+/// Retrieve all the scalar values calculated in the loop
+  void retrieveAllScalarValuesInLoop( std::vector<Value*>& myvals );
 protected:
 /// Get a pointer to the output value
   Value* getPntrToOutput( const unsigned& ind ) const ;
@@ -197,7 +199,7 @@ public:
 /// Clear the forces on the values
   void clearInputForces();
 /// Clear the derivatives of values wrt parameters
-  virtual void clearDerivatives();
+  void clearDerivatives( const bool& force=false );
 /// Calculate the gradients and store them for all the values (need for projections)
   void setGradientsIfNeeded();
 /// Set the value

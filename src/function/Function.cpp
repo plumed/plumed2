@@ -142,7 +142,7 @@ void Function::performTask( const unsigned& current, MultiValue& myvals ) const 
   // Calculate whatever we are calculating
   calculateFunction( args, myvals ); 
   // And update the dynamic list
-  if( !doNotCalculateDerivatives() ) myvals.updateDynamicList();
+  if( !doNotCalculateDerivatives() && !done_over_stream ) myvals.updateDynamicList();
 }
 
 void Function::apply()

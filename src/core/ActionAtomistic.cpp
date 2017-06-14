@@ -101,10 +101,10 @@ void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, c
     plumed_massert(a,"only Actions with a value can be differentiated");
   }
 
-  const int nval=a->getNumberOfComponents();
+  std::vector<Value*> myvals; a->retrieveAllScalarValuesInLoop( myvals );
   const int natoms=getNumberOfAtoms();
-  std::vector<Vector> value(nval*natoms);
-  std::vector<Tensor> valuebox(nval);
+  std::vector<Vector> value(myvals.size()*natoms);
+  std::vector<Tensor> valuebox(myvals.size());
   std::vector<Vector> savedPositions(natoms);
   const double delta=sqrt(epsilon);
 
@@ -113,8 +113,8 @@ void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, c
       positions[i][k]=positions[i][k]+delta;
       a->calculate();
       positions[i][k]=savedPositions[i][k];
-      for(int j=0; j<nval; j++) {
-        value[j*natoms+i][k]=a->getOutputQuantity(j);
+      for(int j=0; j<myvals.size(); j++) {
+        value[j*natoms+i][k]=myvals[j]->get(); 
       }
     }
   Tensor box(pbc.getBox());
@@ -128,24 +128,23 @@ void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, c
       box(i,k)=arg0;
       pbc.setBox(box);
       for(int j=0; j<natoms; j++) positions[j]=savedPositions[j];
-      for(int j=0; j<nval; j++) valuebox[j](i,k)=a->getOutputQuantity(j);
+      for(int j=0; j<myvals.size(); j++) valuebox[j](i,k)=myvals[j]->get(); 
     }
 
   a->calculate();
   a->clearDerivatives();
-  for(int j=0; j<nval; j++) {
-    Value* v=a->copyOutput(j);
-    double ref=v->get();
-    if(v->hasDerivatives()) {
+  for(int j=0; j<myvals.size(); j++) {
+    double ref=myvals[j]->get();
+    if(myvals[j]->hasDerivatives()) {
       for(int i=0; i<natoms; i++) for(int k=0; k<3; k++) {
           double d=(value[j*natoms+i][k]-ref)/delta;
-          v->addDerivative(startnum+3*i+k,d);
+          myvals[j]->addDerivative(startnum+3*i+k,d);
         }
       Tensor virial;
       for(int i=0; i<3; i++) for(int k=0; k<3; k++)virial(i,k)= (valuebox[j](i,k)-ref)/delta;
 // BE CAREFUL WITH NON ORTHOROMBIC CELL
       virial=-matmul(box.transpose(),virial);
-      for(int i=0; i<3; i++) for(int k=0; k<3; k++) v->addDerivative(startnum+3*natoms+3*k+i,virial(k,i));
+      for(int i=0; i<3; i++) for(int k=0; k<3; k++) myvals[j]->addDerivative(startnum+3*natoms+3*k+i,virial(k,i));
     }
   }
 }

@@ -89,12 +89,12 @@ void Value::buildDataStore(){
 
 void Value::interpretDataRequest( const std::string& uselab, const std::string& values ){
   if( userdata.count(uselab) ){
-      if( values=="*" || values=="" ){ return; }
+      if( values=="" ){ return; }
       if( userdata[uselab][0]<0 ) plumed_merror("cannot mix use of specific items from value and all items in a single action");
   } else {
       userdata.insert( std::pair<std::string,std::vector<int> >(uselab,std::vector<int>()) );
-      if( values=="*" ){ userdata[uselab].push_back(-1); return; }
-      else if( values=="" ){ userdata[uselab].push_back(-2); return; }
+      if( values=="*" ){ plumed_merror("invalid use of wildcard"); return; }
+      else if( values=="" ){ userdata[uselab].push_back(-1); return; }
   }
   // Retrieve the indices of the point from the string requesting the index
   std::vector<unsigned> indices( shape.size() ); std::string indstr=values;
@@ -230,8 +230,6 @@ void Value::print( const std::string& uselab, OFile& ofile ) const {
   if( shape.size()==0 ){
       if( isPeriodic() ){ ofile.printField( "min_" + name, str_min ); ofile.printField("max_" + name, str_max ); } 
       ofile.printField( name, data[0] ); 
-  } else if( userdata.find(uselab)->second[0]<-1 ){ 
-      plumed_error(); // Not done this yet
   } else if( userdata.find(uselab)->second[0]<0 ){
       if( isPeriodic() ){ ofile.printField( "min_" + name, str_min ); ofile.printField("max_" + name, str_max ); }
       std::vector<unsigned> indices( shape.size() ); 

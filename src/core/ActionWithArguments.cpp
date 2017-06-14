@@ -277,29 +277,28 @@ void ActionWithArguments::createTasksFromArguments(){
 }
 
 void ActionWithArguments::calculateNumericalDerivatives( ActionWithValue* a ) {
+  if( done_over_stream ) error("cannot use numerical derivatives if calculation is done over stream");
   if(!a) {
     a=dynamic_cast<ActionWithValue*>(this);
     plumed_massert(a,"cannot compute numerical derivatives for an action without values");
   }
-  for(unsigned i=0;i<arguments.size();++i) plumed_massert(arguments[i]->getRank()==0,"cannot use numerical derivatives if input is data stream");
 
-  const int nval=a->getNumberOfComponents();
+  std::vector<Value*> myvals; a->retrieveAllScalarValuesInLoop( myvals );
   const int npar=arguments.size();
-  std::vector<double> value (nval*npar);
+  std::vector<double> value (myvals.size()*npar);
   for(int i=0; i<npar; i++) {
     double arg0=arguments[i]->get();
     arguments[i]->set(arg0+sqrt(epsilon));
     a->calculate();
     arguments[i]->set(arg0);
-    for(int j=0; j<nval; j++) {
-      value[i*nval+j]=a->getOutputQuantity(j);
+    for(int j=0; j<myvals.size(); j++) {
+      value[i*myvals.size()+j]=myvals[j]->get(); 
     }
   }
   a->calculate();
   a->clearDerivatives();
-  for(int j=0; j<nval; j++) {
-    Value* v=a->copyOutput(j);
-    if( v->hasDerivatives() ) for(int i=0; i<npar; i++) v->addDerivative(i,(value[i*nval+j]-a->getOutputQuantity(j))/sqrt(epsilon));
+  for(int j=0; j<myvals.size(); j++) {
+    if( myvals[j]->hasDerivatives() ) for(int i=0; i<npar; i++) myvals[j]->addDerivative(i,(value[i*myvals.size()+j]-a->getOutputQuantity(j))/sqrt(epsilon));
   }
 }
 

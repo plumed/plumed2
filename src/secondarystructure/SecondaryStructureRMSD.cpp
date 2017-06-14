@@ -96,7 +96,7 @@ void SecondaryStructureRMSD::readBackboneAtoms( const std::string& moltype, std:
     else if(resstrings[0]=="all") {
       log.printf("  examining all possible secondary structure combinations\n");
     } else {
-      log.printf("  examining secondary structure in residue positions : %s \n",resstrings[0].c_str() );
+      log.printf("  examining secondary structure in residue positions : %s ",resstrings[0].c_str() );
       for(unsigned i=1; i<resstrings.size(); ++i) log.printf(", %s",resstrings[i].c_str() );
       log.printf("\n");
     }

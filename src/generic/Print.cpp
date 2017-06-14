@@ -170,7 +170,7 @@ void Print::prepare() {
 }
 
 void Print::update() {
-  if( getNumberOfArguments()>1 || getPntrToArgument(0)->printAllValues( getLabel() ) || getPntrToArgument(0)->getRank()==0 ){
+  if( getNumberOfArguments()>1 || getPntrToArgument(0)->getRank()==0 ){
       ofile.fmtField(" %f");
       ofile.printField("time",getTime());
       for(unsigned i=0; i<getNumberOfArguments(); i++) {

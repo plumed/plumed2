@@ -97,13 +97,16 @@ void ActionWithValue::clearInputForces() {
   for(unsigned i=0; i<values.size(); i++) values[i]->clearInputForce();
 }
 
-void ActionWithValue::clearDerivatives() {
+void ActionWithValue::clearDerivatives( const bool& force ) {
+  const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
+  if( aa ){ if( !force && aa->done_over_stream ) return; }
   unsigned nt = OpenMP::getGoodNumThreads(values);
   #pragma omp parallel num_threads(nt)
   {
     #pragma omp for
     for(unsigned i=0; i<values.size(); i++) values[i]->clearDerivatives();
   }
+  for(const auto & p : actions_to_do_after ) p->clearDerivatives( true ); 
 }
 
 // -- These are the routine for copying the value pointers to other classes -- //
@@ -274,11 +277,10 @@ void ActionWithValue::interpretDataLabel( const std::string& mystr, ActionWithAr
       // Retrieve value with name of action
       if( values[0]->name!=getLabel() ) myuser->error("action " + getLabel() + " does not have a value");
       args.push_back( values[0] ); values[0]->interpretDataRequest( myuser->getLabel(), "" ); 
-  } else if( mystr==getLabel() + ".*" && nstr==0 ){
-      // Retrieve all Values 
-      for(int k=0;k<getNumberOfComponents();++k ){
-          args.push_back( values[k] ); values[k]->interpretDataRequest( myuser->getLabel(), "*" ); 
-      }
+  } else if( mystr==getLabel() + ".*" ){
+      // Retrieve all scalar values
+      retrieveAllScalarValuesInLoop( args );
+      for(unsigned j=0;j<args.size();++j) args[j]->interpretDataRequest( myuser->getLabel(), "" );
   } else if( mystr.find(".")!=std::string::npos && exists( mystr ) ) {
       // Retrieve value with specific name
       args.push_back( copyOutput( mystr ) ); copyOutput( mystr )->interpretDataRequest( myuser->getLabel(), "" ); 
@@ -446,6 +448,13 @@ void ActionWithValue::gatherAccumulators( const unsigned& taskCode, const MultiV
   for(const auto & p : actions_to_do_after ){
      if( p->isActive() ) p->gatherAccumulators( taskCode, myvals, buffer );
   }
+}
+
+void ActionWithValue::retrieveAllScalarValuesInLoop( std::vector<Value*>& myvals ){
+  for(unsigned i=0;i<values.size();++i){
+      if( values[i]->getRank()==0 ) myvals.push_back( values[i] );
+  }
+  for(const auto & p : actions_to_do_after ) p->retrieveAllScalarValuesInLoop( myvals );
 }
 
 void ActionWithValue::finishComputations( const std::vector<double>& buffer ){

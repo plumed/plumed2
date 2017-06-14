@@ -72,7 +72,14 @@ inline
 void Function::addDerivative( const unsigned& ival, const unsigned& jder, const double& der, MultiValue& myvals ) const {
   if( doNotCalculateDerivatives() ) return ;
 
-  if( done_over_stream ){ plumed_error(); return; }
+  if( done_over_stream ){  
+      for(unsigned k=0;k<myvals.getNumberActive();++k){ 
+          unsigned kind=myvals.getActiveIndex(k); 
+          myvals.addDerivative( getPntrToOutput(ival)->getPositionInStream(), kind, 
+                                der*myvals.getDerivative( getPntrToArgument(jder)->getPositionInStream(), kind ) );
+      }
+      return; 
+  }
   if( getPntrToArgument(0)->getRank()>0 ){ plumed_error(); return; }
   myvals.addDerivative( getPntrToOutput(ival)->getPositionInStream(), arg_ends[jder] + myvals.getTaskIndex(), der ); 
 }
