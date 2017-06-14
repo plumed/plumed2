@@ -1,6 +1,3 @@
-// This document is formatted for Doxygen
-/**
-
 \page AddingAFunction How to add a new function
 
 Many collective variables are a function of a number of some set of simpler collective variables. 
@@ -145,6 +142,4 @@ setValue(nvalue,ncv_val);
 \endverbatim
 
 Please only use this functionality for functions that are VERY similar.
-
-*/
 

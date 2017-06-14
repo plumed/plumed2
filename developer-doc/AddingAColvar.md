@@ -1,6 +1,3 @@
-// This document is formatted for Doxygen
-/**
-
 \page AddingAColvar How to add a new collective variable
 
 To implement a CV you need to create a single cpp file called <i>ColvarName</i>.cpp in the directory src/colvar. 
@@ -139,70 +136,3 @@ setValue(nvalue,ncv_val);
 \endverbatim
 
 Please only use this functionality for CVs that are VERY similar.
-
-*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

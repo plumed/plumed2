@@ -21,29 +21,22 @@ awk '
  next;
  }
 {
-  printf("%s","/// \\class PLMD::"namespace""$1"\n");
-  printf("%s","/// \\ingroup INPUTDIRECTIVES\n");
+  printf("%s","\\class PLMD::"namespace""$1"\n");
+  printf("%s","\\ingroup INPUTDIRECTIVES\n");
   action=tolower($2);
   firstchar=substr($2,1,1);
   n=split(action,actionarray,"");
   lowercase=0;
   if(firstchar==actionarray[1]) lowercase=1;
-  printf("%s","/// Provides the keyword <a href=\"../../user-doc/html/");
+  printf("%s","\\brief Provides the keyword <a href=\"../../user-doc/html/");
   for(i=1;i<=n;i++){
     if(actionarray[i]!="_") printf("_");
     printf("%s",actionarray[i]);
   };
   printf("%s",".html\"> "$2" </a>\n");
-}' >  links-to-user-manual.txt
+}' >  links-to-user-manual.md
 
 cat ../src/maketools/plumedcheck | grep "# DOC:" |
-{
-cat << \EOF
-// This document is formatted for Doxygen
-/**
-
-EOF
-
 awk '
 {
   sub("# DOC:","");
@@ -53,11 +46,7 @@ awk '
      print 
      print ""
   } else print $0
-  
-}END{
-  printf("%s\n","*/");
-}'
-} > plumedcheck.txt
+}' > plumedcheck.md
 
 
 # Create a directory to put all the files in

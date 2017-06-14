@@ -1,6 +1,3 @@
-// This document is formatted for Doxygen
-/**
-
 \page intro-git A brief introduction to git
 
 Clone the github repository:
@@ -118,5 +115,3 @@ All these things can be done with a GUI:
 > git gui
 \endverbatim
 
-
-*/

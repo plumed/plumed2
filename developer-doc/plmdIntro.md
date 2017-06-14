@@ -1,6 +1,3 @@
-// This document is formatted for Doxygen
-/**
-
 \page ABriefIntroduction A brief introduction to the plumed core
 
 Plumed 2, unlike its predecessor plumed 1, which was written in plain C, is written in C++.  
@@ -514,4 +511,3 @@ autoconf
 
 and the necessary changes will be made to the configure script.  <b>You should never edit the configure script directly</b>
 
-*/
