@@ -1,6 +1,3 @@
-// This document is formatted for Doxygen
-/**
-
 \page CodeFormatting How to format code properly
 
 Since version 2.3.2, we format code using <a href="http://astyle.sourceforge.net/"> astyle </a>.
@@ -56,4 +53,3 @@ Notice that you cannot work it in the opposite direction (that is, unformat an a
 formatted branch). Finally, consider that rebasing might be more complicated.
 When all branches will be formatted this will not be an issue anymore.
 
-*/

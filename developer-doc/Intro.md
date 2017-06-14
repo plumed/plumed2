@@ -1,5 +1,3 @@
-// This document is formatted for Doxygen
-/**
 \mainpage Introduction
 
 This is the developer manual. Please first have a look at the <a href="../../user-doc/html/index.html"> user manual </a>.
@@ -102,5 +100,3 @@ This list is built automatically based on the PLUMED_REGISTER_ACTION macro.
 @}
 
 
-
-*/

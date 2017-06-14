@@ -1,6 +1,3 @@
-// This document is formatted for Doxygen
-/**
-
 \page parsing Parsing functionality
 
 By now you are probably familiar with the way that plumed2 input looks:
@@ -27,4 +24,3 @@ This routine will then read the list of action objects you passed to the constru
 
 Please note when you are implementing functionality to read the plumed input that you never need to implement anything to read ARGS and LABEL as these keywords are read elsewhere in the code. 
 
-*/

@@ -1,6 +1,3 @@
-// This document is formatted for Doxygen
-/**
-
 \page AddingAMultiColvar How to add a new MultiColvar
 
 As you are no doubt aware within plumed 2 you can calculate multiple 
@@ -265,5 +262,3 @@ PLMD::multicolvar::AtomValuePack by using the methods PLMD::multicolvar::AtomVal
 Once you have written all the above function you will need to write regression tests for your new feature if you would like
 us to incorporate it in the release version of PLUMED.  Details on how to write regression tests are provided here: \ref regtests  
 
-
-*/

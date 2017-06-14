@@ -1,5 +1,3 @@
-// This document is formatted for Doxygen
-/**
 \page InstallationLayout Installation Layout
 
 I write here some notes related to how plumed is installed.
@@ -150,13 +148,3 @@ Using the standard behavior explained in the autoconf documentation, it is possi
 for plumed install either during configure (with `--prefix`) or by setting `prefix` during `make install`.
 
 
-
-
-
-
-
-
-
-
-
-*/

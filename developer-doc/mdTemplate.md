@@ -1,7 +1,6 @@
-// This document is formatted for Doxygen
-/**
-
 \page HowToPlumedYourMD How to add plumed to an MD code
+
+\brief Learn how to use plumed in a not yet supported MD code
 
 Plumed ships with scripts that can be used to add it to many of the standard MD packages.  Obviously though, if no patch is provided for the MD code you use then you will have to write one yourself.  Plumed has been designed so that it can be added to an MD code
 either statically (i.e. as a collection of objects) or as a dynamic library.
@@ -468,5 +467,3 @@ The two files `energy1` and `energy2` should be virtually identical.
 
 In case you were able to have the virial properly working (see previous section), then you can try the same with a constant temperarure-constant pressure
 simulation. In this case, please also monitor the volume of the resulting trajectory.
-
-*/

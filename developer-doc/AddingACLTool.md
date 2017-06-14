@@ -1,6 +1,3 @@
-// This document is formatted for Doxygen
-/**
-
 \page AddingACLTool How to add a new command-line tool
 
 To implement a command line tool you need to create a single cpp file call CLToolNAME.cpp. You can, in a command line
@@ -137,6 +134,3 @@ delete plumed; delete action;
 
 Please be aware that words should contain everything that would be required in an input
 line to make a valid instance of the Action you require.
-*/
-
-
