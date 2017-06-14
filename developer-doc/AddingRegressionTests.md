@@ -1,6 +1,3 @@
-e/ This document is formatted for Doxygen
-/**
-
 \page regtests Adding regressions tests
 
 When you write new functionality for PLUMED it is important that you document these features AND that you provide suitable
@@ -204,4 +201,3 @@ Notice, however, that with both these commands, even thought there are only forc
 and the cell vectors, the forces with respect to all the atomic positions are output.  In other words, the output files produced usig --debug-forces and 
 -dump-foces will contain a lot of zeros. 
 
-*/

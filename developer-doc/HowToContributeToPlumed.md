@@ -1,5 +1,3 @@
-// This document is formatted for Doxygen
-/**
 \page HowToContributeToPlumed How to contribute new functionality to PLUMED
 
 We welcome researchers to contribute new functionality to the PLUMED code.  In fact, we would 
@@ -195,4 +193,3 @@ will still be able to download it from your fork, but obviosuly your module won'
 enhancement we will add to the main PLUMED repository.
 As always this fix should be done on your fork of the repository first and then merged into the release version of PLUMED using a pull request. 
 
-*/

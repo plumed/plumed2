@@ -1,6 +1,3 @@
-// This document is formatted for Doxygen
-/**
-
 \page usingDoxygen Creating plumed documentation
 
 <b> Whenever you make a change to the documentation for PLUMED and you want the
@@ -506,6 +503,3 @@ Bottom line: when you make a commit where you modified the manual and you want t
 add [makedoc] in the commit log. After ten minutes or so the manual should be up to date, remember to double check on the web
 and to revert the commit if there are errors!
 
-
-
-*/

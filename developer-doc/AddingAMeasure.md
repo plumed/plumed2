@@ -1,6 +1,3 @@
-// This document is formatted for Doxygen
-/**
-
 \page AddingAMetric Implementing methods for calculating the distances between pairs of configurations 
 
 To implement a new method for calculating the distance between a pair of trajectory frames you will need to work with the
@@ -121,4 +118,3 @@ module's functionality to provide multiple methods for calculating the distance 
 that you implement should thus have one of these wrapper actions associated with it and the documentation for the measure
 should be included in the wrapper code's source code file.
 
-*/
