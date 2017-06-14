@@ -58,6 +58,7 @@ and SHIFT keywords. You will need to make sure you are using the correct dihedra
 - CO-C\f$\gamma\f$: \f$\chi_1\f$
 
 \par Examples
+
 In the following example we calculate the Ha-N J-coupling from a set of atoms involved in
 dihedral \f$\psi\f$ angles in the peptide backbone. We also add the experimental datapoints and compute
 the correlation and other measures and finally print the results.

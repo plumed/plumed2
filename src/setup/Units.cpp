@@ -44,6 +44,7 @@ the units. For example, trajectories written in .gro format (with \ref DUMPATOMS
 are going to be always in nm.
 
 \par Examples
+
 \verbatim
 # this is using nm - kj/mol - fs
 UNITS LENGTH=nm TIME=fs

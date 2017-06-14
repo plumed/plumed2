@@ -37,6 +37,7 @@ namespace bias {
 Calculate a restraint that is defined on a grid that is read during start up
 
 \par Examples
+
 The following is an input for a calculation with an external potential that is
 defined in the file bias.dat and that acts on the distance between atoms 3 and 5.
 \verbatim

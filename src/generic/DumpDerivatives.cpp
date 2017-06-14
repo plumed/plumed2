@@ -40,6 +40,7 @@ will be output.  This command is most often used to test whether or not analytic
 can be done by outputting the derivatives calculated analytically and numerically.  You can control the buffering of output using the \ref FLUSH keyword.
 
 \par Examples
+
 The following input instructs plumed to write a file called deriv that contains both the
 analytical and numerical derivatives of the distance between atoms 1 and 2.
 \verbatim

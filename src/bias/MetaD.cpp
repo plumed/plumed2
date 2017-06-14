@@ -159,6 +159,7 @@ as done e.g. in Ref. \cite gil2015enhanced . This indeed can be obtained by usin
 action multiple times in the same input file.
 
 \par Examples
+
 The following input is for a standard metadynamics calculation using as
 collective variables the distance between atoms 3 and 5
 and the distance between atoms 2 and 4. The value of the CVs and

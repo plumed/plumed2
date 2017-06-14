@@ -55,6 +55,7 @@ in a vector of values. Each value will be named as the name of the original
 argument with suffix _pfunc.
 
 \par Examples
+
 \verbatim
 dist1: DISTANCE ATOMS=1,10
 dist2: DISTANCE ATOMS=2,11

@@ -33,6 +33,7 @@ namespace analysis {
 Does a committor analysis.
 
 \par Examples
+
 The following input monitors two torsional angles during a simulation,
 defines two basins (A and B) as a function of the two torsions and
 stops the simulation when it falls in one of the two. In the log

@@ -41,6 +41,7 @@ by specifying more than one argument. You can control the buffering of output us
 
 
 \par Examples
+
 The following input instructs plumed to write a file called forces that contains
 the force acting on the distance between atoms 1 and 2.
 \verbatim

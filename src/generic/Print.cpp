@@ -37,6 +37,7 @@ in the input so you can print files with different strides or print different qu
 to different files.  You can control the buffering of output using the \subpage FLUSH keyword.
 
 \par Examples
+
 The following input instructs plumed to print the distance between atoms 3 and 5 on a file
 called COLVAR every 10 steps, and the distance and total energy on a file called COLVAR_ALL
 every 1000 steps.

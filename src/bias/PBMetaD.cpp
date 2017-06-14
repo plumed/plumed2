@@ -137,6 +137,7 @@ boundaries. Note that:
 Multiple walkers  \cite multiplewalkers can also be used, in the MPI implementation only. See below the examples.
 
 \par Examples
+
 The following input is for PBMetaD calculation using as
 collective variables the distance between atoms 3 and 5
 and the distance between atoms 2 and 4. The value of the CVs and
