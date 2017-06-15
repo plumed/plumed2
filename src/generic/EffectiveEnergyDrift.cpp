@@ -249,8 +249,8 @@ void EffectiveEnergyDrift::update() {
     }
 
     //share stored data
-    plumed.comm.Allgatherv(&indexS[0], pNLocalAtoms, &indexR[0], &indexCnt[0], &indexDsp[0]);
-    plumed.comm.Allgatherv(&dataS[0], pNLocalAtoms*6, &dataR[0], &dataCnt[0], &dataDsp[0]);
+    plumed.comm.Allgatherv((!indexS.empty()?&indexS[0]:NULL), pNLocalAtoms, &indexR[0], &indexCnt[0], &indexDsp[0]);
+    plumed.comm.Allgatherv((!dataS.empty()?&dataS[0]:NULL), pNLocalAtoms*6, &dataR[0], &dataCnt[0], &dataDsp[0]);
 
     //resize vectors to store the proper amount of data
     pGatindex.resize(nLocalAtoms);
