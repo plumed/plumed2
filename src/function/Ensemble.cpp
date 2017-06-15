@@ -36,6 +36,7 @@ Calculates the replica averaging of a collective variable over multiple replicas
 Each collective variable is averaged separately and stored in a component labelled <em>label</em>.cvlabel.
 
 \par Examples
+
 The following input tells plumed to calculate the distance between atoms 3 and 5
 and the average it over the available replicas.
 \plumedfile

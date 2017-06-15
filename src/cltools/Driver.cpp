@@ -841,10 +841,14 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         p.cmd("setMasses",&dd_masses[0]);
         p.cmd("setCharges",&dd_charges[0]);
       } else {
-        p.cmd("setForces",&forces[3*pd_start]);
-        p.cmd("setPositions",&coordinates[3*pd_start]);
-        p.cmd("setMasses",&masses[pd_start]);
-        p.cmd("setCharges",&charges[pd_start]);
+// this is required to avoid troubles when the last domain
+// contains zero atoms
+// Basically, for empty domains we pass null pointers
+#define fix_pd(xx) (pd_nlocal!=0?&xx:NULL)
+        p.cmd("setForces",fix_pd(forces[3*pd_start]));
+        p.cmd("setPositions",fix_pd(coordinates[3*pd_start]));
+        p.cmd("setMasses",fix_pd(masses[pd_start]));
+        p.cmd("setCharges",fix_pd(charges[pd_start]));
       }
       p.cmd("setBox",&cell[0]);
       p.cmd("setVirial",&virial[0]);

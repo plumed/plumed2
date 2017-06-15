@@ -25,11 +25,12 @@
 #include "reference/ReferenceConfiguration.h"
 #include "reference/Direction.h"
 
-/// \ingroup TOOLBOX
-/// This class can be used to make a set of reference configurations equidistant
 
 namespace PLMD {
 namespace mapping {
+
+/// \ingroup TOOLBOX
+/// This class can be used to make a set of reference configurations equidistant
 
 class PathReparameterization {
 private:

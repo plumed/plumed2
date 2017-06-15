@@ -77,13 +77,15 @@ For a LAPLACE prior:
 The value of \f$ \xi(\lambda,t)\f$ is written in output variable _error.
 Setting \f$ \sigma =0\f$ is equivalent to enforce a pure Maximum Entropy restraint without any noise modelling.
 This method can be also used to enforce inequality restraint as shown in following examples.
+
 \par Examples
+
 The following input tells plumed to restrain the distance between atoms 7 and 15
 and the distance between atoms 2 and 19, at different equilibrium
 values, and to print the energy of the restraint.
 Lagrangian multiplier will be printed on a file called restraint.LAGMULT with a stride setted by the variable PACE to 200ps.
 Morover plumed will compute the average of each lagrangian multiplier from TSTART until TEND when it will stop updating lambda and will it's average.
-\verbatim
+\plumedfile
 DISTANCE ATOMS=7,15 LABEL=d1
 DISTANCE ATOMS=2,19 LABEL=d2
 MAXENT ...
@@ -97,15 +99,15 @@ TSTART=100
 TEND=500
 LABEL=restraint
 PRINT ARG=restraint.bias
-\endverbatim
+\endplumedfile
 Lagrangian multipliers will be printed on a file called
 The following input tells plumed to restrain the distance between atoms 7 and 15
 to be greater than 0.2 and to print the energy of the restraint
-\verbatim
+\plumedfile
 DISTANCE ATOMS=7,15 LABEL=d
 MAXENT ARG=d TYPE=INEQUAL> AT=0.02 KAPPA=35000.0 TAU= LABEL=restraint
 PRINT ARG=restraint.bias
-\endverbatim
+\endplumedfile
 
 (See also \ref DISTANCE and \ref PRINT).
 

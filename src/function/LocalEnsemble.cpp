@@ -36,6 +36,7 @@ If more than one collective variable is given for each argument then they
 are averaged separately. The average is stored in a component labelled <em>label</em>.cvlabel.
 
 \par Examples
+
 The following input tells plumed to calculate the chemical shifts for four
 different proteins in the same simulation box then average them, calcualated
 the sum of the squared deviation with respect to the experiemntal values and
