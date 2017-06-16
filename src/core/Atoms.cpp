@@ -145,7 +145,7 @@ void Atoms::share() {
     return;
   }
 
-  unique.clear();
+  //unique.clear();
   for(unsigned i=0; i<actions.size(); i++) {
     if(actions[i]->isActive()) {
       if(!actions[i]->getUnique().empty()) {
@@ -392,6 +392,7 @@ void Atoms::setAtomsGatindex(int*g,bool fortran) {
     // keep in unique only those atoms that are local
     actions[i]->updateUniqueLocal();
   }
+  unique.clear();
 }
 
 void Atoms::setAtomsContiguous(int start) {
@@ -404,6 +405,7 @@ void Atoms::setAtomsContiguous(int start) {
     // keep in unique only those atoms that are local
     actions[i]->updateUniqueLocal();
   }
+  unique.clear();
 }
 
 void Atoms::setRealPrecision(int p) {
