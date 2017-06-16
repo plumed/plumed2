@@ -145,15 +145,25 @@ void Atoms::share() {
     return;
   }
 
-  //unique.clear();
-  for(unsigned i=0; i<actions.size(); i++) {
-    if(actions[i]->isActive()) {
-      if(!actions[i]->getUnique().empty()) {
-        atomsNeeded=true;
-        // unique are the local atoms
-        unique.insert(actions[i]->getUniqueLocal().begin(),actions[i]->getUniqueLocal().end());
+  if(!(int(gatindex.size())==natoms && shuffledAtoms==0)) {
+    for(unsigned i=0; i<actions.size(); i++) {
+      if(actions[i]->isActive()) {
+        if(!actions[i]->getUnique().empty()) {
+          atomsNeeded=true;
+          // unique are the local atoms
+          unique.insert(actions[i]->getUniqueLocal().begin(),actions[i]->getUniqueLocal().end());
+        }
       }
     }
+  } else {
+    for(unsigned i=0; i<actions.size(); i++) {
+      if(actions[i]->isActive()) {
+        if(!actions[i]->getUnique().empty()) {
+          atomsNeeded=true;
+        }
+      }
+    }
+
   }
 
   share(unique);
@@ -175,7 +185,7 @@ void Atoms::share(const std::set<AtomNumber>& unique) {
   plumed_assert( positionsHaveBeenSet==3 && massesHaveBeenSet );
 
   virial.zero();
-  if(zeroallforces) {
+  if(zeroallforces || int(gatindex.size())==natoms) {
     for(int i=0; i<natoms; i++) forces[i].zero();
   } else {
     for(const auto & p : unique) forces[p.index()].zero();
@@ -187,15 +197,20 @@ void Atoms::share(const std::set<AtomNumber>& unique) {
   if(!atomsNeeded) return;
   atomsNeeded=false;
 
-  uniq_index.clear();
-  uniq_index.reserve(unique.size());
-  if(dd && shuffledAtoms>0) {
-    for(const auto & p : unique) uniq_index.push_back(dd.g2l[p.index()]);
+  if(int(gatindex.size())==natoms && shuffledAtoms==0) {
+// faster version, which retrieves all atoms
+    mdatoms->getPositions(0,natoms,positions);
   } else {
-    for(const auto & p : unique) uniq_index.push_back(p.index());
+    uniq_index.clear();
+    uniq_index.reserve(unique.size());
+    if(dd && shuffledAtoms>0) {
+      for(const auto & p : unique) uniq_index.push_back(dd.g2l[p.index()]);
+    } else {
+      for(const auto & p : unique) uniq_index.push_back(p.index());
+    }
+    mdatoms->getPositions(unique,uniq_index,positions);
   }
 
-  mdatoms->getPositions(unique,uniq_index,positions);
 
 // how many double per atom should be scattered:
   int ndata=3;
@@ -308,7 +323,8 @@ void Atoms::updateForces() {
     mdatoms->rescaleForces(gatindex,alpha);
     mdatoms->updateForces(gatindex,forces);
   } else {
-    mdatoms->updateForces(unique,uniq_index,forces);
+    if(int(gatindex.size())==natoms && shuffledAtoms==0) mdatoms->updateForces(gatindex,forces);
+    else mdatoms->updateForces(unique,uniq_index,forces);
   }
   if( !plumed.novirial && dd.Get_rank()==0 ) {
     plumed_assert( virialHasBeenSet );
