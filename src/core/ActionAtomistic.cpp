@@ -78,7 +78,7 @@ void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a) {
     else unique.insert(indexes[i]);
   }
   updateUniqueLocal();
-  atoms.unique.clear();  
+  atoms.unique.clear();
 }
 
 Vector ActionAtomistic::pbcDistance(const Vector &v1,const Vector &v2)const {
