@@ -452,7 +452,13 @@ void ActionWithValue::gatherAccumulators( const unsigned& taskCode, const MultiV
 
 void ActionWithValue::retrieveAllScalarValuesInLoop( std::vector<Value*>& myvals ){
   for(unsigned i=0;i<values.size();++i){
-      if( values[i]->getRank()==0 ) myvals.push_back( values[i] );
+      if( values[i]->getRank()==0 ){
+          bool found=false;
+          for(unsigned j=0;j<myvals.size();++j){
+              if( values[i]->getName()==myvals[j]->getName() ){ found=true; break; }
+          }
+          if( !found ) myvals.push_back( values[i] );
+      }
   }
   for(const auto & p : actions_to_do_after ) p->retrieveAllScalarValuesInLoop( myvals );
 }

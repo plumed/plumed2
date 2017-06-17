@@ -50,10 +50,16 @@ class ActionRegister {
   typedef std::unique_ptr<Action>(*creator_pointer)(const ActionOptions&);
 /// Pointer to a function which, returns the keywords allowed
   typedef void(*keywords_pointer)(Keywords&);
+/// Pointer to a function which expands a shortcut
+  typedef void(*shortcut_pointer)(const std::string&, const std::vector<std::string>&, const std::map<std::string,std::string>&, std::vector<std::vector<std::string> >&);
 /// Map action to a function which creates the related object
   std::map<std::string,creator_pointer> m;
 /// Map action to a function which documents the related object
   std::map<std::string,keywords_pointer> mk;
+/// Map action name to a function that documents the shortcut
+  std::map<std::string,keywords_pointer> sk;
+/// Map action name to a function that expands the shortcut
+  std::map<std::string,shortcut_pointer> s;
 /// Set of disabled actions (which were registered more than once)
   std::set<std::string> disabled;
 public:
@@ -64,6 +70,14 @@ public:
   void add(std::string key,creator_pointer cp,keywords_pointer kp);
 /// Verify if a directive is present in the register
   bool check(std::string action);
+/// Add a shortcut that expands a simpler action into something more complex
+  void addShortcut(std::string key, keywords_pointer kp, shortcut_pointer sp );
+/// Remove a shortcut
+  void removeShortcut(std::string key);
+/// Check if an action has a shortcut associated with it
+  bool checkForShortcut(std::string action); 
+/// And expand any shortcuts in action input
+  std::vector<std::vector<std::string> > expandShortcuts( const unsigned& replica_index, std::vector<std::string>& words );
 /// Create an Action of the type indicated in the options
 /// \param ao object containing information for initialization, such as the full input line, a pointer to PlumedMain, etc
   std::unique_ptr<Action> create(const ActionOptions&ao);
@@ -104,6 +118,18 @@ std::ostream & operator<<(std::ostream &log,const ActionRegister&ar);
     ~PLUMED_UNIQUENAME(classname##RegisterMe)(){PLMD::actionRegister().remove(create);} \
   } PLUMED_UNIQUENAME(classname##RegisterMe);
 
+/// Shortcut for registering shortcuts
+/// \relates PLMD::ActionRegister
+/// For easier registration, this file also provides a macro PLUMED_REGISTER_SHORTCUT.
+/// \param classname the name of the class for which a shortcut is to registered
+/// \param directive a string containing the corresponding directive for this action
+/// This macro should be used in the .cpp file of the class for which the shortcut is created
+#define PLUMED_REGISTER_SHORTCUT(classname,directive) \
+  static class  PLUMED_UNIQUENAME(classname##ShortcutMe){ \
+  public: \
+    PLUMED_UNIQUENAME(classname##ShortcutMe)(){PLMD::actionRegister().addShortcut(directive,classname::shortcutKeywords,classname::expandShortcut);} \
+    ~PLUMED_UNIQUENAME(classname##ShortcutMe)(){PLMD::actionRegister().removeShortcut(directive);} \
+  } PLUMED_UNIQUENAME(classname##ShortcutMe);
 
 #endif
 

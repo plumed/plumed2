@@ -26,9 +26,35 @@
 #include "core/Atoms.h"
 #include "reference/MetricRegister.h"
 #include "reference/SingleDomainRMSD.h"
+#include "tools/SwitchingFunction.h"
 
 namespace PLMD {
 namespace secondarystructure {
+
+void SecondaryStructureRMSD::shortcutKeywords( Keywords& keys ) {
+  keys.add("compulsory","LESS_THAN","calculate the number of a residue segments that are within a certain target distance of this secondary structure type. "
+                                    "This quantity is calculated using \\f$\\sum_i \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ is a \\ref switchingfunction.");
+  keys.add("compulsory","R_0","The r_0 parameter of the switching function.");
+  keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
+  keys.add("compulsory","NN","8","The n parameter of the switching function");
+  keys.add("compulsory","MM","12","The m parameter of the switching function");
+}
+
+void SecondaryStructureRMSD::expandShortcut( const std::string& lab, const std::vector<std::string>& words, 
+                                             const std::map<std::string,std::string>& keys, 
+                                             std::vector<std::vector<std::string> >& actions ){
+  std::vector<std::string> lt_line; lt_line.push_back( lab + "_lt:" ); 
+  lt_line.push_back("LESS_THAN"); lt_line.push_back( "ARG=" + lab ); 
+  if( keys.count("LESS_THAN") ){
+      lt_line.push_back("SWITCH=" + keys.find("LESS_THAN")->second );
+  } else {
+      for(const auto & p : keys ) lt_line.push_back( p.first + "=" + p.second ); 
+  }
+  actions.push_back( lt_line );
+  std::vector<std::string> sum_line; sum_line.push_back( lab + "_lessthan:" ); 
+  sum_line.push_back("SUM"); sum_line.push_back("ARG=" + lab + "_lt" );
+  actions.push_back( sum_line );
+}
 
 void SecondaryStructureRMSD::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
@@ -44,10 +70,6 @@ void SecondaryStructureRMSD::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","TYPE","DRMSD","the manner in which RMSD alignment is performed. Should be OPTIMAL, SIMPLE or DRMSD. "
            "For more details on the OPTIMAL and SIMPLE methods see \\ref RMSD. For more details on the "
            "DRMSD method see \\ref DRMSD.");
-  keys.add("compulsory","R_0","0.08","The r_0 parameter of the switching function.");
-  keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
-  keys.add("compulsory","NN","8","The n parameter of the switching function");
-  keys.add("compulsory","MM","12","The m parameter of the switching function");
   keys.reserve("optional","STRANDS_CUTOFF","If in a segment of protein the two strands are further apart then the calculation "
                "of the actual RMSD is skipped as the structure is very far from being beta-sheet like. "
                "This keyword speeds up the calculation enormously when you are using the LESS_THAN option. "

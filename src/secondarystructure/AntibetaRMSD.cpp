@@ -88,10 +88,28 @@ hh: ANTIBETARMSD RESIDUES=all TYPE=OPTIMAL R_0=0.1  STRANDS_CUTOFF=1
 class AntibetaRMSD : public SecondaryStructureRMSD {
 public:
   static void registerKeywords( Keywords& keys );
+  static void shortcutKeywords( Keywords& keys );
+  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                              const std::map<std::string,std::string>& keys,
+                              std::vector<std::vector<std::string> >& actions );
   explicit AntibetaRMSD(const ActionOptions&);
 };
 
 PLUMED_REGISTER_ACTION(AntibetaRMSD,"ANTIBETARMSD")
+PLUMED_REGISTER_SHORTCUT(AntibetaRMSD,"ANTIBETARMSD")
+
+void AntibetaRMSD::shortcutKeywords( Keywords& keys ){
+  SecondaryStructureRMSD::shortcutKeywords( keys );
+}
+
+void AntibetaRMSD::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                                   const std::map<std::string,std::string>& keys,
+                                   std::vector<std::vector<std::string> >& actions ){
+  std::vector<std::string> ss_line; ss_line.push_back( lab + ":" );
+  for(unsigned i=0;i<words.size();++i) ss_line.push_back(words[i]);
+  actions.push_back( ss_line );      
+  SecondaryStructureRMSD::expandShortcut( lab, words, keys, actions );
+}
 
 void AntibetaRMSD::registerKeywords( Keywords& keys ) {
   SecondaryStructureRMSD::registerKeywords( keys );

@@ -87,10 +87,28 @@ hh: ALPHARMSD RESIDUES=all TYPE=OPTIMAL R_0=0.1
 class AlphaRMSD : public SecondaryStructureRMSD {
 public:
   static void registerKeywords( Keywords& keys );
+  static void shortcutKeywords( Keywords& keys );
+  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                              const std::map<std::string,std::string>& keys,
+                              std::vector<std::vector<std::string> >& actions );
   explicit AlphaRMSD(const ActionOptions&);
 };
 
 PLUMED_REGISTER_ACTION(AlphaRMSD,"ALPHARMSD")
+PLUMED_REGISTER_SHORTCUT(AlphaRMSD,"ALPHARMSD")
+
+void AlphaRMSD::shortcutKeywords( Keywords& keys ){
+  SecondaryStructureRMSD::shortcutKeywords( keys );
+}
+
+void AlphaRMSD::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                                const std::map<std::string,std::string>& keys,
+                                std::vector<std::vector<std::string> >& actions ){
+  std::vector<std::string> ss_line; ss_line.push_back( lab + ":" );
+  for(unsigned i=0;i<words.size();++i) ss_line.push_back(words[i]);
+  actions.push_back( ss_line );
+  SecondaryStructureRMSD::expandShortcut( lab, words, keys, actions ); 
+}
 
 void AlphaRMSD::registerKeywords( Keywords& keys ) {
   SecondaryStructureRMSD::registerKeywords( keys );

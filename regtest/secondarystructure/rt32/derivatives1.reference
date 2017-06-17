@@ -1,4 +1,4 @@
-#! FIELDS time parameter a2 a2num
+#! FIELDS time parameter a2_lessthan a2num_lessthan
  0.000000 0  -0.0002  -0.0002
  0.000000 1   0.0001   0.0001
  0.000000 2  -0.0002  -0.0002

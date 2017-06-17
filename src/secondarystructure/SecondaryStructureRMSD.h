@@ -69,6 +69,10 @@ protected:
   void setupValues();
 public:
   static void registerKeywords( Keywords& keys );
+  static void shortcutKeywords( Keywords& keys );
+  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                              const std::map<std::string,std::string>& keys, 
+                              std::vector<std::vector<std::string> >& actions ); 
   explicit SecondaryStructureRMSD(const ActionOptions&);
   virtual ~SecondaryStructureRMSD();
   unsigned getNumberOfFunctionsInAction();

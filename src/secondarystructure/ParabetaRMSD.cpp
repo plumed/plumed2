@@ -89,10 +89,30 @@ hh: PARABETARMSD RESIDUES=all TYPE=OPTIMAL R_0=0.1  STRANDS_CUTOFF=1
 class ParabetaRMSD : public SecondaryStructureRMSD {
 public:
   static void registerKeywords( Keywords& keys );
+  static void shortcutKeywords( Keywords& keys );
+  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                              const std::map<std::string,std::string>& keys,
+                              std::vector<std::vector<std::string> >& actions );
   explicit ParabetaRMSD(const ActionOptions&);
 };
 
 PLUMED_REGISTER_ACTION(ParabetaRMSD,"PARABETARMSD")
+PLUMED_REGISTER_SHORTCUT(ParabetaRMSD,"PARABETARMSD")
+
+void ParabetaRMSD::shortcutKeywords( Keywords& keys ){
+  SecondaryStructureRMSD::shortcutKeywords( keys );
+}
+
+void ParabetaRMSD::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                                   const std::map<std::string,std::string>& keys,
+                                   std::vector<std::vector<std::string> >& actions ){
+  std::vector<std::string> ss_line; ss_line.push_back( lab + ":" );
+  for(unsigned i=0;i<words.size();++i) ss_line.push_back(words[i]);
+  actions.push_back( ss_line );
+  std::vector<std::string> lowest_line; lowest_line.push_back( lab + "_low:"); lowest_line.push_back("LOWEST"); 
+  lowest_line.push_back("ARG1=" + lab + ".struct-1"); lowest_line.push_back("ARG2=" + lab + ".struct-2");
+  actions.push_back( lowest_line ); SecondaryStructureRMSD::expandShortcut( lab + "_low", words, keys, actions );
+}
 
 void ParabetaRMSD::registerKeywords( Keywords& keys ) {
   SecondaryStructureRMSD::registerKeywords( keys );

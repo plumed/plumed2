@@ -35,6 +35,21 @@ ActionRegister::~ActionRegister() {
     for(const auto & p : m) names+=p.first+" ";
     std::cerr<<"WARNING: Directive "+ names +" has not been properly unregistered. This might lead to memory leak!!\n";
   }
+  if(mk.size()>0) {
+    string names="";
+    for(const auto & p : mk) names+=p.first+" ";
+    std::cerr<<"WARNING: Directive "+ names +" has not been properly unregistered. This might lead to memory leak!!\n";
+  }
+  if(sk.size()>0) {
+    string names="";
+    for(const auto & p : sk) names+=p.first+" ";
+    std::cerr<<"WARNING: Shortcut for directive "+ names +" has not been properly unregistered. This might lead to memory leak!!\n";
+  }
+  if(s.size()>0) {
+    string names="";
+    for(const auto & p : s) names+=p.first+" ";
+    std::cerr<<"WARNING: Shorcut for directive "+ names +" has not been properly unregistered. This might lead to memory leak!!\n";
+  }
 }
 
 ActionRegister& actionRegister() {
@@ -42,11 +57,64 @@ ActionRegister& actionRegister() {
   return ans;
 }
 
+void ActionRegister::addShortcut(std::string key, keywords_pointer kp, shortcut_pointer sp ) {
+  plumed_massert( !sk.count(key) && !s.count(key), "should only be one shortcut registered per action");
+  sk.insert(pair<string,keywords_pointer>(key,kp)); s.insert(pair<string,shortcut_pointer>(key,sp));
+}
+
+void ActionRegister::removeShortcut(std::string key){
+  for(auto p=sk.begin(); p!=sk.end(); ++p) {
+    if((*p).first==key) { sk.erase(p); break; }
+  }
+  for(auto p=s.begin(); p!=s.end(); ++p) {
+    if((*p).first==key) { s.erase(p); break; }
+  }
+}
+
+bool ActionRegister::checkForShortcut(std::string action){
+  if(s.count(action)>0 && sk.count(action)>0) return true;
+  return false;
+}
+
+std::vector<std::vector<std::string> > ActionRegister::expandShortcuts( const unsigned& replica_index, std::vector<std::string>& words ){
+  std::vector<std::vector<std::string> > actions;
+  if( s.count(words[0])>0 ){
+      plumed_assert( sk.count(words[0])>0 );
+      Keywords keys; sk[words[0]](keys); std::map<std::string,std::string> keymap;
+      for(unsigned i=0;i<keys.size();++i){
+          std::string t, def, keyname = keys.get(i);
+          if( keys.style( keyname, "compulsory") && !keys.getDefaultValue( keyname, def ) ){
+              bool found=Tools::parse(words,keyname,t,replica_index);
+              if( found ) keymap.insert(pair<std::string,std::string>(keyname,t));
+          }
+      } 
+      if( keymap.size()>0 ){
+         for(unsigned i=0;i<keys.size();++i){
+             std::string t, def, keyname = keys.get(i);
+             if( keys.getDefaultValue( keyname, def ) ){ 
+                 bool found=Tools::parse(words,keyname,t,replica_index);
+                 if( !found ) keymap.insert(pair<std::string,std::string>(keyname,def));
+                 else keymap.insert(pair<std::string,std::string>(keyname,t));
+             }
+         }
+         std::string lab; bool found=Tools::parse( words, "LABEL", lab, replica_index);
+         plumed_assert( found ); s[words[0]](lab, words, keymap, actions );
+         return actions;
+      }
+  }
+  actions.push_back( words );
+  return actions;
+}
+
 void ActionRegister::remove(creator_pointer f) {
+  std::string directive;
   for(auto p=m.begin(); p!=m.end(); ++p) {
     if((*p).second==f) {
-      m.erase(p); break;
+      directive=(*p).first; m.erase(p); break;
     }
+  }
+  for(auto p=mk.begin(); p!=mk.end(); ++p) {
+    if((*p).first==directive) { mk.erase(p); break; }
   }
 }
 

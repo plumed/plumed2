@@ -203,7 +203,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   Tools::parseFlag(data,"NOSTRETCH",dontstretch); // this is ignored now
   if(dontstretch) dostretch=false;
   double r0;
-  if(name=="CUBIC") {
+  if(name.find("CUBIC")!=std::string::npos ) {
     r0 = dmax - d0;
   } else {
     bool found_r0=Tools::parse(data,"R_0",r0);
@@ -212,7 +212,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   invr0=1.0/r0;
   invr0_2=invr0*invr0;
 
-  if(name=="RATIONAL") {
+  if(name.find("RATIONAL")!=std::string::npos ) {
     type=rational;
     nn=6;
     mm=0;
@@ -221,7 +221,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     present=Tools::findKeyword(data,"MM");
     if(present && !Tools::parse(data,"MM",mm)) errormsg="could not parse MM";
     if(mm==0) mm=2*nn;
-  } else if(name=="SMAP") {
+  } else if(name.find("SMAP")!=std::string::npos ) {
     type=smap;
     present=Tools::findKeyword(data,"A");
     if(present && !Tools::parse(data,"A",a)) errormsg="could not parse A";
@@ -230,7 +230,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     c=pow(2., static_cast<double>(a)/static_cast<double>(b) ) - 1;
     d = -static_cast<double>(b) / static_cast<double>(a);
   }
-  else if(name=="Q") {
+  else if(name.find("Q")!=std::string::npos ) {
     type=nativeq;
     beta = 50.0;  // nm-1
     lambda = 1.8; // unitless
