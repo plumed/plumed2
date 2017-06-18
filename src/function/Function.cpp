@@ -37,7 +37,8 @@ void Function::registerKeywords(Keywords& keys) {
 Function::Function(const ActionOptions&ao):
   Action(ao),
   ActionWithValue(ao),
-  ActionWithArguments(ao)
+  ActionWithArguments(ao),
+  rankOneOutput(false)
 {
   createTasksFromArguments(); nderivatives = getNumberOfArguments();
   // Now create the stream of jobs to work through 
@@ -67,7 +68,7 @@ std::vector<unsigned> Function::getShape() {
       else size += getPntrToArgument(i)->getSize();
   }
   std::vector<unsigned> shape;
-  if( rank0 ){ 
+  if( rank0 || rankOneOutput ){ 
      shape.resize(0);
   } else if( getPntrToArgument(0)->getRank()>1 ){ 
      plumed_assert( getNumberOfArguments()==1 ); shape.resize( getPntrToArgument(0)->getRank() );
@@ -91,7 +92,7 @@ void Function::addValueWithDerivatives() {
 
   std::vector<unsigned> shape( getShape() ); 
   if( arg_ends[1]-arg_ends[0]==1 ){ 
-      if( done_over_stream ) ActionWithValue::addValue( shape ); 
+      if( done_over_stream && !rankOneOutput ) ActionWithValue::addValue( shape ); 
       else ActionWithValue::addValueWithDerivatives( shape ); 
       if(period.size()==1 && period[0]=="NO") setNotPeriodic(); 
       else if(period.size()==2) setPeriodic(period[0],period[1]);
@@ -99,7 +100,7 @@ void Function::addValueWithDerivatives() {
       std::string num; 
       for(unsigned i=0;i<arg_ends.size()-1;++i){
           Tools::convert(i+1,num); 
-          if( done_over_stream ) ActionWithValue::addComponent( "arg_" + num, shape ); 
+          if( done_over_stream && !rankOneOutput ) ActionWithValue::addComponent( "arg_" + num, shape ); 
           else ActionWithValue::addComponentWithDerivatives( "arg_" + num, shape );
           if(period.size()==1 && period[0]=="NO") componentIsNotPeriodic( "arg_" + num ); 
           else if(period.size()==2) componentIsPeriodic("arg_" + num, period[0], period[1]);
@@ -112,14 +113,13 @@ void Function::addComponentWithDerivatives( const std::string& name ) {
 
   std::vector<unsigned> shape( getShape() );
   if( arg_ends[1]-arg_ends[0]==1 ){ 
-      shape.resize(0); 
-      if( done_over_stream ) ActionWithValue::addComponent(name,shape); 
+      if( done_over_stream && !rankOneOutput ) ActionWithValue::addComponent(name,shape); 
       else ActionWithValue::addComponentWithDerivatives(name,shape); 
   } else { 
-      std::string num; shape.resize(0); 
+      std::string num; 
       for(unsigned i=0;i<arg_ends.size()-1;++i){ 
           Tools::convert(i+1,num);
-          if( done_over_stream ) ActionWithValue::addComponent( name + "_arg_" + num, shape ); 
+          if( done_over_stream && !rankOneOutput ) ActionWithValue::addComponent( name + "_arg_" + num, shape ); 
           else ActionWithValue::addComponentWithDerivatives( name + "_arg_" + num, shape ); 
       } 
   }

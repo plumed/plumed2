@@ -19,29 +19,68 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Mapping.h"
-#include "vesselbase/Vessel.h"
-#include "reference/MetricRegister.h"
+#include "core/ActionAtomistic.h"
+#include "core/ActionWithValue.h"
+#include "core/ActionWithArguments.h"
+#include "reference/ReferenceConfiguration.h"
 #include "reference/ReferenceAtoms.h"
+#include "reference/MetricRegister.h"
 #include "tools/PDB.h"
 #include "tools/Matrix.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
+#include "core/ActionRegister.h"
 
 namespace PLMD {
+
 namespace mapping {
 
+class Mapping :
+  public ActionAtomistic,
+  public ActionWithArguments,
+  public ActionWithValue
+{
+private:
+/// Are we calculating squared distances
+  bool squared;
+/// This holds all the reference information
+  std::vector<ReferenceConfiguration*> myframes;
+/// The forces on each of the derivatives (used in apply)
+  std::vector<double> forcesToApply;
+public:
+  static void registerKeywords( Keywords& keys );
+  explicit Mapping(const ActionOptions&);
+  ~Mapping();
+/// Overload the virtual functions that appear in both ActionAtomistic and ActionWithArguments
+  void calculateNumericalDerivatives( ActionWithValue* a=NULL );
+  void lockRequests();
+  void unlockRequests();
+/// Get the number of derivatives for this action
+  unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
+/// Turn on the tasks that are currently active
+  void buildCurrentTaskList( std::vector<unsigned>& tflags ) const ;
+/// Do the actual calculation
+  void calculate();
+/// This calculates the distance from the reference configuration of interest
+  void performTask( const unsigned& current, MultiValue& myvals ) const ;
+/// Apply the forces
+  void apply();
+};
+
+PLUMED_REGISTER_ACTION(Mapping,"EUCLIDEAN_DISSIMILARITIES_VECTOR")
+
+// void Mapping::shortcutKeywords( Keywords& keys ) {
+//   keys.add("compulsory","PROPERTY","the property to be used in the index. This should be in the REMARK of the reference");
+// }
+
 void Mapping::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys );
-  ActionWithValue::registerKeywords( keys );
-  ActionWithArguments::registerKeywords( keys );
-  ActionAtomistic::registerKeywords( keys );
-  vesselbase::ActionWithVessel::registerKeywords( keys );
+  Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
+  ActionWithArguments::registerKeywords( keys ); ActionAtomistic::registerKeywords( keys );
   keys.add("compulsory","REFERENCE","a pdb file containing the set of reference configurations");
-  keys.add("compulsory","PROPERTY","the property to be used in the index. This should be in the REMARK of the reference");
   keys.add("compulsory","TYPE","OPTIMAL-FAST","the manner in which distances are calculated. More information on the different "
            "metrics that are available in PLUMED can be found in the section of the manual on "
            "\\ref dists");
+  keys.addFlag("SQUARED",false," This should be setted if you want MSD instead of RMSD ");
   keys.addFlag("DISABLE_CHECKS",false,"disable checks on reference input structures.");
 }
 
@@ -49,26 +88,13 @@ Mapping::Mapping(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao),
   ActionWithArguments(ao),
-  ActionWithValue(ao),
-  ActionWithVessel(ao)
+  ActionWithValue(ao)
 {
+  // Read the squared flag
+  parseFlag("SQUARED",squared);
   // Read the input
   std::string mtype; parse("TYPE",mtype);
   bool skipchecks; parseFlag("DISABLE_CHECKS",skipchecks);
-  // Setup the object that does the mapping
-  mymap.reset( new PointWiseMapping( mtype, skipchecks ) );
-
-  // Read the properties we require
-  if( keywords.exists("PROPERTY") ) {
-    std::vector<std::string> property;
-    parseVector("PROPERTY",property);
-    if(property.size()==0) error("no properties were specified");
-    mymap->setPropertyNames( property, false );
-  } else {
-    std::vector<std::string> property(1);
-    property[0]="spath";
-    mymap->setPropertyNames( property, true );
-  }
 
   // Open reference file
   std::string reference; parse("REFERENCE",reference);
@@ -76,41 +102,31 @@ Mapping::Mapping(const ActionOptions&ao):
   if(!fp) error("could not open reference file " + reference );
 
   // Read all reference configurations
-  bool do_read=true; std::vector<double> weights;
-  unsigned nfram=0, wnorm=0., ww;
+  bool do_read=true; 
   while (do_read) {
-    PDB mypdb;
     // Read the pdb file
-    do_read=mypdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
+    PDB mypdb; do_read=mypdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
+    // Break if we are done
+    if( !do_read ) break ;
     // Fix argument names
     expandArgKeywordInPDB( mypdb );
-    if(do_read) {
-      mymap->readFrame( mypdb ); ww=mymap->getWeight( nfram );
-      weights.push_back( ww );
-      wnorm+=ww; nfram++;
-    } else {
-      break;
-    }
+    // And add a task to the list
+    addTaskToList( myframes.size() );
+    // And read the frame
+    myframes.push_back( metricRegister().create<ReferenceConfiguration>( mtype, mypdb ) );
   }
   fclose(fp);
 
-  if(nfram==0 ) error("no reference configurations were specified");
-  log.printf("  found %u configurations in file %s\n",nfram,reference.c_str() );
-  for(unsigned i=0; i<weights.size(); ++i) weights[i] /= wnorm;
-  mymap->setWeights( weights );
+  if(myframes.size()==0 ) error("no reference configurations were specified");
+  log.printf("  found %u configurations in file %s\n",myframes.size(),reference.c_str() );
+  std::vector<unsigned> shape(1); shape[0]=myframes.size(); addValue( shape ); setNotPeriodic();
 
   // Finish the setup of the mapping object
   // Get the arguments and atoms that are required
   std::vector<AtomNumber> atoms; std::vector<std::string> args;
-  mymap->getAtomAndArgumentRequirements( atoms, args );
+  for(unsigned i=0; i<myframes.size(); ++i) { myframes[i]->getAtomRequests( atoms, skipchecks ); myframes[i]->getArgumentRequests( args, skipchecks ); }
   requestAtoms( atoms ); std::vector<Value*> req_args;
   interpretArgumentList( args, req_args ); requestArguments( req_args );
-  // Duplicate all frames (duplicates are used by sketch-map)
-  // mymap->duplicateFrameList();
-  // fframes.resize( 2*nfram, 0.0 ); dfframes.resize( 2*nfram, 0.0 );
-  // plumed_assert( !mymap->mappingNeedsSetup() );
-  // Resize all derivative arrays
-  // mymap->setNumberOfAtomsAndArguments( atoms.size(), args.size() );
   // Resize forces array
   if( getNumberOfAtoms()>0 ) {
     forcesToApply.resize( 3*getNumberOfAtoms() + 9 + getNumberOfArguments() );
@@ -119,83 +135,46 @@ Mapping::Mapping(const ActionOptions&ao):
   }
 }
 
-void Mapping::turnOnDerivatives() {
-  ActionWithValue::turnOnDerivatives();
-  needsDerivatives();
+void Mapping::buildCurrentTaskList( std::vector<unsigned>& tflags ) const {
+  tflags.assign(tflags.size(),1);
 }
 
-void Mapping::prepare() {
-  if( mymap->mappingNeedsSetup() ) {
-    // Get the arguments and atoms that are required
-    std::vector<AtomNumber> atoms; std::vector<std::string> args;
-    mymap->getAtomAndArgumentRequirements( atoms, args );
-    requestAtoms( atoms ); std::vector<Value*> req_args;
-    interpretArgumentList( args, req_args ); requestArguments( req_args );
-    // Duplicate all frames (duplicates are used by sketch-map)
-    //mymap->duplicateFrameList();
-    // Get the number of frames in the path
-    // unsigned nfram=getNumberOfReferencePoints();
-    // fframes.resize( 2*nfram, 0.0 ); dfframes.resize( 2*nfram, 0.0 );
-    // plumed_assert( !mymap->mappingNeedsSetup() );
-    // Resize all derivative arrays
-    // mymap->setNumberOfAtomsAndArguments( atoms.size(), args.size() );
-    // Resize forces array
-    if( getNumberOfAtoms()>0 ) {
-      forcesToApply.resize( 3*getNumberOfAtoms() + 9 + getNumberOfArguments() );
-    } else {
-      forcesToApply.resize( getNumberOfArguments() );
-    }
-  }
+void Mapping::calculate(){
+  plumed_dbg_assert( !done_over_stream && getFullNumberOfTasks()>0 ); 
+  runAllTasks();
 }
 
-unsigned Mapping::getPropertyIndex( const std::string& name ) const {
-  return mymap->getPropertyIndex( name );
-}
-
-void Mapping::setPropertyValue( const unsigned& iframe, const unsigned& jprop, const double& property ) {
-  mymap->setProjectionCoordinate( iframe, jprop, property );
-}
-
-double Mapping::getLambda() {
-  plumed_merror("lambda is not defined in this mapping type");
-}
-
-std::string Mapping::getArgumentName( unsigned& iarg ) {
-  if( iarg < getNumberOfArguments() ) return getPntrToArgument(iarg)->getName();
-  unsigned iatom=iarg - getNumberOfArguments();
-  std::string atnum; Tools::convert( getAbsoluteIndex(iatom).serial(),atnum);
-  unsigned icomp=iatom%3;
-  if(icomp==0) return "pos" + atnum + "x";
-  if(icomp==1) return "pos" + atnum + "y";
-  return "pos" + atnum + "z";
-}
-
-void Mapping::finishPackSetup( const unsigned& ifunc, ReferenceValuePack& mypack ) const {
-  ReferenceConfiguration* myref=mymap->getFrame(ifunc); mypack.setValIndex(0);
-  unsigned nargs2=myref->getNumberOfReferenceArguments(); unsigned nat2=myref->getNumberOfReferencePositions();
+void Mapping::performTask( const unsigned& current, MultiValue& myvals ) const {
+  ReferenceValuePack mypack( getNumberOfArguments(), getNumberOfAtoms(), myvals ); mypack.setValIndex( getPntrToOutput(0)->getPositionInStream() );
+  unsigned nargs2=myframes[current]->getNumberOfReferenceArguments(); unsigned nat2=myframes[current]->getNumberOfReferencePositions();
   if( mypack.getNumberOfAtoms()!=nat2 || mypack.getNumberOfArguments()!=nargs2 ) mypack.resize( nargs2, nat2 );
   if( nat2>0 ) {
-    ReferenceAtoms* myat2=dynamic_cast<ReferenceAtoms*>( myref ); plumed_dbg_assert( myat2 );
+    ReferenceAtoms* myat2=dynamic_cast<ReferenceAtoms*>( myframes[current] ); plumed_dbg_assert( myat2 );
     for(unsigned i=0; i<nat2; ++i) mypack.setAtomIndex( i, myat2->getAtomIndex(i) );
   }
-}
-
-double Mapping::calculateDistanceFunction( const unsigned& ifunc, ReferenceValuePack& myder, const bool& squared ) const {
-  // Calculate the distance
-  double dd = mymap->calcDistanceFromConfiguration( ifunc, getPositions(), getPbc(), getArguments(), myder, squared );
-  // Transform distance by whatever
-  double df, ff=transformHD( dd, df ); myder.scaleAllDerivatives( df );
-  // And the virial
-  if( getNumberOfAtoms()>0 && !myder.virialWasSet() ) {
+  double dd = myframes[current]->calculate( getPositions(), getPbc(), getArguments(), mypack, squared );
+  myvals.setValue( getPntrToOutput(0)->getPositionInStream(), dd );
+  if( !doNotCalculateDerivatives() && getNumberOfAtoms()>0 && !mypack.virialWasSet() ) {
     Tensor tvir; tvir.zero();
-    for(unsigned i=0; i<myder.getNumberOfAtoms(); ++i) tvir +=-1.0*Tensor( getPosition( myder.getAtomIndex(i) ), myder.getAtomDerivative(i) );
-    myder.addBoxDerivatives( tvir );
+    for(unsigned i=0; i<mypack.getNumberOfAtoms(); ++i) tvir +=-1.0*Tensor( getPosition( mypack.getAtomIndex(i) ), mypack.getAtomDerivative(i) );
+    mypack.addBoxDerivatives( tvir );
   }
-  return ff;
 }
 
-ReferenceConfiguration* Mapping::getReferenceConfiguration( const unsigned& ifunc ) {
-  return mymap->getFrame( ifunc );
+unsigned Mapping::getNumberOfDerivatives() {
+  unsigned nat=getNumberOfAtoms();
+  if(nat>0) return 3*nat + 9 + getNumberOfArguments();
+  return getNumberOfArguments();
+}
+
+void Mapping::lockRequests() {
+  ActionWithArguments::lockRequests();
+  ActionAtomistic::lockRequests();
+}
+
+void Mapping::unlockRequests() {
+  ActionWithArguments::unlockRequests();
+  ActionAtomistic::unlockRequests();
 }
 
 void Mapping::calculateNumericalDerivatives( ActionWithValue* a ) {
@@ -215,13 +194,12 @@ void Mapping::calculateNumericalDerivatives( ActionWithValue* a ) {
 }
 
 void Mapping::apply() {
-  if( getForcesFromVessels( forcesToApply ) ) {
-    addForcesOnArguments( forcesToApply );
-    if( getNumberOfAtoms()>0 ) setForcesOnAtoms( forcesToApply, getNumberOfArguments() );
-  }
-}
-
-}
+//  if( getForcesFromVessels( forcesToApply ) ) {
+//    addForcesOnArguments( forcesToApply );
+//    if( getNumberOfAtoms()>0 ) setForcesOnAtoms( forcesToApply, getNumberOfArguments() );
+//  }
 }
 
 
+}
+}

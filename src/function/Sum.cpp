@@ -53,28 +53,20 @@ public:
 PLUMED_REGISTER_ACTION(Sum,"SUM")
 
 void Sum::registerKeywords(Keywords& keys) {
-  Function::registerKeywords(keys);
-  keys.use("ARG"); 
+  Function::registerKeywords(keys); keys.use("ARG"); keys.remove("PERIODIC"); 
 }
 
 Sum::Sum(const ActionOptions&ao):
   Action(ao),
   Function(ao)
 {
-  for(unsigned i=0;i<getNumberOfComponents();++i){
-     if( getPntrToComponent(i)->isPeriodic() ) error("cannot use this function on periodic functions");
+  rankOneOutput = getPntrToArgument(0)->getRank()>0;
+  if( rankOneOutput && getNumberOfArguments()>1 ) error("cannot sum more than one vector or matrix at a time");
+  if( arg_ends[1]-arg_ends[0]!=1 ) error("makes no sense to use ARG1, ARG2... with this action use single ARG keyword");
+  for(unsigned i=0;i<getNumberOfArguments();++i){
+     if( getPntrToArgument(i)->isPeriodic() ) error("cannot use this function on periodic functions");
   }
-
-  std::vector<unsigned> shape(0);
-  if( arg_ends[1]-arg_ends[0]==1 ){
-      ActionWithValue::addValueWithDerivatives( shape ); setNotPeriodic();
-  } else {
-      std::string num;
-      for(unsigned i=0;i<arg_ends.size()-1;++i){ 
-         Tools::convert(i+1,num); ActionWithValue::addComponentWithDerivatives( "arg_" + num, shape ); 
-         componentIsNotPeriodic( "arg_" + num );
-      }
-  }
+  addValueWithDerivatives();
   checkRead();
 }
 

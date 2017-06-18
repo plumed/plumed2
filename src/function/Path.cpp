@@ -51,14 +51,14 @@ public:
   static void registerKeywords(Keywords& keys);
   explicit Path(const ActionOptions&);
   void     calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const ;
-//  void finish( const std::vector<double>& buffer );
+  void transformFinalValueAndDerivatives();
 };
 
 
 PLUMED_REGISTER_ACTION(Path,"PATH")
 
 void Path::registerKeywords(Keywords& keys) {
-  Function::registerKeywords(keys); keys.use("ARG"); 
+  Function::registerKeywords(keys); keys.use("ARG"); keys.remove("PERIODIC");
   keys.add("compulsory","LAMBDA","the lambda parameter is needed for smoothing, is in the units of plumed");
   componentsAreNotOptional(keys);
   keys.addOutputComponent("s","default","the position on the path");
@@ -69,6 +69,13 @@ Path::Path(const ActionOptions&ao):
   Action(ao),
   Function(ao)
 {
+  rankOneOutput = getPntrToArgument(0)->getRank()>0;
+  if( getPntrToArgument(0)->getRank()>1 ) error("input arguments should be rank 0 or rank 1");
+  if( rankOneOutput && getNumberOfArguments()>1 ) error("cannot sum more than one vector or matrix at a time");
+  if( arg_ends[1]-arg_ends[0]!=1 ) error("makes no sense to use ARG1, ARG2... with this action use single ARG keyword");
+  for(unsigned i=0;i<getNumberOfArguments();++i){
+     if( getPntrToArgument(i)->isPeriodic() ) error("cannot use this function on periodic functions");
+  }
   parse("LAMBDA",lambda); checkRead();
   log.printf("  lambda is %f\n",lambda);
   addComponentWithDerivatives("s"); componentIsNotPeriodic("s");
@@ -78,6 +85,7 @@ Path::Path(const ActionOptions&ao):
 void Path::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const 
 {
   if( args.size()==1 ){
+      plumed_dbg_assert( done_over_stream );
       double val=exp(-lambda*args[0]); double fram = myvals.getTaskIndex() + 1;
       // Numerator
       setValue( 0, fram*val, myvals ); addDerivative( 0, 0, -lambda*fram*val, myvals );
@@ -101,18 +109,20 @@ void Path::calculateFunction( const std::vector<double>& args, MultiValue& myval
   }
 }
 
-// void Path::finish( const std::vector<double>& buffer ){
-//   Value* val0 = getPntrToComponent(0);
-//   if( val0->isDataStream() ) return;
-//   Value* val1 = getPntrToComponent(1); 
-//   unsigned buf0 = val0->getBufferPosition(), buf1 = val1->getBufferPosition();
-//   double num = buffer[buf0], denom = buffer[buf1], zpref = 1.0 / (denom*lambda); 
-//   val0->set( num / denom ); val1->set( -std::log( denom ) / lambda );
-//   for(unsigned j=0;j<val0->getNumberOfDerivatives();++j){
-//       val0->setDerivative( j, buffer[buf0 + 1 + j]/denom - buffer[buf1 + 1 + j]*num/(denom*denom) );
-//       val1->setDerivative( j, -zpref*buffer[buf1 + 1 + j] );
-//   }
-// }
+void Path::transformFinalValueAndDerivatives() {
+  if( !done_over_stream || getNumberOfArguments()>1 ) return;
+  Value* val0 = getPntrToComponent(0); Value* val1 = getPntrToComponent(1);
+  double num = val0->get(), denom = val1->get();
+  val0->set( num / denom ); val1->set( -std::log( denom ) / lambda );
+  if( !doNotCalculateDerivatives() ){
+      double denom2 = denom*denom, zpref = 1.0 / (denom*lambda);
+      for(unsigned j=0;j<val0->getNumberOfDerivatives();++j){  
+          double denom_deriv = val1->getDerivative(j);
+          val0->setDerivative( j, val0->getDerivative(j)/denom - denom_deriv*num/denom2 );
+          val1->setDerivative( j, -zpref*denom_deriv );
+      }
+  }
+}
 
 }
 }

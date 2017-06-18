@@ -58,6 +58,8 @@ public:
 ///
   void clear();
 ///
+  bool noDerivatives() const ;
+///
   unsigned getNumberOfDerivatives() const ;
 ///
   unsigned getNumberOfArguments() const ;
@@ -106,6 +108,11 @@ public:
 ///
   std::vector<Vector>& getAtomsDisplacementVector();
 };
+
+inline
+bool ReferenceValuePack::noDerivatives() const {
+  return (myvals.getNumberOfDerivatives()==0);
+}
 
 inline
 unsigned ReferenceValuePack::getNumberOfDerivatives() const {

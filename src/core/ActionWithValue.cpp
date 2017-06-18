@@ -243,15 +243,15 @@ void ActionWithValue::setGradientsIfNeeded() {
 }
 
 void ActionWithValue::turnOnDerivatives() {
-  // Turn on the derivatives
-  noderiv=false;
-  // Resize the derivatives
-  for(unsigned i=0; i<values.size(); ++i) values[i]->resizeDerivatives( getNumberOfDerivatives() );
-  // And turn on the derivatives in all actions on which we are dependent
+  // Turn on the derivatives in all actions on which we are dependent
   for(unsigned i=0; i<getDependencies().size(); ++i) {
     ActionWithValue* vv=dynamic_cast<ActionWithValue*>( getDependencies()[i] );
     if(vv) vv->turnOnDerivatives();
   }
+  // Turn on the derivatives
+  noderiv=false;
+  // Resize the derivatives
+  for(unsigned i=0; i<values.size(); ++i) values[i]->resizeDerivatives( getNumberOfDerivatives() );
 }
 
 Value* ActionWithValue::getPntrToOutput( const unsigned& ind ) const {
@@ -337,7 +337,6 @@ void ActionWithValue::runAllTasks() {
 
   // Get the total number of streamed quantities that we need
   unsigned nquantities = 0; getNumberOfStreamedQuantities( nquantities );
-  for(const auto & p : actions_to_do_after ) p->getNumberOfStreamedQuantities( nquantities );
   // Get size for buffer
   unsigned bufsize=0; getSizeOfBuffer( nactive_tasks, bufsize );
   if( buffer.size()!=bufsize ) buffer.resize( bufsize );
@@ -394,10 +393,9 @@ void ActionWithValue::runAllTasks() {
   if(timers) stopwatch.stop("4 Finishing computations");
 }
 
-unsigned ActionWithValue::getNumberOfStreamedQuantities( unsigned& nquants ) const {
+void ActionWithValue::getNumberOfStreamedQuantities( unsigned& nquants ) const {
   for(unsigned i=0;i<values.size();++i){ values[i]->streampos=nquants; nquants++; }
   for(const auto & p : actions_to_do_after ) p->getNumberOfStreamedQuantities( nquants );
-  return nquants;
 }
 
 void ActionWithValue::getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize ){
@@ -474,6 +472,7 @@ void ActionWithValue::finishComputations( const std::vector<double>& buffer ){
           for(unsigned j=0;j<values[i]->getNumberOfDerivatives();++j) values[i]->setDerivative( j, buffer[bufstart+1+j] );
       }
   } 
+  transformFinalValueAndDerivatives();
   for(const auto & p : actions_to_do_after ){
      if( p->isActive() ) p->finishComputations( buffer );
   }

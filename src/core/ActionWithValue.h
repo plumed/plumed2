@@ -105,6 +105,8 @@ private:
   void runTask( const unsigned& index, const unsigned& taskno, MultiValue& myvals ) const ;
   void gatherAccumulators( const unsigned& index, const MultiValue& myvals, std::vector<double>& buf ) const ;
   void finishComputations( const std::vector<double>& buf );
+  void getNumberOfStreamedQuantities( unsigned& nquants ) const ;
+  void getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize );
 public:
 
 // -------- The action has one value only  ---------------- //
@@ -216,10 +218,6 @@ public:
 /// Interpret the data label and get arguments 
   void interpretDataLabel( const std::string& mystr, ActionWithArguments* myuser, std::vector<Value*>& args );
 ///
-  unsigned getNumberOfStreamedQuantities( unsigned& nquants ) const ;
-///
-  void getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize );
-///
   unsigned getFullNumberOfTasks() const ;
 /// Reperform one of the tasks
   void rerunTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const ;
@@ -231,6 +229,8 @@ public:
   virtual void performTask( const unsigned& current, MultiValue& myvals ) const { plumed_error(); }
 ///
   void addActionToChain( ActionWithValue* act );
+///
+  virtual void transformFinalValueAndDerivatives(){};
 };
 
 inline

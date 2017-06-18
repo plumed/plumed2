@@ -74,6 +74,7 @@ double OptimalRMSD::calc( const std::vector<Vector>& pos, ReferenceValuePack& my
     else d=myrmsd.optimalAlignment<true,false>(getAlign(),getDisplace(),pos,getReferencePositions(),myder.getAtomVector(),squared);
   }
   // myder.clear(); 
+  if( myder.noDerivatives() ) return d;
   for(unsigned i=0; i<pos.size(); ++i) myder.setAtomDerivatives( i, myder.getAtomVector()[i] );
   if( !myder.updateComplete() ) myder.updateDynamicLists();
   return d;

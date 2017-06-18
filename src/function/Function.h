@@ -42,6 +42,7 @@ private:
   unsigned nderivatives;
   std::vector<unsigned> getShape();
 protected:
+  bool rankOneOutput;
   void addValueWithDerivatives();
   void addComponentWithDerivatives( const std::string& name );
   void setValue( const unsigned& ival, const double& val, MultiValue& myvals ) const ;

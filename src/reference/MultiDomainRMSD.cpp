@@ -100,7 +100,7 @@ double MultiDomainRMSD::calculate( const std::vector<Vector>& pos, const Pbc& pb
     // This actually does the calculation
     tder.clear(); totd += weights[i]*domains[i]->calculate( mypos, pbc, tder, true );
     // Now merge the derivative
-    myder.copyScaledDerivatives( 0, weights[i], tvals );
+    if( !myder.noDerivatives() ) myder.copyScaledDerivatives( 0, weights[i], tvals );
     // If PCA copy PCA stuff
     if( myder.calcUsingPCAOption() ) {
       unsigned n=0;
@@ -122,7 +122,7 @@ double MultiDomainRMSD::calculate( const std::vector<Vector>& pos, const Pbc& pb
 
   if( !squared ) {
     totd=sqrt(totd); double xx=0.5/totd;
-    myder.scaleAllDerivatives( xx );
+    if( !myder.noDerivatives() ) myder.scaleAllDerivatives( xx );
   }
   return totd;
 }
