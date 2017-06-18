@@ -48,6 +48,10 @@ class Path :
 private:
   double lambda;
 public:
+  static void shortcutKeywords( Keywords& keys );
+  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                              const std::map<std::string,std::string>& keys,
+                              std::vector<std::vector<std::string> >& actions );
   static void registerKeywords(Keywords& keys);
   explicit Path(const ActionOptions&);
   void     calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const ;
@@ -56,6 +60,27 @@ public:
 
 
 PLUMED_REGISTER_ACTION(Path,"PATH")
+PLUMED_REGISTER_SHORTCUT(Path,"PATH")
+
+void Path::shortcutKeywords( Keywords& keys ){
+  keys.add("compulsory","REFERENCE","a pdb file containing the set of reference configurations");
+  keys.add("compulsory","TYPE","OPTIMAL-FAST","the manner in which distances are calculated. More information on the different "
+           "metrics that are available in PLUMED can be found in the section of the manual on "
+           "\\ref dists");
+}
+
+void Path::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                              const std::map<std::string,std::string>& keys,
+                              std::vector<std::vector<std::string> >& actions ){
+  std::vector<std::string> ref_line; ref_line.push_back( lab + "_data:" ); 
+  ref_line.push_back("EUCLIDEAN_DISSIMILARITIES_VECTOR");
+  for(const auto & p : keys ) ref_line.push_back( p.first + "=" + p.second );
+  ref_line.push_back("SQUARED"); actions.push_back( ref_line );
+  std::vector<std::string> path_line; path_line.push_back( lab + ":" ); 
+  for(unsigned i=0;i<words.size();++i) path_line.push_back(words[i]);
+  path_line.push_back("ARG=" + lab + "_data" );  
+  actions.push_back( path_line );
+}
 
 void Path::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys); keys.use("ARG"); keys.remove("PERIODIC");
