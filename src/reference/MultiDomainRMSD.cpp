@@ -174,7 +174,7 @@ void MultiDomainRMSD::extractAtomicDisplacement( const std::vector<Vector>& pos,
 }
 
 double MultiDomainRMSD::projectAtomicDisplacementOnVector( const bool& normalized, const std::vector<Vector>& vecs, ReferenceValuePack& mypack ) const {
-  double totd=0.; std::vector<Vector> tvecs; mypack.clear();
+  double totd=0.; std::vector<Vector> tvecs; 
   MultiValue tvals( 1, mypack.getNumberOfDerivatives() ); ReferenceValuePack tder( 0, getNumberOfAtoms(), tvals );
   for(unsigned i=0; i<domains.size(); ++i) {
     // Must extract appropriate positions here
@@ -196,12 +196,12 @@ double MultiDomainRMSD::projectAtomicDisplacementOnVector( const bool& normalize
     for(unsigned k=n; k<getNumberOfAtoms(); ++k) tder.setAtomIndex(k,3*vecs.size()+10);
 
     // Do the calculations
-    totd += weights[i]*domains[i]->projectAtomicDisplacementOnVector( normalized, tvecs, tder );
+    tder.clear(); totd += weights[i]*domains[i]->projectAtomicDisplacementOnVector( normalized, tvecs, tder );
 
     // And derivatives
     mypack.copyScaledDerivatives( 0, weights[i], tvals );
   }
-  if( !mypack.updateComplete() ) mypack.updateDynamicLists();
+  if( !mypack.updateComplete() ){ mypack.updateDynamicLists(); }
 
   return totd;
 }

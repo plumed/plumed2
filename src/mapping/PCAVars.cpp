@@ -356,8 +356,9 @@ void PCAVars::calculate() {
 
   // Now calculate projections on pca vectors
   Vector adif, ader; Tensor fvir, tvir;
-  for(int i=0; i<getNumberOfComponents()-1; ++i) { // One less component as we also have residual
-    double proj=myref->projectDisplacementOnVector( directions[i], getArguments(), args, mypack );
+  for(unsigned i=0; i<getNumberOfComponents()-1; ++i) { // One less component as we also have residual
+    mypack.clear(); double proj=myref->projectDisplacementOnVector( directions[i], getArguments(), args, mypack );
+
     // And now accumulate derivatives
     Value* eid=getPntrToComponent(i);
     for(unsigned j=0; j<getNumberOfArguments(); ++j) eid->addDerivative( j, mypack.getArgumentDerivative(j) );
