@@ -41,7 +41,9 @@ class ActionAtomistic :
 {
 
   std::vector<AtomNumber> indexes;         // the set of needed atoms
+/// unique should be an ordered set since we later create a vector containing the corresponding indexes
   std::set<AtomNumber>  unique;
+/// unique_local should be an ordered set since we later create a vector containing the corresponding indexes
   std::set<AtomNumber>  unique_local;
   std::vector<Vector>   positions;       // positions of the needed atoms
   double                energy;
