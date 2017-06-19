@@ -77,7 +77,8 @@ void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a) {
 // only real atoms are requested to lower level Atoms class
     else unique.insert(indexes[i]);
   }
-
+  updateUniqueLocal();
+  atoms.unique.clear();
 }
 
 Vector ActionAtomistic::pbcDistance(const Vector &v1,const Vector &v2)const {
@@ -279,6 +280,17 @@ void ActionAtomistic::makeWhole() {
     const Vector & first (positions[j]);
     Vector & second (positions[j+1]);
     second=first+pbcDistance(first,second);
+  }
+}
+
+void ActionAtomistic::updateUniqueLocal() {
+  unique_local.clear();
+  if(atoms.dd && atoms.shuffledAtoms>0) {
+    for(auto pp=unique.begin(); pp!=unique.end(); ++pp) {
+      if(atoms.dd.g2l[pp->index()]>=0) unique_local.insert(*pp);
+    }
+  } else {
+    unique_local.insert(unique.begin(),unique.end());
   }
 }
 
