@@ -41,7 +41,10 @@ class ActionAtomistic :
 {
 
   std::vector<AtomNumber> indexes;         // the set of needed atoms
+/// unique should be an ordered set since we later create a vector containing the corresponding indexes
   std::set<AtomNumber>  unique;
+/// unique_local should be an ordered set since we later create a vector containing the corresponding indexes
+  std::set<AtomNumber>  unique_local;
   std::vector<Vector>   positions;       // positions of the needed atoms
   double                energy;
   Pbc&                  pbc;
@@ -146,6 +149,8 @@ public:
   void makeWhole();
 /// Allow calls to modifyGlobalForce()
   void allowToAccessGlobalForces() {atoms.zeroallforces=true;}
+/// updates local unique atoms
+  void updateUniqueLocal();
 public:
 
 // virtual functions:
@@ -169,6 +174,7 @@ public:
   void lockRequests();
   void unlockRequests();
   const std::set<AtomNumber> & getUnique()const;
+  const std::set<AtomNumber> & getUniqueLocal()const;
 /// Read in an input file containing atom positions and calculate the action for the atomic
 /// configuration therin
   void readAtomsFromPDB( const PDB& pdb );
@@ -268,6 +274,11 @@ void ActionAtomistic::unlockRequests() {
 inline
 const std::set<AtomNumber> & ActionAtomistic::getUnique()const {
   return unique;
+}
+
+inline
+const std::set<AtomNumber> & ActionAtomistic::getUniqueLocal()const {
+  return unique_local;
 }
 
 inline
