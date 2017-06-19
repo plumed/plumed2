@@ -61,7 +61,7 @@ public:
 
 PLUMED_REGISTER_ACTION(Path,"PATH")
 PLUMED_REGISTER_SHORTCUT(Path,"PATH")
-PLUMED_REGISTER_SHORTCUT(Path,"PROPERTY_MAP")
+PLUMED_REGISTER_SHORTCUT(Path,"GPROPERTYMAP")
 
 void Path::shortcutKeywords( Keywords& keys ){
   keys.add("compulsory","REFERENCE","a pdb file containing the set of reference configurations");
@@ -84,21 +84,32 @@ void Path::expandShortcut( const std::string& lab, const std::vector<std::string
   path_line.push_back( lab + ":" ); 
   for(unsigned i=0;i<words.size();++i) path_line.push_back(words[i]);
   path_line.push_back("ARG=" + lab + "_data" );
-  if( path_line[0]=="PROPERTY_MAP" ){
-      path_line[0]="PATH"; std::string coords="COORDINATES=";
-      std::string props = keys.find("PROPERTY")->second;
+  if( path_line[1]=="GPROPERTYMAP" ){
+      path_line[1]="PATH"; 
+      std::vector<std::string> props( Tools::getWords( keys.find("PROPERTY")->second, "\t\n ,") ); 
       FILE* fp=std::fopen(const_cast<char*>(keys.find("REFERENCE")->second.c_str()),"r");
       if(!fp) plumed_merror("could not open reference file " + keys.find("REFERENCE")->second );
-
-      bool do_read=false; double fake_unit=0.1, propval; std::string propstr;
+      
+      std::vector<std::string> coords(props.size()); 
+      for(unsigned i=0;i<props.size();++i) coords[i]="COORDINATES=";
+      bool do_read=true; double fake_unit=0.1; std::string propstr; 
       while (do_read ) {
         PDB mypdb; do_read=mypdb.readFromFilepointer(fp,false,fake_unit);  // Units don't matter here
         // Break if we are done
         if( !do_read ) break ;
-        mypdb.getArgumentValue( props, propval ); Tools::convert( propval, propstr );
-        if( nfram==0 ){ coords += propstr; nfram=1; } else { coords += "," + propstr; } 
+        std::vector<std::string> remarks( mypdb.getRemark() );
+        for(unsigned i=0;i<props.size();++i){
+            bool found=Tools::parse( remarks, props[i], propstr );
+            if( nfram==0 ){ coords[i] += propstr; } else { coords[i] += "," + propstr; } 
+        }
+        nfram=1;
       }
-      path_line.push_back( coords ); actions.push_back( path_line );
+      path_line.push_back( "" ); 
+      for(unsigned i=0;i<props.size();++i){ 
+         path_line[0] = props[i] + ":";
+         path_line[path_line.size()-1] = coords[i]; 
+         actions.push_back( path_line ); 
+      }
   } else { actions.push_back( path_line ); }
 }
 
@@ -125,14 +136,14 @@ Path::Path(const ActionOptions&ao):
   }
   parseVector("COORDINATES",framep);
   if( framep.size()>0 ){ 
-     if( (done_over_stream && framep.size()!=getPntrToArgument(0)->getShape()[0]) ||
+     if( (done_over_stream && framep.size()!=getPntrToArgument(0)->getShape()[0]) &&
          framep.size()!=getNumberOfArguments() ) error("wrong number of input coordinates"); 
   } else {
      if( done_over_stream ) framep.resize( getPntrToArgument(0)->getShape()[0] ); 
      else framep.resize( getNumberOfArguments() );
      for(unsigned i=0;i<framep.size();++i) framep[i] = static_cast<double>(i+1);
   } 
-  log.printf("  coordinates of points on path :");
+  log.printf("  coordinates of points on path : ");
   for(unsigned i=0;i<framep.size();++i) log.printf("%f ",framep[i] );
   log.printf("\n"); parse("LAMBDA",lambda); checkRead(); 
   log.printf("  lambda is %f\n",lambda);

@@ -91,10 +91,15 @@ std::vector<std::vector<std::string> > ActionRegister::expandShortcuts( const un
       if( keymap.size()>0 ){
          for(unsigned i=0;i<keys.size();++i){
              std::string t, def, keyname = keys.get(i);
-             if( keys.getDefaultValue( keyname, def ) ){ 
+             if( keys.style( keyname, "compulsory") ){
+                 if( keys.getDefaultValue( keyname, def ) ){ 
+                     bool found=Tools::parse(words,keyname,t,replica_index);
+                     if( !found ) keymap.insert(pair<std::string,std::string>(keyname,def));
+                     else keymap.insert(pair<std::string,std::string>(keyname,t));
+                 }
+             } else if( keys.style( keyname, "optional") ){
                  bool found=Tools::parse(words,keyname,t,replica_index);
-                 if( !found ) keymap.insert(pair<std::string,std::string>(keyname,def));
-                 else keymap.insert(pair<std::string,std::string>(keyname,t));
+                 if( found ) keymap.insert(pair<std::string,std::string>(keyname,t));
              }
          }
          std::string lab; bool found=Tools::parse( words, "LABEL", lab, replica_index);
