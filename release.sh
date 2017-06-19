@@ -111,7 +111,7 @@ git checkout v$shortversion
 
 set -e
 if ! test "$VALIDATED" ; then
-  update_changelog CHANGES/v$shortversion.txt $version $shortversion "coming soon"
+  update_changelog CHANGES/v$shortversion.md $version $shortversion "coming soon"
   echo 
   msg="Travis tests for v$version
 
@@ -119,12 +119,12 @@ if ! test "$VALIDATED" ; then
   echo "Now I will add an empty commit and push the result to origin"
   echo "I will use the following commands:"
   echo "***"
-  echo "git add CHANGES/v$shortversion.txt"
+  echo "git add CHANGES/v$shortversion.md"
   echo "git commit --allow-empty -m \"$msg\""
   echo "git push origin v$shortversion"
   echo "***"
   confirm || exit
-  git add CHANGES/v$shortversion.txt
+  git add CHANGES/v$shortversion.md
   git commit --allow-empty -m "$msg"
   git push origin v$shortversion
   echo
@@ -136,7 +136,7 @@ if ! test "$VALIDATED" ; then
   echo "  http://plumed.github.io/doc-v$shortversion"
   echo "In case of success, relaunch this script as \"./release.sh --validated\""
 else
-  update_changelog CHANGES/v$shortversion.txt $version $shortversion "$(date '+%b %e, %Y' | sed 's/  / /g')"
+  update_changelog CHANGES/v$shortversion.md $version $shortversion "$(date '+%b %e, %Y' | sed 's/  / /g')"
   {
     grep  \# VERSION 
     echo $version
@@ -153,7 +153,7 @@ else
   echo "push it to origin and create a tgz file"
   echo "I will use the following commands:"
   echo "***"
-  echo "git add CHANGES/v$shortversion.txt"
+  echo "git add CHANGES/v$shortversion.md"
   echo "git add VERSION"
   echo "git commit --allow-empty -m \"$msg\""
   echo "git tag v$version"
@@ -161,7 +161,7 @@ else
   echo "git archive -o plumed-$version.tgz --prefix plumed-$version/ v$version"
   echo "***"
   confirm || exit
-  git add CHANGES/v$shortversion.txt
+  git add CHANGES/v$shortversion.md
   git add VERSION
   git commit --allow-empty -m "$msg"
   git tag v$version

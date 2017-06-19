@@ -33,6 +33,7 @@ namespace analysis {
 Does a committor analysis.
 
 \par Examples
+
 The following input monitors two torsional angles during a simulation,
 defines two basins (A and B) as a function of the two torsions and
 stops the simulation when it falls in one of the two. In the log
@@ -45,8 +46,8 @@ COMMITTOR ...
   STRIDE=10
   BASIN_LL1=0.15,0.20
   BASIN_UL1=0.25,0.40
-  BASIN_LL2=-0.15,-0.20
-  BASIN_UL2=-0.25,-0.40
+  BASIN_LL2=-0.25,-0.40
+  BASIN_UL2=-0.15,-0.20
 ... COMMITTOR
 \endplumedfile
 
