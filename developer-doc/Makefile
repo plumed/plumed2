@@ -25,4 +25,6 @@ coverage:
 	lcov -r coverage.info "*/lapack/*.cpp" "*/lapack/*.h" -o coverage-tmp.info && mv coverage-tmp.info coverage.info
 # remove internal molfile:
 	lcov -r coverage.info "*/molfile/*.cpp" "*/molfile/*.h" -o coverage-tmp.info && mv coverage-tmp.info coverage.info
+# remove internal lepton:
+	lcov -r coverage.info "*/lepton/*.cpp" "*/lepton/*.h" -o coverage-tmp.info && mv coverage-tmp.info coverage.info
 	genhtml -o coverage -t "plumed test coverage" coverage.info
