@@ -19,14 +19,14 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Function.h"
-#include "ActionRegister.h"
+#include "function/Function.h"
+#include "core/ActionRegister.h"
 #include "tools/OpenMP.h"
 
 using namespace std;
 
 namespace PLMD {
-namespace function {
+namespace mapping {
 
 //+PLUMEDOC FUNCTION PATH
 /*
@@ -42,11 +42,10 @@ perpendicular distance from the curvilinear path ("z" component).
 //+ENDPLUMEDOC
 
 
-class Path :
-  public Function
-{
+class Path : public function::Function {
 private:
   double lambda;
+  std::vector<double> framep;
 public:
   static void shortcutKeywords( Keywords& keys );
   static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
@@ -83,8 +82,10 @@ void Path::expandShortcut( const std::string& lab, const std::vector<std::string
 }
 
 void Path::registerKeywords(Keywords& keys) {
-  Function::registerKeywords(keys); keys.use("ARG"); keys.remove("PERIODIC");
+  function::Function::registerKeywords(keys); keys.use("ARG"); keys.remove("PERIODIC");
   keys.add("compulsory","LAMBDA","the lambda parameter is needed for smoothing, is in the units of plumed");
+  keys.add("optional","COORDINATES","a vector of coordinates describing the position of each point along the path.  The default "
+                                    "is to place these coordinates at 1, 2, 3, ...");
   componentsAreNotOptional(keys);
   keys.addOutputComponent("s","default","the position on the path");
   keys.addOutputComponent("z","default","the distance from the path");
@@ -101,7 +102,18 @@ Path::Path(const ActionOptions&ao):
   for(unsigned i=0;i<getNumberOfArguments();++i){
      if( getPntrToArgument(i)->isPeriodic() ) error("cannot use this function on periodic functions");
   }
-  parse("LAMBDA",lambda); checkRead();
+  parseVector("COORDINATES",framep);
+  if( framep.size()>0 ){ 
+     if( (done_over_stream && framep.size()!=getPntrToArgument(0)->getShape()[0]) ||
+         framep.size()!=getNumberOfArguments() ) error("wrong number of input coordinates"); 
+  } else {
+     if( done_over_stream ) framep.resize( getPntrToArgument(0)->getShape()[0] ); 
+     else framep.resize( getNumberOfArguments() );
+     for(unsigned i=0;i<framep.size();++i) framep[i] = static_cast<double>(i+1);
+  } 
+  log.printf("  coordinates of points on path :");
+  for(unsigned i=0;i<framep.size();++i) log.printf("%f ",framep[i] );
+  log.printf("\n"); parse("LAMBDA",lambda); checkRead(); 
   log.printf("  lambda is %f\n",lambda);
   addComponentWithDerivatives("s"); componentIsNotPeriodic("s");
   addComponentWithDerivatives("z"); componentIsNotPeriodic("z");
@@ -111,7 +123,7 @@ void Path::calculateFunction( const std::vector<double>& args, MultiValue& myval
 {
   if( args.size()==1 ){
       plumed_dbg_assert( done_over_stream );
-      double val=exp(-lambda*args[0]); double fram = myvals.getTaskIndex() + 1;
+      double val=exp(-lambda*args[0]); double fram = framep[myvals.getTaskIndex()];
       // Numerator
       setValue( 0, fram*val, myvals ); addDerivative( 0, 0, -lambda*fram*val, myvals );
       // Weight
@@ -119,14 +131,14 @@ void Path::calculateFunction( const std::vector<double>& args, MultiValue& myval
   } else {
       double s=0, norm=0; std::vector<double> normd( args.size() );
       for(unsigned i=0;i<args.size();++i){
-          double val = exp(-lambda*args[i]); s += (i+1)*val; norm += val; normd[i] = -lambda*val;
+          double val = exp(-lambda*args[i]); s += framep[i]*val; norm += val; normd[i] = -lambda*val;
       }
       setValue( 0, s / norm, myvals ); setValue( 1, -std::log( norm )/lambda, myvals );
       if( !doNotCalculateDerivatives() ){
           double zpref = ( 1.0/(norm*lambda) ), ddenom = s /(norm*norm);
           for(unsigned i=0;i<args.size();++i){
               // Derivatives of spath
-              addDerivative( 0, i, (i+1)*normd[i]/norm - ddenom*normd[i], myvals ); 
+              addDerivative( 0, i, framep[i]*normd[i]/norm - ddenom*normd[i], myvals ); 
               // Derivatives of zpath
               addDerivative( 1, i, -zpref*normd[i], myvals );
           }
