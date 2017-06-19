@@ -22,6 +22,7 @@
 #include "SwitchingFunction.h"
 #include "Tools.h"
 #include "Keywords.h"
+#include "lepton/Lepton.h"
 #include <vector>
 #include <limits>
 
@@ -236,6 +237,16 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   else if(name=="GAUSSIAN") type=gaussian;
   else if(name=="CUBIC") type=cubic;
   else if(name=="TANH") type=tanh;
+  else if(name=="MATHEVAL" && std::getenv("PLUMED_USE_LEPTON")) {
+    type=leptontype;
+    std::string func;
+    Tools::parse(data,"FUNC",func);
+    func+=" ; pi=3.14159265358979";
+    lepton_func=func;
+    lepton_evaluator=new lepton::CompiledExpression(lepton::Parser::parse(func).optimize().createCompiledExpression());
+    lepton_evaluator_deriv=new
+    lepton::CompiledExpression(lepton::Parser::parse(func).differentiate("x").optimize().createCompiledExpression());
+  }
 #ifdef __PLUMED_HAS_MATHEVAL
   else if(name=="MATHEVAL") {
     type=matheval;
@@ -288,6 +299,8 @@ std::string SwitchingFunction::description() const {
     ostr<<"cubic";
   } else if(type==tanh) {
     ostr<<"tanh";
+  } else if(type==leptontype) {
+    ostr<<"lepton";
 #ifdef __PLUMED_HAS_MATHEVAL
   } else if(type==matheval) {
     ostr<<"matheval";
@@ -304,6 +317,8 @@ std::string SwitchingFunction::description() const {
     ostr<<" a="<<a<<" b="<<b;
   } else if(type==cubic) {
     ostr<<" dmax="<<dmax;
+  } else if(type==leptontype) {
+    ostr<<" func="<<lepton_func;
 #ifdef __PLUMED_HAS_MATHEVAL
   } else if(type==matheval) {
     ostr<<" func="<<evaluator_get_string(evaluator);
@@ -396,6 +411,16 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
       double tmp1=std::tanh(rdist);
       result = 1.0 - tmp1;
       dfunc=-(1-tmp1*tmp1);
+    } else if(type==leptontype) {
+      try {
+        static_cast<lepton::CompiledExpression*>(lepton_evaluator)->getVariableReference("x")=rdist;
+        static_cast<lepton::CompiledExpression*>(lepton_evaluator_deriv)->getVariableReference("x")=rdist;
+      } catch(PLMD::lepton::Exception& exc) {
+// this is necessary since in some cases lepton things a variable is not present even though it is present
+// e.g. func=0*x
+      }
+      result=static_cast<lepton::CompiledExpression*>(lepton_evaluator)->evaluate();
+      dfunc=static_cast<lepton::CompiledExpression*>(lepton_evaluator_deriv)->evaluate();
 #ifdef __PLUMED_HAS_MATHEVAL
     } else if(type==matheval) {
       result=evaluator_evaluate_x(evaluator,rdist);
@@ -434,6 +459,8 @@ SwitchingFunction::SwitchingFunction():
   dmax_2(0.0),
   stretch(1.0),
   shift(0.0),
+  lepton_evaluator(NULL),
+  lepton_evaluator_deriv(NULL),
   evaluator(NULL),
   evaluator_deriv(NULL)
 {
@@ -458,6 +485,8 @@ SwitchingFunction::SwitchingFunction(const SwitchingFunction&sf):
   dmax_2(sf.dmax_2),
   stretch(sf.stretch),
   shift(sf.shift),
+  lepton_evaluator(NULL),
+  lepton_evaluator_deriv(NULL),
   evaluator(NULL),
   evaluator_deriv(NULL)
 {
@@ -465,6 +494,8 @@ SwitchingFunction::SwitchingFunction(const SwitchingFunction&sf):
   if(sf.evaluator) evaluator=evaluator_create(evaluator_get_string(sf.evaluator));
   if(sf.evaluator_deriv) evaluator_deriv=evaluator_create(evaluator_get_string(sf.evaluator_deriv));
 #endif
+  plumed_massert(sf.lepton_evaluator==NULL,"lepton_evaluator cannot be copied yet");
+  plumed_massert(sf.lepton_evaluator_deriv==NULL,"lepton_evaluator cannot be copied yet");
 }
 
 SwitchingFunction & SwitchingFunction::operator=(const SwitchingFunction& sf) {
@@ -493,6 +524,10 @@ SwitchingFunction & SwitchingFunction::operator=(const SwitchingFunction& sf) {
   if(sf.evaluator) evaluator=evaluator_create(evaluator_get_string(sf.evaluator));
   if(sf.evaluator_deriv) evaluator_deriv=evaluator_create(evaluator_get_string(sf.evaluator_deriv));
 #endif
+  lepton_evaluator=NULL;
+  lepton_evaluator_deriv=NULL;
+  plumed_massert(sf.lepton_evaluator==NULL,"lepton_evaluator cannot be copied yet");
+  plumed_massert(sf.lepton_evaluator_deriv==NULL,"lepton_evaluator cannot be copied yet");
   return *this;
 }
 
@@ -533,6 +568,8 @@ double SwitchingFunction::get_dmax2() const {
 }
 
 SwitchingFunction::~SwitchingFunction() {
+  if(lepton_evaluator) { delete static_cast<lepton::CompiledExpression*>(lepton_evaluator);}
+  if(lepton_evaluator_deriv) { delete static_cast<lepton::CompiledExpression*>(lepton_evaluator_deriv);}
 #ifdef __PLUMED_HAS_MATHEVAL
   if(evaluator) evaluator_destroy(evaluator);
   if(evaluator_deriv) evaluator_destroy(evaluator_deriv);
