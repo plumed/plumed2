@@ -33,6 +33,22 @@ using namespace std;
 namespace PLMD {
 namespace function {
 
+static std::map<string, double> leptonConstants={
+  {"e", std::exp(1.0)},
+  {"log2e", 1.0/std::log(2.0)},
+  {"log10e", 1.0/std::log(10.0)},
+  {"ln2", std::log(2.0)},
+  {"ln10", std::log(10.0)},
+  {"pi", pi},
+  {"pi_2", pi*0.5},
+  {"pi_4", pi*0.25},
+//  {"1_pi", 1.0/pi},
+//  {"2_pi", 2.0/pi},
+//  {"2_sqrtpi", 2.0/std::sqrt(pi)},
+  {"sqrt2", std::sqrt(2.0)},
+  {"sqrt1_2", std::sqrt(0.5)}
+};
+
 
 //+PLUMEDOC FUNCTION MATHEVAL
 /*
@@ -219,9 +235,9 @@ Matheval::Matheval(const ActionOptions&ao):
   checkRead();
 
   if(use_lepton) {
-    func=func+" ; pi=3.14159265358979";
+    func=func;
     log<<"  WARNING: you are using lepton as a replacement for libmatheval\n";
-    evaluator=new lepton::CompiledExpression(lepton::Parser::parse(func).optimize().createCompiledExpression());
+    evaluator=new lepton::CompiledExpression(lepton::Parser::parse(func).optimize(leptonConstants).createCompiledExpression());
   } else {
 #ifdef __PLUMED_HAS_MATHEVAL
     evaluator=evaluator_create(const_cast<char*>(func.c_str()));
@@ -235,7 +251,7 @@ Matheval::Matheval(const ActionOptions&ao):
   if(use_lepton) {
     for(unsigned i=0; i<getNumberOfArguments(); i++)
       evaluator_deriv[i]=new
-      lepton::CompiledExpression(lepton::Parser::parse(func).differentiate(var[i]).optimize().createCompiledExpression());
+      lepton::CompiledExpression(lepton::Parser::parse(func).differentiate(var[i]).optimize(leptonConstants).createCompiledExpression());
   } else {
 #ifdef __PLUMED_HAS_MATHEVAL
     char **check_names;
@@ -266,9 +282,9 @@ Matheval::Matheval(const ActionOptions&ao):
   for(unsigned i=0; i<var.size(); i++) log.printf(" %s",var[i].c_str());
   log.printf("\n");
   if(use_lepton) {
-    log<<"  function as parsed by lepton: "<<lepton::Parser::parse(func).optimize()<<"\n";
+    log<<"  function as parsed by lepton: "<<lepton::Parser::parse(func).optimize(leptonConstants)<<"\n";
     log<<"  derivatives as computed by lepton:\n";
-    for(unsigned i=0; i<var.size(); i++) log<<"    "<<lepton::Parser::parse(func).differentiate(var[i]).optimize()<<"\n";
+    for(unsigned i=0; i<var.size(); i++) log<<"    "<<lepton::Parser::parse(func).differentiate(var[i]).optimize(leptonConstants)<<"\n";
   } else {
 #ifdef __PLUMED_HAS_MATHEVAL
     log.printf("  function as parsed by matheval: %s\n", evaluator_get_string(evaluator));
