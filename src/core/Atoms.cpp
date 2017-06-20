@@ -108,7 +108,6 @@ void Atoms::setCharges(void*p) {
 void Atoms::setVirial(void*p) {
   plumed_massert( dataCanBeSet,"setVirial must be called after setStep in MD code interface");
   mdatoms->setVirial(p); virialHasBeenSet=true;
-
 }
 
 void Atoms::setEnergy(void*p) {
@@ -138,7 +137,6 @@ void Atoms::setForces(void*p,int i) {
 }
 
 void Atoms::share() {
-  std::set<AtomNumber> unique;
 // At first step I scatter all the atoms so as to store their mass and charge
 // Notice that this works with the assumption that charges and masses are
 // not changing during the simulation!
@@ -146,46 +144,74 @@ void Atoms::share() {
     shareAll();
     return;
   }
-  for(unsigned i=0; i<actions.size(); i++) if(actions[i]->isActive()) {
-      if(dd && shuffledAtoms>0) {
-        unique.insert(actions[i]->getUnique().begin(),actions[i]->getUnique().end());
+
+  if(!(int(gatindex.size())==natoms && shuffledAtoms==0)) {
+    for(unsigned i=0; i<actions.size(); i++) {
+      if(actions[i]->isActive()) {
+        if(!actions[i]->getUnique().empty()) {
+          atomsNeeded=true;
+          // unique are the local atoms
+          unique.insert(actions[i]->getUniqueLocal().begin(),actions[i]->getUniqueLocal().end());
+        }
       }
-      if(!actions[i]->getUnique().empty()) atomsNeeded=true;
     }
+  } else {
+    for(unsigned i=0; i<actions.size(); i++) {
+      if(actions[i]->isActive()) {
+        if(!actions[i]->getUnique().empty()) {
+          atomsNeeded=true;
+        }
+      }
+    }
+
+  }
+
   share(unique);
 }
 
 void Atoms::shareAll() {
-  std::set<AtomNumber> unique;
-  if(dd && shuffledAtoms>0)
+  unique.clear();
+  // keep in unique only those atoms that are local
+  if(dd && shuffledAtoms>0) {
+    for(int i=0; i<natoms; i++) if(dd.g2l[i]>=0) unique.insert(AtomNumber::index(i));
+  } else {
     for(int i=0; i<natoms; i++) unique.insert(AtomNumber::index(i));
+  }
   atomsNeeded=true;
   share(unique);
 }
 
 void Atoms::share(const std::set<AtomNumber>& unique) {
   plumed_assert( positionsHaveBeenSet==3 && massesHaveBeenSet );
+
   virial.zero();
   if(zeroallforces || int(gatindex.size())==natoms) {
     for(int i=0; i<natoms; i++) forces[i].zero();
   } else {
-    for(unsigned i=0; i<gatindex.size(); i++) forces[gatindex[i]].zero();
+    for(const auto & p : unique) forces[p.index()].zero();
   }
   for(unsigned i=getNatoms(); i<positions.size(); i++) forces[i].zero(); // virtual atoms
   forceOnEnergy=0.0;
   mdatoms->getBox(box);
 
   if(!atomsNeeded) return;
-
   atomsNeeded=false;
 
   if(int(gatindex.size())==natoms && shuffledAtoms==0) {
 // faster version, which retrieves all atoms
     mdatoms->getPositions(0,natoms,positions);
   } else {
-// version that picks only atoms that are available on this proc
-    mdatoms->getPositions(gatindex,positions);
+    uniq_index.clear();
+    uniq_index.reserve(unique.size());
+    if(dd && shuffledAtoms>0) {
+      for(const auto & p : unique) uniq_index.push_back(dd.g2l[p.index()]);
+    } else {
+      for(const auto & p : unique) uniq_index.push_back(p.index());
+    }
+    mdatoms->getPositions(unique,uniq_index,positions);
   }
+
+
 // how many double per atom should be scattered:
   int ndata=3;
   if(!massAndChargeOK) {
@@ -203,17 +229,15 @@ void Atoms::share(const std::set<AtomNumber>& unique) {
     }
     int count=0;
     for(const auto & p : unique) {
-      if(dd.g2l[p.index()]>=0) {
-        dd.indexToBeSent[count]=p.index();
-        dd.positionsToBeSent[ndata*count+0]=positions[p.index()][0];
-        dd.positionsToBeSent[ndata*count+1]=positions[p.index()][1];
-        dd.positionsToBeSent[ndata*count+2]=positions[p.index()][2];
-        if(!massAndChargeOK) {
-          dd.positionsToBeSent[ndata*count+3]=masses[p.index()];
-          dd.positionsToBeSent[ndata*count+4]=charges[p.index()];
-        }
-        count++;
+      dd.indexToBeSent[count]=p.index();
+      dd.positionsToBeSent[ndata*count+0]=positions[p.index()][0];
+      dd.positionsToBeSent[ndata*count+1]=positions[p.index()][1];
+      dd.positionsToBeSent[ndata*count+2]=positions[p.index()][2];
+      if(!massAndChargeOK) {
+        dd.positionsToBeSent[ndata*count+3]=masses[p.index()];
+        dd.positionsToBeSent[ndata*count+4]=charges[p.index()];
       }
+      count++;
     }
     if(dd.async) {
       asyncSent=true;
@@ -297,8 +321,11 @@ void Atoms::updateForces() {
   if(forceOnEnergy*forceOnEnergy>epsilon) {
     double alpha=1.0-forceOnEnergy;
     mdatoms->rescaleForces(gatindex,alpha);
+    mdatoms->updateForces(gatindex,forces);
+  } else {
+    if(int(gatindex.size())==natoms && shuffledAtoms==0) mdatoms->updateForces(gatindex,forces);
+    else mdatoms->updateForces(unique,uniq_index,forces);
   }
-  mdatoms->updateForces(gatindex,forces);
   if( !plumed.novirial && dd.Get_rank()==0 ) {
     plumed_assert( virialHasBeenSet );
     mdatoms->updateVirial(virial);
@@ -316,11 +343,11 @@ void Atoms::setNatoms(int n) {
 }
 
 
-void Atoms::add(const ActionAtomistic*a) {
+void Atoms::add(ActionAtomistic*a) {
   actions.push_back(a);
 }
 
-void Atoms::remove(const ActionAtomistic*a) {
+void Atoms::remove(ActionAtomistic*a) {
   auto f=find(actions.begin(),actions.end(),a);
   plumed_massert(f!=actions.end(),"cannot remove an action registered to atoms");
   actions.erase(f);
@@ -376,6 +403,12 @@ void Atoms::setAtomsGatindex(int*g,bool fortran) {
     dd.Sum(shuffledAtoms);
     for(unsigned i=0; i<gatindex.size(); i++) dd.g2l[gatindex[i]]=i;
   }
+
+  for(unsigned i=0; i<actions.size(); i++) {
+    // keep in unique only those atoms that are local
+    actions[i]->updateUniqueLocal();
+  }
+  unique.clear();
 }
 
 void Atoms::setAtomsContiguous(int start) {
@@ -384,6 +417,11 @@ void Atoms::setAtomsContiguous(int start) {
   for(unsigned i=0; i<dd.g2l.size(); i++) dd.g2l[i]=-1;
   if(dd) for(unsigned i=0; i<gatindex.size(); i++) dd.g2l[gatindex[i]]=i;
   if(gatindex.size()<natoms) shuffledAtoms=1;
+  for(unsigned i=0; i<actions.size(); i++) {
+    // keep in unique only those atoms that are local
+    actions[i]->updateUniqueLocal();
+  }
+  unique.clear();
 }
 
 void Atoms::setRealPrecision(int p) {
