@@ -22,6 +22,7 @@
 #include "SwitchingFunction.h"
 #include "Tools.h"
 #include "Keywords.h"
+#include "OpenMP.h"
 #include <vector>
 #include <limits>
 
@@ -258,11 +259,11 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     Tools::parse(data,"FUNC",func);
     lepton::ParsedExpression pe=lepton::Parser::parse(func).optimize(leptonConstants);
     lepton_func=func;
-    expression.resize(1);
-    expression[0]=pe.createCompiledExpression();
+    expression.resize(OpenMP::getNumThreads());
+    for(auto & e : expression) e=pe.createCompiledExpression();
     lepton::ParsedExpression ped=lepton::Parser::parse(func).differentiate("x").optimize(leptonConstants);
-    expression_deriv.resize(1);
-    expression_deriv[0]=ped.createCompiledExpression();
+    expression_deriv.resize(OpenMP::getNumThreads());
+    for(auto & e : expression_deriv) e=ped.createCompiledExpression();
   }
 #ifdef __PLUMED_HAS_MATHEVAL
   else if(name=="MATHEVAL") {
@@ -429,15 +430,17 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
       result = 1.0 - tmp1;
       dfunc=-(1-tmp1*tmp1);
     } else if(type==leptontype) {
+      const unsigned t=OpenMP::getThreadNum();
+      plumed_assert(t<expression.size());
       try {
-        const_cast<lepton::CompiledExpression*>(&expression[0])->getVariableReference("x")=rdist;
-        const_cast<lepton::CompiledExpression*>(&expression_deriv[0])->getVariableReference("x")=rdist;
+        const_cast<lepton::CompiledExpression*>(&expression[t])->getVariableReference("x")=rdist;
+        const_cast<lepton::CompiledExpression*>(&expression_deriv[t])->getVariableReference("x")=rdist;
       } catch(PLMD::lepton::Exception& exc) {
 // this is necessary since in some cases lepton things a variable is not present even though it is present
 // e.g. func=0*x
       }
-      result=expression[0].evaluate();
-      dfunc=expression_deriv[0].evaluate();
+      result=expression[t].evaluate();
+      dfunc=expression_deriv[t].evaluate();
 #ifdef __PLUMED_HAS_MATHEVAL
     } else if(type==matheval) {
       result=evaluator_evaluate_x(evaluator,rdist);
