@@ -23,6 +23,9 @@
 #define __PLUMED_tools_SwitchingFunction_h
 
 #include <string>
+#include <vector>
+#include "lepton/Lepton.h"
+
 
 namespace PLMD {
 
@@ -67,11 +70,12 @@ class SwitchingFunction {
   double do_rational(double rdist,double&dfunc,int nn,int mm)const;
 /// Function for lepton;
   std::string lepton_func;
-/// Evaluator for lepton;
-  void* lepton_evaluator;
-/// Evaluator for lepton;
-  void* lepton_evaluator_deriv;
-/// Evaluator for matheval;
+/// Lepton expression.
+/// \warning Since lepton::CompiledExpression is mutable, a vector is necessary for multithreading!
+  std::vector<lepton::CompiledExpression> expression;
+/// Lepton expression for derivative
+/// \warning Since lepton::CompiledExpression is mutable, a vector is necessary for multithreading!
+  std::vector<lepton::CompiledExpression> expression_deriv;
   void* evaluator;
 /// Evaluator for matheval;
   void* evaluator_deriv;

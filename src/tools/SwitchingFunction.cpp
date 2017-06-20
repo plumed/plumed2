@@ -22,7 +22,6 @@
 #include "SwitchingFunction.h"
 #include "Tools.h"
 #include "Keywords.h"
-#include "lepton/Lepton.h"
 #include <vector>
 #include <limits>
 
@@ -32,6 +31,22 @@
 
 using namespace std;
 namespace PLMD {
+
+static std::map<string, double> leptonConstants={
+  {"e", std::exp(1.0)},
+  {"log2e", 1.0/std::log(2.0)},
+  {"log10e", 1.0/std::log(10.0)},
+  {"ln2", std::log(2.0)},
+  {"ln10", std::log(10.0)},
+  {"pi", pi},
+  {"pi_2", pi*0.5},
+  {"pi_4", pi*0.25},
+//  {"1_pi", 1.0/pi},
+//  {"2_pi", 2.0/pi},
+//  {"2_sqrtpi", 2.0/std::sqrt(pi)},
+  {"sqrt2", std::sqrt(2.0)},
+  {"sqrt1_2", std::sqrt(0.5)}
+};
 
 //+PLUMEDOC INTERNAL switchingfunction
 /*
@@ -241,11 +256,13 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     type=leptontype;
     std::string func;
     Tools::parse(data,"FUNC",func);
-    func+=" ; pi=3.14159265358979";
+    lepton::ParsedExpression pe=lepton::Parser::parse(func).optimize(leptonConstants);
     lepton_func=func;
-    lepton_evaluator=new lepton::CompiledExpression(lepton::Parser::parse(func).optimize().createCompiledExpression());
-    lepton_evaluator_deriv=new
-    lepton::CompiledExpression(lepton::Parser::parse(func).differentiate("x").optimize().createCompiledExpression());
+    expression.resize(1);
+    expression[0]=pe.createCompiledExpression();
+    lepton::ParsedExpression ped=lepton::Parser::parse(func).differentiate("x").optimize(leptonConstants);
+    expression_deriv.resize(1);
+    expression_deriv[0]=ped.createCompiledExpression();
   }
 #ifdef __PLUMED_HAS_MATHEVAL
   else if(name=="MATHEVAL") {
@@ -413,14 +430,14 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
       dfunc=-(1-tmp1*tmp1);
     } else if(type==leptontype) {
       try {
-        static_cast<lepton::CompiledExpression*>(lepton_evaluator)->getVariableReference("x")=rdist;
-        static_cast<lepton::CompiledExpression*>(lepton_evaluator_deriv)->getVariableReference("x")=rdist;
+        const_cast<lepton::CompiledExpression*>(&expression[0])->getVariableReference("x")=rdist;
+        const_cast<lepton::CompiledExpression*>(&expression_deriv[0])->getVariableReference("x")=rdist;
       } catch(PLMD::lepton::Exception& exc) {
 // this is necessary since in some cases lepton things a variable is not present even though it is present
 // e.g. func=0*x
       }
-      result=static_cast<lepton::CompiledExpression*>(lepton_evaluator)->evaluate();
-      dfunc=static_cast<lepton::CompiledExpression*>(lepton_evaluator_deriv)->evaluate();
+      result=expression[0].evaluate();
+      dfunc=expression_deriv[0].evaluate();
 #ifdef __PLUMED_HAS_MATHEVAL
     } else if(type==matheval) {
       result=evaluator_evaluate_x(evaluator,rdist);
@@ -459,8 +476,6 @@ SwitchingFunction::SwitchingFunction():
   dmax_2(0.0),
   stretch(1.0),
   shift(0.0),
-  lepton_evaluator(NULL),
-  lepton_evaluator_deriv(NULL),
   evaluator(NULL),
   evaluator_deriv(NULL)
 {
@@ -485,8 +500,6 @@ SwitchingFunction::SwitchingFunction(const SwitchingFunction&sf):
   dmax_2(sf.dmax_2),
   stretch(sf.stretch),
   shift(sf.shift),
-  lepton_evaluator(NULL),
-  lepton_evaluator_deriv(NULL),
   evaluator(NULL),
   evaluator_deriv(NULL)
 {
@@ -494,8 +507,6 @@ SwitchingFunction::SwitchingFunction(const SwitchingFunction&sf):
   if(sf.evaluator) evaluator=evaluator_create(evaluator_get_string(sf.evaluator));
   if(sf.evaluator_deriv) evaluator_deriv=evaluator_create(evaluator_get_string(sf.evaluator_deriv));
 #endif
-  plumed_massert(sf.lepton_evaluator==NULL,"lepton_evaluator cannot be copied yet");
-  plumed_massert(sf.lepton_evaluator_deriv==NULL,"lepton_evaluator cannot be copied yet");
 }
 
 SwitchingFunction & SwitchingFunction::operator=(const SwitchingFunction& sf) {
@@ -524,10 +535,6 @@ SwitchingFunction & SwitchingFunction::operator=(const SwitchingFunction& sf) {
   if(sf.evaluator) evaluator=evaluator_create(evaluator_get_string(sf.evaluator));
   if(sf.evaluator_deriv) evaluator_deriv=evaluator_create(evaluator_get_string(sf.evaluator_deriv));
 #endif
-  lepton_evaluator=NULL;
-  lepton_evaluator_deriv=NULL;
-  plumed_massert(sf.lepton_evaluator==NULL,"lepton_evaluator cannot be copied yet");
-  plumed_massert(sf.lepton_evaluator_deriv==NULL,"lepton_evaluator cannot be copied yet");
   return *this;
 }
 
@@ -568,8 +575,6 @@ double SwitchingFunction::get_dmax2() const {
 }
 
 SwitchingFunction::~SwitchingFunction() {
-  if(lepton_evaluator) { delete static_cast<lepton::CompiledExpression*>(lepton_evaluator);}
-  if(lepton_evaluator_deriv) { delete static_cast<lepton::CompiledExpression*>(lepton_evaluator_deriv);}
 #ifdef __PLUMED_HAS_MATHEVAL
   if(evaluator) evaluator_destroy(evaluator);
   if(evaluator_deriv) evaluator_destroy(evaluator_deriv);
