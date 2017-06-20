@@ -33,6 +33,9 @@ public:
 /// Get number of threads that can be used by openMP
   static unsigned getNumThreads();
 
+/// Returns a unique thread identification number within the current team
+  static unsigned getThreadNum();
+
 /// get cacheline size
   static unsigned getCachelineSize();
 
