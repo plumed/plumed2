@@ -88,7 +88,7 @@ std::vector<std::vector<std::string> > ActionRegister::expandShortcuts( const un
               if( found ) keymap.insert(pair<std::string,std::string>(keyname,t));
           }
       } 
-      if( keymap.size()>0 ){
+      if( keymap.size()>0 || m.find(words[0])==m.end() ){
          for(unsigned i=0;i<keys.size();++i){
              std::string t, def, keyname = keys.get(i);
              if( keys.style( keyname, "compulsory") ){

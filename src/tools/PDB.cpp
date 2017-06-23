@@ -496,11 +496,13 @@ unsigned PDB::size()const {
 
 bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
   //cerr<<file<<endl;
-  bool file_is_alive=false;
+  bool file_is_alive=true;
   if(naturalUnits) scale=1.0;
   string line;
   fpos_t pos; bool between_ters=true;
-  while(Tools::getline(fp,line)) {
+  while(file_is_alive) {
+    file_is_alive = Tools::getline(fp,line);
+    if( !file_is_alive ) break;   
     //cerr<<line<<"\n";
     fgetpos (fp,&pos);
     while(line.length()<80) line.push_back(' ');

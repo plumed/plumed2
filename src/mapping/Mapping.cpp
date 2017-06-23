@@ -49,6 +49,10 @@ private:
   std::vector<double> forcesToApply;
 public:
   static void registerKeywords( Keywords& keys );
+  static void shortcutKeywords( Keywords& keys );
+  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                              const std::map<std::string,std::string>& keys,
+                              std::vector<std::vector<std::string> >& actions );
   explicit Mapping(const ActionOptions&);
   ~Mapping();
 /// Overload the virtual functions that appear in both ActionAtomistic and ActionWithArguments
@@ -68,19 +72,64 @@ public:
 };
 
 PLUMED_REGISTER_ACTION(Mapping,"EUCLIDEAN_DISSIMILARITIES_VECTOR")
+PLUMED_REGISTER_SHORTCUT(Mapping,"DRMSD")
+PLUMED_REGISTER_SHORTCUT(Mapping,"RMSD")
+PLUMED_REGISTER_SHORTCUT(Mapping,"MULTI-RMSD")
+PLUMED_REGISTER_SHORTCUT(Mapping,"TARGET")
 
-// void Mapping::shortcutKeywords( Keywords& keys ) {
-//   keys.add("compulsory","PROPERTY","the property to be used in the index. This should be in the REMARK of the reference");
-// }
+void Mapping::shortcutKeywords( Keywords& keys ) {
+  keys.add("compulsory","TYPE","the manner in which distances are calculated. More information on the different "
+           "metrics that are available in PLUMED can be found in the section of the manual on "
+           "\\ref dists");
+  keys.add("optional","LOWER_CUTOFF","only pairs of atoms further than LOWER_CUTOFF are considered in the calculation.");
+  keys.add("optional","UPPER_CUTOFF","only pairs of atoms closer than UPPER_CUTOFF are considered in the calculation.");
+  keys.addFlag("NOPBC",false,"don't use PBC in calculation of DRMSD vectors");
+}
+
+void Mapping::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                              const std::map<std::string,std::string>& keys,
+                              std::vector<std::vector<std::string> >& actions ){
+  std::vector<std::string> thisact; thisact.push_back( lab + ":" );
+  thisact.push_back( "EUCLIDEAN_DISSIMILARITIES_VECTOR" );
+  for(unsigned i=1;i<words.size();++i) thisact.push_back( words[i] );
+  if( words[0]=="DRMSD" ){
+      if( keys.find("TYPE")!=keys.end() ) thisact.push_back( keys.find("TYPE")->first + "=" + keys.find("TYPE")->second );
+      else thisact.push_back( "TYPE=DRMSD");
+
+      if( keys.find("LOWER_CUTOFF")!=keys.end() ) thisact.push_back( keys.find("LOWER_CUTOFF")->first + "=" + keys.find("LOWER_CUTOFF")->second );
+      else plumed_merror("LOWER_CUTOFF must be specified in DRMSD actions");
+
+      if( keys.find("UPPER_CUTOFF")!=keys.end() ) thisact.push_back( keys.find("UPPER_CUTOFF")->first + "=" + keys.find("UPPER_CUTOFF")->second );
+      else plumed_merror("UPPER_CUTOFF must be specified in DRMSD actions");
+
+      if( keys.find("NOPBC")!=keys.end() ) thisact.push_back("NOPBC");
+  } else if( words[0]=="MULTI-RMSD" ){
+      if( keys.find("TYPE")!=keys.end() ) thisact.push_back( keys.find("TYPE")->first + "=" + keys.find("TYPE")->second ); 
+      else thisact.push_back( "TYPE=MULTI-SIMPLE"); 
+  } else if( words[0]=="TARGET" ){
+      if( keys.find("TYPE")!=keys.end() ) thisact.push_back( keys.find("TYPE")->first + "=" + keys.find("TYPE")->second );
+      else thisact.push_back( "TYPE=EUCLIDEAN" );
+  } else if( words[0]=="RMSD" ){
+      if( keys.find("TYPE")!=keys.end() ) thisact.push_back( keys.find("TYPE")->first + "=" + keys.find("TYPE")->second ); 
+      else thisact.push_back( "TYPE=SIMPLE" );
+  } else {
+      plumed_assert( words[0]=="EUCLIDEAN_DISSIMILARITIES_VECTOR" );
+      actions.push_back( words ); return;
+  }
+  actions.push_back( thisact );
+}
 
 void Mapping::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys ); ActionAtomistic::registerKeywords( keys );
   keys.add("compulsory","REFERENCE","a pdb file containing the set of reference configurations");
-  keys.add("compulsory","TYPE","OPTIMAL-FAST","the manner in which distances are calculated. More information on the different "
+  keys.add("compulsory","TYPE","the manner in which distances are calculated. More information on the different "
            "metrics that are available in PLUMED can be found in the section of the manual on "
            "\\ref dists");
   keys.addFlag("SQUARED",false," This should be setted if you want MSD instead of RMSD ");
+  keys.add("optional","LOWER_CUTOFF","only pairs of atoms further than LOWER_CUTOFF are considered in the calculation.");
+  keys.add("optional","UPPER_CUTOFF","only pairs of atoms closer than UPPER_CUTOFF are considered in the calculation.");
+  keys.addFlag("NOPBC",false,"don't use PBC in calculation of DRMSD vectors");
   keys.addFlag("DISABLE_CHECKS",false,"disable checks on reference input structures.");
 }
 
@@ -96,6 +145,16 @@ Mapping::Mapping(const ActionOptions&ao):
   std::string mtype; parse("TYPE",mtype);
   bool skipchecks; parseFlag("DISABLE_CHECKS",skipchecks);
 
+  // Read stuff for DRMSD 
+  double lcutoff=0; parse("LOWER_CUTOFF",lcutoff);
+  double ucutoff=std::numeric_limits<double>::max(); parse("UPPER_CUTOFF",ucutoff);
+  bool nopbc; parseFlag("NOPBC",nopbc); std::vector<std::string> drmsd_remarks;
+  if( nopbc || lcutoff>0 || ucutoff<std::numeric_limits<double>::max() ){
+      std::string lstr; Tools::convert( lcutoff, lstr ); drmsd_remarks.push_back( "LOWER_CUTOFF=" + lstr );
+      std::string ustr; Tools::convert( ucutoff, ustr ); drmsd_remarks.push_back( "UPPER_CUTOFF=" + ustr );
+      if( nopbc ) drmsd_remarks.push_back( "NOPBC" );
+  }
+
   // Open reference file
   std::string reference; parse("REFERENCE",reference);
   FILE* fp=fopen(reference.c_str(),"r");
@@ -107,7 +166,9 @@ Mapping::Mapping(const ActionOptions&ao):
     // Read the pdb file
     PDB mypdb; do_read=mypdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
     // Break if we are done
-    if( !do_read ) break ;
+    if( myframes.size()>0 && !do_read ) break ;
+    // Add remarks that have been read from the input line
+    mypdb.addRemark( drmsd_remarks );
     // Fix argument names
     expandArgKeywordInPDB( mypdb );
     // And add a task to the list
@@ -118,8 +179,12 @@ Mapping::Mapping(const ActionOptions&ao):
   fclose(fp);
 
   if(myframes.size()==0 ) error("no reference configurations were specified");
+  log.printf("  calculating distance from reference configurations using %s metric \n", mtype.c_str() );
   log.printf("  found %u configurations in file %s\n",myframes.size(),reference.c_str() );
-  std::vector<unsigned> shape(1); shape[0]=myframes.size(); addValue( shape ); setNotPeriodic();
+  std::vector<unsigned> shape; 
+  if( myframes.size()>1 ){ shape.resize(1); shape[0]=myframes.size(); addValue( shape ); }
+  else addValueWithDerivatives( shape ); 
+  setNotPeriodic();
 
   // Finish the setup of the mapping object
   // Get the arguments and atoms that are required
@@ -194,10 +259,30 @@ void Mapping::calculateNumericalDerivatives( ActionWithValue* a ) {
 }
 
 void Mapping::apply() {
-//  if( getForcesFromVessels( forcesToApply ) ) {
-//    addForcesOnArguments( forcesToApply );
-//    if( getNumberOfAtoms()>0 ) setForcesOnAtoms( forcesToApply, getNumberOfArguments() );
-//  }
+  if( getFullNumberOfTasks()>1 ) return;
+  std::vector<Vector>&   f(modifyForces());
+  Tensor&           v(modifyVirial());
+  const unsigned    narg=getNumberOfArguments();
+  const unsigned    nat=getNumberOfAtoms();
+
+  if( getPntrToComponent(0)->applyForce( forcesToApply ) ){
+      for(unsigned i=0;i<narg;++i) getPntrToArgument(i)->addForce( forcesToApply[i] );
+
+      for(unsigned i=0;i<nat;++i){
+          f[i][0] += forcesToApply[narg+3*i+0];
+          f[i][1] += forcesToApply[narg+3*i+1];
+          f[i][2] += forcesToApply[narg+3*i+2];
+      }
+      v(0,0) += forcesToApply[narg+3*nat+0];
+      v(0,1) += forcesToApply[narg+3*nat+1];
+      v(0,2) += forcesToApply[narg+3*nat+2];
+      v(1,0) += forcesToApply[narg+3*nat+3];
+      v(1,1) += forcesToApply[narg+3*nat+4];
+      v(1,2) += forcesToApply[narg+3*nat+5];
+      v(2,0) += forcesToApply[narg+3*nat+6];
+      v(2,1) += forcesToApply[narg+3*nat+7];
+      v(2,2) += forcesToApply[narg+3*nat+8];
+  }
 }
 
 
