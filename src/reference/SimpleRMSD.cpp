@@ -79,8 +79,10 @@ double SimpleRMSD::projectAtomicDisplacementOnVector( const bool& normalized, co
     for(unsigned k=0; k<3; ++k) {
       proj += vecs[j][k]*mypack.getAtomsDisplacementVector()[j][k];
     }
-    mypack.setAtomDerivatives( j, vecs[j] - comder );
+    if( !mypack.noDerivatives() ) mypack.setAtomDerivatives( j, vecs[j] - comder );
   }
+  if( mypack.noDerivatives() ) return proj;
+
   if( !mypack.updateComplete() ) mypack.updateDynamicLists();
   return proj;
 }

@@ -440,7 +440,8 @@ void ActionWithValue::gatherAccumulators( const unsigned& taskCode, const MultiV
                }
            }
       } else if( values[i]->storedata ){
-           unsigned vindex = bufstart + taskCode*(1+values[i]->getNumberOfDerivatives()); buffer[vindex] += myvals.get(sind);
+           unsigned nspace=1; if( values[i]->hasDeriv ) nspace=(1 + values[i]->getNumberOfDerivatives() );
+           unsigned vindex = bufstart + taskCode*nspace; buffer[vindex] += myvals.get(sind);
       } 
   }
   for(const auto & p : actions_to_do_after ){

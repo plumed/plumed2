@@ -154,8 +154,6 @@ public:
   static double projection(const Value&,const Value&);
 /// Build the store of data
   void buildDataStore();
-/// Get the value for the itask th task
-  unsigned getValueForTask( const unsigned& itask ) const { plumed_error(); }
 ///
   void activateTasks( std::vector<unsigned>& taskFlags ) const ;
 ///
@@ -227,7 +225,7 @@ const std::string& Value::getName()const {
 
 inline
 unsigned Value::getNumberOfDerivatives() const {
-  plumed_massert(hasDeriv,"the derivatives array for this value has zero size");
+  plumed_massert(hasDeriv,"the derivatives array for value " + name + " has zero size" );
   return data.size()-1;
 }
 

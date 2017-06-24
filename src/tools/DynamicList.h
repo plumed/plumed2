@@ -323,7 +323,8 @@ void DynamicList<T>::emptyActiveMembers() {
 template <typename T>
 void DynamicList<T>::putIndexInActiveArray( const unsigned& ii ) {
   plumed_dbg_assert( allWereActivated || allWereDeactivated );
-  plumed_dbg_assert( onoff[ii]>0 && onoff[ii]%nprocessors==0 );
+  plumed_dbg_assert( nactive<active.size() && onoff[ii]>0 && onoff[ii]%nprocessors==0 );
+  
   active[nactive]=ii; nactive++;
 }
 

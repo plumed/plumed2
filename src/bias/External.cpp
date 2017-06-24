@@ -153,7 +153,7 @@ void External::calculate()
   unsigned ncv=getNumberOfArguments();
   vector<double> cv(ncv), der(ncv);
 
-  for(unsigned i=0; i<ncv; ++i) {cv[i]=getArgument(i);}
+  for(unsigned i=0; i<ncv; ++i) {cv[i]=getArgumentScalar(i);}
 
   double ene=scale_*BiasGrid_->getValueAndDerivatives(cv,der);
 

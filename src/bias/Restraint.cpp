@@ -113,7 +113,7 @@ void Restraint::calculate() {
   double ene=0.0;
   double totf2=0.0;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    const double cv=difference(i,at[i],getArgument(i));
+    const double cv=difference(i,at[i],getArgumentScalar(i));
     const double k=kappa[i];
     const double m=slope[i];
     const double f=-(k*cv+m);

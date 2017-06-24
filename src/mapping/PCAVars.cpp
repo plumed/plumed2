@@ -351,13 +351,11 @@ void PCAVars::calculate() {
     Vector ader=mypack.getAtomDerivative( j );
     for(unsigned k=0; k<3; ++k) resid->addDerivative( nargs +3*j+k, ader[k] );
   }
-  // Retrieve the values of all arguments
-  std::vector<double> args( getNumberOfArguments() ); for(unsigned i=0; i<getNumberOfArguments(); ++i) args[i]=getArgument(i);
 
   // Now calculate projections on pca vectors
   Vector adif, ader; Tensor fvir, tvir;
   for(unsigned i=0; i<getNumberOfComponents()-1; ++i) { // One less component as we also have residual
-    mypack.clear(); double proj=myref->projectDisplacementOnVector( directions[i], getArguments(), args, mypack );
+    mypack.clear(); double proj=myref->projectDisplacementOnVector( directions[i], getArguments(), mypack );
 
     // And now accumulate derivatives
     Value* eid=getPntrToComponent(i);

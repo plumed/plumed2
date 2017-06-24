@@ -138,7 +138,7 @@ void UpdateIf::prepare() {
 void UpdateIf::calculate() {
   on=true;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    if(getArgument(i)>=upper[i] || getArgument(i)<=lower[i]) on=false;
+    if(getArgumentScalar(i)>=upper[i] || getArgumentScalar(i)<=lower[i]) on=false;
   }
 }
 

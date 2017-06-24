@@ -222,13 +222,13 @@ void ExtendedLagrangian::calculate() {
 
   if(firsttime) {
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      fict[i]=getArgument(i);
+      fict[i]=getArgumentScalar(i);
     }
     firsttime=false;
   }
   double ene=0.0;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    const double cv=difference(i,fict[i],getArgument(i));
+    const double cv=difference(i,fict[i],getArgumentScalar(i));
     const double k=kappa[i];
     const double f=-k*cv;
     ene+=0.5*k*cv*cv;

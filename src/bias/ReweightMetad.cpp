@@ -87,7 +87,7 @@ ReweightMetad::ReweightMetad(const ActionOptions&ao):
 
 double ReweightMetad::getLogWeight() const {
   // Retrieve the bias
-  double bias=0.0; for(unsigned i=0; i<getNumberOfArguments(); ++i) bias+=getArgument(i);
+  double bias=0.0; for(unsigned i=0; i<getNumberOfArguments(); ++i) bias+=getArgumentScalar(i);
   return bias / simtemp;
 }
 

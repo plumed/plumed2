@@ -163,8 +163,7 @@ public:
                                   Direction& mydir ) const ;
 /// Stuff for pca
   virtual bool pcaIsEnabledForThisReference() { return false; }
-  double projectDisplacementOnVector( const Direction& mydir, const std::vector<Value*>& vals,
-                                      const std::vector<double>& arg, ReferenceValuePack& mypack ) const ;
+  double projectDisplacementOnVector( const Direction& mydir, const std::vector<Value*>& vals, ReferenceValuePack& mypack ) const ;
 /// Stuff to setup pca
   virtual void setupPCAStorage( ReferenceValuePack& mypack ) { plumed_error(); }
 /// Move the reference configuration by an ammount specified using a Direction

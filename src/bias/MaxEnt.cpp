@@ -437,7 +437,7 @@ void MaxEnt::update_lambda() {
 
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     const double k=kappa[i];
-    double cv=(getArgument(i)+compute_error(error_type,lambda[i])-at[i]);
+    double cv=(getArgumentScalar(i)+compute_error(error_type,lambda[i])-at[i]);
     if(reweight)
       learning_rate=1.0*k/(1+step/tau[i]);
     else
@@ -456,7 +456,7 @@ void MaxEnt::update_lambda() {
       else
         lambda[i]=avglambda[i]; //keep Lagrangian multipliers fixed to the previously computed average.
     }
-    work[i]+=(convert_lambda(type,lambda[i])-oldlambda[i])*getArgument(i); //compute the work performed in updating lambda
+    work[i]+=(convert_lambda(type,lambda[i])-oldlambda[i])*getArgumentScalar(i); //compute the work performed in updating lambda
     totalWork_+=work[i];
     totalWork=totalWork_;
     oldlambda[i]=convert_lambda(type,lambda[i]);
@@ -476,7 +476,7 @@ void MaxEnt::calculate() {
     getPntrToComponent(getPntrToArgument(i)->getName()+"_coupling")->set(lambda[i]);
     const double f=-KbT*convert_lambda(type,lambda[i])*apply_weights[myrep];
     totf2+=f*f;
-    ene+=KbT*convert_lambda(type,lambda[i])*getArgument(i)*apply_weights[myrep];
+    ene+=KbT*convert_lambda(type,lambda[i])*getArgumentScalar(i)*apply_weights[myrep];
     setOutputForce(i,f);
   }
   setBias(ene);

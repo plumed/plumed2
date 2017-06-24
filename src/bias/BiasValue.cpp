@@ -109,7 +109,7 @@ BiasValue::BiasValue(const ActionOptions&ao):
 void BiasValue::calculate() {
   double bias=0.0;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    double val; val=getArgument(i);
+    double val; val=getArgumentScalar(i);
     getPntrToComponent(i+1)->set(val);
     setOutputForce(i,-1.);
     bias+=val;

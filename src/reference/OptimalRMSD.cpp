@@ -94,6 +94,8 @@ double OptimalRMSD::projectAtomicDisplacementOnVector( const bool& normalized, c
   for(unsigned i=0; i<vecs.size(); ++i) {
     proj += dotProduct( mypack.getAtomsDisplacementVector()[i], vecs[i] );
   }
+  if( mypack.noDerivatives() ) return proj;
+
   for(unsigned a=0; a<3; a++) {
     for(unsigned b=0; b<3; b++) {
       for(unsigned iat=0; iat<getNumberOfAtoms(); iat++) {

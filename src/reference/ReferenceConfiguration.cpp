@@ -203,13 +203,12 @@ void ReferenceConfiguration::extractDisplacementVector( const std::vector<Vector
 }
 
 double ReferenceConfiguration::projectDisplacementOnVector( const Direction& mydir,
-    const std::vector<Value*>& vals, const std::vector<double>& arg,
-    ReferenceValuePack& mypack ) const {
+    const std::vector<Value*>& vals, ReferenceValuePack& mypack ) const {
   double proj=0;
   const ReferenceAtoms* atoms=dynamic_cast<const ReferenceAtoms*>( this );
   if( atoms ) proj += atoms->projectAtomicDisplacementOnVector( mydir.normalized, mydir.getReferencePositions(), mypack );
   const ReferenceArguments* args=dynamic_cast<const ReferenceArguments*>( this );
-  if( args ) proj += args->projectArgDisplacementOnVector( mydir.getReferenceArguments(), vals, arg, mypack );
+  if( args ) proj += args->projectArgDisplacementOnVector( mydir.getReferenceArguments(), vals, mypack );
   return proj;
 }
 

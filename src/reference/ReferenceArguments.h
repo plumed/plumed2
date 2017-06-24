@@ -95,7 +95,7 @@ public:
 /// Extract the displacement from a position in a space
   virtual void extractArgumentDisplacement( const std::vector<Value*>& vals, const std::vector<double>& arg, std::vector<double>& dirout ) const ;
 /// Project the displacement of the arguments on a vector
-  double projectArgDisplacementOnVector( const std::vector<double>& eigv, const std::vector<Value*>& vals, const std::vector<double>& arg, ReferenceValuePack& mypack ) const ;
+  double projectArgDisplacementOnVector( const std::vector<double>& eigv, const std::vector<Value*>& vals, ReferenceValuePack& mypack ) const ;
 };
 
 inline

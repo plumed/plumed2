@@ -19,10 +19,6 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "core/ActionAtomistic.h"
-#include "core/ActionWithValue.h"
-#include "core/ActionWithArguments.h"
-#include "reference/ReferenceConfiguration.h"
 #include "reference/ReferenceAtoms.h"
 #include "reference/MetricRegister.h"
 #include "tools/PDB.h"
@@ -30,46 +26,10 @@
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include "core/ActionRegister.h"
+#include "Mapping.h"
 
 namespace PLMD {
-
 namespace mapping {
-
-class Mapping :
-  public ActionAtomistic,
-  public ActionWithArguments,
-  public ActionWithValue
-{
-private:
-/// Are we calculating squared distances
-  bool squared;
-/// This holds all the reference information
-  std::vector<ReferenceConfiguration*> myframes;
-/// The forces on each of the derivatives (used in apply)
-  std::vector<double> forcesToApply;
-public:
-  static void registerKeywords( Keywords& keys );
-  static void shortcutKeywords( Keywords& keys );
-  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions );
-  explicit Mapping(const ActionOptions&);
-  ~Mapping();
-/// Overload the virtual functions that appear in both ActionAtomistic and ActionWithArguments
-  void calculateNumericalDerivatives( ActionWithValue* a=NULL );
-  void lockRequests();
-  void unlockRequests();
-/// Get the number of derivatives for this action
-  unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
-/// Turn on the tasks that are currently active
-  void buildCurrentTaskList( std::vector<unsigned>& tflags ) const ;
-/// Do the actual calculation
-  void calculate();
-/// This calculates the distance from the reference configuration of interest
-  void performTask( const unsigned& current, MultiValue& myvals ) const ;
-/// Apply the forces
-  void apply();
-};
 
 PLUMED_REGISTER_ACTION(Mapping,"EUCLIDEAN_DISSIMILARITIES_VECTOR")
 PLUMED_REGISTER_SHORTCUT(Mapping,"DRMSD")
@@ -209,6 +169,27 @@ void Mapping::calculate(){
   runAllTasks();
 }
 
+double Mapping::calculateDistanceFromReference( const unsigned& current, ReferenceValuePack& mypack ) const {
+  mypack.clear(); double dd = myframes[current]->calculate( getPositions(), getPbc(), getArguments(), mypack, squared );
+  if( !doNotCalculateDerivatives() && getNumberOfAtoms()>0 && !mypack.virialWasSet() ) {
+    Tensor tvir; tvir.zero();
+    for(unsigned i=0; i<mypack.getNumberOfAtoms(); ++i) tvir +=-1.0*Tensor( getPosition( mypack.getAtomIndex(i) ), mypack.getAtomDerivative(i) );
+    mypack.addBoxDerivatives( tvir ); 
+  }
+  return dd;
+}
+
+double Mapping::calculateDistanceBetweenReferenceAndThisPoint( const unsigned& current, const std::vector<Vector>& pos, 
+                                                               const std::vector<double>& args, ReferenceValuePack& mypack ) const {
+  mypack.clear(); double dd = myframes[current]->calc( pos, getPbc(), getArguments(), args, mypack, squared );
+  if( !doNotCalculateDerivatives() && getNumberOfAtoms()>0 && !mypack.virialWasSet() ) {
+    Tensor tvir; tvir.zero();
+    for(unsigned i=0; i<mypack.getNumberOfAtoms(); ++i) tvir +=-1.0*Tensor( getPosition( mypack.getAtomIndex(i) ), mypack.getAtomDerivative(i) );
+    mypack.addBoxDerivatives( tvir );
+  } 
+  return dd;  
+}
+
 void Mapping::performTask( const unsigned& current, MultiValue& myvals ) const {
   ReferenceValuePack mypack( getNumberOfArguments(), getNumberOfAtoms(), myvals ); mypack.setValIndex( getPntrToOutput(0)->getPositionInStream() );
   unsigned nargs2=myframes[current]->getNumberOfReferenceArguments(); unsigned nat2=myframes[current]->getNumberOfReferencePositions();
@@ -217,13 +198,14 @@ void Mapping::performTask( const unsigned& current, MultiValue& myvals ) const {
     ReferenceAtoms* myat2=dynamic_cast<ReferenceAtoms*>( myframes[current] ); plumed_dbg_assert( myat2 );
     for(unsigned i=0; i<nat2; ++i) mypack.setAtomIndex( i, myat2->getAtomIndex(i) );
   }
-  double dd = myframes[current]->calculate( getPositions(), getPbc(), getArguments(), mypack, squared );
-  myvals.setValue( getPntrToOutput(0)->getPositionInStream(), dd );
-  if( !doNotCalculateDerivatives() && getNumberOfAtoms()>0 && !mypack.virialWasSet() ) {
-    Tensor tvir; tvir.zero();
-    for(unsigned i=0; i<mypack.getNumberOfAtoms(); ++i) tvir +=-1.0*Tensor( getPosition( mypack.getAtomIndex(i) ), mypack.getAtomDerivative(i) );
-    mypack.addBoxDerivatives( tvir );
-  }
+  myvals.setValue( getPntrToOutput(0)->getPositionInStream(), calculateDistanceFromReference( current, mypack ) );
+  // double dd = myframes[current]->calculate( getPositions(), getPbc(), getArguments(), mypack, squared );
+  // myvals.setValue( getPntrToOutput(0)->getPositionInStream(), dd );
+  // if( !doNotCalculateDerivatives() && getNumberOfAtoms()>0 && !mypack.virialWasSet() ) {
+  //   Tensor tvir; tvir.zero();
+  //   for(unsigned i=0; i<mypack.getNumberOfAtoms(); ++i) tvir +=-1.0*Tensor( getPosition( mypack.getAtomIndex(i) ), mypack.getAtomDerivative(i) );
+  //   mypack.addBoxDerivatives( tvir );
+  // }
 }
 
 unsigned Mapping::getNumberOfDerivatives() {

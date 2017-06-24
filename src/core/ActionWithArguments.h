@@ -52,13 +52,15 @@ protected:
   void expandArgKeywordInPDB( PDB& pdb );
 /// Create a list of tasks from the argument streams
   void createTasksFromArguments();
+/// Get the total number of input arguments
+  unsigned getNumberOfScalarArguments() const ;
 public:
 /// Get the scalar product between the gradients of two variables
   double getProjection(unsigned i,unsigned j)const;
 /// Registers the list of keywords
   static void registerKeywords( Keywords& keys );
 /// Returns the value of an argument
-  double getArgument( const unsigned n ) const;
+  double getArgumentScalar( const unsigned n ) const;
 /// Return a pointer to specific argument
   Value* getPntrToArgument( const unsigned n ) const ;
 /// Returns the number of arguments
@@ -99,8 +101,21 @@ Value* ActionWithArguments::getPntrToArgument( const unsigned n ) const {
 }
 
 inline
-double ActionWithArguments::getArgument(const unsigned n) const {
-  return arguments[n]->get();
+unsigned ActionWithArguments::getNumberOfScalarArguments() const {
+  unsigned nscalars=0; 
+  for(unsigned i=0;i<arguments.size();++i) nscalars += arguments[i]->getNumberOfValues();
+  return nscalars;
+}
+
+inline
+double ActionWithArguments::getArgumentScalar(const unsigned n) const {
+  unsigned nt = 0, nn = 0, j=0;
+  for(unsigned i=0;i<arguments.size();++i){
+     nt += arguments[i]->getNumberOfValues();
+     if( n<nt ){ j=i; break ; }
+     nn += arguments[i]->getNumberOfValues();
+  }
+  return arguments[j]->get( n - nn );
 }
 
 inline

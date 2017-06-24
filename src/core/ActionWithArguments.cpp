@@ -328,7 +328,7 @@ void ActionWithArguments::retrieveArguments( const MultiValue& myvals, std::vect
               if( myvals.getTaskIndex()<nt ) break;
               nn += arguments[j]->getNumberOfValues();
           }
-          args[i]=arguments[i]->getValueForTask( myvals.getTaskIndex() - nn );
+          args[i]=arguments[i]->get( myvals.getTaskIndex() - nn );
       }
   } else {
       for(unsigned i=0;i<arg_ends.size()-1;++i) args[i]=arguments[arg_ends[i] + myvals.getTaskIndex()]->get(); 

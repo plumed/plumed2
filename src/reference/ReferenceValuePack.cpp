@@ -41,6 +41,7 @@ void ReferenceValuePack::resize( const unsigned& nargs, const unsigned& natoms )
 }
 
 void ReferenceValuePack::updateDynamicLists() {
+  if( myvals.getNumberOfDerivatives()==0 ) return;
   myvals.emptyActiveMembers();
   for(unsigned i=0; i<numberOfArgs; ++i) myvals.putIndexInActiveArray( i );
   for(unsigned i=0; i<atom_indices.size(); ++i) {

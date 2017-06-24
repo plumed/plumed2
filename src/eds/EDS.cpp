@@ -690,7 +690,7 @@ void EDS::apply_bias() {
   double ene = 0, totf2 = 0, cv, m, f;
 
   for(unsigned int i = 0; i < ncvs_; ++i) {
-    cv = difference(i, center_[i], getArgument(i));
+    cv = difference(i, center_[i], getArgumentScalar(i));
     m = current_coupling_[i];
     f = -m;
     ene += m*cv;
@@ -708,10 +708,10 @@ void EDS::update_statistics()  {
   std::vector<double> deltas(ncvs_);
   //Welford, West, and Hanso online variance method
   for(unsigned int i = 0; i < ncvs_; ++i)  {
-    deltas[i] = difference(i,means_[i],getArgument(i));
+    deltas[i] = difference(i,means_[i],getArgumentScalar(i));
     means_[i] += deltas[i]/fmax(1,update_calls_);
     if(!b_covar_)
-      ssds_[i] += deltas[i]*difference(i,means_[i],getArgument(i));
+      ssds_[i] += deltas[i]*difference(i,means_[i],getArgumentScalar(i));
   }
   if(b_covar_) {
     for(unsigned int i = 0; i < ncvs_; ++i) {

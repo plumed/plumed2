@@ -116,7 +116,7 @@ void FlexibleBin::update(bool nowAddAHill) {
     //
     // beware: the pbc
     delta.resize(ncv);
-    for(i=0; i<ncv; i++)cv.push_back(paction->getArgument(i));
+    for(i=0; i<ncv; i++)cv.push_back(paction->getArgumentScalar(i));
     if(average.size()==0) { // initial time: just set the initial vector
       average.resize(ncv);
       for(i=0; i<ncv; i++)average[i]=cv[i];
@@ -193,7 +193,7 @@ void FlexibleBin::update(bool nowAddAHill, unsigned iarg) {
     // THE AVERAGE VALUE
     //
     delta.resize(1);
-    cv.push_back(paction->getArgument(iarg));
+    cv.push_back(paction->getArgumentScalar(iarg));
     if(average.size()==0) { // initial time: just set the initial vector
       average.resize(1);
       average[0]=cv[0];

@@ -210,15 +210,15 @@ void ReferenceArguments::extractArgumentDisplacement( const std::vector<Value*>&
   }
 }
 
-double ReferenceArguments::projectArgDisplacementOnVector( const std::vector<double>& eigv, const std::vector<Value*>& vals, const std::vector<double>& arg, ReferenceValuePack& mypack ) const {
+double ReferenceArguments::projectArgDisplacementOnVector( const std::vector<double>& eigv, const std::vector<Value*>& vals, ReferenceValuePack& mypack ) const {
   if( hasmetric ) {
     plumed_error();
   } else {
     double proj=0;
     for(unsigned j=0; j<reference_args.size(); ++j) {
       unsigned jk=arg_der_index[j];
-      proj += eigv[j]*sqrtweight[j]*vals[jk]->difference( reference_args[j], arg[jk] );
-      mypack.setArgumentDerivatives( jk, eigv[j]*sqrtweight[j] );
+      proj += eigv[j]*sqrtweight[j]*vals[jk]->difference( reference_args[j], vals[jk]->get() );
+      if( !mypack.noDerivatives() ) mypack.setArgumentDerivatives( jk, eigv[j]*sqrtweight[j] );
     }
     return proj;
   }

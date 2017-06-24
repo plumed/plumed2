@@ -136,8 +136,9 @@ Path::Path(const ActionOptions&ao):
   }
   parseVector("COORDINATES",framep);
   if( framep.size()>0 ){ 
-     if( (done_over_stream && framep.size()!=getPntrToArgument(0)->getShape()[0]) &&
-         framep.size()!=getNumberOfArguments() ) error("wrong number of input coordinates"); 
+     if( framep.size()!=getNumberOfArguments() ){
+        if( framep.size()!=getPntrToArgument(0)->getShape()[0] ) error("wrong number of input coordinates");
+     }
   } else {
      if( done_over_stream ) framep.resize( getPntrToArgument(0)->getShape()[0] ); 
      else framep.resize( getNumberOfArguments() );

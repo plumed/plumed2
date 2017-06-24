@@ -954,9 +954,9 @@ void PBMetaD::calculate()
   double ncv = (double) getNumberOfArguments();
   double bmin = 1.0e+19;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    cv[0]    = getArgument(i);
-    der[0]   = 0.0;
-    bias[i]  = getBiasAndDerivatives(i, cv, der);
+    cv[0] = getArgumentScalar(i);
+    der[0] = 0.0;
+    bias[i] = getBiasAndDerivatives(i, cv, der);
     deriv[i] = der[0];
     if(bias[i] < bmin) bmin = bias[i];
   }
@@ -1016,8 +1016,8 @@ void PBMetaD::update()
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
       if(adaptive_!=FlexibleBin::none) thissigma[i]=flexbin[i].getInverseMatrix(i)[0];
       else thissigma[i]=sigma0_[i];
-      cv[i]     = getArgument(i);
-      cv_tmp[0] = getArgument(i);
+      cv[i]     = getArgumentScalar(i);
+      cv_tmp[0] = getArgumentScalar(i);
       bias[i] = getBiasAndDerivatives(i, cv_tmp);
       if(bias[i] < bmin) bmin = bias[i];
     }

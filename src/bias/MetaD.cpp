@@ -1553,7 +1553,7 @@ void MetaD::calculate()
   vector<double> cv(ncv);
   std::unique_ptr<double[]> der(new double[ncv]);
   for(unsigned i=0; i<ncv; ++i) {
-    cv[i]=getArgument(i);
+    cv[i]=getArgumentScalar(i);
     der[i]=0.;
   }
   double ene = getBiasAndDerivatives(cv,der.get());
@@ -1594,7 +1594,7 @@ void MetaD::update() {
     isFirstStep=false;
   }
 
-  for(unsigned i=0; i<cv.size(); ++i) cv[i] = getArgument(i);
+  for(unsigned i=0; i<cv.size(); ++i) cv[i] = getArgumentScalar(i);
 
   double vbias=getBiasAndDerivatives(cv);
 

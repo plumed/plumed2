@@ -1361,7 +1361,7 @@ void Metainference::get_weights(const unsigned iselect, double &fact, double &va
   if(do_reweight_) {
     vector<double> bias(nrep_,0);
     if(master) {
-      bias[replica_] = getArgument(narg);
+      bias[replica_] = getArgumentScalar(narg);
       if(nrep_>1) multi_sim_comm.Sum(&bias[0], nrep_);
     }
     comm.Sum(&bias[0], nrep_);
@@ -1418,8 +1418,8 @@ void Metainference::get_sigma_mean(const unsigned iselect, const double fact, co
     if(do_reweight_) {
       if(master) {
         for(unsigned i=0; i<narg; ++i) {
-          double tmp1 = (fact*getArgument(i)-ave_fact*mean[i])*(fact*getArgument(i)-ave_fact*mean[i]);
-          double tmp2 = -2.*mean[i]*(fact-ave_fact)*(fact*getArgument(i)-ave_fact*mean[i]);
+          double tmp1 = (fact*getArgumentScalar(i)-ave_fact*mean[i])*(fact*getArgumentScalar(i)-ave_fact*mean[i]);
+          double tmp2 = -2.*mean[i]*(fact-ave_fact)*(fact*getArgumentScalar(i)-ave_fact*mean[i]);
           sigma_mean2_now[i] = tmp1 + tmp2;
         }
         if(nrep_>1) multi_sim_comm.Sum(&sigma_mean2_now[0], narg);
@@ -1429,7 +1429,7 @@ void Metainference::get_sigma_mean(const unsigned iselect, const double fact, co
     } else {
       if(master) {
         for(unsigned i=0; i<narg; ++i) {
-          double tmp  = getArgument(i)-mean[i];
+          double tmp  = getArgumentScalar(i)-mean[i];
           sigma_mean2_now[i] = fact*tmp*tmp;
         }
         if(nrep_>1) multi_sim_comm.Sum(&sigma_mean2_now[0], narg);
@@ -1485,12 +1485,12 @@ void Metainference::get_sigma_mean(const unsigned iselect, const double fact, co
 void Metainference::replica_averaging(const double fact, vector<double> &mean, vector<double> &dmean_b)
 {
   if(master) {
-    for(unsigned i=0; i<narg; ++i) mean[i] = fact*getArgument(i);
+    for(unsigned i=0; i<narg; ++i) mean[i] = fact*getArgumentScalar(i);
     if(nrep_>1) multi_sim_comm.Sum(&mean[0], narg);
   }
   comm.Sum(&mean[0], narg);
   // set the derivative of the mean with respect to the bias
-  for(unsigned i=0; i<narg; ++i) dmean_b[i] = fact/kbt_*(getArgument(i)-mean[i])/static_cast<double>(average_weights_stride_);
+  for(unsigned i=0; i<narg; ++i) dmean_b[i] = fact/kbt_*(getArgumentScalar(i)-mean[i])/static_cast<double>(average_weights_stride_);
 
   // this is only for generic metainference
   if(firstTime) {ftilde_ = mean; firstTime = false;}

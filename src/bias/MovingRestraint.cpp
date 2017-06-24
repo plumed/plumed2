@@ -239,7 +239,7 @@ void MovingRestraint::calculate() {
   }
   tot_work=0.0;
   for(unsigned i=0; i<narg; ++i) {
-    const double cv=difference(i,aa[i],getArgument(i)); // this gives: getArgument(i) - aa[i]
+    const double cv=difference(i,aa[i],getArgumentScalar(i)); // this gives: getArgument(i) - aa[i]
     getPntrToComponent(getPntrToArgument(i)->getName()+"_cntr")->set(aa[i]);
     const double k=kk[i];
     f[i]=-k*cv;

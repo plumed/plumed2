@@ -153,7 +153,7 @@ void ABMD::calculate() {
   double ene=0.0;
   double totf2=0.0;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    const double cv=difference(i,to[i],getArgument(i));
+    const double cv=difference(i,to[i],getArgumentScalar(i));
     const double cv2=cv*cv;
     const double k=kappa[i];
     double noise=0.;
