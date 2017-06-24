@@ -170,7 +170,7 @@ void Mapping::calculate(){
 }
 
 double Mapping::calculateDistanceFromReference( const unsigned& current, ReferenceValuePack& mypack ) const {
-  mypack.clear(); double dd = myframes[current]->calculate( getPositions(), getPbc(), getArguments(), mypack, squared );
+  double dd = myframes[current]->calculate( getPositions(), getPbc(), getArguments(), mypack, squared );
   if( !doNotCalculateDerivatives() && getNumberOfAtoms()>0 && !mypack.virialWasSet() ) {
     Tensor tvir; tvir.zero();
     for(unsigned i=0; i<mypack.getNumberOfAtoms(); ++i) tvir +=-1.0*Tensor( getPosition( mypack.getAtomIndex(i) ), mypack.getAtomDerivative(i) );
@@ -181,7 +181,7 @@ double Mapping::calculateDistanceFromReference( const unsigned& current, Referen
 
 double Mapping::calculateDistanceBetweenReferenceAndThisPoint( const unsigned& current, const std::vector<Vector>& pos, 
                                                                const std::vector<double>& args, ReferenceValuePack& mypack ) const {
-  mypack.clear(); double dd = myframes[current]->calc( pos, getPbc(), getArguments(), args, mypack, squared );
+  double dd = myframes[current]->calc( pos, getPbc(), getArguments(), args, mypack, squared );
   if( !doNotCalculateDerivatives() && getNumberOfAtoms()>0 && !mypack.virialWasSet() ) {
     Tensor tvir; tvir.zero();
     for(unsigned i=0; i<mypack.getNumberOfAtoms(); ++i) tvir +=-1.0*Tensor( getPosition( mypack.getAtomIndex(i) ), mypack.getAtomDerivative(i) );

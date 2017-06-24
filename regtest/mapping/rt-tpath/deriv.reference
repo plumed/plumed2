@@ -1,4 +1,4 @@
-#! FIELDS time parameter p2.gspath p2.gzpath
+#! FIELDS time parameter p2.s p2.z
  0.000000 0   4.3279   0.0314
  0.000000 1  -4.1355  -0.0481
  0.000000 2   5.8258  -0.0160

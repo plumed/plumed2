@@ -1,4 +1,4 @@
-#! FIELDS time parameter pp.gspath pp.gzpath
+#! FIELDS time parameter pp.s pp.z
  0.000000 0   3.8201  -0.6806
  0.000000 1  -3.5483  -0.7327
  0.250000 0   3.8201   0.6806

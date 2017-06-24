@@ -151,9 +151,10 @@ GeometricPath::GeometricPath(const ActionOptions&ao):
   projdir.setNamesAndAtomNumbers( myatoms, myargs );
   mypack1_stashd_atoms.resize( maxatoms ); mypack1_stashd_args.resize( maxargs );
   Mapping* am = dynamic_cast<Mapping*>( getPntrToArgument(0)->getPntrToAction() ); 
-  mypack1.resize( maxargs, maxatoms ); (am->getReferenceConfiguration(0))->setupPCAStorage( mypack1 );
-  mypack2.resize( maxargs, maxatoms ); (am->getReferenceConfiguration(0))->setupPCAStorage( mypack2 );
-  mypack3.resize( maxargs, maxatoms );
+  unsigned maxderiv=maxargs; if( maxatoms>0 ) maxderiv += 3*maxatoms + 9;
+  mydpack1.resize( 1, maxderiv ); mypack1.resize( maxargs, maxatoms ); (am->getReferenceConfiguration(0))->setupPCAStorage( mypack1 );
+  mydpack2.resize( 1, maxderiv ); mypack2.resize( maxargs, maxatoms ); (am->getReferenceConfiguration(0))->setupPCAStorage( mypack2 );
+  mydpack3.resize( 1, maxderiv ); mypack3.resize( maxargs, maxatoms );
   for(unsigned i=0; i<maxatoms; ++i) { mypack1.setAtomIndex(i,i); mypack2.setAtomIndex(i,i); mypack3.setAtomIndex(i,i); }
 
   checkRead(); 
@@ -168,6 +169,7 @@ unsigned GeometricPath::getNumberOfDerivatives(){
 }
 
 void GeometricPath::retrieveReferenceValuePackData( const unsigned& iframe, ReferenceValuePack& mypack ) {
+  mypack.clear(); 
   if( getNumberOfArguments()>1 ){
       Mapping* am = dynamic_cast<Mapping*>( getPntrToArgument(iframe)->getPntrToAction() );
       double ig=am->calculateDistanceFromReference( 0, mypack );
@@ -186,6 +188,7 @@ ReferenceConfiguration* GeometricPath::getReferenceConfiguration( const unsigned
 }
 
 double GeometricPath::calculateDistanceFromPosition( const unsigned & iframe, const std::vector<Vector>& pos, const std::vector<double>& args, ReferenceValuePack& mypack ){ 
+  mypack.clear();
   if( getNumberOfArguments()>1 ){
       Mapping* am = dynamic_cast<Mapping*>( getPntrToArgument(iframe)->getPntrToAction() );
       return am->calculateDistanceBetweenReferenceAndThisPoint( 0, pos, args, mypack );

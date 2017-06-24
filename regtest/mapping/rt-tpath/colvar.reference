@@ -1,4 +1,4 @@
-#! FIELDS time pp.gspath pp.gzpath p2.gspath p2.gzpath
+#! FIELDS time pp.s pp.z p2.s p2.z
  0.000000  21.4988   0.0807   1.9191   0.0115
  0.250000  20.9438   0.0226   0.2895   0.0084
  0.500000  20.6238   0.0050   0.7852   0.0072
