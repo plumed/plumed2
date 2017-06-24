@@ -100,7 +100,7 @@ Mapping::Mapping(const ActionOptions&ao):
   ActionWithValue(ao)
 {
   // Read the squared flag
-  parseFlag("SQUARED",squared);
+  if( keywords.exists("SQUARED") ) parseFlag("SQUARED",squared);
   // Read the input
   std::string mtype; parse("TYPE",mtype);
   bool skipchecks; parseFlag("DISABLE_CHECKS",skipchecks);

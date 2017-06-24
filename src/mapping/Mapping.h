@@ -37,12 +37,13 @@ class Mapping :
   public ActionWithValue
 {
 private:
-/// Are we calculating squared distances
-  bool squared;
-/// This holds all the reference information
-  std::vector<ReferenceConfiguration*> myframes;
 /// The forces on each of the derivatives (used in apply)
   std::vector<double> forcesToApply;
+protected:
+/// Are we calculating squared distances
+  bool squared; 
+/// This holds all the reference information
+  std::vector<ReferenceConfiguration*> myframes;
 public:
   static void registerKeywords( Keywords& keys );
   static void shortcutKeywords( Keywords& keys );

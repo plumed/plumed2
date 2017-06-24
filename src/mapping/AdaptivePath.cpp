@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Mapping.h"
-#include "TrigonometricPathVessel.h"
 #include "PathReparameterization.h"
 #include "reference/Direction.h"
 #include "core/ActionRegister.h"
@@ -86,24 +85,19 @@ private:
   double fadefact, tolerance;
   unsigned update_str, wstride;
   std::vector<unsigned> fixedn;
-  TrigonometricPathVessel* mypathv;
   std::vector<double> wsum;
-  Direction displacement,displacement2;
+  Direction displacement, displacement2;
   std::vector<Direction> pdisplacements;
 public:
   static void registerKeywords( Keywords& keys );
   explicit AdaptivePath(const ActionOptions&);
-  void calculate();
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const ;
-  double getLambda() { return 0.0; }
-  double transformHD( const double& dist, double& df ) const ;
   void update();
 };
 
 PLUMED_REGISTER_ACTION(AdaptivePath,"ADAPTIVE_PATH")
 
 void AdaptivePath::registerKeywords( Keywords& keys ) {
-  Mapping::registerKeywords( keys ); keys.remove("PROPERTY");
+  Mapping::registerKeywords( keys ); keys.remove("SQUARED"); 
   keys.add("compulsory","FIXED","the positions in the list of input frames of the two path nodes whose positions remain fixed during the path optimization");
   keys.add("compulsory","HALFLIFE","-1","the number of MD steps after which a previously measured path distance weighs only 50% in the average. This option may increase convergence by allowing to \"forget\" the memory of a bad initial guess path. The default is to set this to infinity");
   keys.add("compulsory","UPDATE","the frequency with which the path should be updated");
@@ -120,8 +114,9 @@ AdaptivePath::AdaptivePath(const ActionOptions& ao):
   displacement(ReferenceConfigurationOptions("DIRECTION")),
   displacement2(ReferenceConfigurationOptions("DIRECTION"))
 {
-  setLowMemOption( true ); parseVector("FIXED",fixedn);
-  if( fixedn[0]<1 || fixedn[1]>getNumberOfReferencePoints() ) error("fixed nodes must be in range from 0 to number of nodes");
+  if( myframes.size()<2 ) error("not enough reference configurations in path");
+  parseVector("FIXED",fixedn);
+  if( fixedn[0]<1 || fixedn[1]>myframes.size() ) error("fixed nodes must be in range from 0 to number of nodes");
   if( fixedn[0]>=fixedn[1] ) error("invalid selection for fixed nodes first index provided must be smaller than second index");
   log.printf("  fixing position of frames numbered %u and %u \n",fixedn[0],fixedn[1]);
   fixedn[0]--; fixedn[1]--;   // Set fixed notes with c++ indexing starting from zero
@@ -138,25 +133,12 @@ AdaptivePath::AdaptivePath(const ActionOptions& ao):
   for(unsigned i=0; i<getNumberOfArguments(); ++i) argument_names[i] = getPntrToArgument(i)->getName();
   displacement.setNamesAndAtomNumbers( getAbsoluteIndexes(), argument_names );
   displacement2.setNamesAndAtomNumbers( getAbsoluteIndexes(), argument_names );
-  for(int i=0; i<getNumberOfReferencePoints(); ++i) {
-    addTaskToList( i ); pdisplacements.push_back( Direction(ReferenceConfigurationOptions("DIRECTION")) );
-    setPropertyValue( i, 0, static_cast<double>( i - static_cast<int>(fixedn[0]) ) / static_cast<double>( fixedn[1] - fixedn[0] ) );
+  for(int i=0; i<myframes.size(); ++i) {
+    pdisplacements.push_back( Direction(ReferenceConfigurationOptions("DIRECTION")) );
     pdisplacements[i].setNamesAndAtomNumbers( getAbsoluteIndexes(), argument_names ); wsum.push_back( 0.0 );
   }
-  plumed_assert( getPropertyValue( fixedn[0], 0 )==0.0 && getPropertyValue( fixedn[1], 0 )==1.0 );
-  // And activate them all
-  deactivateAllTasks();
-  for(unsigned i=0; i<getFullNumberOfTasks(); ++i) taskFlags[i]=1;
-  lockContributors();
-
-  // Setup the vessel to hold the trig path
-  std::string input; addVessel("GPATH", input, -1 );
-  readVesselKeywords();
-  // Check that there is only one vessel - the one holding the trig path
-  plumed_dbg_assert( getNumberOfVessels()==1 );
-  // Retrieve the path vessel
-  mypathv = dynamic_cast<TrigonometricPathVessel*>( getPntrToVessel(0) );
-  plumed_assert( mypathv );
+  // Make sure we collect all the data
+  squared = true; getPntrToComponent(0)->buildDataStore();
 
   // Information for write out
   std::string wfilename; parse("WFILE",wfilename);
@@ -169,65 +151,92 @@ AdaptivePath::AdaptivePath(const ActionOptions& ao):
   log<<"  Bibliography "<<plumed.cite("Diaz Leines and Ensing, Phys. Rev. Lett. 109, 020601 (2012)")<<"\n";
 }
 
-void AdaptivePath::calculate() {
-  runAllTasks();
-}
-
-void AdaptivePath::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
-  // This builds a pack to hold the derivatives
-  ReferenceValuePack mypack( getNumberOfArguments(), getNumberOfAtoms(), myvals );
-  finishPackSetup( current, mypack );
-  // Calculate the distance from the frame
-  double val=calculateDistanceFunction( current, mypack, true );
-  // Put the element value in element zero
-  myvals.setValue( 0, val ); myvals.setValue( 1, 1.0 );
-  return;
-}
-
-double AdaptivePath::transformHD( const double& dist, double& df ) const {
-  df=1.0; return dist;
-}
-
 void AdaptivePath::update() {
-  double weight2 = -1.*mypathv->dx;
-  double weight1 = 1.0 + mypathv->dx;
+  runAllTasks();   // Redo calculation - makes sure no problems due to parallel tempering
+
+  double v1v1 = getPntrToComponent(0)->get(0); unsigned iclose1 = 0;
+  double v3v3 = getPntrToComponent(0)->get(1); unsigned iclose2 = 1;
+  if( v1v1>v3v3 ){
+      double tmp=v1v1; v1v1=v3v3; v3v3=tmp;
+      iclose1 = 1; iclose2 = 0;
+  }
+  for(unsigned i=2; i<myframes.size(); ++i) {
+    double ndist=getPntrToComponent(0)->get(i);
+    if( ndist<v1v1 ) {
+      v3v3=v1v1; iclose2=iclose1;
+      v1v1=ndist; iclose1=i;
+    } else if( ndist<v3v3 ) {
+      v3v3=ndist; iclose2=i;
+    }
+  }
+  // And find third closest point
+  int isign = iclose1 - iclose2;
+  if( isign>1 ) isign=1; else if( isign<-1 ) isign=-1;
+  int iclose3 = iclose1 + isign; double v2v2;
+
+  //  Create some holders for stuff
+  MultiValue mydpack1(1,0), mydpack2(1,0); 
+  ReferenceValuePack mypack1( getNumberOfArguments(), getNumberOfAtoms(), mydpack1 ); myframes[0]->setupPCAStorage( mypack1 );
+  ReferenceValuePack mypack2( getNumberOfArguments(), getNumberOfAtoms(), mydpack2 );
+  mypack1.clear(); calculateDistanceFromReference( iclose1, mypack1 );
+  if( iclose3<0 || iclose3>=myframes.size() ) {
+    v2v2=calculateDistanceBetweenReferenceAndThisPoint( iclose2, myframes[iclose1]->getReferencePositions(), myframes[iclose1]->getReferenceArguments(), mypack2 );
+    extractDisplacementVector( iclose2, myframes[iclose1]->getReferencePositions(), myframes[iclose1]->getReferenceArguments(), displacement );
+  } else {
+    v2v2=calculateDistanceBetweenReferenceAndThisPoint( iclose1, myframes[iclose3]->getReferencePositions(), myframes[iclose3]->getReferenceArguments(), mypack2 );
+    extractDisplacementVector( iclose1, myframes[iclose3]->getReferencePositions(), myframes[iclose3]->getReferenceArguments(), displacement );
+  }
+  if( getNumberOfAtoms()>0 ) {
+      ReferenceAtoms* at = dynamic_cast<ReferenceAtoms*>( myframes[iclose1] );
+      const std::vector<double> & displace( at->getDisplace() );
+      for(unsigned i=0; i<getNumberOfAtoms(); ++i) mypack1.getAtomsDisplacementVector()[i] /= displace[i];
+  }
+  // Calculate the dot product of v1 with v2
+  double v1v2 = projectDisplacementOnVector( iclose1, displacement, mypack1 );
+  double root = sqrt( v1v2*v1v2 - v2v2 * ( v1v1 - v3v3) );
+  double dx = 0.5 * ( (root + v1v2) / v2v2 - 1.);
+  double weight2 = -1.* dx; double weight1 = 1.0 + dx;
   if( weight1>1.0 ) {
     weight1=1.0; weight2=0.0;
   } else if( weight2>1.0 ) {
     weight1=0.0; weight2=1.0;
   }
   // Add projections to dispalcement accumulators
-  ReferenceConfiguration* myref = getReferenceConfiguration( mypathv->iclose1 );
-  myref->extractDisplacementVector( getPositions(), getArguments(), mypathv->cargs, false, displacement );
-  getReferenceConfiguration( mypathv->iclose2 )->extractDisplacementVector( myref->getReferencePositions(), getArguments(), myref->getReferenceArguments(), false, displacement2 );
-  displacement.addDirection( -mypathv->dx, displacement2 );
-  pdisplacements[mypathv->iclose1].addDirection( weight1, displacement );
-  pdisplacements[mypathv->iclose2].addDirection( weight2, displacement );
+  //ReferenceConfiguration* myref = getReferenceConfiguration( mypathv->iclose1 );
+  // myframes[iclose1]->
+  std::vector<double> cargs( getNumberOfScalarArguments() ); 
+  for(unsigned i=0;i<getNumberOfScalarArguments();++i) cargs[i]=getArgumentScalar(i);
+  extractDisplacementVector( iclose1, getPositions(), cargs, displacement );
+  extractDisplacementVector( iclose2, myframes[iclose1]->getReferencePositions(), myframes[iclose1]->getReferenceArguments(), displacement2 );
+//   myref->extractDisplacementVector( getPositions(), getArguments(), mypathv->cargs, false, displacement );
+//   getReferenceConfiguration( iclose2 )->extractDisplacementVector( myref->getReferencePositions(), getArguments(), myref->getReferenceArguments(), false, displacement2 );
+  displacement.addDirection( -dx, displacement2 );
+  pdisplacements[iclose1].addDirection( weight1, displacement );
+  pdisplacements[iclose2].addDirection( weight2, displacement );
   // Update weight accumulators
-  wsum[mypathv->iclose1] *= fadefact;
-  wsum[mypathv->iclose2] *= fadefact;
-  wsum[mypathv->iclose1] += weight1;
-  wsum[mypathv->iclose2] += weight2;
+  wsum[iclose1] *= fadefact;
+  wsum[iclose2] *= fadefact;
+  wsum[iclose1] += weight1;
+  wsum[iclose2] += weight2;
 
   // This does the update of the path if it is time to
   if( (getStep()>0) && (getStep()%update_str==0) ) {
     wsum[fixedn[0]]=wsum[fixedn[1]]=0.;
-    for(unsigned inode=0; inode<getNumberOfReferencePoints(); ++inode) {
+    for(unsigned inode=0; inode<myframes.size(); ++inode) {
       if( wsum[inode]>0 ) {
         // First displace the node by the weighted direction
-        getReferenceConfiguration( inode )->displaceReferenceConfiguration( 1./wsum[inode], pdisplacements[inode] );
+        myframes[inode]->displaceReferenceConfiguration( 1./wsum[inode], pdisplacements[inode] );
         // Reset the displacement
         pdisplacements[inode].zeroDirection();
       }
     }
     // Now ensure all the nodes of the path are equally spaced
-    PathReparameterization myspacings( getPbc(), getArguments(), getAllReferenceConfigurations() );
+    PathReparameterization myspacings( getPbc(), getArguments(), myframes );
     myspacings.reparameterize( fixedn[0], fixedn[1], tolerance );
   }
   if( (getStep()>0) && (getStep()%wstride==0) ) {
     pathfile.printf("# PATH AT STEP %d TIME %f \n", getStep(), getTime() );
-    std::vector<ReferenceConfiguration*>& myconfs=getAllReferenceConfigurations();
-    for(unsigned i=0; i<myconfs.size(); ++i) myconfs[i]->print( pathfile, ofmt, atoms.getUnits().getLength()/0.1 );
+    for(unsigned i=0; i<myframes.size(); ++i) myframes[i]->print( pathfile, ofmt, atoms.getUnits().getLength()/0.1 );
     pathfile.flush();
   }
 }
