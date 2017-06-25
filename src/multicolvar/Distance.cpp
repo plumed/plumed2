@@ -19,8 +19,9 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Colvar.h"
-#include "ActionRegister.h"
+#include "MultiColvarBase.h"
+#include "AtomValuePack.h"
+#include "core/ActionRegister.h"
 #include "tools/Pbc.h"
 
 #include <string>
@@ -29,7 +30,7 @@
 using namespace std;
 
 namespace PLMD {
-namespace colvar {
+namespace multicolvar {
 
 //+PLUMEDOC COLVAR DISTANCE
 /*
@@ -108,23 +109,22 @@ with domain (-0.5,+0.5).
 */
 //+ENDPLUMEDOC
 
-class Distance : public Colvar {
+class Distance : public MultiColvarBase {
+private:
   bool components;
   bool scaled_components;
-  bool pbc;
 
 public:
   static void registerKeywords( Keywords& keys );
   explicit Distance(const ActionOptions&);
 // active methods:
-  virtual void calculate();
+  void compute( const unsigned& index, AtomValuePack& myatoms ) const ; 
 };
 
 PLUMED_REGISTER_ACTION(Distance,"DISTANCE")
 
 void Distance::registerKeywords( Keywords& keys ) {
-  Colvar::registerKeywords( keys );
-  keys.add("atoms","ATOMS","the pair of atom that we are calculating the distance between");
+  MultiColvarBase::registerKeywords( keys );
   keys.addFlag("COMPONENTS",false,"calculate the x, y and z components of the distance separately and store them as label.x, label.y and label.z");
   keys.addFlag("SCALED_COMPONENTS",false,"calculate the a, b and c scaled components of the distance separately and store them as label.a, label.b and label.c");
   keys.addOutputComponent("x","COMPONENTS","the x-component of the vector connecting the two atoms");
@@ -136,25 +136,15 @@ void Distance::registerKeywords( Keywords& keys ) {
 }
 
 Distance::Distance(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao),
+  Action(ao),
+  MultiColvarBase(ao),
   components(false),
-  scaled_components(false),
-  pbc(true)
+  scaled_components(false)
 {
-  vector<AtomNumber> atoms;
-  parseAtomList("ATOMS",atoms);
-  if(atoms.size()!=2)
-    error("Number of specified atoms should be 2");
+  if(getNumberOfAtomsInEachCV()!=2) error("Number of specified atoms should be 2");
   parseFlag("COMPONENTS",components);
   parseFlag("SCALED_COMPONENTS",scaled_components);
-  bool nopbc=!pbc;
-  parseFlag("NOPBC",nopbc);
-  pbc=!nopbc;
   checkRead();
-
-  log.printf("  between atoms %d %d\n",atoms[0].serial(),atoms[1].serial());
-  if(pbc) log.printf("  using periodic boundary conditions\n");
-  else    log.printf("  without periodic boundary conditions\n");
 
   if(components && scaled_components) error("COMPONENTS and SCALED_COMPONENTS are not compatible");
 
@@ -170,59 +160,49 @@ Distance::Distance(const ActionOptions&ao):
   } else {
     addValueWithDerivatives(); setNotPeriodic();
   }
-
-
-  requestAtoms(atoms);
 }
 
 
 // calculator
-void Distance::calculate() {
+void Distance::compute( const unsigned& index, AtomValuePack& myatoms ) const {
 
-  if(pbc) makeWhole();
-
-  Vector distance=delta(getPosition(0),getPosition(1));
+  Vector distance=delta(myatoms.getPosition(0),myatoms.getPosition(1));
   const double value=distance.modulo();
   const double invvalue=1.0/value;
 
   if(components) {
-    Value* valuex=getPntrToComponent("x");
-    Value* valuey=getPntrToComponent("y");
-    Value* valuez=getPntrToComponent("z");
+    myatoms.addAtomsDerivatives(0,0,Vector(-1,0,0));
+    myatoms.addAtomsDerivatives(0,1,Vector(+1,0,0));
+    myatoms.setBoxDerivativesNoPbc( 0 );
+    myatoms.setValue( 0, distance[0] );
 
-    setAtomsDerivatives (valuex,0,Vector(-1,0,0));
-    setAtomsDerivatives (valuex,1,Vector(+1,0,0));
-    setBoxDerivativesNoPbc(valuex);
-    valuex->set(distance[0]);
+    myatoms.addAtomsDerivatives(1,0,Vector(0,-1,0));
+    myatoms.addAtomsDerivatives(1,1,Vector(0,+1,0));
+    myatoms.setBoxDerivativesNoPbc( 1 );
+    myatoms.setValue( 1, distance[1] );
 
-    setAtomsDerivatives (valuey,0,Vector(0,-1,0));
-    setAtomsDerivatives (valuey,1,Vector(0,+1,0));
-    setBoxDerivativesNoPbc(valuey);
-    valuey->set(distance[1]);
-
-    setAtomsDerivatives (valuez,0,Vector(0,0,-1));
-    setAtomsDerivatives (valuez,1,Vector(0,0,+1));
-    setBoxDerivativesNoPbc(valuez);
-    valuez->set(distance[2]);
+    myatoms.addAtomsDerivatives(2,0,Vector(0,0,-1));
+    myatoms.addAtomsDerivatives(2,1,Vector(0,0,+1));
+    myatoms.setBoxDerivativesNoPbc(2);
+    myatoms.setValue( 2, distance[2] );
   } else if(scaled_components) {
-    Value* valuea=getPntrToComponent("a");
-    Value* valueb=getPntrToComponent("b");
-    Value* valuec=getPntrToComponent("c");
     Vector d=getPbc().realToScaled(distance);
-    setAtomsDerivatives (valuea,0,matmul(getPbc().getInvBox(),Vector(-1,0,0)));
-    setAtomsDerivatives (valuea,1,matmul(getPbc().getInvBox(),Vector(+1,0,0)));
-    valuea->set(Tools::pbc(d[0]));
-    setAtomsDerivatives (valueb,0,matmul(getPbc().getInvBox(),Vector(0,-1,0)));
-    setAtomsDerivatives (valueb,1,matmul(getPbc().getInvBox(),Vector(0,+1,0)));
-    valueb->set(Tools::pbc(d[1]));
-    setAtomsDerivatives (valuec,0,matmul(getPbc().getInvBox(),Vector(0,0,-1)));
-    setAtomsDerivatives (valuec,1,matmul(getPbc().getInvBox(),Vector(0,0,+1)));
-    valuec->set(Tools::pbc(d[2]));
+    myatoms.addAtomsDerivatives(0,0,matmul(getPbc().getInvBox(),Vector(-1,0,0)));
+    myatoms.addAtomsDerivatives(0,1,matmul(getPbc().getInvBox(),Vector(+1,0,0)));
+    myatoms.setValue(0,Tools::pbc(d[0]));
+
+    myatoms.addAtomsDerivatives(1,0,matmul(getPbc().getInvBox(),Vector(0,-1,0)));
+    myatoms.addAtomsDerivatives(1,1,matmul(getPbc().getInvBox(),Vector(0,+1,0)));
+    myatoms.setValue(1,Tools::pbc(d[1]));
+
+    myatoms.addAtomsDerivatives(2,0,matmul(getPbc().getInvBox(),Vector(0,0,-1)));
+    myatoms.addAtomsDerivatives(2,1,matmul(getPbc().getInvBox(),Vector(0,0,+1)));
+    myatoms.setValue(2,Tools::pbc(d[2]));
   } else {
-    setAtomsDerivatives(0,-invvalue*distance);
-    setAtomsDerivatives(1,invvalue*distance);
-    setBoxDerivativesNoPbc();
-    setValue           (value);
+    myatoms.addAtomsDerivatives(0,0,-invvalue*distance);
+    myatoms.addAtomsDerivatives(0,1,invvalue*distance);
+    myatoms.setBoxDerivativesNoPbc(0);
+    myatoms.setValue(0,value);
   }
 
 }

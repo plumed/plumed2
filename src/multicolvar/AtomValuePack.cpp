@@ -20,8 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "AtomValuePack.h"
-#include "CatomPack.h"
-#include "tools/LinkCells.h"
 
 namespace PLMD {
 namespace multicolvar {
@@ -41,17 +39,12 @@ AtomValuePack::AtomValuePack( MultiValue& vals, MultiColvarBase const * mcolv ):
   }
 }
 
-unsigned AtomValuePack::setupAtomsFromLinkCells( const std::vector<unsigned>& cind, const Vector& cpos, const LinkCells& linkcells ) {
-  if( cells_required.size()!=linkcells.getNumberOfCells() ) cells_required.resize( linkcells.getNumberOfCells() );
-  // Build the list of cells that we need
-  unsigned ncells_required=0; linkcells.addRequiredCells( linkcells.findMyCell( cpos ), ncells_required, cells_required );
-  // Now build the list of atoms we need
-  natoms=cind.size(); for(unsigned i=0; i<natoms; ++i) indices[i]=cind[i];
-  linkcells.retrieveAtomsInCells( ncells_required, cells_required, natoms, indices );
-//  linkcells.retrieveNeighboringAtoms( cpos, natoms, indices );
-  for(unsigned i=0; i<natoms; ++i) myatoms[i]=mycolv->getPositionOfAtomForLinkCells( indices[i] ) - cpos;
-  if( mycolv->usesPbc() ) mycolv->applyPbc( myatoms, natoms );
-  return natoms;
+void AtomValuePack::makeWhole(){
+  for(unsigned j=0; j<myatoms.size()-1; ++j) {
+    const Vector & first (myatoms[j]);
+    Vector & second (myatoms[j+1]);
+    second=first+mycolv->pbcDistance(first,second);
+  }
 }
 
 void AtomValuePack::updateUsingIndices() {
@@ -78,22 +71,13 @@ void AtomValuePack::updateUsingIndices() {
   myvals.completeUpdate();
 }
 
-void AtomValuePack::addComDerivatives( const int& ind, const Vector& der, CatomPack& catom_der ) {
-  if( ind<0 ) {
-    for(unsigned ider=0; ider<catom_der.getNumberOfAtomsWithDerivatives(); ++ider) {
-      unsigned jder=3*catom_der.getIndex(ider);
-      myvals.addTemporyDerivative( jder+0, catom_der.getDerivative(ider,0,der) );
-      myvals.addTemporyDerivative( jder+1, catom_der.getDerivative(ider,1,der) );
-      myvals.addTemporyDerivative( jder+2, catom_der.getDerivative(ider,2,der) );
-    }
-  } else {
-    for(unsigned ider=0; ider<catom_der.getNumberOfAtomsWithDerivatives(); ++ider) {
-      unsigned jder=3*catom_der.getIndex(ider);
-      myvals.addDerivative( ind, jder+0, catom_der.getDerivative(ider,0,der) );
-      myvals.addDerivative( ind, jder+1, catom_der.getDerivative(ider,1,der) );
-      myvals.addDerivative( ind, jder+2, catom_der.getDerivative(ider,2,der) );
-    }
-  }
+void AtomValuePack::setBoxDerivativesNoPbc(const unsigned& ival) {
+  if( mycolv->doNotCalculateDerivatives() ) return;
+  Tensor virial; 
+  for(unsigned i=0; i<natoms; i++) virial-=Tensor(getPosition(i), Vector(myvals.getDerivative(ival,3*indices[i]+0),
+                                                                         myvals.getDerivative(ival,3*indices[i]+1), 
+                                                                         myvals.getDerivative(ival,3*indices[i]+2)));
+  addBoxDerivatives(ival,virial);
 }
 
 }
