@@ -46,7 +46,7 @@ we use reweighting into order to discount the effect of the bias from our final 
 \plumedfile
 x: DISTANCE ATOMS=1,2
 RESTRAINT ARG=x SLOPE=1.0 AT=0.0
-as: REWEIGHT_BIAS TEMP=300
+bias: REWEIGHT_BIAS TEMP=300
 
 HISTOGRAM ...
   ARG=x
@@ -54,7 +54,7 @@ HISTOGRAM ...
   GRID_MAX=3.0
   GRID_BIN=100
   BANDWIDTH=0.1
-  LOGWEIGHTS=as
+  LOGWEIGHTS=bias
   LABEL=hB
 ... HISTOGRAM
 
