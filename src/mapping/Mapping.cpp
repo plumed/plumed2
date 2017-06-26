@@ -241,29 +241,11 @@ void Mapping::calculateNumericalDerivatives( ActionWithValue* a ) {
 }
 
 void Mapping::apply() {
-  if( getFullNumberOfTasks()>1 ) return;
-  std::vector<Vector>&   f(modifyForces());
-  Tensor&           v(modifyVirial());
-  const unsigned    narg=getNumberOfArguments();
-  const unsigned    nat=getNumberOfAtoms();
-
-  if( getPntrToComponent(0)->applyForce( forcesToApply ) ){
-      for(unsigned i=0;i<narg;++i) getPntrToArgument(i)->addForce( forcesToApply[i] );
-
-      for(unsigned i=0;i<nat;++i){
-          f[i][0] += forcesToApply[narg+3*i+0];
-          f[i][1] += forcesToApply[narg+3*i+1];
-          f[i][2] += forcesToApply[narg+3*i+2];
-      }
-      v(0,0) += forcesToApply[narg+3*nat+0];
-      v(0,1) += forcesToApply[narg+3*nat+1];
-      v(0,2) += forcesToApply[narg+3*nat+2];
-      v(1,0) += forcesToApply[narg+3*nat+3];
-      v(1,1) += forcesToApply[narg+3*nat+4];
-      v(1,2) += forcesToApply[narg+3*nat+5];
-      v(2,0) += forcesToApply[narg+3*nat+6];
-      v(2,1) += forcesToApply[narg+3*nat+7];
-      v(2,2) += forcesToApply[narg+3*nat+8];
+  if( doNotCalculateDerivatives() ) return;
+  std::fill(forcesToApply.begin(),forcesToApply.end(),0);
+  if( getForcesFromValues( forcesToApply ) ){
+      setForcesOnArguments( forcesToApply );
+      setForcesOnAtoms( forcesToApply, getNumberOfArguments()  );
   }
 }
 

@@ -57,7 +57,7 @@ private:
 /// The value of the quantity
 //  double value;
 /// The force acting on this quantity
-  double inputForce;
+  std::vector<double> inputForces;
 /// A flag telling us we have a force acting on this quantity
   bool hasForce;
 /// The derivatives of the quantity stored in value
@@ -136,9 +136,9 @@ public:
 /// Clear the input force on the variable
   void clearInputForce();
 /// Add some force on this value
-  void  addForce(double f);
+  void  addForce(const unsigned& iforce, double f);
 /// Get the value of the force on this colvar
-  double getForce() const ;
+  double getForce( const unsigned& iforce ) const ;
 /// Apply the forces to the derivatives using the chain rule (if there are no forces this routine returns false)
   bool applyForce( std::vector<double>& forces ) const ;
 /// Calculate the difference between two values of this function: d2 -d1
@@ -208,12 +208,6 @@ double Value::get()const {
 }
 
 inline
-double Value::get(const unsigned& ival) const {
-  if( hasDeriv ) return data[ival*(1+getNumberOfDerivatives())];
-  return data[ival];
-}
-
-inline
 bool Value::valueHasBeenSet() const {
   return value_set;
 }
@@ -256,7 +250,7 @@ void Value::setDerivative(unsigned i, double d) {
 inline
 void Value::clearInputForce() {
   hasForce=false;
-  inputForce=0.0;
+  std::fill(inputForces.begin(),inputForces.end(),0);
 }
 
 inline
@@ -266,15 +260,16 @@ void Value::clearDerivatives() {
 }
 
 inline
-void Value::addForce(double f) {
-  plumed_dbg_massert(hasDerivatives(),"forces can only be added to values with derivatives");
+void Value::addForce(const unsigned& iforce, double f) {
+  plumed_dbg_assert( iforce<inputForces.size() );
   hasForce=true;
-  inputForce+=f;
+  inputForces[iforce]+=f;
 }
 
 inline
-double Value::getForce() const {
-  return inputForce;
+double Value::getForce( const unsigned& iforce ) const {
+  plumed_dbg_assert( iforce<inputForces.size() );
+  return inputForces[iforce];
 }
 
 /// d2-d1

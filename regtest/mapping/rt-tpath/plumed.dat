@@ -14,3 +14,4 @@ DUMPDERIVATIVES ARG=p2.* STRIDE=1 FILE=deriv FMT=%8.4f
 # Print values of CVS
 PRINT ARG=pp.*,p2.* FILE=colvar FMT=%8.4f 
 
+BIASVALUE ARG=pp.*,p2.*

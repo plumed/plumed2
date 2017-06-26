@@ -35,7 +35,6 @@ Value::Value():
   action(NULL),
   value_set(false),
   reset(true),
-  inputForce(0.0),
   hasForce(false),
   hasDeriv(true),
   shape(std::vector<unsigned>()),
@@ -48,14 +47,13 @@ Value::Value():
   max_minus_min(0.0),
   inv_max_minus_min(0.0)
 {
-  data.resize(1);
+  data.resize(1); inputForces.resize(1);
 }
 
 Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,const std::vector<unsigned>&ss):
   action(av),
   value_set(false),
   reset(true),
-  inputForce(0.0),
   hasForce(false),
   name(name),
   hasDeriv(withderiv),
@@ -70,6 +68,8 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   inv_max_minus_min(0.0)
 {
   data.resize(getSize());
+  unsigned fsize=1; for(unsigned i=0;i<shape.size();++i) fsize *= shape[i];
+  inputForces.resize( fsize );
 }
 
 void Value::setupPeriodicity() {
@@ -120,9 +120,27 @@ bool Value::isPeriodic()const {
 
 bool Value::applyForce(std::vector<double>& forces ) const {
   if( !hasForce ) return false;
-  plumed_dbg_massert( shape.size()==0 && (data.size()-1)==forces.size()," forces array has wrong size" );
-  const unsigned N=forces.size();
-  for(unsigned i=0; i<N; ++i) forces[i]=inputForce*data[i+1];
+
+  if( shape.size()==0 && hasDeriv ){
+      const unsigned N=action->getNumberOfDerivatives();
+      for(unsigned i=0;i<N;++i) forces[i] += inputForces[0]*data[i+1];
+  } else if( hasDeriv ){
+      const unsigned N=action->getNumberOfDerivatives();
+      for(unsigned i=0;i<inputForces.size();++i){
+         for(unsigned j=0;j<N;++j) forces[j] += inputForces[i]*data[ i*(1+N) ];
+      }
+  } else if( shape.size()>0 ) {
+      const unsigned N=action->getNumberOfDerivatives(); 
+      unsigned nquants=0; action->recomputeNumberInStream( nquants );
+      MultiValue myvals( nquants, N );
+      for(unsigned i=0;i<inputForces.size();++i){
+          action->rerunTask( i, myvals );
+          for(unsigned j=0;j<myvals.getNumberActive();++j){
+              unsigned jder=myvals.getActiveIndex(j); 
+              forces[jder] += inputForces[i]*myvals.getDerivative( streampos, jder );
+          }
+      }
+  }
   return true;
 }
 
@@ -224,6 +242,11 @@ unsigned Value::getNumberOfValues() const {
   if( shape.size()>0 ) return action->getFullNumberOfTasks();
   return 1;
 }
+
+double Value::get(const unsigned& ival) const {
+  if( hasDeriv ) return data[ival*(1+action->getNumberOfDerivatives())];
+  return data[ival];
+} 
 
 void Value::print( const std::string& uselab, OFile& ofile ) const {
   plumed_dbg_assert( userdata.count(uselab) );

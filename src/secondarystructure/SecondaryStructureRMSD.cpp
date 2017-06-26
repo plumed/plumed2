@@ -234,7 +234,9 @@ void SecondaryStructureRMSD::performTask( const unsigned& current, MultiValue& m
 }
 
 void SecondaryStructureRMSD::apply() {
-//   if( getForcesFromVessels( forcesToApply ) ) setForcesOnAtoms( forcesToApply );
+  if( doNotCalculateDerivatives() ) return;
+  std::fill(forcesToApply.begin(),forcesToApply.end(),0);
+  if( getForcesFromValues( forcesToApply ) ) setForcesOnAtoms( forcesToApply );
 }
 
 }

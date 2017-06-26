@@ -64,7 +64,7 @@ void Bias::apply() {
   if(onStep()) {
     double gstr = static_cast<double>(getStride());
     for(unsigned i=0; i<noa; ++i) {
-      getPntrToArgument(i)->addForce(gstr*outputForces[i]);
+      getPntrToArgument(i)->addForce(0,gstr*outputForces[i]);
     }
   }
 
@@ -83,7 +83,7 @@ void Bias::apply() {
   if(at_least_one_forced && !onStep()) error("you are biasing a bias with an inconsistent STRIDE");
 
   if(at_least_one_forced) for(unsigned i=0; i<noa; ++i) {
-      getPntrToArgument(i)->addForce(f[i]);
+      getPntrToArgument(i)->addForce(0,f[i]);
     }
 
 }

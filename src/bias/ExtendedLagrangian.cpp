@@ -251,7 +251,7 @@ void ExtendedLagrangian::update() {
     double c2=sqrt(kbt*(1.0-c1*c1)/mass);
 // consider additional forces on the fictitious particle
 // (e.g. MetaD stuff)
-    ffict[i]+=fictValue[i]->getForce();
+    ffict[i]+=fictValue[i]->getForce(0);
 
 // update velocity (half step)
     vfict[i]+=ffict[i]*0.5*dt/mass;

@@ -54,6 +54,8 @@ protected:
   void createTasksFromArguments();
 /// Get the total number of input arguments
   unsigned getNumberOfScalarArguments() const ;
+/// Set the forces on the arguments
+  void setForcesOnArguments( const std::vector<double>& forces );
 public:
 /// Get the scalar product between the gradients of two variables
   double getProjection(unsigned i,unsigned j)const;
@@ -75,8 +77,6 @@ public:
   bool parseArgumentList(const std::string&key,int i,std::vector<Value*>&args);
 /// Setup the dependencies
   void requestArguments(const std::vector<Value*> &arg);
-/// Add forces to arguments (used in apply)
-  void addForcesOnArguments( const std::vector<double>& forces );
 public:
   explicit ActionWithArguments(const ActionOptions&);
   virtual ~ActionWithArguments() {}

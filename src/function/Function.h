@@ -40,6 +40,7 @@ class Function:
 {
 private:
   unsigned nderivatives;
+  std::vector<double> forcesToApply;
   std::vector<unsigned> getShape();
 protected:
   bool rankOneOutput;

@@ -38,6 +38,7 @@ Function::Function(const ActionOptions&ao):
   Action(ao),
   ActionWithValue(ao),
   ActionWithArguments(ao),
+  forcesToApply(getNumberOfScalarArguments()),
   rankOneOutput(false)
 {
   createTasksFromArguments(); nderivatives = getNumberOfArguments();
@@ -148,39 +149,43 @@ void Function::performTask( const unsigned& current, MultiValue& myvals ) const 
 void Function::apply()
 {
   // Everything is done elsewhere
-  if( done_over_stream ) return;
-  const unsigned noa=getNumberOfArguments();
-  const unsigned ncp=getNumberOfComponents();
-  const unsigned cgs=comm.Get_size();
+  if( doNotCalculateDerivatives() || done_over_stream ) return;
+  // And add forces
+  std::fill(forcesToApply.begin(),forcesToApply.end(),0);
+  if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( forcesToApply ); 
 
-  vector<double> f(noa,0.0);
+//   const unsigned noa=getNumberOfArguments();
+//   const unsigned ncp=getNumberOfComponents();
+//   const unsigned cgs=comm.Get_size();
+// 
+//   vector<double> f(noa,0.0);
+// 
+//   unsigned stride=1;
+//   unsigned rank=0;
+//   if(ncp>4*cgs) {
+//     stride=comm.Get_size();
+//     rank=comm.Get_rank();
+//   }
+// 
+//   unsigned at_least_one_forced=0;
+//   #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(f)
+//   {
+//     vector<double> omp_f(noa,0.0);
+//     vector<double> forces(noa);
+//     #pragma omp for reduction( + : at_least_one_forced)
+//     for(unsigned i=rank; i<ncp; i+=stride) {
+//       if(getPntrToComponent(i)->applyForce(forces)) {
+//         at_least_one_forced+=1;
+//         for(unsigned j=0; j<noa; j++) omp_f[j]+=forces[j];
+//       }
+//     }
+//     #pragma omp critical
+//     for(unsigned j=0; j<noa; j++) f[j]+=omp_f[j];
+//   }
+// 
+//   if(noa>0&&ncp>4*cgs) { comm.Sum(&f[0],noa); comm.Sum(at_least_one_forced); }
 
-  unsigned stride=1;
-  unsigned rank=0;
-  if(ncp>4*cgs) {
-    stride=comm.Get_size();
-    rank=comm.Get_rank();
-  }
-
-  unsigned at_least_one_forced=0;
-  #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(f)
-  {
-    vector<double> omp_f(noa,0.0);
-    vector<double> forces(noa);
-    #pragma omp for reduction( + : at_least_one_forced)
-    for(unsigned i=rank; i<ncp; i+=stride) {
-      if(getPntrToComponent(i)->applyForce(forces)) {
-        at_least_one_forced+=1;
-        for(unsigned j=0; j<noa; j++) omp_f[j]+=forces[j];
-      }
-    }
-    #pragma omp critical
-    for(unsigned j=0; j<noa; j++) f[j]+=omp_f[j];
-  }
-
-  if(noa>0&&ncp>4*cgs) { comm.Sum(&f[0],noa); comm.Sum(at_least_one_forced); }
-
-  if(at_least_one_forced>0) for(unsigned i=0; i<noa; ++i) getPntrToArgument(i)->addForce(f[i]);
+//  if(at_least_one_forced>0) for(unsigned i=0; i<noa; ++i) getPntrToArgument(i)->addForce(f[i]);
 }
 
 }

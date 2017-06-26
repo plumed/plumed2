@@ -219,8 +219,10 @@ public:
   void interpretDataLabel( const std::string& mystr, ActionWithArguments* myuser, std::vector<Value*>& args );
 ///
   unsigned getFullNumberOfTasks() const ;
+///
+  void recomputeNumberInStream( unsigned& nquants ) const ;
 /// Reperform one of the tasks
-  void rerunTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const ;
+  void rerunTask( const unsigned& task_index, MultiValue& myvals ) const ;
 ///
   virtual void buildCurrentTaskList( std::vector<unsigned>& tflags ) const { plumed_error(); }
 ///
@@ -231,6 +233,8 @@ public:
   void addActionToChain( ActionWithValue* act );
 ///
   virtual void transformFinalValueAndDerivatives(){};
+/// Retrieve the forces acting on all values
+  bool getForcesFromValues( std::vector<double>& forces ) const ;
 };
 
 inline

@@ -36,6 +36,7 @@ class Mapping :
   public ActionWithArguments,
   public ActionWithValue
 {
+friend class GeometricPath;
 private:
 /// The forces on each of the derivatives (used in apply)
   std::vector<double> forcesToApply;

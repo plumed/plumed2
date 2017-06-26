@@ -107,7 +107,7 @@ void DumpForces::update() {
   of.printField("time",getTime());
   for(unsigned i=0; i<getNumberOfArguments(); i++) {
     of.fmtField(fmt);
-    of.printField(getPntrToArgument(i)->getName(),getPntrToArgument(i)->getForce());
+    of.printField(getPntrToArgument(i)->getName(),getPntrToArgument(i)->getForce(0));
   }
   of.printField();
 }

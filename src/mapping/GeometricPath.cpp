@@ -48,6 +48,7 @@ class GeometricPath : public ActionWithValue, public ActionWithArguments {
 private:
   Direction projdir;
   std::vector<double> framep;
+  std::vector<double> forcesToApply;
   MultiValue mydpack1, mydpack2, mydpack3;
   ReferenceValuePack mypack1, mypack2, mypack3;
   std::vector<double> mypack1_stashd_args;
@@ -67,7 +68,7 @@ public:
   void calculate();
   void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const { plumed_error(); }
   unsigned getNumberOfDerivatives();
-  void apply(){}
+  void apply();
 };
 
 PLUMED_REGISTER_ACTION(GeometricPath,"GPATH")
@@ -154,7 +155,7 @@ GeometricPath::GeometricPath(const ActionOptions&ao):
   unsigned maxderiv=maxargs; if( maxatoms>0 ) maxderiv += 3*maxatoms + 9;
   mydpack1.resize( 1, maxderiv ); mypack1.resize( maxargs, maxatoms ); (am->getReferenceConfiguration(0))->setupPCAStorage( mypack1 );
   mydpack2.resize( 1, maxderiv ); mypack2.resize( maxargs, maxatoms ); (am->getReferenceConfiguration(0))->setupPCAStorage( mypack2 );
-  mydpack3.resize( 1, maxderiv ); mypack3.resize( maxargs, maxatoms );
+  mydpack3.resize( 1, maxderiv ); mypack3.resize( maxargs, maxatoms ); forcesToApply.resize( maxderiv );
   for(unsigned i=0; i<maxatoms; ++i) { mypack1.setAtomIndex(i,i); mypack2.setAtomIndex(i,i); mypack3.setAtomIndex(i,i); }
 
   checkRead(); 
@@ -316,6 +317,16 @@ void GeometricPath::calculate(){
         unsigned nbase=narg+3*mypack1_stashd_atoms.size();
         for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) zp->setDerivative( nbase+3*i+j, vir(i,j) );
       }
+  }
+}
+
+void GeometricPath::apply() {
+  if( doNotCalculateDerivatives() ) return;
+  std::fill(forcesToApply.begin(),forcesToApply.end(),0);
+  if( getForcesFromValues( forcesToApply ) ){
+      Mapping* am = dynamic_cast<Mapping*>( getPntrToArgument(0)->getPntrToAction() );
+      am->setForcesOnArguments( forcesToApply );
+      am->setForcesOnAtoms( forcesToApply, am->getNumberOfArguments()  );
   }
 }
 

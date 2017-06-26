@@ -224,21 +224,21 @@ void ActionAtomistic::retrieveAtoms() {
 }
 
 void ActionAtomistic::setForcesOnAtoms( const std::vector<double>& forcesToApply, unsigned ind ) {
-  if(donotforce) return;
+  if( donotforce || indexes.size()==0 ) return;
   for(unsigned i=0; i<indexes.size(); ++i) {
-    forces[i][0]=forcesToApply[ind]; ind++;
-    forces[i][1]=forcesToApply[ind]; ind++;
-    forces[i][2]=forcesToApply[ind]; ind++;
+    forces[i][0]+=forcesToApply[ind]; ind++;
+    forces[i][1]+=forcesToApply[ind]; ind++;
+    forces[i][2]+=forcesToApply[ind]; ind++;
   }
-  virial(0,0)=forcesToApply[ind]; ind++;
-  virial(0,1)=forcesToApply[ind]; ind++;
-  virial(0,2)=forcesToApply[ind]; ind++;
-  virial(1,0)=forcesToApply[ind]; ind++;
-  virial(1,1)=forcesToApply[ind]; ind++;
-  virial(1,2)=forcesToApply[ind]; ind++;
-  virial(2,0)=forcesToApply[ind]; ind++;
-  virial(2,1)=forcesToApply[ind]; ind++;
-  virial(2,2)=forcesToApply[ind];
+  virial(0,0)+=forcesToApply[ind]; ind++;
+  virial(0,1)+=forcesToApply[ind]; ind++;
+  virial(0,2)+=forcesToApply[ind]; ind++;
+  virial(1,0)+=forcesToApply[ind]; ind++;
+  virial(1,1)+=forcesToApply[ind]; ind++;
+  virial(1,2)+=forcesToApply[ind]; ind++;
+  virial(2,0)+=forcesToApply[ind]; ind++;
+  virial(2,1)+=forcesToApply[ind]; ind++;
+  virial(2,2)+=forcesToApply[ind];
   plumed_dbg_assert( ind+1==forcesToApply.size());
 }
 

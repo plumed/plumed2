@@ -40,6 +40,8 @@ class MultiColvarBase :
 private:
 /// Use periodic boundary conditions
   bool usepbc;
+/// Vector of forces
+  std::vector<double> forcesToApply;
 /// Blocks of atom numbers
   std::vector< std::vector<unsigned> > ablocks;
 protected:

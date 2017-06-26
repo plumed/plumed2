@@ -311,10 +311,6 @@ double ActionWithArguments::getProjection(unsigned i,unsigned j)const {
   return Value::projection(*v1,*v2);
 }
 
-void ActionWithArguments::addForcesOnArguments( const std::vector<double>& forces ) {
-  for(unsigned i=0; i<arguments.size(); ++i) arguments[i]->addForce( forces[i] );
-}
-
 void ActionWithArguments::retrieveArguments( const MultiValue& myvals, std::vector<double>& args ) const {
   if( done_over_stream ){
       for(unsigned i=0;i<args.size();++i) args[i]=myvals.get( arguments[i]->streampos );
@@ -332,6 +328,18 @@ void ActionWithArguments::retrieveArguments( const MultiValue& myvals, std::vect
       }
   } else {
       for(unsigned i=0;i<arg_ends.size()-1;++i) args[i]=arguments[arg_ends[i] + myvals.getTaskIndex()]->get(); 
+  }
+}
+
+void ActionWithArguments::setForcesOnArguments( const std::vector<double>& forces ) {
+  for(unsigned k=0;k<getNumberOfScalarArguments();++k) {
+      unsigned nt = 0, nn = 0, j=0;
+      for(unsigned i=0;i<arguments.size();++i){
+         nt += arguments[i]->getNumberOfValues();
+         if( k<nt ){ j=i; break ; }
+         nn += arguments[i]->getNumberOfValues();
+      }
+      arguments[j]->addForce( k-nn, forces[k] );
   }
 }
 

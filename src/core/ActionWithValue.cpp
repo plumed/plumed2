@@ -418,15 +418,26 @@ void ActionWithValue::runTask( const unsigned& task_index, const unsigned& curre
   }
 }
 
-void ActionWithValue::rerunTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
+void ActionWithValue::recomputeNumberInStream( unsigned& nquants ) const {
   for(const auto & p : getDependencies() ){
      ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>(p);
      if( aa ){
         ActionWithValue* av=dynamic_cast<ActionWithValue*>(p);
-        av->rerunTask( task_index, current, myvals );
+        av->recomputeNumberInStream( nquants );
      }
   }
-  myvals.setTaskIndex(task_index); performTask( current, myvals );
+  getNumberOfStreamedQuantities( nquants );
+}
+
+void ActionWithValue::rerunTask( const unsigned& task_index, MultiValue& myvals ) const {
+  for(const auto & p : getDependencies() ){
+     ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>(p);
+     if( aa ){
+        ActionWithValue* av=dynamic_cast<ActionWithValue*>(p);
+        av->rerunTask( task_index, myvals );
+     }
+  }
+  myvals.setTaskIndex(task_index); performTask( fullTaskList[task_index], myvals );
 }
 
 void ActionWithValue::gatherAccumulators( const unsigned& taskCode, const MultiValue& myvals, std::vector<double>& buffer ) const {
@@ -477,6 +488,19 @@ void ActionWithValue::finishComputations( const std::vector<double>& buffer ){
   for(const auto & p : actions_to_do_after ){
      if( p->isActive() ) p->finishComputations( buffer );
   }
+}
+
+bool ActionWithValue::getForcesFromValues( std::vector<double>& forces ) const {
+   bool at_least_one_forced=false;
+   for(unsigned i=0;i<values.size();++i){
+       if( values[i]->applyForce( forces ) ) at_least_one_forced=true;
+   }
+   for(const auto & p : actions_to_do_after ){
+       if( p->isActive() ){
+           if( p->getForcesFromValues( forces ) ) at_least_one_forced=true;
+       } 
+   }
+   return at_least_one_forced;
 }
 
 }
