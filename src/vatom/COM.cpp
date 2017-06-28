@@ -23,7 +23,6 @@
 #include "ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
-#include <cmath>
 
 using namespace std;
 
@@ -112,16 +111,7 @@ void COM::calculate() {
   if(!nopbc) makeWhole();
   double mass(0.0);
   vector<Tensor> deriv(getNumberOfAtoms());
-  for(unsigned i=0; i<getNumberOfAtoms(); i++) {
-    double m=getMass(i);
-    if(isnan(m)) {
-      error(
-        "You are trying to compute a COM but masses are not known.\n"
-        "        If you are using plumed driver, please use the --mc option"
-      );
-    }
-    mass+=m;
-  }
+  for(unsigned i=0; i<getNumberOfAtoms(); i++) mass+=getMass(i);
   if( plumed.getAtoms().chargesWereSet() ) {
     double charge(0.0);
     for(unsigned i=0; i<getNumberOfAtoms(); i++) charge+=getCharge(i);
