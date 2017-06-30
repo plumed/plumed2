@@ -426,11 +426,6 @@ bool Action::getRestart()const {
   return restart;
 }
 
-inline
-bool Action::getCPT()const {
-  return doCheckPoint;
-}
-
 }
 #endif
 

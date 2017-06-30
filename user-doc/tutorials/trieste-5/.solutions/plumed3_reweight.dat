@@ -1,0 +1,35 @@
+# load the pdb to better select torsions later
+MOLINFO STRUCTURE=reference.pdb
+# Compute the backbone dihedral angle phi, defined by atoms C-N-CA-C
+phi: TORSION ATOMS=@phi-2
+# Compute the backbone dihedral angle psi, defined by atoms N-CA-C-N
+psi: TORSION ATOMS=@psi-2
+
+metad: METAD ...
+# Activate well-tempered metadynamics
+# Deposit a Gaussian every 500 time steps, with initial height equal
+# to 1.2 kJoule/mol, biasfactor equal to 10.0
+# Remember: replica 0 and 1: no bias
+# replica 2, bias on psi
+  ARG=@replicas:{phi,psi,psi}
+  HEIGHT=0
+#  PACE=500
+  BIASFACTOR=10.0
+  SIGMA=0.35
+  FILE=HILLS GRID_MIN=-pi GRID_MAX=pi
+  RESTART=YES
+  TEMP=300
+  PACE=100000000
+...
+
+# Print both collective variables and the value of the bias potential on COLVAR_CONCAT file
+PRINT ARG=phi,psi FILE=COLVAR_CONCAT
+
+# Then write the bias potential (as we did for reweighting)
+# As a good practice, remember that there might be multiple bias
+# potential applied (e.g. METAD and a RESTRAINT).
+# to be sure that you include all of them, just combine them:
+bias: COMBINE ARG=*.bias PERIODIC=NO
+# here omit STRIDE, so that you will print the bias
+# for all the frames in your concatenated trajectory
+PRINT FILE=COLVAR_WHAM ARG=bias

@@ -45,7 +45,6 @@ are going to be always in nm.
 
 \par Examples
 
-
 \plumedfile
 # this is using nm - kj/mol - fs
 UNITS LENGTH=A TIME=fs

@@ -23,6 +23,7 @@
 #define __PLUMED_tools_SwitchingFunction_h
 
 #include <string>
+#include <vector>
 
 namespace PLMD {
 
@@ -66,9 +67,13 @@ class SwitchingFunction {
 /// It is separated since it is called both by calculate() and calculateSqr()
   double do_rational(double rdist,double&dfunc,int nn,int mm)const;
 /// Evaluator for matheval:
-  void* evaluator;
+/// \warning Since evaluator is not thread safe, we should create one
+/// evaluator per thread.
+  std::vector<void*> evaluator;
 /// Evaluator for matheval:
-  void* evaluator_deriv;
+/// \warning Since evaluator is not thread safe, we should create one
+/// evaluator per thread.
+  std::vector<void*> evaluator_deriv;
 public:
   static void registerKeywords( Keywords& keys );
 /// Constructor

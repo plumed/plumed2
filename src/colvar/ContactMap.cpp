@@ -39,6 +39,9 @@ The transformed distance can be compared with a reference value in order to calc
 between two contact maps. Each distance can also be weighted for a given value. CONTACTMAP can be used together
 with \ref FUNCPATHMSD to define a path in the contactmap space.
 
+The individual contact map distances related to each contact can be accessed as components
+named `cm.contact-1`, `cm.contact-2`, etc, assuming that the label of the CONTACTMAP is `cm`.
+
 \par Examples
 
 The following example calculates switching functions based on the distances between atoms

@@ -1,6 +1,6 @@
 
 test:
-	../../scripts/run
+	@../../scripts/run
 
 reset:
 	../../scripts/reset

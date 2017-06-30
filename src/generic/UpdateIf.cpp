@@ -60,6 +60,7 @@ particular sense. For example, conditionally updating a \ref METAD keyword
 can lead to unexpected results.
 
 \par Examples
+
 The following input instructs plumed dump all the snapshots where an atom is in touch with
 the solute.
 \plumedfile

@@ -25,7 +25,7 @@ Once this tutorial is completed students will:
 Let's begin by thinking about what is actually output by a simulation trajectory.  You probably know by now that molecular dynamics gives us a trajectory 
 that provides us with information on how the positions and velocities of the all the atoms in the system change with time.  Furthermore, you should by now 
 understand that we can use PLUMED to reduce the ammount of information contained in each of the trajectory frames to a single number or a low-dimensional vector
-by calculating a collective variable or a set of collective variables.  As we saw in \ref belfast-1 this process of lowering the dimensionality of the data 
+by calculating a collective variable or a set of collective variables.  As we saw in \ref trieste-1 this process of lowering the dimensionality of the data 
 contained in a simulation trajectory was vital as we understand very little by watching the motions of the hundreds of atoms that the system we are simulating
 contains.  If we monitor the appropriate key variables, however, we can determine whether a chemical reaction has taken place, whether the system has undergone a 
 phase transition to a more ordered form or if a protein has folded.  Even so if all we do is monitor the values the the collective variables take during the simulation
@@ -207,13 +207,13 @@ this range gets smaller as the number of samples from which you calculate the me
 at which this range narrows in size is relatively small.  
 
 \anchor triest-2-confidence
-\image html trieste-2-confidence.png "A figure showing how the width of the 90% confidence limit changes with number of samples.  Two lines are shown - one at plus epsilon and one at minus epsilon.  This figure shows clearly that simply averaging over more random variables will not get us markedly closer to the true value of the ensemble average, which is 0 for this particular example.  For this random variable average fluctuation is equal to one."
+\image html trieste-2-confidence.png "A figure showing how the width of the 90% confidence limit changes with number of samples.  Two lines are shown - one at plus epsilon and one at minus epsilon.  This figure shows clearly that simply averaging over more random variables will not get us markedly closer to the true value of the ensemble average, which is 0 for this particular example.  For this random variable the average fluctuation is equal to one."
 
 This graph hopefully illustrates to you that an estimate of the ensemble average that is taken over 500 trajectory frames is not guaranteed 
 to lie significantly closer to the true ensemble average than an estimate taken from 100 trajectory frames.  For this reason, we might choose to split the 
 data into blocks that all have equal length.  Will will then estimate the average for each of these blocks separately.  As we will see in the remainder of 
 this exercise this process of block averaging has a number of other advantages.  For now though we are just going to use it to test that the results from the
-various parts of the trajectory are all consistent.
+various parts of ``the trajectory" are all consistent.
 
 We can perform a block averaging on the data we generated at the start of the first exercise above by using PLUMED and the input file below:
 
@@ -236,7 +236,7 @@ on step 1000 and the accumulated data is immediately cleared after printing so t
 that were output from the calculation above by using gnuplot and the following command:
 
 \verbatim
-gnuplot> p 'colvar' u 1:2:3 w e
+gnuplot> p 'colvar' u 1:2 w l
 \endverbatim
 
 If you try this now you should see that all the average values that were calculated are relatively consistent but that there are differences between them.  <b> Try to 
@@ -271,7 +271,7 @@ output files.  In particular, the input above should give you 10 output files wh
 We can plot all of these histograms using gnuplot and the command:
 
 \verbatim
-gnuplot> p 'analysis.0.myhist.dat' u 1:2:3 w e, 'analysis.1.myhist.dat' u 1:2:3 w e, 'analysis.2.myhist.dat' u 1:2:3 w e, 'analysis.3.myhist.dat' u 1:2:3 w e, 'analysis.4.myhist.dat' u 1:2:3 w e, 'analysis.5.myhist.dat' u 1:2:3 w e, 'analysis.6.myhist.dat' u 1:2:3 w e, 'analysis.7.myhist.dat' u 1:2:3 w e, 'analysis.8.myhist.dat' u 1:2:3 w e, 'myhist.dat' u 1:2:3 w e
+gnuplot> p 'analysis.0.myhist.dat' u 1:2 w l, 'analysis.1.myhist.dat' u 1:2 w l, 'analysis.2.myhist.dat' u 1:2 w l, 'analysis.3.myhist.dat' u 1:2 w l, 'analysis.4.myhist.dat' u 1:2 w l, 'analysis.5.myhist.dat' u 1:2 w l, 'analysis.6.myhist.dat' u 1:2 w l, 'analysis.7.myhist.dat' u 1:2 w l, 'analysis.8.myhist.dat' u 1:2 w l, 'myhist.dat' u 1:2 w l
 \endverbatim
 
 Performing a comparison between the results from each of these blocks of data is more involved than the analysis we performed when comparing the ensemble averages as we have
@@ -367,7 +367,7 @@ values were output for you so you can calculate this estimate of the ensemble av
 
 \plumedfile
 UNITS NATURAL  # This ensures that Boltzmann's constant is one
-data: READ FILE=mynormal VALUES=rand
+data: READ FILE=mynormal VALUES=rand IGNORE_FORCES
 mm: RESTRAINT ARG=data AT=0.6 KAPPA=33.333
 rw: REWEIGHT_BIAS TEMP=1
 av: AVERAGE ARG=data STRIDE=1 LOGWEIGHTS=rw
@@ -385,7 +385,7 @@ reweighted histogram.
 
 \plumedfile
 UNITS NATURAL # This ensures that Boltzmann's constant is one
-data: READ FILE=mynormal VALUES=rand
+data: READ FILE=mynormal VALUES=rand IGNORE_FORCES
 mm: RESTRAINT ARG=data AT=0.6 KAPPA=33.333
 rw: REWEIGHT_BIAS TEMP=1
 hh: HISTOGRAM ARG=data STRIDE=1 GRID_MIN=0 GRID_MAX=1.0 GRID_BIN=20 KERNEL=DISCRETE LOGWEIGHTS=rw
@@ -600,8 +600,8 @@ We can use the following PLUMED input to calculate block averages for the unbias
 
 \plumedfile
 UNITS NATURAL # This ensures that Boltzmann's constant is one
-data: READ FILE=mcdata VALUES=rand
-mm: READ FILE=mcdata VALUES=cv.*
+data: READ FILE=mcdata VALUES=rand IGNORE_FORCES
+mm: RESTRAINT ARG=data AT=0.6 KAPPA=33.333
 rw: REWEIGHT_BIAS TEMP=1
 hh: HISTOGRAM ARG=data STRIDE=1 GRID_MIN=0 GRID_MAX=1.0 GRID_BIN=20 KERNEL=DISCRETE LOGWEIGHTS=rw CLEAR=500
 DUMPGRID GRID=hh FILE=myhist.dat STRIDE=500

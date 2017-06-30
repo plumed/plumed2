@@ -1,0 +1,25 @@
+# vim:ft=plumed
+
+# First load information about the molecule.
+MOLINFO STRUCTURE=ref.pdb
+
+# Define here the groups that you need
+rna: GROUP ATOMS=1-258
+mg:  GROUP ATOMS=6580
+wat: GROUP ATOMS=259-6579
+
+# Make RNA whole
+WHOLEMOLECULES ENTITY0=rna
+
+# Here's a compund variable with the box vectors
+# computed before aligning RNA
+cell_before: CELL
+
+# Now we align RNA
+FIT_TO_TEMPLATE REFERENCE=ref-rna.pdb TYPE=OPTIMAL
+
+# Here's a compund variable with the box vectors
+# computed after aligning RNA
+cell_after: CELL
+PRINT ARG=cell_before.* FILE=CELL_BEFORE
+PRINT ARG=cell_after.* FILE=CELL_AFTER

@@ -32,6 +32,7 @@ Adjacency matrix in which two atoms are adjacent if they are connected topologic
 
 \par Examples
 
+
 */
 //+ENDPLUMEDOC
 
@@ -42,7 +43,7 @@ class TopologyMatrix : public AdjacencyMatrixBase {
 private:
 /// The width to use for the kernel density estimation and the
 /// sizes of the bins to be used in kernel density estimation
-  double sigma, radmax2;
+  double sigma;
   std::string kerneltype;
 /// The maximum number of bins that will be used
 /// This is calculated based on the dmax of the switching functions
@@ -53,6 +54,7 @@ private:
   Matrix<SwitchingFunction> switchingFunction;
   Matrix<SwitchingFunction> cylinder_sw;
   Matrix<SwitchingFunction> low_sf;
+  double beadrad, lsfmax;
   Matrix<double> binw_mat;
   SwitchingFunction threshold_switch;
 public:
@@ -64,8 +66,6 @@ public:
   unsigned getNumberOfQuantities() const ;
 /// Create the ith, ith switching function
   void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc );
-/// Get the position that we should use as the center of our link cells
-  Vector getLinkCellPosition( const std::vector<unsigned>& atoms ) const ;
 /// This actually calculates the value of the contact function
   double calculateWeight( const unsigned& taskCode, const double& weight, multicolvar::AtomValuePack& myatoms ) const ;
 /// This does nothing
@@ -99,7 +99,8 @@ void TopologyMatrix::registerKeywords( Keywords& keys ) {
 
 TopologyMatrix::TopologyMatrix( const ActionOptions& ao ):
   Action(ao),
-  AdjacencyMatrixBase(ao)
+  AdjacencyMatrixBase(ao),
+  maxbins(0)
 {
   readMaxThreeSpeciesMatrix("NODES", "FAKE", "FAKE", "ATOMS", true );
   unsigned nrows, ncols, ndonor_types; retrieveTypeDimensions( nrows, ncols, ndonor_types );
@@ -124,6 +125,7 @@ TopologyMatrix::TopologyMatrix( const ActionOptions& ao ):
   }
 
   // Find the largest sf cutoff
+  lsfmax=low_sf(0,0).get_dmax();
   double sfmax=switchingFunction(0,0).get_dmax();
   double rfmax=cylinder_sw(0,0).get_dmax();
   for(unsigned i=0; i<getNumberOfNodeTypes(); ++i) {
@@ -132,16 +134,18 @@ TopologyMatrix::TopologyMatrix( const ActionOptions& ao ):
       if( tsf>sfmax ) sfmax=tsf;
       double rsf=cylinder_sw(i,j).get_dmax();
       if( rsf>rfmax ) rfmax=rsf;
+      double lsf=low_sf(i,j).get_dmax();
+      if( lsf>lsfmax ) lsfmax=lsf;
     }
   }
   // Get the width of the bead
   HistogramBead bead; bead.isNotPeriodic();
   bead.setKernelType( kerneltype ); bead.set( 0.0, 1.0, sigma );
-  double radmax = sfmax/2.0 + bead.getCutoff(); radmax2=radmax*radmax;
+  beadrad = bead.getCutoff();
 
   // Set the link cell cutoff
-  log.printf("  setting cutoffs %f %f \n",sfmax, sqrt( radmax*radmax + rfmax*rfmax ) );
-  setLinkCellCutoff( sfmax, sqrt( radmax*radmax + rfmax*rfmax ) );
+  log.printf("  setting cutoff %f \n", sfmax );
+  setLinkCellCutoff( sfmax, std::numeric_limits<double>::max() );
 
   double maxsize=0;
   for(unsigned i=0; i<getNumberOfNodeTypes(); ++i) {
@@ -184,11 +188,6 @@ void TopologyMatrix::setupConnector( const unsigned& id, const unsigned& i, cons
   }
 }
 
-Vector TopologyMatrix::getLinkCellPosition( const std::vector<unsigned>& atoms ) const {
-  Vector myatom = getPositionOfAtomForLinkCells( atoms[0] );
-  return myatom + 0.5*pbcDistance( getPositionOfAtomForLinkCells( atoms[1] ), myatom );
-}
-
 double TopologyMatrix::calculateWeight( const unsigned& taskCode, const double& weight, multicolvar::AtomValuePack& myatoms ) const {
   Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
   if( distance.modulo2()<switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) ).get_dmax2() ) return 1.0;
@@ -201,9 +200,14 @@ double TopologyMatrix::compute( const unsigned& tindex, multicolvar::AtomValuePa
   // Initialise to zero density on all bins
   for(unsigned bin=0; bin<maxbins; ++bin) myatoms.setValue(bin+1,0);
   // Calculate whether or not atoms 1 and 2 are within cutoff (can use delta here as pbc are done in atom setup)
-  Vector d1 = delta( myatoms.getPosition(0), myatoms.getPosition(1) ); double d1_len = d1.modulo();
+  Vector d1 = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) ); double d1_len = d1.modulo();
   d1 = d1 / d1_len;  // Convert vector into director
-  for(unsigned i=2; i<myatoms.getNumberOfAtoms(); ++i) calculateForThreeAtoms( i, d1, d1_len, bead, myatoms );
+  AtomNumber a1 = myatoms.getAbsoluteIndex( 0 );
+  AtomNumber a2 = myatoms.getAbsoluteIndex( 1 );
+  for(unsigned i=2; i<myatoms.getNumberOfAtoms(); ++i) {
+    AtomNumber a3 = myatoms.getAbsoluteIndex( i );
+    if( a3!=a1 && a3!=a2 ) calculateForThreeAtoms( i, d1, d1_len, bead, myatoms );
+  }
   // std::vector<double> binvals( 1+maxbins ); for(unsigned i=1;i<maxbins;++i) binvals[i]=myatoms.getValue(i);
   // unsigned ii; double fdf;
   //std::cout<<"HELLO DENSITY "<<myatoms.getIndex(0)<<" "<<myatoms.getIndex(1)<<" "<<transformStoredValues( binvals, ii, fdf )<<std::endl;
@@ -239,8 +243,7 @@ double TopologyMatrix::compute( const unsigned& tindex, multicolvar::AtomValuePa
 void TopologyMatrix::calculateForThreeAtoms( const unsigned& iat, const Vector& d1, const double& d1_len,
     HistogramBead& bead, multicolvar::AtomValuePack& myatoms ) const {
   // Calculate if there are atoms in the cylinder (can use delta here as pbc are done in atom setup)
-  Vector d2 = delta( myatoms.getPosition(0), myatoms.getPosition(iat) );
-  if ( d2.modulo2()>radmax2 ) return;
+  Vector d2 = getSeparation( myatoms.getPosition(0), myatoms.getPosition(iat) );
   // Now calculate projection of d2 on d1
   double proj=dotProduct(d2,d1);
   // This tells us if we are outside the end of the cylinder
@@ -263,7 +266,6 @@ void TopologyMatrix::calculateForThreeAtoms( const unsigned& iat, const Vector& 
     double dfuncr, val = cylinder_sw( getBaseColvarNumber( myatoms.getIndex(0) ),
                                       getBaseColvarNumber( myatoms.getIndex(1) ) ).calculateSqr( cm, dfuncr );
     double cellv = cell_volume( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) );
-
     Vector dc1, dc2, dc3, dd1, dd2, dd3, de1, de2, de3;
     if( !doNotCalculateDerivatives() ) {
       Tensor d1_a1;
@@ -294,6 +296,8 @@ void TopologyMatrix::calculateForThreeAtoms( const unsigned& iat, const Vector& 
       de3 = edf*excess*dd3;
     }
 
+    Vector pos1 = myatoms.getPosition(0) + d1_len*d1;
+    Vector pos2 = myatoms.getPosition(0) + d2;
     Vector g1derivf,g2derivf,lderivf; Tensor vir;
     for(unsigned bin=0; bin<maxbins; ++bin) {
       bead.set( bin*binw, (bin+1)*binw, sigma );
@@ -309,7 +313,7 @@ void TopologyMatrix::calculateForThreeAtoms( const unsigned& iat, const Vector& 
         lderivf=contr*eval*dc3 + val*eval*der*dd3 + contr*val*de3;
         addAtomDerivatives( 2+bin, iat, lderivf, myatoms );
         // Virial
-        vir = -Tensor( myatoms.getPosition(0), g1derivf ) - Tensor( myatoms.getPosition(1), g2derivf ) - Tensor( myatoms.getPosition(iat), lderivf );
+        vir = -Tensor( myatoms.getPosition(0), g1derivf ) - Tensor( pos1, g2derivf ) - Tensor( pos2, lderivf );
         myatoms.addBoxDerivatives( 2+bin, vir );
       }
     }

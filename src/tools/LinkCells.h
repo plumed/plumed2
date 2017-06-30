@@ -54,10 +54,6 @@ private:
   std::vector<unsigned> lcell_tots;
 /// The atoms ordered by link cells
   std::vector<unsigned> lcell_lists;
-/// Find the cell in which this position is contained
-  std::vector<unsigned> findMyCell( const Vector& pos ) const ;
-/// Find the cell in which this position is contained
-  unsigned findCell( const Vector& pos ) const ;
 public:
 ///
   explicit LinkCells( Communicator& comm );
@@ -67,15 +63,35 @@ public:
   void setCutoff( const double& lcut );
 /// Get the value of the cutoff
   double getCutoff() const ;
+/// Get the total number of link cells
+  unsigned getNumberOfCells() const ;
 /// Build the link cell lists
   void buildCellLists( const std::vector<Vector>& pos, const std::vector<unsigned>& indices, const Pbc& pbc );
-/// Find a list of relevant atoms
-  void retrieveNeighboringAtoms( const Vector& pos, unsigned& natomsper, std::vector<unsigned>& atoms ) const ;
+/// Take three indices and return the index of the corresponding cell
+  unsigned convertIndicesToIndex( const unsigned& nx, const unsigned& ny, const unsigned& nz ) const ;
+/// Find the cell index in which this position is contained
+  unsigned findCell( const Vector& pos ) const ;
+/// Find the cell in which this position is contained
+  std::vector<unsigned> findMyCell( const Vector& pos ) const ;
+/// Get the list of cells we need to surround the a particular cell
+  void addRequiredCells( const std::vector<unsigned>& celn, unsigned& ncells_required,
+                         std::vector<unsigned>& cells_required ) const ;
+/// Retrieve the atoms in a list of cells
+  void retrieveAtomsInCells( const unsigned& ncells_required,
+                             const std::vector<unsigned>& cells_required,
+                             unsigned& natomsper, std::vector<unsigned>& atoms ) const ;
+/// Retrieve the atoms we need to consider
+  void retrieveNeighboringAtoms( const Vector& pos, std::vector<unsigned>& cell_list, unsigned& natomsper, std::vector<unsigned>& atoms ) const ;
 };
 
 inline
 bool LinkCells::enabled() const {
   return cutoffwasset;
+}
+
+inline
+unsigned LinkCells::getNumberOfCells() const {
+  return ncells[0]*ncells[1]*ncells[2];
 }
 
 }
