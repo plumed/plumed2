@@ -115,6 +115,10 @@ private:
   bool scaled_components;
 
 public:
+  static void shortcutKeywords( Keywords& keys );
+  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                              const std::map<std::string,std::string>& keys,
+                              std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit Distance(const ActionOptions&);
 // active methods:
@@ -122,6 +126,16 @@ public:
 };
 
 PLUMED_REGISTER_ACTION(Distance,"DISTANCE")
+PLUMED_REGISTER_SHORTCUT(Distance,"DISTANCE")
+
+void Distance::shortcutKeywords( Keywords& keys ){
+  MultiColvarBase::shortcutKeywords( keys );
+}
+void Distance::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                              const std::map<std::string,std::string>& keys,
+                              std::vector<std::vector<std::string> >& actions ){
+  MultiColvarBase::expandShortcut( lab, words, keys, actions );
+}
 
 void Distance::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );

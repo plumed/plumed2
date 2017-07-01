@@ -106,6 +106,7 @@ private:
   void gatherAccumulators( const unsigned& index, const MultiValue& myvals, std::vector<double>& buf ) const ;
   void finishComputations( const std::vector<double>& buf );
   void getNumberOfStreamedQuantities( unsigned& nquants ) const ;
+  unsigned getNumberOfStreamedDerivatives() const ;
   void getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize );
 public:
 
@@ -212,7 +213,7 @@ public:
   void useNumericalDerivatives();
 // These are things for using vectors of values as fields
   virtual void checkFieldsAllowed() { error("cannot use this action as a field"); }
-  virtual unsigned getNumberOfDerivatives()=0;
+  virtual unsigned getNumberOfDerivatives() const = 0;
 /// Activate the calculation of derivatives
   virtual void turnOnDerivatives();
 /// Interpret the data label and get arguments 

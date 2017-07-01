@@ -76,7 +76,7 @@ public:
   explicit SecondaryStructureRMSD(const ActionOptions&);
   virtual ~SecondaryStructureRMSD();
   unsigned getNumberOfFunctionsInAction();
-  unsigned getNumberOfDerivatives();
+  unsigned getNumberOfDerivatives() const ;
   void buildCurrentTaskList( std::vector<unsigned>& tflags ) const ;
   void calculate();
   void performTask( const unsigned&, MultiValue& ) const ;
@@ -90,7 +90,7 @@ unsigned SecondaryStructureRMSD::getNumberOfFunctionsInAction() {
 }
 
 inline
-unsigned SecondaryStructureRMSD::getNumberOfDerivatives() {
+unsigned SecondaryStructureRMSD::getNumberOfDerivatives() const {
   return 3*getNumberOfAtoms()+9;
 }
 

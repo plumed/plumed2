@@ -58,7 +58,7 @@ public:
   void lockRequests();
   void unlockRequests();
 /// Get the number of derivatives for this action
-  unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
+  unsigned getNumberOfDerivatives() const ;  // N.B. This is replacing the virtual function in ActionWithValue
 /// Get the iframe th reference configuration
   ReferenceConfiguration* getReferenceConfiguration( const unsigned& iframe ) const ;
 /// Turn on the tasks that are currently active

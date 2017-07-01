@@ -185,7 +185,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit PCAVars(const ActionOptions&);
-  unsigned getNumberOfDerivatives();
+  unsigned getNumberOfDerivatives() const ;
   void lockRequests();
   void unlockRequests();
   void calculateNumericalDerivatives( ActionWithValue* a );
@@ -318,7 +318,7 @@ PCAVars::PCAVars(const ActionOptions& ao):
   for(int i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->resizeDerivatives(nder);
 }
 
-unsigned PCAVars::getNumberOfDerivatives() {
+unsigned PCAVars::getNumberOfDerivatives() const {
   if( getNumberOfAtoms()>0 ) {
     return 3*getNumberOfAtoms() + 9 + getNumberOfArguments();
   }

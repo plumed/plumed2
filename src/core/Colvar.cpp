@@ -75,6 +75,7 @@ void Colvar::apply() {
       vector<double> forces(3*nat+9);
       #pragma omp for
       for(unsigned i=rank; i<ncp; i+=stride) {
+        std::fill(forces.begin(),forces.end(),0);
         if(getPntrToComponent(i)->applyForce(forces)) {
           for(unsigned j=0; j<nat; ++j) {
             omp_f[j][0]+=forces[3*j+0];

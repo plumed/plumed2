@@ -67,12 +67,13 @@ ActionWithValue::ActionWithValue(const ActionOptions&ao):
   if( keywords.exists("NUMERICAL_DERIVATIVES") ) parseFlag("NUMERICAL_DERIVATIVES",numericalDerivatives);
   if(numericalDerivatives) log.printf("  using numerical derivatives\n");
   parseFlag("SERIAL",serial); parseFlag("TIMINGS",timers);
-  stopwatch.start(); stopwatch.pause();
+  if( timers ){ stopwatch.start(); stopwatch.pause(); }
 }
 
 ActionWithValue::~ActionWithValue() {
   stopwatch.start(); stopwatch.stop();
   if(timers) {
+    stopwatch.start(); stopwatch.stop();
     log.printf("timings for action %s with label %s \n", getName().c_str(), getLabel().c_str() );
     log<<stopwatch;
   }
@@ -345,13 +346,7 @@ void ActionWithValue::runAllTasks() {
 
   // Recover the number of derivatives we require
   unsigned nderivatives = 0;
-  if( !noderiv ){
-      nderivatives = getNumberOfDerivatives();
-      for(const auto & p : actions_to_do_after ){
-          unsigned nnd = p->getNumberOfDerivatives();
-          if( nnd>nderivatives ) nderivatives = nnd;
-      }
-  }
+  if( !noderiv ) nderivatives = getNumberOfStreamedDerivatives();
 
   if(timers) stopwatch.start("2 Loop over tasks");
   #pragma omp parallel num_threads(nt)
@@ -391,6 +386,15 @@ void ActionWithValue::runAllTasks() {
   if(timers) stopwatch.start("4 Finishing computations");
   finishComputations( buffer );
   if(timers) stopwatch.stop("4 Finishing computations");
+}
+
+unsigned ActionWithValue::getNumberOfStreamedDerivatives() const {
+  unsigned nderivatives = getNumberOfDerivatives();
+  for(const auto & p : actions_to_do_after ){
+      unsigned nnd = p->getNumberOfDerivatives();
+      if( nnd>nderivatives ) nderivatives = nnd;
+  }
+  return nderivatives;
 }
 
 void ActionWithValue::getNumberOfStreamedQuantities( unsigned& nquants ) const {
@@ -437,6 +441,8 @@ void ActionWithValue::rerunTask( const unsigned& task_index, MultiValue& myvals 
         av->rerunTask( task_index, myvals );
      }
   }
+  unsigned nquantities = 0; getNumberOfStreamedQuantities( nquantities ); unsigned nderivatives = getNumberOfStreamedDerivatives();
+  if( myvals.getNumberOfValues()!=nquantities || myvals.getNumberOfDerivatives()!=nderivatives ) myvals.resize( nquantities, nderivatives );
   myvals.setTaskIndex(task_index); performTask( fullTaskList[task_index], myvals );
 }
 

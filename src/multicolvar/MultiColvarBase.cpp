@@ -25,6 +25,112 @@
 namespace PLMD {
 namespace multicolvar {
 
+void MultiColvarBase::shortcutKeywords( Keywords& keys ) {
+  keys.add("optional","LESS_THAN","calculate the number of variables that are less than a certain target value. "
+                                  "This quantity is calculated using \\f$\\sum_i \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
+                                  "is a \\ref switchingfunction.");
+  keys.add("optional","MORE_THAN","calculate the number of variables that are more than a certain target value. "
+                                  "This quantity is calculated using \\f$\\sum_i 1 - \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
+                                  "is a \\ref switchingfunction.");
+  keys.add("optional","ALT_MIN","calculate the minimum value. "
+                                "To make this quantity continuous the minimum is calculated using "
+                                "\\f$ \\textrm{min} = -\\frac{1}{\\beta} \\log \\sum_i \\exp\\left( -\\beta s_i \\right)  \\f$ "
+                                "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$).");
+  keys.add("optional","BETWEEN","calculate the number of values that are within a certain range. "
+                                "These quantities are calculated using kernel density estimation as described on "
+                                "\\ref histogrambead.");
+  keys.addFlag("HIGHEST",false,"this flag allows you to recover the highest of these variables.");
+  keys.add("optional","HISTOGRAM","calculate a discretized histogram of the distribution of values. "
+                                  "This shortcut allows you to calculates NBIN quantites like BETWEEN.");
+  keys.addFlag("LOWEST",false,"this flag allows you to recover the lowest of these variables.");
+  keys.add("optional","MAX","calculate the maximum value. "
+                            "To make this quantity continuous the maximum is calculated using "
+                            "\\f$ \\textrm{max} = \\beta \\log \\sum_i \\exp\\left( \\frac{s_i}{\\beta}\\right) \\f$ "
+                            "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$)");
+  keys.add("optional","MIN","calculate the minimum value. "
+                            "To make this quantity continuous the minimum is calculated using "
+                            "\\f$ \\textrm{min} = \\frac{\\beta}{ \\log \\sum_i \\exp\\left( \\frac{\\beta}{s_i} \\right) } \\f$ "
+                            "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$)");
+  keys.addFlag("SUM",false,"calculate the sum of all the quantities.");
+  keys.addFlag("MEAN",false,"calculate the mean of all the quantities.");
+}
+
+void MultiColvarBase::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                                      const std::map<std::string,std::string>& keys,
+                                      std::vector<std::vector<std::string> >& actions ){
+  std::vector<std::string> mc_line; mc_line.push_back( lab + ":" );
+  for(unsigned i=0;i<words.size();++i) mc_line.push_back(words[i]);
+  actions.push_back( mc_line );
+
+  // Parse LESS_THAN
+  if( keys.count("LESS_THAN") ){
+      std::vector<std::string> input; input.push_back( lab + "_lt:" ); input.push_back("LESS_THAN"); 
+      input.push_back("ARG=" + lab ); 
+      input.push_back("SWITCH=" + keys.find("LESS_THAN")->second  );
+      actions.push_back( input );
+      std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_lessthan:" ); sum_inp.push_back("SUM"); sum_inp.push_back("ARG=" + lab + "_lt");
+      actions.push_back( sum_inp ); 
+  }
+  // Parse MORE_THAN
+  if( keys.count("MORE_THAN") ){
+      std::vector<std::string> input; input.push_back( lab + "_mt:" ); input.push_back("MORE_THAN");
+      input.push_back("ARG=" + lab );
+      input.push_back("SWITCH=" + keys.find("MORE_THAN")->second  );
+      actions.push_back( input );
+      std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_morethan:" ); sum_inp.push_back("SUM"); sum_inp.push_back("ARG=" + lab + "_mt");
+      actions.push_back( sum_inp );
+  }
+  // Parse ALT_MIN
+  if( keys.count("ALT_MIN") ){
+      std::vector<std::string> input; input.push_back( lab + "_altmin:" ); input.push_back("ALT_MIN");
+      input.push_back("ARG=" + lab ); std::size_t dd = keys.find("ALT_MIN")->second.find("BETA");
+      input.push_back( keys.find("ALT_MIN")->second.substr(dd) ); 
+      actions.push_back( input );
+  }
+  // Parse MIN
+  if( keys.count("MIN") ){
+      std::vector<std::string> input; input.push_back( lab + "_min:" ); input.push_back("MIN");
+      input.push_back("ARG=" + lab ); std::size_t dd = keys.find("MIN")->second.find("BETA"); 
+      input.push_back( keys.find("MIN")->second.substr(dd) ); actions.push_back( input );
+  }
+  // Parse MAX
+  if( keys.count("MAX") ){
+      std::vector<std::string> input; input.push_back( lab + "_max:" ); input.push_back("MAX");
+      input.push_back("ARG=" + lab ); std::size_t dd = keys.find("MAX")->second.find("BETA"); 
+      input.push_back( keys.find("MAX")->second.substr(dd) ); actions.push_back( input );
+  }
+  // Parse HIGHEST
+  if( keys.count("HIGHEST") ){
+      std::vector<std::string> input; input.push_back( lab + "_highest:" ); input.push_back("HIGHEST");
+      input.push_back("ARG=" + lab ); actions.push_back( input );
+  }
+  // Parse LOWEST
+  if( keys.count("LOWEST") ){
+      std::vector<std::string> input; input.push_back( lab + "_lowest:" ); input.push_back("LOWEST");
+      input.push_back("ARG=" + lab ); actions.push_back( input );
+  }
+  // Parse SUM
+  if( keys.count("SUM") ){
+      std::vector<std::string> input; input.push_back( lab + "_sum:" ); input.push_back("SUM");
+      input.push_back("ARG=" + lab ); actions.push_back( input );
+  }
+  // Parse MEAN
+  if( keys.count("MEAN") ){
+      std::vector<std::string> input; input.push_back( lab + "_mean:" ); input.push_back("MEAN");
+      input.push_back("ARG=" + lab ); actions.push_back( input );
+  }
+  // Parse BETWEEN
+  if( keys.count("BETWEEN") ){
+      std::vector<std::string> input; input.push_back( lab + "_bt:" ); input.push_back("BETWEEN");
+      input.push_back("ARG=" + lab );
+      input.push_back("SWITCH=" + keys.find("BETWEEN")->second  );
+      actions.push_back( input );
+      std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_between:" ); sum_inp.push_back("SUM"); sum_inp.push_back("ARG=" + lab + "_bt");
+      actions.push_back( sum_inp );
+  }
+  // Parse HISTOGRAM  
+}
+
 void MultiColvarBase::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
@@ -82,10 +188,20 @@ usepbc(true)
   }
 }
 
+void MultiColvarBase::addValueWithDerivatives(){
+  if( getFullNumberOfTasks()==1 ){ ActionWithValue::addValueWithDerivatives(); }
+  else addValue();
+}
+
 void MultiColvarBase::addValue(){
   std::vector<unsigned> shape;
   if( getFullNumberOfTasks()>1 ){ shape.resize(1); shape[0]=getFullNumberOfTasks(); }
   ActionWithValue::addValue( shape );
+}
+
+void MultiColvarBase::addComponentWithDerivatives( const std::string& name ){
+  if( getFullNumberOfTasks()==1 ){ ActionWithValue::addComponentWithDerivatives(name); }
+  else addValue();
 }
 
 void MultiColvarBase::addComponent( const std::string& name ){

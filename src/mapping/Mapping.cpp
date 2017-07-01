@@ -208,7 +208,7 @@ void Mapping::performTask( const unsigned& current, MultiValue& myvals ) const {
   // }
 }
 
-unsigned Mapping::getNumberOfDerivatives() {
+unsigned Mapping::getNumberOfDerivatives() const {
   unsigned nat=getNumberOfAtoms();
   if(nat>0) return 3*nat + 9 + getNumberOfArguments();
   return getNumberOfArguments();

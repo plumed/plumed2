@@ -47,18 +47,24 @@ private:
 protected:
 /// Add a value to the action
   void addValue();
+  void addValueWithDerivatives();
 /// Add a component to the action
   void addComponent( const std::string& name );
+  void addComponentWithDerivatives( const std::string& name );
 /// Get the number of atoms involved in each CV
   unsigned getNumberOfAtomsInEachCV() const ;
 /// Get the separation between a pair of vectors
   Vector getSeparation( const Vector& vec1, const Vector& vec2 ) const ;
 public:
+  static void shortcutKeywords( Keywords& keys );
+  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                              const std::map<std::string,std::string>& keys,
+                              std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit MultiColvarBase(const ActionOptions&);
   ~MultiColvarBase() {}
 /// Get the number of derivatives for this action
-  unsigned getNumberOfDerivatives();
+  unsigned getNumberOfDerivatives() const ;
 /// Buld the current lists of tags
   void buildCurrentTaskList( std::vector<unsigned>& tflags ) const ;
 /// Do the calculation
@@ -72,7 +78,7 @@ public:
 };
 
 inline
-unsigned MultiColvarBase::getNumberOfDerivatives() {
+unsigned MultiColvarBase::getNumberOfDerivatives() const {
   return 3*getNumberOfAtoms()+9;
 }
 

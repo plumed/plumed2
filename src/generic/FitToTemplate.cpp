@@ -184,7 +184,7 @@ public:
   static void registerKeywords( Keywords& keys );
   void calculate();
   void apply();
-  unsigned getNumberOfDerivatives() {plumed_merror("You should not call this function");};
+  unsigned getNumberOfDerivatives() const {plumed_merror("You should not call this function");};
 };
 
 PLUMED_REGISTER_ACTION(FitToTemplate,"FIT_TO_TEMPLATE")

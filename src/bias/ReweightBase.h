@@ -38,7 +38,7 @@ protected:
 public:
   static void registerKeywords(Keywords&);
   explicit ReweightBase(const ActionOptions&ao);
-  unsigned getNumberOfDerivatives() { return 0; }
+  unsigned getNumberOfDerivatives() const { return 0; }
   void calculate();
   virtual double getLogWeight() const = 0;
   void apply() {}

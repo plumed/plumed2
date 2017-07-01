@@ -67,7 +67,7 @@ public:
   explicit GeometricPath(const ActionOptions&);
   void calculate();
   void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const { plumed_error(); }
-  unsigned getNumberOfDerivatives();
+  unsigned getNumberOfDerivatives() const ;
   void apply();
 };
 
@@ -163,7 +163,7 @@ GeometricPath::GeometricPath(const ActionOptions&ao):
   addComponentWithDerivatives("z"); componentIsNotPeriodic("z");
 }
 
-unsigned GeometricPath::getNumberOfDerivatives(){
+unsigned GeometricPath::getNumberOfDerivatives() const {
   unsigned nder=0;
   if( mypack1_stashd_atoms.size()>0 ) nder = 3*mypack1_stashd_atoms.size() + 9;
   return nder + mypack1_stashd_args.size();

@@ -67,7 +67,7 @@ public:
   explicit Colvar(const ActionOptions&);
   ~Colvar() {}
   static void registerKeywords( Keywords& keys );
-  virtual unsigned getNumberOfDerivatives();
+  virtual unsigned getNumberOfDerivatives() const ;
 };
 
 inline
@@ -110,7 +110,7 @@ void Colvar::setBoxDerivativesNoPbc() {
 }
 
 inline
-unsigned Colvar::getNumberOfDerivatives() {
+unsigned Colvar::getNumberOfDerivatives() const {
   return 3*getNumberOfAtoms() + 9;
 }
 

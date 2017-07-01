@@ -86,6 +86,12 @@ std::vector<std::vector<std::string> > ActionRegister::expandShortcuts( const un
           if( keys.style( keyname, "compulsory") && !keys.getDefaultValue( keyname, def ) ){
               bool found=Tools::parse(words,keyname,t,replica_index);
               if( found ) keymap.insert(pair<std::string,std::string>(keyname,t));
+          } else if( keys.style( keyname, "optional") ){
+              bool found=Tools::parse(words,keyname,t,replica_index);
+              if( found ) keymap.insert(pair<std::string,std::string>(keyname,t));
+          } else if( keys.style( keyname, "flag") ){
+              bool found=false; Tools::parseFlag(words,keyname,found);
+              if( found ) keymap.insert(pair<std::string,std::string>(keyname,""));
           }
       } 
       if( keymap.size()>0 || m.find(words[0])==m.end() ){
@@ -97,10 +103,7 @@ std::vector<std::vector<std::string> > ActionRegister::expandShortcuts( const un
                      if( !found ) keymap.insert(pair<std::string,std::string>(keyname,def));
                      else keymap.insert(pair<std::string,std::string>(keyname,t));
                  }
-             } else if( keys.style( keyname, "optional") ){
-                 bool found=Tools::parse(words,keyname,t,replica_index);
-                 if( found ) keymap.insert(pair<std::string,std::string>(keyname,t));
-             }
+             } 
          }
          std::string lab; bool found=Tools::parse( words, "LABEL", lab, replica_index);
          plumed_assert( found ); s[words[0]](lab, words, keymap, actions );

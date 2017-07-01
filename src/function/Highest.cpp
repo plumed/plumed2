@@ -31,9 +31,9 @@ using namespace std;
 namespace PLMD {
 namespace function {
 
-//+PLUMEDOC FUNCTION LOWEST
+//+PLUMEDOC FUNCTION HIGHEST
 /*
-This function can be used to find the lowest colvar by magnitude in a set.
+This function can be used to find the highest colvar by magnitude in a set.
 
 \par Examples
 
@@ -41,24 +41,24 @@ This function can be used to find the lowest colvar by magnitude in a set.
 //+ENDPLUMEDOC
 
 
-class Lowest : public Function {
+class Highest: public Function {
 private:
   MultiValue tvals;
 public:
-  explicit Lowest(const ActionOptions&);
+  explicit Highest(const ActionOptions&);
   void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const ;
   static void registerKeywords(Keywords& keys);
   void transformFinalValueAndDerivatives();
 };
 
 
-PLUMED_REGISTER_ACTION(Lowest,"LOWEST")
+PLUMED_REGISTER_ACTION(Highest,"HIGHEST")
 
-void Lowest::registerKeywords(Keywords& keys) {
+void Highest::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys); keys.use("ARG");
 }
 
-Lowest::Lowest(const ActionOptions&ao):
+Highest::Highest(const ActionOptions&ao):
   Action(ao),
   Function(ao),
   tvals(0,0)
@@ -72,36 +72,36 @@ Lowest::Lowest(const ActionOptions&ao):
   addValueWithDerivatives(); checkRead();
 }
 
-void Lowest::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
+void Highest::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
   if( args.size()>1 ){
-      double lowest = args[0]; unsigned lowind = 0;
+      double highest = args[0]; unsigned highind = 0;
       for(unsigned i=1; i<args.size(); ++i) {
-        if( args[i]<lowest ){ lowest = args[i]; lowind = 0; } 
+        if( args[i]>highest ){ highest = args[i]; highind = 0; } 
       }
-      setValue( 0, lowest, myvals ); addDerivative( 0, lowind, 1.0, myvals );
+      setValue( 0, highest, myvals ); addDerivative( 0, highind, 1.0, myvals );
   }
 }
 
-void Lowest::transformFinalValueAndDerivatives() {
+void Highest::transformFinalValueAndDerivatives() {
   if( !done_over_stream || getNumberOfArguments()>1 ) return;
 
-  unsigned lind = 0, pves = 0; unsigned aind=0; double lowest = getPntrToArgument(0)->get(0); 
+  unsigned hind = 0, pves = 0; unsigned aind=0; double highest = getPntrToArgument(0)->get(0);
   for(unsigned i=0;i<getNumberOfArguments();++i){
       Value* myarg = getPntrToArgument(i); 
       for(unsigned j=0;j<myarg->getNumberOfValues(); ++j ){
-          if( myarg->get(j)<lowest ){ aind=i; lowest=myarg->get(j); lind = pves + j; }
+          if( myarg->get(j)>highest ){ aind=i; highest=myarg->get(j); hind = pves + j; }
       }
       pves += myarg->getNumberOfValues();
   }
-  Value* val0 = getPntrToComponent(0); val0->set( lowest );
-  if( !doNotCalculateDerivatives() ){
+  Value* val0 = getPntrToComponent(0); val0->set( highest );
+  if( !doNotCalculateDerivatives() ){ 
       unsigned nn=0, nm=0;
       for(unsigned i=0;i<getNumberOfArguments();++i){
           nn += getPntrToArgument(i)->getNumberOfValues();
-          if( lind<nn ){ break; }
+          if( hind<nn ){ break; }
           nm += getPntrToArgument(i)->getNumberOfValues();
       }
-      tvals.clearAll(); (getPntrToArgument(aind)->getPntrToAction())->rerunTask( lind - nm, tvals );
+      tvals.clearAll(); (getPntrToArgument(aind)->getPntrToAction())->rerunTask( hind - nm, tvals );
       for(unsigned i=0;i<tvals.getNumberActive();++i){
           unsigned ider = tvals.getActiveIndex(i); val0->addDerivative( ider, tvals.getDerivative( getPntrToArgument(aind)->getPositionInStream(), ider ) );
       }

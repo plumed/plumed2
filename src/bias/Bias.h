@@ -55,7 +55,7 @@ public:
   static void registerKeywords(Keywords&);
   explicit Bias(const ActionOptions&ao);
   void apply();
-  unsigned getNumberOfDerivatives();
+  unsigned getNumberOfDerivatives() const ;
 };
 
 inline
@@ -70,7 +70,7 @@ void Bias::setBias(double bias) {
 }
 
 inline
-unsigned Bias::getNumberOfDerivatives() {
+unsigned Bias::getNumberOfDerivatives() const {
   return getNumberOfArguments();
 }
 

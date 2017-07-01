@@ -50,7 +50,7 @@ public:
 // active methods:
   virtual void calculate();
   virtual void apply() {}
-  unsigned getNumberOfDerivatives() { return 0; }
+  unsigned getNumberOfDerivatives() const { return 0; }
 };
 
 PLUMED_REGISTER_ACTION(Time,"TIME")

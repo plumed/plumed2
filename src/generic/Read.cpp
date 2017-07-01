@@ -88,7 +88,7 @@ public:
   void update();
   std::string getFilename() const;
   IFile* getFile();
-  unsigned getNumberOfDerivatives();
+  unsigned getNumberOfDerivatives() const ;
   void turnOnDerivatives();
 };
 
@@ -193,7 +193,7 @@ IFile* Read::getFile() {
   return ifile;
 }
 
-unsigned Read::getNumberOfDerivatives() {
+unsigned Read::getNumberOfDerivatives() const {
   return 0;
 }
 
