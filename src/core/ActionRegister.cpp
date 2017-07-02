@@ -89,6 +89,14 @@ std::vector<std::vector<std::string> > ActionRegister::expandShortcuts( const un
           } else if( keys.style( keyname, "optional") ){
               bool found=Tools::parse(words,keyname,t,replica_index);
               if( found ) keymap.insert(pair<std::string,std::string>(keyname,t));
+              else if( !found && keys.numbered( keyname ) ){
+                 for(unsigned i=1;; ++i){
+                     std::string istr; Tools::convert( i, istr );
+                     bool found=Tools::parse(words,keyname + istr,t,replica_index);
+                     if( !found ) break ;
+                     keymap.insert(pair<std::string,std::string>(keyname + istr,t));
+                 }
+              }
           } else if( keys.style( keyname, "flag") ){
               bool found=false; Tools::parseFlag(words,keyname,found);
               if( found ) keymap.insert(pair<std::string,std::string>(keyname,""));

@@ -55,10 +55,12 @@ PLUMED_REGISTER_ACTION(Between,"BETWEEN")
 
 void Between::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys); keys.use("ARG"); 
-  keys.add("compulsory","KERNEL","GAUSSIAN","the type of kernel function to use");
   keys.add("compulsory","LOWER","the lower boundary for this particular bin");
   keys.add("compulsory","UPPER","the upper boundary for this particular bin");
   keys.add("compulsory","SMEAR","0.5","the ammount to smear the Gaussian for each value in the distribution");
+  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous function defined above. "
+           "The following provides information on the \\ref histogrambead that are available. "
+           "When this keyword is present you no longer need the LOWER, UPPER, SMEAR and KERNEL keywords.");
 }
 
 Between::Between(const ActionOptions&ao):
@@ -66,18 +68,21 @@ Between::Between(const ActionOptions&ao):
   Function(ao)
 {
   std::string str_min, str_max, tstr_min, tstr_max;
-  bool isPeriodic = getPntrToComponent(0)->isPeriodic();
-  if( isPeriodic ) getPntrToComponent(0)->getDomain( str_min, str_max );
-  for(unsigned i=1;i<getNumberOfComponents();++i){
+  bool isPeriodic = getPntrToArgument(0)->isPeriodic();
+  if( isPeriodic ) getPntrToArgument(0)->getDomain( str_min, str_max );
+  for(unsigned i=1;i<getNumberOfArguments();++i){
       if( isPeriodic ){
-          if( !getPntrToComponent(i)->isPeriodic() ) error("cannot mix periodic and non periodic arguments");
-          getPntrToComponent(i)->getDomain( tstr_min, tstr_max ); 
+          if( !getPntrToArgument(i)->isPeriodic() ) error("cannot mix periodic and non periodic arguments");
+          getPntrToArgument(i)->getDomain( tstr_min, tstr_max ); 
           if( tstr_min!=str_min || tstr_max!=str_max ) error("cannot mix periodic arguments with different domains");
       }
   }
-  std::string ktype, low, up, sme; parse("KERNEL",ktype);
-  parse("LOWER",low); parse("UPPER",up); parse("SMEAR",sme);
-  std::string hinput = ktype + " LOWER=" + low + " UPPER=" + up + " SMEAR" + sme;
+  std::string hinput; parse("SWITCH",hinput);
+  if(hinput.length()==0) {
+     std::string ktype, low, up, sme; 
+     parse("LOWER",low); parse("UPPER",up); parse("SMEAR",sme);
+     hinput = "GAUSSIAN LOWER=" + low + " UPPER=" + up + " SMEAR" + sme;
+  }
   std::string errors; hist.set( hinput, errors );
   if( errors.size()!=0 ) error( errors );
 

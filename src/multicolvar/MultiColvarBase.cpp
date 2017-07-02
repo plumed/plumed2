@@ -26,19 +26,19 @@ namespace PLMD {
 namespace multicolvar {
 
 void MultiColvarBase::shortcutKeywords( Keywords& keys ) {
-  keys.add("optional","LESS_THAN","calculate the number of variables that are less than a certain target value. "
+  keys.add("numbered","LESS_THAN","calculate the number of variables that are less than a certain target value. "
                                   "This quantity is calculated using \\f$\\sum_i \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
                                   "is a \\ref switchingfunction.");
-  keys.add("optional","MORE_THAN","calculate the number of variables that are more than a certain target value. "
+  keys.add("numbered","MORE_THAN","calculate the number of variables that are more than a certain target value. "
                                   "This quantity is calculated using \\f$\\sum_i 1 - \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
                                   "is a \\ref switchingfunction.");
   keys.add("optional","ALT_MIN","calculate the minimum value. "
                                 "To make this quantity continuous the minimum is calculated using "
                                 "\\f$ \\textrm{min} = -\\frac{1}{\\beta} \\log \\sum_i \\exp\\left( -\\beta s_i \\right)  \\f$ "
                                 "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$).");
-  keys.add("optional","BETWEEN","calculate the number of values that are within a certain range. "
+  keys.add("numbered","BETWEEN","calculate the number of values that are within a certain range. "
                                 "These quantities are calculated using kernel density estimation as described on "
-                                "\\ref histogrambead.");
+                                "\\ref histogrambead."); 
   keys.addFlag("HIGHEST",false,"this flag allows you to recover the highest of these variables.");
   keys.add("optional","HISTOGRAM","calculate a discretized histogram of the distribution of values. "
                                   "This shortcut allows you to calculates NBIN quantites like BETWEEN.");
@@ -71,6 +71,18 @@ void MultiColvarBase::expandShortcut( const std::string& lab, const std::vector<
       std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_lessthan:" ); sum_inp.push_back("SUM"); sum_inp.push_back("ARG=" + lab + "_lt");
       actions.push_back( sum_inp ); 
   }
+  if( keys.count("LESS_THAN1") ){
+      for(unsigned i=1;; ++i){
+          std::string istr; Tools::convert( i, istr );  
+          if( !keys.count("LESS_THAN" + istr ) ){ break; } 
+          std::vector<std::string> input; input.push_back( lab + "_lt" + istr + ":" ); input.push_back("LESS_THAN");
+          input.push_back("ARG=" + lab );
+          input.push_back("SWITCH=" + keys.find("LESS_THAN" + istr)->second  );
+          actions.push_back( input );
+          std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_lessthan" + istr + ":" ); sum_inp.push_back("SUM"); sum_inp.push_back("ARG=" + lab + "_lt" + istr );
+          actions.push_back( sum_inp );
+      }
+  }
   // Parse MORE_THAN
   if( keys.count("MORE_THAN") ){
       std::vector<std::string> input; input.push_back( lab + "_mt:" ); input.push_back("MORE_THAN");
@@ -79,6 +91,18 @@ void MultiColvarBase::expandShortcut( const std::string& lab, const std::vector<
       actions.push_back( input );
       std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_morethan:" ); sum_inp.push_back("SUM"); sum_inp.push_back("ARG=" + lab + "_mt");
       actions.push_back( sum_inp );
+  }
+  if( keys.count("MORE_THAN1") ){
+      for(unsigned i=1;; ++i){ 
+          std::string istr; Tools::convert( i, istr );    
+          if( !keys.count("MORE_THAN" + istr ) ){ break; }
+          std::vector<std::string> input; input.push_back( lab + "_mt" + istr + ":" ); input.push_back("MORE_THAN");
+          input.push_back("ARG=" + lab );
+          input.push_back("SWITCH=" + keys.find("MORE_THAN" + istr)->second  );
+          actions.push_back( input );
+          std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_morethan" + istr + ":" ); sum_inp.push_back("SUM"); sum_inp.push_back("ARG=" + lab + "_mt" + istr );
+          actions.push_back( sum_inp );
+      }
   }
   // Parse ALT_MIN
   if( keys.count("ALT_MIN") ){
@@ -128,7 +152,41 @@ void MultiColvarBase::expandShortcut( const std::string& lab, const std::vector<
       std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_between:" ); sum_inp.push_back("SUM"); sum_inp.push_back("ARG=" + lab + "_bt");
       actions.push_back( sum_inp );
   }
+  if( keys.count("BETWEEN1") ){
+      for(unsigned i=1;; ++i){ 
+          std::string istr; Tools::convert( i, istr );    
+          if( !keys.count("BETWEEN" + istr ) ){ break; }
+          std::vector<std::string> input; input.push_back( lab + "_bt" + istr + ":" ); input.push_back("BETWEEN");
+          input.push_back("ARG=" + lab );
+          input.push_back("SWITCH=" + keys.find("BETWEEN" + istr)->second  );
+          actions.push_back( input );
+          std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_between" + istr + ":" ); sum_inp.push_back("SUM"); sum_inp.push_back("ARG=" + lab + "_bt" + istr );
+          actions.push_back( sum_inp );
+      }
+  }
   // Parse HISTOGRAM  
+  if( keys.count("HISTOGRAM") ){
+      std::vector<std::string> words=Tools::getWords( keys.find("HISTOGRAM")->second );
+      unsigned nbins; bool found=Tools::parse(words,"NBINS",nbins,0); // Need replica index
+      if( !found ) plumed_merror("did not find NBINS in specification for HISTOGRAM");
+      double lower; found=Tools::parse(words,"LOWER",lower,0);
+      if( !found ) plumed_merror("did not find LOWER in specification for HISTOGRAM"); 
+      double upper; found=Tools::parse(words,"UPPER",upper,0);
+      if( !found ) plumed_merror("did not find UPPER in specification for HISTOGRAM");
+      double delr = ( upper - lower ) / static_cast<double>( nbins );
+      double smear=0.5; found=Tools::parse(words,"SMEAR",smear,0);
+      if( !found ) smear = 0.5; 
+      for(unsigned i=0;i<nbins;++i){
+          std::string smstr, istr; Tools::convert( i+1, istr ); Tools::convert( smear, smstr );
+          std::vector<std::string> input; input.push_back( lab + "_bt" + istr + ":" ); input.push_back("BETWEEN");
+          input.push_back("ARG=" + lab ); std::string low_str, high_str; 
+          Tools::convert( lower + i*delr, low_str ); Tools::convert( lower + (i+1)*delr, high_str );
+          input.push_back("SWITCH= " + words[0] + " LOWER=" + low_str + " UPPER=" + high_str + " SMEAR=" + smstr );  actions.push_back( input );   
+          std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_between" + istr + ":" ); 
+          sum_inp.push_back("SUM"); sum_inp.push_back("ARG=" + lab + "_bt" + istr );
+          actions.push_back( sum_inp );
+      }
+  }
 }
 
 void MultiColvarBase::registerKeywords( Keywords& keys ){
