@@ -40,10 +40,14 @@ class MultiColvarBase :
 private:
 /// Use periodic boundary conditions
   bool usepbc;
+/// The atoms indices of the centers of the group
+  std::vector<AtomNumber> mygroup;
 /// Vector of forces
   std::vector<double> forcesToApply;
 /// Blocks of atom numbers
   std::vector< std::vector<unsigned> > ablocks;
+/// Atom numbers for centers
+  std::vector<unsigned> catom_indices;
 protected:
 /// Add a value to the action
   void addValue();
@@ -62,7 +66,7 @@ public:
                               std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit MultiColvarBase(const ActionOptions&);
-  ~MultiColvarBase() {}
+  ~MultiColvarBase(); 
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives() const ;
 /// Buld the current lists of tags
@@ -75,7 +79,14 @@ public:
   virtual void compute( const unsigned& index, AtomValuePack& myatoms ) const = 0 ;
 /// Apply the forces from this action
   virtual void apply();
+/// The number of virtual atoms that are calculated by this action
+  unsigned getNumberOfVirtualAtoms() const ;
 };
+
+inline
+unsigned MultiColvarBase::getNumberOfVirtualAtoms() const {
+  return getFullNumberOfTasks();
+}
 
 inline
 unsigned MultiColvarBase::getNumberOfDerivatives() const {

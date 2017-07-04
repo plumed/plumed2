@@ -180,7 +180,15 @@ public:
 /// Read in an input file containing atom positions and calculate the action for the atomic
 /// configuration therin
   void readAtomsFromPDB( const PDB& pdb );
+/// Get the number of virtual atoms this object creates
+  virtual unsigned getNumberOfVirtualAtoms() const ;
+  virtual const std::map<AtomNumber,Tensor> & getVatomGradients( const AtomNumber& ) ;
 };
+
+inline
+unsigned ActionAtomistic::getNumberOfVirtualAtoms() const {
+  return 0;
+}
 
 inline
 const Vector & ActionAtomistic::getPosition(int i)const {

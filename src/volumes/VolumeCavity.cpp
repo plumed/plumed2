@@ -104,7 +104,7 @@ CAVITY DATA=d1 ATOMS=1,4,5,11 SIGMA=0.1 MEAN MORE_THAN={RATIONAL R_0=4} LABEL=ca
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace multicolvar {
+namespace volumes {
 
 class VolumeCavity : public ActionVolume {
 private:
@@ -117,6 +117,10 @@ private:
   std::vector<Vector> dlbi, dlcross, dlperp;
   std::vector<Tensor> dbi, dcross, dperp;
 public:
+  static void shortcutKeywords( Keywords& keys );
+  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                              const std::map<std::string,std::string>& keys,
+                              std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit VolumeCavity(const ActionOptions& ao);
   ~VolumeCavity();
@@ -126,10 +130,21 @@ public:
 };
 
 PLUMED_REGISTER_ACTION(VolumeCavity,"CAVITY")
+PLUMED_REGISTER_SHORTCUT(VolumeCavity,"CAVITY")
+
+void VolumeCavity::shortcutKeywords( Keywords& keys ){
+  ActionVolume::shortcutKeywords( keys );
+}
+
+void VolumeCavity::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                              const std::map<std::string,std::string>& keys,
+                              std::vector<std::vector<std::string> >& actions ){
+  ActionVolume::expandShortcut( lab, words, keys, actions );
+}
 
 void VolumeCavity::registerKeywords( Keywords& keys ) {
   ActionVolume::registerKeywords( keys );
-  keys.add("atoms","ATOMS","the positions of four atoms that define spatial extent of the cavity");
+  keys.add("atoms","BOX","the positions of four atoms that define spatial extent of the cavity");
   keys.addFlag("PRINT_BOX",false,"write out the positions of the corners of the box to an xyz file");
   keys.add("optional","FILE","the file on which to write out the box coordinates");
   keys.add("optional","UNITS","( default=nm ) the units in which to write out the corners of the box");
@@ -147,13 +162,12 @@ VolumeCavity::VolumeCavity(const ActionOptions& ao):
   dcross(3),
   dperp(3)
 {
-  std::vector<AtomNumber> atoms;
-  parseAtomList("ATOMS",atoms);
-  if( atoms.size()!=4 ) error("number of atoms should be equal to four");
+  std::vector<AtomNumber> atoms; parseAtomList("BOX",atoms);
+  if( atoms.size()!=4 ) error("number of atoms in box should be equal to four");
 
   log.printf("  boundaries for region are calculated based on positions of atoms : ");
   for(unsigned i=0; i<atoms.size(); ++i) log.printf("%d ",atoms[i].serial() );
-  log.printf("\n");
+  log.printf("\n"); requestAtoms( atoms );
 
   boxout=false; parseFlag("PRINT_BOX",boxout);
   if(boxout) {
@@ -172,9 +186,6 @@ VolumeCavity::VolumeCavity(const ActionOptions& ao):
   }
 
   checkRead();
-  requestAtoms(atoms);
-  // We have to readd the dependency because requestAtoms removes it
-  addDependency( getPntrToMultiColvar() );
 }
 
 VolumeCavity::~VolumeCavity() {

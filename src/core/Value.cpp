@@ -185,8 +185,8 @@ void Value::setGradients() {
     for(unsigned j=0; j<aa->getNumberOfAtoms(); ++j) {
       AtomNumber an=aa->getAbsoluteIndex(j);
       if(atoms.isVirtualAtom(an)) {
-        const ActionWithVirtualAtom* a=atoms.getVirtualAtomsAction(an);
-        for(const auto & p : a->getGradients()) {
+        ActionAtomistic* a=atoms.getVirtualAtomsAction(an);
+        for(const auto & p : a->getVatomGradients(an)) {
 // controllare l'ordine del matmul:
           gradients[p.first]+=matmul(Vector(data[1+3*j],data[1+3*j+1],data[1+3*j+2]),p.second);
         }

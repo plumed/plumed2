@@ -23,6 +23,7 @@
 #include "tools/Pbc.h"
 #include "tools/KernelFunctions.h"
 #include "tools/SwitchingFunction.h"
+#include "tools/LinkCells.h"
 #include "ActionVolume.h"
 #include <memory>
 
@@ -59,7 +60,7 @@ PRINT ARG=fi,rr.* FILE=colvar
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace multicolvar {
+namespace volumes {
 
 class VolumeInEnvelope : public ActionVolume {
 private:
@@ -70,6 +71,10 @@ private:
   std::vector<unsigned> ltmp_ind;
   SwitchingFunction sfunc;
 public:
+  static void shortcutKeywords( Keywords& keys );
+  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                              const std::map<std::string,std::string>& keys,
+                              std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit VolumeInEnvelope(const ActionOptions& ao);
   ~VolumeInEnvelope();
@@ -78,10 +83,21 @@ public:
 };
 
 PLUMED_REGISTER_ACTION(VolumeInEnvelope,"INENVELOPE")
+PLUMED_REGISTER_SHORTCUT(VolumeInEnvelope,"INENVELOPE")
+
+void VolumeInEnvelope::shortcutKeywords( Keywords& keys ){
+  ActionVolume::shortcutKeywords( keys );
+}
+
+void VolumeInEnvelope::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                              const std::map<std::string,std::string>& keys,
+                              std::vector<std::vector<std::string> >& actions ){
+  ActionVolume::expandShortcut( lab, words, keys, actions );
+}
 
 void VolumeInEnvelope::registerKeywords( Keywords& keys ) {
   ActionVolume::registerKeywords( keys ); keys.remove("SIGMA");
-  keys.add("atoms","ATOMS","the atom whose positions we are constructing a field from");
+  keys.add("atoms","FIELD_ATOMS","the atom whose positions we are constructing a field from");
   keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
   keys.add("compulsory","CONTOUR","a switching funciton that tells PLUMED how large the density should be");
 }
@@ -91,7 +107,7 @@ VolumeInEnvelope::VolumeInEnvelope(const ActionOptions& ao):
   ActionVolume(ao),
   mylinks(comm)
 {
-  std::vector<AtomNumber> atoms; parseAtomList("ATOMS",atoms);
+  std::vector<AtomNumber> atoms; parseAtomList("FIELD_ATOMS",atoms);
   log.printf("  creating density field from atoms : ");
   for(unsigned i=0; i<atoms.size(); ++i) log.printf("%d ",atoms[i].serial() );
   log.printf("\n"); ltmp_ind.resize( atoms.size() ); ltmp_pos.resize( atoms.size() );
@@ -130,7 +146,7 @@ double VolumeInEnvelope::calculateNumberInside( const Vector& cpos, Vector& deri
   indices[0]=getNumberOfAtoms(); mylinks.retrieveAtomsInCells( ncells_required, cells_required, natoms, indices );
   double value=0; std::vector<double> der(3); Vector tder;
   for(unsigned i=1; i<natoms; ++i) {
-    Vector dist = getSeparation( cpos, getPosition( indices[i] ) );
+    Vector dist = pbcDistance( cpos, getPosition( indices[i] ) );
     for(unsigned j=0; j<3; ++j) pos[j]->set( dist[j] );
     value += kernel->evaluate( pos, der, true );
     for(unsigned j=0; j<3; ++j) {

@@ -499,18 +499,21 @@ void Atoms::resizeVectors(unsigned n) {
   charges.resize(n);
 }
 
-AtomNumber Atoms::addVirtualAtom(ActionWithVirtualAtom*a) {
-  unsigned n=positions.size();
-  resizeVectors(n+1);
-  virtualAtomsActions.push_back(a);
+AtomNumber Atoms::addVirtualAtom(ActionAtomistic*a){
+  bool found=false; 
+  for( const auto & p : virtualAtomsActions ){
+      if( a==p ){ found=true; }
+  }
+  if( !found ) virtualAtomsActions.push_back( a );
+
+  unsigned n=positions.size(); resizeVectors(n+1); 
   return AtomNumber::index(n);
 }
 
-void Atoms::removeVirtualAtom(ActionWithVirtualAtom*a) {
+void Atoms::removeVirtualAtom(ActionAtomistic*a) {
   unsigned n=positions.size();
   plumed_massert(a==virtualAtomsActions[virtualAtomsActions.size()-1],"virtual atoms should be destroyed in reverse creation order");
-  resizeVectors(n-1);
-  virtualAtomsActions.pop_back();
+  resizeVectors(n-1); virtualAtomsActions.pop_back();
 }
 
 void Atoms::insertGroup(const std::string&name,const std::vector<AtomNumber>&a) {
@@ -566,6 +569,15 @@ void Atoms::getLocalMDForces(std::vector<Vector>& localForces) {
   for(unsigned i=0; i<gatindex.size(); i++) {
     localForces[i] = mdatoms->getMDforces(i);
   }
+}
+
+ActionAtomistic* Atoms::getVirtualAtomsAction(AtomNumber i)const {
+   unsigned va_action_ind=0, nn=0, va_index = i.index() - getNatoms();
+   for(unsigned i=0;i<virtualAtomsActions.size();++i) {
+       nn += virtualAtomsActions[i]->getNumberOfVirtualAtoms();
+       if( va_index<nn ){ va_action_ind = i; break; }
+   }
+   return virtualAtomsActions[va_action_ind];
 }
 
 }

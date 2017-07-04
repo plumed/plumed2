@@ -37,6 +37,7 @@
 !/vatom
 !/ves
 !/vesselbase
+!/volumes
 !/wrapper
 !/header.sh
 !/release.sh

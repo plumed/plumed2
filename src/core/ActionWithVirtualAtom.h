@@ -75,14 +75,20 @@ protected:
   void setBoxDerivativesNoPbc();
 public:
   void setGradients();
-  const std::map<AtomNumber,Tensor> & getGradients()const;
+  const std::map<AtomNumber,Tensor> & getVatomGradients( const AtomNumber& ind );
 /// Return the atom id of the corresponding virtual atom
   AtomNumber getIndex()const;
   explicit ActionWithVirtualAtom(const ActionOptions&ao);
   ~ActionWithVirtualAtom();
   static void registerKeywords(Keywords& keys);
   void setGradientsIfNeeded();
+  unsigned getNumberOfVirtualAtoms() const ;
 };
+
+inline
+unsigned ActionWithVirtualAtom::getNumberOfVirtualAtoms() const {
+  return 1;
+}
 
 inline
 AtomNumber ActionWithVirtualAtom::getIndex()const {
@@ -91,17 +97,17 @@ AtomNumber ActionWithVirtualAtom::getIndex()const {
 
 inline
 void ActionWithVirtualAtom::setPosition(const Vector & pos) {
-  atoms.positions[index.index()]=pos;
+  atoms.setVatomPosition( index, pos ); //positions[index.index()]=pos;
 }
 
 inline
 void ActionWithVirtualAtom::setMass(double m) {
-  atoms.masses[index.index()]=m;
+  atoms.setVatomMass( index, m );       // masses[index.index()]=m;
 }
 
 inline
 void ActionWithVirtualAtom::setCharge(double c) {
-  atoms.charges[index.index()]=c;
+  atoms.setVatomCharge( index, c );     // charges[index.index()]=c;
 }
 
 inline
@@ -110,8 +116,8 @@ void ActionWithVirtualAtom::setAtomsDerivatives(const std::vector<Tensor> &d) {
 }
 
 inline
-const std::map<AtomNumber,Tensor> & ActionWithVirtualAtom::getGradients()const {
-  return gradients;
+const std::map<AtomNumber,Tensor> & ActionWithVirtualAtom::getVatomGradients(const AtomNumber& ind) {
+  plumed_dbg_assert( ind.index()==index.index() ); return gradients;
 }
 
 }

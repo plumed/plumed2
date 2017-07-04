@@ -39,7 +39,6 @@ namespace PLMD {
 class MDAtomsBase;
 class PlumedMain;
 class ActionAtomistic;
-class ActionWithVirtualAtom;
 class Pbc;
 
 /// Class containing atom related quantities from the MD code.
@@ -47,7 +46,6 @@ class Pbc;
 class Atoms
 {
   friend class ActionAtomistic;
-  friend class ActionWithVirtualAtom;
   int natoms;
   std::set<AtomNumber> unique;
   std::vector<unsigned> uniq_index;
@@ -55,7 +53,7 @@ class Atoms
   std::vector<Vector> forces;
   std::vector<double> masses;
   std::vector<double> charges;
-  std::vector<ActionWithVirtualAtom*> virtualAtomsActions;
+  std::vector<ActionAtomistic*> virtualAtomsActions;
   Tensor box;
   ForwardDecl<Pbc> pbc_fwd;
   Pbc&   pbc=*pbc_fwd;
@@ -182,6 +180,11 @@ public:
   void setVirial(void*);
   void setPositions(void*);
   void setPositions(void*,int);
+  void setVatomPosition( const AtomNumber& , const Vector& );
+  Vector getVatomPosition( const AtomNumber& ) const ;
+  void setVatomMass( const AtomNumber& , const double& );
+  void setVatomCharge( const AtomNumber&, const double& );
+  Vector & getVatomForces( const AtomNumber& );
   void setForces(void*);
   void setForces(void*,int);
   void setMasses(void*);
@@ -213,9 +216,9 @@ public:
   const Units& getUnits() {return units;}
   void updateUnits();
 
-  AtomNumber addVirtualAtom(ActionWithVirtualAtom*);
-  void removeVirtualAtom(ActionWithVirtualAtom*);
-  ActionWithVirtualAtom* getVirtualAtomsAction(AtomNumber)const;
+  AtomNumber addVirtualAtom(ActionAtomistic*);
+  void removeVirtualAtom(ActionAtomistic*);
+  ActionAtomistic* getVirtualAtomsAction(AtomNumber)const;
   bool isVirtualAtom(AtomNumber)const;
   void insertGroup(const std::string&name,const std::vector<AtomNumber>&a);
   void removeGroup(const std::string&name);
@@ -254,11 +257,6 @@ bool Atoms::isVirtualAtom(AtomNumber i)const {
 }
 
 inline
-ActionWithVirtualAtom* Atoms::getVirtualAtomsAction(AtomNumber i)const {
-  return virtualAtomsActions[i.index()-getNatoms()];
-}
-
-inline
 bool Atoms::usingNaturalUnits() const {
   return naturalUnits;
 }
@@ -276,6 +274,31 @@ bool Atoms::boxWasSet() const {
 inline
 const Tensor& Atoms::getVirial()const {
   return virial;
+}
+
+inline
+void Atoms::setVatomPosition( const AtomNumber& ind, const Vector& pos ) {
+  positions[ind.index()]=pos;
+}
+
+inline
+void Atoms::setVatomMass( const AtomNumber& ind, const double& mass ) {
+  masses[ind.index()]=mass;
+}
+
+inline
+void Atoms::setVatomCharge( const AtomNumber& ind, const double& c ) {
+  charges[ind.index()]=c;
+}
+
+inline
+Vector & Atoms::getVatomForces( const AtomNumber& ind ) {
+  return forces[ind.index()];
+}
+
+inline
+Vector Atoms::getVatomPosition( const AtomNumber& ind ) const {
+  return positions[ind.index()];
 }
 
 

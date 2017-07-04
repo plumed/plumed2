@@ -126,7 +126,7 @@ public:
 };
 
 PLUMED_REGISTER_ACTION(Distance,"DISTANCE")
-PLUMED_REGISTER_SHORTCUT(Distance,"DISTANCE")
+PLUMED_REGISTER_SHORTCUT(Distance,"DISTANCES")
 
 void Distance::shortcutKeywords( Keywords& keys ){
   MultiColvarBase::shortcutKeywords( keys );
@@ -134,6 +134,10 @@ void Distance::shortcutKeywords( Keywords& keys ){
 void Distance::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
                               const std::map<std::string,std::string>& keys,
                               std::vector<std::vector<std::string> >& actions ){
+  std::vector<std::string> mc_line; mc_line.push_back( lab + ":" ); 
+  mc_line.push_back("DISTANCE");
+  for(unsigned i=1;i<words.size();++i) mc_line.push_back(words[i]);
+  actions.push_back( mc_line );
   MultiColvarBase::expandShortcut( lab, words, keys, actions );
 }
 

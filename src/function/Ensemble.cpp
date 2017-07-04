@@ -74,7 +74,7 @@ PLUMED_REGISTER_ACTION(Ensemble,"ENSEMBLE")
 
 void Ensemble::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
-  keys.use("ARG");
+  keys.use("ARG"); keys.remove("SERIAL"); // Serial is always used
   keys.addFlag("REWEIGHT",false,"simple REWEIGHT using the latest ARG as energy");
   keys.addFlag("CENTRAL",false,"calculate a central moment instead of a standard moment");
   keys.add("optional","TEMP","the system temperature - this is only needed if you are reweighting");
@@ -95,8 +95,7 @@ Ensemble::Ensemble(const ActionOptions&ao):
   power(0)
 {
   parseFlag("REWEIGHT", do_reweight);
-  double temp=0.0;
-  parse("TEMP",temp);
+  double temp=0.0; parse("TEMP",temp);
   if(do_reweight) {
     if(temp>0.0) kbt=plumed.getAtoms().getKBoltzmann()*temp;
     else kbt=plumed.getAtoms().getKbT();

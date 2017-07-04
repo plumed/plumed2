@@ -46,7 +46,7 @@ ActionWithVirtualAtom::~ActionWithVirtualAtom() {
 }
 
 void ActionWithVirtualAtom::apply() {
-  Vector & f(atoms.forces[index.index()]);
+  Vector & f(atoms.getVatomForces(index)); //atoms.forces[index.index()]);
   for(unsigned i=0; i<getNumberOfAtoms(); i++) modifyForces()[i]=matmul(derivatives[i],f);
   Tensor & v(modifyVirial());
   for(unsigned i=0; i<3; i++) v+=boxDerivatives[i]*f[i];
@@ -66,8 +66,8 @@ void ActionWithVirtualAtom::setGradients() {
     AtomNumber an=getAbsoluteIndex(i);
     // this case if the atom is a virtual one
     if(atoms.isVirtualAtom(an)) {
-      const ActionWithVirtualAtom* a=atoms.getVirtualAtomsAction(an);
-      for(const auto & p : a->gradients) {
+      ActionAtomistic* a=atoms.getVirtualAtomsAction(an);
+      for(const auto & p : a->getVatomGradients(an)) {
         gradients[p.first]+=matmul(derivatives[i],p.second);
       }
       // this case if the atom is a normal one
@@ -83,7 +83,7 @@ void ActionWithVirtualAtom::setBoxDerivatives(const std::vector<Tensor> &d) {
 // Subtract the trivial part coming from a distorsion applied to the ghost atom first.
 // Notice that this part alone should exactly cancel the already accumulated virial
 // due to forces on this atom.
-  Vector pos=atoms.positions[index.index()];
+  Vector pos=atoms.getVatomPosition(index);   // positions[index.index()];
   for(unsigned i=0; i<3; i++) for(unsigned j=0; j<3; j++) boxDerivatives[j][i][j]+=pos[i];
 }
 

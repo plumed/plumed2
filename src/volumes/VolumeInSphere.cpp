@@ -68,13 +68,17 @@ PRINT ARG=d2.* FILE=colvar
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace multicolvar {
+namespace volumes {
 
 class VolumeInSphere : public ActionVolume {
 private:
   Vector origin;
   SwitchingFunction switchingFunction;
 public:
+  static void shortcutKeywords( Keywords& keys );
+  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                              const std::map<std::string,std::string>& keys,
+                              std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit VolumeInSphere(const ActionOptions& ao);
   void setupRegions();
@@ -82,10 +86,21 @@ public:
 };
 
 PLUMED_REGISTER_ACTION(VolumeInSphere,"INSPHERE")
+PLUMED_REGISTER_SHORTCUT(VolumeInSphere,"INSPHERE")
+
+void VolumeInSphere::shortcutKeywords( Keywords& keys ){
+  ActionVolume::shortcutKeywords( keys );
+}
+
+void VolumeInSphere::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                              const std::map<std::string,std::string>& keys,
+                              std::vector<std::vector<std::string> >& actions ){
+  ActionVolume::expandShortcut( lab, words, keys, actions );
+}
 
 void VolumeInSphere::registerKeywords( Keywords& keys ) {
   ActionVolume::registerKeywords( keys );
-  keys.add("atoms","ATOM","the atom whose vicinity we are interested in examining");
+  keys.add("atoms","CENTER","the atom whose vicinity we are interested in examining");
   keys.add("compulsory","RADIUS","the switching function that tells us the extent of the sphereical region of interest");
   keys.remove("SIGMA");
 }
@@ -95,7 +110,7 @@ VolumeInSphere::VolumeInSphere(const ActionOptions& ao):
   ActionVolume(ao)
 {
   std::vector<AtomNumber> atom;
-  parseAtomList("ATOM",atom);
+  parseAtomList("CENTER",atom);
   if( atom.size()!=1 ) error("should only be one atom specified");
   log.printf("  center of sphere is at position of atom : %d\n",atom[0].serial() );
 

@@ -69,7 +69,7 @@ PRINT ARG=d2.* FILE=colvar
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace multicolvar {
+namespace volumes {
 
 class VolumeInCylinder : public ActionVolume {
 private:
@@ -79,6 +79,10 @@ private:
   std::vector<unsigned> dir;
   SwitchingFunction switchingFunction;
 public:
+  static void shortcutKeywords( Keywords& keys );
+  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                              const std::map<std::string,std::string>& keys,
+                              std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit VolumeInCylinder (const ActionOptions& ao);
   void setupRegions();
@@ -86,10 +90,22 @@ public:
 };
 
 PLUMED_REGISTER_ACTION(VolumeInCylinder,"INCYLINDER")
+PLUMED_REGISTER_SHORTCUT(VolumeInCylinder,"INCYLINDER")
+
+void VolumeInCylinder::shortcutKeywords( Keywords& keys ){
+  ActionVolume::shortcutKeywords( keys );
+}
+
+void VolumeInCylinder::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                              const std::map<std::string,std::string>& keys,
+                              std::vector<std::vector<std::string> >& actions ){
+  ActionVolume::expandShortcut( lab, words, keys, actions );
+}
+
 
 void VolumeInCylinder::registerKeywords( Keywords& keys ) {
   ActionVolume::registerKeywords( keys );
-  keys.add("atoms","ATOM","the atom whose vicinity we are interested in examining");
+  keys.add("atoms","CENTER","the atom whose vicinity we are interested in examining");
   keys.add("compulsory","DIRECTION","the direction of the long axis of the cylinder. Must be x, y or z");
   keys.add("compulsory","RADIUS","a switching function that gives the extent of the cyclinder in the plane perpendicular to the direction");
   keys.add("compulsory","LOWER","0.0","the lower boundary on the direction parallel to the long axis of the cylinder");
@@ -103,7 +119,7 @@ VolumeInCylinder::VolumeInCylinder(const ActionOptions& ao):
   docylinder(false)
 {
   std::vector<AtomNumber> atom;
-  parseAtomList("ATOM",atom);
+  parseAtomList("CENTER",atom);
   if( atom.size()!=1 ) error("should only be one atom specified");
   log.printf("  center of cylinder is at position of atom : %d\n",atom[0].serial() );
 

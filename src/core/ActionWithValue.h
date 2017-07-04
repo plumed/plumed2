@@ -78,6 +78,8 @@ private:
   bool noderiv;
 /// Are we using numerical derivatives to differentiate
   bool numericalDerivatives;
+/// Are we no using open mp for some reason
+  bool no_openmp;
 /// Are we running calculations in serial
   bool serial;
 /// Are we using timers
@@ -127,8 +129,6 @@ protected:
   void setValue(const double& d);
 // -------- The action has multiple components ---------- //
 
-/// Is this thread safe
-  bool threadSafe() const { return true; }
 ///
   unsigned getTaskCode( const unsigned& ii ) const ;
 /// Run all the tasks in the list  

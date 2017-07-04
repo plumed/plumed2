@@ -58,10 +58,6 @@ void MultiColvarBase::shortcutKeywords( Keywords& keys ) {
 void MultiColvarBase::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
                                       const std::map<std::string,std::string>& keys,
                                       std::vector<std::vector<std::string> >& actions ){
-  std::vector<std::string> mc_line; mc_line.push_back( lab + ":" );
-  for(unsigned i=0;i<words.size();++i) mc_line.push_back(words[i]);
-  actions.push_back( mc_line );
-
   // Parse LESS_THAN
   if( keys.count("LESS_THAN") ){
       std::vector<std::string> input; input.push_back( lab + "_lt:" ); input.push_back("LESS_THAN"); 
@@ -197,7 +193,8 @@ void MultiColvarBase::registerKeywords( Keywords& keys ){
   keys.add("numbered","ATOMS","the atoms involved in each of the colvars you wish to calculate. "
            "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one or more scalars will be "
            "calculated for each ATOM keyword you specify");
-  keys.reset_style("ATOMS","atoms");
+  keys.add("numbered","LOCATION","the location at which the CV is assumed to be in space");
+  keys.reset_style("ATOMS","atoms"); keys.reset_style("LOCATION","atoms");
 }
 
 MultiColvarBase::MultiColvarBase(const ActionOptions& ao):
@@ -213,12 +210,21 @@ usepbc(true)
   if( usepbc ) log.printf("  using periodic boundary conditions\n");
   else    log.printf("  without periodic boundary conditions\n");
 
-  std::vector<AtomNumber> all_atoms; parseAtomList( "ATOMS", all_atoms );
+  std::vector<AtomNumber> catoms, all_atoms; parseAtomList( "ATOMS", all_atoms );
   if( all_atoms.size()>0 ){
-      ablocks.resize(all_atoms.size());
+      ablocks.resize(all_atoms.size()); 
       log.printf("  Colvar is calculated from atoms : ");
       for(unsigned j=0; j<ablocks.size(); ++j){ ablocks[j].push_back(j); log.printf("%d ",all_atoms[j].serial() ); }
-      log.printf("\n");
+      log.printf("\n"); parseAtomList("LOCATION",catoms);
+      if( catoms.size()>0 ){
+           if( catoms.size()!=1 ) error("should provide position of one atom only for location");
+           log.printf("  CV is located on position of atom : %d \n", catoms[0].serial() ); 
+           catom_indices.push_back( all_atoms.size() ); mygroup.push_back( catoms[0] );
+      } else {
+           log.printf("  CV is located at center of mass for atoms : ");
+           for(unsigned j=0; j<ablocks.size(); ++j) log.printf("%d ", all_atoms[j].serial() );
+           log.printf("\n"); mygroup.push_back( atoms.addVirtualAtom( this ) );
+      }
   } else {
       std::vector<AtomNumber> t;
       for(int i=1;; ++i ) {
@@ -239,11 +245,33 @@ usepbc(true)
         }
         t.resize(0);
       }
+      parseAtomList("LOCATION", 1, catoms );
+      if( catoms.size()>0 ){
+          if( catoms.size()!=1 ) error("should provide position of one atom only for location");
+          log.printf("  CV 1 is located on position of atom : %d \n", catoms[0].serial() );
+          catom_indices.push_back( all_atoms.size() ); mygroup.push_back( catoms[0] );
+
+          for(int i=2;i<ablocks[0].size();++i){
+              std::vector<AtomNumber> cc; parseAtomList("LOCATION", 1, cc );
+              if( cc.empty() ) error("LOCATION should be specified for all or none of the atoms in your CV");
+
+              log.printf("  CV %d is located on position of atom : %d \n", i, cc[0].serial() );
+              catom_indices.push_back( all_atoms.size() + i ); catoms.push_back( cc[0] ); mygroup.push_back( cc[0] );
+          }
+      } else {
+          for(int i=0;i<ablocks[0].size();++i) mygroup.push_back( atoms.addVirtualAtom( this ) );
+      }
   }
-  requestAtoms(all_atoms); forcesToApply.resize( 3*all_atoms.size()+9 );
+  std::vector<AtomNumber> atoms_for_request(all_atoms); atoms.insertGroup( getLabel(), mygroup );
+  if( catoms.size()>0 ) atoms_for_request.insert( atoms_for_request.end(),catoms.begin(),catoms.end() );
+  requestAtoms(atoms_for_request); forcesToApply.resize( 3*all_atoms.size()+9 );
   if( all_atoms.size()>0 ) {
       for(unsigned i=0; i<ablocks[0].size(); ++i) addTaskToList( i );
   }
+}
+
+MultiColvarBase::~MultiColvarBase(){
+  atoms.removeVirtualAtom( this ); atoms.removeGroup( getLabel() );
 }
 
 void MultiColvarBase::addValueWithDerivatives(){
@@ -278,6 +306,21 @@ void MultiColvarBase::buildCurrentTaskList( std::vector<unsigned>& tflags ) cons
 }
 
 void MultiColvarBase::calculate(){
+  // Set positions of all virtual atoms
+  if( catom_indices.size()==0 ) {
+      unsigned stride=comm.Get_size();
+      unsigned rank=comm.Get_rank();
+      if( runInSerial() ) { stride=1; rank=0; }
+      std::vector<Vector> catomp( getFullNumberOfTasks() ); 
+      double normaliz = 1. / static_cast<double>( ablocks.size() );
+      for(unsigned i=rank;i<getFullNumberOfTasks();i+=stride){
+          catomp[i].zero(); 
+          for(unsigned j=0;j<ablocks.size();++j) catomp[i] += getPosition( ablocks[j][i] );
+          catomp[i] *= normaliz;
+      }
+      if( !runInSerial() ) comm.Sum( catomp );
+      for(unsigned i=0;i<getFullNumberOfTasks();++i) atoms.setVatomPosition( mygroup[i], catomp[i] );
+  }
   runAllTasks();
 }
 

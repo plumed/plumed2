@@ -65,7 +65,7 @@ AROUND DATA=c ORIGIN=c1 XLOWER=-2.0 XUPPER=2.0 SIGMA=0.1 MEAN LABEL=s
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace multicolvar {
+namespace volumes {
 
 class VolumeAround : public ActionVolume {
 private:
@@ -75,6 +75,10 @@ private:
   double ylow, yhigh;
   double zlow, zhigh;
 public:
+  static void shortcutKeywords( Keywords& keys );
+  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                              const std::map<std::string,std::string>& keys,
+                              std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit VolumeAround(const ActionOptions& ao);
   void setupRegions();
@@ -82,10 +86,21 @@ public:
 };
 
 PLUMED_REGISTER_ACTION(VolumeAround,"AROUND")
+PLUMED_REGISTER_SHORTCUT(VolumeAround,"AROUND")
+
+void VolumeAround::shortcutKeywords( Keywords& keys ){
+  ActionVolume::shortcutKeywords( keys );
+}
+
+void VolumeAround::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                              const std::map<std::string,std::string>& keys,
+                              std::vector<std::vector<std::string> >& actions ){
+  ActionVolume::expandShortcut( lab, words, keys, actions );
+}
 
 void VolumeAround::registerKeywords( Keywords& keys ) {
   ActionVolume::registerKeywords( keys );
-  keys.add("atoms","ATOM","the atom whose vicinity we are interested in examining");
+  keys.add("atoms","ORIGIN","the atom whose vicinity we are interested in examining");
   keys.add("compulsory","XLOWER","0.0","the lower boundary in x relative to the x coordinate of the atom (0 indicates use full extent of box).");
   keys.add("compulsory","XUPPER","0.0","the upper boundary in x relative to the x coordinate of the atom (0 indicates use full extent of box).");
   keys.add("compulsory","YLOWER","0.0","the lower boundary in y relative to the y coordinate of the atom (0 indicates use full extent of box).");
@@ -99,7 +114,7 @@ VolumeAround::VolumeAround(const ActionOptions& ao):
   ActionVolume(ao)
 {
   std::vector<AtomNumber> atom;
-  parseAtomList("ATOM",atom);
+  parseAtomList("ORIGIN",atom);
   if( atom.size()!=1 ) error("should only be one atom specified");
   log.printf("  boundaries for region are calculated based on positions of atom : %d\n",atom[0].serial() );
 

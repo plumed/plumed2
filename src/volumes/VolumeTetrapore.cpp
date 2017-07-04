@@ -112,7 +112,7 @@ CAVITY DATA=d1 ATOMS=1,4,5,11 SIGMA=0.1 MEAN MORE_THAN={RATIONAL R_0=4} LABEL=ca
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace multicolvar {
+namespace volumes {
 
 class VolumeTetrapore : public ActionVolume {
 private:
@@ -125,6 +125,10 @@ private:
   std::vector<Vector> dlbi, dlcross, dlperp;
   std::vector<Tensor> dbi, dcross, dperp;
 public:
+  static void shortcutKeywords( Keywords& keys );
+  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                              const std::map<std::string,std::string>& keys,
+                              std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit VolumeTetrapore(const ActionOptions& ao);
   ~VolumeTetrapore();
@@ -134,10 +138,22 @@ public:
 };
 
 PLUMED_REGISTER_ACTION(VolumeTetrapore,"TETRAHEDRALPORE")
+PLUMED_REGISTER_SHORTCUT(VolumeTetrapore,"TETRAHEDRALPORE")
+
+void VolumeTetrapore::shortcutKeywords( Keywords& keys ){
+  ActionVolume::shortcutKeywords( keys );
+}
+
+void VolumeTetrapore::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                              const std::map<std::string,std::string>& keys,
+                              std::vector<std::vector<std::string> >& actions ){
+  ActionVolume::expandShortcut( lab, words, keys, actions );
+}
+
 
 void VolumeTetrapore::registerKeywords( Keywords& keys ) {
   ActionVolume::registerKeywords( keys );
-  keys.add("atoms","ATOMS","the positions of four atoms that define spatial extent of the cavity");
+  keys.add("atoms","BOX","the positions of four atoms that define spatial extent of the cavity");
   keys.addFlag("PRINT_BOX",false,"write out the positions of the corners of the box to an xyz file");
   keys.add("optional","FILE","the file on which to write out the box coordinates");
   keys.add("optional","UNITS","( default=nm ) the units in which to write out the corners of the box");
@@ -156,7 +172,7 @@ VolumeTetrapore::VolumeTetrapore(const ActionOptions& ao):
   dperp(3)
 {
   std::vector<AtomNumber> atoms;
-  parseAtomList("ATOMS",atoms);
+  parseAtomList("BOX",atoms);
   if( atoms.size()!=4 ) error("number of atoms should be equal to four");
 
   log.printf("  boundaries for region are calculated based on positions of atoms : ");
@@ -181,8 +197,6 @@ VolumeTetrapore::VolumeTetrapore(const ActionOptions& ao):
 
   checkRead();
   requestAtoms(atoms);
-  // We have to readd the dependency because requestAtoms removes it
-  addDependency( getPntrToMultiColvar() );
 }
 
 VolumeTetrapore::~VolumeTetrapore() {

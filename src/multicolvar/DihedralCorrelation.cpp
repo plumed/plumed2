@@ -84,49 +84,41 @@ Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle o
 class DihedralCorrelation : public MultiColvarBase {
 private:
 public:
+  static void shortcutKeywords( Keywords& keys ){ keys.add("hidden","ALWAYS_EXPAND",""); }
+  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                              const std::map<std::string,std::string>& keys,
+                              std::vector<std::vector<std::string> >& actions  );
   static void registerKeywords( Keywords& keys );
   explicit DihedralCorrelation(const ActionOptions&);
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
-  bool isPeriodic() { return false; }
+  void compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
 };
 
 PLUMED_REGISTER_ACTION(DihedralCorrelation,"DIHCOR")
+PLUMED_REGISTER_SHORTCUT(DihedralCorrelation,"DIHCOR")
+
+void DihedralCorrelation::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                                          const std::map<std::string,std::string>& keys,
+                                          std::vector<std::vector<std::string> >& actions ){
+  std::vector<std::string> mc_line; mc_line.push_back( lab + "_data:" );
+  mc_line.push_back("DIHCOR");
+  for(unsigned i=1;i<words.size();++i) mc_line.push_back(words[i]);
+  actions.push_back( mc_line );
+  std::vector<std::string> input; input.push_back( lab + ":" ); input.push_back("SUM");
+  input.push_back("ARG=" + lab +"_data" ); actions.push_back( input );
+}
 
 void DihedralCorrelation::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );
-  keys.add("numbered","ATOMS","the atoms involved in each of the dihedral correlation values you wish to calculate. "
-           "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one dihedral correlation will be "
-           "calculated for each ATOM keyword you specify (all ATOM keywords should "
-           "specify the indices of 8 atoms).  The eventual number of quantities calculated by this "
-           "action will depend on what functions of the distribution you choose to calculate.");
-  keys.reset_style("ATOMS","atoms");
 }
 
 DihedralCorrelation::DihedralCorrelation(const ActionOptions&ao):
   Action(ao),
   MultiColvarBase(ao)
 {
-  // Read in the atoms
-  std::vector<AtomNumber> all_atoms;
-  readAtomsLikeKeyword( "ATOMS", 8, all_atoms );
-  setupMultiColvarBase( all_atoms );
-  // Stuff for central atoms
-  std::vector<bool> catom_ind(8, false);
-  catom_ind[1]=catom_ind[2]=catom_ind[5]=catom_ind[6]=true;
-  setAtomsForCentralAtom( catom_ind );
-
-  // And setup the ActionWithVessel
-  if( getNumberOfVessels()==0 ) {
-    std::string fake_input;
-    addVessel( "SUM", fake_input, -1 );  // -1 here means that this value will be named getLabel()
-    readVesselKeywords();  // This makes sure resizing is done
-  }
-
-  // And check everything has been read in correctly
-  checkRead();
+  addValueWithDerivatives(); setNotPeriodic(); checkRead();
 }
 
-double DihedralCorrelation::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
+void DihedralCorrelation::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
   const Vector d10=getSeparation(myatoms.getPosition(1),myatoms.getPosition(0));
   const Vector d11=getSeparation(myatoms.getPosition(2),myatoms.getPosition(1));
   const Vector d12=getSeparation(myatoms.getPosition(3),myatoms.getPosition(2));
@@ -152,23 +144,22 @@ double DihedralCorrelation::compute( const unsigned& tindex, AtomValuePack& myat
   dd11 *= dval;
   dd12 *= dval;
   // And add
-  addAtomDerivatives(1, 0, dd10, myatoms );
-  addAtomDerivatives(1, 1, dd11-dd10, myatoms );
-  addAtomDerivatives(1, 2, dd12-dd11, myatoms );
-  addAtomDerivatives(1, 3, -dd12, myatoms );
-  myatoms.addBoxDerivatives  (1, -(extProduct(d10,dd10)+extProduct(d11,dd11)+extProduct(d12,dd12)));
+  myatoms.addAtomsDerivatives(0, 0, dd10 );
+  myatoms.addAtomsDerivatives(0, 1, dd11-dd10 );
+  myatoms.addAtomsDerivatives(0, 2, dd12-dd11 );
+  myatoms.addAtomsDerivatives(0, 3, -dd12 );
+  myatoms.addBoxDerivatives  (0, -(extProduct(d10,dd10)+extProduct(d11,dd11)+extProduct(d12,dd12)));
   // Derivative wrt phi2
   dd20 *= -dval;
   dd21 *= -dval;
   dd22 *= -dval;
   // And add
-  addAtomDerivatives(1, 4, dd20, myatoms );
-  addAtomDerivatives(1, 5, dd21-dd20, myatoms );
-  addAtomDerivatives(1, 6, dd22-dd21, myatoms );
-  addAtomDerivatives(1, 7, -dd22, myatoms );
-  myatoms.addBoxDerivatives(1, -(extProduct(d20,dd20)+extProduct(d21,dd21)+extProduct(d22,dd22)));
-
-  return value;
+  myatoms.addAtomsDerivatives(0, 4, dd20 );
+  myatoms.addAtomsDerivatives(0, 5, dd21-dd20 );
+  myatoms.addAtomsDerivatives(0, 6, dd22-dd21 );
+  myatoms.addAtomsDerivatives(0, 7, -dd22 );
+  myatoms.addBoxDerivatives(0, -(extProduct(d20,dd20)+extProduct(d21,dd21)+extProduct(d22,dd22)));
+  myatoms.setValue( 0, value );
 }
 
 }

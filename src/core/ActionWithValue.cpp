@@ -60,13 +60,16 @@ ActionWithValue::ActionWithValue(const ActionOptions&ao):
   Action(ao),
   noderiv(true),
   numericalDerivatives(false),
+  no_openmp(false),
   serial(false),
   timers(false),
   nactive_tasks(0)
 {
   if( keywords.exists("NUMERICAL_DERIVATIVES") ) parseFlag("NUMERICAL_DERIVATIVES",numericalDerivatives);
   if(numericalDerivatives) log.printf("  using numerical derivatives\n");
-  parseFlag("SERIAL",serial); parseFlag("TIMINGS",timers);
+  if( keywords.exists("SERIAL") ) parseFlag("SERIAL",serial); 
+  else serial=true;
+  parseFlag("TIMINGS",timers);
   if( timers ){ stopwatch.start(); stopwatch.pause(); }
 }
 
@@ -321,7 +324,7 @@ void ActionWithValue::runAllTasks() {
   // Get number of threads for OpenMP
   unsigned nt=OpenMP::getNumThreads();
   if( nt*stride*10>nactive_tasks ) nt=nactive_tasks/stride/10;
-  if( nt==0 || !threadSafe() ) nt=1;
+  if( nt==0 || no_openmp ) nt=1;
 
   // Build the list of active tasks 
   taskFlags.assign(taskFlags.size(),0); selectActiveTasks( taskFlags ); nactive_tasks = 0;

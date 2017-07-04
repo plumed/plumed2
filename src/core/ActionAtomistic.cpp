@@ -291,4 +291,9 @@ void ActionAtomistic::updateUniqueLocal() {
   }
 }
 
+const std::map<AtomNumber,Tensor> & ActionAtomistic::getVatomGradients( const AtomNumber& ind ) {
+  plumed_merror("this action creates no virtual atoms");
+  std::map<AtomNumber,Tensor> dummy; return dummy;
+}
+
 }
