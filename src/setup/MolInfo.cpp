@@ -90,6 +90,12 @@ For DNA or RNA residues, the following groups are available:
 @back-#
 @sugar-#
 @base-#
+
+# ordered triplets of atoms on the 6-membered ring of nucleobases
+# namely:
+#  C2/C4/C6 for pyrimidines
+#  C2/C6/C4 for purines
+@lcs-#
 \endverbatim
 
 Notice that `zeta` and `epsilon` groups should not be used on 3' end residue and `alpha` and `beta`

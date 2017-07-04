@@ -80,9 +80,9 @@ matrix:
       - $HOME/.macports-ci-ccache
 # I don't put any mpi variant with macports since it takes too long to compile
 ## This command can be used to allow failures:
-##  allow_failures:
-## # I allow this to fail temporarily
-##    - env: CPPCHECK=yes CPPCHECK_VERSION=1.74
+  allow_failures:
+# I allow this to fail temporarily
+  - env: PLUMED_DOCKER=yes
 ## Possible additional variables:
 #   VALGRIND=yes to make valgrind tests, only when log contains string [valgrind]
 install:
