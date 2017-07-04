@@ -59,7 +59,7 @@ ActionVolume::ActionVolume(const ActionOptions&ao):
   if( atoms.size()==0 ) error("no atoms were specified");
   log.printf("  examining positions of atoms ");
   for(unsigned i=0;i<atoms.size();++i){ log.printf(" %d", atoms[i].serial() );  addTaskToList( i ); }
-  log.printf("\n"); requestAtoms( atoms );
+  log.printf("\n"); ActionAtomistic::requestAtoms( atoms );
 
   parseFlag("OUTSIDE",not_in); sigma=0.0;
   if( keywords.exists("SIGMA") ) parse("SIGMA",sigma);
@@ -73,7 +73,7 @@ ActionVolume::ActionVolume(const ActionOptions&ao):
 void ActionVolume::requestAtoms( const std::vector<AtomNumber> & a ) {
   std::vector<AtomNumber> all_atoms( getAbsoluteIndexes() );
   for(unsigned i=0;i<a.size();++i) all_atoms.push_back( a[i] );
-  ActionAtomistic::requestAtoms( all_atoms );
+  ActionAtomistic::requestAtoms( all_atoms ); forcesToApply.resize( 3*all_atoms.size()+9 );
 }
 
 void ActionVolume::buildCurrentTaskList( std::vector<unsigned>& tflags ) const {
@@ -126,7 +126,9 @@ void ActionVolume::performTask( const unsigned& curr, MultiValue& outvals ) cons
 }
 
 void ActionVolume::apply(){
-
+  if( doNotCalculateDerivatives() ) return;
+  std::fill(forcesToApply.begin(),forcesToApply.end(),0);
+  if( getForcesFromValues( forcesToApply ) ) setForcesOnAtoms( forcesToApply );
 }
 
 }

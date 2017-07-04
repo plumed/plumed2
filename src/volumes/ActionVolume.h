@@ -47,6 +47,8 @@ private:
   bool not_in;
 /// The kernel type for this histogram
   std::string kerneltype;
+/// The forces that we collect and apply
+  std::vector<double> forcesToApply;
 protected:
   double getSigma() const ;
   std::string getKernelType() const ;
