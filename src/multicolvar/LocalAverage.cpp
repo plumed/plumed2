@@ -159,7 +159,7 @@ double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) c
   }
 
   if( !doNotCalculateDerivatives() ) {
-    MultiValue& myder=getInputDerivatives( 0, false, myatoms ); 
+    MultiValue& myder=getInputDerivatives( 0, false, myatoms );
 
     // Convert input atom to local index
     unsigned katom = myatoms.getIndex( 0 ); plumed_dbg_assert( katom<atom_lab.size() ); plumed_dbg_assert( atom_lab[katom].first>0 );
@@ -174,41 +174,41 @@ double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) c
       for(unsigned j=0; j<myder.getNumberActive(); ++j) {
         unsigned jder=myder.getActiveIndex(j);
         if( jder<mybasemulticolvars[mmc]->getNumberOfDerivatives()-9 ) {
-            unsigned kder=basen+jder;
-            for(unsigned k=2; k<values.size(); ++k) {
-              myatoms.addDerivative( k, kder, values[0]*myder.getDerivative(k,jder) );
-              myatoms.addDerivative( k, kder, values[k]*myder.getDerivative(0,jder) );
-            }
+          unsigned kder=basen+jder;
+          for(unsigned k=2; k<values.size(); ++k) {
+            myatoms.addDerivative( k, kder, values[0]*myder.getDerivative(k,jder) );
+            myatoms.addDerivative( k, kder, values[k]*myder.getDerivative(0,jder) );
+          }
         } else {
-            unsigned kder=virbas + (jder - mybasemulticolvars[mmc]->getNumberOfDerivatives() + 9);
-            for(unsigned k=2; k<values.size(); ++k) {
-              myatoms.addDerivative( k, kder, values[0]*myder.getDerivative(k,jder) );
-              myatoms.addDerivative( k, kder, values[k]*myder.getDerivative(0,jder) );
-            }
+          unsigned kder=virbas + (jder - mybasemulticolvars[mmc]->getNumberOfDerivatives() + 9);
+          for(unsigned k=2; k<values.size(); ++k) {
+            myatoms.addDerivative( k, kder, values[0]*myder.getDerivative(k,jder) );
+            myatoms.addDerivative( k, kder, values[k]*myder.getDerivative(0,jder) );
+          }
         }
       }
     } else {
       for(unsigned j=0; j<myder.getNumberActive(); ++j) {
         unsigned jder=myder.getActiveIndex(j);
         if( jder<mybasemulticolvars[mmc]->getNumberOfDerivatives()-9 ) {
-            unsigned kder=basen+jder;
-            myatoms.addDerivative( 1, kder, values[0]*myder.getDerivative(1,jder) );
-            myatoms.addDerivative( 1, kder, values[1]*myder.getDerivative(0,jder) );
+          unsigned kder=basen+jder;
+          myatoms.addDerivative( 1, kder, values[0]*myder.getDerivative(1,jder) );
+          myatoms.addDerivative( 1, kder, values[1]*myder.getDerivative(0,jder) );
         } else {
-            unsigned kder=virbas + (jder - mybasemulticolvars[mmc]->getNumberOfDerivatives() + 9);
-            myatoms.addDerivative( 1, kder, values[0]*myder.getDerivative(1,jder) );
-            myatoms.addDerivative( 1, kder, values[1]*myder.getDerivative(0,jder) );
+          unsigned kder=virbas + (jder - mybasemulticolvars[mmc]->getNumberOfDerivatives() + 9);
+          myatoms.addDerivative( 1, kder, values[0]*myder.getDerivative(1,jder) );
+          myatoms.addDerivative( 1, kder, values[1]*myder.getDerivative(0,jder) );
         }
       }
     }
     for(unsigned j=0; j<myder.getNumberActive(); ++j) {
-      unsigned jder=myder.getActiveIndex(j); 
+      unsigned jder=myder.getActiveIndex(j);
       if( jder<mybasemulticolvars[mmc]->getNumberOfDerivatives()-9 ) {
-          unsigned kder=basen+jder;
-          myvals.addTemporyDerivative( kder, myder.getDerivative(0, jder) );
+        unsigned kder=basen+jder;
+        myvals.addTemporyDerivative( kder, myder.getDerivative(0, jder) );
       } else {
-          unsigned kder=virbas + (jder - mybasemulticolvars[mmc]->getNumberOfDerivatives() + 9);
-          myvals.addTemporyDerivative( kder, myder.getDerivative(0, jder) );
+        unsigned kder=virbas + (jder - mybasemulticolvars[mmc]->getNumberOfDerivatives() + 9);
+        myvals.addTemporyDerivative( kder, myder.getDerivative(0, jder) );
       }
     }
     myder.clearAll();
@@ -248,17 +248,17 @@ double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) c
           for(unsigned j=0; j<myder.getNumberActive(); ++j) {
             unsigned jder=myder.getActiveIndex(j);
             if( jder<mybasemulticolvars[mmc]->getNumberOfDerivatives()-9 ) {
-                unsigned kder=basen+jder;
-                for(unsigned k=2; k<values.size(); ++k) {
-                  myatoms.addDerivative( k, kder, sw*values[0]*myder.getDerivative(k,jder) );
-                  myatoms.addDerivative( k, kder, sw*values[k]*myder.getDerivative(0,jder) );
-                }
+              unsigned kder=basen+jder;
+              for(unsigned k=2; k<values.size(); ++k) {
+                myatoms.addDerivative( k, kder, sw*values[0]*myder.getDerivative(k,jder) );
+                myatoms.addDerivative( k, kder, sw*values[k]*myder.getDerivative(0,jder) );
+              }
             } else {
-                unsigned kder=virbas + (jder - mybasemulticolvars[mmc]->getNumberOfDerivatives() + 9);
-                for(unsigned k=2; k<values.size(); ++k) {
-                  myatoms.addDerivative( k, kder, sw*values[0]*myder.getDerivative(k,jder) );
-                  myatoms.addDerivative( k, kder, sw*values[k]*myder.getDerivative(0,jder) );
-                }
+              unsigned kder=virbas + (jder - mybasemulticolvars[mmc]->getNumberOfDerivatives() + 9);
+              for(unsigned k=2; k<values.size(); ++k) {
+                myatoms.addDerivative( k, kder, sw*values[0]*myder.getDerivative(k,jder) );
+                myatoms.addDerivative( k, kder, sw*values[k]*myder.getDerivative(0,jder) );
+              }
             }
           }
           for(unsigned k=2; k<values.size(); ++k) {
@@ -270,13 +270,13 @@ double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) c
           for(unsigned j=0; j<myder.getNumberActive(); ++j) {
             unsigned jder=myder.getActiveIndex(j);
             if( jder<mybasemulticolvars[mmc]->getNumberOfDerivatives()-9 ) {
-                unsigned kder=basen+jder; 
-                myatoms.addDerivative( 1, kder, sw*values[0]*myder.getDerivative(1,jder) );
-                myatoms.addDerivative( 1, kder, sw*values[1]*myder.getDerivative(0,jder) );
+              unsigned kder=basen+jder;
+              myatoms.addDerivative( 1, kder, sw*values[0]*myder.getDerivative(1,jder) );
+              myatoms.addDerivative( 1, kder, sw*values[1]*myder.getDerivative(0,jder) );
             } else {
-                unsigned kder=virbas + (jder - mybasemulticolvars[mmc]->getNumberOfDerivatives() + 9);
-                myatoms.addDerivative( 1, kder, sw*values[0]*myder.getDerivative(1,jder) );
-                myatoms.addDerivative( 1, kder, sw*values[1]*myder.getDerivative(0,jder) );
+              unsigned kder=virbas + (jder - mybasemulticolvars[mmc]->getNumberOfDerivatives() + 9);
+              myatoms.addDerivative( 1, kder, sw*values[0]*myder.getDerivative(1,jder) );
+              myatoms.addDerivative( 1, kder, sw*values[1]*myder.getDerivative(0,jder) );
             }
           }
           addAtomDerivatives( 1, 0, (-dfunc)*values[0]*values[1]*distance, myatoms );
@@ -287,13 +287,13 @@ double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) c
         addAtomDerivatives( -1, 0, (-dfunc)*values[0]*distance, myatoms );
         addAtomDerivatives( -1, i, (+dfunc)*values[0]*distance, myatoms );
         for(unsigned j=0; j<myder.getNumberActive(); ++j) {
-          unsigned jder=myder.getActiveIndex(j); 
+          unsigned jder=myder.getActiveIndex(j);
           if( jder<mybasemulticolvars[mmc]->getNumberOfDerivatives()-9 ) {
-             unsigned kder=basen+jder;
-             myvals.addTemporyDerivative( kder, sw*myder.getDerivative(0, jder) );
+            unsigned kder=basen+jder;
+            myvals.addTemporyDerivative( kder, sw*myder.getDerivative(0, jder) );
           } else {
-             unsigned kder=virbas + (jder - mybasemulticolvars[mmc]->getNumberOfDerivatives() + 9);
-             myvals.addTemporyDerivative( kder, sw*myder.getDerivative(0, jder) );
+            unsigned kder=virbas + (jder - mybasemulticolvars[mmc]->getNumberOfDerivatives() + 9);
+            myvals.addTemporyDerivative( kder, sw*myder.getDerivative(0, jder) );
           }
         }
         myatoms.addTemporyBoxDerivatives( (-dfunc)*values[0]*vir );
