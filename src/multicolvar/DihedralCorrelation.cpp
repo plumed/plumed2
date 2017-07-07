@@ -103,8 +103,8 @@ void DihedralCorrelation::expandShortcut( const std::string& lab, const std::vec
   mc_line.push_back("DIHCOR");
   for(unsigned i=1;i<words.size();++i) mc_line.push_back(words[i]);
   actions.push_back( mc_line );
-  std::vector<std::string> input; input.push_back( lab + ":" ); input.push_back("SUM");
-  input.push_back("ARG=" + lab +"_data" ); actions.push_back( input );
+  std::vector<std::string> input; input.push_back( lab + ":" ); input.push_back("COMBINE");
+  input.push_back("ARG=" + lab +"_data" ); input.push_back("PERIODIC=NO"); actions.push_back( input );
 }
 
 void DihedralCorrelation::registerKeywords( Keywords& keys ) {

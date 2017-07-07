@@ -111,6 +111,7 @@ void Colvar::setBoxDerivativesNoPbc() {
 
 inline
 unsigned Colvar::getNumberOfDerivatives() const {
+  if( isEnergy ) return 1;
   return 3*getNumberOfAtoms() + 9;
 }
 

@@ -82,19 +82,91 @@ ActionWithValue::~ActionWithValue() {
   }
 }
 
-const std::string & ActionWithValue::getLabelOfActionThatCalculates() const {
+ActionWithValue* ActionWithValue::getActionThatCalculates() {
+  // Return this if we have no dependencies
+  if( getDependencies().size()==0 ) return this; 
+  // Return this if it is an action with argument that is not done over a stream
   const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
   if( aa ){
-      if( !aa->done_over_stream ) return getLabel(); 
+      if( !aa->done_over_stream ) return this; 
   }
-  return getLabel();
+  // Return this if we have no dependencies on any ActionWithValue
+  int dd_ind=-1; unsigned i=0;
+  for(const auto & p : getDependencies() ){
+      ActionWithValue* av = dynamic_cast<ActionWithValue*>( p );
+      if( av ){ dd_ind=i; } 
+      i++;
+  } 
+  if( dd_ind<0 ) return this;
+
+  // Retrieve first action in chain 
+  ActionWithValue* av = dynamic_cast<ActionWithValue*>( getDependencies()[dd_ind] );
+  plumed_assert( av ); ActionWithValue* first_av = av->getActionThatCalculates();
+  // Get all actions in chain
+  std::vector<std::string> myactions; first_av->getAllActionLabelsInChain( myactions );
+  // Check all dependencies are looked after in chain
+  for(const auto & p : getDependencies() ){
+      std::string mylab = p->getLabel(); bool found=false;
+      for(unsigned j=0;j<myactions.size();++j){
+          if( mylab==myactions[j] ){ found=true; break; }
+      }
+      plumed_massert( found, "did not find action with label " + mylab + " in chain so cannot do over stream");
+  }
+  return first_av;
 }
 
-void ActionWithValue::addActionToChain( ActionWithValue* act ){
-  for(const auto & p : actions_to_do_after ){ 
-      if( act->getLabel()==p->getLabel() ) return;
+void ActionWithValue::getAllActionLabelsInChain( std::vector<std::string>& mylabels ) const {
+  bool found = false ;
+  for(unsigned i=0;i<mylabels.size();++i){
+      if( getLabel()==mylabels[i] ){ found=true; }
   }
-  actions_to_do_after.push_back( act );
+  if( !found ) mylabels.push_back( getLabel() );
+  for(const auto & p : actions_to_do_after ) p->getAllActionLabelsInChain( mylabels );
+}
+
+void ActionWithValue::getActionsBeforeInChain( const std::string& stop_lab, std::vector<std::string>& mylabels ) const { 
+  for(const auto & p : getDependencies() ){
+      ActionWithValue* av = dynamic_cast<ActionWithValue*>( p );
+      if( av ) av->getActionsBeforeInChain( getLabel(), mylabels );
+  }
+  // Need what is done on this level
+  bool found = false; std::string mylab = getLabel();
+  for(unsigned j=0;j<mylabels.size();++j){
+      if( mylab==mylabels[j] ){ found=true; break; }
+  }
+  if( !found ) mylabels.push_back( mylab );
+  // Return before the action we called from
+  if( mylab==stop_lab ) return;
+
+  // Need all other things done in level after this one
+  for(const auto & p : actions_to_do_after ){
+     bool found = false; std::string mylab = p->getLabel();
+     for(unsigned j=0;j<mylabels.size();++j){
+         if( mylab==mylabels[j] ){ found=true; break; }
+     }
+     if( !found ) mylabels.push_back( p->getLabel() );
+     // Return before the action we called from
+     if( mylab==stop_lab ) return;
+  }
+}
+
+bool ActionWithValue::addActionToChain( const std::vector<std::string>& alabels, ActionWithValue* act ){
+  std::vector<std::string> mylabels; getActionThatCalculates()->getAllActionLabelsInChain( mylabels );
+  // Check action is not already in chain
+  for(unsigned i=0;i<mylabels.size();++i){
+      if( act->getLabel()==mylabels[i] ) return true; 
+  }
+  // Get everything calculated by depdendencies
+  std::vector<std::string> prec_labels; getActionsBeforeInChain( getLabel(), prec_labels );
+  // Check that everything that is required has been calculated
+  for(unsigned i=0;i<alabels.size();++i){
+      bool found=false;
+      for(unsigned j=0;j<prec_labels.size();++j){
+          if( alabels[i]==prec_labels[j] ){ found=true; break; }
+      } 
+      if( !found ) return false;
+  }
+  actions_to_do_after.push_back( act ); return true;
 }
 
 void ActionWithValue::clearInputForces() {
@@ -104,6 +176,10 @@ void ActionWithValue::clearInputForces() {
 void ActionWithValue::clearDerivatives( const bool& force ) {
   const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
   if( aa ){ if( !force && aa->done_over_stream ) return; }
+  else {
+     std::vector<std::string> prec_labels; getActionsBeforeInChain( getLabel(), prec_labels );
+     if( !force && prec_labels.size()>1 ) return;
+  }
   unsigned nt = OpenMP::getGoodNumThreads(values);
   #pragma omp parallel num_threads(nt)
   {
@@ -248,8 +324,8 @@ void ActionWithValue::setGradientsIfNeeded() {
 
 void ActionWithValue::turnOnDerivatives() {
   // Turn on the derivatives in all actions on which we are dependent
-  for(unsigned i=0; i<getDependencies().size(); ++i) {
-    ActionWithValue* vv=dynamic_cast<ActionWithValue*>( getDependencies()[i] );
+  for(const auto & p : getDependencies() ) {
+    ActionWithValue* vv=dynamic_cast<ActionWithValue*>(p);
     if(vv) vv->turnOnDerivatives();
   }
   // Turn on the derivatives
@@ -351,6 +427,9 @@ void ActionWithValue::runAllTasks() {
   unsigned nderivatives = 0;
   if( !noderiv ) nderivatives = getNumberOfStreamedDerivatives();
 
+  // Perform all tasks required before main loop
+  prepareForTasks();
+
   if(timers) stopwatch.start("2 Loop over tasks");
   #pragma omp parallel num_threads(nt)
   {
@@ -416,6 +495,10 @@ void ActionWithValue::getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& 
       // if( values[i]->getRank()==0 ) bufsize += 1 + values[i]->getNumberOfDerivatives();
   }
   for(const auto & p : actions_to_do_after ) p->getSizeOfBuffer( nactive_tasks, bufsize );
+}
+
+void ActionWithValue::prepareForTasks(){
+  for(const auto & p : actions_to_do_after ) p->prepareForTasks();
 }
 
 void ActionWithValue::runTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
@@ -492,7 +575,7 @@ void ActionWithValue::finishComputations( const std::vector<double>& buffer ){
       if( !doNotCalculateDerivatives() && values[i]->getRank()==0 ){ 
           for(unsigned j=0;j<values[i]->getNumberOfDerivatives();++j) values[i]->setDerivative( j, buffer[bufstart+1+j] );
       }
-  } 
+  }
   transformFinalValueAndDerivatives();
   for(const auto & p : actions_to_do_after ){
      if( p->isActive() ) p->finishComputations( buffer );

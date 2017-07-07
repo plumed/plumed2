@@ -64,8 +64,9 @@ void MultiColvarBase::expandShortcut( const std::string& lab, const std::vector<
       input.push_back("ARG=" + lab ); 
       input.push_back("SWITCH=" + keys.find("LESS_THAN")->second  );
       actions.push_back( input );
-      std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_lessthan:" ); sum_inp.push_back("SUM"); sum_inp.push_back("ARG=" + lab + "_lt");
-      actions.push_back( sum_inp ); 
+      std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_lessthan:" ); 
+      sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + lab + "_lt");
+      sum_inp.push_back("PERIODIC=NO"); actions.push_back( sum_inp ); 
   }
   if( keys.count("LESS_THAN1") ){
       for(unsigned i=1;; ++i){
@@ -75,8 +76,9 @@ void MultiColvarBase::expandShortcut( const std::string& lab, const std::vector<
           input.push_back("ARG=" + lab );
           input.push_back("SWITCH=" + keys.find("LESS_THAN" + istr)->second  );
           actions.push_back( input );
-          std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_lessthan" + istr + ":" ); sum_inp.push_back("SUM"); sum_inp.push_back("ARG=" + lab + "_lt" + istr );
-          actions.push_back( sum_inp );
+          std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_lessthan" + istr + ":" ); 
+          sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + lab + "_lt" + istr );
+          sum_inp.push_back("PERIODIC=NO"); actions.push_back( sum_inp );
       }
   }
   // Parse MORE_THAN
@@ -85,8 +87,9 @@ void MultiColvarBase::expandShortcut( const std::string& lab, const std::vector<
       input.push_back("ARG=" + lab );
       input.push_back("SWITCH=" + keys.find("MORE_THAN")->second  );
       actions.push_back( input );
-      std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_morethan:" ); sum_inp.push_back("SUM"); sum_inp.push_back("ARG=" + lab + "_mt");
-      actions.push_back( sum_inp );
+      std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_morethan:" ); 
+      sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + lab + "_mt");
+      sum_inp.push_back("PERIODIC=NO"); actions.push_back( sum_inp );
   }
   if( keys.count("MORE_THAN1") ){
       for(unsigned i=1;; ++i){ 
@@ -96,8 +99,9 @@ void MultiColvarBase::expandShortcut( const std::string& lab, const std::vector<
           input.push_back("ARG=" + lab );
           input.push_back("SWITCH=" + keys.find("MORE_THAN" + istr)->second  );
           actions.push_back( input );
-          std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_morethan" + istr + ":" ); sum_inp.push_back("SUM"); sum_inp.push_back("ARG=" + lab + "_mt" + istr );
-          actions.push_back( sum_inp );
+          std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_morethan" + istr + ":" ); 
+          sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + lab + "_mt" + istr );
+          sum_inp.push_back("PERIODIC=NO"); actions.push_back( sum_inp );
       }
   }
   // Parse ALT_MIN
@@ -131,13 +135,15 @@ void MultiColvarBase::expandShortcut( const std::string& lab, const std::vector<
   }
   // Parse SUM
   if( keys.count("SUM") ){
-      std::vector<std::string> input; input.push_back( lab + "_sum:" ); input.push_back("SUM");
-      input.push_back("ARG=" + lab ); actions.push_back( input );
+      std::vector<std::string> input; input.push_back( lab + "_sum:" ); 
+      input.push_back("COMBINE"); input.push_back("ARG=" + lab ); 
+      input.push_back("PERIODIC=NO"); actions.push_back( input );
   }
   // Parse MEAN
   if( keys.count("MEAN") ){
-      std::vector<std::string> input; input.push_back( lab + "_mean:" ); input.push_back("MEAN");
-      input.push_back("ARG=" + lab ); actions.push_back( input );
+      std::vector<std::string> input; input.push_back( lab + "_mean:" ); input.push_back("COMBINE");
+      input.push_back("ARG=" + lab ); input.push_back("NORMALIZE"); 
+      input.push_back("PERIODIC=NO"); actions.push_back( input );
   }
   // Parse BETWEEN
   if( keys.count("BETWEEN") ){
@@ -145,8 +151,9 @@ void MultiColvarBase::expandShortcut( const std::string& lab, const std::vector<
       input.push_back("ARG=" + lab );
       input.push_back("SWITCH=" + keys.find("BETWEEN")->second  );
       actions.push_back( input );
-      std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_between:" ); sum_inp.push_back("SUM"); sum_inp.push_back("ARG=" + lab + "_bt");
-      actions.push_back( sum_inp );
+      std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_between:" ); 
+      sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + lab + "_bt");
+      sum_inp.push_back("PERIODIC=NO"); actions.push_back( sum_inp );
   }
   if( keys.count("BETWEEN1") ){
       for(unsigned i=1;; ++i){ 
@@ -156,8 +163,9 @@ void MultiColvarBase::expandShortcut( const std::string& lab, const std::vector<
           input.push_back("ARG=" + lab );
           input.push_back("SWITCH=" + keys.find("BETWEEN" + istr)->second  );
           actions.push_back( input );
-          std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_between" + istr + ":" ); sum_inp.push_back("SUM"); sum_inp.push_back("ARG=" + lab + "_bt" + istr );
-          actions.push_back( sum_inp );
+          std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_between" + istr + ":" ); 
+          sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + lab + "_bt" + istr );
+          sum_inp.push_back("PERIODIC=NO"); actions.push_back( sum_inp );
       }
   }
   // Parse HISTOGRAM  
@@ -179,8 +187,8 @@ void MultiColvarBase::expandShortcut( const std::string& lab, const std::vector<
           Tools::convert( lower + i*delr, low_str ); Tools::convert( lower + (i+1)*delr, high_str );
           input.push_back("SWITCH= " + words[0] + " LOWER=" + low_str + " UPPER=" + high_str + " SMEAR=" + smstr );  actions.push_back( input );   
           std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_between" + istr + ":" ); 
-          sum_inp.push_back("SUM"); sum_inp.push_back("ARG=" + lab + "_bt" + istr );
-          actions.push_back( sum_inp );
+          sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + lab + "_bt" + istr );
+          sum_inp.push_back("PERIODIC=NO"); actions.push_back( sum_inp );
       }
   }
 }

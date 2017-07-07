@@ -110,6 +110,8 @@ private:
   void getNumberOfStreamedQuantities( unsigned& nquants ) const ;
   unsigned getNumberOfStreamedDerivatives() const ;
   void getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize );
+  void getActionsBeforeInChain( const std::string& stop_lab, std::vector<std::string>& mylabels ) const ;
+  void getAllActionLabelsInChain( std::vector<std::string>& mylabels ) const ;
 public:
 
 // -------- The action has one value only  ---------------- //
@@ -136,8 +138,8 @@ protected:
 /// Run all calculations in serial
   bool runInSerial() const ;
 public:
-/// Get the labe of the action that does the calculation
-  const std::string & getLabelOfActionThatCalculates() const ;
+/// Get the action that does the calculation
+  ActionWithValue* getActionThatCalculates();
 /// Add a value with a name like label.name
   void addComponent( const std::string& name, const std::vector<unsigned>& shape=std::vector<unsigned>() );
 /// Add a value with a name like label.name that has derivatives
@@ -228,10 +230,12 @@ public:
   virtual void buildCurrentTaskList( std::vector<unsigned>& tflags ) const { plumed_error(); }
 ///
   virtual void selectActiveTasks( std::vector<unsigned>& tflags );
+/// Make sure all tasks required for loop are done before loop starts
+  virtual void prepareForTasks();
 ///
   virtual void performTask( const unsigned& current, MultiValue& myvals ) const { plumed_error(); }
 ///
-  void addActionToChain( ActionWithValue* act );
+  bool addActionToChain( const std::vector<std::string>& alabels, ActionWithValue* act );
 ///
   virtual void transformFinalValueAndDerivatives(){};
 /// Retrieve the forces acting on all values

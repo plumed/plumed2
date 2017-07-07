@@ -110,18 +110,32 @@ Combine::Combine(const ActionOptions&ao):
   parameters(getNumberOfArguments(),0.0),
   powers(getNumberOfArguments(),1.0)
 {
-  parseVector("COEFFICIENTS",coefficients);
-  if(coefficients.size()!=static_cast<unsigned>(getNumberOfArguments()))
-    error("Size of COEFFICIENTS array should be the same as number for arguments");
+  rankOneOutput = getPntrToArgument(0)->getRank()>0 && arg_ends[1]-arg_ends[0]==1;
+  if( rankOneOutput ) { 
+     coefficients.resize( getNumberOfScalarArguments() ); parseVector("COEFFICIENTS",coefficients);
+     if(coefficients.size()!=static_cast<unsigned>(getNumberOfScalarArguments()))
+       error("Size of COEFFICIENTS array should be the same as number for arguments");
+  
+     parameters.resize(getNumberOfScalarArguments()); parseVector("PARAMETERS",parameters);
+     if(parameters.size()!=static_cast<unsigned>(getNumberOfScalarArguments()))
+       error("Size of PARAMETERS array should be the same as number for arguments");
+  
+     powers.resize(getNumberOfScalarArguments()); parseVector("POWERS",powers);
+     if(powers.size()!=static_cast<unsigned>(getNumberOfScalarArguments()))
+       error("Size of POWERS array should be the same as number for arguments");
+  } else {
+     parseVector("COEFFICIENTS",coefficients);
+     if(coefficients.size()!=static_cast<unsigned>(getNumberOfArguments()))
+       error("Size of COEFFICIENTS array should be the same as number for arguments");
 
-  parseVector("PARAMETERS",parameters);
-  if(parameters.size()!=static_cast<unsigned>(getNumberOfArguments()))
-    error("Size of PARAMETERS array should be the same as number for arguments");
+     parseVector("PARAMETERS",parameters);
+     if(parameters.size()!=static_cast<unsigned>(getNumberOfArguments()))
+       error("Size of PARAMETERS array should be the same as number for arguments");
 
-  parseVector("POWERS",powers);
-  if(powers.size()!=static_cast<unsigned>(getNumberOfArguments()))
-    error("Size of POWERS array should be the same as number for arguments");
-
+     parseVector("POWERS",powers);
+     if(powers.size()!=static_cast<unsigned>(getNumberOfArguments()))
+       error("Size of POWERS array should be the same as number for arguments");
+  }
   parseFlag("NORMALIZE",normalize);
 
   if(normalize) {
@@ -146,11 +160,18 @@ Combine::Combine(const ActionOptions&ao):
 
 void Combine::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
   double combine=0.0;
-  for(unsigned i=0; i<coefficients.size(); ++i) {
-    double cv = difference(i,parameters[i],args[i]);   
-    combine+=coefficients[i]*pow(cv,powers[i]);
-    addDerivative(0, i, coefficients[i]*powers[i]*pow(cv,powers[i]-1.0), myvals );
-  };
+  if( args.size()==1 ) {
+      unsigned ind = myvals.getTaskIndex();
+      double cv = getPntrToArgument(0)->difference( parameters[ind], args[0] );
+      combine = coefficients[ind]*pow(cv,powers[ind]); 
+      addDerivative( 0, 0, coefficients[ind]*powers[ind]*pow(cv,powers[ind]-1.0), myvals ); 
+  } else {
+      for(unsigned i=0; i<coefficients.size(); ++i) {
+        double cv = difference(i,parameters[i],args[i]);   
+        combine+=coefficients[i]*pow(cv,powers[i]);
+        addDerivative(0, i, coefficients[i]*powers[i]*pow(cv,powers[i]-1.0), myvals );
+      };
+  }
   setValue( 0, combine, myvals );
 }
 

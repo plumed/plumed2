@@ -249,19 +249,28 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
          else if( narg!=nargt ) error("mismatch between number of arguments specified for different numbered ARG values");
       }
     }
-    std::vector<std::string> vnames; 
+    std::vector<ActionWithValue*> f_actions; 
     for(unsigned j=0;j<arg.size();++j){ 
        if( arg[j]->getRank()>0 ){
-           bool found=false;
-           for(unsigned k=0;k<vnames.size();++k){
-               if( vnames[k]==(arg[j]->getPntrToAction())->getLabelOfActionThatCalculates() ){ found=true; break; }
+           bool found=false; ActionWithValue* myact = (arg[j]->getPntrToAction())->getActionThatCalculates();
+           for(unsigned k=0;k<f_actions.size();++k){
+               if( f_actions[k]==myact ){ found=true; break; }
            }
-           if( !found ) vnames.push_back( (arg[j]->getPntrToAction())->getLabelOfActionThatCalculates() );
+           if( !found ) f_actions.push_back( myact );
        }
     }
-    if( vnames.size()>1 ){
-        for(unsigned i=0;i<arg.size();++i){ if( arg[i]->getRank()>0 ) arg[i]->buildDataStore(); }
-    } else if( vnames.size()==1 ) done_over_stream=true;
+    if( f_actions.size()>1 ){
+        done_over_stream=true; 
+        for(unsigned i=1;i<f_actions.size();++i){
+            if( f_actions[0]->getFullNumberOfTasks()!=f_actions[i]->getFullNumberOfTasks() ){ done_over_stream=false; break; }
+        }
+        if( done_over_stream ){
+            std::vector<std::string> empty(1); empty[0] = f_actions[0]->getLabel();
+            for(unsigned i=1;i<f_actions.size();++i){ f_actions[0]->addActionToChain( empty, f_actions[i] ); f_actions[i]->addDependency( f_actions[0] ); }
+        } else { 
+            for(unsigned i=0;i<arg.size();++i){ if( arg[i]->getRank()>0 ) arg[i]->buildDataStore(); }
+        }
+    } else if( f_actions.size()==1 ) done_over_stream=true;
     requestArguments(arg);
   }
 }

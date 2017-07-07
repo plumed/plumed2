@@ -44,10 +44,21 @@ Function::Function(const ActionOptions&ao):
   createTasksFromArguments(); nderivatives = getNumberOfArguments();
   // Now create the stream of jobs to work through 
   if( done_over_stream ){   // getFullNumberOfTasks()>0   // This is for if we have a function that needs to store - needs though GAT
-      nderivatives = 0; std::vector<ActionWithValue*> tvals; 
+      std::vector<std::string> alabels;
+      for(unsigned i=0;i<getNumberOfArguments();++i){
+          bool found=false; std::string mylab = (getPntrToArgument(i)->getPntrToAction())->getLabel();
+          for(unsigned j=0;j<alabels.size();++j){
+              if( alabels[j]==mylab ){ found=true; break; }
+          }
+          if( !found ) alabels.push_back( mylab );
+      }
+      
+      nderivatives = 0; std::vector<ActionWithValue*> tvals; bool added=false;
       for(unsigned i=0;i<getNumberOfArguments();++i){
           // Add this function to jobs to do in recursive loop in previous action
-          if( getPntrToArgument(i)->getRank()>0 ) (getPntrToArgument(i)->getPntrToAction())->addActionToChain( this ); 
+          if( getPntrToArgument(i)->getRank()>0 ){
+              if( (getPntrToArgument(i)->getPntrToAction())->addActionToChain( alabels, this ) ){ added=true; } 
+          }
           // Check for number of derivatives 
           bool found=false; std::string mylabstr = (getPntrToArgument(i)->getPntrToAction())->getLabel();
           for(unsigned j=0;j<tvals.size();++j){
@@ -58,6 +69,7 @@ Function::Function(const ActionOptions&ao):
               nderivatives += (getPntrToArgument(i)->getPntrToAction())->getNumberOfDerivatives(); 
           }
       }  
+      plumed_massert(added, "could not add action " + getLabel() + " to chain of any of its arguments");
   }
 }
 

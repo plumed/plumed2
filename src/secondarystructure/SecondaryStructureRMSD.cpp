@@ -52,8 +52,8 @@ void SecondaryStructureRMSD::expandShortcut( const std::string& lab, const std::
   }
   actions.push_back( lt_line );
   std::vector<std::string> sum_line; sum_line.push_back( lab + "_lessthan:" ); 
-  sum_line.push_back("SUM"); sum_line.push_back("ARG=" + lab + "_lt" );
-  actions.push_back( sum_line );
+  sum_line.push_back("COMBINE"); sum_line.push_back("ARG=" + lab + "_lt" );
+  sum_line.push_back("PERIODIC=NO"); actions.push_back( sum_line );
 }
 
 void SecondaryStructureRMSD::registerKeywords( Keywords& keys ) {

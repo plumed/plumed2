@@ -183,8 +183,8 @@ class Matheval :
   std::vector<lepton::CompiledExpression> expression_deriv;
   vector<string> var;
   string func;
-  vector<double> values;
-  vector<char*> names;
+  //vector<double> values;
+  //vector<char*> names;
 public:
   explicit Matheval(const ActionOptions&);
   ~Matheval();
@@ -230,9 +230,7 @@ void Matheval::registerKeywords(Keywords& keys) {
 Matheval::Matheval(const ActionOptions&ao):
   Action(ao),
   Function(ao),
-  expression_deriv(getNumberOfArguments()),
-  values(getNumberOfArguments()),
-  names(getNumberOfArguments())
+  evaluator_deriv(getNumberOfArguments())
 {
   parseVector("VAR",var);
   if(var.size()==0) {

@@ -163,6 +163,10 @@ void Action::parseFlag(const std::string&key,bool & t) {
 }
 
 void Action::addDependency(Action*action) {
+  bool found=false;
+  for(unsigned i=0;i<after.size();++i){
+      if( after[i]->getLabel()==action->getLabel() ){ found=true; return; }
+  }
   after.push_back(action);
 }
 
