@@ -76,6 +76,10 @@ bool ActionRegister::checkForShortcut(std::string action){
   return false;
 }
 
+void ActionRegister::getShortcutKeywords( const std::string name, Keywords& keys ) {
+  plumed_massert( sk.count(name)>0, "no shortcut for " + name ); sk[name](keys);
+}
+
 std::vector<std::vector<std::string> > ActionRegister::expandShortcuts( const unsigned& replica_index, std::vector<std::string>& words ){
   std::vector<std::vector<std::string> > actions;
   if( s.count(words[0])>0 ){

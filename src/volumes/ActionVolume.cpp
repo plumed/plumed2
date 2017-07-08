@@ -25,12 +25,17 @@ namespace PLMD {
 namespace volumes {
 
 void ActionVolume::shortcutKeywords( Keywords& keys ) {
+  keys.addFlag("SUM",false,"calculate the sum of all the quantities.");
+  keys.addOutputComponent("_sum","SUM","the sum of all the colvars weighted by the function that determines if we are in the region");
+  keys.addFlag("MEAN",false,"calculate the average value of the colvar inside the region of interest");
+  keys.addOutputComponent("_mean","MEAN","the average values of the colvar in the region of interest");
   keys.add("optional","DATA","the label of an action that calculates multicolvars.  Weighted sums based on the location of the colvars calculated by this action will be calcualted");
   keys.add("optional","LESS_THAN","calcualte the number of colvars that are inside the region of interest and that are less than a certain threshold");
+  keys.addOutputComponent("_lessthan","LESS_THAN","the number of cvs in the region of interest that are less than a certain threshold");
   keys.add("optional","MORE_THAN","calcualte the number of colvars that are inside the region of interest and that are greater that a certain threshold");
+  keys.addOutputComponent("_morethan","MORE_THAN","the number of cvs in the region of interest that are more than a certain threshold");
   keys.add("optional","BETWEEN","calculate the number of colvars that are inside the region of interest and that have a CV value that is between a particular set of bounds");
-  keys.addFlag("SUM",false,"calculate the sum of all the quantities.");
-  keys.addFlag("MEAN",false,"calculate the average value of the colvar inside the region of interest");
+  keys.addOutputComponent("_between","BETWEEN","the number of cvs in the region of interest that are within a certain range");
 }
 
 void ActionVolume::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
@@ -48,7 +53,10 @@ void ActionVolume::expandShortcut( const std::string& lab, const std::vector<std
           me_input.push_back("MATHEVAL"); me_input.push_back("ARG1=" + mc_lab); 
           me_input.push_back("ARG2=" + lab); me_input.push_back("FUNC=x*y"); 
           me_input.push_back("PERIODIC=NO"); actions.push_back( me_input );
-          std::vector<std::string> input; input.push_back( lab + "_sum:" ); input.push_back("COMBINE");
+          std::vector<std::string> input; 
+          if( keys.count("SUM") ) input.push_back( lab + "_sum:" );
+          else input.push_back( lab + "_denom:"); 
+          input.push_back("COMBINE");
           input.push_back("ARG=" + lab + "_prod"); input.push_back("PERIODIC=NO"); actions.push_back( input );
       }
       if( keys.count("MEAN") ){
@@ -58,7 +66,9 @@ void ActionVolume::expandShortcut( const std::string& lab, const std::vector<std
           norm_in.push_back("PERIODIC=NO"); actions.push_back( norm_in );
           // And calculate final quantity which is mean of these two actions
           std::vector<std::string> me_input2; me_input2.push_back( lab + "_mean:" );
-          me_input2.push_back("MATHEVAL"); me_input2.push_back("ARG1=" + lab + "_sum" );
+          me_input2.push_back("MATHEVAL"); 
+          if( keys.count("SUM") ) me_input2.push_back("ARG1=" + lab + "_sum" );
+          else me_input2.push_back("ARG1=" + lab + "_denom"); 
           me_input2.push_back("ARG2=" + lab + "_norm"); me_input2.push_back("FUNC=x/y");
           me_input2.push_back("PERIODIC=NO"); actions.push_back( me_input2 );
       }
@@ -74,7 +84,7 @@ void ActionVolume::expandShortcut( const std::string& lab, const std::vector<std
           me_input.push_back("ARG2=" + lab); me_input.push_back("FUNC=x*y");
           me_input.push_back("PERIODIC=NO"); actions.push_back( me_input );
           // And the final sum
-          std::vector<std::string> input; input.push_back( lab + "_ltsum:" ); input.push_back("COMBINE");
+          std::vector<std::string> input; input.push_back( lab + "_lessthan:" ); input.push_back("COMBINE");
           input.push_back("ARG=" + lab + "_lt"); input.push_back("PERIODIC=NO"); actions.push_back( input );
       }
       if( keys.count("MORE_THAN") ){
@@ -89,7 +99,7 @@ void ActionVolume::expandShortcut( const std::string& lab, const std::vector<std
           me_input.push_back("ARG2=" + lab); me_input.push_back("FUNC=x*y");
           me_input.push_back("PERIODIC=NO"); actions.push_back( me_input );
           // And the final sum
-          std::vector<std::string> input; input.push_back( lab + "_mtsum:" ); input.push_back("COMBINE");
+          std::vector<std::string> input; input.push_back( lab + "_morethan:" ); input.push_back("COMBINE");
           input.push_back("ARG=" + lab + "_mt"); input.push_back("PERIODIC=NO"); actions.push_back( input );
       }
       if( keys.count("BETWEEN") ){
@@ -104,7 +114,7 @@ void ActionVolume::expandShortcut( const std::string& lab, const std::vector<std
           me_input.push_back("ARG2=" + lab); me_input.push_back("FUNC=x*y");
           me_input.push_back("PERIODIC=NO"); actions.push_back( me_input );
           // And the final sum
-          std::vector<std::string> input; input.push_back( lab + "_btsum:" ); input.push_back("COMBINE");
+          std::vector<std::string> input; input.push_back( lab + "_between:" ); input.push_back("COMBINE");
           input.push_back("ARG=" + lab + "_bt"); input.push_back("PERIODIC=NO"); actions.push_back( input );
       }
   } else if( keys.count("SUM") ) { 

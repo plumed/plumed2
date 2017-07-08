@@ -99,6 +99,7 @@ PLUMED_REGISTER_SHORTCUT(AlphaRMSD,"ALPHARMSD")
 
 void AlphaRMSD::shortcutKeywords( Keywords& keys ){
   SecondaryStructureRMSD::shortcutKeywords( keys );
+  keys.addOutputComponent("_lessthan","default","the number of residues that have an rmsd less than a threshold");
 }
 
 void AlphaRMSD::expandShortcut( const std::string& lab, const std::vector<std::string>& words,

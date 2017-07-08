@@ -101,6 +101,7 @@ PLUMED_REGISTER_SHORTCUT(ParabetaRMSD,"PARABETARMSD")
 
 void ParabetaRMSD::shortcutKeywords( Keywords& keys ){
   SecondaryStructureRMSD::shortcutKeywords( keys );
+  keys.addOutputComponent("_low_lessthan","default","the number of residues that have an rmsd less than a threshold");
 }
 
 void ParabetaRMSD::expandShortcut( const std::string& lab, const std::vector<std::string>& words,

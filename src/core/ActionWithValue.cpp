@@ -21,6 +21,9 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithValue.h"
 #include "ActionWithArguments.h"
+#include "PlumedMain.h"
+#include "ActionSet.h"
+#include "ActionRegister.h"
 #include "tools/Stopwatch.h"
 #include "tools/Exception.h"
 #include "tools/OpenMP.h"
@@ -359,7 +362,28 @@ void ActionWithValue::interpretDataLabel( const std::string& mystr, ActionWithAr
       args.push_back( values[0] ); values[0]->interpretDataRequest( myuser->getLabel(), "" ); 
   } else if( mystr==getLabel() + ".*" ){
       // Retrieve all scalar values
-      retrieveAllScalarValuesInLoop( args );
+      if( actions_to_do_after.size()==0 ){
+          retrieveAllScalarValuesInLoop( args ); 
+      } else if( actionRegister().checkForShortcut(getName()) ) {  
+          Keywords skeys; actionRegister().getShortcutKeywords( getName(), skeys );
+          std::vector<std::string> out_comps( skeys.getAllOutputComponents() );
+          for(unsigned i=0;i<out_comps.size();++i){
+              std::string keyname; bool donumtest = skeys.getKeywordForThisOutput( out_comps[i], keyname );
+              if( donumtest ) {
+                  if( skeys.numbered( keyname ) ){
+                      for(unsigned j=1;;++j){
+                          std::string numstr; Tools::convert( j, numstr );
+                          ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getLabel() + out_comps[i] + numstr );
+                          if( !action ) break;
+                          args.push_back( action->getPntrToValue() ); 
+                      }
+                  }
+              } 
+              ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getLabel() + out_comps[i] );
+              if( action ) args.push_back( action->getPntrToValue() );
+          }
+          if( args.size()==0 ) myuser->error("could not find any actions created by shortcuts in action");
+      }
       for(unsigned j=0;j<args.size();++j) args[j]->interpretDataRequest( myuser->getLabel(), "" );
   } else if( mystr.find(".")!=std::string::npos && exists( mystr ) ) {
       // Retrieve value with specific name

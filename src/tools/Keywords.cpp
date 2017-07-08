@@ -640,4 +640,13 @@ bool Keywords::outputComponentExists( const std::string& name, const bool& custo
   return false;
 }
 
+const std::vector<std::string>& Keywords::getAllOutputComponents() const {
+  return cnames;
+}
+
+bool Keywords::getKeywordForThisOutput( const std::string& oname, std::string& keyname ) const {
+  if( !exists(ckey.find(oname)->second) ) return false;
+  keyname = ckey.find(oname)->second; return true;  
+}
+
 }

@@ -72,6 +72,8 @@ public:
   bool check(std::string action);
 /// Add a shortcut that expands a simpler action into something more complex
   void addShortcut(std::string key, keywords_pointer kp, shortcut_pointer sp );
+/// Get the list of shortcuts for a particular action
+  void getShortcutKeywords( const std::string name, Keywords& keys );
 /// Remove a shortcut
   void removeShortcut(std::string key);
 /// Check if an action has a shortcut associated with it

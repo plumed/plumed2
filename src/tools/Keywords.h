@@ -154,6 +154,10 @@ public:
   void addOutputComponent( const std::string& name, const std::string& key, const std::string& descr );
 /// Has a component with this name been added?
   bool outputComponentExists( const std::string& name, const bool& custom ) const ;
+/// Get the full list of output components
+  const std::vector<std::string>& getAllOutputComponents() const ;
+/// Get the keyword that tells PLUMED to calculate this particular quantity
+  bool getKeywordForThisOutput( const std::string& oname, std::string& keyname ) const ;
 };
 
 }

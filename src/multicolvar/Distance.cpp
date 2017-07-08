@@ -126,6 +126,7 @@ public:
 };
 
 PLUMED_REGISTER_ACTION(Distance,"DISTANCE")
+PLUMED_REGISTER_SHORTCUT(Distance,"DISTANCE")
 PLUMED_REGISTER_SHORTCUT(Distance,"DISTANCES")
 
 void Distance::shortcutKeywords( Keywords& keys ){
