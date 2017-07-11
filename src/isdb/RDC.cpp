@@ -63,10 +63,11 @@ Common Gyromagnetic Ratios (C.G.S)
 - H(1) 26.7513
 - C(13) 6.7261
 - N(15) -2.7116
-- NH -72.5388
-- CH 179.9319
-- CN -18.2385
-- CC 45.2404
+and their products (this is what is given in input using the keyword GYROM)
+- N-H -72.5388
+- C-H 179.9319
+- C-N -18.2385
+- C-C 45.2404
 
 This collective variable calculates the Residual Dipolar Coupling for a set of couple of atoms using the above definition.
 From the calculated RDCs and a set of experimental values it calculates either their correlation or the squared quality factor
@@ -107,9 +108,9 @@ ATOMS5=92,93
 LABEL=nh
 ... RDC
 
-STATS ARG=nh.* PARAMETERS=8.17,-8.271,-10.489,-9.871,-9.152
+st: STATS ARG=nh.* PARAMETERS=8.17,-8.271,-10.489,-9.871,-9.152
 
-rdce: RESTRAINT ARG=nh.corr KAPPA=0. SLOPE=-25000.0 AT=1.
+rdce: RESTRAINT ARG=st.corr KAPPA=0. SLOPE=-25000.0 AT=1.
 
 RDC ...
 GYROM=-72.5388
@@ -123,7 +124,7 @@ ATOMS5=92,93 COUPLING5=-9.152
 LABEL=svd
 ... RDC
 
-PRINT ARG=nh.corr,rdce.bias FILE=colvar
+PRINT ARG=st.corr,rdce.bias FILE=colvar
 PRINT ARG=svd.* FILE=svd
 \endplumedfile
 (See also \ref PRINT, \ref RESTRAINT)
