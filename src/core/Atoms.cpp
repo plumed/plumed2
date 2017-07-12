@@ -463,14 +463,26 @@ double Atoms::getKbT()const {
 
 
 void Atoms::createFullList(int*n) {
-  vector<AtomNumber> fullListTmp;
-  for(unsigned i=0; i<actions.size(); i++) if(actions[i]->isActive())
-      fullListTmp.insert(fullListTmp.end(),actions[i]->getUnique().begin(),actions[i]->getUnique().end());
-  std::sort(fullListTmp.begin(),fullListTmp.end());
-  int nn=std::unique(fullListTmp.begin(),fullListTmp.end())-fullListTmp.begin();
-  fullList.resize(nn);
-  for(int i=0; i<nn; ++i) fullList[i]=fullListTmp[i].index();
-  *n=nn;
+  if(!massAndChargeOK && shareMassAndChargeOnlyAtFirstStep) {
+    *n=natoms;
+    fullList.resize(natoms);
+    for(unsigned i=0;i<natoms;i++) fullList[i]=i;
+  } else {
+    std::set<AtomNumber> unique;
+    for(unsigned i=0; i<actions.size(); i++) {
+      if(actions[i]->isActive()) {
+        if(!actions[i]->getUnique().empty()) {
+          atomsNeeded=true;
+          // unique are the local atoms
+          unique.insert(actions[i]->getUnique().begin(),actions[i]->getUnique().end());
+        }
+      }
+    }
+    fullList.resize(0);
+    fullList.reserve(unique.size());
+    for(const auto & p : unique) fullList.push_back(p.index());
+    *n=fullList.size();
+  }
 }
 
 void Atoms::getFullList(int**x) {
