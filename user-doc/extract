@@ -10,19 +10,19 @@ mkdir automatic
 long_version="$(../src/lib/plumed --no-mpi info --long-version)"
 git_version="$(../src/lib/plumed --no-mpi info --git-version)"
 
-cat > automatic/version.tmp << EOF
+cat > automatic/VERSION.list << EOF
 This manual has been compiled from PLUMED version <b> $long_version </b>
 (git version: <b> $git_version </b>).
 EOF
 
 if test "$TRAVIS" == true ; then
-cat >> automatic/version.tmp << EOF
+cat >> automatic/VERSION.list << EOF
 Manual built on Travis CI for branch $TRAVIS_BRANCH.
 EOF
 fi
 
 if test -d regtests ; then
-cat >> automatic/version.tmp << EOF
+cat >> automatic/VERSION.list << EOF
 
 Regtest results for this version can be found <a href="../regtests/report.html">here</a>.
 EOF
