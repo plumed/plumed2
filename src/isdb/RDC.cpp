@@ -69,7 +69,8 @@ and their products (this is what is given in input using the keyword GYROM)
 - C-N -18.2385
 - C-C 45.2404
 
-This collective variable calculates the Residual Dipolar Coupling for a set of couple of atoms using the above definition.
+This collective variable calculates the Residual Dipolar Coupling for a set of couple of atoms using 
+the above definition \cite Camilloni:2015ka .
 From the calculated RDCs and a set of experimental values it calculates either their correlation or the squared quality factor
 
 \f[
@@ -137,20 +138,7 @@ PRINT ARG=svd.* FILE=svd
 Calculates the Pseudocontact shift of a nucleus determined by a metal ion.
 
 The PCS of an atomic nucleus depends on the \f$\theta\f$ angle between the vector from the spin-label to the nucleus
- and the external magnetic field and the module of the vector itself.
-
-\f[
-D=D_{max}0.5(3\cos^2(\theta)-1)
-\f]
-
-where
-
-\f[
-D_{max}=-\mu_0\gamma_1\gamma_2h/(8\pi^3r^3)
-\f]
-
-that is the maximal value of the dipolar coupling for the two nuclear spins with gyromagnetic ratio \f$\gamma\f$.
-\f$\mu\f$ is the magnetic constant and h is the Planck constant.
+ and the external magnetic field and the module of the vector itself \cite Camilloni:2015jf .
 
 PCSs can also be calculated using a Single Value Decomposition approach, in this case the code rely on the
 a set of function from the GNU Scientific Library (GSL). (With SVD forces are not currently implemented).
@@ -159,9 +147,9 @@ Metainference simulations can be performed with this CV and \ref METAINFERENCE .
 
 \par Examples
 
-In the following example five N-H RDCs are defined and their correlation with
+In the following example five PCSs are defined and their correlation with
 respect to a set of experimental data is calculated and restrained. In addition,
-and only for analysis purposes, the same RDCs are calculated using a Single Value
+and only for analysis purposes, the same PCSs are calculated using a Single Value
 Decomposition algorithm.
 
 \plumedfile
