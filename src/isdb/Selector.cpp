@@ -29,7 +29,7 @@ using namespace std;
 namespace PLMD {
 namespace isdb {
 
-//+PLUMEDOC GENERIC SELECTOR
+//+PLUMEDOC ISDB_GENERIC SELECTOR
 /*
 
 */

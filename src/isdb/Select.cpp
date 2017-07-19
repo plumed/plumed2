@@ -32,7 +32,7 @@ using namespace std;
 namespace PLMD {
 namespace isdb {
 
-//+PLUMEDOC FUNCTION SELECT
+//+PLUMEDOC ISDB_FUNCTION SELECT
 /*
 
 */

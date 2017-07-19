@@ -34,7 +34,7 @@ using namespace std;
 namespace PLMD {
 namespace isdb {
 
-//+PLUMEDOC BIAS COEVOLUTION
+//+PLUMEDOC ISDB_BIAS COEVOLUTION
 /*
 
 

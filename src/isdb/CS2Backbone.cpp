@@ -48,7 +48,7 @@ using namespace std;
 namespace PLMD {
 namespace isdb {
 
-//+PLUMEDOC COLVAR CS2BACKBONE
+//+PLUMEDOC ISDB_COLVAR CS2BACKBONE
 /*
 This collective variable calculates the backbone chemical shifts for a protein.
 

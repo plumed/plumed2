@@ -31,7 +31,7 @@ using namespace std;
 namespace PLMD {
 namespace isdb {
 
-//+PLUMEDOC COLVAR FRET
+//+PLUMEDOC ISDB_COLVAR FRET
 /*
 Calculate the FRET efficiency between a pair of atoms.
 The efficiency is calculated using the Forster relation:

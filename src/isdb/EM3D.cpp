@@ -39,7 +39,7 @@ using namespace std;
 namespace PLMD {
 namespace isdb {
 
-//+PLUMEDOC COLVAR EM3D
+//+PLUMEDOC ISDB_COLVAR EM3D
 /*
 Put Documentation here
 

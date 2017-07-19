@@ -36,7 +36,7 @@ using namespace std;
 namespace PLMD {
 namespace isdb {
 
-//+PLUMEDOC BIAS METAINFERENCE
+//+PLUMEDOC ISDB_BIAS METAINFERENCE
 /*
 Calculate the Metainference energy for a set of back calculated experimental data.
 

@@ -37,7 +37,7 @@ using namespace std;
 namespace PLMD {
 namespace isdb {
 
-//+PLUMEDOC COLVAR RDC
+//+PLUMEDOC ISDB_COLVAR RDC
 /*
 Calculates the (Residual) Dipolar Coupling between two atoms.
 

@@ -32,7 +32,7 @@ using namespace std;
 namespace PLMD {
 namespace isdb {
 
-//+PLUMEDOC COLVAR NOE
+//+PLUMEDOC ISDB_COLVAR NOE
 /*
 Calculates NOE intensities as sums of 1/r^6, also averaging over multiple equivalent atoms
 or ambiguous NOE.

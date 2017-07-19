@@ -41,9 +41,8 @@ using namespace std;
 namespace PLMD {
 namespace isdb {
 
-//+PLUMEDOC COLVAR SAXS
+//+PLUMEDOC ISDB_COLVAR SAXS
 /*
-
 Calculate SAXS scattered intensity using the Debye equation.
 
 Intensities are calculated for a set of scattering lenght set using QVALUES numbered keywords, QVALUE cannot be 0.

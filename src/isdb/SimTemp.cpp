@@ -37,7 +37,7 @@ using namespace std;
 namespace PLMD {
 namespace isdb {
 
-//+PLUMEDOC BIAS SIMTEMP
+//+PLUMEDOC ISDB_BIAS SIMTEMP
 /*
 
 */

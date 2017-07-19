@@ -32,7 +32,7 @@ using namespace std;
 namespace PLMD {
 namespace isdb {
 
-//+PLUMEDOC COLVAR JCOUPLING
+//+PLUMEDOC ISDB_COLVAR JCOUPLING
 /*
 Calculates \f$^3J\f$ coupling constants for a dihedral angle.
 
