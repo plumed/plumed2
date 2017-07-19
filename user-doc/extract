@@ -33,7 +33,7 @@ echo "- Changes for \\subpage $(cat $file | grep "@page" | awk '{print $2}')"
 done > automatic/CHANGES.list
 
 if test "$make_pdfdoc" = yes ; then
-cat > automatic/pdfmanual.tmp << \EOF
+cat > automatic/PDFMANUAL.list << \EOF
 \htmlonly
 An experimental PDF copy of this manual can be found
 <a href="../manual.pdf"> here</a>, but the html documentation should 
@@ -51,7 +51,7 @@ please do not print it!
 \endhtmlonly
 EOF
 else
-touch automatic/pdfmanual.tmp
+touch automatic/PDFMANUAL.list
 fi
 
 # Check for files that register actions with no documentation
