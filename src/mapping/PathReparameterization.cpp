@@ -55,7 +55,7 @@ void PathReparameterization::calcCurrentPathSpacings( const int& istart, const i
   int incr=1; if( istart>iend ) { incr=-1; }
 
   for(int i=istart+incr; loopEnd(i,iend+incr,incr)==false; i+=incr) {
-    len[i] = mypath[i-incr]->calc( mypath[i]->getReferencePositions(), pbc, args, mypath[i]->getReferenceArguments(), mypack, false );
+    mypack.clear(); len[i] = mypath[i-incr]->calc( mypath[i]->getReferencePositions(), pbc, args, mypath[i]->getReferenceArguments(), mypack, false );
     sumlen[i] = sumlen[i-incr] + len[i];
     //printf("FRAME %d TO FRAME %d EQUALS %f : %f \n",i-incr,i,len[i],sumlen[i] );
   }

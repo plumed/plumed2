@@ -48,27 +48,22 @@ void AtomValuePack::makeWhole(){
 }
 
 void AtomValuePack::updateUsingIndices() {
-  if( myvals.updateComplete() ) return;
+#ifdef DNDEBUG
+  for(unsigned j=0;j<mycolv->getNumberOfComponents();++j) plumed_dbg_assert( myvals.getNumberActive((mycolv->getPntrToOutput(j))->getPositionInStream())==0 );
+#endif  
 
-  unsigned jactive=0;
   for(unsigned i=0; i<natoms; ++i) {
-    unsigned base=3*indices[i];
-    if( myvals.isActive( base ) ) { sort_vector[jactive]=indices[i]; jactive++; }
-  }
-  std::sort( sort_vector.begin(), sort_vector.begin()+jactive );
-
-  myvals.emptyActiveMembers();
-  for(unsigned i=0; i<jactive; ++i) {
-    unsigned base=3*sort_vector[i]; // indices[i];
-    myvals.putIndexInActiveArray( base );
-    myvals.putIndexInActiveArray( base + 1 );
-    myvals.putIndexInActiveArray( base + 2 );
+    unsigned base=3*indices[i]; // indices[i];
+    for(unsigned j=0;j<mycolv->getNumberOfComponents();++j){
+         myvals.updateIndex( (mycolv->getPntrToOutput(j))->getPositionInStream(), base );
+         myvals.updateIndex( (mycolv->getPntrToOutput(j))->getPositionInStream(), base + 1 );
+         myvals.updateIndex( (mycolv->getPntrToOutput(j))->getPositionInStream(), base + 2 );
+    }
   }
   unsigned nvir=3*mycolv->getNumberOfAtoms();
-  if( myvals.isActive( nvir ) ) {
-    for(unsigned i=0; i<9; ++i) myvals.putIndexInActiveArray( nvir + i );
+  for(unsigned j=0;j<mycolv->getNumberOfComponents();++j){ 
+      for(unsigned i=0; i<9; ++i) myvals.updateIndex( (mycolv->getPntrToOutput(j))->getPositionInStream(), nvir + i );
   }
-  myvals.completeUpdate();
 }
 
 void AtomValuePack::setBoxDerivativesNoPbc(const unsigned& ival) {

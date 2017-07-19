@@ -102,8 +102,9 @@ void Highest::transformFinalValueAndDerivatives() {
           nm += getPntrToArgument(i)->getNumberOfValues();
       }
       tvals.clearAll(); (getPntrToArgument(aind)->getPntrToAction())->rerunTask( hind - nm, tvals );
-      for(unsigned i=0;i<tvals.getNumberActive();++i){
-          unsigned ider = tvals.getActiveIndex(i); val0->addDerivative( ider, tvals.getDerivative( getPntrToArgument(aind)->getPositionInStream(), ider ) );
+      unsigned istrn = getPntrToArgument(aind)->getPositionInStream();
+      for(unsigned i=0;i<tvals.getNumberActive(istrn);++i){
+          unsigned ider = tvals.getActiveIndex(istrn,i); val0->addDerivative( ider, tvals.getDerivative( istrn, ider ) );
       }
   }
 }

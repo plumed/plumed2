@@ -25,7 +25,6 @@
 #include <vector>
 #include "core/ActionAtomistic.h"
 #include "core/ActionWithValue.h"
-#include "tools/DynamicList.h"
 
 namespace PLMD {
 namespace multicolvar {
@@ -48,6 +47,8 @@ private:
   std::vector< std::vector<unsigned> > ablocks;
 /// Atom numbers for centers
   std::vector<unsigned> catom_indices;
+/// Forces on virtual atoms if required
+  std::vector<Vector> vatom_forces;
 protected:
 /// Add a value to the action
   void addValue();

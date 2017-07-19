@@ -244,7 +244,7 @@ void Mapping::apply() {
   if( doNotCalculateDerivatives() ) return;
   std::fill(forcesToApply.begin(),forcesToApply.end(),0);
   if( getForcesFromValues( forcesToApply ) ){
-      setForcesOnArguments( forcesToApply );
+      setForcesOnArguments( forcesToApply, 0 );
       setForcesOnAtoms( forcesToApply, getNumberOfArguments()  );
   }
 }

@@ -76,8 +76,7 @@ double OptimalRMSD::calc( const std::vector<Vector>& pos, ReferenceValuePack& my
   // myder.clear(); 
   if( myder.noDerivatives() ) return d;
   for(unsigned i=0; i<pos.size(); ++i) myder.setAtomDerivatives( i, myder.getAtomVector()[i] );
-  if( !myder.updateComplete() ) myder.updateDynamicLists();
-  return d;
+  myder.updateDynamicLists(); return d;
 }
 
 void OptimalRMSD::extractAtomicDisplacement( const std::vector<Vector>& pos, std::vector<Vector>& direction ) const {
@@ -114,9 +113,7 @@ double OptimalRMSD::projectAtomicDisplacementOnVector( const bool& normalized, c
   } else {
     for(unsigned iat=0; iat<getNumberOfAtoms(); iat++) mypack.addAtomDerivatives( iat, (matmul(trot,vecs[iat]) - v1) );
   }
-  if( !mypack.updateComplete() ) mypack.updateDynamicLists();
-
-  return proj;
+  mypack.updateDynamicLists(); return proj;
 }
 
 }

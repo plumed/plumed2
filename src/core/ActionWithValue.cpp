@@ -21,6 +21,8 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithValue.h"
 #include "ActionWithArguments.h"
+#include "ActionAtomistic.h"
+#include "ActionWithVirtualAtom.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
 #include "ActionRegister.h"
@@ -67,6 +69,7 @@ ActionWithValue::ActionWithValue(const ActionOptions&ao):
   serial(false),
   timers(false),
   nactive_tasks(0)
+  action_to_do_after(NULL)
 {
   if( keywords.exists("NUMERICAL_DERIVATIVES") ) parseFlag("NUMERICAL_DERIVATIVES",numericalDerivatives);
   if(numericalDerivatives) log.printf("  using numerical derivatives\n");
@@ -124,52 +127,27 @@ void ActionWithValue::getAllActionLabelsInChain( std::vector<std::string>& mylab
       if( getLabel()==mylabels[i] ){ found=true; }
   }
   if( !found ) mylabels.push_back( getLabel() );
-  for(const auto & p : actions_to_do_after ) p->getAllActionLabelsInChain( mylabels );
-}
-
-void ActionWithValue::getActionsBeforeInChain( const std::string& stop_lab, std::vector<std::string>& mylabels ) const { 
-  for(const auto & p : getDependencies() ){
-      ActionWithValue* av = dynamic_cast<ActionWithValue*>( p );
-      if( av ) av->getActionsBeforeInChain( getLabel(), mylabels );
-  }
-  // Need what is done on this level
-  bool found = false; std::string mylab = getLabel();
-  for(unsigned j=0;j<mylabels.size();++j){
-      if( mylab==mylabels[j] ){ found=true; break; }
-  }
-  if( !found ) mylabels.push_back( mylab );
-  // Return before the action we called from
-  if( mylab==stop_lab ) return;
-
-  // Need all other things done in level after this one
-  for(const auto & p : actions_to_do_after ){
-     bool found = false; std::string mylab = p->getLabel();
-     for(unsigned j=0;j<mylabels.size();++j){
-         if( mylab==mylabels[j] ){ found=true; break; }
-     }
-     if( !found ) mylabels.push_back( p->getLabel() );
-     // Return before the action we called from
-     if( mylab==stop_lab ) return;
-  }
+  if( action_to_do_after ) action_to_do_after->getAllActionLabelsInChain( mylabels );
 }
 
 bool ActionWithValue::addActionToChain( const std::vector<std::string>& alabels, ActionWithValue* act ){
-  std::vector<std::string> mylabels; getActionThatCalculates()->getAllActionLabelsInChain( mylabels );
+  if( action_to_do_after ){ bool state=action_to_do_after->addActionToChain( alabels, act ); return state; }
+
   // Check action is not already in chain
+  std::vector<std::string> mylabels; getActionThatCalculates()->getAllActionLabelsInChain( mylabels );
   for(unsigned i=0;i<mylabels.size();++i){
       if( act->getLabel()==mylabels[i] ) return true; 
   }
-  // Get everything calculated by depdendencies
-  std::vector<std::string> prec_labels; getActionsBeforeInChain( getLabel(), prec_labels );
+
   // Check that everything that is required has been calculated
   for(unsigned i=0;i<alabels.size();++i){
       bool found=false;
-      for(unsigned j=0;j<prec_labels.size();++j){
-          if( alabels[i]==prec_labels[j] ){ found=true; break; }
+      for(unsigned j=0;j<mylabels.size();++j){
+          if( alabels[i]==mylabels[j] ){ found=true; break; }
       } 
-      if( !found ) return false;
+      if( !found ) return false; 
   }
-  actions_to_do_after.push_back( act ); return true;
+  action_to_do_after=act; act->addDependency( this ); return true;
 }
 
 void ActionWithValue::clearInputForces() {
@@ -179,9 +157,11 @@ void ActionWithValue::clearInputForces() {
 void ActionWithValue::clearDerivatives( const bool& force ) {
   const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
   if( aa ){ if( !force && aa->done_over_stream ) return; }
-  else {
-     std::vector<std::string> prec_labels; getActionsBeforeInChain( getLabel(), prec_labels );
-     if( !force && prec_labels.size()>1 ) return;
+  else if( getDependencies().size()>0 ) {
+     // This is a way to check if this is a Volume.  It is not very good
+     const ActionAtomistic* aat = dynamic_cast<const ActionAtomistic*>( this );
+     const ActionWithVirtualAtom* av = dynamic_cast<const ActionWithVirtualAtom*>( getDependencies()[0] );
+     if( aat && !av && !force ) return;  
   }
   unsigned nt = OpenMP::getGoodNumThreads(values);
   #pragma omp parallel num_threads(nt)
@@ -189,7 +169,7 @@ void ActionWithValue::clearDerivatives( const bool& force ) {
     #pragma omp for
     for(unsigned i=0; i<values.size(); i++) values[i]->clearDerivatives();
   }
-  for(const auto & p : actions_to_do_after ) p->clearDerivatives( true ); 
+  if( action_to_do_after ) action_to_do_after->clearDerivatives( true ); 
 }
 
 // -- These are the routine for copying the value pointers to other classes -- //
@@ -362,7 +342,7 @@ void ActionWithValue::interpretDataLabel( const std::string& mystr, ActionWithAr
       args.push_back( values[0] ); values[0]->interpretDataRequest( myuser->getLabel(), "" ); 
   } else if( mystr==getLabel() + ".*" ){
       // Retrieve all scalar values
-      if( actions_to_do_after.size()==0 ){
+      if( !action_to_do_after ){
           retrieveAllScalarValuesInLoop( args ); 
       } else if( actionRegister().checkForShortcut(getName()) ) {  
           Keywords skeys; actionRegister().getShortcutKeywords( getName(), skeys );
@@ -410,7 +390,7 @@ void ActionWithValue::addTaskToList( const unsigned& taskCode ) {
 
 void ActionWithValue::selectActiveTasks( std::vector<unsigned>& tflags ){
   buildCurrentTaskList( tflags );
-  for(const auto & p : actions_to_do_after ) p->selectActiveTasks( tflags );
+  if( action_to_do_after ) action_to_do_after->selectActiveTasks( tflags );
 //  for(unsigned i=0;i<values.size();++i){
 //      if( values[i]->getRank()>0 ) values[i]->activateTasks( tflags );
 //  }
@@ -449,8 +429,7 @@ void ActionWithValue::runAllTasks() {
 
   // Recover the number of derivatives we require
   unsigned nderivatives = 0;
-  if( !noderiv ) nderivatives = getNumberOfStreamedDerivatives();
-
+  if( !noderiv ) getNumberOfStreamedDerivatives( nderivatives );
   // Perform all tasks required before main loop
   prepareForTasks();
 
@@ -494,18 +473,14 @@ void ActionWithValue::runAllTasks() {
   if(timers) stopwatch.stop("4 Finishing computations");
 }
 
-unsigned ActionWithValue::getNumberOfStreamedDerivatives() const {
-  unsigned nderivatives = getNumberOfDerivatives();
-  for(const auto & p : actions_to_do_after ){
-      unsigned nnd = p->getNumberOfDerivatives();
-      if( nnd>nderivatives ) nderivatives = nnd;
-  }
-  return nderivatives;
+void ActionWithValue::getNumberOfStreamedDerivatives( unsigned& nderivatives ) const {
+  unsigned nnd = getNumberOfDerivatives(); if( nnd>nderivatives ) nderivatives = nnd;
+  if( action_to_do_after ) action_to_do_after->getNumberOfStreamedDerivatives( nderivatives );
 }
 
 void ActionWithValue::getNumberOfStreamedQuantities( unsigned& nquants ) const {
   for(unsigned i=0;i<values.size();++i){ values[i]->streampos=nquants; nquants++; }
-  for(const auto & p : actions_to_do_after ) p->getNumberOfStreamedQuantities( nquants );
+  if( action_to_do_after ) action_to_do_after->getNumberOfStreamedQuantities( nquants );
 }
 
 void ActionWithValue::getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize ){
@@ -518,17 +493,17 @@ void ActionWithValue::getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& 
       }
       // if( values[i]->getRank()==0 ) bufsize += 1 + values[i]->getNumberOfDerivatives();
   }
-  for(const auto & p : actions_to_do_after ) p->getSizeOfBuffer( nactive_tasks, bufsize );
+  if( action_to_do_after ) action_to_do_after->getSizeOfBuffer( nactive_tasks, bufsize );
 }
 
 void ActionWithValue::prepareForTasks(){
-  for(const auto & p : actions_to_do_after ) p->prepareForTasks();
+  if( action_to_do_after ) action_to_do_after->prepareForTasks();
 }
 
 void ActionWithValue::runTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
   myvals.setTaskIndex(task_index); performTask( current, myvals ); 
-  for(const auto & p : actions_to_do_after ){
-     if( p->isActive() ) p->runTask( task_index, current, myvals );
+  if( action_to_do_after ){
+     if( action_to_do_after->isActive() ) action_to_do_after->runTask( task_index, current, myvals );
   }
 }
 
@@ -551,7 +526,7 @@ void ActionWithValue::rerunTask( const unsigned& task_index, MultiValue& myvals 
         av->rerunTask( task_index, myvals );
      }
   }
-  unsigned nquantities = 0; getNumberOfStreamedQuantities( nquantities ); unsigned nderivatives = getNumberOfStreamedDerivatives();
+  unsigned nquantities = 0; getNumberOfStreamedQuantities( nquantities ); unsigned nderivatives = 0; getNumberOfStreamedDerivatives( nderivatives );
   if( myvals.getNumberOfValues()!=nquantities || myvals.getNumberOfDerivatives()!=nderivatives ) myvals.resize( nquantities, nderivatives );
   myvals.setTaskIndex(task_index); performTask( fullTaskList[task_index], myvals );
 }
@@ -560,10 +535,14 @@ void ActionWithValue::gatherAccumulators( const unsigned& taskCode, const MultiV
   for(unsigned i=0;i<values.size();++i){
       unsigned sind = values[i]->streampos, bufstart = values[i]->bufstart; 
       if( values[i]->getRank()==0 ){
+           plumed_dbg_massert( bufstart<buffer.size(), "problem in " + getLabel() );
            buffer[bufstart] += myvals.get(sind);
            if( values[i]->hasDerivatives() ){
-               for(unsigned k=0;k<myvals.getNumberActive();++k){
-                   unsigned kindex = myvals.getActiveIndex(k); buffer[bufstart + 1 + kindex] += myvals.getDerivative(sind,kindex);
+               unsigned ndmax = (values[i]->getPntrToAction())->getNumberOfDerivatives();
+               for(unsigned k=0;k<myvals.getNumberActive(sind);++k){
+                   unsigned kindex = myvals.getActiveIndex(sind,k); 
+                   plumed_dbg_massert( bufstart+1+kindex<buffer.size(), "problem in " + getLabel()  );
+                   buffer[bufstart + 1 + kindex] += myvals.getDerivative(sind,kindex);
                }
            }
       } else if( values[i]->storedata ){
@@ -571,8 +550,8 @@ void ActionWithValue::gatherAccumulators( const unsigned& taskCode, const MultiV
            unsigned vindex = bufstart + taskCode*nspace; buffer[vindex] += myvals.get(sind);
       } 
   }
-  for(const auto & p : actions_to_do_after ){
-     if( p->isActive() ) p->gatherAccumulators( taskCode, myvals, buffer );
+  if( action_to_do_after ){
+     if( action_to_do_after->isActive() ) action_to_do_after->gatherAccumulators( taskCode, myvals, buffer );
   }
 }
 
@@ -586,7 +565,7 @@ void ActionWithValue::retrieveAllScalarValuesInLoop( std::vector<Value*>& myvals
           if( !found ) myvals.push_back( values[i] );
       }
   }
-  for(const auto & p : actions_to_do_after ) p->retrieveAllScalarValuesInLoop( myvals );
+  if( action_to_do_after ) action_to_do_after->retrieveAllScalarValuesInLoop( myvals );
 }
 
 void ActionWithValue::finishComputations( const std::vector<double>& buffer ){
@@ -601,8 +580,8 @@ void ActionWithValue::finishComputations( const std::vector<double>& buffer ){
       }
   }
   transformFinalValueAndDerivatives();
-  for(const auto & p : actions_to_do_after ){
-     if( p->isActive() ) p->finishComputations( buffer );
+  if( action_to_do_after ){
+     if( action_to_do_after->isActive() ) action_to_do_after->finishComputations( buffer );
   }
 }
 
@@ -610,11 +589,6 @@ bool ActionWithValue::getForcesFromValues( std::vector<double>& forces ) const {
    bool at_least_one_forced=false;
    for(unsigned i=0;i<values.size();++i){
        if( values[i]->applyForce( forces ) ) at_least_one_forced=true;
-   }
-   for(const auto & p : actions_to_do_after ){
-       if( p->isActive() ){
-           if( p->getForcesFromValues( forces ) ) at_least_one_forced=true;
-       } 
    }
    return at_least_one_forced;
 }

@@ -45,9 +45,11 @@ friend class ActionWithValue;
 private:
   std::vector<Value*> arguments;
   bool lockRequestArguments;
+  ActionWithValue* getFirstNonStream();
 protected:
   bool done_over_stream;
-  std::vector<unsigned> arg_ends;
+  std::vector<ActionWithValue*> distinct_arguments;
+  std::vector<unsigned> arg_ends, arg_deriv_starts;
 /// This changes the arg keyword in the pdb file
   void expandArgKeywordInPDB( PDB& pdb );
 /// Create a list of tasks from the argument streams
@@ -55,7 +57,7 @@ protected:
 /// Get the total number of input arguments
   unsigned getNumberOfScalarArguments() const ;
 /// Set the forces on the arguments
-  void setForcesOnArguments( const std::vector<double>& forces );
+  void setForcesOnArguments( const std::vector<double>& forces, const unsigned& start );
 public:
 /// Get the scalar product between the gradients of two variables
   double getProjection(unsigned i,unsigned j)const;

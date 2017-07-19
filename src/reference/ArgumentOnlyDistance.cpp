@@ -40,8 +40,7 @@ double ArgumentOnlyDistance::calculate( const std::vector<Value*>& vals, Referen
   double d=calculateArgumentDistance( vals, tmparg, myder, squared );
   if( myder.noDerivatives() ) return d;
 
-  if( !myder.updateComplete() ) myder.updateDynamicLists();
-  return d;
+  myder.updateDynamicLists(); return d;
 }
 
 double ArgumentOnlyDistance::calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg,
@@ -50,8 +49,7 @@ double ArgumentOnlyDistance::calc( const std::vector<Vector>& pos, const Pbc& pb
   double d=calculateArgumentDistance( vals, arg, myder, squared );
   if( myder.noDerivatives() ) return d;
 
-  if( !myder.updateComplete() ) myder.updateDynamicLists();
-  return d;
+  myder.updateDynamicLists(); return d;
 }
 
 }

@@ -286,6 +286,7 @@ usepbc(true)
   if( all_atoms.size()>0 ) {
       for(unsigned i=0; i<ablocks[0].size(); ++i) addTaskToList( i );
   }
+  if( catom_indices.size()==0 ) vatom_forces.resize( getNumberOfAtoms() );
 }
 
 MultiColvarBase::~MultiColvarBase(){
@@ -358,6 +359,28 @@ void MultiColvarBase::apply(){
   if( doNotCalculateDerivatives() ) return;
   std::fill(forcesToApply.begin(),forcesToApply.end(),0);
   if( getForcesFromValues( forcesToApply ) ) setForcesOnAtoms( forcesToApply );
+  
+  // Virtual atom forces
+  if( catom_indices.size()==0 ) {
+      Tensor deriv; deriv = (1./static_cast<double>( ablocks.size() ))*Tensor::identity();
+      unsigned stride=comm.Get_size();
+      unsigned rank=comm.Get_rank();
+      if( runInSerial() ) { stride=1; rank=0; }
+      // Clear the forces
+      for(unsigned i=0;i<getNumberOfAtoms();++i) vatom_forces[i].zero();
+      // Accumulate the force on each virtual atom
+      for(unsigned i=rank;i<getFullNumberOfTasks();i+=stride){
+          Vector & f(atoms.getVatomForces(mygroup[i]));  
+          //printf("FORCES %s %d %f %f %f \n",getLabel().c_str(), i,f[0],f[1],f[2]);
+          for(unsigned j=0;j<ablocks.size();++j) vatom_forces[ablocks[j][i]] += matmul( deriv, f );
+      }       
+      if( !runInSerial() ) comm.Sum( vatom_forces ); 
+      // Add the final forces to the atoms
+      std::vector<Vector>& final_forces(modifyForces());
+      for(unsigned i=0;i<final_forces.size();++i) final_forces[i] += vatom_forces[i]; 
+      // Clear the forces on the virtual atoms
+      for(unsigned i=0;i<getFullNumberOfTasks();++i) atoms.getVatomForces(mygroup[i]).zero(); 
+  }
 }
 
 }

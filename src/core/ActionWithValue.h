@@ -100,7 +100,7 @@ private:
 /// The buffer that we use (we keep a copy here to avoid resizing)
   std::vector<double> buffer;
 /// Actions that must be done after this one
-  std::vector<ActionWithValue*> actions_to_do_after;
+  ActionWithValue* action_to_do_after;
 /// Return the index for the component named name
   int getComponent( const std::string& name ) const;
 ///  Run the task
@@ -108,9 +108,7 @@ private:
   void gatherAccumulators( const unsigned& index, const MultiValue& myvals, std::vector<double>& buf ) const ;
   void finishComputations( const std::vector<double>& buf );
   void getNumberOfStreamedQuantities( unsigned& nquants ) const ;
-  unsigned getNumberOfStreamedDerivatives() const ;
   void getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize );
-  void getActionsBeforeInChain( const std::string& stop_lab, std::vector<std::string>& mylabels ) const ;
   void getAllActionLabelsInChain( std::vector<std::string>& mylabels ) const ;
 public:
 
@@ -216,6 +214,8 @@ public:
 // These are things for using vectors of values as fields
   virtual void checkFieldsAllowed() { error("cannot use this action as a field"); }
   virtual unsigned getNumberOfDerivatives() const = 0;
+/// 
+  void getNumberOfStreamedDerivatives( unsigned& nderivatives ) const ;
 /// Activate the calculation of derivatives
   virtual void turnOnDerivatives();
 /// Interpret the data label and get arguments 

@@ -41,13 +41,13 @@ void ReferenceValuePack::resize( const unsigned& nargs, const unsigned& natoms )
 }
 
 void ReferenceValuePack::updateDynamicLists() {
+  plumed_dbg_assert( myvals.getNumberActive(oind)==0 );
   if( myvals.getNumberOfDerivatives()==0 ) return;
-  myvals.emptyActiveMembers();
-  for(unsigned i=0; i<numberOfArgs; ++i) myvals.putIndexInActiveArray( i );
+  for(unsigned i=0; i<numberOfArgs; ++i) myvals.updateIndex( oind, i );   
   for(unsigned i=0; i<atom_indices.size(); ++i) {
     unsigned nbase = numberOfArgs + 3*atom_indices[i];
-    if( atom_indices[i]<myvals.getNumberOfDerivatives() && myvals.isActive( nbase ) ) {
-      myvals.putIndexInActiveArray( nbase+0 ); myvals.putIndexInActiveArray( nbase+1 ); myvals.putIndexInActiveArray( nbase+2 );
+    if( atom_indices[i]<myvals.getNumberOfDerivatives() ) {
+      myvals.updateIndex( oind, nbase+0 ); myvals.updateIndex( oind, nbase+1 ); myvals.updateIndex( oind, nbase+2 );
     }
   }
   unsigned nbase = myvals.getNumberOfDerivatives() - 9;
@@ -56,39 +56,38 @@ void ReferenceValuePack::updateDynamicLists() {
   if( atom_indices.size()>0 ) {
     for(unsigned i=0; i<9; ++i) {
       myvals.addDerivative( oind, nbase+i, 0.0 );
-      myvals.putIndexInActiveArray( nbase+i );
+      myvals.updateIndex( oind, nbase+i );
     }
   }
-  myvals.completeUpdate();
 }
 
 void ReferenceValuePack::clear() {
-  if( !myvals.updateComplete() ) updateDynamicLists();
+  if( myvals.getNumberActive(oind)==0 ) updateDynamicLists();
   myvals.clearAll(); boxWasSet=false;
 }
 
 void ReferenceValuePack::scaleAllDerivatives( const double& scalef ) {
-  if( !myvals.updateComplete() ) updateDynamicLists();
+  if( myvals.getNumberActive(oind)==0 ) updateDynamicLists();
 
-  for(unsigned i=0; i<myvals.getNumberActive(); ++i) {
-    unsigned ider=myvals.getActiveIndex(i);
+  for(unsigned i=0; i<myvals.getNumberActive(oind); ++i) {
+    unsigned ider=myvals.getActiveIndex(oind,i);
     myvals.setDerivative( oind, ider, scalef*myvals.getDerivative( oind, ider ) );
   }
 }
 
 void ReferenceValuePack::copyScaledDerivatives( const unsigned& from, const double& scalef, const MultiValue& tvals ) {
   plumed_dbg_assert( tvals.getNumberOfDerivatives()==myvals.getNumberOfDerivatives() );
-  for(unsigned i=0; i<tvals.getNumberActive(); ++i) {
-    unsigned ider=tvals.getActiveIndex(i);
+  for(unsigned i=0; i<tvals.getNumberActive(from); ++i) {
+    unsigned ider=tvals.getActiveIndex(from,i);
     myvals.addDerivative( oind, ider, scalef*tvals.getDerivative( from, ider ) );
   }
 }
 
 void ReferenceValuePack::moveDerivatives( const unsigned& from, const unsigned& to ) {
-  if( !myvals.updateComplete() ) updateDynamicLists();
+  if( myvals.getNumberActive(oind)==0 ) updateDynamicLists();
 
-  for(unsigned i=0; i<myvals.getNumberActive(); ++i) {
-    unsigned ider=myvals.getActiveIndex(i);
+  for(unsigned i=0; i<myvals.getNumberActive(from); ++i) {
+    unsigned ider=myvals.getActiveIndex(from,i);
     myvals.setDerivative( to, ider, myvals.getDerivative( from, ider ) );
   }
 }

@@ -110,7 +110,10 @@ double DRMSD::calc( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceVal
     idrmsd = inpairs / drmsd ;
   }
 
-  if( !myder.noDerivatives() ) myder.scaleAllDerivatives( idrmsd );
+  if( !myder.noDerivatives() ){
+      myder.updateDynamicLists(); 
+      myder.scaleAllDerivatives( idrmsd );
+  }
   return drmsd;
 }
 

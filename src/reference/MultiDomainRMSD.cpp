@@ -118,7 +118,7 @@ double MultiDomainRMSD::calculate( const std::vector<Vector>& pos, const Pbc& pb
     // This is only done here so I do this by using class friendship
     if( tder.virialWasSet() ) myder.boxWasSet=true;
   }
-  if( !myder.updateComplete() ) myder.updateDynamicLists();
+  myder.updateDynamicLists(); 
 
   if( !squared ) {
     totd=sqrt(totd); double xx=0.5/totd;
@@ -201,9 +201,7 @@ double MultiDomainRMSD::projectAtomicDisplacementOnVector( const bool& normalize
     // And derivatives
     mypack.copyScaledDerivatives( 0, weights[i], tvals );
   }
-  if( !mypack.updateComplete() ){ mypack.updateDynamicLists(); }
-
-  return totd;
+  mypack.updateDynamicLists(); return totd;
 }
 
 }

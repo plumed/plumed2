@@ -24,7 +24,7 @@
 
 #include <vector>
 #include "Exception.h"
-#include "DynamicList.h"
+#include "Vector.h"
 
 namespace PLMD {
 
@@ -32,18 +32,16 @@ class MultiValue {
 private:
 /// The index of the task we are currently performing
   unsigned task_index;
-/// Used to ensure rapid accumulation of derivatives
-  DynamicList<unsigned> hasDerivatives;
 /// Values of quantities
   std::vector<double> values;
 /// Number of derivatives per value
   unsigned nderivatives;
 /// Derivatives
   std::vector<double> derivatives;
-/// Tempory value
-  double tmpval;
-/// Tempory vector of derivatives (used for calculating quotients
-  std::vector<double> tmpder;
+/// Matrix asserting which values have derivatives
+  std::vector<bool> hasderiv;
+/// Lists of active variables
+  std::vector<unsigned> nactive, active_list;
 /// Logical to check if any derivatives were set
   bool atLeastOneSet;
 /// This is a fudge to save on vector resizing in MultiColvar
@@ -70,45 +68,21 @@ public:
   void addValue( const unsigned&,  const double& );
 /// Add derivative
   void addDerivative( const unsigned&, const unsigned&, const double& );
-/// Add to the tempory value
-  void addTemporyValue( const double& val );
-/// Add tempory derivatives - this is used for calculating quotients
-  void addTemporyDerivative( const unsigned& jder, const double& der );
 /// Set the value of the derivative
   void setDerivative( const unsigned& ival, const unsigned& jder, const double& der);
 /// Return the ith value
   double get( const unsigned& ) const ;
 /// Return a derivative value
   double getDerivative( const unsigned&, const unsigned& ) const ;
-/// Get one of the tempory derivatives
-  double getTemporyDerivative( const unsigned& jder ) const ;
 /// Clear all values
   void clearAll();
-/// Clear the tempory derivatives
-  void clearTemporyDerivatives();
 /// Clear a value
   void clear( const unsigned& );
-/// Functions for accessing active list
-  bool updateComplete();
-  void emptyActiveMembers();
-  void putIndexInActiveArray( const unsigned & );
-  void updateIndex( const unsigned& );
-  void sortActiveList();
-  void completeUpdate();
-  void updateDynamicList();
-  bool isActive( const unsigned& ind ) const ;
+  void updateIndex( const unsigned& , const unsigned& );
 ///
-  unsigned getNumberActive() const ;
+  unsigned getNumberActive( const unsigned& ) const ;
 ///
-  unsigned getActiveIndex( const unsigned& ) const ;
-/// Transfer derivatives to buffer
-  void chainRule( const unsigned&, const unsigned&, const unsigned&, const unsigned&, const double&, const unsigned&, std::vector<double>& buffer );
-///
-  void copyValues( MultiValue& ) const ;
-///
-  void copyDerivatives( MultiValue& );
-///
-  void quotientRule( const unsigned& nder, const unsigned& oder );
+  unsigned getActiveIndex( const unsigned& , const unsigned& ) const ;
 };
 
 inline
@@ -118,7 +92,7 @@ unsigned MultiValue::getNumberOfValues() const {
 
 inline
 unsigned MultiValue::getNumberOfDerivatives() const {
-  return nderivatives; //derivatives.ncols();
+  return nderivatives; 
 }
 
 inline
@@ -142,84 +116,38 @@ void MultiValue::addValue( const unsigned& ival,  const double& val) {
 inline
 void MultiValue::addDerivative( const unsigned& ival, const unsigned& jder, const double& der) {
   plumed_dbg_assert( ival<=values.size() && jder<nderivatives ); atLeastOneSet=true;
-  hasDerivatives.activate(jder); derivatives[nderivatives*ival+jder] += der;
+  hasderiv[nderivatives*ival+jder]=true; derivatives[nderivatives*ival+jder] += der;
 }
-
-inline
-void MultiValue::addTemporyValue( const double& val ) {
-  tmpval += val;
-}
-
-inline
-void MultiValue::addTemporyDerivative( const unsigned& jder, const double& der ) {
-  plumed_dbg_assert( jder<nderivatives ); atLeastOneSet=true;
-  hasDerivatives.activate(jder); tmpder[jder] += der;
-}
-
 
 inline
 void MultiValue::setDerivative( const unsigned& ival, const unsigned& jder, const double& der) {
   plumed_dbg_assert( ival<=values.size() && jder<nderivatives ); atLeastOneSet=true;
-  hasDerivatives.activate(jder); derivatives[nderivatives*ival+jder]=der;
+  hasderiv[nderivatives*ival+jder]=true; derivatives[nderivatives*ival+jder]=der;
 }
-
 
 inline
 double MultiValue::getDerivative( const unsigned& ival, const unsigned& jder ) const {
-  plumed_dbg_assert( jder<nderivatives && hasDerivatives.isActive(jder) );
+  plumed_dbg_assert( jder<nderivatives && hasderiv[nderivatives*ival+jder] );
   return derivatives[nderivatives*ival+jder];
 }
 
 inline
-double MultiValue::getTemporyDerivative( const unsigned& jder ) const {
-  plumed_dbg_assert( jder<nderivatives && hasDerivatives.isActive(jder) );
-  return tmpder[jder];
+void MultiValue::updateIndex( const unsigned& ival, const unsigned& jder ) {
+#ifdef DNDEBUG
+  for(unsigned i=0;i<nactive[ival];++i) plumed_dbg_assert( active_list[nderivatives*ival+nactive[ival]]!=jder ); 
+#endif
+  if( hasderiv[nderivatives*ival+jder] ){ active_list[nderivatives*ival+nactive[ival]]=jder; nactive[ival]++; } 
 }
 
 inline
-bool MultiValue::updateComplete() {
-  return hasDerivatives.updateComplete();
+unsigned MultiValue::getNumberActive( const unsigned& ival ) const {
+  return nactive[ival]; 
 }
 
 inline
-void MultiValue::emptyActiveMembers() {
-  hasDerivatives.emptyActiveMembers();
-}
-
-inline
-void MultiValue::putIndexInActiveArray( const unsigned& ind ) {
-  hasDerivatives.putIndexInActiveArray( ind );
-}
-
-inline
-void MultiValue::updateIndex( const unsigned& ind ) {
-  if( hasDerivatives.isActive(ind) ) hasDerivatives.putIndexInActiveArray( ind );
-}
-
-inline
-void MultiValue::sortActiveList() {
-  hasDerivatives.sortActiveList();
-}
-
-inline
-void MultiValue::completeUpdate() {
-  hasDerivatives.completeUpdate();
-}
-
-inline
-unsigned MultiValue::getNumberActive() const {
-  return hasDerivatives.getNumberActive();
-}
-
-inline
-unsigned MultiValue::getActiveIndex( const unsigned& ind ) const {
-  plumed_dbg_assert( ind<hasDerivatives.getNumberActive() );
-  return hasDerivatives[ind];
-}
-
-inline
-void MultiValue::updateDynamicList() {
-  if( atLeastOneSet ) hasDerivatives.updateActiveMembers();
+unsigned MultiValue::getActiveIndex( const unsigned& ival, const unsigned& ind ) const {
+  plumed_dbg_assert( ind<nactive[ival] );
+  return active_list[nderivatives*ival+ind];
 }
 
 inline
@@ -235,11 +163,6 @@ std::vector<unsigned>& MultiValue::getSortIndices() {
 inline
 std::vector<Vector>& MultiValue::getAtomVector() {
   return tmp_atoms;
-}
-
-inline
-bool MultiValue::isActive( const unsigned& ind ) const {
-  return hasDerivatives.isActive( ind );
 }
 
 inline

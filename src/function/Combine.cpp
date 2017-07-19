@@ -147,15 +147,39 @@ Combine::Combine(const ActionOptions&ao):
   addValueWithDerivatives();
   checkRead();
 
-  log.printf("  with coefficients:");
-  for(unsigned i=0; i<coefficients.size(); i++) log.printf(" %f",coefficients[i]);
-  log.printf("\n");
-  log.printf("  with parameters:");
-  for(unsigned i=0; i<parameters.size(); i++) log.printf(" %f",parameters[i]);
-  log.printf("\n");
-  log.printf("  and powers:");
-  for(unsigned i=0; i<powers.size(); i++) log.printf(" %f",powers[i]);
-  log.printf("\n");
+  bool allsame=true; double coeff=coefficients[0];
+  for(unsigned i=1;i<coefficients.size(); i++){
+      if( coefficients[i]!=coeff ){ allsame=false; break; }
+  }
+  if( allsame ){
+      log.printf("  with all coefficients equal to %f\n",coeff);
+  } else {
+      log.printf("  with coefficients:");
+      for(unsigned i=0; i<coefficients.size(); i++) log.printf(" %f",coefficients[i]);
+      log.printf("\n");
+  }
+  allsame=true; double param=parameters[0];
+  for(unsigned i=1;i<parameters.size(); i++){
+      if( parameters[i]!=param ){ allsame=false; break; }
+  }
+  if( allsame ){
+      log.printf("  with all parameters equal to %f\n",param);
+  } else {
+      log.printf("  with parameters:");
+      for(unsigned i=0; i<parameters.size(); i++) log.printf(" %f",parameters[i]);
+      log.printf("\n");
+  }
+  allsame=true; double power=powers[0];
+  for(unsigned i=1;i<powers.size(); i++){
+      if( powers[i]!=power ){ allsame=false; break; }
+  }
+  if( allsame ){
+      log.printf("  with all powers equal to %f\n",power);
+  } else {
+      log.printf("  and powers:");
+      for(unsigned i=0; i<powers.size(); i++) log.printf(" %f",powers[i]);
+      log.printf("\n");
+  }
 }
 
 void Combine::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {

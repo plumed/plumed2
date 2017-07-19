@@ -118,12 +118,11 @@ bool Value::isPeriodic()const {
   return periodicity==periodic;
 }
 
-bool Value::applyForce(std::vector<double>& forces ) const {
+bool Value::applyForce( std::vector<double>& forces ) const {
   if( !hasForce ) return false;
 
   if( shape.size()==0 && hasDeriv ){
-      const unsigned N=action->getNumberOfDerivatives();
-      for(unsigned i=0;i<N;++i) forces[i] += inputForces[0]*data[i+1];
+      for(unsigned i=0;i<forces.size();++i) forces[i] += inputForces[0]*data[1 + i];
   } else if( hasDeriv ){
       const unsigned N=action->getNumberOfDerivatives();
       for(unsigned i=0;i<inputForces.size();++i){
@@ -135,8 +134,8 @@ bool Value::applyForce(std::vector<double>& forces ) const {
       MultiValue myvals( nquants, N );
       for(unsigned i=0;i<inputForces.size();++i){
           action->rerunTask( i, myvals );
-          for(unsigned j=0;j<myvals.getNumberActive();++j){
-              unsigned jder=myvals.getActiveIndex(j); 
+          for(unsigned j=0;j<myvals.getNumberActive(streampos);++j){
+              unsigned jder=myvals.getActiveIndex(streampos, j); 
               forces[jder] += inputForces[i]*myvals.getDerivative( streampos, jder );
           }
       }

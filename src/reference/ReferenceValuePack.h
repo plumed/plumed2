@@ -23,6 +23,9 @@
 #define __PLUMED_reference_ReferenceValuePack_h
 
 #include "tools/MultiValue.h"
+#include "tools/Vector.h"
+#include "tools/Matrix.h"
+#include "tools/Tensor.h"
 
 namespace PLMD {
 
@@ -81,8 +84,6 @@ public:
   void addAtomDerivatives( const unsigned& iatom, const Vector& der );
 ///
   void addBoxDerivatives( const Tensor& vir );
-///
-  bool updateComplete() const ;
 ///
   void updateDynamicLists();
 ///
@@ -148,11 +149,6 @@ void ReferenceValuePack::addArgumentDerivatives( const unsigned& iarg, const dou
 inline
 void ReferenceValuePack::setArgumentDerivatives( const unsigned& iarg, const double& der ) {
   plumed_dbg_assert( iarg<numberOfArgs && oind_set ); myvals.setDerivative( oind, iarg, der );
-}
-
-inline
-bool ReferenceValuePack::updateComplete() const {
-  return myvals.updateComplete();
 }
 
 inline

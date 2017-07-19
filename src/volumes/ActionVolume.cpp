@@ -55,7 +55,7 @@ void ActionVolume::expandShortcut( const std::string& lab, const std::vector<std
           me_input.push_back("PERIODIC=NO"); actions.push_back( me_input );
           std::vector<std::string> input; 
           if( keys.count("SUM") ) input.push_back( lab + "_sum:" );
-          else input.push_back( lab + "_denom:"); 
+          else input.push_back( lab + "_numer:"); 
           input.push_back("COMBINE");
           input.push_back("ARG=" + lab + "_prod"); input.push_back("PERIODIC=NO"); actions.push_back( input );
       }
@@ -68,7 +68,7 @@ void ActionVolume::expandShortcut( const std::string& lab, const std::vector<std
           std::vector<std::string> me_input2; me_input2.push_back( lab + "_mean:" );
           me_input2.push_back("MATHEVAL"); 
           if( keys.count("SUM") ) me_input2.push_back("ARG1=" + lab + "_sum" );
-          else me_input2.push_back("ARG1=" + lab + "_denom"); 
+          else me_input2.push_back("ARG1=" + lab + "_numer"); 
           me_input2.push_back("ARG2=" + lab + "_norm"); me_input2.push_back("FUNC=x/y");
           me_input2.push_back("PERIODIC=NO"); actions.push_back( me_input2 );
       }
@@ -202,22 +202,21 @@ void ActionVolume::performTask( const unsigned& curr, MultiValue& outvals ) cons
   outvals.setValue( getPntrToOutput(0)->getPositionInStream(), weight );
   if( !doNotCalculateDerivatives() ){
       // Atom position
-      outvals.emptyActiveMembers();
       outvals.addDerivative( getPntrToOutput(0)->getPositionInStream(), 3*curr+0, wdf[0] );
-      outvals.putIndexInActiveArray( 3*curr+0 );
+      outvals.updateIndex( getPntrToOutput(0)->getPositionInStream(), 3*curr+0 );
       outvals.addDerivative( getPntrToOutput(0)->getPositionInStream(), 3*curr+1, wdf[1] );
-      outvals.putIndexInActiveArray( 3*curr+1 );
+      outvals.updateIndex( getPntrToOutput(0)->getPositionInStream(), 3*curr+1 );
       outvals.addDerivative( getPntrToOutput(0)->getPositionInStream(), 3*curr+2, wdf[2] );
-      outvals.putIndexInActiveArray( 3*curr+2 ); 
+      outvals.updateIndex( getPntrToOutput(0)->getPositionInStream(), 3*curr+2 ); 
       // Add derivatives with respect to reference positions
       unsigned vbase = 3*getFullNumberOfTasks();  
       for(unsigned i=0;i<refders.size();++i){
          outvals.addDerivative( getPntrToOutput(0)->getPositionInStream(), vbase, refders[i][0] );
-         outvals.putIndexInActiveArray( vbase ); vbase++;
+         outvals.updateIndex( getPntrToOutput(0)->getPositionInStream(), vbase ); vbase++;
          outvals.addDerivative( getPntrToOutput(0)->getPositionInStream(), vbase, refders[i][1] );
-         outvals.putIndexInActiveArray( vbase ); vbase++;
+         outvals.updateIndex( getPntrToOutput(0)->getPositionInStream(), vbase ); vbase++;
          outvals.addDerivative( getPntrToOutput(0)->getPositionInStream(), vbase, refders[i][2] );
-         outvals.putIndexInActiveArray( vbase ); vbase++;
+         outvals.updateIndex( getPntrToOutput(0)->getPositionInStream(), vbase ); vbase++;
       }
       // Add virial 
       outvals.addDerivative( getPntrToOutput(0)->getPositionInStream(), vbase, vir(0,0) ); vbase++;
@@ -230,8 +229,7 @@ void ActionVolume::performTask( const unsigned& curr, MultiValue& outvals ) cons
       outvals.addDerivative( getPntrToOutput(0)->getPositionInStream(), vbase, vir(2,1) ); vbase++;
       outvals.addDerivative( getPntrToOutput(0)->getPositionInStream(), vbase, vir(2,2) ); vbase++;
       vbase = 3*getNumberOfAtoms();
-      for(unsigned i=0;i<9;++i) outvals.putIndexInActiveArray( vbase + i );
-      outvals.completeUpdate();
+      for(unsigned i=0;i<9;++i) outvals.updateIndex( getPntrToOutput(0)->getPositionInStream(), vbase + i );
   }
 }
 

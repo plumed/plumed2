@@ -58,8 +58,7 @@ double SimpleRMSD::calc( const std::vector<Vector>& pos, ReferenceValuePack& myd
   // myder.clear(); 
   if( myder.noDerivatives() ) return d;
   for(unsigned i=0; i<pos.size(); ++i) myder.setAtomDerivatives( i, myder.getAtomVector()[i] );
-  if( !myder.updateComplete() ) myder.updateDynamicLists();
-  return d;
+  myder.updateDynamicLists(); return d;
 }
 
 void SimpleRMSD::extractAtomicDisplacement( const std::vector<Vector>& pos, std::vector<Vector>& direction ) const {
@@ -83,8 +82,7 @@ double SimpleRMSD::projectAtomicDisplacementOnVector( const bool& normalized, co
   }
   if( mypack.noDerivatives() ) return proj;
 
-  if( !mypack.updateComplete() ) mypack.updateDynamicLists();
-  return proj;
+ mypack.updateDynamicLists(); return proj;
 }
 
 }

@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithArguments.h"
 #include "ActionWithValue.h"
+#include "ActionAtomistic.h"
 #include "tools/PDB.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
@@ -272,7 +273,41 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
         }
     } else if( f_actions.size()==1 ) done_over_stream=true;
     requestArguments(arg);
+
+    if( done_over_stream ) {
+        // Get the action where this argument should be applied 
+        ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>( getPntrToArgument(0)->getPntrToAction() );
+        if( !aa || !aa->done_over_stream || aa->getNumberOfArguments()>1 ) distinct_arguments.push_back( getPntrToArgument(0)->getPntrToAction() );
+        else distinct_arguments.push_back( aa->getFirstNonStream() );
+        // Build vector with locations to keep derivatives of arguments 
+        arg_deriv_starts.push_back(0); unsigned nder = distinct_arguments[0]->getNumberOfDerivatives();
+
+        for(unsigned i=1;i<getNumberOfArguments();++i){
+            // Work out what action applies forces
+            ActionWithValue* myval; ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>( getPntrToArgument(i)->getPntrToAction() );
+            if( !aa || !aa->done_over_stream ) myval = getPntrToArgument(i)->getPntrToAction();
+            else myval = aa->getFirstNonStream();
+
+            // Check we haven't already dealt with this argument
+            int argno=-1;;
+            for(unsigned j=0;j<distinct_arguments.size();++j){
+               if( myval==distinct_arguments[j] ){ argno=j; break; }
+            }
+            if( argno>=0 ){ 
+                arg_deriv_starts.push_back( arg_deriv_starts[argno] );
+            } else {
+                arg_deriv_starts.push_back( nder ); distinct_arguments.push_back( myval ); nder += myval->getNumberOfDerivatives();
+            }
+        }
+    }
   }
+}
+
+ActionWithValue* ActionWithArguments::getFirstNonStream() {
+  plumed_massert( getNumberOfArguments()==1, "cannot use functions with multiple arguments in this way" );
+  ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>( getPntrToArgument(0)->getPntrToAction() );
+  if( !aa || !aa->done_over_stream || aa->getNumberOfArguments()>1 ) return getPntrToArgument(0)->getPntrToAction();
+  else return aa->getFirstNonStream();  
 }
 
 void ActionWithArguments::createTasksFromArguments(){
@@ -340,15 +375,26 @@ void ActionWithArguments::retrieveArguments( const MultiValue& myvals, std::vect
   }
 }
 
-void ActionWithArguments::setForcesOnArguments( const std::vector<double>& forces ) {
-  for(unsigned k=0;k<getNumberOfScalarArguments();++k) {
-      unsigned nt = 0, nn = 0, j=0;
-      for(unsigned i=0;i<arguments.size();++i){
-         nt += arguments[i]->getNumberOfValues();
-         if( k<nt ){ j=i; break ; }
-         nn += arguments[i]->getNumberOfValues();
+void ActionWithArguments::setForcesOnArguments( const std::vector<double>& forces, const unsigned& start ) {
+  if( done_over_stream ){
+      unsigned nder = 0;
+      for(unsigned i=0;i<distinct_arguments.size();++i){
+          ActionWithArguments* aarg = dynamic_cast<ActionWithArguments*>( distinct_arguments[i] );
+          if( aarg ) aarg->setForcesOnArguments( forces, nder ); 
+          ActionAtomistic* aat = dynamic_cast<ActionAtomistic*>( distinct_arguments[i] );
+          if( aat ) aat->setForcesOnAtoms( forces, nder ); 
+          nder += distinct_arguments[i]->getNumberOfDerivatives();
+      } 
+  } else {
+      for(unsigned k=0;k<getNumberOfScalarArguments();++k) {
+          unsigned nt = 0, nn = 0, j=0;
+          for(unsigned i=0;i<arguments.size();++i){
+             nt += arguments[i]->getNumberOfValues();
+             if( k<nt ){ j=i; break ; }
+             nn += arguments[i]->getNumberOfValues();
+          }
+          arguments[j]->addForce( k-nn, forces[start + k] );
       }
-      arguments[j]->addForce( k-nn, forces[k] );
   }
 }
 

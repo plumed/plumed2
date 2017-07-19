@@ -53,23 +53,20 @@ Function::Function(const ActionOptions&ao):
           if( !found ) alabels.push_back( mylab );
       }
       
-      nderivatives = 0; std::vector<ActionWithValue*> tvals; bool added=false;
+      bool added=false;
       for(unsigned i=0;i<getNumberOfArguments();++i){
           // Add this function to jobs to do in recursive loop in previous action
           if( getPntrToArgument(i)->getRank()>0 ){
               if( (getPntrToArgument(i)->getPntrToAction())->addActionToChain( alabels, this ) ){ added=true; } 
           }
-          // Check for number of derivatives 
-          bool found=false; std::string mylabstr = (getPntrToArgument(i)->getPntrToAction())->getLabel();
-          for(unsigned j=0;j<tvals.size();++j){
-             if( mylabstr==tvals[j]->getLabel() ){ found=true; break; }
-          }
-          if( !found ){ 
-              tvals.push_back( getPntrToArgument(i)->getPntrToAction() );
-              nderivatives += (getPntrToArgument(i)->getPntrToAction())->getNumberOfDerivatives(); 
-          }
       }  
       plumed_massert(added, "could not add action " + getLabel() + " to chain of any of its arguments");
+
+      // Now make sure we have the derivative size correct
+      nderivatives=0; 
+      for(unsigned i=0;i<distinct_arguments.size();++i) nderivatives += distinct_arguments[i]->getNumberOfDerivatives();
+      // Set forces to apply to correct size
+      forcesToApply.resize( nderivatives );
   }
 }
 
@@ -155,16 +152,41 @@ void Function::performTask( const unsigned& current, MultiValue& myvals ) const 
   // Calculate whatever we are calculating
   calculateFunction( args, myvals ); 
   // And update the dynamic list
-  if( !doNotCalculateDerivatives() && !done_over_stream ) myvals.updateDynamicList();
+  if( doNotCalculateDerivatives() ) return ;
+  if( done_over_stream ) {
+      std::vector<ActionWithValue*> done_list; 
+      for(unsigned i=0;i<getNumberOfArguments();++i){
+          bool found=false;
+          for(unsigned j=0;j<done_list.size();++j){
+              if( getPntrToArgument(i)->getPntrToAction()==done_list[j] ){ found=true; break; }
+          }
+          if( !found ){
+              done_list.push_back( getPntrToArgument(i)->getPntrToAction() );
+              unsigned istrn = getPntrToArgument(i)->getPositionInStream();
+              for(unsigned k=0;k<myvals.getNumberActive(istrn);++k){
+                  unsigned kind = myvals.getActiveIndex(istrn,k);
+                  for(unsigned j=0;j<getNumberOfComponents();++j){
+                      unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
+                      myvals.updateIndex( ostrn, arg_deriv_starts[i] + kind ); 
+                  }
+              }
+          }
+      }
+  } else {
+      for(unsigned j=0;j<getNumberOfComponents();++j){ 
+          unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
+          for(unsigned i=0;i<getNumberOfArguments();++i) myvals.updateIndex( ostrn, i );
+      }
+  }
 }
 
 void Function::apply()
 {
   // Everything is done elsewhere
-  if( doNotCalculateDerivatives() || done_over_stream ) return;
+  if( doNotCalculateDerivatives() ) return;
   // And add forces
   std::fill(forcesToApply.begin(),forcesToApply.end(),0);
-  if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( forcesToApply ); 
+  if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( forcesToApply, 0 ); 
 
 //   const unsigned noa=getNumberOfArguments();
 //   const unsigned ncp=getNumberOfComponents();
