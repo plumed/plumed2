@@ -226,7 +226,7 @@ class Metainference : public bias::Bias
   double getEnergyForceSPE(const vector<double> &mean, const vector<double> &dmean_x, const vector<double> &dmean_b, const double modifier);
   double getEnergyForceGJ(const vector<double> &mean, const vector<double> &dmean_x, const vector<double> &dmean_b, const double modifier);
   double getEnergyForceGJE(const vector<double> &mean, const vector<double> &dmean_x, const vector<double> &dmean_b, const double modifier);
-  void get_weights(const unsigned iselect, const double dnrep, const double ave_fact, double &fact, double &var_fact); 
+  void get_weights(const unsigned iselect, const double dnrep, const double ave_fact, double &fact, double &var_fact);
   vector<double> get_sigma_mean(const unsigned iselect, const double dnrep, const double ave_fact, const double fact, const double var_fact, const vector<double> mean);
   void   writeStatus();
 
@@ -1338,7 +1338,7 @@ double Metainference::getEnergyForceMIGEN(const vector<double> &mean, const vect
   return kbt_*ene;
 }
 
-void Metainference::get_weights(const unsigned iselect, const double dnrep, const double ave_fact, double &fact, double &var_fact) 
+void Metainference::get_weights(const unsigned iselect, const double dnrep, const double ave_fact, double &fact, double &var_fact)
 {
   double norm = 0.0;
 
