@@ -71,8 +71,8 @@ for file in ../patches/*.diff
 do
    myengine=`echo "$file" | sed -e 's/.diff//' | sed -e 's/..\/patches\///'`
    mytag=`echo "$myengine" | sed -e 's/\./-/g'`
-   echo "- $mytag" >> automatic/codesl.list # list only, for Intro
-   echo "- \subpage $mytag " >> automatic/codes.list
+   echo "- $mytag" >> automatic/CODESL.list # list only, for Intro
+   echo "- \subpage $mytag " >> automatic/CODES.list
    echo "/**" >> automatic/$myengine.txt
    echo "\page $mytag $myengine" >> automatic/$myengine.txt
    ../src/lib/plumed --no-mpi patch -e $myengine -i -q >> automatic/$myengine.txt
@@ -204,18 +204,18 @@ done
 # Find the list of modules
 # if [ -d ../mymodules ] ;  then
 #  sed -i '' -e 's/type="user" visible="no" url="mymodules.html"/type="user" visible="yes" url="mymodules.html"/' PlumedLayout.xml
-echo "<table align=center frame=void width=65%% cellpadding=5%%>" > automatic/modules.list
-echo "<tr> <td> <b> Module name </b> </td> <td> <b> Default behavior </b> </td> </tr>" >> automatic/modules.list
+echo "<table align=center frame=void width=65%% cellpadding=5%%>" > automatic/MODULES.list
+echo "<tr> <td> <b> Module name </b> </td> <td> <b> Default behavior </b> </td> </tr>" >> automatic/MODULES.list
 for file in `ls ../src/*/module.type | sed -e 's/..\/src\///' | sed -e 's/\/module.type//'`
 do
    defoff=0
    dstr=`head ../src/$file/module.type`
    if [ "$dstr" != "always" ] ; then
-         echo "<tr> <td> $file </td>" >> automatic/modules.list
+         echo "<tr> <td> $file </td>" >> automatic/MODULES.list
          if [ "$dstr" == "default-on" ] ; then
-            echo "<td> on </td> </tr>" >> automatic/modules.list
+            echo "<td> on </td> </tr>" >> automatic/MODULES.list
          else 
-            echo "<td> off </td> </tr>" >> automatic/modules.list
+            echo "<td> off </td> </tr>" >> automatic/MODULES.list
             defoff=1
          fi
 #        # Generate documentation and accreditation on modules page
@@ -260,7 +260,7 @@ do
         done
    fi 
 done
-echo "</table>" >> automatic/modules.list
+echo "</table>" >> automatic/MODULES.list
 # fi
 
 # Generate all the documentation from keywords
@@ -336,10 +336,11 @@ cp $f ${file}PP.$extension
 
 for kk in $keywords
 do
-  sed -i '' "
+  sed -ie "
     /^ *@"$kk"@ *$/r     automatic/$kk.list
 " ${file}PP.$extension
 done
+rm -f *."$extension"e
 
 grep -Ev '^ *@[A-Z:_]*@ *$' ${file}PP.$extension > tmp;
 mv tmp ${file}PP.$extension
