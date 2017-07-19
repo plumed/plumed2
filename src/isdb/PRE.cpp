@@ -34,7 +34,7 @@ namespace isdb {
 
 //+PLUMEDOC ISDB_COLVAR PRE
 /*
-Calculates the Paramegnetic Resonance Enhancement intensity ratio between two atoms.
+Calculates the Paramegnetic Resonance Enhancement intensity ratio between a spinlabel atom and a list of atoms .
 
 The reference atom for the spin label is added with SPINLABEL, the affected atom(s)
 are give as numbered GROUPA1, GROUPA2, ...

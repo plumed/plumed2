@@ -40,16 +40,16 @@ namespace isdb {
 /*
 Calculate the Metainference energy for a set of experimental data.
 
-Metainference \cite Bonomi:2016ip is a Bayesian framework 
-to model heterogeneous systems by integrating prior information with noisy, ensemble-averaged data. 
-Metainference models a system and quantifies the level of noise in the data by considering a set of replicas of the system. 
+Metainference \cite Bonomi:2016ip is a Bayesian framework
+to model heterogeneous systems by integrating prior information with noisy, ensemble-averaged data.
+Metainference models a system and quantifies the level of noise in the data by considering a set of replicas of the system.
 
 Calculated experimental data are given in input as ARG while reference experimental values
 can be given either from fixed components of other actions using PARARG or as numbers using
 PARAMETERS. The default behavior is that of averaging the data over the available replicas,
 if this is not wanted the keyword NOENSEMBLE prevent this averaging.
 
-Metadynamic Metainference \cite Bonomi:2016ge or more in general biased Metainference requires the knowledge of 
+Metadynamic Metainference \cite Bonomi:2016ge or more in general biased Metainference requires the knowledge of
 biasing potential in order to calculate the weighted average. In this case the value of the bias
 can be provided as the last argument in ARG and adding the keyword REWEIGHT. To avoid the noise
 resulting from the instantaneus value of the bias the weight of each replica can be averaged
@@ -62,7 +62,7 @@ the arguments as a single gaussian common to all the data points, a gaussian per
 point, a single long-tailed gaussian common to all the data points, a log-tailed
  gaussian per data point or using two distinct noises as for the most general formulation of Metainference.
 In this latter case the noise of the replica-averaging is gaussian (one per data point) and the noise for
-the comparison with the experiemntal data can chosen using the keywork LIKELIHOOD 
+the comparison with the experiemntal data can chosen using the keywork LIKELIHOOD
 between gaussian or log-normal (one per data point), furthermore the evolution of the estimated average
 over an infinite number of replicas is driven by DFTILDE.
 
@@ -71,7 +71,7 @@ error of calculating an average quantity using a finite set of replica and shoul
 be set as small as possible following the guidelines for replica-averaged simulations
 in the framework of the Maximum Entropy Principle. Alternatively, this can be obtained
 automatically using the internal sigma mean optimisation as introduced in \cite Lohr:2017gc
-(OPTSIGMAMEAN=SEM), in this second case sigma_mean is estimated from the maximum standard error 
+(OPTSIGMAMEAN=SEM), in this second case sigma_mean is estimated from the maximum standard error
 of the mean either over the simulation or over a defined time using the keyword AVERAGING.
 SIGMA_BIAS is an uncertainty parameter, sampled by a MC algorithm in the bounded interval
 defined by SIGMA_MIN and SIGMA_MAX. The initial value is set at SIGMA0. The MC move is a
@@ -758,6 +758,7 @@ Metainference::Metainference(const ActionOptions&ao):
 
   log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");
   if(do_reweight_) log<<plumed.cite("Bonomi, Camilloni, Vendruscolo, Sci. Rep. 6, 31232 (2016)");
+  if(do_optsigmamean_>0) log<<plumed.cite("Loehr, Jussupow, Camilloni, J. Chem. Phys. 146, 165102 (2017)");
   log<<"\n";
 }
 

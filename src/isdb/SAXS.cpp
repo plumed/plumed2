@@ -240,7 +240,7 @@ SAXS::SAXS(const ActionOptions&ao):
     q_list[i]=q_list[i]*10.0;    //factor 10 to convert from A^-1 to nm^-1
   }
   log<<"  Bibliography ";
-  log<<plumed.cite("Jussupow, et al. (in preparatio)");
+  log<<plumed.cite("Jussupow, et al. (in preparation)");
   if(martini)   log<<plumed.cite("Niebling, Björling, Westenhoff, J Appl Crystallogr 47, 1190–1198 (2014).");
   if(atomistic) {
     log<<plumed.cite("Fraser, MacRae, Suzuki, J. Appl. Crystallogr., 11, 693–694 (1978).");

@@ -86,7 +86,7 @@ the rotational diffusion, but this variable can be used to break the rotational 
 RDCs can also be calculated using a Single Value Decomposition approach, in this case the code rely on the
 a set of function from the GNU Scientific Library (GSL). (With SVD forces are not currently implemented).
 
-Metainference simulations can be performed with this CV and \ref METAINFERENCE.
+Metainference simulations can be performed with this CV and \ref METAINFERENCE .
 
 Additional material and examples can be also found in the tutorial \ref belfast-9
 
@@ -132,7 +132,7 @@ PRINT ARG=svd.* FILE=svd
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC COLVAR PCS
+//+PLUMEDOC ISDB_COLVAR PCS
 /*
 Calculates the Pseudocontact shift of a nucleus determined by a metal ion.
 
@@ -155,9 +155,7 @@ that is the maximal value of the dipolar coupling for the two nuclear spins with
 PCSs can also be calculated using a Single Value Decomposition approach, in this case the code rely on the
 a set of function from the GNU Scientific Library (GSL). (With SVD forces are not currently implemented).
 
-Metainference simulations can be performed with this CV and \ref METAINFERENCE.
-
-Additional material and examples can be also found in the tutorial \ref belfast-9
+Metainference simulations can be performed with this CV and \ref METAINFERENCE .
 
 \par Examples
 
@@ -167,34 +165,34 @@ and only for analysis purposes, the same RDCs are calculated using a Single Valu
 Decomposition algorithm.
 
 \plumedfile
-RDC ...
-GYROM=-72.5388
+PCS ...
+GYROM=1.0
 SCALE=1.0
 ATOMS1=20,21
-ATOMS2=37,38
-ATOMS3=56,57
-ATOMS4=76,77
-ATOMS5=92,93
+ATOMS2=20,38
+ATOMS3=20,57
+ATOMS4=20,77
+ATOMS5=20,93
 LABEL=nh
-... RDC
+... PCS
 
-STATS ARG=nh.* PARAMETERS=8.17,-8.271,-10.489,-9.871,-9.152
+st: STATS ARG=nh.* PARAMETERS=8.17,-8.271,-10.489,-9.871,-9.152
 
-rdce: RESTRAINT ARG=nh.corr KAPPA=0. SLOPE=-25000.0 AT=1.
+rdce: RESTRAINT ARG=st.corr KAPPA=0. SLOPE=-25000.0 AT=1.
 
-RDC ...
-GYROM=-72.5388
+PCS ...
+GYROM=1.0
 SCALE=1.0
 SVD
-ATOMS1=20,21 COUPLING1=8.17
-ATOMS2=37,38 COUPLING2=-8.271
-ATOMS3=56,57 COUPLING3=-10.489
-ATOMS4=76,77 COUPLING4=-9.871
-ATOMS5=92,93 COUPLING5=-9.152
+ATOMS1=20,21 COUPLING1=0.17
+ATOMS2=20,38 COUPLING2=-0.271
+ATOMS3=20,57 COUPLING3=-1.489
+ATOMS4=20,77 COUPLING4=-0.871
+ATOMS5=20,93 COUPLING5=-0.152
 LABEL=svd
-... RDC
+... PCS
 
-PRINT ARG=nh.corr,rdce.bias FILE=colvar
+PRINT ARG=st.corr,rdce.bias FILE=colvar
 PRINT ARG=svd.* FILE=svd
 \endplumedfile
 
