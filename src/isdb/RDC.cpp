@@ -41,10 +41,8 @@ namespace isdb {
 /*
 Calculates the (Residual) Dipolar Coupling between two atoms.
 
-The RDC between two atomic nuclei depends on the \f$\theta\f$ angle between
-the inter-nuclear vector and the external magnetic field. In isotropic media RDCs average to zero because of the rotational
-averaging, but when the rotational symmetry is broken, either through the introduction of an alignment medium or for molecules
-with highly anisotropic paramagnetic susceptibility, RDCs become measurable.
+The Dipolar Coupling between two nuclei depends on the \f$\theta\f$ angle between
+the inter-nuclear vector and the external magnetic field.
 
 \f[
 D=D_{max}0.5(3\cos^2(\theta)-1)
@@ -69,38 +67,35 @@ and their products (this is what is given in input using the keyword GYROM)
 - C-N -18.2385
 - C-C 45.2404
 
-This collective variable calculates the Residual Dipolar Coupling for a set of couple of atoms using 
-the above definition \cite Camilloni:2015ka .
-From the calculated RDCs and a set of experimental values it calculates either their correlation or the squared quality factor
+In isotropic media DCs average to zero because of the rotational
+averaging, but when the rotational symmetry is broken, either through the introduction of an alignment medium or for molecules
+with highly anisotropic paramagnetic susceptibility, then the average of the DCs is not zero and it is possible to measure a Residual Dipolar Coupling (RDCs).
 
-\f[
-Q^2=\frac{\sum_i(D_i-D^{exp}_i)^2}{\sum_i(D^{exp}_i)^2}
-\f]
+This collective variable calculates the Dipolar Coupling for a set of couple of atoms using
+the above definition.
 
-RDCs report only on the fraction of molecules that is aligned, this means that comparing the RDCs from a single structure in
-a MD simulation to the experimental values is not particularly meaningfull, from this point of view it is better to compare
-their correlation. The fraction of aligned molecules can be obtained by maximising the correlation between the calculated and
-the experimental RDCs. This fraction can be used as a scaling factor in the calculation of the RDCs in order to compare their
-values. The averaging of the RDCs calculated with the above definition from a standard MD should result to 0 because of
-the rotational diffusion, but this variable can be used to break the rotational symmetry.
+In a standard MD simulation the average over time of the DC should then be zero. If one wants to model the meaning of a set of measured RDCs it is possible to try to solve the following problem: "what is the distribution of structures and orientations that reproduce the measured RDCs".
 
-RDCs can also be calculated using a Single Value Decomposition approach, in this case the code rely on the
+This collective variable can then be use to break the rotational symmetry of a simulation by imposing that the average of the DCs over the conformational ensemble must be equal to the measured RDCs \cite Camilloni:2015ka . Since measured RDCs are also a function of the fraction of aligned molecules in the sample it is better to compare them modulo a constant or looking at the correlation.
+
+Alternatively if the molecule is rigid it is possible to use the experimental data to calculate the alignment tensor and the use that to back calculate the RDCs, this is what is usually call the Single Value Decomposition approach. In this case the code rely on the
 a set of function from the GNU Scientific Library (GSL). (With SVD forces are not currently implemented).
 
+Replica-Averaged simulations can be perfomed using RDCs, \ref ENSEMBLE, \ref STATS and \ref RESTRAINT .
 Metainference simulations can be performed with this CV and \ref METAINFERENCE .
 
 Additional material and examples can be also found in the tutorial \ref belfast-9
 
 \par Examples
-In the following example five N-H RDCs are defined and their correlation with
-respect to a set of experimental data is calculated and restrained. In addition,
-and only for analysis purposes, the same RDCs are calculated using a Single Value
-Decomposition algorithm.
+In the following example five N-H RDCs are defined and averaged over multiple replicas,
+their correlation is then calculated with respect to a set of experimental data and restrained.
+In addition, and only for analysis purposes, the same RDCs each single conformation are calculated
+using a Single Value Decomposition algorithm, then averaged and again compared with the experimenta data.
 
 \plumedfile
 RDC ...
 GYROM=-72.5388
-SCALE=1.0
+SCALE=0.001
 ATOMS1=20,21
 ATOMS2=37,38
 ATOMS3=56,57
@@ -109,13 +104,14 @@ ATOMS5=92,93
 LABEL=nh
 ... RDC
 
-st: STATS ARG=nh.* PARAMETERS=8.17,-8.271,-10.489,-9.871,-9.152
+erdc: ENSEMBLE ARG=nh.*
+
+st: STATS ARG=erdc.* PARAMETERS=8.17,-8.271,-10.489,-9.871,-9.152
 
 rdce: RESTRAINT ARG=st.corr KAPPA=0. SLOPE=-25000.0 AT=1.
 
 RDC ...
 GYROM=-72.5388
-SCALE=1.0
 SVD
 ATOMS1=20,21 COUPLING1=8.17
 ATOMS2=37,38 COUPLING2=-8.271
@@ -125,24 +121,29 @@ ATOMS5=92,93 COUPLING5=-9.152
 LABEL=svd
 ... RDC
 
-PRINT ARG=st.corr,rdce.bias FILE=colvar
-PRINT ARG=svd.* FILE=svd
+esvd: ENSEMBLE ARG=svd.*
+
+st_svd: STATS ARG=esvd.* PARAMETERS=8.17,-8.271,-10.489,-9.871,-9.152
+
+
+PRINT ARG=st.corr,st_svd.corr,rdce.bias FILE=colvar
 \endplumedfile
-(See also \ref PRINT, \ref RESTRAINT)
 
 */
 //+ENDPLUMEDOC
 
 //+PLUMEDOC ISDB_COLVAR PCS
 /*
-Calculates the Pseudocontact shift of a nucleus determined by a metal ion.
+Calculates the Pseudocontact shift of a nucleus determined by the presence of a metal ion susceptible to anisotropic magnetization.
 
 The PCS of an atomic nucleus depends on the \f$\theta\f$ angle between the vector from the spin-label to the nucleus
- and the external magnetic field and the module of the vector itself \cite Camilloni:2015jf .
+ and the external magnetic field and the module of the vector itself \cite Camilloni:2015jf . While in principle the averaging
+resulting from the tumbling should remove the pseudocontact shift, in presence of the NMR magnetic field the magnatically anisotropic molecule bound to system will break the rotational symmetry does resulting in measurable PCSs and RDCs.
 
 PCSs can also be calculated using a Single Value Decomposition approach, in this case the code rely on the
 a set of function from the GNU Scientific Library (GSL). (With SVD forces are not currently implemented).
 
+Replica-Averaged simulations can be perfomed using PCSs, \ref ENSEMBLE, \ref STATS and \ref RESTRAINT .
 Metainference simulations can be performed with this CV and \ref METAINFERENCE .
 
 \par Examples
@@ -154,8 +155,6 @@ Decomposition algorithm.
 
 \plumedfile
 PCS ...
-GYROM=1.0
-SCALE=1.0
 ATOMS1=20,21
 ATOMS2=20,38
 ATOMS3=20,57
@@ -164,24 +163,13 @@ ATOMS5=20,93
 LABEL=nh
 ... PCS
 
-st: STATS ARG=nh.* PARAMETERS=8.17,-8.271,-10.489,-9.871,-9.152
+enh: ENSEMBLE ARG=nh.*
 
-rdce: RESTRAINT ARG=st.corr KAPPA=0. SLOPE=-25000.0 AT=1.
+st: STATS ARG=enh.* PARAMETERS=8.17,-8.271,-10.489,-9.871,-9.152
 
-PCS ...
-GYROM=1.0
-SCALE=1.0
-SVD
-ATOMS1=20,21 COUPLING1=0.17
-ATOMS2=20,38 COUPLING2=-0.271
-ATOMS3=20,57 COUPLING3=-1.489
-ATOMS4=20,77 COUPLING4=-0.871
-ATOMS5=20,93 COUPLING5=-0.152
-LABEL=svd
-... PCS
+pcse: RESTRAINT ARG=st.corr KAPPA=0. SLOPE=-25000.0 AT=1.
 
-PRINT ARG=st.corr,rdce.bias FILE=colvar
-PRINT ARG=svd.* FILE=svd
+PRINT ARG=st.corr,pcse.bias FILE=colvar
 \endplumedfile
 
 */
