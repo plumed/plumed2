@@ -7,52 +7,6 @@ rm -f errors
 rm -rf automatic
 mkdir automatic
 
-long_version="$(../src/lib/plumed --no-mpi info --long-version)"
-git_version="$(../src/lib/plumed --no-mpi info --git-version)"
-
-cat > automatic/VERSION.list << EOF
-This manual has been compiled from PLUMED version <b> $long_version </b>
-(git version: <b> $git_version </b>).
-EOF
-
-if test "$TRAVIS" == true ; then
-cat >> automatic/VERSION.list << EOF
-Manual built on Travis CI for branch $TRAVIS_BRANCH.
-EOF
-fi
-
-if test -d regtests ; then
-cat >> automatic/VERSION.list << EOF
-
-Regtest results for this version can be found <a href="../regtests/report.html">here</a>.
-EOF
-fi
-
-for file in ../CHANGES/* ; do
-echo "- Changes for \\subpage $(cat $file | grep "@page" | awk '{print $2}')"
-done > automatic/CHANGES.list
-
-if test "$make_pdfdoc" = yes ; then
-cat > automatic/PDFMANUAL.list << \EOF
-\htmlonly
-An experimental PDF copy of this manual can be found
-<a href="../manual.pdf"> here</a>, but the html documentation should 
-be considered as the official one.
-The PDF version has some known issue (e.g. some
-links are not working properly and images are not correctly included).
-The goal of the PDF manual is to allow people to download a full copy on the documentation for offline
-access and to perform easily full-text searches.
-Notice that the manual is updated very frequently (sometime more than once per week),
-so keep your local version of the PDF manual up to date. 
-Since the PDF manual is 200+ pages and is continuously updated,
-<b>
-please do not print it!
-</b>
-\endhtmlonly
-EOF
-else
-touch automatic/PDFMANUAL.list
-fi
 
 # Check for files that register actions with no documentation
 for file in ../src/*/*.cpp
@@ -179,6 +133,53 @@ for file in automatic/*.list ; do
   mv $file-1 $file
 done
 
+# The following are not proper "list" files so should be generated after sorting
+
+long_version="$(../src/lib/plumed --no-mpi info --long-version)"
+git_version="$(../src/lib/plumed --no-mpi info --git-version)"
+
+cat > automatic/VERSION.list << EOF
+This manual has been compiled from PLUMED version <b> $long_version </b>
+(git version: <b> $git_version </b>).
+EOF
+
+if test "$TRAVIS" == true ; then
+cat >> automatic/VERSION.list << EOF
+Manual built on Travis CI for branch $TRAVIS_BRANCH.
+EOF
+fi
+
+if test -d regtests ; then
+cat >> automatic/VERSION.list << EOF
+
+Regtest results for this version can be found <a href="../regtests/report.html">here</a>.
+EOF
+fi
+
+for file in ../CHANGES/* ; do
+echo "- Changes for \\subpage $(cat $file | grep "@page" | awk '{print $2}')"
+done > automatic/CHANGES.list
+
+touch automatic/PDFMANUAL.list
+if test "$make_pdfdoc" = yes ; then
+cat >> automatic/PDFMANUAL.list << EOF
+\htmlonly
+An experimental PDF copy of this manual can be found
+<a href="../manual.pdf"> here</a>, but the html documentation should 
+be considered as the official one.
+The PDF version has some known issue (e.g. some
+links are not working properly and images are not correctly included).
+The goal of the PDF manual is to allow people to download a full copy on the documentation for offline
+access and to perform easily full-text searches.
+Notice that the manual is updated very frequently (sometime more than once per week),
+so keep your local version of the PDF manual up to date. 
+Since the PDF manual is 200+ pages and is continuously updated,
+<b>
+please do not print it!
+</b>
+\endhtmlonly
+EOF
+fi
 
 # Generate links to tutorial pages
 for file in ./tutorials/*.txt ; do
