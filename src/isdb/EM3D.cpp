@@ -225,9 +225,6 @@ EM3D::EM3D(const ActionOptions&ao):
   comm.Sum(&nrep_,1);
   comm.Sum(&replica_,1);
 
-  // divide sigma_mean by the square root of the number of replicas
-  sigma_mean /= sqrt(static_cast<double>(nrep_));
-
   log.printf("  atoms involved : ");
   for(unsigned i=0; i<atoms.size(); ++i) log.printf("%d ",atoms[i].serial());
   log.printf("\n");
