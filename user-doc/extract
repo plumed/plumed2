@@ -120,8 +120,8 @@ awk 'BEGIN{gfile="automatic/GLOSSARY.list"; dfile="automatic/DICTIONARY.list"; }
       module=1
       split($2,array,"_");
       if(lfile!="") close(lfile)
-      lfile="automatic/"array[2]".list"
-      printf "<tr> <td width=%s> \\subpage %s </td> <td>","5%", $3 >> lfile
+      lfile="automatic/"array[2]"_OTHERMODULES.list"
+      printf "<tr> <td width=%s> \\ref %s </td><td> (from %s module) ","5%", $3 ,array[1] >> lfile
     }
   }
 }'
@@ -129,7 +129,8 @@ awk 'BEGIN{gfile="automatic/GLOSSARY.list"; dfile="automatic/DICTIONARY.list"; }
 # Now put all list files in alphabetical order
 for file in automatic/*.list ; do
 
-  sort $file > $file-1
+# -k 5 is required to mix together refs and subpages
+  sort -k 5 $file > $file-1
   mv $file-1 $file
 done
 
@@ -311,6 +312,22 @@ do
     echo "</table>"
   } > $file
   rm $file.1
+done
+
+for file in automatic/*_OTHERMODULES.list
+do
+
+ff=${file%_OTHERMODULES.list}.list
+
+if test -f "$ff" ; then
+
+mv $ff $ff.1
+  {
+    cat $ff.1
+    echo "In addition to the keyword above, by enabling optional modules you can access to the following keywords:"
+    cat $file
+  } > $ff
+fi
 done
 
 # Make all double hyphens appear as double hypens
