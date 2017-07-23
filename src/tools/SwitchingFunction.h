@@ -26,7 +26,6 @@
 #include <vector>
 #include "lepton/Lepton.h"
 
-
 namespace PLMD {
 
 class Log;
@@ -76,9 +75,14 @@ class SwitchingFunction {
 /// Lepton expression for derivative
 /// \warning Since lepton::CompiledExpression is mutable, a vector is necessary for multithreading!
   std::vector<lepton::CompiledExpression> expression_deriv;
-  void* evaluator;
-/// Evaluator for matheval;
-  void* evaluator_deriv;
+/// Evaluator for matheval:
+/// \warning Since evaluator is not thread safe, we should create one
+/// evaluator per thread.
+  std::vector<void*> evaluator;
+/// Evaluator for matheval:
+/// \warning Since evaluator is not thread safe, we should create one
+/// evaluator per thread.
+  std::vector<void*> evaluator_deriv;
 public:
   static void registerKeywords( Keywords& keys );
 /// Constructor

@@ -39,6 +39,10 @@
 	#pragma warn -8004	            // variable is assigned a value that is never used
 #endif
 
+#ifdef __GNUC__
+	#pragma GCC diagnostic ignored "-Wconversion"
+#endif
+
 #ifdef __INTEL_COMPILER
 	#pragma warning(disable:  383)  // value copied to temporary, reference to temporary used
 	#pragma warning(disable:  981)  // operands are evaluated in unspecified order
@@ -250,7 +254,8 @@ public:
 	static const string AS_END;
 	static const string AS_SELECTOR;
 	static const string AS_EXTERN, AS_ENUM;
-	static const string AS_STATIC, AS_CONST, AS_SEALED, AS_OVERRIDE, AS_VOLATILE, AS_NEW, AS_DELETE;
+	static const string AS_FINAL, AS_OVERRIDE;
+	static const string AS_STATIC, AS_CONST, AS_SEALED, AS_VOLATILE, AS_NEW, AS_DELETE;
 	static const string AS_NOEXCEPT, AS_INTERRUPT, AS_AUTORELEASEPOOL;
 	static const string AS_WHERE, AS_LET, AS_SYNCHRONIZED;
 	static const string AS_OPERATOR, AS_TEMPLATE;
