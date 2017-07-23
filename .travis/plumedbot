@@ -15,10 +15,15 @@ git fetch --unshallow
 ## change user
 git config user.email "giovanni.bussi+plumedbot@gmail.com"
 git config user.name "plumedbot"
-git config --global hub.protocol https
 
 set +x # this is not to show the GIT_TOKEN on Travis log
 git remote add plumedbot https://plumedbot:$GIT_TOKEN@github.com/plumedbot/plumed2.git
+cat > $HOME/.config/hub << EOF
+github.com:
+- user: plumedbot
+  oauth_token: $GIT_TOKEN
+  protocol: https
+EOF
 set -x
 
 hash=$( git log -1 --format="%h")
