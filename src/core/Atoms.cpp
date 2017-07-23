@@ -40,12 +40,12 @@ static const bool shareMassAndChargeOnlyAtFirstStep=true;
 class PlumedMain;
 
 Atoms::Atoms(PlumedMain&plumed):
-natoms(0),
-pbc(*new Pbc),
-energy(0.0),
-dataCanBeSet(false),
-collectEnergy(false),
-energyHasBeenSet(false),
+  natoms(0),
+  pbc(*new Pbc),
+  energy(0.0),
+  dataCanBeSet(false),
+  collectEnergy(false),
+  energyHasBeenSet(false),
   positionsHaveBeenSet(0),
   massesHaveBeenSet(false),
   chargesHaveBeenSet(false),
