@@ -83,7 +83,13 @@ bool Tools::convertToReal(const string & str,T & t) {
     t=pi; return true;
   } else if(str=="-PI" || str=="-pi") {
     t=-pi; return true;
-  } else if( str.find("PI")!=std::string::npos ) {
+  }
+  try{
+    t=lepton::Parser::parse(str).evaluate(leptonConstants);
+    return true;
+  } catch(PLMD::lepton::Exception& exc){
+  }
+  if( str.find("PI")!=std::string::npos ) {
     std::size_t pi_start=str.find_first_of("PI");
     if(str.substr(pi_start)!="PI") return false;
     istringstream nstr(str.substr(0,pi_start));
@@ -104,11 +110,6 @@ bool Tools::convertToReal(const string & str,T & t) {
   } else if(str=="NAN") {
     t=NAN;
     return true;
-  }
-  try{
-    t=lepton::Parser::parse(str).evaluate(leptonConstants);
-    return true;
-  } catch(PLMD::lepton::Exception& exc){
   }
   return convertToAny(str,t);
 }
