@@ -34,11 +34,11 @@ ExchangePatterns::ExchangePatterns():
 
 ExchangePatterns::~ExchangePatterns()
 {
-delete &random;
+  delete &random;
 }
 
 void ExchangePatterns::setNofR(const int nrepl) {
-NumberOfReplicas=nrepl;
+  NumberOfReplicas=nrepl;
 }
 
 void ExchangePatterns::setFlag(const int flag) {
