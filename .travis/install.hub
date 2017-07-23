@@ -1,0 +1,16 @@
+#! /bin/bash
+
+set -e
+set -x
+
+cd "$(mktemp -d)"
+
+version=$1
+
+wget https://github.com/github/hub/releases/download/v$version/hub-linux-amd64-$version.tgz
+
+tar xzf hub-linux-amd64-$version.tgz
+
+cp hub-linux-amd64-$version/bin/hub "$HOME/opt/bin"
+hub --version
+

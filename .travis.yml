@@ -115,6 +115,10 @@ install:
   - if test "$CPPCHECK" == yes ; then  ./.travis/install.gawk 4.1.4 ; fi
 # for plumedcheck I need astyle
   - if test "$CPPCHECK" == yes ; then make -j 4 -C astyle ; fi
+# for plumedcheck I also need git and hub
+# this is not necessary (travis version is recent enough):
+#  - if test "$CPPCHECK" == yes ; then .travis/install.git v2.13.3 ; fi
+  - if test "$CPPCHECK" == yes ; then .travis/install.hub 2.2.8 ; fi
 # installation of these packages takes a lot of time
 # we do it only when needed
   - if test "$PLUMED_CXX" == "mpic++" -a "$TRAVIS_OS_NAME" == "linux" ; then sudo apt-get install -y libopenmpi-dev openmpi-bin ; fi
@@ -187,13 +191,22 @@ script:
   - if test "$MAKEDOC" == yes ; then make doc >/dev/null ; fi
   - if test "$PLUMED_CXX" || test -n "$PLUMED_MACPORTS" ; then make -C regtest checkfail ; fi
 
-# CPPCHECK:
+## CPPCHECK ##
+
 # this is required so as to have all the include files inplace:
 # notice that this is done automatically in build
   - if test "$CPPCHECK" == yes ; then make -C src/lib/ dirslinks ; fi
+
+# Create pull request with automatic changes if necessary:
+  - if test "$CPPCHECK" == yes ; then .travis/plumedbot ; fi
+# notice that this in principle already tells the user (via a pull request) if astyle 
+# is violated.
+
 # then we do cppcheck
 # notice that with make codecheck we also run the maketools/plumedcheck
 # script which check if coding policies are satisfied
   - if test "$CPPCHECK" == yes ; then make codecheck ; fi
+
+## END CPPCHECK ##
 after_success:
   - if test "$MAKEDOC" == yes ; then ./.travis/pushdoc ; fi 

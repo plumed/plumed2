@@ -1,0 +1,29 @@
+#! /bin/bash
+
+set -e
+set -x
+
+cd "$(mktemp -d)"
+
+git clone https://github.com/git/git
+
+cd git
+
+if [ -n "$1" ] ; then
+  echo "installing git $version"
+  version=$1
+else
+  echo "installing latest git"
+  version=$(git tag | tail -n 1)
+fi
+
+git checkout $version
+
+make configure
+./configure --prefix="$HOME/opt"
+make -j 4 all
+make install
+
+cd -
+git --version
+
