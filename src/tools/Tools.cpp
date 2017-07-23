@@ -32,7 +32,7 @@
 using namespace std;
 namespace PLMD {
 
-static std::map<string, double> leptonConstants={
+static std::map<string, double> leptonConstants= {
   {"e", std::exp(1.0)},
   {"log2e", 1.0/std::log(2.0)},
   {"log10e", 1.0/std::log(10.0)},
@@ -84,10 +84,10 @@ bool Tools::convertToReal(const string & str,T & t) {
   } else if(str=="-PI" || str=="-pi") {
     t=-pi; return true;
   }
-  try{
+  try {
     t=lepton::Parser::parse(str).evaluate(leptonConstants);
     return true;
-  } catch(PLMD::lepton::Exception& exc){
+  } catch(PLMD::lepton::Exception& exc) {
   }
   if( str.find("PI")!=std::string::npos ) {
     std::size_t pi_start=str.find_first_of("PI");
