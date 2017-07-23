@@ -15,6 +15,7 @@ test -d "$dir" || continue
 test "$dir" = lapack && continue
 test "$dir" = blas && continue
 test "$dir" = molfile && continue
+test "$dir" = lepton && continue
 
 cd $dir
 
