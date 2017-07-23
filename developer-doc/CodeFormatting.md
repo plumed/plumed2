@@ -53,3 +53,15 @@ Notice that you cannot work it in the opposite direction (that is, unformat an a
 formatted branch). Finally, consider that rebasing might be more complicated.
 When all branches will be formatted this will not be an issue anymore.
 
+\section Automatic code formatting by PlumedBot
+
+As of version v2.4, whenever a test runs on Travis-ci, the script .travis/plumedbot is launched.
+The aim of this script is to enforce astyle formatting and, if some change results, it pushes
+a new branch on the plumedbot fork of plumed2 and open a pull request suggesting its merge into
+the head branch. This procedure should simplify the inclusion of astyle changes.
+
+Notice that autentication
+works in the same way as for \ref updating-web-manuals. This means that only branches in the plumed/plumed2
+repository (which knows the PlumedBot token) will be able to open these pull requests.
+
+
