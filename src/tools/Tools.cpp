@@ -79,6 +79,7 @@ bool Tools::convert(const string & str,AtomNumber &a) {
 
 template<class T>
 bool Tools::convertToReal(const string & str,T & t) {
+  if(convertToAny(str,t)) return true;
   if(str=="PI" || str=="+PI" || str=="+pi" || str=="pi") {
     t=pi; return true;
   } else if(str=="-PI" || str=="-pi") {
@@ -111,7 +112,7 @@ bool Tools::convertToReal(const string & str,T & t) {
     t=NAN;
     return true;
   }
-  return convertToAny(str,t);
+  return false;
 }
 
 bool Tools::convert(const string & str,float & t) {
