@@ -40,6 +40,82 @@ namespace isdb {
 //+PLUMEDOC ISDB_BIAS RESCALE
 /*
 
+This action can be used to rescale the value of an another action, being a Collective Variable or a Bias.
+The rescaling factor is determined by a parameter defined on a logarithmic grid of dimension NBIN in the range 
+from 1 to MAX_RESCALE. The current value of the rescaling parameter is stored and shared across
+other actions using a \ref SELECTOR. A Monte Carlo procedure is used to update the value
+of the rescaling factor every \ref MC_STRIDE steps of molecular dynamics. Well-tempered metadynamics, defined by the
+parameters W0 and BIASFACTOR, is used to enhance the sampling in the space of the rescaling factor.
+The well-tempered metadynamics bias potential is written to the file BFILE every BSTRIDE steps and read
+when restarting the simulation using the directive \ref RESTART. 
+
+\note
+Additional arguments not to be rescaled, one for each bin in the rescaling parameter ladder, can be
+provided at the end of the ARG list. The number of such arguments is specified by the option NOT_RESCALED.
+These arguments will be not be rescaled, but they will be 
+considered as bias potentials and used in the computation of the Metropolis
+acceptance probability when proposing a move in the rescaling parameter. See example below.
+
+
+\note
+If PLUMED is running in a multiple-replica framework (for example using the -multi option in GROMACS),
+the arguments will be summed across replicas, unless the NOT_SHARED option is used. Also, the value of the
+\ref SELECTOR will be shared and thus will be the same in all replicas.
+
+
+\par Examples
+
+In this example we use \ref RESCALE to implement a simulated-tempering like approach.
+The total potential energy of the system is rescaled by a parameter defined on a logarithmic grid 
+of 5 bins in the range from 1 to 1.5.
+A well-tempered metadynamics bias potential is used to ensure diffusion in the space of the rescaling
+parameter.
+
+\plumedfile
+ene: ENERGY
+
+SELECTOR NAME=GAMMA VALUE=0
+
+RESCALE ...
+LABEL=res ARG=ene TEMP=300
+SELECTOR=GAMMA MAX_RESCALE=1.5 NBIN=5
+W0=1000 BIASFACTOR=100.0 BSTRIDE=2000 BFILE=bias.dat  
+...
+
+PRINT FILE=COLVAR ARG=* STRIDE=100
+\endplumedfile
+
+In this second example, we add to the simulated-tempering approach introduced above 
+one Parallel Bias metadynamics simulation (see \ref PBMETAD) for each value of the rescaling parameter.
+At each moment of the simulation, only one of the \ref PBMETAD
+actions is activated, based on the current value of the associated \ref SELECTOR.
+The \ref PBMETAD bias potentials are not rescaled, but just used in the calculation of
+the Metropolis acceptance probability when proposing a move in the rescaling parameter. 
+
+\plumedfile
+ene: ENERGY
+d: DISTANCE ATOMS=1,2
+
+SELECTOR NAME=GAMMA VALUE=0
+
+pbmetad0: PBMETAD ARG=d SELECTOR=GAMMA SELECTOR_ID=0 SIGMA=0.1 PACE=500 HEIGHT=1 BIASFACTOR=8 FILE=HILLS.0
+pbmetad1: PBMETAD ARG=d SELECTOR=GAMMA SELECTOR_ID=1 SIGMA=0.1 PACE=500 HEIGHT=1 BIASFACTOR=8 FILE=HILLS.1
+pbmetad2: PBMETAD ARG=d SELECTOR=GAMMA SELECTOR_ID=2 SIGMA=0.1 PACE=500 HEIGHT=1 BIASFACTOR=8 FILE=HILLS.2
+pbmetad3: PBMETAD ARG=d SELECTOR=GAMMA SELECTOR_ID=3 SIGMA=0.1 PACE=500 HEIGHT=1 BIASFACTOR=8 FILE=HILLS.3
+pbmetad4: PBMETAD ARG=d SELECTOR=GAMMA SELECTOR_ID=4 SIGMA=0.1 PACE=500 HEIGHT=1 BIASFACTOR=8 FILE=HILLS.4
+
+RESCALE ...
+LABEL=res TEMP=300 
+ARG=ene,pbmetad0.bias,pbmetad1.bias,pbmetad2.bias,pbmetad3.bias,pbmetad4.bias 
+SELECTOR=GAMMA MAX_RESCALE=1.5 NOT_RESCALED=5 NBIN=5
+W0=1000 BIASFACTOR=100.0 BSTRIDE=2000 BFILE=bias.dat
+...
+
+PRINT FILE=COLVAR ARG=* STRIDE=100 
+\endplumedfile
+
+
+
 */
 //+ENDPLUMEDOC
 
@@ -101,7 +177,7 @@ void Rescale::registerKeywords(Keywords& keys) {
   keys.add("compulsory","BIASFACTOR", "bias factor");
   keys.add("compulsory","BSTRIDE", "stride for writing bias");
   keys.add("compulsory","BFILE", "file name for bias");
-  keys.add("optional","NOT_SHARED",   "list of arguments (from 1 to N ) not summed across replicas");
+  keys.add("optional","NOT_SHARED",   "list of arguments (from 1 to N) not summed across replicas");
   keys.add("optional","NOT_RESCALED", "these last N arguments will not be rescaled");
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_STRIDE","MC stride");
