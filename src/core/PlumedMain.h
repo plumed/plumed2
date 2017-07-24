@@ -104,6 +104,10 @@ private:
 /// Name of the input file
   std::string plumedDat;
 
+/// End of input file.
+/// Set to true to terminate reading
+  bool endPlumed;
+
 /// Object containing information about atoms (such as positions,...).
   Atoms&    atoms;           // atomic coordinates
 
@@ -334,6 +338,8 @@ public:
   void updateFlagsPop();
 /// Get top of update flags
   bool updateFlagsTop();
+/// Set end of input file
+  void setEndPlumed();
 };
 
 /////
@@ -397,6 +403,11 @@ void PlumedMain::updateFlagsPop() {
 inline
 bool PlumedMain::updateFlagsTop() {
   return updateFlags.top();
+}
+
+inline
+void PlumedMain::setEndPlumed() {
+  endPlumed=true;
 }
 
 }
