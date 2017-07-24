@@ -44,7 +44,7 @@ Rescales the value of an another action, being a Collective Variable or a Bias.
 The rescaling factor is determined by a parameter defined on a logarithmic grid of dimension NBIN in the range
 from 1 to MAX_RESCALE. The current value of the rescaling parameter is stored and shared across
 other actions using a \ref SELECTOR. A Monte Carlo procedure is used to update the value
-of the rescaling factor every \ref MC_STRIDE steps of molecular dynamics. Well-tempered metadynamics, defined by the
+of the rescaling factor every MC_STRIDE steps of molecular dynamics. Well-tempered metadynamics, defined by the
 parameters W0 and BIASFACTOR, is used to enhance the sampling in the space of the rescaling factor.
 The well-tempered metadynamics bias potential is written to the file BFILE every BSTRIDE steps and read
 when restarting the simulation using the directive \ref RESTART.
@@ -56,12 +56,10 @@ These arguments will be not be rescaled, but they will be
 considered as bias potentials and used in the computation of the Metropolis
 acceptance probability when proposing a move in the rescaling parameter. See example below.
 
-
 \note
 If PLUMED is running in a multiple-replica framework (for example using the -multi option in GROMACS),
 the arguments will be summed across replicas, unless the NOT_SHARED option is used. Also, the value of the
 \ref SELECTOR will be shared and thus will be the same in all replicas.
-
 
 \par Examples
 
