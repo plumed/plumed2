@@ -34,6 +34,35 @@ namespace isdb {
 
 //+PLUMEDOC ISDB_FUNCTION SELECT
 /*
+This function can be used to select an argument based on the value of a \ref SELECTOR.
+
+\par Examples
+
+In this example we use a simulated-tempering like approach activated by the \ref RESCALE action.
+For each value of the rescale parameter, we perform an independent Parallel Bias Metadynamics
+simulation (see \ref PBMETAD). At each moment of the simulation, only one of the \ref PBMETAD 
+actions is activated, based on the current value of the associated \ref SELECTOR. 
+The \ref SELECT action can then be used to print out the value of the (active) \ref PBMETAD bias potential.
+
+\plumedfile
+ene:  ENERGY
+d: DISTANCE ATOMS=1,2
+
+SELECTOR NAME=GAMMA VALUE=0
+
+pbmetad0: PBMETAD ARG=d SELECTOR=GAMMA SELECTOR_ID=0 SIGMA=0.1 PACE=500 HEIGHT=1 BIASFACTOR=8 FILE=HILLS.0
+pbmetad1: PBMETAD ARG=d SELECTOR=GAMMA SELECTOR_ID=1 SIGMA=0.1 PACE=500 HEIGHT=1 BIASFACTOR=8 FILE=HILLS.1
+
+RESCALE ...
+LABEL=res ARG=ene,pbmetad0.bias,pbmetad1.bias TEMP=300
+SELECTOR=GAMMA MAX_RESCALE=1.2 NOT_RESCALED=2 NBIN=2
+W0=1000 BIASFACTOR=100.0 BSTRIDE=2000 BFILE=bias.dat
+...
+
+pbactive: SELECT ARG=pbmetad0.bias,pbmetad1.bias SELECTOR=GAMMA 
+
+PRINT ARG=pbactive STRIDE=100 FILE=COLVAR
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

@@ -33,7 +33,7 @@ namespace isdb {
 /*
 Define a variable (of the type double) inside the PLUMED code that can be used and modified by other actions.
 
-A SELECTOR can be used for example to activate or modify a bias based on its current value.
+A \ref SELECTOR can be used for example to activate or modify a bias based on its current value.
 
 \par Example
 
