@@ -34,18 +34,20 @@ namespace isdb {
 
 //+PLUMEDOC ISDB_COLVAR NOE
 /*
-Calculates NOE intensities as sums of 1/r^6, also averaging over multiple equivalent atoms
+Calculates NOE intensities as sums of \f$1/r^6\f$, averaging over multiple equivalent atoms
 or ambiguous NOE.
 
 Each NOE is defined by two groups containing the same number of atoms, distances are
-calculated in pairs, transformed in 1/r^6, summed and saved as components.
+calculated in pairs, transformed in intensities as \f$1/r^6\f$, summed and saved as components.
 
 \f[
-NOE() = (\frac{1}{N_{eq}}\sum_j^{N_{eq}} (\frac{1}{r_j^6}))
+NOE = (\frac{1}{N_{eq}}\sum_j^{N_{eq}} (\frac{1}{r_j^6}))
 \f]
 
-Intensities can then in principle ensemble averaged using \ref ENSEMBLE and used to
-calculate a scoring function for example with \ref METAINFERENCE.
+Intensities can then in principle ensemble averaged using \ref ENSEMBLE or used to
+calculate a scoring function with \ref METAINFERENCE . If one wants to transform them back to distances
+it is possible to use \ref COMBINE . It is of notice that in case of averaging the intensities
+should be averaged and not the distances.
 
 \par Examples
 

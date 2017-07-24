@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015,2016 The plumed team
+   Copyright (c) 2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -43,7 +43,7 @@ namespace isdb {
 
 //+PLUMEDOC ISDB_COLVAR SAXS
 /*
-Calculate SAXS scattered intensity using the Debye equation.
+Calculates SAXS scattered intensity using the Debye equation.
 
 Intensities are calculated for a set of scattering lenght set using QVALUES numbered keywords, QVALUE cannot be 0.
 Structure factors can be either assigned using a polynomial expansion to any order using the PARAMETERS keywords;
@@ -240,7 +240,7 @@ SAXS::SAXS(const ActionOptions&ao):
     q_list[i]=q_list[i]*10.0;    //factor 10 to convert from A^-1 to nm^-1
   }
   log<<"  Bibliography ";
-  log<<plumed.cite("Jussupow, et al. (in preparatio)");
+  log<<plumed.cite("Jussupow, et al. (in preparation)");
   if(martini)   log<<plumed.cite("Niebling, Björling, Westenhoff, J Appl Crystallogr 47, 1190–1198 (2014).");
   if(atomistic) {
     log<<plumed.cite("Fraser, MacRae, Suzuki, J. Appl. Crystallogr., 11, 693–694 (1978).");

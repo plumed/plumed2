@@ -50,15 +50,15 @@ namespace isdb {
 
 //+PLUMEDOC ISDB_COLVAR CS2BACKBONE
 /*
-This collective variable calculates the backbone chemical shifts for a protein.
+Calculates the backbone chemical shifts for a protein.
 
 The functional form is that of CamShift \cite Kohlhoff:2009us. The chemical shifts
 of the selected nuclei/residues are saved as components. Reference experimental values
-can also be stored as components. The two components can then be used to calculate
+can also be stored as components. The two sets of components can then be used to calculate
 either a scoring function as in \cite Robustelli:2010dn \cite Granata:2013dk, using
-the keyword CAMSHIFT or to calculate ensemble averages chemical shift per chemical
-shift as in \cite Camilloni:2012je \cite Camilloni:2013hs (see \ref STATS and
-\ref ENSEMBLE).
+the keyword CAMSHIFT or to calculate ensemble averaged chemical shift as in \cite Camilloni:2012je
+\cite Camilloni:2013hs (see \ref ENSEMBLE, \ref STATS and \ref RESTRAINT). Finally they can
+also be used as input for \ref METAINFERENCE, \cite Bonomi:2016ip .
 
 CamShift calculation is relatively heavy because it often uses a large number of atoms, in order
 to make it faster it is currently parallelised with \ref Openmp.
@@ -135,8 +135,6 @@ RESTRAINT ARG=stcs.sqdevsum AT=0 KAPPA=0 SLOPE=24
 PRINT ARG=(cs\.hn_.*),(cs\.nh_.*) FILE=RESTRAINT STRIDE=100
 
 \endplumedfile
-
-(See also \ref WHOLEMOLECULES, \ref STATS, \ref METAD, \ref RESTRAINT and \ref PRINT)
 
 */
 //+ENDPLUMEDOC

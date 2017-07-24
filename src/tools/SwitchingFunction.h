@@ -24,6 +24,7 @@
 
 #include <string>
 #include <vector>
+#include "lepton/Lepton.h"
 
 namespace PLMD {
 
@@ -42,7 +43,7 @@ class SwitchingFunction {
 /// This is to check that switching function has been initialized
   bool init;
 /// Type of function
-  enum {rational,exponential,gaussian,smap,cubic,tanh,matheval,nativeq} type;
+  enum {rational,exponential,gaussian,smap,cubic,tanh,matheval,leptontype,nativeq} type;
 /// Inverse of scaling length.
 /// We store the inverse to avoid a division
   double invr0;
@@ -66,6 +67,14 @@ class SwitchingFunction {
 /// Low-level tool to compute rational functions.
 /// It is separated since it is called both by calculate() and calculateSqr()
   double do_rational(double rdist,double&dfunc,int nn,int mm)const;
+/// Function for lepton;
+  std::string lepton_func;
+/// Lepton expression.
+/// \warning Since lepton::CompiledExpression is mutable, a vector is necessary for multithreading!
+  std::vector<lepton::CompiledExpression> expression;
+/// Lepton expression for derivative
+/// \warning Since lepton::CompiledExpression is mutable, a vector is necessary for multithreading!
+  std::vector<lepton::CompiledExpression> expression_deriv;
 /// Evaluator for matheval:
 /// \warning Since evaluator is not thread safe, we should create one
 /// evaluator per thread.

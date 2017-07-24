@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015,2016 The plumed team
+   Copyright (c) 2016,2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -38,20 +38,41 @@ namespace isdb {
 
 //+PLUMEDOC ISDB_BIAS METAINFERENCE
 /*
-Calculate the Metainference energy for a set of back calculated experimental data.
+Calculates the Metainference energy for a set of experimental data.
+
+Metainference \cite Bonomi:2016ip is a Bayesian framework
+to model heterogeneous systems by integrating prior information with noisy, ensemble-averaged data.
+Metainference models a system and quantifies the level of noise in the data by considering a set of replicas of the system.
+
+Calculated experimental data are given in input as ARG while reference experimental values
+can be given either from fixed components of other actions using PARARG or as numbers using
+PARAMETERS. The default behavior is that of averaging the data over the available replicas,
+if this is not wanted the keyword NOENSEMBLE prevent this averaging.
+
+Metadynamic Metainference \cite Bonomi:2016ge or more in general biased Metainference requires the knowledge of
+biasing potential in order to calculate the weighted average. In this case the value of the bias
+can be provided as the last argument in ARG and adding the keyword REWEIGHT. To avoid the noise
+resulting from the instantaneus value of the bias the weight of each replica can be averaged
+over a give time using the keyword AVERAGING.
 
 The data can be averaged by using multiple replicas and weighted for a bias if present.
 The functional form of Metainference can be chosen among four variants selected
-with NOISE=GAUSS,MGAUSS,OUTLIERS,MOUTLIERS which correspond to modelling the noise for
+with NOISE=GAUSS,MGAUSS,OUTLIERS,MOUTLIERS,GENERIC which correspond to modelling the noise for
 the arguments as a single gaussian common to all the data points, a gaussian per data
-point, a single long-tailed gaussian common to all the data points or a log-tailed
- gaussian per data point.
+point, a single long-tailed gaussian common to all the data points, a log-tailed
+ gaussian per data point or using two distinct noises as for the most general formulation of Metainference.
+In this latter case the noise of the replica-averaging is gaussian (one per data point) and the noise for
+the comparison with the experiemntal data can chosen using the keywork LIKELIHOOD
+between gaussian or log-normal (one per data point), furthermore the evolution of the estimated average
+over an infinite number of replicas is driven by DFTILDE.
 
-As from Metainference theory there are two sigma values: SIGMA_MEAN represent the
+As for Metainference theory there are two sigma values: SIGMA_MEAN represent the
 error of calculating an average quantity using a finite set of replica and should
 be set as small as possible following the guidelines for replica-averaged simulations
-in the framework of the Maximum Entropy Principle. Alternatively this can be obtained
-automatically using the internal sigma mean optimisation (OPTSIGMAMEAN=SEM or FULL).
+in the framework of the Maximum Entropy Principle. Alternatively, this can be obtained
+automatically using the internal sigma mean optimisation as introduced in \cite Lohr:2017gc
+(OPTSIGMAMEAN=SEM), in this second case sigma_mean is estimated from the maximum standard error
+of the mean either over the simulation or over a defined time using the keyword AVERAGING.
 SIGMA_BIAS is an uncertainty parameter, sampled by a MC algorithm in the bounded interval
 defined by SIGMA_MIN and SIGMA_MAX. The initial value is set at SIGMA0. The MC move is a
 random displacement of maximum value equal to DSIGMA. If the number of data point is
@@ -59,7 +80,7 @@ too large and the acceptance rate drops it is possible to make the MC move over 
 exclusive, random subset of size MC_CHUNKSIZE and run more than one move setting MC_STRIDE
 in such a way that MC_CHUNKSIZE*MC_STRIDE will cover all the data points.
 
-Calculated and experimental data can be compared but for a scaling factor and/or an offset
+Calculated and experimental data can be compared modulo a scaling factor and/or an offset
 using SCALEDATA and/or ADDOFFSET, the sampling is obtained by a MC algorithm either using
 a flat or a gaussian prior setting it with SCALE_PRIOR or OFFSET_PRIOR.
 
@@ -246,8 +267,8 @@ void Metainference::registerKeywords(Keywords& keys) {
   keys.use("ARG");
   keys.add("optional","PARARG","reference values for the experimental data, these can be provided as arguments without derivatives");
   keys.add("optional","PARAMETERS","reference values for the experimental data");
-  keys.add("compulsory","NOISETYPE","functional form of the noise (GAUSS,MGAUSS,OUTLIERS,MOUTLIERS)");
-  keys.add("compulsory","LIKELIHOOD","GAUSS","the likelihood for the GENERIC metainference model, at present GAUSS or LOGN");
+  keys.add("compulsory","NOISETYPE","functional form of the noise (GAUSS,MGAUSS,OUTLIERS,MOUTLIERS,GENERIC)");
+  keys.add("compulsory","LIKELIHOOD","GAUSS","the likelihood for the GENERIC metainference model, GAUSS or LOGN");
   keys.add("compulsory","DFTILDE","0.1","fraction of sigma_mean used to evolve ftilde");
   keys.addFlag("NOENSEMBLE",false,"don't perform any replica-averaging");
   keys.addFlag("REWEIGHT",false,"simple REWEIGHT using the latest ARG as energy");
@@ -737,6 +758,7 @@ Metainference::Metainference(const ActionOptions&ao):
 
   log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");
   if(do_reweight_) log<<plumed.cite("Bonomi, Camilloni, Vendruscolo, Sci. Rep. 6, 31232 (2016)");
+  if(do_optsigmamean_>0) log<<plumed.cite("Loehr, Jussupow, Camilloni, J. Chem. Phys. 146, 165102 (2017)");
   log<<"\n";
 }
 

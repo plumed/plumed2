@@ -33,7 +33,7 @@ namespace isdb {
 
 //+PLUMEDOC ISDB_COLVAR FRET
 /*
-Calculate the FRET efficiency between a pair of atoms.
+Calculates the FRET efficiency between a pair of atoms.
 The efficiency is calculated using the Forster relation:
 
 \f[

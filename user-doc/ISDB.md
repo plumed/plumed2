@@ -6,7 +6,10 @@ Here are listed the collective variables, functions and biases originally develo
 - \subpage ISDBFunction
 - \subpage ISDBBias
 
-Furthermore using \subpage SELECTOR it is possible to xxx .
+Furthermore using \subpage SELECTOR it is possible to define a variable
+inside the PLUMED code that can be used and modified by other actions. For example,
+a \ref SELECTOR can be used in combination with \ref RESCALE to activate
+a simulated-tempering like approach.
 
 \page ISDBColvar CVs Documentation
 

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -31,6 +31,32 @@ namespace isdb {
 
 //+PLUMEDOC ISDB_GENERIC SELECTOR
 /*
+Defines a variable (of the type double) inside the PLUMED code that can be used and modified by other actions.
+
+A \ref SELECTOR can be used for example to activate or modify a bias based on its current value.
+
+\par Examples
+
+A typical example is the simulated-tempering like approach activated by \ref RESCALE.
+In this example the total potential energy of the system is rescaled
+by a parameter defined on a grid of dimension NBIN in the range from 1 to MAX_RESCALE.
+The value of the rescale parameter is determined by the current value of the \ref SELECTOR GAMMA.
+The value of the \ref SELECTOR is updated by a MC protocol inside the \ref RESCALE class.
+A well-tempered metadynamics potential is used to enhance sampling in the \ref SELECTOR space.
+
+\plumedfile
+ene:  ENERGY
+
+SELECTOR NAME=GAMMA VALUE=0
+
+RESCALE ...
+LABEL=res ARG=ene TEMP=300
+SELECTOR=GAMMA MAX_RESCALE=1.2 NBIN=2
+W0=1000 BIASFACTOR=100.0 BSTRIDE=2000 BFILE=bias.dat
+...
+
+PRINT FILE=COLVAR ARG=* STRIDE=100
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

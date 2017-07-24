@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016 The plumed team
+   Copyright (c) 2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -224,9 +224,6 @@ EM3D::EM3D(const ActionOptions&ao):
   }
   comm.Sum(&nrep_,1);
   comm.Sum(&replica_,1);
-
-  // divide sigma_mean by the square root of the number of replicas
-  sigma_mean /= sqrt(static_cast<double>(nrep_));
 
   log.printf("  atoms involved : ");
   for(unsigned i=0; i<atoms.size(); ++i) log.printf("%d ",atoms[i].serial());
