@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -42,7 +42,7 @@ In this example the total potential energy of the system is rescaled
 by a parameter defined on a grid of dimension NBIN in the range from 1 to MAX_RESCALE.
 The value of the rescale parameter is determined by the current value of the \ref SELECTOR GAMMA.
 The value of the \ref SELECTOR is updated by a MC protocol inside the \ref RESCALE class.
-A well-tempered metadynamics potential is used to enhance sampling in the \ref SELECTOR space.  
+A well-tempered metadynamics potential is used to enhance sampling in the \ref SELECTOR space.
 
 \plumedfile
 ene:  ENERGY
@@ -52,7 +52,7 @@ SELECTOR NAME=GAMMA VALUE=0
 RESCALE ...
 LABEL=res ARG=ene TEMP=300
 SELECTOR=GAMMA MAX_RESCALE=1.2 NBIN=2
-W0=1000 BIASFACTOR=100.0 BSTRIDE=2000 BFILE=bias.dat  
+W0=1000 BIASFACTOR=100.0 BSTRIDE=2000 BFILE=bias.dat
 ...
 
 PRINT FILE=COLVAR ARG=* STRIDE=100
