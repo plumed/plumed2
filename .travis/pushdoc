@@ -74,7 +74,7 @@ EOF
 case "$branchtype" in
 (official)    echo "This is the manual for an official and supported PLUMED branch." >> README.md ;;
 (unsupported) echo "This is the manual for an official but unsupported PLUMED branch. It will not appear on search engines." >> README.md ;;
-(master)      echo "This is the manual for an the development PLUMED branch." >> README.md ;;
+(master)      echo "This is the manual for the development PLUMED branch." >> README.md ;;
 (unofficial)  echo "This is the manual for an unofficial PLUMED branch. It will not appear on search engines." >> README.md ;;
 esac
 
