@@ -43,7 +43,7 @@ namespace isdb {
 
 //+PLUMEDOC ISDB_COLVAR SAXS
 /*
-Calculate SAXS scattered intensity using the Debye equation.
+Calculates SAXS scattered intensity using the Debye equation.
 
 Intensities are calculated for a set of scattering lenght set using QVALUES numbered keywords, QVALUE cannot be 0.
 Structure factors can be either assigned using a polynomial expansion to any order using the PARAMETERS keywords;

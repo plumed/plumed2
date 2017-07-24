@@ -50,7 +50,7 @@ namespace isdb {
 
 //+PLUMEDOC ISDB_COLVAR CS2BACKBONE
 /*
-This collective variable calculates the backbone chemical shifts for a protein.
+Calculates the backbone chemical shifts for a protein.
 
 The functional form is that of CamShift \cite Kohlhoff:2009us. The chemical shifts
 of the selected nuclei/residues are saved as components. Reference experimental values

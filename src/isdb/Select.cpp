@@ -34,7 +34,7 @@ namespace isdb {
 
 //+PLUMEDOC ISDB_FUNCTION SELECT
 /*
-This function can be used to select an argument based on the value of a \ref SELECTOR.
+Selects an argument based on the value of a \ref SELECTOR.
 
 \par Examples
 

@@ -38,7 +38,7 @@ namespace isdb {
 
 //+PLUMEDOC ISDB_BIAS METAINFERENCE
 /*
-Calculate the Metainference energy for a set of experimental data.
+Calculates the Metainference energy for a set of experimental data.
 
 Metainference \cite Bonomi:2016ip is a Bayesian framework
 to model heterogeneous systems by integrating prior information with noisy, ensemble-averaged data.

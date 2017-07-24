@@ -39,7 +39,7 @@ namespace isdb {
 
 //+PLUMEDOC ISDB_BIAS RESCALE
 /*
-Rescale the value of an another action, being a Collective Variable or a Bias.
+Rescales the value of an another action, being a Collective Variable or a Bias.
 
 The rescaling factor is determined by a parameter defined on a logarithmic grid of dimension NBIN in the range 
 from 1 to MAX_RESCALE. The current value of the rescaling parameter is stored and shared across

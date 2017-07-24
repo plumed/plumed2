@@ -31,7 +31,7 @@ namespace isdb {
 
 //+PLUMEDOC ISDB_GENERIC SELECTOR
 /*
-Define a variable (of the type double) inside the PLUMED code that can be used and modified by other actions.
+Defines a variable (of the type double) inside the PLUMED code that can be used and modified by other actions.
 
 A \ref SELECTOR can be used for example to activate or modify a bias based on its current value.
 
