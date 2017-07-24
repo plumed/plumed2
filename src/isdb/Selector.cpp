@@ -35,7 +35,7 @@ Defines a variable (of the type double) inside the PLUMED code that can be used 
 
 A \ref SELECTOR can be used for example to activate or modify a bias based on its current value.
 
-\par Example
+\par Examples
 
 A typical example is the simulated-tempering like approach activated by \ref RESCALE.
 In this example the total potential energy of the system is rescaled
