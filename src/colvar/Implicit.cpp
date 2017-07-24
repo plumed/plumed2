@@ -42,8 +42,7 @@ namespace colvar {
 
 //+PLUMEDOC COLVAR IMPLICIT
 /*
-
-Calculate EEF1-SB solvation free energy for a group of atoms.
+Calculates EEF1-SB solvation free energy for a group of atoms.
 
 EEF1-SB is a solvent-accessible surface area based model, where the free energy of solvation is computed using a pairwise interaction term for non-hydrogen atoms:
 \f[
