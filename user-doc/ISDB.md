@@ -11,6 +11,10 @@ inside the PLUMED code that can be used and modified by other actions. For examp
 a \ref SELECTOR can be used in combination with \ref RESCALE to activate
 a simulated-tempering like approach.
 
+Additional tutorials focused on the ISDB module are included in the following and are meant as advanced tutorials.
+
+- \subpage ISDBTutorial
+
 \page ISDBColvar CVs Documentation
 
 The following list contains descriptions of a number of the colvars that are currently implemented in the PLUMED-ISDB module.
@@ -29,4 +33,10 @@ The following list contains descriptions of functions originally developed for t
 The following list contains descriptions of biases originally developed for the PLUMED-ISDB module. They can be used in combination with any other collective variable, function or bias also outside the ISDB module.
 
 @ISDB_BIAS@
+
+\page ISDBTutorial Tutorials
+
+The following are tutorials meant to learn how to use the different methods implemented in the ISDB module.
+
+@ISDB_TUTORIALS@
 
