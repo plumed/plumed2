@@ -60,17 +60,6 @@ gmx_mpi mdrun -s run.tpr -table table.xvg -tablep table.xvg -plumed plumed-eef1.
 In order to have a converged sampling for this reference ensemble calculation it is usefull to setup a Metadynamics calculation. In particular we will use \ref PBMETAD because it is then a natural choice for Metadynamic Metainference later.
 
 \plumedfile
-# this is optional and tell to VIM that this is a PLUMED file
-# vim: ft=plumed
-# see comments just below this input file
-MOLINFO MOLTYPE=protein STRUCTURE=egaawaass.pdb
-WHOLEMOLECULES ENTITY0=1-111
-
-# EEF1SB Implicit solvation
-protein-h: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein-H
-solv: IMPLICIT ATOMS=protein-h NOPBC NL_STRIDE=10 NL_BUFFER=0.1
-bias: BIASVALUE ARG=solv
-
 # CVs, Psi9, Phi1 are not defined
 psi1: TORSION ATOMS=@psi-1
 psi2: TORSION ATOMS=@psi-2
@@ -121,74 +110,13 @@ PRINT FILE=ENERGY ARG=bias.bias,pb.bias STRIDE=200
 ENDPLUMED
 \endplumedfile
 
-In this case we are already running a multiple-replica simulation where the sampling is used to parallelise the Metadynamics time-dependent potential through the use of multiple walkers.
+In this case we arerunning a multiple-replica simulation where the sampling is used to parallelise the Metadynamics time-dependent potential through the use of multiple walkers.
 
 \verbatim
 mpiexec -np 14 gmx_mpi mdrun -s topolnew -multi 14 -plumed plumed-eef1-pbmetad.dat -table table.xvg -tablep table.xvg >& log.out &
 \endverbatim
 
 \plumedfile
-# this is optional and tell to VIM that this is a PLUMED file
-# vim: ft=plumed
-# see comments just below this input file
-MOLINFO MOLTYPE=protein STRUCTURE=egaawaass.pdb
-WHOLEMOLECULES ENTITY0=1-111
-
-# EEF1SB Implicit solvation
-protein-h: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein-H
-solv: IMPLICIT ATOMS=protein-h NOPBC NL_STRIDE=10 NL_BUFFER=0.1
-bias: BIASVALUE ARG=solv
-
-# CVs, Psi9, Phi1 are not defined
-psi1: TORSION ATOMS=@psi-1
-psi2: TORSION ATOMS=@psi-2
-psi3: TORSION ATOMS=@psi-3
-psi4: TORSION ATOMS=@psi-4
-psi5: TORSION ATOMS=@psi-5
-psi6: TORSION ATOMS=@psi-6
-psi7: TORSION ATOMS=@psi-7
-psi8: TORSION ATOMS=@psi-8
-
-phi2: TORSION ATOMS=@phi-2
-phi3: TORSION ATOMS=@phi-3
-phi4: TORSION ATOMS=@phi-4
-phi5: TORSION ATOMS=@phi-5
-phi6: TORSION ATOMS=@phi-6
-phi7: TORSION ATOMS=@phi-7
-phi8: TORSION ATOMS=@phi-8
-phi9: TORSION ATOMS=@phi-9
-
-ahc:  ALPHARMSD RESIDUES=all TYPE=OPTIMAL LESS_THAN={RATIONAL R_0=0.12}
-
-# Bulky Trp residue dihedral
-dihtrp_cacb: TORSION ATOMS=67,47,49,52
-dihtrp_cbcg: TORSION ATOMS=47,49,52,53
-
-protein-ca: GROUP NDX_FILE=index.ndx NDX_GROUP=C-alpha
-gyr: GYRATION TYPE=RADIUS ATOMS=protein-ca NOPBC
-
-# PBMetaD
-PBMETAD ...
-    LABEL=pb
-    ARG=phi2,phi3,phi4,phi5,phi6,phi7,phi8,phi9,psi1,psi2,psi3,psi4,psi5,psi6,psi7,psi8,dihtrp_cacb,dihtrp_cbcg,ahc.lessthan
-    SIGMA=1000 
-    SIGMA_MIN=0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.001
-    SIGMA_MAX=0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.2
-    ADAPTIVE=DIFF
-    HEIGHT=0.5
-    PACE=200
-    BIASFACTOR=40
-    GRID_MIN=-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,0
-    GRID_MAX=pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,5
-    GRID_WSTRIDE=5000
-    WALKERS_MPI
-... PBMETAD
-
-# output from the collective variable
-PRINT FILE=COLVAR ARG=phi2,phi3,phi4,phi5,phi6,phi7,phi8,phi9,psi1,psi2,psi3,psi4,psi5,psi6,psi7,psi8,dihtrp_cacb,dihtrp_cbcg,ahc.lessthan STRIDE=200
-# output from PBMETAD and BIASVALUE
-PRINT FILE=ENERGY ARG=bias.bias,pb.bias STRIDE=200
-
 # EXPERIMENTAL DATA SECTION
 
 # RDCs (Grzesiek et al.)
@@ -264,7 +192,7 @@ JCOUPLING ...
     ATOMS1=47,49,52,53 COUPLING1=1.21
     LABEL=jncg
 ... JCOUPLING
-#
+ 
 # Chemical shifts
 cs: CS2BACKBONE ATOMS=1-111 NRES=9 DATA=data TEMPLATE=egaawaass.pdb
 
@@ -317,14 +245,15 @@ PRINT ARG=cahast.*    STRIDE=2000 FILE=ST.RDC.CAHA
 PRINT ARG=csst.*      STRIDE=2000 FILE=ST.CS
 PRINT ARG=jhanst.*,jhahnst.*,jw5ccyst.*,jw5ncyst.* STRIDE=2000 FILE=ST.J
 
-
 # metainference entries
 
 METAINFERENCE ...
     ARG=(nh\.rdc_.*),pb.bias
     PARARG=(nh\.exp_.*)
-    NOISETYPE=MGAUSS SCALEDATA REWEIGHT  OPTSIGMAMEAN=SEM AVERAGING=200
-    SCALE_PRIOR=GAUSSIAN SCALE0=8.0 DSCALE=0.5
+    REWEIGHT 
+    NOISETYPE=MGAUSS
+    OPTSIGMAMEAN=SEM AVERAGING=200
+    SCALEDATA SCALE_PRIOR=GAUSSIAN SCALE0=8.0 DSCALE=0.5
     SIGMA0=5.0 SIGMA_MIN=0.0001 SIGMA_MAX=15.0 DSIGMA=0.1
     WRITE_STRIDE=10000
     LABEL=byrdcnh
@@ -333,8 +262,10 @@ METAINFERENCE ...
 METAINFERENCE ...
     ARG=(caha\.rdc_.*),pb.bias
     PARARG=(caha\.exp_.*)
-    NOISETYPE=MGAUSS SCALEDATA REWEIGHT OPTSIGMAMEAN=SEM AVERAGING=200
-    SCALE_PRIOR=GAUSSIAN SCALE0=9.0 DSCALE=0.5
+    REWEIGHT
+    NOISETYPE=MGAUSS
+    OPTSIGMAMEAN=SEM AVERAGING=200
+    SCALEDATA SCALE_PRIOR=GAUSSIAN SCALE0=9.0 DSCALE=0.5
     SIGMA0=5.0 SIGMA_MIN=0.0001 SIGMA_MAX=15.0 DSIGMA=0.1
     WRITE_STRIDE=10000
     LABEL=byrdccaha
@@ -343,7 +274,9 @@ METAINFERENCE ...
 METAINFERENCE ...
     ARG=(jhan\.j_.*),(jhahn\.j_.*),(jccg\.j.*),(jncg\.j.*),pb.bias
     PARARG=(jhan\.exp_.*),(jhahn\.exp_.*),(jccg\.exp.*),(jncg\.exp.*)
-    NOISETYPE=MGAUSS REWEIGHT OPTSIGMAMEAN=SEM AVERAGING=200
+    REWEIGHT
+    NOISETYPE=MGAUSS
+    OPTSIGMAMEAN=SEM AVERAGING=200
     SIGMA0=5.0 SIGMA_MIN=0.0001 SIGMA_MAX=15.0 DSIGMA=0.1
     WRITE_STRIDE=10000
     LABEL=byj
@@ -352,7 +285,9 @@ METAINFERENCE ...
 METAINFERENCE ...
     ARG=(cs\.ca_.*),(cs\.cb_.*),pb.bias
     PARARG=(cs\.expca.*),(cs\.expcb.*)
-    NOISETYPE=MOUTLIERS REWEIGHT OPTSIGMAMEAN=SEM AVERAGING=200
+    REWEIGHT
+    NOISETYPE=MOUTLIERS
+    OPTSIGMAMEAN=SEM AVERAGING=200
     SIGMA0=5.0 SIGMA_MIN=0.0001 SIGMA_MAX=15.0 DSIGMA=0.1
     WRITE_STRIDE=10000
     LABEL=bycs
@@ -368,6 +303,14 @@ PRINT ARG=bycs.*      STRIDE=200 FILE=BAYES.CS
 
 ENDPLUMED
 \endplumedfile
+
+As for the former case we are running a multiple-replica simulation where in addition to multiple-walker metadynamics we are also coupling the replicas through Metainference. The use
+of multiple-walkers metadynamics is here key in order to have the same bias defined for all the replicas. This allows us to calculate a weighted average of the experimental observables
+where the weights are defined univocally from the bias \cite Bonomi:2016ge .
+
+\verbatim
+mpiexec -np 14 gmx_mpi mdrun -s topolnew -multi 14 -plumed plumed-eef1-pbmetad-m_m.dat -table table.xvg -tablep table.xvg >& log.out &
+\endverbatim
 
 */
 
