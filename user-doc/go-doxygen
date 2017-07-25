@@ -64,6 +64,6 @@ cd latex
 # this is a workaround for a problem on the linux workstation
 # where I compile the manual - GB
 sed -i 's/pdfencoding=unicode/unicode/g' refman.tex
-make
+make -i
 cp refman.pdf ../manual.pdf
 
