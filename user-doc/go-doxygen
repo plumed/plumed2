@@ -21,7 +21,7 @@ LIST="
    TutorialsPP.md
  PerformancesPP.md
  GlossaryPP.md
- automatic tutorials"
+ automatic tutorials tutorials/others"
 
 {
   cat Doxyfile
