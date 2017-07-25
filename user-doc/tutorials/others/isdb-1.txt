@@ -4,7 +4,7 @@
 \section isdb-1-aims Aims
 
 The aim of this tutorial is to introduce the users to the ISDB module and in particular to Metadynamic Metainfenrence \cite Bonomi:2016ip \cite Bonomi:2016ge ensemble determination. 
-We will reproduce the setup of the simulation for a simple system \cite Lohr:2017gc . For a general overview of the problem of ensemble determination please read \cite Bonomi:2017dn .
+We will reproduce the setup of the simulation for a simple system \cite Lohr:2017gc . For a general overview of the problem of ensembles determination please read \cite Bonomi:2017dn .
 
 \section isdb-1-objectives Objectives
 
