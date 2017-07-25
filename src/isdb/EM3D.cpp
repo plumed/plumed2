@@ -41,7 +41,67 @@ namespace isdb {
 
 //+PLUMEDOC ISDB_COLVAR EM3D
 /*
-Put Documentation here
+Calculate the fit of a structure or ensemble of structures with a cryo-EM density map.
+
+This action implements the multi-scale Bayesian approach to cryo-EM data fitting introduced in  Ref. \cite Hanot113951 .
+This method allows efficient and accurate structural modeling of cryo-electron microscopy density maps at multiple scales, from coarse-grained to atomistic resolution, by addressing the presence of random and systematic errors in the data, sample heterogeneity, data correlation, and noise correlation.
+
+The experimental density map is fit by a Gaussian Mixture Model (GMM), which is provided as an external file specified by the keyword
+GMM_FILE. We are currently working on a web server to perform
+this operation. In the meantime, the user can request a stand-alone version of the GMM code at massimiliano.bonomi_AT_gmail.com.
+
+When run in single-replica mode, this action allows atomistic, flexible refinement of an individual structure into a density map.
+Combined with a multi-replica framework (such as the -multi option in GROMACS), the user can model an esemble of structures using
+the Metainference approach \cite Bonomi:2016ip .
+
+\warning
+To use \ref EM3D, the user should always add a \ref MOLINFO line and specify a pdb file of the system.
+
+\note
+To enhance sampling in single-structure refinement, one can use a Replica Exchange Method, such as Parallel Tempering.
+In this case, the user should add the NO_AVER flag to the input line.
+
+\note
+\ref EM3D can be used in combination with periodic and non-periodic systems. In the latter case, one should
+add the NOPBC flag to the input line
+
+\par Example
+
+In this example, we perform a single-structure refinement based on an experimental cryo-EM map. The map is fit with a GMM, whose
+parameters are listed in the file GMM_fit.dat. This file contains one line per GMM component in the following format:
+
+\plumedfile
+#! FIELDS Id Weight Mean_0 Mean_1 Mean_2 Cov_00 Cov_01 Cov_02 Cov_11 Cov_12 Cov_22 Beta
+     0  2.9993805e+01   6.54628 10.37820 -0.92988  2.078920e-02 1.216254e-03 5.990827e-04 2.556246e-02 8.411835e-03 2.486254e-02  1
+     1  2.3468312e+01   6.56095 10.34790 -0.87808  1.879859e-02 6.636049e-03 3.682865e-04 3.194490e-02 1.750524e-03 3.017100e-02  1
+     ...
+\endplumedfile
+
+To accelerate the computation of the Bayesian score, one can:
+- use neighbor lists, specified by the keywords NL_CUTOFF and NL_STRIDE;
+- calculate the restraint every other step (or more).
+
+All the heavy atoms of the system are used to calculate the density map. This list can conveniently be provided
+using a GROMACS index file.
+
+The input file looks as follows:
+
+\plumedfile
+# include pdb info
+MOLINFO STRUCTURE=prot.pdb
+
+#  all heavy atoms
+protein-h: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein-H
+
+# create EM3D score
+gmm: EM3D NOPBC SIGMA_MEAN=0.01 TEMP=300.0 NL_STRIDE=100 NL_CUTOFF=0.01 GMM_FILE=GMM_fit.dat ATOMS=protein-h
+
+# translate into bias - apply every 2 steps
+emr: BIASVALUE ARG=gmm.scoreb STRIDE=2
+
+PRINT ARG=emr.* FILE=COLVAR STRIDE=500 FMT=%20.10f
+\endplumedfile
+
 
 */
 //+ENDPLUMEDOC
@@ -146,11 +206,11 @@ PLUMED_REGISTER_ACTION(EM3D,"EM3D")
 
 void EM3D::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
-  keys.add("atoms","ATOMS","atoms for which we calculate the density map");
+  keys.add("atoms","ATOMS","atoms for which we calculate the density map, typically all heavy atoms");
   keys.add("compulsory","GMM_FILE","file with the parameters of the GMM components");
   keys.add("compulsory","TEMP","temperature");
   keys.addFlag("SERIAL",false,"perform the calculation in serial - for debug purpose");
-  keys.addFlag("NO_AVER",false,"don't do ensemble averaging");
+  keys.addFlag("NO_AVER",false,"don't do ensemble averaging in multi-replica mode");
   keys.addFlag("ANALYSIS",false,"run in analysis mode");
   keys.add("compulsory","NL_CUTOFF","The cutoff in overlap for the neighbor list");
   keys.add("compulsory","NL_STRIDE","The frequency with which we are updating the neighbor list");
@@ -237,7 +297,6 @@ EM3D::EM3D(const ActionOptions&ao):
   log.printf("  temperature of the system in energy unit %f\n",kbt_);
   log.printf("  number of replicas %u\n",nrep_);
 
-  log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");
 
   // set constant quantity before calculating stuff
   cfact_ = 1.0/pow( 2.0*pi, 1.5 );
@@ -282,6 +341,9 @@ EM3D::EM3D(const ActionOptions&ao):
   addComponentWithDerivatives("score");  componentIsNotPeriodic("score");
   addComponentWithDerivatives("scoreb"); componentIsNotPeriodic("scoreb");
 
+  log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");
+  log<<plumed.cite("Hanot, Bonomi, Greenberg, Sali, Nilges, Vendruscolo, Pellarin, bioRxiv doi: 10.1101/113951 (2017)");
+  log<<"\n";
 }
 
 void EM3D::get_GMM_m(vector<AtomNumber> &atoms)
