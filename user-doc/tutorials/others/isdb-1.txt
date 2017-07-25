@@ -4,7 +4,7 @@
 \section isdb-1-aims Aims
 
 The aim of this tutorial is to introduce the users to the ISDB module and in particular to Metadynamic Metainfenrence \cite Bonomi:2016ip \cite Bonomi:2016ge ensemble determination. 
-We will go through the setup of the simulation for a simple system \cite Lohr:2017gc . For a general overview of the problem of ensemble determination please read \cite Bonomi:2017dn .
+We will reproduce the setup of the simulation for a simple system \cite Lohr:2017gc . For a general overview of the problem of ensemble determination please read \cite Bonomi:2017dn .
 
 \section isdb-1-objectives Objectives
 
@@ -326,6 +326,6 @@ mpiexec -np 14 gmx_mpi mdrun -s topolnew -multi 14 -plumed plumed-eef1-pbmetad-m
 
 link: @subpage isdb-1
 
-description: This tutorial explains how to use PLUMED-ISDB to run Metadynamic Metainference 
+description: This tutorial show an example on how to use PLUMED-ISDB to run Metadynamic Metainference 
 
 additional-files: isdb-1
