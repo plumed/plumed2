@@ -182,7 +182,7 @@ please do not print it!
 EOF
 fi
 
-# Generate links to tutorial pages
+# Generate links to standard tutorial pages
 for file in ./tutorials/*.txt ; do
 
     link=`grep link: $file | sed -e 's/link://'`
@@ -201,6 +201,21 @@ for file in ./tutorials/*.site; do
    echo "<tr> <td> $link </td> <td> $describe </td> </tr>" >> automatic/WEBSITES.list
 
 done
+
+# Generate links for module specific tutorials
+for file in ./tutorials/others/*.txt ; do
+
+    arrIN=(${file//.\/tutorials\/others\// }); 
+    temp=$(echo $arrIN | tr "-" "\n"); 
+    modtut=$(echo $temp | awk '{print toupper($1)}')
+
+    link=`grep link: $file | sed -e 's/link://'`
+    describe=`grep description: $file | sed -e 's/description://'`
+
+    echo "<tr> <td> $link </td> <td> $describe </td> </tr>" >> automatic/"$modtut"_TUTORIALS.list  
+
+done
+
 
 # Find what modules the user has installed
 # Find the list of modules
@@ -324,7 +339,7 @@ if test -f "$ff" ; then
 mv $ff $ff.1
   {
     cat $ff.1
-    echo "In addition to the keyword above, by enabling optional modules you can access to the following keywords:"
+    echo "In addition to the keywords above, by enabling optional modules you can access to the following keywords:"
     cat $file
   } > $ff
 fi
