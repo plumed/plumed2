@@ -286,6 +286,7 @@ void Implicit::setupConstants(const vector<AtomNumber> &atoms, vector<vector<dou
   valuemap = setupValueMap();
   typemap  = setupTypeMap();
   vector<SetupMolInfo*> moldat = plumed.getActionSet().select<SetupMolInfo*>();
+  bool cter=false;
   if (moldat.size() == 1) {
     log << "  MOLINFO DATA found, using proper atom names\n";
     for(unsigned i=0; i<atoms.size(); ++i) {
@@ -296,7 +297,7 @@ void Implicit::setupConstants(const vector<AtomNumber> &atoms, vector<vector<dou
       string Atype = typemap[Rname][Aname];
 
       // Check for terminal COOH or COO- (different atomtypes & parameters!)
-      if (moldat[0]->getAtomName(atoms[i]) == "OT1") {
+      if (moldat[0]->getAtomName(atoms[i]) == "OT1" || moldat[0]->getAtomName(atoms[i]) == "OXT") {
         // We create a temporary AtomNumber object to access future atoms
         unsigned ai = atoms[i].index();
         AtomNumber tmp_an;
@@ -308,8 +309,9 @@ void Implicit::setupConstants(const vector<AtomNumber> &atoms, vector<vector<dou
           // COO-
           Atype = "OC";
         }
+        cter = true;
       }
-      if (moldat[0]->getAtomName(atoms[i]) == "OT2") {
+      if (moldat[0]->getAtomName(atoms[i]) == "OT2" || (cter == true && moldat[0]->getAtomName(atoms[i]) == "O")) {
         unsigned ai = atoms[i].index();
         AtomNumber tmp_an;
         tmp_an.setIndex(ai + 1);

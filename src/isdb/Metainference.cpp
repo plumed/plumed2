@@ -450,7 +450,7 @@ Metainference::Metainference(const ActionOptions&ao):
     } else if(read_sigma_mean_.size()==1) {
       sigma_mean2_.resize(narg,read_sigma_mean_[0]*read_sigma_mean_[0]);
     } else if(read_sigma_mean_.size()==0) {
-      sigma_mean2_.resize(narg,0.);
+      sigma_mean2_.resize(narg,0.000001);
     } else {
       error("SIGMA_MEAN0 can accept either one single value or as many values as the arguments (with NOISETYPE=MGAUSS|MOUTLIERS)");
     }
@@ -460,7 +460,7 @@ Metainference::Metainference(const ActionOptions&ao):
     if(read_sigma_mean_.size()==1) {
       sigma_mean2_.resize(1, read_sigma_mean_[0]*read_sigma_mean_[0]);
     } else if(read_sigma_mean_.size()==0) {
-      sigma_mean2_.resize(1, 0.);
+      sigma_mean2_.resize(1, 0.000001);
     } else {
       error("If you want to use more than one SIGMA_MEAN0 you should use NOISETYPE=MGAUSS|MOUTLIERS");
     }
