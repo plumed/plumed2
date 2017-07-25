@@ -15,6 +15,7 @@ Once this tutorial is completed students will be able to:
 \section isdb-1-resources Resources
 
 The \tarball{isdb-1} for this project contains the following files:
+- charmm36-eef1sb.ff: the force-field files for gromacs (not needed)
 - system: a folder with reference files for gromacs (not needed)
 - reference-impl: a folder to perform a simple implicit solvent simulation
 - reference-impl-pbmetad: a folder to perform a pbmetad implicit solvent simulation
