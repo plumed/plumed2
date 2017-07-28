@@ -46,7 +46,7 @@ protected:
   bool rankOneOutput;
   void addValueWithDerivatives();
   void addComponentWithDerivatives( const std::string& name );
-  void setValue( const unsigned& ival, const double& val, MultiValue& myvals ) const ;
+  void addValue( const unsigned& ival, const double& val, MultiValue& myvals ) const ;
   void addDerivative( const unsigned& ival, const unsigned& jder, const double& der, MultiValue& myvals ) const ;
 public:
   static void registerKeywords(Keywords&);
@@ -66,8 +66,8 @@ unsigned Function::getNumberOfDerivatives() const {
 }
 
 inline
-void Function::setValue( const unsigned& ival, const double& val, MultiValue& myvals ) const {
-  myvals.setValue( getPntrToOutput(ival)->getPositionInStream(), val ); 
+void Function::addValue( const unsigned& ival, const double& val, MultiValue& myvals ) const {
+  myvals.addValue( getPntrToOutput(ival)->getPositionInStream(), val ); 
 }
 
 inline

@@ -243,7 +243,7 @@ void Ensemble::calculateFunction( const std::vector<double>& args, MultiValue& m
   // set components
   for(unsigned i=0; i<narg; ++i) {
     // set mean
-    setValue( i, mean[i], myvals );
+    addValue( i, mean[i], myvals );
     addDerivative( i, i, dmean[i], myvals );
     if(do_reweight) {
       const double w_tmp = fact_kbt*(args[i] - mean[i]);
@@ -251,7 +251,7 @@ void Ensemble::calculateFunction( const std::vector<double>& args, MultiValue& m
     }
     if(do_moments) {
       // set moments
-      setValue( i+narg, v_moment[i], myvals );
+      addValue( i+narg, v_moment[i], myvals );
       addDerivative(i+narg, i, dv_moment[i], myvals );
       if(do_reweight) {
         const double w_tmp = fact_kbt*(pow(args[i],moment) - v_moment[i]);

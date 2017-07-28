@@ -72,7 +72,7 @@ private:
 /// Are we storing the data
   bool storedata;
 /// Variables for storing data
-  unsigned bufstart, streampos;
+  unsigned bufstart, streampos, matpos;
 /// Store information on who is using information contained in this value 
   std::map<std::string,std::vector<int> > userdata; 
 /// Is this quantity periodic
@@ -164,6 +164,8 @@ public:
   unsigned getSize() const ;
 ///
   unsigned getPositionInStream() const ;
+///
+  unsigned getPositionInMatrixStash() const ;
 ///
   std::size_t getIndex(const std::vector<unsigned> & indices) const ;
 ///

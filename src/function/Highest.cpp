@@ -78,7 +78,7 @@ void Highest::calculateFunction( const std::vector<double>& args, MultiValue& my
       for(unsigned i=1; i<args.size(); ++i) {
         if( args[i]>highest ){ highest = args[i]; highind = 0; } 
       }
-      setValue( 0, highest, myvals ); addDerivative( 0, highind, 1.0, myvals );
+      addValue( 0, highest, myvals ); addDerivative( 0, highind, 1.0, myvals );
   }
 }
 

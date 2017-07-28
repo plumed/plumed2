@@ -1,4 +1,4 @@
-#! FIELDS time parameter c2.morethan c2n.morethan
+#! FIELDS time parameter c2_morethan c2n_morethan
  0.000000 0   0.0160   0.0160
  0.000000 1   0.0181   0.0181
  0.000000 2   0.0166   0.0166

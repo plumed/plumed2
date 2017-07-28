@@ -90,7 +90,7 @@ std::vector<std::vector<std::string> > ActionRegister::expandShortcuts( const un
           if( keys.style( keyname, "compulsory") && !keys.getDefaultValue( keyname, def ) ){
               bool found=Tools::parse(words,keyname,t,replica_index);
               if( found ) keymap.insert(pair<std::string,std::string>(keyname,t));
-          } else if( keys.style( keyname, "optional") ){
+          } else if( keys.style( keyname, "optional") || keys.style( keyname, "atoms") ){
               bool found=Tools::parse(words,keyname,t,replica_index);
               if( found ) keymap.insert(pair<std::string,std::string>(keyname,t));
               else if( !found && keys.numbered( keyname ) ){

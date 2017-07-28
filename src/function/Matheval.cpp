@@ -277,7 +277,7 @@ void Matheval::calculateFunction( const std::vector<double>& args, MultiValue& m
 // e.g. func=0*x
     }
   }
-  setValue(0, expression.evaluate(), myvals );
+  addValue(0, expression.evaluate(), myvals );
   for(unsigned i=0; i<getNumberOfArguments(); i++) {
     for(unsigned j=0; j<getNumberOfArguments(); j++) {
       try {

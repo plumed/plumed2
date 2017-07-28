@@ -60,13 +60,13 @@ void Max::calculateFunction( const std::vector<double>& args, MultiValue& myvals
       plumed_dbg_assert( done_over_stream );
       double val=exp(args[0]/beta); 
       // Numerator 
-      setValue( 0, val, myvals ); addDerivative( 0, 0, val/beta, myvals );
+      addValue( 0, val, myvals ); addDerivative( 0, 0, val/beta, myvals );
   } else {
       double s=0; std::vector<double> mind( args.size() );
       for(unsigned i=0;i<args.size();++i){
           double val = exp(beta/args[i]); s += val; mind[i] = val/beta;
       }
-      double fval = beta*std::log( s ); setValue( 0, fval, myvals ); 
+      double fval = beta*std::log( s ); addValue( 0, fval, myvals ); 
       if( !doNotCalculateDerivatives() ){
           double pref = beta/s;
           for(unsigned i=0;i<args.size();++i){

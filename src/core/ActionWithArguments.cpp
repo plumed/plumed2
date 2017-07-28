@@ -208,6 +208,7 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg) {
   arguments=arg;
   clearDependencies();
   std::string fullname,name;
+  std::vector<ActionWithValue*> f_actions;
   for(unsigned i=0; i<arguments.size(); i++) {
     fullname=arguments[i]->getName();
     if(fullname.find(".")!=string::npos) {
@@ -219,7 +220,56 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg) {
     ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(name);
     plumed_massert(action,"cannot find action named (in requestArguments - this is weird)" + name);
     addDependency(action);
+    // Check if we already have this argument in the stream
+    if( arguments[i]->getRank()>0 ){
+        bool found=false; ActionWithValue* myact = (arguments[i]->getPntrToAction())->getActionThatCalculates();
+        for(unsigned k=0;k<f_actions.size();++k){
+            if( f_actions[k]==myact ){ found=true; break; }
+        }   
+        if( !found ) f_actions.push_back( myact );
+    }   
   }
+  if( f_actions.size()>1 ){
+      done_over_stream=true;
+      for(unsigned i=1;i<f_actions.size();++i){
+          if( f_actions[0]->getFullNumberOfTasks()!=f_actions[i]->getFullNumberOfTasks() ){ done_over_stream=false; break; }
+      }
+      if( done_over_stream ){
+          std::vector<std::string> empty(1); empty[0] = f_actions[0]->getLabel();
+          for(unsigned i=1;i<f_actions.size();++i){ f_actions[0]->addActionToChain( empty, f_actions[i] ); f_actions[i]->addDependency( f_actions[0] ); }
+      } else {
+          for(unsigned i=0;i<arg.size();++i){ if( arg[i]->getRank()>0 ) arg[i]->buildDataStore(); }
+      }
+  } else if( f_actions.size()==1 ) done_over_stream=true; 
+
+  if( done_over_stream ) {
+      // Get the action where this argument should be applied 
+      ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>( arguments[0]->getPntrToAction() );
+      if( !aa || !aa->done_over_stream || aa->getNumberOfArguments()>1 ) distinct_arguments.push_back( arguments[0]->getPntrToAction() );
+      else distinct_arguments.push_back( aa->getFirstNonStream() );
+      // Build vector with locations to keep derivatives of arguments 
+      arg_deriv_starts.clear(); arg_deriv_starts.resize(0);
+      arg_deriv_starts.push_back(0); unsigned nder = distinct_arguments[0]->getNumberOfDerivatives();
+      
+      for(unsigned i=1;i<getNumberOfArguments();++i){
+          // Work out what action applies forces
+          ActionWithValue* myval; ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>( arguments[i]->getPntrToAction() );
+          if( !aa || !aa->done_over_stream ) myval = arguments[i]->getPntrToAction(); 
+          else myval = aa->getFirstNonStream();
+          
+          // Check we haven't already dealt with this argument
+          int argno=-1;;
+          for(unsigned j=0;j<distinct_arguments.size();++j){
+             if( myval==distinct_arguments[j] ){ argno=j; break; }
+          }  
+          if( argno>=0 ){
+              arg_deriv_starts.push_back( arg_deriv_starts[argno] );
+          } else {
+              arg_deriv_starts.push_back( nder ); distinct_arguments.push_back( myval ); nder += myval->getNumberOfDerivatives();
+          }   
+      }   
+  }
+
 }
 
 ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
@@ -250,56 +300,7 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
          else if( narg!=nargt ) error("mismatch between number of arguments specified for different numbered ARG values");
       }
     }
-    std::vector<ActionWithValue*> f_actions; 
-    for(unsigned j=0;j<arg.size();++j){ 
-       if( arg[j]->getRank()>0 ){
-           bool found=false; ActionWithValue* myact = (arg[j]->getPntrToAction())->getActionThatCalculates();
-           for(unsigned k=0;k<f_actions.size();++k){
-               if( f_actions[k]==myact ){ found=true; break; }
-           }
-           if( !found ) f_actions.push_back( myact );
-       }
-    }
-    if( f_actions.size()>1 ){
-        done_over_stream=true; 
-        for(unsigned i=1;i<f_actions.size();++i){
-            if( f_actions[0]->getFullNumberOfTasks()!=f_actions[i]->getFullNumberOfTasks() ){ done_over_stream=false; break; }
-        }
-        if( done_over_stream ){
-            std::vector<std::string> empty(1); empty[0] = f_actions[0]->getLabel();
-            for(unsigned i=1;i<f_actions.size();++i){ f_actions[0]->addActionToChain( empty, f_actions[i] ); f_actions[i]->addDependency( f_actions[0] ); }
-        } else { 
-            for(unsigned i=0;i<arg.size();++i){ if( arg[i]->getRank()>0 ) arg[i]->buildDataStore(); }
-        }
-    } else if( f_actions.size()==1 ) done_over_stream=true;
     requestArguments(arg);
-
-    if( done_over_stream ) {
-        // Get the action where this argument should be applied 
-        ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>( getPntrToArgument(0)->getPntrToAction() );
-        if( !aa || !aa->done_over_stream || aa->getNumberOfArguments()>1 ) distinct_arguments.push_back( getPntrToArgument(0)->getPntrToAction() );
-        else distinct_arguments.push_back( aa->getFirstNonStream() );
-        // Build vector with locations to keep derivatives of arguments 
-        arg_deriv_starts.push_back(0); unsigned nder = distinct_arguments[0]->getNumberOfDerivatives();
-
-        for(unsigned i=1;i<getNumberOfArguments();++i){
-            // Work out what action applies forces
-            ActionWithValue* myval; ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>( getPntrToArgument(i)->getPntrToAction() );
-            if( !aa || !aa->done_over_stream ) myval = getPntrToArgument(i)->getPntrToAction();
-            else myval = aa->getFirstNonStream();
-
-            // Check we haven't already dealt with this argument
-            int argno=-1;;
-            for(unsigned j=0;j<distinct_arguments.size();++j){
-               if( myval==distinct_arguments[j] ){ argno=j; break; }
-            }
-            if( argno>=0 ){ 
-                arg_deriv_starts.push_back( arg_deriv_starts[argno] );
-            } else {
-                arg_deriv_starts.push_back( nder ); distinct_arguments.push_back( myval ); nder += myval->getNumberOfDerivatives();
-            }
-        }
-    }
   }
 }
 

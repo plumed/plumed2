@@ -78,7 +78,7 @@ void Lowest::calculateFunction( const std::vector<double>& args, MultiValue& myv
       for(unsigned i=1; i<args.size(); ++i) {
         if( args[i]<lowest ){ lowest = args[i]; lowind = 0; } 
       }
-      setValue( 0, lowest, myvals ); addDerivative( 0, lowind, 1.0, myvals );
+      addValue( 0, lowest, myvals ); addDerivative( 0, lowind, 1.0, myvals );
   }
 }
 

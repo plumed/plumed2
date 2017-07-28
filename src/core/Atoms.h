@@ -220,6 +220,7 @@ public:
   void removeVirtualAtom(ActionAtomistic*);
   ActionAtomistic* getVirtualAtomsAction(AtomNumber)const;
   bool isVirtualAtom(AtomNumber)const;
+  const std::map<std::string,std::vector<AtomNumber> >& getAllGroups() const ;
   void insertGroup(const std::string&name,const std::vector<AtomNumber>&a);
   void removeGroup(const std::string&name);
   void writeBinary(std::ostream&)const;
@@ -299,6 +300,11 @@ Vector & Atoms::getVatomForces( const AtomNumber& ind ) {
 inline
 Vector Atoms::getVatomPosition( const AtomNumber& ind ) const {
   return positions[ind.index()];
+}
+
+inline
+const std::map<std::string,std::vector<AtomNumber> >& Atoms::getAllGroups() const {
+  return groups;
 }
 
 

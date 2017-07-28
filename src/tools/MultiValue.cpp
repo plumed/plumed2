@@ -23,7 +23,7 @@
 
 namespace PLMD {
 
-MultiValue::MultiValue( const unsigned& nvals, const unsigned& nder ):
+MultiValue::MultiValue( const unsigned& nvals, const unsigned& nder, const unsigned ncols, const unsigned nmat  ):
   task_index(0),
   values(nvals),
   nderivatives(nder),
@@ -31,7 +31,11 @@ MultiValue::MultiValue( const unsigned& nvals, const unsigned& nder ):
   hasderiv(nvals*nder,false),
   nactive(nvals),
   active_list(nvals*nder),
-  atLeastOneSet(false)
+  nmatrix_cols(ncols),
+  matrix_element_stash(ncols*nmat),
+  atLeastOneSet(false),
+  vector_call(false),
+  nindices(0)
 {
 }
 
@@ -42,20 +46,22 @@ void MultiValue::resize( const unsigned& nvals, const unsigned& nder ) {
 }
 
 void MultiValue::clearAll() {
+  for(unsigned i=0; i<values.size(); ++i) values[i]=0;
   if( !atLeastOneSet ) return;
   for(unsigned i=0; i<values.size(); ++i) clear(i);
   atLeastOneSet=false;
 }
 
 void MultiValue::clear( const unsigned& ival ) {
-  values[ival]=0; 
+  values[ival]=0;
+  if( !atLeastOneSet ) return;
   unsigned base=ival*nderivatives;
   for(unsigned i=0; i<nactive[ival]; ++i){
      unsigned k = base+active_list[base+i]; derivatives[k]=0.; hasderiv[k]=false; 
   }
   nactive[ival]=0;
 #ifndef NDEBUG
-  for(unsigned i=0; i<nderivatives;++i) plumed_dbg_assert( hasderiv[base+i]==false ); 
+  for(unsigned i=0; i<nderivatives;++i) plumed_dbg_assert( hasderiv[base+i]==false );   
 #endif
 }
 

@@ -60,13 +60,13 @@ void AltMin::calculateFunction( const std::vector<double>& args, MultiValue& myv
       plumed_dbg_assert( done_over_stream );
       double val=exp(-beta*args[0]); 
       // Numerator 
-      setValue( 0, val, myvals ); addDerivative( 0, 0, -beta*val, myvals );
+      addValue( 0, val, myvals ); addDerivative( 0, 0, -beta*val, myvals );
   } else {
       double s=0; std::vector<double> mind( args.size() );
       for(unsigned i=0;i<args.size();++i){
           double val = exp(-beta*args[i]); s += val; mind[i] = -beta*val;
       }
-      double fval = - std::log( s ) / beta; setValue( 0, fval, myvals ); 
+      double fval = - std::log( s ) / beta; addValue( 0, fval, myvals ); 
       if( !doNotCalculateDerivatives() ){
           double pref = -1.0 / (beta*s);
           for(unsigned i=0;i<args.size();++i){

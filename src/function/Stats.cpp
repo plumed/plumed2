@@ -164,14 +164,14 @@ void Stats::calculateFunction( const std::vector<double>& args, MultiValue& myva
       double dev = args[i]-parameters[i];
       if(upperd&&dev<0) dev=0.;
       if(components) {
-        setValue( i, dev*dev, myvals );
+        addValue( i, dev*dev, myvals );
         addDerivative( i, i, 2*dev, myvals );
       } else {
         nsqd += dev*dev;
         addDerivative( 0, i, 2*dev, myvals );
       }
     }
-    if(!components) setValue( 0, nsqd, myvals ); 
+    if(!components) addValue( 0, nsqd, myvals ); 
 
   } else {
 
@@ -202,10 +202,10 @@ void Stats::calculateFunction( const std::vector<double>& args, MultiValue& myva
     const double slope = num * idev2x;
     const double inter = (scy - slope * scx)/ns;
 
-    setValue(0, nsqd, myvals ); 
-    setValue(1, correlation, myvals ); 
-    setValue(2, slope, myvals ); 
-    setValue(3, inter, myvals ); 
+    addValue(0, nsqd, myvals ); 
+    addValue(1, correlation, myvals ); 
+    addValue(2, slope, myvals ); 
+    addValue(3, inter, myvals ); 
 
     /* derivatives */
     for(unsigned i=0; i<parameters.size(); ++i) {

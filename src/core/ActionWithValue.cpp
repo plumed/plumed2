@@ -420,7 +420,7 @@ void ActionWithValue::runAllTasks() {
   }
 
   // Get the total number of streamed quantities that we need
-  unsigned nquantities = 0; getNumberOfStreamedQuantities( nquantities );
+  unsigned nquantities = 0, ncols=0, nmatrices=0; getNumberOfStreamedQuantities( nquantities, ncols, nmatrices );
   // Get size for buffer
   unsigned bufsize=0; getSizeOfBuffer( nactive_tasks, bufsize );
   if( buffer.size()!=bufsize ) buffer.resize( bufsize );
@@ -438,7 +438,7 @@ void ActionWithValue::runAllTasks() {
   {
     std::vector<double> omp_buffer;
     if( nt>1 ) omp_buffer.resize( bufsize, 0.0 );
-    MultiValue myvals( nquantities, nderivatives  );
+    MultiValue myvals( nquantities, nderivatives, ncols, nmatrices );
     myvals.clearAll();
 
     #pragma omp for nowait
@@ -478,9 +478,15 @@ void ActionWithValue::getNumberOfStreamedDerivatives( unsigned& nderivatives ) c
   if( action_to_do_after ) action_to_do_after->getNumberOfStreamedDerivatives( nderivatives );
 }
 
-void ActionWithValue::getNumberOfStreamedQuantities( unsigned& nquants ) const {
-  for(unsigned i=0;i<values.size();++i){ values[i]->streampos=nquants; nquants++; }
-  if( action_to_do_after ) action_to_do_after->getNumberOfStreamedQuantities( nquants );
+void ActionWithValue::getNumberOfStreamedQuantities( unsigned& nquants, unsigned& ncols, unsigned& nmat ) const {
+  for(unsigned i=0;i<values.size();++i){ 
+     if( values[i]->getRank()==2 && values[i]->storedata ){ 
+         if( values[i]->getShape()[1]>ncols ){ ncols = values[i]->getShape()[1]; }
+         values[i]->matpos=nmat; nmat++; 
+     }
+     values[i]->streampos=nquants; nquants++; 
+  }
+  if( action_to_do_after ) action_to_do_after->getNumberOfStreamedQuantities( nquants, ncols, nmat );
 }
 
 void ActionWithValue::getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize ){
@@ -500,10 +506,51 @@ void ActionWithValue::prepareForTasks(){
   if( action_to_do_after ) action_to_do_after->prepareForTasks();
 }
 
+void ActionWithValue::runTask( const unsigned& task_index, const unsigned& current, const unsigned colno, MultiValue& myvals ) const {
+  const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
+  if( aa ){
+      if( aa->done_over_stream ) { 
+          // Now check if the task takes a matrix as input - if it does do it
+          bool do_this_task = ((aa->getPntrToArgument(0))->getRank()==2);
+#ifdef DNDEBUG
+          if( do_this_task ){
+              for(unsigned i=1;i<aa->getNumberOfArguments();++i) plumed_dbg_assert( (aa->getPntrToArgument(i))->getRank()==2 ); 
+          }
+#endif
+          if( do_this_task ){ myvals.vector_call=false; myvals.setTaskIndex(task_index); performTask( current, myvals ); }
+      }
+  }
+
+  // Check if we need to store stuff
+  bool matrix=true; 
+  for(unsigned i=0;i<values.size();++i){
+      if( values[i]->getRank()!=2 ){ matrix=false; break; }
+  }
+  if( matrix ){  
+      for(unsigned i=0;i<values.size();++i){
+          if( values[i]->storedata ) myvals.stashMatrixElement( values[i]->getPositionInMatrixStash(), colno, myvals.get( values[i]->getPositionInStream() ) );
+      }
+  }
+  
+  // Now continue on with the stream
+  if( action_to_do_after ){
+      if( action_to_do_after->isActive() ) action_to_do_after->runTask( task_index, current, colno, myvals );
+  }
+}
+
 void ActionWithValue::runTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
-  myvals.setTaskIndex(task_index); performTask( current, myvals ); 
+  myvals.setTaskIndex(task_index); myvals.vector_call=true; performTask( current, myvals ); 
   if( action_to_do_after ){
      if( action_to_do_after->isActive() ) action_to_do_after->runTask( task_index, current, myvals );
+  }
+}
+
+void ActionWithValue::clearMatrixElements( MultiValue& myvals ) const {
+  for(unsigned i=0;i<values.size();++i){
+      if( values[i]->getRank()==2 ) myvals.clear( values[i]->getPositionInStream() ); 
+  }
+  if( action_to_do_after ){
+     if( action_to_do_after->isActive() ) action_to_do_after->clearMatrixElements( myvals );
   }
 }
 
@@ -515,7 +562,8 @@ void ActionWithValue::recomputeNumberInStream( unsigned& nquants ) const {
         av->recomputeNumberInStream( nquants );
      }
   }
-  getNumberOfStreamedQuantities( nquants );
+  unsigned ncols=0, nmat=0;
+  getNumberOfStreamedQuantities( nquants, ncols, nmat );
 }
 
 void ActionWithValue::rerunTask( const unsigned& task_index, MultiValue& myvals ) const {
@@ -526,7 +574,8 @@ void ActionWithValue::rerunTask( const unsigned& task_index, MultiValue& myvals 
         av->rerunTask( task_index, myvals );
      }
   }
-  unsigned nquantities = 0; getNumberOfStreamedQuantities( nquantities ); unsigned nderivatives = 0; getNumberOfStreamedDerivatives( nderivatives );
+  unsigned ncol=0, nmat=0, nquantities = 0; getNumberOfStreamedQuantities( nquantities, ncol, nmat ); 
+  unsigned nderivatives = 0; getNumberOfStreamedDerivatives( nderivatives );
   if( myvals.getNumberOfValues()!=nquantities || myvals.getNumberOfDerivatives()!=nderivatives ) myvals.resize( nquantities, nderivatives );
   myvals.setTaskIndex(task_index); performTask( fullTaskList[task_index], myvals );
 }
@@ -546,8 +595,16 @@ void ActionWithValue::gatherAccumulators( const unsigned& taskCode, const MultiV
                }
            }
       } else if( values[i]->storedata ){
-           unsigned nspace=1; if( values[i]->hasDeriv ) nspace=(1 + values[i]->getNumberOfDerivatives() );
-           unsigned vindex = bufstart + taskCode*nspace; buffer[vindex] += myvals.get(sind);
+           // This looks after storing for matrices 
+           if( values[i]->getRank()==2 && !values[i]->hasDeriv ){
+              unsigned ncols = values[i]->getShape()[1];
+              unsigned vindex = bufstart + taskCode*ncols; unsigned matind = values[i]->getPositionInMatrixStash();
+              for(unsigned j=0;j<ncols;++j) buffer[vindex] += myvals.getStashedMatrixElement( matind, j );
+           // This looks after storing in all other cases 
+           } else {
+              unsigned nspace=1; if( values[i]->hasDeriv ) nspace=(1 + values[i]->getNumberOfDerivatives() );
+              unsigned vindex = bufstart + taskCode*nspace; buffer[vindex] += myvals.get(sind);
+           }
       } 
   }
   if( action_to_do_after ){

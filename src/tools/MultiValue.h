@@ -29,6 +29,7 @@
 namespace PLMD {
 
 class MultiValue {
+friend class ActionWithValue;
 private:
 /// The index of the task we are currently performing
   unsigned task_index;
@@ -44,17 +45,24 @@ private:
   std::vector<unsigned> nactive, active_list;
 /// Logical to check if any derivatives were set
   bool atLeastOneSet;
+/// This allows us to store matrix elements
+  unsigned nmatrix_cols;
+  std::vector<double> matrix_element_stash;
 /// This is a fudge to save on vector resizing in MultiColvar
+  bool vector_call;
+  unsigned nindices;
   std::vector<unsigned> indices, sort_indices;
   std::vector<Vector> tmp_atoms;
 public:
-  MultiValue( const unsigned&, const unsigned& );
+  MultiValue( const unsigned& nvals, const unsigned& nder, const unsigned ncols=0, const unsigned nmat=0 );
   void resize( const unsigned&, const unsigned& );
 /// Set the task index prior to the loop
   void setTaskIndex( const unsigned& tindex );
 /// Get the task index
   unsigned getTaskIndex() const ;
 ///
+  void setNumberOfIndices( const unsigned& nat );
+  unsigned getNumberOfIndices() const ;
   std::vector<unsigned>& getIndices();
   std::vector<unsigned>& getSortIndices();
   std::vector<Vector>& getAtomVector();
@@ -62,6 +70,8 @@ public:
   unsigned getNumberOfValues() const ;
 /// Get the number of derivatives in the stash
   unsigned getNumberOfDerivatives() const ;
+///
+  bool inVectorCall() const ;
 /// Set value numbered
   void setValue( const unsigned&,  const double& );
 /// Add value numbered
@@ -83,6 +93,10 @@ public:
   unsigned getNumberActive( const unsigned& ) const ;
 ///
   unsigned getActiveIndex( const unsigned& , const unsigned& ) const ;
+/// 
+  void stashMatrixElement( const unsigned& imat, const unsigned& jind, const double& val );
+///
+  double getStashedMatrixElement( const unsigned& imat, const unsigned& jind ) const ;
 };
 
 inline
@@ -151,6 +165,16 @@ unsigned MultiValue::getActiveIndex( const unsigned& ival, const unsigned& ind )
 }
 
 inline
+void MultiValue::setNumberOfIndices( const unsigned& nat ) {
+  nindices = nat;
+}
+
+inline
+unsigned MultiValue::getNumberOfIndices() const {
+  return nindices;
+}
+
+inline
 std::vector<unsigned>& MultiValue::getIndices() {
   return indices;
 }
@@ -173,6 +197,21 @@ void MultiValue::setTaskIndex( const unsigned& tindex ) {
 inline
 unsigned MultiValue::getTaskIndex() const {
   return task_index;
+}
+
+inline
+void MultiValue::stashMatrixElement( const unsigned& imat, const unsigned& jind, const double& val ) {
+  matrix_element_stash[imat*nmatrix_cols + jind] = val;
+}
+
+inline
+double MultiValue::getStashedMatrixElement( const unsigned& imat, const unsigned& jind ) const {
+  return matrix_element_stash[imat*nmatrix_cols + jind];
+}
+
+inline
+bool MultiValue::inVectorCall() const {
+  return vector_call;
 }
 
 }

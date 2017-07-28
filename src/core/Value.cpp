@@ -129,7 +129,7 @@ bool Value::applyForce( std::vector<double>& forces ) const {
          for(unsigned j=0;j<N;++j) forces[j] += inputForces[i]*data[ i*(1+N) ];
       }
   } else if( shape.size()>0 ) {
-      const unsigned N=action->getNumberOfDerivatives(); 
+      const unsigned N=action->getNumberOfDerivatives();
       unsigned nquants=0; action->recomputeNumberInStream( nquants );
       MultiValue myvals( nquants, N );
       for(unsigned i=0;i<inputForces.size();++i){
@@ -232,14 +232,14 @@ void Value::activateTasks( std::vector<unsigned>& taskFlags ) const {
 }
 
 unsigned Value::getSize() const {
-  unsigned size=1; for(unsigned i=0;i<shape.size();++i) size *= shape[i];
+  unsigned size=getNumberOfValues(); 
   if( shape.size()>0 && hasDeriv ) return size*( 1 + action->getNumberOfDerivatives() );
   return size;
 }
 
 unsigned Value::getNumberOfValues() const {
-  if( shape.size()>0 ) return action->getFullNumberOfTasks();
-  return 1;
+  unsigned size=1; for(unsigned i=0;i<shape.size();++i) size *= shape[i];
+  return size;
 }
 
 double Value::get(const unsigned& ival) const {
@@ -277,6 +277,10 @@ void Value::print( const std::string& uselab, OFile& ofile ) const {
 
 unsigned Value::getPositionInStream() const {
   return streampos; 
+}
+
+unsigned Value::getPositionInMatrixStash() const {
+  return matpos;
 }
 
 const std::vector<unsigned>& Value::getShape() const {

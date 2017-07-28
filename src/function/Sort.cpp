@@ -101,7 +101,7 @@ void Sort::calculateFunction( const std::vector<double>& args, MultiValue& myval
 // STL sort sorts based on first element (value) then second (index)
   sort(vals.begin(),vals.end());
   for(int i=0; i<getNumberOfComponents(); ++i) {
-    setValue( i, vals[i].first, myvals );
+    addValue( i, vals[i].first, myvals );
     addDerivative( i, vals[i].second, 1.0, myvals );
   }
 }

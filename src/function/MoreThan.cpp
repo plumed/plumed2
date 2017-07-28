@@ -92,7 +92,7 @@ MoreThan::MoreThan(const ActionOptions&ao):
 
 void MoreThan::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
   plumed_dbg_assert( args.size()==1 ); double dv, f = 1.0 - switchingFunction.calculate( args[0], dv );
-  setValue( 0, f, myvals ); addDerivative( 0, 0, -dv*args[0], myvals );
+  addValue( 0, f, myvals ); addDerivative( 0, 0, -dv*args[0], myvals );
 }
 
 }

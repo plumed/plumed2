@@ -158,15 +158,15 @@ void Path::calculateFunction( const std::vector<double>& args, MultiValue& myval
       plumed_dbg_assert( done_over_stream );
       double val=exp(-lambda*args[0]); double fram = framep[myvals.getTaskIndex()];
       // Numerator
-      setValue( 0, fram*val, myvals ); addDerivative( 0, 0, -lambda*fram*val, myvals );
+      addValue( 0, fram*val, myvals ); addDerivative( 0, 0, -lambda*fram*val, myvals );
       // Weight
-      setValue( 1, val, myvals ); addDerivative( 1, 0, -lambda*val, myvals );
+      addValue( 1, val, myvals ); addDerivative( 1, 0, -lambda*val, myvals );
   } else {
       double s=0, norm=0; std::vector<double> normd( args.size() );
       for(unsigned i=0;i<args.size();++i){
           double val = exp(-lambda*args[i]); s += framep[i]*val; norm += val; normd[i] = -lambda*val;
       }
-      setValue( 0, s / norm, myvals ); setValue( 1, -std::log( norm )/lambda, myvals );
+      addValue( 0, s / norm, myvals ); addValue( 1, -std::log( norm )/lambda, myvals );
       if( !doNotCalculateDerivatives() ){
           double zpref = ( 1.0/(norm*lambda) ), ddenom = s /(norm*norm);
           for(unsigned i=0;i<args.size();++i){

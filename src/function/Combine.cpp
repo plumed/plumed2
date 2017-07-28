@@ -185,7 +185,7 @@ Combine::Combine(const ActionOptions&ao):
 void Combine::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
   double combine=0.0;
   if( args.size()==1 ) {
-      unsigned ind = myvals.getTaskIndex();
+      unsigned ind = myvals.getTaskIndex(); plumed_dbg_assert( ind<parameters.size() );
       double cv = getPntrToArgument(0)->difference( parameters[ind], args[0] );
       combine = coefficients[ind]*pow(cv,powers[ind]); 
       addDerivative( 0, 0, coefficients[ind]*powers[ind]*pow(cv,powers[ind]-1.0), myvals ); 
@@ -196,7 +196,7 @@ void Combine::calculateFunction( const std::vector<double>& args, MultiValue& my
         addDerivative(0, i, coefficients[i]*powers[i]*pow(cv,powers[i]-1.0), myvals );
       };
   }
-  setValue( 0, combine, myvals );
+  addValue( 0, combine, myvals );
 }
 
 }

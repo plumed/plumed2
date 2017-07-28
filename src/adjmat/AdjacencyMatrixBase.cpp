@@ -20,175 +20,164 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "AdjacencyMatrixBase.h"
-#include "multicolvar/BridgedMultiColvarFunction.h"
-#include "multicolvar/AtomValuePack.h"
-#include "multicolvar/CatomPack.h"
 #include "core/PlumedMain.h"
-#include "core/ActionSet.h"
+#include "core/Atoms.h"
 
 namespace PLMD {
 namespace adjmat {
 
 void AdjacencyMatrixBase::registerKeywords( Keywords& keys ) {
-  multicolvar::MultiColvarBase::registerKeywords( keys );
-  keys.remove("LOWMEM"); keys.use("HIGHMEM");
+  Action::registerKeywords( keys );
+  ActionAtomistic::registerKeywords( keys );
+  ActionWithValue::registerKeywords( keys );
+  keys.add("atoms","GROUP","the atoms for which you would like to calculate the adjacency matrix");
+  keys.add("atoms","GROUPA","");
+  keys.add("atoms","GROUPB","");
+  keys.reserve("atoms","GROUPC","");
+  keys.addFlag("COMPONENTS",false,"also calculate the components of the vector connecting the atoms in the contact matrix");
+  keys.addFlag("NOPBC",false,"don't use pbc");
 }
 
 AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
   Action(ao),
-  MultiColvarBase(ao),
-  connect_id(0),
-  no_third_dim_accum(true),
-  mat(NULL)
+  ActionAtomistic(ao),
+  ActionWithValue(ao),
+  linkcells(comm)
 {
+  std::vector<unsigned> shape(2); std::vector<AtomNumber> t; parseAtomList("GROUP", t );
+  if( t.size()==0 ){
+      std::vector<AtomNumber> ta; parseAtomList("GROUPA",ta); 
+      std::vector<AtomNumber> tb; parseAtomList("GROUPB",tb);
+      if( ta.size()==0 || tb.size()==0 ) error("no atoms have been specified in input");
+
+      // Create list of tasks
+      log.printf("  atoms in GROUPA ");
+      for(unsigned i=0;i<ta.size();++i){ log.printf("%d ", ta[i].serial()); addTaskToList( i ); t.push_back(ta[i]); }
+      log.printf("\n");
+      log.printf("  atoms in GROUPB "); ablocks.resize( tb.size() ); unsigned n=0;
+      for(unsigned i=0;i<tb.size();++i){ 
+          log.printf("%d ", tb[i].serial()); 
+          bool found=false; unsigned inum=0;
+          for(unsigned j=0; j<ta.size(); ++j) {
+              if( ta[j]==tb[i] ){ found=true; inum=j; break; }
+          }
+          if( found ){ ablocks[i]=inum; }
+          else { ablocks[i]=ta.size()+n; t.push_back(tb[i]); n++; } 
+      }
+      log.printf("\n"); shape[0]=ta.size(); shape[1]=tb.size(); 
+      // Create a group of the atoms in the rows 
+      atoms.insertGroup( getLabel(), ta );
+  } else {
+      // Create list of tasks 
+      log.printf("  atoms in GROUP "); ablocks.resize( t.size() );
+      for(unsigned i=0;i<t.size();++i){ log.printf("%d ", t[i].serial()); addTaskToList( i ); ablocks[i]=i; }
+      log.printf("\n"); shape[0]=shape[1]=t.size();
+      // Create a group of the atoms in the rows
+      atoms.insertGroup( getLabel(), t );
+  }
+  if( keywords.exists("GROUPC") ){
+      std::vector<AtomNumber> tc; parseAtomList("GROUPC",tc);
+      if( tc.size()==0 ) error("no atoms in GROUPC specified");
+      log.printf("  atoms in GROUPC "); 
+      for(unsigned i=0;i<tc.size();++i){ log.printf("%d ", tc[i].serial()); t.push_back(tc[i]); }
+      log.printf("\n");
+  }
+  // Request the atoms from the ActionAtomistic
+  requestAtoms( t ); parseFlag("COMPONENTS",components); parseFlag("NOPBC",nopbc);
+  addComponentWithDerivatives( "w", shape ); componentIsNotPeriodic("w"); 
+  // if( components ){ 
+  //    addComponentWithDerivatives( "x", shape ); componentIsNotPeriodic("x");
+  //    addComponentWithDerivatives( "y", shape ); componentIsNotPeriodic("y");
+  //    addComponentWithDerivatives( "z", shape ); componentIsNotPeriodic("z");
+  // }
   log<<"  Bibliography "<<plumed.cite("Tribello, Giberti, Sosso, Salvalaglio and Parrinello, J. Chem. Theory Comput. 13, 1317 (2017)")<<"\n";
 }
 
-void AdjacencyMatrixBase::parseConnectionDescriptions( const std::string& key, const bool& multiple, const unsigned& nrow_t ) {
-  if( getNumberOfNodeTypes()==1 || (getNumberOfNodeTypes()==2 && nrow_t==1) ) {
-    std::vector<std::string> sw;
-    if( !multiple ) {
-      sw.resize(1); parse(key,sw[0]);
-      if(sw[0].length()==0) error("could not find " + key + " keyword");
-    } else {
-      std::string input;
-      for(int i=1;; i++) {
-        if( !parseNumbered(key, i, input ) ) break;
-        sw.push_back( input );
-      }
-    }
-    setupConnector( connect_id, 0, 0, sw );
-  } else {
-    if( multiple ) error("keyword " + key + " does not work with multiple input strings");
-    unsigned nr, nc;
-    if( nrow_t==0 ) {
-      nr=nc=getNumberOfNodeTypes();
-    } else {
-      nr=nrow_t; nc = getNumberOfNodeTypes() - nr;
-    }
-    for(unsigned i=0; i<nr; ++i) {
-      // Retrieve the base number
-      unsigned ibase;
-      if( nc<10 ) {
-        ibase=(i+1)*10;
-      } else if ( nc<100 ) {
-        ibase=(i+1)*100;
-      } else {
-        error("wow this is an error I never would have expected");
-      }
-
-      for(unsigned j=i; j<nc; ++j) {
-        std::vector<std::string> sw(1); parseNumbered(key,ibase+j+1,sw[0]);
-        if(sw[0].length()==0) {
-          std::string num; Tools::convert(ibase+j+1,num);
-          error("could not find " + key + num + " keyword. Need one " + key + " keyword for each distinct base-multicolvar-pair type");
-        }
-        setupConnector( connect_id, i, j, sw );
-      }
-    }
-  }
-  connect_id++;
+void AdjacencyMatrixBase::setLinkCellCutoff( const double& lcut, double tcut ) {
+  linkcells.setCutoff( lcut );
 }
 
-unsigned AdjacencyMatrixBase::getSizeOfInputVectors() const {
-  if( mybasemulticolvars.size()==0 ) return 2;
-
-  unsigned nq = mybasemulticolvars[0]->getNumberOfQuantities();
-  for(unsigned i=1; i<mybasemulticolvars.size(); ++i) {
-    if( mybasemulticolvars[i]->getNumberOfQuantities()!=nq ) error("mismatch between vectors in base colvars");
-  }
-  return nq;
+void AdjacencyMatrixBase::buildCurrentTaskList( std::vector<unsigned>& tflags ) const {
+  tflags.assign(tflags.size(),1);
 }
 
-unsigned AdjacencyMatrixBase::getNumberOfNodeTypes() const {
-  unsigned size=mybasemulticolvars.size();
-  if( size==0 ) return 1;
-  return size;
+void AdjacencyMatrixBase::calculate(){
+  std::vector<Vector> ltmp_pos( ablocks.size() );
+  for(unsigned i=0; i<ablocks.size(); ++i) {
+      ltmp_pos[i]=getPosition( ablocks[i] );
+  }
+  linkcells.buildCellLists( ltmp_pos, ablocks, getPbc() );
+  // Now run all the tasks
+  runAllTasks();
 }
 
-void AdjacencyMatrixBase::retrieveTypeDimensions( unsigned& nrows, unsigned& ncols, unsigned& ntype ) const {
-  bool allsame=(ablocks[0].size()==ablocks[1].size());
-  if( allsame ) {
-    for(unsigned i=0; i<ablocks[0].size(); ++i) {
-      if( ablocks[0][i]!=ablocks[1][i] ) allsame=false;
-    }
+void AdjacencyMatrixBase::performTask( const unsigned& current, MultiValue& myvals ) const {
+  // Retrieve cells required from link cells
+  std::vector<unsigned> cells_required( linkcells.getNumberOfCells() ); unsigned ncells_required=0;
+  linkcells.addRequiredCells( linkcells.findMyCell( getPosition(current) ), ncells_required, cells_required );
+
+  // Now retrieve bookeeping arrays
+  std::vector<Vector> & atoms( myvals.getAtomVector() );
+  std::vector<unsigned> & indices( myvals.getIndices() ); 
+  if( indices.size()!=(1+ablocks.size()) ){
+     indices.resize( 1+ablocks.size() ); atoms.resize( 1+ablocks.size() );
   }
 
-  if( allsame ) {
-    std::vector<unsigned> types(1); types[0]=atom_lab[ablocks[0][0]].first;
-    for(unsigned i=1; i<ablocks[0].size(); ++i) {
-      bool found = false;
-      for(unsigned j=0; j<types.size(); ++j) {
-        if( atom_lab[ablocks[0][i]].first==types[j] ) { found=true; break; }
+  // Now get the positions
+  unsigned natoms=1; indices[0]=current;
+  linkcells.retrieveAtomsInCells( ncells_required, cells_required, natoms, indices );
+  myvals.setNumberOfIndices( natoms );
+
+  // Apply periodic boundary conditions
+  for(unsigned i=0; i<natoms; ++i) atoms[i] = getPosition(indices[i]) - getPosition(current);
+  if( !nopbc ) pbcApply( atoms, natoms );
+
+  // Now loop over all atoms in coordination sphere
+  MatrixElementPack mypack( myvals, components, this ); 
+  mypack.setIndex( 0, current ); Vector zero; zero.zero(); mypack.setPosition( 0, zero );
+  for(unsigned i=1;i<natoms;++i){
+      mypack.setIndex( 1, indices[i] ); mypack.setPosition( 1, atoms[i] );
+      double weight = calculateWeight( mypack ); 
+      if( weight<epsilon ) continue;
+      // Now set the matrix weight and the vector if required  
+      myvals.setValue( getPntrToOutput(0)->getPositionInStream(), weight ); 
+      if( components ) {
+          unsigned x_index = getPntrToOutput(1)->getPositionInStream();
+          unsigned y_index = getPntrToOutput(2)->getPositionInStream();
+          unsigned z_index = getPntrToOutput(3)->getPositionInStream();
+          myvals.setValue( x_index, atoms[i][0] ); myvals.setValue( y_index, atoms[i][1] ); myvals.setValue( z_index, atoms[i][2] );
+          if( !doNotCalculateDerivatives() ){
+              myvals.addDerivative( x_index, 3*indices[0]+0, -1 ); myvals.addDerivative( x_index, 3*indices[i]+0, +1 );
+              myvals.addDerivative( y_index, 3*indices[0]+1, -1 ); myvals.addDerivative( y_index, 3*indices[i]+1, +1 );
+              myvals.addDerivative( z_index, 3*indices[0]+2, -1 ); myvals.addDerivative( z_index, 3*indices[i]+2, +1 );
+              // Update dynamic lists for central atom
+              myvals.updateIndex( x_index, 3*indices[0]+0 ); myvals.updateIndex( y_index, 3*indices[0]+1 ); myvals.updateIndex( z_index, 3*indices[0]+2 );
+              // Update dynamic lists for bonded atom
+              myvals.updateIndex( x_index, 3*indices[i]+0 ); myvals.updateIndex( y_index, 3*indices[i]+1 ); myvals.updateIndex( z_index, 3*indices[i]+2 );
+              // Update dynamic list indices for virial
+              unsigned base = 3*getNumberOfAtoms(); 
+              for(unsigned j=0;j<9;++j){ myvals.updateIndex( x_index, base+j ); myvals.updateIndex( y_index, base+j ); myvals.updateIndex( z_index, base+j ); }
+          }
+      } 
+      // Update derivatives
+      if( !doNotCalculateDerivatives() ){
+          unsigned w_ind = getPntrToOutput(0)->getPositionInStream();
+          // Update dynamic list indices for central atom
+          myvals.updateIndex( w_ind, 3*indices[0]+0 ); myvals.updateIndex( w_ind, 3*indices[0]+1 ); myvals.updateIndex( w_ind, 3*indices[0]+2 );
+          // Update dynamic list indices for atom forming this bond
+          myvals.updateIndex( w_ind, 3*indices[i]+0 ); myvals.updateIndex( w_ind, 3*indices[i]+1 ); myvals.updateIndex( w_ind, 3*indices[i]+2 );
+          // Update dynamic list indices for virial
+          unsigned base = 3*getNumberOfAtoms(); for(unsigned j=0;j<9;++j) myvals.updateIndex( w_ind, base+j );
       }
-      if( !found ) types.push_back( atom_lab[ablocks[0][i]].first );
-    }
-    ntype=0; nrows=ncols=types.size();
-  } else {
-    std::vector<unsigned> types(1); types[0]=atom_lab[ablocks[0][0]].first;
-    for(unsigned i=1; i<ablocks[0].size(); ++i) {
-      bool found = false;
-      for(unsigned j=0; j<types.size(); ++j) {
-        if( atom_lab[ablocks[0][i]].first==types[j] ) { found=true; break; }
-      }
-      if( !found ) types.push_back( atom_lab[ablocks[0][i]].first );
-    }
-    nrows=ntype=types.size();
-    for(unsigned i=0; i<ablocks[1].size(); ++i) {
-      bool found = false;
-      for(unsigned j=0; j<types.size(); ++j) {
-        if( atom_lab[ablocks[1][i]].first==types[j] ) { found=true; break; }
-      }
-      if( !found ) types.push_back( atom_lab[ablocks[1][i]].first );
-    }
-    if( types.size()==nrows ) { ntype=0; ncols=1; plumed_assert( types.size()==1 && atom_lab[ablocks[0][0]].first==0 ); }
-    else ncols = types.size() - ntype;
+      // This does everything in the stream that is done with single matrix elements 
+      runTask( myvals.getTaskIndex(), current, indices[i], myvals );
+      // Now clear only elements that are not accumulated over whole row
+      clearMatrixElements( myvals );
   }
 }
 
-void AdjacencyMatrixBase::finishMatrixSetup( const bool& symmetric, const std::vector<AtomNumber>& all_atoms ) {
-  std::string param;
-  if( symmetric && ablocks[0].size()==ablocks[1].size() ) param="SYMMETRIC";
-  if( !symmetric ) {
-    bool usehbonds=( ablocks[0].size()==ablocks[1].size() );
-    if( usehbonds ) {
-      for(unsigned i=0; i<ablocks[0].size(); ++i) {
-        if( ablocks[0][i]!=ablocks[1][i] ) { usehbonds = false; break; }
-      }
-      if( usehbonds ) param="HBONDS";
-    }
-  }
+void AdjacencyMatrixBase::apply() {
 
-  vesselbase::VesselOptions da("","",0,param,this);
-  Keywords keys; AdjacencyMatrixVessel::registerKeywords( keys );
-  vesselbase::VesselOptions da2(da,keys); mat = new AdjacencyMatrixVessel(da2); addVessel( mat );
-  setupMultiColvarBase( all_atoms );
-}
-
-void AdjacencyMatrixBase::readMaxTwoSpeciesMatrix( const std::string& key0, const std::string& key1, const std::string& key2, const bool& symmetric ) {
-  std::vector<AtomNumber> all_atoms; readTwoGroups( key0, key1, key2, all_atoms );
-  finishMatrixSetup( symmetric, all_atoms );
-}
-
-void AdjacencyMatrixBase::readMaxThreeSpeciesMatrix( const std::string& key0, const std::string& key1, const std::string& key2, const std::string& keym, const bool& symmetric ) {
-  std::vector<AtomNumber> all_atoms; readGroupKeywords( key0, key1, key2, keym, true, symmetric, all_atoms );
-  finishMatrixSetup( symmetric, all_atoms );
-}
-
-// Maybe put this back GAT to check that it is returning an atom number that is one of the nodes
-// and not a hydrogen if we are doing HBPAMM
-// AtomNumber AdjacencyMatrixBase::getAbsoluteIndexOfCentralAtom(const unsigned& i) const {
-//   plumed_dbg_assert( i<myinputdata.getFullNumberOfBaseTasks() );
-//   return myinputdata.getAtomicIndex( i );
-// }
-
-void AdjacencyMatrixBase::recalculateMatrixElement( const unsigned& myelem, MultiValue& myvals ) {
-  std::vector<unsigned> myatoms; decodeIndexToAtoms( getTaskCode( myelem ), myatoms );
-  unsigned i=myatoms[0], j=myatoms[1];
-  for(unsigned k=bookeeping(i,j).first; k<bookeeping(i,j).second; ++k) {
-    if( !taskIsCurrentlyActive(k) ) continue;
-    performTask( k, getTaskCode(k), myvals );  // This may not accumulate as we would like  GAT
-  }
 }
 
 }

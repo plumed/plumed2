@@ -145,7 +145,7 @@ void Piecewise::calculateFunction( const std::vector<double>& args, MultiValue& 
       f=m*(args[i]-points[p-1].first)+points[p-1].second;
       d=m;
     }
-    setValue( i, f, myvals );
+    addValue( i, f, myvals );
     addDerivative( i, i, d, myvals );
   }
 }

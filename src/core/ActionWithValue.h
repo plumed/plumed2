@@ -107,7 +107,7 @@ private:
   void runTask( const unsigned& index, const unsigned& taskno, MultiValue& myvals ) const ;
   void gatherAccumulators( const unsigned& index, const MultiValue& myvals, std::vector<double>& buf ) const ;
   void finishComputations( const std::vector<double>& buf );
-  void getNumberOfStreamedQuantities( unsigned& nquants ) const ;
+  void getNumberOfStreamedQuantities( unsigned& nquants, unsigned& ncols, unsigned& nmat ) const ;
   void getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize );
   void getAllActionLabelsInChain( std::vector<std::string>& mylabels ) const ;
 public:
@@ -157,6 +157,9 @@ protected:
   Value* getPntrToComponent(int i);
 /// Return a pointer to the value by name
   Value* getPntrToComponent(const std::string& name);
+/// Run a task for a matrix element
+  void runTask( const unsigned& task_index, const unsigned& current, const unsigned colno, MultiValue& myvals ) const ;
+  void clearMatrixElements( MultiValue& myvals ) const ;
 public:
   explicit ActionWithValue(const ActionOptions&ao);
   ~ActionWithValue();
@@ -227,7 +230,7 @@ public:
 /// Reperform one of the tasks
   void rerunTask( const unsigned& task_index, MultiValue& myvals ) const ;
 ///
-  virtual void buildCurrentTaskList( std::vector<unsigned>& tflags ) const { plumed_error(); }
+  virtual void buildCurrentTaskList( std::vector<unsigned>& tflags ) const { plumed_merror( "problem in task list for " + getLabel() ); }
 ///
   virtual void selectActiveTasks( std::vector<unsigned>& tflags );
 /// Make sure all tasks required for loop are done before loop starts
