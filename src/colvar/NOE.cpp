@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2016 The plumed team
+   Copyright (c) 2014-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -48,6 +48,7 @@ Intensities can then in principle ensemble averaged using \ref ENSEMBLE and used
 calculate a scoring function for example with \ref METAINFERENCE.
 
 \par Examples
+
 In the following examples three noes are defined, the first is calculated based on the distances
 of atom 1-2 and 3-2; the second is defined by the distance 5-7 and the third by the distances
 4-15,4-16,8-15,8-16.

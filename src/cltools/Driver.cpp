@@ -101,47 +101,58 @@ will read a file produced by \ref DUMPMASSCHARGE .
 
 \par Examples
 
-The following command tells plumed to postprocess the trajectory contained in trajectory.xyz
- by performing the actions described in the input file plumed.dat.  If an action that takes the
+The following command tells plumed to postprocess the trajectory contained in `trajectory.xyz`
+ by performing the actions described in the input file `plumed.dat`.  If an action that takes the
 stride keyword is given a stride equal to \f$n\f$ then it will be performed only on every \f$n\f$th
-frame in the trajectory file.
+frames in the trajectory file.
 \verbatim
 plumed driver --plumed plumed.dat --ixyz trajectory.xyz
 \endverbatim
 
+Notice that `xyz` files are expected to be in internal PLUMED units, that is by default nm.
+You can change this behavior by using the `--length-units` option:
+\verbatim
+plumed driver --plumed plumed.dat --ixyz trajectory.xyz --length-units A
+\endverbatim
+The strings accepted by the `--length-units` options are the same ones accepted by the \ref UNITS action.
+Other file formats typically have their default coordinates (e.g., `gro` files are always in nm)
+and it thus should not be necessary to use the `--length-units` option. Additionally,
+consider that the units used by the `driver` might be different by the units used in the PLUMED input
+file `plumed.dat`. For instance consider the command:
+\verbatim
+plumed driver --plumed plumed.dat --ixyz trajectory.xyz --length-units A
+\endverbatim
+where `plumed.dat` is
+\plumedfile
+# no explicit UNITS action here
+d: DISTANCE ATOMS=1,2
+PRINT ARG=d FILE=colvar
+\endplumedfile
+In this case, the driver reads the `xyz` file assuming it to contain coordinates in Angstrom units.
+However, the resulting `colvar` file contains a distance expressed in nm.
+
 The following command tells plumed to postprocess the trajectory contained in trajectory.xyz.
- by performing the actions described in the input file plumed.dat. Here though
---trajectory-stride is set equal to the frequency with which frames were output during the trajectory
-and the --timestep is equal to the simulation timestep.  As such the STRIDE parameters in the plumed.dat
-files are no longer ignored and any files output resemble those that would have been generated
-had we run the calculation we are running with driver when the MD simulation was running.
+ by performing the actions described in the input file plumed.dat.
 \verbatim
 plumed driver --plumed plumed.dat --ixyz trajectory.xyz --trajectory-stride 100 --timestep 0.001
 \endverbatim
+Here though
+`--trajectory-stride` is set equal to the frequency with which frames were output during the trajectory
+and the `--timestep` is equal to the simulation timestep.  As such the `STRIDE` parameters in the `plumed.dat`
+files are referred to the original timestep and any files output resemble those that would have been generated
+had we run the calculation we are running with driver when the MD simulation was running.
 
-By default you have access to a subset of the trajectory file formats
-supported by VMD, e.g. xtc and dcd:
+PLUMED can read natively xyz files (in PLUMED units) and gro files (in nm). In addition,
+PLUMED includes by default support for a
+subset of the trajectory file formats supported by VMD, e.g. xtc and dcd:
 
 \verbatim
 plumed driver --plumed plumed.dat --pdb diala.pdb --mf_xtc traj.xtc --trajectory-stride 100 --timestep 0.001
 \endverbatim
 
-where --mf_ prefixes the extension of one of the accepted molfile
-plugin format.
-
-To have support of all of VMD's plugins you need to recompile
-PLUMED. You need to download the SOURCE of VMD, which contains
-a plugins directory. Adapt build.sh and compile it. At
-the end, you should get the molfile plugins compiled as a static
-library libmolfile_plugin.a. Locate said file and libmolfile_plugin.h,
-and customize the configure command with something along
-the lines of:
-
-\verbatim
-configure [...] LDFLAGS="-ltcl8.5 -L/mypathtomolfilelibrary/ -L/mypathtotcl" CPPFLAGS="-I/mypathtolibmolfile_plugin.h/"
-\endverbatim
-
-and rebuild.
+where `--mf_` prefixes the extension of one of the accepted molfile plugin format.
+If PLUMED has been \ref Installation "installed" with full molfile support, other formats will be available.
+Just type `plumed driver --help` to see which plugins are available.
 
 Molfile plugin require periodic cell to be triangular (i.e. first vector oriented along x and
 second vector in xy plane). This is true for many MD codes. However, it could be false
@@ -152,14 +163,15 @@ the `--natoms` option:
 plumed driver --plumed plumed.dat --imf_crd trajectory.crd --natoms 128
 \endverbatim
 
-Check the available molfile plugins and limitations at http://www.ks.uiuc.edu/Research/vmd/plugins/molfile/.
+Check the available molfile plugins and limitations at [this link](http://www.ks.uiuc.edu/Research/vmd/plugins/molfile/).
 
 Additionally, you can use the xdrfile implementation of xtc and trr. To this aim, just
-download and install properly the xdrfile library (see here: http://www.gromacs.org/Developer_Zone/Programming_Guide/XTC_Library).
+download and install properly the xdrfile library (see [this link](http://www.gromacs.org/Developer_Zone/Programming_Guide/XTC_Library)).
 If the xdrfile library is installed properly the PLUMED configure script should be able to
 detect it and enable it.
 Notice that the xdrfile implementation of xtc and trr
 is more robust than the molfile one, since it provides support for generic cell shapes.
+In addition, it allows \ref DUMPATOMS to write compressed xtc files.
 
 
 */
@@ -224,6 +236,7 @@ void Driver<real>::registerKeywords( Keywords& keys ) {
   keys.add("optional","--mc","provides a file with masses and charges as produced with DUMPMASSCHARGE");
   keys.add("optional","--box","comma-separated box dimensions (3 for orthorombic, 9 for generic)");
   keys.add("optional","--natoms","provides number of atoms - only used if file format does not contain number of atoms");
+  keys.add("optional","--initial-step","provides a number for the initial step, default is 0");
   keys.add("optional","--debug-forces","output a file containing the forces due to the bias evaluated using numerical derivatives "
            "and using the analytical derivatives implemented in plumed");
   keys.add("hidden","--debug-float","turns on the single precision version (to check float interface)");
@@ -445,7 +458,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 
   }
 
-  if( debug_dd && debug_pd ) error("cannot use debug-dd and debug-pd at the same time");
+
+  if(debug_dd && debug_pd) error("cannot use debug-dd and debug-pd at the same time");
   if(debug_pd || debug_dd) {
     if( !Communicator::initialized() ) error("needs mpi for debug-pd");
   }
@@ -455,6 +469,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   p.cmd("setRealPrecision",&rr);
   int checknatoms=-1;
   long int step=0;
+  parse("--initial-step",step);
+
   if(Communicator::initialized()) {
     if(multi) {
       if(intracomm.Get_rank()==0) p.cmd("GREX setMPIIntercomm",&intercomm.Get_comm());
@@ -675,7 +691,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           }
         }
         if(intracomm.Get_rank()==0) {
-          fprintf(out,"\nDRIVER: Reassigning particle decomposition\n");
+          fprintf(out,"\nDRIVER: Reassigning domain decomposition\n");
         }
         p.cmd("setAtomsNlocal",&dd_nlocal);
         p.cmd("setAtomsGatindex",&dd_gatindex[0]);
@@ -825,10 +841,14 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         p.cmd("setMasses",&dd_masses[0]);
         p.cmd("setCharges",&dd_charges[0]);
       } else {
-        p.cmd("setForces",&forces[3*pd_start]);
-        p.cmd("setPositions",&coordinates[3*pd_start]);
-        p.cmd("setMasses",&masses[pd_start]);
-        p.cmd("setCharges",&charges[pd_start]);
+// this is required to avoid troubles when the last domain
+// contains zero atoms
+// Basically, for empty domains we pass null pointers
+#define fix_pd(xx) (pd_nlocal!=0?&xx:NULL)
+        p.cmd("setForces",fix_pd(forces[3*pd_start]));
+        p.cmd("setPositions",fix_pd(coordinates[3*pd_start]));
+        p.cmd("setMasses",fix_pd(masses[pd_start]));
+        p.cmd("setCharges",fix_pd(charges[pd_start]));
       }
       p.cmd("setBox",&cell[0]);
       p.cmd("setVirial",&virial[0]);

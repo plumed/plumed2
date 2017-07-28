@@ -29,8 +29,8 @@ using namespace std;
 
 //+PLUMEDOC INTERNAL pdbreader
 /*
+PLUMED can use the PDB format in several places
 
-PLUMED use PDB formats in several places, including
 - To read molecular structure (\ref MOLINFO).
 - To read reference conformations (\ref RMSD, but also many other methods in \ref dists, \ref FIT_TO_TEMPLATE, etc).
 

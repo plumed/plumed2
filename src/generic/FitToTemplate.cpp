@@ -63,6 +63,7 @@ change the result. Examples are:
 - \ref DISTANCE CV with COMPONENTS. Since the alignment could involve a rotation (with TYPE=OPTIMAL) the actual components could be different
   from the original ones.
 - \ref CELL components for a similar reason.
+- \ref DISTANCE from a \ref FIXEDATOM, provided the fixed atom is introduced _after_ the \ref FIT_TO_TEMPLATE action.
 
 \attention
 The implementation of TYPE=OPTIMAL is available but should be considered in testing phase. Please report any
@@ -78,15 +79,65 @@ this action is performed at every MD step.
 
 \par Examples
 
-Align the atomic position to a template then print them
+Align the atomic position to a template then print them.
+The following example is only translating the system so as
+to align the center of mass of a molecule to the one in the reference
+structure `ref.pdb`:
 \plumedfile
-# to see the effect, one could dump the atoms before alignment
+# dump coordinates before fitting, to see the difference:
 DUMPATOMS FILE=dump-before.xyz ATOMS=1-20
+
+# fit coordinates to ref.pdb template
+# this is a "TYPE=SIMPLE" fit, so that only translations are used.
 FIT_TO_TEMPLATE STRIDE=1 REFERENCE=ref.pdb TYPE=SIMPLE
+
+# dump coordinates after fitting, to see the difference:
 DUMPATOMS FILE=dump-after.xyz ATOMS=1-20
 \endplumedfile
 
+The following example instead performs a rototranslational fit.
+\plumedfile
+# dump coordinates before fitting, to see the difference:
+DUMPATOMS FILE=dump-before.xyz ATOMS=1-20
 
+# fit coordinates to ref.pdb template
+# this is a "TYPE=OPTIMAL" fit, so that rototranslations are used.
+FIT_TO_TEMPLATE STRIDE=1 REFERENCE=ref.pdb TYPE=OPTIMAL
+
+# dump coordinates after fitting, to see the difference:
+DUMPATOMS FILE=dump-after.xyz ATOMS=1-20
+\endplumedfile
+
+In the following example you see two completely equivalent way
+to restrain an atom close to a position that is defined in the reference
+frame of an aligned molecule. It could be for instance the center of mass
+of a ligand with respect to a protein
+\plumedfile
+# center of the ligand:
+ce: CENTER ATOMS=100-110
+
+FIT_TO_TEMPLATE REFERENCE=protein.pdb TYPE=OPTIMAL
+
+# place a fixed atom in the protein reference coordinates:
+fix: FIXEDATOM AT=1.0,1.1,1.0
+
+# take the distance between the fixed atom and the center of the ligand
+d: DISTANCE ATOMS=ce,fix
+
+# apply a restraint
+RESTRAINT ARG=d AT=0.0 KAPPA=100.0
+\endplumedfile
+
+Notice that you could have obtained an (almost) identical result adding a fictitious
+atom to `ref.pdb` with the serial number corresponding to the `ce` atom (there is no automatic way
+to get it, but in this example it should be the number of atoms of the system plus one),
+and properly setting the weights for alignment and displacement in \ref RMSD.
+There are two differences to be expected:
+(ab) \ref FIT_TO_TEMPLATE might be slower since it has to rototranslate all the available atoms and
+(b) variables employing PBCs (such as \ref DISTANCE without `NOPBC`, as in the example above)
+  are allowed after \ref FIT_TO_TEMPLATE, whereas \ref RMSD expects PBCs to be already solved.
+The latter means that before the \ref RMSD statement one should use \ref WRAPAROUND or \ref WHOLEMOLECULES to properly place
+the ligand.
 
 
 */
@@ -163,7 +214,11 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
 
 
   // normalize weights
-  double n=0.0; for(unsigned i=0; i<weights.size(); ++i) n+=weights[i]; n=1.0/n;
+  double n=0.0; for(unsigned i=0; i<weights.size(); ++i) n+=weights[i];
+  if(n==0.0) {
+    error("PDB file " + reference + " has zero weights. Please check the occupancy column.");
+  }
+  n=1.0/n;
   for(unsigned i=0; i<weights.size(); ++i) weights[i]*=n;
 
   // normalize weights for rmsd calculation

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -50,6 +50,7 @@ the values of \f$\kappa\f$ and \f$\vec{s}_0\f$ are linearly interpolated.
 Additional material and examples can be also found in the tutorial \ref belfast-5
 
 \par Examples
+
 The following input is dragging the distance between atoms 2 and 4
 from 1 to 2 in the first 1000 steps, then back in the next 1000 steps.
 In the following 500 steps the restraint is progressively switched off.

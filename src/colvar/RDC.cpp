@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2016 The plumed team
+   Copyright (c) 2014-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -89,6 +89,7 @@ Replica-Averaged restrained simulations can be performed with this CV and the fu
 Additional material and examples can be also found in the tutorial \ref belfast-9
 
 \par Examples
+
 In the following example five N-H RDCs are defined and their correlation with
 respect to a set of experimental data is calculated and restrained. In addition,
 and only for analysis purposes, the same RDCs are calculated using a Single Value

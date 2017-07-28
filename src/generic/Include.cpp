@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -41,13 +41,13 @@ This input:
 \plumedfile
 c1: COM ATOMS=1-100
 c2: COM ATOMS=101-202
-d: DISTANCE ARG=c1,c2
+d: DISTANCE ATOMS=c1,c2
 PRINT ARG=d
 \endplumedfile
 can be replaced with this input:
 \plumedfile
 INCLUDE FILE=pippo.dat
-d: DISTANCE ARG=c1,c2
+d: DISTANCE ATOMS=c1,c2
 PRINT ARG=d
 \endplumedfile
 where the content of file pippo.dat is

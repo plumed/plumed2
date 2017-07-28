@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -159,11 +159,11 @@ public:
   virtual const std::vector<std::string>& getArgumentNames();
 /// Extract a Direction giving you the displacement from some position
   void extractDisplacementVector( const std::vector<Vector>& pos, const std::vector<Value*>& vals,
-                                  const std::vector<double>& arg, const bool& anflag, const bool& nflag,
+                                  const std::vector<double>& arg, const bool& nflag,
                                   Direction& mydir ) const ;
 /// Stuff for pca
   virtual bool pcaIsEnabledForThisReference() { return false; }
-  double projectDisplacementOnVector( const Direction& mydir, const std::vector<Vector>& pos, const std::vector<Value*>& vals,
+  double projectDisplacementOnVector( const Direction& mydir, const std::vector<Value*>& vals,
                                       const std::vector<double>& arg, ReferenceValuePack& mypack ) const ;
 /// Stuff to setup pca
   virtual void setupPCAStorage( ReferenceValuePack& mypack ) { plumed_error(); }

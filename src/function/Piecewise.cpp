@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -55,6 +55,7 @@ in a vector of values. Each value will be named as the name of the original
 argument with suffix _pfunc.
 
 \par Examples
+
 \plumedfile
 dist1: DISTANCE ATOMS=1,10
 dist2: DISTANCE ATOMS=2,11

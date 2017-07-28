@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -67,6 +67,7 @@ molecules, the biasing potential does not exert work on the system. \f$\eta(t)\f
 an additional white noise acting on the minimum position of the bias.
 
 \par Examples
+
 The following input sets up two biases, one on the distance between atoms 3 and 5
 and another on the distance between atoms 2 and 4. The two target values are defined
 using TO and the two strength using KAPPA. The total energy of the bias is printed.

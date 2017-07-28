@@ -145,6 +145,9 @@ public:
   std::vector<index_t> getNeighbors(index_t index,const std::vector<unsigned> & neigh) const;
   std::vector<index_t> getNeighbors(const std::vector<unsigned> & indices,const std::vector<unsigned> & neigh) const;
   std::vector<index_t> getNeighbors(const std::vector<double> & x,const std::vector<unsigned> & neigh) const;
+/// get nearest neighbors (those separated by exactly one lattice unit)
+  std::vector<index_t> getNearestNeighbors(const index_t index) const;
+  std::vector<index_t> getNearestNeighbors(const std::vector<unsigned> &indices) const;
 
 /// write header for grid file
   void writeHeader(OFile& file);
@@ -214,6 +217,9 @@ public:
   double integrate( std::vector<unsigned>& npoints );
 ///
   void mpiSumValuesAndDerivatives( Communicator& comm );
+/// Find the maximum over paths of the minimum value of the gridded function along the paths
+/// for all paths of neighboring grid lattice points from a source point to a sink point.
+  virtual double findMaximalPathMinimum(const std::vector<double> &source, const std::vector<double> &sink);
 };
 
 

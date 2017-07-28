@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -37,6 +37,7 @@ namespace bias {
 Calculate a restraint that is defined on a grid that is read during start up
 
 \par Examples
+
 The following is an input for a calculation with an external potential that is
 defined in the file bias.dat and that acts on the distance between atoms 3 and 5.
 \plumedfile

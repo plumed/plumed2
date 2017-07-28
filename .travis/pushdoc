@@ -3,6 +3,19 @@
 set -e
 set -x
 
+if [[ "$TRAVIS_BRANCH" =~ ^v2\.[0-9]+$ ]] ; then
+# TODO: this should be made automatic by reading the CHANGES/*.txt files:
+  if [ "$TRAVIS_BRANCH" = v2.0 ] || [ "$TRAVIS_BRANCH" = v2.1 ] || [ "$TRAVIS_BRANCH" = v2.2 ] ; then
+    branchtype=unsupported
+  else
+    branchtype=official
+  fi
+elif [ "$TRAVIS_BRANCH" = master ] ; then
+  branchtype=master
+else
+  branchtype=unofficial
+fi
+
 hash=$( git log -1 --format="%h")
 
 root="$PWD"
@@ -57,6 +70,34 @@ You can also download a full copy of the manual for offline access
 at [this link](http://github.com/plumed/doc-${TRAVIS_BRANCH}/archive/gh-pages.zip).
 
 EOF
+
+case "$branchtype" in
+(official)    echo "This is the manual for an official and supported PLUMED branch." >> README.md ;;
+(unsupported) echo "This is the manual for an official but unsupported PLUMED branch. It will not appear on search engines." >> README.md ;;
+(master)      echo "This is the manual for the development PLUMED branch." >> README.md ;;
+(unofficial)  echo "This is the manual for an unofficial PLUMED branch. It will not appear on search engines." >> README.md ;;
+esac
+
+case "$branchtype" in
+(unsupported|unofficial)
+# this is to avoid a huge log file:
+set +x
+  for file in $(find . -name "*.html") ; do
+    awk '{
+      if(done){print; next;}
+      print
+      if(match($0,".*<head>.*")){
+        print "<meta name=\"robots\" content=\"noindex\">"
+        done=1;
+      }
+    }END{
+    if(!done) print "error: head not present in " FILENAME > "/dev/stderr"
+    }' $file > $$
+    mv $$ $file
+done
+set -x
+esac
+
 git add --all .
 git commit -m "Update to plumed/plumed2@$hash"
 # -q and 2> is not to show the GIT_TOKEN on Travis log

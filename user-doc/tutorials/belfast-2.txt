@@ -6,7 +6,7 @@
 
 In this section we want to introduce the concept of adaptive collective variables. 
 These are special variables that are knowledge-based in that are built from a pre-existing
-notion of the mechanism of the transition under study
+notion of the mechanism of the transition under study.
 
 \section belfast-2-resources Resources
 
@@ -40,14 +40,14 @@ and sizeable geometric distortions of the neighboring groups.
 
 \section belfast-2-pcvs-general Path collective variables
 
-One possibility to describe many different thing that happen in a single reaction is to use a dimensional reduction technique and in plumed the simplest example  that may show its usefulness can be considered that of the path collective variables. 
+One possibility to describe many different things that happen in a single reaction is to use a dimensional reduction technique and in plumed the simplest example  that may show its usefulness can be considered that of the path collective variables. 
 
 In a nutshell, your reaction might be very complex and happening in many degree of freedom but intuitively is a sort of  track along which the reaction proceeds. So what we need is a coordinate that, given a conformation, just tells which point along the "reactive track" is closest.
 
 \anchor belfast-2-ab-fig
 \image html belfast-2-ab.png "Given the reactant and the product, tell if another state is closer to any of the two with a continuous parameter" 
 
-For example, in Fig. \ref belfast-2-ab-fig, you see a typical chemical reaction (hydrolisys of methylphosphate) with the two end-points denoted by A and B. 
+For example, in Fig. \ref belfast-2-ab-fig, you see a typical chemical reaction (hydrolysis of methylphosphate) with the two end-points denoted by A and B. 
 If you are given a third point, just by looking at it, you might find that this is more resemblant to the reactant than the product, so, hypothetically, if you would intuitively 
 give a parameter that would be 1 for a configuration in the A state and 2 for a configuration in the B state, you probably would give it something like 1.3, right? 
 
@@ -61,7 +61,7 @@ S(X)=\frac{\sum_{i=1}^{N} i\ \exp^{-\lambda \vert X-X_i \vert }}{ \sum_{i=1}^{N}
 \f]
 
 where in \ref belfast-2-s-eq the \f$ \vert X-X_i \vert \f$ represents a distance between one configuration \f$ X \f$ which is analyzed and another from the set that compose the path 
-\f$ X_i \f$. The parameter \f$ \lambda \f$ is a positive value that is tuned in a way explaned later.
+\f$ X_i \f$. The parameter \f$ \lambda \f$ is a positive value that is tuned in a way explained later.
 here are a number of things to note to make you think that this is exactely what you want.
 - The negative exponential function is something that is 1 whenever the value at the exponent is zero, and is progressively smaller when the value is larger than zero (trivially, the case with the value at the exponent larger than zero never occurs since lambda is a positive quantity and the distance is by definition positive).
 - Whenever you sit exactly on a specific images \f$ X_j \f$ then all the other terms in the sum disappear (if \f$ \lambda \f$ is large enough) and only the value \f$ j \f$ survives returning exactely \f$ S(X)=j \f$. 
@@ -76,11 +76,11 @@ As a rule of thumb I use the following formula
 which imply that one should calculate the average distance between consecutive frames composing the path.
 Note also that this distance should be more or less similar between the frames. Generally I tolerate fluctuation of the order of 10/15 percent tops. If you have larger, then it is better to have a smaller value of \f$ \lambda \f$.
 
-It is important to note that in principle one could even have a specific \f$ \lambda \f$ value associated to each frame of the path but this would provide some distortion in the diffucion coefficient which could potentially harm a straightforward interpretation of the free energy landscape. 
+It is important to note that in principle one could even have a specific \f$ \lambda \f$ value associated to each frame of the path but this would provide some distortion in the diffusion coefficient which could potentially harm a straightforward interpretation of the free energy landscape. 
 
-So, at this point is better to understand what is meant with "distance" since a distance between two conformations can be calculated in very many ways.
+So, at this point it is better to understand what is meant with "distance" since a distance between two conformations can be calculated in very many ways.
 The way we refer here is by using mean square deviation after optimal alignment.
-This means that at each step in which the analisys is performed, a number N of optimal alignments is performed. Namely what is calculated is \f$ \vert X-X_i \vert = d(X,X_i)^2 \f$ where \f$  d(X,X_i) \f$ is the RMSD as defined in what you see here \ref RMSD.
+This means that at each step in which the analysis is performed, a number N of optimal alignments is performed. Namely what is calculated is \f$ \vert X-X_i \vert = d(X,X_i)^2 \f$ where \f$  d(X,X_i) \f$ is the RMSD as defined in what you see here \ref RMSD.
 
 Using the MSD instead of RMSD is sometimes more convenient and more stable (you do not have a denominator that gies to zero in the derivatives when biasing.
 

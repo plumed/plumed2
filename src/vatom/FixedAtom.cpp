@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015,2016 The plumed team
+   Copyright (c) 2015-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -64,7 +64,7 @@ and then compute the distance of one of its atom from the point
 \plumedfile
 FIT_TO_TEMPLATE STRIDE=1 REFERENCE=ref.pdb TYPE=SIMPLE
 a: FIXEDATOM AT=10,20,30
-d: DISTANCE ARG=a,20
+d: DISTANCE ATOMS=a,20
 PRINT ARG=d FILE=colvar
 \endplumedfile
 

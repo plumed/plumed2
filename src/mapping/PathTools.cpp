@@ -245,7 +245,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
 // Calculate the vector connecting the start to the end
   Direction mydir(ReferenceConfigurationOptions("DIRECTION")); sframe->setupPCAStorage( mypack );
   mydir.setNamesAndAtomNumbers( sframe->getAbsoluteIndexes(), sframe->getArgumentNames() ); mydir.zeroDirection();
-  sframe->extractDisplacementVector( eframe->getReferencePositions(), args, eframe->getReferenceArguments(), false, false, mydir );
+  sframe->extractDisplacementVector( eframe->getReferencePositions(), args, eframe->getReferenceArguments(), false, mydir );
 
 
 // Now create frames

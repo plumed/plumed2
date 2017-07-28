@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -35,9 +35,13 @@ namespace colvar {
 //+PLUMEDOC COLVAR CONTACTMAP
 /*
 Calculate the distances between a number of pairs of atoms and transform each distance by a switching function.
+
 The transformed distance can be compared with a reference value in order to calculate the squared distance
 between two contact maps. Each distance can also be weighted for a given value. CONTACTMAP can be used together
 with \ref FUNCPATHMSD to define a path in the contactmap space.
+
+The individual contact map distances related to each contact can be accessed as components
+named `cm.contact-1`, `cm.contact-2`, etc, assuming that the label of the CONTACTMAP is `cm`.
 
 \par Examples
 

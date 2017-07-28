@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -37,6 +37,7 @@ The computed ghost atom is stored as a virtual atom that can be accessed in
 an atom list through the the label for the GHOST action that creates it.
 
 \par Examples
+
 The following input instructs plumed to print the distance between the
 ghost atom and the center of mass for atoms 15,20:
 \plumedfile

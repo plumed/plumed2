@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -35,17 +35,34 @@ Print quantities to a file.
 This directive can be used multiple times
 in the input so you can print files with different strides or print different quantities
 to different files.  You can control the buffering of output using the \subpage FLUSH keyword.
+Output file is either appended or backed up depending on the presence of the \ref RESTART action.
+A per-action `RESTART` keyword can be used as well.
+
+Notice that printing happens in the so-called "update" phase. This implies that printing
+is affected by the presence of \ref UPDATE_IF actions. In addition, one might decide to start
+and stop printing at preassigned values of time using the `UPDATE_FROM` and `UPDATE_UNTIL` keywords.
+Keep into account that even on steps when the action is not updated (and thus the file is not printed)
+the argument will be activated. In other words, if you use `UPDATE_FROM` to start printing at a given time,
+the collective variables this PRINT statement depends on will be computed also before that time.
 
 \par Examples
+
 The following input instructs plumed to print the distance between atoms 3 and 5 on a file
 called COLVAR every 10 steps, and the distance and total energy on a file called COLVAR_ALL
 every 1000 steps.
 \plumedfile
-DISTANCE ATOMS=2,5 LABEL=distance
-ENERGY             LABEL=energy
+# compute distance:
+distance: DISTANCE ATOMS=2,5
+# compute total energy (potential)
+energy: ENERGY
+# print distance on a file
 PRINT ARG=distance          STRIDE=10   FILE=COLVAR
+# print both variables on another file
 PRINT ARG=distance,energy   STRIDE=1000 FILE=COLVAR_ALL
 \endplumedfile
+
+Notice that \ref DISTANCE and \ref ENERGY are computed respectively every 10 and 1000 steps, that is
+only when required.
 
 */
 //+ENDPLUMEDOC
@@ -152,7 +169,6 @@ void Print::update() {
   for(unsigned i=0; i<getNumberOfArguments(); i++) {
     ofile.fmtField(fmt);
     ofile.printField( getPntrToArgument(i), getArgument(i) );
-    //ofile.printField(getPntrToArgument(i)->getName(),getArgument(i));
   }
   ofile.printField();
 }

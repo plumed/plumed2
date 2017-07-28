@@ -41,8 +41,10 @@ private:
 /// The number of points in the grid
   unsigned npoints;
 /// Stuff for fibonacci grids
-  int fib_rnd;
-  double fib_offset, fib_increment;
+  double root5, golden, igolden, log_golden2;
+/// Fib increment here is equal to 2*pi*(INVERSE GOLDEN RATIO)
+  double fib_offset, fib_increment, fib_shift;
+  std::vector<std::vector<unsigned> > fib_nlist;
 /// Units for Gaussian Cube file
   double cube_units;
 /// This flag is used to check if the user has created a valid input
@@ -81,6 +83,12 @@ protected:
   std::vector<bool> active;
 /// Convert a point in space the the correspoinding grid point
   unsigned getIndex( const std::vector<double>& p ) const ;
+/// Get the index of the closest point on the fibonacci sphere
+  unsigned getFibonacciIndex( const std::vector<double>& p ) const ;
+/// Get the flat grid coordinates
+  void getFlatGridCoordinates( const unsigned& ipoint, std::vector<unsigned>& tindices, std::vector<double>& x ) const ;
+/// Get the coordinates on the Fibonacci grid
+  void getFibonacciCoordinates( const unsigned& ipoint, std::vector<double>& x ) const ;
 public:
 /// keywords
   static void registerKeywords( Keywords& keys );
@@ -92,6 +100,8 @@ public:
   std::string getType() const ;
 /// Set the minimum and maximum of the grid
   virtual void setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax, const std::vector<unsigned>& nbins, const std::vector<double>& spacing );
+/// Get the cutoff to use for the Fibonacci spheres
+  virtual double getFibonacciCutoff() const ;
 /// Setup the grid if it is a fibonacci grid on the surface of a sphere
   void setupFibonacciGrid( const unsigned& np );
 /// Get a description of the grid to output to the log
@@ -117,6 +127,7 @@ public:
   unsigned getNumberOfPoints() const;
 /// Get the coordinates for a point in the grid
   void getGridPointCoordinates( const unsigned&, std::vector<double>& ) const ;
+  void getGridPointCoordinates( const unsigned&, std::vector<unsigned>&, std::vector<double>& ) const ;
 /// Get the dimensionality of the function
   unsigned getDimension() const ;
 /// Get the number of components in the vector stored on each grid point
@@ -263,6 +274,11 @@ std::string GridVessel::getType() const {
   if( gtype==flat ) return "flat";
   else if( gtype==fibonacci ) return "fibonacci";
   plumed_error();
+}
+
+inline
+double GridVessel::getFibonacciCutoff() const {
+  return 0.0;
 }
 
 }

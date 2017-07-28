@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015,2016 The plumed team
+   Copyright (c) 2015-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -32,7 +32,7 @@ This action allows you to take a free energy surface that was calculated using t
 action and to convert it to a free energy surface.  This transformation performed by doing:
 
 \f[
-F(x) = -k_B T \ln H(x)\f$
+F(x) = -k_B T \ln H(x)
 \f]
 
 The free energy calculated on a grid is output by this action and can be printed using \ref DUMPGRID
@@ -81,7 +81,7 @@ void ConvertToFES::registerKeywords( Keywords& keys ) {
   ActionWithInputGrid::registerKeywords( keys );
   keys.add("optional","TEMP","the temperature at which you are operating");
   keys.remove("STRIDE"); keys.remove("KERNEL"); keys.remove("BANDWIDTH");
-  keys.remove("LOGWEIGHTS"); keys.remove("CLEAR"); keys.remove("UNORMALIZED");
+  keys.remove("LOGWEIGHTS"); keys.remove("CLEAR"); keys.remove("NORMALIZATION");
 }
 
 ConvertToFES::ConvertToFES(const ActionOptions&ao):
