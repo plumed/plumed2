@@ -40,11 +40,14 @@ namespace eds {
 /*
 Add a linear bias on a set of observables.
 
-This force is the same as the linear part of the bias in \ref RESTRAINT,
-but this bias has the ability to compute prefactors
-adaptively using the scheme of White and Voth
-\cite white2014efficient in order to match
-target observable values for a set of CVs.
+This force is the same as the linear part of the bias in \ref
+RESTRAINT, but this bias has the ability to compute prefactors
+adaptively using the scheme of White and Voth \cite white2014efficient
+in order to match target observable values for a set of CVs. You can
+see a tutorial on EDS specifically for biasing coordination number at
+<a
+href="http://thewhitelab.org/Blog/tutorial/2017/05/10/lammps-coordination-number-tutorial/">
+Andrew White's webpage</a>.
 
 The addition to the potential is of the form
 \f[
