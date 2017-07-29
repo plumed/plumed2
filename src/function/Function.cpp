@@ -71,20 +71,22 @@ Function::Function(const ActionOptions&ao):
 }
 
 std::vector<unsigned> Function::getShape() {
-  bool rank0=false; unsigned size=0;
+  bool rank0=false; 
   for(unsigned i=0;i<getNumberOfArguments();++i){
       if( getPntrToArgument(i)->getRank()==0 ) rank0=true;
-      else if( size>0 && getPntrToArgument(i)->getRank()>1 ) error("cannot have more than one 2 or more rank inputs to function");
-      else size += getPntrToArgument(i)->getSize();
+      if( getPntrToArgument(i)->getRank()!=getPntrToArgument(0)->getRank() ) error("all arguments should have same rank");
+      std::vector<unsigned> shape0( getPntrToArgument(0)->getShape() );
+      std::vector<unsigned> shapei( getPntrToArgument(i)->getShape() );
+      for(unsigned j=0;j<shape0.size();++j){
+          if( shape0[j]!=shapei[j] ) error("all arguments should have same shape");
+      }
   }
   std::vector<unsigned> shape;
   if( rank0 || rankOneOutput ){ 
      shape.resize(0);
-  } else if( getPntrToArgument(0)->getRank()>1 ){ 
-     plumed_assert( getNumberOfArguments()==1 ); shape.resize( getPntrToArgument(0)->getRank() );
+  } else { 
+     shape.resize( getPntrToArgument(0)->getRank() );
      for(unsigned i=0;i<shape.size();++i) shape[i]=getPntrToArgument(0)->getShape()[i]; 
-  } else {
-     shape.resize(1); shape[0]=size;
   }
   return shape;
 }

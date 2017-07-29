@@ -36,6 +36,10 @@ void AdjacencyMatrixBase::registerKeywords( Keywords& keys ) {
   keys.reserve("atoms","GROUPC","");
   keys.addFlag("COMPONENTS",false,"also calculate the components of the vector connecting the atoms in the contact matrix");
   keys.addFlag("NOPBC",false,"don't use pbc");
+  keys.addOutputComponent("w","default","the weight of the connection");
+  keys.addOutputComponent("x","COMPONENT","the projection of the bond on the x axis");
+  keys.addOutputComponent("y","COMPONENT","the projection of the bond on the y axis");
+  keys.addOutputComponent("z","COMPONENT","the projection of the bond on the z axis");
 }
 
 AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
@@ -85,11 +89,11 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
   // Request the atoms from the ActionAtomistic
   requestAtoms( t ); parseFlag("COMPONENTS",components); parseFlag("NOPBC",nopbc);
   addComponentWithDerivatives( "w", shape ); componentIsNotPeriodic("w"); 
-  // if( components ){ 
-  //    addComponentWithDerivatives( "x", shape ); componentIsNotPeriodic("x");
-  //    addComponentWithDerivatives( "y", shape ); componentIsNotPeriodic("y");
-  //    addComponentWithDerivatives( "z", shape ); componentIsNotPeriodic("z");
-  // }
+  if( components ){ 
+     addComponentWithDerivatives( "x", shape ); componentIsNotPeriodic("x");
+     addComponentWithDerivatives( "y", shape ); componentIsNotPeriodic("y");
+     addComponentWithDerivatives( "z", shape ); componentIsNotPeriodic("z");
+  }
   log<<"  Bibliography "<<plumed.cite("Tribello, Giberti, Sosso, Salvalaglio and Parrinello, J. Chem. Theory Comput. 13, 1317 (2017)")<<"\n";
 }
 
@@ -154,9 +158,17 @@ void AdjacencyMatrixBase::performTask( const unsigned& current, MultiValue& myva
               myvals.updateIndex( x_index, 3*indices[0]+0 ); myvals.updateIndex( y_index, 3*indices[0]+1 ); myvals.updateIndex( z_index, 3*indices[0]+2 );
               // Update dynamic lists for bonded atom
               myvals.updateIndex( x_index, 3*indices[i]+0 ); myvals.updateIndex( y_index, 3*indices[i]+1 ); myvals.updateIndex( z_index, 3*indices[i]+2 );
-              // Update dynamic list indices for virial
-              unsigned base = 3*getNumberOfAtoms(); 
-              for(unsigned j=0;j<9;++j){ myvals.updateIndex( x_index, base+j ); myvals.updateIndex( y_index, base+j ); myvals.updateIndex( z_index, base+j ); }
+              // Add derivatives of virial
+              unsigned base = 3*getNumberOfAtoms();
+              // Virial for x
+              myvals.addDerivative( x_index, base+0, -atoms[i][0] ); myvals.addDerivative( x_index, base+3, -atoms[i][1] ); myvals.addDerivative( x_index, base+6, -atoms[i][2] ); 
+              myvals.updateIndex( x_index, base+0 ); myvals.updateIndex( x_index, base+3 ); myvals.updateIndex( x_index, base+6 );
+              // Virial for y
+              myvals.addDerivative( y_index, base+1, -atoms[i][0] ); myvals.addDerivative( y_index, base+4, -atoms[i][1] ); myvals.addDerivative( y_index, base+7, -atoms[i][2] );  
+              myvals.updateIndex( y_index, base+1 ); myvals.updateIndex( y_index, base+4 ); myvals.updateIndex( y_index, base+7 );
+              // Virial for z
+              myvals.addDerivative( z_index, base+2, -atoms[i][0] ); myvals.addDerivative( z_index, base+5, -atoms[i][1] ); myvals.addDerivative( z_index, base+8, -atoms[i][2] );  
+              myvals.updateIndex( z_index, base+2 ); myvals.updateIndex( z_index, base+5 ); myvals.updateIndex( z_index, base+8 );
           }
       } 
       // Update derivatives
