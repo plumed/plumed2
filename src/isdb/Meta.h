@@ -238,7 +238,7 @@ void Meta::setScore(const double score) {
 }
 
 inline
-void Meta::setDerivatives(){
+void Meta::setDerivatives() {
   // Get appropriate number of derivatives
   // Derivatives are first for arguments and then for atoms
   unsigned nder;
@@ -311,7 +311,7 @@ void Meta::apply() {
 }
 
 inline
-void Meta::setArgDerivatives(Value *v, const double &d){
+void Meta::setArgDerivatives(Value *v, const double &d) {
   v->addDerivative(0,d);
 }
 
