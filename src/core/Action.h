@@ -375,7 +375,8 @@ void Action::parseVector(const std::string&key,std::vector<T>&t) {
         log.printf("ERROR in action %s with label %s : keyword %s has weird default value",name.c_str(),label.c_str(),key.c_str() );
         this->exit(1);
       } else {
-        for(unsigned i=0; i<t.size(); ++i) t[i]=val;
+        if(t.size()>0) for(unsigned i=0; i<t.size(); ++i) t[i]=val;
+        else t.push_back(val);
       }
     } else if( keywords.style(key,"compulsory") ) {
       error("keyword " + key + " is compulsory for this action");
