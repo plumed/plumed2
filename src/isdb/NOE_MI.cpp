@@ -22,6 +22,7 @@
 #include "Meta.h"
 #include "colvar/ActionRegister.h"
 #include "tools/NeighborList.h"
+#include "tools/OpenMP.h"
 #include "tools/Pbc.h"
 
 #include <string>
