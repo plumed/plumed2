@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Meta.h"
-#include "colvar/ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "tools/NeighborList.h"
 #include "tools/OpenMP.h"
 #include "tools/Pbc.h"
@@ -74,6 +74,7 @@ private:
   bool             pbc;
   vector<unsigned> nga;
   NeighborList     *nl;
+  unsigned         tot_size;
 public:
   static void registerKeywords( Keywords& keys );
   explicit NOEMI(const ActionOptions&);
@@ -157,6 +158,7 @@ NOEMI::NOEMI(const ActionOptions&ao):
       index++;
     }
   }
+  tot_size = index;
 
   if(pbc)      log.printf("  using periodic boundary conditions\n");
   else         log.printf("  without periodic boundary conditions\n");
@@ -245,7 +247,7 @@ void NOEMI::calculate()
 {
   if(!doscore_) calculate_simple();
   else {
-    vector<Vector> deriv(getNumberOfAtoms());
+    vector<Vector> deriv(tot_size, Vector{0,0,0});
     const unsigned ngasz=nga.size();
 
     #pragma omp parallel for num_threads(OpenMP::getNumThreads())
@@ -272,9 +274,7 @@ void NOEMI::calculate()
         const double tmpir8=c_aver*ir8;
 
         noe += tmpir6;
-        Vector tmpder = tmpir8*distance;
-        deriv[i0] += tmpder;
-        deriv[i1] -= tmpder;
+        deriv[index+j] = tmpir8*distance;
       }
       val->set(noe);
       setCalcData(i, noe);
@@ -319,9 +319,9 @@ void NOEMI::calculate()
         if(pbc) distance=pbcDistance(getPosition(i0),getPosition(i1));
         else    distance=delta(getPosition(i0),getPosition(i1));
 
-        dervir += Tensor(distance,deriv[i0]*getMetaDer(i));
-        setAtomsDerivatives(val, i0, deriv[i0]*getMetaDer(i));
-        setAtomsDerivatives(val, i1, deriv[i1]*getMetaDer(i));
+        dervir += Tensor(distance,deriv[index+j]*getMetaDer(i));
+        setAtomsDerivatives(val, i0,  deriv[index+j]*getMetaDer(i));
+        setAtomsDerivatives(val, i1, -deriv[index+j]*getMetaDer(i));
       }
     }
     setBoxDerivatives(val, dervir);

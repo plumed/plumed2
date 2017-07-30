@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_meta_Meta_h
-#define __PLUMED_meta_Meta_h
+#ifndef __PLUMED_isdb_Meta_h
+#define __PLUMED_isdb_Meta_h
 
 #include "core/ActionWithValue.h"
 #include "core/ActionAtomistic.h"
@@ -343,3 +343,4 @@ void Meta::setBoxDerivatives(Value* v,const Tensor&d) {
 }
 
 #endif
+
