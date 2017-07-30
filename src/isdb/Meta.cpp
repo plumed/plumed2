@@ -40,7 +40,7 @@ void Meta::registerKeywords( Keywords& keys ) {
   componentsAreNotOptional(keys);
   keys.use("ARG");
   keys.addFlag("DOSCORE",false,"activate metainference");
-  keys.add("compulsory","NDATA","the number of experimental data given in input");
+  keys.add("compulsory","NDATA","0","the number of data given in input");
   keys.addFlag("NOENSEMBLE",false,"don't perform any replica-averaging");
   keys.addFlag("REWEIGHT",false,"simple REWEIGHT using the ARG as energy");
   keys.add("optional","AVERAGING", "Stride for calculation of averaged weights and sigma_mean");
@@ -124,6 +124,7 @@ Meta::Meta(const ActionOptions&ao):
   parseFlag("DOSCORE", doscore_);
 
   parse("NDATA", narg);
+  if(doscore_&&narg==0) error("NDATA must be equal to the number of data calculated and used for metainference");
 
   bool noensemble = false;
   parseFlag("NOENSEMBLE", noensemble);
