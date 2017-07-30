@@ -172,6 +172,7 @@ public:
   void get_sigma_mean(const double fact, const double var_fact, const std::vector<double> &mean);
   void doMonteCarlo(const std::vector<double> &mean);
   void setParameters(const std::vector<double>& input);
+  void setParameter(const unsigned index, const double input);
   void setCalcData(const unsigned index, const double datum);
   void setCalcData(const std::vector<double>& data);
   double getScore(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
@@ -230,6 +231,11 @@ inline
 void Meta::setParameters(const std::vector<double>& input) {
   if(narg!=input.size()) error("The number of experimental values must be the same of NDATA");
   for(unsigned i=0; i<input.size(); i++) parameters.push_back(input[i]);
+}
+
+inline
+void Meta::setParameter(const unsigned index, const double input) {
+  parameters.push_back(input);
 }
 
 inline
