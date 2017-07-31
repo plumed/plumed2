@@ -428,62 +428,68 @@ Meta::Meta(const ActionOptions&ao):
   for(unsigned i=0; i<sigma_mean2_.size(); ++i) log.printf(" %f", sqrt(sigma_mean2_[i]));
   log.printf("\n");
 
-  if(do_reweight_) {
-    addComponent("MetaDf");
-    componentIsNotPeriodic("MetaDf");
-    addComponent("weight");
-    componentIsNotPeriodic("weight");
-  }
+  if(doscore_) {
+    addComponentWithDerivatives("score");
+    componentIsNotPeriodic("score");
+    valueScore=getPntrToComponent("score");
 
-  if(doscale_) {
-    addComponent("scale");
-    componentIsNotPeriodic("scale");
-    valueScale=getPntrToComponent("scale");
-  }
-
-  if(dooffset_) {
-    addComponent("offset");
-    componentIsNotPeriodic("offset");
-    valueOffset=getPntrToComponent("offset");
-  }
-
-  if(dooffset_||doscale_) {
-    addComponent("acceptScale");
-    componentIsNotPeriodic("acceptScale");
-    valueAcceptScale=getPntrToComponent("acceptScale");
-  }
-
-  if(noise_type_==GENERIC) {
-    addComponent("acceptFT");
-    componentIsNotPeriodic("acceptFT");
-    valueAcceptFT=getPntrToComponent("acceptFT");
-  }
-
-  addComponent("acceptSigma");
-  componentIsNotPeriodic("acceptSigma");
-  valueAccept=getPntrToComponent("acceptSigma");
-
-  if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
-    for(unsigned i=0; i<sigma_mean2_.size(); ++i) {
-      std::string num; Tools::convert(i,num);
-      addComponent("sigmaMean_"+num); componentIsNotPeriodic("sigmaMean_"+num);
-      valueSigmaMean.push_back(getPntrToComponent("sigmaMean_"+num));
-      getPntrToComponent("sigmaMean_"+num)->set(sqrt(sigma_mean2_[i]));
-      addComponent("sigma_"+num); componentIsNotPeriodic("sigma_"+num);
-      valueSigma.push_back(getPntrToComponent("sigma_"+num));
-      getPntrToComponent("sigma_"+num)->set(sigma_[i]);
-      if(noise_type_==GENERIC) {
-        addComponent("ftilde_"+num); componentIsNotPeriodic("ftilde_"+num);
-        valueFtilde.push_back(getPntrToComponent("ftilde_"+num));
-      }
+    if(do_reweight_) {
+      addComponent("MetaDf");
+      componentIsNotPeriodic("MetaDf");
+      addComponent("weight");
+      componentIsNotPeriodic("weight");
     }
-  } else {
-    addComponent("sigmaMean"); componentIsNotPeriodic("sigmaMean");
-    valueSigmaMean.push_back(getPntrToComponent("sigmaMean"));
-    getPntrToComponent("sigmaMean")->set(sqrt(sigma_mean2_[0]));
-    addComponent("sigma"); componentIsNotPeriodic("sigma");
-    valueSigma.push_back(getPntrToComponent("sigma"));
-    getPntrToComponent("sigma")->set(sigma_[0]);
+
+    if(doscale_) {
+      addComponent("scale");
+      componentIsNotPeriodic("scale");
+      valueScale=getPntrToComponent("scale");
+    }
+
+    if(dooffset_) {
+      addComponent("offset");
+      componentIsNotPeriodic("offset");
+      valueOffset=getPntrToComponent("offset");
+    }
+
+    if(dooffset_||doscale_) {
+      addComponent("acceptScale");
+      componentIsNotPeriodic("acceptScale");
+      valueAcceptScale=getPntrToComponent("acceptScale");
+    }
+
+    if(noise_type_==GENERIC) {
+      addComponent("acceptFT");
+      componentIsNotPeriodic("acceptFT");
+      valueAcceptFT=getPntrToComponent("acceptFT");
+    }
+
+    addComponent("acceptSigma");
+    componentIsNotPeriodic("acceptSigma");
+    valueAccept=getPntrToComponent("acceptSigma");
+
+    if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
+      for(unsigned i=0; i<sigma_mean2_.size(); ++i) {
+        std::string num; Tools::convert(i,num);
+        addComponent("sigmaMean_"+num); componentIsNotPeriodic("sigmaMean_"+num);
+        valueSigmaMean.push_back(getPntrToComponent("sigmaMean_"+num));
+        getPntrToComponent("sigmaMean_"+num)->set(sqrt(sigma_mean2_[i]));
+        addComponent("sigma_"+num); componentIsNotPeriodic("sigma_"+num);
+        valueSigma.push_back(getPntrToComponent("sigma_"+num));
+        getPntrToComponent("sigma_"+num)->set(sigma_[i]);
+        if(noise_type_==GENERIC) {
+          addComponent("ftilde_"+num); componentIsNotPeriodic("ftilde_"+num);
+          valueFtilde.push_back(getPntrToComponent("ftilde_"+num));
+        }
+      }
+    } else {
+      addComponent("sigmaMean"); componentIsNotPeriodic("sigmaMean");
+      valueSigmaMean.push_back(getPntrToComponent("sigmaMean"));
+      getPntrToComponent("sigmaMean")->set(sqrt(sigma_mean2_[0]));
+      addComponent("sigma"); componentIsNotPeriodic("sigma");
+      valueSigma.push_back(getPntrToComponent("sigma"));
+      getPntrToComponent("sigma")->set(sigma_[0]);
+    }
   }
 
   // initialize random seed
@@ -511,21 +517,14 @@ Meta::Meta(const ActionOptions&ao):
     sfile_.open(status_file_name_);
   }
 
-  log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");
-  if(do_reweight_) log<<plumed.cite("Bonomi, Camilloni, Vendruscolo, Sci. Rep. 6, 31232 (2016)");
-  if(do_optsigmamean_>0) log<<plumed.cite("Loehr, Jussupow, Camilloni, J. Chem. Phys. 146, 165102 (2017)");
-  log<<"\n";
-
   //resize the number of metainference derivatives and the number of back-calculated data
   metader_.resize(narg, 0.);
   calc_data_.resize(narg, 0.);
 
-  if(doscore_) {
-    addComponentWithDerivatives("score");
-    componentIsNotPeriodic("score");
-    valueScore=getPntrToComponent("score");
-  }
-
+  log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");
+  if(do_reweight_) log<<plumed.cite("Bonomi, Camilloni, Vendruscolo, Sci. Rep. 6, 31232 (2016)");
+  if(do_optsigmamean_>0) log<<plumed.cite("Loehr, Jussupow, Camilloni, J. Chem. Phys. 146, 165102 (2017)");
+  log<<"\n";
 }
 
 Meta::~Meta()
