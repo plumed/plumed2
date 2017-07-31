@@ -534,6 +534,7 @@ CS2Backbonemi::CS2Backbonemi(const ActionOptions&ao):
   string stringapdb;
 
   parseFlag("CAMSHIFT",camshift);
+  if(camshift&&doscore_) error("It is not possible to use CAMSHIFT together with DOSCORE");
 
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
@@ -648,8 +649,11 @@ CS2Backbonemi::CS2Backbonemi(const ActionOptions&ao):
 
   const string str_cs[] = {"ha_","hn_","nh_","ca_","cb_","co_"};
   unsigned index=0;
-  if(camshift) noexp = true;
-  else {
+  if(camshift) {
+    noexp = true;
+    addValueWithDerivatives();
+    setNotPeriodic();
+  } else {
     if(doscore_) {
       index_cs.resize(atom.size(), vector<vector<unsigned> >());
       for(unsigned i=0;i<atom.size();i++) {
@@ -1122,6 +1126,8 @@ void CS2Backbonemi::calculate()
             setCalcData(index_cs[s][a][at_kind], cs);
             all_list[s][a][at_kind] = list;
             all_ff[s][a][at_kind] = ff;
+            Value *comp = atom[s][a].comp[at_kind];
+            comp->set(cs);
           } else if(camshift) {
             score += (cs - atom[s][a].exp_cs[at_kind])*(cs - atom[s][a].exp_cs[at_kind])/camshift_sigma2[at_kind];
             double fact = 2.0*(cs - atom[s][a].exp_cs[at_kind])/camshift_sigma2[at_kind];
@@ -1140,7 +1146,7 @@ void CS2Backbonemi::calculate()
       }
     }
     #pragma omp critical
-    if(camshift) for(int i=0; i<getPositions().size(); i++) setAtomsDerivatives(getPntrToComponent("score"),i,omp_deriv[i]);
+    if(camshift) for(int i=0; i<getPositions().size(); i++) setAtomsDerivatives(getPntrToValue(),i,omp_deriv[i]);
   }
 
   if(doscore_) {
@@ -1185,10 +1191,10 @@ void CS2Backbonemi::calculate()
     Tensor virial;
     unsigned nat=getNumberOfAtoms();
     for(unsigned i=0; i<nat; i++) virial-=Tensor(getPosition(i),
-                                                 Vector(v->getDerivative(3*i+0),
-                                                        v->getDerivative(3*i+1),
-                                                        v->getDerivative(3*i+2)));
-    setBoxDerivatives(v,virial);
+                                                 Vector(val->getDerivative(3*i+0),
+                                                        val->getDerivative(3*i+1),
+                                                        val->getDerivative(3*i+2)));
+    setBoxDerivatives(val,virial);
     
   }
 
@@ -1196,11 +1202,12 @@ void CS2Backbonemi::calculate()
   if(camshift) {
     Tensor virial;
     unsigned nat=getNumberOfAtoms();
+    Value* val=getPntrToValue();
     for(unsigned i=0; i<nat; i++) virial-=Tensor(getPosition(i),
-                                                 Vector(v->getDerivative(3*i+0),
-                                                        v->getDerivative(3*i+1),
-                                                        v->getDerivative(3*i+2)));
-    setBoxDerivatives(v,virial);
+                                                 Vector(val->getDerivative(3*i+0),
+                                                        val->getDerivative(3*i+1),
+                                                        val->getDerivative(3*i+2)));
+    setBoxDerivatives(val,virial);
     setValue(score);
   }
 
