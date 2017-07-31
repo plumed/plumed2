@@ -656,7 +656,7 @@ CS2Backbonemi::CS2Backbonemi(const ActionOptions&ao):
   } else {
     if(doscore_) {
       index_cs.resize(atom.size(), vector<vector<unsigned> >());
-      for(unsigned i=0;i<atom.size();i++) {
+      for(unsigned i=0; i<atom.size(); i++) {
         index_cs[i].resize(atom[i].size(), vector<unsigned>(6));
       }
     }
@@ -800,10 +800,10 @@ void CS2Backbonemi::calculate()
 
   vector<vector<vector<vector<unsigned> > > > all_list(chainsize, vector<vector<vector<unsigned> > >());
   vector<vector<vector<vector<Vector> > > > all_ff(chainsize, vector<vector<vector<Vector> > >());
-  for(unsigned i=0;i<chainsize;i++) {
+  for(unsigned i=0; i<chainsize; i++) {
     all_list[i].resize(atom[i].size(), vector<vector<unsigned> >());
     all_ff[i].resize(atom[i].size(), vector<vector<Vector> >());
-    for(unsigned j=0;j<atom[i].size();j++) {
+    for(unsigned j=0; j<atom[i].size(); j++) {
       all_list[i][j].resize(6, vector<unsigned>());
       all_ff[i][j].resize(6, vector<Vector>());
     }
@@ -1191,11 +1191,11 @@ void CS2Backbonemi::calculate()
     Tensor virial;
     unsigned nat=getNumberOfAtoms();
     for(unsigned i=0; i<nat; i++) virial-=Tensor(getPosition(i),
-                                                 Vector(val->getDerivative(3*i+0),
-                                                        val->getDerivative(3*i+1),
-                                                        val->getDerivative(3*i+2)));
+                                            Vector(val->getDerivative(3*i+0),
+                                                val->getDerivative(3*i+1),
+                                                val->getDerivative(3*i+2)));
     setBoxDerivatives(val,virial);
-    
+
   }
 
   // in the case of camshift we calculate the virial at the end
@@ -1204,9 +1204,9 @@ void CS2Backbonemi::calculate()
     unsigned nat=getNumberOfAtoms();
     Value* val=getPntrToValue();
     for(unsigned i=0; i<nat; i++) virial-=Tensor(getPosition(i),
-                                                 Vector(val->getDerivative(3*i+0),
-                                                        val->getDerivative(3*i+1),
-                                                        val->getDerivative(3*i+2)));
+                                            Vector(val->getDerivative(3*i+0),
+                                                val->getDerivative(3*i+1),
+                                                val->getDerivative(3*i+2)));
     setBoxDerivatives(val,virial);
     setValue(score);
   }
