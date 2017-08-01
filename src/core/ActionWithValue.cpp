@@ -68,7 +68,8 @@ ActionWithValue::ActionWithValue(const ActionOptions&ao):
   no_openmp(false),
   serial(false),
   timers(false),
-  nactive_tasks(0)
+  in_a_chain(false),
+  nactive_tasks(0),
   action_to_do_after(NULL)
 {
   if( keywords.exists("NUMERICAL_DERIVATIVES") ) parseFlag("NUMERICAL_DERIVATIVES",numericalDerivatives);
@@ -147,7 +148,8 @@ bool ActionWithValue::addActionToChain( const std::vector<std::string>& alabels,
       } 
       if( !found ) return false; 
   }
-  action_to_do_after=act; act->addDependency( this ); return true;
+  action_to_do_after=act; act->addDependency( this ); act->in_a_chain=true;
+  return true;
 }
 
 void ActionWithValue::clearInputForces() {
@@ -155,15 +157,10 @@ void ActionWithValue::clearInputForces() {
 }
 
 void ActionWithValue::clearDerivatives( const bool& force ) {
-  const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
-  if( aa ){ if( !force && aa->done_over_stream ) return; }
-  else if( getDependencies().size()>0 ) {
-     // This is a way to check if this is a Volume.  It is not very good
-     const ActionAtomistic* aat = dynamic_cast<const ActionAtomistic*>( this );
-     const ActionWithVirtualAtom* av = dynamic_cast<const ActionWithVirtualAtom*>( getDependencies()[0] );
-     if( aat && !av && !force ) return;  
-  }
-  unsigned nt = OpenMP::getGoodNumThreads(values);
+  // This ensures we do not clear derivatives calculated in a chain until the next time the first 
+  // action in the chain is called
+  if( !force && in_a_chain ) return ;
+  unsigned nt = OpenMP::getGoodNumThreads(values); 
   #pragma omp parallel num_threads(nt)
   {
     #pragma omp for
@@ -397,6 +394,9 @@ void ActionWithValue::selectActiveTasks( std::vector<unsigned>& tflags ){
 }
 
 void ActionWithValue::runAllTasks() {
+// Skip this if this is done elsewhere 
+  if( in_a_chain ) return;
+  
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
   if(serial) { stride=1; rank=0; }

@@ -45,8 +45,6 @@ private:
   double sigma;
 /// Are we interested in the area outside the colvar
   bool not_in;
-/// Are we doing this action over a stream
-  bool done_over_stream;
 /// The kernel type for this histogram
   std::string kerneltype;
 /// The forces that we collect and apply
@@ -64,7 +62,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit ActionVolume(const ActionOptions&);
   unsigned getNumberOfDerivatives() const ;
-  void buildCurrentTaskList( std::vector<unsigned>& tflags ) const ;
+  void buildCurrentTaskList( std::vector<unsigned>& tflags );
   void calculate();
   void apply();
   virtual void setupRegions() = 0;

@@ -46,7 +46,7 @@ Max::Max( const ActionOptions& ao ) :
   Action(ao),
   Function(ao)
 {
-  rankOneOutput = getPntrToArgument(0)->getRank()>0 && arg_ends[1]-arg_ends[0]==1;
+  rankOneOutput = getPntrToArgument(0)->getRank()>0 && arg_ends.size()==2;
   for(unsigned i=0;i<getNumberOfArguments();++i){
      if( getPntrToArgument(i)->isPeriodic() ) error("MAX is not a meaningful option for periodic variables");
   }

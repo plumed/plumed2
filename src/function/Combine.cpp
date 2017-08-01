@@ -110,7 +110,7 @@ Combine::Combine(const ActionOptions&ao):
   parameters(getNumberOfArguments(),0.0),
   powers(getNumberOfArguments(),1.0)
 {
-  rankOneOutput = getPntrToArgument(0)->getRank()>0 && arg_ends[1]-arg_ends[0]==1;
+  rankOneOutput = getPntrToArgument(0)->getRank()>0 && arg_ends.size()==2;
   if( rankOneOutput ) { 
      coefficients.resize( getNumberOfScalarArguments() ); parseVector("COEFFICIENTS",coefficients);
      if(coefficients.size()!=static_cast<unsigned>(getNumberOfScalarArguments()))

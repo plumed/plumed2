@@ -103,7 +103,7 @@ void Function::addValueWithDerivatives() {
   } else { period.resize(1); period[0]="NO"; }
 
   std::vector<unsigned> shape( getShape() ); 
-  if( arg_ends[1]-arg_ends[0]==1 ){ 
+  if( arg_ends[1]-arg_ends[0]==1 ){
       if( done_over_stream && !rankOneOutput ) ActionWithValue::addValue( shape ); 
       else ActionWithValue::addValueWithDerivatives( shape ); 
       if(period.size()==1 && period[0]=="NO") setNotPeriodic(); 
@@ -144,7 +144,7 @@ void Function::calculate(){
   plumed_dbg_assert( getFullNumberOfTasks()>0 ); runAllTasks(); 
 }
 
-void Function::buildCurrentTaskList( std::vector<unsigned>& tflags ) const {
+void Function::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
   if( !done_over_stream ) tflags.assign(tflags.size(),1);
 }
 

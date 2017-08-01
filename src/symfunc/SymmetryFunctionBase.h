@@ -57,7 +57,7 @@ public:
   explicit SymmetryFunctionBase(const ActionOptions&); 
   unsigned getNumberOfDerivatives() const ;
   void calculate(){} 
-  void buildCurrentTaskList( std::vector<unsigned>& tflags ) const ;
+  void buildCurrentTaskList( std::vector<unsigned>& tflags );
   virtual void compute( const double& weight, const Vector& vec, MultiValue& myvals ) const = 0;
   virtual void performTask( const unsigned& current, MultiValue& myvals ) const ;
   void apply();

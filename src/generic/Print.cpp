@@ -21,7 +21,9 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionPilot.h"
 #include "core/ActionWithArguments.h"
+#include "core/ActionAtomistic.h"
 #include "core/ActionRegister.h"
+#include "core/PlumedMain.h"
 
 using namespace std;
 
@@ -69,11 +71,14 @@ only when required.
 
 class Print :
   public ActionPilot,
-  public ActionWithArguments
+  public ActionWithArguments,
+  public ActionAtomistic
 {
+  string tstyle;
   string file;
   OFile ofile;
   string fmt;
+  double lenunit;
 // small internal utility
 /////////////////////////////////////////
 // these are crazy things just for debug:
@@ -91,6 +96,9 @@ public:
   static void registerKeywords(Keywords& keys);
   void apply() {}
   void update();
+  void unlockRequests() { ActionWithArguments::unlockRequests(); ActionAtomistic::unlockRequests(); }
+  void lockRequests() { ActionWithArguments::lockRequests(); ActionAtomistic::lockRequests(); }
+  void calculateNumericalDerivatives( ActionWithValue* a=NULL ){ plumed_error(); }
   ~Print();
 };
 
@@ -100,7 +108,10 @@ void Print::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys);
   ActionPilot::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
+  ActionAtomistic::registerKeywords(keys);
   keys.use("ARG");
+  keys.add("atoms","ATOMS","the atoms that you would like to you output - only required if using xyz");
+  keys.add("compulsory","UNITS","PLUMED","the length units you would like to use when outputting atoms in you xyz file");
   keys.add("compulsory","STRIDE","1","the frequency with which the quantities of interest should be output");
   keys.add("optional","FILE","the name of the file on which to output these quantities");
   keys.add("optional","FMT","the format that should be used to output real numbers");
@@ -114,39 +125,76 @@ Print::Print(const ActionOptions&ao):
   Action(ao),
   ActionPilot(ao),
   ActionWithArguments(ao),
+  ActionAtomistic(ao),
+  tstyle("colvar"),
   fmt("%f"),
+  lenunit(1.0),
   rotate(0)
 {
   ofile.link(*this);
   parse("FILE",file);
   if(file.length()>0) {
-    ofile.open(file);
+    ofile.open(file); 
+    std::size_t dot=file.find_first_of(".");
+    if( dot!=std::string::npos ) tstyle=file.substr(dot+1); 
+    if( tstyle!="xyz" ) tstyle="colvar";
     log.printf("  on file %s\n",file.c_str());
   } else {
     log.printf("  on plumed log file\n");
-    ofile.link(log);
+    ofile.link(log); 
   }
   parse("FMT",fmt);
   fmt=" "+fmt;
   log.printf("  with format %s\n",fmt.c_str());
-  for(unsigned i=0; i<getNumberOfArguments(); ++i){  // ofile.setupPrintValue( getPntrToArgument(i) );
-      getPntrToArgument(i)->buildDataStore();
-      if( getPntrToArgument(i)->isPeriodic() ){ 
-          ofile.addConstantField("min_" + getPntrToArgument(i)->getName() );
-          ofile.addConstantField("max_" + getPntrToArgument(i)->getName() );
+  if( tstyle=="colvar" ){
+      for(unsigned i=0; i<getNumberOfArguments(); ++i){  // ofile.setupPrintValue( getPntrToArgument(i) );
+          getPntrToArgument(i)->buildDataStore();
+          if( getPntrToArgument(i)->isPeriodic() ){ 
+              ofile.addConstantField("min_" + getPntrToArgument(i)->getName() );
+              ofile.addConstantField("max_" + getPntrToArgument(i)->getName() );
+          }
       }
-  }
 /////////////////////////////////////////
 // these are crazy things just for debug:
 // they allow to change regularly the
 // printed argument
-  parse("_ROTATE",rotate);
-  if(rotate>0) {
-    rotateCountdown=rotate;
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) rotateArguments.push_back( getPntrToArgument(i) );
-    vector<Value*> a(1,rotateArguments[0]);
-    requestArguments(vector<Value*>(1,rotateArguments[0]));
-    rotateLast=0;
+      parse("_ROTATE",rotate);
+      if(rotate>0) {
+        rotateCountdown=rotate;
+        for(unsigned i=0; i<getNumberOfArguments(); ++i) rotateArguments.push_back( getPntrToArgument(i) );
+        vector<Value*> a(1,rotateArguments[0]);
+        requestArguments(vector<Value*>(1,rotateArguments[0]));
+        rotateLast=0;
+      }
+  } else if( tstyle=="xyz" ){
+      unsigned nper=0; std::string unitname; parse("UNITS",unitname);
+      if(unitname!="PLUMED") {
+        Units myunit; myunit.setLength(unitname);
+        lenunit=plumed.getAtoms().getUnits().getLength()/myunit.getLength();
+      }
+      for(unsigned i=0;i<arg_ends.size()-1;++i) {
+          unsigned nt=0;
+          for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j){
+              if( getPntrToArgument(j)->getRank()!=1 ) error("can only output vectors to xyz output");
+              nt += getPntrToArgument(j)->getNumberOfValues();
+          } 
+          if( i==0 ){ nper=nt; }
+          else if( nt!=nper ) error("mismatched number of values in matrices input in input");
+      }
+      std::vector<AtomNumber> atoms; parseAtomList("ATOMS",atoms); 
+      if( atoms.size()!=nper ) error("number of atoms should match number of colvars");
+      log.printf("  printing xyz file containing poisitions of atoms in columns 1, 2 and 3\n");
+      for(unsigned i=0;i<getNumberOfArguments();++i){
+          log.printf("  column %d contains components of vector %s \n", 4+i, getPntrToArgument(i)->getName().c_str() );
+      }
+      log.printf("  atom positions printed are : ");
+      for(unsigned int i=0; i<atoms.size(); ++i) {
+         if ( (i+1) % 25 == 0 ) log.printf("  \n");
+         log.printf("  %d", atoms[i].serial());
+      }
+      log.printf("\n"); std::vector<Value*> args( getArguments() ); requestAtoms( atoms ); requestArguments( args ); 
+  } else {
+      error("expected output does not exist");
   }
 /////////////////////////////////////////
   checkRead();
@@ -170,15 +218,38 @@ void Print::prepare() {
 }
 
 void Print::update() {
-  if( getNumberOfArguments()>1 || getPntrToArgument(0)->getRank()==0 ){
+  if( tstyle=="colvar" ){
       ofile.fmtField(" %f");
       ofile.printField("time",getTime());
-      for(unsigned i=0; i<getNumberOfArguments(); i++) {
-         ofile.fmtField(fmt); getPntrToArgument(i)->print( getLabel(), ofile );
+      if( getNumberOfArguments()>1 || getPntrToArgument(0)->getRank()==0 ){
+          for(unsigned i=0; i<getNumberOfArguments(); i++) {
+             ofile.fmtField(fmt); getPntrToArgument(i)->print( getLabel(), ofile );
+          }
+      } else {
+          for(unsigned i=0; i<getNumberOfArguments(); i++){ ofile.fmtField(fmt); getPntrToArgument(i)->print( getLabel(), ofile ); }
       }
       ofile.printField();
-  } else {
-      ofile.fmtField(" %f"); getPntrToArgument(0)->print( getLabel(), ofile ); 
+  } else if( tstyle=="xyz") {
+      ofile.printf("%d\n",getNumberOfAtoms());
+      const Tensor & t(getPbc().getBox());
+      if(getPbc().isOrthorombic()) {
+        ofile.printf((" "+fmt+" "+fmt+" "+fmt+"\n").c_str(),lenunit*t(0,0),lenunit*t(1,1),lenunit*t(2,2));
+      } else {
+        ofile.printf((" "+fmt+" "+fmt+" "+fmt+" "+fmt+" "+fmt+" "+fmt+" "+fmt+" "+fmt+" "+fmt+"\n").c_str(),
+                       lenunit*t(0,0),lenunit*t(0,1),lenunit*t(0,2),
+                       lenunit*t(1,0),lenunit*t(1,1),lenunit*t(1,2),
+                       lenunit*t(2,0),lenunit*t(2,1),lenunit*t(2,2)
+                      );
+      }
+      MultiValue myfvals(0,0); std::vector<double> argvals( arg_ends.size()-1 ); 
+      for(unsigned i=0; i<getNumberOfAtoms();++i) {
+          const char* defname="X";
+          const char* name=defname;
+          ofile.printf(("%s "+fmt+" "+fmt+" "+fmt).c_str(),name,lenunit*getPosition(i)[0],lenunit*getPosition(i)[1],lenunit*getPosition(i)[2]);
+          myfvals.setTaskIndex(i); retrieveArguments( myfvals, argvals );
+          for(unsigned j=0;j<argvals.size();++j) ofile.printf((" " + fmt).c_str(), argvals[j] );
+          ofile.printf("\n"); 
+      } 
   }
 }
 

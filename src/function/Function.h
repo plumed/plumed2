@@ -53,7 +53,7 @@ public:
   explicit Function(const ActionOptions&);
   virtual ~Function() {}
   void calculate();
-  void buildCurrentTaskList( std::vector<unsigned>& tflags ) const ;
+  void buildCurrentTaskList( std::vector<unsigned>& tflags );
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
   virtual void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const = 0;
   void apply();

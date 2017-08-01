@@ -179,7 +179,7 @@ void SecondaryStructureRMSD::setupValues(){
   }
 }
 
-void SecondaryStructureRMSD::buildCurrentTaskList( std::vector<unsigned>& tflags ) const {
+void SecondaryStructureRMSD::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
   if( s_cutoff2>0 ) {
       for(unsigned i=0;i<tflags.size();++i){
           Vector distance=pbcDistance( ActionAtomistic::getPosition( getAtomIndex(i,align_atom_1) ), 

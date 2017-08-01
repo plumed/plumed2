@@ -139,8 +139,7 @@ void ActionVolume::registerKeywords( Keywords& keys ) {
 ActionVolume::ActionVolume(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao),
-  ActionWithValue(ao),
-  done_over_stream(false)
+  ActionWithValue(ao)
 {
   std::vector<AtomNumber> atoms; parseAtomList("ATOMS",atoms);
   if( atoms.size()==0 ) error("no atoms were specified");
@@ -158,7 +157,7 @@ ActionVolume::ActionVolume(const ActionOptions&ao):
       plumed_assert( f_actions.size()<2 );
       if( f_actions.size()==1 ){ 
           std::vector<std::string> empty(1); empty[0] = f_actions[0]->getLabel();
-          f_actions[0]->addActionToChain( empty, this ); done_over_stream=true;
+          f_actions[0]->addActionToChain( empty, this ); 
       }
   }
 
@@ -177,17 +176,17 @@ void ActionVolume::requestAtoms( const std::vector<AtomNumber> & a ) {
   ActionAtomistic::requestAtoms( all_atoms ); forcesToApply.resize( 3*all_atoms.size()+9 );
 }
 
-void ActionVolume::buildCurrentTaskList( std::vector<unsigned>& tflags ) const {
+void ActionVolume::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
   tflags.assign(tflags.size(),1);  // Can surely do something more smart here
 }
 
 void ActionVolume::calculate(){
-  if( done_over_stream ) return;
+  if( actionInChain() ) return;
   setupRegions(); runAllTasks();
 }
 
 void ActionVolume::prepareForTasks(){
-  if( done_over_stream ) retrieveAtoms(); 
+  if( actionInChain() ) retrieveAtoms();
   setupRegions(); ActionWithValue::prepareForTasks();
 }
 

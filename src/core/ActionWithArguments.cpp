@@ -205,6 +205,7 @@ void ActionWithArguments::expandArgKeywordInPDB( PDB& pdb ) {
 
 void ActionWithArguments::requestArguments(const vector<Value*> &arg) {
   plumed_massert(!lockRequestArguments,"requested argument list can only be changed in the prepare() method");
+  bool firstcall=(arguments.size()==0);
   arguments=arg;
   clearDependencies();
   std::string fullname,name;
@@ -229,6 +230,17 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg) {
         if( !found ) f_actions.push_back( myact );
     }   
   }
+  // This is a way of checking if we are in an ActionWithValue by looking at the keywords -- is there better fix?
+  if( firstcall ) {
+      if( !keywords.exists("SERIAL") ){
+          for(unsigned i=0;i<arg.size();++i){ if( arg[i]->getRank()>0 ) arg[i]->buildDataStore(); }
+          return;
+      }
+  } else {
+      ActionWithValue* av = dynamic_cast<ActionWithValue*>(this);
+      if(!av) return;
+  }
+
   if( f_actions.size()>1 ){
       done_over_stream=true;
       for(unsigned i=1;i<f_actions.size();++i){
@@ -305,7 +317,7 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
 }
 
 ActionWithValue* ActionWithArguments::getFirstNonStream() {
-  plumed_massert( getNumberOfArguments()==1, "cannot use functions with multiple arguments in this way" );
+  plumed_massert( getNumberOfArguments()==1, "cannot use functions with multiple arguments in this way " + getLabel() );
   ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>( getPntrToArgument(0)->getPntrToAction() );
   if( !aa || !aa->done_over_stream || aa->getNumberOfArguments()>1 ) return getPntrToArgument(0)->getPntrToAction();
   else return aa->getFirstNonStream();  

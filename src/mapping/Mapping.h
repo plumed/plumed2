@@ -62,7 +62,7 @@ public:
 /// Get the iframe th reference configuration
   ReferenceConfiguration* getReferenceConfiguration( const unsigned& iframe ) const ;
 /// Turn on the tasks that are currently active
-  void buildCurrentTaskList( std::vector<unsigned>& tflags ) const ;
+  void buildCurrentTaskList( std::vector<unsigned>& tflags );
 /// Do the actual calculation
   void calculate();
 /// This calculates the distance from the reference

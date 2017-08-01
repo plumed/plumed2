@@ -84,6 +84,8 @@ private:
   bool serial;
 /// Are we using timers
   bool timers;
+/// Are we in a chain
+  bool in_a_chain;
 /// The stopwatch that times the different parts of the calculation
   ForwardDecl<Stopwatch> stopwatch_fwd;
   Stopwatch& stopwatch=*stopwatch_fwd;
@@ -123,6 +125,8 @@ public:
 /// Set the value to be periodic with a particular domain
   void setPeriodic( const std::string& min, const std::string& max );
 protected:
+///
+  bool actionInChain() const ; 
 /// Get a pointer to the default value
   Value* getPntrToValue();
 /// Set the default value (the one without name)
@@ -230,7 +234,7 @@ public:
 /// Reperform one of the tasks
   void rerunTask( const unsigned& task_index, MultiValue& myvals ) const ;
 ///
-  virtual void buildCurrentTaskList( std::vector<unsigned>& tflags ) const { plumed_merror( "problem in task list for " + getLabel() ); }
+  virtual void buildCurrentTaskList( std::vector<unsigned>& tflags ) { plumed_merror( "problem in task list for " + getLabel() ); }
 ///
   virtual void selectActiveTasks( std::vector<unsigned>& tflags );
 /// Make sure all tasks required for loop are done before loop starts
@@ -302,6 +306,11 @@ unsigned ActionWithValue::getTaskCode( const unsigned& ii ) const {
 inline
 bool ActionWithValue::runInSerial() const {
   return serial;
+}
+
+inline
+bool ActionWithValue::actionInChain() const {
+  return in_a_chain;
 }
 
 

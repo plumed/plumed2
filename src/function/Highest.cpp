@@ -63,7 +63,7 @@ Highest::Highest(const ActionOptions&ao):
   Function(ao),
   tvals(0,0)
 {
-  rankOneOutput = getPntrToArgument(0)->getRank()>0 && getNumberOfArguments()==1;
+  rankOneOutput = getPntrToArgument(0)->getRank()>0 && arg_ends.size()==2;
   if( rankOneOutput ){ for(unsigned i=0; i<getNumberOfArguments(); ++i) getPntrToArgument(i)->buildDataStore(); }
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     string s; Tools::convert(i+1,s);

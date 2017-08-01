@@ -320,7 +320,7 @@ Vector MultiColvarBase::getSeparation( const Vector& vec1, const Vector& vec2 ) 
   else { return delta( vec1, vec2 ); }
 }
 
-void MultiColvarBase::buildCurrentTaskList( std::vector<unsigned>& tflags ) const {
+void MultiColvarBase::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
   tflags.assign(tflags.size(),1);
 }
 

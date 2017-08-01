@@ -101,16 +101,20 @@ void AdjacencyMatrixBase::setLinkCellCutoff( const double& lcut, double tcut ) {
   linkcells.setCutoff( lcut );
 }
 
-void AdjacencyMatrixBase::buildCurrentTaskList( std::vector<unsigned>& tflags ) const {
+void AdjacencyMatrixBase::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
+  // Need to retrieve atoms here in case this is done in a stream
+  if( actionInChain() ) retrieveAtoms();
+  // Make sure all tasks are done
   tflags.assign(tflags.size(),1);
-}
-
-void AdjacencyMatrixBase::calculate(){
+  // Build link cells here so that this is done in stream if it needed in stream
   std::vector<Vector> ltmp_pos( ablocks.size() );
   for(unsigned i=0; i<ablocks.size(); ++i) {
       ltmp_pos[i]=getPosition( ablocks[i] );
   }
   linkcells.buildCellLists( ltmp_pos, ablocks, getPbc() );
+}
+
+void AdjacencyMatrixBase::calculate(){
   // Now run all the tasks
   runAllTasks();
 }

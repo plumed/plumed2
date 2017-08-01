@@ -295,7 +295,7 @@ void SymmetryFunctionBase::addComponentWithDerivatives( const std::string& name 
   ActionWithValue::addComponent(name,shape); componentIsNotPeriodic(name); 
 }
 
-void SymmetryFunctionBase::buildCurrentTaskList( std::vector<unsigned>& tflags ) const {
+void SymmetryFunctionBase::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
   plumed_assert( done_over_stream ); tflags.assign(tflags.size(),1);
 }
 
