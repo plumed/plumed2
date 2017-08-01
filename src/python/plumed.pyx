@@ -33,10 +33,8 @@ cdef class Plumed:
      cdef int precision
      def __cinit__(self,precision=8):
          self.c_plumed = new cplumed.Plumed()
-         cdef np.int_t[:] buffer
-         tarr = np.array([precision])
-         buffer = tarr.view(np.int) 
-         self.c_plumed.cmd( "setRealPrecision", <void*>&buffer[0] )  
+         cdef int pres = precision
+         self.c_plumed.cmd( "setRealPrecision", <void*>&pres )  
          self.precision=precision
      def __dealloc__(self):
          del self.c_plumed
