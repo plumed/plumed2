@@ -40,9 +40,14 @@ cdef class Plumed:
          self.precision=precision
      def __dealloc__(self):
          del self.c_plumed
+
      def cmd_ndarray(self, ckey, val):
          cdef double [:] abuffer = val.ravel()
          self.c_plumed.cmd(ckey, <void*>&abuffer[0])
+     cdef cmd_float(self, ckey, double val ):
+         self.c_plumed.cmd( ckey, <void*>&val )
+     cdef cmd_int(self, ckey, int val):
+         self.c_plumed.cmd(ckey, <void*>&val)
 
      def cmd( self, key, val=None ):
          cdef bytes py_bytes = key.encode()
@@ -52,15 +57,13 @@ cdef class Plumed:
          cdef np.float64_t[:] dbuffer
          if val is None :
             self.c_plumed.cmd( ckey, NULL )
-         elif isinstance(val, (int, long) ) :
-            iarr = np.array([val])
-            ibuffer = iarr.view(np.int)
-            self.c_plumed.cmd( ckey, <void*>&ibuffer[0] )
+         elif isinstance(val, (int,long) ):
+            self.cmd_int(ckey, val)
          elif isinstance(val, float ) :
+            if key=="getBias" :
+               raise ValueError("when using cmd with getBias option value must be a one dimensional ndarray")
             if self.precision==8 :
-               darr = np.array([val])
-               dbuffer = darr.view(np.float64)
-               self.c_plumed.cmd( ckey, <void*>&dbuffer[0]  ) 
+               self.cmd_float(ckey, val) 
             else :
                raise ValueError("Unknown precision type ".str(np.precision))
          elif isinstance(val, np.ndarray) : 
@@ -74,31 +77,3 @@ cdef class Plumed:
               self.c_plumed.cmd( ckey, <void*>cval )
          else :
             raise ValueError("Unknown value type ({})".format(str(type(val))))
-     #def grab( self, key ):
-     #    # This bit gets the shape of the array
-     #    shape = np.zeros((11,), dtype=np.int_ )
-     #    np.ascontiguousarray(shape)
-     #    sizes = shape.flatten()
-     #    pkey = "grabDataShape " + key
-     #    cdef bytes py_bytes=pkey.encode()
-     #    cdef char* ckey = py_bytes
-     #    self.c_plumed.cmd( ckey, <void*>sizes.data )
-     #    # Now get the data
-     #    ndims = shape[0]
-     #    pkey2 = "setDataForGrab " + key
-     #    py_bytes=pkey2.encode()
-     #    ckey = py_bytes
-     #    if ndims == 0 :
-     #       value = np.zeros(1)
-     #       np.ascontiguousarray(value, dtype=np.float64 )
-     #       dbuffer = value.flatten() 
-     #       self.c_plumed.cmd( ckey, <void*> dbuffer.data )
-     #    else :
-     #       value = np.zeros( shape[1:ndims+1] )
-     #       np.ascontiguousarray(value, dtype=np.float64 )
-     #       dbuffer = value.flatten()
-     #       self.c_plumed.cmd( ckey, <void*> dbuffer.data ) 
-     #    # And do the calculation
-     #    self.c_plumed.cmd( "calc", NULL )
-     #    return value
-       

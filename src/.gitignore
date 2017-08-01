@@ -26,6 +26,7 @@
 !/manyrestraints
 !/molfile
 !/multicolvar
+!/python
 !/reference
 !/secondarystructure
 !/setup
