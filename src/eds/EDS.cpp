@@ -40,28 +40,37 @@ namespace eds {
 /*
 Add a linear bias on a set of observables.
 
-This force is the same as the linear part of the bias in \ref RESTRAINT,
-but this bias has the ability to compute prefactors
-adaptively using the scheme of White and Voth
-\cite white2014efficient in order to match
-target observable values for a set of CVs.
+This force is the same as the linear part of the bias in \ref
+RESTRAINT, but this bias has the ability to compute prefactors
+adaptively using the scheme of White and Voth \cite white2014efficient
+in order to match target observable values for a set of CVs. You can
+see a tutorial on EDS specifically for biasing coordination number at
+<a
+href="http://thewhitelab.org/Blog/tutorial/2017/05/10/lammps-coordination-number-tutorial/">
+Andrew White's webpage</a>.
 
 The addition to the potential is of the form
 \f[
   \sum_i \frac{\alpha_i}{s_i} x_i
 \f]
 
-where for CV \f$x_i\f$, a coupling \f${\alpha}_i\f$ is determined
+where for CV \f$x_i\f$, a coupling constant \f${\alpha}_i\f$ is determined
 adaptively or set by the user to match a target value for
 \f$x_i\f$. \f$s_i\f$ is a scale parameter, which by default is set to
 the target value. It may also be set separately.
 
 \warning
-It is not possible to set the target value of the observable to zero with the default value of \f$s_i\f$ as this will cause a divide-by-zero error. Instead, set \f$s_i=1\f$ or modify the CV so the desired target value is no longer zero.
+It is not possible to set the target value of the observable
+to zero with the default value of \f$s_i\f$ as this will cause a
+divide-by-zero error. Instead, set \f$s_i=1\f$ or modify the CV so the
+desired target value is no longer zero.
 
 \par Examples
 
-The following input for a harmonic oscillator of two beads will adaptively find a linear bias to change the mean and variance to the target values. The PRINT line shows how to access the value of the coupling constants.
+The following input for a harmonic oscillator of two beads will
+adaptively find a linear bias to change the mean and variance to the
+target values. The PRINT line shows how to access the value of the
+coupling constants.
 
 \plumedfile
 dist: DISTANCE ATOMS=1,2
@@ -73,7 +82,7 @@ eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0
 PRINT ARG=dist,dist2,eds.dist_coupling,eds.dist2_coupling,eds.bias,eds.force2 FILE=colvars.dat STRIDE=100
 \endplumedfile
 
-Rather than trying to find the coupling constants adaptively, can ramp up to a constant value.
+Rather than trying to find the coupling constants adaptively, one can ramp up to a constant value.
 \plumedfile
 #ramp couplings from 0,0 to -1,1 over 50000 steps
 eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 FIXED=-1,1 RAMP PERIOD=50000 TEMP=1.0
@@ -82,21 +91,29 @@ eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 FIXED=-1,1 RAMP PERIOD=50000 TEMP=1.0
 eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 FIXED=-1,1 INIT=-0.5,0.5 RAMP PERIOD=50000 TEMP=1.0
 \endplumedfile
 
-A restart file can be added to dump information needed to restart/continue simulation using these parameters every STRIDE.
+A restart file can be added to dump information needed to restart/continue simulation using these parameters every PERIOD.
 \plumedfile
 #add the option to write to a restart file
 eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 OUT_RESTART=restart.dat
+\endplumedfile
 
-#add the option to read in a previous restart file. Adding RESTART flag makes output append
-eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.dat RESTART=yes
+Read in a previous restart file. Adding RESTART flag makes output append
+\plumedfile
+eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.dat RESTART
+\endplumedfile
 
-#add the option to read in a previous restart file and freeze the bias at the final level from the previous simulation
-eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.dat FREEZE
+Read in a previous restart file and freeze the bias at the final level from the previous simulation
+\plumedfile
+eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 TEMP=1.0 IN_RESTART=restart.dat FREEZE
+\endplumedfile
 
-#add the option to read in a previous restart file and freeze the bias at the mean from the previous simulation
-eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.dat FREEZE MEAN
+Read in a previous restart file and freeze the bias at the mean from the previous simulation
+\plumedfile
+eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 TEMP=1.0 IN_RESTART=restart.dat FREEZE MEAN
+\endplumedfile
 
-#add the option to read in a previous restart file and continue the bias, but use the mean from the previous run as the starting point
+Read in a previous restart file and continue the bias, but use the mean from the previous run as the starting point
+\plumedfile
 eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.dat MEAN
 \endplumedfile
 
@@ -180,12 +197,12 @@ void EDS::registerKeywords(Keywords& keys) {
   keys.add("optional","CENTER_ARG","The desired centers (equilibrium values) which will be sought during the adaptive linear biasing. "
            "CENTER_ARG is for calculated centers, e.g. from a CV or analysis. ");
 
-  keys.add("compulsory","PERIOD","Steps over which to adjust bias");
+  keys.add("optional","PERIOD","Steps over which to adjust bias for adaptive or ramping");
 
   keys.add("compulsory","RANGE","3.0","The largest magnitude of the force constant which one expects (in kBT) for each CV based");
   keys.add("compulsory","SEED","0","Seed for random order of changing bias");
-  keys.add("compulsory","INIT","0","Starting value for coupling coefficients");
-  keys.add("compulsory","FIXED","0","Fixed target values for bias factors (not adaptive)");
+  keys.add("compulsory","INIT","0","Starting value for coupling constant");
+  keys.add("compulsory","FIXED","0","Fixed target values for coupling constant. Non-adaptive.");
   keys.add("optional","BIAS_SCALE","A divisor to set the units of the bias. "
            "If not set, this will be the experimental value by default (as is done in White and Voth 2014).");
   keys.add("optional","TEMP","The system temperature. If not provided will be taken from MD code (if available)");
@@ -202,7 +219,7 @@ void EDS::registerKeywords(Keywords& keys) {
 
   keys.addFlag("RAMP",false,"Slowly increase bias constant to a fixed value");
   keys.addFlag("COVAR",false,"Utilize the covariance matrix when updating the bias. Default Off, but may be enabled due to other options");
-  keys.addFlag("FREEZE",false,"Fix bias at current level (only used for restarting). Can also set PERIOD=0 if not using RESTART.");
+  keys.addFlag("FREEZE",false,"Fix bias at current level (only used for restarting).");
   keys.addFlag("MEAN",false,"Instead of using final bias level from restart, use average. Can only be used in conjunction with FREEZE");
 
   keys.use("RESTART");
@@ -221,7 +238,7 @@ EDS::EDS(const ActionOptions&ao):
   max_coupling_range_(ncvs_,3.0),
   max_coupling_grad_(ncvs_,0.0),
   coupling_rate_(ncvs_,1.0),
-  coupling_accum_(ncvs_,1.0),
+  coupling_accum_(ncvs_,0.0),
   means_(ncvs_,0.0),
   step_size_(ncvs_,0.0),
   out_coupling_(ncvs_,NULL),
@@ -452,15 +469,6 @@ void EDS::readInRestart(const bool b_mean) {
 
   in_restart_.open(in_restart_name_);
 
-  //some sample code to get the field names:
-  /*
-    std::vector<std::string> fields;
-    in_restart_.scanFieldList(fields);
-    log.printf("field");
-    for(unsigned int i = 0;i<fields.size();i++) log.printf(" %s",fields[i].c_str());
-    log.printf("\n");
-  */
-
   if(in_restart_.FieldExist("kbt")) {
     in_restart_.scanField("kbt",kbt_);
   } else { error("No field 'kbt' in restart file"); }
@@ -485,7 +493,7 @@ void EDS::readInRestart(const bool b_mean) {
     rand_.setSeed(seed_);
   }
 
-  double time;
+  double time, tmp;
   std::vector<double> avg_bias = std::vector<double>(center_.size());
   unsigned int N = 0;
   std::string cv_name;
@@ -500,6 +508,9 @@ void EDS::readInRestart(const bool b_mean) {
       in_restart_.scanField(cv_name + "_coupling",current_coupling_[i]);
       in_restart_.scanField(cv_name + "_maxrange",max_coupling_range_[i]);
       in_restart_.scanField(cv_name + "_maxgrad",max_coupling_grad_[i]);
+      in_restart_.scanField(cv_name + "_mean",means_[i]);
+      //unused due to difference between covar/nocovar
+      in_restart_.scanField(cv_name + "_std",tmp);
 
       avg_bias[i] += current_coupling_[i];
     }
@@ -571,6 +582,12 @@ void EDS::writeOutRestart() {
     out_restart_.printField(cv_name + "_coupling",current_coupling_[i]);
     out_restart_.printField(cv_name + "_maxrange",max_coupling_range_[i]);
     out_restart_.printField(cv_name + "_maxgrad",max_coupling_grad_[i]);
+    out_restart_.printField(cv_name + "_mean",means_[i]);
+    if(!b_covar_)
+      out_restart_.printField(cv_name + "_std",ssds_[i] / (fmax(1, update_calls_ - 1)));
+    else
+      out_restart_.printField(cv_name + "_std",covar_(i,i) / (fmax(1, update_calls_ - 1)));
+
   }
   out_restart_.printField();
 }
@@ -660,6 +677,8 @@ void EDS::calculate() {
   for(unsigned int i = 0; i<ncvs_; ++i) {
     out_coupling_[i]->set(current_coupling_[i]);
   }
+
+
 }
 
 void EDS::apply_bias() {
@@ -686,7 +705,7 @@ void EDS::update_statistics()  {
   //Welford, West, and Hanso online variance method
   for(unsigned int i = 0; i < ncvs_; ++i)  {
     deltas[i] = difference(i,means_[i],getArgument(i));
-    means_[i] += deltas[i]/update_calls_;
+    means_[i] += deltas[i]/fmax(1,update_calls_);
     if(!b_covar_)
       ssds_[i] += deltas[i]*difference(i,means_[i],getArgument(i));
   }
@@ -721,7 +740,7 @@ void EDS::calc_covar_step_size() {
   for(unsigned int i = 0; i< ncvs_; ++i) {
     tmp = 0;
     for(unsigned int j = 0; j < ncvs_; ++j)
-      tmp += difference(i, means_[i], center_[i]) * covar_(i,j);
+      tmp += difference(i, center_[i], means_[i]) * covar_(i,j);
     step_size_[i] = 2 * tmp / kbt_ / scale_[i] * update_calls_ / (update_calls_ - 1);
   }
 
@@ -730,7 +749,7 @@ void EDS::calc_covar_step_size() {
 void EDS::calc_ssd_step_size() {
   double tmp;
   for(unsigned int i = 0; i< ncvs_; ++i) {
-    tmp = 2. * difference(i, means_[i], center_[i]) * ssds_[i] / (update_calls_ - 1);
+    tmp = 2. * difference(i, center_[i], means_[i]) * ssds_[i] / (update_calls_ - 1);
     step_size_[i] = tmp / kbt_/scale_[i];
   }
 }
