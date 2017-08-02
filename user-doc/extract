@@ -121,7 +121,7 @@ awk 'BEGIN{gfile="automatic/GLOSSARY.list"; dfile="automatic/DICTIONARY.list"; }
       split($2,array,"_");
       if(lfile!="") close(lfile)
       lfile="automatic/"array[2]"_OTHERMODULES.list"
-      printf "<tr> <td width=%s> \\ref %s </td><td> (from %s module) ","5%", $3 ,array[1] >> lfile
+      printf "<tr> <td width=%s> \\ref %s </td><td> (from \\ref %s module) ","5%", $3 ,array[1] >> lfile
       if(afile!="") close(afile)
       afile="automatic/ADDITIONALMODULES.list"
       cmd="grep description: " array[1]".md | sed -e 's/description://'"
