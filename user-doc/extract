@@ -121,7 +121,19 @@ awk 'BEGIN{gfile="automatic/GLOSSARY.list"; dfile="automatic/DICTIONARY.list"; }
       split($2,array,"_");
       if(lfile!="") close(lfile)
       lfile="automatic/"array[2]"_OTHERMODULES.list"
-      printf "<tr> <td width=%s> \\ref %s </td><td> (from %s module) ","5%", $3 ,array[1] >> lfile
+      printf "<tr> <td width=%s> \\ref %s </td><td> (from \\ref %s module) ","5%", $3 ,array[1] >> lfile
+      if(afile!="") close(afile)
+      afile="automatic/ADDITIONALMODULES.list"
+      cmd="grep description: " array[1]".md | sed -e 's/description://'"
+      cmd | getline describe
+      close(cmd)
+      cmd="grep authors: " array[1]".md | sed -e 's/authors://'"
+      cmd | getline authors 
+      close(cmd)
+      cmd="grep reference: " array[1]".md | sed -e 's/reference://'"
+      cmd | getline reference 
+      close(cmd)
+      printf "<tr><td width=%s>\\subpage %s </td><td> %s </td><td> %s </td><td> %s </td></tr>\n", "10%", array[1], describe, authors, reference >> afile
     }
   }
 }'
@@ -130,7 +142,7 @@ awk 'BEGIN{gfile="automatic/GLOSSARY.list"; dfile="automatic/DICTIONARY.list"; }
 for file in automatic/*.list ; do
 
 # -k 5 is required to mix together refs and subpages
-  sort -k 5 $file > $file-1
+  sort -k 5 $file | uniq > $file-1
   mv $file-1 $file
 done
 
@@ -182,7 +194,7 @@ please do not print it!
 EOF
 fi
 
-# Generate links to tutorial pages
+# Generate links to standard tutorial pages
 for file in ./tutorials/*.txt ; do
 
     link=`grep link: $file | sed -e 's/link://'`
@@ -201,6 +213,21 @@ for file in ./tutorials/*.site; do
    echo "<tr> <td> $link </td> <td> $describe </td> </tr>" >> automatic/WEBSITES.list
 
 done
+
+# Generate links for module specific tutorials
+for file in ./tutorials/others/*.txt ; do
+
+    arrIN=(${file//.\/tutorials\/others\// }); 
+    temp=$(echo $arrIN | tr "-" "\n"); 
+    modtut=$(echo $temp | awk '{print toupper($1)}')
+
+    link=`grep link: $file | sed -e 's/link://'`
+    describe=`grep description: $file | sed -e 's/description://'`
+
+    echo "<tr> <td> $link </td> <td> $describe </td> </tr>" >> automatic/"$modtut"_TUTORIALS.list  
+
+done
+
 
 # Find what modules the user has installed
 # Find the list of modules
@@ -324,7 +351,7 @@ if test -f "$ff" ; then
 mv $ff $ff.1
   {
     cat $ff.1
-    echo "In addition to the keyword above, by enabling optional modules you can access to the following keywords:"
+    echo "In addition to the keywords above, by enabling optional modules you can access to the following keywords:"
     cat $file
   } > $ff
 fi
@@ -336,7 +363,7 @@ rm automatic/*.txte
 
 rm -f *PP.txt *PP.md
 
-keywords=`grep "@[A-Z_]*@" *.md | awk -F"@" '{print $2}' | uniq`
+keywords=`grep "@[A-Z_]*@" *.md | awk -F"@" '{print $2}' | sort | uniq`
 
 for f in *.txt *.md
 do

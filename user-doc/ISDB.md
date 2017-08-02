@@ -1,4 +1,10 @@
-\page ISDBintro PLUMED-ISDB
+\page ISDB PLUMED-ISDB
+
+<!-- 
+description: Integrative Structural and Dynamical Biology with PLUMED
+authors: Max Bonomi and Carlo Camilloni
+reference: \cite Bonomi:2017dn 
+-->
 
 Here are listed the collective variables, functions and biases originally developed for the Integrative Structural and Dynamical Biology module of PLUMED. They are related but not limited to the interpretation and modelling of experimental data in molecular modelling.
 
@@ -10,6 +16,10 @@ Furthermore using \subpage SELECTOR it is possible to define a variable
 inside the PLUMED code that can be used and modified by other actions. For example,
 a \ref SELECTOR can be used in combination with \ref RESCALE to activate
 a simulated-tempering like approach.
+
+Additional tutorials focused on the ISDB module are included in the following and are meant as advanced tutorials.
+
+- \subpage ISDBTutorial
 
 \page ISDBColvar CVs Documentation
 
@@ -29,4 +39,11 @@ The following list contains descriptions of functions originally developed for t
 The following list contains descriptions of biases originally developed for the PLUMED-ISDB module. They can be used in combination with any other collective variable, function or bias also outside the ISDB module.
 
 @ISDB_BIAS@
+
+\page ISDBTutorial Tutorials
+
+The following are tutorials meant to learn how to use the different methods implemented in the ISDB module.
+
+@ISDB_TUTORIALS@
+
 

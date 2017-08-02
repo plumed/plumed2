@@ -65,7 +65,7 @@ In this case, the user should add the NO_AVER flag to the input line.
 \ref EM3D can be used in combination with periodic and non-periodic systems. In the latter case, one should
 add the NOPBC flag to the input line
 
-\par Example
+\par Examples
 
 In this example, we perform a single-structure refinement based on an experimental cryo-EM map. The map is fit with a GMM, whose
 parameters are listed in the file GMM_fit.dat. This file contains one line per GMM component in the following format:

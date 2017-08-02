@@ -13,6 +13,7 @@ LIST="
    FunctionsPP.md
  AnalysisPP.md
  BiasPP.md
+ AdditionalModulesPP.md
  ISDBPP.md
  CommandLineToolsPP.md
  MiscelaneousPP.md
@@ -22,7 +23,7 @@ LIST="
    TutorialsPP.md
  PerformancesPP.md
  GlossaryPP.md
- automatic tutorials"
+ automatic tutorials tutorials/others"
 
 {
   cat Doxyfile
@@ -82,6 +83,6 @@ cd latex
 # this is a workaround for a problem on the linux workstation
 # where I compile the manual - GB
 sed -i 's/pdfencoding=unicode/unicode/g' refman.tex
-make
+make -i
 cp refman.pdf ../manual.pdf
 
