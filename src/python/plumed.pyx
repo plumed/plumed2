@@ -39,8 +39,11 @@ cdef class Plumed:
      def __dealloc__(self):
          del self.c_plumed
 
-     def cmd_ndarray(self, ckey, val):
+     def cmd_ndarray_real(self, ckey, val):
          cdef double [:] abuffer = val.ravel()
+         self.c_plumed.cmd(ckey, <void*>&abuffer[0])
+     def cmd_ndarray_int(self, ckey, val):
+         cdef long [:] abuffer = val.ravel()
          self.c_plumed.cmd(ckey, <void*>&abuffer[0])
      cdef cmd_float(self, ckey, double val ):
          self.c_plumed.cmd( ckey, <void*>&val )
@@ -56,6 +59,8 @@ cdef class Plumed:
          if val is None :
             self.c_plumed.cmd( ckey, NULL )
          elif isinstance(val, (int,long) ):
+            if key=="getDataRank" :
+               raise ValueError("when using cmd with getDataRank option value must a size one ndarray")
             self.cmd_int(ckey, val)
          elif isinstance(val, float ) :
             if key=="getBias" :
@@ -65,10 +70,15 @@ cdef class Plumed:
             else :
                raise ValueError("Unknown precision type ".str(np.precision))
          elif isinstance(val, np.ndarray) : 
-            if self.precision==8 :
-               self.cmd_ndarray(ckey, val)
+            if( val.dtype=="float64" ):
+               if self.precision==8 :
+                  self.cmd_ndarray_real(ckey, val)
+               else :
+                  raise ValueError("Unknown precision type ".str(np.precision))
+            elif( val.dtype=="int64" ) : 
+               self.cmd_ndarray_int(ckey, val)
             else :
-               raise ValueError("Unknown precision type ".str(np.precision))
+               raise ValueError("ndarrys should be float64 or int64")
          elif isinstance(val, basestring ) :
               py_bytes = val.encode()
               cval = py_bytes 

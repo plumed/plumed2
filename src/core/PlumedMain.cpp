@@ -40,6 +40,7 @@
 #include "tools/OpenMP.h"
 #include "tools/Tools.h"
 #include "tools/Stopwatch.h"
+#include "DataFetchingObject.h"
 #include <cstdlib>
 #include <cstring>
 #include <set>
@@ -89,6 +90,7 @@ PlumedMain::PlumedMain():
 {
   log.link(comm);
   log.setLinePrefix("PLUMED: ");
+  mydatafetcher=DataFetchingObject::create(sizeof(double),*this);
   stopwatch.start();
   stopwatch.pause();
 }
@@ -97,6 +99,7 @@ PlumedMain::~PlumedMain() {
   stopwatch.start();
   stopwatch.stop();
   if(initialized) log<<stopwatch;
+  delete mydatafetcher;
   delete &exchangePatterns;
   delete &actionSet;
   delete &citations;
@@ -260,6 +263,25 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       CHECK_INIT(initialized,word);
       atoms.clearFullList();
       break;
+    case cmd_getDataRank:
+      CHECK_INIT(initialized,words[0]); plumed_assert(nw==2 || nw==3);
+      if( nw==2 ) DataFetchingObject::get_rank( actionSet, words[1], "", static_cast<long*>(val) );
+      else DataFetchingObject::get_rank( actionSet, words[1], words[2], static_cast<long*>(val) );
+      break;
+    case cmd_getDataShape:
+      CHECK_INIT(initialized,words[0]); plumed_assert(nw==2 || nw==3);
+      if( nw==2 ) DataFetchingObject::get_shape( actionSet, words[1], "", static_cast<long*>(val) );
+      else DataFetchingObject::get_shape( actionSet, words[1], words[2], static_cast<long*>(val) );
+      break;
+    case cmd_setMemoryForData:
+      CHECK_INIT(initialized,words[0]); plumed_assert(nw==2 || nw==3);
+      if( nw==2 ) mydatafetcher->setData( words[1], "", val );
+      else mydatafetcher->setData( words[1], words[2], val );
+      break;
+    case cmd_createAction:
+      CHECK_INIT(initialized,word);
+      if(val)readAction(static_cast<char*>(val));
+      break;
     case cmd_read:
       CHECK_INIT(initialized,word);
       if(val)readInputFile(static_cast<char*>(val));
@@ -287,6 +309,8 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       CHECK_NOTINIT(initialized,word);
       CHECK_NOTNULL(val,word);
       atoms.setRealPrecision(*static_cast<int*>(val));
+      delete mydatafetcher;
+      mydatafetcher=DataFetchingObject::create(sizeof(double),*this);
       break;
     case cmd_setMDLengthUnits:
       CHECK_NOTINIT(initialized,word);
@@ -505,6 +529,13 @@ void PlumedMain::init() {
   log<<"Finished setup\n";
 }
 
+void PlumedMain::readAction(std::string str) {
+  plumed_assert(initialized);
+  int parlevel=0; std::vector<std::string> words_tmp;
+  words_tmp = Tools::getWords(str,NULL,&parlevel);
+  readInputWords(words_tmp);
+}
+
 void PlumedMain::readInputFile(std::string str) {
   plumed_assert(initialized);
   log.printf("FILE: %s\n",str.c_str());
@@ -599,7 +630,7 @@ void PlumedMain::prepareDependencies() {
   }
 
 // for optimization, an "active" flag remains false if no action at all is active
-  active=false;
+  active=mydatafetcher->activate();
   for(unsigned i=0; i<pilots.size(); ++i) {
     if(pilots[i]->onStep()) {
       pilots[i]->activate();
@@ -636,6 +667,7 @@ void PlumedMain::performCalc() {
   justCalculate();
   backwardPropagate();
   update();
+  mydatafetcher->finishDataGrab();
 }
 
 void PlumedMain::waitData() {
