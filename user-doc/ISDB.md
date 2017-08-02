@@ -1,4 +1,4 @@
-\page ISDBintro PLUMED-ISDB
+\page ISDB PLUMED-ISDB
 
 Here are listed the collective variables, functions and biases originally developed for the Integrative Structural and Dynamical Biology module of PLUMED. They are related but not limited to the interpretation and modelling of experimental data in molecular modelling.
 

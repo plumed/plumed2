@@ -122,6 +122,9 @@ awk 'BEGIN{gfile="automatic/GLOSSARY.list"; dfile="automatic/DICTIONARY.list"; }
       if(lfile!="") close(lfile)
       lfile="automatic/"array[2]"_OTHERMODULES.list"
       printf "<tr> <td width=%s> \\ref %s </td><td> (from %s module) ","5%", $3 ,array[1] >> lfile
+      if(afile!="") close(afile)
+      afile="automatic/ADDITIONALMODULES.list"
+      printf "\\subpage %s\n", array[1] >> afile
     }
   }
 }'
@@ -130,7 +133,7 @@ awk 'BEGIN{gfile="automatic/GLOSSARY.list"; dfile="automatic/DICTIONARY.list"; }
 for file in automatic/*.list ; do
 
 # -k 5 is required to mix together refs and subpages
-  sort -k 5 $file > $file-1
+  sort -k 5 $file | uniq > $file-1
   mv $file-1 $file
 done
 
