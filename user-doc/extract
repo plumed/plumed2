@@ -121,10 +121,19 @@ awk 'BEGIN{gfile="automatic/GLOSSARY.list"; dfile="automatic/DICTIONARY.list"; }
       split($2,array,"_");
       if(lfile!="") close(lfile)
       lfile="automatic/"array[2]"_OTHERMODULES.list"
-      printf "<tr> <td width=%s> \\ref %s </td><td> (from %s module) ","5%", $3 ,array[1] >> lfile
+      printf "<tr> <td width=%s> \\ref %s </td><td> (from \\ref %s module) ","5%", $3 ,array[1] >> lfile
       if(afile!="") close(afile)
       afile="automatic/ADDITIONALMODULES.list"
-      printf "\\subpage %s\n", array[1] >> afile
+      cmd="grep description: " array[1]".md | sed -e 's/description://'"
+      cmd | getline describe
+      close(cmd)
+      cmd="grep authors: " array[1]".md | sed -e 's/authors://'"
+      cmd | getline authors 
+      close(cmd)
+      cmd="grep reference: " array[1]".md | sed -e 's/reference://'"
+      cmd | getline reference 
+      close(cmd)
+      printf "<tr><td width=%s>\\subpage %s </td><td> %s </td><td> %s </td><td> %s </td></tr>\n", "10%", array[1], describe, authors, reference >> afile
     }
   }
 }'
@@ -354,7 +363,7 @@ rm automatic/*.txte
 
 rm -f *PP.txt *PP.md
 
-keywords=`grep "@[A-Z_]*@" *.md | awk -F"@" '{print $2}' | uniq`
+keywords=`grep "@[A-Z_]*@" *.md | awk -F"@" '{print $2}' | sort | uniq`
 
 for f in *.txt *.md
 do

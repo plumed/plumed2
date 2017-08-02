@@ -1,5 +1,11 @@
 \page ISDB PLUMED-ISDB
 
+<!-- 
+description: Integrative Structural and Dynamical Biology with PLUMED
+authors: Max Bonomi and Carlo Camilloni
+reference: \cite Bonomi:2017dn 
+-->
+
 Here are listed the collective variables, functions and biases originally developed for the Integrative Structural and Dynamical Biology module of PLUMED. They are related but not limited to the interpretation and modelling of experimental data in molecular modelling.
 
 - \subpage ISDBColvar
@@ -39,4 +45,5 @@ The following list contains descriptions of biases originally developed for the 
 The following are tutorials meant to learn how to use the different methods implemented in the ISDB module.
 
 @ISDB_TUTORIALS@
+
 
