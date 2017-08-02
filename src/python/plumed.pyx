@@ -59,7 +59,7 @@ cdef class Plumed:
             self.cmd_int(ckey, val)
          elif isinstance(val, float ) :
             if key=="getBias" :
-               raise ValueError("when using cmd with getBias option value must be a one dimensional ndarray")
+               raise ValueError("when using cmd with getBias option value must be a size one ndarray")
             if self.precision==8 :
                self.cmd_float(ckey, val) 
             else :
