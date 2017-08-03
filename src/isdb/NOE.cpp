@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2017 The plumed team
+   Copyright (c) 2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,10 +19,11 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "colvar/Colvar.h"
-#include "colvar/ActionRegister.h"
+#include "Meta.h"
+#include "core/ActionRegister.h"
 #include "tools/NeighborList.h"
 #include "tools/OpenMP.h"
+#include "tools/Pbc.h"
 
 #include <string>
 #include <cmath>
@@ -34,23 +35,20 @@ namespace isdb {
 
 //+PLUMEDOC ISDB_COLVAR NOE
 /*
-Calculates NOE intensities as sums of \f$1/r^6\f$, averaging over multiple equivalent atoms
+Calculates NOE intensities as sums of 1/r^6, also averaging over multiple equivalent atoms
 or ambiguous NOE.
 
 Each NOE is defined by two groups containing the same number of atoms, distances are
-calculated in pairs, transformed in intensities as \f$1/r^6\f$, summed and saved as components.
+calculated in pairs, transformed in 1/r^6, summed and saved as components.
 
 \f[
-NOE = (\frac{1}{N_{eq}}\sum_j^{N_{eq}} (\frac{1}{r_j^6}))
+NOE() = (\frac{1}{N_{eq}}\sum_j^{N_{eq}} (\frac{1}{r_j^6}))
 \f]
 
-Intensities can then in principle ensemble averaged using \ref ENSEMBLE or used to
-calculate a scoring function with \ref METAINFERENCE . If one wants to transform them back to distances
-it is possible to use \ref COMBINE . It is of notice that in case of averaging the intensities
-should be averaged and not the distances.
+Intensities can then in principle ensemble averaged using \ref ENSEMBLE and used to
+calculate a scoring function for example with \ref METAINFERENCE.
 
 \par Examples
-
 In the following examples three noes are defined, the first is calculated based on the distances
 of atom 1-2 and 3-2; the second is defined by the distance 5-7 and the third by the distances
 4-15,4-16,8-15,8-16.
@@ -69,24 +67,29 @@ PRINT ARG=noes.* FILE=colvar
 */
 //+ENDPLUMEDOC
 
-class NOE : public Colvar {
+class NOE :
+  public Meta
+{
 private:
   bool             pbc;
   vector<unsigned> nga;
   NeighborList     *nl;
+  unsigned         tot_size;
 public:
   static void registerKeywords( Keywords& keys );
   explicit NOE(const ActionOptions&);
   ~NOE();
-  virtual void calculate();
+  void calculate_simple();
+  void calculate();
 };
 
 PLUMED_REGISTER_ACTION(NOE,"NOE")
 
 void NOE::registerKeywords( Keywords& keys ) {
-  Colvar::registerKeywords( keys );
   componentsAreNotOptional(keys);
   useCustomisableComponents(keys);
+  Meta::registerKeywords(keys);
+  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.add("numbered","GROUPA","the atoms involved in each of the contacts you wish to calculate. "
            "Keywords like GROUPA1, GROUPA2, GROUPA3,... should be listed and one contact will be "
            "calculated for each ATOM keyword you specify.");
@@ -102,7 +105,7 @@ void NOE::registerKeywords( Keywords& keys ) {
 }
 
 NOE::NOE(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao),
+  PLUMED_METAINF_INIT(ao),
   pbc(true)
 {
   bool nopbc=!pbc;
@@ -155,17 +158,33 @@ NOE::NOE(const ActionOptions&ao):
       index++;
     }
   }
+  tot_size = index;
 
   if(pbc)      log.printf("  using periodic boundary conditions\n");
   else         log.printf("  without periodic boundary conditions\n");
 
-  for(unsigned i=0; i<nga.size(); i++) {
-    string num; Tools::convert(i,num);
-    addComponentWithDerivatives("noe_"+num);
-    componentIsNotPeriodic("noe_"+num);
-  }
-
-  if(addexp) {
+  if(!doscore_) {
+    for(unsigned i=0; i<nga.size(); i++) {
+      string num; Tools::convert(i,num);
+      addComponentWithDerivatives("noe_"+num);
+      componentIsNotPeriodic("noe_"+num);
+    }
+    if(addexp) {
+      for(unsigned i=0; i<nga.size(); i++) {
+        string num; Tools::convert(i,num);
+        addComponent("exp_"+num);
+        componentIsNotPeriodic("exp_"+num);
+        Value* comp=getPntrToComponent("exp_"+num);
+        comp->set(noedist[i]);
+      }
+    }
+  } else {
+    setParameters(noedist);
+    for(unsigned i=0; i<nga.size(); i++) {
+      string num; Tools::convert(i,num);
+      addComponent("noe_"+num);
+      componentIsNotPeriodic("noe_"+num);
+    }
     for(unsigned i=0; i<nga.size(); i++) {
       string num; Tools::convert(i,num);
       addComponent("exp_"+num);
@@ -176,6 +195,7 @@ NOE::NOE(const ActionOptions&ao):
   }
 
   requestAtoms(nl->getFullAtomList());
+  setDerivatives();
   checkRead();
 }
 
@@ -183,7 +203,7 @@ NOE::~NOE() {
   delete nl;
 }
 
-void NOE::calculate()
+void NOE::calculate_simple()
 {
   const unsigned ngasz=nga.size();
 
@@ -194,7 +214,8 @@ void NOE::calculate()
     unsigned index=0;
     for(unsigned k=0; k<i; k++) index+=nga[k];
     const double c_aver=1./static_cast<double>(nga[i]);
-    Value* val=getPntrToComponent(i);
+    string num; Tools::convert(i,num);
+    Value* val=getPntrToComponent("noe_"+num);
     // cycle over equivalent atoms
     for(unsigned j=0; j<nga[i]; j++) {
       const unsigned i0=nl->getClosePair(index+j).first;
@@ -217,6 +238,92 @@ void NOE::calculate()
       setAtomsDerivatives(val, i1, -deriv);
     }
     val->set(noe);
+    setBoxDerivatives(val, dervir);
+  }
+}
+
+
+void NOE::calculate()
+{
+  if(!doscore_) calculate_simple();
+  else {
+    vector<Vector> deriv(tot_size, Vector{0,0,0});
+    const unsigned ngasz=nga.size();
+
+    #pragma omp parallel for num_threads(OpenMP::getNumThreads())
+    for(unsigned i=0; i<ngasz; i++) {
+      double noe=0;
+      unsigned index=0;
+      for(unsigned k=0; k<i; k++) index+=nga[k];
+      const double c_aver=1./static_cast<double>(nga[i]);
+      string num; Tools::convert(i,num);
+      Value* val=getPntrToComponent("noe_"+num);
+      // cycle over equivalent atoms
+      for(unsigned j=0; j<nga[i]; j++) {
+        const unsigned i0=nl->getClosePair(index+j).first;
+        const unsigned i1=nl->getClosePair(index+j).second;
+
+        Vector distance;
+        if(pbc) distance=pbcDistance(getPosition(i0),getPosition(i1));
+        else    distance=delta(getPosition(i0),getPosition(i1));
+
+        const double ir2=1./distance.modulo2();
+        const double ir6=ir2*ir2*ir2;
+        const double ir8=6*ir6*ir2;
+        const double tmpir6=c_aver*ir6;
+        const double tmpir8=c_aver*ir8;
+
+        noe += tmpir6;
+        deriv[index+j] = tmpir8*distance;
+      }
+      val->set(noe);
+      setCalcData(i, noe);
+    }
+    /* Metainference */
+    /* 1) collect weights */
+    double fact = 0.;
+    double var_fact = 0.;
+    get_weights(fact, var_fact);
+
+    /* 2) calculate average */
+    vector<double> mean(getNarg(),0);
+    // this is the derivative of the mean with respect to the argument
+    vector<double> dmean_x(getNarg(),fact);
+    // this is the derivative of the mean with respect to the bias
+    vector<double> dmean_b(getNarg(),0);
+    // calculate it
+    replica_averaging(fact, mean, dmean_b);
+
+    /* 3) calculates parameters */
+    get_sigma_mean(fact, var_fact, mean);
+
+    /* 4) run monte carlo */
+    doMonteCarlo(mean);
+
+    /* 5) calculate score */
+    double score = getScore(mean, dmean_x, dmean_b);
+    setScore(score);
+
+    /* calculate final derivatives */
+    Tensor dervir;
+    Value* val=getPntrToComponent("score");
+    for(unsigned i=0; i<ngasz; i++) {
+      unsigned index=0;
+      for(unsigned k=0; k<i; k++) index+=nga[k];
+      // cycle over equivalent atoms
+      for(unsigned j=0; j<nga[i]; j++) {
+        const unsigned i0=nl->getClosePair(index+j).first;
+        const unsigned i1=nl->getClosePair(index+j).second;
+
+        Vector distance;
+        if(pbc) distance=pbcDistance(getPosition(i0),getPosition(i1));
+        else    distance=delta(getPosition(i0),getPosition(i1));
+
+        dervir += Tensor(distance,deriv[index+j]*getMetaDer(i));
+        setAtomsDerivatives(val, i0,  deriv[index+j]*getMetaDer(i));
+        setAtomsDerivatives(val, i1, -deriv[index+j]*getMetaDer(i));
+      }
+    }
     setBoxDerivatives(val, dervir);
   }
 }
