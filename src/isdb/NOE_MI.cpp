@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2017 The plumed team
+   Copyright (c) 2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -33,7 +33,7 @@ using namespace std;
 namespace PLMD {
 namespace isdb {
 
-//+PLUMEDOC COLVAR NOEMI
+//+PLUMEDOC ISDB_COLVAR NOEMI
 /*
 Calculates NOEMI intensities as sums of 1/r^6, also averaging over multiple equivalent atoms
 or ambiguous NOEMI.

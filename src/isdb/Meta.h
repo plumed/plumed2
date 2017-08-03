@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2017 The plumed team
+   Copyright (c) 2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -245,6 +245,12 @@ void Meta::setScore(const double score) {
 
 inline
 void Meta::setDerivatives() {
+  if(narg!=parameters.size()) {
+    std::string num1; Tools::convert(parameters.size(),num1);
+    std::string num2; Tools::convert(narg,num2);
+    std::string msg = "The number of experimental values " + num1 +" must be the same of NDATA " + num2;
+    error(msg);
+  }
   // Get appropriate number of derivatives
   // Derivatives are first for arguments and then for atoms
   unsigned nder;

@@ -180,9 +180,6 @@ class Metainference : public bias::Bias
   vector<double> ftilde_;
   double Dftilde_;
 
-  // sigma_mean rescue params
-  double sigma_mean_correction_;
-
   // temperature in kbt
   double   kbt_;
 
@@ -232,23 +229,24 @@ class Metainference : public bias::Bias
   vector< vector <double> >  average_weights_;
 
   double getEnergyMIGEN(const vector<double> &mean, const vector<double> &ftilde, const vector<double> &sigma,
-                        const double scale, const double offset, const double modifier);
+                        const double scale, const double offset);
   double getEnergySP(const vector<double> &mean, const vector<double> &sigma,
-                     const double scale, const double offset, const double modifier);
+                     const double scale, const double offset);
   double getEnergySPE(const vector<double> &mean, const vector<double> &sigma,
-                      const double scale, const double offset, const double modifier);
+                      const double scale, const double offset);
   double getEnergyGJ(const vector<double> &mean, const vector<double> &sigma,
-                     const double scale, const double offset, const double modifier);
+                     const double scale, const double offset);
   double getEnergyGJE(const vector<double> &mean, const vector<double> &sigma,
-                      const double scale, const double offset, const double modifier);
-  void   doMonteCarlo(const vector<double> &mean, const double modifier);
-  double getEnergyForceMIGEN(const vector<double> &mean, const vector<double> &dmean_x, const vector<double> &dmean_b, const double modifier);
-  double getEnergyForceSP(const vector<double> &mean, const vector<double> &dmean_x, const vector<double> &dmean_b, const double modifier);
-  double getEnergyForceSPE(const vector<double> &mean, const vector<double> &dmean_x, const vector<double> &dmean_b, const double modifier);
-  double getEnergyForceGJ(const vector<double> &mean, const vector<double> &dmean_x, const vector<double> &dmean_b, const double modifier);
-  double getEnergyForceGJE(const vector<double> &mean, const vector<double> &dmean_x, const vector<double> &dmean_b, const double modifier);
-  void get_weights(const unsigned iselect, const double dnrep, const double ave_fact, double &fact, double &var_fact);
-  vector<double> get_sigma_mean(const unsigned iselect, const double dnrep, const double ave_fact, const double fact, const double var_fact, const vector<double> &mean);
+                      const double scale, const double offset);
+  void   doMonteCarlo(const vector<double> &mean);
+  double getEnergyForceMIGEN(const vector<double> &mean, const vector<double> &dmean_x, const vector<double> &dmean_b);
+  double getEnergyForceSP(const vector<double> &mean, const vector<double> &dmean_x, const vector<double> &dmean_b);
+  double getEnergyForceSPE(const vector<double> &mean, const vector<double> &dmean_x, const vector<double> &dmean_b);
+  double getEnergyForceGJ(const vector<double> &mean, const vector<double> &dmean_x, const vector<double> &dmean_b);
+  double getEnergyForceGJE(const vector<double> &mean, const vector<double> &dmean_x, const vector<double> &dmean_b);
+  void get_weights(const unsigned iselect, double &fact, double &var_fact);
+  void replica_averaging(const double fact, std::vector<double> &mean, std::vector<double> &dmean_b);
+  void get_sigma_mean(const unsigned iselect, const double fact, const double var_fact, const vector<double> &mean);
   void   writeStatus();
 
 public:
@@ -267,37 +265,36 @@ void Metainference::registerKeywords(Keywords& keys) {
   keys.use("ARG");
   keys.add("optional","PARARG","reference values for the experimental data, these can be provided as arguments without derivatives");
   keys.add("optional","PARAMETERS","reference values for the experimental data");
-  keys.add("compulsory","NOISETYPE","functional form of the noise (GAUSS,MGAUSS,OUTLIERS,MOUTLIERS,GENERIC)");
-  keys.add("compulsory","LIKELIHOOD","GAUSS","the likelihood for the GENERIC metainference model, GAUSS or LOGN");
-  keys.add("compulsory","DFTILDE","0.1","fraction of sigma_mean used to evolve ftilde");
   keys.addFlag("NOENSEMBLE",false,"don't perform any replica-averaging");
   keys.addFlag("REWEIGHT",false,"simple REWEIGHT using the latest ARG as energy");
   keys.add("optional","AVERAGING", "Stride for calculation of averaged weights and sigma_mean");
+  keys.add("compulsory","NOISETYPE","MGAUSS","functional form of the noise (GAUSS,MGAUSS,OUTLIERS,MOUTLIERS,GENERIC)");
+  keys.add("compulsory","LIKELIHOOD","GAUSS","the likelihood for the GENERIC metainference model, GAUSS or LOGN");
+  keys.add("compulsory","DFTILDE","0.1","fraction of sigma_mean used to evolve ftilde");
   keys.addFlag("SCALEDATA",false,"Set to TRUE if you want to sample a scaling factor common to all values and replicas");
-  keys.add("compulsory","SCALE0","initial value of the scaling factor");
+  keys.add("compulsory","SCALE0","1.0","initial value of the scaling factor");
   keys.add("compulsory","SCALE_PRIOR","FLAT","either FLAT or GAUSSIAN");
   keys.add("optional","SCALE_MIN","minimum value of the scaling factor");
   keys.add("optional","SCALE_MAX","maximum value of the scaling factor");
   keys.add("optional","DSCALE","maximum MC move of the scaling factor");
   keys.addFlag("ADDOFFSET",false,"Set to TRUE if you want to sample an offset common to all values and replicas");
-  keys.add("compulsory","OFFSET0","initial value of the offset");
+  keys.add("compulsory","OFFSET0","0.0","initial value of the offset");
   keys.add("compulsory","OFFSET_PRIOR","FLAT","either FLAT or GAUSSIAN");
   keys.add("optional","OFFSET_MIN","minimum value of the offset");
   keys.add("optional","OFFSET_MAX","maximum value of the offset");
   keys.add("optional","DOFFSET","maximum MC move of the offset");
-  keys.add("compulsory","SIGMA0","initial value of the uncertainty parameter");
-  keys.add("compulsory","SIGMA_MIN","minimum value of the uncertainty parameter");
-  keys.add("compulsory","SIGMA_MAX","maximum value of the uncertainty parameter");
+  keys.add("compulsory","SIGMA0","1.0","initial value of the uncertainty parameter");
+  keys.add("compulsory","SIGMA_MIN","0.0","minimum value of the uncertainty parameter");
+  keys.add("compulsory","SIGMA_MAX","10.","maximum value of the uncertainty parameter");
   keys.add("optional","DSIGMA","maximum MC move of the uncertainty parameter");
   keys.add("compulsory","OPTSIGMAMEAN","NONE","Set to NONE/SEM to manually set sigma mean, or to estimate it on the fly");
   keys.add("optional","SIGMA_MEAN0","starting value for the uncertainty in the mean estimate");
-  keys.add("optional","SIGMA_MEAN_CORRECTION","sigma_mean correction modifier");
   keys.add("optional","TEMP","the system temperature - this is only needed if code doesnt' pass the temperature to plumed");
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_STRIDE","MC stride");
   keys.add("optional","MC_CHUNKSIZE","MC chunksize");
   keys.add("optional","STATUS_FILE","write a file with all the data usefull for restart/continuation of Metainference");
-  keys.add("compulsory","WRITE_STRIDE","write the status to a file every N steps, this can be used for restart/continuation");
+  keys.add("compulsory","WRITE_STRIDE","1000","write the status to a file every N steps, this can be used for restart/continuation");
   keys.add("optional","SELECTOR","name of selector");
   keys.add("optional","NSELECT","range of values for selector [0, N-1]");
   keys.use("RESTART");
@@ -328,7 +325,6 @@ Metainference::Metainference(const ActionOptions&ao):
   offset_max_(-1),
   Doffset_(-1),
   Dftilde_(0.1),
-  sigma_mean_correction_(1.),
   random(3),
   MCsteps_(1),
   MCstride_(1),
@@ -369,7 +365,6 @@ Metainference::Metainference(const ActionOptions&ao):
 
   // initialise firstTimeW
   firstTimeW.resize(nsel, true);
-
 
   // reweight implies a different number of arguments (the latest one must always be the bias)
   parseFlag("REWEIGHT", do_reweight_);
@@ -468,9 +463,6 @@ Metainference::Metainference(const ActionOptions&ao):
     for(unsigned i=0; i<nsel; i++) for(unsigned j=0; j<narg; j++) sigma_mean2_last_[i][j].push_back(sigma_mean2_[0]);
   }
 
-
-  parse("SIGMA_MEAN_CORRECTION", sigma_mean_correction_);
-
   parseFlag("SCALEDATA", doscale_);
   if(doscale_) {
     string stringa_noise;
@@ -547,6 +539,7 @@ Metainference::Metainference(const ActionOptions&ao):
   parse("TEMP",temp);
   if(temp>0.0) kbt_=plumed.getAtoms().getKBoltzmann()*temp;
   else kbt_=plumed.getAtoms().getKbT();
+  if(kbt_==0.0) error("Unless the MD engine passes the temperature to plumed, you must specify it using TEMP");
 
   checkRead();
 
@@ -768,11 +761,10 @@ Metainference::~Metainference()
 }
 
 double Metainference::getEnergySP(const vector<double> &mean, const vector<double> &sigma,
-                                  const double scale, const double offset, const double modifier)
+                                  const double scale, const double offset)
 {
   const double scale2 = scale*scale;
-  const double mod2   = modifier*modifier;
-  const double sm2    = mod2*sigma_mean2_[0];
+  const double sm2    = sigma_mean2_[0];
   const double ss2    = sigma[0]*sigma[0] + scale2*sm2;
   const double sss    = sigma[0]*sigma[0] + sm2;
 
@@ -794,16 +786,15 @@ double Metainference::getEnergySP(const vector<double> &mean, const vector<doubl
 }
 
 double Metainference::getEnergySPE(const vector<double> &mean, const vector<double> &sigma,
-                                   const double scale, const double offset, const double modifier)
+                                   const double scale, const double offset)
 {
   const double scale2 = scale*scale;
-  const double mod2   = modifier*modifier;
   double ene = 0.0;
   #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(ene)
   {
     #pragma omp for reduction( + : ene)
     for(unsigned i=0; i<narg; ++i) {
-      const double sm2 = mod2*sigma_mean2_[i];
+      const double sm2 = sigma_mean2_[i];
       const double ss2 = sigma[i]*sigma[i] + scale2*sm2;
       const double sss = sigma[i]*sigma[i] + sm2;
       const double dev = scale*mean[i]-parameters[i]+offset;
@@ -817,7 +808,7 @@ double Metainference::getEnergySPE(const vector<double> &mean, const vector<doub
 }
 
 double Metainference::getEnergyMIGEN(const vector<double> &mean, const vector<double> &ftilde, const vector<double> &sigma,
-                                     const double scale, const double offset, const double modifier)
+                                     const double scale, const double offset)
 {
   double ene = 0.0;
   #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(ene)
@@ -845,12 +836,11 @@ double Metainference::getEnergyMIGEN(const vector<double> &mean, const vector<do
 }
 
 double Metainference::getEnergyGJ(const vector<double> &mean, const vector<double> &sigma,
-                                  const double scale, const double offset, const double modifier)
+                                  const double scale, const double offset)
 {
   const double scale2  = scale*scale;
-  const double mod2    = modifier*modifier;
-  const double inv_s2  = 1./(sigma[0]*sigma[0] + scale2*mod2*sigma_mean2_[0]);
-  const double inv_sss = 1./(sigma[0]*sigma[0] + mod2*sigma_mean2_[0]);
+  const double inv_s2  = 1./(sigma[0]*sigma[0] + scale2*sigma_mean2_[0]);
+  const double inv_sss = 1./(sigma[0]*sigma[0] + sigma_mean2_[0]);
 
   double ene = 0.0;
   #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(ene)
@@ -872,18 +862,17 @@ double Metainference::getEnergyGJ(const vector<double> &mean, const vector<doubl
 }
 
 double Metainference::getEnergyGJE(const vector<double> &mean, const vector<double> &sigma,
-                                   const double scale, const double offset, const double modifier)
+                                   const double scale, const double offset)
 {
   const double scale2 = scale*scale;
-  const double mod2   = modifier*modifier;
 
   double ene = 0.0;
   #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(ene)
   {
     #pragma omp for reduction( + : ene)
     for(unsigned i=0; i<narg; ++i) {
-      const double inv_s2  = 1./(sigma[i]*sigma[i] + scale2*mod2*sigma_mean2_[i]);
-      const double inv_sss = 1./(sigma[i]*sigma[i] + mod2*sigma_mean2_[i]);
+      const double inv_s2  = 1./(sigma[i]*sigma[i] + scale2*sigma_mean2_[i]);
+      const double inv_sss = 1./(sigma[i]*sigma[i] + sigma_mean2_[i]);
       double dev = scale*mean[i]-parameters[i]+offset;
       // deviation + normalisation + jeffrey
       const double normalisation = -0.5*std::log(0.5/M_PI*inv_s2);
@@ -896,26 +885,26 @@ double Metainference::getEnergyGJE(const vector<double> &mean, const vector<doub
   return kbt_ * ene;
 }
 
-void Metainference::doMonteCarlo(const vector<double> &mean_, const double modifier)
+void Metainference::doMonteCarlo(const vector<double> &mean_)
 {
   // calculate old energy with the updated coordinates
   double old_energy=0.;
 
   switch(noise_type_) {
   case GAUSS:
-    old_energy = getEnergyGJ(mean_,sigma_,scale_,offset_,modifier);
+    old_energy = getEnergyGJ(mean_,sigma_,scale_,offset_);
     break;
   case MGAUSS:
-    old_energy = getEnergyGJE(mean_,sigma_,scale_,offset_,modifier);
+    old_energy = getEnergyGJE(mean_,sigma_,scale_,offset_);
     break;
   case OUTLIERS:
-    old_energy = getEnergySP(mean_,sigma_,scale_,offset_,modifier);
+    old_energy = getEnergySP(mean_,sigma_,scale_,offset_);
     break;
   case MOUTLIERS:
-    old_energy = getEnergySPE(mean_,sigma_,scale_,offset_,modifier);
+    old_energy = getEnergySPE(mean_,sigma_,scale_,offset_);
     break;
   case GENERIC:
-    old_energy = getEnergyMIGEN(mean_,ftilde_,sigma_,scale_,offset_,modifier);
+    old_energy = getEnergyMIGEN(mean_,ftilde_,sigma_,scale_,offset_);
     break;
   }
 
@@ -946,7 +935,7 @@ void Metainference::doMonteCarlo(const vector<double> &mean_, const double modif
         new_ftilde[j] = ftilde_[j] + ds3;
       }
       // calculate new energy
-      double new_energy = getEnergyMIGEN(mean_,new_ftilde,sigma_,scale_,offset_,modifier);
+      double new_energy = getEnergyMIGEN(mean_,new_ftilde,sigma_,scale_,offset_);
 
       // accept or reject
       const double delta = ( new_energy - old_energy ) / kbt_;
@@ -1005,19 +994,19 @@ void Metainference::doMonteCarlo(const vector<double> &mean_, const double modif
 
       switch(noise_type_) {
       case GAUSS:
-        new_energy = getEnergyGJ(mean_,sigma_,new_scale,new_offset,modifier);
+        new_energy = getEnergyGJ(mean_,sigma_,new_scale,new_offset);
         break;
       case MGAUSS:
-        new_energy = getEnergyGJE(mean_,sigma_,new_scale,new_offset,modifier);
+        new_energy = getEnergyGJE(mean_,sigma_,new_scale,new_offset);
         break;
       case OUTLIERS:
-        new_energy = getEnergySP(mean_,sigma_,new_scale,new_offset,modifier);
+        new_energy = getEnergySP(mean_,sigma_,new_scale,new_offset);
         break;
       case MOUTLIERS:
-        new_energy = getEnergySPE(mean_,sigma_,new_scale,new_offset,modifier);
+        new_energy = getEnergySPE(mean_,sigma_,new_scale,new_offset);
         break;
       case GENERIC:
-        new_energy = getEnergyMIGEN(mean_,ftilde_,sigma_,new_scale,new_offset,modifier);
+        new_energy = getEnergyMIGEN(mean_,ftilde_,sigma_,new_scale,new_offset);
         break;
       }
       // for the scale we need to consider the total energy
@@ -1099,19 +1088,19 @@ void Metainference::doMonteCarlo(const vector<double> &mean_, const double modif
     double new_energy;
     switch(noise_type_) {
     case GAUSS:
-      new_energy = getEnergyGJ(mean_,new_sigma,scale_,offset_,modifier);
+      new_energy = getEnergyGJ(mean_,new_sigma,scale_,offset_);
       break;
     case MGAUSS:
-      new_energy = getEnergyGJE(mean_,new_sigma,scale_,offset_,modifier);
+      new_energy = getEnergyGJE(mean_,new_sigma,scale_,offset_);
       break;
     case OUTLIERS:
-      new_energy = getEnergySP(mean_,new_sigma,scale_,offset_,modifier);
+      new_energy = getEnergySP(mean_,new_sigma,scale_,offset_);
       break;
     case MOUTLIERS:
-      new_energy = getEnergySPE(mean_,new_sigma,scale_,offset_,modifier);
+      new_energy = getEnergySPE(mean_,new_sigma,scale_,offset_);
       break;
     case GENERIC:
-      new_energy = getEnergyMIGEN(mean_,ftilde_,new_sigma,scale_,offset_,modifier);
+      new_energy = getEnergyMIGEN(mean_,ftilde_,new_sigma,scale_,offset_);
       break;
     }
 
@@ -1157,11 +1146,10 @@ void Metainference::doMonteCarlo(const vector<double> &mean_, const double modif
 */
 
 double Metainference::getEnergyForceSP(const vector<double> &mean, const vector<double> &dmean_x,
-                                       const vector<double> &dmean_b, const double modifier)
+                                       const vector<double> &dmean_b)
 {
-  const double mod2   = modifier*modifier; /* this is now modifiers */
   const double scale2 = scale_*scale_;
-  const double sm2    = mod2*sigma_mean2_[0];
+  const double sm2    = sigma_mean2_[0];
   const double ss2    = sigma_[0]*sigma_[0] + scale2*sm2;
   vector<double> f(narg+1,0);
 
@@ -1204,9 +1192,8 @@ double Metainference::getEnergyForceSP(const vector<double> &mean, const vector<
 }
 
 double Metainference::getEnergyForceSPE(const vector<double> &mean, const vector<double> &dmean_x,
-                                        const vector<double> &dmean_b, const double modifier)
+                                        const vector<double> &dmean_b)
 {
-  const double mod2   = modifier*modifier;
   const double scale2 = scale_*scale_;
   vector<double> f(narg+1,0);
 
@@ -1216,7 +1203,7 @@ double Metainference::getEnergyForceSPE(const vector<double> &mean, const vector
     {
       #pragma omp for reduction( + : omp_ene)
       for(unsigned i=0; i<narg; ++i) {
-        const double sm2 = mod2*sigma_mean2_[i];
+        const double sm2 = sigma_mean2_[i];
         const double ss2 = sigma_[i]*sigma_[i] + scale2*sm2;
         const double dev = scale_*mean[i]-parameters[i]+offset_;
         const double a2  = 0.5*dev*dev + ss2;
@@ -1250,14 +1237,13 @@ double Metainference::getEnergyForceSPE(const vector<double> &mean, const vector
 }
 
 double Metainference::getEnergyForceGJ(const vector<double> &mean, const vector<double> &dmean_x,
-                                       const vector<double> &dmean_b, const double modifier)
+                                       const vector<double> &dmean_b)
 {
-  const double mod2   = modifier*modifier;
   const double scale2 = scale_*scale_;
   double inv_s2=0.;
 
   if(master) {
-    inv_s2 = 1./(sigma_[0]*sigma_[0] + mod2*scale2*sigma_mean2_[0]);
+    inv_s2 = 1./(sigma_[0]*sigma_[0] + scale2*sigma_mean2_[0]);
     if(nrep_>1) multi_sim_comm.Sum(inv_s2);
   }
   comm.Sum(inv_s2);
@@ -1285,14 +1271,13 @@ double Metainference::getEnergyForceGJ(const vector<double> &mean, const vector<
 }
 
 double Metainference::getEnergyForceGJE(const vector<double> &mean, const vector<double> &dmean_x,
-                                        const vector<double> &dmean_b, const double modifier)
+                                        const vector<double> &dmean_b)
 {
-  const double mod2   = modifier*modifier;
   const double scale2 = scale_*scale_;
   vector<double> inv_s2(sigma_.size(),0.);
 
   if(master) {
-    for(unsigned i=0; i<sigma_.size(); ++i) inv_s2[i] = 1./(sigma_[i]*sigma_[i] + scale2*mod2*sigma_mean2_[i]);
+    for(unsigned i=0; i<sigma_.size(); ++i) inv_s2[i] = 1./(sigma_[i]*sigma_[i] + scale2*sigma_mean2_[i]);
     if(nrep_>1) multi_sim_comm.Sum(&inv_s2[0],sigma_.size());
   }
   comm.Sum(&inv_s2[0],sigma_.size());
@@ -1319,7 +1304,7 @@ double Metainference::getEnergyForceGJE(const vector<double> &mean, const vector
   return kbt_*ene;
 }
 
-double Metainference::getEnergyForceMIGEN(const vector<double> &mean, const vector<double> &dmean_x, const vector<double> &dmean_b, const double modifier)
+double Metainference::getEnergyForceMIGEN(const vector<double> &mean, const vector<double> &dmean_x, const vector<double> &dmean_b)
 {
   vector<double> inv_s2(sigma_.size(),0.);
   vector<double> dev(sigma_.size(),0.);
@@ -1360,8 +1345,11 @@ double Metainference::getEnergyForceMIGEN(const vector<double> &mean, const vect
   return kbt_*ene;
 }
 
-void Metainference::get_weights(const unsigned iselect, const double dnrep, const double ave_fact, double &fact, double &var_fact)
+void Metainference::get_weights(const unsigned iselect, double &fact, double &var_fact)
 {
+  const double dnrep    = static_cast<double>(nrep_);
+  const double ave_fact = 1.0/dnrep;
+
   double norm = 0.0;
 
   // calculate the weights either from BIAS
@@ -1407,8 +1395,11 @@ void Metainference::get_weights(const unsigned iselect, const double dnrep, cons
   }
 }
 
-vector<double> Metainference::get_sigma_mean(const unsigned iselect, const double dnrep, const double ave_fact, const double fact, const double var_fact, const vector<double> &mean)
+void Metainference::get_sigma_mean(const unsigned iselect, const double fact, const double var_fact, const vector<double> &mean)
 {
+  const double dnrep    = static_cast<double>(nrep_);
+  const double ave_fact = 1.0/dnrep;
+
   vector<double> sigma_mean2_tmp(sigma_mean2_.size(), 0.);
 
   if(do_optsigmamean_>0) {
@@ -1483,28 +1474,11 @@ vector<double> Metainference::get_sigma_mean(const unsigned iselect, const doubl
     }
   }
 
-  return sigma_mean2_tmp;
+  sigma_mean2_ = sigma_mean2_tmp;
 }
 
-void Metainference::calculate()
+void Metainference::replica_averaging(const double fact, vector<double> &mean, vector<double> &dmean_b)
 {
-  unsigned iselect = 0;
-  // set the value of selector for  REM-like stuff
-  if(selector_.length()>0) iselect = static_cast<unsigned>(plumed.passMap[selector_]);
-
-  const double dnrep    = static_cast<double>(nrep_);
-  const double ave_fact = 1.0/dnrep;
-  double       fact     = 0.0;
-  double       var_fact = 0.0;
-
-  get_weights(iselect, dnrep, ave_fact, fact, var_fact);
-
-  // calculate the mean
-  vector<double> mean(narg,0);
-  // this is the derivative of the mean with respect to the argument
-  vector<double> dmean_x(narg,fact);
-  // this is the derivative of the mean with respect to the bias
-  vector<double> dmean_b(narg,0);
   if(master) {
     for(unsigned i=0; i<narg; ++i) mean[i] = fact*getArgument(i);
     if(nrep_>1) multi_sim_comm.Sum(&mean[0], narg);
@@ -1513,32 +1487,54 @@ void Metainference::calculate()
   // set the derivative of the mean with respect to the bias
   for(unsigned i=0; i<narg; ++i) dmean_b[i] = fact/kbt_*(getArgument(i)-mean[i])/static_cast<double>(average_weights_stride_);
 
-  sigma_mean2_ = get_sigma_mean(iselect, dnrep, ave_fact, fact, var_fact, mean);
-
   // this is only for generic metainference
   if(firstTime) {ftilde_ = mean; firstTime = false;}
+}
+
+void Metainference::calculate()
+{
+  unsigned iselect = 0;
+  // set the value of selector for  REM-like stuff
+  if(selector_.length()>0) iselect = static_cast<unsigned>(plumed.passMap[selector_]);
+
+  double       fact     = 0.0;
+  double       var_fact = 0.0;
+
+  get_weights(iselect, fact, var_fact);
+
+  // calculate the mean
+  vector<double> mean(narg,0);
+  // this is the derivative of the mean with respect to the argument
+  vector<double> dmean_x(narg,fact);
+  // this is the derivative of the mean with respect to the bias
+  vector<double> dmean_b(narg,0);
+  // calculate it
+  replica_averaging(fact, mean, dmean_b);
+
+  get_sigma_mean(iselect, fact, var_fact, mean);
+
 
   /* MONTE CARLO */
   const long int step = getStep();
-  if(step%MCstride_==0&&!getExchangeStep()) doMonteCarlo(mean, sigma_mean_correction_);
+  if(step%MCstride_==0&&!getExchangeStep()) doMonteCarlo(mean);
 
   // calculate bias and forces
   double ene = 0;
   switch(noise_type_) {
   case GAUSS:
-    ene = getEnergyForceGJ(mean, dmean_x, dmean_b, sigma_mean_correction_);
+    ene = getEnergyForceGJ(mean, dmean_x, dmean_b);
     break;
   case MGAUSS:
-    ene = getEnergyForceGJE(mean, dmean_x, dmean_b, sigma_mean_correction_);
+    ene = getEnergyForceGJE(mean, dmean_x, dmean_b);
     break;
   case OUTLIERS:
-    ene = getEnergyForceSP(mean, dmean_x, dmean_b, sigma_mean_correction_);
+    ene = getEnergyForceSP(mean, dmean_x, dmean_b);
     break;
   case MOUTLIERS:
-    ene = getEnergyForceSPE(mean, dmean_x, dmean_b, sigma_mean_correction_);
+    ene = getEnergyForceSPE(mean, dmean_x, dmean_b);
     break;
   case GENERIC:
-    ene = getEnergyForceMIGEN(mean, dmean_x, dmean_b, sigma_mean_correction_);
+    ene = getEnergyForceMIGEN(mean, dmean_x, dmean_b);
     break;
   }
 

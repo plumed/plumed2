@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -304,6 +304,7 @@ Meta::Meta(const ActionOptions&ao):
   parse("TEMP",temp);
   if(temp>0.0) kbt_=plumed.getAtoms().getKBoltzmann()*temp;
   else kbt_=plumed.getAtoms().getKbT();
+  if(kbt_==0.0) error("Unless the MD engine passes the temperature to plumed, you must specify it using TEMP");
 
   IFile restart_sfile;
   restart_sfile.link(*this);

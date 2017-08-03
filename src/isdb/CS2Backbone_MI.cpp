@@ -494,18 +494,18 @@ public:
 
   explicit CS2Backbonemi(const ActionOptions&);
   static void registerKeywords( Keywords& keys );
-  virtual void calculate();
+  void calculate();
 };
 
 PLUMED_REGISTER_ACTION(CS2Backbonemi,"CS2BACKBONEMI")
 
 void CS2Backbonemi::registerKeywords( Keywords& keys ) {
-  Meta::registerKeywords( keys );
   componentsAreNotOptional(keys);
   useCustomisableComponents(keys);
+  Meta::registerKeywords( keys );
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
-  keys.add("compulsory","DATA","data/","The folder with the experimental chemical shifts.");
+  keys.add("compulsory","DATADIR","data/","The folder with the experimental chemical shifts.");
   keys.add("compulsory","TEMPLATE","template.pdb","A PDB file of the protein system to initialise ALMOST.");
   keys.add("compulsory","NEIGH_FREQ","20","Period in step for neighbour list update.");
   keys.add("compulsory","NRES","Number of residues, corresponding to the number of chemical shifts.");
@@ -544,7 +544,7 @@ CS2Backbonemi::CS2Backbonemi(const ActionOptions&ao):
   parseFlag("NOEXP",noexp);
 
   string stringa_data;
-  parse("DATA",stringa_data);
+  parse("DATADIR",stringa_data);
 
   string stringa_template;
   parse("TEMPLATE",stringa_template);
@@ -640,7 +640,6 @@ CS2Backbonemi::CS2Backbonemi(const ActionOptions&ao):
 
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
-  checkRead();
 
   log<<"  Bibliography "
      <<plumed.cite("Kohlhoff K, Robustelli P, Cavalli A, Salvatella A, Vendruscolo M, J. Am. Chem. Soc. 131, 13894 (2009)")
@@ -714,6 +713,7 @@ CS2Backbonemi::CS2Backbonemi(const ActionOptions&ao):
 
   requestAtoms(atoms);
   setDerivatives();
+  checkRead();
 }
 
 void CS2Backbonemi::remove_problematic(const string &res, const string &nucl) {
