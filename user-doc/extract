@@ -7,52 +7,6 @@ rm -f errors
 rm -rf automatic
 mkdir automatic
 
-long_version="$(../src/lib/plumed --no-mpi info --long-version)"
-git_version="$(../src/lib/plumed --no-mpi info --git-version)"
-
-cat > automatic/version.tmp << EOF
-This manual has been compiled from PLUMED version <b> $long_version </b>
-(git version: <b> $git_version </b>).
-EOF
-
-if test "$TRAVIS" == true ; then
-cat >> automatic/version.tmp << EOF
-Manual built on Travis CI for branch $TRAVIS_BRANCH.
-EOF
-fi
-
-if test -d regtests ; then
-cat >> automatic/version.tmp << EOF
-
-Regtest results for this version can be found <a href="../regtests/report.html">here</a>.
-EOF
-fi
-
-for file in ../CHANGES/* ; do
-echo "- Changes for \\subpage $(cat $file | grep "@page" | awk '{print $2}')"
-done > automatic/changes.tmp
-
-if test "$make_pdfdoc" = yes ; then
-cat > automatic/pdfmanual.tmp << \EOF
-\htmlonly
-An experimental PDF copy of this manual can be found
-<a href="../manual.pdf"> here</a>, but the html documentation should 
-be considered as the official one.
-The PDF version has some known issue (e.g. some
-links are not working properly and images are not correctly included).
-The goal of the PDF manual is to allow people to download a full copy on the documentation for offline
-access and to perform easily full-text searches.
-Notice that the manual is updated very frequently (sometime more than once per week),
-so keep your local version of the PDF manual up to date. 
-Since the PDF manual is 200+ pages and is continuously updated,
-<b>
-please do not print it!
-</b>
-\endhtmlonly
-EOF
-else
-touch automatic/pdfmanual.tmp
-fi
 
 # Check for files that register actions with no documentation
 for file in ../src/*/*.cpp
@@ -71,8 +25,8 @@ for file in ../patches/*.diff
 do
    myengine=`echo "$file" | sed -e 's/.diff//' | sed -e 's/..\/patches\///'`
    mytag=`echo "$myengine" | sed -e 's/\./-/g'`
-   echo "- $mytag" >> automatic/codesl.list # list only, for Intro
-   echo "- \subpage $mytag " >> automatic/codes.list
+   echo "- $mytag" >> automatic/CODESL.list # list only, for Intro
+   echo "- \subpage $mytag " >> automatic/CODES.list
    echo "/**" >> automatic/$myengine.txt
    echo "\page $mytag $myengine" >> automatic/$myengine.txt
    ../src/lib/plumed --no-mpi patch -e $myengine -i -q >> automatic/$myengine.txt
@@ -84,23 +38,48 @@ cat ../*/*/*cpp |
 awk 'BEGIN{gfile="automatic/GLOSSARY.list"; dfile="automatic/DICTIONARY.list"; }{
   if($1=="//+ENDPLUMEDOC" && inside){
      inside=0;
+     module=0
      print "*/" >output
   }
   if(inside>=2 && NF==0){
      print "</td> </tr>" >> lfile
+     if(module==1) print "</td> </tr>" >> mfile
      if(inside==2){ printf "</td> </tr>\n" > gfile; }
      if(inside==3){ printf "</td> </tr>\n" > dfile; }
      inside=1
+     module=0
   }
   if(inside==1 && $1!="/*" && $1!="*/") print $0 > output
   if(inside>=2 && $1!="/*" && $1!="*/" ){
      print $0 > output
      printf "%s", $0 >> lfile
+     if(module==1) printf "%s", $0 >> mfile
      if(inside==2){ printf "%s", $0 > gfile; }
      if(inside==3){ printf "%s", $0 > dfile; }
   }
   if($1=="//+PLUMEDOC"){
-    if( $2=="TOPOLOGY" || $2=="COLVAR" || $2=="MCOLVAR" || $2=="DCOLVAR"|| $2=="MFILTERS" || $2=="MTRANSFORMS" || $2=="VOLUMES" || $2=="MCOLVARF" || $2=="MCOLVARB" || $2=="MATRIX" || $2=="MATRIXF" || $2=="CONCOMP" || $2=="FUNCTION" || $2=="GRIDCALC" || $2=="REWEIGHTING"|| $2=="PRINTANALYSIS" || $2=="DIMRED" || $2=="GRIDANALYSIS" || $2=="BIAS" || $2=="GENERIC" || $2=="VATOM" || $2=="TOOLS" ){
+    if( $2=="TOPOLOGY" || 
+        $2=="COLVAR" || 
+        $2=="MCOLVAR" || 
+        $2=="DCOLVAR"|| 
+        $2=="MFILTERS" || 
+        $2=="MTRANSFORMS" || 
+        $2=="VOLUMES" || 
+        $2=="MCOLVARF" || 
+        $2=="MCOLVARB" || 
+        $2=="MATRIX" || 
+        $2=="MATRIXF" || 
+        $2=="CONCOMP" || 
+        $2=="FUNCTION" || 
+        $2=="GRIDCALC" || 
+        $2=="REWEIGHTING"|| 
+        $2=="PRINTANALYSIS" || 
+        $2=="DIMRED" || 
+        $2=="GRIDANALYSIS" || 
+        $2=="BIAS" || 
+        $2=="GENERIC" || 
+        $2=="VATOM" || 
+        $2=="TOOLS" ){
       if(lfile!="") close(lfile)
       lfile="automatic/"$2".list"
       
@@ -114,6 +93,7 @@ awk 'BEGIN{gfile="automatic/GLOSSARY.list"; dfile="automatic/DICTIONARY.list"; }
       print "\\page "$3" "$3 > output
 #      print "\\section "$3 >output
       inside=2;
+      module=0
     } else if ( $2=="INTERNAL" ){
       if(output!="")close(output);
 
@@ -125,6 +105,35 @@ awk 'BEGIN{gfile="automatic/GLOSSARY.list"; dfile="automatic/DICTIONARY.list"; }
       print "\\page "$3" "$3 > output
 #      print "\\section "$3 >output
       inside=3;
+      module=0
+    } else {
+# this is the place where other modules are checked for
+      if(mfile!="") close(mfile)
+      mfile="automatic/"$2".list"
+      printf "<tr> <td width=%s> \\subpage %s </td> <td>","5%", $3 >> mfile
+      printf "<tr> <td width=%s> \\ref %s </td><td> %s </td><td>","5%",$3, $2 > gfile
+      if(output!="")close(output);
+      output="automatic/"$3".tmp";
+      print "/**" > output
+      print "\\page "$3" "$3 > output
+      inside=2
+      module=1
+      split($2,array,"_");
+      if(lfile!="") close(lfile)
+      lfile="automatic/"array[2]"_OTHERMODULES.list"
+      printf "<tr> <td width=%s> \\ref %s </td><td> (from \\ref %s module) ","5%", $3 ,array[1] >> lfile
+      if(afile!="") close(afile)
+      afile="automatic/ADDITIONALMODULES.list"
+      cmd="grep description: " array[1]".md | sed -e 's/description://'"
+      cmd | getline describe
+      close(cmd)
+      cmd="grep authors: " array[1]".md | sed -e 's/authors://'"
+      cmd | getline authors 
+      close(cmd)
+      cmd="grep reference: " array[1]".md | sed -e 's/reference://'"
+      cmd | getline reference 
+      close(cmd)
+      printf "<tr><td width=%s>\\subpage %s </td><td> %s </td><td> %s </td><td> %s </td></tr>\n", "10%", array[1], describe, authors, reference >> afile
     }
   }
 }'
@@ -132,12 +141,60 @@ awk 'BEGIN{gfile="automatic/GLOSSARY.list"; dfile="automatic/DICTIONARY.list"; }
 # Now put all list files in alphabetical order
 for file in automatic/*.list ; do
 
-  sort $file > $file-1
+# -k 5 is required to mix together refs and subpages
+  sort -k 5 $file | uniq > $file-1
   mv $file-1 $file
 done
 
+# The following are not proper "list" files so should be generated after sorting
 
-# Generate links to tutorial pages
+long_version="$(../src/lib/plumed --no-mpi info --long-version)"
+git_version="$(../src/lib/plumed --no-mpi info --git-version)"
+
+cat > automatic/VERSION.list << EOF
+This manual has been compiled from PLUMED version <b> $long_version </b>
+(git version: <b> $git_version </b>).
+EOF
+
+if test "$TRAVIS" == true ; then
+cat >> automatic/VERSION.list << EOF
+Manual built on Travis CI for branch $TRAVIS_BRANCH.
+EOF
+fi
+
+if test -d regtests ; then
+cat >> automatic/VERSION.list << EOF
+
+Regtest results for this version can be found <a href="../regtests/report.html">here</a>.
+EOF
+fi
+
+for file in ../CHANGES/* ; do
+echo "- Changes for \\subpage $(cat $file | grep "@page" | awk '{print $2}')"
+done > automatic/CHANGES.list
+
+touch automatic/PDFMANUAL.list
+if test "$make_pdfdoc" = yes ; then
+cat >> automatic/PDFMANUAL.list << EOF
+\htmlonly
+An experimental PDF copy of this manual can be found
+<a href="../manual.pdf"> here</a>, but the html documentation should 
+be considered as the official one.
+The PDF version has some known issue (e.g. some
+links are not working properly and images are not correctly included).
+The goal of the PDF manual is to allow people to download a full copy on the documentation for offline
+access and to perform easily full-text searches.
+Notice that the manual is updated very frequently (sometime more than once per week),
+so keep your local version of the PDF manual up to date. 
+Since the PDF manual is 200+ pages and is continuously updated,
+<b>
+please do not print it!
+</b>
+\endhtmlonly
+EOF
+fi
+
+# Generate links to standard tutorial pages
 for file in ./tutorials/*.txt ; do
 
     link=`grep link: $file | sed -e 's/link://'`
@@ -157,22 +214,37 @@ for file in ./tutorials/*.site; do
 
 done
 
+# Generate links for module specific tutorials
+for file in ./tutorials/others/*.txt ; do
+
+    arrIN=(${file//.\/tutorials\/others\// }); 
+    temp=$(echo $arrIN | tr "-" "\n"); 
+    modtut=$(echo $temp | awk '{print toupper($1)}')
+
+    link=`grep link: $file | sed -e 's/link://'`
+    describe=`grep description: $file | sed -e 's/description://'`
+
+    echo "<tr> <td> $link </td> <td> $describe </td> </tr>" >> automatic/"$modtut"_TUTORIALS.list  
+
+done
+
+
 # Find what modules the user has installed
 # Find the list of modules
 # if [ -d ../mymodules ] ;  then
 #  sed -i '' -e 's/type="user" visible="no" url="mymodules.html"/type="user" visible="yes" url="mymodules.html"/' PlumedLayout.xml
-echo "<table align=center frame=void width=65%% cellpadding=5%%>" > automatic/modules.list
-echo "<tr> <td> <b> Module name </b> </td> <td> <b> Default behavior </b> </td> </tr>" >> automatic/modules.list
+echo "<table align=center frame=void width=65%% cellpadding=5%%>" > automatic/MODULES.list
+echo "<tr> <td> <b> Module name </b> </td> <td> <b> Default behavior </b> </td> </tr>" >> automatic/MODULES.list
 for file in `ls ../src/*/module.type | sed -e 's/..\/src\///' | sed -e 's/\/module.type//'`
 do
    defoff=0
    dstr=`head ../src/$file/module.type`
    if [ "$dstr" != "always" ] ; then
-         echo "<tr> <td> $file </td>" >> automatic/modules.list
+         echo "<tr> <td> $file </td>" >> automatic/MODULES.list
          if [ "$dstr" == "default-on" ] ; then
-            echo "<td> on </td> </tr>" >> automatic/modules.list
+            echo "<td> on </td> </tr>" >> automatic/MODULES.list
          else 
-            echo "<td> off </td> </tr>" >> automatic/modules.list
+            echo "<td> off </td> </tr>" >> automatic/MODULES.list
             defoff=1
          fi
 #        # Generate documentation and accreditation on modules page
@@ -217,7 +289,7 @@ do
         done
    fi 
 done
-echo "</table>" >> automatic/modules.list
+echo "</table>" >> automatic/MODULES.list
 # fi
 
 # Generate all the documentation from keywords
@@ -258,51 +330,64 @@ do
   rm automatic/$file.1.list
 done
 
+for file in automatic/*_*.list
+do
+  mv $file $file.1
+  {
+    echo "<table align=center frame=void width=95%% cellpadding=5%%>"
+    cat $file.1
+    echo "</table>"
+  } > $file
+  rm $file.1
+done
+
+for file in automatic/*_OTHERMODULES.list
+do
+
+ff=${file%_OTHERMODULES.list}.list
+
+if test -f "$ff" ; then
+
+mv $ff $ff.1
+  {
+    cat $ff.1
+    echo "In addition to the keywords above, by enabling optional modules you can access to the following keywords:"
+    cat $file
+  } > $ff
+fi
+done
+
 # Make all double hyphens appear as double hypens
 sed -ie 's/<b> --/<b> \\c \\-\\-/g' automatic/*.txt
 rm automatic/*.txte
 
-rm -f *PP.txt
-for f in *.txt
+rm -f *PP.txt *PP.md
+
+keywords=`grep "@[A-Z_]*@" *.md | awk -F"@" '{print $2}' | sort | uniq`
+
+for f in *.txt *.md
 do
 
-file=${f%.txt}
+test -f $f || continue
+
+extension=${f##*.}
+
+file=${f%.$extension}
 
 # first replace with the content of the files
 # then grep out the special strings
 
-cat $file.txt |
-  sed "
-    /^ *@COLVAR@ *$/r     automatic/COLVAR.list
-    /^ *@MCOLVAR@ *$/r    automatic/MCOLVAR.list
-    /^ *@DCOLVAR@ *$/r    automatic/DCOLVAR.list
-    /^ *@MFILTERS@ *$/r   automatic/MFILTERS.list
-    /^ *@MTRANSFORMS@ *$/r   automatic/MTRANSFORMS.list
-    /^ *@VOLUMES@ *$/r    automatic/VOLUMES.list
-    /^ *@MCOLVARF@ *$/r   automatic/MCOLVARF.list
-    /^ *@MCOLVARB@ *$/r   automatic/MCOLVARB.list
-    /^ *@REWEIGHTING@ *$/r   automatic/REWEIGHTING.list
-    /^ *@PRINTANALYSIS@ *$/r   automatic/PRINTANALYSIS.list
-    /^ *@GRIDCALC@ *$/r   automatic/GRIDCALC.list
-    /^ *@GRIDANALYSIS@ *$/r   automatic/GRIDANALYSIS.list
-    /^ *@DIMRED@ *$/r   automatic/DIMRED.list
-    /^ *@MATRIX@ *$/r   automatic/MATRIX.list
-    /^ *@MATRIXF@ *$/r   automatic/MATRIXF.list
-    /^ *@CONCOMP@ *$/r   automatic/CONCOMP.list
-    /^ *@BIAS@ *$/r       automatic/BIAS.list
-    /^ *@GLOSSARY@ *$/r   automatic/GLOSSARY.list
-    /^ *@DICTIONARY@ *$/r automatic/DICTIONARY.list
-    /^ *@TUTORIALS@ *$/r  automatic/TUTORIALS.list
-    /^ *@WEBSITES@ *$/r   automatic/WEBSITES.list
-    /^ *@FUNCTION@ *$/r   automatic/FUNCTION.list
-    /^ *@TOPOLOGY@ *$/r   automatic/TOPOLOGY.list
-    /^ *@VATOM@ *$/r      automatic/VATOM.list
-    /^ *@TOOLS@ *$/r      automatic/TOOLS.list
-    /^ *@MODULES@ *$/r    automatic/modules.list
-    /^ *@CODES@ *$/r      automatic/codes.list
-    /^ *@CODESL@ *$/r     automatic/codesl.list
-    /^ *@VERSION@ *$/r    automatic/version.tmp
-    /^ *@CHANGES@ *$/r    automatic/changes.tmp
-    /^ *@PDFMANUAL@ *$/r  automatic/pdfmanual.tmp
-" | grep -Ev '^ *@[A-Z]*@ *$' > ${file}PP.txt
+cp $f ${file}PP.$extension
+
+for kk in $keywords
+do
+  sed -ie "
+    /^ *@"$kk"@ *$/r     automatic/$kk.list
+" ${file}PP.$extension
+done
+rm -f *."$extension"e
+
+grep -Ev '^ *@[A-Z:_]*@ *$' ${file}PP.$extension > tmp;
+mv tmp ${file}PP.$extension
+
 done

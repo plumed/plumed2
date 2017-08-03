@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2014-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -105,6 +105,7 @@ void BridgedMultiColvarFunction::applyBridgeForces( const std::vector<double>& b
   for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
     f[i][0]+=bb[3*i+0]; f[i][1]+=bb[3*i+1]; f[i][2]+=bb[3*i+2];
   }
+  applyForces();
 }
 
 bool BridgedMultiColvarFunction::isPeriodic() {

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2016,2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -34,7 +34,7 @@ AveragingVessel::AveragingVessel( const vesselbase::VesselOptions& vo ):
   wascleared(true)
 {
   ActionWithAveraging* myav = dynamic_cast<ActionWithAveraging*>( getAction() );
-  plumed_assert( myav ); unormalised = myav->unormalised;
+  plumed_assert( myav ); unormalised = myav->noNormalization();
 }
 
 void AveragingVessel::finish( const std::vector<double>& buffer ) {

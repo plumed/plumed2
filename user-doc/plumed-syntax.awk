@@ -1,6 +1,7 @@
 {
   if(match($0,"BEGIN_PLUMED_FILE")){
     inside=1;
+    endplumed=0;
     sub("BEGIN_PLUMED_FILE","");
     print;
     next;
@@ -18,6 +19,7 @@
 # DRAFT LINK TO DOC:
  copy=$0
  sub("#.*","",copy);
+ if(endplumed) copy="";
  nw=split(copy,words);
  if(match(words[1],".*:$")){
    action=words[2];
@@ -25,6 +27,9 @@
    action=words[1];
  }
  if(action=="__FILL__") action=""
+ if(action=="ENDPLUMED"){
+   endplumed=1;
+ }
  actionx="";
  for(i=1;i<=length(action);i++){
    letter=substr(action,i,1);
@@ -50,5 +55,6 @@
 #  sub("#","<span style=\"color:blue\">#");
 #  if(match($0,"span style=")) $0=$0 "</span>";
   sub("#.*$","<span style=\"color:blue\">&</span>");
+  if(endplumed) sub("^.*$","<span style=\"color:blue\">&</span>");
   print
 }

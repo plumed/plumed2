@@ -1,0 +1,25 @@
+# vim: ft=plumed
+# First load information about the molecule.
+MOLINFO STRUCTURE=ref.pdb
+
+# Define some group that will make the rest of the input more readable
+mg:  GROUP ATOMS=6580 # a group with one atom is also useful!
+
+# Distances between Mg and phosphorous atoms:
+d1: DISTANCE ATOMS=mg,@P-2
+d2: DISTANCE ATOMS=mg,@P-3
+d3: DISTANCE ATOMS=mg,@P-4
+d4: DISTANCE ATOMS=mg,@P-6
+d5: DISTANCE ATOMS=mg,@P-7
+d6: DISTANCE ATOMS=mg,@P-8
+
+# Compute the sum of these distances
+c: COMBINE ARG=(d.) PERIODIC=NO
+
+# Compute the distance between Mg and the closest phosphorous atom
+s: SORT ARG=(d.)
+
+# Print the required variables
+PRINT FILE=COLVAR ARG=c,s.1
+
+PRINT ARG=(d.)

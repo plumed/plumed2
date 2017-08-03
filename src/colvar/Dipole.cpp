@@ -35,6 +35,7 @@ namespace colvar {
 Calculate the dipole moment for a group of atoms.
 
 \par Examples
+
 The following tells plumed to calculate the dipole of the group of atoms containing
 the atoms from 1-10 and print it every 5 steps
 \plumedfile

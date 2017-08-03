@@ -219,7 +219,7 @@ unsigned GridVessel::getIndex( const std::vector<double>& point ) const {
 unsigned GridVessel::getFibonacciIndex( const std::vector<double>& p ) const {
   plumed_dbg_assert( gtype==fibonacci );
   // Convert input point to coordinates on cylinder
-  unsigned k=2; double phi = atan2( p[2], p[0] ), sinthet2 = 1 - p[1]*p[1];
+  int k=2; double phi = atan2( p[2], p[0] ), sinthet2 = 1 - p[1]*p[1];
   // Calculate power to raise golden ratio
   if( sinthet2<epsilon ) { k = 2; }
   else {

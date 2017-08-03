@@ -91,10 +91,20 @@ int Info::main(FILE* in, FILE*out,Communicator& pc) {
   bool printgitversion; parseFlag("--git-version",printgitversion);
   if(printroot) fprintf(out,"%s\n",config::getPlumedRoot().c_str());
   if(printconfiguration) fprintf(out,"%s",config::getMakefile().c_str());
-  std::string userdoc=config::getPlumedHtmldir()+"/user-doc/html/index.html";
-  std::string developerdoc=config::getPlumedHtmldir()+"/developer-doc/html/index.html";
-  if(printuserdoc) fprintf(out,"%s\n",userdoc.c_str());
-  if(printdeveloperdoc) fprintf(out,"%s\n",developerdoc.c_str());
+  if(printuserdoc) {
+    std::string userdoc=config::getPlumedHtmldir()+"/user-doc/html/index.html";
+    FILE *ff=std::fopen(userdoc.c_str(),"r");
+    if(ff) std::fclose(ff);
+    else userdoc="http://plumed.github.io/doc-v" + config::getVersion() + "/user-doc/html/index.html";
+    fprintf(out,"%s\n",userdoc.c_str());
+  }
+  if(printdeveloperdoc) {
+    std::string developerdoc=config::getPlumedHtmldir()+"/developer-doc/html/index.html";
+    FILE *ff=std::fopen(developerdoc.c_str(),"r");
+    if(ff) std::fclose(ff);
+    else developerdoc="http://plumed.github.io/doc-v" + config::getVersion() + "/developer-doc/html/index.html";
+    fprintf(out,"%s\n",developerdoc.c_str());
+  }
   if(printversion) fprintf(out,"%s\n",config::getVersion().c_str());
   if(printlongversion) fprintf(out,"%s\n",config::getVersionLong().c_str());
   if(printgitversion) fprintf(out,"%s\n",config::getVersionGit().c_str());

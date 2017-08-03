@@ -32,7 +32,7 @@ then
   COPYRIGHT="$FIX_COPYRIGHT"
   echo -n "Custom header for file: $file"
 else
-  years=$(git log --follow --format=%aD $file |
+    years=$(git log --follow -M75% --format=%aD $file |
     awk '{if(NR==1)last=$4;}END{
     first=$4
     if(first=="") print ""

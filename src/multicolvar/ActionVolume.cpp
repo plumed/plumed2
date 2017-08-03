@@ -28,7 +28,7 @@ void ActionVolume::registerKeywords( Keywords& keys ) {
   VolumeGradientBase::registerKeywords( keys );
   if( keys.reserved("VMEAN") ) keys.use("VMEAN");
   keys.use("MEAN"); keys.use("LESS_THAN"); keys.use("MORE_THAN");
-  keys.use("BETWEEN"); keys.use("HISTOGRAM");
+  keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("SUM");
   keys.add("compulsory","SIGMA","the width of the function to be used for kernel density estimation");
   keys.add("compulsory","KERNEL","gaussian","the type of kernel function to be used");
   keys.addFlag("OUTSIDE",false,"calculate quantities for colvars that are on atoms outside the region of interest");
