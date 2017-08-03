@@ -55,6 +55,7 @@ public:
   ~Mapping();
 /// Overload the virtual functions that appear in both ActionAtomistic and ActionWithArguments
   void calculateNumericalDerivatives( ActionWithValue* a=NULL );
+  bool mustBeTreatedAsDistinctArguments() const ;
   void lockRequests();
   void unlockRequests();
 /// Get the number of derivatives for this action
@@ -79,6 +80,11 @@ public:
 /// Apply the forces
   void apply();
 };
+
+inline
+bool Mapping::mustBeTreatedAsDistinctArguments() const {
+  return true;
+}
 
 inline
 ReferenceConfiguration* Mapping::getReferenceConfiguration( const unsigned& iframe ) const {

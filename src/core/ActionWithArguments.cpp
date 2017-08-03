@@ -257,7 +257,7 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg) {
   if( done_over_stream ) {
       // Get the action where this argument should be applied 
       ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>( arguments[0]->getPntrToAction() );
-      if( !aa || !aa->done_over_stream || aa->getNumberOfArguments()>1 ) distinct_arguments.push_back( arguments[0]->getPntrToAction() );
+      if( !aa || aa->mustBeTreatedAsDistinctArguments() ) distinct_arguments.push_back( arguments[0]->getPntrToAction() );
       else distinct_arguments.push_back( aa->getFirstNonStream() );
       // Build vector with locations to keep derivatives of arguments 
       arg_deriv_starts.clear(); arg_deriv_starts.resize(0);
@@ -266,7 +266,7 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg) {
       for(unsigned i=1;i<getNumberOfArguments();++i){
           // Work out what action applies forces
           ActionWithValue* myval; ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>( arguments[i]->getPntrToAction() );
-          if( !aa || !aa->done_over_stream ) myval = arguments[i]->getPntrToAction(); 
+          if( !aa || aa->mustBeTreatedAsDistinctArguments() ) myval = arguments[i]->getPntrToAction(); 
           else myval = aa->getFirstNonStream();
           
           // Check we haven't already dealt with this argument
@@ -279,7 +279,7 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg) {
           } else {
               arg_deriv_starts.push_back( nder ); distinct_arguments.push_back( myval ); nder += myval->getNumberOfDerivatives();
           }   
-      }   
+      }
   }
 
 }
@@ -317,9 +317,9 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
 }
 
 ActionWithValue* ActionWithArguments::getFirstNonStream() {
-  plumed_massert( getNumberOfArguments()==1, "cannot use functions with multiple arguments in this way " + getLabel() );
+  plumed_massert( getNumberOfArguments()<2, "cannot use functions with multiple arguments in this way " + getLabel() );
   ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>( getPntrToArgument(0)->getPntrToAction() );
-  if( !aa || !aa->done_over_stream || aa->getNumberOfArguments()>1 ) return getPntrToArgument(0)->getPntrToAction();
+  if( !aa || aa->mustBeTreatedAsDistinctArguments() ) return getPntrToArgument(0)->getPntrToAction();
   else return aa->getFirstNonStream();  
 }
 
@@ -388,15 +388,13 @@ void ActionWithArguments::retrieveArguments( const MultiValue& myvals, std::vect
   }
 }
 
-void ActionWithArguments::setForcesOnArguments( const std::vector<double>& forces, const unsigned& start ) {
+void ActionWithArguments::setForcesOnArguments( const std::vector<double>& forces, unsigned& start ) {
   if( done_over_stream ){
-      unsigned nder = 0;
       for(unsigned i=0;i<distinct_arguments.size();++i){
           ActionWithArguments* aarg = dynamic_cast<ActionWithArguments*>( distinct_arguments[i] );
-          if( aarg ) aarg->setForcesOnArguments( forces, nder ); 
+          if( aarg ) aarg->setForcesOnArguments( forces, start ); 
           ActionAtomistic* aat = dynamic_cast<ActionAtomistic*>( distinct_arguments[i] );
-          if( aat ) aat->setForcesOnAtoms( forces, nder ); 
-          nder += distinct_arguments[i]->getNumberOfDerivatives();
+          if( aat ){ aat->setForcesOnAtoms( forces, start ); start += distinct_arguments[i]->getNumberOfDerivatives(); } 
       } 
   } else {
       for(unsigned k=0;k<getNumberOfScalarArguments();++k) {
@@ -408,6 +406,7 @@ void ActionWithArguments::setForcesOnArguments( const std::vector<double>& force
           }
           arguments[j]->addForce( k-nn, forces[start + k] );
       }
+      start += getNumberOfScalarArguments();
   }
 }
 

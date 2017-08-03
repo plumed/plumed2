@@ -328,8 +328,8 @@ void SymmetryFunctionBase::updateDerivativeIndices( MultiValue& myvals ) const {
 
 void SymmetryFunctionBase::apply() {
   if( doNotCalculateDerivatives() ) return;
-  std::fill(forcesToApply.begin(),forcesToApply.end(),0);
-  if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( forcesToApply, 0 );
+  std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned mm=0;
+  if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( forcesToApply, mm ); 
 }
 
 }

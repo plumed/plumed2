@@ -325,7 +325,7 @@ void GeometricPath::apply() {
   std::fill(forcesToApply.begin(),forcesToApply.end(),0);
   if( getForcesFromValues( forcesToApply ) ){
       Mapping* am = dynamic_cast<Mapping*>( getPntrToArgument(0)->getPntrToAction() );
-      am->setForcesOnArguments( forcesToApply, 0 );
+      unsigned mm=0; am->setForcesOnArguments( forcesToApply, mm );
       am->setForcesOnAtoms( forcesToApply, am->getNumberOfArguments()  );
   }
 }

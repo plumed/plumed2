@@ -55,6 +55,7 @@ public:
                                std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit SymmetryFunctionBase(const ActionOptions&); 
+  bool mustBeTreatedAsDistinctArguments() const ; 
   unsigned getNumberOfDerivatives() const ;
   void calculate(){} 
   void buildCurrentTaskList( std::vector<unsigned>& tflags );
@@ -62,6 +63,11 @@ public:
   virtual void performTask( const unsigned& current, MultiValue& myvals ) const ;
   void apply();
 };
+
+inline
+bool SymmetryFunctionBase::mustBeTreatedAsDistinctArguments() const {
+  return true;
+}
 
 inline
 unsigned SymmetryFunctionBase::getNumberOfDerivatives() const {

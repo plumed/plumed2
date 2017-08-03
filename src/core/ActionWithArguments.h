@@ -57,7 +57,7 @@ protected:
 /// Get the total number of input arguments
   unsigned getNumberOfScalarArguments() const ;
 /// Set the forces on the arguments
-  void setForcesOnArguments( const std::vector<double>& forces, const unsigned& start );
+  void setForcesOnArguments( const std::vector<double>& forces, unsigned& start );
 public:
 /// Get the scalar product between the gradients of two variables
   double getProjection(unsigned i,unsigned j)const;
@@ -94,6 +94,8 @@ public:
   void interpretArgumentList(const std::vector<std::string>& c, std::vector<Value*>&arg);
 /// Retrieve the argument values
   void retrieveArguments( const MultiValue& myvals, std::vector<double>& args ) const ;
+/// This tells us which arguments must be treated as distinct in functions
+  virtual bool mustBeTreatedAsDistinctArguments() const ;
 };
 
 
@@ -148,6 +150,11 @@ void ActionWithArguments::unlockRequests() {
 inline
 const std::vector<Value*> & ActionWithArguments::getArguments() const {
   return arguments;
+}
+
+inline
+bool ActionWithArguments::mustBeTreatedAsDistinctArguments() const {
+ return (done_over_stream || getNumberOfArguments()>1);
 }
 
 }

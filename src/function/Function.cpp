@@ -156,21 +156,13 @@ void Function::performTask( const unsigned& current, MultiValue& myvals ) const 
   // And update the dynamic list
   if( doNotCalculateDerivatives() ) return ;
   if( done_over_stream ) {
-      std::vector<ActionWithValue*> done_list; 
-      for(unsigned i=0;i<getNumberOfArguments();++i){
-          bool found=false;
-          for(unsigned j=0;j<done_list.size();++j){
-              if( getPntrToArgument(i)->getPntrToAction()==done_list[j] ){ found=true; break; }
-          }
-          if( !found ){
-              done_list.push_back( getPntrToArgument(i)->getPntrToAction() );
-              unsigned istrn = getPntrToArgument(i)->getPositionInStream();
-              for(unsigned k=0;k<myvals.getNumberActive(istrn);++k){
-                  unsigned kind = myvals.getActiveIndex(istrn,k);
-                  for(unsigned j=0;j<getNumberOfComponents();++j){
-                      unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
-                      myvals.updateIndex( ostrn, arg_deriv_starts[i] + kind ); 
-                  }
+      for(unsigned i=0;i<distinct_arguments.size();++i){
+          unsigned istrn = (distinct_arguments[i]->copyOutput(0))->getPositionInStream();
+          for(unsigned k=0;k<myvals.getNumberActive(istrn);++k){
+              unsigned kind = myvals.getActiveIndex(istrn,k);
+              for(unsigned j=0;j<getNumberOfComponents();++j){
+                  unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
+                  myvals.updateIndex( ostrn, arg_deriv_starts[i] + kind ); 
               }
           }
       }
@@ -187,8 +179,8 @@ void Function::apply()
   // Everything is done elsewhere
   if( doNotCalculateDerivatives() ) return;
   // And add forces
-  std::fill(forcesToApply.begin(),forcesToApply.end(),0);
-  if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( forcesToApply, 0 ); 
+  std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned ss=0;
+  if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( forcesToApply, ss ); 
 
 //   const unsigned noa=getNumberOfArguments();
 //   const unsigned ncp=getNumberOfComponents();

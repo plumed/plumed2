@@ -431,7 +431,7 @@ void PCAVars::apply() {
     }
   }
   if( wasforced ) {
-    setForcesOnArguments( forcesToApply, 0 );
+    unsigned mm=0; setForcesOnArguments( forcesToApply, mm );
     if( getNumberOfAtoms()>0 ) setForcesOnAtoms( forcesToApply, getNumberOfArguments() );
   }
 

@@ -79,12 +79,13 @@ Between::Between(const ActionOptions&ao):
   }
   std::string hinput; parse("SWITCH",hinput);
   if(hinput.length()==0) {
-     std::string ktype, low, up, sme; 
+     std::string low, up, sme;
      parse("LOWER",low); parse("UPPER",up); parse("SMEAR",sme);
-     hinput = "GAUSSIAN LOWER=" + low + " UPPER=" + up + " SMEAR" + sme;
+     hinput = "GAUSSIAN LOWER=" + low + " UPPER=" + up + " SMEAR=" + sme;
   }
   std::string errors; hist.set( hinput, errors );
   if( errors.size()!=0 ) error( errors );
+  log.printf("  %s \n", hist.description().c_str() );
 
   if( !isPeriodic ) hist.isNotPeriodic();
   else {
