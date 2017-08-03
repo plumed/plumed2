@@ -34,8 +34,7 @@ PammObject::PammObject( const PammObject& in ):
   regulariser(in.regulariser),
   pbc(in.pbc),
   min(in.min),
-  max(in.max),
-  kgroup_start(in.kgroup_start)
+  max(in.max)
 {
   for(unsigned i=0; i<in.kernels.size(); ++i) kernels.push_back( new KernelFunctions( in.kernels[i] ) );
 }
@@ -64,15 +63,13 @@ void PammObject::setup( const std::string& filename, const double& reg, const st
     else pos[i]->setDomain( min[i], max[i] );
   }
 
-  ifile.open(filename); ifile.allowIgnoredFields();
-  kernels.resize(0); kgroup_start.resize(0); kgroup_start.push_back(0);
+  ifile.open(filename); ifile.allowIgnoredFields(); kernels.resize(0); 
   for(unsigned k=0;; ++k) {
     KernelFunctions* kk = KernelFunctions::read( &ifile, false, valnames );
     if( !kk ) break ;
     kk->normalize( pos );
     kernels.push_back( kk );
     ifile.scanField();
-    kgroup_start.push_back( kernels.size() );
   }
   ifile.close();
   for(unsigned i=0; i<valnames.size(); ++i) delete pos[i];
@@ -89,19 +86,13 @@ void PammObject::evaluate( const std::vector<double>& invar, std::vector<double>
   }
 
   // Evaluate the set of kernels
-  double denom=regulariser; unsigned ikernel=0;
-  std::vector<double> tmpder( der[0].size() ), dderiv( der[0].size(), 0 );
-  for(unsigned i=0; i<kgroup_start.size()-1; ++i) {
-    outvals[i]=0;
-    for(unsigned k=kgroup_start[i]; k<kgroup_start[i+1]; ++k) {
-      outvals[i] += kernels[ikernel]->evaluate( pos, tmpder );
-      denom+=outvals[i];
-      for(unsigned j=0; j<der[i].size(); ++j) { der[i][j] += tmpder[j]; dderiv[j] += tmpder[j]; }
-      ikernel++;
-    }
+  double denom=regulariser; std::vector<double> dderiv( der[0].size(), 0 );
+  for(unsigned i=0; i<kernels.size(); ++i) {
+      outvals[i]=kernels[i]->evaluate( pos, der[i] ); denom+=outvals[i];
+      for(unsigned j=0; j<der[i].size(); ++j) dderiv[j] += der[i][j]; 
   }
   // Evaluate the set of derivatives
-  for(unsigned i=0; i<kgroup_start.size()-1; ++i) {
+  for(unsigned i=0; i<kernels.size(); ++i) {
     outvals[i]/=denom;
     for(unsigned j=0; j<der[i].size(); ++j) der[i][j]=der[i][j]/denom - outvals[i]*dderiv[j]/denom;
   }
