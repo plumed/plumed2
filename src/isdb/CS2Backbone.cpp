@@ -35,7 +35,7 @@
 #include <iterator>
 #include <sstream>
 
-#include "Meta.h"
+#include "MetainferenceBase.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "tools/OpenMP.h"
@@ -386,7 +386,7 @@ private:
   }
 };
 
-class CS2Backbone : public Meta {
+class CS2Backbone : public MetainferenceBase {
   struct Fragment {
     vector<Value*> comp;
     vector<double> exp_cs;
@@ -502,7 +502,7 @@ PLUMED_REGISTER_ACTION(CS2Backbone,"CS2BACKBONE")
 void CS2Backbone::registerKeywords( Keywords& keys ) {
   componentsAreNotOptional(keys);
   useCustomisableComponents(keys);
-  Meta::registerKeywords( keys );
+  MetainferenceBase::registerKeywords( keys );
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
   keys.add("compulsory","DATADIR","data/","The folder with the experimental chemical shifts.");

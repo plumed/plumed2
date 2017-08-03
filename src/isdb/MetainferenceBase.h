@@ -19,15 +19,15 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_isdb_Meta_h
-#define __PLUMED_isdb_Meta_h
+#ifndef __PLUMED_isdb_MetainferenceBase_h
+#define __PLUMED_isdb_MetainferenceBase_h
 
 #include "core/ActionWithValue.h"
 #include "core/ActionAtomistic.h"
 #include "core/ActionWithArguments.h"
 #include "tools/Random.h"
 
-#define PLUMED_METAINF_INIT(ao) Action(ao),Meta(ao)
+#define PLUMED_METAINF_INIT(ao) Action(ao),MetainferenceBase(ao)
 
 namespace PLMD {
 namespace isdb {
@@ -38,7 +38,7 @@ This is the abstract base class to use for implementing new ISDB Metainference a
 information as to how to go about implementing a new Metainference action.
 */
 
-class Meta :
+class MetainferenceBase :
   public ActionAtomistic,
   public ActionWithArguments,
   public ActionWithValue
@@ -163,8 +163,8 @@ private:
 
 public:
   static void registerKeywords( Keywords& keys );
-  explicit Meta(const ActionOptions&);
-  ~Meta();
+  explicit MetainferenceBase(const ActionOptions&);
+  ~MetainferenceBase();
   void Selector();
   unsigned getNarg();
   void get_weights(double &fact, double &var_fact);
@@ -192,59 +192,59 @@ public:
 };
 
 inline
-unsigned Meta::getNarg()
+unsigned MetainferenceBase::getNarg()
 {
   return narg;
 }
 
 inline
-void Meta::setMetaDer(const unsigned index, const double der)
+void MetainferenceBase::setMetaDer(const unsigned index, const double der)
 {
   metader_[index] = der;
 }
 
 inline
-double Meta::getMetaDer(const unsigned index)
+double MetainferenceBase::getMetaDer(const unsigned index)
 {
   return metader_[index];
 }
 
 inline
-double Meta::getCalcData(const unsigned index)
+double MetainferenceBase::getCalcData(const unsigned index)
 {
   return calc_data_[index];
 }
 
 inline
-void Meta::setCalcData(const unsigned index, const double datum)
+void MetainferenceBase::setCalcData(const unsigned index, const double datum)
 {
   calc_data_[index] = datum;
 }
 
 inline
-void Meta::setCalcData(const std::vector<double>& data)
+void MetainferenceBase::setCalcData(const std::vector<double>& data)
 {
   for(unsigned i=0; i<data.size(); i++) calc_data_[i] = data[i];
 }
 
 inline
-void Meta::setParameters(const std::vector<double>& input) {
+void MetainferenceBase::setParameters(const std::vector<double>& input) {
   if(narg!=input.size()) error("The number of experimental values must be the same of NDATA");
   for(unsigned i=0; i<input.size(); i++) parameters.push_back(input[i]);
 }
 
 inline
-void Meta::setParameter(const unsigned index, const double input) {
+void MetainferenceBase::setParameter(const unsigned index, const double input) {
   parameters.push_back(input);
 }
 
 inline
-void Meta::setScore(const double score) {
+void MetainferenceBase::setScore(const double score) {
   valueScore->set(score);
 }
 
 inline
-void Meta::setDerivatives() {
+void MetainferenceBase::setDerivatives() {
   if(narg!=parameters.size()) {
     std::string num1; Tools::convert(parameters.size(),num1);
     std::string num2; Tools::convert(narg,num2);
@@ -266,12 +266,12 @@ void Meta::setDerivatives() {
 }
 
 inline
-void Meta::turnOnDerivatives() {
+void MetainferenceBase::turnOnDerivatives() {
   ActionWithValue::turnOnDerivatives();
 }
 
 inline
-unsigned Meta::getNumberOfDerivatives() {
+unsigned MetainferenceBase::getNumberOfDerivatives() {
   if( getNumberOfAtoms()>0 ) {
     return 3*getNumberOfAtoms() + 9 + getNumberOfArguments();
   }
@@ -279,19 +279,19 @@ unsigned Meta::getNumberOfDerivatives() {
 }
 
 inline
-void Meta::lockRequests() {
+void MetainferenceBase::lockRequests() {
   ActionAtomistic::lockRequests();
   ActionWithArguments::lockRequests();
 }
 
 inline
-void Meta::unlockRequests() {
+void MetainferenceBase::unlockRequests() {
   ActionAtomistic::unlockRequests();
   ActionWithArguments::unlockRequests();
 }
 
 inline
-void Meta::calculateNumericalDerivatives( ActionWithValue* a ) {
+void MetainferenceBase::calculateNumericalDerivatives( ActionWithValue* a ) {
   if( getNumberOfArguments()>0 ) {
     ActionWithArguments::calculateNumericalDerivatives( a );
   }
@@ -308,7 +308,7 @@ void Meta::calculateNumericalDerivatives( ActionWithValue* a ) {
 }
 
 inline
-void Meta::apply() {
+void MetainferenceBase::apply() {
   bool wasforced=false; forcesToApply.assign(forcesToApply.size(),0.0);
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     if( getPntrToComponent(i)->applyForce( forces ) ) {
@@ -323,12 +323,12 @@ void Meta::apply() {
 }
 
 inline
-void Meta::setArgDerivatives(Value *v, const double &d) {
+void MetainferenceBase::setArgDerivatives(Value *v, const double &d) {
   v->addDerivative(0,d);
 }
 
 inline
-void Meta::setAtomsDerivatives(Value*v, const unsigned i, const Vector&d) {
+void MetainferenceBase::setAtomsDerivatives(Value*v, const unsigned i, const Vector&d) {
   const unsigned noa=getNumberOfArguments();
   v->addDerivative(noa+3*i+0,d[0]);
   v->addDerivative(noa+3*i+1,d[1]);
@@ -336,7 +336,7 @@ void Meta::setAtomsDerivatives(Value*v, const unsigned i, const Vector&d) {
 }
 
 inline
-void Meta::setBoxDerivatives(Value* v,const Tensor&d) {
+void MetainferenceBase::setBoxDerivatives(Value* v,const Tensor&d) {
   const unsigned noa=getNumberOfArguments();
   const unsigned nat=getNumberOfAtoms();
   v->addDerivative(noa+3*nat+0,d(0,0));

@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Meta.h"
+#include "MetainferenceBase.h"
 #include "core/ActionRegister.h"
 #include "tools/NeighborList.h"
 #include "tools/OpenMP.h"
@@ -68,7 +68,7 @@ PRINT ARG=noes.* FILE=colvar
 //+ENDPLUMEDOC
 
 class NOE :
-  public Meta
+  public MetainferenceBase
 {
 private:
   bool             pbc;
@@ -88,7 +88,7 @@ PLUMED_REGISTER_ACTION(NOE,"NOE")
 void NOE::registerKeywords( Keywords& keys ) {
   componentsAreNotOptional(keys);
   useCustomisableComponents(keys);
-  Meta::registerKeywords(keys);
+  MetainferenceBase::registerKeywords(keys);
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.add("numbered","GROUPA","the atoms involved in each of the contacts you wish to calculate. "
            "Keywords like GROUPA1, GROUPA2, GROUPA3,... should be listed and one contact will be "

@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Meta.h"
+#include "MetainferenceBase.h"
 #include "core/PlumedMain.h"
 #include "tools/File.h"
 #include "tools/OpenMP.h"
@@ -32,7 +32,7 @@ using namespace std;
 namespace PLMD {
 namespace isdb {
 
-void Meta::registerKeywords( Keywords& keys ) {
+void MetainferenceBase::registerKeywords( Keywords& keys ) {
   Action::registerKeywords(keys);
   ActionAtomistic::registerKeywords(keys);
   ActionWithValue::registerKeywords(keys);
@@ -86,7 +86,7 @@ void Meta::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("ftilde",       "GENERIC",      "ensemble average estimator");
 }
 
-Meta::Meta(const ActionOptions&ao):
+MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao),
   ActionWithArguments(ao),
@@ -528,20 +528,20 @@ Meta::Meta(const ActionOptions&ao):
   log<<"\n";
 }
 
-Meta::~Meta()
+MetainferenceBase::~MetainferenceBase()
 {
   if(sfile_.isOpen()) sfile_.close();
 }
 
-void Meta::Selector()
+void MetainferenceBase::Selector()
 {
   iselect = 0;
   // set the value of selector for  REM-like stuff
   if(selector_.length()>0) iselect = static_cast<unsigned>(plumed.passMap[selector_]);
 }
 
-double Meta::getEnergySP(const vector<double> &mean, const vector<double> &sigma,
-                         const double scale, const double offset)
+double MetainferenceBase::getEnergySP(const vector<double> &mean, const vector<double> &sigma,
+                                      const double scale, const double offset)
 {
   const double scale2 = scale*scale;
   const double sm2    = sigma_mean2_[0];
@@ -565,8 +565,8 @@ double Meta::getEnergySP(const vector<double> &mean, const vector<double> &sigma
   return kbt_ * ene;
 }
 
-double Meta::getEnergySPE(const vector<double> &mean, const vector<double> &sigma,
-                          const double scale, const double offset)
+double MetainferenceBase::getEnergySPE(const vector<double> &mean, const vector<double> &sigma,
+                                       const double scale, const double offset)
 {
   const double scale2 = scale*scale;
   double ene = 0.0;
@@ -587,8 +587,8 @@ double Meta::getEnergySPE(const vector<double> &mean, const vector<double> &sigm
   return kbt_ * ene;
 }
 
-double Meta::getEnergyMIGEN(const vector<double> &mean, const vector<double> &ftilde, const vector<double> &sigma,
-                            const double scale, const double offset)
+double MetainferenceBase::getEnergyMIGEN(const vector<double> &mean, const vector<double> &ftilde, const vector<double> &sigma,
+    const double scale, const double offset)
 {
   double ene = 0.0;
   #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(ene)
@@ -615,8 +615,8 @@ double Meta::getEnergyMIGEN(const vector<double> &mean, const vector<double> &ft
   return kbt_ * ene;
 }
 
-double Meta::getEnergyGJ(const vector<double> &mean, const vector<double> &sigma,
-                         const double scale, const double offset)
+double MetainferenceBase::getEnergyGJ(const vector<double> &mean, const vector<double> &sigma,
+                                      const double scale, const double offset)
 {
   const double scale2  = scale*scale;
   const double inv_s2  = 1./(sigma[0]*sigma[0] + scale2*sigma_mean2_[0]);
@@ -641,8 +641,8 @@ double Meta::getEnergyGJ(const vector<double> &mean, const vector<double> &sigma
   return kbt_ * ene;
 }
 
-double Meta::getEnergyGJE(const vector<double> &mean, const vector<double> &sigma,
-                          const double scale, const double offset)
+double MetainferenceBase::getEnergyGJE(const vector<double> &mean, const vector<double> &sigma,
+                                       const double scale, const double offset)
 {
   const double scale2 = scale*scale;
 
@@ -665,7 +665,7 @@ double Meta::getEnergyGJE(const vector<double> &mean, const vector<double> &sigm
   return kbt_ * ene;
 }
 
-void Meta::doMonteCarlo(const vector<double> &mean_)
+void MetainferenceBase::doMonteCarlo(const vector<double> &mean_)
 {
   if(getStep()%MCstride_!=0||getExchangeStep()) return;
 
@@ -927,8 +927,8 @@ void Meta::doMonteCarlo(const vector<double> &mean_)
    in the Monte-Carlo
 */
 
-double Meta::getEnergyForceSP(const vector<double> &mean, const vector<double> &dmean_x,
-                              const vector<double> &dmean_b)
+double MetainferenceBase::getEnergyForceSP(const vector<double> &mean, const vector<double> &dmean_x,
+    const vector<double> &dmean_b)
 {
   const double scale2 = scale_*scale_;
   const double sm2    = sigma_mean2_[0];
@@ -973,8 +973,8 @@ double Meta::getEnergyForceSP(const vector<double> &mean, const vector<double> &
   return kbt_*ene;
 }
 
-double Meta::getEnergyForceSPE(const vector<double> &mean, const vector<double> &dmean_x,
-                               const vector<double> &dmean_b)
+double MetainferenceBase::getEnergyForceSPE(const vector<double> &mean, const vector<double> &dmean_x,
+    const vector<double> &dmean_b)
 {
   const double scale2 = scale_*scale_;
   vector<double> f(narg+1,0);
@@ -1018,8 +1018,8 @@ double Meta::getEnergyForceSPE(const vector<double> &mean, const vector<double> 
   return kbt_*ene;
 }
 
-double Meta::getEnergyForceGJ(const vector<double> &mean, const vector<double> &dmean_x,
-                              const vector<double> &dmean_b)
+double MetainferenceBase::getEnergyForceGJ(const vector<double> &mean, const vector<double> &dmean_x,
+    const vector<double> &dmean_b)
 {
   const double scale2 = scale_*scale_;
   double inv_s2=0.;
@@ -1052,8 +1052,8 @@ double Meta::getEnergyForceGJ(const vector<double> &mean, const vector<double> &
   return kbt_*ene;
 }
 
-double Meta::getEnergyForceGJE(const vector<double> &mean, const vector<double> &dmean_x,
-                               const vector<double> &dmean_b)
+double MetainferenceBase::getEnergyForceGJE(const vector<double> &mean, const vector<double> &dmean_x,
+    const vector<double> &dmean_b)
 {
   const double scale2 = scale_*scale_;
   vector<double> inv_s2(sigma_.size(),0.);
@@ -1086,7 +1086,7 @@ double Meta::getEnergyForceGJE(const vector<double> &mean, const vector<double> 
   return kbt_*ene;
 }
 
-double Meta::getEnergyForceMIGEN(const vector<double> &mean, const vector<double> &dmean_x, const vector<double> &dmean_b)
+double MetainferenceBase::getEnergyForceMIGEN(const vector<double> &mean, const vector<double> &dmean_x, const vector<double> &dmean_b)
 {
   vector<double> inv_s2(sigma_.size(),0.);
   vector<double> dev(sigma_.size(),0.);
@@ -1127,7 +1127,7 @@ double Meta::getEnergyForceMIGEN(const vector<double> &mean, const vector<double
   return kbt_*ene;
 }
 
-void Meta::get_weights(double &fact, double &var_fact)
+void MetainferenceBase::get_weights(double &fact, double &var_fact)
 {
   const double dnrep    = static_cast<double>(nrep_);
   const double ave_fact = 1.0/dnrep;
@@ -1177,7 +1177,7 @@ void Meta::get_weights(double &fact, double &var_fact)
   }
 }
 
-void Meta::get_sigma_mean(const double fact, const double var_fact, const vector<double> &mean)
+void MetainferenceBase::get_sigma_mean(const double fact, const double var_fact, const vector<double> &mean)
 {
   const double dnrep    = static_cast<double>(nrep_);
   const double ave_fact = 1.0/dnrep;
@@ -1259,7 +1259,7 @@ void Meta::get_sigma_mean(const double fact, const double var_fact, const vector
   sigma_mean2_ = sigma_mean2_tmp;
 }
 
-void Meta::replica_averaging(const double fact, vector<double> &mean, vector<double> &dmean_b)
+void MetainferenceBase::replica_averaging(const double fact, vector<double> &mean, vector<double> &dmean_b)
 {
   if(master) {
     for(unsigned i=0; i<narg; ++i) mean[i] = fact*calc_data_[i];
@@ -1273,7 +1273,7 @@ void Meta::replica_averaging(const double fact, vector<double> &mean, vector<dou
   if(firstTime) {ftilde_ = mean; firstTime = false;}
 }
 
-double Meta::getScore(const vector<double> &mean, const vector<double> &dmean_x, const vector<double> &dmean_b)
+double MetainferenceBase::getScore(const vector<double> &mean, const vector<double> &dmean_x, const vector<double> &dmean_b)
 {
   // calculate bias and forces
   double ene = 0;
@@ -1298,7 +1298,7 @@ double Meta::getScore(const vector<double> &mean, const vector<double> &dmean_x,
   return ene;
 }
 
-void Meta::writeStatus()
+void MetainferenceBase::writeStatus()
 {
   sfile_.rewind();
   sfile_.printField("time",getTimeStep()*getStep());
