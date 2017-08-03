@@ -63,7 +63,7 @@ void PammObject::setup( const std::string& filename, const double& reg, const st
     else pos[i]->setDomain( min[i], max[i] );
   }
 
-  ifile.open(filename); ifile.allowIgnoredFields(); kernels.resize(0); 
+  ifile.open(filename); ifile.allowIgnoredFields(); kernels.resize(0);
   for(unsigned k=0;; ++k) {
     KernelFunctions* kk = KernelFunctions::read( &ifile, false, valnames );
     if( !kk ) break ;
@@ -88,8 +88,8 @@ void PammObject::evaluate( const std::vector<double>& invar, std::vector<double>
   // Evaluate the set of kernels
   double denom=regulariser; std::vector<double> dderiv( der[0].size(), 0 );
   for(unsigned i=0; i<kernels.size(); ++i) {
-      outvals[i]=kernels[i]->evaluate( pos, der[i] ); denom+=outvals[i];
-      for(unsigned j=0; j<der[i].size(); ++j) dderiv[j] += der[i][j]; 
+    outvals[i]=kernels[i]->evaluate( pos, der[i] ); denom+=outvals[i];
+    for(unsigned j=0; j<der[i].size(); ++j) dderiv[j] += der[i][j];
   }
   // Evaluate the set of derivatives
   for(unsigned i=0; i<kernels.size(); ++i) {
