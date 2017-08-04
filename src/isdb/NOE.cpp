@@ -81,6 +81,7 @@ public:
   ~NOE();
   void calculate_simple();
   void calculate();
+  void update();
 };
 
 PLUMED_REGISTER_ACTION(NOE,"NOE")
@@ -327,6 +328,12 @@ void NOE::calculate()
     setBoxDerivatives(val, dervir);
   }
 }
+
+void NOE::update() {
+  // write status file
+  if(write_stride_>0&& (getStep()%write_stride_==0 || getCPT()) ) writeStatus();
+}
+
 
 }
 }

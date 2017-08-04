@@ -46,6 +46,7 @@ class MetainferenceBase :
 public:
   // activate metainference
   bool doscore_;
+  unsigned write_stride_;
 
 private:
   std::vector<double> forces;
@@ -118,7 +119,6 @@ private:
   std::vector<Value*> valueFtilde;
 
   // restart
-  unsigned write_stride_;
   OFile    sfile_;
 
   // others
