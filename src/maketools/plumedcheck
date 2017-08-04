@@ -335,18 +335,35 @@ BEGINFILE{
 # DOC: way the manual is generated, a cltool cannot have the same name of an action.
       if(doc in plumed_doc) error("multi_doc","doc " doc " already at "plumed_doc[action]);
       plumed_doc[doc]=FILENAME ":" FNR;
-      switch($(NF-1)){
-      case "TOOLS":
-        plumed_doc_cltools[doc]=FILENAME ":" FNR;
-        information("documented_cltool","doc " doc);
-        break;
-      case "INTERNAL":
-        plumed_doc_internal[doc]=FILENAME ":" FNR;
-        information("documented_internal","doc " doc);
-      break;
-      default:
-        plumed_doc_action[doc]=FILENAME ":" FNR;
-        information("documented_action","doc " doc);
+      n=split($(NF-1),array,"_");
+      if(n==1) {
+        switch($(NF-1)){
+        case "TOOLS":
+          plumed_doc_cltools[doc]=FILENAME ":" FNR;
+          information("documented_cltool","doc " doc);
+          break;
+        case "INTERNAL":
+          plumed_doc_internal[doc]=FILENAME ":" FNR;
+          information("documented_internal","doc " doc);
+          break;
+        default:
+          plumed_doc_action[doc]=FILENAME ":" FNR;
+          information("documented_action","doc " doc);
+        }
+      } else {
+        switch(array[2]){
+        case "TOOLS":
+          plumed_doc_cltools[doc]=FILENAME ":" FNR;
+          information("documented_cltool","doc " doc);
+          break;
+        case "INTERNAL":
+          plumed_doc_internal[doc]=FILENAME ":" FNR;
+          information("documented_internal","doc " doc);
+          break;
+        default:
+          plumed_doc_action[doc]=FILENAME ":" FNR;
+          information("documented_action","doc " doc);
+        }
       }
     }
 
