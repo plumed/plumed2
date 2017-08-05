@@ -58,7 +58,9 @@ can also be stored as components. The two sets of components can then be used to
 either a scoring function as in \cite Robustelli:2010dn \cite Granata:2013dk, using
 the keyword CAMSHIFT or to calculate ensemble averaged chemical shift as in \cite Camilloni:2012je
 \cite Camilloni:2013hs (see \ref ENSEMBLE, \ref STATS and \ref RESTRAINT). Finally they can
-also be used as input for \ref METAINFERENCE, \cite Bonomi:2016ip .
+also be used as input for \ref METAINFERENCE, \cite Bonomi:2016ip . In the current implementation there is
+no need to pass the data to \ref METAINFERENCE because \ref CS2BACKBONE can internally enable Metainference
+using the keywork DOSCORE.
 
 CamShift calculation is relatively heavy because it often uses a large number of atoms, in order
 to make it faster it is currently parallelised with \ref Openmp.
@@ -68,7 +70,7 @@ increase the accuracy of the constraint algorithm due to the increased strain on
 In the case of GROMACS it is safer to use lincs-iter=2 and lincs-order=6.
 
 In general the system for which chemical shifts are calculated must be completly included in
-ATOMS and a TEMPLATE pdb file for the same atoms should be provided as well in the folder DATA.
+ATOMS and a TEMPLATE pdb file for the same atoms should be provided as well in the folder DATADIR.
 The atoms are made automatically whole unless NOPBC is used, in particular if the system is made of
 by multiple chains it is usually better to use NOPBC and make the molecule whole \ref WHOLEMOLECULES
 selecting an appropriate order.
@@ -104,10 +106,10 @@ protonation of GLU and ASP. Non-standard amino acids and other molecules are not
 they can be named UNK. If multiple chains are present the chain identifier must be in the standard PDB format,
 together with the TER keyword at the end of each chain.
 
-One more standard file is also needed in the folder DATA: camshift.db. This file includes all the CamShift parameters
-and can be found in regtest/basic/rt45/data/ .
+One more standard file is also needed in the folder DATADIR: camshift.db. This file includes all the CamShift parameters
+and can be found in regtest/isdb/rt-cs2backbone/data/ .
 
-All the above files must be in a single folder that must be specified with the keyword DATA.
+All the above files must be in a single folder that must be specified with the keyword DATADIR.
 
 Additional material and examples can be also found in the tutorial \ref belfast-9
 
@@ -119,7 +121,7 @@ in NMR driven Metadynamics \cite Granata:2013dk :
 \plumedfile
 whole: GROUP ATOMS=2612-2514:-1,961-1:-1,2466-962:-1,2513-2467:-1
 WHOLEMOLECULES ENTITY0=whole
-cs: CS2BACKBONE ATOMS=1-2612 NRES=176 DATA=../data/ TEMPLATE=template.pdb CAMSHIFT NOPBC
+cs: CS2BACKBONE ATOMS=1-2612 NRES=176 DATADIR=../data/ TEMPLATE=template.pdb CAMSHIFT NOPBC
 metad: METAD ARG=cs HEIGHT=0.5 SIGMA=0.1 PACE=200 BIASFACTOR=10
 PRINT ARG=cs,metad.bias FILE=COLVAR STRIDE=100
 \endplumedfile
@@ -127,13 +129,23 @@ PRINT ARG=cs,metad.bias FILE=COLVAR STRIDE=100
 In this second example the chemical shifts are used as replica-averaged restrained as in \cite Camilloni:2012je \cite Camilloni:2013hs.
 
 \plumedfile
-cs: CS2BACKBONE ATOMS=1-174 DATA=data/ NRES=13
+cs: CS2BACKBONE ATOMS=1-174 DATADIR=data/ NRES=13
 encs: ENSEMBLE ARG=(cs\.hn_.*),(cs\.nh_.*)
 stcs: STATS ARG=encs.* SQDEVSUM PARARG=(cs\.exphn_.*),(cs\.expnh_.*)
 RESTRAINT ARG=stcs.sqdevsum AT=0 KAPPA=0 SLOPE=24
 
 PRINT ARG=(cs\.hn_.*),(cs\.nh_.*) FILE=RESTRAINT STRIDE=100
 
+\endplumedfile
+
+This third example show how to use chemical shifts to calculate a \ref METAINFERENCE score .
+
+\plumedfile
+cs: CS2BACKBONE ATOMS=1-174 DATADIR=data/ NRES=13 DOSCORE NDATA=24
+csbias: BIASVALUE ARG=cs
+
+PRINT ARG=(cs\.hn_.*),(cs\.nh_.*) FILE=CS.dat STRIDE=1000
+PRINT ARG=cs.score FILE=BIAS STRIDE=100
 \endplumedfile
 
 */

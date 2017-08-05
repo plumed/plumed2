@@ -45,19 +45,20 @@ calculated in pairs, transformed in 1/r^6, summed and saved as components.
 NOE() = (\frac{1}{N_{eq}}\sum_j^{N_{eq}} (\frac{1}{r_j^6}))
 \f]
 
-Intensities can then in principle ensemble averaged using \ref ENSEMBLE and used to
-calculate a scoring function for example with \ref METAINFERENCE.
+NOE can be used to calculate a Metainference score over one or more replicas using the intrinsic implementation
+of \ref METAINFERENCE that is activated by DOSCORE.
 
 \par Examples
 In the following examples three noes are defined, the first is calculated based on the distances
 of atom 1-2 and 3-2; the second is defined by the distance 5-7 and the third by the distances
-4-15,4-16,8-15,8-16.
+4-15,4-16,8-15,8-16. \ref METAINFERENCE is activated using DOSCORE and NDATA.
 
 \plumedfile
 NOE ...
 GROUPA1=1,3 GROUPB1=2,2
 GROUPA2=5 GROUPB2=7
 GROUPA3=4,4,8,8 GROUPB3=15,16,15,16
+DOSCORE NDATA=3
 LABEL=noes
 ... NOE
 
