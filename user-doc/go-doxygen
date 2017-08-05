@@ -2,6 +2,8 @@
 
 source ../sourceme.sh
 
+LISTMORE=`ls *PP.md | grep -wvFf basic.list`
+
 LIST="
  IntroductionPP.md
  ChangeLogPP.md
@@ -14,6 +16,7 @@ LIST="
  AnalysisPP.md
  BiasPP.md
  AdditionalModulesPP.md
+ $LISTMORE
  CommandLineToolsPP.md
  MiscelaneousPP.md
    RegexPP.md
@@ -23,6 +26,8 @@ LIST="
  PerformancesPP.md
  GlossaryPP.md
  automatic tutorials tutorials/others"
+
+echo $LIST
 
 {
   cat Doxyfile
@@ -81,7 +86,7 @@ cd latex
 
 # this is a workaround for a problem on the linux workstation
 # where I compile the manual - GB
-sed -i 's/pdfencoding=unicode/unicode/g' refman.tex
+sed -ie 's/pdfencoding=unicode/unicode/g' refman.tex
 make -i
 cp refman.pdf ../manual.pdf
 
