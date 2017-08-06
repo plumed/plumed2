@@ -1164,28 +1164,7 @@ void CS2Backbone::calculate()
 
   if(doscore_) {
     /* Metainference */
-    /* 1) collect weights */
-    double fact = 0.;
-    double var_fact = 0.;
-    get_weights(fact, var_fact);
-
-    /* 2) calculate average */
-    vector<double> mean(getNarg(),0);
-    // this is the derivative of the mean with respect to the argument
-    vector<double> dmean_x(getNarg(),fact);
-    // this is the derivative of the mean with respect to the bias
-    vector<double> dmean_b(getNarg(),0);
-    // calculate it
-    replica_averaging(fact, mean, dmean_b);
-
-    /* 3) calculates parameters */
-    get_sigma_mean(fact, var_fact, mean);
-
-    /* 4) run monte carlo */
-    doMonteCarlo(mean);
-
-    /* 5) calculate score */
-    double score = getScore(mean, dmean_x, dmean_b);
+    double score = getScore();
     setScore(score);
 
     /* calculate final derivatives */

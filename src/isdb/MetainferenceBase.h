@@ -175,7 +175,7 @@ public:
   void setParameter(const unsigned index, const double input);
   void setCalcData(const unsigned index, const double datum);
   void setCalcData(const std::vector<double>& data);
-  double getScore(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
+  double getScore();
   void setScore(const double score);
   void setDerivatives();
   double getMetaDer(const unsigned index);
