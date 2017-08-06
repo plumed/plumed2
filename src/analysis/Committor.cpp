@@ -147,7 +147,7 @@ void Committor::calculate() {
   // check if current configuration belongs to a basin
   for(unsigned b=0; b<nbasins; ++b) {
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      if(getArgument(i)>lowerlimits[b][i]&&getArgument(i)<upperlimits[b][i]) {
+      if(getArgumentScalar(i)>lowerlimits[b][i]&&getArgumentScalar(i)<upperlimits[b][i]) {
         inbasin[b]*=1;
       } else {
         inbasin[b]*=0;
@@ -165,7 +165,7 @@ void Committor::calculate() {
         ofile.printField("time",getTime());
         for(unsigned i=0; i<getNumberOfArguments(); i++) {
           ofile.fmtField(fmt);
-          ofile.printField( getPntrToArgument(i), getArgument(i) );
+          ofile.printField( getPntrToArgument(i), getArgumentScalar(i) );
         }
         ofile.printField("basin", static_cast<int> (b+1));
         ofile.printField();

@@ -165,7 +165,7 @@ void Mapping::buildCurrentTaskList( std::vector<unsigned>& tflags ) const {
 }
 
 void Mapping::calculate(){
-  plumed_dbg_assert( !done_over_stream && getFullNumberOfTasks()>0 ); 
+  plumed_dbg_assert( !actionInChain() && getFullNumberOfTasks()>0 ); 
   runAllTasks();
 }
 

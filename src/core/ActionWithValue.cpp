@@ -70,6 +70,7 @@ ActionWithValue::ActionWithValue(const ActionOptions&ao):
   timers(false),
   in_a_chain(false),
   nactive_tasks(0),
+  action_to_do_before(NULL),
   action_to_do_after(NULL)
 {
   if( keywords.exists("NUMERICAL_DERIVATIVES") ) parseFlag("NUMERICAL_DERIVATIVES",numericalDerivatives);
@@ -93,10 +94,7 @@ ActionWithValue* ActionWithValue::getActionThatCalculates() {
   // Return this if we have no dependencies
   if( getDependencies().size()==0 ) return this; 
   // Return this if it is an action with argument that is not done over a stream
-  const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
-  if( aa ){
-      if( !aa->done_over_stream ) return this; 
-  }
+  if( !actionInChain() ) return this;
   // Return this if we have no dependencies on any ActionWithValue
   int dd_ind=-1; unsigned i=0;
   for(const auto & p : getDependencies() ){
@@ -148,7 +146,7 @@ bool ActionWithValue::addActionToChain( const std::vector<std::string>& alabels,
       } 
       if( !found ) return false; 
   }
-  action_to_do_after=act; act->addDependency( this ); act->in_a_chain=true;
+  action_to_do_after=act; act->addDependency( this ); act->action_to_do_before=this; 
   return true;
 }
 
@@ -159,7 +157,7 @@ void ActionWithValue::clearInputForces() {
 void ActionWithValue::clearDerivatives( const bool& force ) {
   // This ensures we do not clear derivatives calculated in a chain until the next time the first 
   // action in the chain is called
-  if( !force && in_a_chain ) return ;
+  if( !force && action_to_do_before ) return ;
   unsigned nt = OpenMP::getGoodNumThreads(values); 
   #pragma omp parallel num_threads(nt)
   {
@@ -395,7 +393,7 @@ void ActionWithValue::selectActiveTasks( std::vector<unsigned>& tflags ){
 
 void ActionWithValue::runAllTasks() {
 // Skip this if this is done elsewhere 
-  if( in_a_chain ) return;
+  if( action_to_do_before ) return;
   
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
@@ -509,7 +507,7 @@ void ActionWithValue::prepareForTasks(){
 void ActionWithValue::runTask( const unsigned& task_index, const unsigned& current, const unsigned colno, MultiValue& myvals ) const {
   const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
   if( aa ){
-      if( aa->done_over_stream ) { 
+      if( actionInChain() ) { 
           // Now check if the task takes a matrix as input - if it does do it
           bool do_this_task = ((aa->getPntrToArgument(0))->getRank()==2);
 #ifdef DNDEBUG
@@ -567,17 +565,14 @@ void ActionWithValue::recomputeNumberInStream( unsigned& nquants ) const {
 }
 
 void ActionWithValue::rerunTask( const unsigned& task_index, MultiValue& myvals ) const {
-  for(const auto & p : getDependencies() ){
-     ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>(p);
-     if( aa ){
-        ActionWithValue* av=dynamic_cast<ActionWithValue*>(p);
-        av->rerunTask( task_index, myvals );
-     }
+  if( !action_to_do_before ) {
+      unsigned ncol=0, nmat=0, nquantities = 0; getNumberOfStreamedQuantities( nquantities, ncol, nmat ); 
+      unsigned nderivatives = 0; getNumberOfStreamedDerivatives( nderivatives );
+      if( myvals.getNumberOfValues()!=nquantities || myvals.getNumberOfDerivatives()!=nderivatives ) myvals.resize( nquantities, nderivatives );
+      runTask( task_index, fullTaskList[task_index], myvals ); return;
   }
-  unsigned ncol=0, nmat=0, nquantities = 0; getNumberOfStreamedQuantities( nquantities, ncol, nmat ); 
-  unsigned nderivatives = 0; getNumberOfStreamedDerivatives( nderivatives );
-  if( myvals.getNumberOfValues()!=nquantities || myvals.getNumberOfDerivatives()!=nderivatives ) myvals.resize( nquantities, nderivatives );
-  myvals.setTaskIndex(task_index); performTask( fullTaskList[task_index], myvals );
+  action_to_do_before->rerunTask( task_index, myvals );
+  
 }
 
 void ActionWithValue::gatherAccumulators( const unsigned& taskCode, const MultiValue& myvals, std::vector<double>& buffer ) const {

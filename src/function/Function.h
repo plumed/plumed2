@@ -74,7 +74,7 @@ inline
 void Function::addDerivative( const unsigned& ival, const unsigned& jder, const double& der, MultiValue& myvals ) const {
   if( doNotCalculateDerivatives() ) return ;
 
-  if( done_over_stream ){ 
+  if( actionInChain() ){ 
       unsigned istrn = getPntrToArgument(jder)->getPositionInStream();
       unsigned ostrn = getPntrToOutput(ival)->getPositionInStream();
       for(unsigned k=0;k<myvals.getNumberActive(istrn);++k){ 

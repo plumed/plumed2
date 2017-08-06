@@ -111,42 +111,43 @@ unsigned MultiValue::getNumberOfDerivatives() const {
 
 inline
 double MultiValue::get( const unsigned& ival ) const {
-  plumed_dbg_assert( ival<=values.size() );
+  plumed_dbg_assert( ival<values.size() );
   return values[ival];
 }
 
 inline
 void MultiValue::setValue( const unsigned& ival,  const double& val) {
-  plumed_dbg_assert( ival<=values.size() );
+  plumed_dbg_assert( ival<values.size() );
   values[ival]=val;
 }
 
 inline
 void MultiValue::addValue( const unsigned& ival,  const double& val) {
-  plumed_dbg_assert( ival<=values.size() );
+  plumed_dbg_assert( ival<values.size() );
   values[ival]+=val;
 }
 
 inline
 void MultiValue::addDerivative( const unsigned& ival, const unsigned& jder, const double& der) {
-  plumed_dbg_assert( ival<=values.size() && jder<nderivatives ); atLeastOneSet=true;
+  plumed_dbg_assert( ival<values.size() && jder<nderivatives ); atLeastOneSet=true;
   hasderiv[nderivatives*ival+jder]=true; derivatives[nderivatives*ival+jder] += der;
 }
 
 inline
 void MultiValue::setDerivative( const unsigned& ival, const unsigned& jder, const double& der) {
-  plumed_dbg_assert( ival<=values.size() && jder<nderivatives ); atLeastOneSet=true;
+  plumed_dbg_assert( ival<values.size() && jder<nderivatives ); atLeastOneSet=true;
   hasderiv[nderivatives*ival+jder]=true; derivatives[nderivatives*ival+jder]=der;
 }
 
 inline
 double MultiValue::getDerivative( const unsigned& ival, const unsigned& jder ) const {
-  plumed_dbg_assert( jder<nderivatives && hasderiv[nderivatives*ival+jder] );
+  plumed_dbg_assert( ival<values.size() && jder<nderivatives && hasderiv[nderivatives*ival+jder] );
   return derivatives[nderivatives*ival+jder];
 }
 
 inline
 void MultiValue::updateIndex( const unsigned& ival, const unsigned& jder ) {
+  plumed_dbg_assert( ival<values.size() && jder<nderivatives );
 #ifdef DNDEBUG
   for(unsigned i=0;i<nactive[ival];++i) plumed_dbg_assert( active_list[nderivatives*ival+nactive[ival]]!=jder ); 
 #endif
@@ -155,6 +156,7 @@ void MultiValue::updateIndex( const unsigned& ival, const unsigned& jder ) {
 
 inline
 unsigned MultiValue::getNumberActive( const unsigned& ival ) const {
+  plumed_dbg_assert( ival<nactive.size() );
   return nactive[ival]; 
 }
 

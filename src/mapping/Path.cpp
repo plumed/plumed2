@@ -140,7 +140,7 @@ Path::Path(const ActionOptions&ao):
         if( framep.size()!=getPntrToArgument(0)->getShape()[0] ) error("wrong number of input coordinates");
      }
   } else {
-     if( done_over_stream ) framep.resize( getPntrToArgument(0)->getShape()[0] ); 
+     if( actionInChain() ) framep.resize( getPntrToArgument(0)->getShape()[0] ); 
      else framep.resize( getNumberOfArguments() );
      for(unsigned i=0;i<framep.size();++i) framep[i] = static_cast<double>(i+1);
   } 
@@ -155,7 +155,7 @@ Path::Path(const ActionOptions&ao):
 void Path::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const 
 {
   if( args.size()==1 ){
-      plumed_dbg_assert( done_over_stream );
+      plumed_dbg_assert( actionInChain() );
       double val=exp(-lambda*args[0]); double fram = framep[myvals.getTaskIndex()];
       // Numerator
       addValue( 0, fram*val, myvals ); addDerivative( 0, 0, -lambda*fram*val, myvals );
@@ -180,7 +180,7 @@ void Path::calculateFunction( const std::vector<double>& args, MultiValue& myval
 }
 
 void Path::transformFinalValueAndDerivatives() {
-  if( !done_over_stream || getNumberOfArguments()>1 ) return;
+  if( !actionInChain() || getNumberOfArguments()>1 ) return;
   Value* val0 = getPntrToComponent(0); Value* val1 = getPntrToComponent(1);
   double num = val0->get(), denom = val1->get();
   val0->set( num / denom ); val1->set( -std::log( denom ) / lambda );

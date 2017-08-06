@@ -83,7 +83,7 @@ void Lowest::calculateFunction( const std::vector<double>& args, MultiValue& myv
 }
 
 void Lowest::transformFinalValueAndDerivatives() {
-  if( !done_over_stream || getNumberOfArguments()>1 ) return;
+  if( !actionInChain() || getNumberOfArguments()>1 ) return;
 
   unsigned lind = 0, pves = 0; unsigned aind=0; double lowest = getPntrToArgument(0)->get(0); 
   for(unsigned i=0;i<getNumberOfArguments();++i){

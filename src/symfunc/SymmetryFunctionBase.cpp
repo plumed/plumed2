@@ -258,7 +258,6 @@ Action(ao),
 ActionWithValue(ao),
 ActionWithArguments(ao)
 {
-  done_over_stream=true;
   std::vector<std::string> alabels(1); std::vector<Value*> wval; parseArgumentList("WEIGHT",wval);
   if( wval.size()!=1 ) error("keyword WEIGHT should be provided with the label of a single action"); 
   alabels[0]=(wval[0]->getPntrToAction())->getLabel(); (wval[0]->getPntrToAction())->addActionToChain( alabels, this );
@@ -309,7 +308,7 @@ void SymmetryFunctionBase::addComponentWithDerivatives( const std::string& name 
 }
 
 void SymmetryFunctionBase::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
-  plumed_assert( done_over_stream ); tflags.assign(tflags.size(),1);
+  plumed_assert( actionInChain() ); tflags.assign(tflags.size(),1);
 }
 
 void SymmetryFunctionBase::performTask( const unsigned& current, MultiValue& myvals ) const {

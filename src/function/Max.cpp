@@ -57,7 +57,7 @@ Max::Max( const ActionOptions& ao ) :
 
 void Max::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
   if( args.size()==1 ){
-      plumed_dbg_assert( done_over_stream );
+      plumed_dbg_assert( actionInChain() );
       double val=exp(args[0]/beta); 
       // Numerator 
       addValue( 0, val, myvals ); addDerivative( 0, 0, val/beta, myvals );
@@ -78,7 +78,7 @@ void Max::calculateFunction( const std::vector<double>& args, MultiValue& myvals
 }
 
 void Max::transformFinalValueAndDerivatives() {
-  if( !done_over_stream || getNumberOfArguments()>1 ) return;
+  if( !actionInChain() || getNumberOfArguments()>1 ) return;
   Value* val0 = getPntrToComponent(0); double val = val0->get(); 
   double fval = beta*std::log( val ); val0->set( fval );
   if( !doNotCalculateDerivatives() ){

@@ -84,8 +84,6 @@ private:
   bool serial;
 /// Are we using timers
   bool timers;
-/// Are we in a chain
-  bool in_a_chain;
 /// The stopwatch that times the different parts of the calculation
   ForwardDecl<Stopwatch> stopwatch_fwd;
   Stopwatch& stopwatch=*stopwatch_fwd;
@@ -101,6 +99,8 @@ private:
   std::vector<unsigned> taskFlags;
 /// The buffer that we use (we keep a copy here to avoid resizing)
   std::vector<double> buffer;
+/// Action that must be done before this one
+  ActionWithValue* action_to_do_before;
 /// Actions that must be done after this one
   ActionWithValue* action_to_do_after;
 /// Return the index for the component named name
@@ -310,7 +310,7 @@ bool ActionWithValue::runInSerial() const {
 
 inline
 bool ActionWithValue::actionInChain() const {
-  return in_a_chain;
+  return (action_to_do_before!=NULL);
 }
 
 

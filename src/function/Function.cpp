@@ -43,7 +43,7 @@ Function::Function(const ActionOptions&ao):
 {
   createTasksFromArguments(); nderivatives = getNumberOfArguments();
   // Now create the stream of jobs to work through 
-  if( done_over_stream ){   // getFullNumberOfTasks()>0   // This is for if we have a function that needs to store - needs though GAT
+  if( distinct_arguments.size()>0 ){   // getFullNumberOfTasks()>0   // This is for if we have a function that needs to store - needs though GAT
       std::vector<std::string> alabels;
       for(unsigned i=0;i<getNumberOfArguments();++i){
           bool found=false; std::string mylab = (getPntrToArgument(i)->getPntrToAction())->getLabel();
@@ -104,7 +104,7 @@ void Function::addValueWithDerivatives() {
 
   std::vector<unsigned> shape( getShape() ); 
   if( arg_ends[1]-arg_ends[0]==1 ){
-      if( done_over_stream && !rankOneOutput ) ActionWithValue::addValue( shape ); 
+      if( actionInChain() && !rankOneOutput ) ActionWithValue::addValue( shape ); 
       else ActionWithValue::addValueWithDerivatives( shape ); 
       if(period.size()==1 && period[0]=="NO") setNotPeriodic(); 
       else if(period.size()==2) setPeriodic(period[0],period[1]);
@@ -112,7 +112,7 @@ void Function::addValueWithDerivatives() {
       std::string num; 
       for(unsigned i=0;i<arg_ends.size()-1;++i){
           Tools::convert(i+1,num); 
-          if( done_over_stream && !rankOneOutput ) ActionWithValue::addComponent( "arg_" + num, shape ); 
+          if( actionInChain() && !rankOneOutput ) ActionWithValue::addComponent( "arg_" + num, shape ); 
           else ActionWithValue::addComponentWithDerivatives( "arg_" + num, shape );
           if(period.size()==1 && period[0]=="NO") componentIsNotPeriodic( "arg_" + num ); 
           else if(period.size()==2) componentIsPeriodic("arg_" + num, period[0], period[1]);
@@ -125,13 +125,13 @@ void Function::addComponentWithDerivatives( const std::string& name ) {
 
   std::vector<unsigned> shape( getShape() );
   if( arg_ends[1]-arg_ends[0]==1 ){ 
-      if( done_over_stream && !rankOneOutput ) ActionWithValue::addComponent(name,shape); 
+      if( actionInChain() && !rankOneOutput ) ActionWithValue::addComponent(name,shape); 
       else ActionWithValue::addComponentWithDerivatives(name,shape); 
   } else { 
       std::string num; 
       for(unsigned i=0;i<arg_ends.size()-1;++i){ 
           Tools::convert(i+1,num);
-          if( done_over_stream && !rankOneOutput ) ActionWithValue::addComponent( name + "_arg_" + num, shape ); 
+          if( actionInChain() && !rankOneOutput ) ActionWithValue::addComponent( name + "_arg_" + num, shape ); 
           else ActionWithValue::addComponentWithDerivatives( name + "_arg_" + num, shape ); 
       } 
   }
@@ -139,13 +139,13 @@ void Function::addComponentWithDerivatives( const std::string& name ) {
 
 void Function::calculate(){
   // Everything is done elsewhere
-  if( done_over_stream ) return;
+  if( actionInChain() ) return;
   // This is done if we are calculating a function of multiple cvs
   plumed_dbg_assert( getFullNumberOfTasks()>0 ); runAllTasks(); 
 }
 
 void Function::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
-  if( !done_over_stream ) tflags.assign(tflags.size(),1);
+  if( !actionInChain() ) tflags.assign(tflags.size(),1);
 }
 
 void Function::performTask( const unsigned& current, MultiValue& myvals ) const {
@@ -155,7 +155,7 @@ void Function::performTask( const unsigned& current, MultiValue& myvals ) const 
   calculateFunction( args, myvals ); 
   // And update the dynamic list
   if( doNotCalculateDerivatives() ) return ;
-  if( done_over_stream ) {
+  if( actionInChain() ) {
       for(unsigned i=0;i<distinct_arguments.size();++i){
           unsigned istrn = (distinct_arguments[i]->copyOutput(0))->getPositionInStream();
           for(unsigned k=0;k<myvals.getNumberActive(istrn);++k){
