@@ -43,15 +43,13 @@ class MetainferenceBase :
   public ActionWithArguments,
   public ActionWithValue
 {
-public:
-  // activate metainference
-  bool doscore_;
-  unsigned write_stride_;
-
 private:
   std::vector<double> forces;
   std::vector<double> forcesToApply;
 
+  // activate metainference
+  bool doscore_;
+  unsigned write_stride_;
   // number of experimental data
   unsigned narg;
   // experimental data
@@ -159,6 +157,10 @@ private:
   double getEnergyForceGJE(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
   double getEnergyForceMIGEN(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
   double getCalcData(const unsigned index);
+  void get_weights(double &fact, double &var_fact);
+  void replica_averaging(const double fact, std::vector<double> &mean, std::vector<double> &dmean_b);
+  void get_sigma_mean(const double fact, const double var_fact, const std::vector<double> &mean);
+  void doMonteCarlo(const std::vector<double> &mean);
 
 
 public:
@@ -167,14 +169,12 @@ public:
   ~MetainferenceBase();
   void Selector();
   unsigned getNarg();
-  void get_weights(double &fact, double &var_fact);
-  void replica_averaging(const double fact, std::vector<double> &mean, std::vector<double> &dmean_b);
-  void get_sigma_mean(const double fact, const double var_fact, const std::vector<double> &mean);
-  void doMonteCarlo(const std::vector<double> &mean);
   void setParameters(const std::vector<double>& input);
   void setParameter(const unsigned index, const double input);
   void setCalcData(const unsigned index, const double datum);
   void setCalcData(const std::vector<double>& data);
+  bool getDoScore();
+  unsigned getWstride();
   double getScore();
   void setScore(const double score);
   void setDerivatives();
@@ -190,6 +190,18 @@ public:
   void setAtomsDerivatives(Value*v, const unsigned i, const Vector&d);
   void setBoxDerivatives(Value*v, const Tensor&d);
 };
+
+inline
+bool MetainferenceBase::getDoScore()
+{
+  return doscore_;
+}
+
+inline
+unsigned MetainferenceBase::getWstride()
+{
+  return write_stride_;
+}
 
 inline
 unsigned MetainferenceBase::getNarg()

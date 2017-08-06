@@ -547,7 +547,7 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
   string stringapdb;
 
   parseFlag("CAMSHIFT",camshift);
-  if(camshift&&doscore_) error("It is not possible to use CAMSHIFT together with DOSCORE");
+  if(camshift&&getDoScore()) error("It is not possible to use CAMSHIFT together with DOSCORE");
 
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
@@ -666,7 +666,7 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
     addValueWithDerivatives();
     setNotPeriodic();
   } else {
-    if(doscore_) {
+    if(getDoScore()) {
       index_cs.resize(atom.size(), vector<vector<unsigned> >());
       for(unsigned i=0; i<atom.size(); i++) {
         index_cs[i].resize(atom[i].size(), vector<unsigned>(6));
@@ -679,7 +679,7 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
         std::string num; Tools::convert(res,num);
         for(unsigned at_kind=0; at_kind<6; at_kind++) {
           if(atom[i][a].exp_cs[at_kind]!=0) {
-            if(doscore_) {
+            if(getDoScore()) {
               addComponent(str_cs[at_kind]+num);
               componentIsNotPeriodic(str_cs[at_kind]+num);
               atom[i][a].comp[at_kind] = getPntrToComponent(str_cs[at_kind]+num);
@@ -1135,7 +1135,7 @@ void CS2Backbone::calculate()
           }
           //END OF DIHE
 
-          if(doscore_) {
+          if(getDoScore()) {
             setCalcData(index_cs[s][a][at_kind], cs);
             all_list[s][a][at_kind] = list;
             all_ff[s][a][at_kind] = ff;
@@ -1162,7 +1162,7 @@ void CS2Backbone::calculate()
     if(camshift) for(int i=0; i<getPositions().size(); i++) setAtomsDerivatives(getPntrToValue(),i,omp_deriv[i]);
   }
 
-  if(doscore_) {
+  if(getDoScore()) {
     /* Metainference */
     double score = getScore();
     setScore(score);
@@ -2203,7 +2203,7 @@ void CS2Backbone::xdist_name_map(string & name) {
 
 void CS2Backbone::update() {
   // write status file
-  if(write_stride_>0&& (getStep()%write_stride_==0 || getCPT()) ) writeStatus();
+  if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) writeStatus();
 }
 
 }

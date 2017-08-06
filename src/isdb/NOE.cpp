@@ -165,7 +165,7 @@ NOE::NOE(const ActionOptions&ao):
   if(pbc)      log.printf("  using periodic boundary conditions\n");
   else         log.printf("  without periodic boundary conditions\n");
 
-  if(!doscore_) {
+  if(!getDoScore()) {
     for(unsigned i=0; i<nga.size(); i++) {
       string num; Tools::convert(i,num);
       addComponentWithDerivatives("noe_"+num);
@@ -247,7 +247,7 @@ void NOE::calculate_simple()
 
 void NOE::calculate()
 {
-  if(!doscore_) calculate_simple();
+  if(!getDoScore()) calculate_simple();
   else {
     vector<Vector> deriv(tot_size, Vector{0,0,0});
     const unsigned ngasz=nga.size();
@@ -312,7 +312,7 @@ void NOE::calculate()
 
 void NOE::update() {
   // write status file
-  if(write_stride_>0&& (getStep()%write_stride_==0 || getCPT()) ) writeStatus();
+  if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) writeStatus();
 }
 
 
