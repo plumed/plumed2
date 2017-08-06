@@ -40,6 +40,7 @@ private:
   bool nopbc, components;
   LinkCells linkcells;
   std::vector<unsigned> ablocks;
+  void updateWeightDerivativeIndices( const unsigned& sno, const std::vector<unsigned>& indices, MultiValue& myvals ) const ;
 protected:
   void setLinkCellCutoff( const double& lcut, double tcut=-1.0 );
 public:

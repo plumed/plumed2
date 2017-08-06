@@ -119,6 +119,16 @@ void AdjacencyMatrixBase::calculate(){
   runAllTasks();
 }
 
+void AdjacencyMatrixBase::updateWeightDerivativeIndices( const unsigned& sno, const std::vector<unsigned>& indices, MultiValue& myvals ) const {
+  unsigned w_ind = getPntrToOutput(0)->getPositionInStream();
+  // Update dynamic list indices for central atom
+  myvals.updateIndex( w_ind, 3*indices[0]+0 ); myvals.updateIndex( w_ind, 3*indices[0]+1 ); myvals.updateIndex( w_ind, 3*indices[0]+2 );
+  // Update dynamic list indices for atom forming this bond
+  myvals.updateIndex( w_ind, 3*indices[sno]+0 ); myvals.updateIndex( w_ind, 3*indices[sno]+1 ); myvals.updateIndex( w_ind, 3*indices[sno]+2 );
+  // Update dynamic list indices for virial
+  unsigned base = 3*getNumberOfAtoms(); for(unsigned j=0;j<9;++j) myvals.updateIndex( w_ind, base+j );
+}
+
 void AdjacencyMatrixBase::performTask( const unsigned& current, MultiValue& myvals ) const {
   // Retrieve cells required from link cells
   std::vector<unsigned> cells_required( linkcells.getNumberOfCells() ); unsigned ncells_required=0;
@@ -146,7 +156,12 @@ void AdjacencyMatrixBase::performTask( const unsigned& current, MultiValue& myva
   for(unsigned i=1;i<natoms;++i){
       mypack.setIndex( 1, indices[i] ); mypack.setPosition( 1, atoms[i] );
       double weight = calculateWeight( mypack ); 
-      if( weight<epsilon ) continue;
+      if( weight<epsilon ){
+          if( !doNotCalculateDerivatives() ) {
+              updateWeightDerivativeIndices( i, indices, myvals ); clearMatrixElements( myvals );
+          }
+          continue;
+      }
       // Now set the matrix weight and the vector if required  
       myvals.setValue( getPntrToOutput(0)->getPositionInStream(), weight ); 
       if( components ) {
@@ -176,15 +191,7 @@ void AdjacencyMatrixBase::performTask( const unsigned& current, MultiValue& myva
           }
       } 
       // Update derivatives
-      if( !doNotCalculateDerivatives() ){
-          unsigned w_ind = getPntrToOutput(0)->getPositionInStream();
-          // Update dynamic list indices for central atom
-          myvals.updateIndex( w_ind, 3*indices[0]+0 ); myvals.updateIndex( w_ind, 3*indices[0]+1 ); myvals.updateIndex( w_ind, 3*indices[0]+2 );
-          // Update dynamic list indices for atom forming this bond
-          myvals.updateIndex( w_ind, 3*indices[i]+0 ); myvals.updateIndex( w_ind, 3*indices[i]+1 ); myvals.updateIndex( w_ind, 3*indices[i]+2 );
-          // Update dynamic list indices for virial
-          unsigned base = 3*getNumberOfAtoms(); for(unsigned j=0;j<9;++j) myvals.updateIndex( w_ind, base+j );
-      }
+      if( !doNotCalculateDerivatives() ) updateWeightDerivativeIndices( i, indices, myvals );
       // This does everything in the stream that is done with single matrix elements 
       runTask( myvals.getTaskIndex(), current, indices[i], myvals );
       // Now clear only elements that are not accumulated over whole row

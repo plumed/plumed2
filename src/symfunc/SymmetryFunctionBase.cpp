@@ -39,7 +39,11 @@ void SymmetryFunctionBase::shortcutKeywords( Keywords& keys ) {
                "using the label of another multicolvar");
   keys.add("atoms-4","SPECIESB","this keyword is used for colvars such as the coordination number.  It must appear with SPECIESA.  For a full explanation see "
                "the documentation for that keyword");
-  keys.add("compulsory","SWITCH","the switching function that it used in the construction of the contact matrix");
+  keys.add("compulsory","NN","6","The n parameter of the switching function ");
+  keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
+  keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
+  keys.add("compulsory","R_0","The r_0 parameter of the switching function");
+  keys.add("optional","SWITCH","the switching function that it used in the construction of the contact matrix");
   keys.add("numbered","LESS_THAN","calculate the number of variables that are less than a certain target value. "
                                   "This quantity is calculated using \\f$\\sum_i \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
                                   "is a \\ref switchingfunction.");
@@ -87,8 +91,17 @@ void SymmetryFunctionBase::expandMatrix( const bool& components, const std::stri
       matinp.push_back("GROUP=" + keys.find("SPECIES")->second ); 
   } else if( keys.count("SPECIESA") ) {
       matinp.push_back("GROUPA=" + keys.find("SPECIESA")->second ); matinp.push_back("GROUPB=" + keys.find("SPECIESB")->second );
-  } 
-  matinp.push_back("SWITCH=" + keys.find("SWITCH")->second );
+  }
+  if( keys.count("SWITCH") ) { 
+      matinp.push_back("SWITCH=" + keys.find("SWITCH")->second );
+  } else if( keys.count("R_0") ) {
+      matinp.push_back("R_0=" + keys.find("R_0")->second );
+      matinp.push_back("D_0=" + keys.find("D_0")->second );
+      matinp.push_back("NN=" + keys.find("NN")->second );
+      matinp.push_back("MM=" + keys.find("MM")->second );
+  } else {
+      plumed_merror("could not interpret switching function definition");
+  }
   if( components ) matinp.push_back("COMPONENTS");
   actions.push_back( matinp );
 }

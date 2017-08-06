@@ -41,7 +41,7 @@ namespace symfunc {
 
 class SphericalHarmonic : public SymmetryFunctionBase {
 private:
-  unsigned tmom;
+  int tmom;
   std::vector<double> coeff_poly;
   std::vector<double> normaliz;
   unsigned factorial( const unsigned& n ) const ;
@@ -57,6 +57,10 @@ public:
 };
 
 PLUMED_REGISTER_ACTION(SphericalHarmonic,"SPHERICAL_HARMONIC")
+PLUMED_REGISTER_SHORTCUT(SphericalHarmonic,"SPHERICAL_HARMONIC")
+PLUMED_REGISTER_SHORTCUT(SphericalHarmonic,"Q3")
+PLUMED_REGISTER_SHORTCUT(SphericalHarmonic,"Q4")
+PLUMED_REGISTER_SHORTCUT(SphericalHarmonic,"Q6")
 
 void SphericalHarmonic::shortcutKeywords( Keywords& keys ) {
   SymmetryFunctionBase::shortcutKeywords( keys );
@@ -66,12 +70,65 @@ void SphericalHarmonic::expandShortcut( const std::string& lab, const std::vecto
                                   const std::map<std::string,std::string>& keys,
                                   std::vector<std::vector<std::string> >& actions ) {
   SymmetryFunctionBase::expandMatrix( true, lab, words, keys, actions );
-  SymmetryFunctionBase::expandFunctions( lab, lab + "_n", words, keys, actions );
+  std::vector<std::string> sph_input; sph_input.push_back( lab + ":" ); 
+  sph_input.push_back("SPHERICAL_HARMONIC"); sph_input.push_back("WEIGHT=" + lab + "_mat.w");
+  sph_input.push_back("VECTORS1=" + lab + "_mat.x" ); sph_input.push_back("VECTORS2=" + lab + "_mat.y" ); 
+  sph_input.push_back("VECTORS3=" + lab + "_mat.z" ); int l; 
+  if( words[0]=="Q3" ) { 
+      sph_input.push_back("L=3"); l=3;
+  } else if( words[0]=="Q4" ) {
+      sph_input.push_back("L=4"); l=4;
+  } else if( words[0]=="Q6" ) {
+      sph_input.push_back("L=6"); l=6;
+  } else {
+      plumed_merror("invalid input");
+  }
+  actions.push_back( sph_input );
+
+  // Input for denominator (coord)
+  std::vector<std::string> d_input; d_input.push_back(lab + "_denom:"); d_input.push_back("COORDINATIONNUMBER");
+  d_input.push_back("WEIGHT=" + lab + "_mat.w"); actions.push_back( d_input );
+
+  // Divide all components by coordination numbers
+  for(int i=-l;i<=l;++i){
+      std::string snum; Tools::convert( i, snum ); 
+      // Real part 
+      std::vector<std::string> rm_input; rm_input.push_back(lab + "_rmn-[" + snum + "]:"); 
+      rm_input.push_back("MATHEVAL"); rm_input.push_back("ARG1=" + lab + ".rm-[" + snum + "]"); 
+      rm_input.push_back("ARG2=" + lab + "_denom"); rm_input.push_back("FUNC=x/y"); rm_input.push_back("PERIODIC=NO");
+      actions.push_back(rm_input);
+      // Imaginary part
+      std::vector<std::string> im_input; im_input.push_back(lab + "_imn-[" + snum + "]:");
+      im_input.push_back("MATHEVAL"); im_input.push_back("ARG1=" + lab + ".im-[" + snum + "]");
+      im_input.push_back("ARG2=" + lab + "_denom"); im_input.push_back("FUNC=x/y"); im_input.push_back("PERIODIC=NO");
+      actions.push_back(im_input);
+  }
+
+  // Now calculate the total length of the vector
+  std::vector<std::string> norm_input; 
+  norm_input.push_back(lab +"_norm2:"); 
+  norm_input.push_back("COMBINE"); std::string powstr="POWERS=2";
+  std::string snum, num; unsigned nn=1;
+  for(int i=-l;i<=l;++i){ 
+     Tools::convert( nn, num ); Tools::convert( i, snum ); 
+     norm_input.push_back("ARG" + num + "=" + lab + "_rmn-[" + snum + "]"); 
+     nn++; Tools::convert( nn, num );
+     norm_input.push_back("ARG" + num + "=" + lab + "_imn-[" + snum + "]"); 
+     nn++; 
+     if( i==-l ) powstr += ",2"; else powstr += ",2,2";
+  } 
+  norm_input.push_back("PERIODIC=NO"); norm_input.push_back(powstr); actions.push_back( norm_input );
+  std::vector<std::string> sqrt_input; sqrt_input.push_back(lab +"_norm:"); sqrt_input.push_back("MATHEVAL");
+  sqrt_input.push_back("ARG1=" + lab + "_norm2"); sqrt_input.push_back( "FUNC=sqrt(x)" ); 
+  sqrt_input.push_back("PERIODIC=NO"); actions.push_back( sqrt_input );
+  SymmetryFunctionBase::expandFunctions( lab, lab + "_norm", words, keys, actions );
 }
 
 void SphericalHarmonic::registerKeywords( Keywords& keys ) {
   SymmetryFunctionBase::registerKeywords( keys );
   keys.add("compulsory","L","the value of the angular momentum");
+  keys.addOutputComponent("rm","default","the real parts of the spherical harmonic values with the m value given");
+  keys.addOutputComponent("im","default","the real parts of the spherical harmonic values with the m value given");
 }
 
 unsigned SphericalHarmonic::factorial( const unsigned& n ) const {
@@ -83,13 +140,14 @@ SphericalHarmonic::SphericalHarmonic(const ActionOptions&ao):
   SymmetryFunctionBase(ao)
 {
   parse("L",tmom);
-  for(int i=-tmom;i<tmom;++i){
+  log.printf("  calculating %dth order spherical harmonics \n", tmom);  
+  for(int i=-tmom;i<=tmom;++i){
       std::string num; Tools::convert(i,num);
-      addComponentWithDerivatives( "rm_" + num ); 
+      addComponentWithDerivatives( "rm-[" + num + "]" ); 
   }
-  for(int i=-tmom;i<tmom;++i){
+  for(int i=-tmom;i<=tmom;++i){
       std::string num; Tools::convert(i,num);
-      addComponentWithDerivatives( "im_" + num );
+      addComponentWithDerivatives( "im-[" + num + "]" );
   }
   normaliz.resize( tmom+1 ); 
   for(unsigned i=0;i<=tmom;++i){
@@ -133,7 +191,6 @@ void SphericalHarmonic::compute( const double& val, const Vector& distance, Mult
   std::complex<double> com1( distance[0]/dlen,distance[1]/dlen ), dp_x, dp_y, dp_z; double md, real_z, imag_z;
   std::complex<double> powered = std::complex<double>(1.0,0.0); std::complex<double> ii( 0.0, 1.0 ); 
   Vector myrealvec, myimagvec, real_dz, imag_dz;
-
   // Do stuff for all other m values
   for(unsigned m=1; m<=tmom; ++m) {
     // Calculate Legendre Polynomial

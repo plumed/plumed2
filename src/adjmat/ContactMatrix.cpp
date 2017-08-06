@@ -78,7 +78,11 @@ PLUMED_REGISTER_ACTION(ContactMatrix,"CONTACT_MATRIX")
 
 void ContactMatrix::registerKeywords( Keywords& keys ) {
   AdjacencyMatrixBase::registerKeywords( keys );
-  keys.add("compulsory","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
+  keys.add("compulsory","NN","6","The n parameter of the switching function ");
+  keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
+  keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
+  keys.add("compulsory","R_0","The r_0 parameter of the switching function");
+  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
            "The following provides information on the \\ref switchingfunction that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
 }
@@ -88,9 +92,18 @@ ContactMatrix::ContactMatrix( const ActionOptions& ao ):
   AdjacencyMatrixBase(ao)
 {
   std::string errors, input; parse("SWITCH",input);
-  switchingFunction.set( input, errors ); 
-  if( errors.length()!=0 ) error("problem reading switching function description " + errors);
+     if( input.length()>0 ) {
+     switchingFunction.set( input, errors ); 
+     if( errors.length()!=0 ) error("problem reading switching function description " + errors);
+  } else {
+     double r_0=-1.0, d_0; int nn, mm;
+     parse("NN",nn); parse("MM",mm);
+     parse("R_0",r_0); parse("D_0",d_0);
+     if( r_0<0.0 ) error("you must set a value for R_0");
+     switchingFunction.set(nn,mm,r_0,d_0);
+  }
   // And set the link cell cutoff
+  log.printf("  switching function cutoff is %s \n",switchingFunction.description().c_str() );
   setLinkCellCutoff( switchingFunction.get_dmax() );
 }
 
