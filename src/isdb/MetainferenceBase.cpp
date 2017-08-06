@@ -40,7 +40,6 @@ void MetainferenceBase::registerKeywords( Keywords& keys ) {
   componentsAreNotOptional(keys);
   keys.use("ARG");
   keys.addFlag("DOSCORE",false,"activate metainference");
-  keys.add("compulsory","NDATA","0","the number of data given in input");
   keys.addFlag("NOENSEMBLE",false,"don't perform any replica-averaging");
   keys.addFlag("REWEIGHT",false,"simple REWEIGHT using the ARG as energy");
   keys.add("optional","AVERAGING", "Stride for calculation of averaged weights and sigma_mean");
@@ -80,7 +79,7 @@ void MetainferenceBase::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("acceptSigma",  "default",      "MC acceptance");
   keys.addOutputComponent("acceptScale",  "SCALEDATA",    "MC acceptance");
   keys.addOutputComponent("weight",       "REWEIGHT",     "weights of the weighted average");
-  keys.addOutputComponent("MetaDf",       "REWEIGHT",     "force on metadynamics");
+  keys.addOutputComponent("biasDer",      "REWEIGHT",     "derivatives wrt the bias");
   keys.addOutputComponent("scale",        "SCALEDATA",    "scale parameter");
   keys.addOutputComponent("offset",       "ADDOFFSET",    "offset parameter");
   keys.addOutputComponent("ftilde",       "GENERIC",      "ensemble average estimator");
@@ -117,14 +116,12 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
   firstTime(true),
   do_reweight_(false),
   do_optsigmamean_(0),
+  nsel_(1),
   iselect(0),
   optsigmamean_stride_(0),
   average_weights_stride_(1)
 {
   parseFlag("DOSCORE", doscore_);
-
-  parse("NDATA", narg);
-  if(doscore_&&narg==0) error("NDATA must be equal to the number of data calculated and used for metainference");
 
   bool noensemble = false;
   parseFlag("NOENSEMBLE", noensemble);
@@ -142,22 +139,21 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
   comm.Sum(&nrep_,1);
   comm.Sum(&replica_,1);
 
-  unsigned nsel = 1;
   parse("SELECTOR", selector_);
-  parse("NSELECT", nsel);
+  parse("NSELECT", nsel_);
   // do checks
-  if(selector_.length()>0 && nsel<=1) error("With SELECTOR active, NSELECT must be greater than 1");
-  if(selector_.length()==0 && nsel>1) error("With NSELECT greater than 1, you must specify SELECTOR");
+  if(selector_.length()>0 && nsel_<=1) error("With SELECTOR active, NSELECT must be greater than 1");
+  if(selector_.length()==0 && nsel_>1) error("With NSELECT greater than 1, you must specify SELECTOR");
 
   // initialise firstTimeW
-  firstTimeW.resize(nsel, true);
+  firstTimeW.resize(nsel_, true);
 
   // reweight implies a different number of arguments (the latest one must always be the bias)
   parseFlag("REWEIGHT", do_reweight_);
   if(do_reweight_&&getNumberOfArguments()!=1) error("To REWEIGHT one must provide a bias as an argument");
   if(do_reweight_&&nrep_<2) error("REWEIGHT can only be used in parallel with 2 or more replicas");
-  if(!getRestart()) average_weights_.resize(nsel, vector<double> (nrep_, 1./static_cast<double>(nrep_)));
-  else average_weights_.resize(nsel, vector<double> (nrep_, 0.));
+  if(!getRestart()) average_weights_.resize(nsel_, vector<double> (nrep_, 1./static_cast<double>(nrep_)));
+  else average_weights_.resize(nsel_, vector<double> (nrep_, 0.));
 
   unsigned averaging=0;
   parse("AVERAGING", averaging);
@@ -186,7 +182,6 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
   }
 
   parse("WRITE_STRIDE",write_stride_);
-  string status_file_name_;
   parse("STATUS_FILE",status_file_name_);
   if(status_file_name_=="") status_file_name_ = "MISTATUS"+getLabel();
   else                      status_file_name_ = status_file_name_+getLabel();
@@ -196,28 +191,18 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
   if(stringa_optsigma=="NONE")      do_optsigmamean_=0;
   else if(stringa_optsigma=="SEM")  do_optsigmamean_=1;
 
-  // resize vector for sigma_mean history
-  sigma_mean2_last_.resize(nsel);
-  for(unsigned i=0; i<nsel; i++) sigma_mean2_last_[i].resize(narg);
-
   vector<double> read_sigma_mean_;
   parseVector("SIGMA_MEAN0",read_sigma_mean_);
   if(!do_optsigmamean_ && read_sigma_mean_.size()==0 && !getRestart() && doscore_)
     error("If you don't use OPTSIGMAMEAN and you are not RESTARTING then you MUST SET SIGMA_MEAN0");
 
   if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
-    if(read_sigma_mean_.size()==narg) {
-      sigma_mean2_.resize(narg);
-      for(unsigned i=0; i<narg; i++) sigma_mean2_[i]=read_sigma_mean_[i]*read_sigma_mean_[i];
-    } else if(read_sigma_mean_.size()==1) {
-      sigma_mean2_.resize(narg,read_sigma_mean_[0]*read_sigma_mean_[0]);
-    } else if(read_sigma_mean_.size()==0) {
-      sigma_mean2_.resize(narg,0.000001);
+    if(read_sigma_mean_.size()>0) {
+      sigma_mean2_.resize(read_sigma_mean_.size());
+      for(unsigned i=0; i<read_sigma_mean_.size(); i++) sigma_mean2_[i]=read_sigma_mean_[i]*read_sigma_mean_[i];
     } else {
-      error("SIGMA_MEAN0 can accept either one single value or as many values as the arguments (with NOISETYPE=MGAUSS|MOUTLIERS)");
+      sigma_mean2_.resize(1,0.000001);
     }
-    // set the initial value for the history
-    for(unsigned i=0; i<nsel; i++) for(unsigned j=0; j<narg; j++) sigma_mean2_last_[i][j].push_back(sigma_mean2_[j]);
   } else {
     if(read_sigma_mean_.size()==1) {
       sigma_mean2_.resize(1, read_sigma_mean_[0]*read_sigma_mean_[0]);
@@ -226,8 +211,6 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
     } else {
       error("If you want to use more than one SIGMA_MEAN0 you should use NOISETYPE=MGAUSS|MOUTLIERS");
     }
-    // set the initial value for the history
-    for(unsigned i=0; i<nsel; i++) for(unsigned j=0; j<narg; j++) sigma_mean2_last_[i][j].push_back(sigma_mean2_[0]);
   }
 
   parseFlag("SCALEDATA", doscale_);
@@ -272,28 +255,22 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
   vector<double> readsigma;
   parseVector("SIGMA0",readsigma);
   if((noise_type_!=MGAUSS&&noise_type_!=MOUTLIERS&&noise_type_!=GENERIC)&&readsigma.size()>1)
-    error("If you want to use more than one SIGMA you should use NOISETYPE=MGAUSS|MOUTLIERS");
+    error("If you want to use more than one SIGMA you should use NOISETYPE=MGAUSS|MOUTLIERS|GENERIC");
   if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
-    if(readsigma.size()==narg) {
-      sigma_.resize(narg);
-      sigma_=readsigma;
-    } else if(readsigma.size()==1) {
-      sigma_.resize(narg,readsigma[0]);
-    } else {
-      error("SIGMA0 can accept either one single value or as many values as the number of arguments (with NOISETYPE=MGAUSS|MOUTLIERS)");
-    }
+    sigma_.resize(readsigma.size());
+    sigma_=readsigma;
   } else sigma_.resize(1, readsigma[0]);
 
   double read_smin_;
   parse("SIGMA_MIN",read_smin_);
-  sigma_min_.resize(sigma_.size(),read_smin_);
+  sigma_min_.resize(1,read_smin_);
   double read_smax_;
   parse("SIGMA_MAX",read_smax_);
-  sigma_max_.resize(sigma_.size(),read_smax_);
+  sigma_max_.resize(1,read_smax_);
   double read_dsigma_=-1.;
   parse("DSIGMA",read_dsigma_);
   if(read_dsigma_<0) read_dsigma_ = 0.05*(read_smax_ - read_smin_);
-  Dsigma_.resize(sigma_.size(),read_dsigma_);
+  Dsigma_.resize(1,read_dsigma_);
 
   // monte carlo stuff
   parse("MC_STEPS",MCsteps_);
@@ -306,11 +283,87 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
   else kbt_=plumed.getAtoms().getKbT();
   if(kbt_==0.0&&doscore_) error("Unless the MD engine passes the temperature to plumed, you must specify it using TEMP");
 
+  // initialize random seed
+  unsigned iseed;
+  if(master) iseed = time(NULL)+replica_;
+  else iseed = 0;
+  comm.Sum(&iseed, 1);
+  random[0].setSeed(-iseed);
+  // Random chunk
+  if(master) iseed = time(NULL)+replica_;
+  else iseed = 0;
+  comm.Sum(&iseed, 1);
+  random[2].setSeed(-iseed);
+  if(doscale_||dooffset_) {
+    // in this case we want the same seed everywhere
+    iseed = time(NULL);
+    if(master&&nrep_>1) multi_sim_comm.Bcast(iseed,0);
+    comm.Bcast(iseed,0);
+    random[1].setSeed(-iseed);
+  }
+
+  // outfile stuff
+  if(write_stride_>0) {
+    sfile_.link(*this);
+    sfile_.open(status_file_name_);
+  }
+
+}
+
+MetainferenceBase::~MetainferenceBase()
+{
+  if(sfile_.isOpen()) sfile_.close();
+}
+
+void MetainferenceBase::Initialise(const unsigned input)
+{
+  setNarg(input);
+  if(narg!=parameters.size()) {
+    std::string num1; Tools::convert(parameters.size(),num1);
+    std::string num2; Tools::convert(narg,num2);
+    std::string msg = "The number of experimental values " + num1 +" must be the same of the calculated values " + num2;
+    error(msg);
+  }
+
+  // resize vector for sigma_mean history
+  sigma_mean2_last_.resize(nsel_);
+  for(unsigned i=0; i<nsel_; i++) sigma_mean2_last_[i].resize(narg);
+  if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
+    if(sigma_mean2_.size()==1) {
+      double tmp = sigma_mean2_[0];
+      sigma_mean2_.resize(narg, tmp);
+    } else if(sigma_mean2_.size()>1&&sigma_mean2_.size()!=narg) {
+      error("SIGMA_MEAN0 can accept either one single value or as many values as the number of arguments (with NOISETYPE=MGAUSS|MOUTLIERS|GENERIC)");
+    }
+    // set the initial value for the history
+    for(unsigned i=0; i<nsel_; i++) for(unsigned j=0; j<narg; j++) sigma_mean2_last_[i][j].push_back(sigma_mean2_[j]);
+  } else {
+    // set the initial value for the history
+    for(unsigned i=0; i<nsel_; i++) for(unsigned j=0; j<narg; j++) sigma_mean2_last_[i][j].push_back(sigma_mean2_[0]);
+  }
+
+  // set sigma_bias
+  if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
+    if(sigma_.size()==1) {
+      double tmp = sigma_[0];
+      sigma_.resize(narg, tmp);
+    } else if(sigma_.size()>1&&sigma_.size()!=narg) {
+      error("SIGMA0 can accept either one single value or as many values as the number of arguments (with NOISETYPE=MGAUSS|MOUTLIERS|GENERIC)");
+    }
+  }
+
+  double tmp_min = sigma_min_[0];
+  sigma_min_.resize(sigma_.size(),tmp_min);
+  double tmp_max = sigma_max_[0];
+  sigma_max_.resize(sigma_.size(),tmp_max);
+  double tmp_ds = Dsigma_[0];
+  Dsigma_.resize(sigma_.size(),tmp_ds);
+
   IFile restart_sfile;
   restart_sfile.link(*this);
   if(getRestart()&&restart_sfile.FileExist(status_file_name_)) {
     firstTime = false;
-    for(unsigned i=0; i<nsel; i++) firstTimeW[i] = false;
+    for(unsigned i=0; i<nsel_; i++) firstTimeW[i] = false;
     restart_sfile.open(status_file_name_);
     log.printf("  Restarting from %s\n", status_file_name_.c_str());
     double dummy;
@@ -352,7 +405,7 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
       restart_sfile.scanField("scale0_",scale_);
       restart_sfile.scanField("offset0_",offset_);
 
-      for(unsigned i=0; i<nsel; i++) {
+      for(unsigned i=0; i<nsel_; i++) {
         std::string msg;
         Tools::convert(i,msg);
         double tmp_w;
@@ -367,6 +420,68 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
     }
     restart_sfile.scanField();
     restart_sfile.close();
+  }
+
+  addComponentWithDerivatives("score");
+  componentIsNotPeriodic("score");
+  valueScore=getPntrToComponent("score");
+
+  if(do_reweight_) {
+    addComponent("biasDer");
+    componentIsNotPeriodic("biasDer");
+    addComponent("weight");
+    componentIsNotPeriodic("weight");
+  }
+
+  if(doscale_) {
+    addComponent("scale");
+    componentIsNotPeriodic("scale");
+    valueScale=getPntrToComponent("scale");
+  }
+
+  if(dooffset_) {
+    addComponent("offset");
+    componentIsNotPeriodic("offset");
+    valueOffset=getPntrToComponent("offset");
+  }
+
+  if(dooffset_||doscale_) {
+    addComponent("acceptScale");
+    componentIsNotPeriodic("acceptScale");
+    valueAcceptScale=getPntrToComponent("acceptScale");
+  }
+
+  if(noise_type_==GENERIC) {
+    addComponent("acceptFT");
+    componentIsNotPeriodic("acceptFT");
+    valueAcceptFT=getPntrToComponent("acceptFT");
+  }
+
+  addComponent("acceptSigma");
+  componentIsNotPeriodic("acceptSigma");
+  valueAccept=getPntrToComponent("acceptSigma");
+
+  if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
+    for(unsigned i=0; i<sigma_mean2_.size(); ++i) {
+      std::string num; Tools::convert(i,num);
+      addComponent("sigmaMean_"+num); componentIsNotPeriodic("sigmaMean_"+num);
+      valueSigmaMean.push_back(getPntrToComponent("sigmaMean_"+num));
+      getPntrToComponent("sigmaMean_"+num)->set(sqrt(sigma_mean2_[i]));
+      addComponent("sigma_"+num); componentIsNotPeriodic("sigma_"+num);
+      valueSigma.push_back(getPntrToComponent("sigma_"+num));
+      getPntrToComponent("sigma_"+num)->set(sigma_[i]);
+      if(noise_type_==GENERIC) {
+        addComponent("ftilde_"+num); componentIsNotPeriodic("ftilde_"+num);
+        valueFtilde.push_back(getPntrToComponent("ftilde_"+num));
+      }
+    }
+  } else {
+    addComponent("sigmaMean"); componentIsNotPeriodic("sigmaMean");
+    valueSigmaMean.push_back(getPntrToComponent("sigmaMean"));
+    getPntrToComponent("sigmaMean")->set(sqrt(sigma_mean2_[0]));
+    addComponent("sigma"); componentIsNotPeriodic("sigma");
+    valueSigma.push_back(getPntrToComponent("sigma"));
+    getPntrToComponent("sigma")->set(sigma_[0]);
   }
 
   switch(noise_type_) {
@@ -419,104 +534,15 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
   log.printf("  initial data uncertainties");
   for(unsigned i=0; i<sigma_.size(); ++i) log.printf(" %f", sigma_[i]);
   log.printf("\n");
-  log.printf("  minimum data uncertainty %f\n",read_smin_);
-  log.printf("  maximum data uncertainty %f\n",read_smax_);
-  log.printf("  maximum MC move of data uncertainty %f\n",read_dsigma_);
+  log.printf("  minimum data uncertainty %f\n",sigma_min_[0]);
+  log.printf("  maximum data uncertainty %f\n",sigma_max_[0]);
+  log.printf("  maximum MC move of data uncertainty %f\n",Dsigma_[0]);
   log.printf("  temperature of the system %f\n",kbt_);
   log.printf("  MC steps %u\n",MCsteps_);
   log.printf("  MC stride %u\n",MCstride_);
   log.printf("  initial standard errors of the mean");
   for(unsigned i=0; i<sigma_mean2_.size(); ++i) log.printf(" %f", sqrt(sigma_mean2_[i]));
   log.printf("\n");
-
-  if(doscore_) {
-    addComponentWithDerivatives("score");
-    componentIsNotPeriodic("score");
-    valueScore=getPntrToComponent("score");
-
-    if(do_reweight_) {
-      addComponent("MetaDf");
-      componentIsNotPeriodic("MetaDf");
-      addComponent("weight");
-      componentIsNotPeriodic("weight");
-    }
-
-    if(doscale_) {
-      addComponent("scale");
-      componentIsNotPeriodic("scale");
-      valueScale=getPntrToComponent("scale");
-    }
-
-    if(dooffset_) {
-      addComponent("offset");
-      componentIsNotPeriodic("offset");
-      valueOffset=getPntrToComponent("offset");
-    }
-
-    if(dooffset_||doscale_) {
-      addComponent("acceptScale");
-      componentIsNotPeriodic("acceptScale");
-      valueAcceptScale=getPntrToComponent("acceptScale");
-    }
-
-    if(noise_type_==GENERIC) {
-      addComponent("acceptFT");
-      componentIsNotPeriodic("acceptFT");
-      valueAcceptFT=getPntrToComponent("acceptFT");
-    }
-
-    addComponent("acceptSigma");
-    componentIsNotPeriodic("acceptSigma");
-    valueAccept=getPntrToComponent("acceptSigma");
-
-    if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
-      for(unsigned i=0; i<sigma_mean2_.size(); ++i) {
-        std::string num; Tools::convert(i,num);
-        addComponent("sigmaMean_"+num); componentIsNotPeriodic("sigmaMean_"+num);
-        valueSigmaMean.push_back(getPntrToComponent("sigmaMean_"+num));
-        getPntrToComponent("sigmaMean_"+num)->set(sqrt(sigma_mean2_[i]));
-        addComponent("sigma_"+num); componentIsNotPeriodic("sigma_"+num);
-        valueSigma.push_back(getPntrToComponent("sigma_"+num));
-        getPntrToComponent("sigma_"+num)->set(sigma_[i]);
-        if(noise_type_==GENERIC) {
-          addComponent("ftilde_"+num); componentIsNotPeriodic("ftilde_"+num);
-          valueFtilde.push_back(getPntrToComponent("ftilde_"+num));
-        }
-      }
-    } else {
-      addComponent("sigmaMean"); componentIsNotPeriodic("sigmaMean");
-      valueSigmaMean.push_back(getPntrToComponent("sigmaMean"));
-      getPntrToComponent("sigmaMean")->set(sqrt(sigma_mean2_[0]));
-      addComponent("sigma"); componentIsNotPeriodic("sigma");
-      valueSigma.push_back(getPntrToComponent("sigma"));
-      getPntrToComponent("sigma")->set(sigma_[0]);
-    }
-  }
-
-  // initialize random seed
-  unsigned iseed;
-  if(master) iseed = time(NULL)+replica_;
-  else iseed = 0;
-  comm.Sum(&iseed, 1);
-  random[0].setSeed(-iseed);
-  // Random chunk
-  if(master) iseed = time(NULL)+replica_;
-  else iseed = 0;
-  comm.Sum(&iseed, 1);
-  random[2].setSeed(-iseed);
-  if(doscale_||dooffset_) {
-    // in this case we want the same seed everywhere
-    iseed = time(NULL);
-    if(master&&nrep_>1) multi_sim_comm.Bcast(iseed,0);
-    comm.Bcast(iseed,0);
-    random[1].setSeed(-iseed);
-  }
-
-  // outfile stuff
-  if(write_stride_>0) {
-    sfile_.link(*this);
-    sfile_.open(status_file_name_);
-  }
 
   //resize the number of metainference derivatives and the number of back-calculated data
   metader_.resize(narg, 0.);
@@ -526,11 +552,6 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
   if(do_reweight_) log<<plumed.cite("Bonomi, Camilloni, Vendruscolo, Sci. Rep. 6, 31232 (2016)");
   if(do_optsigmamean_>0) log<<plumed.cite("Loehr, Jussupow, Camilloni, J. Chem. Phys. 146, 165102 (2017)");
   log<<"\n";
-}
-
-MetainferenceBase::~MetainferenceBase()
-{
-  if(sfile_.isOpen()) sfile_.close();
 }
 
 void MetainferenceBase::Selector()
@@ -967,7 +988,7 @@ double MetainferenceBase::getEnergyForceSP(const vector<double> &mean, const vec
 
   if(do_reweight_) {
     setArgDerivatives(valueScore, -w_tmp);
-    getPntrToComponent("MetaDf")->set(-w_tmp);
+    getPntrToComponent("biasDer")->set(-w_tmp);
   }
 
   return kbt_*ene;
@@ -1012,7 +1033,7 @@ double MetainferenceBase::getEnergyForceSPE(const vector<double> &mean, const ve
 
   if(do_reweight_) {
     setArgDerivatives(valueScore, -w_tmp);
-    getPntrToComponent("MetaDf")->set(-w_tmp);
+    getPntrToComponent("biasDer")->set(-w_tmp);
   }
 
   return kbt_*ene;
@@ -1046,7 +1067,7 @@ double MetainferenceBase::getEnergyForceGJ(const vector<double> &mean, const vec
 
   if(do_reweight_) {
     setArgDerivatives(valueScore, w_tmp);
-    getPntrToComponent("MetaDf")->set(w_tmp);
+    getPntrToComponent("biasDer")->set(w_tmp);
   }
 
   return kbt_*ene;
@@ -1080,7 +1101,7 @@ double MetainferenceBase::getEnergyForceGJE(const vector<double> &mean, const ve
 
   if(do_reweight_) {
     setArgDerivatives(valueScore, w_tmp);
-    getPntrToComponent("MetaDf")->set(w_tmp);
+    getPntrToComponent("biasDer")->set(w_tmp);
   }
 
   return kbt_*ene;
@@ -1121,7 +1142,7 @@ double MetainferenceBase::getEnergyForceMIGEN(const vector<double> &mean, const 
 
   if(do_reweight_) {
     setArgDerivatives(valueScore, dene_b);
-    getPntrToComponent("MetaDf")->set(dene_b);
+    getPntrToComponent("biasDer")->set(dene_b);
   }
 
   return kbt_*ene;
@@ -1280,7 +1301,6 @@ double MetainferenceBase::getScore()
   double fact = 0.;
   double var_fact = 0.;
   get_weights(fact, var_fact);
-
   /* 2) calculate average */
   vector<double> mean(getNarg(),0);
   // this is the derivative of the mean with respect to the argument

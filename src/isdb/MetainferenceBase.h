@@ -117,6 +117,7 @@ private:
   std::vector<Value*> valueFtilde;
 
   // restart
+  std::string status_file_name_;
   OFile    sfile_;
 
   // others
@@ -129,6 +130,7 @@ private:
   unsigned replica_;
 
   // selector
+  unsigned nsel_;
   std::string selector_;
   unsigned iselect;
 
@@ -167,10 +169,12 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit MetainferenceBase(const ActionOptions&);
   ~MetainferenceBase();
+  void Initialise(const unsigned input);
   void Selector();
   unsigned getNarg();
+  void setNarg(const unsigned input);
   void setParameters(const std::vector<double>& input);
-  void setParameter(const unsigned index, const double input);
+  void setParameter(const double input);
   void setCalcData(const unsigned index, const double datum);
   void setCalcData(const std::vector<double>& data);
   bool getDoScore();
@@ -190,6 +194,12 @@ public:
   void setAtomsDerivatives(Value*v, const unsigned i, const Vector&d);
   void setBoxDerivatives(Value*v, const Tensor&d);
 };
+
+inline
+void MetainferenceBase::setNarg(const unsigned input)
+{
+  narg = input;
+}
 
 inline
 bool MetainferenceBase::getDoScore()
@@ -241,12 +251,11 @@ void MetainferenceBase::setCalcData(const std::vector<double>& data)
 
 inline
 void MetainferenceBase::setParameters(const std::vector<double>& input) {
-  if(narg!=input.size()) error("The number of experimental values must be the same of NDATA");
   for(unsigned i=0; i<input.size(); i++) parameters.push_back(input[i]);
 }
 
 inline
-void MetainferenceBase::setParameter(const unsigned index, const double input) {
+void MetainferenceBase::setParameter(const double input) {
   parameters.push_back(input);
 }
 
@@ -257,12 +266,6 @@ void MetainferenceBase::setScore(const double score) {
 
 inline
 void MetainferenceBase::setDerivatives() {
-  if(narg!=parameters.size()) {
-    std::string num1; Tools::convert(parameters.size(),num1);
-    std::string num2; Tools::convert(narg,num2);
-    std::string msg = "The number of experimental values " + num1 +" must be the same of NDATA " + num2;
-    error(msg);
-  }
   // Get appropriate number of derivatives
   // Derivatives are first for arguments and then for atoms
   unsigned nder;

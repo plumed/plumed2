@@ -684,8 +684,8 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
               componentIsNotPeriodic(str_cs[at_kind]+num);
               atom[i][a].comp[at_kind] = getPntrToComponent(str_cs[at_kind]+num);
               index_cs[i][a][at_kind]=l;
+              setParameter(atom[i][a].exp_cs[at_kind]);
               l++;
-              setParameter(l,atom[i][a].exp_cs[at_kind]);
             } else {
               addComponentWithDerivatives(str_cs[at_kind]+num);
               componentIsNotPeriodic(str_cs[at_kind]+num);
@@ -696,6 +696,7 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
       }
       index += atom[i].size();
     }
+    if(getDoScore()) Initialise(l);
   }
 
   if(!noexp) {
@@ -1168,7 +1169,6 @@ void CS2Backbone::calculate()
     setScore(score);
 
     /* calculate final derivatives */
-    Tensor dervir;
     Value* val=getPntrToComponent("score");
 
     for(unsigned i=0; i<all_list.size(); i++) {

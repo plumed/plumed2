@@ -138,6 +138,7 @@ NOE::NOE(const ActionOptions&ao):
 
   bool addexp=false;
   parseFlag("ADDEXP",addexp);
+  if(getDoScore()) addexp=true;
 
   vector<double> noedist;
   if(addexp) {
@@ -181,7 +182,6 @@ NOE::NOE(const ActionOptions&ao):
       }
     }
   } else {
-    setParameters(noedist);
     for(unsigned i=0; i<nga.size(); i++) {
       string num; Tools::convert(i,num);
       addComponent("noe_"+num);
@@ -197,6 +197,10 @@ NOE::NOE(const ActionOptions&ao):
   }
 
   requestAtoms(nl->getFullAtomList());
+  if(getDoScore()) {
+    setParameters(noedist);
+    Initialise(nga.size());
+  }
   setDerivatives();
   checkRead();
 }
@@ -314,7 +318,6 @@ void NOE::update() {
   // write status file
   if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) writeStatus();
 }
-
 
 }
 }

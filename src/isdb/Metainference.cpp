@@ -304,7 +304,7 @@ void Metainference::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("acceptSigma",  "default",      "MC acceptance");
   keys.addOutputComponent("acceptScale",  "SCALEDATA",    "MC acceptance");
   keys.addOutputComponent("weight",       "REWEIGHT",     "weights of the weighted average");
-  keys.addOutputComponent("MetaDf",       "REWEIGHT",     "force on metadynamics");
+  keys.addOutputComponent("biasDer",      "REWEIGHT",     "derivatives wrt the bias");
   keys.addOutputComponent("scale",        "SCALEDATA",    "scale parameter");
   keys.addOutputComponent("offset",       "ADDOFFSET",    "offset parameter");
   keys.addOutputComponent("ftilde",       "GENERIC",      "ensemble average estimator");
@@ -667,8 +667,8 @@ Metainference::Metainference(const ActionOptions&ao):
   log.printf("\n");
 
   if(do_reweight_) {
-    addComponent("MetaDf");
-    componentIsNotPeriodic("MetaDf");
+    addComponent("biasDer");
+    componentIsNotPeriodic("biasDer");
     addComponent("weight");
     componentIsNotPeriodic("weight");
   }
@@ -1185,7 +1185,7 @@ double Metainference::getEnergyForceSP(const vector<double> &mean, const vector<
 
   if(do_reweight_) {
     setOutputForce(narg, w_tmp);
-    getPntrToComponent("MetaDf")->set(-w_tmp);
+    getPntrToComponent("biasDer")->set(-w_tmp);
   }
 
   return kbt_*ene;
@@ -1230,7 +1230,7 @@ double Metainference::getEnergyForceSPE(const vector<double> &mean, const vector
 
   if(do_reweight_) {
     setOutputForce(narg, w_tmp);
-    getPntrToComponent("MetaDf")->set(-w_tmp);
+    getPntrToComponent("biasDer")->set(-w_tmp);
   }
 
   return kbt_*ene;
@@ -1264,7 +1264,7 @@ double Metainference::getEnergyForceGJ(const vector<double> &mean, const vector<
 
   if(do_reweight_) {
     setOutputForce(narg, -w_tmp);
-    getPntrToComponent("MetaDf")->set(w_tmp);
+    getPntrToComponent("biasDer")->set(w_tmp);
   }
 
   return kbt_*ene;
@@ -1298,7 +1298,7 @@ double Metainference::getEnergyForceGJE(const vector<double> &mean, const vector
 
   if(do_reweight_) {
     setOutputForce(narg, -w_tmp);
-    getPntrToComponent("MetaDf")->set(w_tmp);
+    getPntrToComponent("biasDer")->set(w_tmp);
   }
 
   return kbt_*ene;
@@ -1339,7 +1339,7 @@ double Metainference::getEnergyForceMIGEN(const vector<double> &mean, const vect
 
   if(do_reweight_) {
     setOutputForce(narg, -dene_b);
-    getPntrToComponent("MetaDf")->set(dene_b);
+    getPntrToComponent("biasDer")->set(dene_b);
   }
 
   return kbt_*ene;
