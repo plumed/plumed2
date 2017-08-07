@@ -88,6 +88,8 @@ public:
   void clearAll();
 /// Clear a value
   void clear( const unsigned& );
+///
+  void clearActiveMembers( const unsigned& vv );
   void updateIndex( const unsigned& , const unsigned& );
 ///
   unsigned getNumberActive( const unsigned& ) const ;
@@ -151,7 +153,11 @@ void MultiValue::updateIndex( const unsigned& ival, const unsigned& jder ) {
 #ifdef DNDEBUG
   for(unsigned i=0;i<nactive[ival];++i) plumed_dbg_assert( active_list[nderivatives*ival+nactive[ival]]!=jder ); 
 #endif
-  if( hasderiv[nderivatives*ival+jder] ){ active_list[nderivatives*ival+nactive[ival]]=jder; nactive[ival]++; } 
+  if( hasderiv[nderivatives*ival+jder] ){ 
+      plumed_dbg_assert( nactive[ival]<nderivatives); 
+      active_list[nderivatives*ival+nactive[ival]]=jder; 
+      nactive[ival]++; 
+  } 
 }
 
 inline
@@ -213,7 +219,12 @@ double MultiValue::getStashedMatrixElement( const unsigned& imat, const unsigned
 
 inline
 bool MultiValue::inVectorCall() const {
-  return vector_call;
+  return (nmatrix_cols>0 && vector_call);
+}
+
+inline
+void MultiValue::clearActiveMembers( const unsigned& ival ) {
+  nactive[ival]=0;
 }
 
 }

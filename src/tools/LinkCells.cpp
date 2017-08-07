@@ -140,7 +140,6 @@ void LinkCells::retrieveNeighboringAtoms( const Vector& pos, std::vector<unsigne
 void LinkCells::retrieveAtomsInCells( const unsigned& ncells_required,
                                       const std::vector<unsigned>& cells_required,
                                       unsigned& natomsper, std::vector<unsigned>& atoms ) const {
-  plumed_assert( natomsper==1 || natomsper==2 );  // This is really a bug. If you are trying to reuse this ask GAT for help
   for(unsigned i=0; i<ncells_required; ++i) {
     unsigned mybox=cells_required[i];
     for(unsigned k=0; k<lcell_tots[mybox]; ++k) {

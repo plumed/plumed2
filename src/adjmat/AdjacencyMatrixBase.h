@@ -38,9 +38,10 @@ class AdjacencyMatrixBase :
 friend class MatrixElementPack;
 private:
   bool nopbc, components;
-  LinkCells linkcells;
-  std::vector<unsigned> ablocks;
-  void updateWeightDerivativeIndices( const unsigned& sno, const std::vector<unsigned>& indices, MultiValue& myvals ) const ;
+  LinkCells linkcells, threecells;
+  std::vector<unsigned> ablocks, threeblocks;
+  void updateWeightDerivativeIndices( const unsigned& sno, const unsigned& ntwo_atoms, const unsigned& natoms,
+                                      const std::vector<unsigned>& indices, MultiValue& myvals ) const ;
 protected:
   void setLinkCellCutoff( const double& lcut, double tcut=-1.0 );
 public:

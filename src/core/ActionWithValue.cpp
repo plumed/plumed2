@@ -478,7 +478,7 @@ void ActionWithValue::getNumberOfStreamedDerivatives( unsigned& nderivatives ) c
 
 void ActionWithValue::getNumberOfStreamedQuantities( unsigned& nquants, unsigned& ncols, unsigned& nmat ) const {
   for(unsigned i=0;i<values.size();++i){ 
-     if( values[i]->getRank()==2 && values[i]->storedata ){ 
+     if( values[i]->getRank()==2 ){ 
          if( values[i]->getShape()[1]>ncols ){ ncols = values[i]->getShape()[1]; }
          values[i]->matpos=nmat; nmat++; 
      }
@@ -584,7 +584,7 @@ void ActionWithValue::gatherAccumulators( const unsigned& taskCode, const MultiV
            if( values[i]->hasDerivatives() ){
                unsigned ndmax = (values[i]->getPntrToAction())->getNumberOfDerivatives();
                for(unsigned k=0;k<myvals.getNumberActive(sind);++k){
-                   unsigned kindex = myvals.getActiveIndex(sind,k); 
+                   unsigned kindex = myvals.getActiveIndex(sind,k);
                    plumed_dbg_massert( bufstart+1+kindex<buffer.size(), "problem in " + getLabel()  );
                    buffer[bufstart + 1 + kindex] += myvals.getDerivative(sind,kindex);
                }

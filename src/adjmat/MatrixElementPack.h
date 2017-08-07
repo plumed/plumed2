@@ -48,7 +48,9 @@ private:
 ///
   std::vector<Vector> positions;
 public:
-  MatrixElementPack( MultiValue& vals, const bool comp, ActionWithValue const * myaction );
+  MatrixElementPack( MultiValue& vals, const unsigned& nthree, const bool comp, ActionWithValue const * myaction );
+  void setNumberOfAtoms( const unsigned& nat );
+  unsigned getNumberOfAtoms() const ;
   void setIndex( const unsigned& indno, const unsigned& ind );
   void setPosition( const unsigned& indno, const Vector& pos );
   Vector getPosition( const unsigned& indno ) const ;
@@ -56,6 +58,11 @@ public:
   void addBoxDerivatives( const Tensor& vir );
   void clear();
 };
+
+inline
+unsigned MatrixElementPack::getNumberOfAtoms() const {
+  return indices.size();
+}
 
 inline
 void MatrixElementPack::setIndex( const unsigned& indno, const unsigned& ind ){

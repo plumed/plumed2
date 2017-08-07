@@ -156,14 +156,42 @@ void Function::performTask( const unsigned& current, MultiValue& myvals ) const 
   // And update the dynamic list
   if( doNotCalculateDerivatives() ) return ;
   if( actionInChain() ) {
-      for(unsigned i=0;i<distinct_arguments.size();++i){
-          unsigned istrn = (distinct_arguments[i]->copyOutput(0))->getPositionInStream();
-          for(unsigned k=0;k<myvals.getNumberActive(istrn);++k){
-              unsigned kind = myvals.getActiveIndex(istrn,k);
-              for(unsigned j=0;j<getNumberOfComponents();++j){
-                  unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
-                  myvals.updateIndex( ostrn, arg_deriv_starts[i] + kind ); 
+      bool matout=false, matinp=getPntrToArgument(0)->getRank()==2;
+#ifdef DNDEBUG
+      if( matinp ){
+          for(unsigned i=1;i<getNumberOfArguments();++i) plumed_dbg_assert( getPntrToArgument(i)->getRank()==2 );
+      }
+#endif
+      if( matinp ) {
+          matout=getPntrToOutput(0)->getRank()==2;
+#ifdef DNDEBUG
+          if( matout ){
+              for(unsigned i=1;i<getNumberOfComponents();++i) plumed_dbg_assert( getPntrToOutput(i)->getRank()==2 );
+          }
+#endif          
+      }
+      if( (matinp && matout) || !matinp ) {
+           for(unsigned i=0;i<distinct_arguments.size();++i){
+               unsigned istrn = (distinct_arguments[i]->copyOutput(0))->getPositionInStream();
+               for(unsigned k=0;k<myvals.getNumberActive(istrn);++k){
+                   unsigned kind = myvals.getActiveIndex(istrn,k);
+                   for(unsigned j=0;j<getNumberOfComponents();++j){
+                       unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
+                       myvals.updateIndex( ostrn, arg_deriv_starts[i] + kind );
+                   }
+               }
+           }
+      } else if( myvals.inVectorCall() ) {
+          // This requires further thought to make it future proof
+          std::vector<unsigned> & indices( myvals.getIndices() );
+          for(unsigned j=0;j<getNumberOfComponents();++j){
+              unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
+              myvals.clearActiveMembers( ostrn );
+              for(unsigned i=0;i<myvals.getNumberOfIndices();++i) {
+                  myvals.updateIndex( ostrn, 3*indices[i]+0 ); myvals.updateIndex( ostrn, 3*indices[i]+1 ); myvals.updateIndex( ostrn, 3*indices[i]+2 );
               }
+              unsigned nbase = nderivatives - 9;
+              for(unsigned i=0;i<9;++i) myvals.updateIndex( ostrn, nbase + i );
           }
       }
   } else {

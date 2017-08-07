@@ -46,7 +46,8 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
   Action(ao),
   ActionAtomistic(ao),
   ActionWithValue(ao),
-  linkcells(comm)
+  linkcells(comm),
+  threecells(comm)
 {
   std::vector<unsigned> shape(2); std::vector<AtomNumber> t; parseAtomList("GROUP", t );
   if( t.size()==0 ){
@@ -82,8 +83,14 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
   if( keywords.exists("GROUPC") ){
       std::vector<AtomNumber> tc; parseAtomList("GROUPC",tc);
       if( tc.size()==0 ) error("no atoms in GROUPC specified");
-      log.printf("  atoms in GROUPC "); 
-      for(unsigned i=0;i<tc.size();++i){ log.printf("%d ", tc[i].serial()); t.push_back(tc[i]); }
+      log.printf("  atoms in GROUPC "); threeblocks.resize( tc.size() ); unsigned base=t.size();
+      for(unsigned i=0;i<tc.size();++i){ log.printf("%d ", tc[i].serial()); t.push_back(tc[i]); threeblocks[i]=base+i; }
+      log.printf("\n");
+  } else if( keywords.exists("BRIDGING_ATOMS") ) {
+      std::vector<AtomNumber> tc; parseAtomList("BRIDGING_ATOMS",tc); 
+      if( tc.size()==0 ) error("no BRIDGING_ATOMS specified");
+      log.printf("  bridging atoms are "); threeblocks.resize( tc.size() ); unsigned base=t.size();
+      for(unsigned i=0;i<tc.size();++i){ log.printf("%d ", tc[i].serial()); t.push_back(tc[i]); threeblocks[i]=base+i; }
       log.printf("\n");
   }
   // Request the atoms from the ActionAtomistic
@@ -98,7 +105,9 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
 }
 
 void AdjacencyMatrixBase::setLinkCellCutoff( const double& lcut, double tcut ) {
+  if( tcut<0 ) tcut=lcut; 
   linkcells.setCutoff( lcut );
+  threecells.setCutoff( tcut );
 }
 
 void AdjacencyMatrixBase::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
@@ -112,6 +121,13 @@ void AdjacencyMatrixBase::buildCurrentTaskList( std::vector<unsigned>& tflags ) 
       ltmp_pos[i]=getPosition( ablocks[i] );
   }
   linkcells.buildCellLists( ltmp_pos, ablocks, getPbc() );
+  if( threeblocks.size()>0 ) {
+      std::vector<Vector> ltmp_pos2( threeblocks.size() );
+      for(unsigned i=0; i<ablocks.size(); ++i) {
+          ltmp_pos[i]=getPosition( threeblocks[i] );
+      }
+      threecells.buildCellLists( ltmp_pos2, threeblocks, getPbc() );
+  }
 }
 
 void AdjacencyMatrixBase::calculate(){
@@ -119,31 +135,46 @@ void AdjacencyMatrixBase::calculate(){
   runAllTasks();
 }
 
-void AdjacencyMatrixBase::updateWeightDerivativeIndices( const unsigned& sno, const std::vector<unsigned>& indices, MultiValue& myvals ) const {
+void AdjacencyMatrixBase::updateWeightDerivativeIndices( const unsigned& sno, const unsigned& ntwo_atoms, const unsigned& natoms,  
+                                                         const std::vector<unsigned>& indices, MultiValue& myvals ) const {
   unsigned w_ind = getPntrToOutput(0)->getPositionInStream();
   // Update dynamic list indices for central atom
   myvals.updateIndex( w_ind, 3*indices[0]+0 ); myvals.updateIndex( w_ind, 3*indices[0]+1 ); myvals.updateIndex( w_ind, 3*indices[0]+2 );
   // Update dynamic list indices for atom forming this bond
   myvals.updateIndex( w_ind, 3*indices[sno]+0 ); myvals.updateIndex( w_ind, 3*indices[sno]+1 ); myvals.updateIndex( w_ind, 3*indices[sno]+2 );
+  // Now look after all the atoms in the third block
+  for(unsigned i=ntwo_atoms;i<natoms;++i){
+      myvals.updateIndex( w_ind, 3*indices[i]+0 ); myvals.updateIndex( w_ind, 3*indices[i]+1 ); myvals.updateIndex( w_ind, 3*indices[i]+2 );
+  }
   // Update dynamic list indices for virial
   unsigned base = 3*getNumberOfAtoms(); for(unsigned j=0;j<9;++j) myvals.updateIndex( w_ind, base+j );
 }
 
 void AdjacencyMatrixBase::performTask( const unsigned& current, MultiValue& myvals ) const {
-  // Retrieve cells required from link cells
+  // Retrieve cells required from link cells - for matrix blocks
   std::vector<unsigned> cells_required( linkcells.getNumberOfCells() ); unsigned ncells_required=0;
   linkcells.addRequiredCells( linkcells.findMyCell( getPosition(current) ), ncells_required, cells_required );
 
   // Now retrieve bookeeping arrays
   std::vector<Vector> & atoms( myvals.getAtomVector() );
   std::vector<unsigned> & indices( myvals.getIndices() ); 
-  if( indices.size()!=(1+ablocks.size()) ){
-     indices.resize( 1+ablocks.size() ); atoms.resize( 1+ablocks.size() );
+  if( indices.size()!=(1+ablocks.size()+threeblocks.size()) ){
+     indices.resize( 1+ablocks.size()+threeblocks.size() ); 
+     atoms.resize( 1+ablocks.size()+threeblocks.size() );
   }
 
   // Now get the positions
   unsigned natoms=1; indices[0]=current;
   linkcells.retrieveAtomsInCells( ncells_required, cells_required, natoms, indices );
+  unsigned ntwo_atoms=natoms;
+
+  // Now retrieve everything for the third atoms
+  if( threeblocks.size()>0 ) {
+      if( cells_required.size()!=threecells.getNumberOfCells() ) cells_required.resize( threecells.getNumberOfCells() ); 
+      unsigned ncells_required=0;
+      threecells.addRequiredCells( threecells.findMyCell( getPosition(current) ), ncells_required, cells_required ); 
+      threecells.retrieveAtomsInCells( ncells_required, cells_required, natoms, indices ); 
+  }
   myvals.setNumberOfIndices( natoms );
 
   // Apply periodic boundary conditions
@@ -151,14 +182,18 @@ void AdjacencyMatrixBase::performTask( const unsigned& current, MultiValue& myva
   if( !nopbc ) pbcApply( atoms, natoms );
 
   // Now loop over all atoms in coordination sphere
-  MatrixElementPack mypack( myvals, components, this ); 
+  MatrixElementPack mypack( myvals, natoms-ntwo_atoms, components, this );
+  if( threeblocks.size()>0 ) {
+      unsigned kb=2; for(unsigned i=ntwo_atoms;i<natoms;++i){ mypack.setIndex( kb, indices[i] ); mypack.setPosition( kb, atoms[i] ); kb++; }
+  }
   mypack.setIndex( 0, current ); Vector zero; zero.zero(); mypack.setPosition( 0, zero );
-  for(unsigned i=1;i<natoms;++i){
+  for(unsigned i=1;i<ntwo_atoms;++i){
       mypack.setIndex( 1, indices[i] ); mypack.setPosition( 1, atoms[i] );
       double weight = calculateWeight( mypack ); 
       if( weight<epsilon ){
           if( !doNotCalculateDerivatives() ) {
-              updateWeightDerivativeIndices( i, indices, myvals ); clearMatrixElements( myvals );
+              updateWeightDerivativeIndices( i, ntwo_atoms, natoms, indices, myvals ); 
+              clearMatrixElements( myvals );
           }
           continue;
       }
@@ -191,7 +226,7 @@ void AdjacencyMatrixBase::performTask( const unsigned& current, MultiValue& myva
           }
       } 
       // Update derivatives
-      if( !doNotCalculateDerivatives() ) updateWeightDerivativeIndices( i, indices, myvals );
+      if( !doNotCalculateDerivatives() ) updateWeightDerivativeIndices( i, ntwo_atoms, natoms, indices, myvals );
       // This does everything in the stream that is done with single matrix elements 
       runTask( myvals.getTaskIndex(), current, indices[i], myvals );
       // Now clear only elements that are not accumulated over whole row
@@ -199,9 +234,7 @@ void AdjacencyMatrixBase::performTask( const unsigned& current, MultiValue& myva
   }
 }
 
-void AdjacencyMatrixBase::apply() {
-
-}
+void AdjacencyMatrixBase::apply() {}
 
 }
 }

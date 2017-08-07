@@ -26,13 +26,13 @@
 namespace PLMD {
 namespace adjmat {
 
-MatrixElementPack::MatrixElementPack( MultiValue& vals, const bool comp, ActionWithValue const * myaction ):
+MatrixElementPack::MatrixElementPack( MultiValue& vals, const unsigned& nthree, const bool comp, ActionWithValue const * myaction ):
 myvals(vals),
 natoms_in_base(0),
 noderiv(myaction->doNotCalculateDerivatives()),
 components(comp),
-indices(2),
-positions(2)
+indices(2+nthree),
+positions(2+nthree)
 {
   ActionAtomistic const * aa = dynamic_cast<ActionAtomistic const *>( myaction );
   if(aa) natoms_in_base = aa->getNumberOfAtoms();
