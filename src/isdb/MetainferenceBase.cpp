@@ -303,7 +303,7 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
   }
 
   // outfile stuff
-  if(write_stride_>0) {
+  if(write_stride_>0&&doscore_) {
     sfile_.link(*this);
     sfile_.open(status_file_name_);
   }
@@ -1341,6 +1341,7 @@ double MetainferenceBase::getScore()
 
 void MetainferenceBase::writeStatus()
 {
+  if(!doscore_) return;
   sfile_.rewind();
   sfile_.printField("time",getTimeStep()*getStep());
   //nsel
