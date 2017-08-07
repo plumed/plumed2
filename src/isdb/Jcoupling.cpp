@@ -58,6 +58,9 @@ and SHIFT keywords. You will need to make sure you are using the correct dihedra
 - N-C\f$\gamma\f$: \f$\chi_1\f$
 - CO-C\f$\gamma\f$: \f$\chi_1\f$
 
+J-couplings can be used to calculate a Metainference score using the internal keyword DOSCORE and all the options
+of \ref METAINFERENCE .
+
 \par Examples
 
 In the following example we calculate the Ha-N J-coupling from a set of atoms involved in
