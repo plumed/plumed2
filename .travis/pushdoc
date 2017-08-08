@@ -105,6 +105,6 @@ set -x
 esac
 
 git add --all .
-git commit -m "Update to plumed/plumed2@$hash"
+git commit -m "Update to ${GIT_OWNER}/${GIT_REPO}@$hash"
 # -q and 2> is not to show the GIT_TOKEN on Travis log
 git push -q -f doc gh-pages 2> /dev/null 
