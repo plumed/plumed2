@@ -287,18 +287,19 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg) {
 ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
   Action(ao),
   lockRequestArguments(false),
-  done_over_stream(false)
+  done_over_stream(false),
+  numberedkeys(false)
 {
   if( keywords.exists("ARG") && !keywords.exists("DATA") ) {
     vector<Value*> arg;
     parseArgumentList("ARG",arg);
 
     if(!arg.empty()) {
-      log.printf("  with arguments"); arg_ends.push_back(0);
+      log.printf("  with arguments"); arg_ends.push_back(0); numberedkeys=false;
       for(unsigned i=0; i<arg.size(); i++){ log.printf(" %s",arg[i]->getName().c_str()); arg_ends.push_back(1+i); }
       log.printf("\n");
     } else {
-      unsigned narg=0; arg_ends.push_back(0);
+      unsigned narg=0; arg_ends.push_back(0); numberedkeys=true;
       for(unsigned i=1;;++i){
          vector<Value*> argn; parseArgumentList("ARG",i,argn);
          if( argn.size()==0 ) break;

@@ -63,8 +63,12 @@ Lowest::Lowest(const ActionOptions&ao):
   Function(ao),
   tvals(0,0)
 {
-  rankOneOutput = getPntrToArgument(0)->getRank()>0 && arg_ends.size()==2;
-  if( rankOneOutput ){ for(unsigned i=0; i<getNumberOfArguments(); ++i) getPntrToArgument(i)->buildDataStore(); }
+  if( !numberedkeys ){ 
+     if( getPntrToArgument(0)->getRank()>0 ) {
+         if( arg_ends.size()!=2 ) error("should only use one non-scalar argument in input for ARG keyword");
+     }
+     for(unsigned i=0; i<getNumberOfArguments(); ++i) getPntrToArgument(i)->buildDataStore(); 
+  }
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     string s; Tools::convert(i+1,s);
     if(getPntrToArgument(i)->isPeriodic()) error("Cannot sort periodic values (check argument "+s+")");

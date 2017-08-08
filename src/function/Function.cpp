@@ -38,8 +38,7 @@ Function::Function(const ActionOptions&ao):
   Action(ao),
   ActionWithValue(ao),
   ActionWithArguments(ao),
-  forcesToApply(getNumberOfScalarArguments()),
-  rankOneOutput(false)
+  forcesToApply(getNumberOfScalarArguments())
 {
   createTasksFromArguments(); nderivatives = getNumberOfArguments();
   // Now create the stream of jobs to work through 
@@ -82,7 +81,7 @@ std::vector<unsigned> Function::getShape() {
       }
   }
   std::vector<unsigned> shape;
-  if( rank0 || rankOneOutput ){ 
+  if( rank0 || !numberedkeys ){ 
      shape.resize(0);
   } else { 
      shape.resize( getPntrToArgument(0)->getRank() );
@@ -104,7 +103,7 @@ void Function::addValueWithDerivatives() {
 
   std::vector<unsigned> shape( getShape() ); 
   if( arg_ends[1]-arg_ends[0]==1 ){
-      if( actionInChain() && !rankOneOutput ) ActionWithValue::addValue( shape ); 
+      if( actionInChain() && shape.size()>0 ) ActionWithValue::addValue( shape ); 
       else ActionWithValue::addValueWithDerivatives( shape ); 
       if(period.size()==1 && period[0]=="NO") setNotPeriodic(); 
       else if(period.size()==2) setPeriodic(period[0],period[1]);
@@ -112,7 +111,7 @@ void Function::addValueWithDerivatives() {
       std::string num; 
       for(unsigned i=0;i<arg_ends.size()-1;++i){
           Tools::convert(i+1,num); 
-          if( actionInChain() && !rankOneOutput ) ActionWithValue::addComponent( "arg_" + num, shape ); 
+          if( actionInChain() && shape.size()>0 ) ActionWithValue::addComponent( "arg_" + num, shape ); 
           else ActionWithValue::addComponentWithDerivatives( "arg_" + num, shape );
           if(period.size()==1 && period[0]=="NO") componentIsNotPeriodic( "arg_" + num ); 
           else if(period.size()==2) componentIsPeriodic("arg_" + num, period[0], period[1]);
@@ -125,13 +124,13 @@ void Function::addComponentWithDerivatives( const std::string& name ) {
 
   std::vector<unsigned> shape( getShape() );
   if( arg_ends[1]-arg_ends[0]==1 ){ 
-      if( actionInChain() && !rankOneOutput ) ActionWithValue::addComponent(name,shape); 
+      if( actionInChain() && shape.size()>0 ) ActionWithValue::addComponent(name,shape); 
       else ActionWithValue::addComponentWithDerivatives(name,shape); 
   } else { 
       std::string num; 
       for(unsigned i=0;i<arg_ends.size()-1;++i){ 
           Tools::convert(i+1,num);
-          if( actionInChain() && !rankOneOutput ) ActionWithValue::addComponent( name + "_arg_" + num, shape ); 
+          if( actionInChain() && shape.size()>0 ) ActionWithValue::addComponent( name + "_arg_" + num, shape ); 
           else ActionWithValue::addComponentWithDerivatives( name + "_arg_" + num, shape ); 
       } 
   }

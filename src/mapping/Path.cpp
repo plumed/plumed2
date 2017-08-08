@@ -127,9 +127,8 @@ Path::Path(const ActionOptions&ao):
   Action(ao),
   Function(ao)
 {
-  rankOneOutput = getPntrToArgument(0)->getRank()>0;
   if( getPntrToArgument(0)->getRank()>1 ) error("input arguments should be rank 0 or rank 1");
-  if( rankOneOutput && getNumberOfArguments()>1 ) error("cannot sum more than one vector or matrix at a time");
+  if( getPntrToArgument(0)->getRank()>0 && getNumberOfArguments()>1 ) error("cannot sum more than one vector or matrix at a time");
   if( arg_ends[1]-arg_ends[0]!=1 ) error("makes no sense to use ARG1, ARG2... with this action use single ARG keyword");
   for(unsigned i=0;i<getNumberOfArguments();++i){
      if( getPntrToArgument(i)->isPeriodic() ) error("cannot use this function on periodic functions");

@@ -72,62 +72,87 @@ Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle o
 */
 //+ENDPLUMEDOC
 
-class Torsions : public MultiColvarBase {
+class Torsion : public MultiColvarBase {
 public:
+  static void shortcutKeywords( Keywords& keys );
+  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                              const std::map<std::string,std::string>& keys,
+                              std::vector<std::vector<std::string> >& actions  );
   static void registerKeywords( Keywords& keys );
-  explicit Torsions(const ActionOptions&);
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
-  bool isPeriodic() { return true; }
-  void retrieveDomain( std::string& min, std::string& max ) { min="-pi"; max="pi"; }
+  explicit Torsion(const ActionOptions&);
+  void compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
 };
 
-PLUMED_REGISTER_ACTION(Torsions,"TORSIONS")
+PLUMED_REGISTER_ACTION(Torsion,"TORSIONS")
+PLUMED_REGISTER_SHORTCUT(Torsion,"TORSIONS")
+PLUMED_REGISTER_SHORTCUT(Torsion,"ALPHABETA")
 
-void Torsions::registerKeywords( Keywords& keys ) {
-  MultiColvarBase::registerKeywords( keys );
-  keys.add("numbered","ATOMS","the atoms involved in each of the torsion angles you wish to calculate. "
-           "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one torsion will be "
-           "calculated for each ATOM keyword you specify (all ATOM keywords should "
-           "provide the indices of four atoms).  The eventual number of quantities calculated by this "
-           "action will depend on what functions of the distribution you choose to calculate.");
-  keys.reset_style("ATOMS","atoms");
-  keys.use("BETWEEN"); keys.use("HISTOGRAM");
+void Torsion::shortcutKeywords( Keywords& keys ) {
+  MultiColvarBase::shortcutKeywords( keys );
+  keys.add("compulsory","REFERENCE","the reference values for each of the torsional angles.  If you use a single REFERENCE value the "
+           "same reference value is used for all torsions");
 }
 
-Torsions::Torsions(const ActionOptions&ao):
+void Torsion::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                              const std::map<std::string,std::string>& keys,
+                              std::vector<std::vector<std::string> >& actions  ) {
+  if( words[0]=="ALPHABETA" ) {
+      // Calculate angles
+      std::vector<std::string> mc_line; mc_line.push_back(lab + "_torsions:"); mc_line.push_back("TORSIONS");
+      for(unsigned i=1;i<words.size();++i) mc_line.push_back(words[i]);
+      actions.push_back( mc_line );
+
+      // Caculate difference from reference using combine
+      std::string pstr; std::vector<std::string> cc_line; 
+      cc_line.push_back( lab + "_comb:"); cc_line.push_back("COMBINE");
+      cc_line.push_back("PARAMETERS=" + keys.find("REFERENCE")->second );
+      cc_line.push_back("ARG1=" + lab + "_torsions"); cc_line.push_back("PERIODIC=NO");
+      actions.push_back( cc_line );
+
+      // Now matheval for cosine bit
+      std::vector<std::string> mm_line; mm_line.push_back( lab + "_cos:"); mm_line.push_back("MATHEVAL");
+      mm_line.push_back("ARG1=" + lab + "_comb"); mm_line.push_back("FUNC=0.5+0.5*cos(x)"); mm_line.push_back("PERIODIC=NO");
+      actions.push_back( mm_line );
+
+      // And combine to get final value
+      std::vector<std::string> ff_line; ff_line.push_back( lab + ":" ); ff_line.push_back("COMBINE");
+      ff_line.push_back("ARG=" + lab + "_cos"); ff_line.push_back("PERIODIC=NO");
+      actions.push_back( ff_line );
+  } else {
+      plumed_assert( words[0]=="TORSIONS" ); std::vector<std::string> mc_line; 
+      mc_line.push_back(lab + ":"); mc_line.push_back("TORSIONS");
+      for(unsigned i=1;i<words.size();++i) mc_line.push_back(words[i]);
+      actions.push_back( mc_line );
+      MultiColvarBase::expandShortcut( lab, words, keys, actions );
+  }
+}
+
+void Torsion::registerKeywords( Keywords& keys ) {
+  MultiColvarBase::registerKeywords( keys );
+}
+
+Torsion::Torsion(const ActionOptions&ao):
   Action(ao),
   MultiColvarBase(ao)
 {
-  // Read in the atoms
-  int natoms=4; std::vector<AtomNumber> all_atoms;
-  readAtomsLikeKeyword( "ATOMS", natoms, all_atoms );
-  setupMultiColvarBase( all_atoms );
-  std::vector<bool> catom_ind(4, false);
-  catom_ind[1]=catom_ind[2]=true;
-  setAtomsForCentralAtom( catom_ind );
-  // Read in the vessels
-  readVesselKeywords();
-  // And check everything has been read in correctly
-  checkRead();
+  addValueWithDerivatives(); setNotPeriodic(); checkRead();
 }
 
-double Torsions::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
-  Vector d0,d1,d2;
-  d0=getSeparation(myatoms.getPosition(1),myatoms.getPosition(0));
-  d1=getSeparation(myatoms.getPosition(2),myatoms.getPosition(1));
-  d2=getSeparation(myatoms.getPosition(3),myatoms.getPosition(2));
+void Torsion::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
+  const Vector d0=getSeparation(myatoms.getPosition(1),myatoms.getPosition(0));
+  const Vector d1=getSeparation(myatoms.getPosition(2),myatoms.getPosition(1));
+  const Vector d2=getSeparation(myatoms.getPosition(3),myatoms.getPosition(2));
 
   Vector dd0,dd1,dd2; PLMD::Torsion t;
   double value  = t.compute(d0,d1,d2,dd0,dd1,dd2);
 
-  addAtomDerivatives(1,0,dd0,myatoms);
-  addAtomDerivatives(1,1,dd1-dd0,myatoms);
-  addAtomDerivatives(1,2,dd2-dd1,myatoms);
-  addAtomDerivatives(1,3,-dd2,myatoms);
+  myatoms.addAtomsDerivatives(0, 0, dd0);
+  myatoms.addAtomsDerivatives(0, 1, dd1-dd0);
+  myatoms.addAtomsDerivatives(0, 2, dd2-dd1);
+  myatoms.addAtomsDerivatives(0, 3, -dd2);
 
-  myatoms.addBoxDerivatives  (1, -(extProduct(d0,dd0)+extProduct(d1,dd1)+extProduct(d2,dd2)));
-
-  return value;
+  myatoms.addBoxDerivatives (0, -(extProduct(d0,dd0)+extProduct(d1,dd1)+extProduct(d2,dd2)));
+  myatoms.setValue( 0, value );
 }
 
 }

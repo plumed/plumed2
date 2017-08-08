@@ -43,7 +43,6 @@ private:
   std::vector<double> forcesToApply;
   std::vector<unsigned> getShape();
 protected:
-  bool rankOneOutput;
   void addValueWithDerivatives();
   void addComponentWithDerivatives( const std::string& name );
   void addValue( const unsigned& ival, const double& val, MultiValue& myvals ) const ;

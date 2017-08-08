@@ -48,6 +48,7 @@ private:
   ActionWithValue* getFirstNonStream();
   bool done_over_stream;
 protected:
+  bool numberedkeys;
   std::vector<ActionWithValue*> distinct_arguments;
   std::vector<unsigned> arg_ends, arg_deriv_starts;
 /// This changes the arg keyword in the pdb file

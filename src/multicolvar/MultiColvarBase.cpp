@@ -71,7 +71,7 @@ void MultiColvarBase::expandShortcut( const std::string& lab, const std::vector<
   // Parse LESS_THAN
   if( keys.count("LESS_THAN") ){
       std::vector<std::string> input; input.push_back( lab + "_lt:" ); input.push_back("LESS_THAN"); 
-      input.push_back("ARG=" + lab ); 
+      input.push_back("ARG1=" + lab ); 
       input.push_back("SWITCH=" + keys.find("LESS_THAN")->second  );
       actions.push_back( input );
       std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_lessthan:" ); 
@@ -83,7 +83,7 @@ void MultiColvarBase::expandShortcut( const std::string& lab, const std::vector<
           std::string istr; Tools::convert( i, istr );  
           if( !keys.count("LESS_THAN" + istr ) ){ break; } 
           std::vector<std::string> input; input.push_back( lab + "_lt" + istr + ":" ); input.push_back("LESS_THAN");
-          input.push_back("ARG=" + lab );
+          input.push_back("ARG1=" + lab );
           input.push_back("SWITCH=" + keys.find("LESS_THAN" + istr)->second  );
           actions.push_back( input );
           std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_lessthan" + istr + ":" ); 
@@ -94,7 +94,7 @@ void MultiColvarBase::expandShortcut( const std::string& lab, const std::vector<
   // Parse MORE_THAN
   if( keys.count("MORE_THAN") ){
       std::vector<std::string> input; input.push_back( lab + "_mt:" ); input.push_back("MORE_THAN");
-      input.push_back("ARG=" + lab );
+      input.push_back("ARG1=" + lab );
       input.push_back("SWITCH=" + keys.find("MORE_THAN")->second  );
       actions.push_back( input );
       std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_morethan:" ); 
@@ -106,7 +106,7 @@ void MultiColvarBase::expandShortcut( const std::string& lab, const std::vector<
           std::string istr; Tools::convert( i, istr );    
           if( !keys.count("MORE_THAN" + istr ) ){ break; }
           std::vector<std::string> input; input.push_back( lab + "_mt" + istr + ":" ); input.push_back("MORE_THAN");
-          input.push_back("ARG=" + lab );
+          input.push_back("ARG1=" + lab );
           input.push_back("SWITCH=" + keys.find("MORE_THAN" + istr)->second  );
           actions.push_back( input );
           std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_morethan" + istr + ":" ); 
@@ -158,7 +158,7 @@ void MultiColvarBase::expandShortcut( const std::string& lab, const std::vector<
   // Parse BETWEEN
   if( keys.count("BETWEEN") ){
       std::vector<std::string> input; input.push_back( lab + "_bt:" ); input.push_back("BETWEEN");
-      input.push_back("ARG=" + lab );
+      input.push_back("ARG1=" + lab );
       input.push_back("SWITCH=" + keys.find("BETWEEN")->second  );
       actions.push_back( input );
       std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_between:" ); 
@@ -170,7 +170,7 @@ void MultiColvarBase::expandShortcut( const std::string& lab, const std::vector<
           std::string istr; Tools::convert( i, istr );    
           if( !keys.count("BETWEEN" + istr ) ){ break; }
           std::vector<std::string> input; input.push_back( lab + "_bt" + istr + ":" ); input.push_back("BETWEEN");
-          input.push_back("ARG=" + lab );
+          input.push_back("ARG1=" + lab );
           input.push_back("SWITCH=" + keys.find("BETWEEN" + istr)->second  );
           actions.push_back( input );
           std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_between" + istr + ":" ); 
@@ -193,7 +193,7 @@ void MultiColvarBase::expandShortcut( const std::string& lab, const std::vector<
       for(unsigned i=0;i<nbins;++i){
           std::string smstr, istr; Tools::convert( i+1, istr ); Tools::convert( smear, smstr );
           std::vector<std::string> input; input.push_back( lab + "_bt" + istr + ":" ); input.push_back("BETWEEN");
-          input.push_back("ARG=" + lab ); std::string low_str, high_str; 
+          input.push_back("ARG1=" + lab ); std::string low_str, high_str; 
           Tools::convert( lower + i*delr, low_str ); Tools::convert( lower + (i+1)*delr, high_str );
           input.push_back("SWITCH= " + words[0] + " LOWER=" + low_str + " UPPER=" + high_str + " SMEAR=" + smstr );  actions.push_back( input );   
           std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_between" + istr + ":" ); 

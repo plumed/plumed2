@@ -75,7 +75,7 @@ void ActionVolume::expandShortcut( const std::string& lab, const std::vector<std
       if( keys.count("LESS_THAN") ){
           // Calculate number less than
           std::vector<std::string> lt_inp; lt_inp.push_back( mc_lab + "_" + lab + "_lt:" );
-          lt_inp.push_back("LESS_THAN"); lt_inp.push_back("ARG=" + mc_lab );
+          lt_inp.push_back("LESS_THAN"); lt_inp.push_back("ARG1=" + mc_lab );
           lt_inp.push_back("SWITCH=" + keys.find("LESS_THAN")->second  ); 
           actions.push_back( lt_inp );
           // And the matheval bit
@@ -90,7 +90,7 @@ void ActionVolume::expandShortcut( const std::string& lab, const std::vector<std
       if( keys.count("MORE_THAN") ){
           // Calculate number less than
           std::vector<std::string> lt_inp; lt_inp.push_back( mc_lab + "_" + lab + "_mt:" );
-          lt_inp.push_back("LESS_THAN"); lt_inp.push_back("ARG=" + mc_lab );
+          lt_inp.push_back("LESS_THAN"); lt_inp.push_back("ARG1=" + mc_lab );
           lt_inp.push_back("SWITCH=" + keys.find("LESS_THAN")->second  ); 
           actions.push_back( lt_inp );
           // And the matheval bit
@@ -105,7 +105,7 @@ void ActionVolume::expandShortcut( const std::string& lab, const std::vector<std
       if( keys.count("BETWEEN") ){
           // Calculate number less than
           std::vector<std::string> lt_inp; lt_inp.push_back( mc_lab + "_" + lab + "_bt:" );
-          lt_inp.push_back("LESS_THAN"); lt_inp.push_back("ARG=" + mc_lab );
+          lt_inp.push_back("LESS_THAN"); lt_inp.push_back("ARG1=" + mc_lab );
           lt_inp.push_back("SWITCH=" + keys.find("LESS_THAN")->second  ); 
           actions.push_back( lt_inp );
           // And the matheval bit

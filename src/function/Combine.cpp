@@ -110,8 +110,9 @@ Combine::Combine(const ActionOptions&ao):
   parameters(getNumberOfArguments(),0.0),
   powers(getNumberOfArguments(),1.0)
 {
-  rankOneOutput = getPntrToArgument(0)->getRank()>0 && arg_ends.size()==2;
-  if( rankOneOutput ) { 
+  if( !numberedkeys ) {
+     if( getPntrToArgument(0)->getRank()>0 && arg_ends.size()!=2 ) error("should only specify one non-scalar argument in input to ARG keyword");
+ 
      coefficients.resize( getNumberOfScalarArguments() ); parseVector("COEFFICIENTS",coefficients);
      if(coefficients.size()!=static_cast<unsigned>(getNumberOfScalarArguments()))
        error("Size of COEFFICIENTS array should be the same as number for arguments");
@@ -184,7 +185,7 @@ Combine::Combine(const ActionOptions&ao):
 
 void Combine::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
   double combine=0.0;
-  if( args.size()==1 ) {
+  if( args.size()==1 && !numberedkeys ) {
       unsigned ind = myvals.getTaskIndex(); plumed_dbg_assert( ind<parameters.size() );
       double cv = getPntrToArgument(0)->difference( parameters[ind], args[0] );
       combine = coefficients[ind]*pow(cv,powers[ind]); 

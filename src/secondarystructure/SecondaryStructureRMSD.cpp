@@ -44,7 +44,7 @@ void SecondaryStructureRMSD::expandShortcut( const std::string& lab, const std::
                                              const std::map<std::string,std::string>& keys, 
                                              std::vector<std::vector<std::string> >& actions ){
   std::vector<std::string> lt_line; lt_line.push_back( lab + "_lt:" ); 
-  lt_line.push_back("LESS_THAN"); lt_line.push_back( "ARG=" + lab ); 
+  lt_line.push_back("LESS_THAN"); lt_line.push_back( "ARG1=" + lab ); 
   if( keys.count("LESS_THAN") ){
       lt_line.push_back("SWITCH=" + keys.find("LESS_THAN")->second );
   } else {

@@ -69,8 +69,8 @@ LessThan::LessThan(const ActionOptions&ao):
   Action(ao),
   Function(ao)
 {
-  for(unsigned i=0;i<getNumberOfComponents();++i){
-     if( getPntrToComponent(i)->isPeriodic() ) error("cannot use this function on periodic functions");
+  for(unsigned i=0;i<getNumberOfArguments();++i){
+     if( getPntrToArgument(i)->isPeriodic() ) error("cannot use this function on periodic functions");
   }
 
   string sw,errors;
