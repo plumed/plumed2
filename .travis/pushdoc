@@ -50,9 +50,6 @@ EOF
 GIT_OWNER=$(  echo $TRAVIS_REPO_SLUG | sed "s/\/.*$//" )
 GIT_REPO=$(   echo $TRAVIS_REPO_SLUG | sed "s/^.*\///" )
 
-echo ${GIT_BOT}
-echo ${GIT_BOT_EMAIL}
-
 git init
 git config user.email "${GIT_BOT_EMAIL}"
 git config user.name "${GIT_BOT}"
