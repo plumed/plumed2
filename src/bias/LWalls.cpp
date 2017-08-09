@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Bias.h"
+#include "MultiBias.h"
 #include "ActionRegister.h"
 
 
@@ -65,7 +65,7 @@ PRINT ARG=uwall.bias,lwall.bias
 */
 //+ENDPLUMEDOC
 
-class LWalls : public Bias {
+class LWalls : public MultiBias {
   std::vector<double> at;
   std::vector<double> kappa;
   std::vector<double> exp;
@@ -73,14 +73,14 @@ class LWalls : public Bias {
   std::vector<double> offset;
 public:
   explicit LWalls(const ActionOptions&);
-  void calculate();
+  void calculateBias( const std::vector<double>& args, MultiValue& myvals ) const ;
   static void registerKeywords(Keywords& keys);
 };
 
 PLUMED_REGISTER_ACTION(LWalls,"LOWER_WALLS")
 
 void LWalls::registerKeywords(Keywords& keys) {
-  Bias::registerKeywords(keys);
+  MultiBias::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","AT","the positions of the wall. The a_i in the expression for a wall.");
   keys.add("compulsory","KAPPA","the force constant for the wall.  The k_i in the expression for a wall.");
@@ -91,7 +91,8 @@ void LWalls::registerKeywords(Keywords& keys) {
 }
 
 LWalls::LWalls(const ActionOptions&ao):
-  PLUMED_BIAS_INIT(ao),
+  Action(ao),
+  MultiBias(ao),
   at(getNumberOfArguments(),0),
   kappa(getNumberOfArguments(),0.0),
   exp(getNumberOfArguments(),2.0),
@@ -125,12 +126,12 @@ LWalls::LWalls(const ActionOptions&ao):
   addComponent("force2"); componentIsNotPeriodic("force2");
 }
 
-void LWalls::calculate() {
+void LWalls::calculateBias( const std::vector<double>& args, MultiValue& myvals ) const {
   double ene = 0.0;
   double totf2 = 0.0;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     double f = 0.0;
-    const double cv=difference(i,at[i],getArgumentScalar(i));
+    const double cv=difference(i,at[i],args[i]);
     const double k=kappa[i];
     const double exponent=exp[i];
     const double epsilon=eps[i];
@@ -145,10 +146,10 @@ void LWalls::calculate() {
       ene += k * power;
       totf2 += f * f;
     }
-    setOutputForce(i,f);
+    addBiasDerivative( i, -f, myvals );
   }
-  setBias(ene);
-  getPntrToComponent("force2")->set(totf2);
+  setBias( ene, myvals ); 
+  setNonBiasComponent( 0, totf2, myvals );
 }
 
 }

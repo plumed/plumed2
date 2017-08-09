@@ -490,7 +490,7 @@ void ActionWithValue::getNumberOfStreamedQuantities( unsigned& nquants, unsigned
 void ActionWithValue::getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize ){
   for(unsigned i=0;i<values.size();++i){
       values[i]->bufstart=bufsize; 
-      if( values[i]->getRank()==0 && !noderiv ) bufsize += 1 + values[i]->getNumberOfDerivatives();
+      if( values[i]->getRank()==0 && values[i]->hasDerivatives() ) bufsize += 1 + values[i]->getNumberOfDerivatives();
       else if( values[i]->getRank()==0 ) bufsize += 1;
       else if( values[i]->storedata ){
           if( values[i]->hasDeriv ) bufsize += values[i]->getSize(); else bufsize += nactive_tasks;
@@ -627,7 +627,7 @@ void ActionWithValue::finishComputations( const std::vector<double>& buffer ){
       if( values[i]->storedata ){
           for(unsigned j=0;j<values[i]->getSize();++j) values[i]->add( j, buffer[bufstart+j] ); 
       }
-      if( !doNotCalculateDerivatives() && values[i]->getRank()==0 ){ 
+      if( !doNotCalculateDerivatives() && values[i]->hasDeriv && values[i]->getRank()==0 ){ 
           for(unsigned j=0;j<values[i]->getNumberOfDerivatives();++j) values[i]->setDerivative( j, buffer[bufstart+1+j] );
       }
   }

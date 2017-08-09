@@ -1,2 +1,0 @@
-include ../scripts/module.make
-

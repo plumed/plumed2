@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Bias.h"
+#include "MultiBias.h"
 #include "ActionRegister.h"
 
 
@@ -60,22 +60,20 @@ PRINT ARG=restraint.bias
 */
 //+ENDPLUMEDOC
 
-class Restraint : public Bias {
+class Restraint : public MultiBias {
   std::vector<double> at;
   std::vector<double> kappa;
   std::vector<double> slope;
-  Value* valueForce2;
 public:
   explicit Restraint(const ActionOptions&);
-  void calculate();
+  void calculateBias( const std::vector<double>& args, MultiValue& myvals ) const ;
   static void registerKeywords(Keywords& keys);
 };
 
 PLUMED_REGISTER_ACTION(Restraint,"RESTRAINT")
 
 void Restraint::registerKeywords(Keywords& keys) {
-  Bias::registerKeywords(keys);
-  keys.use("ARG");
+  MultiBias::registerKeywords(keys); keys.use("ARG");
   keys.add("compulsory","SLOPE","0.0","specifies that the restraint is linear and what the values of the force constants on each of the variables are");
   keys.add("compulsory","KAPPA","0.0","specifies that the restraint is harmonic and what the values of the force constants on each of the variables are");
   keys.add("compulsory","AT","the position of the restraint");
@@ -83,7 +81,8 @@ void Restraint::registerKeywords(Keywords& keys) {
 }
 
 Restraint::Restraint(const ActionOptions&ao):
-  PLUMED_BIAS_INIT(ao),
+  Action(ao),
+  MultiBias(ao),
   at(getNumberOfArguments()),
   kappa(getNumberOfArguments(),0.0),
   slope(getNumberOfArguments(),0.0)
@@ -103,26 +102,24 @@ Restraint::Restraint(const ActionOptions&ao):
   for(unsigned i=0; i<slope.size(); i++) log.printf(" %f",slope[i]);
   log.printf("\n");
 
-  addComponent("force2");
-  componentIsNotPeriodic("force2");
-  valueForce2=getPntrToComponent("force2");
+  addComponent("force2"); componentIsNotPeriodic("force2");
 }
 
 
-void Restraint::calculate() {
+void Restraint::calculateBias( const std::vector<double>& args, MultiValue& myvals ) const {
   double ene=0.0;
   double totf2=0.0;
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    const double cv=difference(i,at[i],getArgumentScalar(i));
+  for(unsigned i=0; i<args.size(); ++i) {
+    const double cv=difference(i,at[i],args[i]);
     const double k=kappa[i];
     const double m=slope[i];
     const double f=-(k*cv+m);
+    addBiasDerivative( i, -f, myvals );
     ene+=0.5*k*cv*cv+m*cv;
-    setOutputForce(i,f);
     totf2+=f*f;
   }
-  setBias(ene);
-  valueForce2->set(totf2);
+  setBias( ene, myvals );
+  setNonBiasComponent( 0, totf2, myvals );
 }
 
 }
