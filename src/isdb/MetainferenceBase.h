@@ -313,11 +313,11 @@ void MetainferenceBase::calculateNumericalDerivatives( ActionWithValue* a ) {
   if( getNumberOfAtoms()>0 ) {
     Matrix<double> save_derivatives( getNumberOfComponents(), getNumberOfArguments() );
     for(unsigned j=0; j<getNumberOfComponents(); ++j) {
-      for(unsigned i=0; i<getNumberOfArguments(); ++i) save_derivatives(j,i)=getPntrToComponent(j)->getDerivative(i);
+      for(unsigned i=0; i<getNumberOfArguments(); ++i) if(getPntrToComponent(j)->hasDerivatives()) save_derivatives(j,i)=getPntrToComponent(j)->getDerivative(i);
     }
     calculateAtomicNumericalDerivatives( a, getNumberOfArguments() );
     for(unsigned j=0; j<getNumberOfComponents(); ++j) {
-      for(unsigned i=0; i<getNumberOfArguments(); ++i) getPntrToComponent(j)->addDerivative( i, save_derivatives(j,i) );
+      for(unsigned i=0; i<getNumberOfArguments(); ++i) if(getPntrToComponent(j)->hasDerivatives()) getPntrToComponent(j)->addDerivative( i, save_derivatives(j,i) );
     }
   }
 }
