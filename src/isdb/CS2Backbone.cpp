@@ -1171,21 +1171,17 @@ void CS2Backbone::calculate()
     /* calculate final derivatives */
     Value* val=getPntrToComponent("score");
 
+    Tensor virial;
     for(unsigned i=0; i<all_list.size(); i++) {
       for(unsigned j=0; j<all_list[i].size(); j++) {
         for(unsigned k=0; k<all_list[i][j].size(); k++) {
           for(unsigned l=0; l<all_list[i][j][k].size(); l++) {
             setAtomsDerivatives(val, all_list[i][j][k][l],  all_ff[i][j][k][l]*getMetaDer(index_cs[i][j][k]));
+            virial-=Tensor(getPosition(all_list[i][j][k][l]), all_ff[i][j][k][l]*getMetaDer(index_cs[i][j][k]));
           }
         }
       }
     }
-    Tensor virial;
-    unsigned nat=getNumberOfAtoms();
-    for(unsigned i=0; i<nat; i++) virial-=Tensor(getPosition(i),
-                                            Vector(val->getDerivative(3*i+0),
-                                                val->getDerivative(3*i+1),
-                                                val->getDerivative(3*i+2)));
     setBoxDerivatives(val,virial);
 
   }
