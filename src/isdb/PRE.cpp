@@ -286,7 +286,6 @@ void PRE::calculate()
     val->set(ratio);
     if(!getDoScore()) {
       setBoxDerivatives(val, fact[i]*dervir);
-      dervir.zero();
       for(unsigned j=0; j<nga[i]; j++) {
         const unsigned i0=nl->getClosePair(index+j).first;
         const unsigned i1=nl->getClosePair(index+j).second;
