@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017 The plumed team
+   Copyright (c) 2014-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -51,14 +51,14 @@ of \ref METAINFERENCE that is activated by DOSCORE.
 \par Examples
 In the following examples three noes are defined, the first is calculated based on the distances
 of atom 1-2 and 3-2; the second is defined by the distance 5-7 and the third by the distances
-4-15,4-16,8-15,8-16. \ref METAINFERENCE is activated using DOSCORE and NDATA.
+4-15,4-16,8-15,8-16. \ref METAINFERENCE is activated using DOSCORE.
 
 \plumedfile
 NOE ...
 GROUPA1=1,3 GROUPB1=2,2
 GROUPA2=5 GROUPB2=7
 GROUPA3=4,4,8,8 GROUPB3=15,16,15,16
-DOSCORE NDATA=3
+DOSCORE
 LABEL=noes
 ... NOE
 
