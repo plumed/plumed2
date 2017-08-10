@@ -80,7 +80,6 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit NOE(const ActionOptions&);
   ~NOE();
-  void calculate_simple();
   void calculate();
   void update();
 };
@@ -209,13 +208,14 @@ NOE::~NOE() {
   delete nl;
 }
 
-void NOE::calculate_simple()
+void NOE::calculate()
 {
   const unsigned ngasz=nga.size();
+  vector<Vector> deriv(tot_size, Vector{0,0,0});
+  Tensor dervir;
 
   #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for(unsigned i=0; i<ngasz; i++) {
-    Tensor dervir;
     double noe=0;
     unsigned index=0;
     for(unsigned k=0; k<i; k++) index+=nga[k];
@@ -238,60 +238,26 @@ void NOE::calculate_simple()
       const double tmpir8=c_aver*ir8;
 
       noe += tmpir6;
-      Vector deriv = tmpir8*distance;
-      dervir += Tensor(distance,deriv);
-      setAtomsDerivatives(val, i0,  deriv);
-      setAtomsDerivatives(val, i1, -deriv);
+      deriv[index+j] = tmpir8*distance;
+      if(!getDoScore()) {
+        dervir += Tensor(distance, deriv[index+j]);
+        setAtomsDerivatives(val, i0,  deriv[index+j]);
+        setAtomsDerivatives(val, i1, -deriv[index+j]);
+      }
     }
     val->set(noe);
-    setBoxDerivatives(val, dervir);
+    if(!getDoScore()) {
+      setBoxDerivatives(val, dervir);
+      dervir.zero();
+    } else setCalcData(i, noe);
   }
-}
 
-
-void NOE::calculate()
-{
-  if(!getDoScore()) calculate_simple();
-  else {
-    vector<Vector> deriv(tot_size, Vector{0,0,0});
-    const unsigned ngasz=nga.size();
-
-    #pragma omp parallel for num_threads(OpenMP::getNumThreads())
-    for(unsigned i=0; i<ngasz; i++) {
-      double noe=0;
-      unsigned index=0;
-      for(unsigned k=0; k<i; k++) index+=nga[k];
-      const double c_aver=1./static_cast<double>(nga[i]);
-      string num; Tools::convert(i,num);
-      Value* val=getPntrToComponent("noe_"+num);
-      // cycle over equivalent atoms
-      for(unsigned j=0; j<nga[i]; j++) {
-        const unsigned i0=nl->getClosePair(index+j).first;
-        const unsigned i1=nl->getClosePair(index+j).second;
-
-        Vector distance;
-        if(pbc) distance=pbcDistance(getPosition(i0),getPosition(i1));
-        else    distance=delta(getPosition(i0),getPosition(i1));
-
-        const double ir2=1./distance.modulo2();
-        const double ir6=ir2*ir2*ir2;
-        const double ir8=6*ir6*ir2;
-        const double tmpir6=c_aver*ir6;
-        const double tmpir8=c_aver*ir8;
-
-        noe += tmpir6;
-        deriv[index+j] = tmpir8*distance;
-      }
-      val->set(noe);
-      setCalcData(i, noe);
-    }
-
+  if(getDoScore()) {
     /* Metainference */
     double score = getScore();
     setScore(score);
 
     /* calculate final derivatives */
-    Tensor dervir;
     Value* val=getPntrToComponent("score");
     for(unsigned i=0; i<ngasz; i++) {
       unsigned index=0;
