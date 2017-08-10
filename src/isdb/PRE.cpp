@@ -250,11 +250,11 @@ void PRE::calculate()
 {
   vector<Vector> deriv(tot_size, Vector{0,0,0});
   vector<double> fact(nga.size(), 0.);
-  Tensor dervir;
 
   // cycle over the number of PRE
   #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for(unsigned i=0; i<nga.size(); i++) {
+    Tensor dervir;
     double pre=0;
     unsigned index=0;
     for(unsigned k=0; k<i; k++) index+=nga[k];
@@ -298,6 +298,7 @@ void PRE::calculate()
 
   if(getDoScore()) {
     /* Metainference */
+    Tensor dervir;
     double score = getScore();
     setScore(score);
 

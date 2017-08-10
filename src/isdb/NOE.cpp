@@ -212,10 +212,10 @@ void NOE::calculate()
 {
   const unsigned ngasz=nga.size();
   vector<Vector> deriv(tot_size, Vector{0,0,0});
-  Tensor dervir;
 
   #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for(unsigned i=0; i<ngasz; i++) {
+    Tensor dervir;
     double noe=0;
     unsigned index=0;
     for(unsigned k=0; k<i; k++) index+=nga[k];
@@ -248,12 +248,12 @@ void NOE::calculate()
     val->set(noe);
     if(!getDoScore()) {
       setBoxDerivatives(val, dervir);
-      dervir.zero();
     } else setCalcData(i, noe);
   }
 
   if(getDoScore()) {
     /* Metainference */
+    Tensor dervir;
     double score = getScore();
     setScore(score);
 
