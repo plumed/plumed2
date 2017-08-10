@@ -209,7 +209,7 @@ void RDC::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","GYROM","1.","Add the product of the gyromagnetic constants for the bond. ");
   keys.add("compulsory","SCALE","1.","Add the scaling factor to take into account concentration and other effects. ");
   keys.addFlag("SVD",false,"Set to TRUE if you want to backcalculate using Single Value Decomposition (need GSL at compilation time).");
-  keys.addFlag("ADDEXP",false,"Set to TRUE if you want to have fixed components with the experimetnal values.");
+  keys.addFlag("ADDCOUPLINGS",false,"Set to TRUE if you want to have fixed components with the experimetnal values.");
   keys.add("numbered","COUPLING","Add an experimental value for each coupling (needed by SVD and usefull for \ref STATS).");
   keys.addOutputComponent("rdc","default","the calculated # RDC");
   keys.addOutputComponent("exp","SVD/ADDCOUPLINGS","the experimental # RDC");
@@ -265,7 +265,7 @@ RDC::RDC(const ActionOptions&ao):
   if(svd&&getDoScore()) error("It is not possible to use SVD and METAINFERENCE together");
 
   bool addexp=false;
-  parseFlag("ADDEXP",addexp);
+  parseFlag("ADDCOUPLINGS",addexp);
   if(getDoScore()||svd) addexp=true;
 
   if(addexp) {
