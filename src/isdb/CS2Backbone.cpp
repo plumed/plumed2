@@ -812,8 +812,12 @@ void CS2Backbone::calculate()
   const unsigned chainsize = atom.size();
   const unsigned atleastned = 72+ringInfo.size()*6;
 
-  vector<vector<unsigned> > all_list(getNarg(), vector<unsigned>());
-  vector<vector<Vector> > all_ff(getNarg(), vector<Vector>());
+  vector<vector<unsigned> > all_list;
+  vector<vector<Vector> > all_ff;
+  if(getDoScore()) {
+    all_list.resize(getNarg(), vector<unsigned>());
+    all_ff.resize(getNarg(), vector<Vector>());
+  }
 
   // CYCLE OVER MULTIPLE CHAINS
   #pragma omp parallel num_threads(OpenMP::getNumThreads())

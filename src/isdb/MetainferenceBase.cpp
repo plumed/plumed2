@@ -92,6 +92,7 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
   ActionWithValue(ao),
   doscore_(false),
   write_stride_(0),
+  narg(0),
   doscale_(false),
   scale_(1.),
   scale_mu_(0),
