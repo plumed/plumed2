@@ -812,16 +812,8 @@ void CS2Backbone::calculate()
   const unsigned chainsize = atom.size();
   const unsigned atleastned = 72+ringInfo.size()*6;
 
-  vector<vector<vector<vector<unsigned> > > > all_list(chainsize, vector<vector<vector<unsigned> > >());
-  vector<vector<vector<vector<Vector> > > > all_ff(chainsize, vector<vector<vector<Vector> > >());
-  for(unsigned i=0; i<chainsize; i++) {
-    all_list[i].resize(atom[i].size(), vector<vector<unsigned> >());
-    all_ff[i].resize(atom[i].size(), vector<vector<Vector> >());
-    for(unsigned j=0; j<atom[i].size(); j++) {
-      all_list[i][j].resize(6, vector<unsigned>());
-      all_ff[i][j].resize(6, vector<Vector>());
-    }
-  }
+  vector<vector<unsigned> > all_list(getNarg(), vector<unsigned>());
+  vector<vector<Vector> > all_ff(getNarg(), vector<Vector>());
 
   // CYCLE OVER MULTIPLE CHAINS
   #pragma omp parallel num_threads(OpenMP::getNumThreads())
@@ -862,12 +854,15 @@ void CS2Backbone::calculate()
           // this is the atom for which we are calculating the chemical shift
           const unsigned ipos = myfrag->pos[at_kind];
 
+          all_list[index_cs[s][a][at_kind]].reserve(needed_atoms);
+          all_ff[index_cs[s][a][at_kind]].reserve(needed_atoms);
           vector<unsigned> list;
           list.reserve(needed_atoms);
           list.push_back(ipos);
           vector<Vector> ff;
           ff.reserve(needed_atoms);
           ff.push_back(Vector(0,0,0));
+
 
           //PREV
           const double * CONST_BB2_PREV = db.CONST_BB2_PREV(aa_kind,at_kind);
@@ -1138,8 +1133,8 @@ void CS2Backbone::calculate()
 
           if(getDoScore()) {
             setCalcData(index_cs[s][a][at_kind], cs);
-            all_list[s][a][at_kind] = list;
-            all_ff[s][a][at_kind] = ff;
+            all_list[index_cs[s][a][at_kind]] = list;
+            all_ff[index_cs[s][a][at_kind]] = ff;
             Value *comp = atom[s][a].comp[at_kind];
             comp->set(cs);
           } else if(camshift) {
@@ -1172,14 +1167,12 @@ void CS2Backbone::calculate()
     Value* val=getPntrToComponent("score");
 
     Tensor virial;
+
     for(unsigned i=0; i<all_list.size(); i++) {
+      const double fact = getMetaDer(i);
       for(unsigned j=0; j<all_list[i].size(); j++) {
-        for(unsigned k=0; k<all_list[i][j].size(); k++) {
-          for(unsigned l=0; l<all_list[i][j][k].size(); l++) {
-            setAtomsDerivatives(val, all_list[i][j][k][l],  all_ff[i][j][k][l]*getMetaDer(index_cs[i][j][k]));
-            virial-=Tensor(getPosition(all_list[i][j][k][l]), all_ff[i][j][k][l]*getMetaDer(index_cs[i][j][k]));
-          }
-        }
+         setAtomsDerivatives(val, all_list[i][j],  all_ff[i][j]*fact);
+         virial-=Tensor(getPosition(all_list[i][j]), all_ff[i][j]*fact);
       }
     }
     setBoxDerivatives(val,virial);

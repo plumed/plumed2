@@ -483,10 +483,10 @@ void RDC::calculate()
       Vector  distance;
       if(pbc) distance   = pbcDistance(getPosition(r),getPosition(r+1));
       else    distance   = delta(getPosition(r),getPosition(r+1));
-
-      dervir += Tensor(distance,dRDC[index]*getMetaDer(index));
-      setAtomsDerivatives(val, r,  dRDC[index]*getMetaDer(index));
-      setAtomsDerivatives(val, r+1, -dRDC[index]*getMetaDer(index));
+      const Vector der = dRDC[index]*getMetaDer(index);
+      dervir += Tensor(distance, der);
+      setAtomsDerivatives(val, r,  der);
+      setAtomsDerivatives(val, r+1, -der);
     }
     setBoxDerivatives(val, dervir);
   }
