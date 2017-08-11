@@ -854,8 +854,6 @@ void CS2Backbone::calculate()
           // this is the atom for which we are calculating the chemical shift
           const unsigned ipos = myfrag->pos[at_kind];
 
-          all_list[index_cs[s][a][at_kind]].reserve(needed_atoms);
-          all_ff[index_cs[s][a][at_kind]].reserve(needed_atoms);
           vector<unsigned> list;
           list.reserve(needed_atoms);
           list.push_back(ipos);
@@ -1137,19 +1135,21 @@ void CS2Backbone::calculate()
             all_ff[index_cs[s][a][at_kind]] = ff;
             Value *comp = atom[s][a].comp[at_kind];
             comp->set(cs);
-          } else if(camshift) {
-            score += (cs - atom[s][a].exp_cs[at_kind])*(cs - atom[s][a].exp_cs[at_kind])/camshift_sigma2[at_kind];
-            double fact = 2.0*(cs - atom[s][a].exp_cs[at_kind])/camshift_sigma2[at_kind];
-            for(unsigned i=0; i<list.size(); i++) omp_deriv[list[i]] += fact*ff[i];
           } else {
-            Value *comp = atom[s][a].comp[at_kind];
-            comp->set(cs);
-            Tensor virial;
-            for(unsigned i=0; i<list.size(); i++) {
-              setAtomsDerivatives(comp,list[i],ff[i]);
-              virial-=Tensor(getPosition(list[i]),ff[i]);
+            if(camshift) {
+              score += (cs - atom[s][a].exp_cs[at_kind])*(cs - atom[s][a].exp_cs[at_kind])/camshift_sigma2[at_kind];
+              double fact = 2.0*(cs - atom[s][a].exp_cs[at_kind])/camshift_sigma2[at_kind];
+              for(unsigned i=0; i<list.size(); i++) omp_deriv[list[i]] += fact*ff[i];
+            } else {
+              Value *comp = atom[s][a].comp[at_kind];
+              comp->set(cs);
+              Tensor virial;
+              for(unsigned i=0; i<list.size(); i++) {
+                setAtomsDerivatives(comp,list[i],ff[i]);
+                virial-=Tensor(getPosition(list[i]),ff[i]);
+              }
+              setBoxDerivatives(comp,virial);
             }
-            setBoxDerivatives(comp,virial);
           }
         }
       }
@@ -1171,12 +1171,11 @@ void CS2Backbone::calculate()
     for(unsigned i=0; i<all_list.size(); i++) {
       const double fact = getMetaDer(i);
       for(unsigned j=0; j<all_list[i].size(); j++) {
-         setAtomsDerivatives(val, all_list[i][j],  all_ff[i][j]*fact);
-         virial-=Tensor(getPosition(all_list[i][j]), all_ff[i][j]*fact);
+        setAtomsDerivatives(val, all_list[i][j],  all_ff[i][j]*fact);
+        virial-=Tensor(getPosition(all_list[i][j]), all_ff[i][j]*fact);
       }
     }
     setBoxDerivatives(val,virial);
-
   }
 
   // in the case of camshift we calculate the virial at the end
