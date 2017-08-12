@@ -32,7 +32,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit AltMin( const ActionOptions& ao );
   void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const ;
-  void transformFinalValueAndDerivatives();
+  void transformFinalValueAndDerivatives( const std::vector<double>& buf );
 };
 
 PLUMED_REGISTER_ACTION(AltMin,"ALT_MIN")
@@ -76,7 +76,7 @@ void AltMin::calculateFunction( const std::vector<double>& args, MultiValue& myv
   }  
 }
 
-void AltMin::transformFinalValueAndDerivatives() {
+void AltMin::transformFinalValueAndDerivatives( const std::vector<double>& buf ) {
   if( !actionInChain() || getNumberOfArguments()>1 ) return;
   Value* val0 = getPntrToComponent(0); double val = val0->get(); 
   double fval = -std::log( val ) / beta; val0->set( fval );

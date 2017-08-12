@@ -77,8 +77,10 @@ ActionWithValue::ActionWithValue(const ActionOptions&ao):
   if(numericalDerivatives) log.printf("  using numerical derivatives\n");
   if( keywords.exists("SERIAL") ) parseFlag("SERIAL",serial); 
   else serial=true;
-  parseFlag("TIMINGS",timers);
-  if( timers ){ stopwatch.start(); stopwatch.pause(); }
+  if( keywords.exists("TIMINGS") ){
+      parseFlag("TIMINGS",timers);
+      if( timers ){ stopwatch.start(); stopwatch.pause(); }
+  }
 }
 
 ActionWithValue::~ActionWithValue() {
@@ -418,7 +420,9 @@ void ActionWithValue::runAllTasks() {
   }
 
   // Get the total number of streamed quantities that we need
-  unsigned nquantities = 0, ncols=0, nmatrices=0; getNumberOfStreamedQuantities( nquantities, ncols, nmatrices );
+  unsigned nquantities = 0, ncols=0, nmatrices=0; 
+  getNumberOfStreamedQuantities( nquantities, ncols, nmatrices );
+  setupVirtualAtomStashes( nquantities );
   // Get size for buffer
   unsigned bufsize=0; getSizeOfBuffer( nactive_tasks, bufsize );
   if( buffer.size()!=bufsize ) buffer.resize( bufsize );
@@ -474,6 +478,12 @@ void ActionWithValue::runAllTasks() {
 void ActionWithValue::getNumberOfStreamedDerivatives( unsigned& nderivatives ) const {
   unsigned nnd = getNumberOfDerivatives(); if( nnd>nderivatives ) nderivatives = nnd;
   if( action_to_do_after ) action_to_do_after->getNumberOfStreamedDerivatives( nderivatives );
+}
+
+void ActionWithValue::setupVirtualAtomStashes( unsigned& nquants ) {
+  ActionWithVirtualAtom* av = dynamic_cast<ActionWithVirtualAtom*>( this );
+  if( av ) av->setStashIndices( nquants );
+  if( action_to_do_after ) action_to_do_after->setupVirtualAtomStashes( nquants );
 }
 
 void ActionWithValue::getNumberOfStreamedQuantities( unsigned& nquants, unsigned& ncols, unsigned& nmat ) const {
@@ -602,6 +612,11 @@ void ActionWithValue::gatherAccumulators( const unsigned& taskCode, const MultiV
            }
       } 
   }
+
+  // Special method for dealing with centers
+  const ActionWithVirtualAtom* av = dynamic_cast<const ActionWithVirtualAtom*>( this );
+  if( av ) av->gatherForVirtualAtom( myvals, buffer );
+
   if( action_to_do_after ){
      if( action_to_do_after->isActive() ) action_to_do_after->gatherAccumulators( taskCode, myvals, buffer );
   }
@@ -631,7 +646,7 @@ void ActionWithValue::finishComputations( const std::vector<double>& buffer ){
           for(unsigned j=0;j<values[i]->getNumberOfDerivatives();++j) values[i]->setDerivative( j, buffer[bufstart+1+j] );
       }
   }
-  transformFinalValueAndDerivatives();
+  transformFinalValueAndDerivatives( buffer );
   if( action_to_do_after ){
      if( action_to_do_after->isActive() ) action_to_do_after->finishComputations( buffer );
   }

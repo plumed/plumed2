@@ -35,6 +35,7 @@ void ActionWithVirtualAtom::registerKeywords(Keywords& keys) {
 ActionWithVirtualAtom::ActionWithVirtualAtom(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao),
+  ActionWithValue(ao),
   boxDerivatives(3)
 {
   index=atoms.addVirtualAtom(this);

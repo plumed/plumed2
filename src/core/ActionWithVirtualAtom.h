@@ -23,6 +23,7 @@
 #define __PLUMED_core_ActionWithVirtualAtom_h
 
 #include "ActionAtomistic.h"
+#include "ActionWithValue.h"
 #include "tools/AtomNumber.h"
 #include "tools/Vector.h"
 #include "tools/Tensor.h"
@@ -38,7 +39,8 @@ Inherit from here if you are calculating the position of a virtual atom (eg a ce
 /// Class to add a single virtual atom to the system.
 /// (it might be extended to add multiple virtual atoms).
 class ActionWithVirtualAtom:
-  public ActionAtomistic
+  public ActionAtomistic,
+  public ActionWithValue
 {
   AtomNumber index;
   std::vector<Tensor> derivatives;
@@ -83,7 +85,15 @@ public:
   static void registerKeywords(Keywords& keys);
   void setGradientsIfNeeded();
   unsigned getNumberOfVirtualAtoms() const ;
+  virtual unsigned getNumberOfDerivatives() const ;
+  virtual void setStashIndices( unsigned& nquants ) { plumed_error(); }
+  virtual void gatherForVirtualAtom( const MultiValue& myvals, std::vector<double>& buffer ) const { plumed_error(); }
 };
+
+inline
+unsigned ActionWithVirtualAtom::getNumberOfDerivatives() const {
+  return 0;
+}
 
 inline
 unsigned ActionWithVirtualAtom::getNumberOfVirtualAtoms() const {

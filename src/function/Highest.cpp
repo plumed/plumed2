@@ -48,7 +48,7 @@ public:
   explicit Highest(const ActionOptions&);
   void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const ;
   static void registerKeywords(Keywords& keys);
-  void transformFinalValueAndDerivatives();
+  void transformFinalValueAndDerivatives( const std::vector<double>& buf );
 };
 
 
@@ -86,7 +86,7 @@ void Highest::calculateFunction( const std::vector<double>& args, MultiValue& my
   }
 }
 
-void Highest::transformFinalValueAndDerivatives() {
+void Highest::transformFinalValueAndDerivatives( const std::vector<double>& buf ) {
   if( !actionInChain() || getNumberOfArguments()>1 ) return;
 
   unsigned hind = 0, pves = 0; unsigned aind=0; double highest = getPntrToArgument(0)->get(0);

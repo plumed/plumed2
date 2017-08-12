@@ -55,7 +55,7 @@ public:
   static void registerKeywords(Keywords& keys);
   explicit Path(const ActionOptions&);
   void     calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const ;
-  void transformFinalValueAndDerivatives();
+  void transformFinalValueAndDerivatives( const std::vector<double>& buf );
 };
 
 
@@ -178,7 +178,7 @@ void Path::calculateFunction( const std::vector<double>& args, MultiValue& myval
   }
 }
 
-void Path::transformFinalValueAndDerivatives() {
+void Path::transformFinalValueAndDerivatives( const std::vector<double>& buf ) {
   if( !actionInChain() || getNumberOfArguments()>1 ) return;
   Value* val0 = getPntrToComponent(0); Value* val1 = getPntrToComponent(1);
   double num = val0->get(), denom = val1->get();

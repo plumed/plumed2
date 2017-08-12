@@ -148,7 +148,6 @@ void MultiBias::apply() {
   }
   // And add all the forces from here and elsewhere
   std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned ss=0;
-  printf("IN APPLY %s \n",getLabel().c_str() );
   if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( forcesToApply, ss );
 }
 

@@ -48,7 +48,7 @@ public:
   explicit Lowest(const ActionOptions&);
   void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const ;
   static void registerKeywords(Keywords& keys);
-  void transformFinalValueAndDerivatives();
+  void transformFinalValueAndDerivatives( const std::vector<double>& buf );
 };
 
 
@@ -86,7 +86,7 @@ void Lowest::calculateFunction( const std::vector<double>& args, MultiValue& myv
   }
 }
 
-void Lowest::transformFinalValueAndDerivatives() {
+void Lowest::transformFinalValueAndDerivatives( const std::vector<double>& buf ) {
   if( !actionInChain() || getNumberOfArguments()>1 ) return;
 
   unsigned lind = 0, pves = 0; unsigned aind=0; double lowest = getPntrToArgument(0)->get(0); 

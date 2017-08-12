@@ -110,7 +110,7 @@ private:
   void gatherAccumulators( const unsigned& index, const MultiValue& myvals, std::vector<double>& buf ) const ;
   void finishComputations( const std::vector<double>& buf );
   void getNumberOfStreamedQuantities( unsigned& nquants, unsigned& ncols, unsigned& nmat ) const ;
-  void getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize );
+  void setupVirtualAtomStashes( unsigned& nquants );
   void getAllActionLabelsInChain( std::vector<std::string>& mylabels ) const ;
 public:
 
@@ -124,6 +124,7 @@ public:
   void setNotPeriodic();
 /// Set the value to be periodic with a particular domain
   void setPeriodic( const std::string& min, const std::string& max );
+  virtual void getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize );
 protected:
 ///
   bool actionInChain() const ; 
@@ -244,7 +245,7 @@ public:
 ///
   bool addActionToChain( const std::vector<std::string>& alabels, ActionWithValue* act );
 ///
-  virtual void transformFinalValueAndDerivatives(){};
+  virtual void transformFinalValueAndDerivatives( const std::vector<double>& buf  ){};
 /// Retrieve the forces acting on all values
   bool getForcesFromValues( std::vector<double>& forces ) const ;
 };

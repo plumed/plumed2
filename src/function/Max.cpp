@@ -32,7 +32,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Max( const ActionOptions& ao );
   void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const ;
-  void transformFinalValueAndDerivatives();
+  void transformFinalValueAndDerivatives( const std::vector<double>& buf );
 };
 
 PLUMED_REGISTER_ACTION(Max,"MAX")
@@ -76,7 +76,7 @@ void Max::calculateFunction( const std::vector<double>& args, MultiValue& myvals
   }  
 }
 
-void Max::transformFinalValueAndDerivatives() {
+void Max::transformFinalValueAndDerivatives( const std::vector<double>& buf ) {
   if( !actionInChain() || getNumberOfArguments()>1 ) return;
   Value* val0 = getPntrToComponent(0); double val = val0->get(); 
   double fval = beta*std::log( val ); val0->set( fval );
