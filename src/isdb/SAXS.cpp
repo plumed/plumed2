@@ -24,13 +24,14 @@
  Carlo Camilloni
 */
 
-#include "colvar/Colvar.h"
-#include "colvar/ActionRegister.h"
+#include "MetainferenceBase.h"
+#include "core/ActionRegister.h"
 #include "core/ActionSet.h"
 #include "core/PlumedMain.h"
 #include "core/SetupMolInfo.h"
 #include "tools/Communicator.h"
 #include "tools/OpenMP.h"
+#include "tools/Pbc.h"
 
 #include <string>
 #include <cmath>
@@ -62,7 +63,7 @@ MOLINFO STRUCTURE=template.pdb
 SAXS ...
 LABEL=saxs
 ATOMS=1-355
-ADDEXPVALUES
+ADDEXP
 SCEXP=3920000
 MARTINI
 QVALUE1=0.02 EXPINT1=1.0902
@@ -89,7 +90,9 @@ PRINT ARG=(saxs\.q_.*),(saxs\.exp_.*) FILE=colvar STRIDE=1
 */
 //+ENDPLUMEDOC
 
-class SAXS : public Colvar {
+class SAXS :
+  public MetainferenceBase
+{
 private:
   bool                     pbc;
   bool                     serial;
@@ -104,14 +107,16 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit SAXS(const ActionOptions&);
   virtual void calculate();
+  void update();
 };
 
 PLUMED_REGISTER_ACTION(SAXS,"SAXS")
 
 void SAXS::registerKeywords(Keywords& keys) {
-  Colvar::registerKeywords( keys );
   componentsAreNotOptional(keys);
   useCustomisableComponents(keys);
+  MetainferenceBase::registerKeywords(keys);
+  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   keys.addFlag("ATOMISTIC",false,"calculate SAXS for an atomistic model");
   keys.addFlag("MARTINI",false,"calculate SAXS for a Martini model");
@@ -119,13 +124,15 @@ void SAXS::registerKeywords(Keywords& keys) {
   keys.add("numbered","QVALUE","Selected scattering lenghts in Angstrom are given as QVALUE1, QVALUE2, ... .");
   keys.add("numbered","PARAMETERS","Used parameter Keywords like PARAMETERS1, PARAMETERS2. These are used to calculate the structure factor for the i-th atom/bead.");
   keys.add("compulsory","WATERDENS","0.334","Density of the water to be used for the correction of atomistic structure factors.");
-  keys.addFlag("ADDEXPVALUES",false,"Set to TRUE if you want to have fixed components with the experimental values.");
+  keys.addFlag("ADDEXP",false,"Set to TRUE if you want to have fixed components with the experimental values.");
   keys.add("numbered","EXPINT","Add an experimental value for each q value.");
   keys.add("compulsory","SCEXP","1.0","SCALING value of the experimental data. Usefull to simplify the comparison.");
+  keys.addOutputComponent("q","default","the # SAXS of q");
+  keys.addOutputComponent("exp","ADDEXP","the # experimental intensity");
 }
 
 SAXS::SAXS(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao),
+  PLUMED_METAINF_INIT(ao),
   pbc(true),
   serial(false)
 {
@@ -152,13 +159,6 @@ SAXS::SAXS(const ActionOptions&ao):
   }
   const unsigned numq = ntarget;
 
-  for(unsigned i=0; i<numq; i++) {
-    if(q_list[i]==0.) error("it is not possible to set q=0\n");
-    log.printf("  my q: %lf \n",q_list[i]);
-    std::string num; Tools::convert(i,num);
-    addComponentWithDerivatives("q_"+num);
-    componentIsNotPeriodic("q_"+num);
-  }
 
   bool atomistic=false;
   parseFlag("ATOMISTIC",atomistic);
@@ -216,22 +216,52 @@ SAXS::SAXS(const ActionOptions&ao):
   }
 
   bool exp=false;
-  parseFlag("ADDEXPVALUES",exp);
-  vector<double> expint;
-  if(exp) {
-    expint.resize( numq );
-    unsigned ntarget=0;
-    for(unsigned i=0; i<numq; ++i) {
-      if( !parseNumbered( "EXPINT", i+1, expint[i] ) ) break;
-      ntarget++;
-    }
-    if( ntarget!=numq ) error("found wrong number of EXPINT values");
+  parseFlag("ADDEXP",exp);
+  if(getDoScore()) exp=true;
 
+  vector<double> expint;
+  expint.resize( numq );
+  ntarget=0;
+  for(unsigned i=0; i<numq; ++i) {
+    if( !parseNumbered( "EXPINT", i+1, expint[i] ) ) break;
+    ntarget++;
+  }
+  if( ntarget!=numq ) error("found wrong number of EXPINT values");
+
+  if(pbc)      log.printf("  using periodic boundary conditions\n");
+  else         log.printf("  without periodic boundary conditions\n");
+  for(unsigned i=0; i<numq; i++) {
+    if(q_list[i]==0.) error("it is not possible to set q=0\n");
+    log.printf("  my q: %lf \n",q_list[i]);
+  }
+
+  if(!getDoScore()) {
+    for(unsigned i=0; i<numq; i++) {
+      std::string num; Tools::convert(i,num);
+      addComponentWithDerivatives("q_"+num);
+      componentIsNotPeriodic("q_"+num);
+    }
+    if(exp) {
+      for(unsigned i=0; i<numq; i++) {
+        std::string num; Tools::convert(i,num);
+        addComponent("exp_"+num);
+        componentIsNotPeriodic("exp_"+num);
+        Value* comp=getPntrToComponent("exp_"+num);
+        comp->set(expint[i]);
+      }
+    }
+  } else {
+    for(unsigned i=0; i<numq; i++) {
+      std::string num; Tools::convert(i,num);
+      addComponent("q_"+num);
+      componentIsNotPeriodic("q_"+num);
+    }
     for(unsigned i=0; i<numq; i++) {
       std::string num; Tools::convert(i,num);
       addComponent("exp_"+num);
       componentIsNotPeriodic("exp_"+num);
-      Value* comp=getPntrToComponent("exp_"+num); comp->set(expint[i]);
+      Value* comp=getPntrToComponent("exp_"+num);
+      comp->set(expint[i]);
     }
   }
 
@@ -249,6 +279,11 @@ SAXS::SAXS(const ActionOptions&ao):
   log<<"\n";
 
   requestAtoms(atoms);
+  if(getDoScore()) {
+    setParameters(expint);
+    Initialise(numq);
+  }
+  setDerivatives();
   checkRead();
 }
 
@@ -297,19 +332,47 @@ void SAXS::calculate() {
     comm.Sum(&sum[0], numq);
   }
 
+  for (unsigned k=0; k<numq; k++) {
+    sum[k]+=FF_rank[k];
+    string num; Tools::convert(k,num);
+    Value* val=getPntrToComponent("q_"+num);
+    val->set(sum[k]);
+    if(getDoScore()) setCalcData(k, sum[k]);
+  }
+
+  if(getDoScore()) {
+    /* Metainference */
+    double score = getScore();
+    setScore(score);
+  }
+
   #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for (unsigned k=0; k<numq; k++) {
     const unsigned kdx=k*size;
-    Value* val=getPntrToComponent(k);
     Tensor deriv_box;
-    for(unsigned i=0; i<size; i++) {
-      setAtomsDerivatives(val, i, deriv[kdx+i]);
-      deriv_box += Tensor(getPosition(i),deriv[kdx+i]);
+    Value* val;
+    if(!getDoScore()) {
+      string num; Tools::convert(k,num);
+      val=getPntrToComponent("q_"+num);
+    } else {
+      val=getPntrToComponent("score");
     }
-    sum[k]+=FF_rank[k];
-    val->set(sum[k]);
+    for(unsigned i=0; i<size; i++) {
+      if(!getDoScore()) {
+        setAtomsDerivatives(val, i, deriv[kdx+i]);
+        deriv_box += Tensor(getPosition(i),deriv[kdx+i]);
+      } else {
+        setAtomsDerivatives(val, i, deriv[kdx+i]*getMetaDer(k));
+        deriv_box += Tensor(getPosition(i),deriv[kdx+i]*getMetaDer(k));
+      }
+    }
     setBoxDerivatives(val, -deriv_box);
   }
+}
+
+void SAXS::update() {
+  // write status file
+  if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) writeStatus();
 }
 
 void SAXS::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long double> > &parameter)
