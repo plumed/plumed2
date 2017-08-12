@@ -227,7 +227,7 @@ public:
 /// Activate the calculation of derivatives
   virtual void turnOnDerivatives();
 /// Interpret the data label and get arguments 
-  void interpretDataLabel( const std::string& mystr, ActionWithArguments* myuser, std::vector<Value*>& args );
+  void interpretDataLabel( const std::string& mystr, Action* myuser, std::vector<Value*>& args );
 ///
   unsigned getFullNumberOfTasks() const ;
 ///

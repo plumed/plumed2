@@ -329,7 +329,7 @@ Value* ActionWithValue::getPntrToComponent( int n ) {
   return values[n].get();
 }
 
-void ActionWithValue::interpretDataLabel( const std::string& mystr, ActionWithArguments* myuser, std::vector<Value*>& args ){
+void ActionWithValue::interpretDataLabel( const std::string& mystr, Action* myuser, std::vector<Value*>& args ){
   // Check for streams
   unsigned nstr=0; for(unsigned i=0;i<values.size();++i){ if( values[i]->getRank()>0 ) nstr++; }
 

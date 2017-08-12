@@ -22,6 +22,7 @@
 #include "ActionWithVirtualAtom.h"
 #include "ActionRegister.h"
 #include "core/PlumedMain.h"
+#include "core/ActionSet.h"
 #include "core/Atoms.h"
 
 using namespace std;
@@ -113,8 +114,9 @@ class Center:
 {
   std::vector<double> weights;
   bool weight_mass, weight_charge;
-  bool nopbc;
-  unsigned myx, myy, myz, myw, bufstart, nspace;
+  bool nopbc, berryp;
+  Value* val_weights;
+  unsigned myx, myw, bufstart, nspace;
 public:
   static void shortcutKeywords( Keywords& keys );
   static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
@@ -160,6 +162,7 @@ void Center::registerKeywords(Keywords& keys) {
                                 "If WEIGHTS=@masses is used the center of mass is computed.  If WEIGHTS=@charges the center of charge is computed.  If "
                                 "the label of an action is provided PLUMED assumes that that action calculates a list of symmetry functions that can be used "
                                 "as weights. Lastly, an explicit list of numbers to use as weights can be provided");
+  keys.addFlag("BERRYPHASE",false,"calculate the position of the center using a Berry Phase average.");
 }
 
 Center::Center(const ActionOptions&ao):
@@ -167,8 +170,9 @@ Center::Center(const ActionOptions&ao):
   ActionWithVirtualAtom(ao),
   weight_mass(false),
   weight_charge(false),
-  nopbc(false),
-  myx(0), myy(0), myz(0), myw(0), bufstart(0), nspace(1)
+  nopbc(false),berryp(false),
+  val_weights(NULL),
+  myx(0), myw(0), bufstart(0), nspace(1)
 {
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
@@ -186,7 +190,29 @@ Center::Center(const ActionOptions&ao):
           weight_charge=true;
           log<<"  computing the center of charge of atoms:\n";
       } else {
-         error("not implemented yet");
+          std::size_t dot=str_weights[0].find_first_of("."); std::vector<Value*> args;
+          if( dot!=std::string::npos ) {
+              ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( str_weights[0].substr(0,dot) );
+              if( !action ){ 
+                  std::string str=" (hint! the actions in this ActionSet are: ";
+                  str+=plumed.getActionSet().getLabelList()+")";
+                  error("cannot find action named " + str_weights[0] +str);
+              } 
+              action->interpretDataLabel( str_weights[0], this, args );
+          } else {
+              ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( str_weights[0] );
+              if( !action ){
+                  std::string str=" (hint! the actions in this ActionSet are: ";
+                  str+=plumed.getActionSet().getLabelList()+")";
+                  error("cannot find action named " + str_weights[0] +str);
+              }
+              action->interpretDataLabel( str_weights[0], this, args ); 
+          } 
+          if( args.size()!=1 ) error("should only have one value as input to WEIGHT");
+          if( args[0]->getRank()!=1 || args[0]->getShape()[0]!=atoms.size() ) error("value input for WEIGHTS has wrong shape"); 
+          val_weights = args[0]; std::vector<std::string> empty(1); empty[0] = (val_weights->getPntrToAction())->getLabel();
+          (val_weights->getPntrToAction())->addActionToChain( empty, this );
+          log.printf("  atoms are weighted by values in %s \n",val_weights->getName().c_str() );
       }
   } else {
       log<<" with weights:";
@@ -203,48 +229,64 @@ Center::Center(const ActionOptions&ao):
     log.printf("  %d",atoms[i].serial());
   }
   log<<"\n";
-  parseFlag("NOPBC",nopbc);
+  parseFlag("NOPBC",nopbc); parseFlag("BERRYPHASE",berryp);
   checkRead();
-  if(!nopbc) {
+  if( !nopbc && !berryp ) {
     log<<"  PBC will be ignored\n";
+  } else if( berryp ) {
+    nopbc=true; log<<"  PBC will be dealt with by computing a berry phase average\n";
   } else {
     log<<"  broken molecules will be rebuilt assuming atoms are in the proper order\n";
   }
-  requestAtoms(atoms);
+  requestAtoms(atoms); if( val_weights ) addDependency( val_weights->getPntrToAction() ); 
   // And create task list
   for(unsigned i=0; i<atoms.size(); ++i) addTaskToList( i ); 
 }
 
 unsigned Center::getNumberOfDerivatives() const {
+  if( val_weights ) return 3*getNumberOfAtoms() + val_weights->getNumberOfDerivatives(); 
   return 3*getNumberOfAtoms();
 }
 
 void Center::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
+  // Must retrieve the atoms if it has not been done already
+  if( actionInChain() ) retrieveAtoms();
+  // Check that we are orthorhomoic
+  if( berryp && !getPbc().isOrthorombic() ) error("cannot calculate berry phase average with non-orthorhombic cells");
+  // Check if we need to make the whole thing 
+  if(!nopbc) makeWhole();
+
+  // Set mass for center 
+  double mass=0.;
+  for(unsigned i=0; i<getNumberOfAtoms(); i++) mass+=getMass(i);
+  setMass( mass );
+  // Set charge for center
+  if( plumed.getAtoms().chargesWereSet() ) {
+      double charge=0.;
+      for(unsigned i=0; i<getNumberOfAtoms(); i++) charge+=getCharge(i);
+      setCharge(charge);
+  } else setCharge(0.0);
+  // Set that we need to do all tasks
   tflags.assign(tflags.size(),1);
 }
 
 void Center::setStashIndices( unsigned& nquants ) {
-  myx = nquants; myy = nquants + 1; myz = nquants + 2; myw = nquants + 3; nquants += 4;
+  if( berryp ){
+      myx = nquants; myw = nquants + 6; nquants +=7;
+  } else {
+      myx = nquants; myw = nquants + 3; nquants += 4;
+  }
 }
 
 void Center::getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize ){
-  bufstart = bufsize; if( !doNotCalculateDerivatives() ) nspace = 1 + 3*getNumberOfAtoms();
-  bufsize += 4*nspace; ActionWithValue::getSizeOfBuffer( nactive_tasks, bufsize );
+  bufstart = bufsize; if( !doNotCalculateDerivatives() ) nspace = 1 + getNumberOfDerivatives(); 
+  if( berryp ) bufsize += 7*nspace; else bufsize += 4*nspace; 
+  ActionWithValue::getSizeOfBuffer( nactive_tasks, bufsize );
 }
 
 void Center::calculate() {
-  if(!nopbc) makeWhole();
+  if( actionInChain() ) return;
   runAllTasks();
-  // Set mass for center 
-  double mass=0.; 
-  for(unsigned i=0; i<getNumberOfAtoms(); i++) mass+=getMass(i); 
-  setMass( mass );
-  // Set charge for center
-  if( plumed.getAtoms().chargesWereSet() ) {
-      double charge=0.; 
-      for(unsigned i=0; i<getNumberOfAtoms(); i++) charge+=getCharge(i);
-      setCharge(charge);
-  } else setCharge(0.0);
 }
 
 void Center::performTask( const unsigned& task_index, MultiValue& myvals ) const {
@@ -254,60 +296,136 @@ void Center::performTask( const unsigned& task_index, MultiValue& myvals ) const
   } else if( weight_charge ){
       if( !plumed.getAtoms().chargesWereSet() ) plumed_merror("cannot calculate center of charge if chrages are unset");
       w = getCharge(task_index);
+  } else if( val_weights ) {
+      w = myvals.get( val_weights->getPositionInStream() );
   } else {
       plumed_dbg_assert( task_index<weights.size() );
       w = weights[task_index];
   }
-  myvals.addValue( myx, w*pos[0] ); myvals.addValue( myy, w*pos[1] ); 
-  myvals.addValue( myz, w*pos[2] ); myvals.addValue( myw, w );
-  if( !doNotCalculateDerivatives() ) {
-      myvals.addDerivative( myx, 3*task_index+0, w ); myvals.updateIndex( myx, 3*task_index+0 );
-      myvals.addDerivative( myy, 3*task_index+1, w ); myvals.updateIndex( myy, 3*task_index+1 );
-      myvals.addDerivative( myz, 3*task_index+2, w ); myvals.updateIndex( myz, 3*task_index+2 );
+  if( berryp ) { 
+      Vector stmp, ctmp, fpos = getPbc().realToScaled( pos ); myvals.addValue( myw, w );
+      for(unsigned j=0;j<3;++j) {
+          stmp[j] = sin( 2*pi*fpos[j] ); ctmp[j] = cos( 2*pi*fpos[j] );
+          myvals.addValue( myx+j, w*stmp[j] ); myvals.addValue( myx+3+j, w*ctmp[j] );
+      }
+      if( !doNotCalculateDerivatives() ) { 
+          for(unsigned j=0;j<3;++j) {
+              double icell = 1.0 / getPbc().getBox().getRow(j).modulo();
+              myvals.addDerivative( myx+j, 3*task_index+j, 2*pi*icell*ctmp[j] );
+              myvals.addDerivative( myx+3+j, 3*task_index+j, -2*pi*icell*stmp[j] );
+          }
+          if( val_weights ) {
+              unsigned istrn = val_weights->getPositionInStream();
+              for(unsigned k=0;k<myvals.getNumberActive(istrn);++k){
+                  unsigned kindex = myvals.getActiveIndex(istrn,k); 
+                  double der = myvals.getDerivative( istrn, kindex );
+                  for(unsigned j=0;j<3;++j) {
+                      myvals.addDerivative( myx+j, kindex, der*stmp[j] ); 
+                      myvals.addDerivative( myx+3+j, kindex, der*ctmp[j] );
+                  }
+                  myvals.addDerivative( myw, kindex, der );
+              }
+          }
+      }
+  } else {
+      myvals.addValue( myw, w ); for(unsigned j=0;j<3;++j) myvals.addValue( myx+j, w*pos[j] );
+      if( !doNotCalculateDerivatives() ) {
+          for(unsigned j=0;j<3;++j) {
+              myvals.addDerivative( myx+j, 3*task_index+j, w ); myvals.updateIndex( myx+j, 3*task_index+j );
+          }
+          if( val_weights ) {
+              unsigned istrn = val_weights->getPositionInStream();
+              for(unsigned k=0;k<myvals.getNumberActive(istrn);++k){
+                  unsigned kindex = myvals.getActiveIndex(istrn,k); 
+                  double der = myvals.getDerivative( istrn, kindex );
+                  for(unsigned j=0;j<3;++j) myvals.addDerivative( myx+j, kindex, der*pos[j] );
+                  myvals.addDerivative( myw, kindex, der );
+              }
+          }
+      }
   }
 }
 
 void Center::gatherForVirtualAtom( const MultiValue& myvals, std::vector<double>& buffer ) const {
-  buffer[bufstart] += myvals.get( myx ); buffer[bufstart+nspace] += myvals.get( myy );
-  buffer[bufstart+2*nspace] += myvals.get( myz ); buffer[bufstart+3*nspace] += myvals.get( myw );
+  unsigned ntmp_vals = 4; 
+  if( berryp ) {
+      unsigned sstart = bufstart, cstart = bufstart + 3*nspace;
+      for(unsigned j=0;j<3;++j){ 
+          buffer[sstart] += myvals.get(myx+j); sstart+=nspace; 
+          buffer[cstart] += myvals.get(myx+3+j); cstart+=nspace; 
+      } 
+      buffer[bufstart+6*nspace] += myvals.get( myw ); ntmp_vals = 7;
+  } else {
+      unsigned bstart = bufstart;
+      for(unsigned j=0;j<3;++j){ buffer[bstart] += myvals.get(myx+j); bstart+=nspace; }
+      buffer[bufstart+3*nspace] += myvals.get( myw );
+      ntmp_vals = 4;
+  }
   if( !doNotCalculateDerivatives() ) {
       unsigned bstart = bufstart;
-      for(unsigned k=0;k<myvals.getNumberActive(myx);++k){
-          unsigned kindex = myvals.getActiveIndex(myx,k); 
-          plumed_dbg_assert( bstart + 1 + kindex<buffer.size() );
-          buffer[bstart + 1 + kindex] += myvals.getDerivative( myx, kindex ); 
-      }
-      bstart += nspace;
-      for(unsigned k=0;k<myvals.getNumberActive(myy);++k){
-          unsigned kindex = myvals.getActiveIndex(myy,k); 
-          plumed_dbg_assert( bstart + 1 + kindex<buffer.size() );
-          buffer[bstart + 1 + kindex] += myvals.getDerivative( myy, kindex );
-      }
-      bstart += nspace;
-      for(unsigned k=0;k<myvals.getNumberActive(myz);++k){
-          unsigned kindex = myvals.getActiveIndex(myz,k); 
-          plumed_dbg_assert( bstart + 1 + kindex<buffer.size() );
-          buffer[bstart + 1 + kindex] += myvals.getDerivative( myz, kindex );
+      for(unsigned j=0;j<ntmp_vals;++j){ 
+          for(unsigned k=0;k<myvals.getNumberActive(myx+j);++k){
+              unsigned kindex = myvals.getActiveIndex(myx+j,k); 
+              plumed_dbg_assert( bstart + 1 + kindex<buffer.size() );
+              buffer[bstart + 1 + kindex] += myvals.getDerivative( myx+j, kindex ); 
+          }
+          bstart += nspace;
       }
   }
 }
 
 void Center::transformFinalValueAndDerivatives( const std::vector<double>& buffer ) {
   // Get final position
-  double ww = buffer[bufstart + 3*nspace];
-  Vector pos; pos[0]=buffer[bufstart]/ww; pos[1]=buffer[bufstart+nspace]/ww; pos[2]=buffer[bufstart+2*nspace]/ww;
-  setPosition(pos);
-  // And final derivatives
-  if( !doNotCalculateDerivatives() ) {
-      std::vector<Tensor> deriv(getNumberOfAtoms());
-      for(unsigned i=0; i<getNumberOfAtoms(); ++i ){
-          for(unsigned j=0;j<3;++j){
-              deriv[i](0,j) = buffer[bufstart + 1 + 3*i + j ] / ww;
-              deriv[i](1,j) = buffer[bufstart + nspace + 1 + 3*i + j ] / ww;
-              deriv[i](2,j) = buffer[bufstart + 2*nspace + 1 + 3*i +j ] / ww;
+  if( berryp ) {
+      Vector stmp, ctmp; double ww = buffer[bufstart + 6*nspace]; Vector fpos;
+      for(unsigned i=0;i<3;++i){ 
+          stmp[i]=buffer[bufstart+i*nspace]/ww; ctmp[i]=buffer[bufstart+(3+i)*nspace]/ww; 
+          fpos[i] = atan2( stmp[i], ctmp[i] ) / (2*pi);
+      }
+      setPosition( getPbc().scaledToReal( fpos ) );
+      // And derivatives
+      if( !doNotCalculateDerivatives() ) { 
+         double inv_weight = 1.0 / ww; Vector tander;
+         std::vector<Tensor> deriv(getNumberOfAtoms());
+         for(unsigned j=0;j<3;++j){
+             double tmp = stmp[j] / ctmp[j];
+             tander[j] = getPbc().getBox().getRow(j).modulo() / (2*pi*( 1 + tmp*tmp ));
+         }
+         double sderv, cderv;
+         for(unsigned i=0; i<getNumberOfAtoms(); ++i ){
+             for(unsigned j=0;j<3;++j){
+                 sderv = inv_weight*buffer[bufstart + 1 + 3*i + j]; cderv = inv_weight*buffer[bufstart + 1 + 3*nspace + 3*i + j];
+                 deriv[i](0,j) = tander[j]*( sderv/ctmp[j]  - stmp[j]*cderv/(ctmp[j]*ctmp[j]) );
+                 sderv = inv_weight*buffer[bufstart + 1 + nspace + 3*i + j]; cderv = inv_weight*buffer[bufstart + 1 + 4*nspace + 3*i + j];
+                 deriv[i](1,j) = tander[j]*( sderv/ctmp[j]  - stmp[j]*cderv/(ctmp[j]*ctmp[j]) );
+                 sderv = inv_weight*buffer[bufstart + 1 + 2*nspace + 3*i + j]; cderv = inv_weight*buffer[bufstart + 1 + 5*nspace + 3*i + j];
+                 deriv[i](2,j) = tander[j]*( sderv/ctmp[j]  - stmp[j]*cderv/(ctmp[j]*ctmp[j]) );
+             }
+         }
+         setAtomsDerivatives(deriv); 
+         if( val_weights ) {
+
+         }
+      }
+  } else {
+      double ww = buffer[bufstart + 3*nspace]; Vector pos; 
+      for(unsigned i=0;i<3;++i) pos[i]=buffer[bufstart + i*nspace]/ww; 
+      setPosition(pos);
+      // And final derivatives
+      if( !doNotCalculateDerivatives() ) {
+          std::vector<Tensor> deriv(getNumberOfAtoms());
+          for(unsigned i=0; i<getNumberOfAtoms(); ++i ){
+              for(unsigned j=0;j<3;++j){
+                  deriv[i](0,j) = buffer[bufstart + 1 + 3*i + j ] / ww;
+                  deriv[i](1,j) = buffer[bufstart + nspace + 1 + 3*i + j ] / ww;
+                  deriv[i](2,j) = buffer[bufstart + 2*nspace + 1 + 3*i +j ] / ww;
+              }
           }
-      }  
-      setAtomsDerivatives(deriv);
+          setAtomsDerivatives(deriv);
+          if( val_weights ) {
+
+          }
+      }
   }
 }
 
