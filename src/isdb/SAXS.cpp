@@ -51,7 +51,8 @@ Structure factors can be either assigned using a polynomial expansion to any ord
 automatically assigned to atoms using the ATOMISTIC flag reading a PDB file, a correction for the water density is automatically added;
 automatically assigned to Martini pseudoatoms usign the MARTINI flag.
 The calculated intensities can be scaled using the SCEXP keywords. This is applied by rescaling the structure factors.
-Experimental reference intensities can be added using the ADDEXPVALUES and EXPINT flag and keywords.
+Experimental reference intensities can be added using the ADDEXP and EXPINT flag and keywords.
+\ref METAINFERENCE can be activated using DOSCORE and the other relevant keywords.
 
 \par Examples
 in the following example the saxs intensities for a martini model are calculated. structure factors

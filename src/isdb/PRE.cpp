@@ -43,6 +43,8 @@ The additional parameters needed for the calculation are given as INEPT, the ine
 time, TAUC the correlation time, OMEGA, the larmor frequency and RTWO for the relaxation
 time.
 
+\ref METAINFERENCE can be activated using DOSCORE and the other relevant keywords.
+
 \par Examples
 
 In the following example five PRE intensities are calculated using the distance between the

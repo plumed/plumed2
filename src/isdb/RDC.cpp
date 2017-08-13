@@ -82,7 +82,7 @@ Alternatively if the molecule is rigid it is possible to use the experimental da
 a set of function from the GNU Scientific Library (GSL). (With SVD forces are not currently implemented).
 
 Replica-Averaged simulations can be perfomed using RDCs, \ref ENSEMBLE, \ref STATS and \ref RESTRAINT .
-Metainference simulations can be performed with this CV and \ref METAINFERENCE .
+\ref METAINFERENCE can be activated using DOSCORE and the other relevant keywords.
 
 Additional material and examples can be also found in the tutorial \ref belfast-9
 
