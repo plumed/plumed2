@@ -139,7 +139,7 @@ private:
   unsigned optsigmamean_stride_;
 
   // average weights
-  unsigned average_weights_stride_;
+  double decay_w_;
   std::vector< std::vector <double> >  average_weights_;
 
   double getEnergyMIGEN(const std::vector<double> &mean, const std::vector<double> &ftilde, const std::vector<double> &sigma,

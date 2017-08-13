@@ -120,7 +120,7 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
   nsel_(1),
   iselect(0),
   optsigmamean_stride_(0),
-  average_weights_stride_(1)
+  decay_w_(1.)
 {
   parseFlag("DOSCORE", doscore_);
 
@@ -159,7 +159,7 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
   unsigned averaging=0;
   parse("AVERAGING", averaging);
   if(averaging>0) {
-    average_weights_stride_ = averaging;
+    decay_w_ = 1./static_cast<double> (averaging);
     optsigmamean_stride_    = averaging;
   }
 
@@ -1172,11 +1172,10 @@ void MetainferenceBase::get_weights(double &fact, double &var_fact)
     }
 
     // accumulate weights
-    const double decay = 1./static_cast<double> (average_weights_stride_);
     if(!firstTimeW[iselect]) {
       for(unsigned i=0; i<nrep_; ++i) {
         const double delta=bias[i]/norm-average_weights_[iselect][i];
-        average_weights_[iselect][i]+=decay*delta;
+        average_weights_[iselect][i]+=decay_w_*delta;
       }
     } else {
       firstTimeW[iselect] = false;
@@ -1204,7 +1203,7 @@ void MetainferenceBase::get_sigma_mean(const double fact, const double var_fact,
   const double dnrep    = static_cast<double>(nrep_);
   const double ave_fact = 1.0/dnrep;
 
-  vector<double> sigma_mean2_tmp(sigma_mean2_.size(), 0.);
+  vector<double> sigma_mean2_tmp(sigma_mean2_.size());
 
   if(do_optsigmamean_>0) {
     // remove first entry of the history vector
@@ -1289,7 +1288,7 @@ void MetainferenceBase::replica_averaging(const double fact, vector<double> &mea
   }
   comm.Sum(&mean[0], narg);
   // set the derivative of the mean with respect to the bias
-  for(unsigned i=0; i<narg; ++i) dmean_b[i] = fact/kbt_*(calc_data_[i]-mean[i])/static_cast<double>(average_weights_stride_);
+  for(unsigned i=0; i<narg; ++i) dmean_b[i] = fact/kbt_*(calc_data_[i]-mean[i])*decay_w_;
 
   // this is only for generic metainference
   if(firstTime) {ftilde_ = mean; firstTime = false;}
@@ -1302,6 +1301,7 @@ double MetainferenceBase::getScore()
   double fact = 0.;
   double var_fact = 0.;
   get_weights(fact, var_fact);
+
   /* 2) calculate average */
   vector<double> mean(getNarg(),0);
   // this is the derivative of the mean with respect to the argument
