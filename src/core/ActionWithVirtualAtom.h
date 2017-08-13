@@ -46,7 +46,6 @@ class ActionWithVirtualAtom:
   std::vector<Tensor> derivatives;
   std::vector<Tensor> boxDerivatives;
   std::map<AtomNumber,Tensor> gradients;
-  void apply();
 protected:
 /// Set position of the virtual atom
   void setPosition(const Vector &);
@@ -88,6 +87,7 @@ public:
   virtual unsigned getNumberOfDerivatives() const ;
   virtual void setStashIndices( unsigned& nquants ) { plumed_error(); }
   virtual void gatherForVirtualAtom( const MultiValue& myvals, std::vector<double>& buffer ) const { plumed_error(); }
+  virtual void apply();
 };
 
 inline

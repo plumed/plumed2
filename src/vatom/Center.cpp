@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithVirtualAtom.h"
 #include "ActionRegister.h"
+#include "core/ActionWithArguments.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/Atoms.h"
@@ -117,6 +118,9 @@ class Center:
   bool nopbc, berryp;
   Value* val_weights;
   unsigned myx, myw, bufstart, nspace;
+  std::vector<Tensor> deriv;
+  std::vector<double> val_forces;
+  std::vector<std::vector<double> > val_deriv;
 public:
   static void shortcutKeywords( Keywords& keys );
   static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
@@ -124,6 +128,7 @@ public:
                               std::vector<std::vector<std::string> >& actions );
   explicit Center(const ActionOptions&ao);
   void calculate();
+  void apply();
   static void registerKeywords( Keywords& keys );
   unsigned getNumberOfDerivatives() const ;
   void setStashIndices( unsigned& nquants );
@@ -238,13 +243,20 @@ Center::Center(const ActionOptions&ao):
   } else {
     log<<"  broken molecules will be rebuilt assuming atoms are in the proper order\n";
   }
-  requestAtoms(atoms); if( val_weights ) addDependency( val_weights->getPntrToAction() ); 
+  requestAtoms(atoms); deriv.resize( atoms.size() ); 
+  if( val_weights ){ 
+      addDependency( val_weights->getPntrToAction() ); 
+      val_deriv.resize(3); val_forces.resize( (val_weights->getPntrToAction())->getNumberOfDerivatives() );
+      val_deriv[0].resize( (val_weights->getPntrToAction())->getNumberOfDerivatives() ); 
+      val_deriv[1].resize( (val_weights->getPntrToAction())->getNumberOfDerivatives() );
+      val_deriv[2].resize( (val_weights->getPntrToAction())->getNumberOfDerivatives() );
+  } 
   // And create task list
   for(unsigned i=0; i<atoms.size(); ++i) addTaskToList( i ); 
 }
 
 unsigned Center::getNumberOfDerivatives() const {
-  if( val_weights ) return 3*getNumberOfAtoms() + val_weights->getNumberOfDerivatives(); 
+  if( val_weights ) return 3*getNumberOfAtoms() + (val_weights->getPntrToAction())->getNumberOfDerivatives(); 
   return 3*getNumberOfAtoms();
 }
 
@@ -311,19 +323,20 @@ void Center::performTask( const unsigned& task_index, MultiValue& myvals ) const
       if( !doNotCalculateDerivatives() ) { 
           for(unsigned j=0;j<3;++j) {
               double icell = 1.0 / getPbc().getBox().getRow(j).modulo();
-              myvals.addDerivative( myx+j, 3*task_index+j, 2*pi*icell*ctmp[j] );
-              myvals.addDerivative( myx+3+j, 3*task_index+j, -2*pi*icell*stmp[j] );
+              myvals.addDerivative( myx+j, 3*task_index+j, 2*pi*icell*w*ctmp[j] ); myvals.updateIndex( myx+j, 3*task_index+j );
+              myvals.addDerivative( myx+3+j, 3*task_index+j, -2*pi*icell*w*stmp[j] ); myvals.updateIndex( myx+3+j, 3*task_index+j );
           }
           if( val_weights ) {
+              unsigned base = 3*getNumberOfAtoms();
               unsigned istrn = val_weights->getPositionInStream();
               for(unsigned k=0;k<myvals.getNumberActive(istrn);++k){
                   unsigned kindex = myvals.getActiveIndex(istrn,k); 
                   double der = myvals.getDerivative( istrn, kindex );
                   for(unsigned j=0;j<3;++j) {
-                      myvals.addDerivative( myx+j, kindex, der*stmp[j] ); 
-                      myvals.addDerivative( myx+3+j, kindex, der*ctmp[j] );
+                      myvals.addDerivative( myx+j, base+kindex, der*stmp[j] ); myvals.updateIndex( myx+j, base+kindex );
+                      myvals.addDerivative( myx+3+j, base+kindex, der*ctmp[j] ); myvals.updateIndex( myx+3+j, base+kindex );
                   }
-                  myvals.addDerivative( myw, kindex, der );
+                  myvals.addDerivative( myw, base+kindex, der ); myvals.updateIndex( myw, base+kindex );
               }
           }
       }
@@ -334,12 +347,13 @@ void Center::performTask( const unsigned& task_index, MultiValue& myvals ) const
               myvals.addDerivative( myx+j, 3*task_index+j, w ); myvals.updateIndex( myx+j, 3*task_index+j );
           }
           if( val_weights ) {
+              unsigned base = 3*getNumberOfAtoms();
               unsigned istrn = val_weights->getPositionInStream();
               for(unsigned k=0;k<myvals.getNumberActive(istrn);++k){
                   unsigned kindex = myvals.getActiveIndex(istrn,k); 
                   double der = myvals.getDerivative( istrn, kindex );
-                  for(unsigned j=0;j<3;++j) myvals.addDerivative( myx+j, kindex, der*pos[j] );
-                  myvals.addDerivative( myw, kindex, der );
+                  for(unsigned j=0;j<3;++j){ myvals.addDerivative( myx+j, kindex, der*pos[j] ); myvals.updateIndex( myx+j, base+kindex ); }
+                  myvals.addDerivative( myw, base+kindex, der ); myvals.updateIndex( myw, base+kindex );
               }
           }
       }
@@ -386,7 +400,6 @@ void Center::transformFinalValueAndDerivatives( const std::vector<double>& buffe
       // And derivatives
       if( !doNotCalculateDerivatives() ) { 
          double inv_weight = 1.0 / ww; Vector tander;
-         std::vector<Tensor> deriv(getNumberOfAtoms());
          for(unsigned j=0;j<3;++j){
              double tmp = stmp[j] / ctmp[j];
              tander[j] = getPbc().getBox().getRow(j).modulo() / (2*pi*( 1 + tmp*tmp ));
@@ -404,7 +417,16 @@ void Center::transformFinalValueAndDerivatives( const std::vector<double>& buffe
          }
          setAtomsDerivatives(deriv); 
          if( val_weights ) {
-
+             unsigned k=0;
+             for(unsigned i=3*getNumberOfAtoms(); i<getNumberOfDerivatives(); ++i ){
+                 double wder = buffer[bufstart + 1 + 6*nspace +i];
+                 for(unsigned j=0;j<3;++j){
+                     sderv = inv_weight*buffer[bufstart + 1 + j*nspace + i] - inv_weight*stmp[j]*wder; 
+                     cderv = inv_weight*buffer[bufstart + 1 + (3+j)*nspace + i] - inv_weight*ctmp[j]*wder; 
+                     val_deriv[j][k] = tander[j]*( sderv/ctmp[j]  - stmp[j]*cderv/(ctmp[j]*ctmp[j]) ); 
+                 }
+                 k++;
+             }
          }
       }
   } else {
@@ -413,7 +435,6 @@ void Center::transformFinalValueAndDerivatives( const std::vector<double>& buffe
       setPosition(pos);
       // And final derivatives
       if( !doNotCalculateDerivatives() ) {
-          std::vector<Tensor> deriv(getNumberOfAtoms());
           for(unsigned i=0; i<getNumberOfAtoms(); ++i ){
               for(unsigned j=0;j<3;++j){
                   deriv[i](0,j) = buffer[bufstart + 1 + 3*i + j ] / ww;
@@ -423,10 +444,32 @@ void Center::transformFinalValueAndDerivatives( const std::vector<double>& buffe
           }
           setAtomsDerivatives(deriv);
           if( val_weights ) {
-
+              unsigned k=0;
+              for(unsigned i=3*getNumberOfAtoms(); i<getNumberOfDerivatives(); ++i ){
+                  for(unsigned j=0;j<3;++j){
+                      val_deriv[j][k] = buffer[bufstart + 1 + j*nspace + i ] / ww - pos[j]*buffer[bufstart + 1 + 6*nspace + i] / ww; 
+                  }
+                  k++;
+              }
           }
       }
   }
+}
+
+void Center::apply() {
+  Vector & f(atoms.getVatomForces(getIndex())); unsigned start;
+  if( val_weights ) {
+      ActionWithArguments* aarg = dynamic_cast<ActionWithArguments*>( val_weights->getPntrToAction() );
+      ActionAtomistic* aat = dynamic_cast<ActionAtomistic*>( val_weights->getPntrToAction() );
+      for(unsigned j=0;j<3;++j) { 
+          for(unsigned k=0;k<val_deriv[j].size();++k) val_forces[k] = f[j]*val_deriv[j][k];
+          start=0; 
+          if( aarg ) aarg->setForcesOnArguments( val_forces, start );
+          if( aat ) aat->setForcesOnAtoms( val_forces, start );
+      }
+  }
+  // And apply the forces to the centers
+  ActionWithVirtualAtom::apply();
 }
 
 }
