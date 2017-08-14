@@ -1691,8 +1691,8 @@ void MetaD::update() {
 
       // Flying Gaussian
       if (flying) {
-          hills_.clear();
-          comm.Barrier();
+        hills_.clear();
+        comm.Barrier();
       }
 
       for(unsigned i=0; i<mpi_nw_; i++) {
