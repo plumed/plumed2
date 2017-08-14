@@ -387,7 +387,7 @@ private:
   int mw_id_;
   int mw_rstride_;
   bool walkers_mpi;
-  bool flying;  //flying Gaussian
+  bool flying;
   unsigned mpi_nw_;
   unsigned mpi_mw_;
   bool acceleration;
