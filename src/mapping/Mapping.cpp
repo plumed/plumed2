@@ -151,7 +151,7 @@ Mapping::Mapping(const ActionOptions&ao):
   std::vector<AtomNumber> atoms; std::vector<std::string> args;
   for(unsigned i=0; i<myframes.size(); ++i) { myframes[i]->getAtomRequests( atoms, skipchecks ); myframes[i]->getArgumentRequests( args, skipchecks ); }
   requestAtoms( atoms ); std::vector<Value*> req_args;
-  interpretArgumentList( args, req_args ); requestArguments( req_args );
+  interpretArgumentList( args, req_args ); requestArguments( req_args, false );
   // Resize forces array
   if( getNumberOfAtoms()>0 ) {
     forcesToApply.resize( 3*getNumberOfAtoms() + 9 + getNumberOfArguments() );

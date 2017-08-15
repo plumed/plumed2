@@ -282,7 +282,7 @@ ActionWithArguments(ao)
           log.printf("  %s direction of bond read from %s \n",dir.c_str(),vecs[0]->getName().c_str() );
       }
   }
-  requestArguments(wval); forcesToApply.resize( nderivatives );
+  requestArguments(wval,true); forcesToApply.resize( nderivatives );
   if( plumed.getAtoms().getAllGroups().count(wval[0]->getPntrToAction()->getLabel()) ){
      const auto m=plumed.getAtoms().getAllGroups().find(wval[0]->getPntrToAction()->getLabel());
      plumed.getAtoms().insertGroup( getLabel(), m->second ); 

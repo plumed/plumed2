@@ -35,7 +35,8 @@ MultiValue::MultiValue( const unsigned& nvals, const unsigned& nder, const unsig
   matrix_element_stash(ncols*nmat),
   atLeastOneSet(false),
   vector_call(false),
-  nindices(0)
+  nindices(0),
+  tmp_atoms(2)
 {
 }
 

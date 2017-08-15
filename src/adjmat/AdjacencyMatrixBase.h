@@ -26,7 +26,6 @@
 #include "core/ActionAtomistic.h"
 #include "core/ActionWithValue.h"
 #include "tools/LinkCells.h"
-#include "MatrixElementPack.h"
 
 namespace PLMD {
 namespace adjmat {
@@ -35,15 +34,17 @@ class AdjacencyMatrixBase :
   public ActionAtomistic,
   public ActionWithValue 
 {
-friend class MatrixElementPack;
 private:
   bool nopbc, components;
   LinkCells linkcells, threecells;
   std::vector<unsigned> ablocks, threeblocks;
-  void updateWeightDerivativeIndices( const unsigned& sno, const unsigned& ntwo_atoms, const unsigned& natoms,
-                                      const std::vector<unsigned>& indices, MultiValue& myvals ) const ;
+  void updateWeightDerivativeIndices( const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
 protected:
+  Vector getPosition( const unsigned& indno, const MultiValue& myvals ) const ;
+  void addAtomDerivatives( const unsigned& indno, const Vector& der, MultiValue& myvals ) const ;
+  void addThirdAtomDerivatives( const unsigned& indno, const Vector& der, MultiValue& myvals ) const ;
   void setLinkCellCutoff( const double& lcut, double tcut=-1.0 );
+  void addBoxDerivatives( const Tensor& vir, MultiValue& myvals ) const ;
 public:
   static void registerKeywords( Keywords& keys );
   explicit AdjacencyMatrixBase(const ActionOptions&);
@@ -51,7 +52,8 @@ public:
   void buildCurrentTaskList( std::vector<unsigned>& tflags );
   void calculate();
   void performTask( const unsigned& task_index, MultiValue& myvals ) const ;
-  virtual double calculateWeight( MatrixElementPack& myvals ) const = 0;
+  void performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
+  virtual double calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const = 0;
   void apply();
 };
 
@@ -59,6 +61,50 @@ inline
 unsigned AdjacencyMatrixBase::getNumberOfDerivatives() const  {
   return 3*getNumberOfAtoms() + 9;
 }
+
+inline
+Vector AdjacencyMatrixBase::getPosition( const unsigned& indno, const MultiValue& myvals ) const { 
+  unsigned index = myvals.getIndices()[ indno + myvals.getSplitIndex() ]; 
+  return myvals.getAtomVector()[index];
+}
+
+inline
+void AdjacencyMatrixBase::addAtomDerivatives( const unsigned& indno, const Vector& der, MultiValue& myvals ) const {
+  if( doNotCalculateDerivatives() ) return;
+  plumed_dbg_assert( indno<2 ); unsigned index = myvals.getTaskIndex(); 
+  if( indno==1 ) index = myvals.getSecondTaskIndex();
+  unsigned w_index = getPntrToOutput(0)->getPositionInStream();
+  myvals.addDerivative( w_index, 3*index+0, der[0] );
+  myvals.addDerivative( w_index, 3*index+1, der[1] );
+  myvals.addDerivative( w_index, 3*index+2, der[2] );
+}
+
+inline
+void AdjacencyMatrixBase::addThirdAtomDerivatives( const unsigned& indno, const Vector& der, MultiValue& myvals ) const {
+  if( doNotCalculateDerivatives() ) return;
+  unsigned index = myvals.getIndices()[ indno + myvals.getSplitIndex() ];
+  unsigned w_index = getPntrToOutput(0)->getPositionInStream();
+  myvals.addDerivative( w_index, 3*index+0, der[0] );
+  myvals.addDerivative( w_index, 3*index+1, der[1] );
+  myvals.addDerivative( w_index, 3*index+2, der[2] );
+}
+
+inline
+void AdjacencyMatrixBase::addBoxDerivatives( const Tensor& vir, MultiValue& myvals ) const {
+  if( doNotCalculateDerivatives() ) return;
+  unsigned nbase = 3*getNumberOfAtoms();
+  unsigned w_index = getPntrToOutput(0)->getPositionInStream();
+  myvals.addDerivative( w_index, nbase+0, vir(0,0) );
+  myvals.addDerivative( w_index, nbase+1, vir(0,1) );
+  myvals.addDerivative( w_index, nbase+2, vir(0,2) );
+  myvals.addDerivative( w_index, nbase+3, vir(1,0) );
+  myvals.addDerivative( w_index, nbase+4, vir(1,1) );
+  myvals.addDerivative( w_index, nbase+5, vir(1,2) );
+  myvals.addDerivative( w_index, nbase+6, vir(2,0) );
+  myvals.addDerivative( w_index, nbase+7, vir(2,1) );
+  myvals.addDerivative( w_index, nbase+8, vir(2,2) );
+}
+
 
 }
 }

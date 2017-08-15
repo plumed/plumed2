@@ -31,13 +31,13 @@ ReferenceValuePack::ReferenceValuePack( const unsigned& nargs, const unsigned& n
   atom_indices(myvals.getIndices()),
   pca(false)
 {
-  if( atom_indices.size()!=natoms ) { atom_indices.resize( natoms ); myvals.getAtomVector().resize( natoms ); }
+  if( atom_indices.size()!=natoms ) { atom_indices.resize( natoms ); myvals.getFirstAtomVector().resize( natoms ); }
   if( vals.getNumberOfValues()==1 ) { oind=0; oind_set=true; }
 }
 
 void ReferenceValuePack::resize( const unsigned& nargs, const unsigned& natoms ) {
   numberOfArgs=nargs; atom_indices.resize( natoms );
-  myvals.getAtomVector().resize( natoms );
+  myvals.getFirstAtomVector().resize( natoms );
 }
 
 void ReferenceValuePack::updateDynamicLists() {

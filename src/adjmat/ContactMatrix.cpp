@@ -70,7 +70,7 @@ public:
 /// Constructor
   explicit ContactMatrix(const ActionOptions&);
 /// This does nothing
-  double calculateWeight( MatrixElementPack& myvals ) const ;
+  double calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const ;
 };
 
 PLUMED_REGISTER_ACTION(ContactMatrix,"CONTACT_MATRIX")
@@ -106,12 +106,12 @@ ContactMatrix::ContactMatrix( const ActionOptions& ao ):
   setLinkCellCutoff( switchingFunction.get_dmax() );
 }
 
-double ContactMatrix::calculateWeight( MatrixElementPack& myvals ) const {
-  Vector distance = myvals.getPosition(1);
+double ContactMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const {
+  Vector distance = pos2;
   double dfunc, val = switchingFunction.calculateSqr( distance.modulo2(), dfunc ); 
-  myvals.addAtomDerivatives( 0, (-dfunc)*distance );
-  myvals.addAtomDerivatives( 1, (+dfunc)*distance );
-  myvals.addBoxDerivatives( (-dfunc)*Tensor(distance,distance) );
+  addAtomDerivatives( 0, (-dfunc)*distance, myvals );
+  addAtomDerivatives( 1, (+dfunc)*distance, myvals );
+  addBoxDerivatives( (-dfunc)*Tensor(distance,distance), myvals );
   return val;
 }
 

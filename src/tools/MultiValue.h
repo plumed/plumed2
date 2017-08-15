@@ -32,7 +32,7 @@ class MultiValue {
 friend class ActionWithValue;
 private:
 /// The index of the task we are currently performing
-  unsigned task_index;
+  unsigned task_index, task2_index;
 /// Values of quantities
   std::vector<double> values;
 /// Number of derivatives per value
@@ -50,9 +50,9 @@ private:
   std::vector<double> matrix_element_stash;
 /// This is a fudge to save on vector resizing in MultiColvar
   bool vector_call;
-  unsigned nindices;
+  unsigned nindices, nsplit;
   std::vector<unsigned> indices, sort_indices;
-  std::vector<Vector> tmp_atoms;
+  std::vector<std::vector<Vector> > tmp_atoms;
 public:
   MultiValue( const unsigned& nvals, const unsigned& nder, const unsigned ncols=0, const unsigned nmat=0 );
   void resize( const unsigned&, const unsigned& );
@@ -61,11 +61,21 @@ public:
 /// Get the task index
   unsigned getTaskIndex() const ;
 ///
+  void setSecondTaskIndex( const unsigned& tindex );
+/// Get the task index
+  unsigned getSecondTaskIndex() const ;
+///
+  void setSplitIndex( const unsigned& nat );
+  unsigned getSplitIndex() const ;
+///
   void setNumberOfIndices( const unsigned& nat );
   unsigned getNumberOfIndices() const ;
   std::vector<unsigned>& getIndices();
+  const std::vector<unsigned>& getIndices() const ;
   std::vector<unsigned>& getSortIndices();
-  std::vector<Vector>& getAtomVector();
+  std::vector<Vector>& getFirstAtomVector();
+  const std::vector<Vector>& getAtomVector() const ;
+  std::vector<Vector>& getSecondAtomVector();
 /// Get the number of values in the stash
   unsigned getNumberOfValues() const ;
 /// Get the number of derivatives in the stash
@@ -173,6 +183,16 @@ unsigned MultiValue::getActiveIndex( const unsigned& ival, const unsigned& ind )
 }
 
 inline
+void MultiValue::setSplitIndex( const unsigned& nat ) {
+  nsplit = nat;
+}
+
+inline
+unsigned MultiValue::getSplitIndex() const {
+  return nsplit;
+}
+
+inline
 void MultiValue::setNumberOfIndices( const unsigned& nat ) {
   nindices = nat;
 }
@@ -188,13 +208,28 @@ std::vector<unsigned>& MultiValue::getIndices() {
 }
 
 inline
+const std::vector<unsigned>& MultiValue::getIndices() const {
+  return indices;
+} 
+
+inline
 std::vector<unsigned>& MultiValue::getSortIndices() {
   return sort_indices;
 }
 
 inline
-std::vector<Vector>& MultiValue::getAtomVector() {
-  return tmp_atoms;
+std::vector<Vector>& MultiValue::getFirstAtomVector() {
+  return tmp_atoms[0];
+}
+
+inline
+const std::vector<Vector>& MultiValue::getAtomVector() const {
+  return tmp_atoms[0];
+} 
+
+inline
+std::vector<Vector>& MultiValue::getSecondAtomVector() {
+  return tmp_atoms[1];
 }
 
 inline
@@ -205,6 +240,16 @@ void MultiValue::setTaskIndex( const unsigned& tindex ) {
 inline
 unsigned MultiValue::getTaskIndex() const {
   return task_index;
+}
+
+inline
+void MultiValue::setSecondTaskIndex( const unsigned& tindex ) {
+  task2_index = tindex;
+}
+
+inline
+unsigned MultiValue::getSecondTaskIndex() const {
+  return task2_index;
 }
 
 inline

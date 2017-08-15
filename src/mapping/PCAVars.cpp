@@ -267,7 +267,7 @@ PCAVars::PCAVars(const ActionOptions& ao):
   std::vector<AtomNumber> atoms; std::vector<std::string> args;
   myframes.getAtomAndArgumentRequirements( atoms, args );
   requestAtoms( atoms ); std::vector<Value*> req_args;
-  interpretArgumentList( args, req_args ); requestArguments( req_args );
+  interpretArgumentList( args, req_args ); requestArguments( req_args, false );
 
   // Setup the derivative pack
   if( atoms.size()>0 ) myvals.resize( 1, args.size() + 3*atoms.size() + 9 );

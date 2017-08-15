@@ -163,7 +163,7 @@ protected:
 /// Return a pointer to the value by name
   Value* getPntrToComponent(const std::string& name);
 /// Run a task for a matrix element
-  void runTask( const unsigned& task_index, const unsigned& current, const unsigned colno, MultiValue& myvals ) const ;
+  void runTask( const std::string& controller, const unsigned& task_index, const unsigned& current, const unsigned colno, MultiValue& myvals ) const ;
   void clearMatrixElements( MultiValue& myvals ) const ;
 public:
   explicit ActionWithValue(const ActionOptions&ao);
@@ -242,6 +242,8 @@ public:
   virtual void prepareForTasks();
 ///
   virtual void performTask( const unsigned& current, MultiValue& myvals ) const { plumed_error(); }
+/// This one calculates matrix elements
+  virtual void performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {}
 ///
   bool addActionToChain( const std::vector<std::string>& alabels, ActionWithValue* act );
 ///

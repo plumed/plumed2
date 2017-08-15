@@ -163,7 +163,7 @@ Print::Print(const ActionOptions&ao):
         rotateCountdown=rotate;
         for(unsigned i=0; i<getNumberOfArguments(); ++i) rotateArguments.push_back( getPntrToArgument(i) );
         vector<Value*> a(1,rotateArguments[0]);
-        requestArguments(vector<Value*>(1,rotateArguments[0]));
+        requestArguments(vector<Value*>(1,rotateArguments[0]),false);
         rotateLast=0;
       }
   } else if( tstyle=="xyz" ){
@@ -192,7 +192,7 @@ Print::Print(const ActionOptions&ao):
          if ( (i+1) % 25 == 0 ) log.printf("  \n");
          log.printf("  %d", atoms[i].serial());
       }
-      log.printf("\n"); std::vector<Value*> args( getArguments() ); requestAtoms( atoms ); requestArguments( args ); 
+      log.printf("\n"); std::vector<Value*> args( getArguments() ); requestAtoms( atoms ); requestArguments( args, false ); 
   } else {
       error("expected output does not exist");
   }
@@ -211,7 +211,7 @@ void Print::prepare() {
       rotateCountdown=rotate;
       rotateLast++;
       rotateLast%=rotateArguments.size();
-      requestArguments(vector<Value*>(1,rotateArguments[rotateLast]));
+      requestArguments(vector<Value*>(1,rotateArguments[rotateLast]), false);
     }
   }
 /////////////////////////////////////////

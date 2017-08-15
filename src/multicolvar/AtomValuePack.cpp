@@ -30,7 +30,7 @@ AtomValuePack::AtomValuePack( MultiValue& vals, MultiColvarBase const * mcolv ):
   natoms(0),
   indices( vals.getIndices() ),
   sort_vector( vals.getSortIndices() ),
-  myatoms( vals.getAtomVector() )
+  myatoms( vals.getFirstAtomVector() )
 {
   if( indices.size()!=mcolv->getNumberOfAtoms() ) {
     indices.resize( mcolv->getNumberOfAtoms() );

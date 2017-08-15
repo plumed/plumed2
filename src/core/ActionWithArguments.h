@@ -77,7 +77,7 @@ public:
 /// Parse a numbered list of arguments
   bool parseArgumentList(const std::string&key,int i,std::vector<Value*>&args);
 /// Setup the dependencies
-  void requestArguments(const std::vector<Value*> &arg);
+  void requestArguments(const std::vector<Value*> &arg, const bool& allow_streams);
 /// Set the forces on the arguments
   void setForcesOnArguments( const std::vector<double>& forces, unsigned& start );
 public:

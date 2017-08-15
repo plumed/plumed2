@@ -514,7 +514,9 @@ void ActionWithValue::prepareForTasks(){
   if( action_to_do_after ) action_to_do_after->prepareForTasks();
 }
 
-void ActionWithValue::runTask( const unsigned& task_index, const unsigned& current, const unsigned colno, MultiValue& myvals ) const {
+void ActionWithValue::runTask( const std::string& controller, const unsigned& task_index, const unsigned& current, const unsigned colno, MultiValue& myvals ) const {
+  // Do matrix element task
+  myvals.setTaskIndex(task_index); myvals.setSecondTaskIndex( colno ); performTask( controller, current, colno, myvals );
   const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
   if( aa ){
       if( actionInChain() ) { 
@@ -542,7 +544,7 @@ void ActionWithValue::runTask( const unsigned& task_index, const unsigned& curre
   
   // Now continue on with the stream
   if( action_to_do_after ){
-      if( action_to_do_after->isActive() ) action_to_do_after->runTask( task_index, current, colno, myvals );
+      if( action_to_do_after->isActive() ) action_to_do_after->runTask( controller, task_index, current, colno, myvals );
   }
 }
 

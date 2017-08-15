@@ -118,13 +118,13 @@ void AdjacencyMatrixBase::buildCurrentTaskList( std::vector<unsigned>& tflags ) 
   // Build link cells here so that this is done in stream if it needed in stream
   std::vector<Vector> ltmp_pos( ablocks.size() );
   for(unsigned i=0; i<ablocks.size(); ++i) {
-      ltmp_pos[i]=getPosition( ablocks[i] );
+      ltmp_pos[i]=ActionAtomistic::getPosition( ablocks[i] );
   }
   linkcells.buildCellLists( ltmp_pos, ablocks, getPbc() );
   if( threeblocks.size()>0 ) {
       std::vector<Vector> ltmp_pos2( threeblocks.size() );
       for(unsigned i=0; i<ablocks.size(); ++i) {
-          ltmp_pos[i]=getPosition( threeblocks[i] );
+          ltmp_pos[i]=ActionAtomistic::getPosition( threeblocks[i] );
       }
       threecells.buildCellLists( ltmp_pos2, threeblocks, getPbc() );
   }
@@ -135,15 +135,15 @@ void AdjacencyMatrixBase::calculate(){
   runAllTasks();
 }
 
-void AdjacencyMatrixBase::updateWeightDerivativeIndices( const unsigned& sno, const unsigned& ntwo_atoms, const unsigned& natoms,  
-                                                         const std::vector<unsigned>& indices, MultiValue& myvals ) const {
+void AdjacencyMatrixBase::updateWeightDerivativeIndices( const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
   unsigned w_ind = getPntrToOutput(0)->getPositionInStream();
   // Update dynamic list indices for central atom
-  myvals.updateIndex( w_ind, 3*indices[0]+0 ); myvals.updateIndex( w_ind, 3*indices[0]+1 ); myvals.updateIndex( w_ind, 3*indices[0]+2 );
+  myvals.updateIndex( w_ind, 3*index1+0 ); myvals.updateIndex( w_ind, 3*index1+1 ); myvals.updateIndex( w_ind, 3*index1+2 );
   // Update dynamic list indices for atom forming this bond
-  myvals.updateIndex( w_ind, 3*indices[sno]+0 ); myvals.updateIndex( w_ind, 3*indices[sno]+1 ); myvals.updateIndex( w_ind, 3*indices[sno]+2 );
+  myvals.updateIndex( w_ind, 3*index2+0 ); myvals.updateIndex( w_ind, 3*index2+1 ); myvals.updateIndex( w_ind, 3*index2+2 );
   // Now look after all the atoms in the third block
-  for(unsigned i=ntwo_atoms;i<natoms;++i){
+  std::vector<unsigned> & indices( myvals.getIndices() );
+  for(unsigned i=myvals.getSplitIndex();i<myvals.getNumberOfIndices();++i){
       myvals.updateIndex( w_ind, 3*indices[i]+0 ); myvals.updateIndex( w_ind, 3*indices[i]+1 ); myvals.updateIndex( w_ind, 3*indices[i]+2 );
   }
   // Update dynamic list indices for virial
@@ -153,85 +153,89 @@ void AdjacencyMatrixBase::updateWeightDerivativeIndices( const unsigned& sno, co
 void AdjacencyMatrixBase::performTask( const unsigned& current, MultiValue& myvals ) const {
   // Retrieve cells required from link cells - for matrix blocks
   std::vector<unsigned> cells_required( linkcells.getNumberOfCells() ); unsigned ncells_required=0;
-  linkcells.addRequiredCells( linkcells.findMyCell( getPosition(current) ), ncells_required, cells_required );
+  linkcells.addRequiredCells( linkcells.findMyCell( ActionAtomistic::getPosition(current) ), ncells_required, cells_required );
 
   // Now retrieve bookeeping arrays
-  std::vector<Vector> & atoms( myvals.getAtomVector() );
-  std::vector<unsigned> & indices( myvals.getIndices() ); 
-  if( indices.size()!=(1+ablocks.size()+threeblocks.size()) ){
-     indices.resize( 1+ablocks.size()+threeblocks.size() ); 
-     atoms.resize( 1+ablocks.size()+threeblocks.size() );
-  }
+  std::vector<unsigned> & indices( myvals.getIndices() );
+  if( indices.size()!=(1+ablocks.size()+threeblocks.size()) ) indices.resize( 1+ablocks.size()+threeblocks.size() );
 
   // Now get the positions
   unsigned natoms=1; indices[0]=current;
   linkcells.retrieveAtomsInCells( ncells_required, cells_required, natoms, indices );
-  unsigned ntwo_atoms=natoms;
+  unsigned ntwo_atoms=natoms; myvals.setSplitIndex( ntwo_atoms );
 
   // Now retrieve everything for the third atoms
   if( threeblocks.size()>0 ) {
-      if( cells_required.size()!=threecells.getNumberOfCells() ) cells_required.resize( threecells.getNumberOfCells() ); 
+      if( cells_required.size()!=threecells.getNumberOfCells() ) cells_required.resize( threecells.getNumberOfCells() );
       unsigned ncells_required=0;
-      threecells.addRequiredCells( threecells.findMyCell( getPosition(current) ), ncells_required, cells_required ); 
-      threecells.retrieveAtomsInCells( ncells_required, cells_required, natoms, indices ); 
+      threecells.addRequiredCells( threecells.findMyCell( ActionAtomistic::getPosition(current) ), ncells_required, cells_required );
+      threecells.retrieveAtomsInCells( ncells_required, cells_required, natoms, indices );
   }
   myvals.setNumberOfIndices( natoms );
 
-  // Apply periodic boundary conditions
-  for(unsigned i=0; i<natoms; ++i) atoms[i] = getPosition(indices[i]) - getPosition(current);
-  if( !nopbc ) pbcApply( atoms, natoms );
+  // Apply periodic boundary conditions to atom positions
+  std::vector<Vector> & t_atoms( myvals.getSecondAtomVector() );
+  if( t_atoms.size()<getNumberOfAtoms() ) t_atoms.resize( getNumberOfAtoms() );
+  for(unsigned i=0; i<natoms; ++i) t_atoms[i] = ActionAtomistic::getPosition(indices[i]) - ActionAtomistic::getPosition(current);
+  if( !nopbc ) pbcApply( t_atoms, natoms );
+  // And collect atom position data
+  std::vector<Vector> & atoms( myvals.getFirstAtomVector() );
+  if( atoms.size()<getNumberOfAtoms() ) atoms.resize( getNumberOfAtoms() );
+  for(unsigned i=0; i<natoms; ++i) atoms[ indices[i] ] = t_atoms[i];
 
   // Now loop over all atoms in coordination sphere
-  MatrixElementPack mypack( myvals, natoms-ntwo_atoms, components, this );
-  if( threeblocks.size()>0 ) {
-      unsigned kb=2; for(unsigned i=ntwo_atoms;i<natoms;++i){ mypack.setIndex( kb, indices[i] ); mypack.setPosition( kb, atoms[i] ); kb++; }
-  }
-  mypack.setIndex( 0, current ); Vector zero; zero.zero(); mypack.setPosition( 0, zero );
   for(unsigned i=1;i<ntwo_atoms;++i){
-      mypack.setIndex( 1, indices[i] ); mypack.setPosition( 1, atoms[i] );
-      double weight = calculateWeight( mypack ); 
-      if( weight<epsilon ){
-          if( !doNotCalculateDerivatives() ) {
-              updateWeightDerivativeIndices( i, ntwo_atoms, natoms, indices, myvals ); 
-              clearMatrixElements( myvals );
-          }
-          continue;
-      }
-      // Now set the matrix weight and the vector if required  
-      myvals.setValue( getPntrToOutput(0)->getPositionInStream(), weight ); 
-      if( components ) {
-          unsigned x_index = getPntrToOutput(1)->getPositionInStream();
-          unsigned y_index = getPntrToOutput(2)->getPositionInStream();
-          unsigned z_index = getPntrToOutput(3)->getPositionInStream();
-          myvals.setValue( x_index, atoms[i][0] ); myvals.setValue( y_index, atoms[i][1] ); myvals.setValue( z_index, atoms[i][2] );
-          if( !doNotCalculateDerivatives() ){
-              myvals.addDerivative( x_index, 3*indices[0]+0, -1 ); myvals.addDerivative( x_index, 3*indices[i]+0, +1 );
-              myvals.addDerivative( y_index, 3*indices[0]+1, -1 ); myvals.addDerivative( y_index, 3*indices[i]+1, +1 );
-              myvals.addDerivative( z_index, 3*indices[0]+2, -1 ); myvals.addDerivative( z_index, 3*indices[i]+2, +1 );
-              // Update dynamic lists for central atom
-              myvals.updateIndex( x_index, 3*indices[0]+0 ); myvals.updateIndex( y_index, 3*indices[0]+1 ); myvals.updateIndex( z_index, 3*indices[0]+2 );
-              // Update dynamic lists for bonded atom
-              myvals.updateIndex( x_index, 3*indices[i]+0 ); myvals.updateIndex( y_index, 3*indices[i]+1 ); myvals.updateIndex( z_index, 3*indices[i]+2 );
-              // Add derivatives of virial
-              unsigned base = 3*getNumberOfAtoms();
-              // Virial for x
-              myvals.addDerivative( x_index, base+0, -atoms[i][0] ); myvals.addDerivative( x_index, base+3, -atoms[i][1] ); myvals.addDerivative( x_index, base+6, -atoms[i][2] ); 
-              myvals.updateIndex( x_index, base+0 ); myvals.updateIndex( x_index, base+3 ); myvals.updateIndex( x_index, base+6 );
-              // Virial for y
-              myvals.addDerivative( y_index, base+1, -atoms[i][0] ); myvals.addDerivative( y_index, base+4, -atoms[i][1] ); myvals.addDerivative( y_index, base+7, -atoms[i][2] );  
-              myvals.updateIndex( y_index, base+1 ); myvals.updateIndex( y_index, base+4 ); myvals.updateIndex( y_index, base+7 );
-              // Virial for z
-              myvals.addDerivative( z_index, base+2, -atoms[i][0] ); myvals.addDerivative( z_index, base+5, -atoms[i][1] ); myvals.addDerivative( z_index, base+8, -atoms[i][2] );  
-              myvals.updateIndex( z_index, base+2 ); myvals.updateIndex( z_index, base+5 ); myvals.updateIndex( z_index, base+8 );
-          }
-      } 
-      // Update derivatives
-      if( !doNotCalculateDerivatives() ) updateWeightDerivativeIndices( i, ntwo_atoms, natoms, indices, myvals );
       // This does everything in the stream that is done with single matrix elements 
-      runTask( myvals.getTaskIndex(), current, indices[i], myvals );
+      runTask( getLabel(), myvals.getTaskIndex(), current, indices[i], myvals );
       // Now clear only elements that are not accumulated over whole row
       clearMatrixElements( myvals );
   }
+}
+
+void AdjacencyMatrixBase::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
+  // This makes sure other AdjacencyMatrixBase actions in the stream don't get their matrix elements calculated here
+  if( controller!=getLabel() ) return;
+
+  Vector zero; zero.zero();
+  double weight = calculateWeight( zero, myvals.getAtomVector()[index2], myvals.getNumberOfIndices()-myvals.getSplitIndex(), myvals );
+  if( weight<epsilon ){
+      if( !doNotCalculateDerivatives() ) {
+          updateWeightDerivativeIndices( index1, index2, myvals );
+          clearMatrixElements( myvals );
+      }
+      return;
+  }
+  // Now set the matrix weight and the vector if required  
+  myvals.setValue( getPntrToOutput(0)->getPositionInStream(), weight );
+  if( components ) {
+      unsigned x_index = getPntrToOutput(1)->getPositionInStream();
+      unsigned y_index = getPntrToOutput(2)->getPositionInStream();
+      unsigned z_index = getPntrToOutput(3)->getPositionInStream();
+      Vector atom = myvals.getAtomVector()[index2]; 
+      myvals.setValue( x_index, atom[0] ); myvals.setValue( y_index, atom[1] ); myvals.setValue( z_index, atom[2] );
+      if( !doNotCalculateDerivatives() ){
+          myvals.addDerivative( x_index, 3*index1+0, -1 ); myvals.addDerivative( x_index, 3*index2+0, +1 );
+          myvals.addDerivative( y_index, 3*index1+1, -1 ); myvals.addDerivative( y_index, 3*index2+1, +1 );
+          myvals.addDerivative( z_index, 3*index1+2, -1 ); myvals.addDerivative( z_index, 3*index2+2, +1 );
+          // Update dynamic lists for central atom
+          myvals.updateIndex( x_index, 3*index1+0 ); myvals.updateIndex( y_index, 3*index1+1 ); myvals.updateIndex( z_index, 3*index1+2 );
+          // Update dynamic lists for bonded atom
+          myvals.updateIndex( x_index, 3*index2+0 ); myvals.updateIndex( y_index, 3*index2+1 ); myvals.updateIndex( z_index, 3*index2+2 );
+          // Add derivatives of virial
+          unsigned base = 3*getNumberOfAtoms();
+          // Virial for x
+          myvals.addDerivative( x_index, base+0, -atom[0] ); myvals.addDerivative( x_index, base+3, -atom[1] ); myvals.addDerivative( x_index, base+6, -atom[2] );
+          myvals.updateIndex( x_index, base+0 ); myvals.updateIndex( x_index, base+3 ); myvals.updateIndex( x_index, base+6 );
+          // Virial for y
+          myvals.addDerivative( y_index, base+1, -atom[0] ); myvals.addDerivative( y_index, base+4, -atom[1] ); myvals.addDerivative( y_index, base+7, -atom[2] );
+          myvals.updateIndex( y_index, base+1 ); myvals.updateIndex( y_index, base+4 ); myvals.updateIndex( y_index, base+7 );
+          // Virial for z
+          myvals.addDerivative( z_index, base+2, -atom[0] ); myvals.addDerivative( z_index, base+5, -atom[1] ); myvals.addDerivative( z_index, base+8, -atom[2] );
+          myvals.updateIndex( z_index, base+2 ); myvals.updateIndex( z_index, base+5 ); myvals.updateIndex( z_index, base+8 );
+      }
+  }
+  // Update derivatives
+  if( !doNotCalculateDerivatives() ) updateWeightDerivativeIndices( index1, index2, myvals );
 }
 
 void AdjacencyMatrixBase::apply() {}

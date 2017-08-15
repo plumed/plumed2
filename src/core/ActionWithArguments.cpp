@@ -203,7 +203,7 @@ void ActionWithArguments::expandArgKeywordInPDB( PDB& pdb ) {
   }
 }
 
-void ActionWithArguments::requestArguments(const vector<Value*> &arg) {
+void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool& allow_streams ) {
   plumed_massert(!lockRequestArguments,"requested argument list can only be changed in the prepare() method");
   bool firstcall=(arguments.size()==0);
   arguments=arg;
@@ -241,7 +241,9 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg) {
       if(!av) return;
   }
 
-  if( f_actions.size()>1 ){
+  if( !allow_streams ){
+      done_over_stream=false;
+  } else if( f_actions.size()>1 ){
       done_over_stream=true;
       for(unsigned i=1;i<f_actions.size();++i){
           if( f_actions[0]->getFullNumberOfTasks()!=f_actions[i]->getFullNumberOfTasks() ){ done_over_stream=false; break; }
@@ -313,7 +315,7 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
          else if( narg!=nargt ) error("mismatch between number of arguments specified for different numbered ARG values");
       }
     }
-    requestArguments(arg);
+    requestArguments(arg,true);
   }
 }
 

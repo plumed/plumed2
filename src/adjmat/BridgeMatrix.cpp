@@ -71,7 +71,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit BridgeMatrix(const ActionOptions&);
 // active methods:
-  double calculateWeight( MatrixElementPack& myvals ) const ;
+  double calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const ;
 };
 
 PLUMED_REGISTER_ACTION(BridgeMatrix,"BRIDGE_MATRIX")
@@ -140,20 +140,20 @@ BridgeMatrix::BridgeMatrix(const ActionOptions&ao):
   checkRead();
 }
 
-double BridgeMatrix::calculateWeight( MatrixElementPack& myvals ) const {
+double BridgeMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const {
   double tot=0;
-  for(unsigned i=2; i<myvals.getNumberOfAtoms(); ++i) {
-    Vector dij= myvals.getPosition(i); 
+  for(unsigned i=0; i<natoms; ++i) {
+    Vector dij= getPosition(i,myvals); 
     double dw1, w1=sf1.calculateSqr( dij.modulo2(), dw1 );
-    Vector dik=pbcDistance( myvals.getPosition(i), myvals.getPosition(1) );
+    Vector dik=pbcDistance( getPosition(i,myvals), pos2 );
     double dw2, w2=sf2.calculateSqr( dik.modulo2(), dw2 );
 
     tot += w1*w2;
     // And finish the calculation
-    myvals.addAtomDerivatives( 0,  -w2*dw1*dij );
-    myvals.addAtomDerivatives( 1,  w1*dw2*dik );
-    myvals.addAtomDerivatives( i, -w1*dw2*dik+w2*dw1*dij );
-    myvals.addBoxDerivatives( w1*(-dw2)*Tensor(dik,dik)+w2*(-dw1)*Tensor(dij,dij) );
+    addAtomDerivatives( 0,  -w2*dw1*dij, myvals );
+    addAtomDerivatives( 1,  w1*dw2*dik, myvals );
+    addThirdAtomDerivatives( i, -w1*dw2*dik+w2*dw1*dij, myvals );
+    addBoxDerivatives( w1*(-dw2)*Tensor(dik,dik)+w2*(-dw1)*Tensor(dij,dij), myvals );
   }
   return tot;
 }

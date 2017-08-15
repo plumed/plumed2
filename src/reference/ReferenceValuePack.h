@@ -218,7 +218,7 @@ void ReferenceValuePack::switchOnPCAOption() {
 
 inline
 std::vector<Vector>& ReferenceValuePack::getAtomVector() {
-  return myvals.getAtomVector();
+  return myvals.getFirstAtomVector();
 }
 
 inline
