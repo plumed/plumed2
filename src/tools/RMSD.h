@@ -97,6 +97,8 @@ class RMSD
 public:
 /// Constructor
   RMSD();
+  RMSD(const RMSD &cp);
+  ~RMSD();
 /// clear the structure
   void clear();
 /// set reference, align and displace from input pdb structure: evtl remove com from the initial structure and normalize the input weights from the pdb
@@ -107,12 +109,15 @@ public:
   void setType(const std::string & mytype);
 /// set reference coordinates, remove the com by using uniform weights
   void setReference(const std::vector<Vector> & reference);
+  std::vector<Vector> getReference();
 /// set weights and remove the center from reference with normalized weights. If the com has been removed, it resets to the new value
   void setAlign(const std::vector<double> & align, bool normalize_weights=true, bool remove_center=true);
+  std::vector<double> getAlign();
 /// set align
   void setDisplace(const std::vector<double> & displace, bool normalize_weights=true);
-///
-  std::string getMethod();
+  std::vector<double> getDisplace();
+/// 
+  std::string getMethod();	
 /// workhorses
   double simpleAlignment(const  std::vector<double>  & align,
                          const  std::vector<double>  & displace,
@@ -128,14 +133,40 @@ public:
                           const std::vector<Vector> & reference,
                           std::vector<Vector>  & DDistDPos, bool squared=false)const;
 
-  template <bool safe,bool alEqDis>
-  double optimalAlignment_DDistDRef(const  std::vector<double>  & align,
-                                    const  std::vector<double>  & displace,
-                                    const std::vector<Vector> & positions,
-                                    const std::vector<Vector> & reference,
-                                    std::vector<Vector>  & DDistDPos,
-                                    std::vector<Vector> &  DDistDRef,
-                                    bool squared=false) const;
+template <bool safe, bool alEqDis>
+    double optimalAlignmentWithCloseStructure(const  std::vector<double>  & align,
+            const  std::vector<double>  & displace,
+            const std::vector<Vector> & positions,
+            const std::vector<Vector> & reference ,
+            std::vector<Vector>  & derivatives,
+            Tensor & rotationPosClose,
+            Tensor & rotationRefClose,
+            Tensor * drotationPosCloseDrr01,
+            bool squared=false)const;
+template <bool safe, bool alEqDis>
+    double optimalAlignment_Rot_DRotDRr01(const  std::vector<double>  & align,
+            const  std::vector<double>  & displace,
+            const std::vector<Vector> & positions,
+            const std::vector<Vector> & reference ,
+            Tensor & Rotation,
+            Tensor * drotationPosCloseDrr01,
+            bool squared=false)const;
+template <bool safe, bool alEqDis>
+    double optimalAlignment_Rot(const  std::vector<double>  & align,
+            const  std::vector<double>  & displace,
+            const std::vector<Vector> & positions,
+            const std::vector<Vector> & reference,
+            std::vector<Vector>  & derivatives,
+            Tensor & Rotation,
+            bool squared=false)const;
+template <bool safe,bool alEqDis>
+double optimalAlignment_DDistDRef(const  std::vector<double>  & align,
+                              const  std::vector<double>  & displace,
+                              const std::vector<Vector> & positions,
+                              const std::vector<Vector> & reference ,
+			      std::vector<Vector>  & DDistDPos,	
+                              std::vector<Vector> &  DDistDRef, 
+                              bool squared=false) const;
 
   template <bool safe,bool alEqDis>
   double optimalAlignment_SOMA(const  std::vector<double>  & align,
@@ -204,6 +235,12 @@ public:
 ///
   double calc_DDistDRef_Rot_DRotDPos( const std::vector<Vector>& positions, std::vector<Vector> &DDistDPos, std::vector<Vector>& DDistDRef, Tensor & Rotation,Matrix<std::vector<Vector> > &DRotDPos, const bool squared=false   );
   double calc_DDistDRef_Rot_DRotDPos_DRotDRef( const std::vector<Vector>& positions, std::vector<Vector> &DDistDPos, std::vector<Vector>& DDistDRef, Tensor & Rotation,Matrix<std::vector<Vector> > &DRotDPos,Matrix<std::vector<Vector> > &DRotDRef, const bool squared=false   );
+ ///calculate rotation matrix, derivative of rotation matrix w.r.t. positions, derivative of rotation matrix w.r.t. rr01
+ double calc_Rot_DRotDRr01( const std::vector<Vector>& positions, Tensor & Rotation, Tensor * DRotDRr01, const bool squared=false   );
+ ///calculate rotation matrix, derivative of rotation matrix w.r.t. positions
+ double calc_Rot( const std::vector<Vector>& positions, std::vector<Vector> &DDistDPos, Tensor & Rotation, const bool squared=false   );
+ ///calculate with close structure, i.e. use arguments .... to approximate the RMSD without expensive computation of rotation matrix
+ double calculateWithCloseStructure( const std::vector<Vector>& positions, std::vector<Vector> &DDistDPos, Tensor & rotationPosClose, Tensor & rotationRefClose, Tensor * drotationPosCloseDrr01, const bool squared=false   );
 /// convenience method to retrieve all the bits and pieces for PCA
   double calc_PCAelements( const std::vector<Vector>& pos, std::vector<Vector> &DDistDPos, Tensor & Rotation, Matrix<std::vector<Vector> > & DRotDPos,std::vector<Vector>  & alignedpositions, std::vector<Vector> & centeredpositions, std::vector<Vector> &centeredreference, const bool& squared=false) const ;
 /// convenience method to retrieve all the bits and pieces needed by FitToTemplate
@@ -293,6 +330,8 @@ public:
   // only_rotation=true does not retrieve the derivatives, just retrieve the optimal rotation (the same calc cannot be exploit further)
   void doCoreCalc(bool safe,bool alEqDis, bool only_rotation=false);
   // retrieve the distance if required after doCoreCalc
+  // do calculation with close structure data structures
+  void doCoreCalcWithCloseStructure(bool safe,bool alEqDis, Tensor & rotationPosClose, Tensor & rotationRefClose, Tensor * drotationPosCloseDrr01);
   double getDistance(bool squared);
   // retrieve the derivative of the distance respect to the position
   std::vector<Vector> getDDistanceDPositions();
@@ -324,6 +363,7 @@ public:
   // note that the this transformation overlap the  reference onto position
   // if inverseTransform=true then aligns the positions onto reference
   Matrix<std::vector<Vector> >  getDRotationDReference(bool inverseTransform=false );
+  void copyDRotationDRr01(Tensor * to);
 };
 
 }

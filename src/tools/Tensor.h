@@ -219,7 +219,7 @@ void TensorGeneric<n,m>::zero() {
   LoopUnroller<n*m>::_zero(d);
 }
 
-template<unsigned n,unsigned m>
+template<unsigned n,unsigned m> inline
 double & TensorGeneric<n,m>::operator() (unsigned i,unsigned j) {
 #ifdef _GLIBCXX_DEBUG
   plumed_assert(i<n && j<m);
@@ -227,7 +227,7 @@ double & TensorGeneric<n,m>::operator() (unsigned i,unsigned j) {
   return d[m*i+j];
 }
 
-template<unsigned n,unsigned m>
+template<unsigned n,unsigned m> inline
 const double & TensorGeneric<n,m>::operator() (unsigned i,unsigned j)const {
 #ifdef _GLIBCXX_DEBUG
   plumed_assert(i<n && j<m);
