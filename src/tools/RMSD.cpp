@@ -54,7 +54,7 @@ RMSD& RMSD::operator=(const RMSD& cp) {
   positions_center = cp.positions_center;
   positions_center_is_calculated = cp.positions_center_is_calculated;
   positions_center_is_removed = cp.positions_center_is_removed;
-  return this;
+  return *this;
 }
 
 ///
