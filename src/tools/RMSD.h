@@ -99,7 +99,7 @@ public:
   RMSD();
   RMSD(const RMSD &cp);
   ~RMSD();
-  RMSD& operator=(const RMSD& cp) {
+  RMSD& operator=(const RMSD& cp);
 /// clear the structure
     void clear();
 /// set reference, align and displace from input pdb structure: evtl remove com from the initial structure and normalize the input weights from the pdb
