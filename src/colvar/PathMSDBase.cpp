@@ -53,7 +53,8 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
   nframes(0),
   epsilonClose(-1),
   debugClose(0),
-  logClose(0)
+  logClose(0),
+  computeRefClose(false)
 {
   parse("LAMBDA",lambda);
   parse("NEIGH_SIZE",neigh_size);
@@ -97,6 +98,7 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
     //set up rmsdRefClose, initialize it to the first structure loaded from reference file
     rmsdPosClose.set(pdbv[0], "OPTIMAL");
     firstPosClose = true;
+    computeRefClose = false;
   }
   if(neigh_stride>0 || neigh_size>0) {
     if(neigh_size>int(nframes)) {

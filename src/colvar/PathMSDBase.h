@@ -75,7 +75,6 @@ class PathMSDBase : public Colvar {
   RMSD rmsdPosClose;
   bool firstPosClose;
   bool computeRefClose;
-  long natoms;  //number of relevant atoms
   Tensor *rotationRefClose; //Tensor[i]
   Tensor rotationPosClose;
   Tensor *drotationPosCloseDrr01; //Tensor[3][3];
