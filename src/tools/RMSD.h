@@ -240,7 +240,7 @@ public:
   double calc_Rot_DRotDRr01( const std::vector<Vector>& positions, Tensor & Rotation, Tensor * DRotDRr01, const bool squared=false   );
 ///calculate rotation matrix, derivative of rotation matrix w.r.t. positions
   double calc_Rot( const std::vector<Vector>& positions, std::vector<Vector> &DDistDPos, Tensor & Rotation, const bool squared=false   );
-///calculate with close structure, i.e. use arguments .... to approximate the RMSD without expensive computation of rotation matrix
+///calculate with close structure, i.e. approximate the RMSD without expensive computation of rotation matrix by reusing saved rotation matrices from previous steps
   double calculateWithCloseStructure( const std::vector<Vector>& positions, std::vector<Vector> &DDistDPos, Tensor & rotationPosClose, Tensor & rotationRefClose, Tensor * drotationPosCloseDrr01, const bool squared=false   );
 /// convenience method to retrieve all the bits and pieces for PCA
   double calc_PCAelements( const std::vector<Vector>& pos, std::vector<Vector> &DDistDPos, Tensor & Rotation, Matrix<std::vector<Vector> > & DRotDPos,std::vector<Vector>  & alignedpositions, std::vector<Vector> & centeredpositions, std::vector<Vector> &centeredreference, const bool& squared=false) const ;

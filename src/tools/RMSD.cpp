@@ -955,7 +955,7 @@ double RMSD::optimalAlignmentWithCloseStructure(const  std::vector<double>  & al
     cd.setReferenceCenter(reference_center);
   }
 
-  // Perform the diagonalization and all the needed stuff
+  // instead of diagonalization, approximate with saved rotation matrix
   cd.doCoreCalcWithCloseStructure(safe,alEqDis, rotationPosClose, rotationRefClose, drotationPosCloseDrr01);
   // make the core calc distance
   double dist=cd.getDistance(squared);
@@ -1267,7 +1267,7 @@ void RMSDCoreData::doCoreCalcWithCloseStructure(bool safe,bool alEqDis, Tensor &
   cr.zero();
   if(!creference_is_removed)cr=creference;
   //distance = \sum_{n=0}^{N} w_n(x_n-cpos-R_{XY} R_{AY} a_n)^2
-
+//approximate the rotation matrix instead of accurate calculation via expensive diagonalization
   Tensor rotation = matmul(rotationPosClose, rotationRefClose);
 
 #pragma simd

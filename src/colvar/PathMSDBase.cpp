@@ -41,9 +41,9 @@ void PathMSDBase::registerKeywords(Keywords& keys) {
   keys.add("compulsory","REFERENCE","the pdb is needed to provide the various milestones");
   keys.add("optional","NEIGH_SIZE","size of the neighbor list");
   keys.add("optional","NEIGH_STRIDE","how often the neighbor list needs to be calculated in time units");
-  keys.add("optional", "EPSILON", "what is the maximum distance between the close and  current structure");
-  keys.add("optional", "LOG-CLOSE", "enable logging regarding the close structure, the simulation will run a bit slower");
-  keys.add("optional", "DEBUG-CLOSE", "enable extensive debugging info regarding the close structure, the simulation will run much slower");
+  keys.add("optional", "EPSILON", "(default=-1) the maximum distance between the close and the current structure, the positive value turn on the close structure method");
+  keys.add("optional", "LOG-CLOSE", "(default=0) value 1 enables logging regarding the close structure");
+  keys.add("optional", "DEBUG-CLOSE", "(default=0) value 1 enables extensive debugging info regarding the close structure, the simulation will run much slower");
 }
 
 PathMSDBase::PathMSDBase(const ActionOptions&ao):
@@ -112,10 +112,13 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
     log.printf("  Neighbor list NOT enabled \n");
   }
 
-  if (epsilonClose > 0)
-    log.printf(" Epsilon = %lf, computing with the close structure\n", epsilonClose);
-  else
+  if (epsilonClose > 0) {
+    log.printf(" Computing with the close structure, epsilon = %lf\n", epsilonClose);
+    log << "  Bibliography " << plumed.cite("Pazurikova J, Krenek A, Spiwok V, Simkova M J. Chem. Phys. 146, 115101 (2017)") << "\n";
+  } else {
     debugClose = 0;
+    logClose=0;
+  }
   if (debugClose)
     log.printf(" Extensive debug info regarding close structure turned on\n");
 
@@ -158,9 +161,9 @@ void PathMSDBase::calculate() {
   Tensor* tmp_rotationRefClose = new Tensor[nframes];
 
   if (epsilonClose > 0) {
-    //compute rmsd between positions and close structure, save rotation matrix, drotation_drr01, drotation_dpos
+    //compute rmsd between positions and close structure, save rotation matrix, drotation_drr01
     double posclose = rmsdPosClose.calc_Rot_DRotDRr01(getPositions(), rotationPosClose, drotationPosCloseDrr01, true);
-    //if there is no close structure or the existing one is too far from current structure
+    //if we compute for the first time or the existing close structure is too far from current structure
     if (firstPosClose || (posclose > epsilonClose)) {
       //set the current structure as close one for a few next steps
       if (logClose)
@@ -192,8 +195,8 @@ void PathMSDBase::calculate() {
 
 // if imgVec.size() is less than nframes, it means that only some msd will be calculated
   if (epsilonClose > 0) {
-    //set the type of alignment that determines the function used for RMSD calculation
     if (computeRefClose) {
+      //recompute rotation matrices accurately
       for (unsigned i=rank; i<imgVec.size(); i+=stride) {
         tmp_distances[i] = msdv[imgVec[i].index].calc_Rot(getPositions(), tmp_derivs, tmp_rotationRefClose[imgVec[i].index], true);
         plumed_assert(tmp_derivs.size()==nat);
@@ -201,6 +204,7 @@ void PathMSDBase::calculate() {
         for (unsigned j=0; j<nat; j++) tmp_derivs2[i*nat+j]=tmp_derivs[j];
       }
     } else {
+      //approximate distance with saved rotation matrices
       for (unsigned i=rank; i<imgVec.size(); i+=stride) {
         tmp_distances[i] = msdv[imgVec[i].index].calculateWithCloseStructure(getPositions(), tmp_derivs, rotationPosClose, rotationRefClose[imgVec[i].index], drotationPosCloseDrr01, true);
         plumed_assert(tmp_derivs.size()==nat);
@@ -214,7 +218,7 @@ void PathMSDBase::calculate() {
           vector<Vector> ders;
           double withoutclose = opt.calculate(getPositions(), ders, true);
           float difference = fabs(withoutclose-withclose);
-          log.printf("PLUMED-CLOSE: difference original - with close = %lf, step %d, i %d imgVec[i].index %d \n", difference, getStep(), i, imgVec[i].index);
+          log.printf("PLUMED-CLOSE: difference original %lf - with close%lf = %lf, step %d, i %d imgVec[i].index %d \n", withoutclose, withclose, difference, getStep(), i, imgVec[i].index);
         }
       }
     }
