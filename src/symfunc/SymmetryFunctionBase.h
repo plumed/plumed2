@@ -49,10 +49,6 @@ public:
   static void expandMatrix( const bool& components, const std::string& lab, const std::vector<std::string>& words,
                                          const std::map<std::string,std::string>& keys,
                                          std::vector<std::vector<std::string> >& actions );
-  static void expandFunctions( const std::string& labout, const std::string& argin, 
-                               const std::vector<std::string>& words,
-                               const std::map<std::string,std::string>& keys,
-                               std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit SymmetryFunctionBase(const ActionOptions&); 
   bool mustBeTreatedAsDistinctArguments() const ; 

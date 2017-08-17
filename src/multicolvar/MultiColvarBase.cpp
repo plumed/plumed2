@@ -65,116 +65,117 @@ void MultiColvarBase::shortcutKeywords( Keywords& keys ) {
   keys.addOutputComponent("_mean","MEAN","the mean of the colvars");
 }
 
-void MultiColvarBase::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                                      const std::map<std::string,std::string>& keys,
-                                      std::vector<std::vector<std::string> >& actions ){
+void MultiColvarBase::expandFunctions( const std::string& labout, const std::string& argin, 
+                                       const std::vector<std::string>& words,
+                                       const std::map<std::string,std::string>& keys,
+                                       std::vector<std::vector<std::string> >& actions ){
   // Parse LESS_THAN
   if( keys.count("LESS_THAN") ){
-      std::vector<std::string> input; input.push_back( lab + "_lt:" ); input.push_back("LESS_THAN"); 
-      input.push_back("ARG1=" + lab ); 
+      std::vector<std::string> input; input.push_back( labout + "_lt:" ); input.push_back("LESS_THAN"); 
+      input.push_back("ARG1=" + argin ); 
       input.push_back("SWITCH=" + keys.find("LESS_THAN")->second  );
       actions.push_back( input );
-      std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_lessthan:" ); 
-      sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + lab + "_lt");
+      std::vector<std::string> sum_inp; sum_inp.push_back( labout + "_lessthan:" ); 
+      sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + labout + "_lt");
       sum_inp.push_back("PERIODIC=NO"); actions.push_back( sum_inp ); 
   }
   if( keys.count("LESS_THAN1") ){
       for(unsigned i=1;; ++i){
           std::string istr; Tools::convert( i, istr );  
           if( !keys.count("LESS_THAN" + istr ) ){ break; } 
-          std::vector<std::string> input; input.push_back( lab + "_lt" + istr + ":" ); input.push_back("LESS_THAN");
-          input.push_back("ARG1=" + lab );
+          std::vector<std::string> input; input.push_back( labout + "_lt" + istr + ":" ); input.push_back("LESS_THAN");
+          input.push_back("ARG1=" + argin );
           input.push_back("SWITCH=" + keys.find("LESS_THAN" + istr)->second  );
           actions.push_back( input );
-          std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_lessthan" + istr + ":" ); 
-          sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + lab + "_lt" + istr );
+          std::vector<std::string> sum_inp; sum_inp.push_back( labout + "_lessthan" + istr + ":" ); 
+          sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + labout + "_lt" + istr );
           sum_inp.push_back("PERIODIC=NO"); actions.push_back( sum_inp );
       }
   }
   // Parse MORE_THAN
   if( keys.count("MORE_THAN") ){
-      std::vector<std::string> input; input.push_back( lab + "_mt:" ); input.push_back("MORE_THAN");
-      input.push_back("ARG1=" + lab );
+      std::vector<std::string> input; input.push_back( labout + "_mt:" ); input.push_back("MORE_THAN");
+      input.push_back("ARG1=" + argin );
       input.push_back("SWITCH=" + keys.find("MORE_THAN")->second  );
       actions.push_back( input );
-      std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_morethan:" ); 
-      sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + lab + "_mt");
+      std::vector<std::string> sum_inp; sum_inp.push_back( labout + "_morethan:" ); 
+      sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + labout + "_mt");
       sum_inp.push_back("PERIODIC=NO"); actions.push_back( sum_inp );
   }
   if( keys.count("MORE_THAN1") ){
       for(unsigned i=1;; ++i){ 
           std::string istr; Tools::convert( i, istr );    
           if( !keys.count("MORE_THAN" + istr ) ){ break; }
-          std::vector<std::string> input; input.push_back( lab + "_mt" + istr + ":" ); input.push_back("MORE_THAN");
-          input.push_back("ARG1=" + lab );
+          std::vector<std::string> input; input.push_back( labout + "_mt" + istr + ":" ); input.push_back("MORE_THAN");
+          input.push_back("ARG1=" + argin );
           input.push_back("SWITCH=" + keys.find("MORE_THAN" + istr)->second  );
           actions.push_back( input );
-          std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_morethan" + istr + ":" ); 
-          sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + lab + "_mt" + istr );
+          std::vector<std::string> sum_inp; sum_inp.push_back( labout + "_morethan" + istr + ":" ); 
+          sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + labout + "_mt" + istr );
           sum_inp.push_back("PERIODIC=NO"); actions.push_back( sum_inp );
       }
   }
   // Parse ALT_MIN
   if( keys.count("ALT_MIN") ){
-      std::vector<std::string> input; input.push_back( lab + "_altmin:" ); input.push_back("ALT_MIN");
-      input.push_back("ARG=" + lab ); std::size_t dd = keys.find("ALT_MIN")->second.find("BETA");
+      std::vector<std::string> input; input.push_back( labout + "_altmin:" ); input.push_back("ALT_MIN");
+      input.push_back("ARG=" + argin ); std::size_t dd = keys.find("ALT_MIN")->second.find("BETA");
       input.push_back( keys.find("ALT_MIN")->second.substr(dd) ); 
       actions.push_back( input );
   }
   // Parse MIN
   if( keys.count("MIN") ){
-      std::vector<std::string> input; input.push_back( lab + "_min:" ); input.push_back("MIN");
-      input.push_back("ARG=" + lab ); std::size_t dd = keys.find("MIN")->second.find("BETA"); 
+      std::vector<std::string> input; input.push_back( labout + "_min:" ); input.push_back("MIN");
+      input.push_back("ARG=" + argin ); std::size_t dd = keys.find("MIN")->second.find("BETA"); 
       input.push_back( keys.find("MIN")->second.substr(dd) ); actions.push_back( input );
   }
   // Parse MAX
   if( keys.count("MAX") ){
-      std::vector<std::string> input; input.push_back( lab + "_max:" ); input.push_back("MAX");
-      input.push_back("ARG=" + lab ); std::size_t dd = keys.find("MAX")->second.find("BETA"); 
+      std::vector<std::string> input; input.push_back( labout + "_max:" ); input.push_back("MAX");
+      input.push_back("ARG=" + argin ); std::size_t dd = keys.find("MAX")->second.find("BETA"); 
       input.push_back( keys.find("MAX")->second.substr(dd) ); actions.push_back( input );
   }
   // Parse HIGHEST
   if( keys.count("HIGHEST") ){
-      std::vector<std::string> input; input.push_back( lab + "_highest:" ); input.push_back("HIGHEST");
-      input.push_back("ARG=" + lab ); actions.push_back( input );
+      std::vector<std::string> input; input.push_back( labout + "_highest:" ); input.push_back("HIGHEST");
+      input.push_back("ARG=" + argin ); actions.push_back( input );
   }
   // Parse LOWEST
   if( keys.count("LOWEST") ){
-      std::vector<std::string> input; input.push_back( lab + "_lowest:" ); input.push_back("LOWEST");
-      input.push_back("ARG=" + lab ); actions.push_back( input );
+      std::vector<std::string> input; input.push_back( labout + "_lowest:" ); input.push_back("LOWEST");
+      input.push_back("ARG=" + argin ); actions.push_back( input );
   }
   // Parse SUM
   if( keys.count("SUM") ){
-      std::vector<std::string> input; input.push_back( lab + "_sum:" ); 
-      input.push_back("COMBINE"); input.push_back("ARG=" + lab ); 
+      std::vector<std::string> input; input.push_back( labout + "_sum:" ); 
+      input.push_back("COMBINE"); input.push_back("ARG=" + argin ); 
       input.push_back("PERIODIC=NO"); actions.push_back( input );
   }
   // Parse MEAN
   if( keys.count("MEAN") ){
-      std::vector<std::string> input; input.push_back( lab + "_mean:" ); input.push_back("COMBINE");
-      input.push_back("ARG=" + lab ); input.push_back("NORMALIZE"); 
+      std::vector<std::string> input; input.push_back( labout + "_mean:" ); input.push_back("COMBINE");
+      input.push_back("ARG=" + argin ); input.push_back("NORMALIZE"); 
       input.push_back("PERIODIC=NO"); actions.push_back( input );
   }
   // Parse BETWEEN
   if( keys.count("BETWEEN") ){
-      std::vector<std::string> input; input.push_back( lab + "_bt:" ); input.push_back("BETWEEN");
-      input.push_back("ARG1=" + lab );
+      std::vector<std::string> input; input.push_back( labout + "_bt:" ); input.push_back("BETWEEN");
+      input.push_back("ARG1=" + argin );
       input.push_back("SWITCH=" + keys.find("BETWEEN")->second  );
       actions.push_back( input );
-      std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_between:" ); 
-      sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + lab + "_bt");
+      std::vector<std::string> sum_inp; sum_inp.push_back( labout + "_between:" ); 
+      sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + labout + "_bt");
       sum_inp.push_back("PERIODIC=NO"); actions.push_back( sum_inp );
   }
   if( keys.count("BETWEEN1") ){
       for(unsigned i=1;; ++i){ 
           std::string istr; Tools::convert( i, istr );    
           if( !keys.count("BETWEEN" + istr ) ){ break; }
-          std::vector<std::string> input; input.push_back( lab + "_bt" + istr + ":" ); input.push_back("BETWEEN");
-          input.push_back("ARG1=" + lab );
+          std::vector<std::string> input; input.push_back( labout + "_bt" + istr + ":" ); input.push_back("BETWEEN");
+          input.push_back("ARG1=" + argin );
           input.push_back("SWITCH=" + keys.find("BETWEEN" + istr)->second  );
           actions.push_back( input );
-          std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_between" + istr + ":" ); 
-          sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + lab + "_bt" + istr );
+          std::vector<std::string> sum_inp; sum_inp.push_back( labout + "_between" + istr + ":" ); 
+          sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + labout + "_bt" + istr );
           sum_inp.push_back("PERIODIC=NO"); actions.push_back( sum_inp );
       }
   }
@@ -192,12 +193,12 @@ void MultiColvarBase::expandShortcut( const std::string& lab, const std::vector<
       if( !found ) smear = 0.5; 
       for(unsigned i=0;i<nbins;++i){
           std::string smstr, istr; Tools::convert( i+1, istr ); Tools::convert( smear, smstr );
-          std::vector<std::string> input; input.push_back( lab + "_bt" + istr + ":" ); input.push_back("BETWEEN");
-          input.push_back("ARG1=" + lab ); std::string low_str, high_str; 
+          std::vector<std::string> input; input.push_back( labout + "_bt" + istr + ":" ); input.push_back("BETWEEN");
+          input.push_back("ARG1=" + argin ); std::string low_str, high_str; 
           Tools::convert( lower + i*delr, low_str ); Tools::convert( lower + (i+1)*delr, high_str );
           input.push_back("SWITCH= " + words[0] + " LOWER=" + low_str + " UPPER=" + high_str + " SMEAR=" + smstr );  actions.push_back( input );   
-          std::vector<std::string> sum_inp; sum_inp.push_back( lab + "_between" + istr + ":" ); 
-          sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + lab + "_bt" + istr );
+          std::vector<std::string> sum_inp; sum_inp.push_back( labout + "_between" + istr + ":" ); 
+          sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + labout + "_bt" + istr );
           sum_inp.push_back("PERIODIC=NO"); actions.push_back( sum_inp );
       }
   }

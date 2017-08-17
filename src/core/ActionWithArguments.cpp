@@ -282,6 +282,8 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
               arg_deriv_starts.push_back( nder ); distinct_arguments.push_back( myval ); nder += myval->getNumberOfDerivatives();
           }   
       }
+  } else {
+      for(unsigned i=0;i<getNumberOfArguments();++i){ if( arg[i]->getRank()>0 ) arg[i]->buildDataStore(); } 
   }
 
 }

@@ -62,9 +62,10 @@ protected:
   Vector getSeparation( const Vector& vec1, const Vector& vec2 ) const ;
 public:
   static void shortcutKeywords( Keywords& keys );
-  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions );
+  static void expandFunctions( const std::string& labout, const std::string& argin,
+                               const std::vector<std::string>& words,
+                               const std::map<std::string,std::string>& keys,
+                               std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit MultiColvarBase(const ActionOptions&);
   ~MultiColvarBase(); 

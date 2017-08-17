@@ -139,7 +139,7 @@ void Distance::expandShortcut( const std::string& lab, const std::vector<std::st
   mc_line.push_back("DISTANCE");
   for(unsigned i=1;i<words.size();++i) mc_line.push_back(words[i]);
   actions.push_back( mc_line );
-  MultiColvarBase::expandShortcut( lab, words, keys, actions );
+  MultiColvarBase::expandFunctions( lab, lab, words, keys, actions );
 }
 
 void Distance::registerKeywords( Keywords& keys ) {

@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "SymmetryFunctionBase.h"
+#include "multicolvar/MultiColvarBase.h"
 #include "core/ActionRegister.h"
 
 #include <complex>
@@ -121,7 +122,7 @@ void SphericalHarmonic::expandShortcut( const std::string& lab, const std::vecto
   std::vector<std::string> sqrt_input; sqrt_input.push_back(lab +"_norm:"); sqrt_input.push_back("MATHEVAL");
   sqrt_input.push_back("ARG1=" + lab + "_norm2"); sqrt_input.push_back( "FUNC=sqrt(x)" ); 
   sqrt_input.push_back("PERIODIC=NO"); actions.push_back( sqrt_input );
-  SymmetryFunctionBase::expandFunctions( lab, lab + "_norm", words, keys, actions );
+  multicolvar::MultiColvarBase::expandFunctions( lab, lab + "_norm", words, keys, actions );
 }
 
 void SphericalHarmonic::registerKeywords( Keywords& keys ) {

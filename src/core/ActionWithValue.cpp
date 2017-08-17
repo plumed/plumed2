@@ -94,32 +94,9 @@ ActionWithValue::~ActionWithValue() {
 
 ActionWithValue* ActionWithValue::getActionThatCalculates() {
   // Return this if we have no dependencies
-  if( getDependencies().size()==0 ) return this; 
-  // Return this if it is an action with argument that is not done over a stream
-  if( !actionInChain() ) return this;
-  // Return this if we have no dependencies on any ActionWithValue
-  int dd_ind=-1; unsigned i=0;
-  for(const auto & p : getDependencies() ){
-      ActionWithValue* av = dynamic_cast<ActionWithValue*>( p );
-      if( av ){ dd_ind=i; } 
-      i++;
-  } 
-  if( dd_ind<0 ) return this;
-
-  // Retrieve first action in chain 
-  ActionWithValue* av = dynamic_cast<ActionWithValue*>( getDependencies()[dd_ind] );
-  plumed_assert( av ); ActionWithValue* first_av = av->getActionThatCalculates();
-  // Get all actions in chain
-  std::vector<std::string> myactions; first_av->getAllActionLabelsInChain( myactions );
-  // Check all dependencies are looked after in chain
-  for(const auto & p : getDependencies() ){
-      std::string mylab = p->getLabel(); bool found=false;
-      for(unsigned j=0;j<myactions.size();++j){
-          if( mylab==myactions[j] ){ found=true; break; }
-      }
-      plumed_massert( found, "did not find action with label " + mylab + " in chain so cannot do over stream");
-  }
-  return first_av;
+  if( !action_to_do_before ) return this; 
+  // Recursively go through actiosn before
+  return action_to_do_before->getActionThatCalculates();
 }
 
 void ActionWithValue::getAllActionLabelsInChain( std::vector<std::string>& mylabels ) const {

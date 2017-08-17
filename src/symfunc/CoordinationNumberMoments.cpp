@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "SymmetryFunctionBase.h"
+#include "multicolvar/MultiColvarBase.h"
 #include "core/ActionRegister.h"
 #include <string>
 #include <cmath>
@@ -64,7 +65,8 @@ void CoordinationNumberMoments::expandShortcut( const std::string& lab, const st
   input.push_back("WEIGHT=" + lab + "_mat.w" ); input.push_back("VECTORS1=" + lab + "_mat.x" );
   input.push_back("VECTORS2=" + lab + "_mat.y" ); input.push_back("VECTORS3=" + lab + "_mat.z" );
   for(unsigned i=1;i<words.size();++i) input.push_back(words[i]); 
-  actions.push_back( input ); SymmetryFunctionBase::expandFunctions( lab, lab, words, keys, actions );
+  actions.push_back( input ); 
+  multicolvar::MultiColvarBase::expandFunctions( lab, lab, words, keys, actions );
 }
 
 void CoordinationNumberMoments::registerKeywords( Keywords& keys ) {

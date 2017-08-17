@@ -22,6 +22,7 @@
 #include "SymmetryFunctionBase.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
+#include "multicolvar/MultiColvarBase.h"
 
 namespace PLMD {
 namespace symfunc {
@@ -44,43 +45,7 @@ void SymmetryFunctionBase::shortcutKeywords( Keywords& keys ) {
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
   keys.add("optional","SWITCH","the switching function that it used in the construction of the contact matrix");
-  keys.add("numbered","LESS_THAN","calculate the number of variables that are less than a certain target value. "
-                                  "This quantity is calculated using \\f$\\sum_i \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
-                                  "is a \\ref switchingfunction.");
-  keys.addOutputComponent("_lessthan","LESS_THAN","the number of colvars that have a value less than a threshold");
-  keys.add("numbered","MORE_THAN","calculate the number of variables that are more than a certain target value. "
-                                  "This quantity is calculated using \\f$\\sum_i 1 - \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
-                                  "is a \\ref switchingfunction.");
-  keys.addOutputComponent("_morethan","MORE_THAN","the number of colvars that have a value more than a threshold");
-  keys.add("optional","ALT_MIN","calculate the minimum value. "
-                                "To make this quantity continuous the minimum is calculated using "
-                                "\\f$ \\textrm{min} = -\\frac{1}{\\beta} \\log \\sum_i \\exp\\left( -\\beta s_i \\right)  \\f$ "
-                                "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$).");
-  keys.addOutputComponent("_altmin","ALT_MIN","the minimum value of the cv");
-  keys.add("optional","MIN","calculate the minimum value. "
-                            "To make this quantity continuous the minimum is calculated using "
-                            "\\f$ \\textrm{min} = \\frac{\\beta}{ \\log \\sum_i \\exp\\left( \\frac{\\beta}{s_i} \\right) } \\f$ "
-                            "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$)");
-  keys.addOutputComponent("_min","MIN","the minimum colvar");
-  keys.add("optional","MAX","calculate the maximum value. "
-                            "To make this quantity continuous the maximum is calculated using "
-                            "\\f$ \\textrm{max} = \\beta \\log \\sum_i \\exp\\left( \\frac{s_i}{\\beta}\\right) \\f$ "
-                            "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$)");
-  keys.addOutputComponent("_max","MAX","the maximum colvar");
-  keys.add("numbered","BETWEEN","calculate the number of values that are within a certain range. "
-                                "These quantities are calculated using kernel density estimation as described on "
-                                "\\ref histogrambead."); 
-  keys.addOutputComponent("_between","BETWEEN","the number of colvars that have a value that lies in a particular interval");
-  keys.addFlag("HIGHEST",false,"this flag allows you to recover the highest of these variables.");
-  keys.addOutputComponent("_highest","HIGHEST","the largest of the colvars");
-  keys.add("optional","HISTOGRAM","calculate a discretized histogram of the distribution of values. "
-                                  "This shortcut allows you to calculates NBIN quantites like BETWEEN.");
-  keys.addFlag("LOWEST",false,"this flag allows you to recover the lowest of these variables.");
-  keys.addOutputComponent("_lowest","LOWEST","the smallest of the colvars");
-  keys.addFlag("SUM",false,"calculate the sum of all the quantities.");
-  keys.addOutputComponent("_sum","SUM","the sum of the colvars");
-  keys.addFlag("MEAN",false,"calculate the mean of all the quantities.");
-  keys.addOutputComponent("_mean","MEAN","the mean of the colvars");
+  multicolvar::MultiColvarBase::shortcutKeywords( keys );
 }
 
 void SymmetryFunctionBase::expandMatrix( const bool& components, const std::string& lab, const std::vector<std::string>& words,
@@ -104,145 +69,6 @@ void SymmetryFunctionBase::expandMatrix( const bool& components, const std::stri
   }
   if( components ) matinp.push_back("COMPONENTS");
   actions.push_back( matinp );
-}
-
-void SymmetryFunctionBase::expandFunctions( const std::string& labout, const std::string& argin,
-                                            const std::vector<std::string>& words,
-                                            const std::map<std::string,std::string>& keys,
-                                            std::vector<std::vector<std::string> >& actions ){
-  // Parse LESS_THAN
-  if( keys.count("LESS_THAN") ){
-      std::vector<std::string> input; input.push_back( labout + "_lt:" ); input.push_back("LESS_THAN");
-      input.push_back("ARG1=" + argin );
-      input.push_back("SWITCH=" + keys.find("LESS_THAN")->second  );
-      actions.push_back( input );
-      std::vector<std::string> sum_inp; sum_inp.push_back( labout + "_lessthan:" );
-      sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + labout + "_lt");
-      sum_inp.push_back("PERIODIC=NO"); actions.push_back( sum_inp );
-  }
-  if( keys.count("LESS_THAN1") ){
-      for(unsigned i=1;; ++i){
-          std::string istr; Tools::convert( i, istr );
-          if( !keys.count("LESS_THAN" + istr ) ){ break; }
-          std::vector<std::string> input; input.push_back( labout + "_lt" + istr + ":" ); input.push_back("LESS_THAN");
-          input.push_back("ARG1=" + argin);
-          input.push_back("SWITCH=" + keys.find("LESS_THAN" + istr)->second  );
-          actions.push_back( input );
-          std::vector<std::string> sum_inp; sum_inp.push_back( labout + "_lessthan" + istr + ":" );
-          sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + labout + "_lt" + istr );
-          sum_inp.push_back("PERIODIC=NO"); actions.push_back( sum_inp );
-      }
-  }
-  // Parse MORE_THAN
-  if( keys.count("MORE_THAN") ){
-      std::vector<std::string> input; input.push_back( labout + "_mt:" ); input.push_back("MORE_THAN");
-      input.push_back("ARG1=" + argin );
-      input.push_back("SWITCH=" + keys.find("MORE_THAN")->second  );
-      actions.push_back( input );
-      std::vector<std::string> sum_inp; sum_inp.push_back( labout + "_morethan:" );
-      sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + labout + "_mt");
-      sum_inp.push_back("PERIODIC=NO"); actions.push_back( sum_inp );
-  }
-  if( keys.count("MORE_THAN1") ){
-      for(unsigned i=1;; ++i){
-          std::string istr; Tools::convert( i, istr );
-          if( !keys.count("MORE_THAN" + istr ) ){ break; }
-          std::vector<std::string> input; input.push_back( labout + "_mt" + istr + ":" ); input.push_back("MORE_THAN");
-          input.push_back("ARG1=" + argin );
-          input.push_back("SWITCH=" + keys.find("MORE_THAN" + istr)->second  );
-          actions.push_back( input );
-          std::vector<std::string> sum_inp; sum_inp.push_back( labout + "_morethan" + istr + ":" );
-          sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + labout + "_mt" + istr );
-          sum_inp.push_back("PERIODIC=NO"); actions.push_back( sum_inp );
-      }
-  }
-  // Parse ALT_MIN
-  if( keys.count("ALT_MIN") ){
-      std::vector<std::string> input; input.push_back( labout + "_altmin:" ); input.push_back("ALT_MIN");
-      input.push_back("ARG=" + argin ); std::size_t dd = keys.find("ALT_MIN")->second.find("BETA");
-      input.push_back( keys.find("ALT_MIN")->second.substr(dd) );
-      actions.push_back( input );
-  }
-  // Parse MIN
-  if( keys.count("MIN") ){
-      std::vector<std::string> input; input.push_back( labout + "_min:" ); input.push_back("MIN");
-      input.push_back("ARG=" + argin ); std::size_t dd = keys.find("MIN")->second.find("BETA");
-      input.push_back( keys.find("MIN")->second.substr(dd) ); actions.push_back( input );
-  }
-  // Parse MAX
-  if( keys.count("MAX") ){
-      std::vector<std::string> input; input.push_back( labout + "_max:" ); input.push_back("MAX");
-      input.push_back("ARG=" + argin ); std::size_t dd = keys.find("MAX")->second.find("BETA");
-      input.push_back( keys.find("MAX")->second.substr(dd) ); actions.push_back( input );
-  }
-  // Parse HIGHEST
-  if( keys.count("HIGHEST") ){
-      std::vector<std::string> input; input.push_back( labout + "_highest:" ); input.push_back("HIGHEST");
-      input.push_back("ARG=" + argin ); actions.push_back( input );
-  }
-  // Parse LOWEST
-  if( keys.count("LOWEST") ){
-      std::vector<std::string> input; input.push_back( labout + "_lowest:" ); input.push_back("LOWEST");
-      input.push_back("ARG=" + argin ); actions.push_back( input );
-  }
-  // Parse SUM
-  if( keys.count("SUM") ){
-      std::vector<std::string> input; input.push_back( labout + "_sum:" );
-      input.push_back("COMBINE"); input.push_back("ARG=" + argin );
-      input.push_back("PERIODIC=NO"); actions.push_back( input );
-  }
-  // Parse MEAN
-  if( keys.count("MEAN") ){
-      std::vector<std::string> input; input.push_back( labout + "_mean:" ); input.push_back("COMBINE");
-      input.push_back("ARG=" + argin ); input.push_back("NORMALIZE");
-      input.push_back("PERIODIC=NO"); actions.push_back( input );
-  }
-  // Parse BETWEEN
-  if( keys.count("BETWEEN") ){
-      std::vector<std::string> input; input.push_back( labout + "_bt:" ); input.push_back("BETWEEN");
-      input.push_back("ARG1=" + argin );
-      input.push_back("SWITCH=" + keys.find("BETWEEN")->second  );
-      actions.push_back( input );
-      std::vector<std::string> sum_inp; sum_inp.push_back( labout + "_between:" );
-      sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + labout + "_bt");
-      sum_inp.push_back("PERIODIC=NO"); actions.push_back( sum_inp );
-  }
-  if( keys.count("BETWEEN1") ){
-      for(unsigned i=1;; ++i){
-          std::string istr; Tools::convert( i, istr );
-          if( !keys.count("BETWEEN" + istr ) ){ break; }
-          std::vector<std::string> input; input.push_back( labout + "_bt" + istr + ":" ); input.push_back("BETWEEN");
-          input.push_back("ARG1=" + argin );
-          input.push_back("SWITCH=" + keys.find("BETWEEN" + istr)->second  );
-          actions.push_back( input );
-          std::vector<std::string> sum_inp; sum_inp.push_back( labout + "_between" + istr + ":" );
-          sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + labout + "_bt" + istr );
-          sum_inp.push_back("PERIODIC=NO"); actions.push_back( sum_inp );
-      }
-  }
-  // Parse HISTOGRAM  
-  if( keys.count("HISTOGRAM") ){
-      std::vector<std::string> words=Tools::getWords( keys.find("HISTOGRAM")->second );
-      unsigned nbins; bool found=Tools::parse(words,"NBINS",nbins,0); // Need replica index
-      if( !found ) plumed_merror("did not find NBINS in specification for HISTOGRAM");
-      double lower; found=Tools::parse(words,"LOWER",lower,0);
-      if( !found ) plumed_merror("did not find LOWER in specification for HISTOGRAM");
-      double upper; found=Tools::parse(words,"UPPER",upper,0);
-      if( !found ) plumed_merror("did not find UPPER in specification for HISTOGRAM");
-      double delr = ( upper - lower ) / static_cast<double>( nbins );
-      double smear=0.5; found=Tools::parse(words,"SMEAR",smear,0);
-      if( !found ) smear = 0.5;
-      for(unsigned i=0;i<nbins;++i){
-          std::string smstr, istr; Tools::convert( i+1, istr ); Tools::convert( smear, smstr );
-          std::vector<std::string> input; input.push_back( labout + "_bt" + istr + ":" ); input.push_back("BETWEEN");
-          input.push_back("ARG1=" + argin ); std::string low_str, high_str;
-          Tools::convert( lower + i*delr, low_str ); Tools::convert( lower + (i+1)*delr, high_str );
-          input.push_back("SWITCH= " + words[0] + " LOWER=" + low_str + " UPPER=" + high_str + " SMEAR=" + smstr );  actions.push_back( input );
-          std::vector<std::string> sum_inp; sum_inp.push_back( labout + "_between" + istr + ":" );
-          sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + labout + "_bt" + istr );
-          sum_inp.push_back("PERIODIC=NO"); actions.push_back( sum_inp );
-      }
-  }
 }
 
 void SymmetryFunctionBase::registerKeywords( Keywords& keys ){
@@ -286,9 +112,7 @@ ActionWithArguments(ao)
   if( plumed.getAtoms().getAllGroups().count(wval[0]->getPntrToAction()->getLabel()) ){
      const auto m=plumed.getAtoms().getAllGroups().find(wval[0]->getPntrToAction()->getLabel());
      plumed.getAtoms().insertGroup( getLabel(), m->second ); 
-  } else {
-     error("could not determine where centers are for this particular set of weights");
-  }
+  } 
 }
 
 void SymmetryFunctionBase::addValueWithDerivatives() {
