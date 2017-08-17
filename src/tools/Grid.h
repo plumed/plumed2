@@ -127,6 +127,8 @@ public:
   unsigned getDimension() const;
 /// get argument names  of this grid
   std::vector<std::string> getArgNames() const;
+/// get if the grid has derivatives
+  bool hasDerivatives() const {return usederiv_;}
 
 /// methods to handle grid indices
   std::vector<unsigned> getIndices(index_t index) const;
