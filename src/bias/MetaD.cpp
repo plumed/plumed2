@@ -387,7 +387,7 @@ private:
   int mw_id_;
   int mw_rstride_;
   bool walkers_mpi;
-  bool flying;  //flying Gaussian
+  bool flying;
   unsigned mpi_nw_;
   unsigned mpi_mw_;
   bool acceleration;
@@ -488,7 +488,7 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with WALKERS_* options other than WALKERS_DIR");
-  keys.addFlag("FLYING_GAUSSIAN",false,"Switch on flying Gaussian method, must be used with WALKERS_MPI");  //Flying Gaussian
+  keys.addFlag("FLYING_GAUSSIAN",false,"Switch on flying Gaussian method, must be used with WALKERS_MPI");
   keys.addFlag("ACCELERATION",false,"Set to TRUE if you want to compute the metadynamics acceleration factor.");
   keys.add("optional","ACCELERATION_RFILE","a data file from which the acceleration should be read at the initial step of the simulation");
   keys.addFlag("CALC_MAX_BIAS", false, "Set to TRUE if you want to compute the maximum of the metadynamics V(s, t)");
@@ -1691,8 +1691,8 @@ void MetaD::update() {
 
       // Flying Gaussian
       if (flying) {
-          hills_.clear();
-          comm.Barrier();
+        hills_.clear();
+        comm.Barrier();
       }
 
       for(unsigned i=0; i<mpi_nw_; i++) {
