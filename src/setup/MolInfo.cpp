@@ -51,7 +51,7 @@ historical reasons and to allow future extensions where alternative lists will b
 As of now, you can just ignore this keyoword.
 
 Using MOLINFO with a protein's or nucleic acid's pdb extends the possibility of atoms selection using the @ special
-symbol in the form 
+symbol in the form
 
 \verbatim
 @"definition"-chainresiduenum
@@ -59,7 +59,7 @@ symbol in the form
 \endverbatim
 
 So for example
- 
+
 \verbatim
 @psi-1 will select the atoms defining the psi torsion of residue 1
 @psi-C1 will define the same torsion for residue 1 of chain C.
