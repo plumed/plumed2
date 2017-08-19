@@ -25,42 +25,6 @@ In addition, for certain colvars, pdb files can be read in using the following k
 
 @TOPOLOGY@
 
-The information on the molecules in your system can either be provided in the form of a pdb file or as a set of lists of 
-atoms that describe the various chains in your system using \ref MOLINFO. If a pdb file is used plumed the MOLINFO command will endeavor to 
-recognize the various chains and residues that make up the molecules in your system using the chainIDs and resnumbers from 
-the pdb file. You can then use this information in commands where this has been implemented to specify atom lists. One place where this is 
-particularly useful is when using the commands \ref ALPHARMSD, \ref ANTIBETARMSD and \ref PARABETARMSD.
-
-MOLINFO also introduces special groups that can be used in atom selection. These special groups always begin with a \@ symbol.  The 
-following special groups are currently available in PLUMED:
-
-<table align=center frame=void width=95%% cellpadding=5%%>
-<tr> <td width=10%> <b> Symbol </b> </td> <td> <b> Topology type </b> </td> <td> <b> Despription </b> </td> </tr>
-<tr> <td> \@phi-\# </td> <td> protein </td> <td> 
-The torsional angle defined by the C, CA, N and C atoms of the protein backbone in the \#th residue. See http://en.wikipedia.org/wiki/Ramachandran_plot
-</td> </tr>
-<tr> <td> \@psi-\# </td> <td> protein </td> <td>
-The torsional angle defined by the N, C, CA and N atoms of the protein backbone in the \#th residue. See http://en.wikipedia.org/wiki/Ramachandran_plot
-</td> </tr>
-<tr> <td> \@omega-\# </td> <td> protein </td> <td>
-The torsional angle defined by the CA, N, C and CA atoms of the protein backbone in the \#th residue. See http://en.wikipedia.org/wiki/Ramachandran_plot
-</td> </tr>
-<tr> <td> \@chi1-\# </td> <td> protein </td> <td>
-The first torsional angle of the sidechain of the \#th residue.  Be aware that this angle is not defined for GLY or ALA residues.  
-See http://en.wikipedia.org/wiki/Ramachandran_plot
-</td> </tr>
-</table>
-
-The following example shows how to use \ref MOLINFO with \ref TORSION to calculate the torsion angles phi and psi for the first and fourth residue
-of the protein:
-
-\plumedfile
-MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
-t1: TORSION ATOMS=@phi-3
-t2: TORSION ATOMS=@psi-4
-PRINT ARG=t1,t2 FILE=colvar STRIDE=10
-\endplumedfile
-
 \subsection pbc Broken Molecules and PBC 
 
 PLUMED is designed so that for the majority of the CVs implemented the periodic boundary conditions are treated 
