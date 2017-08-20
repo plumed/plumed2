@@ -169,29 +169,43 @@ void Function::performTask( const unsigned& current, MultiValue& myvals ) const 
           }
 #endif          
       }
-      if( (matinp && matout) || !matinp ) {
+      if( (matinp && matout && !myvals.inVectorCall()) || !matinp ) {
+           unsigned der_start=0;
            for(unsigned i=0;i<distinct_arguments.size();++i){
                unsigned istrn = (distinct_arguments[i]->copyOutput(0))->getPositionInStream();
                for(unsigned k=0;k<myvals.getNumberActive(istrn);++k){
                    unsigned kind = myvals.getActiveIndex(istrn,k);
                    for(unsigned j=0;j<getNumberOfComponents();++j){
                        unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
-                       myvals.updateIndex( ostrn, arg_deriv_starts[i] + kind );
+                       myvals.updateIndex( ostrn, der_start + kind );
                    }
                }
+               der_start += distinct_arguments[i]->getNumberOfDerivatives();
            }
-      } else if( myvals.inVectorCall() ) {
-          // This requires further thought to make it future proof
-          std::vector<unsigned> & indices( myvals.getIndices() );
-          for(unsigned j=0;j<getNumberOfComponents();++j){
-              unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
-              myvals.clearActiveMembers( ostrn );
-              for(unsigned i=0;i<myvals.getNumberOfIndices();++i) {
-                  myvals.updateIndex( ostrn, 3*indices[i]+0 ); myvals.updateIndex( ostrn, 3*indices[i]+1 ); myvals.updateIndex( ostrn, 3*indices[i]+2 );
-              }
-              unsigned nbase = nderivatives - 9;
-              for(unsigned i=0;i<9;++i) myvals.updateIndex( ostrn, nbase + i );
-          }
+      } else if( (matinp && matout && myvals.inVectorCall()) ) {
+           unsigned nmat = getPntrToOutput(0)->getPositionInMatrixStash();
+           std::vector<unsigned>& mat_indices( myvals.getMatrixIndices( nmat ) ); unsigned der_start=0, ntot_mat=0;
+           if( mat_indices.size()<getNumberOfDerivatives() ) mat_indices.resize( getNumberOfDerivatives() );
+           for(unsigned i=0;i<distinct_arguments.size();++i){
+               unsigned istrn = (distinct_arguments[i]->copyOutput(0))->getPositionInMatrixStash();
+               std::vector<unsigned>& imat_indices( myvals.getMatrixIndices( istrn ) );
+               for(unsigned k=0;k<myvals.getNumberOfMatrixIndices( istrn );++k) mat_indices[ntot_mat + k] = der_start + imat_indices[k]; 
+               ntot_mat += myvals.getNumberOfMatrixIndices( istrn ); der_start += distinct_arguments[i]->getNumberOfDerivatives();
+           }
+           myvals.setNumberOfMatrixIndices( nmat, ntot_mat ); 
+      } else if( myvals.inVectorCall() ) { 
+           for(unsigned i=0;i<distinct_arguments.size();++i){
+               unsigned der_start = 0;
+               unsigned istrn = (distinct_arguments[i]->copyOutput(0))->getPositionInMatrixStash();
+               std::vector<unsigned>& mat_indices( myvals.getMatrixIndices( istrn ) );
+               for(unsigned k=0;k<myvals.getNumberOfMatrixIndices( istrn );++k){
+                   for(unsigned j=0;j<getNumberOfComponents();++j){
+                       unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
+                       myvals.updateIndex( ostrn, der_start + mat_indices[k] );
+                   }
+               }
+               der_start += distinct_arguments[i]->getNumberOfDerivatives();
+           }
       }
   } else {
       for(unsigned j=0;j<getNumberOfComponents();++j){ 

@@ -59,6 +59,7 @@ public:
 
 PLUMED_REGISTER_ACTION(SphericalHarmonic,"SPHERICAL_HARMONIC")
 PLUMED_REGISTER_SHORTCUT(SphericalHarmonic,"SPHERICAL_HARMONIC")
+PLUMED_REGISTER_SHORTCUT(SphericalHarmonic,"Q1")
 PLUMED_REGISTER_SHORTCUT(SphericalHarmonic,"Q3")
 PLUMED_REGISTER_SHORTCUT(SphericalHarmonic,"Q4")
 PLUMED_REGISTER_SHORTCUT(SphericalHarmonic,"Q6")
@@ -75,7 +76,9 @@ void SphericalHarmonic::expandShortcut( const std::string& lab, const std::vecto
   sph_input.push_back("SPHERICAL_HARMONIC"); sph_input.push_back("WEIGHT=" + lab + "_mat.w");
   sph_input.push_back("VECTORS1=" + lab + "_mat.x" ); sph_input.push_back("VECTORS2=" + lab + "_mat.y" ); 
   sph_input.push_back("VECTORS3=" + lab + "_mat.z" ); int l; 
-  if( words[0]=="Q3" ) { 
+  if( words[0]=="Q1" ) {
+      sph_input.push_back("L=1"); l=1;
+  } else if( words[0]=="Q3" ) { 
       sph_input.push_back("L=3"); l=3;
   } else if( words[0]=="Q4" ) {
       sph_input.push_back("L=4"); l=4;
@@ -157,7 +160,14 @@ SphericalHarmonic::SphericalHarmonic(const ActionOptions&ao):
   }
 
   coeff_poly.resize( tmom+1 );
-  if( tmom==3 ) {
+  if( tmom==1 ) {
+      // Legendre polynomial coefficients of order one
+      coeff_poly[0]=0; coeff_poly[1]=1.0;
+  } else if( tmom==2 ) {
+      // Legendre polynomial coefficients of order two
+      coeff_poly[0]=-0.5; coeff_poly[1]=0.0; 
+      coeff_poly[2]=1.5;
+  } else if( tmom==3 ) {
       // Legendre polynomial coefficients of order three
       coeff_poly[0]=0.0; coeff_poly[1]=-1.5;
       coeff_poly[2]=0.0; coeff_poly[3]=2.5;
@@ -166,6 +176,11 @@ SphericalHarmonic::SphericalHarmonic(const ActionOptions&ao):
       coeff_poly[0]=0.375; coeff_poly[1]=0.0;
       coeff_poly[2]=-3.75; coeff_poly[3]=0.0;
       coeff_poly[4]=4.375;
+  } else if( tmom==5 ) {
+      // Legendre polynomial coefficients of order five
+      coeff_poly[0]=0.0; coeff_poly[1]=1.875;
+      coeff_poly[2]=0.0; coeff_poly[3]=-8.75;
+      coeff_poly[4]=0.0; coeff_poly[5]=7.875;
   } else if( tmom==6 ) {
       // Legendre polynomial coefficients of order six
       coeff_poly[0]=-0.3125; coeff_poly[1]=0.0;

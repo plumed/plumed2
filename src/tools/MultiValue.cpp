@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiValue.h"
+#include "Tools.h"
 
 namespace PLMD {
 
@@ -31,23 +32,29 @@ MultiValue::MultiValue( const unsigned& nvals, const unsigned& nder, const unsig
   hasderiv(nvals*nder,false),
   nactive(nvals),
   active_list(nvals*nder),
+  atLeastOneSet(false),
   nmatrix_cols(ncols),
   matrix_element_stash(ncols*nmat),
-  atLeastOneSet(false),
   vector_call(false),
   nindices(0),
+  mat_nindices(nmat,0),
+  mat_indices(nmat),
   tmp_atoms(2)
 {
 }
 
-void MultiValue::resize( const unsigned& nvals, const unsigned& nder ) {
+void MultiValue::resize( const unsigned& nvals, const unsigned& nder, const unsigned& ncols, const unsigned& nmat ) {
   values.resize(nvals); nderivatives=nder; derivatives.resize( nvals*nder );
   hasderiv.resize(nvals*nder,false); nactive.resize(nvals); active_list.resize(nvals*nder); 
+  nmatrix_cols=ncols; matrix_element_stash.resize(ncols*nmat); nindices=0; 
+  mat_nindices.resize(nmat,0); mat_indices.resize(nmat);
   atLeastOneSet=false;
 }
 
 void MultiValue::clearAll() {
   for(unsigned i=0; i<values.size(); ++i) values[i]=0;
+  // Clear matrix indices
+  for(unsigned i=0;i<mat_nindices.size();++i) mat_nindices[i]=0;
   if( !atLeastOneSet ) return;
   for(unsigned i=0; i<values.size(); ++i) clear(i);
   atLeastOneSet=false;
@@ -62,7 +69,13 @@ void MultiValue::clear( const unsigned& ival ) {
   }
   nactive[ival]=0;
 #ifndef NDEBUG
-  for(unsigned i=0; i<nderivatives;++i) plumed_dbg_assert( hasderiv[base+i]==false );   
+  for(unsigned i=0; i<nderivatives;++i){ 
+     if( hasderiv[base+i] ){ 
+         std::string num1, num2; 
+         Tools::convert(ival,num1); Tools::convert(i,num2); 
+         plumed_merror("FAILING TO CLEAR VALUE " + num1 + " DERIVATIVE " + num2 + " IS PROBLEMATIC");
+     }
+  }   
 #endif
 }
 

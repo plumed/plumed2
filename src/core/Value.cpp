@@ -129,16 +129,7 @@ bool Value::applyForce( std::vector<double>& forces ) const {
          for(unsigned j=0;j<N;++j) forces[j] += inputForces[i]*data[ i*(1+N) ];
       }
   } else if( shape.size()>0 ) {
-      const unsigned N=action->getNumberOfDerivatives();
-      unsigned nquants=0; action->recomputeNumberInStream( nquants );
-      MultiValue myvals( nquants, N );
-      for(unsigned i=0;i<inputForces.size();++i){
-          action->rerunTask( i, myvals );
-          for(unsigned j=0;j<myvals.getNumberActive(streampos);++j){
-              unsigned jder=myvals.getActiveIndex(streampos, j); 
-              forces[jder] += inputForces[i]*myvals.getDerivative( streampos, jder );
-          }
-      }
+      plumed_merror("should not be using apply forces with vectors");
   }
   return true;
 }

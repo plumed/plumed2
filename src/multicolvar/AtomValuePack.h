@@ -39,8 +39,6 @@ private:
   unsigned natoms;
 /// Atom indices
   std::vector<unsigned>& indices;
-/// This is used to sort the atom indices
-  std::vector<unsigned>& sort_vector;
 /// This holds atom positions
   std::vector<Vector>& myatoms;
 public:

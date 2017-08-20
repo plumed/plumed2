@@ -270,8 +270,8 @@ PCAVars::PCAVars(const ActionOptions& ao):
   interpretArgumentList( args, req_args ); requestArguments( req_args, false );
 
   // Setup the derivative pack
-  if( atoms.size()>0 ) myvals.resize( 1, args.size() + 3*atoms.size() + 9 );
-  else myvals.resize( 1, args.size() );
+  if( atoms.size()>0 ) myvals.resize( 1, args.size() + 3*atoms.size() + 9, 0, 0 );
+  else myvals.resize( 1, args.size(), 0, 0 );
   mypack.resize( args.size(), atoms.size() );
   for(unsigned i=0; i<atoms.size(); ++i) mypack.setAtomIndex( i, i );
   /// This sets up all the storage data required by PCA in the pack

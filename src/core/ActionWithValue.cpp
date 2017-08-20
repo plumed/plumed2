@@ -378,16 +378,18 @@ void ActionWithValue::runAllTasks() {
   unsigned rank=comm.Get_rank();
   if(serial) { stride=1; rank=0; }
 
-  // Get number of threads for OpenMP
-  unsigned nt=OpenMP::getNumThreads();
-  if( nt*stride*10>nactive_tasks ) nt=nactive_tasks/stride/10;
-  if( nt==0 || no_openmp ) nt=1;
-
   // Build the list of active tasks 
   taskFlags.assign(taskFlags.size(),0); selectActiveTasks( taskFlags ); nactive_tasks = 0;
   for(unsigned i=0; i<fullTaskList.size(); ++i) {
     if( taskFlags[i]>0 ) nactive_tasks++;
   }
+
+  // Get number of threads for OpenMP
+  unsigned nt=OpenMP::getNumThreads();
+  if( nt*stride*10>nactive_tasks ) nt=nactive_tasks/stride/10;
+  if( nt==0 || no_openmp ) nt=1;
+
+  // Now create the partial task list
   unsigned n=0; partialTaskList.resize( nactive_tasks ); indexOfTaskInFullList.resize( nactive_tasks );
   for(unsigned i=0; i<fullTaskList.size(); ++i) {
     // Deactivate sets inactive tasks to number not equal to zero
@@ -541,23 +543,11 @@ void ActionWithValue::clearMatrixElements( MultiValue& myvals ) const {
   }
 }
 
-void ActionWithValue::recomputeNumberInStream( unsigned& nquants ) const {
-  for(const auto & p : getDependencies() ){
-     ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>(p);
-     if( aa ){
-        ActionWithValue* av=dynamic_cast<ActionWithValue*>(p);
-        av->recomputeNumberInStream( nquants );
-     }
-  }
-  unsigned ncols=0, nmat=0;
-  getNumberOfStreamedQuantities( nquants, ncols, nmat );
-}
-
 void ActionWithValue::rerunTask( const unsigned& task_index, MultiValue& myvals ) const {
   if( !action_to_do_before ) {
       unsigned ncol=0, nmat=0, nquantities = 0; getNumberOfStreamedQuantities( nquantities, ncol, nmat ); 
       unsigned nderivatives = 0; getNumberOfStreamedDerivatives( nderivatives );
-      if( myvals.getNumberOfValues()!=nquantities || myvals.getNumberOfDerivatives()!=nderivatives ) myvals.resize( nquantities, nderivatives );
+      if( myvals.getNumberOfValues()!=nquantities || myvals.getNumberOfDerivatives()!=nderivatives ) myvals.resize( nquantities, nderivatives, ncol, nmat );
       runTask( task_index, fullTaskList[task_index], myvals ); return;
   }
   action_to_do_before->rerunTask( task_index, myvals );
@@ -631,10 +621,83 @@ void ActionWithValue::finishComputations( const std::vector<double>& buffer ){
   }
 }
 
-bool ActionWithValue::getForcesFromValues( std::vector<double>& forces ) const {
+bool ActionWithValue::getForcesFromValues( std::vector<double>& forces ) {
+   unsigned type=0;
+   if( values[0]->shape.size()==0 && values[0]->hasDeriv ) type=1;
+   else if( values[0]->hasDeriv ) type=2;
+   else plumed_assert( values[0]->shape.size()>0 );
+
+#ifdef DNDEBUG
+   if( type==0 ) {
+       for(unsigned i=0;i<values.size();++i) plumed_dbg_assert( values[i]->shape.size()>0 && !values[i]->hasDeriv );
+   } else if( type==1 ) {
+       for(unsigned i=0;i<values.size();++i) plumed_dbg_assert( values[i]->shape.size()==0 ); 
+   } else if( type==2 ) {
+       for(unsigned i=0;i<values.size();++i) plumed_dbg_assert( values[i]->shape.size()>0 && values[i]->hasDeriv );
+   } else {
+       plumed_merror("value type not defined");
+   }
+#endif
    bool at_least_one_forced=false;
-   for(unsigned i=0;i<values.size();++i){
-       if( values[i]->applyForce( forces ) ) at_least_one_forced=true;
+   if( type==1 || type==2 ) { 
+       for(unsigned i=0;i<values.size();++i){
+           if( values[i]->applyForce( forces ) ) at_least_one_forced=true;
+       }
+   } else {
+      // Check if there are any forces
+      for(unsigned i=0;i<values.size();++i){
+          if( values[i]->hasForce ) at_least_one_forced=true;
+      }
+      if( !at_least_one_forced ) return false;
+
+      // Get the action that calculates these quantitites
+      ActionWithValue* av = getActionThatCalculates();
+      nactive_tasks = av->nactive_tasks;
+      // Setup MPI parallel loop
+      unsigned stride=comm.Get_size();
+      unsigned rank=comm.Get_rank();
+      if(serial) { stride=1; rank=0; }
+
+      // Get number of threads for OpenMP
+      unsigned nt=OpenMP::getNumThreads();
+      if( nt*stride*10>nactive_tasks ) nt=nactive_tasks/stride/10;
+      if( nt==0 || no_openmp ) nt=1;
+
+      // Now determine how big the multivalue needs to be
+      unsigned nderiv=0; av->getNumberOfStreamedDerivatives( nderiv );
+      unsigned nquants=0, ncols=0, nmatrices=0; av->getNumberOfStreamedQuantities( nquants, ncols, nmatrices );
+      #pragma omp parallel num_threads(nt)
+      {
+        std::vector<double> omp_forces;
+        if( nt>1 ) omp_forces.resize( forces.size(), 0.0 );
+        MultiValue myvals( nquants, nderiv, ncols, nmatrices );
+        myvals.clearAll();
+
+        #pragma omp for nowait
+        for(unsigned i=rank;i<nactive_tasks;i+=stride){
+            unsigned itask = av->indexOfTaskInFullList[i]; 
+            av->runTask( itask, av->partialTaskList[i], myvals );
+            for(unsigned k=0;k<values.size();++k){
+                unsigned sspos = values[k]->streampos; double fforce = values[k]->getForce(itask);
+                if( nt>1 ) {
+                   for(unsigned j=0;j<myvals.getNumberActive(sspos);++j){
+                        unsigned jder=myvals.getActiveIndex(sspos, j);
+                        omp_forces[jder] += fforce*myvals.getDerivative( sspos, jder );
+                    }
+                } else {
+                    for(unsigned j=0;j<myvals.getNumberActive(sspos);++j){
+                        unsigned jder=myvals.getActiveIndex(sspos, j);
+                        forces[jder] += fforce*myvals.getDerivative( sspos, jder );
+                    }
+                }
+            }
+            myvals.clearAll();
+        }
+        #pragma omp critical
+        if(nt>1) for(unsigned i=0; i<forces.size(); ++i) forces[i]+=omp_forces[i]; 
+      }
+      // MPI Gather on forces
+      if( !serial ) comm.Sum( forces );
    }
    return at_least_one_forced;
 }

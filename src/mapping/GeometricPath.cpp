@@ -153,9 +153,9 @@ GeometricPath::GeometricPath(const ActionOptions&ao):
   mypack1_stashd_atoms.resize( maxatoms ); mypack1_stashd_args.resize( maxargs );
   Mapping* am = dynamic_cast<Mapping*>( getPntrToArgument(0)->getPntrToAction() ); 
   unsigned maxderiv=maxargs; if( maxatoms>0 ) maxderiv += 3*maxatoms + 9;
-  mydpack1.resize( 1, maxderiv ); mypack1.resize( maxargs, maxatoms ); (am->getReferenceConfiguration(0))->setupPCAStorage( mypack1 );
-  mydpack2.resize( 1, maxderiv ); mypack2.resize( maxargs, maxatoms ); (am->getReferenceConfiguration(0))->setupPCAStorage( mypack2 );
-  mydpack3.resize( 1, maxderiv ); mypack3.resize( maxargs, maxatoms ); forcesToApply.resize( maxderiv );
+  mydpack1.resize( 1, maxderiv, 0, 0 ); mypack1.resize( maxargs, maxatoms ); (am->getReferenceConfiguration(0))->setupPCAStorage( mypack1 );
+  mydpack2.resize( 1, maxderiv, 0, 0 ); mypack2.resize( maxargs, maxatoms ); (am->getReferenceConfiguration(0))->setupPCAStorage( mypack2 );
+  mydpack3.resize( 1, maxderiv, 0, 0 ); mypack3.resize( maxargs, maxatoms ); forcesToApply.resize( maxderiv );
   for(unsigned i=0; i<maxatoms; ++i) { mypack1.setAtomIndex(i,i); mypack2.setAtomIndex(i,i); mypack3.setAtomIndex(i,i); }
 
   checkRead(); 

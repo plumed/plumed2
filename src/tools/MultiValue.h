@@ -51,11 +51,13 @@ private:
 /// This is a fudge to save on vector resizing in MultiColvar
   bool vector_call;
   unsigned nindices, nsplit;
-  std::vector<unsigned> indices, sort_indices;
+  std::vector<unsigned> indices;
+  std::vector<unsigned> mat_nindices;
+  std::vector<std::vector<unsigned> > mat_indices;
   std::vector<std::vector<Vector> > tmp_atoms;
 public:
   MultiValue( const unsigned& nvals, const unsigned& nder, const unsigned ncols=0, const unsigned nmat=0 );
-  void resize( const unsigned&, const unsigned& );
+  void resize( const unsigned&, const unsigned&, const unsigned& , const unsigned& );
 /// Set the task index prior to the loop
   void setTaskIndex( const unsigned& tindex );
 /// Get the task index
@@ -64,15 +66,17 @@ public:
   void setSecondTaskIndex( const unsigned& tindex );
 /// Get the task index
   unsigned getSecondTaskIndex() const ;
-///
+/// Tempory indices
   void setSplitIndex( const unsigned& nat );
   unsigned getSplitIndex() const ;
-///
   void setNumberOfIndices( const unsigned& nat );
   unsigned getNumberOfIndices() const ;
   std::vector<unsigned>& getIndices();
   const std::vector<unsigned>& getIndices() const ;
-  std::vector<unsigned>& getSortIndices();
+/// Tempory matrix indices
+  void setNumberOfMatrixIndices( const unsigned& nmat, const unsigned& nind );
+  unsigned getNumberOfMatrixIndices( const unsigned& nmat ) const ; 
+  std::vector<unsigned>& getMatrixIndices( const unsigned& nmat );
   std::vector<Vector>& getFirstAtomVector();
   const std::vector<Vector>& getAtomVector() const ;
   std::vector<Vector>& getSecondAtomVector();
@@ -213,11 +217,6 @@ const std::vector<unsigned>& MultiValue::getIndices() const {
 } 
 
 inline
-std::vector<unsigned>& MultiValue::getSortIndices() {
-  return sort_indices;
-}
-
-inline
 std::vector<Vector>& MultiValue::getFirstAtomVector() {
   return tmp_atoms[0];
 }
@@ -270,6 +269,22 @@ bool MultiValue::inVectorCall() const {
 inline
 void MultiValue::clearActiveMembers( const unsigned& ival ) {
   nactive[ival]=0;
+}
+
+inline
+void MultiValue::setNumberOfMatrixIndices( const unsigned& nmat, const unsigned& nind ){
+  plumed_dbg_assert( nmat<mat_nindices.size() && nind<=mat_indices[nmat].size() ); 
+  mat_nindices[nmat]=nind;
+}
+
+inline
+unsigned MultiValue::getNumberOfMatrixIndices( const unsigned& nmat ) const {
+  plumed_dbg_assert( nmat<mat_nindices.size() ); return mat_nindices[nmat];
+}
+
+inline
+std::vector<unsigned>& MultiValue::getMatrixIndices( const unsigned& nmat ) {
+  plumed_dbg_assert( nmat<mat_nindices.size() ); return mat_indices[nmat]; 
 }
 
 }

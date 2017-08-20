@@ -35,7 +35,9 @@ class DotProductMatrix :
 {
 private:
   unsigned ncol_args;
+  std::vector<double> forcesToApply;
   Value* convertStringToValue( const std::string& name );
+  void updateCentralMatrixIndex( const unsigned& ind, MultiValue& myvals ) const ;
 public:
   static void shortcutKeywords( Keywords& keys );
   static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
@@ -169,15 +171,15 @@ DotProductMatrix::DotProductMatrix(const ActionOptions& ao):
           args.push_back( convertStringToValue(ga_name) );
           if( args[args.size()-1]->getRank()!=1 ) error("all arguments should be vectors");
           if( args[args.size()-1]->getShape()[0]!=args[0]->getShape()[0] ) error("all arguments to GROUPA should have same shape");
-          log.printf("  %dth component of vectors in rows of dot product matrix is %s \n", i+1, ga_name.c_str() );
+          log.printf("  %dth component of vectors in rows of dot product matrix is %s \n", i, ga_name.c_str() );
       }
       log.printf("\n"); ncol_args = args.size();
-      log.printf("  calculating dot matrix between with columns :"); 
-      for(unsigned i=0;i<ncol_args;++i){
-          if( !parseNumbered("GROUPB",i,gb_name) ) error("every GROUPA must have a matching GROUPB keyword");
+      log.printf("  calculating dot matrix between with columns : \n"); 
+      for(unsigned i=0;i<ncol_args;++i){ 
+          if( !parseNumbered("GROUPB",i+1,gb_name) ) error("every GROUPA must have a matching GROUPB keyword");
           args.push_back( convertStringToValue(gb_name) );
           if( args[args.size()-1]->getRank()!=1 ) error("all arguments should be vectors");
-          if( args[args.size()-1]->getShape()[0]!=args[0]->getShape()[ncol_args] ) error("all arguments to GROUPB should have same shape");
+          if( args[args.size()-1]->getShape()[0]!=args[ncol_args]->getShape()[0] ) error("all arguments to GROUPB should have same shape");
           log.printf("  %dth component of vectors in columns of dot product matrix is %s\n", i+1, gb_name.c_str() );
       }
   }
@@ -187,7 +189,7 @@ DotProductMatrix::DotProductMatrix(const ActionOptions& ao):
   requestArguments( args, false ); std::vector<unsigned> shape(2); 
   shape[0]=args[0]->getShape()[0]; shape[1]=args[ncol_args]->getShape()[0];
   // And create the matrix to hold the dot products 
-  addValue( shape );
+  addValue( shape ); forcesToApply.resize( getNumberOfDerivatives() );
 }
 
 Value* DotProductMatrix::convertStringToValue( const std::string& name ) {
@@ -214,6 +216,7 @@ Value* DotProductMatrix::convertStringToValue( const std::string& name ) {
 }
 
 unsigned DotProductMatrix::getNumberOfDerivatives() const  {
+  if( ncol_args>0 ) return (getPntrToArgument(0)->getShape()[0]+getPntrToArgument(ncol_args)->getShape()[0])*getNumberOfArguments()/2;
   return getPntrToArgument(0)->getShape()[0]*getNumberOfArguments();
 }
 
@@ -226,19 +229,38 @@ void DotProductMatrix::calculate() {
   runAllTasks();
 }
 
+void DotProductMatrix::updateCentralMatrixIndex( const unsigned& ind, MultiValue& myvals ) const {
+  if( doNotCalculateDerivatives() ) return;
+
+  unsigned nargs=getNumberOfArguments(); if( ncol_args>0 ) nargs /= 2;
+  unsigned nmat = getPntrToOutput(0)->getPositionInMatrixStash();
+  unsigned nmat_ind = myvals.getNumberOfMatrixIndices( nmat );
+  std::vector<unsigned>& matrix_indices( myvals.getMatrixIndices( nmat ) );
+   
+  for(unsigned i=0;i<nargs;++i) matrix_indices[nmat_ind+i] = nargs*ind + i; 
+  myvals.setNumberOfMatrixIndices( nmat, nmat_ind + nargs );
+}
+
 void DotProductMatrix::performTask( const unsigned& current, MultiValue& myvals ) const {
-  if( actionInChain() ) return ;
+  if( actionInChain() ){
+     updateCentralMatrixIndex( myvals.getTaskIndex(), myvals );
+     return ;
+  }
+
   // Now loop over all atoms in coordination sphere
-  for(unsigned i=0;i<getPntrToArgument(0)->getShape()[1];++i){
+  for(unsigned i=0;i<getPntrToArgument(0)->getShape()[0];++i){
       // This does everything in the stream that is done with single matrix elements 
       runTask( getLabel(), myvals.getTaskIndex(), i, current, myvals );
       // Now clear only elements that are not accumulated over whole row
       clearMatrixElements( myvals );
   }
+  // Update the matrix index for the central atom
+  updateCentralMatrixIndex( myvals.getTaskIndex(), myvals );
 }
 
 void DotProductMatrix::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
-  unsigned nargs=getNumberOfArguments(); if( ncol_args>0 ) nargs /= 2;
+  unsigned nargs=getNumberOfArguments(); 
+  if( ncol_args>0 ) nargs /= 2;
   std::vector<double> args1(nargs), args2(nargs);
   if( ncol_args>0 ) {
       for(unsigned i=0;i<nargs;++i){ 
@@ -252,11 +274,37 @@ void DotProductMatrix::performTask( const std::string& controller, const unsigne
       }
   }
   double val=0; for(unsigned i=0;i<args1.size();++i) val += args1[i]*args2[i];
-  myvals.setValue( getPntrToOutput(0)->getPositionInStream(), val );
+  unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
+  myvals.setValue( ostrn, val ); 
+  // Return after calculation of value if we do not need derivatives
+  if( doNotCalculateDerivatives() ) return;
+
+  unsigned nmat = getPntrToOutput(0)->getPositionInMatrixStash();
+  std::vector<unsigned>& matrix_indices( myvals.getMatrixIndices( nmat ) );
+  if( matrix_indices.size()<getNumberOfDerivatives() ) matrix_indices.resize( getNumberOfDerivatives() );
+  unsigned nmat_ind = myvals.getNumberOfMatrixIndices( nmat );
+  if( ncol_args>0 ) {
+      unsigned invals = getPntrToArgument(0)->getShape()[0];
+      for(unsigned i=0;i<nargs;++i){
+          myvals.addDerivative( ostrn, nargs*index1 + i, args2[i] ); myvals.updateIndex( ostrn, nargs*index1 + i );
+          myvals.addDerivative( ostrn, nargs*(invals + index2) + i, args1[i] ); 
+          myvals.updateIndex( ostrn, nargs*(invals + index2) + i );
+          matrix_indices[nmat_ind+i] = nargs*(invals + index2) + i;
+      }
+  } else {
+      for(unsigned i=0;i<nargs;++i){
+          myvals.addDerivative( ostrn, nargs*index1 + i, args2[i] ); myvals.updateIndex( ostrn, nargs*index1 + i );
+          myvals.addDerivative( ostrn, nargs*index2 + i, args1[i] ); myvals.updateIndex( ostrn, nargs*index2 + i );
+          matrix_indices[nmat_ind+i] = nargs*index2 + i;
+      }
+  }
+  myvals.setNumberOfMatrixIndices( nmat, nmat_ind + nargs );
 }
 
 void DotProductMatrix::apply() {
-
+  if( doNotCalculateDerivatives() ) return;
+  std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned mm=0;
+  if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( forcesToApply, mm );
 }
 
 }

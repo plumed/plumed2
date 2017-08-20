@@ -150,14 +150,13 @@ void SymmetryFunctionBase::performTask( const unsigned& current, MultiValue& myv
 void SymmetryFunctionBase::updateDerivativeIndices( MultiValue& myvals ) const {
   if( !doNotCalculateDerivatives() && myvals.inVectorCall() ) {
       // Update derivatives for indices
-      std::vector<unsigned> & indices( myvals.getIndices() );
-      for(unsigned j=0;j<getNumberOfComponents();++j){
-          unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
-          for(unsigned i=0;i<myvals.getNumberOfIndices();++i) {
-              myvals.updateIndex( ostrn, 3*indices[i]+0 ); myvals.updateIndex( ostrn, 3*indices[i]+1 ); myvals.updateIndex( ostrn, 3*indices[i]+2 );
+      unsigned istrn = getPntrToArgument(0)->getPositionInMatrixStash();
+      std::vector<unsigned>& mat_indices( myvals.getMatrixIndices( istrn ) );
+      for(unsigned i=0;i<myvals.getNumberOfMatrixIndices(istrn);++i) {
+          for(unsigned j=0;j<getNumberOfComponents();++j){
+              unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
+              myvals.updateIndex( ostrn, mat_indices[i] );
           }
-          unsigned nbase = nderivatives - 9;
-          for(unsigned i=0;i<9;++i) myvals.updateIndex( ostrn, nbase + i );
       }
   }
 } 

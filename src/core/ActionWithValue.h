@@ -230,8 +230,6 @@ public:
   void interpretDataLabel( const std::string& mystr, Action* myuser, std::vector<Value*>& args );
 ///
   unsigned getFullNumberOfTasks() const ;
-///
-  void recomputeNumberInStream( unsigned& nquants ) const ;
 /// Reperform one of the tasks
   void rerunTask( const unsigned& task_index, MultiValue& myvals ) const ;
 ///
@@ -249,7 +247,7 @@ public:
 ///
   virtual void transformFinalValueAndDerivatives( const std::vector<double>& buf  ){};
 /// Retrieve the forces acting on all values
-  bool getForcesFromValues( std::vector<double>& forces ) const ;
+  bool getForcesFromValues( std::vector<double>& forces );
 };
 
 inline

@@ -190,6 +190,19 @@ void AdjacencyMatrixBase::performTask( const unsigned& current, MultiValue& myva
       // Now clear only elements that are not accumulated over whole row
       clearMatrixElements( myvals );
   }
+
+  // Update matrix indices
+  if( !doNotCalculateDerivatives() ) {
+      unsigned nmat = getPntrToOutput(0)->getPositionInMatrixStash();
+      std::vector<unsigned>& mat_indices( myvals.getMatrixIndices( nmat ) );
+      if( mat_indices.size()<3*getNumberOfAtoms()+9 ) mat_indices.resize( 3*getNumberOfAtoms()+9 );
+      myvals.setNumberOfMatrixIndices( nmat, 3*natoms+9 );
+      for(unsigned i=0;i<natoms;++i) {
+          mat_indices[3*i+0] = 3*indices[i]; mat_indices[3*i+1] = 3*indices[i]+1; mat_indices[3*i+2]=3*indices[i]+2;
+      } 
+      unsigned nbase=3*natoms, vbase=3*getNumberOfAtoms();
+      for(unsigned i=0;i<9;++i) mat_indices[nbase+i] = vbase + i;
+  }
 }
 
 void AdjacencyMatrixBase::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
