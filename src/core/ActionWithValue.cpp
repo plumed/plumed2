@@ -516,8 +516,9 @@ void ActionWithValue::runTask( const std::string& controller, const unsigned& ta
       if( values[i]->getRank()!=2 ){ matrix=false; break; }
   }
   if( matrix ){  
+      unsigned col_stash_index = colno; if( colno>getFullNumberOfTasks() ) col_stash_index = colno - getFullNumberOfTasks();
       for(unsigned i=0;i<values.size();++i){
-          if( values[i]->storedata ) myvals.stashMatrixElement( values[i]->getPositionInMatrixStash(), colno, myvals.get( values[i]->getPositionInStream() ) );
+          if( values[i]->storedata ) myvals.stashMatrixElement( values[i]->getPositionInMatrixStash(), col_stash_index, myvals.get( values[i]->getPositionInStream() ) );
       }
   }
   

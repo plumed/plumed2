@@ -402,16 +402,9 @@ void ActionWithArguments::setForcesOnArguments( const std::vector<double>& force
           if( aat ){ aat->setForcesOnAtoms( forces, start ); start += distinct_arguments[i]->getNumberOfDerivatives(); } 
       } 
   } else {
-      for(unsigned k=0;k<getNumberOfScalarArguments();++k) {
-          unsigned nt = 0, nn = 0, j=0;
-          for(unsigned i=0;i<arguments.size();++i){
-             nt += arguments[i]->getNumberOfValues();
-             if( k<nt ){ j=i; break ; }
-             nn += arguments[i]->getNumberOfValues();
-          }
-          arguments[j]->addForce( k-nn, forces[start + k] );
+      for(unsigned i=0;i<arguments.size();++i) {
+          for(unsigned j=0;j<arguments[i]->getNumberOfValues();++j) { arguments[i]->addForce( j, forces[start] ); start++; }
       }
-      start += getNumberOfScalarArguments();
   }
 }
 

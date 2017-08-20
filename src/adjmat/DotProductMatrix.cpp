@@ -237,7 +237,8 @@ void DotProductMatrix::updateCentralMatrixIndex( const unsigned& ind, MultiValue
   unsigned nmat_ind = myvals.getNumberOfMatrixIndices( nmat );
   std::vector<unsigned>& matrix_indices( myvals.getMatrixIndices( nmat ) );
    
-  for(unsigned i=0;i<nargs;++i) matrix_indices[nmat_ind+i] = nargs*ind + i; 
+  unsigned invals = getPntrToArgument(0)->getShape()[0];
+  for(unsigned i=0;i<nargs;++i) matrix_indices[nmat_ind+i] = ind + i*invals; 
   myvals.setNumberOfMatrixIndices( nmat, nmat_ind + nargs );
 }
 
@@ -248,9 +249,12 @@ void DotProductMatrix::performTask( const unsigned& current, MultiValue& myvals 
   }
 
   // Now loop over all atoms in coordination sphere
+  unsigned start_n=0; if(  ncol_args>0 ) start_n = getFullNumberOfTasks();
   for(unsigned i=0;i<getPntrToArgument(0)->getShape()[0];++i){
+      // Don't do i==j
+      if( ncol_args==0 && myvals.getTaskIndex()==i ) continue;
       // This does everything in the stream that is done with single matrix elements 
-      runTask( getLabel(), myvals.getTaskIndex(), i, current, myvals );
+      runTask( getLabel(), myvals.getTaskIndex(), current, start_n + i, myvals );
       // Now clear only elements that are not accumulated over whole row
       clearMatrixElements( myvals );
   }
@@ -259,20 +263,20 @@ void DotProductMatrix::performTask( const unsigned& current, MultiValue& myvals 
 }
 
 void DotProductMatrix::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
-  unsigned nargs=getNumberOfArguments(); 
-  if( ncol_args>0 ) nargs /= 2;
-  std::vector<double> args1(nargs), args2(nargs);
-  if( ncol_args>0 ) {
-      for(unsigned i=0;i<nargs;++i){ 
-         args1[i] = getPntrToArgument(i)->get( index1 ); 
-         args2[i] = getPntrToArgument(ncol_args+i)->get( index2 ); 
-      }
-  } else {
-      for(unsigned i=0;i<nargs;++i){ 
-         args1[i] = getPntrToArgument(i)->get( index1 );  
-         args2[i] = getPntrToArgument(i)->get( index2 ); 
-      }
+  unsigned invals, jnvals; invals = jnvals = getPntrToArgument(0)->getShape()[0]; 
+  unsigned jindex=index2, jind_start = 0, nargs=getNumberOfArguments(); 
+  if( ncol_args>0 ) { 
+      nargs /= 2; jnvals = getPntrToArgument(ncol_args)->getShape()[0];
+      jindex = index2 - getFullNumberOfTasks();
+      jind_start = nargs*invals;
   }
+ 
+  std::vector<double> args1(nargs), args2(nargs);
+  for(unsigned i=0;i<nargs;++i){ 
+      args1[i] = getPntrToArgument(i)->get( index1 ); 
+      args2[i] = getPntrToArgument(ncol_args+i)->get( jindex ); 
+  }
+  
   double val=0; for(unsigned i=0;i<args1.size();++i) val += args1[i]*args2[i];
   unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
   myvals.setValue( ostrn, val ); 
@@ -283,20 +287,11 @@ void DotProductMatrix::performTask( const std::string& controller, const unsigne
   std::vector<unsigned>& matrix_indices( myvals.getMatrixIndices( nmat ) );
   if( matrix_indices.size()<getNumberOfDerivatives() ) matrix_indices.resize( getNumberOfDerivatives() );
   unsigned nmat_ind = myvals.getNumberOfMatrixIndices( nmat );
-  if( ncol_args>0 ) {
-      unsigned invals = getPntrToArgument(0)->getShape()[0];
-      for(unsigned i=0;i<nargs;++i){
-          myvals.addDerivative( ostrn, nargs*index1 + i, args2[i] ); myvals.updateIndex( ostrn, nargs*index1 + i );
-          myvals.addDerivative( ostrn, nargs*(invals + index2) + i, args1[i] ); 
-          myvals.updateIndex( ostrn, nargs*(invals + index2) + i );
-          matrix_indices[nmat_ind+i] = nargs*(invals + index2) + i;
-      }
-  } else {
-      for(unsigned i=0;i<nargs;++i){
-          myvals.addDerivative( ostrn, nargs*index1 + i, args2[i] ); myvals.updateIndex( ostrn, nargs*index1 + i );
-          myvals.addDerivative( ostrn, nargs*index2 + i, args1[i] ); myvals.updateIndex( ostrn, nargs*index2 + i );
-          matrix_indices[nmat_ind+i] = nargs*index2 + i;
-      }
+  for(unsigned i=0;i<nargs;++i) {
+      plumed_dbg_assert( index1 + i*invals<getNumberOfDerivatives() );
+      myvals.addDerivative( ostrn, index1 + i*invals, args2[i] ); myvals.updateIndex( ostrn, index1 + i*invals );
+      myvals.addDerivative( ostrn, jind_start + jindex + i*jnvals, args1[i] ); myvals.updateIndex( ostrn, jind_start + jindex + i*jnvals );
+      matrix_indices[nmat_ind+i] = jind_start + jindex + i*jnvals; 
   }
   myvals.setNumberOfMatrixIndices( nmat, nmat_ind + nargs );
 }
