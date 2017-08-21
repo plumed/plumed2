@@ -82,7 +82,7 @@ void Normalize::calculateFunction( const std::vector<double>& args, MultiValue& 
   double pref, len=0; std::vector<double> mypowl( args.size() );
   if( norm==2 ) {
       for(unsigned i=0;i<args.size();++i){ mypowl[i] = 1.0; len += args[i]*args[i]; }
-      len=sqrt(len); pref = - 1.0/(len*len*len);
+      len=sqrt(len); pref = -1.0/(len*len*len);
   } else {
       for(unsigned i=0;i<args.size();++i){ mypowl[i] = pow( args[i], norm-1 ); len += args[i]*mypowl[i]; } 
       len = pow( len, norm_sqr ); pref = -norm*norm_sqr*pow( len, norm_sqr-1)/(len*len);
@@ -91,7 +91,7 @@ void Normalize::calculateFunction( const std::vector<double>& args, MultiValue& 
   // And now set all the components
   for(unsigned i=0;i<args.size();++i) {
       addValue( i, args[i]/len, myvals ); addDerivative( i, i, 1.0/len, myvals);
-      for(unsigned j=0;j<args.size();++j) addDerivative( i, j, pref*args[i]*mypowl[j], myvals);
+      for(unsigned j=0;j<args.size();++j) addDerivative( i, j, pref*args[i]*args[j]*mypowl[j], myvals);
   }
 }
 
