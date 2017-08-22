@@ -22,7 +22,7 @@
 #
 # This create cython wrappers to the main bits of the PLUMED libraray
 #
-cdef extern from "Plumed.h"  namespace "PLMD":
+cdef extern from "Plumed.h" namespace "PLMD":
      cdef cppclass Plumed:
           Plumed() except +
-          void cmd(const char*key,const void*val);
+          void cmd(const char*key,const void*val) except *

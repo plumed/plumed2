@@ -28,5 +28,13 @@ from Cython.Build import cythonize
 import numpy
 
 setup( 
-  ext_modules = cythonize([Extension("plumed", ["plumed.pyx"],libraries=["plumed"],language="c++",include_dirs=[numpy.get_include()])])
+  ext_modules = cythonize([
+                  Extension( name="plumed", 
+                             sources=["plumed.pyx"],
+                             library_dirs=["../lib/"],
+                             libraries=["plumed"],
+                             language="c++",
+                             include_dirs=["../wrapper/", numpy.get_include()]
+                           )
+                          ])
 )
