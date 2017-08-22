@@ -329,12 +329,12 @@ void JCoupling::calculate() {
       d0 = delta(getPosition(r + 1), getPosition(r + 0));
       d1 = delta(getPosition(r + 3), getPosition(r + 2));
       d2 = delta(getPosition(r + 5), getPosition(r + 4));
-    
+
       // Calculate dihedral with 3 vectors, get the derivatives
       Vector dd0, dd1, dd2;
       PLMD::Torsion t;
       const double torsion = t.compute(d0, d1, d2, dd0, dd1, dd2);
-    
+
       // Calculate the Karplus relation and its derivative
       const double theta = torsion + kshift_;
       const double cos_theta = cos(theta);
@@ -358,7 +358,7 @@ void JCoupling::calculate() {
         setAtomsDerivatives(val, r + 3, derj * -dd1);
         setAtomsDerivatives(val, r + 4, derj * dd2);
         setAtomsDerivatives(val, r + 5, derj * -dd2);
-    
+
         Tensor virial;
         virial-=Tensor(getPosition(r+0),derj * dd0);
         virial-=Tensor(getPosition(r+1),derj * -dd0);
