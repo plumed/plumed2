@@ -1,0 +1,118 @@
+q6: Q6 SPECIES=1-64 D_0=3.0 R_0=1.5 NN=12 MEAN 
+q4: Q4 SPECIES=1-64 D_0=3.0 R_0=1.5 NN=12 MEAN
+
+nq6: NORMALIZE ...
+  ARG1=q6.rm-[-6]
+  ARG2=q6.im-[-6] 
+  ARG3=q6.rm-[-5]
+  ARG4=q6.im-[-5]
+  ARG5=q6.rm-[-4]   
+  ARG6=q6.im-[-4] 
+  ARG7=q6.rm-[-3]
+  ARG8=q6.im-[-3] 
+  ARG9=q6.rm-[-2] 
+  ARG10=q6.im-[-2]
+  ARG11=q6.rm-[-1]
+  ARG12=q6.im-[-1]
+  ARG13=q6.rm-[0]
+  ARG14=q6.im-[0]
+  ARG15=q6.rm-[1]
+  ARG16=q6.im-[1]
+  ARG17=q6.rm-[2]
+  ARG18=q6.im-[2]
+  ARG19=q6.rm-[3]
+  ARG20=q6.im-[3]
+  ARG21=q6.rm-[4]
+  ARG22=q6.im-[4]
+  ARG23=q6.rm-[5]
+  ARG24=q6.im-[5]
+  ARG25=q6.rm-[6]
+  ARG26=q6.im-[6]
+...
+
+con6: CONTACT_MATRIX GROUP=q6 SWITCH={RATIONAL D_0=3.0 R_0=1.5}
+
+dot6: DOTPRODUCT_MATRIX ...
+  GROUP1=nq6.rm-[-6] 
+  GROUP2=nq6.im-[-6] 
+  GROUP3=nq6.rm-[-5]  
+  GROUP4=nq6.im-[-5]
+  GROUP5=nq6.rm-[-4]   
+  GROUP6=nq6.im-[-4] 
+  GROUP7=nq6.rm-[-3]
+  GROUP8=nq6.im-[-3] 
+  GROUP9=nq6.rm-[-2] 
+  GROUP10=nq6.im-[-2]
+  GROUP11=nq6.rm-[-1]  
+  GROUP12=nq6.im-[-1]
+  GROUP13=nq6.rm-[0]
+  GROUP14=nq6.im-[0]
+  GROUP15=nq6.rm-[1]
+  GROUP16=nq6.im-[1]
+  GROUP17=nq6.rm-[2]
+  GROUP18=nq6.im-[2]
+  GROUP19=nq6.rm-[3]
+  GROUP20=nq6.im-[3]
+  GROUP21=nq6.rm-[4]
+  GROUP22=nq6.im-[4]
+  GROUP23=nq6.rm-[5] 
+  GROUP24=nq6.im-[5] 
+  GROUP25=nq6.rm-[6]
+  GROUP26=nq6.im-[6]
+...
+
+ww6: MATHEVAL ARG1=con6.w ARG2=dot6 FUNC=x*y PERIODIC=NO
+
+w6: COMBINE ARG=ww6 PERIODIC=NO
+
+PRINT ARG=w6 FILE=colv1 FMT=%8.4f 
+
+nq4: NORMALIZE ...
+  ARG1=q4.rm-[-4]
+  ARG2=q4.im-[-4]
+  ARG3=q4.rm-[-3]
+  ARG4=q4.im-[-3]
+  ARG5=q4.rm-[-2]   
+  ARG6=q4.im-[-2] 
+  ARG7=q4.rm-[-1]
+  ARG8=q4.im-[-1] 
+  ARG9=q4.rm-[0] 
+  ARG10=q4.im-[0]
+  ARG11=q4.rm-[1]
+  ARG12=q4.im-[1]
+  ARG13=q4.rm-[2]
+  ARG14=q4.im-[2]
+  ARG15=q4.rm-[3]
+  ARG16=q4.im-[3]
+  ARG17=q4.rm-[4]
+  ARG18=q4.im-[4]
+...
+
+dot4: DOTPRODUCT_MATRIX ...
+  GROUP1=nq4.rm-[-4]
+  GROUP2=nq4.im-[-4]
+  GROUP3=nq4.rm-[-3]
+  GROUP4=nq4.im-[-3]
+  GROUP5=nq4.rm-[-2]
+  GROUP6=nq4.im-[-2]
+  GROUP7=nq4.rm-[-1]
+  GROUP8=nq4.im-[-1]
+  GROUP9=nq4.rm-[0]
+  GROUP10=nq4.im-[0]
+  GROUP11=nq4.rm-[1]
+  GROUP12=nq4.im-[1]
+  GROUP13=nq4.rm-[2]
+  GROUP14=nq4.im-[2]
+  GROUP15=nq4.rm-[3]
+  GROUP16=nq4.im-[3]
+  GROUP17=nq4.rm-[4]
+  GROUP18=nq4.im-[4]
+...
+  
+ww4: MATHEVAL ARG1=con6.w ARG2=dot4 FUNC=x*y PERIODIC=NO
+  
+w4: COMBINE ARG=ww4 PERIODIC=NO
+
+PRINT ARG=w4 FILE=colv2 FMT=%8.4f
+
+RESTRAINT ARG=w6,w4 AT=30,66 KAPPA=1,1 

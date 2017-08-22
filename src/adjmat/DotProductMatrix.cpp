@@ -45,6 +45,7 @@ public:
                               std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit DotProductMatrix(const ActionOptions&);
+  bool mustBeTreatedAsDistinctArguments() const ;
   unsigned getNumberOfDerivatives() const ;
   void buildCurrentTaskList( std::vector<unsigned>& tflags );
   void calculate();
@@ -218,6 +219,10 @@ Value* DotProductMatrix::convertStringToValue( const std::string& name ) {
 unsigned DotProductMatrix::getNumberOfDerivatives() const  {
   if( ncol_args>0 ) return (getPntrToArgument(0)->getShape()[0]+getPntrToArgument(ncol_args)->getShape()[0])*getNumberOfArguments()/2;
   return getPntrToArgument(0)->getShape()[0]*getNumberOfArguments();
+}
+
+bool DotProductMatrix::mustBeTreatedAsDistinctArguments() const {
+  return true;
 }
 
 void DotProductMatrix::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
