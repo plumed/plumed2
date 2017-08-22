@@ -73,6 +73,7 @@ PlumedMain::PlumedMain():
   citations(*new Citations),
   step(0),
   active(false),
+  endPlumed(false),
   atoms(*new Atoms(*this)),
   actionSet(*new ActionSet(*this)),
   bias(0.0),
@@ -512,7 +513,8 @@ void PlumedMain::readInputFile(std::string str) {
   ifile.open(str);
   ifile.allowNoEOL();
   std::vector<std::string> words;
-  while(Tools::getParsedLine(ifile,words) && words[0]!="ENDPLUMED") readInputWords(words);
+  while(Tools::getParsedLine(ifile,words) && !endPlumed) readInputWords(words);
+  endPlumed=false;
   log.printf("END FILE: %s\n",str.c_str());
   log.flush();
 
@@ -535,7 +537,6 @@ void PlumedMain::readInputLine(const std::string & str) {
 void PlumedMain::readInputWords(const std::vector<std::string> & words) {
   plumed_assert(initialized);
   if(words.empty())return;
-  else if(words[0]=="ENDPLUMED") return;
   else if(words[0]=="_SET_SUFFIX") {
     plumed_assert(words.size()==2);
     setSuffix(words[1]);

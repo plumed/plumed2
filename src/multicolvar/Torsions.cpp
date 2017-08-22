@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2014-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -85,11 +85,11 @@ PLUMED_REGISTER_ACTION(Torsions,"TORSIONS")
 
 void Torsions::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );
-  keys.reserve("numbered","ATOMS","the atoms involved in each of the torsion angles you wish to calculate. "
-               "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one torsion will be "
-               "calculated for each ATOM keyword you specify (all ATOM keywords should "
-               "provide the indices of four atoms).  The eventual number of quantities calculated by this "
-               "action will depend on what functions of the distribution you choose to calculate.");
+  keys.add("numbered","ATOMS","the atoms involved in each of the torsion angles you wish to calculate. "
+           "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one torsion will be "
+           "calculated for each ATOM keyword you specify (all ATOM keywords should "
+           "provide the indices of four atoms).  The eventual number of quantities calculated by this "
+           "action will depend on what functions of the distribution you choose to calculate.");
   keys.reset_style("ATOMS","atoms");
   keys.use("BETWEEN"); keys.use("HISTOGRAM");
 }

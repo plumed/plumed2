@@ -110,6 +110,8 @@ void Value::getDomain(double&minout,double&maxout) const {
 }
 
 void Value::setGradients() {
+  // Can't do gradients if we don't have derivatives
+  if( !hasDeriv ) return;
   gradients.clear();
   ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(action);
   ActionWithArguments*aw=dynamic_cast<ActionWithArguments*>(action);

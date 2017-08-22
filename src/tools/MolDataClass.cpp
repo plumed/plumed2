@@ -67,6 +67,9 @@ bool MolDataClass::allowedResidue( const std::string& type, const std::string& r
     else if(residuename=="HSE") return true; // HIS-E charmm
     else if(residuename=="HIP") return true; // HIS-P amber
     else if(residuename=="HSP") return true; // HIS-P charmm
+// Weird amino acids
+    else if(residuename=="NLE") return true;
+    else if(residuename=="SFO") return true;
     else return false;
   } else if( type=="dna" ) {
     if(residuename=="DA") return true;
@@ -214,7 +217,7 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
         numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N",resnum+1,chainid));
         numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CA",resnum+1,chainid));
       } else if( name=="chi1" && !isTerminalGroup("protein",resname) ) {
-        if ( resname=="GLY" || resname=="ALA" ) plumed_merror("chi-1 is not defined for Alanine and Glycine");
+        if ( resname=="GLY" || resname=="ALA" || resname=="SFO" ) plumed_merror("chi-1 is not defined for Alanine, Glycine and SFO");
         numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N",resnum,chainid));
         numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CA",resnum,chainid));
         numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CB",resnum,chainid));

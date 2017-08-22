@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -104,9 +104,8 @@ protected:
   void addTaskToList( const unsigned& taskCode );
 /// Finish setting up the multicolvar base
   void setupMultiColvarBase( const std::vector<AtomNumber>& atoms );
-/// Add some derivatives to a particular component of a particular atom
-  void addAtomDerivatives( const int&, const unsigned&, const Vector&, multicolvar::AtomValuePack& ) const ;
-/// Add derivative of the input value
+/// This routine take the vector of input derivatives and adds all the vectors to ivalth output derivatives
+/// In other words end-start sets of derivatives come in and one set of derivatives come out
   void mergeInputDerivatives( const unsigned& ival, const unsigned& start, const unsigned& end, const unsigned& jatom,
                               const std::vector<double>& der, MultiValue& myder, AtomValuePack& myatoms ) const ;
 /// This routine take the ith set of input derivatives and adds it to each of the (end-start) output derivatives
@@ -128,8 +127,6 @@ protected:
   double getLinkCellCutoff()  const ;
 /// This does setup of link cell stuff that is specific to the non-use of the usespecies keyword
   void setupNonUseSpeciesLinkCells( const unsigned& );
-/// Get the separation between a pair of vectors
-  Vector getSeparation( const Vector& vec1, const Vector& vec2 ) const ;
 /// This sets up the list of atoms that are involved in this colvar
   bool setupCurrentAtomList( const unsigned& taskCode, AtomValuePack& myatoms ) const ;
 /// Decode indices if there are 2 or 3 atoms involved
@@ -153,7 +150,9 @@ public:
   ~MultiColvarBase() {}
   static void registerKeywords( Keywords& keys );
 /// Turn on the derivatives
-  virtual void turnOnDerivatives();
+  void turnOnDerivatives();
+/// Get the separation between a pair of vectors
+  Vector getSeparation( const Vector& vec1, const Vector& vec2 ) const ;
 /// Do we use pbc to calculate this quantity
   bool usesPbc() const ;
 /// Apply PBCs over a set of distance vectors
@@ -184,6 +183,8 @@ public:
   virtual unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
 /// Checks if an task is being performed at the present time
   virtual bool isCurrentlyActive( const unsigned& code );
+/// Add some derivatives to a particular component of a particular atom
+  void addAtomDerivatives( const int&, const unsigned&, const Vector&, multicolvar::AtomValuePack& ) const ;
 ///
   virtual void getCentralAtomPack( const unsigned& basn, const unsigned& curr, CatomPack& mypack);
 /// Get the index where the central atom is stored

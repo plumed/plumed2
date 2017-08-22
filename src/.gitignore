@@ -18,6 +18,7 @@
 !/gridtools
 !/imd
 !/lapack
+!/lepton
 !/lib
 !/main
 !/maketools
@@ -25,6 +26,7 @@
 !/manyrestraints
 !/molfile
 !/multicolvar
+!/pamm
 !/reference
 !/secondarystructure
 !/setup

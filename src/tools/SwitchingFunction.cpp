@@ -35,6 +35,22 @@
 using namespace std;
 namespace PLMD {
 
+static std::map<string, double> leptonConstants= {
+  {"e", std::exp(1.0)},
+  {"log2e", 1.0/std::log(2.0)},
+  {"log10e", 1.0/std::log(10.0)},
+  {"ln2", std::log(2.0)},
+  {"ln10", std::log(10.0)},
+  {"pi", pi},
+  {"pi_2", pi*0.5},
+  {"pi_4", pi*0.25},
+//  {"1_pi", 1.0/pi},
+//  {"2_pi", 2.0/pi},
+//  {"2_sqrtpi", 2.0/std::sqrt(pi)},
+  {"sqrt2", std::sqrt(2.0)},
+  {"sqrt1_2", std::sqrt(0.5)}
+};
+
 //+PLUMEDOC INTERNAL switchingfunction
 /*
 Functions that measure whether values are less than a certain quantity.
@@ -250,6 +266,18 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   else if(name=="CUBIC") type=cubic;
   else if(name=="TANH") type=tanh;
   else if(name=="COSINUS") type=cosinus;
+  else if(name=="MATHEVAL" && std::getenv("PLUMED_USE_LEPTON")) {
+    type=leptontype;
+    std::string func;
+    Tools::parse(data,"FUNC",func);
+    lepton::ParsedExpression pe=lepton::Parser::parse(func).optimize(leptonConstants);
+    lepton_func=func;
+    expression.resize(OpenMP::getNumThreads());
+    for(auto & e : expression) e=pe.createCompiledExpression();
+    lepton::ParsedExpression ped=lepton::Parser::parse(func).differentiate("x").optimize(leptonConstants);
+    expression_deriv.resize(OpenMP::getNumThreads());
+    for(auto & e : expression_deriv) e=ped.createCompiledExpression();
+  }
 #ifdef __PLUMED_HAS_MATHEVAL
   else if(name=="MATHEVAL") {
     type=matheval;
@@ -312,6 +340,8 @@ std::string SwitchingFunction::description() const {
     ostr<<"tanh";
   } else if(type==cosinus) {
      ostr<<"cosinus";
+  } else if(type==leptontype) {
+    ostr<<"lepton";
 #ifdef __PLUMED_HAS_MATHEVAL
   } else if(type==matheval) {
     ostr<<"matheval";
@@ -328,6 +358,8 @@ std::string SwitchingFunction::description() const {
     ostr<<" a="<<a<<" b="<<b;
   } else if(type==cubic) {
     ostr<<" dmax="<<dmax;
+  } else if(type==leptontype) {
+    ostr<<" func="<<lepton_func;
 #ifdef __PLUMED_HAS_MATHEVAL
   } else if(type==matheval) {
     ostr<<" func="<<evaluator_get_string(evaluator[0]);
@@ -431,10 +463,22 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
         double tmpsin = sin ( rdist * PI );
         result = 0.5 * (tmpcos + 1.0);
         dfunc=-0.5 * PI * tmpsin * invr0;
-      }else {
+      } else {
         result=0.;
         dfunc=0.0;
       }
+    } else if(type==leptontype) {
+      const unsigned t=OpenMP::getThreadNum();
+      plumed_assert(t<expression.size());
+      try {
+        const_cast<lepton::CompiledExpression*>(&expression[t])->getVariableReference("x")=rdist;
+        const_cast<lepton::CompiledExpression*>(&expression_deriv[t])->getVariableReference("x")=rdist;
+      } catch(PLMD::lepton::Exception& exc) {
+// this is necessary since in some cases lepton things a variable is not present even though it is present
+// e.g. func=0*x
+      }
+      result=expression[t].evaluate();
+      dfunc=expression_deriv[t].evaluate();
 #ifdef __PLUMED_HAS_MATHEVAL
     } else if(type==matheval) {
       const unsigned it=OpenMP::getThreadNum();

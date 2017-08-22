@@ -23,12 +23,30 @@
 #include "AtomNumber.h"
 #include "Exception.h"
 #include "IFile.h"
+#include "lepton/Lepton.h"
 #include <cstring>
 #include <dirent.h>
 #include <iostream>
+#include <map>
 
 using namespace std;
 namespace PLMD {
+
+static std::map<string, double> leptonConstants= {
+  {"e", std::exp(1.0)},
+  {"log2e", 1.0/std::log(2.0)},
+  {"log10e", 1.0/std::log(10.0)},
+  {"ln2", std::log(2.0)},
+  {"ln10", std::log(10.0)},
+  {"pi", pi},
+  {"pi_2", pi*0.5},
+  {"pi_4", pi*0.25},
+//  {"1_pi", 1.0/pi},
+//  {"2_pi", 2.0/pi},
+//  {"2_sqrtpi", 2.0/std::sqrt(pi)},
+  {"sqrt2", std::sqrt(2.0)},
+  {"sqrt1_2", std::sqrt(0.5)}
+};
 
 template<class T>
 bool Tools::convertToAny(const string & str,T & t) {
@@ -61,11 +79,18 @@ bool Tools::convert(const string & str,AtomNumber &a) {
 
 template<class T>
 bool Tools::convertToReal(const string & str,T & t) {
+  if(convertToAny(str,t)) return true;
   if(str=="PI" || str=="+PI" || str=="+pi" || str=="pi") {
     t=pi; return true;
   } else if(str=="-PI" || str=="-pi") {
     t=-pi; return true;
-  } else if( str.find("PI")!=std::string::npos ) {
+  }
+  try {
+    t=lepton::Parser::parse(str).evaluate(leptonConstants);
+    return true;
+  } catch(PLMD::lepton::Exception& exc) {
+  }
+  if( str.find("PI")!=std::string::npos ) {
     std::size_t pi_start=str.find_first_of("PI");
     if(str.substr(pi_start)!="PI") return false;
     istringstream nstr(str.substr(0,pi_start));
@@ -87,7 +112,7 @@ bool Tools::convertToReal(const string & str,T & t) {
     t=NAN;
     return true;
   }
-  return convertToAny(str,t);
+  return false;
 }
 
 bool Tools::convert(const string & str,float & t) {
@@ -328,6 +353,16 @@ std::string Tools::extension(const std::string&s) {
     if(base.length()>0 && base[base.length()-1]=='/') ext="";
   }
   return ext;
+}
+
+double Tools::bessel0( const double& val ) {
+  if (fabs(val)<3.75) {
+    double y = Tools::fastpow( val/3.75, 2 );
+    return 1 + y*(3.5156229 +y*(3.0899424 + y*(1.2067492+y*(0.2659732+y*(0.0360768+y*0.0045813)))));
+  }
+  double ax=fabs(val), y=3.75/ax, bx=std::exp(ax)/sqrt(ax);
+  ax=0.39894228+y*(0.01328592+y*(0.00225319+y*(-0.00157565+y*(0.00916281+y*(-0.02057706+y*(0.02635537+y*(-0.01647633+y*0.00392377)))))));
+  return ax*bx;
 }
 
 bool Tools::startWith(const std::string & full,const std::string &start) {

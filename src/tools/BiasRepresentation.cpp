@@ -126,14 +126,14 @@ KernelFunctions* BiasRepresentation::readFromPoint(IFile *ifile) {
     ifile->scanField(names[i],cc[i]);
   }
   double h=1.0;
-  return new KernelFunctions(cc,histosigma,"gaussian",false,h,false);
+  return new KernelFunctions(cc,histosigma,"gaussian","DIAGONAL",h);
 }
 void BiasRepresentation::pushKernel( IFile *ifile ) {
   KernelFunctions *kk=NULL;
   // here below the reading of the kernel is completely hidden
   if(histosigma.size()==0) {
     ifile->allowIgnoredFields();
-    kk=KernelFunctions::read(ifile,names)   ;
+    kk=KernelFunctions::read(ifile,true,names)   ;
   } else {
     // when doing histogram assume gaussian with a given diagonal sigma
     // and neglect all the rest

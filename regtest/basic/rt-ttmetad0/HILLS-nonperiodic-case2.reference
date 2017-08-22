@@ -1,5 +1,6 @@
 #! FIELDS time psi sigma_psi height biasf
 #! SET multivariate false
+#! SET kerneltype gaussian
                       1      1.938132764982607                    0.2                    1.2                     -1
                       2      1.966349061093571                    0.2                    1.2                     -1
                       3      1.988460591924974                    0.2                    1.2                     -1

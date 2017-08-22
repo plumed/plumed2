@@ -26,10 +26,28 @@
 #include <matheval.h>
 #endif
 
+#include "lepton/Lepton.h"
+
 using namespace std;
 
 namespace PLMD {
 namespace function {
+
+static std::map<string, double> leptonConstants= {
+  {"e", std::exp(1.0)},
+  {"log2e", 1.0/std::log(2.0)},
+  {"log10e", 1.0/std::log(10.0)},
+  {"ln2", std::log(2.0)},
+  {"ln10", std::log(10.0)},
+  {"pi", pi},
+  {"pi_2", pi*0.5},
+  {"pi_4", pi*0.25},
+//  {"1_pi", 1.0/pi},
+//  {"2_pi", 2.0/pi},
+//  {"2_sqrtpi", 2.0/std::sqrt(pi)},
+  {"sqrt2", std::sqrt(2.0)},
+  {"sqrt1_2", std::sqrt(0.5)}
+};
 
 
 //+PLUMEDOC FUNCTION MATHEVAL
@@ -170,6 +188,9 @@ progression (S) and distance (Z) variables \cite perez2015atp.
 class Matheval :
   public Function
 {
+  const bool use_lepton;
+  lepton::CompiledExpression expression;
+  std::vector<lepton::CompiledExpression> expression_deriv;
   void* evaluator;
   vector<void*> evaluator_deriv;
   vector<string> var;
@@ -183,7 +204,6 @@ public:
   static void registerKeywords(Keywords& keys);
 };
 
-#ifdef __PLUMED_HAS_MATHEVAL
 PLUMED_REGISTER_ACTION(Matheval,"MATHEVAL")
 
 void Matheval::registerKeywords(Keywords& keys) {
@@ -196,7 +216,10 @@ void Matheval::registerKeywords(Keywords& keys) {
 Matheval::Matheval(const ActionOptions&ao):
   Action(ao),
   Function(ao),
-  evaluator_deriv(getNumberOfArguments()),
+  use_lepton(std::getenv("PLUMED_USE_LEPTON")),
+  expression_deriv(getNumberOfArguments()),
+  evaluator(NULL),
+  evaluator_deriv(getNumberOfArguments(),NULL),
   values(getNumberOfArguments()),
   names(getNumberOfArguments())
 {
@@ -215,56 +238,104 @@ Matheval::Matheval(const ActionOptions&ao):
   addValueWithDerivatives();
   checkRead();
 
-  evaluator=evaluator_create(const_cast<char*>(func.c_str()));
-
-  if(!evaluator) error("There was some problem in parsing matheval formula "+func);
-
-  char **check_names;
-  int    check_count;
-  evaluator_get_variables(evaluator,&check_names,&check_count);
-  if(check_count!=int(getNumberOfArguments())) {
-    string sc;
-    Tools::convert(check_count,sc);
-    error("Your function string contains "+sc+" arguments. This should be equal to the number of ARGs");
-  }
-  for(unsigned i=0; i<getNumberOfArguments(); i++) {
-    bool found=false;
-    for(unsigned j=0; j<getNumberOfArguments(); j++) {
-      if(var[i]==check_names[j])found=true;
-    }
-    if(!found)
-      error("Variable "+var[i]+" cannot be found in your function string");
-  }
-
-  for(unsigned i=0; i<getNumberOfArguments(); i++)
-    evaluator_deriv[i]=evaluator_derivative(evaluator,const_cast<char*>(var[i].c_str()));
-
-
   log.printf("  with function : %s\n",func.c_str());
   log.printf("  with variables :");
   for(unsigned i=0; i<var.size(); i++) log.printf(" %s",var[i].c_str());
   log.printf("\n");
-  log.printf("  function as parsed by matheval: %s\n", evaluator_get_string(evaluator));
-  log.printf("  derivatives as computed by matheval:\n");
-  for(unsigned i=0; i<var.size(); i++) log.printf("    %s\n",evaluator_get_string(evaluator_deriv[i]));
+
+  if(use_lepton) {
+    log<<"  WARNING: you are using lepton as a replacement for libmatheval\n";
+    lepton::ParsedExpression pe=lepton::Parser::parse(func).optimize(leptonConstants);
+    log<<"  function as parsed by lepton: "<<pe<<"\n";
+    expression=pe.createCompiledExpression();
+    for(auto &p: expression.getVariables()) {
+      if(std::find(var.begin(),var.end(),p)==var.end()) {
+        error("variable " + p + " is not defined");
+      }
+    }
+    log<<"  derivatives as computed by lepton:\n";
+    for(unsigned i=0; i<getNumberOfArguments(); i++) {
+      lepton::ParsedExpression pe=lepton::Parser::parse(func).differentiate(var[i]).optimize(leptonConstants);
+      log<<"    "<<pe<<"\n";
+      expression_deriv[i]=pe.createCompiledExpression();
+    }
+  } else {
+#ifdef __PLUMED_HAS_MATHEVAL
+    evaluator=evaluator_create(const_cast<char*>(func.c_str()));
+    if(!evaluator) error("There was some problem in parsing matheval formula "+func);
+    char **check_names;
+    int    check_count;
+    evaluator_get_variables(evaluator,&check_names,&check_count);
+    if(check_count!=int(getNumberOfArguments())) {
+      string sc;
+      Tools::convert(check_count,sc);
+      error("Your function string contains "+sc+" arguments. This should be equal to the number of ARGs");
+    }
+    for(unsigned i=0; i<getNumberOfArguments(); i++) {
+      bool found=false;
+      for(unsigned j=0; j<getNumberOfArguments(); j++) {
+        if(var[i]==check_names[j])found=true;
+      }
+      if(!found)
+        error("Variable "+var[i]+" cannot be found in your function string");
+    }
+    for(unsigned i=0; i<getNumberOfArguments(); i++)
+      evaluator_deriv[i]=evaluator_derivative(evaluator,const_cast<char*>(var[i].c_str()));
+    log.printf("  function as parsed by matheval: %s\n", evaluator_get_string(evaluator));
+    log.printf("  derivatives as computed by matheval:\n");
+    for(unsigned i=0; i<var.size(); i++) log.printf("    %s\n",evaluator_get_string(evaluator_deriv[i]));
+#else
+    error("MATHEVAL not available, please export PLUMED_USE_LEPTON=yes");
+#endif
+  }
 }
 
 void Matheval::calculate() {
-  for(unsigned i=0; i<getNumberOfArguments(); i++) values[i]=getArgument(i);
-  for(unsigned i=0; i<getNumberOfArguments(); i++) names[i]=const_cast<char*>(var[i].c_str());
-  setValue(evaluator_evaluate(evaluator,names.size(),&names[0],&values[0]));
-
-  for(unsigned i=0; i<getNumberOfArguments(); i++) {
-    setDerivative(i,evaluator_evaluate(evaluator_deriv[i],names.size(),&names[0],&values[0]));
+  if(use_lepton) {
+    for(unsigned i=0; i<getNumberOfArguments(); i++) {
+      try {
+        expression.getVariableReference(var[i])=getArgument(i);
+      } catch(PLMD::lepton::Exception& exc) {
+// this is necessary since in some cases lepton things a variable is not present even though it is present
+// e.g. func=0*x
+      }
+    }
+    setValue(expression.evaluate());
+    for(unsigned i=0; i<getNumberOfArguments(); i++) {
+      for(unsigned j=0; j<getNumberOfArguments(); j++) {
+        try {
+          expression_deriv[i].getVariableReference(var[j])=getArgument(j);
+        } catch(PLMD::lepton::Exception& exc) {
+// this is necessary since in some cases lepton things a variable is not present even though it is present
+// e.g. func=0*x
+        }
+      }
+      setDerivative(i,expression_deriv[i].evaluate());
+    }
+  } else {
+#ifdef __PLUMED_HAS_MATHEVAL
+    for(unsigned i=0; i<getNumberOfArguments(); i++) values[i]=getArgument(i);
+    for(unsigned i=0; i<getNumberOfArguments(); i++) names[i]=const_cast<char*>(var[i].c_str());
+    setValue(evaluator_evaluate(evaluator,names.size(),&names[0],&values[0]));
+    for(unsigned i=0; i<getNumberOfArguments(); i++) {
+      setDerivative(i,evaluator_evaluate(evaluator_deriv[i],names.size(),&names[0],&values[0]));
+    }
+#else
+    error("MATHEVAL not available, please export PLUMED_USE_LEPTON=yes");
+#endif
   }
 }
 
 Matheval::~Matheval() {
-  evaluator_destroy(evaluator);
-  for(unsigned i=0; i<evaluator_deriv.size(); i++)evaluator_destroy(evaluator_deriv[i]);
-}
-
+  if(evaluator) {
+#ifdef __PLUMED_HAS_MATHEVAL
+    evaluator_destroy(evaluator);
+    for(unsigned i=0; i<evaluator_deriv.size(); i++)evaluator_destroy(evaluator_deriv[i]);
+#else
+    error("MATHEVAL not available, please export PLUMED_USE_LEPTON=yes");
 #endif
+  }
+}
 
 }
 }
