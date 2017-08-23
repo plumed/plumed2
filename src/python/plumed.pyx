@@ -29,26 +29,27 @@ import numpy as np
 cimport numpy as np
 
 cdef class Plumed:
-     cdef cplumed.Plumed* c_plumed
+     cdef cplumed.plumed c_plumed
      cdef int precision
      def __cinit__(self,precision=8):
-         self.c_plumed = new cplumed.Plumed()
+         self.c_plumed = cplumed.plumed_create()   #new cplumed.Plumed()
          cdef int pres = precision
-         self.c_plumed.cmd( "setRealPrecision", <void*>&pres )  
+         cplumed.wrapped_cmd(self.c_plumed, "setRealPrecision", <void*>&pres )  
          self.precision=precision
-     def __dealloc__(self):
-         del self.c_plumed
+     def __dealloc__(self): 
+         pass
+         #del self.c_plumed
 
      def cmd_ndarray_real(self, ckey, val):
          cdef double [:] abuffer = val.ravel()
-         self.c_plumed.cmd(ckey, <void*>&abuffer[0])
+         cplumed.wrapped_cmd(self.c_plumed, ckey, <void*>&abuffer[0])
      def cmd_ndarray_int(self, ckey, val):
          cdef long [:] abuffer = val.ravel()
-         self.c_plumed.cmd(ckey, <void*>&abuffer[0])
+         cplumed.wrapped_cmd(self.c_plumed, ckey, <void*>&abuffer[0])
      cdef cmd_float(self, ckey, double val ):
-         self.c_plumed.cmd( ckey, <void*>&val )
+         cplumed.wrapped_cmd(self.c_plumed, ckey, <void*>&val )
      cdef cmd_int(self, ckey, int val):
-         self.c_plumed.cmd(ckey, <void*>&val)
+         cplumed.wrapped_cmd(self.c_plumed, ckey, <void*>&val)
 
      def cmd( self, key, val=None ):
          cdef bytes py_bytes = key.encode()
@@ -57,7 +58,7 @@ cdef class Plumed:
          cdef np.int_t[:] ibuffer
          cdef np.float64_t[:] dbuffer
          if val is None :
-            self.c_plumed.cmd( ckey, NULL )
+            cplumed.wrapped_cmd( self.c_plumed, ckey, NULL )
          elif isinstance(val, (int,long) ):
             if key=="getDataRank" :
                raise ValueError("when using cmd with getDataRank option value must a size one ndarray")
@@ -82,6 +83,6 @@ cdef class Plumed:
          elif isinstance(val, basestring ) :
               py_bytes = val.encode()
               cval = py_bytes 
-              self.c_plumed.cmd( ckey, <void*>cval )
+              cplumed.wrapped_cmd( self.c_plumed, ckey, <void*>cval )
          else :
             raise ValueError("Unknown value type ({})".format(str(type(val))))
