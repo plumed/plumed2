@@ -574,7 +574,10 @@ void ActionWithValue::gatherAccumulators( const unsigned& taskCode, const MultiV
            if( values[i]->getRank()==2 && !values[i]->hasDeriv ){
               unsigned ncols = values[i]->getShape()[1];
               unsigned vindex = bufstart + taskCode*ncols; unsigned matind = values[i]->getPositionInMatrixStash();
-              for(unsigned j=0;j<ncols;++j) buffer[vindex] += myvals.getStashedMatrixElement( matind, j );
+              for(unsigned j=0;j<myvals.getNumberOfStashedMatrixElements(matind);++j){
+                  unsigned jind = myvals.getStashedMatrixIndex(matind,j);
+                  buffer[vindex + jind] += myvals.getStashedMatrixElement( matind, jind );
+              }
            // This looks after storing in all other cases 
            } else {
               unsigned nspace=1; if( values[i]->hasDeriv ) nspace=(1 + values[i]->getNumberOfDerivatives() );

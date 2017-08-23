@@ -34,6 +34,8 @@ MultiValue::MultiValue( const unsigned& nvals, const unsigned& nder, const unsig
   active_list(nvals*nder),
   atLeastOneSet(false),
   nmatrix_cols(ncols),
+  matrix_element_nind(nmat),
+  matrix_element_indices(ncols*nmat),
   matrix_element_stash(ncols*nmat),
   vector_call(false),
   nindices(0),
@@ -46,8 +48,8 @@ MultiValue::MultiValue( const unsigned& nvals, const unsigned& nder, const unsig
 void MultiValue::resize( const unsigned& nvals, const unsigned& nder, const unsigned& ncols, const unsigned& nmat ) {
   values.resize(nvals); nderivatives=nder; derivatives.resize( nvals*nder );
   hasderiv.resize(nvals*nder,false); nactive.resize(nvals); active_list.resize(nvals*nder); 
-  nmatrix_cols=ncols; matrix_element_stash.resize(ncols*nmat); nindices=0; 
-  mat_nindices.resize(nmat,0); mat_indices.resize(nmat);
+  nmatrix_cols=ncols; matrix_element_nind.resize(nmat); matrix_element_indices.resize(ncols*nmat); 
+  matrix_element_stash.resize(ncols*nmat); nindices=0; mat_nindices.resize(nmat,0); mat_indices.resize(nmat);
   atLeastOneSet=false;
 }
 
@@ -55,6 +57,7 @@ void MultiValue::clearAll() {
   for(unsigned i=0; i<values.size(); ++i) values[i]=0;
   // Clear matrix indices
   for(unsigned i=0;i<mat_nindices.size();++i) mat_nindices[i]=0;
+  for(unsigned i=0;i<matrix_element_nind.size();++i) matrix_element_nind[i]=0;
   if( !atLeastOneSet ) return;
   for(unsigned i=0; i<values.size(); ++i) clear(i);
   atLeastOneSet=false;

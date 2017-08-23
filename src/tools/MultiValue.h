@@ -47,6 +47,8 @@ private:
   bool atLeastOneSet;
 /// This allows us to store matrix elements
   unsigned nmatrix_cols;
+  std::vector<unsigned> matrix_element_nind;
+  std::vector<unsigned> matrix_element_indices;
   std::vector<double> matrix_element_stash;
 /// This is a fudge to save on vector resizing in MultiColvar
   bool vector_call;
@@ -111,6 +113,10 @@ public:
   unsigned getActiveIndex( const unsigned& , const unsigned& ) const ;
 /// 
   void stashMatrixElement( const unsigned& imat, const unsigned& jind, const double& val );
+///
+  unsigned getNumberOfStashedMatrixElements( const unsigned& imat ) const ;
+///
+  unsigned getStashedMatrixIndex( const unsigned& imat, const unsigned& jind ) const ;
 ///
   double getStashedMatrixElement( const unsigned& imat, const unsigned& jind ) const ;
 };
@@ -252,8 +258,22 @@ unsigned MultiValue::getSecondTaskIndex() const {
 }
 
 inline
+unsigned MultiValue::getNumberOfStashedMatrixElements( const unsigned& imat ) const {
+  plumed_dbg_assert( imat<matrix_element_nind.size() );
+  return matrix_element_nind[imat];
+}
+
+inline
+unsigned MultiValue::getStashedMatrixIndex( const unsigned& imat, const unsigned& jind ) const {
+  plumed_dbg_assert( imat<matrix_element_nind.size() && jind<matrix_element_nind[imat] );
+  return matrix_element_indices[imat*nmatrix_cols + jind];
+}
+
+inline
 void MultiValue::stashMatrixElement( const unsigned& imat, const unsigned& jind, const double& val ) {
-  matrix_element_stash[imat*nmatrix_cols + jind] = val;
+  plumed_dbg_assert( imat<matrix_element_nind.size() && jind<nmatrix_cols );
+  matrix_element_indices[imat*nmatrix_cols + matrix_element_nind[imat]] = jind; 
+  matrix_element_nind[imat]++; matrix_element_stash[imat*nmatrix_cols + jind] = val;
 }
 
 inline

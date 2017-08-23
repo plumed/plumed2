@@ -52,6 +52,8 @@ public:
   static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
                               const std::map<std::string,std::string>& keys,
                               std::vector<std::vector<std::string> >& actions );
+  static void createVectorNormInput( const std::string& ilab, const std::string& olab, const int& l,
+                                     const std::string& vlab, std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit SphericalHarmonic(const ActionOptions&);
   void compute( const double& val, const Vector& dir, MultiValue& myvals ) const ;
@@ -66,6 +68,8 @@ PLUMED_REGISTER_SHORTCUT(SphericalHarmonic,"Q6")
 
 void SphericalHarmonic::shortcutKeywords( Keywords& keys ) {
   SymmetryFunctionBase::shortcutKeywords( keys );
+  keys.addFlag("VMEAN",false,"calculate the norm of the mean vector.");
+  keys.addFlag("VSUM",false,"calculate the norm of the sum of all the vectors");
 }
 
 void SphericalHarmonic::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
@@ -108,24 +112,64 @@ void SphericalHarmonic::expandShortcut( const std::string& lab, const std::vecto
       actions.push_back(im_input);
   }
 
+  // If we are doing VMEAN determine sum of vector components
+  if( keys.count("VMEAN") ) {
+      for(int i=-l;i<=l;++i){
+          std::string snum; Tools::convert( i, snum ); 
+          // Real part 
+          std::vector<std::string> rm_input; rm_input.push_back(lab + "_rms-[" + snum + "]:");
+          rm_input.push_back("COMBINE"); rm_input.push_back("ARG=" + lab + "_rmn-[" + snum + "]");
+          rm_input.push_back("NORMALIZE"); rm_input.push_back("PERIODIC=NO");
+          actions.push_back(rm_input);
+          // Imaginary part 
+          std::vector<std::string> im_input; im_input.push_back(lab + "_ims-[" + snum + "]:");
+          im_input.push_back("COMBINE"); im_input.push_back("ARG=" + lab + "_imn-[" + snum + "]");
+          im_input.push_back("NORMALIZE"); im_input.push_back("PERIODIC=NO");
+          actions.push_back(im_input);
+      }
+      // And determine final length of the vector
+      std::vector<std::string> norm_inp; norm_inp.push_back(lab + "_vmean");
+      // Now calculate the total length of the vector
+      SphericalHarmonic::createVectorNormInput( lab, lab + "_vmean", l, "ms", actions ); 
+  }
+  if( keys.count("VSUM") ) {
+      for(int i=-l;i<=l;++i){
+          std::string snum; Tools::convert( i, snum );
+          // Real part 
+          std::vector<std::string> rm_input; rm_input.push_back(lab + "_rmz-[" + snum + "]:");
+          rm_input.push_back("COMBINE"); rm_input.push_back("ARG=" + lab + "_rmn-[" + snum + "]");
+          rm_input.push_back("PERIODIC=NO"); actions.push_back(rm_input);
+          // Imaginary part 
+          std::vector<std::string> im_input; im_input.push_back(lab + "_imz-[" + snum + "]:");
+          im_input.push_back("COMBINE"); im_input.push_back("ARG=" + lab + "_imn-[" + snum + "]");
+          im_input.push_back("PERIODIC=NO"); actions.push_back(im_input);
+      }
+      // Now calculate the total length of the vector
+      SphericalHarmonic::createVectorNormInput( lab, lab + "_vsum", l, "mz", actions ); 
+  }   
+
   // Now calculate the total length of the vector
-  std::vector<std::string> norm_input; 
-  norm_input.push_back(lab +"_norm2:"); 
+  SphericalHarmonic::createVectorNormInput( lab, lab + "_norm", l, "mn", actions ); 
+  multicolvar::MultiColvarBase::expandFunctions( lab, lab + "_norm", words, keys, actions );
+}
+
+void SphericalHarmonic::createVectorNormInput( const std::string& ilab, const std::string& olab, const int& l, 
+                                               const std::string& vlab, std::vector<std::vector<std::string> >& actions ) {
+  std::vector<std::string> norm_input; norm_input.push_back(olab + "2:"); 
   norm_input.push_back("COMBINE"); std::string powstr="POWERS=2";
   std::string snum, num; unsigned nn=1;
   for(int i=-l;i<=l;++i){ 
      Tools::convert( nn, num ); Tools::convert( i, snum ); 
-     norm_input.push_back("ARG" + num + "=" + lab + "_rmn-[" + snum + "]"); 
+     norm_input.push_back("ARG" + num + "=" + ilab + "_r" + vlab + "-[" + snum + "]"); 
      nn++; Tools::convert( nn, num );
-     norm_input.push_back("ARG" + num + "=" + lab + "_imn-[" + snum + "]"); 
+     norm_input.push_back("ARG" + num + "=" + ilab + "_i" + vlab + "-[" + snum + "]"); 
      nn++; 
      if( i==-l ) powstr += ",2"; else powstr += ",2,2";
   } 
   norm_input.push_back("PERIODIC=NO"); norm_input.push_back(powstr); actions.push_back( norm_input );
-  std::vector<std::string> sqrt_input; sqrt_input.push_back(lab +"_norm:"); sqrt_input.push_back("MATHEVAL");
-  sqrt_input.push_back("ARG1=" + lab + "_norm2"); sqrt_input.push_back( "FUNC=sqrt(x)" ); 
+  std::vector<std::string> sqrt_input; sqrt_input.push_back(olab + ":"); sqrt_input.push_back("MATHEVAL");
+  sqrt_input.push_back("ARG1=" + olab + "2"); sqrt_input.push_back( "FUNC=sqrt(x)" );
   sqrt_input.push_back("PERIODIC=NO"); actions.push_back( sqrt_input );
-  multicolvar::MultiColvarBase::expandFunctions( lab, lab + "_norm", words, keys, actions );
 }
 
 void SphericalHarmonic::registerKeywords( Keywords& keys ) {
