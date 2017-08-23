@@ -192,10 +192,6 @@ public:
   void cmd(const std::string&key,void*val=NULL);
   ~PlumedMain();
   /**
-    Read a single action line
-  */
-  void readAction(std::string str);
-  /**
     Read an input file.
     \param str name of the file
   */

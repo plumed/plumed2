@@ -60,7 +60,7 @@ def read_xyz(filename):
    return trajectory
 
 def create_plumed_var( p, name, command ):
-   p.cmd("createAction", name + ": " + command )
+   p.cmd("readInputLine", name + ": " + command )
    shape = np.zeros( 1, dtype=np.int_ )
    p.cmd("getDataRank " + name, shape )
    data = np.zeros((1))
@@ -89,7 +89,7 @@ p.cmd("setKbT", 1.)
 p.cmd("setNatoms",num_atoms)
 p.cmd("setLogFile","test.log")
 p.cmd("init")
-p.cmd("createAction","MOLINFO STRUCTURE=template.pdb")
+p.cmd("readInputLine","MOLINFO STRUCTURE=template.pdb")
 t1 = create_plumed_var( p, "t1", "TORSION ATOMS=@phi-2" ) 
 t2 = create_plumed_var( p, "t2", "TORSION ATOMS=@psi-2" )
 t3 = create_plumed_var( p, "t3", "TORSION ATOMS=@phi-3" )

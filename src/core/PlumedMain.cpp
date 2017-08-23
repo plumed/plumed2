@@ -278,10 +278,6 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       if( nw==2 ) mydatafetcher->setData( words[1], "", val );
       else mydatafetcher->setData( words[1], words[2], val );
       break;
-    case cmd_createAction:
-      CHECK_INIT(initialized,word);
-      if(val)readAction(static_cast<char*>(val));
-      break;
     case cmd_read:
       CHECK_INIT(initialized,word);
       if(val)readInputFile(static_cast<char*>(val));
@@ -527,13 +523,6 @@ void PlumedMain::init() {
   log<<citations;
   log<<"Please read and cite where appropriate!\n";
   log<<"Finished setup\n";
-}
-
-void PlumedMain::readAction(std::string str) {
-  plumed_assert(initialized);
-  int parlevel=0; std::vector<std::string> words_tmp;
-  words_tmp = Tools::getWords(str,NULL,&parlevel);
-  readInputWords(words_tmp);
 }
 
 void PlumedMain::readInputFile(std::string str) {
