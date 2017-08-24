@@ -307,7 +307,7 @@ void MultiColvarBase::addValue(){
 
 void MultiColvarBase::addComponentWithDerivatives( const std::string& name ){
   if( getFullNumberOfTasks()==1 ){ ActionWithValue::addComponentWithDerivatives(name); }
-  else addValue();
+  else addComponent( name );
 }
 
 void MultiColvarBase::addComponent( const std::string& name ){

@@ -128,6 +128,16 @@ public:
 PLUMED_REGISTER_ACTION(Distance,"DISTANCE")
 PLUMED_REGISTER_SHORTCUT(Distance,"DISTANCE")
 PLUMED_REGISTER_SHORTCUT(Distance,"DISTANCES")
+PLUMED_REGISTER_SHORTCUT(Distance,"XANGLES")
+PLUMED_REGISTER_SHORTCUT(Distance,"YANGLES")
+PLUMED_REGISTER_SHORTCUT(Distance,"ZANGLES")
+PLUMED_REGISTER_SHORTCUT(Distance,"XYTORSIONS")
+PLUMED_REGISTER_SHORTCUT(Distance,"XZTORSIONS")
+PLUMED_REGISTER_SHORTCUT(Distance,"YXTORSIONS")
+PLUMED_REGISTER_SHORTCUT(Distance,"YZTORSIONS")
+PLUMED_REGISTER_SHORTCUT(Distance,"ZXTORSIONS")
+PLUMED_REGISTER_SHORTCUT(Distance,"ZYTORSIONS")
+
 
 void Distance::shortcutKeywords( Keywords& keys ){
   MultiColvarBase::shortcutKeywords( keys );
@@ -138,8 +148,35 @@ void Distance::expandShortcut( const std::string& lab, const std::vector<std::st
   std::vector<std::string> mc_line; mc_line.push_back( lab + ":" ); 
   mc_line.push_back("DISTANCE");
   for(unsigned i=1;i<words.size();++i) mc_line.push_back(words[i]);
+  if( words[0].find("ANGLES")!=std::string::npos ) mc_line.push_back("COMPONENTS");
   actions.push_back( mc_line );
-  MultiColvarBase::expandFunctions( lab, lab, words, keys, actions );
+
+  // Now do stuff to compute ANGLE from axis
+  std::string ilab = lab;
+  if( words[0].find("ANGLES")!=std::string::npos ) {
+      // Normalize the vector
+      std::vector<std::string> norm_input; norm_input.push_back( lab + "_norm:");
+      norm_input.push_back("NORMALIZE"); norm_input.push_back("ARG1=" + lab + ".x"); 
+      norm_input.push_back("ARG2=" + lab + ".y"); norm_input.push_back("ARG3=" + lab + ".z");
+      actions.push_back( norm_input );
+      // Now compute the angles with matheval
+      std::vector<std::string> ang_input; ang_input.push_back( lab + "_ang:"); ilab = lab + "_ang";
+      ang_input.push_back("MATHEVAL"); ang_input.push_back("FUNC=acos(x)"); ang_input.push_back("PERIODIC=NO");
+      if( words[0]=="XANGLES" ) ang_input.push_back("ARG1=" + lab + "_norm.x");
+      else if( words[0]=="YANGLES" ) ang_input.push_back("ARG1=" + lab + "_norm.y");
+      else if( words[0]=="ZANGLES" ) ang_input.push_back("ARG1=" + lab + "_norm.z");
+      actions.push_back( ang_input );
+  }
+  // Now do stuff to compute TORSIONS from axis
+  if( words[0].find("TORSIONS")!=std::string::npos ) {
+      // Normalize the vector
+      std::vector<std::string> norm_input; norm_input.push_back( lab + "_norm:");
+      norm_input.push_back("NORMALIZE"); norm_input.push_back("ARG1=" + lab + ".x");
+      norm_input.push_back("ARG2=" + lab + ".y"); norm_input.push_back("ARG3=" + lab + ".z");
+      actions.push_back( norm_input );
+      // Now compute the cross products
+  }
+  MultiColvarBase::expandFunctions( lab, ilab, words, keys, actions );
 }
 
 void Distance::registerKeywords( Keywords& keys ) {

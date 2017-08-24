@@ -482,7 +482,9 @@ void ActionWithValue::getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& 
       if( values[i]->getRank()==0 && values[i]->hasDerivatives() ) bufsize += 1 + values[i]->getNumberOfDerivatives();
       else if( values[i]->getRank()==0 ) bufsize += 1;
       else if( values[i]->storedata ){
-          if( values[i]->hasDeriv ) bufsize += values[i]->getSize(); else bufsize += nactive_tasks;
+          if( values[i]->hasDeriv ) bufsize += values[i]->getSize(); 
+          else if( values[i]->getRank()==2 ) bufsize += nactive_tasks*values[i]->getShape()[1];
+          else bufsize += nactive_tasks;
       }
       // if( values[i]->getRank()==0 ) bufsize += 1 + values[i]->getNumberOfDerivatives();
   }
@@ -576,12 +578,14 @@ void ActionWithValue::gatherAccumulators( const unsigned& taskCode, const MultiV
               unsigned vindex = bufstart + taskCode*ncols; unsigned matind = values[i]->getPositionInMatrixStash();
               for(unsigned j=0;j<myvals.getNumberOfStashedMatrixElements(matind);++j){
                   unsigned jind = myvals.getStashedMatrixIndex(matind,j);
+                  plumed_dbg_massert( vindex+jind<buffer.size(), "failing in " + getLabel() );
                   buffer[vindex + jind] += myvals.getStashedMatrixElement( matind, jind );
               }
            // This looks after storing in all other cases 
            } else {
               unsigned nspace=1; if( values[i]->hasDeriv ) nspace=(1 + values[i]->getNumberOfDerivatives() );
-              unsigned vindex = bufstart + taskCode*nspace; buffer[vindex] += myvals.get(sind);
+              unsigned vindex = bufstart + taskCode*nspace; plumed_dbg_massert( vindex<buffer.size(), "failing in " + getLabel() ); 
+              buffer[vindex] += myvals.get(sind);
            }
       } 
   }

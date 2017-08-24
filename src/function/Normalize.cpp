@@ -65,7 +65,6 @@ Normalize::Normalize(const ActionOptions&ao):
 {
   parse("NORM",norm); norm_sqr = 1.0 / static_cast<double>( norm );
   log.printf("  normalizing these vectors of cvs using %d norm \n",norm);
-  printf("and thus norm_sqr is %f \n",norm_sqr );
 
   for(unsigned i=0;i<getNumberOfArguments();++i) {
       if( getPntrToArgument(i)->isPeriodic() ) error("cannot normalize vectors that contain periodic components");

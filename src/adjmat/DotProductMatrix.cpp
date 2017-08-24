@@ -19,25 +19,14 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "core/PlumedMain.h"
-#include "core/ActionSet.h"
-#include "core/ActionWithArguments.h"
-#include "core/ActionWithValue.h"
+#include "VectorProductMatrix.h"
 #include "core/ActionRegister.h"
 #include "multicolvar/MultiColvarBase.h"
 
 namespace PLMD {
 namespace adjmat {
 
-class DotProductMatrix :
-  public ActionWithArguments,
-  public ActionWithValue
-{
-private:
-  unsigned ncol_args;
-  std::vector<double> forcesToApply;
-  Value* convertStringToValue( const std::string& name );
-  void updateCentralMatrixIndex( const unsigned& ind, MultiValue& myvals ) const ;
+class DotProductMatrix : public VectorProductMatrix {
 public:
   static void shortcutKeywords( Keywords& keys );
   static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
@@ -45,13 +34,9 @@ public:
                               std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit DotProductMatrix(const ActionOptions&);
-  bool mustBeTreatedAsDistinctArguments() const ;
-  unsigned getNumberOfDerivatives() const ;
-  void buildCurrentTaskList( std::vector<unsigned>& tflags );
-  void calculate();
-  void performTask( const unsigned& task_index, MultiValue& myvals ) const ;
-  void performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
-  void apply();
+  double computeVectorProduct( const unsigned& index1, const unsigned& index2, 
+                               const std::vector<double>& vec1, const std::vector<double>& vec2, 
+                               std::vector<double>& dvec1, std::vector<double>& dvec2, MultiValue& myvals ) const ;
 };
 
 PLUMED_REGISTER_ACTION(DotProductMatrix,"DOTPRODUCT_MATRIX")
@@ -138,173 +123,24 @@ void DotProductMatrix::expandShortcut( const std::string& lab, const std::vector
 }
 
 void DotProductMatrix::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys ); 
-  ActionWithArguments::registerKeywords( keys );
-  ActionWithValue::registerKeywords( keys );
-  keys.add("numbered","GROUP","the vectors of arguments for which you would like to calculate the dot product matrix");
-  keys.add("numbered","GROUPA","");
-  keys.add("numbered","GROUPB","");
-  keys.reset_style("GROUP","optional");
+  VectorProductMatrix::registerKeywords( keys ); 
 }
 
 DotProductMatrix::DotProductMatrix(const ActionOptions& ao):
   Action(ao),
-  ActionWithArguments(ao),
-  ActionWithValue(ao),
-  ncol_args(0)
+  VectorProductMatrix(ao)
 {
-  bool readgroup=false; std::string g_name; std::vector<Value*> args;
-  for(unsigned i=1;;++i) {
-      if( !parseNumbered("GROUP",i,g_name) ){ break; }
-      readgroup=true; args.push_back( convertStringToValue(g_name) );
-      if( args[args.size()-1]->getRank()!=1 ) error("all arguments should be vectors");
-      if( args[args.size()-1]->getShape()[0]!=args[0]->getShape()[0] ) error("all arguments should have same shape");
-  }
-  if( readgroup ) {
-      log.printf("  calculating square dot product matrix \n");
-      for(unsigned i=0;i<args.size();++i) log.printf("  %dth component of vectors for dot product is %s\n", i+1,args[i]->getName().c_str() );
-  }
-  if( !readgroup ){
-      std::string ga_name, gb_name;
-      log.printf("  calculating rectangular dot product matrix \n"); 
-      for(unsigned i=1;;++i) {
-          if( !parseNumbered("GROUPA",i,ga_name) ){ break; }
-          args.push_back( convertStringToValue(ga_name) );
-          if( args[args.size()-1]->getRank()!=1 ) error("all arguments should be vectors");
-          if( args[args.size()-1]->getShape()[0]!=args[0]->getShape()[0] ) error("all arguments to GROUPA should have same shape");
-          log.printf("  %dth component of vectors in rows of dot product matrix is %s \n", i, ga_name.c_str() );
-      }
-      log.printf("\n"); ncol_args = args.size();
-      log.printf("  calculating dot matrix between with columns : \n"); 
-      for(unsigned i=0;i<ncol_args;++i){ 
-          if( !parseNumbered("GROUPB",i+1,gb_name) ) error("every GROUPA must have a matching GROUPB keyword");
-          args.push_back( convertStringToValue(gb_name) );
-          if( args[args.size()-1]->getRank()!=1 ) error("all arguments should be vectors");
-          if( args[args.size()-1]->getShape()[0]!=args[ncol_args]->getShape()[0] ) error("all arguments to GROUPB should have same shape");
-          log.printf("  %dth component of vectors in columns of dot product matrix is %s\n", i+1, gb_name.c_str() );
-      }
-  }
-  if( args.size()==0 ) error("no arguments were read in use GROUP or GROUPA and GROUPB");
-  // Create a list of tasks for this action - n.b. each task calculates one row of the matrix
-  for(unsigned i=0;i<args[0]->getShape()[0];++i) addTaskToList(i);
-  requestArguments( args, false ); std::vector<unsigned> shape(2); 
-  shape[0]=args[0]->getShape()[0]; shape[1]=args[ncol_args]->getShape()[0];
-  // And create the matrix to hold the dot products 
-  addValue( shape ); forcesToApply.resize( getNumberOfDerivatives() );
 }
 
-Value* DotProductMatrix::convertStringToValue( const std::string& name ) {
-  std::size_t dot=name.find_first_of("."); std::vector<Value*> args;
-  if( dot!=std::string::npos ) {
-      ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( name.substr(0,dot) );
-      if( !action ){
-          std::string str=" (hint! the actions in this ActionSet are: ";
-          str+=plumed.getActionSet().getLabelList()+")";
-          error("cannot find action named " + name + str);
-      }
-      action->interpretDataLabel( name, this, args );
-  } else {
-      ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( name );
-      if( !action ){
-          std::string str=" (hint! the actions in this ActionSet are: ";
-          str+=plumed.getActionSet().getLabelList()+")";
-          error("cannot find action named " + name + str);
-      }
-      action->interpretDataLabel( name, this, args );
+double DotProductMatrix::computeVectorProduct( const unsigned& index1, const unsigned& index2,
+                                               const std::vector<double>& vec1, const std::vector<double>& vec2, 
+                                               std::vector<double>& dvec1, std::vector<double>& dvec2, MultiValue& myvals ) const {  
+  double val=0; 
+  for(unsigned i=0;i<vec1.size();++i){
+      val += vec1[i]*vec2[i]; 
+      dvec1[i]=vec2[i]; dvec2[i]=vec1[i];
   }
-  plumed_assert( args.size()==1 );
-  return args[0];
-}
-
-unsigned DotProductMatrix::getNumberOfDerivatives() const  {
-  if( ncol_args>0 ) return (getPntrToArgument(0)->getShape()[0]+getPntrToArgument(ncol_args)->getShape()[0])*getNumberOfArguments()/2;
-  return getPntrToArgument(0)->getShape()[0]*getNumberOfArguments();
-}
-
-bool DotProductMatrix::mustBeTreatedAsDistinctArguments() const {
-  return true;
-}
-
-void DotProductMatrix::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
-  tflags.assign(tflags.size(),1);
-}
-
-void DotProductMatrix::calculate() {
-  if( actionInChain() ) return;
-  runAllTasks();
-}
-
-void DotProductMatrix::updateCentralMatrixIndex( const unsigned& ind, MultiValue& myvals ) const {
-  if( doNotCalculateDerivatives() ) return;
-
-  unsigned nargs=getNumberOfArguments(); if( ncol_args>0 ) nargs /= 2;
-  unsigned nmat = getPntrToOutput(0)->getPositionInMatrixStash();
-  unsigned nmat_ind = myvals.getNumberOfMatrixIndices( nmat );
-  std::vector<unsigned>& matrix_indices( myvals.getMatrixIndices( nmat ) );
-   
-  unsigned invals = getPntrToArgument(0)->getShape()[0];
-  for(unsigned i=0;i<nargs;++i) matrix_indices[nmat_ind+i] = ind + i*invals; 
-  myvals.setNumberOfMatrixIndices( nmat, nmat_ind + nargs );
-}
-
-void DotProductMatrix::performTask( const unsigned& current, MultiValue& myvals ) const {
-  if( actionInChain() ){
-     updateCentralMatrixIndex( myvals.getTaskIndex(), myvals );
-     return ;
-  }
-
-  // Now loop over all atoms in coordination sphere
-  unsigned start_n=0; if(  ncol_args>0 ) start_n = getFullNumberOfTasks();
-  for(unsigned i=0;i<getPntrToArgument(0)->getShape()[0];++i){
-      // Don't do i==j
-      if( ncol_args==0 && myvals.getTaskIndex()==i ) continue;
-      // This does everything in the stream that is done with single matrix elements 
-      runTask( getLabel(), myvals.getTaskIndex(), current, start_n + i, myvals );
-      // Now clear only elements that are not accumulated over whole row
-      clearMatrixElements( myvals );
-  }
-  // Update the matrix index for the central atom
-  updateCentralMatrixIndex( myvals.getTaskIndex(), myvals );
-}
-
-void DotProductMatrix::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
-  unsigned invals, jnvals; invals = jnvals = getPntrToArgument(0)->getShape()[0]; 
-  unsigned jindex=index2, jind_start = 0, nargs=getNumberOfArguments(); 
-  if( ncol_args>0 ) { 
-      nargs /= 2; jnvals = getPntrToArgument(ncol_args)->getShape()[0];
-      jindex = index2 - getFullNumberOfTasks();
-      jind_start = nargs*invals;
-  }
- 
-  std::vector<double> args1(nargs), args2(nargs);
-  for(unsigned i=0;i<nargs;++i){ 
-      args1[i] = getPntrToArgument(i)->get( index1 ); 
-      args2[i] = getPntrToArgument(ncol_args+i)->get( jindex ); 
-  }
-  
-  double val=0; for(unsigned i=0;i<args1.size();++i) val += args1[i]*args2[i];
-  unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
-  myvals.setValue( ostrn, val ); 
-  // Return after calculation of value if we do not need derivatives
-  if( doNotCalculateDerivatives() ) return;
-
-  unsigned nmat = getPntrToOutput(0)->getPositionInMatrixStash();
-  std::vector<unsigned>& matrix_indices( myvals.getMatrixIndices( nmat ) );
-  if( matrix_indices.size()<getNumberOfDerivatives() ) matrix_indices.resize( getNumberOfDerivatives() );
-  unsigned nmat_ind = myvals.getNumberOfMatrixIndices( nmat );
-  for(unsigned i=0;i<nargs;++i) {
-      plumed_dbg_assert( index1 + i*invals<getNumberOfDerivatives() );
-      myvals.addDerivative( ostrn, index1 + i*invals, args2[i] ); myvals.updateIndex( ostrn, index1 + i*invals );
-      myvals.addDerivative( ostrn, jind_start + jindex + i*jnvals, args1[i] ); myvals.updateIndex( ostrn, jind_start + jindex + i*jnvals );
-      matrix_indices[nmat_ind+i] = jind_start + jindex + i*jnvals; 
-  }
-  myvals.setNumberOfMatrixIndices( nmat, nmat_ind + nargs );
-}
-
-void DotProductMatrix::apply() {
-  if( doNotCalculateDerivatives() ) return;
-  std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned mm=0;
-  if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( forcesToApply, mm );
+  return val;
 }
 
 }

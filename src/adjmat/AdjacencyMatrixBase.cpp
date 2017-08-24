@@ -95,11 +95,11 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
   }
   // Request the atoms from the ActionAtomistic
   requestAtoms( t ); parseFlag("COMPONENTS",components); parseFlag("NOPBC",nopbc);
-  addComponentWithDerivatives( "w", shape ); componentIsNotPeriodic("w"); 
+  addComponent( "w", shape ); componentIsNotPeriodic("w"); 
   if( components ){ 
-     addComponentWithDerivatives( "x", shape ); componentIsNotPeriodic("x");
-     addComponentWithDerivatives( "y", shape ); componentIsNotPeriodic("y");
-     addComponentWithDerivatives( "z", shape ); componentIsNotPeriodic("z");
+     addComponent( "x", shape ); componentIsNotPeriodic("x");
+     addComponent( "y", shape ); componentIsNotPeriodic("y");
+     addComponent( "z", shape ); componentIsNotPeriodic("z");
   }
   log<<"  Bibliography "<<plumed.cite("Tribello, Giberti, Sosso, Salvalaglio and Parrinello, J. Chem. Theory Comput. 13, 1317 (2017)")<<"\n";
 }

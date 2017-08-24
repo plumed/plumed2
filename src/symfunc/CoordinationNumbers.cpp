@@ -85,8 +85,7 @@ public:
                               std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit CoordinationNumbers(const ActionOptions&);
-  void performTask( const unsigned& current, MultiValue& myvals ) const ;  
-  void compute( const double& weight, const Vector& vec, MultiValue& myvals ) const { plumed_error(); }
+  void compute( const double& weight, const Vector& vec, MultiValue& myvals ) const ;
 };
 
 PLUMED_REGISTER_ACTION(CoordinationNumbers,"COORDINATIONNUMBER")
@@ -123,10 +122,8 @@ CoordinationNumbers::CoordinationNumbers(const ActionOptions&ao):
   addValueWithDerivatives();
 }
 
-void CoordinationNumbers::performTask( const unsigned& current, MultiValue& myvals ) const {
-  double weight = myvals.get( getPntrToArgument(0)->getPositionInStream() );
-  addToValue( 0, weight, myvals ); addWeightDerivative( 0, 1.0, myvals );
-  updateDerivativeIndices( myvals );
+void CoordinationNumbers::compute( const double& val, const Vector& dir, MultiValue& myvals ) const {
+  addToValue( 0, val, myvals ); addWeightDerivative( 0, 1.0, myvals ); 
 }
 
 }
