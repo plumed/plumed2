@@ -90,7 +90,6 @@ public:
 
 PLUMED_REGISTER_ACTION(CoordinationNumbers,"COORDINATIONNUMBER")
 PLUMED_REGISTER_SHORTCUT(CoordinationNumbers,"COORDINATIONNUMBER")
-PLUMED_REGISTER_SHORTCUT(CoordinationNumbers,"G1")
 
 void CoordinationNumbers::shortcutKeywords( Keywords& keys ) {
   SymmetryFunctionBase::shortcutKeywords( keys );
@@ -99,16 +98,10 @@ void CoordinationNumbers::shortcutKeywords( Keywords& keys ) {
 void CoordinationNumbers::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
                                           const std::map<std::string,std::string>& keys,
                                           std::vector<std::vector<std::string> >& actions ) {
-  if( words[0]=="G1" ) {
-      std::vector<std::string> g1_inp; g1_inp.push_back(lab +":"); g1_inp.push_back("COORDINATIONNUMBER");
-      for(unsigned i=1;i<words.size();++i) g1_inp.push_back( words[i] );
-      actions.push_back( g1_inp );
-  } else {
-      SymmetryFunctionBase::expandMatrix( false, lab, words, keys, actions );
-      std::vector<std::string> input; input.push_back(lab + ":"); input.push_back("COORDINATIONNUMBER");
-      input.push_back("WEIGHT=" + lab + "_mat.w" ); actions.push_back( input );
-      multicolvar::MultiColvarBase::expandFunctions( lab, lab, words, keys, actions );
-  }
+  SymmetryFunctionBase::expandMatrix( false, lab, words, keys, actions );
+  std::vector<std::string> input; input.push_back(lab + ":"); input.push_back("COORDINATIONNUMBER");
+  input.push_back("WEIGHT=" + lab + "_mat.w" ); actions.push_back( input );
+  multicolvar::MultiColvarBase::expandFunctions( lab, lab, words, keys, actions );
 }
 
 void CoordinationNumbers::registerKeywords( Keywords& keys ) {

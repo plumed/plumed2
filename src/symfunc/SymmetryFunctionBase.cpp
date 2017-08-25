@@ -114,10 +114,14 @@ done_with_matrix_comput(true)
           log.printf("  %s direction of bond read from %s \n",dir.c_str(),vecs[0]->getName().c_str() );
       }
   }
-  bool oneshot; parseFlag("ONESHOT",oneshot);
-  if( oneshot ) { 
-    done_with_matrix_comput=false; 
-    log.printf("  computing full matrix rows before computing symmetry function \n"); 
+  if( keywords.exists("ONESHOT") ) {
+      bool oneshot; parseFlag("ONESHOT",oneshot);
+      if( oneshot ) { 
+        done_with_matrix_comput=false; 
+        log.printf("  computing full matrix rows before computing symmetry function \n"); 
+      }
+  } else {
+      done_with_matrix_comput=false;
   }
   // If we are doing the calculation as we compute matrix elements we must store all matrix elements
   // in rows.  Actually we store whole matrix because I don't want to make more complicated options 
