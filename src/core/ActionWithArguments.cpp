@@ -396,10 +396,11 @@ void ActionWithArguments::retrieveArguments( const MultiValue& myvals, std::vect
 void ActionWithArguments::setForcesOnArguments( const std::vector<double>& forces, unsigned& start ) {
   if( done_over_stream ){
       for(unsigned i=0;i<distinct_arguments.size();++i){
+          plumed_dbg_massert( start<forces.size(), "not enough forces have been saved in " + getLabel() );
           ActionWithArguments* aarg = dynamic_cast<ActionWithArguments*>( distinct_arguments[i] );
           if( aarg ) aarg->setForcesOnArguments( forces, start ); 
           ActionAtomistic* aat = dynamic_cast<ActionAtomistic*>( distinct_arguments[i] );
-          if( aat ){ aat->setForcesOnAtoms( forces, start ); start += distinct_arguments[i]->getNumberOfDerivatives(); } 
+          if( aat ) aat->setForcesOnAtoms( forces, start );
       } 
   } else {
       for(unsigned i=0;i<arguments.size();++i) {

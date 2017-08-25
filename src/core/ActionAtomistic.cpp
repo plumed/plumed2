@@ -223,22 +223,34 @@ void ActionAtomistic::retrieveAtoms() {
   for(unsigned j=0; j<indexes.size(); j++) masses[j]=m[indexes[j].index()];
 }
 
-void ActionAtomistic::setForcesOnAtoms( const std::vector<double>& forcesToApply, unsigned ind ) {
+void ActionAtomistic::setForcesOnAtoms( const std::vector<double>& forcesToApply, unsigned& ind ) {
   if( donotforce || indexes.size()==0 ) return;
   for(unsigned i=0; i<indexes.size(); ++i) {
+    plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
     forces[i][0]+=forcesToApply[ind]; ind++;
+    plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
     forces[i][1]+=forcesToApply[ind]; ind++;
+    plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
     forces[i][2]+=forcesToApply[ind]; ind++;
   }
+  plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
   virial(0,0)+=forcesToApply[ind]; ind++;
+  plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
   virial(0,1)+=forcesToApply[ind]; ind++;
+  plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
   virial(0,2)+=forcesToApply[ind]; ind++;
+  plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
   virial(1,0)+=forcesToApply[ind]; ind++;
+  plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
   virial(1,1)+=forcesToApply[ind]; ind++;
+  plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
   virial(1,2)+=forcesToApply[ind]; ind++;
+  plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
   virial(2,0)+=forcesToApply[ind]; ind++;
+  plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
   virial(2,1)+=forcesToApply[ind]; ind++;
-  virial(2,2)+=forcesToApply[ind];
+  plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
+  virial(2,2)+=forcesToApply[ind]; ind++;
 }
 
 void ActionAtomistic::applyForces() {

@@ -171,7 +171,10 @@ void AdjacencyMatrixBase::performTask( const unsigned& current, MultiValue& myva
       threecells.addRequiredCells( threecells.findMyCell( ActionAtomistic::getPosition(current) ), ncells_required, cells_required );
       threecells.retrieveAtomsInCells( ncells_required, cells_required, natoms, indices );
   }
-  myvals.setNumberOfIndices( natoms );
+  myvals.setNumberOfIndices( natoms ); 
+  // Ensure that things that come later know if we have used GROUPA + GROUPB style symmetry function
+  if( indices[1]>getFullNumberOfTasks() ) myvals.setNumberOfIndicesInFirstBlock( getFullNumberOfTasks() );
+  else myvals.setNumberOfIndicesInFirstBlock( 0 );
 
   // Apply periodic boundary conditions to atom positions
   std::vector<Vector> & t_atoms( myvals.getSecondAtomVector() );
@@ -209,7 +212,7 @@ void AdjacencyMatrixBase::performTask( const std::string& controller, const unsi
   // This makes sure other AdjacencyMatrixBase actions in the stream don't get their matrix elements calculated here
   if( controller!=getLabel() ) return;
 
-  Vector zero; zero.zero();
+  Vector zero; zero.zero(); plumed_dbg_assert( index2<myvals.getAtomVector().size() );
   double weight = calculateWeight( zero, myvals.getAtomVector()[index2], myvals.getNumberOfIndices()-myvals.getSplitIndex(), myvals );
   if( weight<epsilon ){
       if( !doNotCalculateDerivatives() ) {

@@ -87,7 +87,7 @@ void SymmetryFunctionBase::addWeightDerivative( const unsigned& ival, const doub
           myvals.addDerivative( ostrn, arg_deriv_starts[0] + kind, dval*myvals.getDerivative( my_weight, kind ) );
       }
   } else {
-      unsigned index = myvals.getSymfuncTemporyIndex();
+      unsigned index = ival*getPntrToArgument(0)->getShape()[1]+myvals.getSymfuncTemporyIndex();
       unsigned my_w = getPntrToArgument(0)->getPositionInStream();
       std::vector<double>& tmp_w( myvals.getSymfuncTemporyDerivatives(my_w) ); tmp_w[index]=dval;
   }
@@ -114,7 +114,7 @@ void SymmetryFunctionBase::addVectorDerivatives( const unsigned& ival, const Vec
           myvals.addDerivative( ostrn, arg_deriv_starts[3] + kind, dvec[2]*myvals.getDerivative( my_z, kind ) );
       }
   } else {
-      unsigned index = myvals.getSymfuncTemporyIndex();
+      unsigned index = ival*getPntrToArgument(0)->getShape()[1]+myvals.getSymfuncTemporyIndex();
       unsigned my_x = getPntrToArgument(1)->getPositionInStream();
       std::vector<double>& tmp_x( myvals.getSymfuncTemporyDerivatives(my_x) ); tmp_x[index]=dvec[0]; 
       unsigned my_y = getPntrToArgument(2)->getPositionInStream();

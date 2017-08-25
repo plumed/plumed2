@@ -234,8 +234,8 @@ void ActionVolume::performTask( const unsigned& curr, MultiValue& outvals ) cons
 
 void ActionVolume::apply(){
   if( doNotCalculateDerivatives() ) return;
-  std::fill(forcesToApply.begin(),forcesToApply.end(),0);
-  if( getForcesFromValues( forcesToApply ) ) setForcesOnAtoms( forcesToApply );
+  std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned mm=0;
+  if( getForcesFromValues( forcesToApply ) ) setForcesOnAtoms( forcesToApply, mm );
 }
 
 }

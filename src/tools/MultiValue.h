@@ -47,12 +47,13 @@ private:
   bool atLeastOneSet;
 /// This allows us to store matrix elements
   unsigned nmatrix_cols;
+  bool rerunning_matrix;
   std::vector<unsigned> matrix_element_nind;
   std::vector<unsigned> matrix_element_indices;
   std::vector<double> matrix_element_stash;
 /// This is a fudge to save on vector resizing in MultiColvar
   bool vector_call;
-  unsigned nindices, nsplit;
+  unsigned nindices, nfblock, nsplit;
   std::vector<unsigned> indices;
   std::vector<unsigned> mat_nindices;
   std::vector<std::vector<unsigned> > mat_indices;
@@ -74,6 +75,8 @@ public:
 /// Tempory indices
   void setSplitIndex( const unsigned& nat );
   unsigned getSplitIndex() const ;
+  void setNumberOfIndicesInFirstBlock( const unsigned& nat );
+  unsigned getNumberOfIndicesInFirstBlock( ) const ;
   void setNumberOfIndices( const unsigned& nat );
   unsigned getNumberOfIndices() const ;
   std::vector<unsigned>& getIndices();
@@ -122,6 +125,12 @@ public:
   unsigned getStashedMatrixIndex( const unsigned& imat, const unsigned& jind ) const ;
 ///
   double getStashedMatrixElement( const unsigned& imat, const unsigned& jind ) const ;
+///
+  void setMatrixStashForRerun();
+///
+  bool inMatrixRerun() const ;
+///
+  void setMatrixStashForNormalRun();
 ///
   void setSymfuncTemporyIndex( const unsigned& ind );
 ///
@@ -212,6 +221,16 @@ unsigned MultiValue::getSplitIndex() const {
 }
 
 inline
+void MultiValue::setNumberOfIndicesInFirstBlock( const unsigned& nat ) {
+  nfblock = nat;
+}
+
+inline    
+unsigned MultiValue::getNumberOfIndicesInFirstBlock() const {
+  return nfblock;
+} 
+
+inline
 void MultiValue::setNumberOfIndices( const unsigned& nat ) {
   nindices = nat;
 }
@@ -280,6 +299,7 @@ unsigned MultiValue::getStashedMatrixIndex( const unsigned& imat, const unsigned
 
 inline
 void MultiValue::stashMatrixElement( const unsigned& imat, const unsigned& jind, const double& val ) {
+  if( rerunning_matrix ) return;
   plumed_dbg_assert( imat<matrix_element_nind.size() && jind<nmatrix_cols );
   matrix_element_indices[imat*nmatrix_cols + matrix_element_nind[imat]] = jind; 
   matrix_element_nind[imat]++; matrix_element_stash[imat*nmatrix_cols + jind] = val;
@@ -288,6 +308,21 @@ void MultiValue::stashMatrixElement( const unsigned& imat, const unsigned& jind,
 inline
 double MultiValue::getStashedMatrixElement( const unsigned& imat, const unsigned& jind ) const {
   return matrix_element_stash[imat*nmatrix_cols + jind];
+}
+
+inline
+void MultiValue::setMatrixStashForRerun() {
+  rerunning_matrix=true;
+}
+
+inline
+void MultiValue::setMatrixStashForNormalRun() {
+  rerunning_matrix=false;
+}
+
+inline
+bool MultiValue::inMatrixRerun() const {
+  return rerunning_matrix;
 }
 
 inline
@@ -315,6 +350,7 @@ inline
 std::vector<unsigned>& MultiValue::getMatrixIndices( const unsigned& nmat ) {
   plumed_dbg_assert( nmat<mat_nindices.size() ); return mat_indices[nmat]; 
 }
+
 
 inline
 void MultiValue::setSymfuncTemporyIndex( const unsigned& ind ) {

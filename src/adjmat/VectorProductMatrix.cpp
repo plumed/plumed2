@@ -154,8 +154,8 @@ void VectorProductMatrix::performTask( const unsigned& current, MultiValue& myva
   }
 
   // Now loop over all atoms in coordination sphere
-  unsigned start_n=0; if(  ncol_args>0 ) start_n = getFullNumberOfTasks();
-  for(unsigned i=0;i<getPntrToArgument(0)->getShape()[0];++i){
+  unsigned start_n=0; if(  ncol_args>0 ){ start_n = getFullNumberOfTasks(); myvals.setNumberOfIndicesInFirstBlock( start_n ); }
+  for(unsigned i=0;i<getPntrToArgument(ncol_args)->getShape()[0];++i){
       // Don't do i==j
       if( ncol_args==0 && myvals.getTaskIndex()==i ) continue;
       // This does everything in the stream that is done with single matrix elements 

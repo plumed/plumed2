@@ -358,8 +358,8 @@ void MultiColvarBase::performTask( const unsigned& task_index, MultiValue& myval
 
 void MultiColvarBase::apply(){
   if( doNotCalculateDerivatives() ) return;
-  std::fill(forcesToApply.begin(),forcesToApply.end(),0);
-  if( getForcesFromValues( forcesToApply ) ) setForcesOnAtoms( forcesToApply );
+  std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned mm=0;
+  if( getForcesFromValues( forcesToApply ) ) setForcesOnAtoms( forcesToApply, mm );
   
   // Virtual atom forces
   if( catom_indices.size()==0 ) {

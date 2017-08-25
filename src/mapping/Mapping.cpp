@@ -245,7 +245,7 @@ void Mapping::apply() {
   std::fill(forcesToApply.begin(),forcesToApply.end(),0);
   if( getForcesFromValues( forcesToApply ) ){
       unsigned mm=0; setForcesOnArguments( forcesToApply, mm );
-      setForcesOnAtoms( forcesToApply, getNumberOfArguments()  );
+      setForcesOnAtoms( forcesToApply, mm  );
   }
 }
 
