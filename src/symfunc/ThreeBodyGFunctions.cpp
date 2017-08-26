@@ -22,6 +22,7 @@
 #include "SymmetryFunctionBase.h"
 #include "core/ActionRegister.h"
 #include "tools/SwitchingFunction.h"
+#include "tools/Angle.h"
 
 namespace PLMD {
 namespace symfunc {
@@ -88,7 +89,7 @@ SymmetryFunctionBase(ao)
 }
 
 void ThreeBodyGFunctions::computeSymmetryFunction( const unsigned& current, MultiValue& myvals ) const {
-   Vector diri, dirj; double mod2i, mod2j, weighti, weightj;
+   Vector dd_i, dd_j, disti, distj;  double mod2i, mod2j, weighti, weightj; Angle angle;
    unsigned matind = getPntrToArgument(0)->getPositionInMatrixStash();
    unsigned matind_x = getPntrToArgument(1)->getPositionInMatrixStash();
    unsigned matind_y = getPntrToArgument(2)->getPositionInMatrixStash();
@@ -97,38 +98,71 @@ void ThreeBodyGFunctions::computeSymmetryFunction( const unsigned& current, Mult
        unsigned iind = myvals.getStashedMatrixIndex(matind,i);
        weighti = myvals.getStashedMatrixElement( matind, iind );
        if( weighti<epsilon ) continue ;
-       diri[0] = myvals.getStashedMatrixElement( matind_x, iind );
-       diri[1] = myvals.getStashedMatrixElement( matind_y, iind );
-       diri[2] = myvals.getStashedMatrixElement( matind_z, iind );
-       mod2i = diri.modulo2(); diri /= sqrt(mod2i);
+       disti[0] = myvals.getStashedMatrixElement( matind_x, iind );
+       disti[1] = myvals.getStashedMatrixElement( matind_y, iind );
+       disti[2] = myvals.getStashedMatrixElement( matind_z, iind );
+       mod2i = disti.modulo2(); 
        for(unsigned j=0;j<i;++j) {
            unsigned jind = myvals.getStashedMatrixIndex(matind,j);
            weightj = myvals.getStashedMatrixElement( matind, jind );
            if( weightj<epsilon ) continue ;
-           dirj[0] = myvals.getStashedMatrixElement( matind_x, jind );
-           dirj[1] = myvals.getStashedMatrixElement( matind_y, jind );
-           dirj[2] = myvals.getStashedMatrixElement( matind_z, jind );
-           mod2j = dirj.modulo2(); dirj /= sqrt(mod2j);
-           Vector dirij = diri - dirj; double mod2ij = dirij.modulo2();
+           distj[0] = myvals.getStashedMatrixElement( matind_x, jind );
+           distj[1] = myvals.getStashedMatrixElement( matind_y, jind );
+           distj[2] = myvals.getStashedMatrixElement( matind_z, jind );
+           mod2j = distj.modulo2(); 
+           Vector dirij = disti - distj; double mod2ij = dirij.modulo2();
            double dder_ij, switchik = sf4.calculateSqr( mod2ij, dder_ij );
-           // Compute cosine of angle 
-           double cosa = dotProduct( diri, dirj );
+           // Compute angle betwee bonds
+           double ang = angle.compute( disti, distj, dd_i, dd_j );
+           // And cosine and sine of angle
+           double cosa = cos(ang), sina = sin(ang); 
            // Compute product of weights
            double weightij = weighti*weightj;
            // Compute G4
            double expg4 = exp( -nu4*( mod2i + mod2j + mod2ij ) );
-           double g4p = pow( (1 + lambda4*cosa), zeta4 );
-           addToValue( 0, g4_prefactor*g4p*expg4*weightij*switchik, myvals );
+           double g4v = (1 + lambda4*cosa);
+           double g4p = pow( g4v, zeta4-1 );
+           double g4_nonweight = g4_prefactor*g4p*g4v*expg4*switchik;
+           addToValue( 0, g4_nonweight*weightij, myvals );
+           myvals.setSymfuncTemporyIndex( iind ); 
+           addWeightDerivative( 0, 1.0, myvals ); 
+           //addWeightDerivative( 0, g4_nonweight*weightj, myvals );
+           myvals.setSymfuncTemporyIndex( jind );
+           addWeightDerivative( 0, 1.0, myvals ); 
+           //addWeightDerivative( 0, g4_nonweight*weighti, myvals );
            // Compute G5
            double expg5 = exp( -nu4*( mod2i + mod2j ) );
-           double g5p = pow( (1 + lambda5*cosa), zeta5 );
-           addToValue( 1, g5_prefactor*g5p*expg5*weightij, myvals ); 
+           double g5v = (1 + lambda5*cosa);
+           double g5p = pow( g5v, zeta5-1 ); 
+           double g5_nonweight = g5_prefactor*g5p*g5v*expg5;
+           double g5_vder1 = -g5_prefactor*weightij*expg5*zeta5*g5p*lambda5*sina;
+           double g5_vder2 = -g5_prefactor*weightij*g5p*g5v*2*expg5*nu4;
+           addToValue( 1, g5_nonweight*weightij, myvals ); 
+           myvals.setSymfuncTemporyIndex( iind ); 
+           addWeightDerivative( 1, g5_nonweight*weightj, myvals );
+           addVectorDerivatives( 1, g5_vder1*dd_i, myvals ); 
+           addVectorDerivatives(1, g5_vder2*disti, myvals );
+           myvals.setSymfuncTemporyIndex( jind ); 
+           addWeightDerivative( 1, g5_nonweight*weighti, myvals );
+           addVectorDerivatives( 1, g5_vder1*dd_j, myvals ); 
+           addVectorDerivatives(1, g5_vder2*distj, myvals );
            // Compute G6
-           double g6p = pow( (1 + lambda6*cosa), zeta6 );
-           addToValue( 2, g6_prefactor*g6p*weightij, myvals );  
-           // Compute G7
-           double ang = acos( cosa ); double sina = sin( nu7*( ang - alpha7 ) );
-           addToValue( 3, 0.5*sina*weightij, myvals );
+           double g6v = (1 + lambda6*cosa);
+           double g6p = pow( g6v, zeta6-1 );
+           double g6_nonweight = g6_prefactor*g6p*g6v;
+           double g6_vder = -g6_prefactor*weightij*zeta6*g6p*lambda6*sina;
+           addToValue( 2, g6_nonweight*weightij, myvals );  
+           myvals.setSymfuncTemporyIndex( iind ); 
+           addWeightDerivative( 2, g6_nonweight*weightj, myvals );
+           addVectorDerivatives(2, g6_vder*dd_i, myvals );
+           myvals.setSymfuncTemporyIndex( jind ); 
+           addWeightDerivative( 2, g6_nonweight*weighti, myvals );
+           addVectorDerivatives(2, g6_vder*dd_j, myvals );
+           // // Compute G7
+           double g7_nonweight = 0.5*sin( nu7*(ang-alpha7) );
+           addToValue( 3, g7_nonweight*weightij, myvals );
+           // myvals.setSymfuncTemporyIndex( iind ); addWeightDerivative( 3, g7_nonweight*weightj, myvals );
+           // myvals.setSymfuncTemporyIndex( jind ); addWeightDerivative( 3, g7_nonweight*weighti, myvals );
        }
    }
 }

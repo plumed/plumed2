@@ -172,13 +172,13 @@ void SymmetryFunctionBase::performTask( const unsigned& current, MultiValue& myv
           // Make sure tempory derivative space is set up if required
           if( !doNotCalculateDerivatives() ) {
               std::vector<double>& tmp_w( myvals.getSymfuncTemporyDerivatives( getPntrToArgument(0)->getPositionInStream() ) );
-              if( tmp_w.size()<getNumberOfComponents()*getPntrToArgument(0)->getShape()[1] ) tmp_w.resize( getNumberOfComponents()*getPntrToArgument(0)->getShape()[1] );
+              if( tmp_w.size()<getNumberOfComponents()*getPntrToArgument(0)->getShape()[1] ) tmp_w.resize( getNumberOfComponents()*getPntrToArgument(0)->getShape()[1], 0 );
               std::vector<double>& tmp_x( myvals.getSymfuncTemporyDerivatives( getPntrToArgument(1)->getPositionInStream() ) );
-              if( tmp_x.size()<getNumberOfComponents()*getPntrToArgument(1)->getShape()[1] ) tmp_x.resize( getNumberOfComponents()*getPntrToArgument(1)->getShape()[1] );
+              if( tmp_x.size()<getNumberOfComponents()*getPntrToArgument(1)->getShape()[1] ) tmp_x.resize( getNumberOfComponents()*getPntrToArgument(1)->getShape()[1], 0 );
               std::vector<double>& tmp_y( myvals.getSymfuncTemporyDerivatives( getPntrToArgument(2)->getPositionInStream() ) );
-              if( tmp_y.size()<getNumberOfComponents()*getPntrToArgument(2)->getShape()[1] ) tmp_y.resize( getNumberOfComponents()*getPntrToArgument(2)->getShape()[1] );
+              if( tmp_y.size()<getNumberOfComponents()*getPntrToArgument(2)->getShape()[1] ) tmp_y.resize( getNumberOfComponents()*getPntrToArgument(2)->getShape()[1], 0 );
               std::vector<double>& tmp_z( myvals.getSymfuncTemporyDerivatives( getPntrToArgument(3)->getPositionInStream() ) );
-              if( tmp_z.size()<getNumberOfComponents()*getPntrToArgument(3)->getShape()[1] ) tmp_z.resize( getNumberOfComponents()*getPntrToArgument(3)->getShape()[1] );
+              if( tmp_z.size()<getNumberOfComponents()*getPntrToArgument(3)->getShape()[1] ) tmp_z.resize( getNumberOfComponents()*getPntrToArgument(3)->getShape()[1], 0 );
           } 
           computeSymmetryFunction( current, myvals );
           // And now the derivatives 
@@ -199,13 +199,20 @@ void SymmetryFunctionBase::performTask( const unsigned& current, MultiValue& myv
                   std::vector<double>& tmp_z( myvals.getSymfuncTemporyDerivatives(my_z) ); 
                   for(unsigned j=0;j<myvals.getNumberOfStashedMatrixElements(matind);++j) {
                       unsigned wstart=0, jind = myvals.getStashedMatrixIndex(matind,j);
+                      // Check for derivatives and skip recalculation if there are none
+                      double totder=0; 
+                      for(unsigned i=0;i<getNumberOfComponents();++i){ 
+                          totder +=tmp_w[wstart+jind] + tmp_x[wstart+jind] + tmp_y[wstart+jind] + tmp_z[wstart+jind]; 
+                          wstart++; 
+                      }
+                      if( totder<epsilon ) continue ;
                       // Rerun the task required
-                      av->runTask( av->getLabel(), myvals.getTaskIndex(), current, aindex_start + jind, myvals ); 
+                      wstart = 0; av->runTask( av->getLabel(), myvals.getTaskIndex(), current, aindex_start + jind, myvals ); 
                       // Now add on the derivatives
                       for(unsigned i=0;i<getNumberOfComponents();++i){
                           unsigned ostrn = getPntrToOutput(i)->getPositionInStream(); 
                           for(unsigned k=0;k<myvals.getNumberActive(my_w);++k){
-                              unsigned kind=myvals.getActiveIndex(my_w,k);
+                              unsigned kind=myvals.getActiveIndex(my_w,k); 
                               myvals.addDerivative( ostrn, arg_deriv_starts[3] + kind, tmp_w[wstart+jind]*myvals.getDerivative( my_w, kind ) );
                           }
                           for(unsigned k=0;k<myvals.getNumberActive(my_x);++k){
@@ -220,6 +227,7 @@ void SymmetryFunctionBase::performTask( const unsigned& current, MultiValue& myv
                               unsigned kind=myvals.getActiveIndex(my_z,k);
                               myvals.addDerivative( ostrn, arg_deriv_starts[3] + kind, tmp_z[wstart+jind]*myvals.getDerivative( my_z, kind ) );
                           }
+                          tmp_w[wstart+jind]=tmp_x[wstart+jind]=tmp_y[wstart+jind]=tmp_z[wstart+jind]=0;
                           wstart += getPntrToArgument(0)->getShape()[1];
                       }
                       // Clear the matrix elements for this task
@@ -237,7 +245,7 @@ void SymmetryFunctionBase::performTask( const unsigned& current, MultiValue& myv
                               unsigned kind=myvals.getActiveIndex(my_w,k);
                               myvals.addDerivative( ostrn, arg_deriv_starts[3] + kind, tmp_w[wstart+jind]*myvals.getDerivative( my_w, kind ) );
                           }
-                          wstart += getPntrToArgument(0)->getShape()[1];
+                          tmp_w[wstart+jind]=0; wstart += getPntrToArgument(0)->getShape()[1];
                       }
                       // Clear the matrix elements for this task
                       av->clearMatrixElements( myvals );
