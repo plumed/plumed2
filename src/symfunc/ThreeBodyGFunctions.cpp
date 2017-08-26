@@ -111,7 +111,7 @@ void ThreeBodyGFunctions::computeSymmetryFunction( const unsigned& current, Mult
            distj[2] = myvals.getStashedMatrixElement( matind_z, jind );
            mod2j = distj.modulo2(); 
            Vector dirij = disti - distj; double mod2ij = dirij.modulo2();
-           double dder_ij, switchik = sf4.calculateSqr( mod2ij, dder_ij );
+           double dder_ij, switchij = sf4.calculateSqr( mod2ij, dder_ij );
            // Compute angle betwee bonds
            double ang = angle.compute( disti, distj, dd_i, dd_j );
            // And cosine and sine of angle
@@ -122,21 +122,29 @@ void ThreeBodyGFunctions::computeSymmetryFunction( const unsigned& current, Mult
            double expg4 = exp( -nu4*( mod2i + mod2j + mod2ij ) );
            double g4v = (1 + lambda4*cosa);
            double g4p = pow( g4v, zeta4-1 );
-           double g4_nonweight = g4_prefactor*g4p*g4v*expg4*switchik;
+           double g4_nonweight = g4_prefactor*g4p*g4v*expg4*switchij;
+           double g4_vder1 = -g4_prefactor*weightij*zeta4*g4p*lambda4*sina*expg4*switchij; 
+           double g4_mder = g4_prefactor*weightij*g4p*g4v*expg4;
+           double g4_vder2 = -g4_mder*2*nu4*switchij; 
+           double g4_vder3 = g4_mder*(dder_ij -2*nu4*switchij);
            addToValue( 0, g4_nonweight*weightij, myvals );
            myvals.setSymfuncTemporyIndex( iind ); 
-           addWeightDerivative( 0, 1.0, myvals ); 
-           //addWeightDerivative( 0, g4_nonweight*weightj, myvals );
+           addWeightDerivative( 0, g4_nonweight*weightj, myvals );
+           addVectorDerivatives(0, g4_vder1*dd_i, myvals ); 
+           addVectorDerivatives(0, g4_vder2*disti, myvals );
+           addVectorDerivatives(0, g4_vder3*dirij, myvals );
            myvals.setSymfuncTemporyIndex( jind );
-           addWeightDerivative( 0, 1.0, myvals ); 
-           //addWeightDerivative( 0, g4_nonweight*weighti, myvals );
+           addWeightDerivative( 0, g4_nonweight*weighti, myvals );
+           addVectorDerivatives(0, g4_vder1*dd_j, myvals );
+           addVectorDerivatives(0, g4_vder2*distj, myvals );
+           addVectorDerivatives(0, -g4_vder3*dirij, myvals );
            // Compute G5
-           double expg5 = exp( -nu4*( mod2i + mod2j ) );
+           double expg5 = exp( -nu5*( mod2i + mod2j ) );
            double g5v = (1 + lambda5*cosa);
            double g5p = pow( g5v, zeta5-1 ); 
            double g5_nonweight = g5_prefactor*g5p*g5v*expg5;
            double g5_vder1 = -g5_prefactor*weightij*expg5*zeta5*g5p*lambda5*sina;
-           double g5_vder2 = -g5_prefactor*weightij*g5p*g5v*2*expg5*nu4;
+           double g5_vder2 = -g5_prefactor*weightij*g5p*g5v*2*expg5*nu5;
            addToValue( 1, g5_nonweight*weightij, myvals ); 
            myvals.setSymfuncTemporyIndex( iind ); 
            addWeightDerivative( 1, g5_nonweight*weightj, myvals );

@@ -205,7 +205,7 @@ void SymmetryFunctionBase::performTask( const unsigned& current, MultiValue& myv
                           totder +=tmp_w[wstart+jind] + tmp_x[wstart+jind] + tmp_y[wstart+jind] + tmp_z[wstart+jind]; 
                           wstart++; 
                       }
-                      if( totder<epsilon ) continue ;
+                      if( fabs(totder)<epsilon ) continue ;
                       // Rerun the task required
                       wstart = 0; av->runTask( av->getLabel(), myvals.getTaskIndex(), current, aindex_start + jind, myvals ); 
                       // Now add on the derivatives
@@ -213,19 +213,19 @@ void SymmetryFunctionBase::performTask( const unsigned& current, MultiValue& myv
                           unsigned ostrn = getPntrToOutput(i)->getPositionInStream(); 
                           for(unsigned k=0;k<myvals.getNumberActive(my_w);++k){
                               unsigned kind=myvals.getActiveIndex(my_w,k); 
-                              myvals.addDerivative( ostrn, arg_deriv_starts[3] + kind, tmp_w[wstart+jind]*myvals.getDerivative( my_w, kind ) );
+                              myvals.addDerivative( ostrn, arg_deriv_starts[i] + kind, tmp_w[wstart+jind]*myvals.getDerivative( my_w, kind ) );
                           }
                           for(unsigned k=0;k<myvals.getNumberActive(my_x);++k){
                               unsigned kind=myvals.getActiveIndex(my_x,k);
-                              myvals.addDerivative( ostrn, arg_deriv_starts[3] + kind, tmp_x[wstart+jind]*myvals.getDerivative( my_x, kind ) );
+                              myvals.addDerivative( ostrn, arg_deriv_starts[i] + kind, tmp_x[wstart+jind]*myvals.getDerivative( my_x, kind ) );
                           }
                           for(unsigned k=0;k<myvals.getNumberActive(my_y);++k){ 
                               unsigned kind=myvals.getActiveIndex(my_y,k);
-                              myvals.addDerivative( ostrn, arg_deriv_starts[3] + kind, tmp_y[wstart+jind]*myvals.getDerivative( my_y, kind ) );
+                              myvals.addDerivative( ostrn, arg_deriv_starts[i] + kind, tmp_y[wstart+jind]*myvals.getDerivative( my_y, kind ) );
                           }
                           for(unsigned k=0;k<myvals.getNumberActive(my_z);++k){ 
                               unsigned kind=myvals.getActiveIndex(my_z,k);
-                              myvals.addDerivative( ostrn, arg_deriv_starts[3] + kind, tmp_z[wstart+jind]*myvals.getDerivative( my_z, kind ) );
+                              myvals.addDerivative( ostrn, arg_deriv_starts[i] + kind, tmp_z[wstart+jind]*myvals.getDerivative( my_z, kind ) );
                           }
                           tmp_w[wstart+jind]=tmp_x[wstart+jind]=tmp_y[wstart+jind]=tmp_z[wstart+jind]=0;
                           wstart += getPntrToArgument(0)->getShape()[1];
@@ -243,7 +243,7 @@ void SymmetryFunctionBase::performTask( const unsigned& current, MultiValue& myv
                           unsigned wstart=0, ostrn = getPntrToOutput(i)->getPositionInStream();
                           for(unsigned k=0;k<myvals.getNumberActive(my_w);++k){
                               unsigned kind=myvals.getActiveIndex(my_w,k);
-                              myvals.addDerivative( ostrn, arg_deriv_starts[3] + kind, tmp_w[wstart+jind]*myvals.getDerivative( my_w, kind ) );
+                              myvals.addDerivative( ostrn, arg_deriv_starts[i] + kind, tmp_w[wstart+jind]*myvals.getDerivative( my_w, kind ) );
                           }
                           tmp_w[wstart+jind]=0; wstart += getPntrToArgument(0)->getShape()[1];
                       }
