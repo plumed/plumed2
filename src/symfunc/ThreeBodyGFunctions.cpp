@@ -160,9 +160,14 @@ void ThreeBodyGFunctions::computeSymmetryFunction( const unsigned& current, Mult
            addVectorDerivatives(2, g6_vder*dd_j, myvals );
            // // Compute G7
            double g7_nonweight = 0.5*sin( nu7*(ang-alpha7) );
+           double g7_vder = weightij*0.5*nu7*cos( nu7*(ang-alpha7) );
            addToValue( 3, g7_nonweight*weightij, myvals );
-           // myvals.setSymfuncTemporyIndex( iind ); addWeightDerivative( 3, g7_nonweight*weightj, myvals );
-           // myvals.setSymfuncTemporyIndex( jind ); addWeightDerivative( 3, g7_nonweight*weighti, myvals );
+           myvals.setSymfuncTemporyIndex( iind ); 
+           addWeightDerivative( 3, g7_nonweight*weightj, myvals );
+           addVectorDerivatives( 3, g7_vder*dd_i, myvals );
+           myvals.setSymfuncTemporyIndex( jind ); 
+           addWeightDerivative( 3, g7_nonweight*weighti, myvals );
+           addVectorDerivatives( 3, g7_vder*dd_j, myvals );
        }
    }
 }
