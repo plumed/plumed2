@@ -270,8 +270,8 @@ usepbc(true)
           log.printf("  CV 1 is located on position of atom : %d \n", catoms[0].serial() );
           catom_indices.push_back( all_atoms.size() ); mygroup.push_back( catoms[0] );
 
-          for(int i=2;i<ablocks[0].size();++i){
-              std::vector<AtomNumber> cc; parseAtomList("LOCATION", 1, cc );
+          for(int i=2;i<=ablocks[0].size();++i){
+              std::vector<AtomNumber> cc; parseAtomList("LOCATION", i, cc );
               if( cc.empty() ) error("LOCATION should be specified for all or none of the atoms in your CV");
 
               log.printf("  CV %d is located on position of atom : %d \n", i, cc[0].serial() );
@@ -291,7 +291,8 @@ usepbc(true)
 }
 
 MultiColvarBase::~MultiColvarBase(){
-  atoms.removeVirtualAtom( this ); atoms.removeGroup( getLabel() );
+  if(catom_indices.size()==0 ) atoms.removeVirtualAtom( this ); 
+  atoms.removeGroup( getLabel() );
 }
 
 void MultiColvarBase::addValueWithDerivatives(){

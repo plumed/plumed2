@@ -235,7 +235,7 @@ unsigned Value::getNumberOfValues() const {
 
 double Value::get(const unsigned& ival) const {
   if( hasDeriv ) return data[ival*(1+action->getNumberOfDerivatives())];
-  plumed_dbg_assert( ival<data.size() ); return data[ival];
+  plumed_dbg_massert( ival<data.size(), "could not get value from " + name ); return data[ival];
 } 
 
 void Value::print( const std::string& uselab, OFile& ofile ) const {

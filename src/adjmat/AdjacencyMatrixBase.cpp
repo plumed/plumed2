@@ -62,12 +62,7 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
       log.printf("  atoms in GROUPB "); ablocks.resize( tb.size() ); unsigned n=0;
       for(unsigned i=0;i<tb.size();++i){ 
           log.printf("%d ", tb[i].serial()); 
-          bool found=false; unsigned inum=0;
-          for(unsigned j=0; j<ta.size(); ++j) {
-              if( ta[j]==tb[i] ){ found=true; inum=j; break; }
-          }
-          if( found ){ ablocks[i]=inum; }
-          else { ablocks[i]=ta.size()+n; t.push_back(tb[i]); n++; } 
+          ablocks[i]=ta.size()+n; t.push_back(tb[i]); n++; 
       }
       log.printf("\n"); shape[0]=ta.size(); shape[1]=tb.size(); 
       // Create a group of the atoms in the rows 

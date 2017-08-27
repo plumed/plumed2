@@ -34,6 +34,7 @@ public:
                               std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit DotProductMatrix(const ActionOptions&);
+  unsigned getNumberOfDerivatives() const ;
   double computeVectorProduct( const unsigned& index1, const unsigned& index2, 
                                const std::vector<double>& vec1, const std::vector<double>& vec2, 
                                std::vector<double>& dvec1, std::vector<double>& dvec2, MultiValue& myvals ) const ;
@@ -130,6 +131,13 @@ DotProductMatrix::DotProductMatrix(const ActionOptions& ao):
   Action(ao),
   VectorProductMatrix(ao)
 {
+  forcesToApply.resize( getNumberOfDerivatives() );
+  setNotPeriodic();
+}
+
+unsigned DotProductMatrix::getNumberOfDerivatives() const  {
+  if( ncol_args>0 ) return (getPntrToArgument(0)->getShape()[0]+getPntrToArgument(ncol_args)->getShape()[0])*getNumberOfArguments()/2;
+  return getPntrToArgument(0)->getShape()[0]*getNumberOfArguments();
 }
 
 double DotProductMatrix::computeVectorProduct( const unsigned& index1, const unsigned& index2,

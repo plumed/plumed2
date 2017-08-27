@@ -34,11 +34,11 @@ class VectorProductMatrix :
   public ActionWithValue
 {
 private:
-  std::vector<double> forcesToApply;
   Value* convertStringToValue( const std::string& name );
   void updateCentralMatrixIndex( const unsigned& ind, MultiValue& myvals ) const ;
 protected:
   unsigned ncol_args;
+  std::vector<double> forcesToApply;
 public:
   static void registerKeywords( Keywords& keys );
   explicit VectorProductMatrix(const ActionOptions&);
@@ -46,7 +46,6 @@ public:
   void lockRequests();
   void unlockRequests();
   void calculateNumericalDerivatives( ActionWithValue* a=NULL );
-  unsigned getNumberOfDerivatives() const ;
   void buildCurrentTaskList( std::vector<unsigned>& tflags );
   void calculate();
   void performTask( const unsigned& task_index, MultiValue& myvals ) const ;
@@ -56,14 +55,6 @@ public:
                                        std::vector<double>& dvec1, std::vector<double>& dvec2, MultiValue& myvals ) const = 0;
   void apply();
 };
-
-inline
-unsigned VectorProductMatrix::getNumberOfDerivatives() const  {
-  unsigned nat_der = 0;
-  if( getNumberOfAtoms()>0 ) nat_der = 3*getNumberOfAtoms()+9;
-  if( ncol_args>0 ) return nat_der + (getPntrToArgument(0)->getShape()[0]+getPntrToArgument(ncol_args)->getShape()[0])*getNumberOfArguments()/2;
-  return nat_der + getPntrToArgument(0)->getShape()[0]*getNumberOfArguments();
-}
 
 inline
 bool VectorProductMatrix::mustBeTreatedAsDistinctArguments() const {

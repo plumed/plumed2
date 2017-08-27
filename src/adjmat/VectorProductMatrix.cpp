@@ -31,7 +31,7 @@ void VectorProductMatrix::registerKeywords( Keywords& keys ) {
   ActionAtomistic::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
-  keys.add("numbered","GROUP","the vectors of arguments for which you would like to calculate the dot product matrix");
+  keys.add("numbered","GROUP","the vectors of arguments for which you would like to calculate the vector product matrix");
   keys.add("numbered","GROUPA","");
   keys.add("numbered","GROUPB","");
   keys.reset_style("GROUP","optional"); keys.remove("NUMERICAL_DERIVATIVES");
@@ -52,18 +52,18 @@ VectorProductMatrix::VectorProductMatrix(const ActionOptions& ao):
       if( args[args.size()-1]->getShape()[0]!=args[0]->getShape()[0] ) error("all arguments should have same shape");
   }
   if( readgroup ) {
-      log.printf("  calculating square dot product matrix \n");
-      for(unsigned i=0;i<args.size();++i) log.printf("  %dth component of vectors for dot product is %s\n", i+1,args[i]->getName().c_str() );
+      log.printf("  calculating square vector product matrix \n");
+      for(unsigned i=0;i<args.size();++i) log.printf("  %dth component of vectors for vector product is %s\n", i+1,args[i]->getName().c_str() );
   }
   if( !readgroup ){
       std::string ga_name, gb_name;
-      log.printf("  calculating rectangular dot product matrix \n"); 
+      log.printf("  calculating rectangular vector product matrix \n"); 
       for(unsigned i=1;;++i) {
           if( !parseNumbered("GROUPA",i,ga_name) ){ break; }
           args.push_back( convertStringToValue(ga_name) );
           if( args[args.size()-1]->getRank()!=1 ) error("all arguments should be vectors");
           if( args[args.size()-1]->getShape()[0]!=args[0]->getShape()[0] ) error("all arguments to GROUPA should have same shape");
-          log.printf("  %dth component of vectors in rows of dot product matrix is %s \n", i, ga_name.c_str() );
+          log.printf("  %dth component of vectors in rows of vector product matrix is %s \n", i, ga_name.c_str() );
       }
       log.printf("\n"); ncol_args = args.size();
       log.printf("  calculating dot matrix between with columns : \n"); 
@@ -72,7 +72,7 @@ VectorProductMatrix::VectorProductMatrix(const ActionOptions& ao):
           args.push_back( convertStringToValue(gb_name) );
           if( args[args.size()-1]->getRank()!=1 ) error("all arguments should be vectors");
           if( args[args.size()-1]->getShape()[0]!=args[ncol_args]->getShape()[0] ) error("all arguments to GROUPB should have same shape");
-          log.printf("  %dth component of vectors in columns of dot product matrix is %s\n", i+1, gb_name.c_str() );
+          log.printf("  %dth component of vectors in columns of vector product matrix is %s\n", i+1, gb_name.c_str() );
       }
   }
   if( args.size()==0 ) error("no arguments were read in use GROUP or GROUPA and GROUPB");
@@ -81,7 +81,7 @@ VectorProductMatrix::VectorProductMatrix(const ActionOptions& ao):
   requestArguments( args, false ); std::vector<unsigned> shape(2); 
   shape[0]=args[0]->getShape()[0]; shape[1]=args[ncol_args]->getShape()[0];
   // And create the matrix to hold the dot products 
-  addValue( shape ); forcesToApply.resize( getNumberOfDerivatives() );
+  addValue( shape ); 
 }
 
 Value* VectorProductMatrix::convertStringToValue( const std::string& name ) {

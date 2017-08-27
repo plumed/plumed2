@@ -55,6 +55,8 @@ public:
   unsigned ndim() const;
 /// Get the cutoff for a kernel
   double getCutoff( const double& width ) const ;
+/// Get the description of the kernel function
+  std::string description() const ;
 /// Get the position of the center
   std::vector<double> getCenter() const;
 /// Get the support

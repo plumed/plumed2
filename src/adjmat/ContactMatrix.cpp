@@ -107,8 +107,9 @@ ContactMatrix::ContactMatrix( const ActionOptions& ao ):
 }
 
 double ContactMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const {
-  Vector distance = pos2;
-  double dfunc, val = switchingFunction.calculateSqr( distance.modulo2(), dfunc ); 
+  Vector distance = pos2; double mod2 = distance.modulo2();
+  if( mod2<epsilon ) return 0.0;  // Atoms can't be bonded to themselves
+  double dfunc, val = switchingFunction.calculateSqr( mod2, dfunc ); 
   addAtomDerivatives( 0, (-dfunc)*distance, myvals );
   addAtomDerivatives( 1, (+dfunc)*distance, myvals );
   addBoxDerivatives( (-dfunc)*Tensor(distance,distance), myvals );

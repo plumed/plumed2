@@ -255,6 +255,34 @@ void KernelFunctions::normalize( const std::vector<Value*>& myvals ) {
   height /= volume;
 }
 
+std::string KernelFunctions::description() const {
+  std::ostringstream ostr;
+  ostr<<"using "; 
+  if( ktype==gaussian ) ostr<<"gaussian ";
+  else if( ktype==uniform ) ostr<<"uniform ";
+  else if( ktype==triangular ) ostr<<"triangular ";
+  else plumed_merror("invalid kernel type");
+  ostr<<"kernel centered at (";
+  for(unsigned i=0;i<center.size()-1;++i) ostr<<center[i]<<", ";
+  ostr<<center[center.size()-1]<<").  Kernel is ";
+  if( diagonal ) {
+      ostr<<"diagonal and diagonal elements of inverse covariance matrix are (";
+      for(unsigned i=0;i<width.size()-1;++i) ostr<<width[i]<<", ";
+      ostr<<width[center.size()-1]<<")."; 
+  } else {
+      ostr<<"not diagonal and covariance matrix is [";
+      Matrix<double> mymatrix( getMatrix() );
+      for(unsigned i=0; i<mymatrix.nrows(); ++i) {
+         ostr<<"("; 
+         for(unsigned j=0;j<mymatrix.ncols()-1;++j) ostr<<mymatrix(i,j)<<", ";
+         if( i<mymatrix.nrows()-1 ) ostr<<mymatrix(i,mymatrix.ncols()-1)<<"), ";
+         else ostr<<mymatrix(i,mymatrix.ncols()-1)<<")";
+      } 
+      ostr<<"]";
+  } 
+  return ostr.str();
+}
+
 double KernelFunctions::getCutoff( const double& width ) const {
   const double DP2CUTOFF=6.25;
   if( ktype==gaussian ) return sqrt(2.0*DP2CUTOFF)*width;

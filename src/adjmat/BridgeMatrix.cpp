@@ -143,10 +143,10 @@ BridgeMatrix::BridgeMatrix(const ActionOptions&ao):
 double BridgeMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const {
   double tot=0;
   for(unsigned i=0; i<natoms; ++i) {
-    Vector dij= getPosition(i,myvals); 
-    double dw1, w1=sf1.calculateSqr( dij.modulo2(), dw1 );
-    Vector dik=pbcDistance( getPosition(i,myvals), pos2 );
-    double dw2, w2=sf2.calculateSqr( dik.modulo2(), dw2 );
+    Vector dij= getPosition(i,myvals); double dijm = dij.modulo2();
+    double dw1, w1=sf1.calculateSqr( dijm, dw1 ); if( dijm<epsilon ){ w1=0.0; dw1=0.0; }
+    Vector dik=pbcDistance( getPosition(i,myvals), pos2 ); double dikm=dik.modulo2();
+    double dw2, w2=sf2.calculateSqr( dikm, dw2 ); if( dikm<epsilon ){ w2=0.0; dw2=0.0; }
 
     tot += w1*w2;
     // And finish the calculation

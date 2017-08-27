@@ -1,4 +1,4 @@
-#! FIELDS time s3.morethan
+#! FIELDS time s3_morethan
  0.000000   0.1436
  1.000000   0.1815
  2.000000   0.1786
