@@ -82,6 +82,8 @@ VectorProductMatrix::VectorProductMatrix(const ActionOptions& ao):
   shape[0]=args[0]->getShape()[0]; shape[1]=args[ncol_args]->getShape()[0];
   // And create the matrix to hold the dot products 
   addValue( shape ); 
+  if( ncol_args>0 ) narg_derivatives = (getPntrToArgument(0)->getShape()[0]+getPntrToArgument(ncol_args)->getShape()[0])*getNumberOfArguments()/2;
+  else narg_derivatives = getPntrToArgument(0)->getShape()[0]*getNumberOfArguments(); 
 }
 
 Value* VectorProductMatrix::convertStringToValue( const std::string& name ) {
@@ -131,20 +133,21 @@ void VectorProductMatrix::calculate() {
 void VectorProductMatrix::updateCentralMatrixIndex( const unsigned& ind, MultiValue& myvals ) const {
   if( doNotCalculateDerivatives() ) return;
 
-  unsigned nat_indices = 0; 
   unsigned nargs=getNumberOfArguments(); if( ncol_args>0 ) nargs /= 2;
   unsigned nmat = getPntrToOutput(0)->getPositionInMatrixStash();
   unsigned nmat_ind = myvals.getNumberOfMatrixIndices( nmat );
   std::vector<unsigned>& matrix_indices( myvals.getMatrixIndices( nmat ) );
-  if( getNumberOfAtoms()>0 ) {
-      matrix_indices[nmat_ind+0]=3*ind+0; matrix_indices[nmat_ind+1]=3*ind+1; matrix_indices[nmat_ind+2]=3*ind+2; nmat_ind+=3; 
-      unsigned virbase = 3*getNumberOfAtoms(); nat_indices = virbase+9;
-      for(unsigned i=0;i<9;++i) matrix_indices[nmat_ind+i]=virbase+i;
-      nmat_ind+=9; 
-  }   
   unsigned invals = getPntrToArgument(0)->getShape()[0];
-  for(unsigned i=0;i<nargs;++i) matrix_indices[nmat_ind+i] = nat_indices + ind + i*invals; 
-  myvals.setNumberOfMatrixIndices( nmat, nmat_ind + nargs );
+  for(unsigned i=0;i<nargs;++i){ matrix_indices[nmat_ind] = ind + i*invals; nmat_ind++; }
+  if( getNumberOfAtoms()>0 ) {
+      matrix_indices[nmat_ind+0]=narg_derivatives + 3*ind+0; 
+      matrix_indices[nmat_ind+1]=narg_derivatives + 3*ind+1; 
+      matrix_indices[nmat_ind+2]=narg_derivatives + 3*ind+2; 
+      nmat_ind+=3; unsigned virbase = narg_derivatives + 3*getNumberOfAtoms();
+      for(unsigned i=0;i<9;++i) matrix_indices[nmat_ind+i]=virbase+i;
+      nmat_ind+=9;
+  }
+  myvals.setNumberOfMatrixIndices( nmat, nmat_ind );
 }
 
 void VectorProductMatrix::performTask( const unsigned& current, MultiValue& myvals ) const {
@@ -192,23 +195,23 @@ void VectorProductMatrix::performTask( const std::string& controller, const unsi
   unsigned nmat = getPntrToOutput(0)->getPositionInMatrixStash();
   std::vector<unsigned>& matrix_indices( myvals.getMatrixIndices( nmat ) );
   if( matrix_indices.size()<getNumberOfDerivatives() ) matrix_indices.resize( getNumberOfDerivatives() );
-  unsigned nmat_ind = myvals.getNumberOfMatrixIndices( nmat ), nat_indices=0;
-  if( getNumberOfAtoms()>0 ) {
-      unsigned nat_indices=3*getNumberOfAtoms()+9;
-      myvals.updateIndex( ostrn, 3*index1+0 ); myvals.updateIndex( ostrn, 3*index1+1 ); myvals.updateIndex( ostrn, 3*index1+2 );
-      myvals.updateIndex( ostrn, 3*index2+0 ); myvals.updateIndex( ostrn, 3*index2+1 ); myvals.updateIndex( ostrn, 3*index2+2 );
-      unsigned virbase=3*getNumberOfAtoms(); for(unsigned i=0;i<9;++i) myvals.updateIndex( ostrn, virbase + i );
-      matrix_indices[nmat_ind+0]=3*index2+0; matrix_indices[nmat_ind+1]=3*index2+1; matrix_indices[nmat_ind+2]=3*index2+2; nmat_ind+=3;
-  }
+  unsigned nmat_ind = myvals.getNumberOfMatrixIndices( nmat ); 
   for(unsigned i=0;i<nargs;++i) {
       plumed_dbg_assert( index1 + i*invals<getNumberOfDerivatives() );
-      myvals.addDerivative( ostrn, nat_indices + index1 + i*invals, der1[i] ); 
-      myvals.updateIndex( ostrn, nat_indices + index1 + i*invals );
-      myvals.addDerivative( ostrn, nat_indices + jind_start + jindex + i*jnvals, der2[i] ); 
-      myvals.updateIndex( ostrn, nat_indices + jind_start + jindex + i*jnvals );
-      matrix_indices[nmat_ind+i] = nat_indices + jind_start + jindex + i*jnvals; 
+      myvals.addDerivative( ostrn, index1 + i*invals, der1[i] ); 
+      myvals.updateIndex( ostrn, index1 + i*invals );
+      myvals.addDerivative( ostrn, jind_start + jindex + i*jnvals, der2[i] ); 
+      myvals.updateIndex( ostrn, jind_start + jindex + i*jnvals );
+      matrix_indices[nmat_ind] = jind_start + jindex + i*jnvals; 
+      nmat_ind++;
   }
-  myvals.setNumberOfMatrixIndices( nmat, nmat_ind + nargs );
+  if( getNumberOfAtoms()>0 ) {
+      matrix_indices[nmat_ind+0]=narg_derivatives + 3*index2+0; 
+      matrix_indices[nmat_ind+1]=narg_derivatives + 3*index2+1; 
+      matrix_indices[nmat_ind+2]=narg_derivatives + 3*index2+2; 
+      nmat_ind+=3;
+  }
+  myvals.setNumberOfMatrixIndices( nmat, nmat_ind );
 }
 
 void VectorProductMatrix::apply() {

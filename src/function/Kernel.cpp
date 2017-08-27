@@ -72,7 +72,7 @@ Kernel::Kernel(const ActionOptions&ao):
 }
 
 void Kernel::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
-  std::string smin, smax; std::vector<double> derivatives( args.size() ); std::vector<Value*> pos;
+  std::string smin, smax; std::vector<double> derivatives( args.size(),0 ); std::vector<Value*> pos;
   for(unsigned i=0;i<args.size();++i){
       pos.push_back( new Value() ); pos[i]->set( args[i] );
       if( getPntrToArgument(i)->isPeriodic() ){ 

@@ -283,7 +283,7 @@ usepbc(true)
   }
   std::vector<AtomNumber> atoms_for_request(all_atoms); atoms.insertGroup( getLabel(), mygroup );
   if( catoms.size()>0 ) atoms_for_request.insert( atoms_for_request.end(),catoms.begin(),catoms.end() );
-  requestAtoms(atoms_for_request); forcesToApply.resize( 3*all_atoms.size()+9 );
+  requestAtoms(atoms_for_request); forcesToApply.resize( getNumberOfDerivatives() );
   if( all_atoms.size()>0 ) {
       for(unsigned i=0; i<ablocks[0].size(); ++i) addTaskToList( i );
   }
