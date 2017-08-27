@@ -69,7 +69,9 @@ PLUMED_REGISTER_SHORTCUT(SphericalHarmonic,"Q6")
 void SphericalHarmonic::shortcutKeywords( Keywords& keys ) {
   SymmetryFunctionBase::shortcutKeywords( keys );
   keys.addFlag("VMEAN",false,"calculate the norm of the mean vector.");
+  keys.addOutputComponent("_vmean","VMEAN","the norm of the mean vector");
   keys.addFlag("VSUM",false,"calculate the norm of the sum of all the vectors");
+  keys.addOutputComponent("_vsum","VSUM","the norm of the mean vector");
 }
 
 void SphericalHarmonic::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
