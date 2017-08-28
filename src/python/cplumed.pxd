@@ -28,4 +28,4 @@ cdef extern from "Plumed.h" :
      plumed plumed_create()
 
 cdef extern from "PythonWrapper.h" namespace "PLMD" :
-     int wrapped_cmd(plumed p,const char*key,const void*val) except *
+     int wrapped_cmd(plumed p,const char*key,const void*val) except +RuntimeError

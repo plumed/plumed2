@@ -28,12 +28,9 @@ namespace PLMD {
 
 int wrapped_cmd(plumed p,const char*key,const void*val) {
   try {
-     std::cout<<"TRYING"<<std::endl;
      plumed_cmd(p,key,val);
   } catch( std::exception& e ) {
-     std::cout<<"CAUGHT"<<std::endl;
      throw std::runtime_error( e.what() );
-     std::cout<<"CAUGHT AN EXCEPTION "<<e.what()<<std::endl;
   } 
   return 1;
 }
