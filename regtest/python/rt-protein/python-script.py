@@ -82,7 +82,7 @@ forces=np.random.rand(num_atoms,3)
 charges=np.zeros(num_atoms,dtype=np.float64)
 
 # Create PLUMED object and read input
-p = plumed.Plumed(8)
+p = plumed.Plumed()
 p.cmd("setMDEngine","python")
 p.cmd("setTimestep", 1.)
 p.cmd("setKbT", 1.)
@@ -121,7 +121,7 @@ t28 = create_plumed_var( p, "t28", "TORSION ATOMS=@psi-15" )
 t29 = create_plumed_var( p, "t29", "TORSION ATOMS=@phi-16" )
 t30 = create_plumed_var( p, "t30", "TORSION ATOMS=@psi-16" )
 t31 = create_plumed_var( p, "t31", "TORSION ATOMS=@phi-17" )
-t32 = create_plumed_var( p, "t32", "ORSION ATOMS=@psi-17" )
+t32 = create_plumed_var( p, "t32", "TORSION ATOMS=@psi-17" )
  
 # Read in the correct answers that were calculated directly using PLUMED
 correct_torsions = np.loadtxt("colvar.ref")

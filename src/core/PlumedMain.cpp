@@ -306,7 +306,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       CHECK_NOTNULL(val,word);
       atoms.setRealPrecision(*static_cast<int*>(val));
       delete mydatafetcher;
-      mydatafetcher=DataFetchingObject::create(sizeof(double),*this);
+      mydatafetcher=DataFetchingObject::create(*static_cast<int*>(val),*this);
       break;
     case cmd_setMDLengthUnits:
       CHECK_NOTINIT(initialized,word);
