@@ -48,7 +48,7 @@ namespace bias {
 
 //+PLUMEDOC BIAS MAXENT
 /*
-Adds a linear biasing potential on one or more variables satisfing maximum entropy principle.  .
+Add a linear biasing potential on one or more variables f_{i}\left(\boldsymbol{x}\right) satisfying the maximum entropy principle as proposed in Ref. \cite cesari2016maxent .
 
 \warning
     Notice that syntax is still under revision and might change
@@ -57,11 +57,11 @@ The resulting biasing potential is given by:
 \f[
   V_{BIAS}(\boldsymbol{x},t)=K_{B}T\sum_{i=1}^{\#arguments}f_{i}(\boldsymbol{x},t)\lambda_{i}(t)
 \f]
-Lagrangian multipliers \f$ \lambda_{i}\f$ are determined according to the following equation:
+Lagrangian multipliers \f$ \lambda_{i}\f$ are updated, every PACE steps, according to the following update rule:
 \f[
-\dot{\lambda}_{i}(t)=\frac{k}{1+\frac{t}{\tau}}\left(f_{exp,i}+\xi_{i}(\lambda)-f_{i}(\boldsymbol{x}(t))\right)
+\lambda_{i}=\lambda_{i}+\frac{k_{i}}{1+\frac{t}{\tau_{i}}}\left(f_{exp,i}+\xi_{i}\lambda_{i}-f_{i}(\boldsymbol{x})\right)
 \f]
-\f$k\f$ set the initial value of the learning rate and its units are \f$[observable]^{-2}ps^{-2}\f$. This can be set with the keyword KAPPA.
+\f$k\f$ set the initial value of the learning rate and its units are \f$[observable]^{-2}ps^{-1}\f$. This can be set with the keyword KAPPA.
 The number of components for any KAPPA vector must be equal to the number of arguments of the action.
 
 Variable \f$ \xi_{i}(\lambda) \f$ is related to the choosen prior to model experimental errors. If a GAUSSIAN prior is used then:
@@ -74,7 +74,7 @@ For a LAPLACE prior:
 \xi_{i}(\lambda)=-\frac{\lambda_{i}\sigma^{2}}{1-\frac{\lambda^{2}\sigma^{2}}{2}}
 
 \f]
-The value of \f$ \xi(\lambda,t)\f$ is written in output variable _error.
+The value of \f$ \xi(\lambda,t)\f$ is written in output as a component named: argument name followed by the string _error.
 Setting \f$ \sigma =0\f$ is equivalent to enforce a pure Maximum Entropy restraint without any noise modelling.
 This method can be also used to enforce inequality restraint as shown in following examples.
 
@@ -83,8 +83,8 @@ This method can be also used to enforce inequality restraint as shown in followi
 The following input tells plumed to restrain the distance between atoms 7 and 15
 and the distance between atoms 2 and 19, at different equilibrium
 values, and to print the energy of the restraint.
-Lagrangian multiplier will be printed on a file called restraint.LAGMULT with a stride setted by the variable PACE to 200ps.
-Morover plumed will compute the average of each lagrangian multiplier from TSTART until TEND when it will stop updating lambda and will it's average.
+Lagrangian multiplier will be printed on a file called restraint.LAGMULT with a stride set by the variable PACE to 200ps.
+Moreover plumed will compute the average of each lagrangian multiplier in the window [TSTART,TEND] and use that to continue the simulations with fixed Lagrangian multipliers.
 \plumedfile
 DISTANCE ATOMS=7,15 LABEL=d1
 DISTANCE ATOMS=2,19 LABEL=d2
@@ -99,8 +99,9 @@ TSTART=100
 TEND=500
 LABEL=restraint
 PRINT ARG=restraint.bias
+... MAXENT
 \endplumedfile
-Lagrangian multipliers will be printed on a file called
+Lagrangian multipliers will be printed on a file called restraint.bias
 The following input tells plumed to restrain the distance between atoms 7 and 15
 to be greater than 0.2 and to print the energy of the restraint
 \plumedfile
@@ -139,7 +140,7 @@ class MaxEnt : public Bias {
   vector<ActionWithValue*> biases;
   std::string type;
   std::string error_type;
-  double alfa;
+  double alpha;
   double avg_counter;
   int learn_replica;
   Value* valueForce2;
@@ -176,7 +177,7 @@ void MaxEnt::registerKeywords(Keywords& keys) {
   keys.use("ARG");
   keys.add("compulsory","KAPPA","0.0","specifies the initial value for the learning rate");
   keys.add("compulsory","TAU","Specify the dumping time for the learning rate.");
-  keys.add("compulsory","TYPE","specify the type of the restraint. "
+  keys.add("compulsory","TYPE","specify the restraint type. "
            "EQAUL to restrain the variable at a given equilibrium value"
            "INEQUAL< to restrain the variable to be smaller than a given value"
            "INEQUAL> to restrain the variable to be greater than a given value");
@@ -185,15 +186,15 @@ void MaxEnt::registerKeywords(Keywords& keys) {
            "LAPLACE: use a Laplace prior");
   keys.add("optional","TSTART","time in ps from where to start averaging the Lagrangian multiplier. By default no average is computed, hence lambda is updated every PACE steps");
   keys.add("optional","TEND","time in ps where to stop to compute the average of Lagrangian multiplier. From this time until the end of the simulation Lagrangian multipliers are kept fix to the average computed between TSTART and TEND;");
-  keys.add("optional","ALFA","default=1.0; To be used with LAPLACE KEYWORD, allows to choose a prior function proportional to a Gaussian times an exponential function. ALFA=1 correspond to the LAPLACE prior.");
+  keys.add("optional","ALPHA","default=1.0; To be used with LAPLACE KEYWORD, allows to choose a prior function proportional to a Gaussian times an exponential function. ALPHA=1 correspond to the LAPLACE prior.");
   keys.add("compulsory","AT","the position of the restraint");
   keys.add("optional","SIGMA","The typical erros expected on observable");
-  keys.add("optional","FILE","File where to write lagrangian multipliers. The default name is the name of the label followed by the string .LAGMULT ");
-  keys.add("optional","LEARN_REPLICA","In a multiple replica environment specify which is the reference replica");
-  keys.add("optional","APPLY_WEIGHTS","Vector of weights containing 1 in correspondece of each replica that will receive the lagrangian multiplier from the current one");
-  keys.add("optional","PACE","the frequency for Lagrangian multiplier update");
-  keys.add("optional","PRINT_STRIDE","the frequency for Lagrangian multipliers printing. If no STRIDE is passed they are written every time they are updated (PACE).");
-  keys.add("optional","FMT","specify format for Lagrangian multipliers files (useful for decrease the number of digits in regtests)");
+  keys.add("optional","FILE","Lagrangian multipliers output file. The default name is: label name followed by the string .LAGMULT ");
+  keys.add("optional","LEARN_REPLICA","In a multiple replica environment specify which is the reference replica. By default replica 0 will be used.");
+  keys.add("optional","APPLY_WEIGHTS","Vector of weights containing 1 in correspondece of each replica that will receive the lagrangian multiplier from the current one.");
+  keys.add("optional","PACE","the frequency for Lagrangian multipliers update");
+  keys.add("optional","PRINT_STRIDE","stride of Lagrangian multipliers output file. If no STRIDE is passed they are written every time they are updated (PACE).");
+  keys.add("optional","FMT","specify format for Lagrangian multipliers files (usefulf to decrease the number of digits in regtests)");
   keys.addFlag("REWEIGHT",false,"to be used with plumed driver in order to reweight a trajectory a posteriori");
   keys.addFlag("NO_BROADCAST",false,"If active will avoid Lagrangian multipliers to be comunicated to other replicas.");
   keys.add("optional","TEMP","the system temperature.  This is required if you are reweighting.");
@@ -223,7 +224,7 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
   sigma(0.0),
   pace_(100),
   stride_(100),
-  alfa(1.0),
+  alpha(1.0),
   avg_counter(0.0),
   isFirstStep(true),
   reweight(false),
@@ -256,7 +257,7 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
   parse("TYPE",type);
   error_type="GAUSSIAN";
   parse("ERROR_TYPE",error_type);
-  parse("ALFA",alfa);
+  parse("ALPHA",alpha);
   parse("SIGMA",sigma);
   parse("TSTART",tstart);
   if(tstart <0 && tstart != -1.0) error("TSTART should be a positive number");
@@ -382,7 +383,7 @@ double MaxEnt::compute_error(string &err_type,double &l) {
     return_error=-l2*sigma2;
   else {
     if(err_type=="LAPLACE" && sigma!=0) {
-      return_error=-l2*sigma2/(1.0-l2*l2*sigma2/(alfa+1));
+      return_error=-l2*sigma2/(1.0-l2*l2*sigma2/(alpha+1));
     }
   }
   return return_error;
@@ -412,12 +413,12 @@ double MaxEnt::convert_lambda(string &type,double lold) {
 void MaxEnt::check_lambda_boundaries(string &err_type,double &l) {
   if(err_type=="LAPLACE" && sigma !=0 ) {
     double l2=convert_lambda(err_type,l);
-    if(l2 <-(sqrt(alfa+1)/sigma-0.01)) {
-      l=-(sqrt(alfa+1)/sigma-0.01);
+    if(l2 <-(sqrt(alpha+1)/sigma-0.01)) {
+      l=-(sqrt(alpha+1)/sigma-0.01);
       log.printf("Lambda exceeded the allowed range\n");
     }
-    if(l2>(sqrt(alfa+1)/sigma-0.01)) {
-      l=sqrt(alfa+1)/sigma-0.01;
+    if(l2>(sqrt(alpha+1)/sigma-0.01)) {
+      l=sqrt(alpha+1)/sigma-0.01;
       log.printf("Lambda exceeded the allowed range\n");
     }
   }
@@ -446,7 +447,7 @@ void MaxEnt::update_lambda() {
     else
       learning_rate=1.0*k/(1+time/tau[i]);
     lambda[i]+=learning_rate*cv*exp(-BetaReweightBias); //update Lagrangian multipliers and reweight them if REWEIGHT is set
-    check_lambda_boundaries(error_type,lambda[i]);      //check that Lagrangians multipliers not exceed the aloowed range
+    check_lambda_boundaries(error_type,lambda[i]);      //check that Lagrangians multipliers not exceed the allowed range
     if(time>=tstart && time <=tend && !done_average[i]) {
       avglambda[i]+=convert_lambda(type,lambda[i]); //compute the average of Lagrangian multipliers over the required time window
     }
