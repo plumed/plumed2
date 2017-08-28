@@ -30,12 +30,10 @@ cimport numpy as np
 
 cdef class Plumed:
      cdef cplumed.plumed c_plumed
-     cdef int precision
-     def __cinit__(self,precision=8):
+     def __cinit__(self):
          self.c_plumed = cplumed.plumed_create()   #new cplumed.Plumed()
-         cdef int pres = precision
+         cdef int pres = 8
          cplumed.wrapped_cmd(self.c_plumed, "setRealPrecision", <void*>&pres )  
-         self.precision=precision
      def __dealloc__(self): 
          pass
          #del self.c_plumed
@@ -66,16 +64,10 @@ cdef class Plumed:
          elif isinstance(val, float ) :
             if key=="getBias" :
                raise ValueError("when using cmd with getBias option value must be a size one ndarray")
-            if self.precision==8 :
-               self.cmd_float(ckey, val) 
-            else :
-               raise ValueError("Unknown precision type ".str(np.precision))
+            self.cmd_float(ckey, val) 
          elif isinstance(val, np.ndarray) : 
             if( val.dtype=="float64" ):
-               if self.precision==8 :
-                  self.cmd_ndarray_real(ckey, val)
-               else :
-                  raise ValueError("Unknown precision type ".str(np.precision))
+               self.cmd_ndarray_real(ckey, val)
             elif( val.dtype=="int64" ) : 
                self.cmd_ndarray_int(ckey, val)
             else :
