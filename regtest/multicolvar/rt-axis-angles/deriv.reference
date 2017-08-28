@@ -1,4 +1,4 @@
-#! FIELDS time parameter dx.lessthan dy.between
+#! FIELDS time parameter dx_lessthan dy_between
  0.000000 0  -0.0531   0.0021
  0.000000 1  -0.0009   0.1631
  0.000000 2   0.0602   0.0000
