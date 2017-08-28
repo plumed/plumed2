@@ -22,7 +22,10 @@
 #
 # This create cython wrappers to the main bits of the PLUMED libraray
 #
-cdef extern from "Plumed.h" namespace "PLMD":
-     cdef cppclass Plumed:
-          Plumed() except +
-          void cmd(const char*key,const void*val) except *
+cdef extern from "Plumed.h" :
+     ctypedef struct plumed:
+         pass
+     plumed plumed_create()
+
+cdef extern from "PythonWrapper.h" namespace "PLMD" :
+     int wrapped_cmd(plumed p,const char*key,const void*val) except +RuntimeError
