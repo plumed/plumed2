@@ -284,7 +284,7 @@ double Value::difference(double d1,double d2)const {
     // remember: pbc brings the difference in a range of -0.5:0.5
     s=Tools::pbc(s);
     return s*max_minus_min;
-  } else plumed_merror("periodicity should be set to compute differences");
+  } else plumed_merror("periodicity in " + name + " should be set to compute differences");
 }
 
 inline

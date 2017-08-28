@@ -302,7 +302,7 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
       log.printf("  with arguments"); arg_ends.push_back(0); numberedkeys=false;
       for(unsigned i=0; i<arg.size(); i++){ log.printf(" %s",arg[i]->getName().c_str()); arg_ends.push_back(1+i); }
       log.printf("\n");
-    } else {
+    } else if( keywords.numbered("ARG") ) {
       unsigned narg=0; arg_ends.push_back(0); numberedkeys=true;
       for(unsigned i=1;;++i){
          vector<Value*> argn; parseArgumentList("ARG",i,argn);
@@ -317,7 +317,8 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
          else if( narg!=nargt ) error("mismatch between number of arguments specified for different numbered ARG values");
       }
     }
-    requestArguments(arg,true);
+    if( keywords.numbered("ARG" ) ) requestArguments(arg,true);
+    else requestArguments(arg,false);
   }
 }
 

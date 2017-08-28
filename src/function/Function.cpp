@@ -40,7 +40,7 @@ Function::Function(const ActionOptions&ao):
   ActionWithArguments(ao),
   forcesToApply(getNumberOfScalarArguments())
 {
-  createTasksFromArguments(); nderivatives = getNumberOfArguments();
+  createTasksFromArguments(); nderivatives = getNumberOfScalarArguments();
   // Now create the stream of jobs to work through 
   if( distinct_arguments.size()>0 ){   // getFullNumberOfTasks()>0   // This is for if we have a function that needs to store - needs though GAT
       std::vector<std::string> alabels;
