@@ -355,7 +355,7 @@ class B{
   A& content;
 public:
   B();
-  ~();
+  ~B();
 };
 
 }
