@@ -201,6 +201,7 @@ PLUMED_CONFIG_ENABLE([gsl],[gsl],[search for gsl],[yes])
 PLUMED_CONFIG_ENABLE([xdrfile],[xdrfile],[search for xdrfile],[yes])
 PLUMED_CONFIG_ENABLE([boost_graph],[boost_graph],[search for boost graph],[no])
 PLUMED_CONFIG_ENABLE([fftw],[fftw],[search for fftw],[no])
+PLUMED_CONFIG_ENABLE([python],[python],[search for python],[yes])
 
 AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
 AC_ARG_VAR(STATIC_LIBS,[variables that should be linked statically directly to MD code - configure will add here -ldl if necessary ])
@@ -564,6 +565,15 @@ if test $execinfo == true ; then
 fi
 if test $zlib == true ; then
   PLUMED_CHECK_PACKAGE([zlib.h],[gzopen],[__PLUMED_HAS_ZLIB],[z])
+fi
+if test $python == true ; then
+  AC_CHECK_PROG([py],[python],[found])
+  AC_CHECK_PROG([cython],[cython],[found])
+  if test "$py" == found && test "$cython" == found ; then
+     AC_DEFINE([__PLUMED_HAS_PYTHON])
+  else 
+     AC_MSG_WARN([cannot enable python])
+  fi
 fi
 
 save_LIBS="$LIBS"

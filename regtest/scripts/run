@@ -132,7 +132,16 @@ case "$type" in
   $mpi $valgrind $plumed $arg > out 2> err
   ;;
 (python)
-  python $arg > out 2> err
+  if command -v python > /dev/null 2>&1; then
+     python -c "import plumed"
+     if test $? -eq 0 ; then
+        python $arg > out 2> err
+     else 
+        echo "plumed was not compiled with python support"
+     fi
+  else 
+    echo "python is not installed on this machine"
+  fi
   ;;
 (*) echo "unknown test type" ; exit 1 ;;
 esac

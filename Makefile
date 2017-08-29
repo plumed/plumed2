@@ -29,6 +29,7 @@ lib:
 
 install:
 	$(MAKE) -C src install
+	$(MAKE) -C python install
 
 uninstall:
 	$(MAKE) -C src uninstall

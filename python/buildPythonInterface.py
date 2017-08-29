@@ -26,8 +26,18 @@ from distutils.core import setup
 from distutils.extension import Extension
 from Cython.Build import cythonize
 import numpy
+import subprocess
 
-setup( 
+plumedversion = str(subprocess.check_output(['../src/lib/plumed', 'info', '--version'])).replace("b'","")
+print( "Creating interface for plumed version " + plumedversion )
+
+setup(
+  name='plumed',
+  version=plumedversion,
+  description='Python interface to PLUMED',
+  author='Gareth A. Tribello',
+  author_email='plumed-users@googlegroups.com',
+  url='http://www.plumed.org',
   ext_modules = cythonize([
                   Extension( name="plumed", 
                              sources=["plumed.pyx","PythonWrapper.cpp"],
