@@ -31,10 +31,10 @@ setup(
   ext_modules = cythonize([
                   Extension( name="plumed", 
                              sources=["plumed.pyx","PythonWrapper.cpp"],
-                             library_dirs=["../lib/"],
+                             library_dirs=["../src/lib/"],
                              libraries=["plumed"],
                              language="c++",
-                             include_dirs=[".","../wrapper/", numpy.get_include()]
+                             include_dirs=[".","../src/wrapper/", numpy.get_include()]
                            )
                           ])
 )
