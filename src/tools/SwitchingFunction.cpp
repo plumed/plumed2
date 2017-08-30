@@ -253,7 +253,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   else if(name=="GAUSSIAN") type=gaussian;
   else if(name=="CUBIC") type=cubic;
   else if(name=="TANH") type=tanh;
-  else if(name=="MATHEVAL" && std::getenv("PLUMED_USE_LEPTON")) {
+  else if((name=="MATHEVAL" || name=="CUSTOM") && std::getenv("PLUMED_USE_LEPTON")) {
     type=leptontype;
     std::string func;
     Tools::parse(data,"FUNC",func);
