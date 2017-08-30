@@ -226,6 +226,11 @@ public:
   bool usingNaturalUnits()const;
   void setNaturalUnits(bool n) {naturalUnits=n;}
   void setMDNaturalUnits(bool n) {MDnaturalUnits=n;}
+
+  void setExtraCV(const std::string &name,void*p);
+  void setExtraCVForce(const std::string &name,void*p);
+  double getExtraCV(const std::string &name);
+  void updateExtraCVForce(const std::string &name,double f);
 };
 
 inline

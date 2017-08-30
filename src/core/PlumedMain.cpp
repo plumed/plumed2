@@ -443,6 +443,16 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       plumed_assert(nw==2);
       *(static_cast<int*>(val))=(actionRegister().check(words[1]) ? 1:0);
       break;
+    case cmd_setExtraCV:
+      CHECK_NOTNULL(val,word);
+      plumed_assert(nw==2);
+      atoms.setExtraCV(words[1],val);
+      break;
+    case cmd_setExtraCVForce:
+      CHECK_NOTNULL(val,word);
+      plumed_assert(nw==2);
+      atoms.setExtraCVForce(words[1],val);
+      break;
     case cmd_GREX:
       if(!grex) grex.reset(new GREX(*this));
       plumed_massert(grex,"error allocating grex");

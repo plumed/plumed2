@@ -43,6 +43,7 @@ class Colvar :
 private:
 protected:
   bool isEnergy;
+  bool isExtraCV;
   void requestAtoms(const std::vector<AtomNumber> & a);
 // Set the derivatives for a particular atom equal to the input Vector
 // This routine is called setAtomsDerivatives because not because you
