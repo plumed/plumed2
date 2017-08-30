@@ -65,6 +65,8 @@ to zero with the default value of \f$s_i\f$ as this will cause a
 divide-by-zero error. Instead, set \f$s_i=1\f$ or modify the CV so the
 desired target value is no longer zero.
 
+Notice that a similar method is available as \ref MAXENT, although with different features and using a different optimization algorithm.
+
 \par Examples
 
 The following input for a harmonic oscillator of two beads will

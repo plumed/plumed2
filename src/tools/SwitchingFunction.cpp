@@ -266,7 +266,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     for(auto & e : expression_deriv) e=ped.createCompiledExpression();
   }
 #ifdef __PLUMED_HAS_MATHEVAL
-  else if(name=="MATHEVAL") {
+  else if(name=="MATHEVAL" || name=="CUSTOM") {
     type=matheval;
     std::string func;
     Tools::parse(data,"FUNC",func);
