@@ -78,6 +78,8 @@ The value of \f$ \xi(\lambda,t)\f$ is written in output as a component named: ar
 Setting \f$ \sigma =0\f$ is equivalent to enforce a pure Maximum Entropy restraint without any noise modelling.
 This method can be also used to enforce inequality restraint as shown in following examples.
 
+Notice that a similar method is available as \ref EDS, although with different features and using a different optimization algorithm.
+
 \par Examples
 
 The following input tells plumed to restrain the distance between atoms 7 and 15
