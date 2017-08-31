@@ -26,6 +26,7 @@
 #include "KernelFunctions.h"
 #include "File.h"
 #include "Grid.h"
+#include <memory>
 
 namespace PLMD {
 
@@ -91,11 +92,11 @@ private:
   double uppI_;
   std::vector<Value*> values;
   std::vector<std::string> names;
-  std::vector<KernelFunctions*> hills;
+  std::vector<std::unique_ptr<KernelFunctions>> hills;
   std::vector<double> biasf;
   std::vector<double> histosigma;
   Communicator& mycomm;
-  Grid* BiasGrid_;
+  std::unique_ptr<Grid> BiasGrid_;
 };
 
 }

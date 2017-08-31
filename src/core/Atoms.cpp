@@ -41,7 +41,7 @@ class PlumedMain;
 
 Atoms::Atoms(PlumedMain&plumed):
   natoms(0),
-  pbc(*new Pbc),
+  pbc_fwd(new Pbc),
   energy(0.0),
   dataCanBeSet(false),
   collectEnergy(false),
@@ -64,15 +64,13 @@ Atoms::Atoms(PlumedMain&plumed):
   atomsNeeded(false),
   ddStep(0)
 {
-  mdatoms=MDAtomsBase::create(sizeof(double));
+  mdatoms.reset(MDAtomsBase::create(sizeof(double)));
 }
 
 Atoms::~Atoms() {
   if(actions.size()>0) {
     std::cerr<<"WARNING: there is some inconsistency in action added to atoms, as some of them were not properly destroyed. This might indicate an internal bug!!\n";
   }
-  delete mdatoms;
-  delete &pbc;
 }
 
 void Atoms::startStep() {
@@ -425,9 +423,7 @@ void Atoms::setAtomsContiguous(int start) {
 }
 
 void Atoms::setRealPrecision(int p) {
-  MDAtomsBase *x=MDAtomsBase::create(p);
-  delete mdatoms;
-  mdatoms=x;
+  mdatoms.reset(MDAtomsBase::create(p));
 }
 
 int Atoms::getRealPrecision()const {
