@@ -3,16 +3,23 @@
 set -e
 set -x
 
-if [[ "$TRAVIS_BRANCH" =~ ^v2\.[0-9]+$ ]] ; then
-# TODO: this should be made automatic by reading the CHANGES/*.txt files:
-  if [ "$TRAVIS_BRANCH" = v2.0 ] || [ "$TRAVIS_BRANCH" = v2.1 ] || [ "$TRAVIS_BRANCH" = v2.2 ] ; then
-    branchtype=unsupported
+GIT_OWNER=$(  echo $TRAVIS_REPO_SLUG | sed "s/\/.*$//" )
+GIT_REPO=$(   echo $TRAVIS_REPO_SLUG | sed "s/^.*\///" )
+
+if [ "$GIT_OWNER" = plumed ] ; then
+  if [[ "$TRAVIS_BRANCH" =~ ^v2\.[0-9]+$ ]] ; then
+  # TODO: this should be made automatic by reading the CHANGES/*.txt files:
+    if [ "$TRAVIS_BRANCH" = v2.0 ] || [ "$TRAVIS_BRANCH" = v2.1 ] || [ "$TRAVIS_BRANCH" = v2.2 ] ; then
+      branchtype=unsupported
+    else
+      branchtype=official
+    fi
+  elif [ "$TRAVIS_BRANCH" = master ] ; then
+    branchtype=master
   else
-    branchtype=official
+    branchtype=unofficial
   fi
-elif [ "$TRAVIS_BRANCH" = master ] ; then
-  branchtype=master
-else
+else 
   branchtype=unofficial
 fi
 
@@ -47,8 +54,6 @@ This is an auto redirect page.
 </html>
 EOF
 
-GIT_OWNER=$(  echo $TRAVIS_REPO_SLUG | sed "s/\/.*$//" )
-GIT_REPO=$(   echo $TRAVIS_REPO_SLUG | sed "s/^.*\///" )
 
 git init
 git config user.email "${GIT_BOT_EMAIL}"
