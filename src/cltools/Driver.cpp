@@ -30,6 +30,7 @@
 #include <cstring>
 #include <vector>
 #include <map>
+#include <memory>
 #include "tools/Units.h"
 #include "tools/PDB.h"
 #include "tools/FileBase.h"
@@ -287,10 +288,9 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   std::string fakein;
   bool debugfloat=parse("--debug-float",fakein);
   if(debugfloat && sizeof(real)!=sizeof(float)) {
-    CLTool* cl=cltoolRegister().create(CLToolOptions("driver-float"));    //new Driver<float>(*this);
+    std::unique_ptr<CLTool> cl(cltoolRegister().create(CLToolOptions("driver-float")));
     cl->setInputData(this->getInputData());
     int ret=cl->main(in,out,pc);
-    delete cl;
     return ret;
   }
 
@@ -358,7 +358,10 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   molfile_plugin_t *api=NULL;
   void *h_in=NULL;
   molfile_timestep_t ts_in; // this is the structure that has the timestep
-  ts_in.coords=NULL;
+// a std::unique_ptr<float> with the same scope as ts_in
+// it is necessary in order to store the pointer to ts_in.coords
+  std::unique_ptr<float[]> ts_in_coords;
+  ts_in.coords=ts_in_coords.get();
   ts_in.A=-1; // we use this to check whether cell is provided or not
 #endif
 
@@ -511,7 +514,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           if(command_line_natoms>=0) natoms=command_line_natoms;
           else error("this file format does not provide number of atoms; use --natoms on the command line");
         }
-        ts_in.coords = new float [3*natoms];
+        ts_in_coords.reset(new float [3*natoms]);
+        ts_in.coords = ts_in_coords.get();
 #endif
       } else if(trajectory_fmt=="xdr-xtc" || trajectory_fmt=="xdr-trr") {
 #ifdef __PLUMED_HAS_XDRFILE
@@ -739,18 +743,17 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         int localstep;
         float time;
         matrix box;
-        rvec* pos=new rvec[natoms];
+        std::unique_ptr<rvec[]> pos(new rvec[natoms]);
         float prec,lambda;
         int ret;
-        if(trajectory_fmt=="xdr-xtc") ret=read_xtc(xd,natoms,&localstep,&time,box,pos,&prec);
-        if(trajectory_fmt=="xdr-trr") ret=read_trr(xd,natoms,&localstep,&time,&lambda,box,pos,NULL,NULL);
+        if(trajectory_fmt=="xdr-xtc") ret=read_xtc(xd,natoms,&localstep,&time,box,pos.get(),&prec);
+        if(trajectory_fmt=="xdr-trr") ret=read_trr(xd,natoms,&localstep,&time,&lambda,box,pos.get(),NULL,NULL);
         if(stride==0) step=localstep;
         if(ret==exdrENDOFFILE) break;
         if(ret!=exdrOK) break;
         for(unsigned i=0; i<3; i++) for(unsigned j=0; j<3; j++) cell[3*i+j]=box[i][j];
         for(unsigned i=0; i<natoms; i++) for(unsigned j=0; j<3; j++)
             coordinates[3*i+j]=real(pos[i][j]);
-        delete [] pos;
 #endif
       } else {
         if(trajectory_fmt=="xyz") {
@@ -944,7 +947,6 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 #endif
 #ifdef __PLUMED_HAS_MOLFILE_PLUGINS
   if(h_in) api->close_file_read(h_in);
-  if(ts_in.coords) delete [] ts_in.coords;
 #endif
   if(grex_log) fclose(grex_log);
 
