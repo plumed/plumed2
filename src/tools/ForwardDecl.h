@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,45 +19,32 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_core_GREX_h
-#define __PLUMED_core_GREX_h
+#ifndef __PLUMED_tools_ForwardDecl_h
+#define __PLUMED_tools_ForwardDecl_h
 
-#include "WithCmd.h"
-#include "tools/ForwardDecl.h"
-#include <string>
-#include <vector>
+#include <memory>
 
 namespace PLMD {
 
-class PlumedMain;
-class Atoms;
-class Communicator;
+/**
+  Utility class for forward declaration of references.
 
-class GREX:
-  public WithCmd
+*/
+template <class T>
+class ForwardDecl:
+  std::unique_ptr<T>
 {
-  bool initialized;
-  ForwardDecl<Communicator> intracomm_fwd;
-  Communicator& intracomm=*intracomm_fwd;
-  ForwardDecl<Communicator> intercomm_fwd;
-  Communicator& intercomm=*intercomm_fwd;
-  PlumedMain& plumedMain;
-  Atoms&      atoms;
-  int partner;
-  double localDeltaBias;
-  double foreignDeltaBias;
-  double localUNow;
-  double localUSwap;
-  std::vector<double> allDeltaBias;
-  std::string buffer;
-  int myreplica;
 public:
-  explicit GREX(PlumedMain&);
-  ~GREX();
-  void cmd(const std::string&key,void*val=NULL);
-  void calculate();
-  void savePositions();
+// Construction is only possible from a pointer.
+  ForwardDecl(T*);
+// Dereference operator is inherited from std::unique_ptr<T>
+  using std::unique_ptr<T>::operator *;
 };
+
+template <class T>
+ForwardDecl<T>::ForwardDecl(T*x):
+  std::unique_ptr<T>(x)
+{}
 
 }
 
