@@ -78,10 +78,6 @@ BiasRepresentation::BiasRepresentation(const vector<Value*> & tmpvalues, Communi
   addGrid(gmin,gmax,nbin);
 }
 
-BiasRepresentation::~BiasRepresentation() {
-// empty destructor to delete unique_ptr
-}
-
 void  BiasRepresentation::addGrid( const vector<string> & gmin, const vector<string> & gmax, const vector<unsigned> & nbin ) {
   plumed_massert(hills.size()==0,"you can set the grid before loading the hills");
   plumed_massert(hasgrid==false,"to build the grid you should not having the grid in this bias representation");

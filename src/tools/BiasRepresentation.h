@@ -51,8 +51,6 @@ public:
                      const std::vector<unsigned> & nbin, bool doInt, double lowI_, double uppI_);
   /// create a histogram with grid representation and sigmas in input
   BiasRepresentation(const std::vector<Value*> & tmpvalues, Communicator &cc, const std::vector<std::string> & gmin, const std::vector<std::string> & gmax, const std::vector<unsigned> & nbin, const std::vector<double> & sigma);
-  /// destructor
-  ~BiasRepresentation();
   /// retrieve the number of dimension of the representation
   unsigned 	getNumberOfDimensions();
   /// add the grid to the representation
