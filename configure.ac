@@ -20,17 +20,17 @@ AC_INIT([PLUMED], [2])
 # they just need to be different with optionname contains a "-"
 # (not allowed in shell variable names)
 AC_DEFUN([PLUMED_CONFIG_ENABLE], [
-$1=
-AC_ARG_ENABLE([$2],
-  AS_HELP_STRING([--enable-$2], [enable $3, default: $4]),
+m4_bpatsubst([$1],-,_)=
+AC_ARG_ENABLE([$1],
+  AS_HELP_STRING([--enable-$1], [enable $2, default: $3]),
   [case "${enableval}" in
-             (yes) $1=true ;;
-             (no)  $1=false ;;
-             (*)   AC_MSG_ERROR([wrong argument to --enable-$2]) ;;
+             (yes) m4_bpatsubst([$1],-,_)=true ;;
+             (no)  m4_bpatsubst([$1],-,_)=false ;;
+             (*)   AC_MSG_ERROR([wrong argument to --enable-$1]) ;;
   esac],
-  [case "$4" in
-             (yes) $1=true ;;
-             (no)  $1=false ;;
+  [case "$3" in
+             (yes) m4_bpatsubst([$1],-,_)=true ;;
+             (no)  m4_bpatsubst([$1],-,_)=false ;;
   esac]
 )
 ])
@@ -167,41 +167,41 @@ AC_ARG_ENABLE([modules],
 # This can be disabled when configuring within a package manager
 # such as macports to make sure that only libraries explicitly
 # listed in LDFLAGS are linked
-PLUMED_CONFIG_ENABLE([libsearch],[libsearch],[search for libraries],[yes])
+PLUMED_CONFIG_ENABLE([libsearch],[search for libraries],[yes])
 
 # This can be disabled to avoid the extra tests for static patching.
 # In the future, when this is disabled, we could disable the "--static" flag
 # of "plumed patch"
-PLUMED_CONFIG_ENABLE([static_patch],[static-patch],[allow statically linking plumed],[yes])
+PLUMED_CONFIG_ENABLE([static-patch],[allow statically linking plumed],[yes])
 
-PLUMED_CONFIG_ENABLE([doc],[doc],[documentation],[yes])
-PLUMED_CONFIG_ENABLE([pdfdoc],[pdfdoc],[pdf version of the manual],[no])
-PLUMED_CONFIG_ENABLE([debug],[debug],[debugging],[no])
-PLUMED_CONFIG_ENABLE([gcov],[gcov],[gcov to estimate code coverage],[no])
-PLUMED_CONFIG_ENABLE([basic_warnings],[basic-warnings],[basic warnings],[yes])
-PLUMED_CONFIG_ENABLE([fussy],[fussy],[fussy warnings],[no])
-PLUMED_CONFIG_ENABLE([debug_glibcxx],[debug-glibcxx],[enable boundary check],[no])
-PLUMED_CONFIG_ENABLE([shared],[shared],[shared libs],[yes])
-PLUMED_CONFIG_ENABLE([dependency_tracking],[dependency-tracking],[dependency tracking],[yes])
-PLUMED_CONFIG_ENABLE([rpath],[rpath],[store rpath],[no])
-PLUMED_CONFIG_ENABLE([cxx_exceptions],[cxx-exceptions],[c++ exceptions],[yes])
-PLUMED_CONFIG_ENABLE([ld_r],[ld-r],[group object files],[yes])
-PLUMED_CONFIG_ENABLE([mpi],[mpi],[search for mpi],[yes])
-PLUMED_CONFIG_ENABLE([external_lapack],[external-lapack],[search for external lapack],[yes])
-PLUMED_CONFIG_ENABLE([external_blas],[external-blas],[search for external blas],[yes])
-PLUMED_CONFIG_ENABLE([molfile_plugins],[molfile-plugins],[use molfile_plugins],[yes])
-PLUMED_CONFIG_ENABLE([external_molfile_plugins],[external-molfile-plugins],[search for external molfile_plugins],[yes])
-PLUMED_CONFIG_ENABLE([matheval],[matheval],[search for matheval],[yes])
-PLUMED_CONFIG_ENABLE([zlib],[zlib],[search for zlib],[yes])
-PLUMED_CONFIG_ENABLE([readdir_r],[readdir-r],[search for readdir_r (threadsafe)],[yes])
-PLUMED_CONFIG_ENABLE([cregex],[cregex],[search for C regular expression],[yes])
-PLUMED_CONFIG_ENABLE([dlopen],[dlopen],[search for dlopen],[yes])
-PLUMED_CONFIG_ENABLE([execinfo],[execinfo],[search for execinfo],[yes])
-PLUMED_CONFIG_ENABLE([gsl],[gsl],[search for gsl],[yes])
-PLUMED_CONFIG_ENABLE([xdrfile],[xdrfile],[search for xdrfile],[yes])
-PLUMED_CONFIG_ENABLE([boost_graph],[boost_graph],[search for boost graph],[no])
-PLUMED_CONFIG_ENABLE([boost_serialization],[boost_serialization],[search for boost serialization],[no])
-PLUMED_CONFIG_ENABLE([fftw],[fftw],[search for fftw],[no])
+PLUMED_CONFIG_ENABLE([doc],[documentation],[yes])
+PLUMED_CONFIG_ENABLE([pdfdoc],[pdf version of the manual],[no])
+PLUMED_CONFIG_ENABLE([debug],[debugging],[no])
+PLUMED_CONFIG_ENABLE([gcov],[gcov to estimate code coverage],[no])
+PLUMED_CONFIG_ENABLE([basic-warnings],[basic warnings],[yes])
+PLUMED_CONFIG_ENABLE([fussy],[fussy warnings],[no])
+PLUMED_CONFIG_ENABLE([debug-glibcxx],[enable boundary check],[no])
+PLUMED_CONFIG_ENABLE([shared],[shared libs],[yes])
+PLUMED_CONFIG_ENABLE([dependency-tracking],[dependency tracking],[yes])
+PLUMED_CONFIG_ENABLE([rpath],[store rpath],[no])
+PLUMED_CONFIG_ENABLE([cxx-exceptions],[c++ exceptions],[yes])
+PLUMED_CONFIG_ENABLE([ld-r],[group object files],[yes])
+PLUMED_CONFIG_ENABLE([mpi],[search for mpi],[yes])
+PLUMED_CONFIG_ENABLE([external-lapack],[search for external lapack],[yes])
+PLUMED_CONFIG_ENABLE([external-blas],[search for external blas],[yes])
+PLUMED_CONFIG_ENABLE([molfile-plugins],[use molfile_plugins],[yes])
+PLUMED_CONFIG_ENABLE([external-molfile-plugins],[search for external molfile_plugins],[yes])
+PLUMED_CONFIG_ENABLE([matheval],[search for matheval],[yes])
+PLUMED_CONFIG_ENABLE([zlib],[search for zlib],[yes])
+PLUMED_CONFIG_ENABLE([readdir-r],[search for readdir_r (threadsafe)],[yes])
+PLUMED_CONFIG_ENABLE([cregex],[search for C regular expression],[yes])
+PLUMED_CONFIG_ENABLE([dlopen],[search for dlopen],[yes])
+PLUMED_CONFIG_ENABLE([execinfo],[search for execinfo],[yes])
+PLUMED_CONFIG_ENABLE([gsl],[search for gsl],[yes])
+PLUMED_CONFIG_ENABLE([xdrfile],[search for xdrfile],[yes])
+PLUMED_CONFIG_ENABLE([boost_graph],[search for boost graph],[no])
+PLUMED_CONFIG_ENABLE([boost_serialization],[search for boost serialization],[no])
+PLUMED_CONFIG_ENABLE([fftw],[search for fftw],[no])
 
 AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
 AC_ARG_VAR(STATIC_LIBS,[variables that should be linked statically directly to MD code - configure will add here -ldl if necessary ])
