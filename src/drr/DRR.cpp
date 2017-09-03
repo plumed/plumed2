@@ -51,7 +51,7 @@ std::vector<double> DRRAxis::getMiddlePoints() {
 }
 
 size_t DRRForceGrid::index1D(const DRRAxis &c, double x) {
-#ifdef DEBUG
+#ifdef DEBUG_DRR
   if (x < c.min || x > c.max) {
     std::cerr << "This is a bug!" << '\n';
     std::cerr << "CV should be larger than minimal value or smaller than the "
@@ -213,7 +213,7 @@ std::vector<double> DRRForceGrid::getGradient(const std::vector<double> &pos,
 std::vector<double>
 DRRForceGrid::getCountsLogDerivative(const std::vector<double> &pos) const {
   const size_t addr = sampleAddress(pos);
-  const size_t count_this = samples[addr];
+  const unsigned long int count_this = samples[addr];
   std::vector<double> result(ndims, 0);
   for (size_t i = 0; i < ndims; ++i) {
     const double binWidth = dimensions[i].getWidth();
@@ -222,14 +222,14 @@ DRRForceGrid::getCountsLogDerivative(const std::vector<double> &pos) const {
     const size_t addr_last = addr_first + shifts[i] * (dimensions[i].nbins - 1);
     if (addr == addr_first) {
       if (dimensions[i].periodic == true) {
-        const size_t &count_next = samples[addr + shifts[i]];
-        const size_t &count_prev = samples[addr_last];
+        const unsigned long int &count_next = samples[addr + shifts[i]];
+        const unsigned long int &count_prev = samples[addr_last];
         if (count_next != 0 && count_prev != 0)
           result[i] =
               (std::log(count_next) - std::log(count_prev)) / (2 * binWidth);
       } else {
-        const size_t &count_next = samples[addr + shifts[i]];
-        const size_t &count_next2 = samples[addr + shifts[i] * 2];
+        const unsigned long int &count_next = samples[addr + shifts[i]];
+        const unsigned long int &count_next2 = samples[addr + shifts[i] * 2];
         if (count_next != 0 && count_this != 0 && count_next2 != 0)
           result[i] =
               (std::log(count_next2) * (-1.0) + std::log(count_next) * 4.0 -
@@ -238,22 +238,22 @@ DRRForceGrid::getCountsLogDerivative(const std::vector<double> &pos) const {
       }
     } else if (addr == addr_last) {
       if (dimensions[i].periodic == true) {
-        const size_t &count_prev = samples[addr - shifts[i]];
-        const size_t &count_next = samples[addr_first];
+        const unsigned long int &count_prev = samples[addr - shifts[i]];
+        const unsigned long int &count_next = samples[addr_first];
         if (count_next != 0 && count_prev != 0)
           result[i] =
               (std::log(count_next) - std::log(count_prev)) / (2 * binWidth);
       } else {
-        const size_t &count_prev = samples[addr - shifts[i]];
-        const size_t &count_prev2 = samples[addr - shifts[i] * 2];
+        const unsigned long int &count_prev = samples[addr - shifts[i]];
+        const unsigned long int &count_prev2 = samples[addr - shifts[i] * 2];
         if (count_prev != 0 && count_this != 0 && count_prev2 != 0)
           result[i] = (std::log(count_this) * 3.0 - std::log(count_prev) * 4.0 +
                        std::log(count_prev2)) /
                       (2.0 * binWidth);
       }
     } else {
-      const size_t &count_prev = samples[addr - shifts[i]];
-      const size_t &count_next = samples[addr + shifts[i]];
+      const unsigned long int &count_prev = samples[addr - shifts[i]];
+      const unsigned long int &count_next = samples[addr + shifts[i]];
       if (count_next != 0 && count_prev != 0)
         result[i] =
             (std::log(count_next) - std::log(count_prev)) / (2 * binWidth);
@@ -370,7 +370,7 @@ bool ABF::store_getbias(const std::vector<double> &pos,
   const size_t baseaddr = sampleAddress(pos);
   unsigned long int &count = samples[baseaddr];
   ++count;
-  double factor = 2 * (double(count)) / fullsamples - 1;
+  double factor = 2 * (static_cast<double>(count)) / fullsamples - 1;
   factor = factor < 0 ? 0 : factor > 1 ? 1 : factor; // Clamp to [0,1]
   auto it_fa = std::begin(forces) + baseaddr * ndims;
   auto it_fb = std::begin(fbias);
@@ -378,7 +378,7 @@ bool ABF::store_getbias(const std::vector<double> &pos,
   do {
     (*it_fa) += (*it_f); // Accumulate instantaneous force
     (*it_fb) =
-        factor * (*it_fa) * (-1.0) / double(count); // Calculate bias force
+        factor * (*it_fa) * (-1.0) / static_cast<double>(count); // Calculate bias force
     ++it_fa;
     ++it_fb;
     ++it_f;
@@ -420,7 +420,8 @@ std::vector<double> CZAR::getGradient(const std::vector<double> &pos,
     }
   }
   if (kbt <= std::numeric_limits<double>::epsilon()) {
-    std::cerr << "ERROR!!!" << std::endl;
+    std::cerr << "ERROR! The kbt shouldn't be zero when use CZAR estimator. "
+              << '\n';
     std::abort();
   }
   const size_t baseaddr = sampleAddress(pos) * ndims;
