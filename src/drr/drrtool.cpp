@@ -74,6 +74,7 @@ public:
 
 private:
   bool verbosity;
+  const std::string suffix{".drrstate"};
 };
 
 PLUMED_REGISTER_CLTOOL(drrtool, "drrtool")
@@ -133,7 +134,6 @@ void drrtool::extractdrr(const std::vector<std::string> &filename) {
       std::cout << "Dumping counts and gradients from grids..." << '\n';
     }
     std::string outputname(filename[j]);
-    const std::string suffix(".drrstate");
     outputname = outputname.substr(0, outputname.length() - suffix.length());
     if (verbosity)
       std::cout << "Writing ABF(naive) estimator files..." << '\n';
@@ -146,7 +146,7 @@ void drrtool::extractdrr(const std::vector<std::string> &filename) {
 
 void drrtool::mergewindows(const std::vector<std::string> &filename) {
   if (filename.size() < 2) {
-    std::cerr << "ERROR!" << std::endl;
+    std::cerr << "ERROR! You need at least two .drrstate file to merge windows!" << std::endl;
     std::abort();
   }
   // Read grid into abfs and czars;
@@ -175,10 +175,13 @@ void drrtool::mergewindows(const std::vector<std::string> &filename) {
     cmerged = CZAR::mergewindow(cmerged, czars[i]);
     amerged = ABF::mergewindow(amerged, abfs[i]);
   }
-  std::string coutputname("czar.");
-  std::string aoutputname("abf.");
-  cmerged.writeAll(coutputname);
-  amerged.writeAll(aoutputname);
+  // Generate new file name for merged grad and count
+  std::vector<std::string> tmp_name = filename;
+  std::transform(std::begin(tmp_name), std::end(tmp_name), std::begin(tmp_name), [&](std::string s){return s.substr(0, s.find(suffix));});
+  std::string mergename = std::accumulate(std::begin(tmp_name), std::end(tmp_name), std::string(""), [](std::string a, std::string b){return a + b + "+";});
+  mergename = mergename.substr(0, mergename.size() - 1);
+  cmerged.writeAll(mergename);
+  amerged.writeAll(mergename);
 }
 
 } // End of namespace
