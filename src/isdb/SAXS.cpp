@@ -227,7 +227,7 @@ SAXS::SAXS(const ActionOptions&ao):
     if( !parseNumbered( "EXPINT", i+1, expint[i] ) ) break;
     ntarget++;
   }
-  if( ntarget!=numq ) error("found wrong number of EXPINT values");
+  if( ntarget!=numq && exp==true) error("found wrong number of EXPINT values");
 
   if(pbc)      log.printf("  using periodic boundary conditions\n");
   else         log.printf("  without periodic boundary conditions\n");
