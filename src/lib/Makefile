@@ -201,7 +201,9 @@ endif
 	if test -d ../../vim/help ; then mkdir -p "$(DESTDIR)$(libdir)/$(program_name)" && cd ../../ && tar cf - vim/help | tar xf - -C "$(DESTDIR)$(libdir)/$(program_name)/" ; fi
 	if test -f ../../vim/scripts.vim ; then cp ../../vim/scripts.vim  "$(DESTDIR)$(libdir)/$(program_name)/vim/" ; fi
 # python installation
-	$(MAKE) -C ../../python install 
+ifneq (,$(findstring __PLUMED_HAS_PYTHON,$(CPPFLAGS)))
+	cp -pr ../../python "$(DESTDIR)$(libdir)/$(program_name)/" 
+endif
 # making everything visible:
 	chmod -R go+rX,go-w "$(DESTDIR)$(libdir)/$(program_name)"
 	chmod -R go+rX,go-w "$(DESTDIR)$(includedir)/$(program_name)"
@@ -245,6 +247,11 @@ endif
 	@if test -d ../../vim/help ; then echo "- Set this environment variable         : PLUMED_VIMPATH=$(libdir)/$(program_name)/vim" ; fi
 	@if test -d ../../vim/help ; then echo "- Add the command 'let &runtimepath.=','.\$$PLUMED_VIMPATH' to your .vimrc file" ; fi
 	@if test -d ../../vim/help ; then echo "From vim, you can use :set syntax=$(program_name) to enable it" ; fi
+	@if test -d ../../python/build ; then echo "A python plugin can be found here: $(libdir)/$(program_name)/python/" ; fi
+	@if test -d ../../python/build ; then echo "To use PLUMED through python either : " ; fi
+	@if test -d ../../python/build ; then echo "- Add $(libdir)/$(program_name)/python/ to your PYTHONPATH" ; fi
+	@if test -d ../../python/build ; then echo "- Execute the command python buildPythonInterface.py install in the plumed2/python directory"; fi
+	@if test -d ../../python/build ; then echo "Plumed can be loaded in a python script using the command import plumed" ; fi
 ifeq ($(program_can_run),no)
 	@echo "WARNING: $(program_name) executable will not run on this machine"
 	@echo "WARNING: to patch an MD code use 'plumed-patch'"

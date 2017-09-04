@@ -28,14 +28,8 @@ from Cython.Build import cythonize
 import numpy
 import subprocess
 
-progname=""
-with open("../Makefile.conf") as f:
-  for line in f:
-      if "program_name=" in line:
-          progname = line.replace("program_name=","").strip()
-
 plumedversion = subprocess.check_output(['../src/lib/plumed', 'info', '--version']).decode("utf-8")
-print( "Creating interface for " + progname  + " version " + plumedversion )
+print( "Creating interface for plumed version " + plumedversion )
 
 setup(
   name='plumed',
