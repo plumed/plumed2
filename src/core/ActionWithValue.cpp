@@ -68,7 +68,7 @@ ActionWithValue::ActionWithValue(const ActionOptions&ao):
   no_openmp(false),
   serial(false),
   timers(false),
-  in_a_chain(false),
+  do_not_add_to_chain(false),
   nactive_tasks(0),
   action_to_do_before(NULL),
   action_to_do_after(NULL)
@@ -123,7 +123,14 @@ bool ActionWithValue::addActionToChain( const std::vector<std::string>& alabels,
       for(unsigned j=0;j<mylabels.size();++j){
           if( alabels[i]==mylabels[j] ){ found=true; break; }
       } 
-      if( !found ) return false; 
+      if( !found ){
+          ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( alabels[i] );
+          bool storingall=true;
+          for(unsigned j=0;j<av->getNumberOfComponents();++j){
+              if( !(av->getPntrToOutput(j))->storedata ) storingall=false;
+          }
+          if( !storingall ) return false; 
+      }
   }
   action_to_do_after=act; act->addDependency( this ); act->action_to_do_before=this; 
   return true;
@@ -337,7 +344,7 @@ void ActionWithValue::interpretDataLabel( const std::string& mystr, Action* myus
               if( action ) args.push_back( action->getPntrToValue() );
           }
           if( args.size()==0 ) myuser->error("could not find any actions created by shortcuts in action");
-      }
+      } 
       for(unsigned j=0;j<args.size();++j) args[j]->interpretDataRequest( myuser->getLabel(), "" );
   } else if( mystr.find(".")!=std::string::npos && exists( mystr ) ) {
       // Retrieve value with specific name
@@ -481,12 +488,7 @@ void ActionWithValue::getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& 
       values[i]->bufstart=bufsize; 
       if( values[i]->getRank()==0 && values[i]->hasDerivatives() ) bufsize += 1 + values[i]->getNumberOfDerivatives();
       else if( values[i]->getRank()==0 ) bufsize += 1;
-      else if( values[i]->storedata ){
-          if( values[i]->hasDeriv ) bufsize += values[i]->getSize(); 
-          else if( values[i]->getRank()==2 ) bufsize += nactive_tasks*values[i]->getShape()[1];
-          else bufsize += nactive_tasks;
-      }
-      // if( values[i]->getRank()==0 ) bufsize += 1 + values[i]->getNumberOfDerivatives();
+      else if( values[i]->storedata ) bufsize += values[i]->getSize();
   }
   if( action_to_do_after ) action_to_do_after->getSizeOfBuffer( nactive_tasks, bufsize );
 }
@@ -519,7 +521,7 @@ void ActionWithValue::runTask( const std::string& controller, const unsigned& ta
       if( values[i]->getRank()!=2 ){ matrix=false; break; }
   }
   if( matrix ){  
-      unsigned col_stash_index = colno; if( colno>getFullNumberOfTasks() ) col_stash_index = colno - getFullNumberOfTasks();
+      unsigned col_stash_index = colno; if( colno>=getFullNumberOfTasks() ) col_stash_index = colno - getFullNumberOfTasks();
       for(unsigned i=0;i<values.size();++i){
           if( values[i]->storedata ) myvals.stashMatrixElement( values[i]->getPositionInMatrixStash(), col_stash_index, myvals.get( values[i]->getPositionInStream() ) );
       }

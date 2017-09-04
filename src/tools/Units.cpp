@@ -66,6 +66,8 @@ void Units::setLength(const std::string &s) {
     length=0.1;
   } else if(s=="um") {
     length=1000.0;
+  } else if(s=="bohr") {
+    length=0.05292;
   } else {
     length=-1.0;
     lengthString="";

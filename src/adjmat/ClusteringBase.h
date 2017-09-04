@@ -22,49 +22,50 @@
 #ifndef __PLUMED_adjmat_ClusteringBase_h
 #define __PLUMED_adjmat_ClusteringBase_h
 
-#include "ActionWithInputMatrix.h"
-#include "multicolvar/AtomValuePack.h"
+#include "core/ActionWithArguments.h"
+#include "core/ActionWithValue.h"
+#include "tools/Matrix.h"
 
 namespace PLMD {
 namespace adjmat {
 
-class ClusteringBase : public ActionWithInputMatrix {
+class ClusteringBase : 
+public ActionWithArguments,
+public ActionWithValue 
+{
 protected:
 /// Vector that stores the sizes of the current set of clusters
   std::vector< std::pair<unsigned,unsigned> > cluster_sizes;
 /// Used to identify the cluster we are working on
-  int number_of_cluster;
+  int number_of_cluster;  
 /// Vector that identifies the cluster each atom belongs to
   std::vector<unsigned> which_cluster;
+/// Get the number of nodes
+  unsigned getNumberOfNodes() const ;
+/// Get the neighbour list based on the adjacency matrix
+  void retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matrix<unsigned>& adj_list );
+/// Retrieve the list of edges in the adjacency matrix/graph
+  void retrieveEdgeList( unsigned& nedge, std::vector<std::pair<unsigned,unsigned> >& edge_list );  
 public:
 /// Create manual
   static void registerKeywords( Keywords& keys );
 /// Constructor
   explicit ClusteringBase(const ActionOptions&);
-/// This checks whether derivatives can be computed given the base multicolvar
-  void turnOnDerivatives();
-/// Are these two atoms connected
-  bool areConnected( const unsigned& iatom, const unsigned& jatom ) const ;
+/// Get the numebr of derivatives
+  unsigned getNumberOfDerivatives() const { return 0; }
 /// Do the calculation
   void calculate();
 /// Do the clustering
   virtual void performClustering()=0;
-/// Get the number of clusters that have been found
-  unsigned getNumberOfClusters() const ;
-/// Get the atoms in one of the clusters
-  virtual void retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const ;
 /// Do nothing for apply here
   void apply() {}
-/// Get the cutoff
-  virtual double getCutoffForConnection() const ;
 };
 
 inline
-unsigned ClusteringBase::getNumberOfClusters() const {
-  return number_of_cluster + 1;
+unsigned ClusteringBase::getNumberOfNodes() const {
+  return getPntrToArgument(0)->getShape()[0];
 }
 
 }
 }
-
 #endif

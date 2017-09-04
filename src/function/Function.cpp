@@ -56,7 +56,7 @@ Function::Function(const ActionOptions&ao):
       for(unsigned i=0;i<getNumberOfArguments();++i){
           // Add this function to jobs to do in recursive loop in previous action
           if( getPntrToArgument(i)->getRank()>0 ){
-              if( (getPntrToArgument(i)->getPntrToAction())->addActionToChain( alabels, this ) ){ added=true; } 
+              if( (getPntrToArgument(i)->getPntrToAction())->addActionToChain( alabels, this ) ){ added=true; break; } 
           }
       }  
       plumed_massert(added, "could not add action " + getLabel() + " to chain of any of its arguments");
@@ -104,7 +104,8 @@ void Function::addValueWithDerivatives() {
   std::vector<unsigned> shape( getShape() ); 
   if( arg_ends[1]-arg_ends[0]==1 ){
       if( actionInChain() && shape.size()>0 ) ActionWithValue::addValue( shape ); 
-      else ActionWithValue::addValueWithDerivatives( shape ); 
+      else if( shape.size()==0 ) ActionWithValue::addValueWithDerivatives( shape );
+      else ActionWithValue::addValue( shape ); 
       if(period.size()==1 && period[0]=="NO") setNotPeriodic(); 
       else if(period.size()==2) setPeriodic(period[0],period[1]);
   } else {
@@ -125,7 +126,8 @@ void Function::addComponentWithDerivatives( const std::string& name ) {
   std::vector<unsigned> shape( getShape() );
   if( arg_ends[1]-arg_ends[0]==1 ){ 
       if( actionInChain() && shape.size()>0 ) ActionWithValue::addComponent(name,shape); 
-      else ActionWithValue::addComponentWithDerivatives(name,shape); 
+      else if( shape.size()==0 ) ActionWithValue::addComponentWithDerivatives(name,shape); 
+      else ActionWithValue::addComponent(name,shape);
   } else { 
       std::string num; 
       for(unsigned i=0;i<arg_ends.size()-1;++i){ 
@@ -149,13 +151,9 @@ void Function::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
 
 void Function::performTask( const unsigned& current, MultiValue& myvals ) const {
   // Get the values of all the arguments
-  std::vector<double> args( arg_ends.size()-1 ); retrieveArguments( myvals, args );
-  // Calculate whatever we are calculating
-  calculateFunction( args, myvals ); 
-  // And update the dynamic list
-  if( doNotCalculateDerivatives() ) return ;
+  bool matout=false, matinp=false;
   if( actionInChain() ) {
-      bool matout=false, matinp=getPntrToArgument(0)->getRank()==2;
+      matinp=getPntrToArgument(0)->getRank()==2;
 #ifdef DNDEBUG
       if( matinp ){
           for(unsigned i=1;i<getNumberOfArguments();++i) plumed_dbg_assert( getPntrToArgument(i)->getRank()==2 );
@@ -167,8 +165,17 @@ void Function::performTask( const unsigned& current, MultiValue& myvals ) const 
           if( matout ){
               for(unsigned i=1;i<getNumberOfComponents();++i) plumed_dbg_assert( getPntrToOutput(i)->getRank()==2 );
           }
-#endif          
+#endif
       }
+  }
+  // Calculate whatever we are calculating
+  if( (matinp && !myvals.inVectorCall()) || !matinp ){
+       std::vector<double> args( arg_ends.size()-1 ); retrieveArguments( myvals, args );
+       calculateFunction( args, myvals ); 
+  }
+  // And update the dynamic list
+  if( doNotCalculateDerivatives() ) return ;
+  if( actionInChain() ) {
       if( (matinp && matout && !myvals.inVectorCall()) || !matinp ) {
            unsigned der_start=0;
            for(unsigned i=0;i<distinct_arguments.size();++i){

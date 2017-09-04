@@ -205,9 +205,17 @@ void ActionWithArguments::expandArgKeywordInPDB( PDB& pdb ) {
 
 void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool& allow_streams ) {
   plumed_massert(!lockRequestArguments,"requested argument list can only be changed in the prepare() method");
+  if( !allow_streams ) {
+      ActionWithValue* av=dynamic_cast<ActionWithValue*>( this );
+      if( av ) av->do_not_add_to_chain=true;
+  }
   bool firstcall=(arguments.size()==0);
   arguments=arg;
   clearDependencies();
+  bool storing=false; 
+  for(unsigned i=0;i<arguments.size();++i){
+      if( arguments[i]->storedata ){ storing=true; break; }
+  }
   std::string fullname,name;
   std::vector<ActionWithValue*> f_actions;
   for(unsigned i=0; i<arguments.size(); i++) {
@@ -228,7 +236,8 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
             if( f_actions[k]==myact ){ found=true; break; }
         }   
         if( !found ) f_actions.push_back( myact );
-    }   
+    }
+    if( storing ) arguments[i]->buildDataStore();   
   }
   // This is a way of checking if we are in an ActionWithValue by looking at the keywords -- is there better fix?
   if( firstcall ) {
@@ -250,7 +259,12 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
       }
       if( done_over_stream ){
           std::vector<std::string> empty(1); empty[0] = f_actions[0]->getLabel();
-          for(unsigned i=1;i<f_actions.size();++i){ f_actions[0]->addActionToChain( empty, f_actions[i] ); f_actions[i]->addDependency( f_actions[0] ); }
+          for(unsigned i=1;i<f_actions.size();++i) { 
+              if( !f_actions[0]->do_not_add_to_chain ) f_actions[0]->addActionToChain( empty, f_actions[i] ); 
+              else {
+                 for(unsigned j=0;j<arguments.size();++j) plumed_assert( arguments[j]->storedata );
+              }
+          }
       } else {
           for(unsigned i=0;i<arg.size();++i){ if( arg[i]->getRank()>0 ) arg[i]->buildDataStore(); }
       }
@@ -376,7 +390,10 @@ double ActionWithArguments::getProjection(unsigned i,unsigned j)const {
 
 void ActionWithArguments::retrieveArguments( const MultiValue& myvals, std::vector<double>& args ) const {
   if( done_over_stream ){
-      for(unsigned i=0;i<args.size();++i) args[i]=myvals.get( arguments[i]->streampos );
+      for(unsigned i=0;i<args.size();++i) {
+         if( !arguments[i]->value_set ) args[i]=myvals.get( arguments[i]->streampos );
+         else args[i]=arguments[i]->get( myvals.getTaskIndex() );
+      }
       return;
   }
   if( arguments[0]->getRank()>0 ){

@@ -35,6 +35,7 @@ class TwoBodyGFunctions : public SymmetryFunctionBase {
 private:
   double center2, nu2;
   double kappa3;
+  int g1_ind, g2_ind, g3_ind;
 public:
   static void registerKeywords( Keywords& keys );
   explicit TwoBodyGFunctions(const ActionOptions&);
@@ -45,37 +46,53 @@ PLUMED_REGISTER_ACTION(TwoBodyGFunctions,"GSYMFUNC_TWOBODY")
 
 void TwoBodyGFunctions::registerKeywords( Keywords& keys ) {
   SymmetryFunctionBase::registerKeywords( keys ); 
+  keys.addFlag("NO_G1",false,"do not compute the G1 symmetry function");
   keys.add("compulsory","CENTER2","position of the gaussian center in the G2 symmetry function");
-  keys.add("compulsory","NU2","value of the width parameter for the gaussian in the G2 symmetry function");
-  keys.add("compulsory","KAPPA3","value of kappa parameter in the G3 symmetry function");
-  keys.addOutputComponent("g1","default","the value of the G1 symmetry function");
-  keys.addOutputComponent("g2","default","the value of the G2 symmetry function");
-  keys.addOutputComponent("g3","default","the value of the G3 symmetry function");
+  keys.add("optional","NU2","value of the width parameter for the gaussian in the G2 symmetry function");
+  keys.add("optional","KAPPA3","value of kappa parameter in the G3 symmetry function");
+  keys.addOutputComponent("g1","NO_G1","the value of the G1 symmetry function - this is computed by default unless the flag NO_G1 is given");
+  keys.addOutputComponent("g2","CENTER2","the value of the G2 symmetry function");
+  keys.addOutputComponent("g3","KAPPA3","the value of the G3 symmetry function");
 }
 
 TwoBodyGFunctions::TwoBodyGFunctions(const ActionOptions&ao):
   Action(ao),
-  SymmetryFunctionBase(ao)
+  SymmetryFunctionBase(ao),
+  g1_ind(-1),g2_ind(-1),g3_ind(-1)
 {
-  addComponentWithDerivatives( "g1" );
-  parse("NU2",nu2); parse("CENTER2",center2); addComponentWithDerivatives( "g2" );
-  log.printf("  for g2 function gaussian center is as %f and width paramter is %f \n", center2, nu2 );
-  parse("KAPPA3",kappa3); addComponentWithDerivatives( "g3" );
-  log.printf("  for g3 function value of kappa parameter is %f \n",kappa3 );
+  bool nog1; parseFlag("NO_G1",nog1 ); unsigned oflag=0;
+  if( !nog1 ){ addComponentWithDerivatives( "g1" ); g1_ind=oflag; oflag++; }
+  nu2=0.0; parse("NU2",nu2);
+  if( nu2!=0.0 ){
+     parse("CENTER2",center2); 
+     addComponentWithDerivatives( "g2" );
+     g2_ind=oflag; oflag++;
+     log.printf("  for g2 function gaussian center is as %f and width paramter is %f \n", center2, nu2 );  
+  }
+  kappa3=0.0; parse("KAPPA3",kappa3); 
+  if( kappa3!=0.0 ) {
+      addComponentWithDerivatives( "g3" );
+      g3_ind=oflag; oflag++;
+      log.printf("  for g3 function value of kappa parameter is %f \n",kappa3 );
+  }
 }
 
 void TwoBodyGFunctions::compute( const double& val, const Vector& distance, MultiValue& myvals ) const {
   double dlen = distance.modulo();
   // Compute G1
-  addToValue( 0, val, myvals ); addWeightDerivative( 0, 1.0, myvals );
+  if( g1_ind>-1 ) { addToValue( g1_ind, val, myvals ); addWeightDerivative( g1_ind, 1.0, myvals ); }
   // Compute G2
-  double diff = dlen - center2, ee = exp( - nu2*diff*diff );
-  addToValue( 1, ee*val, myvals ); addWeightDerivative( 1, ee, myvals ); 
-  addVectorDerivatives( 1, -(val/dlen)*2*nu2*diff*ee*distance, myvals );
+  if( g2_ind>-1 ) {
+     double diff = dlen - center2, ee = exp( - nu2*diff*diff );
+     addToValue( g2_ind, ee*val, myvals ); addWeightDerivative( g2_ind, ee, myvals ); 
+     addVectorDerivatives( g2_ind, -(val/dlen)*2*nu2*diff*ee*distance, myvals );
+  }
   // Compute G3
-  double cc = cos( kappa3*dlen ), ss = -kappa3*sin( kappa3*dlen );
-  addToValue( 2, cc*val, myvals ); addWeightDerivative( 2, cc, myvals );
-  addVectorDerivatives( 2, (val/dlen)*ss*distance, myvals );
+  if( g3_ind>-1 ) {
+      double cc = cos( kappa3*dlen ), ss = -kappa3*sin( kappa3*dlen );
+      addToValue( g3_ind, cc*val, myvals ); addWeightDerivative( g3_ind, cc, myvals );
+      addVectorDerivatives( g3_ind, (val/dlen)*ss*distance, myvals );
+  }
 }
 
 }

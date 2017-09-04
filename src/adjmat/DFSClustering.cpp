@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ClusteringBase.h"
-#include "AdjacencyMatrixVessel.h"
 #include "core/ActionRegister.h"
 
 #ifdef __PLUMED_HAS_BOOST_GRAPH
@@ -119,7 +118,7 @@ DFSClustering::DFSClustering(const ActionOptions&ao):
 void DFSClustering::performClustering() {
 #ifdef __PLUMED_HAS_BOOST_GRAPH
   // Get the list of edges
-  unsigned nedges=0; getAdjacencyVessel()->retrieveEdgeList( nedges, edge_list );
+  unsigned nedges=0; retrieveEdgeList( nedges, edge_list );
 
   // Build the graph using boost
   boost::adjacency_list<boost::vecS,boost::vecS,boost::undirectedS> sg(&edge_list[0],&edge_list[nedges],getNumberOfNodes());
@@ -131,7 +130,7 @@ void DFSClustering::performClustering() {
   for(unsigned i=0; i<which_cluster.size(); ++i) cluster_sizes[which_cluster[i]].first++;
 #else
   // Get the adjacency matrix
-  getAdjacencyVessel()->retrieveAdjacencyLists( nneigh, adj_list );
+  retrieveAdjacencyLists( nneigh, adj_list );
 
   // Perform clustering
   number_of_cluster=-1; color.assign(color.size(),0);
