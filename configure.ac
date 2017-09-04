@@ -601,7 +601,7 @@ if test $boost_graph == true ; then
   PLUMED_CHECK_PACKAGE([boost/graph/graph_utility.hpp],[exit],[__PLUMED_HAS_BOOST_GRAPH],[boost_graph])
 fi
 if test $boost_serialization == true ; then
-  PLUMED_CHECK_PACKAGE([boost/serialization/vector.hpp],[exit],[__PLUMED_HAS_BOOST_SERIALIZATION],[boost_serialization])
+  PLUMED_CHECK_PACKAGE([boost/serialization/vector.hpp],[main],[__PLUMED_HAS_BOOST_SERIALIZATION],[boost_serialization])
 fi
 if test $fftw == true ; then
   PLUMED_CHECK_PACKAGE([fftw3.h],[fftw_execute],[__PLUMED_HAS_FFTW],[fftw3])
