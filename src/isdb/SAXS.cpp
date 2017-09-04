@@ -347,7 +347,6 @@ void SAXS::calculate() {
     setScore(score);
   }
 
-  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for (unsigned k=0; k<numq; k++) {
     const unsigned kdx=k*size;
     Tensor deriv_box;
@@ -355,14 +354,13 @@ void SAXS::calculate() {
     if(!getDoScore()) {
       string num; Tools::convert(k,num);
       val=getPntrToComponent("q_"+num);
-    } else {
-      val=getPntrToComponent("score");
-    }
-    for(unsigned i=0; i<size; i++) {
-      if(!getDoScore()) {
+      for(unsigned i=0; i<size; i++) {
         setAtomsDerivatives(val, i, deriv[kdx+i]);
         deriv_box += Tensor(getPosition(i),deriv[kdx+i]);
-      } else {
+      }
+    } else {
+      val=getPntrToComponent("score");
+      for(unsigned i=0; i<size; i++) {
         setAtomsDerivatives(val, i, deriv[kdx+i]*getMetaDer(k));
         deriv_box += Tensor(getPosition(i),deriv[kdx+i]*getMetaDer(k));
       }
