@@ -35,40 +35,40 @@ private:
   std::map<std::string,T*> data;
 public:
   explicit DataFetchingObjectTyped(PlumedMain&plumed);
-  ~DataFetchingObjectTyped(){}
+  ~DataFetchingObjectTyped() {}
   void setData( const std::string& key, const std::string& type, void* outval );
   void finishDataGrab();
 };
 
-DataFetchingObject* DataFetchingObject::create(unsigned n, PlumedMain& p){
-  if(n==sizeof(double)){
+DataFetchingObject* DataFetchingObject::create(unsigned n, PlumedMain& p) {
+  if(n==sizeof(double)) {
     return new DataFetchingObjectTyped<double>(p);
-  } else  if(n==sizeof(float)){ 
+  } else  if(n==sizeof(float)) {
     return new DataFetchingObjectTyped<float>(p);
-  } 
+  }
   std::string pp; Tools::convert(n,pp);
   plumed_merror("cannot create an MD interface with sizeof(real)=="+ pp);
   return NULL;
 }
 
 DataFetchingObject::DataFetchingObject(PlumedMain&p):
-plumed(p)
+  plumed(p)
 {
 }
 
 bool DataFetchingObject::activate() const {
-  for(unsigned j=0;j<myactions.size();++j) myactions[j]->activate(); 
+  for(unsigned j=0; j<myactions.size(); ++j) myactions[j]->activate();
   if( myactions.size()>0 ) return true;
   return false;
 }
 
-ActionWithValue* DataFetchingObject::findAction( const ActionSet& a, const std::string& key ) { 
+ActionWithValue* DataFetchingObject::findAction( const ActionSet& a, const std::string& key ) {
   std::string aname = key; std::size_t dot = key.find(".");
   if( dot!=std::string::npos ) aname = key.substr(0,dot);
   return a.selectWithLabel<ActionWithValue*>( aname );
 }
 
-void DataFetchingObject::get_rank( const ActionSet& a, const std::string& key, const std::string& type, long* dims ){
+void DataFetchingObject::get_rank( const ActionSet& a, const std::string& key, const std::string& type, long* dims ) {
   plumed_assert( Tools::getWords(key,"\t\n ,").size()==1 );
   plumed_massert( key.find("*")==std::string::npos, "cannot use wildcards in python interface");
 
@@ -77,47 +77,47 @@ void DataFetchingObject::get_rank( const ActionSet& a, const std::string& key, c
   Value* val = myv->copyOutput( key );
 
   // Now work out what we are returning for this action
-  if( type=="" ){
-      // Return a single value in this case
-      dims[0]=1; 
+  if( type=="" ) {
+    // Return a single value in this case
+    dims[0]=1;
   } else if( type=="derivatives" ) {
-      plumed_merror("not yet implemented");
+    plumed_merror("not yet implemented");
   } else if( type=="forces" ) {
-      plumed_merror("not yet implemented");
+    plumed_merror("not yet implemented");
   } else {
-      plumed_merror("invalid type specifier");
+    plumed_merror("invalid type specifier");
   }
 }
 
-void DataFetchingObject::get_shape( const ActionSet& a, const std::string& key, const std::string& type, long* dims ){
-  plumed_assert( Tools::getWords(key,"\t\n ,").size()==1 ); 
+void DataFetchingObject::get_shape( const ActionSet& a, const std::string& key, const std::string& type, long* dims ) {
+  plumed_assert( Tools::getWords(key,"\t\n ,").size()==1 );
   plumed_massert( key.find("*")==std::string::npos, "cannot use wildcards in python interface");
 
   // Find the appropriate action and store value containing quantity of interest
-  ActionWithValue* myv = findAction( a, key ); 
+  ActionWithValue* myv = findAction( a, key );
   Value* val = myv->copyOutput( key );
 
   // Now work out what we are returning for this action
-  if( type=="" ){
-      // Return a single value in this case
-      dims[0]=1; 
+  if( type=="" ) {
+    // Return a single value in this case
+    dims[0]=1;
   } else if( type=="derivatives" ) {
-      plumed_merror("not yet implemented");
+    plumed_merror("not yet implemented");
   } else if( type=="forces" ) {
-      plumed_merror("not yet implemented");
+    plumed_merror("not yet implemented");
   } else {
-      plumed_merror("invalid type specifier");
+    plumed_merror("invalid type specifier");
   }
 }
 
 template <class T>
 DataFetchingObjectTyped<T>::DataFetchingObjectTyped(PlumedMain&p):
-DataFetchingObject(p)
+  DataFetchingObject(p)
 {
 }
 
 template <class T>
-void DataFetchingObjectTyped<T>::setData( const std::string& key, const std::string& type, void* outval ){
+void DataFetchingObjectTyped<T>::setData( const std::string& key, const std::string& type, void* outval ) {
   plumed_assert( Tools::getWords(key,"\t\n ,").size()==1 );
   plumed_massert( key.find("*")==std::string::npos, "cannot use wildcards in python interface");
   plumed_massert( !data.count(key + " " + type), "already collecting this data elsewhere");
@@ -126,32 +126,32 @@ void DataFetchingObjectTyped<T>::setData( const std::string& key, const std::str
   data.insert(std::pair<std::string,T*>(key + " " + type,f));
 
   // Find the appropriate action and store value containing quantity of interest
-  ActionWithValue* myv = DataFetchingObject::findAction( plumed.getActionSet(), key ); 
+  ActionWithValue* myv = DataFetchingObject::findAction( plumed.getActionSet(), key );
   // Store the action if not already stored
   bool found=false;
   for(const auto & p : myactions) {
-      if( p->getLabel()==myv->getLabel() ){ found=true; break; } 
+    if( p->getLabel()==myv->getLabel() ) { found=true; break; }
   }
   if( !found ) myactions.push_back( myv );
   // Store the value
-  myvalues.push_back( myv->copyOutput( key ) ); 
+  myvalues.push_back( myv->copyOutput( key ) );
 }
 
 template <class T>
-void DataFetchingObjectTyped<T>::finishDataGrab(){
+void DataFetchingObjectTyped<T>::finishDataGrab() {
   // Run over all values and collect data
-  for(const auto & p : myvalues ) { 
-      T* val = static_cast<T*>( data.find(p->getName() + " ")->second );
-      if( data.find(p->getName() + " ")!=data.end() ) {
-         val[0] = static_cast<T>( p->get() );
-      }       
-      if( data.find(p->getName() + " derivatives")!=data.end() ) {
-          plumed_merror("not implemented yet");
-      } 
-      if( data.find(p->getName() + " forces")!=data.end() ) {
-          plumed_merror("not implemented yet");
-      }
-  } 
+  for(const auto & p : myvalues ) {
+    T* val = static_cast<T*>( data.find(p->getName() + " ")->second );
+    if( data.find(p->getName() + " ")!=data.end() ) {
+      val[0] = static_cast<T>( p->get() );
+    }
+    if( data.find(p->getName() + " derivatives")!=data.end() ) {
+      plumed_merror("not implemented yet");
+    }
+    if( data.find(p->getName() + " forces")!=data.end() ) {
+      plumed_merror("not implemented yet");
+    }
+  }
 }
 
 }

@@ -45,7 +45,7 @@ public:
   static DataFetchingObject* create(unsigned n, PlumedMain& p);
 /// A constructor so that we can create the plumed main object
   explicit DataFetchingObject(PlumedMain&p);
-  virtual ~DataFetchingObject(){}
+  virtual ~DataFetchingObject() {}
 ///
   bool activate() const ;
 /// Return the rank required for a particular key
