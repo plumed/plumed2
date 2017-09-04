@@ -13,18 +13,16 @@ your code in the future.  Consequently, please  be ready to answer to specific q
 Finally, we are very happy to accept contributions to the documentation.
 
 Notice that when you open a pull request you
-*implictly agree to transfer the copyright of your code to the PLUMED developers*.
+*implictly agree to transfer the copyright of your code to the PLUMED developers* (or to the authors
+of the code that you are modifying).
 We understand that you might think this unfair.  However, we want to be 100% sure that in the
 future we can make drastic changes to the code, including changes to the  license and that we will not have to 
 contact all the developers that contributed a small number of lines when doing so.
 
-If you want to contribute some large change, notice that
-we prefer not to include your code directly in PLUMED. Large external contributions are difficult for us to maintain.
-To be more specific, a contribution can be considered small (and maintainable) only if one
-of the current PLUMED developers is able to read every single line of it and understand what it does.
-We have, however, put considerable effort into making the code modular.  Consequently, adding a new collective variable is often a single matter of including one additional
-file. We would therefore suggest that, one option you might consider is putting your extra files on the web in some way.
-In other words, you can just distribute a single cpp file together with instructions on how to include this with PLUMED.
-Alternatively, and this is the option we would recommend, you can distribution a separate fork of the full PLUMED with your added code inside.  Creating such forks is relatively straightforward if you use github.
-In addition, if you use this second object people will be able to download a fully validated version of plumed with your extra feature,
-and will, furthermore, be able to merge the latest changes of the code.  On a final note, we are more than happy to put a link to your webpage/repository/whatever in the PLUMED manual so as to make it is visible to our community of users.
+If you want to contribute some large change, please consider adding a new module.
+Documentation about adding new modules is still limited, but you can get inspiration
+from the existing ones. This procedure will allow you to keep the ownership on your code.
+On the other hand, we expect that you will maintain it in the future.
+
+Finally, notice that you can always share modified versions of PLUMED with your changes.
+We are happy if you want to host on github a fork of PLUMED with additional features.

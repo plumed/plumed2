@@ -203,27 +203,31 @@ template <typename T> int diagMat( const Matrix<T>& A, std::vector<double>& eige
 
   // Check matrix is square and symmetric
   plumed_assert( A.rw==A.cl ); plumed_assert( A.isSymmetric()==1 );
-  double *da=new double[A.sz]; unsigned k=0; double *evals=new double[ A.cl ];
+  std::vector<double> da(A.sz);
+  unsigned k=0;
+  std::vector<double> evals(A.cl);
   // Transfer the matrix to the local array
   for (unsigned i=0; i<A.cl; ++i) for (unsigned j=0; j<A.rw; ++j) da[k++]=static_cast<double>( A(j,i) );
 
   int n=A.cl; int lwork=-1, liwork=-1, m, info, one=1;
-  double *work=new double[A.cl]; int *iwork=new int[A.cl];
+  std::vector<double> work(A.cl);
+  std::vector<int> iwork(A.cl);
   double vl, vu, abstol=0.0;
-  int* isup=new int[2*A.cl]; double *evecs=new double[A.sz];
+  std::vector<int> isup(2*A.cl);
+  std::vector<double> evecs(A.sz);
 
-  plumed_lapack_dsyevr("V", "I", "U", &n, da, &n, &vl, &vu, &one, &n,
-                       &abstol, &m, evals, evecs, &n,
-                       isup, work, &lwork, iwork, &liwork, &info);
+  plumed_lapack_dsyevr("V", "I", "U", &n, da.data(), &n, &vl, &vu, &one, &n,
+                       &abstol, &m, evals.data(), evecs.data(), &n,
+                       isup.data(), work.data(), &lwork, iwork.data(), &liwork, &info);
   if (info!=0) return info;
 
   // Retrieve correct sizes for work and iwork then reallocate
-  liwork=iwork[0]; delete [] iwork; iwork=new int[liwork];
-  lwork=static_cast<int>( work[0] ); delete [] work; work=new double[lwork];
+  liwork=iwork[0]; iwork.resize(liwork);
+  lwork=static_cast<int>( work[0] ); work.resize(lwork);
 
-  plumed_lapack_dsyevr("V", "I", "U", &n, da, &n, &vl, &vu, &one, &n,
-                       &abstol, &m, evals, evecs, &n,
-                       isup, work, &lwork, iwork, &liwork, &info);
+  plumed_lapack_dsyevr("V", "I", "U", &n, da.data(), &n, &vl, &vu, &one, &n,
+                       &abstol, &m, evals.data(), evecs.data(), &n,
+                       isup.data(), work.data(), &lwork, iwork.data(), &liwork, &info);
   if (info!=0) return info;
 
   if( eigenvals.size()!=A.cl ) { eigenvals.resize( A.cl ); }
@@ -246,14 +250,12 @@ template <typename T> int diagMat( const Matrix<T>& A, std::vector<double>& eige
     for(j=0; j<n; j++) if(eigenvecs(i,j)*eigenvecs(i,j)>1e-14) break;
     if(j<n) if(eigenvecs(i,j)<0.0) for(j=0; j<n; j++) eigenvecs(i,j)*=-1;
   }
-
-  // Deallocate all the memory used by the various arrays
-  delete[] da; delete [] work; delete [] evals; delete[] evecs; delete [] iwork; delete [] isup;
   return 0;
 }
 
 template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<double>& pseudoinverse ) {
-  double *da=new double[A.sz]; unsigned k=0;
+  std::vector<double> da(A.sz);
+  unsigned k=0;
   // Transfer the matrix to the local array
   for (unsigned i=0; i<A.cl; ++i) for (unsigned j=0; j<A.rw; ++j) da[k++]=static_cast<double>( A(j,i) );
 
@@ -261,19 +263,22 @@ template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<double>& pseu
   if(A.rw>A.cl) {nsv=A.cl;} else {nsv=A.rw;}
 
   // Create some containers for stuff from single value decomposition
-  double *S=new double[nsv]; double *U=new double[nrows*nrows];
-  double *VT=new double[ncols*ncols]; int *iwork=new int[8*nsv];
+  std::vector<double> S(nsv);
+  std::vector<double> U(nrows*nrows);
+  std::vector<double> VT(ncols*ncols);
+  std::vector<int> iwork(8*nsv);
 
   // This optimizes the size of the work array used in lapack singular value decomposition
-  int lwork=-1; double* work=new double[1];
-  plumed_lapack_dgesdd( "A", &nrows, &ncols, da, &nrows, S, U, &nrows, VT, &ncols, work, &lwork, iwork, &info );
+  int lwork=-1;
+  std::vector<double> work(1);
+  plumed_lapack_dgesdd( "A", &nrows, &ncols, da.data(), &nrows, S.data(), U.data(), &nrows, VT.data(), &ncols, work.data(), &lwork, iwork.data(), &info );
   if(info!=0) return info;
 
   // Retrieve correct sizes for work and rellocate
-  lwork=(int) work[0]; delete [] work; work=new double[lwork];
+  lwork=(int) work[0]; work.resize(lwork);
 
   // This does the singular value decomposition
-  plumed_lapack_dgesdd( "A", &nrows, &ncols, da, &nrows, S, U, &nrows, VT, &ncols, work, &lwork, iwork, &info );
+  plumed_lapack_dgesdd( "A", &nrows, &ncols, da.data(), &nrows, S.data(), U.data(), &nrows, VT.data(), &ncols, work.data(), &lwork, iwork.data(), &info );
   if(info!=0) return info;
 
   // Compute the tolerance on the singular values ( machine epsilon * number of singular values * maximum singular value )
@@ -292,8 +297,6 @@ template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<double>& pseu
   if( pseudoinverse.rw!=ncols || pseudoinverse.cl!=nrows ) pseudoinverse.resize( ncols, nrows );
   mult( V, Si, tmp ); mult( tmp, UT, pseudoinverse );
 
-  // Deallocate all the memory
-  delete [] S; delete [] U; delete [] VT; delete [] work; delete [] iwork; delete [] da;
   return 0;
 }
 
@@ -309,25 +312,25 @@ template <typename T> int Invert( const Matrix<T>& A, Matrix<double>& inverse ) 
     for (unsigned i=0; i<A.rw; ++i) for (unsigned j=0; j<A.cl; ++j) tevec(i,j)=evec(j,i)/eval[j];
     mult(tevec,evec,inverse);
   } else {
-    double *da=new double[A.sz]; int *ipiv=new int[A.cl];
+    std::vector<double> da(A.sz);
+    std::vector<int> ipiv(A.cl);
     unsigned k=0; int n=A.rw, info;
     for(unsigned i=0; i<A.cl; ++i) for(unsigned j=0; j<A.rw; ++j) da[k++]=static_cast<double>( A(j,i) );
 
-    plumed_lapack_dgetrf(&n,&n,da,&n,ipiv,&info);
+    plumed_lapack_dgetrf(&n,&n,da.data(),&n,ipiv.data(),&info);
     if(info!=0) return info;
 
-    int lwork=-1; double* work=new double[A.cl];
-    plumed_lapack_dgetri(&n,da,&n,ipiv,work,&lwork,&info);
+    int lwork=-1;
+    std::vector<double> work(A.cl);
+    plumed_lapack_dgetri(&n,da.data(),&n,ipiv.data(),work.data(),&lwork,&info);
     if(info!=0) return info;
 
-    lwork=static_cast<int>( work[0] ); delete [] work; work=new double[lwork];
-    plumed_lapack_dgetri(&n,da,&n,ipiv,work,&lwork,&info);
+    lwork=static_cast<int>( work[0] ); work.resize(lwork);
+    plumed_lapack_dgetri(&n,da.data(),&n,ipiv.data(),work.data(),&lwork,&info);
     if(info!=0) return info;
 
     if( inverse.cl!=A.cl || inverse.rw!=A.rw ) { inverse.resize(A.rw,A.cl); }
     k=0; for(unsigned i=0; i<A.rw; ++i) for(unsigned j=0; j<A.cl; ++j) inverse(j,i)=da[k++];
-
-    delete [] da; delete[] work; delete[] ipiv;
   }
 
   return 0;
@@ -373,33 +376,34 @@ template <typename T> int logdet( const Matrix<T>& M, double& ldet ) {
   // Check matrix is square and symmetric
   plumed_assert( M.rw==M.cl || M.isSymmetric() );
 
-  double *da=new double[M.sz]; unsigned k=0; double *evals=new double[M.cl];
+  std::vector<double> da(M.sz);
+  unsigned k=0;
+  std::vector<double> evals(M.cl);
   // Transfer the matrix to the local array
   for (unsigned i=0; i<M.rw; ++i) for (unsigned j=0; j<M.cl; ++j) da[k++]=static_cast<double>( M(j,i) );
 
   int n=M.cl; int lwork=-1, liwork=-1, info, m, one=1;
-  double *work=new double[M.rw]; int *iwork=new int[M.rw];
+  std::vector<double> work(M.rw);
+  std::vector<int> iwork(M.rw);
   double vl, vu, abstol=0.0;
-  int* isup=new int[2*M.rw]; double *evecs=new double[M.sz];
-  plumed_lapack_dsyevr("N", "I", "U", &n, da, &n, &vl, &vu, &one, &n,
-                       &abstol, &m, evals, evecs, &n,
-                       isup, work, &lwork, iwork, &liwork, &info);
+  std::vector<int> isup(2*M.rw);
+  std::vector<double> evecs(M.sz);
+  plumed_lapack_dsyevr("N", "I", "U", &n, da.data(), &n, &vl, &vu, &one, &n,
+                       &abstol, &m, evals.data(), evecs.data(), &n,
+                       isup.data(), work.data(), &lwork, iwork.data(), &liwork, &info);
   if (info!=0) return info;
 
   // Retrieve correct sizes for work and iwork then reallocate
-  lwork=static_cast<int>( work[0] ); delete [] work; work=new double[lwork];
-  liwork=iwork[0]; delete [] iwork; iwork=new int[liwork];
+  lwork=static_cast<int>( work[0] ); work.resize(lwork);
+  liwork=iwork[0]; iwork.resize(liwork);
 
-  plumed_lapack_dsyevr("N", "I", "U", &n, da, &n, &vl, &vu, &one, &n,
-                       &abstol, &m, evals, evecs, &n,
-                       isup, work, &lwork, iwork, &liwork, &info);
+  plumed_lapack_dsyevr("N", "I", "U", &n, da.data(), &n, &vl, &vu, &one, &n,
+                       &abstol, &m, evals.data(), evecs.data(), &n,
+                       isup.data(), work.data(), &lwork, iwork.data(), &liwork, &info);
   if (info!=0) return info;
 
   // Transfer the eigenvalues and eigenvectors to the output
   ldet=0; for(unsigned i=0; i<M.cl; i++) { ldet+=log(evals[i]); }
-
-  // Deallocate all the memory used by the various arrays
-  delete[] da; delete [] work; delete [] evals; delete[] evecs; delete [] iwork; delete [] isup;
 
   return 0;
 }

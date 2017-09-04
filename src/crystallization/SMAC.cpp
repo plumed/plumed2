@@ -155,7 +155,7 @@ SMAC::SMAC(const ActionOptions& ao):
   std::string kernelinpt;
   for(int i=1;; i++) {
     if( !parseNumbered("KERNEL",i,kernelinpt) ) break;
-    KernelFunctions mykernel( kernelinpt, false );
+    KernelFunctions mykernel( kernelinpt );
     kernels.push_back( mykernel );
   }
   if( kernels.size()==0 ) error("no kernels defined");

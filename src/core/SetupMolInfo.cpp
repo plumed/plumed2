@@ -48,14 +48,14 @@ void SetupMolInfo::registerKeywords( Keywords& keys ) {
 }
 
 SetupMolInfo::~SetupMolInfo() {
-  delete &pdb;
+// empty destructor to delete unique_ptr
 }
 
 SetupMolInfo::SetupMolInfo( const ActionOptions&ao ):
   Action(ao),
   ActionSetup(ao),
   ActionAtomistic(ao),
-  pdb(*new(PDB))
+  pdb_fwd(new(PDB))
 {
   // Read what is contained in the pdb file
   parse("MOLTYPE",mytype);

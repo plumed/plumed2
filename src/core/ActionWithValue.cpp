@@ -62,7 +62,7 @@ ActionWithValue::ActionWithValue(const ActionOptions&ao):
 }
 
 ActionWithValue::~ActionWithValue() {
-  for(unsigned i=0; i<values.size(); ++i)delete values[i];
+// empty destructor to delete unique_ptr
 }
 
 void ActionWithValue::clearInputForces() {
@@ -89,7 +89,7 @@ bool ActionWithValue::exists( const std::string& name ) const {
 
 Value* ActionWithValue::copyOutput( const std::string& name ) const {
   for(unsigned i=0; i<values.size(); ++i) {
-    if (values[i]->name==name) return values[i];
+    if (values[i]->name==name) return values[i].get();
   }
   plumed_merror("there is no pointer with name " + name);
   return NULL;
@@ -97,19 +97,19 @@ Value* ActionWithValue::copyOutput( const std::string& name ) const {
 
 Value* ActionWithValue::copyOutput( const unsigned& n ) const {
   plumed_massert(n<values.size(),"you have requested a pointer that is out of bounds");
-  return values[n];
+  return values[n].get();
 }
 
 // -- HERE WE HAVE THE STUFF FOR THE DEFAULT VALUE -- //
 
 void ActionWithValue::addValue() {
   plumed_massert(values.empty(),"You have already added the default value for this action");
-  values.push_back(new Value(this,getLabel(), false ) );
+  values.emplace_back(new Value(this,getLabel(), false ) );
 }
 
 void ActionWithValue::addValueWithDerivatives() {
   plumed_massert(values.empty(),"You have already added the default value for this action");
-  values.push_back(new Value(this,getLabel(), true ) );
+  values.emplace_back(new Value(this,getLabel(), true ) );
 }
 
 void ActionWithValue::setNotPeriodic() {
@@ -128,7 +128,7 @@ void ActionWithValue::setPeriodic( const std::string& min, const std::string& ma
 Value* ActionWithValue::getPntrToValue() {
   plumed_dbg_massert(values.size()==1,"The number of components is not equal to one");
   plumed_dbg_massert(values[0]->name==getLabel(), "The value you are trying to retrieve is not the default");
-  return values[0];
+  return values[0].get();
 }
 
 // -- HERE WE HAVE THE STUFF FOR NAMED VALUES / COMPONENTS -- //
@@ -145,7 +145,7 @@ void ActionWithValue::addComponent( const std::string& name ) {
                    "Remove the line addComponent(\"bias\") from your bias.");
     plumed_massert(values[i]->name!=thename,"there is already a value with this name");
   }
-  values.push_back(new Value(this,thename, false ) );
+  values.emplace_back(new Value(this,thename, false ) );
   std::string msg="  added component to this action:  "+thename+" \n";
   log.printf(msg.c_str());
 }
@@ -162,7 +162,7 @@ void ActionWithValue::addComponentWithDerivatives( const std::string& name ) {
                    "Remove the line addComponentWithDerivatives(\"bias\") from your bias.");
     plumed_massert(values[i]->name!=thename,"there is already a value with this name");
   }
-  values.push_back(new Value(this,thename, true ) );
+  values.emplace_back(new Value(this,thename, true ) );
   std::string msg="  added component to this action:  "+thename+" \n";
   log.printf(msg.c_str());
 }
@@ -224,12 +224,12 @@ void ActionWithValue::turnOnDerivatives() {
 
 Value* ActionWithValue::getPntrToComponent( const std::string& name ) {
   int kk=getComponent(name);
-  return values[kk];
+  return values[kk].get();
 }
 
 Value* ActionWithValue::getPntrToComponent( int n ) {
   plumed_dbg_massert(n<values.size(),"you have requested a pointer that is out of bounds");
-  return values[n];
+  return values[n].get();
 }
 
 }
