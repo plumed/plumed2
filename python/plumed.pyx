@@ -33,21 +33,21 @@ cdef class Plumed:
      def __cinit__(self):
          self.c_plumed = cplumed.plumed_create()   #new cplumed.Plumed()
          cdef int pres = 8
-         cplumed.wrapped_cmd(self.c_plumed, "setRealPrecision", <void*>&pres )  
+         cplumed.plumed_cmd(self.c_plumed, "setRealPrecision", <void*>&pres )  
      def __dealloc__(self): 
          pass
          #del self.c_plumed
 
      def cmd_ndarray_real(self, ckey, val):
          cdef double [:] abuffer = val.ravel()
-         cplumed.wrapped_cmd(self.c_plumed, ckey, <void*>&abuffer[0])
+         cplumed.plumed_cmd(self.c_plumed, ckey, <void*>&abuffer[0])
      def cmd_ndarray_int(self, ckey, val):
          cdef long [:] abuffer = val.ravel()
-         cplumed.wrapped_cmd(self.c_plumed, ckey, <void*>&abuffer[0])
+         cplumed.plumed_cmd(self.c_plumed, ckey, <void*>&abuffer[0])
      cdef cmd_float(self, ckey, double val ):
-         cplumed.wrapped_cmd(self.c_plumed, ckey, <void*>&val )
+         cplumed.plumed_cmd(self.c_plumed, ckey, <void*>&val )
      cdef cmd_int(self, ckey, int val):
-         cplumed.wrapped_cmd(self.c_plumed, ckey, <void*>&val)
+         cplumed.plumed_cmd(self.c_plumed, ckey, <void*>&val)
 
      def cmd( self, key, val=None ):
          cdef bytes py_bytes = key.encode()
@@ -56,7 +56,7 @@ cdef class Plumed:
          cdef np.int_t[:] ibuffer
          cdef np.float64_t[:] dbuffer
          if val is None :
-            cplumed.wrapped_cmd( self.c_plumed, ckey, NULL )
+            cplumed.plumed_cmd( self.c_plumed, ckey, NULL )
          elif isinstance(val, (int,long) ):
             if key=="getDataRank" :
                raise ValueError("when using cmd with getDataRank option value must a size one ndarray")
@@ -75,6 +75,6 @@ cdef class Plumed:
          elif isinstance(val, basestring ) :
               py_bytes = val.encode()
               cval = py_bytes 
-              cplumed.wrapped_cmd( self.c_plumed, ckey, <void*>cval )
+              cplumed.plumed_cmd( self.c_plumed, ckey, <void*>cval )
          else :
             raise ValueError("Unknown value type ({})".format(str(type(val))))

@@ -26,6 +26,4 @@ cdef extern from "Plumed.h" :
      ctypedef struct plumed:
          pass
      plumed plumed_create()
-
-cdef extern from "PythonWrapper.h" namespace "PLMD" :
-     int wrapped_cmd(plumed p,const char*key,const void*val) except +RuntimeError
+     void plumed_cmd(plumed p, const char*key, const void*val) except + 

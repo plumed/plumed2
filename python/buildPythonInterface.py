@@ -46,11 +46,11 @@ setup(
   url='http://www.plumed.org',
   ext_modules = cythonize([
                   Extension( name="plumed", 
-                             sources=["plumed.pyx","PythonWrapper.cpp"],
+                             sources=["plumed.pyx"],
                              library_dirs=["../src/lib/"],
                              libraries=["plumed"],
                              language="c++",
-                             include_dirs=[".","../src/wrapper/", numpy.get_include()]
+                             include_dirs=["../src/wrapper/", numpy.get_include()]
                            )
                           ])
 )
