@@ -391,7 +391,7 @@ ABF ABF::mergewindow(const ABF &aWA, const ABF &aWB) {
   const std::vector<DRRAxis> dA = aWA.getDimensions();
   const std::vector<DRRAxis> dB = aWB.getDimensions();
   const std::vector<DRRAxis> dR = merge(dA, dB);
-  const std::string suffix = aWA.getSuffix() + "+" + aWB.getSuffix();
+  const std::string suffix = ".abf";
   ABF result(dR, suffix);
   const std::vector<std::vector<double>> table = result.getTable();
   const size_t nrows = result.getSampleSize();
@@ -441,7 +441,7 @@ CZAR CZAR::mergewindow(const CZAR &cWA, const CZAR &cWB) {
   const std::vector<DRRAxis> dB = cWB.getDimensions();
   const std::vector<DRRAxis> dR = merge(dA, dB);
   const double newkbt = cWA.getkbt();
-  const std::string suffix = cWA.getSuffix() + "+" + cWB.getSuffix();
+  const std::string suffix = ".czar";
   CZAR result(dR, suffix, newkbt);
   const std::vector<std::vector<double>> table = result.getTable();
   const size_t nrows = result.getSampleSize();
