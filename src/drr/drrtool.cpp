@@ -30,7 +30,6 @@
 #include <iostream>
 #include <string>
 
-using namespace std;
 using namespace PLMD::DRR;
 
 namespace PLMD {
@@ -71,7 +70,7 @@ public:
   int main(FILE *in, FILE *out, Communicator &pc);
   void extractdrr(const std::vector<std::string> &filename);
   void mergewindows(const std::vector<std::string> &filename);
-  string description() const { return "Extract or merge the drrstate files."; }
+  std::string description() const { return "Extract or merge the drrstate files."; }
 
 private:
   bool verbosity;
@@ -92,12 +91,12 @@ drrtool::drrtool(const CLToolOptions &co) : CLTool(co) {
 
 int drrtool::main(FILE *in, FILE *out, Communicator &pc) {
   parseFlag("-v", verbosity);
-  vector<string> stateFilesToExtract;
+  std::vector<std::string> stateFilesToExtract;
   bool doextract = parseVector("--extract", stateFilesToExtract);
   if (doextract) {
     extractdrr(stateFilesToExtract);
   }
-  vector<string> stateFilesToMerge;
+  std::vector<std::string> stateFilesToMerge;
   bool domerge = parseVector("--merge", stateFilesToMerge);
   if (domerge) {
     mergewindows(stateFilesToMerge);
@@ -107,9 +106,9 @@ int drrtool::main(FILE *in, FILE *out, Communicator &pc) {
 
 void drrtool::extractdrr(const std::vector<std::string> &filename) {
 #pragma omp parallel for
-  for (size_t i = 0; i < filename.size(); ++i) {
+  for (size_t j = 0; j < filename.size(); ++j) {
     std::ifstream in;
-    in.open(filename[i]);
+    in.open(filename[j]);
     boost::archive::binary_iarchive ia(in);
     long long int step;
     std::vector<double> fict;
@@ -133,7 +132,7 @@ void drrtool::extractdrr(const std::vector<std::string> &filename) {
       }
       std::cout << "Dumping counts and gradients from grids..." << '\n';
     }
-    std::string outputname(filename[i]);
+    std::string outputname(filename[j]);
     const std::string suffix(".drrstate");
     outputname = outputname.substr(0, outputname.length() - suffix.length());
     if (verbosity)
@@ -153,9 +152,9 @@ void drrtool::mergewindows(const std::vector<std::string> &filename) {
   // Read grid into abfs and czars;
   std::vector<ABF> abfs;
   std::vector<CZAR> czars;
-  for (size_t i = 0; i < filename.size(); ++i) {
+  for (auto it_fn = filename.begin(); it_fn != filename.end(); ++it_fn) {
     std::ifstream in;
-    in.open(filename[i]);
+    in.open((*it_fn));
     boost::archive::binary_iarchive ia(in);
     long long int step;
     std::vector<double> fict;
