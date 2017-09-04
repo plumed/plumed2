@@ -206,6 +206,32 @@ public:
 
 PLUMED_REGISTER_ACTION(Matheval,"MATHEVAL")
 
+//+PLUMEDOC FUNCTION CUSTOM
+/*
+An alias to the \ref MATHEVAL function.
+
+\par Examples
+
+Just replace \ref MATHEVAL with \ref CUSTOM.
+
+\plumedfile
+d: DISTANCE ATOMS=10,15
+m: CUSTOM ARG=d FUNC=0.5*step(0.5-x)+x*step(x-0.5) PERIODIC=NO
+# check the function you are applying:
+PRINT ARG=d,n FILE=checkme
+RESTRAINT ARG=d AT=0.5 KAPPA=10.0
+\endplumedfile
+(see also \ref DISTANCE, \ref PRINT, and \ref RESTRAINT)
+
+*/
+//+ENDPLUMEDOC
+
+class Custom :
+  public Matheval {
+};
+
+PLUMED_REGISTER_ACTION(Matheval,"CUSTOM")
+
 void Matheval::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
   keys.use("ARG"); keys.use("PERIODIC");

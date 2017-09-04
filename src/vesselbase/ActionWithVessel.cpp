@@ -56,7 +56,7 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   noderiv(true),
   actionIsBridged(false),
   nactive_tasks(0),
-  stopwatch(*new Stopwatch),
+  stopwatch_fwd(new Stopwatch),
   dertime_can_be_off(false),
   dertime(true),
   contributorsAreUnlocked(false),
@@ -97,7 +97,6 @@ ActionWithVessel::~ActionWithVessel() {
     log.printf("timings for action %s with label %s \n", getName().c_str(), getLabel().c_str() );
     log<<stopwatch;
   }
-  delete &stopwatch;
 }
 
 void ActionWithVessel::addVessel( const std::string& name, const std::string& input, const int numlab ) {

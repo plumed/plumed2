@@ -60,7 +60,7 @@ void FunctionVessel::calculate( const unsigned& current, MultiValue& myvals, std
   if( norm ) {
     if( usetol && weight<getTolerance() ) return;
     buffer[bufstart+1+nderivatives] += weight;
-    if( diffweight ) myvals.chainRule( 0, 1, 1, 0, 1.0, bufstart, buffer );
+    if( getAction()->derivativesAreRequired() && diffweight ) myvals.chainRule( 0, 1, 1, 0, 1.0, bufstart, buffer );
   }
 
   double contr=weight*f;

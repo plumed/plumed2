@@ -1149,6 +1149,7 @@ MetaD::MetaD(const ActionOptions& ao):
   hillsOfile_.open(ifilesnames[mw_id_]);
   if(fmt.length()>0) hillsOfile_.fmtField(fmt);
   hillsOfile_.addConstantField("multivariate");
+  hillsOfile_.addConstantField("kerneltype");
   if(doInt_) {
     hillsOfile_.addConstantField("lower_int").printField("lower_int",lowI_);
     hillsOfile_.addConstantField("upper_int").printField("upper_int",uppI_);
@@ -1282,6 +1283,7 @@ void MetaD::writeGaussian(const Gaussian& hill, OFile&file)
   for(unsigned i=0; i<ncv; ++i) {
     file.printField(getPntrToArgument(i),hill.center[i]);
   }
+  hillsOfile_.printField("kerneltype","gaussian");
   if(hill.multivariate) {
     hillsOfile_.printField("multivariate","true");
     Matrix<double> mymatrix(ncv,ncv);
@@ -1781,8 +1783,8 @@ bool MetaD::scanOneHill(IFile *ifile,  vector<Value> &tmpvalues, vector<double> 
       center[i]=tmpvalues[i].get();
     }
     // scan for multivariate label: record the actual file position so to eventually rewind
-    std::string sss;
-    ifile->scanField("multivariate",sss);
+    std::string sss, ktype;
+    ifile->scanField("multivariate",sss); ifile->scanField("kerneltype",ktype);
     if(sss=="true") multivariate=true;
     else if(sss=="false") multivariate=false;
     else plumed_merror("cannot parse multivariate = "+ sss);

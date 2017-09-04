@@ -45,14 +45,27 @@ generated with `gmx editconf -f topol.tpr -o reference.pdb`.
 
 More information of the PDB parser implemented in PLUMED can be found \ref pdbreader "at this page".
 
-
-Using MOLINFO with a protein's or nucleic acid's pdb extends the possibility of atoms selection using the @ special
-symbol.
-
 Providing `MOLTYPE=protein`, `MOLTYPE=rna`, or `MOLTYPE=dna` will instruct plumed to look
 for known residues from these three types of molecule. In other words, this is available for
 historical reasons and to allow future extensions where alternative lists will be provided.
 As of now, you can just ignore this keyoword.
+
+Using MOLINFO with a protein's or nucleic acid's pdb extends the possibility of atoms selection using the @ special
+symbol in the form
+
+\verbatim
+@"definition"-chainresiduenum
+@"definition"-residuenum
+\endverbatim
+
+So for example
+
+\verbatim
+@psi-1 will select the atoms defining the psi torsion of residue 1
+@psi-C1 will define the same torsion for residue 1 of chain C.
+\endverbatim
+
+In the following are listed the current available definitions:
 
 For protein residues, the following groups are available:
 
@@ -101,9 +114,8 @@ For DNA or RNA residues, the following groups are available:
 Notice that `zeta` and `epsilon` groups should not be used on 3' end residue and `alpha` and `beta`
 should not be used on 5' end residue.
 
-If the chosen group name does not match any of the default ones, the parser looks for a single atom
-with the same name. This means that it is also possible to pick single atoms using the syntax
-`@atom-residue`.
+Furthermore it is also possible to pick single atoms using the syntax
+`@atom-chainresiduenum` or `@atom-residuenum`.
 
 \warning If a residue-chain is repeated twice in the reference pdb only the first entry will be selected.
 
@@ -135,6 +147,14 @@ hb3: DISTANCE ATOMS=@O6-1,@N4-14
 PRINT ARG=hb1,hb2,hb3
 \endplumedfile
 
+This example use MOLINFO to calculate torsions angles
+
+\verbatim
+MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
+t1: TORSION ATOMS=@phi-3
+t2: TORSION ATOMS=@psi-4
+PRINT ARG=t1,t2 FILE=colvar STRIDE=10
+\endverbatim
 
 */
 //+ENDPLUMEDOC

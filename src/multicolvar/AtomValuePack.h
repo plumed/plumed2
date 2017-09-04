@@ -52,8 +52,6 @@ private:
 /// This is stuff for link cells
   std::vector<unsigned> cells_required;
 ///
-  void addDerivative( const unsigned&, const unsigned&, const double& );
-///
   void addAtomsDerivatives( const unsigned&, const unsigned&, const Vector& );
 ///
   void addTemporyAtomsDerivatives( const unsigned& jder, const Vector& der );
@@ -97,6 +95,8 @@ public:
   void addComDerivatives( const int&, const Vector&, CatomPack& );
 ///
   MultiValue& getUnderlyingMultiValue();
+///
+  void addDerivative( const unsigned&, const unsigned&, const double& );
 };
 
 inline

@@ -126,14 +126,14 @@ Units::Units(const ActionOptions&ao):
   s="";
   parse("CHARGE",s);
   if(s.length()>0) u.setCharge(s);
-  if(u.getChargeString().length()>0) log.printf("  time: %s\n",u.getChargeString().c_str());
-  else                               log.printf("  time: %f e\n",u.getCharge());
+  if(u.getChargeString().length()>0) log.printf("  charge: %s\n",u.getChargeString().c_str());
+  else                               log.printf("  charge: %f e\n",u.getCharge());
 
   s="";
   parse("MASS",s);
   if(s.length()>0) u.setMass(s);
-  if(u.getMassString().length()>0) log.printf("  time: %s\n",u.getMassString().c_str());
-  else                             log.printf("  time: %f amu\n",u.getMass());
+  if(u.getMassString().length()>0) log.printf("  mass: %s\n",u.getMassString().c_str());
+  else                             log.printf("  mass: %f amu\n",u.getMass());
 
   bool natural=false;
   parseFlag("NATURAL",natural);
