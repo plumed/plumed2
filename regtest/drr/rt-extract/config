@@ -1,0 +1,2 @@
+type=plumed
+arg="drrtool --extract test.drrstate"
