@@ -231,11 +231,11 @@ void RosettaCoEvolutionRestraint::calculate()
     // get distance
     double dist = getArgument(i);
     // calculate temporary factor
-    double tmp0 = exp( ( dist - R0_[i] ) / gamma_[i] );
+    double tmp0 = exp( - ( dist - R0_[i] ) / gamma_[i] );
     // increment energy
     ene += weights_[i] / ( 1.0 + tmp0 );
     // calculate force
-    force[i] = weights_[i] / ( 1.0 + tmp0 ) / ( 1.0 + tmp0 ) * tmp0 / gamma_[i];
+    force[i] = -weights_[i] / ( 1.0 + tmp0 ) / ( 1.0 + tmp0 ) * tmp0 / gamma_[i];
   }
 
   // sum energy and forces
