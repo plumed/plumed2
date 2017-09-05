@@ -5941,7 +5941,16 @@ $as_echo "#define __PLUMED_HAS_MOLFILE_PLUGINS 1" >>confdefs.h
 
 found=ko
 if test "$external_molfile_plugins" == true ; then
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for molfile_dcdplugin_init in -lmolfile_plugin" >&5
+  ac_fn_cxx_check_header_mongrel "$LINENO" "libmolfile_plugin.h" "ac_cv_header_libmolfile_plugin_h" "$ac_includes_default"
+if test "x$ac_cv_header_libmolfile_plugin_h" = xyes; then :
+
+      ac_fn_cxx_check_func "$LINENO" "molfile_dcdplugin_init" "ac_cv_func_molfile_dcdplugin_init"
+if test "x$ac_cv_func_molfile_dcdplugin_init" = xyes; then :
+  found=ok
+else
+
+      if test "${libsearch}" == true ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for molfile_dcdplugin_init in -lmolfile_plugin" >&5
 $as_echo_n "checking for molfile_dcdplugin_init in -lmolfile_plugin... " >&6; }
 if ${ac_cv_lib_molfile_plugin_molfile_dcdplugin_init+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -5978,16 +5987,16 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_molfile_plugin_molfile_dcdplugin_init" >&5
 $as_echo "$ac_cv_lib_molfile_plugin_molfile_dcdplugin_init" >&6; }
 if test "x$ac_cv_lib_molfile_plugin_molfile_dcdplugin_init" = xyes; then :
-  if test "${libsearch}" == true ; then
-        	 ac_fn_cxx_check_header_mongrel "$LINENO" "libmolfile_plugin.h" "ac_cv_header_libmolfile_plugin_h" "$ac_includes_default"
-if test "x$ac_cv_header_libmolfile_plugin_h" = xyes; then :
   LIBS="-lmolfile_plugin $LIBS" found=ok
 fi
 
-
-           fi
+      fi
 
 fi
+
+
+fi
+
 
 fi
 if test $found == ko ; then
