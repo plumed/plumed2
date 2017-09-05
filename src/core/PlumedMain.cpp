@@ -845,7 +845,7 @@ void PlumedMain::runJobsAtEndOfCalculation() {
 }
 
 #ifdef __PLUMED_HAS_PYTHON
-// This is here to stop cppcheck throwing an error 
+// This is here to stop cppcheck throwing an error
 #endif
 
 }
