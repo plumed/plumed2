@@ -89,6 +89,7 @@ void drrtool::registerKeywords(Keywords &keys) {
 
 drrtool::drrtool(const CLToolOptions &co) : CLTool(co) {
   inputdata = commandline;
+  verbosity = false;
 }
 
 int drrtool::main(FILE *in, FILE *out, Communicator &pc) {
