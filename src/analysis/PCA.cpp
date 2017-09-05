@@ -106,7 +106,6 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit PCA(const ActionOptions&ao);
   void performAnalysis();
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const { plumed_error(); }
 };
 
 PLUMED_REGISTER_ACTION(PCA,"PCA")

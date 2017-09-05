@@ -25,14 +25,11 @@
 #include <vector>
 
 namespace PLMD {
-
-class PointWiseMapping;
-
 namespace analysis {
 
 class ClassicalScaling {
 public:
-  static void run( PointWiseMapping* mymap );
+//  static void run( PointWiseMapping* mymap );
 };
 
 }

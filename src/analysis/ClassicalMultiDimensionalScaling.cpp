@@ -21,7 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "AnalysisWithLandmarks.h"
 #include "ClassicalScaling.h"
-#include "reference/PointWiseMapping.h"
 #include "core/ActionRegister.h"
 
 namespace PLMD {
@@ -169,7 +168,6 @@ private:
   unsigned nlow;
   std::string ofilename;
   std::string efilename;
-  std::unique_ptr<PointWiseMapping> myembedding;
 public:
   static void registerKeywords( Keywords& keys );
   explicit ClassicalMultiDimensionalScaling( const ActionOptions& ao );
@@ -190,7 +188,6 @@ ClassicalMultiDimensionalScaling::ClassicalMultiDimensionalScaling( const Action
   AnalysisWithLandmarks(ao),
   myembedding(new PointWiseMapping( getMetricName(), false ))
 {
-  setDataToAnalyze( dynamic_cast<MultiReferenceBase*>(myembedding.get()) );
 
   parse("NLOW_DIM",nlow);
   if( nlow<1 ) error("dimensionality of low dimensional space must be at least one");
@@ -200,7 +197,7 @@ ClassicalMultiDimensionalScaling::ClassicalMultiDimensionalScaling( const Action
     if(lab.find("@")!=std::string::npos) propnames[i]=getName() + "." + num;
     else propnames[i]=getLabel() + "." + num;
   }
-  myembedding->setPropertyNames( propnames, false );
+  //myembedding->setPropertyNames( propnames, false );
 
   parseOutputFile("EMBEDDING_OFILE",efilename);
   parseOutputFile("OUTPUT_FILE",ofilename);
@@ -208,10 +205,9 @@ ClassicalMultiDimensionalScaling::ClassicalMultiDimensionalScaling( const Action
 
 void ClassicalMultiDimensionalScaling::analyzeLandmarks() {
   // Calculate all pairwise diatances
-  myembedding->calculateAllDistances( getPbc(), getArguments(), comm, myembedding->modifyDmat(), true );
+  // myembedding->calculateAllDistances( getPbc(), getArguments(), comm, myembedding->modifyDmat(), true );
 
   // Run multidimensional scaling
-  ClassicalScaling::run( myembedding.get() );
 
   // Output the embedding as long lists of data
 //  std::string gfname=saveResultsFromPreviousAnalyses( ofilename );
@@ -221,20 +217,20 @@ void ClassicalMultiDimensionalScaling::analyzeLandmarks() {
   gfile.open( ofilename.c_str() );
 
   // Print embedding coordinates
-  for(unsigned i=0; i<myembedding->getNumberOfReferenceFrames(); ++i) {
-    for(unsigned j=0; j<nlow; ++j) {
-      std::string num; Tools::convert(j+1,num);
-      gfile.printField( getLabel() + "." + num, myembedding->getProjectionCoordinate(i,j) );
-    }
-    gfile.printField();
-  }
+  // for(unsigned i=0; i<myembedding->getNumberOfReferenceFrames(); ++i) {
+  //   for(unsigned j=0; j<nlow; ++j) {
+  //     std::string num; Tools::convert(j+1,num);
+  //     gfile.printField( getLabel() + "." + num, myembedding->getProjectionCoordinate(i,j) );
+  //   }
+  //   gfile.printField();
+  // }
   gfile.close();
 
   // Output the embedding in plumed format
   if( efilename!="dont output") {
     OFile afile; afile.link(*this); afile.setBackupString("analysis");
     afile.open( efilename.c_str() );
-    myembedding->print( "classical mds", getTime(), afile, getOutputFormat(), atoms.getUnits().getLength()/0.1 );
+    //myembedding->print( "classical mds", getTime(), afile, getOutputFormat(), atoms.getUnits().getLength()/0.1 );
     afile.close();
   }
 }

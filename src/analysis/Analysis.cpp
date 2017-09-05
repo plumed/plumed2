@@ -35,7 +35,10 @@ namespace PLMD {
 namespace analysis {
 
 void Analysis::registerKeywords( Keywords& keys ) {
-  vesselbase::ActionWithAveraging::registerKeywords( keys );
+  Action::registerKeywords( keys ); 
+  ActionAtomistic::registerKeywords( keys );
+  ActionWithArguments::registerKeywords( keys );
+  ActionPilot::registerKeywords( keys );
   keys.use("ARG"); keys.reset_style("ARG","optional");
   keys.add("atoms","ATOMS","the atoms whose positions we are tracking for the purpose of analysing the data");
   keys.add("compulsory","METRIC","EUCLIDEAN","how are we measuring the distances between configurations");
@@ -49,7 +52,9 @@ void Analysis::registerKeywords( Keywords& keys ) {
 
 Analysis::Analysis(const ActionOptions&ao):
   Action(ao),
-  ActionWithAveraging(ao),
+  ActionAtomistic(ao),
+  ActionWithArguments(ao),
+  ActionPilot(ao),
   nomemory(true),
   write_chq(false),
   reusing_data(false),
@@ -156,6 +161,20 @@ void Analysis::readDataFromFile( const std::string& filename ) {
   // if(old_norm>0) firstAnalysisDone=true;
 }
 
+void Analysis::lockRequests() {
+  ActionAtomistic::lockRequests();
+  ActionWithArguments::lockRequests();
+}
+
+void Analysis::unlockRequests() {
+  ActionAtomistic::unlockRequests();
+  ActionWithArguments::unlockRequests();
+}
+
+void Analysis::calculateNumericalDerivatives(PLMD::ActionWithValue*) {
+  error("not possible to compute numerical derivatives for this action");
+}
+
 void Analysis::parseOutputFile( const std::string& key, std::string& filename ) {
   parse(key,filename);
   if(filename=="dont output") return;
@@ -173,18 +192,18 @@ void Analysis::accumulate() {
   // This is used when we have a full quota of data from the first run
   if( freq>0 && idata==logweights.size() ) return;
   // Get the arguments ready to transfer to reference configuration
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) current_args[i]=getArgument(i);
+  for(unsigned i=0; i<getNumberOfScalarArguments(); ++i) current_args[i]=getArgumentScalar(i);
 
   if( freq>0) {
     // Get the arguments and store them in a vector of vectors
     data[idata]->setReferenceConfig( getPositions(), current_args, getMetric() );
-    logweights[idata] = lweight;
+    logweights[idata] = 0.0;  // lweight;
   } else {
     data.emplace_back( metricRegister().create<ReferenceConfiguration>( metricname ) );
     plumed_dbg_assert( data.size()==idata+1 );
     data[idata]->setNamesAndAtomNumbers( getAbsoluteIndexes(), argument_names );
     data[idata]->setReferenceConfig( getPositions(), current_args, getMetric() );
-    logweights.push_back(lweight);
+    logweights.push_back(0.0);    // push_back(lweight);
   }
 
   // Write data to checkpoint file
@@ -291,7 +310,8 @@ void Analysis::runAnalysis() {
 
 }
 
-void Analysis::performOperations( const bool& from_update ) {
+void Analysis::update() {
+  if( !onStep() ) return;
   accumulate();
   if( freq>0 ) {
     if( getStep()>0 && getStep()%freq==0 ) runAnalysis();

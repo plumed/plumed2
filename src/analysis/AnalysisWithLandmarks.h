@@ -53,8 +53,6 @@ public:
 /// Do the analysis
   void performAnalysis();
   virtual void analyzeLandmarks()=0;
-/// This does nothing
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const ;
 };
 
 }

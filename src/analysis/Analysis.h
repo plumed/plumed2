@@ -22,7 +22,9 @@
 #ifndef __PLUMED_analysis_Analysis_h
 #define __PLUMED_analysis_Analysis_h
 
-#include "vesselbase/ActionWithAveraging.h"
+#include "core/ActionWithArguments.h"
+#include "core/ActionAtomistic.h"
+#include "core/ActionPilot.h"
 
 #define PLUMED_ANALYSIS_INIT(ao) Action(ao),Analysis(ao)
 
@@ -39,7 +41,10 @@ is information as to how to go about implementing a new analysis method.
 
 */
 
-class Analysis : public vesselbase::ActionWithAveraging {
+class Analysis : 
+public ActionAtomistic,
+public ActionWithArguments,
+public ActionPilot {
 private:
 /// Are we treating each block of data separately
   bool nomemory;
@@ -110,10 +115,13 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Analysis(const ActionOptions&);
   ~Analysis();
+  void lockRequests();
+  void unlockRequests();
+  void calculateNumericalDerivatives(PLMD::ActionWithValue*);
   void calculate() {}
   void apply() {}
   void accumulate();
-  void performOperations( const bool& from_update );
+  void update();
   virtual void performAnalysis()=0;
   void runFinalJobs();
   void runAnalysis();
