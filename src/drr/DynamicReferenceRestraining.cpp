@@ -36,11 +36,11 @@
 #include <string>
 
 using namespace PLMD;
-using namespace PLMD::DRR;
+using namespace bias;
 using namespace std;
 
 namespace PLMD {
-namespace bias {
+namespace drr {
 
 //+PLUMEDOC BIAS DRR
 /*

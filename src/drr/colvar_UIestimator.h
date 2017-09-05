@@ -36,6 +36,9 @@
 // when integrated into other code, just remove this line and "...cvm::backup_file(...)"
 // #include "colvarmodule.h"
 
+namespace PLMD {
+namespace drr {
+
 namespace UIestimator
 {
 const int Y_SIZE = 21;
@@ -851,6 +854,9 @@ LOOPEND4:
     }
   }
 };
+}
+
+}
 }
 
 #endif

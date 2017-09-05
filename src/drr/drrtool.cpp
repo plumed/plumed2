@@ -30,10 +30,11 @@
 #include <iostream>
 #include <string>
 
-using namespace PLMD::DRR;
+using namespace PLMD;
+using namespace cltools;
 
 namespace PLMD {
-namespace cltools {
+namespace drr {
 
 //+PLUMEDOC TOOLS drrtool
 /*
