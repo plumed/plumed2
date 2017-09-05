@@ -253,7 +253,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   else if(name=="GAUSSIAN") type=gaussian;
   else if(name=="CUBIC") type=cubic;
   else if(name=="TANH") type=tanh;
-  else if(name=="MATHEVAL" && std::getenv("PLUMED_USE_LEPTON")) {
+  else if((name=="MATHEVAL" || name=="CUSTOM") && std::getenv("PLUMED_USE_LEPTON")) {
     type=leptontype;
     std::string func;
     Tools::parse(data,"FUNC",func);
@@ -266,7 +266,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     for(auto & e : expression_deriv) e=ped.createCompiledExpression();
   }
 #ifdef __PLUMED_HAS_MATHEVAL
-  else if(name=="MATHEVAL") {
+  else if(name=="MATHEVAL" || name=="CUSTOM") {
     type=matheval;
     std::string func;
     Tools::parse(data,"FUNC",func);
