@@ -58,6 +58,10 @@ class CoEvolutionRestraint : public bias::Bias
   double alpha_p_sig_;
   double alpha_n_mean_;
   double alpha_n_sig_;
+  // sigma parameters
+  double sigma_p_;
+  double sigma_n_;
+  double Dsigma_;
   // "cutoff", gamma, and P0 parameters;
   vector<double> R0_;
   vector<double> gamma_;
@@ -70,12 +74,17 @@ class CoEvolutionRestraint : public bias::Bias
   unsigned int MCaccalpha_p_;
   unsigned int MCaccalpha_n_;
   long int MCfirst_;
+  unsigned int MCaccsigma_p_;
+  unsigned int MCaccsigma_n_;
   // parallel stuff
   unsigned rank_;
   unsigned nrep_;
+  // use jeffreys
+  bool   doJeffreys_;
 
   void   setup_restraint(double R0, double gamma, string res_file);
   double getPrior(double a, double amean, double asig);
+  double getJeffreysPrior(double a, double amean, double s);
   void   doMonteCarlo(double oldE, const vector<double> &fmod, long int step);
   double getEnergy(double alpha_p, double alpha_n, const vector<double> &fmod);
   double proposeMove(double x, double xmin, double xmax, double dxmax);
@@ -99,10 +108,6 @@ void CoEvolutionRestraint::registerKeywords(Keywords& keys) {
   keys.add("compulsory","R0","forward model parameter R0");
   keys.add("compulsory","P0","forward model parameter P0");
   keys.add("compulsory","GAMMA","forward model parameter gamma");
-  keys.add("compulsory","ALPHA_P_MEAN","alpha_p prior mean");
-  keys.add("compulsory","ALPHA_P_SIG","alpha_p prior sigma constant");
-  keys.add("compulsory","ALPHA_N_MEAN","alpha_n prior mean");
-  keys.add("compulsory","ALPHA_N_SIG","alpha_n prior sigma constant");
   keys.add("compulsory","NPOS","number of positives");
   keys.add("compulsory","NNEG","number of negatives");
   keys.add("compulsory","RES_FILE","file with residue ids for each argument");
@@ -110,18 +115,29 @@ void CoEvolutionRestraint::registerKeywords(Keywords& keys) {
   keys.add("optional","TEMP","temperature in energy units");
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_STRIDE","MC stride");
+  keys.addFlag("JEFFREYS",false,"use Jeffreys prior for sigma pos and neg");
+  keys.add("optional","SIGMA_P0","initial value of the sigma positive parameter");
+  keys.add("optional","SIGMA_N0","initial value of the sigma negative parameter");
+  keys.add("optional","DSIGMA","maximum MC move of the sigma parameters");
   componentsAreNotOptional(keys);
   useCustomisableComponents(keys);
   keys.addOutputComponent("alphap",   "default","alpha positive parameter");
   keys.addOutputComponent("alphan",   "default","alpha negative parameter");
   keys.addOutputComponent("accalphap","default","MC acceptance alpha positive");
   keys.addOutputComponent("accalphan","default","MC acceptance alpha negative");
+  keys.addOutputComponent("sigmap","JEFFREYS","sigma positive parameter");
+  keys.addOutputComponent("sigman","JEFFREYS","sigma negative parameter");
+  keys.addOutputComponent("accsigmap","JEFFREYS","MC acceptance sigma positive");
+  keys.addOutputComponent("accsigman","JEFFREYS","MC acceptance sigma negative");
 }
 
 CoEvolutionRestraint::CoEvolutionRestraint(const ActionOptions&ao):
   PLUMED_BIAS_INIT(ao), slope_(0.0),
+  sigma_p_(0.0), sigma_n_(0.0), Dsigma_(0.0),
   MCsteps_(1), MCstride_(1), MCaccalpha_p_(0),
-  MCaccalpha_n_(0), MCfirst_(-1)
+  MCaccalpha_n_(0), MCfirst_(-1),
+  MCaccsigma_p_(0), MCaccsigma_n_(0),
+  doJeffreys_(false)
 {
   // additional slope
   parse("SLOPE", slope_);
@@ -144,11 +160,24 @@ CoEvolutionRestraint::CoEvolutionRestraint(const ActionOptions&ao):
   string res_file;
   parse("RES_FILE", res_file);
 
-  // prior parameters
-  parse("ALPHA_P_MEAN", alpha_p_mean_);
-  parse("ALPHA_P_SIG",  alpha_p_sig_);
-  parse("ALPHA_N_MEAN", alpha_n_mean_);
-  parse("ALPHA_N_SIG",  alpha_n_sig_);
+  // set constant prior parameters
+  alpha_p_mean_ = 0.2399;
+  alpha_p_sig_ = 4269552.0;
+  alpha_n_mean_ = 0.0064;
+  alpha_n_sig_ = 165805402.0;
+
+  // check if using Jeffreys prior
+  parseFlag("JEFFREYS", doJeffreys_);
+  // parse initial values of sigma positive and negative
+  parse("SIGMA_P0", sigma_p_);
+  parse("SIGMA_N0", sigma_n_);
+  parse("DSIGMA",   Dsigma_);
+  // check for errors
+  if(doJeffreys_) {
+    if(sigma_p_ <=0.0 || sigma_p_ >=1.0) error("With JEFFREYS, SIGMA_P0 should be specified and strictly between 0 and 1");
+    if(sigma_n_ <=0.0 || sigma_n_ >=1.0) error("With JEFFREYS, SIGMA_N0 should be specified and strictly between 0 and 1");
+    if(Dsigma_  <=0.0 || Dsigma_  >=1.0) error("With JEFFREYS, DSIGMA should be specified and strictly between 0 and 1");
+  }
 
   // number of positives and negatives
   parse("NPOS", npos_);
@@ -180,13 +209,15 @@ CoEvolutionRestraint::CoEvolutionRestraint(const ActionOptions&ao):
   log.printf("  initial value of alpha_p %f\n",alpha_p_);
   log.printf("  initial value of alpha_n %f\n",alpha_n_);
   log.printf("  maximum MC move of the alpha parameter %f\n",Dalpha_);
+  if(doJeffreys_) {
+    log.printf("  using Jeffreys prior for sigma\n");
+    log.printf("  initial value of sigma_p %f\n",sigma_p_);
+    log.printf("  initial value of sigma_n %f\n",sigma_n_);
+    log.printf("  maximum MC move of the sigma parameters %f\n",Dsigma_);
+  }
   log.printf("  forward model parameter R0 %f\n",R0);
   log.printf("  forward model parameter P0 %f\n",P0_);
   log.printf("  forward model parameter gamma %f\n",gamma);
-  log.printf("  alpha_p prior mean %f\n",alpha_p_mean_);
-  log.printf("  alpha_p prior sigma constant %f\n",alpha_p_sig_);
-  log.printf("  alpha_n prior mean %f\n",alpha_n_mean_);
-  log.printf("  alpha_n prior sigma constant %f\n",alpha_n_sig_);
   log.printf("  number of positive data points %d\n",npos_);
   log.printf("  number of negative data points %d\n",nneg_);
   log.printf("  temperature of the system in energy unit %f\n",kbt_);
@@ -197,6 +228,12 @@ CoEvolutionRestraint::CoEvolutionRestraint(const ActionOptions&ao):
   addComponent("accalphap"); componentIsNotPeriodic("accalphap");
   addComponent("alphan");    componentIsNotPeriodic("alphan");
   addComponent("accalphan"); componentIsNotPeriodic("accalphan");
+  if(doJeffreys_) {
+    addComponent("sigmap");    componentIsNotPeriodic("sigmap");
+    addComponent("accsigmap"); componentIsNotPeriodic("accsigmap");
+    addComponent("sigman");    componentIsNotPeriodic("sigman");
+    addComponent("accsigman"); componentIsNotPeriodic("accsigman");
+  }
 
   // initialize parallel stuff
   rank_ = comm.Get_rank();
@@ -328,11 +365,22 @@ double CoEvolutionRestraint::getPrior(double a, double amean, double asig)
 {
   // calculate sigma
   double s = sqrt(a*(1.0-a)/asig);
-  // calculate prior - excluding 2pi which is constant
+  // calculate Gaussian prior - excluding 2pi which is constant
   double prior = 0.5 * ( a - amean ) * ( a - amean ) / s / s + std::log(s);
 
   return kbt_ * prior;
 }
+
+// calculate Gaussian + Jeffreys prior for a single alpha
+double CoEvolutionRestraint::getJeffreysPrior(double a, double amean, double s)
+{
+  // calculate Gaussian prior + Jeffreys - excluding 2pi which is constant
+  double prior = 0.5 * ( a - amean ) * ( a - amean ) / s / s + 2.0 * std::log(s);
+
+  return kbt_ * prior;
+}
+
+
 
 // used to update Bayesian nuisance parameters
 double CoEvolutionRestraint::getEnergy
@@ -358,10 +406,17 @@ double CoEvolutionRestraint::getEnergy
   // sum energy
   comm.Sum(&ene, 1);
 
-  // add prior on alpha_p
-  ene += getPrior(alpha_p, alpha_p_mean_, alpha_p_sig_);
-  // add prior on alpha_n
-  ene += getPrior(alpha_n, alpha_n_mean_, alpha_n_sig_);
+  if(doJeffreys_ == false) {
+    // add Gaussian prior on alpha_p
+    ene += getPrior(alpha_p, alpha_p_mean_, alpha_p_sig_);
+    // add Gaussian prior on alpha_n
+    ene += getPrior(alpha_n, alpha_n_mean_, alpha_n_sig_);
+  } else {
+    // add Gaussian + Jeffreys prior on alpha_p
+    ene += getJeffreysPrior(alpha_p, alpha_p_mean_, sigma_p_);
+    // add Gaussian + Jeffreys prior on alpha_n
+    ene += getJeffreysPrior(alpha_n, alpha_n_mean_, sigma_n_);
+  }
 
   return ene;
 }
@@ -418,18 +473,57 @@ void CoEvolutionRestraint::doMonteCarlo(double oldE, const vector<double> &fmod,
       MCaccalpha_n_++;
       oldE = newE;
     }
-
   }
-// this is needed when restarting simulations
+// if Jeffreys prior, update sigma_p_ and sigma_n_
+  if(doJeffreys_) {
+    // cycle on MC steps
+    for(unsigned i=0; i<MCsteps_; ++i) {
+      // first store old energy, only the sigma_p_ part
+      oldE = getJeffreysPrior(alpha_p_, alpha_p_mean_, sigma_p_);
+      // 3) propose move in sigma_p_
+      double new_sigma_p = proposeMove(sigma_p_, 0.0, 1.0, Dsigma_);
+      // calculate new energy
+      double newE = getJeffreysPrior(alpha_p_, alpha_p_mean_, new_sigma_p);
+      // accept or reject
+      bool accept = doAccept(oldE, newE);
+      if(accept) {
+        sigma_p_ = new_sigma_p;
+        MCaccsigma_p_++;
+      }
+      // first store old energy, only the sigma_n_ part
+      oldE = getJeffreysPrior(alpha_n_, alpha_n_mean_, sigma_n_);
+      // 4) propose move in sigma_n_
+      double new_sigma_n = proposeMove(sigma_n_, 0.0, 1.0, Dsigma_);
+      // calculate new energy
+      newE = getJeffreysPrior(alpha_n_, alpha_n_mean_, new_sigma_n);
+      // accept or reject
+      accept = doAccept(oldE, newE);
+      if(accept) {
+        sigma_n_ = new_sigma_n;
+        MCaccsigma_n_++;
+      }
+    } // end on MC cycle
+  } // endif Jeffreys
+
+  // this is needed when restarting simulations
   if(MCfirst_==-1) MCfirst_=step;
-// calculate number of trials
+  // calculate number of trials
   double MCtrials = std::floor(static_cast<double>(step-MCfirst_) / static_cast<double>(MCstride_))+1.0;
-// alpha_p acceptance
+  // alpha_p acceptance
   double accalpha_p = static_cast<double>(MCaccalpha_p_) / static_cast<double>(MCsteps_) / MCtrials;
   getPntrToComponent("accalphap")->set(accalpha_p);
   // alpha_n acceptance
   double accalpha_n = static_cast<double>(MCaccalpha_n_) / static_cast<double>(MCsteps_) / MCtrials;
   getPntrToComponent("accalphan")->set(accalpha_n);
+  // if Jeffreys
+  if(doJeffreys_) {
+    // sigma_p acceptance
+    double accsigma_p = static_cast<double>(MCaccsigma_p_) / static_cast<double>(MCsteps_) / MCtrials;
+    getPntrToComponent("accsigmap")->set(accsigma_p);
+    // sigma_n acceptance
+    double accsigma_n = static_cast<double>(MCaccsigma_n_) / static_cast<double>(MCsteps_) / MCtrials;
+    getPntrToComponent("accsigman")->set(accsigma_n);
+  }
 }
 
 void CoEvolutionRestraint::calculate()
@@ -498,10 +592,17 @@ void CoEvolutionRestraint::calculate()
   // apply forces
   for(unsigned i=0; i<force.size(); ++i) setOutputForce(i, force[i]);
 
-// add prior on alpha_p
-  ene += getPrior(alpha_p_, alpha_p_mean_, alpha_p_sig_);
-  // add prior on alpha_n
-  ene += getPrior(alpha_n_, alpha_n_mean_, alpha_n_sig_);
+  if(doJeffreys_ == false) {
+    // add Gaussian prior on alpha_p
+    ene += getPrior(alpha_p_, alpha_p_mean_, alpha_p_sig_);
+    // add Gaussian prior on alpha_n
+    ene += getPrior(alpha_n_, alpha_n_mean_, alpha_n_sig_);
+  } else {
+    // add Gaussian + Jeffreys prior on alpha_p
+    ene += getJeffreysPrior(alpha_p_, alpha_p_mean_, sigma_p_);
+    // add Gaussian + Jeffreys prior on alpha_n
+    ene += getJeffreysPrior(alpha_n_, alpha_n_mean_, sigma_n_);
+  }
 
   // set value of the bias
   setBias(ene);
@@ -509,6 +610,13 @@ void CoEvolutionRestraint::calculate()
   getPntrToComponent("alphap")->set(alpha_p_);
   // set values of alpha_n
   getPntrToComponent("alphan")->set(alpha_n_);
+  // if Jeffreys
+  if(doJeffreys_) {
+    // set values of sigma_p
+    getPntrToComponent("sigmap")->set(sigma_p_);
+    // set values of sigma_n
+    getPntrToComponent("sigman")->set(sigma_n_);
+  }
 
   // get time step
   long int step = getStep();
