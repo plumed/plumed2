@@ -203,9 +203,9 @@ void AdjacencyMatrixBase::performTask( const unsigned& current, MultiValue& myva
   }
 }
 
-void AdjacencyMatrixBase::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
+bool AdjacencyMatrixBase::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
   // This makes sure other AdjacencyMatrixBase actions in the stream don't get their matrix elements calculated here
-  if( controller!=getLabel() ) return;
+  if( controller!=getLabel() ) return false;
 
   Vector zero; zero.zero(); plumed_dbg_assert( index2<myvals.getAtomVector().size() );
   double weight = calculateWeight( zero, myvals.getAtomVector()[index2], myvals.getNumberOfIndices()-myvals.getSplitIndex(), myvals );
@@ -214,7 +214,7 @@ void AdjacencyMatrixBase::performTask( const std::string& controller, const unsi
           updateWeightDerivativeIndices( index1, index2, myvals );
           clearMatrixElements( myvals );
       }
-      return;
+      return false;
   }
   // Now set the matrix weight and the vector if required  
   myvals.setValue( getPntrToOutput(0)->getPositionInStream(), weight );
@@ -247,6 +247,7 @@ void AdjacencyMatrixBase::performTask( const std::string& controller, const unsi
   }
   // Update derivatives
   if( !doNotCalculateDerivatives() ) updateWeightDerivativeIndices( index1, index2, myvals );
+  return true;
 }
 
 void AdjacencyMatrixBase::apply() {}

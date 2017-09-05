@@ -170,7 +170,7 @@ void VectorProductMatrix::performTask( const unsigned& current, MultiValue& myva
   updateCentralMatrixIndex( myvals.getTaskIndex(), myvals );
 }
 
-void VectorProductMatrix::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
+bool VectorProductMatrix::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
   unsigned invals, jnvals; invals = jnvals = getPntrToArgument(0)->getShape()[0]; 
   unsigned jindex=index2, jind_start = 0, nargs=getNumberOfArguments(); 
   if( ncol_args>0 ) { 
@@ -190,7 +190,7 @@ void VectorProductMatrix::performTask( const std::string& controller, const unsi
   unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
   myvals.setValue( ostrn, val ); 
   // Return after calculation of value if we do not need derivatives
-  if( doNotCalculateDerivatives() ) return;
+  if( doNotCalculateDerivatives() ) return true;
 
   unsigned nmat = getPntrToOutput(0)->getPositionInMatrixStash();
   std::vector<unsigned>& matrix_indices( myvals.getMatrixIndices( nmat ) );
@@ -212,6 +212,7 @@ void VectorProductMatrix::performTask( const std::string& controller, const unsi
       nmat_ind+=3;
   }
   myvals.setNumberOfMatrixIndices( nmat, nmat_ind );
+  return true;
 }
 
 void VectorProductMatrix::apply() {

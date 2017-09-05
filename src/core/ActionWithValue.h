@@ -242,7 +242,7 @@ public:
 ///
   virtual void performTask( const unsigned& current, MultiValue& myvals ) const { plumed_error(); }
 /// This one calculates matrix elements
-  virtual void performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {}
+  virtual bool performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const { return true; }
 ///
   bool addActionToChain( const std::vector<std::string>& alabels, ActionWithValue* act );
 ///

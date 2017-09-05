@@ -132,6 +132,14 @@ s(r) = 0.5\left[ \cos\left( \pi \frac{ r - d_0 }{ r_0 } \right) + 1 \right] \qqu
 {COSINE R_0=\f$r_0\f$ D_0=\f$d_0\f$}
 </td> <td> </td>
 </tr> <tr>
+<td> TANH3 </td> <td>
+\f$
+s(r) = \tanh^3\left( 1 - \frac{ r - d_0}{r_0} \right) \qquad d_{max} = d_0 + r_0 
+\f$
+</td> <td>
+{TANH3 R_0=\f$r_0\f$ D_0=\f$d_0\f$}
+</td> <td> </td>
+</tr> <tr>
 <td> MATHEVAL </td> <td>
 \f$
 s(r) = FUNC
@@ -254,6 +262,12 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   else if(name=="GAUSSIAN") type=gaussian;
   else if(name=="CUBIC") type=cubic;
   else if(name=="TANH") type=tanh;
+  else if(name=="COSINE"){ 
+    type=cosine; dmax=r0+d0; dmax_2=dmax*dmax; dostretch=false;
+  }
+  else if(name=="TANH3") {
+    type=tanh3; dmax=r0+d0; dmax_2=dmax*dmax; dostretch=false; 
+  }
   else if((name=="MATHEVAL" || name=="CUSTOM")) {
     type=leptontype;
     std::string func;
@@ -302,6 +316,8 @@ std::string SwitchingFunction::description() const {
     ostr<<"lepton";
   } else if(type==cosine) {
     ostr<<"cosine";
+  } else if(type==tanh3) {
+    ostr<<"tanh3";
   } else {
     plumed_merror("Unknown switching function type");
   }
@@ -420,6 +436,11 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
       double tmp1=pi*rdist;
       result = 0.5*( cos(tmp1) + 1 );
       dfunc = -0.5*pi*sin(tmp1);
+    } else if(type==tanh3) {
+      double tmp1=std::tanh(1-rdist);
+      double tmp2=tmp1*tmp1;
+      result = tmp2*tmp1;
+      dfunc = -3*tmp2*(1-tmp2);
     } else plumed_merror("Unknown switching function type");
 // this is for the chain rule:
     dfunc*=invr0;

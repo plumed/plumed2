@@ -52,7 +52,7 @@ public:
   void buildCurrentTaskList( std::vector<unsigned>& tflags );
   void calculate();
   void performTask( const unsigned& task_index, MultiValue& myvals ) const ;
-  void performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
+  bool performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
   virtual double calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const = 0;
   void apply();
 };

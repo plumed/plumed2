@@ -50,7 +50,7 @@ public:
   void buildCurrentTaskList( std::vector<unsigned>& tflags );
   void calculate();
   void performTask( const unsigned& task_index, MultiValue& myvals ) const ;
-  void performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
+  bool performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
   virtual double computeVectorProduct( const unsigned& index1, const unsigned& index2, 
                                        const std::vector<double>& vec1, const std::vector<double>& vec2, 
                                        std::vector<double>& dvec1, std::vector<double>& dvec2, MultiValue& myvals ) const = 0;

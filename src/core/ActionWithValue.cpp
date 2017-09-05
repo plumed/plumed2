@@ -488,7 +488,7 @@ void ActionWithValue::getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& 
       values[i]->bufstart=bufsize; 
       if( values[i]->getRank()==0 && values[i]->hasDerivatives() ) bufsize += 1 + values[i]->getNumberOfDerivatives();
       else if( values[i]->getRank()==0 ) bufsize += 1;
-      else if( values[i]->storedata ) bufsize += values[i]->getSize();
+      else if( values[i]->storedata ) bufsize += values[i]->getSize(); 
   }
   if( action_to_do_after ) action_to_do_after->getSizeOfBuffer( nactive_tasks, bufsize );
 }
@@ -499,8 +499,8 @@ void ActionWithValue::prepareForTasks(){
 
 void ActionWithValue::runTask( const std::string& controller, const unsigned& task_index, const unsigned& current, const unsigned colno, MultiValue& myvals ) const {
   // Do matrix element task
-  myvals.setTaskIndex(task_index); myvals.setSecondTaskIndex( colno ); 
-  if( isActive() ) performTask( controller, current, colno, myvals );
+  bool wasperformed=false; myvals.setTaskIndex(task_index); myvals.setSecondTaskIndex( colno ); 
+  if( isActive() ) wasperformed=performTask( controller, current, colno, myvals );
   const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
   if( aa ){
       if( actionInChain() ) { 
@@ -516,7 +516,7 @@ void ActionWithValue::runTask( const std::string& controller, const unsigned& ta
   }
 
   // Check if we need to store stuff
-  bool matrix=true; 
+  bool matrix=wasperformed; 
   for(unsigned i=0;i<values.size();++i){
       if( values[i]->getRank()!=2 ){ matrix=false; break; }
   }
@@ -580,7 +580,7 @@ void ActionWithValue::gatherAccumulators( const unsigned& taskCode, const MultiV
                   unsigned vindex = bufstart + taskCode*ncols; unsigned matind = values[i]->getPositionInMatrixStash();
                   for(unsigned j=0;j<myvals.getNumberOfStashedMatrixElements(matind);++j){
                       unsigned jind = myvals.getStashedMatrixIndex(matind,j);
-                      plumed_dbg_massert( vindex+jind<buffer.size(), "failing in " + getLabel() );
+                      plumed_dbg_massert( vindex+jind<buffer.size(), "failing in " + getLabel() + " on value " + values[i]->getName() );
                       buffer[vindex + jind] += myvals.getStashedMatrixElement( matind, jind );
                   }
                // This looks after storing in all other cases 
