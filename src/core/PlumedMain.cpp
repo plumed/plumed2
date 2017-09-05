@@ -88,7 +88,7 @@ PlumedMain::PlumedMain():
 {
   log.link(comm);
   log.setLinePrefix("PLUMED: ");
-  mydatafetcher=DataFetchingObject::create(sizeof(double),*this);
+  mydatafetcher.reset(DataFetchingObject::create(sizeof(double),*this));
   stopwatch.start();
   stopwatch.pause();
 }
@@ -97,7 +97,6 @@ PlumedMain::~PlumedMain() {
   stopwatch.start();
   stopwatch.stop();
   if(initialized) log<<stopwatch;
-  delete mydatafetcher;
 }
 
 /////////////////////////////////////////////////////////////
@@ -292,8 +291,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       CHECK_NOTINIT(initialized,word);
       CHECK_NOTNULL(val,word);
       atoms.setRealPrecision(*static_cast<int*>(val));
-      delete mydatafetcher;
-      mydatafetcher=DataFetchingObject::create(*static_cast<int*>(val),*this);
+      mydatafetcher.reset(DataFetchingObject::create(*static_cast<int*>(val),*this));
       break;
     case cmd_setMDLengthUnits:
       CHECK_NOTINIT(initialized,word);
@@ -846,10 +844,10 @@ void PlumedMain::runJobsAtEndOfCalculation() {
   }
 }
 
-}
-
 #ifdef __PLUMED_HAS_PYTHON
 // This is here to stop cppcheck throwing an error 
 #endif
+
+}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////

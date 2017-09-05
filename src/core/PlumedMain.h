@@ -132,7 +132,7 @@ private:
   std::string plumedDat;
 
 /// Object containing data we would like to grab and pass back
-  DataFetchingObject* mydatafetcher;
+  std::unique_ptr<DataFetchingObject> mydatafetcher;
 
 /// End of input file.
 /// Set to true to terminate reading

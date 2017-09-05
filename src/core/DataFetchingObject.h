@@ -29,6 +29,7 @@
 
 namespace PLMD {
 
+class ActionSet;
 class PlumedMain;
 class ActionWithValue;
 class Value;
