@@ -80,25 +80,73 @@ AC_DEFUN([PLUMED_CHECK_LDFLAGS], [
     [AC_MSG_RESULT([no]); LDFLAGS="$save_LDFLAGS"])
 ])
 
+# PLUMED_SEARCH_LIBS(function,search-libs[,action-if-found][,action-if-not-found][,other-libraries])
+# same as AC_SEARCH_LIBS, but does not try any library unless $libsearch==true
+# Should be used instead of AC_SEARCH_LIBS in order to make --disable-libsearch work correctly
+AC_DEFUN([PLUMED_SEARCH_LIBS], [
+  if test "${libsearch}" == true ; then
+    AC_SEARCH_LIBS([$1],[$2],[$3],[$4],[$5])
+  else
+    AC_SEARCH_LIBS([$1],[],[$3],[$4],[])
+  fi
+])
+
 # PLUMED_CHECK_PACKAGE(header,function,define[,library])
 # first we check if the header is present. if so, we check if the given function can be found.
 # if it cannot be found and the fourth argument (library) has been supplied, we look for it
 # in the library. finally, we set the define flag
 AC_DEFUN([PLUMED_CHECK_PACKAGE], [
     found=ko
+    $3=no
     AC_CHECK_HEADER( [$1],[
-      AC_CHECK_FUNC(   [$2], [found=ok],
-        m4_ifnblank([$4],[
-          if test "${libsearch}" == true ; then
-           AC_CHECK_LIB(    [$4], [$2], [LIBS="-l$4 $LIBS" && found=ok])
-          fi
-        ])
-      )
+      PLUMED_SEARCH_LIBS([$2],[$4],[found=ok])
     ])
     if test $found == ok ; then
-      AC_DEFINE([$3])
+       AC_DEFINE([$3])
+       $3=yes
     else
        AC_MSG_WARN([cannot enable $3]) 
+    fi
+])
+
+# PLUMED_CHECK_CXX_PACKAGE(name,program,define[,library])
+# Similar to PLUMED_CHECK_PACKAGE but suitable for checking C++ libraries.
+# Name is just a string used in the configure log
+# program is a string containing a short C++ program that should compiled.
+# If present and necessary, library is also linked.
+AC_DEFUN([PLUMED_CHECK_CXX_PACKAGE], [
+    found=ko
+    $3=no
+    if test "${libsearch}" == true ; then
+      testlibs="$4"
+    else
+      testlibs=""
+    fi
+    for testlib in "" $testlibs
+    do
+      save_LIBS="$LIBS"
+      if test -n "$testlib" ; then
+        AC_MSG_CHECKING([$1 with -l$testlib])
+        LIBS="-l$testlib $LIBS"
+      else
+        AC_MSG_CHECKING([$1 without extra libs])
+      fi
+      AC_LINK_IFELSE([AC_LANG_SOURCE([$2])],
+          [found=ok]
+          [AC_MSG_RESULT([yes])],
+          [AC_MSG_RESULT([no])]
+      )
+      if test $found == ok ; then
+        break
+      fi
+      LIBS="$save_LIBS"
+    done
+    if test $found == ok ; then
+      AC_DEFINE([$3])
+      $3=yes
+    else
+      AC_MSG_WARN([cannot enable $3]) 
+      LIBS="$save_LIBS"
     fi
 ])
 
@@ -354,10 +402,8 @@ AC_MSG_NOTICE([Now we will check compulsory headers and libraries])
 AC_CHECK_HEADER([dirent.h],     [ ], [AC_MSG_ERROR([compulsory header not found])] )
 AC_CHECK_FUNC(  [readdir],      [ ], [AC_MSG_ERROR([compulsory function not found])] )
 
-save_LIBS="$LIBS"
 # Then check for blas. This is a bit complicated because we want to allow
 # either the version with underscore or the one without
-# If they are not found in the normal search path, we repeat the search with -lblas
 blas_found=
 lapack_found=
 
@@ -371,21 +417,14 @@ fi
 
 # first look for blas
 if test "$external_blas" == true ; then
-AC_CHECK_FUNC(  [dgemv], [blas_found=nounderscore], [
-AC_CHECK_FUNC(  [dgemv_],[blas_found=underscore],   [
-if test "${libsearch}" == true ; then
-  AC_CHECK_LIB(   [blas],[dgemv],  [LIBS="-lblas $LIBS"] [blas_found=nounderscore], [
-  AC_CHECK_LIB(   [blas],[dgemv_], [LIBS="-lblas $LIBS"] [blas_found=underscore]
-) ])
-fi
-]) ])
+  PLUMED_SEARCH_LIBS([dgemv],[blas],[blas_found=nounderscore], [
+    PLUMED_SEARCH_LIBS([dgemv_],[blas],[blas_found=underscore])
+  ])
 fi
 
 # if not found, then use internal lapack and blas
 if test -z "$blas_found" ; then
 AC_MSG_WARN([using internal lapack and blas, could be inefficient])
-LIBS="$save_LIBS"
-
 fi
 
 # if found, also look for external lapack
@@ -393,26 +432,18 @@ if test -n "$blas_found" ; then
 
 AC_DEFINE([__PLUMED_HAS_EXTERNAL_BLAS])
 
-save_LIBS="$LIBS"
-
 if test "$external_lapack" == true ; then
 # Then we look for lapack using same underscoring
 case "$blas_found" in
 (underscore) search_for=dsyevr_ ;;
 (nounderscore) search_for=dsyevr ;;
 esac
-AC_CHECK_FUNC( [$search_for], [lapack_found=$blas_found], [
-if test "${libsearch}" == true ; then
-  AC_CHECK_LIB(  [lapack],[$search_for], [LIBS="-llapack $LIBS"] [lapack_found=yes])
-fi
-])
+PLUMED_SEARCH_LIBS( [$search_for],[lapack],[lapack_found=yes])
 fi
 
 # if not found, then use internal lapack with external blas
 if test -z "$lapack_found" ; then
 AC_MSG_WARN([using internal lapack, could be inefficient])
-LIBS="$save_LIBS"
-
 else
 AC_DEFINE([__PLUMED_HAS_EXTERNAL_LAPACK])
 fi
@@ -510,25 +541,15 @@ if test $molfile_plugins == true ; then
 # We always have molfile, now
 AC_DEFINE([__PLUMED_HAS_MOLFILE_PLUGINS])
 
-found=ko
-if test "$external_molfile_plugins" == true ; then
-  AC_CHECK_HEADER(  [libmolfile_plugin.h], [
-      AC_CHECK_FUNC(  [molfile_dcdplugin_init], [found=ok], [
-      if test "${libsearch}" == true ; then
-        AC_CHECK_LIB(   [molfile_plugin],[molfile_dcdplugin_init], [LIBS="-lmolfile_plugin $LIBS"] [found=ok])
-      fi
-    ])
-  ])
+  if test "$external_molfile_plugins" == true ; then
+    PLUMED_CHECK_PACKAGE([libmolfile_plugin.h],[molfile_dcdplugin_init],[__PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS],molfile_plugin)
+    if test "$__PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS" != yes ; then
+      AC_MSG_WARN([using internal molfile_plugins, which only support dcd/xtc/trr/trj/crd files])
+    else
+      AC_DEFINE([__PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS])
+    fi
+  fi
 fi
-if test $found == ko ; then
-	AC_MSG_WARN([using internal molfile_plugins, which only support dcd/xtc/trr/trj/crd files])
-else
-	AC_DEFINE([__PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS])
-fi
-
-fi
-
-
 
 # this is special and is also attached to STATIC_LIBS
 # this flag should be used also when linking MD engines to allow plumed
@@ -569,42 +590,51 @@ if test $zlib == true ; then
   PLUMED_CHECK_PACKAGE([zlib.h],[gzopen],[__PLUMED_HAS_ZLIB],[z])
 fi
 
-save_LIBS="$LIBS"
-
 if test $gsl == true ; then
   found=ko
-  AC_CHECK_FUNC(  [cblas_dgemv], [found=ok], [
-  if test "${libsearch}" == true ; then
-    AC_CHECK_LIB(   [gslcblas],[cblas_dgemv], [LIBS="-lgslcblas $LIBS"] [found=ok])
-  fi
-  ])
-  if test $found == ok ; then
-    found=ko
+  PLUMED_SEARCH_LIBS([cblas_dgemv],[gslcblas], [
     AC_CHECK_HEADER(  [gsl/gsl_vector.h], [
-      AC_CHECK_FUNC(  [gsl_vector_alloc], [found=ok], [
-      if test "${libsearch}" == true ; then
-        AC_CHECK_LIB(   [gsl],[gsl_vector_alloc], [LIBS="-lgsl $LIBS"] [found=ok])
-      fi
+      PLUMED_SEARCH_LIBS([gsl_vector_alloc],[gsl],[found=ok])
     ])
-    ])
-  fi
+  ])
   if test $found == ok ; then
     AC_DEFINE([__PLUMED_HAS_GSL])
   else
-     LIBS="$save_LIBS"
-     AC_MSG_WARN([cannot enable __PLUMED_HAS_GSL])
+    AC_MSG_WARN([cannot enable __PLUMED_HAS_GSL])
   fi
 fi
 
 if test $xdrfile == true ; then
   PLUMED_CHECK_PACKAGE([xdrfile/xdrfile_xtc.h],[write_xtc],[__PLUMED_HAS_XDRFILE],[xdrfile])
 fi
+
 if test $boost_graph == true ; then
-  PLUMED_CHECK_PACKAGE([boost/graph/graph_utility.hpp],[exit],[__PLUMED_HAS_BOOST_GRAPH],[boost_graph])
+  PLUMED_CHECK_CXX_PACKAGE([boost graph],[
+#include <boost/graph/graph_utility.hpp>
+#include <boost/graph/adjacency_matrix.hpp>
+int
+main ()
+{
+  boost::adjacency_matrix<boost::directedS> a(1);
+  ;
+  return 0;
+}
+  ], [__PLUMED_HAS_BOOST_GRAPH])
 fi
+
 if test $boost_serialization == true ; then
-  PLUMED_CHECK_PACKAGE([boost/serialization/vector.hpp],[main],[__PLUMED_HAS_BOOST_SERIALIZATION],[boost_serialization])
+  PLUMED_CHECK_CXX_PACKAGE([boost serialization],[
+#include <fstream>
+#include <boost/archive/text_oarchive.hpp>
+int main() {
+    std::ofstream ofs("filename");
+    boost::archive::text_oarchive oa(ofs);
+    return 0;
+}
+  ], [__PLUMED_HAS_BOOST_SERIALIZATION],[boost_serialization boost_serialization-mt])
+# notice: macports install libraries with -mt suffix
 fi
+
 if test $fftw == true ; then
   PLUMED_CHECK_PACKAGE([fftw3.h],[fftw_execute],[__PLUMED_HAS_FFTW],[fftw3])
 fi
