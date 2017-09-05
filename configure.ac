@@ -436,11 +436,13 @@ AC_DEFINE([__PLUMED_HAS_MOLFILE_PLUGINS])
 
 found=ko
 if test "$external_molfile_plugins" == true ; then
-	AC_CHECK_LIB([molfile_plugin],[molfile_dcdplugin_init],
-           if test "${libsearch}" == true ; then
-        	[ AC_CHECK_HEADER([libmolfile_plugin.h], [LIBS="-lmolfile_plugin $LIBS"] [found=ok] ) ]
-           fi
-)
+  AC_CHECK_HEADER(  [libmolfile_plugin.h], [
+      AC_CHECK_FUNC(  [molfile_dcdplugin_init], [found=ok], [
+      if test "${libsearch}" == true ; then
+        AC_CHECK_LIB(   [molfile_plugin],[molfile_dcdplugin_init], [LIBS="-lmolfile_plugin $LIBS"] [found=ok])
+      fi
+    ])
+  ])
 fi
 if test $found == ko ; then
 	AC_MSG_WARN([using internal molfile_plugins, which only support dcd/xtc/trr/trj/crd files])
