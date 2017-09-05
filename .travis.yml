@@ -150,17 +150,16 @@ script:
   - CONFIG_FLAGS="$CONFIG_FLAGS --enable-modules=all"
 # we enable fftw, which is off by default
   - CONFIG_FLAGS="$CONFIG_FLAGS --enable-fftw"
+# enable boost_serialization to test drr module
+  - CONFIG_FLAGS="$CONFIG_FLAGS --enable-boost_serialization"
   - if test "$MAKEDOC" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-pdfdoc" ; fi
   - if test "$MAKEDOC" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-gcov" ; fi
-# enable boost_serialization to test drr module
-  - CONFIG_FLAG="$CONFIG_FLAGS --enable-boost_serialization"
 # when running lcov plumed should be compiled with -O0
   - if test "$MAKEDOC" == yes ; then PLUMED_CXXFLAGS=-O0 ; fi
 
 # BUILD:
 # this is done only if PLUMED_CXX is defined
   - if test "$PLUMED_CXX" ; then
-      autoconf ;
       ccache -s ;
       ./configure CXX="ccache $(which $PLUMED_CXX)" CC=$(which $PLUMED_CC) CXXFLAGS="$PLUMED_CXXFLAGS" LDFLAGS="$PLUMED_LDFLAGS" CPPFLAGS="$PLUMED_CPPFLAGS" $CONFIG_FLAGS ;
       make -j 4 ;
