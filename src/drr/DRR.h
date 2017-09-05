@@ -54,12 +54,12 @@ public:
   /// Constructor using maximum value, minimum value and the number of bins(No
   /// pbc)
   DRRAxis(double l, double h, size_t n)
-      : min(l), max(h), nbins(n), periodic(false), domainMax(0), domainMin(0),
-        binWidth((max - min) / double(nbins)) {}
+    : min(l), max(h), nbins(n), periodic(false), domainMax(0), domainMin(0),
+      binWidth((max - min) / double(nbins)) {}
   /// PBC-aware constructor
   DRRAxis(double l, double h, size_t n, bool pbc, double dMax, double dMin)
-      : min(l), max(h), nbins(n), periodic(pbc), domainMax(dMax),
-        domainMin(dMin), binWidth((max - min) / double(nbins)) {}
+    : min(l), max(h), nbins(n), periodic(pbc), domainMax(dMax),
+      domainMin(dMin), binWidth((max - min) / double(nbins)) {}
   /// Set values
   void set(double l, double h, size_t n, bool pbc = false, double dmax = 0,
            double dmin = 0) {
@@ -255,8 +255,8 @@ protected:
     for (size_t i = 0; i < ndims; ++i) {
       mp[i] = dimensions[i].getMiddlePoints();
       shifts[i] = std::accumulate(
-          std::begin(dimensions), std::begin(dimensions) + i, size_t(1),
-          [](size_t k, const DRRAxis &d) { return k * d.getBins(); });
+                    std::begin(dimensions), std::begin(dimensions) + i, size_t(1),
+      [](size_t k, const DRRAxis &d) { return k * d.getBins(); });
       ss.precision(std::numeric_limits<double>::max_digits10);
       ss << std::fixed << "# " << dimensions[i].min << ' '
          << dimensions[i].getWidth() << ' ' << dimensions[i].nbins;
@@ -289,7 +289,7 @@ public:
   ABF() {}
   ABF(const std::vector<DRRAxis> &p_dimensions, const std::string &p_suffix,
       bool initializeTable = true)
-      : DRRForceGrid(p_dimensions, p_suffix, initializeTable) {}
+    : DRRForceGrid(p_dimensions, p_suffix, initializeTable) {}
   // Store the "instantaneous" spring force of a point and get ABF bias forces.
   bool store_getbias(const std::vector<double> &pos,
                      const std::vector<double> &f, std::vector<double> &fbias,
@@ -311,7 +311,7 @@ public:
   CZAR() : kbt(0) {}
   CZAR(const std::vector<DRRAxis> &p_dimensions, const std::string &p_suffix,
        double p_kbt, bool initializeTable = true)
-      : DRRForceGrid(p_dimensions, p_suffix, initializeTable), kbt(p_kbt) {}
+    : DRRForceGrid(p_dimensions, p_suffix, initializeTable), kbt(p_kbt) {}
   std::vector<double> getGradient(const std::vector<double> &pos,
                                   bool SkipCheck = false) const;
   double getkbt() const { return kbt; }

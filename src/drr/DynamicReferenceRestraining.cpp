@@ -60,7 +60,7 @@ F_{bias}(\lambda_i)=k(\lambda_i-\langle\xi_i\rangle_{\lambda_i})
 \f]
 
 If spring force constant k is large enough, then \f$\xi_i\f$ synchronizes with
-\f$\lambda_i\f$. The naive(ABF) estimator is just the negative 
+\f$\lambda_i\f$. The naive(ABF) estimator is just the negative
 average spring force of \f$\lambda_i\f$.
 
 The naive(ABF) estimator is biased. There are unbiased estimators such as
@@ -182,23 +182,23 @@ void DynamicReferenceRestraining::registerKeywords(Keywords &keys) {
   Bias::registerKeywords(keys);
   keys.use("ARG");
   keys.add("optional", "KAPPA", "specifies that the restraint is harmonic and "
-                                "what the values of the force constants on "
-                                "each of the variables are (default to "
-                                "kbt/(GRID_SPACING)^2)");
+           "what the values of the force constants on "
+           "each of the variables are (default to "
+           "kbt/(GRID_SPACING)^2)");
   keys.add("compulsory", "TAU", "0.5", "specifies relaxation time on each of "
-                                       "variables are, similar to "
-                                       "extendedTimeConstant in Colvars");
+           "variables are, similar to "
+           "extendedTimeConstant in Colvars");
   keys.add("compulsory", "FRICTION", "8.0",
            "add a friction to the variable, similar to extendedLangevinDamping "
            "in Colvars");
   keys.add("compulsory", "GRID_MIN", "the lower bounds for the grid (GRID_BIN "
-                                     "or GRID_SPACING should be specified)");
+           "or GRID_SPACING should be specified)");
   keys.add("compulsory", "GRID_MAX", "the upper bounds for the grid (GRID_BIN "
-                                     "or GRID_SPACING should be specified)");
+           "or GRID_SPACING should be specified)");
   keys.add("optional", "GRID_BIN", "the number of bins for the grid");
   keys.add("optional", "GRID_SPACING", "the approximate grid spacing (to be "
-                                       "used as an alternative or together "
-                                       "with GRID_BIN)");
+           "used as an alternative or together "
+           "with GRID_BIN)");
   keys.add("compulsory", "FULLSAMPLES", "500",
            "number of samples in a bin prior to application of the ABF");
   keys.add("compulsory", "OUTPUTFREQ", "write results to a file every N steps");
@@ -210,83 +210,83 @@ void DynamicReferenceRestraining::registerKeywords(Keywords &keys) {
   keys.add("optional", "OUTPUTPREFIX",
            "specify the output prefix (default to the label name)");
   keys.add("optional", "TEMP", "the system temperature - needed when FRICTION "
-                               "is present. If not provided will be taken from "
-                               "MD code (if available)");
+           "is present. If not provided will be taken from "
+           "MD code (if available)");
   keys.add(
-      "optional", "EXTTEMP",
-      "the temperature of extended variables (default to system temperature)");
+    "optional", "EXTTEMP",
+    "the temperature of extended variables (default to system temperature)");
   keys.add("optional", "DRR_RFILE",
            "specifies the restart file (.drrstate file)");
   keys.addFlag("NOBIAS", false, "DO NOT apply bias forces.");
   keys.addFlag("TEXTOUTPUT", false, "use text output for grad and count files "
-                                    "instead of boost::serialization binary "
-                                    "output");
+               "instead of boost::serialization binary "
+               "output");
   componentsAreNotOptional(keys);
   keys.addOutputComponent(
-      "_fict", "default",
-      "one or multiple instances of this quantity will be refereceable "
-      "elsewhere in the input file. "
-      "These quantities will named with the arguments of the bias followed by "
-      "the character string _tilde. It is possible to add forces on these "
-      "variable.");
+    "_fict", "default",
+    "one or multiple instances of this quantity will be refereceable "
+    "elsewhere in the input file. "
+    "These quantities will named with the arguments of the bias followed by "
+    "the character string _tilde. It is possible to add forces on these "
+    "variable.");
   keys.addOutputComponent(
-      "_vfict", "default",
-      "one or multiple instances of this quantity will be refereceable "
-      "elsewhere in the input file. "
-      "These quantities will named with the arguments of the bias followed by "
-      "the character string _tilde. It is NOT possible to add forces on these "
-      "variable.");
+    "_vfict", "default",
+    "one or multiple instances of this quantity will be refereceable "
+    "elsewhere in the input file. "
+    "These quantities will named with the arguments of the bias followed by "
+    "the character string _tilde. It is NOT possible to add forces on these "
+    "variable.");
   keys.addOutputComponent(
-      "_biasforce", "default",
-      "The bias force from eABF/DRR of the fictitious particle.");
+    "_biasforce", "default",
+    "The bias force from eABF/DRR of the fictitious particle.");
 }
 
 DynamicReferenceRestraining::DynamicReferenceRestraining(
-    const ActionOptions &ao)
-    : PLUMED_BIAS_INIT(ao), firsttime(true), nobias(false),
-      fictNoPBC(getNumberOfArguments(), 0.0), real(getNumberOfArguments(), 0.0),
-      springlength(getNumberOfArguments(), 0.0),
-      fict(getNumberOfArguments(), 0.0), vfict(getNumberOfArguments(), 0.0),
-      vfict_laststep(getNumberOfArguments(), 0.0),
-      ffict(getNumberOfArguments(), 0.0), fbias(getNumberOfArguments(), 0.0),
-      kappa(getNumberOfArguments(), 0.0), tau(getNumberOfArguments(), 0.0),
-      friction(getNumberOfArguments(), 0.0), etemp(getNumberOfArguments(), 0.0),
-      ffict_measured(getNumberOfArguments(), 0.0),
-      biasforceValue(getNumberOfArguments(), NULL),
-      fictValue(getNumberOfArguments(), NULL),
-      vfictValue(getNumberOfArguments(), NULL), c1(getNumberOfArguments(), 0.0),
-      c2(getNumberOfArguments(), 0.0), mass(getNumberOfArguments(), 0.0),
-      delim(getNumberOfArguments()), outputname(""), cptname(""),
-      outputprefix(""), ndims(getNumberOfArguments()), dt(0.0), kbt(0.0),
-      outputfreq(0.0), historyfreq(-1.0), isRestart(false),
-      useUIestimator(false), textoutput(false), rng(1),
-      NormalDistribution(0, 1) {
+  const ActionOptions &ao)
+  : PLUMED_BIAS_INIT(ao), firsttime(true), nobias(false),
+    fictNoPBC(getNumberOfArguments(), 0.0), real(getNumberOfArguments(), 0.0),
+    springlength(getNumberOfArguments(), 0.0),
+    fict(getNumberOfArguments(), 0.0), vfict(getNumberOfArguments(), 0.0),
+    vfict_laststep(getNumberOfArguments(), 0.0),
+    ffict(getNumberOfArguments(), 0.0), fbias(getNumberOfArguments(), 0.0),
+    kappa(getNumberOfArguments(), 0.0), tau(getNumberOfArguments(), 0.0),
+    friction(getNumberOfArguments(), 0.0), etemp(getNumberOfArguments(), 0.0),
+    ffict_measured(getNumberOfArguments(), 0.0),
+    biasforceValue(getNumberOfArguments(), NULL),
+    fictValue(getNumberOfArguments(), NULL),
+    vfictValue(getNumberOfArguments(), NULL), c1(getNumberOfArguments(), 0.0),
+    c2(getNumberOfArguments(), 0.0), mass(getNumberOfArguments(), 0.0),
+    delim(getNumberOfArguments()), outputname(""), cptname(""),
+    outputprefix(""), ndims(getNumberOfArguments()), dt(0.0), kbt(0.0),
+    outputfreq(0.0), historyfreq(-1.0), isRestart(false),
+    useUIestimator(false), textoutput(false), rng(1),
+    NormalDistribution(0, 1) {
   log << "eABF/DRR: You now are using the extended adaptive biasing "
-         "force(eABF) method."
+      "force(eABF) method."
       << '\n';
   log << "eABF/DRR: Some people also refer to it as dynamic reference "
-         "restraining(DRR) method."
+      "restraining(DRR) method."
       << '\n';
   log << "eABF/DRR: Currently the CZAR and naive(ABF on extended variables) "
-         "estimator is enabled by default."
+      "estimator is enabled by default."
       << '\n';
   log << "eABF/DRR: For reasons of performance, the umbrella integration "
-         "estimator is not enabled by default."
+      "estimator is not enabled by default."
       << '\n';
   log << "eABF/DRR: This method is originally implemented in "
-         "colvars(https://github.com/colvars/colvars)."
+      "colvars(https://github.com/colvars/colvars)."
       << '\n';
   log << "eABF/DRR: This code in plumed is heavily modified from "
-         "ExtendedLagrangian.cpp and doesn't implemented all variants of "
-         "eABF/DRR."
+      "ExtendedLagrangian.cpp and doesn't implemented all variants of "
+      "eABF/DRR."
       << '\n';
   log << "eABF/DRR: The thermostat using here maybe different from colvars."
       << '\n';
   log << "eABF/DRR: To integrate the gradients file, you can use abf_integrate "
-         "from https://github.com/colvars/colvars/tree/master/colvartools."
+      "from https://github.com/colvars/colvars/tree/master/colvartools."
       << '\n';
   log << "eABF/DRR: Please reading relevant articles and using this bias "
-         "method carefully!"
+      "method carefully!"
       << '\n';
   parseFlag("NOBIAS", nobias);
   parseFlag("UIESTIMATOR", useUIestimator);
@@ -312,7 +312,7 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   if (fullsamples < 0.5) {
     fullsamples = 500.0;
     log << "eABF/DRR: The fullsamples parametre is not set. Set it to "
-           "500(default)."
+        "500(default)."
         << '\n';
   }
   if (getRestart()) {
@@ -342,7 +342,7 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   parseVector("GRID_SPACING", gspacing);
   if (gbin.size() != getNumberOfArguments()) {
     log << "eABF/DRR: You didn't specify GRID_BIN. Trying to use GRID_SPACING "
-           "instead."
+        "instead."
         << '\n';
     if (gspacing.size() != getNumberOfArguments()) {
       error("eABF/DRR: not enough values for GRID_BIN");
@@ -471,7 +471,7 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   }
   if (useUIestimator) {
     log << "eABF/DRR: Using umbrella integration(Zheng and Yang's) estimator "
-           "of gradients."
+        "of gradients."
         << '\n';
     log << "eABF/DRR: The UI estimator code is contributed by Haohao Fu."
         << '\n';
@@ -492,15 +492,15 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     if (isRestart && (uirprefix.length() == 0))
       input_filename.push_back(getLabel());
     eabf_UI = UIestimator::UIestimator(
-        lowerboundary, upperboundary, width, kappa, getLabel(), int(outputfreq),
-        uirestart, input_filename, kbt / plumed.getAtoms().getKBoltzmann());
+                lowerboundary, upperboundary, width, kappa, getLabel(), int(outputfreq),
+                uirestart, input_filename, kbt / plumed.getAtoms().getKBoltzmann());
   }
   log << "  Bibliography " << plumed.cite("Lesage, Lelièvre, Stoltz and Hénin, "
                                           "J. Phys. Chem. B 3676, 121 (2017)");
   log << plumed.cite("Darve and Pohorille, J. Chem. Phys. 9169, 115 (2001)");
   if (useUIestimator) {
     log << plumed.cite(
-        "Fu, Shao, Chipot and Cai, J. Chem. Theory Comput. 3506, 12 (2016)");
+          "Fu, Shao, Chipot and Cai, J. Chem. Theory Comput. 3506, 12 (2016)");
     log << plumed.cite("Zheng and Yang, J. Chem. Theory Comput. 810, 8 (2012)");
   }
   log << "\n";
@@ -526,18 +526,18 @@ void DynamicReferenceRestraining::calculate() {
     if (historyfreq > 0 && (step_now % int(historyfreq)) == 0) {
       if (!textoutput) {
         const std::string filename =
-            outputprefix + "." + std::to_string(step_now) + ".drrstate";
+          outputprefix + "." + std::to_string(step_now) + ".drrstate";
         save(filename, step_now);
       } else {
         const std::string filename =
-            outputprefix + "." + std::to_string(step_now);
+          outputprefix + "." + std::to_string(step_now);
         ABFGrid.writeAll(filename);
         CZARestimator.writeAll(filename);
       }
     }
     if (getCPT()) {
       log << "eABF/DRR: The MD engine is writing checkpoint so we also write a "
-             "DRR state file at step: "
+          "DRR state file at step: "
           << step_now << ".\n";
       save(cptname, step_now);
     }
@@ -607,7 +607,7 @@ void DynamicReferenceRestraining::load(const std::string &filename) {
   log << "eABF/DRR: Read restart file: " << filename << '\n';
   boost::archive::binary_iarchive ia(in);
   ia >> step >> fict >> vfict >> vfict_laststep >> ffict >> ABFGrid >>
-      CZARestimator;
+     CZARestimator;
   in.close();
   log << "eABF/DRR: Restart at step: " << step << '\n';
   backupFile(filename);
