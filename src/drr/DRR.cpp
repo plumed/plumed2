@@ -55,7 +55,7 @@ size_t DRRForceGrid::index1D(const DRRAxis &c, double x) {
   if (x < c.min || x > c.max) {
     std::cerr << "This is a bug!" << '\n';
     std::cerr << "CV should be larger than minimal value or smaller than the "
-                 "maximum value of dimension."
+              "maximum value of dimension."
               << '\n';
     std::cerr << "min = " << c.min << '\n';
     std::cerr << "max = " << c.max << '\n';
@@ -86,12 +86,12 @@ void DRRForceGrid::fillTable(const std::vector<std::vector<double>> &in) {
 }
 
 DRRForceGrid::DRRForceGrid()
-    : suffix(""), ndims(0), dimensions(0), sampleSize(0), forceSize(0),
-      headers(""), table(0), forces(0), samples(0), endpoints(0), shifts(0) {}
+  : suffix(""), ndims(0), dimensions(0), sampleSize(0), forceSize(0),
+    headers(""), table(0), forces(0), samples(0), endpoints(0), shifts(0) {}
 
 DRRForceGrid::DRRForceGrid(const std::vector<DRRAxis> &p_dimensions,
                            const std::string &p_suffix, bool initializeTable)
-    : suffix(p_suffix), ndims(p_dimensions.size()), dimensions(p_dimensions) {
+  : suffix(p_suffix), ndims(p_dimensions.size()), dimensions(p_dimensions) {
   sampleSize = 1;
   std::vector<std::vector<double>> mp(ndims);
   std::stringstream ss;
@@ -101,8 +101,8 @@ DRRForceGrid::DRRForceGrid(const std::vector<DRRAxis> &p_dimensions,
     sampleSize = dimensions[i].nbins * sampleSize;
     mp[i] = dimensions[i].getMiddlePoints();
     shifts[i] = std::accumulate(
-        std::begin(dimensions), std::begin(dimensions) + i, size_t(1),
-        [](size_t k, const DRRAxis &d) { return k * d.getBins(); });
+                  std::begin(dimensions), std::begin(dimensions) + i, size_t(1),
+    [](size_t k, const DRRAxis &d) { return k * d.getBins(); });
     ss.precision(std::numeric_limits<double>::max_digits10);
     ss << std::fixed << "# " << dimensions[i].min << ' '
        << dimensions[i].getWidth() << ' ' << dimensions[i].nbins;
@@ -164,7 +164,7 @@ bool DRRForceGrid::store(const std::vector<double> &pos,
 }
 
 std::vector<DRRAxis> DRRForceGrid::merge(const std::vector<DRRAxis> &dA,
-                                         const std::vector<DRRAxis> &dB) {
+    const std::vector<DRRAxis> &dB) {
   std::vector<DRRAxis> dR(dA.size());
   std::transform(std::begin(dA), std::end(dA), std::begin(dB), std::begin(dR),
                  DRRAxis::merge);
@@ -183,7 +183,7 @@ DRRForceGrid::getAccumulatedForces(const std::vector<double> &pos) const {
 }
 
 unsigned long int DRRForceGrid::getCount(const std::vector<double> &pos,
-                                         bool SkipCheck) const {
+    bool SkipCheck) const {
   if (!SkipCheck) {
     if (!isInBoundary(pos)) {
       return 0;
@@ -193,7 +193,7 @@ unsigned long int DRRForceGrid::getCount(const std::vector<double> &pos,
 }
 
 std::vector<double> DRRForceGrid::getGradient(const std::vector<double> &pos,
-                                              bool SkipCheck) const {
+    bool SkipCheck) const {
   std::vector<double> result(ndims, 0);
   if (!SkipCheck) {
     if (!isInBoundary(pos)) {
@@ -218,7 +218,7 @@ DRRForceGrid::getCountsLogDerivative(const std::vector<double> &pos) const {
   for (size_t i = 0; i < ndims; ++i) {
     const double binWidth = dimensions[i].getWidth();
     const size_t addr_first =
-        addr - shifts[i] * index1D(dimensions[i], pos[i]) + 0;
+      addr - shifts[i] * index1D(dimensions[i], pos[i]) + 0;
     const size_t addr_last = addr_first + shifts[i] * (dimensions[i].nbins - 1);
     if (addr == addr_first) {
       if (dimensions[i].periodic == true) {
@@ -226,15 +226,15 @@ DRRForceGrid::getCountsLogDerivative(const std::vector<double> &pos) const {
         const unsigned long int &count_prev = samples[addr_last];
         if (count_next != 0 && count_prev != 0)
           result[i] =
-              (std::log(count_next) - std::log(count_prev)) / (2 * binWidth);
+            (std::log(count_next) - std::log(count_prev)) / (2 * binWidth);
       } else {
         const unsigned long int &count_next = samples[addr + shifts[i]];
         const unsigned long int &count_next2 = samples[addr + shifts[i] * 2];
         if (count_next != 0 && count_this != 0 && count_next2 != 0)
           result[i] =
-              (std::log(count_next2) * (-1.0) + std::log(count_next) * 4.0 -
-               std::log(count_this) * 3.0) /
-              (2.0 * binWidth);
+            (std::log(count_next2) * (-1.0) + std::log(count_next) * 4.0 -
+             std::log(count_this) * 3.0) /
+            (2.0 * binWidth);
       }
     } else if (addr == addr_last) {
       if (dimensions[i].periodic == true) {
@@ -242,7 +242,7 @@ DRRForceGrid::getCountsLogDerivative(const std::vector<double> &pos) const {
         const unsigned long int &count_next = samples[addr_first];
         if (count_next != 0 && count_prev != 0)
           result[i] =
-              (std::log(count_next) - std::log(count_prev)) / (2 * binWidth);
+            (std::log(count_next) - std::log(count_prev)) / (2 * binWidth);
       } else {
         const unsigned long int &count_prev = samples[addr - shifts[i]];
         const unsigned long int &count_prev2 = samples[addr - shifts[i] * 2];
@@ -256,7 +256,7 @@ DRRForceGrid::getCountsLogDerivative(const std::vector<double> &pos) const {
       const unsigned long int &count_next = samples[addr + shifts[i]];
       if (count_next != 0 && count_prev != 0)
         result[i] =
-            (std::log(count_next) - std::log(count_prev)) / (2 * binWidth);
+          (std::log(count_next) - std::log(count_prev)) / (2 * binWidth);
     }
   }
   return result;
@@ -378,7 +378,7 @@ bool ABF::store_getbias(const std::vector<double> &pos,
   do {
     (*it_fa) += (*it_f); // Accumulate instantaneous force
     (*it_fb) =
-        factor * (*it_fa) * (-1.0) / static_cast<double>(count); // Calculate bias force
+      factor * (*it_fa) * (-1.0) / static_cast<double>(count); // Calculate bias force
     ++it_fa;
     ++it_fb;
     ++it_f;
@@ -430,9 +430,9 @@ std::vector<double> CZAR::getGradient(const std::vector<double> &pos,
     return result;
   auto it_fa = std::begin(forces) + baseaddr;
   std::transform(it_fa, it_fa + ndims, std::begin(log_deriv),
-                 std::begin(result), [&](double fa, double ld) {
-                   return fa * (-1.0) / samples[baseaddr / ndims] - kbt * ld;
-                 });
+  std::begin(result), [&](double fa, double ld) {
+    return fa * (-1.0) / samples[baseaddr / ndims] - kbt * ld;
+  });
   return result;
 }
 

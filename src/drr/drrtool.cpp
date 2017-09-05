@@ -107,7 +107,7 @@ int drrtool::main(FILE *in, FILE *out, Communicator &pc) {
 }
 
 void drrtool::extractdrr(const std::vector<std::string> &filename) {
-#pragma omp parallel for
+  #pragma omp parallel for
   for (size_t j = 0; j < filename.size(); ++j) {
     std::ifstream in;
     in.open(filename[j]);
@@ -120,7 +120,7 @@ void drrtool::extractdrr(const std::vector<std::string> &filename) {
     ABF abfgrid;
     CZAR czarestimator;
     ia >> step >> fict >> vfict >> vfict_laststep >> ffict >> abfgrid >>
-        czarestimator;
+       czarestimator;
     in.close();
     if (verbosity) {
       std::cout << "Dumping information of extended variables..." << '\n';
@@ -165,7 +165,7 @@ void drrtool::mergewindows(const std::vector<std::string> &filename) {
     ABF abfgrid;
     CZAR czarestimator;
     ia >> step >> fict >> vfict >> vfict_laststep >> ffict >> abfgrid >>
-        czarestimator;
+       czarestimator;
     abfs.push_back(abfgrid);
     czars.push_back(czarestimator);
     in.close();
@@ -178,8 +178,8 @@ void drrtool::mergewindows(const std::vector<std::string> &filename) {
   }
   // Generate new file name for merged grad and count
   std::vector<std::string> tmp_name = filename;
-  std::transform(std::begin(tmp_name), std::end(tmp_name), std::begin(tmp_name), [&](std::string s){return s.substr(0, s.find(suffix));});
-  std::string mergename = std::accumulate(std::begin(tmp_name), std::end(tmp_name), std::string(""), [](std::string a, std::string b){return a + b + "+";});
+  std::transform(std::begin(tmp_name), std::end(tmp_name), std::begin(tmp_name), [&](std::string s) {return s.substr(0, s.find(suffix));});
+  std::string mergename = std::accumulate(std::begin(tmp_name), std::end(tmp_name), std::string(""), [](std::string a, std::string b) {return a + b + "+";});
   mergename = mergename.substr(0, mergename.size() - 1);
   cmerged.writeAll(mergename);
   amerged.writeAll(mergename);
