@@ -38,7 +38,7 @@
 #include <boost/serialization/vector.hpp>
 
 namespace PLMD {
-namespace DRR {
+namespace drr {
 
 /// This class can store the minimum, maximum and bins of a dimension(axis).
 class DRRAxis {

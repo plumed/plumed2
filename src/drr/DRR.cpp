@@ -17,8 +17,8 @@
 #ifdef __PLUMED_HAS_BOOST_SERIALIZATION
 #include "DRR.h"
 
-using namespace PLMD;
-using namespace PLMD::DRR;
+namespace PLMD {
+namespace drr {
 
 bool DRRAxis::isInBoundary(double x) const {
   if (x < min || x > max)
@@ -460,4 +460,8 @@ CZAR CZAR::mergewindow(const CZAR &cWA, const CZAR &cWB) {
   }
   return result;
 }
+
+}
+}
+
 #endif
