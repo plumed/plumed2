@@ -226,16 +226,16 @@ void RosettaCoEvolutionRestraint::calculate()
 
   // calculate energy
   double ene = 0.0;
-  // cycle on positive arguments
+  // cycle on arguments
   for(unsigned i=rank_; i<getNumberOfArguments(); i=i+nrep_) {
     // get distance
     double dist = getArgument(i);
     // calculate temporary factor
-    double tmp0 = exp( - ( dist - R0_[i] ) / gamma_[i] );
+    double tmp0 = exp( ( dist - R0_[i] ) / gamma_[i] );
     // increment energy
-    ene += weights_[i] * ( 1.0 + tmp0 );
+    ene += weights_[i] / ( 1.0 + tmp0 );
     // calculate force
-    force[i] = weights_[i] * tmp0 / gamma_[i];
+    force[i] = weights_[i] / ( 1.0 + tmp0 ) / ( 1.0 + tmp0 ) * tmp0 / gamma_[i];
   }
 
   // sum energy and forces
