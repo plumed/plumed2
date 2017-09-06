@@ -191,7 +191,6 @@ PLUMED_CONFIG_ENABLE([external_lapack],[external-lapack],[search for external la
 PLUMED_CONFIG_ENABLE([external_blas],[external-blas],[search for external blas],[yes])
 PLUMED_CONFIG_ENABLE([molfile_plugins],[molfile-plugins],[use molfile_plugins],[yes])
 PLUMED_CONFIG_ENABLE([external_molfile_plugins],[external-molfile-plugins],[search for external molfile_plugins],[yes])
-PLUMED_CONFIG_ENABLE([matheval],[matheval],[search for matheval],[yes])
 PLUMED_CONFIG_ENABLE([zlib],[zlib],[search for zlib],[yes])
 PLUMED_CONFIG_ENABLE([readdir_r],[readdir-r],[search for readdir_r (threadsafe)],[yes])
 PLUMED_CONFIG_ENABLE([cregex],[cregex],[search for C regular expression],[yes])
@@ -511,11 +510,13 @@ AC_DEFINE([__PLUMED_HAS_MOLFILE_PLUGINS])
 
 found=ko
 if test "$external_molfile_plugins" == true ; then
-	AC_CHECK_LIB([molfile_plugin],[molfile_dcdplugin_init],
-           if test "${libsearch}" == true ; then
-        	[ AC_CHECK_HEADER([libmolfile_plugin.h], [LIBS="-lmolfile_plugin $LIBS"] [found=ok] ) ]
-           fi
-)
+  AC_CHECK_HEADER(  [libmolfile_plugin.h], [
+      AC_CHECK_FUNC(  [molfile_dcdplugin_init], [found=ok], [
+      if test "${libsearch}" == true ; then
+        AC_CHECK_LIB(   [molfile_plugin],[molfile_dcdplugin_init], [LIBS="-lmolfile_plugin $LIBS"] [found=ok])
+      fi
+    ])
+  ])
 fi
 if test $found == ko ; then
 	AC_MSG_WARN([using internal molfile_plugins, which only support dcd/xtc/trr/trj/crd files])
@@ -547,9 +548,6 @@ fi
 # when configuring with --disable-openmp
 AC_OPENMP
 
-if test $matheval == true ; then
-  PLUMED_CHECK_PACKAGE([matheval.h],[evaluator_create],[__PLUMED_HAS_MATHEVAL],[matheval])
-fi
 if test $readdir_r == true ; then
   PLUMED_CHECK_PACKAGE([dirent.h],[readdir_r],[__PLUMED_HAS_READDIR_R])
 fi

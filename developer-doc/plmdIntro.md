@@ -427,7 +427,7 @@ even more convenient to use range-based loops:
 \endverbatim
 Notice that now `p` is a constant reference, so it is not anymore necessary to use the `*` operator.
 
-\subsection cxx11features-auto Using smart pointers
+\subsection cxx11features-smart-pointers Using smart pointers
 
 There are many resources on the web about this topic. Have a look at <a href="https://mbevin.wordpress.com/2012/11/18/smart-pointers/"> this link </a> for a
 concise introduction.
@@ -499,7 +499,7 @@ unique_ptr in advance, you should insert it with the following syntax
   objs.emplace_back(std::move(to_insert));
 \endverbatim
 
-\subsection cxx11features-forward
+\subsection cxx11features-forward Forward declarations using C++11
 
 Notice that also forward declarations discussed above are a bit simpler
 to implement using C++11 syntax. This can be done using a std::unique_ptr
