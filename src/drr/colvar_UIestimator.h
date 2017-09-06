@@ -54,7 +54,7 @@ public:
            const std::vector<double> & upperboundary_p,   // upperboundary of
            const std::vector<double> & width_p,           // width of x
            const int y_size)           // size of y, for example, ysize=7, then when x=1, the distribution of y in [-2,4] is considered
-  : lowerboundary(lowerboundary_p), upperboundary(upperboundary_p), width(width_p)
+    : lowerboundary(lowerboundary_p), upperboundary(upperboundary_p), width(width_p)
   {
     this->dimension = lowerboundary.size();
     this->y_size = y_size;     // keep in mind the internal (spare) matrix is stored in diagonal form
@@ -170,7 +170,7 @@ public:
            const std::vector<double> & width_p,                // width of x
            const int y_size,           // size of y, for example, ysize=7, then when x=1, the distribution of y in [-2,4] is considered
            const T & default_value)          //   the default value of T
-  :width(width_p)
+    :width(width_p)
   {
     this->dimension = lowerboundary.size();
 
@@ -255,11 +255,11 @@ public:
               const bool restart_p,                              // whether restart from a .count and a .grad file
               const std::vector<std::string>& input_filename_p,   // the prefixes of input files
               const double temperature_p)
-  : lowerboundary(lowerboundary_p), upperboundary(upperboundary_p),
-    width(width_p), krestr(krestr_p),
-    output_filename(output_filename_p), output_freq(output_freq_p),
-    restart(restart_p), input_filename(input_filename_p),
-    temperature(temperature_p)
+    : lowerboundary(lowerboundary_p), upperboundary(upperboundary_p),
+      width(width_p), krestr(krestr_p),
+      output_filename(output_filename_p), output_freq(output_freq_p),
+      restart(restart_p), input_filename(input_filename_p),
+      temperature(temperature_p)
   {
 
     dimension = lowerboundary.size();
