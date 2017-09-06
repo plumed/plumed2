@@ -259,7 +259,7 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     outputprefix(""), ndims(getNumberOfArguments()), dt(0.0), kbt(0.0),
     outputfreq(0.0), historyfreq(-1.0), isRestart(false),
     useUIestimator(false), textoutput(false)
-    {
+{
   log << "eABF/DRR: You now are using the extended adaptive biasing "
       "force(eABF) method."
       << '\n';
