@@ -105,9 +105,7 @@ void CoEvolutionRestraint::registerKeywords(Keywords& keys) {
   keys.add("compulsory","R0","forward model parameter R0");
   keys.add("compulsory","P0","forward model parameter P0");
   keys.add("compulsory","GAMMA","forward model parameter gamma");
-  keys.add("compulsory","NPOS","number of positives");
-  keys.add("compulsory","NNEG","number of negatives");
-  keys.add("compulsory","RES_FILE","file with residue ids for each argument");
+  keys.add("compulsory","RES_FILE","file with residue types for each argument");
   keys.add("optional","SLOPE","add logarithmic slope");
   keys.add("optional","TEMP","temperature in energy units");
   keys.add("optional","MC_STEPS","number of MC steps");
