@@ -248,14 +248,14 @@ public:
   UIestimator() {}
 
   //called when (re)start an eabf simulation
-  UIestimator(const std::vector<double> lowerboundary,
-              const std::vector<double> upperboundary,
-              const std::vector<double> width,
-              const std::vector<double> krestr,                // force constant in eABF
+  UIestimator(const std::vector<double>& lowerboundary,
+              const std::vector<double>& upperboundary,
+              const std::vector<double>& width,
+              const std::vector<double>& krestr,                // force constant in eABF
               const std::string& output_filename,              // the prefix of output files
               const int output_freq,
               const bool restart,                              // whether restart from a .count and a .grad file
-              const std::vector<std::string> input_filename,   // the prefixes of input files
+              const std::vector<std::string>& input_filename,   // the prefixes of input files
               const double temperature)
   {
 
@@ -788,7 +788,7 @@ LOOPEND4:
   }
 
   // read input files
-  void read_inputfiles(const std::vector<std::string> input_filename)
+  void read_inputfiles(const std::vector<std::string>& input_filename)
   {
     char sharp;
     double nothing;
