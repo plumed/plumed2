@@ -23,13 +23,14 @@
 #define __PLUMED_analysis_ClassicalScaling_h
 
 #include <vector>
+#include "tools/Matrix.h"
 
 namespace PLMD {
 namespace analysis {
 
 class ClassicalScaling {
 public:
-//  static void run( PointWiseMapping* mymap );
+  static void run( const Matrix<double>& targets, Matrix<double>& projections );
 };
 
 }

@@ -40,6 +40,7 @@ void Analysis::registerKeywords( Keywords& keys ) {
   ActionWithArguments::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
   keys.use("ARG"); keys.reset_style("ARG","optional");
+  keys.add("compulsory","STRIDE","1","the frequency with which to store data to be analyzed");
   keys.add("atoms","ATOMS","the atoms whose positions we are tracking for the purpose of analysing the data");
   keys.add("compulsory","METRIC","EUCLIDEAN","how are we measuring the distances between configurations");
   keys.add("compulsory","RUN","0","the frequency with which to run the analysis algorithm. The default value of zero assumes you want to analyse the whole trajectory");
@@ -47,7 +48,8 @@ void Analysis::registerKeywords( Keywords& keys ) {
   keys.addFlag("WRITE_CHECKPOINT",false,"write out a checkpoint so that the analysis can be restarted in a later run");
   keys.add("hidden","REUSE_DATA_FROM","eventually this will allow you to analyse the same set of data multiple times");
   keys.add("hidden","IGNORE_REWEIGHTING","this allows you to ignore any reweighting factors");
-  keys.use("RESTART"); keys.use("UPDATE_FROM"); keys.use("UPDATE_UNTIL"); keys.remove("TOL");
+  keys.add("optional","LOGWEIGHTS","list of actions that calculates log weights that should be used to weight configurations when calculating averages");
+  keys.use("RESTART"); keys.use("UPDATE_FROM"); keys.use("UPDATE_UNTIL"); 
 }
 
 Analysis::Analysis(const ActionOptions&ao):
@@ -63,8 +65,8 @@ Analysis::Analysis(const ActionOptions&ao):
 //firstAnalysisDone(false),
 //old_norm(0.0),
   ofmt("%f"),
-  current_args(getNumberOfArguments()),
-  argument_names(getNumberOfArguments())
+  current_args(getNumberOfScalarArguments()),
+  argument_names(getNumberOfScalarArguments())
 {
   parse("FMT",ofmt);  // Read the format for output files
   // Make a vector containing all the argument names
@@ -84,6 +86,20 @@ Analysis::Analysis(const ActionOptions&ao):
   ReferenceArguments* hasargs=dynamic_cast<ReferenceArguments*>( checkref.get() );
   if( !hasargs && getNumberOfArguments()!=0 ) error("use of arguments with metric type " + metricname + " is invalid");
   if( hasatoms && hasargs ) error("currently dependencies break if you have both arguments and atoms");
+
+  std::vector<std::string> wwstr; parseVector("LOGWEIGHTS",wwstr);
+  if( wwstr.size()>0 ) log.printf("  reweighting using weights from ");
+  std::vector<Value*> arg( getArguments() );
+  for(unsigned i=0; i<wwstr.size(); ++i) {
+    ActionWithValue* val = plumed.getActionSet().selectWithLabel<ActionWithValue*>(wwstr[i]);
+    if( !val ) error("could not find value named");
+    weights.push_back( val->copyOutput(val->getLabel()) );
+    arg.push_back( val->copyOutput(val->getLabel()) );
+    log.printf("%s ",wwstr[i].c_str() );
+  }
+  if( wwstr.size()>0 ) log.printf("\n");
+  else log.printf("  weights are all equal to one\n");
+  requestArguments( arg, false );
 
   std::string prev_analysis; parse("REUSE_DATA_FROM",prev_analysis);
   if( prev_analysis.length()>0 ) {
@@ -192,18 +208,23 @@ void Analysis::accumulate() {
   // This is used when we have a full quota of data from the first run
   if( freq>0 && idata==logweights.size() ) return;
   // Get the arguments ready to transfer to reference configuration
-  for(unsigned i=0; i<getNumberOfScalarArguments(); ++i) current_args[i]=getArgumentScalar(i);
+  for(unsigned i=0; i<getNumberOfScalarArguments()-weights.size(); ++i){
+     plumed_dbg_assert( i<current_args.size() );
+     current_args[i]=getArgumentScalar(i);
+  }
+
+  double lweight=0; for(unsigned i=0; i<weights.size(); ++i) lweight+=weights[i]->get();
 
   if( freq>0) {
     // Get the arguments and store them in a vector of vectors
     data[idata]->setReferenceConfig( getPositions(), current_args, getMetric() );
-    logweights[idata] = 0.0;  // lweight;
+    logweights[idata] = lweight;
   } else {
     data.emplace_back( metricRegister().create<ReferenceConfiguration>( metricname ) );
     plumed_dbg_assert( data.size()==idata+1 );
     data[idata]->setNamesAndAtomNumbers( getAbsoluteIndexes(), argument_names );
     data[idata]->setReferenceConfig( getPositions(), current_args, getMetric() );
-    logweights.push_back(0.0);    // push_back(lweight);
+    logweights.push_back(lweight);
   }
 
   // Write data to checkpoint file

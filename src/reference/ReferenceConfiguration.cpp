@@ -218,10 +218,10 @@ double distance( const Pbc& pbc, const std::vector<Value*> & vals, ReferenceConf
   else nder=ref1->getReferenceArguments().size();
 
   MultiValue myvals( 1, nder ); ReferenceValuePack myder( ref1->getReferenceArguments().size(), ref1->getReferencePositions().size(), myvals );
-  double dist1=ref1->calc( ref2->getReferencePositions(), pbc, vals, ref2->getReferenceArguments(), myder, squared );
+  myder.clear(); double dist1=ref1->calc( ref2->getReferencePositions(), pbc, vals, ref2->getReferenceArguments(), myder, squared );
 #ifndef NDEBUG
   // Check that A - B = B - A
-  double dist2=ref2->calc( ref1->getReferencePositions(), pbc, vals, ref1->getReferenceArguments(), myder, squared );
+  myder.clear(); double dist2=ref2->calc( ref1->getReferencePositions(), pbc, vals, ref1->getReferenceArguments(), myder, squared );
   plumed_dbg_assert( fabs(dist1-dist2)<epsilon );
 #endif
   return dist1;

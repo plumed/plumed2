@@ -91,7 +91,6 @@ void ClusteringBase::retrieveEdgeList( unsigned& nedge, std::vector<std::pair<un
 }
 
 void ClusteringBase::calculate() {
-  printf("IN CLUSTERING BASE \n");
   // All the clusters have zero size initially
   for(unsigned i=0; i<cluster_sizes.size(); ++i) { cluster_sizes[i].first=0; cluster_sizes[i].second=i; }
   // Do the clustering bit

@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "AnalysisWithLandmarks.h"
 #include "ClassicalScaling.h"
+#include "reference/ReferenceConfiguration.h"
 #include "core/ActionRegister.h"
 
 namespace PLMD {
@@ -166,6 +167,7 @@ see <a href="http://quest4rigor.com/tag/multidimensional-scaling/"> this website
 class ClassicalMultiDimensionalScaling : public AnalysisWithLandmarks {
 private:
   unsigned nlow;
+  std::vector<std::string> propnames;
   std::string ofilename;
   std::string efilename;
 public:
@@ -191,7 +193,7 @@ ClassicalMultiDimensionalScaling::ClassicalMultiDimensionalScaling( const Action
 
   parse("NLOW_DIM",nlow);
   if( nlow<1 ) error("dimensionality of low dimensional space must be at least one");
-  std::vector<std::string> propnames( nlow ); std::string num;
+  propnames.resize( nlow ); std::string num;
   for(unsigned i=0; i<propnames.size(); ++i) {
     Tools::convert(i+1,num); std::string lab=getLabel();
     if(lab.find("@")!=std::string::npos) propnames[i]=getName() + "." + num;
@@ -205,9 +207,14 @@ ClassicalMultiDimensionalScaling::ClassicalMultiDimensionalScaling( const Action
 
 void ClassicalMultiDimensionalScaling::analyzeLandmarks() {
   // Calculate all pairwise diatances
-  // myembedding->calculateAllDistances( getPbc(), getArguments(), comm, myembedding->modifyDmat(), true );
+  Matrix<double> targets( data.size(), data.size() ); targets=0;
+  for(unsigned i=1; i<data.size(); ++i) {
+    for(unsigned j=0; j<i; ++j) targets(i,j)=targets(j,i)=distance( getPbc(), getArguments(), data[i], data[j], true );
+  }
 
   // Run multidimensional scaling
+  Matrix<double> projections( data.size(), nlow );
+  ClassicalScaling::run( targets, projections );
 
   // Output the embedding as long lists of data
 //  std::string gfname=saveResultsFromPreviousAnalyses( ofilename );
@@ -217,20 +224,35 @@ void ClassicalMultiDimensionalScaling::analyzeLandmarks() {
   gfile.open( ofilename.c_str() );
 
   // Print embedding coordinates
-  // for(unsigned i=0; i<myembedding->getNumberOfReferenceFrames(); ++i) {
-  //   for(unsigned j=0; j<nlow; ++j) {
-  //     std::string num; Tools::convert(j+1,num);
-  //     gfile.printField( getLabel() + "." + num, myembedding->getProjectionCoordinate(i,j) );
-  //   }
-  //   gfile.printField();
-  // }
+  for(unsigned i=0; i<data.size(); ++i) {
+    for(unsigned j=0; j<nlow; ++j) {
+      std::string num; Tools::convert(j+1,num);
+      gfile.printField( getLabel() + "." + num, projections(i,j) );
+    }
+    gfile.printField();
+  }
   gfile.close();
 
   // Output the embedding in plumed format
   if( efilename!="dont output") {
     OFile afile; afile.link(*this); afile.setBackupString("analysis");
-    afile.open( efilename.c_str() );
-    //myembedding->print( "classical mds", getTime(), afile, getOutputFormat(), atoms.getUnits().getLength()/0.1 );
+    afile.open( efilename.c_str() ); 
+    std::string descr2, descr="DESCRIPTION: results from classical mds analysis performed at time " + getOutputFormat() +"\n";
+    afile.printf(descr.c_str(), getTime() );
+    if(getOutputFormat().find("-")!=std::string::npos) {
+      descr="REMARK WEIGHT=" + getOutputFormat() + " %s=" + getOutputFormat() + " "; descr2="%s=" + getOutputFormat();
+    } else {
+      // This ensures numbers are left justified (i.e. next to the equals sign
+      std::size_t psign=getOutputFormat().find("%");
+      plumed_assert( psign!=std::string::npos );
+      descr="REMARK WEIGHT=%-" + getOutputFormat().substr(psign+1) + " %s=%-" + getOutputFormat().substr(psign+1) + " ";
+      descr2="%s=%-" + getOutputFormat().substr(psign+1);
+    }
+    for(unsigned i=0; i<data.size(); ++i) {
+        afile.printf(descr.c_str(), data[i]->getWeight(), propnames[0].c_str(), projections(i,0) );
+        for(unsigned j=1; j<propnames.size(); ++j) afile.printf(descr2.c_str(), propnames[j].c_str(), projections(i,j));
+        afile.printf("\n"); data[i]->print( afile, getOutputFormat(), atoms.getUnits().getLength()/0.1 );
+    }
     afile.close();
   }
 }

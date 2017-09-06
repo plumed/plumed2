@@ -22,6 +22,7 @@
 #include "AnalysisWithLandmarks.h"
 #include "LandmarkRegister.h"
 #include "LandmarkSelectionBase.h"
+#include "reference/MultiReferenceBase.h"
 
 //+PLUMEDOC INTERNAL landmarkselection
 /*
@@ -44,21 +45,17 @@ void AnalysisWithLandmarks::registerKeywords( Keywords& keys ) {
 
 AnalysisWithLandmarks::AnalysisWithLandmarks( const ActionOptions& ao):
   Action(ao),
-  Analysis(ao),
-  data_to_analyze(NULL)
+  Analysis(ao)
 {
   std::string linput; parse("LANDMARKS",linput);
   std::vector<std::string> words=Tools::getWords(linput);
   landmarkSelector=landmarkRegister().create( LandmarkSelectionOptions(words,this) );
+  data_to_analyze = new MultiReferenceBase( getMetricName(), false );
   log.printf("  %s\n", landmarkSelector->description().c_str() );
 }
 
 AnalysisWithLandmarks::~AnalysisWithLandmarks() {
 // destructor is required to delete class landmarkSelector
-}
-
-void AnalysisWithLandmarks::setDataToAnalyze( MultiReferenceBase* mydata ) {
-  data_to_analyze=mydata;
 }
 
 unsigned AnalysisWithLandmarks::getNumberOfLandmarks() const {

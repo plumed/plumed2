@@ -42,8 +42,6 @@ private:
 /// A pointer to the data we are analyzing
   MultiReferenceBase* data_to_analyze;
 protected:
-/// Set the data that needs to be analyzed
-  void setDataToAnalyze( MultiReferenceBase* mydata );
 /// Return the number of landmarks we are selecting
   unsigned getNumberOfLandmarks() const ;
 public:

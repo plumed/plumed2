@@ -82,6 +82,8 @@ private:
   std::string metricname;
 /// The checkpoint file
   OFile rfile;
+/// The weights to use 
+  std::vector<Value*> weights;
 /// Read in data from a file
   void readDataFromFile( const std::string& filename );
 /// Get the metric if we are using malonobius distance and flexible hill
@@ -128,7 +130,22 @@ public:
   bool isPeriodic() { plumed_error(); return false; }
   /// Convert the stored log weights to proper weights
   virtual void finalizeWeights( const bool& ignore_weights );
+  unsigned getNumberOfArguments() const ;
+/// Overwrite ActionWithArguments getArguments() so that we don't return the bias
+  std::vector<Value*> getArguments();
 };
+
+inline
+unsigned Analysis::getNumberOfArguments() const {
+  return ActionWithArguments::getNumberOfArguments() - weights.size();
+}
+
+inline
+std::vector<Value*> Analysis::getArguments() {
+  std::vector<Value*> arg_vals( ActionWithArguments::getArguments() );
+  for(unsigned i=0; i<weights.size(); ++i) arg_vals.erase(arg_vals.end()-1);
+  return arg_vals;
+}
 
 inline
 std::string Analysis::getMetricName() const {
