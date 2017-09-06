@@ -60,10 +60,6 @@ This names can be customized using the VAR keyword (see examples below).
 If you want a function that depends not only on collective variables
 but also on time you can use the \subpage TIME action.
 
-\attention
-The MATHEVAL object only works if libmatheval is installed on the system and
-PLUMED has been linked to it
-
 \par Examples
 
 The following input tells plumed to perform a metadynamics
@@ -82,8 +78,7 @@ to atoms 10, 12, and 15.
 Also notice that since MATHEVAL is used without the VAR option
 the two arguments should be referred to as x and y in the expression FUNC.
 For simple functions
-such as this one it is possible to use \ref COMBINE, which does
-not require libmatheval to be installed on your system.
+such as this one it is possible to use \ref COMBINE.
 
 The following input tells plumed to print the angle between vectors
 identified by atoms 1,2 and atoms 2,3
@@ -103,7 +98,7 @@ PRINT ARG=theta
 \endplumedfile
 (See also \ref PRINT and \ref DISTANCE).
 
-Notice that the matheval library implements a large number of functions (trigonometric, exp, log, etc).
+Notice that this action implements a large number of functions (trigonometric, exp, log, etc).
 Among the useful functions, have a look at the step function (that is the Heaviside function).
 `step(x)` is defined as 1 when `x` is positive and `0` when x is negative. This allows for
 a straightforward implementation of if clauses.
