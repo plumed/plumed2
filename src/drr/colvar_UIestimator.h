@@ -1,5 +1,6 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    Copyright (c) 2017 of Haohao Fu
+    Copyright (c) 2017 of Haochuan Chen (excluding colvar_UIestimator.h)
+    Copyright (c) 2017 of Haohao Fu (colvar_UIestimator.h)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published
@@ -12,16 +13,16 @@
     GNU Lesser General Public License for more details.
 
     You should have received a copy of the GNU Lesser General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#ifndef __PLUMED_drr_colvar_UIestimator_h
+#define __PLUMED_drr_colvar_UIestimator_h
 // The original code(https://github.com/fhh2626/colvars/blob/master/src/colvar_UIestimator.h) has been modified by Haochuan Chen.
 // Modifications:
 // 1. Disable colvars related code.
 // 2. Change boltzmann constant.
 // 3. Change output precision.
 // I(Haochuan Chen) don't know how to maintain this code and how it runs. If you are interested in it, please contact Haohao Fu.
-#ifndef __PLUMED_COLVAR_UIESTIMATOR_H
-#define __PLUMED_COLVAR_UIESTIMATOR_H
 
 #include <cmath>
 #include <vector>

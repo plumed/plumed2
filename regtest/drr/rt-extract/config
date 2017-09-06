@@ -1,2 +1,3 @@
 type=plumed
-arg="drrtool --extract test.drrstate"
+plumed_modules=drr
+arg="drr_tool --extract test.drrstate"

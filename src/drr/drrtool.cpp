@@ -1,5 +1,6 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    Copyright (c) 2017 of Haochuan Chen
+    Copyright (c) 2017 of Haochuan Chen (excluding colvar_UIestimator.h)
+    Copyright (c) 2017 of Haohao Fu (colvar_UIestimator.h)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published
@@ -12,7 +13,7 @@
     GNU Lesser General Public License for more details.
 
     You should have received a copy of the GNU Lesser General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #ifdef __PLUMED_HAS_BOOST_SERIALIZATION
 #include "cltools/CLTool.h"
@@ -78,7 +79,7 @@ private:
   const std::string suffix{".drrstate"};
 };
 
-PLUMED_REGISTER_CLTOOL(drrtool, "drrtool")
+PLUMED_REGISTER_CLTOOL(drrtool, "drr_tool")
 
 void drrtool::registerKeywords(Keywords &keys) {
   CLTool::registerKeywords(keys);
