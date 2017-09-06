@@ -30,11 +30,8 @@ namespace symfunc {
 class ThreeBodyGFunctions : public SymmetryFunctionBase {
 private:
   SwitchingFunction sf4;
-  int g4_ind, g5_ind, g6_ind, g7_ind;
-  double lambda4, nu4, zeta4, g4_prefactor;
-  double lambda5, nu5, zeta5, g5_prefactor;
-  double lambda6, zeta6, g6_prefactor;
-  double nu7, alpha7, g7_prefactor;
+  std::vector<unsigned> ftypes;
+  std::vector<double> lambda, nu, zeta, prefactor, alpha;
 public:
   static void registerKeywords( Keywords& keys );
   explicit ThreeBodyGFunctions(const ActionOptions&);
@@ -46,68 +43,52 @@ PLUMED_REGISTER_ACTION(ThreeBodyGFunctions,"GSYMFUNC_THREEBODY")
 
 void ThreeBodyGFunctions::registerKeywords( Keywords& keys ) {
   SymmetryFunctionBase::registerKeywords( keys ); keys.remove("ONESHOT");
-  keys.add("optional","LAMBDA4","the lambda parameter in the G4 symmetry function");
-  keys.add("compulsory","NU4","the NU parameteter in the G4 symmetry function");
-  keys.add("compulsory","ZETA4","the zeta parameter in the G4 symmetry function");
-  keys.add("compulsory","SWITCH4","the switching function that acts on the distance between atom j and atom k in the G4 symmetry function");
-  keys.add("optional","LAMBDA5","the lambda parameter in the G5 symmetry function");
-  keys.add("compulsory","NU5","the NU parameteter in the G5 symmetry function");
-  keys.add("compulsory","ZETA5","the zeta parameter in the G5 symmetry function");
-  keys.add("optional","LAMBDA6","the lambda parameter in the G6 symmetry function");
-  keys.add("compulsory","ZETA6","the zeta parameter in the G6 symmetry function");
-  keys.add("optional","NU7","the nu parameter in the G7 symmetry function");
-  keys.add("compulsory","ALPHA7","the alpha parameter in the G7 symmetry function");
-  keys.addOutputComponent("g4","LAMBDA4","the value of the G4 symmetry function");
-  keys.addOutputComponent("g5","LAMBDA5","the value of the G5 symmetry function");
-  keys.addOutputComponent("g6","LAMBDA6","the value of the G6 symmetry function");
-  keys.addOutputComponent("g7","NU7","the value of the G7 symmetry function");
+  keys.add("numbered","FUNCTION","the parameters of the function you would like to compute");
+  keys.add("compulsory","SWITCH","the switching function that acts on the distance between atom j and atom k in the G4 symmetry function");
 }
 
 ThreeBodyGFunctions::ThreeBodyGFunctions(const ActionOptions&ao):
 Action(ao),
-SymmetryFunctionBase(ao),
-g4_ind(-1), g5_ind(-1), g6_ind(-1), g7_ind(-1)
+SymmetryFunctionBase(ao)
 {
-   unsigned vindex=0;
-   // Read input for G4
-   lambda4=0.0; parse("LAMBDA4",lambda4); 
-   if( lambda4!=0 ) {
-       parse("NU4",nu4); parse("ZETA4",zeta4);
-       addComponentWithDerivatives("g4"); g4_prefactor = 2.0 / pow(2.0,zeta4);
-       log.printf("  parameters for g4 are lambda=%f, nu=%f and zeta=%f\n",lambda4, nu4, zeta4);
-       std::string swstr, errors; parse("SWITCH4",swstr); sf4.set(swstr, errors );
-       if( errors.length()!=0 ) error("problem reading switching function description " + errors ); 
+   bool hasg4=false;
+   for(int i=1;;i++) {
+      std::string mystr, stype, lab, num; Tools::convert(i,num);
+      if( !parseNumbered("FUNCTION",i,mystr ) ) break;
+      std::vector<std::string> data=Tools::getWords(mystr);
+      if( !Tools::parse(data,"LABEL",lab ) ) error("found no LABEL in FUNCTION" + num + " specification");
+      if( !Tools::parse(data,"TYPE",stype) ) error("found no TYPE in FUNCTION" + num + " specification");
+      lambda.push_back(0); nu.push_back(0); zeta.push_back(0); prefactor.push_back(0); alpha.push_back(0); 
+      addComponentWithDerivatives( lab );
+      if( (stype=="g4" || stype=="g5" || stype=="g6") && !Tools::parse(data,"LAMBDA",lambda[i-1]) ) error("found no LAMBDA in FUNCTION" + num + " specification");  
+      if( (stype=="g4" || stype=="g5" || stype=="g6") && !Tools::parse(data,"ZETA",zeta[i-1]) ) error("found no ZETA in FUNCTION" + num + " specification"); 
+      if( (stype=="g4" || stype=="g5" || stype=="g7") && !Tools::parse(data,"NU",nu[i-1]) ) error("found no NU in FUNCTION" + num + " specification");
+      if( stype=="g7" && !Tools::parse(data,"ALPHA",alpha[i-1]) ) error("found no ALPHA in FUNCTION" + num + " specification");
+      if( stype=="g4" ) {
+          ftypes.push_back(4); prefactor[i-1] = 2.0 / pow(2.0,zeta[i-1]); hasg4=true;
+          log.printf("  component labelled %s is of type g4 with parameters lambda=%f, nu=%f and zeta=%f\n", lab.c_str(), lambda[i-1], nu[i-1], zeta[i-1]);   
+      } else if( stype=="g5" ) {
+          ftypes.push_back(5); prefactor[i-1] = 2.0 / pow(2.0,zeta[i-1]);
+          log.printf("  component labelled %s is of type g5 with parameters lambda=%f, nu=%f and zeta=%f\n", lab.c_str(), lambda[i-1], nu[i-1], zeta[i-1]);
+      } else if( stype=="g6" ) {
+          ftypes.push_back(6); prefactor[i-1] = 2.0 / pow(2.0,zeta[i-1]);
+          log.printf("  component labelled %s is of type g6 with parameters lambda=%f and zeta=%f\n", lab.c_str(), lambda[i-1], zeta[i-1]);
+      } else if( stype=="g7" ) {
+          ftypes.push_back(7); prefactor[i-1] = 2.0;
+          log.printf("  component labelled %s is of type g7 with parameters nu=%f and alpha=%f\n", lab.c_str(), nu[i-1], alpha[i-1]);
+      }
+   }
+   if( hasg4 ) {
+       std::string swstr, errors; parse("SWITCH",swstr); sf4.set(swstr, errors );
+       if( errors.length()!=0 ) error("problem reading switching function description " + errors );
        log.printf("  using switching function distance between atom j and atom k with cutoff %s \n",sf4.description().c_str() );
-       g4_ind=vindex; vindex++;
-   }
-   // Read input for G5
-   lambda5=0.0; parse("LAMBDA5",lambda5); 
-   if( lambda5!=0 ){
-       parse("NU5",nu5); parse("ZETA5",zeta5);
-       addComponentWithDerivatives("g5"); g5_prefactor = 2.0 / pow(2.0,zeta5);
-       log.printf("  parameters for g5 are lambda=%f, nu=%f and zeta=%f\n",lambda5, nu5, zeta5); 
-       g5_ind=vindex; vindex++;
-   }
-   // Read input for G6
-   lambda6=0.0; parse("LAMBDA6",lambda6); 
-   if( lambda6!=0 ) {
-       parse("ZETA6",zeta6);
-       addComponentWithDerivatives("g6"); g6_prefactor = 2.0 / pow(2.0,zeta6);
-       log.printf("  parameters for g6 are lambda=%f and zeta=%f\n",lambda6, zeta6);
-       g6_ind=vindex; vindex++;
-   }
-   // Read input for G7
-   nu7=0.0; parse("NU7",nu7); 
-   if( nu7!=0 ) {
-       parse("ALPHA7",alpha7); 
-       addComponentWithDerivatives("g7"); g7_prefactor = 2.0;
-       log.printf("  parameters for g7 are nu=%f and alpha=%f\n",nu7, alpha7);
-       g7_ind=vindex; vindex++; 
    }
    checkRead();
 }
 
 void ThreeBodyGFunctions::computeSymmetryFunction( const unsigned& current, MultiValue& myvals ) const {
+   bool hasg4=false; for(unsigned j=0;j<ftypes.size();++j){ if( ftypes[j]==4 ){ hasg4=true; break; } } 
+
    Vector dd_i, dd_j, disti, distj;  double mod2i, mod2j, weighti, weightj; Angle angle;
    unsigned matind = getPntrToArgument(0)->getPositionInMatrixStash();
    unsigned matind_x = getPntrToArgument(1)->getPositionInMatrixStash();
@@ -136,72 +117,75 @@ void ThreeBodyGFunctions::computeSymmetryFunction( const unsigned& current, Mult
            double cosa = cos(ang), sina = sin(ang); 
            // Compute product of weights
            double weightij = weighti*weightj;
-           // Compute G4
-           if( g4_ind>-1 ){
-               double dder_ij, switchij = sf4.calculateSqr( mod2ij, dder_ij );
-               double expg4 = exp( -nu4*( mod2i + mod2j + mod2ij ) );
-               double g4v = (1 + lambda4*cosa);
-               double g4p = pow( g4v, zeta4-1 );
-               double g4_nonweight = g4_prefactor*g4p*g4v*expg4*switchij;
-               double g4_vder1 = -g4_prefactor*weightij*zeta4*g4p*lambda4*sina*expg4*switchij; 
-               double g4_mder = g4_prefactor*weightij*g4p*g4v*expg4;
-               double g4_vder2 = -g4_mder*2*nu4*switchij; 
-               double g4_vder3 = g4_mder*(dder_ij -2*nu4*switchij);
-               addToValue( g4_ind, g4_nonweight*weightij, myvals );
-               myvals.setSymfuncTemporyIndex( iind ); 
-               addWeightDerivative( g4_ind, g4_nonweight*weightj, myvals );
-               addVectorDerivatives(g4_ind, g4_vder1*dd_i, myvals ); 
-               addVectorDerivatives(g4_ind, g4_vder2*disti, myvals );
-               addVectorDerivatives(g4_ind, g4_vder3*dirij, myvals );
-               myvals.setSymfuncTemporyIndex( jind );
-               addWeightDerivative( g4_ind, g4_nonweight*weighti, myvals );
-               addVectorDerivatives(g4_ind, g4_vder1*dd_j, myvals );
-               addVectorDerivatives(g4_ind, g4_vder2*distj, myvals );
-               addVectorDerivatives(g4_ind, -g4_vder3*dirij, myvals );
-           }
-           // Compute G5
-           if( g5_ind>-1 ) {
-               double expg5 = exp( -nu5*( mod2i + mod2j ) );
-               double g5v = (1 + lambda5*cosa);
-               double g5p = pow( g5v, zeta5-1 ); 
-               double g5_nonweight = g5_prefactor*g5p*g5v*expg5;
-               double g5_vder1 = -g5_prefactor*weightij*expg5*zeta5*g5p*lambda5*sina;
-               double g5_vder2 = -g5_prefactor*weightij*g5p*g5v*2*expg5*nu5;
-               addToValue( g5_ind, g5_nonweight*weightij, myvals ); 
-               myvals.setSymfuncTemporyIndex( iind ); 
-               addWeightDerivative( g5_ind, g5_nonweight*weightj, myvals );
-               addVectorDerivatives( g5_ind, g5_vder1*dd_i, myvals ); 
-               addVectorDerivatives(g5_ind, g5_vder2*disti, myvals );
-               myvals.setSymfuncTemporyIndex( jind ); 
-               addWeightDerivative( g5_ind, g5_nonweight*weighti, myvals );
-               addVectorDerivatives( g5_ind, g5_vder1*dd_j, myvals ); 
-               addVectorDerivatives(g5_ind, g5_vder2*distj, myvals );
-           }
-           // Compute G6
-           if( g6_ind>-1 ) {
-               double g6v = (1 + lambda6*cosa);
-               double g6p = pow( g6v, zeta6-1 );
-               double g6_nonweight = g6_prefactor*g6p*g6v;
-               double g6_vder = -g6_prefactor*weightij*zeta6*g6p*lambda6*sina;
-               addToValue( g6_ind, g6_nonweight*weightij, myvals );  
-               myvals.setSymfuncTemporyIndex( iind ); 
-               addWeightDerivative( g6_ind, g6_nonweight*weightj, myvals );
-               addVectorDerivatives(g6_ind, g6_vder*dd_i, myvals );
-               myvals.setSymfuncTemporyIndex( jind ); 
-               addWeightDerivative( g6_ind, g6_nonweight*weighti, myvals );
-               addVectorDerivatives(g6_ind, g6_vder*dd_j, myvals );
-           }
-           // Compute G7
-           if( g7_ind>-1 ) {
-               double g7_nonweight = 0.5*g7_prefactor*sin( nu7*(ang-alpha7) );
-               double g7_vder = g7_prefactor*weightij*0.5*nu7*cos( nu7*(ang-alpha7) );
-               addToValue( g7_ind, g7_nonweight*weightij, myvals );
-               myvals.setSymfuncTemporyIndex( iind ); 
-               addWeightDerivative( g7_ind, g7_nonweight*weightj, myvals );
-               addVectorDerivatives( g7_ind, g7_vder*dd_i, myvals );
-               myvals.setSymfuncTemporyIndex( jind ); 
-               addWeightDerivative( g7_ind, g7_nonweight*weighti, myvals );
-               addVectorDerivatives( g7_ind, g7_vder*dd_j, myvals );
+           // Calculate switching function
+           double dder_ij=0, switchij=0; if( hasg4 ) switchij = sf4.calculateSqr( mod2ij, dder_ij ); 
+           // Now compute all symmetry functions
+           for(unsigned n=0;n<ftypes.size();++n) {
+               // Compute G4
+               if( ftypes[n]==4 ){
+                   double expg4 = exp( -nu[n]*( mod2i + mod2j + mod2ij ) );
+                   double g4v = (1 + lambda[n]*cosa);
+                   double g4p = pow( g4v, zeta[n]-1 );
+                   double g4_nonweight = prefactor[n]*g4p*g4v*expg4*switchij;
+                   double g4_vder1 = -prefactor[n]*weightij*zeta[n]*g4p*lambda[n]*sina*expg4*switchij; 
+                   double g4_mder = prefactor[n]*weightij*g4p*g4v*expg4;
+                   double g4_vder2 = -g4_mder*2*nu[n]*switchij; 
+                   double g4_vder3 = g4_mder*(dder_ij -2*nu[n]*switchij);
+                   addToValue( n, g4_nonweight*weightij, myvals );
+                   myvals.setSymfuncTemporyIndex( iind ); 
+                   addWeightDerivative( n, g4_nonweight*weightj, myvals );
+                   addVectorDerivatives(n, g4_vder1*dd_i, myvals ); 
+                   addVectorDerivatives(n, g4_vder2*disti, myvals );
+                   addVectorDerivatives(n, g4_vder3*dirij, myvals );
+                   myvals.setSymfuncTemporyIndex( jind );
+                   addWeightDerivative( n, g4_nonweight*weighti, myvals );
+                   addVectorDerivatives(n, g4_vder1*dd_j, myvals );
+                   addVectorDerivatives(n, g4_vder2*distj, myvals );
+                   addVectorDerivatives(n, -g4_vder3*dirij, myvals );
+               // Compute G5
+               } else if( ftypes[n]==5 ) {
+                   double expg5 = exp( -nu[n]*( mod2i + mod2j ) );
+                   double g5v = (1 + lambda[n]*cosa);
+                   double g5p = pow( g5v, zeta[n]-1 ); 
+                   double g5_nonweight = prefactor[n]*g5p*g5v*expg5;
+                   double g5_vder1 = -prefactor[n]*weightij*expg5*zeta[n]*g5p*lambda[n]*sina;
+                   double g5_vder2 = -prefactor[n]*weightij*g5p*g5v*2*expg5*nu[n];
+                   addToValue( n, g5_nonweight*weightij, myvals ); 
+                   myvals.setSymfuncTemporyIndex( iind ); 
+                   addWeightDerivative( n, g5_nonweight*weightj, myvals );
+                   addVectorDerivatives(n, g5_vder1*dd_i, myvals ); 
+                   addVectorDerivatives(n, g5_vder2*disti, myvals );
+                   myvals.setSymfuncTemporyIndex( jind ); 
+                   addWeightDerivative( n, g5_nonweight*weighti, myvals );
+                   addVectorDerivatives(n, g5_vder1*dd_j, myvals ); 
+                   addVectorDerivatives(n, g5_vder2*distj, myvals );
+               // Compute G6
+               } else if( ftypes[n]==6 ) {
+                   double g6v = (1 + lambda[n]*cosa);
+                   double g6p = pow( g6v, zeta[n]-1 );
+                   double g6_nonweight = prefactor[n]*g6p*g6v;
+                   double g6_vder = -prefactor[n]*weightij*zeta[n]*g6p*lambda[n]*sina;
+                   addToValue( n, g6_nonweight*weightij, myvals );  
+                   myvals.setSymfuncTemporyIndex( iind ); 
+                   addWeightDerivative( n, g6_nonweight*weightj, myvals );
+                   addVectorDerivatives(n, g6_vder*dd_i, myvals );
+                   myvals.setSymfuncTemporyIndex( jind ); 
+                   addWeightDerivative( n, g6_nonweight*weighti, myvals );
+                   addVectorDerivatives(n, g6_vder*dd_j, myvals );
+               // Compute G7
+               } else if( ftypes[n]==7 ) {
+                   double g7_nonweight = 0.5*prefactor[n]*sin( nu[n]*(ang-alpha[n]) );
+                   double g7_vder = prefactor[n]*weightij*0.5*nu[n]*cos( nu[n]*(ang-alpha[n]) );
+                   addToValue( n, g7_nonweight*weightij, myvals );
+                   myvals.setSymfuncTemporyIndex( iind ); 
+                   addWeightDerivative( n, g7_nonweight*weightj, myvals );
+                   addVectorDerivatives( n, g7_vder*dd_i, myvals );
+                   myvals.setSymfuncTemporyIndex( jind ); 
+                   addWeightDerivative( n, g7_nonweight*weighti, myvals );
+                   addVectorDerivatives( n, g7_vder*dd_j, myvals );
+               } else {
+                   plumed_merror("invalid symmetry function type");
+               }
            }
        }
    }
