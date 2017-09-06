@@ -714,7 +714,6 @@ enable_external_lapack
 enable_external_blas
 enable_molfile_plugins
 enable_external_molfile_plugins
-enable_matheval
 enable_zlib
 enable_readdir_r
 enable_cregex
@@ -1383,7 +1382,6 @@ Optional Features:
   --enable-external-molfile-plugins
                           enable search for external molfile_plugins, default:
                           yes
-  --enable-matheval       enable search for matheval, default: yes
   --enable-zlib           enable search for zlib, default: yes
   --enable-readdir-r      enable search for readdir_r (threadsafe), default:
                           yes
@@ -2758,24 +2756,6 @@ else
   case "yes" in
              (yes) external_molfile_plugins=true ;;
              (no)  external_molfile_plugins=false ;;
-  esac
-
-fi
-
-
-
-matheval=
-# Check whether --enable-matheval was given.
-if test "${enable_matheval+set}" = set; then :
-  enableval=$enable_matheval; case "${enableval}" in
-             (yes) matheval=true ;;
-             (no)  matheval=false ;;
-             (*)   as_fn_error $? "wrong argument to --enable-matheval" "$LINENO" 5 ;;
-  esac
-else
-  case "yes" in
-             (yes) matheval=true ;;
-             (no)  matheval=false ;;
   esac
 
 fi
@@ -6156,76 +6136,6 @@ $as_echo "$ac_cv_prog_cxx_openmp" >&6; }
 
 
 
-if test $matheval == true ; then
-
-    found=ko
-    ac_fn_cxx_check_header_mongrel "$LINENO" "matheval.h" "ac_cv_header_matheval_h" "$ac_includes_default"
-if test "x$ac_cv_header_matheval_h" = xyes; then :
-
-      ac_fn_cxx_check_func "$LINENO" "evaluator_create" "ac_cv_func_evaluator_create"
-if test "x$ac_cv_func_evaluator_create" = xyes; then :
-  found=ok
-else
-
-          if test "${libsearch}" == true ; then
-           { $as_echo "$as_me:${as_lineno-$LINENO}: checking for evaluator_create in -lmatheval" >&5
-$as_echo_n "checking for evaluator_create in -lmatheval... " >&6; }
-if ${ac_cv_lib_matheval_evaluator_create+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lmatheval  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char evaluator_create ();
-int
-main ()
-{
-return evaluator_create ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_matheval_evaluator_create=yes
-else
-  ac_cv_lib_matheval_evaluator_create=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_matheval_evaluator_create" >&5
-$as_echo "$ac_cv_lib_matheval_evaluator_create" >&6; }
-if test "x$ac_cv_lib_matheval_evaluator_create" = xyes; then :
-  LIBS="-lmatheval $LIBS" && found=ok
-fi
-
-          fi
-
-
-fi
-
-
-fi
-
-
-    if test $found == ok ; then
-      $as_echo "#define __PLUMED_HAS_MATHEVAL 1" >>confdefs.h
-
-    else
-       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_MATHEVAL" >&5
-$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_MATHEVAL" >&2;}
-    fi
-
-fi
 if test $readdir_r == true ; then
 
     found=ko

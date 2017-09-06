@@ -26,10 +26,6 @@
 #include <vector>
 #include <limits>
 
-#ifdef __PLUMED_HAS_MATHEVAL
-#include <matheval.h>
-#endif
-
 using namespace std;
 namespace PLMD {
 
@@ -253,7 +249,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   else if(name=="GAUSSIAN") type=gaussian;
   else if(name=="CUBIC") type=cubic;
   else if(name=="TANH") type=tanh;
-  else if((name=="MATHEVAL" || name=="CUSTOM") && std::getenv("PLUMED_USE_LEPTON")) {
+  else if((name=="MATHEVAL" || name=="CUSTOM")) {
     type=leptontype;
     std::string func;
     Tools::parse(data,"FUNC",func);
@@ -265,34 +261,6 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     expression_deriv.resize(OpenMP::getNumThreads());
     for(auto & e : expression_deriv) e=ped.createCompiledExpression();
   }
-#ifdef __PLUMED_HAS_MATHEVAL
-  else if(name=="MATHEVAL" || name=="CUSTOM") {
-    type=matheval;
-    std::string func;
-    Tools::parse(data,"FUNC",func);
-    const unsigned nt=OpenMP::getNumThreads();
-    plumed_assert(nt>0);
-    evaluator.resize(nt);
-    for(unsigned i=0; i<nt; i++) {
-      evaluator[i]=evaluator_create(const_cast<char*>(func.c_str()));
-    }
-    char **check_names;
-    int    check_count;
-    evaluator_get_variables(evaluator[0],&check_names,&check_count);
-    if(check_count!=1) {
-      errormsg="wrong number of arguments in MATHEVAL switching function";
-      return;
-    }
-    if(std::string(check_names[0])!="x") {
-      errormsg ="argument should be named 'x'";
-      return;
-    }
-    evaluator_deriv.resize(nt);
-    for(unsigned i=0; i<nt; i++) {
-      evaluator_deriv[i]=evaluator_derivative(evaluator[i],const_cast<char*>("x"));
-    }
-  }
-#endif
   else errormsg="cannot understand switching function type '"+name+"'";
   if( !data.empty() ) {
     errormsg="found the following rogue keywords in switching function input : ";
@@ -327,10 +295,6 @@ std::string SwitchingFunction::description() const {
     ostr<<"tanh";
   } else if(type==leptontype) {
     ostr<<"lepton";
-#ifdef __PLUMED_HAS_MATHEVAL
-  } else if(type==matheval) {
-    ostr<<"matheval";
-#endif
   } else {
     plumed_merror("Unknown switching function type");
   }
@@ -345,10 +309,6 @@ std::string SwitchingFunction::description() const {
     ostr<<" dmax="<<dmax;
   } else if(type==leptontype) {
     ostr<<" func="<<lepton_func;
-#ifdef __PLUMED_HAS_MATHEVAL
-  } else if(type==matheval) {
-    ostr<<" func="<<evaluator_get_string(evaluator[0]);
-#endif
 
   }
   return ostr.str();
@@ -449,12 +409,6 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
       }
       result=expression[t].evaluate();
       dfunc=expression_deriv[t].evaluate();
-#ifdef __PLUMED_HAS_MATHEVAL
-    } else if(type==matheval) {
-      const unsigned it=OpenMP::getThreadNum();
-      result=evaluator_evaluate_x(evaluator[it],rdist);
-      dfunc=evaluator_evaluate_x(evaluator_deriv[it],rdist);
-#endif
     } else plumed_merror("Unknown switching function type");
 // this is for the chain rule:
     dfunc*=invr0;
@@ -511,18 +465,6 @@ SwitchingFunction::SwitchingFunction(const SwitchingFunction&sf):
   stretch(sf.stretch),
   shift(sf.shift)
 {
-#ifdef __PLUMED_HAS_MATHEVAL
-  if(sf.evaluator.size()>0) {
-    const unsigned nt=OpenMP::getNumThreads();
-    plumed_assert(nt>0);
-    evaluator.resize(nt);
-    evaluator_deriv.resize(nt);
-    for(unsigned i=0; i<nt; i++) {
-      evaluator[i]=evaluator_create(evaluator_get_string(sf.evaluator[0]));
-      evaluator_deriv[i]=evaluator_create(evaluator_get_string(sf.evaluator_deriv[0]));
-    }
-  }
-#endif
 }
 
 SwitchingFunction & SwitchingFunction::operator=(const SwitchingFunction& sf) {
@@ -545,18 +487,6 @@ SwitchingFunction & SwitchingFunction::operator=(const SwitchingFunction& sf) {
   dmax_2=sf.dmax_2;
   stretch=sf.stretch;
   shift=sf.shift;
-#ifdef __PLUMED_HAS_MATHEVAL
-  if(sf.evaluator.size()>0) {
-    const unsigned nt=OpenMP::getNumThreads();
-    plumed_assert(nt>0);
-    evaluator.resize(nt);
-    evaluator_deriv.resize(nt);
-    for(unsigned i=0; i<nt; i++) {
-      evaluator[i]=evaluator_create(evaluator_get_string(sf.evaluator[0]));
-      evaluator_deriv[i]=evaluator_create(evaluator_get_string(sf.evaluator_deriv[0]));
-    }
-  }
-#endif
   return *this;
 }
 
@@ -594,13 +524,6 @@ double SwitchingFunction::get_dmax() const {
 
 double SwitchingFunction::get_dmax2() const {
   return dmax_2;
-}
-
-SwitchingFunction::~SwitchingFunction() {
-#ifdef __PLUMED_HAS_MATHEVAL
-  for(unsigned i=0; i<evaluator.size(); i++) evaluator_destroy(evaluator[i]);
-  for(unsigned i=0; i<evaluator_deriv.size(); i++) evaluator_destroy(evaluator_deriv[i]);
-#endif
 }
 
 
