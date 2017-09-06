@@ -70,8 +70,8 @@ if {[mpi_variant_isset]} {
 # Libraries.
 # Library names are specified here to make sure that
 # only requested packages are linked.
-configure.ldflags-append -lmatheval -lxdrfile -lz -lgsl
-depends_lib-append port:libmatheval port:xdrfile port:zlib port:gsl
+configure.ldflags-append -lxdrfile -lz -lgsl
+depends_lib-append port:xdrfile port:zlib port:gsl
 
 # This variant enables optional modules in PLUMED.
 variant allmodules description {Enable all optional modules} {
