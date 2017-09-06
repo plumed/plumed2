@@ -1160,7 +1160,7 @@ MetaD::MetaD(const ActionOptions& ao):
 
   bool concurrent=false;
   const ActionSet&actionSet(plumed.getActionSet());
-  for(const auto & p : actionSet) if(dynamic_cast<MetaD*>(p)) { concurrent=true; break; }
+  for(const auto & p : actionSet) if(dynamic_cast<MetaD*>(p.get())) { concurrent=true; break; }
   if(concurrent) log<<"  You are using concurrent metadynamics\n";
   if(rect_biasf_.size()>0) {
     if(walkers_mpi) {
