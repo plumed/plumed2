@@ -1,5 +1,6 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    Copyright (c) 2017 of Haochuan Chen
+    Copyright (c) 2017 of Haochuan Chen (excluding colvar_UIestimator.h)
+    Copyright (c) 2017 of Haohao Fu (colvar_UIestimator.h)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published
@@ -12,12 +13,12 @@
     GNU Lesser General Public License for more details.
 
     You should have received a copy of the GNU Lesser General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#ifndef __PLUMED_drr_DRR_h
+#define __PLUMED_drr_DRR_h
 // Build requirement: boost, c++11 compatible compiler.
 #ifdef __PLUMED_HAS_BOOST_SERIALIZATION
-#ifndef __PLUMED_DRR_H
-#define __PLUMED_DRR_H
 
 #include <algorithm>
 #include <cmath>
@@ -331,5 +332,5 @@ private:
 }
 }
 
-#endif // DRR_H
+#endif
 #endif
