@@ -37,7 +37,7 @@ using namespace cltools;
 namespace PLMD {
 namespace drr {
 
-//+PLUMEDOC TOOLS drrtool
+//+PLUMEDOC TOOLS drr_tool
 /*
  - Extract .grad and .count files from the binary output .drrstate
  - Merge windows
