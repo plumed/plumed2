@@ -158,12 +158,11 @@ private:
   bool isRestart;
   bool useUIestimator;
   bool textoutput;
-  std::minstd_rand rng;
-  std::normal_distribution<double> NormalDistribution;
   ABF ABFGrid;
   CZAR CZARestimator;
   double fullsamples;
   UIestimator::UIestimator eabf_UI;
+  Random rand;
 
 public:
   explicit DynamicReferenceRestraining(const ActionOptions &);
@@ -259,8 +258,8 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     delim(getNumberOfArguments()), outputname(""), cptname(""),
     outputprefix(""), ndims(getNumberOfArguments()), dt(0.0), kbt(0.0),
     outputfreq(0.0), historyfreq(-1.0), isRestart(false),
-    useUIestimator(false), textoutput(false), rng(1),
-    NormalDistribution(0, 1) {
+    useUIestimator(false), textoutput(false)
+    {
   log << "eABF/DRR: You now are using the extended adaptive biasing "
       "force(eABF) method."
       << '\n';
@@ -577,11 +576,11 @@ void DynamicReferenceRestraining::update() {
     // update velocity (half step)
     vfict[i] += ffict[i] * 0.5 * dt / mass[i];
     // thermostat (half step)
-    vfict[i] = c1[i] * vfict[i] + c2[i] * NormalDistribution(rng);
+    vfict[i] = c1[i] * vfict[i] + c2[i] * rand.Gaussian();
     // save full step velocity to be dumped at next step
     vfict_laststep[i] = vfict[i];
     // thermostat (half step)
-    vfict[i] = c1[i] * vfict[i] + c2[i] * NormalDistribution(rng);
+    vfict[i] = c1[i] * vfict[i] + c2[i] * rand.Gaussian();
     // update velocity (half step)
     vfict[i] += ffict[i] * 0.5 * dt / mass[i];
     // update position (full step)
