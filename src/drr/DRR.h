@@ -16,8 +16,8 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 // Build requirement: boost, c++11 compatible compiler.
 #ifdef __PLUMED_HAS_BOOST_SERIALIZATION
-#ifndef DRR_H
-#define DRR_H
+#ifndef __PLUMED_DRR_H
+#define __PLUMED_DRR_H
 
 #include <algorithm>
 #include <cmath>
