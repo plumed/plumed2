@@ -20,8 +20,8 @@
 // 2. Change boltzmann constant.
 // 3. Change output precision.
 // I(Haochuan Chen) don't know how to maintain this code and how it runs. If you are interested in it, please contact Haohao Fu.
-#ifndef COLVAR_UIESTIMATOR_H
-#define COLVAR_UIESTIMATOR_H
+#ifndef __PLUMED_COLVAR_UIESTIMATOR_H
+#define __PLUMED_COLVAR_UIESTIMATOR_H
 
 #include <cmath>
 #include <vector>
