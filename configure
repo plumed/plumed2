@@ -722,6 +722,7 @@ enable_execinfo
 enable_gsl
 enable_xdrfile
 enable_boost_graph
+enable_boost_serialization
 enable_fftw
 enable_openmp
 '
@@ -1391,6 +1392,8 @@ Optional Features:
   --enable-gsl            enable search for gsl, default: yes
   --enable-xdrfile        enable search for xdrfile, default: yes
   --enable-boost_graph    enable search for boost graph, default: no
+  --enable-boost_serialization
+                          enable search for boost serialization, default: no
   --enable-fftw           enable search for fftw, default: no
   --disable-openmp        do not use OpenMP
 
@@ -2900,6 +2903,24 @@ else
   case "no" in
              (yes) boost_graph=true ;;
              (no)  boost_graph=false ;;
+  esac
+
+fi
+
+
+
+boost_serialization=
+# Check whether --enable-boost_serialization was given.
+if test "${enable_boost_serialization+set}" = set; then :
+  enableval=$enable_boost_serialization; case "${enableval}" in
+             (yes) boost_serialization=true ;;
+             (no)  boost_serialization=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-boost_serialization" "$LINENO" 5 ;;
+  esac
+else
+  case "no" in
+             (yes) boost_serialization=true ;;
+             (no)  boost_serialization=false ;;
   esac
 
 fi
@@ -6564,6 +6585,70 @@ fi
     else
        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_BOOST_GRAPH" >&5
 $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_BOOST_GRAPH" >&2;}
+    fi
+
+fi
+if test $boost_serialization == true ; then
+
+    found=ko
+    ac_fn_cxx_check_header_mongrel "$LINENO" "boost/serialization/vector.hpp" "ac_cv_header_boost_serialization_vector_hpp" "$ac_includes_default"
+if test "x$ac_cv_header_boost_serialization_vector_hpp" = xyes; then :
+
+      ac_fn_cxx_check_func "$LINENO" "main" "ac_cv_func_main"
+if test "x$ac_cv_func_main" = xyes; then :
+  found=ok
+else
+
+          if test "${libsearch}" == true ; then
+           { $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lboost_serialization" >&5
+$as_echo_n "checking for main in -lboost_serialization... " >&6; }
+if ${ac_cv_lib_boost_serialization_main+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lboost_serialization  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+int
+main ()
+{
+return main ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_lib_boost_serialization_main=yes
+else
+  ac_cv_lib_boost_serialization_main=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_boost_serialization_main" >&5
+$as_echo "$ac_cv_lib_boost_serialization_main" >&6; }
+if test "x$ac_cv_lib_boost_serialization_main" = xyes; then :
+  LIBS="-lboost_serialization $LIBS" && found=ok
+fi
+
+          fi
+
+
+fi
+
+
+fi
+
+
+    if test $found == ok ; then
+      $as_echo "#define __PLUMED_HAS_BOOST_SERIALIZATION 1" >>confdefs.h
+
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_BOOST_SERIALIZATION" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_BOOST_SERIALIZATION" >&2;}
     fi
 
 fi
