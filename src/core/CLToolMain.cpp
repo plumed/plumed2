@@ -122,8 +122,6 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
     } else if(a=="--has-mpi") {
       if(Communicator::initialized()) return 0;
       else return 1;
-    } else if(a=="--has-matheval") {
-      return (config::hasMatheval()?0:1);
     } else if(a=="--has-cregex") {
       return (config::hasCregex()?0:1);
     } else if(a=="--has-dlopen") {
@@ -203,7 +201,6 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
       "  [help|-h|--help]          : to print this help\n"
       "  [--is-installed]          : fails if plumed is not installed\n"
       "  [--has-mpi]               : fails if plumed is running without MPI\n"
-      "  [--has-matheval]          : fails if plumed is compiled without matheval\n"
       "  [--has-dlopen]            : fails if plumed is compiled without dlopen\n"
       "  [--load LIB]              : loads a shared object (typically a plugin library)\n"
       "  [--standalone-executable] : tells plumed not to look for commands implemented as scripts\n"
