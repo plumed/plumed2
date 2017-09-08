@@ -35,7 +35,11 @@ for line in f :
    if "CC=" in line : os.environ["CC"] = line.replace("CC=","").replace("\n","")
    if "CXX=" in line : os.environ["CXX"] = line.replace("CXX=","").replace("\n","")
 f.close()
+os.environ["LD"] = os.environ["CXX"]
 print( "Building interface using CC=" + os.environ["CC"] + " and CXX=" + os.environ["CXX"] )
+print( "Environment variables are:")
+for key in os.environ.keys():
+    print( key, os.environ[key] )
 
 plumedversion = subprocess.check_output(['../src/lib/plumed', 'info', '--version']).decode("utf-8")
 print( "Creating interface for plumed version " + plumedversion )
