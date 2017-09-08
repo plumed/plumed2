@@ -201,10 +201,11 @@ class Histogram : public gridtools::ActionWithGrid {
 private:
   double ww;
   bool in_apply, mvectors;
-  KernelFunctions* kernel;
+  std::unique_ptr<KernelFunctions> kernel;
   std::vector<double> forcesToApply, finalForces;
   std::vector<vesselbase::ActionWithVessel*> myvessels;
   std::vector<vesselbase::StoreDataVessel*> stashes;
+// this is a plain pointer since this object is now owned
   gridtools::HistogramOnGrid* myhist;
 public:
   static void registerKeywords( Keywords& keys );
@@ -239,8 +240,7 @@ Histogram::Histogram(const ActionOptions&ao):
   ActionWithGrid(ao),
   ww(0.0),
   in_apply(false),
-  mvectors(false),
-  kernel(NULL)
+  mvectors(false)
 {
   // Read in arguments
   std::string vlab; parse("VECTORS",vlab);
@@ -401,7 +401,7 @@ void Histogram::prepareForAveraging() {
     std::vector<double> point( getNumberOfArguments() );
     for(unsigned i=0; i<point.size(); ++i) point[i]=getArgument(i);
     unsigned num_neigh; std::vector<unsigned> neighbors(1);
-    kernel = myhist->getKernelAndNeighbors( point, num_neigh, neighbors );
+    kernel.reset(myhist->getKernelAndNeighbors( point, num_neigh, neighbors ));
 
     if( num_neigh>1 ) {
       // Activate relevant tasks
@@ -418,7 +418,7 @@ void Histogram::prepareForAveraging() {
 void Histogram::performOperations( const bool& from_update ) { if( myvessels.size()==0 ) plumed_dbg_assert( !myhist->noDiscreteKernels() ); }
 
 void Histogram::finishAveraging() {
-  if( myvessels.size()==0 ) delete kernel;
+  if( myvessels.size()==0 ) kernel.reset();
 }
 
 void Histogram::compute( const unsigned& current, MultiValue& myvals ) const {

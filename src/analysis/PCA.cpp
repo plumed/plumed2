@@ -96,7 +96,7 @@ class PCA : public Analysis {
 private:
   unsigned ndim;
 /// The position of the reference configuration (the one we align to)
-  ReferenceConfiguration* myref;
+  std::unique_ptr<ReferenceConfiguration> myref;
 /// The eigenvectors for the atomic displacements
   Matrix<Vector> atom_eigv;
 /// The eigenvectors for the displacements in argument space
@@ -105,7 +105,6 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit PCA(const ActionOptions&ao);
-  ~PCA();
   void performAnalysis();
   void performTask( const unsigned&, const unsigned&, MultiValue& ) const { plumed_error(); }
 };
@@ -123,7 +122,7 @@ PCA::PCA(const ActionOptions&ao):
 {
   // Setup reference configuration
   log.printf("  performing PCA analysis using %s metric \n", getMetricName().c_str() );
-  myref = metricRegister().create<ReferenceConfiguration>( getMetricName() );
+  myref.reset( metricRegister().create<ReferenceConfiguration>( getMetricName() ) );
   std::vector<std::string> argnames( getNumberOfArguments() );
   for(unsigned i=0; i<argnames.size(); ++i) {
     if( getArguments()[i]->isPeriodic() ) error("cannot run PCA with periodic variables");
@@ -140,10 +139,6 @@ PCA::PCA(const ActionOptions&ao):
   checkRead();
 }
 
-PCA::~PCA() {
-  delete myref;
-}
-
 void PCA::performAnalysis() {
   // Align everything to the first frame
   MultiValue myval( 1, getNumberOfArguments() + 3*getNumberOfAtoms() + 9 );
@@ -152,7 +147,7 @@ void PCA::performAnalysis() {
   // Setup some PCA storage
   data[0]->setupPCAStorage ( mypack ); std::vector<double> displace( getNumberOfAtoms() );
   if( getNumberOfAtoms()>0 ) {
-    ReferenceAtoms* at = dynamic_cast<ReferenceAtoms*>( data[0] );
+    ReferenceAtoms* at = dynamic_cast<ReferenceAtoms*>( data[0].get() );
     displace = at->getDisplace();
   }
 
@@ -224,7 +219,7 @@ void PCA::performAnalysis() {
   // Store and print the eigenvectors
   std::vector<Vector> tmp_atoms( getNumberOfAtoms() );
   std::vector<double> tmp_args( getNumberOfArguments() );
-  Direction* tref = metricRegister().create<Direction>( "DIRECTION" );
+  std::unique_ptr<Direction> tref(metricRegister().create<Direction>( "DIRECTION" ));
   tref->setNamesAndAtomNumbers( getAbsoluteIndexes(), argument_names );
   for(unsigned dim=0; dim<ndim; ++dim) {
     unsigned idim = covar.ncols() - 1 - dim;
@@ -236,7 +231,7 @@ void PCA::performAnalysis() {
     tref->print( ofile, getOutputFormat(), atoms.getUnits().getLength()/0.1 );
   }
   // Close the output file
-  delete tref; ofile.close();
+  ofile.close();
 }
 
 }

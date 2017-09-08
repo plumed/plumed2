@@ -66,9 +66,9 @@ Analysis::Analysis(const ActionOptions&ao):
   for(unsigned i=0; i<getNumberOfArguments(); ++i) argument_names[i]=getPntrToArgument(i)->getName();
   // Read in the metric style
   parse("METRIC",metricname); std::vector<AtomNumber> atom_numbers;
-  ReferenceConfiguration* checkref=metricRegister().create<ReferenceConfiguration>( metricname );
+  std::unique_ptr<ReferenceConfiguration> checkref(metricRegister().create<ReferenceConfiguration>( metricname ));
   // Check if we should read atoms
-  ReferenceAtoms* hasatoms=dynamic_cast<ReferenceAtoms*>( checkref );
+  ReferenceAtoms* hasatoms=dynamic_cast<ReferenceAtoms*>( checkref.get() );
   if( hasatoms ) {
     parseAtomList("ATOMS",atom_numbers); requestAtoms(atom_numbers);
     log.printf("  monitoring positions of atoms ");
@@ -76,11 +76,9 @@ Analysis::Analysis(const ActionOptions&ao):
     log.printf("\n");
   }
   // Check if we should read arguments
-  ReferenceArguments* hasargs=dynamic_cast<ReferenceArguments*>( checkref );
+  ReferenceArguments* hasargs=dynamic_cast<ReferenceArguments*>( checkref.get() );
   if( !hasargs && getNumberOfArguments()!=0 ) error("use of arguments with metric type " + metricname + " is invalid");
   if( hasatoms && hasargs ) error("currently dependencies break if you have both arguments and atoms");
-  // And delte the fake reference we created
-  delete checkref;
 
   std::string prev_analysis; parse("REUSE_DATA_FROM",prev_analysis);
   if( prev_analysis.length()>0 ) {
@@ -99,7 +97,7 @@ Analysis::Analysis(const ActionOptions&ao):
       log.printf("  running analysis every %u steps\n",freq);
       ndata=freq/getStride(); data.resize( ndata ); logweights.resize( ndata );
       for(unsigned i=0; i<ndata; ++i) {
-        data[i]=metricRegister().create<ReferenceConfiguration>( metricname );
+        data[i].reset(metricRegister().create<ReferenceConfiguration>( metricname ));
         data[i]->setNamesAndAtomNumbers( getAbsoluteIndexes(), argument_names );
       }
     }
@@ -182,7 +180,7 @@ void Analysis::accumulate() {
     data[idata]->setReferenceConfig( getPositions(), current_args, getMetric() );
     logweights[idata] = lweight;
   } else {
-    data.push_back( metricRegister().create<ReferenceConfiguration>( metricname ) );
+    data.emplace_back( metricRegister().create<ReferenceConfiguration>( metricname ) );
     plumed_dbg_assert( data.size()==idata+1 );
     data[idata]->setNamesAndAtomNumbers( getAbsoluteIndexes(), argument_names );
     data[idata]->setReferenceConfig( getPositions(), current_args, getMetric() );
@@ -200,7 +198,6 @@ void Analysis::accumulate() {
 }
 
 Analysis::~Analysis() {
-  for(unsigned i=0; i<data.size(); ++i ) delete data[i];
   if( write_chq ) rfile.close();
 }
 
