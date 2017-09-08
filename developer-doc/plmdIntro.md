@@ -462,8 +462,8 @@ of code that uses the boost graph library:
 #endif
 \endverbatim
 
-Here the ifdef __PLUMED_HAS_BOOST_GRAPH ensures that this part of the code is only compiled when the 
--D__PLUMED_HAS_BOOST_GRAPH flag is set at compile time.  
+Here the `#ifdef __PLUMED_HAS_BOOST_GRAPH` ensures that this part of the code is only compiled when the 
+`-D__PLUMED_HAS_BOOST_GRAPH` flag is set at compile time.  
 
 This example is a bit of a special case as the particular PLMD::Action I took this example from both when the 
 library is available and when it is not.  Obviously, if your PLMD::Action does not work without the library
@@ -476,12 +476,14 @@ with your new functionality and the link to the external library available.  To 
 file configure.ac in the plumed2 directory.  The first edit you need to make to this file should read as follows:
 
 \verbatim
-PLUMED_CONFIG_ENABLE([library_name],[library_name],[search for library_name],[no])
+PLUMED_CONFIG_ENABLE([library_name],[search for library_name],[no])
 \endverbatim
 
 Add this in the part of the file where there are similar names.  This command allows users to enable the package
-using --enable-library_name when they run the configure command.  Obviously, library_name here should be replaced
-with the name of the particular library you are using.
+using `--enable-library_name` when they run the configure command.  Obviously, library_name here should be replaced
+with the name of the particular library you are using. A shell variable named `library_name` will be set
+to `true` if the library has been requested. The last argument says that, by default, the library is not requested.
+If you replace it with a `[yes]`, then you will be able to use `--disable--library_name` to disable the library.
 
 The second edit you need to make to the configure.ac file is as follows:
 
@@ -502,6 +504,29 @@ argument to PLUMED_CHECK_PACKAGE is one of the functions that is within the libr
 you can use the exit funciton here, which should work even if you are using template functions.  The third argument is the precompiler 
 directive that appears around your library calling code and that we discussed earlier.  The last argument meanwhile is the name of the library - 
 the part that appears after the -l.  In the example above the code would thus try and link -llibrary_name. 
+
+Notice that in the for C++ libraries sometimes one has to check something more complicated than the presence of a single function.
+In this case you can use a more advanced version of the command which allows you to write a short test. Look at this example:
+\verbatim
+if test $boost_serialization == true ; then
+  PLUMED_CHECK_CXX_PACKAGE([boost serialization],[
+#include <fstream>
+#include <boost/archive/text_oarchive.hpp>
+int main() {
+    std::ofstream ofs("filename");
+    boost::archive::text_oarchive oa(ofs);
+    return 0;
+}
+  ], [__PLUMED_HAS_BOOST_SERIALIZATION],[boost_serialization boost_serialization-mt])
+fi
+\endverbatim
+
+The first argument here (`[boost serialization]`) is just used in the configure log. The second argument is a
+complete C++ program that should compile and link. The last arguments are similar to those of the `PLUMED_CHECK_PACKAGE` macro.
+
+Notice that for both macros (`PLUMED_CHECK_PACKAGE` and `PLUMED_CHECK_CXX_PACKAGE`) you can omit the final library, which
+means that the function should be found without adding any extra `-l` option. In addition, you can put multiple libraries.
+In this case, autoconf will scan them to find the appropriate one.
 
 Once you have made these edits issue the command:
 
