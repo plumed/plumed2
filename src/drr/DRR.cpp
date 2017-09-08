@@ -264,27 +264,27 @@ DRRForceGrid::getCountsLogDerivative(const std::vector<double> &pos) const {
 }
 
 // Write the gradients to a .grad file.
-void DRRForceGrid::writeGrad(std::string filename) const {
-  std::stringstream ssg;
-  std::fstream fsgrad;
-  filename += suffix + ".grad";
-  ssg << headers;
-  ssg << std::left << std::fixed << std::setprecision(OUTPUTPRECISION);
-  for (size_t i = 0; i < sampleSize; ++i) {
-    std::vector<double> pos(ndims, 0);
-    for (size_t j = 0; j < ndims; ++j) {
-      pos[j] = table[j][i];
-      ssg << ' ' << table[j][i];
-    }
-    const std::vector<double> f = getGradient(pos, true);
-    for (const auto &i : f)
-      ssg << ' ' << i;
-    ssg << '\n';
-  }
-  fsgrad.open(filename.c_str(), std::ios_base::out);
-  fsgrad.write(ssg.str().c_str(), ssg.str().length());
-  fsgrad.close();
-}
+// void DRRForceGrid::writeGrad(std::string filename) const {
+//   std::stringstream ssg;
+//   std::fstream fsgrad;
+//   filename += suffix + ".grad";
+//   ssg << headers;
+//   ssg << std::left << std::fixed << std::setprecision(OUTPUTPRECISION);
+//   for (size_t i = 0; i < sampleSize; ++i) {
+//     std::vector<double> pos(ndims, 0);
+//     for (size_t j = 0; j < ndims; ++j) {
+//       pos[j] = table[j][i];
+//       ssg << ' ' << table[j][i];
+//     }
+//     const std::vector<double> f = getGradient(pos, true);
+//     for (const auto &i : f)
+//       ssg << ' ' << i;
+//     ssg << '\n';
+//   }
+//   fsgrad.open(filename.c_str(), std::ios_base::out);
+//   fsgrad.write(ssg.str().c_str(), ssg.str().length());
+//   fsgrad.close();
+// }
 
 void DRRForceGrid::write1DPMF(std::string filename) const {
   std::stringstream ssp;
@@ -308,24 +308,24 @@ void DRRForceGrid::write1DPMF(std::string filename) const {
 }
 
 // Write the gradients to a .count file.
-void DRRForceGrid::writeCount(std::string filename) const {
-  std::stringstream ssc;
-  std::fstream fscount;
-  filename += suffix + ".count";
-  ssc << headers;
-  ssc << std::left << std::fixed << std::setprecision(OUTPUTPRECISION);
-  std::vector<double> pos(ndims, 0);
-  for (size_t i = 0; i < sampleSize; ++i) {
-    for (size_t j = 0; j < ndims; ++j) {
-      pos[j] = table[j][i];
-      ssc << ' ' << table[j][i];
-    }
-    ssc << ' ' << getCount(pos, true) << '\n';
-  }
-  fscount.open(filename.c_str(), std::ios_base::out);
-  fscount.write(ssc.str().c_str(), ssc.str().length());
-  fscount.close();
-}
+// void DRRForceGrid::writeCount(std::string filename) const {
+//   std::stringstream ssc;
+//   std::fstream fscount;
+//   filename += suffix + ".count";
+//   ssc << headers;
+//   ssc << std::left << std::fixed << std::setprecision(OUTPUTPRECISION);
+//   std::vector<double> pos(ndims, 0);
+//   for (size_t i = 0; i < sampleSize; ++i) {
+//     for (size_t j = 0; j < ndims; ++j) {
+//       pos[j] = table[j][i];
+//       ssc << ' ' << table[j][i];
+//     }
+//     ssc << ' ' << getCount(pos, true) << '\n';
+//   }
+//   fscount.open(filename.c_str(), std::ios_base::out);
+//   fscount.write(ssc.str().c_str(), ssc.str().length());
+//   fscount.close();
+// }
 
 void DRRForceGrid::writeAll(const std::string &filename) const {
   std::stringstream ssc, ssg;
