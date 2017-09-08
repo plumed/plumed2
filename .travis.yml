@@ -107,7 +107,7 @@ install:
     fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update -qq ; fi
 # install some package - these are fast, we install them anyway
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libmatheval-dev libfftw3-dev gsl-bin libgsl0-dev ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libfftw3-dev gsl-bin libgsl0-dev  libboost-serialization-dev ; fi
   - if test "$PLUMED_CXX" ; then ./.travis/install.xdrfile ; fi
 # cppcheck:
 # I use 1.71 since 1.72 seems to report a lot of false positive
@@ -154,6 +154,8 @@ script:
   - CONFIG_FLAGS="$CONFIG_FLAGS --enable-modules=all"
 # we enable fftw, which is off by default
   - CONFIG_FLAGS="$CONFIG_FLAGS --enable-fftw"
+# enable boost_serialization to test drr module
+  - CONFIG_FLAGS="$CONFIG_FLAGS --enable-boost_serialization"
   - if test "$MAKEDOC" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-pdfdoc" ; fi
   - if test "$MAKEDOC" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-gcov" ; fi
 # when running lcov plumed should be compiled with -O0
