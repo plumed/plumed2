@@ -22,7 +22,6 @@
 #ifndef __PLUMED_colvar_CoordinationBase_h
 #define __PLUMED_colvar_CoordinationBase_h
 #include "Colvar.h"
-#include "tools/NeighborList.h"
 
 namespace PLMD {
 
@@ -45,7 +44,6 @@ public:
   virtual void prepare();
   virtual double pairing(double distance,double&dfunc,unsigned i,unsigned j)const=0;
   static void registerKeywords( Keywords& keys );
-  std::vector<AtomNumber>& getAtomNumbers() {return nl->getFullAtomList();}
 };
 
 }
