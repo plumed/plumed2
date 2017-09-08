@@ -169,11 +169,10 @@ private:
   unsigned nlow;
   std::string ofilename;
   std::string efilename;
-  PointWiseMapping* myembedding;
+  std::unique_ptr<PointWiseMapping> myembedding;
 public:
   static void registerKeywords( Keywords& keys );
   explicit ClassicalMultiDimensionalScaling( const ActionOptions& ao );
-  ~ClassicalMultiDimensionalScaling();
   void analyzeLandmarks();
 };
 
@@ -188,10 +187,10 @@ void ClassicalMultiDimensionalScaling::registerKeywords( Keywords& keys ) {
 
 ClassicalMultiDimensionalScaling::ClassicalMultiDimensionalScaling( const ActionOptions& ao ):
   Action(ao),
-  AnalysisWithLandmarks(ao)
+  AnalysisWithLandmarks(ao),
+  myembedding(new PointWiseMapping( getMetricName(), false ))
 {
-  myembedding = new PointWiseMapping( getMetricName(), false );
-  setDataToAnalyze( dynamic_cast<MultiReferenceBase*>(myembedding) );
+  setDataToAnalyze( dynamic_cast<MultiReferenceBase*>(myembedding.get()) );
 
   parse("NLOW_DIM",nlow);
   if( nlow<1 ) error("dimensionality of low dimensional space must be at least one");
@@ -207,16 +206,12 @@ ClassicalMultiDimensionalScaling::ClassicalMultiDimensionalScaling( const Action
   parseOutputFile("OUTPUT_FILE",ofilename);
 }
 
-ClassicalMultiDimensionalScaling::~ClassicalMultiDimensionalScaling() {
-  delete myembedding;
-}
-
 void ClassicalMultiDimensionalScaling::analyzeLandmarks() {
   // Calculate all pairwise diatances
   myembedding->calculateAllDistances( getPbc(), getArguments(), comm, myembedding->modifyDmat(), true );
 
   // Run multidimensional scaling
-  ClassicalScaling::run( myembedding );
+  ClassicalScaling::run( myembedding.get() );
 
   // Output the embedding as long lists of data
 //  std::string gfname=saveResultsFromPreviousAnalyses( ofilename );

@@ -23,6 +23,7 @@
 #define __PLUMED_analysis_AnalysisWithLandmarks_h
 
 #include "Analysis.h"
+#include <memory>
 
 namespace PLMD {
 
@@ -37,7 +38,7 @@ class AnalysisWithLandmarks : public Analysis {
   friend class CopyAllFrames;
 private:
 /// This object selects landmarks from the data
-  LandmarkSelectionBase* landmarkSelector;
+  std::unique_ptr<LandmarkSelectionBase> landmarkSelector;
 /// A pointer to the data we are analyzing
   MultiReferenceBase* data_to_analyze;
 protected:
