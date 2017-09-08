@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017 The plumed team
+   Copyright (c) 2016,2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -42,10 +42,9 @@ namespace colvar {
 
 //+PLUMEDOC COLVAR IMPLICIT
 /*
+Calculates EEF1 solvation free energy for a group of atoms.
 
-Calculate EEF1-SB solvation free energy for a group of atoms.
-
-EEF1-SB is a solvent-accessible surface area based model, where the free energy of solvation is computed using a pairwise interaction term for non-hydrogen atoms:
+EEF1 is a solvent-accessible surface area based model, where the free energy of solvation is computed using a pairwise interaction term for non-hydrogen atoms:
 \f[
     \Delta G^\mathrm{solv}_i = \Delta G^\mathrm{ref}_i - \sum_{j \neq i} f_i(r_{ij}) V_j
 \f]
@@ -133,8 +132,7 @@ Implicit::Implicit(const ActionOptions&ao):
 
   checkRead();
 
-  log << "  Bibliography " << plumed.cite("Bottaro S, Lindorff-Larsen K, Best R, J. Chem. Theory Comput. 9, 5641 (2013)")
-      << plumed.cite("Lazaridis T, Karplus M, Proteins Struct. Funct. Genet. 35, 133 (1999)"); log << "\n";
+  log << "  Bibliography " << plumed.cite("Lazaridis T, Karplus M, Proteins Struct. Funct. Genet. 35, 133 (1999)"); log << "\n";
 
 
   nl.resize(size);
@@ -287,6 +285,7 @@ void Implicit::setupConstants(const vector<AtomNumber> &atoms, vector<vector<dou
   valuemap = setupValueMap();
   typemap  = setupTypeMap();
   vector<SetupMolInfo*> moldat = plumed.getActionSet().select<SetupMolInfo*>();
+  bool cter=false;
   if (moldat.size() == 1) {
     log << "  MOLINFO DATA found, using proper atom names\n";
     for(unsigned i=0; i<atoms.size(); ++i) {
@@ -297,7 +296,7 @@ void Implicit::setupConstants(const vector<AtomNumber> &atoms, vector<vector<dou
       string Atype = typemap[Rname][Aname];
 
       // Check for terminal COOH or COO- (different atomtypes & parameters!)
-      if (moldat[0]->getAtomName(atoms[i]) == "OT1") {
+      if (moldat[0]->getAtomName(atoms[i]) == "OT1" || moldat[0]->getAtomName(atoms[i]) == "OXT") {
         // We create a temporary AtomNumber object to access future atoms
         unsigned ai = atoms[i].index();
         AtomNumber tmp_an;
@@ -309,8 +308,9 @@ void Implicit::setupConstants(const vector<AtomNumber> &atoms, vector<vector<dou
           // COO-
           Atype = "OC";
         }
+        cter = true;
       }
-      if (moldat[0]->getAtomName(atoms[i]) == "OT2") {
+      if (moldat[0]->getAtomName(atoms[i]) == "OT2" || (cter == true && moldat[0]->getAtomName(atoms[i]) == "O")) {
         unsigned ai = atoms[i].index();
         AtomNumber tmp_an;
         tmp_an.setIndex(ai + 1);
@@ -372,6 +372,15 @@ void Implicit::setupConstants(const vector<AtomNumber> &atoms, vector<vector<dou
 map<string, map<string, string> > Implicit::setupTypeMap()  {
   map<string, map<string, string> > typemap;
   typemap = {
+    { "ACE", {
+        {"CH3", "CT3"},
+        {"HH31","HA3"},
+        {"HH32","HA3"},
+        {"HH33","HA3"},
+        {"C",   "C"  },
+        {"O",   "O"  }
+      }
+    },
     { "ALA", {
         {"N",   "NH1"},
         {"HN",  "H"  },
@@ -709,6 +718,15 @@ map<string, map<string, string> > Implicit::setupTypeMap()  {
         {"HE3", "HA3"},
         {"C",   "C"  },
         {"O",   "O"  }
+      }
+    },
+    { "NMA", {
+        {"N",   "NH1"},
+        {"HN",  "H"  },
+        {"CH3", "CT3"},
+        {"HH31","HA3"},
+        {"HH32","HA3"},
+        {"HH33","HA3"},
       }
     },
     { "PHE", {
