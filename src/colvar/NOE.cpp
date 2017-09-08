@@ -71,11 +71,10 @@ class NOE : public Colvar {
 private:
   bool             pbc;
   vector<unsigned> nga;
-  NeighborList     *nl;
+  std::unique_ptr<NeighborList> nl;
 public:
   static void registerKeywords( Keywords& keys );
   explicit NOE(const ActionOptions&);
-  ~NOE();
   virtual void calculate();
 };
 
@@ -127,7 +126,7 @@ NOE::NOE(const ActionOptions&ao):
   }
   if(nga.size()!=ngb.size()) error("There should be the same number of GROUPA and GROUPB keywords");
   // Create neighbour lists
-  nl= new NeighborList(ga_lista,gb_lista,true,pbc,getPbc());
+  nl.reset( new NeighborList(ga_lista,gb_lista,true,pbc,getPbc()) );
 
   bool addexp=false;
   parseFlag("ADDEXP",addexp);
@@ -175,10 +174,6 @@ NOE::NOE(const ActionOptions&ao):
 
   requestAtoms(nl->getFullAtomList());
   checkRead();
-}
-
-NOE::~NOE() {
-  delete nl;
 }
 
 void NOE::calculate()

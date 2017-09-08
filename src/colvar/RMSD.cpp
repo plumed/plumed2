@@ -37,12 +37,11 @@ class RMSD : public Colvar {
 
   MultiValue myvals;
   ReferenceValuePack mypack;
-  PLMD::RMSDBase* rmsd;
+  std::unique_ptr<PLMD::RMSDBase> rmsd;
   bool squared;
 
 public:
   explicit RMSD(const ActionOptions&);
-  ~RMSD();
   virtual void calculate();
   static void registerKeywords(Keywords& keys);
 };
@@ -173,7 +172,7 @@ RMSD::RMSD(const ActionOptions&ao):
   if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) )
     error("missing input file " + reference );
 
-  rmsd = metricRegister().create<RMSDBase>(type,pdb);
+  rmsd.reset( metricRegister().create<RMSDBase>(type,pdb) );
 
   std::vector<AtomNumber> atoms;
   rmsd->getAtomRequests( atoms );
@@ -188,10 +187,6 @@ RMSD::RMSD(const ActionOptions&ao):
   log.printf("  which contains %d atoms\n",getNumberOfAtoms());
   log.printf("  method for alignment : %s \n",type.c_str() );
   if(squared)log.printf("  chosen to use SQUARED option for MSD instead of RMSD\n");
-}
-
-RMSD::~RMSD() {
-  delete rmsd;
 }
 
 
