@@ -639,7 +639,7 @@ Grid* Grid::create(const std::string& funcl, const std::vector<Value*> & args, I
 
 Grid* Grid::create(const std::string& funcl, const std::vector<Value*> & args, IFile& ifile, bool dosparse, bool dospline, bool doder)
 {
-  Grid* grid=NULL;
+  std::unique_ptr<Grid> grid;
   unsigned nvar=args.size(); bool hasder=false; std::string pstring;
   std::vector<int> gbin1(nvar); std::vector<unsigned> gbin(nvar);
   std::vector<std::string> labels(nvar),gmin(nvar),gmax(nvar);
@@ -673,8 +673,8 @@ Grid* Grid::create(const std::string& funcl, const std::vector<Value*> & args, I
     }
   }
 
-  if(!dosparse) {grid=new Grid(funcl,args,gmin,gmax,gbin,dospline,doder);}
-  else {grid=new SparseGrid(funcl,args,gmin,gmax,gbin,dospline,doder);}
+  if(!dosparse) {grid.reset(new Grid(funcl,args,gmin,gmax,gbin,dospline,doder));}
+  else {grid.reset(new SparseGrid(funcl,args,gmin,gmax,gbin,dospline,doder));}
 
   vector<double> xx(nvar),dder(nvar);
   vector<double> dx=grid->getDx();
@@ -693,7 +693,8 @@ Grid* Grid::create(const std::string& funcl, const std::vector<Value*> & args, I
     else {grid->setValue(index,f);}
     ifile.scanField();
   }
-  return grid;
+// release pointer here:
+  return grid.release();
 }
 
 // Sparse version of grid with map

@@ -1059,9 +1059,9 @@ MetaD::MetaD(const ActionOptions& ao):
       }
     }
     IFile *ifile = new IFile();
-    ifile->link(*this);
     ifiles.emplace_back(ifile);
     ifilesnames.push_back(fname);
+    ifile->link(*this);
     if(ifile->FileExist(fname)) {
       ifile->open(fname);
       if(getRestart()&&!restartedFromGrid) {
