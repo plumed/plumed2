@@ -9,7 +9,7 @@ cc1: MATHEVAL ARG=t1,t2,t3 FUNC=x^2+y+0*z+1 PERIODIC=NO
 cc2: MATHEVAL ARG=t1,t2,t3 FUNC=0*x^3+0*y^3+0*z^3 PERIODIC=NO
 cc3: MATHEVAL ARG=t1,t2 FUNC=x^2+y^2 PERIODIC=NO
 
-all: MATHEVAL ARG=t1,t2,t3,cc1,cc2,cc3 VAR=a1,a2,a3,a4,a5,a6 FUNC={ (a1+a2+a3+a4+a5+a6) / 6.0 } PERIODIC=NO
+all: CUSTOM ARG=t1,t2,t3,cc1,cc2,cc3 VAR=a1,a2,a3,a4,a5,a6 FUNC={ (a1+a2+a3+a4+a5+a6) / 6.0 } PERIODIC=NO
 
 RESTRAINT ARG=all AT=0 SLOPE=1.0
 
