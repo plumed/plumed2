@@ -23,6 +23,7 @@
 #define __PLUMED_core_ActionSet_h
 
 #include "Action.h"
+#include <memory>
 
 namespace PLMD {
 
@@ -36,7 +37,7 @@ class PlumedMain;
 /// Finally, since it holds pointers, there is a clearDelete() function
 /// which deletes the pointers before deleting the vector
 class ActionSet:
-  public std::vector<Action*>
+  public std::vector<std::unique_ptr<Action>>
 {
   PlumedMain& plumed;
 public:
@@ -73,7 +74,7 @@ template <class T>
 std::vector<T> ActionSet::select()const {
   std::vector<T> ret;
   for(const auto & p : (*this)) {
-    T t=dynamic_cast<T>(p);
+    T t=dynamic_cast<T>(p.get());
     if(t) ret.push_back(t);
   };
   return ret;
@@ -82,7 +83,7 @@ std::vector<T> ActionSet::select()const {
 template <class T>
 T ActionSet::selectWithLabel(const std::string&s)const {
   for(const auto & p : (*this)) {
-    T t=dynamic_cast<T>(p);
+    T t=dynamic_cast<T>(p.get());
     if(t && dynamic_cast<Action*>(t)->getLabel()==s) return t;
   };
   return NULL;
@@ -93,7 +94,7 @@ std::vector<Action*> ActionSet::selectNot()const {
   std::vector<Action*> ret;
   for(const auto & p : (*this)) {
     T t=dynamic_cast<T>(p);
-    if(!t) ret.push_back(p);
+    if(!t) ret.push_back(p.get());
   };
   return ret;
 }

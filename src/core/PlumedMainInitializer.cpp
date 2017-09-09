@@ -54,6 +54,8 @@ extern "C" void plumedmain_cmd(void*plumed,const char*key,const void*val) {
 
 extern "C" void plumedmain_finalize(void*plumed) {
   plumed_massert(plumed,"trying to deallocate a plumed object which is not initialized");
+// I think it is not possible to replace this delete with a smart pointer
+// since the ownership of this pointer is in a C structure. GB
   delete static_cast<PLMD::PlumedMain*>(plumed);
 }
 

@@ -37,6 +37,7 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 
 using namespace std;
 
@@ -155,7 +156,7 @@ class FitToTemplate:
   Vector center;
   Vector shift;
   // optimal alignment related stuff
-  PLMD::RMSD* rmsd;
+  std::unique_ptr<PLMD::RMSD> rmsd;
   Tensor rotation;
   Matrix< std::vector<Vector> > drotdpos;
   std::vector<Vector> positions;
@@ -167,7 +168,6 @@ class FitToTemplate:
 
 public:
   explicit FitToTemplate(const ActionOptions&ao);
-  ~FitToTemplate();
   static void registerKeywords( Keywords& keys );
   void calculate();
   void apply();
@@ -188,8 +188,7 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
   Action(ao),
   ActionPilot(ao),
   ActionAtomistic(ao),
-  ActionWithValue(ao),
-  rmsd(NULL)
+  ActionWithValue(ao)
 {
   string reference;
   parse("REFERENCE",reference);
@@ -231,7 +230,7 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
   for(unsigned i=0; i<weights.size(); ++i) positions[i]-=center;
 
   if(type=="OPTIMAL" or type=="OPTIMAL-FAST" ) {
-    rmsd=new RMSD();
+    rmsd.reset(new RMSD());
     rmsd->set(weights,weights_measure,positions,type,false,false);// note: the reference is shifted now with center in the origin
     log<<"  Method chosen for fitting: "<<rmsd->getMethod()<<" \n";
   }
@@ -329,10 +328,6 @@ void FitToTemplate::apply() {
 // finally, correction to the virial
     virial+=extProduct(matmul(transpose(rotation),center),totForce);
   }
-}
-
-FitToTemplate::~FitToTemplate() {
-  if(rmsd) delete rmsd;
 }
 
 }

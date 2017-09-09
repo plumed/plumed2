@@ -530,7 +530,7 @@ void PlumedMain::readInputWords(const std::vector<std::string> & words) {
   } else {
     std::vector<std::string> interpreted(words);
     Tools::interpretLabel(interpreted);
-    Action* action=actionRegister().create(ActionOptions(*this,interpreted));
+    std::unique_ptr<Action> action(actionRegister().create(ActionOptions(*this,interpreted)));
     if(!action) {
       log<<"ERROR\n";
       log<<"I cannot understand line:";
@@ -540,7 +540,7 @@ void PlumedMain::readInputWords(const std::vector<std::string> & words) {
       plumed_merror("I cannot understand line " + interpreted[0] + " " + interpreted[1]);
     };
     action->checkRead();
-    actionSet.push_back(action);
+    actionSet.emplace_back(std::move(action));
   };
 
   pilots=actionSet.select<ActionPilot*>();
@@ -640,7 +640,8 @@ void PlumedMain::justCalculate() {
 
   int iaction=0;
 // calculate the active actions in order (assuming *backward* dependence)
-  for(const auto & p : actionSet) {
+  for(const auto & pp : actionSet) {
+    Action* p(pp.get());
     if(p->isActive()) {
       std::string actionNumberLabel;
       if(detailedTimers) {
@@ -684,7 +685,7 @@ void PlumedMain::backwardPropagate() {
   stopwatch.start("5 Applying (backward loop)");
 // apply them in reverse order
   for(auto pp=actionSet.rbegin(); pp!=actionSet.rend(); ++pp) {
-    const auto & p(*pp);
+    const auto & p(pp->get());
     if(p->isActive()) {
 
       std::string actionNumberLabel;

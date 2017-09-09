@@ -197,7 +197,7 @@ void ActionAtomistic::interpretAtomList( std::vector<std::string>& strings, std:
     if(!ok) {
       const ActionSet&actionSet(plumed.getActionSet());
       for(const auto & a : actionSet) {
-        ActionWithVirtualAtom* c=dynamic_cast<ActionWithVirtualAtom*>(a);
+        ActionWithVirtualAtom* c=dynamic_cast<ActionWithVirtualAtom*>(a.get());
         if(c) if(c->getLabel()==strings[i]) {
             ok=true;
             t.push_back(c->getIndex());
