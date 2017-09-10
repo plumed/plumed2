@@ -50,6 +50,9 @@ class CoEvolutionRestraint : public bias::Bias
   double alpha_p_;
   double alpha_n_;
   double Dalpha_;
+  // number of positives/negatives
+  unsigned npos_;
+  unsigned nneg_;
   // alpha prior parameters
   double alpha_p_mean_;
   double alpha_p_sig_;
@@ -105,6 +108,8 @@ void CoEvolutionRestraint::registerKeywords(Keywords& keys) {
   keys.add("compulsory","R0","forward model parameter R0");
   keys.add("compulsory","P0","forward model parameter P0");
   keys.add("compulsory","GAMMA","forward model parameter gamma");
+  keys.add("compulsory","NPOS","number of positives");
+  keys.add("compulsory","NNEG","number of negatives");
   keys.add("compulsory","RES_FILE","file with residue types for each argument");
   keys.add("optional","SLOPE","add logarithmic slope");
   keys.add("optional","TEMP","temperature in energy units");
@@ -154,6 +159,12 @@ CoEvolutionRestraint::CoEvolutionRestraint(const ActionOptions&ao):
   // check if using tabulated prior
   parseFlag("TABPRIOR", doTabPrior_);
 
+  // number of positives and negatives
+  parse("NPOS", npos_);
+  if(npos_<0) error("NPOS should be positive");
+  parse("NNEG", nneg_);
+  if(nneg_<0) error("NNEG should be positive");
+
   // temperature
   double temp=0.0;
   parse("TEMP",temp);
@@ -166,6 +177,9 @@ CoEvolutionRestraint::CoEvolutionRestraint(const ActionOptions&ao):
   parse("MC_STRIDE",MCstride_);
 
   checkRead();
+
+  // check number of arguments
+  if(getNumberOfArguments()!=(npos_+nneg_)) error("The number of arguments should be equal to NPOS + NNEG");
 
   // setup prior
   setup_prior();
@@ -184,6 +198,8 @@ CoEvolutionRestraint::CoEvolutionRestraint(const ActionOptions&ao):
   log.printf("  forward model parameter R0 %f\n",R0);
   log.printf("  forward model parameter P0 %f\n",P0_);
   log.printf("  forward model parameter gamma %f\n",gamma);
+  log.printf("  number of positive data points %d\n",npos_);
+  log.printf("  number of negative data points %d\n",nneg_);
   log.printf("  temperature of the system in energy unit %f\n",kbt_);
   log.printf("  number of MC steps %d\n",MCsteps_);
   log.printf("  do MC every %d steps\n", MCstride_);
@@ -390,10 +406,17 @@ double CoEvolutionRestraint::getEnergy
 {
   // calculate energy
   double ene = 0.0;
-  // cycle on arguments (= positive data)
-  for(unsigned i=rank_; i<getNumberOfArguments(); i=i+nrep_) {
+  // cycle on positive arguments
+  for(unsigned i=rank_; i<npos_; i=i+nrep_) {
     // calculate data likelihood
     double like = alpha_p * fmod[i] + alpha_n * ( 1.0 - fmod[i] );
+    // add to energy
+    ene += -kbt_ * std::log(like);
+  }
+  // cycle on negative arguments
+  for(unsigned i=rank_; i<nneg_; i=i+nrep_) {
+    // calculate data likelihood
+    double like = ( 1.0 - alpha_p ) * fmod[i+npos_] + ( 1.0 - alpha_n ) * ( 1.0 - fmod[i+npos_] );
     // add to energy
     ene += -kbt_ * std::log(like);
   }
@@ -490,8 +513,8 @@ void CoEvolutionRestraint::calculate()
 
   // calculate energy
   double ene = 0.0;
-  // cycle on arguments (= positive data)
-  for(unsigned i=rank_; i<getNumberOfArguments(); i=i+nrep_) {
+  // cycle on positive arguments
+  for(unsigned i=rank_; i<npos_; i=i+nrep_) {
     // get distance
     double dist = getArgument(i);
     // calculate forward model
@@ -512,6 +535,30 @@ void CoEvolutionRestraint::calculate()
       double dp_ddist   = -p * (dist-R0_[i]) / gamma_[i] / gamma_[i];
       // apply chain rule
       force[i] += -dene_dlike * dlike_dp * dp_ddist;
+    }
+  }
+  // cycle on negative arguments
+  for(unsigned i=rank_; i<nneg_; i=i+nrep_) {
+    // get distance
+    double dist = getArgument(i+npos_);
+    // calculate forward model
+    double p = P0_;
+    if(dist >= R0_[i+npos_]) p = P0_ * exp(-0.5*(dist-R0_[i+npos_])*(dist-R0_[i+npos_])/gamma_[i+npos_]/gamma_[i+npos_]);
+    // store forward model
+    fmod[i+npos_] = p;
+    // calculate data likelihood
+    double like = ( 1.0 - alpha_p_ ) * p + ( 1.0 - alpha_n_ ) * ( 1.0 - p );
+    // add to energy
+    ene += -kbt_ * std::log(like) + kbt_ * slope_ * std::log(dist);
+    // calculate force
+    force[i+npos_] = - kbt_ * slope_ / dist;
+    // second contribution
+    if(dist >= R0_[i+npos_]) {
+      double dene_dlike = -kbt_ / like;
+      double dlike_dp   = -alpha_p_ + alpha_n_;
+      double dp_ddist   = -p * (dist-R0_[i+npos_]) / gamma_[i+npos_] / gamma_[i+npos_];
+      // apply chain rule
+      force[i+npos_] += -dene_dlike * dlike_dp * dp_ddist;
     }
   }
 
