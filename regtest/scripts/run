@@ -103,6 +103,13 @@ do
   fi
 done
 
+if type -t plumed_custom_skip 1>/dev/null ; then
+  if plumed_custom_skip ; then
+    echo "NOT_APPLIABLE (plumed_custom_skip)"
+    exit 0;
+  fi
+fi
+
 if type -t plumed_regtest_before 1>/dev/null ; then
   plumed_regtest_before
 fi
