@@ -44,7 +44,7 @@ matrix:
 # osx serial
   - os: osx
     osx_image: xcode7.3
-    env: PLUMED_CC=clang PLUMED_CXX=clang++ PLUMED_CXXFLAGS="-O3 --disable-static-patch"
+    env: PLUMED_CC=clang PLUMED_CXX=clang++ PLUMED_CXXFLAGS=-O3
 # this should not be required. I add it since it looks like with OSX it does not work otherwise
     cache:
       directories:
@@ -52,7 +52,7 @@ matrix:
 # osx parallel
   - os: osx
     osx_image: xcode7.3
-    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS="-O3 --disable-static-patch"
+    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3
 # this should not be required. I add it since it looks like with OSX it does not work otherwise
     cache:
       directories:
@@ -101,6 +101,7 @@ install:
   - ./.travis/check.log valgrind || VALGRIND=no
 # update packages
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]] && test -z "$PLUMED_MACPORTS" ; then
+      CONFIG_FLAGS="$CONFIG_FLAGS --disable-static-patch";
       brew update > /dev/null ;
       brew install ccache ;
     fi
