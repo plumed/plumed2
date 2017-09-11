@@ -49,7 +49,7 @@ AnalysisWithLandmarks::AnalysisWithLandmarks( const ActionOptions& ao):
 {
   std::string linput; parse("LANDMARKS",linput);
   std::vector<std::string> words=Tools::getWords(linput);
-  landmarkSelector.reset(landmarkRegister().create( LandmarkSelectionOptions(words,this) ));
+  landmarkSelector=landmarkRegister().create( LandmarkSelectionOptions(words,this) );
   log.printf("  %s\n", landmarkSelector->description().c_str() );
 }
 
