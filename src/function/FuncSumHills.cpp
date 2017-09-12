@@ -492,14 +492,11 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
     // of hills (i.e. a list of hills and the associated grid)
 
     // decide how to source colvars ( serial parallel )
-    FilesHandler *hillsHandler;
-    FilesHandler *histoHandler;
+    std::unique_ptr<FilesHandler> hillsHandler;
+    std::unique_ptr<FilesHandler> histoHandler;
 
-    hillsHandler=NULL;
-    histoHandler=NULL;
-
-    if(integratehills)	hillsHandler=new FilesHandler(hillsFiles,parallelread,*this, log);
-    if(integratehisto)	histoHandler=new FilesHandler(histoFiles,parallelread,*this, log);
+    if(integratehills)	hillsHandler.reset(new FilesHandler(hillsFiles,parallelread,*this, log));
+    if(integratehisto)	histoHandler.reset(new FilesHandler(histoFiles,parallelread,*this, log));
 
     Stopwatch sw;
 
@@ -613,9 +610,6 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
 
       nfiles++;
     }
-
-    if( hillsHandler ) delete hillsHandler;
-    if( histoHandler ) delete histoHandler;
 
     sw.stop("0 Summing hills");
 
