@@ -54,7 +54,7 @@ AnalysisWithLandmarks::AnalysisWithLandmarks( const ActionOptions& ao):
 }
 
 AnalysisWithLandmarks::~AnalysisWithLandmarks() {
-  delete landmarkSelector;
+// destructor is required to delete class landmarkSelector
 }
 
 void AnalysisWithLandmarks::setDataToAnalyze( MultiReferenceBase* mydata ) {
