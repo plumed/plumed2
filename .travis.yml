@@ -92,7 +92,7 @@ install:
   - export INCLUDE="$HOME/opt/include:$INCLUDE"
   - export LIBRARY_PATH="$HOME/opt/lib:$LIBRARY_PATH"
   - export LD_LIBRARY_PATH="$HOME/opt/lib:$LD_LIBRARY_PATH"
-  - export PYTHONPATH="$HOME/opt/lib/python:$PYTHONPATH"
+  - export PYTHONPATH="$HOME/opt/lib/plumed/python:$PYTHONPATH"
 # on travis, better dump stack trace in case there is an error
   - export PLUMED_STACK_TRACE=yes
 # build the manual, only if log contains string [makedoc]
