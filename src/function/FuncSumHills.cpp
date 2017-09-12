@@ -614,6 +614,9 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
       nfiles++;
     }
 
+    if( hillsHandler ) delete hillsHandler;
+    if( histoHandler ) delete histoHandler;
+
     sw.stop("0 Summing hills");
 
     log<<sw;
