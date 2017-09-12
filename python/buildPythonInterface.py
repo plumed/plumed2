@@ -37,9 +37,6 @@ for line in f :
    if "LDSO=" in line : os.environ["LDSHARED"] = line.replace("LDSO=","").replace("\n","")
 f.close()
 print( "Building interface using CC=" + os.environ["CC"] + " , CXX=" + os.environ["CXX"] + " and LDSHARED=" + os.environ["LDSHARED"] )
-print( "Environment variables are:")
-for key in os.environ.keys():
-    print( key, os.environ[key] )
 
 plumedversion = subprocess.check_output(['../src/lib/plumed', 'info', '--version']).decode("utf-8")
 print( "Creating interface for plumed version " + plumedversion )
