@@ -38,6 +38,7 @@ Value::Value():
   hasForce(false),
   hasDeriv(true),
   shape(std::vector<unsigned>()),
+  alwaysstore(false),
   storedata(true),
   bufstart(0),
   streampos(0),
@@ -58,6 +59,7 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   name(name),
   hasDeriv(withderiv),
   shape(ss),
+  alwaysstore(false),
   storedata(shape.size()==0),
   bufstart(0),
   streampos(0),
@@ -85,6 +87,10 @@ void Value::setupPeriodicity() {
 
 void Value::buildDataStore(){
   storedata=true;
+}
+
+void Value::alwaysStoreValues(){
+  alwaysstore=true; storedata=true;
 }
 
 void Value::interpretDataRequest( const std::string& uselab, const std::string& values ){

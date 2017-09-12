@@ -131,7 +131,7 @@ ClusterWeights::ClusterWeights(const ActionOptions&ao):
   requestArguments( clusters, false );
   // Now create the value
   std::vector<unsigned> shape(1); shape[0]=clusters[0]->getShape()[0]; 
-  addValue( shape ); getPntrToOutput(0)->buildDataStore();
+  addValue( shape ); getPntrToOutput(0)->alwaysStoreValues();
   // And the tasks
   for(unsigned i=0;i<shape[0];++i) addTaskToList(i);
   // Find out which cluster we want

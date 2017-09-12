@@ -323,9 +323,9 @@ void ActionWithValue::interpretDataLabel( const std::string& mystr, Action* myus
       args.push_back( values[0] ); values[0]->interpretDataRequest( myuser->getLabel(), "" ); 
   } else if( mystr==getLabel() + ".*" ){
       // Retrieve all scalar values
-      if( !action_to_do_after ){
-          retrieveAllScalarValuesInLoop( args ); 
-      } else if( actionRegister().checkForShortcut(getName()) ) {  
+      unsigned nargs = args.size();
+      if( !action_to_do_after ) retrieveAllScalarValuesInLoop( args ); 
+      if( args.size()==nargs && actionRegister().checkForShortcut(getName()) ) {  
           Keywords skeys; actionRegister().getShortcutKeywords( getName(), skeys );
           std::vector<std::string> out_comps( skeys.getAllOutputComponents() );
           for(unsigned i=0;i<out_comps.size();++i){

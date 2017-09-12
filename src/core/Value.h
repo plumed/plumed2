@@ -69,6 +69,8 @@ private:
   bool hasDeriv;
 /// What is the shape of the value (0 dimensional=scalar, 1 dimensional=vector, 2 dimensional=matrix)
   std::vector<unsigned> shape;
+/// This is used by actions that always store data.  They cannot operate without storing all values
+  bool alwaysstore;
 /// Are we storing the data
   bool storedata;
 /// Variables for storing data
@@ -154,6 +156,7 @@ public:
   static double projection(const Value&,const Value&);
 /// Build the store of data
   void buildDataStore();
+  void alwaysStoreValues();
 ///
   void activateTasks( std::vector<unsigned>& taskFlags ) const ;
 ///

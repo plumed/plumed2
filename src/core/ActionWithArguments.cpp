@@ -214,8 +214,8 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
   clearDependencies();
   bool storing=false; 
   for(unsigned i=0;i<arguments.size();++i){
-      if( arguments[i]->storedata ){ storing=true; break; }
-  }
+      if( arguments[i]->alwaysstore ){ storing=true; break; }
+  } 
   std::string fullname,name;
   std::vector<ActionWithValue*> f_actions;
   for(unsigned i=0; i<arguments.size(); i++) {
@@ -250,7 +250,7 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
       if(!av) return;
   }
 
-  if( !allow_streams ){
+  if( !allow_streams || storing ){
       done_over_stream=false;
   } else if( f_actions.size()>1 ){
       done_over_stream=true;

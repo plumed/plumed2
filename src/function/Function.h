@@ -82,7 +82,11 @@ void Function::addDerivative( const unsigned& ival, const unsigned& jder, const 
       }
       return; 
   }
-  if( getPntrToArgument(0)->getRank()>0 ){ plumed_error(); return; }
+  if( getPntrToArgument(0)->getRank()>0 ) { 
+      unsigned base=0; for(unsigned i=0;i<jder;++i) base += getPntrToArgument(i)->getSize();
+      myvals.addDerivative( getPntrToOutput(ival)->getPositionInStream(), base + myvals.getTaskIndex(), der ); 
+      return; 
+  }
   myvals.addDerivative( getPntrToOutput(ival)->getPositionInStream(), arg_ends[jder] + myvals.getTaskIndex(), der ); 
 }
 
