@@ -442,52 +442,6 @@ SwitchingFunction::SwitchingFunction():
 {
 }
 
-SwitchingFunction::SwitchingFunction(const SwitchingFunction&sf):
-  init(sf.init),
-  type(sf.type),
-  invr0(sf.invr0),
-  d0(sf.d0),
-  dmax(sf.dmax),
-  nn(sf.nn),
-  mm(sf.mm),
-  a(sf.a),
-  b(sf.b),
-  c(sf.c),
-  d(sf.d),
-  lambda(sf.lambda),
-  beta(sf.beta),
-  ref(sf.ref),
-  invr0_2(sf.invr0_2),
-  dmax_2(sf.dmax_2),
-  stretch(sf.stretch),
-  shift(sf.shift)
-{
-}
-
-SwitchingFunction & SwitchingFunction::operator=(const SwitchingFunction& sf) {
-  if(&sf==this) return *this;
-  init=sf.init;
-  type=sf.type;
-  invr0=sf.invr0;
-  d0=sf.d0;
-  dmax=sf.dmax;
-  nn=sf.nn;
-  mm=sf.mm;
-  a=sf.a;
-  b=sf.b;
-  c=sf.c;
-  d=sf.d;
-  lambda=sf.lambda;
-  beta=sf.beta;
-  ref=sf.ref;
-  invr0_2=sf.invr0_2;
-  dmax_2=sf.dmax_2;
-  stretch=sf.stretch;
-  shift=sf.shift;
-  return *this;
-}
-
-
 void SwitchingFunction::set(int nn,int mm,double r0,double d0) {
   init=true;
   type=rational;
