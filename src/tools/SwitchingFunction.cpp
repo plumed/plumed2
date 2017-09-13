@@ -420,28 +420,6 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
   return result;
 }
 
-SwitchingFunction::SwitchingFunction():
-  init(false),
-  type(rational),
-  invr0(0.0),
-  d0(0.0),
-  dmax(0.0),
-  nn(6),
-  mm(0),
-  a(0.0),
-  b(0.0),
-  c(0.0),
-  d(0.0),
-  lambda(0.0),
-  beta(0.0),
-  ref(0.0),
-  invr0_2(0.0),
-  dmax_2(0.0),
-  stretch(1.0),
-  shift(0.0)
-{
-}
-
 void SwitchingFunction::set(int nn,int mm,double r0,double d0) {
   init=true;
   type=rational;
