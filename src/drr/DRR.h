@@ -176,11 +176,11 @@ public:
   std::vector<double>
   getCountsLogDerivative(const std::vector<double> &pos) const;
   /// Write grad file
-  void writeGrad(std::string filename) const;
+//   void writeGrad(std::string filename) const;
   /// Write 1D pmf file on one dimensional occasion
   void write1DPMF(std::string filename) const;
   /// Write count file
-  void writeCount(std::string filename) const;
+//   void writeCount(std::string filename) const;
   /// Write necessary output file in one function
   void writeAll(const std::string &filename) const;
   /// Miscellaneous getter functions, useful for merging windows

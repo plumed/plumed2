@@ -6691,7 +6691,7 @@ fi
 $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_MPI" >&2;}
     fi
 
-  if test "x$ac_cv_func_MPI_Init" = xyes; then
+  if test "$__PLUMED_HAS_MPI" = yes; then
     mpi_found=ok
   fi
 else
