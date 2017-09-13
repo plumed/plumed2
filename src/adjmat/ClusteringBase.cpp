@@ -95,8 +95,15 @@ void ClusteringBase::calculate() {
   for(unsigned i=0; i<cluster_sizes.size(); ++i) { cluster_sizes[i].first=0; cluster_sizes[i].second=i; }
   // Do the clustering bit
   performClustering();
+  // Order the clusters in the system by size (this returns ascending order )
+  std::sort( cluster_sizes.begin(), cluster_sizes.end() );
   // Set the elements of the value to the cluster identies
-  for(unsigned i=0; i<cluster_sizes.size(); ++i) getPntrToValue()->add( i,  static_cast<double>(which_cluster[i]) ); 
+  for(unsigned i=0; i<cluster_sizes.size(); ++i){
+      double this_size = static_cast<double>(cluster_sizes.size()-1-i);
+      for(unsigned j=0;j<cluster_sizes.size(); ++j){
+          if( which_cluster[j]==cluster_sizes[i].second ) getPntrToValue()->add( j, this_size ); 
+      }
+  }
 }
 
 }

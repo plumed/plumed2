@@ -63,6 +63,7 @@ protected:
 public:
   static void shortcutKeywords( Keywords& keys );
   static void expandFunctions( const std::string& labout, const std::string& argin,
+                               const std::string& weights,
                                const std::vector<std::string>& words,
                                const std::map<std::string,std::string>& keys,
                                std::vector<std::vector<std::string> >& actions );

@@ -66,7 +66,7 @@ void CoordinationNumberMoments::expandShortcut( const std::string& lab, const st
   input.push_back("VECTORS2=" + lab + "_mat.y" ); input.push_back("VECTORS3=" + lab + "_mat.z" );
   for(unsigned i=1;i<words.size();++i) input.push_back(words[i]); 
   actions.push_back( input ); 
-  multicolvar::MultiColvarBase::expandFunctions( lab, lab, words, keys, actions );
+  multicolvar::MultiColvarBase::expandFunctions( lab, lab, "", words, keys, actions );
 }
 
 void CoordinationNumberMoments::registerKeywords( Keywords& keys ) {

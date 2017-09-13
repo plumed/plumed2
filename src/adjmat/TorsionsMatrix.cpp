@@ -119,7 +119,7 @@ void TorsionsMatrix::expandShortcut( const std::string& lab, const std::vector<s
   matheval_input.push_back("FUNC=(x*y)/z");
   matheval_input.push_back("PERIODIC=NO"); actions.push_back( matheval_input );
   // And this expands everything
-  multicolvar::MultiColvarBase::expandFunctions( lab, lab + "_smac", words, keys, actions );
+  multicolvar::MultiColvarBase::expandFunctions( lab, lab + "_smac", "", words, keys, actions );
 }
 
 void TorsionsMatrix::registerKeywords( Keywords& keys ) {

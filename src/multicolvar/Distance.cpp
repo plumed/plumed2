@@ -181,7 +181,7 @@ void Distance::expandShortcut( const std::string& lab, const std::vector<std::st
       else plumed_merror("invalid shortcut input");
       actions.push_back( tor_input ); ilab = lab + "_tor";
   }
-  MultiColvarBase::expandFunctions( lab, ilab, words, keys, actions );
+  MultiColvarBase::expandFunctions( lab, ilab, "", words, keys, actions );
 }
 
 void Distance::registerKeywords( Keywords& keys ) {

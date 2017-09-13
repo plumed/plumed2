@@ -102,10 +102,7 @@ void ClusterWeights::expandShortcut( const std::string& lab, const std::vector<s
   for(unsigned i=1;i<words.size();++i) weights.push_back( words[i] );
   actions.push_back( weights );
   if( words[0]=="CLUSTER_PROPERTIES" ) { 
-      std::vector<std::string> matheval; matheval.push_back( lab + "_clust:"); matheval.push_back("MATHEVAL");
-      matheval.push_back("ARG2=" + keys.find("ARG")->second ); matheval.push_back("ARG1=" + lab );
-      matheval.push_back("FUNC=x*y"); matheval.push_back("PERIODIC=NO"); actions.push_back( matheval );
-      multicolvar::MultiColvarBase::expandFunctions( lab, lab + "_clust", words, keys, actions ); 
+      multicolvar::MultiColvarBase::expandFunctions( lab, keys.find("ARG")->second, lab, words, keys, actions ); 
   }
 }
 

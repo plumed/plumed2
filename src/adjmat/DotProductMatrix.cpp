@@ -120,7 +120,7 @@ void DotProductMatrix::expandShortcut( const std::string& lab, const std::vector
   matheval_input.push_back("ARG2=" + lab + "_denom"); matheval_input.push_back("FUNC=x/y"); 
   matheval_input.push_back("PERIODIC=NO"); actions.push_back( matheval_input );   
   // And this expands everything
-  multicolvar::MultiColvarBase::expandFunctions( lab, lab + "_av", words, keys, actions );
+  multicolvar::MultiColvarBase::expandFunctions( lab, lab + "_av", "", words, keys, actions );
 }
 
 void DotProductMatrix::registerKeywords( Keywords& keys ) {

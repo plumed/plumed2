@@ -65,7 +65,7 @@ void MultiColvarBase::shortcutKeywords( Keywords& keys ) {
   keys.addOutputComponent("_mean","MEAN","the mean of the colvars");
 }
 
-void MultiColvarBase::expandFunctions( const std::string& labout, const std::string& argin, 
+void MultiColvarBase::expandFunctions( const std::string& labout, const std::string& argin, const std::string& weights, 
                                        const std::vector<std::string>& words,
                                        const std::map<std::string,std::string>& keys,
                                        std::vector<std::vector<std::string> >& actions ){
@@ -74,9 +74,15 @@ void MultiColvarBase::expandFunctions( const std::string& labout, const std::str
       std::vector<std::string> input; input.push_back( labout + "_lt:" ); input.push_back("LESS_THAN"); 
       input.push_back("ARG1=" + argin ); 
       input.push_back("SWITCH=" + keys.find("LESS_THAN")->second  );
-      actions.push_back( input );
+      actions.push_back( input ); std::string sum_arg=labout + "_lt";
+      if( weights.length()>0 ){
+          std::vector<std::string> matheval; matheval.push_back( labout + "_wlt:"); matheval.push_back("MATHEVAL");
+          matheval.push_back("ARG2=" + labout + "_lt" ); matheval.push_back("ARG1=" + weights );
+          matheval.push_back("FUNC=x*y"); matheval.push_back("PERIODIC=NO"); 
+          actions.push_back( matheval ); sum_arg = labout + "_wlt";
+      } 
       std::vector<std::string> sum_inp; sum_inp.push_back( labout + "_lessthan:" ); 
-      sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + labout + "_lt");
+      sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + sum_arg );
       sum_inp.push_back("PERIODIC=NO"); actions.push_back( sum_inp ); 
   }
   if( keys.count("LESS_THAN1") ){
@@ -86,9 +92,15 @@ void MultiColvarBase::expandFunctions( const std::string& labout, const std::str
           std::vector<std::string> input; input.push_back( labout + "_lt" + istr + ":" ); input.push_back("LESS_THAN");
           input.push_back("ARG1=" + argin );
           input.push_back("SWITCH=" + keys.find("LESS_THAN" + istr)->second  );
-          actions.push_back( input );
+          actions.push_back( input ); std::string sum_arg=labout + "_lt" + istr;
+          if( weights.length()>0 ){
+              std::vector<std::string> matheval; matheval.push_back( labout + "_wlt" + istr + ":"); matheval.push_back("MATHEVAL");
+              matheval.push_back("ARG2=" + labout + "_lt" + istr ); matheval.push_back("ARG1=" + weights );
+              matheval.push_back("FUNC=x*y"); matheval.push_back("PERIODIC=NO");
+              actions.push_back( matheval ); sum_arg = labout + "_wlt" + istr;
+          }
           std::vector<std::string> sum_inp; sum_inp.push_back( labout + "_lessthan" + istr + ":" ); 
-          sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + labout + "_lt" + istr );
+          sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + sum_arg );
           sum_inp.push_back("PERIODIC=NO"); actions.push_back( sum_inp );
       }
   }
@@ -97,9 +109,15 @@ void MultiColvarBase::expandFunctions( const std::string& labout, const std::str
       std::vector<std::string> input; input.push_back( labout + "_mt:" ); input.push_back("MORE_THAN");
       input.push_back("ARG1=" + argin );
       input.push_back("SWITCH=" + keys.find("MORE_THAN")->second  );
-      actions.push_back( input );
+      actions.push_back( input ); std::string sum_arg=labout + "_mt";
+      if( weights.length()>0 ){
+          std::vector<std::string> matheval; matheval.push_back( labout + "_wmt:"); matheval.push_back("MATHEVAL");
+          matheval.push_back("ARG2=" + labout + "_mt" ); matheval.push_back("ARG1=" + weights );
+          matheval.push_back("FUNC=x*y"); matheval.push_back("PERIODIC=NO");
+          actions.push_back( matheval ); sum_arg = labout + "_wmt";
+      }
       std::vector<std::string> sum_inp; sum_inp.push_back( labout + "_morethan:" ); 
-      sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + labout + "_mt");
+      sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + sum_arg );
       sum_inp.push_back("PERIODIC=NO"); actions.push_back( sum_inp );
   }
   if( keys.count("MORE_THAN1") ){
@@ -109,7 +127,13 @@ void MultiColvarBase::expandFunctions( const std::string& labout, const std::str
           std::vector<std::string> input; input.push_back( labout + "_mt" + istr + ":" ); input.push_back("MORE_THAN");
           input.push_back("ARG1=" + argin );
           input.push_back("SWITCH=" + keys.find("MORE_THAN" + istr)->second  );
-          actions.push_back( input );
+          actions.push_back( input ); std::string sum_arg=labout + "_mt" + istr;
+          if( weights.length()>0 ){
+              std::vector<std::string> matheval; matheval.push_back( labout + "_wmt" + istr + ":"); matheval.push_back("MATHEVAL");
+              matheval.push_back("ARG2=" + labout + "_mt" + istr ); matheval.push_back("ARG1=" + weights );
+              matheval.push_back("FUNC=x*y"); matheval.push_back("PERIODIC=NO");
+              actions.push_back( matheval ); sum_arg = labout + "_wmt" + istr;
+          }
           std::vector<std::string> sum_inp; sum_inp.push_back( labout + "_morethan" + istr + ":" ); 
           sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + labout + "_mt" + istr );
           sum_inp.push_back("PERIODIC=NO"); actions.push_back( sum_inp );
@@ -117,6 +141,7 @@ void MultiColvarBase::expandFunctions( const std::string& labout, const std::str
   }
   // Parse ALT_MIN
   if( keys.count("ALT_MIN") ){
+      if( weights.length()>0 ) plumed_merror("cannot use ALT_MIN with this shortcut");
       std::vector<std::string> input; input.push_back( labout + "_altmin:" ); input.push_back("ALT_MIN");
       input.push_back("ARG=" + argin ); std::size_t dd = keys.find("ALT_MIN")->second.find("BETA");
       input.push_back( keys.find("ALT_MIN")->second.substr(dd) ); 
@@ -124,34 +149,46 @@ void MultiColvarBase::expandFunctions( const std::string& labout, const std::str
   }
   // Parse MIN
   if( keys.count("MIN") ){
+      if( weights.length()>0 ) plumed_merror("cannot use MIN with this shortcut");
       std::vector<std::string> input; input.push_back( labout + "_min:" ); input.push_back("MIN");
       input.push_back("ARG=" + argin ); std::size_t dd = keys.find("MIN")->second.find("BETA"); 
       input.push_back( keys.find("MIN")->second.substr(dd) ); actions.push_back( input );
   }
   // Parse MAX
   if( keys.count("MAX") ){
+      if( weights.length()>0 ) plumed_merror("cannot use MAX with this shortcut");
       std::vector<std::string> input; input.push_back( labout + "_max:" ); input.push_back("MAX");
       input.push_back("ARG=" + argin ); std::size_t dd = keys.find("MAX")->second.find("BETA"); 
       input.push_back( keys.find("MAX")->second.substr(dd) ); actions.push_back( input );
   }
   // Parse HIGHEST
   if( keys.count("HIGHEST") ){
+      if( weights.length()>0 ) plumed_merror("cannot use HIGHEST with this shortcut"); 
       std::vector<std::string> input; input.push_back( labout + "_highest:" ); input.push_back("HIGHEST");
       input.push_back("ARG=" + argin ); actions.push_back( input );
   }
   // Parse LOWEST
   if( keys.count("LOWEST") ){
+      if( weights.length()>0 ) plumed_merror("cannot use LOWEST with this shortcut");
       std::vector<std::string> input; input.push_back( labout + "_lowest:" ); input.push_back("LOWEST");
       input.push_back("ARG=" + argin ); actions.push_back( input );
   }
   // Parse SUM
   if( keys.count("SUM") ){
+      std::string sum_arg=argin;
+      if( weights.length()>0 ){
+          std::vector<std::string> matheval; matheval.push_back( labout + "_wsum:"); matheval.push_back("MATHEVAL");
+          matheval.push_back("ARG2=" + argin ); matheval.push_back("ARG1=" + weights );
+          matheval.push_back("FUNC=x*y"); matheval.push_back("PERIODIC=NO");
+          actions.push_back( matheval ); sum_arg = labout + "_wsum";
+      }
       std::vector<std::string> input; input.push_back( labout + "_sum:" ); 
-      input.push_back("COMBINE"); input.push_back("ARG=" + argin ); 
+      input.push_back("COMBINE"); input.push_back("ARG=" + sum_arg ); 
       input.push_back("PERIODIC=NO"); actions.push_back( input );
   }
   // Parse MEAN
   if( keys.count("MEAN") ){
+      if( weights.length()>0 ) plumed_merror("cannot use LOWEST with this shortcut");
       std::vector<std::string> input; input.push_back( labout + "_mean:" ); input.push_back("COMBINE");
       input.push_back("ARG=" + argin ); input.push_back("NORMALIZE"); 
       input.push_back("PERIODIC=NO"); actions.push_back( input );
@@ -161,9 +198,15 @@ void MultiColvarBase::expandFunctions( const std::string& labout, const std::str
       std::vector<std::string> input; input.push_back( labout + "_bt:" ); input.push_back("BETWEEN");
       input.push_back("ARG1=" + argin );
       input.push_back("SWITCH=" + keys.find("BETWEEN")->second  );
-      actions.push_back( input );
+      actions.push_back( input ); std::string sum_arg=labout + "_bt";
+      if( weights.length()>0 ){
+          std::vector<std::string> matheval; matheval.push_back( labout + "_wbt:"); matheval.push_back("MATHEVAL");
+          matheval.push_back("ARG2=" + labout + "_bt" ); matheval.push_back("ARG1=" + weights );
+          matheval.push_back("FUNC=x*y"); matheval.push_back("PERIODIC=NO");
+          actions.push_back( matheval ); sum_arg = labout + "_wbt";
+      }
       std::vector<std::string> sum_inp; sum_inp.push_back( labout + "_between:" ); 
-      sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + labout + "_bt");
+      sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + sum_arg );
       sum_inp.push_back("PERIODIC=NO"); actions.push_back( sum_inp );
   }
   if( keys.count("BETWEEN1") ){
@@ -173,9 +216,15 @@ void MultiColvarBase::expandFunctions( const std::string& labout, const std::str
           std::vector<std::string> input; input.push_back( labout + "_bt" + istr + ":" ); input.push_back("BETWEEN");
           input.push_back("ARG1=" + argin );
           input.push_back("SWITCH=" + keys.find("BETWEEN" + istr)->second  );
-          actions.push_back( input );
+          actions.push_back( input ); std::string sum_arg=labout + "_bt" + istr;
+          if( weights.length()>0 ){
+              std::vector<std::string> matheval; matheval.push_back( labout + "_wbt" + istr + ":"); matheval.push_back("MATHEVAL");
+              matheval.push_back("ARG2=" + labout + "_bt" + istr ); matheval.push_back("ARG1=" + weights );
+              matheval.push_back("FUNC=x*y"); matheval.push_back("PERIODIC=NO");
+              actions.push_back( matheval ); sum_arg = labout + "_wbt" + istr;
+          }
           std::vector<std::string> sum_inp; sum_inp.push_back( labout + "_between" + istr + ":" ); 
-          sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + labout + "_bt" + istr );
+          sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + sum_arg );
           sum_inp.push_back("PERIODIC=NO"); actions.push_back( sum_inp );
       }
   }
@@ -196,9 +245,16 @@ void MultiColvarBase::expandFunctions( const std::string& labout, const std::str
           std::vector<std::string> input; input.push_back( labout + "_bt" + istr + ":" ); input.push_back("BETWEEN");
           input.push_back("ARG1=" + argin ); std::string low_str, high_str; 
           Tools::convert( lower + i*delr, low_str ); Tools::convert( lower + (i+1)*delr, high_str );
-          input.push_back("SWITCH= " + words[0] + " LOWER=" + low_str + " UPPER=" + high_str + " SMEAR=" + smstr );  actions.push_back( input );   
+          input.push_back("SWITCH= " + words[0] + " LOWER=" + low_str + " UPPER=" + high_str + " SMEAR=" + smstr );  
+          actions.push_back( input ); std::string sum_arg=labout + "_bt" + istr;
+          if( weights.length()>0 ){
+              std::vector<std::string> matheval; matheval.push_back( labout + "_wbt" + istr + ":"); matheval.push_back("MATHEVAL");
+              matheval.push_back("ARG2=" + labout + "_bt" + istr ); matheval.push_back("ARG1=" + weights );
+              matheval.push_back("FUNC=x*y"); matheval.push_back("PERIODIC=NO");
+              actions.push_back( matheval ); sum_arg = labout + "_wbt" + istr;
+          }
           std::vector<std::string> sum_inp; sum_inp.push_back( labout + "_between" + istr + ":" ); 
-          sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + labout + "_bt" + istr );
+          sum_inp.push_back("COMBINE"); sum_inp.push_back("ARG=" + sum_arg );
           sum_inp.push_back("PERIODIC=NO"); actions.push_back( sum_inp );
       }
   }

@@ -152,7 +152,7 @@ void SphericalHarmonic::expandShortcut( const std::string& lab, const std::vecto
 
   // Now calculate the total length of the vector
   SphericalHarmonic::createVectorNormInput( lab, lab + "_norm", l, "mn", actions ); 
-  multicolvar::MultiColvarBase::expandFunctions( lab, lab + "_norm", words, keys, actions );
+  multicolvar::MultiColvarBase::expandFunctions( lab, lab + "_norm", "", words, keys, actions );
 }
 
 void SphericalHarmonic::createVectorNormInput( const std::string& ilab, const std::string& olab, const int& l, 

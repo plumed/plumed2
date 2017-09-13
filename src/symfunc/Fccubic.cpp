@@ -108,7 +108,7 @@ void Fccubic::expandShortcut( const std::string& lab, const std::vector<std::str
   std::vector<std::string> me_input; me_input.push_back(lab + "_n:"); me_input.push_back("MATHEVAL");
   me_input.push_back("ARG1=" + lab); me_input.push_back("ARG2=" + lab + "_denom"); me_input.push_back("FUNC=x/y");
   me_input.push_back("PERIODIC=NO"); actions.push_back(me_input);
-  multicolvar::MultiColvarBase::expandFunctions( lab, lab + "_n", words, keys, actions );
+  multicolvar::MultiColvarBase::expandFunctions( lab, lab + "_n", "", words, keys, actions );
 }
 
 void Fccubic::registerKeywords( Keywords& keys ) {

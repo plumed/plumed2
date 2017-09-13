@@ -101,7 +101,7 @@ void CoordinationNumbers::expandShortcut( const std::string& lab, const std::vec
   SymmetryFunctionBase::expandMatrix( false, lab, words, keys, actions );
   std::vector<std::string> input; input.push_back(lab + ":"); input.push_back("COORDINATIONNUMBER");
   input.push_back("WEIGHT=" + lab + "_mat.w" ); actions.push_back( input );
-  multicolvar::MultiColvarBase::expandFunctions( lab, lab, words, keys, actions );
+  multicolvar::MultiColvarBase::expandFunctions( lab, lab, "", words, keys, actions );
 }
 
 void CoordinationNumbers::registerKeywords( Keywords& keys ) {
