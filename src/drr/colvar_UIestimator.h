@@ -629,60 +629,60 @@ LOOPEND3:;
   }
 
   // write interal data, used for testing
-  void write_interal_data()
-  {
-    std::string internal_filaname = output_filename + ".UI.internal";
-
-    std::ofstream ofile_internal(internal_filaname.c_str());
-
-    std::vector<double> loop_flag(dimension, 0);
-    for (int i = 0; i < dimension; i++)
-    {
-      loop_flag[i] = lowerboundary[i];
-    }
-    while (true)
-    {
-      for (int i = 0; i < dimension; i++)
-      {
-        ofile_internal << loop_flag[i] + 0.5 * width[i] << " ";
-      }
-
-      for (int i = 0; i < dimension; i++)
-      {
-        ofile_internal << grad.get_value(loop_flag)[i] << " ";
-      }
-
-      std::vector<double> ii(dimension,0);
-      for (double i = loop_flag[0] - 10; i < loop_flag[0] + 10 + 0.00001; i+= width[0])
-      {
-        for (double j = loop_flag[1] - 10; j< loop_flag[1] + 10 +0.00001; j+=width[1])
-        {
-          ii[0] = i;
-          ii[1] = j;
-          ofile_internal << i <<" "<<j<<" "<< distribution_x_y.get_value(loop_flag,ii)<< " ";
-        }
-      }
-      ofile_internal << std::endl;
-
-      // iterate over any dimensions
-      int i = dimension - 1;
-      while (true)
-      {
-        loop_flag[i] += width[i];
-        if (loop_flag[i] > upperboundary[i] - width[i] + 0.00001)
-        {
-          loop_flag[i] = lowerboundary[i];
-          i--;
-          if (i < 0)
-            goto LOOPEND5;
-        }
-        else
-          break;
-      }
-    }
-LOOPEND5:
-    ofile_internal.close();
-  }
+//   void write_interal_data()
+//   {
+//     std::string internal_filaname = output_filename + ".UI.internal";
+//
+//     std::ofstream ofile_internal(internal_filaname.c_str());
+//
+//     std::vector<double> loop_flag(dimension, 0);
+//     for (int i = 0; i < dimension; i++)
+//     {
+//       loop_flag[i] = lowerboundary[i];
+//     }
+//     while (true)
+//     {
+//       for (int i = 0; i < dimension; i++)
+//       {
+//         ofile_internal << loop_flag[i] + 0.5 * width[i] << " ";
+//       }
+//
+//       for (int i = 0; i < dimension; i++)
+//       {
+//         ofile_internal << grad.get_value(loop_flag)[i] << " ";
+//       }
+//
+//       std::vector<double> ii(dimension,0);
+//       for (double i = loop_flag[0] - 10; i < loop_flag[0] + 10 + 0.00001; i+= width[0])
+//       {
+//         for (double j = loop_flag[1] - 10; j< loop_flag[1] + 10 +0.00001; j+=width[1])
+//         {
+//           ii[0] = i;
+//           ii[1] = j;
+//           ofile_internal << i <<" "<<j<<" "<< distribution_x_y.get_value(loop_flag,ii)<< " ";
+//         }
+//       }
+//       ofile_internal << std::endl;
+//
+//       // iterate over any dimensions
+//       int i = dimension - 1;
+//       while (true)
+//       {
+//         loop_flag[i] += width[i];
+//         if (loop_flag[i] > upperboundary[i] - width[i] + 0.00001)
+//         {
+//           loop_flag[i] = lowerboundary[i];
+//           i--;
+//           if (i < 0)
+//             goto LOOPEND5;
+//         }
+//         else
+//           break;
+//       }
+//     }
+// LOOPEND5:
+//     ofile_internal.close();
+//   }
 
   // write output files
   void write_files()

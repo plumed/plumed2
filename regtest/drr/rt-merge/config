@@ -1,0 +1,11 @@
+function plumed_custom_skip(){
+  if [ "$(uname)" == "Darwin" ] ; then
+    return 0
+  else
+    return 1
+  fi
+}
+type=plumed
+plumed_needs=boost_serialization
+plumed_modules=drr
+arg="drr_tool --merge eabf_win1.drrstate,eabf_win2.drrstate"

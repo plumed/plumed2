@@ -561,7 +561,7 @@ mpi_found=ko
 # optional libraries follow
 if test $mpi == true ; then
   PLUMED_CHECK_PACKAGE([mpi.h],[MPI_Init],[__PLUMED_HAS_MPI])
-  if test "x$ac_cv_func_MPI_Init" = xyes; then
+  if test "$__PLUMED_HAS_MPI" = yes; then
     mpi_found=ok
   fi
 else 
