@@ -126,7 +126,8 @@ install:
 # install lcov
   - if test "$MAKEDOC" == yes ; then ./.travis/install.lcov v1.13 ; fi
 # install numpy and cython for python interface
-  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+  - if test "$TRAVIS_OS_NAME" == "linux" ; then wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh ; fi
+  - if test "$TRAVIS_OS_NAME" == "osx" ; then wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh ; fi
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
