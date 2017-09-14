@@ -33,15 +33,6 @@ import os
 def is_exe(fpath):
     return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
 
-# Read makefile.conf and get CC and CXX flags
-f = open('../Makefile.conf', 'r')
-for line in f :
-   if "CC=" in line : os.environ["CC"] = line.replace("CC=","").replace("\n","")
-   if "CXX=" in line : os.environ["CXX"] = line.replace("CXX=","").replace("\n","")
-   if "LDSO=" in line : os.environ["LDSHARED"] = line.replace("LDSO=","").replace("\n","")
-f.close()
-print( "Building interface using CC=" + os.environ["CC"] + " , CXX=" + os.environ["CXX"] + " and LDSHARED=" + os.environ["LDSHARED"] )
-
 # Check if PLUMED is in PATH
 plumedexe = '../src/lib/plumed'
 for path in os.environ["PATH"].split(os.pathsep):
@@ -51,6 +42,7 @@ for path in os.environ["PATH"].split(os.pathsep):
        plumedexe=exe_file
        break
 
+# Get information on where plumed headers and libraries are installed and the version number
 print( "Plumedexe is " + plumedexe )
 plumedroot = subprocess.check_output([plumedexe, 'info', '--root']).decode("utf-8").strip("\n")
 print( "Creating interface for plumed version in " + plumedroot )
@@ -58,6 +50,15 @@ plumedhead = subprocess.check_output([plumedexe, 'info', '--include-dir']).decod
 print( "Using headers in " + plumedhead )
 plumedversion = subprocess.check_output([plumedexe, 'info', '--version']).decode("utf-8")
 print( "Version number for this plumed is " + plumedversion )
+# Get list containing all config variables so we can extract information on compilers to use during cython build
+plumedconfig = subprocess.check_output([plumedexe, 'info', '--configuration']).decode("utf-8").split("\n")
+
+for line in plumedconfig :
+   if "CC=" in line : os.environ["CC"] = line.replace("CC=","").replace("\n","")
+   if "CXX=" in line : os.environ["CXX"] = line.replace("CXX=","").replace("\n","")
+   if "LDSO=" in line : os.environ["LDSHARED"] = line.replace("LDSO=","").replace("\n","")
+
+print( "Building interface using CC=" + os.environ["CC"] + " , CXX=" + os.environ["CXX"] + " and LDSHARED=" + os.environ["LDSHARED"] )
 
 setup(
   name='plumed',

@@ -202,8 +202,9 @@ endif
 	if test -f ../../vim/scripts.vim ; then cp ../../vim/scripts.vim  "$(DESTDIR)$(libdir)/$(program_name)/vim/" ; fi
 # python installation (rebuild prior to installation so as to discover plumed in path)
 ifneq (,$(findstring __PLUMED_HAS_PYTHON,$(CPPFLAGS)))
-	cd ../../python && rm -fr *.so plumed.cpp build && python buildPythonInterface.py build_ext -i
-	cp -pr ../../python "$(DESTDIR)$(libdir)/$(program_name)/" 
+	cp -pr ../../python install 
+	cd install/python && rm -fr *.so plumed.cpp build && python buildPythonInterface.py build_ext -i
+	cp -pr install/python "$(DESTDIR)$(libdir)/$(program_name)/" 
 endif
 # making everything visible:
 	chmod -R go+rX,go-w "$(DESTDIR)$(libdir)/$(program_name)"

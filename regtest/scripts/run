@@ -133,8 +133,7 @@ case "$type" in
   ;;
 (python)
   if command -v python > /dev/null 2>&1; then
-     python -c "import plumed"
-     if test $? -eq 0 ; then
+     if plumed config -q has python ; then
         python $arg > out 2> err
      else 
         echo "plumed was not compiled with python support"
