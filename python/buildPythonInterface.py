@@ -29,6 +29,10 @@ import numpy
 import subprocess
 import os
 
+# Function for checking if PLUMED is in path
+def is_exe(fpath):
+    return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
 # Read makefile.conf and get CC and CXX flags
 f = open('../Makefile.conf', 'r')
 for line in f :
@@ -38,8 +42,22 @@ for line in f :
 f.close()
 print( "Building interface using CC=" + os.environ["CC"] + " , CXX=" + os.environ["CXX"] + " and LDSHARED=" + os.environ["LDSHARED"] )
 
-plumedversion = subprocess.check_output(['../src/lib/plumed', 'info', '--version']).decode("utf-8")
-print( "Creating interface for plumed version " + plumedversion )
+# Check if PLUMED is in PATH
+plumedexe = '../src/lib/plumed'
+for path in os.environ["PATH"].split(os.pathsep):
+    path = path.strip('"')
+    exe_file = os.path.join(path, 'plumed') 
+    if is_exe(exe_file) : 
+       plumedexe=exe_file
+       break
+
+print( "Plumedexe is " + plumedexe )
+plumedroot = subprocess.check_output([plumedexe, 'info', '--root']).decode("utf-8").strip("\n")
+print( "Creating interface for plumed version in " + plumedroot )
+plumedhead = subprocess.check_output([plumedexe, 'info', '--include-dir']).decode("utf-8").strip("\n") + "/plumed/wrapper/"
+print( "Using headers in " + plumedhead )
+plumedversion = subprocess.check_output([plumedexe, 'info', '--version']).decode("utf-8")
+print( "Version number for this plumed is " + plumedversion )
 
 setup(
   name='plumed',
@@ -51,10 +69,10 @@ setup(
   ext_modules = cythonize([
                   Extension( name="plumed", 
                              sources=["plumed.pyx"],
-                             library_dirs=["../src/lib/"],
+                             library_dirs=[plumedroot, plumedroot + "/src/lib/"],
                              libraries=["plumed"],
                              language="c++",
-                             include_dirs=["../src/wrapper/", numpy.get_include()]
+                             include_dirs=[plumedhead, numpy.get_include()]
                            )
                           ])
 )
