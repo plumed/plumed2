@@ -999,7 +999,7 @@ MetaD::MetaD(const ActionOptions& ao):
       error("The GRID file you want to read: " + gridreadfilename_ + ", cannot be found!");
     }
     std::string funcl=getLabel() + ".bias";
-    BiasGrid_.reset(Grid::create(funcl, getArguments(), gridfile, gmin, gmax, gbin, sparsegrid, spline, true));
+    BiasGrid_=Grid::create(funcl, getArguments(), gridfile, gmin, gmax, gbin, sparsegrid, spline, true);
     gridfile.close();
     if(BiasGrid_->getDimension()!=getNumberOfArguments()) error("mismatch between dimensionality of input grid and number of arguments");
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
@@ -1086,7 +1086,7 @@ MetaD::MetaD(const ActionOptions& ao):
   if(targetfilename_.length()>0) {
     IFile gridfile; gridfile.open(targetfilename_);
     std::string funcl=getLabel() + ".target";
-    TargetGrid_.reset(Grid::create(funcl,getArguments(),gridfile,false,false,true));
+    TargetGrid_=Grid::create(funcl,getArguments(),gridfile,false,false,true);
     gridfile.close();
     if(TargetGrid_->getDimension()!=getNumberOfArguments()) error("mismatch between dimensionality of input grid and number of arguments");
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
